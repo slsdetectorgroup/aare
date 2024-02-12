@@ -1,0 +1,17 @@
+.cproject
+.project
+bin/
+.settings
+*.aux
+*.log
+*.out
+*.toc
+*.o
+*.so
+build/**
+RELEASE.txt
+Testing/
+
+*.pyc
+*/__pycache__/*
+
