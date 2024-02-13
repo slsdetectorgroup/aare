@@ -1,8 +1,10 @@
 // Your First C++ Program
-
 #include <iostream>
+#include "file_io/FileFactory.hpp"
+
 
 int main() {
-    std::cout << "Hello World!";
-    return 0;
+    FileFactory fileFactory=FileFactory();
+    std::filesystem::path p = std::filesystem::current_path();
+    File f = fileFactory.loadFile(p/"test.raw");
 }

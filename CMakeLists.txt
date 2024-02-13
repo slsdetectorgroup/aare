@@ -19,7 +19,7 @@ if (CMAKE_BUILD_TYPE STREQUAL "Debug")
     set(OPTIMIZATION_FLAGS "-Og -ggdb3")
 else()
     set(OPTIMIZATION_FLAGS "-O3")
-
+endif()
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 
 option(USE_SANITIZER "Sanitizers for debugging" ON)
@@ -41,9 +41,7 @@ if(DISABLE_WARNINGS)
 endif()
 
 if(USE_SANITIZER)
-    set(OPTIONAL_FLAGS "${OPTIONAL_FLAGS} -fdiagnostics-parseable-fixits -fdiagnostics-generate-patch
-                         -fdiagnostics-show-template-tree -fsanitize=address,undefined -fno-sanitize-recover
-                         -D_FORTIFY_SOURCE=2 -fstack-protector")
+    set(OPTIONAL_FLAGS "${OPTIONAL_FLAGS} -fdiagnostics-parseable-fixits -fdiagnostics-generate-patch -fdiagnostics-show-template-tree -fsanitize=address,undefined,pointer-compare -fno-sanitize-recover -D_FORTIFY_SOURCE=2 -fstack-protector -fno-omit-frame-pointer ")
 endif()
 
 # if(TUNE_LOCAL)
@@ -58,8 +56,6 @@ endif()
 #     # 
 # endif()
 
-if 
-set(CMAKE_CXX_FLAGS  "")
 
 
 #Enable LTO if available
@@ -70,6 +66,9 @@ if((CMAKE_BUILD_TYPE STREQUAL "Release") AND  LTO_AVAILABLE)
 else()
     message(STATUS "Building without link time optimization")
 endif()
+
+
+set(CMAKE_CXX_FLAGS  "${OPTIONAL_FLAGS} ${OPTIMIZATION_FLAGS}")
 
 add_executable(aare)
 
