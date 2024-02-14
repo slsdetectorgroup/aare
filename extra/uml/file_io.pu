@@ -1,0 +1,36 @@
+@startuml ClassDiagram
+abstract class FileFactory{
+    {static} +getFactory(path):FileFactory
+    {abstract} +loadFile(path):File
+}
+class JsonFileFactory{
+  +loadFile(path):JsonFile
+}
+class RawFileFactory{
+   +loadFile(path):RawFile
+}
+class NumpyFileFactory{
+   +loadFile(path):NumpyFile
+}
+
+abstract File{
+}
+
+class JsonFile{
+}
+class RawFile{
+}
+class NumpyFile{
+}
+
+FileFactory <|-- RawFileFactory
+FileFactory <|-- NumpyFileFactory
+FileFactory <|-- JsonFileFactory
+
+File <|-- JsonFile
+File <|-- RawFile
+File <|-- NumpyFile
+
+FileFactory ..> File
+
+@enduml

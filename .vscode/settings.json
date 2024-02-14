@@ -52,6 +52,25 @@
         "streambuf": "cpp",
         "cinttypes": "cpp",
         "typeinfo": "cpp",
-        "filesystem": "cpp"
-    }
+        "filesystem": "cpp",
+        "csignal": "cpp",
+        "cstring": "cpp",
+        "any": "cpp",
+        "condition_variable": "cpp",
+        "forward_list": "cpp",
+        "list": "cpp",
+        "map": "cpp",
+        "set": "cpp",
+        "unordered_set": "cpp",
+        "fstream": "cpp",
+        "mutex": "cpp",
+        "ranges": "cpp",
+        "semaphore": "cpp",
+        "span": "cpp",
+        "stop_token": "cpp",
+        "thread": "cpp",
+        "valarray": "cpp",
+        "variant": "cpp"
+    },
+    "C_Cpp.errorSquiggles": "enabled"
 }

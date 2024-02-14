@@ -6,12 +6,20 @@ project(aare
     HOMEPAGE_URL "https://github.com/slsdetectorgroup/aare"
     LANGUAGES C CXX 
 )
-# cmake_policy(SET CMP0135 NEW)
 
-# include(GNUInstallDirs)
+cmake_policy(SET CMP0135 NEW)
 
-# include(cmake/helpers.cmake)
-# default_build_type("Debug")]
+
+include(FetchContent)
+
+FetchContent_Declare(json
+    GIT_REPOSITORY https://github.com/nlohmann/json
+    GIT_TAG v3.11.3
+)
+FetchContent_MakeAvailable(json)
+
+find_package(fmt 6 REQUIRED)
+
 
 set(CMAKE_BUILD_TYPE "Debug")
 
@@ -24,16 +32,7 @@ set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 
 option(USE_SANITIZER "Sanitizers for debugging" ON)
 option(DISABLE_WARNINGS "Disbale compilation warnings" OFF)
-# option(USE_TESTS "Unit tests" OFF)
-# option(USE_PYTHON "Python bindings" OFF)
-# option(TUNE_LOCAL "Tune to exact CPU architecture" OFF)
-# option(BUILD_EXAMPLES "Build examples" OFF)
-# option(DISABLE_LTO "Disable Link Time Optimizations" OFF)
 
-
-# if(NOT APPLE)
-#     set(CMAKE_INSTALL_RPATH $ORIGIN)
-# endif()
 
 set(OPTIONAL_FLAGS "")
 if(DISABLE_WARNINGS)
@@ -58,7 +57,6 @@ endif()
 
 
 
-#Enable LTO if available
 include(CheckIPOSupported)
 check_ipo_supported(RESULT LTO_AVAILABLE)
 if((CMAKE_BUILD_TYPE STREQUAL "Release") AND  LTO_AVAILABLE)
@@ -67,9 +65,26 @@ else()
     message(STATUS "Building without link time optimization")
 endif()
 
+set(SUPPRESSED_WARNINGS "-Wno-return-type")
 
-set(CMAKE_CXX_FLAGS  "${OPTIONAL_FLAGS} ${OPTIMIZATION_FLAGS}")
+set(CMAKE_CXX_FLAGS  "${OPTIONAL_FLAGS} ${OPTIMIZATION_FLAGS} ${SUPPRESSED_WARNINGS}")
+
+
 
 add_executable(aare)
 
+target_link_libraries( aare  
+PRIVATE
+ nlohmann_json::nlohmann_json
+PUBLIC
+ fmt::fmt
+)
+
+
+
+
+
 add_subdirectory(src)
+
+
+
