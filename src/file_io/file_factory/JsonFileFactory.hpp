@@ -9,5 +9,6 @@ public:
     void parse_metadata(File&) override;
     JsonFileFactory(std::filesystem::path fpath);
 
+
 };
 

@@ -3,10 +3,11 @@
 #include "helpers.hpp"
 #include <iostream>
 #include <fstream>
-
+#include "defs.hpp"
 #include <nlohmann/json.hpp>
 
 using json = nlohmann::json;
+
 
 
 
@@ -23,19 +24,21 @@ void JsonFileFactory::parse_metadata(File& file){
     ifs >> j;
     double v = j["Version"];
     file.version = fmt::format("{:.1f}", v);
-    file.type = StringTo<DetectorType>(j["Detector Type"].get<std::string>());
+    std::string tmp;
+    j["Detector Type"].get_to(tmp);
+    file.type = StringTo<DetectorType>(tmp);
     file.timing_mode = StringTo<TimingMode>(j["Timing Mode"].get<std::string>());
     file.total_frames = j["Frames in File"];
     file.subfile_cols = j["Pixels"]["x"];
     file.subfile_rows = j["Pixels"]["y"];
-    if (type_ == DetectorType::Moench)
-        bitdepth_ = 16;
+    if (file.type == DetectorType::Moench)
+        file.bitdepth = 16;
     else
-        bitdepth_ = j["Dynamic Range"];
+        file.bitdepth = j["Dynamic Range"];
 
     // only Eiger had quad
-    if (type_ == DetectorType::Eiger) {
-        quad_ = (j["Quad"] == 1);
+    if (file.type == DetectorType::Eiger) {
+        file.quad = (j["Quad"] == 1);
     }
 
 
@@ -46,8 +49,12 @@ void JsonFileFactory::parse_metadata(File& file){
 File JsonFileFactory::loadFile(){
     std::cout<<"Loading json file"<<std::endl;
     JsonFile file = JsonFile();
+    file.fname = fpath;
     this->parse_fname(file);
     this->parse_metadata(file);
+    file.find_number_of_subfiles();
+    this->find_geometry(file);
+    
 
 
 

@@ -12,10 +12,13 @@ public:
     // virtual int deleteFile() = 0;
     virtual File loadFile(){};//TODO: add option to load all file to memory or keep it on disk
     virtual void parse_metadata(File&){};
-
-    // inline fs::path master_fname() const {
-    // return base_path / fmt::format("{}_master_{}{}", base_name, findex, ext);}
-
+    
+    
+    void find_geometry(File&){};
     void parse_fname(File&);
+
+    template <typename Header> Header read_header(const std::filesystem::path &fname);
+
+
 
 };

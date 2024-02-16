@@ -9,6 +9,7 @@ project(aare
 
 cmake_policy(SET CMP0135 NEW)
 
+include(GNUInstallDirs)
 
 include(FetchContent)
 
