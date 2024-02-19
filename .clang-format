@@ -2,6 +2,6 @@ BasedOnStyle: LLVM
 IndentWidth: 4
 
 UseTab: Never
-ColumnLimit: 80
+ColumnLimit: 120
 AlignConsecutiveAssignments: false 
 AlignConsecutiveMacros: true

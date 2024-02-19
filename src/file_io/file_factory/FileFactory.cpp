@@ -72,5 +72,5 @@ void FileFactory::find_geometry(File& file) {
     file.rows = r * file.subfile_rows;
     file.cols = c * file.subfile_cols;
 
-    file.rows += (r - 1) * cfg.module_gap_row;
+    file.rows += (r - 1) * file.cfg.module_gap_row;
 }

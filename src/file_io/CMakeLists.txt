@@ -4,6 +4,7 @@ target_include_directories(aare PUBLIC "${CMAKE_CURRENT_SOURCE_DIR}")
 
 set(FILE_IO_SOURCES "file/File.cpp"
                     "file/JsonFile.cpp"
+                    "file/SubFile.cpp"
                     "file_factory/FileFactory.cpp"
                     "file_factory/JsonFileFactory.cpp"
                     "file_factory/RawFileFactory.cpp"

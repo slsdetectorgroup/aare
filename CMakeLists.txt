@@ -25,7 +25,7 @@ find_package(fmt 6 REQUIRED)
 set(CMAKE_BUILD_TYPE "Debug")
 
 if (CMAKE_BUILD_TYPE STREQUAL "Debug")
-    set(OPTIMIZATION_FLAGS "-Og -ggdb3")
+    set(OPTIMIZATION_FLAGS "-Og -ggdb3 -D_GLIBCXX_DEBUG -D_GLIBCXX_DEBUG_PEDANTIC")
 else()
     set(OPTIMIZATION_FLAGS "-O3")
 endif()

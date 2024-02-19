@@ -14,7 +14,7 @@ public:
     virtual void parse_metadata(File&){};
     
     
-    void find_geometry(File&){};
+    void find_geometry(File&);
     void parse_fname(File&);
 
     template <typename Header> Header read_header(const std::filesystem::path &fname);
