@@ -6,7 +6,7 @@
 
 
 
-FileFactory FileFactory::getFactory(std::filesystem::path fpath){
+ FileFactory* FileFactory::getFactory(std::filesystem::path fpath){
     // check if file exists
     if(!std::filesystem::exists(fpath)){
         throw std::runtime_error("File does not exist");
@@ -18,7 +18,7 @@ FileFactory FileFactory::getFactory(std::filesystem::path fpath){
     }
     else if(fpath.extension() == ".json"){
         std::cout<<"Loading json file"<<std::endl;
-        return JsonFileFactory(fpath);
+        return new JsonFileFactory(fpath);
     }
     //check if extension is numpy
     else if(fpath.extension() == ".npy"){
@@ -29,15 +29,15 @@ FileFactory FileFactory::getFactory(std::filesystem::path fpath){
     throw std::runtime_error("Unsupported file type");    
 }
 
-void FileFactory::parse_fname(File& file) {
-    file.base_path = fpath.parent_path();
-    file.base_name = fpath.stem();
-    file.ext = fpath.extension();
+void FileFactory::parse_fname(File* file) {
+    file->base_path = fpath.parent_path();
+    file->base_name = fpath.stem();
+    file->ext = fpath.extension();
 
-    auto pos = file.base_name.rfind("_");
-    file.findex = std::stoi(file.base_name.substr(pos + 1));
-    pos = file.base_name.find("_master_");
-    file.base_name.erase(pos);
+    auto pos = file->base_name.rfind("_");
+    file->findex = std::stoi(file->base_name.substr(pos + 1));
+    pos = file->base_name.find("_master_");
+    file->base_name.erase(pos);
 }
 
 template <typename Header=sls_detector_header>
@@ -56,21 +56,21 @@ template <typename Header=sls_detector_header>
    
 }
 
-void FileFactory::find_geometry(File& file) {
+void FileFactory::find_geometry(File* file) {
     uint16_t r{};
     uint16_t c{};
-    for (int i = 0; i != file.n_subfiles; ++i) {
-        auto h = this->read_header(file.data_fname(i, 0));
+    for (int i = 0; i != file->n_subfiles; ++i) {
+        auto h = this->read_header(file->data_fname(i, 0));
         r = std::max(r, h.row);
         c = std::max(c, h.column);
 
-        file.positions.push_back({h.row, h.column});
+        file->positions.push_back({h.row, h.column});
     }
     r++;
     c++;
 
-    file.rows = r * file.subfile_rows;
-    file.cols = c * file.subfile_cols;
+    file->rows = r * file->subfile_rows;
+    file->cols = c * file->subfile_cols;
 
-    file.rows += (r - 1) * file.cfg.module_gap_row;
+    file->rows += (r - 1) * file->cfg.module_gap_row;
 }

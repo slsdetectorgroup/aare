@@ -8,7 +8,10 @@
  *
  */
 template <class Header, class DataType>
-SubFile<Header, DataType>::SubFile(std::filesystem::path fname, ssize_t rows, ssize_t cols) : rows(rows), cols(cols) {
+SubFile<Header, DataType>::SubFile(std::filesystem::path fname, ssize_t rows, ssize_t cols)  {
+    this->rows = rows;
+    this->cols = cols;
+    this->fname = fname;
     fp = fopen(fname.c_str(), "rb");
     if (fp == nullptr) {
         throw std::runtime_error("Could not open file " + fname.string());
@@ -16,8 +19,18 @@ SubFile<Header, DataType>::SubFile(std::filesystem::path fname, ssize_t rows, ss
     std::cout<<"File opened"<<std::endl;
     n_frames = std::filesystem::file_size(fname) / (sizeof(Header) + rows * cols * sizeof(DataType));
     std::cout<<"Number of frames: "<<n_frames<<std::endl;
-
 }
+
+
+template <class Header, class DataType>
+size_t SubFile<Header, DataType>::get_frame(std::byte *buffer, int frame_number) {
+    if (frame_number >= n_frames or frame_number < 0) {
+        throw std::runtime_error("Frame number out of range");
+    }
+    fseek(fp, sizeof(Header)+(sizeof(Header) + bytes_per_frame()) *frame_number, SEEK_SET);
+    return read_impl(buffer);
+}
+
 /**
  * NormalSubFile methods
 */
@@ -26,7 +39,7 @@ NormalSubFile<Header, DataType>::NormalSubFile(std::filesystem::path fname, ssiz
     : SubFile<Header, DataType>(fname, rows, cols){};
 
 template <class Header, class DataType> size_t NormalSubFile<Header, DataType>::read_impl(std::byte *buffer) {
-    return fread(reinterpret_cast<char *>(buffer), sizeof(DataType) * this->rows * this->cols, 1, this->fp);
+    return fread(buffer, this->bytes_per_frame(), 1, this->fp);
 };
 
 
@@ -38,7 +51,8 @@ template <class Header, class DataType>
 ReorderM03SubFile<Header, DataType>::ReorderM03SubFile(std::filesystem::path fname, ssize_t rows, ssize_t cols)
     : SubFile<Header, DataType>(fname, rows, cols){};
 
-template <class Header, class DataType> size_t ReorderM03SubFile<Header, DataType>::read_impl(std::byte *buffer) {
+template <class Header, class DataType> 
+size_t ReorderM03SubFile<Header, DataType>::read_impl(std::byte *buffer) {
     std::vector<DataType> tmp(this->pixels_per_frame());
     size_t rc = fread(reinterpret_cast<char *>(&tmp[0]), this->bytes_per_frame(), 1, this->fp);
 
@@ -69,3 +83,9 @@ template <class Header, class DataType> size_t ReorderM03SubFile<Header, DataTyp
 template class NormalSubFile<sls_detector_header, uint16_t>;
 template class NormalSubFile<sls_detector_header, uint32_t>;
 template class ReorderM03SubFile<sls_detector_header, uint16_t>;
+
+// template size_t ReorderM03SubFile<sls_detector_header, uint16_t>::read_impl(std::byte *buffer); 
+// template size_t ReorderM03SubFile<sls_detector_header, uint32_t>::read_impl(std::byte *buffer); 
+
+// template size_t NormalSubFile<sls_detector_header, uint32_t>::read_impl(std::byte *buffer);
+// template size_t NormalSubFile<sls_detector_header, uint16_t>::read_impl(std::byte *buffer);

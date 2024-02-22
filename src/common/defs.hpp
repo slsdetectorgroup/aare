@@ -6,6 +6,7 @@
 #include <string_view>
 #include <stdexcept>
 #include <fmt/format.h>
+#include <variant>
 
 typedef struct {
     uint64_t frameNumber;
@@ -29,7 +30,7 @@ struct xy {
     int col;
 };
 
-using image_shape = std::array<ssize_t, 2>;
+// using image_shape = std::array<ssize_t, 2>;
 using dynamic_shape = std::vector<ssize_t>;
 
 enum class DetectorType { Jungfrau, Eiger, Mythen3, Moench };
@@ -45,3 +46,4 @@ template <> DetectorType StringTo(std::string);
 
 template <> TimingMode StringTo(std::string);
 
+using DataTypeVariants = std::variant<uint16_t, uint32_t>;

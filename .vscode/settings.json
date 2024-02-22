@@ -85,7 +85,10 @@
         "__verbose_abort": "cpp",
         "execution": "cpp",
         "ios": "cpp",
-        "locale": "cpp"
+        "locale": "cpp",
+        "__tree": "cpp",
+        "queue": "cpp",
+        "stack": "cpp"
     },
     "C_Cpp.errorSquiggles": "enabled"
 }

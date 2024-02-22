@@ -1,3 +1,4 @@
+#pragma once
 #include <cstddef>
 #include <sys/types.h>
 #include <cstdint>
@@ -5,20 +6,19 @@
 #include <vector>
 #include "defs.hpp"
 
-class Frame{
 
-    ssize_t nrows{};
-    ssize_t ncols{};
-    uint8_t bitdepth_{};
-    std::unique_ptr<std::byte[]> data_{nullptr};
-public:
-    ssize_t rows() const;
-    ssize_t cols() const;
-    image_shape shape() const;
-    uint8_t bits_per_pixel() const;
-    uint8_t bytes_per_pixel() const;
-    size_t total_bytes() const;
+/**
+ * @brief Frame class to represent a single frame of data
+ * model class
+ * should be able to work with streams coming from files or network
+*/
+template <class DataType>
+class Frame {
 
-
-
+    DataType* data{nullptr};
+    ssize_t rows{};
+    ssize_t cols{};
+    public:
+    Frame(std::byte* fp, ssize_t rows, ssize_t cols);
+    DataType get(int row, int col);
 };
