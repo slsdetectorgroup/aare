@@ -33,4 +33,5 @@ int main() {
 
 
     delete fileFactory;
+    delete f;
 }

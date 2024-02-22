@@ -10,7 +10,11 @@ Frame<uint16_t> JsonFile::get_frame(int frame_number){
     subfiles[subfile_id]->get_frame(buffer, frame_number%max_frames_per_file);
 
 
-    return Frame<uint16_t>(buffer, rows, cols);
+
+    auto f =  Frame<uint16_t>(buffer, rows, cols);
+
+    delete[] buffer;
+    return f;
 
     
 

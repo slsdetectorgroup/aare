@@ -21,4 +21,7 @@ class Frame {
     public:
     Frame(std::byte* fp, ssize_t rows, ssize_t cols);
     DataType get(int row, int col);
+    ~Frame(){
+        delete[] data;
+    }
 };

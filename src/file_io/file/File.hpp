@@ -51,7 +51,7 @@ class File {
 
     config cfg{0,0};
     // File();
-    // ~File();
+    ~File();
 
     inline size_t bytes_per_frame() const { return rows * cols * bitdepth / 8; }
     inline size_t pixels() const { return rows * cols; }
