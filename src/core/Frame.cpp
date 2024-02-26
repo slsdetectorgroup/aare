@@ -2,25 +2,21 @@
 #include <iostream>
 
 
-template <class DataType>
-Frame<DataType>::Frame(std::byte* bytes, ssize_t rows, ssize_t cols)
+IFrame::IFrame(std::byte* bytes, ssize_t rows, ssize_t cols, ssize_t bitdepth)
  {
   this->rows = rows;
   this->cols = cols;
-  data = new DataType[rows * cols];
-  std::memcpy(data, bytes, sizeof(DataType) * rows * cols);
+  data = new std::byte[rows * cols*bitdepth/8];
+  std::memcpy(data, bytes, bitdepth/8 * rows * cols);
 }
 
-template <class DataType>
-DataType Frame<DataType>::get(int row, int col) {
+std::byte* IFrame::get(int row, int col) {
   if (row < 0 || row >= rows || col < 0 || col >= cols) {
     std::cerr << "Invalid row or column index" << std::endl;
     return 0;
   }
-  return  data[row * cols + col];
+  return  data+(row * cols + col)*bitdepth/8;
 
 
 }
 
-template class Frame<uint16_t>;
-template class Frame<uint32_t>;

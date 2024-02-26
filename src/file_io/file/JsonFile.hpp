@@ -5,6 +5,9 @@
 
 class JsonFile: public File
 {
-    Frame<uint16_t> get_frame(int frame_number);
+    template <class T>
+    Frame<T> get_frame(int frame_number);
+
+    IFrame get_frame(int frame_number);
     
 };

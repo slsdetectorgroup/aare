@@ -1,7 +1,8 @@
 #include "JsonFile.hpp"
 #include <typeinfo>
 
-Frame<uint16_t> JsonFile::get_frame(int frame_number){
+template <class T>
+Frame<T> JsonFile::get_frame(int frame_number){
     int subfile_id=frame_number/max_frames_per_file;
     std::byte* buffer;
     size_t frame_size = subfiles[subfile_id]->bytes_per_frame();
@@ -11,7 +12,7 @@ Frame<uint16_t> JsonFile::get_frame(int frame_number){
 
 
 
-    auto f =  Frame<uint16_t>(buffer, rows, cols);
+    auto f =  Frame<T>(buffer, rows, cols);
 
     delete[] buffer;
     return f;
