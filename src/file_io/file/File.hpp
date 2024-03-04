@@ -1,14 +1,11 @@
 #pragma once
 
+#include "Frame.hpp"
+#include "SubFile.hpp"
 #include "defs.hpp"
 #include <filesystem>
 #include <fmt/core.h>
-#include "SubFile.hpp"
 #include <iostream>
-#include "Frame.hpp"
-
-
-
 
 struct RawFileConfig {
     int module_gap_row{};
@@ -23,13 +20,16 @@ struct RawFileConfig {
     }
 };
 
-
-
 class File {
-    private:
-    using config = RawFileConfig;
+
   public:
-    std::vector<SubFileBase*> subfiles;
+    virtual FrameImpl* get_frame(int frame_number) = 0;
+
+  private:
+    using config = RawFileConfig;
+
+  public:
+    std::vector<SubFile*> subfiles;
     std::filesystem::path fname;
     std::filesystem::path base_path;
     std::string base_name, ext;
@@ -49,13 +49,13 @@ class File {
     using data_type = uint16_t;
     std::vector<xy> positions;
 
-    config cfg{0,0};
+    config cfg{0, 0};
     // File();
     ~File();
 
     inline size_t bytes_per_frame() const { return rows * cols * bitdepth / 8; }
     inline size_t pixels() const { return rows * cols; }
-    inline void set_config(int row,int col){
+    inline void set_config(int row, int col) {
         cfg.module_gap_row = row;
         cfg.module_gap_col = col;
     }
@@ -63,21 +63,17 @@ class File {
     // TODO! Deal with fast quad and missing files
     void find_number_of_subfiles() {
         int n_mod = 0;
-        while (std::filesystem::exists(data_fname(++n_mod, 0)));
+        while (std::filesystem::exists(data_fname(++n_mod, 0)))
+            ;
         n_subfiles = n_mod;
-        
     }
 
     inline std::filesystem::path master_fname() {
-        return base_path /
-               fmt::format("{}_master_{}{}", base_name, findex, ext);
+        return base_path / fmt::format("{}_master_{}{}", base_name, findex, ext);
     }
     inline std::filesystem::path data_fname(int mod_id, int file_id) {
-        return base_path / fmt::format("{}_d{}_f{}_{}.raw", base_name, file_id,
-                                       mod_id, findex);
+        return base_path / fmt::format("{}_d{}_f{}_{}.raw", base_name, file_id, mod_id, findex);
     }
 
-
-    virtual Frame<uint16_t> get_frame(int frame_number)=0;
     // size_t total_frames();
 };

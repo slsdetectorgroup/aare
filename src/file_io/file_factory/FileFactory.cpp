@@ -6,7 +6,7 @@
 
 
 
- FileFactory* FileFactory::getFactory(std::filesystem::path fpath){
+ FileFactory* FileFactory::get_factory(std::filesystem::path fpath, uint16_t bitdepth){
     // check if file exists
     if(!std::filesystem::exists(fpath)){
         throw std::runtime_error("File does not exist");
@@ -18,7 +18,7 @@
     }
     else if(fpath.extension() == ".json"){
         std::cout<<"Loading json file"<<std::endl;
-        return new JsonFileFactory(fpath);
+        return new JsonFileFactory(fpath, bitdepth);
     }
     //check if extension is numpy
     else if(fpath.extension() == ".npy"){

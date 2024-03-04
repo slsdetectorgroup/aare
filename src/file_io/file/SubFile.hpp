@@ -4,50 +4,29 @@
 #include <filesystem>
 #include <variant>
 
-class SubFileBase {
+class SubFile {
   protected:
     FILE *fp = nullptr;
+    uint16_t bitdepth;
 
   public:
-    virtual inline size_t bytes_per_frame() =0;
-    virtual inline size_t pixels_per_frame() =0;
-    std::filesystem::path fname;
+    // pointer to a read_impl function. pointer will be set to the appropriate read_impl function in the constructor
+    size_t (SubFile::*read_impl)(std::byte *buffer) = nullptr;
+    size_t read_impl_normal(std::byte *buffer);
+    template <typename DataType> size_t  read_impl_flip(std::byte *buffer);
+    template <typename DataType> size_t  read_impl_reorder(std::byte *buffer);
 
+
+    SubFile(std::filesystem::path fname,DetectorType detector, ssize_t rows, ssize_t cols, uint16_t bitdepth);
+
+    size_t get_frame(std::byte *buffer, int frame_number);
+
+    // TODO: define the inlines as variables and assign them in constructor
+    inline size_t bytes_per_frame() { return (bitdepth / 8) * rows * cols; }
+    inline size_t pixels_per_frame() { return rows * cols; }
+    std::filesystem::path fname;
     ssize_t rows{};
     ssize_t cols{};
     ssize_t n_frames{};
     int sub_file_index_{};
-    virtual size_t read_impl(std::byte *buffer)=0;
-    virtual size_t get_frame(std::byte *buffer, int frame_number)=0;
-
 };
-
-template <class Header, class DataType> class SubFile : public SubFileBase{
-  public:
-    SubFile(std::filesystem::path fname, ssize_t rows, ssize_t cols);
-    inline size_t bytes_per_frame() override { return sizeof(DataType) * rows * cols; }
-    inline size_t pixels_per_frame() override { return rows * cols; }
-    virtual size_t read_impl(std::byte *buffer)=0;
-    size_t get_frame(std::byte *buffer, int frame_number);
-
-    
-};
-
-template <class Header, class DataType> class NormalSubFile : public SubFile<Header, DataType> {
-  public:
-    NormalSubFile(std::filesystem::path fname, ssize_t rows, ssize_t cols);
-    size_t read_impl(std::byte *buffer);
-};
-
-template <class Header, class DataType> class ReorderM03SubFile : public SubFile<Header, DataType> {
-  public:
-    ReorderM03SubFile(std::filesystem::path fname, ssize_t rows, ssize_t cols);
-    size_t read_impl(std::byte *buffer);
-};
-
-using JungfrauSubFile = NormalSubFile<sls_detector_header, uint16_t>;
-using Moench03SubFile = ReorderM03SubFile<sls_detector_header, uint16_t>;
-using Mythen3SubFile = NormalSubFile<sls_detector_header, uint32_t>;
-
-// using SubFileVariants = std::variant<JungfrauSubFile, Mythen3SubFile, Moench03SubFile>;
-

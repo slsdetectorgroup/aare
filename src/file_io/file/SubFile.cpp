@@ -7,52 +7,42 @@
  *
  *
  */
-template <class Header, class DataType>
-SubFile<Header, DataType>::SubFile(std::filesystem::path fname, ssize_t rows, ssize_t cols)  {
+
+SubFile::SubFile(std::filesystem::path fname, DetectorType detector, ssize_t rows, ssize_t cols, uint16_t bitdepth) {
     this->rows = rows;
     this->cols = cols;
     this->fname = fname;
+    this->bitdepth = bitdepth;
     fp = fopen(fname.c_str(), "rb");
     if (fp == nullptr) {
         throw std::runtime_error("Could not open file " + fname.string());
     }
-    std::cout<<"File opened"<<std::endl;
-    n_frames = std::filesystem::file_size(fname) / (sizeof(Header) + rows * cols * sizeof(DataType));
-    std::cout<<"Number of frames: "<<n_frames<<std::endl;
+    std::cout << "File opened" << std::endl;
+    n_frames = std::filesystem::file_size(fname) / (sizeof(sls_detector_header) + rows * cols * bitdepth / 8);
+    std::cout << "Number of frames: " << n_frames << std::endl;
+    
+    if (detector == DetectorType::Moench) {
+        read_impl = &SubFile::read_impl_reorder<uint16_t>;
+    } else if (detector == DetectorType::Jungfrau) {
+        read_impl = &SubFile::read_impl_normal;
+    }
+    else {
+        throw std::runtime_error("Detector type not implemented");
+    }
 }
 
-
-template <class Header, class DataType>
-size_t SubFile<Header, DataType>::get_frame(std::byte *buffer, int frame_number) {
+size_t SubFile::get_frame(std::byte *buffer, int frame_number) {
     if (frame_number >= n_frames or frame_number < 0) {
         throw std::runtime_error("Frame number out of range");
     }
-    fseek(fp, sizeof(Header)+(sizeof(Header) + bytes_per_frame()) *frame_number, SEEK_SET);
-    return read_impl(buffer);
+    fseek(fp, sizeof(sls_detector_header) + (sizeof(sls_detector_header) + bytes_per_frame()) * frame_number, SEEK_SET);
+    return (this->*read_impl)(buffer);
 }
 
-/**
- * NormalSubFile methods
-*/
-template <class Header, class DataType>
-NormalSubFile<Header, DataType>::NormalSubFile(std::filesystem::path fname, ssize_t rows, ssize_t cols)
-    : SubFile<Header, DataType>(fname, rows, cols){};
+size_t SubFile::read_impl_normal(std::byte *buffer) { return fread(buffer, this->bytes_per_frame(), 1, this->fp); }
 
-template <class Header, class DataType> size_t NormalSubFile<Header, DataType>::read_impl(std::byte *buffer) {
-    return fread(buffer, this->bytes_per_frame(), 1, this->fp);
-};
+template <typename DataType> size_t SubFile::read_impl_reorder(std::byte *buffer) {
 
-
-
-/**
- * ReorderM03SubFile methods
-*/
-template <class Header, class DataType>
-ReorderM03SubFile<Header, DataType>::ReorderM03SubFile(std::filesystem::path fname, ssize_t rows, ssize_t cols)
-    : SubFile<Header, DataType>(fname, rows, cols){};
-
-template <class Header, class DataType> 
-size_t ReorderM03SubFile<Header, DataType>::read_impl(std::byte *buffer) {
     std::vector<DataType> tmp(this->pixels_per_frame());
     size_t rc = fread(reinterpret_cast<char *>(&tmp[0]), this->bytes_per_frame(), 1, this->fp);
 
@@ -79,13 +69,24 @@ size_t ReorderM03SubFile<Header, DataType>::read_impl(std::byte *buffer) {
     }
     return rc;
 };
+template <typename DataType> size_t SubFile::read_impl_flip(std::byte *buffer) {
 
-template class NormalSubFile<sls_detector_header, uint16_t>;
-template class NormalSubFile<sls_detector_header, uint32_t>;
-template class ReorderM03SubFile<sls_detector_header, uint16_t>;
+    // read to temporary buffer
+    // TODO! benchmark direct reads
+    std::vector<std::byte> tmp(this->bytes_per_frame());
+    size_t rc = fread(reinterpret_cast<char *>(&tmp[0]), this->bytes_per_frame(), 1, this->fp);
 
-// template size_t ReorderM03SubFile<sls_detector_header, uint16_t>::read_impl(std::byte *buffer); 
-// template size_t ReorderM03SubFile<sls_detector_header, uint32_t>::read_impl(std::byte *buffer); 
+    // copy to place
+    const size_t start = this->cols * (this->rows - 1) * sizeof(DataType);
+    const size_t row_size = this->cols * sizeof(DataType);
+    auto dst = buffer + start;
+    auto src = &tmp[0];
 
-// template size_t NormalSubFile<sls_detector_header, uint32_t>::read_impl(std::byte *buffer);
-// template size_t NormalSubFile<sls_detector_header, uint16_t>::read_impl(std::byte *buffer);
+    for (int i = 0; i != this->rows; ++i) {
+        memcpy(dst, src, row_size);
+        dst -= row_size;
+        src += row_size;
+    }
+
+    return rc;
+};
