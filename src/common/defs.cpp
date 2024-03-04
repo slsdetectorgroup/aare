@@ -1,5 +1,21 @@
 #include "defs.hpp"
 
+template <> std::string toString(DetectorType type) {
+    switch (type) {
+    case DetectorType::Jungfrau:
+        return "Jungfrau";
+    case DetectorType::Eiger:
+        return "Eiger";
+    case DetectorType::Mythen3:
+        return "Mythen3";
+    case DetectorType::Moench:
+        return "Moench";
+    default:
+        return "Unknown";
+    }
+}
+
+
  template <> DetectorType StringTo(std::string name) {
     if (name == "Jungfrau")
         return DetectorType::Jungfrau;

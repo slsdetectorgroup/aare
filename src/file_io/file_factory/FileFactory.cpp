@@ -1,35 +1,34 @@
 #include "FileFactory.hpp"
 #include "File.hpp"
-#include "RawFileFactory.hpp"
 #include "JsonFileFactory.hpp"
+#include "RawFileFactory.hpp"
 #include <iostream>
 
-
-
- FileFactory* FileFactory::get_factory(std::filesystem::path fpath, uint16_t bitdepth){
+template <DetectorType detector, typename DataType>
+FileFactory<detector, DataType> *FileFactory<detector, DataType>::get_factory(std::filesystem::path fpath) {
     // check if file exists
-    if(!std::filesystem::exists(fpath)){
+    if (!std::filesystem::exists(fpath)) {
         throw std::runtime_error("File does not exist");
     }
 
-    if(fpath.extension() == ".raw"){
-        std::cout<<"Loading raw file"<<std::endl;
+    if (fpath.extension() == ".raw") {
+        std::cout << "Loading raw file" << std::endl;
         throw std::runtime_error("Raw file not implemented");
+    } else if (fpath.extension() == ".json") {
+        std::cout << "Loading json file" << std::endl;
+        return new JsonFileFactory<detector, DataType>(fpath);
     }
-    else if(fpath.extension() == ".json"){
-        std::cout<<"Loading json file"<<std::endl;
-        return new JsonFileFactory(fpath, bitdepth);
-    }
-    //check if extension is numpy
-    else if(fpath.extension() == ".npy"){
-        std::cout<<"Loading numpy file"<<std::endl;
+    // check if extension is numpy
+    else if (fpath.extension() == ".npy") {
+        std::cout << "Loading numpy file" << std::endl;
         throw std::runtime_error("Numpy file not implemented");
     }
-    
-    throw std::runtime_error("Unsupported file type");    
+
+    throw std::runtime_error("Unsupported file type");
 }
 
-void FileFactory::parse_fname(File* file) {
+template <DetectorType detector, typename DataType>
+void FileFactory<detector, DataType>::parse_fname(File<detector, DataType> *file) {
     file->base_path = fpath.parent_path();
     file->base_name = fpath.stem();
     file->ext = fpath.extension();
@@ -40,23 +39,22 @@ void FileFactory::parse_fname(File* file) {
     file->base_name.erase(pos);
 }
 
-template <typename Header=sls_detector_header>
- Header FileFactory::read_header(const std::filesystem::path &fname) {
-    Header h{};
+template <DetectorType detector, typename DataType>
+sls_detector_header FileFactory<detector, DataType>::read_header(const std::filesystem::path &fname) {
+    sls_detector_header h{};
     FILE *fp = fopen(fname.c_str(), "r");
     if (!fp)
-        throw std::runtime_error(
-            fmt::format("Could not open: {} for reading", fname.c_str()));
+        throw std::runtime_error(fmt::format("Could not open: {} for reading", fname.c_str()));
 
     size_t rc = fread(reinterpret_cast<char *>(&h), sizeof(h), 1, fp);
     fclose(fp);
     if (rc != 1)
         throw std::runtime_error("Could not read header from file");
     return h;
-   
 }
 
-void FileFactory::find_geometry(File* file) {
+template <DetectorType detector, typename DataType>
+void FileFactory<detector, DataType>::find_geometry(File<detector, DataType> *file) {
     uint16_t r{};
     uint16_t c{};
     for (int i = 0; i != file->n_subfiles; ++i) {
@@ -74,3 +72,5 @@ void FileFactory::find_geometry(File* file) {
 
     file->rows += (r - 1) * file->cfg.module_gap_row;
 }
+
+template class FileFactory<DetectorType::Jungfrau, uint16_t>;

@@ -42,7 +42,14 @@ T StringTo(std::string sv){
     return T(sv);
 }
 
+template<class T> 
+std::string toString(T sv){
+    return T(sv);
+}
+
 template <> DetectorType StringTo(std::string);
+template <> std::string toString(DetectorType type);
+
 
 template <> TimingMode StringTo(std::string);
 

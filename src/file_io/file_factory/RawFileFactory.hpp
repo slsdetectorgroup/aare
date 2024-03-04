@@ -1,9 +1,9 @@
 #include "File.hpp"
 #include <filesystem>
-
+template<DetectorType detector,typename DataType>  
 class RawFileFactory{
     public:
         // RawFileFactory();
         // ~RawFileFactory();
-        File loadFile(std::filesystem::path fpath);
+        File<detector,DataType> loadFile(std::filesystem::path fpath);
 };

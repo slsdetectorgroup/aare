@@ -1,9 +1,15 @@
 // Your First C++ Program
 #include <iostream>
 #include <FileHandler.hpp>
-void test(FileHandler* f,int frame_number){
+
+using JFileHandler = FileHandler<DetectorType::Jungfrau,uint16_t>;
+using JFile = File<DetectorType::Jungfrau,uint16_t>;
+using JFrame = Frame<uint16_t>;
+
+
+void test(JFileHandler* f,int frame_number){
     std::cout << "frame number: " << frame_number << std::endl;
-    Frame16* frame = f->get_frame<uint16_t>(frame_number);
+    JFrame* frame = f->get_frame(frame_number);
     std::cout << frame->get(0,0) << ' ';
     std::cout << frame->get(0,1) << ' ';
     std::cout << frame->get(1,0) << ' ';
@@ -14,8 +20,7 @@ void test(FileHandler* f,int frame_number){
 
 int main() {
     std::filesystem::path fpath("/home/l_bechir/github/aare/data/jungfrau_single_master_0.json");
-    FileHandler* fileHandler = new FileHandler(fpath);
-    test(fileHandler,0);
+    auto fileHandler = new JFileHandler (fpath);
 
     delete fileHandler;
 

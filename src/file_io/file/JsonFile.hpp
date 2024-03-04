@@ -1,11 +1,9 @@
 #pragma once
+#include "File.hpp"
 #include "Frame.hpp"
 #include "defs.hpp"
-#include "File.hpp"
+template <DetectorType detector, typename DataType>
+class JsonFile : public File<detector, DataType> {
 
-class JsonFile: public File
-{
-
-    FrameImpl* get_frame(int frame_number);
-    
+    Frame<DataType> *get_frame(int frame_number);
 };

@@ -19,11 +19,11 @@ struct RawFileConfig {
         return true;
     }
 };
-
+template <DetectorType detector, typename DataType>
 class File {
 
   public:
-    virtual FrameImpl* get_frame(int frame_number) = 0;
+    virtual Frame<DataType>* get_frame(int frame_number) = 0;
 
   private:
     using config = RawFileConfig;

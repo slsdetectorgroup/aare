@@ -9,14 +9,15 @@
 
 using json = nlohmann::json;
 
-JsonFileFactory::JsonFileFactory(std::filesystem::path fpath, uint16_t bitdepth=16) {
+template <DetectorType detector,typename DataType>
+JsonFileFactory<detector,DataType>::JsonFileFactory(std::filesystem::path fpath) {
     if (not is_master_file(fpath))
         throw std::runtime_error("Json file is not a master file");
     this->fpath = fpath;
-    this->bitdepth = bitdepth;
 }
 
-void JsonFileFactory::parse_metadata(File *file) {
+template <DetectorType detector,typename DataType>
+void JsonFileFactory<detector,DataType>::parse_metadata(File<detector,DataType> *file) {
     std::cout << "Parsing metadata" << std::endl;
     std::ifstream ifs(file->master_fname());
     json j;
@@ -25,6 +26,9 @@ void JsonFileFactory::parse_metadata(File *file) {
     std::cout << "Version: " << v << std::endl;
     file->version = fmt::format("{:.1f}", v);
     file->type = StringTo<DetectorType>(j["Detector Type"].get<std::string>());
+    if (file->type != detector)
+        throw std::runtime_error("Detector type mismatch: file type (" + toString<DetectorType>(file->type) +
+                                 ") != specified type (" + toString<DetectorType>(detector) + ")");
     file->timing_mode = StringTo<TimingMode>(j["Timing Mode"].get<std::string>());
     file->total_frames = j["Frames in File"];
     file->subfile_cols = j["Pixels"]["x"];
@@ -36,9 +40,9 @@ void JsonFileFactory::parse_metadata(File *file) {
         std::cerr << "master file does not have Dynamic Range. Defaulting to 16 bit" << '\n';
         file->bitdepth = 16;
     }
-    // if (file->bitdepth != this->bitdepth)
-    //     throw std::runtime_error("Bitdepth mismatch: file bitdepth (" + std::to_string(file->bitdepth) +
-    //                              ") != specified bitdepth (" + std::to_string(this->bitdepth) + ")");
+    if (file->bitdepth != sizeof(DataType) * 8)
+        throw std::runtime_error("Bitdepth mismatch: file bitdepth (" + std::to_string(file->bitdepth) +
+                                 ") != specified bitdepth (" + std::to_string(sizeof(DataType) * 8) + ")");
 
     // only Eiger had quad
     if (file->type == DetectorType::Eiger) {
@@ -46,7 +50,8 @@ void JsonFileFactory::parse_metadata(File *file) {
     }
 }
 
-void JsonFileFactory::open_subfiles(File *file) {
+template <DetectorType detector,typename DataType>
+void JsonFileFactory<detector,DataType>::open_subfiles(File<detector,DataType> *file) {
     for (int i = 0; i != file->n_subfiles; ++i) {
 
         file->subfiles.push_back(
@@ -54,10 +59,11 @@ void JsonFileFactory::open_subfiles(File *file) {
     }
 }
 
-File *JsonFileFactory::load_file() {
+template <DetectorType detector,typename DataType>
+File<detector,DataType> *JsonFileFactory<detector,DataType>::load_file() {
     std::cout << "Loading json file" << std::endl;
-    JsonFile *file = new JsonFile();
-    file->fname = fpath;
+    JsonFile<detector,DataType> *file = new JsonFile<detector,DataType>();
+    file->fname = this->fpath;
     this->parse_fname(file);
     this->parse_metadata(file);
     file->find_number_of_subfiles();
@@ -66,3 +72,5 @@ File *JsonFileFactory::load_file() {
 
     return file;
 }
+
+template class JsonFileFactory<DetectorType::Jungfrau, uint16_t>;

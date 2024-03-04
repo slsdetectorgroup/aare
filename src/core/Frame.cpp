@@ -1,22 +1,23 @@
 #include "Frame.hpp"
 #include <iostream>
 
+template <typename DataType>
+Frame<DataType>::Frame(std::byte* bytes, ssize_t rows, ssize_t cols):
+  rows(rows), cols(cols) {
+    data = new DataType[rows*cols];
+    std::memcpy(data, bytes, rows*cols*sizeof(DataType));
+  }
 
-FrameImpl::FrameImpl(std::byte* bytes, ssize_t rows, ssize_t cols, ssize_t bitdepth)
- {
-  this->rows = rows;
-  this->cols = cols;
-  data = new std::byte[rows * cols*bitdepth/8];
-  std::memcpy(data, bytes, bitdepth/8 * rows * cols);
-}
 
-std::byte* FrameImpl::get(int row, int col) {
+
+template <typename DataType>
+DataType Frame<DataType>::get(int row, int col) {
   if (row < 0 || row >= rows || col < 0 || col >= cols) {
     std::cerr << "Invalid row or column index" << std::endl;
     return 0;
   }
-  return  data+(row * cols + col)*bitdepth/8;
-
-
+  return data[row*cols + col];
 }
 
+
+template class Frame<uint16_t>;

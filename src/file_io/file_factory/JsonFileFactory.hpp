@@ -1,14 +1,14 @@
 #include "FileFactory.hpp"
-
-class JsonFileFactory: public FileFactory
+template <DetectorType detector,typename DataType>
+class JsonFileFactory: public FileFactory<detector,DataType>
 {
 private:
     /* data */
 public:
-    File* load_file() override;
-    void parse_metadata(File*) override;
-    JsonFileFactory(std::filesystem::path fpath, uint16_t bitdepth);
-    void open_subfiles(File*);
+    File<detector,DataType>* load_file() override;
+    void parse_metadata(File<detector,DataType>*) override;
+    JsonFileFactory<detector,DataType>(std::filesystem::path fpath);
+    void open_subfiles(File<detector,DataType>*);
     
 
 
