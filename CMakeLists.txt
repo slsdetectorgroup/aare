@@ -8,6 +8,8 @@ project(aare
 )
 
 cmake_policy(SET CMP0135 NEW)
+cmake_policy(SET CMP0079 NEW)
+
 
 include(GNUInstallDirs)
 
@@ -71,21 +73,22 @@ set(SUPPRESSED_WARNINGS "-Wno-return-type")
 set(CMAKE_CXX_FLAGS  "${OPTIONAL_FLAGS} ${OPTIMIZATION_FLAGS} ${SUPPRESSED_WARNINGS}")
 
 
-
-add_executable(aare)
-
-target_link_libraries( aare  
-PRIVATE
- nlohmann_json::nlohmann_json
-PUBLIC
- fmt::fmt
-)
-
-
-
-
-
 add_subdirectory(src)
 
 
 
+
+
+add_library(aare INTERFACE) 
+
+# target_link_libraries( aare  
+# PRIVATE
+#  nlohmann_json::nlohmann_json
+# PUBLIC
+#  fmt::fmt
+# )
+
+target_link_libraries(aare INTERFACE common core file_io)
+
+
+add_subdirectory(examples)

@@ -1,5 +1,7 @@
-target_include_directories(aare PUBLIC ${CMAKE_CURRENT_SOURCE_DIR})
+add_library(common "${CMAKE_CURRENT_SOURCE_DIR}/defs.cpp")
 
-target_sources(aare PRIVATE  "${CMAKE_CURRENT_SOURCE_DIR}/defs.cpp")
+target_include_directories(common PUBLIC "${CMAKE_CURRENT_SOURCE_DIR}")
+
+target_link_libraries(common PUBLIC fmt::fmt)
 
 

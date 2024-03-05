@@ -41,3 +41,5 @@ template <> TimingMode StringTo(std::string mode){
         throw std::runtime_error(msg);
     }
 }
+
+// template <> TimingMode StringTo<TimingMode>(std::string mode);

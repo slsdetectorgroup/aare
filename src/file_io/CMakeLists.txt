@@ -1,6 +1,3 @@
-target_include_directories(aare PUBLIC "${CMAKE_CURRENT_SOURCE_DIR}/file")
-target_include_directories(aare PUBLIC "${CMAKE_CURRENT_SOURCE_DIR}/file_factory")
-target_include_directories(aare PUBLIC "${CMAKE_CURRENT_SOURCE_DIR}")
 
 set(FILE_IO_SOURCES "file/File.cpp"
                     "file/JsonFile.cpp"
@@ -15,4 +12,12 @@ foreach(FILE_IO_SOURCE ${FILE_IO_SOURCES})
     list(APPEND FILE_IO_SOURCES_WITH_PATH "${CMAKE_CURRENT_SOURCE_DIR}/${FILE_IO_SOURCE}")
 endforeach()
 
-target_sources(aare PRIVATE ${FILE_IO_SOURCES_WITH_PATH})
+add_library(file_io ${FILE_IO_SOURCES_WITH_PATH})
+
+
+target_include_directories(file_io PUBLIC "${CMAKE_CURRENT_SOURCE_DIR}/file")
+target_include_directories(file_io PUBLIC "${CMAKE_CURRENT_SOURCE_DIR}/file_factory")
+target_include_directories(file_io PUBLIC "${CMAKE_CURRENT_SOURCE_DIR}")
+
+
+target_link_libraries(file_io common fmt::fmt core nlohmann_json::nlohmann_json)
