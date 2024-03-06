@@ -1,5 +1,5 @@
 #pragma once
-#include "defs.hpp"
+#include "common/defs.hpp"
 #include <cstdint>
 #include <filesystem>
 #include <variant>

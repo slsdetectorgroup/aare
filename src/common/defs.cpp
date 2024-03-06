@@ -1,4 +1,4 @@
-#include "defs.hpp"
+#include "common/defs.hpp"
 
 template <> std::string toString(DetectorType type) {
     switch (type) {

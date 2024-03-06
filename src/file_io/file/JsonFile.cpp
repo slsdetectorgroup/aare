@@ -1,4 +1,4 @@
-#include "JsonFile.hpp"
+#include "file_io/JsonFile.hpp"
 #include <typeinfo>
 
 template <DetectorType detector,typename DataType>

@@ -1,7 +1,7 @@
 #pragma once
 
-#include "defs.hpp"
-#include "Frame.hpp"
+#include "common/defs.hpp"
+#include "core/Frame.hpp"
 #include "SubFile.hpp"
 #include <filesystem>
 #include <fmt/core.h>

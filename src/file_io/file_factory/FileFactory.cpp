@@ -1,7 +1,6 @@
-#include "FileFactory.hpp"
-#include "File.hpp"
-#include "JsonFileFactory.hpp"
-#include "RawFileFactory.hpp"
+#include "file_io/FileFactory.hpp"
+#include "file_io/File.hpp"
+#include "file_io/JsonFileFactory.hpp"
 #include <iostream>
 
 template <DetectorType detector, typename DataType>

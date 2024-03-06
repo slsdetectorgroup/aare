@@ -1,7 +1,7 @@
 #pragma once
-#include "File.hpp"
-#include "Frame.hpp"
-#include "defs.hpp"
+#include "file_io/File.hpp"
+#include "core/Frame.hpp"
+#include "common/defs.hpp"
 template <DetectorType detector, typename DataType>
 class JsonFile : public File<detector, DataType> {
 

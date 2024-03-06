@@ -1,8 +1,8 @@
-#include "JsonFileFactory.hpp"
-#include "JsonFile.hpp"
-#include "SubFile.hpp"
-#include "defs.hpp"
-#include "helpers.hpp"
+#include "file_io/JsonFileFactory.hpp"
+#include "file_io/JsonFile.hpp"
+#include "file_io/SubFile.hpp"
+#include "common/defs.hpp"
+#include "file_io/helpers.hpp"
 #include <fstream>
 #include <iostream>
 #include <nlohmann/json.hpp>

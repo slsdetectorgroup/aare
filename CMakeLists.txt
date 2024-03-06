@@ -72,7 +72,7 @@ set(SUPPRESSED_WARNINGS "-Wno-return-type")
 
 set(CMAKE_CXX_FLAGS  "${OPTIONAL_FLAGS} ${OPTIMIZATION_FLAGS} ${SUPPRESSED_WARNINGS}")
 
-
+include_directories(include)
 add_subdirectory(src)
 
 
