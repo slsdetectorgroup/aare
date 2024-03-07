@@ -31,51 +31,55 @@ if(AARE_BUILD_TESTS)
     add_subdirectory(tests)
 endif()
 
-
+set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 
 find_package(fmt 6 REQUIRED)
 
 
-set(CMAKE_BUILD_TYPE "Debug")
+# set(CMAKE_BUILD_TYPE "Debug")
 
-if (CMAKE_BUILD_TYPE STREQUAL "Debug")
-    set(OPTIMIZATION_FLAGS "-Og -ggdb3 -D_GLIBCXX_DEBUG -D_GLIBCXX_DEBUG_PEDANTIC")
-else()
-    set(OPTIMIZATION_FLAGS "-O3")
-endif()
-set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
-
-
-
-
-set(OPTIONAL_FLAGS "")
-if(DISABLE_WARNINGS)
-    set(OPTIONAL_FLAGS "${OPTIONAL_FLAGS} -Wall -Wextra -pedantic -Wno-unused-parameter -Wshadow -Wformat=2 -Wold-style-cast -Wnon-virtual-dtor  -Wfloat-equal -Wconversion -Wlogical-op -Wshift-overflow=2 -Woverloaded-virtual -Winline")
-endif()
-
-if(USE_SANITIZER)
-    set(OPTIONAL_FLAGS "${OPTIONAL_FLAGS} -fdiagnostics-parseable-fixits -fdiagnostics-generate-patch -fdiagnostics-show-template-tree -fsanitize=address,undefined,pointer-compare -fno-sanitize-recover -D_FORTIFY_SOURCE=2 -fstack-protector -fno-omit-frame-pointer ")
-endif()
-
-
-
-set(SUPPRESSED_WARNINGS "-Wno-return-type")
-
-set(CMAKE_CXX_FLAGS  "${OPTIMIZATION_FLAGS} ${SUPPRESSED_WARNINGS}")
-
-if(USE_PYTHON)
-set(CMAKE_CXX_FLAGS  "${CMAKE_CXX_FLAGS} -fPIC")
-endif(USE_PYTHON)
+# if (CMAKE_BUILD_TYPE STREQUAL "Debug")
+#     set(OPTIMIZATION_FLAGS "-Og -ggdb3 -D_GLIBCXX_DEBUG -D_GLIBCXX_DEBUG_PEDANTIC")
+# else()
+#     set(OPTIMIZATION_FLAGS "-O3")
+# endif()
 
 
 
 
-include_directories(include)
-add_subdirectory(src)
+
+# set(OPTIONAL_FLAGS "")
+# if(DISABLE_WARNINGS)
+#     set(OPTIONAL_FLAGS "${OPTIONAL_FLAGS} -Wall -Wextra -pedantic -Wno-unused-parameter -Wshadow -Wformat=2 -Wold-style-cast -Wnon-virtual-dtor  -Wfloat-equal -Wconversion -Wlogical-op -Wshift-overflow=2 -Woverloaded-virtual -Winline")
+# endif()
+
+# if(USE_SANITIZER)
+#     set(OPTIONAL_FLAGS "${OPTIONAL_FLAGS} -fdiagnostics-parseable-fixits -fdiagnostics-generate-patch -fdiagnostics-show-template-tree -fsanitize=address,undefined,pointer-compare -fno-sanitize-recover -D_FORTIFY_SOURCE=2 -fstack-protector -fno-omit-frame-pointer ")
+# endif()
+
+
+
+# set(SUPPRESSED_WARNINGS "-Wno-return-type")
+
+# set(CMAKE_CXX_FLAGS  "${OPTIMIZATION_FLAGS} ${SUPPRESSED_WARNINGS}")
+
+# if(USE_PYTHON)
+# set(CMAKE_CXX_FLAGS  "${CMAKE_CXX_FLAGS} -fPIC")
+# endif(USE_PYTHON)
+
+
+
+
+# include_directories(include)
+# add_subdirectory(src)
+
+add_subdirectory(core)
+add_subdirectory(file_io)
+
 
 
 add_library(aare INTERFACE) 
-target_link_libraries(aare INTERFACE common core file_io)
+target_link_libraries(aare INTERFACE core file_io)
 
 
 add_subdirectory(examples)
