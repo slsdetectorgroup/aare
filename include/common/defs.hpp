@@ -4,6 +4,7 @@
 #include <vector>
 #include <sys/types.h>
 #include <string_view>
+#include <string>
 #include <stdexcept>
 #include <fmt/format.h>
 #include <variant>
