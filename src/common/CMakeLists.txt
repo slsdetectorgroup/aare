@@ -1,6 +1,12 @@
-add_library(common "${CMAKE_CURRENT_SOURCE_DIR}/defs.cpp")
+add_library(common "defs.cpp")
 
-target_link_libraries(common PUBLIC fmt::fmt)
+target_link_libraries(
+    common
+ PUBLIC
+    fmt::fmt
+   PRIVATE 
+   aare_compiler_flags
+     )
 
 
 if(AARE_BUILD_TESTS)

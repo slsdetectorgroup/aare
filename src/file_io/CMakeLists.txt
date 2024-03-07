@@ -13,4 +13,7 @@ endforeach()
 
 add_library(file_io ${FILE_IO_SOURCES_WITH_PATH})
 
-target_link_libraries(file_io common fmt::fmt core nlohmann_json::nlohmann_json)
+target_link_libraries(file_io PUBLIC common fmt::fmt core nlohmann_json::nlohmann_json
+PRIVATE
+aare_compiler_flags)
+

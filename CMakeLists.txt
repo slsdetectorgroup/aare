@@ -1,5 +1,4 @@
 cmake_minimum_required(VERSION 3.12)
-set(CMAKE_CXX_STANDARD 17)
 project(aare 
     VERSION 0.1
     DESCRIPTION "Data processing library for PSI detectors"
@@ -9,6 +8,16 @@ project(aare
 
 cmake_policy(SET CMP0135 NEW)
 cmake_policy(SET CMP0079 NEW)
+set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
+
+add_library(aare_compiler_flags INTERFACE)
+target_compile_features(aare_compiler_flags INTERFACE cxx_std_17)
+
+add_library(warning_compiler_flags INTERFACE)
+add_library(debug_compiler_flags INTERFACE)
+add_library(sanitizer_compiler_flags INTERFACE)
+
+
 
 
 include(GNUInstallDirs)
@@ -38,37 +47,33 @@ find_package(fmt 6 REQUIRED)
 
 set(CMAKE_BUILD_TYPE "Debug")
 
+
 if (CMAKE_BUILD_TYPE STREQUAL "Debug")
-    set(OPTIMIZATION_FLAGS "-Og -ggdb3 -D_GLIBCXX_DEBUG -D_GLIBCXX_DEBUG_PEDANTIC")
+    target_compile_options(debug_compiler_flags INTERFACE -Og -ggdb3 -D_GLIBCXX_DEBUG -D_GLIBCXX_DEBUG_PEDANTIC)
 else()
-    set(OPTIMIZATION_FLAGS "-O3")
+    target_compile_options(debug_compiler_flags INTERFACE -O3)
 endif()
-set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 
 
 
 
-set(OPTIONAL_FLAGS "")
+
 if(DISABLE_WARNINGS)
-    set(OPTIONAL_FLAGS "${OPTIONAL_FLAGS} -Wall -Wextra -pedantic -Wno-unused-parameter -Wshadow -Wformat=2 -Wold-style-cast -Wnon-virtual-dtor  -Wfloat-equal -Wconversion -Wlogical-op -Wshift-overflow=2 -Woverloaded-virtual -Winline")
+target_compile_options(warning_compiler_flags INTERFACE -Wall -Wextra -pedantic -Wno-unused-parameter -Wshadow -Wformat=2 -Wold-style-cast -Wnon-virtual-dtor  -Wfloat-equal -Wconversion -Wlogical-op -Wshift-overflow=2 -Woverloaded-virtual -Winline)
 endif()
 
 if(USE_SANITIZER)
-    set(OPTIONAL_FLAGS "${OPTIONAL_FLAGS} -fdiagnostics-parseable-fixits -fdiagnostics-generate-patch -fdiagnostics-show-template-tree -fsanitize=address,undefined,pointer-compare -fno-sanitize-recover -D_FORTIFY_SOURCE=2 -fstack-protector -fno-omit-frame-pointer ")
+target_compile_options(sanitizer_compiler_flags INTERFACE  -fPIC)
 endif()
 
+# each library can choose to use sanitizer flags or not
 
-
-set(SUPPRESSED_WARNINGS "-Wno-return-type")
-
-set(CMAKE_CXX_FLAGS  "${OPTIMIZATION_FLAGS} ${SUPPRESSED_WARNINGS}")
-
-if(USE_PYTHON)
-set(CMAKE_CXX_FLAGS  "${CMAKE_CXX_FLAGS} -fPIC")
-endif(USE_PYTHON)
-
-
-
+target_link_libraries(aare_compiler_flags
+ INTERFACE
+  warning_compiler_flags
+  debug_compiler_flags
+  sanitizer_compiler_flags
+  )
 
 include_directories(include)
 add_subdirectory(src)
@@ -83,8 +88,6 @@ target_link_libraries(example PUBLIC aare)
 
 
 if(USE_PYTHON)
-    find_package (Python 3.11 COMPONENTS Interpreter Development)
-    find_package(pybind11 2.11 REQUIRED)
     add_subdirectory(python)
-    target_link_libraries(_aare PRIVATE aare nlohmann_json::nlohmann_json fmt::fmt)
 endif()
+

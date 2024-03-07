@@ -5,6 +5,9 @@
 
 add_library(core "${CMAKE_CURRENT_SOURCE_DIR}/Frame.cpp")
 
-target_link_libraries(core PUBLIC common)
+target_link_libraries(core PUBLIC 
+common
+PRIVATE
+aare_compiler_flags)
 
 
