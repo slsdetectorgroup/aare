@@ -35,6 +35,7 @@ set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 
 option(USE_SANITIZER "Sanitizers for debugging" ON)
 option(DISABLE_WARNINGS "Disbale compilation warnings" OFF)
+option(USE_PYTHON "Build python bindings" ON)
 
 
 set(OPTIONAL_FLAGS "")
@@ -46,49 +47,33 @@ if(USE_SANITIZER)
     set(OPTIONAL_FLAGS "${OPTIONAL_FLAGS} -fdiagnostics-parseable-fixits -fdiagnostics-generate-patch -fdiagnostics-show-template-tree -fsanitize=address,undefined,pointer-compare -fno-sanitize-recover -D_FORTIFY_SOURCE=2 -fstack-protector -fno-omit-frame-pointer ")
 endif()
 
-# if(TUNE_LOCAL)
-#     if(UNIX AND NOT APPLE)
-#         message(STATUS "unix")
-#         set(ARCH_FLAGS )
-#         target_compile_options(project_options INTERFACE -mtune=native -march=native )
-#     elseif(APPLE)
-#         message(STATUS "compiling for apple")
-#         target_compile_options(project_options INTERFACE -mtune=apple-m1 -mcpu=apple-m1 )
-#     endif()
-#     # 
-# endif()
 
-
-
-include(CheckIPOSupported)
-check_ipo_supported(RESULT LTO_AVAILABLE)
-if((CMAKE_BUILD_TYPE STREQUAL "Release") AND  LTO_AVAILABLE)
-    message(STATUS "Building with link time optimization")
-else()
-    message(STATUS "Building without link time optimization")
-endif()
 
 set(SUPPRESSED_WARNINGS "-Wno-return-type")
 
-set(CMAKE_CXX_FLAGS  "${OPTIONAL_FLAGS} ${OPTIMIZATION_FLAGS} ${SUPPRESSED_WARNINGS}")
+set(CMAKE_CXX_FLAGS  "${OPTIMIZATION_FLAGS} ${SUPPRESSED_WARNINGS}")
+
+if(USE_PYTHON)
+set(CMAKE_CXX_FLAGS  "${CMAKE_CXX_FLAGS} -fPIC")
+endif(USE_PYTHON)
+
+
+
 
 include_directories(include)
 add_subdirectory(src)
 
 
-
-
-
 add_library(aare INTERFACE) 
-
-# target_link_libraries( aare  
-# PRIVATE
-#  nlohmann_json::nlohmann_json
-# PUBLIC
-#  fmt::fmt
-# )
-
 target_link_libraries(aare INTERFACE common core file_io)
 
 
 add_subdirectory(examples)
+target_link_libraries(example PUBLIC aare)
+
+if(USE_PYTHON)
+    find_package (Python 3.11 COMPONENTS Interpreter Development)
+    find_package(pybind11 2.11 REQUIRED)
+    add_subdirectory(python)
+    target_link_libraries(_aare PRIVATE aare nlohmann_json::nlohmann_json fmt::fmt)
+endif()
