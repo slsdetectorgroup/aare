@@ -15,11 +15,23 @@ include(GNUInstallDirs)
 
 include(FetchContent)
 
+
+option(USE_SANITIZER "Sanitizers for debugging" ON)
+option(DISABLE_WARNINGS "Disbale compilation warnings" OFF)
+option(USE_PYTHON "Build python bindings" ON)
+option(AARE_BUILD_TESTS "Build tests" OFF)
+
 FetchContent_Declare(json
     GIT_REPOSITORY https://github.com/nlohmann/json
     GIT_TAG v3.11.3
 )
 FetchContent_MakeAvailable(json)
+
+if(AARE_BUILD_TESTS)
+    add_subdirectory(tests)
+endif()
+
+
 
 find_package(fmt 6 REQUIRED)
 
@@ -33,9 +45,7 @@ else()
 endif()
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 
-option(USE_SANITIZER "Sanitizers for debugging" ON)
-option(DISABLE_WARNINGS "Disbale compilation warnings" OFF)
-option(USE_PYTHON "Build python bindings" ON)
+
 
 
 set(OPTIONAL_FLAGS "")
@@ -70,6 +80,7 @@ target_link_libraries(aare INTERFACE common core file_io)
 
 add_subdirectory(examples)
 target_link_libraries(example PUBLIC aare)
+
 
 if(USE_PYTHON)
     find_package (Python 3.11 COMPONENTS Interpreter Development)
