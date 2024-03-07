@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 3.12)
-set(CMAKE_CXX_STANDARD 17)
+set(CMAKE_CXX_STANDARD 17) #TODO! Global or per target?
 project(aare 
     VERSION 0.1
     DESCRIPTION "Data processing library for PSI detectors"
@@ -10,29 +10,26 @@ project(aare
 cmake_policy(SET CMP0135 NEW)
 cmake_policy(SET CMP0079 NEW)
 
-
 include(GNUInstallDirs)
-
 include(FetchContent)
 
 
-option(USE_SANITIZER "Sanitizers for debugging" ON)
-option(DISABLE_WARNINGS "Disbale compilation warnings" OFF)
-option(USE_PYTHON "Build python bindings" ON)
-option(AARE_BUILD_TESTS "Build tests" OFF)
+option(AARE_USE_SANITIZER "Sanitizers for debugging" ON)
+option(AARE_PYTHON_BINDINGS "Build python bindings" ON)
+option(AARE_TESTS "Build tests" OFF)
+option(AARE_EXAMPLES "Build examples" OFF)
 
+#TODO! Should this be on the top level or move it down to the component
+#that needs it? 
 FetchContent_Declare(json
     GIT_REPOSITORY https://github.com/nlohmann/json
     GIT_TAG v3.11.3
 )
 FetchContent_MakeAvailable(json)
 
-if(AARE_BUILD_TESTS)
-    add_subdirectory(tests)
-endif()
+
 
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
-
 find_package(fmt 6 REQUIRED)
 
 
@@ -63,32 +60,26 @@ find_package(fmt 6 REQUIRED)
 
 # set(CMAKE_CXX_FLAGS  "${OPTIMIZATION_FLAGS} ${SUPPRESSED_WARNINGS}")
 
-# if(USE_PYTHON)
-# set(CMAKE_CXX_FLAGS  "${CMAKE_CXX_FLAGS} -fPIC")
-# endif(USE_PYTHON)
 
-
-
-
-# include_directories(include)
-# add_subdirectory(src)
-
+if(AARE_BUILD_TESTS)
+    add_subdirectory(tests)
+endif()
 add_subdirectory(core)
 add_subdirectory(file_io)
 
 
-
+#Overall target to link to when using the library
 add_library(aare INTERFACE) 
 target_link_libraries(aare INTERFACE core file_io)
-
+target_include_directories(aare INTERFACE 
+    $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
+    $<INSTALL_INTERFACE:include>
+)
 
 add_subdirectory(examples)
 target_link_libraries(example PUBLIC aare)
 
 
-if(USE_PYTHON)
-    find_package (Python 3.11 COMPONENTS Interpreter Development)
-    find_package(pybind11 2.11 REQUIRED)
+if(AARE_PYTHON_BINDINGS)
     add_subdirectory(python)
-    target_link_libraries(_aare PRIVATE aare nlohmann_json::nlohmann_json fmt::fmt)
 endif()
