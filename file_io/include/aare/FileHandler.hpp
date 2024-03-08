@@ -10,9 +10,9 @@ class FileHandler{
     File<detector,DataType>* f;
 
     public:
-    FileHandler<detector,DataType>(std::filesystem::path fpath){
-        this->fpath = fpath;
-         this->fileFactory= FileFactory<detector,DataType>::get_factory(fpath);
+    FileHandler<detector,DataType>(std::filesystem::path fname){
+        this->fpath = fname;
+         this->fileFactory= FileFactory<detector,DataType>::get_factory(fname);
          this->f= fileFactory->load_file();
          delete fileFactory;
     }
