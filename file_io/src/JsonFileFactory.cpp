@@ -13,7 +13,7 @@ template <DetectorType detector,typename DataType>
 JsonFileFactory<detector,DataType>::JsonFileFactory(std::filesystem::path fpath) {
     if (not is_master_file(fpath))
         throw std::runtime_error("Json file is not a master file");
-    this->fpath = fpath;
+    this->m_fpath = fpath;
 }
 
 template <DetectorType detector,typename DataType>
@@ -63,7 +63,7 @@ void JsonFileFactory<detector,DataType>::open_subfiles(File<detector,DataType> *
 template <DetectorType detector,typename DataType>
 File<detector,DataType> *JsonFileFactory<detector,DataType>::load_file() {
     JsonFile<detector,DataType> *file = new JsonFile<detector,DataType>();
-    file->fname = this->fpath;
+    file->fname = this->m_fpath;
     this->parse_fname(file);
     this->parse_metadata(file);
     file->find_number_of_subfiles();
@@ -113,9 +113,9 @@ void JsonFileFactory<detector, DataType>::find_geometry(File<detector, DataType>
 template <DetectorType detector, typename DataType>
 void JsonFileFactory<detector, DataType>::parse_fname(File<detector, DataType> *file) {
 
-    file->base_path = this->fpath.parent_path();
-    file->base_name = this->fpath.stem();
-    file->ext = this->fpath.extension();
+    file->base_path = this->m_fpath.parent_path();
+    file->base_name = this->m_fpath.stem();
+    file->ext = this->m_fpath.extension();
 
     auto pos = file->base_name.rfind("_");
     file->findex = std::stoi(file->base_name.substr(pos + 1));

@@ -27,9 +27,9 @@ PYBIND11_MODULE(_aare, m) {
     py::class_<Frame<uint16_t>>(m, "_Frame16")
         .def(py::init<std::byte*, ssize_t, ssize_t>())
         .def("get", &Frame<uint16_t>::get)
-        .def_readonly("rows", &Frame<uint16_t>::rows)
-        .def_readonly("cols", &Frame<uint16_t>::cols)
-        .def_readonly("bitdepth", &Frame<uint16_t>::bitdepth);
+        .def_property_readonly("rows", &Frame<uint16_t>::rows)
+        .def_property_readonly("cols", &Frame<uint16_t>::cols)
+        .def_property_readonly("bitdepth", &Frame<uint16_t>::bitdepth);
 
 
 

@@ -7,7 +7,12 @@
 class SubFile {
   protected:
     FILE *fp = nullptr;
-    uint16_t bitdepth;
+    uint16_t m_bitdepth;
+    std::filesystem::path m_fname;
+    ssize_t m_rows{};
+    ssize_t m_cols{};
+    ssize_t n_frames{};
+    int m_sub_file_index_{};
 
   public:
     // pointer to a read_impl function. pointer will be set to the appropriate read_impl function in the constructor
@@ -22,11 +27,7 @@ class SubFile {
     size_t get_frame(std::byte *buffer, int frame_number);
 
     // TODO: define the inlines as variables and assign them in constructor
-    inline size_t bytes_per_frame() { return (bitdepth / 8) * rows * cols; }
-    inline size_t pixels_per_frame() { return rows * cols; }
-    std::filesystem::path fname;
-    ssize_t rows{};
-    ssize_t cols{};
-    ssize_t n_frames{};
-    int sub_file_index_{};
+    inline size_t bytes_per_frame() { return (m_bitdepth / 8) * m_rows * m_cols; }
+    inline size_t pixels_per_frame() { return m_rows * m_cols; }
+
 };
