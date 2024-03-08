@@ -2,7 +2,7 @@
 
 template <DetectorType detector, typename DataType>
 NumpyFileFactory<detector, DataType>::NumpyFileFactory(std::filesystem::path fpath) {
-    this->fpath = fpath;
+    this->m_fpath = fpath;
 }
 inline std::string parse_str(const std::string &in) {
     if ((in.front() == '\'') && (in.back() == '\''))
@@ -213,7 +213,7 @@ void NumpyFileFactory<detector, DataType>::parse_metadata(File<detector, DataTyp
 
 template <DetectorType detector, typename DataType>
  File<detector, DataType>* NumpyFileFactory<detector, DataType>::load_file() {
-    NumpyFile<detector, DataType> *file = new NumpyFile<detector, DataType>(this->fpath);
+    NumpyFile<detector, DataType> *file = new NumpyFile<detector, DataType>(this->m_fpath);
     parse_metadata(file);
     NumpyFile<detector, DataType> *f = dynamic_cast<NumpyFile<detector, DataType> *>(file);
     std::cout << "parsed header: " << f->header.to_string() << std::endl;

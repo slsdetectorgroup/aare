@@ -10,8 +10,8 @@ Frame<DataType>::Frame(std::byte* bytes, ssize_t rows, ssize_t cols):
 
 template <typename DataType>
 Frame<DataType>::Frame(ssize_t rows, ssize_t cols):
-  rows(rows), cols(cols) {
-    data = new DataType[rows*cols];
+  m_rows(rows), m_cols(cols) {
+    m_data = new DataType[m_rows*m_cols];
   }
 
 
