@@ -7,6 +7,8 @@ set(SourceFiles
     ${CMAKE_CURRENT_SOURCE_DIR}/src/JsonFile.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/src/JsonFileFactory.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/src/SubFile.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/NumpyFile.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/NumpyFileFactory.cpp
 )
 
 add_library(file_io STATIC ${SourceFiles})

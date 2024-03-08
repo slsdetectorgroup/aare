@@ -1,5 +1,4 @@
 #include "aare/JsonFile.hpp"
-#include <typeinfo>
 
 template <DetectorType detector, typename DataType>
 Frame<DataType> *JsonFile<detector, DataType>::get_frame(int frame_number) {
@@ -15,5 +14,13 @@ Frame<DataType> *JsonFile<detector, DataType>::get_frame(int frame_number) {
     delete[] buffer;
     return f;
 }
+
+template <DetectorType detector, typename DataType>
+JsonFile<detector,DataType>::~JsonFile<detector,DataType>() {
+    for (auto& subfile : subfiles) {
+        delete subfile;
+    }
+}
+
 
 template class JsonFile<DetectorType::Jungfrau, uint16_t>;

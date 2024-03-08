@@ -1,7 +1,6 @@
 #pragma once
 #include <filesystem>
 #include "aare/File.hpp"
-
 template <DetectorType detector,typename DataType>
 class FileFactory{
     // Class that will be used to create File objects
@@ -13,14 +12,9 @@ public:
     // virtual int deleteFile() = 0;
     virtual File<detector,DataType>* load_file()=0;//TODO: add option to load all file to memory or keep it on disk
     virtual void parse_metadata(File<detector,DataType>*)=0;
-    
-    
-    void find_geometry(File<detector,DataType>*);
-    void parse_fname(File<detector,DataType>*);
+    virtual void parse_fname(File<detector,DataType>*)=0;
 
-    sls_detector_header read_header(const std::filesystem::path &fname);
 
 
 
 };
-
