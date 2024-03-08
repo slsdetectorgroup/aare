@@ -17,7 +17,7 @@ include(GNUInstallDirs)
 include(FetchContent)
 
 
-option(AARE_USE_WARNINGS "Eable warnings" ON)
+option(AARE_USE_WARNINGS "Eable warnings" OFF)
 option(AARE_PYTHON_BINDINGS "Build python bindings" ON)
 option(AARE_TESTS "Build tests" ON)
 option(AARE_EXAMPLES "Build examples" ON)

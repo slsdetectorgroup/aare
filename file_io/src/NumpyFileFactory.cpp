@@ -13,8 +13,8 @@ inline std::string parse_str(const std::string &in) {
 /**
   Removes leading and trailing whitespaces
   */
-inline std::string trim(const std::string& str) {
-    const std::string whitespace = " \t";
+inline std::string trim(const std::string &str) {
+    const std::string whitespace = " \t\n";
     auto begin = str.find_first_not_of(whitespace);
 
     if (begin == std::string::npos)
@@ -52,7 +52,6 @@ inline bool parse_bool(const std::string &in) {
     throw std::runtime_error("Invalid python boolan.");
 }
 
-
 inline std::string get_value_from_map(const std::string &mapstr) {
     size_t sep_pos = mapstr.find_first_of(":");
     if (sep_pos == std::string::npos)
@@ -63,7 +62,6 @@ inline std::string get_value_from_map(const std::string &mapstr) {
 }
 std::unordered_map<std::string, std::string> parse_dict(std::string in, const std::vector<std::string> &keys) {
     std::unordered_map<std::string, std::string> map;
-
     if (keys.size() == 0)
         return map;
 
@@ -113,19 +111,6 @@ std::unordered_map<std::string, std::string> parse_dict(std::string in, const st
     return map;
 }
 
-
-using shape_t = std::vector<uint64_t>;
-
-struct dtype_t {
-    char byteorder;
-    char kind;
-    unsigned int itemsize;
-};
-struct header_t {
-    dtype_t dtype;
-    bool fortran_order;
-    shape_t shape;
-};
 template <typename T, size_t N> inline bool in_array(T val, const std::array<T, N> &arr) {
     return std::find(std::begin(arr), std::end(arr), val) != std::end(arr);
 }
@@ -160,14 +145,15 @@ template <DetectorType detector, typename DataType>
 void NumpyFileFactory<detector, DataType>::parse_metadata(File<detector, DataType> *_file) {
     auto file = dynamic_cast<NumpyFile<detector, DataType> *>(_file);
     // open ifsteam to file
-    std::ifstream f(file->fname, std::ios::binary);
+    f = std::ifstream(file->fname, std::ios::binary);
+    // check if file exists
     if (!f.is_open()) {
         throw std::runtime_error(fmt::format("Could not open: {} for reading", file->fname.c_str()));
     }
     // read magic number
     std::array<char, 6> tmp{};
     f.read(tmp.data(), tmp.size());
-    if (tmp != NumpyFileFactory<detector, DataType>::magic_str) {
+    if (tmp != NumpyFile<detector, DataType>::magic_str) {
         for (auto item : tmp)
             fmt::print("{}, ", int(item));
         fmt::print("\n");
@@ -175,29 +161,31 @@ void NumpyFileFactory<detector, DataType>::parse_metadata(File<detector, DataTyp
     }
 
     // read version
-    f.read(reinterpret_cast<char *>(&major_ver_), 1);
-    f.read(reinterpret_cast<char *>(&minor_ver_), 1);
+    f.read(reinterpret_cast<char *>(&file->major_ver_), 1);
+    f.read(reinterpret_cast<char *>(&file->minor_ver_), 1);
 
-    if (major_ver_ == 1) {
-        header_len_size = 2;
-    } else if (major_ver_ == 2) {
-        header_len_size = 4;
+    if (file->major_ver_ == 1) {
+        file->header_len_size = 2;
+    } else if (file->major_ver_ == 2) {
+        file->header_len_size = 4;
     } else {
         throw std::runtime_error("Unsupported numpy version");
     }
     // read header length
-    f.read(reinterpret_cast<char *>(&header_len), header_len_size);
-    if ((magic_string_length + 2 + header_len_size + header_len) % 16 != 0) {
+    f.read(reinterpret_cast<char *>(&file->header_len), file->header_len_size);
+    file->header_size = file->magic_string_length + 2 + file->header_len_size + file->header_len;
+    if (file->header_size % 16 != 0) {
         fmt::print("Warning: header length is not a multiple of 16\n");
     }
     // read header
-    auto buf_v = std::vector<char>(header_len);
-    f.read(buf_v.data(), header_len);
-    std::string header(buf_v.data(), header_len);
+    auto buf_v = std::vector<char>(file->header_len);
+    f.read(buf_v.data(), file->header_len);
+    std::string header(buf_v.data(), file->header_len);
 
     // parse header
 
     std::vector<std::string> keys{"descr", "fortran_order", "shape"};
+    std::cout << "original header: " << '"' << header << '"' << std::endl;
 
     auto dict_map = parse_dict(header, keys);
     if (dict_map.size() == 0)
@@ -220,6 +208,23 @@ void NumpyFileFactory<detector, DataType>::parse_metadata(File<detector, DataTyp
         auto dim = static_cast<unsigned long>(std::stoul(item));
         shape.push_back(dim);
     }
+    file->header = {dtype, fortran_order, shape};
+}
 
-    // {dtype, fortran_order, shape};
+template <DetectorType detector, typename DataType>
+ File<detector, DataType>* NumpyFileFactory<detector, DataType>::load_file() {
+    NumpyFile<detector, DataType> *file = new NumpyFile<detector, DataType>(this->fpath);
+    parse_metadata(file);
+    NumpyFile<detector, DataType> *f = dynamic_cast<NumpyFile<detector, DataType> *>(file);
+    std::cout << "parsed header: " << f->header.to_string() << std::endl;
+
+    if(sizeof(DataType) != f->header.dtype.itemsize){
+        std::stringstream  s;
+        s << "Data type size mismatch: " << sizeof(DataType) << " != " << f->header.dtype.itemsize;
+        throw std::runtime_error(s.str());
+    }       
+    return file;
 };
+template class NumpyFileFactory<DetectorType::Jungfrau, uint16_t>;
+
+

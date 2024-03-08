@@ -1,6 +1,7 @@
 #include "aare/FileFactory.hpp"
 #include "aare/File.hpp"
 #include "aare/JsonFileFactory.hpp"
+#include "aare/NumpyFileFactory.hpp"
 #include <iostream>
 
 template <DetectorType detector, typename DataType>
@@ -20,7 +21,7 @@ FileFactory<detector, DataType> *FileFactory<detector, DataType>::get_factory(st
     // check if extension is numpy
     else if (fpath.extension() == ".npy") {
         std::cout << "Loading numpy file" << std::endl;
-        throw std::runtime_error("Numpy file not implemented");
+        return new NumpyFileFactory<detector, DataType>(fpath);
     }
 
     throw std::runtime_error("Unsupported file type");

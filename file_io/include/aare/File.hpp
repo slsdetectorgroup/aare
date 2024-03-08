@@ -15,6 +15,8 @@ class File {
     virtual Frame<DataType>* get_frame(int frame_number) = 0;
 
   private:
+  //comment
+  
 
   public:
     std::filesystem::path fname;

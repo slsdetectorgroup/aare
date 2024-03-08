@@ -22,6 +22,7 @@ template <class DataType> class Frame{
     ssize_t cols;
     DataType* data;
     ssize_t bitdepth = sizeof(DataType)*8;
+    Frame(ssize_t rows, ssize_t cols);
 
     Frame(std::byte* fp, ssize_t rows, ssize_t cols);
     DataType get(int row, int col);
