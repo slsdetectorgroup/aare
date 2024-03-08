@@ -17,8 +17,8 @@ JsonFileFactory<detector,DataType>::JsonFileFactory(std::filesystem::path fpath)
 }
 
 template <DetectorType detector,typename DataType>
-void JsonFileFactory<detector,DataType>::parse_metadata(File<detector,DataType> *file) {
-    std::cout << "Parsing metadata" << std::endl;
+void JsonFileFactory<detector,DataType>::parse_metadata(File<detector,DataType> *_file) {
+    auto file = dynamic_cast<JsonFile<detector,DataType> *>(_file);
     std::ifstream ifs(file->master_fname());
     json j;
     ifs >> j;
@@ -51,7 +51,8 @@ void JsonFileFactory<detector,DataType>::parse_metadata(File<detector,DataType> 
 }
 
 template <DetectorType detector,typename DataType>
-void JsonFileFactory<detector,DataType>::open_subfiles(File<detector,DataType> *file) {
+void JsonFileFactory<detector,DataType>::open_subfiles(File<detector,DataType> *_file) {
+    auto file = dynamic_cast<JsonFile<detector,DataType> *>(_file);
     for (int i = 0; i != file->n_subfiles; ++i) {
 
         file->subfiles.push_back(
@@ -61,7 +62,6 @@ void JsonFileFactory<detector,DataType>::open_subfiles(File<detector,DataType> *
 
 template <DetectorType detector,typename DataType>
 File<detector,DataType> *JsonFileFactory<detector,DataType>::load_file() {
-    std::cout << "Loading json file" << std::endl;
     JsonFile<detector,DataType> *file = new JsonFile<detector,DataType>();
     file->fname = this->fpath;
     this->parse_fname(file);
@@ -72,5 +72,56 @@ File<detector,DataType> *JsonFileFactory<detector,DataType>::load_file() {
 
     return file;
 }
+
+
+template <DetectorType detector, typename DataType>
+sls_detector_header JsonFileFactory<detector, DataType>::read_header(const std::filesystem::path &fname) {
+    sls_detector_header h{};
+    FILE *fp = fopen(fname.c_str(), "r");
+    if (!fp)
+        throw std::runtime_error(fmt::format("Could not open: {} for reading", fname.c_str()));
+
+    size_t rc = fread(reinterpret_cast<char *>(&h), sizeof(h), 1, fp);
+    fclose(fp);
+    if (rc != 1)
+        throw std::runtime_error("Could not read header from file");
+    return h;
+}
+
+
+template <DetectorType detector, typename DataType>
+void JsonFileFactory<detector, DataType>::find_geometry(File<detector, DataType> *_file) {
+    auto file = dynamic_cast<JsonFile<detector, DataType> *>(_file);
+    uint16_t r{};
+    uint16_t c{};
+    for (int i = 0; i != file->n_subfiles; ++i) {
+        auto h = this->read_header(file->data_fname(i, 0));
+        r = std::max(r, h.row);
+        c = std::max(c, h.column);
+
+        file->positions.push_back({h.row, h.column});
+    }
+    r++;
+    c++;
+
+    file->rows = r * file->subfile_rows;
+    file->cols = c * file->subfile_cols;
+
+    file->rows += (r - 1) * file->cfg.module_gap_row;
+}
+
+template <DetectorType detector, typename DataType>
+void JsonFileFactory<detector, DataType>::parse_fname(File<detector, DataType> *file) {
+
+    file->base_path = this->fpath.parent_path();
+    file->base_name = this->fpath.stem();
+    file->ext = this->fpath.extension();
+
+    auto pos = file->base_name.rfind("_");
+    file->findex = std::stoi(file->base_name.substr(pos + 1));
+    pos = file->base_name.find("_master_");
+    file->base_name.erase(pos);
+}
+
 
 template class JsonFileFactory<DetectorType::Jungfrau, uint16_t>;
