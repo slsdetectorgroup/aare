@@ -9,10 +9,10 @@
  */
 
 SubFile::SubFile(std::filesystem::path fname, DetectorType detector, ssize_t rows, ssize_t cols, uint16_t bitdepth) {
-    this->rows = rows;
-    this->cols = cols;
-    this->fname = fname;
-    this->bitdepth = bitdepth;
+    this->m_rows = rows;
+    this->m_cols = cols;
+    this->m_fname = fname;
+    this->m_bitdepth = bitdepth;
     fp = fopen(fname.c_str(), "rb");
     if (fp == nullptr) {
         throw std::runtime_error("Could not open file " + fname.string());
@@ -77,12 +77,12 @@ template <typename DataType> size_t SubFile::read_impl_flip(std::byte *buffer) {
     size_t rc = fread(reinterpret_cast<char *>(&tmp[0]), this->bytes_per_frame(), 1, this->fp);
 
     // copy to place
-    const size_t start = this->cols * (this->rows - 1) * sizeof(DataType);
-    const size_t row_size = this->cols * sizeof(DataType);
+    const size_t start = this->m_cols * (this->m_rows - 1) * sizeof(DataType);
+    const size_t row_size = this->m_cols * sizeof(DataType);
     auto dst = buffer + start;
     auto src = &tmp[0];
 
-    for (int i = 0; i != this->rows; ++i) {
+    for (int i = 0; i != this->m_rows; ++i) {
         memcpy(dst, src, row_size);
         dst -= row_size;
         src += row_size;

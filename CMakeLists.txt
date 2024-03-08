@@ -7,34 +7,61 @@ project(aare
     LANGUAGES C CXX 
 )
 
-add_library(aare_compiler_flags INTERFACE)
-target_compile_features(aare_compiler_flags INTERFACE cxx_std_17)
-
 cmake_policy(SET CMP0135 NEW)
 cmake_policy(SET CMP0079 NEW)
 
 include(GNUInstallDirs)
 include(FetchContent)
 
+#Set default build type if none was specified
+include(cmake/helpers.cmake)
+default_build_type("Release")
 
 option(AARE_USE_WARNINGS "Eable warnings" ON)
 option(AARE_PYTHON_BINDINGS "Build python bindings" ON)
 option(AARE_TESTS "Build tests" ON)
 option(AARE_EXAMPLES "Build examples" ON)
-option(AARE_DEBUG "Compile in debug mode" ON) 
+
 
 
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 find_package(fmt 6 REQUIRED)
 
-if (AARE_DEBUG)
-    target_compile_options(aare_compiler_flags INTERFACE -Og -ggdb3 -D_GLIBCXX_DEBUG -D_GLIBCXX_DEBUG_PEDANTIC)
-else()
+add_library(aare_compiler_flags INTERFACE)
+target_compile_features(aare_compiler_flags INTERFACE cxx_std_17)
+
+#TODO! Explicitly setting flags is not cross platform compatible
+if(CMAKE_BUILD_TYPE STREQUAL "Release")
+    message(STATUS "Release build")
     target_compile_options(aare_compiler_flags INTERFACE -O3)
+else()
+    target_compile_options(
+        aare_compiler_flags 
+        INTERFACE 
+            -Og 
+            -ggdb3 
+            -D_GLIBCXX_DEBUG 
+            -D_GLIBCXX_DEBUG_PEDANTIC
+    )
 endif()
 
 if(AARE_USE_WARNINGS)
-    target_compile_options(aare_compiler_flags INTERFACE -Wall -Wextra -pedantic -Wshadow )
+    target_compile_options(
+        aare_compiler_flags 
+        INTERFACE 
+            -Wall 
+            -Wextra 
+            -pedantic 
+            -Wshadow 
+            -Wnon-virtual-dtor
+            -Woverloaded-virtual
+            -Wdouble-promotion
+            -Wformat=2
+            -Wredundant-decls
+            -Wvla
+            -Wdouble-promotion
+            -Werror=return-type #important can cause segfault in optimzed builds
+        )
 endif()
 
 if(AARE_BUILD_TESTS)
