@@ -17,6 +17,7 @@ class File {
   private:
 
   public:
+    virtual ~File() = default;
     std::filesystem::path fname;
     std::filesystem::path base_path;
     std::string base_name, ext;
