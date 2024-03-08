@@ -3,9 +3,9 @@
 #include <pybind11/pybind11.h>
 #include <string>
 
-#include "common/defs.hpp"
-#include "core/Frame.hpp"
-#include "file_io/FileHandler.hpp"
+#include "aare/defs.hpp"
+#include "aare/Frame.hpp"
+#include "aare/FileHandler.hpp"
 
 namespace py = pybind11;
 

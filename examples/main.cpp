@@ -1,6 +1,6 @@
 // Your First C++ Program
 #include <iostream>
-#include "file_io/FileHandler.hpp"
+#include "aare/FileHandler.hpp"
 
 using JFileHandler = FileHandler<DetectorType::Jungfrau,uint16_t>;
 using JFile = File<DetectorType::Jungfrau,uint16_t>;
