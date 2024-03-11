@@ -25,5 +25,17 @@ DataType Frame<DataType>::get(int row, int col) {
   return m_data[row*m_cols + col];
 }
 
+template <typename DataType>
+std::vector<std::vector<DataType>> Frame<DataType>::get_array() {
+  std::vector<std::vector<DataType>> array;
+  for (int i = 0; i < m_rows; i++) {
+    std::vector<DataType> row;
+    row.assign(m_data + i*m_cols, m_data + (i+1)*m_cols);
+    array.push_back(row);
+  }
+
+  return array;
+}
+
 
 template class Frame<uint16_t>;

@@ -22,6 +22,7 @@ template <class DataType> class Frame {
     Frame(ssize_t rows, ssize_t cols);
     Frame(std::byte *fp, ssize_t rows, ssize_t cols);
     DataType get(int row, int col);
+    std::vector<std::vector<DataType>> get_array();
     ssize_t rows() const{
         return m_rows;
     }
