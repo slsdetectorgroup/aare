@@ -87,5 +87,3 @@ target_link_libraries(example PUBLIC aare)
 if(AARE_PYTHON_BINDINGS)
     add_subdirectory(python)
 endif()
-
-set(ENV{PROJECT_ROOT_DIR} ${PROJECT_SOURCE_DIR})
