@@ -2,6 +2,8 @@
 #include "aare/FileHandler.hpp"
 #include <iostream>
 
+#define AARE_ROOT_DIR_VAR "PROJECT_ROOT_DIR"
+
 using JFileHandler = FileHandler<DetectorType::Jungfrau, uint16_t>;
 using JFile = File<DetectorType::Jungfrau, uint16_t>;
 using JFrame = Frame<uint16_t>;
@@ -18,8 +20,11 @@ void test(JFileHandler *f, int frame_number) {
 }
 
 int main() {
+    auto  PROJECT_ROOT_DIR = std::filesystem::path(getenv(AARE_ROOT_DIR_VAR));
     // std::filesystem::path fpath("/home/bb/github/aare/data/jungfrau_single_master_0.json");
-    std::filesystem::path fpath("/home/bb/github/aare/data/test_numpy_file.npy");
+    std::filesystem::path fpath(PROJECT_ROOT_DIR / "data" / "test_numpy_file.npy");
+        std::cout<<fpath<<std::endl;
+
 
     auto fileHandler = new JFileHandler(fpath);
     test(fileHandler, 0);

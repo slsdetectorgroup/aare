@@ -2,14 +2,9 @@
 #include "aare/FileFactory.hpp"
 #include "aare/NumpyFile.hpp"
 #include "aare/defs.hpp"
-#include <algorithm>
-#include <array>
-#include <filesystem>
 #include <fstream>
-#include <string>
-#include <unordered_map>
-#include <vector>
-#include <sstream>
+
+
 
 template <DetectorType detector, typename DataType> class NumpyFileFactory : public FileFactory<detector, DataType> {
   private:
