@@ -19,9 +19,9 @@ include(CTest)
 include(Catch)
 catch_discover_tests(tests)
 
-if(AARE_BUILD_TESTS)
+if(AARE_TESTS)
     set(TestSources
-            ${CMAKE_CURRENT_SOURCE_DIR}/src/defs.test.cpp
+            ${CMAKE_CURRENT_SOURCE_DIR}/test.cpp
         )
     target_sources(tests PRIVATE ${TestSources} )
 

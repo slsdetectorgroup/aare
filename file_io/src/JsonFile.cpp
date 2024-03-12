@@ -1,7 +1,7 @@
 #include "aare/JsonFile.hpp"
 
 template <DetectorType detector, typename DataType>
-Frame<DataType> *JsonFile<detector, DataType>::get_frame(int frame_number) {
+Frame<DataType> *JsonFile<detector, DataType>::get_frame(size_t frame_number) {
     if (frame_number > this->total_frames) {
         throw std::runtime_error("Frame number out of range");
     }

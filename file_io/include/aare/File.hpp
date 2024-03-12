@@ -12,7 +12,7 @@ template <DetectorType detector, typename DataType>
 class File {
 
   public:
-    virtual Frame<DataType>* get_frame(int frame_number) = 0;
+    virtual Frame<DataType>* get_frame(size_t frame_number) = 0;
 
   private:
   //comment

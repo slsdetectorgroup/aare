@@ -89,7 +89,13 @@
         "__tree": "cpp",
         "queue": "cpp",
         "stack": "cpp",
-        "shared_mutex": "cpp"
+        "shared_mutex": "cpp",
+        "cfenv": "cpp",
+        "complex": "cpp",
+        "regex": "cpp",
+        "source_location": "cpp",
+        "future": "cpp",
+        "typeindex": "cpp"
     },
     "C_Cpp.errorSquiggles": "enabled"
 }
