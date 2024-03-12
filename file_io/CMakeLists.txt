@@ -13,6 +13,7 @@ set(SourceFiles
     ${CMAKE_CURRENT_SOURCE_DIR}/src/SubFile.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/src/NumpyFile.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/src/NumpyFileFactory.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/NumpyHelpers.cpp
 )
 
 add_library(file_io STATIC ${SourceFiles})
@@ -20,3 +21,10 @@ target_include_directories(file_io PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/include)
 target_link_libraries(file_io PRIVATE fmt::fmt core nlohmann_json::nlohmann_json aare_compiler_flags)
 set_property(TARGET file_io PROPERTY POSITION_INDEPENDENT_CODE ON)
 
+if(AARE_TESTS)
+    set(TestSources
+            ${CMAKE_CURRENT_SOURCE_DIR}/src/NumpyHelpers.test.cpp
+        )
+    target_sources(tests PRIVATE ${TestSources} )
+    target_link_libraries(tests PRIVATE core file_io)
+endif()

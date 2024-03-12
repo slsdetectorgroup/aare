@@ -1,36 +1,11 @@
 #pragma once
 #include "aare/File.hpp"
 #include "aare/defs.hpp"
+#include "aare/NumpyHelpers.hpp"
 #include <iostream>
 #include <numeric>
 
-using shape_t = std::vector<uint64_t>;
 
-struct dtype_t {
-    char byteorder;
-    char kind;
-    unsigned int itemsize;
-    std::string to_string() {
-        std::stringstream sstm;
-        sstm << byteorder << kind << itemsize;
-        return sstm.str();
-    }
-};
-struct header_t {
-    dtype_t dtype;
-    bool fortran_order;
-    shape_t shape;
-    std::string to_string() {
-        std::stringstream sstm;
-        sstm << "dtype: " << dtype.to_string() << ", fortran_order: " << fortran_order << ' ';
-
-        sstm << "shape: (";
-        for (auto item : shape)
-            sstm << item << ',';
-        sstm << ')';
-        return sstm.str();
-    }
-};
 template <DetectorType detector, typename DataType> class NumpyFile : public File<detector, DataType> {
     FILE *fp = nullptr;
     
