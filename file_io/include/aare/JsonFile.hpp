@@ -9,7 +9,7 @@ template <DetectorType detector, typename DataType> class JsonFile : public File
         using config = RawFileConfig;
                 public:
 
-    Frame<DataType> *get_frame(int frame_number);
+    Frame<DataType> *get_frame(size_t frame_number);
     int n_subfiles;
     std::vector<SubFile *> subfiles;
     int subfile_rows, subfile_cols;

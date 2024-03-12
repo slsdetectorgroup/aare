@@ -11,7 +11,7 @@ template <DetectorType detector, typename DataType> class NumpyFile : public Fil
     
   public:
     NumpyFile(std::filesystem::path fname);
-    Frame<DataType> *get_frame(int frame_number) override;
+    Frame<DataType> *get_frame(size_t frame_number) override;
     header_t header{};
     static constexpr std::array<char, 6> magic_str{'\x93', 'N', 'U', 'M', 'P', 'Y'};
     uint8_t major_ver_{};

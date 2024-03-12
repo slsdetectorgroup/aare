@@ -78,12 +78,11 @@ template <DetectorType detector, typename DataType>
  File<detector, DataType>* NumpyFileFactory<detector, DataType>::load_file() {
     NumpyFile<detector, DataType> *file = new NumpyFile<detector, DataType>(this->m_fpath);
     parse_metadata(file);
-    NumpyFile<detector, DataType> *f = dynamic_cast<NumpyFile<detector, DataType> *>(file);
-    std::cout << "parsed header: " << f->header.to_string() << std::endl;
+    std::cout << "parsed header: " << file->header.to_string() << std::endl;
 
-    if(sizeof(DataType) != f->header.dtype.itemsize){
+    if(sizeof(DataType) != file->header.dtype.itemsize){
         std::stringstream  s;
-        s << "Data type size mismatch: " << sizeof(DataType) << " != " << f->header.dtype.itemsize;
+        s << "Data type size mismatch: " << sizeof(DataType) << " != " << file->header.dtype.itemsize;
         throw std::runtime_error(s.str());
     }       
     return file;
