@@ -28,5 +28,4 @@ if(AARE_BUILD_TESTS)
     #Work around to remove, this is not the way to do it =) 
     # target_include_directories(tests PRIVATE ${CMAKE_SOURCE_DIR}/include/common)
     target_link_libraries(tests PRIVATE core aare_compiler_flags)
-
 endif()

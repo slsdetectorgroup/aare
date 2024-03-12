@@ -64,7 +64,7 @@ if(AARE_USE_WARNINGS)
         )
 endif()
 
-if(AARE_BUILD_TESTS)
+if(AARE_TESTS)
     add_subdirectory(tests)
 endif()
 
