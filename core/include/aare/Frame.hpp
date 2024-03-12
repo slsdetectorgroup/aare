@@ -19,8 +19,10 @@ template <class DataType> class Frame {
     ssize_t m_bitdepth = sizeof(DataType) * 8;
 
   public:
+    Frame(ssize_t rows, ssize_t cols);
     Frame(std::byte *fp, ssize_t rows, ssize_t cols);
     DataType get(int row, int col);
+    std::vector<std::vector<DataType>> get_array();
     ssize_t rows() const{
         return m_rows;
     }
@@ -29,6 +31,9 @@ template <class DataType> class Frame {
     }
     ssize_t bitdepth() const{
         return m_bitdepth;
+    }
+    DataType* _get_data(){
+        return m_data;
     }
 
     ~Frame() { delete[] m_data; }

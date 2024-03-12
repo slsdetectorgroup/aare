@@ -21,7 +21,7 @@ class File:
             raise FileNotFoundError(f"File not found: {path}")
         ext = os.path.splitext(path)[1]
 
-        if ext not in (".raw", ".json"):
+        if ext not in (".raw", ".json", ".npy"):
             raise ValueError(f"Invalid file extension: {ext}")
         
         if ext == ".json":
@@ -33,6 +33,17 @@ class File:
                 bitdepth = 16
             else:
                 bitdepth = master_data["Dynamic Range"]
+        elif ext == ".npy":
+            # TODO: find solution for this. maybe add a None detector type
+            detector = "Jungfrau"
+            with open(path, "rb") as fobj:
+                import numpy as np
+                version = np.lib.format.read_magic(fobj)
+                # find what function to call based on the version
+                func_name = 'read_array_header_' + '_'.join(str(v) for v in version)
+                func = getattr(np.lib.format, func_name)
+                header = func(fobj)
+                bitdepth = header[2].itemsize * 8
         else:
             NotImplementedError("Raw file not implemented yet")
 
