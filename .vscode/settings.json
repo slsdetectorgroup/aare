@@ -95,7 +95,8 @@
         "regex": "cpp",
         "source_location": "cpp",
         "future": "cpp",
-        "typeindex": "cpp"
+        "typeindex": "cpp",
+        "*.in": "c"
     },
     "C_Cpp.errorSquiggles": "enabled"
 }

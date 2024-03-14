@@ -1,0 +1,7 @@
+#pragma once
+#include <filesystem>
+
+static constexpr auto test_data_path_str = "@TEST_FILE_PATH@";
+inline auto test_data_path() {
+    return std::filesystem::path(test_data_path_str);
+}
