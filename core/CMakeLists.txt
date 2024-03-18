@@ -3,6 +3,8 @@
 set(SourceFiles
     ${CMAKE_CURRENT_SOURCE_DIR}/src/defs.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/src/Frame.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/IFrame.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/ImageData.cpp
 )
 
 add_library(core STATIC ${SourceFiles})

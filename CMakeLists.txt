@@ -81,7 +81,6 @@ target_include_directories(aare INTERFACE
 )
 
 add_subdirectory(examples)
-target_link_libraries(example PUBLIC aare)
 
 
 if(AARE_PYTHON_BINDINGS)

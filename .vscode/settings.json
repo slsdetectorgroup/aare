@@ -96,7 +96,8 @@
         "source_location": "cpp",
         "future": "cpp",
         "typeindex": "cpp",
-        "*.in": "c"
+        "*.in": "c",
+        "*.inc": "cpp"
     },
     "C_Cpp.errorSquiggles": "enabled"
 }

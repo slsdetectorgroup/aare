@@ -33,6 +33,22 @@ PYBIND11_MODULE(_aare, m) {
         .def_property_readonly("cols", &Frame<uint16_t>::cols)
         .def_property_readonly("bitdepth", &Frame<uint16_t>::bitdepth);
 
+    py::class_<DataSpan<uint16_t>>(m, "_DataSpan16")
+        .def(py::init<std::byte*, ssize_t, ssize_t>())
+        .def("get", &DataSpan<uint16_t>::get)
+        .def("get_array", &DataSpan<uint16_t>::get_array)
+        .def_property_readonly("rows", &DataSpan<uint16_t>::rows)
+        .def_property_readonly("cols", &DataSpan<uint16_t>::cols)
+        .def_property_readonly("bitdepth", &DataSpan<uint16_t>::bitdepth);
+
+    py::class_<ImageData<uint16_t>>(m, "_ImageData16")
+        .def(py::init<std::byte*, ssize_t, ssize_t>())
+        .def("get", &ImageData<uint16_t>::get)
+        .def("get_array", &ImageData<uint16_t>::get_array)
+        .def_property_readonly("rows", &ImageData<uint16_t>::rows)
+        .def_property_readonly("cols", &ImageData<uint16_t>::cols)
+        .def_property_readonly("bitdepth", &ImageData<uint16_t>::bitdepth);
+
     
 
 
