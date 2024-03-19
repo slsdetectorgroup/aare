@@ -1,6 +1,7 @@
 import json
 from typing import Any
 import _aare
+from . import Frame
 import os
 
 
@@ -54,11 +55,22 @@ class File:
         # self._file = _FileHandler_Jungfrau_16(path)
         self._file = getattr(_aare, class_name)(path)
     
+    def get_frame(self, frame_number):
+        """
+        returns a Frame object
+        """
+        c_frame= object.__getattribute__(self, "_file").get_frame(frame_number)
+        return Frame(c_frame)
 
+        
+        
     def __getattribute__(self, __name: str) -> Any:
         """
         Proxy pattern to call the methods of the _file
         """
+        if __name == "get_frame":
+            return object.__getattribute__(self, "get_frame")
+        
         return getattr(object.__getattribute__(self, "_file"), __name)
 
 
