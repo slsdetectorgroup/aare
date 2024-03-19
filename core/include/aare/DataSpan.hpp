@@ -18,10 +18,6 @@ template <class DataType> class DataSpan :public IFrame<DataType> {
     DataSpan(std::byte *fp, ssize_t rows, ssize_t cols) {
         this->m_rows = rows;
         this->m_cols = cols;
-        if (sizeof(DataType) * rows * cols != sizeof(fp)) {
-            std::cerr << "Invalid data size" << std::endl;
-            return;
-        }
         this->m_data = reinterpret_cast<DataType *>(fp);
     }
     ~DataSpan() {}

@@ -52,65 +52,72 @@ TEST_CASE("DataSpan") {
     for (int i = 0; i < 100; i++) {
         frame->set(i / 10, i % 10, i);
     }
-    {
-        // create span in a block so that it is deleted before the frame
-        SECTION("span of a frame") {
-            DataSpan<uint16_t> span(*frame);
-            REQUIRE(span.rows() == 10);
-            REQUIRE(span.cols() == 10);
-            REQUIRE(span.bitdepth() == 16);
-            for (int i = 0; i < 100; i++) {
-                REQUIRE(span.get(i / 10, i % 10) == i);
-            }
-            // check that the span is a view of the frame
-            frame->set(9, 9, 2024);
-            REQUIRE(span.get(9, 9) == 2024);
-            REQUIRE(frame->get(9, 9) == 2024);
-            REQUIRE(span._get_data() == frame->_get_data());
+    SECTION("constructor"){
+        std::byte *data = reinterpret_cast<std::byte *>(frame->_get_data());
+        DataSpan<uint16_t> span(data, 10, 10);
+        REQUIRE(span.rows() == 10);
+        REQUIRE(span.cols() == 10);
+        REQUIRE(span.bitdepth() == 16);
+        for (int i = 0; i < 100; i++) {
+            REQUIRE(span.get(i / 10, i % 10) == i);
         }
-
-        // dataspan of a dataspan
-        SECTION("span of a span") {
-            frame->set(9, 9, 2024);
-            DataSpan<uint16_t> span(*frame);
-            DataSpan<uint16_t> span2(span);
-            REQUIRE(span2.rows() == 10);
-            REQUIRE(span2.cols() == 10);
-            REQUIRE(span2.bitdepth() == 16);
-            REQUIRE(span2.get(9, 9) == 2024);
-
-            for (int i = 0; i < 99; i++) {
-                REQUIRE(span2.get(i / 10, i % 10) == i);
-            }
-
-            // check that changing span2 changes span and frame
-            span2.set(9, 7, 2025);
-            REQUIRE(span2.get(9, 7) == 2025);
-            REQUIRE(span.get(9, 7) == 2025);
-            REQUIRE(frame->get(9, 7) == 2025);
-            REQUIRE(span2._get_data() == frame->_get_data());
-        }
-        SECTION("span of image"){
-            ImageData<uint16_t> image(*frame);
-            DataSpan<uint16_t> span(image);
-            REQUIRE(span.rows() == 10);
-            REQUIRE(span.cols() == 10);
-            REQUIRE(span.bitdepth() == 16);
-            for (int i = 0; i < 100; i++) {
-                REQUIRE(span.get(i / 10, i % 10) == i);
-            }
-            // check that the span is a view of the image not the frame
-            span.set(9, 9, 2024);
-            REQUIRE(span.get(9, 9) == 2024);
-            REQUIRE(image.get(9, 9) == 2024);
-            REQUIRE(frame->get(9, 9) != 2024);
-
-            REQUIRE(span._get_data() != frame->_get_data());
-            REQUIRE(span._get_data() == image._get_data());
-        
-        }
-        REQUIRE_NOTHROW(delete frame);
     }
+
+    SECTION("span of a frame") {
+        DataSpan<uint16_t> span(*frame);
+        REQUIRE(span.rows() == 10);
+        REQUIRE(span.cols() == 10);
+        REQUIRE(span.bitdepth() == 16);
+        for (int i = 0; i < 100; i++) {
+            REQUIRE(span.get(i / 10, i % 10) == i);
+        }
+        // check that the span is a view of the frame
+        frame->set(9, 9, 2024);
+        REQUIRE(span.get(9, 9) == 2024);
+        REQUIRE(frame->get(9, 9) == 2024);
+        REQUIRE(span._get_data() == frame->_get_data());
+    }
+
+    // dataspan of a dataspan
+    SECTION("span of a span") {
+        frame->set(9, 9, 2024);
+        DataSpan<uint16_t> span(*frame);
+        DataSpan<uint16_t> span2(span);
+        REQUIRE(span2.rows() == 10);
+        REQUIRE(span2.cols() == 10);
+        REQUIRE(span2.bitdepth() == 16);
+        REQUIRE(span2.get(9, 9) == 2024);
+
+        for (int i = 0; i < 99; i++) {
+            REQUIRE(span2.get(i / 10, i % 10) == i);
+        }
+
+        // check that changing span2 changes span and frame
+        span2.set(9, 7, 2025);
+        REQUIRE(span2.get(9, 7) == 2025);
+        REQUIRE(span.get(9, 7) == 2025);
+        REQUIRE(frame->get(9, 7) == 2025);
+        REQUIRE(span2._get_data() == frame->_get_data());
+    }
+    SECTION("span of image") {
+        ImageData<uint16_t> image(*frame);
+        DataSpan<uint16_t> span(image);
+        REQUIRE(span.rows() == 10);
+        REQUIRE(span.cols() == 10);
+        REQUIRE(span.bitdepth() == 16);
+        for (int i = 0; i < 100; i++) {
+            REQUIRE(span.get(i / 10, i % 10) == i);
+        }
+        // check that the span is a view of the image not the frame
+        span.set(9, 9, 2024);
+        REQUIRE(span.get(9, 9) == 2024);
+        REQUIRE(image.get(9, 9) == 2024);
+        REQUIRE(frame->get(9, 9) != 2024);
+
+        REQUIRE(span._get_data() != frame->_get_data());
+        REQUIRE(span._get_data() == image._get_data());
+    }
+    REQUIRE_NOTHROW(delete frame);
 }
 
 TEST_CASE("ImageData") {
