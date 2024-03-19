@@ -1,6 +1,6 @@
 #pragma once
 #include "aare/defs.hpp"
-#include <bits/unique_ptr.h>
+#include <memory>
 #include <cstddef>
 #include <cstdint>
 #include <sys/types.h>
