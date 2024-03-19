@@ -1,0 +1,2 @@
+/usr/bin/ar qc libcore.a CMakeFiles/core.dir/src/defs.cpp.o CMakeFiles/core.dir/src/Frame.cpp.o CMakeFiles/core.dir/src/IFrame.cpp.o CMakeFiles/core.dir/src/ImageData.cpp.o
+/usr/bin/ranlib libcore.a

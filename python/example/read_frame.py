@@ -1,6 +1,6 @@
 import os
 from pathlib import Path
-from aare import File, Frame
+from aare import File, Frame, DataSpan, ImageData
 import numpy as np
 
 if __name__ == "__main__":
@@ -30,3 +30,12 @@ if __name__ == "__main__":
     print(arr.shape)
     
     print(np.array_equal(arr, np.load(data_path)[0]))
+    
+    span = DataSpan(frame)
+    image = ImageData(frame)
+    def f(a,b,c, cord):
+        print(f"Frame: {a.get(*cord)} Span: {b.get(*cord)} Image: {c.get(*cord)}")
+    
+    f(frame, span, image, (0,0))
+    frame.set(0,0, 100)
+    f(frame, span, image, (0,0))
