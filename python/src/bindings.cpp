@@ -7,6 +7,8 @@
 #include "aare/defs.hpp"
 #include "aare/Frame.hpp"
 #include "aare/FileHandler.hpp"
+#include "aare/ImageData.hpp"
+#include "aare/DataSpan.hpp"
 
 namespace py = pybind11;
 

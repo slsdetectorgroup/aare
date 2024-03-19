@@ -17,7 +17,8 @@ set_property(TARGET core PROPERTY POSITION_INDEPENDENT_CODE ON)
 
 if(AARE_TESTS)
     set(TestSources
-            ${CMAKE_CURRENT_SOURCE_DIR}/src/defs.test.cpp
+            ${CMAKE_CURRENT_SOURCE_DIR}/test/defs.test.cpp
+            ${CMAKE_CURRENT_SOURCE_DIR}/test/frame.test.cpp
         )
     target_sources(tests PRIVATE ${TestSources} )
     target_link_libraries(tests PRIVATE core)

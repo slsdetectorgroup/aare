@@ -15,7 +15,7 @@
 template <class DataType> 
 class Frame: public IFrame<DataType> {
   public:
-    Frame(ssize_t rows, ssize_t cols);
+    Frame(ssize_t rows, ssize_t cols, bool allocate_memory=true);
     Frame(std::byte *fp, ssize_t rows, ssize_t cols);
     ~Frame() { delete[] this->m_data; }
 };

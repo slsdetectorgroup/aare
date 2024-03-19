@@ -42,4 +42,12 @@ template <> TimingMode StringTo(std::string mode){
     }
 }
 
+template <> std::string toString(TimingMode mode){
+    if (mode == TimingMode::Auto)
+        return "auto";
+    else if(mode == TimingMode::Trigger)
+        return "trigger";
+    return "unknown";
+}
+
 // template <> TimingMode StringTo<TimingMode>(std::string mode);

@@ -53,6 +53,8 @@ template <> std::string toString(DetectorType type);
 
 
 template <> TimingMode StringTo(std::string);
+template <> std::string toString(TimingMode type);
+
 
 using DataTypeVariants = std::variant<uint16_t, uint32_t>;
 
