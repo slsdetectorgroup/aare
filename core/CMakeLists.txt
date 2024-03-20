@@ -18,6 +18,8 @@ endif()
 if(AARE_TESTS)
     set(TestSources
             ${CMAKE_CURRENT_SOURCE_DIR}/src/defs.test.cpp
+            ${CMAKE_CURRENT_SOURCE_DIR}/src/ProducerConsumerQueue.test.cpp
+            ${CMAKE_CURRENT_SOURCE_DIR}/src/CircularFifo.test.cpp
         )
     target_sources(tests PRIVATE ${TestSources} )
     target_link_libraries(tests PRIVATE core)
