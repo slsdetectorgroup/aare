@@ -18,20 +18,19 @@ PYBIND11_MODULE(_aare, m) {
         py::implicitly_convertible<std::string, std::filesystem::path>();
 
     //TODO: find a solution to avoid code duplication and include other detectors
-    py::class_<FileHandler<DetectorType::Jungfrau, uint16_t>>(m, "_FileHandler_Jungfrau_16")
+    py::class_<FileHandler>(m, "_FileHandler")
         .def(py::init<std::filesystem::path>())
-        .def("get_frame", &FileHandler<DetectorType::Jungfrau, uint16_t>::get_frame);
+        .def("get_frame", &FileHandler::get_frame);
 
     
     py::enum_<DetectorType>(m, "DetectorType");
 
-    py::class_<Frame<uint16_t>>(m, "_Frame16")
-        .def(py::init<std::byte*, ssize_t, ssize_t>())
-        .def("get", &Frame<uint16_t>::get)
-        .def("get_array", &Frame<uint16_t>::get_array)
-        .def_property_readonly("rows", &Frame<uint16_t>::rows)
-        .def_property_readonly("cols", &Frame<uint16_t>::cols)
-        .def_property_readonly("bitdepth", &Frame<uint16_t>::bitdepth);
+    py::class_<Frame>(m, "_Frame")
+        .def(py::init<std::byte*, ssize_t, ssize_t,ssize_t>())
+        .def("get", &Frame::get)
+        .def_property_readonly("rows", &Frame::rows)
+        .def_property_readonly("cols", &Frame::cols)
+        .def_property_readonly("bitdepth", &Frame::bitdepth);
 
     
 

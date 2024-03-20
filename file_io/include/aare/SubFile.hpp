@@ -3,20 +3,28 @@
 #include <cstdint>
 #include <filesystem>
 #include <variant>
+#include <map>
 
 class SubFile {
   protected:
     FILE *fp = nullptr;
-    uint16_t m_bitdepth;
+    ssize_t m_bitdepth;
     std::filesystem::path m_fname;
     ssize_t m_rows{};
     ssize_t m_cols{};
     ssize_t n_frames{};
     int m_sub_file_index_{};
+    // pointer to functions that will read frames
+    using pfunc = size_t (SubFile::*)(std::byte *);
+    std::map<std::pair<DetectorType, int>, pfunc> read_impl_map = {
+        {{DetectorType::Moench, 16}, &SubFile::read_impl_reorder<uint16_t>},
+        {{DetectorType::Jungfrau, 16}, &SubFile::read_impl_normal},
+    };
+
 
   public:
     // pointer to a read_impl function. pointer will be set to the appropriate read_impl function in the constructor
-    size_t (SubFile::*read_impl)(std::byte *buffer) = nullptr;
+    pfunc read_impl = nullptr;
     size_t read_impl_normal(std::byte *buffer);
     template <typename DataType> size_t  read_impl_flip(std::byte *buffer);
     template <typename DataType> size_t  read_impl_reorder(std::byte *buffer);

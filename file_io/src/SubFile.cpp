@@ -2,11 +2,7 @@
 #include <iostream>
 // #include <filesystem>
 
-/**
- * SubFile methods
- *
- *
- */
+
 
 SubFile::SubFile(std::filesystem::path fname, DetectorType detector, ssize_t rows, ssize_t cols, uint16_t bitdepth) {
     this->m_rows = rows;
@@ -20,15 +16,15 @@ SubFile::SubFile(std::filesystem::path fname, DetectorType detector, ssize_t row
     std::cout << "File opened" << std::endl;
     n_frames = std::filesystem::file_size(fname) / (sizeof(sls_detector_header) + rows * cols * bitdepth / 8);
     std::cout << "Number of frames: " << n_frames << std::endl;
+
+    if (read_impl_map.find({detector, bitdepth}) == read_impl_map.end()) {
+        throw std::runtime_error("Unsupported detector/bitdepth combination");
+    }
+    read_impl = read_impl_map.at({detector, bitdepth});
+
+
     
-    if (detector == DetectorType::Moench) {
-        read_impl = &SubFile::read_impl_reorder<uint16_t>;
-    } else if (detector == DetectorType::Jungfrau) {
-        read_impl = &SubFile::read_impl_normal;
-    }
-    else {
-        throw std::runtime_error("Detector type not implemented");
-    }
+
 }
 
 size_t SubFile::get_frame(std::byte *buffer, int frame_number) {
