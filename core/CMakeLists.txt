@@ -10,8 +10,10 @@ target_include_directories(core PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/include)
 
 
 target_link_libraries(core PUBLIC fmt::fmt PRIVATE aare_compiler_flags)
-set_property(TARGET core PROPERTY POSITION_INDEPENDENT_CODE ON)
 
+if (AARE_PYTHON_BINDINGS)
+set_property(TARGET core PROPERTY POSITION_INDEPENDENT_CODE ON)
+endif()
 
 if(AARE_TESTS)
     set(TestSources

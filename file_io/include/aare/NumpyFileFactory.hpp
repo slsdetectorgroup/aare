@@ -6,15 +6,15 @@
 
 
 
-template <DetectorType detector, typename DataType> class NumpyFileFactory : public FileFactory<detector, DataType> {
+class NumpyFileFactory : public FileFactory {
   private:
     std::ifstream f;
-    void read_data(File<detector, DataType> *_file);
+    void read_data(File *_file);
 
   public:
     NumpyFileFactory(std::filesystem::path fpath);
-    void parse_metadata(File<detector, DataType> *_file) override;
-    File<detector, DataType> *load_file() override;
-    void parse_fname(File<detector, DataType> *){};
+    void parse_metadata(File *_file) override;
+    File *load_file() override;
+    void parse_fname(File*){};
 
 };

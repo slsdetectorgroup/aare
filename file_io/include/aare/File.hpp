@@ -8,11 +8,10 @@
 #include <iostream>
 
 
-template <DetectorType detector, typename DataType>
 class File {
 
   public:
-    virtual Frame<DataType>* get_frame(size_t frame_number) = 0;
+    virtual Frame* get_frame(size_t frame_number) = 0;
 
   private:
   //comment
@@ -34,7 +33,7 @@ class File {
 
     ssize_t rows{};
     ssize_t cols{};
-    uint8_t bitdepth{};
+    ssize_t bitdepth{};
     // File();
     
 

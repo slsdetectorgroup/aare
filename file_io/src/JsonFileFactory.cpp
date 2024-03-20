@@ -9,16 +9,14 @@
 
 using json = nlohmann::json;
 
-template <DetectorType detector,typename DataType>
-JsonFileFactory<detector,DataType>::JsonFileFactory(std::filesystem::path fpath) {
+JsonFileFactory::JsonFileFactory(std::filesystem::path fpath) {
     if (not is_master_file(fpath))
         throw std::runtime_error("Json file is not a master file");
     this->m_fpath = fpath;
 }
 
-template <DetectorType detector,typename DataType>
-void JsonFileFactory<detector,DataType>::parse_metadata(File<detector,DataType> *_file) {
-    auto file = dynamic_cast<JsonFile<detector,DataType> *>(_file);
+void JsonFileFactory::parse_metadata(File*_file) {
+    auto file = dynamic_cast<JsonFile*>(_file);
     std::ifstream ifs(file->master_fname());
     json j;
     ifs >> j;
@@ -26,9 +24,6 @@ void JsonFileFactory<detector,DataType>::parse_metadata(File<detector,DataType> 
     std::cout << "Version: " << v << std::endl;
     file->version = fmt::format("{:.1f}", v);
     file->type = StringTo<DetectorType>(j["Detector Type"].get<std::string>());
-    if (file->type != detector)
-        throw std::runtime_error("Detector type mismatch: file type (" + toString<DetectorType>(file->type) +
-                                 ") != specified type (" + toString<DetectorType>(detector) + ")");
     file->timing_mode = StringTo<TimingMode>(j["Timing Mode"].get<std::string>());
     file->total_frames = j["Frames in File"];
     file->subfile_cols = j["Pixels"]["x"];
@@ -37,22 +32,16 @@ void JsonFileFactory<detector,DataType>::parse_metadata(File<detector,DataType> 
     try {
         file->bitdepth = j.at("Dynamic Range");
     } catch (const json::out_of_range &e) {
-        std::cerr << "master file does not have Dynamic Range. Defaulting to 16 bit" << '\n';
         file->bitdepth = 16;
     }
-    if (file->bitdepth != sizeof(DataType) * 8)
-        throw std::runtime_error("Bitdepth mismatch: file bitdepth (" + std::to_string(file->bitdepth) +
-                                 ") != specified bitdepth (" + std::to_string(sizeof(DataType) * 8) + ")");
-
     // only Eiger had quad
     if (file->type == DetectorType::Eiger) {
         file->quad = (j["Quad"] == 1);
     }
 }
 
-template <DetectorType detector,typename DataType>
-void JsonFileFactory<detector,DataType>::open_subfiles(File<detector,DataType> *_file) {
-    auto file = dynamic_cast<JsonFile<detector,DataType> *>(_file);
+void JsonFileFactory::open_subfiles(File*_file) {
+    auto file = dynamic_cast<JsonFile*>(_file);
     for (int i = 0; i != file->n_subfiles; ++i) {
 
         file->subfiles.push_back(
@@ -60,22 +49,19 @@ void JsonFileFactory<detector,DataType>::open_subfiles(File<detector,DataType> *
     }
 }
 
-template <DetectorType detector,typename DataType>
-File<detector,DataType> *JsonFileFactory<detector,DataType>::load_file() {
-    JsonFile<detector,DataType> *file = new JsonFile<detector,DataType>();
+File* JsonFileFactory::load_file() {
+    JsonFile *file = new JsonFile();
     file->fname = this->m_fpath;
     this->parse_fname(file);
     this->parse_metadata(file);
     file->find_number_of_subfiles();
     this->find_geometry(file);
     this->open_subfiles(file);
-
     return file;
 }
 
 
-template <DetectorType detector, typename DataType>
-sls_detector_header JsonFileFactory<detector, DataType>::read_header(const std::filesystem::path &fname) {
+sls_detector_header JsonFileFactory::read_header(const std::filesystem::path &fname) {
     sls_detector_header h{};
     FILE *fp = fopen(fname.c_str(), "r");
     if (!fp)
@@ -89,9 +75,8 @@ sls_detector_header JsonFileFactory<detector, DataType>::read_header(const std::
 }
 
 
-template <DetectorType detector, typename DataType>
-void JsonFileFactory<detector, DataType>::find_geometry(File<detector, DataType> *_file) {
-    auto file = dynamic_cast<JsonFile<detector, DataType> *>(_file);
+void JsonFileFactory::find_geometry(File* _file) {
+    auto file = dynamic_cast<JsonFile*>(_file);
     uint16_t r{};
     uint16_t c{};
     for (int i = 0; i != file->n_subfiles; ++i) {
@@ -110,8 +95,7 @@ void JsonFileFactory<detector, DataType>::find_geometry(File<detector, DataType>
     file->rows += (r - 1) * file->cfg.module_gap_row;
 }
 
-template <DetectorType detector, typename DataType>
-void JsonFileFactory<detector, DataType>::parse_fname(File<detector, DataType> *file) {
+void JsonFileFactory::parse_fname(File* file) {
 
     file->base_path = this->m_fpath.parent_path();
     file->base_name = this->m_fpath.stem();
@@ -124,4 +108,3 @@ void JsonFileFactory<detector, DataType>::parse_fname(File<detector, DataType> *
 }
 
 
-template class JsonFileFactory<DetectorType::Jungfrau, uint16_t>;

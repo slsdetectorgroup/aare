@@ -1,12 +1,10 @@
 #include "aare/NumpyFileFactory.hpp"
 #include "aare/NumpyHelpers.hpp"
-template <DetectorType detector, typename DataType>
-NumpyFileFactory<detector, DataType>::NumpyFileFactory(std::filesystem::path fpath) {
+NumpyFileFactory::NumpyFileFactory(std::filesystem::path fpath) {
     this->m_fpath = fpath;
 }
-template <DetectorType detector, typename DataType>
-void NumpyFileFactory<detector, DataType>::parse_metadata(File<detector, DataType> *_file) {
-    auto file = dynamic_cast<NumpyFile<detector, DataType> *>(_file);
+void NumpyFileFactory::parse_metadata(File *_file) {
+    auto file = dynamic_cast<NumpyFile*>(_file);
     // open ifsteam to file
     f = std::ifstream(file->fname, std::ios::binary);
     // check if file exists
@@ -16,7 +14,7 @@ void NumpyFileFactory<detector, DataType>::parse_metadata(File<detector, DataTyp
     // read magic number
     std::array<char, 6> tmp{};
     f.read(tmp.data(), tmp.size());
-    if (tmp != NumpyFile<detector, DataType>::magic_str) {
+    if (tmp != NumpyFile::magic_str) {
         for (auto item : tmp)
             fmt::print("{}, ", int(item));
         fmt::print("\n");
@@ -74,19 +72,11 @@ void NumpyFileFactory<detector, DataType>::parse_metadata(File<detector, DataTyp
     file->header = {dtype, fortran_order, shape};
 }
 
-template <DetectorType detector, typename DataType>
- File<detector, DataType>* NumpyFileFactory<detector, DataType>::load_file() {
-    NumpyFile<detector, DataType> *file = new NumpyFile<detector, DataType>(this->m_fpath);
+ File* NumpyFileFactory::load_file() {
+    NumpyFile *file = new NumpyFile(this->m_fpath);
     parse_metadata(file);
-    std::cout << "parsed header: " << file->header.to_string() << std::endl;
-
-    if(sizeof(DataType) != file->header.dtype.itemsize){
-        std::stringstream  s;
-        s << "Data type size mismatch: " << sizeof(DataType) << " != " << file->header.dtype.itemsize;
-        throw std::runtime_error(s.str());
-    }       
+    std::cout << "parsed header: " << file->header.to_string() << std::endl;      
     return file;
 };
-template class NumpyFileFactory<DetectorType::Jungfrau, uint16_t>;
 
 
