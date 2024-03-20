@@ -43,6 +43,34 @@ else()
             -D_GLIBCXX_DEBUG 
             -D_GLIBCXX_DEBUG_PEDANTIC
     )
+
+    if (NOT AARE_PYTHON_BINDINGS)
+    target_compile_options(
+        aare_compiler_flags
+        INTERFACE
+            -fdiagnostics-parseable-fixits
+            -fdiagnostics-generate-patch 
+            -fdiagnostics-show-template-tree 
+            -fsanitize=address,undefined,pointer-compare 
+            -fno-sanitize-recover 
+            # -D_FORTIFY_SOURCE=2  # not needed for debug builds
+            # -fstack-protector  # cause errors wih folly (ProducerConsumerQueue.hpp)
+            -fno-omit-frame-pointer
+    )
+    
+    target_link_libraries(
+        aare_compiler_flags
+        INTERFACE
+            -fdiagnostics-parseable-fixits
+            -fdiagnostics-generate-patch 
+            -fdiagnostics-show-template-tree 
+            -fsanitize=address,undefined,pointer-compare 
+            -fno-sanitize-recover 
+            # -D_FORTIFY_SOURCE=2 
+            -fno-omit-frame-pointer
+    )
+endif()
+
 endif()
 
 if(AARE_USE_WARNINGS)
@@ -64,35 +92,6 @@ if(AARE_USE_WARNINGS)
         )
 endif()
 
-if (NOT AARE_PYTHON_BINDINGS)
-    target_compile_options(
-        aare_compiler_flags
-        INTERFACE
-            -fsanitize=address
-            -fdiagnostics-parseable-fixits
-            -fdiagnostics-generate-patch 
-            -fdiagnostics-show-template-tree 
-            -fsanitize=address,undefined,pointer-compare 
-            -fno-sanitize-recover 
-            -D_FORTIFY_SOURCE=2 
-            -fstack-protector 
-            -fno-omit-frame-pointer
-    )
-    
-    target_link_libraries(
-        aare_compiler_flags
-        INTERFACE
-            -fsanitize=address
-            -fdiagnostics-parseable-fixits
-            -fdiagnostics-generate-patch 
-            -fdiagnostics-show-template-tree 
-            -fsanitize=address,undefined,pointer-compare 
-            -fno-sanitize-recover 
-            -D_FORTIFY_SOURCE=2 
-            -fstack-protector 
-            -fno-omit-frame-pointer
-    )
-endif()
 if(AARE_TESTS)
     add_subdirectory(tests)
 endif()

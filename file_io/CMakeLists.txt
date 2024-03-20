@@ -1,5 +1,8 @@
-find_package(nlohmann_json 3.2.0 REQUIRED)
-
+FetchContent_Declare(json
+    GIT_REPOSITORY https://github.com/nlohmann/json
+    GIT_TAG v3.11.3
+)
+FetchContent_MakeAvailable(json)
 
 set(SourceFiles
     ${CMAKE_CURRENT_SOURCE_DIR}/src/File.cpp
