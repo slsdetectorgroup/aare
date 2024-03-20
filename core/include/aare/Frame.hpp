@@ -23,6 +23,8 @@ class Frame {
     Frame(ssize_t rows, ssize_t cols,ssize_t m_bitdepth);
     Frame(std::byte *fp, ssize_t rows, ssize_t cols,ssize_t m_bitdepth);
     std::byte* get(int row, int col);
+    template <typename T>
+    void set(int row, int col,T data);
     // std::vector<std::vector<DataType>> get_array();
     ssize_t rows() const{
         return m_rows;
