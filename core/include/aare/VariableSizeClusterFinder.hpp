@@ -6,7 +6,7 @@
 #include <vector>
 
 
-#include "aare/ImageData.hpp"
+#include "aare/Image.hpp"
 
 const int MAX_CLUSTER_SIZE = 200;
 namespace pl {
@@ -31,9 +31,9 @@ template <typename T> class ClusterFinder {
   private:
     const std::array<ssize_t, 2> shape_;
     View<T, 2> original_;
-    ImageData<int, 2> labeled_;
-    ImageData<int, 2> peripheral_labeled_;
-    ImageData<bool, 2> binary_; // over threshold flag
+    Image<int, 2> labeled_;
+    Image<int, 2> peripheral_labeled_;
+    Image<bool, 2> binary_; // over threshold flag
     T threshold_;
     View<T, 2> noiseMap;
     bool use_noise_map = false;
@@ -56,7 +56,7 @@ template <typename T> class ClusterFinder {
         hits.reserve(2000);
     }
 
-    ImageData<int, 2> labeled() { return labeled_; }
+    Image<int, 2> labeled() { return labeled_; }
 
     void set_noiseMap(View<T, 2> noise_map) { noiseMap = noise_map; use_noise_map = true; }
     void set_peripheralThresholdFactor(int factor) { peripheralThresholdFactor_ = factor; }

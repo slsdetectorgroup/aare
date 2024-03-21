@@ -1,5 +1,5 @@
-#include <aare/View.hpp>
 #include <aare/Frame.hpp>
+#include <aare/View.hpp>
 #include <catch2/catch_test_macros.hpp>
 #include <cstdint>
 
@@ -33,17 +33,37 @@ TEST_CASE("View") {
             REQUIRE(ds(i / 10, i % 10) == data[i]);
         }
     }
+    // SECTION("from Frame") {
+    //     Frame f(reinterpret_cast<std::byte *>(data), 10, 10, 16);
+    //     View<uint16_t> ds = f.view<uint16_t>();
+    //     for (int i = 0; i < 100; i++) {
+    //         REQUIRE(ds(i / 10, i % 10) == data[i]);
+    //     }
+
+    //     f.set(0, 0, (uint16_t)44);
+    //     REQUIRE((uint16_t)*f.get(0, 0) == 44); // check that set worked
+    //     REQUIRE(ds(0, 0) == 44);               // check that ds is updated
+    //     REQUIRE(data[0] == 0);                 // check that data is not updated
+    // }
+    delete[] data;
+}
+
+TEST_CASE("Image") {
+    auto data = new uint16_t[100];
+    for (int i = 0; i < 100; i++) {
+        data[i] = i;
+    }
     SECTION("from Frame") {
         Frame f(reinterpret_cast<std::byte *>(data), 10, 10, 16);
-        View<uint16_t> ds = f.view<uint16_t>();
+        Image<uint16_t> img = f.image<uint16_t>();
         for (int i = 0; i < 100; i++) {
-            REQUIRE(ds(i / 10, i % 10) == data[i]);
+            REQUIRE(img(i / 10, i % 10) == data[i]);
         }
 
         f.set(0, 0, (uint16_t)44);
         REQUIRE((uint16_t)*f.get(0, 0) == 44); // check that set worked
-        REQUIRE(ds(0, 0) == 44);// check that ds is updated
-        REQUIRE(data[0] == 0); // check that data is not updated
+        REQUIRE(img(0, 0) == 0);               // check that ds is updated
+        REQUIRE(data[0] == 0);                 // check that data is not updated
     }
     delete[] data;
 }
