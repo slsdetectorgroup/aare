@@ -6,6 +6,7 @@
 #include <numeric>
 #include <vector>
 
+template <ssize_t Ndim> using Shape = std::array<ssize_t, Ndim>;
 
 template <ssize_t Dim = 0, typename Strides> ssize_t element_offset(const Strides &) { return 0; }
 

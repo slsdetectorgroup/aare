@@ -43,3 +43,7 @@ TEST_CASE("Cannot pop from an empty queue"){
     int a=0; 
     CHECK_FALSE(q.read(a));
 }
+
+// TEST_CASE("fail"){
+//     CHECK(false);
+// }
