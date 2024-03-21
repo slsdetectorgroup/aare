@@ -6,7 +6,7 @@
 #include <vector>
 
 
-#include "aare/Image.hpp"
+#include "aare/NDArray.hpp"
 
 const int MAX_CLUSTER_SIZE = 200;
 namespace pl {
@@ -31,9 +31,9 @@ template <typename T> class ClusterFinder {
   private:
     const std::array<ssize_t, 2> shape_;
     NDView<T, 2> original_;
-    Image<int, 2> labeled_;
-    Image<int, 2> peripheral_labeled_;
-    Image<bool, 2> binary_; // over threshold flag
+    NDArray<int, 2> labeled_;
+    NDArray<int, 2> peripheral_labeled_;
+    NDArray<bool, 2> binary_; // over threshold flag
     T threshold_;
     NDView<T, 2> noiseMap;
     bool use_noise_map = false;
@@ -56,7 +56,7 @@ template <typename T> class ClusterFinder {
         hits.reserve(2000);
     }
 
-    Image<int, 2> labeled() { return labeled_; }
+    NDArray<int, 2> labeled() { return labeled_; }
 
     void set_noiseMap(NDView<T, 2> noise_map) { noiseMap = noise_map; use_noise_map = true; }
     void set_peripheralThresholdFactor(int factor) { peripheralThresholdFactor_ = factor; }

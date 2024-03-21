@@ -7,7 +7,7 @@ memory.
 TODO! Add expression templates for operators
 
 */
-#include "aare/View.hpp"
+#include "aare/NDView.hpp"
 
 #include <algorithm>
 #include <array>
@@ -19,47 +19,47 @@ TODO! Add expression templates for operators
 #include <numeric>
 
 
-template <typename T, ssize_t Ndim = 2> class Image {
+template <typename T, ssize_t Ndim = 2> class NDArray {
   public:
-    Image()
+    NDArray()
         : shape_(), strides_(c_strides<Ndim>(shape_)), size_(0),
           data_(nullptr){};
 
-    explicit Image(std::array<ssize_t, Ndim> shape)
+    explicit NDArray(std::array<ssize_t, Ndim> shape)
         : shape_(shape), strides_(c_strides<Ndim>(shape_)),
           size_(std::accumulate(shape_.begin(), shape_.end(), 1,
                                 std::multiplies<ssize_t>())),
           data_(new T[size_]){};
 
-    Image(std::array<ssize_t, Ndim> shape, T value) : Image(shape) {
+    NDArray(std::array<ssize_t, Ndim> shape, T value) : NDArray(shape) {
         this->operator=(value);
     }
 
-    /* When constructing from a View we need to copy the data since
-    Image expect to own its data, and span is just a view*/
-    Image(View<T, Ndim> span):Image(span.shape()){
+    /* When constructing from a NDView we need to copy the data since
+    NDArray expect to own its data, and span is just a view*/
+    NDArray(NDView<T, Ndim> span):NDArray(span.shape()){
         std::copy(span.begin(), span.end(), begin());
-        // fmt::print("Image(View<T, Ndim> span)\n");
+        // fmt::print("NDArray(NDView<T, Ndim> span)\n");
     }
 
     // Move constructor
-    Image(Image &&other)
+    NDArray(NDArray &&other)
         : shape_(other.shape_), strides_(c_strides<Ndim>(shape_)),
           size_(other.size_), data_(nullptr) {
         data_ = other.data_;
         other.reset();
-        // fmt::print("Image(Image &&other)\n");
+        // fmt::print("NDArray(NDArray &&other)\n");
     }
 
     // Copy constructor
-    Image(const Image &other)
+    NDArray(const NDArray &other)
         : shape_(other.shape_), strides_(c_strides<Ndim>(shape_)),
           size_(other.size_), data_(new T[size_]) {
         std::copy(other.data_, other.data_ + size_, data_);
-        // fmt::print("Image(const Image &other)\n");
+        // fmt::print("NDArray(const NDArray &other)\n");
     }
 
-    ~Image() {
+    ~NDArray() {
         delete[] data_;
     }
 
@@ -68,19 +68,19 @@ template <typename T, ssize_t Ndim = 2> class Image {
 
     using value_type =  T;
 
-    Image &operator=(Image &&other);      // Move assign
-    Image &operator=(const Image &other); // Copy assign
+    NDArray &operator=(NDArray &&other);      // Move assign
+    NDArray &operator=(const NDArray &other); // Copy assign
 
-    Image operator+(const Image &other);
-    Image &operator+=(const Image &other);
-    Image operator-(const Image &other);
-    Image &operator-=(const Image &other);
-    Image operator*(const Image &other);
-    Image &operator*=(const Image &other);
-    Image operator/(const Image &other);
-    // Image& operator/=(const Image& other);
+    NDArray operator+(const NDArray &other);
+    NDArray &operator+=(const NDArray &other);
+    NDArray operator-(const NDArray &other);
+    NDArray &operator-=(const NDArray &other);
+    NDArray operator*(const NDArray &other);
+    NDArray &operator*=(const NDArray &other);
+    NDArray operator/(const NDArray &other);
+    // NDArray& operator/=(const NDArray& other);
     template <typename V>
-    Image &operator/=(const Image<V, Ndim> &other) {
+    NDArray &operator/=(const NDArray<V, Ndim> &other) {
         // check shape
         if (shape_ == other.shape()) {
             for (int i = 0; i < size_; ++i) {
@@ -88,26 +88,26 @@ template <typename T, ssize_t Ndim = 2> class Image {
             }
             return *this;
         } else {
-            throw(std::runtime_error("Shape of Image must match"));
+            throw(std::runtime_error("Shape of NDArray must match"));
         }
     }
 
-    Image<bool, Ndim> operator>(const Image &other);
+    NDArray<bool, Ndim> operator>(const NDArray &other);
 
-    bool operator==(const Image &other) const;
-    bool operator!=(const Image &other) const;
+    bool operator==(const NDArray &other) const;
+    bool operator!=(const NDArray &other) const;
 
-    Image &operator=(const T &);
-    Image &operator+=(const T &);
-    Image operator+(const T &);
-    Image &operator-=(const T &);
-    Image operator-(const T &);
-    Image &operator*=(const T &);
-    Image operator*(const T &);
-    Image &operator/=(const T &);
-    Image operator/(const T &);
+    NDArray &operator=(const T &);
+    NDArray &operator+=(const T &);
+    NDArray operator+(const T &);
+    NDArray &operator-=(const T &);
+    NDArray operator-(const T &);
+    NDArray &operator*=(const T &);
+    NDArray operator*(const T &);
+    NDArray &operator/=(const T &);
+    NDArray operator/(const T &);
 
-    Image &operator&=(const T &);
+    NDArray &operator&=(const T &);
 
     void sqrt() {
         for (int i = 0; i < size_; ++i) {
@@ -115,7 +115,7 @@ template <typename T, ssize_t Ndim = 2> class Image {
         }
     }
 
-    Image &operator++(); // pre inc
+    NDArray &operator++(); // pre inc
 
     template <typename... Ix>
     typename std::enable_if<sizeof...(Ix) == Ndim, T &>::type
@@ -153,7 +153,7 @@ template <typename T, ssize_t Ndim = 2> class Image {
         // return strides_;
     }
 
-    View<T, Ndim> span() const { return View<T, Ndim>{data_, shape_}; }
+    NDView<T, Ndim> span() const { return NDView<T, Ndim>{data_, shape_}; }
 
     void Print();
     void Print_all();
@@ -175,7 +175,7 @@ template <typename T, ssize_t Ndim = 2> class Image {
 
 // Move assign
 template <typename T, ssize_t Ndim>
-Image<T, Ndim> &Image<T, Ndim>::operator=(Image<T, Ndim> &&other) {
+NDArray<T, Ndim> &NDArray<T, Ndim>::operator=(NDArray<T, Ndim> &&other) {
     if (this != &other) {
         delete[] data_;
         data_ = other.data_;
@@ -188,14 +188,14 @@ Image<T, Ndim> &Image<T, Ndim>::operator=(Image<T, Ndim> &&other) {
 }
 
 template <typename T, ssize_t Ndim>
-Image<T, Ndim> Image<T, Ndim>::operator+(const Image &other) {
-    Image result(*this);
+NDArray<T, Ndim> NDArray<T, Ndim>::operator+(const NDArray &other) {
+    NDArray result(*this);
     result += other;
     return result;
 }
 template <typename T, ssize_t Ndim>
-Image<T, Ndim> &
-Image<T, Ndim>::operator+=(const Image<T, Ndim> &other) {
+NDArray<T, Ndim> &
+NDArray<T, Ndim>::operator+=(const NDArray<T, Ndim> &other) {
     // check shape
     if (shape_ == other.shape_) {
         for (int i = 0; i < size_; ++i) {
@@ -208,15 +208,15 @@ Image<T, Ndim>::operator+=(const Image<T, Ndim> &other) {
 }
 
 template <typename T, ssize_t Ndim>
-Image<T, Ndim> Image<T, Ndim>::operator-(const Image &other) {
-    Image result{*this};
+NDArray<T, Ndim> NDArray<T, Ndim>::operator-(const NDArray &other) {
+    NDArray result{*this};
     result -= other;
     return result;
 }
 
 template <typename T, ssize_t Ndim>
-Image<T, Ndim> &
-Image<T, Ndim>::operator-=(const Image<T, Ndim> &other) {
+NDArray<T, Ndim> &
+NDArray<T, Ndim>::operator-=(const NDArray<T, Ndim> &other) {
     // check shape
     if (shape_ == other.shape_) {
         for (int i = 0; i < size_; ++i) {
@@ -228,15 +228,15 @@ Image<T, Ndim>::operator-=(const Image<T, Ndim> &other) {
     }
 }
 template <typename T, ssize_t Ndim>
-Image<T, Ndim> Image<T, Ndim>::operator*(const Image &other) {
-    Image result = *this;
+NDArray<T, Ndim> NDArray<T, Ndim>::operator*(const NDArray &other) {
+    NDArray result = *this;
     result *= other;
     return result;
 }
 
 template <typename T, ssize_t Ndim>
-Image<T, Ndim> &
-Image<T, Ndim>::operator*=(const Image<T, Ndim> &other) {
+NDArray<T, Ndim> &
+NDArray<T, Ndim>::operator*=(const NDArray<T, Ndim> &other) {
     // check shape
     if (shape_ == other.shape_) {
         for (int i = 0; i < size_; ++i) {
@@ -249,21 +249,21 @@ Image<T, Ndim>::operator*=(const Image<T, Ndim> &other) {
 }
 
 template <typename T, ssize_t Ndim>
-Image<T, Ndim> Image<T, Ndim>::operator/(const Image &other) {
-    Image result = *this;
+NDArray<T, Ndim> NDArray<T, Ndim>::operator/(const NDArray &other) {
+    NDArray result = *this;
     result /= other;
     return result;
 }
 
 template <typename T, ssize_t Ndim>
-Image<T, Ndim> &Image<T, Ndim>::operator&=(const T &mask) {
+NDArray<T, Ndim> &NDArray<T, Ndim>::operator&=(const T &mask) {
     for (auto it = begin(); it != end(); ++it)
         *it &= mask;
     return *this;
 }
 
 // template <typename T, ssize_t Ndim>
-// Image<T, Ndim>& Image<T, Ndim>::operator/=(const Image<T, Ndim>&
+// NDArray<T, Ndim>& NDArray<T, Ndim>::operator/=(const NDArray<T, Ndim>&
 // other)
 // {
 //     //check shape
@@ -278,9 +278,9 @@ Image<T, Ndim> &Image<T, Ndim>::operator&=(const T &mask) {
 // }
 
 template <typename T, ssize_t Ndim>
-Image<bool, Ndim> Image<T, Ndim>::operator>(const Image &other) {
+NDArray<bool, Ndim> NDArray<T, Ndim>::operator>(const NDArray &other) {
     if (shape_ == other.shape_) {
-        Image<bool> result{shape_};
+        NDArray<bool> result{shape_};
         for (int i = 0; i < size_; ++i) {
             result(i) = (data_[i] > other.data_[i]);
         }
@@ -291,8 +291,8 @@ Image<bool, Ndim> Image<T, Ndim>::operator>(const Image &other) {
 }
 
 template <typename T, ssize_t Ndim>
-Image<T, Ndim> &
-Image<T, Ndim>::operator=(const Image<T, Ndim> &other) {
+NDArray<T, Ndim> &
+NDArray<T, Ndim>::operator=(const NDArray<T, Ndim> &other) {
     if (this != &other) {
         delete[] data_;
         shape_ = other.shape_;
@@ -305,7 +305,7 @@ Image<T, Ndim>::operator=(const Image<T, Ndim> &other) {
 }
 
 template <typename T, ssize_t Ndim>
-bool Image<T, Ndim>::operator==(const Image<T, Ndim> &other) const {
+bool NDArray<T, Ndim>::operator==(const NDArray<T, Ndim> &other) const {
     if (shape_ != other.shape_)
         return false;
 
@@ -317,78 +317,78 @@ bool Image<T, Ndim>::operator==(const Image<T, Ndim> &other) const {
 }
 
 template <typename T, ssize_t Ndim>
-bool Image<T, Ndim>::operator!=(const Image<T, Ndim> &other) const {
+bool NDArray<T, Ndim>::operator!=(const NDArray<T, Ndim> &other) const {
     return !((*this) == other);
 }
 template <typename T, ssize_t Ndim>
-Image<T, Ndim> &Image<T, Ndim>::operator++() {
+NDArray<T, Ndim> &NDArray<T, Ndim>::operator++() {
     for (int i = 0; i < size_; ++i)
         data_[i] += 1;
     return *this;
 }
 template <typename T, ssize_t Ndim>
-Image<T, Ndim> &Image<T, Ndim>::operator=(const T &value) {
+NDArray<T, Ndim> &NDArray<T, Ndim>::operator=(const T &value) {
     std::fill_n(data_, size_, value);
     return *this;
 }
 
 template <typename T, ssize_t Ndim>
-Image<T, Ndim> &Image<T, Ndim>::operator+=(const T &value) {
+NDArray<T, Ndim> &NDArray<T, Ndim>::operator+=(const T &value) {
     for (int i = 0; i < size_; ++i)
         data_[i] += value;
     return *this;
 }
 
 template <typename T, ssize_t Ndim>
-Image<T, Ndim> Image<T, Ndim>::operator+(const T &value) {
-    Image result = *this;
+NDArray<T, Ndim> NDArray<T, Ndim>::operator+(const T &value) {
+    NDArray result = *this;
     result += value;
     return result;
 }
 template <typename T, ssize_t Ndim>
-Image<T, Ndim> &Image<T, Ndim>::operator-=(const T &value) {
+NDArray<T, Ndim> &NDArray<T, Ndim>::operator-=(const T &value) {
     for (int i = 0; i < size_; ++i)
         data_[i] -= value;
     return *this;
 }
 template <typename T, ssize_t Ndim>
-Image<T, Ndim> Image<T, Ndim>::operator-(const T &value) {
-    Image result = *this;
+NDArray<T, Ndim> NDArray<T, Ndim>::operator-(const T &value) {
+    NDArray result = *this;
     result -= value;
     return result;
 }
 
 template <typename T, ssize_t Ndim>
-Image<T, Ndim> &Image<T, Ndim>::operator/=(const T &value) {
+NDArray<T, Ndim> &NDArray<T, Ndim>::operator/=(const T &value) {
     for (int i = 0; i < size_; ++i)
         data_[i] /= value;
     return *this;
 }
 template <typename T, ssize_t Ndim>
-Image<T, Ndim> Image<T, Ndim>::operator/(const T &value) {
-    Image result = *this;
+NDArray<T, Ndim> NDArray<T, Ndim>::operator/(const T &value) {
+    NDArray result = *this;
     result /= value;
     return result;
 }
 template <typename T, ssize_t Ndim>
-Image<T, Ndim> &Image<T, Ndim>::operator*=(const T &value) {
+NDArray<T, Ndim> &NDArray<T, Ndim>::operator*=(const T &value) {
     for (int i = 0; i < size_; ++i)
         data_[i] *= value;
     return *this;
 }
 template <typename T, ssize_t Ndim>
-Image<T, Ndim> Image<T, Ndim>::operator*(const T &value) {
-    Image result = *this;
+NDArray<T, Ndim> NDArray<T, Ndim>::operator*(const T &value) {
+    NDArray result = *this;
     result *= value;
     return result;
 }
-template <typename T, ssize_t Ndim> void Image<T, Ndim>::Print() {
+template <typename T, ssize_t Ndim> void NDArray<T, Ndim>::Print() {
     if (shape_[0] < 20 && shape_[1] < 20)
         Print_all();
     else
         Print_some();
 }
-template <typename T, ssize_t Ndim> void Image<T, Ndim>::Print_all() {
+template <typename T, ssize_t Ndim> void NDArray<T, Ndim>::Print_all() {
     for (auto row = 0; row < shape_[0]; ++row) {
         for (auto col = 0; col < shape_[1]; ++col) {
             std::cout << std::setw(3);
@@ -397,7 +397,7 @@ template <typename T, ssize_t Ndim> void Image<T, Ndim>::Print_all() {
         std::cout << "\n";
     }
 }
-template <typename T, ssize_t Ndim> void Image<T, Ndim>::Print_some() {
+template <typename T, ssize_t Ndim> void NDArray<T, Ndim>::Print_some() {
     for (auto row = 0; row < 5; ++row) {
         for (auto col = 0; col < 5; ++col) {
             std::cout << std::setw(7);
@@ -408,7 +408,7 @@ template <typename T, ssize_t Ndim> void Image<T, Ndim>::Print_some() {
 }
 
 template <typename T, ssize_t Ndim>
-void save(Image<T, Ndim> &img, std::string pathname) {
+void save(NDArray<T, Ndim> &img, std::string pathname) {
     std::ofstream f;
     f.open(pathname, std::ios::binary);
     f.write(img.buffer(), img.size() * sizeof(T));
@@ -416,9 +416,9 @@ void save(Image<T, Ndim> &img, std::string pathname) {
 }
 
 template <typename T, ssize_t Ndim>
-Image<T, Ndim> load(const std::string &pathname,
+NDArray<T, Ndim> load(const std::string &pathname,
                         std::array<ssize_t, Ndim> shape) {
-    Image<T, Ndim> img{shape};
+    NDArray<T, Ndim> img{shape};
     std::ifstream f;
     f.open(pathname, std::ios::binary);
     f.read(img.buffer(), img.size() * sizeof(T));

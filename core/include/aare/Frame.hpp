@@ -1,5 +1,5 @@
 #pragma once
-#include "aare/Image.hpp"
+#include "aare/NDArray.hpp"
 #include "aare/defs.hpp"
 #include <cstddef>
 #include <cstdint>
@@ -47,8 +47,8 @@ class Frame {
     }
 
     template <typename T>
-    Image<T> image() {
-        return Image<T>(this->view<T>());
+    NDArray<T> image() {
+        return NDArray<T>(this->view<T>());
     }
 
     ~Frame() { delete[] m_data; }
