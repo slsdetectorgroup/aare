@@ -1,5 +1,5 @@
 #pragma once
-#include "aare/NDView.hpp"
+#include "aare/NDArray.hpp"
 #include "aare/defs.hpp"
 #include <cstddef>
 #include <cstdint>
@@ -44,6 +44,11 @@ class Frame {
         std::vector<ssize_t> shape = {m_rows, m_cols};
         T* data = reinterpret_cast<T *>(m_data);
         return NDView<T>(data, shape);
+    }
+
+    template <typename T>
+    NDArray<T> image() {
+        return NDArray<T>(this->view<T>());
     }
 
     ~Frame() { delete[] m_data; }
