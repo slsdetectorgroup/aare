@@ -30,18 +30,18 @@ template <ssize_t Ndim> std::array<ssize_t, Ndim> make_array(const std::vector<s
     return arr;
 }
 
-template <typename T, ssize_t Ndim=2> class View {
+template <typename T, ssize_t Ndim=2> class NDView {
   public:
-    View(){};
+    NDView(){};
 
-    View(T* buffer, std::array<ssize_t, Ndim> shape) {
+    NDView(T* buffer, std::array<ssize_t, Ndim> shape) {
         buffer_ = buffer;
         strides_ = c_strides<Ndim>(shape);
         shape_ = shape;
         size_ = std::accumulate(std::begin(shape), std::end(shape), 1, std::multiplies<ssize_t>());
     }
 
-    View(T *buffer, const std::vector<ssize_t> &shape) {
+    NDView(T *buffer, const std::vector<ssize_t> &shape) {
         buffer_ = buffer;
         strides_ = c_strides<Ndim>(make_array<Ndim>(shape));
         shape_ = make_array<Ndim>(shape);
@@ -59,28 +59,28 @@ template <typename T, ssize_t Ndim=2> class View {
 
     ssize_t size() const { return size_; }
 
-    View(const View &) = default;
-    View(View &&) = default;
+    NDView(const NDView &) = default;
+    NDView(NDView &&) = default;
 
     T *begin() { return buffer_; }
     T *end() { return buffer_ + size_; }
     T &operator()(ssize_t i) { return buffer_[i]; }
     T &operator[](ssize_t i) { return buffer_[i]; }
 
-    View &operator+=(const T val) { return elemenwise(val, std::plus<T>()); }
-    View &operator-=(const T val) { return elemenwise(val, std::minus<T>()); }
-    View &operator*=(const T val) { return elemenwise(val, std::multiplies<T>()); }
-    View &operator/=(const T val) { return elemenwise(val, std::divides<T>()); }
+    NDView &operator+=(const T val) { return elemenwise(val, std::plus<T>()); }
+    NDView &operator-=(const T val) { return elemenwise(val, std::minus<T>()); }
+    NDView &operator*=(const T val) { return elemenwise(val, std::multiplies<T>()); }
+    NDView &operator/=(const T val) { return elemenwise(val, std::divides<T>()); }
 
-    View &operator/=(const View &other) { return elemenwise(other, std::divides<T>()); }
+    NDView &operator/=(const NDView &other) { return elemenwise(other, std::divides<T>()); }
 
-    View &operator=(const T val) {
+    NDView &operator=(const T val) {
         for (auto it = begin(); it != end(); ++it)
             *it = val;
         return *this;
     }
 
-    View &operator=(const View &other) {
+    NDView &operator=(const NDView &other) {
         shape_ = other.shape_;
         strides_ = other.strides_;
         size_ = other.size_;
@@ -98,13 +98,13 @@ template <typename T, ssize_t Ndim=2> class View {
     std::array<ssize_t, Ndim> shape_{};
     ssize_t size_{};
 
-    template <class BinaryOperation> View &elemenwise(T val, BinaryOperation op) {
+    template <class BinaryOperation> NDView &elemenwise(T val, BinaryOperation op) {
         for (ssize_t i = 0; i != size_; ++i) {
             buffer_[i] = op(buffer_[i], val);
         }
         return *this;
     }
-    template <class BinaryOperation> View &elemenwise(const View &other, BinaryOperation op) {
+    template <class BinaryOperation> NDView &elemenwise(const NDView &other, BinaryOperation op) {
         for (ssize_t i = 0; i != size_; ++i) {
             buffer_[i] = op(buffer_[i], other.buffer_[i]);
         }
@@ -112,5 +112,5 @@ template <typename T, ssize_t Ndim=2> class View {
     }
 };
 
-template class View<uint16_t, 2>;
+template class NDView<uint16_t, 2>;
 
