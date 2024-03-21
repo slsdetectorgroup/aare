@@ -1,5 +1,5 @@
 #pragma once
-#include "aare/View.hpp"
+#include "aare/NDView.hpp"
 #include "aare/defs.hpp"
 #include <cstddef>
 #include <cstdint>
@@ -40,10 +40,10 @@ class Frame {
     }
 
     template <typename T> 
-    View<T> view() {
+    NDView<T> view() {
         std::vector<ssize_t> shape = {m_rows, m_cols};
         T* data = reinterpret_cast<T *>(m_data);
-        return View<T>(data, shape);
+        return NDView<T>(data, shape);
     }
 
     ~Frame() { delete[] m_data; }
