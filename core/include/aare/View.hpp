@@ -4,7 +4,6 @@
 #include <cassert>
 #include <cstdint>
 #include <numeric>
-#include<aare/Frame.hpp>
 #include <vector>
 
 
@@ -31,31 +30,23 @@ template <ssize_t Ndim> std::array<ssize_t, Ndim> make_array(const std::vector<s
     return arr;
 }
 
-template <typename T, ssize_t Ndim> class DataSpan {
+template <typename T, ssize_t Ndim=2> class View {
   public:
-    DataSpan(){};
+    View(){};
 
-    DataSpan(T* buffer, std::array<ssize_t, Ndim> shape) {
+    View(T* buffer, std::array<ssize_t, Ndim> shape) {
         buffer_ = buffer;
         strides_ = c_strides<Ndim>(shape);
         shape_ = shape;
         size_ = std::accumulate(std::begin(shape), std::end(shape), 1, std::multiplies<ssize_t>());
     }
 
-    DataSpan(T *buffer, const std::vector<ssize_t> &shape) {
+    View(T *buffer, const std::vector<ssize_t> &shape) {
         buffer_ = buffer;
         strides_ = c_strides<Ndim>(make_array<Ndim>(shape));
         shape_ = make_array<Ndim>(shape);
         size_ = std::accumulate(std::begin(shape), std::end(shape), 1, std::multiplies<ssize_t>());
         
-    }
-
-    DataSpan(Frame& frame) {
-        assert(Ndim == 2);
-        buffer_ = reinterpret_cast<T*>(frame._get_data());
-        strides_ = c_strides<Ndim>({frame.rows(), frame.cols()});
-        shape_ = {frame.rows(), frame.cols()};
-        size_ = frame.rows() * frame.cols();
     }
 
     template <typename... Ix> typename std::enable_if<sizeof...(Ix) == Ndim, T &>::type operator()(Ix... index) {
@@ -68,28 +59,28 @@ template <typename T, ssize_t Ndim> class DataSpan {
 
     ssize_t size() const { return size_; }
 
-    DataSpan(const DataSpan &) = default;
-    DataSpan(DataSpan &&) = default;
+    View(const View &) = default;
+    View(View &&) = default;
 
     T *begin() { return buffer_; }
     T *end() { return buffer_ + size_; }
     T &operator()(ssize_t i) { return buffer_[i]; }
     T &operator[](ssize_t i) { return buffer_[i]; }
 
-    DataSpan &operator+=(const T val) { return elemenwise(val, std::plus<T>()); }
-    DataSpan &operator-=(const T val) { return elemenwise(val, std::minus<T>()); }
-    DataSpan &operator*=(const T val) { return elemenwise(val, std::multiplies<T>()); }
-    DataSpan &operator/=(const T val) { return elemenwise(val, std::divides<T>()); }
+    View &operator+=(const T val) { return elemenwise(val, std::plus<T>()); }
+    View &operator-=(const T val) { return elemenwise(val, std::minus<T>()); }
+    View &operator*=(const T val) { return elemenwise(val, std::multiplies<T>()); }
+    View &operator/=(const T val) { return elemenwise(val, std::divides<T>()); }
 
-    DataSpan &operator/=(const DataSpan &other) { return elemenwise(other, std::divides<T>()); }
+    View &operator/=(const View &other) { return elemenwise(other, std::divides<T>()); }
 
-    DataSpan &operator=(const T val) {
+    View &operator=(const T val) {
         for (auto it = begin(); it != end(); ++it)
             *it = val;
         return *this;
     }
 
-    DataSpan &operator=(const DataSpan &other) {
+    View &operator=(const View &other) {
         shape_ = other.shape_;
         strides_ = other.strides_;
         size_ = other.size_;
@@ -107,13 +98,13 @@ template <typename T, ssize_t Ndim> class DataSpan {
     std::array<ssize_t, Ndim> shape_{};
     ssize_t size_{};
 
-    template <class BinaryOperation> DataSpan &elemenwise(T val, BinaryOperation op) {
+    template <class BinaryOperation> View &elemenwise(T val, BinaryOperation op) {
         for (ssize_t i = 0; i != size_; ++i) {
             buffer_[i] = op(buffer_[i], val);
         }
         return *this;
     }
-    template <class BinaryOperation> DataSpan &elemenwise(const DataSpan &other, BinaryOperation op) {
+    template <class BinaryOperation> View &elemenwise(const View &other, BinaryOperation op) {
         for (ssize_t i = 0; i != size_; ++i) {
             buffer_[i] = op(buffer_[i], other.buffer_[i]);
         }
@@ -121,5 +112,5 @@ template <typename T, ssize_t Ndim> class DataSpan {
     }
 };
 
-template class DataSpan<uint16_t, 2>;
+template class View<uint16_t, 2>;
 

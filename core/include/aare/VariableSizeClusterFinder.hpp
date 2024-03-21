@@ -30,12 +30,12 @@ template <typename T> class ClusterFinder {
 
   private:
     const std::array<ssize_t, 2> shape_;
-    DataSpan<T, 2> original_;
+    View<T, 2> original_;
     ImageData<int, 2> labeled_;
     ImageData<int, 2> peripheral_labeled_;
     ImageData<bool, 2> binary_; // over threshold flag
     T threshold_;
-    DataSpan<T, 2> noiseMap;
+    View<T, 2> noiseMap;
     bool use_noise_map = false;
     int peripheralThresholdFactor_ = 5;
     int current_label;
@@ -58,12 +58,12 @@ template <typename T> class ClusterFinder {
 
     ImageData<int, 2> labeled() { return labeled_; }
 
-    void set_noiseMap(DataSpan<T, 2> noise_map) { noiseMap = noise_map; use_noise_map = true; }
+    void set_noiseMap(View<T, 2> noise_map) { noiseMap = noise_map; use_noise_map = true; }
     void set_peripheralThresholdFactor(int factor) { peripheralThresholdFactor_ = factor; }
-    void find_clusters(DataSpan<T, 2> img);
-    void find_clusters_X(DataSpan<T, 2> img);
+    void find_clusters(View<T, 2> img);
+    void find_clusters_X(View<T, 2> img);
     void rec_FillHit(int clusterIndex, int i, int j);
-    void single_pass(DataSpan<T, 2> img);
+    void single_pass(View<T, 2> img);
     void first_pass();
     void second_pass();
     void store_clusters();
@@ -144,7 +144,7 @@ template <typename T> int ClusterFinder<T>::check_neighbours(int i, int j) {
     }
 }
 
-template <typename T> void ClusterFinder<T>::find_clusters(DataSpan<T, 2> img) {
+template <typename T> void ClusterFinder<T>::find_clusters(View<T, 2> img) {
     original_ = img;
     labeled_ = 0;
     peripheral_labeled_ = 0;
@@ -156,7 +156,7 @@ template <typename T> void ClusterFinder<T>::find_clusters(DataSpan<T, 2> img) {
     store_clusters();
 }
 
-template <typename T> void ClusterFinder<T>::find_clusters_X(DataSpan<T, 2> img) {
+template <typename T> void ClusterFinder<T>::find_clusters_X(View<T, 2> img) {
     original_ = img;
     int clusterIndex = 0;
     for (int i = 0; i < shape_[0]; ++i) {
@@ -214,7 +214,7 @@ template <typename T> void ClusterFinder<T>::rec_FillHit(int clusterIndex, int i
     }
 }
 
-template <typename T> void ClusterFinder<T>::single_pass(DataSpan<T, 2> img) {
+template <typename T> void ClusterFinder<T>::single_pass(View<T, 2> img) {
     original_ = img;
     labeled_ = 0;
     current_label = 0;

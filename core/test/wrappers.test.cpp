@@ -1,4 +1,4 @@
-#include <aare/DataSpan.hpp>
+#include <aare/View.hpp>
 #include <aare/Frame.hpp>
 #include <catch2/catch_test_macros.hpp>
 #include <cstdint>
@@ -22,20 +22,20 @@ TEST_CASE("Frame") {
     delete[] data;
 }
 
-TEST_CASE("DataSpan") {
+TEST_CASE("View") {
     auto data = new uint16_t[100];
     for (int i = 0; i < 100; i++) {
         data[i] = i;
     }
     SECTION("constructors") {
-        DataSpan<uint16_t, 2> ds(data, std::vector<ssize_t>({10, 10}));
+        View<uint16_t, 2> ds(data, std::vector<ssize_t>({10, 10}));
         for (int i = 0; i < 100; i++) {
             REQUIRE(ds(i / 10, i % 10) == data[i]);
         }
     }
     SECTION("from Frame") {
         Frame f(reinterpret_cast<std::byte *>(data), 10, 10, 16);
-        DataSpan<uint16_t, 2> ds(f);
+        View<uint16_t> ds = f.view<uint16_t>();
         for (int i = 0; i < 100; i++) {
             REQUIRE(ds(i / 10, i % 10) == data[i]);
         }
