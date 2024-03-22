@@ -20,6 +20,9 @@ public:
 
     // read n_frames frame into the provided buffer
     virtual void read_into(std::byte* image_buf, size_t n_frames) = 0; 
+
+    // size of one frame, important fro teh read_into function
+    virtual size_t bytes_per_frame() const = 0;
     
     // goto frame number
     virtual void seek(size_t frame_number) = 0;
@@ -29,6 +32,10 @@ public:
 
     // total number of frames in the file
     virtual size_t total_frames() = 0;
+
+    virtual size_t rows() const = 0;
+
+    virtual size_t cols() const = 0;
 
     virtual ~FileInterface() = 0;
 };
