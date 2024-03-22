@@ -37,6 +37,9 @@ public:
 
     virtual size_t cols() const = 0;
 
+    // function to query the data type of the file
+    /*virtual DataType dtype = 0; */
+
     virtual ~FileInterface() = 0;
 };
 } // namespace aare
