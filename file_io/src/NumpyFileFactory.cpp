@@ -72,11 +72,11 @@ void NumpyFileFactory::parse_metadata(File *_file) {
     file->header = {dtype, fortran_order, shape};
 }
 
- File* NumpyFileFactory::load_file() {
-    NumpyFile *file = new NumpyFile(this->m_fpath);
+ NumpyFile& NumpyFileFactory::load_file() {
+    NumpyFile* file = new NumpyFile(this->m_fpath);
     parse_metadata(file);
     std::cout << "parsed header: " << file->header.to_string() << std::endl;      
-    return file;
+    return *file;
 };
 
 

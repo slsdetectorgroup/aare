@@ -11,7 +11,7 @@ class NumpyFile : public File {
     
   public:
     NumpyFile(std::filesystem::path fname);
-    Frame *get_frame(size_t frame_number) override;
+    Frame get_frame(size_t frame_number) override;
     header_t header{};
     static constexpr std::array<char, 6> magic_str{'\x93', 'N', 'U', 'M', 'P', 'Y'};
     uint8_t major_ver_{};

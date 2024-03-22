@@ -1,18 +1,17 @@
 // Your First C++ Program
-#include "aare/FileHandler.hpp"
+#include "aare/FileFactory.hpp"
 #include <iostream>
 
 #define AARE_ROOT_DIR_VAR "PROJECT_ROOT_DIR"
 
-void test(FileHandler *f, int frame_number) {
+void test(File& f, int frame_number) {
     std::cout << "frame number: " << frame_number << std::endl;
-    Frame *frame = f->get_frame(frame_number);
-    std::cout << *((uint16_t *)frame->get(0, 0)) << std::endl;
-    std::cout << *((uint16_t *)frame->get(0, 1)) << std::endl;
-    std::cout << *((uint16_t *)frame->get(1, 0)) << std::endl;
-    std::cout << *((uint16_t *)frame->get(49, 49)) << std::endl;
+    Frame frame = f.get_frame(frame_number);
+    std::cout << *((uint16_t *)frame.get(0, 0)) << std::endl;
+    std::cout << *((uint16_t *)frame.get(0, 1)) << std::endl;
+    std::cout << *((uint16_t *)frame.get(1, 0)) << std::endl;
+    std::cout << *((uint16_t *)frame.get(49, 49)) << std::endl;
 
-    delete frame;
 }
 
 int main() {
@@ -21,10 +20,9 @@ int main() {
     std::filesystem::path fpath(PROJECT_ROOT_DIR / "data" / "test_numpy_file.npy");
     std::cout << fpath << std::endl;
 
-    auto fileHandler = new FileHandler(fpath);
-    test(fileHandler, 0);
-    test(fileHandler, 2);
-    test(fileHandler, 24);
+    File& file = FileFactory::load_file(fpath);
+    test(file, 0);
+    test(file, 2);
+    test(file, 24);
 
-    delete fileHandler;
 }

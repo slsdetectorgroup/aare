@@ -9,7 +9,13 @@ class FileFactory{
 public:
     static FileFactory* get_factory(std::filesystem::path);
     // virtual int deleteFile() = 0;
-    virtual File* load_file()=0;//TODO: add option to load all file to memory or keep it on disk
+    static File& load_file(std::filesystem::path p){
+        auto factory = get_factory(p);
+        File& tmp= factory->load_file();
+        delete factory;
+        return tmp;
+    };
+    virtual File& load_file()=0;//TODO: add option to load all file to memory or keep it on disk
     virtual void parse_metadata(File*)=0;
     virtual void parse_fname(File*)=0;
     virtual ~FileFactory() = default;
