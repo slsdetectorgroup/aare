@@ -49,7 +49,7 @@ else()
         aare_compiler_flags
         INTERFACE
             -fdiagnostics-parseable-fixits
-            # -fdiagnostics-generate-patch 
+            -fdiagnostics-generate-patch 
             -fdiagnostics-show-template-tree 
             -fsanitize=address,undefined,pointer-compare 
             -fno-sanitize-recover 
@@ -62,7 +62,7 @@ else()
         aare_compiler_flags
         INTERFACE
             -fdiagnostics-parseable-fixits
-            # -fdiagnostics-generate-patch 
+            -fdiagnostics-generate-patch 
             -fdiagnostics-show-template-tree 
             -fsanitize=address,undefined,pointer-compare 
             -fno-sanitize-recover 
