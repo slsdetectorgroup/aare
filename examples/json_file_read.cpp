@@ -1,6 +1,7 @@
 // Your First C++ Program
 #include "aare/ContextManager.hpp"
 #include <iostream>
+#include "aare/utils/logger.hpp"
 
 #define AARE_ROOT_DIR_VAR "PROJECT_ROOT_DIR"
 
@@ -25,5 +26,10 @@ int main() {
     test(file, 0);
     test(file, 2);
     test(file, 9);
+
+    aare::logger::debug("Hello", "World");
+
+
+
 
 }
