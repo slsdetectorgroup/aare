@@ -10,10 +10,7 @@
 class File {
 
   public:
-    virtual Frame get_frame(size_t frame_number) {
-      // throw run time error
-      throw std::runtime_error("call to Base class File get_frame() method is not allowed");
-    };
+    virtual Frame get_frame(size_t frame_number) =0;
 
   private:
     // comment

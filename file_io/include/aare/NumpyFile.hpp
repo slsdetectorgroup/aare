@@ -25,7 +25,6 @@ class NumpyFile : public File {
     };
     inline ssize_t bytes_per_frame() { return header.dtype.itemsize * pixels_per_frame(); };
     ~NumpyFile(){
-      std::cout << "#########################NumpyFile destructor called" << std::endl;  
         if (fp != nullptr) {
             fclose(fp);
         }
