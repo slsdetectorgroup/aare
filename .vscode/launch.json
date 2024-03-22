@@ -4,11 +4,11 @@
             "name": "(gdb) Launch",
             "type": "cppdbg",
             "request": "launch",
-            "program": "${workspaceFolder}/build/aare",
+            "program": "${workspaceFolder}/build/examples/json_example",
             "args": [],
             "stopAtEntry": true,
             "cwd": "${fileDirname}",
-            "environment": [],
+            "environment": [{"name": "PROJECT_ROOT_DIR", "value": "/home/l_bechir/github/aare"}],
             "externalConsole": false,
             "MIMode": "gdb",
             "setupCommands": [

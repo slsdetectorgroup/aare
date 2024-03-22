@@ -11,7 +11,7 @@ class NumpyFile : public File {
     
   public:
     NumpyFile(std::filesystem::path fname);
-    Frame *get_frame(size_t frame_number) override;
+    Frame get_frame(size_t frame_number) override;
     header_t header{};
     static constexpr std::array<char, 6> magic_str{'\x93', 'N', 'U', 'M', 'P', 'Y'};
     uint8_t major_ver_{};
@@ -24,4 +24,10 @@ class NumpyFile : public File {
         return std::accumulate(header.shape.begin() + 1, header.shape.end(), 1, std::multiplies<uint64_t>());
     };
     inline ssize_t bytes_per_frame() { return header.dtype.itemsize * pixels_per_frame(); };
+    ~NumpyFile(){
+        if (fp != nullptr) {
+            fclose(fp);
+        }
+
+    }
 };

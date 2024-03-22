@@ -49,8 +49,8 @@ void JsonFileFactory::open_subfiles(File*_file) {
     }
 }
 
-File* JsonFileFactory::load_file() {
-    JsonFile *file = new JsonFile();
+JsonFile* JsonFileFactory::load_file() {
+    JsonFile* file = new JsonFile();
     file->fname = this->m_fpath;
     this->parse_fname(file);
     this->parse_metadata(file);

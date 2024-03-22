@@ -10,4 +10,3 @@ target_link_libraries(numpy_example PUBLIC aare)
 
 
 
-
