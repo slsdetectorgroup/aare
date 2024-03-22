@@ -1,12 +1,11 @@
 #pragma once
 
-#include "aare/defs.hpp"
-#include "aare/Frame.hpp"
 #include "SubFile.hpp"
+#include "aare/Frame.hpp"
+#include "aare/defs.hpp"
 #include <filesystem>
 #include <fmt/core.h>
 #include <iostream>
-
 
 class File {
 
@@ -14,11 +13,10 @@ class File {
     virtual Frame get_frame(size_t frame_number) = 0;
 
   private:
-  //comment
-  
+    // comment
 
   public:
-    virtual ~File() = default;
+    virtual ~File() = default; 
     std::filesystem::path fname;
     std::filesystem::path base_path;
     std::string base_name, ext;
@@ -35,11 +33,9 @@ class File {
     ssize_t cols{};
     ssize_t bitdepth{};
     // File();
-    
 
     inline size_t bytes_per_frame() const { return rows * cols * bitdepth / 8; }
     inline size_t pixels() const { return rows * cols; }
-
 
     // size_t total_frames();
 };

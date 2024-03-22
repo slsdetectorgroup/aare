@@ -24,4 +24,11 @@ class NumpyFile : public File {
         return std::accumulate(header.shape.begin() + 1, header.shape.end(), 1, std::multiplies<uint64_t>());
     };
     inline ssize_t bytes_per_frame() { return header.dtype.itemsize * pixels_per_frame(); };
+    ~NumpyFile(){
+      std::cout << "#########################NumpyFile destructor called" << std::endl;  
+        if (fp != nullptr) {
+            fclose(fp);
+        }
+
+    }
 };

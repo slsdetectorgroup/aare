@@ -25,5 +25,7 @@ int main() {
     test(file, 2);
     test(file, 24);
 
+    delete &file;
+
 
 }
