@@ -2,8 +2,10 @@
 
 set(SourceFiles
     ${CMAKE_CURRENT_SOURCE_DIR}/src/defs.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/DType.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/src/Frame.cpp
 )
+
 
 add_library(core STATIC ${SourceFiles})
 target_include_directories(core PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/include)
@@ -18,6 +20,7 @@ endif()
 if(AARE_TESTS)
     set(TestSources
             ${CMAKE_CURRENT_SOURCE_DIR}/test/defs.test.cpp
+            ${CMAKE_CURRENT_SOURCE_DIR}/test/DType.test.cpp
             ${CMAKE_CURRENT_SOURCE_DIR}/test/ProducerConsumerQueue.test.cpp
             ${CMAKE_CURRENT_SOURCE_DIR}/test/NDArray.test.cpp
             ${CMAKE_CURRENT_SOURCE_DIR}/test/NDView.test.cpp
