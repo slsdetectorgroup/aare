@@ -38,6 +38,15 @@ class Frame {
         std::memcpy(m_data, other.m_data, m_rows * m_cols * m_bitdepth / 8);
         return *this;
     }
+    // add move constructor
+    Frame(Frame &&other) {
+        m_rows = other.rows();
+        m_cols = other.cols();
+        m_bitdepth = other.bitdepth();
+        m_data = other.m_data;
+        other.m_data = nullptr;
+        other.m_rows = other.m_cols = other.m_bitdepth = 0;
+    }
 
     template <typename T> 
     NDView<T> view() {
