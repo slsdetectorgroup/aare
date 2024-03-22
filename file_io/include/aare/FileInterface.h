@@ -4,10 +4,18 @@
 namespace aare {
 class FileInterface {
 public:
-    FileInterface(std::filesystem::path& fname ){}; //do we need this? 
+    // options:
+    //  - r reading 
+    //  - w writing (overwrites existing file)
+    //  - a appending (appends to existing file)
+    // TODO! do we need to support w+, r+ and a+?
+    FileInterface(std::filesystem::path& fname, const char* opts="r" ){}; 
     
-    // read the frame number on position frame_index
-    virtual size_t frame_number(size_t frame_index) = 0; 
+    // write one frame
+    virtual void write(Frame& frame) = 0;
+
+    // write n_frames frames
+    virtual void write(std::vector<Frame>& frames) = 0;
 
     // read one frame
     virtual Frame read() = 0;
@@ -20,6 +28,9 @@ public:
 
     // read n_frames frame into the provided buffer
     virtual void read_into(std::byte* image_buf, size_t n_frames) = 0; 
+
+    // read the frame number on position frame_index
+    virtual size_t frame_number(size_t frame_index) = 0; 
 
     // size of one frame, important fro teh read_into function
     virtual size_t bytes_per_frame() const = 0;
