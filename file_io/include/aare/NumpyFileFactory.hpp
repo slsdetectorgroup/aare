@@ -14,7 +14,7 @@ class NumpyFileFactory : public FileFactory {
   public:
     NumpyFileFactory(std::filesystem::path fpath);
     void parse_metadata(File *_file) override;
-    NumpyFile& load_file() override;
+    NumpyFile* load_file() override;
     void parse_fname(File*){};
 
 };

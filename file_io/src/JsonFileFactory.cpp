@@ -49,7 +49,7 @@ void JsonFileFactory::open_subfiles(File*_file) {
     }
 }
 
-JsonFile& JsonFileFactory::load_file() {
+JsonFile* JsonFileFactory::load_file() {
     JsonFile* file = new JsonFile();
     file->fname = this->m_fpath;
     this->parse_fname(file);
@@ -57,7 +57,7 @@ JsonFile& JsonFileFactory::load_file() {
     file->find_number_of_subfiles();
     this->find_geometry(file);
     this->open_subfiles(file);
-    return *file;
+    return file;
 }
 
 
