@@ -3,6 +3,8 @@
 #include "aare/SubFile.hpp"
 #include "aare/defs.hpp"
 #include "aare/helpers.hpp"
+#include "aare/utils/logger.hpp"
+
 #include <fstream>
 #include <iostream>
 #include <nlohmann/json.hpp>
@@ -15,8 +17,8 @@ JsonFileFactory::JsonFileFactory(std::filesystem::path fpath) {
     this->m_fpath = fpath;
 }
 
-void JsonFileFactory::parse_metadata(File*_file) {
-    auto file = dynamic_cast<JsonFile*>(_file);
+void JsonFileFactory::parse_metadata(File *_file) {
+    auto file = dynamic_cast<JsonFile *>(_file);
     std::ifstream ifs(file->master_fname());
     json j;
     ifs >> j;
@@ -38,28 +40,35 @@ void JsonFileFactory::parse_metadata(File*_file) {
     if (file->type == DetectorType::Eiger) {
         file->quad = (j["Quad"] == 1);
     }
+
+    file->geometry = {j["Geometry"]["x"], j["Geometry"]["y"]};
+    file->n_subfile_parts = file->geometry.row * file->geometry.col;
 }
 
-void JsonFileFactory::open_subfiles(File*_file) {
-    auto file = dynamic_cast<JsonFile*>(_file);
-    for (int i = 0; i != file->n_subfiles; ++i) {
-
-        file->subfiles.push_back(
-            new SubFile(file->data_fname(i, 0), file->type, file->subfile_rows, file->subfile_cols, file->bitdepth));
+void JsonFileFactory::open_subfiles(File *_file) {
+    auto file = dynamic_cast<JsonFile *>(_file);
+    for (size_t i = 0; i != file->n_subfiles; ++i) {
+        auto v = std::vector<SubFile *>(file->n_subfile_parts);
+        for (size_t j = 0; j != file->n_subfile_parts; ++j) {
+            v[j]=new SubFile(file->data_fname(i, j), file->type, file->subfile_rows,
+                                                    file->subfile_cols, file->bitdepth);
+        }
+        file->subfiles.push_back(v);
     }
 }
 
-JsonFile* JsonFileFactory::load_file() {
-    JsonFile* file = new JsonFile();
+JsonFile *JsonFileFactory::load_file() {
+    JsonFile *file = new JsonFile();
     file->fname = this->m_fpath;
     this->parse_fname(file);
     this->parse_metadata(file);
     file->find_number_of_subfiles();
+
     this->find_geometry(file);
     this->open_subfiles(file);
+
     return file;
 }
-
 
 sls_detector_header JsonFileFactory::read_header(const std::filesystem::path &fname) {
     sls_detector_header h{};
@@ -74,18 +83,20 @@ sls_detector_header JsonFileFactory::read_header(const std::filesystem::path &fn
     return h;
 }
 
-
-void JsonFileFactory::find_geometry(File* _file) {
-    auto file = dynamic_cast<JsonFile*>(_file);
+void JsonFileFactory::find_geometry(File *_file) {
+    auto file = dynamic_cast<JsonFile *>(_file);
     uint16_t r{};
     uint16_t c{};
-    for (int i = 0; i != file->n_subfiles; ++i) {
-        auto h = this->read_header(file->data_fname(i, 0));
-        r = std::max(r, h.row);
-        c = std::max(c, h.column);
+    for (size_t i = 0; i < file->n_subfile_parts; i++) {
+        for (size_t j = 0; j != file->n_subfiles; ++j) {
+            auto h = this->read_header(file->data_fname(j, i));
+            r = std::max(r, h.row);
+            c = std::max(c, h.column);
 
-        file->positions.push_back({h.row, h.column});
+            file->positions.push_back({h.row, h.column});
+        }
     }
+
     r++;
     c++;
 
@@ -95,7 +106,7 @@ void JsonFileFactory::find_geometry(File* _file) {
     file->rows += (r - 1) * file->cfg.module_gap_row;
 }
 
-void JsonFileFactory::parse_fname(File* file) {
+void JsonFileFactory::parse_fname(File *file) {
 
     file->base_path = this->m_fpath.parent_path();
     file->base_name = this->m_fpath.stem();
@@ -106,5 +117,3 @@ void JsonFileFactory::parse_fname(File* file) {
     pos = file->base_name.find("_master_");
     file->base_name.erase(pos);
 }
-
-

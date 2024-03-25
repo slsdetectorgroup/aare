@@ -5,20 +5,21 @@ Frame JsonFile::get_frame(size_t frame_number) {
         throw std::runtime_error("Frame number out of range");
     }
     int subfile_id = frame_number / this->max_frames_per_file;
-    std::byte *buffer;
-    size_t frame_size = this->subfiles[subfile_id]->bytes_per_frame();
-    buffer = new std::byte[frame_size];
-    this->subfiles[subfile_id]->get_frame(buffer, frame_number % this->max_frames_per_file);
+    std::byte *buffer = new std::byte[this->bytes_per_frame()];
+    for (size_t i = 0; i != this->n_subfile_parts; ++i) {
+        auto part_offset = this->subfiles[subfile_id][i]->bytes_per_part();
+        this->subfiles[subfile_id][i]->get_part(buffer + i*part_offset, frame_number % this->max_frames_per_file);
+    }
     auto f =  Frame(buffer, this->rows, this->cols, this->bitdepth );
-
-
     delete[] buffer;
     return f;
 }
 
 JsonFile::~JsonFile() {
-    for (auto& subfile : subfiles) {
-        delete subfile;
+    for (auto& vec : subfiles) {
+        for (auto subfile : vec) {
+            delete subfile;
+        }
     }
 }
 
