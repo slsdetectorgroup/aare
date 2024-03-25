@@ -10,7 +10,9 @@ void test(File *f, int frame_number) {
     Frame frame = f->get_frame(frame_number);
     std::cout << *((uint16_t *)frame.get(0, 0)) << std::endl;
     std::cout << *((uint16_t *)frame.get(0,1)) << std::endl;
-    std::cout << *((uint16_t *)frame.get(1, 0)) << std::endl;
+    std::cout << *((uint16_t *)frame.get(255, 1023)) << std::endl;
+    std::cout << *((uint16_t *)frame.get(511, 1023)) << std::endl;
+
 
 
 }

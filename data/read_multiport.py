@@ -26,11 +26,11 @@ header_dt = np.dtype(
 frames = 1
 parts = 2
 
-frame_cols = 512
-frame_rows = 1024
+frame_cols = 1024
+frame_rows = 512
 
-part_cols = 256
-part_rows = 1024
+part_cols = 1024
+part_rows = 256
 
 
 parts_data = np.zeros((frames,parts,part_rows,part_cols), dtype = np.uint16)
@@ -48,17 +48,31 @@ for frame in range(frames):
         with open(file_name) as f:
             header[frame,part] = np.fromfile(f, dtype=header_dt, count = 1)
             parts_data[frame,part] = np.fromfile(f, dtype=np.uint16,count = part_rows*part_cols).reshape(part_rows,part_cols)
-            print("Part:", part, parts_data[frame,part].shape)
-            print(parts_data[frame,part])
 
     
-    data[frame] = np.concatenate((parts_data[frame,0],parts_data[frame,1]),axis=1)
+    data[frame] = np.concatenate((parts_data[frame,0],parts_data[frame,1]),axis=0)
 
 
 
-for frame in range(frames):
-    print("Frame:", frame)
-    print("Data:", data[frame])
+# for frame in range(frames):
+#     print("Frame:", frame)
+#     print("Data:\n", data[frame])
+
+# print(data[0,0,0])
+# print(data[0,0,1])
+# print(data[0,0,50])
+print(data[0,0,0])
+print(data[0,0,1])
+print(data[0,255,1023])
+
+print(data[0,511,1023])
+# print()
+# print(parts_data[0,0,0,0])
+# print(parts_data[0,0,0,1])
+# print(parts_data[0,0,1,0])
+
+# print(data.shape)
+
 
 
 #fig, ax = plt.subplots()

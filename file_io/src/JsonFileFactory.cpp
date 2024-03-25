@@ -28,8 +28,8 @@ void JsonFileFactory::parse_metadata(File *_file) {
     file->type = StringTo<DetectorType>(j["Detector Type"].get<std::string>());
     file->timing_mode = StringTo<TimingMode>(j["Timing Mode"].get<std::string>());
     file->total_frames = j["Frames in File"];
-    file->subfile_cols = j["Pixels"]["x"];
     file->subfile_rows = j["Pixels"]["y"];
+    file->subfile_cols = j["Pixels"]["x"];
     file->max_frames_per_file = j["Max Frames Per File"];
     try {
         file->bitdepth = j.at("Dynamic Range");
@@ -41,7 +41,7 @@ void JsonFileFactory::parse_metadata(File *_file) {
         file->quad = (j["Quad"] == 1);
     }
 
-    file->geometry = {j["Geometry"]["x"], j["Geometry"]["y"]};
+    file->geometry = {j["Geometry"]["y"], j["Geometry"]["x"]};
     file->n_subfile_parts = file->geometry.row * file->geometry.col;
 }
 
