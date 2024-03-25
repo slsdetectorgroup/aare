@@ -1,4 +1,21 @@
 #include "iostream"
+#include <vector>
+#define LOCATION std::string(__FILE__)+std::string(":")+std::to_string(__LINE__)+":"+std::string(__func__)+":"
+
+template<typename T>
+std::ostream& operator<< (std::ostream& out, const std::vector<T>& v) {
+    out << "[";
+    size_t last = v.size() - 1;
+    for(size_t i = 0; i < v.size(); ++i) {
+        out << v[i];
+        if (i != last) 
+            out << ", ";
+    }
+    out << "]";
+    return out;
+}
+
+
 
 namespace aare {
 
@@ -10,10 +27,10 @@ namespace logger {
     ERROR = 3
 
 };
-LOGGING_LEVEL CURRENT_LEVEL = LOGGING_LEVEL::DEBUG;
+ extern LOGGING_LEVEL CURRENT_LEVEL;
 namespace internal {
-std::ostream standard_output(std::cout.rdbuf());
-std::ostream error_output(std::cerr.rdbuf());
+ extern std::ostream standard_output;
+ extern std::ostream error_output;
 
 template <LOGGING_LEVEL level> void log_() {
     if (level < CURRENT_LEVEL) {
@@ -30,9 +47,9 @@ template <LOGGING_LEVEL level, typename First, typename... Strings> void log_(Fi
         return;
     }
     if (level == LOGGING_LEVEL::ERROR) {
-        internal::error_output << static_cast<std::string>(arg) << ' ';
+        internal::error_output << (arg) << ' ';
     } else {
-        internal::standard_output << static_cast<std::string>(arg) << ' ';
+        internal::standard_output << (arg) << ' ';
     }
     log_<level>(s...);
 }
