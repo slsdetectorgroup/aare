@@ -1,0 +1,55 @@
+{
+    "Version": 7.1,
+    "Timestamp": "Wed Sep 21 13:48:10 2022",
+    "Detector Type": "Mythen3",
+    "Timing Mode": "auto",
+    "Geometry": {
+        "x": 1,
+        "y": 1
+    },
+    "Image Size in bytes": 15360,
+    "Pixels": {
+        "x": 3840,
+        "y": 1
+    },
+    "Max Frames Per File": 10000,
+    "Frame Discard Policy": "nodiscard",
+    "Frame Padding": 1,
+    "Scan Parameters": "[disabled]",
+    "Total Frames": 1,
+    "Receiver Roi": {
+        "xmin": 4294967295,
+        "xmax": 4294967295,
+        "ymin": 4294967295,
+        "ymax": 4294967295
+    },
+    "Dynamic Range": 32,
+    "Ten Giga": 1,
+    "Period": "2ms",
+    "Counter Mask": "0x7",
+    "Exptime1": "0.1s",
+    "Exptime2": "0.1s",
+    "Exptime3": "0.1s",
+    "GateDelay1": "0ns",
+    "GateDelay2": "0ns",
+    "GateDelay3": "0ns",
+    "Gates": 1,
+    "Threshold Energies": "[-1, -1, -1]",
+    "Frames in File": 1,
+    "Frame Header Format": {
+        "Frame Number": "8 bytes",
+        "SubFrame Number/ExpLength": "4 bytes",
+        "Packet Number": "4 bytes",
+        "Bunch ID": "8 bytes",
+        "Timestamp": "8 bytes",
+        "Module Id": "2 bytes",
+        "Row": "2 bytes",
+        "Column": "2 bytes",
+        "Reserved": "2 bytes",
+        "Debug": "4 bytes",
+        "Round Robin Number": "2 bytes",
+        "Detector Type": "1 byte",
+        "Header Version": "1 byte",
+        "Packets Caught Mask": "64 bytes"
+    }
+}

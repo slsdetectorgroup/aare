@@ -17,8 +17,7 @@ void test(File *f, int frame_number) {
 int main() {
     ContextManager ctx_manager;
     auto PROJECT_ROOT_DIR = std::filesystem::path(getenv(AARE_ROOT_DIR_VAR));
-    std::filesystem::path fpath(PROJECT_ROOT_DIR / "data" / "jungfrau_single_master_0.json");
-    // std::filesystem::path fpath(PROJECT_ROOT_DIR / "data" / "test_numpy_file.npy");
+    std::filesystem::path fpath(PROJECT_ROOT_DIR / "data" /"jungfrau"/ "jungfrau_single_master_0.json");
     std::cout << fpath << std::endl;
 
 

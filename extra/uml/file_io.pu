@@ -3,8 +3,8 @@ abstract class FileFactory{
     {static} +getFactory(path):FileFactory
     {abstract} +loadFile(path):File
 }
-class JsonFileFactory{
-  +loadFile(path):JsonFile
+class RawFileFactory{
+  +loadFile(path):RawFile
 }
 class RawFileFactory{
    +loadFile(path):RawFile
@@ -16,7 +16,7 @@ class NumpyFileFactory{
 abstract File{
 }
 
-class JsonFile{
+class RawFile{
 }
 class RawFile{
 }
@@ -25,9 +25,9 @@ class NumpyFile{
 
 FileFactory <|-- RawFileFactory
 FileFactory <|-- NumpyFileFactory
-FileFactory <|-- JsonFileFactory
+FileFactory <|-- RawFileFactory
 
-File <|-- JsonFile
+File <|-- RawFile
 File <|-- RawFile
 File <|-- NumpyFile
 

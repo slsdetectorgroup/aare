@@ -19,6 +19,7 @@ class SubFile {
     std::map<std::pair<DetectorType, int>, pfunc> read_impl_map = {
         {{DetectorType::Moench, 16}, &SubFile::read_impl_reorder<uint16_t>},
         {{DetectorType::Jungfrau, 16}, &SubFile::read_impl_normal},
+        {{DetectorType::ChipTestBoard,16}, &SubFile::read_impl_normal}
     };
 
 

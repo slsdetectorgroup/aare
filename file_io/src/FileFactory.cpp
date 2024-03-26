@@ -1,7 +1,8 @@
 #include "aare/FileFactory.hpp"
 #include "aare/File.hpp"
-#include "aare/JsonFileFactory.hpp"
+#include "aare/RawFileFactory.hpp"
 #include "aare/NumpyFileFactory.hpp"
+#include "aare/utils/logger.hpp"
 #include <iostream>
 
 FileFactory *FileFactory::get_factory(std::filesystem::path fpath) {
@@ -10,16 +11,13 @@ FileFactory *FileFactory::get_factory(std::filesystem::path fpath) {
         throw std::runtime_error("File does not exist");
     }
 
-    if (fpath.extension() == ".raw") {
-        std::cout << "Loading raw file" << std::endl;
-        throw std::runtime_error("Raw file not implemented");
-    } else if (fpath.extension() == ".json") {
-        std::cout << "Loading json file" << std::endl;
-        return new JsonFileFactory(fpath);
-    }
+    if (fpath.extension() == ".raw" || fpath.extension() == ".json"){
+        aare::logger::info("Loading",fpath.extension(),"file");
+        return new RawFileFactory(fpath);
+    } 
     // check if extension is numpy
     else if (fpath.extension() == ".npy") {
-        std::cout << "Loading numpy file" << std::endl;
+        aare::logger::info("Loading numpy file");
         return new NumpyFileFactory(fpath);
     }
 
