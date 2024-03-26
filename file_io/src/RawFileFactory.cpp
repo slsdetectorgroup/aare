@@ -17,21 +17,21 @@ RawFileFactory::RawFileFactory(std::filesystem::path fpath) {
     this->m_fpath = fpath;
 }
 
-void RawFileFactory::parse_metadata(File *_file) {
+void RawFileFactory::parse_metadata(FileInterface *_file) {
     auto file = dynamic_cast<RawFile *>(_file);
-    if (file->ext == ".raw") {
+    if (file->m_ext == ".raw") {
         this->parse_raw_metadata(file);
-        if (file->bitdepth == 0) {
-            switch (file->type) {
+        if (file->m_bitdepth == 0) {
+            switch (file->m_type) {
             case DetectorType::Eiger:
-                file->bitdepth = 32;
+                file->m_bitdepth = 32;
                 break;
 
             default:
-                file->bitdepth = 16;
+                file->m_bitdepth = 16;
             }
         }
-    } else if (file->ext == ".json") {
+    } else if (file->m_ext == ".json") {
         this->parse_json_metadata(file);
     } else {
         throw std::runtime_error("Unsupported file type");
@@ -57,7 +57,7 @@ void RawFileFactory::parse_raw_metadata(RawFile *file) {
             } else if (key == "TimeStamp") {
 
             } else if (key == "Detector Type") {
-                file->type = StringTo<DetectorType>(value);
+                file->m_type = StringTo<DetectorType>(value);
             } else if (key == "Timing Mode") {
                 file->timing_mode = StringTo<TimingMode>(value);
             } else if (key == "Pixels") {
@@ -67,9 +67,9 @@ void RawFileFactory::parse_raw_metadata(RawFile *file) {
                 file->subfile_cols = std::stoi(value.substr(1, pos));
                 file->subfile_rows = std::stoi(value.substr(pos + 1));
             } else if (key == "Total Frames") {
-                file->total_frames = std::stoi(value);
+                file->m_total_frames = std::stoi(value);
             } else if (key == "Dynamic Range") {
-                file->bitdepth = std::stoi(value);
+                file->m_bitdepth = std::stoi(value);
             } else if (key == "Quad") {
                 file->quad = (value == "1");
             } else if (key == "Max Frames Per File") {
@@ -89,32 +89,32 @@ void RawFileFactory::parse_json_metadata(RawFile *file) {
     double v = j["Version"];
     std::cout << "Version: " << v << std::endl;
     file->version = fmt::format("{:.1f}", v);
-    file->type = StringTo<DetectorType>(j["Detector Type"].get<std::string>());
+    file->m_type = StringTo<DetectorType>(j["Detector Type"].get<std::string>());
     file->timing_mode = StringTo<TimingMode>(j["Timing Mode"].get<std::string>());
-    file->total_frames = j["Frames in File"];
+    file->m_total_frames = j["Frames in File"];
     file->subfile_rows = j["Pixels"]["y"];
     file->subfile_cols = j["Pixels"]["x"];
     file->max_frames_per_file = j["Max Frames Per File"];
     try {
-        file->bitdepth = j.at("Dynamic Range");
+        file->m_bitdepth = j.at("Dynamic Range");
     } catch (const json::out_of_range &e) {
-        file->bitdepth = 16;
+        file->m_bitdepth = 16;
     }
     // only Eiger had quad
-    if (file->type == DetectorType::Eiger) {
+    if (file->m_type == DetectorType::Eiger) {
         file->quad = (j["Quad"] == 1);
     }
 
     file->geometry = {j["Geometry"]["y"], j["Geometry"]["x"]};
 }
 
-void RawFileFactory::open_subfiles(File *_file) {
+void RawFileFactory::open_subfiles(FileInterface *_file) {
     auto file = dynamic_cast<RawFile *>(_file);
     for (size_t i = 0; i != file->n_subfiles; ++i) {
         auto v = std::vector<SubFile *>(file->n_subfile_parts);
         for (size_t j = 0; j != file->n_subfile_parts; ++j) {
             v[j] =
-                new SubFile(file->data_fname(i, j), file->type, file->subfile_rows, file->subfile_cols, file->bitdepth);
+                new SubFile(file->data_fname(i, j), file->m_type, file->subfile_rows, file->subfile_cols, file->bitdepth());
         }
         file->subfiles.push_back(v);
     }
@@ -122,7 +122,7 @@ void RawFileFactory::open_subfiles(File *_file) {
 
 RawFile *RawFileFactory::load_file() {
     RawFile *file = new RawFile();
-    file->fname = this->m_fpath;
+    file->m_fname = this->m_fpath;
     this->parse_fname(file);
     this->parse_metadata(file);
     file->find_number_of_subfiles();
@@ -146,7 +146,8 @@ sls_detector_header RawFileFactory::read_header(const std::filesystem::path &fna
     return h;
 }
 
-void RawFileFactory::find_geometry(File *_file) {
+
+void RawFileFactory::find_geometry(FileInterface *_file) {
     auto file = dynamic_cast<RawFile *>(_file);
     uint16_t r{};
     uint16_t c{};
@@ -163,20 +164,20 @@ void RawFileFactory::find_geometry(File *_file) {
     r++;
     c++;
 
-    file->rows = r * file->subfile_rows;
-    file->cols = c * file->subfile_cols;
+    file->m_rows = r * file->subfile_rows;
+    file->m_cols = c * file->subfile_cols;
 
-    file->rows += (r - 1) * file->cfg.module_gap_row;
+    file->m_rows += (r - 1) * file->cfg.module_gap_row;
 }
 
-void RawFileFactory::parse_fname(File *file) {
+void RawFileFactory::parse_fname(FileInterface *file) {
 
-    file->base_path = this->m_fpath.parent_path();
-    file->base_name = this->m_fpath.stem();
-    file->ext = this->m_fpath.extension();
+    file->m_base_path = this->m_fpath.parent_path();
+    file->m_base_name = this->m_fpath.stem();
+    file->m_ext = this->m_fpath.extension();
 
-    auto pos = file->base_name.rfind("_");
-    file->findex = std::stoi(file->base_name.substr(pos + 1));
-    pos = file->base_name.find("_master_");
-    file->base_name.erase(pos);
+    auto pos = file->m_base_name.rfind("_");
+    file->m_findex = std::stoi(file->m_base_name.substr(pos + 1));
+    pos = file->m_base_name.find("_master_");
+    file->m_base_name.erase(pos);
 }

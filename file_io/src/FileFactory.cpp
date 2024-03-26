@@ -1,5 +1,5 @@
 #include "aare/FileFactory.hpp"
-#include "aare/File.hpp"
+#include "aare/FileInterface.hpp"
 #include "aare/RawFileFactory.hpp"
 #include "aare/NumpyFileFactory.hpp"
 #include "aare/utils/logger.hpp"
@@ -16,10 +16,10 @@ FileFactory *FileFactory::get_factory(std::filesystem::path fpath) {
         return new RawFileFactory(fpath);
     } 
     // check if extension is numpy
-    else if (fpath.extension() == ".npy") {
-        aare::logger::info("Loading numpy file");
-        return new NumpyFileFactory(fpath);
-    }
+    // else if (fpath.extension() == ".npy") {
+    //     aare::logger::info("Loading numpy file");
+    //     return new NumpyFileFactory(fpath);
+    // }
 
     throw std::runtime_error("Unsupported file type");
 }

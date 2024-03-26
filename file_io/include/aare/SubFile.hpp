@@ -35,6 +35,7 @@ class SubFile {
     SubFile(std::filesystem::path fname,DetectorType detector, ssize_t rows, ssize_t cols, uint16_t bitdepth);
 
     size_t get_part(std::byte *buffer, int frame_number);
+    size_t frame_number(int frame_index);
 
     // TODO: define the inlines as variables and assign them in constructor
     inline size_t bytes_per_part() { return (m_bitdepth / 8) * m_rows * m_cols; }

@@ -1,9 +1,7 @@
 #include "aare/SubFile.hpp"
-#include <iostream>
 #include "aare/utils/logger.hpp"
+#include <iostream>
 // #include <filesystem>
-
-
 
 SubFile::SubFile(std::filesystem::path fname, DetectorType detector, ssize_t rows, ssize_t cols, uint16_t bitdepth) {
     this->m_rows = rows;
@@ -12,19 +10,17 @@ SubFile::SubFile(std::filesystem::path fname, DetectorType detector, ssize_t row
     this->m_bitdepth = bitdepth;
     this->n_frames = std::filesystem::file_size(fname) / (sizeof(sls_detector_header) + rows * cols * bitdepth / 8);
     if (read_impl_map.find({detector, bitdepth}) == read_impl_map.end()) {
-        throw std::runtime_error(LOCATION+"Unsupported detector/bitdepth combination");
+        throw std::runtime_error(LOCATION + "Unsupported detector/bitdepth combination");
     }
-    this->read_impl = read_impl_map.at({detector, bitdepth}); 
-
+    this->read_impl = read_impl_map.at({detector, bitdepth});
 }
-
 
 size_t SubFile::get_part(std::byte *buffer, int frame_number) {
     if (frame_number >= n_frames or frame_number < 0) {
         throw std::runtime_error("Frame number out of range");
     }
     // TODO: find a way to avoid opening and closing the file for each frame
-    aare::logger::debug(LOCATION,"frame:", frame_number, "file:", m_fname.c_str());
+    aare::logger::debug(LOCATION, "frame:", frame_number, "file:", m_fname.c_str());
     fp = fopen(m_fname.c_str(), "rb");
     if (!fp) {
         throw std::runtime_error(fmt::format("Could not open: {} for reading", m_fname.c_str()));
@@ -86,3 +82,17 @@ template <typename DataType> size_t SubFile::read_impl_flip(std::byte *buffer) {
 
     return rc;
 };
+
+size_t SubFile::frame_number(int frame_index) {
+    sls_detector_header h{};
+    FILE *fp = fopen(this->m_fname.c_str(), "r");
+    if (!fp)
+        throw std::runtime_error(fmt::format("Could not open: {} for reading", m_fname.c_str()));
+
+    size_t rc = fread(reinterpret_cast<char *>(&h), sizeof(h), 1, fp);
+    fclose(fp);
+    if (rc != 1)
+        throw std::runtime_error("Could not read header from file");
+
+    return h.frameNumber;
+}
