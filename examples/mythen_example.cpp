@@ -5,19 +5,27 @@
 
 #define AARE_ROOT_DIR_VAR "PROJECT_ROOT_DIR"
 
-void test(File *f, int frame_number) {
+void test1(File *f, int frame_number) {
     std::cout << "frame number: " << frame_number << std::endl;
     Frame frame = f->get_frame(frame_number);
-    std::cout << *((uint16_t *)frame.get(0, 0)) << std::endl;
-    std::cout << *((uint16_t *)frame.get(0, 1)) << std::endl;
-    std::cout << *((uint16_t *)frame.get(0, 3839)) << std::endl;
+    std::cout << *((uint32_t *)frame.get(0, 0)) << std::endl;
+    std::cout << *((uint32_t *)frame.get(0, 1)) << std::endl;
+    std::cout << *((uint32_t *)frame.get(0, 3839)) << std::endl;
 
     for (int i = 0; i < 3840; i++) {
-        uint16_t x = *((uint16_t *)frame.get(0, i));
+        uint16_t x = *((uint32_t *)frame.get(0, i));
         if (x != i) {
             aare::logger::error("error at i", i, "x", x);
         }
     }
+}
+
+void test2(File *f, int frame_number) {
+    std::cout << "frame number: " << frame_number << std::endl;
+    Frame frame = f->get_frame(frame_number);
+    std::cout << *((uint32_t *)frame.get(0, 0)) << std::endl;
+    std::cout << *((uint32_t *)frame.get(0, 1)) << std::endl;
+    std::cout << *((uint32_t *)frame.get(0, 1280*4 -1)) << std::endl;
 }
 
 int main() {
@@ -28,5 +36,13 @@ int main() {
     }
     std::filesystem::path fpath(PROJECT_ROOT_DIR / "data" / "mythen" / "m3_master_0.json");
     File *file = ctx_manager.get_file(fpath);
-    test(file, 0);
+    test1(file, 0);
+
+    fpath = (PROJECT_ROOT_DIR / "data" / "mythen" / "scan242_master_3.raw");
+    file = ctx_manager.get_file(fpath);
+    test2(file, 0);
+
+    
+
+
 }

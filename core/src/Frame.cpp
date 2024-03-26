@@ -1,4 +1,5 @@
 #include "aare/Frame.hpp"
+#include "aare/utils/logger.hpp"
 #include <iostream>
 #include <cassert>
 Frame::Frame(std::byte* bytes, ssize_t rows, ssize_t cols, ssize_t bitdepth):
