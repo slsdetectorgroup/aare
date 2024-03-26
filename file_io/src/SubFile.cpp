@@ -1,5 +1,6 @@
 #include "aare/SubFile.hpp"
 #include <iostream>
+#include "aare/utils/logger.hpp"
 // #include <filesystem>
 
 
@@ -9,38 +10,37 @@ SubFile::SubFile(std::filesystem::path fname, DetectorType detector, ssize_t row
     this->m_cols = cols;
     this->m_fname = fname;
     this->m_bitdepth = bitdepth;
-    fp = fopen(fname.c_str(), "rb");
-    if (fp == nullptr) {
-        throw std::runtime_error("Could not open file " + fname.string());
-    }
-    std::cout << "File opened" << std::endl;
-    n_frames = std::filesystem::file_size(fname) / (sizeof(sls_detector_header) + rows * cols * bitdepth / 8);
-    std::cout << "Number of frames: " << n_frames << std::endl;
-
+    this->n_frames = std::filesystem::file_size(fname) / (sizeof(sls_detector_header) + rows * cols * bitdepth / 8);
     if (read_impl_map.find({detector, bitdepth}) == read_impl_map.end()) {
         throw std::runtime_error("Unsupported detector/bitdepth combination");
     }
-    read_impl = read_impl_map.at({detector, bitdepth});
-
-
-    
+    this->read_impl = read_impl_map.at({detector, bitdepth}); 
 
 }
 
-size_t SubFile::get_frame(std::byte *buffer, int frame_number) {
+
+size_t SubFile::get_part(std::byte *buffer, int frame_number) {
     if (frame_number >= n_frames or frame_number < 0) {
         throw std::runtime_error("Frame number out of range");
     }
-    fseek(fp, sizeof(sls_detector_header) + (sizeof(sls_detector_header) + bytes_per_frame()) * frame_number, SEEK_SET);
-    return (this->*read_impl)(buffer);
+    // TODO: find a way to avoid opening and closing the file for each frame
+    aare::logger::debug(LOCATION,"frame:", frame_number, "file:", m_fname.c_str());
+    fp = fopen(m_fname.c_str(), "rb");
+    if (!fp) {
+        throw std::runtime_error(fmt::format("Could not open: {} for reading", m_fname.c_str()));
+    }
+    fseek(fp, sizeof(sls_detector_header) + (sizeof(sls_detector_header) + bytes_per_part()) * frame_number, SEEK_SET);
+    auto ret = (this->*read_impl)(buffer);
+    fclose(fp);
+    return ret;
 }
 
-size_t SubFile::read_impl_normal(std::byte *buffer) { return fread(buffer, this->bytes_per_frame(), 1, this->fp); }
+size_t SubFile::read_impl_normal(std::byte *buffer) { return fread(buffer, this->bytes_per_part(), 1, this->fp); }
 
 template <typename DataType> size_t SubFile::read_impl_reorder(std::byte *buffer) {
 
-    std::vector<DataType> tmp(this->pixels_per_frame());
-    size_t rc = fread(reinterpret_cast<char *>(&tmp[0]), this->bytes_per_frame(), 1, this->fp);
+    std::vector<DataType> tmp(this->pixels_per_part());
+    size_t rc = fread(reinterpret_cast<char *>(&tmp[0]), this->bytes_per_part(), 1, this->fp);
 
     int adc_nr[32] = {300, 325, 350, 375, 300, 325, 350, 375, 200, 225, 250, 275, 200, 225, 250, 275,
                       100, 125, 150, 175, 100, 125, 150, 175, 0,   25,  50,  75,  0,   25,  50,  75};
@@ -69,8 +69,8 @@ template <typename DataType> size_t SubFile::read_impl_flip(std::byte *buffer) {
 
     // read to temporary buffer
     // TODO! benchmark direct reads
-    std::vector<std::byte> tmp(this->bytes_per_frame());
-    size_t rc = fread(reinterpret_cast<char *>(&tmp[0]), this->bytes_per_frame(), 1, this->fp);
+    std::vector<std::byte> tmp(this->bytes_per_part());
+    size_t rc = fread(reinterpret_cast<char *>(&tmp[0]), this->bytes_per_part(), 1, this->fp);
 
     // copy to place
     const size_t start = this->m_cols * (this->m_rows - 1) * sizeof(DataType);

@@ -10,9 +10,11 @@ class JsonFile : public File {
                 public:
 
     Frame get_frame(size_t frame_number);
-    int n_subfiles;
-    std::vector<SubFile *> subfiles;
+    size_t n_subfiles;
+    size_t n_subfile_parts;
+    std::vector<std::vector<SubFile *>> subfiles;
     int subfile_rows, subfile_cols;
+    xy geometry;
     std::vector<xy> positions;
     config cfg{0, 0};
 
