@@ -24,7 +24,7 @@ size_t SubFile::get_part(std::byte *buffer, int frame_number) {
         throw std::runtime_error("Frame number out of range");
     }
     // TODO: find a way to avoid opening and closing the file for each frame
-    aare::logger::info(__func__,"frame: ", frame_number, "file: ", m_fname.c_str());
+    aare::logger::debug(LOCATION,"frame:", frame_number, "file:", m_fname.c_str());
     fp = fopen(m_fname.c_str(), "rb");
     if (!fp) {
         throw std::runtime_error(fmt::format("Could not open: {} for reading", m_fname.c_str()));

@@ -1,14 +1,13 @@
-add_executable(json_example json_file_read.cpp)
-target_link_libraries(json_example PRIVATE aare_compiler_flags)
-target_link_libraries(json_example PUBLIC aare)
 
-add_executable(numpy_example numpy_file_read.cpp)
-target_link_libraries(numpy_example PRIVATE aare_compiler_flags)
-target_link_libraries(numpy_example PUBLIC aare)
+set(EXAMPLE_LIST "json_example;logger_example;numpy_example;multiport_example")
+foreach(example ${EXAMPLE_LIST})
+    add_executable(${example} ${example}.cpp)
+    target_link_libraries(${example} PUBLIC aare PRIVATE aare_compiler_flags)
 
-add_executable(multiport_example multi_port_read.cpp)
-target_link_libraries(multiport_example PRIVATE aare_compiler_flags)
-target_link_libraries(multiport_example PUBLIC aare)
+
+endforeach()
+
+
 
 
 
