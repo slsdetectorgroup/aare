@@ -1,4 +1,3 @@
-
 set(EXAMPLE_LIST "json_example;logger_example;numpy_example;multiport_example")
 foreach(example ${EXAMPLE_LIST})
     add_executable(${example} ${example}.cpp)

@@ -26,4 +26,6 @@ int main() {
     test(file, 0);
     test(file, 2);
     test(file, 9);
+
+    aare::logger::debug(LOCATION,"Hello", "World");
 }
