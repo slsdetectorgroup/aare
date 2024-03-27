@@ -9,6 +9,9 @@ class NumpyFile : public FileInterface {
     FILE *fp = nullptr;
 
   public:
+    friend class NumpyFileFactory;
+
+    void write(Frame &frame) override;
     Frame read() override { return get_frame(this->current_frame++); }
 
     std::vector<Frame> read(size_t n_frames) override;
@@ -20,11 +23,19 @@ class NumpyFile : public FileInterface {
     void seek(size_t frame_number) override { this->current_frame = frame_number; }
     size_t tell() override { return this->current_frame; }
     size_t total_frames() const override { return header.shape[0]; }
-    ssize_t rows()const override  { return header.shape[1]; }
-    ssize_t cols()const override  { return header.shape[2]; }
-    ssize_t bitdepth()const override  { return header.dtype.itemsize; }
+    ssize_t rows() const override { return header.shape[1]; }
+    ssize_t cols() const override { return header.shape[2]; }
+    ssize_t bitdepth() const override { return header.dtype.itemsize; }
 
     NumpyFile(std::filesystem::path fname);
+
+    ~NumpyFile() {
+        if (fp != nullptr) {
+            fclose(fp);
+        }
+    }
+
+  private:
     header_t header{};
     static constexpr std::array<char, 6> magic_str{'\x93', 'N', 'U', 'M', 'P', 'Y'};
     uint8_t major_ver_{};
@@ -34,13 +45,6 @@ class NumpyFile : public FileInterface {
     const uint8_t magic_string_length{6};
     ssize_t header_size{};
 
-    ~NumpyFile() {
-        if (fp != nullptr) {
-            fclose(fp);
-        }
-    }
-
-  private:
     size_t current_frame{};
     void get_frame_into(size_t, std::byte *);
     Frame get_frame(size_t frame_number);

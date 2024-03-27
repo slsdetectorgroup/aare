@@ -5,10 +5,13 @@
 #include "aare/defs.hpp"
 
 class RawFile : public FileInterface {
+    friend class RawFileFactory;
 
     using config = RawFileConfig;
 
   public:
+    // TODO implement the write function
+    void write(Frame &frame) override{};
     Frame read() override { return get_frame(this->current_frame++); };
     std::vector<Frame> read(size_t n_frames) override;
     void read_into(std::byte *image_buf) override { return get_frame_into(this->current_frame++, image_buf); };
@@ -65,6 +68,10 @@ class RawFile : public FileInterface {
     ssize_t bitdepth() const { return m_bitdepth; }
 
   private:
+    std::filesystem::path m_base_path;
+    std::string m_base_name, m_ext;
+    int m_findex;
+
     size_t current_frame{};
     void get_frame_into(size_t frame_number, std::byte *image_buf);
     Frame get_frame(size_t frame_number);

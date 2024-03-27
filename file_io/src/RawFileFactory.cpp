@@ -63,7 +63,7 @@ void RawFileFactory::parse_raw_metadata(RawFile *file) {
             } else if (key == "Pixels") {
                 // Total number of pixels cannot be found yet looking at
                 // submodule
-                 pos = value.find(',');
+                pos = value.find(',');
                 file->subfile_cols = std::stoi(value.substr(1, pos));
                 file->subfile_rows = std::stoi(value.substr(pos + 1));
             } else if (key == "Total Frames") {
@@ -75,7 +75,7 @@ void RawFileFactory::parse_raw_metadata(RawFile *file) {
             } else if (key == "Max Frames Per File") {
                 file->max_frames_per_file = std::stoi(value);
             } else if (key == "Geometry") {
-                 pos = value.find(',');
+                pos = value.find(',');
                 file->geometry = {std::stoi(value.substr(1, pos)), std::stoi(value.substr(pos + 1))};
             }
         }
@@ -113,8 +113,8 @@ void RawFileFactory::open_subfiles(FileInterface *_file) {
     for (size_t i = 0; i != file->n_subfiles; ++i) {
         auto v = std::vector<SubFile *>(file->n_subfile_parts);
         for (size_t j = 0; j != file->n_subfile_parts; ++j) {
-            v[j] =
-                new SubFile(file->data_fname(i, j), file->m_type, file->subfile_rows, file->subfile_cols, file->bitdepth());
+            v[j] = new SubFile(file->data_fname(i, j), file->m_type, file->subfile_rows, file->subfile_cols,
+                               file->bitdepth());
         }
         file->subfiles.push_back(v);
     }
@@ -146,7 +146,6 @@ sls_detector_header RawFileFactory::read_header(const std::filesystem::path &fna
     return h;
 }
 
-
 void RawFileFactory::find_geometry(FileInterface *_file) {
     auto file = dynamic_cast<RawFile *>(_file);
     uint16_t r{};
@@ -170,7 +169,8 @@ void RawFileFactory::find_geometry(FileInterface *_file) {
     file->m_rows += (r - 1) * file->cfg.module_gap_row;
 }
 
-void RawFileFactory::parse_fname(FileInterface *file) {
+void RawFileFactory::parse_fname(FileInterface *file_) {
+    auto file = dynamic_cast<RawFile *>(file_);
 
     file->m_base_path = this->m_fpath.parent_path();
     file->m_base_name = this->m_fpath.stem();
