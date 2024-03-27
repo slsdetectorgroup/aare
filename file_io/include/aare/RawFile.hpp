@@ -1,7 +1,7 @@
 #pragma once
 #include "aare/FileInterface.hpp"
-#include "aare/SubFile.hpp"
 #include "aare/Frame.hpp"
+#include "aare/SubFile.hpp"
 #include "aare/defs.hpp"
 
 class RawFile : public FileInterface {
@@ -9,12 +9,11 @@ class RawFile : public FileInterface {
     using config = RawFileConfig;
 
   public:
-    Frame get_frame(size_t frame_number);
-    Frame read() { return get_frame(this->current_frame++); };
-    std::vector<Frame> read(size_t n_frames);
-    void read_into(std::byte *image_buf) { return get_frame_into(this->current_frame++, image_buf); };
-    void read_into(std::byte *image_buf, size_t n_frames);
-    size_t frame_number(size_t frame_index);
+    Frame read() override { return get_frame(this->current_frame++); };
+    std::vector<Frame> read(size_t n_frames) override;
+    void read_into(std::byte *image_buf) override { return get_frame_into(this->current_frame++, image_buf); };
+    void read_into(std::byte *image_buf, size_t n_frames) override;
+    size_t frame_number(size_t frame_index) override;
 
     // size of one frame, important fro teh read_into function
     size_t bytes_per_frame() override { return m_rows * m_cols * m_bitdepth / 8; }
@@ -63,9 +62,10 @@ class RawFile : public FileInterface {
     size_t total_frames() const { return m_total_frames; }
     ssize_t rows() const { return m_rows; }
     ssize_t cols() const { return m_cols; }
-    ssize_t bitdepth() const { return m_bitdepth;}
+    ssize_t bitdepth() const { return m_bitdepth; }
 
   private:
-    size_t current_frame{0};
+    size_t current_frame{};
     void get_frame_into(size_t frame_number, std::byte *image_buf);
+    Frame get_frame(size_t frame_number);
 };

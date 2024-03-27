@@ -1,20 +1,20 @@
-// #pragma once
-// #include "aare/FileFactory.hpp"
-// #include "aare/NumpyFile.hpp"
-// #include "aare/defs.hpp"
-// #include <fstream>
+#pragma once
+#include "aare/FileFactory.hpp"
+#include "aare/NumpyFile.hpp"
+#include "aare/defs.hpp"
+#include <fstream>
 
 
 
-// class NumpyFileFactory : public FileFactory {
-//   private:
-//     std::ifstream f;
-//     void read_data(FileInterface *_file);
+class NumpyFileFactory : public FileFactory {
+  private:
+    std::ifstream f;
+    void read_data(FileInterface *_file);
 
-//   public:
-//     NumpyFileFactory(std::filesystem::path fpath);
-//     void parse_metadata(FileInterface *_file) override;
-//     NumpyFile* load_file() override;
-//     void parse_fname(FileInterface*){};
+  public:
+    NumpyFileFactory(std::filesystem::path fpath);
+    void parse_metadata(FileInterface *_file) override;
+    NumpyFile* load_file() override;
+    void parse_fname(FileInterface*){};
 
-// };
+};

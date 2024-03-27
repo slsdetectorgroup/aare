@@ -6,7 +6,6 @@
 #include <vector>
 class FileInterface {
   public:
-
     friend class FileFactory;
     // write one frame
     // virtual void write(Frame &frame) = 0;
@@ -40,6 +39,12 @@ class FileInterface {
     // return the position of the file pointer (in number of frames)
     virtual size_t tell() = 0;
 
+    // Getter functions
+    virtual size_t total_frames() const = 0;
+    virtual ssize_t rows() const = 0;
+    virtual ssize_t cols() const = 0;
+    virtual ssize_t bitdepth() const = 0;
+
     // read one frame at position frame_number
     Frame iread(size_t frame_number) {
         auto old_pos = tell();
@@ -61,16 +66,9 @@ class FileInterface {
     // function to query the data type of the file
     /*virtual DataType dtype = 0; */
 
-    virtual ~FileInterface() {
+    virtual ~FileInterface(){
 
     };
-
-    // Getter functions
-    virtual size_t total_frames() const = 0;
-    virtual ssize_t rows() const = 0;
-    virtual ssize_t cols() const = 0;
-    virtual ssize_t bitdepth() const = 0;
-
 
   public:
     std::filesystem::path m_fname;

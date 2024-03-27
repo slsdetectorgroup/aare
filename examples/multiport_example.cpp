@@ -19,7 +19,6 @@ void test(File &f, int frame_number) {
 int main() {
     auto PROJECT_ROOT_DIR = std::filesystem::path(getenv(AARE_ROOT_DIR_VAR));
     std::filesystem::path fpath(PROJECT_ROOT_DIR / "data" / "jungfrau" / "jungfrau_double_master_0.json");
-    std::filesystem::path fpath(PROJECT_ROOT_DIR / "data" / "jungfrau" / "jungfrau_double_master_0.json");
     std::cout << fpath << std::endl;
 
     File file(fpath, "r");
