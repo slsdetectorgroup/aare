@@ -1,6 +1,23 @@
 
 find_package (Python 3.11 COMPONENTS Interpreter Development)
-find_package(pybind11 2.11 REQUIRED)
+
+
+
+if(AARE_FETCH_PYBIND11)
+    FetchContent_Declare(
+        pybind11
+        GIT_REPOSITORY https://github.com/pybind/pybind11
+        GIT_TAG        v2.11.0
+    )
+    FetchContent_MakeAvailable(pybind11)
+else()
+    find_package(pybind11 2.11 REQUIRED)
+endif()
+
+
+
+
+
 pybind11_add_module(_aare src/bindings.cpp)
 set_target_properties(_aare PROPERTIES
     LIBRARY_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}
