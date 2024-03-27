@@ -8,8 +8,8 @@ set(SourceFiles
     ${CMAKE_CURRENT_SOURCE_DIR}/src/File.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/src/FileFactory.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/src/helpers.cpp
-    ${CMAKE_CURRENT_SOURCE_DIR}/src/JsonFile.cpp
-    ${CMAKE_CURRENT_SOURCE_DIR}/src/JsonFileFactory.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/RawFile.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/RawFileFactory.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/src/SubFile.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/src/NumpyFile.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/src/NumpyFileFactory.cpp

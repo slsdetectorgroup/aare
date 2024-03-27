@@ -12,7 +12,7 @@ SubFile::SubFile(std::filesystem::path fname, DetectorType detector, ssize_t row
     this->m_bitdepth = bitdepth;
     this->n_frames = std::filesystem::file_size(fname) / (sizeof(sls_detector_header) + rows * cols * bitdepth / 8);
     if (read_impl_map.find({detector, bitdepth}) == read_impl_map.end()) {
-        throw std::runtime_error("Unsupported detector/bitdepth combination");
+        throw std::runtime_error(LOCATION+"Unsupported detector/bitdepth combination");
     }
     this->read_impl = read_impl_map.at({detector, bitdepth}); 
 

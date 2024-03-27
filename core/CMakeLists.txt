@@ -11,7 +11,7 @@ add_library(core STATIC ${SourceFiles})
 target_include_directories(core PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/include)
 
 
-target_link_libraries(core PUBLIC fmt::fmt PRIVATE aare_compiler_flags)
+target_link_libraries(core PUBLIC fmt::fmt PRIVATE aare_compiler_flags utils)
 
 if (AARE_PYTHON_BINDINGS)
 set_property(TARGET core PROPERTY POSITION_INDEPENDENT_CODE ON)
@@ -29,5 +29,5 @@ if(AARE_TESTS)
 
         )
     target_sources(tests PRIVATE ${TestSources} )
-    target_link_libraries(tests PRIVATE core)
+    target_link_libraries(tests PRIVATE core )
 endif()

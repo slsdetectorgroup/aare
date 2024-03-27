@@ -1,3 +1,5 @@
+.vscode
+.env.dev
 .cproject
 .project
 bin/
