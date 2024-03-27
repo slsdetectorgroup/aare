@@ -1,10 +1,17 @@
-FetchContent_Declare(
-    Catch2
-    GIT_SHALLOW    TRUE
-    GIT_REPOSITORY https://github.com/catchorg/Catch2.git
-    GIT_TAG        v3.5.3
-)
-FetchContent_MakeAvailable(Catch2)
+
+if (AARE_FETCH_CATCH)
+    FetchContent_Declare(
+        Catch2
+        GIT_SHALLOW    TRUE
+        GIT_REPOSITORY https://github.com/catchorg/Catch2.git
+        GIT_TAG        v3.5.3
+    )
+    FetchContent_MakeAvailable(Catch2)
+else()
+    find_package(Catch2 3 REQUIRED)
+endif()
+
+
 list(APPEND CMAKE_MODULE_PATH ${Catch2_SOURCE_DIR}/extras)
 
 add_executable(tests test.cpp)

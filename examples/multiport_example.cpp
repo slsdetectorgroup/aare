@@ -2,6 +2,7 @@
 #include "aare/File.hpp"
 #include "aare/utils/logger.hpp"
 #include <iostream>
+#include <iostream>
 
 #define AARE_ROOT_DIR_VAR "PROJECT_ROOT_DIR"
 
@@ -10,12 +11,14 @@ void test(File &f, int frame_number) {
     Frame frame = f.iread(frame_number);
     std::cout << *((uint16_t *)frame.get(0, 0)) << std::endl;
     std::cout << *((uint16_t *)frame.get(0, 1)) << std::endl;
+    std::cout << *((uint16_t *)frame.get(0, 1)) << std::endl;
     std::cout << *((uint16_t *)frame.get(255, 1023)) << std::endl;
     std::cout << *((uint16_t *)frame.get(511, 1023)) << std::endl;
 }
 
 int main() {
     auto PROJECT_ROOT_DIR = std::filesystem::path(getenv(AARE_ROOT_DIR_VAR));
+    std::filesystem::path fpath(PROJECT_ROOT_DIR / "data" / "jungfrau" / "jungfrau_double_master_0.json");
     std::filesystem::path fpath(PROJECT_ROOT_DIR / "data" / "jungfrau" / "jungfrau_double_master_0.json");
     std::cout << fpath << std::endl;
 

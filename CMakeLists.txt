@@ -22,10 +22,37 @@ option(AARE_PYTHON_BINDINGS "Build python bindings" ON)
 option(AARE_TESTS "Build tests" ON)
 option(AARE_EXAMPLES "Build examples" ON)
 
+option(AARE_FETCH_FMT "Use FetchContent to download fmt" ON)
+option(AARE_FETCH_PYBIND11 "Use FetchContent to download pybind11" ON)
+option(AARE_FETCH_CATCH "Use FetchContent to download catch2" ON)
+option(AARE_FETCH_JSON "Use FetchContent to download nlohmann::json" ON)
+
+#Convenience option to use system libraries
+option(AARE_SYSTEM_LIBRARIES "Use system libraries" OFF)
+if(AARE_SYSTEM_LIBRARIES)
+    message(STATUS "Build using system libraries")
+    set(AARE_FETCH_FMT OFF CACHE BOOL "Disabled FetchContent for FMT" FORCE)
+    set(AARE_FETCH_PYBIND11 OFF CACHE BOOL "Disabled FetchContent for pybind11" FORCE)
+    set(AARE_FETCH_CATCH OFF CACHE BOOL "Disabled FetchContent for catch2" FORCE)
+    set(AARE_FETCH_JSON OFF CACHE BOOL "Disabled FetchContent for nlohmann::json" FORCE)
+endif()
 
 
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
-find_package(fmt 6 REQUIRED)
+
+if (AARE_FETCH_FMT)
+    set(FMT_TEST OFF CACHE INTERNAL "disabling fmt tests")
+    FetchContent_Declare(
+            fmt
+            GIT_REPOSITORY  https://github.com/fmtlib/fmt.git
+            GIT_TAG         10.2.1
+            GIT_PROGRESS    TRUE
+            USES_TERMINAL_DOWNLOAD TRUE
+    )
+    FetchContent_MakeAvailable(fmt)
+else()
+    find_package(fmt 6 REQUIRED)
+endif()
 
 add_library(aare_compiler_flags INTERFACE)
 target_compile_features(aare_compiler_flags INTERFACE cxx_std_17)
@@ -49,7 +76,7 @@ else()
         aare_compiler_flags
         INTERFACE
             -fdiagnostics-parseable-fixits
-            -fdiagnostics-generate-patch 
+            # -fdiagnostics-generate-patch 
             -fdiagnostics-show-template-tree 
             -fsanitize=address,undefined,pointer-compare 
             -fno-sanitize-recover 
@@ -62,7 +89,7 @@ else()
         aare_compiler_flags
         INTERFACE
             -fdiagnostics-parseable-fixits
-            -fdiagnostics-generate-patch 
+            # -fdiagnostics-generate-patch 
             -fdiagnostics-show-template-tree 
             -fsanitize=address,undefined,pointer-compare 
             -fno-sanitize-recover 
