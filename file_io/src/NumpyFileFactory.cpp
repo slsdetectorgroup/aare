@@ -3,13 +3,13 @@
 NumpyFileFactory::NumpyFileFactory(std::filesystem::path fpath) {
     this->m_fpath = fpath;
 }
-void NumpyFileFactory::parse_metadata(File *_file) {
+void NumpyFileFactory::parse_metadata(FileInterface *_file) {
     auto file = dynamic_cast<NumpyFile*>(_file);
     // open ifsteam to file
-    f = std::ifstream(file->fname, std::ios::binary);
+    f = std::ifstream(file->m_fname, std::ios::binary);
     // check if file exists
     if (!f.is_open()) {
-        throw std::runtime_error(fmt::format("Could not open: {} for reading", file->fname.c_str()));
+        throw std::runtime_error(fmt::format("Could not open: {} for reading", file->m_fname.c_str()));
     }
     // read magic number
     std::array<char, 6> tmp{};

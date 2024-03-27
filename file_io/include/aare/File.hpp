@@ -1,41 +1,30 @@
-#pragma once
-
-#include "SubFile.hpp"
-#include "aare/Frame.hpp"
-#include "aare/defs.hpp"
-#include <filesystem>
-#include <fmt/core.h>
-#include <iostream>
-
-class File {
-
-  public:
-    virtual Frame get_frame(size_t frame_number) =0;
-
+#include "aare/FileInterface.hpp"
+class File : public FileInterface {
   private:
-    // comment
+    FileInterface *file_impl;
 
   public:
-    virtual ~File() = default; 
-    std::filesystem::path fname;
-    std::filesystem::path base_path;
-    std::string base_name, ext;
-    int findex;
-    size_t total_frames{};
-    size_t max_frames_per_file{};
+    // options:
+    //  - r reading
+    //  - w writing (overwrites existing file)
+    //  - a appending (appends to existing file)
+    // TODO! do we need to support w+, r+ and a+?
+    File(std::filesystem::path fname, std::string mode);
+    Frame read() override;
+    std::vector<Frame> read(size_t n_frames) override;
+    void read_into(std::byte *image_buf) override;
+    void read_into(std::byte *image_buf, size_t n_frames) override;
+    size_t frame_number(size_t frame_index) override;
+    size_t bytes_per_frame() override;
+    size_t pixels() override;
+    void seek(size_t frame_number) override;
+    size_t tell() override;
+    size_t total_frames() const override ;
+    ssize_t rows() const override ;
+    ssize_t cols() const  override ;
+    ssize_t bitdepth()  const override ;
+    File(File &&other);
 
-    std::string version;
-    DetectorType type;
-    TimingMode timing_mode;
-    bool quad{false};
 
-    ssize_t rows{};
-    ssize_t cols{};
-    ssize_t bitdepth{};
-    // File();
-
-    inline size_t bytes_per_frame() const { return rows * cols * bitdepth / 8; }
-    inline size_t pixels() const { return rows * cols; }
-
-    // size_t total_frames();
+    ~File();
 };

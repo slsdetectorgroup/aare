@@ -9,12 +9,12 @@
 class NumpyFileFactory : public FileFactory {
   private:
     std::ifstream f;
-    void read_data(File *_file);
+    void read_data(FileInterface *_file);
 
   public:
     NumpyFileFactory(std::filesystem::path fpath);
-    void parse_metadata(File *_file) override;
+    void parse_metadata(FileInterface *_file) override;
     NumpyFile* load_file() override;
-    void parse_fname(File*){};
+    void parse_fname(FileInterface*){};
 
 };

@@ -1,6 +1,6 @@
 #pragma once
 
-#include "aare/File.hpp"
+#include "aare/FileInterface.hpp"
 #include <filesystem>
 #include <fmt/core.h>
 

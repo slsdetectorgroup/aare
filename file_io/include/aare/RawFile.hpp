@@ -1,15 +1,32 @@
 #pragma once
-#include "aare/defs.hpp"
+#include "aare/FileInterface.hpp"
 #include "aare/Frame.hpp"
-#include "aare/File.hpp"
+#include "aare/SubFile.hpp"
+#include "aare/defs.hpp"
 
+class RawFile : public FileInterface {
 
-class RawFile : public File {
+    using config = RawFileConfig;
 
-        using config = RawFileConfig;
-                public:
+  public:
+    Frame read() override { return get_frame(this->current_frame++); };
+    std::vector<Frame> read(size_t n_frames) override;
+    void read_into(std::byte *image_buf) override { return get_frame_into(this->current_frame++, image_buf); };
+    void read_into(std::byte *image_buf, size_t n_frames) override;
+    size_t frame_number(size_t frame_index) override;
 
-    Frame get_frame(size_t frame_number);
+    // size of one frame, important fro teh read_into function
+    size_t bytes_per_frame() override { return m_rows * m_cols * m_bitdepth / 8; }
+
+    // number of pixels in one frame
+    size_t pixels() override { return m_rows * m_cols; }
+
+    // goto frame number
+    void seek(size_t frame_number) { this->current_frame = frame_number; };
+
+    // return the position of the file pointer (in number of frames)
+    size_t tell() { return this->current_frame; };
+
     size_t n_subfiles;
     size_t n_subfile_parts;
     std::vector<std::vector<SubFile *>> subfiles;
@@ -17,6 +34,8 @@ class RawFile : public File {
     xy geometry;
     std::vector<xy> positions;
     config cfg{0, 0};
+    TimingMode timing_mode;
+    bool quad{false};
 
     inline void set_config(int row, int col) {
         cfg.module_gap_row = row;
@@ -32,11 +51,21 @@ class RawFile : public File {
     }
 
     inline std::filesystem::path master_fname() {
-        return this->base_path / fmt::format("{}_master_{}{}", this->base_name, this->findex, this->ext);
+        return this->m_base_path / fmt::format("{}_master_{}{}", this->m_base_name, this->m_findex, this->m_ext);
     }
     inline std::filesystem::path data_fname(int mod_id, int file_id) {
-        return this->base_path / fmt::format("{}_d{}_f{}_{}.raw", this->base_name, file_id, mod_id, this->findex);
+        return this->m_base_path / fmt::format("{}_d{}_f{}_{}.raw", this->m_base_name, file_id, mod_id, this->m_findex);
     }
 
     ~RawFile();
+
+    size_t total_frames() const { return m_total_frames; }
+    ssize_t rows() const { return m_rows; }
+    ssize_t cols() const { return m_cols; }
+    ssize_t bitdepth() const { return m_bitdepth; }
+
+  private:
+    size_t current_frame{};
+    void get_frame_into(size_t frame_number, std::byte *image_buf);
+    Frame get_frame(size_t frame_number);
 };
