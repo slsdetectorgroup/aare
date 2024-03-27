@@ -32,7 +32,8 @@ endif()
 
 if(AARE_TESTS)
     set(TestSources
-            ${CMAKE_CURRENT_SOURCE_DIR}/src/NumpyHelpers.test.cpp
+            ${CMAKE_CURRENT_SOURCE_DIR}/test/NumpyHelpers.test.cpp
+            ${CMAKE_CURRENT_SOURCE_DIR}/test/RawFile.test.cpp
         )
     target_sources(tests PRIVATE ${TestSources} )
     target_link_libraries(tests PRIVATE core file_io)
