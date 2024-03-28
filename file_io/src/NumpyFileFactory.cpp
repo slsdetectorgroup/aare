@@ -1,10 +1,8 @@
 #include "aare/NumpyFileFactory.hpp"
 #include "aare/NumpyHelpers.hpp"
-NumpyFileFactory::NumpyFileFactory(std::filesystem::path fpath) {
-    this->m_fpath = fpath;
-}
+NumpyFileFactory::NumpyFileFactory(std::filesystem::path fpath) { this->m_fpath = fpath; }
 void NumpyFileFactory::parse_metadata(FileInterface *_file) {
-    auto file = dynamic_cast<NumpyFile*>(_file);
+    auto file = dynamic_cast<NumpyFile *>(_file);
     // open ifsteam to file
     f = std::ifstream(file->m_fname, std::ios::binary);
     // check if file exists
@@ -57,7 +55,7 @@ void NumpyFileFactory::parse_metadata(FileInterface *_file) {
     std::string shape_s = dict_map["shape"];
 
     std::string descr = parse_str(descr_s);
-    dtype_t dtype = parse_descr(descr);
+    aare::DType dtype = parse_descr(descr);
 
     // convert literal Python bool to C++ bool
     bool fortran_order = parse_bool(fortran_s);
@@ -72,11 +70,15 @@ void NumpyFileFactory::parse_metadata(FileInterface *_file) {
     file->header = {dtype, fortran_order, shape};
 }
 
- NumpyFile* NumpyFileFactory::load_file() {
-    NumpyFile* file = new NumpyFile(this->m_fpath);
+NumpyFile *NumpyFileFactory::load_file_read() {
+    NumpyFile *file = new NumpyFile(this->m_fpath);
     parse_metadata(file);
-    std::cout << "parsed header: " << file->header.to_string() << std::endl;      
+    std::cout << "parsed header: " << file->header.to_string() << std::endl;
     return file;
 };
 
-
+NumpyFile *NumpyFileFactory::load_file_write(FileConfig config) {
+    NumpyFile *file = new NumpyFile(this->m_fpath, config);
+    file->header = {config.bitdepth, false, {config.rows, config.cols}};
+    return file;
+};

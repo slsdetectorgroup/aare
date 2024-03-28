@@ -4,11 +4,19 @@
 #include "aare/utils/logger.hpp"
 #include <filesystem>
 #include <vector>
+
+struct FileConfig {
+    std::filesystem::path fname;
+    uint8_t bitdepth;
+    ssize_t rows;
+    ssize_t cols;
+    xy geometry{1, 1};
+};
 class FileInterface {
   public:
     friend class FileFactory;
     // write one frame
-    // virtual void write(Frame &frame) = 0;
+    virtual void write(Frame &frame) = 0;
 
     // write n_frames frames
     // virtual void write(std::vector<Frame> &frames) = 0;
@@ -71,6 +79,7 @@ class FileInterface {
     };
 
   public:
+    std::string mode;
     std::filesystem::path m_fname;
     std::filesystem::path m_base_path;
     std::string m_base_name, m_ext;

@@ -9,6 +9,7 @@ class RawFile : public FileInterface {
     using config = RawFileConfig;
 
   public:
+    void write(Frame &frame) override{};
     Frame read() override { return get_frame(this->current_frame++); };
     std::vector<Frame> read(size_t n_frames) override;
     void read_into(std::byte *image_buf) override { return get_frame_into(this->current_frame++, image_buf); };

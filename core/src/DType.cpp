@@ -4,6 +4,7 @@
 
 namespace aare {
 
+
 DType::DType(const std::type_info &t) {
     if (t == typeid(int8_t))
         m_type = TypeIndex::INT8;

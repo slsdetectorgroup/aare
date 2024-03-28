@@ -12,21 +12,13 @@
 #include <iostream>
 
 #include "aare/defs.hpp"
+#include "aare/DType.hpp"
 
 using shape_t = std::vector<uint64_t>;
 
-struct dtype_t {
-    char byteorder;
-    char kind;
-    unsigned int itemsize;
-    std::string to_string() {
-        std::stringstream sstm;
-        sstm << byteorder << kind << itemsize;
-        return sstm.str();
-    }
-};
+
 struct header_t {
-    dtype_t dtype;
+    aare::DType dtype;
     bool fortran_order;
     shape_t shape;
     std::string to_string() {
@@ -61,4 +53,4 @@ template <typename T, size_t N> inline bool in_array(T val, const std::array<T, 
 }
 bool is_digits(const std::string &str);
 
-dtype_t parse_descr(std::string typestring);
+aare::Dtype parse_descr(std::string typestring);
