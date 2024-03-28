@@ -6,9 +6,8 @@
 #include <vector>
 class FileInterface {
   public:
-    friend class FileFactory;
     // write one frame
-    // virtual void write(Frame &frame) = 0;
+    virtual void write(Frame &frame) = 0;
 
     // write n_frames frames
     // virtual void write(std::vector<Frame> &frames) = 0;
@@ -44,6 +43,7 @@ class FileInterface {
     virtual ssize_t rows() const = 0;
     virtual ssize_t cols() const = 0;
     virtual ssize_t bitdepth() const = 0;
+    virtual std::filesystem::path fname() const =0;
 
     // read one frame at position frame_number
     Frame iread(size_t frame_number) {
@@ -70,11 +70,8 @@ class FileInterface {
 
     };
 
-  public:
+  protected:
     std::filesystem::path m_fname;
-    std::filesystem::path m_base_path;
-    std::string m_base_name, m_ext;
-    int m_findex;
     size_t m_total_frames{};
     size_t max_frames_per_file{};
     std::string version;
