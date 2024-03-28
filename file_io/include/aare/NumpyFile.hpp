@@ -20,9 +20,9 @@ class NumpyFile : public FileInterface {
     void seek(size_t frame_number) override { this->current_frame = frame_number; }
     size_t tell() override { return this->current_frame; }
     size_t total_frames() const override { return header.shape[0]; }
-    ssize_t rows()const override  { return header.shape[1]; }
-    ssize_t cols()const override  { return header.shape[2]; }
-    ssize_t bitdepth()const override  { return header.dtype.itemsize; }
+    ssize_t rows() const override { return header.shape[1]; }
+    ssize_t cols() const override { return header.shape[2]; }
+    ssize_t bitdepth() const override { return header.dtype.itemsize; }
 
     NumpyFile(std::filesystem::path fname);
     header_t header{};

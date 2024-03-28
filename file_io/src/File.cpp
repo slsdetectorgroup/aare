@@ -10,7 +10,7 @@ File::File(std::filesystem::path fname, std::string mode) {
 }
 
 Frame File::read() { return file_impl->read(); }
-size_t File::total_frames() const { return file_impl->m_total_frames; }
+size_t File::total_frames() const { return file_impl->total_frames(); }
 std::vector<Frame> File::read(size_t n_frames) { return file_impl->read(n_frames); }
 void File::read_into(std::byte *image_buf) { file_impl->read_into(image_buf); }
 void File::read_into(std::byte *image_buf, size_t n_frames) { file_impl->read_into(image_buf, n_frames); }

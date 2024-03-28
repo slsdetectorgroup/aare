@@ -10,7 +10,8 @@ SubFile::SubFile(std::filesystem::path fname, DetectorType detector, ssize_t row
     this->m_bitdepth = bitdepth;
     this->n_frames = std::filesystem::file_size(fname) / (sizeof(sls_detector_header) + rows * cols * bitdepth / 8);
     if (read_impl_map.find({detector, bitdepth}) == read_impl_map.end()) {
-        throw std::runtime_error(LOCATION + "Unsupported detector/bitdepth combination");
+        auto error_msg = LOCATION + "No read_impl function found for detector: " + toString(detector) + " and bitdepth: " + std::to_string(bitdepth);
+        throw std::runtime_error(error_msg);
     }
     this->read_impl = read_impl_map.at({detector, bitdepth});
 }
@@ -88,7 +89,7 @@ size_t SubFile::frame_number(int frame_index) {
     FILE *fp = fopen(this->m_fname.c_str(), "r");
     if (!fp)
         throw std::runtime_error(fmt::format("Could not open: {} for reading", m_fname.c_str()));
-
+    fseek(fp, (sizeof(sls_detector_header) + bytes_per_part()) * frame_index, SEEK_SET);
     size_t rc = fread(reinterpret_cast<char *>(&h), sizeof(h), 1, fp);
     fclose(fp);
     if (rc != 1)
