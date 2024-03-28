@@ -1,10 +1,8 @@
 #include "aare/NumpyFileFactory.hpp"
 #include "aare/NumpyHelpers.hpp"
-NumpyFileFactory::NumpyFileFactory(std::filesystem::path fpath) {
-    this->m_fpath = fpath;
-}
+NumpyFileFactory::NumpyFileFactory(std::filesystem::path fpath) { this->m_fpath = fpath; }
 void NumpyFileFactory::parse_metadata(FileInterface *_file) {
-    auto file = dynamic_cast<NumpyFile*>(_file);
+    auto file = dynamic_cast<NumpyFile *>(_file);
     // open ifsteam to file
     f = std::ifstream(file->m_fname, std::ios::binary);
     // check if file exists
@@ -46,7 +44,7 @@ void NumpyFileFactory::parse_metadata(FileInterface *_file) {
     // parse header
 
     std::vector<std::string> keys{"descr", "fortran_order", "shape"};
-    std::cout << "original header: " << '"' << header << '"' << std::endl;
+    aare::logger::debug("original header: \"header\"");
 
     auto dict_map = parse_dict(header, keys);
     if (dict_map.size() == 0)
@@ -72,11 +70,8 @@ void NumpyFileFactory::parse_metadata(FileInterface *_file) {
     file->header = {dtype, fortran_order, shape};
 }
 
- NumpyFile* NumpyFileFactory::load_file() {
-    NumpyFile* file = new NumpyFile(this->m_fpath);
+NumpyFile *NumpyFileFactory::load_file() {
+    NumpyFile *file = new NumpyFile(this->m_fpath);
     parse_metadata(file);
-    std::cout << "parsed header: " << file->header.to_string() << std::endl;      
     return file;
 };
-
-

@@ -13,16 +13,16 @@ FileFactory *FileFactory::get_factory(std::filesystem::path fpath) {
     }
 
     if (fpath.extension() == ".raw" || fpath.extension() == ".json"){
-        aare::logger::info("Loading",fpath.extension(),"file");
+        aare::logger::debug("Loading",fpath.extension(),"file");
         return new RawFileFactory(fpath);
     } 
     if (fpath.extension() == ".raw" || fpath.extension() == ".json"){
-        aare::logger::info("Loading",fpath.extension(),"file");
+        aare::logger::debug("Loading",fpath.extension(),"file");
         return new RawFileFactory(fpath);
     } 
     // check if extension is numpy
     else if (fpath.extension() == ".npy") {
-        aare::logger::info("Loading numpy file");
+        aare::logger::debug("Loading numpy file");
         return new NumpyFileFactory(fpath);
     }
 

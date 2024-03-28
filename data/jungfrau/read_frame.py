@@ -39,10 +39,11 @@ for file_id in range(4):
 
     # for i in range(frames if file_id != 3 else 1 ):
     #     print("frame:",i)
-    #     print(data[i][0,0],data[i][0,1],data[i][1,0],data[i][rows-1,cols-1])
+    #     print(header[i][0,0],data[i][0,1],data[i][1,0],data[i][rows-1,cols-1])
     #     print("")
 
 
+print(header[1]["Frame Number"])
 #fig, ax = plt.subplots()
 #im = ax.imshow(data[0])
 #im.set_clim(2000,4000)
