@@ -47,7 +47,7 @@ void NumpyFileFactory::parse_metadata(FileInterface *_file) {
     // parse header
 
     std::vector<std::string> keys{"descr", "fortran_order", "shape"};
-    std::cout << "original header: " << '"' << header << '"' << std::endl;
+    aare::logger::debug("original header: \"header\"");
 
     auto dict_map = aare::NumpyHelpers::parse_dict(header, keys);
     if (dict_map.size() == 0)
@@ -76,7 +76,6 @@ void NumpyFileFactory::parse_metadata(FileInterface *_file) {
 NumpyFile *NumpyFileFactory::load_file_read() {
     NumpyFile *file = new NumpyFile(this->m_fpath);
     parse_metadata(file);
-    std::cout << "parsed header: " << file->header.to_string() << std::endl;
     return file;
 };
 

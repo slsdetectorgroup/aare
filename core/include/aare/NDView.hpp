@@ -68,6 +68,16 @@ template <typename T, ssize_t Ndim=2> class NDView {
     T &operator()(ssize_t i) { return buffer_[i]; }
     T &operator[](ssize_t i) { return buffer_[i]; }
 
+    bool operator==(const NDView &other) const {
+        if (size_ != other.size_)
+            return false;
+        for (ssize_t i = 0; i != size_; ++i) {
+            if (buffer_[i] != other.buffer_[i])
+                return false;
+        }
+        return true;
+    }
+
     NDView &operator+=(const T val) { return elemenwise(val, std::plus<T>()); }
     NDView &operator-=(const T val) { return elemenwise(val, std::minus<T>()); }
     NDView &operator*=(const T val) { return elemenwise(val, std::multiplies<T>()); }

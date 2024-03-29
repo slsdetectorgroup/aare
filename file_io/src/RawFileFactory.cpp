@@ -87,7 +87,6 @@ void RawFileFactory::parse_json_metadata(RawFile *file) {
     json j;
     ifs >> j;
     double v = j["Version"];
-    std::cout << "Version: " << v << std::endl;
     file->version = fmt::format("{:.1f}", v);
     file->m_type = StringTo<DetectorType>(j["Detector Type"].get<std::string>());
     file->timing_mode = StringTo<TimingMode>(j["Timing Mode"].get<std::string>());

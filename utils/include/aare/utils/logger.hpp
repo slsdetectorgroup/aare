@@ -37,7 +37,7 @@ class Logger {
     std::streambuf *error_buf = std::cerr.rdbuf();
     std::ostream *standard_output;
     std::ostream *error_output;
-    LOGGING_LEVEL VERBOSITY_LEVEL = LOGGING_LEVEL::DEBUG;
+    LOGGING_LEVEL VERBOSITY_LEVEL = LOGGING_LEVEL::INFO;
 
     std::ofstream out_file;
 
