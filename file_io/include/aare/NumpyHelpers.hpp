@@ -4,34 +4,28 @@
 #include <array>
 #include <filesystem>
 #include <fstream>
+#include <iostream>
+#include <numeric>
+#include <sstream>
 #include <string>
 #include <unordered_map>
 #include <vector>
-#include <sstream>
-#include <numeric>
-#include <iostream>
 
+#include "aare/DType.hpp"
 #include "aare/defs.hpp"
 
 using shape_t = std::vector<uint64_t>;
 
-struct dtype_t {
-    char byteorder;
-    char kind;
-    unsigned int itemsize;
-    std::string to_string() {
-        std::stringstream sstm;
-        sstm << byteorder << kind << itemsize;
-        return sstm.str();
-    }
-};
 struct header_t {
-    dtype_t dtype;
+    header_t() : dtype(aare::DType(aare::DType::ERROR)), fortran_order(false), shape(shape_t()){};
+    header_t(aare::DType dtype, bool fortran_order, shape_t shape)
+        : dtype(dtype), fortran_order(fortran_order), shape(shape){};
+    aare::DType dtype;
     bool fortran_order;
     shape_t shape;
     std::string to_string() {
         std::stringstream sstm;
-        sstm << "dtype: " << dtype.to_string() << ", fortran_order: " << fortran_order << ' ';
+        sstm << "dtype: " << dtype.str() << ", fortran_order: " << fortran_order << ' ';
 
         sstm << "shape: (";
         for (auto item : shape)
@@ -41,6 +35,9 @@ struct header_t {
     }
 };
 
+namespace aare::NumpyHelpers {
+const constexpr std::array<char, 6> magic_str{'\x93', 'N', 'U', 'M', 'P', 'Y'};
+const uint8_t magic_string_length{6};
 
 std::string parse_str(const std::string &in);
 /**
@@ -61,4 +58,9 @@ template <typename T, size_t N> inline bool in_array(T val, const std::array<T, 
 }
 bool is_digits(const std::string &str);
 
-dtype_t parse_descr(std::string typestring);
+aare::DType parse_descr(std::string typestring);
+size_t write_header(std::filesystem::path fname, const header_t &header) ;
+size_t write_header(std::ostream &out, const header_t &header) ;
+bool is_digits(const std::string &str);
+
+} // namespace aare::NumpyHelpers

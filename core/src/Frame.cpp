@@ -34,6 +34,7 @@ void Frame::set(int row, int col, T data) {
 }
 
 template void Frame::set(int row, int col, uint16_t data);
+template void Frame::set(int row, int col, uint32_t data);
 
 
 // std::vector<std::vector<DataType>> Frame<DataType>::get_array() {

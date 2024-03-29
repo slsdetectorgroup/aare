@@ -9,6 +9,7 @@ class RawFile : public FileInterface {
     using config = RawFileConfig;
 
   public:
+    void write(Frame &frame) override{};
     Frame read() override { return get_frame(this->current_frame++); };
     std::vector<Frame> read(size_t n_frames) override;
     void read_into(std::byte *image_buf) override { return get_frame_into(this->current_frame++, image_buf); };
@@ -22,10 +23,10 @@ class RawFile : public FileInterface {
     size_t pixels() override { return m_rows * m_cols; }
 
     // goto frame number
-    void seek(size_t frame_number) { this->current_frame = frame_number; };
+    void seek(size_t frame_number) override{ this->current_frame = frame_number; };
 
     // return the position of the file pointer (in number of frames)
-    size_t tell() { return this->current_frame; };
+    size_t tell() override{ return this->current_frame; };
 
     size_t n_subfiles;
     size_t n_subfile_parts;
@@ -59,10 +60,10 @@ class RawFile : public FileInterface {
 
     ~RawFile();
 
-    size_t total_frames() const { return m_total_frames; }
-    ssize_t rows() const { return m_rows; }
-    ssize_t cols() const { return m_cols; }
-    ssize_t bitdepth() const { return m_bitdepth; }
+    size_t total_frames() const override { return m_total_frames; }
+    ssize_t rows() const override { return m_rows; }
+    ssize_t cols() const override{ return m_cols; }
+    ssize_t bitdepth() const override{ return m_bitdepth; }
 
   private:
     size_t current_frame{};

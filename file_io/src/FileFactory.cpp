@@ -7,11 +7,6 @@
 #include <iostream>
 
 FileFactory *FileFactory::get_factory(std::filesystem::path fpath) {
-    // check if file exists
-    if (!std::filesystem::exists(fpath)) {
-        throw std::runtime_error("File does not exist");
-    }
-
     if (fpath.extension() == ".raw" || fpath.extension() == ".json"){
         aare::logger::info("Loading",fpath.extension(),"file");
         return new RawFileFactory(fpath);

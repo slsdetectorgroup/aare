@@ -1,10 +1,11 @@
 #include "aare/NumpyFileFactory.hpp"
 #include "aare/NumpyHelpers.hpp"
-NumpyFileFactory::NumpyFileFactory(std::filesystem::path fpath) {
-    this->m_fpath = fpath;
-}
+
+using namespace aare;
+
+NumpyFileFactory::NumpyFileFactory(std::filesystem::path fpath) { this->m_fpath = fpath; }
 void NumpyFileFactory::parse_metadata(FileInterface *_file) {
-    auto file = dynamic_cast<NumpyFile*>(_file);
+    auto file = dynamic_cast<NumpyFile *>(_file);
     // open ifsteam to file
     f = std::ifstream(file->m_fname, std::ios::binary);
     // check if file exists
@@ -14,7 +15,7 @@ void NumpyFileFactory::parse_metadata(FileInterface *_file) {
     // read magic number
     std::array<char, 6> tmp{};
     f.read(tmp.data(), tmp.size());
-    if (tmp != NumpyFile::magic_str) {
+    if (tmp != aare::NumpyHelpers::magic_str) {
         for (auto item : tmp)
             fmt::print("{}, ", int(item));
         fmt::print("\n");
@@ -34,7 +35,7 @@ void NumpyFileFactory::parse_metadata(FileInterface *_file) {
     }
     // read header length
     f.read(reinterpret_cast<char *>(&file->header_len), file->header_len_size);
-    file->header_size = file->magic_string_length + 2 + file->header_len_size + file->header_len;
+    file->header_size = aare::NumpyHelpers::magic_string_length + 2 + file->header_len_size + file->header_len;
     if (file->header_size % 16 != 0) {
         fmt::print("Warning: header length is not a multiple of 16\n");
     }
@@ -48,7 +49,7 @@ void NumpyFileFactory::parse_metadata(FileInterface *_file) {
     std::vector<std::string> keys{"descr", "fortran_order", "shape"};
     std::cout << "original header: " << '"' << header << '"' << std::endl;
 
-    auto dict_map = parse_dict(header, keys);
+    auto dict_map = aare::NumpyHelpers::parse_dict(header, keys);
     if (dict_map.size() == 0)
         throw std::runtime_error("invalid dictionary in header");
 
@@ -56,14 +57,14 @@ void NumpyFileFactory::parse_metadata(FileInterface *_file) {
     std::string fortran_s = dict_map["fortran_order"];
     std::string shape_s = dict_map["shape"];
 
-    std::string descr = parse_str(descr_s);
-    dtype_t dtype = parse_descr(descr);
+    std::string descr = aare::NumpyHelpers::parse_str(descr_s);
+    aare::DType dtype = aare::NumpyHelpers::parse_descr(descr);
 
     // convert literal Python bool to C++ bool
-    bool fortran_order = parse_bool(fortran_s);
+    bool fortran_order = aare::NumpyHelpers::parse_bool(fortran_s);
 
     // parse the shape tuple
-    auto shape_v = parse_tuple(shape_s);
+    auto shape_v = aare::NumpyHelpers::parse_tuple(shape_s);
     shape_t shape;
     for (auto item : shape_v) {
         auto dim = static_cast<unsigned long>(std::stoul(item));
@@ -72,11 +73,17 @@ void NumpyFileFactory::parse_metadata(FileInterface *_file) {
     file->header = {dtype, fortran_order, shape};
 }
 
- NumpyFile* NumpyFileFactory::load_file() {
-    NumpyFile* file = new NumpyFile(this->m_fpath);
+NumpyFile *NumpyFileFactory::load_file_read() {
+    NumpyFile *file = new NumpyFile(this->m_fpath);
     parse_metadata(file);
-    std::cout << "parsed header: " << file->header.to_string() << std::endl;      
+    std::cout << "parsed header: " << file->header.to_string() << std::endl;
     return file;
 };
 
+NumpyFile *NumpyFileFactory::load_file_write(FileConfig config) {
+    NumpyFile *file = new NumpyFile(config, {config.dtype, false, {config.rows, config.cols}});
+    
 
+
+    return file;
+};

@@ -4,6 +4,7 @@
 
 namespace aare {
 
+
 DType::DType(const std::type_info &t) {
     if (t == typeid(int8_t))
         m_type = TypeIndex::INT8;
@@ -30,6 +31,32 @@ DType::DType(const std::type_info &t) {
     else
         throw std::runtime_error(
             "Could not construct data type. Type not supported.");
+}
+
+uint8_t DType::bitdepth()const {
+    switch (m_type) {
+    case TypeIndex::INT8:
+    case TypeIndex::UINT8:
+        return 8;
+    case TypeIndex::INT16:
+    case TypeIndex::UINT16:
+        return 16;
+    case TypeIndex::INT32:
+    case TypeIndex::UINT32:
+        return 32;
+    case TypeIndex::INT64:
+    case TypeIndex::UINT64:
+        return 64;
+    case TypeIndex::FLOAT:
+        return 32;
+    case TypeIndex::DOUBLE:
+        return 64;
+    case TypeIndex::ERROR:
+        return 0;
+    default:
+        throw std::runtime_error(LOCATION+"Could not get bitdepth. Type not supported.");
+    }
+
 }
 
 DType::DType(DType::TypeIndex ti):m_type(ti){}

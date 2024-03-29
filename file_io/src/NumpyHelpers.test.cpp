@@ -1,6 +1,8 @@
 #include <catch2/catch_test_macros.hpp>
 #include "aare/NumpyHelpers.hpp" //Is this really a public header?
 
+using namespace aare::NumpyHelpers; 
+
 TEST_CASE("is_digits with a few standard cases"){
     REQUIRE(is_digits(""));
     REQUIRE(is_digits("123"));
