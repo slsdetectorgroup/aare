@@ -1,5 +1,7 @@
 #include "aare/defs.hpp"
 
+namespace aare {
+
 template <> std::string toString(DetectorType type) {
     switch (type) {
     case DetectorType::Jungfrau:
@@ -46,3 +48,5 @@ template <> TimingMode StringTo(std::string mode) {
 }
 
 // template <> TimingMode StringTo<TimingMode>(std::string mode);
+
+} // namespace aare

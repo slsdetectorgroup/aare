@@ -1,6 +1,8 @@
 #include "aare/RawFile.hpp"
 #include "aare/utils/logger.hpp"
 
+namespace aare{
+
 Frame RawFile::get_frame(size_t frame_number) {
     auto f = Frame(this->m_rows, this->m_cols, this->m_bitdepth);
     std::byte *frame_buffer = f._get_data();
@@ -77,3 +79,5 @@ RawFile::~RawFile() {
         }
     }
 }
+
+} // namespace aare

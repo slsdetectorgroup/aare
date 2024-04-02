@@ -29,5 +29,5 @@ if(AARE_TESTS)
 
         )
     target_sources(tests PRIVATE ${TestSources} )
-    target_link_libraries(tests PRIVATE core )
+    target_link_libraries(tests PRIVATE core utils)
 endif()

@@ -5,6 +5,9 @@
 
 #define AARE_ROOT_DIR_VAR "PROJECT_ROOT_DIR"
 
+using aare::File;
+using aare::Frame;
+
 void test1(File &f, int frame_number) {
     std::cout << "frame number: " << frame_number << std::endl;
     Frame frame = f.iread(frame_number);

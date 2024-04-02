@@ -11,6 +11,8 @@
 
 using json = nlohmann::json;
 
+namespace aare {
+
 RawFileFactory::RawFileFactory(std::filesystem::path fpath) {
     if (not is_master_file(fpath))
         throw std::runtime_error("Json file is not a master file");
@@ -119,7 +121,7 @@ void RawFileFactory::open_subfiles(FileInterface *_file) {
     }
 }
 
-RawFile *RawFileFactory::load_file() {
+RawFile *RawFileFactory::load_file_read() {
     RawFile *file = new RawFile();
     file->m_fname = this->m_fpath;
     this->parse_fname(file);
@@ -180,3 +182,5 @@ void RawFileFactory::parse_fname(FileInterface *file) {
     pos = file->m_base_name.find("_master_");
     file->m_base_name.erase(pos);
 }
+
+} // namespace aare

@@ -6,12 +6,9 @@
 #include "aare/utils/logger.hpp"
 #include <iostream>
 
-FileFactory *FileFactory::get_factory(std::filesystem::path fpath) {
-    // check if file exists
-    if (!std::filesystem::exists(fpath)) {
-        throw std::runtime_error("File does not exist");
-    }
+namespace aare {
 
+FileFactory *FileFactory::get_factory(std::filesystem::path fpath) {
     if (fpath.extension() == ".raw" || fpath.extension() == ".json"){
         aare::logger::debug("Loading",fpath.extension(),"file");
         return new RawFileFactory(fpath);
@@ -23,11 +20,12 @@ FileFactory *FileFactory::get_factory(std::filesystem::path fpath) {
     // check if extension is numpy
     else if (fpath.extension() == ".npy") {
         aare::logger::debug("Loading numpy file");
-        return new NumpyFileFactory(fpath);
+        return new aare::NumpyFileFactory(fpath);
     }
 
     throw std::runtime_error("Unsupported file type");
 }
 
+} // namespace aare
 
 

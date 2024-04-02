@@ -1,14 +1,25 @@
 #pragma once
 #include "aare/Frame.hpp"
 #include "aare/defs.hpp"
+#include "aare/DType.hpp"
 #include "aare/utils/logger.hpp"
 #include <filesystem>
 #include <vector>
+
+namespace aare {
+
+struct FileConfig {
+    std::filesystem::path fname;
+    aare::DType dtype = aare::DType(typeid(uint16_t));
+    uint64_t rows;
+    uint64_t cols;
+    xy geometry{1, 1};
+};
 class FileInterface {
   public:
     friend class FileFactory;
     // write one frame
-    // virtual void write(Frame &frame) = 0;
+    virtual void write(Frame &frame) = 0;
 
     // write n_frames frames
     // virtual void write(std::vector<Frame> &frames) = 0;
@@ -71,6 +82,7 @@ class FileInterface {
     };
 
   public:
+    std::string mode;
     std::filesystem::path m_fname;
     std::filesystem::path m_base_path;
     std::string m_base_name, m_ext;
@@ -83,3 +95,5 @@ class FileInterface {
     ssize_t m_cols{};
     ssize_t m_bitdepth{};
 };
+
+}

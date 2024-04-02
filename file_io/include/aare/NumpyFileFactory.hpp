@@ -4,7 +4,7 @@
 #include "aare/defs.hpp"
 #include <fstream>
 
-
+namespace aare {
 
 class NumpyFileFactory : public FileFactory {
   private:
@@ -14,7 +14,10 @@ class NumpyFileFactory : public FileFactory {
   public:
     NumpyFileFactory(std::filesystem::path fpath);
     void parse_metadata(FileInterface *_file) override;
-    NumpyFile* load_file() override;
-    void parse_fname(FileInterface*){};
+    NumpyFile* load_file_read() override;
+    NumpyFile* load_file_write(FileConfig) override;
+    void parse_fname(FileInterface*)override{};
 
 };
+
+} // namespace aare

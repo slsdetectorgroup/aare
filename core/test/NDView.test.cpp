@@ -4,7 +4,8 @@
 #include <iostream>
 #include <vector>
 
-
+using aare::NDView;
+using aare::Shape;
 
 TEST_CASE("Element reference 1D") {
     std::vector<int> vec;

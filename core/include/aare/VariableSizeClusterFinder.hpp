@@ -9,7 +9,7 @@
 #include "aare/NDArray.hpp"
 
 const int MAX_CLUSTER_SIZE = 200;
-namespace pl {
+namespace aare {
 
 template <typename T> class ClusterFinder {
   public:
@@ -307,4 +307,4 @@ template <typename T> void ClusterFinder<T>::store_clusters() {
 
 }
 
-} // namespace pl
+} // namespace aare

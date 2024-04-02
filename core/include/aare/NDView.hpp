@@ -6,6 +6,8 @@
 #include <numeric>
 #include <vector>
 
+namespace aare {
+
 template <ssize_t Ndim> using Shape = std::array<ssize_t, Ndim>;
 
 template <ssize_t Dim = 0, typename Strides> ssize_t element_offset(const Strides &) { return 0; }
@@ -125,3 +127,4 @@ template <typename T, ssize_t Ndim=2> class NDView {
 
 template class NDView<uint16_t, 2>;
 
+} // namespace aare
