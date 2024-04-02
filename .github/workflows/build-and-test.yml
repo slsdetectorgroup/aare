@@ -1,17 +1,31 @@
 name: Build and run tests
 on: [push]
 jobs:
-  build:
+  build with sanitizers:
     runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        use-system-libraries: ["ON","OFF"] 
     steps:
       - uses: actions/checkout@v3
-      - name: build without python bindings with fetch content
+      - name: install dependencies
+        if: matrix.use-system-libraries=="ON"
+        run: echo "AAA"
+      - name: build with fetch content
         run: |
           mkdir build
           cd build
-          cmake .. -DCMAKE_BUILD_TYPE="Debug" -DAARE_PYTHON_BINDINGS="OFF"
+          cmake .. -DCMAKE_BUILD_TYPE="Debug" -DAARE_PYTHON_BINDINGS="OFF" -DAARE_SYSTEM_LIBRARIES=${{matrix.use-system-libraries}}
           cmake --build . -j 10
       - name: run tests
         run: |
           cd build/
           ./run_tests
+      - name: run examples
+        run: |
+          cd build/examples/
+          ls *_example
+          find -name "*_example" | xargs -I {} -n 1 -t  bash -c {}
+
+
+
