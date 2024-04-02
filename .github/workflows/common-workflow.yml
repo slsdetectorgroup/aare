@@ -17,7 +17,7 @@ jobs:
         if: ${{ contains(inputs.use-system-libraries, 'ON')}}
         with:
           auto-update-conda: true
-          python-version: ${{ matrix.python-version }}
+          python-version: 3.11
         run: |
 		  conda list
 		  
