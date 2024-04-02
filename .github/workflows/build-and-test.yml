@@ -1,17 +1,17 @@
 name: Build and run tests
 on: [push]
 jobs:
-	build:
-		runs-on: ubuntu-latest
-		steps:
-			- uses: actions/checkout@v3
-			- name: build without python bindings with fetch content
-			  run: |
-				mkdir build
-				cd build
-				cmake .. -DCMAKE_BUILD_TYPE="Debug" -DAARE_PYTHON_BINDINGS="OFF"
-				cmake --build . -j 10
-			- name: run tests
-			  run: |
-			  cd build/
-			  ./run_tests
+  build:
+	runs-on: ubuntu-latest
+	steps:
+	  - uses: actions/checkout@v3
+	  - name: build without python bindings with fetch content
+		  run: |
+			mkdir build
+			cd build
+			cmake .. -DCMAKE_BUILD_TYPE="Debug" -DAARE_PYTHON_BINDINGS="OFF"
+			cmake --build . -j 10
+	  - name: run tests
+		  run: |
+			cd build/
+			./run_tests
