@@ -10,7 +10,10 @@ jobs:
   build:
     runs-on: ubuntu-latest
     steps:
-	  - uses: actions/checkout@v3
+      - uses: actions/checkout@v3
+      - name: install dependencies
+        if: ${{ contains(inputs.use-system-libraries, 'ON')}}
+        run: echo "AAA"
       - name: build with fetch content
         run: |
           mkdir build
