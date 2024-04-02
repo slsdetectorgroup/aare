@@ -1,7 +1,7 @@
 name: Build and run tests
 on: [push]
 jobs:
-  build with sanitizers:
+  build:
     runs-on: ubuntu-latest
     strategy:
       matrix:
