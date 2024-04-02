@@ -5,6 +5,8 @@
 #include <map>
 #include <variant>
 
+namespace aare {
+
 class SubFile {
   protected:
     FILE *fp = nullptr;
@@ -42,3 +44,5 @@ class SubFile {
     inline size_t bytes_per_part() { return (m_bitdepth / 8) * m_rows * m_cols; }
     inline size_t pixels_per_part() { return m_rows * m_cols; }
 };
+
+} // namespace aare

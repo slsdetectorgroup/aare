@@ -14,6 +14,8 @@
  * should be able to work with streams coming from files or network
  */
 
+namespace aare {
+
 class Frame {
     ssize_t m_rows;
     ssize_t m_cols;
@@ -65,3 +67,4 @@ class Frame {
 };
 
 
+} // namespace aare

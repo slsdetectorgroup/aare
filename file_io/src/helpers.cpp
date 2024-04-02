@@ -1,5 +1,6 @@
 #include "aare/helpers.hpp"
 
+namespace aare {
 
 bool is_master_file(std::filesystem::path fpath) {
     std::string stem = fpath.stem();
@@ -9,3 +10,4 @@ bool is_master_file(std::filesystem::path fpath) {
         return false;
 }
 
+}// namespace aare

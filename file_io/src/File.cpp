@@ -2,6 +2,8 @@
 #include "aare/FileFactory.hpp"
 #include "aare/utils/logger.hpp"
 
+namespace aare {
+
 File::File(std::filesystem::path fname, std::string mode, FileConfig cfg) {
     file_impl = FileFactory::load_file(fname, mode, cfg);
 }
@@ -30,3 +32,5 @@ File::File(File &&other) {
 }
 
 // write move assignment operator
+
+}

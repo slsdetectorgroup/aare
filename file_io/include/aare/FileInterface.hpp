@@ -6,6 +6,8 @@
 #include <filesystem>
 #include <vector>
 
+namespace aare {
+
 struct FileConfig {
     std::filesystem::path fname;
     aare::DType dtype = aare::DType(typeid(uint16_t));
@@ -93,3 +95,5 @@ class FileInterface {
     ssize_t m_cols{};
     ssize_t m_bitdepth{};
 };
+
+}

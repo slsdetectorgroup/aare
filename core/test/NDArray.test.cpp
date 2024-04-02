@@ -3,8 +3,10 @@
 #include <array>
 
 
-// using reuss::DataSpan;
-// using reuss::Shape;
+using aare::NDArray;
+using aare::NDView;
+using aare::Shape;
+
 
 TEST_CASE("Initial size is zero if no size is specified")
 {

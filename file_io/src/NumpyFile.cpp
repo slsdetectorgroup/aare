@@ -1,6 +1,8 @@
 
 #include "aare/NumpyFile.hpp"
 
+namespace aare{
+
 void NumpyFile::write(Frame &frame) {
     if (fp == nullptr) {
         throw std::runtime_error("File not open");
@@ -97,3 +99,5 @@ NumpyFile::~NumpyFile() {
         
     }
 }
+
+} // namespace aare

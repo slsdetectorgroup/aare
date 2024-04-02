@@ -4,7 +4,7 @@
 #include "aare/defs.hpp"
 #include <fstream>
 
-
+namespace aare {
 
 class NumpyFileFactory : public FileFactory {
   private:
@@ -19,3 +19,5 @@ class NumpyFileFactory : public FileFactory {
     void parse_fname(FileInterface*)override{};
 
 };
+
+} // namespace aare

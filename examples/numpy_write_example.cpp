@@ -5,6 +5,10 @@
 
 #define AARE_ROOT_DIR_VAR "PROJECT_ROOT_DIR"
 
+using aare::File;
+using aare::FileConfig;
+using aare::Frame;
+
 
 int main() {
     auto path = std::filesystem::path("/tmp/test.npy");

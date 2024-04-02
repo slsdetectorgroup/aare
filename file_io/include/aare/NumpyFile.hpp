@@ -5,6 +5,8 @@
 #include <iostream>
 #include <numeric>
 
+namespace aare{
+
 class NumpyFile : public FileInterface {
     FILE *fp = nullptr;
     size_t initial_header_len = 0;
@@ -43,3 +45,5 @@ class NumpyFile : public FileInterface {
     void get_frame_into(size_t, std::byte *);
     Frame get_frame(size_t frame_number);
 };
+
+} // namespace aare

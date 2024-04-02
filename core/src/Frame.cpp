@@ -2,6 +2,9 @@
 #include "aare/utils/logger.hpp"
 #include <iostream>
 #include <cassert>
+
+namespace aare {
+
 Frame::Frame(std::byte* bytes, ssize_t rows, ssize_t cols, ssize_t bitdepth):
   m_rows(rows), m_cols(cols), m_bitdepth(bitdepth) {
     m_data = new std::byte[rows*cols*bitdepth/8];
@@ -48,4 +51,4 @@ template void Frame::set(int row, int col, uint32_t data);
 //   return array;
 // }
 
-
+} // namespace aare
