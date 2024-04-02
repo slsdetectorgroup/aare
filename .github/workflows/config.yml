@@ -4,7 +4,7 @@ on:
   push:
 
 jobs:
-  version-matrix:
+  build-and-test:
     strategy:
       # super important if you want to see all results, even if one fails
       # fail-fast is true by default
@@ -13,6 +13,6 @@ jobs:
         use-system-libraries: ["OFF","ON"]
     uses: ./.github/workflows/common-workflow.yml # calls the one above 
     with:
-      use-system-libraries: ${{ matrix.version }}
+      use-system-libraries: ${{ matrix.use-system-libraries }}
     secrets: inherit
 
