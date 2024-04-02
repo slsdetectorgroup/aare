@@ -13,6 +13,6 @@ jobs:
         use-system-libraries: ["OFF","ON"]
     uses: ./.github/workflows/common-workflow.yml # calls the one above 
     with:
-      version: ${{ matrix.version }}
+      use-system-libraries: ${{ matrix.version }}
     secrets: inherit
 
