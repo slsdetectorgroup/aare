@@ -20,7 +20,7 @@ jobs:
         shell: bash -el {0}
         run: |
           conda info
-          conda install fmt catch2 pybind11
+          conda install conda-forge::fmt conda-forge::catch2 conda-forge::pybind11 conda-forge::nlohmann_json
       - name: build with fetch content
         shell: bash -el {0}
         run: |
