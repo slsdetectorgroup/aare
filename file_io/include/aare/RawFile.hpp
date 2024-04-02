@@ -9,8 +9,10 @@ namespace aare {
 class RawFile : public FileInterface {
 
     using config = RawFileConfig;
+    
 
   public:
+    std::filesystem::path m_fname; //TO be made private!
     void write(Frame &frame) override{};
     Frame read() override { return get_frame(this->current_frame++); };
     std::vector<Frame> read(size_t n_frames) override;
