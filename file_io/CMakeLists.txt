@@ -32,6 +32,7 @@ endif()
 
 if(AARE_TESTS)
     set(TestSources
+            ${CMAKE_CURRENT_SOURCE_DIR}/test/NumpyFile.test.cpp
             ${CMAKE_CURRENT_SOURCE_DIR}/test/NumpyHelpers.test.cpp
             ${CMAKE_CURRENT_SOURCE_DIR}/test/RawFile.test.cpp
         )

@@ -41,13 +41,13 @@ std::unordered_map<std::string, std::string> parse_dict(std::string in, const st
 
     std::vector<std::pair<size_t, std::string>> positions;
 
-    for (auto const &value : keys) {
-        size_t pos = in.find("'" + value + "'");
+    for (auto const &key : keys) {
+        size_t pos = in.find("'" + key + "'");
 
         if (pos == std::string::npos)
-            throw std::runtime_error("Missing '" + value + "' key.");
+            throw std::runtime_error("Missing '" + key + "' key.");
 
-        std::pair<size_t, std::string> position_pair{pos, value};
+        std::pair<size_t, std::string> position_pair{pos, key};
         positions.push_back(position_pair);
     }
 
@@ -78,12 +78,19 @@ std::unordered_map<std::string, std::string> parse_dict(std::string in, const st
 }
 
 aare::DType parse_descr(std::string typestring) {
+    
     if (typestring.length() < 3) {
         throw std::runtime_error("invalid typestring (length)");
     }
 
-    char byteorder_c = typestring.at(0);
-    char kind_c = typestring.at(1);
+    constexpr char little_endian_char = '<';
+    constexpr char big_endian_char = '>';
+    constexpr char no_endian_char = '|';
+    constexpr std::array<char, 3> endian_chars = {little_endian_char, big_endian_char, no_endian_char};
+    constexpr std::array<char, 4> numtype_chars = {'f', 'i', 'u', 'c'};
+
+    const char byteorder_c = typestring[0];
+    const char kind_c = typestring[1];
     std::string itemsize_s = typestring.substr(2);
 
     if (!in_array(byteorder_c, endian_chars)) {
@@ -97,7 +104,6 @@ aare::DType parse_descr(std::string typestring) {
     if (!is_digits(itemsize_s)) {
         throw std::runtime_error("invalid typestring (itemsize)");
     }
-    // unsigned int itemsize = std::stoul(itemsize_s);
 
     return aare::DType(typestring);
 }
@@ -107,8 +113,7 @@ bool parse_bool(const std::string &in) {
         return true;
     if (in == "False")
         return false;
-
-    throw std::runtime_error("Invalid python boolan.");
+    throw std::runtime_error("Invalid python boolean.");
 }
 
 std::string get_value_from_map(const std::string &mapstr) {
@@ -124,7 +129,7 @@ bool is_digits(const std::string &str) { return std::all_of(str.begin(), str.end
 
 std::vector<std::string> parse_tuple(std::string in) {
     std::vector<std::string> v;
-    const char seperator = ',';
+    const char separator = ',';
 
     in = trim(in);
 
@@ -135,7 +140,7 @@ std::vector<std::string> parse_tuple(std::string in) {
 
     std::istringstream iss(in);
 
-    for (std::string token; std::getline(iss, token, seperator);) {
+    for (std::string token; std::getline(iss, token, separator);) {
         v.push_back(token);
     }
 
@@ -150,7 +155,6 @@ std::string trim(const std::string &str) {
         return "";
 
     auto end = str.find_last_not_of(whitespace);
-
     return str.substr(begin, end - begin + 1);
 }
 

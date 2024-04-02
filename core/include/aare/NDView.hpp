@@ -5,10 +5,21 @@
 #include <cstdint>
 #include <numeric>
 #include <vector>
+#include <stdexcept>
 
 namespace aare {
 
 template <ssize_t Ndim> using Shape = std::array<ssize_t, Ndim>;
+
+//TODO! fix mismatch between signed and unsigned
+template <ssize_t Ndim>
+Shape<Ndim> make_shape(const std::vector<size_t>& shape){
+    if(shape.size() != Ndim)
+        throw std::runtime_error("Shape size mismatch");
+    Shape<Ndim> arr;
+    std::copy_n(shape.begin(), Ndim, arr.begin());
+    return arr;
+}
 
 template <ssize_t Dim = 0, typename Strides> ssize_t element_offset(const Strides &) { return 0; }
 
