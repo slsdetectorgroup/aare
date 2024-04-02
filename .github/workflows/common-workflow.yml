@@ -38,7 +38,7 @@ jobs:
           pwd
           export PROJECT_ROOT_DIR="."
           ls build/examples/*_example
-          find -name "build/examples/*_example" | xargs -I {} -n 1 -t  bash -c {}
+          find build/examples -name "*_example"  | xargs -I {} -n 1 -t  bash -c {}
 
 
 
