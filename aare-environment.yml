@@ -1,0 +1,9 @@
+name: aare
+channels:
+  - conda-forge
+  - defaults
+dependencies:
+  - fmt
+  - pybind11
+  - nlohmann_json
+  - catch2
