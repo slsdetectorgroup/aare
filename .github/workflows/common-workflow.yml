@@ -22,7 +22,7 @@ jobs:
         run: |
           conda info
           conda install conda-forge::fmt conda-forge::catch2 conda-forge::pybind11 conda-forge::nlohmann_json
-      - name: build with fetch content
+      - name: build
         shell: bash -el {0}
         run: |
           mkdir build
