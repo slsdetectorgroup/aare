@@ -1,0 +1,18 @@
+name: Config Workflow
+
+on:
+  push:
+
+jobs:
+  version-matrix:
+    strategy:
+      # super important if you want to see all results, even if one fails
+      # fail-fast is true by default
+      fail-fast: false
+      matrix:
+        use-system-libraries: ["OFF","ON"]
+    uses: ./.github/workflows/common-workflow.yml # calls the one above 
+    with:
+      version: ${{ matrix.version }}
+    secrets: inherit
+

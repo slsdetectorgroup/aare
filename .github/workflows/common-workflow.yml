@@ -1,21 +1,24 @@
 name: Build and run tests
-on: [push]
+on: 
+  workflow_call:
+    inputs:
+      use-system-libraries: # the variable you can use in place of a matrix
+        required: true
+        type: string
+
 jobs:
   build:
     runs-on: ubuntu-latest
-    strategy:
-      matrix:
-        use-system-libraries: ["ON","OFF"] 
     steps:
       - uses: actions/checkout@v3
       - name: install dependencies
-        if: ${{ contains(matrix.use-system-libraries, 'ON')}}
+        if: ${{ contains(inputs.use-system-libraries, 'ON')}}
         run: echo "AAA"
       - name: build with fetch content
         run: |
           mkdir build
           cd build
-          cmake .. -DCMAKE_BUILD_TYPE="Debug" -DAARE_PYTHON_BINDINGS="OFF" -DAARE_SYSTEM_LIBRARIES=${{matrix.use-system-libraries}}
+          cmake .. -DCMAKE_BUILD_TYPE="Debug" -DAARE_PYTHON_BINDINGS="OFF" -DAARE_SYSTEM_LIBRARIES=${{inputs.use-system-libraries}}
           cmake --build . -j 10
       - name: run tests
         run: |
