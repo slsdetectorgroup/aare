@@ -5,6 +5,11 @@ on:
       use-system-libraries: # the variable you can use in place of a matrix
         required: true
         type: string
+        default: OFF
+      build-type:
+        required: true
+        type: string
+        default: Debug
 
 jobs:
   build:
@@ -24,13 +29,14 @@ jobs:
         run: |
           mkdir build
           cd build
-          cmake .. -DCMAKE_BUILD_TYPE="Debug" -DAARE_PYTHON_BINDINGS="OFF" -DAARE_SYSTEM_LIBRARIES=${{inputs.use-system-libraries}}
+          cmake .. -DCMAKE_BUILD_TYPE=${{inputs.build-type}} -DAARE_PYTHON_BINDINGS="OFF" -DAARE_SYSTEM_LIBRARIES=${{inputs.use-system-libraries}}
           cmake --build . -j 10
       - name: run tests
         run: |
           cd build/
           ./run_tests
       - name: run examples
+        # find all examples in build/examples and run them
         run: |
           pwd
           export PROJECT_ROOT_DIR="."

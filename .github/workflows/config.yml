@@ -12,8 +12,10 @@ jobs:
       fail-fast: false
       matrix:
         use-system-libraries: ["OFF","ON"]
+        build-type: ["Debug","Release"]
     uses: ./.github/workflows/common-workflow.yml # calls the one above 
     with:
       use-system-libraries: ${{ matrix.use-system-libraries }}
+      build-type: ${{ matrix.build-type }}
     secrets: inherit
 
