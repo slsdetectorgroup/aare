@@ -22,14 +22,14 @@ jobs:
       #     key:
       #       ${{ runner.os }}-conda-${{ env.CACHE_NUMBER }}-${{
       #       hashFiles('aare-environment.yml') }}
-      - uses: conda-incubator/setup-miniconda@v3
-        if: ${{ contains(inputs.use-system-libraries, 'ON')}}
+      - uses: mamba-org/setup-micromamba@v1
         with:
-          activate-environment: aare
-          channel-priority: strict
+          micromamba-version: '1.5.6-0' # any version from https://github.com/mamba-org/micromamba-releases
           environment-file: aare-environment.yml
-          python-version: 3.11
-          use-only-tar-bz2: true # IMPORTANT: This needs to be set for caching to work properly!
+          init-shell: >-
+            bash
+          cache-environment: true
+          post-cleanup: 'all'
       - name: build
         shell: bash -el {0}
         run: |
