@@ -11,17 +11,17 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v3
-      - name: Cache conda
-        if: ${{ contains(inputs.use-system-libraries, 'ON')}}
-        uses: actions/cache@v3
-        env:
-          # Increase this value to reset cache if etc/example-environment.yml has not changed
-          CACHE_NUMBER: 0
-        with:
-          path: ~/conda_pkgs_dir
-          key:
-            ${{ runner.os }}-conda-${{ env.CACHE_NUMBER }}-${{
-            hashFiles('aare-environment.yml') }}
+      # - name: Cache conda
+      #   if: ${{ contains(inputs.use-system-libraries, 'ON')}}
+      #   uses: actions/cache@v3
+      #   env:
+      #     # Increase this value to reset cache if etc/example-environment.yml has not changed
+      #     CACHE_NUMBER: 0
+      #   with:
+      #     path: ~/conda_pkgs_dir
+      #     key:
+      #       ${{ runner.os }}-conda-${{ env.CACHE_NUMBER }}-${{
+      #       hashFiles('aare-environment.yml') }}
       - uses: conda-incubator/setup-miniconda@v3
         if: ${{ contains(inputs.use-system-libraries, 'ON')}}
         with:
