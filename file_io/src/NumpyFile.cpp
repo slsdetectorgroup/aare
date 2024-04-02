@@ -4,25 +4,25 @@
 namespace aare{
 
 NumpyFile::NumpyFile(const std::filesystem::path& fname) {
-    this->m_fname = fname;
-    fp = fopen(this->m_fname.c_str(), "rb");
+    m_fname = fname;
+    fp = fopen(m_fname.c_str(), "rb");
 }
 NumpyFile::NumpyFile(FileConfig config, header_t header) {
-    this->mode = "w";
-    this->m_fname = config.fname;
-    this->m_bitdepth = config.dtype.bitdepth();
-    this->m_rows = config.rows;
-    this->m_cols = config.cols;
-    this->header = header;
-    this->header.shape = {0, config.rows, config.cols};
+    mode = "w";
+    m_fname = config.fname;
+    m_bitdepth = config.dtype.bitdepth();
+    m_rows = config.rows;
+    m_cols = config.cols;
+    m_header = header;
+    m_header.shape = {0, config.rows, config.cols};
 
-    fp = fopen(this->m_fname.c_str(), "wb");
+    fp = fopen(m_fname.c_str(), "wb");
     if (!fp) {
-        throw std::runtime_error(fmt::format("Could not open: {} for reading", this->m_fname.c_str()));
+        throw std::runtime_error(fmt::format("Could not open: {} for reading", m_fname.c_str()));
     }
 
-    this->initial_header_len =
-        aare::NumpyHelpers::write_header(std::filesystem::path(this->m_fname.c_str()), this->header);
+    initial_header_len =
+        aare::NumpyHelpers::write_header(std::filesystem::path(m_fname.c_str()), header);
 }
 
 void NumpyFile::write(Frame &frame) {
@@ -39,7 +39,7 @@ void NumpyFile::write(Frame &frame) {
 
 
 Frame NumpyFile::get_frame(size_t frame_number) {
-    Frame frame(header.shape[1], header.shape[2], header.dtype.bitdepth());
+    Frame frame(m_header.shape[1], m_header.shape[2], m_header.dtype.bitdepth());
     get_frame_into(frame_number, frame._get_data());
     return frame;
 }
@@ -47,7 +47,7 @@ void NumpyFile::get_frame_into(size_t frame_number, std::byte *image_buf) {
     if (fp == nullptr) {
         throw std::runtime_error("File not open");
     }
-    if (frame_number > header.shape[0]) {
+    if (frame_number > m_header.shape[0]) {
         throw std::runtime_error("Frame number out of range");
     }
     fseek(fp, header_size + frame_number * bytes_per_frame(), SEEK_SET);
@@ -55,24 +55,24 @@ void NumpyFile::get_frame_into(size_t frame_number, std::byte *image_buf) {
 }
 
 size_t NumpyFile::pixels() {
-    return std::accumulate(header.shape.begin() + 1, header.shape.end(), 1, std::multiplies<uint64_t>());
+    return std::accumulate(m_header.shape.begin() + 1, m_header.shape.end(), 1, std::multiplies<uint64_t>());
 };
-size_t NumpyFile::bytes_per_frame() { return header.dtype.bitdepth() / 8 * pixels(); };
+size_t NumpyFile::bytes_per_frame() { return m_header.dtype.bitdepth() / 8 * pixels(); };
 
 std::vector<Frame> NumpyFile::read(size_t n_frames) {
     // TODO: implement this in a more efficient way
     std::vector<Frame> frames;
     for (size_t i = 0; i < n_frames; i++) {
-        frames.push_back(this->get_frame(this->current_frame));
-        this->current_frame++;
+        frames.push_back(get_frame(current_frame));
+        current_frame++;
     }
     return frames;
 }
 void NumpyFile::read_into(std::byte *image_buf, size_t n_frames) {
     // TODO: implement this in a more efficient way
     for (size_t i = 0; i < n_frames; i++) {
-        this->get_frame_into(this->current_frame++, image_buf);
-        image_buf += this->bytes_per_frame();
+        get_frame_into(current_frame++, image_buf);
+        image_buf += bytes_per_frame();
     }
 }
 
@@ -84,11 +84,11 @@ NumpyFile::~NumpyFile() {
         size_t data_size = file_size - initial_header_len;
         size_t n_frames = data_size / bytes_per_frame();
         // update number of frames in header (first element of shape)
-        this->header.shape[0] = n_frames;
+        m_header.shape[0] = n_frames;
         fseek(fp, 0, SEEK_SET);
         // create string stream to contain header
         std::stringstream ss;
-        aare::NumpyHelpers::write_header(ss, this->header);
+        aare::NumpyHelpers::write_header(ss, m_header);
         std::string header_str = ss.str();
         // write header
         fwrite(header_str.c_str(), header_str.size(), 1, fp);

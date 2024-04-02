@@ -70,7 +70,7 @@ void NumpyFileFactory::parse_metadata(FileInterface *_file) {
         auto dim = static_cast<unsigned long>(std::stoul(item));
         shape.push_back(dim);
     }
-    file->header = {dtype, fortran_order, shape};
+    file->m_header = {dtype, fortran_order, shape};
 }
 
 NumpyFile *NumpyFileFactory::load_file_read() {

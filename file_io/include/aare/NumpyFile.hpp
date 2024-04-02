@@ -11,7 +11,9 @@ namespace aare{
 class NumpyFile : public FileInterface {
     FILE *fp = nullptr;
     size_t initial_header_len = 0;
-    
+    size_t current_frame{};
+    void get_frame_into(size_t, std::byte *);
+    Frame get_frame(size_t frame_number);
 
 
   public:
@@ -30,12 +32,12 @@ class NumpyFile : public FileInterface {
     size_t pixels() override;
     void seek(size_t frame_number) override { this->current_frame = frame_number; }
     size_t tell() override { return this->current_frame; }
-    size_t total_frames() const override { return header.shape[0]; }
-    ssize_t rows() const override { return header.shape[1]; }
-    ssize_t cols() const override { return header.shape[2]; }
-    ssize_t bitdepth() const override { return header.dtype.bitdepth(); }
+    size_t total_frames() const override { return m_header.shape[0]; }
+    ssize_t rows() const override { return m_header.shape[1]; }
+    ssize_t cols() const override { return m_header.shape[2]; }
+    ssize_t bitdepth() const override { return m_header.dtype.bitdepth(); }
 
-    header_t header;
+    header_t m_header;
     uint8_t major_ver_{};
     uint8_t minor_ver_{};
     uint32_t header_len{};
@@ -44,10 +46,8 @@ class NumpyFile : public FileInterface {
 
     ~NumpyFile();
 
-  private:
-    size_t current_frame{};
-    void get_frame_into(size_t, std::byte *);
-    Frame get_frame(size_t frame_number);
+
+    
 };
 
 } // namespace aare
