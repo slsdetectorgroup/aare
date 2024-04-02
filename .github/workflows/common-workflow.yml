@@ -7,20 +7,9 @@ on:
         type: string
 
 jobs:
-
-
-
   build:
     runs-on: ubuntu-latest
     steps:
-	  - uses: conda-incubator/setup-miniconda@v3
-        if: ${{ contains(inputs.use-system-libraries, 'ON')}}
-        with:
-          auto-update-conda: true
-          python-version: 3.11
-        run: |
-		  conda list
-		  
       - name: build with fetch content
         run: |
           mkdir build
