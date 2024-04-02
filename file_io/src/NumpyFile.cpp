@@ -3,19 +3,8 @@
 
 namespace aare{
 
-void NumpyFile::write(Frame &frame) {
-    if (fp == nullptr) {
-        throw std::runtime_error("File not open");
-    }
-    if (not(mode == "w" or mode == "a")) {
-        throw std::runtime_error("File not open for writing");
-    }
-    fseek(fp, 0, SEEK_END);
-    fwrite(frame._get_data(), frame.size(), 1, fp);
-}
-
-NumpyFile::NumpyFile(std::filesystem::path fname_) {
-    this->m_fname = fname_;
+NumpyFile::NumpyFile(const std::filesystem::path& fname) {
+    this->m_fname = fname;
     fp = fopen(this->m_fname.c_str(), "rb");
 }
 NumpyFile::NumpyFile(FileConfig config, header_t header) {
@@ -35,6 +24,19 @@ NumpyFile::NumpyFile(FileConfig config, header_t header) {
     this->initial_header_len =
         aare::NumpyHelpers::write_header(std::filesystem::path(this->m_fname.c_str()), this->header);
 }
+
+void NumpyFile::write(Frame &frame) {
+    if (fp == nullptr) {
+        throw std::runtime_error("File not open");
+    }
+    if (not(mode == "w" or mode == "a")) {
+        throw std::runtime_error("File not open for writing");
+    }
+    fseek(fp, 0, SEEK_END);
+    fwrite(frame._get_data(), frame.size(), 1, fp);
+}
+
+
 
 Frame NumpyFile::get_frame(size_t frame_number) {
     Frame frame(header.shape[1], header.shape[2], header.dtype.bitdepth());

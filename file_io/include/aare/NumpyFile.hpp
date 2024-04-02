@@ -4,15 +4,21 @@
 #include "aare/defs.hpp"
 #include <iostream>
 #include <numeric>
+#include <filesystem>
 
 namespace aare{
 
 class NumpyFile : public FileInterface {
     FILE *fp = nullptr;
     size_t initial_header_len = 0;
+    
 
 
   public:
+    std::filesystem::path m_fname; //TO be made private!
+
+    NumpyFile(const std::filesystem::path& fname);
+    NumpyFile(FileConfig, header_t);
     void write(Frame &frame) override;
     Frame read() override { return get_frame(this->current_frame++); }
 
@@ -29,8 +35,6 @@ class NumpyFile : public FileInterface {
     ssize_t cols() const override { return header.shape[2]; }
     ssize_t bitdepth() const override { return header.dtype.bitdepth(); }
 
-    NumpyFile(std::filesystem::path fname);
-    NumpyFile(FileConfig, header_t);
     header_t header;
     uint8_t major_ver_{};
     uint8_t minor_ver_{};

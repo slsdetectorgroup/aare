@@ -83,7 +83,7 @@ class FileInterface {
 
   public:
     std::string mode;
-    std::filesystem::path m_fname;
+    // std::filesystem::path m_fname;
     std::filesystem::path m_base_path;
     std::string m_base_name, m_ext;
     int m_findex;

@@ -9,7 +9,7 @@ public:
     //  - w writing (overwrites existing file)
     //  - a appending (appends to existing file)
     // TODO! do we need to support w+, r+ and a+?
-    FileInterface(std::filesystem::path& fname, const char* opts="r" ){}; 
+    FileInterface(const std::filesystem::path& fname, const char* opts="r" ){}; 
     
     // write one frame
     virtual void write(Frame& frame) = 0;
