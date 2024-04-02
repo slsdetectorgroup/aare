@@ -1,3 +1,4 @@
+# config file to run multiple jobs in parallel with matrix strategy
 name: Config Workflow
 
 on:

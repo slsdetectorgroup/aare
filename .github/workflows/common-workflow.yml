@@ -15,13 +15,14 @@ jobs:
         if: ${{ contains(inputs.use-system-libraries, 'ON')}}
         with:
           activate-environment: aare
+          environment-file: aare-environment.yml
           python-version: 3.11
-      - name: install dependencies
-        if: ${{ contains(inputs.use-system-libraries, 'ON')}}
-        shell: bash -el {0}
-        run: |
-          conda info
-          conda install conda-forge::fmt conda-forge::catch2 conda-forge::pybind11 conda-forge::nlohmann_json
+      # - name: install dependencies
+      #   if: ${{ contains(inputs.use-system-libraries, 'ON')}}
+      #   shell: bash -el {0}
+      #   run: |
+      #     conda info
+      #     conda install conda-forge::fmt conda-forge::catch2 conda-forge::pybind11 conda-forge::nlohmann_json
       - name: build
         shell: bash -el {0}
         run: |
