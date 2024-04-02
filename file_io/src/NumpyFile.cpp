@@ -139,9 +139,9 @@ void NumpyFile::load_metadata(){
     }
 
     // read header
-    auto buf_v = std::vector<char>(header_len);
-    fread(buf_v.data(), header_len,1,fp);
-    std::string header(buf_v.data(), header_len);
+    std::string header(header_len, '\0');
+    fread(header.data(), header_len,1,fp);
+
 
     // parse header
     std::vector<std::string> keys{"descr", "fortran_order", "shape"};

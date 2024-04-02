@@ -1,6 +1,7 @@
 #pragma once
 #include "aare/FileInterface.hpp"
 #include "aare/NumpyHelpers.hpp"
+#include "aare/DType.hpp"
 #include "aare/defs.hpp"
 #include <iostream>
 #include <numeric>
@@ -44,6 +45,18 @@ class NumpyFile : public FileInterface {
     ssize_t rows() const override { return m_header.shape[1]; }
     ssize_t cols() const override { return m_header.shape[2]; }
     ssize_t bitdepth() const override { return m_header.dtype.bitdepth(); }
+
+    DType dtype() const { return m_header.dtype; }
+    std::vector<size_t> shape() const { return m_header.shape; }
+    
+    //load the full numpy file into a NDArray
+    template<typename T, size_t NDim>
+    NDArray<T,NDim> load(){
+        NDArray<T,NDim> arr(make_shape<NDim>(m_header.shape));
+        fseek(fp, header_size, SEEK_SET);
+        fread(arr.data(), sizeof(T), arr.size(), fp);
+        return arr;
+    }
 
     ~NumpyFile();
 };

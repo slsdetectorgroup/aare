@@ -72,11 +72,6 @@ struct RawFileConfig {
     }
 };
 
-const char little_endian_char = '<';
-const char big_endian_char = '>';
-const char no_endian_char = '|';
 
-const std::array<char, 3> endian_chars = {little_endian_char, big_endian_char, no_endian_char};
-const std::array<char, 4> numtype_chars = {'f', 'i', 'u', 'c'};
 
 } // namespace aare
