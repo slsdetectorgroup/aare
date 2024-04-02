@@ -1,6 +1,5 @@
 name: aare
 channels:
-  - slsdetectorgroup
   - conda-forge
   - defaults
 dependencies:
