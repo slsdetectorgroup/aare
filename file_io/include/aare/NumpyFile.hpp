@@ -15,9 +15,11 @@ class NumpyFile : public FileInterface {
     void get_frame_into(size_t, std::byte *);
     Frame get_frame(size_t frame_number);
 
+    void load_metadata();
+    std::filesystem::path m_fname; 
 
   public:
-    std::filesystem::path m_fname; //TO be made private!
+    
 
     NumpyFile(const std::filesystem::path& fname);
     NumpyFile(FileConfig, header_t);
