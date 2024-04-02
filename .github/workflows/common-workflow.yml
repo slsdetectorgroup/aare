@@ -18,8 +18,11 @@ jobs:
       - name: install dependencies
         if: ${{ contains(inputs.use-system-libraries, 'ON')}}
         shell: bash -el {0}
-        run: conda info
+        run: |
+		  conda info
+		  conda install fmt catch2 pybind11
       - name: build with fetch content
+        shell: bash -el {0}
         run: |
           mkdir build
           cd build
