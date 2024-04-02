@@ -109,14 +109,6 @@ NumpyFile::~NumpyFile() {
 
 void NumpyFile::load_metadata(){
 
-    // auto file = dynamic_cast<NumpyFile *>(_file);
-    // // open ifsteam to file
-    // f = std::ifstream(file->m_fname, std::ios::binary);
-    // // check if file exists
-    // if (!f.is_open()) {
-    //     throw std::runtime_error(fmt::format("Could not open: \"{}\" for reading", file->m_fname.c_str()));
-    // }
-    
     // read magic number
     std::array<char, 6> tmp{};
     fread(tmp.data(), tmp.size(), 1, fp);
@@ -128,8 +120,8 @@ void NumpyFile::load_metadata(){
     }
 
     // read version
-    fread(reinterpret_cast<char *>(&major_ver_),sizeof(major_ver_), 1,fp);
-    fread(reinterpret_cast<char *>(&minor_ver_), sizeof(minor_ver_),1,fp);
+    fread(reinterpret_cast<char *>(&major_ver_), sizeof(major_ver_), 1,fp);
+    fread(reinterpret_cast<char *>(&minor_ver_), sizeof(minor_ver_), 1,fp);
 
     if (major_ver_ == 1) {
         header_len_size = 2;
@@ -145,13 +137,13 @@ void NumpyFile::load_metadata(){
     if (header_size % 16 != 0) {
         fmt::print("Warning: header length is not a multiple of 16\n");
     }
+
     // read header
     auto buf_v = std::vector<char>(header_len);
     fread(buf_v.data(), header_len,1,fp);
     std::string header(buf_v.data(), header_len);
 
     // parse header
-
     std::vector<std::string> keys{"descr", "fortran_order", "shape"};
     aare::logger::debug("original header: \"header\"");
 
