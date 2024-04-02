@@ -9,7 +9,7 @@ jobs:
     steps:
       - uses: actions/checkout@v3
       - name: install dependencies
-        if: ${{ contains(matrix.use-system-libraries, "ON")}}
+        if: ${{ contains(matrix.use-system-libraries, 'ON')}}
         run: echo "AAA"
       - name: build with fetch content
         run: |
