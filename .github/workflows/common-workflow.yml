@@ -11,18 +11,23 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v3
+      - name: Cache conda
+        uses: actions/cache@v3
+        env:
+          # Increase this value to reset cache if etc/example-environment.yml has not changed
+          CACHE_NUMBER: 0
+        with:
+          path: ~/conda_pkgs_dir
+          key:
+            ${{ runner.os }}-conda-${{ env.CACHE_NUMBER }}-${{
+            hashFiles('aare-environment.yml') }}
       - uses: conda-incubator/setup-miniconda@v3
         if: ${{ contains(inputs.use-system-libraries, 'ON')}}
         with:
           activate-environment: aare
           environment-file: aare-environment.yml
           python-version: 3.11
-      # - name: install dependencies
-      #   if: ${{ contains(inputs.use-system-libraries, 'ON')}}
-      #   shell: bash -el {0}
-      #   run: |
-      #     conda info
-      #     conda install conda-forge::fmt conda-forge::catch2 conda-forge::pybind11 conda-forge::nlohmann_json
+          use-only-tar-bz2: true # IMPORTANT: This needs to be set for caching to work properly!
       - name: build
         shell: bash -el {0}
         run: |
