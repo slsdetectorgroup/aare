@@ -119,7 +119,7 @@ void RawFileFactory::open_subfiles(FileInterface *_file) {
     }
 }
 
-RawFile *RawFileFactory::load_file() {
+RawFile *RawFileFactory::load_file_read() {
     RawFile *file = new RawFile();
     file->m_fname = this->m_fpath;
     this->parse_fname(file);

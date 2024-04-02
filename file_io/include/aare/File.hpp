@@ -1,4 +1,6 @@
 #include "aare/FileInterface.hpp"
+
+
 class File {
   private:
     FileInterface *file_impl;
@@ -9,7 +11,8 @@ class File {
     //  - w writing (overwrites existing file)
     //  - a appending (appends to existing file)
     // TODO! do we need to support w+, r+ and a+?
-    File(std::filesystem::path fname, std::string mode);
+    File(std::filesystem::path fname, std::string mode,FileConfig cfg = {});
+    void write(Frame& frame);
     Frame read();
     Frame iread(size_t frame_number);
     std::vector<Frame> read(size_t n_frames);

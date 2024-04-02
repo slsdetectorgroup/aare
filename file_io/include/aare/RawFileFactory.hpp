@@ -6,8 +6,10 @@ class RawFileFactory : public FileFactory {
     void parse_raw_metadata(RawFile *file);
 
   public:
+
     RawFileFactory(std::filesystem::path fpath);
-    virtual RawFile *load_file() override;
+    RawFile *load_file_read() override;
+    RawFile *load_file_write(FileConfig) override{return new RawFile();};
     void parse_metadata(FileInterface *) override;
     void parse_fname(FileInterface *) override;
     void open_subfiles(FileInterface *);

@@ -1,4 +1,30 @@
+/*
+   28-03-2024 modified by: Bechir Braham <bechir.braham@psi.ch>
+
+   Copyright 2017-2023 Leon Merten Lohse
+
+   Permission is hereby granted, free of charge, to any person obtaining a copy
+   of this software and associated documentation files (the "Software"), to deal
+   in the Software without restriction, including without limitation the rights
+   to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+   copies of the Software, and to permit persons to whom the Software is
+   furnished to do so, subject to the following conditions:
+
+   The above copyright notice and this permission notice shall be included in
+   all copies or substantial portions of the Software.
+
+   THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+   IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+   FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+   AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+   LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+   OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+   SOFTWARE.
+*/
+
 #include "aare/NumpyHelpers.hpp"
+
+namespace aare::NumpyHelpers {
 
 std::unordered_map<std::string, std::string> parse_dict(std::string in, const std::vector<std::string> &keys) {
     std::unordered_map<std::string, std::string> map;
@@ -51,8 +77,7 @@ std::unordered_map<std::string, std::string> parse_dict(std::string in, const st
     return map;
 }
 
-
-dtype_t parse_descr(std::string typestring) {
+aare::DType parse_descr(std::string typestring) {
     if (typestring.length() < 3) {
         throw std::runtime_error("invalid typestring (length)");
     }
@@ -72,9 +97,9 @@ dtype_t parse_descr(std::string typestring) {
     if (!is_digits(itemsize_s)) {
         throw std::runtime_error("invalid typestring (itemsize)");
     }
-    unsigned int itemsize = std::stoul(itemsize_s);
+    // unsigned int itemsize = std::stoul(itemsize_s);
 
-    return {byteorder_c, kind_c, itemsize};
+    return aare::DType(typestring);
 }
 
 bool parse_bool(const std::string &in) {
@@ -135,3 +160,93 @@ std::string parse_str(const std::string &in) {
 
     throw std::runtime_error("Invalid python string.");
 }
+
+void write_magic(std::ostream &ostream, int version_major, int version_minor) {
+    ostream.write(magic_str.data(), magic_string_length);
+    ostream.put(version_major);
+    ostream.put(version_minor);
+}
+template <typename T> inline std::string write_tuple(const std::vector<T> &v) {
+
+    if (v.size() == 0)
+        return "()";
+    std::ostringstream ss;
+    ss.imbue(std::locale("C"));
+
+    if (v.size() == 1) {
+        ss << "(" << v.front() << ",)";
+    } else {
+        const std::string delimiter = ", ";
+        // v.size() > 1
+        ss << "(";
+        // for (size_t i = 0; i < v.size() - 1; ++i) {
+        //     ss << v[i] << delimiter;
+        // }
+        // ss << v.back();
+        std::copy(v.begin(), v.end()-1, std::ostream_iterator<T>(ss, ", "));
+        ss << v.back();
+        ss << ")";
+    }
+
+    return ss.str();
+}
+
+inline std::string write_boolean(bool b) {
+    if (b)
+        return "True";
+    else
+        return "False";
+}
+
+inline std::string write_header_dict(const std::string &descr, bool fortran_order, const shape_t &shape) {
+    std::string s_fortran_order = write_boolean(fortran_order);
+    std::string shape_s = write_tuple(shape);
+
+    return "{'descr': '" + descr + "', 'fortran_order': " + s_fortran_order + ", 'shape': " + shape_s + ", }";
+}
+
+size_t write_header(std::filesystem::path fname, const header_t &header) {
+    std::ofstream out(fname, std::ios::binary | std::ios::out);
+    return write_header(out, header);
+}
+
+
+size_t write_header(std::ostream &out, const header_t &header) {
+    std::string header_dict = write_header_dict(header.dtype.str(), header.fortran_order, header.shape);
+
+    size_t length = magic_string_length + 2 + 2 + header_dict.length() + 1;
+
+    int version_major = 1;
+    int version_minor = 0;
+    if (length >= 255 * 255) {
+        length = magic_string_length + 2 + 4 + header_dict.length() + 1;
+        version_major = 2;
+        version_minor = 0;
+    }
+    size_t padding_len = 16 - length % 16;
+    std::string padding(padding_len, ' ');
+
+    // write magic
+    write_magic(out, version_major, version_minor);
+
+    // write header length
+    if (version_major == 1 and version_minor == 0) {
+        auto header_len = static_cast<uint16_t>(header_dict.length() + padding.length() + 1);
+
+        std::array<uint8_t, 2> header_len_le16{static_cast<uint8_t>((header_len >> 0) & 0xff),
+                                               static_cast<uint8_t>((header_len >> 8) & 0xff)};
+        out.write(reinterpret_cast<char *>(header_len_le16.data()), 2);
+    } else {
+        auto header_len = static_cast<uint32_t>(header_dict.length() + padding.length() + 1);
+
+        std::array<uint8_t, 4> header_len_le32{
+            static_cast<uint8_t>((header_len >> 0) & 0xff), static_cast<uint8_t>((header_len >> 8) & 0xff),
+            static_cast<uint8_t>((header_len >> 16) & 0xff), static_cast<uint8_t>((header_len >> 24) & 0xff)};
+        out.write(reinterpret_cast<char *>(header_len_le32.data()), 4);
+    }
+
+    out << header_dict << padding << '\n';
+    return length;
+}
+
+} // namespace aare::NumpyHelpers
