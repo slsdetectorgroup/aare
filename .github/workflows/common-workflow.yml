@@ -12,6 +12,7 @@ jobs:
     steps:
       - uses: actions/checkout@v3
       - uses: conda-incubator/setup-miniconda@v3
+        if: ${{ contains(inputs.use-system-libraries, 'ON')}}
         with:
           activate-environment: aare
           python-version: 3.11
@@ -34,10 +35,10 @@ jobs:
           ./run_tests
       - name: run examples
         run: |
+          pwd
           export PROJECT_ROOT_DIR="."
-          cd build/examples/
-          ls *_example
-          find -name "*_example" | xargs -I {} -n 1 -t  bash -c {}
+          ls build/examples/*_example
+          find -name "build/examples/*_example" | xargs -I {} -n 1 -t  bash -c {}
 
 
 
