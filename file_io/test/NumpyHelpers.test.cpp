@@ -31,3 +31,34 @@ TEST_CASE("trim whitespace"){
     REQUIRE(trim(" ") == "");
     REQUIRE(trim(" \thej hej ") == "hej hej");
 }
+
+TEST_CASE("parse data type descriptions"){
+    REQUIRE(parse_descr("<i1") == aare::DType::INT8);
+    REQUIRE(parse_descr("<i2") == aare::DType::INT16);
+    REQUIRE(parse_descr("<i4") == aare::DType::INT32);
+    REQUIRE(parse_descr("<i8") == aare::DType::INT64);
+
+    REQUIRE(parse_descr("<u1") == aare::DType::UINT8);
+    REQUIRE(parse_descr("<u2") == aare::DType::UINT16);
+    REQUIRE(parse_descr("<u4") == aare::DType::UINT32);
+    REQUIRE(parse_descr("<u8") == aare::DType::UINT64);
+
+    REQUIRE(parse_descr("<f4") == aare::DType::FLOAT);
+    REQUIRE(parse_descr("<f8") == aare::DType::DOUBLE);
+}
+
+TEST_CASE("is element in array"){   
+    REQUIRE(in_array(1, std::array<int, 3>{1,2,3}));
+    REQUIRE_FALSE(in_array(4, std::array<int, 3>{1,2,3}));
+    REQUIRE(in_array(1, std::array<int, 1>{1}));
+    REQUIRE_FALSE(in_array(1, std::array<int, 0>{}));
+}
+
+TEST_CASE("Parse numpy dict"){
+    std::string in = "{'descr': '<f4', 'fortran_order': False, 'shape': (3, 4)}";
+    std::vector<std::string> keys{"descr", "fortran_order", "shape"};
+    auto map = parse_dict(in, keys);
+    REQUIRE(map["descr"] == "'<f4'");
+    REQUIRE(map["fortran_order"] == "False");
+    REQUIRE(map["shape"] == "(3, 4)");
+}

@@ -14,7 +14,7 @@
 #include "aare/DType.hpp"
 #include "aare/defs.hpp"
 
-using shape_t = std::vector<uint64_t>;
+using shape_t = std::vector<size_t>;
 
 struct header_t {
     header_t() : dtype(aare::DType(aare::DType::ERROR)), fortran_order(false), shape(shape_t()){};
@@ -53,7 +53,7 @@ std::string get_value_from_map(const std::string &mapstr);
 
 std::unordered_map<std::string, std::string> parse_dict(std::string in, const std::vector<std::string> &keys);
 
-template <typename T, size_t N> inline bool in_array(T val, const std::array<T, N> &arr) {
+template <typename T, size_t N> bool in_array(T val, const std::array<T, N> &arr) {
     return std::find(std::begin(arr), std::end(arr), val) != std::end(arr);
 }
 bool is_digits(const std::string &str);
