@@ -14,12 +14,12 @@ jobs:
       - uses: conda-incubator/setup-miniconda@v3
         with:
           auto-activate-base: true
-          activate-environment: ""
+          activate-environment: true
           auto-update-conda: true
           python-version: 3.11
       - name: install dependencies
         if: ${{ contains(inputs.use-system-libraries, 'ON')}}
-        run: echo "AAA"
+        run: conda info
       - name: build with fetch content
         run: |
           mkdir build
