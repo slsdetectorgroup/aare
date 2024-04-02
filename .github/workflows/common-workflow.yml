@@ -26,7 +26,7 @@ jobs:
           ./run_tests
       - name: run examples
         run: |
-		  export PROJECT_ROOT_DIR="."
+          export PROJECT_ROOT_DIR="."
           cd build/examples/
           ls *_example
           find -name "*_example" | xargs -I {} -n 1 -t  bash -c {}
