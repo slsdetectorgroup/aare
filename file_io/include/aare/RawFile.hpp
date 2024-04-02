@@ -4,6 +4,8 @@
 #include "aare/SubFile.hpp"
 #include "aare/defs.hpp"
 
+namespace aare {
+
 class RawFile : public FileInterface {
 
     using config = RawFileConfig;
@@ -70,3 +72,5 @@ class RawFile : public FileInterface {
     void get_frame_into(size_t frame_number, std::byte *image_buf);
     Frame get_frame(size_t frame_number);
 };
+
+}

@@ -9,6 +9,8 @@
 #include <fmt/format.h>
 #include <variant>
 
+namespace aare{
+
 typedef struct {
     uint64_t frameNumber;
     uint32_t expLength;
@@ -76,3 +78,5 @@ const char no_endian_char = '|';
 
 const std::array<char, 3> endian_chars = {little_endian_char, big_endian_char, no_endian_char};
 const std::array<char, 4> numtype_chars = {'f', 'i', 'u', 'c'};
+
+} // namespace aare

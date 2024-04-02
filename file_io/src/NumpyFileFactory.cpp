@@ -1,7 +1,7 @@
 #include "aare/NumpyFileFactory.hpp"
 #include "aare/NumpyHelpers.hpp"
 
-using namespace aare;
+namespace aare {
 
 NumpyFileFactory::NumpyFileFactory(std::filesystem::path fpath) { this->m_fpath = fpath; }
 void NumpyFileFactory::parse_metadata(FileInterface *_file) {
@@ -86,3 +86,5 @@ NumpyFile *NumpyFileFactory::load_file_write(FileConfig config) {
 
     return file;
 };
+
+} // namespace aare

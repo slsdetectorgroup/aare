@@ -18,6 +18,7 @@ TODO! Add expression templates for operators
 #include <iostream>
 #include <numeric>
 
+namespace aare {
 
 template <typename T, ssize_t Ndim = 2> class NDArray {
   public:
@@ -427,3 +428,4 @@ NDArray<T, Ndim> load(const std::string &pathname,
 }
 
 
+} // namespace aare

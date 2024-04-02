@@ -3,6 +3,8 @@
 #include <iostream>
 // #include <filesystem>
 
+namespace aare {
+
 SubFile::SubFile(std::filesystem::path fname, DetectorType detector, ssize_t rows, ssize_t cols, uint16_t bitdepth) {
     this->m_rows = rows;
     this->m_cols = cols;
@@ -97,3 +99,5 @@ size_t SubFile::frame_number(int frame_index) {
 
     return h.frameNumber;
 }
+
+} // namespace aare

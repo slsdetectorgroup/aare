@@ -4,6 +4,8 @@
 #include "aare/utils/logger.hpp"
 #include <filesystem>
 
+namespace aare{
+
 class FileFactory {
     // Class that will be used to create FileInterface objects
     // follows the factory pattern
@@ -35,3 +37,5 @@ class FileFactory {
     virtual void parse_fname(FileInterface *) = 0;
     virtual ~FileFactory() = default;
 };
+
+} // namespace aare

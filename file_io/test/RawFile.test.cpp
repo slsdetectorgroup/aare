@@ -5,6 +5,7 @@
 
 #include "test_config.hpp"
 
+using aare::File;
 
 TEST_CASE("Read number of frames from a jungfrau raw file") {
 

@@ -1,5 +1,8 @@
 #include "aare/FileFactory.hpp"
 #include "aare/RawFile.hpp"
+
+namespace aare {
+
 class RawFileFactory : public FileFactory {
   private:
     void parse_json_metadata(RawFile *file);
@@ -16,3 +19,5 @@ class RawFileFactory : public FileFactory {
     sls_detector_header read_header(const std::filesystem::path &fname);
     void find_geometry(FileInterface *);
 };
+
+}

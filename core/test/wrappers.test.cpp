@@ -4,6 +4,10 @@
 #include <catch2/catch_test_macros.hpp>
 #include <cstdint>
 
+using aare::Frame;
+using aare::NDView;
+using aare::NDArray;
+
 TEST_CASE("Frame") {
     auto data = new uint16_t[100];
     for (int i = 0; i < 100; i++) {

@@ -1,6 +1,6 @@
 #include "aare/FileInterface.hpp"
 
-
+namespace aare{
 class File {
   private:
     FileInterface *file_impl;
@@ -32,3 +32,5 @@ class File {
 
     ~File();
 };
+
+} // namespace aare
