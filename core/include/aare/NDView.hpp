@@ -4,17 +4,16 @@
 #include <cassert>
 #include <cstdint>
 #include <numeric>
-#include <vector>
 #include <stdexcept>
+#include <vector>
 
 namespace aare {
 
 template <ssize_t Ndim> using Shape = std::array<ssize_t, Ndim>;
 
-//TODO! fix mismatch between signed and unsigned
-template <ssize_t Ndim>
-Shape<Ndim> make_shape(const std::vector<size_t>& shape){
-    if(shape.size() != Ndim)
+// TODO! fix mismatch between signed and unsigned
+template <ssize_t Ndim> Shape<Ndim> make_shape(const std::vector<size_t> &shape) {
+    if (shape.size() != Ndim)
         throw std::runtime_error("Shape size mismatch");
     Shape<Ndim> arr;
     std::copy_n(shape.begin(), Ndim, arr.begin());
@@ -44,11 +43,11 @@ template <ssize_t Ndim> std::array<ssize_t, Ndim> make_array(const std::vector<s
     return arr;
 }
 
-template <typename T, ssize_t Ndim=2> class NDView {
+template <typename T, ssize_t Ndim = 2> class NDView {
   public:
     NDView(){};
 
-    NDView(T* buffer, std::array<ssize_t, Ndim> shape) {
+    NDView(T *buffer, std::array<ssize_t, Ndim> shape) {
         buffer_ = buffer;
         strides_ = c_strides<Ndim>(shape);
         shape_ = shape;
@@ -60,7 +59,6 @@ template <typename T, ssize_t Ndim=2> class NDView {
         strides_ = c_strides<Ndim>(make_array<Ndim>(shape));
         shape_ = make_array<Ndim>(shape);
         size_ = std::accumulate(std::begin(shape), std::end(shape), 1, std::multiplies<ssize_t>());
-        
     }
 
     template <typename... Ix> typename std::enable_if<sizeof...(Ix) == Ndim, T &>::type operator()(Ix... index) {

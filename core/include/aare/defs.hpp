@@ -1,15 +1,15 @@
 #pragma once
 
 #include <array>
-#include <vector>
-#include <sys/types.h>
-#include <string_view>
-#include <string>
-#include <stdexcept>
 #include <fmt/format.h>
+#include <stdexcept>
+#include <string>
+#include <string_view>
+#include <sys/types.h>
 #include <variant>
+#include <vector>
 
-namespace aare{
+namespace aare {
 
 typedef struct {
     uint64_t frameNumber;
@@ -26,7 +26,7 @@ typedef struct {
     uint8_t detType;
     uint8_t version;
     uint8_t packetMask[64];
-}__attribute__((packed)) sls_detector_header;
+} __attribute__((packed)) sls_detector_header;
 
 struct xy {
     int row;
@@ -36,28 +36,20 @@ struct xy {
 // using image_shape = std::array<ssize_t, 2>;
 using dynamic_shape = std::vector<ssize_t>;
 
-enum class DetectorType { Jungfrau, Eiger, Mythen3, Moench,ChipTestBoard };
+enum class DetectorType { Jungfrau, Eiger, Mythen3, Moench, ChipTestBoard };
 
-enum class TimingMode {Auto, Trigger};
+enum class TimingMode { Auto, Trigger };
 
-template<class T> 
-T StringTo(std::string sv){
-    return T(sv);
-}
+template <class T> T StringTo(std::string sv) { return T(sv); }
 
-template<class T> 
-std::string toString(T sv){
-    return T(sv);
-}
+template <class T> std::string toString(T sv) { return T(sv); }
 
 template <> DetectorType StringTo(std::string);
 template <> std::string toString(DetectorType type);
 
-
 template <> TimingMode StringTo(std::string);
 
 using DataTypeVariants = std::variant<uint16_t, uint32_t>;
-
 
 struct RawFileConfig {
     int module_gap_row{};
@@ -71,7 +63,5 @@ struct RawFileConfig {
         return true;
     }
 };
-
-
 
 } // namespace aare
