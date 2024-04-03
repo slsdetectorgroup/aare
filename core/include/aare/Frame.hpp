@@ -42,7 +42,7 @@ class Frame {
     ssize_t cols() const { return m_cols; }
     ssize_t bitdepth() const { return m_bitdepth; }
     ssize_t size() const { return m_rows * m_cols * m_bitdepth / 8; }
-    std::byte *data() { return m_data; }
+    std::byte *data() const { return m_data; }
     
     Frame &operator=(Frame &other) {
         m_rows = other.rows();
