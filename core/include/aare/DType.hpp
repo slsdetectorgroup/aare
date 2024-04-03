@@ -19,7 +19,7 @@ enum class endian {
 };
 
 class DType {
-    //TODO! support for non native endianess?
+    // TODO! support for non native endianess?
     static_assert(sizeof(long) == sizeof(int64_t), "long should be 64bits");
 
   public:

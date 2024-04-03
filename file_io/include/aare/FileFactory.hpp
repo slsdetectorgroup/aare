@@ -4,7 +4,7 @@
 #include "aare/utils/logger.hpp"
 #include <filesystem>
 
-namespace aare{
+namespace aare {
 
 class FileFactory {
     // Class that will be used to create FileInterface objects
@@ -17,7 +17,7 @@ class FileFactory {
     // virtual int deleteFile() = 0;
     static FileInterface *load_file(std::filesystem::path p, std::string mode, FileConfig cfg = {}) {
         if ((mode == "r" or mode == "a") and not std::filesystem::exists(p)) {
-            throw std::runtime_error(LOCATION+"File does not exist");
+            throw std::runtime_error(LOCATION + "File does not exist");
         }
 
         auto factory = get_factory(p);

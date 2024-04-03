@@ -164,3 +164,12 @@ add_subdirectory(examples)
 if(AARE_PYTHON_BINDINGS)
     add_subdirectory(python)
 endif()
+
+# custom target to run check formatting with clang-format
+add_custom_target(
+    check-format
+    find \( -name "*.cpp" -o -name "*.hpp" \) -not -path "./build/*" -print0 | xargs -0 clang-format -i
+    COMMAND git status --porcelain | xargs -I {} -0 test -z \"{}\"
+    WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
+    VERBATIM
+)

@@ -8,10 +8,13 @@ jobs:
     steps:
       - uses: actions/checkout@v3
       - name: check if files are formatted
-        # find all examples in build/examples and run them
+        # find all .cpp and .hpp files that are not in the build directory
+        # and run clang-format on them and diff the output with the original file
+        # if there is a difference, the diff will be printed and the action will fail
         run: |
           pwd
-          find -name "*.cpp" -not -path "./build/*" | xargs -I {} -n 1 -P 10 clang-format  {}  -Werror --dry-run -style='file:.clang-format'
+          find \( -name "*.cpp" -o -name "*.hpp" \) -not -path "./build/*" | xargs -I {} -n 1  bash -c  'echo {} && ( clang-format -Werror -style="file:.clang-format" {} | diff {} -)' 
+
 
           
 

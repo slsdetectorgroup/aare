@@ -115,7 +115,7 @@ template <typename... Strings> void error(const Strings... s) { internal::logger
 extern void set_streams(std::streambuf *out, std::streambuf *err);
 extern void set_streams(std::streambuf *out);
 extern void set_verbosity(LOGGING_LEVEL level);
-extern void set_output_file(std::string filename);    
+extern void set_output_file(std::string filename);
 extern Logger &get_logger_instance();
 
 } // namespace logger

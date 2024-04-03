@@ -5,7 +5,6 @@
 #include <unordered_map>
 #include <vector>
 
-
 #include "aare/NDArray.hpp"
 
 const int MAX_CLUSTER_SIZE = 200;
@@ -23,9 +22,9 @@ template <typename T> class ClusterFinder {
 
         // std::vector<int16_t> rows{};
         // std::vector<int16_t> cols{};
-        int16_t rows[MAX_CLUSTER_SIZE]={0};
-        int16_t cols[MAX_CLUSTER_SIZE]={0};
-        double enes[MAX_CLUSTER_SIZE]={0};
+        int16_t rows[MAX_CLUSTER_SIZE] = {0};
+        int16_t cols[MAX_CLUSTER_SIZE] = {0};
+        double enes[MAX_CLUSTER_SIZE] = {0};
     };
 
   private:
@@ -39,11 +38,11 @@ template <typename T> class ClusterFinder {
     bool use_noise_map = false;
     int peripheralThresholdFactor_ = 5;
     int current_label;
-    const std::array<int, 4> di{{0, -1, -1, -1}}; // row ### 8-neighbour by scaning from left to right
-    const std::array<int, 4> dj{{-1, -1, 0, 1}};  // col ### 8-neighbour by scaning from top to bottom
+    const std::array<int, 4> di{{0, -1, -1, -1}};              // row ### 8-neighbour by scaning from left to right
+    const std::array<int, 4> dj{{-1, -1, 0, 1}};               // col ### 8-neighbour by scaning from top to bottom
     const std::array<int, 8> di_{{0, 0, -1, 1, -1, 1, -1, 1}}; // row
-    const std::array<int, 8> dj_{{-1, 1, 0, 0, 1, -1, -1, 1}};  // col
-    std::map<int, int> child; // heirachy: key: child; val: parent
+    const std::array<int, 8> dj_{{-1, 1, 0, 0, 1, -1, -1, 1}}; // col
+    std::map<int, int> child;                                  // heirachy: key: child; val: parent
     std::unordered_map<int, Hit> h_size;
     std::vector<Hit> hits;
     // std::vector<std::vector<int16_t>> row
@@ -51,14 +50,16 @@ template <typename T> class ClusterFinder {
 
   public:
     ClusterFinder(image_shape shape, T threshold)
-        : shape_(shape), labeled_(shape, 0), peripheral_labeled_(shape, 0), binary_(shape),
-          threshold_(threshold) {
+        : shape_(shape), labeled_(shape, 0), peripheral_labeled_(shape, 0), binary_(shape), threshold_(threshold) {
         hits.reserve(2000);
     }
 
     NDArray<int, 2> labeled() { return labeled_; }
 
-    void set_noiseMap(NDView<T, 2> noise_map) { noiseMap = noise_map; use_noise_map = true; }
+    void set_noiseMap(NDView<T, 2> noise_map) {
+        noiseMap = noise_map;
+        use_noise_map = true;
+    }
     void set_peripheralThresholdFactor(int factor) { peripheralThresholdFactor_ = factor; }
     void find_clusters(NDView<T, 2> img);
     void find_clusters_X(NDView<T, 2> img);
@@ -81,8 +82,8 @@ template <typename T> class ClusterFinder {
             fmt::print("{} -> {}\n", it->first, it->second);
         }
     }
-    size_t total_clusters() const{
-        //TODO! fix for stealing
+    size_t total_clusters() const {
+        // TODO! fix for stealing
         return hits.size();
     }
 
@@ -103,8 +104,8 @@ template <typename T> class ClusterFinder {
                     auto old = it->second;
                     it->second = to;
                     add_link(old, to);
-                }else{
-                    //found value is smaller than what we want to link
+                } else {
+                    // found value is smaller than what we want to link
                     add_link(to, it->second);
                 }
             }
@@ -117,7 +118,7 @@ template <typename T> int ClusterFinder<T>::check_neighbours(int i, int j) {
     for (int k = 0; k < 4; ++k) {
         const auto row = i + di[k];
         const auto col = j + dj[k];
-        if (row >= 0 && col >= 0 && row<shape_[0] && col < shape_[1]) {
+        if (row >= 0 && col >= 0 && row < shape_[0] && col < shape_[1]) {
             auto tmp = labeled_.value(i + di[k], j + dj[k]);
             if (tmp != 0)
                 neighbour_labels.push_back(tmp);
@@ -139,8 +140,7 @@ template <typename T> int ClusterFinder<T>::check_neighbours(int i, int j) {
             auto next = current + 1;
             add_link(*current, *next);
         }
-        return neighbour_labels.back(); //already sorted
-
+        return neighbour_labels.back(); // already sorted
     }
 }
 
@@ -162,7 +162,7 @@ template <typename T> void ClusterFinder<T>::find_clusters_X(NDView<T, 2> img) {
     for (int i = 0; i < shape_[0]; ++i) {
         for (int j = 0; j < shape_[1]; ++j) {
             if (use_noise_map)
-                threshold_ = 5*noiseMap(i, j);
+                threshold_ = 5 * noiseMap(i, j);
             if (original_(i, j) > threshold_) {
                 // printf("========== Cluster index: %d\n", clusterIndex);
                 rec_FillHit(clusterIndex, i, j);
@@ -178,7 +178,7 @@ template <typename T> void ClusterFinder<T>::find_clusters_X(NDView<T, 2> img) {
 template <typename T> void ClusterFinder<T>::rec_FillHit(int clusterIndex, int i, int j) {
     // printf("original_(%d, %d)=%f\n", i, j, original_(i,j));
     // printf("h_size[%d].size=%d\n", clusterIndex, h_size[clusterIndex].size);
-    if (h_size[clusterIndex].size < MAX_CLUSTER_SIZE){
+    if (h_size[clusterIndex].size < MAX_CLUSTER_SIZE) {
         h_size[clusterIndex].rows[h_size[clusterIndex].size] = i;
         h_size[clusterIndex].cols[h_size[clusterIndex].size] = j;
         h_size[clusterIndex].enes[h_size[clusterIndex].size] = original_(i, j);
@@ -197,11 +197,10 @@ template <typename T> void ClusterFinder<T>::rec_FillHit(int clusterIndex, int i
         const auto col = j + dj_[k];
         if (row >= 0 && col >= 0 && row < shape_[0] && col < shape_[1]) {
             if (use_noise_map)
-                threshold_ = peripheralThresholdFactor_*noiseMap(row, col);
-            if (original_(row, col) > threshold_){
+                threshold_ = peripheralThresholdFactor_ * noiseMap(row, col);
+            if (original_(row, col) > threshold_) {
                 rec_FillHit(clusterIndex, row, col);
-            }
-            else{
+            } else {
                 // if (h_size[clusterIndex].size < MAX_CLUSTER_SIZE){
                 //     h_size[clusterIndex].size += 1;
                 //     h_size[clusterIndex].rows[h_size[clusterIndex].size] = row;
@@ -229,7 +228,7 @@ template <typename T> void ClusterFinder<T>::first_pass() {
 
     for (int i = 0; i < original_.size(); ++i) {
         if (use_noise_map)
-            threshold_ = 5*noiseMap(i);
+            threshold_ = 5 * noiseMap(i);
         binary_(i) = (original_(i) > threshold_);
     }
 
@@ -258,8 +257,8 @@ template <typename T> void ClusterFinder<T>::second_pass() {
             while (it != child.end()) {
                 current_label = it->second;
                 it = child.find(current_label);
-                //do this once before doing the second pass? 
-                //all values point to the final one...
+                // do this once before doing the second pass?
+                // all values point to the final one...
             }
             labeled_(i) = current_label;
         }
@@ -280,14 +279,13 @@ template <typename T> void ClusterFinder<T>::store_clusters() {
                 // (j-1 >= 0 and labeled_(i, j-1) != 0) or
                 // (i+1 < shape_[0] and labeled_(i+1, j) != 0) or
                 // (j+1 < shape_[1] and labeled_(i, j+1) != 0)
-            ){
+            ) {
                 Hit &record = h_size[labeled_(i, j)];
-                if (record.size < MAX_CLUSTER_SIZE){
+                if (record.size < MAX_CLUSTER_SIZE) {
                     record.rows[record.size] = i;
                     record.cols[record.size] = j;
                     record.enes[record.size] = original_(i, j);
-                }
-                else{
+                } else {
                     continue;
                 }
                 record.size += 1;
@@ -301,10 +299,9 @@ template <typename T> void ClusterFinder<T>::store_clusters() {
             }
         }
     }
-    
+
     for (const auto &h : h_size)
         hits.push_back(h.second);
-
 }
 
 } // namespace aare
