@@ -11,7 +11,7 @@ on:
         type: string
         default: Debug
       use-python-bindings:
-        required: true
+        # required: true
         type: string
         default: OFF
 
