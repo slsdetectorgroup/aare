@@ -24,18 +24,17 @@
 
 #include "aare/NumpyHelpers.hpp"
 
-namespace aare{
+namespace aare {
 
-std::string NumpyHeader::to_string() const{
-        std::stringstream sstm;
-        sstm << "dtype: " << dtype.str() << ", fortran_order: " << fortran_order << ' ';
-        sstm << "shape: (";
-        for (auto item : shape)
-            sstm << item << ',';
-        sstm << ')';
-        return sstm.str();
+std::string NumpyHeader::to_string() const {
+    std::stringstream sstm;
+    sstm << "dtype: " << dtype.str() << ", fortran_order: " << fortran_order << ' ';
+    sstm << "shape: (";
+    for (auto item : shape)
+        sstm << item << ',';
+    sstm << ')';
+    return sstm.str();
 }
-
 
 namespace NumpyHelpers {
 
