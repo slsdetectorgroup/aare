@@ -24,7 +24,19 @@
 
 #include "aare/NumpyHelpers.hpp"
 
-namespace aare::NumpyHelpers {
+namespace aare {
+
+std::string NumpyHeader::to_string() const {
+    std::stringstream sstm;
+    sstm << "dtype: " << dtype.str() << ", fortran_order: " << fortran_order << ' ';
+    sstm << "shape: (";
+    for (auto item : shape)
+        sstm << item << ',';
+    sstm << ')';
+    return sstm.str();
+}
+
+namespace NumpyHelpers {
 
 std::unordered_map<std::string, std::string> parse_dict(std::string in, const std::vector<std::string> &keys) {
     std::unordered_map<std::string, std::string> map;
@@ -209,12 +221,12 @@ inline std::string write_header_dict(const std::string &descr, bool fortran_orde
     return "{'descr': '" + descr + "', 'fortran_order': " + s_fortran_order + ", 'shape': " + shape_s + ", }";
 }
 
-size_t write_header(std::filesystem::path fname, const header_t &header) {
+size_t write_header(std::filesystem::path fname, const NumpyHeader &header) {
     std::ofstream out(fname, std::ios::binary | std::ios::out);
     return write_header(out, header);
 }
 
-size_t write_header(std::ostream &out, const header_t &header) {
+size_t write_header(std::ostream &out, const NumpyHeader &header) {
     std::string header_dict = write_header_dict(header.dtype.str(), header.fortran_order, header.shape);
 
     size_t length = magic_string_length + 2 + 2 + header_dict.length() + 1;
@@ -252,4 +264,5 @@ size_t write_header(std::ostream &out, const header_t &header) {
     return length;
 }
 
-} // namespace aare::NumpyHelpers
+} // namespace NumpyHelpers
+} // namespace aare

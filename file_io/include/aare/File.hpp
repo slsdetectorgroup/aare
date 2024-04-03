@@ -1,3 +1,4 @@
+#pragma once
 #include "aare/FileInterface.hpp"
 
 namespace aare{

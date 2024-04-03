@@ -14,28 +14,20 @@
 #include "aare/DType.hpp"
 #include "aare/defs.hpp"
 
+namespace aare {
+
 using shape_t = std::vector<size_t>;
 
-struct header_t {
-    header_t() : dtype(aare::DType(aare::DType::ERROR)), fortran_order(false), shape(shape_t()){};
-    header_t(aare::DType dtype, bool fortran_order, shape_t shape)
-        : dtype(dtype), fortran_order(fortran_order), shape(shape){};
-    aare::DType dtype;
-    bool fortran_order;
-    shape_t shape;
-    std::string to_string() {
-        std::stringstream sstm;
-        sstm << "dtype: " << dtype.str() << ", fortran_order: " << fortran_order << ' ';
+struct NumpyHeader {
+    DType dtype{aare::DType::ERROR};
+    bool fortran_order{false};
+    shape_t shape{};    
 
-        sstm << "shape: (";
-        for (auto item : shape)
-            sstm << item << ',';
-        sstm << ')';
-        return sstm.str();
-    }
+    std::string to_string() const;
 };
 
-namespace aare::NumpyHelpers {
+namespace NumpyHelpers {
+
 const constexpr std::array<char, 6> magic_str{'\x93', 'N', 'U', 'M', 'P', 'Y'};
 const uint8_t magic_string_length{6};
 
@@ -59,8 +51,9 @@ template <typename T, size_t N> bool in_array(T val, const std::array<T, N> &arr
 bool is_digits(const std::string &str);
 
 aare::DType parse_descr(std::string typestring);
-size_t write_header(std::filesystem::path fname, const header_t &header) ;
-size_t write_header(std::ostream &out, const header_t &header) ;
-bool is_digits(const std::string &str);
+size_t write_header(std::filesystem::path fname, const NumpyHeader &header) ;
+size_t write_header(std::ostream &out, const NumpyHeader &header) ;
 
-} // namespace aare::NumpyHelpers
+
+} // namespace NumpyHelpers
+} // namespace aare
