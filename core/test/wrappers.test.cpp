@@ -1,12 +1,11 @@
-#include <aare/NDView.hpp>
 #include <aare/Frame.hpp>
 #include <aare/NDView.hpp>
 #include <catch2/catch_test_macros.hpp>
 #include <cstdint>
 
 using aare::Frame;
-using aare::NDView;
 using aare::NDArray;
+using aare::NDView;
 
 TEST_CASE("Frame") {
     auto data = new uint16_t[100];

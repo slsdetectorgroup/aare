@@ -8,7 +8,7 @@ File::File(std::filesystem::path fname, std::string mode, FileConfig cfg) {
     file_impl = FileFactory::load_file(fname, mode, cfg);
 }
 
-void File::write(Frame& frame) { file_impl->write(frame); }
+void File::write(Frame &frame) { file_impl->write(frame); }
 Frame File::read() { return file_impl->read(); }
 size_t File::total_frames() const { return file_impl->total_frames(); }
 std::vector<Frame> File::read(size_t n_frames) { return file_impl->read(n_frames); }
@@ -33,4 +33,4 @@ File::File(File &&other) {
 
 // write move assignment operator
 
-}
+} // namespace aare

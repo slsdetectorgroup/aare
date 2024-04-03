@@ -10,4 +10,4 @@ bool is_master_file(std::filesystem::path fpath) {
         return false;
 }
 
-}// namespace aare
+} // namespace aare

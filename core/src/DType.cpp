@@ -4,7 +4,6 @@
 
 namespace aare {
 
-
 DType::DType(const std::type_info &t) {
     if (t == typeid(int8_t))
         m_type = TypeIndex::INT8;
@@ -29,11 +28,10 @@ DType::DType(const std::type_info &t) {
     else if (t == typeid(double))
         m_type = TypeIndex::DOUBLE;
     else
-        throw std::runtime_error(
-            "Could not construct data type. Type not supported.");
+        throw std::runtime_error("Could not construct data type. Type not supported.");
 }
 
-uint8_t DType::bitdepth()const {
+uint8_t DType::bitdepth() const {
     switch (m_type) {
     case TypeIndex::INT8:
     case TypeIndex::UINT8:
@@ -54,12 +52,11 @@ uint8_t DType::bitdepth()const {
     case TypeIndex::ERROR:
         return 0;
     default:
-        throw std::runtime_error(LOCATION+"Could not get bitdepth. Type not supported.");
+        throw std::runtime_error(LOCATION + "Could not get bitdepth. Type not supported.");
     }
-
 }
 
-DType::DType(DType::TypeIndex ti):m_type(ti){}
+DType::DType(DType::TypeIndex ti) : m_type(ti) {}
 
 DType::DType(std::string_view sv) {
 
@@ -99,8 +96,7 @@ DType::DType(std::string_view sv) {
     else if (sv == "f8")
         m_type = TypeIndex::DOUBLE;
     else
-        throw std::runtime_error(
-            "Could not construct data type. Type no supported.");
+        throw std::runtime_error("Could not construct data type. Type no supported.");
 }
 
 std::string DType::str() const {
@@ -138,18 +134,10 @@ std::string DType::str() const {
     return {};
 }
 
-bool DType::operator==(const DType &other) const noexcept {
-    return m_type == other.m_type;
-}
-bool DType::operator!=(const DType &other) const noexcept {
-    return !(*this == other);
-}
+bool DType::operator==(const DType &other) const noexcept { return m_type == other.m_type; }
+bool DType::operator!=(const DType &other) const noexcept { return !(*this == other); }
 
-bool DType::operator==(const std::type_info &t) const {
-    return DType(t) == *this;
-}
-bool DType::operator!=(const std::type_info &t) const {
-    return DType(t) != *this;
-}
+bool DType::operator==(const std::type_info &t) const { return DType(t) == *this; }
+bool DType::operator!=(const std::type_info &t) const { return DType(t) != *this; }
 
-} // namespace pl
+} // namespace aare

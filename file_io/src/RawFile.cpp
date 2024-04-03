@@ -1,7 +1,7 @@
 #include "aare/RawFile.hpp"
 #include "aare/utils/logger.hpp"
 
-namespace aare{
+namespace aare {
 
 Frame RawFile::get_frame(size_t frame_number) {
     auto f = Frame(this->m_rows, this->m_cols, this->m_bitdepth);
@@ -61,8 +61,6 @@ void RawFile::read_into(std::byte *image_buf, size_t n_frames) {
         image_buf += this->bytes_per_frame();
     }
 }
-
-
 
 size_t RawFile::frame_number(size_t frame_index) {
     if (frame_index > this->m_total_frames) {

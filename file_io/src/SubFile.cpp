@@ -12,7 +12,8 @@ SubFile::SubFile(std::filesystem::path fname, DetectorType detector, ssize_t row
     this->m_bitdepth = bitdepth;
     this->n_frames = std::filesystem::file_size(fname) / (sizeof(sls_detector_header) + rows * cols * bitdepth / 8);
     if (read_impl_map.find({detector, bitdepth}) == read_impl_map.end()) {
-        auto error_msg = LOCATION + "No read_impl function found for detector: " + toString(detector) + " and bitdepth: " + std::to_string(bitdepth);
+        auto error_msg = LOCATION + "No read_impl function found for detector: " + toString(detector) +
+                         " and bitdepth: " + std::to_string(bitdepth);
         throw std::runtime_error(error_msg);
     }
     this->read_impl = read_impl_map.at({detector, bitdepth});

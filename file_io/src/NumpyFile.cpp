@@ -1,10 +1,10 @@
 
 #include "aare/NumpyFile.hpp"
 
-namespace aare{
+namespace aare {
 
-NumpyFile::NumpyFile(const std::filesystem::path& fname) {
-    //TODO! add opts to constructor
+NumpyFile::NumpyFile(const std::filesystem::path &fname) {
+    // TODO! add opts to constructor
     m_fname = fname;
     fp = fopen(m_fname.c_str(), "rb");
     if (!fp) {
@@ -26,8 +26,7 @@ NumpyFile::NumpyFile(FileConfig config, header_t header) {
         throw std::runtime_error(fmt::format("Could not open: {} for reading", m_fname.c_str()));
     }
 
-    initial_header_len =
-        aare::NumpyHelpers::write_header(std::filesystem::path(m_fname.c_str()), header);
+    initial_header_len = aare::NumpyHelpers::write_header(std::filesystem::path(m_fname.c_str()), header);
 }
 
 void NumpyFile::write(Frame &frame) {
@@ -40,8 +39,6 @@ void NumpyFile::write(Frame &frame) {
     fseek(fp, 0, SEEK_END);
     fwrite(frame.data(), frame.size(), 1, fp);
 }
-
-
 
 Frame NumpyFile::get_frame(size_t frame_number) {
     Frame frame(m_header.shape[1], m_header.shape[2], m_header.dtype.bitdepth());
@@ -97,17 +94,14 @@ NumpyFile::~NumpyFile() {
         std::string header_str = ss.str();
         // write header
         fwrite(header_str.c_str(), header_str.size(), 1, fp);
-
-        
     }
 
     if (fp != nullptr) {
         fclose(fp);
-        
     }
 }
 
-void NumpyFile::load_metadata(){
+void NumpyFile::load_metadata() {
 
     // read magic number
     std::array<char, 6> tmp{};
@@ -120,8 +114,8 @@ void NumpyFile::load_metadata(){
     }
 
     // read version
-    fread(reinterpret_cast<char *>(&major_ver_), sizeof(major_ver_), 1,fp);
-    fread(reinterpret_cast<char *>(&minor_ver_), sizeof(minor_ver_), 1,fp);
+    fread(reinterpret_cast<char *>(&major_ver_), sizeof(major_ver_), 1, fp);
+    fread(reinterpret_cast<char *>(&minor_ver_), sizeof(minor_ver_), 1, fp);
 
     if (major_ver_ == 1) {
         header_len_size = 2;
@@ -132,7 +126,7 @@ void NumpyFile::load_metadata(){
     }
 
     // read header length
-    fread(reinterpret_cast<char *>(&header_len), header_len_size,1, fp);
+    fread(reinterpret_cast<char *>(&header_len), header_len_size, 1, fp);
     header_size = aare::NumpyHelpers::magic_string_length + 2 + header_len_size + header_len;
     if (header_size % 16 != 0) {
         fmt::print("Warning: header length is not a multiple of 16\n");
@@ -140,8 +134,7 @@ void NumpyFile::load_metadata(){
 
     // read header
     std::string header(header_len, '\0');
-    fread(header.data(), header_len,1,fp);
-
+    fread(header.data(), header_len, 1, fp);
 
     // parse header
     std::vector<std::string> keys{"descr", "fortran_order", "shape"};
@@ -170,6 +163,5 @@ void NumpyFile::load_metadata(){
     }
     m_header = {dtype, fortran_order, shape};
 }
-
 
 } // namespace aare

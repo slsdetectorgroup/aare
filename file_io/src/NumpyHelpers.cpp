@@ -78,7 +78,7 @@ std::unordered_map<std::string, std::string> parse_dict(std::string in, const st
 }
 
 aare::DType parse_descr(std::string typestring) {
-    
+
     if (typestring.length() < 3) {
         throw std::runtime_error("invalid typestring (length)");
     }
@@ -187,7 +187,7 @@ template <typename T> inline std::string write_tuple(const std::vector<T> &v) {
         //     ss << v[i] << delimiter;
         // }
         // ss << v.back();
-        std::copy(v.begin(), v.end()-1, std::ostream_iterator<T>(ss, ", "));
+        std::copy(v.begin(), v.end() - 1, std::ostream_iterator<T>(ss, ", "));
         ss << v.back();
         ss << ")";
     }
@@ -213,7 +213,6 @@ size_t write_header(std::filesystem::path fname, const header_t &header) {
     std::ofstream out(fname, std::ios::binary | std::ios::out);
     return write_header(out, header);
 }
-
 
 size_t write_header(std::ostream &out, const header_t &header) {
     std::string header_dict = write_header_dict(header.dtype.str(), header.fortran_order, header.shape);

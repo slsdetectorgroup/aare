@@ -1,0 +1,19 @@
+name: test-formatting
+on: 
+  push:
+
+jobs:
+  test-formatting:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+      - name: check if files are formatted
+        # find all examples in build/examples and run them
+        run: |
+          pwd
+          find -name "*.cpp" -not -path "./build/*" | xargs -I {} -n 1 -P 10 clang-format  {}  -Werror --dry-run -style='file:.clang-format'
+
+          
+
+
+
