@@ -1,14 +1,14 @@
-#include "aare/ZmqSocket.hpp"
+#include "aare/ZmqSocketReceiver.hpp"
 #include <fmt/core.h>
 #include <zmq.h>
 
 namespace aare {
 
-ZmqSocket::ZmqSocket(const std::string &endpoint) : m_endpoint(endpoint) {
+ZmqSocketReceiver::ZmqSocketReceiver(const std::string &endpoint) : m_endpoint(endpoint) {
     memset(m_header_buffer, 0, m_max_header_size);
 }
 
-void ZmqSocket::connect() {
+void ZmqSocketReceiver::connect() {
     m_context = zmq_ctx_new();
     m_socket = zmq_socket(m_context, ZMQ_SUB);
     fmt::print("Setting ZMQ_RCVHWM to {}\n", m_zmq_hwm);
@@ -26,24 +26,24 @@ void ZmqSocket::connect() {
     zmq_setsockopt(m_socket, ZMQ_SUBSCRIBE, "", 0);
 }
 
-void ZmqSocket::disconnect() {
+void ZmqSocketReceiver::disconnect() {
     zmq_close(m_socket);
     zmq_ctx_destroy(m_context);
     m_socket = nullptr;
     m_context = nullptr;
 }
 
-ZmqSocket::~ZmqSocket() {
+ZmqSocketReceiver::~ZmqSocketReceiver() {
     if (m_socket)
         disconnect();
     delete[] m_header_buffer;
 }
 
-void ZmqSocket::set_zmq_hwm(int hwm) { m_zmq_hwm = hwm; }
+void ZmqSocketReceiver::set_zmq_hwm(int hwm) { m_zmq_hwm = hwm; }
 
-void ZmqSocket::set_timeout_ms(int n) { m_timeout_ms = n; }
+void ZmqSocketReceiver::set_timeout_ms(int n) { m_timeout_ms = n; }
 
-int ZmqSocket::receive(zmqHeader &header, std::byte *data) {
+int ZmqSocketReceiver::receive(zmqHeader &header, std::byte *data) {
 
     // receive header
     int header_bytes_received = zmq_recv(m_socket, m_header_buffer, m_max_header_size, 0);
@@ -74,7 +74,7 @@ int ZmqSocket::receive(zmqHeader &header, std::byte *data) {
     return 1;
 }
 
-bool ZmqSocket::decode_header(zmqHeader &h) {
+bool ZmqSocketReceiver::decode_header(zmqHeader &h) {
     // TODO: implement
     return true;
 }

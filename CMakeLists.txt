@@ -148,11 +148,12 @@ endif()
 add_subdirectory(core)
 add_subdirectory(file_io)
 add_subdirectory(utils)
+add_subdirectory(network_io)
 
 
 #Overall target to link to when using the library
 add_library(aare INTERFACE) 
-target_link_libraries(aare INTERFACE core file_io utils)
+target_link_libraries(aare INTERFACE core file_io utils network_io)
 target_include_directories(aare INTERFACE 
     $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
     $<INSTALL_INTERFACE:include>

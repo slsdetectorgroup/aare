@@ -64,7 +64,7 @@ struct zmqHeader {
     std::array<int, 4> rx_roi{};
 };
 
-class ZmqSocket {
+class ZmqSocketReceiver {
     void *m_context{nullptr};
     void *m_socket{nullptr};
     std::string m_endpoint;
@@ -76,11 +76,11 @@ class ZmqSocket {
     bool decode_header(zmqHeader &h);
 
   public:
-    ZmqSocket(const std::string &endpoint);
-    ~ZmqSocket();
-    ZmqSocket(const ZmqSocket &) = delete;
-    ZmqSocket operator=(const ZmqSocket &) = delete;
-    ZmqSocket(ZmqSocket &&) = delete;
+    ZmqSocketReceiver(const std::string &endpoint);
+    ~ZmqSocketReceiver();
+    ZmqSocketReceiver(const ZmqSocketReceiver &) = delete;
+    ZmqSocketReceiver operator=(const ZmqSocketReceiver &) = delete;
+    ZmqSocketReceiver(ZmqSocketReceiver &&) = delete;
 
     void connect();
     void disconnect();
