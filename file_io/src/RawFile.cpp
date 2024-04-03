@@ -5,7 +5,7 @@ namespace aare{
 
 Frame RawFile::get_frame(size_t frame_number) {
     auto f = Frame(this->m_rows, this->m_cols, this->m_bitdepth);
-    std::byte *frame_buffer = f._get_data();
+    std::byte *frame_buffer = f.data();
     get_frame_into(frame_number, frame_buffer);
     return f;
 }
