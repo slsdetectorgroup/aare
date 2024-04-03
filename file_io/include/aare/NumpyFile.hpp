@@ -17,7 +17,7 @@ class NumpyFile : public FileInterface {
     uint32_t header_len{};
     uint8_t header_len_size{};
     ssize_t header_size{};
-    header_t m_header;
+    NumpyHeader m_header;
     uint8_t major_ver_{};
     uint8_t minor_ver_{};
 
@@ -29,7 +29,7 @@ class NumpyFile : public FileInterface {
     
 
     NumpyFile(const std::filesystem::path& fname);
-    NumpyFile(FileConfig, header_t);
+    NumpyFile(FileConfig, NumpyHeader);
     void write(Frame &frame) override;
     Frame read() override { return get_frame(this->current_frame++); }
 

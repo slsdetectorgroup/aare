@@ -12,7 +12,7 @@ NumpyFile::NumpyFile(const std::filesystem::path &fname) {
     }
     load_metadata();
 }
-NumpyFile::NumpyFile(FileConfig config, header_t header) {
+NumpyFile::NumpyFile(FileConfig config, NumpyHeader header) {
     mode = "w";
     m_fname = config.fname;
     m_bitdepth = config.dtype.bitdepth();

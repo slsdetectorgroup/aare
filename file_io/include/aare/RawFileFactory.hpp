@@ -1,3 +1,4 @@
+#pragma once
 #include "aare/FileFactory.hpp"
 #include "aare/RawFile.hpp"
 
