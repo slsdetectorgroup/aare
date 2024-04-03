@@ -26,6 +26,7 @@ option(AARE_FETCH_FMT "Use FetchContent to download fmt" ON)
 option(AARE_FETCH_PYBIND11 "Use FetchContent to download pybind11" ON)
 option(AARE_FETCH_CATCH "Use FetchContent to download catch2" ON)
 option(AARE_FETCH_JSON "Use FetchContent to download nlohmann::json" ON)
+option(AARE_FETCH_ZMQ "Use FetchContent to download libzmq" ON)
 
 #Convenience option to use system libraries
 option(AARE_SYSTEM_LIBRARIES "Use system libraries" OFF)
@@ -35,10 +36,30 @@ if(AARE_SYSTEM_LIBRARIES)
     set(AARE_FETCH_PYBIND11 OFF CACHE BOOL "Disabled FetchContent for pybind11" FORCE)
     set(AARE_FETCH_CATCH OFF CACHE BOOL "Disabled FetchContent for catch2" FORCE)
     set(AARE_FETCH_JSON OFF CACHE BOOL "Disabled FetchContent for nlohmann::json" FORCE)
+    set(AARE_FETCH_ZMQ OFF CACHE BOOL "Disabled FetchContent for libzmq" FORCE)
 endif()
 
 
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
+
+if(AARE_FETCH_ZMQ)
+    FetchContent_Declare(
+        libzmq
+        GIT_REPOSITORY https://github.com/zeromq/libzmq.git
+        GIT_TAG        v4.3.4
+    )
+    # TODO! Verify that this is what we want to do in aare
+    # Using GetProperties and Populate to be able to exclude zmq
+    # from install (not possible with FetchContent_MakeAvailable(libzmq))
+    FetchContent_GetProperties(libzmq)
+    if(NOT libzmq_POPULATED)
+        FetchContent_Populate(libzmq)
+        add_subdirectory(${libzmq_SOURCE_DIR} ${libzmq_BINARY_DIR} EXCLUDE_FROM_ALL)
+    endif()
+else()
+    find_package(ZeroMQ 4 REQUIRED)
+endif()
+
 
 if (AARE_FETCH_FMT)
     set(FMT_TEST OFF CACHE INTERNAL "disabling fmt tests")
