@@ -120,6 +120,7 @@ if(AARE_USE_WARNINGS)
 endif()
 
 if(AARE_TESTS)
+    enable_testing()
     add_subdirectory(tests)
 endif()
 

@@ -24,6 +24,7 @@ set_target_properties(tests PROPERTIES
 
 include(CTest)
 include(Catch)
+catch_discover_tests(tests)
 
 set(TestSources
         ${CMAKE_CURRENT_SOURCE_DIR}/test.cpp
@@ -34,11 +35,10 @@ target_sources(tests PRIVATE ${TestSources} )
 # target_include_directories(tests PRIVATE ${CMAKE_SOURCE_DIR}/include/common)
 target_link_libraries(tests PRIVATE core aare_compiler_flags utils)
 
-catch_discover_tests(tests
-    # WORKING_DIRECTORY ${PROJECT_SOURCE_DIR}/data
-)
+
 
 #configure a header to pass test file paths
 get_filename_component(TEST_FILE_PATH ${PROJECT_SOURCE_DIR}/data ABSOLUTE)
 configure_file(test_config.hpp.in test_config.hpp)
 target_include_directories(tests PRIVATE ${CMAKE_CURRENT_BINARY_DIR})
+

@@ -38,14 +38,14 @@ void NumpyFile::write(Frame &frame) {
         throw std::runtime_error("File not open for writing");
     }
     fseek(fp, 0, SEEK_END);
-    fwrite(frame._get_data(), frame.size(), 1, fp);
+    fwrite(frame.data(), frame.size(), 1, fp);
 }
 
 
 
 Frame NumpyFile::get_frame(size_t frame_number) {
     Frame frame(m_header.shape[1], m_header.shape[2], m_header.dtype.bitdepth());
-    get_frame_into(frame_number, frame._get_data());
+    get_frame_into(frame_number, frame.data());
     return frame;
 }
 void NumpyFile::get_frame_into(size_t frame_number, std::byte *image_buf) {

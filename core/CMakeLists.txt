@@ -21,6 +21,7 @@ if(AARE_TESTS)
     set(TestSources
             ${CMAKE_CURRENT_SOURCE_DIR}/test/defs.test.cpp
             ${CMAKE_CURRENT_SOURCE_DIR}/test/DType.test.cpp
+            ${CMAKE_CURRENT_SOURCE_DIR}/test/Frame.test.cpp
             ${CMAKE_CURRENT_SOURCE_DIR}/test/ProducerConsumerQueue.test.cpp
             ${CMAKE_CURRENT_SOURCE_DIR}/test/NDArray.test.cpp
             ${CMAKE_CURRENT_SOURCE_DIR}/test/NDView.test.cpp
