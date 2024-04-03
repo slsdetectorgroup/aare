@@ -13,6 +13,7 @@ jobs:
         # if there is a difference, the diff will be printed and the action will fail
         run: |
             pwd
+            mkdir build
             cd build
             cmake ..
             cmake --build . --target=check-format
