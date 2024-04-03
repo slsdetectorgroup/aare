@@ -7,3 +7,4 @@ dependencies:
   - pybind11
   - nlohmann_json
   - catch2
+  - zeromq
