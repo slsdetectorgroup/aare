@@ -2,7 +2,6 @@
 #include "aare/File.hpp"
 #include "aare/utils/logger.hpp"
 #include <iostream>
-#include <iostream>
 
 #define AARE_ROOT_DIR_VAR "PROJECT_ROOT_DIR"
 

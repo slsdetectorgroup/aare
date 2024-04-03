@@ -1,6 +1,6 @@
 #include "aare/utils/logger.hpp"
-#include <iostream>
 #include <fstream>
+#include <iostream>
 
 int main() {
     aare::logger::debug(LOCATION, "hello", 1, "world", std::vector<long>{1, 2, 3, 4, 5});
@@ -9,14 +9,11 @@ int main() {
     aare::logger::debug(LOCATION, "NOTHING SHOULD BE PRINTED");
     aare::logger::info(LOCATION, "info printed");
 
-
     // writing to file
     std::ofstream textfile;
     textfile.open("Test.txt");
     aare::logger::set_streams(textfile.rdbuf());
     aare::logger::info(LOCATION, "info printed to file");
-
-
 
     // writing with a local logger instance
     aare::logger::Logger logger;
@@ -26,7 +23,6 @@ int main() {
     logger.warn(LOCATION, "warning printed in std::cout");
     aare::logger::info(LOCATION, "info printed in file ##");
     textfile.close();
-
 
     // setting file output by path
     // user doesn't have to close file

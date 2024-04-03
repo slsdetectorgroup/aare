@@ -7,7 +7,7 @@
 using aare::File;
 using aare::Frame;
 
-void test(File& f, int frame_number) {
+void test(File &f, int frame_number) {
     std::cout << "frame number: " << frame_number << std::endl;
     Frame frame = f.iread(frame_number);
     std::cout << *((uint16_t *)frame.get(0, 0)) << std::endl;
@@ -22,7 +22,7 @@ int main() {
     std::filesystem::path fpath(PROJECT_ROOT_DIR / "data" / "numpy" / "test_numpy_file.npy");
     std::cout << fpath << std::endl;
 
-    File file(fpath,"r");
+    File file(fpath, "r");
     test(file, 0);
     test(file, 2);
     test(file, 24);
