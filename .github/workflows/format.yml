@@ -12,9 +12,11 @@ jobs:
         # and run clang-format on them and diff the output with the original file
         # if there is a difference, the diff will be printed and the action will fail
         run: |
-          pwd
-          find \( -name "*.cpp" -o -name "*.hpp" \) -not -path "./build/*" | xargs -I {} -n 1  bash -c  'echo {} && ( clang-format -Werror -style="file:.clang-format" {} | diff {} -)' 
-
+            pwd
+            cd build
+            cmake ..
+            cmake --build . --target=check-format
+          
 
           
 
