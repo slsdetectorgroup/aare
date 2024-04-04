@@ -13,10 +13,10 @@ int main() {
         int rc = socket.receive(header, reinterpret_cast<std::byte *>(data));
         aare::logger::info("Received header: ", header.to_string());
         auto *data_int = reinterpret_cast<uint32_t *>(data);
-        for (int i=0;i<header.npixelsx;i++){
-            for (int j=0;j<header.npixelsy;j++){
+        for (int i = 0; i < header.npixelsx; i++) {
+            for (int j = 0; j < header.npixelsy; j++) {
                 // verify that the sent data is correct
-                assert(data_int[i*header.npixelsy+j] == (i+j));
+                assert(data_int[i * header.npixelsy + j] == (i + j));
             }
         }
         aare::logger::info("Frame verified");

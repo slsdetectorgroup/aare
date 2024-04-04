@@ -20,8 +20,8 @@ add_library(network_io STATIC
 
 
 target_include_directories(network_io PUBLIC include)
-target_link_libraries(network_io PRIVATE simdjson  libzmq fmt::fmt core utils  aare_compiler_flags )
-# target_link_libraries(network_io LINK_PRIVATE  )
+target_link_libraries(network_io PRIVATE   libzmq fmt::fmt core utils   aare_compiler_flags )
+target_link_libraries(network_io PUBLIC simdjson)
 
 if(AARE_PYTHON_BINDINGS)
 set_property(TARGET file_io PROPERTY POSITION_INDEPENDENT_CODE ON)
