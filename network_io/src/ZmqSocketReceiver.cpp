@@ -1,10 +1,13 @@
 #include "aare/ZmqSocketReceiver.hpp"
+#include "aare/utils/logger.hpp"
+
 #include <fmt/core.h>
 #include <zmq.h>
 
 namespace aare {
 
-ZmqSocketReceiver::ZmqSocketReceiver(const std::string &endpoint) : m_endpoint(endpoint) {
+ZmqSocketReceiver::ZmqSocketReceiver(const std::string &endpoint) {
+    m_endpoint = endpoint;
     memset(m_header_buffer, 0, m_max_header_size);
 }
 
@@ -16,7 +19,7 @@ void ZmqSocketReceiver::connect() {
     if (rc)
         throw std::runtime_error(fmt::format("Could not set ZMQ_RCVHWM: {}", strerror(errno)));
 
-    int bufsize = 1024 * 1024 * m_zmq_hwm;
+    int bufsize = m_potential_frame_size * m_zmq_hwm;
     fmt::print("Setting ZMQ_RCVBUF to: {} MB\n", bufsize / (1024 * 1024));
     rc = zmq_setsockopt(m_socket, ZMQ_RCVBUF, &bufsize, sizeof(bufsize));
     if (rc)
@@ -26,37 +29,27 @@ void ZmqSocketReceiver::connect() {
     zmq_setsockopt(m_socket, ZMQ_SUBSCRIBE, "", 0);
 }
 
-void ZmqSocketReceiver::disconnect() {
-    zmq_close(m_socket);
-    zmq_ctx_destroy(m_context);
-    m_socket = nullptr;
-    m_context = nullptr;
-}
+int ZmqSocketReceiver::receive(ZmqHeader &header, std::byte *data, bool serialized_header) {
 
-ZmqSocketReceiver::~ZmqSocketReceiver() {
-    if (m_socket)
-        disconnect();
-    delete[] m_header_buffer;
-}
+    if (serialized_header)
+        throw std::runtime_error("Not implemented");
 
-void ZmqSocketReceiver::set_zmq_hwm(int hwm) { m_zmq_hwm = hwm; }
-
-void ZmqSocketReceiver::set_timeout_ms(int n) { m_timeout_ms = n; }
-
-int ZmqSocketReceiver::receive(zmqHeader &header, std::byte *data) {
+    int header_bytes_received = zmq_recv(m_socket, m_header_buffer, m_max_header_size, 0);
 
     // receive header
-    int header_bytes_received = zmq_recv(m_socket, m_header_buffer, m_max_header_size, 0);
     m_header_buffer[header_bytes_received] = '\0'; // make sure we zero terminate
     if (header_bytes_received < 0) {
         fmt::print("Error receiving header: {}\n", strerror(errno));
         return -1;
     }
-    fmt::print("Bytes: {}, Header: {}\n", header_bytes_received, m_header_buffer);
+    aare::logger::debug("Bytes: ", header_bytes_received, ", Header: ", m_header_buffer);
 
-    // decode header
-    if (!decode_header(header)) {
-        fmt::print("Error decoding header\n");
+    // parse header
+    try {
+        std::string header_str(m_header_buffer);
+        header.from_string(header_str);
+    } catch (const simdjson::simdjson_error &e) {
+        aare::logger::error(LOCATION + "Error parsing header: ", e.what());
         return -1;
     }
 
@@ -67,16 +60,13 @@ int ZmqSocketReceiver::receive(zmqHeader &header, std::byte *data) {
     if (!more) {
         return 0; // no data following header
     } else {
-        int data_bytes_received = zmq_recv(m_socket, data, 1024 * 1024 * 2, 0); // TODO! configurable size!!!!
+
+        int data_bytes_received = zmq_recv(m_socket, data, header.imageSize, 0); // TODO! configurable size!!!!
         if (data_bytes_received == -1)
             throw std::runtime_error("Got half of a multipart msg!!!");
+        aare::logger::debug("Bytes: ", data_bytes_received);
     }
     return 1;
-}
-
-bool ZmqSocketReceiver::decode_header(zmqHeader &h) {
-    // TODO: implement
-    return true;
 }
 
 } // namespace aare

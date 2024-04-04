@@ -20,6 +20,19 @@ template <typename T> std::ostream &operator<<(std::ostream &out, const std::vec
     return out;
 }
 
+// operator overload for std::array
+template <typename T, size_t N> std::ostream &operator<<(std::ostream &out, const std::array<T, N> &v) {
+    out << "[";
+    size_t last = N - 1;
+    for (size_t i = 0; i < N; ++i) {
+        out << v[i];
+        if (i != last)
+            out << ", ";
+    }
+    out << "]";
+    return out;
+}
+
 namespace aare {
 
 namespace logger {
