@@ -11,9 +11,13 @@ jobs:
         # find all examples in build/examples and run them
         run: |
           pwd
-          find -name "*.cpp" -not -path "./build/*" | xargs -I {} -n 1 -P 10 clang-format  {}  -Werror --dry-run -style='file:.clang-format'
+          mkdir build
+          cd build
+          cmake ..
+          cmake --build . --target=check-format
 
           
+
 
 
 

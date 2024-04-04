@@ -1,10 +1,9 @@
 #pragma once
 
 #include <array>
+#include <cstdint>
 #include <map>
 #include <string>
-#include <cstdint>
-
 
 // Socket to receive data from a ZMQ publisher
 // needs to be in sync with the main library (or maybe better use the versioning in the header)
@@ -12,7 +11,7 @@
 // forward declare zmq_msg_t to avoid including zmq.h in the header
 class zmq_msg_t;
 
-namespace aare{
+namespace aare {
 
 /** zmq header structure (from slsDetectorPackage)*/
 struct zmqHeader {
@@ -65,24 +64,23 @@ struct zmqHeader {
     std::array<int, 4> rx_roi{};
 };
 
-
-class ZmqSocket{
+class ZmqSocket {
     void *m_context{nullptr};
     void *m_socket{nullptr};
     std::string m_endpoint;
     int m_zmq_hwm{1000};
     int m_timeout_ms{1000};
     constexpr static size_t m_max_header_size = 1024;
-    char* m_header_buffer = new char[m_max_header_size];
+    char *m_header_buffer = new char[m_max_header_size];
 
     bool decode_header(zmqHeader &h);
 
-public:
-    ZmqSocket(const std::string& endpoint);
+  public:
+    ZmqSocket(const std::string &endpoint);
     ~ZmqSocket();
-    ZmqSocket(const ZmqSocket&) = delete;
-    ZmqSocket operator=(const ZmqSocket&) = delete;
-    ZmqSocket(ZmqSocket&&) = delete;
+    ZmqSocket(const ZmqSocket &) = delete;
+    ZmqSocket operator=(const ZmqSocket &) = delete;
+    ZmqSocket(ZmqSocket &&) = delete;
 
     void connect();
     void disconnect();
@@ -90,8 +88,6 @@ public:
     void set_timeout_ms(int n);
 
     int receive(zmqHeader &header, std::byte *data);
-    
-
 };
 
 } // namespace aare

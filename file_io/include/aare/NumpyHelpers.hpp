@@ -21,7 +21,7 @@ using shape_t = std::vector<size_t>;
 struct NumpyHeader {
     DType dtype{aare::DType::ERROR};
     bool fortran_order{false};
-    shape_t shape{};    
+    shape_t shape{};
 
     std::string to_string() const;
 };
@@ -51,9 +51,8 @@ template <typename T, size_t N> bool in_array(T val, const std::array<T, N> &arr
 bool is_digits(const std::string &str);
 
 aare::DType parse_descr(std::string typestring);
-size_t write_header(std::filesystem::path fname, const NumpyHeader &header) ;
-size_t write_header(std::ostream &out, const NumpyHeader &header) ;
-
+size_t write_header(std::filesystem::path fname, const NumpyHeader &header);
+size_t write_header(std::ostream &out, const NumpyHeader &header);
 
 } // namespace NumpyHelpers
 } // namespace aare

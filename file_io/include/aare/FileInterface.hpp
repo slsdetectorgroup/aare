@@ -1,7 +1,7 @@
 #pragma once
+#include "aare/DType.hpp"
 #include "aare/Frame.hpp"
 #include "aare/defs.hpp"
-#include "aare/DType.hpp"
 #include "aare/utils/logger.hpp"
 #include <filesystem>
 #include <vector>
@@ -96,4 +96,4 @@ class FileInterface {
     ssize_t m_bitdepth{};
 };
 
-}
+} // namespace aare

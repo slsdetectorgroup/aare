@@ -1,19 +1,19 @@
 #pragma once
+#include "aare/DType.hpp"
 #include "aare/FileInterface.hpp"
 #include "aare/NumpyHelpers.hpp"
-#include "aare/DType.hpp"
 #include "aare/defs.hpp"
+#include <filesystem>
 #include <iostream>
 #include <numeric>
-#include <filesystem>
 
-namespace aare{
+namespace aare {
 
 class NumpyFile : public FileInterface {
     FILE *fp = nullptr;
     size_t initial_header_len = 0;
     size_t current_frame{};
-    std::filesystem::path m_fname; 
+    std::filesystem::path m_fname;
     uint32_t header_len{};
     uint8_t header_len_size{};
     ssize_t header_size{};
@@ -26,9 +26,7 @@ class NumpyFile : public FileInterface {
     Frame get_frame(size_t frame_number);
 
   public:
-    
-
-    NumpyFile(const std::filesystem::path& fname);
+    NumpyFile(const std::filesystem::path &fname);
     NumpyFile(FileConfig, NumpyHeader);
     void write(Frame &frame) override;
     Frame read() override { return get_frame(this->current_frame++); }
@@ -48,11 +46,10 @@ class NumpyFile : public FileInterface {
 
     DType dtype() const { return m_header.dtype; }
     std::vector<size_t> shape() const { return m_header.shape; }
-    
-    //load the full numpy file into a NDArray
-    template<typename T, size_t NDim>
-    NDArray<T,NDim> load(){
-        NDArray<T,NDim> arr(make_shape<NDim>(m_header.shape));
+
+    // load the full numpy file into a NDArray
+    template <typename T, size_t NDim> NDArray<T, NDim> load() {
+        NDArray<T, NDim> arr(make_shape<NDim>(m_header.shape));
         fseek(fp, header_size, SEEK_SET);
         fread(arr.data(), sizeof(T), arr.size(), fp);
         return arr;
