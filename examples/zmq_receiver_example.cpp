@@ -1,4 +1,5 @@
 #include "aare/ZmqSocketReceiver.hpp"
+#include <cassert>
 #include <fmt/core.h>
 #include <string>
 

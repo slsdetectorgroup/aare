@@ -40,6 +40,13 @@ void write_map(std::string &s, const std::string &key, const std::map<std::strin
     for (auto &kv : value) {
         write_str(s, kv.first, kv.second);
     }
+    // remove last comma or trailing spaces
+    for (int i = s.size() - 1; i >= 0; i--) {
+        if (s[i] == ',' or s[i] == ' ') {
+            s.pop_back();
+        } else
+            break;
+    }
     s += "}, ";
 }
 void write_array(std::string &s, const std::string &key, const std::array<int, 4> &value) {
@@ -171,18 +178,23 @@ void ZmqHeader::from_string(std::string &s) {
         } else if (key == "completeImage") {
             completeImage = uint64_t(field.value()) ? true : false;
         } else if (key == "addJsonHeader") {
-            for (auto field2 : field.value().get_object()) {
-                simdjson::ondemand::raw_json_string tmp;
-                auto error = field2.key().get(tmp);
-                std::string key2(tmp.raw());
-                std::string val;
-                error = field2.value().get_string(val);
-                addJsonHeader[key2] = std::string(val);
-            }
+            addJsonHeader = std::map<std::string, std::string>(field.value());
         } else if (key == "rx_roi") {
             rx_roi = std::array<int, 4>(field.value());
         }
     }
+}
+bool ZmqHeader::operator==(const ZmqHeader &other) const {
+    return data == other.data && jsonversion == other.jsonversion && dynamicRange == other.dynamicRange &&
+           fileIndex == other.fileIndex && ndetx == other.ndetx && ndety == other.ndety && npixelsx == other.npixelsx &&
+           npixelsy == other.npixelsy && imageSize == other.imageSize && acqIndex == other.acqIndex &&
+           frameIndex == other.frameIndex && progress == other.progress && fname == other.fname &&
+           frameNumber == other.frameNumber && expLength == other.expLength && packetNumber == other.packetNumber &&
+           detSpec1 == other.detSpec1 && timestamp == other.timestamp && modId == other.modId && row == other.row &&
+           column == other.column && detSpec2 == other.detSpec2 && detSpec3 == other.detSpec3 &&
+           detSpec4 == other.detSpec4 && detType == other.detType && version == other.version &&
+           flipRows == other.flipRows && quad == other.quad && completeImage == other.completeImage &&
+           addJsonHeader == other.addJsonHeader && rx_roi == other.rx_roi;
 }
 
 } // namespace aare

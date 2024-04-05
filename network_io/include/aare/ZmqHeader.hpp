@@ -45,6 +45,34 @@ template <> simdjson_inline simdjson::simdjson_result<uint32_t> simdjson::ondema
     return static_cast<uint32_t>(val);
 }
 
+/**
+ * @brief cast a simdjson::ondemand::value to a std::map<std::string, std::string> 
+*/
+template <> simdjson_inline simdjson::simdjson_result<std::map<std::string, std::string>> simdjson::ondemand::value::get() noexcept {
+    std::map<std::string, std::string> map;
+    ondemand::object obj;
+    auto error = get_object().get(obj);
+    if (error) {
+        return error;
+    }
+    for (auto field : obj) {
+        simdjson::ondemand::raw_json_string tmp;
+        error = field.key().get(tmp);
+        if (error) {
+            return error;
+        }
+        error = field.value().get(tmp);
+        if (error) {
+            return error;
+        }
+        std::string_view key_view = field.unescaped_key();
+        std::string key_str(key_view.data(), key_view.size());
+        std::string_view value_view = field.value().get_string();
+        map[key_str] = {value_view.data(), value_view.size()};
+    }
+    return map;
+}
+
 } // namespace simdjson
 
 namespace aare {
@@ -102,5 +130,7 @@ struct ZmqHeader {
     /** serialize struct to json string */
     std::string to_string() const;
     void from_string(std::string &s);
+    // compare operator
+    bool operator==(const ZmqHeader &other) const ;
 };
 } // namespace aare

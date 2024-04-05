@@ -7,7 +7,9 @@ FetchContent_Declare(
 )
 
 FetchContent_MakeAvailable(simdjson)
-
+# hide simdjson warnings by making the includes system includes
+get_target_property(_inc simdjson INTERFACE_INCLUDE_DIRECTORIES)
+target_include_directories(simdjson SYSTEM INTERFACE ${_inc})
 
 
 add_library(network_io STATIC 
@@ -27,10 +29,10 @@ if(AARE_PYTHON_BINDINGS)
 set_property(TARGET file_io PROPERTY POSITION_INDEPENDENT_CODE ON)
 endif()
 
-# if(AARE_TESTS)
-#     set(TestSources
-#             ${CMAKE_CURRENT_SOURCE_DIR}/test/NumpyFile.test.cpp
-#         )
-#     target_sources(tests PRIVATE ${TestSources} )
-#     target_link_libraries(tests PRIVATE core network_io)
-# endif()
+if(AARE_TESTS)
+    set(TestSources 
+    ${CMAKE_CURRENT_SOURCE_DIR}/test/ZmqHeader.test.cpp
+    )
+    target_sources(tests PRIVATE ${TestSources} )
+    target_link_libraries(tests PRIVATE network_io core utils)
+endif()
