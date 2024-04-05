@@ -46,9 +46,11 @@ template <> simdjson_inline simdjson::simdjson_result<uint32_t> simdjson::ondema
 }
 
 /**
- * @brief cast a simdjson::ondemand::value to a std::map<std::string, std::string> 
-*/
-template <> simdjson_inline simdjson::simdjson_result<std::map<std::string, std::string>> simdjson::ondemand::value::get() noexcept {
+ * @brief cast a simdjson::ondemand::value to a std::map<std::string, std::string>
+ */
+template <>
+simdjson_inline simdjson::simdjson_result<std::map<std::string, std::string>>
+simdjson::ondemand::value::get() noexcept {
     std::map<std::string, std::string> map;
     ondemand::object obj;
     auto error = get_object().get(obj);
@@ -131,6 +133,6 @@ struct ZmqHeader {
     std::string to_string() const;
     void from_string(std::string &s);
     // compare operator
-    bool operator==(const ZmqHeader &other) const ;
+    bool operator==(const ZmqHeader &other) const;
 };
 } // namespace aare

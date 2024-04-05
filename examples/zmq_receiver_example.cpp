@@ -12,7 +12,7 @@ int main() {
 
     while (true) {
         int rc = socket.receive(header, reinterpret_cast<std::byte *>(data));
-        aare::logger::info("Received bytes",rc,"Received header: ", header.to_string());
+        aare::logger::info("Received bytes", rc, "Received header: ", header.to_string());
         auto *data_int = reinterpret_cast<uint32_t *>(data);
         for (uint32_t i = 0; i < header.npixelsx; i++) {
             for (uint32_t j = 0; j < header.npixelsy; j++) {

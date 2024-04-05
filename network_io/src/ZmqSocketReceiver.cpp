@@ -32,7 +32,7 @@ void ZmqSocketReceiver::connect() {
 size_t ZmqSocketReceiver::receive(ZmqHeader &header, std::byte *data, bool serialized_header) {
 
     size_t data_bytes_received{};
-    
+
     if (serialized_header)
         throw std::runtime_error("Not implemented");
 
