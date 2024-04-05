@@ -4,7 +4,6 @@ set(SourceFiles
     ${CMAKE_CURRENT_SOURCE_DIR}/src/defs.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/src/DType.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/src/Frame.cpp
-    ${CMAKE_CURRENT_SOURCE_DIR}/src/ZmqSocket.cpp
 )
 
 
@@ -12,7 +11,7 @@ add_library(core STATIC ${SourceFiles})
 target_include_directories(core PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/include)
 
 
-target_link_libraries(core PUBLIC fmt::fmt PRIVATE aare_compiler_flags utils libzmq)
+target_link_libraries(core PUBLIC fmt::fmt PRIVATE aare_compiler_flags utils )
 
 if (AARE_PYTHON_BINDINGS)
 set_property(TARGET core PROPERTY POSITION_INDEPENDENT_CODE ON)

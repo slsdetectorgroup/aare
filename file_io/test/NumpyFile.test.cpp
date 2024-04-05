@@ -19,7 +19,7 @@ TEST_CASE("Read a 1D numpy file with int32 data type") {
 
     // use the load function to read the full file into a NDArray
     auto data = f.load<int32_t, 1>();
-    for (size_t i = 0; i < 10; i++) {
+    for (int32_t i = 0; i < 10; i++) {
         REQUIRE(data(i) == i);
     }
 }

@@ -2,6 +2,7 @@
 #include <filesystem>
 #include <fstream>
 #include <iostream>
+#include <map>
 #include <vector>
 
 #define LOCATION std::string(__FILE__) + std::string(":") + std::to_string(__LINE__) + ":" + std::string(__func__) + ":"
@@ -17,6 +18,30 @@ template <typename T> std::ostream &operator<<(std::ostream &out, const std::vec
             out << ", ";
     }
     out << "]";
+    return out;
+}
+
+// operator overload for std::array
+template <typename T, size_t N> std::ostream &operator<<(std::ostream &out, const std::array<T, N> &v) {
+    out << "[";
+    size_t last = N - 1;
+    for (size_t i = 0; i < N; ++i) {
+        out << v[i];
+        if (i != last)
+            out << ", ";
+    }
+    out << "]";
+    return out;
+}
+// operator overlaod for std::map
+template <typename K, typename V> std::ostream &operator<<(std::ostream &out, const std::map<K, V> &v) {
+    out << "{";
+    size_t i = 0;
+    for (auto &kv : v) {
+        out << kv.first << ": " << kv.second << ((++i != v.size()) ? ", " : "");
+    }
+
+    out << "}";
     return out;
 }
 
