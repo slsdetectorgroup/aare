@@ -20,7 +20,7 @@ class ZmqSocketReceiver : public ZmqSocket {
   public:
     ZmqSocketReceiver(const std::string &endpoint);
     void connect();
-    int receive(ZmqHeader &header, std::byte *data, bool serialized_header = false);
+    size_t receive(ZmqHeader &header, std::byte *data, bool serialized_header = false);
 };
 
 } // namespace aare

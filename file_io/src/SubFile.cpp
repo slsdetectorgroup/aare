@@ -89,7 +89,7 @@ template <typename DataType> size_t SubFile::read_impl_flip(std::byte *buffer) {
 
 size_t SubFile::frame_number(int frame_index) {
     sls_detector_header h{};
-    FILE *fp = fopen(this->m_fname.c_str(), "r");
+    fp = fopen(this->m_fname.c_str(), "r");
     if (!fp)
         throw std::runtime_error(fmt::format("Could not open: {} for reading", m_fname.c_str()));
     fseek(fp, (sizeof(sls_detector_header) + bytes_per_part()) * frame_index, SEEK_SET);

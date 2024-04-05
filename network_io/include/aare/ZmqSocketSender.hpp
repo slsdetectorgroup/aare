@@ -7,6 +7,6 @@ class ZmqSocketSender : public ZmqSocket {
   public:
     ZmqSocketSender(const std::string &endpoint);
     void bind();
-    int send(ZmqHeader &header, const std::byte *data, size_t size, bool serialize_header = false);
+    size_t send(ZmqHeader &header, const std::byte *data, size_t size, bool serialize_header = false);
 };
 } // namespace aare

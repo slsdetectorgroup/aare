@@ -12,7 +12,12 @@ class RawFile : public FileInterface {
 
   public:
     std::filesystem::path m_fname; // TO be made private!
-    void write(Frame &frame) override{};
+
+    // pragma to ignore warnings
+    void write(Frame &frame) override{
+        throw std::runtime_error("Not implemented");
+    };
+
     Frame read() override { return get_frame(this->current_frame++); };
     std::vector<Frame> read(size_t n_frames) override;
     void read_into(std::byte *image_buf) override { return get_frame_into(this->current_frame++, image_buf); };

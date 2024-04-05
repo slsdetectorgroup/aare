@@ -29,12 +29,14 @@ void ZmqSocketReceiver::connect() {
     zmq_setsockopt(m_socket, ZMQ_SUBSCRIBE, "", 0);
 }
 
-int ZmqSocketReceiver::receive(ZmqHeader &header, std::byte *data, bool serialized_header) {
+size_t ZmqSocketReceiver::receive(ZmqHeader &header, std::byte *data, bool serialized_header) {
 
+    size_t data_bytes_received{};
+    
     if (serialized_header)
         throw std::runtime_error("Not implemented");
 
-    int header_bytes_received = zmq_recv(m_socket, m_header_buffer, m_max_header_size, 0);
+    size_t header_bytes_received = zmq_recv(m_socket, m_header_buffer, m_max_header_size, 0);
 
     // receive header
     m_header_buffer[header_bytes_received] = '\0'; // make sure we zero terminate
@@ -61,12 +63,12 @@ int ZmqSocketReceiver::receive(ZmqHeader &header, std::byte *data, bool serializ
         return 0; // no data following header
     } else {
 
-        int data_bytes_received = zmq_recv(m_socket, data, header.imageSize, 0); // TODO! configurable size!!!!
+        data_bytes_received = zmq_recv(m_socket, data, header.imageSize, 0); // TODO! configurable size!!!!
         if (data_bytes_received == -1)
             throw std::runtime_error("Got half of a multipart msg!!!");
         aare::logger::debug("Bytes: ", data_bytes_received);
     }
-    return 1;
+    return data_bytes_received + header_bytes_received;
 }
 
 } // namespace aare

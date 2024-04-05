@@ -30,6 +30,7 @@ int main() {
         aare::logger::info("Frame size:", frame.size(), "\n");
 
         int rc = socket.send(header, frame.data(), frame.size());
+        aare::logger::info("Sent bytes", rc);
         sleep(1);
     }
     return 0;
