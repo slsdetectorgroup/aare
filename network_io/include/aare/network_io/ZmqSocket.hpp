@@ -1,7 +1,5 @@
 #pragma once
 
-#include <array>
-#include <map>
 #include <string>
 
 // Socket to receive data from a ZMQ publisher

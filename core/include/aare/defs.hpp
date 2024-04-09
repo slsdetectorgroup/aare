@@ -1,11 +1,11 @@
 #pragma once
 
 #include <array>
-#include <fmt/format.h>
 #include <stdexcept>
+
+#include <cstdint>
 #include <string>
 #include <string_view>
-#include <sys/types.h>
 #include <variant>
 #include <vector>
 

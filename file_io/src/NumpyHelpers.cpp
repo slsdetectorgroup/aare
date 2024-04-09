@@ -23,6 +23,7 @@
 */
 
 #include "aare/NumpyHelpers.hpp"
+#include <iterator>
 
 namespace aare {
 

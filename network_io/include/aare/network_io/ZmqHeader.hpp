@@ -1,4 +1,7 @@
+#pragma once
+#include "aare/Frame.hpp"
 #include "aare/utils/logger.hpp"
+
 #include "simdjson.h"
 #include <array>
 #include <cstdint>
@@ -135,4 +138,5 @@ struct ZmqHeader {
     // compare operator
     bool operator==(const ZmqHeader &other) const;
 };
+
 } // namespace aare

@@ -58,6 +58,14 @@ class Frame {
         other.m_data = nullptr;
         other.m_rows = other.m_cols = other.m_bitdepth = 0;
     }
+    // copy constructor
+    Frame(const Frame &other) {
+        m_rows = other.rows();
+        m_cols = other.cols();
+        m_bitdepth = other.bitdepth();
+        m_data = new std::byte[m_rows * m_cols * m_bitdepth / 8];
+        std::memcpy(m_data, other.m_data, m_rows * m_cols * m_bitdepth / 8);
+    }
 
     template <typename T> NDView<T> view() {
         std::vector<ssize_t> shape = {m_rows, m_cols};

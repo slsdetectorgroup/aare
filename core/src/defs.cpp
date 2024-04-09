@@ -31,8 +31,7 @@ template <> DetectorType StringTo(std::string name) {
     else if (name == "ChipTestBoard")
         return DetectorType::ChipTestBoard;
     else {
-        auto msg = fmt::format("Could not decode dector from: \"{}\"", name);
-        throw std::runtime_error(msg);
+        throw std::runtime_error("Could not decode dector from: \"" + name + "\"");
     }
 }
 
@@ -42,8 +41,7 @@ template <> TimingMode StringTo(std::string mode) {
     else if (mode == "trigger")
         return TimingMode::Trigger;
     else {
-        auto msg = fmt::format("Could not decode timing mode from: \"{}\"", mode);
-        throw std::runtime_error(msg);
+        throw std::runtime_error("Could not decode timing mode from: \"" + mode + "\"");
     }
 }
 

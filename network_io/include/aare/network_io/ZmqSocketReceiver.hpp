@@ -1,11 +1,11 @@
 #pragma once
 
-#include "ZmqHeader.hpp"
-#include "ZmqSocket.hpp"
+#include "aare/Frame.hpp"
+#include "aare/network_io/ZmqHeader.hpp"
+#include "aare/network_io/ZmqSocket.hpp"
+#include "aare/network_io/defs.hpp"
 
-#include <array>
 #include <cstdint>
-#include <map>
 #include <string>
 
 // Socket to receive data from a ZMQ publisher
@@ -20,7 +20,13 @@ class ZmqSocketReceiver : public ZmqSocket {
   public:
     ZmqSocketReceiver(const std::string &endpoint);
     void connect();
-    size_t receive(ZmqHeader &header, std::byte *data, bool serialized_header = false);
+    ZmqFrame receive(ZmqFrame &zmq_frame);
+    std::vector<ZmqFrame> receive_n();
+
+  private:
+    int receive_data(std::byte *data, size_t size);
+    ZmqFrame receive_zmqframe();
+    ZmqHeader receive_header();
 };
 
 } // namespace aare
