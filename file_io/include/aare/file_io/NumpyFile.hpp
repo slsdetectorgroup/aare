@@ -1,8 +1,8 @@
 #pragma once
 #include "aare/core/DType.hpp"
+#include "aare/core/defs.hpp"
 #include "aare/file_io/FileInterface.hpp"
 #include "aare/file_io/NumpyHelpers.hpp"
-#include "aare/core/defs.hpp"
 #include <filesystem>
 #include <iostream>
 #include <numeric>

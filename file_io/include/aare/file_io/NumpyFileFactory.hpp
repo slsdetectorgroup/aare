@@ -1,7 +1,7 @@
 #pragma once
+#include "aare/core/defs.hpp"
 #include "aare/file_io/FileFactory.hpp"
 #include "aare/file_io/NumpyFile.hpp"
-#include "aare/core/defs.hpp"
 #include <fstream>
 
 namespace aare {

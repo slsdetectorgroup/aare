@@ -43,7 +43,9 @@ void ZmqSocketReceiver::connect() {
 ZmqHeader ZmqSocketReceiver::receive_header() {
 
     // receive string ZmqHeader
+    aare::logger::debug("Receiving header");
     size_t header_bytes_received = zmq_recv(m_socket, m_header_buffer, m_max_header_size, 0);
+    aare::logger::debug("Bytes: ", header_bytes_received);
 
     m_header_buffer[header_bytes_received] = '\0'; // make sure we zero terminate
     if (header_bytes_received < 0) {
@@ -80,6 +82,7 @@ int ZmqSocketReceiver::receive_data(std::byte *data, size_t size) {
 ZmqFrame ZmqSocketReceiver::receive_zmqframe() {
     // receive header from zmq and parse it
     ZmqHeader header = receive_header();
+
     if (!header.data) {
         // no data following header
         return {header, Frame(0, 0, 0)};

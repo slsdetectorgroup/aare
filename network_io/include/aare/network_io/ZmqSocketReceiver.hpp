@@ -20,7 +20,6 @@ class ZmqSocketReceiver : public ZmqSocket {
   public:
     ZmqSocketReceiver(const std::string &endpoint);
     void connect();
-    ZmqFrame receive(ZmqFrame &zmq_frame);
     std::vector<ZmqFrame> receive_n();
 
   private:
