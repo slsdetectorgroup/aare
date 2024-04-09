@@ -89,6 +89,7 @@ if (AARE_FETCH_BOOST)
     GIT_TAG boost-1.80.0
     )
     FetchContent_MakeAvailable(Boost)
+    set(Boost_LIBRARIES Boost::program_options)
 else()
 
     find_package(Boost 1.80 REQUIRED COMPONENTS program_options)

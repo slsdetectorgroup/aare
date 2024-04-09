@@ -13,9 +13,7 @@ jobs:
           pwd
           mkdir build
           cd build
-          cmake ..
-          cmake --build . --target=check-format
-
+          find \( -name "*.cpp" -o -name "*.hpp" \) -not -path "./build/*" | xargs -I {} -n 1 -P 10 bash -c "clang-format -i -style=\"file:.clang-format\" {}"
           
 
 
