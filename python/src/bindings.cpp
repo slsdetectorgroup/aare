@@ -5,8 +5,8 @@
 #include <string>
 
 #include "aare/FileHandler.hpp"
-#include "aare/Frame.hpp"
-#include "aare/defs.hpp"
+#include "aare/core/Frame.hpp"
+#include "aare/core/defs.hpp"
 
 namespace py = pybind11;
 

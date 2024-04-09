@@ -1,4 +1,4 @@
-#include "aare/Frame.hpp"
+#include "aare/core/Frame.hpp"
 #include "aare/network_io/ZmqHeader.hpp"
 #include "aare/network_io/ZmqSocketSender.hpp"
 #include "aare/network_io/defs.hpp"

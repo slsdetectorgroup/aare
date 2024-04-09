@@ -1,4 +1,4 @@
-#include "aare/Frame.hpp"
+#include "aare/core/Frame.hpp"
 #include <catch2/catch_test_macros.hpp>
 
 using aare::Frame;

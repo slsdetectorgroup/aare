@@ -1,6 +1,6 @@
 #pragma once
 
-#include "aare/Frame.hpp"
+#include "aare/core/Frame.hpp"
 #include "aare/network_io/ZmqHeader.hpp"
 #include "aare/network_io/ZmqSocket.hpp"
 #include "aare/network_io/defs.hpp"

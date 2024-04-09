@@ -6,7 +6,7 @@
 #include <memory>
 #include <thread>
 
-#include "aare/ProducerConsumerQueue.hpp"
+#include "aare/core/ProducerConsumerQueue.hpp"
 
 namespace aare {
 

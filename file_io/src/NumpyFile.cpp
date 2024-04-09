@@ -1,5 +1,5 @@
 
-#include "aare/NumpyFile.hpp"
+#include "aare/file_io/NumpyFile.hpp"
 
 namespace aare {
 

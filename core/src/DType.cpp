@@ -1,5 +1,5 @@
 
-#include "aare/DType.hpp"
+#include "aare/core/DType.hpp"
 #include <fmt/format.h>
 
 namespace aare {

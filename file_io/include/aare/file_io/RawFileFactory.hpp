@@ -1,6 +1,6 @@
 #pragma once
-#include "aare/FileFactory.hpp"
-#include "aare/RawFile.hpp"
+#include "aare/file_io/FileFactory.hpp"
+#include "aare/file_io/RawFile.hpp"
 
 namespace aare {
 

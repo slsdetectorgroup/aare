@@ -1,8 +1,8 @@
 #pragma once
-#include "aare/FileInterface.hpp"
-#include "aare/Frame.hpp"
-#include "aare/SubFile.hpp"
-#include "aare/defs.hpp"
+#include "aare/file_io/FileInterface.hpp"
+#include "aare/core/Frame.hpp"
+#include "aare/file_io/SubFile.hpp"
+#include "aare/core/defs.hpp"
 
 namespace aare {
 

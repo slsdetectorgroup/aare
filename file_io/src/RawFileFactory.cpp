@@ -1,8 +1,8 @@
-#include "aare/RawFileFactory.hpp"
-#include "aare/RawFile.hpp"
-#include "aare/SubFile.hpp"
-#include "aare/defs.hpp"
-#include "aare/helpers.hpp"
+#include "aare/file_io/RawFileFactory.hpp"
+#include "aare/file_io/RawFile.hpp"
+#include "aare/file_io/SubFile.hpp"
+#include "aare/core/defs.hpp"
+#include "aare/file_io/helpers.hpp"
 #include "aare/utils/logger.hpp"
 
 #include <fstream>

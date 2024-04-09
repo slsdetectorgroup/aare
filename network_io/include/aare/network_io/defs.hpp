@@ -1,5 +1,5 @@
 #pragma once
-#include "aare/Frame.hpp"
+#include "aare/core/Frame.hpp"
 #include "aare/network_io/ZmqHeader.hpp"
 
 #include <stdexcept>

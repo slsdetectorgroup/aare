@@ -7,7 +7,7 @@ memory.
 TODO! Add expression templates for operators
 
 */
-#include "aare/NDView.hpp"
+#include "aare/core/NDView.hpp"
 
 #include <algorithm>
 #include <array>

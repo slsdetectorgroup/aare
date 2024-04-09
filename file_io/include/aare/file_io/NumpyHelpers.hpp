@@ -11,8 +11,8 @@
 #include <unordered_map>
 #include <vector>
 
-#include "aare/DType.hpp"
-#include "aare/defs.hpp"
+#include "aare/core/DType.hpp"
+#include "aare/core/defs.hpp"
 
 namespace aare {
 

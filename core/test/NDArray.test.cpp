@@ -1,4 +1,4 @@
-#include "aare/NDArray.hpp"
+#include "aare/core/NDArray.hpp"
 #include <array>
 #include <catch2/catch_test_macros.hpp>
 
