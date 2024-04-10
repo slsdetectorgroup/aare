@@ -23,7 +23,7 @@ PYBIND11_MODULE(_aare, m) {
     py::enum_<DetectorType>(m, "DetectorType");
 
     py::class_<Frame>(m, "_Frame")
-        .def(py::init<std::byte *, size_t, size_t, size_t>())
+        .def(py::init<std::byte *, ssize_t, ssize_t, ssize_t>())
         .def("get", &Frame::get)
         .def_property_readonly("rows", &Frame::rows)
         .def_property_readonly("cols", &Frame::cols)

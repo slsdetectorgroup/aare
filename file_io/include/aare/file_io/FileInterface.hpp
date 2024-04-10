@@ -55,9 +55,9 @@ class FileInterface {
 
     // Getter functions
     virtual size_t total_frames() const = 0;
-    virtual size_t rows() const = 0;
-    virtual size_t cols() const = 0;
-    virtual size_t bitdepth() const = 0;
+    virtual ssize_t rows() const = 0;
+    virtual ssize_t cols() const = 0;
+    virtual ssize_t bitdepth() const = 0;
 
     // read one frame at position frame_number
     Frame iread(size_t frame_number) {
@@ -94,9 +94,9 @@ class FileInterface {
     size_t max_frames_per_file{};
     std::string version;
     DetectorType m_type;
-    size_t m_rows{};
-    size_t m_cols{};
-    size_t m_bitdepth{};
+    ssize_t m_rows{};
+    ssize_t m_cols{};
+    ssize_t m_bitdepth{};
     size_t current_frame{};
 
 };

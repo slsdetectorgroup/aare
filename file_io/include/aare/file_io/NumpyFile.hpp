@@ -25,9 +25,9 @@ class NumpyFile : public FileInterface {
     void seek(size_t frame_number) override { this->current_frame = frame_number; }
     size_t tell() override { return this->current_frame; }
     size_t total_frames() const override { return m_header.shape[0]; }
-    size_t rows() const override { return m_header.shape[1]; }
-    size_t cols() const override { return m_header.shape[2]; }
-    size_t bitdepth() const override { return m_header.dtype.bitdepth(); }
+    ssize_t rows() const override { return m_header.shape[1]; }
+    ssize_t cols() const override { return m_header.shape[2]; }
+    ssize_t bitdepth() const override { return m_header.dtype.bitdepth(); }
 
     DType dtype() const { return m_header.dtype; }
     std::vector<size_t> shape() const { return m_header.shape; }

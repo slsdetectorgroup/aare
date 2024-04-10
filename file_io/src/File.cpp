@@ -36,9 +36,9 @@ size_t File::bytes_per_frame() { return file_impl->bytes_per_frame(); }
 size_t File::pixels() { return file_impl->pixels(); }
 void File::seek(size_t frame_number) { file_impl->seek(frame_number); }
 size_t File::tell() const { return file_impl->tell(); }
-size_t File::rows() const { return file_impl->rows(); }
-size_t File::cols() const { return file_impl->cols(); }
-size_t File::bitdepth() const { return file_impl->bitdepth(); }
+ssize_t File::rows() const { return file_impl->rows(); }
+ssize_t File::cols() const { return file_impl->cols(); }
+ssize_t File::bitdepth() const { return file_impl->bitdepth(); }
 File::~File() { delete file_impl; }
 
 Frame File::iread(size_t frame_number) { return file_impl->iread(frame_number); }

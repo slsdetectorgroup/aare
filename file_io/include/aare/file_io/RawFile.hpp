@@ -64,9 +64,9 @@ class RawFile : public FileInterface {
     ~RawFile();
 
     size_t total_frames() const override { return m_total_frames; }
-    size_t rows() const override { return m_rows; }
-    size_t cols() const override { return m_cols; }
-    size_t bitdepth() const override { return m_bitdepth; }
+    ssize_t rows() const override { return m_rows; }
+    ssize_t cols() const override { return m_cols; }
+    ssize_t bitdepth() const override { return m_bitdepth; }
 
   private:
     void get_frame_into(size_t frame_number, std::byte *image_buf);
