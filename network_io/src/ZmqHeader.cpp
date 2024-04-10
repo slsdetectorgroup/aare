@@ -1,5 +1,5 @@
 
-#include "aare/ZmqHeader.hpp"
+#include "aare/network_io/ZmqHeader.hpp"
 
 #include "simdjson.h"
 
@@ -77,7 +77,7 @@ std::string ZmqHeader::to_string() const {
     write_digit(s, "ndety", ndety);
     write_digit(s, "npixelsx", npixelsx);
     write_digit(s, "npixelsy", npixelsy);
-    write_digit(s, "imageSize", imageSize);
+    write_digit(s, "size", size);
     write_digit(s, "acqIndex", acqIndex);
     write_digit(s, "frameIndex", frameIndex);
     write_digit(s, "progress", progress);
@@ -117,7 +117,6 @@ void ZmqHeader::from_string(std::string &s) {
 
     for (auto field : object) {
         std::string_view key = field.unescaped_key();
-
         if (key == "data") {
             data = uint64_t(field.value()) ? true : false;
         } else if (key == "jsonversion") {
@@ -134,8 +133,8 @@ void ZmqHeader::from_string(std::string &s) {
             npixelsx = uint32_t(field.value());
         } else if (key == "npixelsy") {
             npixelsy = uint32_t(field.value());
-        } else if (key == "imageSize") {
-            imageSize = uint32_t(field.value());
+        } else if (key == "size") {
+            size = uint32_t(field.value());
         } else if (key == "acqIndex") {
             acqIndex = uint64_t(field.value());
         } else if (key == "frameIndex") {
@@ -187,7 +186,7 @@ void ZmqHeader::from_string(std::string &s) {
 bool ZmqHeader::operator==(const ZmqHeader &other) const {
     return data == other.data && jsonversion == other.jsonversion && dynamicRange == other.dynamicRange &&
            fileIndex == other.fileIndex && ndetx == other.ndetx && ndety == other.ndety && npixelsx == other.npixelsx &&
-           npixelsy == other.npixelsy && imageSize == other.imageSize && acqIndex == other.acqIndex &&
+           npixelsy == other.npixelsy && size == other.size && acqIndex == other.acqIndex &&
            frameIndex == other.frameIndex && progress == other.progress && fname == other.fname &&
            frameNumber == other.frameNumber && expLength == other.expLength && packetNumber == other.packetNumber &&
            detSpec1 == other.detSpec1 && timestamp == other.timestamp && modId == other.modId && row == other.row &&

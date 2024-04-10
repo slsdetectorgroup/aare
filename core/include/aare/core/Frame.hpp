@@ -1,20 +1,19 @@
 #pragma once
-#include "aare/NDArray.hpp"
-#include "aare/defs.hpp"
+#include "aare/core/NDArray.hpp"
+#include "aare/core/defs.hpp"
 #include <cstddef>
 #include <cstdint>
 #include <memory>
 #include <sys/types.h>
 #include <vector>
 
+namespace aare {
+
 /**
  * @brief Frame class to represent a single frame of data
  * model class
  * should be able to work with streams coming from files or network
  */
-
-namespace aare {
-
 class Frame {
     ssize_t m_rows;
     ssize_t m_cols;
@@ -57,6 +56,14 @@ class Frame {
         m_data = other.m_data;
         other.m_data = nullptr;
         other.m_rows = other.m_cols = other.m_bitdepth = 0;
+    }
+    // copy constructor
+    Frame(const Frame &other) {
+        m_rows = other.rows();
+        m_cols = other.cols();
+        m_bitdepth = other.bitdepth();
+        m_data = new std::byte[m_rows * m_cols * m_bitdepth / 8];
+        std::memcpy(m_data, other.m_data, m_rows * m_cols * m_bitdepth / 8);
     }
 
     template <typename T> NDView<T> view() {

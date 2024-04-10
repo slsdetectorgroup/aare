@@ -1,7 +1,7 @@
-#include "aare/FileFactory.hpp"
-#include "aare/FileInterface.hpp"
-#include "aare/NumpyFileFactory.hpp"
-#include "aare/RawFileFactory.hpp"
+#include "aare/file_io/FileFactory.hpp"
+#include "aare/file_io/FileInterface.hpp"
+#include "aare/file_io/NumpyFileFactory.hpp"
+#include "aare/file_io/RawFileFactory.hpp"
 #include "aare/utils/logger.hpp"
 #include <iostream>
 

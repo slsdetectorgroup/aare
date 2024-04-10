@@ -22,7 +22,8 @@
    SOFTWARE.
 */
 
-#include "aare/NumpyHelpers.hpp"
+#include "aare/file_io/NumpyHelpers.hpp"
+#include <iterator>
 
 namespace aare {
 

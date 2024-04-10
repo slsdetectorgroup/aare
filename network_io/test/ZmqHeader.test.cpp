@@ -1,4 +1,4 @@
-#include "aare/ZmqHeader.hpp"
+#include "aare/network_io/ZmqHeader.hpp"
 #include "aare/utils/logger.hpp"
 #include <catch2/catch_test_macros.hpp>
 
@@ -13,7 +13,7 @@ TEST_CASE("Test ZmqHeader") {
     header.fileIndex = 4;
     header.ndetx = 5;
     header.ndety = 6;
-    header.imageSize = 4800;
+    header.size = 4800;
     header.acqIndex = 8;
     header.frameIndex = 9;
     header.progress = 0.1;
@@ -46,7 +46,7 @@ TEST_CASE("Test ZmqHeader") {
                               "\"ndety\": 6, "
                               "\"npixelsx\": 10, "
                               "\"npixelsy\": 15, "
-                              "\"imageSize\": 4800, "
+                              "\"size\": 4800, "
                               "\"acqIndex\": 8, "
                               "\"frameIndex\": 9, "
                               "\"progress\": 0.100000, "

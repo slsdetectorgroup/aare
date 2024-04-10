@@ -1,7 +1,7 @@
 #pragma once
-#include "aare/DType.hpp"
-#include "aare/Frame.hpp"
-#include "aare/defs.hpp"
+#include "aare/core/DType.hpp"
+#include "aare/core/Frame.hpp"
+#include "aare/core/defs.hpp"
 #include "aare/utils/logger.hpp"
 #include <filesystem>
 #include <vector>

@@ -1,4 +1,4 @@
-#include "aare/ProducerConsumerQueue.hpp"
+#include "aare/core/ProducerConsumerQueue.hpp"
 #include <catch2/catch_all.hpp>
 
 // using arve::SimpleQueue;

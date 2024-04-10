@@ -1,6 +1,6 @@
 #include <catch2/catch_all.hpp>
 
-#include "aare/CircularFifo.hpp"
+#include "aare/core/CircularFifo.hpp"
 
 using aare::CircularFifo;
 

@@ -1,4 +1,4 @@
-#include "aare/RawFile.hpp"
+#include "aare/file_io/RawFile.hpp"
 #include "aare/utils/logger.hpp"
 
 namespace aare {

@@ -1,4 +1,4 @@
-#include "aare/NumpyHelpers.hpp" //Is this really a public header?
+#include "aare/file_io/NumpyHelpers.hpp" //Is this really a public header?
 #include <catch2/catch_test_macros.hpp>
 
 using namespace aare::NumpyHelpers;

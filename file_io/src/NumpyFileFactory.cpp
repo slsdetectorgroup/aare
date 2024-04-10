@@ -1,5 +1,5 @@
-#include "aare/NumpyFileFactory.hpp"
-#include "aare/NumpyHelpers.hpp"
+#include "aare/file_io/NumpyFileFactory.hpp"
+#include "aare/file_io/NumpyHelpers.hpp"
 
 namespace aare {
 

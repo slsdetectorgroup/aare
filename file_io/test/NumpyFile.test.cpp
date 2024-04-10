@@ -1,5 +1,5 @@
-#include "aare/NumpyFile.hpp"
-#include "aare/NDArray.hpp"
+#include "aare/file_io/NumpyFile.hpp"
+#include "aare/core/NDArray.hpp"
 #include <catch2/catch_test_macros.hpp>
 
 #include "test_config.hpp"

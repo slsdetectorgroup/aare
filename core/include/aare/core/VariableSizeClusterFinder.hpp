@@ -5,7 +5,7 @@
 #include <unordered_map>
 #include <vector>
 
-#include "aare/NDArray.hpp"
+#include "aare/core/NDArray.hpp"
 
 const int MAX_CLUSTER_SIZE = 200;
 namespace aare {

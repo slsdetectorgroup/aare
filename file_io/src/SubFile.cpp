@@ -1,5 +1,7 @@
-#include "aare/SubFile.hpp"
+#include "aare/file_io/SubFile.hpp"
 #include "aare/utils/logger.hpp"
+#include <cstring> // memcpy
+#include <fmt/core.h>
 #include <iostream>
 // #include <filesystem>
 
@@ -79,7 +81,7 @@ template <typename DataType> size_t SubFile::read_impl_flip(std::byte *buffer) {
     auto src = &tmp[0];
 
     for (int i = 0; i != this->m_rows; ++i) {
-        memcpy(dst, src, row_size);
+        std::memcpy(dst, src, row_size);
         dst -= row_size;
         src += row_size;
     }

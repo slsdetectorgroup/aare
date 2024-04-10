@@ -1,4 +1,7 @@
+#pragma once
+#include "aare/core/Frame.hpp"
 #include "aare/utils/logger.hpp"
+
 #include "simdjson.h"
 #include <array>
 #include <cstdint>
@@ -95,7 +98,7 @@ struct ZmqHeader {
     /** number of pixels/channels in y axis for this zmq socket */
     uint32_t npixelsy{0};
     /** number of bytes for an image in this socket */
-    uint32_t imageSize{0};
+    uint32_t size{0};
     /** frame number from detector */
     uint64_t acqIndex{0};
     /** frame index (starting at 0 for each acquisition) */
@@ -135,4 +138,5 @@ struct ZmqHeader {
     // compare operator
     bool operator==(const ZmqHeader &other) const;
 };
+
 } // namespace aare

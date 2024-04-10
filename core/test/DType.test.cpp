@@ -1,6 +1,6 @@
 
 
-#include "aare/DType.hpp"
+#include "aare/core/DType.hpp"
 #include <catch2/catch_test_macros.hpp>
 
 using aare::DType;

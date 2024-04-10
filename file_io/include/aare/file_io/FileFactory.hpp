@@ -1,6 +1,6 @@
 #pragma once
-#include "aare/DType.hpp"
-#include "aare/FileInterface.hpp"
+#include "aare/core/DType.hpp"
+#include "aare/file_io/FileInterface.hpp"
 #include "aare/utils/logger.hpp"
 #include <filesystem>
 

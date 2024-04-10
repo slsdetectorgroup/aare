@@ -8,3 +8,4 @@ dependencies:
   - nlohmann_json # should be removed
   - catch2
   - zeromq
+  - boost-cpp
