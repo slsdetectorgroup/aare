@@ -7,7 +7,7 @@
 
 namespace aare {
 
-SubFile::SubFile(std::filesystem::path fname, DetectorType detector, ssize_t rows, ssize_t cols, uint16_t bitdepth) {
+SubFile::SubFile(std::filesystem::path fname, DetectorType detector, size_t rows, size_t cols, uint16_t bitdepth) {
     this->m_rows = rows;
     this->m_cols = cols;
     this->m_fname = fname;

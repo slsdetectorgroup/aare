@@ -1,11 +1,28 @@
 #include "aare/file_io/File.hpp"
-#include "aare/file_io/FileFactory.hpp"
+#include "aare/file_io/NumpyFile.hpp"
+#include "aare/file_io/RawFile.hpp"
 #include "aare/utils/logger.hpp"
+#include <fmt/format.h>
 
 namespace aare {
 
 File::File(std::filesystem::path fname, std::string mode, FileConfig cfg) {
-    file_impl = FileFactory::load_file(fname, mode, cfg);
+
+    if ((mode == "r" or mode == "a") and not std::filesystem::exists(fname)) {
+        throw std::runtime_error(fmt::format("File does not exist: {}", fname.c_str()));
+    }
+
+    if (fname.extension() == ".raw" || fname.extension() == ".json") {
+        aare::logger::debug("Loading raw file");
+        file_impl = new RawFile(fname, mode, cfg);
+    }
+    // check if extension is numpy
+    else if (fname.extension() == ".npy") {
+        aare::logger::debug("Loading numpy file");
+        file_impl = new NumpyFile(fname, mode, cfg);
+    } else {
+        throw std::runtime_error("Unsupported file type");
+    }
 }
 
 void File::write(Frame &frame) { file_impl->write(frame); }
@@ -19,9 +36,9 @@ size_t File::bytes_per_frame() { return file_impl->bytes_per_frame(); }
 size_t File::pixels() { return file_impl->pixels(); }
 void File::seek(size_t frame_number) { file_impl->seek(frame_number); }
 size_t File::tell() const { return file_impl->tell(); }
-ssize_t File::rows() const { return file_impl->rows(); }
-ssize_t File::cols() const { return file_impl->cols(); }
-ssize_t File::bitdepth() const { return file_impl->bitdepth(); }
+size_t File::rows() const { return file_impl->rows(); }
+size_t File::cols() const { return file_impl->cols(); }
+size_t File::bitdepth() const { return file_impl->bitdepth(); }
 File::~File() { delete file_impl; }
 
 Frame File::iread(size_t frame_number) { return file_impl->iread(frame_number); }

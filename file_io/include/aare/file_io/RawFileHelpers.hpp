@@ -1,16 +1,10 @@
 #pragma once
-#include "aare/file_io/FileFactory.hpp"
 #include "aare/file_io/RawFile.hpp"
 
-namespace aare {
 
-class RawFileFactory : public FileFactory {
-  private:
+namespace aare::RawFileHelpers {
     void parse_json_metadata(RawFile *file);
     void parse_raw_metadata(RawFile *file);
-
-  public:
-    RawFileFactory(std::filesystem::path fpath);
     RawFile *load_file_read() override;
     RawFile *load_file_write(FileConfig) override { return new RawFile(); };
     void parse_metadata(FileInterface *) override;
@@ -20,4 +14,3 @@ class RawFileFactory : public FileFactory {
     void find_geometry(FileInterface *);
 };
 
-} // namespace aare

@@ -25,9 +25,9 @@ class File {
     void seek(size_t frame_number);
     size_t tell() const;
     size_t total_frames() const;
-    ssize_t rows() const;
-    ssize_t cols() const;
-    ssize_t bitdepth() const;
+    size_t rows() const;
+    size_t cols() const;
+    size_t bitdepth() const;
     File(File &&other);
 
     ~File();

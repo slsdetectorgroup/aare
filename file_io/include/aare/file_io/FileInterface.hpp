@@ -9,11 +9,14 @@
 namespace aare {
 
 struct FileConfig {
-    std::filesystem::path fname;
     aare::DType dtype = aare::DType(typeid(uint16_t));
     uint64_t rows;
     uint64_t cols;
     xy geometry{1, 1};
+    bool operator==(const FileConfig &other) const {
+        return dtype == other.dtype && rows == other.rows && cols == other.cols && geometry == other.geometry;
+    }
+    bool operator!=(const FileConfig &other) const { return !(*this == other); }
 };
 class FileInterface {
   public:
@@ -52,9 +55,9 @@ class FileInterface {
 
     // Getter functions
     virtual size_t total_frames() const = 0;
-    virtual ssize_t rows() const = 0;
-    virtual ssize_t cols() const = 0;
-    virtual ssize_t bitdepth() const = 0;
+    virtual size_t rows() const = 0;
+    virtual size_t cols() const = 0;
+    virtual size_t bitdepth() const = 0;
 
     // read one frame at position frame_number
     Frame iread(size_t frame_number) {
@@ -82,8 +85,8 @@ class FileInterface {
     };
 
   public:
-    std::string mode;
-    // std::filesystem::path m_fname;
+    std::string m_mode;
+    std::filesystem::path m_fname;
     std::filesystem::path m_base_path;
     std::string m_base_name, m_ext;
     int m_findex;
@@ -91,9 +94,11 @@ class FileInterface {
     size_t max_frames_per_file{};
     std::string version;
     DetectorType m_type;
-    ssize_t m_rows{};
-    ssize_t m_cols{};
-    ssize_t m_bitdepth{};
+    size_t m_rows{};
+    size_t m_cols{};
+    size_t m_bitdepth{};
+    size_t current_frame{};
+
 };
 
 } // namespace aare

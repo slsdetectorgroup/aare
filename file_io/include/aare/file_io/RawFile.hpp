@@ -1,19 +1,16 @@
 #pragma once
 #include "aare/core/Frame.hpp"
-#include "aare/core/defs.hpp"
 #include "aare/file_io/FileInterface.hpp"
 #include "aare/file_io/SubFile.hpp"
 
 namespace aare {
 
 class RawFile : public FileInterface {
-
-    using config = RawFileConfig;
-
+  private:
   public:
     std::filesystem::path m_fname; // TO be made private!
 
-    // pragma to ignore warnings
+    RawFile(const std::filesystem::path &fname, const std::string &mode = "r", const FileConfig &cfg = {});
     void write(Frame &frame) override { throw std::runtime_error("Not implemented"); };
 
     Frame read() override { return get_frame(this->current_frame++); };
@@ -40,7 +37,7 @@ class RawFile : public FileInterface {
     int subfile_rows, subfile_cols;
     xy geometry;
     std::vector<xy> positions;
-    config cfg{0, 0};
+    RawFileConfig cfg{0, 0};
     TimingMode timing_mode;
     bool quad{false};
 
@@ -67,14 +64,20 @@ class RawFile : public FileInterface {
     ~RawFile();
 
     size_t total_frames() const override { return m_total_frames; }
-    ssize_t rows() const override { return m_rows; }
-    ssize_t cols() const override { return m_cols; }
-    ssize_t bitdepth() const override { return m_bitdepth; }
+    size_t rows() const override { return m_rows; }
+    size_t cols() const override { return m_cols; }
+    size_t bitdepth() const override { return m_bitdepth; }
 
   private:
-    size_t current_frame{};
     void get_frame_into(size_t frame_number, std::byte *image_buf);
     Frame get_frame(size_t frame_number);
+    void parse_fname();
+    void parse_metadata();
+    void parse_raw_metadata();
+    void parse_json_metadata();
+    void find_geometry();
+    sls_detector_header read_header(const std::filesystem::path &fname);
+    void open_subfiles();
 };
 
 } // namespace aare

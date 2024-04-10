@@ -31,6 +31,8 @@ typedef struct {
 struct xy {
     int row;
     int col;
+    bool operator==(const xy &other) const { return row == other.row && col == other.col; }
+    bool operator!=(const xy &other) const { return !(*this == other); }
 };
 
 // using image_shape = std::array<ssize_t, 2>;
