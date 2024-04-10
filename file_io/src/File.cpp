@@ -7,6 +7,9 @@
 namespace aare {
 
 File::File(std::filesystem::path fname, std::string mode, FileConfig cfg) {
+    if (mode != "r" && mode != "w" && mode != "a") {
+        throw std::invalid_argument("Unsupported file mode");
+    }
 
     if ((mode == "r" or mode == "a") and not std::filesystem::exists(fname)) {
         throw std::runtime_error(fmt::format("File does not exist: {}", fname.c_str()));

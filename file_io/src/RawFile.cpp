@@ -15,7 +15,6 @@ RawFile::RawFile(const std::filesystem::path &fname, const std::string &mode, co
             aare::logger::warn(
                 "In read mode it is not necessary to provide a config, the provided config will be ignored");
         }
-        aare::logger::debug("XXXXXXXXLoading raw file");
         parse_fname();
         parse_metadata();
         find_number_of_subfiles();
@@ -48,6 +47,27 @@ sls_detector_header RawFile::read_header(const std::filesystem::path &fname) {
     if (rc != 1)
         throw std::runtime_error("Could not read header from file");
     return h;
+}
+bool RawFile::is_master_file(std::filesystem::path fpath) {
+    std::string stem = fpath.stem();
+    if (stem.find("_master_") != std::string::npos)
+        return true;
+    else
+        return false;
+}
+
+void RawFile::find_number_of_subfiles() {
+    int n_mod = 0;
+    while (std::filesystem::exists(data_fname(++n_mod, 0)))
+        ;
+    n_subfiles = n_mod;
+}
+inline std::filesystem::path RawFile::data_fname(int mod_id, int file_id) {
+    return this->m_base_path / fmt::format("{}_d{}_f{}_{}.raw", this->m_base_name, file_id, mod_id, this->m_findex);
+}
+
+inline std::filesystem::path RawFile::master_fname() {
+    return this->m_base_path / fmt::format("{}_master_{}{}", this->m_base_name, this->m_findex, this->m_ext);
 }
 
 void RawFile::find_geometry() {
@@ -163,7 +183,6 @@ void RawFile::parse_fname() {
     m_base_path = m_fname.parent_path();
     m_base_name = m_fname.stem();
     m_ext = m_fname.extension();
-    aare::logger::debug("EXTEXT", m_ext);
     auto pos = m_base_name.rfind("_");
     m_findex = std::stoi(m_base_name.substr(pos + 1));
     pos = m_base_name.find("_master_");

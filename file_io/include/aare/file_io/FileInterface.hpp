@@ -2,12 +2,18 @@
 #include "aare/core/DType.hpp"
 #include "aare/core/Frame.hpp"
 #include "aare/core/defs.hpp"
-#include "aare/utils/logger.hpp"
 #include <filesystem>
 #include <vector>
 
 namespace aare {
 
+/**
+ * @brief FileConfig structure to store the configuration of a file
+ * dtype: data type of the file
+ * rows: number of rows in the file
+ * cols: number of columns in the file
+ * geometry: geometry of the file
+ */
 struct FileConfig {
     aare::DType dtype = aare::DType(typeid(uint16_t));
     uint64_t rows;
@@ -18,48 +24,115 @@ struct FileConfig {
     }
     bool operator!=(const FileConfig &other) const { return !(*this == other); }
 };
+
+/**
+ * @brief FileInterface class to define the interface for file operations
+ * @note parent class for NumpyFile and RawFile
+ * @note all functions are pure virtual and must be implemented by the derived classes
+ */
 class FileInterface {
   public:
-    friend class FileFactory;
-    // write one frame
+    /**
+     * @brief write a frame to the file
+     * @param frame frame to write
+     * @return void
+     * @throws std::runtime_error if the function is not implemented
+     */
     virtual void write(Frame &frame) = 0;
 
-    // write n_frames frames
+    /**
+     * @brief write a vector of frames to the file
+     * @param frames vector of frames to write
+     * @return void
+     */
     // virtual void write(std::vector<Frame> &frames) = 0;
 
-    // read one frame
+    /**
+     * @brief read one frame from the file at the current position
+     * @return Frame
+     */
     virtual Frame read() = 0;
 
-    // read n_frames frames
+    /**
+     * @brief read n_frames from the file at the current position
+     * @param n_frames number of frames to read
+     * @return vector of frames
+     */
     virtual std::vector<Frame> read(size_t n_frames) = 0; // Is this the right interface?
 
-    // read one frame into the provided buffer
+    /**
+     * @brief read one frame from the file at the current position and store it in the provided buffer
+     * @param image_buf buffer to store the frame
+     * @return void
+     */
     virtual void read_into(std::byte *image_buf) = 0;
 
-    // read n_frames frame into the provided buffer
+    /**
+     * @brief read n_frames from the file at the current position and store them in the provided buffer
+     * @param image_buf buffer to store the frames
+     * @param n_frames number of frames to read
+     * @return void
+     */
     virtual void read_into(std::byte *image_buf, size_t n_frames) = 0;
 
-    // read the frame number on position frame_index
+    /**
+     * @brief get the frame number at the given frame index
+     * @param frame_index index of the frame
+     * @return frame number
+     */
     virtual size_t frame_number(size_t frame_index) = 0;
 
-    // size of one frame, important fro teh read_into function
+    /**
+     * @brief get the size of one frame in bytes
+     * @return size of one frame
+     */
     virtual size_t bytes_per_frame() = 0;
 
-    // number of pixels in one frame
+    /**
+     * @brief get the number of pixels in one frame
+     * @return number of pixels in one frame
+     */
     virtual size_t pixels() = 0;
-    // goto frame number
+
+    /**
+     * @brief seek to the given frame number
+     * @param frame_number frame number to seek to
+     * @return void
+     */
     virtual void seek(size_t frame_number) = 0;
 
-    // return the position of the file pointer (in number of frames)
+    /**
+     * @brief get the current position of the file pointer
+     * @return current position of the file pointer
+     */
     virtual size_t tell() = 0;
 
-    // Getter functions
+    /**
+     * @brief get the total number of frames in the file
+     * @return total number of frames in the file
+     */
     virtual size_t total_frames() const = 0;
+    /**
+     * @brief get the number of rows in the file
+     * @return number of rows in the file
+     */
     virtual ssize_t rows() const = 0;
+    /**
+     * @brief get the number of columns in the file
+     * @return number of columns in the file
+     */
     virtual ssize_t cols() const = 0;
+    /**
+     * @brief get the bitdepth of the file
+     * @return bitdepth of the file
+     */
     virtual ssize_t bitdepth() const = 0;
 
-    // read one frame at position frame_number
+    /**
+     * @brief read one frame from the file at the given frame number
+     * @param frame_number frame number to read
+     * @return frame
+     */
     Frame iread(size_t frame_number) {
         auto old_pos = tell();
         seek(frame_number);
@@ -68,7 +141,12 @@ class FileInterface {
         return tmp;
     };
 
-    // read n_frames frames starting at frame_number
+    /**
+     * @brief read n_frames from the file starting at the given frame number
+     * @param frame_number frame number to start reading from
+     * @param n_frames number of frames to read
+     * @return vector of frames
+     */
     std::vector<Frame> iread(size_t frame_number, size_t n_frames) {
         auto old_pos = tell();
         seek(frame_number);
@@ -98,7 +176,6 @@ class FileInterface {
     ssize_t m_cols{};
     ssize_t m_bitdepth{};
     size_t current_frame{};
-
 };
 
 } // namespace aare
