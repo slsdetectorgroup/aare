@@ -10,7 +10,22 @@ class zmq_msg_t;
 
 namespace aare {
 
+/**
+ * @brief parent class for ZmqSocketReceiver and ZmqSocketSender
+ * contains common functions and variables
+ */
 class ZmqSocket {
+  public:
+    ZmqSocket() = default;
+    ~ZmqSocket();
+    ZmqSocket(const ZmqSocket &) = delete;
+    ZmqSocket operator=(const ZmqSocket &) = delete;
+    ZmqSocket(ZmqSocket &&) = delete;
+    void disconnect();
+    void set_zmq_hwm(int hwm);
+    void set_timeout_ms(int n);
+    void set_potential_frame_size(size_t size);
+
   protected:
     void *m_context{nullptr};
     void *m_socket{nullptr};
@@ -20,19 +35,6 @@ class ZmqSocket {
     size_t m_potential_frame_size{1024 * 1024};
     constexpr static size_t m_max_header_size = 1024;
     char *m_header_buffer = new char[m_max_header_size];
-
-  public:
-    ZmqSocket() = default;
-    ~ZmqSocket();
-
-    ZmqSocket(const ZmqSocket &) = delete;
-    ZmqSocket operator=(const ZmqSocket &) = delete;
-    ZmqSocket(ZmqSocket &&) = delete;
-
-    void disconnect();
-    void set_zmq_hwm(int hwm);
-    void set_timeout_ms(int n);
-    void set_potential_frame_size(size_t size);
 };
 
 } // namespace aare

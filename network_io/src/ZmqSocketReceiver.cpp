@@ -79,6 +79,10 @@ int ZmqSocketReceiver::receive_data(std::byte *data, size_t size) {
     return data_bytes_received;
 }
 
+/**
+ * @brief receive a ZmqFrame (header and data)
+ * @return ZmqFrame
+ */
 ZmqFrame ZmqSocketReceiver::receive_zmqframe() {
     // receive header from zmq and parse it
     ZmqHeader header = receive_header();
@@ -94,13 +98,17 @@ ZmqFrame ZmqSocketReceiver::receive_zmqframe() {
     if (bytes_received == -1) {
         throw network_io::NetworkError(LOCATION + "Error receiving frame");
     }
-    if ((uint32_t)bytes_received != header.imageSize) {
+    if ((uint32_t)bytes_received != header.size) {
         throw network_io::NetworkError(
-            fmt::format("{} Expected {} bytes but received {}", LOCATION, header.imageSize, bytes_received));
+            fmt::format("{} Expected {} bytes but received {}", LOCATION, header.size, bytes_received));
     }
     return {header, std::move(frame)};
 }
 
+/**
+ * @brief receive multiple ZmqFrames (header and data)
+ * @return std::vector<ZmqFrame>
+ */
 std::vector<ZmqFrame> ZmqSocketReceiver::receive_n() {
     std::vector<ZmqFrame> frames;
     while (true) {

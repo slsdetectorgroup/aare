@@ -11,6 +11,9 @@
 
 namespace aare {
 
+/**
+ * @brief header contained in parts of frames
+ */
 typedef struct {
     uint64_t frameNumber;
     uint32_t expLength;
@@ -26,14 +29,13 @@ typedef struct {
     uint8_t detType;
     uint8_t version;
     uint8_t packetMask[64];
-} __attribute__((packed)) sls_detector_header;
+} sls_detector_header;
 
 struct xy {
     int row;
     int col;
 };
 
-// using image_shape = std::array<ssize_t, 2>;
 using dynamic_shape = std::vector<ssize_t>;
 
 enum class DetectorType { Jungfrau, Eiger, Mythen3, Moench, ChipTestBoard };

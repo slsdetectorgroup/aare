@@ -5,6 +5,11 @@
 #include "aare/network_io/defs.hpp"
 
 namespace aare {
+
+/**
+ * @brief Socket to send data to a ZMQ subscriber
+ * @note needs to be in sync with the main library (or maybe better use the versioning in the header)
+ */
 class ZmqSocketSender : public ZmqSocket {
   public:
     ZmqSocketSender(const std::string &endpoint);

@@ -3,6 +3,11 @@
 
 namespace aare {
 
+/**
+ * @brief closes the socket and destroys the context
+ * @return void
+ * @note this function is called by the destructor
+ */
 void ZmqSocket::disconnect() {
     zmq_close(m_socket);
     zmq_ctx_destroy(m_context);
@@ -10,6 +15,10 @@ void ZmqSocket::disconnect() {
     m_context = nullptr;
 }
 
+/**
+ * @brief destructor
+ * @note called from child classes (ZmqSocketReceiver and ZmqSocketSender)
+ */
 ZmqSocket::~ZmqSocket() {
     if (m_socket)
         disconnect();

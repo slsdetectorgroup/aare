@@ -98,7 +98,7 @@ struct ZmqHeader {
     /** number of pixels/channels in y axis for this zmq socket */
     uint32_t npixelsy{0};
     /** number of bytes for an image in this socket */
-    uint32_t imageSize{0};
+    uint32_t size{0};
     /** frame number from detector */
     uint64_t acqIndex{0};
     /** frame index (starting at 0 for each acquisition) */
