@@ -2,6 +2,11 @@
 
 namespace aare {
 
+/**
+ * @brief Convert a DetectorType to a string
+ * @param type DetectorType
+ * @return string representation of the DetectorType
+ */
 template <> std::string toString(DetectorType type) {
     switch (type) {
     case DetectorType::Jungfrau:
@@ -19,6 +24,12 @@ template <> std::string toString(DetectorType type) {
     }
 }
 
+/**
+ * @brief Convert a string to a DetectorType
+ * @param name string representation of the DetectorType
+ * @return DetectorType
+ * @throw runtime_error if the string does not match any DetectorType
+ */
 template <> DetectorType StringTo(std::string name) {
     if (name == "Jungfrau")
         return DetectorType::Jungfrau;
@@ -35,6 +46,12 @@ template <> DetectorType StringTo(std::string name) {
     }
 }
 
+/**
+ * @brief Convert a string to a TimingMode
+ * @param mode string representation of the TimingMode
+ * @return TimingMode
+ * @throw runtime_error if the string does not match any TimingMode
+ */
 template <> TimingMode StringTo(std::string mode) {
     if (mode == "auto")
         return TimingMode::Auto;

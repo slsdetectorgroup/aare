@@ -24,7 +24,7 @@ int main() {
     aare::ZmqHeader header;
     header.npixelsx = 1024;
     header.npixelsy = 1024;
-    header.imageSize = sizeof(uint32_t) * 1024 * 1024;
+    header.size = sizeof(uint32_t) * 1024 * 1024;
     header.dynamicRange = 32;
 
     std::vector<ZmqFrame> zmq_frames;

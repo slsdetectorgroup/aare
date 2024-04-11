@@ -5,6 +5,9 @@
 
 namespace aare {
 
+/**
+ * @brief enum class to define the endianess of the system
+ */
 enum class endian {
 #ifdef _WIN32
     little = 0,
@@ -17,6 +20,10 @@ enum class endian {
 #endif
 };
 
+/**
+ * @brief class to define the data type of the pixels
+ * @note only native endianess is supported
+ */
 class DType {
     // TODO! support for non native endianess?
     static_assert(sizeof(long) == sizeof(int64_t), "long should be 64bits");

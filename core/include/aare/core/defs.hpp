@@ -11,6 +11,9 @@
 
 namespace aare {
 
+/**
+ * @brief header contained in parts of frames
+ */
 struct sls_detector_header {
     uint64_t frameNumber;
     uint32_t expLength;
@@ -35,7 +38,6 @@ struct xy {
     bool operator!=(const xy &other) const { return !(*this == other); }
 };
 
-// using image_shape = std::array<ssize_t, 2>;
 using dynamic_shape = std::vector<ssize_t>;
 
 enum class DetectorType { Jungfrau, Eiger, Mythen3, Moench, ChipTestBoard };

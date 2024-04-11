@@ -79,7 +79,7 @@ int main(int argc, char **argv) {
         header.npixelsx = frame.rows();
         header.npixelsy = frame.cols();
         header.dynamicRange = frame.bitdepth();
-        header.imageSize = frame.size();
+        header.size = frame.size();
 
         sender.send({header, frame});
         std::this_thread::sleep_for(d);

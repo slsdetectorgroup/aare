@@ -6,6 +6,13 @@
 
 namespace aare {
 
+/**
+ * @brief Construct a DType object from a type_info object
+ * @param t type_info object
+ * @throw runtime_error if the type is not supported
+ * @note supported types are: int8_t, uint8_t, int16_t, uint16_t, int32_t, uint32_t, int64_t, uint64_t, float, double
+ * @note the type_info object is obtained using typeid (e.g. typeid(int))
+ */
 DType::DType(const std::type_info &t) {
     if (t == typeid(int8_t))
         m_type = TypeIndex::INT8;
@@ -33,6 +40,10 @@ DType::DType(const std::type_info &t) {
         throw std::runtime_error("Could not construct data type. Type not supported.");
 }
 
+/**
+ * @brief Get the bitdepth of the data type
+ * @return bitdepth
+ */
 uint8_t DType::bitdepth() const {
     switch (m_type) {
     case TypeIndex::INT8:
@@ -58,8 +69,20 @@ uint8_t DType::bitdepth() const {
     }
 }
 
+/**
+ * @brief Construct a DType object from a TypeIndex
+ * @param ti TypeIndex
+ *
+ */
 DType::DType(DType::TypeIndex ti) : m_type(ti) {}
 
+/**
+ * @brief Construct a DType object from a string
+ * @param sv string_view
+ * @throw runtime_error if the type is not supported
+ * @note example strings: "<i4", "u8", "f4"
+ * @note the endianess is checked and only native endianess is supported
+ */
 DType::DType(std::string_view sv) {
 
     // Check if the file is using our native endianess
@@ -101,6 +124,10 @@ DType::DType(std::string_view sv) {
         throw std::runtime_error("Could not construct data type. Type no supported.");
 }
 
+/**
+ * @brief Get the string representation of the data type
+ * @return string representation
+ */
 std::string DType::str() const {
 
     char ec;
