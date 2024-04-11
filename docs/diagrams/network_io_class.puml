@@ -1,0 +1,136 @@
+@startuml
+class "aare::Frame" as C_0001608703618093824988
+class C_0001608703618093824988 {
++Frame(ssize_t rows, ssize_t cols, ssize_t m_bitdepth) : void
++Frame(std::byte * fp, ssize_t rows, ssize_t cols, ssize_t m_bitdepth) : void
++Frame(Frame && other) : void
++Frame(const Frame & other) : void
++~Frame() : void
+..
++operator=(Frame & other) : Frame &
+..
++bitdepth() const : ssize_t
++cols() const : ssize_t
++data() const : std::byte *
++get(int row, int col) : std::byte *
++image<T>() : NDArray<T>
++rows() const : ssize_t
++set<T>(int row, int col, T data) : void
++size() const : ssize_t
++view<T>() : NDView<T>
+__
+-m_bitdepth : ssize_t
+-m_cols : ssize_t
+-m_data : std::byte *
+-m_rows : ssize_t
+}
+class "aare::ZmqHeader" as C_0000690012646166089557
+class C_0000690012646166089557 {
++operator==(const ZmqHeader & other) const : bool
+..
++from_string(std::string & s) : void
++to_string() const : std::string
+__
++acqIndex : uint64_t
++addJsonHeader : std::map<std::string,std::string>
++column : uint16_t
++completeImage : bool
++data : bool
++detSpec1 : uint64_t
++detSpec2 : uint16_t
++detSpec3 : uint32_t
++detSpec4 : uint16_t
++detType : uint8_t
++dynamicRange : uint32_t
++expLength : uint32_t
++fileIndex : uint64_t
++flipRows : int
++fname : std::string
++frameIndex : uint64_t
++frameNumber : uint64_t
++imageSize : uint32_t
++jsonversion : uint32_t
++modId : uint16_t
++ndetx : uint32_t
++ndety : uint32_t
++npixelsx : uint32_t
++npixelsy : uint32_t
++packetNumber : uint32_t
++progress : double
++quad : uint32_t
++row : uint16_t
++rx_roi : std::array<int,4>
++timestamp : uint64_t
++version : uint8_t
+}
+class "aare::ZmqSocket" as C_0000575290120620432482
+class C_0000575290120620432482 {
++ZmqSocket() = default : void
++ZmqSocket(const ZmqSocket &) = deleted : void
++ZmqSocket(ZmqSocket &&) = deleted : void
++~ZmqSocket() : void
+..
++operator=(const ZmqSocket &) = deleted : ZmqSocket
+..
++disconnect() : void
++set_potential_frame_size(size_t size) : void
++set_timeout_ms(int n) : void
++set_zmq_hwm(int hwm) : void
+__
+#m_context : void *
+#m_endpoint : std::string
+#m_header_buffer : char *
+{static} #m_max_header_size : const size_t
+#m_potential_frame_size : size_t
+#m_socket : void *
+#m_timeout_ms : int
+#m_zmq_hwm : int
+}
+class "aare::ZmqFrame" as C_0001018278375791869829
+class C_0001018278375791869829 {
+__
++frame : Frame
++header : ZmqHeader
+}
+class "aare::network_io::NetworkError" as C_0001290043041844945927
+class C_0001290043041844945927 {
++NetworkError(const char * msg) : void
++NetworkError(const std::string msg) : void
+..
++what() const noexcept : const char *
+__
+-m_msg : const char *
+}
+class "aare::ZmqSocketReceiver" as C_0001017868003595712218
+class C_0001017868003595712218 {
++ZmqSocketReceiver(const std::string & endpoint) : void
+..
++connect() : void
+-receive_data(std::byte * data, size_t size) : int
+-receive_header() : ZmqHeader
++receive_n() : std::vector<ZmqFrame>
+-receive_zmqframe() : ZmqFrame
+__
+}
+class "aare::ZmqSocketSender" as C_0002178845803227443176
+class C_0002178845803227443176 {
++ZmqSocketSender(const std::string & endpoint) : void
+..
++bind() : void
++send(const ZmqHeader & header, const std::byte * data, size_t size) : size_t
++send(const ZmqFrame & zmq_frame) : size_t
++send(const std::vector<ZmqFrame> & zmq_frames) : size_t
+__
+}
+C_0001018278375791869829 o-- C_0000690012646166089557 : +header
+C_0001018278375791869829 o-- C_0001608703618093824988 : +frame
+C_0001017868003595712218 ..> C_0001018278375791869829
+C_0001017868003595712218 ..> C_0000690012646166089557
+C_0000575290120620432482 <|-- C_0001017868003595712218
+C_0002178845803227443176 ..> C_0000690012646166089557
+C_0002178845803227443176 ..> C_0001018278375791869829
+C_0000575290120620432482 <|-- C_0002178845803227443176
+
+'Generated with clang-uml, version 0.5.1
+'LLVM version clang version 17.0.6 (Fedora 17.0.6-2.fc39)
+@enduml

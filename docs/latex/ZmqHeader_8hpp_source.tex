@@ -1,0 +1,119 @@
+\doxysection{Zmq\+Header.\+hpp}
+\hypertarget{ZmqHeader_8hpp_source}{}\label{ZmqHeader_8hpp_source}\index{network\_io/include/aare/network\_io/ZmqHeader.hpp@{network\_io/include/aare/network\_io/ZmqHeader.hpp}}
+\mbox{\hyperlink{ZmqHeader_8hpp}{Go to the documentation of this file.}}
+\begin{DoxyCode}{0}
+\DoxyCodeLine{00001\ \textcolor{preprocessor}{\#pragma\ once}}
+\DoxyCodeLine{00002\ \textcolor{preprocessor}{\#include\ "{}\mbox{\hyperlink{Frame_8hpp}{aare/core/Frame.hpp}}"{}}}
+\DoxyCodeLine{00003\ \textcolor{preprocessor}{\#include\ "{}\mbox{\hyperlink{logger_8hpp}{aare/utils/logger.hpp}}"{}}}
+\DoxyCodeLine{00004\ }
+\DoxyCodeLine{00005\ \textcolor{preprocessor}{\#include\ "{}simdjson.h"{}}}
+\DoxyCodeLine{00006\ \textcolor{preprocessor}{\#include\ <array>}}
+\DoxyCodeLine{00007\ \textcolor{preprocessor}{\#include\ <cstdint>}}
+\DoxyCodeLine{00008\ \textcolor{preprocessor}{\#include\ <map>}}
+\DoxyCodeLine{00009\ \textcolor{preprocessor}{\#include\ <string>}}
+\DoxyCodeLine{00010\ \textcolor{keyword}{namespace\ }\mbox{\hyperlink{namespacesimdjson}{simdjson}}\ \{}
+\DoxyCodeLine{00015\ \textcolor{keyword}{template}\ <>\ simdjson\_inline\ simdjson::simdjson\_result<std::array<int,\ 4>>\ simdjson::ondemand::value::get()\ \textcolor{keyword}{noexcept}\ \{}
+\DoxyCodeLine{00016\ \ \ \ \ ondemand::array\ array;}
+\DoxyCodeLine{00017\ \ \ \ \ \textcolor{keyword}{auto}\ error\ =\ get\_array().get(array);}
+\DoxyCodeLine{00018\ \ \ \ \ \textcolor{keywordflow}{if}\ (error)\ \{}
+\DoxyCodeLine{00019\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{return}\ error;}
+\DoxyCodeLine{00020\ \ \ \ \ \}}
+\DoxyCodeLine{00021\ \ \ \ \ std::array<int,\ 4>\ arr;}
+\DoxyCodeLine{00022\ \ \ \ \ \textcolor{keywordtype}{int}\ i\ =\ 0;}
+\DoxyCodeLine{00023\ \ \ \ \ \textcolor{keywordflow}{for}\ (\textcolor{keyword}{auto}\ v\ :\ array)\ \{}
+\DoxyCodeLine{00024\ \ \ \ \ \ \ \ \ int64\_t\ val;}
+\DoxyCodeLine{00025\ \ \ \ \ \ \ \ \ error\ =\ v.get\_int64().get(val);}
+\DoxyCodeLine{00026\ }
+\DoxyCodeLine{00027\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{if}\ (error)\ \{}
+\DoxyCodeLine{00028\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{return}\ error;}
+\DoxyCodeLine{00029\ \ \ \ \ \ \ \ \ \}}
+\DoxyCodeLine{00030\ \ \ \ \ \ \ \ \ arr[i++]\ =\ val;}
+\DoxyCodeLine{00031\ \ \ \ \ \}}
+\DoxyCodeLine{00032\ \ \ \ \ \textcolor{keywordflow}{return}\ arr;}
+\DoxyCodeLine{00033\ \}}
+\DoxyCodeLine{00034\ }
+\DoxyCodeLine{00039\ \textcolor{keyword}{template}\ <>\ simdjson\_inline\ simdjson::simdjson\_result<uint32\_t>\ simdjson::ondemand::value::get()\ \textcolor{keyword}{noexcept}\ \{}
+\DoxyCodeLine{00040\ \ \ \ \ \textcolor{keywordtype}{size\_t}\ val;}
+\DoxyCodeLine{00041\ \ \ \ \ \textcolor{keyword}{auto}\ error\ =\ get\_uint64().get(val);}
+\DoxyCodeLine{00042\ \ \ \ \ \textcolor{keywordflow}{if}\ (error)\ \{}
+\DoxyCodeLine{00043\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{return}\ error;}
+\DoxyCodeLine{00044\ \ \ \ \ \}}
+\DoxyCodeLine{00045\ \ \ \ \ \textcolor{keywordflow}{if}\ (val\ >\ std::numeric\_limits<uint32\_t>::max())\ \{}
+\DoxyCodeLine{00046\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{return}\ 1;}
+\DoxyCodeLine{00047\ \ \ \ \ \}}
+\DoxyCodeLine{00048\ \ \ \ \ \textcolor{keywordflow}{return}\ \textcolor{keyword}{static\_cast<}uint32\_t\textcolor{keyword}{>}(val);}
+\DoxyCodeLine{00049\ \}}
+\DoxyCodeLine{00050\ }
+\DoxyCodeLine{00054\ \textcolor{keyword}{template}\ <>}
+\DoxyCodeLine{00055\ simdjson\_inline\ simdjson::simdjson\_result<std::map<std::string,\ std::string>>}
+\DoxyCodeLine{00056\ simdjson::ondemand::value::get()\ \textcolor{keyword}{noexcept}\ \{}
+\DoxyCodeLine{00057\ \ \ \ \ std::map<std::string,\ std::string>\ map;}
+\DoxyCodeLine{00058\ \ \ \ \ ondemand::object\ obj;}
+\DoxyCodeLine{00059\ \ \ \ \ \textcolor{keyword}{auto}\ error\ =\ get\_object().get(obj);}
+\DoxyCodeLine{00060\ \ \ \ \ \textcolor{keywordflow}{if}\ (error)\ \{}
+\DoxyCodeLine{00061\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{return}\ error;}
+\DoxyCodeLine{00062\ \ \ \ \ \}}
+\DoxyCodeLine{00063\ \ \ \ \ \textcolor{keywordflow}{for}\ (\textcolor{keyword}{auto}\ field\ :\ obj)\ \{}
+\DoxyCodeLine{00064\ \ \ \ \ \ \ \ \ simdjson::ondemand::raw\_json\_string\ tmp;}
+\DoxyCodeLine{00065\ \ \ \ \ \ \ \ \ error\ =\ field.key().get(tmp);}
+\DoxyCodeLine{00066\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{if}\ (error)\ \{}
+\DoxyCodeLine{00067\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{return}\ error;}
+\DoxyCodeLine{00068\ \ \ \ \ \ \ \ \ \}}
+\DoxyCodeLine{00069\ \ \ \ \ \ \ \ \ error\ =\ field.value().get(tmp);}
+\DoxyCodeLine{00070\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{if}\ (error)\ \{}
+\DoxyCodeLine{00071\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{return}\ error;}
+\DoxyCodeLine{00072\ \ \ \ \ \ \ \ \ \}}
+\DoxyCodeLine{00073\ \ \ \ \ \ \ \ \ std::string\_view\ key\_view\ =\ field.unescaped\_key();}
+\DoxyCodeLine{00074\ \ \ \ \ \ \ \ \ std::string\ key\_str(key\_view.data(),\ key\_view.size());}
+\DoxyCodeLine{00075\ \ \ \ \ \ \ \ \ std::string\_view\ value\_view\ =\ field.value().get\_string();}
+\DoxyCodeLine{00076\ \ \ \ \ \ \ \ \ map[key\_str]\ =\ \{value\_view.data(),\ value\_view.size()\};}
+\DoxyCodeLine{00077\ \ \ \ \ \}}
+\DoxyCodeLine{00078\ \ \ \ \ \textcolor{keywordflow}{return}\ map;}
+\DoxyCodeLine{00079\ \}}
+\DoxyCodeLine{00080\ }
+\DoxyCodeLine{00081\ \}\ \textcolor{comment}{//\ namespace\ simdjson}}
+\DoxyCodeLine{00082\ }
+\DoxyCodeLine{00083\ \textcolor{keyword}{namespace\ }\mbox{\hyperlink{namespaceaare}{aare}}\ \{}
+\DoxyCodeLine{00084\ }
+\DoxyCodeLine{00086\ \textcolor{keyword}{struct\ }\mbox{\hyperlink{structaare_1_1ZmqHeader}{ZmqHeader}}\ \{}
+\DoxyCodeLine{00088\ \ \ \ \ \textcolor{keywordtype}{bool}\ \mbox{\hyperlink{structaare_1_1ZmqHeader_abc6b8ab126eeeb6947ff3892a8c4af22}{data}}\{\textcolor{keyword}{true}\};}
+\DoxyCodeLine{00089\ \ \ \ \ uint32\_t\ \mbox{\hyperlink{structaare_1_1ZmqHeader_abef7af329a052a6a93aa6475f77ce8d0}{jsonversion}}\{0\};}
+\DoxyCodeLine{00090\ \ \ \ \ uint32\_t\ \mbox{\hyperlink{structaare_1_1ZmqHeader_a204168b6969b738ad8e9e15b3511f921}{dynamicRange}}\{0\};}
+\DoxyCodeLine{00091\ \ \ \ \ uint64\_t\ \mbox{\hyperlink{structaare_1_1ZmqHeader_a96dc350ffe696cc2cf5fb2f3b3b0f948}{fileIndex}}\{0\};}
+\DoxyCodeLine{00093\ \ \ \ \ uint32\_t\ \mbox{\hyperlink{structaare_1_1ZmqHeader_a4f5f15da11fd269b5034ce2365c77697}{ndetx}}\{0\};}
+\DoxyCodeLine{00095\ \ \ \ \ uint32\_t\ \mbox{\hyperlink{structaare_1_1ZmqHeader_a5cb59c5f8b096c4a8ab8ab2c4434efc8}{ndety}}\{0\};}
+\DoxyCodeLine{00097\ \ \ \ \ uint32\_t\ \mbox{\hyperlink{structaare_1_1ZmqHeader_ab74dd730a41ff31f7bf0bb012b46a9bf}{npixelsx}}\{0\};}
+\DoxyCodeLine{00099\ \ \ \ \ uint32\_t\ \mbox{\hyperlink{structaare_1_1ZmqHeader_a3fe3e9591ebbab239aeebc034c68396c}{npixelsy}}\{0\};}
+\DoxyCodeLine{00101\ \ \ \ \ uint32\_t\ \mbox{\hyperlink{structaare_1_1ZmqHeader_a553186a1c9a254038c88c1d064a01a6b}{imageSize}}\{0\};}
+\DoxyCodeLine{00103\ \ \ \ \ uint64\_t\ \mbox{\hyperlink{structaare_1_1ZmqHeader_ad44077f60043919ea4cce5b2afb4addb}{acqIndex}}\{0\};}
+\DoxyCodeLine{00105\ \ \ \ \ uint64\_t\ \mbox{\hyperlink{structaare_1_1ZmqHeader_acd24f294bf54871bdd41e896918857b3}{frameIndex}}\{0\};}
+\DoxyCodeLine{00107\ \ \ \ \ \textcolor{keywordtype}{double}\ \mbox{\hyperlink{structaare_1_1ZmqHeader_af506ef5de11292d5056c902f131441cd}{progress}}\{0\};}
+\DoxyCodeLine{00109\ \ \ \ \ std::string\ \mbox{\hyperlink{structaare_1_1ZmqHeader_af34a97741a1ff54ebc4e060298a30d81}{fname}};}
+\DoxyCodeLine{00111\ \ \ \ \ uint64\_t\ \mbox{\hyperlink{structaare_1_1ZmqHeader_ac939e8bb28f7c78c6e60bdc5a3f0fa24}{frameNumber}}\{0\};}
+\DoxyCodeLine{00112\ \ \ \ \ uint32\_t\ \mbox{\hyperlink{structaare_1_1ZmqHeader_a11f597ea59c14c9976cf823e3dc90119}{expLength}}\{0\};}
+\DoxyCodeLine{00113\ \ \ \ \ uint32\_t\ \mbox{\hyperlink{structaare_1_1ZmqHeader_a1cc29d99dde183862b4b6d563cbe990d}{packetNumber}}\{0\};}
+\DoxyCodeLine{00114\ \ \ \ \ uint64\_t\ \mbox{\hyperlink{structaare_1_1ZmqHeader_a21d6952bd400623f4f5c82c2517549b2}{detSpec1}}\{0\};}
+\DoxyCodeLine{00115\ \ \ \ \ uint64\_t\ \mbox{\hyperlink{structaare_1_1ZmqHeader_a974ae65dd6b07b8de83857a32140a6e3}{timestamp}}\{0\};}
+\DoxyCodeLine{00116\ \ \ \ \ uint16\_t\ \mbox{\hyperlink{structaare_1_1ZmqHeader_a41db0b6b8b69d1911e92819b65453a3d}{modId}}\{0\};}
+\DoxyCodeLine{00117\ \ \ \ \ uint16\_t\ \mbox{\hyperlink{structaare_1_1ZmqHeader_a1cfd038a2e22a1243332aafb8ccf0926}{row}}\{0\};}
+\DoxyCodeLine{00118\ \ \ \ \ uint16\_t\ \mbox{\hyperlink{structaare_1_1ZmqHeader_a9055548e98d7f5c7be94000077cf9ca0}{column}}\{0\};}
+\DoxyCodeLine{00119\ \ \ \ \ uint16\_t\ \mbox{\hyperlink{structaare_1_1ZmqHeader_a8325849b8abdd44f67b1b72de227062c}{detSpec2}}\{0\};}
+\DoxyCodeLine{00120\ \ \ \ \ uint32\_t\ \mbox{\hyperlink{structaare_1_1ZmqHeader_ae581d2a4e13f116107fe7850891c9ac8}{detSpec3}}\{0\};}
+\DoxyCodeLine{00121\ \ \ \ \ uint16\_t\ \mbox{\hyperlink{structaare_1_1ZmqHeader_a6bb1b6c9da7a68d54873b7969517ba8f}{detSpec4}}\{0\};}
+\DoxyCodeLine{00122\ \ \ \ \ uint8\_t\ \mbox{\hyperlink{structaare_1_1ZmqHeader_a05d97cf0b43cdc510276a660606e65a3}{detType}}\{0\};}
+\DoxyCodeLine{00123\ \ \ \ \ uint8\_t\ \mbox{\hyperlink{structaare_1_1ZmqHeader_a0a128a6dc9c8917a7518d0f4af5b5735}{version}}\{0\};}
+\DoxyCodeLine{00125\ \ \ \ \ \textcolor{keywordtype}{int}\ \mbox{\hyperlink{structaare_1_1ZmqHeader_a37f3d99023eebeb08000ff4dc03632a7}{flipRows}}\{0\};}
+\DoxyCodeLine{00127\ \ \ \ \ uint32\_t\ \mbox{\hyperlink{structaare_1_1ZmqHeader_a7a1b315873916872d3ef539679488291}{quad}}\{0\};}
+\DoxyCodeLine{00129\ \ \ \ \ \textcolor{keywordtype}{bool}\ \mbox{\hyperlink{structaare_1_1ZmqHeader_aa45927c9dcb69f885f5a3f4fa5f1ce16}{completeImage}}\{\textcolor{keyword}{false}\};}
+\DoxyCodeLine{00131\ \ \ \ \ std::map<std::string,\ std::string>\ \mbox{\hyperlink{structaare_1_1ZmqHeader_abf3d0804cb93fc0d5e7dfef0e6f72c3a}{addJsonHeader}};}
+\DoxyCodeLine{00133\ \ \ \ \ std::array<int,\ 4>\ \mbox{\hyperlink{structaare_1_1ZmqHeader_af023e76fcd6b4f3dc1c7231e362af7c4}{rx\_roi}}\{\};}
+\DoxyCodeLine{00134\ }
+\DoxyCodeLine{00136\ \ \ \ \ std::string\ \mbox{\hyperlink{structaare_1_1ZmqHeader_a0efc66ecb0bcf30a8b417b4969627de7}{to\_string}}()\ \textcolor{keyword}{const};}
+\DoxyCodeLine{00137\ \ \ \ \ \textcolor{keywordtype}{void}\ \mbox{\hyperlink{structaare_1_1ZmqHeader_a8a603c42606baa3df8869ee542e0bbda}{from\_string}}(std::string\ \&s);}
+\DoxyCodeLine{00138\ \ \ \ \ \textcolor{comment}{//\ compare\ operator}}
+\DoxyCodeLine{00139\ \ \ \ \ \textcolor{keywordtype}{bool}\ \mbox{\hyperlink{structaare_1_1ZmqHeader_a25225eff34f1a9f4acc3495d4f02cc8b}{operator==}}(\textcolor{keyword}{const}\ \mbox{\hyperlink{structaare_1_1ZmqHeader}{ZmqHeader}}\ \&other)\ \textcolor{keyword}{const};}
+\DoxyCodeLine{00140\ \};}
+\DoxyCodeLine{00141\ }
+\DoxyCodeLine{00142\ \}\ \textcolor{comment}{//\ namespace\ aare}}
+
+\end{DoxyCode}

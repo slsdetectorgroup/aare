@@ -1,0 +1,22 @@
+\doxysection{Zmq\+Socket\+Sender.\+hpp}
+\hypertarget{ZmqSocketSender_8hpp_source}{}\label{ZmqSocketSender_8hpp_source}\index{network\_io/include/aare/network\_io/ZmqSocketSender.hpp@{network\_io/include/aare/network\_io/ZmqSocketSender.hpp}}
+\mbox{\hyperlink{ZmqSocketSender_8hpp}{Go to the documentation of this file.}}
+\begin{DoxyCode}{0}
+\DoxyCodeLine{00001\ \textcolor{preprocessor}{\#pragma\ once}}
+\DoxyCodeLine{00002\ \textcolor{preprocessor}{\#include\ "{}\mbox{\hyperlink{Frame_8hpp}{aare/core/Frame.hpp}}"{}}}
+\DoxyCodeLine{00003\ \textcolor{preprocessor}{\#include\ "{}\mbox{\hyperlink{ZmqHeader_8hpp}{aare/network\_io/ZmqHeader.hpp}}"{}}}
+\DoxyCodeLine{00004\ \textcolor{preprocessor}{\#include\ "{}\mbox{\hyperlink{ZmqSocket_8hpp}{aare/network\_io/ZmqSocket.hpp}}"{}}}
+\DoxyCodeLine{00005\ \textcolor{preprocessor}{\#include\ "{}\mbox{\hyperlink{network__io_2include_2aare_2network__io_2defs_8hpp}{aare/network\_io/defs.hpp}}"{}}}
+\DoxyCodeLine{00006\ }
+\DoxyCodeLine{00007\ \textcolor{keyword}{namespace\ }\mbox{\hyperlink{namespaceaare}{aare}}\ \{}
+\DoxyCodeLine{00008\ \textcolor{keyword}{class\ }\mbox{\hyperlink{classaare_1_1ZmqSocketSender}{ZmqSocketSender}}\ :\ \textcolor{keyword}{public}\ \mbox{\hyperlink{classaare_1_1ZmqSocket}{ZmqSocket}}\ \{}
+\DoxyCodeLine{00009\ \ \ \textcolor{keyword}{public}:}
+\DoxyCodeLine{00010\ \ \ \ \ \mbox{\hyperlink{classaare_1_1ZmqSocketSender}{ZmqSocketSender}}(\textcolor{keyword}{const}\ std::string\ \&endpoint);}
+\DoxyCodeLine{00011\ \ \ \ \ \textcolor{keywordtype}{void}\ \mbox{\hyperlink{classaare_1_1ZmqSocketSender_ab1f579fa0235552acaad322119093b60}{bind}}();}
+\DoxyCodeLine{00012\ \ \ \ \ \textcolor{keywordtype}{size\_t}\ \mbox{\hyperlink{classaare_1_1ZmqSocketSender_a98ac84ddeaafca6a0df9cbfe95a64321}{send}}(\textcolor{keyword}{const}\ \mbox{\hyperlink{structaare_1_1ZmqHeader}{ZmqHeader}}\ \&header,\ \textcolor{keyword}{const}\ std::byte\ *data,\ \textcolor{keywordtype}{size\_t}\ size);}
+\DoxyCodeLine{00013\ \ \ \ \ \textcolor{keywordtype}{size\_t}\ \mbox{\hyperlink{classaare_1_1ZmqSocketSender_a98ac84ddeaafca6a0df9cbfe95a64321}{send}}(\textcolor{keyword}{const}\ \mbox{\hyperlink{structaare_1_1ZmqFrame}{ZmqFrame}}\ \&zmq\_frame);}
+\DoxyCodeLine{00014\ \ \ \ \ \textcolor{keywordtype}{size\_t}\ \mbox{\hyperlink{classaare_1_1ZmqSocketSender_a98ac84ddeaafca6a0df9cbfe95a64321}{send}}(\textcolor{keyword}{const}\ std::vector<ZmqFrame>\ \&zmq\_frames);}
+\DoxyCodeLine{00015\ \};}
+\DoxyCodeLine{00016\ \}\ \textcolor{comment}{//\ namespace\ aare}}
+
+\end{DoxyCode}

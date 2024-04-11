@@ -1,0 +1,59 @@
+\doxysection{core/include/aare/core/defs.hpp File Reference}
+\hypertarget{core_2include_2aare_2core_2defs_8hpp}{}\label{core_2include_2aare_2core_2defs_8hpp}\index{core/include/aare/core/defs.hpp@{core/include/aare/core/defs.hpp}}
+{\ttfamily \#include $<$array$>$}\newline
+{\ttfamily \#include $<$stdexcept$>$}\newline
+{\ttfamily \#include $<$cstdint$>$}\newline
+{\ttfamily \#include $<$string$>$}\newline
+{\ttfamily \#include $<$string\+\_\+view$>$}\newline
+{\ttfamily \#include $<$variant$>$}\newline
+{\ttfamily \#include $<$vector$>$}\newline
+\doxysubsubsection*{Data Structures}
+\begin{DoxyCompactItemize}
+\item 
+struct \mbox{\hyperlink{structaare_1_1sls__detector__header}{aare\+::sls\+\_\+detector\+\_\+header}}
+\item 
+struct \mbox{\hyperlink{structaare_1_1xy}{aare\+::xy}}
+\item 
+struct \mbox{\hyperlink{structaare_1_1RawFileConfig}{aare\+::\+Raw\+File\+Config}}
+\end{DoxyCompactItemize}
+\doxysubsubsection*{Namespaces}
+\begin{DoxyCompactItemize}
+\item 
+namespace \mbox{\hyperlink{namespaceaare}{aare}}
+\begin{DoxyCompactList}\small\item\em \doxylink{classaare_1_1Frame}{Frame} class to represent a single frame of data model class should be able to work with streams coming from files or network. \end{DoxyCompactList}\end{DoxyCompactItemize}
+\doxysubsubsection*{Typedefs}
+\begin{DoxyCompactItemize}
+\item 
+using \mbox{\hyperlink{namespaceaare_aa03afd6344a7789bfe983642f0ba1003}{aare\+::dynamic\+\_\+shape}} = std\+::vector$<$ ssize\+\_\+t $>$
+\item 
+using \mbox{\hyperlink{namespaceaare_aaefd953421441991510a6bf436553aad}{aare\+::\+Data\+Type\+Variants}} = std\+::variant$<$ uint16\+\_\+t, uint32\+\_\+t $>$
+\end{DoxyCompactItemize}
+\doxysubsubsection*{Enumerations}
+\begin{DoxyCompactItemize}
+\item 
+enum class \mbox{\hyperlink{namespaceaare_a5b95afba95553c1e118e1478c69042f7}{aare\+::\+Detector\+Type}} \{ \newline
+\mbox{\hyperlink{namespaceaare_a5b95afba95553c1e118e1478c69042f7ab2c7db922623442a04314d3c941a336b}{aare\+::\+Jungfrau}}
+, \mbox{\hyperlink{namespaceaare_a5b95afba95553c1e118e1478c69042f7a36df9c5ff09bbd406715bc0f8beec72e}{aare\+::\+Eiger}}
+, \mbox{\hyperlink{namespaceaare_a5b95afba95553c1e118e1478c69042f7ae62a69cfc990501180f9457056826208}{aare\+::\+Mythen3}}
+, \mbox{\hyperlink{namespaceaare_a5b95afba95553c1e118e1478c69042f7a0947b28848519e2e61c3f8561dedf7d0}{aare\+::\+Moench}}
+, \newline
+\mbox{\hyperlink{namespaceaare_a5b95afba95553c1e118e1478c69042f7a8fcb8dbe4124015503e7a92e13ebe66c}{aare\+::\+Chip\+Test\+Board}}
+ \}
+\item 
+enum class \mbox{\hyperlink{namespaceaare_a180255836568df302c95b5ca87dc5355}{aare\+::\+Timing\+Mode}} \{ \mbox{\hyperlink{namespaceaare_a180255836568df302c95b5ca87dc5355a06b9281e396db002010bde1de57262eb}{aare\+::\+Auto}}
+, \mbox{\hyperlink{namespaceaare_a180255836568df302c95b5ca87dc5355af698f67f5666aff10729d8a1cb1c14d2}{aare\+::\+Trigger}}
+ \}
+\end{DoxyCompactItemize}
+\doxysubsubsection*{Functions}
+\begin{DoxyCompactItemize}
+\item 
+{\footnotesize template$<$class T $>$ }\\T \mbox{\hyperlink{namespaceaare_a43707c616f0b7e5edfd2b36bfe4edc8d}{aare\+::\+String\+To}} (std\+::string sv)
+\item 
+{\footnotesize template$<$class T $>$ }\\std\+::string \mbox{\hyperlink{namespaceaare_a00df34c2dc4c69e0cfe84adb4c749403}{aare\+::to\+String}} (T sv)
+\item 
+template$<$$>$ \mbox{\hyperlink{namespaceaare_a5b95afba95553c1e118e1478c69042f7}{Detector\+Type}} \mbox{\hyperlink{namespaceaare_adfdafb087b91443c8dadc60446c27add}{aare\+::\+String\+To}} (std\+::string)
+\item 
+template$<$$>$ std\+::string \mbox{\hyperlink{namespaceaare_a10ded84d674dfc5e9c56409cb04ad3b4}{aare\+::to\+String}} (\mbox{\hyperlink{namespaceaare_a5b95afba95553c1e118e1478c69042f7}{Detector\+Type}} type)
+\item 
+template$<$$>$ \mbox{\hyperlink{namespaceaare_a180255836568df302c95b5ca87dc5355}{Timing\+Mode}} \mbox{\hyperlink{namespaceaare_a5e815d643704b75fc2b35c7c61b5aa87}{aare\+::\+String\+To}} (std\+::string)
+\end{DoxyCompactItemize}

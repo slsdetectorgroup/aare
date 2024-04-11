@@ -1,0 +1,1833 @@
+\begin{theindex}
+
+  \item {\_\_getattribute\_\_}
+    \subitem {aare.File.File}, \hyperpage{44}
+    \subitem {aare.Frame.Frame}, \hyperpage{58}
+  \item {\_\_init\_\_}
+    \subitem {aare.File.File}, \hyperpage{44}
+    \subitem {aare.Frame.Frame}, \hyperpage{57}
+  \item {\_file}
+    \subitem {aare.File.File}, \hyperpage{44}
+  \item {\_frameImpl}
+    \subitem {aare.Frame.Frame}, \hyperpage{58}
+  \item {\texorpdfstring{$\sim$}{\string~}CircularFifo}
+    \subitem {aare::CircularFifo$<$ ItemType $>$}, \hyperpage{30}
+  \item {\texorpdfstring{$\sim$}{\string~}File}
+    \subitem {aare::File}, \hyperpage{41}
+  \item {\texorpdfstring{$\sim$}{\string~}FileInterface}
+    \subitem {aare::FileInterface}, \hyperpage{47}
+  \item {\texorpdfstring{$\sim$}{\string~}Frame}
+    \subitem {aare::Frame}, \hyperpage{55}
+  \item {\texorpdfstring{$\sim$}{\string~}Logger}
+    \subitem {aare::logger::Logger}, \hyperpage{60}
+  \item {\texorpdfstring{$\sim$}{\string~}NDArray}
+    \subitem {aare::NDArray$<$ T, Ndim $>$}, \hyperpage{67}
+  \item {\texorpdfstring{$\sim$}{\string~}NumpyFile}
+    \subitem {aare::NumpyFile}, \hyperpage{82}
+  \item {\texorpdfstring{$\sim$}{\string~}ProducerConsumerQueue}
+    \subitem {folly::ProducerConsumerQueue$<$ T $>$}, \hyperpage{92}
+  \item {\texorpdfstring{$\sim$}{\string~}RawFile}
+    \subitem {aare::RawFile}, \hyperpage{97}
+  \item {\texorpdfstring{$\sim$}{\string~}ZmqSocket}
+    \subitem {aare::ZmqSocket}, \hyperpage{123}
+
+  \indexspace
+
+  \item {aare}, \hyperpage{1}, \hyperpage{11}
+    \subitem {Auto}, \hyperpage{14}
+    \subitem {big}, \hyperpage{14}
+    \subitem {c\_strides}, \hyperpage{14}
+    \subitem {ChipTestBoard}, \hyperpage{13}
+    \subitem {DataTypeVariants}, \hyperpage{13}
+    \subitem {DetectorType}, \hyperpage{13}
+    \subitem {dynamic\_shape}, \hyperpage{13}
+    \subitem {Eiger}, \hyperpage{13}
+    \subitem {element\_offset}, \hyperpage{14}
+    \subitem {endian}, \hyperpage{13}
+    \subitem {Jungfrau}, \hyperpage{13}
+    \subitem {little}, \hyperpage{14}
+    \subitem {load}, \hyperpage{14}
+    \subitem {make\_array}, \hyperpage{14}
+    \subitem {make\_shape}, \hyperpage{15}
+    \subitem {Moench}, \hyperpage{13}
+    \subitem {Mythen3}, \hyperpage{13}
+    \subitem {native}, \hyperpage{14}
+    \subitem {save}, \hyperpage{15}
+    \subitem {Shape}, \hyperpage{13}
+    \subitem {shape\_t}, \hyperpage{13}
+    \subitem {StringTo}, \hyperpage{15}
+    \subitem {TimingMode}, \hyperpage{14}
+    \subitem {toString}, \hyperpage{16}
+    \subitem {Trigger}, \hyperpage{14}
+  \item {aare.File}, \hyperpage{16}
+  \item {aare.File.File}, \hyperpage{43}
+    \subitem {\_\_getattribute\_\_}, \hyperpage{44}
+    \subitem {\_\_init\_\_}, \hyperpage{44}
+    \subitem {\_file}, \hyperpage{44}
+    \subitem {path}, \hyperpage{44}
+  \item {aare.Frame}, \hyperpage{16}
+  \item {aare.Frame.Frame}, \hyperpage{57}
+    \subitem {\_\_getattribute\_\_}, \hyperpage{58}
+    \subitem {\_\_init\_\_}, \hyperpage{57}
+    \subitem {\_frameImpl}, \hyperpage{58}
+  \item {aare::CircularFifo$<$ ItemType $>$}, \hyperpage{29}
+    \subitem {\texorpdfstring{$\sim$}{\string~}CircularFifo}, 
+		\hyperpage{30}
+    \subitem {CircularFifo}, \hyperpage{30}
+    \subitem {fifo\_size}, \hyperpage{32}
+    \subitem {filled\_slots}, \hyperpage{32}
+    \subitem {free\_slots}, \hyperpage{32}
+    \subitem {frontPtr}, \hyperpage{30}
+    \subitem {isFull}, \hyperpage{30}
+    \subitem {next}, \hyperpage{30}
+    \subitem {numFilledSlots}, \hyperpage{30}
+    \subitem {numFreeSlots}, \hyperpage{31}
+    \subitem {pop\_free}, \hyperpage{31}
+    \subitem {pop\_value}, \hyperpage{31}
+    \subitem {push\_free}, \hyperpage{31}
+    \subitem {push\_value}, \hyperpage{31}
+    \subitem {try\_pop\_free}, \hyperpage{31}
+    \subitem {try\_push\_free}, \hyperpage{31}
+    \subitem {try\_push\_value}, \hyperpage{32}
+    \subitem {value\_type}, \hyperpage{30}
+  \item {aare::ClusterFinder$<$ T $>$}, \hyperpage{32}
+    \subitem {add\_link}, \hyperpage{34}
+    \subitem {binary\_}, \hyperpage{36}
+    \subitem {check\_neighbours}, \hyperpage{34}
+    \subitem {child}, \hyperpage{36}
+    \subitem {clear\_hits}, \hyperpage{34}
+    \subitem {ClusterFinder}, \hyperpage{33}
+    \subitem {current\_label}, \hyperpage{36}
+    \subitem {di}, \hyperpage{36}
+    \subitem {di\_}, \hyperpage{36}
+    \subitem {dj}, \hyperpage{36}
+    \subitem {dj\_}, \hyperpage{36}
+    \subitem {find\_clusters}, \hyperpage{34}
+    \subitem {find\_clusters\_X}, \hyperpage{34}
+    \subitem {first\_pass}, \hyperpage{34}
+    \subitem {h\_size}, \hyperpage{36}
+    \subitem {hits}, \hyperpage{37}
+    \subitem {labeled}, \hyperpage{34}
+    \subitem {labeled\_}, \hyperpage{37}
+    \subitem {noiseMap}, \hyperpage{37}
+    \subitem {original\_}, \hyperpage{37}
+    \subitem {peripheral\_labeled\_}, \hyperpage{37}
+    \subitem {peripheralThresholdFactor\_}, \hyperpage{37}
+    \subitem {print\_connections}, \hyperpage{34}
+    \subitem {rec\_FillHit}, \hyperpage{35}
+    \subitem {second\_pass}, \hyperpage{35}
+    \subitem {set\_noiseMap}, \hyperpage{35}
+    \subitem {set\_peripheralThresholdFactor}, \hyperpage{35}
+    \subitem {shape\_}, \hyperpage{37}
+    \subitem {single\_pass}, \hyperpage{35}
+    \subitem {steal\_hits}, \hyperpage{35}
+    \subitem {store\_clusters}, \hyperpage{35}
+    \subitem {threshold\_}, \hyperpage{37}
+    \subitem {total\_clusters}, \hyperpage{35}
+    \subitem {use\_noise\_map}, \hyperpage{37}
+  \item {aare::ClusterFinder$<$ T $>$::Hit}, \hyperpage{58}
+    \subitem {col}, \hyperpage{58}
+    \subitem {cols}, \hyperpage{58}
+    \subitem {energy}, \hyperpage{59}
+    \subitem {enes}, \hyperpage{59}
+    \subitem {max}, \hyperpage{59}
+    \subitem {reserved}, \hyperpage{59}
+    \subitem {row}, \hyperpage{59}
+    \subitem {rows}, \hyperpage{59}
+    \subitem {size}, \hyperpage{59}
+  \item {aare::DType}, \hyperpage{38}
+    \subitem {bitdepth}, \hyperpage{39}
+    \subitem {DOUBLE}, \hyperpage{38}
+    \subitem {DType}, \hyperpage{39}
+    \subitem {ERROR}, \hyperpage{38}
+    \subitem {FLOAT}, \hyperpage{38}
+    \subitem {INT16}, \hyperpage{38}
+    \subitem {INT32}, \hyperpage{38}
+    \subitem {INT64}, \hyperpage{38}
+    \subitem {INT8}, \hyperpage{38}
+    \subitem {m\_type}, \hyperpage{40}
+    \subitem {operator!=}, \hyperpage{39}
+    \subitem {operator==}, \hyperpage{39}
+    \subitem {str}, \hyperpage{39}
+    \subitem {TypeIndex}, \hyperpage{38}
+    \subitem {UINT16}, \hyperpage{38}
+    \subitem {UINT32}, \hyperpage{38}
+    \subitem {UINT64}, \hyperpage{38}
+    \subitem {UINT8}, \hyperpage{38}
+  \item {aare::File}, \hyperpage{40}
+    \subitem {\texorpdfstring{$\sim$}{\string~}File}, \hyperpage{41}
+    \subitem {bitdepth}, \hyperpage{42}
+    \subitem {bytes\_per\_frame}, \hyperpage{42}
+    \subitem {cols}, \hyperpage{42}
+    \subitem {File}, \hyperpage{41}
+    \subitem {file\_impl}, \hyperpage{43}
+    \subitem {frame\_number}, \hyperpage{42}
+    \subitem {iread}, \hyperpage{42}
+    \subitem {pixels}, \hyperpage{42}
+    \subitem {read}, \hyperpage{42}
+    \subitem {read\_into}, \hyperpage{42}
+    \subitem {rows}, \hyperpage{43}
+    \subitem {seek}, \hyperpage{43}
+    \subitem {tell}, \hyperpage{43}
+    \subitem {total\_frames}, \hyperpage{43}
+    \subitem {write}, \hyperpage{43}
+  \item {aare::FileConfig}, \hyperpage{45}
+    \subitem {cols}, \hyperpage{45}
+    \subitem {dtype}, \hyperpage{45}
+    \subitem {geometry}, \hyperpage{45}
+    \subitem {operator!=}, \hyperpage{45}
+    \subitem {operator==}, \hyperpage{45}
+    \subitem {rows}, \hyperpage{46}
+  \item {aare::FileInterface}, \hyperpage{46}
+    \subitem {\texorpdfstring{$\sim$}{\string~}FileInterface}, 
+		\hyperpage{47}
+    \subitem {bitdepth}, \hyperpage{48}
+    \subitem {bytes\_per\_frame}, \hyperpage{48}
+    \subitem {cols}, \hyperpage{48}
+    \subitem {current\_frame}, \hyperpage{53}
+    \subitem {frame\_number}, \hyperpage{48}
+    \subitem {iread}, \hyperpage{49}
+    \subitem {m\_base\_name}, \hyperpage{53}
+    \subitem {m\_base\_path}, \hyperpage{53}
+    \subitem {m\_bitdepth}, \hyperpage{53}
+    \subitem {m\_cols}, \hyperpage{53}
+    \subitem {m\_ext}, \hyperpage{53}
+    \subitem {m\_findex}, \hyperpage{53}
+    \subitem {m\_fname}, \hyperpage{53}
+    \subitem {m\_mode}, \hyperpage{53}
+    \subitem {m\_rows}, \hyperpage{53}
+    \subitem {m\_total\_frames}, \hyperpage{54}
+    \subitem {m\_type}, \hyperpage{54}
+    \subitem {max\_frames\_per\_file}, \hyperpage{54}
+    \subitem {pixels}, \hyperpage{49}
+    \subitem {read}, \hyperpage{49, 50}
+    \subitem {read\_into}, \hyperpage{50, 51}
+    \subitem {rows}, \hyperpage{51}
+    \subitem {seek}, \hyperpage{51}
+    \subitem {tell}, \hyperpage{52}
+    \subitem {total\_frames}, \hyperpage{52}
+    \subitem {version}, \hyperpage{54}
+    \subitem {write}, \hyperpage{52}
+  \item {aare::Frame}, \hyperpage{54}
+    \subitem {\texorpdfstring{$\sim$}{\string~}Frame}, \hyperpage{55}
+    \subitem {bitdepth}, \hyperpage{55}
+    \subitem {cols}, \hyperpage{55}
+    \subitem {data}, \hyperpage{56}
+    \subitem {Frame}, \hyperpage{55}
+    \subitem {get}, \hyperpage{56}
+    \subitem {image}, \hyperpage{56}
+    \subitem {m\_bitdepth}, \hyperpage{57}
+    \subitem {m\_cols}, \hyperpage{57}
+    \subitem {m\_data}, \hyperpage{57}
+    \subitem {m\_rows}, \hyperpage{57}
+    \subitem {operator=}, \hyperpage{56}
+    \subitem {rows}, \hyperpage{56}
+    \subitem {set}, \hyperpage{56}
+    \subitem {size}, \hyperpage{56}
+    \subitem {view}, \hyperpage{56}
+  \item {aare::logger}, \hyperpage{16}
+    \subitem {DEBUG}, \hyperpage{17}
+    \subitem {debug}, \hyperpage{17}
+    \subitem {ERROR}, \hyperpage{17}
+    \subitem {error}, \hyperpage{17}
+    \subitem {get\_logger\_instance}, \hyperpage{18}
+    \subitem {INFO}, \hyperpage{17}
+    \subitem {info}, \hyperpage{18}
+    \subitem {log}, \hyperpage{18}
+    \subitem {LOGGING\_LEVEL}, \hyperpage{17}
+    \subitem {set\_output\_file}, \hyperpage{18}
+    \subitem {set\_streams}, \hyperpage{18}
+    \subitem {set\_verbosity}, \hyperpage{18}
+    \subitem {warn}, \hyperpage{18}
+    \subitem {WARNING}, \hyperpage{17}
+  \item {aare::logger::internal}, \hyperpage{19}
+    \subitem {logger\_instance}, \hyperpage{19}
+  \item {aare::logger::Logger}, \hyperpage{60}
+    \subitem {\texorpdfstring{$\sim$}{\string~}Logger}, \hyperpage{60}
+    \subitem {debug}, \hyperpage{61}
+    \subitem {error}, \hyperpage{61}
+    \subitem {error\_buf}, \hyperpage{62}
+    \subitem {error\_output}, \hyperpage{62}
+    \subitem {info}, \hyperpage{61}
+    \subitem {log}, \hyperpage{61}
+    \subitem {log\_}, \hyperpage{61}
+    \subitem {Logger}, \hyperpage{60}
+    \subitem {out\_file}, \hyperpage{62}
+    \subitem {set\_output\_file}, \hyperpage{61}
+    \subitem {set\_streams}, \hyperpage{61, 62}
+    \subitem {set\_verbosity}, \hyperpage{62}
+    \subitem {standard\_buf}, \hyperpage{62}
+    \subitem {standard\_output}, \hyperpage{62}
+    \subitem {VERBOSITY\_LEVEL}, \hyperpage{62}
+    \subitem {warn}, \hyperpage{62}
+  \item {aare::NDArray$<$ T, Ndim $>$}, \hyperpage{64}
+    \subitem {\texorpdfstring{$\sim$}{\string~}NDArray}, \hyperpage{67}
+    \subitem {begin}, \hyperpage{67}
+    \subitem {buffer}, \hyperpage{67}
+    \subitem {byte\_strides}, \hyperpage{67}
+    \subitem {data}, \hyperpage{67}
+    \subitem {data\_}, \hyperpage{73}
+    \subitem {end}, \hyperpage{67}
+    \subitem {NDArray}, \hyperpage{66}
+    \subitem {operator!=}, \hyperpage{67}
+    \subitem {operator$>$}, \hyperpage{71}
+    \subitem {operator()}, \hyperpage{68}
+    \subitem {operator+}, \hyperpage{69}
+    \subitem {operator++}, \hyperpage{69}
+    \subitem {operator+=}, \hyperpage{69}
+    \subitem {operator-\/}, \hyperpage{69}
+    \subitem {operator-\/=}, \hyperpage{70}
+    \subitem {operator/}, \hyperpage{70}
+    \subitem {operator/=}, \hyperpage{70}
+    \subitem {operator=}, \hyperpage{70, 71}
+    \subitem {operator==}, \hyperpage{71}
+    \subitem {operator\&=}, \hyperpage{67}
+    \subitem {operator\texorpdfstring{$\ast$}{*}}, \hyperpage{68}
+    \subitem {operator\texorpdfstring{$\ast$}{*}=}, \hyperpage{68, 69}
+    \subitem {Print}, \hyperpage{71}
+    \subitem {Print\_all}, \hyperpage{71}
+    \subitem {Print\_some}, \hyperpage{71}
+    \subitem {reset}, \hyperpage{71}
+    \subitem {shape}, \hyperpage{72}
+    \subitem {shape\_}, \hyperpage{73}
+    \subitem {size}, \hyperpage{72}
+    \subitem {size\_}, \hyperpage{73}
+    \subitem {span}, \hyperpage{72}
+    \subitem {sqrt}, \hyperpage{72}
+    \subitem {strides}, \hyperpage{72}
+    \subitem {strides\_}, \hyperpage{73}
+    \subitem {total\_bytes}, \hyperpage{72}
+    \subitem {value}, \hyperpage{72}
+    \subitem {value\_type}, \hyperpage{66}
+  \item {aare::NDView$<$ T, Ndim $>$}, \hyperpage{73}
+    \subitem {begin}, \hyperpage{75}
+    \subitem {buffer\_}, \hyperpage{78}
+    \subitem {data}, \hyperpage{75}
+    \subitem {elemenwise}, \hyperpage{75}
+    \subitem {end}, \hyperpage{76}
+    \subitem {NDView}, \hyperpage{74, 75}
+    \subitem {operator()}, \hyperpage{76}
+    \subitem {operator+=}, \hyperpage{76}
+    \subitem {operator-\/=}, \hyperpage{76}
+    \subitem {operator/=}, \hyperpage{77}
+    \subitem {operator=}, \hyperpage{77}
+    \subitem {operator==}, \hyperpage{77}
+    \subitem {operator[]}, \hyperpage{77}
+    \subitem {operator\texorpdfstring{$\ast$}{*}=}, \hyperpage{76}
+    \subitem {shape}, \hyperpage{77}
+    \subitem {shape\_}, \hyperpage{78}
+    \subitem {size}, \hyperpage{78}
+    \subitem {size\_}, \hyperpage{78}
+    \subitem {strides\_}, \hyperpage{78}
+  \item {aare::network\_io}, \hyperpage{19}
+  \item {aare::network\_io::NetworkError}, \hyperpage{78}
+    \subitem {m\_msg}, \hyperpage{79}
+    \subitem {NetworkError}, \hyperpage{79}
+    \subitem {what}, \hyperpage{79}
+  \item {aare::NumpyFile}, \hyperpage{80}
+    \subitem {\texorpdfstring{$\sim$}{\string~}NumpyFile}, 
+		\hyperpage{82}
+    \subitem {bitdepth}, \hyperpage{82}
+    \subitem {bytes\_per\_frame}, \hyperpage{82}
+    \subitem {cols}, \hyperpage{82}
+    \subitem {current\_frame}, \hyperpage{88}
+    \subitem {dtype}, \hyperpage{83}
+    \subitem {fp}, \hyperpage{88}
+    \subitem {frame\_number}, \hyperpage{83}
+    \subitem {get\_frame}, \hyperpage{83}
+    \subitem {get\_frame\_into}, \hyperpage{83}
+    \subitem {header\_len}, \hyperpage{88}
+    \subitem {header\_len\_size}, \hyperpage{88}
+    \subitem {header\_size}, \hyperpage{88}
+    \subitem {initial\_header\_len}, \hyperpage{88}
+    \subitem {iread}, \hyperpage{83, 84}
+    \subitem {load}, \hyperpage{84}
+    \subitem {load\_metadata}, \hyperpage{84}
+    \subitem {m\_base\_name}, \hyperpage{88}
+    \subitem {m\_base\_path}, \hyperpage{88}
+    \subitem {m\_bitdepth}, \hyperpage{89}
+    \subitem {m\_cols}, \hyperpage{89}
+    \subitem {m\_ext}, \hyperpage{89}
+    \subitem {m\_findex}, \hyperpage{89}
+    \subitem {m\_fname}, \hyperpage{89}
+    \subitem {m\_header}, \hyperpage{89}
+    \subitem {m\_mode}, \hyperpage{89}
+    \subitem {m\_rows}, \hyperpage{89}
+    \subitem {m\_total\_frames}, \hyperpage{89}
+    \subitem {m\_type}, \hyperpage{89}
+    \subitem {major\_ver\_}, \hyperpage{90}
+    \subitem {max\_frames\_per\_file}, \hyperpage{90}
+    \subitem {minor\_ver\_}, \hyperpage{90}
+    \subitem {NumpyFile}, \hyperpage{82}
+    \subitem {pixels}, \hyperpage{85}
+    \subitem {read}, \hyperpage{85}
+    \subitem {read\_into}, \hyperpage{86}
+    \subitem {rows}, \hyperpage{86}
+    \subitem {seek}, \hyperpage{86}
+    \subitem {shape}, \hyperpage{87}
+    \subitem {tell}, \hyperpage{87}
+    \subitem {total\_frames}, \hyperpage{87}
+    \subitem {version}, \hyperpage{90}
+    \subitem {write}, \hyperpage{87}
+  \item {aare::NumpyHeader}, \hyperpage{90}
+    \subitem {dtype}, \hyperpage{91}
+    \subitem {fortran\_order}, \hyperpage{91}
+    \subitem {shape}, \hyperpage{91}
+    \subitem {to\_string}, \hyperpage{90}
+  \item {aare::NumpyHelpers}, \hyperpage{19}
+    \subitem {get\_value\_from\_map}, \hyperpage{20}
+    \subitem {in\_array}, \hyperpage{20}
+    \subitem {is\_digits}, \hyperpage{20}
+    \subitem {magic\_str}, \hyperpage{22}
+    \subitem {magic\_string\_length}, \hyperpage{22}
+    \subitem {parse\_bool}, \hyperpage{20}
+    \subitem {parse\_descr}, \hyperpage{20}
+    \subitem {parse\_dict}, \hyperpage{20}
+    \subitem {parse\_str}, \hyperpage{20}
+    \subitem {parse\_tuple}, \hyperpage{20}
+    \subitem {trim}, \hyperpage{21}
+    \subitem {write\_boolean}, \hyperpage{21}
+    \subitem {write\_header}, \hyperpage{21}
+    \subitem {write\_header\_dict}, \hyperpage{21}
+    \subitem {write\_magic}, \hyperpage{21}
+    \subitem {write\_tuple}, \hyperpage{21}
+  \item {aare::RawFile}, \hyperpage{94}
+    \subitem {\texorpdfstring{$\sim$}{\string~}RawFile}, \hyperpage{97}
+    \subitem {bitdepth}, \hyperpage{97}
+    \subitem {bytes\_per\_frame}, \hyperpage{97}
+    \subitem {cfg}, \hyperpage{105}
+    \subitem {cols}, \hyperpage{98}
+    \subitem {current\_frame}, \hyperpage{105}
+    \subitem {data\_fname}, \hyperpage{98}
+    \subitem {find\_geometry}, \hyperpage{98}
+    \subitem {find\_number\_of\_subfiles}, \hyperpage{98}
+    \subitem {frame\_number}, \hyperpage{99}
+    \subitem {geometry}, \hyperpage{105}
+    \subitem {get\_frame}, \hyperpage{99}
+    \subitem {get\_frame\_into}, \hyperpage{99}
+    \subitem {iread}, \hyperpage{100}
+    \subitem {is\_master\_file}, \hyperpage{100}
+    \subitem {m\_base\_name}, \hyperpage{105}
+    \subitem {m\_base\_path}, \hyperpage{105}
+    \subitem {m\_bitdepth}, \hyperpage{105}
+    \subitem {m\_cols}, \hyperpage{105}
+    \subitem {m\_ext}, \hyperpage{105}
+    \subitem {m\_findex}, \hyperpage{105}
+    \subitem {m\_fname}, \hyperpage{106}
+    \subitem {m\_mode}, \hyperpage{106}
+    \subitem {m\_rows}, \hyperpage{106}
+    \subitem {m\_total\_frames}, \hyperpage{106}
+    \subitem {m\_type}, \hyperpage{106}
+    \subitem {master\_fname}, \hyperpage{101}
+    \subitem {max\_frames\_per\_file}, \hyperpage{106}
+    \subitem {n\_subfile\_parts}, \hyperpage{106}
+    \subitem {n\_subfiles}, \hyperpage{106}
+    \subitem {open\_subfiles}, \hyperpage{101}
+    \subitem {parse\_fname}, \hyperpage{101}
+    \subitem {parse\_json\_metadata}, \hyperpage{101}
+    \subitem {parse\_metadata}, \hyperpage{101}
+    \subitem {parse\_raw\_metadata}, \hyperpage{101}
+    \subitem {pixels}, \hyperpage{101}
+    \subitem {positions}, \hyperpage{106}
+    \subitem {quad}, \hyperpage{106}
+    \subitem {RawFile}, \hyperpage{97}
+    \subitem {read}, \hyperpage{101, 102}
+    \subitem {read\_header}, \hyperpage{102}
+    \subitem {read\_into}, \hyperpage{102, 103}
+    \subitem {rows}, \hyperpage{103}
+    \subitem {seek}, \hyperpage{103}
+    \subitem {set\_config}, \hyperpage{104}
+    \subitem {subfile\_cols}, \hyperpage{107}
+    \subitem {subfile\_rows}, \hyperpage{107}
+    \subitem {subfiles}, \hyperpage{107}
+    \subitem {tell}, \hyperpage{104}
+    \subitem {timing\_mode}, \hyperpage{107}
+    \subitem {total\_frames}, \hyperpage{104}
+    \subitem {version}, \hyperpage{107}
+    \subitem {write}, \hyperpage{104}
+  \item {aare::RawFileConfig}, \hyperpage{107}
+    \subitem {module\_gap\_col}, \hyperpage{108}
+    \subitem {module\_gap\_row}, \hyperpage{108}
+    \subitem {operator==}, \hyperpage{108}
+  \item {aare::sls\_detector\_header}, \hyperpage{108}
+    \subitem {bunchId}, \hyperpage{108}
+    \subitem {column}, \hyperpage{108}
+    \subitem {debug}, \hyperpage{109}
+    \subitem {detType}, \hyperpage{109}
+    \subitem {expLength}, \hyperpage{109}
+    \subitem {frameNumber}, \hyperpage{109}
+    \subitem {modId}, \hyperpage{109}
+    \subitem {packetMask}, \hyperpage{109}
+    \subitem {packetNumber}, \hyperpage{109}
+    \subitem {reserved}, \hyperpage{109}
+    \subitem {roundRNumber}, \hyperpage{109}
+    \subitem {row}, \hyperpage{109}
+    \subitem {timestamp}, \hyperpage{110}
+    \subitem {version}, \hyperpage{110}
+  \item {aare::SubFile}, \hyperpage{110}
+    \subitem {bytes\_per\_part}, \hyperpage{112}
+    \subitem {fp}, \hyperpage{114}
+    \subitem {frame\_number}, \hyperpage{112}
+    \subitem {get\_part}, \hyperpage{112}
+    \subitem {m\_bitdepth}, \hyperpage{114}
+    \subitem {m\_cols}, \hyperpage{114}
+    \subitem {m\_fname}, \hyperpage{114}
+    \subitem {m\_rows}, \hyperpage{114}
+    \subitem {m\_sub\_file\_index\_}, \hyperpage{114}
+    \subitem {n\_frames}, \hyperpage{114}
+    \subitem {pfunc}, \hyperpage{111}
+    \subitem {pixels\_per\_part}, \hyperpage{112}
+    \subitem {read\_impl}, \hyperpage{114}
+    \subitem {read\_impl\_flip}, \hyperpage{112}
+    \subitem {read\_impl\_map}, \hyperpage{114}
+    \subitem {read\_impl\_normal}, \hyperpage{113}
+    \subitem {read\_impl\_reorder}, \hyperpage{113}
+    \subitem {SubFile}, \hyperpage{111}
+  \item {aare::xy}, \hyperpage{115}
+    \subitem {col}, \hyperpage{116}
+    \subitem {operator!=}, \hyperpage{115}
+    \subitem {operator==}, \hyperpage{115}
+    \subitem {row}, \hyperpage{116}
+  \item {aare::ZmqFrame}, \hyperpage{116}
+    \subitem {frame}, \hyperpage{116}
+    \subitem {header}, \hyperpage{116}
+  \item {aare::ZmqHeader}, \hyperpage{117}
+    \subitem {acqIndex}, \hyperpage{118}
+    \subitem {addJsonHeader}, \hyperpage{118}
+    \subitem {column}, \hyperpage{118}
+    \subitem {completeImage}, \hyperpage{118}
+    \subitem {data}, \hyperpage{118}
+    \subitem {detSpec1}, \hyperpage{119}
+    \subitem {detSpec2}, \hyperpage{119}
+    \subitem {detSpec3}, \hyperpage{119}
+    \subitem {detSpec4}, \hyperpage{119}
+    \subitem {detType}, \hyperpage{119}
+    \subitem {dynamicRange}, \hyperpage{119}
+    \subitem {expLength}, \hyperpage{119}
+    \subitem {fileIndex}, \hyperpage{119}
+    \subitem {flipRows}, \hyperpage{119}
+    \subitem {fname}, \hyperpage{119}
+    \subitem {frameIndex}, \hyperpage{120}
+    \subitem {frameNumber}, \hyperpage{120}
+    \subitem {from\_string}, \hyperpage{118}
+    \subitem {imageSize}, \hyperpage{120}
+    \subitem {jsonversion}, \hyperpage{120}
+    \subitem {modId}, \hyperpage{120}
+    \subitem {ndetx}, \hyperpage{120}
+    \subitem {ndety}, \hyperpage{120}
+    \subitem {npixelsx}, \hyperpage{120}
+    \subitem {npixelsy}, \hyperpage{121}
+    \subitem {operator==}, \hyperpage{118}
+    \subitem {packetNumber}, \hyperpage{121}
+    \subitem {progress}, \hyperpage{121}
+    \subitem {quad}, \hyperpage{121}
+    \subitem {row}, \hyperpage{121}
+    \subitem {rx\_roi}, \hyperpage{121}
+    \subitem {timestamp}, \hyperpage{121}
+    \subitem {to\_string}, \hyperpage{118}
+    \subitem {version}, \hyperpage{121}
+  \item {aare::ZmqSocket}, \hyperpage{122}
+    \subitem {\texorpdfstring{$\sim$}{\string~}ZmqSocket}, 
+		\hyperpage{123}
+    \subitem {disconnect}, \hyperpage{123}
+    \subitem {m\_context}, \hyperpage{124}
+    \subitem {m\_endpoint}, \hyperpage{124}
+    \subitem {m\_header\_buffer}, \hyperpage{124}
+    \subitem {m\_max\_header\_size}, \hyperpage{124}
+    \subitem {m\_potential\_frame\_size}, \hyperpage{124}
+    \subitem {m\_socket}, \hyperpage{124}
+    \subitem {m\_timeout\_ms}, \hyperpage{124}
+    \subitem {m\_zmq\_hwm}, \hyperpage{124}
+    \subitem {operator=}, \hyperpage{123}
+    \subitem {set\_potential\_frame\_size}, \hyperpage{123}
+    \subitem {set\_timeout\_ms}, \hyperpage{123}
+    \subitem {set\_zmq\_hwm}, \hyperpage{123}
+    \subitem {ZmqSocket}, \hyperpage{123}
+  \item {aare::ZmqSocketReceiver}, \hyperpage{125}
+    \subitem {connect}, \hyperpage{126}
+    \subitem {disconnect}, \hyperpage{126}
+    \subitem {m\_context}, \hyperpage{127}
+    \subitem {m\_endpoint}, \hyperpage{127}
+    \subitem {m\_header\_buffer}, \hyperpage{127}
+    \subitem {m\_max\_header\_size}, \hyperpage{127}
+    \subitem {m\_potential\_frame\_size}, \hyperpage{127}
+    \subitem {m\_socket}, \hyperpage{128}
+    \subitem {m\_timeout\_ms}, \hyperpage{128}
+    \subitem {m\_zmq\_hwm}, \hyperpage{128}
+    \subitem {receive\_data}, \hyperpage{126}
+    \subitem {receive\_header}, \hyperpage{126}
+    \subitem {receive\_n}, \hyperpage{126}
+    \subitem {receive\_zmqframe}, \hyperpage{127}
+    \subitem {set\_potential\_frame\_size}, \hyperpage{127}
+    \subitem {set\_timeout\_ms}, \hyperpage{127}
+    \subitem {set\_zmq\_hwm}, \hyperpage{127}
+    \subitem {ZmqSocketReceiver}, \hyperpage{126}
+  \item {aare::ZmqSocketSender}, \hyperpage{128}
+    \subitem {bind}, \hyperpage{129}
+    \subitem {disconnect}, \hyperpage{129}
+    \subitem {m\_context}, \hyperpage{131}
+    \subitem {m\_endpoint}, \hyperpage{131}
+    \subitem {m\_header\_buffer}, \hyperpage{131}
+    \subitem {m\_max\_header\_size}, \hyperpage{131}
+    \subitem {m\_potential\_frame\_size}, \hyperpage{131}
+    \subitem {m\_socket}, \hyperpage{131}
+    \subitem {m\_timeout\_ms}, \hyperpage{131}
+    \subitem {m\_zmq\_hwm}, \hyperpage{131}
+    \subitem {send}, \hyperpage{129, 130}
+    \subitem {set\_potential\_frame\_size}, \hyperpage{130}
+    \subitem {set\_timeout\_ms}, \hyperpage{130}
+    \subitem {set\_zmq\_hwm}, \hyperpage{131}
+    \subitem {ZmqSocketSender}, \hyperpage{129}
+  \item {AARE\_ROOT\_DIR\_VAR}
+    \subitem {json\_example.cpp}, \hyperpage{167}
+    \subitem {multiport\_example.cpp}, \hyperpage{168}
+    \subitem {mythen\_example.cpp}, \hyperpage{169}
+    \subitem {numpy\_read\_example.cpp}, \hyperpage{170}
+    \subitem {numpy\_write\_example.cpp}, \hyperpage{171}
+    \subitem {raw\_example.cpp}, \hyperpage{171}
+  \item {acqIndex}
+    \subitem {aare::ZmqHeader}, \hyperpage{118}
+  \item {add\_link}
+    \subitem {aare::ClusterFinder$<$ T $>$}, \hyperpage{34}
+  \item {addJsonHeader}
+    \subitem {aare::ZmqHeader}, \hyperpage{118}
+  \item {arr}
+    \subitem {example.read\_frame}, \hyperpage{22}
+    \subitem {write\_test\_files}, \hyperpage{28}
+  \item {arr2}
+    \subitem {write\_test\_files}, \hyperpage{28}
+  \item {AtomicIndex}
+    \subitem {folly::ProducerConsumerQueue$<$ T $>$}, \hyperpage{92}
+  \item {Auto}
+    \subitem {aare}, \hyperpage{14}
+  \item {axis}
+    \subitem {read\_multiport}, \hyperpage{26}
+
+  \indexspace
+
+  \item {begin}
+    \subitem {aare::NDArray$<$ T, Ndim $>$}, \hyperpage{67}
+    \subitem {aare::NDView$<$ T, Ndim $>$}, \hyperpage{75}
+  \item {big}
+    \subitem {aare}, \hyperpage{14}
+  \item {binary\_}
+    \subitem {aare::ClusterFinder$<$ T $>$}, \hyperpage{36}
+  \item {bind}
+    \subitem {aare::ZmqSocketSender}, \hyperpage{129}
+  \item {bindings.cpp}
+    \subitem {PYBIND11\_MODULE}, \hyperpage{195}
+  \item {bitdepth}
+    \subitem {aare::DType}, \hyperpage{39}
+    \subitem {aare::File}, \hyperpage{42}
+    \subitem {aare::FileInterface}, \hyperpage{48}
+    \subitem {aare::Frame}, \hyperpage{55}
+    \subitem {aare::NumpyFile}, \hyperpage{82}
+    \subitem {aare::RawFile}, \hyperpage{97}
+  \item {buffer}
+    \subitem {aare::NDArray$<$ T, Ndim $>$}, \hyperpage{67}
+  \item {buffer\_}
+    \subitem {aare::NDView$<$ T, Ndim $>$}, \hyperpage{78}
+  \item {bunchId}
+    \subitem {aare::sls\_detector\_header}, \hyperpage{108}
+  \item {byte\_strides}
+    \subitem {aare::NDArray$<$ T, Ndim $>$}, \hyperpage{67}
+  \item {bytes\_per\_frame}
+    \subitem {aare::File}, \hyperpage{42}
+    \subitem {aare::FileInterface}, \hyperpage{48}
+    \subitem {aare::NumpyFile}, \hyperpage{82}
+    \subitem {aare::RawFile}, \hyperpage{97}
+  \item {bytes\_per\_part}
+    \subitem {aare::SubFile}, \hyperpage{112}
+
+  \indexspace
+
+  \item {c\_strides}
+    \subitem {aare}, \hyperpage{14}
+  \item {capacity}
+    \subitem {folly::ProducerConsumerQueue$<$ T $>$}, \hyperpage{92}
+  \item {cfg}
+    \subitem {aare::RawFile}, \hyperpage{105}
+  \item {check\_neighbours}
+    \subitem {aare::ClusterFinder$<$ T $>$}, \hyperpage{34}
+  \item {child}
+    \subitem {aare::ClusterFinder$<$ T $>$}, \hyperpage{36}
+  \item {ChipTestBoard}
+    \subitem {aare}, \hyperpage{13}
+  \item {CircularFifo}
+    \subitem {aare::CircularFifo$<$ ItemType $>$}, \hyperpage{30}
+  \item {CircularFifo.test.cpp}
+    \subitem {TEST\_CASE}, \hyperpage{157}
+  \item {clear\_hits}
+    \subitem {aare::ClusterFinder$<$ T $>$}, \hyperpage{34}
+  \item {ClusterFinder}
+    \subitem {aare::ClusterFinder$<$ T $>$}, \hyperpage{33}
+  \item {col}
+    \subitem {aare::ClusterFinder$<$ T $>$::Hit}, \hyperpage{58}
+    \subitem {aare::xy}, \hyperpage{116}
+  \item {cols}
+    \subitem {aare::ClusterFinder$<$ T $>$::Hit}, \hyperpage{58}
+    \subitem {aare::File}, \hyperpage{42}
+    \subitem {aare::FileConfig}, \hyperpage{45}
+    \subitem {aare::FileInterface}, \hyperpage{48}
+    \subitem {aare::Frame}, \hyperpage{55}
+    \subitem {aare::NumpyFile}, \hyperpage{82}
+    \subitem {aare::RawFile}, \hyperpage{98}
+    \subitem {read\_frame}, \hyperpage{24}
+  \item {column}
+    \subitem {aare::sls\_detector\_header}, \hyperpage{108}
+    \subitem {aare::ZmqHeader}, \hyperpage{118}
+  \item {completeImage}
+    \subitem {aare::ZmqHeader}, \hyperpage{118}
+  \item {connect}
+    \subitem {aare::ZmqSocketReceiver}, \hyperpage{126}
+  \item {core/include/aare/core/CircularFifo.hpp}, \hyperpage{133}
+  \item {core/include/aare/core/defs.hpp}, \hyperpage{135, 136}
+  \item {core/include/aare/core/DType.hpp}, \hyperpage{137, 138}
+  \item {core/include/aare/core/Frame.hpp}, \hyperpage{138, 139}
+  \item {core/include/aare/core/NDArray.hpp}, \hyperpage{140, 141}
+  \item {core/include/aare/core/NDView.hpp}, \hyperpage{145, 146}
+  \item {core/include/aare/core/ProducerConsumerQueue.hpp}, 
+		\hyperpage{148, 149}
+  \item {core/include/aare/core/VariableSizeClusterFinder.hpp}, 
+		\hyperpage{151, 152}
+  \item {core/src/defs.cpp}, \hyperpage{155}
+  \item {core/src/DType.cpp}, \hyperpage{156}
+  \item {core/src/Frame.cpp}, \hyperpage{156}
+  \item {core/test/CircularFifo.test.cpp}, \hyperpage{156}
+  \item {core/test/defs.test.cpp}, \hyperpage{158}
+  \item {core/test/DType.test.cpp}, \hyperpage{158}
+  \item {core/test/Frame.test.cpp}, \hyperpage{159}
+  \item {core/test/NDArray.test.cpp}, \hyperpage{160}
+  \item {core/test/NDView.test.cpp}, \hyperpage{162}
+  \item {core/test/ProducerConsumerQueue.test.cpp}, \hyperpage{163}
+  \item {core/test/wrappers.test.cpp}, \hyperpage{164}
+  \item {count}
+    \subitem {read\_frame}, \hyperpage{24}
+    \subitem {read\_multiport}, \hyperpage{26}
+  \item {current\_frame}
+    \subitem {aare::FileInterface}, \hyperpage{53}
+    \subitem {aare::NumpyFile}, \hyperpage{88}
+    \subitem {aare::RawFile}, \hyperpage{105}
+  \item {current\_label}
+    \subitem {aare::ClusterFinder$<$ T $>$}, \hyperpage{36}
+
+  \indexspace
+
+  \item {data}
+    \subitem {aare::Frame}, \hyperpage{56}
+    \subitem {aare::NDArray$<$ T, Ndim $>$}, \hyperpage{67}
+    \subitem {aare::NDView$<$ T, Ndim $>$}, \hyperpage{75}
+    \subitem {aare::ZmqHeader}, \hyperpage{118}
+    \subitem {read\_frame}, \hyperpage{24}
+    \subitem {read\_multiport}, \hyperpage{26}
+  \item {data/jungfrau/read\_frame.py}, \hyperpage{165}
+  \item {data/jungfrau/read\_multiport.py}, \hyperpage{166}
+  \item {data/numpy/write\_test\_files.py}, \hyperpage{166}
+  \item {data/scripts/read\_first\_frame\_number.py}, \hyperpage{166}
+  \item {data/scripts/read\_multiport.py}, \hyperpage{167}
+  \item {data\_}
+    \subitem {aare::NDArray$<$ T, Ndim $>$}, \hyperpage{73}
+  \item {data\_fname}
+    \subitem {aare::RawFile}, \hyperpage{98}
+  \item {data\_path}
+    \subitem {example.read\_frame}, \hyperpage{22}
+  \item {DataTypeVariants}
+    \subitem {aare}, \hyperpage{13}
+  \item {DEBUG}
+    \subitem {aare::logger}, \hyperpage{17}
+  \item {debug}
+    \subitem {aare::logger}, \hyperpage{17}
+    \subitem {aare::logger::Logger}, \hyperpage{61}
+    \subitem {aare::sls\_detector\_header}, \hyperpage{109}
+  \item {defs.test.cpp}
+    \subitem {TEST\_CASE}, \hyperpage{158}
+  \item {DetectorType}
+    \subitem {aare}, \hyperpage{13}
+  \item {detSpec1}
+    \subitem {aare::ZmqHeader}, \hyperpage{119}
+  \item {detSpec2}
+    \subitem {aare::ZmqHeader}, \hyperpage{119}
+  \item {detSpec3}
+    \subitem {aare::ZmqHeader}, \hyperpage{119}
+  \item {detSpec4}
+    \subitem {aare::ZmqHeader}, \hyperpage{119}
+  \item {detType}
+    \subitem {aare::sls\_detector\_header}, \hyperpage{109}
+    \subitem {aare::ZmqHeader}, \hyperpage{119}
+  \item {di}
+    \subitem {aare::ClusterFinder$<$ T $>$}, \hyperpage{36}
+  \item {di\_}
+    \subitem {aare::ClusterFinder$<$ T $>$}, \hyperpage{36}
+  \item {disconnect}
+    \subitem {aare::ZmqSocket}, \hyperpage{123}
+    \subitem {aare::ZmqSocketReceiver}, \hyperpage{126}
+    \subitem {aare::ZmqSocketSender}, \hyperpage{129}
+  \item {dj}
+    \subitem {aare::ClusterFinder$<$ T $>$}, \hyperpage{36}
+  \item {dj\_}
+    \subitem {aare::ClusterFinder$<$ T $>$}, \hyperpage{36}
+  \item {DOUBLE}
+    \subitem {aare::DType}, \hyperpage{38}
+  \item {DType}
+    \subitem {aare::DType}, \hyperpage{39}
+  \item {dtype}
+    \subitem {aare::FileConfig}, \hyperpage{45}
+    \subitem {aare::NumpyFile}, \hyperpage{83}
+    \subitem {aare::NumpyHeader}, \hyperpage{91}
+    \subitem {read\_frame}, \hyperpage{24}
+    \subitem {read\_multiport}, \hyperpage{26}
+  \item {DType.test.cpp}
+    \subitem {TEST\_CASE}, \hyperpage{158, 159}
+  \item {dynamic\_shape}
+    \subitem {aare}, \hyperpage{13}
+  \item {dynamicRange}
+    \subitem {aare::ZmqHeader}, \hyperpage{119}
+
+  \indexspace
+
+  \item {Eiger}
+    \subitem {aare}, \hyperpage{13}
+  \item {element\_offset}
+    \subitem {aare}, \hyperpage{14}
+  \item {elemenwise}
+    \subitem {aare::NDView$<$ T, Ndim $>$}, \hyperpage{75}
+  \item {end}
+    \subitem {aare::NDArray$<$ T, Ndim $>$}, \hyperpage{67}
+    \subitem {aare::NDView$<$ T, Ndim $>$}, \hyperpage{76}
+  \item {endian}
+    \subitem {aare}, \hyperpage{13}
+  \item {energy}
+    \subitem {aare::ClusterFinder$<$ T $>$::Hit}, \hyperpage{59}
+  \item {enes}
+    \subitem {aare::ClusterFinder$<$ T $>$::Hit}, \hyperpage{59}
+  \item {ERROR}
+    \subitem {aare::DType}, \hyperpage{38}
+    \subitem {aare::logger}, \hyperpage{17}
+  \item {error}
+    \subitem {aare::logger}, \hyperpage{17}
+    \subitem {aare::logger::Logger}, \hyperpage{61}
+  \item {error\_buf}
+    \subitem {aare::logger::Logger}, \hyperpage{62}
+  \item {error\_output}
+    \subitem {aare::logger::Logger}, \hyperpage{62}
+  \item {example}, \hyperpage{22}
+  \item {example.read\_frame}, \hyperpage{22}
+    \subitem {arr}, \hyperpage{22}
+    \subitem {data\_path}, \hyperpage{22}
+    \subitem {file}, \hyperpage{22}
+    \subitem {frame}, \hyperpage{23}
+    \subitem {root\_dir}, \hyperpage{23}
+  \item {examples/json\_example.cpp}, \hyperpage{167}
+  \item {examples/logger\_example.cpp}, \hyperpage{167}
+  \item {examples/multiport\_example.cpp}, \hyperpage{168}
+  \item {examples/mythen\_example.cpp}, \hyperpage{169}
+  \item {examples/numpy\_read\_example.cpp}, \hyperpage{169}
+  \item {examples/numpy\_write\_example.cpp}, \hyperpage{170}
+  \item {examples/raw\_example.cpp}, \hyperpage{171}
+  \item {examples/zmq\_receiver\_example.cpp}, \hyperpage{172}
+  \item {examples/zmq\_restream\_example.cpp}, \hyperpage{172}
+  \item {examples/zmq\_sender\_example.cpp}, \hyperpage{173}
+  \item {expLength}
+    \subitem {aare::sls\_detector\_header}, \hyperpage{109}
+    \subitem {aare::ZmqHeader}, \hyperpage{119}
+
+  \indexspace
+
+  \item {f}
+    \subitem {read\_frame}, \hyperpage{24}
+    \subitem {read\_multiport}, \hyperpage{26}
+  \item {fifo\_size}
+    \subitem {aare::CircularFifo$<$ ItemType $>$}, \hyperpage{32}
+  \item {File}
+    \subitem {aare::File}, \hyperpage{41}
+  \item {file}
+    \subitem {example.read\_frame}, \hyperpage{22}
+  \item {file\_impl}
+    \subitem {aare::File}, \hyperpage{43}
+  \item {file\_io/include/aare/file\_io/File.hpp}, \hyperpage{173, 174}
+  \item {file\_io/include/aare/file\_io/FileInterface.hpp}, 
+		\hyperpage{174, 175}
+  \item {file\_io/include/aare/file\_io/NumpyFile.hpp}, \hyperpage{176}
+  \item {file\_io/include/aare/file\_io/NumpyHelpers.hpp}, 
+		\hyperpage{177, 178}
+  \item {file\_io/include/aare/file\_io/RawFile.hpp}, \hyperpage{179}
+  \item {file\_io/include/aare/file\_io/SubFile.hpp}, 
+		\hyperpage{180, 181}
+  \item {file\_io/src/File.cpp}, \hyperpage{181}
+  \item {file\_io/src/NumpyFile.cpp}, \hyperpage{182}
+  \item {file\_io/src/NumpyHelpers.cpp}, \hyperpage{182}
+  \item {file\_io/src/RawFile.cpp}, \hyperpage{183}
+  \item {file\_io/src/SubFile.cpp}, \hyperpage{183}
+  \item {file\_io/test/NumpyFile.test.cpp}, \hyperpage{183}
+  \item {file\_io/test/NumpyHelpers.test.cpp}, \hyperpage{184}
+  \item {file\_io/test/RawFile.test.cpp}, \hyperpage{185}
+  \item {file\_name}
+    \subitem {read\_frame}, \hyperpage{24}
+    \subitem {read\_multiport}, \hyperpage{26}
+  \item {fileIndex}
+    \subitem {aare::ZmqHeader}, \hyperpage{119}
+  \item {filled\_slots}
+    \subitem {aare::CircularFifo$<$ ItemType $>$}, \hyperpage{32}
+  \item {find\_clusters}
+    \subitem {aare::ClusterFinder$<$ T $>$}, \hyperpage{34}
+  \item {find\_clusters\_X}
+    \subitem {aare::ClusterFinder$<$ T $>$}, \hyperpage{34}
+  \item {find\_geometry}
+    \subitem {aare::RawFile}, \hyperpage{98}
+  \item {find\_number\_of\_subfiles}
+    \subitem {aare::RawFile}, \hyperpage{98}
+  \item {first\_pass}
+    \subitem {aare::ClusterFinder$<$ T $>$}, \hyperpage{34}
+  \item {flipRows}
+    \subitem {aare::ZmqHeader}, \hyperpage{119}
+  \item {FLOAT}
+    \subitem {aare::DType}, \hyperpage{38}
+  \item {fname}
+    \subitem {aare::ZmqHeader}, \hyperpage{119}
+  \item {folly}, \hyperpage{23}
+  \item {folly::ProducerConsumerQueue$<$ T $>$}, \hyperpage{91}
+    \subitem {\texorpdfstring{$\sim$}{\string~}ProducerConsumerQueue}, 
+		\hyperpage{92}
+    \subitem {AtomicIndex}, \hyperpage{92}
+    \subitem {capacity}, \hyperpage{92}
+    \subitem {frontPtr}, \hyperpage{92}
+    \subitem {isEmpty}, \hyperpage{93}
+    \subitem {isFull}, \hyperpage{93}
+    \subitem {operator=}, \hyperpage{93}
+    \subitem {pad0\_}, \hyperpage{94}
+    \subitem {pad1\_}, \hyperpage{94}
+    \subitem {popFront}, \hyperpage{93}
+    \subitem {ProducerConsumerQueue}, \hyperpage{92}
+    \subitem {read}, \hyperpage{93}
+    \subitem {readIndex\_}, \hyperpage{94}
+    \subitem {records\_}, \hyperpage{94}
+    \subitem {size\_}, \hyperpage{94}
+    \subitem {sizeGuess}, \hyperpage{93}
+    \subitem {value\_type}, \hyperpage{92}
+    \subitem {write}, \hyperpage{93}
+    \subitem {writeIndex\_}, \hyperpage{94}
+  \item {fortran\_order}
+    \subitem {aare::NumpyHeader}, \hyperpage{91}
+  \item {fp}
+    \subitem {aare::NumpyFile}, \hyperpage{88}
+    \subitem {aare::SubFile}, \hyperpage{114}
+  \item {Frame}
+    \subitem {aare::Frame}, \hyperpage{55}
+  \item {frame}
+    \subitem {aare::ZmqFrame}, \hyperpage{116}
+    \subitem {example.read\_frame}, \hyperpage{23}
+  \item {Frame.test.cpp}
+    \subitem {TEST\_CASE}, \hyperpage{159}
+  \item {frame\_cols}
+    \subitem {read\_multiport}, \hyperpage{26}
+  \item {frame\_number}
+    \subitem {aare::File}, \hyperpage{42}
+    \subitem {aare::FileInterface}, \hyperpage{48}
+    \subitem {aare::NumpyFile}, \hyperpage{83}
+    \subitem {aare::RawFile}, \hyperpage{99}
+    \subitem {aare::SubFile}, \hyperpage{112}
+    \subitem {read\_first\_frame\_number}, \hyperpage{23}
+  \item {frame\_rows}
+    \subitem {read\_multiport}, \hyperpage{26}
+  \item {frameIndex}
+    \subitem {aare::ZmqHeader}, \hyperpage{120}
+  \item {frameNumber}
+    \subitem {aare::sls\_detector\_header}, \hyperpage{109}
+    \subitem {aare::ZmqHeader}, \hyperpage{120}
+  \item {frames}
+    \subitem {read\_frame}, \hyperpage{24}
+    \subitem {read\_multiport}, \hyperpage{26}
+  \item {free\_slots}
+    \subitem {aare::CircularFifo$<$ ItemType $>$}, \hyperpage{32}
+  \item {from\_string}
+    \subitem {aare::ZmqHeader}, \hyperpage{118}
+  \item {frontPtr}
+    \subitem {aare::CircularFifo$<$ ItemType $>$}, \hyperpage{30}
+    \subitem {folly::ProducerConsumerQueue$<$ T $>$}, \hyperpage{92}
+
+  \indexspace
+
+  \item {geometry}
+    \subitem {aare::FileConfig}, \hyperpage{45}
+    \subitem {aare::RawFile}, \hyperpage{105}
+  \item {get}
+    \subitem {aare::Frame}, \hyperpage{56}
+  \item {get\_frame}
+    \subitem {aare::NumpyFile}, \hyperpage{83}
+    \subitem {aare::RawFile}, \hyperpage{99}
+  \item {get\_frame\_into}
+    \subitem {aare::NumpyFile}, \hyperpage{83}
+    \subitem {aare::RawFile}, \hyperpage{99}
+  \item {get\_logger\_instance}
+    \subitem {aare::logger}, \hyperpage{18}
+  \item {get\_part}
+    \subitem {aare::SubFile}, \hyperpage{112}
+  \item {get\_value\_from\_map}
+    \subitem {aare::NumpyHelpers}, \hyperpage{20}
+
+  \indexspace
+
+  \item {h\_size}
+    \subitem {aare::ClusterFinder$<$ T $>$}, \hyperpage{36}
+  \item {hardware\_destructive\_interference\_size}
+    \subitem {ProducerConsumerQueue.hpp}, \hyperpage{148}
+  \item {header}
+    \subitem {aare::ZmqFrame}, \hyperpage{116}
+    \subitem {read\_frame}, \hyperpage{24}
+    \subitem {read\_multiport}, \hyperpage{26}
+  \item {header\_dt}
+    \subitem {read\_first\_frame\_number}, \hyperpage{23}
+    \subitem {read\_frame}, \hyperpage{25}
+    \subitem {read\_multiport}, \hyperpage{26}
+  \item {header\_len}
+    \subitem {aare::NumpyFile}, \hyperpage{88}
+  \item {header\_len\_size}
+    \subitem {aare::NumpyFile}, \hyperpage{88}
+  \item {header\_size}
+    \subitem {aare::NumpyFile}, \hyperpage{88}
+  \item {hits}
+    \subitem {aare::ClusterFinder$<$ T $>$}, \hyperpage{37}
+
+  \indexspace
+
+  \item {image}
+    \subitem {aare::Frame}, \hyperpage{56}
+  \item {imageSize}
+    \subitem {aare::ZmqHeader}, \hyperpage{120}
+  \item {in\_array}
+    \subitem {aare::NumpyHelpers}, \hyperpage{20}
+  \item {include/aare/aare.hpp}, \hyperpage{186}
+  \item {INFO}
+    \subitem {aare::logger}, \hyperpage{17}
+  \item {info}
+    \subitem {aare::logger}, \hyperpage{18}
+    \subitem {aare::logger::Logger}, \hyperpage{61}
+  \item {initial\_header\_len}
+    \subitem {aare::NumpyFile}, \hyperpage{88}
+  \item {INT16}
+    \subitem {aare::DType}, \hyperpage{38}
+  \item {INT32}
+    \subitem {aare::DType}, \hyperpage{38}
+  \item {INT64}
+    \subitem {aare::DType}, \hyperpage{38}
+  \item {INT8}
+    \subitem {aare::DType}, \hyperpage{38}
+  \item {iread}
+    \subitem {aare::File}, \hyperpage{42}
+    \subitem {aare::FileInterface}, \hyperpage{49}
+    \subitem {aare::NumpyFile}, \hyperpage{83, 84}
+    \subitem {aare::RawFile}, \hyperpage{100}
+  \item {is\_digits}
+    \subitem {aare::NumpyHelpers}, \hyperpage{20}
+  \item {is\_master\_file}
+    \subitem {aare::RawFile}, \hyperpage{100}
+  \item {isEmpty}
+    \subitem {folly::ProducerConsumerQueue$<$ T $>$}, \hyperpage{93}
+  \item {isFull}
+    \subitem {aare::CircularFifo$<$ ItemType $>$}, \hyperpage{30}
+    \subitem {folly::ProducerConsumerQueue$<$ T $>$}, \hyperpage{93}
+
+  \indexspace
+
+  \item {json}
+    \subitem {RawFile.cpp}, \hyperpage{183}
+  \item {json\_example.cpp}
+    \subitem {AARE\_ROOT\_DIR\_VAR}, \hyperpage{167}
+    \subitem {main}, \hyperpage{167}
+    \subitem {test}, \hyperpage{167}
+  \item {jsonversion}
+    \subitem {aare::ZmqHeader}, \hyperpage{120}
+  \item {Jungfrau}
+    \subitem {aare}, \hyperpage{13}
+
+  \indexspace
+
+  \item {labeled}
+    \subitem {aare::ClusterFinder$<$ T $>$}, \hyperpage{34}
+  \item {labeled\_}
+    \subitem {aare::ClusterFinder$<$ T $>$}, \hyperpage{37}
+  \item {little}
+    \subitem {aare}, \hyperpage{14}
+  \item {load}
+    \subitem {aare}, \hyperpage{14}
+    \subitem {aare::NumpyFile}, \hyperpage{84}
+  \item {load\_metadata}
+    \subitem {aare::NumpyFile}, \hyperpage{84}
+  \item {LOCATION}
+    \subitem {logger.hpp}, \hyperpage{197}
+  \item {log}
+    \subitem {aare::logger}, \hyperpage{18}
+    \subitem {aare::logger::Logger}, \hyperpage{61}
+  \item {log\_}
+    \subitem {aare::logger::Logger}, \hyperpage{61}
+  \item {Logger}
+    \subitem {aare::logger::Logger}, \hyperpage{60}
+  \item {logger.hpp}
+    \subitem {LOCATION}, \hyperpage{197}
+    \subitem {operator$<$$<$}, \hyperpage{197}
+  \item {logger\_example.cpp}
+    \subitem {main}, \hyperpage{168}
+  \item {logger\_instance}
+    \subitem {aare::logger::internal}, \hyperpage{19}
+  \item {LOGGING\_LEVEL}
+    \subitem {aare::logger}, \hyperpage{17}
+
+  \indexspace
+
+  \item {m\_base\_name}
+    \subitem {aare::FileInterface}, \hyperpage{53}
+    \subitem {aare::NumpyFile}, \hyperpage{88}
+    \subitem {aare::RawFile}, \hyperpage{105}
+  \item {m\_base\_path}
+    \subitem {aare::FileInterface}, \hyperpage{53}
+    \subitem {aare::NumpyFile}, \hyperpage{88}
+    \subitem {aare::RawFile}, \hyperpage{105}
+  \item {m\_bitdepth}
+    \subitem {aare::FileInterface}, \hyperpage{53}
+    \subitem {aare::Frame}, \hyperpage{57}
+    \subitem {aare::NumpyFile}, \hyperpage{89}
+    \subitem {aare::RawFile}, \hyperpage{105}
+    \subitem {aare::SubFile}, \hyperpage{114}
+  \item {m\_cols}
+    \subitem {aare::FileInterface}, \hyperpage{53}
+    \subitem {aare::Frame}, \hyperpage{57}
+    \subitem {aare::NumpyFile}, \hyperpage{89}
+    \subitem {aare::RawFile}, \hyperpage{105}
+    \subitem {aare::SubFile}, \hyperpage{114}
+  \item {m\_context}
+    \subitem {aare::ZmqSocket}, \hyperpage{124}
+    \subitem {aare::ZmqSocketReceiver}, \hyperpage{127}
+    \subitem {aare::ZmqSocketSender}, \hyperpage{131}
+  \item {m\_data}
+    \subitem {aare::Frame}, \hyperpage{57}
+  \item {m\_endpoint}
+    \subitem {aare::ZmqSocket}, \hyperpage{124}
+    \subitem {aare::ZmqSocketReceiver}, \hyperpage{127}
+    \subitem {aare::ZmqSocketSender}, \hyperpage{131}
+  \item {m\_ext}
+    \subitem {aare::FileInterface}, \hyperpage{53}
+    \subitem {aare::NumpyFile}, \hyperpage{89}
+    \subitem {aare::RawFile}, \hyperpage{105}
+  \item {m\_findex}
+    \subitem {aare::FileInterface}, \hyperpage{53}
+    \subitem {aare::NumpyFile}, \hyperpage{89}
+    \subitem {aare::RawFile}, \hyperpage{105}
+  \item {m\_fname}
+    \subitem {aare::FileInterface}, \hyperpage{53}
+    \subitem {aare::NumpyFile}, \hyperpage{89}
+    \subitem {aare::RawFile}, \hyperpage{106}
+    \subitem {aare::SubFile}, \hyperpage{114}
+  \item {m\_header}
+    \subitem {aare::NumpyFile}, \hyperpage{89}
+  \item {m\_header\_buffer}
+    \subitem {aare::ZmqSocket}, \hyperpage{124}
+    \subitem {aare::ZmqSocketReceiver}, \hyperpage{127}
+    \subitem {aare::ZmqSocketSender}, \hyperpage{131}
+  \item {m\_max\_header\_size}
+    \subitem {aare::ZmqSocket}, \hyperpage{124}
+    \subitem {aare::ZmqSocketReceiver}, \hyperpage{127}
+    \subitem {aare::ZmqSocketSender}, \hyperpage{131}
+  \item {m\_mode}
+    \subitem {aare::FileInterface}, \hyperpage{53}
+    \subitem {aare::NumpyFile}, \hyperpage{89}
+    \subitem {aare::RawFile}, \hyperpage{106}
+  \item {m\_msg}
+    \subitem {aare::network\_io::NetworkError}, \hyperpage{79}
+  \item {m\_potential\_frame\_size}
+    \subitem {aare::ZmqSocket}, \hyperpage{124}
+    \subitem {aare::ZmqSocketReceiver}, \hyperpage{127}
+    \subitem {aare::ZmqSocketSender}, \hyperpage{131}
+  \item {m\_rows}
+    \subitem {aare::FileInterface}, \hyperpage{53}
+    \subitem {aare::Frame}, \hyperpage{57}
+    \subitem {aare::NumpyFile}, \hyperpage{89}
+    \subitem {aare::RawFile}, \hyperpage{106}
+    \subitem {aare::SubFile}, \hyperpage{114}
+  \item {m\_socket}
+    \subitem {aare::ZmqSocket}, \hyperpage{124}
+    \subitem {aare::ZmqSocketReceiver}, \hyperpage{128}
+    \subitem {aare::ZmqSocketSender}, \hyperpage{131}
+  \item {m\_sub\_file\_index\_}
+    \subitem {aare::SubFile}, \hyperpage{114}
+  \item {m\_timeout\_ms}
+    \subitem {aare::ZmqSocket}, \hyperpage{124}
+    \subitem {aare::ZmqSocketReceiver}, \hyperpage{128}
+    \subitem {aare::ZmqSocketSender}, \hyperpage{131}
+  \item {m\_total\_frames}
+    \subitem {aare::FileInterface}, \hyperpage{54}
+    \subitem {aare::NumpyFile}, \hyperpage{89}
+    \subitem {aare::RawFile}, \hyperpage{106}
+  \item {m\_type}
+    \subitem {aare::DType}, \hyperpage{40}
+    \subitem {aare::FileInterface}, \hyperpage{54}
+    \subitem {aare::NumpyFile}, \hyperpage{89}
+    \subitem {aare::RawFile}, \hyperpage{106}
+  \item {m\_zmq\_hwm}
+    \subitem {aare::ZmqSocket}, \hyperpage{124}
+    \subitem {aare::ZmqSocketReceiver}, \hyperpage{128}
+    \subitem {aare::ZmqSocketSender}, \hyperpage{131}
+  \item {magic\_str}
+    \subitem {aare::NumpyHelpers}, \hyperpage{22}
+  \item {magic\_string\_length}
+    \subitem {aare::NumpyHelpers}, \hyperpage{22}
+  \item {main}
+    \subitem {json\_example.cpp}, \hyperpage{167}
+    \subitem {logger\_example.cpp}, \hyperpage{168}
+    \subitem {multiport\_example.cpp}, \hyperpage{168}
+    \subitem {mythen\_example.cpp}, \hyperpage{169}
+    \subitem {numpy\_read\_example.cpp}, \hyperpage{170}
+    \subitem {numpy\_write\_example.cpp}, \hyperpage{171}
+    \subitem {raw\_example.cpp}, \hyperpage{171}
+    \subitem {zmq\_receiver\_example.cpp}, \hyperpage{172}
+    \subitem {zmq\_restream\_example.cpp}, \hyperpage{172}
+    \subitem {zmq\_sender\_example.cpp}, \hyperpage{173}
+  \item {major\_ver\_}
+    \subitem {aare::NumpyFile}, \hyperpage{90}
+  \item {make\_array}
+    \subitem {aare}, \hyperpage{14}
+  \item {make\_shape}
+    \subitem {aare}, \hyperpage{15}
+  \item {master\_fname}
+    \subitem {aare::RawFile}, \hyperpage{101}
+  \item {max}
+    \subitem {aare::ClusterFinder$<$ T $>$::Hit}, \hyperpage{59}
+  \item {MAX\_CLUSTER\_SIZE}
+    \subitem {VariableSizeClusterFinder.hpp}, \hyperpage{151}
+  \item {max\_frames\_per\_file}
+    \subitem {aare::FileInterface}, \hyperpage{54}
+    \subitem {aare::NumpyFile}, \hyperpage{90}
+    \subitem {aare::RawFile}, \hyperpage{106}
+  \item {minor\_ver\_}
+    \subitem {aare::NumpyFile}, \hyperpage{90}
+  \item {modId}
+    \subitem {aare::sls\_detector\_header}, \hyperpage{109}
+    \subitem {aare::ZmqHeader}, \hyperpage{120}
+  \item {module\_gap\_col}
+    \subitem {aare::RawFileConfig}, \hyperpage{108}
+  \item {module\_gap\_row}
+    \subitem {aare::RawFileConfig}, \hyperpage{108}
+  \item {Moench}
+    \subitem {aare}, \hyperpage{13}
+  \item {MoveOnlyInt}, \hyperpage{63}
+    \subitem {MoveOnlyInt}, \hyperpage{63}
+    \subitem {operator=}, \hyperpage{64}
+    \subitem {operator==}, \hyperpage{64}
+    \subitem {value}, \hyperpage{64}
+  \item {multiport\_example.cpp}
+    \subitem {AARE\_ROOT\_DIR\_VAR}, \hyperpage{168}
+    \subitem {main}, \hyperpage{168}
+    \subitem {test}, \hyperpage{168}
+  \item {Mythen3}
+    \subitem {aare}, \hyperpage{13}
+  \item {mythen\_example.cpp}
+    \subitem {AARE\_ROOT\_DIR\_VAR}, \hyperpage{169}
+    \subitem {main}, \hyperpage{169}
+    \subitem {test1}, \hyperpage{169}
+    \subitem {test2}, \hyperpage{169}
+
+  \indexspace
+
+  \item {n\_frames}
+    \subitem {aare::SubFile}, \hyperpage{114}
+  \item {n\_subfile\_parts}
+    \subitem {aare::RawFile}, \hyperpage{106}
+  \item {n\_subfiles}
+    \subitem {aare::RawFile}, \hyperpage{106}
+  \item {native}
+    \subitem {aare}, \hyperpage{14}
+  \item {NDArray}
+    \subitem {aare::NDArray$<$ T, Ndim $>$}, \hyperpage{66}
+  \item {NDArray.test.cpp}
+    \subitem {TEST\_CASE}, \hyperpage{160, 161}
+  \item {ndetx}
+    \subitem {aare::ZmqHeader}, \hyperpage{120}
+  \item {ndety}
+    \subitem {aare::ZmqHeader}, \hyperpage{120}
+  \item {NDView}
+    \subitem {aare::NDView$<$ T, Ndim $>$}, \hyperpage{74, 75}
+  \item {NDView.test.cpp}
+    \subitem {TEST\_CASE}, \hyperpage{162, 163}
+  \item {network\_io/include/aare/network\_io/defs.hpp}, 
+		\hyperpage{136, 137}
+  \item {network\_io/include/aare/network\_io/ZmqHeader.hpp}, 
+		\hyperpage{186, 187}
+  \item {network\_io/include/aare/network\_io/ZmqSocket.hpp}, 
+		\hyperpage{188, 189}
+  \item {network\_io/include/aare/network\_io/ZmqSocketReceiver.hpp}, 
+		\hyperpage{189, 190}
+  \item {network\_io/include/aare/network\_io/ZmqSocketSender.hpp}, 
+		\hyperpage{190, 191}
+  \item {network\_io/src/ZmqHeader.cpp}, \hyperpage{191}
+  \item {network\_io/src/ZmqSocket.cpp}, \hyperpage{192}
+  \item {network\_io/src/ZmqSocketReceiver.cpp}, \hyperpage{193}
+  \item {network\_io/src/ZmqSocketSender.cpp}, \hyperpage{193}
+  \item {network\_io/test/ZmqHeader.test.cpp}, \hyperpage{193}
+  \item {NetworkError}
+    \subitem {aare::network\_io::NetworkError}, \hyperpage{79}
+  \item {next}
+    \subitem {aare::CircularFifo$<$ ItemType $>$}, \hyperpage{30}
+  \item {noiseMap}
+    \subitem {aare::ClusterFinder$<$ T $>$}, \hyperpage{37}
+  \item {npixelsx}
+    \subitem {aare::ZmqHeader}, \hyperpage{120}
+  \item {npixelsy}
+    \subitem {aare::ZmqHeader}, \hyperpage{121}
+  \item {numFilledSlots}
+    \subitem {aare::CircularFifo$<$ ItemType $>$}, \hyperpage{30}
+  \item {numFreeSlots}
+    \subitem {aare::CircularFifo$<$ ItemType $>$}, \hyperpage{31}
+  \item {numpy\_read\_example.cpp}
+    \subitem {AARE\_ROOT\_DIR\_VAR}, \hyperpage{170}
+    \subitem {main}, \hyperpage{170}
+    \subitem {test}, \hyperpage{170}
+  \item {numpy\_write\_example.cpp}
+    \subitem {AARE\_ROOT\_DIR\_VAR}, \hyperpage{171}
+    \subitem {main}, \hyperpage{171}
+  \item {NumpyFile}
+    \subitem {aare::NumpyFile}, \hyperpage{82}
+  \item {NumpyFile.test.cpp}
+    \subitem {TEST\_CASE}, \hyperpage{184}
+  \item {NumpyHelpers.test.cpp}
+    \subitem {TEST\_CASE}, \hyperpage{184, 185}
+
+  \indexspace
+
+  \item {open\_subfiles}
+    \subitem {aare::RawFile}, \hyperpage{101}
+  \item {operator!=}
+    \subitem {aare::DType}, \hyperpage{39}
+    \subitem {aare::FileConfig}, \hyperpage{45}
+    \subitem {aare::NDArray$<$ T, Ndim $>$}, \hyperpage{67}
+    \subitem {aare::xy}, \hyperpage{115}
+  \item {operator$<$$<$}
+    \subitem {logger.hpp}, \hyperpage{197}
+  \item {operator$>$}
+    \subitem {aare::NDArray$<$ T, Ndim $>$}, \hyperpage{71}
+  \item {operator()}
+    \subitem {aare::NDArray$<$ T, Ndim $>$}, \hyperpage{68}
+    \subitem {aare::NDView$<$ T, Ndim $>$}, \hyperpage{76}
+  \item {operator+}
+    \subitem {aare::NDArray$<$ T, Ndim $>$}, \hyperpage{69}
+  \item {operator++}
+    \subitem {aare::NDArray$<$ T, Ndim $>$}, \hyperpage{69}
+  \item {operator+=}
+    \subitem {aare::NDArray$<$ T, Ndim $>$}, \hyperpage{69}
+    \subitem {aare::NDView$<$ T, Ndim $>$}, \hyperpage{76}
+  \item {operator-\/}
+    \subitem {aare::NDArray$<$ T, Ndim $>$}, \hyperpage{69}
+  \item {operator-\/=}
+    \subitem {aare::NDArray$<$ T, Ndim $>$}, \hyperpage{70}
+    \subitem {aare::NDView$<$ T, Ndim $>$}, \hyperpage{76}
+  \item {operator/}
+    \subitem {aare::NDArray$<$ T, Ndim $>$}, \hyperpage{70}
+  \item {operator/=}
+    \subitem {aare::NDArray$<$ T, Ndim $>$}, \hyperpage{70}
+    \subitem {aare::NDView$<$ T, Ndim $>$}, \hyperpage{77}
+  \item {operator=}
+    \subitem {aare::Frame}, \hyperpage{56}
+    \subitem {aare::NDArray$<$ T, Ndim $>$}, \hyperpage{70, 71}
+    \subitem {aare::NDView$<$ T, Ndim $>$}, \hyperpage{77}
+    \subitem {aare::ZmqSocket}, \hyperpage{123}
+    \subitem {folly::ProducerConsumerQueue$<$ T $>$}, \hyperpage{93}
+    \subitem {MoveOnlyInt}, \hyperpage{64}
+  \item {operator==}
+    \subitem {aare::DType}, \hyperpage{39}
+    \subitem {aare::FileConfig}, \hyperpage{45}
+    \subitem {aare::NDArray$<$ T, Ndim $>$}, \hyperpage{71}
+    \subitem {aare::NDView$<$ T, Ndim $>$}, \hyperpage{77}
+    \subitem {aare::RawFileConfig}, \hyperpage{108}
+    \subitem {aare::xy}, \hyperpage{115}
+    \subitem {aare::ZmqHeader}, \hyperpage{118}
+    \subitem {MoveOnlyInt}, \hyperpage{64}
+  \item {operator\&=}
+    \subitem {aare::NDArray$<$ T, Ndim $>$}, \hyperpage{67}
+  \item {operator[]}
+    \subitem {aare::NDView$<$ T, Ndim $>$}, \hyperpage{77}
+  \item {operator\texorpdfstring{$\ast$}{*}}
+    \subitem {aare::NDArray$<$ T, Ndim $>$}, \hyperpage{68}
+  \item {operator\texorpdfstring{$\ast$}{*}=}
+    \subitem {aare::NDArray$<$ T, Ndim $>$}, \hyperpage{68, 69}
+    \subitem {aare::NDView$<$ T, Ndim $>$}, \hyperpage{76}
+  \item {original\_}
+    \subitem {aare::ClusterFinder$<$ T $>$}, \hyperpage{37}
+  \item {out\_file}
+    \subitem {aare::logger::Logger}, \hyperpage{62}
+
+  \indexspace
+
+  \item {packetMask}
+    \subitem {aare::sls\_detector\_header}, \hyperpage{109}
+  \item {packetNumber}
+    \subitem {aare::sls\_detector\_header}, \hyperpage{109}
+    \subitem {aare::ZmqHeader}, \hyperpage{121}
+  \item {pad0\_}
+    \subitem {folly::ProducerConsumerQueue$<$ T $>$}, \hyperpage{94}
+  \item {pad1\_}
+    \subitem {folly::ProducerConsumerQueue$<$ T $>$}, \hyperpage{94}
+  \item {parse\_bool}
+    \subitem {aare::NumpyHelpers}, \hyperpage{20}
+  \item {parse\_descr}
+    \subitem {aare::NumpyHelpers}, \hyperpage{20}
+  \item {parse\_dict}
+    \subitem {aare::NumpyHelpers}, \hyperpage{20}
+  \item {parse\_fname}
+    \subitem {aare::RawFile}, \hyperpage{101}
+  \item {parse\_json\_metadata}
+    \subitem {aare::RawFile}, \hyperpage{101}
+  \item {parse\_metadata}
+    \subitem {aare::RawFile}, \hyperpage{101}
+  \item {parse\_raw\_metadata}
+    \subitem {aare::RawFile}, \hyperpage{101}
+  \item {parse\_str}
+    \subitem {aare::NumpyHelpers}, \hyperpage{20}
+  \item {parse\_tuple}
+    \subitem {aare::NumpyHelpers}, \hyperpage{20}
+  \item {part\_cols}
+    \subitem {read\_multiport}, \hyperpage{27}
+  \item {part\_rows}
+    \subitem {read\_multiport}, \hyperpage{27}
+  \item {parts}
+    \subitem {read\_multiport}, \hyperpage{27}
+  \item {parts\_data}
+    \subitem {read\_multiport}, \hyperpage{27}
+  \item {path}
+    \subitem {aare.File.File}, \hyperpage{44}
+  \item {peripheral\_labeled\_}
+    \subitem {aare::ClusterFinder$<$ T $>$}, \hyperpage{37}
+  \item {peripheralThresholdFactor\_}
+    \subitem {aare::ClusterFinder$<$ T $>$}, \hyperpage{37}
+  \item {pfunc}
+    \subitem {aare::SubFile}, \hyperpage{111}
+  \item {pixels}
+    \subitem {aare::File}, \hyperpage{42}
+    \subitem {aare::FileInterface}, \hyperpage{49}
+    \subitem {aare::NumpyFile}, \hyperpage{85}
+    \subitem {aare::RawFile}, \hyperpage{101}
+  \item {pixels\_per\_part}
+    \subitem {aare::SubFile}, \hyperpage{112}
+  \item {pop\_free}
+    \subitem {aare::CircularFifo$<$ ItemType $>$}, \hyperpage{31}
+  \item {pop\_value}
+    \subitem {aare::CircularFifo$<$ ItemType $>$}, \hyperpage{31}
+  \item {popFront}
+    \subitem {folly::ProducerConsumerQueue$<$ T $>$}, \hyperpage{93}
+  \item {positions}
+    \subitem {aare::RawFile}, \hyperpage{106}
+  \item {Print}
+    \subitem {aare::NDArray$<$ T, Ndim $>$}, \hyperpage{71}
+  \item {Print\_all}
+    \subitem {aare::NDArray$<$ T, Ndim $>$}, \hyperpage{71}
+  \item {print\_connections}
+    \subitem {aare::ClusterFinder$<$ T $>$}, \hyperpage{34}
+  \item {Print\_some}
+    \subitem {aare::NDArray$<$ T, Ndim $>$}, \hyperpage{71}
+  \item {ProducerConsumerQueue}
+    \subitem {folly::ProducerConsumerQueue$<$ T $>$}, \hyperpage{92}
+  \item {ProducerConsumerQueue.hpp}
+    \subitem {hardware\_destructive\_interference\_size}, 
+		\hyperpage{148}
+  \item {ProducerConsumerQueue.test.cpp}
+    \subitem {TEST\_CASE}, \hyperpage{164}
+  \item {progress}
+    \subitem {aare::ZmqHeader}, \hyperpage{121}
+  \item {push\_free}
+    \subitem {aare::CircularFifo$<$ ItemType $>$}, \hyperpage{31}
+  \item {push\_value}
+    \subitem {aare::CircularFifo$<$ ItemType $>$}, \hyperpage{31}
+  \item {PYBIND11\_MODULE}
+    \subitem {bindings.cpp}, \hyperpage{195}
+  \item {python/aare/\_\_init\_\_.py}, \hyperpage{194}
+  \item {python/aare/File.py}, \hyperpage{194}
+  \item {python/aare/Frame.py}, \hyperpage{194}
+  \item {python/example/\_\_init\_\_.py}, \hyperpage{194}
+  \item {python/example/read\_frame.py}, \hyperpage{165}
+  \item {python/src/bindings.cpp}, \hyperpage{194}
+
+  \indexspace
+
+  \item {quad}
+    \subitem {aare::RawFile}, \hyperpage{106}
+    \subitem {aare::ZmqHeader}, \hyperpage{121}
+
+  \indexspace
+
+  \item {raw\_example.cpp}
+    \subitem {AARE\_ROOT\_DIR\_VAR}, \hyperpage{171}
+    \subitem {main}, \hyperpage{171}
+    \subitem {test}, \hyperpage{171}
+  \item {RawFile}
+    \subitem {aare::RawFile}, \hyperpage{97}
+  \item {RawFile.cpp}
+    \subitem {json}, \hyperpage{183}
+  \item {RawFile.test.cpp}
+    \subitem {TEST\_CASE}, \hyperpage{186}
+  \item {read}
+    \subitem {aare::File}, \hyperpage{42}
+    \subitem {aare::FileInterface}, \hyperpage{49, 50}
+    \subitem {aare::NumpyFile}, \hyperpage{85}
+    \subitem {aare::RawFile}, \hyperpage{101, 102}
+    \subitem {folly::ProducerConsumerQueue$<$ T $>$}, \hyperpage{93}
+  \item {read\_first\_frame\_number}, \hyperpage{23}
+    \subitem {frame\_number}, \hyperpage{23}
+    \subitem {header\_dt}, \hyperpage{23}
+  \item {read\_frame}, \hyperpage{24}
+    \subitem {cols}, \hyperpage{24}
+    \subitem {count}, \hyperpage{24}
+    \subitem {data}, \hyperpage{24}
+    \subitem {dtype}, \hyperpage{24}
+    \subitem {f}, \hyperpage{24}
+    \subitem {file\_name}, \hyperpage{24}
+    \subitem {frames}, \hyperpage{24}
+    \subitem {header}, \hyperpage{24}
+    \subitem {header\_dt}, \hyperpage{25}
+    \subitem {rows}, \hyperpage{25}
+    \subitem {uint16}, \hyperpage{25}
+  \item {read\_header}
+    \subitem {aare::RawFile}, \hyperpage{102}
+  \item {read\_impl}
+    \subitem {aare::SubFile}, \hyperpage{114}
+  \item {read\_impl\_flip}
+    \subitem {aare::SubFile}, \hyperpage{112}
+  \item {read\_impl\_map}
+    \subitem {aare::SubFile}, \hyperpage{114}
+  \item {read\_impl\_normal}
+    \subitem {aare::SubFile}, \hyperpage{113}
+  \item {read\_impl\_reorder}
+    \subitem {aare::SubFile}, \hyperpage{113}
+  \item {read\_into}
+    \subitem {aare::File}, \hyperpage{42}
+    \subitem {aare::FileInterface}, \hyperpage{50, 51}
+    \subitem {aare::NumpyFile}, \hyperpage{86}
+    \subitem {aare::RawFile}, \hyperpage{102, 103}
+  \item {read\_multiport}, \hyperpage{25}
+    \subitem {axis}, \hyperpage{26}
+    \subitem {count}, \hyperpage{26}
+    \subitem {data}, \hyperpage{26}
+    \subitem {dtype}, \hyperpage{26}
+    \subitem {f}, \hyperpage{26}
+    \subitem {file\_name}, \hyperpage{26}
+    \subitem {frame\_cols}, \hyperpage{26}
+    \subitem {frame\_rows}, \hyperpage{26}
+    \subitem {frames}, \hyperpage{26}
+    \subitem {header}, \hyperpage{26}
+    \subitem {header\_dt}, \hyperpage{26}
+    \subitem {part\_cols}, \hyperpage{27}
+    \subitem {part\_rows}, \hyperpage{27}
+    \subitem {parts}, \hyperpage{27}
+    \subitem {parts\_data}, \hyperpage{27}
+    \subitem {uint16}, \hyperpage{27}
+  \item {readIndex\_}
+    \subitem {folly::ProducerConsumerQueue$<$ T $>$}, \hyperpage{94}
+  \item {README.md}, \hyperpage{195}
+  \item {rec\_FillHit}
+    \subitem {aare::ClusterFinder$<$ T $>$}, \hyperpage{35}
+  \item {receive\_data}
+    \subitem {aare::ZmqSocketReceiver}, \hyperpage{126}
+  \item {receive\_header}
+    \subitem {aare::ZmqSocketReceiver}, \hyperpage{126}
+  \item {receive\_n}
+    \subitem {aare::ZmqSocketReceiver}, \hyperpage{126}
+  \item {receive\_zmqframe}
+    \subitem {aare::ZmqSocketReceiver}, \hyperpage{127}
+  \item {records\_}
+    \subitem {folly::ProducerConsumerQueue$<$ T $>$}, \hyperpage{94}
+  \item {reserved}
+    \subitem {aare::ClusterFinder$<$ T $>$::Hit}, \hyperpage{59}
+    \subitem {aare::sls\_detector\_header}, \hyperpage{109}
+  \item {reset}
+    \subitem {aare::NDArray$<$ T, Ndim $>$}, \hyperpage{71}
+  \item {root\_dir}
+    \subitem {example.read\_frame}, \hyperpage{23}
+  \item {roundRNumber}
+    \subitem {aare::sls\_detector\_header}, \hyperpage{109}
+  \item {row}
+    \subitem {aare::ClusterFinder$<$ T $>$::Hit}, \hyperpage{59}
+    \subitem {aare::sls\_detector\_header}, \hyperpage{109}
+    \subitem {aare::xy}, \hyperpage{116}
+    \subitem {aare::ZmqHeader}, \hyperpage{121}
+  \item {rows}
+    \subitem {aare::ClusterFinder$<$ T $>$::Hit}, \hyperpage{59}
+    \subitem {aare::File}, \hyperpage{43}
+    \subitem {aare::FileConfig}, \hyperpage{46}
+    \subitem {aare::FileInterface}, \hyperpage{51}
+    \subitem {aare::Frame}, \hyperpage{56}
+    \subitem {aare::NumpyFile}, \hyperpage{86}
+    \subitem {aare::RawFile}, \hyperpage{103}
+    \subitem {read\_frame}, \hyperpage{25}
+  \item {rx\_roi}
+    \subitem {aare::ZmqHeader}, \hyperpage{121}
+
+  \indexspace
+
+  \item {save}
+    \subitem {aare}, \hyperpage{15}
+  \item {second\_pass}
+    \subitem {aare::ClusterFinder$<$ T $>$}, \hyperpage{35}
+  \item {seek}
+    \subitem {aare::File}, \hyperpage{43}
+    \subitem {aare::FileInterface}, \hyperpage{51}
+    \subitem {aare::NumpyFile}, \hyperpage{86}
+    \subitem {aare::RawFile}, \hyperpage{103}
+  \item {send}
+    \subitem {aare::ZmqSocketSender}, \hyperpage{129, 130}
+  \item {set}
+    \subitem {aare::Frame}, \hyperpage{56}
+  \item {set\_config}
+    \subitem {aare::RawFile}, \hyperpage{104}
+  \item {set\_noiseMap}
+    \subitem {aare::ClusterFinder$<$ T $>$}, \hyperpage{35}
+  \item {set\_output\_file}
+    \subitem {aare::logger}, \hyperpage{18}
+    \subitem {aare::logger::Logger}, \hyperpage{61}
+  \item {set\_peripheralThresholdFactor}
+    \subitem {aare::ClusterFinder$<$ T $>$}, \hyperpage{35}
+  \item {set\_potential\_frame\_size}
+    \subitem {aare::ZmqSocket}, \hyperpage{123}
+    \subitem {aare::ZmqSocketReceiver}, \hyperpage{127}
+    \subitem {aare::ZmqSocketSender}, \hyperpage{130}
+  \item {set\_streams}
+    \subitem {aare::logger}, \hyperpage{18}
+    \subitem {aare::logger::Logger}, \hyperpage{61, 62}
+  \item {set\_timeout\_ms}
+    \subitem {aare::ZmqSocket}, \hyperpage{123}
+    \subitem {aare::ZmqSocketReceiver}, \hyperpage{127}
+    \subitem {aare::ZmqSocketSender}, \hyperpage{130}
+  \item {set\_verbosity}
+    \subitem {aare::logger}, \hyperpage{18}
+    \subitem {aare::logger::Logger}, \hyperpage{62}
+  \item {set\_zmq\_hwm}
+    \subitem {aare::ZmqSocket}, \hyperpage{123}
+    \subitem {aare::ZmqSocketReceiver}, \hyperpage{127}
+    \subitem {aare::ZmqSocketSender}, \hyperpage{131}
+  \item {Shape}
+    \subitem {aare}, \hyperpage{13}
+  \item {shape}
+    \subitem {aare::NDArray$<$ T, Ndim $>$}, \hyperpage{72}
+    \subitem {aare::NDView$<$ T, Ndim $>$}, \hyperpage{77}
+    \subitem {aare::NumpyFile}, \hyperpage{87}
+    \subitem {aare::NumpyHeader}, \hyperpage{91}
+  \item {shape\_}
+    \subitem {aare::ClusterFinder$<$ T $>$}, \hyperpage{37}
+    \subitem {aare::NDArray$<$ T, Ndim $>$}, \hyperpage{73}
+    \subitem {aare::NDView$<$ T, Ndim $>$}, \hyperpage{78}
+  \item {shape\_t}
+    \subitem {aare}, \hyperpage{13}
+  \item {simdjson}, \hyperpage{27}
+  \item {single\_pass}
+    \subitem {aare::ClusterFinder$<$ T $>$}, \hyperpage{35}
+  \item {size}
+    \subitem {aare::ClusterFinder$<$ T $>$::Hit}, \hyperpage{59}
+    \subitem {aare::Frame}, \hyperpage{56}
+    \subitem {aare::NDArray$<$ T, Ndim $>$}, \hyperpage{72}
+    \subitem {aare::NDView$<$ T, Ndim $>$}, \hyperpage{78}
+  \item {size\_}
+    \subitem {aare::NDArray$<$ T, Ndim $>$}, \hyperpage{73}
+    \subitem {aare::NDView$<$ T, Ndim $>$}, \hyperpage{78}
+    \subitem {folly::ProducerConsumerQueue$<$ T $>$}, \hyperpage{94}
+  \item {sizeGuess}
+    \subitem {folly::ProducerConsumerQueue$<$ T $>$}, \hyperpage{93}
+  \item {span}
+    \subitem {aare::NDArray$<$ T, Ndim $>$}, \hyperpage{72}
+  \item {sqrt}
+    \subitem {aare::NDArray$<$ T, Ndim $>$}, \hyperpage{72}
+  \item {standard\_buf}
+    \subitem {aare::logger::Logger}, \hyperpage{62}
+  \item {standard\_output}
+    \subitem {aare::logger::Logger}, \hyperpage{62}
+  \item {steal\_hits}
+    \subitem {aare::ClusterFinder$<$ T $>$}, \hyperpage{35}
+  \item {store\_clusters}
+    \subitem {aare::ClusterFinder$<$ T $>$}, \hyperpage{35}
+  \item {str}
+    \subitem {aare::DType}, \hyperpage{39}
+  \item {strides}
+    \subitem {aare::NDArray$<$ T, Ndim $>$}, \hyperpage{72}
+  \item {strides\_}
+    \subitem {aare::NDArray$<$ T, Ndim $>$}, \hyperpage{73}
+    \subitem {aare::NDView$<$ T, Ndim $>$}, \hyperpage{78}
+  \item {StringTo}
+    \subitem {aare}, \hyperpage{15}
+  \item {SubFile}
+    \subitem {aare::SubFile}, \hyperpage{111}
+  \item {subfile\_cols}
+    \subitem {aare::RawFile}, \hyperpage{107}
+  \item {subfile\_rows}
+    \subitem {aare::RawFile}, \hyperpage{107}
+  \item {subfiles}
+    \subitem {aare::RawFile}, \hyperpage{107}
+
+  \indexspace
+
+  \item {tell}
+    \subitem {aare::File}, \hyperpage{43}
+    \subitem {aare::FileInterface}, \hyperpage{52}
+    \subitem {aare::NumpyFile}, \hyperpage{87}
+    \subitem {aare::RawFile}, \hyperpage{104}
+  \item {test}
+    \subitem {json\_example.cpp}, \hyperpage{167}
+    \subitem {multiport\_example.cpp}, \hyperpage{168}
+    \subitem {numpy\_read\_example.cpp}, \hyperpage{170}
+    \subitem {raw\_example.cpp}, \hyperpage{171}
+  \item {test.cpp}
+    \subitem {TEST\_CASE}, \hyperpage{195}
+  \item {test1}
+    \subitem {mythen\_example.cpp}, \hyperpage{169}
+  \item {test2}
+    \subitem {mythen\_example.cpp}, \hyperpage{169}
+  \item {TEST\_CASE}
+    \subitem {CircularFifo.test.cpp}, \hyperpage{157}
+    \subitem {defs.test.cpp}, \hyperpage{158}
+    \subitem {DType.test.cpp}, \hyperpage{158, 159}
+    \subitem {Frame.test.cpp}, \hyperpage{159}
+    \subitem {NDArray.test.cpp}, \hyperpage{160, 161}
+    \subitem {NDView.test.cpp}, \hyperpage{162, 163}
+    \subitem {NumpyFile.test.cpp}, \hyperpage{184}
+    \subitem {NumpyHelpers.test.cpp}, \hyperpage{184, 185}
+    \subitem {ProducerConsumerQueue.test.cpp}, \hyperpage{164}
+    \subitem {RawFile.test.cpp}, \hyperpage{186}
+    \subitem {test.cpp}, \hyperpage{195}
+    \subitem {wrappers.test.cpp}, \hyperpage{164, 165}
+    \subitem {ZmqHeader.test.cpp}, \hyperpage{193}
+  \item {tests/test.cpp}, \hyperpage{195}
+  \item {threshold\_}
+    \subitem {aare::ClusterFinder$<$ T $>$}, \hyperpage{37}
+  \item {timestamp}
+    \subitem {aare::sls\_detector\_header}, \hyperpage{110}
+    \subitem {aare::ZmqHeader}, \hyperpage{121}
+  \item {timing\_mode}
+    \subitem {aare::RawFile}, \hyperpage{107}
+  \item {TimingMode}
+    \subitem {aare}, \hyperpage{14}
+  \item {to\_string}
+    \subitem {aare::NumpyHeader}, \hyperpage{90}
+    \subitem {aare::ZmqHeader}, \hyperpage{118}
+  \item {toString}
+    \subitem {aare}, \hyperpage{16}
+  \item {total\_bytes}
+    \subitem {aare::NDArray$<$ T, Ndim $>$}, \hyperpage{72}
+  \item {total\_clusters}
+    \subitem {aare::ClusterFinder$<$ T $>$}, \hyperpage{35}
+  \item {total\_frames}
+    \subitem {aare::File}, \hyperpage{43}
+    \subitem {aare::FileInterface}, \hyperpage{52}
+    \subitem {aare::NumpyFile}, \hyperpage{87}
+    \subitem {aare::RawFile}, \hyperpage{104}
+  \item {Trigger}
+    \subitem {aare}, \hyperpage{14}
+  \item {trim}
+    \subitem {aare::NumpyHelpers}, \hyperpage{21}
+  \item {try\_pop\_free}
+    \subitem {aare::CircularFifo$<$ ItemType $>$}, \hyperpage{31}
+  \item {try\_push\_free}
+    \subitem {aare::CircularFifo$<$ ItemType $>$}, \hyperpage{31}
+  \item {try\_push\_value}
+    \subitem {aare::CircularFifo$<$ ItemType $>$}, \hyperpage{32}
+  \item {TypeIndex}
+    \subitem {aare::DType}, \hyperpage{38}
+
+  \indexspace
+
+  \item {UINT16}
+    \subitem {aare::DType}, \hyperpage{38}
+  \item {uint16}
+    \subitem {read\_frame}, \hyperpage{25}
+    \subitem {read\_multiport}, \hyperpage{27}
+  \item {UINT32}
+    \subitem {aare::DType}, \hyperpage{38}
+  \item {UINT64}
+    \subitem {aare::DType}, \hyperpage{38}
+  \item {UINT8}
+    \subitem {aare::DType}, \hyperpage{38}
+  \item {use\_noise\_map}
+    \subitem {aare::ClusterFinder$<$ T $>$}, \hyperpage{37}
+  \item {utils/include/aare/utils/logger.hpp}, \hyperpage{195}, 
+		\hyperpage{197}
+  \item {utils/src/logger.cpp}, \hyperpage{199}
+  \item {utils/test/logger.test.cpp}, \hyperpage{200}
+
+  \indexspace
+
+  \item {value}
+    \subitem {aare::NDArray$<$ T, Ndim $>$}, \hyperpage{72}
+    \subitem {MoveOnlyInt}, \hyperpage{64}
+  \item {value\_type}
+    \subitem {aare::CircularFifo$<$ ItemType $>$}, \hyperpage{30}
+    \subitem {aare::NDArray$<$ T, Ndim $>$}, \hyperpage{66}
+    \subitem {folly::ProducerConsumerQueue$<$ T $>$}, \hyperpage{92}
+  \item {VariableSizeClusterFinder.hpp}
+    \subitem {MAX\_CLUSTER\_SIZE}, \hyperpage{151}
+  \item {VERBOSITY\_LEVEL}
+    \subitem {aare::logger::Logger}, \hyperpage{62}
+  \item {version}
+    \subitem {aare::FileInterface}, \hyperpage{54}
+    \subitem {aare::NumpyFile}, \hyperpage{90}
+    \subitem {aare::RawFile}, \hyperpage{107}
+    \subitem {aare::sls\_detector\_header}, \hyperpage{110}
+    \subitem {aare::ZmqHeader}, \hyperpage{121}
+  \item {view}
+    \subitem {aare::Frame}, \hyperpage{56}
+
+  \indexspace
+
+  \item {warn}
+    \subitem {aare::logger}, \hyperpage{18}
+    \subitem {aare::logger::Logger}, \hyperpage{62}
+  \item {WARNING}
+    \subitem {aare::logger}, \hyperpage{17}
+  \item {what}
+    \subitem {aare::network\_io::NetworkError}, \hyperpage{79}
+  \item {wrappers.test.cpp}
+    \subitem {TEST\_CASE}, \hyperpage{164, 165}
+  \item {write}
+    \subitem {aare::File}, \hyperpage{43}
+    \subitem {aare::FileInterface}, \hyperpage{52}
+    \subitem {aare::NumpyFile}, \hyperpage{87}
+    \subitem {aare::RawFile}, \hyperpage{104}
+    \subitem {folly::ProducerConsumerQueue$<$ T $>$}, \hyperpage{93}
+  \item {write\_array}
+    \subitem {ZmqHeader.cpp}, \hyperpage{191}
+  \item {write\_boolean}
+    \subitem {aare::NumpyHelpers}, \hyperpage{21}
+  \item {write\_digit}
+    \subitem {ZmqHeader.cpp}, \hyperpage{191}
+  \item {write\_header}
+    \subitem {aare::NumpyHelpers}, \hyperpage{21}
+  \item {write\_header\_dict}
+    \subitem {aare::NumpyHelpers}, \hyperpage{21}
+  \item {write\_magic}
+    \subitem {aare::NumpyHelpers}, \hyperpage{21}
+  \item {write\_map}
+    \subitem {ZmqHeader.cpp}, \hyperpage{192}
+  \item {write\_str}
+    \subitem {ZmqHeader.cpp}, \hyperpage{192}
+  \item {write\_test\_files}, \hyperpage{27}
+    \subitem {arr}, \hyperpage{28}
+    \subitem {arr2}, \hyperpage{28}
+  \item {write\_tuple}
+    \subitem {aare::NumpyHelpers}, \hyperpage{21}
+  \item {writeIndex\_}
+    \subitem {folly::ProducerConsumerQueue$<$ T $>$}, \hyperpage{94}
+
+  \indexspace
+
+  \item {zmq\_receiver\_example.cpp}
+    \subitem {main}, \hyperpage{172}
+  \item {zmq\_restream\_example.cpp}
+    \subitem {main}, \hyperpage{172}
+  \item {zmq\_sender\_example.cpp}
+    \subitem {main}, \hyperpage{173}
+  \item {ZmqHeader.cpp}
+    \subitem {write\_array}, \hyperpage{191}
+    \subitem {write\_digit}, \hyperpage{191}
+    \subitem {write\_map}, \hyperpage{192}
+    \subitem {write\_str}, \hyperpage{192}
+  \item {ZmqHeader.test.cpp}
+    \subitem {TEST\_CASE}, \hyperpage{193}
+  \item {ZmqSocket}
+    \subitem {aare::ZmqSocket}, \hyperpage{123}
+  \item {ZmqSocketReceiver}
+    \subitem {aare::ZmqSocketReceiver}, \hyperpage{126}
+  \item {ZmqSocketSender}
+    \subitem {aare::ZmqSocketSender}, \hyperpage{129}
+
+\end{theindex}

@@ -1,0 +1,81 @@
+\doxysection{Frame.\+hpp}
+\hypertarget{Frame_8hpp_source}{}\label{Frame_8hpp_source}\index{core/include/aare/core/Frame.hpp@{core/include/aare/core/Frame.hpp}}
+\mbox{\hyperlink{Frame_8hpp}{Go to the documentation of this file.}}
+\begin{DoxyCode}{0}
+\DoxyCodeLine{00001\ \textcolor{preprocessor}{\#pragma\ once}}
+\DoxyCodeLine{00002\ \textcolor{preprocessor}{\#include\ "{}\mbox{\hyperlink{NDArray_8hpp}{aare/core/NDArray.hpp}}"{}}}
+\DoxyCodeLine{00003\ \textcolor{preprocessor}{\#include\ "{}\mbox{\hyperlink{core_2include_2aare_2core_2defs_8hpp}{aare/core/defs.hpp}}"{}}}
+\DoxyCodeLine{00004\ \textcolor{preprocessor}{\#include\ <cstddef>}}
+\DoxyCodeLine{00005\ \textcolor{preprocessor}{\#include\ <cstdint>}}
+\DoxyCodeLine{00006\ \textcolor{preprocessor}{\#include\ <memory>}}
+\DoxyCodeLine{00007\ \textcolor{preprocessor}{\#include\ <sys/types.h>}}
+\DoxyCodeLine{00008\ \textcolor{preprocessor}{\#include\ <vector>}}
+\DoxyCodeLine{00009\ }
+\DoxyCodeLine{00016\ \textcolor{keyword}{namespace\ }\mbox{\hyperlink{namespaceaare}{aare}}\ \{}
+\DoxyCodeLine{00017\ }
+\DoxyCodeLine{00018\ \textcolor{keyword}{class\ }\mbox{\hyperlink{classaare_1_1Frame}{Frame}}\ \{}
+\DoxyCodeLine{00019\ \ \ \ \ ssize\_t\ \mbox{\hyperlink{classaare_1_1Frame_a21c0feaf422c4ffdd479328f2fdaefec}{m\_rows}};}
+\DoxyCodeLine{00020\ \ \ \ \ ssize\_t\ \mbox{\hyperlink{classaare_1_1Frame_a3edb3a0e0ed32c3837ad5ad95e537aed}{m\_cols}};}
+\DoxyCodeLine{00021\ \ \ \ \ ssize\_t\ \mbox{\hyperlink{classaare_1_1Frame_a17ccc92b87bc2b4c3d3a500759269cab}{m\_bitdepth}};}
+\DoxyCodeLine{00022\ \ \ \ \ std::byte\ *\mbox{\hyperlink{classaare_1_1Frame_afa6172a742a35734ad5148786697d197}{m\_data}};}
+\DoxyCodeLine{00023\ }
+\DoxyCodeLine{00024\ \ \ \textcolor{keyword}{public}:}
+\DoxyCodeLine{00025\ \ \ \ \ \mbox{\hyperlink{classaare_1_1Frame}{Frame}}(ssize\_t\ rows,\ ssize\_t\ cols,\ ssize\_t\ m\_bitdepth);}
+\DoxyCodeLine{00026\ \ \ \ \ \mbox{\hyperlink{classaare_1_1Frame}{Frame}}(std::byte\ *fp,\ ssize\_t\ rows,\ ssize\_t\ cols,\ ssize\_t\ m\_bitdepth);}
+\DoxyCodeLine{00027\ \ \ \ \ std::byte\ *\mbox{\hyperlink{classaare_1_1Frame_a6ace52fdcdf3d87921c1a56ca1781f32}{get}}(\textcolor{keywordtype}{int}\ row,\ \textcolor{keywordtype}{int}\ col);}
+\DoxyCodeLine{00028\ }
+\DoxyCodeLine{00029\ \ \ \ \ \textcolor{comment}{//\ TODO!\ can\ we,\ or\ even\ want\ to\ remove\ the\ template?}}
+\DoxyCodeLine{00030\ \ \ \ \ \textcolor{keyword}{template}\ <\textcolor{keyword}{typename}\ T>\ \textcolor{keywordtype}{void}\ \mbox{\hyperlink{classaare_1_1Frame_addd6b73bbb426aafe834e261360eb2d8}{set}}(\textcolor{keywordtype}{int}\ row,\ \textcolor{keywordtype}{int}\ col,\ T\ data)\ \{}
+\DoxyCodeLine{00031\ \ \ \ \ \ \ \ \ assert(\textcolor{keyword}{sizeof}(T)\ ==\ m\_bitdepth\ /\ 8);}
+\DoxyCodeLine{00032\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{if}\ (row\ <\ 0\ ||\ row\ >=\ m\_rows\ ||\ col\ <\ 0\ ||\ col\ >=\ m\_cols)\ \{}
+\DoxyCodeLine{00033\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{throw}\ std::out\_of\_range(\textcolor{stringliteral}{"{}Invalid\ row\ or\ column\ index"{}});}
+\DoxyCodeLine{00034\ \ \ \ \ \ \ \ \ \}}
+\DoxyCodeLine{00035\ \ \ \ \ \ \ \ \ std::memcpy(m\_data\ +\ (row\ *\ m\_cols\ +\ col)\ *\ (m\_bitdepth\ /\ 8),\ \&data,\ m\_bitdepth\ /\ 8);}
+\DoxyCodeLine{00036\ \ \ \ \ \}}
+\DoxyCodeLine{00037\ }
+\DoxyCodeLine{00038\ \ \ \ \ ssize\_t\ \mbox{\hyperlink{classaare_1_1Frame_a5cc556f6b13efb17b3635adb436d816c}{rows}}()\textcolor{keyword}{\ const\ }\{\ \textcolor{keywordflow}{return}\ m\_rows;\ \}}
+\DoxyCodeLine{00039\ \ \ \ \ ssize\_t\ \mbox{\hyperlink{classaare_1_1Frame_a658566623e47c1fa88a08f5e8fe1957f}{cols}}()\textcolor{keyword}{\ const\ }\{\ \textcolor{keywordflow}{return}\ m\_cols;\ \}}
+\DoxyCodeLine{00040\ \ \ \ \ ssize\_t\ \mbox{\hyperlink{classaare_1_1Frame_ae1fbb96ec971ddcd76ecf3cd91dc5890}{bitdepth}}()\textcolor{keyword}{\ const\ }\{\ \textcolor{keywordflow}{return}\ m\_bitdepth;\ \}}
+\DoxyCodeLine{00041\ \ \ \ \ ssize\_t\ \mbox{\hyperlink{classaare_1_1Frame_a094683d38cac2461c18ed7cc776221c2}{size}}()\textcolor{keyword}{\ const\ }\{\ \textcolor{keywordflow}{return}\ m\_rows\ *\ m\_cols\ *\ m\_bitdepth\ /\ 8;\ \}}
+\DoxyCodeLine{00042\ \ \ \ \ std::byte\ *\mbox{\hyperlink{classaare_1_1Frame_a635a1ff8db457c20fcbc2b2b5601bc1d}{data}}()\textcolor{keyword}{\ const\ }\{\ \textcolor{keywordflow}{return}\ m\_data;\ \}}
+\DoxyCodeLine{00043\ }
+\DoxyCodeLine{00044\ \ \ \ \ \mbox{\hyperlink{classaare_1_1Frame}{Frame}}\ \&\mbox{\hyperlink{classaare_1_1Frame_ad153902f7332be45aa5441196c3aad64}{operator=}}(\mbox{\hyperlink{classaare_1_1Frame}{Frame}}\ \&other)\ \{}
+\DoxyCodeLine{00045\ \ \ \ \ \ \ \ \ m\_rows\ =\ other.\mbox{\hyperlink{classaare_1_1Frame_a5cc556f6b13efb17b3635adb436d816c}{rows}}();}
+\DoxyCodeLine{00046\ \ \ \ \ \ \ \ \ m\_cols\ =\ other.\mbox{\hyperlink{classaare_1_1Frame_a658566623e47c1fa88a08f5e8fe1957f}{cols}}();}
+\DoxyCodeLine{00047\ \ \ \ \ \ \ \ \ m\_bitdepth\ =\ other.\mbox{\hyperlink{classaare_1_1Frame_ae1fbb96ec971ddcd76ecf3cd91dc5890}{bitdepth}}();}
+\DoxyCodeLine{00048\ \ \ \ \ \ \ \ \ m\_data\ =\ \textcolor{keyword}{new}\ std::byte[m\_rows\ *\ m\_cols\ *\ m\_bitdepth\ /\ 8];}
+\DoxyCodeLine{00049\ \ \ \ \ \ \ \ \ std::memcpy(m\_data,\ other.\mbox{\hyperlink{classaare_1_1Frame_afa6172a742a35734ad5148786697d197}{m\_data}},\ m\_rows\ *\ m\_cols\ *\ m\_bitdepth\ /\ 8);}
+\DoxyCodeLine{00050\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{return}\ *\textcolor{keyword}{this};}
+\DoxyCodeLine{00051\ \ \ \ \ \}}
+\DoxyCodeLine{00052\ \ \ \ \ \textcolor{comment}{//\ add\ move\ constructor}}
+\DoxyCodeLine{00053\ \ \ \ \ \mbox{\hyperlink{classaare_1_1Frame_a2986002a7d6c161dcc592cea1162a5bb}{Frame}}(\mbox{\hyperlink{classaare_1_1Frame}{Frame}}\ \&\&other)\ \{}
+\DoxyCodeLine{00054\ \ \ \ \ \ \ \ \ m\_rows\ =\ other.rows();}
+\DoxyCodeLine{00055\ \ \ \ \ \ \ \ \ m\_cols\ =\ other.cols();}
+\DoxyCodeLine{00056\ \ \ \ \ \ \ \ \ m\_bitdepth\ =\ other.bitdepth();}
+\DoxyCodeLine{00057\ \ \ \ \ \ \ \ \ m\_data\ =\ other.m\_data;}
+\DoxyCodeLine{00058\ \ \ \ \ \ \ \ \ other.m\_data\ =\ \textcolor{keyword}{nullptr};}
+\DoxyCodeLine{00059\ \ \ \ \ \ \ \ \ other.m\_rows\ =\ other.m\_cols\ =\ other.m\_bitdepth\ =\ 0;}
+\DoxyCodeLine{00060\ \ \ \ \ \}}
+\DoxyCodeLine{00061\ \ \ \ \ \textcolor{comment}{//\ copy\ constructor}}
+\DoxyCodeLine{00062\ \ \ \ \ \mbox{\hyperlink{classaare_1_1Frame_a82f7c09b244a295e2cc13e199a198448}{Frame}}(\textcolor{keyword}{const}\ \mbox{\hyperlink{classaare_1_1Frame}{Frame}}\ \&other)\ \{}
+\DoxyCodeLine{00063\ \ \ \ \ \ \ \ \ m\_rows\ =\ other.\mbox{\hyperlink{classaare_1_1Frame_a5cc556f6b13efb17b3635adb436d816c}{rows}}();}
+\DoxyCodeLine{00064\ \ \ \ \ \ \ \ \ m\_cols\ =\ other.\mbox{\hyperlink{classaare_1_1Frame_a658566623e47c1fa88a08f5e8fe1957f}{cols}}();}
+\DoxyCodeLine{00065\ \ \ \ \ \ \ \ \ m\_bitdepth\ =\ other.\mbox{\hyperlink{classaare_1_1Frame_ae1fbb96ec971ddcd76ecf3cd91dc5890}{bitdepth}}();}
+\DoxyCodeLine{00066\ \ \ \ \ \ \ \ \ m\_data\ =\ \textcolor{keyword}{new}\ std::byte[m\_rows\ *\ m\_cols\ *\ m\_bitdepth\ /\ 8];}
+\DoxyCodeLine{00067\ \ \ \ \ \ \ \ \ std::memcpy(m\_data,\ other.\mbox{\hyperlink{classaare_1_1Frame_afa6172a742a35734ad5148786697d197}{m\_data}},\ m\_rows\ *\ m\_cols\ *\ m\_bitdepth\ /\ 8);}
+\DoxyCodeLine{00068\ \ \ \ \ \}}
+\DoxyCodeLine{00069\ }
+\DoxyCodeLine{00070\ \ \ \ \ \textcolor{keyword}{template}\ <\textcolor{keyword}{typename}\ T>\ \mbox{\hyperlink{classaare_1_1NDView}{NDView<T>}}\ \mbox{\hyperlink{classaare_1_1Frame_af6fbc8eaa1f00062431edf118caebe0f}{view}}()\ \{}
+\DoxyCodeLine{00071\ \ \ \ \ \ \ \ \ std::vector<ssize\_t>\ shape\ =\ \{m\_rows,\ m\_cols\};}
+\DoxyCodeLine{00072\ \ \ \ \ \ \ \ \ T\ *\mbox{\hyperlink{classaare_1_1Frame_a635a1ff8db457c20fcbc2b2b5601bc1d}{data}}\ =\ \textcolor{keyword}{reinterpret\_cast<}T\ *\textcolor{keyword}{>}(m\_data);}
+\DoxyCodeLine{00073\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{return}\ \mbox{\hyperlink{classaare_1_1NDView}{NDView<T>}}(data,\ shape);}
+\DoxyCodeLine{00074\ \ \ \ \ \}}
+\DoxyCodeLine{00075\ }
+\DoxyCodeLine{00076\ \ \ \ \ \textcolor{keyword}{template}\ <\textcolor{keyword}{typename}\ T>\ \mbox{\hyperlink{classaare_1_1NDArray}{NDArray<T>}}\ \mbox{\hyperlink{classaare_1_1Frame_aac3f666d8f5fdb30861459c2f639d40a}{image}}()\ \{\ \textcolor{keywordflow}{return}\ \mbox{\hyperlink{classaare_1_1NDArray}{NDArray<T>}}(this-\/>view<T>());\ \}}
+\DoxyCodeLine{00077\ }
+\DoxyCodeLine{00078\ \ \ \ \ \mbox{\hyperlink{classaare_1_1Frame_a6bd29a7d2219e3dde03d4c9bd4298c60}{\string~Frame}}()\ \{\ \textcolor{keyword}{delete}[]\ m\_data;\ \}}
+\DoxyCodeLine{00079\ \};}
+\DoxyCodeLine{00080\ }
+\DoxyCodeLine{00081\ \}\ \textcolor{comment}{//\ namespace\ aare}}
+
+\end{DoxyCode}

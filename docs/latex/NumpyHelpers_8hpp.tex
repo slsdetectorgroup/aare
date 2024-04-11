@@ -1,0 +1,63 @@
+\doxysection{file\+\_\+io/include/aare/file\+\_\+io/\+Numpy\+Helpers.hpp File Reference}
+\hypertarget{NumpyHelpers_8hpp}{}\label{NumpyHelpers_8hpp}\index{file\_io/include/aare/file\_io/NumpyHelpers.hpp@{file\_io/include/aare/file\_io/NumpyHelpers.hpp}}
+{\ttfamily \#include $<$algorithm$>$}\newline
+{\ttfamily \#include $<$array$>$}\newline
+{\ttfamily \#include $<$filesystem$>$}\newline
+{\ttfamily \#include $<$fstream$>$}\newline
+{\ttfamily \#include $<$iostream$>$}\newline
+{\ttfamily \#include $<$numeric$>$}\newline
+{\ttfamily \#include $<$sstream$>$}\newline
+{\ttfamily \#include $<$string$>$}\newline
+{\ttfamily \#include $<$unordered\+\_\+map$>$}\newline
+{\ttfamily \#include $<$vector$>$}\newline
+{\ttfamily \#include \"{}aare/core/\+DType.\+hpp\"{}}\newline
+{\ttfamily \#include \"{}aare/core/defs.\+hpp\"{}}\newline
+\doxysubsubsection*{Data Structures}
+\begin{DoxyCompactItemize}
+\item 
+struct \mbox{\hyperlink{structaare_1_1NumpyHeader}{aare\+::\+Numpy\+Header}}
+\end{DoxyCompactItemize}
+\doxysubsubsection*{Namespaces}
+\begin{DoxyCompactItemize}
+\item 
+namespace \mbox{\hyperlink{namespaceaare}{aare}}
+\begin{DoxyCompactList}\small\item\em \doxylink{classaare_1_1Frame}{Frame} class to represent a single frame of data model class should be able to work with streams coming from files or network. \end{DoxyCompactList}\item 
+namespace \mbox{\hyperlink{namespaceaare_1_1NumpyHelpers}{aare\+::\+Numpy\+Helpers}}
+\end{DoxyCompactItemize}
+\doxysubsubsection*{Typedefs}
+\begin{DoxyCompactItemize}
+\item 
+using \mbox{\hyperlink{namespaceaare_a7caab4efdc1e33ee28f8de9056bbec6c}{aare\+::shape\+\_\+t}} = std\+::vector$<$ size\+\_\+t $>$
+\end{DoxyCompactItemize}
+\doxysubsubsection*{Functions}
+\begin{DoxyCompactItemize}
+\item 
+std\+::string \mbox{\hyperlink{namespaceaare_1_1NumpyHelpers_ab7b89887eba4e7b8e6ab0d2d44551050}{aare\+::\+Numpy\+Helpers\+::parse\+\_\+str}} (const std\+::string \&in)
+\item 
+std\+::string \mbox{\hyperlink{namespaceaare_1_1NumpyHelpers_a3c864e2c24ee9158c9ead124049259f6}{aare\+::\+Numpy\+Helpers\+::trim}} (const std\+::string \&str)
+\item 
+std\+::vector$<$ std\+::string $>$ \mbox{\hyperlink{namespaceaare_1_1NumpyHelpers_a315ba7a4dd89b5098e9110566f08edcc}{aare\+::\+Numpy\+Helpers\+::parse\+\_\+tuple}} (std\+::string in)
+\item 
+bool \mbox{\hyperlink{namespaceaare_1_1NumpyHelpers_a3da52716c32667b0ff22719fbb2839b5}{aare\+::\+Numpy\+Helpers\+::parse\+\_\+bool}} (const std\+::string \&in)
+\item 
+std\+::string \mbox{\hyperlink{namespaceaare_1_1NumpyHelpers_a1acfb66f71009f5851109a5619b7754d}{aare\+::\+Numpy\+Helpers\+::get\+\_\+value\+\_\+from\+\_\+map}} (const std\+::string \&mapstr)
+\item 
+std\+::unordered\+\_\+map$<$ std\+::string, std\+::string $>$ \mbox{\hyperlink{namespaceaare_1_1NumpyHelpers_a612ac2a0ff0b43984c52ce029c117ba7}{aare\+::\+Numpy\+Helpers\+::parse\+\_\+dict}} (std\+::string in, const std\+::vector$<$ std\+::string $>$ \&keys)
+\item 
+{\footnotesize template$<$typename T , size\+\_\+t N$>$ }\\bool \mbox{\hyperlink{namespaceaare_1_1NumpyHelpers_ab6caf7f9849fab03a058c5e2ee823b39}{aare\+::\+Numpy\+Helpers\+::in\+\_\+array}} (T val, const std\+::array$<$ T, N $>$ \&arr)
+\item 
+bool \mbox{\hyperlink{namespaceaare_1_1NumpyHelpers_a28fa68ac0d5fb557251fa01325d4ccea}{aare\+::\+Numpy\+Helpers\+::is\+\_\+digits}} (const std\+::string \&str)
+\item 
+\mbox{\hyperlink{classaare_1_1DType}{aare\+::\+DType}} \mbox{\hyperlink{namespaceaare_1_1NumpyHelpers_a39261feb19103c64004ca045459da925}{aare\+::\+Numpy\+Helpers\+::parse\+\_\+descr}} (std\+::string typestring)
+\item 
+size\+\_\+t \mbox{\hyperlink{namespaceaare_1_1NumpyHelpers_a01a4b858752f6d232279b19968fb483b}{aare\+::\+Numpy\+Helpers\+::write\+\_\+header}} (std\+::filesystem\+::path fname, const \mbox{\hyperlink{structaare_1_1NumpyHeader}{Numpy\+Header}} \&header)
+\item 
+size\+\_\+t \mbox{\hyperlink{namespaceaare_1_1NumpyHelpers_a01b81d87c6a7e13417733e25997f38cf}{aare\+::\+Numpy\+Helpers\+::write\+\_\+header}} (std\+::ostream \&out, const \mbox{\hyperlink{structaare_1_1NumpyHeader}{Numpy\+Header}} \&header)
+\end{DoxyCompactItemize}
+\doxysubsubsection*{Variables}
+\begin{DoxyCompactItemize}
+\item 
+const constexpr std\+::array$<$ char, 6 $>$ \mbox{\hyperlink{namespaceaare_1_1NumpyHelpers_a6767da0d34b753d6f330ba33bbc0a1a8}{aare\+::\+Numpy\+Helpers\+::magic\+\_\+str}} \{\textquotesingle{}\textbackslash{}x93\textquotesingle{}, \textquotesingle{}N\textquotesingle{}, \textquotesingle{}U\textquotesingle{}, \textquotesingle{}M\textquotesingle{}, \textquotesingle{}P\textquotesingle{}, \textquotesingle{}Y\textquotesingle{}\}
+\item 
+const uint8\+\_\+t \mbox{\hyperlink{namespaceaare_1_1NumpyHelpers_aef6d0c7df7895501f385397d7d706dea}{aare\+::\+Numpy\+Helpers\+::magic\+\_\+string\+\_\+length}} \{6\}
+\end{DoxyCompactItemize}

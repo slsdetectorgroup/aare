@@ -1,0 +1,75 @@
+\chapter{aare}
+\hypertarget{index}{}\label{index}\index{aare@{aare}}
+\label{index_md_README}%
+\Hypertarget{index_md_README}%
+Data analysis library for PSI hybrid detectors\hypertarget{index_autotoc_md1}{}\doxysection{\texorpdfstring{Folder structure}{Folder structure}}\label{index_autotoc_md1}
+\tabulinesep=1mm
+\begin{longtabu}spread 0pt [c]{*{3}{|X[-1]}|}
+\hline
+\PBS\centering \cellcolor{\tableheadbgcolor}\textbf{ Folder   }&\PBS\centering \cellcolor{\tableheadbgcolor}\textbf{ subfolder   }&\PBS\centering \cellcolor{\tableheadbgcolor}\textbf{ Content    }\\\cline{1-3}
+\endfirsthead
+\hline
+\endfoot
+\hline
+\PBS\centering \cellcolor{\tableheadbgcolor}\textbf{ Folder   }&\PBS\centering \cellcolor{\tableheadbgcolor}\textbf{ subfolder   }&\PBS\centering \cellcolor{\tableheadbgcolor}\textbf{ Content    }\\\cline{1-3}
+\endhead
+include/   &aare/   &top level header/s    \\\cline{1-3}
+core/   &include/   &public headers for core    \\\cline{1-3}
+&src/   &source files and non public headers   \\\cline{1-3}
+\end{longtabu}
+\hypertarget{index_autotoc_md2}{}\doxysection{\texorpdfstring{file\+\_\+io class diagram}{file\_io class diagram}}\label{index_autotoc_md2}
+\hypertarget{index_autotoc_md3}{}\doxysection{\texorpdfstring{Test the zmq socket with a detector simulator}{Test the zmq socket with a detector simulator}}\label{index_autotoc_md3}
+{\bfseries{1. Download and build the sls\+Detector\+Package}}
+
+
+\begin{DoxyCode}{0}
+\DoxyCodeLine{git\ clone\ https://github.com/slsdetectorgroup/slsDetectorPackage.git\ -\/-\/branch=8.0.1\ \#or\ the\ desired\ branch}
+\DoxyCodeLine{cd\ slsDetectorPackage}
+\DoxyCodeLine{mkdir\ build\ \&\&\ cd\ build}
+\DoxyCodeLine{cmake\ ..\ -\/DSLS\_USE\_SIMULATOR=ON}
+\DoxyCodeLine{make\ -\/j8\ \#or\ your\ number\ of\ cores}
+
+\end{DoxyCode}
+
+
+{\bfseries{2. Launch the sls\+Receiver}} 
+\begin{DoxyCode}{0}
+\DoxyCodeLine{bin/slsReceiver}
+
+\end{DoxyCode}
+
+
+{\bfseries{3. Launch the virtual server}} 
+\begin{DoxyCode}{0}
+\DoxyCodeLine{bin/jungfrauDetectorServer\_virtual}
+
+\end{DoxyCode}
+
+
+{\bfseries{4 Configure the detector simulator}}
+
+
+\begin{DoxyCode}{0}
+\DoxyCodeLine{\#sample\ config\ file\ is\ in\ etc/\ in\ the\ aare\ repo}
+\DoxyCodeLine{sls\_detector\_put\ config\ etc/virtual\_jf.config}
+\DoxyCodeLine{}
+\DoxyCodeLine{\#Now\ you\ can\ take\ images\ using\ sls\_detector\_acquire}
+\DoxyCodeLine{sls\_detector\_acquire}
+
+\end{DoxyCode}
+
+
+{\bfseries{5. Run the zmq example}} 
+\begin{DoxyCode}{0}
+\DoxyCodeLine{examples/zmq\_example}
+\DoxyCodeLine{}
+\DoxyCodeLine{\#Will\ print\ the\ headers\ fof\ the\ frames\ received}
+
+\end{DoxyCode}
+\hypertarget{index_autotoc_md4}{}\doxysection{\texorpdfstring{Test the zmq processing replaying data}{Test the zmq processing replaying data}}\label{index_autotoc_md4}
+To be implemented\hypertarget{index_autotoc_md5}{}\doxysection{\texorpdfstring{generate documentation}{generate documentation}}\label{index_autotoc_md5}
+
+\begin{DoxyCode}{0}
+
+\end{DoxyCode}
+ 

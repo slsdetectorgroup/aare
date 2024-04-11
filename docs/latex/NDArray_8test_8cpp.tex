@@ -1,0 +1,123 @@
+\doxysection{core/test/\+NDArray.test.\+cpp File Reference}
+\hypertarget{NDArray_8test_8cpp}{}\label{NDArray_8test_8cpp}\index{core/test/NDArray.test.cpp@{core/test/NDArray.test.cpp}}
+{\ttfamily \#include \"{}aare/core/\+NDArray.\+hpp\"{}}\newline
+{\ttfamily \#include $<$array$>$}\newline
+{\ttfamily \#include $<$catch2/catch\+\_\+test\+\_\+macros.\+hpp$>$}\newline
+\doxysubsubsection*{Functions}
+\begin{DoxyCompactItemize}
+\item 
+\mbox{\hyperlink{NDArray_8test_8cpp_a706076cb6a6f8c87f13156d0e06f0560}{TEST\+\_\+\+CASE}} (\"{}Initial size is zero if no size is specified\"{})
+\item 
+\mbox{\hyperlink{NDArray_8test_8cpp_ae5d43750d6201bdb5aff783631ebfaf7}{TEST\+\_\+\+CASE}} (\"{}Construct from a Data\+Span\"{})
+\item 
+\mbox{\hyperlink{NDArray_8test_8cpp_a03f588d9d68e7e396b87b30ebff75887}{TEST\+\_\+\+CASE}} (\"{}1D image\"{})
+\item 
+\mbox{\hyperlink{NDArray_8test_8cpp_ae53f567850abf1db336976b253abcca2}{TEST\+\_\+\+CASE}} (\"{}Accessing a const object\"{})
+\item 
+\mbox{\hyperlink{NDArray_8test_8cpp_a304785e3d5c0d192b7f5356c4ca28f82}{TEST\+\_\+\+CASE}} (\"{}Indexing of a 2D image\"{})
+\item 
+\mbox{\hyperlink{NDArray_8test_8cpp_a42aac6c66ce7372f4fbeb23cdc01fba4}{TEST\+\_\+\+CASE}} (\"{}Indexing of a 3D image\"{})
+\item 
+\mbox{\hyperlink{NDArray_8test_8cpp_abaf3df3492fd29a369d1baf11e3bdbc5}{TEST\+\_\+\+CASE}} (\"{}Divide double by int\"{})
+\item 
+\mbox{\hyperlink{NDArray_8test_8cpp_a236a5e0031a7f8ed34071a4ee94024a9}{TEST\+\_\+\+CASE}} (\"{}Elementwise multiplication of 3D image\"{})
+\item 
+\mbox{\hyperlink{NDArray_8test_8cpp_ab22676de767d5f1ba3a09543bb66084c}{TEST\+\_\+\+CASE}} (\"{}Compare two images\"{})
+\item 
+\mbox{\hyperlink{NDArray_8test_8cpp_a64db248306777f6b2f7ef6a77ff77d6e}{TEST\+\_\+\+CASE}} (\"{}Size and shape matches\"{})
+\item 
+\mbox{\hyperlink{NDArray_8test_8cpp_aa5e54f6fe2b54a43194e05bebda0cb2c}{TEST\+\_\+\+CASE}} (\"{}Initial value matches for all elements\"{})
+\item 
+\mbox{\hyperlink{NDArray_8test_8cpp_aae2694bb812379ef93c7c07b5e3959b7}{TEST\+\_\+\+CASE}} (\"{}Data layout of 3D image, fast index last\"{})
+\item 
+\mbox{\hyperlink{NDArray_8test_8cpp_a717d9c9320722e455da5aa291d288865}{TEST\+\_\+\+CASE}} (\"{}Bitwise and on data\"{})
+\item 
+\mbox{\hyperlink{NDArray_8test_8cpp_a3a450e7f04b11cc5b32ce2135aa27123}{TEST\+\_\+\+CASE}} (\"{}Elementwise operatios on images\"{})
+\end{DoxyCompactItemize}
+
+
+\doxysubsection{Function Documentation}
+\Hypertarget{NDArray_8test_8cpp_a03f588d9d68e7e396b87b30ebff75887}\label{NDArray_8test_8cpp_a03f588d9d68e7e396b87b30ebff75887} 
+\index{NDArray.test.cpp@{NDArray.test.cpp}!TEST\_CASE@{TEST\_CASE}}
+\index{TEST\_CASE@{TEST\_CASE}!NDArray.test.cpp@{NDArray.test.cpp}}
+\doxysubsubsection{\texorpdfstring{TEST\_CASE()}{TEST\_CASE()}\hspace{0.1cm}{\footnotesize\ttfamily [1/14]}}
+{\footnotesize\ttfamily TEST\+\_\+\+CASE (\begin{DoxyParamCaption}\item[{\"{}1D image\"{}}]{ }\end{DoxyParamCaption})}
+
+\Hypertarget{NDArray_8test_8cpp_ae53f567850abf1db336976b253abcca2}\label{NDArray_8test_8cpp_ae53f567850abf1db336976b253abcca2} 
+\index{NDArray.test.cpp@{NDArray.test.cpp}!TEST\_CASE@{TEST\_CASE}}
+\index{TEST\_CASE@{TEST\_CASE}!NDArray.test.cpp@{NDArray.test.cpp}}
+\doxysubsubsection{\texorpdfstring{TEST\_CASE()}{TEST\_CASE()}\hspace{0.1cm}{\footnotesize\ttfamily [2/14]}}
+{\footnotesize\ttfamily TEST\+\_\+\+CASE (\begin{DoxyParamCaption}\item[{\"{}Accessing a const object\"{}}]{ }\end{DoxyParamCaption})}
+
+\Hypertarget{NDArray_8test_8cpp_a717d9c9320722e455da5aa291d288865}\label{NDArray_8test_8cpp_a717d9c9320722e455da5aa291d288865} 
+\index{NDArray.test.cpp@{NDArray.test.cpp}!TEST\_CASE@{TEST\_CASE}}
+\index{TEST\_CASE@{TEST\_CASE}!NDArray.test.cpp@{NDArray.test.cpp}}
+\doxysubsubsection{\texorpdfstring{TEST\_CASE()}{TEST\_CASE()}\hspace{0.1cm}{\footnotesize\ttfamily [3/14]}}
+{\footnotesize\ttfamily TEST\+\_\+\+CASE (\begin{DoxyParamCaption}\item[{\"{}Bitwise and on data\"{}}]{ }\end{DoxyParamCaption})}
+
+\Hypertarget{NDArray_8test_8cpp_ab22676de767d5f1ba3a09543bb66084c}\label{NDArray_8test_8cpp_ab22676de767d5f1ba3a09543bb66084c} 
+\index{NDArray.test.cpp@{NDArray.test.cpp}!TEST\_CASE@{TEST\_CASE}}
+\index{TEST\_CASE@{TEST\_CASE}!NDArray.test.cpp@{NDArray.test.cpp}}
+\doxysubsubsection{\texorpdfstring{TEST\_CASE()}{TEST\_CASE()}\hspace{0.1cm}{\footnotesize\ttfamily [4/14]}}
+{\footnotesize\ttfamily TEST\+\_\+\+CASE (\begin{DoxyParamCaption}\item[{\"{}Compare two images\"{}}]{ }\end{DoxyParamCaption})}
+
+\Hypertarget{NDArray_8test_8cpp_ae5d43750d6201bdb5aff783631ebfaf7}\label{NDArray_8test_8cpp_ae5d43750d6201bdb5aff783631ebfaf7} 
+\index{NDArray.test.cpp@{NDArray.test.cpp}!TEST\_CASE@{TEST\_CASE}}
+\index{TEST\_CASE@{TEST\_CASE}!NDArray.test.cpp@{NDArray.test.cpp}}
+\doxysubsubsection{\texorpdfstring{TEST\_CASE()}{TEST\_CASE()}\hspace{0.1cm}{\footnotesize\ttfamily [5/14]}}
+{\footnotesize\ttfamily TEST\+\_\+\+CASE (\begin{DoxyParamCaption}\item[{\"{}Construct from a Data\+Span\"{}}]{ }\end{DoxyParamCaption})}
+
+\Hypertarget{NDArray_8test_8cpp_aae2694bb812379ef93c7c07b5e3959b7}\label{NDArray_8test_8cpp_aae2694bb812379ef93c7c07b5e3959b7} 
+\index{NDArray.test.cpp@{NDArray.test.cpp}!TEST\_CASE@{TEST\_CASE}}
+\index{TEST\_CASE@{TEST\_CASE}!NDArray.test.cpp@{NDArray.test.cpp}}
+\doxysubsubsection{\texorpdfstring{TEST\_CASE()}{TEST\_CASE()}\hspace{0.1cm}{\footnotesize\ttfamily [6/14]}}
+{\footnotesize\ttfamily TEST\+\_\+\+CASE (\begin{DoxyParamCaption}\item[{\"{}Data layout of 3D}]{image,  }\item[{fast index last\"{}}]{ }\end{DoxyParamCaption})}
+
+\Hypertarget{NDArray_8test_8cpp_abaf3df3492fd29a369d1baf11e3bdbc5}\label{NDArray_8test_8cpp_abaf3df3492fd29a369d1baf11e3bdbc5} 
+\index{NDArray.test.cpp@{NDArray.test.cpp}!TEST\_CASE@{TEST\_CASE}}
+\index{TEST\_CASE@{TEST\_CASE}!NDArray.test.cpp@{NDArray.test.cpp}}
+\doxysubsubsection{\texorpdfstring{TEST\_CASE()}{TEST\_CASE()}\hspace{0.1cm}{\footnotesize\ttfamily [7/14]}}
+{\footnotesize\ttfamily TEST\+\_\+\+CASE (\begin{DoxyParamCaption}\item[{\"{}Divide double by int\"{}}]{ }\end{DoxyParamCaption})}
+
+\Hypertarget{NDArray_8test_8cpp_a236a5e0031a7f8ed34071a4ee94024a9}\label{NDArray_8test_8cpp_a236a5e0031a7f8ed34071a4ee94024a9} 
+\index{NDArray.test.cpp@{NDArray.test.cpp}!TEST\_CASE@{TEST\_CASE}}
+\index{TEST\_CASE@{TEST\_CASE}!NDArray.test.cpp@{NDArray.test.cpp}}
+\doxysubsubsection{\texorpdfstring{TEST\_CASE()}{TEST\_CASE()}\hspace{0.1cm}{\footnotesize\ttfamily [8/14]}}
+{\footnotesize\ttfamily TEST\+\_\+\+CASE (\begin{DoxyParamCaption}\item[{\"{}Elementwise multiplication of 3D image\"{}}]{ }\end{DoxyParamCaption})}
+
+\Hypertarget{NDArray_8test_8cpp_a3a450e7f04b11cc5b32ce2135aa27123}\label{NDArray_8test_8cpp_a3a450e7f04b11cc5b32ce2135aa27123} 
+\index{NDArray.test.cpp@{NDArray.test.cpp}!TEST\_CASE@{TEST\_CASE}}
+\index{TEST\_CASE@{TEST\_CASE}!NDArray.test.cpp@{NDArray.test.cpp}}
+\doxysubsubsection{\texorpdfstring{TEST\_CASE()}{TEST\_CASE()}\hspace{0.1cm}{\footnotesize\ttfamily [9/14]}}
+{\footnotesize\ttfamily TEST\+\_\+\+CASE (\begin{DoxyParamCaption}\item[{\"{}Elementwise operatios on images\"{}}]{ }\end{DoxyParamCaption})}
+
+\Hypertarget{NDArray_8test_8cpp_a304785e3d5c0d192b7f5356c4ca28f82}\label{NDArray_8test_8cpp_a304785e3d5c0d192b7f5356c4ca28f82} 
+\index{NDArray.test.cpp@{NDArray.test.cpp}!TEST\_CASE@{TEST\_CASE}}
+\index{TEST\_CASE@{TEST\_CASE}!NDArray.test.cpp@{NDArray.test.cpp}}
+\doxysubsubsection{\texorpdfstring{TEST\_CASE()}{TEST\_CASE()}\hspace{0.1cm}{\footnotesize\ttfamily [10/14]}}
+{\footnotesize\ttfamily TEST\+\_\+\+CASE (\begin{DoxyParamCaption}\item[{\"{}Indexing of a 2D image\"{}}]{ }\end{DoxyParamCaption})}
+
+\Hypertarget{NDArray_8test_8cpp_a42aac6c66ce7372f4fbeb23cdc01fba4}\label{NDArray_8test_8cpp_a42aac6c66ce7372f4fbeb23cdc01fba4} 
+\index{NDArray.test.cpp@{NDArray.test.cpp}!TEST\_CASE@{TEST\_CASE}}
+\index{TEST\_CASE@{TEST\_CASE}!NDArray.test.cpp@{NDArray.test.cpp}}
+\doxysubsubsection{\texorpdfstring{TEST\_CASE()}{TEST\_CASE()}\hspace{0.1cm}{\footnotesize\ttfamily [11/14]}}
+{\footnotesize\ttfamily TEST\+\_\+\+CASE (\begin{DoxyParamCaption}\item[{\"{}Indexing of a 3D image\"{}}]{ }\end{DoxyParamCaption})}
+
+\Hypertarget{NDArray_8test_8cpp_a706076cb6a6f8c87f13156d0e06f0560}\label{NDArray_8test_8cpp_a706076cb6a6f8c87f13156d0e06f0560} 
+\index{NDArray.test.cpp@{NDArray.test.cpp}!TEST\_CASE@{TEST\_CASE}}
+\index{TEST\_CASE@{TEST\_CASE}!NDArray.test.cpp@{NDArray.test.cpp}}
+\doxysubsubsection{\texorpdfstring{TEST\_CASE()}{TEST\_CASE()}\hspace{0.1cm}{\footnotesize\ttfamily [12/14]}}
+{\footnotesize\ttfamily TEST\+\_\+\+CASE (\begin{DoxyParamCaption}\item[{\"{}Initial size is zero if no size is specified\"{}}]{ }\end{DoxyParamCaption})}
+
+\Hypertarget{NDArray_8test_8cpp_aa5e54f6fe2b54a43194e05bebda0cb2c}\label{NDArray_8test_8cpp_aa5e54f6fe2b54a43194e05bebda0cb2c} 
+\index{NDArray.test.cpp@{NDArray.test.cpp}!TEST\_CASE@{TEST\_CASE}}
+\index{TEST\_CASE@{TEST\_CASE}!NDArray.test.cpp@{NDArray.test.cpp}}
+\doxysubsubsection{\texorpdfstring{TEST\_CASE()}{TEST\_CASE()}\hspace{0.1cm}{\footnotesize\ttfamily [13/14]}}
+{\footnotesize\ttfamily TEST\+\_\+\+CASE (\begin{DoxyParamCaption}\item[{\"{}Initial value matches for all elements\"{}}]{ }\end{DoxyParamCaption})}
+
+\Hypertarget{NDArray_8test_8cpp_a64db248306777f6b2f7ef6a77ff77d6e}\label{NDArray_8test_8cpp_a64db248306777f6b2f7ef6a77ff77d6e} 
+\index{NDArray.test.cpp@{NDArray.test.cpp}!TEST\_CASE@{TEST\_CASE}}
+\index{TEST\_CASE@{TEST\_CASE}!NDArray.test.cpp@{NDArray.test.cpp}}
+\doxysubsubsection{\texorpdfstring{TEST\_CASE()}{TEST\_CASE()}\hspace{0.1cm}{\footnotesize\ttfamily [14/14]}}
+{\footnotesize\ttfamily TEST\+\_\+\+CASE (\begin{DoxyParamCaption}\item[{\"{}Size and shape matches\"{}}]{ }\end{DoxyParamCaption})}
+

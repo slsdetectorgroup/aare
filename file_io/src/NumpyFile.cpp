@@ -1,39 +1,38 @@
 
 #include "aare/file_io/NumpyFile.hpp"
+#include "aare/utils/logger.hpp"
 
 namespace aare {
 
-NumpyFile::NumpyFile(const std::filesystem::path &fname) {
+NumpyFile::NumpyFile(const std::filesystem::path &fname, const std::string &mode, FileConfig cfg) {
     // TODO! add opts to constructor
     m_fname = fname;
-    fp = fopen(m_fname.c_str(), "rb");
-    if (!fp) {
-        throw std::runtime_error(fmt::format("Could not open: {} for reading", m_fname.c_str()));
+    m_mode = mode;
+    if (mode == "r") {
+        fp = fopen(m_fname.c_str(), "rb");
+        if (!fp) {
+            throw std::runtime_error(fmt::format("Could not open: {} for reading", m_fname.c_str()));
+        }
+        load_metadata();
+    } else if (mode == "w") {
+        m_bitdepth = cfg.dtype.bitdepth();
+        m_rows = cfg.rows;
+        m_cols = cfg.cols;
+        m_header = {cfg.dtype, false, {cfg.rows, cfg.cols}};
+        m_header.shape = {0, cfg.rows, cfg.cols};
+        fp = fopen(m_fname.c_str(), "wb");
+        if (!fp) {
+            throw std::runtime_error(fmt::format("Could not open: {} for reading", m_fname.c_str()));
+        }
+        initial_header_len = aare::NumpyHelpers::write_header(std::filesystem::path(m_fname.c_str()), m_header);
     }
-    load_metadata();
-}
-NumpyFile::NumpyFile(FileConfig config, NumpyHeader header) {
-    mode = "w";
-    m_fname = config.fname;
-    m_bitdepth = config.dtype.bitdepth();
-    m_rows = config.rows;
-    m_cols = config.cols;
-    m_header = header;
-    m_header.shape = {0, config.rows, config.cols};
-
-    fp = fopen(m_fname.c_str(), "wb");
-    if (!fp) {
-        throw std::runtime_error(fmt::format("Could not open: {} for reading", m_fname.c_str()));
-    }
-
-    initial_header_len = aare::NumpyHelpers::write_header(std::filesystem::path(m_fname.c_str()), header);
 }
 
 void NumpyFile::write(Frame &frame) {
     if (fp == nullptr) {
         throw std::runtime_error("File not open");
     }
-    if (not(mode == "w" or mode == "a")) {
+    if (not(m_mode == "w" or m_mode == "a")) {
         throw std::runtime_error("File not open for writing");
     }
     fseek(fp, 0, SEEK_END);
@@ -79,7 +78,7 @@ void NumpyFile::read_into(std::byte *image_buf, size_t n_frames) {
 }
 
 NumpyFile::~NumpyFile() {
-    if (mode == "w" or mode == "a") {
+    if (m_mode == "w" or m_mode == "a") {
         // determine number of frames
         fseek(fp, 0, SEEK_END);
         size_t file_size = ftell(fp);

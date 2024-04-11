@@ -1,11 +1,31 @@
 #include "aare/file_io/File.hpp"
-#include "aare/file_io/FileFactory.hpp"
+#include "aare/file_io/NumpyFile.hpp"
+#include "aare/file_io/RawFile.hpp"
 #include "aare/utils/logger.hpp"
+#include <fmt/format.h>
 
 namespace aare {
 
 File::File(std::filesystem::path fname, std::string mode, FileConfig cfg) {
-    file_impl = FileFactory::load_file(fname, mode, cfg);
+    if (mode != "r" && mode != "w" && mode != "a") {
+        throw std::invalid_argument("Unsupported file mode");
+    }
+
+    if ((mode == "r" or mode == "a") and not std::filesystem::exists(fname)) {
+        throw std::runtime_error(fmt::format("File does not exist: {}", fname.c_str()));
+    }
+
+    if (fname.extension() == ".raw" || fname.extension() == ".json") {
+        aare::logger::debug("Loading raw file");
+        file_impl = new RawFile(fname, mode, cfg);
+    }
+    // check if extension is numpy
+    else if (fname.extension() == ".npy") {
+        aare::logger::debug("Loading numpy file");
+        file_impl = new NumpyFile(fname, mode, cfg);
+    } else {
+        throw std::runtime_error("Unsupported file type");
+    }
 }
 
 void File::write(Frame &frame) { file_impl->write(frame); }

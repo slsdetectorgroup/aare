@@ -1,5 +1,7 @@
 
 #include "aare/core/DType.hpp"
+#include "aare/utils/logger.hpp"
+
 #include <fmt/format.h>
 
 namespace aare {

@@ -1,0 +1,187 @@
+\doxysection{Producer\+Consumer\+Queue.\+hpp}
+\hypertarget{ProducerConsumerQueue_8hpp_source}{}\label{ProducerConsumerQueue_8hpp_source}\index{core/include/aare/core/ProducerConsumerQueue.hpp@{core/include/aare/core/ProducerConsumerQueue.hpp}}
+\mbox{\hyperlink{ProducerConsumerQueue_8hpp}{Go to the documentation of this file.}}
+\begin{DoxyCode}{0}
+\DoxyCodeLine{00001\ \textcolor{comment}{/*}}
+\DoxyCodeLine{00002\ \textcolor{comment}{\ *\ Copyright\ (c)\ Meta\ Platforms,\ Inc.\ and\ affiliates.}}
+\DoxyCodeLine{00003\ \textcolor{comment}{\ *}}
+\DoxyCodeLine{00004\ \textcolor{comment}{\ *\ Licensed\ under\ the\ Apache\ License,\ Version\ 2.0\ (the\ "{}License"{});}}
+\DoxyCodeLine{00005\ \textcolor{comment}{\ *\ you\ may\ not\ use\ this\ file\ except\ in\ compliance\ with\ the\ License.}}
+\DoxyCodeLine{00006\ \textcolor{comment}{\ *\ You\ may\ obtain\ a\ copy\ of\ the\ License\ at}}
+\DoxyCodeLine{00007\ \textcolor{comment}{\ *}}
+\DoxyCodeLine{00008\ \textcolor{comment}{\ *\ \ \ \ \ http://www.apache.org/licenses/LICENSE-\/2.0}}
+\DoxyCodeLine{00009\ \textcolor{comment}{\ *}}
+\DoxyCodeLine{00010\ \textcolor{comment}{\ *\ Unless\ required\ by\ applicable\ law\ or\ agreed\ to\ in\ writing,\ software}}
+\DoxyCodeLine{00011\ \textcolor{comment}{\ *\ distributed\ under\ the\ License\ is\ distributed\ on\ an\ "{}AS\ IS"{}\ BASIS,}}
+\DoxyCodeLine{00012\ \textcolor{comment}{\ *\ WITHOUT\ WARRANTIES\ OR\ CONDITIONS\ OF\ ANY\ KIND,\ either\ express\ or\ implied.}}
+\DoxyCodeLine{00013\ \textcolor{comment}{\ *\ See\ the\ License\ for\ the\ specific\ language\ governing\ permissions\ and}}
+\DoxyCodeLine{00014\ \textcolor{comment}{\ *\ limitations\ under\ the\ License.}}
+\DoxyCodeLine{00015\ \textcolor{comment}{\ */}}
+\DoxyCodeLine{00016\ }
+\DoxyCodeLine{00017\ \textcolor{comment}{//\ @author\ Bo\ Hu\ (bhu@fb.com)}}
+\DoxyCodeLine{00018\ \textcolor{comment}{//\ @author\ Jordan\ DeLong\ (delong.j@fb.com)}}
+\DoxyCodeLine{00019\ }
+\DoxyCodeLine{00020\ \textcolor{comment}{//\ Changes\ made\ by\ PSD\ Detector\ Group:}}
+\DoxyCodeLine{00021\ \textcolor{comment}{//\ Copied:\ Line\ 34\ constexpr\ std::size\_t\ hardware\_destructive\_interference\_size\ =\ 128;\ from\ folly/lang/Align.h}}
+\DoxyCodeLine{00022\ \textcolor{comment}{//\ Changed\ extension\ to\ .hpp}}
+\DoxyCodeLine{00023\ }
+\DoxyCodeLine{00024\ \textcolor{preprocessor}{\#pragma\ once}}
+\DoxyCodeLine{00025\ }
+\DoxyCodeLine{00026\ \textcolor{preprocessor}{\#include\ <atomic>}}
+\DoxyCodeLine{00027\ \textcolor{preprocessor}{\#include\ <cassert>}}
+\DoxyCodeLine{00028\ \textcolor{preprocessor}{\#include\ <cstdlib>}}
+\DoxyCodeLine{00029\ \textcolor{preprocessor}{\#include\ <memory>}}
+\DoxyCodeLine{00030\ \textcolor{preprocessor}{\#include\ <stdexcept>}}
+\DoxyCodeLine{00031\ \textcolor{preprocessor}{\#include\ <type\_traits>}}
+\DoxyCodeLine{00032\ \textcolor{preprocessor}{\#include\ <utility>}}
+\DoxyCodeLine{00033\ }
+\DoxyCodeLine{00034\ \textcolor{keyword}{constexpr}\ std::size\_t\ \mbox{\hyperlink{ProducerConsumerQueue_8hpp_afcfcf0ecf646b16dd2b471dc568cf6c6}{hardware\_destructive\_interference\_size}}\ =\ 128;}
+\DoxyCodeLine{00035\ \textcolor{keyword}{namespace\ }\mbox{\hyperlink{namespacefolly}{folly}}\ \{}
+\DoxyCodeLine{00036\ }
+\DoxyCodeLine{00037\ \textcolor{comment}{/*}}
+\DoxyCodeLine{00038\ \textcolor{comment}{\ *\ ProducerConsumerQueue\ is\ a\ one\ producer\ and\ one\ consumer\ queue}}
+\DoxyCodeLine{00039\ \textcolor{comment}{\ *\ without\ locks.}}
+\DoxyCodeLine{00040\ \textcolor{comment}{\ */}}
+\DoxyCodeLine{00041\ \textcolor{keyword}{template}\ <\textcolor{keyword}{class}\ T>\ \textcolor{keyword}{struct\ }\mbox{\hyperlink{structfolly_1_1ProducerConsumerQueue}{ProducerConsumerQueue}}\ \{}
+\DoxyCodeLine{00042\ \ \ \ \ \textcolor{keyword}{typedef}\ T\ \mbox{\hyperlink{structfolly_1_1ProducerConsumerQueue_ab9ca59636041c88588bf0a367c4c9415}{value\_type}};}
+\DoxyCodeLine{00043\ }
+\DoxyCodeLine{00044\ \ \ \ \ \mbox{\hyperlink{structfolly_1_1ProducerConsumerQueue_af6639f8106b78609082a4cd5e3e8ceb5}{ProducerConsumerQueue}}(\textcolor{keyword}{const}\ \mbox{\hyperlink{structfolly_1_1ProducerConsumerQueue}{ProducerConsumerQueue}}\ \&)\ =\ \textcolor{keyword}{delete};}
+\DoxyCodeLine{00045\ \ \ \ \ \mbox{\hyperlink{structfolly_1_1ProducerConsumerQueue}{ProducerConsumerQueue}}\ \&\mbox{\hyperlink{structfolly_1_1ProducerConsumerQueue_ac1f83f5f296f6f79583125947859b9d0}{operator=}}(\textcolor{keyword}{const}\ \mbox{\hyperlink{structfolly_1_1ProducerConsumerQueue}{ProducerConsumerQueue}}\ \&)\ =\ \textcolor{keyword}{delete};}
+\DoxyCodeLine{00046\ }
+\DoxyCodeLine{00047\ \ \ \ \ \textcolor{comment}{//\ size\ must\ be\ >=\ 2.}}
+\DoxyCodeLine{00048\ \ \ \ \ \textcolor{comment}{//}}
+\DoxyCodeLine{00049\ \ \ \ \ \textcolor{comment}{//\ Also,\ note\ that\ the\ number\ of\ usable\ slots\ in\ the\ queue\ at\ any}}
+\DoxyCodeLine{00050\ \ \ \ \ \textcolor{comment}{//\ given\ time\ is\ actually\ (size-\/1),\ so\ if\ you\ start\ with\ an\ empty\ queue,}}
+\DoxyCodeLine{00051\ \ \ \ \ \textcolor{comment}{//\ isFull()\ will\ return\ true\ after\ size-\/1\ insertions.}}
+\DoxyCodeLine{00052\ \ \ \ \ \textcolor{keyword}{explicit}\ \mbox{\hyperlink{structfolly_1_1ProducerConsumerQueue_a3398aa33aa91bad8e0f023d2e1df8069}{ProducerConsumerQueue}}(uint32\_t\ size)}
+\DoxyCodeLine{00053\ \ \ \ \ \ \ \ \ :\ \mbox{\hyperlink{structfolly_1_1ProducerConsumerQueue_ad5bf2e76bc4aad660840cbb927317d76}{size\_}}(size),\ \mbox{\hyperlink{structfolly_1_1ProducerConsumerQueue_a7f28bc4897019e6a4743dd22a97b33e1}{records\_}}(static\_cast<T\ *>(std::malloc(sizeof(T)\ *\ size))),\ \mbox{\hyperlink{structfolly_1_1ProducerConsumerQueue_a5f0ee08f1bfb4c8721c41426137e2005}{readIndex\_}}(0),\ \mbox{\hyperlink{structfolly_1_1ProducerConsumerQueue_a7c4b68cf28e3e925ff14f5736bce59d4}{writeIndex\_}}(0)\ \{}
+\DoxyCodeLine{00054\ \ \ \ \ \ \ \ \ assert(size\ >=\ 2);}
+\DoxyCodeLine{00055\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{if}\ (!\mbox{\hyperlink{structfolly_1_1ProducerConsumerQueue_a7f28bc4897019e6a4743dd22a97b33e1}{records\_}})\ \{}
+\DoxyCodeLine{00056\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{throw}\ std::bad\_alloc();}
+\DoxyCodeLine{00057\ \ \ \ \ \ \ \ \ \}}
+\DoxyCodeLine{00058\ \ \ \ \ \}}
+\DoxyCodeLine{00059\ }
+\DoxyCodeLine{00060\ \ \ \ \ \mbox{\hyperlink{structfolly_1_1ProducerConsumerQueue_ae21044b9fe0c4345e2b7ec10cb81a18c}{\string~ProducerConsumerQueue}}()\ \{}
+\DoxyCodeLine{00061\ \ \ \ \ \ \ \ \ \textcolor{comment}{//\ We\ need\ to\ destruct\ anything\ that\ may\ still\ exist\ in\ our\ queue.}}
+\DoxyCodeLine{00062\ \ \ \ \ \ \ \ \ \textcolor{comment}{//\ (No\ real\ synchronization\ needed\ at\ destructor\ time:\ only\ one}}
+\DoxyCodeLine{00063\ \ \ \ \ \ \ \ \ \textcolor{comment}{//\ thread\ can\ be\ doing\ this.)}}
+\DoxyCodeLine{00064\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{if}\ (!std::is\_trivially\_destructible<T>::value)\ \{}
+\DoxyCodeLine{00065\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordtype}{size\_t}\ readIndex\ =\ \mbox{\hyperlink{structfolly_1_1ProducerConsumerQueue_a5f0ee08f1bfb4c8721c41426137e2005}{readIndex\_}};}
+\DoxyCodeLine{00066\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordtype}{size\_t}\ endIndex\ =\ \mbox{\hyperlink{structfolly_1_1ProducerConsumerQueue_a7c4b68cf28e3e925ff14f5736bce59d4}{writeIndex\_}};}
+\DoxyCodeLine{00067\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{while}\ (readIndex\ !=\ endIndex)\ \{}
+\DoxyCodeLine{00068\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \mbox{\hyperlink{structfolly_1_1ProducerConsumerQueue_a7f28bc4897019e6a4743dd22a97b33e1}{records\_}}[readIndex].\string~T();}
+\DoxyCodeLine{00069\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{if}\ (++readIndex\ ==\ \mbox{\hyperlink{structfolly_1_1ProducerConsumerQueue_ad5bf2e76bc4aad660840cbb927317d76}{size\_}})\ \{}
+\DoxyCodeLine{00070\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ readIndex\ =\ 0;}
+\DoxyCodeLine{00071\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \}}
+\DoxyCodeLine{00072\ \ \ \ \ \ \ \ \ \ \ \ \ \}}
+\DoxyCodeLine{00073\ \ \ \ \ \ \ \ \ \}}
+\DoxyCodeLine{00074\ }
+\DoxyCodeLine{00075\ \ \ \ \ \ \ \ \ std::free(\mbox{\hyperlink{structfolly_1_1ProducerConsumerQueue_a7f28bc4897019e6a4743dd22a97b33e1}{records\_}});}
+\DoxyCodeLine{00076\ \ \ \ \ \}}
+\DoxyCodeLine{00077\ }
+\DoxyCodeLine{00078\ \ \ \ \ \textcolor{keyword}{template}\ <\textcolor{keyword}{class}...\ Args>\ \textcolor{keywordtype}{bool}\ \mbox{\hyperlink{structfolly_1_1ProducerConsumerQueue_af849682c2351c5f2b3344e32c512a961}{write}}(Args\ \&\&...recordArgs)\ \{}
+\DoxyCodeLine{00079\ \ \ \ \ \ \ \ \ \textcolor{keyword}{auto}\ \textcolor{keyword}{const}\ currentWrite\ =\ \mbox{\hyperlink{structfolly_1_1ProducerConsumerQueue_a7c4b68cf28e3e925ff14f5736bce59d4}{writeIndex\_}}.load(std::memory\_order\_relaxed);}
+\DoxyCodeLine{00080\ \ \ \ \ \ \ \ \ \textcolor{keyword}{auto}\ nextRecord\ =\ currentWrite\ +\ 1;}
+\DoxyCodeLine{00081\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{if}\ (nextRecord\ ==\ \mbox{\hyperlink{structfolly_1_1ProducerConsumerQueue_ad5bf2e76bc4aad660840cbb927317d76}{size\_}})\ \{}
+\DoxyCodeLine{00082\ \ \ \ \ \ \ \ \ \ \ \ \ nextRecord\ =\ 0;}
+\DoxyCodeLine{00083\ \ \ \ \ \ \ \ \ \}}
+\DoxyCodeLine{00084\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{if}\ (nextRecord\ !=\ \mbox{\hyperlink{structfolly_1_1ProducerConsumerQueue_a5f0ee08f1bfb4c8721c41426137e2005}{readIndex\_}}.load(std::memory\_order\_acquire))\ \{}
+\DoxyCodeLine{00085\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keyword}{new}\ (\&\mbox{\hyperlink{structfolly_1_1ProducerConsumerQueue_a7f28bc4897019e6a4743dd22a97b33e1}{records\_}}[currentWrite])\ T(std::forward<Args>(recordArgs)...);}
+\DoxyCodeLine{00086\ \ \ \ \ \ \ \ \ \ \ \ \ \mbox{\hyperlink{structfolly_1_1ProducerConsumerQueue_a7c4b68cf28e3e925ff14f5736bce59d4}{writeIndex\_}}.store(nextRecord,\ std::memory\_order\_release);}
+\DoxyCodeLine{00087\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{return}\ \textcolor{keyword}{true};}
+\DoxyCodeLine{00088\ \ \ \ \ \ \ \ \ \}}
+\DoxyCodeLine{00089\ }
+\DoxyCodeLine{00090\ \ \ \ \ \ \ \ \ \textcolor{comment}{//\ queue\ is\ full}}
+\DoxyCodeLine{00091\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{return}\ \textcolor{keyword}{false};}
+\DoxyCodeLine{00092\ \ \ \ \ \}}
+\DoxyCodeLine{00093\ }
+\DoxyCodeLine{00094\ \ \ \ \ \textcolor{comment}{//\ move\ (or\ copy)\ the\ value\ at\ the\ front\ of\ the\ queue\ to\ given\ variable}}
+\DoxyCodeLine{00095\ \ \ \ \ \textcolor{keywordtype}{bool}\ \mbox{\hyperlink{structfolly_1_1ProducerConsumerQueue_a3288ef770695d676376c80ea41630b74}{read}}(T\ \&record)\ \{}
+\DoxyCodeLine{00096\ \ \ \ \ \ \ \ \ \textcolor{keyword}{auto}\ \textcolor{keyword}{const}\ currentRead\ =\ \mbox{\hyperlink{structfolly_1_1ProducerConsumerQueue_a5f0ee08f1bfb4c8721c41426137e2005}{readIndex\_}}.load(std::memory\_order\_relaxed);}
+\DoxyCodeLine{00097\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{if}\ (currentRead\ ==\ \mbox{\hyperlink{structfolly_1_1ProducerConsumerQueue_a7c4b68cf28e3e925ff14f5736bce59d4}{writeIndex\_}}.load(std::memory\_order\_acquire))\ \{}
+\DoxyCodeLine{00098\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{comment}{//\ queue\ is\ empty}}
+\DoxyCodeLine{00099\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{return}\ \textcolor{keyword}{false};}
+\DoxyCodeLine{00100\ \ \ \ \ \ \ \ \ \}}
+\DoxyCodeLine{00101\ }
+\DoxyCodeLine{00102\ \ \ \ \ \ \ \ \ \textcolor{keyword}{auto}\ nextRecord\ =\ currentRead\ +\ 1;}
+\DoxyCodeLine{00103\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{if}\ (nextRecord\ ==\ \mbox{\hyperlink{structfolly_1_1ProducerConsumerQueue_ad5bf2e76bc4aad660840cbb927317d76}{size\_}})\ \{}
+\DoxyCodeLine{00104\ \ \ \ \ \ \ \ \ \ \ \ \ nextRecord\ =\ 0;}
+\DoxyCodeLine{00105\ \ \ \ \ \ \ \ \ \}}
+\DoxyCodeLine{00106\ \ \ \ \ \ \ \ \ record\ =\ std::move(\mbox{\hyperlink{structfolly_1_1ProducerConsumerQueue_a7f28bc4897019e6a4743dd22a97b33e1}{records\_}}[currentRead]);}
+\DoxyCodeLine{00107\ \ \ \ \ \ \ \ \ \mbox{\hyperlink{structfolly_1_1ProducerConsumerQueue_a7f28bc4897019e6a4743dd22a97b33e1}{records\_}}[currentRead].\string~T();}
+\DoxyCodeLine{00108\ \ \ \ \ \ \ \ \ \mbox{\hyperlink{structfolly_1_1ProducerConsumerQueue_a5f0ee08f1bfb4c8721c41426137e2005}{readIndex\_}}.store(nextRecord,\ std::memory\_order\_release);}
+\DoxyCodeLine{00109\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{return}\ \textcolor{keyword}{true};}
+\DoxyCodeLine{00110\ \ \ \ \ \}}
+\DoxyCodeLine{00111\ }
+\DoxyCodeLine{00112\ \ \ \ \ \textcolor{comment}{//\ pointer\ to\ the\ value\ at\ the\ front\ of\ the\ queue\ (for\ use\ in-\/place)\ or}}
+\DoxyCodeLine{00113\ \ \ \ \ \textcolor{comment}{//\ nullptr\ if\ empty.}}
+\DoxyCodeLine{00114\ \ \ \ \ T\ *\mbox{\hyperlink{structfolly_1_1ProducerConsumerQueue_a24474b670bc44f75f7c978087e401bd0}{frontPtr}}()\ \{}
+\DoxyCodeLine{00115\ \ \ \ \ \ \ \ \ \textcolor{keyword}{auto}\ \textcolor{keyword}{const}\ currentRead\ =\ \mbox{\hyperlink{structfolly_1_1ProducerConsumerQueue_a5f0ee08f1bfb4c8721c41426137e2005}{readIndex\_}}.load(std::memory\_order\_relaxed);}
+\DoxyCodeLine{00116\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{if}\ (currentRead\ ==\ \mbox{\hyperlink{structfolly_1_1ProducerConsumerQueue_a7c4b68cf28e3e925ff14f5736bce59d4}{writeIndex\_}}.load(std::memory\_order\_acquire))\ \{}
+\DoxyCodeLine{00117\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{comment}{//\ queue\ is\ empty}}
+\DoxyCodeLine{00118\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{return}\ \textcolor{keyword}{nullptr};}
+\DoxyCodeLine{00119\ \ \ \ \ \ \ \ \ \}}
+\DoxyCodeLine{00120\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{return}\ \&\mbox{\hyperlink{structfolly_1_1ProducerConsumerQueue_a7f28bc4897019e6a4743dd22a97b33e1}{records\_}}[currentRead];}
+\DoxyCodeLine{00121\ \ \ \ \ \}}
+\DoxyCodeLine{00122\ }
+\DoxyCodeLine{00123\ \ \ \ \ \textcolor{comment}{//\ queue\ must\ not\ be\ empty}}
+\DoxyCodeLine{00124\ \ \ \ \ \textcolor{keywordtype}{void}\ \mbox{\hyperlink{structfolly_1_1ProducerConsumerQueue_a92e517783bcaa0102521fb739b7f5f4e}{popFront}}()\ \{}
+\DoxyCodeLine{00125\ \ \ \ \ \ \ \ \ \textcolor{keyword}{auto}\ \textcolor{keyword}{const}\ currentRead\ =\ \mbox{\hyperlink{structfolly_1_1ProducerConsumerQueue_a5f0ee08f1bfb4c8721c41426137e2005}{readIndex\_}}.load(std::memory\_order\_relaxed);}
+\DoxyCodeLine{00126\ \ \ \ \ \ \ \ \ assert(currentRead\ !=\ \mbox{\hyperlink{structfolly_1_1ProducerConsumerQueue_a7c4b68cf28e3e925ff14f5736bce59d4}{writeIndex\_}}.load(std::memory\_order\_acquire));}
+\DoxyCodeLine{00127\ }
+\DoxyCodeLine{00128\ \ \ \ \ \ \ \ \ \textcolor{keyword}{auto}\ nextRecord\ =\ currentRead\ +\ 1;}
+\DoxyCodeLine{00129\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{if}\ (nextRecord\ ==\ \mbox{\hyperlink{structfolly_1_1ProducerConsumerQueue_ad5bf2e76bc4aad660840cbb927317d76}{size\_}})\ \{}
+\DoxyCodeLine{00130\ \ \ \ \ \ \ \ \ \ \ \ \ nextRecord\ =\ 0;}
+\DoxyCodeLine{00131\ \ \ \ \ \ \ \ \ \}}
+\DoxyCodeLine{00132\ \ \ \ \ \ \ \ \ \mbox{\hyperlink{structfolly_1_1ProducerConsumerQueue_a7f28bc4897019e6a4743dd22a97b33e1}{records\_}}[currentRead].\string~T();}
+\DoxyCodeLine{00133\ \ \ \ \ \ \ \ \ \mbox{\hyperlink{structfolly_1_1ProducerConsumerQueue_a5f0ee08f1bfb4c8721c41426137e2005}{readIndex\_}}.store(nextRecord,\ std::memory\_order\_release);}
+\DoxyCodeLine{00134\ \ \ \ \ \}}
+\DoxyCodeLine{00135\ }
+\DoxyCodeLine{00136\ \ \ \ \ \textcolor{keywordtype}{bool}\ \mbox{\hyperlink{structfolly_1_1ProducerConsumerQueue_a7f277f7b04debc85e2f99006ac3558e8}{isEmpty}}()\textcolor{keyword}{\ const\ }\{}
+\DoxyCodeLine{00137\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{return}\ \mbox{\hyperlink{structfolly_1_1ProducerConsumerQueue_a5f0ee08f1bfb4c8721c41426137e2005}{readIndex\_}}.load(std::memory\_order\_acquire)\ ==\ \mbox{\hyperlink{structfolly_1_1ProducerConsumerQueue_a7c4b68cf28e3e925ff14f5736bce59d4}{writeIndex\_}}.load(std::memory\_order\_acquire);}
+\DoxyCodeLine{00138\ \ \ \ \ \}}
+\DoxyCodeLine{00139\ }
+\DoxyCodeLine{00140\ \ \ \ \ \textcolor{keywordtype}{bool}\ \mbox{\hyperlink{structfolly_1_1ProducerConsumerQueue_ad883c041917c2b7f10b0ecdaeaeb0577}{isFull}}()\textcolor{keyword}{\ const\ }\{}
+\DoxyCodeLine{00141\ \ \ \ \ \ \ \ \ \textcolor{keyword}{auto}\ nextRecord\ =\ \mbox{\hyperlink{structfolly_1_1ProducerConsumerQueue_a7c4b68cf28e3e925ff14f5736bce59d4}{writeIndex\_}}.load(std::memory\_order\_acquire)\ +\ 1;}
+\DoxyCodeLine{00142\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{if}\ (nextRecord\ ==\ \mbox{\hyperlink{structfolly_1_1ProducerConsumerQueue_ad5bf2e76bc4aad660840cbb927317d76}{size\_}})\ \{}
+\DoxyCodeLine{00143\ \ \ \ \ \ \ \ \ \ \ \ \ nextRecord\ =\ 0;}
+\DoxyCodeLine{00144\ \ \ \ \ \ \ \ \ \}}
+\DoxyCodeLine{00145\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{if}\ (nextRecord\ !=\ \mbox{\hyperlink{structfolly_1_1ProducerConsumerQueue_a5f0ee08f1bfb4c8721c41426137e2005}{readIndex\_}}.load(std::memory\_order\_acquire))\ \{}
+\DoxyCodeLine{00146\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{return}\ \textcolor{keyword}{false};}
+\DoxyCodeLine{00147\ \ \ \ \ \ \ \ \ \}}
+\DoxyCodeLine{00148\ \ \ \ \ \ \ \ \ \textcolor{comment}{//\ queue\ is\ full}}
+\DoxyCodeLine{00149\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{return}\ \textcolor{keyword}{true};}
+\DoxyCodeLine{00150\ \ \ \ \ \}}
+\DoxyCodeLine{00151\ }
+\DoxyCodeLine{00152\ \ \ \ \ \textcolor{comment}{//\ *\ If\ called\ by\ consumer,\ then\ true\ size\ may\ be\ more\ (because\ producer\ may}}
+\DoxyCodeLine{00153\ \ \ \ \ \textcolor{comment}{//\ \ \ be\ adding\ items\ concurrently).}}
+\DoxyCodeLine{00154\ \ \ \ \ \textcolor{comment}{//\ *\ If\ called\ by\ producer,\ then\ true\ size\ may\ be\ less\ (because\ consumer\ may}}
+\DoxyCodeLine{00155\ \ \ \ \ \textcolor{comment}{//\ \ \ be\ removing\ items\ concurrently).}}
+\DoxyCodeLine{00156\ \ \ \ \ \textcolor{comment}{//\ *\ It\ is\ undefined\ to\ call\ this\ from\ any\ other\ thread.}}
+\DoxyCodeLine{00157\ \ \ \ \ \textcolor{keywordtype}{size\_t}\ \mbox{\hyperlink{structfolly_1_1ProducerConsumerQueue_adb384b6a25b755b627d04ff6f2ca9c95}{sizeGuess}}()\textcolor{keyword}{\ const\ }\{}
+\DoxyCodeLine{00158\ \ \ \ \ \ \ \ \ \textcolor{keywordtype}{int}\ ret\ =\ \mbox{\hyperlink{structfolly_1_1ProducerConsumerQueue_a7c4b68cf28e3e925ff14f5736bce59d4}{writeIndex\_}}.load(std::memory\_order\_acquire)\ -\/\ \mbox{\hyperlink{structfolly_1_1ProducerConsumerQueue_a5f0ee08f1bfb4c8721c41426137e2005}{readIndex\_}}.load(std::memory\_order\_acquire);}
+\DoxyCodeLine{00159\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{if}\ (ret\ <\ 0)\ \{}
+\DoxyCodeLine{00160\ \ \ \ \ \ \ \ \ \ \ \ \ ret\ +=\ \mbox{\hyperlink{structfolly_1_1ProducerConsumerQueue_ad5bf2e76bc4aad660840cbb927317d76}{size\_}};}
+\DoxyCodeLine{00161\ \ \ \ \ \ \ \ \ \}}
+\DoxyCodeLine{00162\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{return}\ ret;}
+\DoxyCodeLine{00163\ \ \ \ \ \}}
+\DoxyCodeLine{00164\ }
+\DoxyCodeLine{00165\ \ \ \ \ \textcolor{comment}{//\ maximum\ number\ of\ items\ in\ the\ queue.}}
+\DoxyCodeLine{00166\ \ \ \ \ \textcolor{keywordtype}{size\_t}\ \mbox{\hyperlink{structfolly_1_1ProducerConsumerQueue_ab5966af8b6789e2ad2c215d0226fd616}{capacity}}()\textcolor{keyword}{\ const\ }\{\ \textcolor{keywordflow}{return}\ \mbox{\hyperlink{structfolly_1_1ProducerConsumerQueue_ad5bf2e76bc4aad660840cbb927317d76}{size\_}}\ -\/\ 1;\ \}}
+\DoxyCodeLine{00167\ }
+\DoxyCodeLine{00168\ \ \ \textcolor{keyword}{private}:}
+\DoxyCodeLine{00169\ \ \ \ \ \textcolor{keyword}{using\ }\mbox{\hyperlink{structfolly_1_1ProducerConsumerQueue_af9f2e0d5fb4a92eb037b630a80f521cb}{AtomicIndex}}\ =\ std::atomic<unsigned\ int>;}
+\DoxyCodeLine{00170\ }
+\DoxyCodeLine{00171\ \ \ \ \ \textcolor{keywordtype}{char}\ \mbox{\hyperlink{structfolly_1_1ProducerConsumerQueue_ab20193986ce865e7c2f430f706d743cf}{pad0\_}}[\mbox{\hyperlink{ProducerConsumerQueue_8hpp_afcfcf0ecf646b16dd2b471dc568cf6c6}{hardware\_destructive\_interference\_size}}];}
+\DoxyCodeLine{00172\ \ \ \ \ \textcolor{keyword}{const}\ uint32\_t\ \mbox{\hyperlink{structfolly_1_1ProducerConsumerQueue_ad5bf2e76bc4aad660840cbb927317d76}{size\_}};}
+\DoxyCodeLine{00173\ \ \ \ \ T\ *\textcolor{keyword}{const}\ \mbox{\hyperlink{structfolly_1_1ProducerConsumerQueue_a7f28bc4897019e6a4743dd22a97b33e1}{records\_}};}
+\DoxyCodeLine{00174\ }
+\DoxyCodeLine{00175\ \ \ \ \ \textcolor{keyword}{alignas}(\mbox{\hyperlink{ProducerConsumerQueue_8hpp_afcfcf0ecf646b16dd2b471dc568cf6c6}{hardware\_destructive\_interference\_size}})\ \mbox{\hyperlink{structfolly_1_1ProducerConsumerQueue_af9f2e0d5fb4a92eb037b630a80f521cb}{AtomicIndex}}\ \mbox{\hyperlink{structfolly_1_1ProducerConsumerQueue_a5f0ee08f1bfb4c8721c41426137e2005}{readIndex\_}};}
+\DoxyCodeLine{00176\ \ \ \ \ \textcolor{keyword}{alignas}(\mbox{\hyperlink{ProducerConsumerQueue_8hpp_afcfcf0ecf646b16dd2b471dc568cf6c6}{hardware\_destructive\_interference\_size}})\ \mbox{\hyperlink{structfolly_1_1ProducerConsumerQueue_af9f2e0d5fb4a92eb037b630a80f521cb}{AtomicIndex}}\ \mbox{\hyperlink{structfolly_1_1ProducerConsumerQueue_a7c4b68cf28e3e925ff14f5736bce59d4}{writeIndex\_}};}
+\DoxyCodeLine{00177\ }
+\DoxyCodeLine{00178\ \ \ \ \ \textcolor{keywordtype}{char}\ \mbox{\hyperlink{structfolly_1_1ProducerConsumerQueue_a14823e2289be8649cebd813caa00d1fa}{pad1\_}}[\mbox{\hyperlink{ProducerConsumerQueue_8hpp_afcfcf0ecf646b16dd2b471dc568cf6c6}{hardware\_destructive\_interference\_size}}\ -\/\ \textcolor{keyword}{sizeof}(\mbox{\hyperlink{structfolly_1_1ProducerConsumerQueue_af9f2e0d5fb4a92eb037b630a80f521cb}{AtomicIndex}})];}
+\DoxyCodeLine{00179\ \};}
+\DoxyCodeLine{00180\ }
+\DoxyCodeLine{00181\ \}\ \textcolor{comment}{//\ namespace\ folly}}
+
+\end{DoxyCode}

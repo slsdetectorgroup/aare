@@ -1,0 +1,95 @@
+\doxysection{File\+Interface.\+hpp}
+\hypertarget{FileInterface_8hpp_source}{}\label{FileInterface_8hpp_source}\index{file\_io/include/aare/file\_io/FileInterface.hpp@{file\_io/include/aare/file\_io/FileInterface.hpp}}
+\mbox{\hyperlink{FileInterface_8hpp}{Go to the documentation of this file.}}
+\begin{DoxyCode}{0}
+\DoxyCodeLine{00001\ \textcolor{preprocessor}{\#pragma\ once}}
+\DoxyCodeLine{00002\ \textcolor{preprocessor}{\#include\ "{}\mbox{\hyperlink{DType_8hpp}{aare/core/DType.hpp}}"{}}}
+\DoxyCodeLine{00003\ \textcolor{preprocessor}{\#include\ "{}\mbox{\hyperlink{Frame_8hpp}{aare/core/Frame.hpp}}"{}}}
+\DoxyCodeLine{00004\ \textcolor{preprocessor}{\#include\ "{}\mbox{\hyperlink{core_2include_2aare_2core_2defs_8hpp}{aare/core/defs.hpp}}"{}}}
+\DoxyCodeLine{00005\ \textcolor{preprocessor}{\#include\ <filesystem>}}
+\DoxyCodeLine{00006\ \textcolor{preprocessor}{\#include\ <vector>}}
+\DoxyCodeLine{00007\ }
+\DoxyCodeLine{00008\ \textcolor{keyword}{namespace\ }\mbox{\hyperlink{namespaceaare}{aare}}\ \{}
+\DoxyCodeLine{00009\ }
+\DoxyCodeLine{00017\ \textcolor{keyword}{struct\ }\mbox{\hyperlink{structaare_1_1FileConfig}{FileConfig}}\ \{}
+\DoxyCodeLine{00018\ \ \ \ \ \mbox{\hyperlink{classaare_1_1DType}{aare::DType}}\ \mbox{\hyperlink{structaare_1_1FileConfig_a45520457ebc4d6e918f25e7263b5ee73}{dtype}}\ =\ \mbox{\hyperlink{classaare_1_1DType}{aare::DType}}(\textcolor{keyword}{typeid}(uint16\_t));}
+\DoxyCodeLine{00019\ \ \ \ \ uint64\_t\ \mbox{\hyperlink{structaare_1_1FileConfig_aa132aaa25c237d8a5e264edaf604f7e5}{rows}};}
+\DoxyCodeLine{00020\ \ \ \ \ uint64\_t\ \mbox{\hyperlink{structaare_1_1FileConfig_a22da62fb09da30e52a555886119f4449}{cols}};}
+\DoxyCodeLine{00021\ \ \ \ \ \mbox{\hyperlink{structaare_1_1xy}{xy}}\ \mbox{\hyperlink{structaare_1_1FileConfig_a23f634204a24ff0af342412dfea3dd93}{geometry}}\{1,\ 1\};}
+\DoxyCodeLine{00022\ \ \ \ \ \textcolor{keywordtype}{bool}\ \mbox{\hyperlink{structaare_1_1FileConfig_ad25cc3e8a6edd711549dcef250a6e378}{operator==}}(\textcolor{keyword}{const}\ \mbox{\hyperlink{structaare_1_1FileConfig}{FileConfig}}\ \&other)\textcolor{keyword}{\ const\ }\{}
+\DoxyCodeLine{00023\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{return}\ \mbox{\hyperlink{structaare_1_1FileConfig_a45520457ebc4d6e918f25e7263b5ee73}{dtype}}\ ==\ other.\mbox{\hyperlink{structaare_1_1FileConfig_a45520457ebc4d6e918f25e7263b5ee73}{dtype}}\ \&\&\ \mbox{\hyperlink{structaare_1_1FileConfig_aa132aaa25c237d8a5e264edaf604f7e5}{rows}}\ ==\ other.\mbox{\hyperlink{structaare_1_1FileConfig_aa132aaa25c237d8a5e264edaf604f7e5}{rows}}\ \&\&\ \mbox{\hyperlink{structaare_1_1FileConfig_a22da62fb09da30e52a555886119f4449}{cols}}\ ==\ other.\mbox{\hyperlink{structaare_1_1FileConfig_a22da62fb09da30e52a555886119f4449}{cols}}\ \&\&\ \mbox{\hyperlink{structaare_1_1FileConfig_a23f634204a24ff0af342412dfea3dd93}{geometry}}\ ==\ other.\mbox{\hyperlink{structaare_1_1FileConfig_a23f634204a24ff0af342412dfea3dd93}{geometry}};}
+\DoxyCodeLine{00024\ \ \ \ \ \}}
+\DoxyCodeLine{00025\ \ \ \ \ \textcolor{keywordtype}{bool}\ \mbox{\hyperlink{structaare_1_1FileConfig_ac348b8c97ab8395069f5f9bc9040c67e}{operator!=}}(\textcolor{keyword}{const}\ \mbox{\hyperlink{structaare_1_1FileConfig}{FileConfig}}\ \&other)\textcolor{keyword}{\ const\ }\{\ \textcolor{keywordflow}{return}\ !(*\textcolor{keyword}{this}\ ==\ other);\ \}}
+\DoxyCodeLine{00026\ \};}
+\DoxyCodeLine{00027\ }
+\DoxyCodeLine{00033\ \textcolor{keyword}{class\ }\mbox{\hyperlink{classaare_1_1FileInterface}{FileInterface}}\ \{}
+\DoxyCodeLine{00034\ \ \ \textcolor{keyword}{public}:}
+\DoxyCodeLine{00041\ \ \ \ \ \textcolor{keyword}{virtual}\ \textcolor{keywordtype}{void}\ \mbox{\hyperlink{classaare_1_1FileInterface_a5d39033c9d218d53d51413b99bf7d1f4}{write}}(\mbox{\hyperlink{classaare_1_1Frame}{Frame}}\ \&frame)\ =\ 0;}
+\DoxyCodeLine{00042\ }
+\DoxyCodeLine{00048\ \ \ \ \ \textcolor{comment}{//\ virtual\ void\ write(std::vector<Frame>\ \&frames)\ =\ 0;}}
+\DoxyCodeLine{00049\ }
+\DoxyCodeLine{00054\ \ \ \ \ \textcolor{keyword}{virtual}\ \mbox{\hyperlink{classaare_1_1Frame}{Frame}}\ \mbox{\hyperlink{classaare_1_1FileInterface_a9cb196de2bee8638578e4ba3ce46532e}{read}}()\ =\ 0;}
+\DoxyCodeLine{00055\ }
+\DoxyCodeLine{00061\ \ \ \ \ \textcolor{keyword}{virtual}\ std::vector<Frame>\ \mbox{\hyperlink{classaare_1_1FileInterface_a1624d72f0feb1c19d507cc91c4cb414a}{read}}(\textcolor{keywordtype}{size\_t}\ n\_frames)\ =\ 0;\ \textcolor{comment}{//\ Is\ this\ the\ right\ interface?}}
+\DoxyCodeLine{00062\ }
+\DoxyCodeLine{00068\ \ \ \ \ \textcolor{keyword}{virtual}\ \textcolor{keywordtype}{void}\ \mbox{\hyperlink{classaare_1_1FileInterface_a4ac0f4e63ccf90af9f0d5b9b44db856c}{read\_into}}(std::byte\ *image\_buf)\ =\ 0;}
+\DoxyCodeLine{00069\ }
+\DoxyCodeLine{00076\ \ \ \ \ \textcolor{keyword}{virtual}\ \textcolor{keywordtype}{void}\ \mbox{\hyperlink{classaare_1_1FileInterface_a580c71b3eecf45ce2140cd65103cfd43}{read\_into}}(std::byte\ *image\_buf,\ \textcolor{keywordtype}{size\_t}\ n\_frames)\ =\ 0;}
+\DoxyCodeLine{00077\ }
+\DoxyCodeLine{00083\ \ \ \ \ \textcolor{keyword}{virtual}\ \textcolor{keywordtype}{size\_t}\ \mbox{\hyperlink{classaare_1_1FileInterface_ac6d10d468f79e855a3334cd1347c1178}{frame\_number}}(\textcolor{keywordtype}{size\_t}\ frame\_index)\ =\ 0;}
+\DoxyCodeLine{00084\ }
+\DoxyCodeLine{00089\ \ \ \ \ \textcolor{keyword}{virtual}\ \textcolor{keywordtype}{size\_t}\ \mbox{\hyperlink{classaare_1_1FileInterface_aab236d5b808f2acc44266281274ed93a}{bytes\_per\_frame}}()\ =\ 0;}
+\DoxyCodeLine{00090\ }
+\DoxyCodeLine{00095\ \ \ \ \ \textcolor{keyword}{virtual}\ \textcolor{keywordtype}{size\_t}\ \mbox{\hyperlink{classaare_1_1FileInterface_a99da51594609984efe62bb64a88a3fa6}{pixels}}()\ =\ 0;}
+\DoxyCodeLine{00096\ }
+\DoxyCodeLine{00102\ \ \ \ \ \textcolor{keyword}{virtual}\ \textcolor{keywordtype}{void}\ \mbox{\hyperlink{classaare_1_1FileInterface_a49510fb96eaa245fd5d2be7f25a40b74}{seek}}(\textcolor{keywordtype}{size\_t}\ \mbox{\hyperlink{classaare_1_1FileInterface_ac6d10d468f79e855a3334cd1347c1178}{frame\_number}})\ =\ 0;}
+\DoxyCodeLine{00103\ }
+\DoxyCodeLine{00108\ \ \ \ \ \textcolor{keyword}{virtual}\ \textcolor{keywordtype}{size\_t}\ \mbox{\hyperlink{classaare_1_1FileInterface_abd01811dcf904625b4dbd78dd9188de4}{tell}}()\ =\ 0;}
+\DoxyCodeLine{00109\ }
+\DoxyCodeLine{00114\ \ \ \ \ \textcolor{keyword}{virtual}\ \textcolor{keywordtype}{size\_t}\ \mbox{\hyperlink{classaare_1_1FileInterface_ad4391bafd11f77f807114ba5108071d3}{total\_frames}}()\ \textcolor{keyword}{const}\ =\ 0;}
+\DoxyCodeLine{00119\ \ \ \ \ \textcolor{keyword}{virtual}\ ssize\_t\ \mbox{\hyperlink{classaare_1_1FileInterface_a8a5bc2d9b7b9ec1a9a100bf8a114d909}{rows}}()\ \textcolor{keyword}{const}\ =\ 0;}
+\DoxyCodeLine{00124\ \ \ \ \ \textcolor{keyword}{virtual}\ ssize\_t\ \mbox{\hyperlink{classaare_1_1FileInterface_a2927ba0e6a564bcd0da139a552c09b76}{cols}}()\ \textcolor{keyword}{const}\ =\ 0;}
+\DoxyCodeLine{00129\ \ \ \ \ \textcolor{keyword}{virtual}\ ssize\_t\ \mbox{\hyperlink{classaare_1_1FileInterface_a8bfd7abf4271210000b2ef8d1c0d6149}{bitdepth}}()\ \textcolor{keyword}{const}\ =\ 0;}
+\DoxyCodeLine{00130\ }
+\DoxyCodeLine{00136\ \ \ \ \ \mbox{\hyperlink{classaare_1_1Frame}{Frame}}\ \mbox{\hyperlink{classaare_1_1FileInterface_aad0827f2dad4403cebdce417243d842c}{iread}}(\textcolor{keywordtype}{size\_t}\ \mbox{\hyperlink{classaare_1_1FileInterface_ac6d10d468f79e855a3334cd1347c1178}{frame\_number}})\ \{}
+\DoxyCodeLine{00137\ \ \ \ \ \ \ \ \ \textcolor{keyword}{auto}\ old\_pos\ =\ \mbox{\hyperlink{classaare_1_1FileInterface_abd01811dcf904625b4dbd78dd9188de4}{tell}}();}
+\DoxyCodeLine{00138\ \ \ \ \ \ \ \ \ \mbox{\hyperlink{classaare_1_1FileInterface_a49510fb96eaa245fd5d2be7f25a40b74}{seek}}(\mbox{\hyperlink{classaare_1_1FileInterface_ac6d10d468f79e855a3334cd1347c1178}{frame\_number}});}
+\DoxyCodeLine{00139\ \ \ \ \ \ \ \ \ \mbox{\hyperlink{classaare_1_1Frame}{Frame}}\ tmp\ =\ \mbox{\hyperlink{classaare_1_1FileInterface_a9cb196de2bee8638578e4ba3ce46532e}{read}}();}
+\DoxyCodeLine{00140\ \ \ \ \ \ \ \ \ \mbox{\hyperlink{classaare_1_1FileInterface_a49510fb96eaa245fd5d2be7f25a40b74}{seek}}(old\_pos);}
+\DoxyCodeLine{00141\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{return}\ tmp;}
+\DoxyCodeLine{00142\ \ \ \ \ \};}
+\DoxyCodeLine{00143\ }
+\DoxyCodeLine{00150\ \ \ \ \ std::vector<Frame>\ \mbox{\hyperlink{classaare_1_1FileInterface_a1a304e356f3c1d100544d6ceeb35c0fb}{iread}}(\textcolor{keywordtype}{size\_t}\ \mbox{\hyperlink{classaare_1_1FileInterface_ac6d10d468f79e855a3334cd1347c1178}{frame\_number}},\ \textcolor{keywordtype}{size\_t}\ n\_frames)\ \{}
+\DoxyCodeLine{00151\ \ \ \ \ \ \ \ \ \textcolor{keyword}{auto}\ old\_pos\ =\ \mbox{\hyperlink{classaare_1_1FileInterface_abd01811dcf904625b4dbd78dd9188de4}{tell}}();}
+\DoxyCodeLine{00152\ \ \ \ \ \ \ \ \ \mbox{\hyperlink{classaare_1_1FileInterface_a49510fb96eaa245fd5d2be7f25a40b74}{seek}}(\mbox{\hyperlink{classaare_1_1FileInterface_ac6d10d468f79e855a3334cd1347c1178}{frame\_number}});}
+\DoxyCodeLine{00153\ \ \ \ \ \ \ \ \ std::vector<Frame>\ tmp\ =\ \mbox{\hyperlink{classaare_1_1FileInterface_a9cb196de2bee8638578e4ba3ce46532e}{read}}(n\_frames);}
+\DoxyCodeLine{00154\ \ \ \ \ \ \ \ \ \mbox{\hyperlink{classaare_1_1FileInterface_a49510fb96eaa245fd5d2be7f25a40b74}{seek}}(old\_pos);}
+\DoxyCodeLine{00155\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{return}\ tmp;}
+\DoxyCodeLine{00156\ \ \ \ \ \}}
+\DoxyCodeLine{00157\ }
+\DoxyCodeLine{00158\ \ \ \ \ \textcolor{comment}{//\ function\ to\ query\ the\ data\ type\ of\ the\ file}}
+\DoxyCodeLine{00159\ \ \ \ \ \textcolor{comment}{/*virtual\ DataType\ dtype\ =\ 0;\ */}}
+\DoxyCodeLine{00160\ }
+\DoxyCodeLine{00161\ \ \ \ \ \textcolor{keyword}{virtual}\ \mbox{\hyperlink{classaare_1_1FileInterface_a7546e2d2dec365bee91cbf5607278e80}{\string~FileInterface}}()\{}
+\DoxyCodeLine{00162\ }
+\DoxyCodeLine{00163\ \ \ \ \ \};}
+\DoxyCodeLine{00164\ }
+\DoxyCodeLine{00165\ \ \ \textcolor{keyword}{public}:}
+\DoxyCodeLine{00166\ \ \ \ \ std::string\ \mbox{\hyperlink{classaare_1_1FileInterface_ab1d0e6de947affd5af9740eb06888fc6}{m\_mode}};}
+\DoxyCodeLine{00167\ \ \ \ \ std::filesystem::path\ \mbox{\hyperlink{classaare_1_1FileInterface_a325f6603f564fb42f8f28f1136b5e329}{m\_fname}};}
+\DoxyCodeLine{00168\ \ \ \ \ std::filesystem::path\ \mbox{\hyperlink{classaare_1_1FileInterface_afdd0a1a75618ad5db2f4794e0900b2f4}{m\_base\_path}};}
+\DoxyCodeLine{00169\ \ \ \ \ std::string\ \mbox{\hyperlink{classaare_1_1FileInterface_adae2b35fc6a3f185e9eb263c97bc024b}{m\_base\_name}},\ \mbox{\hyperlink{classaare_1_1FileInterface_a5fffaf9a7c8ae2b3a2ebe89b9c94ed34}{m\_ext}};}
+\DoxyCodeLine{00170\ \ \ \ \ \textcolor{keywordtype}{int}\ \mbox{\hyperlink{classaare_1_1FileInterface_a30e926a897b534ab9a327d40594ff191}{m\_findex}};}
+\DoxyCodeLine{00171\ \ \ \ \ \textcolor{keywordtype}{size\_t}\ \mbox{\hyperlink{classaare_1_1FileInterface_a91551fada444b231294c095f3f5fb768}{m\_total\_frames}}\{\};}
+\DoxyCodeLine{00172\ \ \ \ \ \textcolor{keywordtype}{size\_t}\ \mbox{\hyperlink{classaare_1_1FileInterface_ab0762d7652c9a4e1afe6dbb7d7325ac9}{max\_frames\_per\_file}}\{\};}
+\DoxyCodeLine{00173\ \ \ \ \ std::string\ \mbox{\hyperlink{classaare_1_1FileInterface_a44cbe933bbd2cae1f48213121d15bce2}{version}};}
+\DoxyCodeLine{00174\ \ \ \ \ \mbox{\hyperlink{namespaceaare_a5b95afba95553c1e118e1478c69042f7}{DetectorType}}\ \mbox{\hyperlink{classaare_1_1FileInterface_a9476a299cea6b4e97605135a28d0cb60}{m\_type}};}
+\DoxyCodeLine{00175\ \ \ \ \ ssize\_t\ \mbox{\hyperlink{classaare_1_1FileInterface_ae29d98625cf56989e2c5237ace0d0f4c}{m\_rows}}\{\};}
+\DoxyCodeLine{00176\ \ \ \ \ ssize\_t\ \mbox{\hyperlink{classaare_1_1FileInterface_ad4c9991c30a71ba83cbaab283bc756b5}{m\_cols}}\{\};}
+\DoxyCodeLine{00177\ \ \ \ \ ssize\_t\ \mbox{\hyperlink{classaare_1_1FileInterface_a252d27cbbfcdfc528b86925eaac55bb7}{m\_bitdepth}}\{\};}
+\DoxyCodeLine{00178\ \ \ \ \ \textcolor{keywordtype}{size\_t}\ \mbox{\hyperlink{classaare_1_1FileInterface_ab96f5dd0c99fb7b5a527da812368d736}{current\_frame}}\{\};}
+\DoxyCodeLine{00179\ \};}
+\DoxyCodeLine{00180\ }
+\DoxyCodeLine{00181\ \}\ \textcolor{comment}{//\ namespace\ aare}}
+
+\end{DoxyCode}

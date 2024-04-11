@@ -1,0 +1,188 @@
+\doxysection{aare\+::logger\+::Logger Class Reference}
+\hypertarget{classaare_1_1logger_1_1Logger}{}\label{classaare_1_1logger_1_1Logger}\index{aare::logger::Logger@{aare::logger::Logger}}
+
+
+{\ttfamily \#include $<$logger.\+hpp$>$}
+
+\doxysubsubsection*{Public Member Functions}
+\begin{DoxyCompactItemize}
+\item 
+void \mbox{\hyperlink{classaare_1_1logger_1_1Logger_ad758e0a3ba1dafbf37bb9b27f128037e}{set\+\_\+output\+\_\+file}} (std\+::string filename)
+\item 
+void \mbox{\hyperlink{classaare_1_1logger_1_1Logger_a38d6998a952960955503110b6c548a7c}{set\+\_\+streams}} (std\+::streambuf \texorpdfstring{$\ast$}{*}out, std\+::streambuf \texorpdfstring{$\ast$}{*}err)
+\item 
+void \mbox{\hyperlink{classaare_1_1logger_1_1Logger_a9347723aa8f9211a409545eb42a35bbb}{set\+\_\+streams}} (std\+::streambuf \texorpdfstring{$\ast$}{*}out)
+\item 
+void \mbox{\hyperlink{classaare_1_1logger_1_1Logger_a58c7bf903ae895639465882ce3389cd5}{set\+\_\+verbosity}} (\mbox{\hyperlink{namespaceaare_1_1logger_af49e00b36677b44ea78813c109b697ed}{LOGGING\+\_\+\+LEVEL}} level)
+\item 
+\mbox{\hyperlink{classaare_1_1logger_1_1Logger_a6a814b3ec1da07895fb5a4e0730ae73b}{Logger}} ()
+\item 
+\mbox{\hyperlink{classaare_1_1logger_1_1Logger_a4e6fb5d7897b38221180b402f8b961a2}{\texorpdfstring{$\sim$}{\string~}\+Logger}} ()
+\item 
+{\footnotesize template$<$\mbox{\hyperlink{namespaceaare_1_1logger_af49e00b36677b44ea78813c109b697ed}{LOGGING\+\_\+\+LEVEL}} level, typename... Strings$>$ }\\void \mbox{\hyperlink{classaare_1_1logger_1_1Logger_a6af7cdd6470c45c75ead18beef5acc05}{log}} (const Strings... s)
+\item 
+{\footnotesize template$<$typename... Strings$>$ }\\void \mbox{\hyperlink{classaare_1_1logger_1_1Logger_a8e7bb30772e8172de56816f5a8064a92}{debug}} (const Strings... s)
+\item 
+{\footnotesize template$<$typename... Strings$>$ }\\void \mbox{\hyperlink{classaare_1_1logger_1_1Logger_a8771c669369560459142d57bd2039a3a}{info}} (const Strings... s)
+\item 
+{\footnotesize template$<$typename... Strings$>$ }\\void \mbox{\hyperlink{classaare_1_1logger_1_1Logger_a69ddcaa771a0e307e6b7cc6695073eb7}{warn}} (const Strings... s)
+\item 
+{\footnotesize template$<$typename... Strings$>$ }\\void \mbox{\hyperlink{classaare_1_1logger_1_1Logger_af1f0c59605d44733cd2520d7820e9cc4}{error}} (const Strings... s)
+\end{DoxyCompactItemize}
+\doxysubsubsection*{Private Member Functions}
+\begin{DoxyCompactItemize}
+\item 
+{\footnotesize template$<$\mbox{\hyperlink{namespaceaare_1_1logger_af49e00b36677b44ea78813c109b697ed}{LOGGING\+\_\+\+LEVEL}} level$>$ }\\void \mbox{\hyperlink{classaare_1_1logger_1_1Logger_ae1700009b33adc5a9c6f0b2c017feece}{log\+\_\+}} ()
+\item 
+{\footnotesize template$<$\mbox{\hyperlink{namespaceaare_1_1logger_af49e00b36677b44ea78813c109b697ed}{LOGGING\+\_\+\+LEVEL}} level, typename First , typename... Strings$>$ }\\void \mbox{\hyperlink{classaare_1_1logger_1_1Logger_adc97b62fee1726187426212fac981485}{log\+\_\+}} (First arg, const Strings... s)
+\end{DoxyCompactItemize}
+\doxysubsubsection*{Private Attributes}
+\begin{DoxyCompactItemize}
+\item 
+std\+::streambuf \texorpdfstring{$\ast$}{*} \mbox{\hyperlink{classaare_1_1logger_1_1Logger_ae2e6694d5ed4e385a8fff81cfa31b881}{standard\+\_\+buf}} = std\+::cout.\+rdbuf()
+\item 
+std\+::streambuf \texorpdfstring{$\ast$}{*} \mbox{\hyperlink{classaare_1_1logger_1_1Logger_acd26de11ebd34bac7530994cfad21c47}{error\+\_\+buf}} = std\+::cerr.\+rdbuf()
+\item 
+std\+::ostream \texorpdfstring{$\ast$}{*} \mbox{\hyperlink{classaare_1_1logger_1_1Logger_a9a97e0af9b628e0b44f1650503e3703b}{standard\+\_\+output}}
+\item 
+std\+::ostream \texorpdfstring{$\ast$}{*} \mbox{\hyperlink{classaare_1_1logger_1_1Logger_aacddc9dbc5f3909779766a6290cfa9e2}{error\+\_\+output}}
+\item 
+\mbox{\hyperlink{namespaceaare_1_1logger_af49e00b36677b44ea78813c109b697ed}{LOGGING\+\_\+\+LEVEL}} \mbox{\hyperlink{classaare_1_1logger_1_1Logger_a8442d8748d3441ada95d85c95fd2ba9f}{VERBOSITY\+\_\+\+LEVEL}} = \mbox{\hyperlink{namespaceaare_1_1logger_af49e00b36677b44ea78813c109b697edaa299d78fc1de06730cc5c9e63992071f}{LOGGING\+\_\+\+LEVEL\+::\+INFO}}
+\item 
+std\+::ofstream \mbox{\hyperlink{classaare_1_1logger_1_1Logger_a4b40d1254643c48085df472a850edf14}{out\+\_\+file}}
+\end{DoxyCompactItemize}
+
+
+\doxysubsection{Constructor \& Destructor Documentation}
+\Hypertarget{classaare_1_1logger_1_1Logger_a6a814b3ec1da07895fb5a4e0730ae73b}\label{classaare_1_1logger_1_1Logger_a6a814b3ec1da07895fb5a4e0730ae73b} 
+\index{aare::logger::Logger@{aare::logger::Logger}!Logger@{Logger}}
+\index{Logger@{Logger}!aare::logger::Logger@{aare::logger::Logger}}
+\doxysubsubsection{\texorpdfstring{Logger()}{Logger()}}
+{\footnotesize\ttfamily aare\+::logger\+::\+Logger\+::\+Logger (\begin{DoxyParamCaption}{ }\end{DoxyParamCaption})\hspace{0.3cm}{\ttfamily [inline]}}
+
+\Hypertarget{classaare_1_1logger_1_1Logger_a4e6fb5d7897b38221180b402f8b961a2}\label{classaare_1_1logger_1_1Logger_a4e6fb5d7897b38221180b402f8b961a2} 
+\index{aare::logger::Logger@{aare::logger::Logger}!````~Logger@{\texorpdfstring{$\sim$}{\string~}Logger}}
+\index{````~Logger@{\texorpdfstring{$\sim$}{\string~}Logger}!aare::logger::Logger@{aare::logger::Logger}}
+\doxysubsubsection{\texorpdfstring{\texorpdfstring{$\sim$}{\string~}Logger()}{\string~Logger()}}
+{\footnotesize\ttfamily aare\+::logger\+::\+Logger\+::\texorpdfstring{$\sim$}{\string~}\+Logger (\begin{DoxyParamCaption}{ }\end{DoxyParamCaption})\hspace{0.3cm}{\ttfamily [inline]}}
+
+
+
+\doxysubsection{Member Function Documentation}
+\Hypertarget{classaare_1_1logger_1_1Logger_a8e7bb30772e8172de56816f5a8064a92}\label{classaare_1_1logger_1_1Logger_a8e7bb30772e8172de56816f5a8064a92} 
+\index{aare::logger::Logger@{aare::logger::Logger}!debug@{debug}}
+\index{debug@{debug}!aare::logger::Logger@{aare::logger::Logger}}
+\doxysubsubsection{\texorpdfstring{debug()}{debug()}}
+{\footnotesize\ttfamily template$<$typename... Strings$>$ \\
+void aare\+::logger\+::\+Logger\+::debug (\begin{DoxyParamCaption}\item[{const Strings...}]{s }\end{DoxyParamCaption})\hspace{0.3cm}{\ttfamily [inline]}}
+
+\Hypertarget{classaare_1_1logger_1_1Logger_af1f0c59605d44733cd2520d7820e9cc4}\label{classaare_1_1logger_1_1Logger_af1f0c59605d44733cd2520d7820e9cc4} 
+\index{aare::logger::Logger@{aare::logger::Logger}!error@{error}}
+\index{error@{error}!aare::logger::Logger@{aare::logger::Logger}}
+\doxysubsubsection{\texorpdfstring{error()}{error()}}
+{\footnotesize\ttfamily template$<$typename... Strings$>$ \\
+void aare\+::logger\+::\+Logger\+::error (\begin{DoxyParamCaption}\item[{const Strings...}]{s }\end{DoxyParamCaption})\hspace{0.3cm}{\ttfamily [inline]}}
+
+\Hypertarget{classaare_1_1logger_1_1Logger_a8771c669369560459142d57bd2039a3a}\label{classaare_1_1logger_1_1Logger_a8771c669369560459142d57bd2039a3a} 
+\index{aare::logger::Logger@{aare::logger::Logger}!info@{info}}
+\index{info@{info}!aare::logger::Logger@{aare::logger::Logger}}
+\doxysubsubsection{\texorpdfstring{info()}{info()}}
+{\footnotesize\ttfamily template$<$typename... Strings$>$ \\
+void aare\+::logger\+::\+Logger\+::info (\begin{DoxyParamCaption}\item[{const Strings...}]{s }\end{DoxyParamCaption})\hspace{0.3cm}{\ttfamily [inline]}}
+
+\Hypertarget{classaare_1_1logger_1_1Logger_a6af7cdd6470c45c75ead18beef5acc05}\label{classaare_1_1logger_1_1Logger_a6af7cdd6470c45c75ead18beef5acc05} 
+\index{aare::logger::Logger@{aare::logger::Logger}!log@{log}}
+\index{log@{log}!aare::logger::Logger@{aare::logger::Logger}}
+\doxysubsubsection{\texorpdfstring{log()}{log()}}
+{\footnotesize\ttfamily template$<$\mbox{\hyperlink{namespaceaare_1_1logger_af49e00b36677b44ea78813c109b697ed}{LOGGING\+\_\+\+LEVEL}} level, typename... Strings$>$ \\
+void aare\+::logger\+::\+Logger\+::log (\begin{DoxyParamCaption}\item[{const Strings...}]{s }\end{DoxyParamCaption})\hspace{0.3cm}{\ttfamily [inline]}}
+
+\Hypertarget{classaare_1_1logger_1_1Logger_ae1700009b33adc5a9c6f0b2c017feece}\label{classaare_1_1logger_1_1Logger_ae1700009b33adc5a9c6f0b2c017feece} 
+\index{aare::logger::Logger@{aare::logger::Logger}!log\_@{log\_}}
+\index{log\_@{log\_}!aare::logger::Logger@{aare::logger::Logger}}
+\doxysubsubsection{\texorpdfstring{log\_()}{log\_()}\hspace{0.1cm}{\footnotesize\ttfamily [1/2]}}
+{\footnotesize\ttfamily template$<$\mbox{\hyperlink{namespaceaare_1_1logger_af49e00b36677b44ea78813c109b697ed}{LOGGING\+\_\+\+LEVEL}} level$>$ \\
+void aare\+::logger\+::\+Logger\+::log\+\_\+ (\begin{DoxyParamCaption}{ }\end{DoxyParamCaption})\hspace{0.3cm}{\ttfamily [inline]}, {\ttfamily [private]}}
+
+\Hypertarget{classaare_1_1logger_1_1Logger_adc97b62fee1726187426212fac981485}\label{classaare_1_1logger_1_1Logger_adc97b62fee1726187426212fac981485} 
+\index{aare::logger::Logger@{aare::logger::Logger}!log\_@{log\_}}
+\index{log\_@{log\_}!aare::logger::Logger@{aare::logger::Logger}}
+\doxysubsubsection{\texorpdfstring{log\_()}{log\_()}\hspace{0.1cm}{\footnotesize\ttfamily [2/2]}}
+{\footnotesize\ttfamily template$<$\mbox{\hyperlink{namespaceaare_1_1logger_af49e00b36677b44ea78813c109b697ed}{LOGGING\+\_\+\+LEVEL}} level, typename First , typename... Strings$>$ \\
+void aare\+::logger\+::\+Logger\+::log\+\_\+ (\begin{DoxyParamCaption}\item[{First}]{arg,  }\item[{const Strings...}]{s }\end{DoxyParamCaption})\hspace{0.3cm}{\ttfamily [inline]}, {\ttfamily [private]}}
+
+\Hypertarget{classaare_1_1logger_1_1Logger_ad758e0a3ba1dafbf37bb9b27f128037e}\label{classaare_1_1logger_1_1Logger_ad758e0a3ba1dafbf37bb9b27f128037e} 
+\index{aare::logger::Logger@{aare::logger::Logger}!set\_output\_file@{set\_output\_file}}
+\index{set\_output\_file@{set\_output\_file}!aare::logger::Logger@{aare::logger::Logger}}
+\doxysubsubsection{\texorpdfstring{set\_output\_file()}{set\_output\_file()}}
+{\footnotesize\ttfamily void aare\+::logger\+::\+Logger\+::set\+\_\+output\+\_\+file (\begin{DoxyParamCaption}\item[{std\+::string}]{filename }\end{DoxyParamCaption})\hspace{0.3cm}{\ttfamily [inline]}}
+
+\Hypertarget{classaare_1_1logger_1_1Logger_a9347723aa8f9211a409545eb42a35bbb}\label{classaare_1_1logger_1_1Logger_a9347723aa8f9211a409545eb42a35bbb} 
+\index{aare::logger::Logger@{aare::logger::Logger}!set\_streams@{set\_streams}}
+\index{set\_streams@{set\_streams}!aare::logger::Logger@{aare::logger::Logger}}
+\doxysubsubsection{\texorpdfstring{set\_streams()}{set\_streams()}\hspace{0.1cm}{\footnotesize\ttfamily [1/2]}}
+{\footnotesize\ttfamily void aare\+::logger\+::\+Logger\+::set\+\_\+streams (\begin{DoxyParamCaption}\item[{std\+::streambuf \texorpdfstring{$\ast$}{*}}]{out }\end{DoxyParamCaption})\hspace{0.3cm}{\ttfamily [inline]}}
+
+\Hypertarget{classaare_1_1logger_1_1Logger_a38d6998a952960955503110b6c548a7c}\label{classaare_1_1logger_1_1Logger_a38d6998a952960955503110b6c548a7c} 
+\index{aare::logger::Logger@{aare::logger::Logger}!set\_streams@{set\_streams}}
+\index{set\_streams@{set\_streams}!aare::logger::Logger@{aare::logger::Logger}}
+\doxysubsubsection{\texorpdfstring{set\_streams()}{set\_streams()}\hspace{0.1cm}{\footnotesize\ttfamily [2/2]}}
+{\footnotesize\ttfamily void aare\+::logger\+::\+Logger\+::set\+\_\+streams (\begin{DoxyParamCaption}\item[{std\+::streambuf \texorpdfstring{$\ast$}{*}}]{out,  }\item[{std\+::streambuf \texorpdfstring{$\ast$}{*}}]{err }\end{DoxyParamCaption})\hspace{0.3cm}{\ttfamily [inline]}}
+
+\Hypertarget{classaare_1_1logger_1_1Logger_a58c7bf903ae895639465882ce3389cd5}\label{classaare_1_1logger_1_1Logger_a58c7bf903ae895639465882ce3389cd5} 
+\index{aare::logger::Logger@{aare::logger::Logger}!set\_verbosity@{set\_verbosity}}
+\index{set\_verbosity@{set\_verbosity}!aare::logger::Logger@{aare::logger::Logger}}
+\doxysubsubsection{\texorpdfstring{set\_verbosity()}{set\_verbosity()}}
+{\footnotesize\ttfamily void aare\+::logger\+::\+Logger\+::set\+\_\+verbosity (\begin{DoxyParamCaption}\item[{\mbox{\hyperlink{namespaceaare_1_1logger_af49e00b36677b44ea78813c109b697ed}{LOGGING\+\_\+\+LEVEL}}}]{level }\end{DoxyParamCaption})\hspace{0.3cm}{\ttfamily [inline]}}
+
+\Hypertarget{classaare_1_1logger_1_1Logger_a69ddcaa771a0e307e6b7cc6695073eb7}\label{classaare_1_1logger_1_1Logger_a69ddcaa771a0e307e6b7cc6695073eb7} 
+\index{aare::logger::Logger@{aare::logger::Logger}!warn@{warn}}
+\index{warn@{warn}!aare::logger::Logger@{aare::logger::Logger}}
+\doxysubsubsection{\texorpdfstring{warn()}{warn()}}
+{\footnotesize\ttfamily template$<$typename... Strings$>$ \\
+void aare\+::logger\+::\+Logger\+::warn (\begin{DoxyParamCaption}\item[{const Strings...}]{s }\end{DoxyParamCaption})\hspace{0.3cm}{\ttfamily [inline]}}
+
+
+
+\doxysubsection{Field Documentation}
+\Hypertarget{classaare_1_1logger_1_1Logger_acd26de11ebd34bac7530994cfad21c47}\label{classaare_1_1logger_1_1Logger_acd26de11ebd34bac7530994cfad21c47} 
+\index{aare::logger::Logger@{aare::logger::Logger}!error\_buf@{error\_buf}}
+\index{error\_buf@{error\_buf}!aare::logger::Logger@{aare::logger::Logger}}
+\doxysubsubsection{\texorpdfstring{error\_buf}{error\_buf}}
+{\footnotesize\ttfamily std\+::streambuf\texorpdfstring{$\ast$}{*} aare\+::logger\+::\+Logger\+::error\+\_\+buf = std\+::cerr.\+rdbuf()\hspace{0.3cm}{\ttfamily [private]}}
+
+\Hypertarget{classaare_1_1logger_1_1Logger_aacddc9dbc5f3909779766a6290cfa9e2}\label{classaare_1_1logger_1_1Logger_aacddc9dbc5f3909779766a6290cfa9e2} 
+\index{aare::logger::Logger@{aare::logger::Logger}!error\_output@{error\_output}}
+\index{error\_output@{error\_output}!aare::logger::Logger@{aare::logger::Logger}}
+\doxysubsubsection{\texorpdfstring{error\_output}{error\_output}}
+{\footnotesize\ttfamily std\+::ostream\texorpdfstring{$\ast$}{*} aare\+::logger\+::\+Logger\+::error\+\_\+output\hspace{0.3cm}{\ttfamily [private]}}
+
+\Hypertarget{classaare_1_1logger_1_1Logger_a4b40d1254643c48085df472a850edf14}\label{classaare_1_1logger_1_1Logger_a4b40d1254643c48085df472a850edf14} 
+\index{aare::logger::Logger@{aare::logger::Logger}!out\_file@{out\_file}}
+\index{out\_file@{out\_file}!aare::logger::Logger@{aare::logger::Logger}}
+\doxysubsubsection{\texorpdfstring{out\_file}{out\_file}}
+{\footnotesize\ttfamily std\+::ofstream aare\+::logger\+::\+Logger\+::out\+\_\+file\hspace{0.3cm}{\ttfamily [private]}}
+
+\Hypertarget{classaare_1_1logger_1_1Logger_ae2e6694d5ed4e385a8fff81cfa31b881}\label{classaare_1_1logger_1_1Logger_ae2e6694d5ed4e385a8fff81cfa31b881} 
+\index{aare::logger::Logger@{aare::logger::Logger}!standard\_buf@{standard\_buf}}
+\index{standard\_buf@{standard\_buf}!aare::logger::Logger@{aare::logger::Logger}}
+\doxysubsubsection{\texorpdfstring{standard\_buf}{standard\_buf}}
+{\footnotesize\ttfamily std\+::streambuf\texorpdfstring{$\ast$}{*} aare\+::logger\+::\+Logger\+::standard\+\_\+buf = std\+::cout.\+rdbuf()\hspace{0.3cm}{\ttfamily [private]}}
+
+\Hypertarget{classaare_1_1logger_1_1Logger_a9a97e0af9b628e0b44f1650503e3703b}\label{classaare_1_1logger_1_1Logger_a9a97e0af9b628e0b44f1650503e3703b} 
+\index{aare::logger::Logger@{aare::logger::Logger}!standard\_output@{standard\_output}}
+\index{standard\_output@{standard\_output}!aare::logger::Logger@{aare::logger::Logger}}
+\doxysubsubsection{\texorpdfstring{standard\_output}{standard\_output}}
+{\footnotesize\ttfamily std\+::ostream\texorpdfstring{$\ast$}{*} aare\+::logger\+::\+Logger\+::standard\+\_\+output\hspace{0.3cm}{\ttfamily [private]}}
+
+\Hypertarget{classaare_1_1logger_1_1Logger_a8442d8748d3441ada95d85c95fd2ba9f}\label{classaare_1_1logger_1_1Logger_a8442d8748d3441ada95d85c95fd2ba9f} 
+\index{aare::logger::Logger@{aare::logger::Logger}!VERBOSITY\_LEVEL@{VERBOSITY\_LEVEL}}
+\index{VERBOSITY\_LEVEL@{VERBOSITY\_LEVEL}!aare::logger::Logger@{aare::logger::Logger}}
+\doxysubsubsection{\texorpdfstring{VERBOSITY\_LEVEL}{VERBOSITY\_LEVEL}}
+{\footnotesize\ttfamily \mbox{\hyperlink{namespaceaare_1_1logger_af49e00b36677b44ea78813c109b697ed}{LOGGING\+\_\+\+LEVEL}} aare\+::logger\+::\+Logger\+::\+VERBOSITY\+\_\+\+LEVEL = \mbox{\hyperlink{namespaceaare_1_1logger_af49e00b36677b44ea78813c109b697edaa299d78fc1de06730cc5c9e63992071f}{LOGGING\+\_\+\+LEVEL\+::\+INFO}}\hspace{0.3cm}{\ttfamily [private]}}
+
+
+
+The documentation for this class was generated from the following file\+:\begin{DoxyCompactItemize}
+\item 
+utils/include/aare/utils/\mbox{\hyperlink{logger_8hpp}{logger.\+hpp}}\end{DoxyCompactItemize}

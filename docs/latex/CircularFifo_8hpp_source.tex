@@ -1,0 +1,103 @@
+\doxysection{Circular\+Fifo.\+hpp}
+\hypertarget{CircularFifo_8hpp_source}{}\label{CircularFifo_8hpp_source}\index{core/include/aare/core/CircularFifo.hpp@{core/include/aare/core/CircularFifo.hpp}}
+\mbox{\hyperlink{CircularFifo_8hpp}{Go to the documentation of this file.}}
+\begin{DoxyCode}{0}
+\DoxyCodeLine{00001\ \textcolor{preprocessor}{\#pragma\ once}}
+\DoxyCodeLine{00002\ }
+\DoxyCodeLine{00003\ \textcolor{preprocessor}{\#include\ <chrono>}}
+\DoxyCodeLine{00004\ \textcolor{preprocessor}{\#include\ <fmt/color.h>}}
+\DoxyCodeLine{00005\ \textcolor{preprocessor}{\#include\ <fmt/format.h>}}
+\DoxyCodeLine{00006\ \textcolor{preprocessor}{\#include\ <memory>}}
+\DoxyCodeLine{00007\ \textcolor{preprocessor}{\#include\ <thread>}}
+\DoxyCodeLine{00008\ }
+\DoxyCodeLine{00009\ \textcolor{preprocessor}{\#include\ "{}\mbox{\hyperlink{ProducerConsumerQueue_8hpp}{aare/core/ProducerConsumerQueue.hpp}}"{}}}
+\DoxyCodeLine{00010\ }
+\DoxyCodeLine{00011\ \textcolor{keyword}{namespace\ }\mbox{\hyperlink{namespaceaare}{aare}}\ \{}
+\DoxyCodeLine{00012\ }
+\DoxyCodeLine{00013\ \textcolor{keyword}{template}\ <\textcolor{keyword}{class}\ ItemType>\ \textcolor{keyword}{class\ }\mbox{\hyperlink{classaare_1_1CircularFifo}{CircularFifo}}\ \{}
+\DoxyCodeLine{00014\ \ \ \ \ uint32\_t\ \mbox{\hyperlink{classaare_1_1CircularFifo_af2c357b41296f0516b402feae91dc82d}{fifo\_size}};}
+\DoxyCodeLine{00015\ \ \ \ \ \mbox{\hyperlink{structfolly_1_1ProducerConsumerQueue}{folly::ProducerConsumerQueue<ItemType>}}\ \mbox{\hyperlink{classaare_1_1CircularFifo_ad08760281625cee96d79104c4321dbf4}{free\_slots}};}
+\DoxyCodeLine{00016\ \ \ \ \ \mbox{\hyperlink{structfolly_1_1ProducerConsumerQueue}{folly::ProducerConsumerQueue<ItemType>}}\ \mbox{\hyperlink{classaare_1_1CircularFifo_a28f5f6090b7812d18543b213c4d3177f}{filled\_slots}};}
+\DoxyCodeLine{00017\ }
+\DoxyCodeLine{00018\ \ \ \textcolor{keyword}{public}:}
+\DoxyCodeLine{00019\ \ \ \ \ \mbox{\hyperlink{classaare_1_1CircularFifo_a8579c56895285557b6029db73f5b2af3}{CircularFifo}}()\ :\ \mbox{\hyperlink{classaare_1_1CircularFifo}{CircularFifo}}(100)\{\};}
+\DoxyCodeLine{00020\ \ \ \ \ \mbox{\hyperlink{classaare_1_1CircularFifo_abeda9cfed3526a9c4241fcc9ed4ba163}{CircularFifo}}(uint32\_t\ size)\ :\ \mbox{\hyperlink{classaare_1_1CircularFifo_af2c357b41296f0516b402feae91dc82d}{fifo\_size}}(size),\ \mbox{\hyperlink{classaare_1_1CircularFifo_ad08760281625cee96d79104c4321dbf4}{free\_slots}}(size\ +\ 1),\ \mbox{\hyperlink{classaare_1_1CircularFifo_a28f5f6090b7812d18543b213c4d3177f}{filled\_slots}}(size\ +\ 1)\ \{}
+\DoxyCodeLine{00021\ }
+\DoxyCodeLine{00022\ \ \ \ \ \ \ \ \ \textcolor{comment}{//\ TODO!\ how\ do\ we\ deal\ with\ alignment\ for\ writing?\ alignas???}}
+\DoxyCodeLine{00023\ \ \ \ \ \ \ \ \ \textcolor{comment}{//\ Do\ we\ give\ the\ user\ a\ chance\ to\ provide\ memory\ locations?}}
+\DoxyCodeLine{00024\ \ \ \ \ \ \ \ \ \textcolor{comment}{//\ Templated\ allocator?}}
+\DoxyCodeLine{00025\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{for}\ (\textcolor{keywordtype}{size\_t}\ i\ =\ 0;\ i\ <\ \mbox{\hyperlink{classaare_1_1CircularFifo_af2c357b41296f0516b402feae91dc82d}{fifo\_size}};\ ++i)\ \{}
+\DoxyCodeLine{00026\ \ \ \ \ \ \ \ \ \ \ \ \ \mbox{\hyperlink{classaare_1_1CircularFifo_ad08760281625cee96d79104c4321dbf4}{free\_slots}}.\mbox{\hyperlink{structfolly_1_1ProducerConsumerQueue_af849682c2351c5f2b3344e32c512a961}{write}}(ItemType\{\});}
+\DoxyCodeLine{00027\ \ \ \ \ \ \ \ \ \}}
+\DoxyCodeLine{00028\ \ \ \ \ \}}
+\DoxyCodeLine{00029\ }
+\DoxyCodeLine{00030\ \ \ \ \ \textcolor{keywordtype}{bool}\ \mbox{\hyperlink{classaare_1_1CircularFifo_af4e41499b0c82bb4264739a55fef2cdc}{next}}()\ \{}
+\DoxyCodeLine{00031\ \ \ \ \ \ \ \ \ \textcolor{comment}{//\ TODO!\ avoid\ default\ constructing\ ItemType}}
+\DoxyCodeLine{00032\ \ \ \ \ \ \ \ \ ItemType\ it;}
+\DoxyCodeLine{00033\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{if}\ (!\mbox{\hyperlink{classaare_1_1CircularFifo_a28f5f6090b7812d18543b213c4d3177f}{filled\_slots}}.\mbox{\hyperlink{structfolly_1_1ProducerConsumerQueue_a3288ef770695d676376c80ea41630b74}{read}}(it))}
+\DoxyCodeLine{00034\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{return}\ \textcolor{keyword}{false};}
+\DoxyCodeLine{00035\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{if}\ (!\mbox{\hyperlink{classaare_1_1CircularFifo_ad08760281625cee96d79104c4321dbf4}{free\_slots}}.\mbox{\hyperlink{structfolly_1_1ProducerConsumerQueue_af849682c2351c5f2b3344e32c512a961}{write}}(std::move(it)))}
+\DoxyCodeLine{00036\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{return}\ \textcolor{keyword}{false};}
+\DoxyCodeLine{00037\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{return}\ \textcolor{keyword}{true};}
+\DoxyCodeLine{00038\ \ \ \ \ \}}
+\DoxyCodeLine{00039\ }
+\DoxyCodeLine{00040\ \ \ \ \ \mbox{\hyperlink{classaare_1_1CircularFifo_a2a2d8bb747eb3235b2bddd88216b1733}{\string~CircularFifo}}()\ \{\}}
+\DoxyCodeLine{00041\ }
+\DoxyCodeLine{00042\ \ \ \ \ \textcolor{keyword}{using\ }\mbox{\hyperlink{classaare_1_1CircularFifo_a37b26e1fd9d6904cef2d1cafda316dc0}{value\_type}}\ =\ ItemType;}
+\DoxyCodeLine{00043\ }
+\DoxyCodeLine{00044\ \ \ \ \ \textcolor{keyword}{auto}\ \mbox{\hyperlink{classaare_1_1CircularFifo_afbf8f710904794b3994363161fbb2cab}{numFilledSlots}}()\ const\ noexcept\ \{\ \textcolor{keywordflow}{return}\ \mbox{\hyperlink{classaare_1_1CircularFifo_a28f5f6090b7812d18543b213c4d3177f}{filled\_slots}}.\mbox{\hyperlink{structfolly_1_1ProducerConsumerQueue_adb384b6a25b755b627d04ff6f2ca9c95}{sizeGuess}}();\ \}}
+\DoxyCodeLine{00045\ \ \ \ \ \textcolor{keyword}{auto}\ \mbox{\hyperlink{classaare_1_1CircularFifo_a9190570892efabe5d2cb6fbdcd31c813}{numFreeSlots}}()\ const\ noexcept\ \{\ \textcolor{keywordflow}{return}\ \mbox{\hyperlink{classaare_1_1CircularFifo_ad08760281625cee96d79104c4321dbf4}{free\_slots}}.\mbox{\hyperlink{structfolly_1_1ProducerConsumerQueue_adb384b6a25b755b627d04ff6f2ca9c95}{sizeGuess}}();\ \}}
+\DoxyCodeLine{00046\ \ \ \ \ \textcolor{keyword}{auto}\ \mbox{\hyperlink{classaare_1_1CircularFifo_ae7ef1972a9b372c36c048f358f3bc977}{isFull}}()\ const\ noexcept\ \{\ \textcolor{keywordflow}{return}\ \mbox{\hyperlink{classaare_1_1CircularFifo_a28f5f6090b7812d18543b213c4d3177f}{filled\_slots}}.\mbox{\hyperlink{structfolly_1_1ProducerConsumerQueue_ad883c041917c2b7f10b0ecdaeaeb0577}{isFull}}();\ \}}
+\DoxyCodeLine{00047\ }
+\DoxyCodeLine{00048\ \ \ \ \ ItemType\ \mbox{\hyperlink{classaare_1_1CircularFifo_a7065cd5808ef6226fd36d0a522678b41}{pop\_free}}()\ \{}
+\DoxyCodeLine{00049\ \ \ \ \ \ \ \ \ ItemType\ v;}
+\DoxyCodeLine{00050\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{while}\ (!\mbox{\hyperlink{classaare_1_1CircularFifo_ad08760281625cee96d79104c4321dbf4}{free\_slots}}.\mbox{\hyperlink{structfolly_1_1ProducerConsumerQueue_a3288ef770695d676376c80ea41630b74}{read}}(v))}
+\DoxyCodeLine{00051\ \ \ \ \ \ \ \ \ \ \ \ \ ;}
+\DoxyCodeLine{00052\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{return}\ std::move(v);}
+\DoxyCodeLine{00053\ \ \ \ \ \ \ \ \ \textcolor{comment}{//\ return\ v;}}
+\DoxyCodeLine{00054\ \ \ \ \ \}}
+\DoxyCodeLine{00055\ }
+\DoxyCodeLine{00056\ \ \ \ \ \textcolor{keywordtype}{bool}\ \mbox{\hyperlink{classaare_1_1CircularFifo_a1ee728381a85f2105739db57b3a3c74d}{try\_pop\_free}}(ItemType\ \&v)\ \{\ \textcolor{keywordflow}{return}\ \mbox{\hyperlink{classaare_1_1CircularFifo_ad08760281625cee96d79104c4321dbf4}{free\_slots}}.\mbox{\hyperlink{structfolly_1_1ProducerConsumerQueue_a3288ef770695d676376c80ea41630b74}{read}}(v);\ \}}
+\DoxyCodeLine{00057\ }
+\DoxyCodeLine{00058\ \ \ \ \ ItemType\ \mbox{\hyperlink{classaare_1_1CircularFifo_af10fb2772258ac5f3001a48f42ddc466}{pop\_value}}(std::chrono::nanoseconds\ wait,\ std::atomic<bool>\ \&stopped)\ \{}
+\DoxyCodeLine{00059\ \ \ \ \ \ \ \ \ ItemType\ v;}
+\DoxyCodeLine{00060\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{while}\ (!\mbox{\hyperlink{classaare_1_1CircularFifo_a28f5f6090b7812d18543b213c4d3177f}{filled\_slots}}.\mbox{\hyperlink{structfolly_1_1ProducerConsumerQueue_a3288ef770695d676376c80ea41630b74}{read}}(v)\ \&\&\ !stopped)\ \{}
+\DoxyCodeLine{00061\ \ \ \ \ \ \ \ \ \ \ \ \ std::this\_thread::sleep\_for(wait);}
+\DoxyCodeLine{00062\ \ \ \ \ \ \ \ \ \}}
+\DoxyCodeLine{00063\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{return}\ std::move(v);}
+\DoxyCodeLine{00064\ \ \ \ \ \}}
+\DoxyCodeLine{00065\ }
+\DoxyCodeLine{00066\ \ \ \ \ ItemType\ \mbox{\hyperlink{classaare_1_1CircularFifo_a3568e05982e05668593ebf5d033cb0f6}{pop\_value}}()\ \{}
+\DoxyCodeLine{00067\ \ \ \ \ \ \ \ \ ItemType\ v;}
+\DoxyCodeLine{00068\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{while}\ (!\mbox{\hyperlink{classaare_1_1CircularFifo_a28f5f6090b7812d18543b213c4d3177f}{filled\_slots}}.\mbox{\hyperlink{structfolly_1_1ProducerConsumerQueue_a3288ef770695d676376c80ea41630b74}{read}}(v))}
+\DoxyCodeLine{00069\ \ \ \ \ \ \ \ \ \ \ \ \ ;}
+\DoxyCodeLine{00070\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{return}\ std::move(v);}
+\DoxyCodeLine{00071\ \ \ \ \ \}}
+\DoxyCodeLine{00072\ }
+\DoxyCodeLine{00073\ \ \ \ \ ItemType\ *\mbox{\hyperlink{classaare_1_1CircularFifo_ace6570667d6859e219f3519812c5a24a}{frontPtr}}()\ \{\ \textcolor{keywordflow}{return}\ \mbox{\hyperlink{classaare_1_1CircularFifo_a28f5f6090b7812d18543b213c4d3177f}{filled\_slots}}.\mbox{\hyperlink{structfolly_1_1ProducerConsumerQueue_a24474b670bc44f75f7c978087e401bd0}{frontPtr}}();\ \}}
+\DoxyCodeLine{00074\ }
+\DoxyCodeLine{00075\ \ \ \ \ \textcolor{comment}{//\ TODO!\ Add\ function\ to\ move\ item\ from\ filled\ to\ free\ to\ be\ used}}
+\DoxyCodeLine{00076\ \ \ \ \ \textcolor{comment}{//\ with\ the\ frontPtr\ function}}
+\DoxyCodeLine{00077\ }
+\DoxyCodeLine{00078\ \ \ \ \ \textcolor{keyword}{template}\ <\textcolor{keyword}{class}...\ Args>\ \textcolor{keywordtype}{void}\ \mbox{\hyperlink{classaare_1_1CircularFifo_ae0637495a0c030ad77e78b14cbe619ad}{push\_value}}(Args\ \&\&...recordArgs)\ \{}
+\DoxyCodeLine{00079\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{while}\ (!\mbox{\hyperlink{classaare_1_1CircularFifo_a28f5f6090b7812d18543b213c4d3177f}{filled\_slots}}.\mbox{\hyperlink{structfolly_1_1ProducerConsumerQueue_af849682c2351c5f2b3344e32c512a961}{write}}(std::forward<Args>(recordArgs)...))}
+\DoxyCodeLine{00080\ \ \ \ \ \ \ \ \ \ \ \ \ ;}
+\DoxyCodeLine{00081\ \ \ \ \ \}}
+\DoxyCodeLine{00082\ }
+\DoxyCodeLine{00083\ \ \ \ \ \textcolor{keyword}{template}\ <\textcolor{keyword}{class}...\ Args>\ \textcolor{keywordtype}{bool}\ \mbox{\hyperlink{classaare_1_1CircularFifo_aa16fd4ce93fb94b7214353cabfefc1e1}{try\_push\_value}}(Args\ \&\&...recordArgs)\ \{}
+\DoxyCodeLine{00084\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{return}\ \mbox{\hyperlink{classaare_1_1CircularFifo_a28f5f6090b7812d18543b213c4d3177f}{filled\_slots}}.\mbox{\hyperlink{structfolly_1_1ProducerConsumerQueue_af849682c2351c5f2b3344e32c512a961}{write}}(std::forward<Args>(recordArgs)...);}
+\DoxyCodeLine{00085\ \ \ \ \ \}}
+\DoxyCodeLine{00086\ }
+\DoxyCodeLine{00087\ \ \ \ \ \textcolor{keyword}{template}\ <\textcolor{keyword}{class}...\ Args>\ \textcolor{keywordtype}{void}\ \mbox{\hyperlink{classaare_1_1CircularFifo_a0d58312a721120580eb030c6524c35ec}{push\_free}}(Args\ \&\&...recordArgs)\ \{}
+\DoxyCodeLine{00088\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{while}\ (!\mbox{\hyperlink{classaare_1_1CircularFifo_ad08760281625cee96d79104c4321dbf4}{free\_slots}}.\mbox{\hyperlink{structfolly_1_1ProducerConsumerQueue_af849682c2351c5f2b3344e32c512a961}{write}}(std::forward<Args>(recordArgs)...))}
+\DoxyCodeLine{00089\ \ \ \ \ \ \ \ \ \ \ \ \ ;}
+\DoxyCodeLine{00090\ \ \ \ \ \}}
+\DoxyCodeLine{00091\ }
+\DoxyCodeLine{00092\ \ \ \ \ \textcolor{keyword}{template}\ <\textcolor{keyword}{class}...\ Args>\ \textcolor{keywordtype}{bool}\ \mbox{\hyperlink{classaare_1_1CircularFifo_ae643565632229878f01a88f650ea5e3a}{try\_push\_free}}(Args\ \&\&...recordArgs)\ \{}
+\DoxyCodeLine{00093\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{return}\ \mbox{\hyperlink{classaare_1_1CircularFifo_ad08760281625cee96d79104c4321dbf4}{free\_slots}}.\mbox{\hyperlink{structfolly_1_1ProducerConsumerQueue_af849682c2351c5f2b3344e32c512a961}{write}}(std::forward<Args>(recordArgs)...);}
+\DoxyCodeLine{00094\ \ \ \ \ \}}
+\DoxyCodeLine{00095\ \};}
+\DoxyCodeLine{00096\ }
+\DoxyCodeLine{00097\ \}\ \textcolor{comment}{//\ namespace\ aare}}
+
+\end{DoxyCode}

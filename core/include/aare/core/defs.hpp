@@ -14,7 +14,7 @@ namespace aare {
 /**
  * @brief header contained in parts of frames
  */
-typedef struct {
+struct sls_detector_header {
     uint64_t frameNumber;
     uint32_t expLength;
     uint32_t packetNumber;
@@ -29,11 +29,13 @@ typedef struct {
     uint8_t detType;
     uint8_t version;
     uint8_t packetMask[64];
-} sls_detector_header;
+};
 
 struct xy {
     int row;
     int col;
+    bool operator==(const xy &other) const { return row == other.row && col == other.col; }
+    bool operator!=(const xy &other) const { return !(*this == other); }
 };
 
 using dynamic_shape = std::vector<ssize_t>;
