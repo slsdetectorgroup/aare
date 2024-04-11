@@ -112,7 +112,7 @@ class RawFile : public FileInterface {
 
     /**
      * @brief parse the file name to get the extension, base name and index
-    */
+     */
     void parse_fname();
 
     /**
@@ -122,12 +122,12 @@ class RawFile : public FileInterface {
 
     /**
      * @brief parse the metadata of a .raw file
-    */
+     */
     void parse_raw_metadata();
 
     /**
      * @brief parse the metadata of a .json file
-    */
+     */
     void parse_json_metadata();
 
     /**
@@ -144,9 +144,10 @@ class RawFile : public FileInterface {
 
     /**
      * @brief open the subfiles
-    */
+     */
     void open_subfiles();
 
+  private:
     size_t n_subfiles;
     size_t n_subfile_parts;
     std::vector<std::vector<SubFile *>> subfiles;

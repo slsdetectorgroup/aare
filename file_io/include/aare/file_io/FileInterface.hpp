@@ -162,7 +162,7 @@ class FileInterface {
 
     };
 
-  public:
+  protected:
     std::string m_mode;
     std::filesystem::path m_fname;
     std::filesystem::path m_base_path;
