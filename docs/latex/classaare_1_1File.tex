@@ -1,0 +1,225 @@
+\doxysection{aare\+::File Class Reference}
+\hypertarget{classaare_1_1File}{}\label{classaare_1_1File}\index{aare::File@{aare::File}}
+
+
+RAII \doxylink{classaare_1_1File_1_1File}{File} class for reading and writing image files in various formats wrapper on a \doxylink{classaare_1_1FileInterface}{File\+Interface} to abstract the underlying file format.  
+
+
+
+
+{\ttfamily \#include $<$File.\+hpp$>$}
+
+\doxysubsubsection*{Public Member Functions}
+\begin{DoxyCompactItemize}
+\item 
+\mbox{\hyperlink{classaare_1_1File_a9bdd1ad48e0eb476d8ff44e8d113ed0e}{File}} (std\+::filesystem\+::path fname, std\+::string mode, \mbox{\hyperlink{structaare_1_1FileConfig}{File\+Config}} cfg=\{\})
+\begin{DoxyCompactList}\small\item\em Construct a new \doxylink{classaare_1_1File_1_1File}{File} object. \end{DoxyCompactList}\item 
+void \mbox{\hyperlink{classaare_1_1File_a53d2397c69b01f8aaf972b68f470b781}{write}} (\mbox{\hyperlink{classaare_1_1Frame}{Frame}} \&frame)
+\item 
+\mbox{\hyperlink{classaare_1_1Frame}{Frame}} \mbox{\hyperlink{classaare_1_1File_a3a10c5eb34627b0badddd43121eb1d83}{read}} ()
+\item 
+\mbox{\hyperlink{classaare_1_1Frame}{Frame}} \mbox{\hyperlink{classaare_1_1File_a27dd0920d959676a8936f42998d9aebc}{iread}} (size\+\_\+t frame\+\_\+number)
+\item 
+std\+::vector$<$ \mbox{\hyperlink{classaare_1_1Frame}{Frame}} $>$ \mbox{\hyperlink{classaare_1_1File_a7f1e7f601e748a5bfd99497c948f47ee}{read}} (size\+\_\+t n\+\_\+frames)
+\item 
+void \mbox{\hyperlink{classaare_1_1File_a66ee1d36d4d2f6683aa46ca93768d07d}{read\+\_\+into}} (std\+::byte \texorpdfstring{$\ast$}{*}image\+\_\+buf)
+\item 
+void \mbox{\hyperlink{classaare_1_1File_aabea27aefdae51a29dcc86433bec9fdb}{read\+\_\+into}} (std\+::byte \texorpdfstring{$\ast$}{*}image\+\_\+buf, size\+\_\+t n\+\_\+frames)
+\item 
+size\+\_\+t \mbox{\hyperlink{classaare_1_1File_a207aae034a1794ea2b1092afcc17756f}{frame\+\_\+number}} (size\+\_\+t frame\+\_\+index)
+\item 
+size\+\_\+t \mbox{\hyperlink{classaare_1_1File_a32a13788fc0a1cadd2ebc8ed2aaa4ac9}{bytes\+\_\+per\+\_\+frame}} ()
+\item 
+size\+\_\+t \mbox{\hyperlink{classaare_1_1File_a5b527f5d8cef1cee5ed9297e36fee8c6}{pixels}} ()
+\item 
+void \mbox{\hyperlink{classaare_1_1File_ac6a40444bb5124484bafcd522f3ff49e}{seek}} (size\+\_\+t frame\+\_\+number)
+\item 
+size\+\_\+t \mbox{\hyperlink{classaare_1_1File_a79bb952679193b02ee83a622c15a599c}{tell}} () const
+\item 
+size\+\_\+t \mbox{\hyperlink{classaare_1_1File_a706409a694455040034b431fedff9172}{total\+\_\+frames}} () const
+\item 
+ssize\+\_\+t \mbox{\hyperlink{classaare_1_1File_a79cf93d8fc08366dedf9e52a25a23010}{rows}} () const
+\item 
+ssize\+\_\+t \mbox{\hyperlink{classaare_1_1File_a4da675b97939fba070cfe42a17936a66}{cols}} () const
+\item 
+ssize\+\_\+t \mbox{\hyperlink{classaare_1_1File_a344c27c3dba3e4bd24dad2c29de9dae1}{bitdepth}} () const
+\item 
+\mbox{\hyperlink{classaare_1_1File_aba1a27e7fa3fcfd62564925583b70ae6}{File}} (\mbox{\hyperlink{classaare_1_1File}{File}} \&\&other)
+\begin{DoxyCompactList}\small\item\em Move constructor. \end{DoxyCompactList}\item 
+\mbox{\hyperlink{classaare_1_1File_ad53f1dda26609290e30fcaba9d2020dc}{\texorpdfstring{$\sim$}{\string~}\+File}} ()
+\begin{DoxyCompactList}\small\item\em destructor\+: will only delete the \doxylink{classaare_1_1FileInterface}{File\+Interface} object \end{DoxyCompactList}\end{DoxyCompactItemize}
+\doxysubsubsection*{Private Attributes}
+\begin{DoxyCompactItemize}
+\item 
+\mbox{\hyperlink{classaare_1_1FileInterface}{File\+Interface}} \texorpdfstring{$\ast$}{*} \mbox{\hyperlink{classaare_1_1File_ac2c569dfd6c15c1f5b19f5f1a5e38abf}{file\+\_\+impl}}
+\end{DoxyCompactItemize}
+
+
+\doxysubsection{Detailed Description}
+RAII \doxylink{classaare_1_1File_1_1File}{File} class for reading and writing image files in various formats wrapper on a \doxylink{classaare_1_1FileInterface}{File\+Interface} to abstract the underlying file format. 
+
+\begin{DoxyNote}{Note}
+documentation for each function is in the \doxylink{classaare_1_1FileInterface}{File\+Interface} class 
+\end{DoxyNote}
+
+
+\doxysubsection{Constructor \& Destructor Documentation}
+\Hypertarget{classaare_1_1File_a9bdd1ad48e0eb476d8ff44e8d113ed0e}\label{classaare_1_1File_a9bdd1ad48e0eb476d8ff44e8d113ed0e} 
+\index{aare::File@{aare::File}!File@{File}}
+\index{File@{File}!aare::File@{aare::File}}
+\doxysubsubsection{\texorpdfstring{File()}{File()}\hspace{0.1cm}{\footnotesize\ttfamily [1/2]}}
+{\footnotesize\ttfamily \mbox{\hyperlink{classaare_1_1File_1_1File}{aare\+::\+File\+::\+File}} (\begin{DoxyParamCaption}\item[{std\+::filesystem\+::path}]{fname,  }\item[{std\+::string}]{mode,  }\item[{\mbox{\hyperlink{structaare_1_1FileConfig}{File\+Config}}}]{cfg = {\ttfamily \{\}} }\end{DoxyParamCaption})}
+
+
+
+Construct a new \doxylink{classaare_1_1File_1_1File}{File} object. 
+
+
+\begin{DoxyParams}{Parameters}
+{\em fname} & path to the file \\
+\hline
+{\em mode} & file mode (r, w, a) \\
+\hline
+{\em cfg} & file configuration \\
+\hline
+\end{DoxyParams}
+
+\begin{DoxyExceptions}{Exceptions}
+{\em std\+::runtime\+\_\+error} & if the file cannot be opened \\
+\hline
+{\em std\+::invalid\+\_\+argument} & if the file mode is not supported \\
+\hline
+\end{DoxyExceptions}
+\Hypertarget{classaare_1_1File_aba1a27e7fa3fcfd62564925583b70ae6}\label{classaare_1_1File_aba1a27e7fa3fcfd62564925583b70ae6} 
+\index{aare::File@{aare::File}!File@{File}}
+\index{File@{File}!aare::File@{aare::File}}
+\doxysubsubsection{\texorpdfstring{File()}{File()}\hspace{0.1cm}{\footnotesize\ttfamily [2/2]}}
+{\footnotesize\ttfamily \mbox{\hyperlink{classaare_1_1File_1_1File}{aare\+::\+File\+::\+File}} (\begin{DoxyParamCaption}\item[{\mbox{\hyperlink{classaare_1_1File}{File}} \&\&}]{other }\end{DoxyParamCaption})}
+
+
+
+Move constructor. 
+
+
+\begin{DoxyParams}{Parameters}
+{\em other} & \doxylink{classaare_1_1File_1_1File}{File} object to move from \\
+\hline
+\end{DoxyParams}
+\Hypertarget{classaare_1_1File_ad53f1dda26609290e30fcaba9d2020dc}\label{classaare_1_1File_ad53f1dda26609290e30fcaba9d2020dc} 
+\index{aare::File@{aare::File}!````~File@{\texorpdfstring{$\sim$}{\string~}File}}
+\index{````~File@{\texorpdfstring{$\sim$}{\string~}File}!aare::File@{aare::File}}
+\doxysubsubsection{\texorpdfstring{\texorpdfstring{$\sim$}{\string~}File()}{\string~File()}}
+{\footnotesize\ttfamily aare\+::\+File\+::\texorpdfstring{$\sim$}{\string~}\+File (\begin{DoxyParamCaption}{ }\end{DoxyParamCaption})}
+
+
+
+destructor\+: will only delete the \doxylink{classaare_1_1FileInterface}{File\+Interface} object 
+
+
+
+\doxysubsection{Member Function Documentation}
+\Hypertarget{classaare_1_1File_a344c27c3dba3e4bd24dad2c29de9dae1}\label{classaare_1_1File_a344c27c3dba3e4bd24dad2c29de9dae1} 
+\index{aare::File@{aare::File}!bitdepth@{bitdepth}}
+\index{bitdepth@{bitdepth}!aare::File@{aare::File}}
+\doxysubsubsection{\texorpdfstring{bitdepth()}{bitdepth()}}
+{\footnotesize\ttfamily ssize\+\_\+t aare\+::\+File\+::bitdepth (\begin{DoxyParamCaption}{ }\end{DoxyParamCaption}) const}
+
+\Hypertarget{classaare_1_1File_a32a13788fc0a1cadd2ebc8ed2aaa4ac9}\label{classaare_1_1File_a32a13788fc0a1cadd2ebc8ed2aaa4ac9} 
+\index{aare::File@{aare::File}!bytes\_per\_frame@{bytes\_per\_frame}}
+\index{bytes\_per\_frame@{bytes\_per\_frame}!aare::File@{aare::File}}
+\doxysubsubsection{\texorpdfstring{bytes\_per\_frame()}{bytes\_per\_frame()}}
+{\footnotesize\ttfamily size\+\_\+t aare\+::\+File\+::bytes\+\_\+per\+\_\+frame (\begin{DoxyParamCaption}{ }\end{DoxyParamCaption})}
+
+\Hypertarget{classaare_1_1File_a4da675b97939fba070cfe42a17936a66}\label{classaare_1_1File_a4da675b97939fba070cfe42a17936a66} 
+\index{aare::File@{aare::File}!cols@{cols}}
+\index{cols@{cols}!aare::File@{aare::File}}
+\doxysubsubsection{\texorpdfstring{cols()}{cols()}}
+{\footnotesize\ttfamily ssize\+\_\+t aare\+::\+File\+::cols (\begin{DoxyParamCaption}{ }\end{DoxyParamCaption}) const}
+
+\Hypertarget{classaare_1_1File_a207aae034a1794ea2b1092afcc17756f}\label{classaare_1_1File_a207aae034a1794ea2b1092afcc17756f} 
+\index{aare::File@{aare::File}!frame\_number@{frame\_number}}
+\index{frame\_number@{frame\_number}!aare::File@{aare::File}}
+\doxysubsubsection{\texorpdfstring{frame\_number()}{frame\_number()}}
+{\footnotesize\ttfamily size\+\_\+t aare\+::\+File\+::frame\+\_\+number (\begin{DoxyParamCaption}\item[{size\+\_\+t}]{frame\+\_\+index }\end{DoxyParamCaption})}
+
+\Hypertarget{classaare_1_1File_a27dd0920d959676a8936f42998d9aebc}\label{classaare_1_1File_a27dd0920d959676a8936f42998d9aebc} 
+\index{aare::File@{aare::File}!iread@{iread}}
+\index{iread@{iread}!aare::File@{aare::File}}
+\doxysubsubsection{\texorpdfstring{iread()}{iread()}}
+{\footnotesize\ttfamily \mbox{\hyperlink{classaare_1_1Frame}{Frame}} aare\+::\+File\+::iread (\begin{DoxyParamCaption}\item[{size\+\_\+t}]{frame\+\_\+number }\end{DoxyParamCaption})}
+
+\Hypertarget{classaare_1_1File_a5b527f5d8cef1cee5ed9297e36fee8c6}\label{classaare_1_1File_a5b527f5d8cef1cee5ed9297e36fee8c6} 
+\index{aare::File@{aare::File}!pixels@{pixels}}
+\index{pixels@{pixels}!aare::File@{aare::File}}
+\doxysubsubsection{\texorpdfstring{pixels()}{pixels()}}
+{\footnotesize\ttfamily size\+\_\+t aare\+::\+File\+::pixels (\begin{DoxyParamCaption}{ }\end{DoxyParamCaption})}
+
+\Hypertarget{classaare_1_1File_a3a10c5eb34627b0badddd43121eb1d83}\label{classaare_1_1File_a3a10c5eb34627b0badddd43121eb1d83} 
+\index{aare::File@{aare::File}!read@{read}}
+\index{read@{read}!aare::File@{aare::File}}
+\doxysubsubsection{\texorpdfstring{read()}{read()}\hspace{0.1cm}{\footnotesize\ttfamily [1/2]}}
+{\footnotesize\ttfamily \mbox{\hyperlink{classaare_1_1Frame}{Frame}} aare\+::\+File\+::read (\begin{DoxyParamCaption}{ }\end{DoxyParamCaption})}
+
+\Hypertarget{classaare_1_1File_a7f1e7f601e748a5bfd99497c948f47ee}\label{classaare_1_1File_a7f1e7f601e748a5bfd99497c948f47ee} 
+\index{aare::File@{aare::File}!read@{read}}
+\index{read@{read}!aare::File@{aare::File}}
+\doxysubsubsection{\texorpdfstring{read()}{read()}\hspace{0.1cm}{\footnotesize\ttfamily [2/2]}}
+{\footnotesize\ttfamily std\+::vector$<$ \mbox{\hyperlink{classaare_1_1Frame}{Frame}} $>$ aare\+::\+File\+::read (\begin{DoxyParamCaption}\item[{size\+\_\+t}]{n\+\_\+frames }\end{DoxyParamCaption})}
+
+\Hypertarget{classaare_1_1File_a66ee1d36d4d2f6683aa46ca93768d07d}\label{classaare_1_1File_a66ee1d36d4d2f6683aa46ca93768d07d} 
+\index{aare::File@{aare::File}!read\_into@{read\_into}}
+\index{read\_into@{read\_into}!aare::File@{aare::File}}
+\doxysubsubsection{\texorpdfstring{read\_into()}{read\_into()}\hspace{0.1cm}{\footnotesize\ttfamily [1/2]}}
+{\footnotesize\ttfamily void aare\+::\+File\+::read\+\_\+into (\begin{DoxyParamCaption}\item[{std\+::byte \texorpdfstring{$\ast$}{*}}]{image\+\_\+buf }\end{DoxyParamCaption})}
+
+\Hypertarget{classaare_1_1File_aabea27aefdae51a29dcc86433bec9fdb}\label{classaare_1_1File_aabea27aefdae51a29dcc86433bec9fdb} 
+\index{aare::File@{aare::File}!read\_into@{read\_into}}
+\index{read\_into@{read\_into}!aare::File@{aare::File}}
+\doxysubsubsection{\texorpdfstring{read\_into()}{read\_into()}\hspace{0.1cm}{\footnotesize\ttfamily [2/2]}}
+{\footnotesize\ttfamily void aare\+::\+File\+::read\+\_\+into (\begin{DoxyParamCaption}\item[{std\+::byte \texorpdfstring{$\ast$}{*}}]{image\+\_\+buf,  }\item[{size\+\_\+t}]{n\+\_\+frames }\end{DoxyParamCaption})}
+
+\Hypertarget{classaare_1_1File_a79cf93d8fc08366dedf9e52a25a23010}\label{classaare_1_1File_a79cf93d8fc08366dedf9e52a25a23010} 
+\index{aare::File@{aare::File}!rows@{rows}}
+\index{rows@{rows}!aare::File@{aare::File}}
+\doxysubsubsection{\texorpdfstring{rows()}{rows()}}
+{\footnotesize\ttfamily ssize\+\_\+t aare\+::\+File\+::rows (\begin{DoxyParamCaption}{ }\end{DoxyParamCaption}) const}
+
+\Hypertarget{classaare_1_1File_ac6a40444bb5124484bafcd522f3ff49e}\label{classaare_1_1File_ac6a40444bb5124484bafcd522f3ff49e} 
+\index{aare::File@{aare::File}!seek@{seek}}
+\index{seek@{seek}!aare::File@{aare::File}}
+\doxysubsubsection{\texorpdfstring{seek()}{seek()}}
+{\footnotesize\ttfamily void aare\+::\+File\+::seek (\begin{DoxyParamCaption}\item[{size\+\_\+t}]{frame\+\_\+number }\end{DoxyParamCaption})}
+
+\Hypertarget{classaare_1_1File_a79bb952679193b02ee83a622c15a599c}\label{classaare_1_1File_a79bb952679193b02ee83a622c15a599c} 
+\index{aare::File@{aare::File}!tell@{tell}}
+\index{tell@{tell}!aare::File@{aare::File}}
+\doxysubsubsection{\texorpdfstring{tell()}{tell()}}
+{\footnotesize\ttfamily size\+\_\+t aare\+::\+File\+::tell (\begin{DoxyParamCaption}{ }\end{DoxyParamCaption}) const}
+
+\Hypertarget{classaare_1_1File_a706409a694455040034b431fedff9172}\label{classaare_1_1File_a706409a694455040034b431fedff9172} 
+\index{aare::File@{aare::File}!total\_frames@{total\_frames}}
+\index{total\_frames@{total\_frames}!aare::File@{aare::File}}
+\doxysubsubsection{\texorpdfstring{total\_frames()}{total\_frames()}}
+{\footnotesize\ttfamily size\+\_\+t aare\+::\+File\+::total\+\_\+frames (\begin{DoxyParamCaption}{ }\end{DoxyParamCaption}) const}
+
+\Hypertarget{classaare_1_1File_a53d2397c69b01f8aaf972b68f470b781}\label{classaare_1_1File_a53d2397c69b01f8aaf972b68f470b781} 
+\index{aare::File@{aare::File}!write@{write}}
+\index{write@{write}!aare::File@{aare::File}}
+\doxysubsubsection{\texorpdfstring{write()}{write()}}
+{\footnotesize\ttfamily void aare\+::\+File\+::write (\begin{DoxyParamCaption}\item[{\mbox{\hyperlink{classaare_1_1Frame}{Frame}} \&}]{frame }\end{DoxyParamCaption})}
+
+
+
+\doxysubsection{Field Documentation}
+\Hypertarget{classaare_1_1File_ac2c569dfd6c15c1f5b19f5f1a5e38abf}\label{classaare_1_1File_ac2c569dfd6c15c1f5b19f5f1a5e38abf} 
+\index{aare::File@{aare::File}!file\_impl@{file\_impl}}
+\index{file\_impl@{file\_impl}!aare::File@{aare::File}}
+\doxysubsubsection{\texorpdfstring{file\_impl}{file\_impl}}
+{\footnotesize\ttfamily \mbox{\hyperlink{classaare_1_1FileInterface}{File\+Interface}}\texorpdfstring{$\ast$}{*} aare\+::\+File\+::file\+\_\+impl\hspace{0.3cm}{\ttfamily [private]}}
+
+
+
+The documentation for this class was generated from the following files\+:\begin{DoxyCompactItemize}
+\item 
+file\+\_\+io/include/aare/file\+\_\+io/\mbox{\hyperlink{File_8hpp}{File.\+hpp}}\item 
+file\+\_\+io/src/\mbox{\hyperlink{File_8cpp}{File.\+cpp}}\end{DoxyCompactItemize}

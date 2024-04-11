@@ -1,0 +1,39 @@
+\doxysection{File.\+hpp}
+\hypertarget{File_8hpp_source}{}\label{File_8hpp_source}\index{file\_io/include/aare/file\_io/File.hpp@{file\_io/include/aare/file\_io/File.hpp}}
+\mbox{\hyperlink{File_8hpp}{Go to the documentation of this file.}}
+\begin{DoxyCode}{0}
+\DoxyCodeLine{00001\ \textcolor{preprocessor}{\#pragma\ once}}
+\DoxyCodeLine{00002\ \textcolor{preprocessor}{\#include\ "{}\mbox{\hyperlink{FileInterface_8hpp}{aare/file\_io/FileInterface.hpp}}"{}}}
+\DoxyCodeLine{00003\ }
+\DoxyCodeLine{00004\ \textcolor{keyword}{namespace\ }\mbox{\hyperlink{namespaceaare}{aare}}\ \{}
+\DoxyCodeLine{00005\ }
+\DoxyCodeLine{00011\ \textcolor{keyword}{class\ }\mbox{\hyperlink{classaare_1_1File}{File}}\ \{}
+\DoxyCodeLine{00012\ \ \ \textcolor{keyword}{private}:}
+\DoxyCodeLine{00013\ \ \ \ \ \mbox{\hyperlink{classaare_1_1FileInterface}{FileInterface}}\ *\mbox{\hyperlink{classaare_1_1File_ac2c569dfd6c15c1f5b19f5f1a5e38abf}{file\_impl}};}
+\DoxyCodeLine{00014\ }
+\DoxyCodeLine{00015\ \ \ \textcolor{keyword}{public}:}
+\DoxyCodeLine{00025\ \ \ \ \ \mbox{\hyperlink{classaare_1_1File}{File}}(std::filesystem::path\ fname,\ std::string\ mode,\ \mbox{\hyperlink{structaare_1_1FileConfig}{FileConfig}}\ cfg\ =\ \{\});}
+\DoxyCodeLine{00026\ \ \ \ \ \textcolor{keywordtype}{void}\ write(\mbox{\hyperlink{classaare_1_1Frame}{Frame}}\ \&frame);}
+\DoxyCodeLine{00027\ \ \ \ \ \mbox{\hyperlink{classaare_1_1Frame}{Frame}}\ read();}
+\DoxyCodeLine{00028\ \ \ \ \ \mbox{\hyperlink{classaare_1_1Frame}{Frame}}\ iread(\textcolor{keywordtype}{size\_t}\ frame\_number);}
+\DoxyCodeLine{00029\ \ \ \ \ std::vector<Frame>\ read(\textcolor{keywordtype}{size\_t}\ n\_frames);}
+\DoxyCodeLine{00030\ \ \ \ \ \textcolor{keywordtype}{void}\ read\_into(std::byte\ *image\_buf);}
+\DoxyCodeLine{00031\ \ \ \ \ \textcolor{keywordtype}{void}\ read\_into(std::byte\ *image\_buf,\ \textcolor{keywordtype}{size\_t}\ n\_frames);}
+\DoxyCodeLine{00032\ \ \ \ \ \textcolor{keywordtype}{size\_t}\ frame\_number(\textcolor{keywordtype}{size\_t}\ frame\_index);}
+\DoxyCodeLine{00033\ \ \ \ \ \textcolor{keywordtype}{size\_t}\ bytes\_per\_frame();}
+\DoxyCodeLine{00034\ \ \ \ \ \textcolor{keywordtype}{size\_t}\ pixels();}
+\DoxyCodeLine{00035\ \ \ \ \ \textcolor{keywordtype}{void}\ seek(\textcolor{keywordtype}{size\_t}\ frame\_number);}
+\DoxyCodeLine{00036\ \ \ \ \ \textcolor{keywordtype}{size\_t}\ tell()\ \textcolor{keyword}{const};}
+\DoxyCodeLine{00037\ \ \ \ \ \textcolor{keywordtype}{size\_t}\ total\_frames()\ \textcolor{keyword}{const};}
+\DoxyCodeLine{00038\ \ \ \ \ ssize\_t\ rows()\ \textcolor{keyword}{const};}
+\DoxyCodeLine{00039\ \ \ \ \ ssize\_t\ cols()\ \textcolor{keyword}{const};}
+\DoxyCodeLine{00040\ \ \ \ \ ssize\_t\ bitdepth()\ \textcolor{keyword}{const};}
+\DoxyCodeLine{00041\ }
+\DoxyCodeLine{00046\ \ \ \ \ \mbox{\hyperlink{classaare_1_1File}{File}}(\mbox{\hyperlink{classaare_1_1File}{File}}\ \&\&other);}
+\DoxyCodeLine{00047\ }
+\DoxyCodeLine{00051\ \ \ \ \ \mbox{\hyperlink{classaare_1_1File}{\string~File}}();}
+\DoxyCodeLine{00052\ \};}
+\DoxyCodeLine{00053\ }
+\DoxyCodeLine{00054\ \}\ \textcolor{comment}{//\ namespace\ aare}}
+
+\end{DoxyCode}

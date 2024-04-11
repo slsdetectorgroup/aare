@@ -1,0 +1,182 @@
+\doxysection{aare\+::Frame Class Reference}
+\hypertarget{classaare_1_1Frame}{}\label{classaare_1_1Frame}\index{aare::Frame@{aare::Frame}}
+
+
+{\ttfamily \#include $<$Frame.\+hpp$>$}
+
+\doxysubsubsection*{Public Member Functions}
+\begin{DoxyCompactItemize}
+\item 
+\mbox{\hyperlink{classaare_1_1Frame_a0e8319c5863605265fb8a66653aae382}{Frame}} (ssize\+\_\+t rows, ssize\+\_\+t cols, ssize\+\_\+t m\+\_\+bitdepth)
+\item 
+\mbox{\hyperlink{classaare_1_1Frame_a4f7fc9193a81c29613f05da769363246}{Frame}} (std\+::byte \texorpdfstring{$\ast$}{*}fp, ssize\+\_\+t rows, ssize\+\_\+t cols, ssize\+\_\+t m\+\_\+bitdepth)
+\item 
+std\+::byte \texorpdfstring{$\ast$}{*} \mbox{\hyperlink{classaare_1_1Frame_a6ace52fdcdf3d87921c1a56ca1781f32}{get}} (int row, int col)
+\item 
+{\footnotesize template$<$typename T $>$ }\\void \mbox{\hyperlink{classaare_1_1Frame_addd6b73bbb426aafe834e261360eb2d8}{set}} (int row, int col, T data)
+\item 
+ssize\+\_\+t \mbox{\hyperlink{classaare_1_1Frame_a5cc556f6b13efb17b3635adb436d816c}{rows}} () const
+\item 
+ssize\+\_\+t \mbox{\hyperlink{classaare_1_1Frame_a658566623e47c1fa88a08f5e8fe1957f}{cols}} () const
+\item 
+ssize\+\_\+t \mbox{\hyperlink{classaare_1_1Frame_ae1fbb96ec971ddcd76ecf3cd91dc5890}{bitdepth}} () const
+\item 
+ssize\+\_\+t \mbox{\hyperlink{classaare_1_1Frame_a094683d38cac2461c18ed7cc776221c2}{size}} () const
+\item 
+std\+::byte \texorpdfstring{$\ast$}{*} \mbox{\hyperlink{classaare_1_1Frame_a635a1ff8db457c20fcbc2b2b5601bc1d}{data}} () const
+\item 
+\mbox{\hyperlink{classaare_1_1Frame}{Frame}} \& \mbox{\hyperlink{classaare_1_1Frame_ad153902f7332be45aa5441196c3aad64}{operator=}} (\mbox{\hyperlink{classaare_1_1Frame}{Frame}} \&other)
+\item 
+\mbox{\hyperlink{classaare_1_1Frame_a2986002a7d6c161dcc592cea1162a5bb}{Frame}} (\mbox{\hyperlink{classaare_1_1Frame}{Frame}} \&\&other)
+\item 
+\mbox{\hyperlink{classaare_1_1Frame_a82f7c09b244a295e2cc13e199a198448}{Frame}} (const \mbox{\hyperlink{classaare_1_1Frame}{Frame}} \&other)
+\item 
+{\footnotesize template$<$typename T $>$ }\\\mbox{\hyperlink{classaare_1_1NDView}{NDView}}$<$ T $>$ \mbox{\hyperlink{classaare_1_1Frame_af6fbc8eaa1f00062431edf118caebe0f}{view}} ()
+\item 
+{\footnotesize template$<$typename T $>$ }\\\mbox{\hyperlink{classaare_1_1NDArray}{NDArray}}$<$ T $>$ \mbox{\hyperlink{classaare_1_1Frame_aac3f666d8f5fdb30861459c2f639d40a}{image}} ()
+\item 
+\mbox{\hyperlink{classaare_1_1Frame_a6bd29a7d2219e3dde03d4c9bd4298c60}{\texorpdfstring{$\sim$}{\string~}\+Frame}} ()
+\end{DoxyCompactItemize}
+\doxysubsubsection*{Private Attributes}
+\begin{DoxyCompactItemize}
+\item 
+ssize\+\_\+t \mbox{\hyperlink{classaare_1_1Frame_a21c0feaf422c4ffdd479328f2fdaefec}{m\+\_\+rows}}
+\item 
+ssize\+\_\+t \mbox{\hyperlink{classaare_1_1Frame_a3edb3a0e0ed32c3837ad5ad95e537aed}{m\+\_\+cols}}
+\item 
+ssize\+\_\+t \mbox{\hyperlink{classaare_1_1Frame_a17ccc92b87bc2b4c3d3a500759269cab}{m\+\_\+bitdepth}}
+\item 
+std\+::byte \texorpdfstring{$\ast$}{*} \mbox{\hyperlink{classaare_1_1Frame_afa6172a742a35734ad5148786697d197}{m\+\_\+data}}
+\end{DoxyCompactItemize}
+
+
+\doxysubsection{Constructor \& Destructor Documentation}
+\Hypertarget{classaare_1_1Frame_a0e8319c5863605265fb8a66653aae382}\label{classaare_1_1Frame_a0e8319c5863605265fb8a66653aae382} 
+\index{aare::Frame@{aare::Frame}!Frame@{Frame}}
+\index{Frame@{Frame}!aare::Frame@{aare::Frame}}
+\doxysubsubsection{\texorpdfstring{Frame()}{Frame()}\hspace{0.1cm}{\footnotesize\ttfamily [1/4]}}
+{\footnotesize\ttfamily \mbox{\hyperlink{classaare_1_1Frame_1_1Frame}{aare\+::\+Frame\+::\+Frame}} (\begin{DoxyParamCaption}\item[{ssize\+\_\+t}]{rows,  }\item[{ssize\+\_\+t}]{cols,  }\item[{ssize\+\_\+t}]{m\+\_\+bitdepth }\end{DoxyParamCaption})}
+
+\Hypertarget{classaare_1_1Frame_a4f7fc9193a81c29613f05da769363246}\label{classaare_1_1Frame_a4f7fc9193a81c29613f05da769363246} 
+\index{aare::Frame@{aare::Frame}!Frame@{Frame}}
+\index{Frame@{Frame}!aare::Frame@{aare::Frame}}
+\doxysubsubsection{\texorpdfstring{Frame()}{Frame()}\hspace{0.1cm}{\footnotesize\ttfamily [2/4]}}
+{\footnotesize\ttfamily \mbox{\hyperlink{classaare_1_1Frame_1_1Frame}{aare\+::\+Frame\+::\+Frame}} (\begin{DoxyParamCaption}\item[{std\+::byte \texorpdfstring{$\ast$}{*}}]{fp,  }\item[{ssize\+\_\+t}]{rows,  }\item[{ssize\+\_\+t}]{cols,  }\item[{ssize\+\_\+t}]{m\+\_\+bitdepth }\end{DoxyParamCaption})}
+
+\Hypertarget{classaare_1_1Frame_a2986002a7d6c161dcc592cea1162a5bb}\label{classaare_1_1Frame_a2986002a7d6c161dcc592cea1162a5bb} 
+\index{aare::Frame@{aare::Frame}!Frame@{Frame}}
+\index{Frame@{Frame}!aare::Frame@{aare::Frame}}
+\doxysubsubsection{\texorpdfstring{Frame()}{Frame()}\hspace{0.1cm}{\footnotesize\ttfamily [3/4]}}
+{\footnotesize\ttfamily \mbox{\hyperlink{classaare_1_1Frame_1_1Frame}{aare\+::\+Frame\+::\+Frame}} (\begin{DoxyParamCaption}\item[{\mbox{\hyperlink{classaare_1_1Frame}{Frame}} \&\&}]{other }\end{DoxyParamCaption})\hspace{0.3cm}{\ttfamily [inline]}}
+
+\Hypertarget{classaare_1_1Frame_a82f7c09b244a295e2cc13e199a198448}\label{classaare_1_1Frame_a82f7c09b244a295e2cc13e199a198448} 
+\index{aare::Frame@{aare::Frame}!Frame@{Frame}}
+\index{Frame@{Frame}!aare::Frame@{aare::Frame}}
+\doxysubsubsection{\texorpdfstring{Frame()}{Frame()}\hspace{0.1cm}{\footnotesize\ttfamily [4/4]}}
+{\footnotesize\ttfamily \mbox{\hyperlink{classaare_1_1Frame_1_1Frame}{aare\+::\+Frame\+::\+Frame}} (\begin{DoxyParamCaption}\item[{const \mbox{\hyperlink{classaare_1_1Frame}{Frame}} \&}]{other }\end{DoxyParamCaption})\hspace{0.3cm}{\ttfamily [inline]}}
+
+\Hypertarget{classaare_1_1Frame_a6bd29a7d2219e3dde03d4c9bd4298c60}\label{classaare_1_1Frame_a6bd29a7d2219e3dde03d4c9bd4298c60} 
+\index{aare::Frame@{aare::Frame}!````~Frame@{\texorpdfstring{$\sim$}{\string~}Frame}}
+\index{````~Frame@{\texorpdfstring{$\sim$}{\string~}Frame}!aare::Frame@{aare::Frame}}
+\doxysubsubsection{\texorpdfstring{\texorpdfstring{$\sim$}{\string~}Frame()}{\string~Frame()}}
+{\footnotesize\ttfamily aare\+::\+Frame\+::\texorpdfstring{$\sim$}{\string~}\+Frame (\begin{DoxyParamCaption}{ }\end{DoxyParamCaption})\hspace{0.3cm}{\ttfamily [inline]}}
+
+
+
+\doxysubsection{Member Function Documentation}
+\Hypertarget{classaare_1_1Frame_ae1fbb96ec971ddcd76ecf3cd91dc5890}\label{classaare_1_1Frame_ae1fbb96ec971ddcd76ecf3cd91dc5890} 
+\index{aare::Frame@{aare::Frame}!bitdepth@{bitdepth}}
+\index{bitdepth@{bitdepth}!aare::Frame@{aare::Frame}}
+\doxysubsubsection{\texorpdfstring{bitdepth()}{bitdepth()}}
+{\footnotesize\ttfamily ssize\+\_\+t aare\+::\+Frame\+::bitdepth (\begin{DoxyParamCaption}{ }\end{DoxyParamCaption}) const\hspace{0.3cm}{\ttfamily [inline]}}
+
+\Hypertarget{classaare_1_1Frame_a658566623e47c1fa88a08f5e8fe1957f}\label{classaare_1_1Frame_a658566623e47c1fa88a08f5e8fe1957f} 
+\index{aare::Frame@{aare::Frame}!cols@{cols}}
+\index{cols@{cols}!aare::Frame@{aare::Frame}}
+\doxysubsubsection{\texorpdfstring{cols()}{cols()}}
+{\footnotesize\ttfamily ssize\+\_\+t aare\+::\+Frame\+::cols (\begin{DoxyParamCaption}{ }\end{DoxyParamCaption}) const\hspace{0.3cm}{\ttfamily [inline]}}
+
+\Hypertarget{classaare_1_1Frame_a635a1ff8db457c20fcbc2b2b5601bc1d}\label{classaare_1_1Frame_a635a1ff8db457c20fcbc2b2b5601bc1d} 
+\index{aare::Frame@{aare::Frame}!data@{data}}
+\index{data@{data}!aare::Frame@{aare::Frame}}
+\doxysubsubsection{\texorpdfstring{data()}{data()}}
+{\footnotesize\ttfamily std\+::byte \texorpdfstring{$\ast$}{*} aare\+::\+Frame\+::data (\begin{DoxyParamCaption}{ }\end{DoxyParamCaption}) const\hspace{0.3cm}{\ttfamily [inline]}}
+
+\Hypertarget{classaare_1_1Frame_a6ace52fdcdf3d87921c1a56ca1781f32}\label{classaare_1_1Frame_a6ace52fdcdf3d87921c1a56ca1781f32} 
+\index{aare::Frame@{aare::Frame}!get@{get}}
+\index{get@{get}!aare::Frame@{aare::Frame}}
+\doxysubsubsection{\texorpdfstring{get()}{get()}}
+{\footnotesize\ttfamily std\+::byte \texorpdfstring{$\ast$}{*} aare\+::\+Frame\+::get (\begin{DoxyParamCaption}\item[{int}]{row,  }\item[{int}]{col }\end{DoxyParamCaption})}
+
+\Hypertarget{classaare_1_1Frame_aac3f666d8f5fdb30861459c2f639d40a}\label{classaare_1_1Frame_aac3f666d8f5fdb30861459c2f639d40a} 
+\index{aare::Frame@{aare::Frame}!image@{image}}
+\index{image@{image}!aare::Frame@{aare::Frame}}
+\doxysubsubsection{\texorpdfstring{image()}{image()}}
+{\footnotesize\ttfamily template$<$typename T $>$ \\
+\mbox{\hyperlink{classaare_1_1NDArray}{NDArray}}$<$ T $>$ aare\+::\+Frame\+::image (\begin{DoxyParamCaption}{ }\end{DoxyParamCaption})\hspace{0.3cm}{\ttfamily [inline]}}
+
+\Hypertarget{classaare_1_1Frame_ad153902f7332be45aa5441196c3aad64}\label{classaare_1_1Frame_ad153902f7332be45aa5441196c3aad64} 
+\index{aare::Frame@{aare::Frame}!operator=@{operator=}}
+\index{operator=@{operator=}!aare::Frame@{aare::Frame}}
+\doxysubsubsection{\texorpdfstring{operator=()}{operator=()}}
+{\footnotesize\ttfamily \mbox{\hyperlink{classaare_1_1Frame}{Frame}} \& aare\+::\+Frame\+::operator= (\begin{DoxyParamCaption}\item[{\mbox{\hyperlink{classaare_1_1Frame}{Frame}} \&}]{other }\end{DoxyParamCaption})\hspace{0.3cm}{\ttfamily [inline]}}
+
+\Hypertarget{classaare_1_1Frame_a5cc556f6b13efb17b3635adb436d816c}\label{classaare_1_1Frame_a5cc556f6b13efb17b3635adb436d816c} 
+\index{aare::Frame@{aare::Frame}!rows@{rows}}
+\index{rows@{rows}!aare::Frame@{aare::Frame}}
+\doxysubsubsection{\texorpdfstring{rows()}{rows()}}
+{\footnotesize\ttfamily ssize\+\_\+t aare\+::\+Frame\+::rows (\begin{DoxyParamCaption}{ }\end{DoxyParamCaption}) const\hspace{0.3cm}{\ttfamily [inline]}}
+
+\Hypertarget{classaare_1_1Frame_addd6b73bbb426aafe834e261360eb2d8}\label{classaare_1_1Frame_addd6b73bbb426aafe834e261360eb2d8} 
+\index{aare::Frame@{aare::Frame}!set@{set}}
+\index{set@{set}!aare::Frame@{aare::Frame}}
+\doxysubsubsection{\texorpdfstring{set()}{set()}}
+{\footnotesize\ttfamily template$<$typename T $>$ \\
+void aare\+::\+Frame\+::set (\begin{DoxyParamCaption}\item[{int}]{row,  }\item[{int}]{col,  }\item[{T}]{data }\end{DoxyParamCaption})\hspace{0.3cm}{\ttfamily [inline]}}
+
+\Hypertarget{classaare_1_1Frame_a094683d38cac2461c18ed7cc776221c2}\label{classaare_1_1Frame_a094683d38cac2461c18ed7cc776221c2} 
+\index{aare::Frame@{aare::Frame}!size@{size}}
+\index{size@{size}!aare::Frame@{aare::Frame}}
+\doxysubsubsection{\texorpdfstring{size()}{size()}}
+{\footnotesize\ttfamily ssize\+\_\+t aare\+::\+Frame\+::size (\begin{DoxyParamCaption}{ }\end{DoxyParamCaption}) const\hspace{0.3cm}{\ttfamily [inline]}}
+
+\Hypertarget{classaare_1_1Frame_af6fbc8eaa1f00062431edf118caebe0f}\label{classaare_1_1Frame_af6fbc8eaa1f00062431edf118caebe0f} 
+\index{aare::Frame@{aare::Frame}!view@{view}}
+\index{view@{view}!aare::Frame@{aare::Frame}}
+\doxysubsubsection{\texorpdfstring{view()}{view()}}
+{\footnotesize\ttfamily template$<$typename T $>$ \\
+\mbox{\hyperlink{classaare_1_1NDView}{NDView}}$<$ T $>$ aare\+::\+Frame\+::view (\begin{DoxyParamCaption}{ }\end{DoxyParamCaption})\hspace{0.3cm}{\ttfamily [inline]}}
+
+
+
+\doxysubsection{Field Documentation}
+\Hypertarget{classaare_1_1Frame_a17ccc92b87bc2b4c3d3a500759269cab}\label{classaare_1_1Frame_a17ccc92b87bc2b4c3d3a500759269cab} 
+\index{aare::Frame@{aare::Frame}!m\_bitdepth@{m\_bitdepth}}
+\index{m\_bitdepth@{m\_bitdepth}!aare::Frame@{aare::Frame}}
+\doxysubsubsection{\texorpdfstring{m\_bitdepth}{m\_bitdepth}}
+{\footnotesize\ttfamily ssize\+\_\+t aare\+::\+Frame\+::m\+\_\+bitdepth\hspace{0.3cm}{\ttfamily [private]}}
+
+\Hypertarget{classaare_1_1Frame_a3edb3a0e0ed32c3837ad5ad95e537aed}\label{classaare_1_1Frame_a3edb3a0e0ed32c3837ad5ad95e537aed} 
+\index{aare::Frame@{aare::Frame}!m\_cols@{m\_cols}}
+\index{m\_cols@{m\_cols}!aare::Frame@{aare::Frame}}
+\doxysubsubsection{\texorpdfstring{m\_cols}{m\_cols}}
+{\footnotesize\ttfamily ssize\+\_\+t aare\+::\+Frame\+::m\+\_\+cols\hspace{0.3cm}{\ttfamily [private]}}
+
+\Hypertarget{classaare_1_1Frame_afa6172a742a35734ad5148786697d197}\label{classaare_1_1Frame_afa6172a742a35734ad5148786697d197} 
+\index{aare::Frame@{aare::Frame}!m\_data@{m\_data}}
+\index{m\_data@{m\_data}!aare::Frame@{aare::Frame}}
+\doxysubsubsection{\texorpdfstring{m\_data}{m\_data}}
+{\footnotesize\ttfamily std\+::byte\texorpdfstring{$\ast$}{*} aare\+::\+Frame\+::m\+\_\+data\hspace{0.3cm}{\ttfamily [private]}}
+
+\Hypertarget{classaare_1_1Frame_a21c0feaf422c4ffdd479328f2fdaefec}\label{classaare_1_1Frame_a21c0feaf422c4ffdd479328f2fdaefec} 
+\index{aare::Frame@{aare::Frame}!m\_rows@{m\_rows}}
+\index{m\_rows@{m\_rows}!aare::Frame@{aare::Frame}}
+\doxysubsubsection{\texorpdfstring{m\_rows}{m\_rows}}
+{\footnotesize\ttfamily ssize\+\_\+t aare\+::\+Frame\+::m\+\_\+rows\hspace{0.3cm}{\ttfamily [private]}}
+
+
+
+The documentation for this class was generated from the following files\+:\begin{DoxyCompactItemize}
+\item 
+core/include/aare/core/\mbox{\hyperlink{Frame_8hpp}{Frame.\+hpp}}\item 
+core/src/\mbox{\hyperlink{Frame_8cpp}{Frame.\+cpp}}\end{DoxyCompactItemize}

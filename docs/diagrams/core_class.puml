@@ -1,0 +1,267 @@
+@startuml
+class "aare::sls_detector_header" as C_0001674535970515942906
+class C_0001674535970515942906 {
+__
++bunchId : uint64_t
++column : uint16_t
++debug : uint32_t
++detType : uint8_t
++expLength : uint32_t
++frameNumber : uint64_t
++modId : uint16_t
++packetMask : uint8_t[64]
++packetNumber : uint32_t
++reserved : uint16_t
++roundRNumber : uint16_t
++row : uint16_t
++timestamp : uint64_t
++version : uint8_t
+}
+class "aare::xy" as C_0000162230005032830360
+class C_0000162230005032830360 {
++operator!=(const xy & other) const : bool
++operator==(const xy & other) const : bool
+__
++col : int
++row : int
+}
+enum "aare::DetectorType" as C_0000214432771357383463
+enum C_0000214432771357383463 {
+Jungfrau
+Eiger
+Mythen3
+Moench
+ChipTestBoard
+}
+enum "aare::TimingMode" as C_0000845115331155903292
+enum C_0000845115331155903292 {
+Auto
+Trigger
+}
+class "aare::RawFileConfig" as C_0000511537329021463656
+class C_0000511537329021463656 {
++operator==(const RawFileConfig & other) const : bool
+__
++module_gap_col : int
++module_gap_row : int
+}
+enum "aare::endian" as C_0000190468130082798308
+enum C_0000190468130082798308 {
+little
+big
+native
+}
+class "aare::DType" as C_0000703695317535186100
+class C_0000703695317535186100 {
++DType(const std::type_info & t) : void
++DType(std::string_view sv) : void
++DType(DType::TypeIndex ti) : void
+..
++operator!=(const DType & other) const noexcept : bool
++operator!=(const std::type_info & t) const : bool
++operator==(const DType & other) const noexcept : bool
++operator==(const std::type_info & t) const : bool
+..
++bitdepth() const : uint8_t
++str() const : std::string
+__
+-m_type : TypeIndex
+}
+enum "aare::DType::TypeIndex" as C_0000575426556754591775
+enum C_0000575426556754591775 {
+INT8
+UINT8
+INT16
+UINT16
+INT32
+UINT32
+INT64
+UINT64
+FLOAT
+DOUBLE
+ERROR
+}
+class "aare::NDView<T,ssize_t Ndim=2>" as C_0000853339819629793090
+class C_0000853339819629793090 {
++NDView() : void
++NDView(T * buffer, std::array<ssize_t,Ndim> shape) : void
++NDView(T * buffer, const std::vector<ssize_t> & shape) : void
++NDView(const NDView<T,Ndim> &) = default : void
++NDView(NDView<T,Ndim> &&) = default : void
+..
++operator=(const NDView<T,Ndim> & other) : NDView<T,Ndim> &
+..
++operator()(ssize_t i) : T &
++operator()<Ix...>(Ix... index) : typename std::enable_if<sizeof...(Ix) == Ndim, T &>::type
++operator()<Ix...>(Ix... index) const : typename std::enable_if<sizeof...(Ix) == Ndim, T &>::type
++operator*=(const T val) : NDView<T,Ndim> &
++operator+=(const T val) : NDView<T,Ndim> &
++operator-=(const T val) : NDView<T,Ndim> &
++operator/=(const T val) : NDView<T,Ndim> &
++operator/=(const NDView<T,Ndim> & other) : NDView<T,Ndim> &
++operator=(const T val) : NDView<T,Ndim> &
++operator==(const NDView<T,Ndim> & other) const : bool
++operator[](ssize_t i) : T &
+..
++begin() : T *
++data() : T *
+-elemenwise<BinaryOperation>(T val, BinaryOperation op) : NDView<T, Ndim> &
+-elemenwise<BinaryOperation>(const NDView<T,Ndim> & other, BinaryOperation op) : NDView<T, Ndim> &
++end() : T *
++shape() : auto &
++shape(ssize_t i) const : auto
++size() const : ssize_t
+__
+-buffer_ : T *
+-shape_ : std::array<ssize_t,Ndim>
+-size_ : ssize_t
+-strides_ : std::array<ssize_t,Ndim>
+}
+class "aare::NDView<unsigned short,2L>" as C_0000800815410987673815
+class C_0000800815410987673815 {
++NDView() : void
++NDView(unsigned short * buffer, std::array<ssize_t,2L> shape) : void
++NDView(unsigned short * buffer, const std::vector<ssize_t> & shape) : void
++NDView(const aare::NDView<uint16_t,2> &) = default : void
++NDView(aare::NDView<uint16_t,2> &&) = default : void
+..
++operator=(const aare::NDView<uint16_t,2> & other) : aare::NDView<uint16_t,2> &
+..
++operator()(ssize_t i) : unsigned short &
++operator()<Ix...>(Ix... index) : typename std::enable_if<sizeof...(Ix) == 2L, unsigned short &>::type
++operator()<Ix...>(Ix... index) const : typename std::enable_if<sizeof...(Ix) == 2L, unsigned short &>::type
++operator*=(const unsigned short val) : aare::NDView<uint16_t,2> &
++operator+=(const unsigned short val) : aare::NDView<uint16_t,2> &
++operator-=(const unsigned short val) : aare::NDView<uint16_t,2> &
++operator/=(const unsigned short val) : aare::NDView<uint16_t,2> &
++operator/=(const aare::NDView<uint16_t,2> & other) : aare::NDView<uint16_t,2> &
++operator=(const unsigned short val) : aare::NDView<uint16_t,2> &
++operator==(const aare::NDView<uint16_t,2> & other) const : bool
++operator[](ssize_t i) : unsigned short &
+..
++begin() : unsigned short *
++data() : unsigned short *
+-elemenwise<BinaryOperation>(unsigned short val, BinaryOperation op) : NDView<uint16_t, 2> &
+-elemenwise<BinaryOperation>(const aare::NDView<uint16_t,2> & other, BinaryOperation op) : NDView<uint16_t, 2> &
++end() : unsigned short *
++shape() : std::array<ssize_t,2L> &
++shape(ssize_t i) const : value_type
++size() const : ssize_t
+__
+-buffer_ : unsigned short *
+-shape_ : std::array<ssize_t,2L>
+-size_ : ssize_t
+-strides_ : std::array<ssize_t,2L>
+}
+class "aare::NDView<T,Ndim>" as C_0001549403386232143110
+class C_0001549403386232143110 {
+__
+}
+class "aare::NDArray<bool,Ndim>" as C_0000823076622246857026
+class C_0000823076622246857026 {
+__
+}
+class "aare::NDArray<V,Ndim>" as C_0002198222861307321825
+class C_0002198222861307321825 {
+__
+}
+class "aare::NDArray<T,ssize_t Ndim=2>" as C_0001181947618035129503
+class C_0001181947618035129503 {
++NDArray() : void
++NDArray(std::array<ssize_t,Ndim> shape) : void
++NDArray(std::array<ssize_t,Ndim> shape, T value) : void
++NDArray(NDView<T,Ndim> span) : void
++NDArray(NDArray<T,Ndim> && other) : void
++NDArray(const NDArray<T,Ndim> & other) : void
++~NDArray() : void
+..
++operator=(NDArray<T,Ndim> && other) : NDArray<T,Ndim> &
++operator=(const NDArray<T,Ndim> & other) : NDArray<T,Ndim> &
+..
++operator!=(const NDArray<T,Ndim> & other) const : bool
++operator&=(const T &) : NDArray<T,Ndim> &
++operator()<Ix...>(Ix... index) const : typename std::enable_if<sizeof...(Ix) == Ndim, T &>::type
++operator()<Ix...>(Ix... index) : typename std::enable_if<sizeof...(Ix) == Ndim, T &>::type
++operator()(int i) const : const T &
++operator()(int i) : T &
++operator*(const NDArray<T,Ndim> & other) : NDArray<T,Ndim>
++operator*(const T &) : NDArray<T,Ndim>
++operator*=(const NDArray<T,Ndim> & other) : NDArray<T,Ndim> &
++operator*=(const T &) : NDArray<T,Ndim> &
++operator+(const NDArray<T,Ndim> & other) : NDArray<T,Ndim>
++operator+(const T &) : NDArray<T,Ndim>
++operator++() : NDArray<T,Ndim> &
++operator+=(const NDArray<T,Ndim> & other) : NDArray<T,Ndim> &
++operator+=(const T &) : NDArray<T,Ndim> &
++operator-(const T &) : NDArray<T,Ndim>
++operator-(const NDArray<T,Ndim> & other) : NDArray<T,Ndim>
++operator-=(const T &) : NDArray<T,Ndim> &
++operator-=(const NDArray<T,Ndim> & other) : NDArray<T,Ndim> &
++operator/(const T &) : NDArray<T,Ndim>
++operator/(const NDArray<T,Ndim> & other) : NDArray<T,Ndim>
++operator/=(const T &) : NDArray<T,Ndim> &
++operator/=<V>(const NDArray<V,Ndim> & other) : NDArray<T, Ndim> &
++operator=(const T &) : NDArray<T,Ndim> &
++operator==(const NDArray<T,Ndim> & other) const : bool
++operator>(const NDArray<T,Ndim> & other) : NDArray<bool,Ndim>
+..
++Print() : void
++Print_all() : void
++Print_some() : void
++begin() : auto
++buffer() : std::byte *
++byte_strides() const noexcept : std::array<ssize_t,Ndim>
++data() : T *
++end() : auto
++reset() : void
++shape(ssize_t i) const noexcept : ssize_t
++shape() const noexcept : std::array<ssize_t,Ndim>
++size() const : ssize_t
++span() const : NDView<T,Ndim>
++sqrt() : void
++strides() const noexcept : std::array<ssize_t,Ndim>
++total_bytes() const : size_t
++value<Ix...>(Ix... index) : typename std::enable_if<sizeof...(Ix) == Ndim, T>::type
+__
+-data_ : T *
+-shape_ : std::array<ssize_t,Ndim>
+-size_ : ssize_t
+-strides_ : std::array<ssize_t,Ndim>
+}
+class "aare::Frame" as C_0001608703618093824988
+class C_0001608703618093824988 {
++Frame(ssize_t rows, ssize_t cols, ssize_t m_bitdepth) : void
++Frame(std::byte * fp, ssize_t rows, ssize_t cols, ssize_t m_bitdepth) : void
++Frame(Frame && other) : void
++Frame(const Frame & other) : void
++~Frame() : void
+..
++operator=(Frame & other) : Frame &
+..
++bitdepth() const : ssize_t
++cols() const : ssize_t
++data() const : std::byte *
++get(int row, int col) : std::byte *
++image<T>() : NDArray<T>
++rows() const : ssize_t
++set<T>(int row, int col, T data) : void
++size() const : ssize_t
++view<T>() : NDView<T>
+__
+-m_bitdepth : ssize_t
+-m_cols : ssize_t
+-m_data : std::byte *
+-m_rows : ssize_t
+}
+C_0000575426556754591775 --+ C_0000703695317535186100
+C_0000800815410987673815 ..|> C_0000853339819629793090
+C_0001549403386232143110 ..|> C_0000853339819629793090
+C_0000823076622246857026 ..|> C_0001181947618035129503
+C_0002198222861307321825 ..|> C_0001181947618035129503
+C_0001181947618035129503 ..> C_0001549403386232143110
+C_0001181947618035129503 ..> C_0000823076622246857026
+C_0001181947618035129503 ..> C_0002198222861307321825
+
+'Generated with clang-uml, version 0.5.1
+'LLVM version clang version 17.0.6 (Fedora 17.0.6-2.fc39)
+@enduml

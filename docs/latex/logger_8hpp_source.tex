@@ -1,0 +1,154 @@
+\doxysection{logger.\+hpp}
+\hypertarget{logger_8hpp_source}{}\label{logger_8hpp_source}\index{utils/include/aare/utils/logger.hpp@{utils/include/aare/utils/logger.hpp}}
+\mbox{\hyperlink{logger_8hpp}{Go to the documentation of this file.}}
+\begin{DoxyCode}{0}
+\DoxyCodeLine{00001\ \textcolor{preprocessor}{\#pragma\ once}}
+\DoxyCodeLine{00002\ \textcolor{preprocessor}{\#include\ <filesystem>}}
+\DoxyCodeLine{00003\ \textcolor{preprocessor}{\#include\ <fstream>}}
+\DoxyCodeLine{00004\ \textcolor{preprocessor}{\#include\ <iostream>}}
+\DoxyCodeLine{00005\ \textcolor{preprocessor}{\#include\ <map>}}
+\DoxyCodeLine{00006\ \textcolor{preprocessor}{\#include\ <vector>}}
+\DoxyCodeLine{00007\ }
+\DoxyCodeLine{00008\ \textcolor{preprocessor}{\#define\ LOCATION\ std::string(\_\_FILE\_\_)\ +\ std::string("{}:"{}})\ +\ std::to\_string(\_\_LINE\_\_)\ +\ "{}:"{}\ +\ std::string(\_\_func\_\_)\ +\ "{}:"{}}
+\DoxyCodeLine{00009\ }
+\DoxyCodeLine{00010\ \textcolor{comment}{//\ operator\ overload\ to\ print\ vectors}}
+\DoxyCodeLine{00011\ \textcolor{comment}{//\ typename\ T\ must\ be\ printable\ (i.e.\ have\ the\ <<\ operator)}}
+\DoxyCodeLine{00012\ \textcolor{keyword}{template}\ <\textcolor{keyword}{typename}\ T>\ std::ostream\ \&\mbox{\hyperlink{logger_8hpp_a9e4ea0ca899f97b1680d4193d7372c71}{operator<<}}(std::ostream\ \&out,\ \textcolor{keyword}{const}\ std::vector<T>\ \&v)\ \{}
+\DoxyCodeLine{00013\ \ \ \ \ out\ <<\ \textcolor{stringliteral}{"{}["{}};}
+\DoxyCodeLine{00014\ \ \ \ \ \textcolor{keywordtype}{size\_t}\ last\ =\ v.size()\ -\/\ 1;}
+\DoxyCodeLine{00015\ \ \ \ \ \textcolor{keywordflow}{for}\ (\textcolor{keywordtype}{size\_t}\ i\ =\ 0;\ i\ <\ v.size();\ ++i)\ \{}
+\DoxyCodeLine{00016\ \ \ \ \ \ \ \ \ out\ <<\ v[i];}
+\DoxyCodeLine{00017\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{if}\ (i\ !=\ last)}
+\DoxyCodeLine{00018\ \ \ \ \ \ \ \ \ \ \ \ \ out\ <<\ \textcolor{stringliteral}{"{},\ "{}};}
+\DoxyCodeLine{00019\ \ \ \ \ \}}
+\DoxyCodeLine{00020\ \ \ \ \ out\ <<\ \textcolor{stringliteral}{"{}]"{}};}
+\DoxyCodeLine{00021\ \ \ \ \ \textcolor{keywordflow}{return}\ out;}
+\DoxyCodeLine{00022\ \}}
+\DoxyCodeLine{00023\ }
+\DoxyCodeLine{00024\ \textcolor{comment}{//\ operator\ overload\ for\ std::array}}
+\DoxyCodeLine{00025\ \textcolor{keyword}{template}\ <\textcolor{keyword}{typename}\ T,\ \textcolor{keywordtype}{size\_t}\ N>\ std::ostream\ \&\mbox{\hyperlink{logger_8hpp_a9e4ea0ca899f97b1680d4193d7372c71}{operator<<}}(std::ostream\ \&out,\ \textcolor{keyword}{const}\ std::array<T,\ N>\ \&v)\ \{}
+\DoxyCodeLine{00026\ \ \ \ \ out\ <<\ \textcolor{stringliteral}{"{}["{}};}
+\DoxyCodeLine{00027\ \ \ \ \ \textcolor{keywordtype}{size\_t}\ last\ =\ N\ -\/\ 1;}
+\DoxyCodeLine{00028\ \ \ \ \ \textcolor{keywordflow}{for}\ (\textcolor{keywordtype}{size\_t}\ i\ =\ 0;\ i\ <\ N;\ ++i)\ \{}
+\DoxyCodeLine{00029\ \ \ \ \ \ \ \ \ out\ <<\ v[i];}
+\DoxyCodeLine{00030\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{if}\ (i\ !=\ last)}
+\DoxyCodeLine{00031\ \ \ \ \ \ \ \ \ \ \ \ \ out\ <<\ \textcolor{stringliteral}{"{},\ "{}};}
+\DoxyCodeLine{00032\ \ \ \ \ \}}
+\DoxyCodeLine{00033\ \ \ \ \ out\ <<\ \textcolor{stringliteral}{"{}]"{}};}
+\DoxyCodeLine{00034\ \ \ \ \ \textcolor{keywordflow}{return}\ out;}
+\DoxyCodeLine{00035\ \}}
+\DoxyCodeLine{00036\ \textcolor{comment}{//\ operator\ overlaod\ for\ std::map}}
+\DoxyCodeLine{00037\ \textcolor{keyword}{template}\ <\textcolor{keyword}{typename}\ K,\ \textcolor{keyword}{typename}\ V>\ std::ostream\ \&\mbox{\hyperlink{logger_8hpp_a9e4ea0ca899f97b1680d4193d7372c71}{operator<<}}(std::ostream\ \&out,\ \textcolor{keyword}{const}\ std::map<K,\ V>\ \&v)\ \{}
+\DoxyCodeLine{00038\ \ \ \ \ out\ <<\ \textcolor{stringliteral}{"{}\{"{}};}
+\DoxyCodeLine{00039\ \ \ \ \ \textcolor{keywordtype}{size\_t}\ i\ =\ 0;}
+\DoxyCodeLine{00040\ \ \ \ \ \textcolor{keywordflow}{for}\ (\textcolor{keyword}{auto}\ \&kv\ :\ v)\ \{}
+\DoxyCodeLine{00041\ \ \ \ \ \ \ \ \ out\ <<\ kv.first\ <<\ \textcolor{stringliteral}{"{}:\ "{}}\ <<\ kv.second\ <<\ ((++i\ !=\ v.size())\ ?\ \textcolor{stringliteral}{"{},\ "{}}\ :\ \textcolor{stringliteral}{"{}"{}});}
+\DoxyCodeLine{00042\ \ \ \ \ \}}
+\DoxyCodeLine{00043\ }
+\DoxyCodeLine{00044\ \ \ \ \ out\ <<\ \textcolor{stringliteral}{"{}\}"{}};}
+\DoxyCodeLine{00045\ \ \ \ \ \textcolor{keywordflow}{return}\ out;}
+\DoxyCodeLine{00046\ \}}
+\DoxyCodeLine{00047\ }
+\DoxyCodeLine{00048\ \textcolor{keyword}{namespace\ }\mbox{\hyperlink{namespaceaare}{aare}}\ \{}
+\DoxyCodeLine{00049\ }
+\DoxyCodeLine{00050\ \textcolor{keyword}{namespace\ }logger\ \{}
+\DoxyCodeLine{00051\ \textcolor{keyword}{enum}\ \mbox{\hyperlink{namespaceaare_1_1logger_af49e00b36677b44ea78813c109b697ed}{LOGGING\_LEVEL}}\ \{}
+\DoxyCodeLine{00052\ \ \ \ \ \mbox{\hyperlink{namespaceaare_1_1logger_af49e00b36677b44ea78813c109b697eda49a634116dfda67973725d859848ceda}{DEBUG}}\ =\ 0,}
+\DoxyCodeLine{00053\ \ \ \ \ \mbox{\hyperlink{namespaceaare_1_1logger_af49e00b36677b44ea78813c109b697edaa299d78fc1de06730cc5c9e63992071f}{INFO}}\ =\ 1,}
+\DoxyCodeLine{00054\ \ \ \ \ \mbox{\hyperlink{namespaceaare_1_1logger_af49e00b36677b44ea78813c109b697eda27d3614b3477d3fe03ac6eba997350c8}{WARNING}}\ =\ 2,}
+\DoxyCodeLine{00055\ \ \ \ \ \mbox{\hyperlink{namespaceaare_1_1logger_af49e00b36677b44ea78813c109b697eda5e573dce2cdf7298dfcce0f91c9aef59}{ERROR}}\ =\ 3}
+\DoxyCodeLine{00056\ }
+\DoxyCodeLine{00057\ \};}
+\DoxyCodeLine{00058\ }
+\DoxyCodeLine{00059\ \textcolor{keyword}{class\ }\mbox{\hyperlink{classaare_1_1logger_1_1Logger}{Logger}}\ \{}
+\DoxyCodeLine{00060\ }
+\DoxyCodeLine{00061\ \ \ \ \ std::streambuf\ *\mbox{\hyperlink{classaare_1_1logger_1_1Logger_ae2e6694d5ed4e385a8fff81cfa31b881}{standard\_buf}}\ =\ std::cout.rdbuf();}
+\DoxyCodeLine{00062\ \ \ \ \ std::streambuf\ *\mbox{\hyperlink{classaare_1_1logger_1_1Logger_acd26de11ebd34bac7530994cfad21c47}{error\_buf}}\ =\ std::cerr.rdbuf();}
+\DoxyCodeLine{00063\ \ \ \ \ std::ostream\ *\mbox{\hyperlink{classaare_1_1logger_1_1Logger_a9a97e0af9b628e0b44f1650503e3703b}{standard\_output}};}
+\DoxyCodeLine{00064\ \ \ \ \ std::ostream\ *\mbox{\hyperlink{classaare_1_1logger_1_1Logger_aacddc9dbc5f3909779766a6290cfa9e2}{error\_output}};}
+\DoxyCodeLine{00065\ \ \ \ \ \mbox{\hyperlink{namespaceaare_1_1logger_af49e00b36677b44ea78813c109b697ed}{LOGGING\_LEVEL}}\ \mbox{\hyperlink{classaare_1_1logger_1_1Logger_a8442d8748d3441ada95d85c95fd2ba9f}{VERBOSITY\_LEVEL}}\ =\ \mbox{\hyperlink{namespaceaare_1_1logger_af49e00b36677b44ea78813c109b697edaa299d78fc1de06730cc5c9e63992071f}{LOGGING\_LEVEL::INFO}};}
+\DoxyCodeLine{00066\ }
+\DoxyCodeLine{00067\ \ \ \ \ std::ofstream\ \mbox{\hyperlink{classaare_1_1logger_1_1Logger_a4b40d1254643c48085df472a850edf14}{out\_file}};}
+\DoxyCodeLine{00068\ }
+\DoxyCodeLine{00069\ \ \ \textcolor{keyword}{public}:}
+\DoxyCodeLine{00070\ \ \ \ \ \textcolor{keywordtype}{void}\ \mbox{\hyperlink{classaare_1_1logger_1_1Logger_ad758e0a3ba1dafbf37bb9b27f128037e}{set\_output\_file}}(std::string\ filename)\ \{}
+\DoxyCodeLine{00071\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{if}\ (\mbox{\hyperlink{classaare_1_1logger_1_1Logger_a4b40d1254643c48085df472a850edf14}{out\_file}}.is\_open())}
+\DoxyCodeLine{00072\ \ \ \ \ \ \ \ \ \ \ \ \ \mbox{\hyperlink{classaare_1_1logger_1_1Logger_a4b40d1254643c48085df472a850edf14}{out\_file}}.close();}
+\DoxyCodeLine{00073\ \ \ \ \ \ \ \ \ \mbox{\hyperlink{classaare_1_1logger_1_1Logger_a4b40d1254643c48085df472a850edf14}{out\_file}}.open(filename);}
+\DoxyCodeLine{00074\ \ \ \ \ \ \ \ \ \mbox{\hyperlink{classaare_1_1logger_1_1Logger_a38d6998a952960955503110b6c548a7c}{set\_streams}}(\mbox{\hyperlink{classaare_1_1logger_1_1Logger_a4b40d1254643c48085df472a850edf14}{out\_file}}.rdbuf());}
+\DoxyCodeLine{00075\ \ \ \ \ \}}
+\DoxyCodeLine{00076\ \ \ \ \ \textcolor{keywordtype}{void}\ \mbox{\hyperlink{classaare_1_1logger_1_1Logger_a38d6998a952960955503110b6c548a7c}{set\_streams}}(std::streambuf\ *out,\ std::streambuf\ *err)\ \{}
+\DoxyCodeLine{00077\ \ \ \ \ \ \ \ \ \textcolor{keyword}{delete}\ \mbox{\hyperlink{classaare_1_1logger_1_1Logger_a9a97e0af9b628e0b44f1650503e3703b}{standard\_output}};}
+\DoxyCodeLine{00078\ \ \ \ \ \ \ \ \ \textcolor{keyword}{delete}\ \mbox{\hyperlink{classaare_1_1logger_1_1Logger_aacddc9dbc5f3909779766a6290cfa9e2}{error\_output}};}
+\DoxyCodeLine{00079\ \ \ \ \ \ \ \ \ \mbox{\hyperlink{classaare_1_1logger_1_1Logger_a9a97e0af9b628e0b44f1650503e3703b}{standard\_output}}\ =\ \textcolor{keyword}{new}\ std::ostream(out);}
+\DoxyCodeLine{00080\ \ \ \ \ \ \ \ \ \mbox{\hyperlink{classaare_1_1logger_1_1Logger_aacddc9dbc5f3909779766a6290cfa9e2}{error\_output}}\ =\ \textcolor{keyword}{new}\ std::ostream(err);}
+\DoxyCodeLine{00081\ \ \ \ \ \}}
+\DoxyCodeLine{00082\ \ \ \ \ \textcolor{keywordtype}{void}\ \mbox{\hyperlink{classaare_1_1logger_1_1Logger_a9347723aa8f9211a409545eb42a35bbb}{set\_streams}}(std::streambuf\ *out)\ \{\ \mbox{\hyperlink{classaare_1_1logger_1_1Logger_a9347723aa8f9211a409545eb42a35bbb}{set\_streams}}(out,\ out);\ \}}
+\DoxyCodeLine{00083\ \ \ \ \ \textcolor{keywordtype}{void}\ \mbox{\hyperlink{classaare_1_1logger_1_1Logger_a58c7bf903ae895639465882ce3389cd5}{set\_verbosity}}(\mbox{\hyperlink{namespaceaare_1_1logger_af49e00b36677b44ea78813c109b697ed}{LOGGING\_LEVEL}}\ level)\ \{\ \mbox{\hyperlink{classaare_1_1logger_1_1Logger_a8442d8748d3441ada95d85c95fd2ba9f}{VERBOSITY\_LEVEL}}\ =\ level;\ \}}
+\DoxyCodeLine{00084\ \ \ \ \ \mbox{\hyperlink{classaare_1_1logger_1_1Logger_a6a814b3ec1da07895fb5a4e0730ae73b}{Logger}}()\ \{}
+\DoxyCodeLine{00085\ \ \ \ \ \ \ \ \ \mbox{\hyperlink{classaare_1_1logger_1_1Logger_a9a97e0af9b628e0b44f1650503e3703b}{standard\_output}}\ =\ \textcolor{keyword}{new}\ std::ostream(\mbox{\hyperlink{classaare_1_1logger_1_1Logger_ae2e6694d5ed4e385a8fff81cfa31b881}{standard\_buf}});}
+\DoxyCodeLine{00086\ \ \ \ \ \ \ \ \ \mbox{\hyperlink{classaare_1_1logger_1_1Logger_aacddc9dbc5f3909779766a6290cfa9e2}{error\_output}}\ =\ \textcolor{keyword}{new}\ std::ostream(\mbox{\hyperlink{classaare_1_1logger_1_1Logger_acd26de11ebd34bac7530994cfad21c47}{error\_buf}});}
+\DoxyCodeLine{00087\ \ \ \ \ \}}
+\DoxyCodeLine{00088\ }
+\DoxyCodeLine{00089\ \ \ \ \ \mbox{\hyperlink{classaare_1_1logger_1_1Logger_a4e6fb5d7897b38221180b402f8b961a2}{\string~Logger}}()\ \{}
+\DoxyCodeLine{00090\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{if}\ (\mbox{\hyperlink{classaare_1_1logger_1_1Logger_a4b40d1254643c48085df472a850edf14}{out\_file}}.is\_open())}
+\DoxyCodeLine{00091\ \ \ \ \ \ \ \ \ \ \ \ \ \mbox{\hyperlink{classaare_1_1logger_1_1Logger_a4b40d1254643c48085df472a850edf14}{out\_file}}.close();}
+\DoxyCodeLine{00092\ }
+\DoxyCodeLine{00093\ \ \ \ \ \ \ \ \ \mbox{\hyperlink{classaare_1_1logger_1_1Logger_a9a97e0af9b628e0b44f1650503e3703b}{standard\_output}}-\/>flush();}
+\DoxyCodeLine{00094\ \ \ \ \ \ \ \ \ \mbox{\hyperlink{classaare_1_1logger_1_1Logger_aacddc9dbc5f3909779766a6290cfa9e2}{error\_output}}-\/>flush();}
+\DoxyCodeLine{00095\ \ \ \ \ \ \ \ \ \textcolor{keyword}{delete}\ \mbox{\hyperlink{classaare_1_1logger_1_1Logger_a9a97e0af9b628e0b44f1650503e3703b}{standard\_output}};}
+\DoxyCodeLine{00096\ \ \ \ \ \ \ \ \ \textcolor{keyword}{delete}\ \mbox{\hyperlink{classaare_1_1logger_1_1Logger_aacddc9dbc5f3909779766a6290cfa9e2}{error\_output}};}
+\DoxyCodeLine{00097\ \ \ \ \ \}}
+\DoxyCodeLine{00098\ \ \ \ \ \textcolor{keyword}{template}\ <\mbox{\hyperlink{namespaceaare_1_1logger_af49e00b36677b44ea78813c109b697ed}{LOGGING\_LEVEL}}\ level,\ \textcolor{keyword}{typename}...\ Strings>\ \textcolor{keywordtype}{void}\ \mbox{\hyperlink{classaare_1_1logger_1_1Logger_a6af7cdd6470c45c75ead18beef5acc05}{log}}(\textcolor{keyword}{const}\ Strings...\ s)\ \{}
+\DoxyCodeLine{00099\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{if}\ (level\ >=\ \mbox{\hyperlink{classaare_1_1logger_1_1Logger_a8442d8748d3441ada95d85c95fd2ba9f}{VERBOSITY\_LEVEL}})}
+\DoxyCodeLine{00100\ \ \ \ \ \ \ \ \ \ \ \ \ log\_<level>(s...);}
+\DoxyCodeLine{00101\ \ \ \ \ \}}
+\DoxyCodeLine{00102\ \ \ \ \ \textcolor{keyword}{template}\ <\textcolor{keyword}{typename}...\ Strings>\ \textcolor{keywordtype}{void}\ \mbox{\hyperlink{classaare_1_1logger_1_1Logger_a8e7bb30772e8172de56816f5a8064a92}{debug}}(\textcolor{keyword}{const}\ Strings...\ s)\ \{\ log<LOGGING\_LEVEL::DEBUG>(\textcolor{stringliteral}{"{}[DEBUG]"{}},\ s...);\ \}}
+\DoxyCodeLine{00103\ \ \ \ \ \textcolor{keyword}{template}\ <\textcolor{keyword}{typename}...\ Strings>\ \textcolor{keywordtype}{void}\ \mbox{\hyperlink{classaare_1_1logger_1_1Logger_a8771c669369560459142d57bd2039a3a}{info}}(\textcolor{keyword}{const}\ Strings...\ s)\ \{\ log<LOGGING\_LEVEL::INFO>(\textcolor{stringliteral}{"{}[INFO]"{}},\ s...);\ \}}
+\DoxyCodeLine{00104\ \ \ \ \ \textcolor{keyword}{template}\ <\textcolor{keyword}{typename}...\ Strings>\ \textcolor{keywordtype}{void}\ \mbox{\hyperlink{classaare_1_1logger_1_1Logger_a69ddcaa771a0e307e6b7cc6695073eb7}{warn}}(\textcolor{keyword}{const}\ Strings...\ s)\ \{\ log<LOGGING\_LEVEL::WARNING>(\textcolor{stringliteral}{"{}[WARN]"{}},\ s...);\ \}}
+\DoxyCodeLine{00105\ \ \ \ \ \textcolor{keyword}{template}\ <\textcolor{keyword}{typename}...\ Strings>\ \textcolor{keywordtype}{void}\ \mbox{\hyperlink{classaare_1_1logger_1_1Logger_af1f0c59605d44733cd2520d7820e9cc4}{error}}(\textcolor{keyword}{const}\ Strings...\ s)\ \{\ log<LOGGING\_LEVEL::ERROR>(\textcolor{stringliteral}{"{}[ERROR]"{}},\ s...);\ \}}
+\DoxyCodeLine{00106\ }
+\DoxyCodeLine{00107\ \ \ \textcolor{keyword}{private}:}
+\DoxyCodeLine{00108\ \ \ \ \ \textcolor{keyword}{template}\ <LOGGING\_LEVEL\ level>\ \textcolor{keywordtype}{void}\ \mbox{\hyperlink{classaare_1_1logger_1_1Logger_ae1700009b33adc5a9c6f0b2c017feece}{log\_}}()\ \{}
+\DoxyCodeLine{00109\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{if}\ (level\ ==\ \mbox{\hyperlink{namespaceaare_1_1logger_af49e00b36677b44ea78813c109b697eda5e573dce2cdf7298dfcce0f91c9aef59}{LOGGING\_LEVEL::ERROR}})\ \{}
+\DoxyCodeLine{00110\ \ \ \ \ \ \ \ \ \ \ \ \ *\mbox{\hyperlink{classaare_1_1logger_1_1Logger_aacddc9dbc5f3909779766a6290cfa9e2}{error\_output}}\ <<\ std::endl;}
+\DoxyCodeLine{00111\ \ \ \ \ \ \ \ \ \}\ \textcolor{keywordflow}{else}\ \{}
+\DoxyCodeLine{00112\ \ \ \ \ \ \ \ \ \ \ \ \ *\mbox{\hyperlink{classaare_1_1logger_1_1Logger_a9a97e0af9b628e0b44f1650503e3703b}{standard\_output}}\ <<\ std::endl;}
+\DoxyCodeLine{00113\ \ \ \ \ \ \ \ \ \}}
+\DoxyCodeLine{00114\ \ \ \ \ \}}
+\DoxyCodeLine{00115\ \ \ \ \ \textcolor{keyword}{template}\ <\mbox{\hyperlink{namespaceaare_1_1logger_af49e00b36677b44ea78813c109b697ed}{LOGGING\_LEVEL}}\ level,\ \textcolor{keyword}{typename}\ First,\ \textcolor{keyword}{typename}...\ Strings>\ \textcolor{keywordtype}{void}\ \mbox{\hyperlink{classaare_1_1logger_1_1Logger_adc97b62fee1726187426212fac981485}{log\_}}(First\ arg,\ \textcolor{keyword}{const}\ Strings...\ s)\ \{}
+\DoxyCodeLine{00116\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{if}\ (level\ ==\ \mbox{\hyperlink{namespaceaare_1_1logger_af49e00b36677b44ea78813c109b697eda5e573dce2cdf7298dfcce0f91c9aef59}{LOGGING\_LEVEL::ERROR}})\ \{}
+\DoxyCodeLine{00117\ \ \ \ \ \ \ \ \ \ \ \ \ *\mbox{\hyperlink{classaare_1_1logger_1_1Logger_aacddc9dbc5f3909779766a6290cfa9e2}{error\_output}}\ <<\ (arg)\ <<\ \textcolor{charliteral}{'\ '};}
+\DoxyCodeLine{00118\ \ \ \ \ \ \ \ \ \ \ \ \ \mbox{\hyperlink{classaare_1_1logger_1_1Logger_aacddc9dbc5f3909779766a6290cfa9e2}{error\_output}}-\/>flush();}
+\DoxyCodeLine{00119\ \ \ \ \ \ \ \ \ \}\ \textcolor{keywordflow}{else}\ \{}
+\DoxyCodeLine{00120\ \ \ \ \ \ \ \ \ \ \ \ \ *\mbox{\hyperlink{classaare_1_1logger_1_1Logger_a9a97e0af9b628e0b44f1650503e3703b}{standard\_output}}\ <<\ (arg)\ <<\ \textcolor{charliteral}{'\ '};}
+\DoxyCodeLine{00121\ \ \ \ \ \ \ \ \ \ \ \ \ \mbox{\hyperlink{classaare_1_1logger_1_1Logger_a9a97e0af9b628e0b44f1650503e3703b}{standard\_output}}-\/>flush();}
+\DoxyCodeLine{00122\ \ \ \ \ \ \ \ \ \}}
+\DoxyCodeLine{00123\ \ \ \ \ \ \ \ \ log\_<level>(s...);}
+\DoxyCodeLine{00124\ \ \ \ \ \}}
+\DoxyCodeLine{00125\ \};}
+\DoxyCodeLine{00126\ }
+\DoxyCodeLine{00127\ \textcolor{keyword}{namespace\ }internal\ \{}
+\DoxyCodeLine{00128\ }
+\DoxyCodeLine{00129\ \textcolor{keyword}{extern}\ \mbox{\hyperlink{classaare_1_1logger_1_1Logger}{aare::logger::Logger}}\ \mbox{\hyperlink{namespaceaare_1_1logger_1_1internal_a42d1e41bd805bdd6c87f2c36239d27bf}{logger\_instance}};}
+\DoxyCodeLine{00130\ \}\ \textcolor{comment}{//\ namespace\ internal}}
+\DoxyCodeLine{00131\ }
+\DoxyCodeLine{00132\ \textcolor{keyword}{template}\ <\mbox{\hyperlink{namespaceaare_1_1logger_af49e00b36677b44ea78813c109b697ed}{LOGGING\_LEVEL}}\ level,\ \textcolor{keyword}{typename}...\ Strings>\ \textcolor{keywordtype}{void}\ \mbox{\hyperlink{namespaceaare_1_1logger_a937a16230b5f98a197ab370d3b807ec6}{log}}(\textcolor{keyword}{const}\ Strings...\ s)\ \{}
+\DoxyCodeLine{00133\ \ \ \ \ \mbox{\hyperlink{namespaceaare_1_1logger_1_1internal_a42d1e41bd805bdd6c87f2c36239d27bf}{internal::logger\_instance}}.\mbox{\hyperlink{classaare_1_1logger_1_1Logger_a6af7cdd6470c45c75ead18beef5acc05}{log}}<level>(s...);}
+\DoxyCodeLine{00134\ \}}
+\DoxyCodeLine{00135\ \textcolor{keyword}{template}\ <\textcolor{keyword}{typename}...\ Strings>\ \textcolor{keywordtype}{void}\ \mbox{\hyperlink{namespaceaare_1_1logger_abae5b0551a44b7a2820cf8136cc8b967}{debug}}(\textcolor{keyword}{const}\ Strings...\ s)\ \{\ \mbox{\hyperlink{namespaceaare_1_1logger_1_1internal_a42d1e41bd805bdd6c87f2c36239d27bf}{internal::logger\_instance}}.\mbox{\hyperlink{classaare_1_1logger_1_1Logger_a8e7bb30772e8172de56816f5a8064a92}{debug}}(s...);\ \}}
+\DoxyCodeLine{00136\ \textcolor{keyword}{template}\ <\textcolor{keyword}{typename}...\ Strings>\ \textcolor{keywordtype}{void}\ \mbox{\hyperlink{namespaceaare_1_1logger_ad1d416cf2f59b9112627c6bc2b351218}{info}}(\textcolor{keyword}{const}\ Strings...\ s)\ \{\ \mbox{\hyperlink{namespaceaare_1_1logger_1_1internal_a42d1e41bd805bdd6c87f2c36239d27bf}{internal::logger\_instance}}.\mbox{\hyperlink{classaare_1_1logger_1_1Logger_a8771c669369560459142d57bd2039a3a}{info}}(s...);\ \}}
+\DoxyCodeLine{00137\ \textcolor{keyword}{template}\ <\textcolor{keyword}{typename}...\ Strings>\ \textcolor{keywordtype}{void}\ \mbox{\hyperlink{namespaceaare_1_1logger_a1449109c5a71459c6c9a5e997d98127b}{warn}}(\textcolor{keyword}{const}\ Strings...\ s)\ \{\ \mbox{\hyperlink{namespaceaare_1_1logger_1_1internal_a42d1e41bd805bdd6c87f2c36239d27bf}{internal::logger\_instance}}.\mbox{\hyperlink{classaare_1_1logger_1_1Logger_a69ddcaa771a0e307e6b7cc6695073eb7}{warn}}(s...);\ \}}
+\DoxyCodeLine{00138\ \textcolor{keyword}{template}\ <\textcolor{keyword}{typename}...\ Strings>\ \textcolor{keywordtype}{void}\ \mbox{\hyperlink{namespaceaare_1_1logger_aa3c59889c871f655a4a576bad35cd0e7}{error}}(\textcolor{keyword}{const}\ Strings...\ s)\ \{\ \mbox{\hyperlink{namespaceaare_1_1logger_1_1internal_a42d1e41bd805bdd6c87f2c36239d27bf}{internal::logger\_instance}}.\mbox{\hyperlink{classaare_1_1logger_1_1Logger_af1f0c59605d44733cd2520d7820e9cc4}{error}}(s...);\ \}}
+\DoxyCodeLine{00139\ }
+\DoxyCodeLine{00140\ \textcolor{keyword}{extern}\ \textcolor{keywordtype}{void}\ \mbox{\hyperlink{namespaceaare_1_1logger_a9615ab157fbc2bb3e9b2bfb65e12be8c}{set\_streams}}(std::streambuf\ *out,\ std::streambuf\ *err);}
+\DoxyCodeLine{00141\ \textcolor{keyword}{extern}\ \textcolor{keywordtype}{void}\ \mbox{\hyperlink{namespaceaare_1_1logger_a9615ab157fbc2bb3e9b2bfb65e12be8c}{set\_streams}}(std::streambuf\ *out);}
+\DoxyCodeLine{00142\ \textcolor{keyword}{extern}\ \textcolor{keywordtype}{void}\ \mbox{\hyperlink{namespaceaare_1_1logger_a335576e89f0ac25831e1ff7abb3c67c8}{set\_verbosity}}(\mbox{\hyperlink{namespaceaare_1_1logger_af49e00b36677b44ea78813c109b697ed}{LOGGING\_LEVEL}}\ level);}
+\DoxyCodeLine{00143\ \textcolor{keyword}{extern}\ \textcolor{keywordtype}{void}\ \mbox{\hyperlink{namespaceaare_1_1logger_a42089a21b600c9733ff5a82138c4f53d}{set\_output\_file}}(std::string\ filename);}
+\DoxyCodeLine{00144\ \textcolor{keyword}{extern}\ Logger\ \&\mbox{\hyperlink{namespaceaare_1_1logger_adfa4e46d0e102fd5f1eb9a6471eead60}{get\_logger\_instance}}();}
+\DoxyCodeLine{00145\ }
+\DoxyCodeLine{00146\ \}\ \textcolor{comment}{//\ namespace\ logger}}
+\DoxyCodeLine{00147\ }
+\DoxyCodeLine{00148\ \}\ \textcolor{comment}{//\ namespace\ aare}}
+
+\end{DoxyCode}

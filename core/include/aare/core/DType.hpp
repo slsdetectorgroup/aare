@@ -1,5 +1,4 @@
 #pragma once
-#include "aare/utils/logger.hpp"
 #include <cstdint>
 #include <string>
 #include <typeinfo>

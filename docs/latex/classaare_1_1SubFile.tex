@@ -1,0 +1,295 @@
+\doxysection{aare\+::Sub\+File Class Reference}
+\hypertarget{classaare_1_1SubFile}{}\label{classaare_1_1SubFile}\index{aare::SubFile@{aare::SubFile}}
+
+
+Class to read a subfile from a \doxylink{classaare_1_1RawFile}{Raw\+File}.  
+
+
+
+
+{\ttfamily \#include $<$Sub\+File.\+hpp$>$}
+
+\doxysubsubsection*{Public Member Functions}
+\begin{DoxyCompactItemize}
+\item 
+\mbox{\hyperlink{classaare_1_1SubFile_a502c8395f5e6536064dd896987fb8128}{Sub\+File}} (std\+::filesystem\+::path fname, \mbox{\hyperlink{namespaceaare_a5b95afba95553c1e118e1478c69042f7}{Detector\+Type}} detector, ssize\+\_\+t rows, ssize\+\_\+t cols, uint16\+\_\+t bitdepth)
+\begin{DoxyCompactList}\small\item\em \doxylink{classaare_1_1SubFile}{Sub\+File} constructor. \end{DoxyCompactList}\item 
+size\+\_\+t \mbox{\hyperlink{classaare_1_1SubFile_a660d0c9ccb8d0e79d9f17bbdea910a45}{read\+\_\+impl\+\_\+normal}} (std\+::byte \texorpdfstring{$\ast$}{*}buffer)
+\begin{DoxyCompactList}\small\item\em read the subfile into a buffer \end{DoxyCompactList}\item 
+{\footnotesize template$<$typename Data\+Type $>$ }\\size\+\_\+t \mbox{\hyperlink{classaare_1_1SubFile_af8977099c5a78c5d76d3fb3f41d450de}{read\+\_\+impl\+\_\+flip}} (std\+::byte \texorpdfstring{$\ast$}{*}buffer)
+\begin{DoxyCompactList}\small\item\em read the subfile into a buffer with the bytes flipped \end{DoxyCompactList}\item 
+{\footnotesize template$<$typename Data\+Type $>$ }\\size\+\_\+t \mbox{\hyperlink{classaare_1_1SubFile_aa41e65b3174ad83c7eee101421104c69}{read\+\_\+impl\+\_\+reorder}} (std\+::byte \texorpdfstring{$\ast$}{*}buffer)
+\begin{DoxyCompactList}\small\item\em read the subfile into a buffer with the bytes reordered \end{DoxyCompactList}\item 
+size\+\_\+t \mbox{\hyperlink{classaare_1_1SubFile_a4f13c03f410dfae1440d3d7126914416}{get\+\_\+part}} (std\+::byte \texorpdfstring{$\ast$}{*}buffer, int \mbox{\hyperlink{classaare_1_1SubFile_adb165b1e12b49ad58dfac71a9ad5e64f}{frame\+\_\+number}})
+\begin{DoxyCompactList}\small\item\em read the subfile into a buffer with the bytes reordered and flipped \end{DoxyCompactList}\item 
+size\+\_\+t \mbox{\hyperlink{classaare_1_1SubFile_adb165b1e12b49ad58dfac71a9ad5e64f}{frame\+\_\+number}} (int frame\+\_\+index)
+\item 
+size\+\_\+t \mbox{\hyperlink{classaare_1_1SubFile_a3d54db8c48d87c4da2c9c7e263a8f953}{bytes\+\_\+per\+\_\+part}} ()
+\item 
+size\+\_\+t \mbox{\hyperlink{classaare_1_1SubFile_a90d1b67477a665badbf23fc582fe11d2}{pixels\+\_\+per\+\_\+part}} ()
+\end{DoxyCompactItemize}
+\doxysubsubsection*{Protected Types}
+\begin{DoxyCompactItemize}
+\item 
+using \mbox{\hyperlink{classaare_1_1SubFile_a15fca3d77492479d07d9e1490b0397b7}{pfunc}} = size\+\_\+t(Sub\+File\+::\texorpdfstring{$\ast$}{*})(std\+::byte \texorpdfstring{$\ast$}{*})
+\begin{DoxyCompactList}\small\item\em type of the read\+\_\+impl function pointer \end{DoxyCompactList}\end{DoxyCompactItemize}
+\doxysubsubsection*{Protected Attributes}
+\begin{DoxyCompactItemize}
+\item 
+\mbox{\hyperlink{classaare_1_1SubFile_a15fca3d77492479d07d9e1490b0397b7}{pfunc}} \mbox{\hyperlink{classaare_1_1SubFile_a6581cd31c90c530b8ab4d4c3c1f24c11}{read\+\_\+impl}} = nullptr
+\item 
+std\+::map$<$ std\+::pair$<$ \mbox{\hyperlink{namespaceaare_a5b95afba95553c1e118e1478c69042f7}{Detector\+Type}}, int $>$, \mbox{\hyperlink{classaare_1_1SubFile_a15fca3d77492479d07d9e1490b0397b7}{pfunc}} $>$ \mbox{\hyperlink{classaare_1_1SubFile_ac0f3eb666f5ce7d789c98e3e48adb0c1}{read\+\_\+impl\+\_\+map}}
+\begin{DoxyCompactList}\small\item\em map to store the read\+\_\+impl functions for different detectors \end{DoxyCompactList}\item 
+FILE \texorpdfstring{$\ast$}{*} \mbox{\hyperlink{classaare_1_1SubFile_aaee4e9dddec3bbfa3267d1ba341b4282}{fp}} = nullptr
+\item 
+ssize\+\_\+t \mbox{\hyperlink{classaare_1_1SubFile_acd8a2bd749eaf02f1413af755e9c8108}{m\+\_\+bitdepth}}
+\item 
+std\+::filesystem\+::path \mbox{\hyperlink{classaare_1_1SubFile_a81226b922c7a22effced3f88658e5a82}{m\+\_\+fname}}
+\item 
+ssize\+\_\+t \mbox{\hyperlink{classaare_1_1SubFile_a16592f71e1f546fce6a00707768e6fad}{m\+\_\+rows}} \{\}
+\item 
+ssize\+\_\+t \mbox{\hyperlink{classaare_1_1SubFile_af5a74f674ac2a626ff6b8a761a6558ee}{m\+\_\+cols}} \{\}
+\item 
+ssize\+\_\+t \mbox{\hyperlink{classaare_1_1SubFile_abf8c8d431ddd4e8e7154fe01b415e8cc}{n\+\_\+frames}} \{\}
+\item 
+int \mbox{\hyperlink{classaare_1_1SubFile_a9651937b2a83af293c1330b86aa1c884}{m\+\_\+sub\+\_\+file\+\_\+index\+\_\+}} \{\}
+\end{DoxyCompactItemize}
+
+
+\doxysubsection{Detailed Description}
+Class to read a subfile from a \doxylink{classaare_1_1RawFile}{Raw\+File}. 
+
+\doxysubsection{Member Typedef Documentation}
+\Hypertarget{classaare_1_1SubFile_a15fca3d77492479d07d9e1490b0397b7}\label{classaare_1_1SubFile_a15fca3d77492479d07d9e1490b0397b7} 
+\index{aare::SubFile@{aare::SubFile}!pfunc@{pfunc}}
+\index{pfunc@{pfunc}!aare::SubFile@{aare::SubFile}}
+\doxysubsubsection{\texorpdfstring{pfunc}{pfunc}}
+{\footnotesize\ttfamily using \mbox{\hyperlink{classaare_1_1SubFile_a15fca3d77492479d07d9e1490b0397b7}{aare\+::\+Sub\+File\+::pfunc}} =  size\+\_\+t (Sub\+File\+::\texorpdfstring{$\ast$}{*})(std\+::byte \texorpdfstring{$\ast$}{*})\hspace{0.3cm}{\ttfamily [protected]}}
+
+
+
+type of the read\+\_\+impl function pointer 
+
+
+\begin{DoxyParams}{Parameters}
+{\em buffer} & pointer to the buffer to read the data into \\
+\hline
+\end{DoxyParams}
+\begin{DoxyReturn}{Returns}
+number of bytes read 
+\end{DoxyReturn}
+
+
+\doxysubsection{Constructor \& Destructor Documentation}
+\Hypertarget{classaare_1_1SubFile_a502c8395f5e6536064dd896987fb8128}\label{classaare_1_1SubFile_a502c8395f5e6536064dd896987fb8128} 
+\index{aare::SubFile@{aare::SubFile}!SubFile@{SubFile}}
+\index{SubFile@{SubFile}!aare::SubFile@{aare::SubFile}}
+\doxysubsubsection{\texorpdfstring{SubFile()}{SubFile()}}
+{\footnotesize\ttfamily aare\+::\+Sub\+File\+::\+Sub\+File (\begin{DoxyParamCaption}\item[{std\+::filesystem\+::path}]{fname,  }\item[{\mbox{\hyperlink{namespaceaare_a5b95afba95553c1e118e1478c69042f7}{Detector\+Type}}}]{detector,  }\item[{ssize\+\_\+t}]{rows,  }\item[{ssize\+\_\+t}]{cols,  }\item[{uint16\+\_\+t}]{bitdepth }\end{DoxyParamCaption})}
+
+
+
+\doxylink{classaare_1_1SubFile}{Sub\+File} constructor. 
+
+
+\begin{DoxyParams}{Parameters}
+{\em fname} & path to the subfile \\
+\hline
+{\em detector} & detector type \\
+\hline
+{\em rows} & number of rows in the subfile \\
+\hline
+{\em cols} & number of columns in the subfile \\
+\hline
+{\em bitdepth} & bitdepth of the subfile \\
+\hline
+\end{DoxyParams}
+
+\begin{DoxyExceptions}{Exceptions}
+{\em std\+::invalid\+\_\+argument} & if the detector,type pair is not supported \\
+\hline
+\end{DoxyExceptions}
+
+
+\doxysubsection{Member Function Documentation}
+\Hypertarget{classaare_1_1SubFile_a3d54db8c48d87c4da2c9c7e263a8f953}\label{classaare_1_1SubFile_a3d54db8c48d87c4da2c9c7e263a8f953} 
+\index{aare::SubFile@{aare::SubFile}!bytes\_per\_part@{bytes\_per\_part}}
+\index{bytes\_per\_part@{bytes\_per\_part}!aare::SubFile@{aare::SubFile}}
+\doxysubsubsection{\texorpdfstring{bytes\_per\_part()}{bytes\_per\_part()}}
+{\footnotesize\ttfamily size\+\_\+t aare\+::\+Sub\+File\+::bytes\+\_\+per\+\_\+part (\begin{DoxyParamCaption}{ }\end{DoxyParamCaption})\hspace{0.3cm}{\ttfamily [inline]}}
+
+\Hypertarget{classaare_1_1SubFile_adb165b1e12b49ad58dfac71a9ad5e64f}\label{classaare_1_1SubFile_adb165b1e12b49ad58dfac71a9ad5e64f} 
+\index{aare::SubFile@{aare::SubFile}!frame\_number@{frame\_number}}
+\index{frame\_number@{frame\_number}!aare::SubFile@{aare::SubFile}}
+\doxysubsubsection{\texorpdfstring{frame\_number()}{frame\_number()}}
+{\footnotesize\ttfamily size\+\_\+t aare\+::\+Sub\+File\+::frame\+\_\+number (\begin{DoxyParamCaption}\item[{int}]{frame\+\_\+index }\end{DoxyParamCaption})}
+
+\Hypertarget{classaare_1_1SubFile_a4f13c03f410dfae1440d3d7126914416}\label{classaare_1_1SubFile_a4f13c03f410dfae1440d3d7126914416} 
+\index{aare::SubFile@{aare::SubFile}!get\_part@{get\_part}}
+\index{get\_part@{get\_part}!aare::SubFile@{aare::SubFile}}
+\doxysubsubsection{\texorpdfstring{get\_part()}{get\_part()}}
+{\footnotesize\ttfamily size\+\_\+t aare\+::\+Sub\+File\+::get\+\_\+part (\begin{DoxyParamCaption}\item[{std\+::byte \texorpdfstring{$\ast$}{*}}]{buffer,  }\item[{int}]{frame\+\_\+number }\end{DoxyParamCaption})}
+
+
+
+read the subfile into a buffer with the bytes reordered and flipped 
+
+
+\begin{DoxyParams}{Parameters}
+{\em buffer} & pointer to the buffer to read the data into \\
+\hline
+{\em frame\+\_\+number} & frame number to read \\
+\hline
+\end{DoxyParams}
+\begin{DoxyReturn}{Returns}
+number of bytes read 
+\end{DoxyReturn}
+\Hypertarget{classaare_1_1SubFile_a90d1b67477a665badbf23fc582fe11d2}\label{classaare_1_1SubFile_a90d1b67477a665badbf23fc582fe11d2} 
+\index{aare::SubFile@{aare::SubFile}!pixels\_per\_part@{pixels\_per\_part}}
+\index{pixels\_per\_part@{pixels\_per\_part}!aare::SubFile@{aare::SubFile}}
+\doxysubsubsection{\texorpdfstring{pixels\_per\_part()}{pixels\_per\_part()}}
+{\footnotesize\ttfamily size\+\_\+t aare\+::\+Sub\+File\+::pixels\+\_\+per\+\_\+part (\begin{DoxyParamCaption}{ }\end{DoxyParamCaption})\hspace{0.3cm}{\ttfamily [inline]}}
+
+\Hypertarget{classaare_1_1SubFile_af8977099c5a78c5d76d3fb3f41d450de}\label{classaare_1_1SubFile_af8977099c5a78c5d76d3fb3f41d450de} 
+\index{aare::SubFile@{aare::SubFile}!read\_impl\_flip@{read\_impl\_flip}}
+\index{read\_impl\_flip@{read\_impl\_flip}!aare::SubFile@{aare::SubFile}}
+\doxysubsubsection{\texorpdfstring{read\_impl\_flip()}{read\_impl\_flip()}}
+{\footnotesize\ttfamily template$<$typename Data\+Type $>$ \\
+size\+\_\+t aare\+::\+Sub\+File\+::read\+\_\+impl\+\_\+flip (\begin{DoxyParamCaption}\item[{std\+::byte \texorpdfstring{$\ast$}{*}}]{buffer }\end{DoxyParamCaption})}
+
+
+
+read the subfile into a buffer with the bytes flipped 
+
+
+\begin{DoxyParams}{Parameters}
+{\em buffer} & pointer to the buffer to read the data into \\
+\hline
+\end{DoxyParams}
+\begin{DoxyReturn}{Returns}
+number of bytes read 
+\end{DoxyReturn}
+\Hypertarget{classaare_1_1SubFile_a660d0c9ccb8d0e79d9f17bbdea910a45}\label{classaare_1_1SubFile_a660d0c9ccb8d0e79d9f17bbdea910a45} 
+\index{aare::SubFile@{aare::SubFile}!read\_impl\_normal@{read\_impl\_normal}}
+\index{read\_impl\_normal@{read\_impl\_normal}!aare::SubFile@{aare::SubFile}}
+\doxysubsubsection{\texorpdfstring{read\_impl\_normal()}{read\_impl\_normal()}}
+{\footnotesize\ttfamily size\+\_\+t aare\+::\+Sub\+File\+::read\+\_\+impl\+\_\+normal (\begin{DoxyParamCaption}\item[{std\+::byte \texorpdfstring{$\ast$}{*}}]{buffer }\end{DoxyParamCaption})}
+
+
+
+read the subfile into a buffer 
+
+
+\begin{DoxyParams}{Parameters}
+{\em buffer} & pointer to the buffer to read the data into \\
+\hline
+\end{DoxyParams}
+\begin{DoxyReturn}{Returns}
+number of bytes read 
+\end{DoxyReturn}
+\Hypertarget{classaare_1_1SubFile_aa41e65b3174ad83c7eee101421104c69}\label{classaare_1_1SubFile_aa41e65b3174ad83c7eee101421104c69} 
+\index{aare::SubFile@{aare::SubFile}!read\_impl\_reorder@{read\_impl\_reorder}}
+\index{read\_impl\_reorder@{read\_impl\_reorder}!aare::SubFile@{aare::SubFile}}
+\doxysubsubsection{\texorpdfstring{read\_impl\_reorder()}{read\_impl\_reorder()}}
+{\footnotesize\ttfamily template$<$typename Data\+Type $>$ \\
+size\+\_\+t aare\+::\+Sub\+File\+::read\+\_\+impl\+\_\+reorder (\begin{DoxyParamCaption}\item[{std\+::byte \texorpdfstring{$\ast$}{*}}]{buffer }\end{DoxyParamCaption})}
+
+
+
+read the subfile into a buffer with the bytes reordered 
+
+
+\begin{DoxyParams}{Parameters}
+{\em buffer} & pointer to the buffer to read the data into \\
+\hline
+\end{DoxyParams}
+\begin{DoxyReturn}{Returns}
+number of bytes read 
+\end{DoxyReturn}
+
+
+\doxysubsection{Field Documentation}
+\Hypertarget{classaare_1_1SubFile_aaee4e9dddec3bbfa3267d1ba341b4282}\label{classaare_1_1SubFile_aaee4e9dddec3bbfa3267d1ba341b4282} 
+\index{aare::SubFile@{aare::SubFile}!fp@{fp}}
+\index{fp@{fp}!aare::SubFile@{aare::SubFile}}
+\doxysubsubsection{\texorpdfstring{fp}{fp}}
+{\footnotesize\ttfamily FILE\texorpdfstring{$\ast$}{*} aare\+::\+Sub\+File\+::fp = nullptr\hspace{0.3cm}{\ttfamily [protected]}}
+
+\Hypertarget{classaare_1_1SubFile_acd8a2bd749eaf02f1413af755e9c8108}\label{classaare_1_1SubFile_acd8a2bd749eaf02f1413af755e9c8108} 
+\index{aare::SubFile@{aare::SubFile}!m\_bitdepth@{m\_bitdepth}}
+\index{m\_bitdepth@{m\_bitdepth}!aare::SubFile@{aare::SubFile}}
+\doxysubsubsection{\texorpdfstring{m\_bitdepth}{m\_bitdepth}}
+{\footnotesize\ttfamily ssize\+\_\+t aare\+::\+Sub\+File\+::m\+\_\+bitdepth\hspace{0.3cm}{\ttfamily [protected]}}
+
+\Hypertarget{classaare_1_1SubFile_af5a74f674ac2a626ff6b8a761a6558ee}\label{classaare_1_1SubFile_af5a74f674ac2a626ff6b8a761a6558ee} 
+\index{aare::SubFile@{aare::SubFile}!m\_cols@{m\_cols}}
+\index{m\_cols@{m\_cols}!aare::SubFile@{aare::SubFile}}
+\doxysubsubsection{\texorpdfstring{m\_cols}{m\_cols}}
+{\footnotesize\ttfamily ssize\+\_\+t aare\+::\+Sub\+File\+::m\+\_\+cols \{\}\hspace{0.3cm}{\ttfamily [protected]}}
+
+\Hypertarget{classaare_1_1SubFile_a81226b922c7a22effced3f88658e5a82}\label{classaare_1_1SubFile_a81226b922c7a22effced3f88658e5a82} 
+\index{aare::SubFile@{aare::SubFile}!m\_fname@{m\_fname}}
+\index{m\_fname@{m\_fname}!aare::SubFile@{aare::SubFile}}
+\doxysubsubsection{\texorpdfstring{m\_fname}{m\_fname}}
+{\footnotesize\ttfamily std\+::filesystem\+::path aare\+::\+Sub\+File\+::m\+\_\+fname\hspace{0.3cm}{\ttfamily [protected]}}
+
+\Hypertarget{classaare_1_1SubFile_a16592f71e1f546fce6a00707768e6fad}\label{classaare_1_1SubFile_a16592f71e1f546fce6a00707768e6fad} 
+\index{aare::SubFile@{aare::SubFile}!m\_rows@{m\_rows}}
+\index{m\_rows@{m\_rows}!aare::SubFile@{aare::SubFile}}
+\doxysubsubsection{\texorpdfstring{m\_rows}{m\_rows}}
+{\footnotesize\ttfamily ssize\+\_\+t aare\+::\+Sub\+File\+::m\+\_\+rows \{\}\hspace{0.3cm}{\ttfamily [protected]}}
+
+\Hypertarget{classaare_1_1SubFile_a9651937b2a83af293c1330b86aa1c884}\label{classaare_1_1SubFile_a9651937b2a83af293c1330b86aa1c884} 
+\index{aare::SubFile@{aare::SubFile}!m\_sub\_file\_index\_@{m\_sub\_file\_index\_}}
+\index{m\_sub\_file\_index\_@{m\_sub\_file\_index\_}!aare::SubFile@{aare::SubFile}}
+\doxysubsubsection{\texorpdfstring{m\_sub\_file\_index\_}{m\_sub\_file\_index\_}}
+{\footnotesize\ttfamily int aare\+::\+Sub\+File\+::m\+\_\+sub\+\_\+file\+\_\+index\+\_\+ \{\}\hspace{0.3cm}{\ttfamily [protected]}}
+
+\Hypertarget{classaare_1_1SubFile_abf8c8d431ddd4e8e7154fe01b415e8cc}\label{classaare_1_1SubFile_abf8c8d431ddd4e8e7154fe01b415e8cc} 
+\index{aare::SubFile@{aare::SubFile}!n\_frames@{n\_frames}}
+\index{n\_frames@{n\_frames}!aare::SubFile@{aare::SubFile}}
+\doxysubsubsection{\texorpdfstring{n\_frames}{n\_frames}}
+{\footnotesize\ttfamily ssize\+\_\+t aare\+::\+Sub\+File\+::n\+\_\+frames \{\}\hspace{0.3cm}{\ttfamily [protected]}}
+
+\Hypertarget{classaare_1_1SubFile_a6581cd31c90c530b8ab4d4c3c1f24c11}\label{classaare_1_1SubFile_a6581cd31c90c530b8ab4d4c3c1f24c11} 
+\index{aare::SubFile@{aare::SubFile}!read\_impl@{read\_impl}}
+\index{read\_impl@{read\_impl}!aare::SubFile@{aare::SubFile}}
+\doxysubsubsection{\texorpdfstring{read\_impl}{read\_impl}}
+{\footnotesize\ttfamily \mbox{\hyperlink{classaare_1_1SubFile_a15fca3d77492479d07d9e1490b0397b7}{pfunc}} aare\+::\+Sub\+File\+::read\+\_\+impl = nullptr\hspace{0.3cm}{\ttfamily [protected]}}
+
+\Hypertarget{classaare_1_1SubFile_ac0f3eb666f5ce7d789c98e3e48adb0c1}\label{classaare_1_1SubFile_ac0f3eb666f5ce7d789c98e3e48adb0c1} 
+\index{aare::SubFile@{aare::SubFile}!read\_impl\_map@{read\_impl\_map}}
+\index{read\_impl\_map@{read\_impl\_map}!aare::SubFile@{aare::SubFile}}
+\doxysubsubsection{\texorpdfstring{read\_impl\_map}{read\_impl\_map}}
+{\footnotesize\ttfamily std\+::map$<$std\+::pair$<$\mbox{\hyperlink{namespaceaare_a5b95afba95553c1e118e1478c69042f7}{Detector\+Type}}, int$>$, \mbox{\hyperlink{classaare_1_1SubFile_a15fca3d77492479d07d9e1490b0397b7}{pfunc}}$>$ aare\+::\+Sub\+File\+::read\+\_\+impl\+\_\+map\hspace{0.3cm}{\ttfamily [protected]}}
+
+{\bfseries Initial value\+:}
+\begin{DoxyCode}{0}
+\DoxyCodeLine{=\ \{}
+\DoxyCodeLine{\ \ \ \ \ \ \ \ \{\{\mbox{\hyperlink{namespaceaare_a5b95afba95553c1e118e1478c69042f7a0947b28848519e2e61c3f8561dedf7d0}{DetectorType::Moench}},\ 16\},\ \&SubFile::read\_impl\_reorder<uint16\_t>\},}
+\DoxyCodeLine{\ \ \ \ \ \ \ \ \{\{\mbox{\hyperlink{namespaceaare_a5b95afba95553c1e118e1478c69042f7ab2c7db922623442a04314d3c941a336b}{DetectorType::Jungfrau}},\ 16\},\ \&\mbox{\hyperlink{classaare_1_1SubFile_a660d0c9ccb8d0e79d9f17bbdea910a45}{SubFile::read\_impl\_normal}}\},}
+\DoxyCodeLine{\ \ \ \ \ \ \ \ \{\{\mbox{\hyperlink{namespaceaare_a5b95afba95553c1e118e1478c69042f7a8fcb8dbe4124015503e7a92e13ebe66c}{DetectorType::ChipTestBoard}},\ 16\},\ \&\mbox{\hyperlink{classaare_1_1SubFile_a660d0c9ccb8d0e79d9f17bbdea910a45}{SubFile::read\_impl\_normal}}\},}
+\DoxyCodeLine{\ \ \ \ \ \ \ \ \{\{\mbox{\hyperlink{namespaceaare_a5b95afba95553c1e118e1478c69042f7ae62a69cfc990501180f9457056826208}{DetectorType::Mythen3}},\ 32\},\ \&\mbox{\hyperlink{classaare_1_1SubFile_a660d0c9ccb8d0e79d9f17bbdea910a45}{SubFile::read\_impl\_normal}}\},}
+\DoxyCodeLine{\ \ \ \ \ \ \ \ \{\{\mbox{\hyperlink{namespaceaare_a5b95afba95553c1e118e1478c69042f7a36df9c5ff09bbd406715bc0f8beec72e}{DetectorType::Eiger}},\ 32\},\ \&\mbox{\hyperlink{classaare_1_1SubFile_a660d0c9ccb8d0e79d9f17bbdea910a45}{SubFile::read\_impl\_normal}}\},}
+\DoxyCodeLine{\ \ \ \ \ \ \ \ \{\{\mbox{\hyperlink{namespaceaare_a5b95afba95553c1e118e1478c69042f7a36df9c5ff09bbd406715bc0f8beec72e}{DetectorType::Eiger}},\ 16\},\ \&\mbox{\hyperlink{classaare_1_1SubFile_a660d0c9ccb8d0e79d9f17bbdea910a45}{SubFile::read\_impl\_normal}}\}}
+\DoxyCodeLine{}
+\DoxyCodeLine{\ \ \ \ \}}
+
+\end{DoxyCode}
+
+
+map to store the read\+\_\+impl functions for different detectors 
+
+\begin{DoxyNote}{Note}
+the key is a pair of Detector\+Type and bitdepth 
+
+the value is a pointer to the read\+\_\+impl function specific for the detector 
+
+the read\+\_\+impl function will be set to the appropriate function in the constructor 
+\end{DoxyNote}
+
+
+The documentation for this class was generated from the following files\+:\begin{DoxyCompactItemize}
+\item 
+file\+\_\+io/include/aare/file\+\_\+io/\mbox{\hyperlink{SubFile_8hpp}{Sub\+File.\+hpp}}\item 
+file\+\_\+io/src/\mbox{\hyperlink{SubFile_8cpp}{Sub\+File.\+cpp}}\end{DoxyCompactItemize}

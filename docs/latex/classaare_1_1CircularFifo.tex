@@ -1,0 +1,216 @@
+\doxysection{aare\+::Circular\+Fifo\texorpdfstring{$<$}{<} Item\+Type \texorpdfstring{$>$}{>} Class Template Reference}
+\hypertarget{classaare_1_1CircularFifo}{}\label{classaare_1_1CircularFifo}\index{aare::CircularFifo$<$ ItemType $>$@{aare::CircularFifo$<$ ItemType $>$}}
+
+
+{\ttfamily \#include $<$Circular\+Fifo.\+hpp$>$}
+
+\doxysubsubsection*{Public Types}
+\begin{DoxyCompactItemize}
+\item 
+using \mbox{\hyperlink{classaare_1_1CircularFifo_a37b26e1fd9d6904cef2d1cafda316dc0}{value\+\_\+type}} = Item\+Type
+\end{DoxyCompactItemize}
+\doxysubsubsection*{Public Member Functions}
+\begin{DoxyCompactItemize}
+\item 
+\mbox{\hyperlink{classaare_1_1CircularFifo_a8579c56895285557b6029db73f5b2af3}{Circular\+Fifo}} ()
+\item 
+\mbox{\hyperlink{classaare_1_1CircularFifo_abeda9cfed3526a9c4241fcc9ed4ba163}{Circular\+Fifo}} (uint32\+\_\+t size)
+\item 
+bool \mbox{\hyperlink{classaare_1_1CircularFifo_af4e41499b0c82bb4264739a55fef2cdc}{next}} ()
+\item 
+\mbox{\hyperlink{classaare_1_1CircularFifo_a2a2d8bb747eb3235b2bddd88216b1733}{\texorpdfstring{$\sim$}{\string~}\+Circular\+Fifo}} ()
+\item 
+auto \mbox{\hyperlink{classaare_1_1CircularFifo_afbf8f710904794b3994363161fbb2cab}{num\+Filled\+Slots}} () const noexcept
+\item 
+auto \mbox{\hyperlink{classaare_1_1CircularFifo_a9190570892efabe5d2cb6fbdcd31c813}{num\+Free\+Slots}} () const noexcept
+\item 
+auto \mbox{\hyperlink{classaare_1_1CircularFifo_ae7ef1972a9b372c36c048f358f3bc977}{is\+Full}} () const noexcept
+\item 
+Item\+Type \mbox{\hyperlink{classaare_1_1CircularFifo_a7065cd5808ef6226fd36d0a522678b41}{pop\+\_\+free}} ()
+\item 
+bool \mbox{\hyperlink{classaare_1_1CircularFifo_a1ee728381a85f2105739db57b3a3c74d}{try\+\_\+pop\+\_\+free}} (Item\+Type \&v)
+\item 
+Item\+Type \mbox{\hyperlink{classaare_1_1CircularFifo_af10fb2772258ac5f3001a48f42ddc466}{pop\+\_\+value}} (std\+::chrono\+::nanoseconds wait, std\+::atomic$<$ bool $>$ \&stopped)
+\item 
+Item\+Type \mbox{\hyperlink{classaare_1_1CircularFifo_a3568e05982e05668593ebf5d033cb0f6}{pop\+\_\+value}} ()
+\item 
+Item\+Type \texorpdfstring{$\ast$}{*} \mbox{\hyperlink{classaare_1_1CircularFifo_ace6570667d6859e219f3519812c5a24a}{front\+Ptr}} ()
+\item 
+{\footnotesize template$<$class... Args$>$ }\\void \mbox{\hyperlink{classaare_1_1CircularFifo_ae0637495a0c030ad77e78b14cbe619ad}{push\+\_\+value}} (Args \&\&...record\+Args)
+\item 
+{\footnotesize template$<$class... Args$>$ }\\bool \mbox{\hyperlink{classaare_1_1CircularFifo_aa16fd4ce93fb94b7214353cabfefc1e1}{try\+\_\+push\+\_\+value}} (Args \&\&...record\+Args)
+\item 
+{\footnotesize template$<$class... Args$>$ }\\void \mbox{\hyperlink{classaare_1_1CircularFifo_a0d58312a721120580eb030c6524c35ec}{push\+\_\+free}} (Args \&\&...record\+Args)
+\item 
+{\footnotesize template$<$class... Args$>$ }\\bool \mbox{\hyperlink{classaare_1_1CircularFifo_ae643565632229878f01a88f650ea5e3a}{try\+\_\+push\+\_\+free}} (Args \&\&...record\+Args)
+\end{DoxyCompactItemize}
+\doxysubsubsection*{Private Attributes}
+\begin{DoxyCompactItemize}
+\item 
+uint32\+\_\+t \mbox{\hyperlink{classaare_1_1CircularFifo_af2c357b41296f0516b402feae91dc82d}{fifo\+\_\+size}}
+\item 
+\mbox{\hyperlink{structfolly_1_1ProducerConsumerQueue}{folly\+::\+Producer\+Consumer\+Queue}}$<$ Item\+Type $>$ \mbox{\hyperlink{classaare_1_1CircularFifo_ad08760281625cee96d79104c4321dbf4}{free\+\_\+slots}}
+\item 
+\mbox{\hyperlink{structfolly_1_1ProducerConsumerQueue}{folly\+::\+Producer\+Consumer\+Queue}}$<$ Item\+Type $>$ \mbox{\hyperlink{classaare_1_1CircularFifo_a28f5f6090b7812d18543b213c4d3177f}{filled\+\_\+slots}}
+\end{DoxyCompactItemize}
+
+
+\doxysubsection{Member Typedef Documentation}
+\Hypertarget{classaare_1_1CircularFifo_a37b26e1fd9d6904cef2d1cafda316dc0}\label{classaare_1_1CircularFifo_a37b26e1fd9d6904cef2d1cafda316dc0} 
+\index{aare::CircularFifo$<$ ItemType $>$@{aare::CircularFifo$<$ ItemType $>$}!value\_type@{value\_type}}
+\index{value\_type@{value\_type}!aare::CircularFifo$<$ ItemType $>$@{aare::CircularFifo$<$ ItemType $>$}}
+\doxysubsubsection{\texorpdfstring{value\_type}{value\_type}}
+{\footnotesize\ttfamily template$<$class Item\+Type $>$ \\
+using \mbox{\hyperlink{classaare_1_1CircularFifo}{aare\+::\+Circular\+Fifo}}$<$ Item\+Type $>$\+::value\+\_\+type =  Item\+Type}
+
+
+
+\doxysubsection{Constructor \& Destructor Documentation}
+\Hypertarget{classaare_1_1CircularFifo_a8579c56895285557b6029db73f5b2af3}\label{classaare_1_1CircularFifo_a8579c56895285557b6029db73f5b2af3} 
+\index{aare::CircularFifo$<$ ItemType $>$@{aare::CircularFifo$<$ ItemType $>$}!CircularFifo@{CircularFifo}}
+\index{CircularFifo@{CircularFifo}!aare::CircularFifo$<$ ItemType $>$@{aare::CircularFifo$<$ ItemType $>$}}
+\doxysubsubsection{\texorpdfstring{CircularFifo()}{CircularFifo()}\hspace{0.1cm}{\footnotesize\ttfamily [1/2]}}
+{\footnotesize\ttfamily template$<$class Item\+Type $>$ \\
+\mbox{\hyperlink{classaare_1_1CircularFifo}{aare\+::\+Circular\+Fifo}}$<$ Item\+Type $>$\+::\+Circular\+Fifo (\begin{DoxyParamCaption}{ }\end{DoxyParamCaption})\hspace{0.3cm}{\ttfamily [inline]}}
+
+\Hypertarget{classaare_1_1CircularFifo_abeda9cfed3526a9c4241fcc9ed4ba163}\label{classaare_1_1CircularFifo_abeda9cfed3526a9c4241fcc9ed4ba163} 
+\index{aare::CircularFifo$<$ ItemType $>$@{aare::CircularFifo$<$ ItemType $>$}!CircularFifo@{CircularFifo}}
+\index{CircularFifo@{CircularFifo}!aare::CircularFifo$<$ ItemType $>$@{aare::CircularFifo$<$ ItemType $>$}}
+\doxysubsubsection{\texorpdfstring{CircularFifo()}{CircularFifo()}\hspace{0.1cm}{\footnotesize\ttfamily [2/2]}}
+{\footnotesize\ttfamily template$<$class Item\+Type $>$ \\
+\mbox{\hyperlink{classaare_1_1CircularFifo}{aare\+::\+Circular\+Fifo}}$<$ Item\+Type $>$\+::\+Circular\+Fifo (\begin{DoxyParamCaption}\item[{uint32\+\_\+t}]{size }\end{DoxyParamCaption})\hspace{0.3cm}{\ttfamily [inline]}}
+
+\Hypertarget{classaare_1_1CircularFifo_a2a2d8bb747eb3235b2bddd88216b1733}\label{classaare_1_1CircularFifo_a2a2d8bb747eb3235b2bddd88216b1733} 
+\index{aare::CircularFifo$<$ ItemType $>$@{aare::CircularFifo$<$ ItemType $>$}!````~CircularFifo@{\texorpdfstring{$\sim$}{\string~}CircularFifo}}
+\index{````~CircularFifo@{\texorpdfstring{$\sim$}{\string~}CircularFifo}!aare::CircularFifo$<$ ItemType $>$@{aare::CircularFifo$<$ ItemType $>$}}
+\doxysubsubsection{\texorpdfstring{\texorpdfstring{$\sim$}{\string~}CircularFifo()}{\string~CircularFifo()}}
+{\footnotesize\ttfamily template$<$class Item\+Type $>$ \\
+\mbox{\hyperlink{classaare_1_1CircularFifo}{aare\+::\+Circular\+Fifo}}$<$ Item\+Type $>$\+::\texorpdfstring{$\sim$}{\string~}\mbox{\hyperlink{classaare_1_1CircularFifo}{Circular\+Fifo}} (\begin{DoxyParamCaption}{ }\end{DoxyParamCaption})\hspace{0.3cm}{\ttfamily [inline]}}
+
+
+
+\doxysubsection{Member Function Documentation}
+\Hypertarget{classaare_1_1CircularFifo_ace6570667d6859e219f3519812c5a24a}\label{classaare_1_1CircularFifo_ace6570667d6859e219f3519812c5a24a} 
+\index{aare::CircularFifo$<$ ItemType $>$@{aare::CircularFifo$<$ ItemType $>$}!frontPtr@{frontPtr}}
+\index{frontPtr@{frontPtr}!aare::CircularFifo$<$ ItemType $>$@{aare::CircularFifo$<$ ItemType $>$}}
+\doxysubsubsection{\texorpdfstring{frontPtr()}{frontPtr()}}
+{\footnotesize\ttfamily template$<$class Item\+Type $>$ \\
+Item\+Type \texorpdfstring{$\ast$}{*} \mbox{\hyperlink{classaare_1_1CircularFifo}{aare\+::\+Circular\+Fifo}}$<$ Item\+Type $>$\+::front\+Ptr (\begin{DoxyParamCaption}{ }\end{DoxyParamCaption})\hspace{0.3cm}{\ttfamily [inline]}}
+
+\Hypertarget{classaare_1_1CircularFifo_ae7ef1972a9b372c36c048f358f3bc977}\label{classaare_1_1CircularFifo_ae7ef1972a9b372c36c048f358f3bc977} 
+\index{aare::CircularFifo$<$ ItemType $>$@{aare::CircularFifo$<$ ItemType $>$}!isFull@{isFull}}
+\index{isFull@{isFull}!aare::CircularFifo$<$ ItemType $>$@{aare::CircularFifo$<$ ItemType $>$}}
+\doxysubsubsection{\texorpdfstring{isFull()}{isFull()}}
+{\footnotesize\ttfamily template$<$class Item\+Type $>$ \\
+auto \mbox{\hyperlink{classaare_1_1CircularFifo}{aare\+::\+Circular\+Fifo}}$<$ Item\+Type $>$\+::is\+Full (\begin{DoxyParamCaption}{ }\end{DoxyParamCaption}) const\hspace{0.3cm}{\ttfamily [inline]}, {\ttfamily [noexcept]}}
+
+\Hypertarget{classaare_1_1CircularFifo_af4e41499b0c82bb4264739a55fef2cdc}\label{classaare_1_1CircularFifo_af4e41499b0c82bb4264739a55fef2cdc} 
+\index{aare::CircularFifo$<$ ItemType $>$@{aare::CircularFifo$<$ ItemType $>$}!next@{next}}
+\index{next@{next}!aare::CircularFifo$<$ ItemType $>$@{aare::CircularFifo$<$ ItemType $>$}}
+\doxysubsubsection{\texorpdfstring{next()}{next()}}
+{\footnotesize\ttfamily template$<$class Item\+Type $>$ \\
+bool \mbox{\hyperlink{classaare_1_1CircularFifo}{aare\+::\+Circular\+Fifo}}$<$ Item\+Type $>$\+::next (\begin{DoxyParamCaption}{ }\end{DoxyParamCaption})\hspace{0.3cm}{\ttfamily [inline]}}
+
+\Hypertarget{classaare_1_1CircularFifo_afbf8f710904794b3994363161fbb2cab}\label{classaare_1_1CircularFifo_afbf8f710904794b3994363161fbb2cab} 
+\index{aare::CircularFifo$<$ ItemType $>$@{aare::CircularFifo$<$ ItemType $>$}!numFilledSlots@{numFilledSlots}}
+\index{numFilledSlots@{numFilledSlots}!aare::CircularFifo$<$ ItemType $>$@{aare::CircularFifo$<$ ItemType $>$}}
+\doxysubsubsection{\texorpdfstring{numFilledSlots()}{numFilledSlots()}}
+{\footnotesize\ttfamily template$<$class Item\+Type $>$ \\
+auto \mbox{\hyperlink{classaare_1_1CircularFifo}{aare\+::\+Circular\+Fifo}}$<$ Item\+Type $>$\+::num\+Filled\+Slots (\begin{DoxyParamCaption}{ }\end{DoxyParamCaption}) const\hspace{0.3cm}{\ttfamily [inline]}, {\ttfamily [noexcept]}}
+
+\Hypertarget{classaare_1_1CircularFifo_a9190570892efabe5d2cb6fbdcd31c813}\label{classaare_1_1CircularFifo_a9190570892efabe5d2cb6fbdcd31c813} 
+\index{aare::CircularFifo$<$ ItemType $>$@{aare::CircularFifo$<$ ItemType $>$}!numFreeSlots@{numFreeSlots}}
+\index{numFreeSlots@{numFreeSlots}!aare::CircularFifo$<$ ItemType $>$@{aare::CircularFifo$<$ ItemType $>$}}
+\doxysubsubsection{\texorpdfstring{numFreeSlots()}{numFreeSlots()}}
+{\footnotesize\ttfamily template$<$class Item\+Type $>$ \\
+auto \mbox{\hyperlink{classaare_1_1CircularFifo}{aare\+::\+Circular\+Fifo}}$<$ Item\+Type $>$\+::num\+Free\+Slots (\begin{DoxyParamCaption}{ }\end{DoxyParamCaption}) const\hspace{0.3cm}{\ttfamily [inline]}, {\ttfamily [noexcept]}}
+
+\Hypertarget{classaare_1_1CircularFifo_a7065cd5808ef6226fd36d0a522678b41}\label{classaare_1_1CircularFifo_a7065cd5808ef6226fd36d0a522678b41} 
+\index{aare::CircularFifo$<$ ItemType $>$@{aare::CircularFifo$<$ ItemType $>$}!pop\_free@{pop\_free}}
+\index{pop\_free@{pop\_free}!aare::CircularFifo$<$ ItemType $>$@{aare::CircularFifo$<$ ItemType $>$}}
+\doxysubsubsection{\texorpdfstring{pop\_free()}{pop\_free()}}
+{\footnotesize\ttfamily template$<$class Item\+Type $>$ \\
+Item\+Type \mbox{\hyperlink{classaare_1_1CircularFifo}{aare\+::\+Circular\+Fifo}}$<$ Item\+Type $>$\+::pop\+\_\+free (\begin{DoxyParamCaption}{ }\end{DoxyParamCaption})\hspace{0.3cm}{\ttfamily [inline]}}
+
+\Hypertarget{classaare_1_1CircularFifo_a3568e05982e05668593ebf5d033cb0f6}\label{classaare_1_1CircularFifo_a3568e05982e05668593ebf5d033cb0f6} 
+\index{aare::CircularFifo$<$ ItemType $>$@{aare::CircularFifo$<$ ItemType $>$}!pop\_value@{pop\_value}}
+\index{pop\_value@{pop\_value}!aare::CircularFifo$<$ ItemType $>$@{aare::CircularFifo$<$ ItemType $>$}}
+\doxysubsubsection{\texorpdfstring{pop\_value()}{pop\_value()}\hspace{0.1cm}{\footnotesize\ttfamily [1/2]}}
+{\footnotesize\ttfamily template$<$class Item\+Type $>$ \\
+Item\+Type \mbox{\hyperlink{classaare_1_1CircularFifo}{aare\+::\+Circular\+Fifo}}$<$ Item\+Type $>$\+::pop\+\_\+value (\begin{DoxyParamCaption}{ }\end{DoxyParamCaption})\hspace{0.3cm}{\ttfamily [inline]}}
+
+\Hypertarget{classaare_1_1CircularFifo_af10fb2772258ac5f3001a48f42ddc466}\label{classaare_1_1CircularFifo_af10fb2772258ac5f3001a48f42ddc466} 
+\index{aare::CircularFifo$<$ ItemType $>$@{aare::CircularFifo$<$ ItemType $>$}!pop\_value@{pop\_value}}
+\index{pop\_value@{pop\_value}!aare::CircularFifo$<$ ItemType $>$@{aare::CircularFifo$<$ ItemType $>$}}
+\doxysubsubsection{\texorpdfstring{pop\_value()}{pop\_value()}\hspace{0.1cm}{\footnotesize\ttfamily [2/2]}}
+{\footnotesize\ttfamily template$<$class Item\+Type $>$ \\
+Item\+Type \mbox{\hyperlink{classaare_1_1CircularFifo}{aare\+::\+Circular\+Fifo}}$<$ Item\+Type $>$\+::pop\+\_\+value (\begin{DoxyParamCaption}\item[{std\+::chrono\+::nanoseconds}]{wait,  }\item[{std\+::atomic$<$ bool $>$ \&}]{stopped }\end{DoxyParamCaption})\hspace{0.3cm}{\ttfamily [inline]}}
+
+\Hypertarget{classaare_1_1CircularFifo_a0d58312a721120580eb030c6524c35ec}\label{classaare_1_1CircularFifo_a0d58312a721120580eb030c6524c35ec} 
+\index{aare::CircularFifo$<$ ItemType $>$@{aare::CircularFifo$<$ ItemType $>$}!push\_free@{push\_free}}
+\index{push\_free@{push\_free}!aare::CircularFifo$<$ ItemType $>$@{aare::CircularFifo$<$ ItemType $>$}}
+\doxysubsubsection{\texorpdfstring{push\_free()}{push\_free()}}
+{\footnotesize\ttfamily template$<$class Item\+Type $>$ \\
+template$<$class... Args$>$ \\
+void \mbox{\hyperlink{classaare_1_1CircularFifo}{aare\+::\+Circular\+Fifo}}$<$ Item\+Type $>$\+::push\+\_\+free (\begin{DoxyParamCaption}\item[{Args \&\&...}]{record\+Args }\end{DoxyParamCaption})\hspace{0.3cm}{\ttfamily [inline]}}
+
+\Hypertarget{classaare_1_1CircularFifo_ae0637495a0c030ad77e78b14cbe619ad}\label{classaare_1_1CircularFifo_ae0637495a0c030ad77e78b14cbe619ad} 
+\index{aare::CircularFifo$<$ ItemType $>$@{aare::CircularFifo$<$ ItemType $>$}!push\_value@{push\_value}}
+\index{push\_value@{push\_value}!aare::CircularFifo$<$ ItemType $>$@{aare::CircularFifo$<$ ItemType $>$}}
+\doxysubsubsection{\texorpdfstring{push\_value()}{push\_value()}}
+{\footnotesize\ttfamily template$<$class Item\+Type $>$ \\
+template$<$class... Args$>$ \\
+void \mbox{\hyperlink{classaare_1_1CircularFifo}{aare\+::\+Circular\+Fifo}}$<$ Item\+Type $>$\+::push\+\_\+value (\begin{DoxyParamCaption}\item[{Args \&\&...}]{record\+Args }\end{DoxyParamCaption})\hspace{0.3cm}{\ttfamily [inline]}}
+
+\Hypertarget{classaare_1_1CircularFifo_a1ee728381a85f2105739db57b3a3c74d}\label{classaare_1_1CircularFifo_a1ee728381a85f2105739db57b3a3c74d} 
+\index{aare::CircularFifo$<$ ItemType $>$@{aare::CircularFifo$<$ ItemType $>$}!try\_pop\_free@{try\_pop\_free}}
+\index{try\_pop\_free@{try\_pop\_free}!aare::CircularFifo$<$ ItemType $>$@{aare::CircularFifo$<$ ItemType $>$}}
+\doxysubsubsection{\texorpdfstring{try\_pop\_free()}{try\_pop\_free()}}
+{\footnotesize\ttfamily template$<$class Item\+Type $>$ \\
+bool \mbox{\hyperlink{classaare_1_1CircularFifo}{aare\+::\+Circular\+Fifo}}$<$ Item\+Type $>$\+::try\+\_\+pop\+\_\+free (\begin{DoxyParamCaption}\item[{Item\+Type \&}]{v }\end{DoxyParamCaption})\hspace{0.3cm}{\ttfamily [inline]}}
+
+\Hypertarget{classaare_1_1CircularFifo_ae643565632229878f01a88f650ea5e3a}\label{classaare_1_1CircularFifo_ae643565632229878f01a88f650ea5e3a} 
+\index{aare::CircularFifo$<$ ItemType $>$@{aare::CircularFifo$<$ ItemType $>$}!try\_push\_free@{try\_push\_free}}
+\index{try\_push\_free@{try\_push\_free}!aare::CircularFifo$<$ ItemType $>$@{aare::CircularFifo$<$ ItemType $>$}}
+\doxysubsubsection{\texorpdfstring{try\_push\_free()}{try\_push\_free()}}
+{\footnotesize\ttfamily template$<$class Item\+Type $>$ \\
+template$<$class... Args$>$ \\
+bool \mbox{\hyperlink{classaare_1_1CircularFifo}{aare\+::\+Circular\+Fifo}}$<$ Item\+Type $>$\+::try\+\_\+push\+\_\+free (\begin{DoxyParamCaption}\item[{Args \&\&...}]{record\+Args }\end{DoxyParamCaption})\hspace{0.3cm}{\ttfamily [inline]}}
+
+\Hypertarget{classaare_1_1CircularFifo_aa16fd4ce93fb94b7214353cabfefc1e1}\label{classaare_1_1CircularFifo_aa16fd4ce93fb94b7214353cabfefc1e1} 
+\index{aare::CircularFifo$<$ ItemType $>$@{aare::CircularFifo$<$ ItemType $>$}!try\_push\_value@{try\_push\_value}}
+\index{try\_push\_value@{try\_push\_value}!aare::CircularFifo$<$ ItemType $>$@{aare::CircularFifo$<$ ItemType $>$}}
+\doxysubsubsection{\texorpdfstring{try\_push\_value()}{try\_push\_value()}}
+{\footnotesize\ttfamily template$<$class Item\+Type $>$ \\
+template$<$class... Args$>$ \\
+bool \mbox{\hyperlink{classaare_1_1CircularFifo}{aare\+::\+Circular\+Fifo}}$<$ Item\+Type $>$\+::try\+\_\+push\+\_\+value (\begin{DoxyParamCaption}\item[{Args \&\&...}]{record\+Args }\end{DoxyParamCaption})\hspace{0.3cm}{\ttfamily [inline]}}
+
+
+
+\doxysubsection{Field Documentation}
+\Hypertarget{classaare_1_1CircularFifo_af2c357b41296f0516b402feae91dc82d}\label{classaare_1_1CircularFifo_af2c357b41296f0516b402feae91dc82d} 
+\index{aare::CircularFifo$<$ ItemType $>$@{aare::CircularFifo$<$ ItemType $>$}!fifo\_size@{fifo\_size}}
+\index{fifo\_size@{fifo\_size}!aare::CircularFifo$<$ ItemType $>$@{aare::CircularFifo$<$ ItemType $>$}}
+\doxysubsubsection{\texorpdfstring{fifo\_size}{fifo\_size}}
+{\footnotesize\ttfamily template$<$class Item\+Type $>$ \\
+uint32\+\_\+t \mbox{\hyperlink{classaare_1_1CircularFifo}{aare\+::\+Circular\+Fifo}}$<$ Item\+Type $>$\+::fifo\+\_\+size\hspace{0.3cm}{\ttfamily [private]}}
+
+\Hypertarget{classaare_1_1CircularFifo_a28f5f6090b7812d18543b213c4d3177f}\label{classaare_1_1CircularFifo_a28f5f6090b7812d18543b213c4d3177f} 
+\index{aare::CircularFifo$<$ ItemType $>$@{aare::CircularFifo$<$ ItemType $>$}!filled\_slots@{filled\_slots}}
+\index{filled\_slots@{filled\_slots}!aare::CircularFifo$<$ ItemType $>$@{aare::CircularFifo$<$ ItemType $>$}}
+\doxysubsubsection{\texorpdfstring{filled\_slots}{filled\_slots}}
+{\footnotesize\ttfamily template$<$class Item\+Type $>$ \\
+\mbox{\hyperlink{structfolly_1_1ProducerConsumerQueue}{folly\+::\+Producer\+Consumer\+Queue}}$<$Item\+Type$>$ \mbox{\hyperlink{classaare_1_1CircularFifo}{aare\+::\+Circular\+Fifo}}$<$ Item\+Type $>$\+::filled\+\_\+slots\hspace{0.3cm}{\ttfamily [private]}}
+
+\Hypertarget{classaare_1_1CircularFifo_ad08760281625cee96d79104c4321dbf4}\label{classaare_1_1CircularFifo_ad08760281625cee96d79104c4321dbf4} 
+\index{aare::CircularFifo$<$ ItemType $>$@{aare::CircularFifo$<$ ItemType $>$}!free\_slots@{free\_slots}}
+\index{free\_slots@{free\_slots}!aare::CircularFifo$<$ ItemType $>$@{aare::CircularFifo$<$ ItemType $>$}}
+\doxysubsubsection{\texorpdfstring{free\_slots}{free\_slots}}
+{\footnotesize\ttfamily template$<$class Item\+Type $>$ \\
+\mbox{\hyperlink{structfolly_1_1ProducerConsumerQueue}{folly\+::\+Producer\+Consumer\+Queue}}$<$Item\+Type$>$ \mbox{\hyperlink{classaare_1_1CircularFifo}{aare\+::\+Circular\+Fifo}}$<$ Item\+Type $>$\+::free\+\_\+slots\hspace{0.3cm}{\ttfamily [private]}}
+
+
+
+The documentation for this class was generated from the following file\+:\begin{DoxyCompactItemize}
+\item 
+core/include/aare/core/\mbox{\hyperlink{CircularFifo_8hpp}{Circular\+Fifo.\+hpp}}\end{DoxyCompactItemize}

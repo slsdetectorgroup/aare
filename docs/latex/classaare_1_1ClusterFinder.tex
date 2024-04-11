@@ -1,0 +1,340 @@
+\doxysection{aare\+::Cluster\+Finder\texorpdfstring{$<$}{<} T \texorpdfstring{$>$}{>} Class Template Reference}
+\hypertarget{classaare_1_1ClusterFinder}{}\label{classaare_1_1ClusterFinder}\index{aare::ClusterFinder$<$ T $>$@{aare::ClusterFinder$<$ T $>$}}
+
+
+{\ttfamily \#include $<$Variable\+Size\+Cluster\+Finder.\+hpp$>$}
+
+\doxysubsubsection*{Data Structures}
+\begin{DoxyCompactItemize}
+\item 
+struct \mbox{\hyperlink{structaare_1_1ClusterFinder_1_1Hit}{Hit}}
+\end{DoxyCompactItemize}
+\doxysubsubsection*{Public Member Functions}
+\begin{DoxyCompactItemize}
+\item 
+\mbox{\hyperlink{classaare_1_1ClusterFinder_a95c3c74dcd2812659c4664f8896dcc6e}{Cluster\+Finder}} (image\+\_\+shape shape, T threshold)
+\item 
+\mbox{\hyperlink{classaare_1_1NDArray}{NDArray}}$<$ int, 2 $>$ \mbox{\hyperlink{classaare_1_1ClusterFinder_a8df807dc085267ece8c8329d546c1560}{labeled}} ()
+\item 
+void \mbox{\hyperlink{classaare_1_1ClusterFinder_acd1fc878a5043e0adc8f085d1edf3ba6}{set\+\_\+noise\+Map}} (\mbox{\hyperlink{classaare_1_1NDView}{NDView}}$<$ T, 2 $>$ noise\+\_\+map)
+\item 
+void \mbox{\hyperlink{classaare_1_1ClusterFinder_a3d8448ccd2478a52075a4b7d5e090b2f}{set\+\_\+peripheral\+Threshold\+Factor}} (int factor)
+\item 
+void \mbox{\hyperlink{classaare_1_1ClusterFinder_ab880d2c07964ee558a85daed3b3ec181}{find\+\_\+clusters}} (\mbox{\hyperlink{classaare_1_1NDView}{NDView}}$<$ T, 2 $>$ img)
+\item 
+void \mbox{\hyperlink{classaare_1_1ClusterFinder_af33f83aeeb4187f826919270b8b38391}{find\+\_\+clusters\+\_\+X}} (\mbox{\hyperlink{classaare_1_1NDView}{NDView}}$<$ T, 2 $>$ img)
+\item 
+void \mbox{\hyperlink{classaare_1_1ClusterFinder_a64540f74ba953ae2ba2efab9f06e9fc5}{rec\+\_\+\+Fill\+Hit}} (int cluster\+Index, int i, int j)
+\item 
+void \mbox{\hyperlink{classaare_1_1ClusterFinder_ab25d54418b721d429f6141da73cc2a41}{single\+\_\+pass}} (\mbox{\hyperlink{classaare_1_1NDView}{NDView}}$<$ T, 2 $>$ img)
+\item 
+void \mbox{\hyperlink{classaare_1_1ClusterFinder_a7993fb06ee06a24ede5a4ddd94f8a987}{first\+\_\+pass}} ()
+\item 
+void \mbox{\hyperlink{classaare_1_1ClusterFinder_a6630ba010b0d0b6b4cd8aefe98a1bd9e}{second\+\_\+pass}} ()
+\item 
+void \mbox{\hyperlink{classaare_1_1ClusterFinder_a053a2b1729301c1bda8b78a8187112b6}{store\+\_\+clusters}} ()
+\item 
+std\+::vector$<$ \mbox{\hyperlink{structaare_1_1ClusterFinder_1_1Hit}{Hit}} $>$ \mbox{\hyperlink{classaare_1_1ClusterFinder_a4695c04a848715d073455b76241119b4}{steal\+\_\+hits}} ()
+\item 
+void \mbox{\hyperlink{classaare_1_1ClusterFinder_a405e7f0d0eabc9a93099763f4eaa8fbc}{clear\+\_\+hits}} ()
+\item 
+void \mbox{\hyperlink{classaare_1_1ClusterFinder_aed823a8611547fb93d6accacdd61b55c}{print\+\_\+connections}} ()
+\item 
+size\+\_\+t \mbox{\hyperlink{classaare_1_1ClusterFinder_a301516e99319ee02ecf4c44f8310ce16}{total\+\_\+clusters}} () const
+\end{DoxyCompactItemize}
+\doxysubsubsection*{Private Member Functions}
+\begin{DoxyCompactItemize}
+\item 
+int \mbox{\hyperlink{classaare_1_1ClusterFinder_ac6372eadf0bff57bd560bd07cd59da96}{check\+\_\+neighbours}} (int i, int j)
+\item 
+void \mbox{\hyperlink{classaare_1_1ClusterFinder_a1a31f9419dd90e3136bf1c59e53fbad7}{add\+\_\+link}} (int from, int to)
+\end{DoxyCompactItemize}
+\doxysubsubsection*{Private Attributes}
+\begin{DoxyCompactItemize}
+\item 
+const std\+::array$<$ ssize\+\_\+t, 2 $>$ \mbox{\hyperlink{classaare_1_1ClusterFinder_a87ae02ed18b8d51cf34d6dcc4a0a11b1}{shape\+\_\+}}
+\item 
+\mbox{\hyperlink{classaare_1_1NDView}{NDView}}$<$ T, 2 $>$ \mbox{\hyperlink{classaare_1_1ClusterFinder_a77a7f9093806a6b66596262c726aedff}{original\+\_\+}}
+\item 
+\mbox{\hyperlink{classaare_1_1NDArray}{NDArray}}$<$ int, 2 $>$ \mbox{\hyperlink{classaare_1_1ClusterFinder_a0a507adf23a53c14e823c8721c8139dc}{labeled\+\_\+}}
+\item 
+\mbox{\hyperlink{classaare_1_1NDArray}{NDArray}}$<$ int, 2 $>$ \mbox{\hyperlink{classaare_1_1ClusterFinder_a86342541978eac118b16eefa026930d4}{peripheral\+\_\+labeled\+\_\+}}
+\item 
+\mbox{\hyperlink{classaare_1_1NDArray}{NDArray}}$<$ bool, 2 $>$ \mbox{\hyperlink{classaare_1_1ClusterFinder_aca8f21925565b4f3dbf4677d2ca6ba64}{binary\+\_\+}}
+\item 
+T \mbox{\hyperlink{classaare_1_1ClusterFinder_a2726725360133a70fce11b8072cf2a93}{threshold\+\_\+}}
+\item 
+\mbox{\hyperlink{classaare_1_1NDView}{NDView}}$<$ T, 2 $>$ \mbox{\hyperlink{classaare_1_1ClusterFinder_a8044d4bdabc6ed090f07bfddc362f2eb}{noise\+Map}}
+\item 
+bool \mbox{\hyperlink{classaare_1_1ClusterFinder_ae7622ae945b849df6bad3d2cc0347370}{use\+\_\+noise\+\_\+map}} = false
+\item 
+int \mbox{\hyperlink{classaare_1_1ClusterFinder_af933139fed8103cab83572a6ba449f36}{peripheral\+Threshold\+Factor\+\_\+}} = 5
+\item 
+int \mbox{\hyperlink{classaare_1_1ClusterFinder_a91e708f8f94adfb3af7e5d9c3a748bb3}{current\+\_\+label}}
+\item 
+const std\+::array$<$ int, 4 $>$ \mbox{\hyperlink{classaare_1_1ClusterFinder_a69ffad49f0d31fdf9993774d219f87e8}{di}} \{\{0, -\/1, -\/1, -\/1\}\}
+\item 
+const std\+::array$<$ int, 4 $>$ \mbox{\hyperlink{classaare_1_1ClusterFinder_a7575c70f662ffa316882eec6f2b865e7}{dj}} \{\{-\/1, -\/1, 0, 1\}\}
+\item 
+const std\+::array$<$ int, 8 $>$ \mbox{\hyperlink{classaare_1_1ClusterFinder_af97013b5f3fff727149b4e09c9d485a3}{di\+\_\+}} \{\{0, 0, -\/1, 1, -\/1, 1, -\/1, 1\}\}
+\item 
+const std\+::array$<$ int, 8 $>$ \mbox{\hyperlink{classaare_1_1ClusterFinder_a9809de5007aeb2095b5ec74f68b6a7d8}{dj\+\_\+}} \{\{-\/1, 1, 0, 0, 1, -\/1, -\/1, 1\}\}
+\item 
+std\+::map$<$ int, int $>$ \mbox{\hyperlink{classaare_1_1ClusterFinder_aeeec655301ed05e4c5ee9201e828b7f0}{child}}
+\item 
+std\+::unordered\+\_\+map$<$ int, \mbox{\hyperlink{structaare_1_1ClusterFinder_1_1Hit}{Hit}} $>$ \mbox{\hyperlink{classaare_1_1ClusterFinder_ad4b7557ac7b34a7fd188564e22d634ec}{h\+\_\+size}}
+\item 
+std\+::vector$<$ \mbox{\hyperlink{structaare_1_1ClusterFinder_1_1Hit}{Hit}} $>$ \mbox{\hyperlink{classaare_1_1ClusterFinder_ac228fbe6a24d8b2179db87aa0cfecc86}{hits}}
+\end{DoxyCompactItemize}
+
+
+\doxysubsection{Constructor \& Destructor Documentation}
+\Hypertarget{classaare_1_1ClusterFinder_a95c3c74dcd2812659c4664f8896dcc6e}\label{classaare_1_1ClusterFinder_a95c3c74dcd2812659c4664f8896dcc6e} 
+\index{aare::ClusterFinder$<$ T $>$@{aare::ClusterFinder$<$ T $>$}!ClusterFinder@{ClusterFinder}}
+\index{ClusterFinder@{ClusterFinder}!aare::ClusterFinder$<$ T $>$@{aare::ClusterFinder$<$ T $>$}}
+\doxysubsubsection{\texorpdfstring{ClusterFinder()}{ClusterFinder()}}
+{\footnotesize\ttfamily template$<$typename T $>$ \\
+\mbox{\hyperlink{classaare_1_1ClusterFinder}{aare\+::\+Cluster\+Finder}}$<$ T $>$\+::\+Cluster\+Finder (\begin{DoxyParamCaption}\item[{image\+\_\+shape}]{shape,  }\item[{T}]{threshold }\end{DoxyParamCaption})\hspace{0.3cm}{\ttfamily [inline]}}
+
+
+
+\doxysubsection{Member Function Documentation}
+\Hypertarget{classaare_1_1ClusterFinder_a1a31f9419dd90e3136bf1c59e53fbad7}\label{classaare_1_1ClusterFinder_a1a31f9419dd90e3136bf1c59e53fbad7} 
+\index{aare::ClusterFinder$<$ T $>$@{aare::ClusterFinder$<$ T $>$}!add\_link@{add\_link}}
+\index{add\_link@{add\_link}!aare::ClusterFinder$<$ T $>$@{aare::ClusterFinder$<$ T $>$}}
+\doxysubsubsection{\texorpdfstring{add\_link()}{add\_link()}}
+{\footnotesize\ttfamily template$<$typename T $>$ \\
+void \mbox{\hyperlink{classaare_1_1ClusterFinder}{aare\+::\+Cluster\+Finder}}$<$ T $>$\+::add\+\_\+link (\begin{DoxyParamCaption}\item[{int}]{from,  }\item[{int}]{to }\end{DoxyParamCaption})\hspace{0.3cm}{\ttfamily [inline]}, {\ttfamily [private]}}
+
+\Hypertarget{classaare_1_1ClusterFinder_ac6372eadf0bff57bd560bd07cd59da96}\label{classaare_1_1ClusterFinder_ac6372eadf0bff57bd560bd07cd59da96} 
+\index{aare::ClusterFinder$<$ T $>$@{aare::ClusterFinder$<$ T $>$}!check\_neighbours@{check\_neighbours}}
+\index{check\_neighbours@{check\_neighbours}!aare::ClusterFinder$<$ T $>$@{aare::ClusterFinder$<$ T $>$}}
+\doxysubsubsection{\texorpdfstring{check\_neighbours()}{check\_neighbours()}}
+{\footnotesize\ttfamily template$<$typename T $>$ \\
+int \mbox{\hyperlink{classaare_1_1ClusterFinder}{aare\+::\+Cluster\+Finder}}$<$ T $>$\+::check\+\_\+neighbours (\begin{DoxyParamCaption}\item[{int}]{i,  }\item[{int}]{j }\end{DoxyParamCaption})\hspace{0.3cm}{\ttfamily [private]}}
+
+\Hypertarget{classaare_1_1ClusterFinder_a405e7f0d0eabc9a93099763f4eaa8fbc}\label{classaare_1_1ClusterFinder_a405e7f0d0eabc9a93099763f4eaa8fbc} 
+\index{aare::ClusterFinder$<$ T $>$@{aare::ClusterFinder$<$ T $>$}!clear\_hits@{clear\_hits}}
+\index{clear\_hits@{clear\_hits}!aare::ClusterFinder$<$ T $>$@{aare::ClusterFinder$<$ T $>$}}
+\doxysubsubsection{\texorpdfstring{clear\_hits()}{clear\_hits()}}
+{\footnotesize\ttfamily template$<$typename T $>$ \\
+void \mbox{\hyperlink{classaare_1_1ClusterFinder}{aare\+::\+Cluster\+Finder}}$<$ T $>$\+::clear\+\_\+hits (\begin{DoxyParamCaption}{ }\end{DoxyParamCaption})\hspace{0.3cm}{\ttfamily [inline]}}
+
+\Hypertarget{classaare_1_1ClusterFinder_ab880d2c07964ee558a85daed3b3ec181}\label{classaare_1_1ClusterFinder_ab880d2c07964ee558a85daed3b3ec181} 
+\index{aare::ClusterFinder$<$ T $>$@{aare::ClusterFinder$<$ T $>$}!find\_clusters@{find\_clusters}}
+\index{find\_clusters@{find\_clusters}!aare::ClusterFinder$<$ T $>$@{aare::ClusterFinder$<$ T $>$}}
+\doxysubsubsection{\texorpdfstring{find\_clusters()}{find\_clusters()}}
+{\footnotesize\ttfamily template$<$typename T $>$ \\
+void \mbox{\hyperlink{classaare_1_1ClusterFinder}{aare\+::\+Cluster\+Finder}}$<$ T $>$\+::find\+\_\+clusters (\begin{DoxyParamCaption}\item[{\mbox{\hyperlink{classaare_1_1NDView}{NDView}}$<$ T, 2 $>$}]{img }\end{DoxyParamCaption})}
+
+\Hypertarget{classaare_1_1ClusterFinder_af33f83aeeb4187f826919270b8b38391}\label{classaare_1_1ClusterFinder_af33f83aeeb4187f826919270b8b38391} 
+\index{aare::ClusterFinder$<$ T $>$@{aare::ClusterFinder$<$ T $>$}!find\_clusters\_X@{find\_clusters\_X}}
+\index{find\_clusters\_X@{find\_clusters\_X}!aare::ClusterFinder$<$ T $>$@{aare::ClusterFinder$<$ T $>$}}
+\doxysubsubsection{\texorpdfstring{find\_clusters\_X()}{find\_clusters\_X()}}
+{\footnotesize\ttfamily template$<$typename T $>$ \\
+void \mbox{\hyperlink{classaare_1_1ClusterFinder}{aare\+::\+Cluster\+Finder}}$<$ T $>$\+::find\+\_\+clusters\+\_\+X (\begin{DoxyParamCaption}\item[{\mbox{\hyperlink{classaare_1_1NDView}{NDView}}$<$ T, 2 $>$}]{img }\end{DoxyParamCaption})}
+
+\Hypertarget{classaare_1_1ClusterFinder_a7993fb06ee06a24ede5a4ddd94f8a987}\label{classaare_1_1ClusterFinder_a7993fb06ee06a24ede5a4ddd94f8a987} 
+\index{aare::ClusterFinder$<$ T $>$@{aare::ClusterFinder$<$ T $>$}!first\_pass@{first\_pass}}
+\index{first\_pass@{first\_pass}!aare::ClusterFinder$<$ T $>$@{aare::ClusterFinder$<$ T $>$}}
+\doxysubsubsection{\texorpdfstring{first\_pass()}{first\_pass()}}
+{\footnotesize\ttfamily template$<$typename T $>$ \\
+void \mbox{\hyperlink{classaare_1_1ClusterFinder}{aare\+::\+Cluster\+Finder}}$<$ T $>$\+::first\+\_\+pass}
+
+\Hypertarget{classaare_1_1ClusterFinder_a8df807dc085267ece8c8329d546c1560}\label{classaare_1_1ClusterFinder_a8df807dc085267ece8c8329d546c1560} 
+\index{aare::ClusterFinder$<$ T $>$@{aare::ClusterFinder$<$ T $>$}!labeled@{labeled}}
+\index{labeled@{labeled}!aare::ClusterFinder$<$ T $>$@{aare::ClusterFinder$<$ T $>$}}
+\doxysubsubsection{\texorpdfstring{labeled()}{labeled()}}
+{\footnotesize\ttfamily template$<$typename T $>$ \\
+\mbox{\hyperlink{classaare_1_1NDArray}{NDArray}}$<$ int, 2 $>$ \mbox{\hyperlink{classaare_1_1ClusterFinder}{aare\+::\+Cluster\+Finder}}$<$ T $>$\+::labeled (\begin{DoxyParamCaption}{ }\end{DoxyParamCaption})\hspace{0.3cm}{\ttfamily [inline]}}
+
+\Hypertarget{classaare_1_1ClusterFinder_aed823a8611547fb93d6accacdd61b55c}\label{classaare_1_1ClusterFinder_aed823a8611547fb93d6accacdd61b55c} 
+\index{aare::ClusterFinder$<$ T $>$@{aare::ClusterFinder$<$ T $>$}!print\_connections@{print\_connections}}
+\index{print\_connections@{print\_connections}!aare::ClusterFinder$<$ T $>$@{aare::ClusterFinder$<$ T $>$}}
+\doxysubsubsection{\texorpdfstring{print\_connections()}{print\_connections()}}
+{\footnotesize\ttfamily template$<$typename T $>$ \\
+void \mbox{\hyperlink{classaare_1_1ClusterFinder}{aare\+::\+Cluster\+Finder}}$<$ T $>$\+::print\+\_\+connections (\begin{DoxyParamCaption}{ }\end{DoxyParamCaption})\hspace{0.3cm}{\ttfamily [inline]}}
+
+\Hypertarget{classaare_1_1ClusterFinder_a64540f74ba953ae2ba2efab9f06e9fc5}\label{classaare_1_1ClusterFinder_a64540f74ba953ae2ba2efab9f06e9fc5} 
+\index{aare::ClusterFinder$<$ T $>$@{aare::ClusterFinder$<$ T $>$}!rec\_FillHit@{rec\_FillHit}}
+\index{rec\_FillHit@{rec\_FillHit}!aare::ClusterFinder$<$ T $>$@{aare::ClusterFinder$<$ T $>$}}
+\doxysubsubsection{\texorpdfstring{rec\_FillHit()}{rec\_FillHit()}}
+{\footnotesize\ttfamily template$<$typename T $>$ \\
+void \mbox{\hyperlink{classaare_1_1ClusterFinder}{aare\+::\+Cluster\+Finder}}$<$ T $>$\+::rec\+\_\+\+Fill\+Hit (\begin{DoxyParamCaption}\item[{int}]{cluster\+Index,  }\item[{int}]{i,  }\item[{int}]{j }\end{DoxyParamCaption})}
+
+\Hypertarget{classaare_1_1ClusterFinder_a6630ba010b0d0b6b4cd8aefe98a1bd9e}\label{classaare_1_1ClusterFinder_a6630ba010b0d0b6b4cd8aefe98a1bd9e} 
+\index{aare::ClusterFinder$<$ T $>$@{aare::ClusterFinder$<$ T $>$}!second\_pass@{second\_pass}}
+\index{second\_pass@{second\_pass}!aare::ClusterFinder$<$ T $>$@{aare::ClusterFinder$<$ T $>$}}
+\doxysubsubsection{\texorpdfstring{second\_pass()}{second\_pass()}}
+{\footnotesize\ttfamily template$<$typename T $>$ \\
+void \mbox{\hyperlink{classaare_1_1ClusterFinder}{aare\+::\+Cluster\+Finder}}$<$ T $>$\+::second\+\_\+pass}
+
+\Hypertarget{classaare_1_1ClusterFinder_acd1fc878a5043e0adc8f085d1edf3ba6}\label{classaare_1_1ClusterFinder_acd1fc878a5043e0adc8f085d1edf3ba6} 
+\index{aare::ClusterFinder$<$ T $>$@{aare::ClusterFinder$<$ T $>$}!set\_noiseMap@{set\_noiseMap}}
+\index{set\_noiseMap@{set\_noiseMap}!aare::ClusterFinder$<$ T $>$@{aare::ClusterFinder$<$ T $>$}}
+\doxysubsubsection{\texorpdfstring{set\_noiseMap()}{set\_noiseMap()}}
+{\footnotesize\ttfamily template$<$typename T $>$ \\
+void \mbox{\hyperlink{classaare_1_1ClusterFinder}{aare\+::\+Cluster\+Finder}}$<$ T $>$\+::set\+\_\+noise\+Map (\begin{DoxyParamCaption}\item[{\mbox{\hyperlink{classaare_1_1NDView}{NDView}}$<$ T, 2 $>$}]{noise\+\_\+map }\end{DoxyParamCaption})\hspace{0.3cm}{\ttfamily [inline]}}
+
+\Hypertarget{classaare_1_1ClusterFinder_a3d8448ccd2478a52075a4b7d5e090b2f}\label{classaare_1_1ClusterFinder_a3d8448ccd2478a52075a4b7d5e090b2f} 
+\index{aare::ClusterFinder$<$ T $>$@{aare::ClusterFinder$<$ T $>$}!set\_peripheralThresholdFactor@{set\_peripheralThresholdFactor}}
+\index{set\_peripheralThresholdFactor@{set\_peripheralThresholdFactor}!aare::ClusterFinder$<$ T $>$@{aare::ClusterFinder$<$ T $>$}}
+\doxysubsubsection{\texorpdfstring{set\_peripheralThresholdFactor()}{set\_peripheralThresholdFactor()}}
+{\footnotesize\ttfamily template$<$typename T $>$ \\
+void \mbox{\hyperlink{classaare_1_1ClusterFinder}{aare\+::\+Cluster\+Finder}}$<$ T $>$\+::set\+\_\+peripheral\+Threshold\+Factor (\begin{DoxyParamCaption}\item[{int}]{factor }\end{DoxyParamCaption})\hspace{0.3cm}{\ttfamily [inline]}}
+
+\Hypertarget{classaare_1_1ClusterFinder_ab25d54418b721d429f6141da73cc2a41}\label{classaare_1_1ClusterFinder_ab25d54418b721d429f6141da73cc2a41} 
+\index{aare::ClusterFinder$<$ T $>$@{aare::ClusterFinder$<$ T $>$}!single\_pass@{single\_pass}}
+\index{single\_pass@{single\_pass}!aare::ClusterFinder$<$ T $>$@{aare::ClusterFinder$<$ T $>$}}
+\doxysubsubsection{\texorpdfstring{single\_pass()}{single\_pass()}}
+{\footnotesize\ttfamily template$<$typename T $>$ \\
+void \mbox{\hyperlink{classaare_1_1ClusterFinder}{aare\+::\+Cluster\+Finder}}$<$ T $>$\+::single\+\_\+pass (\begin{DoxyParamCaption}\item[{\mbox{\hyperlink{classaare_1_1NDView}{NDView}}$<$ T, 2 $>$}]{img }\end{DoxyParamCaption})}
+
+\Hypertarget{classaare_1_1ClusterFinder_a4695c04a848715d073455b76241119b4}\label{classaare_1_1ClusterFinder_a4695c04a848715d073455b76241119b4} 
+\index{aare::ClusterFinder$<$ T $>$@{aare::ClusterFinder$<$ T $>$}!steal\_hits@{steal\_hits}}
+\index{steal\_hits@{steal\_hits}!aare::ClusterFinder$<$ T $>$@{aare::ClusterFinder$<$ T $>$}}
+\doxysubsubsection{\texorpdfstring{steal\_hits()}{steal\_hits()}}
+{\footnotesize\ttfamily template$<$typename T $>$ \\
+std\+::vector$<$ \mbox{\hyperlink{structaare_1_1ClusterFinder_1_1Hit}{Hit}} $>$ \mbox{\hyperlink{classaare_1_1ClusterFinder}{aare\+::\+Cluster\+Finder}}$<$ T $>$\+::steal\+\_\+hits (\begin{DoxyParamCaption}{ }\end{DoxyParamCaption})\hspace{0.3cm}{\ttfamily [inline]}}
+
+\Hypertarget{classaare_1_1ClusterFinder_a053a2b1729301c1bda8b78a8187112b6}\label{classaare_1_1ClusterFinder_a053a2b1729301c1bda8b78a8187112b6} 
+\index{aare::ClusterFinder$<$ T $>$@{aare::ClusterFinder$<$ T $>$}!store\_clusters@{store\_clusters}}
+\index{store\_clusters@{store\_clusters}!aare::ClusterFinder$<$ T $>$@{aare::ClusterFinder$<$ T $>$}}
+\doxysubsubsection{\texorpdfstring{store\_clusters()}{store\_clusters()}}
+{\footnotesize\ttfamily template$<$typename T $>$ \\
+void \mbox{\hyperlink{classaare_1_1ClusterFinder}{aare\+::\+Cluster\+Finder}}$<$ T $>$\+::store\+\_\+clusters}
+
+\Hypertarget{classaare_1_1ClusterFinder_a301516e99319ee02ecf4c44f8310ce16}\label{classaare_1_1ClusterFinder_a301516e99319ee02ecf4c44f8310ce16} 
+\index{aare::ClusterFinder$<$ T $>$@{aare::ClusterFinder$<$ T $>$}!total\_clusters@{total\_clusters}}
+\index{total\_clusters@{total\_clusters}!aare::ClusterFinder$<$ T $>$@{aare::ClusterFinder$<$ T $>$}}
+\doxysubsubsection{\texorpdfstring{total\_clusters()}{total\_clusters()}}
+{\footnotesize\ttfamily template$<$typename T $>$ \\
+size\+\_\+t \mbox{\hyperlink{classaare_1_1ClusterFinder}{aare\+::\+Cluster\+Finder}}$<$ T $>$\+::total\+\_\+clusters (\begin{DoxyParamCaption}{ }\end{DoxyParamCaption}) const\hspace{0.3cm}{\ttfamily [inline]}}
+
+
+
+\doxysubsection{Field Documentation}
+\Hypertarget{classaare_1_1ClusterFinder_aca8f21925565b4f3dbf4677d2ca6ba64}\label{classaare_1_1ClusterFinder_aca8f21925565b4f3dbf4677d2ca6ba64} 
+\index{aare::ClusterFinder$<$ T $>$@{aare::ClusterFinder$<$ T $>$}!binary\_@{binary\_}}
+\index{binary\_@{binary\_}!aare::ClusterFinder$<$ T $>$@{aare::ClusterFinder$<$ T $>$}}
+\doxysubsubsection{\texorpdfstring{binary\_}{binary\_}}
+{\footnotesize\ttfamily template$<$typename T $>$ \\
+\mbox{\hyperlink{classaare_1_1NDArray}{NDArray}}$<$bool, 2$>$ \mbox{\hyperlink{classaare_1_1ClusterFinder}{aare\+::\+Cluster\+Finder}}$<$ T $>$\+::binary\+\_\+\hspace{0.3cm}{\ttfamily [private]}}
+
+\Hypertarget{classaare_1_1ClusterFinder_aeeec655301ed05e4c5ee9201e828b7f0}\label{classaare_1_1ClusterFinder_aeeec655301ed05e4c5ee9201e828b7f0} 
+\index{aare::ClusterFinder$<$ T $>$@{aare::ClusterFinder$<$ T $>$}!child@{child}}
+\index{child@{child}!aare::ClusterFinder$<$ T $>$@{aare::ClusterFinder$<$ T $>$}}
+\doxysubsubsection{\texorpdfstring{child}{child}}
+{\footnotesize\ttfamily template$<$typename T $>$ \\
+std\+::map$<$int, int$>$ \mbox{\hyperlink{classaare_1_1ClusterFinder}{aare\+::\+Cluster\+Finder}}$<$ T $>$\+::child\hspace{0.3cm}{\ttfamily [private]}}
+
+\Hypertarget{classaare_1_1ClusterFinder_a91e708f8f94adfb3af7e5d9c3a748bb3}\label{classaare_1_1ClusterFinder_a91e708f8f94adfb3af7e5d9c3a748bb3} 
+\index{aare::ClusterFinder$<$ T $>$@{aare::ClusterFinder$<$ T $>$}!current\_label@{current\_label}}
+\index{current\_label@{current\_label}!aare::ClusterFinder$<$ T $>$@{aare::ClusterFinder$<$ T $>$}}
+\doxysubsubsection{\texorpdfstring{current\_label}{current\_label}}
+{\footnotesize\ttfamily template$<$typename T $>$ \\
+int \mbox{\hyperlink{classaare_1_1ClusterFinder}{aare\+::\+Cluster\+Finder}}$<$ T $>$\+::current\+\_\+label\hspace{0.3cm}{\ttfamily [private]}}
+
+\Hypertarget{classaare_1_1ClusterFinder_a69ffad49f0d31fdf9993774d219f87e8}\label{classaare_1_1ClusterFinder_a69ffad49f0d31fdf9993774d219f87e8} 
+\index{aare::ClusterFinder$<$ T $>$@{aare::ClusterFinder$<$ T $>$}!di@{di}}
+\index{di@{di}!aare::ClusterFinder$<$ T $>$@{aare::ClusterFinder$<$ T $>$}}
+\doxysubsubsection{\texorpdfstring{di}{di}}
+{\footnotesize\ttfamily template$<$typename T $>$ \\
+const std\+::array$<$int, 4$>$ \mbox{\hyperlink{classaare_1_1ClusterFinder}{aare\+::\+Cluster\+Finder}}$<$ T $>$\+::di \{\{0, -\/1, -\/1, -\/1\}\}\hspace{0.3cm}{\ttfamily [private]}}
+
+\Hypertarget{classaare_1_1ClusterFinder_af97013b5f3fff727149b4e09c9d485a3}\label{classaare_1_1ClusterFinder_af97013b5f3fff727149b4e09c9d485a3} 
+\index{aare::ClusterFinder$<$ T $>$@{aare::ClusterFinder$<$ T $>$}!di\_@{di\_}}
+\index{di\_@{di\_}!aare::ClusterFinder$<$ T $>$@{aare::ClusterFinder$<$ T $>$}}
+\doxysubsubsection{\texorpdfstring{di\_}{di\_}}
+{\footnotesize\ttfamily template$<$typename T $>$ \\
+const std\+::array$<$int, 8$>$ \mbox{\hyperlink{classaare_1_1ClusterFinder}{aare\+::\+Cluster\+Finder}}$<$ T $>$\+::di\+\_\+ \{\{0, 0, -\/1, 1, -\/1, 1, -\/1, 1\}\}\hspace{0.3cm}{\ttfamily [private]}}
+
+\Hypertarget{classaare_1_1ClusterFinder_a7575c70f662ffa316882eec6f2b865e7}\label{classaare_1_1ClusterFinder_a7575c70f662ffa316882eec6f2b865e7} 
+\index{aare::ClusterFinder$<$ T $>$@{aare::ClusterFinder$<$ T $>$}!dj@{dj}}
+\index{dj@{dj}!aare::ClusterFinder$<$ T $>$@{aare::ClusterFinder$<$ T $>$}}
+\doxysubsubsection{\texorpdfstring{dj}{dj}}
+{\footnotesize\ttfamily template$<$typename T $>$ \\
+const std\+::array$<$int, 4$>$ \mbox{\hyperlink{classaare_1_1ClusterFinder}{aare\+::\+Cluster\+Finder}}$<$ T $>$\+::dj \{\{-\/1, -\/1, 0, 1\}\}\hspace{0.3cm}{\ttfamily [private]}}
+
+\Hypertarget{classaare_1_1ClusterFinder_a9809de5007aeb2095b5ec74f68b6a7d8}\label{classaare_1_1ClusterFinder_a9809de5007aeb2095b5ec74f68b6a7d8} 
+\index{aare::ClusterFinder$<$ T $>$@{aare::ClusterFinder$<$ T $>$}!dj\_@{dj\_}}
+\index{dj\_@{dj\_}!aare::ClusterFinder$<$ T $>$@{aare::ClusterFinder$<$ T $>$}}
+\doxysubsubsection{\texorpdfstring{dj\_}{dj\_}}
+{\footnotesize\ttfamily template$<$typename T $>$ \\
+const std\+::array$<$int, 8$>$ \mbox{\hyperlink{classaare_1_1ClusterFinder}{aare\+::\+Cluster\+Finder}}$<$ T $>$\+::dj\+\_\+ \{\{-\/1, 1, 0, 0, 1, -\/1, -\/1, 1\}\}\hspace{0.3cm}{\ttfamily [private]}}
+
+\Hypertarget{classaare_1_1ClusterFinder_ad4b7557ac7b34a7fd188564e22d634ec}\label{classaare_1_1ClusterFinder_ad4b7557ac7b34a7fd188564e22d634ec} 
+\index{aare::ClusterFinder$<$ T $>$@{aare::ClusterFinder$<$ T $>$}!h\_size@{h\_size}}
+\index{h\_size@{h\_size}!aare::ClusterFinder$<$ T $>$@{aare::ClusterFinder$<$ T $>$}}
+\doxysubsubsection{\texorpdfstring{h\_size}{h\_size}}
+{\footnotesize\ttfamily template$<$typename T $>$ \\
+std\+::unordered\+\_\+map$<$int, \mbox{\hyperlink{structaare_1_1ClusterFinder_1_1Hit}{Hit}}$>$ \mbox{\hyperlink{classaare_1_1ClusterFinder}{aare\+::\+Cluster\+Finder}}$<$ T $>$\+::h\+\_\+size\hspace{0.3cm}{\ttfamily [private]}}
+
+\Hypertarget{classaare_1_1ClusterFinder_ac228fbe6a24d8b2179db87aa0cfecc86}\label{classaare_1_1ClusterFinder_ac228fbe6a24d8b2179db87aa0cfecc86} 
+\index{aare::ClusterFinder$<$ T $>$@{aare::ClusterFinder$<$ T $>$}!hits@{hits}}
+\index{hits@{hits}!aare::ClusterFinder$<$ T $>$@{aare::ClusterFinder$<$ T $>$}}
+\doxysubsubsection{\texorpdfstring{hits}{hits}}
+{\footnotesize\ttfamily template$<$typename T $>$ \\
+std\+::vector$<$\mbox{\hyperlink{structaare_1_1ClusterFinder_1_1Hit}{Hit}}$>$ \mbox{\hyperlink{classaare_1_1ClusterFinder}{aare\+::\+Cluster\+Finder}}$<$ T $>$\+::hits\hspace{0.3cm}{\ttfamily [private]}}
+
+\Hypertarget{classaare_1_1ClusterFinder_a0a507adf23a53c14e823c8721c8139dc}\label{classaare_1_1ClusterFinder_a0a507adf23a53c14e823c8721c8139dc} 
+\index{aare::ClusterFinder$<$ T $>$@{aare::ClusterFinder$<$ T $>$}!labeled\_@{labeled\_}}
+\index{labeled\_@{labeled\_}!aare::ClusterFinder$<$ T $>$@{aare::ClusterFinder$<$ T $>$}}
+\doxysubsubsection{\texorpdfstring{labeled\_}{labeled\_}}
+{\footnotesize\ttfamily template$<$typename T $>$ \\
+\mbox{\hyperlink{classaare_1_1NDArray}{NDArray}}$<$int, 2$>$ \mbox{\hyperlink{classaare_1_1ClusterFinder}{aare\+::\+Cluster\+Finder}}$<$ T $>$\+::labeled\+\_\+\hspace{0.3cm}{\ttfamily [private]}}
+
+\Hypertarget{classaare_1_1ClusterFinder_a8044d4bdabc6ed090f07bfddc362f2eb}\label{classaare_1_1ClusterFinder_a8044d4bdabc6ed090f07bfddc362f2eb} 
+\index{aare::ClusterFinder$<$ T $>$@{aare::ClusterFinder$<$ T $>$}!noiseMap@{noiseMap}}
+\index{noiseMap@{noiseMap}!aare::ClusterFinder$<$ T $>$@{aare::ClusterFinder$<$ T $>$}}
+\doxysubsubsection{\texorpdfstring{noiseMap}{noiseMap}}
+{\footnotesize\ttfamily template$<$typename T $>$ \\
+\mbox{\hyperlink{classaare_1_1NDView}{NDView}}$<$T, 2$>$ \mbox{\hyperlink{classaare_1_1ClusterFinder}{aare\+::\+Cluster\+Finder}}$<$ T $>$\+::noise\+Map\hspace{0.3cm}{\ttfamily [private]}}
+
+\Hypertarget{classaare_1_1ClusterFinder_a77a7f9093806a6b66596262c726aedff}\label{classaare_1_1ClusterFinder_a77a7f9093806a6b66596262c726aedff} 
+\index{aare::ClusterFinder$<$ T $>$@{aare::ClusterFinder$<$ T $>$}!original\_@{original\_}}
+\index{original\_@{original\_}!aare::ClusterFinder$<$ T $>$@{aare::ClusterFinder$<$ T $>$}}
+\doxysubsubsection{\texorpdfstring{original\_}{original\_}}
+{\footnotesize\ttfamily template$<$typename T $>$ \\
+\mbox{\hyperlink{classaare_1_1NDView}{NDView}}$<$T, 2$>$ \mbox{\hyperlink{classaare_1_1ClusterFinder}{aare\+::\+Cluster\+Finder}}$<$ T $>$\+::original\+\_\+\hspace{0.3cm}{\ttfamily [private]}}
+
+\Hypertarget{classaare_1_1ClusterFinder_a86342541978eac118b16eefa026930d4}\label{classaare_1_1ClusterFinder_a86342541978eac118b16eefa026930d4} 
+\index{aare::ClusterFinder$<$ T $>$@{aare::ClusterFinder$<$ T $>$}!peripheral\_labeled\_@{peripheral\_labeled\_}}
+\index{peripheral\_labeled\_@{peripheral\_labeled\_}!aare::ClusterFinder$<$ T $>$@{aare::ClusterFinder$<$ T $>$}}
+\doxysubsubsection{\texorpdfstring{peripheral\_labeled\_}{peripheral\_labeled\_}}
+{\footnotesize\ttfamily template$<$typename T $>$ \\
+\mbox{\hyperlink{classaare_1_1NDArray}{NDArray}}$<$int, 2$>$ \mbox{\hyperlink{classaare_1_1ClusterFinder}{aare\+::\+Cluster\+Finder}}$<$ T $>$\+::peripheral\+\_\+labeled\+\_\+\hspace{0.3cm}{\ttfamily [private]}}
+
+\Hypertarget{classaare_1_1ClusterFinder_af933139fed8103cab83572a6ba449f36}\label{classaare_1_1ClusterFinder_af933139fed8103cab83572a6ba449f36} 
+\index{aare::ClusterFinder$<$ T $>$@{aare::ClusterFinder$<$ T $>$}!peripheralThresholdFactor\_@{peripheralThresholdFactor\_}}
+\index{peripheralThresholdFactor\_@{peripheralThresholdFactor\_}!aare::ClusterFinder$<$ T $>$@{aare::ClusterFinder$<$ T $>$}}
+\doxysubsubsection{\texorpdfstring{peripheralThresholdFactor\_}{peripheralThresholdFactor\_}}
+{\footnotesize\ttfamily template$<$typename T $>$ \\
+int \mbox{\hyperlink{classaare_1_1ClusterFinder}{aare\+::\+Cluster\+Finder}}$<$ T $>$\+::peripheral\+Threshold\+Factor\+\_\+ = 5\hspace{0.3cm}{\ttfamily [private]}}
+
+\Hypertarget{classaare_1_1ClusterFinder_a87ae02ed18b8d51cf34d6dcc4a0a11b1}\label{classaare_1_1ClusterFinder_a87ae02ed18b8d51cf34d6dcc4a0a11b1} 
+\index{aare::ClusterFinder$<$ T $>$@{aare::ClusterFinder$<$ T $>$}!shape\_@{shape\_}}
+\index{shape\_@{shape\_}!aare::ClusterFinder$<$ T $>$@{aare::ClusterFinder$<$ T $>$}}
+\doxysubsubsection{\texorpdfstring{shape\_}{shape\_}}
+{\footnotesize\ttfamily template$<$typename T $>$ \\
+const std\+::array$<$ssize\+\_\+t, 2$>$ \mbox{\hyperlink{classaare_1_1ClusterFinder}{aare\+::\+Cluster\+Finder}}$<$ T $>$\+::shape\+\_\+\hspace{0.3cm}{\ttfamily [private]}}
+
+\Hypertarget{classaare_1_1ClusterFinder_a2726725360133a70fce11b8072cf2a93}\label{classaare_1_1ClusterFinder_a2726725360133a70fce11b8072cf2a93} 
+\index{aare::ClusterFinder$<$ T $>$@{aare::ClusterFinder$<$ T $>$}!threshold\_@{threshold\_}}
+\index{threshold\_@{threshold\_}!aare::ClusterFinder$<$ T $>$@{aare::ClusterFinder$<$ T $>$}}
+\doxysubsubsection{\texorpdfstring{threshold\_}{threshold\_}}
+{\footnotesize\ttfamily template$<$typename T $>$ \\
+T \mbox{\hyperlink{classaare_1_1ClusterFinder}{aare\+::\+Cluster\+Finder}}$<$ T $>$\+::threshold\+\_\+\hspace{0.3cm}{\ttfamily [private]}}
+
+\Hypertarget{classaare_1_1ClusterFinder_ae7622ae945b849df6bad3d2cc0347370}\label{classaare_1_1ClusterFinder_ae7622ae945b849df6bad3d2cc0347370} 
+\index{aare::ClusterFinder$<$ T $>$@{aare::ClusterFinder$<$ T $>$}!use\_noise\_map@{use\_noise\_map}}
+\index{use\_noise\_map@{use\_noise\_map}!aare::ClusterFinder$<$ T $>$@{aare::ClusterFinder$<$ T $>$}}
+\doxysubsubsection{\texorpdfstring{use\_noise\_map}{use\_noise\_map}}
+{\footnotesize\ttfamily template$<$typename T $>$ \\
+bool \mbox{\hyperlink{classaare_1_1ClusterFinder}{aare\+::\+Cluster\+Finder}}$<$ T $>$\+::use\+\_\+noise\+\_\+map = false\hspace{0.3cm}{\ttfamily [private]}}
+
+
+
+The documentation for this class was generated from the following file\+:\begin{DoxyCompactItemize}
+\item 
+core/include/aare/core/\mbox{\hyperlink{VariableSizeClusterFinder_8hpp}{Variable\+Size\+Cluster\+Finder.\+hpp}}\end{DoxyCompactItemize}

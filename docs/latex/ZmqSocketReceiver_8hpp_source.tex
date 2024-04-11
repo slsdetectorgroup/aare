@@ -1,0 +1,37 @@
+\doxysection{Zmq\+Socket\+Receiver.\+hpp}
+\hypertarget{ZmqSocketReceiver_8hpp_source}{}\label{ZmqSocketReceiver_8hpp_source}\index{network\_io/include/aare/network\_io/ZmqSocketReceiver.hpp@{network\_io/include/aare/network\_io/ZmqSocketReceiver.hpp}}
+\mbox{\hyperlink{ZmqSocketReceiver_8hpp}{Go to the documentation of this file.}}
+\begin{DoxyCode}{0}
+\DoxyCodeLine{00001\ \textcolor{preprocessor}{\#pragma\ once}}
+\DoxyCodeLine{00002\ }
+\DoxyCodeLine{00003\ \textcolor{preprocessor}{\#include\ "{}\mbox{\hyperlink{Frame_8hpp}{aare/core/Frame.hpp}}"{}}}
+\DoxyCodeLine{00004\ \textcolor{preprocessor}{\#include\ "{}\mbox{\hyperlink{ZmqHeader_8hpp}{aare/network\_io/ZmqHeader.hpp}}"{}}}
+\DoxyCodeLine{00005\ \textcolor{preprocessor}{\#include\ "{}\mbox{\hyperlink{ZmqSocket_8hpp}{aare/network\_io/ZmqSocket.hpp}}"{}}}
+\DoxyCodeLine{00006\ \textcolor{preprocessor}{\#include\ "{}\mbox{\hyperlink{network__io_2include_2aare_2network__io_2defs_8hpp}{aare/network\_io/defs.hpp}}"{}}}
+\DoxyCodeLine{00007\ }
+\DoxyCodeLine{00008\ \textcolor{preprocessor}{\#include\ <cstdint>}}
+\DoxyCodeLine{00009\ \textcolor{preprocessor}{\#include\ <string>}}
+\DoxyCodeLine{00010\ }
+\DoxyCodeLine{00011\ \textcolor{comment}{//\ Socket\ to\ receive\ data\ from\ a\ ZMQ\ publisher}}
+\DoxyCodeLine{00012\ \textcolor{comment}{//\ needs\ to\ be\ in\ sync\ with\ the\ main\ library\ (or\ maybe\ better\ use\ the\ versioning\ in\ the\ header)}}
+\DoxyCodeLine{00013\ }
+\DoxyCodeLine{00014\ \textcolor{comment}{//\ forward\ declare\ zmq\_msg\_t\ to\ avoid\ including\ zmq.h\ in\ the\ header}}
+\DoxyCodeLine{00015\ \textcolor{keyword}{class\ }zmq\_msg\_t;}
+\DoxyCodeLine{00016\ }
+\DoxyCodeLine{00017\ \textcolor{keyword}{namespace\ }\mbox{\hyperlink{namespaceaare}{aare}}\ \{}
+\DoxyCodeLine{00018\ }
+\DoxyCodeLine{00019\ \textcolor{keyword}{class\ }\mbox{\hyperlink{classaare_1_1ZmqSocketReceiver}{ZmqSocketReceiver}}\ :\ \textcolor{keyword}{public}\ \mbox{\hyperlink{classaare_1_1ZmqSocket}{ZmqSocket}}\ \{}
+\DoxyCodeLine{00020\ \ \ \textcolor{keyword}{public}:}
+\DoxyCodeLine{00021\ \ \ \ \ \mbox{\hyperlink{classaare_1_1ZmqSocketReceiver}{ZmqSocketReceiver}}(\textcolor{keyword}{const}\ std::string\ \&endpoint);}
+\DoxyCodeLine{00022\ \ \ \ \ \textcolor{keywordtype}{void}\ \mbox{\hyperlink{classaare_1_1ZmqSocketReceiver_aaa2bca0e37c80eb2c7e60cd77a819f6b}{connect}}();}
+\DoxyCodeLine{00023\ \ \ \ \ std::vector<ZmqFrame>\ \mbox{\hyperlink{classaare_1_1ZmqSocketReceiver_a9e0648acf762956515ea0db29e0466de}{receive\_n}}();}
+\DoxyCodeLine{00024\ }
+\DoxyCodeLine{00025\ \ \ \textcolor{keyword}{private}:}
+\DoxyCodeLine{00026\ \ \ \ \ \textcolor{keywordtype}{int}\ \mbox{\hyperlink{classaare_1_1ZmqSocketReceiver_afd4ee1a6ca11bac4bd8ed0688c05addd}{receive\_data}}(std::byte\ *data,\ \textcolor{keywordtype}{size\_t}\ size);}
+\DoxyCodeLine{00027\ \ \ \ \ \mbox{\hyperlink{structaare_1_1ZmqFrame}{ZmqFrame}}\ \mbox{\hyperlink{classaare_1_1ZmqSocketReceiver_aed81980b6f96cbb48e3bd40b9c455d60}{receive\_zmqframe}}();}
+\DoxyCodeLine{00028\ \ \ \ \ \mbox{\hyperlink{structaare_1_1ZmqHeader}{ZmqHeader}}\ \mbox{\hyperlink{classaare_1_1ZmqSocketReceiver_ab15e227a1f5446377755b126644d6c0b}{receive\_header}}();}
+\DoxyCodeLine{00029\ \};}
+\DoxyCodeLine{00030\ }
+\DoxyCodeLine{00031\ \}\ \textcolor{comment}{//\ namespace\ aare}}
+
+\end{DoxyCode}

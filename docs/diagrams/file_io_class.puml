@@ -1,0 +1,200 @@
+@startuml
+enum "aare::DetectorType" as C_0000214432771357383463
+enum C_0000214432771357383463 {
+Jungfrau
+Eiger
+Mythen3
+Moench
+ChipTestBoard
+}
+class "aare::Frame" as C_0001608703618093824988
+class C_0001608703618093824988 {
++Frame(ssize_t rows, ssize_t cols, ssize_t m_bitdepth) : void
++Frame(std::byte * fp, ssize_t rows, ssize_t cols, ssize_t m_bitdepth) : void
++Frame(Frame && other) : void
++Frame(const Frame & other) : void
++~Frame() : void
+..
++operator=(Frame & other) : Frame &
+..
++bitdepth() const : ssize_t
++cols() const : ssize_t
++data() const : std::byte *
++get(int row, int col) : std::byte *
++image<T>() : NDArray<T>
++rows() const : ssize_t
++set<T>(int row, int col, T data) : void
++size() const : ssize_t
++view<T>() : NDView<T>
+__
+-m_bitdepth : ssize_t
+-m_cols : ssize_t
+-m_data : std::byte *
+-m_rows : ssize_t
+}
+class "aare::FileConfig" as C_0001694843161451381081
+class C_0001694843161451381081 {
++operator!=(const FileConfig & other) const : bool
++operator==(const FileConfig & other) const : bool
+__
++cols : uint64_t
++dtype : aare::DType
++geometry : xy
++rows : uint64_t
+}
+abstract "aare::FileInterface" as C_0002122346448923803234
+abstract C_0002122346448923803234 {
++~FileInterface() : void
+..
+{abstract} +bitdepth() const = 0 : ssize_t
+{abstract} +bytes_per_frame() = 0 : size_t
+{abstract} +cols() const = 0 : ssize_t
+{abstract} +frame_number(size_t frame_index) = 0 : size_t
++iread(size_t frame_number) : Frame
++iread(size_t frame_number, size_t n_frames) : std::vector<Frame>
+{abstract} +pixels() = 0 : size_t
+{abstract} +read() = 0 : Frame
+{abstract} +read(size_t n_frames) = 0 : std::vector<Frame>
+{abstract} +read_into(std::byte * image_buf) = 0 : void
+{abstract} +read_into(std::byte * image_buf, size_t n_frames) = 0 : void
+{abstract} +rows() const = 0 : ssize_t
+{abstract} +seek(size_t frame_number) = 0 : void
+{abstract} +tell() = 0 : size_t
+{abstract} +total_frames() const = 0 : size_t
+{abstract} +write(Frame & frame) = 0 : void
+__
++current_frame : size_t
++m_base_name : std::string
++m_base_path : std::filesystem::path
++m_bitdepth : ssize_t
++m_cols : ssize_t
++m_ext : std::string
++m_findex : int
++m_fname : std::filesystem::path
++m_mode : std::string
++m_rows : ssize_t
++m_total_frames : size_t
++m_type : DetectorType
++max_frames_per_file : size_t
++version : std::string
+}
+class "aare::File" as C_0002007196654403438648
+class C_0002007196654403438648 {
++File(std::filesystem::path fname, std::string mode, FileConfig cfg = {}) : void
++File(File && other) : void
++~File() : void
+..
++bitdepth() const : ssize_t
++bytes_per_frame() : size_t
++cols() const : ssize_t
++frame_number(size_t frame_index) : size_t
++iread(size_t frame_number) : Frame
++pixels() : size_t
++read() : Frame
++read(size_t n_frames) : std::vector<Frame>
++read_into(std::byte * image_buf) : void
++read_into(std::byte * image_buf, size_t n_frames) : void
++rows() const : ssize_t
++seek(size_t frame_number) : void
++tell() const : size_t
++total_frames() const : size_t
++write(Frame & frame) : void
+__
+-file_impl : FileInterface *
+}
+class "aare::NumpyFile" as C_0001470720024404954003
+class C_0001470720024404954003 {
++NumpyFile(const std::filesystem::path & fname, const std::string & mode = "r", FileConfig cfg = {}) : void
++~NumpyFile() : void
+..
++bitdepth() const : ssize_t
++bytes_per_frame() : size_t
++cols() const : ssize_t
++dtype() const : DType
++frame_number(size_t frame_index) : size_t
+-get_frame(size_t frame_number) : Frame
+-get_frame_into(size_t, std::byte *) : void
++load<T,size_t NDim>() : NDArray<T, NDim>
+-load_metadata() : void
++pixels() : size_t
++read() : Frame
++read(size_t n_frames) : std::vector<Frame>
++read_into(std::byte * image_buf, size_t n_frames) : void
++read_into(std::byte * image_buf) : void
++rows() const : ssize_t
++seek(size_t frame_number) : void
++shape() const : std::vector<size_t>
++tell() : size_t
++total_frames() const : size_t
++write(Frame & frame) : void
+__
+-current_frame : size_t
+-fp : FILE *
+-header_len : uint32_t
+-header_len_size : uint8_t
+-header_size : size_t
+-initial_header_len : size_t
+-m_header : NumpyHeader
+-major_ver_ : uint8_t
+-minor_ver_ : uint8_t
+}
+class "aare::RawFile" as C_0001505206538021535080
+class C_0001505206538021535080 {
++RawFile(const std::filesystem::path & fname, const std::string & mode = "r", const FileConfig & cfg = {}) : void
++~RawFile() : void
+..
++bitdepth() const : ssize_t
++bytes_per_frame() : size_t
++cols() const : ssize_t
++data_fname(int mod_id, int file_id) : std::filesystem::path
+-find_geometry() : void
++find_number_of_subfiles() : void
++frame_number(size_t frame_index) : size_t
+-get_frame(size_t frame_number) : Frame
+-get_frame_into(size_t frame_number, std::byte * image_buf) : void
+{static} +is_master_file(std::filesystem::path fpath) : bool
++master_fname() : std::filesystem::path
+-open_subfiles() : void
+-parse_fname() : void
+-parse_json_metadata() : void
+-parse_metadata() : void
+-parse_raw_metadata() : void
++pixels() : size_t
++read(size_t n_frames) : std::vector<Frame>
++read() : Frame
+-read_header(const std::filesystem::path & fname) : sls_detector_header
++read_into(std::byte * image_buf, size_t n_frames) : void
++read_into(std::byte * image_buf) : void
++rows() const : ssize_t
++seek(size_t frame_number) : void
++set_config(int row, int col) : void
++tell() : size_t
++total_frames() const : size_t
++write(Frame & frame) : void
+__
+-cfg : RawFileConfig
+-geometry : xy
+-n_subfile_parts : size_t
+-n_subfiles : size_t
+-positions : std::vector<xy>
+-quad : bool
+-subfile_cols : int
+-subfile_rows : int
+-subfiles : std::vector<std::vector<SubFile *>>
+-timing_mode : TimingMode
+}
+C_0002122346448923803234 ..> C_0001608703618093824988
+C_0002122346448923803234 o-- C_0000214432771357383463 : +m_type
+C_0002007196654403438648 ..> C_0001694843161451381081
+C_0002007196654403438648 ..> C_0001608703618093824988
+C_0002007196654403438648 --> C_0002122346448923803234 : -file_impl
+C_0001470720024404954003 ..> C_0001694843161451381081
+C_0001470720024404954003 ..> C_0001608703618093824988
+C_0002122346448923803234 <|-- C_0001470720024404954003
+C_0001505206538021535080 ..> C_0001694843161451381081
+C_0001505206538021535080 ..> C_0001608703618093824988
+C_0002122346448923803234 <|-- C_0001505206538021535080
+
+'Generated with clang-uml, version 0.5.1
+'LLVM version clang version 17.0.6 (Fedora 17.0.6-2.fc39)
+@enduml

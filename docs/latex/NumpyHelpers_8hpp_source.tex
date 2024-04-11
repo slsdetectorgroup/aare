@@ -1,0 +1,61 @@
+\doxysection{Numpy\+Helpers.\+hpp}
+\hypertarget{NumpyHelpers_8hpp_source}{}\label{NumpyHelpers_8hpp_source}\index{file\_io/include/aare/file\_io/NumpyHelpers.hpp@{file\_io/include/aare/file\_io/NumpyHelpers.hpp}}
+\mbox{\hyperlink{NumpyHelpers_8hpp}{Go to the documentation of this file.}}
+\begin{DoxyCode}{0}
+\DoxyCodeLine{00001\ }
+\DoxyCodeLine{00002\ \textcolor{preprocessor}{\#pragma\ once}}
+\DoxyCodeLine{00003\ \textcolor{preprocessor}{\#include\ <algorithm>}}
+\DoxyCodeLine{00004\ \textcolor{preprocessor}{\#include\ <array>}}
+\DoxyCodeLine{00005\ \textcolor{preprocessor}{\#include\ <filesystem>}}
+\DoxyCodeLine{00006\ \textcolor{preprocessor}{\#include\ <fstream>}}
+\DoxyCodeLine{00007\ \textcolor{preprocessor}{\#include\ <iostream>}}
+\DoxyCodeLine{00008\ \textcolor{preprocessor}{\#include\ <numeric>}}
+\DoxyCodeLine{00009\ \textcolor{preprocessor}{\#include\ <sstream>}}
+\DoxyCodeLine{00010\ \textcolor{preprocessor}{\#include\ <string>}}
+\DoxyCodeLine{00011\ \textcolor{preprocessor}{\#include\ <unordered\_map>}}
+\DoxyCodeLine{00012\ \textcolor{preprocessor}{\#include\ <vector>}}
+\DoxyCodeLine{00013\ }
+\DoxyCodeLine{00014\ \textcolor{preprocessor}{\#include\ "{}\mbox{\hyperlink{DType_8hpp}{aare/core/DType.hpp}}"{}}}
+\DoxyCodeLine{00015\ \textcolor{preprocessor}{\#include\ "{}\mbox{\hyperlink{core_2include_2aare_2core_2defs_8hpp}{aare/core/defs.hpp}}"{}}}
+\DoxyCodeLine{00016\ }
+\DoxyCodeLine{00017\ \textcolor{keyword}{namespace\ }\mbox{\hyperlink{namespaceaare}{aare}}\ \{}
+\DoxyCodeLine{00018\ }
+\DoxyCodeLine{00019\ \textcolor{keyword}{using\ }\mbox{\hyperlink{namespaceaare_a7caab4efdc1e33ee28f8de9056bbec6c}{shape\_t}}\ =\ std::vector<size\_t>;}
+\DoxyCodeLine{00020\ }
+\DoxyCodeLine{00021\ \textcolor{keyword}{struct\ }\mbox{\hyperlink{structaare_1_1NumpyHeader}{NumpyHeader}}\ \{}
+\DoxyCodeLine{00022\ \ \ \ \ \mbox{\hyperlink{classaare_1_1DType}{DType}}\ \mbox{\hyperlink{structaare_1_1NumpyHeader_a686bc8e00746ae1ea90c1cc64e1553b6}{dtype}}\{\mbox{\hyperlink{classaare_1_1DType_af556f6d36fca6f3c555c08a1cc19611ca31f898431fe733a5154366a0eedbf1e9}{aare::DType::ERROR}}\};}
+\DoxyCodeLine{00023\ \ \ \ \ \textcolor{keywordtype}{bool}\ \mbox{\hyperlink{structaare_1_1NumpyHeader_a01595519f88afd1eabca41e5eb35020a}{fortran\_order}}\{\textcolor{keyword}{false}\};}
+\DoxyCodeLine{00024\ \ \ \ \ \mbox{\hyperlink{namespaceaare_a7caab4efdc1e33ee28f8de9056bbec6c}{shape\_t}}\ \mbox{\hyperlink{structaare_1_1NumpyHeader_a9715508b7135198e1dd6d705ea189b99}{shape}}\{\};}
+\DoxyCodeLine{00025\ }
+\DoxyCodeLine{00026\ \ \ \ \ std::string\ \mbox{\hyperlink{structaare_1_1NumpyHeader_a15557f321068a0e6449f1ca5e5cf7d07}{to\_string}}()\ \textcolor{keyword}{const};}
+\DoxyCodeLine{00027\ \};}
+\DoxyCodeLine{00028\ }
+\DoxyCodeLine{00029\ \textcolor{keyword}{namespace\ }NumpyHelpers\ \{}
+\DoxyCodeLine{00030\ }
+\DoxyCodeLine{00031\ \textcolor{keyword}{const}\ \textcolor{keyword}{constexpr}\ std::array<char,\ 6>\ \mbox{\hyperlink{namespaceaare_1_1NumpyHelpers_a6767da0d34b753d6f330ba33bbc0a1a8}{magic\_str}}\{\textcolor{stringliteral}{'\(\backslash\)x93'},\ \textcolor{charliteral}{'N'},\ \textcolor{charliteral}{'U'},\ \textcolor{charliteral}{'M'},\ \textcolor{charliteral}{'P'},\ \textcolor{charliteral}{'Y'}\};}
+\DoxyCodeLine{00032\ \textcolor{keyword}{const}\ uint8\_t\ \mbox{\hyperlink{namespaceaare_1_1NumpyHelpers_aef6d0c7df7895501f385397d7d706dea}{magic\_string\_length}}\{6\};}
+\DoxyCodeLine{00033\ }
+\DoxyCodeLine{00034\ std::string\ \mbox{\hyperlink{namespaceaare_1_1NumpyHelpers_ab7b89887eba4e7b8e6ab0d2d44551050}{parse\_str}}(\textcolor{keyword}{const}\ std::string\ \&in);}
+\DoxyCodeLine{00038\ std::string\ \mbox{\hyperlink{namespaceaare_1_1NumpyHelpers_a3c864e2c24ee9158c9ead124049259f6}{trim}}(\textcolor{keyword}{const}\ std::string\ \&str);}
+\DoxyCodeLine{00039\ }
+\DoxyCodeLine{00040\ std::vector<std::string>\ \mbox{\hyperlink{namespaceaare_1_1NumpyHelpers_a315ba7a4dd89b5098e9110566f08edcc}{parse\_tuple}}(std::string\ in);}
+\DoxyCodeLine{00041\ }
+\DoxyCodeLine{00042\ \textcolor{keywordtype}{bool}\ \mbox{\hyperlink{namespaceaare_1_1NumpyHelpers_a3da52716c32667b0ff22719fbb2839b5}{parse\_bool}}(\textcolor{keyword}{const}\ std::string\ \&in);}
+\DoxyCodeLine{00043\ }
+\DoxyCodeLine{00044\ std::string\ \mbox{\hyperlink{namespaceaare_1_1NumpyHelpers_a1acfb66f71009f5851109a5619b7754d}{get\_value\_from\_map}}(\textcolor{keyword}{const}\ std::string\ \&mapstr);}
+\DoxyCodeLine{00045\ }
+\DoxyCodeLine{00046\ std::unordered\_map<std::string,\ std::string>\ \mbox{\hyperlink{namespaceaare_1_1NumpyHelpers_a612ac2a0ff0b43984c52ce029c117ba7}{parse\_dict}}(std::string\ in,\ \textcolor{keyword}{const}\ std::vector<std::string>\ \&keys);}
+\DoxyCodeLine{00047\ }
+\DoxyCodeLine{00048\ \textcolor{keyword}{template}\ <\textcolor{keyword}{typename}\ T,\ \textcolor{keywordtype}{size\_t}\ N>\ \textcolor{keywordtype}{bool}\ \mbox{\hyperlink{namespaceaare_1_1NumpyHelpers_ab6caf7f9849fab03a058c5e2ee823b39}{in\_array}}(T\ val,\ \textcolor{keyword}{const}\ std::array<T,\ N>\ \&arr)\ \{}
+\DoxyCodeLine{00049\ \ \ \ \ \textcolor{keywordflow}{return}\ std::find(std::begin(arr),\ std::end(arr),\ val)\ !=\ std::end(arr);}
+\DoxyCodeLine{00050\ \}}
+\DoxyCodeLine{00051\ \textcolor{keywordtype}{bool}\ \mbox{\hyperlink{namespaceaare_1_1NumpyHelpers_a28fa68ac0d5fb557251fa01325d4ccea}{is\_digits}}(\textcolor{keyword}{const}\ std::string\ \&str);}
+\DoxyCodeLine{00052\ }
+\DoxyCodeLine{00053\ \mbox{\hyperlink{classaare_1_1DType}{aare::DType}}\ \mbox{\hyperlink{namespaceaare_1_1NumpyHelpers_a39261feb19103c64004ca045459da925}{parse\_descr}}(std::string\ typestring);}
+\DoxyCodeLine{00054\ \textcolor{keywordtype}{size\_t}\ \mbox{\hyperlink{namespaceaare_1_1NumpyHelpers_a01a4b858752f6d232279b19968fb483b}{write\_header}}(std::filesystem::path\ fname,\ \textcolor{keyword}{const}\ \mbox{\hyperlink{structaare_1_1NumpyHeader}{NumpyHeader}}\ \&header);}
+\DoxyCodeLine{00055\ \textcolor{keywordtype}{size\_t}\ \mbox{\hyperlink{namespaceaare_1_1NumpyHelpers_a01a4b858752f6d232279b19968fb483b}{write\_header}}(std::ostream\ \&out,\ \textcolor{keyword}{const}\ \mbox{\hyperlink{structaare_1_1NumpyHeader}{NumpyHeader}}\ \&header);}
+\DoxyCodeLine{00056\ }
+\DoxyCodeLine{00057\ \}\ \textcolor{comment}{//\ namespace\ NumpyHelpers}}
+\DoxyCodeLine{00058\ \}\ \textcolor{comment}{//\ namespace\ aare}}
+
+\end{DoxyCode}

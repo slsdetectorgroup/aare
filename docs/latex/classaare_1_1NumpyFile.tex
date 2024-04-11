@@ -1,0 +1,691 @@
+\doxysection{aare\+::Numpy\+File Class Reference}
+\hypertarget{classaare_1_1NumpyFile}{}\label{classaare_1_1NumpyFile}\index{aare::NumpyFile@{aare::NumpyFile}}
+
+
+\doxylink{classaare_1_1NumpyFile}{Numpy\+File} class to read and write numpy files.  
+
+
+
+
+{\ttfamily \#include $<$Numpy\+File.\+hpp$>$}
+
+Inheritance diagram for aare\+::Numpy\+File\+:\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[height=2.000000cm]{classaare_1_1NumpyFile}
+\end{center}
+\end{figure}
+\doxysubsubsection*{Public Member Functions}
+\begin{DoxyCompactItemize}
+\item 
+\mbox{\hyperlink{classaare_1_1NumpyFile_a4764fdd2679c4c9a5671aa29a9b06899}{Numpy\+File}} (const std\+::filesystem\+::path \&fname, const std\+::string \&mode=\"{}r\"{}, \mbox{\hyperlink{structaare_1_1FileConfig}{File\+Config}} cfg=\{\})
+\begin{DoxyCompactList}\small\item\em \doxylink{classaare_1_1NumpyFile}{Numpy\+File} constructor. \end{DoxyCompactList}\item 
+void \mbox{\hyperlink{classaare_1_1NumpyFile_a12b0ddf6334dfab4ac0993cd9c45f738}{write}} (\mbox{\hyperlink{classaare_1_1Frame}{Frame}} \&frame) override
+\begin{DoxyCompactList}\small\item\em write a frame to the file \end{DoxyCompactList}\item 
+\mbox{\hyperlink{classaare_1_1Frame}{Frame}} \mbox{\hyperlink{classaare_1_1NumpyFile_a81e1a331ece6681bbfe9437e049d3b3a}{read}} () override
+\begin{DoxyCompactList}\small\item\em write a vector of frames to the file \end{DoxyCompactList}\item 
+std\+::vector$<$ \mbox{\hyperlink{classaare_1_1Frame}{Frame}} $>$ \mbox{\hyperlink{classaare_1_1NumpyFile_a4cc861469a9dd388a937c318d3b6a13b}{read}} (size\+\_\+t n\+\_\+frames) override
+\begin{DoxyCompactList}\small\item\em read n\+\_\+frames from the file at the current position \end{DoxyCompactList}\item 
+void \mbox{\hyperlink{classaare_1_1NumpyFile_a8b25fc8fa2e0ab9e38b0388504d60962}{read\+\_\+into}} (std\+::byte \texorpdfstring{$\ast$}{*}image\+\_\+buf) override
+\begin{DoxyCompactList}\small\item\em read one frame from the file at the current position and store it in the provided buffer \end{DoxyCompactList}\item 
+void \mbox{\hyperlink{classaare_1_1NumpyFile_a88f0fbdd9cf61f517d925a37854d82f8}{read\+\_\+into}} (std\+::byte \texorpdfstring{$\ast$}{*}image\+\_\+buf, size\+\_\+t n\+\_\+frames) override
+\begin{DoxyCompactList}\small\item\em read n\+\_\+frames from the file at the current position and store them in the provided buffer \end{DoxyCompactList}\item 
+size\+\_\+t \mbox{\hyperlink{classaare_1_1NumpyFile_abe5817c47fa552b7d6de72a4b59d290a}{frame\+\_\+number}} (size\+\_\+t frame\+\_\+index) override
+\begin{DoxyCompactList}\small\item\em get the frame number at the given frame index \end{DoxyCompactList}\item 
+size\+\_\+t \mbox{\hyperlink{classaare_1_1NumpyFile_a35c1b49a469ba8e261d4e675a816b5f2}{bytes\+\_\+per\+\_\+frame}} () override
+\begin{DoxyCompactList}\small\item\em get the size of one frame in bytes \end{DoxyCompactList}\item 
+size\+\_\+t \mbox{\hyperlink{classaare_1_1NumpyFile_a2a40aebcb9b25ad36f1ecd75699c47d0}{pixels}} () override
+\begin{DoxyCompactList}\small\item\em get the number of pixels in one frame \end{DoxyCompactList}\item 
+void \mbox{\hyperlink{classaare_1_1NumpyFile_ae4f669f86fb614e446540638d8efe1b8}{seek}} (size\+\_\+t \mbox{\hyperlink{classaare_1_1NumpyFile_abe5817c47fa552b7d6de72a4b59d290a}{frame\+\_\+number}}) override
+\begin{DoxyCompactList}\small\item\em seek to the given frame number \end{DoxyCompactList}\item 
+size\+\_\+t \mbox{\hyperlink{classaare_1_1NumpyFile_a022af0b9d792abb00a9dc661beb3e9a2}{tell}} () override
+\begin{DoxyCompactList}\small\item\em get the current position of the file pointer \end{DoxyCompactList}\item 
+size\+\_\+t \mbox{\hyperlink{classaare_1_1NumpyFile_afec228003225dcc91b16227d24c58d37}{total\+\_\+frames}} () const override
+\begin{DoxyCompactList}\small\item\em get the total number of frames in the file \end{DoxyCompactList}\item 
+ssize\+\_\+t \mbox{\hyperlink{classaare_1_1NumpyFile_a24c0cad439c52b77886c862b8093b91a}{rows}} () const override
+\begin{DoxyCompactList}\small\item\em get the number of rows in the file \end{DoxyCompactList}\item 
+ssize\+\_\+t \mbox{\hyperlink{classaare_1_1NumpyFile_ae1558b1ab6fbea54f853cdfad9363d31}{cols}} () const override
+\begin{DoxyCompactList}\small\item\em get the number of columns in the file \end{DoxyCompactList}\item 
+ssize\+\_\+t \mbox{\hyperlink{classaare_1_1NumpyFile_afcdc40fcc15f5a3a470e23033ad1323c}{bitdepth}} () const override
+\begin{DoxyCompactList}\small\item\em get the bitdepth of the file \end{DoxyCompactList}\item 
+\mbox{\hyperlink{classaare_1_1DType}{DType}} \mbox{\hyperlink{classaare_1_1NumpyFile_ae0f029f5e1c09875533962a9ee957a98}{dtype}} () const
+\begin{DoxyCompactList}\small\item\em get the data type of the numpy file \end{DoxyCompactList}\item 
+std\+::vector$<$ size\+\_\+t $>$ \mbox{\hyperlink{classaare_1_1NumpyFile_a060d3bc922d3a759aabb3716e9c97791}{shape}} () const
+\begin{DoxyCompactList}\small\item\em get the shape of the numpy file \end{DoxyCompactList}\item 
+{\footnotesize template$<$typename T , size\+\_\+t NDim$>$ }\\\mbox{\hyperlink{classaare_1_1NDArray}{NDArray}}$<$ T, NDim $>$ \mbox{\hyperlink{classaare_1_1NumpyFile_ab16bb0e1a3c4d17b137c9c8708b9031c}{load}} ()
+\begin{DoxyCompactList}\small\item\em load the numpy file into an \doxylink{classaare_1_1NDArray}{NDArray} \end{DoxyCompactList}\item 
+\mbox{\hyperlink{classaare_1_1NumpyFile_af8d6ace67f7880e6b2cd12da568fbead}{\texorpdfstring{$\sim$}{\string~}\+Numpy\+File}} ()
+\item 
+\mbox{\hyperlink{classaare_1_1Frame}{Frame}} \mbox{\hyperlink{classaare_1_1FileInterface_aad0827f2dad4403cebdce417243d842c}{iread}} (size\+\_\+t \mbox{\hyperlink{classaare_1_1NumpyFile_abe5817c47fa552b7d6de72a4b59d290a}{frame\+\_\+number}})
+\begin{DoxyCompactList}\small\item\em read one frame from the file at the given frame number \end{DoxyCompactList}\item 
+std\+::vector$<$ \mbox{\hyperlink{classaare_1_1Frame}{Frame}} $>$ \mbox{\hyperlink{classaare_1_1FileInterface_a1a304e356f3c1d100544d6ceeb35c0fb}{iread}} (size\+\_\+t \mbox{\hyperlink{classaare_1_1NumpyFile_abe5817c47fa552b7d6de72a4b59d290a}{frame\+\_\+number}}, size\+\_\+t n\+\_\+frames)
+\begin{DoxyCompactList}\small\item\em read n\+\_\+frames from the file starting at the given frame number \end{DoxyCompactList}\end{DoxyCompactItemize}
+\doxysubsubsection*{Data Fields}
+\begin{DoxyCompactItemize}
+\item 
+std\+::string \mbox{\hyperlink{classaare_1_1FileInterface_ab1d0e6de947affd5af9740eb06888fc6}{m\+\_\+mode}}
+\item 
+std\+::filesystem\+::path \mbox{\hyperlink{classaare_1_1FileInterface_a325f6603f564fb42f8f28f1136b5e329}{m\+\_\+fname}}
+\item 
+std\+::filesystem\+::path \mbox{\hyperlink{classaare_1_1FileInterface_afdd0a1a75618ad5db2f4794e0900b2f4}{m\+\_\+base\+\_\+path}}
+\item 
+std\+::string \mbox{\hyperlink{classaare_1_1FileInterface_adae2b35fc6a3f185e9eb263c97bc024b}{m\+\_\+base\+\_\+name}}
+\item 
+std\+::string \mbox{\hyperlink{classaare_1_1FileInterface_a5fffaf9a7c8ae2b3a2ebe89b9c94ed34}{m\+\_\+ext}}
+\item 
+int \mbox{\hyperlink{classaare_1_1FileInterface_a30e926a897b534ab9a327d40594ff191}{m\+\_\+findex}}
+\item 
+size\+\_\+t \mbox{\hyperlink{classaare_1_1FileInterface_a91551fada444b231294c095f3f5fb768}{m\+\_\+total\+\_\+frames}} \{\}
+\item 
+size\+\_\+t \mbox{\hyperlink{classaare_1_1FileInterface_ab0762d7652c9a4e1afe6dbb7d7325ac9}{max\+\_\+frames\+\_\+per\+\_\+file}} \{\}
+\item 
+std\+::string \mbox{\hyperlink{classaare_1_1FileInterface_a44cbe933bbd2cae1f48213121d15bce2}{version}}
+\item 
+\mbox{\hyperlink{namespaceaare_a5b95afba95553c1e118e1478c69042f7}{Detector\+Type}} \mbox{\hyperlink{classaare_1_1FileInterface_a9476a299cea6b4e97605135a28d0cb60}{m\+\_\+type}}
+\item 
+ssize\+\_\+t \mbox{\hyperlink{classaare_1_1FileInterface_ae29d98625cf56989e2c5237ace0d0f4c}{m\+\_\+rows}} \{\}
+\item 
+ssize\+\_\+t \mbox{\hyperlink{classaare_1_1FileInterface_ad4c9991c30a71ba83cbaab283bc756b5}{m\+\_\+cols}} \{\}
+\item 
+ssize\+\_\+t \mbox{\hyperlink{classaare_1_1FileInterface_a252d27cbbfcdfc528b86925eaac55bb7}{m\+\_\+bitdepth}} \{\}
+\end{DoxyCompactItemize}
+\doxysubsubsection*{Private Member Functions}
+\begin{DoxyCompactItemize}
+\item 
+void \mbox{\hyperlink{classaare_1_1NumpyFile_a1c4bfd5eefa5ac19ecf2aa96c0dbdae3}{load\+\_\+metadata}} ()
+\item 
+void \mbox{\hyperlink{classaare_1_1NumpyFile_add05576e7b9256474c104553f0856c80}{get\+\_\+frame\+\_\+into}} (size\+\_\+t, std\+::byte \texorpdfstring{$\ast$}{*})
+\item 
+\mbox{\hyperlink{classaare_1_1Frame}{Frame}} \mbox{\hyperlink{classaare_1_1NumpyFile_ac0e88af0f3793ef18302db5c503bd3d7}{get\+\_\+frame}} (size\+\_\+t \mbox{\hyperlink{classaare_1_1NumpyFile_abe5817c47fa552b7d6de72a4b59d290a}{frame\+\_\+number}})
+\end{DoxyCompactItemize}
+\doxysubsubsection*{Private Attributes}
+\begin{DoxyCompactItemize}
+\item 
+FILE \texorpdfstring{$\ast$}{*} \mbox{\hyperlink{classaare_1_1NumpyFile_a1b3f50636674e919e54b7d61e11ed03a}{fp}} = nullptr
+\item 
+size\+\_\+t \mbox{\hyperlink{classaare_1_1NumpyFile_a85400183bf0f1fdc43fd9a37e3f10a2d}{initial\+\_\+header\+\_\+len}} = 0
+\item 
+size\+\_\+t \mbox{\hyperlink{classaare_1_1NumpyFile_a080973acac90ab8e6d0552b282e2d73c}{current\+\_\+frame}} \{\}
+\item 
+uint32\+\_\+t \mbox{\hyperlink{classaare_1_1NumpyFile_aff59772a6f221edd2606e483ef4ed8ee}{header\+\_\+len}} \{\}
+\item 
+uint8\+\_\+t \mbox{\hyperlink{classaare_1_1NumpyFile_a50d19cf61c165c609c1b707abbe13cbd}{header\+\_\+len\+\_\+size}} \{\}
+\item 
+size\+\_\+t \mbox{\hyperlink{classaare_1_1NumpyFile_a5aed02e400e44d7fbc5356365f421c5b}{header\+\_\+size}} \{\}
+\item 
+\mbox{\hyperlink{structaare_1_1NumpyHeader}{Numpy\+Header}} \mbox{\hyperlink{classaare_1_1NumpyFile_aa2d11ec505dc7c3b4918e194d24d00fe}{m\+\_\+header}}
+\item 
+uint8\+\_\+t \mbox{\hyperlink{classaare_1_1NumpyFile_a58feea4735fdf9599d810427785266ea}{major\+\_\+ver\+\_\+}} \{\}
+\item 
+uint8\+\_\+t \mbox{\hyperlink{classaare_1_1NumpyFile_a2ca45b371f1c56e6b74eaca1852c5ffc}{minor\+\_\+ver\+\_\+}} \{\}
+\end{DoxyCompactItemize}
+
+
+\doxysubsection{Detailed Description}
+\doxylink{classaare_1_1NumpyFile}{Numpy\+File} class to read and write numpy files. 
+
+\begin{DoxyNote}{Note}
+derived from \doxylink{classaare_1_1FileInterface}{File\+Interface} 
+
+implements all the pure virtual functions from \doxylink{classaare_1_1FileInterface}{File\+Interface} 
+
+documentation for the functions can also be found in the \doxylink{classaare_1_1FileInterface}{File\+Interface} class 
+\end{DoxyNote}
+
+
+\doxysubsection{Constructor \& Destructor Documentation}
+\Hypertarget{classaare_1_1NumpyFile_a4764fdd2679c4c9a5671aa29a9b06899}\label{classaare_1_1NumpyFile_a4764fdd2679c4c9a5671aa29a9b06899} 
+\index{aare::NumpyFile@{aare::NumpyFile}!NumpyFile@{NumpyFile}}
+\index{NumpyFile@{NumpyFile}!aare::NumpyFile@{aare::NumpyFile}}
+\doxysubsubsection{\texorpdfstring{NumpyFile()}{NumpyFile()}}
+{\footnotesize\ttfamily aare\+::\+Numpy\+File\+::\+Numpy\+File (\begin{DoxyParamCaption}\item[{const std\+::filesystem\+::path \&}]{fname,  }\item[{const std\+::string \&}]{mode = {\ttfamily \"{}r\"{}},  }\item[{\mbox{\hyperlink{structaare_1_1FileConfig}{File\+Config}}}]{cfg = {\ttfamily \{\}} }\end{DoxyParamCaption})}
+
+
+
+\doxylink{classaare_1_1NumpyFile}{Numpy\+File} constructor. 
+
+
+\begin{DoxyParams}{Parameters}
+{\em fname} & path to the numpy file \\
+\hline
+{\em mode} & file mode (r, w) \\
+\hline
+{\em cfg} & file configuration \\
+\hline
+\end{DoxyParams}
+\Hypertarget{classaare_1_1NumpyFile_af8d6ace67f7880e6b2cd12da568fbead}\label{classaare_1_1NumpyFile_af8d6ace67f7880e6b2cd12da568fbead} 
+\index{aare::NumpyFile@{aare::NumpyFile}!````~NumpyFile@{\texorpdfstring{$\sim$}{\string~}NumpyFile}}
+\index{````~NumpyFile@{\texorpdfstring{$\sim$}{\string~}NumpyFile}!aare::NumpyFile@{aare::NumpyFile}}
+\doxysubsubsection{\texorpdfstring{\texorpdfstring{$\sim$}{\string~}NumpyFile()}{\string~NumpyFile()}}
+{\footnotesize\ttfamily aare\+::\+Numpy\+File\+::\texorpdfstring{$\sim$}{\string~}\+Numpy\+File (\begin{DoxyParamCaption}{ }\end{DoxyParamCaption})}
+
+
+
+\doxysubsection{Member Function Documentation}
+\Hypertarget{classaare_1_1NumpyFile_afcdc40fcc15f5a3a470e23033ad1323c}\label{classaare_1_1NumpyFile_afcdc40fcc15f5a3a470e23033ad1323c} 
+\index{aare::NumpyFile@{aare::NumpyFile}!bitdepth@{bitdepth}}
+\index{bitdepth@{bitdepth}!aare::NumpyFile@{aare::NumpyFile}}
+\doxysubsubsection{\texorpdfstring{bitdepth()}{bitdepth()}}
+{\footnotesize\ttfamily ssize\+\_\+t aare\+::\+Numpy\+File\+::bitdepth (\begin{DoxyParamCaption}{ }\end{DoxyParamCaption}) const\hspace{0.3cm}{\ttfamily [inline]}, {\ttfamily [override]}, {\ttfamily [virtual]}}
+
+
+
+get the bitdepth of the file 
+
+\begin{DoxyReturn}{Returns}
+bitdepth of the file 
+\end{DoxyReturn}
+
+
+Implements \mbox{\hyperlink{classaare_1_1FileInterface_a8bfd7abf4271210000b2ef8d1c0d6149}{aare\+::\+File\+Interface}}.
+
+\Hypertarget{classaare_1_1NumpyFile_a35c1b49a469ba8e261d4e675a816b5f2}\label{classaare_1_1NumpyFile_a35c1b49a469ba8e261d4e675a816b5f2} 
+\index{aare::NumpyFile@{aare::NumpyFile}!bytes\_per\_frame@{bytes\_per\_frame}}
+\index{bytes\_per\_frame@{bytes\_per\_frame}!aare::NumpyFile@{aare::NumpyFile}}
+\doxysubsubsection{\texorpdfstring{bytes\_per\_frame()}{bytes\_per\_frame()}}
+{\footnotesize\ttfamily size\+\_\+t aare\+::\+Numpy\+File\+::bytes\+\_\+per\+\_\+frame (\begin{DoxyParamCaption}{ }\end{DoxyParamCaption})\hspace{0.3cm}{\ttfamily [override]}, {\ttfamily [virtual]}}
+
+
+
+get the size of one frame in bytes 
+
+\begin{DoxyReturn}{Returns}
+size of one frame 
+\end{DoxyReturn}
+
+
+Implements \mbox{\hyperlink{classaare_1_1FileInterface_aab236d5b808f2acc44266281274ed93a}{aare\+::\+File\+Interface}}.
+
+\Hypertarget{classaare_1_1NumpyFile_ae1558b1ab6fbea54f853cdfad9363d31}\label{classaare_1_1NumpyFile_ae1558b1ab6fbea54f853cdfad9363d31} 
+\index{aare::NumpyFile@{aare::NumpyFile}!cols@{cols}}
+\index{cols@{cols}!aare::NumpyFile@{aare::NumpyFile}}
+\doxysubsubsection{\texorpdfstring{cols()}{cols()}}
+{\footnotesize\ttfamily ssize\+\_\+t aare\+::\+Numpy\+File\+::cols (\begin{DoxyParamCaption}{ }\end{DoxyParamCaption}) const\hspace{0.3cm}{\ttfamily [inline]}, {\ttfamily [override]}, {\ttfamily [virtual]}}
+
+
+
+get the number of columns in the file 
+
+\begin{DoxyReturn}{Returns}
+number of columns in the file 
+\end{DoxyReturn}
+
+
+Implements \mbox{\hyperlink{classaare_1_1FileInterface_a2927ba0e6a564bcd0da139a552c09b76}{aare\+::\+File\+Interface}}.
+
+\Hypertarget{classaare_1_1NumpyFile_ae0f029f5e1c09875533962a9ee957a98}\label{classaare_1_1NumpyFile_ae0f029f5e1c09875533962a9ee957a98} 
+\index{aare::NumpyFile@{aare::NumpyFile}!dtype@{dtype}}
+\index{dtype@{dtype}!aare::NumpyFile@{aare::NumpyFile}}
+\doxysubsubsection{\texorpdfstring{dtype()}{dtype()}}
+{\footnotesize\ttfamily \mbox{\hyperlink{classaare_1_1DType}{DType}} aare\+::\+Numpy\+File\+::dtype (\begin{DoxyParamCaption}{ }\end{DoxyParamCaption}) const\hspace{0.3cm}{\ttfamily [inline]}}
+
+
+
+get the data type of the numpy file 
+
+\begin{DoxyReturn}{Returns}
+\doxylink{classaare_1_1DType}{DType} 
+\end{DoxyReturn}
+\Hypertarget{classaare_1_1NumpyFile_abe5817c47fa552b7d6de72a4b59d290a}\label{classaare_1_1NumpyFile_abe5817c47fa552b7d6de72a4b59d290a} 
+\index{aare::NumpyFile@{aare::NumpyFile}!frame\_number@{frame\_number}}
+\index{frame\_number@{frame\_number}!aare::NumpyFile@{aare::NumpyFile}}
+\doxysubsubsection{\texorpdfstring{frame\_number()}{frame\_number()}}
+{\footnotesize\ttfamily size\+\_\+t aare\+::\+Numpy\+File\+::frame\+\_\+number (\begin{DoxyParamCaption}\item[{size\+\_\+t}]{frame\+\_\+index }\end{DoxyParamCaption})\hspace{0.3cm}{\ttfamily [inline]}, {\ttfamily [override]}, {\ttfamily [virtual]}}
+
+
+
+get the frame number at the given frame index 
+
+
+\begin{DoxyParams}{Parameters}
+{\em frame\+\_\+index} & index of the frame \\
+\hline
+\end{DoxyParams}
+\begin{DoxyReturn}{Returns}
+frame number 
+\end{DoxyReturn}
+
+
+Implements \mbox{\hyperlink{classaare_1_1FileInterface_ac6d10d468f79e855a3334cd1347c1178}{aare\+::\+File\+Interface}}.
+
+\Hypertarget{classaare_1_1NumpyFile_ac0e88af0f3793ef18302db5c503bd3d7}\label{classaare_1_1NumpyFile_ac0e88af0f3793ef18302db5c503bd3d7} 
+\index{aare::NumpyFile@{aare::NumpyFile}!get\_frame@{get\_frame}}
+\index{get\_frame@{get\_frame}!aare::NumpyFile@{aare::NumpyFile}}
+\doxysubsubsection{\texorpdfstring{get\_frame()}{get\_frame()}}
+{\footnotesize\ttfamily \mbox{\hyperlink{classaare_1_1Frame}{Frame}} aare\+::\+Numpy\+File\+::get\+\_\+frame (\begin{DoxyParamCaption}\item[{size\+\_\+t}]{frame\+\_\+number }\end{DoxyParamCaption})\hspace{0.3cm}{\ttfamily [private]}}
+
+\Hypertarget{classaare_1_1NumpyFile_add05576e7b9256474c104553f0856c80}\label{classaare_1_1NumpyFile_add05576e7b9256474c104553f0856c80} 
+\index{aare::NumpyFile@{aare::NumpyFile}!get\_frame\_into@{get\_frame\_into}}
+\index{get\_frame\_into@{get\_frame\_into}!aare::NumpyFile@{aare::NumpyFile}}
+\doxysubsubsection{\texorpdfstring{get\_frame\_into()}{get\_frame\_into()}}
+{\footnotesize\ttfamily void aare\+::\+Numpy\+File\+::get\+\_\+frame\+\_\+into (\begin{DoxyParamCaption}\item[{size\+\_\+t}]{frame\+\_\+number,  }\item[{std\+::byte \texorpdfstring{$\ast$}{*}}]{image\+\_\+buf }\end{DoxyParamCaption})\hspace{0.3cm}{\ttfamily [private]}}
+
+\Hypertarget{classaare_1_1FileInterface_aad0827f2dad4403cebdce417243d842c}\label{classaare_1_1FileInterface_aad0827f2dad4403cebdce417243d842c} 
+\index{aare::NumpyFile@{aare::NumpyFile}!iread@{iread}}
+\index{iread@{iread}!aare::NumpyFile@{aare::NumpyFile}}
+\doxysubsubsection{\texorpdfstring{iread()}{iread()}\hspace{0.1cm}{\footnotesize\ttfamily [1/2]}}
+{\footnotesize\ttfamily \mbox{\hyperlink{classaare_1_1Frame}{Frame}} aare\+::\+File\+Interface\+::iread (\begin{DoxyParamCaption}\item[{size\+\_\+t}]{frame\+\_\+number }\end{DoxyParamCaption})\hspace{0.3cm}{\ttfamily [inline]}, {\ttfamily [inherited]}}
+
+
+
+read one frame from the file at the given frame number 
+
+
+\begin{DoxyParams}{Parameters}
+{\em frame\+\_\+number} & frame number to read \\
+\hline
+\end{DoxyParams}
+\begin{DoxyReturn}{Returns}
+frame 
+\end{DoxyReturn}
+\Hypertarget{classaare_1_1FileInterface_a1a304e356f3c1d100544d6ceeb35c0fb}\label{classaare_1_1FileInterface_a1a304e356f3c1d100544d6ceeb35c0fb} 
+\index{aare::NumpyFile@{aare::NumpyFile}!iread@{iread}}
+\index{iread@{iread}!aare::NumpyFile@{aare::NumpyFile}}
+\doxysubsubsection{\texorpdfstring{iread()}{iread()}\hspace{0.1cm}{\footnotesize\ttfamily [2/2]}}
+{\footnotesize\ttfamily std\+::vector$<$ \mbox{\hyperlink{classaare_1_1Frame}{Frame}} $>$ aare\+::\+File\+Interface\+::iread (\begin{DoxyParamCaption}\item[{size\+\_\+t}]{frame\+\_\+number,  }\item[{size\+\_\+t}]{n\+\_\+frames }\end{DoxyParamCaption})\hspace{0.3cm}{\ttfamily [inline]}, {\ttfamily [inherited]}}
+
+
+
+read n\+\_\+frames from the file starting at the given frame number 
+
+
+\begin{DoxyParams}{Parameters}
+{\em frame\+\_\+number} & frame number to start reading from \\
+\hline
+{\em n\+\_\+frames} & number of frames to read \\
+\hline
+\end{DoxyParams}
+\begin{DoxyReturn}{Returns}
+vector of frames 
+\end{DoxyReturn}
+\Hypertarget{classaare_1_1NumpyFile_ab16bb0e1a3c4d17b137c9c8708b9031c}\label{classaare_1_1NumpyFile_ab16bb0e1a3c4d17b137c9c8708b9031c} 
+\index{aare::NumpyFile@{aare::NumpyFile}!load@{load}}
+\index{load@{load}!aare::NumpyFile@{aare::NumpyFile}}
+\doxysubsubsection{\texorpdfstring{load()}{load()}}
+{\footnotesize\ttfamily template$<$typename T , size\+\_\+t NDim$>$ \\
+\mbox{\hyperlink{classaare_1_1NDArray}{NDArray}}$<$ T, NDim $>$ aare\+::\+Numpy\+File\+::load (\begin{DoxyParamCaption}{ }\end{DoxyParamCaption})\hspace{0.3cm}{\ttfamily [inline]}}
+
+
+
+load the numpy file into an \doxylink{classaare_1_1NDArray}{NDArray} 
+
+
+\begin{DoxyTemplParams}{Template Parameters}
+{\em T} & data type of the \doxylink{classaare_1_1NDArray}{NDArray} \\
+\hline
+{\em NDim} & number of dimensions of the \doxylink{classaare_1_1NDArray}{NDArray} \\
+\hline
+\end{DoxyTemplParams}
+\begin{DoxyReturn}{Returns}
+NDArray$<$\+T, NDim$>$ 
+\end{DoxyReturn}
+\Hypertarget{classaare_1_1NumpyFile_a1c4bfd5eefa5ac19ecf2aa96c0dbdae3}\label{classaare_1_1NumpyFile_a1c4bfd5eefa5ac19ecf2aa96c0dbdae3} 
+\index{aare::NumpyFile@{aare::NumpyFile}!load\_metadata@{load\_metadata}}
+\index{load\_metadata@{load\_metadata}!aare::NumpyFile@{aare::NumpyFile}}
+\doxysubsubsection{\texorpdfstring{load\_metadata()}{load\_metadata()}}
+{\footnotesize\ttfamily void aare\+::\+Numpy\+File\+::load\+\_\+metadata (\begin{DoxyParamCaption}{ }\end{DoxyParamCaption})\hspace{0.3cm}{\ttfamily [private]}}
+
+\Hypertarget{classaare_1_1NumpyFile_a2a40aebcb9b25ad36f1ecd75699c47d0}\label{classaare_1_1NumpyFile_a2a40aebcb9b25ad36f1ecd75699c47d0} 
+\index{aare::NumpyFile@{aare::NumpyFile}!pixels@{pixels}}
+\index{pixels@{pixels}!aare::NumpyFile@{aare::NumpyFile}}
+\doxysubsubsection{\texorpdfstring{pixels()}{pixels()}}
+{\footnotesize\ttfamily size\+\_\+t aare\+::\+Numpy\+File\+::pixels (\begin{DoxyParamCaption}{ }\end{DoxyParamCaption})\hspace{0.3cm}{\ttfamily [override]}, {\ttfamily [virtual]}}
+
+
+
+get the number of pixels in one frame 
+
+\begin{DoxyReturn}{Returns}
+number of pixels in one frame 
+\end{DoxyReturn}
+
+
+Implements \mbox{\hyperlink{classaare_1_1FileInterface_a99da51594609984efe62bb64a88a3fa6}{aare\+::\+File\+Interface}}.
+
+\Hypertarget{classaare_1_1NumpyFile_a81e1a331ece6681bbfe9437e049d3b3a}\label{classaare_1_1NumpyFile_a81e1a331ece6681bbfe9437e049d3b3a} 
+\index{aare::NumpyFile@{aare::NumpyFile}!read@{read}}
+\index{read@{read}!aare::NumpyFile@{aare::NumpyFile}}
+\doxysubsubsection{\texorpdfstring{read()}{read()}\hspace{0.1cm}{\footnotesize\ttfamily [1/2]}}
+{\footnotesize\ttfamily \mbox{\hyperlink{classaare_1_1Frame}{Frame}} aare\+::\+Numpy\+File\+::read (\begin{DoxyParamCaption}{ }\end{DoxyParamCaption})\hspace{0.3cm}{\ttfamily [inline]}, {\ttfamily [override]}, {\ttfamily [virtual]}}
+
+
+
+write a vector of frames to the file 
+
+
+\begin{DoxyParams}{Parameters}
+{\em frames} & vector of frames to write \\
+\hline
+\end{DoxyParams}
+\begin{DoxyReturn}{Returns}
+void
+\end{DoxyReturn}
+read one frame from the file at the current position \begin{DoxyReturn}{Returns}
+\doxylink{classaare_1_1Frame}{Frame} 
+\end{DoxyReturn}
+
+
+Implements \mbox{\hyperlink{classaare_1_1FileInterface_a9cb196de2bee8638578e4ba3ce46532e}{aare\+::\+File\+Interface}}.
+
+\Hypertarget{classaare_1_1NumpyFile_a4cc861469a9dd388a937c318d3b6a13b}\label{classaare_1_1NumpyFile_a4cc861469a9dd388a937c318d3b6a13b} 
+\index{aare::NumpyFile@{aare::NumpyFile}!read@{read}}
+\index{read@{read}!aare::NumpyFile@{aare::NumpyFile}}
+\doxysubsubsection{\texorpdfstring{read()}{read()}\hspace{0.1cm}{\footnotesize\ttfamily [2/2]}}
+{\footnotesize\ttfamily std\+::vector$<$ \mbox{\hyperlink{classaare_1_1Frame}{Frame}} $>$ aare\+::\+Numpy\+File\+::read (\begin{DoxyParamCaption}\item[{size\+\_\+t}]{n\+\_\+frames }\end{DoxyParamCaption})\hspace{0.3cm}{\ttfamily [override]}, {\ttfamily [virtual]}}
+
+
+
+read n\+\_\+frames from the file at the current position 
+
+
+\begin{DoxyParams}{Parameters}
+{\em n\+\_\+frames} & number of frames to read \\
+\hline
+\end{DoxyParams}
+\begin{DoxyReturn}{Returns}
+vector of frames 
+\end{DoxyReturn}
+
+
+Implements \mbox{\hyperlink{classaare_1_1FileInterface_a1624d72f0feb1c19d507cc91c4cb414a}{aare\+::\+File\+Interface}}.
+
+\Hypertarget{classaare_1_1NumpyFile_a8b25fc8fa2e0ab9e38b0388504d60962}\label{classaare_1_1NumpyFile_a8b25fc8fa2e0ab9e38b0388504d60962} 
+\index{aare::NumpyFile@{aare::NumpyFile}!read\_into@{read\_into}}
+\index{read\_into@{read\_into}!aare::NumpyFile@{aare::NumpyFile}}
+\doxysubsubsection{\texorpdfstring{read\_into()}{read\_into()}\hspace{0.1cm}{\footnotesize\ttfamily [1/2]}}
+{\footnotesize\ttfamily void aare\+::\+Numpy\+File\+::read\+\_\+into (\begin{DoxyParamCaption}\item[{std\+::byte \texorpdfstring{$\ast$}{*}}]{image\+\_\+buf }\end{DoxyParamCaption})\hspace{0.3cm}{\ttfamily [inline]}, {\ttfamily [override]}, {\ttfamily [virtual]}}
+
+
+
+read one frame from the file at the current position and store it in the provided buffer 
+
+
+\begin{DoxyParams}{Parameters}
+{\em image\+\_\+buf} & buffer to store the frame \\
+\hline
+\end{DoxyParams}
+\begin{DoxyReturn}{Returns}
+void 
+\end{DoxyReturn}
+
+
+Implements \mbox{\hyperlink{classaare_1_1FileInterface_a4ac0f4e63ccf90af9f0d5b9b44db856c}{aare\+::\+File\+Interface}}.
+
+\Hypertarget{classaare_1_1NumpyFile_a88f0fbdd9cf61f517d925a37854d82f8}\label{classaare_1_1NumpyFile_a88f0fbdd9cf61f517d925a37854d82f8} 
+\index{aare::NumpyFile@{aare::NumpyFile}!read\_into@{read\_into}}
+\index{read\_into@{read\_into}!aare::NumpyFile@{aare::NumpyFile}}
+\doxysubsubsection{\texorpdfstring{read\_into()}{read\_into()}\hspace{0.1cm}{\footnotesize\ttfamily [2/2]}}
+{\footnotesize\ttfamily void aare\+::\+Numpy\+File\+::read\+\_\+into (\begin{DoxyParamCaption}\item[{std\+::byte \texorpdfstring{$\ast$}{*}}]{image\+\_\+buf,  }\item[{size\+\_\+t}]{n\+\_\+frames }\end{DoxyParamCaption})\hspace{0.3cm}{\ttfamily [override]}, {\ttfamily [virtual]}}
+
+
+
+read n\+\_\+frames from the file at the current position and store them in the provided buffer 
+
+
+\begin{DoxyParams}{Parameters}
+{\em image\+\_\+buf} & buffer to store the frames \\
+\hline
+{\em n\+\_\+frames} & number of frames to read \\
+\hline
+\end{DoxyParams}
+\begin{DoxyReturn}{Returns}
+void 
+\end{DoxyReturn}
+
+
+Implements \mbox{\hyperlink{classaare_1_1FileInterface_a580c71b3eecf45ce2140cd65103cfd43}{aare\+::\+File\+Interface}}.
+
+\Hypertarget{classaare_1_1NumpyFile_a24c0cad439c52b77886c862b8093b91a}\label{classaare_1_1NumpyFile_a24c0cad439c52b77886c862b8093b91a} 
+\index{aare::NumpyFile@{aare::NumpyFile}!rows@{rows}}
+\index{rows@{rows}!aare::NumpyFile@{aare::NumpyFile}}
+\doxysubsubsection{\texorpdfstring{rows()}{rows()}}
+{\footnotesize\ttfamily ssize\+\_\+t aare\+::\+Numpy\+File\+::rows (\begin{DoxyParamCaption}{ }\end{DoxyParamCaption}) const\hspace{0.3cm}{\ttfamily [inline]}, {\ttfamily [override]}, {\ttfamily [virtual]}}
+
+
+
+get the number of rows in the file 
+
+\begin{DoxyReturn}{Returns}
+number of rows in the file 
+\end{DoxyReturn}
+
+
+Implements \mbox{\hyperlink{classaare_1_1FileInterface_a8a5bc2d9b7b9ec1a9a100bf8a114d909}{aare\+::\+File\+Interface}}.
+
+\Hypertarget{classaare_1_1NumpyFile_ae4f669f86fb614e446540638d8efe1b8}\label{classaare_1_1NumpyFile_ae4f669f86fb614e446540638d8efe1b8} 
+\index{aare::NumpyFile@{aare::NumpyFile}!seek@{seek}}
+\index{seek@{seek}!aare::NumpyFile@{aare::NumpyFile}}
+\doxysubsubsection{\texorpdfstring{seek()}{seek()}}
+{\footnotesize\ttfamily void aare\+::\+Numpy\+File\+::seek (\begin{DoxyParamCaption}\item[{size\+\_\+t}]{frame\+\_\+number }\end{DoxyParamCaption})\hspace{0.3cm}{\ttfamily [inline]}, {\ttfamily [override]}, {\ttfamily [virtual]}}
+
+
+
+seek to the given frame number 
+
+
+\begin{DoxyParams}{Parameters}
+{\em frame\+\_\+number} & frame number to seek to \\
+\hline
+\end{DoxyParams}
+\begin{DoxyReturn}{Returns}
+void 
+\end{DoxyReturn}
+
+
+Implements \mbox{\hyperlink{classaare_1_1FileInterface_a49510fb96eaa245fd5d2be7f25a40b74}{aare\+::\+File\+Interface}}.
+
+\Hypertarget{classaare_1_1NumpyFile_a060d3bc922d3a759aabb3716e9c97791}\label{classaare_1_1NumpyFile_a060d3bc922d3a759aabb3716e9c97791} 
+\index{aare::NumpyFile@{aare::NumpyFile}!shape@{shape}}
+\index{shape@{shape}!aare::NumpyFile@{aare::NumpyFile}}
+\doxysubsubsection{\texorpdfstring{shape()}{shape()}}
+{\footnotesize\ttfamily std\+::vector$<$ size\+\_\+t $>$ aare\+::\+Numpy\+File\+::shape (\begin{DoxyParamCaption}{ }\end{DoxyParamCaption}) const\hspace{0.3cm}{\ttfamily [inline]}}
+
+
+
+get the shape of the numpy file 
+
+\begin{DoxyReturn}{Returns}
+vector of type size\+\_\+t 
+\end{DoxyReturn}
+\Hypertarget{classaare_1_1NumpyFile_a022af0b9d792abb00a9dc661beb3e9a2}\label{classaare_1_1NumpyFile_a022af0b9d792abb00a9dc661beb3e9a2} 
+\index{aare::NumpyFile@{aare::NumpyFile}!tell@{tell}}
+\index{tell@{tell}!aare::NumpyFile@{aare::NumpyFile}}
+\doxysubsubsection{\texorpdfstring{tell()}{tell()}}
+{\footnotesize\ttfamily size\+\_\+t aare\+::\+Numpy\+File\+::tell (\begin{DoxyParamCaption}{ }\end{DoxyParamCaption})\hspace{0.3cm}{\ttfamily [inline]}, {\ttfamily [override]}, {\ttfamily [virtual]}}
+
+
+
+get the current position of the file pointer 
+
+\begin{DoxyReturn}{Returns}
+current position of the file pointer 
+\end{DoxyReturn}
+
+
+Implements \mbox{\hyperlink{classaare_1_1FileInterface_abd01811dcf904625b4dbd78dd9188de4}{aare\+::\+File\+Interface}}.
+
+\Hypertarget{classaare_1_1NumpyFile_afec228003225dcc91b16227d24c58d37}\label{classaare_1_1NumpyFile_afec228003225dcc91b16227d24c58d37} 
+\index{aare::NumpyFile@{aare::NumpyFile}!total\_frames@{total\_frames}}
+\index{total\_frames@{total\_frames}!aare::NumpyFile@{aare::NumpyFile}}
+\doxysubsubsection{\texorpdfstring{total\_frames()}{total\_frames()}}
+{\footnotesize\ttfamily size\+\_\+t aare\+::\+Numpy\+File\+::total\+\_\+frames (\begin{DoxyParamCaption}{ }\end{DoxyParamCaption}) const\hspace{0.3cm}{\ttfamily [inline]}, {\ttfamily [override]}, {\ttfamily [virtual]}}
+
+
+
+get the total number of frames in the file 
+
+\begin{DoxyReturn}{Returns}
+total number of frames in the file 
+\end{DoxyReturn}
+
+
+Implements \mbox{\hyperlink{classaare_1_1FileInterface_ad4391bafd11f77f807114ba5108071d3}{aare\+::\+File\+Interface}}.
+
+\Hypertarget{classaare_1_1NumpyFile_a12b0ddf6334dfab4ac0993cd9c45f738}\label{classaare_1_1NumpyFile_a12b0ddf6334dfab4ac0993cd9c45f738} 
+\index{aare::NumpyFile@{aare::NumpyFile}!write@{write}}
+\index{write@{write}!aare::NumpyFile@{aare::NumpyFile}}
+\doxysubsubsection{\texorpdfstring{write()}{write()}}
+{\footnotesize\ttfamily void aare\+::\+Numpy\+File\+::write (\begin{DoxyParamCaption}\item[{\mbox{\hyperlink{classaare_1_1Frame}{Frame}} \&}]{frame }\end{DoxyParamCaption})\hspace{0.3cm}{\ttfamily [override]}, {\ttfamily [virtual]}}
+
+
+
+write a frame to the file 
+
+
+\begin{DoxyParams}{Parameters}
+{\em frame} & frame to write \\
+\hline
+\end{DoxyParams}
+\begin{DoxyReturn}{Returns}
+void 
+\end{DoxyReturn}
+
+\begin{DoxyExceptions}{Exceptions}
+{\em std\+::runtime\+\_\+error} & if the function is not implemented \\
+\hline
+\end{DoxyExceptions}
+
+
+Implements \mbox{\hyperlink{classaare_1_1FileInterface_a5d39033c9d218d53d51413b99bf7d1f4}{aare\+::\+File\+Interface}}.
+
+
+
+\doxysubsection{Field Documentation}
+\Hypertarget{classaare_1_1NumpyFile_a080973acac90ab8e6d0552b282e2d73c}\label{classaare_1_1NumpyFile_a080973acac90ab8e6d0552b282e2d73c} 
+\index{aare::NumpyFile@{aare::NumpyFile}!current\_frame@{current\_frame}}
+\index{current\_frame@{current\_frame}!aare::NumpyFile@{aare::NumpyFile}}
+\doxysubsubsection{\texorpdfstring{current\_frame}{current\_frame}}
+{\footnotesize\ttfamily size\+\_\+t aare\+::\+Numpy\+File\+::current\+\_\+frame \{\}\hspace{0.3cm}{\ttfamily [private]}}
+
+\Hypertarget{classaare_1_1NumpyFile_a1b3f50636674e919e54b7d61e11ed03a}\label{classaare_1_1NumpyFile_a1b3f50636674e919e54b7d61e11ed03a} 
+\index{aare::NumpyFile@{aare::NumpyFile}!fp@{fp}}
+\index{fp@{fp}!aare::NumpyFile@{aare::NumpyFile}}
+\doxysubsubsection{\texorpdfstring{fp}{fp}}
+{\footnotesize\ttfamily FILE\texorpdfstring{$\ast$}{*} aare\+::\+Numpy\+File\+::fp = nullptr\hspace{0.3cm}{\ttfamily [private]}}
+
+\Hypertarget{classaare_1_1NumpyFile_aff59772a6f221edd2606e483ef4ed8ee}\label{classaare_1_1NumpyFile_aff59772a6f221edd2606e483ef4ed8ee} 
+\index{aare::NumpyFile@{aare::NumpyFile}!header\_len@{header\_len}}
+\index{header\_len@{header\_len}!aare::NumpyFile@{aare::NumpyFile}}
+\doxysubsubsection{\texorpdfstring{header\_len}{header\_len}}
+{\footnotesize\ttfamily uint32\+\_\+t aare\+::\+Numpy\+File\+::header\+\_\+len \{\}\hspace{0.3cm}{\ttfamily [private]}}
+
+\Hypertarget{classaare_1_1NumpyFile_a50d19cf61c165c609c1b707abbe13cbd}\label{classaare_1_1NumpyFile_a50d19cf61c165c609c1b707abbe13cbd} 
+\index{aare::NumpyFile@{aare::NumpyFile}!header\_len\_size@{header\_len\_size}}
+\index{header\_len\_size@{header\_len\_size}!aare::NumpyFile@{aare::NumpyFile}}
+\doxysubsubsection{\texorpdfstring{header\_len\_size}{header\_len\_size}}
+{\footnotesize\ttfamily uint8\+\_\+t aare\+::\+Numpy\+File\+::header\+\_\+len\+\_\+size \{\}\hspace{0.3cm}{\ttfamily [private]}}
+
+\Hypertarget{classaare_1_1NumpyFile_a5aed02e400e44d7fbc5356365f421c5b}\label{classaare_1_1NumpyFile_a5aed02e400e44d7fbc5356365f421c5b} 
+\index{aare::NumpyFile@{aare::NumpyFile}!header\_size@{header\_size}}
+\index{header\_size@{header\_size}!aare::NumpyFile@{aare::NumpyFile}}
+\doxysubsubsection{\texorpdfstring{header\_size}{header\_size}}
+{\footnotesize\ttfamily size\+\_\+t aare\+::\+Numpy\+File\+::header\+\_\+size \{\}\hspace{0.3cm}{\ttfamily [private]}}
+
+\Hypertarget{classaare_1_1NumpyFile_a85400183bf0f1fdc43fd9a37e3f10a2d}\label{classaare_1_1NumpyFile_a85400183bf0f1fdc43fd9a37e3f10a2d} 
+\index{aare::NumpyFile@{aare::NumpyFile}!initial\_header\_len@{initial\_header\_len}}
+\index{initial\_header\_len@{initial\_header\_len}!aare::NumpyFile@{aare::NumpyFile}}
+\doxysubsubsection{\texorpdfstring{initial\_header\_len}{initial\_header\_len}}
+{\footnotesize\ttfamily size\+\_\+t aare\+::\+Numpy\+File\+::initial\+\_\+header\+\_\+len = 0\hspace{0.3cm}{\ttfamily [private]}}
+
+\Hypertarget{classaare_1_1FileInterface_adae2b35fc6a3f185e9eb263c97bc024b}\label{classaare_1_1FileInterface_adae2b35fc6a3f185e9eb263c97bc024b} 
+\index{aare::NumpyFile@{aare::NumpyFile}!m\_base\_name@{m\_base\_name}}
+\index{m\_base\_name@{m\_base\_name}!aare::NumpyFile@{aare::NumpyFile}}
+\doxysubsubsection{\texorpdfstring{m\_base\_name}{m\_base\_name}}
+{\footnotesize\ttfamily std\+::string aare\+::\+File\+Interface\+::m\+\_\+base\+\_\+name\hspace{0.3cm}{\ttfamily [inherited]}}
+
+\Hypertarget{classaare_1_1FileInterface_afdd0a1a75618ad5db2f4794e0900b2f4}\label{classaare_1_1FileInterface_afdd0a1a75618ad5db2f4794e0900b2f4} 
+\index{aare::NumpyFile@{aare::NumpyFile}!m\_base\_path@{m\_base\_path}}
+\index{m\_base\_path@{m\_base\_path}!aare::NumpyFile@{aare::NumpyFile}}
+\doxysubsubsection{\texorpdfstring{m\_base\_path}{m\_base\_path}}
+{\footnotesize\ttfamily std\+::filesystem\+::path aare\+::\+File\+Interface\+::m\+\_\+base\+\_\+path\hspace{0.3cm}{\ttfamily [inherited]}}
+
+\Hypertarget{classaare_1_1FileInterface_a252d27cbbfcdfc528b86925eaac55bb7}\label{classaare_1_1FileInterface_a252d27cbbfcdfc528b86925eaac55bb7} 
+\index{aare::NumpyFile@{aare::NumpyFile}!m\_bitdepth@{m\_bitdepth}}
+\index{m\_bitdepth@{m\_bitdepth}!aare::NumpyFile@{aare::NumpyFile}}
+\doxysubsubsection{\texorpdfstring{m\_bitdepth}{m\_bitdepth}}
+{\footnotesize\ttfamily ssize\+\_\+t aare\+::\+File\+Interface\+::m\+\_\+bitdepth \{\}\hspace{0.3cm}{\ttfamily [inherited]}}
+
+\Hypertarget{classaare_1_1FileInterface_ad4c9991c30a71ba83cbaab283bc756b5}\label{classaare_1_1FileInterface_ad4c9991c30a71ba83cbaab283bc756b5} 
+\index{aare::NumpyFile@{aare::NumpyFile}!m\_cols@{m\_cols}}
+\index{m\_cols@{m\_cols}!aare::NumpyFile@{aare::NumpyFile}}
+\doxysubsubsection{\texorpdfstring{m\_cols}{m\_cols}}
+{\footnotesize\ttfamily ssize\+\_\+t aare\+::\+File\+Interface\+::m\+\_\+cols \{\}\hspace{0.3cm}{\ttfamily [inherited]}}
+
+\Hypertarget{classaare_1_1FileInterface_a5fffaf9a7c8ae2b3a2ebe89b9c94ed34}\label{classaare_1_1FileInterface_a5fffaf9a7c8ae2b3a2ebe89b9c94ed34} 
+\index{aare::NumpyFile@{aare::NumpyFile}!m\_ext@{m\_ext}}
+\index{m\_ext@{m\_ext}!aare::NumpyFile@{aare::NumpyFile}}
+\doxysubsubsection{\texorpdfstring{m\_ext}{m\_ext}}
+{\footnotesize\ttfamily std\+::string aare\+::\+File\+Interface\+::m\+\_\+ext\hspace{0.3cm}{\ttfamily [inherited]}}
+
+\Hypertarget{classaare_1_1FileInterface_a30e926a897b534ab9a327d40594ff191}\label{classaare_1_1FileInterface_a30e926a897b534ab9a327d40594ff191} 
+\index{aare::NumpyFile@{aare::NumpyFile}!m\_findex@{m\_findex}}
+\index{m\_findex@{m\_findex}!aare::NumpyFile@{aare::NumpyFile}}
+\doxysubsubsection{\texorpdfstring{m\_findex}{m\_findex}}
+{\footnotesize\ttfamily int aare\+::\+File\+Interface\+::m\+\_\+findex\hspace{0.3cm}{\ttfamily [inherited]}}
+
+\Hypertarget{classaare_1_1FileInterface_a325f6603f564fb42f8f28f1136b5e329}\label{classaare_1_1FileInterface_a325f6603f564fb42f8f28f1136b5e329} 
+\index{aare::NumpyFile@{aare::NumpyFile}!m\_fname@{m\_fname}}
+\index{m\_fname@{m\_fname}!aare::NumpyFile@{aare::NumpyFile}}
+\doxysubsubsection{\texorpdfstring{m\_fname}{m\_fname}}
+{\footnotesize\ttfamily std\+::filesystem\+::path aare\+::\+File\+Interface\+::m\+\_\+fname\hspace{0.3cm}{\ttfamily [inherited]}}
+
+\Hypertarget{classaare_1_1NumpyFile_aa2d11ec505dc7c3b4918e194d24d00fe}\label{classaare_1_1NumpyFile_aa2d11ec505dc7c3b4918e194d24d00fe} 
+\index{aare::NumpyFile@{aare::NumpyFile}!m\_header@{m\_header}}
+\index{m\_header@{m\_header}!aare::NumpyFile@{aare::NumpyFile}}
+\doxysubsubsection{\texorpdfstring{m\_header}{m\_header}}
+{\footnotesize\ttfamily \mbox{\hyperlink{structaare_1_1NumpyHeader}{Numpy\+Header}} aare\+::\+Numpy\+File\+::m\+\_\+header\hspace{0.3cm}{\ttfamily [private]}}
+
+\Hypertarget{classaare_1_1FileInterface_ab1d0e6de947affd5af9740eb06888fc6}\label{classaare_1_1FileInterface_ab1d0e6de947affd5af9740eb06888fc6} 
+\index{aare::NumpyFile@{aare::NumpyFile}!m\_mode@{m\_mode}}
+\index{m\_mode@{m\_mode}!aare::NumpyFile@{aare::NumpyFile}}
+\doxysubsubsection{\texorpdfstring{m\_mode}{m\_mode}}
+{\footnotesize\ttfamily std\+::string aare\+::\+File\+Interface\+::m\+\_\+mode\hspace{0.3cm}{\ttfamily [inherited]}}
+
+\Hypertarget{classaare_1_1FileInterface_ae29d98625cf56989e2c5237ace0d0f4c}\label{classaare_1_1FileInterface_ae29d98625cf56989e2c5237ace0d0f4c} 
+\index{aare::NumpyFile@{aare::NumpyFile}!m\_rows@{m\_rows}}
+\index{m\_rows@{m\_rows}!aare::NumpyFile@{aare::NumpyFile}}
+\doxysubsubsection{\texorpdfstring{m\_rows}{m\_rows}}
+{\footnotesize\ttfamily ssize\+\_\+t aare\+::\+File\+Interface\+::m\+\_\+rows \{\}\hspace{0.3cm}{\ttfamily [inherited]}}
+
+\Hypertarget{classaare_1_1FileInterface_a91551fada444b231294c095f3f5fb768}\label{classaare_1_1FileInterface_a91551fada444b231294c095f3f5fb768} 
+\index{aare::NumpyFile@{aare::NumpyFile}!m\_total\_frames@{m\_total\_frames}}
+\index{m\_total\_frames@{m\_total\_frames}!aare::NumpyFile@{aare::NumpyFile}}
+\doxysubsubsection{\texorpdfstring{m\_total\_frames}{m\_total\_frames}}
+{\footnotesize\ttfamily size\+\_\+t aare\+::\+File\+Interface\+::m\+\_\+total\+\_\+frames \{\}\hspace{0.3cm}{\ttfamily [inherited]}}
+
+\Hypertarget{classaare_1_1FileInterface_a9476a299cea6b4e97605135a28d0cb60}\label{classaare_1_1FileInterface_a9476a299cea6b4e97605135a28d0cb60} 
+\index{aare::NumpyFile@{aare::NumpyFile}!m\_type@{m\_type}}
+\index{m\_type@{m\_type}!aare::NumpyFile@{aare::NumpyFile}}
+\doxysubsubsection{\texorpdfstring{m\_type}{m\_type}}
+{\footnotesize\ttfamily \mbox{\hyperlink{namespaceaare_a5b95afba95553c1e118e1478c69042f7}{Detector\+Type}} aare\+::\+File\+Interface\+::m\+\_\+type\hspace{0.3cm}{\ttfamily [inherited]}}
+
+\Hypertarget{classaare_1_1NumpyFile_a58feea4735fdf9599d810427785266ea}\label{classaare_1_1NumpyFile_a58feea4735fdf9599d810427785266ea} 
+\index{aare::NumpyFile@{aare::NumpyFile}!major\_ver\_@{major\_ver\_}}
+\index{major\_ver\_@{major\_ver\_}!aare::NumpyFile@{aare::NumpyFile}}
+\doxysubsubsection{\texorpdfstring{major\_ver\_}{major\_ver\_}}
+{\footnotesize\ttfamily uint8\+\_\+t aare\+::\+Numpy\+File\+::major\+\_\+ver\+\_\+ \{\}\hspace{0.3cm}{\ttfamily [private]}}
+
+\Hypertarget{classaare_1_1FileInterface_ab0762d7652c9a4e1afe6dbb7d7325ac9}\label{classaare_1_1FileInterface_ab0762d7652c9a4e1afe6dbb7d7325ac9} 
+\index{aare::NumpyFile@{aare::NumpyFile}!max\_frames\_per\_file@{max\_frames\_per\_file}}
+\index{max\_frames\_per\_file@{max\_frames\_per\_file}!aare::NumpyFile@{aare::NumpyFile}}
+\doxysubsubsection{\texorpdfstring{max\_frames\_per\_file}{max\_frames\_per\_file}}
+{\footnotesize\ttfamily size\+\_\+t aare\+::\+File\+Interface\+::max\+\_\+frames\+\_\+per\+\_\+file \{\}\hspace{0.3cm}{\ttfamily [inherited]}}
+
+\Hypertarget{classaare_1_1NumpyFile_a2ca45b371f1c56e6b74eaca1852c5ffc}\label{classaare_1_1NumpyFile_a2ca45b371f1c56e6b74eaca1852c5ffc} 
+\index{aare::NumpyFile@{aare::NumpyFile}!minor\_ver\_@{minor\_ver\_}}
+\index{minor\_ver\_@{minor\_ver\_}!aare::NumpyFile@{aare::NumpyFile}}
+\doxysubsubsection{\texorpdfstring{minor\_ver\_}{minor\_ver\_}}
+{\footnotesize\ttfamily uint8\+\_\+t aare\+::\+Numpy\+File\+::minor\+\_\+ver\+\_\+ \{\}\hspace{0.3cm}{\ttfamily [private]}}
+
+\Hypertarget{classaare_1_1FileInterface_a44cbe933bbd2cae1f48213121d15bce2}\label{classaare_1_1FileInterface_a44cbe933bbd2cae1f48213121d15bce2} 
+\index{aare::NumpyFile@{aare::NumpyFile}!version@{version}}
+\index{version@{version}!aare::NumpyFile@{aare::NumpyFile}}
+\doxysubsubsection{\texorpdfstring{version}{version}}
+{\footnotesize\ttfamily std\+::string aare\+::\+File\+Interface\+::version\hspace{0.3cm}{\ttfamily [inherited]}}
+
+
+
+The documentation for this class was generated from the following files\+:\begin{DoxyCompactItemize}
+\item 
+file\+\_\+io/include/aare/file\+\_\+io/\mbox{\hyperlink{NumpyFile_8hpp}{Numpy\+File.\+hpp}}\item 
+file\+\_\+io/src/\mbox{\hyperlink{NumpyFile_8cpp}{Numpy\+File.\+cpp}}\end{DoxyCompactItemize}

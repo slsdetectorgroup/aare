@@ -9,25 +9,23 @@
 
 namespace aare {
 
+/**
+ * @brief NumpyFile class to read and write numpy files
+ * @note derived from FileInterface
+ * @note implements all the pure virtual functions from FileInterface
+ * @note documentation for the functions can also be found in the FileInterface class
+ */
 class NumpyFile : public FileInterface {
-    FILE *fp = nullptr;
-    size_t initial_header_len = 0;
-    size_t current_frame{};
-    std::filesystem::path m_fname;
-    uint32_t header_len{};
-    uint8_t header_len_size{};
-    ssize_t header_size{};
-    NumpyHeader m_header;
-    uint8_t major_ver_{};
-    uint8_t minor_ver_{};
-
-    void load_metadata();
-    void get_frame_into(size_t, std::byte *);
-    Frame get_frame(size_t frame_number);
 
   public:
-    NumpyFile(const std::filesystem::path &fname);
-    NumpyFile(FileConfig, NumpyHeader);
+    /**
+     * @brief NumpyFile constructor
+     * @param fname path to the numpy file
+     * @param mode file mode (r, w)
+     * @param cfg file configuration
+     */
+    NumpyFile(const std::filesystem::path &fname, const std::string &mode = "r", FileConfig cfg = {});
+
     void write(Frame &frame) override;
     Frame read() override { return get_frame(this->current_frame++); }
 
@@ -44,10 +42,24 @@ class NumpyFile : public FileInterface {
     ssize_t cols() const override { return m_header.shape[2]; }
     ssize_t bitdepth() const override { return m_header.dtype.bitdepth(); }
 
+    /**
+     * @brief get the data type of the numpy file
+     * @return DType
+     */
     DType dtype() const { return m_header.dtype; }
+
+    /**
+     * @brief get the shape of the numpy file
+     * @return vector of type size_t
+     */
     std::vector<size_t> shape() const { return m_header.shape; }
 
-    // load the full numpy file into a NDArray
+    /**
+     * @brief load the numpy file into an NDArray
+     * @tparam T data type of the NDArray
+     * @tparam NDim number of dimensions of the NDArray
+     * @return NDArray<T, NDim>
+     */
     template <typename T, size_t NDim> NDArray<T, NDim> load() {
         NDArray<T, NDim> arr(make_shape<NDim>(m_header.shape));
         fseek(fp, header_size, SEEK_SET);
@@ -56,6 +68,21 @@ class NumpyFile : public FileInterface {
     }
 
     ~NumpyFile();
+
+  private:
+    FILE *fp = nullptr;
+    size_t initial_header_len = 0;
+    size_t current_frame{};
+    uint32_t header_len{};
+    uint8_t header_len_size{};
+    size_t header_size{};
+    NumpyHeader m_header;
+    uint8_t major_ver_{};
+    uint8_t minor_ver_{};
+
+    void load_metadata();
+    void get_frame_into(size_t, std::byte *);
+    Frame get_frame(size_t frame_number);
 };
 
 } // namespace aare

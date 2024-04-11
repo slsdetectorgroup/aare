@@ -16,7 +16,7 @@ SubFile::SubFile(std::filesystem::path fname, DetectorType detector, ssize_t row
     if (read_impl_map.find({detector, bitdepth}) == read_impl_map.end()) {
         auto error_msg = LOCATION + "No read_impl function found for detector: " + toString(detector) +
                          " and bitdepth: " + std::to_string(bitdepth);
-        throw std::runtime_error(error_msg);
+        throw std::invalid_argument(error_msg);
     }
     this->read_impl = read_impl_map.at({detector, bitdepth});
 }

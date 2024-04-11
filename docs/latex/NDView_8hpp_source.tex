@@ -1,0 +1,145 @@
+\doxysection{NDView.\+hpp}
+\hypertarget{NDView_8hpp_source}{}\label{NDView_8hpp_source}\index{core/include/aare/core/NDView.hpp@{core/include/aare/core/NDView.hpp}}
+\mbox{\hyperlink{NDView_8hpp}{Go to the documentation of this file.}}
+\begin{DoxyCode}{0}
+\DoxyCodeLine{00001\ \textcolor{preprocessor}{\#pragma\ once}}
+\DoxyCodeLine{00002\ \textcolor{preprocessor}{\#include\ <algorithm>}}
+\DoxyCodeLine{00003\ \textcolor{preprocessor}{\#include\ <array>}}
+\DoxyCodeLine{00004\ \textcolor{preprocessor}{\#include\ <cassert>}}
+\DoxyCodeLine{00005\ \textcolor{preprocessor}{\#include\ <cstdint>}}
+\DoxyCodeLine{00006\ \textcolor{preprocessor}{\#include\ <numeric>}}
+\DoxyCodeLine{00007\ \textcolor{preprocessor}{\#include\ <stdexcept>}}
+\DoxyCodeLine{00008\ \textcolor{preprocessor}{\#include\ <vector>}}
+\DoxyCodeLine{00009\ }
+\DoxyCodeLine{00010\ \textcolor{keyword}{namespace\ }\mbox{\hyperlink{namespaceaare}{aare}}\ \{}
+\DoxyCodeLine{00011\ }
+\DoxyCodeLine{00012\ \textcolor{keyword}{template}\ <s\textcolor{keywordtype}{size\_t}\ Ndim>\ \textcolor{keyword}{using\ }\mbox{\hyperlink{namespaceaare_a3e7aced06ae41952428121c25c4d54d4}{Shape}}\ =\ std::array<ssize\_t,\ Ndim>;}
+\DoxyCodeLine{00013\ }
+\DoxyCodeLine{00014\ \textcolor{comment}{//\ TODO!\ fix\ mismatch\ between\ signed\ and\ unsigned}}
+\DoxyCodeLine{00015\ \textcolor{keyword}{template}\ <s\textcolor{keywordtype}{size\_t}\ Ndim>\ \mbox{\hyperlink{namespaceaare_a3e7aced06ae41952428121c25c4d54d4}{Shape<Ndim>}}\ \mbox{\hyperlink{namespaceaare_a3ebdc3c557843d49b065a15ff833e2a2}{make\_shape}}(\textcolor{keyword}{const}\ std::vector<size\_t>\ \&shape)\ \{}
+\DoxyCodeLine{00016\ \ \ \ \ \textcolor{keywordflow}{if}\ (shape.size()\ !=\ Ndim)}
+\DoxyCodeLine{00017\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{throw}\ std::runtime\_error(\textcolor{stringliteral}{"{}Shape\ size\ mismatch"{}});}
+\DoxyCodeLine{00018\ \ \ \ \ \mbox{\hyperlink{namespaceaare_a3e7aced06ae41952428121c25c4d54d4}{Shape<Ndim>}}\ arr;}
+\DoxyCodeLine{00019\ \ \ \ \ std::copy\_n(shape.begin(),\ Ndim,\ arr.begin());}
+\DoxyCodeLine{00020\ \ \ \ \ \textcolor{keywordflow}{return}\ arr;}
+\DoxyCodeLine{00021\ \}}
+\DoxyCodeLine{00022\ }
+\DoxyCodeLine{00023\ \textcolor{keyword}{template}\ <s\textcolor{keywordtype}{size\_t}\ Dim\ =\ 0,\ \textcolor{keyword}{typename}\ Str\textcolor{keywordtype}{id}es>\ ssize\_t\ \mbox{\hyperlink{namespaceaare_a45ca88f1c8c15d6e4d08b14e21a3e579}{element\_offset}}(\textcolor{keyword}{const}\ Strides\ \&)\ \{\ \textcolor{keywordflow}{return}\ 0;\ \}}
+\DoxyCodeLine{00024\ }
+\DoxyCodeLine{00025\ \textcolor{keyword}{template}\ <ssize\_t\ Dim\ =\ 0,\ \textcolor{keyword}{typename}\ Strides,\ \textcolor{keyword}{typename}...\ Ix>}
+\DoxyCodeLine{00026\ ssize\_t\ \mbox{\hyperlink{namespaceaare_a45ca88f1c8c15d6e4d08b14e21a3e579}{element\_offset}}(\textcolor{keyword}{const}\ Strides\ \&strides,\ ssize\_t\ i,\ Ix...\ index)\ \{}
+\DoxyCodeLine{00027\ \ \ \ \ \textcolor{keywordflow}{return}\ i\ *\ strides[Dim]\ +\ element\_offset<Dim\ +\ 1>(strides,\ index...);}
+\DoxyCodeLine{00028\ \}}
+\DoxyCodeLine{00029\ }
+\DoxyCodeLine{00030\ \textcolor{keyword}{template}\ <s\textcolor{keywordtype}{size\_t}\ Ndim>\ std::array<ssize\_t,\ Ndim>\ \mbox{\hyperlink{namespaceaare_a737039de5f8de78a691a40b9ceb47b64}{c\_strides}}(\textcolor{keyword}{const}\ std::array<ssize\_t,\ Ndim>\ \&shape)\ \{}
+\DoxyCodeLine{00031\ \ \ \ \ std::array<ssize\_t,\ Ndim>\ strides;}
+\DoxyCodeLine{00032\ \ \ \ \ std::fill(strides.begin(),\ strides.end(),\ 1);}
+\DoxyCodeLine{00033\ \ \ \ \ \textcolor{keywordflow}{for}\ (ssize\_t\ i\ =\ Ndim\ -\/\ 1;\ i\ >\ 0;\ -\/-\/i)\ \{}
+\DoxyCodeLine{00034\ \ \ \ \ \ \ \ \ strides[i\ -\/\ 1]\ =\ strides[i]\ *\ shape[i];}
+\DoxyCodeLine{00035\ \ \ \ \ \}}
+\DoxyCodeLine{00036\ \ \ \ \ \textcolor{keywordflow}{return}\ strides;}
+\DoxyCodeLine{00037\ \}}
+\DoxyCodeLine{00038\ }
+\DoxyCodeLine{00039\ \textcolor{keyword}{template}\ <s\textcolor{keywordtype}{size\_t}\ Ndim>\ std::array<ssize\_t,\ Ndim>\ \mbox{\hyperlink{namespaceaare_a2fecee4bfadd26c1cd61d316e16cc060}{make\_array}}(\textcolor{keyword}{const}\ std::vector<ssize\_t>\ \&vec)\ \{}
+\DoxyCodeLine{00040\ \ \ \ \ assert(vec.size()\ ==\ Ndim);}
+\DoxyCodeLine{00041\ \ \ \ \ std::array<ssize\_t,\ Ndim>\ arr;}
+\DoxyCodeLine{00042\ \ \ \ \ std::copy\_n(vec.begin(),\ Ndim,\ arr.begin());}
+\DoxyCodeLine{00043\ \ \ \ \ \textcolor{keywordflow}{return}\ arr;}
+\DoxyCodeLine{00044\ \}}
+\DoxyCodeLine{00045\ }
+\DoxyCodeLine{00046\ \textcolor{keyword}{template}\ <\textcolor{keyword}{typename}\ T,\ s\textcolor{keywordtype}{size\_t}\ Ndim\ =\ 2>\ \textcolor{keyword}{class\ }\mbox{\hyperlink{classaare_1_1NDView}{NDView}}\ \{}
+\DoxyCodeLine{00047\ \ \ \textcolor{keyword}{public}:}
+\DoxyCodeLine{00048\ \ \ \ \ \mbox{\hyperlink{classaare_1_1NDView_a34ce222de6f687c226117116fea52777}{NDView}}()\{\};}
+\DoxyCodeLine{00049\ }
+\DoxyCodeLine{00050\ \ \ \ \ \mbox{\hyperlink{classaare_1_1NDView_a2c5589c5060377025399230601b4e554}{NDView}}(T\ *buffer,\ std::array<ssize\_t,\ Ndim>\ \mbox{\hyperlink{classaare_1_1NDView_a273904b889c29e2ce253da3f920db1c1}{shape}})\ \{}
+\DoxyCodeLine{00051\ \ \ \ \ \ \ \ \ \mbox{\hyperlink{classaare_1_1NDView_aaedcfb2c15d7335aae5f75646d182732}{buffer\_}}\ =\ buffer;}
+\DoxyCodeLine{00052\ \ \ \ \ \ \ \ \ \mbox{\hyperlink{classaare_1_1NDView_a32ff10f10d0efcdc0abb9d1f2121d505}{strides\_}}\ =\ c\_strides<Ndim>(\mbox{\hyperlink{classaare_1_1NDView_a273904b889c29e2ce253da3f920db1c1}{shape}});}
+\DoxyCodeLine{00053\ \ \ \ \ \ \ \ \ \mbox{\hyperlink{classaare_1_1NDView_a1ebe6ccd25a47781e2bc9f1365b1f2ba}{shape\_}}\ =\ \mbox{\hyperlink{classaare_1_1NDView_a273904b889c29e2ce253da3f920db1c1}{shape}};}
+\DoxyCodeLine{00054\ \ \ \ \ \ \ \ \ \mbox{\hyperlink{classaare_1_1NDView_a53af97aeef3fb68f82b5913c4fa99fa7}{size\_}}\ =\ std::accumulate(std::begin(\mbox{\hyperlink{classaare_1_1NDView_a273904b889c29e2ce253da3f920db1c1}{shape}}),\ std::end(\mbox{\hyperlink{classaare_1_1NDView_a273904b889c29e2ce253da3f920db1c1}{shape}}),\ 1,\ std::multiplies<ssize\_t>());}
+\DoxyCodeLine{00055\ \ \ \ \ \}}
+\DoxyCodeLine{00056\ }
+\DoxyCodeLine{00057\ \ \ \ \ \mbox{\hyperlink{classaare_1_1NDView_a43053d8295448ef85af8ab5511e70b9d}{NDView}}(T\ *buffer,\ \textcolor{keyword}{const}\ std::vector<ssize\_t>\ \&\mbox{\hyperlink{classaare_1_1NDView_a273904b889c29e2ce253da3f920db1c1}{shape}})\ \{}
+\DoxyCodeLine{00058\ \ \ \ \ \ \ \ \ \mbox{\hyperlink{classaare_1_1NDView_aaedcfb2c15d7335aae5f75646d182732}{buffer\_}}\ =\ buffer;}
+\DoxyCodeLine{00059\ \ \ \ \ \ \ \ \ \mbox{\hyperlink{classaare_1_1NDView_a32ff10f10d0efcdc0abb9d1f2121d505}{strides\_}}\ =\ c\_strides<Ndim>(make\_array<Ndim>(\mbox{\hyperlink{classaare_1_1NDView_a273904b889c29e2ce253da3f920db1c1}{shape}}));}
+\DoxyCodeLine{00060\ \ \ \ \ \ \ \ \ \mbox{\hyperlink{classaare_1_1NDView_a1ebe6ccd25a47781e2bc9f1365b1f2ba}{shape\_}}\ =\ make\_array<Ndim>(\mbox{\hyperlink{classaare_1_1NDView_a273904b889c29e2ce253da3f920db1c1}{shape}});}
+\DoxyCodeLine{00061\ \ \ \ \ \ \ \ \ \mbox{\hyperlink{classaare_1_1NDView_a53af97aeef3fb68f82b5913c4fa99fa7}{size\_}}\ =\ std::accumulate(std::begin(\mbox{\hyperlink{classaare_1_1NDView_a273904b889c29e2ce253da3f920db1c1}{shape}}),\ std::end(\mbox{\hyperlink{classaare_1_1NDView_a273904b889c29e2ce253da3f920db1c1}{shape}}),\ 1,\ std::multiplies<ssize\_t>());}
+\DoxyCodeLine{00062\ \ \ \ \ \}}
+\DoxyCodeLine{00063\ }
+\DoxyCodeLine{00064\ \ \ \ \ \textcolor{keyword}{template}\ <\textcolor{keyword}{typename}...\ Ix>\ \textcolor{keyword}{typename}\ std::enable\_if<\textcolor{keyword}{sizeof}...(Ix)\ ==\ Ndim,\ T\ \&>::type\ \textcolor{keyword}{operator}()(Ix...\ index)\ \{}
+\DoxyCodeLine{00065\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{return}\ \mbox{\hyperlink{classaare_1_1NDView_aaedcfb2c15d7335aae5f75646d182732}{buffer\_}}[\mbox{\hyperlink{namespaceaare_a45ca88f1c8c15d6e4d08b14e21a3e579}{element\_offset}}(\mbox{\hyperlink{classaare_1_1NDView_a32ff10f10d0efcdc0abb9d1f2121d505}{strides\_}},\ index...)];}
+\DoxyCodeLine{00066\ \ \ \ \ \}}
+\DoxyCodeLine{00067\ }
+\DoxyCodeLine{00068\ \ \ \ \ \textcolor{keyword}{template}\ <\textcolor{keyword}{typename}...\ Ix>\ \textcolor{keyword}{typename}\ std::enable\_if<\textcolor{keyword}{sizeof}...(Ix)\ ==\ Ndim,\ T\ \&>::type\ \textcolor{keyword}{operator}()(Ix...\ index)\ \textcolor{keyword}{const}\ \{}
+\DoxyCodeLine{00069\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{return}\ \mbox{\hyperlink{classaare_1_1NDView_aaedcfb2c15d7335aae5f75646d182732}{buffer\_}}[\mbox{\hyperlink{namespaceaare_a45ca88f1c8c15d6e4d08b14e21a3e579}{element\_offset}}(\mbox{\hyperlink{classaare_1_1NDView_a32ff10f10d0efcdc0abb9d1f2121d505}{strides\_}},\ index...)];}
+\DoxyCodeLine{00070\ \ \ \ \ \}}
+\DoxyCodeLine{00071\ }
+\DoxyCodeLine{00072\ \ \ \ \ ssize\_t\ \mbox{\hyperlink{classaare_1_1NDView_a0ef23651982b606952225026c6a9f8d6}{size}}()\textcolor{keyword}{\ const\ }\{\ \textcolor{keywordflow}{return}\ \mbox{\hyperlink{classaare_1_1NDView_a53af97aeef3fb68f82b5913c4fa99fa7}{size\_}};\ \}}
+\DoxyCodeLine{00073\ }
+\DoxyCodeLine{00074\ \ \ \ \ \mbox{\hyperlink{classaare_1_1NDView_a14e2e819279f5d97e1d526ca6133adf2}{NDView}}(\textcolor{keyword}{const}\ \mbox{\hyperlink{classaare_1_1NDView}{NDView}}\ \&)\ =\ \textcolor{keywordflow}{default};}
+\DoxyCodeLine{00075\ \ \ \ \ \mbox{\hyperlink{classaare_1_1NDView_ab66865dacfd69328dbacbbe5719c4ce0}{NDView}}(\mbox{\hyperlink{classaare_1_1NDView}{NDView}}\ \&\&)\ =\ \textcolor{keywordflow}{default};}
+\DoxyCodeLine{00076\ }
+\DoxyCodeLine{00077\ \ \ \ \ T\ *\mbox{\hyperlink{classaare_1_1NDView_ae83cfabd1885669ef03d17d2637d0842}{begin}}()\ \{\ \textcolor{keywordflow}{return}\ \mbox{\hyperlink{classaare_1_1NDView_aaedcfb2c15d7335aae5f75646d182732}{buffer\_}};\ \}}
+\DoxyCodeLine{00078\ \ \ \ \ T\ *\mbox{\hyperlink{classaare_1_1NDView_a91833343d6c3fe58035e41ff68ab807e}{end}}()\ \{\ \textcolor{keywordflow}{return}\ \mbox{\hyperlink{classaare_1_1NDView_aaedcfb2c15d7335aae5f75646d182732}{buffer\_}}\ +\ \mbox{\hyperlink{classaare_1_1NDView_a53af97aeef3fb68f82b5913c4fa99fa7}{size\_}};\ \}}
+\DoxyCodeLine{00079\ \ \ \ \ T\ \&\mbox{\hyperlink{classaare_1_1NDView_a0879971dbc9ae3ea5eb363c736cfe465}{operator()}}(ssize\_t\ i)\ \{\ \textcolor{keywordflow}{return}\ \mbox{\hyperlink{classaare_1_1NDView_aaedcfb2c15d7335aae5f75646d182732}{buffer\_}}[i];\ \}}
+\DoxyCodeLine{00080\ \ \ \ \ T\ \&\mbox{\hyperlink{classaare_1_1NDView_ac70c65b158a631fee3e9f3768997c67c}{operator[]}}(ssize\_t\ i)\ \{\ \textcolor{keywordflow}{return}\ \mbox{\hyperlink{classaare_1_1NDView_aaedcfb2c15d7335aae5f75646d182732}{buffer\_}}[i];\ \}}
+\DoxyCodeLine{00081\ }
+\DoxyCodeLine{00082\ \ \ \ \ \textcolor{keywordtype}{bool}\ \mbox{\hyperlink{classaare_1_1NDView_a357d05b259ce08438eade05f50ba4776}{operator==}}(\textcolor{keyword}{const}\ \mbox{\hyperlink{classaare_1_1NDView}{NDView}}\ \&other)\textcolor{keyword}{\ const\ }\{}
+\DoxyCodeLine{00083\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{if}\ (\mbox{\hyperlink{classaare_1_1NDView_a53af97aeef3fb68f82b5913c4fa99fa7}{size\_}}\ !=\ other.\mbox{\hyperlink{classaare_1_1NDView_a53af97aeef3fb68f82b5913c4fa99fa7}{size\_}})}
+\DoxyCodeLine{00084\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{return}\ \textcolor{keyword}{false};}
+\DoxyCodeLine{00085\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{for}\ (ssize\_t\ i\ =\ 0;\ i\ !=\ \mbox{\hyperlink{classaare_1_1NDView_a53af97aeef3fb68f82b5913c4fa99fa7}{size\_}};\ ++i)\ \{}
+\DoxyCodeLine{00086\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{if}\ (\mbox{\hyperlink{classaare_1_1NDView_aaedcfb2c15d7335aae5f75646d182732}{buffer\_}}[i]\ !=\ other.\mbox{\hyperlink{classaare_1_1NDView_aaedcfb2c15d7335aae5f75646d182732}{buffer\_}}[i])}
+\DoxyCodeLine{00087\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{return}\ \textcolor{keyword}{false};}
+\DoxyCodeLine{00088\ \ \ \ \ \ \ \ \ \}}
+\DoxyCodeLine{00089\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{return}\ \textcolor{keyword}{true};}
+\DoxyCodeLine{00090\ \ \ \ \ \}}
+\DoxyCodeLine{00091\ }
+\DoxyCodeLine{00092\ \ \ \ \ \mbox{\hyperlink{classaare_1_1NDView}{NDView}}\ \&\mbox{\hyperlink{classaare_1_1NDView_a126d485d7b671c1511192c6d077e4823}{operator+=}}(\textcolor{keyword}{const}\ T\ val)\ \{\ \textcolor{keywordflow}{return}\ \mbox{\hyperlink{classaare_1_1NDView_aa36026a1c222c33f72ddb79ed228136d}{elemenwise}}(val,\ std::plus<T>());\ \}}
+\DoxyCodeLine{00093\ \ \ \ \ \mbox{\hyperlink{classaare_1_1NDView}{NDView}}\ \&\mbox{\hyperlink{classaare_1_1NDView_a1a6502a34c94d4f3c50b3f95c38de792}{operator-\/=}}(\textcolor{keyword}{const}\ T\ val)\ \{\ \textcolor{keywordflow}{return}\ \mbox{\hyperlink{classaare_1_1NDView_aa36026a1c222c33f72ddb79ed228136d}{elemenwise}}(val,\ std::minus<T>());\ \}}
+\DoxyCodeLine{00094\ \ \ \ \ \mbox{\hyperlink{classaare_1_1NDView}{NDView}}\ \&\mbox{\hyperlink{classaare_1_1NDView_a533077f53d9c7f19f94e94f97711dc10}{operator*=}}(\textcolor{keyword}{const}\ T\ val)\ \{\ \textcolor{keywordflow}{return}\ \mbox{\hyperlink{classaare_1_1NDView_aa36026a1c222c33f72ddb79ed228136d}{elemenwise}}(val,\ std::multiplies<T>());\ \}}
+\DoxyCodeLine{00095\ \ \ \ \ \mbox{\hyperlink{classaare_1_1NDView}{NDView}}\ \&\mbox{\hyperlink{classaare_1_1NDView_a3d553c8b66ec074ed7339fec0f5d0982}{operator/=}}(\textcolor{keyword}{const}\ T\ val)\ \{\ \textcolor{keywordflow}{return}\ \mbox{\hyperlink{classaare_1_1NDView_aa36026a1c222c33f72ddb79ed228136d}{elemenwise}}(val,\ std::divides<T>());\ \}}
+\DoxyCodeLine{00096\ }
+\DoxyCodeLine{00097\ \ \ \ \ \mbox{\hyperlink{classaare_1_1NDView}{NDView}}\ \&\mbox{\hyperlink{classaare_1_1NDView_a772b8b9221ba7fc424fc551633cd9cc9}{operator/=}}(\textcolor{keyword}{const}\ \mbox{\hyperlink{classaare_1_1NDView}{NDView}}\ \&other)\ \{\ \textcolor{keywordflow}{return}\ \mbox{\hyperlink{classaare_1_1NDView_aa36026a1c222c33f72ddb79ed228136d}{elemenwise}}(other,\ std::divides<T>());\ \}}
+\DoxyCodeLine{00098\ }
+\DoxyCodeLine{00099\ \ \ \ \ \mbox{\hyperlink{classaare_1_1NDView}{NDView}}\ \&\mbox{\hyperlink{classaare_1_1NDView_a8131bcea5ee6a9ed0f6e3832a3734dda}{operator=}}(\textcolor{keyword}{const}\ T\ val)\ \{}
+\DoxyCodeLine{00100\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{for}\ (\textcolor{keyword}{auto}\ it\ =\ \mbox{\hyperlink{classaare_1_1NDView_ae83cfabd1885669ef03d17d2637d0842}{begin}}();\ it\ !=\ \mbox{\hyperlink{classaare_1_1NDView_a91833343d6c3fe58035e41ff68ab807e}{end}}();\ ++it)}
+\DoxyCodeLine{00101\ \ \ \ \ \ \ \ \ \ \ \ \ *it\ =\ val;}
+\DoxyCodeLine{00102\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{return}\ *\textcolor{keyword}{this};}
+\DoxyCodeLine{00103\ \ \ \ \ \}}
+\DoxyCodeLine{00104\ }
+\DoxyCodeLine{00105\ \ \ \ \ \mbox{\hyperlink{classaare_1_1NDView}{NDView}}\ \&\mbox{\hyperlink{classaare_1_1NDView_a1bfb67419c1ab347038b5afa9f556bb4}{operator=}}(\textcolor{keyword}{const}\ \mbox{\hyperlink{classaare_1_1NDView}{NDView}}\ \&other)\ \{}
+\DoxyCodeLine{00106\ \ \ \ \ \ \ \ \ \mbox{\hyperlink{classaare_1_1NDView_a1ebe6ccd25a47781e2bc9f1365b1f2ba}{shape\_}}\ =\ other.\mbox{\hyperlink{classaare_1_1NDView_a1ebe6ccd25a47781e2bc9f1365b1f2ba}{shape\_}};}
+\DoxyCodeLine{00107\ \ \ \ \ \ \ \ \ \mbox{\hyperlink{classaare_1_1NDView_a32ff10f10d0efcdc0abb9d1f2121d505}{strides\_}}\ =\ other.\mbox{\hyperlink{classaare_1_1NDView_a32ff10f10d0efcdc0abb9d1f2121d505}{strides\_}};}
+\DoxyCodeLine{00108\ \ \ \ \ \ \ \ \ \mbox{\hyperlink{classaare_1_1NDView_a53af97aeef3fb68f82b5913c4fa99fa7}{size\_}}\ =\ other.\mbox{\hyperlink{classaare_1_1NDView_a53af97aeef3fb68f82b5913c4fa99fa7}{size\_}};}
+\DoxyCodeLine{00109\ \ \ \ \ \ \ \ \ \mbox{\hyperlink{classaare_1_1NDView_aaedcfb2c15d7335aae5f75646d182732}{buffer\_}}\ =\ other.\mbox{\hyperlink{classaare_1_1NDView_aaedcfb2c15d7335aae5f75646d182732}{buffer\_}};}
+\DoxyCodeLine{00110\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{return}\ *\textcolor{keyword}{this};}
+\DoxyCodeLine{00111\ \ \ \ \ \}}
+\DoxyCodeLine{00112\ \ \ \ \ \textcolor{keyword}{auto}\ \&\mbox{\hyperlink{classaare_1_1NDView_a273904b889c29e2ce253da3f920db1c1}{shape}}()\ \{\ \textcolor{keywordflow}{return}\ \mbox{\hyperlink{classaare_1_1NDView_a1ebe6ccd25a47781e2bc9f1365b1f2ba}{shape\_}};\ \}}
+\DoxyCodeLine{00113\ \ \ \ \ \textcolor{keyword}{auto}\ \mbox{\hyperlink{classaare_1_1NDView_accf33eba4264f201ffd06cab26b60f3c}{shape}}(ssize\_t\ i)\textcolor{keyword}{\ const\ }\{\ \textcolor{keywordflow}{return}\ \mbox{\hyperlink{classaare_1_1NDView_a1ebe6ccd25a47781e2bc9f1365b1f2ba}{shape\_}}[i];\ \}}
+\DoxyCodeLine{00114\ }
+\DoxyCodeLine{00115\ \ \ \ \ T\ *\mbox{\hyperlink{classaare_1_1NDView_a265ec46d178b53d164d0634f61c51030}{data}}()\ \{\ \textcolor{keywordflow}{return}\ \mbox{\hyperlink{classaare_1_1NDView_aaedcfb2c15d7335aae5f75646d182732}{buffer\_}};\ \}}
+\DoxyCodeLine{00116\ }
+\DoxyCodeLine{00117\ \ \ \textcolor{keyword}{private}:}
+\DoxyCodeLine{00118\ \ \ \ \ T\ *\mbox{\hyperlink{classaare_1_1NDView_aaedcfb2c15d7335aae5f75646d182732}{buffer\_}}\{\textcolor{keyword}{nullptr}\};}
+\DoxyCodeLine{00119\ \ \ \ \ std::array<ssize\_t,\ Ndim>\ \mbox{\hyperlink{classaare_1_1NDView_a32ff10f10d0efcdc0abb9d1f2121d505}{strides\_}}\{\};}
+\DoxyCodeLine{00120\ \ \ \ \ std::array<ssize\_t,\ Ndim>\ \mbox{\hyperlink{classaare_1_1NDView_a1ebe6ccd25a47781e2bc9f1365b1f2ba}{shape\_}}\{\};}
+\DoxyCodeLine{00121\ \ \ \ \ ssize\_t\ \mbox{\hyperlink{classaare_1_1NDView_a53af97aeef3fb68f82b5913c4fa99fa7}{size\_}}\{\};}
+\DoxyCodeLine{00122\ }
+\DoxyCodeLine{00123\ \ \ \ \ \textcolor{keyword}{template}\ <\textcolor{keyword}{class}\ BinaryOperation>\ \mbox{\hyperlink{classaare_1_1NDView}{NDView}}\ \&\mbox{\hyperlink{classaare_1_1NDView_aa36026a1c222c33f72ddb79ed228136d}{elemenwise}}(T\ val,\ BinaryOperation\ op)\ \{}
+\DoxyCodeLine{00124\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{for}\ (ssize\_t\ i\ =\ 0;\ i\ !=\ \mbox{\hyperlink{classaare_1_1NDView_a53af97aeef3fb68f82b5913c4fa99fa7}{size\_}};\ ++i)\ \{}
+\DoxyCodeLine{00125\ \ \ \ \ \ \ \ \ \ \ \ \ \mbox{\hyperlink{classaare_1_1NDView_aaedcfb2c15d7335aae5f75646d182732}{buffer\_}}[i]\ =\ op(\mbox{\hyperlink{classaare_1_1NDView_aaedcfb2c15d7335aae5f75646d182732}{buffer\_}}[i],\ val);}
+\DoxyCodeLine{00126\ \ \ \ \ \ \ \ \ \}}
+\DoxyCodeLine{00127\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{return}\ *\textcolor{keyword}{this};}
+\DoxyCodeLine{00128\ \ \ \ \ \}}
+\DoxyCodeLine{00129\ \ \ \ \ \textcolor{keyword}{template}\ <\textcolor{keyword}{class}\ BinaryOperation>\ \mbox{\hyperlink{classaare_1_1NDView}{NDView}}\ \&\mbox{\hyperlink{classaare_1_1NDView_acae51d9008a98daeb40e4779cf2e6053}{elemenwise}}(\textcolor{keyword}{const}\ \mbox{\hyperlink{classaare_1_1NDView}{NDView}}\ \&other,\ BinaryOperation\ op)\ \{}
+\DoxyCodeLine{00130\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{for}\ (ssize\_t\ i\ =\ 0;\ i\ !=\ \mbox{\hyperlink{classaare_1_1NDView_a53af97aeef3fb68f82b5913c4fa99fa7}{size\_}};\ ++i)\ \{}
+\DoxyCodeLine{00131\ \ \ \ \ \ \ \ \ \ \ \ \ \mbox{\hyperlink{classaare_1_1NDView_aaedcfb2c15d7335aae5f75646d182732}{buffer\_}}[i]\ =\ op(\mbox{\hyperlink{classaare_1_1NDView_aaedcfb2c15d7335aae5f75646d182732}{buffer\_}}[i],\ other.\mbox{\hyperlink{classaare_1_1NDView_aaedcfb2c15d7335aae5f75646d182732}{buffer\_}}[i]);}
+\DoxyCodeLine{00132\ \ \ \ \ \ \ \ \ \}}
+\DoxyCodeLine{00133\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{return}\ *\textcolor{keyword}{this};}
+\DoxyCodeLine{00134\ \ \ \ \ \}}
+\DoxyCodeLine{00135\ \};}
+\DoxyCodeLine{00136\ }
+\DoxyCodeLine{00137\ \textcolor{keyword}{template}\ \textcolor{keyword}{class\ }NDView<uint16\_t,\ 2>;}
+\DoxyCodeLine{00138\ }
+\DoxyCodeLine{00139\ \}\ \textcolor{comment}{//\ namespace\ aare}}
+
+\end{DoxyCode}

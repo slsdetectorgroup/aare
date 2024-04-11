@@ -1,0 +1,44 @@
+\doxysection{Zmq\+Socket.\+hpp}
+\hypertarget{ZmqSocket_8hpp_source}{}\label{ZmqSocket_8hpp_source}\index{network\_io/include/aare/network\_io/ZmqSocket.hpp@{network\_io/include/aare/network\_io/ZmqSocket.hpp}}
+\mbox{\hyperlink{ZmqSocket_8hpp}{Go to the documentation of this file.}}
+\begin{DoxyCode}{0}
+\DoxyCodeLine{00001\ \textcolor{preprocessor}{\#pragma\ once}}
+\DoxyCodeLine{00002\ }
+\DoxyCodeLine{00003\ \textcolor{preprocessor}{\#include\ <string>}}
+\DoxyCodeLine{00004\ }
+\DoxyCodeLine{00005\ \textcolor{comment}{//\ Socket\ to\ receive\ data\ from\ a\ ZMQ\ publisher}}
+\DoxyCodeLine{00006\ \textcolor{comment}{//\ needs\ to\ be\ in\ sync\ with\ the\ main\ library\ (or\ maybe\ better\ use\ the\ versioning\ in\ the\ header)}}
+\DoxyCodeLine{00007\ }
+\DoxyCodeLine{00008\ \textcolor{comment}{//\ forward\ declare\ zmq\_msg\_t\ to\ avoid\ including\ zmq.h\ in\ the\ header}}
+\DoxyCodeLine{00009\ \textcolor{keyword}{class\ }zmq\_msg\_t;}
+\DoxyCodeLine{00010\ }
+\DoxyCodeLine{00011\ \textcolor{keyword}{namespace\ }\mbox{\hyperlink{namespaceaare}{aare}}\ \{}
+\DoxyCodeLine{00012\ }
+\DoxyCodeLine{00013\ \textcolor{keyword}{class\ }\mbox{\hyperlink{classaare_1_1ZmqSocket}{ZmqSocket}}\ \{}
+\DoxyCodeLine{00014\ \ \ \textcolor{keyword}{protected}:}
+\DoxyCodeLine{00015\ \ \ \ \ \textcolor{keywordtype}{void}\ *\mbox{\hyperlink{classaare_1_1ZmqSocket_ab4b7264f583904f1c3d3181377295204}{m\_context}}\{\textcolor{keyword}{nullptr}\};}
+\DoxyCodeLine{00016\ \ \ \ \ \textcolor{keywordtype}{void}\ *\mbox{\hyperlink{classaare_1_1ZmqSocket_a818f6534a600be8422c980d193c85b94}{m\_socket}}\{\textcolor{keyword}{nullptr}\};}
+\DoxyCodeLine{00017\ \ \ \ \ std::string\ \mbox{\hyperlink{classaare_1_1ZmqSocket_ab7bfda5aee365ef499a6605b7426ec79}{m\_endpoint}};}
+\DoxyCodeLine{00018\ \ \ \ \ \textcolor{keywordtype}{int}\ \mbox{\hyperlink{classaare_1_1ZmqSocket_a13c8da9738e41cf6e884ed0c070ced63}{m\_zmq\_hwm}}\{1000\};}
+\DoxyCodeLine{00019\ \ \ \ \ \textcolor{keywordtype}{int}\ \mbox{\hyperlink{classaare_1_1ZmqSocket_a6b4316d6f9edfdac66f5e6393d3eaebf}{m\_timeout\_ms}}\{1000\};}
+\DoxyCodeLine{00020\ \ \ \ \ \textcolor{keywordtype}{size\_t}\ \mbox{\hyperlink{classaare_1_1ZmqSocket_ab662a79c5fb770399567277523a168d4}{m\_potential\_frame\_size}}\{1024\ *\ 1024\};}
+\DoxyCodeLine{00021\ \ \ \ \ \textcolor{keyword}{constexpr}\ \textcolor{keyword}{static}\ \textcolor{keywordtype}{size\_t}\ \mbox{\hyperlink{classaare_1_1ZmqSocket_aeff0afb3278a5474ddb2525caa8375b9}{m\_max\_header\_size}}\ =\ 1024;}
+\DoxyCodeLine{00022\ \ \ \ \ \textcolor{keywordtype}{char}\ *\mbox{\hyperlink{classaare_1_1ZmqSocket_acf6efc2e696efcc0780c0b174e43ae6d}{m\_header\_buffer}}\ =\ \textcolor{keyword}{new}\ \textcolor{keywordtype}{char}[\mbox{\hyperlink{classaare_1_1ZmqSocket_aeff0afb3278a5474ddb2525caa8375b9}{m\_max\_header\_size}}];}
+\DoxyCodeLine{00023\ }
+\DoxyCodeLine{00024\ \ \ \textcolor{keyword}{public}:}
+\DoxyCodeLine{00025\ \ \ \ \ \mbox{\hyperlink{classaare_1_1ZmqSocket_a1b9bd643c6f86733fc198ad39396cbc8}{ZmqSocket}}()\ =\ \textcolor{keywordflow}{default};}
+\DoxyCodeLine{00026\ \ \ \ \ \mbox{\hyperlink{classaare_1_1ZmqSocket_a8608b7b4aeafc0349763bec3a9f26503}{\string~ZmqSocket}}();}
+\DoxyCodeLine{00027\ }
+\DoxyCodeLine{00028\ \ \ \ \ \mbox{\hyperlink{classaare_1_1ZmqSocket_ab6fe77359ecda3e89d969b96cbcc2f2f}{ZmqSocket}}(\textcolor{keyword}{const}\ \mbox{\hyperlink{classaare_1_1ZmqSocket}{ZmqSocket}}\ \&)\ =\ \textcolor{keyword}{delete};}
+\DoxyCodeLine{00029\ \ \ \ \ \mbox{\hyperlink{classaare_1_1ZmqSocket}{ZmqSocket}}\ \mbox{\hyperlink{classaare_1_1ZmqSocket_a2bda9d69955c0b9d6f917aff2eeacc75}{operator=}}(\textcolor{keyword}{const}\ \mbox{\hyperlink{classaare_1_1ZmqSocket}{ZmqSocket}}\ \&)\ =\ \textcolor{keyword}{delete};}
+\DoxyCodeLine{00030\ \ \ \ \ \mbox{\hyperlink{classaare_1_1ZmqSocket_a462d2dc5a4bc97428a9ddb911dbca4af}{ZmqSocket}}(\mbox{\hyperlink{classaare_1_1ZmqSocket}{ZmqSocket}}\ \&\&)\ =\ \textcolor{keyword}{delete};}
+\DoxyCodeLine{00031\ }
+\DoxyCodeLine{00032\ \ \ \ \ \textcolor{keywordtype}{void}\ \mbox{\hyperlink{classaare_1_1ZmqSocket_a0eab196c0b514be8c49a3fd98d758778}{disconnect}}();}
+\DoxyCodeLine{00033\ \ \ \ \ \textcolor{keywordtype}{void}\ \mbox{\hyperlink{classaare_1_1ZmqSocket_a0223c4d123eb7aec9cd1464509941a99}{set\_zmq\_hwm}}(\textcolor{keywordtype}{int}\ hwm);}
+\DoxyCodeLine{00034\ \ \ \ \ \textcolor{keywordtype}{void}\ \mbox{\hyperlink{classaare_1_1ZmqSocket_ab1f26596ce66e2ca7d4b26ee912b433c}{set\_timeout\_ms}}(\textcolor{keywordtype}{int}\ n);}
+\DoxyCodeLine{00035\ \ \ \ \ \textcolor{keywordtype}{void}\ \mbox{\hyperlink{classaare_1_1ZmqSocket_a755a2e592ed706976c0fbf000eb70b96}{set\_potential\_frame\_size}}(\textcolor{keywordtype}{size\_t}\ size);}
+\DoxyCodeLine{00036\ \};}
+\DoxyCodeLine{00037\ }
+\DoxyCodeLine{00038\ \}\ \textcolor{comment}{//\ namespace\ aare}}
+
+\end{DoxyCode}

@@ -2,16 +2,26 @@
 #include "aare/file_io/FileInterface.hpp"
 
 namespace aare {
+
+/**
+ * @brief RAII File class for reading and writing image files in various formats
+ * wrapper on a FileInterface to abstract the underlying file format
+ * @note documentation for each function is in the FileInterface class
+ */
 class File {
   private:
     FileInterface *file_impl;
 
   public:
-    // options:
-    //  - r reading
-    //  - w writing (overwrites existing file)
-    //  - a appending (appends to existing file)
-    // TODO! do we need to support w+, r+ and a+?
+    /**
+     * @brief Construct a new File object
+     * @param fname path to the file
+     * @param mode file mode (r, w, a)
+     * @param cfg file configuration
+     * @throws std::runtime_error if the file cannot be opened
+     * @throws std::invalid_argument if the file mode is not supported
+     * 
+    */
     File(std::filesystem::path fname, std::string mode, FileConfig cfg = {});
     void write(Frame &frame);
     Frame read();
@@ -28,8 +38,16 @@ class File {
     ssize_t rows() const;
     ssize_t cols() const;
     ssize_t bitdepth() const;
+
+    /**
+     * @brief Move constructor
+     * @param other File object to move from
+    */
     File(File &&other);
 
+    /**
+     * @brief destructor: will only delete the FileInterface object
+    */
     ~File();
 };
 

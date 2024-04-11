@@ -1,0 +1,79 @@
+\doxysection{core/test/\+Circular\+Fifo.test.\+cpp File Reference}
+\hypertarget{CircularFifo_8test_8cpp}{}\label{CircularFifo_8test_8cpp}\index{core/test/CircularFifo.test.cpp@{core/test/CircularFifo.test.cpp}}
+{\ttfamily \#include $<$catch2/catch\+\_\+all.\+hpp$>$}\newline
+{\ttfamily \#include \"{}aare/core/\+Circular\+Fifo.\+hpp\"{}}\newline
+\doxysubsubsection*{Data Structures}
+\begin{DoxyCompactItemize}
+\item 
+struct \mbox{\hyperlink{structMoveOnlyInt}{Move\+Only\+Int}}
+\end{DoxyCompactItemize}
+\doxysubsubsection*{Functions}
+\begin{DoxyCompactItemize}
+\item 
+\mbox{\hyperlink{CircularFifo_8test_8cpp_a1b8c212b4d5924f3e89b962865f3bdb9}{TEST\+\_\+\+CASE}} (\"{}Circular\+Fifo can be default constructed\"{})
+\item 
+\mbox{\hyperlink{CircularFifo_8test_8cpp_a4b1a907d65f3038d619c6384e3667475}{TEST\+\_\+\+CASE}} (\"{}Newly constructed fifo has the right size\"{})
+\item 
+\mbox{\hyperlink{CircularFifo_8test_8cpp_ae6091590aba8aec03a95d8028dfa18cc}{TEST\+\_\+\+CASE}} (\"{}Can fit size number of objects\"{})
+\item 
+\mbox{\hyperlink{CircularFifo_8test_8cpp_ab732da1983d607b1804e45cbb130e2cc}{TEST\+\_\+\+CASE}} (\"{}Push move only type\"{})
+\item 
+\mbox{\hyperlink{CircularFifo_8test_8cpp_ab2201262beb92831c027637b6cfd06ac}{TEST\+\_\+\+CASE}} (\"{}Push pop\"{})
+\item 
+\mbox{\hyperlink{CircularFifo_8test_8cpp_a4df422caab10b6bbb68a5e01c0e9b659}{TEST\+\_\+\+CASE}} (\"{}Pop free and then push\"{})
+\item 
+\mbox{\hyperlink{CircularFifo_8test_8cpp_a6d240590401958a420199d04a65ff6b0}{TEST\+\_\+\+CASE}} (\"{}Skip the first value\"{})
+\item 
+\mbox{\hyperlink{CircularFifo_8test_8cpp_ab65aae5a6bc4e7f44728108ca0c2683d}{TEST\+\_\+\+CASE}} (\"{}Use in place and move to free\"{})
+\end{DoxyCompactItemize}
+
+
+\doxysubsection{Function Documentation}
+\Hypertarget{CircularFifo_8test_8cpp_ae6091590aba8aec03a95d8028dfa18cc}\label{CircularFifo_8test_8cpp_ae6091590aba8aec03a95d8028dfa18cc} 
+\index{CircularFifo.test.cpp@{CircularFifo.test.cpp}!TEST\_CASE@{TEST\_CASE}}
+\index{TEST\_CASE@{TEST\_CASE}!CircularFifo.test.cpp@{CircularFifo.test.cpp}}
+\doxysubsubsection{\texorpdfstring{TEST\_CASE()}{TEST\_CASE()}\hspace{0.1cm}{\footnotesize\ttfamily [1/8]}}
+{\footnotesize\ttfamily TEST\+\_\+\+CASE (\begin{DoxyParamCaption}\item[{\"{}Can fit size number of objects\"{}}]{ }\end{DoxyParamCaption})}
+
+\Hypertarget{CircularFifo_8test_8cpp_a1b8c212b4d5924f3e89b962865f3bdb9}\label{CircularFifo_8test_8cpp_a1b8c212b4d5924f3e89b962865f3bdb9} 
+\index{CircularFifo.test.cpp@{CircularFifo.test.cpp}!TEST\_CASE@{TEST\_CASE}}
+\index{TEST\_CASE@{TEST\_CASE}!CircularFifo.test.cpp@{CircularFifo.test.cpp}}
+\doxysubsubsection{\texorpdfstring{TEST\_CASE()}{TEST\_CASE()}\hspace{0.1cm}{\footnotesize\ttfamily [2/8]}}
+{\footnotesize\ttfamily TEST\+\_\+\+CASE (\begin{DoxyParamCaption}\item[{\"{}Circular\+Fifo can be default constructed\"{}}]{ }\end{DoxyParamCaption})}
+
+\Hypertarget{CircularFifo_8test_8cpp_a4b1a907d65f3038d619c6384e3667475}\label{CircularFifo_8test_8cpp_a4b1a907d65f3038d619c6384e3667475} 
+\index{CircularFifo.test.cpp@{CircularFifo.test.cpp}!TEST\_CASE@{TEST\_CASE}}
+\index{TEST\_CASE@{TEST\_CASE}!CircularFifo.test.cpp@{CircularFifo.test.cpp}}
+\doxysubsubsection{\texorpdfstring{TEST\_CASE()}{TEST\_CASE()}\hspace{0.1cm}{\footnotesize\ttfamily [3/8]}}
+{\footnotesize\ttfamily TEST\+\_\+\+CASE (\begin{DoxyParamCaption}\item[{\"{}Newly constructed fifo has the right size\"{}}]{ }\end{DoxyParamCaption})}
+
+\Hypertarget{CircularFifo_8test_8cpp_a4df422caab10b6bbb68a5e01c0e9b659}\label{CircularFifo_8test_8cpp_a4df422caab10b6bbb68a5e01c0e9b659} 
+\index{CircularFifo.test.cpp@{CircularFifo.test.cpp}!TEST\_CASE@{TEST\_CASE}}
+\index{TEST\_CASE@{TEST\_CASE}!CircularFifo.test.cpp@{CircularFifo.test.cpp}}
+\doxysubsubsection{\texorpdfstring{TEST\_CASE()}{TEST\_CASE()}\hspace{0.1cm}{\footnotesize\ttfamily [4/8]}}
+{\footnotesize\ttfamily TEST\+\_\+\+CASE (\begin{DoxyParamCaption}\item[{\"{}Pop free and then push\"{}}]{ }\end{DoxyParamCaption})}
+
+\Hypertarget{CircularFifo_8test_8cpp_ab732da1983d607b1804e45cbb130e2cc}\label{CircularFifo_8test_8cpp_ab732da1983d607b1804e45cbb130e2cc} 
+\index{CircularFifo.test.cpp@{CircularFifo.test.cpp}!TEST\_CASE@{TEST\_CASE}}
+\index{TEST\_CASE@{TEST\_CASE}!CircularFifo.test.cpp@{CircularFifo.test.cpp}}
+\doxysubsubsection{\texorpdfstring{TEST\_CASE()}{TEST\_CASE()}\hspace{0.1cm}{\footnotesize\ttfamily [5/8]}}
+{\footnotesize\ttfamily TEST\+\_\+\+CASE (\begin{DoxyParamCaption}\item[{\"{}Push move only type\"{}}]{ }\end{DoxyParamCaption})}
+
+\Hypertarget{CircularFifo_8test_8cpp_ab2201262beb92831c027637b6cfd06ac}\label{CircularFifo_8test_8cpp_ab2201262beb92831c027637b6cfd06ac} 
+\index{CircularFifo.test.cpp@{CircularFifo.test.cpp}!TEST\_CASE@{TEST\_CASE}}
+\index{TEST\_CASE@{TEST\_CASE}!CircularFifo.test.cpp@{CircularFifo.test.cpp}}
+\doxysubsubsection{\texorpdfstring{TEST\_CASE()}{TEST\_CASE()}\hspace{0.1cm}{\footnotesize\ttfamily [6/8]}}
+{\footnotesize\ttfamily TEST\+\_\+\+CASE (\begin{DoxyParamCaption}\item[{\"{}Push pop\"{}}]{ }\end{DoxyParamCaption})}
+
+\Hypertarget{CircularFifo_8test_8cpp_a6d240590401958a420199d04a65ff6b0}\label{CircularFifo_8test_8cpp_a6d240590401958a420199d04a65ff6b0} 
+\index{CircularFifo.test.cpp@{CircularFifo.test.cpp}!TEST\_CASE@{TEST\_CASE}}
+\index{TEST\_CASE@{TEST\_CASE}!CircularFifo.test.cpp@{CircularFifo.test.cpp}}
+\doxysubsubsection{\texorpdfstring{TEST\_CASE()}{TEST\_CASE()}\hspace{0.1cm}{\footnotesize\ttfamily [7/8]}}
+{\footnotesize\ttfamily TEST\+\_\+\+CASE (\begin{DoxyParamCaption}\item[{\"{}Skip the first value\"{}}]{ }\end{DoxyParamCaption})}
+
+\Hypertarget{CircularFifo_8test_8cpp_ab65aae5a6bc4e7f44728108ca0c2683d}\label{CircularFifo_8test_8cpp_ab65aae5a6bc4e7f44728108ca0c2683d} 
+\index{CircularFifo.test.cpp@{CircularFifo.test.cpp}!TEST\_CASE@{TEST\_CASE}}
+\index{TEST\_CASE@{TEST\_CASE}!CircularFifo.test.cpp@{CircularFifo.test.cpp}}
+\doxysubsubsection{\texorpdfstring{TEST\_CASE()}{TEST\_CASE()}\hspace{0.1cm}{\footnotesize\ttfamily [8/8]}}
+{\footnotesize\ttfamily TEST\+\_\+\+CASE (\begin{DoxyParamCaption}\item[{\"{}Use in place and move to free\"{}}]{ }\end{DoxyParamCaption})}
+

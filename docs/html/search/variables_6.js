@@ -1,0 +1,22 @@
+var searchData=
+[
+  ['f_0',['f',['../namespaceread__multiport.html#a4719091e3d67936d60dbdc1343370949',1,'read_multiport.f'],['../namespaceread__frame.html#adc85620c668618147dfa83334a28a8f1',1,'read_frame.f']]],
+  ['fifo_5fsize_1',['fifo_size',['../classaare_1_1CircularFifo.html#af2c357b41296f0516b402feae91dc82d',1,'aare::CircularFifo']]],
+  ['file_2',['file',['../namespaceexample_1_1read__frame.html#a3f98c9ddad647341ac99a60d74cfbb25',1,'example::read_frame']]],
+  ['file_5fimpl_3',['file_impl',['../classaare_1_1File.html#ac2c569dfd6c15c1f5b19f5f1a5e38abf',1,'aare::File']]],
+  ['file_5fname_4',['file_name',['../namespaceread__multiport.html#ac3b88b6d1fad86d89221f215436cd491',1,'read_multiport.file_name'],['../namespaceread__frame.html#ad23adc485f1714de79813577dcecaf7c',1,'read_frame.file_name']]],
+  ['fileindex_5',['fileIndex',['../structaare_1_1ZmqHeader.html#a96dc350ffe696cc2cf5fb2f3b3b0f948',1,'aare::ZmqHeader']]],
+  ['filled_5fslots_6',['filled_slots',['../classaare_1_1CircularFifo.html#a28f5f6090b7812d18543b213c4d3177f',1,'aare::CircularFifo']]],
+  ['fliprows_7',['flipRows',['../structaare_1_1ZmqHeader.html#a37f3d99023eebeb08000ff4dc03632a7',1,'aare::ZmqHeader']]],
+  ['fname_8',['fname',['../structaare_1_1ZmqHeader.html#af34a97741a1ff54ebc4e060298a30d81',1,'aare::ZmqHeader']]],
+  ['fortran_5forder_9',['fortran_order',['../structaare_1_1NumpyHeader.html#a01595519f88afd1eabca41e5eb35020a',1,'aare::NumpyHeader']]],
+  ['fp_10',['fp',['../classaare_1_1NumpyFile.html#a1b3f50636674e919e54b7d61e11ed03a',1,'aare::NumpyFile::fp'],['../classaare_1_1SubFile.html#aaee4e9dddec3bbfa3267d1ba341b4282',1,'aare::SubFile::fp']]],
+  ['frame_11',['frame',['../structaare_1_1ZmqFrame.html#a106be099646ad8fef289e60c3d9f7633',1,'aare::ZmqFrame::frame'],['../namespaceexample_1_1read__frame.html#a5947c2ddaf00c3f301023e3a10d3208a',1,'example.read_frame.frame']]],
+  ['frame_5fcols_12',['frame_cols',['../namespaceread__multiport.html#a7bcbfacb145e23379c260eefe16d3fef',1,'read_multiport']]],
+  ['frame_5fnumber_13',['frame_number',['../namespaceread__first__frame__number.html#ab2eadc78bc8e13c6000db355336187c5',1,'read_first_frame_number']]],
+  ['frame_5frows_14',['frame_rows',['../namespaceread__multiport.html#a651e43a18770fe8d3aeb787fe2129978',1,'read_multiport']]],
+  ['frameindex_15',['frameIndex',['../structaare_1_1ZmqHeader.html#acd24f294bf54871bdd41e896918857b3',1,'aare::ZmqHeader']]],
+  ['framenumber_16',['frameNumber',['../structaare_1_1ZmqHeader.html#ac939e8bb28f7c78c6e60bdc5a3f0fa24',1,'aare::ZmqHeader::frameNumber'],['../structaare_1_1sls__detector__header.html#a5eef21352a958948550ca34628f45a4b',1,'aare::sls_detector_header::frameNumber']]],
+  ['frames_17',['frames',['../namespaceread__frame.html#a1ee86864b77a2fbd666de97025d3a7b7',1,'read_frame.frames'],['../namespaceread__multiport.html#a82ac74470c6321274c51b6945532354f',1,'read_multiport.frames']]],
+  ['free_5fslots_18',['free_slots',['../classaare_1_1CircularFifo.html#ad08760281625cee96d79104c4321dbf4',1,'aare::CircularFifo']]]
+];

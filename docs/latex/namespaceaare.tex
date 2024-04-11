@@ -1,0 +1,336 @@
+\doxysection{aare Namespace Reference}
+\hypertarget{namespaceaare}{}\label{namespaceaare}\index{aare@{aare}}
+
+
+\doxylink{classaare_1_1Frame}{Frame} class to represent a single frame of data model class should be able to work with streams coming from files or network.  
+
+
+\doxysubsubsection*{Namespaces}
+\begin{DoxyCompactItemize}
+\item 
+namespace \mbox{\hyperlink{namespaceaare_1_1File}{File}}
+\item 
+namespace \mbox{\hyperlink{namespaceaare_1_1Frame}{Frame}}
+\item 
+namespace \mbox{\hyperlink{namespaceaare_1_1logger}{logger}}
+\item 
+namespace \mbox{\hyperlink{namespaceaare_1_1network__io}{network\+\_\+io}}
+\item 
+namespace \mbox{\hyperlink{namespaceaare_1_1NumpyHelpers}{Numpy\+Helpers}}
+\end{DoxyCompactItemize}
+\doxysubsubsection*{Data Structures}
+\begin{DoxyCompactItemize}
+\item 
+class \mbox{\hyperlink{classaare_1_1CircularFifo}{Circular\+Fifo}}
+\item 
+class \mbox{\hyperlink{classaare_1_1ClusterFinder}{Cluster\+Finder}}
+\item 
+class \mbox{\hyperlink{classaare_1_1DType}{DType}}
+\item 
+class \mbox{\hyperlink{classaare_1_1File}{File}}
+\begin{DoxyCompactList}\small\item\em RAII \doxylink{classaare_1_1File_1_1File}{File} class for reading and writing image files in various formats wrapper on a \doxylink{classaare_1_1FileInterface}{File\+Interface} to abstract the underlying file format. \end{DoxyCompactList}\item 
+struct \mbox{\hyperlink{structaare_1_1FileConfig}{File\+Config}}
+\begin{DoxyCompactList}\small\item\em \doxylink{structaare_1_1FileConfig}{File\+Config} structure to store the configuration of a file dtype\+: data type of the file rows\+: number of rows in the file cols\+: number of columns in the file geometry\+: geometry of the file. \end{DoxyCompactList}\item 
+class \mbox{\hyperlink{classaare_1_1FileInterface}{File\+Interface}}
+\begin{DoxyCompactList}\small\item\em \doxylink{classaare_1_1FileInterface}{File\+Interface} class to define the interface for file operations. \end{DoxyCompactList}\item 
+class \mbox{\hyperlink{classaare_1_1Frame}{Frame}}
+\item 
+class \mbox{\hyperlink{classaare_1_1NDArray}{NDArray}}
+\item 
+class \mbox{\hyperlink{classaare_1_1NDView}{NDView}}
+\item 
+class \mbox{\hyperlink{classaare_1_1NumpyFile}{Numpy\+File}}
+\begin{DoxyCompactList}\small\item\em \doxylink{classaare_1_1NumpyFile}{Numpy\+File} class to read and write numpy files. \end{DoxyCompactList}\item 
+struct \mbox{\hyperlink{structaare_1_1NumpyHeader}{Numpy\+Header}}
+\item 
+class \mbox{\hyperlink{classaare_1_1RawFile}{Raw\+File}}
+\begin{DoxyCompactList}\small\item\em \doxylink{classaare_1_1RawFile}{Raw\+File} class to read .raw and .json files. \end{DoxyCompactList}\item 
+struct \mbox{\hyperlink{structaare_1_1RawFileConfig}{Raw\+File\+Config}}
+\item 
+struct \mbox{\hyperlink{structaare_1_1sls__detector__header}{sls\+\_\+detector\+\_\+header}}
+\item 
+class \mbox{\hyperlink{classaare_1_1SubFile}{Sub\+File}}
+\begin{DoxyCompactList}\small\item\em Class to read a subfile from a \doxylink{classaare_1_1RawFile}{Raw\+File}. \end{DoxyCompactList}\item 
+struct \mbox{\hyperlink{structaare_1_1xy}{xy}}
+\item 
+struct \mbox{\hyperlink{structaare_1_1ZmqFrame}{Zmq\+Frame}}
+\begin{DoxyCompactList}\small\item\em \doxylink{structaare_1_1ZmqFrame}{Zmq\+Frame} structure wrapper class to contain a \doxylink{structaare_1_1ZmqHeader}{Zmq\+Header} and a \doxylink{classaare_1_1Frame}{Frame}. \end{DoxyCompactList}\item 
+struct \mbox{\hyperlink{structaare_1_1ZmqHeader}{Zmq\+Header}}
+\item 
+class \mbox{\hyperlink{classaare_1_1ZmqSocket}{Zmq\+Socket}}
+\item 
+class \mbox{\hyperlink{classaare_1_1ZmqSocketReceiver}{Zmq\+Socket\+Receiver}}
+\item 
+class \mbox{\hyperlink{classaare_1_1ZmqSocketSender}{Zmq\+Socket\+Sender}}
+\end{DoxyCompactItemize}
+\doxysubsubsection*{Typedefs}
+\begin{DoxyCompactItemize}
+\item 
+using \mbox{\hyperlink{namespaceaare_aa03afd6344a7789bfe983642f0ba1003}{dynamic\+\_\+shape}} = std\+::vector$<$ ssize\+\_\+t $>$
+\item 
+using \mbox{\hyperlink{namespaceaare_aaefd953421441991510a6bf436553aad}{Data\+Type\+Variants}} = std\+::variant$<$ uint16\+\_\+t, uint32\+\_\+t $>$
+\item 
+{\footnotesize template$<$ssize\+\_\+t Ndim$>$ }\\using \mbox{\hyperlink{namespaceaare_a3e7aced06ae41952428121c25c4d54d4}{Shape}} = std\+::array$<$ ssize\+\_\+t, Ndim $>$
+\item 
+using \mbox{\hyperlink{namespaceaare_a7caab4efdc1e33ee28f8de9056bbec6c}{shape\+\_\+t}} = std\+::vector$<$ size\+\_\+t $>$
+\end{DoxyCompactItemize}
+\doxysubsubsection*{Enumerations}
+\begin{DoxyCompactItemize}
+\item 
+enum class \mbox{\hyperlink{namespaceaare_a5b95afba95553c1e118e1478c69042f7}{Detector\+Type}} \{ \newline
+\mbox{\hyperlink{namespaceaare_a5b95afba95553c1e118e1478c69042f7ab2c7db922623442a04314d3c941a336b}{Jungfrau}}
+, \mbox{\hyperlink{namespaceaare_a5b95afba95553c1e118e1478c69042f7a36df9c5ff09bbd406715bc0f8beec72e}{Eiger}}
+, \mbox{\hyperlink{namespaceaare_a5b95afba95553c1e118e1478c69042f7ae62a69cfc990501180f9457056826208}{Mythen3}}
+, \mbox{\hyperlink{namespaceaare_a5b95afba95553c1e118e1478c69042f7a0947b28848519e2e61c3f8561dedf7d0}{Moench}}
+, \newline
+\mbox{\hyperlink{namespaceaare_a5b95afba95553c1e118e1478c69042f7a8fcb8dbe4124015503e7a92e13ebe66c}{Chip\+Test\+Board}}
+ \}
+\item 
+enum class \mbox{\hyperlink{namespaceaare_a180255836568df302c95b5ca87dc5355}{Timing\+Mode}} \{ \mbox{\hyperlink{namespaceaare_a180255836568df302c95b5ca87dc5355a06b9281e396db002010bde1de57262eb}{Auto}}
+, \mbox{\hyperlink{namespaceaare_a180255836568df302c95b5ca87dc5355af698f67f5666aff10729d8a1cb1c14d2}{Trigger}}
+ \}
+\item 
+enum class \mbox{\hyperlink{namespaceaare_a1e464b780b0133eabe398b58ff7d0aff}{endian}} \{ \mbox{\hyperlink{namespaceaare_a1e464b780b0133eabe398b58ff7d0affaaae6635e044ac56046b2893a529b5114}{little}} = \+\_\+\+\_\+\+ORDER\+\_\+\+LITTLE\+\_\+\+ENDIAN\+\_\+\+\_\+
+, \mbox{\hyperlink{namespaceaare_a1e464b780b0133eabe398b58ff7d0affad861877da56b8b4ceb35c8cbfdf65bb4}{big}} = \+\_\+\+\_\+\+ORDER\+\_\+\+BIG\+\_\+\+ENDIAN\+\_\+\+\_\+
+, \mbox{\hyperlink{namespaceaare_a1e464b780b0133eabe398b58ff7d0affa8e5f3adee38c8fccc13c1f3be0143796}{native}} = \+\_\+\+\_\+\+BYTE\+\_\+\+ORDER\+\_\+\+\_\+
+ \}
+\end{DoxyCompactItemize}
+\doxysubsubsection*{Functions}
+\begin{DoxyCompactItemize}
+\item 
+{\footnotesize template$<$class T $>$ }\\T \mbox{\hyperlink{namespaceaare_a43707c616f0b7e5edfd2b36bfe4edc8d}{String\+To}} (std\+::string sv)
+\item 
+{\footnotesize template$<$class T $>$ }\\std\+::string \mbox{\hyperlink{namespaceaare_a00df34c2dc4c69e0cfe84adb4c749403}{to\+String}} (T sv)
+\item 
+template$<$$>$ \mbox{\hyperlink{namespaceaare_a5b95afba95553c1e118e1478c69042f7}{Detector\+Type}} \mbox{\hyperlink{namespaceaare_adfdafb087b91443c8dadc60446c27add}{String\+To}} (std\+::string)
+\item 
+template$<$$>$ std\+::string \mbox{\hyperlink{namespaceaare_a10ded84d674dfc5e9c56409cb04ad3b4}{to\+String}} (\mbox{\hyperlink{namespaceaare_a5b95afba95553c1e118e1478c69042f7}{Detector\+Type}} type)
+\item 
+template$<$$>$ \mbox{\hyperlink{namespaceaare_a180255836568df302c95b5ca87dc5355}{Timing\+Mode}} \mbox{\hyperlink{namespaceaare_a5e815d643704b75fc2b35c7c61b5aa87}{String\+To}} (std\+::string)
+\item 
+{\footnotesize template$<$typename T , ssize\+\_\+t Ndim$>$ }\\void \mbox{\hyperlink{namespaceaare_aac5d322f266bccdc416bcd66098eae33}{save}} (\mbox{\hyperlink{classaare_1_1NDArray}{NDArray}}$<$ T, Ndim $>$ \&img, std\+::string pathname)
+\item 
+{\footnotesize template$<$typename T , ssize\+\_\+t Ndim$>$ }\\\mbox{\hyperlink{classaare_1_1NDArray}{NDArray}}$<$ T, Ndim $>$ \mbox{\hyperlink{namespaceaare_a2868d09c334b1aa09be4da1979100ec5}{load}} (const std\+::string \&pathname, std\+::array$<$ ssize\+\_\+t, Ndim $>$ shape)
+\item 
+{\footnotesize template$<$ssize\+\_\+t Ndim$>$ }\\\mbox{\hyperlink{namespaceaare_a3e7aced06ae41952428121c25c4d54d4}{Shape}}$<$ Ndim $>$ \mbox{\hyperlink{namespaceaare_a3ebdc3c557843d49b065a15ff833e2a2}{make\+\_\+shape}} (const std\+::vector$<$ size\+\_\+t $>$ \&shape)
+\item 
+{\footnotesize template$<$ssize\+\_\+t Dim = 0, typename Strides $>$ }\\ssize\+\_\+t \mbox{\hyperlink{namespaceaare_a45ca88f1c8c15d6e4d08b14e21a3e579}{element\+\_\+offset}} (const Strides \&)
+\item 
+{\footnotesize template$<$ssize\+\_\+t Dim = 0, typename Strides , typename... Ix$>$ }\\ssize\+\_\+t \mbox{\hyperlink{namespaceaare_a8d8ef7169db0fb9c771c24f8bb640950}{element\+\_\+offset}} (const Strides \&strides, ssize\+\_\+t i, Ix... index)
+\item 
+{\footnotesize template$<$ssize\+\_\+t Ndim$>$ }\\std\+::array$<$ ssize\+\_\+t, Ndim $>$ \mbox{\hyperlink{namespaceaare_a737039de5f8de78a691a40b9ceb47b64}{c\+\_\+strides}} (const std\+::array$<$ ssize\+\_\+t, Ndim $>$ \&shape)
+\item 
+{\footnotesize template$<$ssize\+\_\+t Ndim$>$ }\\std\+::array$<$ ssize\+\_\+t, Ndim $>$ \mbox{\hyperlink{namespaceaare_a2fecee4bfadd26c1cd61d316e16cc060}{make\+\_\+array}} (const std\+::vector$<$ ssize\+\_\+t $>$ \&vec)
+\item 
+template$<$$>$ std\+::string \mbox{\hyperlink{namespaceaare_a10ded84d674dfc5e9c56409cb04ad3b4}{to\+String}} (\mbox{\hyperlink{namespaceaare_a5b95afba95553c1e118e1478c69042f7}{Detector\+Type}} type)
+\item 
+template$<$$>$ \mbox{\hyperlink{namespaceaare_a5b95afba95553c1e118e1478c69042f7}{Detector\+Type}} \mbox{\hyperlink{namespaceaare_aa0b3a129f80c6fb123f22f466f8794e1}{String\+To}} (std\+::string name)
+\item 
+template$<$$>$ \mbox{\hyperlink{namespaceaare_a180255836568df302c95b5ca87dc5355}{Timing\+Mode}} \mbox{\hyperlink{namespaceaare_a89378a4bb4e084b9d399d9b673059451}{String\+To}} (std\+::string mode)
+\end{DoxyCompactItemize}
+
+
+\doxysubsection{Detailed Description}
+\doxylink{classaare_1_1Frame}{Frame} class to represent a single frame of data model class should be able to work with streams coming from files or network. 
+
+\doxysubsection{Typedef Documentation}
+\Hypertarget{namespaceaare_aaefd953421441991510a6bf436553aad}\label{namespaceaare_aaefd953421441991510a6bf436553aad} 
+\index{aare@{aare}!DataTypeVariants@{DataTypeVariants}}
+\index{DataTypeVariants@{DataTypeVariants}!aare@{aare}}
+\doxysubsubsection{\texorpdfstring{DataTypeVariants}{DataTypeVariants}}
+{\footnotesize\ttfamily using \mbox{\hyperlink{namespaceaare_aaefd953421441991510a6bf436553aad}{aare\+::\+Data\+Type\+Variants}} = typedef std\+::variant$<$uint16\+\_\+t, uint32\+\_\+t$>$}
+
+\Hypertarget{namespaceaare_aa03afd6344a7789bfe983642f0ba1003}\label{namespaceaare_aa03afd6344a7789bfe983642f0ba1003} 
+\index{aare@{aare}!dynamic\_shape@{dynamic\_shape}}
+\index{dynamic\_shape@{dynamic\_shape}!aare@{aare}}
+\doxysubsubsection{\texorpdfstring{dynamic\_shape}{dynamic\_shape}}
+{\footnotesize\ttfamily using \mbox{\hyperlink{namespaceaare_aa03afd6344a7789bfe983642f0ba1003}{aare\+::dynamic\+\_\+shape}} = typedef std\+::vector$<$ssize\+\_\+t$>$}
+
+\Hypertarget{namespaceaare_a3e7aced06ae41952428121c25c4d54d4}\label{namespaceaare_a3e7aced06ae41952428121c25c4d54d4} 
+\index{aare@{aare}!Shape@{Shape}}
+\index{Shape@{Shape}!aare@{aare}}
+\doxysubsubsection{\texorpdfstring{Shape}{Shape}}
+{\footnotesize\ttfamily template$<$ssize\+\_\+t Ndim$>$ \\
+using \mbox{\hyperlink{namespaceaare_a3e7aced06ae41952428121c25c4d54d4}{aare\+::\+Shape}} = typedef std\+::array$<$ssize\+\_\+t, Ndim$>$}
+
+\Hypertarget{namespaceaare_a7caab4efdc1e33ee28f8de9056bbec6c}\label{namespaceaare_a7caab4efdc1e33ee28f8de9056bbec6c} 
+\index{aare@{aare}!shape\_t@{shape\_t}}
+\index{shape\_t@{shape\_t}!aare@{aare}}
+\doxysubsubsection{\texorpdfstring{shape\_t}{shape\_t}}
+{\footnotesize\ttfamily using \mbox{\hyperlink{namespaceaare_a7caab4efdc1e33ee28f8de9056bbec6c}{aare\+::shape\+\_\+t}} = typedef std\+::vector$<$size\+\_\+t$>$}
+
+
+
+\doxysubsection{Enumeration Type Documentation}
+\Hypertarget{namespaceaare_a5b95afba95553c1e118e1478c69042f7}\label{namespaceaare_a5b95afba95553c1e118e1478c69042f7} 
+\index{aare@{aare}!DetectorType@{DetectorType}}
+\index{DetectorType@{DetectorType}!aare@{aare}}
+\doxysubsubsection{\texorpdfstring{DetectorType}{DetectorType}}
+{\footnotesize\ttfamily enum class \mbox{\hyperlink{namespaceaare_a5b95afba95553c1e118e1478c69042f7}{aare\+::\+Detector\+Type}}\hspace{0.3cm}{\ttfamily [strong]}}
+
+\begin{DoxyEnumFields}{Enumerator}
+\raisebox{\heightof{T}}[0pt][0pt]{\index{Jungfrau@{Jungfrau}!aare@{aare}}\index{aare@{aare}!Jungfrau@{Jungfrau}}}\Hypertarget{namespaceaare_a5b95afba95553c1e118e1478c69042f7ab2c7db922623442a04314d3c941a336b}\label{namespaceaare_a5b95afba95553c1e118e1478c69042f7ab2c7db922623442a04314d3c941a336b} 
+Jungfrau&\\
+\hline
+
+\raisebox{\heightof{T}}[0pt][0pt]{\index{Eiger@{Eiger}!aare@{aare}}\index{aare@{aare}!Eiger@{Eiger}}}\Hypertarget{namespaceaare_a5b95afba95553c1e118e1478c69042f7a36df9c5ff09bbd406715bc0f8beec72e}\label{namespaceaare_a5b95afba95553c1e118e1478c69042f7a36df9c5ff09bbd406715bc0f8beec72e} 
+Eiger&\\
+\hline
+
+\raisebox{\heightof{T}}[0pt][0pt]{\index{Mythen3@{Mythen3}!aare@{aare}}\index{aare@{aare}!Mythen3@{Mythen3}}}\Hypertarget{namespaceaare_a5b95afba95553c1e118e1478c69042f7ae62a69cfc990501180f9457056826208}\label{namespaceaare_a5b95afba95553c1e118e1478c69042f7ae62a69cfc990501180f9457056826208} 
+Mythen3&\\
+\hline
+
+\raisebox{\heightof{T}}[0pt][0pt]{\index{Moench@{Moench}!aare@{aare}}\index{aare@{aare}!Moench@{Moench}}}\Hypertarget{namespaceaare_a5b95afba95553c1e118e1478c69042f7a0947b28848519e2e61c3f8561dedf7d0}\label{namespaceaare_a5b95afba95553c1e118e1478c69042f7a0947b28848519e2e61c3f8561dedf7d0} 
+Moench&\\
+\hline
+
+\raisebox{\heightof{T}}[0pt][0pt]{\index{ChipTestBoard@{ChipTestBoard}!aare@{aare}}\index{aare@{aare}!ChipTestBoard@{ChipTestBoard}}}\Hypertarget{namespaceaare_a5b95afba95553c1e118e1478c69042f7a8fcb8dbe4124015503e7a92e13ebe66c}\label{namespaceaare_a5b95afba95553c1e118e1478c69042f7a8fcb8dbe4124015503e7a92e13ebe66c} 
+Chip\+Test\+Board&\\
+\hline
+
+\end{DoxyEnumFields}
+\Hypertarget{namespaceaare_a1e464b780b0133eabe398b58ff7d0aff}\label{namespaceaare_a1e464b780b0133eabe398b58ff7d0aff} 
+\index{aare@{aare}!endian@{endian}}
+\index{endian@{endian}!aare@{aare}}
+\doxysubsubsection{\texorpdfstring{endian}{endian}}
+{\footnotesize\ttfamily enum class \mbox{\hyperlink{namespaceaare_a1e464b780b0133eabe398b58ff7d0aff}{aare\+::endian}}\hspace{0.3cm}{\ttfamily [strong]}}
+
+\begin{DoxyEnumFields}{Enumerator}
+\raisebox{\heightof{T}}[0pt][0pt]{\index{little@{little}!aare@{aare}}\index{aare@{aare}!little@{little}}}\Hypertarget{namespaceaare_a1e464b780b0133eabe398b58ff7d0affaaae6635e044ac56046b2893a529b5114}\label{namespaceaare_a1e464b780b0133eabe398b58ff7d0affaaae6635e044ac56046b2893a529b5114} 
+little&\\
+\hline
+
+\raisebox{\heightof{T}}[0pt][0pt]{\index{big@{big}!aare@{aare}}\index{aare@{aare}!big@{big}}}\Hypertarget{namespaceaare_a1e464b780b0133eabe398b58ff7d0affad861877da56b8b4ceb35c8cbfdf65bb4}\label{namespaceaare_a1e464b780b0133eabe398b58ff7d0affad861877da56b8b4ceb35c8cbfdf65bb4} 
+big&\\
+\hline
+
+\raisebox{\heightof{T}}[0pt][0pt]{\index{native@{native}!aare@{aare}}\index{aare@{aare}!native@{native}}}\Hypertarget{namespaceaare_a1e464b780b0133eabe398b58ff7d0affa8e5f3adee38c8fccc13c1f3be0143796}\label{namespaceaare_a1e464b780b0133eabe398b58ff7d0affa8e5f3adee38c8fccc13c1f3be0143796} 
+native&\\
+\hline
+
+\end{DoxyEnumFields}
+\Hypertarget{namespaceaare_a180255836568df302c95b5ca87dc5355}\label{namespaceaare_a180255836568df302c95b5ca87dc5355} 
+\index{aare@{aare}!TimingMode@{TimingMode}}
+\index{TimingMode@{TimingMode}!aare@{aare}}
+\doxysubsubsection{\texorpdfstring{TimingMode}{TimingMode}}
+{\footnotesize\ttfamily enum class \mbox{\hyperlink{namespaceaare_a180255836568df302c95b5ca87dc5355}{aare\+::\+Timing\+Mode}}\hspace{0.3cm}{\ttfamily [strong]}}
+
+\begin{DoxyEnumFields}{Enumerator}
+\raisebox{\heightof{T}}[0pt][0pt]{\index{Auto@{Auto}!aare@{aare}}\index{aare@{aare}!Auto@{Auto}}}\Hypertarget{namespaceaare_a180255836568df302c95b5ca87dc5355a06b9281e396db002010bde1de57262eb}\label{namespaceaare_a180255836568df302c95b5ca87dc5355a06b9281e396db002010bde1de57262eb} 
+Auto&\\
+\hline
+
+\raisebox{\heightof{T}}[0pt][0pt]{\index{Trigger@{Trigger}!aare@{aare}}\index{aare@{aare}!Trigger@{Trigger}}}\Hypertarget{namespaceaare_a180255836568df302c95b5ca87dc5355af698f67f5666aff10729d8a1cb1c14d2}\label{namespaceaare_a180255836568df302c95b5ca87dc5355af698f67f5666aff10729d8a1cb1c14d2} 
+Trigger&\\
+\hline
+
+\end{DoxyEnumFields}
+
+
+\doxysubsection{Function Documentation}
+\Hypertarget{namespaceaare_a737039de5f8de78a691a40b9ceb47b64}\label{namespaceaare_a737039de5f8de78a691a40b9ceb47b64} 
+\index{aare@{aare}!c\_strides@{c\_strides}}
+\index{c\_strides@{c\_strides}!aare@{aare}}
+\doxysubsubsection{\texorpdfstring{c\_strides()}{c\_strides()}}
+{\footnotesize\ttfamily template$<$ssize\+\_\+t Ndim$>$ \\
+std\+::array$<$ ssize\+\_\+t, Ndim $>$ aare\+::c\+\_\+strides (\begin{DoxyParamCaption}\item[{const std\+::array$<$ ssize\+\_\+t, Ndim $>$ \&}]{shape }\end{DoxyParamCaption})}
+
+\Hypertarget{namespaceaare_a45ca88f1c8c15d6e4d08b14e21a3e579}\label{namespaceaare_a45ca88f1c8c15d6e4d08b14e21a3e579} 
+\index{aare@{aare}!element\_offset@{element\_offset}}
+\index{element\_offset@{element\_offset}!aare@{aare}}
+\doxysubsubsection{\texorpdfstring{element\_offset()}{element\_offset()}\hspace{0.1cm}{\footnotesize\ttfamily [1/2]}}
+{\footnotesize\ttfamily template$<$ssize\+\_\+t Dim = 0, typename Strides $>$ \\
+ssize\+\_\+t aare\+::element\+\_\+offset (\begin{DoxyParamCaption}\item[{const Strides \&}]{ }\end{DoxyParamCaption})}
+
+\Hypertarget{namespaceaare_a8d8ef7169db0fb9c771c24f8bb640950}\label{namespaceaare_a8d8ef7169db0fb9c771c24f8bb640950} 
+\index{aare@{aare}!element\_offset@{element\_offset}}
+\index{element\_offset@{element\_offset}!aare@{aare}}
+\doxysubsubsection{\texorpdfstring{element\_offset()}{element\_offset()}\hspace{0.1cm}{\footnotesize\ttfamily [2/2]}}
+{\footnotesize\ttfamily template$<$ssize\+\_\+t Dim = 0, typename Strides , typename... Ix$>$ \\
+ssize\+\_\+t aare\+::element\+\_\+offset (\begin{DoxyParamCaption}\item[{const Strides \&}]{strides,  }\item[{ssize\+\_\+t}]{i,  }\item[{Ix...}]{index }\end{DoxyParamCaption})}
+
+\Hypertarget{namespaceaare_a2868d09c334b1aa09be4da1979100ec5}\label{namespaceaare_a2868d09c334b1aa09be4da1979100ec5} 
+\index{aare@{aare}!load@{load}}
+\index{load@{load}!aare@{aare}}
+\doxysubsubsection{\texorpdfstring{load()}{load()}}
+{\footnotesize\ttfamily template$<$typename T , ssize\+\_\+t Ndim$>$ \\
+\mbox{\hyperlink{classaare_1_1NDArray}{NDArray}}$<$ T, Ndim $>$ aare\+::load (\begin{DoxyParamCaption}\item[{const std\+::string \&}]{pathname,  }\item[{std\+::array$<$ ssize\+\_\+t, Ndim $>$}]{shape }\end{DoxyParamCaption})}
+
+\Hypertarget{namespaceaare_a2fecee4bfadd26c1cd61d316e16cc060}\label{namespaceaare_a2fecee4bfadd26c1cd61d316e16cc060} 
+\index{aare@{aare}!make\_array@{make\_array}}
+\index{make\_array@{make\_array}!aare@{aare}}
+\doxysubsubsection{\texorpdfstring{make\_array()}{make\_array()}}
+{\footnotesize\ttfamily template$<$ssize\+\_\+t Ndim$>$ \\
+std\+::array$<$ ssize\+\_\+t, Ndim $>$ aare\+::make\+\_\+array (\begin{DoxyParamCaption}\item[{const std\+::vector$<$ ssize\+\_\+t $>$ \&}]{vec }\end{DoxyParamCaption})}
+
+\Hypertarget{namespaceaare_a3ebdc3c557843d49b065a15ff833e2a2}\label{namespaceaare_a3ebdc3c557843d49b065a15ff833e2a2} 
+\index{aare@{aare}!make\_shape@{make\_shape}}
+\index{make\_shape@{make\_shape}!aare@{aare}}
+\doxysubsubsection{\texorpdfstring{make\_shape()}{make\_shape()}}
+{\footnotesize\ttfamily template$<$ssize\+\_\+t Ndim$>$ \\
+\mbox{\hyperlink{namespaceaare_a3e7aced06ae41952428121c25c4d54d4}{Shape}}$<$ Ndim $>$ aare\+::make\+\_\+shape (\begin{DoxyParamCaption}\item[{const std\+::vector$<$ size\+\_\+t $>$ \&}]{shape }\end{DoxyParamCaption})}
+
+\Hypertarget{namespaceaare_aac5d322f266bccdc416bcd66098eae33}\label{namespaceaare_aac5d322f266bccdc416bcd66098eae33} 
+\index{aare@{aare}!save@{save}}
+\index{save@{save}!aare@{aare}}
+\doxysubsubsection{\texorpdfstring{save()}{save()}}
+{\footnotesize\ttfamily template$<$typename T , ssize\+\_\+t Ndim$>$ \\
+void aare\+::save (\begin{DoxyParamCaption}\item[{\mbox{\hyperlink{classaare_1_1NDArray}{NDArray}}$<$ T, Ndim $>$ \&}]{img,  }\item[{std\+::string}]{pathname }\end{DoxyParamCaption})}
+
+\Hypertarget{namespaceaare_a89378a4bb4e084b9d399d9b673059451}\label{namespaceaare_a89378a4bb4e084b9d399d9b673059451} 
+\index{aare@{aare}!StringTo@{StringTo}}
+\index{StringTo@{StringTo}!aare@{aare}}
+\doxysubsubsection{\texorpdfstring{StringTo()}{StringTo()}\hspace{0.1cm}{\footnotesize\ttfamily [1/5]}}
+{\footnotesize\ttfamily template$<$$>$ \\
+\mbox{\hyperlink{namespaceaare_a180255836568df302c95b5ca87dc5355}{Timing\+Mode}} aare\+::\+String\+To (\begin{DoxyParamCaption}\item[{std\+::string}]{mode }\end{DoxyParamCaption})}
+
+\Hypertarget{namespaceaare_aa0b3a129f80c6fb123f22f466f8794e1}\label{namespaceaare_aa0b3a129f80c6fb123f22f466f8794e1} 
+\index{aare@{aare}!StringTo@{StringTo}}
+\index{StringTo@{StringTo}!aare@{aare}}
+\doxysubsubsection{\texorpdfstring{StringTo()}{StringTo()}\hspace{0.1cm}{\footnotesize\ttfamily [2/5]}}
+{\footnotesize\ttfamily template$<$$>$ \\
+\mbox{\hyperlink{namespaceaare_a5b95afba95553c1e118e1478c69042f7}{Detector\+Type}} aare\+::\+String\+To (\begin{DoxyParamCaption}\item[{std\+::string}]{name }\end{DoxyParamCaption})}
+
+\Hypertarget{namespaceaare_a43707c616f0b7e5edfd2b36bfe4edc8d}\label{namespaceaare_a43707c616f0b7e5edfd2b36bfe4edc8d} 
+\index{aare@{aare}!StringTo@{StringTo}}
+\index{StringTo@{StringTo}!aare@{aare}}
+\doxysubsubsection{\texorpdfstring{StringTo()}{StringTo()}\hspace{0.1cm}{\footnotesize\ttfamily [3/5]}}
+{\footnotesize\ttfamily template$<$class T $>$ \\
+T aare\+::\+String\+To (\begin{DoxyParamCaption}\item[{std\+::string}]{sv }\end{DoxyParamCaption})}
+
+\Hypertarget{namespaceaare_adfdafb087b91443c8dadc60446c27add}\label{namespaceaare_adfdafb087b91443c8dadc60446c27add} 
+\index{aare@{aare}!StringTo@{StringTo}}
+\index{StringTo@{StringTo}!aare@{aare}}
+\doxysubsubsection{\texorpdfstring{StringTo()}{StringTo()}\hspace{0.1cm}{\footnotesize\ttfamily [4/5]}}
+{\footnotesize\ttfamily template$<$$>$ \\
+\mbox{\hyperlink{namespaceaare_a5b95afba95553c1e118e1478c69042f7}{Detector\+Type}} aare\+::\+String\+To (\begin{DoxyParamCaption}\item[{std\+::string}]{name }\end{DoxyParamCaption})}
+
+\Hypertarget{namespaceaare_a5e815d643704b75fc2b35c7c61b5aa87}\label{namespaceaare_a5e815d643704b75fc2b35c7c61b5aa87} 
+\index{aare@{aare}!StringTo@{StringTo}}
+\index{StringTo@{StringTo}!aare@{aare}}
+\doxysubsubsection{\texorpdfstring{StringTo()}{StringTo()}\hspace{0.1cm}{\footnotesize\ttfamily [5/5]}}
+{\footnotesize\ttfamily template$<$$>$ \\
+\mbox{\hyperlink{namespaceaare_a180255836568df302c95b5ca87dc5355}{Timing\+Mode}} aare\+::\+String\+To (\begin{DoxyParamCaption}\item[{std\+::string}]{name }\end{DoxyParamCaption})}
+
+\Hypertarget{namespaceaare_a10ded84d674dfc5e9c56409cb04ad3b4}\label{namespaceaare_a10ded84d674dfc5e9c56409cb04ad3b4} 
+\index{aare@{aare}!toString@{toString}}
+\index{toString@{toString}!aare@{aare}}
+\doxysubsubsection{\texorpdfstring{toString()}{toString()}\hspace{0.1cm}{\footnotesize\ttfamily [1/3]}}
+{\footnotesize\ttfamily template$<$$>$ \\
+std\+::string aare\+::to\+String (\begin{DoxyParamCaption}\item[{\mbox{\hyperlink{namespaceaare_a5b95afba95553c1e118e1478c69042f7}{Detector\+Type}}}]{type }\end{DoxyParamCaption})}
+
+\Hypertarget{namespaceaare_a10ded84d674dfc5e9c56409cb04ad3b4}\label{namespaceaare_a10ded84d674dfc5e9c56409cb04ad3b4} 
+\index{aare@{aare}!toString@{toString}}
+\index{toString@{toString}!aare@{aare}}
+\doxysubsubsection{\texorpdfstring{toString()}{toString()}\hspace{0.1cm}{\footnotesize\ttfamily [2/3]}}
+{\footnotesize\ttfamily template$<$$>$ \\
+std\+::string aare\+::to\+String (\begin{DoxyParamCaption}\item[{\mbox{\hyperlink{namespaceaare_a5b95afba95553c1e118e1478c69042f7}{Detector\+Type}}}]{type }\end{DoxyParamCaption})}
+
+\Hypertarget{namespaceaare_a00df34c2dc4c69e0cfe84adb4c749403}\label{namespaceaare_a00df34c2dc4c69e0cfe84adb4c749403} 
+\index{aare@{aare}!toString@{toString}}
+\index{toString@{toString}!aare@{aare}}
+\doxysubsubsection{\texorpdfstring{toString()}{toString()}\hspace{0.1cm}{\footnotesize\ttfamily [3/3]}}
+{\footnotesize\ttfamily template$<$class T $>$ \\
+std\+::string aare\+::to\+String (\begin{DoxyParamCaption}\item[{T}]{sv }\end{DoxyParamCaption})}
+

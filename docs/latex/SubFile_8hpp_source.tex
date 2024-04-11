@@ -1,0 +1,56 @@
+\doxysection{Sub\+File.\+hpp}
+\hypertarget{SubFile_8hpp_source}{}\label{SubFile_8hpp_source}\index{file\_io/include/aare/file\_io/SubFile.hpp@{file\_io/include/aare/file\_io/SubFile.hpp}}
+\mbox{\hyperlink{SubFile_8hpp}{Go to the documentation of this file.}}
+\begin{DoxyCode}{0}
+\DoxyCodeLine{00001\ \textcolor{preprocessor}{\#pragma\ once}}
+\DoxyCodeLine{00002\ \textcolor{preprocessor}{\#include\ "{}\mbox{\hyperlink{core_2include_2aare_2core_2defs_8hpp}{aare/core/defs.hpp}}"{}}}
+\DoxyCodeLine{00003\ \textcolor{preprocessor}{\#include\ <cstdint>}}
+\DoxyCodeLine{00004\ \textcolor{preprocessor}{\#include\ <filesystem>}}
+\DoxyCodeLine{00005\ \textcolor{preprocessor}{\#include\ <map>}}
+\DoxyCodeLine{00006\ \textcolor{preprocessor}{\#include\ <variant>}}
+\DoxyCodeLine{00007\ }
+\DoxyCodeLine{00008\ \textcolor{keyword}{namespace\ }\mbox{\hyperlink{namespaceaare}{aare}}\ \{}
+\DoxyCodeLine{00009\ }
+\DoxyCodeLine{00013\ \textcolor{keyword}{class\ }\mbox{\hyperlink{classaare_1_1SubFile}{SubFile}}\ \{}
+\DoxyCodeLine{00014\ \ \ \textcolor{keyword}{protected}:}
+\DoxyCodeLine{00020\ \ \ \ \ \textcolor{keyword}{using\ }\mbox{\hyperlink{classaare_1_1SubFile_a15fca3d77492479d07d9e1490b0397b7}{pfunc}}\ =\ size\_t\ (\mbox{\hyperlink{classaare_1_1SubFile}{SubFile}}::*)(std::byte\ *);}
+\DoxyCodeLine{00021\ \ \ \ \ \mbox{\hyperlink{classaare_1_1SubFile_a15fca3d77492479d07d9e1490b0397b7}{pfunc}}\ \mbox{\hyperlink{classaare_1_1SubFile_a6581cd31c90c530b8ab4d4c3c1f24c11}{read\_impl}}\ =\ \textcolor{keyword}{nullptr};}
+\DoxyCodeLine{00028\ \ \ \ \ std::map<std::pair<DetectorType,\ int>,\ \mbox{\hyperlink{classaare_1_1SubFile_a15fca3d77492479d07d9e1490b0397b7}{pfunc}}>\ \mbox{\hyperlink{classaare_1_1SubFile_ac0f3eb666f5ce7d789c98e3e48adb0c1}{read\_impl\_map}}\ =\ \{}
+\DoxyCodeLine{00029\ \ \ \ \ \ \ \ \ \{\{\mbox{\hyperlink{namespaceaare_a5b95afba95553c1e118e1478c69042f7a0947b28848519e2e61c3f8561dedf7d0}{DetectorType::Moench}},\ 16\},\ \&SubFile::read\_impl\_reorder<uint16\_t>\},}
+\DoxyCodeLine{00030\ \ \ \ \ \ \ \ \ \{\{\mbox{\hyperlink{namespaceaare_a5b95afba95553c1e118e1478c69042f7ab2c7db922623442a04314d3c941a336b}{DetectorType::Jungfrau}},\ 16\},\ \&\mbox{\hyperlink{classaare_1_1SubFile_a660d0c9ccb8d0e79d9f17bbdea910a45}{SubFile::read\_impl\_normal}}\},}
+\DoxyCodeLine{00031\ \ \ \ \ \ \ \ \ \{\{\mbox{\hyperlink{namespaceaare_a5b95afba95553c1e118e1478c69042f7a8fcb8dbe4124015503e7a92e13ebe66c}{DetectorType::ChipTestBoard}},\ 16\},\ \&\mbox{\hyperlink{classaare_1_1SubFile_a660d0c9ccb8d0e79d9f17bbdea910a45}{SubFile::read\_impl\_normal}}\},}
+\DoxyCodeLine{00032\ \ \ \ \ \ \ \ \ \{\{\mbox{\hyperlink{namespaceaare_a5b95afba95553c1e118e1478c69042f7ae62a69cfc990501180f9457056826208}{DetectorType::Mythen3}},\ 32\},\ \&\mbox{\hyperlink{classaare_1_1SubFile_a660d0c9ccb8d0e79d9f17bbdea910a45}{SubFile::read\_impl\_normal}}\},}
+\DoxyCodeLine{00033\ \ \ \ \ \ \ \ \ \{\{\mbox{\hyperlink{namespaceaare_a5b95afba95553c1e118e1478c69042f7a36df9c5ff09bbd406715bc0f8beec72e}{DetectorType::Eiger}},\ 32\},\ \&\mbox{\hyperlink{classaare_1_1SubFile_a660d0c9ccb8d0e79d9f17bbdea910a45}{SubFile::read\_impl\_normal}}\},}
+\DoxyCodeLine{00034\ \ \ \ \ \ \ \ \ \{\{\mbox{\hyperlink{namespaceaare_a5b95afba95553c1e118e1478c69042f7a36df9c5ff09bbd406715bc0f8beec72e}{DetectorType::Eiger}},\ 16\},\ \&\mbox{\hyperlink{classaare_1_1SubFile_a660d0c9ccb8d0e79d9f17bbdea910a45}{SubFile::read\_impl\_normal}}\}}
+\DoxyCodeLine{00035\ }
+\DoxyCodeLine{00036\ \ \ \ \ \};}
+\DoxyCodeLine{00037\ }
+\DoxyCodeLine{00038\ \ \ \textcolor{keyword}{public}:}
+\DoxyCodeLine{00048\ \ \ \ \ \mbox{\hyperlink{classaare_1_1SubFile}{SubFile}}(std::filesystem::path\ fname,\ \mbox{\hyperlink{namespaceaare_a5b95afba95553c1e118e1478c69042f7}{DetectorType}}\ detector,\ ssize\_t\ rows,\ ssize\_t\ cols,\ uint16\_t\ bitdepth);}
+\DoxyCodeLine{00049\ }
+\DoxyCodeLine{00055\ \ \ \ \ \textcolor{keywordtype}{size\_t}\ \mbox{\hyperlink{classaare_1_1SubFile_a660d0c9ccb8d0e79d9f17bbdea910a45}{read\_impl\_normal}}(std::byte\ *buffer);}
+\DoxyCodeLine{00056\ }
+\DoxyCodeLine{00062\ \ \ \ \ \textcolor{keyword}{template}\ <\textcolor{keyword}{typename}\ DataType>\ \textcolor{keywordtype}{size\_t}\ \mbox{\hyperlink{classaare_1_1SubFile_af8977099c5a78c5d76d3fb3f41d450de}{read\_impl\_flip}}(std::byte\ *buffer);}
+\DoxyCodeLine{00063\ }
+\DoxyCodeLine{00069\ \ \ \ \ \textcolor{keyword}{template}\ <\textcolor{keyword}{typename}\ DataType>\ \textcolor{keywordtype}{size\_t}\ \mbox{\hyperlink{classaare_1_1SubFile_aa41e65b3174ad83c7eee101421104c69}{read\_impl\_reorder}}(std::byte\ *buffer);}
+\DoxyCodeLine{00070\ }
+\DoxyCodeLine{00077\ \ \ \ \ \textcolor{keywordtype}{size\_t}\ \mbox{\hyperlink{classaare_1_1SubFile_a4f13c03f410dfae1440d3d7126914416}{get\_part}}(std::byte\ *buffer,\ \textcolor{keywordtype}{int}\ \mbox{\hyperlink{classaare_1_1SubFile_adb165b1e12b49ad58dfac71a9ad5e64f}{frame\_number}});}
+\DoxyCodeLine{00078\ \ \ \ \ \textcolor{keywordtype}{size\_t}\ \mbox{\hyperlink{classaare_1_1SubFile_adb165b1e12b49ad58dfac71a9ad5e64f}{frame\_number}}(\textcolor{keywordtype}{int}\ frame\_index);}
+\DoxyCodeLine{00079\ }
+\DoxyCodeLine{00080\ \ \ \ \ \textcolor{comment}{//\ TODO:\ define\ the\ inlines\ as\ variables\ and\ assign\ them\ in\ constructor}}
+\DoxyCodeLine{00081\ \ \ \ \ \textcolor{keyword}{inline}\ \textcolor{keywordtype}{size\_t}\ \mbox{\hyperlink{classaare_1_1SubFile_a3d54db8c48d87c4da2c9c7e263a8f953}{bytes\_per\_part}}()\ \{\ \textcolor{keywordflow}{return}\ (\mbox{\hyperlink{classaare_1_1SubFile_acd8a2bd749eaf02f1413af755e9c8108}{m\_bitdepth}}\ /\ 8)\ *\ \mbox{\hyperlink{classaare_1_1SubFile_a16592f71e1f546fce6a00707768e6fad}{m\_rows}}\ *\ \mbox{\hyperlink{classaare_1_1SubFile_af5a74f674ac2a626ff6b8a761a6558ee}{m\_cols}};\ \}}
+\DoxyCodeLine{00082\ \ \ \ \ \textcolor{keyword}{inline}\ \textcolor{keywordtype}{size\_t}\ \mbox{\hyperlink{classaare_1_1SubFile_a90d1b67477a665badbf23fc582fe11d2}{pixels\_per\_part}}()\ \{\ \textcolor{keywordflow}{return}\ \mbox{\hyperlink{classaare_1_1SubFile_a16592f71e1f546fce6a00707768e6fad}{m\_rows}}\ *\ \mbox{\hyperlink{classaare_1_1SubFile_af5a74f674ac2a626ff6b8a761a6558ee}{m\_cols}};\ \}}
+\DoxyCodeLine{00083\ }
+\DoxyCodeLine{00084\ \ \ \textcolor{keyword}{protected}:}
+\DoxyCodeLine{00085\ \ \ \ \ FILE\ *\mbox{\hyperlink{classaare_1_1SubFile_aaee4e9dddec3bbfa3267d1ba341b4282}{fp}}\ =\ \textcolor{keyword}{nullptr};}
+\DoxyCodeLine{00086\ \ \ \ \ ssize\_t\ \mbox{\hyperlink{classaare_1_1SubFile_acd8a2bd749eaf02f1413af755e9c8108}{m\_bitdepth}};}
+\DoxyCodeLine{00087\ \ \ \ \ std::filesystem::path\ \mbox{\hyperlink{classaare_1_1SubFile_a81226b922c7a22effced3f88658e5a82}{m\_fname}};}
+\DoxyCodeLine{00088\ \ \ \ \ ssize\_t\ \mbox{\hyperlink{classaare_1_1SubFile_a16592f71e1f546fce6a00707768e6fad}{m\_rows}}\{\};}
+\DoxyCodeLine{00089\ \ \ \ \ ssize\_t\ \mbox{\hyperlink{classaare_1_1SubFile_af5a74f674ac2a626ff6b8a761a6558ee}{m\_cols}}\{\};}
+\DoxyCodeLine{00090\ \ \ \ \ ssize\_t\ \mbox{\hyperlink{classaare_1_1SubFile_abf8c8d431ddd4e8e7154fe01b415e8cc}{n\_frames}}\{\};}
+\DoxyCodeLine{00091\ \ \ \ \ \textcolor{keywordtype}{int}\ \mbox{\hyperlink{classaare_1_1SubFile_a9651937b2a83af293c1330b86aa1c884}{m\_sub\_file\_index\_}}\{\};}
+\DoxyCodeLine{00092\ \};}
+\DoxyCodeLine{00093\ }
+\DoxyCodeLine{00094\ \}\ \textcolor{comment}{//\ namespace\ aare}}
+
+\end{DoxyCode}

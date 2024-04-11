@@ -1,0 +1,152 @@
+\doxysection{aare\+::Numpy\+Helpers Namespace Reference}
+\hypertarget{namespaceaare_1_1NumpyHelpers}{}\label{namespaceaare_1_1NumpyHelpers}\index{aare::NumpyHelpers@{aare::NumpyHelpers}}
+\doxysubsubsection*{Functions}
+\begin{DoxyCompactItemize}
+\item 
+std\+::string \mbox{\hyperlink{namespaceaare_1_1NumpyHelpers_ab7b89887eba4e7b8e6ab0d2d44551050}{parse\+\_\+str}} (const std\+::string \&in)
+\item 
+std\+::string \mbox{\hyperlink{namespaceaare_1_1NumpyHelpers_a3c864e2c24ee9158c9ead124049259f6}{trim}} (const std\+::string \&str)
+\item 
+std\+::vector$<$ std\+::string $>$ \mbox{\hyperlink{namespaceaare_1_1NumpyHelpers_a315ba7a4dd89b5098e9110566f08edcc}{parse\+\_\+tuple}} (std\+::string in)
+\item 
+bool \mbox{\hyperlink{namespaceaare_1_1NumpyHelpers_a3da52716c32667b0ff22719fbb2839b5}{parse\+\_\+bool}} (const std\+::string \&in)
+\item 
+std\+::string \mbox{\hyperlink{namespaceaare_1_1NumpyHelpers_a1acfb66f71009f5851109a5619b7754d}{get\+\_\+value\+\_\+from\+\_\+map}} (const std\+::string \&mapstr)
+\item 
+std\+::unordered\+\_\+map$<$ std\+::string, std\+::string $>$ \mbox{\hyperlink{namespaceaare_1_1NumpyHelpers_a612ac2a0ff0b43984c52ce029c117ba7}{parse\+\_\+dict}} (std\+::string in, const std\+::vector$<$ std\+::string $>$ \&keys)
+\item 
+{\footnotesize template$<$typename T , size\+\_\+t N$>$ }\\bool \mbox{\hyperlink{namespaceaare_1_1NumpyHelpers_ab6caf7f9849fab03a058c5e2ee823b39}{in\+\_\+array}} (T val, const std\+::array$<$ T, N $>$ \&arr)
+\item 
+bool \mbox{\hyperlink{namespaceaare_1_1NumpyHelpers_a28fa68ac0d5fb557251fa01325d4ccea}{is\+\_\+digits}} (const std\+::string \&str)
+\item 
+\mbox{\hyperlink{classaare_1_1DType}{aare\+::\+DType}} \mbox{\hyperlink{namespaceaare_1_1NumpyHelpers_a39261feb19103c64004ca045459da925}{parse\+\_\+descr}} (std\+::string typestring)
+\item 
+size\+\_\+t \mbox{\hyperlink{namespaceaare_1_1NumpyHelpers_a01a4b858752f6d232279b19968fb483b}{write\+\_\+header}} (std\+::filesystem\+::path fname, const \mbox{\hyperlink{structaare_1_1NumpyHeader}{Numpy\+Header}} \&header)
+\item 
+size\+\_\+t \mbox{\hyperlink{namespaceaare_1_1NumpyHelpers_a01b81d87c6a7e13417733e25997f38cf}{write\+\_\+header}} (std\+::ostream \&out, const \mbox{\hyperlink{structaare_1_1NumpyHeader}{Numpy\+Header}} \&header)
+\item 
+void \mbox{\hyperlink{namespaceaare_1_1NumpyHelpers_aee29f94dded675a486808b89a759531f}{write\+\_\+magic}} (std\+::ostream \&ostream, int version\+\_\+major, int version\+\_\+minor)
+\item 
+{\footnotesize template$<$typename T $>$ }\\std\+::string \mbox{\hyperlink{namespaceaare_1_1NumpyHelpers_a3d35c45544f1451e197f10743d40b31f}{write\+\_\+tuple}} (const std\+::vector$<$ T $>$ \&v)
+\item 
+std\+::string \mbox{\hyperlink{namespaceaare_1_1NumpyHelpers_a8a90de70594a009cdcb5130d222977b3}{write\+\_\+boolean}} (bool b)
+\item 
+std\+::string \mbox{\hyperlink{namespaceaare_1_1NumpyHelpers_aca8a97cafedd5652f22aa51e07c0c31b}{write\+\_\+header\+\_\+dict}} (const std\+::string \&descr, bool fortran\+\_\+order, const \mbox{\hyperlink{namespaceaare_a7caab4efdc1e33ee28f8de9056bbec6c}{shape\+\_\+t}} \&shape)
+\end{DoxyCompactItemize}
+\doxysubsubsection*{Variables}
+\begin{DoxyCompactItemize}
+\item 
+const constexpr std\+::array$<$ char, 6 $>$ \mbox{\hyperlink{namespaceaare_1_1NumpyHelpers_a6767da0d34b753d6f330ba33bbc0a1a8}{magic\+\_\+str}} \{\textquotesingle{}\textbackslash{}x93\textquotesingle{}, \textquotesingle{}N\textquotesingle{}, \textquotesingle{}U\textquotesingle{}, \textquotesingle{}M\textquotesingle{}, \textquotesingle{}P\textquotesingle{}, \textquotesingle{}Y\textquotesingle{}\}
+\item 
+const uint8\+\_\+t \mbox{\hyperlink{namespaceaare_1_1NumpyHelpers_aef6d0c7df7895501f385397d7d706dea}{magic\+\_\+string\+\_\+length}} \{6\}
+\end{DoxyCompactItemize}
+
+
+\doxysubsection{Function Documentation}
+\Hypertarget{namespaceaare_1_1NumpyHelpers_a1acfb66f71009f5851109a5619b7754d}\label{namespaceaare_1_1NumpyHelpers_a1acfb66f71009f5851109a5619b7754d} 
+\index{aare::NumpyHelpers@{aare::NumpyHelpers}!get\_value\_from\_map@{get\_value\_from\_map}}
+\index{get\_value\_from\_map@{get\_value\_from\_map}!aare::NumpyHelpers@{aare::NumpyHelpers}}
+\doxysubsubsection{\texorpdfstring{get\_value\_from\_map()}{get\_value\_from\_map()}}
+{\footnotesize\ttfamily std\+::string aare\+::\+Numpy\+Helpers\+::get\+\_\+value\+\_\+from\+\_\+map (\begin{DoxyParamCaption}\item[{const std\+::string \&}]{mapstr }\end{DoxyParamCaption})}
+
+\Hypertarget{namespaceaare_1_1NumpyHelpers_ab6caf7f9849fab03a058c5e2ee823b39}\label{namespaceaare_1_1NumpyHelpers_ab6caf7f9849fab03a058c5e2ee823b39} 
+\index{aare::NumpyHelpers@{aare::NumpyHelpers}!in\_array@{in\_array}}
+\index{in\_array@{in\_array}!aare::NumpyHelpers@{aare::NumpyHelpers}}
+\doxysubsubsection{\texorpdfstring{in\_array()}{in\_array()}}
+{\footnotesize\ttfamily template$<$typename T , size\+\_\+t N$>$ \\
+bool aare\+::\+Numpy\+Helpers\+::in\+\_\+array (\begin{DoxyParamCaption}\item[{T}]{val,  }\item[{const std\+::array$<$ T, N $>$ \&}]{arr }\end{DoxyParamCaption})}
+
+\Hypertarget{namespaceaare_1_1NumpyHelpers_a28fa68ac0d5fb557251fa01325d4ccea}\label{namespaceaare_1_1NumpyHelpers_a28fa68ac0d5fb557251fa01325d4ccea} 
+\index{aare::NumpyHelpers@{aare::NumpyHelpers}!is\_digits@{is\_digits}}
+\index{is\_digits@{is\_digits}!aare::NumpyHelpers@{aare::NumpyHelpers}}
+\doxysubsubsection{\texorpdfstring{is\_digits()}{is\_digits()}}
+{\footnotesize\ttfamily bool aare\+::\+Numpy\+Helpers\+::is\+\_\+digits (\begin{DoxyParamCaption}\item[{const std\+::string \&}]{str }\end{DoxyParamCaption})}
+
+\Hypertarget{namespaceaare_1_1NumpyHelpers_a3da52716c32667b0ff22719fbb2839b5}\label{namespaceaare_1_1NumpyHelpers_a3da52716c32667b0ff22719fbb2839b5} 
+\index{aare::NumpyHelpers@{aare::NumpyHelpers}!parse\_bool@{parse\_bool}}
+\index{parse\_bool@{parse\_bool}!aare::NumpyHelpers@{aare::NumpyHelpers}}
+\doxysubsubsection{\texorpdfstring{parse\_bool()}{parse\_bool()}}
+{\footnotesize\ttfamily bool aare\+::\+Numpy\+Helpers\+::parse\+\_\+bool (\begin{DoxyParamCaption}\item[{const std\+::string \&}]{in }\end{DoxyParamCaption})}
+
+\Hypertarget{namespaceaare_1_1NumpyHelpers_a39261feb19103c64004ca045459da925}\label{namespaceaare_1_1NumpyHelpers_a39261feb19103c64004ca045459da925} 
+\index{aare::NumpyHelpers@{aare::NumpyHelpers}!parse\_descr@{parse\_descr}}
+\index{parse\_descr@{parse\_descr}!aare::NumpyHelpers@{aare::NumpyHelpers}}
+\doxysubsubsection{\texorpdfstring{parse\_descr()}{parse\_descr()}}
+{\footnotesize\ttfamily \mbox{\hyperlink{classaare_1_1DType}{aare\+::\+DType}} aare\+::\+Numpy\+Helpers\+::parse\+\_\+descr (\begin{DoxyParamCaption}\item[{std\+::string}]{typestring }\end{DoxyParamCaption})}
+
+\Hypertarget{namespaceaare_1_1NumpyHelpers_a612ac2a0ff0b43984c52ce029c117ba7}\label{namespaceaare_1_1NumpyHelpers_a612ac2a0ff0b43984c52ce029c117ba7} 
+\index{aare::NumpyHelpers@{aare::NumpyHelpers}!parse\_dict@{parse\_dict}}
+\index{parse\_dict@{parse\_dict}!aare::NumpyHelpers@{aare::NumpyHelpers}}
+\doxysubsubsection{\texorpdfstring{parse\_dict()}{parse\_dict()}}
+{\footnotesize\ttfamily std\+::unordered\+\_\+map$<$ std\+::string, std\+::string $>$ aare\+::\+Numpy\+Helpers\+::parse\+\_\+dict (\begin{DoxyParamCaption}\item[{std\+::string}]{in,  }\item[{const std\+::vector$<$ std\+::string $>$ \&}]{keys }\end{DoxyParamCaption})}
+
+\Hypertarget{namespaceaare_1_1NumpyHelpers_ab7b89887eba4e7b8e6ab0d2d44551050}\label{namespaceaare_1_1NumpyHelpers_ab7b89887eba4e7b8e6ab0d2d44551050} 
+\index{aare::NumpyHelpers@{aare::NumpyHelpers}!parse\_str@{parse\_str}}
+\index{parse\_str@{parse\_str}!aare::NumpyHelpers@{aare::NumpyHelpers}}
+\doxysubsubsection{\texorpdfstring{parse\_str()}{parse\_str()}}
+{\footnotesize\ttfamily std\+::string aare\+::\+Numpy\+Helpers\+::parse\+\_\+str (\begin{DoxyParamCaption}\item[{const std\+::string \&}]{in }\end{DoxyParamCaption})}
+
+\Hypertarget{namespaceaare_1_1NumpyHelpers_a315ba7a4dd89b5098e9110566f08edcc}\label{namespaceaare_1_1NumpyHelpers_a315ba7a4dd89b5098e9110566f08edcc} 
+\index{aare::NumpyHelpers@{aare::NumpyHelpers}!parse\_tuple@{parse\_tuple}}
+\index{parse\_tuple@{parse\_tuple}!aare::NumpyHelpers@{aare::NumpyHelpers}}
+\doxysubsubsection{\texorpdfstring{parse\_tuple()}{parse\_tuple()}}
+{\footnotesize\ttfamily std\+::vector$<$ std\+::string $>$ aare\+::\+Numpy\+Helpers\+::parse\+\_\+tuple (\begin{DoxyParamCaption}\item[{std\+::string}]{in }\end{DoxyParamCaption})}
+
+\Hypertarget{namespaceaare_1_1NumpyHelpers_a3c864e2c24ee9158c9ead124049259f6}\label{namespaceaare_1_1NumpyHelpers_a3c864e2c24ee9158c9ead124049259f6} 
+\index{aare::NumpyHelpers@{aare::NumpyHelpers}!trim@{trim}}
+\index{trim@{trim}!aare::NumpyHelpers@{aare::NumpyHelpers}}
+\doxysubsubsection{\texorpdfstring{trim()}{trim()}}
+{\footnotesize\ttfamily std\+::string aare\+::\+Numpy\+Helpers\+::trim (\begin{DoxyParamCaption}\item[{const std\+::string \&}]{str }\end{DoxyParamCaption})}
+
+Removes leading and trailing whitespaces \Hypertarget{namespaceaare_1_1NumpyHelpers_a8a90de70594a009cdcb5130d222977b3}\label{namespaceaare_1_1NumpyHelpers_a8a90de70594a009cdcb5130d222977b3} 
+\index{aare::NumpyHelpers@{aare::NumpyHelpers}!write\_boolean@{write\_boolean}}
+\index{write\_boolean@{write\_boolean}!aare::NumpyHelpers@{aare::NumpyHelpers}}
+\doxysubsubsection{\texorpdfstring{write\_boolean()}{write\_boolean()}}
+{\footnotesize\ttfamily std\+::string aare\+::\+Numpy\+Helpers\+::write\+\_\+boolean (\begin{DoxyParamCaption}\item[{bool}]{b }\end{DoxyParamCaption})\hspace{0.3cm}{\ttfamily [inline]}}
+
+\Hypertarget{namespaceaare_1_1NumpyHelpers_a01a4b858752f6d232279b19968fb483b}\label{namespaceaare_1_1NumpyHelpers_a01a4b858752f6d232279b19968fb483b} 
+\index{aare::NumpyHelpers@{aare::NumpyHelpers}!write\_header@{write\_header}}
+\index{write\_header@{write\_header}!aare::NumpyHelpers@{aare::NumpyHelpers}}
+\doxysubsubsection{\texorpdfstring{write\_header()}{write\_header()}\hspace{0.1cm}{\footnotesize\ttfamily [1/2]}}
+{\footnotesize\ttfamily size\+\_\+t aare\+::\+Numpy\+Helpers\+::write\+\_\+header (\begin{DoxyParamCaption}\item[{std\+::filesystem\+::path}]{fname,  }\item[{const \mbox{\hyperlink{structaare_1_1NumpyHeader}{Numpy\+Header}} \&}]{header }\end{DoxyParamCaption})}
+
+\Hypertarget{namespaceaare_1_1NumpyHelpers_a01b81d87c6a7e13417733e25997f38cf}\label{namespaceaare_1_1NumpyHelpers_a01b81d87c6a7e13417733e25997f38cf} 
+\index{aare::NumpyHelpers@{aare::NumpyHelpers}!write\_header@{write\_header}}
+\index{write\_header@{write\_header}!aare::NumpyHelpers@{aare::NumpyHelpers}}
+\doxysubsubsection{\texorpdfstring{write\_header()}{write\_header()}\hspace{0.1cm}{\footnotesize\ttfamily [2/2]}}
+{\footnotesize\ttfamily size\+\_\+t aare\+::\+Numpy\+Helpers\+::write\+\_\+header (\begin{DoxyParamCaption}\item[{std\+::ostream \&}]{out,  }\item[{const \mbox{\hyperlink{structaare_1_1NumpyHeader}{Numpy\+Header}} \&}]{header }\end{DoxyParamCaption})}
+
+\Hypertarget{namespaceaare_1_1NumpyHelpers_aca8a97cafedd5652f22aa51e07c0c31b}\label{namespaceaare_1_1NumpyHelpers_aca8a97cafedd5652f22aa51e07c0c31b} 
+\index{aare::NumpyHelpers@{aare::NumpyHelpers}!write\_header\_dict@{write\_header\_dict}}
+\index{write\_header\_dict@{write\_header\_dict}!aare::NumpyHelpers@{aare::NumpyHelpers}}
+\doxysubsubsection{\texorpdfstring{write\_header\_dict()}{write\_header\_dict()}}
+{\footnotesize\ttfamily std\+::string aare\+::\+Numpy\+Helpers\+::write\+\_\+header\+\_\+dict (\begin{DoxyParamCaption}\item[{const std\+::string \&}]{descr,  }\item[{bool}]{fortran\+\_\+order,  }\item[{const \mbox{\hyperlink{namespaceaare_a7caab4efdc1e33ee28f8de9056bbec6c}{shape\+\_\+t}} \&}]{shape }\end{DoxyParamCaption})\hspace{0.3cm}{\ttfamily [inline]}}
+
+\Hypertarget{namespaceaare_1_1NumpyHelpers_aee29f94dded675a486808b89a759531f}\label{namespaceaare_1_1NumpyHelpers_aee29f94dded675a486808b89a759531f} 
+\index{aare::NumpyHelpers@{aare::NumpyHelpers}!write\_magic@{write\_magic}}
+\index{write\_magic@{write\_magic}!aare::NumpyHelpers@{aare::NumpyHelpers}}
+\doxysubsubsection{\texorpdfstring{write\_magic()}{write\_magic()}}
+{\footnotesize\ttfamily void aare\+::\+Numpy\+Helpers\+::write\+\_\+magic (\begin{DoxyParamCaption}\item[{std\+::ostream \&}]{ostream,  }\item[{int}]{version\+\_\+major,  }\item[{int}]{version\+\_\+minor }\end{DoxyParamCaption})}
+
+\Hypertarget{namespaceaare_1_1NumpyHelpers_a3d35c45544f1451e197f10743d40b31f}\label{namespaceaare_1_1NumpyHelpers_a3d35c45544f1451e197f10743d40b31f} 
+\index{aare::NumpyHelpers@{aare::NumpyHelpers}!write\_tuple@{write\_tuple}}
+\index{write\_tuple@{write\_tuple}!aare::NumpyHelpers@{aare::NumpyHelpers}}
+\doxysubsubsection{\texorpdfstring{write\_tuple()}{write\_tuple()}}
+{\footnotesize\ttfamily template$<$typename T $>$ \\
+std\+::string aare\+::\+Numpy\+Helpers\+::write\+\_\+tuple (\begin{DoxyParamCaption}\item[{const std\+::vector$<$ T $>$ \&}]{v }\end{DoxyParamCaption})\hspace{0.3cm}{\ttfamily [inline]}}
+
+
+
+\doxysubsection{Variable Documentation}
+\Hypertarget{namespaceaare_1_1NumpyHelpers_a6767da0d34b753d6f330ba33bbc0a1a8}\label{namespaceaare_1_1NumpyHelpers_a6767da0d34b753d6f330ba33bbc0a1a8} 
+\index{aare::NumpyHelpers@{aare::NumpyHelpers}!magic\_str@{magic\_str}}
+\index{magic\_str@{magic\_str}!aare::NumpyHelpers@{aare::NumpyHelpers}}
+\doxysubsubsection{\texorpdfstring{magic\_str}{magic\_str}}
+{\footnotesize\ttfamily const constexpr std\+::array$<$char, 6$>$ aare\+::\+Numpy\+Helpers\+::magic\+\_\+str \{\textquotesingle{}\textbackslash{}x93\textquotesingle{}, \textquotesingle{}N\textquotesingle{}, \textquotesingle{}U\textquotesingle{}, \textquotesingle{}M\textquotesingle{}, \textquotesingle{}P\textquotesingle{}, \textquotesingle{}Y\textquotesingle{}\}\hspace{0.3cm}{\ttfamily [constexpr]}}
+
+\Hypertarget{namespaceaare_1_1NumpyHelpers_aef6d0c7df7895501f385397d7d706dea}\label{namespaceaare_1_1NumpyHelpers_aef6d0c7df7895501f385397d7d706dea} 
+\index{aare::NumpyHelpers@{aare::NumpyHelpers}!magic\_string\_length@{magic\_string\_length}}
+\index{magic\_string\_length@{magic\_string\_length}!aare::NumpyHelpers@{aare::NumpyHelpers}}
+\doxysubsubsection{\texorpdfstring{magic\_string\_length}{magic\_string\_length}}
+{\footnotesize\ttfamily const uint8\+\_\+t aare\+::\+Numpy\+Helpers\+::magic\+\_\+string\+\_\+length \{6\}}
+

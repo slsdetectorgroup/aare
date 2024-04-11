@@ -1,0 +1,103 @@
+compilation_database_dir: ./build
+output_directory: docs/diagrams
+
+diagrams:
+  aare_class:
+    type: class
+    using_namespace: aare
+    include:
+      namespaces:
+        - aare
+    exclude:
+      element_types:
+        - enum
+      access:
+        - private
+        - protected
+        - public
+    glob:
+      - core/src/*.cpp
+      - file_io/src/*.cpp
+      - network_io/src/*.cpp
+      - utils/src/*.cpp
+
+  aare_class_simplified:
+    type: class
+    using_namespace: aare
+    include:
+      context:
+        - match:
+            radius: 1
+            pattern: aare::FileInterface
+        - match:
+            radius: 2
+            pattern: aare::ZmqSocket
+        - match:
+            radius: 2
+            pattern: aare::Frame
+      namespaces:
+        - aare
+    exclude:
+      elements:
+        - aare::xy
+      element_types:
+        - enum
+      access:
+        - private
+        - protected
+        - public
+    glob:
+      - core/src/*.cpp
+      - file_io/src/*.cpp
+      - network_io/src/*.cpp
+      - utils/src/*.cpp
+
+  # aare_package:
+  #   type: package
+  #   package_type: directory
+
+  #   include:
+  #     paths:
+  #       - core
+  #       - file_io
+  #       - network_io
+  #       - utils
+  #       - tests
+
+  file_io_class:
+    type: class
+    # generate_packages: true
+    # package_type: directory
+    include:
+      context:
+        - aare::FileInterface
+        - aare::File
+      namespaces:
+        - aare
+      # relationships:
+      #   - inheritance
+
+    glob:
+      - file_io/src/*.cpp
+
+  network_io_class:
+    type: class
+    include:
+      paths:
+        - network_io/include/aare/network_io/*.hpp
+        - core/include/aare/core/Frame.hpp
+      namespaces:
+        - aare
+    glob:
+      - network_io/src/*.cpp
+
+  core_class:
+    type: class
+    include:
+      paths:
+        - core/include/aare/core/*.hpp
+      namespaces:
+        - aare
+    glob:
+      - core/src/*.cpp
+

@@ -1,0 +1,313 @@
+\doxysection{Variable\+Size\+Cluster\+Finder.\+hpp}
+\hypertarget{VariableSizeClusterFinder_8hpp_source}{}\label{VariableSizeClusterFinder_8hpp_source}\index{core/include/aare/core/VariableSizeClusterFinder.hpp@{core/include/aare/core/VariableSizeClusterFinder.hpp}}
+\mbox{\hyperlink{VariableSizeClusterFinder_8hpp}{Go to the documentation of this file.}}
+\begin{DoxyCode}{0}
+\DoxyCodeLine{00001\ \textcolor{preprocessor}{\#pragma\ once}}
+\DoxyCodeLine{00002\ }
+\DoxyCodeLine{00003\ \textcolor{preprocessor}{\#include\ <algorithm>}}
+\DoxyCodeLine{00004\ \textcolor{preprocessor}{\#include\ <map>}}
+\DoxyCodeLine{00005\ \textcolor{preprocessor}{\#include\ <unordered\_map>}}
+\DoxyCodeLine{00006\ \textcolor{preprocessor}{\#include\ <vector>}}
+\DoxyCodeLine{00007\ }
+\DoxyCodeLine{00008\ \textcolor{preprocessor}{\#include\ "{}\mbox{\hyperlink{NDArray_8hpp}{aare/core/NDArray.hpp}}"{}}}
+\DoxyCodeLine{00009\ }
+\DoxyCodeLine{00010\ \textcolor{keyword}{const}\ \textcolor{keywordtype}{int}\ \mbox{\hyperlink{VariableSizeClusterFinder_8hpp_af7298d7428936e9c8ecb92df87bd621c}{MAX\_CLUSTER\_SIZE}}\ =\ 200;}
+\DoxyCodeLine{00011\ \textcolor{keyword}{namespace\ }\mbox{\hyperlink{namespaceaare}{aare}}\ \{}
+\DoxyCodeLine{00012\ }
+\DoxyCodeLine{00013\ \textcolor{keyword}{template}\ <\textcolor{keyword}{typename}\ T>\ \textcolor{keyword}{class\ }\mbox{\hyperlink{classaare_1_1ClusterFinder}{ClusterFinder}}\ \{}
+\DoxyCodeLine{00014\ \ \ \textcolor{keyword}{public}:}
+\DoxyCodeLine{00015\ \ \ \ \ \textcolor{keyword}{struct\ }\mbox{\hyperlink{structaare_1_1ClusterFinder_1_1Hit}{Hit}}\ \{}
+\DoxyCodeLine{00016\ \ \ \ \ \ \ \ \ int16\_t\ \mbox{\hyperlink{structaare_1_1ClusterFinder_1_1Hit_a467c1a642f4f886142031a9cdedf8974}{size}}\{\};}
+\DoxyCodeLine{00017\ \ \ \ \ \ \ \ \ int16\_t\ \mbox{\hyperlink{structaare_1_1ClusterFinder_1_1Hit_a62e5ba47c8626344a6816906cb440b30}{row}}\{\};}
+\DoxyCodeLine{00018\ \ \ \ \ \ \ \ \ int16\_t\ \mbox{\hyperlink{structaare_1_1ClusterFinder_1_1Hit_afcae3086d96e4761ab437d227a12e872}{col}}\{\};}
+\DoxyCodeLine{00019\ \ \ \ \ \ \ \ \ uint16\_t\ \mbox{\hyperlink{structaare_1_1ClusterFinder_1_1Hit_a3f2ca05a76fa614ab5cfc70c0197093c}{reserved}}\{\};\ \textcolor{comment}{//\ for\ alignment}}
+\DoxyCodeLine{00020\ \ \ \ \ \ \ \ \ T\ \mbox{\hyperlink{structaare_1_1ClusterFinder_1_1Hit_aefdfa834b42bdedc95f872267e9ef08a}{energy}}\{\};}
+\DoxyCodeLine{00021\ \ \ \ \ \ \ \ \ T\ \mbox{\hyperlink{structaare_1_1ClusterFinder_1_1Hit_a92ff57e741cf640d00dce1976616837a}{max}}\{\};}
+\DoxyCodeLine{00022\ }
+\DoxyCodeLine{00023\ \ \ \ \ \ \ \ \ \textcolor{comment}{//\ std::vector<int16\_t>\ rows\{\};}}
+\DoxyCodeLine{00024\ \ \ \ \ \ \ \ \ \textcolor{comment}{//\ std::vector<int16\_t>\ cols\{\};}}
+\DoxyCodeLine{00025\ \ \ \ \ \ \ \ \ int16\_t\ \mbox{\hyperlink{structaare_1_1ClusterFinder_1_1Hit_a284bcfb7b46f098ec297533aff39991e}{rows}}[\mbox{\hyperlink{VariableSizeClusterFinder_8hpp_af7298d7428936e9c8ecb92df87bd621c}{MAX\_CLUSTER\_SIZE}}]\ =\ \{0\};}
+\DoxyCodeLine{00026\ \ \ \ \ \ \ \ \ int16\_t\ \mbox{\hyperlink{structaare_1_1ClusterFinder_1_1Hit_a567f82696f8b38154602c389ae551306}{cols}}[\mbox{\hyperlink{VariableSizeClusterFinder_8hpp_af7298d7428936e9c8ecb92df87bd621c}{MAX\_CLUSTER\_SIZE}}]\ =\ \{0\};}
+\DoxyCodeLine{00027\ \ \ \ \ \ \ \ \ \textcolor{keywordtype}{double}\ \mbox{\hyperlink{structaare_1_1ClusterFinder_1_1Hit_a6c31a388fb5bcc77aed32dd5fa5fcb08}{enes}}[\mbox{\hyperlink{VariableSizeClusterFinder_8hpp_af7298d7428936e9c8ecb92df87bd621c}{MAX\_CLUSTER\_SIZE}}]\ =\ \{0\};}
+\DoxyCodeLine{00028\ \ \ \ \ \};}
+\DoxyCodeLine{00029\ }
+\DoxyCodeLine{00030\ \ \ \textcolor{keyword}{private}:}
+\DoxyCodeLine{00031\ \ \ \ \ \textcolor{keyword}{const}\ std::array<ssize\_t,\ 2>\ \mbox{\hyperlink{classaare_1_1ClusterFinder_a87ae02ed18b8d51cf34d6dcc4a0a11b1}{shape\_}};}
+\DoxyCodeLine{00032\ \ \ \ \ \mbox{\hyperlink{classaare_1_1NDView}{NDView<T,\ 2>}}\ \mbox{\hyperlink{classaare_1_1ClusterFinder_a77a7f9093806a6b66596262c726aedff}{original\_}};}
+\DoxyCodeLine{00033\ \ \ \ \ \mbox{\hyperlink{classaare_1_1NDArray}{NDArray<int,\ 2>}}\ \mbox{\hyperlink{classaare_1_1ClusterFinder_a0a507adf23a53c14e823c8721c8139dc}{labeled\_}};}
+\DoxyCodeLine{00034\ \ \ \ \ \mbox{\hyperlink{classaare_1_1NDArray}{NDArray<int,\ 2>}}\ \mbox{\hyperlink{classaare_1_1ClusterFinder_a86342541978eac118b16eefa026930d4}{peripheral\_labeled\_}};}
+\DoxyCodeLine{00035\ \ \ \ \ \mbox{\hyperlink{classaare_1_1NDArray}{NDArray<bool,\ 2>}}\ \mbox{\hyperlink{classaare_1_1ClusterFinder_aca8f21925565b4f3dbf4677d2ca6ba64}{binary\_}};\ \textcolor{comment}{//\ over\ threshold\ flag}}
+\DoxyCodeLine{00036\ \ \ \ \ T\ \mbox{\hyperlink{classaare_1_1ClusterFinder_a2726725360133a70fce11b8072cf2a93}{threshold\_}};}
+\DoxyCodeLine{00037\ \ \ \ \ \mbox{\hyperlink{classaare_1_1NDView}{NDView<T,\ 2>}}\ \mbox{\hyperlink{classaare_1_1ClusterFinder_a8044d4bdabc6ed090f07bfddc362f2eb}{noiseMap}};}
+\DoxyCodeLine{00038\ \ \ \ \ \textcolor{keywordtype}{bool}\ \mbox{\hyperlink{classaare_1_1ClusterFinder_ae7622ae945b849df6bad3d2cc0347370}{use\_noise\_map}}\ =\ \textcolor{keyword}{false};}
+\DoxyCodeLine{00039\ \ \ \ \ \textcolor{keywordtype}{int}\ \mbox{\hyperlink{classaare_1_1ClusterFinder_af933139fed8103cab83572a6ba449f36}{peripheralThresholdFactor\_}}\ =\ 5;}
+\DoxyCodeLine{00040\ \ \ \ \ \textcolor{keywordtype}{int}\ \mbox{\hyperlink{classaare_1_1ClusterFinder_a91e708f8f94adfb3af7e5d9c3a748bb3}{current\_label}};}
+\DoxyCodeLine{00041\ \ \ \ \ \textcolor{keyword}{const}\ std::array<int,\ 4>\ \mbox{\hyperlink{classaare_1_1ClusterFinder_a69ffad49f0d31fdf9993774d219f87e8}{di}}\{\{0,\ -\/1,\ -\/1,\ -\/1\}\};\ \ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{comment}{//\ row\ \#\#\#\ 8-\/neighbour\ by\ scaning\ from\ left\ to\ right}}
+\DoxyCodeLine{00042\ \ \ \ \ \textcolor{keyword}{const}\ std::array<int,\ 4>\ \mbox{\hyperlink{classaare_1_1ClusterFinder_a7575c70f662ffa316882eec6f2b865e7}{dj}}\{\{-\/1,\ -\/1,\ 0,\ 1\}\};\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{comment}{//\ col\ \#\#\#\ 8-\/neighbour\ by\ scaning\ from\ top\ to\ bottom}}
+\DoxyCodeLine{00043\ \ \ \ \ \textcolor{keyword}{const}\ std::array<int,\ 8>\ \mbox{\hyperlink{classaare_1_1ClusterFinder_af97013b5f3fff727149b4e09c9d485a3}{di\_}}\{\{0,\ 0,\ -\/1,\ 1,\ -\/1,\ 1,\ -\/1,\ 1\}\};\ \textcolor{comment}{//\ row}}
+\DoxyCodeLine{00044\ \ \ \ \ \textcolor{keyword}{const}\ std::array<int,\ 8>\ \mbox{\hyperlink{classaare_1_1ClusterFinder_a9809de5007aeb2095b5ec74f68b6a7d8}{dj\_}}\{\{-\/1,\ 1,\ 0,\ 0,\ 1,\ -\/1,\ -\/1,\ 1\}\};\ \textcolor{comment}{//\ col}}
+\DoxyCodeLine{00045\ \ \ \ \ std::map<int,\ int>\ \mbox{\hyperlink{classaare_1_1ClusterFinder_aeeec655301ed05e4c5ee9201e828b7f0}{child}};\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{comment}{//\ heirachy:\ key:\ child;\ val:\ parent}}
+\DoxyCodeLine{00046\ \ \ \ \ std::unordered\_map<int,\ Hit>\ \mbox{\hyperlink{classaare_1_1ClusterFinder_ad4b7557ac7b34a7fd188564e22d634ec}{h\_size}};}
+\DoxyCodeLine{00047\ \ \ \ \ std::vector<Hit>\ \mbox{\hyperlink{classaare_1_1ClusterFinder_ac228fbe6a24d8b2179db87aa0cfecc86}{hits}};}
+\DoxyCodeLine{00048\ \ \ \ \ \textcolor{comment}{//\ std::vector<std::vector<int16\_t>>\ row}}
+\DoxyCodeLine{00049\ \ \ \ \ \textcolor{keywordtype}{int}\ \mbox{\hyperlink{classaare_1_1ClusterFinder_ac6372eadf0bff57bd560bd07cd59da96}{check\_neighbours}}(\textcolor{keywordtype}{int}\ i,\ \textcolor{keywordtype}{int}\ j);}
+\DoxyCodeLine{00050\ }
+\DoxyCodeLine{00051\ \ \ \textcolor{keyword}{public}:}
+\DoxyCodeLine{00052\ \ \ \ \ \mbox{\hyperlink{classaare_1_1ClusterFinder_a95c3c74dcd2812659c4664f8896dcc6e}{ClusterFinder}}(image\_shape\ shape,\ T\ threshold)}
+\DoxyCodeLine{00053\ \ \ \ \ \ \ \ \ :\ \mbox{\hyperlink{classaare_1_1ClusterFinder_a87ae02ed18b8d51cf34d6dcc4a0a11b1}{shape\_}}(shape),\ \mbox{\hyperlink{classaare_1_1ClusterFinder_a0a507adf23a53c14e823c8721c8139dc}{labeled\_}}(shape,\ 0),\ \mbox{\hyperlink{classaare_1_1ClusterFinder_a86342541978eac118b16eefa026930d4}{peripheral\_labeled\_}}(shape,\ 0),\ \mbox{\hyperlink{classaare_1_1ClusterFinder_aca8f21925565b4f3dbf4677d2ca6ba64}{binary\_}}(shape),\ \mbox{\hyperlink{classaare_1_1ClusterFinder_a2726725360133a70fce11b8072cf2a93}{threshold\_}}(threshold)\ \{}
+\DoxyCodeLine{00054\ \ \ \ \ \ \ \ \ \mbox{\hyperlink{classaare_1_1ClusterFinder_ac228fbe6a24d8b2179db87aa0cfecc86}{hits}}.reserve(2000);}
+\DoxyCodeLine{00055\ \ \ \ \ \}}
+\DoxyCodeLine{00056\ }
+\DoxyCodeLine{00057\ \ \ \ \ \mbox{\hyperlink{classaare_1_1NDArray}{NDArray<int,\ 2>}}\ \mbox{\hyperlink{classaare_1_1ClusterFinder_a8df807dc085267ece8c8329d546c1560}{labeled}}()\ \{\ \textcolor{keywordflow}{return}\ \mbox{\hyperlink{classaare_1_1ClusterFinder_a0a507adf23a53c14e823c8721c8139dc}{labeled\_}};\ \}}
+\DoxyCodeLine{00058\ }
+\DoxyCodeLine{00059\ \ \ \ \ \textcolor{keywordtype}{void}\ \mbox{\hyperlink{classaare_1_1ClusterFinder_acd1fc878a5043e0adc8f085d1edf3ba6}{set\_noiseMap}}(\mbox{\hyperlink{classaare_1_1NDView}{NDView<T,\ 2>}}\ noise\_map)\ \{}
+\DoxyCodeLine{00060\ \ \ \ \ \ \ \ \ \mbox{\hyperlink{classaare_1_1ClusterFinder_a8044d4bdabc6ed090f07bfddc362f2eb}{noiseMap}}\ =\ noise\_map;}
+\DoxyCodeLine{00061\ \ \ \ \ \ \ \ \ \mbox{\hyperlink{classaare_1_1ClusterFinder_ae7622ae945b849df6bad3d2cc0347370}{use\_noise\_map}}\ =\ \textcolor{keyword}{true};}
+\DoxyCodeLine{00062\ \ \ \ \ \}}
+\DoxyCodeLine{00063\ \ \ \ \ \textcolor{keywordtype}{void}\ \mbox{\hyperlink{classaare_1_1ClusterFinder_a3d8448ccd2478a52075a4b7d5e090b2f}{set\_peripheralThresholdFactor}}(\textcolor{keywordtype}{int}\ factor)\ \{\ \mbox{\hyperlink{classaare_1_1ClusterFinder_af933139fed8103cab83572a6ba449f36}{peripheralThresholdFactor\_}}\ =\ factor;\ \}}
+\DoxyCodeLine{00064\ \ \ \ \ \textcolor{keywordtype}{void}\ \mbox{\hyperlink{classaare_1_1ClusterFinder_ab880d2c07964ee558a85daed3b3ec181}{find\_clusters}}(\mbox{\hyperlink{classaare_1_1NDView}{NDView<T,\ 2>}}\ img);}
+\DoxyCodeLine{00065\ \ \ \ \ \textcolor{keywordtype}{void}\ \mbox{\hyperlink{classaare_1_1ClusterFinder_af33f83aeeb4187f826919270b8b38391}{find\_clusters\_X}}(\mbox{\hyperlink{classaare_1_1NDView}{NDView<T,\ 2>}}\ img);}
+\DoxyCodeLine{00066\ \ \ \ \ \textcolor{keywordtype}{void}\ \mbox{\hyperlink{classaare_1_1ClusterFinder_a64540f74ba953ae2ba2efab9f06e9fc5}{rec\_FillHit}}(\textcolor{keywordtype}{int}\ clusterIndex,\ \textcolor{keywordtype}{int}\ i,\ \textcolor{keywordtype}{int}\ j);}
+\DoxyCodeLine{00067\ \ \ \ \ \textcolor{keywordtype}{void}\ \mbox{\hyperlink{classaare_1_1ClusterFinder_ab25d54418b721d429f6141da73cc2a41}{single\_pass}}(\mbox{\hyperlink{classaare_1_1NDView}{NDView<T,\ 2>}}\ img);}
+\DoxyCodeLine{00068\ \ \ \ \ \textcolor{keywordtype}{void}\ \mbox{\hyperlink{classaare_1_1ClusterFinder_a7993fb06ee06a24ede5a4ddd94f8a987}{first\_pass}}();}
+\DoxyCodeLine{00069\ \ \ \ \ \textcolor{keywordtype}{void}\ \mbox{\hyperlink{classaare_1_1ClusterFinder_a6630ba010b0d0b6b4cd8aefe98a1bd9e}{second\_pass}}();}
+\DoxyCodeLine{00070\ \ \ \ \ \textcolor{keywordtype}{void}\ \mbox{\hyperlink{classaare_1_1ClusterFinder_a053a2b1729301c1bda8b78a8187112b6}{store\_clusters}}();}
+\DoxyCodeLine{00071\ }
+\DoxyCodeLine{00072\ \ \ \ \ std::vector<Hit>\ \mbox{\hyperlink{classaare_1_1ClusterFinder_a4695c04a848715d073455b76241119b4}{steal\_hits}}()\ \{}
+\DoxyCodeLine{00073\ \ \ \ \ \ \ \ \ std::vector<Hit>\ tmp;}
+\DoxyCodeLine{00074\ \ \ \ \ \ \ \ \ std::swap(tmp,\ \mbox{\hyperlink{classaare_1_1ClusterFinder_ac228fbe6a24d8b2179db87aa0cfecc86}{hits}});}
+\DoxyCodeLine{00075\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{return}\ tmp;}
+\DoxyCodeLine{00076\ \ \ \ \ \};}
+\DoxyCodeLine{00077\ \ \ \ \ \textcolor{keywordtype}{void}\ \mbox{\hyperlink{classaare_1_1ClusterFinder_a405e7f0d0eabc9a93099763f4eaa8fbc}{clear\_hits}}()\ \{\ \mbox{\hyperlink{classaare_1_1ClusterFinder_ac228fbe6a24d8b2179db87aa0cfecc86}{hits}}.clear();\ \};}
+\DoxyCodeLine{00078\ }
+\DoxyCodeLine{00079\ \ \ \ \ \textcolor{keywordtype}{void}\ \mbox{\hyperlink{classaare_1_1ClusterFinder_aed823a8611547fb93d6accacdd61b55c}{print\_connections}}()\ \{}
+\DoxyCodeLine{00080\ \ \ \ \ \ \ \ \ fmt::print(\textcolor{stringliteral}{"{}Connections:\(\backslash\)n"{}});}
+\DoxyCodeLine{00081\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{for}\ (\textcolor{keyword}{auto}\ it\ =\ \mbox{\hyperlink{classaare_1_1ClusterFinder_aeeec655301ed05e4c5ee9201e828b7f0}{child}}.begin();\ it\ !=\ \mbox{\hyperlink{classaare_1_1ClusterFinder_aeeec655301ed05e4c5ee9201e828b7f0}{child}}.end();\ ++it)\ \{}
+\DoxyCodeLine{00082\ \ \ \ \ \ \ \ \ \ \ \ \ fmt::print(\textcolor{stringliteral}{"{}\{\}\ -\/>\ \{\}\(\backslash\)n"{}},\ it-\/>first,\ it-\/>second);}
+\DoxyCodeLine{00083\ \ \ \ \ \ \ \ \ \}}
+\DoxyCodeLine{00084\ \ \ \ \ \}}
+\DoxyCodeLine{00085\ \ \ \ \ \textcolor{keywordtype}{size\_t}\ \mbox{\hyperlink{classaare_1_1ClusterFinder_a301516e99319ee02ecf4c44f8310ce16}{total\_clusters}}()\textcolor{keyword}{\ const\ }\{}
+\DoxyCodeLine{00086\ \ \ \ \ \ \ \ \ \textcolor{comment}{//\ TODO!\ fix\ for\ stealing}}
+\DoxyCodeLine{00087\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{return}\ \mbox{\hyperlink{classaare_1_1ClusterFinder_ac228fbe6a24d8b2179db87aa0cfecc86}{hits}}.size();}
+\DoxyCodeLine{00088\ \ \ \ \ \}}
+\DoxyCodeLine{00089\ }
+\DoxyCodeLine{00090\ \ \ \textcolor{keyword}{private}:}
+\DoxyCodeLine{00091\ \ \ \ \ \textcolor{keywordtype}{void}\ \mbox{\hyperlink{classaare_1_1ClusterFinder_a1a31f9419dd90e3136bf1c59e53fbad7}{add\_link}}(\textcolor{keywordtype}{int}\ from,\ \textcolor{keywordtype}{int}\ to)\ \{}
+\DoxyCodeLine{00092\ \ \ \ \ \ \ \ \ \textcolor{comment}{//\ we\ want\ to\ add\ key\ from\ -\/>\ value\ to}}
+\DoxyCodeLine{00093\ \ \ \ \ \ \ \ \ \textcolor{comment}{//\ fmt::print("{}add\_link(\{\},\{\})\(\backslash\)n"{},\ from,\ to);}}
+\DoxyCodeLine{00094\ \ \ \ \ \ \ \ \ \textcolor{keyword}{auto}\ it\ =\ \mbox{\hyperlink{classaare_1_1ClusterFinder_aeeec655301ed05e4c5ee9201e828b7f0}{child}}.find(from);}
+\DoxyCodeLine{00095\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{if}\ (it\ ==\ \mbox{\hyperlink{classaare_1_1ClusterFinder_aeeec655301ed05e4c5ee9201e828b7f0}{child}}.end())\ \{}
+\DoxyCodeLine{00096\ \ \ \ \ \ \ \ \ \ \ \ \ \mbox{\hyperlink{classaare_1_1ClusterFinder_aeeec655301ed05e4c5ee9201e828b7f0}{child}}[from]\ =\ to;}
+\DoxyCodeLine{00097\ \ \ \ \ \ \ \ \ \}\ \textcolor{keywordflow}{else}\ \{}
+\DoxyCodeLine{00098\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{comment}{//\ found\ need\ to\ disambiguate}}
+\DoxyCodeLine{00099\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{if}\ (it-\/>second\ ==\ to)}
+\DoxyCodeLine{00100\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{return};}
+\DoxyCodeLine{00101\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{else}\ \{}
+\DoxyCodeLine{00102\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{if}\ (it-\/>second\ >\ to)\ \{}
+\DoxyCodeLine{00103\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{comment}{//\ child[from]\ =\ to;}}
+\DoxyCodeLine{00104\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keyword}{auto}\ old\ =\ it-\/>second;}
+\DoxyCodeLine{00105\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ it-\/>second\ =\ to;}
+\DoxyCodeLine{00106\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \mbox{\hyperlink{classaare_1_1ClusterFinder_a1a31f9419dd90e3136bf1c59e53fbad7}{add\_link}}(old,\ to);}
+\DoxyCodeLine{00107\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \}\ \textcolor{keywordflow}{else}\ \{}
+\DoxyCodeLine{00108\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{comment}{//\ found\ value\ is\ smaller\ than\ what\ we\ want\ to\ link}}
+\DoxyCodeLine{00109\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \mbox{\hyperlink{classaare_1_1ClusterFinder_a1a31f9419dd90e3136bf1c59e53fbad7}{add\_link}}(to,\ it-\/>second);}
+\DoxyCodeLine{00110\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \}}
+\DoxyCodeLine{00111\ \ \ \ \ \ \ \ \ \ \ \ \ \}}
+\DoxyCodeLine{00112\ \ \ \ \ \ \ \ \ \}}
+\DoxyCodeLine{00113\ \ \ \ \ \}}
+\DoxyCodeLine{00114\ \};}
+\DoxyCodeLine{00115\ \textcolor{keyword}{template}\ <\textcolor{keyword}{typename}\ T>\ \textcolor{keywordtype}{int}\ \mbox{\hyperlink{classaare_1_1ClusterFinder_ac6372eadf0bff57bd560bd07cd59da96}{ClusterFinder<T>::check\_neighbours}}(\textcolor{keywordtype}{int}\ i,\ \textcolor{keywordtype}{int}\ j)\ \{}
+\DoxyCodeLine{00116\ \ \ \ \ std::vector<int>\ neighbour\_labels;}
+\DoxyCodeLine{00117\ }
+\DoxyCodeLine{00118\ \ \ \ \ \textcolor{keywordflow}{for}\ (\textcolor{keywordtype}{int}\ k\ =\ 0;\ k\ <\ 4;\ ++k)\ \{}
+\DoxyCodeLine{00119\ \ \ \ \ \ \ \ \ \textcolor{keyword}{const}\ \textcolor{keyword}{auto}\ row\ =\ i\ +\ di[k];}
+\DoxyCodeLine{00120\ \ \ \ \ \ \ \ \ \textcolor{keyword}{const}\ \textcolor{keyword}{auto}\ col\ =\ j\ +\ dj[k];}
+\DoxyCodeLine{00121\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{if}\ (row\ >=\ 0\ \&\&\ col\ >=\ 0\ \&\&\ row\ <\ shape\_[0]\ \&\&\ col\ <\ shape\_[1])\ \{}
+\DoxyCodeLine{00122\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keyword}{auto}\ tmp\ =\ labeled\_.value(i\ +\ di[k],\ j\ +\ dj[k]);}
+\DoxyCodeLine{00123\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{if}\ (tmp\ !=\ 0)}
+\DoxyCodeLine{00124\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ neighbour\_labels.push\_back(tmp);}
+\DoxyCodeLine{00125\ \ \ \ \ \ \ \ \ \}}
+\DoxyCodeLine{00126\ \ \ \ \ \}}
+\DoxyCodeLine{00127\ }
+\DoxyCodeLine{00128\ \ \ \ \ \textcolor{keywordflow}{if}\ (neighbour\_labels.size()\ ==\ 0)\ \{}
+\DoxyCodeLine{00129\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{return}\ 0;}
+\DoxyCodeLine{00130\ \ \ \ \ \}\ \textcolor{keywordflow}{else}\ \{}
+\DoxyCodeLine{00131\ }
+\DoxyCodeLine{00132\ \ \ \ \ \ \ \ \ \textcolor{comment}{//\ need\ to\ sort\ and\ add\ to\ union\ field}}
+\DoxyCodeLine{00133\ \ \ \ \ \ \ \ \ std::sort(neighbour\_labels.rbegin(),\ neighbour\_labels.rend());}
+\DoxyCodeLine{00134\ \ \ \ \ \ \ \ \ \textcolor{keyword}{auto}\ first\ =\ neighbour\_labels.begin();}
+\DoxyCodeLine{00135\ \ \ \ \ \ \ \ \ \textcolor{keyword}{auto}\ last\ =\ std::unique(first,\ neighbour\_labels.end());}
+\DoxyCodeLine{00136\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{if}\ (last\ -\/\ first\ ==\ 1)}
+\DoxyCodeLine{00137\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{return}\ *neighbour\_labels.begin();}
+\DoxyCodeLine{00138\ }
+\DoxyCodeLine{00139\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{for}\ (\textcolor{keyword}{auto}\ current\ =\ first;\ current\ !=\ last\ -\/\ 1;\ ++current)\ \{}
+\DoxyCodeLine{00140\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keyword}{auto}\ next\ =\ current\ +\ 1;}
+\DoxyCodeLine{00141\ \ \ \ \ \ \ \ \ \ \ \ \ add\_link(*current,\ *next);}
+\DoxyCodeLine{00142\ \ \ \ \ \ \ \ \ \}}
+\DoxyCodeLine{00143\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{return}\ neighbour\_labels.back();\ \textcolor{comment}{//\ already\ sorted}}
+\DoxyCodeLine{00144\ \ \ \ \ \}}
+\DoxyCodeLine{00145\ \}}
+\DoxyCodeLine{00146\ }
+\DoxyCodeLine{00147\ \textcolor{keyword}{template}\ <\textcolor{keyword}{typename}\ T>\ \textcolor{keywordtype}{void}\ \mbox{\hyperlink{classaare_1_1ClusterFinder_ab880d2c07964ee558a85daed3b3ec181}{ClusterFinder<T>::find\_clusters}}(\mbox{\hyperlink{classaare_1_1NDView}{NDView<T,\ 2>}}\ img)\ \{}
+\DoxyCodeLine{00148\ \ \ \ \ original\_\ =\ img;}
+\DoxyCodeLine{00149\ \ \ \ \ labeled\_\ =\ 0;}
+\DoxyCodeLine{00150\ \ \ \ \ peripheral\_labeled\_\ =\ 0;}
+\DoxyCodeLine{00151\ \ \ \ \ current\_label\ =\ 0;}
+\DoxyCodeLine{00152\ \ \ \ \ child.clear();}
+\DoxyCodeLine{00153\ \ \ \ \ first\_pass();}
+\DoxyCodeLine{00154\ \ \ \ \ \textcolor{comment}{//\ print\_connections();}}
+\DoxyCodeLine{00155\ \ \ \ \ second\_pass();}
+\DoxyCodeLine{00156\ \ \ \ \ store\_clusters();}
+\DoxyCodeLine{00157\ \}}
+\DoxyCodeLine{00158\ }
+\DoxyCodeLine{00159\ \textcolor{keyword}{template}\ <\textcolor{keyword}{typename}\ T>\ \textcolor{keywordtype}{void}\ \mbox{\hyperlink{classaare_1_1ClusterFinder_af33f83aeeb4187f826919270b8b38391}{ClusterFinder<T>::find\_clusters\_X}}(\mbox{\hyperlink{classaare_1_1NDView}{NDView<T,\ 2>}}\ img)\ \{}
+\DoxyCodeLine{00160\ \ \ \ \ original\_\ =\ img;}
+\DoxyCodeLine{00161\ \ \ \ \ \textcolor{keywordtype}{int}\ clusterIndex\ =\ 0;}
+\DoxyCodeLine{00162\ \ \ \ \ \textcolor{keywordflow}{for}\ (\textcolor{keywordtype}{int}\ i\ =\ 0;\ i\ <\ shape\_[0];\ ++i)\ \{}
+\DoxyCodeLine{00163\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{for}\ (\textcolor{keywordtype}{int}\ j\ =\ 0;\ j\ <\ shape\_[1];\ ++j)\ \{}
+\DoxyCodeLine{00164\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{if}\ (use\_noise\_map)}
+\DoxyCodeLine{00165\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ threshold\_\ =\ 5\ *\ noiseMap(i,\ j);}
+\DoxyCodeLine{00166\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{if}\ (original\_(i,\ j)\ >\ threshold\_)\ \{}
+\DoxyCodeLine{00167\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{comment}{//\ printf("{}==========\ Cluster\ index:\ \%d\(\backslash\)n"{},\ clusterIndex);}}
+\DoxyCodeLine{00168\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ rec\_FillHit(clusterIndex,\ i,\ j);}
+\DoxyCodeLine{00169\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ clusterIndex++;}
+\DoxyCodeLine{00170\ \ \ \ \ \ \ \ \ \ \ \ \ \}}
+\DoxyCodeLine{00171\ \ \ \ \ \ \ \ \ \}}
+\DoxyCodeLine{00172\ \ \ \ \ \}}
+\DoxyCodeLine{00173\ \ \ \ \ \textcolor{keywordflow}{for}\ (\textcolor{keyword}{const}\ \textcolor{keyword}{auto}\ \&h\ :\ h\_size)}
+\DoxyCodeLine{00174\ \ \ \ \ \ \ \ \ hits.push\_back(h.second);}
+\DoxyCodeLine{00175\ \ \ \ \ h\_size.clear();}
+\DoxyCodeLine{00176\ \}}
+\DoxyCodeLine{00177\ }
+\DoxyCodeLine{00178\ \textcolor{keyword}{template}\ <\textcolor{keyword}{typename}\ T>\ \textcolor{keywordtype}{void}\ \mbox{\hyperlink{classaare_1_1ClusterFinder_a64540f74ba953ae2ba2efab9f06e9fc5}{ClusterFinder<T>::rec\_FillHit}}(\textcolor{keywordtype}{int}\ clusterIndex,\ \textcolor{keywordtype}{int}\ i,\ \textcolor{keywordtype}{int}\ j)\ \{}
+\DoxyCodeLine{00179\ \ \ \ \ \textcolor{comment}{//\ printf("{}original\_(\%d,\ \%d)=\%f\(\backslash\)n"{},\ i,\ j,\ original\_(i,j));}}
+\DoxyCodeLine{00180\ \ \ \ \ \textcolor{comment}{//\ printf("{}h\_size[\%d].size=\%d\(\backslash\)n"{},\ clusterIndex,\ h\_size[clusterIndex].size);}}
+\DoxyCodeLine{00181\ \ \ \ \ \textcolor{keywordflow}{if}\ (h\_size[clusterIndex].size\ <\ \mbox{\hyperlink{VariableSizeClusterFinder_8hpp_af7298d7428936e9c8ecb92df87bd621c}{MAX\_CLUSTER\_SIZE}})\ \{}
+\DoxyCodeLine{00182\ \ \ \ \ \ \ \ \ h\_size[clusterIndex].rows[h\_size[clusterIndex].size]\ =\ i;}
+\DoxyCodeLine{00183\ \ \ \ \ \ \ \ \ h\_size[clusterIndex].cols[h\_size[clusterIndex].size]\ =\ j;}
+\DoxyCodeLine{00184\ \ \ \ \ \ \ \ \ h\_size[clusterIndex].enes[h\_size[clusterIndex].size]\ =\ original\_(i,\ j);}
+\DoxyCodeLine{00185\ \ \ \ \ \}}
+\DoxyCodeLine{00186\ \ \ \ \ h\_size[clusterIndex].size\ +=\ 1;}
+\DoxyCodeLine{00187\ \ \ \ \ h\_size[clusterIndex].energy\ +=\ original\_(i,\ j);}
+\DoxyCodeLine{00188\ \ \ \ \ \textcolor{keywordflow}{if}\ (h\_size[clusterIndex].max\ <\ original\_(i,\ j))\ \{}
+\DoxyCodeLine{00189\ \ \ \ \ \ \ \ \ h\_size[clusterIndex].row\ =\ i;}
+\DoxyCodeLine{00190\ \ \ \ \ \ \ \ \ h\_size[clusterIndex].col\ =\ j;}
+\DoxyCodeLine{00191\ \ \ \ \ \ \ \ \ h\_size[clusterIndex].max\ =\ original\_(i,\ j);}
+\DoxyCodeLine{00192\ \ \ \ \ \}}
+\DoxyCodeLine{00193\ \ \ \ \ original\_(i,\ j)\ =\ 0;}
+\DoxyCodeLine{00194\ }
+\DoxyCodeLine{00195\ \ \ \ \ \textcolor{keywordflow}{for}\ (\textcolor{keywordtype}{int}\ k\ =\ 0;\ k\ <\ 8;\ ++k)\ \{\ \textcolor{comment}{//\ 8\ for\ 8-\/neighbour}}
+\DoxyCodeLine{00196\ \ \ \ \ \ \ \ \ \textcolor{keyword}{const}\ \textcolor{keyword}{auto}\ row\ =\ i\ +\ di\_[k];}
+\DoxyCodeLine{00197\ \ \ \ \ \ \ \ \ \textcolor{keyword}{const}\ \textcolor{keyword}{auto}\ col\ =\ j\ +\ dj\_[k];}
+\DoxyCodeLine{00198\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{if}\ (row\ >=\ 0\ \&\&\ col\ >=\ 0\ \&\&\ row\ <\ shape\_[0]\ \&\&\ col\ <\ shape\_[1])\ \{}
+\DoxyCodeLine{00199\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{if}\ (use\_noise\_map)}
+\DoxyCodeLine{00200\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ threshold\_\ =\ peripheralThresholdFactor\_\ *\ noiseMap(row,\ col);}
+\DoxyCodeLine{00201\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{if}\ (original\_(row,\ col)\ >\ threshold\_)\ \{}
+\DoxyCodeLine{00202\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ rec\_FillHit(clusterIndex,\ row,\ col);}
+\DoxyCodeLine{00203\ \ \ \ \ \ \ \ \ \ \ \ \ \}\ \textcolor{keywordflow}{else}\ \{}
+\DoxyCodeLine{00204\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{comment}{//\ if\ (h\_size[clusterIndex].size\ <\ MAX\_CLUSTER\_SIZE)\{}}
+\DoxyCodeLine{00205\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{comment}{//\ \ \ \ \ h\_size[clusterIndex].size\ +=\ 1;}}
+\DoxyCodeLine{00206\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{comment}{//\ \ \ \ \ h\_size[clusterIndex].rows[h\_size[clusterIndex].size]\ =\ row;}}
+\DoxyCodeLine{00207\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{comment}{//\ \ \ \ \ h\_size[clusterIndex].cols[h\_size[clusterIndex].size]\ =\ col;}}
+\DoxyCodeLine{00208\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{comment}{//\ \ \ \ \ h\_size[clusterIndex].enes[h\_size[clusterIndex].size]\ =\ original\_(row,\ col);}}
+\DoxyCodeLine{00209\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{comment}{//\ \}//\ ?\ weather\ to\ include\ peripheral\ pixels}}
+\DoxyCodeLine{00210\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ original\_(row,\ col)\ =\ 0;\ \textcolor{comment}{//\ remove\ peripheral\ pixels,\ to\ avoid\ potential\ influence\ for\ pedestal\ updating}}
+\DoxyCodeLine{00211\ \ \ \ \ \ \ \ \ \ \ \ \ \}}
+\DoxyCodeLine{00212\ \ \ \ \ \ \ \ \ \}}
+\DoxyCodeLine{00213\ \ \ \ \ \}}
+\DoxyCodeLine{00214\ \}}
+\DoxyCodeLine{00215\ }
+\DoxyCodeLine{00216\ \textcolor{keyword}{template}\ <\textcolor{keyword}{typename}\ T>\ \textcolor{keywordtype}{void}\ \mbox{\hyperlink{classaare_1_1ClusterFinder_ab25d54418b721d429f6141da73cc2a41}{ClusterFinder<T>::single\_pass}}(\mbox{\hyperlink{classaare_1_1NDView}{NDView<T,\ 2>}}\ img)\ \{}
+\DoxyCodeLine{00217\ \ \ \ \ original\_\ =\ img;}
+\DoxyCodeLine{00218\ \ \ \ \ labeled\_\ =\ 0;}
+\DoxyCodeLine{00219\ \ \ \ \ current\_label\ =\ 0;}
+\DoxyCodeLine{00220\ \ \ \ \ child.clear();}
+\DoxyCodeLine{00221\ \ \ \ \ first\_pass();}
+\DoxyCodeLine{00222\ \ \ \ \ \textcolor{comment}{//\ print\_connections();}}
+\DoxyCodeLine{00223\ \ \ \ \ \textcolor{comment}{//\ second\_pass();}}
+\DoxyCodeLine{00224\ \ \ \ \ \textcolor{comment}{//\ store\_clusters();}}
+\DoxyCodeLine{00225\ \}}
+\DoxyCodeLine{00226\ }
+\DoxyCodeLine{00227\ \textcolor{keyword}{template}\ <\textcolor{keyword}{typename}\ T>\ \textcolor{keywordtype}{void}\ \mbox{\hyperlink{classaare_1_1ClusterFinder_a7993fb06ee06a24ede5a4ddd94f8a987}{ClusterFinder<T>::first\_pass}}()\ \{}
+\DoxyCodeLine{00228\ }
+\DoxyCodeLine{00229\ \ \ \ \ \textcolor{keywordflow}{for}\ (\textcolor{keywordtype}{int}\ i\ =\ 0;\ i\ <\ original\_.size();\ ++i)\ \{}
+\DoxyCodeLine{00230\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{if}\ (use\_noise\_map)}
+\DoxyCodeLine{00231\ \ \ \ \ \ \ \ \ \ \ \ \ threshold\_\ =\ 5\ *\ noiseMap(i);}
+\DoxyCodeLine{00232\ \ \ \ \ \ \ \ \ binary\_(i)\ =\ (original\_(i)\ >\ threshold\_);}
+\DoxyCodeLine{00233\ \ \ \ \ \}}
+\DoxyCodeLine{00234\ }
+\DoxyCodeLine{00235\ \ \ \ \ \textcolor{keywordflow}{for}\ (\textcolor{keywordtype}{int}\ i\ =\ 0;\ i\ <\ shape\_[0];\ ++i)\ \{}
+\DoxyCodeLine{00236\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{for}\ (\textcolor{keywordtype}{int}\ j\ =\ 0;\ j\ <\ shape\_[1];\ ++j)\ \{}
+\DoxyCodeLine{00237\ }
+\DoxyCodeLine{00238\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{comment}{//\ do\ we\ have\ someting\ to\ process?}}
+\DoxyCodeLine{00239\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{if}\ (binary\_(i,\ j))\ \{}
+\DoxyCodeLine{00240\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keyword}{auto}\ tmp\ =\ check\_neighbours(i,\ j);}
+\DoxyCodeLine{00241\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{if}\ (tmp\ !=\ 0)\ \{}
+\DoxyCodeLine{00242\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ labeled\_(i,\ j)\ =\ tmp;}
+\DoxyCodeLine{00243\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \}\ \textcolor{keywordflow}{else}\ \{}
+\DoxyCodeLine{00244\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ labeled\_(i,\ j)\ =\ ++current\_label;}
+\DoxyCodeLine{00245\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \}}
+\DoxyCodeLine{00246\ \ \ \ \ \ \ \ \ \ \ \ \ \}}
+\DoxyCodeLine{00247\ \ \ \ \ \ \ \ \ \}}
+\DoxyCodeLine{00248\ \ \ \ \ \}}
+\DoxyCodeLine{00249\ \}}
+\DoxyCodeLine{00250\ }
+\DoxyCodeLine{00251\ \textcolor{keyword}{template}\ <\textcolor{keyword}{typename}\ T>\ \textcolor{keywordtype}{void}\ \mbox{\hyperlink{classaare_1_1ClusterFinder_a6630ba010b0d0b6b4cd8aefe98a1bd9e}{ClusterFinder<T>::second\_pass}}()\ \{}
+\DoxyCodeLine{00252\ }
+\DoxyCodeLine{00253\ \ \ \ \ \textcolor{keywordflow}{for}\ (ssize\_t\ i\ =\ 0;\ i\ !=\ labeled\_.size();\ ++i)\ \{}
+\DoxyCodeLine{00254\ \ \ \ \ \ \ \ \ \textcolor{keyword}{auto}\ current\_label\ =\ labeled\_(i);}
+\DoxyCodeLine{00255\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{if}\ (current\_label\ !=\ 0)\ \{}
+\DoxyCodeLine{00256\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keyword}{auto}\ it\ =\ child.find(current\_label);}
+\DoxyCodeLine{00257\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{while}\ (it\ !=\ child.end())\ \{}
+\DoxyCodeLine{00258\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ current\_label\ =\ it-\/>second;}
+\DoxyCodeLine{00259\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ it\ =\ child.find(current\_label);}
+\DoxyCodeLine{00260\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{comment}{//\ do\ this\ once\ before\ doing\ the\ second\ pass?}}
+\DoxyCodeLine{00261\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{comment}{//\ all\ values\ point\ to\ the\ final\ one...}}
+\DoxyCodeLine{00262\ \ \ \ \ \ \ \ \ \ \ \ \ \}}
+\DoxyCodeLine{00263\ \ \ \ \ \ \ \ \ \ \ \ \ labeled\_(i)\ =\ current\_label;}
+\DoxyCodeLine{00264\ \ \ \ \ \ \ \ \ \}}
+\DoxyCodeLine{00265\ \ \ \ \ \}}
+\DoxyCodeLine{00266\ \}}
+\DoxyCodeLine{00267\ }
+\DoxyCodeLine{00268\ \textcolor{keyword}{template}\ <\textcolor{keyword}{typename}\ T>\ \textcolor{keywordtype}{void}\ \mbox{\hyperlink{classaare_1_1ClusterFinder_a053a2b1729301c1bda8b78a8187112b6}{ClusterFinder<T>::store\_clusters}}()\ \{}
+\DoxyCodeLine{00269\ }
+\DoxyCodeLine{00270\ \ \ \ \ \textcolor{comment}{//\ Accumulate\ hit\ information\ in\ a\ map}}
+\DoxyCodeLine{00271\ \ \ \ \ \textcolor{comment}{//\ Do\ we\ always\ have\ monotonic\ increasing}}
+\DoxyCodeLine{00272\ \ \ \ \ \textcolor{comment}{//\ labels?\ Then\ vector?}}
+\DoxyCodeLine{00273\ \ \ \ \ \textcolor{comment}{//\ here\ the\ translation\ is\ label\ -\/>\ Hit}}
+\DoxyCodeLine{00274\ \ \ \ \ std::unordered\_map<int,\ Hit>\ h\_size;}
+\DoxyCodeLine{00275\ \ \ \ \ \textcolor{keywordflow}{for}\ (\textcolor{keywordtype}{int}\ i\ =\ 0;\ i\ <\ shape\_[0];\ ++i)\ \{}
+\DoxyCodeLine{00276\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{for}\ (\textcolor{keywordtype}{int}\ j\ =\ 0;\ j\ <\ shape\_[1];\ ++j)\ \{}
+\DoxyCodeLine{00277\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{if}\ (labeled\_(i,\ j)\ !=\ 0\ or\ \textcolor{keyword}{false}}
+\DoxyCodeLine{00278\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{comment}{//\ (i-\/1\ >=\ 0\ and\ labeled\_(i-\/1,\ j)\ !=\ 0)\ or\ //\ another\ circle\ of\ peripheral\ pixels}}
+\DoxyCodeLine{00279\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{comment}{//\ (j-\/1\ >=\ 0\ and\ labeled\_(i,\ j-\/1)\ !=\ 0)\ or}}
+\DoxyCodeLine{00280\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{comment}{//\ (i+1\ <\ shape\_[0]\ and\ labeled\_(i+1,\ j)\ !=\ 0)\ or}}
+\DoxyCodeLine{00281\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{comment}{//\ (j+1\ <\ shape\_[1]\ and\ labeled\_(i,\ j+1)\ !=\ 0)}}
+\DoxyCodeLine{00282\ \ \ \ \ \ \ \ \ \ \ \ \ )\ \{}
+\DoxyCodeLine{00283\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \mbox{\hyperlink{structaare_1_1ClusterFinder_1_1Hit}{Hit}}\ \&record\ =\ h\_size[labeled\_(i,\ j)];}
+\DoxyCodeLine{00284\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{if}\ (record.\mbox{\hyperlink{structaare_1_1ClusterFinder_1_1Hit_a467c1a642f4f886142031a9cdedf8974}{size}}\ <\ \mbox{\hyperlink{VariableSizeClusterFinder_8hpp_af7298d7428936e9c8ecb92df87bd621c}{MAX\_CLUSTER\_SIZE}})\ \{}
+\DoxyCodeLine{00285\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ record.\mbox{\hyperlink{structaare_1_1ClusterFinder_1_1Hit_a284bcfb7b46f098ec297533aff39991e}{rows}}[record.\mbox{\hyperlink{structaare_1_1ClusterFinder_1_1Hit_a467c1a642f4f886142031a9cdedf8974}{size}}]\ =\ i;}
+\DoxyCodeLine{00286\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ record.\mbox{\hyperlink{structaare_1_1ClusterFinder_1_1Hit_a567f82696f8b38154602c389ae551306}{cols}}[record.\mbox{\hyperlink{structaare_1_1ClusterFinder_1_1Hit_a467c1a642f4f886142031a9cdedf8974}{size}}]\ =\ j;}
+\DoxyCodeLine{00287\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ record.\mbox{\hyperlink{structaare_1_1ClusterFinder_1_1Hit_a6c31a388fb5bcc77aed32dd5fa5fcb08}{enes}}[record.\mbox{\hyperlink{structaare_1_1ClusterFinder_1_1Hit_a467c1a642f4f886142031a9cdedf8974}{size}}]\ =\ original\_(i,\ j);}
+\DoxyCodeLine{00288\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \}\ \textcolor{keywordflow}{else}\ \{}
+\DoxyCodeLine{00289\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{continue};}
+\DoxyCodeLine{00290\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \}}
+\DoxyCodeLine{00291\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ record.\mbox{\hyperlink{structaare_1_1ClusterFinder_1_1Hit_a467c1a642f4f886142031a9cdedf8974}{size}}\ +=\ 1;}
+\DoxyCodeLine{00292\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ record.\mbox{\hyperlink{structaare_1_1ClusterFinder_1_1Hit_aefdfa834b42bdedc95f872267e9ef08a}{energy}}\ +=\ original\_(i,\ j);}
+\DoxyCodeLine{00293\ }
+\DoxyCodeLine{00294\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{if}\ (record.\mbox{\hyperlink{structaare_1_1ClusterFinder_1_1Hit_a92ff57e741cf640d00dce1976616837a}{max}}\ <\ original\_(i,\ j))\ \{}
+\DoxyCodeLine{00295\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ record.\mbox{\hyperlink{structaare_1_1ClusterFinder_1_1Hit_a62e5ba47c8626344a6816906cb440b30}{row}}\ =\ i;}
+\DoxyCodeLine{00296\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ record.\mbox{\hyperlink{structaare_1_1ClusterFinder_1_1Hit_afcae3086d96e4761ab437d227a12e872}{col}}\ =\ j;}
+\DoxyCodeLine{00297\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ record.\mbox{\hyperlink{structaare_1_1ClusterFinder_1_1Hit_a92ff57e741cf640d00dce1976616837a}{max}}\ =\ original\_(i,\ j);}
+\DoxyCodeLine{00298\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \}}
+\DoxyCodeLine{00299\ \ \ \ \ \ \ \ \ \ \ \ \ \}}
+\DoxyCodeLine{00300\ \ \ \ \ \ \ \ \ \}}
+\DoxyCodeLine{00301\ \ \ \ \ \}}
+\DoxyCodeLine{00302\ }
+\DoxyCodeLine{00303\ \ \ \ \ \textcolor{keywordflow}{for}\ (\textcolor{keyword}{const}\ \textcolor{keyword}{auto}\ \&h\ :\ h\_size)}
+\DoxyCodeLine{00304\ \ \ \ \ \ \ \ \ hits.push\_back(h.second);}
+\DoxyCodeLine{00305\ \}}
+\DoxyCodeLine{00306\ }
+\DoxyCodeLine{00307\ \}\ \textcolor{comment}{//\ namespace\ aare}}
+
+\end{DoxyCode}

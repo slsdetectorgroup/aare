@@ -1,0 +1,75 @@
+\doxysection{network\+\_\+io/src/\+Zmq\+Header.cpp File Reference}
+\hypertarget{ZmqHeader_8cpp}{}\label{ZmqHeader_8cpp}\index{network\_io/src/ZmqHeader.cpp@{network\_io/src/ZmqHeader.cpp}}
+{\ttfamily \#include \"{}aare/network\+\_\+io/\+Zmq\+Header.\+hpp\"{}}\newline
+{\ttfamily \#include \"{}simdjson.\+h\"{}}\newline
+\doxysubsubsection*{Namespaces}
+\begin{DoxyCompactItemize}
+\item 
+namespace \mbox{\hyperlink{namespaceaare}{aare}}
+\begin{DoxyCompactList}\small\item\em \doxylink{classaare_1_1Frame}{Frame} class to represent a single frame of data model class should be able to work with streams coming from files or network. \end{DoxyCompactList}\end{DoxyCompactItemize}
+\doxysubsubsection*{Functions}
+\begin{DoxyCompactItemize}
+\item 
+{\footnotesize template$<$typename T $>$ }\\void \mbox{\hyperlink{ZmqHeader_8cpp_a544ca552152d57c0006c6eb361b07aa7}{write\+\_\+digit}} (std\+::string \&s, const std\+::string \&key, const T \&value)
+\begin{DoxyCompactList}\small\item\em write a digit to a string takes key and value and outputs-\/\texorpdfstring{$>$}{>}\"{}key\"{}\+: value, \end{DoxyCompactList}\item 
+void \mbox{\hyperlink{ZmqHeader_8cpp_a3c314b7004ca6f606d7a24e861d4acd0}{write\+\_\+str}} (std\+::string \&s, const std\+::string \&key, const std\+::string \&value)
+\item 
+void \mbox{\hyperlink{ZmqHeader_8cpp_a3fd7f2167e68c18f441b18e36c201362}{write\+\_\+map}} (std\+::string \&s, const std\+::string \&key, const std\+::map$<$ std\+::string, std\+::string $>$ \&value)
+\item 
+void \mbox{\hyperlink{ZmqHeader_8cpp_a40da37505a8960ac3306e41d533e7aa4}{write\+\_\+array}} (std\+::string \&s, const std\+::string \&key, const std\+::array$<$ int, 4 $>$ \&value)
+\end{DoxyCompactItemize}
+
+
+\doxysubsection{Function Documentation}
+\Hypertarget{ZmqHeader_8cpp_a40da37505a8960ac3306e41d533e7aa4}\label{ZmqHeader_8cpp_a40da37505a8960ac3306e41d533e7aa4} 
+\index{ZmqHeader.cpp@{ZmqHeader.cpp}!write\_array@{write\_array}}
+\index{write\_array@{write\_array}!ZmqHeader.cpp@{ZmqHeader.cpp}}
+\doxysubsubsection{\texorpdfstring{write\_array()}{write\_array()}}
+{\footnotesize\ttfamily void write\+\_\+array (\begin{DoxyParamCaption}\item[{std\+::string \&}]{s,  }\item[{const std\+::string \&}]{key,  }\item[{const std\+::array$<$ int, 4 $>$ \&}]{value }\end{DoxyParamCaption})}
+
+\Hypertarget{ZmqHeader_8cpp_a544ca552152d57c0006c6eb361b07aa7}\label{ZmqHeader_8cpp_a544ca552152d57c0006c6eb361b07aa7} 
+\index{ZmqHeader.cpp@{ZmqHeader.cpp}!write\_digit@{write\_digit}}
+\index{write\_digit@{write\_digit}!ZmqHeader.cpp@{ZmqHeader.cpp}}
+\doxysubsubsection{\texorpdfstring{write\_digit()}{write\_digit()}}
+{\footnotesize\ttfamily template$<$typename T $>$ \\
+void write\+\_\+digit (\begin{DoxyParamCaption}\item[{std\+::string \&}]{s,  }\item[{const std\+::string \&}]{key,  }\item[{const T \&}]{value }\end{DoxyParamCaption})}
+
+
+
+write a digit to a string takes key and value and outputs-\/\texorpdfstring{$>$}{>}\"{}key\"{}\+: value, 
+
+
+\begin{DoxyTemplParams}{Template Parameters}
+{\em T} & type of value (int, uint32\+\_\+t, ...) \\
+\hline
+\end{DoxyTemplParams}
+
+\begin{DoxyParams}{Parameters}
+{\em s} & string to append to \\
+\hline
+{\em key} & key to write \\
+\hline
+{\em value} & value to write \\
+\hline
+\end{DoxyParams}
+\begin{DoxyReturn}{Returns}
+void 
+\end{DoxyReturn}
+\begin{DoxyNote}{Note}
+
+\begin{DoxyItemize}
+\item can\textquotesingle{}t use concepts here because we are using c++17 
+\end{DoxyItemize}
+\end{DoxyNote}
+\Hypertarget{ZmqHeader_8cpp_a3fd7f2167e68c18f441b18e36c201362}\label{ZmqHeader_8cpp_a3fd7f2167e68c18f441b18e36c201362} 
+\index{ZmqHeader.cpp@{ZmqHeader.cpp}!write\_map@{write\_map}}
+\index{write\_map@{write\_map}!ZmqHeader.cpp@{ZmqHeader.cpp}}
+\doxysubsubsection{\texorpdfstring{write\_map()}{write\_map()}}
+{\footnotesize\ttfamily void write\+\_\+map (\begin{DoxyParamCaption}\item[{std\+::string \&}]{s,  }\item[{const std\+::string \&}]{key,  }\item[{const std\+::map$<$ std\+::string, std\+::string $>$ \&}]{value }\end{DoxyParamCaption})}
+
+\Hypertarget{ZmqHeader_8cpp_a3c314b7004ca6f606d7a24e861d4acd0}\label{ZmqHeader_8cpp_a3c314b7004ca6f606d7a24e861d4acd0} 
+\index{ZmqHeader.cpp@{ZmqHeader.cpp}!write\_str@{write\_str}}
+\index{write\_str@{write\_str}!ZmqHeader.cpp@{ZmqHeader.cpp}}
+\doxysubsubsection{\texorpdfstring{write\_str()}{write\_str()}}
+{\footnotesize\ttfamily void write\+\_\+str (\begin{DoxyParamCaption}\item[{std\+::string \&}]{s,  }\item[{const std\+::string \&}]{key,  }\item[{const std\+::string \&}]{value }\end{DoxyParamCaption})}
+

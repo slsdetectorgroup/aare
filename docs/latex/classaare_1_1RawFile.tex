@@ -1,0 +1,846 @@
+\doxysection{aare\+::Raw\+File Class Reference}
+\hypertarget{classaare_1_1RawFile}{}\label{classaare_1_1RawFile}\index{aare::RawFile@{aare::RawFile}}
+
+
+\doxylink{classaare_1_1RawFile}{Raw\+File} class to read .raw and .json files.  
+
+
+
+
+{\ttfamily \#include $<$Raw\+File.\+hpp$>$}
+
+Inheritance diagram for aare\+::Raw\+File\+:\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[height=2.000000cm]{classaare_1_1RawFile}
+\end{center}
+\end{figure}
+\doxysubsubsection*{Public Member Functions}
+\begin{DoxyCompactItemize}
+\item 
+\mbox{\hyperlink{classaare_1_1RawFile_a2ae421cea7baddb96b3abb212f22b621}{Raw\+File}} (const std\+::filesystem\+::path \&fname, const std\+::string \&mode=\"{}r\"{}, const \mbox{\hyperlink{structaare_1_1FileConfig}{File\+Config}} \&\mbox{\hyperlink{classaare_1_1RawFile_a6a98d519afde63d3b075110e53d244f0}{cfg}}=\{\})
+\begin{DoxyCompactList}\small\item\em \doxylink{classaare_1_1RawFile}{Raw\+File} constructor. \end{DoxyCompactList}\item 
+void \mbox{\hyperlink{classaare_1_1RawFile_ae9312684dfa014dede39e4c81d62abcd}{write}} (\mbox{\hyperlink{classaare_1_1Frame}{Frame}} \&frame) override
+\begin{DoxyCompactList}\small\item\em write function is not implemented for \doxylink{classaare_1_1RawFile}{Raw\+File} \end{DoxyCompactList}\item 
+\mbox{\hyperlink{classaare_1_1Frame}{Frame}} \mbox{\hyperlink{classaare_1_1RawFile_afc6d881b6d2f246f09a595e637afd58c}{read}} () override
+\begin{DoxyCompactList}\small\item\em write a vector of frames to the file \end{DoxyCompactList}\item 
+std\+::vector$<$ \mbox{\hyperlink{classaare_1_1Frame}{Frame}} $>$ \mbox{\hyperlink{classaare_1_1RawFile_a1adf18bc4fd91c620edfc5c9477ad11f}{read}} (size\+\_\+t n\+\_\+frames) override
+\begin{DoxyCompactList}\small\item\em read n\+\_\+frames from the file at the current position \end{DoxyCompactList}\item 
+void \mbox{\hyperlink{classaare_1_1RawFile_afa0228d53554cf5cc192e97474361269}{read\+\_\+into}} (std\+::byte \texorpdfstring{$\ast$}{*}image\+\_\+buf) override
+\begin{DoxyCompactList}\small\item\em read one frame from the file at the current position and store it in the provided buffer \end{DoxyCompactList}\item 
+void \mbox{\hyperlink{classaare_1_1RawFile_ad8dc6726891e1100035631b7365e8d31}{read\+\_\+into}} (std\+::byte \texorpdfstring{$\ast$}{*}image\+\_\+buf, size\+\_\+t n\+\_\+frames) override
+\begin{DoxyCompactList}\small\item\em read n\+\_\+frames from the file at the current position and store them in the provided buffer \end{DoxyCompactList}\item 
+size\+\_\+t \mbox{\hyperlink{classaare_1_1RawFile_a42972170354d7d9cde0b9b9509b63fee}{frame\+\_\+number}} (size\+\_\+t frame\+\_\+index) override
+\begin{DoxyCompactList}\small\item\em get the frame number at the given frame index \end{DoxyCompactList}\item 
+size\+\_\+t \mbox{\hyperlink{classaare_1_1RawFile_ac20d32d75330d179554c2c69292332f0}{bytes\+\_\+per\+\_\+frame}} () override
+\begin{DoxyCompactList}\small\item\em get the number of bytess per frame \end{DoxyCompactList}\item 
+size\+\_\+t \mbox{\hyperlink{classaare_1_1RawFile_ab8935d47a8482c36532ff5cdd91c78da}{pixels}} () override
+\begin{DoxyCompactList}\small\item\em get the number of pixels in the frame \end{DoxyCompactList}\item 
+void \mbox{\hyperlink{classaare_1_1RawFile_a5eef29c0377f5af2e18475e9ae66527c}{seek}} (size\+\_\+t \mbox{\hyperlink{classaare_1_1RawFile_a42972170354d7d9cde0b9b9509b63fee}{frame\+\_\+number}}) override
+\begin{DoxyCompactList}\small\item\em seek to the given frame number \end{DoxyCompactList}\item 
+size\+\_\+t \mbox{\hyperlink{classaare_1_1RawFile_aa0773872c1e6dd2ab86df2bfff35dee8}{tell}} () override
+\begin{DoxyCompactList}\small\item\em get the current position of the file pointer \end{DoxyCompactList}\item 
+void \mbox{\hyperlink{classaare_1_1RawFile_aeebfe5a324fa2f24c9a3353a668a8323}{set\+\_\+config}} (int row, int col)
+\begin{DoxyCompactList}\small\item\em set the module gap row and column \end{DoxyCompactList}\item 
+void \mbox{\hyperlink{classaare_1_1RawFile_ae1f4fa8c6f909beb31e56a57cb452079}{find\+\_\+number\+\_\+of\+\_\+subfiles}} ()
+\begin{DoxyCompactList}\small\item\em get the number of subfiles for the \doxylink{classaare_1_1RawFile}{Raw\+File} \end{DoxyCompactList}\item 
+std\+::filesystem\+::path \mbox{\hyperlink{classaare_1_1RawFile_ad310ff7f4ab8f007974755654c268432}{master\+\_\+fname}} ()
+\begin{DoxyCompactList}\small\item\em get the master file name path for the \doxylink{classaare_1_1RawFile}{Raw\+File} \end{DoxyCompactList}\item 
+std\+::filesystem\+::path \mbox{\hyperlink{classaare_1_1RawFile_a3ceff9543ba1fff7c57513374410fc0c}{data\+\_\+fname}} (int mod\+\_\+id, int file\+\_\+id)
+\begin{DoxyCompactList}\small\item\em get the data file name path for the \doxylink{classaare_1_1RawFile}{Raw\+File} with the given module id and file id \end{DoxyCompactList}\item 
+\mbox{\hyperlink{classaare_1_1RawFile_ab3b4c559fa8bd4041bb32765f5c364d4}{\texorpdfstring{$\sim$}{\string~}\+Raw\+File}} ()
+\begin{DoxyCompactList}\small\item\em destructor\+: will delete the subfiles \end{DoxyCompactList}\item 
+size\+\_\+t \mbox{\hyperlink{classaare_1_1RawFile_a88a1e49617855a0984acf2bd70b3d209}{total\+\_\+frames}} () const override
+\begin{DoxyCompactList}\small\item\em get the total number of frames in the file \end{DoxyCompactList}\item 
+ssize\+\_\+t \mbox{\hyperlink{classaare_1_1RawFile_a432c1b1f9a922e9951aaed0d221f5ea6}{rows}} () const override
+\begin{DoxyCompactList}\small\item\em get the number of rows in the file \end{DoxyCompactList}\item 
+ssize\+\_\+t \mbox{\hyperlink{classaare_1_1RawFile_a8b646fd35e7b19740f6358804bba2bce}{cols}} () const override
+\begin{DoxyCompactList}\small\item\em get the number of columns in the file \end{DoxyCompactList}\item 
+ssize\+\_\+t \mbox{\hyperlink{classaare_1_1RawFile_ae880a6c07caaca176028936a29162ff2}{bitdepth}} () const override
+\begin{DoxyCompactList}\small\item\em get the bitdepth of the file \end{DoxyCompactList}\item 
+\mbox{\hyperlink{classaare_1_1Frame}{Frame}} \mbox{\hyperlink{classaare_1_1FileInterface_aad0827f2dad4403cebdce417243d842c}{iread}} (size\+\_\+t \mbox{\hyperlink{classaare_1_1RawFile_a42972170354d7d9cde0b9b9509b63fee}{frame\+\_\+number}})
+\begin{DoxyCompactList}\small\item\em read one frame from the file at the given frame number \end{DoxyCompactList}\item 
+std\+::vector$<$ \mbox{\hyperlink{classaare_1_1Frame}{Frame}} $>$ \mbox{\hyperlink{classaare_1_1FileInterface_a1a304e356f3c1d100544d6ceeb35c0fb}{iread}} (size\+\_\+t \mbox{\hyperlink{classaare_1_1RawFile_a42972170354d7d9cde0b9b9509b63fee}{frame\+\_\+number}}, size\+\_\+t n\+\_\+frames)
+\begin{DoxyCompactList}\small\item\em read n\+\_\+frames from the file starting at the given frame number \end{DoxyCompactList}\end{DoxyCompactItemize}
+\doxysubsubsection*{Static Public Member Functions}
+\begin{DoxyCompactItemize}
+\item 
+static bool \mbox{\hyperlink{classaare_1_1RawFile_ab01258c2c975668a1924aa4a267df685}{is\+\_\+master\+\_\+file}} (std\+::filesystem\+::path fpath)
+\begin{DoxyCompactList}\small\item\em check if the file is a master file \end{DoxyCompactList}\end{DoxyCompactItemize}
+\doxysubsubsection*{Data Fields}
+\begin{DoxyCompactItemize}
+\item 
+std\+::string \mbox{\hyperlink{classaare_1_1FileInterface_ab1d0e6de947affd5af9740eb06888fc6}{m\+\_\+mode}}
+\item 
+std\+::filesystem\+::path \mbox{\hyperlink{classaare_1_1FileInterface_a325f6603f564fb42f8f28f1136b5e329}{m\+\_\+fname}}
+\item 
+std\+::filesystem\+::path \mbox{\hyperlink{classaare_1_1FileInterface_afdd0a1a75618ad5db2f4794e0900b2f4}{m\+\_\+base\+\_\+path}}
+\item 
+std\+::string \mbox{\hyperlink{classaare_1_1FileInterface_adae2b35fc6a3f185e9eb263c97bc024b}{m\+\_\+base\+\_\+name}}
+\item 
+std\+::string \mbox{\hyperlink{classaare_1_1FileInterface_a5fffaf9a7c8ae2b3a2ebe89b9c94ed34}{m\+\_\+ext}}
+\item 
+int \mbox{\hyperlink{classaare_1_1FileInterface_a30e926a897b534ab9a327d40594ff191}{m\+\_\+findex}}
+\item 
+size\+\_\+t \mbox{\hyperlink{classaare_1_1FileInterface_a91551fada444b231294c095f3f5fb768}{m\+\_\+total\+\_\+frames}} \{\}
+\item 
+size\+\_\+t \mbox{\hyperlink{classaare_1_1FileInterface_ab0762d7652c9a4e1afe6dbb7d7325ac9}{max\+\_\+frames\+\_\+per\+\_\+file}} \{\}
+\item 
+std\+::string \mbox{\hyperlink{classaare_1_1FileInterface_a44cbe933bbd2cae1f48213121d15bce2}{version}}
+\item 
+\mbox{\hyperlink{namespaceaare_a5b95afba95553c1e118e1478c69042f7}{Detector\+Type}} \mbox{\hyperlink{classaare_1_1FileInterface_a9476a299cea6b4e97605135a28d0cb60}{m\+\_\+type}}
+\item 
+ssize\+\_\+t \mbox{\hyperlink{classaare_1_1FileInterface_ae29d98625cf56989e2c5237ace0d0f4c}{m\+\_\+rows}} \{\}
+\item 
+ssize\+\_\+t \mbox{\hyperlink{classaare_1_1FileInterface_ad4c9991c30a71ba83cbaab283bc756b5}{m\+\_\+cols}} \{\}
+\item 
+ssize\+\_\+t \mbox{\hyperlink{classaare_1_1FileInterface_a252d27cbbfcdfc528b86925eaac55bb7}{m\+\_\+bitdepth}} \{\}
+\item 
+size\+\_\+t \mbox{\hyperlink{classaare_1_1FileInterface_ab96f5dd0c99fb7b5a527da812368d736}{current\+\_\+frame}} \{\}
+\end{DoxyCompactItemize}
+\doxysubsubsection*{Private Member Functions}
+\begin{DoxyCompactItemize}
+\item 
+void \mbox{\hyperlink{classaare_1_1RawFile_ac37989a067cd0b9f22e0f9203b6a9a22}{get\+\_\+frame\+\_\+into}} (size\+\_\+t \mbox{\hyperlink{classaare_1_1RawFile_a42972170354d7d9cde0b9b9509b63fee}{frame\+\_\+number}}, std\+::byte \texorpdfstring{$\ast$}{*}image\+\_\+buf)
+\begin{DoxyCompactList}\small\item\em read the frame at the given frame number into the image buffer \end{DoxyCompactList}\item 
+\mbox{\hyperlink{classaare_1_1Frame}{Frame}} \mbox{\hyperlink{classaare_1_1RawFile_a7a035699488278961f601e5d23bd7154}{get\+\_\+frame}} (size\+\_\+t \mbox{\hyperlink{classaare_1_1RawFile_a42972170354d7d9cde0b9b9509b63fee}{frame\+\_\+number}})
+\begin{DoxyCompactList}\small\item\em get the frame at the given frame number \end{DoxyCompactList}\item 
+void \mbox{\hyperlink{classaare_1_1RawFile_a57d281f40683621a40bae3ac78e6489c}{parse\+\_\+fname}} ()
+\begin{DoxyCompactList}\small\item\em parse the file name to get the extension, base name and index \end{DoxyCompactList}\item 
+void \mbox{\hyperlink{classaare_1_1RawFile_a2937ce909e9c9a8f3c55c4eebe2e0493}{parse\+\_\+metadata}} ()
+\begin{DoxyCompactList}\small\item\em parse the metadata from the file \end{DoxyCompactList}\item 
+void \mbox{\hyperlink{classaare_1_1RawFile_adbe11ff4722d5938bc1f4b7a9808216a}{parse\+\_\+raw\+\_\+metadata}} ()
+\begin{DoxyCompactList}\small\item\em parse the metadata of a .raw file \end{DoxyCompactList}\item 
+void \mbox{\hyperlink{classaare_1_1RawFile_ae8a1f274417363cb6c112a065065f395}{parse\+\_\+json\+\_\+metadata}} ()
+\begin{DoxyCompactList}\small\item\em parse the metadata of a .json file \end{DoxyCompactList}\item 
+void \mbox{\hyperlink{classaare_1_1RawFile_aca4db4b540a58dc78f65124f159192b5}{find\+\_\+geometry}} ()
+\begin{DoxyCompactList}\small\item\em finds the geometry of the file \end{DoxyCompactList}\item 
+\mbox{\hyperlink{structaare_1_1sls__detector__header}{sls\+\_\+detector\+\_\+header}} \mbox{\hyperlink{classaare_1_1RawFile_a87d4af5d79244e7f1d69ab3a66e2bd10}{read\+\_\+header}} (const std\+::filesystem\+::path \&fname)
+\begin{DoxyCompactList}\small\item\em read the header of the file \end{DoxyCompactList}\item 
+void \mbox{\hyperlink{classaare_1_1RawFile_a778b1fcb1d5fcfdfb57c15642a6775e0}{open\+\_\+subfiles}} ()
+\begin{DoxyCompactList}\small\item\em open the subfiles \end{DoxyCompactList}\end{DoxyCompactItemize}
+\doxysubsubsection*{Private Attributes}
+\begin{DoxyCompactItemize}
+\item 
+size\+\_\+t \mbox{\hyperlink{classaare_1_1RawFile_ad256cf93af5d382fcd9381ad50db6f94}{n\+\_\+subfiles}}
+\item 
+size\+\_\+t \mbox{\hyperlink{classaare_1_1RawFile_ac1493a619e12568437f95bf1b8ae5c51}{n\+\_\+subfile\+\_\+parts}}
+\item 
+std\+::vector$<$ std\+::vector$<$ \mbox{\hyperlink{classaare_1_1SubFile}{Sub\+File}} \texorpdfstring{$\ast$}{*} $>$ $>$ \mbox{\hyperlink{classaare_1_1RawFile_a310a0a7c3e49e112117ebed8bfdf199d}{subfiles}}
+\item 
+int \mbox{\hyperlink{classaare_1_1RawFile_ab1a3902a51ded3c1823937a914c7d458}{subfile\+\_\+rows}}
+\item 
+int \mbox{\hyperlink{classaare_1_1RawFile_ae322f1b62cfa7e4ebeb1ccae51a799f2}{subfile\+\_\+cols}}
+\item 
+\mbox{\hyperlink{structaare_1_1xy}{xy}} \mbox{\hyperlink{classaare_1_1RawFile_a913ff02d0893519b290a121da13ac1e2}{geometry}}
+\item 
+std\+::vector$<$ \mbox{\hyperlink{structaare_1_1xy}{xy}} $>$ \mbox{\hyperlink{classaare_1_1RawFile_a8be8d44e86171815bf54031b00fa1610}{positions}}
+\item 
+\mbox{\hyperlink{structaare_1_1RawFileConfig}{Raw\+File\+Config}} \mbox{\hyperlink{classaare_1_1RawFile_a6a98d519afde63d3b075110e53d244f0}{cfg}} \{0, 0\}
+\item 
+\mbox{\hyperlink{namespaceaare_a180255836568df302c95b5ca87dc5355}{Timing\+Mode}} \mbox{\hyperlink{classaare_1_1RawFile_a333f2ee8aec487d0e4cbf7973fafaec4}{timing\+\_\+mode}}
+\item 
+bool \mbox{\hyperlink{classaare_1_1RawFile_ad2e86859abde675cab13a68eeaea0e55}{quad}} \{false\}
+\end{DoxyCompactItemize}
+
+
+\doxysubsection{Detailed Description}
+\doxylink{classaare_1_1RawFile}{Raw\+File} class to read .raw and .json files. 
+
+\begin{DoxyNote}{Note}
+derived from \doxylink{classaare_1_1FileInterface}{File\+Interface} 
+
+documentation can also be found in the \doxylink{classaare_1_1FileInterface}{File\+Interface} class 
+\end{DoxyNote}
+
+
+\doxysubsection{Constructor \& Destructor Documentation}
+\Hypertarget{classaare_1_1RawFile_a2ae421cea7baddb96b3abb212f22b621}\label{classaare_1_1RawFile_a2ae421cea7baddb96b3abb212f22b621} 
+\index{aare::RawFile@{aare::RawFile}!RawFile@{RawFile}}
+\index{RawFile@{RawFile}!aare::RawFile@{aare::RawFile}}
+\doxysubsubsection{\texorpdfstring{RawFile()}{RawFile()}}
+{\footnotesize\ttfamily aare\+::\+Raw\+File\+::\+Raw\+File (\begin{DoxyParamCaption}\item[{const std\+::filesystem\+::path \&}]{fname,  }\item[{const std\+::string \&}]{mode = {\ttfamily \"{}r\"{}},  }\item[{const \mbox{\hyperlink{structaare_1_1FileConfig}{File\+Config}} \&}]{cfg = {\ttfamily \{\}} }\end{DoxyParamCaption})}
+
+
+
+\doxylink{classaare_1_1RawFile}{Raw\+File} constructor. 
+
+
+\begin{DoxyParams}{Parameters}
+{\em fname} & path to the file \\
+\hline
+{\em mode} & file mode (r, w) \\
+\hline
+{\em cfg} & file configuration \\
+\hline
+\end{DoxyParams}
+\Hypertarget{classaare_1_1RawFile_ab3b4c559fa8bd4041bb32765f5c364d4}\label{classaare_1_1RawFile_ab3b4c559fa8bd4041bb32765f5c364d4} 
+\index{aare::RawFile@{aare::RawFile}!````~RawFile@{\texorpdfstring{$\sim$}{\string~}RawFile}}
+\index{````~RawFile@{\texorpdfstring{$\sim$}{\string~}RawFile}!aare::RawFile@{aare::RawFile}}
+\doxysubsubsection{\texorpdfstring{\texorpdfstring{$\sim$}{\string~}RawFile()}{\string~RawFile()}}
+{\footnotesize\ttfamily aare\+::\+Raw\+File\+::\texorpdfstring{$\sim$}{\string~}\+Raw\+File (\begin{DoxyParamCaption}{ }\end{DoxyParamCaption})}
+
+
+
+destructor\+: will delete the subfiles 
+
+
+
+\doxysubsection{Member Function Documentation}
+\Hypertarget{classaare_1_1RawFile_ae880a6c07caaca176028936a29162ff2}\label{classaare_1_1RawFile_ae880a6c07caaca176028936a29162ff2} 
+\index{aare::RawFile@{aare::RawFile}!bitdepth@{bitdepth}}
+\index{bitdepth@{bitdepth}!aare::RawFile@{aare::RawFile}}
+\doxysubsubsection{\texorpdfstring{bitdepth()}{bitdepth()}}
+{\footnotesize\ttfamily ssize\+\_\+t aare\+::\+Raw\+File\+::bitdepth (\begin{DoxyParamCaption}{ }\end{DoxyParamCaption}) const\hspace{0.3cm}{\ttfamily [inline]}, {\ttfamily [override]}, {\ttfamily [virtual]}}
+
+
+
+get the bitdepth of the file 
+
+\begin{DoxyReturn}{Returns}
+bitdepth of the file 
+\end{DoxyReturn}
+
+
+Implements \mbox{\hyperlink{classaare_1_1FileInterface_a8bfd7abf4271210000b2ef8d1c0d6149}{aare\+::\+File\+Interface}}.
+
+\Hypertarget{classaare_1_1RawFile_ac20d32d75330d179554c2c69292332f0}\label{classaare_1_1RawFile_ac20d32d75330d179554c2c69292332f0} 
+\index{aare::RawFile@{aare::RawFile}!bytes\_per\_frame@{bytes\_per\_frame}}
+\index{bytes\_per\_frame@{bytes\_per\_frame}!aare::RawFile@{aare::RawFile}}
+\doxysubsubsection{\texorpdfstring{bytes\_per\_frame()}{bytes\_per\_frame()}}
+{\footnotesize\ttfamily size\+\_\+t aare\+::\+Raw\+File\+::bytes\+\_\+per\+\_\+frame (\begin{DoxyParamCaption}{ }\end{DoxyParamCaption})\hspace{0.3cm}{\ttfamily [inline]}, {\ttfamily [override]}, {\ttfamily [virtual]}}
+
+
+
+get the number of bytess per frame 
+
+\begin{DoxyReturn}{Returns}
+size of one frame in bytes 
+\end{DoxyReturn}
+
+
+Implements \mbox{\hyperlink{classaare_1_1FileInterface_aab236d5b808f2acc44266281274ed93a}{aare\+::\+File\+Interface}}.
+
+\Hypertarget{classaare_1_1RawFile_a8b646fd35e7b19740f6358804bba2bce}\label{classaare_1_1RawFile_a8b646fd35e7b19740f6358804bba2bce} 
+\index{aare::RawFile@{aare::RawFile}!cols@{cols}}
+\index{cols@{cols}!aare::RawFile@{aare::RawFile}}
+\doxysubsubsection{\texorpdfstring{cols()}{cols()}}
+{\footnotesize\ttfamily ssize\+\_\+t aare\+::\+Raw\+File\+::cols (\begin{DoxyParamCaption}{ }\end{DoxyParamCaption}) const\hspace{0.3cm}{\ttfamily [inline]}, {\ttfamily [override]}, {\ttfamily [virtual]}}
+
+
+
+get the number of columns in the file 
+
+\begin{DoxyReturn}{Returns}
+number of columns in the file 
+\end{DoxyReturn}
+
+
+Implements \mbox{\hyperlink{classaare_1_1FileInterface_a2927ba0e6a564bcd0da139a552c09b76}{aare\+::\+File\+Interface}}.
+
+\Hypertarget{classaare_1_1RawFile_a3ceff9543ba1fff7c57513374410fc0c}\label{classaare_1_1RawFile_a3ceff9543ba1fff7c57513374410fc0c} 
+\index{aare::RawFile@{aare::RawFile}!data\_fname@{data\_fname}}
+\index{data\_fname@{data\_fname}!aare::RawFile@{aare::RawFile}}
+\doxysubsubsection{\texorpdfstring{data\_fname()}{data\_fname()}}
+{\footnotesize\ttfamily std\+::filesystem\+::path aare\+::\+Raw\+File\+::data\+\_\+fname (\begin{DoxyParamCaption}\item[{int}]{mod\+\_\+id,  }\item[{int}]{file\+\_\+id }\end{DoxyParamCaption})\hspace{0.3cm}{\ttfamily [inline]}}
+
+
+
+get the data file name path for the \doxylink{classaare_1_1RawFile}{Raw\+File} with the given module id and file id 
+
+
+\begin{DoxyParams}{Parameters}
+{\em mod\+\_\+id} & module id \\
+\hline
+{\em file\+\_\+id} & file id \\
+\hline
+\end{DoxyParams}
+\begin{DoxyReturn}{Returns}
+path to the data file 
+\end{DoxyReturn}
+\Hypertarget{classaare_1_1RawFile_aca4db4b540a58dc78f65124f159192b5}\label{classaare_1_1RawFile_aca4db4b540a58dc78f65124f159192b5} 
+\index{aare::RawFile@{aare::RawFile}!find\_geometry@{find\_geometry}}
+\index{find\_geometry@{find\_geometry}!aare::RawFile@{aare::RawFile}}
+\doxysubsubsection{\texorpdfstring{find\_geometry()}{find\_geometry()}}
+{\footnotesize\ttfamily void aare\+::\+Raw\+File\+::find\+\_\+geometry (\begin{DoxyParamCaption}{ }\end{DoxyParamCaption})\hspace{0.3cm}{\ttfamily [private]}}
+
+
+
+finds the geometry of the file 
+
+\Hypertarget{classaare_1_1RawFile_ae1f4fa8c6f909beb31e56a57cb452079}\label{classaare_1_1RawFile_ae1f4fa8c6f909beb31e56a57cb452079} 
+\index{aare::RawFile@{aare::RawFile}!find\_number\_of\_subfiles@{find\_number\_of\_subfiles}}
+\index{find\_number\_of\_subfiles@{find\_number\_of\_subfiles}!aare::RawFile@{aare::RawFile}}
+\doxysubsubsection{\texorpdfstring{find\_number\_of\_subfiles()}{find\_number\_of\_subfiles()}}
+{\footnotesize\ttfamily void aare\+::\+Raw\+File\+::find\+\_\+number\+\_\+of\+\_\+subfiles (\begin{DoxyParamCaption}{ }\end{DoxyParamCaption})}
+
+
+
+get the number of subfiles for the \doxylink{classaare_1_1RawFile}{Raw\+File} 
+
+\begin{DoxyReturn}{Returns}
+number of subfiles 
+\end{DoxyReturn}
+\Hypertarget{classaare_1_1RawFile_a42972170354d7d9cde0b9b9509b63fee}\label{classaare_1_1RawFile_a42972170354d7d9cde0b9b9509b63fee} 
+\index{aare::RawFile@{aare::RawFile}!frame\_number@{frame\_number}}
+\index{frame\_number@{frame\_number}!aare::RawFile@{aare::RawFile}}
+\doxysubsubsection{\texorpdfstring{frame\_number()}{frame\_number()}}
+{\footnotesize\ttfamily size\+\_\+t aare\+::\+Raw\+File\+::frame\+\_\+number (\begin{DoxyParamCaption}\item[{size\+\_\+t}]{frame\+\_\+index }\end{DoxyParamCaption})\hspace{0.3cm}{\ttfamily [override]}, {\ttfamily [virtual]}}
+
+
+
+get the frame number at the given frame index 
+
+
+\begin{DoxyParams}{Parameters}
+{\em frame\+\_\+index} & index of the frame \\
+\hline
+\end{DoxyParams}
+\begin{DoxyReturn}{Returns}
+frame number 
+\end{DoxyReturn}
+
+
+Implements \mbox{\hyperlink{classaare_1_1FileInterface_ac6d10d468f79e855a3334cd1347c1178}{aare\+::\+File\+Interface}}.
+
+\Hypertarget{classaare_1_1RawFile_a7a035699488278961f601e5d23bd7154}\label{classaare_1_1RawFile_a7a035699488278961f601e5d23bd7154} 
+\index{aare::RawFile@{aare::RawFile}!get\_frame@{get\_frame}}
+\index{get\_frame@{get\_frame}!aare::RawFile@{aare::RawFile}}
+\doxysubsubsection{\texorpdfstring{get\_frame()}{get\_frame()}}
+{\footnotesize\ttfamily \mbox{\hyperlink{classaare_1_1Frame}{Frame}} aare\+::\+Raw\+File\+::get\+\_\+frame (\begin{DoxyParamCaption}\item[{size\+\_\+t}]{frame\+\_\+number }\end{DoxyParamCaption})\hspace{0.3cm}{\ttfamily [private]}}
+
+
+
+get the frame at the given frame number 
+
+
+\begin{DoxyParams}{Parameters}
+{\em frame\+\_\+number} & frame number to read \\
+\hline
+\end{DoxyParams}
+\begin{DoxyReturn}{Returns}
+\doxylink{classaare_1_1Frame}{Frame} 
+\end{DoxyReturn}
+\Hypertarget{classaare_1_1RawFile_ac37989a067cd0b9f22e0f9203b6a9a22}\label{classaare_1_1RawFile_ac37989a067cd0b9f22e0f9203b6a9a22} 
+\index{aare::RawFile@{aare::RawFile}!get\_frame\_into@{get\_frame\_into}}
+\index{get\_frame\_into@{get\_frame\_into}!aare::RawFile@{aare::RawFile}}
+\doxysubsubsection{\texorpdfstring{get\_frame\_into()}{get\_frame\_into()}}
+{\footnotesize\ttfamily void aare\+::\+Raw\+File\+::get\+\_\+frame\+\_\+into (\begin{DoxyParamCaption}\item[{size\+\_\+t}]{frame\+\_\+number,  }\item[{std\+::byte \texorpdfstring{$\ast$}{*}}]{image\+\_\+buf }\end{DoxyParamCaption})\hspace{0.3cm}{\ttfamily [private]}}
+
+
+
+read the frame at the given frame number into the image buffer 
+
+
+\begin{DoxyParams}{Parameters}
+{\em frame\+\_\+number} & frame number to read \\
+\hline
+{\em image\+\_\+buf} & buffer to store the frame \\
+\hline
+\end{DoxyParams}
+\Hypertarget{classaare_1_1FileInterface_aad0827f2dad4403cebdce417243d842c}\label{classaare_1_1FileInterface_aad0827f2dad4403cebdce417243d842c} 
+\index{aare::RawFile@{aare::RawFile}!iread@{iread}}
+\index{iread@{iread}!aare::RawFile@{aare::RawFile}}
+\doxysubsubsection{\texorpdfstring{iread()}{iread()}\hspace{0.1cm}{\footnotesize\ttfamily [1/2]}}
+{\footnotesize\ttfamily \mbox{\hyperlink{classaare_1_1Frame}{Frame}} aare\+::\+File\+Interface\+::iread (\begin{DoxyParamCaption}\item[{size\+\_\+t}]{frame\+\_\+number }\end{DoxyParamCaption})\hspace{0.3cm}{\ttfamily [inline]}, {\ttfamily [inherited]}}
+
+
+
+read one frame from the file at the given frame number 
+
+
+\begin{DoxyParams}{Parameters}
+{\em frame\+\_\+number} & frame number to read \\
+\hline
+\end{DoxyParams}
+\begin{DoxyReturn}{Returns}
+frame 
+\end{DoxyReturn}
+\Hypertarget{classaare_1_1FileInterface_a1a304e356f3c1d100544d6ceeb35c0fb}\label{classaare_1_1FileInterface_a1a304e356f3c1d100544d6ceeb35c0fb} 
+\index{aare::RawFile@{aare::RawFile}!iread@{iread}}
+\index{iread@{iread}!aare::RawFile@{aare::RawFile}}
+\doxysubsubsection{\texorpdfstring{iread()}{iread()}\hspace{0.1cm}{\footnotesize\ttfamily [2/2]}}
+{\footnotesize\ttfamily std\+::vector$<$ \mbox{\hyperlink{classaare_1_1Frame}{Frame}} $>$ aare\+::\+File\+Interface\+::iread (\begin{DoxyParamCaption}\item[{size\+\_\+t}]{frame\+\_\+number,  }\item[{size\+\_\+t}]{n\+\_\+frames }\end{DoxyParamCaption})\hspace{0.3cm}{\ttfamily [inline]}, {\ttfamily [inherited]}}
+
+
+
+read n\+\_\+frames from the file starting at the given frame number 
+
+
+\begin{DoxyParams}{Parameters}
+{\em frame\+\_\+number} & frame number to start reading from \\
+\hline
+{\em n\+\_\+frames} & number of frames to read \\
+\hline
+\end{DoxyParams}
+\begin{DoxyReturn}{Returns}
+vector of frames 
+\end{DoxyReturn}
+\Hypertarget{classaare_1_1RawFile_ab01258c2c975668a1924aa4a267df685}\label{classaare_1_1RawFile_ab01258c2c975668a1924aa4a267df685} 
+\index{aare::RawFile@{aare::RawFile}!is\_master\_file@{is\_master\_file}}
+\index{is\_master\_file@{is\_master\_file}!aare::RawFile@{aare::RawFile}}
+\doxysubsubsection{\texorpdfstring{is\_master\_file()}{is\_master\_file()}}
+{\footnotesize\ttfamily bool aare\+::\+Raw\+File\+::is\+\_\+master\+\_\+file (\begin{DoxyParamCaption}\item[{std\+::filesystem\+::path}]{fpath }\end{DoxyParamCaption})\hspace{0.3cm}{\ttfamily [static]}}
+
+
+
+check if the file is a master file 
+
+
+\begin{DoxyParams}{Parameters}
+{\em fpath} & path to the file \\
+\hline
+\end{DoxyParams}
+\Hypertarget{classaare_1_1RawFile_ad310ff7f4ab8f007974755654c268432}\label{classaare_1_1RawFile_ad310ff7f4ab8f007974755654c268432} 
+\index{aare::RawFile@{aare::RawFile}!master\_fname@{master\_fname}}
+\index{master\_fname@{master\_fname}!aare::RawFile@{aare::RawFile}}
+\doxysubsubsection{\texorpdfstring{master\_fname()}{master\_fname()}}
+{\footnotesize\ttfamily std\+::filesystem\+::path aare\+::\+Raw\+File\+::master\+\_\+fname (\begin{DoxyParamCaption}{ }\end{DoxyParamCaption})\hspace{0.3cm}{\ttfamily [inline]}}
+
+
+
+get the master file name path for the \doxylink{classaare_1_1RawFile}{Raw\+File} 
+
+\begin{DoxyReturn}{Returns}
+path to the master file 
+\end{DoxyReturn}
+\Hypertarget{classaare_1_1RawFile_a778b1fcb1d5fcfdfb57c15642a6775e0}\label{classaare_1_1RawFile_a778b1fcb1d5fcfdfb57c15642a6775e0} 
+\index{aare::RawFile@{aare::RawFile}!open\_subfiles@{open\_subfiles}}
+\index{open\_subfiles@{open\_subfiles}!aare::RawFile@{aare::RawFile}}
+\doxysubsubsection{\texorpdfstring{open\_subfiles()}{open\_subfiles()}}
+{\footnotesize\ttfamily void aare\+::\+Raw\+File\+::open\+\_\+subfiles (\begin{DoxyParamCaption}{ }\end{DoxyParamCaption})\hspace{0.3cm}{\ttfamily [private]}}
+
+
+
+open the subfiles 
+
+\Hypertarget{classaare_1_1RawFile_a57d281f40683621a40bae3ac78e6489c}\label{classaare_1_1RawFile_a57d281f40683621a40bae3ac78e6489c} 
+\index{aare::RawFile@{aare::RawFile}!parse\_fname@{parse\_fname}}
+\index{parse\_fname@{parse\_fname}!aare::RawFile@{aare::RawFile}}
+\doxysubsubsection{\texorpdfstring{parse\_fname()}{parse\_fname()}}
+{\footnotesize\ttfamily void aare\+::\+Raw\+File\+::parse\+\_\+fname (\begin{DoxyParamCaption}{ }\end{DoxyParamCaption})\hspace{0.3cm}{\ttfamily [private]}}
+
+
+
+parse the file name to get the extension, base name and index 
+
+\Hypertarget{classaare_1_1RawFile_ae8a1f274417363cb6c112a065065f395}\label{classaare_1_1RawFile_ae8a1f274417363cb6c112a065065f395} 
+\index{aare::RawFile@{aare::RawFile}!parse\_json\_metadata@{parse\_json\_metadata}}
+\index{parse\_json\_metadata@{parse\_json\_metadata}!aare::RawFile@{aare::RawFile}}
+\doxysubsubsection{\texorpdfstring{parse\_json\_metadata()}{parse\_json\_metadata()}}
+{\footnotesize\ttfamily void aare\+::\+Raw\+File\+::parse\+\_\+json\+\_\+metadata (\begin{DoxyParamCaption}{ }\end{DoxyParamCaption})\hspace{0.3cm}{\ttfamily [private]}}
+
+
+
+parse the metadata of a .json file 
+
+\Hypertarget{classaare_1_1RawFile_a2937ce909e9c9a8f3c55c4eebe2e0493}\label{classaare_1_1RawFile_a2937ce909e9c9a8f3c55c4eebe2e0493} 
+\index{aare::RawFile@{aare::RawFile}!parse\_metadata@{parse\_metadata}}
+\index{parse\_metadata@{parse\_metadata}!aare::RawFile@{aare::RawFile}}
+\doxysubsubsection{\texorpdfstring{parse\_metadata()}{parse\_metadata()}}
+{\footnotesize\ttfamily void aare\+::\+Raw\+File\+::parse\+\_\+metadata (\begin{DoxyParamCaption}{ }\end{DoxyParamCaption})\hspace{0.3cm}{\ttfamily [private]}}
+
+
+
+parse the metadata from the file 
+
+\Hypertarget{classaare_1_1RawFile_adbe11ff4722d5938bc1f4b7a9808216a}\label{classaare_1_1RawFile_adbe11ff4722d5938bc1f4b7a9808216a} 
+\index{aare::RawFile@{aare::RawFile}!parse\_raw\_metadata@{parse\_raw\_metadata}}
+\index{parse\_raw\_metadata@{parse\_raw\_metadata}!aare::RawFile@{aare::RawFile}}
+\doxysubsubsection{\texorpdfstring{parse\_raw\_metadata()}{parse\_raw\_metadata()}}
+{\footnotesize\ttfamily void aare\+::\+Raw\+File\+::parse\+\_\+raw\+\_\+metadata (\begin{DoxyParamCaption}{ }\end{DoxyParamCaption})\hspace{0.3cm}{\ttfamily [private]}}
+
+
+
+parse the metadata of a .raw file 
+
+\Hypertarget{classaare_1_1RawFile_ab8935d47a8482c36532ff5cdd91c78da}\label{classaare_1_1RawFile_ab8935d47a8482c36532ff5cdd91c78da} 
+\index{aare::RawFile@{aare::RawFile}!pixels@{pixels}}
+\index{pixels@{pixels}!aare::RawFile@{aare::RawFile}}
+\doxysubsubsection{\texorpdfstring{pixels()}{pixels()}}
+{\footnotesize\ttfamily size\+\_\+t aare\+::\+Raw\+File\+::pixels (\begin{DoxyParamCaption}{ }\end{DoxyParamCaption})\hspace{0.3cm}{\ttfamily [inline]}, {\ttfamily [override]}, {\ttfamily [virtual]}}
+
+
+
+get the number of pixels in the frame 
+
+\begin{DoxyReturn}{Returns}
+number of pixels 
+\end{DoxyReturn}
+
+
+Implements \mbox{\hyperlink{classaare_1_1FileInterface_a99da51594609984efe62bb64a88a3fa6}{aare\+::\+File\+Interface}}.
+
+\Hypertarget{classaare_1_1RawFile_afc6d881b6d2f246f09a595e637afd58c}\label{classaare_1_1RawFile_afc6d881b6d2f246f09a595e637afd58c} 
+\index{aare::RawFile@{aare::RawFile}!read@{read}}
+\index{read@{read}!aare::RawFile@{aare::RawFile}}
+\doxysubsubsection{\texorpdfstring{read()}{read()}\hspace{0.1cm}{\footnotesize\ttfamily [1/2]}}
+{\footnotesize\ttfamily \mbox{\hyperlink{classaare_1_1Frame}{Frame}} aare\+::\+Raw\+File\+::read (\begin{DoxyParamCaption}{ }\end{DoxyParamCaption})\hspace{0.3cm}{\ttfamily [inline]}, {\ttfamily [override]}, {\ttfamily [virtual]}}
+
+
+
+write a vector of frames to the file 
+
+
+\begin{DoxyParams}{Parameters}
+{\em frames} & vector of frames to write \\
+\hline
+\end{DoxyParams}
+\begin{DoxyReturn}{Returns}
+void
+\end{DoxyReturn}
+read one frame from the file at the current position \begin{DoxyReturn}{Returns}
+\doxylink{classaare_1_1Frame}{Frame} 
+\end{DoxyReturn}
+
+
+Implements \mbox{\hyperlink{classaare_1_1FileInterface_a9cb196de2bee8638578e4ba3ce46532e}{aare\+::\+File\+Interface}}.
+
+\Hypertarget{classaare_1_1RawFile_a1adf18bc4fd91c620edfc5c9477ad11f}\label{classaare_1_1RawFile_a1adf18bc4fd91c620edfc5c9477ad11f} 
+\index{aare::RawFile@{aare::RawFile}!read@{read}}
+\index{read@{read}!aare::RawFile@{aare::RawFile}}
+\doxysubsubsection{\texorpdfstring{read()}{read()}\hspace{0.1cm}{\footnotesize\ttfamily [2/2]}}
+{\footnotesize\ttfamily std\+::vector$<$ \mbox{\hyperlink{classaare_1_1Frame}{Frame}} $>$ aare\+::\+Raw\+File\+::read (\begin{DoxyParamCaption}\item[{size\+\_\+t}]{n\+\_\+frames }\end{DoxyParamCaption})\hspace{0.3cm}{\ttfamily [override]}, {\ttfamily [virtual]}}
+
+
+
+read n\+\_\+frames from the file at the current position 
+
+
+\begin{DoxyParams}{Parameters}
+{\em n\+\_\+frames} & number of frames to read \\
+\hline
+\end{DoxyParams}
+\begin{DoxyReturn}{Returns}
+vector of frames 
+\end{DoxyReturn}
+
+
+Implements \mbox{\hyperlink{classaare_1_1FileInterface_a1624d72f0feb1c19d507cc91c4cb414a}{aare\+::\+File\+Interface}}.
+
+\Hypertarget{classaare_1_1RawFile_a87d4af5d79244e7f1d69ab3a66e2bd10}\label{classaare_1_1RawFile_a87d4af5d79244e7f1d69ab3a66e2bd10} 
+\index{aare::RawFile@{aare::RawFile}!read\_header@{read\_header}}
+\index{read\_header@{read\_header}!aare::RawFile@{aare::RawFile}}
+\doxysubsubsection{\texorpdfstring{read\_header()}{read\_header()}}
+{\footnotesize\ttfamily \mbox{\hyperlink{structaare_1_1sls__detector__header}{sls\+\_\+detector\+\_\+header}} aare\+::\+Raw\+File\+::read\+\_\+header (\begin{DoxyParamCaption}\item[{const std\+::filesystem\+::path \&}]{fname }\end{DoxyParamCaption})\hspace{0.3cm}{\ttfamily [private]}}
+
+
+
+read the header of the file 
+
+
+\begin{DoxyParams}{Parameters}
+{\em fname} & path to the data subfile \\
+\hline
+\end{DoxyParams}
+\begin{DoxyReturn}{Returns}
+\doxylink{structaare_1_1sls__detector__header}{sls\+\_\+detector\+\_\+header} 
+\end{DoxyReturn}
+\Hypertarget{classaare_1_1RawFile_afa0228d53554cf5cc192e97474361269}\label{classaare_1_1RawFile_afa0228d53554cf5cc192e97474361269} 
+\index{aare::RawFile@{aare::RawFile}!read\_into@{read\_into}}
+\index{read\_into@{read\_into}!aare::RawFile@{aare::RawFile}}
+\doxysubsubsection{\texorpdfstring{read\_into()}{read\_into()}\hspace{0.1cm}{\footnotesize\ttfamily [1/2]}}
+{\footnotesize\ttfamily void aare\+::\+Raw\+File\+::read\+\_\+into (\begin{DoxyParamCaption}\item[{std\+::byte \texorpdfstring{$\ast$}{*}}]{image\+\_\+buf }\end{DoxyParamCaption})\hspace{0.3cm}{\ttfamily [inline]}, {\ttfamily [override]}, {\ttfamily [virtual]}}
+
+
+
+read one frame from the file at the current position and store it in the provided buffer 
+
+
+\begin{DoxyParams}{Parameters}
+{\em image\+\_\+buf} & buffer to store the frame \\
+\hline
+\end{DoxyParams}
+\begin{DoxyReturn}{Returns}
+void 
+\end{DoxyReturn}
+
+
+Implements \mbox{\hyperlink{classaare_1_1FileInterface_a4ac0f4e63ccf90af9f0d5b9b44db856c}{aare\+::\+File\+Interface}}.
+
+\Hypertarget{classaare_1_1RawFile_ad8dc6726891e1100035631b7365e8d31}\label{classaare_1_1RawFile_ad8dc6726891e1100035631b7365e8d31} 
+\index{aare::RawFile@{aare::RawFile}!read\_into@{read\_into}}
+\index{read\_into@{read\_into}!aare::RawFile@{aare::RawFile}}
+\doxysubsubsection{\texorpdfstring{read\_into()}{read\_into()}\hspace{0.1cm}{\footnotesize\ttfamily [2/2]}}
+{\footnotesize\ttfamily void aare\+::\+Raw\+File\+::read\+\_\+into (\begin{DoxyParamCaption}\item[{std\+::byte \texorpdfstring{$\ast$}{*}}]{image\+\_\+buf,  }\item[{size\+\_\+t}]{n\+\_\+frames }\end{DoxyParamCaption})\hspace{0.3cm}{\ttfamily [override]}, {\ttfamily [virtual]}}
+
+
+
+read n\+\_\+frames from the file at the current position and store them in the provided buffer 
+
+
+\begin{DoxyParams}{Parameters}
+{\em image\+\_\+buf} & buffer to store the frames \\
+\hline
+{\em n\+\_\+frames} & number of frames to read \\
+\hline
+\end{DoxyParams}
+\begin{DoxyReturn}{Returns}
+void 
+\end{DoxyReturn}
+
+
+Implements \mbox{\hyperlink{classaare_1_1FileInterface_a580c71b3eecf45ce2140cd65103cfd43}{aare\+::\+File\+Interface}}.
+
+\Hypertarget{classaare_1_1RawFile_a432c1b1f9a922e9951aaed0d221f5ea6}\label{classaare_1_1RawFile_a432c1b1f9a922e9951aaed0d221f5ea6} 
+\index{aare::RawFile@{aare::RawFile}!rows@{rows}}
+\index{rows@{rows}!aare::RawFile@{aare::RawFile}}
+\doxysubsubsection{\texorpdfstring{rows()}{rows()}}
+{\footnotesize\ttfamily ssize\+\_\+t aare\+::\+Raw\+File\+::rows (\begin{DoxyParamCaption}{ }\end{DoxyParamCaption}) const\hspace{0.3cm}{\ttfamily [inline]}, {\ttfamily [override]}, {\ttfamily [virtual]}}
+
+
+
+get the number of rows in the file 
+
+\begin{DoxyReturn}{Returns}
+number of rows in the file 
+\end{DoxyReturn}
+
+
+Implements \mbox{\hyperlink{classaare_1_1FileInterface_a8a5bc2d9b7b9ec1a9a100bf8a114d909}{aare\+::\+File\+Interface}}.
+
+\Hypertarget{classaare_1_1RawFile_a5eef29c0377f5af2e18475e9ae66527c}\label{classaare_1_1RawFile_a5eef29c0377f5af2e18475e9ae66527c} 
+\index{aare::RawFile@{aare::RawFile}!seek@{seek}}
+\index{seek@{seek}!aare::RawFile@{aare::RawFile}}
+\doxysubsubsection{\texorpdfstring{seek()}{seek()}}
+{\footnotesize\ttfamily void aare\+::\+Raw\+File\+::seek (\begin{DoxyParamCaption}\item[{size\+\_\+t}]{frame\+\_\+number }\end{DoxyParamCaption})\hspace{0.3cm}{\ttfamily [inline]}, {\ttfamily [override]}, {\ttfamily [virtual]}}
+
+
+
+seek to the given frame number 
+
+
+\begin{DoxyParams}{Parameters}
+{\em frame\+\_\+number} & frame number to seek to \\
+\hline
+\end{DoxyParams}
+\begin{DoxyReturn}{Returns}
+void 
+\end{DoxyReturn}
+
+
+Implements \mbox{\hyperlink{classaare_1_1FileInterface_a49510fb96eaa245fd5d2be7f25a40b74}{aare\+::\+File\+Interface}}.
+
+\Hypertarget{classaare_1_1RawFile_aeebfe5a324fa2f24c9a3353a668a8323}\label{classaare_1_1RawFile_aeebfe5a324fa2f24c9a3353a668a8323} 
+\index{aare::RawFile@{aare::RawFile}!set\_config@{set\_config}}
+\index{set\_config@{set\_config}!aare::RawFile@{aare::RawFile}}
+\doxysubsubsection{\texorpdfstring{set\_config()}{set\_config()}}
+{\footnotesize\ttfamily void aare\+::\+Raw\+File\+::set\+\_\+config (\begin{DoxyParamCaption}\item[{int}]{row,  }\item[{int}]{col }\end{DoxyParamCaption})\hspace{0.3cm}{\ttfamily [inline]}}
+
+
+
+set the module gap row and column 
+
+
+\begin{DoxyParams}{Parameters}
+{\em row} & gap between rows \\
+\hline
+{\em col} & gap between columns \\
+\hline
+\end{DoxyParams}
+\Hypertarget{classaare_1_1RawFile_aa0773872c1e6dd2ab86df2bfff35dee8}\label{classaare_1_1RawFile_aa0773872c1e6dd2ab86df2bfff35dee8} 
+\index{aare::RawFile@{aare::RawFile}!tell@{tell}}
+\index{tell@{tell}!aare::RawFile@{aare::RawFile}}
+\doxysubsubsection{\texorpdfstring{tell()}{tell()}}
+{\footnotesize\ttfamily size\+\_\+t aare\+::\+Raw\+File\+::tell (\begin{DoxyParamCaption}{ }\end{DoxyParamCaption})\hspace{0.3cm}{\ttfamily [inline]}, {\ttfamily [override]}, {\ttfamily [virtual]}}
+
+
+
+get the current position of the file pointer 
+
+\begin{DoxyReturn}{Returns}
+current position of the file pointer 
+\end{DoxyReturn}
+
+
+Implements \mbox{\hyperlink{classaare_1_1FileInterface_abd01811dcf904625b4dbd78dd9188de4}{aare\+::\+File\+Interface}}.
+
+\Hypertarget{classaare_1_1RawFile_a88a1e49617855a0984acf2bd70b3d209}\label{classaare_1_1RawFile_a88a1e49617855a0984acf2bd70b3d209} 
+\index{aare::RawFile@{aare::RawFile}!total\_frames@{total\_frames}}
+\index{total\_frames@{total\_frames}!aare::RawFile@{aare::RawFile}}
+\doxysubsubsection{\texorpdfstring{total\_frames()}{total\_frames()}}
+{\footnotesize\ttfamily size\+\_\+t aare\+::\+Raw\+File\+::total\+\_\+frames (\begin{DoxyParamCaption}{ }\end{DoxyParamCaption}) const\hspace{0.3cm}{\ttfamily [inline]}, {\ttfamily [override]}, {\ttfamily [virtual]}}
+
+
+
+get the total number of frames in the file 
+
+\begin{DoxyReturn}{Returns}
+total number of frames in the file 
+\end{DoxyReturn}
+
+
+Implements \mbox{\hyperlink{classaare_1_1FileInterface_ad4391bafd11f77f807114ba5108071d3}{aare\+::\+File\+Interface}}.
+
+\Hypertarget{classaare_1_1RawFile_ae9312684dfa014dede39e4c81d62abcd}\label{classaare_1_1RawFile_ae9312684dfa014dede39e4c81d62abcd} 
+\index{aare::RawFile@{aare::RawFile}!write@{write}}
+\index{write@{write}!aare::RawFile@{aare::RawFile}}
+\doxysubsubsection{\texorpdfstring{write()}{write()}}
+{\footnotesize\ttfamily void aare\+::\+Raw\+File\+::write (\begin{DoxyParamCaption}\item[{\mbox{\hyperlink{classaare_1_1Frame}{Frame}} \&}]{frame }\end{DoxyParamCaption})\hspace{0.3cm}{\ttfamily [inline]}, {\ttfamily [override]}, {\ttfamily [virtual]}}
+
+
+
+write function is not implemented for \doxylink{classaare_1_1RawFile}{Raw\+File} 
+
+
+\begin{DoxyParams}{Parameters}
+{\em frame} & frame to write \\
+\hline
+\end{DoxyParams}
+
+
+Implements \mbox{\hyperlink{classaare_1_1FileInterface_a5d39033c9d218d53d51413b99bf7d1f4}{aare\+::\+File\+Interface}}.
+
+
+
+\doxysubsection{Field Documentation}
+\Hypertarget{classaare_1_1RawFile_a6a98d519afde63d3b075110e53d244f0}\label{classaare_1_1RawFile_a6a98d519afde63d3b075110e53d244f0} 
+\index{aare::RawFile@{aare::RawFile}!cfg@{cfg}}
+\index{cfg@{cfg}!aare::RawFile@{aare::RawFile}}
+\doxysubsubsection{\texorpdfstring{cfg}{cfg}}
+{\footnotesize\ttfamily \mbox{\hyperlink{structaare_1_1RawFileConfig}{Raw\+File\+Config}} aare\+::\+Raw\+File\+::cfg \{0, 0\}\hspace{0.3cm}{\ttfamily [private]}}
+
+\Hypertarget{classaare_1_1FileInterface_ab96f5dd0c99fb7b5a527da812368d736}\label{classaare_1_1FileInterface_ab96f5dd0c99fb7b5a527da812368d736} 
+\index{aare::RawFile@{aare::RawFile}!current\_frame@{current\_frame}}
+\index{current\_frame@{current\_frame}!aare::RawFile@{aare::RawFile}}
+\doxysubsubsection{\texorpdfstring{current\_frame}{current\_frame}}
+{\footnotesize\ttfamily size\+\_\+t aare\+::\+File\+Interface\+::current\+\_\+frame \{\}\hspace{0.3cm}{\ttfamily [inherited]}}
+
+\Hypertarget{classaare_1_1RawFile_a913ff02d0893519b290a121da13ac1e2}\label{classaare_1_1RawFile_a913ff02d0893519b290a121da13ac1e2} 
+\index{aare::RawFile@{aare::RawFile}!geometry@{geometry}}
+\index{geometry@{geometry}!aare::RawFile@{aare::RawFile}}
+\doxysubsubsection{\texorpdfstring{geometry}{geometry}}
+{\footnotesize\ttfamily \mbox{\hyperlink{structaare_1_1xy}{xy}} aare\+::\+Raw\+File\+::geometry\hspace{0.3cm}{\ttfamily [private]}}
+
+\Hypertarget{classaare_1_1FileInterface_adae2b35fc6a3f185e9eb263c97bc024b}\label{classaare_1_1FileInterface_adae2b35fc6a3f185e9eb263c97bc024b} 
+\index{aare::RawFile@{aare::RawFile}!m\_base\_name@{m\_base\_name}}
+\index{m\_base\_name@{m\_base\_name}!aare::RawFile@{aare::RawFile}}
+\doxysubsubsection{\texorpdfstring{m\_base\_name}{m\_base\_name}}
+{\footnotesize\ttfamily std\+::string aare\+::\+File\+Interface\+::m\+\_\+base\+\_\+name\hspace{0.3cm}{\ttfamily [inherited]}}
+
+\Hypertarget{classaare_1_1FileInterface_afdd0a1a75618ad5db2f4794e0900b2f4}\label{classaare_1_1FileInterface_afdd0a1a75618ad5db2f4794e0900b2f4} 
+\index{aare::RawFile@{aare::RawFile}!m\_base\_path@{m\_base\_path}}
+\index{m\_base\_path@{m\_base\_path}!aare::RawFile@{aare::RawFile}}
+\doxysubsubsection{\texorpdfstring{m\_base\_path}{m\_base\_path}}
+{\footnotesize\ttfamily std\+::filesystem\+::path aare\+::\+File\+Interface\+::m\+\_\+base\+\_\+path\hspace{0.3cm}{\ttfamily [inherited]}}
+
+\Hypertarget{classaare_1_1FileInterface_a252d27cbbfcdfc528b86925eaac55bb7}\label{classaare_1_1FileInterface_a252d27cbbfcdfc528b86925eaac55bb7} 
+\index{aare::RawFile@{aare::RawFile}!m\_bitdepth@{m\_bitdepth}}
+\index{m\_bitdepth@{m\_bitdepth}!aare::RawFile@{aare::RawFile}}
+\doxysubsubsection{\texorpdfstring{m\_bitdepth}{m\_bitdepth}}
+{\footnotesize\ttfamily ssize\+\_\+t aare\+::\+File\+Interface\+::m\+\_\+bitdepth \{\}\hspace{0.3cm}{\ttfamily [inherited]}}
+
+\Hypertarget{classaare_1_1FileInterface_ad4c9991c30a71ba83cbaab283bc756b5}\label{classaare_1_1FileInterface_ad4c9991c30a71ba83cbaab283bc756b5} 
+\index{aare::RawFile@{aare::RawFile}!m\_cols@{m\_cols}}
+\index{m\_cols@{m\_cols}!aare::RawFile@{aare::RawFile}}
+\doxysubsubsection{\texorpdfstring{m\_cols}{m\_cols}}
+{\footnotesize\ttfamily ssize\+\_\+t aare\+::\+File\+Interface\+::m\+\_\+cols \{\}\hspace{0.3cm}{\ttfamily [inherited]}}
+
+\Hypertarget{classaare_1_1FileInterface_a5fffaf9a7c8ae2b3a2ebe89b9c94ed34}\label{classaare_1_1FileInterface_a5fffaf9a7c8ae2b3a2ebe89b9c94ed34} 
+\index{aare::RawFile@{aare::RawFile}!m\_ext@{m\_ext}}
+\index{m\_ext@{m\_ext}!aare::RawFile@{aare::RawFile}}
+\doxysubsubsection{\texorpdfstring{m\_ext}{m\_ext}}
+{\footnotesize\ttfamily std\+::string aare\+::\+File\+Interface\+::m\+\_\+ext\hspace{0.3cm}{\ttfamily [inherited]}}
+
+\Hypertarget{classaare_1_1FileInterface_a30e926a897b534ab9a327d40594ff191}\label{classaare_1_1FileInterface_a30e926a897b534ab9a327d40594ff191} 
+\index{aare::RawFile@{aare::RawFile}!m\_findex@{m\_findex}}
+\index{m\_findex@{m\_findex}!aare::RawFile@{aare::RawFile}}
+\doxysubsubsection{\texorpdfstring{m\_findex}{m\_findex}}
+{\footnotesize\ttfamily int aare\+::\+File\+Interface\+::m\+\_\+findex\hspace{0.3cm}{\ttfamily [inherited]}}
+
+\Hypertarget{classaare_1_1FileInterface_a325f6603f564fb42f8f28f1136b5e329}\label{classaare_1_1FileInterface_a325f6603f564fb42f8f28f1136b5e329} 
+\index{aare::RawFile@{aare::RawFile}!m\_fname@{m\_fname}}
+\index{m\_fname@{m\_fname}!aare::RawFile@{aare::RawFile}}
+\doxysubsubsection{\texorpdfstring{m\_fname}{m\_fname}}
+{\footnotesize\ttfamily std\+::filesystem\+::path aare\+::\+File\+Interface\+::m\+\_\+fname\hspace{0.3cm}{\ttfamily [inherited]}}
+
+\Hypertarget{classaare_1_1FileInterface_ab1d0e6de947affd5af9740eb06888fc6}\label{classaare_1_1FileInterface_ab1d0e6de947affd5af9740eb06888fc6} 
+\index{aare::RawFile@{aare::RawFile}!m\_mode@{m\_mode}}
+\index{m\_mode@{m\_mode}!aare::RawFile@{aare::RawFile}}
+\doxysubsubsection{\texorpdfstring{m\_mode}{m\_mode}}
+{\footnotesize\ttfamily std\+::string aare\+::\+File\+Interface\+::m\+\_\+mode\hspace{0.3cm}{\ttfamily [inherited]}}
+
+\Hypertarget{classaare_1_1FileInterface_ae29d98625cf56989e2c5237ace0d0f4c}\label{classaare_1_1FileInterface_ae29d98625cf56989e2c5237ace0d0f4c} 
+\index{aare::RawFile@{aare::RawFile}!m\_rows@{m\_rows}}
+\index{m\_rows@{m\_rows}!aare::RawFile@{aare::RawFile}}
+\doxysubsubsection{\texorpdfstring{m\_rows}{m\_rows}}
+{\footnotesize\ttfamily ssize\+\_\+t aare\+::\+File\+Interface\+::m\+\_\+rows \{\}\hspace{0.3cm}{\ttfamily [inherited]}}
+
+\Hypertarget{classaare_1_1FileInterface_a91551fada444b231294c095f3f5fb768}\label{classaare_1_1FileInterface_a91551fada444b231294c095f3f5fb768} 
+\index{aare::RawFile@{aare::RawFile}!m\_total\_frames@{m\_total\_frames}}
+\index{m\_total\_frames@{m\_total\_frames}!aare::RawFile@{aare::RawFile}}
+\doxysubsubsection{\texorpdfstring{m\_total\_frames}{m\_total\_frames}}
+{\footnotesize\ttfamily size\+\_\+t aare\+::\+File\+Interface\+::m\+\_\+total\+\_\+frames \{\}\hspace{0.3cm}{\ttfamily [inherited]}}
+
+\Hypertarget{classaare_1_1FileInterface_a9476a299cea6b4e97605135a28d0cb60}\label{classaare_1_1FileInterface_a9476a299cea6b4e97605135a28d0cb60} 
+\index{aare::RawFile@{aare::RawFile}!m\_type@{m\_type}}
+\index{m\_type@{m\_type}!aare::RawFile@{aare::RawFile}}
+\doxysubsubsection{\texorpdfstring{m\_type}{m\_type}}
+{\footnotesize\ttfamily \mbox{\hyperlink{namespaceaare_a5b95afba95553c1e118e1478c69042f7}{Detector\+Type}} aare\+::\+File\+Interface\+::m\+\_\+type\hspace{0.3cm}{\ttfamily [inherited]}}
+
+\Hypertarget{classaare_1_1FileInterface_ab0762d7652c9a4e1afe6dbb7d7325ac9}\label{classaare_1_1FileInterface_ab0762d7652c9a4e1afe6dbb7d7325ac9} 
+\index{aare::RawFile@{aare::RawFile}!max\_frames\_per\_file@{max\_frames\_per\_file}}
+\index{max\_frames\_per\_file@{max\_frames\_per\_file}!aare::RawFile@{aare::RawFile}}
+\doxysubsubsection{\texorpdfstring{max\_frames\_per\_file}{max\_frames\_per\_file}}
+{\footnotesize\ttfamily size\+\_\+t aare\+::\+File\+Interface\+::max\+\_\+frames\+\_\+per\+\_\+file \{\}\hspace{0.3cm}{\ttfamily [inherited]}}
+
+\Hypertarget{classaare_1_1RawFile_ac1493a619e12568437f95bf1b8ae5c51}\label{classaare_1_1RawFile_ac1493a619e12568437f95bf1b8ae5c51} 
+\index{aare::RawFile@{aare::RawFile}!n\_subfile\_parts@{n\_subfile\_parts}}
+\index{n\_subfile\_parts@{n\_subfile\_parts}!aare::RawFile@{aare::RawFile}}
+\doxysubsubsection{\texorpdfstring{n\_subfile\_parts}{n\_subfile\_parts}}
+{\footnotesize\ttfamily size\+\_\+t aare\+::\+Raw\+File\+::n\+\_\+subfile\+\_\+parts\hspace{0.3cm}{\ttfamily [private]}}
+
+\Hypertarget{classaare_1_1RawFile_ad256cf93af5d382fcd9381ad50db6f94}\label{classaare_1_1RawFile_ad256cf93af5d382fcd9381ad50db6f94} 
+\index{aare::RawFile@{aare::RawFile}!n\_subfiles@{n\_subfiles}}
+\index{n\_subfiles@{n\_subfiles}!aare::RawFile@{aare::RawFile}}
+\doxysubsubsection{\texorpdfstring{n\_subfiles}{n\_subfiles}}
+{\footnotesize\ttfamily size\+\_\+t aare\+::\+Raw\+File\+::n\+\_\+subfiles\hspace{0.3cm}{\ttfamily [private]}}
+
+\Hypertarget{classaare_1_1RawFile_a8be8d44e86171815bf54031b00fa1610}\label{classaare_1_1RawFile_a8be8d44e86171815bf54031b00fa1610} 
+\index{aare::RawFile@{aare::RawFile}!positions@{positions}}
+\index{positions@{positions}!aare::RawFile@{aare::RawFile}}
+\doxysubsubsection{\texorpdfstring{positions}{positions}}
+{\footnotesize\ttfamily std\+::vector$<$\mbox{\hyperlink{structaare_1_1xy}{xy}}$>$ aare\+::\+Raw\+File\+::positions\hspace{0.3cm}{\ttfamily [private]}}
+
+\Hypertarget{classaare_1_1RawFile_ad2e86859abde675cab13a68eeaea0e55}\label{classaare_1_1RawFile_ad2e86859abde675cab13a68eeaea0e55} 
+\index{aare::RawFile@{aare::RawFile}!quad@{quad}}
+\index{quad@{quad}!aare::RawFile@{aare::RawFile}}
+\doxysubsubsection{\texorpdfstring{quad}{quad}}
+{\footnotesize\ttfamily bool aare\+::\+Raw\+File\+::quad \{false\}\hspace{0.3cm}{\ttfamily [private]}}
+
+\Hypertarget{classaare_1_1RawFile_ae322f1b62cfa7e4ebeb1ccae51a799f2}\label{classaare_1_1RawFile_ae322f1b62cfa7e4ebeb1ccae51a799f2} 
+\index{aare::RawFile@{aare::RawFile}!subfile\_cols@{subfile\_cols}}
+\index{subfile\_cols@{subfile\_cols}!aare::RawFile@{aare::RawFile}}
+\doxysubsubsection{\texorpdfstring{subfile\_cols}{subfile\_cols}}
+{\footnotesize\ttfamily int aare\+::\+Raw\+File\+::subfile\+\_\+cols\hspace{0.3cm}{\ttfamily [private]}}
+
+\Hypertarget{classaare_1_1RawFile_ab1a3902a51ded3c1823937a914c7d458}\label{classaare_1_1RawFile_ab1a3902a51ded3c1823937a914c7d458} 
+\index{aare::RawFile@{aare::RawFile}!subfile\_rows@{subfile\_rows}}
+\index{subfile\_rows@{subfile\_rows}!aare::RawFile@{aare::RawFile}}
+\doxysubsubsection{\texorpdfstring{subfile\_rows}{subfile\_rows}}
+{\footnotesize\ttfamily int aare\+::\+Raw\+File\+::subfile\+\_\+rows\hspace{0.3cm}{\ttfamily [private]}}
+
+\Hypertarget{classaare_1_1RawFile_a310a0a7c3e49e112117ebed8bfdf199d}\label{classaare_1_1RawFile_a310a0a7c3e49e112117ebed8bfdf199d} 
+\index{aare::RawFile@{aare::RawFile}!subfiles@{subfiles}}
+\index{subfiles@{subfiles}!aare::RawFile@{aare::RawFile}}
+\doxysubsubsection{\texorpdfstring{subfiles}{subfiles}}
+{\footnotesize\ttfamily std\+::vector$<$std\+::vector$<$\mbox{\hyperlink{classaare_1_1SubFile}{Sub\+File}} \texorpdfstring{$\ast$}{*}$>$ $>$ aare\+::\+Raw\+File\+::subfiles\hspace{0.3cm}{\ttfamily [private]}}
+
+\Hypertarget{classaare_1_1RawFile_a333f2ee8aec487d0e4cbf7973fafaec4}\label{classaare_1_1RawFile_a333f2ee8aec487d0e4cbf7973fafaec4} 
+\index{aare::RawFile@{aare::RawFile}!timing\_mode@{timing\_mode}}
+\index{timing\_mode@{timing\_mode}!aare::RawFile@{aare::RawFile}}
+\doxysubsubsection{\texorpdfstring{timing\_mode}{timing\_mode}}
+{\footnotesize\ttfamily \mbox{\hyperlink{namespaceaare_a180255836568df302c95b5ca87dc5355}{Timing\+Mode}} aare\+::\+Raw\+File\+::timing\+\_\+mode\hspace{0.3cm}{\ttfamily [private]}}
+
+\Hypertarget{classaare_1_1FileInterface_a44cbe933bbd2cae1f48213121d15bce2}\label{classaare_1_1FileInterface_a44cbe933bbd2cae1f48213121d15bce2} 
+\index{aare::RawFile@{aare::RawFile}!version@{version}}
+\index{version@{version}!aare::RawFile@{aare::RawFile}}
+\doxysubsubsection{\texorpdfstring{version}{version}}
+{\footnotesize\ttfamily std\+::string aare\+::\+File\+Interface\+::version\hspace{0.3cm}{\ttfamily [inherited]}}
+
+
+
+The documentation for this class was generated from the following files\+:\begin{DoxyCompactItemize}
+\item 
+file\+\_\+io/include/aare/file\+\_\+io/\mbox{\hyperlink{RawFile_8hpp}{Raw\+File.\+hpp}}\item 
+file\+\_\+io/src/\mbox{\hyperlink{RawFile_8cpp}{Raw\+File.\+cpp}}\end{DoxyCompactItemize}

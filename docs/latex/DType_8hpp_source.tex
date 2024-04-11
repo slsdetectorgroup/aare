@@ -1,0 +1,54 @@
+\doxysection{DType.\+hpp}
+\hypertarget{DType_8hpp_source}{}\label{DType_8hpp_source}\index{core/include/aare/core/DType.hpp@{core/include/aare/core/DType.hpp}}
+\mbox{\hyperlink{DType_8hpp}{Go to the documentation of this file.}}
+\begin{DoxyCode}{0}
+\DoxyCodeLine{00001\ \textcolor{preprocessor}{\#pragma\ once}}
+\DoxyCodeLine{00002\ \textcolor{preprocessor}{\#include\ <cstdint>}}
+\DoxyCodeLine{00003\ \textcolor{preprocessor}{\#include\ <string>}}
+\DoxyCodeLine{00004\ \textcolor{preprocessor}{\#include\ <typeinfo>}}
+\DoxyCodeLine{00005\ }
+\DoxyCodeLine{00006\ \textcolor{keyword}{namespace\ }\mbox{\hyperlink{namespaceaare}{aare}}\ \{}
+\DoxyCodeLine{00007\ }
+\DoxyCodeLine{00008\ \textcolor{keyword}{enum\ class}\ \mbox{\hyperlink{namespaceaare_a1e464b780b0133eabe398b58ff7d0aff}{endian}}\ \{}
+\DoxyCodeLine{00009\ \textcolor{preprocessor}{\#ifdef\ \_WIN32}}
+\DoxyCodeLine{00010\ \ \ \ \ \mbox{\hyperlink{namespaceaare_a1e464b780b0133eabe398b58ff7d0affaaae6635e044ac56046b2893a529b5114}{little}}\ =\ 0,}
+\DoxyCodeLine{00011\ \ \ \ \ \mbox{\hyperlink{namespaceaare_a1e464b780b0133eabe398b58ff7d0affad861877da56b8b4ceb35c8cbfdf65bb4}{big}}\ =\ 1,}
+\DoxyCodeLine{00012\ \ \ \ \ \mbox{\hyperlink{namespaceaare_a1e464b780b0133eabe398b58ff7d0affa8e5f3adee38c8fccc13c1f3be0143796}{native}}\ =\ \mbox{\hyperlink{namespaceaare_a1e464b780b0133eabe398b58ff7d0affaaae6635e044ac56046b2893a529b5114}{little}}}
+\DoxyCodeLine{00013\ \textcolor{preprocessor}{\#else}}
+\DoxyCodeLine{00014\ \ \ \ \ \mbox{\hyperlink{namespaceaare_a1e464b780b0133eabe398b58ff7d0affaaae6635e044ac56046b2893a529b5114}{little}}\ =\ \_\_ORDER\_LITTLE\_ENDIAN\_\_,}
+\DoxyCodeLine{00015\ \ \ \ \ \mbox{\hyperlink{namespaceaare_a1e464b780b0133eabe398b58ff7d0affad861877da56b8b4ceb35c8cbfdf65bb4}{big}}\ =\ \_\_ORDER\_BIG\_ENDIAN\_\_,}
+\DoxyCodeLine{00016\ \ \ \ \ \mbox{\hyperlink{namespaceaare_a1e464b780b0133eabe398b58ff7d0affa8e5f3adee38c8fccc13c1f3be0143796}{native}}\ =\ \_\_BYTE\_ORDER\_\_}
+\DoxyCodeLine{00017\ \textcolor{preprocessor}{\#endif}}
+\DoxyCodeLine{00018\ \};}
+\DoxyCodeLine{00019\ }
+\DoxyCodeLine{00020\ \textcolor{keyword}{class\ }\mbox{\hyperlink{classaare_1_1DType}{DType}}\ \{}
+\DoxyCodeLine{00021\ \ \ \ \ \textcolor{comment}{//\ TODO!\ support\ for\ non\ native\ endianess?}}
+\DoxyCodeLine{00022\ \ \ \ \ \textcolor{keyword}{static\_assert}(\textcolor{keyword}{sizeof}(long)\ ==\ \textcolor{keyword}{sizeof}(int64\_t),\ \textcolor{stringliteral}{"{}long\ should\ be\ 64bits"{}});}
+\DoxyCodeLine{00023\ }
+\DoxyCodeLine{00024\ \ \ \textcolor{keyword}{public}:}
+\DoxyCodeLine{00025\ \ \ \ \ \textcolor{keyword}{enum}\ \mbox{\hyperlink{classaare_1_1DType_af556f6d36fca6f3c555c08a1cc19611c}{TypeIndex}}\ \{\ \mbox{\hyperlink{classaare_1_1DType_af556f6d36fca6f3c555c08a1cc19611cadbcf6ad40b9ebfcebead7c2e02ede4fc}{INT8}},\ \mbox{\hyperlink{classaare_1_1DType_af556f6d36fca6f3c555c08a1cc19611ca39bed0512dff6efdd29ad8180940b431}{UINT8}},\ \mbox{\hyperlink{classaare_1_1DType_af556f6d36fca6f3c555c08a1cc19611ca9c4f21df66c74163b09a2adcd855da40}{INT16}},\ \mbox{\hyperlink{classaare_1_1DType_af556f6d36fca6f3c555c08a1cc19611ca359189b12cd95a59c0feeba7cdbf4625}{UINT16}},\ \mbox{\hyperlink{classaare_1_1DType_af556f6d36fca6f3c555c08a1cc19611ca85ac1b748eb9b8d6c12cf6b3c8ef5543}{INT32}},\ \mbox{\hyperlink{classaare_1_1DType_af556f6d36fca6f3c555c08a1cc19611cacd2ee958be34e3fefcf8f3dc3d935caf}{UINT32}},\ \mbox{\hyperlink{classaare_1_1DType_af556f6d36fca6f3c555c08a1cc19611caf2642ad7946c063c5b4d0a5d2f723957}{INT64}},\ \mbox{\hyperlink{classaare_1_1DType_af556f6d36fca6f3c555c08a1cc19611ca62199831e85b359a70f9bed0690aa079}{UINT64}},\ \mbox{\hyperlink{classaare_1_1DType_af556f6d36fca6f3c555c08a1cc19611ca44e73e5741c6e0cb456e177badce218e}{FLOAT}},\ \mbox{\hyperlink{classaare_1_1DType_af556f6d36fca6f3c555c08a1cc19611ca6371d710bd9a7297ca4878b661ddf07b}{DOUBLE}},\ \mbox{\hyperlink{classaare_1_1DType_af556f6d36fca6f3c555c08a1cc19611ca31f898431fe733a5154366a0eedbf1e9}{ERROR}}\ \};}
+\DoxyCodeLine{00026\ }
+\DoxyCodeLine{00027\ \ \ \ \ uint8\_t\ \mbox{\hyperlink{classaare_1_1DType_ab097410b8d43b58061b1d64682ff8ac4}{bitdepth}}()\ \textcolor{keyword}{const};}
+\DoxyCodeLine{00028\ }
+\DoxyCodeLine{00029\ \ \ \ \ \textcolor{keyword}{explicit}\ \mbox{\hyperlink{classaare_1_1DType}{DType}}(\textcolor{keyword}{const}\ std::type\_info\ \&t);}
+\DoxyCodeLine{00030\ \ \ \ \ \textcolor{keyword}{explicit}\ \mbox{\hyperlink{classaare_1_1DType}{DType}}(std::string\_view\ sv);}
+\DoxyCodeLine{00031\ }
+\DoxyCodeLine{00032\ \ \ \ \ \textcolor{comment}{//\ not\ explicit\ to\ allow\ conversions\ form\ enum\ to\ DType}}
+\DoxyCodeLine{00033\ \ \ \ \ \mbox{\hyperlink{classaare_1_1DType}{DType}}(\mbox{\hyperlink{classaare_1_1DType_af556f6d36fca6f3c555c08a1cc19611c}{DType::TypeIndex}}\ ti);}
+\DoxyCodeLine{00034\ }
+\DoxyCodeLine{00035\ \ \ \ \ \textcolor{keywordtype}{bool}\ \mbox{\hyperlink{classaare_1_1DType_a9e5f23c134cf9f11787c10e5b3cc3e4e}{operator==}}(\textcolor{keyword}{const}\ \mbox{\hyperlink{classaare_1_1DType}{DType}}\ \&other)\ \textcolor{keyword}{const}\ \textcolor{keyword}{noexcept};}
+\DoxyCodeLine{00036\ \ \ \ \ \textcolor{keywordtype}{bool}\ \mbox{\hyperlink{classaare_1_1DType_af47e1fd8989195c38df4ef1b5d797a70}{operator!=}}(\textcolor{keyword}{const}\ \mbox{\hyperlink{classaare_1_1DType}{DType}}\ \&other)\ \textcolor{keyword}{const}\ \textcolor{keyword}{noexcept};}
+\DoxyCodeLine{00037\ \ \ \ \ \textcolor{keywordtype}{bool}\ \mbox{\hyperlink{classaare_1_1DType_a9e5f23c134cf9f11787c10e5b3cc3e4e}{operator==}}(\textcolor{keyword}{const}\ std::type\_info\ \&t)\ \textcolor{keyword}{const};}
+\DoxyCodeLine{00038\ \ \ \ \ \textcolor{keywordtype}{bool}\ \mbox{\hyperlink{classaare_1_1DType_af47e1fd8989195c38df4ef1b5d797a70}{operator!=}}(\textcolor{keyword}{const}\ std::type\_info\ \&t)\ \textcolor{keyword}{const};}
+\DoxyCodeLine{00039\ }
+\DoxyCodeLine{00040\ \ \ \ \ \textcolor{comment}{//\ bool\ operator==(DType::TypeIndex\ ti)\ const;}}
+\DoxyCodeLine{00041\ \ \ \ \ \textcolor{comment}{//\ bool\ operator!=(DType::TypeIndex\ ti)\ const;}}
+\DoxyCodeLine{00042\ \ \ \ \ std::string\ \mbox{\hyperlink{classaare_1_1DType_a87461d7de8fea6cee34761ef67040a69}{str}}()\ \textcolor{keyword}{const};}
+\DoxyCodeLine{00043\ }
+\DoxyCodeLine{00044\ \ \ \textcolor{keyword}{private}:}
+\DoxyCodeLine{00045\ \ \ \ \ \mbox{\hyperlink{classaare_1_1DType_af556f6d36fca6f3c555c08a1cc19611c}{TypeIndex}}\ \mbox{\hyperlink{classaare_1_1DType_a61529ea1e39bab2a222229fdcda8b1c0}{m\_type}}\{\mbox{\hyperlink{classaare_1_1DType_af556f6d36fca6f3c555c08a1cc19611ca31f898431fe733a5154366a0eedbf1e9}{TypeIndex::ERROR}}\};}
+\DoxyCodeLine{00046\ \};}
+\DoxyCodeLine{00047\ }
+\DoxyCodeLine{00048\ \}\ \textcolor{comment}{//\ namespace\ aare}}
+
+\end{DoxyCode}

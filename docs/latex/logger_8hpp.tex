@@ -1,0 +1,102 @@
+\doxysection{utils/include/aare/utils/logger.hpp File Reference}
+\hypertarget{logger_8hpp}{}\label{logger_8hpp}\index{utils/include/aare/utils/logger.hpp@{utils/include/aare/utils/logger.hpp}}
+{\ttfamily \#include $<$filesystem$>$}\newline
+{\ttfamily \#include $<$fstream$>$}\newline
+{\ttfamily \#include $<$iostream$>$}\newline
+{\ttfamily \#include $<$map$>$}\newline
+{\ttfamily \#include $<$vector$>$}\newline
+\doxysubsubsection*{Data Structures}
+\begin{DoxyCompactItemize}
+\item 
+class \mbox{\hyperlink{classaare_1_1logger_1_1Logger}{aare\+::logger\+::\+Logger}}
+\end{DoxyCompactItemize}
+\doxysubsubsection*{Namespaces}
+\begin{DoxyCompactItemize}
+\item 
+namespace \mbox{\hyperlink{namespaceaare}{aare}}
+\begin{DoxyCompactList}\small\item\em \doxylink{classaare_1_1Frame}{Frame} class to represent a single frame of data model class should be able to work with streams coming from files or network. \end{DoxyCompactList}\item 
+namespace \mbox{\hyperlink{namespaceaare_1_1logger}{aare\+::logger}}
+\item 
+namespace \mbox{\hyperlink{namespaceaare_1_1logger_1_1internal}{aare\+::logger\+::internal}}
+\end{DoxyCompactItemize}
+\doxysubsubsection*{Macros}
+\begin{DoxyCompactItemize}
+\item 
+\#define \mbox{\hyperlink{logger_8hpp_ac27b81440ce6781d5bfcab7a9bbdef99}{LOCATION}}~std\+::string(\+\_\+\+\_\+\+FILE\+\_\+\+\_\+) + std\+::string(\"{}\+:\"{}) + std\+::to\+\_\+string(\+\_\+\+\_\+\+LINE\+\_\+\+\_\+) + \"{}\+:\"{} + std\+::string(\+\_\+\+\_\+func\+\_\+\+\_\+) + \"{}\+:\"{}
+\end{DoxyCompactItemize}
+\doxysubsubsection*{Enumerations}
+\begin{DoxyCompactItemize}
+\item 
+enum \mbox{\hyperlink{namespaceaare_1_1logger_af49e00b36677b44ea78813c109b697ed}{aare\+::logger\+::\+LOGGING\+\_\+\+LEVEL}} \{ \mbox{\hyperlink{namespaceaare_1_1logger_af49e00b36677b44ea78813c109b697eda49a634116dfda67973725d859848ceda}{aare\+::logger\+::\+DEBUG}} = 0
+, \mbox{\hyperlink{namespaceaare_1_1logger_af49e00b36677b44ea78813c109b697edaa299d78fc1de06730cc5c9e63992071f}{aare\+::logger\+::\+INFO}} = 1
+, \mbox{\hyperlink{namespaceaare_1_1logger_af49e00b36677b44ea78813c109b697eda27d3614b3477d3fe03ac6eba997350c8}{aare\+::logger\+::\+WARNING}} = 2
+, \mbox{\hyperlink{namespaceaare_1_1logger_af49e00b36677b44ea78813c109b697eda5e573dce2cdf7298dfcce0f91c9aef59}{aare\+::logger\+::\+ERROR}} = 3
+ \}
+\end{DoxyCompactItemize}
+\doxysubsubsection*{Functions}
+\begin{DoxyCompactItemize}
+\item 
+{\footnotesize template$<$typename T $>$ }\\std\+::ostream \& \mbox{\hyperlink{logger_8hpp_a9e4ea0ca899f97b1680d4193d7372c71}{operator$<$$<$}} (std\+::ostream \&out, const std\+::vector$<$ T $>$ \&v)
+\item 
+{\footnotesize template$<$typename T , size\+\_\+t N$>$ }\\std\+::ostream \& \mbox{\hyperlink{logger_8hpp_a2ed0d126d7ddc7335e7174abbc04b6a4}{operator$<$$<$}} (std\+::ostream \&out, const std\+::array$<$ T, N $>$ \&v)
+\item 
+{\footnotesize template$<$typename K , typename V $>$ }\\std\+::ostream \& \mbox{\hyperlink{logger_8hpp_a7edea15fddf51d747c763deab919e17b}{operator$<$$<$}} (std\+::ostream \&out, const std\+::map$<$ K, V $>$ \&v)
+\item 
+{\footnotesize template$<$\mbox{\hyperlink{namespaceaare_1_1logger_af49e00b36677b44ea78813c109b697ed}{LOGGING\+\_\+\+LEVEL}} level, typename... Strings$>$ }\\void \mbox{\hyperlink{namespaceaare_1_1logger_a937a16230b5f98a197ab370d3b807ec6}{aare\+::logger\+::log}} (const Strings... s)
+\item 
+{\footnotesize template$<$typename... Strings$>$ }\\void \mbox{\hyperlink{namespaceaare_1_1logger_abae5b0551a44b7a2820cf8136cc8b967}{aare\+::logger\+::debug}} (const Strings... s)
+\item 
+{\footnotesize template$<$typename... Strings$>$ }\\void \mbox{\hyperlink{namespaceaare_1_1logger_ad1d416cf2f59b9112627c6bc2b351218}{aare\+::logger\+::info}} (const Strings... s)
+\item 
+{\footnotesize template$<$typename... Strings$>$ }\\void \mbox{\hyperlink{namespaceaare_1_1logger_a1449109c5a71459c6c9a5e997d98127b}{aare\+::logger\+::warn}} (const Strings... s)
+\item 
+{\footnotesize template$<$typename... Strings$>$ }\\void \mbox{\hyperlink{namespaceaare_1_1logger_aa3c59889c871f655a4a576bad35cd0e7}{aare\+::logger\+::error}} (const Strings... s)
+\item 
+void \mbox{\hyperlink{namespaceaare_1_1logger_a9615ab157fbc2bb3e9b2bfb65e12be8c}{aare\+::logger\+::set\+\_\+streams}} (std\+::streambuf \texorpdfstring{$\ast$}{*}out, std\+::streambuf \texorpdfstring{$\ast$}{*}err)
+\item 
+void \mbox{\hyperlink{namespaceaare_1_1logger_ab1dff5db561f3b7ebaee8428ab6d5b7d}{aare\+::logger\+::set\+\_\+streams}} (std\+::streambuf \texorpdfstring{$\ast$}{*}out)
+\item 
+void \mbox{\hyperlink{namespaceaare_1_1logger_a335576e89f0ac25831e1ff7abb3c67c8}{aare\+::logger\+::set\+\_\+verbosity}} (\mbox{\hyperlink{namespaceaare_1_1logger_af49e00b36677b44ea78813c109b697ed}{LOGGING\+\_\+\+LEVEL}} level)
+\item 
+void \mbox{\hyperlink{namespaceaare_1_1logger_a42089a21b600c9733ff5a82138c4f53d}{aare\+::logger\+::set\+\_\+output\+\_\+file}} (std\+::string filename)
+\item 
+\mbox{\hyperlink{classaare_1_1logger_1_1Logger}{Logger}} \& \mbox{\hyperlink{namespaceaare_1_1logger_adfa4e46d0e102fd5f1eb9a6471eead60}{aare\+::logger\+::get\+\_\+logger\+\_\+instance}} ()
+\end{DoxyCompactItemize}
+\doxysubsubsection*{Variables}
+\begin{DoxyCompactItemize}
+\item 
+\mbox{\hyperlink{classaare_1_1logger_1_1Logger}{aare\+::logger\+::\+Logger}} \mbox{\hyperlink{namespaceaare_1_1logger_1_1internal_a42d1e41bd805bdd6c87f2c36239d27bf}{aare\+::logger\+::internal\+::logger\+\_\+instance}} = \mbox{\hyperlink{classaare_1_1logger_1_1Logger}{aare\+::logger\+::\+Logger}}()
+\end{DoxyCompactItemize}
+
+
+\doxysubsection{Macro Definition Documentation}
+\Hypertarget{logger_8hpp_ac27b81440ce6781d5bfcab7a9bbdef99}\label{logger_8hpp_ac27b81440ce6781d5bfcab7a9bbdef99} 
+\index{logger.hpp@{logger.hpp}!LOCATION@{LOCATION}}
+\index{LOCATION@{LOCATION}!logger.hpp@{logger.hpp}}
+\doxysubsubsection{\texorpdfstring{LOCATION}{LOCATION}}
+{\footnotesize\ttfamily \#define LOCATION~std\+::string(\+\_\+\+\_\+\+FILE\+\_\+\+\_\+) + std\+::string(\"{}\+:\"{}) + std\+::to\+\_\+string(\+\_\+\+\_\+\+LINE\+\_\+\+\_\+) + \"{}\+:\"{} + std\+::string(\+\_\+\+\_\+func\+\_\+\+\_\+) + \"{}\+:\"{}}
+
+
+
+\doxysubsection{Function Documentation}
+\Hypertarget{logger_8hpp_a2ed0d126d7ddc7335e7174abbc04b6a4}\label{logger_8hpp_a2ed0d126d7ddc7335e7174abbc04b6a4} 
+\index{logger.hpp@{logger.hpp}!operator$<$$<$@{operator$<$$<$}}
+\index{operator$<$$<$@{operator$<$$<$}!logger.hpp@{logger.hpp}}
+\doxysubsubsection{\texorpdfstring{operator$<$$<$()}{operator<<()}\hspace{0.1cm}{\footnotesize\ttfamily [1/3]}}
+{\footnotesize\ttfamily template$<$typename T , size\+\_\+t N$>$ \\
+std\+::ostream \& operator$<$$<$ (\begin{DoxyParamCaption}\item[{std\+::ostream \&}]{out,  }\item[{const std\+::array$<$ T, N $>$ \&}]{v }\end{DoxyParamCaption})}
+
+\Hypertarget{logger_8hpp_a7edea15fddf51d747c763deab919e17b}\label{logger_8hpp_a7edea15fddf51d747c763deab919e17b} 
+\index{logger.hpp@{logger.hpp}!operator$<$$<$@{operator$<$$<$}}
+\index{operator$<$$<$@{operator$<$$<$}!logger.hpp@{logger.hpp}}
+\doxysubsubsection{\texorpdfstring{operator$<$$<$()}{operator<<()}\hspace{0.1cm}{\footnotesize\ttfamily [2/3]}}
+{\footnotesize\ttfamily template$<$typename K , typename V $>$ \\
+std\+::ostream \& operator$<$$<$ (\begin{DoxyParamCaption}\item[{std\+::ostream \&}]{out,  }\item[{const std\+::map$<$ K, V $>$ \&}]{v }\end{DoxyParamCaption})}
+
+\Hypertarget{logger_8hpp_a9e4ea0ca899f97b1680d4193d7372c71}\label{logger_8hpp_a9e4ea0ca899f97b1680d4193d7372c71} 
+\index{logger.hpp@{logger.hpp}!operator$<$$<$@{operator$<$$<$}}
+\index{operator$<$$<$@{operator$<$$<$}!logger.hpp@{logger.hpp}}
+\doxysubsubsection{\texorpdfstring{operator$<$$<$()}{operator<<()}\hspace{0.1cm}{\footnotesize\ttfamily [3/3]}}
+{\footnotesize\ttfamily template$<$typename T $>$ \\
+std\+::ostream \& operator$<$$<$ (\begin{DoxyParamCaption}\item[{std\+::ostream \&}]{out,  }\item[{const std\+::vector$<$ T $>$ \&}]{v }\end{DoxyParamCaption})}
+
