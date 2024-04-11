@@ -1,0 +1,28 @@
+\doxysection{core/include/aare/core/\+NDArray.hpp File Reference}
+\hypertarget{NDArray_8hpp}{}\label{NDArray_8hpp}\index{core/include/aare/core/NDArray.hpp@{core/include/aare/core/NDArray.hpp}}
+{\ttfamily \#include \"{}aare/core/\+NDView.\+hpp\"{}}\newline
+{\ttfamily \#include $<$algorithm$>$}\newline
+{\ttfamily \#include $<$array$>$}\newline
+{\ttfamily \#include $<$cmath$>$}\newline
+{\ttfamily \#include $<$fmt/format.\+h$>$}\newline
+{\ttfamily \#include $<$fstream$>$}\newline
+{\ttfamily \#include $<$iomanip$>$}\newline
+{\ttfamily \#include $<$iostream$>$}\newline
+{\ttfamily \#include $<$numeric$>$}\newline
+\doxysubsubsection*{Data Structures}
+\begin{DoxyCompactItemize}
+\item 
+class \mbox{\hyperlink{classaare_1_1NDArray}{aare\+::\+NDArray$<$ T, Ndim $>$}}
+\end{DoxyCompactItemize}
+\doxysubsubsection*{Namespaces}
+\begin{DoxyCompactItemize}
+\item 
+namespace \mbox{\hyperlink{namespaceaare}{aare}}
+\begin{DoxyCompactList}\small\item\em \doxylink{classaare_1_1Frame}{Frame} class to represent a single frame of data model class should be able to work with streams coming from files or network. \end{DoxyCompactList}\end{DoxyCompactItemize}
+\doxysubsubsection*{Functions}
+\begin{DoxyCompactItemize}
+\item 
+{\footnotesize template$<$typename T , ssize\+\_\+t Ndim$>$ }\\void \mbox{\hyperlink{namespaceaare_aac5d322f266bccdc416bcd66098eae33}{aare\+::save}} (\mbox{\hyperlink{classaare_1_1NDArray}{NDArray}}$<$ T, Ndim $>$ \&img, std\+::string pathname)
+\item 
+{\footnotesize template$<$typename T , ssize\+\_\+t Ndim$>$ }\\\mbox{\hyperlink{classaare_1_1NDArray}{NDArray}}$<$ T, Ndim $>$ \mbox{\hyperlink{namespaceaare_a2868d09c334b1aa09be4da1979100ec5}{aare\+::load}} (const std\+::string \&pathname, std\+::array$<$ ssize\+\_\+t, Ndim $>$ shape)
+\end{DoxyCompactItemize}

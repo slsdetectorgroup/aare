@@ -1,0 +1,549 @@
+\doxysection{aare\+::NDArray\texorpdfstring{$<$}{<} T, Ndim \texorpdfstring{$>$}{>} Class Template Reference}
+\hypertarget{classaare_1_1NDArray}{}\label{classaare_1_1NDArray}\index{aare::NDArray$<$ T, Ndim $>$@{aare::NDArray$<$ T, Ndim $>$}}
+
+
+{\ttfamily \#include $<$NDArray.\+hpp$>$}
+
+\doxysubsubsection*{Public Types}
+\begin{DoxyCompactItemize}
+\item 
+using \mbox{\hyperlink{classaare_1_1NDArray_a0574380e6b0f3d77a8364c942123c24a}{value\+\_\+type}} = T
+\end{DoxyCompactItemize}
+\doxysubsubsection*{Public Member Functions}
+\begin{DoxyCompactItemize}
+\item 
+\mbox{\hyperlink{classaare_1_1NDArray_a41d9f4d28c02f18b60a1fa297249559d}{NDArray}} ()
+\item 
+\mbox{\hyperlink{classaare_1_1NDArray_a2e965c4b7501e355b3cbd2bd3b33f32f}{NDArray}} (std\+::array$<$ ssize\+\_\+t, Ndim $>$ \mbox{\hyperlink{classaare_1_1NDArray_a6dfa3b12cb66147effe2a42435dd346d}{shape}})
+\item 
+\mbox{\hyperlink{classaare_1_1NDArray_a5f2e568908401ef19e82f63379e80d97}{NDArray}} (std\+::array$<$ ssize\+\_\+t, Ndim $>$ \mbox{\hyperlink{classaare_1_1NDArray_a6dfa3b12cb66147effe2a42435dd346d}{shape}}, T \mbox{\hyperlink{classaare_1_1NDArray_ad8f804893325ae1553d33accec070e92}{value}})
+\item 
+\mbox{\hyperlink{classaare_1_1NDArray_a04cbc1cc0ba2aaac434b43674b0f820e}{NDArray}} (\mbox{\hyperlink{classaare_1_1NDView}{NDView}}$<$ T, Ndim $>$ \mbox{\hyperlink{classaare_1_1NDArray_ac5ffe1a4b9dde8f2ec6dba021951c922}{span}})
+\item 
+\mbox{\hyperlink{classaare_1_1NDArray_a804d1971ae1fc08375ec4bad36a42fe7}{NDArray}} (\mbox{\hyperlink{classaare_1_1NDArray}{NDArray}} \&\&other)
+\item 
+\mbox{\hyperlink{classaare_1_1NDArray_a1485287520ba5919ebb4fa2bc84b3a67}{NDArray}} (const \mbox{\hyperlink{classaare_1_1NDArray}{NDArray}} \&other)
+\item 
+\mbox{\hyperlink{classaare_1_1NDArray_a702d2a7566dd9796eb891d043159fd41}{\texorpdfstring{$\sim$}{\string~}\+NDArray}} ()
+\item 
+auto \mbox{\hyperlink{classaare_1_1NDArray_a3241eee2a316d350390c3b9a2e3ba091}{begin}} ()
+\item 
+auto \mbox{\hyperlink{classaare_1_1NDArray_aeac1405793b07e8433b53f1e04740ec8}{end}} ()
+\item 
+\mbox{\hyperlink{classaare_1_1NDArray}{NDArray}} \& \mbox{\hyperlink{classaare_1_1NDArray_a06c658e8a6490c74fb9878b14a4faf1d}{operator=}} (\mbox{\hyperlink{classaare_1_1NDArray}{NDArray}} \&\&other)
+\item 
+\mbox{\hyperlink{classaare_1_1NDArray}{NDArray}} \& \mbox{\hyperlink{classaare_1_1NDArray_a713fff54cdec54f27ec92c1f317a46c7}{operator=}} (const \mbox{\hyperlink{classaare_1_1NDArray}{NDArray}} \&other)
+\item 
+\mbox{\hyperlink{classaare_1_1NDArray}{NDArray}} \mbox{\hyperlink{classaare_1_1NDArray_afcc5f259b1bd0cadcadbf2b52795babc}{operator+}} (const \mbox{\hyperlink{classaare_1_1NDArray}{NDArray}} \&other)
+\item 
+\mbox{\hyperlink{classaare_1_1NDArray}{NDArray}} \& \mbox{\hyperlink{classaare_1_1NDArray_a27eb7b3599cb62297832d4a3d8022f32}{operator+=}} (const \mbox{\hyperlink{classaare_1_1NDArray}{NDArray}} \&other)
+\item 
+\mbox{\hyperlink{classaare_1_1NDArray}{NDArray}} \mbox{\hyperlink{classaare_1_1NDArray_aac96eb2ce76cd90d44eb3b19408d2434}{operator-\/}} (const \mbox{\hyperlink{classaare_1_1NDArray}{NDArray}} \&other)
+\item 
+\mbox{\hyperlink{classaare_1_1NDArray}{NDArray}} \& \mbox{\hyperlink{classaare_1_1NDArray_aad602fc6734cb85112f2a8edf91d1c70}{operator-\/=}} (const \mbox{\hyperlink{classaare_1_1NDArray}{NDArray}} \&other)
+\item 
+\mbox{\hyperlink{classaare_1_1NDArray}{NDArray}} \mbox{\hyperlink{classaare_1_1NDArray_ae67f899470bc9f8c8df8b54d544f9171}{operator\texorpdfstring{$\ast$}{*}}} (const \mbox{\hyperlink{classaare_1_1NDArray}{NDArray}} \&other)
+\item 
+\mbox{\hyperlink{classaare_1_1NDArray}{NDArray}} \& \mbox{\hyperlink{classaare_1_1NDArray_a54edf15f9669a1e4601fa4aa936a2d92}{operator\texorpdfstring{$\ast$}{*}=}} (const \mbox{\hyperlink{classaare_1_1NDArray}{NDArray}} \&other)
+\item 
+\mbox{\hyperlink{classaare_1_1NDArray}{NDArray}} \mbox{\hyperlink{classaare_1_1NDArray_a59dc47216852c36191e0cecc869131e1}{operator/}} (const \mbox{\hyperlink{classaare_1_1NDArray}{NDArray}} \&other)
+\item 
+{\footnotesize template$<$typename V $>$ }\\\mbox{\hyperlink{classaare_1_1NDArray}{NDArray}} \& \mbox{\hyperlink{classaare_1_1NDArray_a2a6260113ca73c86d37d0444b5148c49}{operator/=}} (const \mbox{\hyperlink{classaare_1_1NDArray}{NDArray}}$<$ V, Ndim $>$ \&other)
+\item 
+\mbox{\hyperlink{classaare_1_1NDArray}{NDArray}}$<$ bool, Ndim $>$ \mbox{\hyperlink{classaare_1_1NDArray_a569e8de85121a4a6315c556870b48931}{operator$>$}} (const \mbox{\hyperlink{classaare_1_1NDArray}{NDArray}} \&other)
+\item 
+bool \mbox{\hyperlink{classaare_1_1NDArray_ad20b30f1abea56b82196f030b1492027}{operator==}} (const \mbox{\hyperlink{classaare_1_1NDArray}{NDArray}} \&other) const
+\item 
+bool \mbox{\hyperlink{classaare_1_1NDArray_a90408ebad72f63d0288b869b3e32e50b}{operator!=}} (const \mbox{\hyperlink{classaare_1_1NDArray}{NDArray}} \&other) const
+\item 
+\mbox{\hyperlink{classaare_1_1NDArray}{NDArray}} \& \mbox{\hyperlink{classaare_1_1NDArray_a5f249dd42235efcf858caca096300d02}{operator=}} (const T \&)
+\item 
+\mbox{\hyperlink{classaare_1_1NDArray}{NDArray}} \& \mbox{\hyperlink{classaare_1_1NDArray_aa15fe27ef06f8a230345161990ce8381}{operator+=}} (const T \&)
+\item 
+\mbox{\hyperlink{classaare_1_1NDArray}{NDArray}} \mbox{\hyperlink{classaare_1_1NDArray_a86042f9185412e1d68422765d56ce769}{operator+}} (const T \&)
+\item 
+\mbox{\hyperlink{classaare_1_1NDArray}{NDArray}} \& \mbox{\hyperlink{classaare_1_1NDArray_ad65261a50424d112852f046426c66267}{operator-\/=}} (const T \&)
+\item 
+\mbox{\hyperlink{classaare_1_1NDArray}{NDArray}} \mbox{\hyperlink{classaare_1_1NDArray_ae8fcc0b6cb14d353286ffdf2c914200f}{operator-\/}} (const T \&)
+\item 
+\mbox{\hyperlink{classaare_1_1NDArray}{NDArray}} \& \mbox{\hyperlink{classaare_1_1NDArray_afe950d8cf1bdc97d450f912d1d903c09}{operator\texorpdfstring{$\ast$}{*}=}} (const T \&)
+\item 
+\mbox{\hyperlink{classaare_1_1NDArray}{NDArray}} \mbox{\hyperlink{classaare_1_1NDArray_a2d6d56700f622c3175b9b82f043c3b94}{operator\texorpdfstring{$\ast$}{*}}} (const T \&)
+\item 
+\mbox{\hyperlink{classaare_1_1NDArray}{NDArray}} \& \mbox{\hyperlink{classaare_1_1NDArray_a8658f5217fcd0ac6f6900b4f013aed16}{operator/=}} (const T \&)
+\item 
+\mbox{\hyperlink{classaare_1_1NDArray}{NDArray}} \mbox{\hyperlink{classaare_1_1NDArray_a6a69a2fce0631e9ef9b1587e75cf1568}{operator/}} (const T \&)
+\item 
+\mbox{\hyperlink{classaare_1_1NDArray}{NDArray}} \& \mbox{\hyperlink{classaare_1_1NDArray_ab01fdad1a92b1629996f15ff0cf79ac3}{operator\&=}} (const T \&)
+\item 
+void \mbox{\hyperlink{classaare_1_1NDArray_af36c03e7a91fe932d60739d5ea30f1f2}{sqrt}} ()
+\item 
+\mbox{\hyperlink{classaare_1_1NDArray}{NDArray}} \& \mbox{\hyperlink{classaare_1_1NDArray_a040dd143e6dc040703b33d91ba929271}{operator++}} ()
+\item 
+{\footnotesize template$<$typename... Ix$>$ }\\std\+::enable\+\_\+if$<$ sizeof...(Ix)==Ndim, T \& $>$\+::type \mbox{\hyperlink{classaare_1_1NDArray_aea34e489c4721228aeece6dcdd9133dd}{operator()}} (Ix... index)
+\item 
+{\footnotesize template$<$typename... Ix$>$ }\\std\+::enable\+\_\+if$<$ sizeof...(Ix)==Ndim, T \& $>$\+::type \mbox{\hyperlink{classaare_1_1NDArray_ab6938304bf9f74ee4d04451931a53de0}{operator()}} (Ix... index) const
+\item 
+{\footnotesize template$<$typename... Ix$>$ }\\std\+::enable\+\_\+if$<$ sizeof...(Ix)==Ndim, T $>$\+::type \mbox{\hyperlink{classaare_1_1NDArray_ad8f804893325ae1553d33accec070e92}{value}} (Ix... index)
+\item 
+T \& \mbox{\hyperlink{classaare_1_1NDArray_a8d75984e7f384c4c9d25bc04c6c14983}{operator()}} (int i)
+\item 
+const T \& \mbox{\hyperlink{classaare_1_1NDArray_adf800cbb478a4f24ae24026034bafd43}{operator()}} (int i) const
+\item 
+T \texorpdfstring{$\ast$}{*} \mbox{\hyperlink{classaare_1_1NDArray_a77b3ca3e85d5a3e394248fdaab01c5a5}{data}} ()
+\item 
+std\+::byte \texorpdfstring{$\ast$}{*} \mbox{\hyperlink{classaare_1_1NDArray_af289b6a162612ed74ad2fd0606a479a9}{buffer}} ()
+\item 
+ssize\+\_\+t \mbox{\hyperlink{classaare_1_1NDArray_a86632c60ddbdf7af8cfd3939df472127}{size}} () const
+\item 
+size\+\_\+t \mbox{\hyperlink{classaare_1_1NDArray_ab1f9c68ddce8440f1fc220cbc1d865fc}{total\+\_\+bytes}} () const
+\item 
+std\+::array$<$ ssize\+\_\+t, Ndim $>$ \mbox{\hyperlink{classaare_1_1NDArray_a6dfa3b12cb66147effe2a42435dd346d}{shape}} () const noexcept
+\item 
+ssize\+\_\+t \mbox{\hyperlink{classaare_1_1NDArray_af765f5cb619ed79d44a000572b265589}{shape}} (ssize\+\_\+t i) const noexcept
+\item 
+std\+::array$<$ ssize\+\_\+t, Ndim $>$ \mbox{\hyperlink{classaare_1_1NDArray_a07369722ffea061203bfbfd4479c05e9}{strides}} () const noexcept
+\item 
+std\+::array$<$ ssize\+\_\+t, Ndim $>$ \mbox{\hyperlink{classaare_1_1NDArray_a2ab19fc488009d3fce95fcf5bff6b10a}{byte\+\_\+strides}} () const noexcept
+\item 
+\mbox{\hyperlink{classaare_1_1NDView}{NDView}}$<$ T, Ndim $>$ \mbox{\hyperlink{classaare_1_1NDArray_ac5ffe1a4b9dde8f2ec6dba021951c922}{span}} () const
+\item 
+void \mbox{\hyperlink{classaare_1_1NDArray_ad49628442cc054b7c0b56b3104d9ef20}{Print}} ()
+\item 
+void \mbox{\hyperlink{classaare_1_1NDArray_a6084445eed769b89387b4aca53306513}{Print\+\_\+all}} ()
+\item 
+void \mbox{\hyperlink{classaare_1_1NDArray_a5dec49e82ec3abfa28bddfc328b1c4e9}{Print\+\_\+some}} ()
+\item 
+void \mbox{\hyperlink{classaare_1_1NDArray_a98d5740082a649135587590dbbaa42e2}{reset}} ()
+\end{DoxyCompactItemize}
+\doxysubsubsection*{Private Attributes}
+\begin{DoxyCompactItemize}
+\item 
+std\+::array$<$ ssize\+\_\+t, Ndim $>$ \mbox{\hyperlink{classaare_1_1NDArray_af00f150a2867b13b37a3f711ba5f7c3b}{shape\+\_\+}}
+\item 
+std\+::array$<$ ssize\+\_\+t, Ndim $>$ \mbox{\hyperlink{classaare_1_1NDArray_a5275d4999e7422458d472620f792573a}{strides\+\_\+}}
+\item 
+ssize\+\_\+t \mbox{\hyperlink{classaare_1_1NDArray_ac64b3e00ad3b69f6bc46def403614ccd}{size\+\_\+}}
+\item 
+T \texorpdfstring{$\ast$}{*} \mbox{\hyperlink{classaare_1_1NDArray_ad2357b3a2dca6ff0ef6705d9913227ca}{data\+\_\+}}
+\end{DoxyCompactItemize}
+
+
+\doxysubsection{Member Typedef Documentation}
+\Hypertarget{classaare_1_1NDArray_a0574380e6b0f3d77a8364c942123c24a}\label{classaare_1_1NDArray_a0574380e6b0f3d77a8364c942123c24a} 
+\index{aare::NDArray$<$ T, Ndim $>$@{aare::NDArray$<$ T, Ndim $>$}!value\_type@{value\_type}}
+\index{value\_type@{value\_type}!aare::NDArray$<$ T, Ndim $>$@{aare::NDArray$<$ T, Ndim $>$}}
+\doxysubsubsection{\texorpdfstring{value\_type}{value\_type}}
+{\footnotesize\ttfamily template$<$typename T , ssize\+\_\+t Ndim = 2$>$ \\
+using \mbox{\hyperlink{classaare_1_1NDArray}{aare\+::\+NDArray}}$<$ T, Ndim $>$\+::value\+\_\+type =  T}
+
+
+
+\doxysubsection{Constructor \& Destructor Documentation}
+\Hypertarget{classaare_1_1NDArray_a41d9f4d28c02f18b60a1fa297249559d}\label{classaare_1_1NDArray_a41d9f4d28c02f18b60a1fa297249559d} 
+\index{aare::NDArray$<$ T, Ndim $>$@{aare::NDArray$<$ T, Ndim $>$}!NDArray@{NDArray}}
+\index{NDArray@{NDArray}!aare::NDArray$<$ T, Ndim $>$@{aare::NDArray$<$ T, Ndim $>$}}
+\doxysubsubsection{\texorpdfstring{NDArray()}{NDArray()}\hspace{0.1cm}{\footnotesize\ttfamily [1/6]}}
+{\footnotesize\ttfamily template$<$typename T , ssize\+\_\+t Ndim = 2$>$ \\
+\mbox{\hyperlink{classaare_1_1NDArray}{aare\+::\+NDArray}}$<$ T, Ndim $>$\+::\+NDArray (\begin{DoxyParamCaption}{ }\end{DoxyParamCaption})\hspace{0.3cm}{\ttfamily [inline]}}
+
+\Hypertarget{classaare_1_1NDArray_a2e965c4b7501e355b3cbd2bd3b33f32f}\label{classaare_1_1NDArray_a2e965c4b7501e355b3cbd2bd3b33f32f} 
+\index{aare::NDArray$<$ T, Ndim $>$@{aare::NDArray$<$ T, Ndim $>$}!NDArray@{NDArray}}
+\index{NDArray@{NDArray}!aare::NDArray$<$ T, Ndim $>$@{aare::NDArray$<$ T, Ndim $>$}}
+\doxysubsubsection{\texorpdfstring{NDArray()}{NDArray()}\hspace{0.1cm}{\footnotesize\ttfamily [2/6]}}
+{\footnotesize\ttfamily template$<$typename T , ssize\+\_\+t Ndim = 2$>$ \\
+\mbox{\hyperlink{classaare_1_1NDArray}{aare\+::\+NDArray}}$<$ T, Ndim $>$\+::\+NDArray (\begin{DoxyParamCaption}\item[{std\+::array$<$ ssize\+\_\+t, Ndim $>$}]{shape }\end{DoxyParamCaption})\hspace{0.3cm}{\ttfamily [inline]}, {\ttfamily [explicit]}}
+
+\Hypertarget{classaare_1_1NDArray_a5f2e568908401ef19e82f63379e80d97}\label{classaare_1_1NDArray_a5f2e568908401ef19e82f63379e80d97} 
+\index{aare::NDArray$<$ T, Ndim $>$@{aare::NDArray$<$ T, Ndim $>$}!NDArray@{NDArray}}
+\index{NDArray@{NDArray}!aare::NDArray$<$ T, Ndim $>$@{aare::NDArray$<$ T, Ndim $>$}}
+\doxysubsubsection{\texorpdfstring{NDArray()}{NDArray()}\hspace{0.1cm}{\footnotesize\ttfamily [3/6]}}
+{\footnotesize\ttfamily template$<$typename T , ssize\+\_\+t Ndim = 2$>$ \\
+\mbox{\hyperlink{classaare_1_1NDArray}{aare\+::\+NDArray}}$<$ T, Ndim $>$\+::\+NDArray (\begin{DoxyParamCaption}\item[{std\+::array$<$ ssize\+\_\+t, Ndim $>$}]{shape,  }\item[{T}]{value }\end{DoxyParamCaption})\hspace{0.3cm}{\ttfamily [inline]}}
+
+\Hypertarget{classaare_1_1NDArray_a04cbc1cc0ba2aaac434b43674b0f820e}\label{classaare_1_1NDArray_a04cbc1cc0ba2aaac434b43674b0f820e} 
+\index{aare::NDArray$<$ T, Ndim $>$@{aare::NDArray$<$ T, Ndim $>$}!NDArray@{NDArray}}
+\index{NDArray@{NDArray}!aare::NDArray$<$ T, Ndim $>$@{aare::NDArray$<$ T, Ndim $>$}}
+\doxysubsubsection{\texorpdfstring{NDArray()}{NDArray()}\hspace{0.1cm}{\footnotesize\ttfamily [4/6]}}
+{\footnotesize\ttfamily template$<$typename T , ssize\+\_\+t Ndim = 2$>$ \\
+\mbox{\hyperlink{classaare_1_1NDArray}{aare\+::\+NDArray}}$<$ T, Ndim $>$\+::\+NDArray (\begin{DoxyParamCaption}\item[{\mbox{\hyperlink{classaare_1_1NDView}{NDView}}$<$ T, Ndim $>$}]{span }\end{DoxyParamCaption})\hspace{0.3cm}{\ttfamily [inline]}}
+
+\Hypertarget{classaare_1_1NDArray_a804d1971ae1fc08375ec4bad36a42fe7}\label{classaare_1_1NDArray_a804d1971ae1fc08375ec4bad36a42fe7} 
+\index{aare::NDArray$<$ T, Ndim $>$@{aare::NDArray$<$ T, Ndim $>$}!NDArray@{NDArray}}
+\index{NDArray@{NDArray}!aare::NDArray$<$ T, Ndim $>$@{aare::NDArray$<$ T, Ndim $>$}}
+\doxysubsubsection{\texorpdfstring{NDArray()}{NDArray()}\hspace{0.1cm}{\footnotesize\ttfamily [5/6]}}
+{\footnotesize\ttfamily template$<$typename T , ssize\+\_\+t Ndim = 2$>$ \\
+\mbox{\hyperlink{classaare_1_1NDArray}{aare\+::\+NDArray}}$<$ T, Ndim $>$\+::\+NDArray (\begin{DoxyParamCaption}\item[{\mbox{\hyperlink{classaare_1_1NDArray}{NDArray}}$<$ T, Ndim $>$ \&\&}]{other }\end{DoxyParamCaption})\hspace{0.3cm}{\ttfamily [inline]}}
+
+\Hypertarget{classaare_1_1NDArray_a1485287520ba5919ebb4fa2bc84b3a67}\label{classaare_1_1NDArray_a1485287520ba5919ebb4fa2bc84b3a67} 
+\index{aare::NDArray$<$ T, Ndim $>$@{aare::NDArray$<$ T, Ndim $>$}!NDArray@{NDArray}}
+\index{NDArray@{NDArray}!aare::NDArray$<$ T, Ndim $>$@{aare::NDArray$<$ T, Ndim $>$}}
+\doxysubsubsection{\texorpdfstring{NDArray()}{NDArray()}\hspace{0.1cm}{\footnotesize\ttfamily [6/6]}}
+{\footnotesize\ttfamily template$<$typename T , ssize\+\_\+t Ndim = 2$>$ \\
+\mbox{\hyperlink{classaare_1_1NDArray}{aare\+::\+NDArray}}$<$ T, Ndim $>$\+::\+NDArray (\begin{DoxyParamCaption}\item[{const \mbox{\hyperlink{classaare_1_1NDArray}{NDArray}}$<$ T, Ndim $>$ \&}]{other }\end{DoxyParamCaption})\hspace{0.3cm}{\ttfamily [inline]}}
+
+\Hypertarget{classaare_1_1NDArray_a702d2a7566dd9796eb891d043159fd41}\label{classaare_1_1NDArray_a702d2a7566dd9796eb891d043159fd41} 
+\index{aare::NDArray$<$ T, Ndim $>$@{aare::NDArray$<$ T, Ndim $>$}!````~NDArray@{\texorpdfstring{$\sim$}{\string~}NDArray}}
+\index{````~NDArray@{\texorpdfstring{$\sim$}{\string~}NDArray}!aare::NDArray$<$ T, Ndim $>$@{aare::NDArray$<$ T, Ndim $>$}}
+\doxysubsubsection{\texorpdfstring{\texorpdfstring{$\sim$}{\string~}NDArray()}{\string~NDArray()}}
+{\footnotesize\ttfamily template$<$typename T , ssize\+\_\+t Ndim = 2$>$ \\
+\mbox{\hyperlink{classaare_1_1NDArray}{aare\+::\+NDArray}}$<$ T, Ndim $>$\+::\texorpdfstring{$\sim$}{\string~}\mbox{\hyperlink{classaare_1_1NDArray}{NDArray}} (\begin{DoxyParamCaption}{ }\end{DoxyParamCaption})\hspace{0.3cm}{\ttfamily [inline]}}
+
+
+
+\doxysubsection{Member Function Documentation}
+\Hypertarget{classaare_1_1NDArray_a3241eee2a316d350390c3b9a2e3ba091}\label{classaare_1_1NDArray_a3241eee2a316d350390c3b9a2e3ba091} 
+\index{aare::NDArray$<$ T, Ndim $>$@{aare::NDArray$<$ T, Ndim $>$}!begin@{begin}}
+\index{begin@{begin}!aare::NDArray$<$ T, Ndim $>$@{aare::NDArray$<$ T, Ndim $>$}}
+\doxysubsubsection{\texorpdfstring{begin()}{begin()}}
+{\footnotesize\ttfamily template$<$typename T , ssize\+\_\+t Ndim = 2$>$ \\
+auto \mbox{\hyperlink{classaare_1_1NDArray}{aare\+::\+NDArray}}$<$ T, Ndim $>$\+::begin (\begin{DoxyParamCaption}{ }\end{DoxyParamCaption})\hspace{0.3cm}{\ttfamily [inline]}}
+
+\Hypertarget{classaare_1_1NDArray_af289b6a162612ed74ad2fd0606a479a9}\label{classaare_1_1NDArray_af289b6a162612ed74ad2fd0606a479a9} 
+\index{aare::NDArray$<$ T, Ndim $>$@{aare::NDArray$<$ T, Ndim $>$}!buffer@{buffer}}
+\index{buffer@{buffer}!aare::NDArray$<$ T, Ndim $>$@{aare::NDArray$<$ T, Ndim $>$}}
+\doxysubsubsection{\texorpdfstring{buffer()}{buffer()}}
+{\footnotesize\ttfamily template$<$typename T , ssize\+\_\+t Ndim = 2$>$ \\
+std\+::byte \texorpdfstring{$\ast$}{*} \mbox{\hyperlink{classaare_1_1NDArray}{aare\+::\+NDArray}}$<$ T, Ndim $>$\+::buffer (\begin{DoxyParamCaption}{ }\end{DoxyParamCaption})\hspace{0.3cm}{\ttfamily [inline]}}
+
+\Hypertarget{classaare_1_1NDArray_a2ab19fc488009d3fce95fcf5bff6b10a}\label{classaare_1_1NDArray_a2ab19fc488009d3fce95fcf5bff6b10a} 
+\index{aare::NDArray$<$ T, Ndim $>$@{aare::NDArray$<$ T, Ndim $>$}!byte\_strides@{byte\_strides}}
+\index{byte\_strides@{byte\_strides}!aare::NDArray$<$ T, Ndim $>$@{aare::NDArray$<$ T, Ndim $>$}}
+\doxysubsubsection{\texorpdfstring{byte\_strides()}{byte\_strides()}}
+{\footnotesize\ttfamily template$<$typename T , ssize\+\_\+t Ndim = 2$>$ \\
+std\+::array$<$ ssize\+\_\+t, Ndim $>$ \mbox{\hyperlink{classaare_1_1NDArray}{aare\+::\+NDArray}}$<$ T, Ndim $>$\+::byte\+\_\+strides (\begin{DoxyParamCaption}{ }\end{DoxyParamCaption}) const\hspace{0.3cm}{\ttfamily [inline]}, {\ttfamily [noexcept]}}
+
+\Hypertarget{classaare_1_1NDArray_a77b3ca3e85d5a3e394248fdaab01c5a5}\label{classaare_1_1NDArray_a77b3ca3e85d5a3e394248fdaab01c5a5} 
+\index{aare::NDArray$<$ T, Ndim $>$@{aare::NDArray$<$ T, Ndim $>$}!data@{data}}
+\index{data@{data}!aare::NDArray$<$ T, Ndim $>$@{aare::NDArray$<$ T, Ndim $>$}}
+\doxysubsubsection{\texorpdfstring{data()}{data()}}
+{\footnotesize\ttfamily template$<$typename T , ssize\+\_\+t Ndim = 2$>$ \\
+T \texorpdfstring{$\ast$}{*} \mbox{\hyperlink{classaare_1_1NDArray}{aare\+::\+NDArray}}$<$ T, Ndim $>$\+::data (\begin{DoxyParamCaption}{ }\end{DoxyParamCaption})\hspace{0.3cm}{\ttfamily [inline]}}
+
+\Hypertarget{classaare_1_1NDArray_aeac1405793b07e8433b53f1e04740ec8}\label{classaare_1_1NDArray_aeac1405793b07e8433b53f1e04740ec8} 
+\index{aare::NDArray$<$ T, Ndim $>$@{aare::NDArray$<$ T, Ndim $>$}!end@{end}}
+\index{end@{end}!aare::NDArray$<$ T, Ndim $>$@{aare::NDArray$<$ T, Ndim $>$}}
+\doxysubsubsection{\texorpdfstring{end()}{end()}}
+{\footnotesize\ttfamily template$<$typename T , ssize\+\_\+t Ndim = 2$>$ \\
+auto \mbox{\hyperlink{classaare_1_1NDArray}{aare\+::\+NDArray}}$<$ T, Ndim $>$\+::end (\begin{DoxyParamCaption}{ }\end{DoxyParamCaption})\hspace{0.3cm}{\ttfamily [inline]}}
+
+\Hypertarget{classaare_1_1NDArray_a90408ebad72f63d0288b869b3e32e50b}\label{classaare_1_1NDArray_a90408ebad72f63d0288b869b3e32e50b} 
+\index{aare::NDArray$<$ T, Ndim $>$@{aare::NDArray$<$ T, Ndim $>$}!operator"!=@{operator"!=}}
+\index{operator"!=@{operator"!=}!aare::NDArray$<$ T, Ndim $>$@{aare::NDArray$<$ T, Ndim $>$}}
+\doxysubsubsection{\texorpdfstring{operator"!=()}{operator!=()}}
+{\footnotesize\ttfamily template$<$typename T , ssize\+\_\+t Ndim$>$ \\
+bool \mbox{\hyperlink{classaare_1_1NDArray}{aare\+::\+NDArray}}$<$ T, Ndim $>$\+::operator!= (\begin{DoxyParamCaption}\item[{const \mbox{\hyperlink{classaare_1_1NDArray}{NDArray}}$<$ T, Ndim $>$ \&}]{other }\end{DoxyParamCaption}) const}
+
+\Hypertarget{classaare_1_1NDArray_ab01fdad1a92b1629996f15ff0cf79ac3}\label{classaare_1_1NDArray_ab01fdad1a92b1629996f15ff0cf79ac3} 
+\index{aare::NDArray$<$ T, Ndim $>$@{aare::NDArray$<$ T, Ndim $>$}!operator\&=@{operator\&=}}
+\index{operator\&=@{operator\&=}!aare::NDArray$<$ T, Ndim $>$@{aare::NDArray$<$ T, Ndim $>$}}
+\doxysubsubsection{\texorpdfstring{operator\&=()}{operator\&=()}}
+{\footnotesize\ttfamily template$<$typename T , ssize\+\_\+t Ndim$>$ \\
+\mbox{\hyperlink{classaare_1_1NDArray}{NDArray}}$<$ T, Ndim $>$ \& \mbox{\hyperlink{classaare_1_1NDArray}{aare\+::\+NDArray}}$<$ T, Ndim $>$\+::operator\&= (\begin{DoxyParamCaption}\item[{const T \&}]{mask }\end{DoxyParamCaption})}
+
+\Hypertarget{classaare_1_1NDArray_a8d75984e7f384c4c9d25bc04c6c14983}\label{classaare_1_1NDArray_a8d75984e7f384c4c9d25bc04c6c14983} 
+\index{aare::NDArray$<$ T, Ndim $>$@{aare::NDArray$<$ T, Ndim $>$}!operator()@{operator()}}
+\index{operator()@{operator()}!aare::NDArray$<$ T, Ndim $>$@{aare::NDArray$<$ T, Ndim $>$}}
+\doxysubsubsection{\texorpdfstring{operator()()}{operator()()}\hspace{0.1cm}{\footnotesize\ttfamily [1/4]}}
+{\footnotesize\ttfamily template$<$typename T , ssize\+\_\+t Ndim = 2$>$ \\
+T \& \mbox{\hyperlink{classaare_1_1NDArray}{aare\+::\+NDArray}}$<$ T, Ndim $>$\+::operator() (\begin{DoxyParamCaption}\item[{int}]{i }\end{DoxyParamCaption})\hspace{0.3cm}{\ttfamily [inline]}}
+
+\Hypertarget{classaare_1_1NDArray_adf800cbb478a4f24ae24026034bafd43}\label{classaare_1_1NDArray_adf800cbb478a4f24ae24026034bafd43} 
+\index{aare::NDArray$<$ T, Ndim $>$@{aare::NDArray$<$ T, Ndim $>$}!operator()@{operator()}}
+\index{operator()@{operator()}!aare::NDArray$<$ T, Ndim $>$@{aare::NDArray$<$ T, Ndim $>$}}
+\doxysubsubsection{\texorpdfstring{operator()()}{operator()()}\hspace{0.1cm}{\footnotesize\ttfamily [2/4]}}
+{\footnotesize\ttfamily template$<$typename T , ssize\+\_\+t Ndim = 2$>$ \\
+const T \& \mbox{\hyperlink{classaare_1_1NDArray}{aare\+::\+NDArray}}$<$ T, Ndim $>$\+::operator() (\begin{DoxyParamCaption}\item[{int}]{i }\end{DoxyParamCaption}) const\hspace{0.3cm}{\ttfamily [inline]}}
+
+\Hypertarget{classaare_1_1NDArray_aea34e489c4721228aeece6dcdd9133dd}\label{classaare_1_1NDArray_aea34e489c4721228aeece6dcdd9133dd} 
+\index{aare::NDArray$<$ T, Ndim $>$@{aare::NDArray$<$ T, Ndim $>$}!operator()@{operator()}}
+\index{operator()@{operator()}!aare::NDArray$<$ T, Ndim $>$@{aare::NDArray$<$ T, Ndim $>$}}
+\doxysubsubsection{\texorpdfstring{operator()()}{operator()()}\hspace{0.1cm}{\footnotesize\ttfamily [3/4]}}
+{\footnotesize\ttfamily template$<$typename T , ssize\+\_\+t Ndim = 2$>$ \\
+template$<$typename... Ix$>$ \\
+std\+::enable\+\_\+if$<$ sizeof...(Ix)==Ndim, T \& $>$\+::type \mbox{\hyperlink{classaare_1_1NDArray}{aare\+::\+NDArray}}$<$ T, Ndim $>$\+::operator() (\begin{DoxyParamCaption}\item[{Ix...}]{index }\end{DoxyParamCaption})\hspace{0.3cm}{\ttfamily [inline]}}
+
+\Hypertarget{classaare_1_1NDArray_ab6938304bf9f74ee4d04451931a53de0}\label{classaare_1_1NDArray_ab6938304bf9f74ee4d04451931a53de0} 
+\index{aare::NDArray$<$ T, Ndim $>$@{aare::NDArray$<$ T, Ndim $>$}!operator()@{operator()}}
+\index{operator()@{operator()}!aare::NDArray$<$ T, Ndim $>$@{aare::NDArray$<$ T, Ndim $>$}}
+\doxysubsubsection{\texorpdfstring{operator()()}{operator()()}\hspace{0.1cm}{\footnotesize\ttfamily [4/4]}}
+{\footnotesize\ttfamily template$<$typename T , ssize\+\_\+t Ndim = 2$>$ \\
+template$<$typename... Ix$>$ \\
+std\+::enable\+\_\+if$<$ sizeof...(Ix)==Ndim, T \& $>$\+::type \mbox{\hyperlink{classaare_1_1NDArray}{aare\+::\+NDArray}}$<$ T, Ndim $>$\+::operator() (\begin{DoxyParamCaption}\item[{Ix...}]{index }\end{DoxyParamCaption}) const\hspace{0.3cm}{\ttfamily [inline]}}
+
+\Hypertarget{classaare_1_1NDArray_ae67f899470bc9f8c8df8b54d544f9171}\label{classaare_1_1NDArray_ae67f899470bc9f8c8df8b54d544f9171} 
+\index{aare::NDArray$<$ T, Ndim $>$@{aare::NDArray$<$ T, Ndim $>$}!operator\texorpdfstring{$\ast$}{*}@{operator\texorpdfstring{$\ast$}{*}}}
+\index{operator\texorpdfstring{$\ast$}{*}@{operator\texorpdfstring{$\ast$}{*}}!aare::NDArray$<$ T, Ndim $>$@{aare::NDArray$<$ T, Ndim $>$}}
+\doxysubsubsection{\texorpdfstring{operator\texorpdfstring{$\ast$}{*}()}{operator*()}\hspace{0.1cm}{\footnotesize\ttfamily [1/2]}}
+{\footnotesize\ttfamily template$<$typename T , ssize\+\_\+t Ndim$>$ \\
+\mbox{\hyperlink{classaare_1_1NDArray}{NDArray}}$<$ T, Ndim $>$ \mbox{\hyperlink{classaare_1_1NDArray}{aare\+::\+NDArray}}$<$ T, Ndim $>$\+::operator\texorpdfstring{$\ast$}{*} (\begin{DoxyParamCaption}\item[{const \mbox{\hyperlink{classaare_1_1NDArray}{NDArray}}$<$ T, Ndim $>$ \&}]{other }\end{DoxyParamCaption})}
+
+\Hypertarget{classaare_1_1NDArray_a2d6d56700f622c3175b9b82f043c3b94}\label{classaare_1_1NDArray_a2d6d56700f622c3175b9b82f043c3b94} 
+\index{aare::NDArray$<$ T, Ndim $>$@{aare::NDArray$<$ T, Ndim $>$}!operator\texorpdfstring{$\ast$}{*}@{operator\texorpdfstring{$\ast$}{*}}}
+\index{operator\texorpdfstring{$\ast$}{*}@{operator\texorpdfstring{$\ast$}{*}}!aare::NDArray$<$ T, Ndim $>$@{aare::NDArray$<$ T, Ndim $>$}}
+\doxysubsubsection{\texorpdfstring{operator\texorpdfstring{$\ast$}{*}()}{operator*()}\hspace{0.1cm}{\footnotesize\ttfamily [2/2]}}
+{\footnotesize\ttfamily template$<$typename T , ssize\+\_\+t Ndim$>$ \\
+\mbox{\hyperlink{classaare_1_1NDArray}{NDArray}}$<$ T, Ndim $>$ \mbox{\hyperlink{classaare_1_1NDArray}{aare\+::\+NDArray}}$<$ T, Ndim $>$\+::operator\texorpdfstring{$\ast$}{*} (\begin{DoxyParamCaption}\item[{const T \&}]{value }\end{DoxyParamCaption})}
+
+\Hypertarget{classaare_1_1NDArray_a54edf15f9669a1e4601fa4aa936a2d92}\label{classaare_1_1NDArray_a54edf15f9669a1e4601fa4aa936a2d92} 
+\index{aare::NDArray$<$ T, Ndim $>$@{aare::NDArray$<$ T, Ndim $>$}!operator\texorpdfstring{$\ast$}{*}=@{operator\texorpdfstring{$\ast$}{*}=}}
+\index{operator\texorpdfstring{$\ast$}{*}=@{operator\texorpdfstring{$\ast$}{*}=}!aare::NDArray$<$ T, Ndim $>$@{aare::NDArray$<$ T, Ndim $>$}}
+\doxysubsubsection{\texorpdfstring{operator\texorpdfstring{$\ast$}{*}=()}{operator*=()}\hspace{0.1cm}{\footnotesize\ttfamily [1/2]}}
+{\footnotesize\ttfamily template$<$typename T , ssize\+\_\+t Ndim$>$ \\
+\mbox{\hyperlink{classaare_1_1NDArray}{NDArray}}$<$ T, Ndim $>$ \& \mbox{\hyperlink{classaare_1_1NDArray}{aare\+::\+NDArray}}$<$ T, Ndim $>$\+::operator\texorpdfstring{$\ast$}{*}= (\begin{DoxyParamCaption}\item[{const \mbox{\hyperlink{classaare_1_1NDArray}{NDArray}}$<$ T, Ndim $>$ \&}]{other }\end{DoxyParamCaption})}
+
+\Hypertarget{classaare_1_1NDArray_afe950d8cf1bdc97d450f912d1d903c09}\label{classaare_1_1NDArray_afe950d8cf1bdc97d450f912d1d903c09} 
+\index{aare::NDArray$<$ T, Ndim $>$@{aare::NDArray$<$ T, Ndim $>$}!operator\texorpdfstring{$\ast$}{*}=@{operator\texorpdfstring{$\ast$}{*}=}}
+\index{operator\texorpdfstring{$\ast$}{*}=@{operator\texorpdfstring{$\ast$}{*}=}!aare::NDArray$<$ T, Ndim $>$@{aare::NDArray$<$ T, Ndim $>$}}
+\doxysubsubsection{\texorpdfstring{operator\texorpdfstring{$\ast$}{*}=()}{operator*=()}\hspace{0.1cm}{\footnotesize\ttfamily [2/2]}}
+{\footnotesize\ttfamily template$<$typename T , ssize\+\_\+t Ndim$>$ \\
+\mbox{\hyperlink{classaare_1_1NDArray}{NDArray}}$<$ T, Ndim $>$ \& \mbox{\hyperlink{classaare_1_1NDArray}{aare\+::\+NDArray}}$<$ T, Ndim $>$\+::operator\texorpdfstring{$\ast$}{*}= (\begin{DoxyParamCaption}\item[{const T \&}]{value }\end{DoxyParamCaption})}
+
+\Hypertarget{classaare_1_1NDArray_afcc5f259b1bd0cadcadbf2b52795babc}\label{classaare_1_1NDArray_afcc5f259b1bd0cadcadbf2b52795babc} 
+\index{aare::NDArray$<$ T, Ndim $>$@{aare::NDArray$<$ T, Ndim $>$}!operator+@{operator+}}
+\index{operator+@{operator+}!aare::NDArray$<$ T, Ndim $>$@{aare::NDArray$<$ T, Ndim $>$}}
+\doxysubsubsection{\texorpdfstring{operator+()}{operator+()}\hspace{0.1cm}{\footnotesize\ttfamily [1/2]}}
+{\footnotesize\ttfamily template$<$typename T , ssize\+\_\+t Ndim$>$ \\
+\mbox{\hyperlink{classaare_1_1NDArray}{NDArray}}$<$ T, Ndim $>$ \mbox{\hyperlink{classaare_1_1NDArray}{aare\+::\+NDArray}}$<$ T, Ndim $>$\+::operator+ (\begin{DoxyParamCaption}\item[{const \mbox{\hyperlink{classaare_1_1NDArray}{NDArray}}$<$ T, Ndim $>$ \&}]{other }\end{DoxyParamCaption})}
+
+\Hypertarget{classaare_1_1NDArray_a86042f9185412e1d68422765d56ce769}\label{classaare_1_1NDArray_a86042f9185412e1d68422765d56ce769} 
+\index{aare::NDArray$<$ T, Ndim $>$@{aare::NDArray$<$ T, Ndim $>$}!operator+@{operator+}}
+\index{operator+@{operator+}!aare::NDArray$<$ T, Ndim $>$@{aare::NDArray$<$ T, Ndim $>$}}
+\doxysubsubsection{\texorpdfstring{operator+()}{operator+()}\hspace{0.1cm}{\footnotesize\ttfamily [2/2]}}
+{\footnotesize\ttfamily template$<$typename T , ssize\+\_\+t Ndim$>$ \\
+\mbox{\hyperlink{classaare_1_1NDArray}{NDArray}}$<$ T, Ndim $>$ \mbox{\hyperlink{classaare_1_1NDArray}{aare\+::\+NDArray}}$<$ T, Ndim $>$\+::operator+ (\begin{DoxyParamCaption}\item[{const T \&}]{value }\end{DoxyParamCaption})}
+
+\Hypertarget{classaare_1_1NDArray_a040dd143e6dc040703b33d91ba929271}\label{classaare_1_1NDArray_a040dd143e6dc040703b33d91ba929271} 
+\index{aare::NDArray$<$ T, Ndim $>$@{aare::NDArray$<$ T, Ndim $>$}!operator++@{operator++}}
+\index{operator++@{operator++}!aare::NDArray$<$ T, Ndim $>$@{aare::NDArray$<$ T, Ndim $>$}}
+\doxysubsubsection{\texorpdfstring{operator++()}{operator++()}}
+{\footnotesize\ttfamily template$<$typename T , ssize\+\_\+t Ndim$>$ \\
+\mbox{\hyperlink{classaare_1_1NDArray}{NDArray}}$<$ T, Ndim $>$ \& \mbox{\hyperlink{classaare_1_1NDArray}{aare\+::\+NDArray}}$<$ T, Ndim $>$\+::operator++}
+
+\Hypertarget{classaare_1_1NDArray_a27eb7b3599cb62297832d4a3d8022f32}\label{classaare_1_1NDArray_a27eb7b3599cb62297832d4a3d8022f32} 
+\index{aare::NDArray$<$ T, Ndim $>$@{aare::NDArray$<$ T, Ndim $>$}!operator+=@{operator+=}}
+\index{operator+=@{operator+=}!aare::NDArray$<$ T, Ndim $>$@{aare::NDArray$<$ T, Ndim $>$}}
+\doxysubsubsection{\texorpdfstring{operator+=()}{operator+=()}\hspace{0.1cm}{\footnotesize\ttfamily [1/2]}}
+{\footnotesize\ttfamily template$<$typename T , ssize\+\_\+t Ndim$>$ \\
+\mbox{\hyperlink{classaare_1_1NDArray}{NDArray}}$<$ T, Ndim $>$ \& \mbox{\hyperlink{classaare_1_1NDArray}{aare\+::\+NDArray}}$<$ T, Ndim $>$\+::operator+= (\begin{DoxyParamCaption}\item[{const \mbox{\hyperlink{classaare_1_1NDArray}{NDArray}}$<$ T, Ndim $>$ \&}]{other }\end{DoxyParamCaption})}
+
+\Hypertarget{classaare_1_1NDArray_aa15fe27ef06f8a230345161990ce8381}\label{classaare_1_1NDArray_aa15fe27ef06f8a230345161990ce8381} 
+\index{aare::NDArray$<$ T, Ndim $>$@{aare::NDArray$<$ T, Ndim $>$}!operator+=@{operator+=}}
+\index{operator+=@{operator+=}!aare::NDArray$<$ T, Ndim $>$@{aare::NDArray$<$ T, Ndim $>$}}
+\doxysubsubsection{\texorpdfstring{operator+=()}{operator+=()}\hspace{0.1cm}{\footnotesize\ttfamily [2/2]}}
+{\footnotesize\ttfamily template$<$typename T , ssize\+\_\+t Ndim$>$ \\
+\mbox{\hyperlink{classaare_1_1NDArray}{NDArray}}$<$ T, Ndim $>$ \& \mbox{\hyperlink{classaare_1_1NDArray}{aare\+::\+NDArray}}$<$ T, Ndim $>$\+::operator+= (\begin{DoxyParamCaption}\item[{const T \&}]{value }\end{DoxyParamCaption})}
+
+\Hypertarget{classaare_1_1NDArray_aac96eb2ce76cd90d44eb3b19408d2434}\label{classaare_1_1NDArray_aac96eb2ce76cd90d44eb3b19408d2434} 
+\index{aare::NDArray$<$ T, Ndim $>$@{aare::NDArray$<$ T, Ndim $>$}!operator-\/@{operator-\/}}
+\index{operator-\/@{operator-\/}!aare::NDArray$<$ T, Ndim $>$@{aare::NDArray$<$ T, Ndim $>$}}
+\doxysubsubsection{\texorpdfstring{operator-\/()}{operator-()}\hspace{0.1cm}{\footnotesize\ttfamily [1/2]}}
+{\footnotesize\ttfamily template$<$typename T , ssize\+\_\+t Ndim$>$ \\
+\mbox{\hyperlink{classaare_1_1NDArray}{NDArray}}$<$ T, Ndim $>$ \mbox{\hyperlink{classaare_1_1NDArray}{aare\+::\+NDArray}}$<$ T, Ndim $>$\+::operator-\/ (\begin{DoxyParamCaption}\item[{const \mbox{\hyperlink{classaare_1_1NDArray}{NDArray}}$<$ T, Ndim $>$ \&}]{other }\end{DoxyParamCaption})}
+
+\Hypertarget{classaare_1_1NDArray_ae8fcc0b6cb14d353286ffdf2c914200f}\label{classaare_1_1NDArray_ae8fcc0b6cb14d353286ffdf2c914200f} 
+\index{aare::NDArray$<$ T, Ndim $>$@{aare::NDArray$<$ T, Ndim $>$}!operator-\/@{operator-\/}}
+\index{operator-\/@{operator-\/}!aare::NDArray$<$ T, Ndim $>$@{aare::NDArray$<$ T, Ndim $>$}}
+\doxysubsubsection{\texorpdfstring{operator-\/()}{operator-()}\hspace{0.1cm}{\footnotesize\ttfamily [2/2]}}
+{\footnotesize\ttfamily template$<$typename T , ssize\+\_\+t Ndim$>$ \\
+\mbox{\hyperlink{classaare_1_1NDArray}{NDArray}}$<$ T, Ndim $>$ \mbox{\hyperlink{classaare_1_1NDArray}{aare\+::\+NDArray}}$<$ T, Ndim $>$\+::operator-\/ (\begin{DoxyParamCaption}\item[{const T \&}]{value }\end{DoxyParamCaption})}
+
+\Hypertarget{classaare_1_1NDArray_aad602fc6734cb85112f2a8edf91d1c70}\label{classaare_1_1NDArray_aad602fc6734cb85112f2a8edf91d1c70} 
+\index{aare::NDArray$<$ T, Ndim $>$@{aare::NDArray$<$ T, Ndim $>$}!operator-\/=@{operator-\/=}}
+\index{operator-\/=@{operator-\/=}!aare::NDArray$<$ T, Ndim $>$@{aare::NDArray$<$ T, Ndim $>$}}
+\doxysubsubsection{\texorpdfstring{operator-\/=()}{operator-=()}\hspace{0.1cm}{\footnotesize\ttfamily [1/2]}}
+{\footnotesize\ttfamily template$<$typename T , ssize\+\_\+t Ndim$>$ \\
+\mbox{\hyperlink{classaare_1_1NDArray}{NDArray}}$<$ T, Ndim $>$ \& \mbox{\hyperlink{classaare_1_1NDArray}{aare\+::\+NDArray}}$<$ T, Ndim $>$\+::operator-\/= (\begin{DoxyParamCaption}\item[{const \mbox{\hyperlink{classaare_1_1NDArray}{NDArray}}$<$ T, Ndim $>$ \&}]{other }\end{DoxyParamCaption})}
+
+\Hypertarget{classaare_1_1NDArray_ad65261a50424d112852f046426c66267}\label{classaare_1_1NDArray_ad65261a50424d112852f046426c66267} 
+\index{aare::NDArray$<$ T, Ndim $>$@{aare::NDArray$<$ T, Ndim $>$}!operator-\/=@{operator-\/=}}
+\index{operator-\/=@{operator-\/=}!aare::NDArray$<$ T, Ndim $>$@{aare::NDArray$<$ T, Ndim $>$}}
+\doxysubsubsection{\texorpdfstring{operator-\/=()}{operator-=()}\hspace{0.1cm}{\footnotesize\ttfamily [2/2]}}
+{\footnotesize\ttfamily template$<$typename T , ssize\+\_\+t Ndim$>$ \\
+\mbox{\hyperlink{classaare_1_1NDArray}{NDArray}}$<$ T, Ndim $>$ \& \mbox{\hyperlink{classaare_1_1NDArray}{aare\+::\+NDArray}}$<$ T, Ndim $>$\+::operator-\/= (\begin{DoxyParamCaption}\item[{const T \&}]{value }\end{DoxyParamCaption})}
+
+\Hypertarget{classaare_1_1NDArray_a59dc47216852c36191e0cecc869131e1}\label{classaare_1_1NDArray_a59dc47216852c36191e0cecc869131e1} 
+\index{aare::NDArray$<$ T, Ndim $>$@{aare::NDArray$<$ T, Ndim $>$}!operator/@{operator/}}
+\index{operator/@{operator/}!aare::NDArray$<$ T, Ndim $>$@{aare::NDArray$<$ T, Ndim $>$}}
+\doxysubsubsection{\texorpdfstring{operator/()}{operator/()}\hspace{0.1cm}{\footnotesize\ttfamily [1/2]}}
+{\footnotesize\ttfamily template$<$typename T , ssize\+\_\+t Ndim$>$ \\
+\mbox{\hyperlink{classaare_1_1NDArray}{NDArray}}$<$ T, Ndim $>$ \mbox{\hyperlink{classaare_1_1NDArray}{aare\+::\+NDArray}}$<$ T, Ndim $>$\+::operator/ (\begin{DoxyParamCaption}\item[{const \mbox{\hyperlink{classaare_1_1NDArray}{NDArray}}$<$ T, Ndim $>$ \&}]{other }\end{DoxyParamCaption})}
+
+\Hypertarget{classaare_1_1NDArray_a6a69a2fce0631e9ef9b1587e75cf1568}\label{classaare_1_1NDArray_a6a69a2fce0631e9ef9b1587e75cf1568} 
+\index{aare::NDArray$<$ T, Ndim $>$@{aare::NDArray$<$ T, Ndim $>$}!operator/@{operator/}}
+\index{operator/@{operator/}!aare::NDArray$<$ T, Ndim $>$@{aare::NDArray$<$ T, Ndim $>$}}
+\doxysubsubsection{\texorpdfstring{operator/()}{operator/()}\hspace{0.1cm}{\footnotesize\ttfamily [2/2]}}
+{\footnotesize\ttfamily template$<$typename T , ssize\+\_\+t Ndim$>$ \\
+\mbox{\hyperlink{classaare_1_1NDArray}{NDArray}}$<$ T, Ndim $>$ \mbox{\hyperlink{classaare_1_1NDArray}{aare\+::\+NDArray}}$<$ T, Ndim $>$\+::operator/ (\begin{DoxyParamCaption}\item[{const T \&}]{value }\end{DoxyParamCaption})}
+
+\Hypertarget{classaare_1_1NDArray_a2a6260113ca73c86d37d0444b5148c49}\label{classaare_1_1NDArray_a2a6260113ca73c86d37d0444b5148c49} 
+\index{aare::NDArray$<$ T, Ndim $>$@{aare::NDArray$<$ T, Ndim $>$}!operator/=@{operator/=}}
+\index{operator/=@{operator/=}!aare::NDArray$<$ T, Ndim $>$@{aare::NDArray$<$ T, Ndim $>$}}
+\doxysubsubsection{\texorpdfstring{operator/=()}{operator/=()}\hspace{0.1cm}{\footnotesize\ttfamily [1/2]}}
+{\footnotesize\ttfamily template$<$typename T , ssize\+\_\+t Ndim = 2$>$ \\
+template$<$typename V $>$ \\
+\mbox{\hyperlink{classaare_1_1NDArray}{NDArray}} \& \mbox{\hyperlink{classaare_1_1NDArray}{aare\+::\+NDArray}}$<$ T, Ndim $>$\+::operator/= (\begin{DoxyParamCaption}\item[{const \mbox{\hyperlink{classaare_1_1NDArray}{NDArray}}$<$ V, Ndim $>$ \&}]{other }\end{DoxyParamCaption})\hspace{0.3cm}{\ttfamily [inline]}}
+
+\Hypertarget{classaare_1_1NDArray_a8658f5217fcd0ac6f6900b4f013aed16}\label{classaare_1_1NDArray_a8658f5217fcd0ac6f6900b4f013aed16} 
+\index{aare::NDArray$<$ T, Ndim $>$@{aare::NDArray$<$ T, Ndim $>$}!operator/=@{operator/=}}
+\index{operator/=@{operator/=}!aare::NDArray$<$ T, Ndim $>$@{aare::NDArray$<$ T, Ndim $>$}}
+\doxysubsubsection{\texorpdfstring{operator/=()}{operator/=()}\hspace{0.1cm}{\footnotesize\ttfamily [2/2]}}
+{\footnotesize\ttfamily template$<$typename T , ssize\+\_\+t Ndim$>$ \\
+\mbox{\hyperlink{classaare_1_1NDArray}{NDArray}}$<$ T, Ndim $>$ \& \mbox{\hyperlink{classaare_1_1NDArray}{aare\+::\+NDArray}}$<$ T, Ndim $>$\+::operator/= (\begin{DoxyParamCaption}\item[{const T \&}]{value }\end{DoxyParamCaption})}
+
+\Hypertarget{classaare_1_1NDArray_a713fff54cdec54f27ec92c1f317a46c7}\label{classaare_1_1NDArray_a713fff54cdec54f27ec92c1f317a46c7} 
+\index{aare::NDArray$<$ T, Ndim $>$@{aare::NDArray$<$ T, Ndim $>$}!operator=@{operator=}}
+\index{operator=@{operator=}!aare::NDArray$<$ T, Ndim $>$@{aare::NDArray$<$ T, Ndim $>$}}
+\doxysubsubsection{\texorpdfstring{operator=()}{operator=()}\hspace{0.1cm}{\footnotesize\ttfamily [1/3]}}
+{\footnotesize\ttfamily template$<$typename T , ssize\+\_\+t Ndim$>$ \\
+\mbox{\hyperlink{classaare_1_1NDArray}{NDArray}}$<$ T, Ndim $>$ \& \mbox{\hyperlink{classaare_1_1NDArray}{aare\+::\+NDArray}}$<$ T, Ndim $>$\+::operator= (\begin{DoxyParamCaption}\item[{const \mbox{\hyperlink{classaare_1_1NDArray}{NDArray}}$<$ T, Ndim $>$ \&}]{other }\end{DoxyParamCaption})}
+
+\Hypertarget{classaare_1_1NDArray_a5f249dd42235efcf858caca096300d02}\label{classaare_1_1NDArray_a5f249dd42235efcf858caca096300d02} 
+\index{aare::NDArray$<$ T, Ndim $>$@{aare::NDArray$<$ T, Ndim $>$}!operator=@{operator=}}
+\index{operator=@{operator=}!aare::NDArray$<$ T, Ndim $>$@{aare::NDArray$<$ T, Ndim $>$}}
+\doxysubsubsection{\texorpdfstring{operator=()}{operator=()}\hspace{0.1cm}{\footnotesize\ttfamily [2/3]}}
+{\footnotesize\ttfamily template$<$typename T , ssize\+\_\+t Ndim$>$ \\
+\mbox{\hyperlink{classaare_1_1NDArray}{NDArray}}$<$ T, Ndim $>$ \& \mbox{\hyperlink{classaare_1_1NDArray}{aare\+::\+NDArray}}$<$ T, Ndim $>$\+::operator= (\begin{DoxyParamCaption}\item[{const T \&}]{value }\end{DoxyParamCaption})}
+
+\Hypertarget{classaare_1_1NDArray_a06c658e8a6490c74fb9878b14a4faf1d}\label{classaare_1_1NDArray_a06c658e8a6490c74fb9878b14a4faf1d} 
+\index{aare::NDArray$<$ T, Ndim $>$@{aare::NDArray$<$ T, Ndim $>$}!operator=@{operator=}}
+\index{operator=@{operator=}!aare::NDArray$<$ T, Ndim $>$@{aare::NDArray$<$ T, Ndim $>$}}
+\doxysubsubsection{\texorpdfstring{operator=()}{operator=()}\hspace{0.1cm}{\footnotesize\ttfamily [3/3]}}
+{\footnotesize\ttfamily template$<$typename T , ssize\+\_\+t Ndim$>$ \\
+\mbox{\hyperlink{classaare_1_1NDArray}{NDArray}}$<$ T, Ndim $>$ \& \mbox{\hyperlink{classaare_1_1NDArray}{aare\+::\+NDArray}}$<$ T, Ndim $>$\+::operator= (\begin{DoxyParamCaption}\item[{\mbox{\hyperlink{classaare_1_1NDArray}{NDArray}}$<$ T, Ndim $>$ \&\&}]{other }\end{DoxyParamCaption})}
+
+\Hypertarget{classaare_1_1NDArray_ad20b30f1abea56b82196f030b1492027}\label{classaare_1_1NDArray_ad20b30f1abea56b82196f030b1492027} 
+\index{aare::NDArray$<$ T, Ndim $>$@{aare::NDArray$<$ T, Ndim $>$}!operator==@{operator==}}
+\index{operator==@{operator==}!aare::NDArray$<$ T, Ndim $>$@{aare::NDArray$<$ T, Ndim $>$}}
+\doxysubsubsection{\texorpdfstring{operator==()}{operator==()}}
+{\footnotesize\ttfamily template$<$typename T , ssize\+\_\+t Ndim$>$ \\
+bool \mbox{\hyperlink{classaare_1_1NDArray}{aare\+::\+NDArray}}$<$ T, Ndim $>$\+::operator== (\begin{DoxyParamCaption}\item[{const \mbox{\hyperlink{classaare_1_1NDArray}{NDArray}}$<$ T, Ndim $>$ \&}]{other }\end{DoxyParamCaption}) const}
+
+\Hypertarget{classaare_1_1NDArray_a569e8de85121a4a6315c556870b48931}\label{classaare_1_1NDArray_a569e8de85121a4a6315c556870b48931} 
+\index{aare::NDArray$<$ T, Ndim $>$@{aare::NDArray$<$ T, Ndim $>$}!operator$>$@{operator$>$}}
+\index{operator$>$@{operator$>$}!aare::NDArray$<$ T, Ndim $>$@{aare::NDArray$<$ T, Ndim $>$}}
+\doxysubsubsection{\texorpdfstring{operator$>$()}{operator>()}}
+{\footnotesize\ttfamily template$<$typename T , ssize\+\_\+t Ndim$>$ \\
+\mbox{\hyperlink{classaare_1_1NDArray}{NDArray}}$<$ bool, Ndim $>$ \mbox{\hyperlink{classaare_1_1NDArray}{aare\+::\+NDArray}}$<$ T, Ndim $>$\+::operator$>$ (\begin{DoxyParamCaption}\item[{const \mbox{\hyperlink{classaare_1_1NDArray}{NDArray}}$<$ T, Ndim $>$ \&}]{other }\end{DoxyParamCaption})}
+
+\Hypertarget{classaare_1_1NDArray_ad49628442cc054b7c0b56b3104d9ef20}\label{classaare_1_1NDArray_ad49628442cc054b7c0b56b3104d9ef20} 
+\index{aare::NDArray$<$ T, Ndim $>$@{aare::NDArray$<$ T, Ndim $>$}!Print@{Print}}
+\index{Print@{Print}!aare::NDArray$<$ T, Ndim $>$@{aare::NDArray$<$ T, Ndim $>$}}
+\doxysubsubsection{\texorpdfstring{Print()}{Print()}}
+{\footnotesize\ttfamily template$<$typename T , ssize\+\_\+t Ndim$>$ \\
+void \mbox{\hyperlink{classaare_1_1NDArray}{aare\+::\+NDArray}}$<$ T, Ndim $>$\+::\+Print}
+
+\Hypertarget{classaare_1_1NDArray_a6084445eed769b89387b4aca53306513}\label{classaare_1_1NDArray_a6084445eed769b89387b4aca53306513} 
+\index{aare::NDArray$<$ T, Ndim $>$@{aare::NDArray$<$ T, Ndim $>$}!Print\_all@{Print\_all}}
+\index{Print\_all@{Print\_all}!aare::NDArray$<$ T, Ndim $>$@{aare::NDArray$<$ T, Ndim $>$}}
+\doxysubsubsection{\texorpdfstring{Print\_all()}{Print\_all()}}
+{\footnotesize\ttfamily template$<$typename T , ssize\+\_\+t Ndim$>$ \\
+void \mbox{\hyperlink{classaare_1_1NDArray}{aare\+::\+NDArray}}$<$ T, Ndim $>$\+::\+Print\+\_\+all}
+
+\Hypertarget{classaare_1_1NDArray_a5dec49e82ec3abfa28bddfc328b1c4e9}\label{classaare_1_1NDArray_a5dec49e82ec3abfa28bddfc328b1c4e9} 
+\index{aare::NDArray$<$ T, Ndim $>$@{aare::NDArray$<$ T, Ndim $>$}!Print\_some@{Print\_some}}
+\index{Print\_some@{Print\_some}!aare::NDArray$<$ T, Ndim $>$@{aare::NDArray$<$ T, Ndim $>$}}
+\doxysubsubsection{\texorpdfstring{Print\_some()}{Print\_some()}}
+{\footnotesize\ttfamily template$<$typename T , ssize\+\_\+t Ndim$>$ \\
+void \mbox{\hyperlink{classaare_1_1NDArray}{aare\+::\+NDArray}}$<$ T, Ndim $>$\+::\+Print\+\_\+some}
+
+\Hypertarget{classaare_1_1NDArray_a98d5740082a649135587590dbbaa42e2}\label{classaare_1_1NDArray_a98d5740082a649135587590dbbaa42e2} 
+\index{aare::NDArray$<$ T, Ndim $>$@{aare::NDArray$<$ T, Ndim $>$}!reset@{reset}}
+\index{reset@{reset}!aare::NDArray$<$ T, Ndim $>$@{aare::NDArray$<$ T, Ndim $>$}}
+\doxysubsubsection{\texorpdfstring{reset()}{reset()}}
+{\footnotesize\ttfamily template$<$typename T , ssize\+\_\+t Ndim = 2$>$ \\
+void \mbox{\hyperlink{classaare_1_1NDArray}{aare\+::\+NDArray}}$<$ T, Ndim $>$\+::reset (\begin{DoxyParamCaption}{ }\end{DoxyParamCaption})\hspace{0.3cm}{\ttfamily [inline]}}
+
+\Hypertarget{classaare_1_1NDArray_a6dfa3b12cb66147effe2a42435dd346d}\label{classaare_1_1NDArray_a6dfa3b12cb66147effe2a42435dd346d} 
+\index{aare::NDArray$<$ T, Ndim $>$@{aare::NDArray$<$ T, Ndim $>$}!shape@{shape}}
+\index{shape@{shape}!aare::NDArray$<$ T, Ndim $>$@{aare::NDArray$<$ T, Ndim $>$}}
+\doxysubsubsection{\texorpdfstring{shape()}{shape()}\hspace{0.1cm}{\footnotesize\ttfamily [1/2]}}
+{\footnotesize\ttfamily template$<$typename T , ssize\+\_\+t Ndim = 2$>$ \\
+std\+::array$<$ ssize\+\_\+t, Ndim $>$ \mbox{\hyperlink{classaare_1_1NDArray}{aare\+::\+NDArray}}$<$ T, Ndim $>$\+::shape (\begin{DoxyParamCaption}{ }\end{DoxyParamCaption}) const\hspace{0.3cm}{\ttfamily [inline]}, {\ttfamily [noexcept]}}
+
+\Hypertarget{classaare_1_1NDArray_af765f5cb619ed79d44a000572b265589}\label{classaare_1_1NDArray_af765f5cb619ed79d44a000572b265589} 
+\index{aare::NDArray$<$ T, Ndim $>$@{aare::NDArray$<$ T, Ndim $>$}!shape@{shape}}
+\index{shape@{shape}!aare::NDArray$<$ T, Ndim $>$@{aare::NDArray$<$ T, Ndim $>$}}
+\doxysubsubsection{\texorpdfstring{shape()}{shape()}\hspace{0.1cm}{\footnotesize\ttfamily [2/2]}}
+{\footnotesize\ttfamily template$<$typename T , ssize\+\_\+t Ndim = 2$>$ \\
+ssize\+\_\+t \mbox{\hyperlink{classaare_1_1NDArray}{aare\+::\+NDArray}}$<$ T, Ndim $>$\+::shape (\begin{DoxyParamCaption}\item[{ssize\+\_\+t}]{i }\end{DoxyParamCaption}) const\hspace{0.3cm}{\ttfamily [inline]}, {\ttfamily [noexcept]}}
+
+\Hypertarget{classaare_1_1NDArray_a86632c60ddbdf7af8cfd3939df472127}\label{classaare_1_1NDArray_a86632c60ddbdf7af8cfd3939df472127} 
+\index{aare::NDArray$<$ T, Ndim $>$@{aare::NDArray$<$ T, Ndim $>$}!size@{size}}
+\index{size@{size}!aare::NDArray$<$ T, Ndim $>$@{aare::NDArray$<$ T, Ndim $>$}}
+\doxysubsubsection{\texorpdfstring{size()}{size()}}
+{\footnotesize\ttfamily template$<$typename T , ssize\+\_\+t Ndim = 2$>$ \\
+ssize\+\_\+t \mbox{\hyperlink{classaare_1_1NDArray}{aare\+::\+NDArray}}$<$ T, Ndim $>$\+::size (\begin{DoxyParamCaption}{ }\end{DoxyParamCaption}) const\hspace{0.3cm}{\ttfamily [inline]}}
+
+\Hypertarget{classaare_1_1NDArray_ac5ffe1a4b9dde8f2ec6dba021951c922}\label{classaare_1_1NDArray_ac5ffe1a4b9dde8f2ec6dba021951c922} 
+\index{aare::NDArray$<$ T, Ndim $>$@{aare::NDArray$<$ T, Ndim $>$}!span@{span}}
+\index{span@{span}!aare::NDArray$<$ T, Ndim $>$@{aare::NDArray$<$ T, Ndim $>$}}
+\doxysubsubsection{\texorpdfstring{span()}{span()}}
+{\footnotesize\ttfamily template$<$typename T , ssize\+\_\+t Ndim = 2$>$ \\
+\mbox{\hyperlink{classaare_1_1NDView}{NDView}}$<$ T, Ndim $>$ \mbox{\hyperlink{classaare_1_1NDArray}{aare\+::\+NDArray}}$<$ T, Ndim $>$\+::span (\begin{DoxyParamCaption}{ }\end{DoxyParamCaption}) const\hspace{0.3cm}{\ttfamily [inline]}}
+
+\Hypertarget{classaare_1_1NDArray_af36c03e7a91fe932d60739d5ea30f1f2}\label{classaare_1_1NDArray_af36c03e7a91fe932d60739d5ea30f1f2} 
+\index{aare::NDArray$<$ T, Ndim $>$@{aare::NDArray$<$ T, Ndim $>$}!sqrt@{sqrt}}
+\index{sqrt@{sqrt}!aare::NDArray$<$ T, Ndim $>$@{aare::NDArray$<$ T, Ndim $>$}}
+\doxysubsubsection{\texorpdfstring{sqrt()}{sqrt()}}
+{\footnotesize\ttfamily template$<$typename T , ssize\+\_\+t Ndim = 2$>$ \\
+void \mbox{\hyperlink{classaare_1_1NDArray}{aare\+::\+NDArray}}$<$ T, Ndim $>$\+::sqrt (\begin{DoxyParamCaption}{ }\end{DoxyParamCaption})\hspace{0.3cm}{\ttfamily [inline]}}
+
+\Hypertarget{classaare_1_1NDArray_a07369722ffea061203bfbfd4479c05e9}\label{classaare_1_1NDArray_a07369722ffea061203bfbfd4479c05e9} 
+\index{aare::NDArray$<$ T, Ndim $>$@{aare::NDArray$<$ T, Ndim $>$}!strides@{strides}}
+\index{strides@{strides}!aare::NDArray$<$ T, Ndim $>$@{aare::NDArray$<$ T, Ndim $>$}}
+\doxysubsubsection{\texorpdfstring{strides()}{strides()}}
+{\footnotesize\ttfamily template$<$typename T , ssize\+\_\+t Ndim = 2$>$ \\
+std\+::array$<$ ssize\+\_\+t, Ndim $>$ \mbox{\hyperlink{classaare_1_1NDArray}{aare\+::\+NDArray}}$<$ T, Ndim $>$\+::strides (\begin{DoxyParamCaption}{ }\end{DoxyParamCaption}) const\hspace{0.3cm}{\ttfamily [inline]}, {\ttfamily [noexcept]}}
+
+\Hypertarget{classaare_1_1NDArray_ab1f9c68ddce8440f1fc220cbc1d865fc}\label{classaare_1_1NDArray_ab1f9c68ddce8440f1fc220cbc1d865fc} 
+\index{aare::NDArray$<$ T, Ndim $>$@{aare::NDArray$<$ T, Ndim $>$}!total\_bytes@{total\_bytes}}
+\index{total\_bytes@{total\_bytes}!aare::NDArray$<$ T, Ndim $>$@{aare::NDArray$<$ T, Ndim $>$}}
+\doxysubsubsection{\texorpdfstring{total\_bytes()}{total\_bytes()}}
+{\footnotesize\ttfamily template$<$typename T , ssize\+\_\+t Ndim = 2$>$ \\
+size\+\_\+t \mbox{\hyperlink{classaare_1_1NDArray}{aare\+::\+NDArray}}$<$ T, Ndim $>$\+::total\+\_\+bytes (\begin{DoxyParamCaption}{ }\end{DoxyParamCaption}) const\hspace{0.3cm}{\ttfamily [inline]}}
+
+\Hypertarget{classaare_1_1NDArray_ad8f804893325ae1553d33accec070e92}\label{classaare_1_1NDArray_ad8f804893325ae1553d33accec070e92} 
+\index{aare::NDArray$<$ T, Ndim $>$@{aare::NDArray$<$ T, Ndim $>$}!value@{value}}
+\index{value@{value}!aare::NDArray$<$ T, Ndim $>$@{aare::NDArray$<$ T, Ndim $>$}}
+\doxysubsubsection{\texorpdfstring{value()}{value()}}
+{\footnotesize\ttfamily template$<$typename T , ssize\+\_\+t Ndim = 2$>$ \\
+template$<$typename... Ix$>$ \\
+std\+::enable\+\_\+if$<$ sizeof...(Ix)==Ndim, T $>$\+::type \mbox{\hyperlink{classaare_1_1NDArray}{aare\+::\+NDArray}}$<$ T, Ndim $>$\+::value (\begin{DoxyParamCaption}\item[{Ix...}]{index }\end{DoxyParamCaption})\hspace{0.3cm}{\ttfamily [inline]}}
+
+
+
+\doxysubsection{Field Documentation}
+\Hypertarget{classaare_1_1NDArray_ad2357b3a2dca6ff0ef6705d9913227ca}\label{classaare_1_1NDArray_ad2357b3a2dca6ff0ef6705d9913227ca} 
+\index{aare::NDArray$<$ T, Ndim $>$@{aare::NDArray$<$ T, Ndim $>$}!data\_@{data\_}}
+\index{data\_@{data\_}!aare::NDArray$<$ T, Ndim $>$@{aare::NDArray$<$ T, Ndim $>$}}
+\doxysubsubsection{\texorpdfstring{data\_}{data\_}}
+{\footnotesize\ttfamily template$<$typename T , ssize\+\_\+t Ndim = 2$>$ \\
+T\texorpdfstring{$\ast$}{*} \mbox{\hyperlink{classaare_1_1NDArray}{aare\+::\+NDArray}}$<$ T, Ndim $>$\+::data\+\_\+\hspace{0.3cm}{\ttfamily [private]}}
+
+\Hypertarget{classaare_1_1NDArray_af00f150a2867b13b37a3f711ba5f7c3b}\label{classaare_1_1NDArray_af00f150a2867b13b37a3f711ba5f7c3b} 
+\index{aare::NDArray$<$ T, Ndim $>$@{aare::NDArray$<$ T, Ndim $>$}!shape\_@{shape\_}}
+\index{shape\_@{shape\_}!aare::NDArray$<$ T, Ndim $>$@{aare::NDArray$<$ T, Ndim $>$}}
+\doxysubsubsection{\texorpdfstring{shape\_}{shape\_}}
+{\footnotesize\ttfamily template$<$typename T , ssize\+\_\+t Ndim = 2$>$ \\
+std\+::array$<$ssize\+\_\+t, Ndim$>$ \mbox{\hyperlink{classaare_1_1NDArray}{aare\+::\+NDArray}}$<$ T, Ndim $>$\+::shape\+\_\+\hspace{0.3cm}{\ttfamily [private]}}
+
+\Hypertarget{classaare_1_1NDArray_ac64b3e00ad3b69f6bc46def403614ccd}\label{classaare_1_1NDArray_ac64b3e00ad3b69f6bc46def403614ccd} 
+\index{aare::NDArray$<$ T, Ndim $>$@{aare::NDArray$<$ T, Ndim $>$}!size\_@{size\_}}
+\index{size\_@{size\_}!aare::NDArray$<$ T, Ndim $>$@{aare::NDArray$<$ T, Ndim $>$}}
+\doxysubsubsection{\texorpdfstring{size\_}{size\_}}
+{\footnotesize\ttfamily template$<$typename T , ssize\+\_\+t Ndim = 2$>$ \\
+ssize\+\_\+t \mbox{\hyperlink{classaare_1_1NDArray}{aare\+::\+NDArray}}$<$ T, Ndim $>$\+::size\+\_\+\hspace{0.3cm}{\ttfamily [private]}}
+
+\Hypertarget{classaare_1_1NDArray_a5275d4999e7422458d472620f792573a}\label{classaare_1_1NDArray_a5275d4999e7422458d472620f792573a} 
+\index{aare::NDArray$<$ T, Ndim $>$@{aare::NDArray$<$ T, Ndim $>$}!strides\_@{strides\_}}
+\index{strides\_@{strides\_}!aare::NDArray$<$ T, Ndim $>$@{aare::NDArray$<$ T, Ndim $>$}}
+\doxysubsubsection{\texorpdfstring{strides\_}{strides\_}}
+{\footnotesize\ttfamily template$<$typename T , ssize\+\_\+t Ndim = 2$>$ \\
+std\+::array$<$ssize\+\_\+t, Ndim$>$ \mbox{\hyperlink{classaare_1_1NDArray}{aare\+::\+NDArray}}$<$ T, Ndim $>$\+::strides\+\_\+\hspace{0.3cm}{\ttfamily [private]}}
+
+
+
+The documentation for this class was generated from the following file\+:\begin{DoxyCompactItemize}
+\item 
+core/include/aare/core/\mbox{\hyperlink{NDArray_8hpp}{NDArray.\+hpp}}\end{DoxyCompactItemize}

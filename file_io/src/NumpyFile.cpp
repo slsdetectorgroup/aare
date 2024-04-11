@@ -1,5 +1,6 @@
 
 #include "aare/file_io/NumpyFile.hpp"
+#include "aare/utils/logger.hpp"
 
 namespace aare {
 

@@ -61,3 +61,17 @@ examples/zmq_example
 ## Test the zmq processing replaying data
 
 To be implemented
+
+## generate documentation
+```bash
+# for doxygen documentation
+doxygen .doxygen.config 
+
+# for automatically generated plant uml diagrams
+clang-uml
+
+
+
+
+
+```

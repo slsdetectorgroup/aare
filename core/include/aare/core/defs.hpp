@@ -11,7 +11,7 @@
 
 namespace aare {
 
-typedef struct {
+struct sls_detector_header {
     uint64_t frameNumber;
     uint32_t expLength;
     uint32_t packetNumber;
@@ -26,7 +26,7 @@ typedef struct {
     uint8_t detType;
     uint8_t version;
     uint8_t packetMask[64];
-} __attribute__((packed)) sls_detector_header;
+};
 
 struct xy {
     int row;

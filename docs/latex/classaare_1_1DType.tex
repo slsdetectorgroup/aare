@@ -1,0 +1,181 @@
+\doxysection{aare\+::DType Class Reference}
+\hypertarget{classaare_1_1DType}{}\label{classaare_1_1DType}\index{aare::DType@{aare::DType}}
+
+
+{\ttfamily \#include $<$DType.\+hpp$>$}
+
+\doxysubsubsection*{Public Types}
+\begin{DoxyCompactItemize}
+\item 
+enum \mbox{\hyperlink{classaare_1_1DType_af556f6d36fca6f3c555c08a1cc19611c}{Type\+Index}} \{ \newline
+\mbox{\hyperlink{classaare_1_1DType_af556f6d36fca6f3c555c08a1cc19611cadbcf6ad40b9ebfcebead7c2e02ede4fc}{INT8}}
+, \mbox{\hyperlink{classaare_1_1DType_af556f6d36fca6f3c555c08a1cc19611ca39bed0512dff6efdd29ad8180940b431}{UINT8}}
+, \mbox{\hyperlink{classaare_1_1DType_af556f6d36fca6f3c555c08a1cc19611ca9c4f21df66c74163b09a2adcd855da40}{INT16}}
+, \mbox{\hyperlink{classaare_1_1DType_af556f6d36fca6f3c555c08a1cc19611ca359189b12cd95a59c0feeba7cdbf4625}{UINT16}}
+, \newline
+\mbox{\hyperlink{classaare_1_1DType_af556f6d36fca6f3c555c08a1cc19611ca85ac1b748eb9b8d6c12cf6b3c8ef5543}{INT32}}
+, \mbox{\hyperlink{classaare_1_1DType_af556f6d36fca6f3c555c08a1cc19611cacd2ee958be34e3fefcf8f3dc3d935caf}{UINT32}}
+, \mbox{\hyperlink{classaare_1_1DType_af556f6d36fca6f3c555c08a1cc19611caf2642ad7946c063c5b4d0a5d2f723957}{INT64}}
+, \mbox{\hyperlink{classaare_1_1DType_af556f6d36fca6f3c555c08a1cc19611ca62199831e85b359a70f9bed0690aa079}{UINT64}}
+, \newline
+\mbox{\hyperlink{classaare_1_1DType_af556f6d36fca6f3c555c08a1cc19611ca44e73e5741c6e0cb456e177badce218e}{FLOAT}}
+, \mbox{\hyperlink{classaare_1_1DType_af556f6d36fca6f3c555c08a1cc19611ca6371d710bd9a7297ca4878b661ddf07b}{DOUBLE}}
+, \mbox{\hyperlink{classaare_1_1DType_af556f6d36fca6f3c555c08a1cc19611ca31f898431fe733a5154366a0eedbf1e9}{ERROR}}
+ \}
+\end{DoxyCompactItemize}
+\doxysubsubsection*{Public Member Functions}
+\begin{DoxyCompactItemize}
+\item 
+uint8\+\_\+t \mbox{\hyperlink{classaare_1_1DType_ab097410b8d43b58061b1d64682ff8ac4}{bitdepth}} () const
+\item 
+\mbox{\hyperlink{classaare_1_1DType_a71637280c0ab3c286ed3d05bcd4e5a1f}{DType}} (const std\+::type\+\_\+info \&t)
+\item 
+\mbox{\hyperlink{classaare_1_1DType_a05c022d99442810eadc93d287060558b}{DType}} (std\+::string\+\_\+view sv)
+\item 
+\mbox{\hyperlink{classaare_1_1DType_acf00453875439d1e6f8379f62e326186}{DType}} (\mbox{\hyperlink{classaare_1_1DType_af556f6d36fca6f3c555c08a1cc19611c}{DType\+::\+Type\+Index}} ti)
+\item 
+bool \mbox{\hyperlink{classaare_1_1DType_a9e5f23c134cf9f11787c10e5b3cc3e4e}{operator==}} (const \mbox{\hyperlink{classaare_1_1DType}{DType}} \&other) const noexcept
+\item 
+bool \mbox{\hyperlink{classaare_1_1DType_af47e1fd8989195c38df4ef1b5d797a70}{operator!=}} (const \mbox{\hyperlink{classaare_1_1DType}{DType}} \&other) const noexcept
+\item 
+bool \mbox{\hyperlink{classaare_1_1DType_a983974ef0d3b3c052b5dc3025ddac6f7}{operator==}} (const std\+::type\+\_\+info \&t) const
+\item 
+bool \mbox{\hyperlink{classaare_1_1DType_afc3d96a49413ee1b6e449b09ea4fb680}{operator!=}} (const std\+::type\+\_\+info \&t) const
+\item 
+std\+::string \mbox{\hyperlink{classaare_1_1DType_a87461d7de8fea6cee34761ef67040a69}{str}} () const
+\end{DoxyCompactItemize}
+\doxysubsubsection*{Private Attributes}
+\begin{DoxyCompactItemize}
+\item 
+\mbox{\hyperlink{classaare_1_1DType_af556f6d36fca6f3c555c08a1cc19611c}{Type\+Index}} \mbox{\hyperlink{classaare_1_1DType_a61529ea1e39bab2a222229fdcda8b1c0}{m\+\_\+type}} \{\mbox{\hyperlink{classaare_1_1DType_af556f6d36fca6f3c555c08a1cc19611ca31f898431fe733a5154366a0eedbf1e9}{Type\+Index\+::\+ERROR}}\}
+\end{DoxyCompactItemize}
+
+
+\doxysubsection{Member Enumeration Documentation}
+\Hypertarget{classaare_1_1DType_af556f6d36fca6f3c555c08a1cc19611c}\label{classaare_1_1DType_af556f6d36fca6f3c555c08a1cc19611c} 
+\index{aare::DType@{aare::DType}!TypeIndex@{TypeIndex}}
+\index{TypeIndex@{TypeIndex}!aare::DType@{aare::DType}}
+\doxysubsubsection{\texorpdfstring{TypeIndex}{TypeIndex}}
+{\footnotesize\ttfamily enum \mbox{\hyperlink{classaare_1_1DType_af556f6d36fca6f3c555c08a1cc19611c}{aare\+::\+DType\+::\+Type\+Index}}}
+
+\begin{DoxyEnumFields}{Enumerator}
+\raisebox{\heightof{T}}[0pt][0pt]{\index{INT8@{INT8}!aare::DType@{aare::DType}}\index{aare::DType@{aare::DType}!INT8@{INT8}}}\Hypertarget{classaare_1_1DType_af556f6d36fca6f3c555c08a1cc19611cadbcf6ad40b9ebfcebead7c2e02ede4fc}\label{classaare_1_1DType_af556f6d36fca6f3c555c08a1cc19611cadbcf6ad40b9ebfcebead7c2e02ede4fc} 
+INT8&\\
+\hline
+
+\raisebox{\heightof{T}}[0pt][0pt]{\index{UINT8@{UINT8}!aare::DType@{aare::DType}}\index{aare::DType@{aare::DType}!UINT8@{UINT8}}}\Hypertarget{classaare_1_1DType_af556f6d36fca6f3c555c08a1cc19611ca39bed0512dff6efdd29ad8180940b431}\label{classaare_1_1DType_af556f6d36fca6f3c555c08a1cc19611ca39bed0512dff6efdd29ad8180940b431} 
+UINT8&\\
+\hline
+
+\raisebox{\heightof{T}}[0pt][0pt]{\index{INT16@{INT16}!aare::DType@{aare::DType}}\index{aare::DType@{aare::DType}!INT16@{INT16}}}\Hypertarget{classaare_1_1DType_af556f6d36fca6f3c555c08a1cc19611ca9c4f21df66c74163b09a2adcd855da40}\label{classaare_1_1DType_af556f6d36fca6f3c555c08a1cc19611ca9c4f21df66c74163b09a2adcd855da40} 
+INT16&\\
+\hline
+
+\raisebox{\heightof{T}}[0pt][0pt]{\index{UINT16@{UINT16}!aare::DType@{aare::DType}}\index{aare::DType@{aare::DType}!UINT16@{UINT16}}}\Hypertarget{classaare_1_1DType_af556f6d36fca6f3c555c08a1cc19611ca359189b12cd95a59c0feeba7cdbf4625}\label{classaare_1_1DType_af556f6d36fca6f3c555c08a1cc19611ca359189b12cd95a59c0feeba7cdbf4625} 
+UINT16&\\
+\hline
+
+\raisebox{\heightof{T}}[0pt][0pt]{\index{INT32@{INT32}!aare::DType@{aare::DType}}\index{aare::DType@{aare::DType}!INT32@{INT32}}}\Hypertarget{classaare_1_1DType_af556f6d36fca6f3c555c08a1cc19611ca85ac1b748eb9b8d6c12cf6b3c8ef5543}\label{classaare_1_1DType_af556f6d36fca6f3c555c08a1cc19611ca85ac1b748eb9b8d6c12cf6b3c8ef5543} 
+INT32&\\
+\hline
+
+\raisebox{\heightof{T}}[0pt][0pt]{\index{UINT32@{UINT32}!aare::DType@{aare::DType}}\index{aare::DType@{aare::DType}!UINT32@{UINT32}}}\Hypertarget{classaare_1_1DType_af556f6d36fca6f3c555c08a1cc19611cacd2ee958be34e3fefcf8f3dc3d935caf}\label{classaare_1_1DType_af556f6d36fca6f3c555c08a1cc19611cacd2ee958be34e3fefcf8f3dc3d935caf} 
+UINT32&\\
+\hline
+
+\raisebox{\heightof{T}}[0pt][0pt]{\index{INT64@{INT64}!aare::DType@{aare::DType}}\index{aare::DType@{aare::DType}!INT64@{INT64}}}\Hypertarget{classaare_1_1DType_af556f6d36fca6f3c555c08a1cc19611caf2642ad7946c063c5b4d0a5d2f723957}\label{classaare_1_1DType_af556f6d36fca6f3c555c08a1cc19611caf2642ad7946c063c5b4d0a5d2f723957} 
+INT64&\\
+\hline
+
+\raisebox{\heightof{T}}[0pt][0pt]{\index{UINT64@{UINT64}!aare::DType@{aare::DType}}\index{aare::DType@{aare::DType}!UINT64@{UINT64}}}\Hypertarget{classaare_1_1DType_af556f6d36fca6f3c555c08a1cc19611ca62199831e85b359a70f9bed0690aa079}\label{classaare_1_1DType_af556f6d36fca6f3c555c08a1cc19611ca62199831e85b359a70f9bed0690aa079} 
+UINT64&\\
+\hline
+
+\raisebox{\heightof{T}}[0pt][0pt]{\index{FLOAT@{FLOAT}!aare::DType@{aare::DType}}\index{aare::DType@{aare::DType}!FLOAT@{FLOAT}}}\Hypertarget{classaare_1_1DType_af556f6d36fca6f3c555c08a1cc19611ca44e73e5741c6e0cb456e177badce218e}\label{classaare_1_1DType_af556f6d36fca6f3c555c08a1cc19611ca44e73e5741c6e0cb456e177badce218e} 
+FLOAT&\\
+\hline
+
+\raisebox{\heightof{T}}[0pt][0pt]{\index{DOUBLE@{DOUBLE}!aare::DType@{aare::DType}}\index{aare::DType@{aare::DType}!DOUBLE@{DOUBLE}}}\Hypertarget{classaare_1_1DType_af556f6d36fca6f3c555c08a1cc19611ca6371d710bd9a7297ca4878b661ddf07b}\label{classaare_1_1DType_af556f6d36fca6f3c555c08a1cc19611ca6371d710bd9a7297ca4878b661ddf07b} 
+DOUBLE&\\
+\hline
+
+\raisebox{\heightof{T}}[0pt][0pt]{\index{ERROR@{ERROR}!aare::DType@{aare::DType}}\index{aare::DType@{aare::DType}!ERROR@{ERROR}}}\Hypertarget{classaare_1_1DType_af556f6d36fca6f3c555c08a1cc19611ca31f898431fe733a5154366a0eedbf1e9}\label{classaare_1_1DType_af556f6d36fca6f3c555c08a1cc19611ca31f898431fe733a5154366a0eedbf1e9} 
+ERROR&\\
+\hline
+
+\end{DoxyEnumFields}
+
+
+\doxysubsection{Constructor \& Destructor Documentation}
+\Hypertarget{classaare_1_1DType_a71637280c0ab3c286ed3d05bcd4e5a1f}\label{classaare_1_1DType_a71637280c0ab3c286ed3d05bcd4e5a1f} 
+\index{aare::DType@{aare::DType}!DType@{DType}}
+\index{DType@{DType}!aare::DType@{aare::DType}}
+\doxysubsubsection{\texorpdfstring{DType()}{DType()}\hspace{0.1cm}{\footnotesize\ttfamily [1/3]}}
+{\footnotesize\ttfamily aare\+::\+DType\+::\+DType (\begin{DoxyParamCaption}\item[{const std\+::type\+\_\+info \&}]{t }\end{DoxyParamCaption})\hspace{0.3cm}{\ttfamily [explicit]}}
+
+\Hypertarget{classaare_1_1DType_a05c022d99442810eadc93d287060558b}\label{classaare_1_1DType_a05c022d99442810eadc93d287060558b} 
+\index{aare::DType@{aare::DType}!DType@{DType}}
+\index{DType@{DType}!aare::DType@{aare::DType}}
+\doxysubsubsection{\texorpdfstring{DType()}{DType()}\hspace{0.1cm}{\footnotesize\ttfamily [2/3]}}
+{\footnotesize\ttfamily aare\+::\+DType\+::\+DType (\begin{DoxyParamCaption}\item[{std\+::string\+\_\+view}]{sv }\end{DoxyParamCaption})\hspace{0.3cm}{\ttfamily [explicit]}}
+
+\Hypertarget{classaare_1_1DType_acf00453875439d1e6f8379f62e326186}\label{classaare_1_1DType_acf00453875439d1e6f8379f62e326186} 
+\index{aare::DType@{aare::DType}!DType@{DType}}
+\index{DType@{DType}!aare::DType@{aare::DType}}
+\doxysubsubsection{\texorpdfstring{DType()}{DType()}\hspace{0.1cm}{\footnotesize\ttfamily [3/3]}}
+{\footnotesize\ttfamily aare\+::\+DType\+::\+DType (\begin{DoxyParamCaption}\item[{\mbox{\hyperlink{classaare_1_1DType_af556f6d36fca6f3c555c08a1cc19611c}{DType\+::\+Type\+Index}}}]{ti }\end{DoxyParamCaption})}
+
+
+
+\doxysubsection{Member Function Documentation}
+\Hypertarget{classaare_1_1DType_ab097410b8d43b58061b1d64682ff8ac4}\label{classaare_1_1DType_ab097410b8d43b58061b1d64682ff8ac4} 
+\index{aare::DType@{aare::DType}!bitdepth@{bitdepth}}
+\index{bitdepth@{bitdepth}!aare::DType@{aare::DType}}
+\doxysubsubsection{\texorpdfstring{bitdepth()}{bitdepth()}}
+{\footnotesize\ttfamily uint8\+\_\+t aare\+::\+DType\+::bitdepth (\begin{DoxyParamCaption}{ }\end{DoxyParamCaption}) const}
+
+\Hypertarget{classaare_1_1DType_af47e1fd8989195c38df4ef1b5d797a70}\label{classaare_1_1DType_af47e1fd8989195c38df4ef1b5d797a70} 
+\index{aare::DType@{aare::DType}!operator"!=@{operator"!=}}
+\index{operator"!=@{operator"!=}!aare::DType@{aare::DType}}
+\doxysubsubsection{\texorpdfstring{operator"!=()}{operator!=()}\hspace{0.1cm}{\footnotesize\ttfamily [1/2]}}
+{\footnotesize\ttfamily bool aare\+::\+DType\+::operator!= (\begin{DoxyParamCaption}\item[{const \mbox{\hyperlink{classaare_1_1DType}{DType}} \&}]{other }\end{DoxyParamCaption}) const\hspace{0.3cm}{\ttfamily [noexcept]}}
+
+\Hypertarget{classaare_1_1DType_afc3d96a49413ee1b6e449b09ea4fb680}\label{classaare_1_1DType_afc3d96a49413ee1b6e449b09ea4fb680} 
+\index{aare::DType@{aare::DType}!operator"!=@{operator"!=}}
+\index{operator"!=@{operator"!=}!aare::DType@{aare::DType}}
+\doxysubsubsection{\texorpdfstring{operator"!=()}{operator!=()}\hspace{0.1cm}{\footnotesize\ttfamily [2/2]}}
+{\footnotesize\ttfamily bool aare\+::\+DType\+::operator!= (\begin{DoxyParamCaption}\item[{const std\+::type\+\_\+info \&}]{t }\end{DoxyParamCaption}) const}
+
+\Hypertarget{classaare_1_1DType_a9e5f23c134cf9f11787c10e5b3cc3e4e}\label{classaare_1_1DType_a9e5f23c134cf9f11787c10e5b3cc3e4e} 
+\index{aare::DType@{aare::DType}!operator==@{operator==}}
+\index{operator==@{operator==}!aare::DType@{aare::DType}}
+\doxysubsubsection{\texorpdfstring{operator==()}{operator==()}\hspace{0.1cm}{\footnotesize\ttfamily [1/2]}}
+{\footnotesize\ttfamily bool aare\+::\+DType\+::operator== (\begin{DoxyParamCaption}\item[{const \mbox{\hyperlink{classaare_1_1DType}{DType}} \&}]{other }\end{DoxyParamCaption}) const\hspace{0.3cm}{\ttfamily [noexcept]}}
+
+\Hypertarget{classaare_1_1DType_a983974ef0d3b3c052b5dc3025ddac6f7}\label{classaare_1_1DType_a983974ef0d3b3c052b5dc3025ddac6f7} 
+\index{aare::DType@{aare::DType}!operator==@{operator==}}
+\index{operator==@{operator==}!aare::DType@{aare::DType}}
+\doxysubsubsection{\texorpdfstring{operator==()}{operator==()}\hspace{0.1cm}{\footnotesize\ttfamily [2/2]}}
+{\footnotesize\ttfamily bool aare\+::\+DType\+::operator== (\begin{DoxyParamCaption}\item[{const std\+::type\+\_\+info \&}]{t }\end{DoxyParamCaption}) const}
+
+\Hypertarget{classaare_1_1DType_a87461d7de8fea6cee34761ef67040a69}\label{classaare_1_1DType_a87461d7de8fea6cee34761ef67040a69} 
+\index{aare::DType@{aare::DType}!str@{str}}
+\index{str@{str}!aare::DType@{aare::DType}}
+\doxysubsubsection{\texorpdfstring{str()}{str()}}
+{\footnotesize\ttfamily std\+::string aare\+::\+DType\+::str (\begin{DoxyParamCaption}{ }\end{DoxyParamCaption}) const}
+
+
+
+\doxysubsection{Field Documentation}
+\Hypertarget{classaare_1_1DType_a61529ea1e39bab2a222229fdcda8b1c0}\label{classaare_1_1DType_a61529ea1e39bab2a222229fdcda8b1c0} 
+\index{aare::DType@{aare::DType}!m\_type@{m\_type}}
+\index{m\_type@{m\_type}!aare::DType@{aare::DType}}
+\doxysubsubsection{\texorpdfstring{m\_type}{m\_type}}
+{\footnotesize\ttfamily \mbox{\hyperlink{classaare_1_1DType_af556f6d36fca6f3c555c08a1cc19611c}{Type\+Index}} aare\+::\+DType\+::m\+\_\+type \{\mbox{\hyperlink{classaare_1_1DType_af556f6d36fca6f3c555c08a1cc19611ca31f898431fe733a5154366a0eedbf1e9}{Type\+Index\+::\+ERROR}}\}\hspace{0.3cm}{\ttfamily [private]}}
+
+
+
+The documentation for this class was generated from the following files\+:\begin{DoxyCompactItemize}
+\item 
+core/include/aare/core/\mbox{\hyperlink{DType_8hpp}{DType.\+hpp}}\item 
+core/src/\mbox{\hyperlink{DType_8cpp}{DType.\+cpp}}\end{DoxyCompactItemize}

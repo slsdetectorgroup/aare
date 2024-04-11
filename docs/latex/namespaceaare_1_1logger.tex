@@ -1,0 +1,139 @@
+\doxysection{aare\+::logger Namespace Reference}
+\hypertarget{namespaceaare_1_1logger}{}\label{namespaceaare_1_1logger}\index{aare::logger@{aare::logger}}
+\doxysubsubsection*{Namespaces}
+\begin{DoxyCompactItemize}
+\item 
+namespace \mbox{\hyperlink{namespaceaare_1_1logger_1_1internal}{internal}}
+\end{DoxyCompactItemize}
+\doxysubsubsection*{Data Structures}
+\begin{DoxyCompactItemize}
+\item 
+class \mbox{\hyperlink{classaare_1_1logger_1_1Logger}{Logger}}
+\end{DoxyCompactItemize}
+\doxysubsubsection*{Enumerations}
+\begin{DoxyCompactItemize}
+\item 
+enum \mbox{\hyperlink{namespaceaare_1_1logger_af49e00b36677b44ea78813c109b697ed}{LOGGING\+\_\+\+LEVEL}} \{ \mbox{\hyperlink{namespaceaare_1_1logger_af49e00b36677b44ea78813c109b697eda49a634116dfda67973725d859848ceda}{DEBUG}} = 0
+, \mbox{\hyperlink{namespaceaare_1_1logger_af49e00b36677b44ea78813c109b697edaa299d78fc1de06730cc5c9e63992071f}{INFO}} = 1
+, \mbox{\hyperlink{namespaceaare_1_1logger_af49e00b36677b44ea78813c109b697eda27d3614b3477d3fe03ac6eba997350c8}{WARNING}} = 2
+, \mbox{\hyperlink{namespaceaare_1_1logger_af49e00b36677b44ea78813c109b697eda5e573dce2cdf7298dfcce0f91c9aef59}{ERROR}} = 3
+ \}
+\end{DoxyCompactItemize}
+\doxysubsubsection*{Functions}
+\begin{DoxyCompactItemize}
+\item 
+{\footnotesize template$<$\mbox{\hyperlink{namespaceaare_1_1logger_af49e00b36677b44ea78813c109b697ed}{LOGGING\+\_\+\+LEVEL}} level, typename... Strings$>$ }\\void \mbox{\hyperlink{namespaceaare_1_1logger_a937a16230b5f98a197ab370d3b807ec6}{log}} (const Strings... s)
+\item 
+{\footnotesize template$<$typename... Strings$>$ }\\void \mbox{\hyperlink{namespaceaare_1_1logger_abae5b0551a44b7a2820cf8136cc8b967}{debug}} (const Strings... s)
+\item 
+{\footnotesize template$<$typename... Strings$>$ }\\void \mbox{\hyperlink{namespaceaare_1_1logger_ad1d416cf2f59b9112627c6bc2b351218}{info}} (const Strings... s)
+\item 
+{\footnotesize template$<$typename... Strings$>$ }\\void \mbox{\hyperlink{namespaceaare_1_1logger_a1449109c5a71459c6c9a5e997d98127b}{warn}} (const Strings... s)
+\item 
+{\footnotesize template$<$typename... Strings$>$ }\\void \mbox{\hyperlink{namespaceaare_1_1logger_aa3c59889c871f655a4a576bad35cd0e7}{error}} (const Strings... s)
+\item 
+void \mbox{\hyperlink{namespaceaare_1_1logger_a9615ab157fbc2bb3e9b2bfb65e12be8c}{set\+\_\+streams}} (std\+::streambuf \texorpdfstring{$\ast$}{*}out, std\+::streambuf \texorpdfstring{$\ast$}{*}err)
+\item 
+void \mbox{\hyperlink{namespaceaare_1_1logger_ab1dff5db561f3b7ebaee8428ab6d5b7d}{set\+\_\+streams}} (std\+::streambuf \texorpdfstring{$\ast$}{*}out)
+\item 
+void \mbox{\hyperlink{namespaceaare_1_1logger_a335576e89f0ac25831e1ff7abb3c67c8}{set\+\_\+verbosity}} (\mbox{\hyperlink{namespaceaare_1_1logger_af49e00b36677b44ea78813c109b697ed}{LOGGING\+\_\+\+LEVEL}} level)
+\item 
+void \mbox{\hyperlink{namespaceaare_1_1logger_a42089a21b600c9733ff5a82138c4f53d}{set\+\_\+output\+\_\+file}} (std\+::string filename)
+\item 
+\mbox{\hyperlink{classaare_1_1logger_1_1Logger}{Logger}} \& \mbox{\hyperlink{namespaceaare_1_1logger_adfa4e46d0e102fd5f1eb9a6471eead60}{get\+\_\+logger\+\_\+instance}} ()
+\end{DoxyCompactItemize}
+
+
+\doxysubsection{Enumeration Type Documentation}
+\Hypertarget{namespaceaare_1_1logger_af49e00b36677b44ea78813c109b697ed}\label{namespaceaare_1_1logger_af49e00b36677b44ea78813c109b697ed} 
+\index{aare::logger@{aare::logger}!LOGGING\_LEVEL@{LOGGING\_LEVEL}}
+\index{LOGGING\_LEVEL@{LOGGING\_LEVEL}!aare::logger@{aare::logger}}
+\doxysubsubsection{\texorpdfstring{LOGGING\_LEVEL}{LOGGING\_LEVEL}}
+{\footnotesize\ttfamily enum \mbox{\hyperlink{namespaceaare_1_1logger_af49e00b36677b44ea78813c109b697ed}{aare\+::logger\+::\+LOGGING\+\_\+\+LEVEL}}}
+
+\begin{DoxyEnumFields}{Enumerator}
+\raisebox{\heightof{T}}[0pt][0pt]{\index{DEBUG@{DEBUG}!aare::logger@{aare::logger}}\index{aare::logger@{aare::logger}!DEBUG@{DEBUG}}}\Hypertarget{namespaceaare_1_1logger_af49e00b36677b44ea78813c109b697eda49a634116dfda67973725d859848ceda}\label{namespaceaare_1_1logger_af49e00b36677b44ea78813c109b697eda49a634116dfda67973725d859848ceda} 
+DEBUG&\\
+\hline
+
+\raisebox{\heightof{T}}[0pt][0pt]{\index{INFO@{INFO}!aare::logger@{aare::logger}}\index{aare::logger@{aare::logger}!INFO@{INFO}}}\Hypertarget{namespaceaare_1_1logger_af49e00b36677b44ea78813c109b697edaa299d78fc1de06730cc5c9e63992071f}\label{namespaceaare_1_1logger_af49e00b36677b44ea78813c109b697edaa299d78fc1de06730cc5c9e63992071f} 
+INFO&\\
+\hline
+
+\raisebox{\heightof{T}}[0pt][0pt]{\index{WARNING@{WARNING}!aare::logger@{aare::logger}}\index{aare::logger@{aare::logger}!WARNING@{WARNING}}}\Hypertarget{namespaceaare_1_1logger_af49e00b36677b44ea78813c109b697eda27d3614b3477d3fe03ac6eba997350c8}\label{namespaceaare_1_1logger_af49e00b36677b44ea78813c109b697eda27d3614b3477d3fe03ac6eba997350c8} 
+WARNING&\\
+\hline
+
+\raisebox{\heightof{T}}[0pt][0pt]{\index{ERROR@{ERROR}!aare::logger@{aare::logger}}\index{aare::logger@{aare::logger}!ERROR@{ERROR}}}\Hypertarget{namespaceaare_1_1logger_af49e00b36677b44ea78813c109b697eda5e573dce2cdf7298dfcce0f91c9aef59}\label{namespaceaare_1_1logger_af49e00b36677b44ea78813c109b697eda5e573dce2cdf7298dfcce0f91c9aef59} 
+ERROR&\\
+\hline
+
+\end{DoxyEnumFields}
+
+
+\doxysubsection{Function Documentation}
+\Hypertarget{namespaceaare_1_1logger_abae5b0551a44b7a2820cf8136cc8b967}\label{namespaceaare_1_1logger_abae5b0551a44b7a2820cf8136cc8b967} 
+\index{aare::logger@{aare::logger}!debug@{debug}}
+\index{debug@{debug}!aare::logger@{aare::logger}}
+\doxysubsubsection{\texorpdfstring{debug()}{debug()}}
+{\footnotesize\ttfamily template$<$typename... Strings$>$ \\
+void aare\+::logger\+::debug (\begin{DoxyParamCaption}\item[{const Strings...}]{s }\end{DoxyParamCaption})}
+
+\Hypertarget{namespaceaare_1_1logger_aa3c59889c871f655a4a576bad35cd0e7}\label{namespaceaare_1_1logger_aa3c59889c871f655a4a576bad35cd0e7} 
+\index{aare::logger@{aare::logger}!error@{error}}
+\index{error@{error}!aare::logger@{aare::logger}}
+\doxysubsubsection{\texorpdfstring{error()}{error()}}
+{\footnotesize\ttfamily template$<$typename... Strings$>$ \\
+void aare\+::logger\+::error (\begin{DoxyParamCaption}\item[{const Strings...}]{s }\end{DoxyParamCaption})}
+
+\Hypertarget{namespaceaare_1_1logger_adfa4e46d0e102fd5f1eb9a6471eead60}\label{namespaceaare_1_1logger_adfa4e46d0e102fd5f1eb9a6471eead60} 
+\index{aare::logger@{aare::logger}!get\_logger\_instance@{get\_logger\_instance}}
+\index{get\_logger\_instance@{get\_logger\_instance}!aare::logger@{aare::logger}}
+\doxysubsubsection{\texorpdfstring{get\_logger\_instance()}{get\_logger\_instance()}}
+{\footnotesize\ttfamily \mbox{\hyperlink{classaare_1_1logger_1_1Logger}{Logger}} \& aare\+::logger\+::get\+\_\+logger\+\_\+instance (\begin{DoxyParamCaption}{ }\end{DoxyParamCaption})}
+
+\Hypertarget{namespaceaare_1_1logger_ad1d416cf2f59b9112627c6bc2b351218}\label{namespaceaare_1_1logger_ad1d416cf2f59b9112627c6bc2b351218} 
+\index{aare::logger@{aare::logger}!info@{info}}
+\index{info@{info}!aare::logger@{aare::logger}}
+\doxysubsubsection{\texorpdfstring{info()}{info()}}
+{\footnotesize\ttfamily template$<$typename... Strings$>$ \\
+void aare\+::logger\+::info (\begin{DoxyParamCaption}\item[{const Strings...}]{s }\end{DoxyParamCaption})}
+
+\Hypertarget{namespaceaare_1_1logger_a937a16230b5f98a197ab370d3b807ec6}\label{namespaceaare_1_1logger_a937a16230b5f98a197ab370d3b807ec6} 
+\index{aare::logger@{aare::logger}!log@{log}}
+\index{log@{log}!aare::logger@{aare::logger}}
+\doxysubsubsection{\texorpdfstring{log()}{log()}}
+{\footnotesize\ttfamily template$<$\mbox{\hyperlink{namespaceaare_1_1logger_af49e00b36677b44ea78813c109b697ed}{LOGGING\+\_\+\+LEVEL}} level, typename... Strings$>$ \\
+void aare\+::logger\+::log (\begin{DoxyParamCaption}\item[{const Strings...}]{s }\end{DoxyParamCaption})}
+
+\Hypertarget{namespaceaare_1_1logger_a42089a21b600c9733ff5a82138c4f53d}\label{namespaceaare_1_1logger_a42089a21b600c9733ff5a82138c4f53d} 
+\index{aare::logger@{aare::logger}!set\_output\_file@{set\_output\_file}}
+\index{set\_output\_file@{set\_output\_file}!aare::logger@{aare::logger}}
+\doxysubsubsection{\texorpdfstring{set\_output\_file()}{set\_output\_file()}}
+{\footnotesize\ttfamily void aare\+::logger\+::set\+\_\+output\+\_\+file (\begin{DoxyParamCaption}\item[{std\+::string}]{filename }\end{DoxyParamCaption})}
+
+\Hypertarget{namespaceaare_1_1logger_ab1dff5db561f3b7ebaee8428ab6d5b7d}\label{namespaceaare_1_1logger_ab1dff5db561f3b7ebaee8428ab6d5b7d} 
+\index{aare::logger@{aare::logger}!set\_streams@{set\_streams}}
+\index{set\_streams@{set\_streams}!aare::logger@{aare::logger}}
+\doxysubsubsection{\texorpdfstring{set\_streams()}{set\_streams()}\hspace{0.1cm}{\footnotesize\ttfamily [1/2]}}
+{\footnotesize\ttfamily void aare\+::logger\+::set\+\_\+streams (\begin{DoxyParamCaption}\item[{std\+::streambuf \texorpdfstring{$\ast$}{*}}]{out }\end{DoxyParamCaption})}
+
+\Hypertarget{namespaceaare_1_1logger_a9615ab157fbc2bb3e9b2bfb65e12be8c}\label{namespaceaare_1_1logger_a9615ab157fbc2bb3e9b2bfb65e12be8c} 
+\index{aare::logger@{aare::logger}!set\_streams@{set\_streams}}
+\index{set\_streams@{set\_streams}!aare::logger@{aare::logger}}
+\doxysubsubsection{\texorpdfstring{set\_streams()}{set\_streams()}\hspace{0.1cm}{\footnotesize\ttfamily [2/2]}}
+{\footnotesize\ttfamily void aare\+::logger\+::set\+\_\+streams (\begin{DoxyParamCaption}\item[{std\+::streambuf \texorpdfstring{$\ast$}{*}}]{out,  }\item[{std\+::streambuf \texorpdfstring{$\ast$}{*}}]{err }\end{DoxyParamCaption})}
+
+\Hypertarget{namespaceaare_1_1logger_a335576e89f0ac25831e1ff7abb3c67c8}\label{namespaceaare_1_1logger_a335576e89f0ac25831e1ff7abb3c67c8} 
+\index{aare::logger@{aare::logger}!set\_verbosity@{set\_verbosity}}
+\index{set\_verbosity@{set\_verbosity}!aare::logger@{aare::logger}}
+\doxysubsubsection{\texorpdfstring{set\_verbosity()}{set\_verbosity()}}
+{\footnotesize\ttfamily void aare\+::logger\+::set\+\_\+verbosity (\begin{DoxyParamCaption}\item[{\mbox{\hyperlink{namespaceaare_1_1logger_af49e00b36677b44ea78813c109b697ed}{LOGGING\+\_\+\+LEVEL}}}]{level }\end{DoxyParamCaption})}
+
+\Hypertarget{namespaceaare_1_1logger_a1449109c5a71459c6c9a5e997d98127b}\label{namespaceaare_1_1logger_a1449109c5a71459c6c9a5e997d98127b} 
+\index{aare::logger@{aare::logger}!warn@{warn}}
+\index{warn@{warn}!aare::logger@{aare::logger}}
+\doxysubsubsection{\texorpdfstring{warn()}{warn()}}
+{\footnotesize\ttfamily template$<$typename... Strings$>$ \\
+void aare\+::logger\+::warn (\begin{DoxyParamCaption}\item[{const Strings...}]{s }\end{DoxyParamCaption})}
+

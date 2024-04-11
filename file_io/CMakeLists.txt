@@ -11,7 +11,6 @@ endif()
 
 set(SourceFiles
     ${CMAKE_CURRENT_SOURCE_DIR}/src/File.cpp
-    ${CMAKE_CURRENT_SOURCE_DIR}/src/helpers.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/src/RawFile.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/src/SubFile.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/src/NumpyFile.cpp

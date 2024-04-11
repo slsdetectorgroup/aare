@@ -1,0 +1,37 @@
+\doxysection{core/include/aare/core/\+NDView.hpp File Reference}
+\hypertarget{NDView_8hpp}{}\label{NDView_8hpp}\index{core/include/aare/core/NDView.hpp@{core/include/aare/core/NDView.hpp}}
+{\ttfamily \#include $<$algorithm$>$}\newline
+{\ttfamily \#include $<$array$>$}\newline
+{\ttfamily \#include $<$cassert$>$}\newline
+{\ttfamily \#include $<$cstdint$>$}\newline
+{\ttfamily \#include $<$numeric$>$}\newline
+{\ttfamily \#include $<$stdexcept$>$}\newline
+{\ttfamily \#include $<$vector$>$}\newline
+\doxysubsubsection*{Data Structures}
+\begin{DoxyCompactItemize}
+\item 
+class \mbox{\hyperlink{classaare_1_1NDView}{aare\+::\+NDView$<$ T, Ndim $>$}}
+\end{DoxyCompactItemize}
+\doxysubsubsection*{Namespaces}
+\begin{DoxyCompactItemize}
+\item 
+namespace \mbox{\hyperlink{namespaceaare}{aare}}
+\begin{DoxyCompactList}\small\item\em \doxylink{classaare_1_1Frame}{Frame} class to represent a single frame of data model class should be able to work with streams coming from files or network. \end{DoxyCompactList}\end{DoxyCompactItemize}
+\doxysubsubsection*{Typedefs}
+\begin{DoxyCompactItemize}
+\item 
+{\footnotesize template$<$ssize\+\_\+t Ndim$>$ }\\using \mbox{\hyperlink{namespaceaare_a3e7aced06ae41952428121c25c4d54d4}{aare\+::\+Shape}} = std\+::array$<$ ssize\+\_\+t, Ndim $>$
+\end{DoxyCompactItemize}
+\doxysubsubsection*{Functions}
+\begin{DoxyCompactItemize}
+\item 
+{\footnotesize template$<$ssize\+\_\+t Ndim$>$ }\\\mbox{\hyperlink{namespaceaare_a3e7aced06ae41952428121c25c4d54d4}{Shape}}$<$ Ndim $>$ \mbox{\hyperlink{namespaceaare_a3ebdc3c557843d49b065a15ff833e2a2}{aare\+::make\+\_\+shape}} (const std\+::vector$<$ size\+\_\+t $>$ \&shape)
+\item 
+{\footnotesize template$<$ssize\+\_\+t Dim = 0, typename Strides $>$ }\\ssize\+\_\+t \mbox{\hyperlink{namespaceaare_a45ca88f1c8c15d6e4d08b14e21a3e579}{aare\+::element\+\_\+offset}} (const Strides \&)
+\item 
+{\footnotesize template$<$ssize\+\_\+t Dim = 0, typename Strides , typename... Ix$>$ }\\ssize\+\_\+t \mbox{\hyperlink{namespaceaare_a8d8ef7169db0fb9c771c24f8bb640950}{aare\+::element\+\_\+offset}} (const Strides \&strides, ssize\+\_\+t i, Ix... index)
+\item 
+{\footnotesize template$<$ssize\+\_\+t Ndim$>$ }\\std\+::array$<$ ssize\+\_\+t, Ndim $>$ \mbox{\hyperlink{namespaceaare_a737039de5f8de78a691a40b9ceb47b64}{aare\+::c\+\_\+strides}} (const std\+::array$<$ ssize\+\_\+t, Ndim $>$ \&shape)
+\item 
+{\footnotesize template$<$ssize\+\_\+t Ndim$>$ }\\std\+::array$<$ ssize\+\_\+t, Ndim $>$ \mbox{\hyperlink{namespaceaare_a2fecee4bfadd26c1cd61d316e16cc060}{aare\+::make\+\_\+array}} (const std\+::vector$<$ ssize\+\_\+t $>$ \&vec)
+\end{DoxyCompactItemize}

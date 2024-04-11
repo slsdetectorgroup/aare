@@ -1,0 +1,216 @@
+\doxysection{folly\+::Producer\+Consumer\+Queue\texorpdfstring{$<$}{<} T \texorpdfstring{$>$}{>} Struct Template Reference}
+\hypertarget{structfolly_1_1ProducerConsumerQueue}{}\label{structfolly_1_1ProducerConsumerQueue}\index{folly::ProducerConsumerQueue$<$ T $>$@{folly::ProducerConsumerQueue$<$ T $>$}}
+
+
+{\ttfamily \#include $<$Producer\+Consumer\+Queue.\+hpp$>$}
+
+\doxysubsubsection*{Public Types}
+\begin{DoxyCompactItemize}
+\item 
+typedef T \mbox{\hyperlink{structfolly_1_1ProducerConsumerQueue_ab9ca59636041c88588bf0a367c4c9415}{value\+\_\+type}}
+\end{DoxyCompactItemize}
+\doxysubsubsection*{Public Member Functions}
+\begin{DoxyCompactItemize}
+\item 
+\mbox{\hyperlink{structfolly_1_1ProducerConsumerQueue_af6639f8106b78609082a4cd5e3e8ceb5}{Producer\+Consumer\+Queue}} (const \mbox{\hyperlink{structfolly_1_1ProducerConsumerQueue}{Producer\+Consumer\+Queue}} \&)=delete
+\item 
+\mbox{\hyperlink{structfolly_1_1ProducerConsumerQueue}{Producer\+Consumer\+Queue}} \& \mbox{\hyperlink{structfolly_1_1ProducerConsumerQueue_ac1f83f5f296f6f79583125947859b9d0}{operator=}} (const \mbox{\hyperlink{structfolly_1_1ProducerConsumerQueue}{Producer\+Consumer\+Queue}} \&)=delete
+\item 
+\mbox{\hyperlink{structfolly_1_1ProducerConsumerQueue_a3398aa33aa91bad8e0f023d2e1df8069}{Producer\+Consumer\+Queue}} (uint32\+\_\+t size)
+\item 
+\mbox{\hyperlink{structfolly_1_1ProducerConsumerQueue_ae21044b9fe0c4345e2b7ec10cb81a18c}{\texorpdfstring{$\sim$}{\string~}\+Producer\+Consumer\+Queue}} ()
+\item 
+{\footnotesize template$<$class... Args$>$ }\\bool \mbox{\hyperlink{structfolly_1_1ProducerConsumerQueue_af849682c2351c5f2b3344e32c512a961}{write}} (Args \&\&...record\+Args)
+\item 
+bool \mbox{\hyperlink{structfolly_1_1ProducerConsumerQueue_a3288ef770695d676376c80ea41630b74}{read}} (T \&record)
+\item 
+T \texorpdfstring{$\ast$}{*} \mbox{\hyperlink{structfolly_1_1ProducerConsumerQueue_a24474b670bc44f75f7c978087e401bd0}{front\+Ptr}} ()
+\item 
+void \mbox{\hyperlink{structfolly_1_1ProducerConsumerQueue_a92e517783bcaa0102521fb739b7f5f4e}{pop\+Front}} ()
+\item 
+bool \mbox{\hyperlink{structfolly_1_1ProducerConsumerQueue_a7f277f7b04debc85e2f99006ac3558e8}{is\+Empty}} () const
+\item 
+bool \mbox{\hyperlink{structfolly_1_1ProducerConsumerQueue_ad883c041917c2b7f10b0ecdaeaeb0577}{is\+Full}} () const
+\item 
+size\+\_\+t \mbox{\hyperlink{structfolly_1_1ProducerConsumerQueue_adb384b6a25b755b627d04ff6f2ca9c95}{size\+Guess}} () const
+\item 
+size\+\_\+t \mbox{\hyperlink{structfolly_1_1ProducerConsumerQueue_ab5966af8b6789e2ad2c215d0226fd616}{capacity}} () const
+\end{DoxyCompactItemize}
+\doxysubsubsection*{Private Types}
+\begin{DoxyCompactItemize}
+\item 
+using \mbox{\hyperlink{structfolly_1_1ProducerConsumerQueue_af9f2e0d5fb4a92eb037b630a80f521cb}{Atomic\+Index}} = std\+::atomic$<$ unsigned int $>$
+\end{DoxyCompactItemize}
+\doxysubsubsection*{Private Attributes}
+\begin{DoxyCompactItemize}
+\item 
+char \mbox{\hyperlink{structfolly_1_1ProducerConsumerQueue_ab20193986ce865e7c2f430f706d743cf}{pad0\+\_\+}} \mbox{[}\mbox{\hyperlink{ProducerConsumerQueue_8hpp_afcfcf0ecf646b16dd2b471dc568cf6c6}{hardware\+\_\+destructive\+\_\+interference\+\_\+size}}\mbox{]}
+\item 
+const uint32\+\_\+t \mbox{\hyperlink{structfolly_1_1ProducerConsumerQueue_ad5bf2e76bc4aad660840cbb927317d76}{size\+\_\+}}
+\item 
+T \texorpdfstring{$\ast$}{*}const \mbox{\hyperlink{structfolly_1_1ProducerConsumerQueue_a7f28bc4897019e6a4743dd22a97b33e1}{records\+\_\+}}
+\item 
+\mbox{\hyperlink{structfolly_1_1ProducerConsumerQueue_af9f2e0d5fb4a92eb037b630a80f521cb}{Atomic\+Index}} \mbox{\hyperlink{structfolly_1_1ProducerConsumerQueue_a5f0ee08f1bfb4c8721c41426137e2005}{read\+Index\+\_\+}}
+\item 
+\mbox{\hyperlink{structfolly_1_1ProducerConsumerQueue_af9f2e0d5fb4a92eb037b630a80f521cb}{Atomic\+Index}} \mbox{\hyperlink{structfolly_1_1ProducerConsumerQueue_a7c4b68cf28e3e925ff14f5736bce59d4}{write\+Index\+\_\+}}
+\item 
+char \mbox{\hyperlink{structfolly_1_1ProducerConsumerQueue_a14823e2289be8649cebd813caa00d1fa}{pad1\+\_\+}} \mbox{[}\mbox{\hyperlink{ProducerConsumerQueue_8hpp_afcfcf0ecf646b16dd2b471dc568cf6c6}{hardware\+\_\+destructive\+\_\+interference\+\_\+size}} -\/ sizeof(\mbox{\hyperlink{structfolly_1_1ProducerConsumerQueue_af9f2e0d5fb4a92eb037b630a80f521cb}{Atomic\+Index}})\mbox{]}
+\end{DoxyCompactItemize}
+
+
+\doxysubsection{Member Typedef Documentation}
+\Hypertarget{structfolly_1_1ProducerConsumerQueue_af9f2e0d5fb4a92eb037b630a80f521cb}\label{structfolly_1_1ProducerConsumerQueue_af9f2e0d5fb4a92eb037b630a80f521cb} 
+\index{folly::ProducerConsumerQueue$<$ T $>$@{folly::ProducerConsumerQueue$<$ T $>$}!AtomicIndex@{AtomicIndex}}
+\index{AtomicIndex@{AtomicIndex}!folly::ProducerConsumerQueue$<$ T $>$@{folly::ProducerConsumerQueue$<$ T $>$}}
+\doxysubsubsection{\texorpdfstring{AtomicIndex}{AtomicIndex}}
+{\footnotesize\ttfamily template$<$class T $>$ \\
+using \mbox{\hyperlink{structfolly_1_1ProducerConsumerQueue}{folly\+::\+Producer\+Consumer\+Queue}}$<$ T $>$\+::\+Atomic\+Index =  std\+::atomic$<$unsigned int$>$\hspace{0.3cm}{\ttfamily [private]}}
+
+\Hypertarget{structfolly_1_1ProducerConsumerQueue_ab9ca59636041c88588bf0a367c4c9415}\label{structfolly_1_1ProducerConsumerQueue_ab9ca59636041c88588bf0a367c4c9415} 
+\index{folly::ProducerConsumerQueue$<$ T $>$@{folly::ProducerConsumerQueue$<$ T $>$}!value\_type@{value\_type}}
+\index{value\_type@{value\_type}!folly::ProducerConsumerQueue$<$ T $>$@{folly::ProducerConsumerQueue$<$ T $>$}}
+\doxysubsubsection{\texorpdfstring{value\_type}{value\_type}}
+{\footnotesize\ttfamily template$<$class T $>$ \\
+typedef T \mbox{\hyperlink{structfolly_1_1ProducerConsumerQueue}{folly\+::\+Producer\+Consumer\+Queue}}$<$ T $>$\+::value\+\_\+type}
+
+
+
+\doxysubsection{Constructor \& Destructor Documentation}
+\Hypertarget{structfolly_1_1ProducerConsumerQueue_af6639f8106b78609082a4cd5e3e8ceb5}\label{structfolly_1_1ProducerConsumerQueue_af6639f8106b78609082a4cd5e3e8ceb5} 
+\index{folly::ProducerConsumerQueue$<$ T $>$@{folly::ProducerConsumerQueue$<$ T $>$}!ProducerConsumerQueue@{ProducerConsumerQueue}}
+\index{ProducerConsumerQueue@{ProducerConsumerQueue}!folly::ProducerConsumerQueue$<$ T $>$@{folly::ProducerConsumerQueue$<$ T $>$}}
+\doxysubsubsection{\texorpdfstring{ProducerConsumerQueue()}{ProducerConsumerQueue()}\hspace{0.1cm}{\footnotesize\ttfamily [1/2]}}
+{\footnotesize\ttfamily template$<$class T $>$ \\
+\mbox{\hyperlink{structfolly_1_1ProducerConsumerQueue}{folly\+::\+Producer\+Consumer\+Queue}}$<$ T $>$\+::\+Producer\+Consumer\+Queue (\begin{DoxyParamCaption}\item[{const \mbox{\hyperlink{structfolly_1_1ProducerConsumerQueue}{Producer\+Consumer\+Queue}}$<$ T $>$ \&}]{ }\end{DoxyParamCaption})\hspace{0.3cm}{\ttfamily [delete]}}
+
+\Hypertarget{structfolly_1_1ProducerConsumerQueue_a3398aa33aa91bad8e0f023d2e1df8069}\label{structfolly_1_1ProducerConsumerQueue_a3398aa33aa91bad8e0f023d2e1df8069} 
+\index{folly::ProducerConsumerQueue$<$ T $>$@{folly::ProducerConsumerQueue$<$ T $>$}!ProducerConsumerQueue@{ProducerConsumerQueue}}
+\index{ProducerConsumerQueue@{ProducerConsumerQueue}!folly::ProducerConsumerQueue$<$ T $>$@{folly::ProducerConsumerQueue$<$ T $>$}}
+\doxysubsubsection{\texorpdfstring{ProducerConsumerQueue()}{ProducerConsumerQueue()}\hspace{0.1cm}{\footnotesize\ttfamily [2/2]}}
+{\footnotesize\ttfamily template$<$class T $>$ \\
+\mbox{\hyperlink{structfolly_1_1ProducerConsumerQueue}{folly\+::\+Producer\+Consumer\+Queue}}$<$ T $>$\+::\+Producer\+Consumer\+Queue (\begin{DoxyParamCaption}\item[{uint32\+\_\+t}]{size }\end{DoxyParamCaption})\hspace{0.3cm}{\ttfamily [inline]}, {\ttfamily [explicit]}}
+
+\Hypertarget{structfolly_1_1ProducerConsumerQueue_ae21044b9fe0c4345e2b7ec10cb81a18c}\label{structfolly_1_1ProducerConsumerQueue_ae21044b9fe0c4345e2b7ec10cb81a18c} 
+\index{folly::ProducerConsumerQueue$<$ T $>$@{folly::ProducerConsumerQueue$<$ T $>$}!````~ProducerConsumerQueue@{\texorpdfstring{$\sim$}{\string~}ProducerConsumerQueue}}
+\index{````~ProducerConsumerQueue@{\texorpdfstring{$\sim$}{\string~}ProducerConsumerQueue}!folly::ProducerConsumerQueue$<$ T $>$@{folly::ProducerConsumerQueue$<$ T $>$}}
+\doxysubsubsection{\texorpdfstring{\texorpdfstring{$\sim$}{\string~}ProducerConsumerQueue()}{\string~ProducerConsumerQueue()}}
+{\footnotesize\ttfamily template$<$class T $>$ \\
+\mbox{\hyperlink{structfolly_1_1ProducerConsumerQueue}{folly\+::\+Producer\+Consumer\+Queue}}$<$ T $>$\+::\texorpdfstring{$\sim$}{\string~}\mbox{\hyperlink{structfolly_1_1ProducerConsumerQueue}{Producer\+Consumer\+Queue}} (\begin{DoxyParamCaption}{ }\end{DoxyParamCaption})\hspace{0.3cm}{\ttfamily [inline]}}
+
+
+
+\doxysubsection{Member Function Documentation}
+\Hypertarget{structfolly_1_1ProducerConsumerQueue_ab5966af8b6789e2ad2c215d0226fd616}\label{structfolly_1_1ProducerConsumerQueue_ab5966af8b6789e2ad2c215d0226fd616} 
+\index{folly::ProducerConsumerQueue$<$ T $>$@{folly::ProducerConsumerQueue$<$ T $>$}!capacity@{capacity}}
+\index{capacity@{capacity}!folly::ProducerConsumerQueue$<$ T $>$@{folly::ProducerConsumerQueue$<$ T $>$}}
+\doxysubsubsection{\texorpdfstring{capacity()}{capacity()}}
+{\footnotesize\ttfamily template$<$class T $>$ \\
+size\+\_\+t \mbox{\hyperlink{structfolly_1_1ProducerConsumerQueue}{folly\+::\+Producer\+Consumer\+Queue}}$<$ T $>$\+::capacity (\begin{DoxyParamCaption}{ }\end{DoxyParamCaption}) const\hspace{0.3cm}{\ttfamily [inline]}}
+
+\Hypertarget{structfolly_1_1ProducerConsumerQueue_a24474b670bc44f75f7c978087e401bd0}\label{structfolly_1_1ProducerConsumerQueue_a24474b670bc44f75f7c978087e401bd0} 
+\index{folly::ProducerConsumerQueue$<$ T $>$@{folly::ProducerConsumerQueue$<$ T $>$}!frontPtr@{frontPtr}}
+\index{frontPtr@{frontPtr}!folly::ProducerConsumerQueue$<$ T $>$@{folly::ProducerConsumerQueue$<$ T $>$}}
+\doxysubsubsection{\texorpdfstring{frontPtr()}{frontPtr()}}
+{\footnotesize\ttfamily template$<$class T $>$ \\
+T \texorpdfstring{$\ast$}{*} \mbox{\hyperlink{structfolly_1_1ProducerConsumerQueue}{folly\+::\+Producer\+Consumer\+Queue}}$<$ T $>$\+::front\+Ptr (\begin{DoxyParamCaption}{ }\end{DoxyParamCaption})\hspace{0.3cm}{\ttfamily [inline]}}
+
+\Hypertarget{structfolly_1_1ProducerConsumerQueue_a7f277f7b04debc85e2f99006ac3558e8}\label{structfolly_1_1ProducerConsumerQueue_a7f277f7b04debc85e2f99006ac3558e8} 
+\index{folly::ProducerConsumerQueue$<$ T $>$@{folly::ProducerConsumerQueue$<$ T $>$}!isEmpty@{isEmpty}}
+\index{isEmpty@{isEmpty}!folly::ProducerConsumerQueue$<$ T $>$@{folly::ProducerConsumerQueue$<$ T $>$}}
+\doxysubsubsection{\texorpdfstring{isEmpty()}{isEmpty()}}
+{\footnotesize\ttfamily template$<$class T $>$ \\
+bool \mbox{\hyperlink{structfolly_1_1ProducerConsumerQueue}{folly\+::\+Producer\+Consumer\+Queue}}$<$ T $>$\+::is\+Empty (\begin{DoxyParamCaption}{ }\end{DoxyParamCaption}) const\hspace{0.3cm}{\ttfamily [inline]}}
+
+\Hypertarget{structfolly_1_1ProducerConsumerQueue_ad883c041917c2b7f10b0ecdaeaeb0577}\label{structfolly_1_1ProducerConsumerQueue_ad883c041917c2b7f10b0ecdaeaeb0577} 
+\index{folly::ProducerConsumerQueue$<$ T $>$@{folly::ProducerConsumerQueue$<$ T $>$}!isFull@{isFull}}
+\index{isFull@{isFull}!folly::ProducerConsumerQueue$<$ T $>$@{folly::ProducerConsumerQueue$<$ T $>$}}
+\doxysubsubsection{\texorpdfstring{isFull()}{isFull()}}
+{\footnotesize\ttfamily template$<$class T $>$ \\
+bool \mbox{\hyperlink{structfolly_1_1ProducerConsumerQueue}{folly\+::\+Producer\+Consumer\+Queue}}$<$ T $>$\+::is\+Full (\begin{DoxyParamCaption}{ }\end{DoxyParamCaption}) const\hspace{0.3cm}{\ttfamily [inline]}}
+
+\Hypertarget{structfolly_1_1ProducerConsumerQueue_ac1f83f5f296f6f79583125947859b9d0}\label{structfolly_1_1ProducerConsumerQueue_ac1f83f5f296f6f79583125947859b9d0} 
+\index{folly::ProducerConsumerQueue$<$ T $>$@{folly::ProducerConsumerQueue$<$ T $>$}!operator=@{operator=}}
+\index{operator=@{operator=}!folly::ProducerConsumerQueue$<$ T $>$@{folly::ProducerConsumerQueue$<$ T $>$}}
+\doxysubsubsection{\texorpdfstring{operator=()}{operator=()}}
+{\footnotesize\ttfamily template$<$class T $>$ \\
+\mbox{\hyperlink{structfolly_1_1ProducerConsumerQueue}{Producer\+Consumer\+Queue}} \& \mbox{\hyperlink{structfolly_1_1ProducerConsumerQueue}{folly\+::\+Producer\+Consumer\+Queue}}$<$ T $>$\+::operator= (\begin{DoxyParamCaption}\item[{const \mbox{\hyperlink{structfolly_1_1ProducerConsumerQueue}{Producer\+Consumer\+Queue}}$<$ T $>$ \&}]{ }\end{DoxyParamCaption})\hspace{0.3cm}{\ttfamily [delete]}}
+
+\Hypertarget{structfolly_1_1ProducerConsumerQueue_a92e517783bcaa0102521fb739b7f5f4e}\label{structfolly_1_1ProducerConsumerQueue_a92e517783bcaa0102521fb739b7f5f4e} 
+\index{folly::ProducerConsumerQueue$<$ T $>$@{folly::ProducerConsumerQueue$<$ T $>$}!popFront@{popFront}}
+\index{popFront@{popFront}!folly::ProducerConsumerQueue$<$ T $>$@{folly::ProducerConsumerQueue$<$ T $>$}}
+\doxysubsubsection{\texorpdfstring{popFront()}{popFront()}}
+{\footnotesize\ttfamily template$<$class T $>$ \\
+void \mbox{\hyperlink{structfolly_1_1ProducerConsumerQueue}{folly\+::\+Producer\+Consumer\+Queue}}$<$ T $>$\+::pop\+Front (\begin{DoxyParamCaption}{ }\end{DoxyParamCaption})\hspace{0.3cm}{\ttfamily [inline]}}
+
+\Hypertarget{structfolly_1_1ProducerConsumerQueue_a3288ef770695d676376c80ea41630b74}\label{structfolly_1_1ProducerConsumerQueue_a3288ef770695d676376c80ea41630b74} 
+\index{folly::ProducerConsumerQueue$<$ T $>$@{folly::ProducerConsumerQueue$<$ T $>$}!read@{read}}
+\index{read@{read}!folly::ProducerConsumerQueue$<$ T $>$@{folly::ProducerConsumerQueue$<$ T $>$}}
+\doxysubsubsection{\texorpdfstring{read()}{read()}}
+{\footnotesize\ttfamily template$<$class T $>$ \\
+bool \mbox{\hyperlink{structfolly_1_1ProducerConsumerQueue}{folly\+::\+Producer\+Consumer\+Queue}}$<$ T $>$\+::read (\begin{DoxyParamCaption}\item[{T \&}]{record }\end{DoxyParamCaption})\hspace{0.3cm}{\ttfamily [inline]}}
+
+\Hypertarget{structfolly_1_1ProducerConsumerQueue_adb384b6a25b755b627d04ff6f2ca9c95}\label{structfolly_1_1ProducerConsumerQueue_adb384b6a25b755b627d04ff6f2ca9c95} 
+\index{folly::ProducerConsumerQueue$<$ T $>$@{folly::ProducerConsumerQueue$<$ T $>$}!sizeGuess@{sizeGuess}}
+\index{sizeGuess@{sizeGuess}!folly::ProducerConsumerQueue$<$ T $>$@{folly::ProducerConsumerQueue$<$ T $>$}}
+\doxysubsubsection{\texorpdfstring{sizeGuess()}{sizeGuess()}}
+{\footnotesize\ttfamily template$<$class T $>$ \\
+size\+\_\+t \mbox{\hyperlink{structfolly_1_1ProducerConsumerQueue}{folly\+::\+Producer\+Consumer\+Queue}}$<$ T $>$\+::size\+Guess (\begin{DoxyParamCaption}{ }\end{DoxyParamCaption}) const\hspace{0.3cm}{\ttfamily [inline]}}
+
+\Hypertarget{structfolly_1_1ProducerConsumerQueue_af849682c2351c5f2b3344e32c512a961}\label{structfolly_1_1ProducerConsumerQueue_af849682c2351c5f2b3344e32c512a961} 
+\index{folly::ProducerConsumerQueue$<$ T $>$@{folly::ProducerConsumerQueue$<$ T $>$}!write@{write}}
+\index{write@{write}!folly::ProducerConsumerQueue$<$ T $>$@{folly::ProducerConsumerQueue$<$ T $>$}}
+\doxysubsubsection{\texorpdfstring{write()}{write()}}
+{\footnotesize\ttfamily template$<$class T $>$ \\
+template$<$class... Args$>$ \\
+bool \mbox{\hyperlink{structfolly_1_1ProducerConsumerQueue}{folly\+::\+Producer\+Consumer\+Queue}}$<$ T $>$\+::write (\begin{DoxyParamCaption}\item[{Args \&\&...}]{record\+Args }\end{DoxyParamCaption})\hspace{0.3cm}{\ttfamily [inline]}}
+
+
+
+\doxysubsection{Field Documentation}
+\Hypertarget{structfolly_1_1ProducerConsumerQueue_ab20193986ce865e7c2f430f706d743cf}\label{structfolly_1_1ProducerConsumerQueue_ab20193986ce865e7c2f430f706d743cf} 
+\index{folly::ProducerConsumerQueue$<$ T $>$@{folly::ProducerConsumerQueue$<$ T $>$}!pad0\_@{pad0\_}}
+\index{pad0\_@{pad0\_}!folly::ProducerConsumerQueue$<$ T $>$@{folly::ProducerConsumerQueue$<$ T $>$}}
+\doxysubsubsection{\texorpdfstring{pad0\_}{pad0\_}}
+{\footnotesize\ttfamily template$<$class T $>$ \\
+char \mbox{\hyperlink{structfolly_1_1ProducerConsumerQueue}{folly\+::\+Producer\+Consumer\+Queue}}$<$ T $>$\+::pad0\+\_\+\mbox{[}\mbox{\hyperlink{ProducerConsumerQueue_8hpp_afcfcf0ecf646b16dd2b471dc568cf6c6}{hardware\+\_\+destructive\+\_\+interference\+\_\+size}}\mbox{]}\hspace{0.3cm}{\ttfamily [private]}}
+
+\Hypertarget{structfolly_1_1ProducerConsumerQueue_a14823e2289be8649cebd813caa00d1fa}\label{structfolly_1_1ProducerConsumerQueue_a14823e2289be8649cebd813caa00d1fa} 
+\index{folly::ProducerConsumerQueue$<$ T $>$@{folly::ProducerConsumerQueue$<$ T $>$}!pad1\_@{pad1\_}}
+\index{pad1\_@{pad1\_}!folly::ProducerConsumerQueue$<$ T $>$@{folly::ProducerConsumerQueue$<$ T $>$}}
+\doxysubsubsection{\texorpdfstring{pad1\_}{pad1\_}}
+{\footnotesize\ttfamily template$<$class T $>$ \\
+char \mbox{\hyperlink{structfolly_1_1ProducerConsumerQueue}{folly\+::\+Producer\+Consumer\+Queue}}$<$ T $>$\+::pad1\+\_\+\mbox{[}\mbox{\hyperlink{ProducerConsumerQueue_8hpp_afcfcf0ecf646b16dd2b471dc568cf6c6}{hardware\+\_\+destructive\+\_\+interference\+\_\+size}} -\/ sizeof(\mbox{\hyperlink{structfolly_1_1ProducerConsumerQueue_af9f2e0d5fb4a92eb037b630a80f521cb}{Atomic\+Index}})\mbox{]}\hspace{0.3cm}{\ttfamily [private]}}
+
+\Hypertarget{structfolly_1_1ProducerConsumerQueue_a5f0ee08f1bfb4c8721c41426137e2005}\label{structfolly_1_1ProducerConsumerQueue_a5f0ee08f1bfb4c8721c41426137e2005} 
+\index{folly::ProducerConsumerQueue$<$ T $>$@{folly::ProducerConsumerQueue$<$ T $>$}!readIndex\_@{readIndex\_}}
+\index{readIndex\_@{readIndex\_}!folly::ProducerConsumerQueue$<$ T $>$@{folly::ProducerConsumerQueue$<$ T $>$}}
+\doxysubsubsection{\texorpdfstring{readIndex\_}{readIndex\_}}
+{\footnotesize\ttfamily template$<$class T $>$ \\
+\mbox{\hyperlink{structfolly_1_1ProducerConsumerQueue_af9f2e0d5fb4a92eb037b630a80f521cb}{Atomic\+Index}} \mbox{\hyperlink{structfolly_1_1ProducerConsumerQueue}{folly\+::\+Producer\+Consumer\+Queue}}$<$ T $>$\+::read\+Index\+\_\+\hspace{0.3cm}{\ttfamily [private]}}
+
+\Hypertarget{structfolly_1_1ProducerConsumerQueue_a7f28bc4897019e6a4743dd22a97b33e1}\label{structfolly_1_1ProducerConsumerQueue_a7f28bc4897019e6a4743dd22a97b33e1} 
+\index{folly::ProducerConsumerQueue$<$ T $>$@{folly::ProducerConsumerQueue$<$ T $>$}!records\_@{records\_}}
+\index{records\_@{records\_}!folly::ProducerConsumerQueue$<$ T $>$@{folly::ProducerConsumerQueue$<$ T $>$}}
+\doxysubsubsection{\texorpdfstring{records\_}{records\_}}
+{\footnotesize\ttfamily template$<$class T $>$ \\
+T\texorpdfstring{$\ast$}{*} const \mbox{\hyperlink{structfolly_1_1ProducerConsumerQueue}{folly\+::\+Producer\+Consumer\+Queue}}$<$ T $>$\+::records\+\_\+\hspace{0.3cm}{\ttfamily [private]}}
+
+\Hypertarget{structfolly_1_1ProducerConsumerQueue_ad5bf2e76bc4aad660840cbb927317d76}\label{structfolly_1_1ProducerConsumerQueue_ad5bf2e76bc4aad660840cbb927317d76} 
+\index{folly::ProducerConsumerQueue$<$ T $>$@{folly::ProducerConsumerQueue$<$ T $>$}!size\_@{size\_}}
+\index{size\_@{size\_}!folly::ProducerConsumerQueue$<$ T $>$@{folly::ProducerConsumerQueue$<$ T $>$}}
+\doxysubsubsection{\texorpdfstring{size\_}{size\_}}
+{\footnotesize\ttfamily template$<$class T $>$ \\
+const uint32\+\_\+t \mbox{\hyperlink{structfolly_1_1ProducerConsumerQueue}{folly\+::\+Producer\+Consumer\+Queue}}$<$ T $>$\+::size\+\_\+\hspace{0.3cm}{\ttfamily [private]}}
+
+\Hypertarget{structfolly_1_1ProducerConsumerQueue_a7c4b68cf28e3e925ff14f5736bce59d4}\label{structfolly_1_1ProducerConsumerQueue_a7c4b68cf28e3e925ff14f5736bce59d4} 
+\index{folly::ProducerConsumerQueue$<$ T $>$@{folly::ProducerConsumerQueue$<$ T $>$}!writeIndex\_@{writeIndex\_}}
+\index{writeIndex\_@{writeIndex\_}!folly::ProducerConsumerQueue$<$ T $>$@{folly::ProducerConsumerQueue$<$ T $>$}}
+\doxysubsubsection{\texorpdfstring{writeIndex\_}{writeIndex\_}}
+{\footnotesize\ttfamily template$<$class T $>$ \\
+\mbox{\hyperlink{structfolly_1_1ProducerConsumerQueue_af9f2e0d5fb4a92eb037b630a80f521cb}{Atomic\+Index}} \mbox{\hyperlink{structfolly_1_1ProducerConsumerQueue}{folly\+::\+Producer\+Consumer\+Queue}}$<$ T $>$\+::write\+Index\+\_\+\hspace{0.3cm}{\ttfamily [private]}}
+
+
+
+The documentation for this struct was generated from the following file\+:\begin{DoxyCompactItemize}
+\item 
+core/include/aare/core/\mbox{\hyperlink{ProducerConsumerQueue_8hpp}{Producer\+Consumer\+Queue.\+hpp}}\end{DoxyCompactItemize}

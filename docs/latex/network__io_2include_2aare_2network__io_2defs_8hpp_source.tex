@@ -1,0 +1,33 @@
+\doxysection{defs.\+hpp}
+\hypertarget{network__io_2include_2aare_2network__io_2defs_8hpp_source}{}\label{network__io_2include_2aare_2network__io_2defs_8hpp_source}\index{network\_io/include/aare/network\_io/defs.hpp@{network\_io/include/aare/network\_io/defs.hpp}}
+\mbox{\hyperlink{network__io_2include_2aare_2network__io_2defs_8hpp}{Go to the documentation of this file.}}
+\begin{DoxyCode}{0}
+\DoxyCodeLine{00001\ \textcolor{preprocessor}{\#pragma\ once}}
+\DoxyCodeLine{00002\ \textcolor{preprocessor}{\#include\ "{}\mbox{\hyperlink{Frame_8hpp}{aare/core/Frame.hpp}}"{}}}
+\DoxyCodeLine{00003\ \textcolor{preprocessor}{\#include\ "{}\mbox{\hyperlink{ZmqHeader_8hpp}{aare/network\_io/ZmqHeader.hpp}}"{}}}
+\DoxyCodeLine{00004\ }
+\DoxyCodeLine{00005\ \textcolor{preprocessor}{\#include\ <stdexcept>}}
+\DoxyCodeLine{00006\ \textcolor{preprocessor}{\#include\ <string>}}
+\DoxyCodeLine{00007\ }
+\DoxyCodeLine{00008\ \textcolor{keyword}{namespace\ }\mbox{\hyperlink{namespaceaare}{aare}}\ \{}
+\DoxyCodeLine{00013\ \textcolor{keyword}{struct\ }\mbox{\hyperlink{structaare_1_1ZmqFrame}{ZmqFrame}}\ \{}
+\DoxyCodeLine{00014\ \ \ \ \ \mbox{\hyperlink{structaare_1_1ZmqHeader}{ZmqHeader}}\ \mbox{\hyperlink{structaare_1_1ZmqFrame_aa6a1946c3a62c4ca2eedb10edd8ad73a}{header}};}
+\DoxyCodeLine{00015\ \ \ \ \ \mbox{\hyperlink{classaare_1_1Frame}{Frame}}\ \mbox{\hyperlink{structaare_1_1ZmqFrame_a106be099646ad8fef289e60c3d9f7633}{frame}};}
+\DoxyCodeLine{00016\ \};}
+\DoxyCodeLine{00017\ }
+\DoxyCodeLine{00018\ \textcolor{keyword}{namespace\ }network\_io\ \{}
+\DoxyCodeLine{00022\ \textcolor{keyword}{class\ }\mbox{\hyperlink{classaare_1_1network__io_1_1NetworkError}{NetworkError}}\ :\ \textcolor{keyword}{public}\ std::runtime\_error\ \{}
+\DoxyCodeLine{00023\ \ \ \textcolor{keyword}{private}:}
+\DoxyCodeLine{00024\ \ \ \ \ \textcolor{keyword}{const}\ \textcolor{keywordtype}{char}\ *\mbox{\hyperlink{classaare_1_1network__io_1_1NetworkError_ae71bbf2259ead4d7e28e308f80136aed}{m\_msg}};}
+\DoxyCodeLine{00025\ }
+\DoxyCodeLine{00026\ \ \ \textcolor{keyword}{public}:}
+\DoxyCodeLine{00027\ \ \ \ \ \mbox{\hyperlink{classaare_1_1network__io_1_1NetworkError_aecb36912ba56f2e965c226768f015c82}{NetworkError}}(\textcolor{keyword}{const}\ \textcolor{keywordtype}{char}\ *msg)\ :\ std::runtime\_error(msg),\ \mbox{\hyperlink{classaare_1_1network__io_1_1NetworkError_ae71bbf2259ead4d7e28e308f80136aed}{m\_msg}}(msg)\ \{\}}
+\DoxyCodeLine{00028\ \ \ \ \ \mbox{\hyperlink{classaare_1_1network__io_1_1NetworkError_adb39792f41b157b0e4c02d50faa79856}{NetworkError}}(\textcolor{keyword}{const}\ std::string\ msg)\ :\ std::runtime\_error(msg)\ \{\ \mbox{\hyperlink{classaare_1_1network__io_1_1NetworkError_ae71bbf2259ead4d7e28e308f80136aed}{m\_msg}}\ =\ strdup(msg.c\_str());\ \}}
+\DoxyCodeLine{00029\ \ \ \ \ \textcolor{keyword}{virtual}\ \textcolor{keyword}{const}\ \textcolor{keywordtype}{char}\ *\mbox{\hyperlink{classaare_1_1network__io_1_1NetworkError_a09f385c45dab68e38b18dbeb83bdce22}{what}}()\ const\ noexcept\textcolor{keyword}{\ override\ }\{\ \textcolor{keywordflow}{return}\ \mbox{\hyperlink{classaare_1_1network__io_1_1NetworkError_ae71bbf2259ead4d7e28e308f80136aed}{m\_msg}};\ \}}
+\DoxyCodeLine{00030\ \};}
+\DoxyCodeLine{00031\ }
+\DoxyCodeLine{00032\ \}\ \textcolor{comment}{//\ namespace\ network\_io}}
+\DoxyCodeLine{00033\ }
+\DoxyCodeLine{00034\ \}\ \textcolor{comment}{//\ namespace\ aare}}
+
+\end{DoxyCode}
