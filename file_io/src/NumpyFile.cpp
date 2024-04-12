@@ -26,6 +26,9 @@ NumpyFile::NumpyFile(const std::filesystem::path &fname, const std::string &mode
         }
         initial_header_len = aare::NumpyHelpers::write_header(std::filesystem::path(m_fname.c_str()), m_header);
     }
+    m_pixels_per_frame = std::accumulate(m_header.shape.begin() + 1, m_header.shape.end(), 1, std::multiplies<>());
+
+    m_bytes_per_frame = m_header.dtype.bitdepth() / 8 * m_pixels_per_frame;
 }
 
 void NumpyFile::write(Frame &frame) {
@@ -33,10 +36,14 @@ void NumpyFile::write(Frame &frame) {
         throw std::runtime_error("File not open");
     }
     if (not(m_mode == "w" or m_mode == "a")) {
-        throw std::runtime_error("File not open for writing");
+        throw std::invalid_argument("File not open for writing");
     }
-    fseek(fp, 0, SEEK_END);
-    fwrite(frame.data(), frame.size(), 1, fp);
+    if (fseek(fp, 0, SEEK_END))
+        throw std::runtime_error("Could not seek to end of file");
+    size_t const rc = fwrite(frame.data(), frame.size(), 1, fp);
+    if (rc != 1) {
+        throw std::runtime_error("Error writing frame to file");
+    }
 }
 
 Frame NumpyFile::get_frame(size_t frame_number) {
@@ -49,16 +56,19 @@ void NumpyFile::get_frame_into(size_t frame_number, std::byte *image_buf) {
         throw std::runtime_error("File not open");
     }
     if (frame_number > m_header.shape[0]) {
-        throw std::runtime_error("Frame number out of range");
+        throw std::invalid_argument("Frame number out of range");
     }
-    fseek(fp, header_size + frame_number * bytes_per_frame(), SEEK_SET);
-    fread(image_buf, bytes_per_frame(), 1, fp);
+    if (fseek(fp, header_size + frame_number * m_bytes_per_frame, SEEK_SET)) // NOLINT
+        throw std::runtime_error("Could not seek to frame");
+
+    size_t const rc = fread(image_buf, m_bytes_per_frame, 1, fp);
+    if (rc != 1) {
+        throw std::runtime_error("Error reading frame from file");
+    }
 }
 
-size_t NumpyFile::pixels() {
-    return std::accumulate(m_header.shape.begin() + 1, m_header.shape.end(), 1, std::multiplies<uint64_t>());
-};
-size_t NumpyFile::bytes_per_frame() { return m_header.dtype.bitdepth() / 8 * pixels(); };
+size_t NumpyFile::pixels_per_frame() { return m_pixels_per_frame; };
+size_t NumpyFile::bytes_per_frame() { return m_bytes_per_frame; };
 
 std::vector<Frame> NumpyFile::read(size_t n_frames) {
     // TODO: implement this in a more efficient way
@@ -73,30 +83,39 @@ void NumpyFile::read_into(std::byte *image_buf, size_t n_frames) {
     // TODO: implement this in a more efficient way
     for (size_t i = 0; i < n_frames; i++) {
         get_frame_into(current_frame++, image_buf);
-        image_buf += bytes_per_frame();
+        image_buf += m_bytes_per_frame;
     }
 }
 
-NumpyFile::~NumpyFile() {
+NumpyFile::~NumpyFile() noexcept {
     if (m_mode == "w" or m_mode == "a") {
         // determine number of frames
-        fseek(fp, 0, SEEK_END);
-        size_t file_size = ftell(fp);
-        size_t data_size = file_size - initial_header_len;
-        size_t n_frames = data_size / bytes_per_frame();
+        if (fseek(fp, 0, SEEK_END)) {
+            aare::logger::error("Could not seek to end of file");
+        }
+        size_t const file_size = ftell(fp);
+        size_t const data_size = file_size - initial_header_len;
+        size_t const n_frames = data_size / m_bytes_per_frame;
         // update number of frames in header (first element of shape)
         m_header.shape[0] = n_frames;
-        fseek(fp, 0, SEEK_SET);
+        if (fseek(fp, 0, SEEK_SET)) {
+            aare::logger::error("Could not seek to beginning of file");
+        }
         // create string stream to contain header
         std::stringstream ss;
         aare::NumpyHelpers::write_header(ss, m_header);
-        std::string header_str = ss.str();
+        std::string const header_str = ss.str();
         // write header
-        fwrite(header_str.c_str(), header_str.size(), 1, fp);
+        size_t const rc = fwrite(header_str.c_str(), header_str.size(), 1, fp);
+        if (rc != 1) {
+            aare::logger::error("Error writing header to numpy file in destructor");
+        }
     }
 
     if (fp != nullptr) {
-        fclose(fp);
+        if (fclose(fp)) {
+            aare::logger::error("Error closing file");
+        }
     }
 }
 
@@ -104,17 +123,23 @@ void NumpyFile::load_metadata() {
 
     // read magic number
     std::array<char, 6> tmp{};
-    fread(tmp.data(), tmp.size(), 1, fp);
+    size_t rc = fread(tmp.data(), tmp.size(), 1, fp);
+    if (rc != 1) {
+        throw std::runtime_error("Error reading magic number");
+    }
     if (tmp != aare::NumpyHelpers::magic_str) {
         for (auto item : tmp)
-            fmt::print("{}, ", int(item));
+            fmt::print("{}, ", static_cast<int>(item));
         fmt::print("\n");
         throw std::runtime_error("Not a numpy file");
     }
 
     // read version
-    fread(reinterpret_cast<char *>(&major_ver_), sizeof(major_ver_), 1, fp);
-    fread(reinterpret_cast<char *>(&minor_ver_), sizeof(minor_ver_), 1, fp);
+    rc = fread(reinterpret_cast<char *>(&major_ver_), sizeof(major_ver_), 1, fp);
+    rc += fread(reinterpret_cast<char *>(&minor_ver_), sizeof(minor_ver_), 1, fp);
+    if (rc != 2) {
+        throw std::runtime_error("Error reading numpy version");
+    }
 
     if (major_ver_ == 1) {
         header_len_size = 2;
@@ -125,7 +150,10 @@ void NumpyFile::load_metadata() {
     }
 
     // read header length
-    fread(reinterpret_cast<char *>(&header_len), header_len_size, 1, fp);
+    rc = fread(reinterpret_cast<char *>(&header_len), header_len_size, 1, fp);
+    if (rc != 1) {
+        throw std::runtime_error("Error reading header length");
+    }
     header_size = aare::NumpyHelpers::magic_string_length + 2 + header_len_size + header_len;
     if (header_size % 16 != 0) {
         fmt::print("Warning: header length is not a multiple of 16\n");
@@ -133,31 +161,34 @@ void NumpyFile::load_metadata() {
 
     // read header
     std::string header(header_len, '\0');
-    fread(header.data(), header_len, 1, fp);
+    rc = fread(header.data(), header_len, 1, fp);
+    if (rc != 1) {
+        throw std::runtime_error("Error reading header");
+    }
 
     // parse header
-    std::vector<std::string> keys{"descr", "fortran_order", "shape"};
+    std::vector<std::string> const keys{"descr", "fortran_order", "shape"};
     aare::logger::debug("original header: \"header\"");
 
     auto dict_map = aare::NumpyHelpers::parse_dict(header, keys);
-    if (dict_map.size() == 0)
+    if (dict_map.empty())
         throw std::runtime_error("invalid dictionary in header");
 
-    std::string descr_s = dict_map["descr"];
-    std::string fortran_s = dict_map["fortran_order"];
-    std::string shape_s = dict_map["shape"];
+    std::string const descr_s = dict_map["descr"];
+    std::string const fortran_s = dict_map["fortran_order"];
+    std::string const shape_s = dict_map["shape"];
 
-    std::string descr = aare::NumpyHelpers::parse_str(descr_s);
-    aare::DType dtype = aare::NumpyHelpers::parse_descr(descr);
+    std::string const descr = aare::NumpyHelpers::parse_str(descr_s);
+    aare::DType const dtype = aare::NumpyHelpers::parse_descr(descr);
 
     // convert literal Python bool to C++ bool
-    bool fortran_order = aare::NumpyHelpers::parse_bool(fortran_s);
+    bool const fortran_order = aare::NumpyHelpers::parse_bool(fortran_s);
 
     // parse the shape tuple
     auto shape_v = aare::NumpyHelpers::parse_tuple(shape_s);
     shape_t shape;
-    for (auto item : shape_v) {
-        auto dim = static_cast<unsigned long>(std::stoul(item));
+    for (const auto &item : shape_v) {
+        auto dim = static_cast<size_t>(std::stoul(item));
         shape.push_back(dim);
     }
     m_header = {dtype, fortran_order, shape};

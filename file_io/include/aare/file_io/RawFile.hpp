@@ -41,7 +41,7 @@ class RawFile : public FileInterface {
      * @brief get the number of pixels in the frame
      * @return number of pixels
      */
-    size_t pixels() override { return m_rows * m_cols; }
+    size_t pixels_per_frame() override { return m_rows * m_cols; }
 
     // goto frame number
     void seek(size_t frame_number) override { this->current_frame = frame_number; };
@@ -53,7 +53,7 @@ class RawFile : public FileInterface {
      * @brief check if the file is a master file
      * @param fpath path to the file
      */
-    static bool is_master_file(const std::filesystem::path& fpath);
+    static bool is_master_file(const std::filesystem::path &fpath);
 
     /**
      * @brief set the module gap row and column
@@ -147,7 +147,6 @@ class RawFile : public FileInterface {
      */
     void open_subfiles();
 
-  
     size_t n_subfiles{};
     size_t n_subfile_parts{};
     std::vector<std::vector<SubFile *>> subfiles;

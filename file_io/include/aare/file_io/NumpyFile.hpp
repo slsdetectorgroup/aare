@@ -35,7 +35,7 @@ class NumpyFile : public FileInterface {
     void read_into(std::byte *image_buf, size_t n_frames) override;
     size_t frame_number(size_t frame_index) override { return frame_index; };
     size_t bytes_per_frame() override;
-    size_t pixels() override;
+    size_t pixels_per_frame() override;
     void seek(size_t frame_number) override { this->current_frame = frame_number; }
     size_t tell() override { return this->current_frame; }
     size_t total_frames() const override { return m_header.shape[0]; }
@@ -67,13 +67,13 @@ class NumpyFile : public FileInterface {
             throw std::runtime_error(LOCATION + "Error seeking to the start of the data");
         }
         size_t rc = fread(arr.data(), sizeof(T), arr.size(), fp);
-        if (rc != (unsigned) arr.size()) {
+        if (rc != static_cast<size_t>(arr.size())) {
             throw std::runtime_error(LOCATION + "Error reading data from file");
         }
         return arr;
     }
 
-    ~NumpyFile() override;
+    ~NumpyFile() noexcept override;
 
   private:
     FILE *fp = nullptr;
@@ -85,9 +85,11 @@ class NumpyFile : public FileInterface {
     NumpyHeader m_header;
     uint8_t major_ver_{};
     uint8_t minor_ver_{};
+    size_t m_bytes_per_frame{};
+    size_t m_pixels_per_frame{};
 
     void load_metadata();
-    void get_frame_into(size_t, std::byte *);
+    void get_frame_into(size_t /*frame_number*/, std::byte * /*image_buf*/);
     Frame get_frame(size_t frame_number);
 };
 

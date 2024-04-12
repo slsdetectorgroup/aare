@@ -92,7 +92,7 @@ class FileInterface {
      * @brief get the number of pixels in one frame
      * @return number of pixels in one frame
      */
-    virtual size_t pixels() = 0;
+    virtual size_t pixels_per_frame() = 0;
 
     /**
      * @brief seek to the given frame number
