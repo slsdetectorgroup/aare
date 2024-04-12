@@ -25,7 +25,7 @@ jobs:
         shell: bash -el {0}
         run: |
           # find all examples in build/examples and run them
-          find \(-path "./core/*" -o -path "./file_io/*" \) \( -name "*.cpp" -o -name "*.hpp" \)   -not -path "./python/*" -not -name "*.test.cpp"  -not -name "CircularFifo.hpp" -not -name "ProducerConsumerQueue.hpp" -not -name "VariableSizeClusterFinder.hpp" 
-          find \(-path "./core/*" -o -path "./file_io/*" \) \( -name "*.cpp" -o -name "*.hpp" \)   -not -path "./python/*" -not -name "*.test.cpp"  -not -name "CircularFifo.hpp" -not -name "ProducerConsumerQueue.hpp" -not -name "VariableSizeClusterFinder.hpp" | xargs -I {} -n 1 -P 10 clang-tidy --config-file=.clang-tidy -p build {}
+          find \( -path "./core/*" -o -path "./file_io/*" \) \( -name "*.cpp" -o -name "*.hpp" \)   -not -path "./python/*" -not -name "*.test.cpp"  -not -name "CircularFifo.hpp" -not -name "ProducerConsumerQueue.hpp" -not -name "VariableSizeClusterFinder.hpp" 
+          find \( -path "./core/*" -o -path "./file_io/*" \) \( -name "*.cpp" -o -name "*.hpp" \)   -not -path "./python/*" -not -name "*.test.cpp"  -not -name "CircularFifo.hpp" -not -name "ProducerConsumerQueue.hpp" -not -name "VariableSizeClusterFinder.hpp" | xargs -I {} -n 1 -P 10 clang-tidy --config-file=.clang-tidy -p build {}
           # clang-tidy --config-file=.clang-tidy -p build `find -path "./core/*" \( -name "*.cpp" -o -name "*.hpp"  \) -not -name "*.test.cpp"  -not -name "CircularFifo.hpp" -not -name "ProducerConsumerQueue.hpp" -not -name "VariableSizeClusterFinder.hpp" `
 

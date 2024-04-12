@@ -67,7 +67,7 @@ class NumpyFile : public FileInterface {
             throw std::runtime_error(LOCATION + "Error seeking to the start of the data");
         }
         size_t rc = fread(arr.data(), sizeof(T), arr.size(), fp);
-        if (rc != arr.size()) {
+        if (rc != (unsigned) arr.size()) {
             throw std::runtime_error(LOCATION + "Error reading data from file");
         }
         return arr;
