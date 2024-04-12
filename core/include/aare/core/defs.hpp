@@ -28,7 +28,7 @@ struct sls_detector_header {
     uint16_t roundRNumber;
     uint8_t detType;
     uint8_t version;
-    uint8_t packetMask[64];
+    std::array<uint8_t, 64> packetMask;
 };
 
 struct xy {
@@ -44,12 +44,12 @@ enum class DetectorType { Jungfrau, Eiger, Mythen3, Moench, ChipTestBoard };
 
 enum class TimingMode { Auto, Trigger };
 
-template <class T> T StringTo(std::string sv) { return T(sv); }
+template <class T> T StringTo(std::string arg) { return T(arg); }
 
-template <class T> std::string toString(T sv) { return T(sv); }
+template <class T> std::string toString(T arg) { return T(arg); }
 
 template <> DetectorType StringTo(std::string);
-template <> std::string toString(DetectorType type);
+template <> std::string toString(DetectorType arg);
 
 template <> TimingMode StringTo(std::string);
 

@@ -1,0 +1,15 @@
+name: clang-tidy
+on: 
+  push:
+
+jobs:
+  test-formatting:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+      - name: linting checks
+        # find all examples in build/examples and run them
+        run: |
+          pwd
+          # find \( -name "*.cpp" -o -name "*.hpp" \) -not -path "./build/*"  -not -path "./python/*" -not -name "*.test.cpp" | xargs -I {} -n 1 -P 10 clang-tidy --config-file=.clang-tidy -p build {}
+          clang-tidy --config-file=.clang-tidy -p build core/src/Frame.cpp

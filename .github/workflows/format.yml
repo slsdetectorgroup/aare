@@ -10,9 +10,6 @@ jobs:
       - name: check if files are formatted
         # find all examples in build/examples and run them
         run: |
-          pwd
-          mkdir build
-          cd build
           find \( -name "*.cpp" -o -name "*.hpp" \) -not -path "./build/*" | xargs -I {} -n 1 -P 10 bash -c "clang-format -i -style=\"file:.clang-format\" {}"
           
 

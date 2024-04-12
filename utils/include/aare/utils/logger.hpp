@@ -71,9 +71,9 @@ template <typename K, typename V> std::ostream &operator<<(std::ostream &out, co
     return out;
 }
 
-namespace aare {
 
-namespace logger {
+
+namespace aare::logger {
 /**
  * @brief enum to define the logging level
  */
@@ -96,9 +96,9 @@ class Logger {
     /**
      * @brief get the instance of the logger
      */
-    Logger() {
-        standard_output = new std::ostream(standard_buf);
-        error_output = new std::ostream(error_buf);
+    Logger() : standard_output(new std::ostream(standard_buf)), error_output(new std::ostream(error_buf)) {
+        
+        
     }
 
     /**
@@ -106,7 +106,7 @@ class Logger {
      * @param filename name of the file to log to
      * @return void
      */
-    void set_output_file(std::string filename) {
+    void set_output_file(const std::string& filename) {
         if (out_file.is_open())
             out_file.close();
         out_file.open(filename);
@@ -273,6 +273,5 @@ extern void set_verbosity(LOGGING_LEVEL level);
 extern void set_output_file(std::string filename);
 extern Logger &get_logger_instance();
 
-} // namespace logger
+} // namespace aare::logger
 
-} // namespace aare

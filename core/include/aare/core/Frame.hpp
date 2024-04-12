@@ -4,7 +4,6 @@
 #include <cstddef>
 #include <cstdint>
 #include <memory>
-#include <sys/types.h>
 #include <vector>
 
 namespace aare {
@@ -22,7 +21,7 @@ class Frame {
 
   public:
     Frame(ssize_t rows, ssize_t cols, ssize_t m_bitdepth);
-    Frame(std::byte *fp, ssize_t rows, ssize_t cols, ssize_t m_bitdepth);
+    Frame(std::byte *bytes, ssize_t rows, ssize_t cols, ssize_t m_bitdepth);
     std::byte *get(int row, int col);
 
     // TODO! can we, or even want to remove the template?
@@ -40,29 +39,43 @@ class Frame {
     ssize_t size() const { return m_rows * m_cols * m_bitdepth / 8; }
     std::byte *data() const { return m_data; }
 
-    Frame &operator=(Frame &other) {
+    Frame &operator=(const Frame &other) {
+        if (this == &other) {
+            return *this;
+        }
         m_rows = other.rows();
         m_cols = other.cols();
         m_bitdepth = other.bitdepth();
         m_data = new std::byte[m_rows * m_cols * m_bitdepth / 8];
+        if (m_data == nullptr) {
+            throw std::bad_alloc();
+        }
         std::memcpy(m_data, other.m_data, m_rows * m_cols * m_bitdepth / 8);
         return *this;
     }
-    // add move constructor
-    Frame(Frame &&other) {
+
+    Frame &operator=(Frame &&other) noexcept {
         m_rows = other.rows();
         m_cols = other.cols();
         m_bitdepth = other.bitdepth();
         m_data = other.m_data;
         other.m_data = nullptr;
         other.m_rows = other.m_cols = other.m_bitdepth = 0;
+        return *this;
+    }
+
+    // add move constructor
+    Frame(Frame &&other) noexcept
+        : m_rows(other.rows()), m_cols(other.cols()), m_bitdepth(other.bitdepth()), m_data(other.m_data) {
+
+        other.m_data = nullptr;
+        other.m_rows = other.m_cols = other.m_bitdepth = 0;
     }
     // copy constructor
-    Frame(const Frame &other) {
-        m_rows = other.rows();
-        m_cols = other.cols();
-        m_bitdepth = other.bitdepth();
-        m_data = new std::byte[m_rows * m_cols * m_bitdepth / 8];
+    Frame(const Frame &other)
+        : m_rows(other.rows()), m_cols(other.cols()), m_bitdepth(other.bitdepth()),
+          m_data(new std::byte[m_rows * m_cols * m_bitdepth / 8]) {
+
         std::memcpy(m_data, other.m_data, m_rows * m_cols * m_bitdepth / 8);
     }
 

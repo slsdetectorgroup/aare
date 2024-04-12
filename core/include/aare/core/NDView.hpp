@@ -20,7 +20,7 @@ template <ssize_t Ndim> Shape<Ndim> make_shape(const std::vector<size_t> &shape)
     return arr;
 }
 
-template <ssize_t Dim = 0, typename Strides> ssize_t element_offset(const Strides &) { return 0; }
+template <ssize_t Dim = 0, typename Strides> ssize_t element_offset(const Strides & /*unused*/) { return 0; }
 
 template <ssize_t Dim = 0, typename Strides, typename... Ix>
 ssize_t element_offset(const Strides &strides, ssize_t i, Ix... index) {
@@ -28,7 +28,7 @@ ssize_t element_offset(const Strides &strides, ssize_t i, Ix... index) {
 }
 
 template <ssize_t Ndim> std::array<ssize_t, Ndim> c_strides(const std::array<ssize_t, Ndim> &shape) {
-    std::array<ssize_t, Ndim> strides;
+    std::array<ssize_t, Ndim> strides{};
     std::fill(strides.begin(), strides.end(), 1);
     for (ssize_t i = Ndim - 1; i > 0; --i) {
         strides[i - 1] = strides[i] * shape[i];
@@ -38,41 +38,37 @@ template <ssize_t Ndim> std::array<ssize_t, Ndim> c_strides(const std::array<ssi
 
 template <ssize_t Ndim> std::array<ssize_t, Ndim> make_array(const std::vector<ssize_t> &vec) {
     assert(vec.size() == Ndim);
-    std::array<ssize_t, Ndim> arr;
+    std::array<ssize_t, Ndim> arr{};
     std::copy_n(vec.begin(), Ndim, arr.begin());
     return arr;
 }
 
 template <typename T, ssize_t Ndim = 2> class NDView {
   public:
-    NDView(){};
+    NDView() = default;
+    ~NDView() = default;
+    NDView(const NDView &) = default;
+    NDView(NDView &&) = default;
 
-    NDView(T *buffer, std::array<ssize_t, Ndim> shape) {
-        buffer_ = buffer;
-        strides_ = c_strides<Ndim>(shape);
-        shape_ = shape;
-        size_ = std::accumulate(std::begin(shape), std::end(shape), 1, std::multiplies<ssize_t>());
+    NDView(T *buffer, std::array<ssize_t, Ndim> shape)
+        : buffer_(buffer), strides_(c_strides<Ndim>(shape)), shape_(shape),
+          size_(std::accumulate(std::begin(shape), std::end(shape), 1, std::multiplies<>())) {}
+
+    NDView(T *buffer, const std::vector<ssize_t> &shape)
+        : buffer_(buffer), strides_(c_strides<Ndim>(make_array<Ndim>(shape))), shape_(make_array<Ndim>(shape)) {
+
+        size_ = std::accumulate(std::begin(shape), std::end(shape), 1, std::multiplies<>());
     }
 
-    NDView(T *buffer, const std::vector<ssize_t> &shape) {
-        buffer_ = buffer;
-        strides_ = c_strides<Ndim>(make_array<Ndim>(shape));
-        shape_ = make_array<Ndim>(shape);
-        size_ = std::accumulate(std::begin(shape), std::end(shape), 1, std::multiplies<ssize_t>());
-    }
-
-    template <typename... Ix> typename std::enable_if<sizeof...(Ix) == Ndim, T &>::type operator()(Ix... index) {
+    template <typename... Ix> std::enable_if_t<sizeof...(Ix) == Ndim, T &> operator()(Ix... index) {
         return buffer_[element_offset(strides_, index...)];
     }
 
-    template <typename... Ix> typename std::enable_if<sizeof...(Ix) == Ndim, T &>::type operator()(Ix... index) const {
+    template <typename... Ix> std::enable_if_t<sizeof...(Ix) == Ndim, T &> operator()(Ix... index) const {
         return buffer_[element_offset(strides_, index...)];
     }
 
     ssize_t size() const { return size_; }
-
-    NDView(const NDView &) = default;
-    NDView(NDView &&) = default;
 
     T *begin() { return buffer_; }
     T *end() { return buffer_ + size_; }
@@ -103,12 +99,26 @@ template <typename T, ssize_t Ndim = 2> class NDView {
     }
 
     NDView &operator=(const NDView &other) {
+        if (this == &other)
+            return *this;
         shape_ = other.shape_;
         strides_ = other.strides_;
         size_ = other.size_;
         buffer_ = other.buffer_;
         return *this;
     }
+    
+    NDView &operator=(NDView &&other) noexcept {
+        if (this == &other)
+            return *this;
+        shape_ = std::move(other.shape_);
+        strides_ = std::move(other.strides_);
+        size_ = other.size_;
+        buffer_ = other.buffer_;
+        other.buffer_ = nullptr;
+        return *this;
+    }
+
     auto &shape() { return shape_; }
     auto shape(ssize_t i) const { return shape_[i]; }
 
