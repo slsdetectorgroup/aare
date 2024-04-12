@@ -20,7 +20,7 @@
  */
 template <typename T> std::ostream &operator<<(std::ostream &out, const std::vector<T> &v) {
     out << "[";
-    size_t last = v.size() - 1;
+    size_t const last = v.size() - 1;
     for (size_t i = 0; i < v.size(); ++i) {
         out << v[i];
         if (i != last)
@@ -94,7 +94,7 @@ class Logger {
     /**
      * @brief get the instance of the logger
      */
-    Logger() : standard_output(new std::ostream(standard_buf)), error_output(new std::ostream(error_buf)) {}
+    Logger() : standard_output(new std::ostream(standard_buf)), error_output(new std::ostream(error_buf)) {} // NOLINT
 
     /**
      * @brief set the output file for the logger by filename
@@ -267,7 +267,7 @@ template <typename... Strings> void error(const Strings... s) { internal::logger
 extern void set_streams(std::streambuf *out, std::streambuf *err);
 extern void set_streams(std::streambuf *out);
 extern void set_verbosity(LOGGING_LEVEL level);
-extern void set_output_file(std::string filename);
+extern void set_output_file(const std::string &filename);
 extern Logger &get_logger_instance();
 
 } // namespace aare::logger

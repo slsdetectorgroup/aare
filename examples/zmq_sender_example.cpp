@@ -12,7 +12,7 @@ using namespace aare;
 
 int main() {
     std::srand(std::time(nullptr));
-    std::string endpoint = "tcp://*:5555";
+    std::string const endpoint = "tcp://*:5555";
     aare::ZmqSocketSender socket(endpoint);
     socket.bind();
     Frame frame(1024, 1024, sizeof(uint32_t) * 8);
@@ -34,7 +34,7 @@ int main() {
     while (true) {
         zmq_frames.clear();
         header.acqIndex = acqid++;
-        size_t n_frames = std::rand() % 10 + 1;
+        size_t const n_frames = std::rand() % 10 + 1;
 
         aare::logger::info("acquisition:", header.acqIndex);
         aare::logger::info("Header size:", header.to_string().size());
@@ -44,7 +44,7 @@ int main() {
         for (size_t i = 0; i < n_frames; i++) {
             zmq_frames.push_back({header, frame});
         }
-        size_t rc = socket.send(zmq_frames);
+        size_t const rc = socket.send(zmq_frames);
         aare::logger::info("Sent bytes", rc);
         sleep(1);
     }

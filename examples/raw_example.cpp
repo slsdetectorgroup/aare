@@ -9,11 +9,11 @@ using aare::File;
 using aare::Frame;
 
 void test(File &f, int frame_number) {
-    std::cout << "frame number: " << frame_number << std::endl;
+    std::cout << "frame number: " << frame_number << '\n';
     Frame frame = f.iread(frame_number);
-    std::cout << *((uint16_t *)frame.get(0, 0)) << std::endl;
-    std::cout << *((uint16_t *)frame.get(0, 1)) << std::endl;
-    std::cout << *((uint16_t *)frame.get(0, 95)) << std::endl;
+    std::cout << *(reinterpret_cast<uint16_t *>(frame.get(0, 0))) << '\n';
+    std::cout << *(reinterpret_cast<uint16_t *>(frame.get(0, 1))) << '\n';
+    std::cout << *(reinterpret_cast<uint16_t *>(frame.get(0, 95))) << '\n';
 }
 
 int main() {
@@ -21,7 +21,7 @@ int main() {
     if (PROJECT_ROOT_DIR.empty()) {
         throw std::runtime_error("environment variable PROJECT_ROOT_DIR is not set");
     }
-    std::filesystem::path fpath(PROJECT_ROOT_DIR / "data" / "moench" /
+    std::filesystem::path const fpath(PROJECT_ROOT_DIR / "data" / "moench" /
                                 "moench04_noise_200V_sto_both_100us_no_light_thresh_900_master_0.raw");
     File file(fpath, "r");
     test(file, 0);

@@ -209,7 +209,7 @@ add_custom_target(
 
 add_custom_target(
     clang-tidy
-    COMMAND find \( -path "./core/*" -o -path "./file_io/*" -path "./network_io/*" \) \( -name "*.cpp" -o -name "*.hpp" \)   -not -path "./python/*" -not -name "*.test.cpp"  -not -name "CircularFifo.hpp" -not -name "ProducerConsumerQueue.hpp" -not -name "VariableSizeClusterFinder.hpp" | xargs -I {} -n 1 -P 10 bash -c "clang-tidy --config-file=.clang-tidy -p build {}"
+    COMMAND find \( -path "./core/*" -o -path "./file_io/*" -path "./network_io/*" -path "./utils/*" \) \( -name "*.cpp" -o -name "*.hpp" \)   -not -path "./python/*" -not -name "*.test.cpp"  -not -name "CircularFifo.hpp" -not -name "ProducerConsumerQueue.hpp" -not -name "VariableSizeClusterFinder.hpp" | xargs -I {} -n 1 -P 10 bash -c "clang-tidy --config-file=.clang-tidy -p build {}"
     WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
     COMMENT "linting with clang-tidy"
     VERBATIM

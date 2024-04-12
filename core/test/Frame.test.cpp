@@ -16,8 +16,8 @@ TEST_CASE("Construct a frame") {
     REQUIRE(frame.size() == rows * cols * bitdepth / 8);
 
     // data should be initialized to 0
-    for (int i = 0; i < rows; i++) {
-        for (int j = 0; j < cols; j++) {
+    for (size_t i = 0; i < rows; i++) {
+        for (size_t j = 0; j < cols; j++) {
             uint8_t *data = (uint8_t *)frame.get(i, j);
             REQUIRE(data != nullptr);
             REQUIRE(*data == 0);
@@ -37,8 +37,8 @@ TEST_CASE("Set a value in a 8 bit frame") {
     frame.set(5, 7, value);
 
     // only the value we did set should be non-zero
-    for (int i = 0; i < rows; i++) {
-        for (int j = 0; j < cols; j++) {
+    for (size_t i = 0; i < rows; i++) {
+        for (size_t j = 0; j < cols; j++) {
             uint8_t *data = (uint8_t *)frame.get(i, j);
             REQUIRE(data != nullptr);
             if (i == 5 && j == 7) {
@@ -62,8 +62,8 @@ TEST_CASE("Set a value in a 64 bit frame") {
     frame.set(5, 7, value);
 
     // only the value we did set should be non-zero
-    for (int i = 0; i < rows; i++) {
-        for (int j = 0; j < cols; j++) {
+    for (size_t i = 0; i < rows; i++) {
+        for (size_t j = 0; j < cols; j++) {
             uint64_t *data = (uint64_t *)frame.get(i, j);
             REQUIRE(data != nullptr);
             if (i == 5 && j == 7) {
