@@ -51,7 +51,7 @@ template <typename T, size_t N> bool in_array(T val, const std::array<T, N> &arr
 bool is_digits(const std::string &str);
 
 aare::DType parse_descr(std::string typestring);
-size_t write_header(const std::filesystem::path& fname, const NumpyHeader &header);
+size_t write_header(const std::filesystem::path &fname, const NumpyHeader &header);
 size_t write_header(std::ostream &out, const NumpyHeader &header);
 
 } // namespace NumpyHelpers

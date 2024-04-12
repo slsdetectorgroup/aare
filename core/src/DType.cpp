@@ -3,7 +3,6 @@
 #include "aare/utils/logger.hpp"
 #include <fmt/core.h>
 
-
 namespace aare {
 
 /**

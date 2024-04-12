@@ -211,7 +211,7 @@ template <typename T> inline std::string write_tuple(const std::vector<T> &v) {
 inline std::string write_boolean(bool b) {
     if (b)
         return "True";
-            return "False";
+    return "False";
 }
 
 inline std::string write_header_dict(const std::string &descr, bool fortran_order, const shape_t &shape) {
@@ -221,7 +221,7 @@ inline std::string write_header_dict(const std::string &descr, bool fortran_orde
     return "{'descr': '" + descr + "', 'fortran_order': " + s_fortran_order + ", 'shape': " + shape_s + ", }";
 }
 
-size_t write_header(const std::filesystem::path& fname, const NumpyHeader &header) {
+size_t write_header(const std::filesystem::path &fname, const NumpyHeader &header) {
     std::ofstream out(fname, std::ios::binary | std::ios::out);
     return write_header(out, header);
 }

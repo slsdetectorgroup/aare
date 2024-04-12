@@ -44,14 +44,14 @@ enum class DetectorType { Jungfrau, Eiger, Mythen3, Moench, ChipTestBoard };
 
 enum class TimingMode { Auto, Trigger };
 
-template <class T> T StringTo(const std::string& arg) { return T(arg); }
+template <class T> T StringTo(const std::string &arg) { return T(arg); }
 
 template <class T> std::string toString(T arg) { return T(arg); }
 
-template <> DetectorType StringTo(const std::string& /*name*/);
+template <> DetectorType StringTo(const std::string & /*name*/);
 template <> std::string toString(DetectorType arg);
 
-template <> TimingMode StringTo(const std::string& /*mode*/);
+template <> TimingMode StringTo(const std::string & /*mode*/);
 
 using DataTypeVariants = std::variant<uint16_t, uint32_t>;
 

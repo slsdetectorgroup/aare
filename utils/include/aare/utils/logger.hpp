@@ -147,12 +147,10 @@ class Logger {
         delete standard_output;
         delete error_output;
     }
-    Logger(Logger &&) noexcept= default;
+    Logger(Logger &&) noexcept = default;
     Logger(const Logger &) = delete;
-    Logger &operator=(Logger &&) noexcept= default;
+    Logger &operator=(Logger &&) noexcept = default;
     Logger &operator=(const Logger &) = delete;
-
-
 
     /**
      * @brief log a message

@@ -45,7 +45,7 @@ class SubFile {
      * @param bitdepth bitdepth of the subfile
      * @throws std::invalid_argument if the detector,type pair is not supported
      */
-    SubFile(const std::filesystem::path& fname, DetectorType detector, size_t rows, size_t cols, size_t bitdepth);
+    SubFile(const std::filesystem::path &fname, DetectorType detector, size_t rows, size_t cols, size_t bitdepth);
 
     /**
      * @brief read the subfile into a buffer
