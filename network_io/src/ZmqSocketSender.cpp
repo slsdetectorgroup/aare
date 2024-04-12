@@ -16,9 +16,9 @@ ZmqSocketSender::ZmqSocketSender(const std::string &endpoint) { m_endpoint = end
 void ZmqSocketSender::bind() {
     m_context = zmq_ctx_new();
     m_socket = zmq_socket(m_context, ZMQ_PUB);
-    size_t rc = zmq_bind(m_socket, m_endpoint.c_str());
+    size_t const rc = zmq_bind(m_socket, m_endpoint.c_str());
     if (rc != 0) {
-        std::string error = zmq_strerror(zmq_errno());
+        std::string const error = zmq_strerror(zmq_errno());
         throw network_io::NetworkError("zmq_bind failed: " + error);
     }
 }
@@ -31,11 +31,11 @@ void ZmqSocketSender::bind() {
  * @return number of bytes sent
  */
 size_t ZmqSocketSender::send(const ZmqHeader &header, const std::byte *data, size_t size) {
-    size_t rc;
+    size_t rc = 0;
     // if (serialize_header) {
     //     rc = zmq_send(m_socket, &header, sizeof(ZmqHeader), ZMQ_SNDMORE);
     //     assert(rc == sizeof(ZmqHeader));
-    std::string header_str = header.to_string();
+    std::string const header_str = header.to_string();
     aare::logger::debug("Header :", header_str);
     rc = zmq_send(m_socket, header_str.c_str(), header_str.size(), ZMQ_SNDMORE);
     assert(rc == header_str.size());
@@ -43,7 +43,7 @@ size_t ZmqSocketSender::send(const ZmqHeader &header, const std::byte *data, siz
         return rc;
     }
 
-    size_t rc2 = zmq_send(m_socket, data, size, 0);
+    size_t const rc2 = zmq_send(m_socket, data, size, 0);
     assert(rc2 == size);
     return rc + rc2;
 }
@@ -56,11 +56,11 @@ size_t ZmqSocketSender::send(const ZmqHeader &header, const std::byte *data, siz
 size_t ZmqSocketSender::send(const ZmqFrame &zmq_frame) {
     const Frame &frame = zmq_frame.frame;
     // send frame
-    size_t rc = send(zmq_frame.header, frame.data(), frame.size());
+    size_t const rc = send(zmq_frame.header, frame.data(), frame.size());
     // send end of message header
     ZmqHeader end_header = zmq_frame.header;
     end_header.data = false;
-    size_t rc2 = send(end_header, nullptr, 0);
+    size_t const rc2 = send(end_header, nullptr, 0);
 
     return rc + rc2;
 }

@@ -20,7 +20,7 @@ SubFile::SubFile(const std::filesystem::path &fname, DetectorType detector, size
 }
 
 size_t SubFile::get_part(std::byte *buffer, size_t frame_number) {
-    if (frame_number >= n_frames or frame_number < 0) {
+    if (frame_number >= n_frames) {
         throw std::runtime_error("Frame number out of range");
     }
     // TODO: find a way to avoid opening and closing the file for each frame

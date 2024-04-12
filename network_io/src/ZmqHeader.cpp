@@ -39,7 +39,7 @@ void write_map(std::string &s, const std::string &key, const std::map<std::strin
         write_str(s, kv.first, kv.second);
     }
     // remove last comma or trailing spaces
-    for (size_t i = s.size() - 1; i >= 0; i--) {
+    for (size_t i = s.size() - 1; i > 0; i--) {
         if (s[i] == ',' or s[i] == ' ') {
             s.pop_back();
         } else

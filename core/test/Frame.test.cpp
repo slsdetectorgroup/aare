@@ -4,9 +4,9 @@
 using aare::Frame;
 
 TEST_CASE("Construct a frame") {
-    ssize_t rows = 10;
-    ssize_t cols = 10;
-    ssize_t bitdepth = 8;
+    size_t rows = 10;
+    size_t cols = 10;
+    size_t bitdepth = 8;
 
     Frame frame(rows, cols, bitdepth);
 
@@ -26,9 +26,9 @@ TEST_CASE("Construct a frame") {
 }
 
 TEST_CASE("Set a value in a 8 bit frame") {
-    ssize_t rows = 10;
-    ssize_t cols = 10;
-    ssize_t bitdepth = 8;
+    size_t rows = 10;
+    size_t cols = 10;
+    size_t bitdepth = 8;
 
     Frame frame(rows, cols, bitdepth);
 
@@ -51,9 +51,9 @@ TEST_CASE("Set a value in a 8 bit frame") {
 }
 
 TEST_CASE("Set a value in a 64 bit frame") {
-    ssize_t rows = 10;
-    ssize_t cols = 10;
-    ssize_t bitdepth = 64;
+    size_t rows = 10;
+    size_t cols = 10;
+    size_t bitdepth = 64;
 
     Frame frame(rows, cols, bitdepth);
 
@@ -76,9 +76,9 @@ TEST_CASE("Set a value in a 64 bit frame") {
 }
 
 TEST_CASE("Move construct a frame") {
-    ssize_t rows = 10;
-    ssize_t cols = 10;
-    ssize_t bitdepth = 8;
+    size_t rows = 10;
+    size_t cols = 10;
+    size_t bitdepth = 8;
 
     Frame frame(rows, cols, bitdepth);
     std::byte *data = frame.data();

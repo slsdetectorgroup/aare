@@ -32,7 +32,7 @@ class ZmqSocket {
     std::string m_endpoint;
     int m_zmq_hwm{1000};
     int m_timeout_ms{1000};
-    size_t m_potential_frame_size{1024 * 1024};
+    size_t m_potential_frame_size{static_cast<size_t>(1024) * 1024};
     constexpr static size_t m_max_header_size = 1024;
     char *m_header_buffer = new char[m_max_header_size];
 };

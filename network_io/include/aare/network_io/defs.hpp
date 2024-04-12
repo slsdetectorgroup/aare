@@ -6,6 +6,7 @@
 #include <string>
 
 namespace aare {
+
 /**
  * @brief ZmqFrame structure
  * wrapper class to contain a ZmqHeader and a Frame
@@ -24,9 +25,9 @@ class NetworkError : public std::runtime_error {
     const char *m_msg;
 
   public:
-    NetworkError(const char *msg) : std::runtime_error(msg), m_msg(msg) {}
-    NetworkError(const std::string msg) : std::runtime_error(msg) { m_msg = strdup(msg.c_str()); }
-    virtual const char *what() const noexcept override { return m_msg; }
+    explicit NetworkError(const char *msg) : std::runtime_error(msg), m_msg(msg) {}
+    explicit NetworkError(const std::string &msg) : std::runtime_error(msg), m_msg(strdup(msg.c_str())) {}
+    const char *what() const noexcept override { return m_msg; }
 };
 
 } // namespace network_io
