@@ -41,7 +41,7 @@ namespace NumpyHelpers {
 
 std::unordered_map<std::string, std::string> parse_dict(std::string in, const std::vector<std::string> &keys) {
     std::unordered_map<std::string, std::string> map;
-    if (keys.size() == 0)
+    if (keys.empty())
         return map;
 
     in = trim(in);
@@ -55,12 +55,12 @@ std::unordered_map<std::string, std::string> parse_dict(std::string in, const st
     std::vector<std::pair<size_t, std::string>> positions;
 
     for (auto const &key : keys) {
-        size_t pos = in.find("'" + key + "'");
+        size_t const pos = in.find("'" + key + "'");
 
         if (pos == std::string::npos)
             throw std::runtime_error("Missing '" + key + "' key.");
 
-        std::pair<size_t, std::string> position_pair{pos, key};
+        std::pair<size_t, std::string> const position_pair{pos, key};
         positions.push_back(position_pair);
     }
 
@@ -69,10 +69,10 @@ std::unordered_map<std::string, std::string> parse_dict(std::string in, const st
 
     for (size_t i = 0; i < positions.size(); ++i) {
         std::string raw_value;
-        size_t begin{positions[i].first};
+        size_t const begin{positions[i].first};
         size_t end{std::string::npos};
 
-        std::string key = positions[i].second;
+        std::string const key = positions[i].second;
 
         if (i + 1 < positions.size())
             end = positions[i + 1].first;
@@ -104,7 +104,7 @@ aare::DType parse_descr(std::string typestring) {
 
     const char byteorder_c = typestring[0];
     const char kind_c = typestring[1];
-    std::string itemsize_s = typestring.substr(2);
+    std::string const itemsize_s = typestring.substr(2);
 
     if (!in_array(byteorder_c, endian_chars)) {
         throw std::runtime_error("invalid typestring (byteorder)");
@@ -130,11 +130,11 @@ bool parse_bool(const std::string &in) {
 }
 
 std::string get_value_from_map(const std::string &mapstr) {
-    size_t sep_pos = mapstr.find_first_of(":");
+    size_t const sep_pos = mapstr.find_first_of(':');
     if (sep_pos == std::string::npos)
         return "";
 
-    std::string tmp = mapstr.substr(sep_pos + 1);
+    std::string const tmp = mapstr.substr(sep_pos + 1);
     return trim(tmp);
 }
 
@@ -180,12 +180,12 @@ std::string parse_str(const std::string &in) {
 
 void write_magic(std::ostream &ostream, int version_major, int version_minor) {
     ostream.write(magic_str.data(), magic_string_length);
-    ostream.put(version_major);
-    ostream.put(version_minor);
+    ostream.put(static_cast<char>(version_major));
+    ostream.put(static_cast<char>(version_minor));
 }
 template <typename T> inline std::string write_tuple(const std::vector<T> &v) {
 
-    if (v.size() == 0)
+    if (v.empty())
         return "()";
     std::ostringstream ss;
     ss.imbue(std::locale("C"));
@@ -211,36 +211,35 @@ template <typename T> inline std::string write_tuple(const std::vector<T> &v) {
 inline std::string write_boolean(bool b) {
     if (b)
         return "True";
-    else
-        return "False";
+    return "False";
 }
 
 inline std::string write_header_dict(const std::string &descr, bool fortran_order, const shape_t &shape) {
-    std::string s_fortran_order = write_boolean(fortran_order);
-    std::string shape_s = write_tuple(shape);
+    std::string const s_fortran_order = write_boolean(fortran_order);
+    std::string const shape_s = write_tuple(shape);
 
     return "{'descr': '" + descr + "', 'fortran_order': " + s_fortran_order + ", 'shape': " + shape_s + ", }";
 }
 
-size_t write_header(std::filesystem::path fname, const NumpyHeader &header) {
+size_t write_header(const std::filesystem::path &fname, const NumpyHeader &header) {
     std::ofstream out(fname, std::ios::binary | std::ios::out);
     return write_header(out, header);
 }
 
 size_t write_header(std::ostream &out, const NumpyHeader &header) {
-    std::string header_dict = write_header_dict(header.dtype.str(), header.fortran_order, header.shape);
+    std::string const header_dict = write_header_dict(header.dtype.str(), header.fortran_order, header.shape);
 
     size_t length = magic_string_length + 2 + 2 + header_dict.length() + 1;
 
     int version_major = 1;
     int version_minor = 0;
-    if (length >= 255 * 255) {
+    if (length >= static_cast<size_t>(255) * 255) {
         length = magic_string_length + 2 + 4 + header_dict.length() + 1;
         version_major = 2;
         version_minor = 0;
     }
-    size_t padding_len = 16 - length % 16;
-    std::string padding(padding_len, ' ');
+    size_t const padding_len = 16 - length % 16;
+    std::string const padding(padding_len, ' ');
 
     // write magic
     write_magic(out, version_major, version_minor);

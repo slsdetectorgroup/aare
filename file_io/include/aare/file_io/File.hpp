@@ -20,9 +20,9 @@ class File {
      * @param cfg file configuration
      * @throws std::runtime_error if the file cannot be opened
      * @throws std::invalid_argument if the file mode is not supported
-     * 
-    */
-    File(std::filesystem::path fname, std::string mode, FileConfig cfg = {});
+     *
+     */
+    File(const std::filesystem::path &fname, const std::string &mode, FileConfig cfg = {});
     void write(Frame &frame);
     Frame read();
     Frame iread(size_t frame_number);
@@ -31,23 +31,23 @@ class File {
     void read_into(std::byte *image_buf, size_t n_frames);
     size_t frame_number(size_t frame_index);
     size_t bytes_per_frame();
-    size_t pixels();
+    size_t pixels_per_frame();
     void seek(size_t frame_number);
     size_t tell() const;
     size_t total_frames() const;
-    ssize_t rows() const;
-    ssize_t cols() const;
-    ssize_t bitdepth() const;
+    size_t rows() const;
+    size_t cols() const;
+    size_t bitdepth() const;
 
     /**
      * @brief Move constructor
      * @param other File object to move from
-    */
-    File(File &&other);
+     */
+    File(File &&other) noexcept;
 
     /**
      * @brief destructor: will only delete the FileInterface object
-    */
+     */
     ~File();
 };
 

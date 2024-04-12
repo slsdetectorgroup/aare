@@ -4,9 +4,9 @@
 using aare::Frame;
 
 TEST_CASE("Construct a frame") {
-    ssize_t rows = 10;
-    ssize_t cols = 10;
-    ssize_t bitdepth = 8;
+    size_t rows = 10;
+    size_t cols = 10;
+    size_t bitdepth = 8;
 
     Frame frame(rows, cols, bitdepth);
 
@@ -16,8 +16,8 @@ TEST_CASE("Construct a frame") {
     REQUIRE(frame.size() == rows * cols * bitdepth / 8);
 
     // data should be initialized to 0
-    for (int i = 0; i < rows; i++) {
-        for (int j = 0; j < cols; j++) {
+    for (size_t i = 0; i < rows; i++) {
+        for (size_t j = 0; j < cols; j++) {
             uint8_t *data = (uint8_t *)frame.get(i, j);
             REQUIRE(data != nullptr);
             REQUIRE(*data == 0);
@@ -26,9 +26,9 @@ TEST_CASE("Construct a frame") {
 }
 
 TEST_CASE("Set a value in a 8 bit frame") {
-    ssize_t rows = 10;
-    ssize_t cols = 10;
-    ssize_t bitdepth = 8;
+    size_t rows = 10;
+    size_t cols = 10;
+    size_t bitdepth = 8;
 
     Frame frame(rows, cols, bitdepth);
 
@@ -37,8 +37,8 @@ TEST_CASE("Set a value in a 8 bit frame") {
     frame.set(5, 7, value);
 
     // only the value we did set should be non-zero
-    for (int i = 0; i < rows; i++) {
-        for (int j = 0; j < cols; j++) {
+    for (size_t i = 0; i < rows; i++) {
+        for (size_t j = 0; j < cols; j++) {
             uint8_t *data = (uint8_t *)frame.get(i, j);
             REQUIRE(data != nullptr);
             if (i == 5 && j == 7) {
@@ -51,9 +51,9 @@ TEST_CASE("Set a value in a 8 bit frame") {
 }
 
 TEST_CASE("Set a value in a 64 bit frame") {
-    ssize_t rows = 10;
-    ssize_t cols = 10;
-    ssize_t bitdepth = 64;
+    size_t rows = 10;
+    size_t cols = 10;
+    size_t bitdepth = 64;
 
     Frame frame(rows, cols, bitdepth);
 
@@ -62,8 +62,8 @@ TEST_CASE("Set a value in a 64 bit frame") {
     frame.set(5, 7, value);
 
     // only the value we did set should be non-zero
-    for (int i = 0; i < rows; i++) {
-        for (int j = 0; j < cols; j++) {
+    for (size_t i = 0; i < rows; i++) {
+        for (size_t j = 0; j < cols; j++) {
             uint64_t *data = (uint64_t *)frame.get(i, j);
             REQUIRE(data != nullptr);
             if (i == 5 && j == 7) {
@@ -76,9 +76,9 @@ TEST_CASE("Set a value in a 64 bit frame") {
 }
 
 TEST_CASE("Move construct a frame") {
-    ssize_t rows = 10;
-    ssize_t cols = 10;
-    ssize_t bitdepth = 8;
+    size_t rows = 10;
+    size_t cols = 10;
+    size_t bitdepth = 8;
 
     Frame frame(rows, cols, bitdepth);
     std::byte *data = frame.data();

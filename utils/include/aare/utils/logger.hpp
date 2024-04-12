@@ -20,7 +20,7 @@
  */
 template <typename T> std::ostream &operator<<(std::ostream &out, const std::vector<T> &v) {
     out << "[";
-    size_t last = v.size() - 1;
+    size_t const last = v.size() - 1;
     for (size_t i = 0; i < v.size(); ++i) {
         out << v[i];
         if (i != last)
@@ -71,9 +71,7 @@ template <typename K, typename V> std::ostream &operator<<(std::ostream &out, co
     return out;
 }
 
-namespace aare {
-
-namespace logger {
+namespace aare::logger {
 /**
  * @brief enum to define the logging level
  */
@@ -96,17 +94,14 @@ class Logger {
     /**
      * @brief get the instance of the logger
      */
-    Logger() {
-        standard_output = new std::ostream(standard_buf);
-        error_output = new std::ostream(error_buf);
-    }
+    Logger() : standard_output(new std::ostream(standard_buf)), error_output(new std::ostream(error_buf)) {} // NOLINT
 
     /**
      * @brief set the output file for the logger by filename
      * @param filename name of the file to log to
      * @return void
      */
-    void set_output_file(std::string filename) {
+    void set_output_file(const std::string &filename) {
         if (out_file.is_open())
             out_file.close();
         out_file.open(filename);
@@ -152,6 +147,10 @@ class Logger {
         delete standard_output;
         delete error_output;
     }
+    Logger(Logger &&) noexcept = default;
+    Logger(const Logger &) = delete;
+    Logger &operator=(Logger &&) noexcept = default;
+    Logger &operator=(const Logger &) = delete;
 
     /**
      * @brief log a message
@@ -199,9 +198,9 @@ class Logger {
      */
     template <LOGGING_LEVEL level> void log_() {
         if (level == LOGGING_LEVEL::ERROR) {
-            *error_output << std::endl;
+            *error_output << std::endl; // NOLINT
         } else {
-            *standard_output << std::endl;
+            *standard_output << std::endl; // NOLINT
         }
     }
 
@@ -217,10 +216,8 @@ class Logger {
     template <LOGGING_LEVEL level, typename First, typename... Strings> void log_(First arg, const Strings... s) {
         if (level == LOGGING_LEVEL::ERROR) {
             *error_output << (arg) << ' ';
-            error_output->flush();
         } else {
             *standard_output << (arg) << ' ';
-            standard_output->flush();
         }
         log_<level>(s...);
     }
@@ -230,7 +227,7 @@ namespace internal {
 /**
  * @brief global instance of the logger
  */
-extern aare::logger::Logger logger_instance;
+extern aare::logger::Logger logger_instance; // NOLINT
 } // namespace internal
 
 /**
@@ -270,9 +267,7 @@ template <typename... Strings> void error(const Strings... s) { internal::logger
 extern void set_streams(std::streambuf *out, std::streambuf *err);
 extern void set_streams(std::streambuf *out);
 extern void set_verbosity(LOGGING_LEVEL level);
-extern void set_output_file(std::string filename);
+extern void set_output_file(const std::string &filename);
 extern Logger &get_logger_instance();
 
-} // namespace logger
-
-} // namespace aare
+} // namespace aare::logger

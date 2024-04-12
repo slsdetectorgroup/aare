@@ -9,14 +9,14 @@ using aare::File;
 using aare::Frame;
 
 void test1(File &f, int frame_number) {
-    std::cout << "frame number: " << frame_number << std::endl;
+    std::cout << "frame number: " << frame_number << '\n';
     Frame frame = f.iread(frame_number);
-    std::cout << *((uint32_t *)frame.get(0, 0)) << std::endl;
-    std::cout << *((uint32_t *)frame.get(0, 1)) << std::endl;
-    std::cout << *((uint32_t *)frame.get(0, 3839)) << std::endl;
+    std::cout << *(reinterpret_cast<uint32_t *>(frame.get(0, 0))) << '\n';
+    std::cout << *(reinterpret_cast<uint32_t *>(frame.get(0, 1))) << '\n';
+    std::cout << *(reinterpret_cast<uint32_t *>(frame.get(0, 3839))) << '\n';
 
     for (int i = 0; i < 3840; i++) {
-        uint16_t x = *((uint32_t *)frame.get(0, i));
+        uint16_t const x = *(reinterpret_cast<uint32_t *>(frame.get(0, i)));
         if (x != i) {
             aare::logger::error("error at i", i, "x", x);
         }
@@ -24,11 +24,11 @@ void test1(File &f, int frame_number) {
 }
 
 void test2(File &f, int frame_number) {
-    std::cout << "frame number: " << frame_number << std::endl;
+    std::cout << "frame number: " << frame_number << '\n';
     Frame frame = f.iread(frame_number);
-    std::cout << *((uint32_t *)frame.get(0, 0)) << std::endl;
-    std::cout << *((uint32_t *)frame.get(0, 1)) << std::endl;
-    std::cout << *((uint32_t *)frame.get(0, 1280 * 4 - 1)) << std::endl;
+    std::cout << *(reinterpret_cast<uint32_t *>(frame.get(0, 0))) << '\n';
+    std::cout << *(reinterpret_cast<uint32_t *>(frame.get(0, 1))) << '\n';
+    std::cout << *(reinterpret_cast<uint32_t *>(frame.get(0, 1280 * 4 - 1))) << '\n';
 }
 
 int main() {

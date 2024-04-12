@@ -3,8 +3,6 @@
 
 #include "simdjson.h"
 
-using namespace simdjson;
-
 // helper functions to write json
 // append to string for better performance (not tested)
 
@@ -37,11 +35,11 @@ void write_map(std::string &s, const std::string &key, const std::map<std::strin
     s += "\"";
     s += key;
     s += "\": {";
-    for (auto &kv : value) {
+    for (const auto &kv : value) {
         write_str(s, kv.first, kv.second);
     }
     // remove last comma or trailing spaces
-    for (int i = s.size() - 1; i >= 0; i--) {
+    for (size_t i = s.size() - 1; i > 0; i--) {
         if (s[i] == ',' or s[i] == ' ') {
             s.pop_back();
         } else
@@ -66,7 +64,7 @@ void write_array(std::string &s, const std::string &key, const std::array<int, 4
 namespace aare {
 
 std::string ZmqHeader::to_string() const {
-    std::string s = "";
+    std::string s;
     s.reserve(1024);
     s += "{";
     write_digit(s, "data", data ? 1 : 0);
@@ -108,78 +106,79 @@ std::string ZmqHeader::to_string() const {
     return s;
 }
 
-void ZmqHeader::from_string(std::string &s) {
+void ZmqHeader::from_string(std::string &s) { // NOLINT
 
-    simdjson::padded_string ps(s.c_str(), s.size());
-    ondemand::parser parser;
-    ondemand::document doc = parser.iterate(ps);
-    ondemand::object object = doc.get_object();
+    simdjson::padded_string const ps(s.c_str(), s.size());
+    simdjson::ondemand::parser parser;
+    simdjson::ondemand::document doc = parser.iterate(ps);
+    simdjson::ondemand::object object = doc.get_object();
 
     for (auto field : object) {
-        std::string_view key = field.unescaped_key();
+        std::string_view const key = field.unescaped_key();
+
         if (key == "data") {
-            data = uint64_t(field.value()) ? true : false;
+            data = static_cast<uint64_t>(field.value()) != 0;
         } else if (key == "jsonversion") {
-            jsonversion = uint32_t(field.value());
+            jsonversion = static_cast<uint32_t>(field.value());
         } else if (key == "dynamicRange") {
-            dynamicRange = uint32_t(field.value());
+            dynamicRange = static_cast<uint32_t>(field.value());
         } else if (key == "fileIndex") {
-            fileIndex = uint64_t(field.value());
+            fileIndex = static_cast<uint64_t>(field.value());
         } else if (key == "ndetx") {
-            ndetx = uint32_t(field.value());
+            ndetx = static_cast<uint32_t>(field.value());
         } else if (key == "ndety") {
-            ndety = uint32_t(field.value());
+            ndety = static_cast<uint32_t>(field.value());
         } else if (key == "npixelsx") {
-            npixelsx = uint32_t(field.value());
+            npixelsx = static_cast<uint32_t>(field.value());
         } else if (key == "npixelsy") {
-            npixelsy = uint32_t(field.value());
+            npixelsy = static_cast<uint32_t>(field.value());
         } else if (key == "size") {
-            size = uint32_t(field.value());
+            size = static_cast<uint32_t>(field.value());
         } else if (key == "acqIndex") {
-            acqIndex = uint64_t(field.value());
+            acqIndex = static_cast<uint64_t>(field.value());
         } else if (key == "frameIndex") {
-            frameIndex = uint64_t(field.value());
+            frameIndex = static_cast<uint64_t>(field.value());
         } else if (key == "progress") {
             progress = field.value().get_double();
         } else if (key == "fname") {
-            std::string_view tmp = field.value().get_string();
+            std::string_view const tmp = field.value().get_string();
             fname = {tmp.begin(), tmp.end()};
         } else if (key == "frameNumber") {
-            frameNumber = uint64_t(field.value());
+            frameNumber = static_cast<uint64_t>(field.value());
         } else if (key == "expLength") {
-            expLength = uint32_t(field.value());
+            expLength = static_cast<uint32_t>(field.value());
         } else if (key == "packetNumber") {
-            packetNumber = uint32_t(field.value());
+            packetNumber = static_cast<uint32_t>(field.value());
         } else if (key == "detSpec1") {
-            detSpec1 = uint64_t(field.value());
+            detSpec1 = static_cast<uint64_t>(field.value());
         } else if (key == "timestamp") {
-            timestamp = uint64_t(field.value());
+            timestamp = static_cast<uint64_t>(field.value());
         } else if (key == "modId") {
-            modId = uint32_t(field.value());
+            modId = static_cast<uint32_t>(field.value());
         } else if (key == "row") {
-            row = uint32_t(field.value());
+            row = static_cast<uint32_t>(field.value());
         } else if (key == "column") {
-            column = uint32_t(field.value());
+            column = static_cast<uint32_t>(field.value());
         } else if (key == "detSpec2") {
-            detSpec2 = uint32_t(field.value());
+            detSpec2 = static_cast<uint32_t>(field.value());
         } else if (key == "detSpec3") {
-            detSpec3 = uint32_t(field.value());
+            detSpec3 = static_cast<uint32_t>(field.value());
         } else if (key == "detSpec4") {
-            detSpec4 = uint32_t(field.value());
+            detSpec4 = static_cast<uint32_t>(field.value());
         } else if (key == "detType") {
-            detType = uint32_t(field.value());
+            detType = static_cast<uint32_t>(field.value());
         } else if (key == "version") {
-            version = uint32_t(field.value());
+            version = static_cast<uint32_t>(field.value());
         } else if (key == "flipRows") {
-            flipRows = uint32_t(field.value());
+            flipRows = static_cast<int64_t>(field.value());
         } else if (key == "quad") {
-            quad = uint32_t(field.value());
+            quad = static_cast<uint32_t>(field.value());
         } else if (key == "completeImage") {
-            completeImage = uint64_t(field.value()) ? true : false;
+            completeImage = static_cast<uint64_t>(field.value()) != 0;
         } else if (key == "addJsonHeader") {
-            addJsonHeader = std::map<std::string, std::string>(field.value());
+            addJsonHeader = static_cast<std::map<std::string, std::string>>(field.value());
         } else if (key == "rx_roi") {
-            rx_roi = std::array<int, 4>(field.value());
+            rx_roi = static_cast<std::array<int, 4>>(field.value());
         }
     }
 }

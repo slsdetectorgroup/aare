@@ -3,6 +3,7 @@
 #include "aare/core/defs.hpp"
 #include "aare/file_io/FileInterface.hpp"
 #include "aare/file_io/NumpyHelpers.hpp"
+#include "aare/utils/logger.hpp"
 #include <filesystem>
 #include <iostream>
 #include <numeric>
@@ -24,7 +25,7 @@ class NumpyFile : public FileInterface {
      * @param mode file mode (r, w)
      * @param cfg file configuration
      */
-    NumpyFile(const std::filesystem::path &fname, const std::string &mode = "r", FileConfig cfg = {});
+    explicit NumpyFile(const std::filesystem::path &fname, const std::string &mode = "r", FileConfig cfg = {});
 
     void write(Frame &frame) override;
     Frame read() override { return get_frame(this->current_frame++); }
@@ -34,13 +35,13 @@ class NumpyFile : public FileInterface {
     void read_into(std::byte *image_buf, size_t n_frames) override;
     size_t frame_number(size_t frame_index) override { return frame_index; };
     size_t bytes_per_frame() override;
-    size_t pixels() override;
+    size_t pixels_per_frame() override;
     void seek(size_t frame_number) override { this->current_frame = frame_number; }
     size_t tell() override { return this->current_frame; }
     size_t total_frames() const override { return m_header.shape[0]; }
-    ssize_t rows() const override { return m_header.shape[1]; }
-    ssize_t cols() const override { return m_header.shape[2]; }
-    ssize_t bitdepth() const override { return m_header.dtype.bitdepth(); }
+    size_t rows() const override { return m_header.shape[1]; }
+    size_t cols() const override { return m_header.shape[2]; }
+    size_t bitdepth() const override { return m_header.dtype.bitdepth(); }
 
     /**
      * @brief get the data type of the numpy file
@@ -62,12 +63,17 @@ class NumpyFile : public FileInterface {
      */
     template <typename T, size_t NDim> NDArray<T, NDim> load() {
         NDArray<T, NDim> arr(make_shape<NDim>(m_header.shape));
-        fseek(fp, header_size, SEEK_SET);
-        fread(arr.data(), sizeof(T), arr.size(), fp);
+        if (fseek(fp, static_cast<int64_t>(header_size), SEEK_SET)) {
+            throw std::runtime_error(LOCATION + "Error seeking to the start of the data");
+        }
+        size_t rc = fread(arr.data(), sizeof(T), arr.size(), fp);
+        if (rc != static_cast<size_t>(arr.size())) {
+            throw std::runtime_error(LOCATION + "Error reading data from file");
+        }
         return arr;
     }
 
-    ~NumpyFile();
+    ~NumpyFile() noexcept override;
 
   private:
     FILE *fp = nullptr;
@@ -79,9 +85,11 @@ class NumpyFile : public FileInterface {
     NumpyHeader m_header;
     uint8_t major_ver_{};
     uint8_t minor_ver_{};
+    size_t m_bytes_per_frame{};
+    size_t m_pixels_per_frame{};
 
     void load_metadata();
-    void get_frame_into(size_t, std::byte *);
+    void get_frame_into(size_t /*frame_number*/, std::byte * /*image_buf*/);
     Frame get_frame(size_t frame_number);
 };
 

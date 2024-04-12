@@ -26,7 +26,7 @@ enum class endian {
  */
 class DType {
     // TODO! support for non native endianess?
-    static_assert(sizeof(long) == sizeof(int64_t), "long should be 64bits");
+    static_assert(sizeof(long) == sizeof(int64_t), "long should be 64bits"); // NOLINT
 
   public:
     enum TypeIndex { INT8, UINT8, INT16, UINT16, INT32, UINT32, INT64, UINT64, FLOAT, DOUBLE, ERROR };
@@ -37,7 +37,7 @@ class DType {
     explicit DType(std::string_view sv);
 
     // not explicit to allow conversions form enum to DType
-    DType(DType::TypeIndex ti);
+    DType(DType::TypeIndex ti); // NOLINT
 
     bool operator==(const DType &other) const noexcept;
     bool operator!=(const DType &other) const noexcept;

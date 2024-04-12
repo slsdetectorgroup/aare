@@ -48,10 +48,10 @@ int main(int argc, char **argv) {
         return 1;
     }
 
-    std::string path = vm["file"].as<string>();
-    uint16_t port = vm["port"].as<uint16_t>();
-    bool loop = vm.count("loop") == 1 ? true : false;
-    uint16_t fps = vm["fps"].as<uint16_t>();
+    std::string const path = vm["file"].as<string>();
+    uint16_t const port = vm["port"].as<uint16_t>();
+    bool const loop = vm.count("loop") == 1;
+    uint16_t const fps = vm["fps"].as<uint16_t>();
 
     aare::logger::debug("ARGS: file:", path, "port:", port, "fps:", fps, "loop:", loop);
     auto d = round<std::chrono::milliseconds>(std::chrono::duration<double>{1. / fps});
@@ -62,17 +62,17 @@ int main(int argc, char **argv) {
         return 1;
     }
 
-    std::filesystem::path tmp(path);
+    std::filesystem::path const tmp(path);
 
     File file(tmp, "r");
-    string endpoint = "tcp://*:" + std::to_string(port);
+    string const endpoint = "tcp://*:" + std::to_string(port);
     ZmqSocketSender sender(endpoint);
     sender.bind();
     std::this_thread::sleep_for(d); // slow joiner problem should fix this
 
     for (size_t frameidx = 0; frameidx < file.total_frames(); frameidx++) {
 
-        Frame frame = file.read();
+        Frame const frame = file.read();
         ZmqHeader header;
         header.frameNumber = frameidx;
         header.data = true;

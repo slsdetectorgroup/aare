@@ -16,8 +16,8 @@ namespace aare {
  */
 struct FileConfig {
     aare::DType dtype = aare::DType(typeid(uint16_t));
-    uint64_t rows;
-    uint64_t cols;
+    uint64_t rows{};
+    uint64_t cols{};
     xy geometry{1, 1};
     bool operator==(const FileConfig &other) const {
         return dtype == other.dtype && rows == other.rows && cols == other.cols && geometry == other.geometry;
@@ -92,7 +92,7 @@ class FileInterface {
      * @brief get the number of pixels in one frame
      * @return number of pixels in one frame
      */
-    virtual size_t pixels() = 0;
+    virtual size_t pixels_per_frame() = 0;
 
     /**
      * @brief seek to the given frame number
@@ -116,17 +116,17 @@ class FileInterface {
      * @brief get the number of rows in the file
      * @return number of rows in the file
      */
-    virtual ssize_t rows() const = 0;
+    virtual size_t rows() const = 0;
     /**
      * @brief get the number of columns in the file
      * @return number of columns in the file
      */
-    virtual ssize_t cols() const = 0;
+    virtual size_t cols() const = 0;
     /**
      * @brief get the bitdepth of the file
      * @return bitdepth of the file
      */
-    virtual ssize_t bitdepth() const = 0;
+    virtual size_t bitdepth() const = 0;
 
     /**
      * @brief read one frame from the file at the given frame number
@@ -158,23 +158,21 @@ class FileInterface {
     // function to query the data type of the file
     /*virtual DataType dtype = 0; */
 
-    virtual ~FileInterface(){
-
-    };
+    virtual ~FileInterface() = default;
 
   protected:
-    std::string m_mode;
-    std::filesystem::path m_fname;
-    std::filesystem::path m_base_path;
-    std::string m_base_name, m_ext;
-    int m_findex;
+    std::string m_mode{};
+    std::filesystem::path m_fname{};
+    std::filesystem::path m_base_path{};
+    std::string m_base_name{}, m_ext{};
+    int m_findex{};
     size_t m_total_frames{};
     size_t max_frames_per_file{};
-    std::string version;
-    DetectorType m_type;
-    ssize_t m_rows{};
-    ssize_t m_cols{};
-    ssize_t m_bitdepth{};
+    std::string version{};
+    DetectorType m_type{};
+    size_t m_rows{};
+    size_t m_cols{};
+    size_t m_bitdepth{};
     size_t current_frame{};
 };
 

@@ -1,4 +1,6 @@
 #include "aare/core/defs.hpp"
+#include <stdexcept>
+#include <string>
 
 namespace aare {
 
@@ -7,8 +9,8 @@ namespace aare {
  * @param type DetectorType
  * @return string representation of the DetectorType
  */
-template <> std::string toString(DetectorType type) {
-    switch (type) {
+template <> std::string toString(DetectorType arg) {
+    switch (arg) {
     case DetectorType::Jungfrau:
         return "Jungfrau";
     case DetectorType::Eiger:
@@ -30,20 +32,18 @@ template <> std::string toString(DetectorType type) {
  * @return DetectorType
  * @throw runtime_error if the string does not match any DetectorType
  */
-template <> DetectorType StringTo(std::string name) {
-    if (name == "Jungfrau")
+template <> DetectorType StringTo(const std::string &arg) {
+    if (arg == "Jungfrau")
         return DetectorType::Jungfrau;
-    else if (name == "Eiger")
+    if (arg == "Eiger")
         return DetectorType::Eiger;
-    else if (name == "Mythen3")
+    if (arg == "Mythen3")
         return DetectorType::Mythen3;
-    else if (name == "Moench")
+    if (arg == "Moench")
         return DetectorType::Moench;
-    else if (name == "ChipTestBoard")
+    if (arg == "ChipTestBoard")
         return DetectorType::ChipTestBoard;
-    else {
-        throw std::runtime_error("Could not decode dector from: \"" + name + "\"");
-    }
+    throw std::runtime_error("Could not decode dector from: \"" + arg + "\"");
 }
 
 /**
@@ -52,14 +52,12 @@ template <> DetectorType StringTo(std::string name) {
  * @return TimingMode
  * @throw runtime_error if the string does not match any TimingMode
  */
-template <> TimingMode StringTo(std::string mode) {
-    if (mode == "auto")
+template <> TimingMode StringTo(const std::string &arg) {
+    if (arg == "auto")
         return TimingMode::Auto;
-    else if (mode == "trigger")
+    if (arg == "trigger")
         return TimingMode::Trigger;
-    else {
-        throw std::runtime_error("Could not decode timing mode from: \"" + mode + "\"");
-    }
+    throw std::runtime_error("Could not decode timing mode from: \"" + arg + "\"");
 }
 
 // template <> TimingMode StringTo<TimingMode>(std::string mode);

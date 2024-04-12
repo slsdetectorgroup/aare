@@ -1,9 +1,9 @@
-name: test-formatting
+name: clang-tidy
 on: 
   push:
 
 jobs:
-  test-formatting:
+  clang-tidy:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -26,9 +26,5 @@ jobs:
         run: |
           # find all examples in build/examples and run them
           cd build
-          cmake --build . --target=check-format
-          
-
-
-
+          cmake --build . --target clang-tidy
 
