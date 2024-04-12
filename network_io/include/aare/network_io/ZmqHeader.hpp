@@ -18,16 +18,16 @@ template <> simdjson_inline simdjson::simdjson_result<std::array<int, 4>> simdjs
     if (error) {
         return error;
     }
-    std::array<int, 4> arr;
+    std::array<int, 4> arr{};
     int i = 0;
     for (auto v : array) {
-        int64_t val;
+        int64_t val = 0;
         error = v.get_int64().get(val);
 
         if (error) {
             return error;
         }
-        arr[i++] = val;
+        arr[i++] = static_cast<int>(val);
     }
     return arr;
 }
@@ -37,7 +37,7 @@ template <> simdjson_inline simdjson::simdjson_result<std::array<int, 4>> simdjs
  * adds a check for 32bit overflow
  */
 template <> simdjson_inline simdjson::simdjson_result<uint32_t> simdjson::ondemand::value::get() noexcept {
-    size_t val;
+    size_t val = 0;
     auto error = get_uint64().get(val);
     if (error) {
         return error;
@@ -70,9 +70,9 @@ simdjson::ondemand::value::get() noexcept {
         if (error) {
             return error;
         }
-        std::string_view key_view = field.unescaped_key();
-        std::string key_str(key_view.data(), key_view.size());
-        std::string_view value_view = field.value().get_string();
+        std::string_view const key_view = field.unescaped_key();
+        std::string const key_str(key_view.data(), key_view.size());
+        std::string_view const value_view = field.value().get_string();
         map[key_str] = {value_view.data(), value_view.size()};
     }
     return map;
@@ -122,7 +122,7 @@ struct ZmqHeader {
     uint8_t detType{0};
     uint8_t version{0};
     /** if rows of image should be flipped */
-    int flipRows{0};
+    int64_t flipRows{0};
     /** quad type (eiger hardware specific) */
     uint32_t quad{0};
     /** true if complete image, else missing packets */
