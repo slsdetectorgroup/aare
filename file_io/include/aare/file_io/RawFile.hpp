@@ -18,13 +18,13 @@ class RawFile : public FileInterface {
      * @param mode file mode (r, w)
      * @param cfg file configuration
      */
-    RawFile(const std::filesystem::path &fname, const std::string &mode = "r", const FileConfig &cfg = {});
+    explicit RawFile(const std::filesystem::path &fname, const std::string &mode = "r", const FileConfig &cfg = {});
 
     /**
      * @brief write function is not implemented for RawFile
      * @param frame frame to write
      */
-    void write(Frame &frame) override { throw std::runtime_error("Not implemented"); };
+    void write(Frame & /*frame*/) override { throw std::runtime_error("Not implemented"); };
     Frame read() override { return get_frame(this->current_frame++); };
     std::vector<Frame> read(size_t n_frames) override;
     void read_into(std::byte *image_buf) override { return get_frame_into(this->current_frame++, image_buf); };
@@ -88,12 +88,12 @@ class RawFile : public FileInterface {
     /**
      * @brief destructor: will delete the subfiles
      */
-    ~RawFile();
+    ~RawFile() override;
 
     size_t total_frames() const override { return m_total_frames; }
-    ssize_t rows() const override { return m_rows; }
-    ssize_t cols() const override { return m_cols; }
-    ssize_t bitdepth() const override { return m_bitdepth; }
+    size_t rows() const override { return m_rows; }
+    size_t cols() const override { return m_cols; }
+    size_t bitdepth() const override { return m_bitdepth; }
 
   private:
     /**
@@ -147,7 +147,7 @@ class RawFile : public FileInterface {
      */
     void open_subfiles();
 
-  private:
+  
     size_t n_subfiles;
     size_t n_subfile_parts;
     std::vector<std::vector<SubFile *>> subfiles;

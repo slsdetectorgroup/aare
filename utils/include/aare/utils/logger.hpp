@@ -218,10 +218,8 @@ class Logger {
     template <LOGGING_LEVEL level, typename First, typename... Strings> void log_(First arg, const Strings... s) {
         if (level == LOGGING_LEVEL::ERROR) {
             *error_output << (arg) << ' ';
-            error_output->flush();
         } else {
             *standard_output << (arg) << ' ';
-            standard_output->flush();
         }
         log_<level>(s...);
     }

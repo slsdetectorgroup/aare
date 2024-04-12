@@ -6,7 +6,7 @@ jobs:
   test-formatting:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
       - name: check if files are formatted
         # find all examples in build/examples and run them
         run: |

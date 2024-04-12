@@ -6,6 +6,11 @@ Checks: '
     # cppcoreguidelines-avoid-magic-numbers
     # cppcoreguidelines-owning-memory
     # bugprone-easily-swappable-parameters
+    # cppcoreguidelines-non-private-member-variables-in-classes
+    # these two below are useful but make the code too verbose (maybe add them later)
+    # cppcoreguidelines-special-member-functions
+    # hicpp-special-member-functions
+
 
 
     abseil-cleanup-ctad
@@ -287,7 +292,6 @@ Checks: '
     cppcoreguidelines-noexcept-destructor
     cppcoreguidelines-noexcept-move-operations
     cppcoreguidelines-noexcept-swap
-    cppcoreguidelines-non-private-member-variables-in-classes
     cppcoreguidelines-prefer-member-initializer
     cppcoreguidelines-pro-type-const-cast
     cppcoreguidelines-pro-type-cstyle-cast
@@ -297,7 +301,6 @@ Checks: '
     cppcoreguidelines-pro-type-vararg
     cppcoreguidelines-rvalue-reference-param-not-moved
     cppcoreguidelines-slicing
-    cppcoreguidelines-special-member-functions
     cppcoreguidelines-use-default-member-init
     cppcoreguidelines-virtual-class-destructor
     darwin-avoid-spinlock
@@ -334,7 +337,6 @@ Checks: '
     hicpp-no-assembler
     hicpp-no-malloc
     hicpp-noexcept-move
-    hicpp-special-member-functions
     hicpp-static-assert
     hicpp-undelegated-constructor
     hicpp-uppercase-literal-suffix

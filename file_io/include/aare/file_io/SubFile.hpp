@@ -45,7 +45,7 @@ class SubFile {
      * @param bitdepth bitdepth of the subfile
      * @throws std::invalid_argument if the detector,type pair is not supported
      */
-    SubFile(std::filesystem::path fname, DetectorType detector, ssize_t rows, ssize_t cols, uint16_t bitdepth);
+    SubFile(const std::filesystem::path& fname, DetectorType detector, ssize_t rows, ssize_t cols, uint16_t bitdepth);
 
     /**
      * @brief read the subfile into a buffer
@@ -74,20 +74,20 @@ class SubFile {
      * @param frame_number frame number to read
      * @return number of bytes read
      */
-    size_t get_part(std::byte *buffer, int frame_number);
+    size_t get_part(std::byte *buffer, size_t frame_number);
     size_t frame_number(int frame_index);
 
     // TODO: define the inlines as variables and assign them in constructor
-    inline size_t bytes_per_part() { return (m_bitdepth / 8) * m_rows * m_cols; }
-    inline size_t pixels_per_part() { return m_rows * m_cols; }
+    inline size_t bytes_per_part() const { return (m_bitdepth / 8) * m_rows * m_cols; }
+    inline size_t pixels_per_part() const { return m_rows * m_cols; }
 
   protected:
     FILE *fp = nullptr;
-    ssize_t m_bitdepth;
+    size_t m_bitdepth;
     std::filesystem::path m_fname;
-    ssize_t m_rows{};
-    ssize_t m_cols{};
-    ssize_t n_frames{};
+    size_t m_rows{};
+    size_t m_cols{};
+    size_t n_frames{};
     int m_sub_file_index_{};
 };
 
