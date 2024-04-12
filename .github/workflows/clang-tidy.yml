@@ -7,13 +7,25 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - name: linting checks
-        # find all examples in build/examples and run them
+      - uses: mamba-org/setup-micromamba@v1
+        if: ${{ contains(inputs.use-system-libraries, 'ON')}}
+        with:
+          micromamba-version: '1.5.6-0' # any version from https://github.com/mamba-org/micromamba-releases
+          environment-file: aare-environment.yml
+          init-shell: bash
+          cache-environment: true
+          post-cleanup: 'all'
+      - name: cmake
+        shell: bash -el {0}
         run: |
-          pwd
           mkdir build
           cd build
-          cmake ..
-          cd ..
-          find \(-path "./core/*" -o -path "./file_io/*" \) \( -name "*.cpp" -o -name "*.hpp" \)   -not -path "./python/*" -not -name "*.test.cpp"  -not -name "CircularFifo.hpp" -not -name "ProducerConsumerQueue.hpp" -not -name "VariableSizeClusterFinder.hpp" `| xargs -I {} -n 1 -P 10 clang-tidy --config-file=.clang-tidy -p build {}
+          cmake -DCMAKE_BUILD_TYPE=Release -DUSE_SYSTEM_LIBRARIES=ON ..
+      - name: linting checks
+        shell: bash -el {0}
+        run: |
+          # find all examples in build/examples and run them
+          find \(-path "./core/*" -o -path "./file_io/*" \) \( -name "*.cpp" -o -name "*.hpp" \)   -not -path "./python/*" -not -name "*.test.cpp"  -not -name "CircularFifo.hpp" -not -name "ProducerConsumerQueue.hpp" -not -name "VariableSizeClusterFinder.hpp" 
+          find \(-path "./core/*" -o -path "./file_io/*" \) \( -name "*.cpp" -o -name "*.hpp" \)   -not -path "./python/*" -not -name "*.test.cpp"  -not -name "CircularFifo.hpp" -not -name "ProducerConsumerQueue.hpp" -not -name "VariableSizeClusterFinder.hpp" | xargs -I {} -n 1 -P 10 clang-tidy --config-file=.clang-tidy -p build {}
           # clang-tidy --config-file=.clang-tidy -p build `find -path "./core/*" \( -name "*.cpp" -o -name "*.hpp"  \) -not -name "*.test.cpp"  -not -name "CircularFifo.hpp" -not -name "ProducerConsumerQueue.hpp" -not -name "VariableSizeClusterFinder.hpp" `
+
