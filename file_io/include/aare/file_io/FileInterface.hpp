@@ -161,15 +161,15 @@ class FileInterface {
     virtual ~FileInterface() = default;
 
   protected:
-    std::string m_mode;
-    std::filesystem::path m_fname;
-    std::filesystem::path m_base_path;
-    std::string m_base_name, m_ext;
-    int m_findex;
+    std::string m_mode{};
+    std::filesystem::path m_fname{};
+    std::filesystem::path m_base_path{};
+    std::string m_base_name{}, m_ext{};
+    int m_findex{};
     size_t m_total_frames{};
     size_t max_frames_per_file{};
-    std::string version;
-    DetectorType m_type;
+    std::string version{};
+    DetectorType m_type{};
     size_t m_rows{};
     size_t m_cols{};
     size_t m_bitdepth{};

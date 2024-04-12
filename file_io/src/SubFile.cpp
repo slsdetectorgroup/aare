@@ -7,8 +7,7 @@
 
 namespace aare {
 
-SubFile::SubFile(const std::filesystem::path &fname, DetectorType detector, ssize_t rows, ssize_t cols,
-                 uint16_t bitdepth)
+SubFile::SubFile(const std::filesystem::path &fname, DetectorType detector, size_t rows, size_t cols, size_t bitdepth)
     : m_bitdepth(bitdepth), m_fname(fname), m_rows(rows), m_cols(cols),
       n_frames(std::filesystem::file_size(fname) / (sizeof(sls_detector_header) + rows * cols * bitdepth / 8)) {
 
@@ -90,7 +89,7 @@ template <typename DataType> size_t SubFile::read_impl_flip(std::byte *buffer) {
     return rc;
 };
 
-size_t SubFile::frame_number(int frame_index) {
+size_t SubFile::frame_number(size_t frame_index) {
     sls_detector_header h{};
     fp = fopen(this->m_fname.c_str(), "r");
     if (!fp)

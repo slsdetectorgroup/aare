@@ -1,6 +1,7 @@
 #include "aare/file_io/RawFile.hpp"
 #include "aare/core/defs.hpp"
 #include "aare/utils/logger.hpp"
+#include "absl/strings/match.h"
 #include <fmt/format.h>
 #include <nlohmann/json.hpp>
 
@@ -30,7 +31,7 @@ void RawFile::open_subfiles() {
     for (size_t i = 0; i != n_subfiles; ++i) {
         auto v = std::vector<SubFile *>(n_subfile_parts);
         for (size_t j = 0; j != n_subfile_parts; ++j) {
-            v[j] = new SubFile(data_fname(i, j), m_type, subfile_rows, subfile_cols, bitdepth());
+            v[j] = new SubFile(data_fname(i, j), m_type, subfile_rows, subfile_cols, m_bitdepth);
         }
         subfiles.push_back(v);
     }
@@ -42,18 +43,18 @@ sls_detector_header RawFile::read_header(const std::filesystem::path &fname) {
     if (!fp)
         throw std::runtime_error(fmt::format("Could not open: {} for reading", fname.c_str()));
 
-    size_t rc = fread(reinterpret_cast<char *>(&h), sizeof(h), 1, fp);
-    fclose(fp);
+    size_t const rc = fread(reinterpret_cast<char *>(&h), sizeof(h), 1, fp);
     if (rc != 1)
-        throw std::runtime_error("Could not read header from file");
+        throw std::runtime_error(LOCATION + "Could not read header from file");
+    if (fclose(fp)) {
+        throw std::runtime_error(LOCATION + "Could not close file");
+    }
+
     return h;
 }
-bool RawFile::is_master_file(std::filesystem::path fpath) {
-    std::string stem = fpath.stem();
-    if (stem.find("_master_") != std::string::npos)
-        return true;
-    else
-        return false;
+bool RawFile::is_master_file(const std::filesystem::path &fpath) {
+    std::string const stem = fpath.stem();
+    return absl::StrContains(stem, "_master_");
 }
 
 void RawFile::find_number_of_subfiles() {
@@ -62,7 +63,7 @@ void RawFile::find_number_of_subfiles() {
         ;
     n_subfiles = n_mod;
 }
-inline std::filesystem::path RawFile::data_fname(int mod_id, int file_id) {
+inline std::filesystem::path RawFile::data_fname(size_t mod_id, size_t file_id) {
     return this->m_base_path / fmt::format("{}_d{}_f{}_{}.raw", this->m_base_name, file_id, mod_id, this->m_findex);
 }
 
@@ -86,10 +87,10 @@ void RawFile::find_geometry() {
     r++;
     c++;
 
-    m_rows = r * subfile_rows;
-    m_cols = c * subfile_cols;
+    m_rows = (r * subfile_rows);
+    m_cols = (c * subfile_cols);
 
-    m_rows += (r - 1) * cfg.module_gap_row;
+    m_rows += static_cast<size_t>((r - 1) * cfg.module_gap_row);
 }
 
 void RawFile::parse_metadata() {
@@ -109,7 +110,7 @@ void RawFile::parse_metadata() {
     } else {
         throw std::runtime_error(LOCATION + "Unsupported file type");
     }
-    n_subfile_parts = geometry.row * geometry.col;
+    n_subfile_parts = static_cast<size_t>(geometry.row) * geometry.col;
 }
 
 void RawFile::parse_json_metadata() {
@@ -141,7 +142,7 @@ void RawFile::parse_raw_metadata() {
     for (std::string line; std::getline(ifs, line);) {
         if (line == "#Frame Header")
             break;
-        auto pos = line.find(":");
+        auto pos = line.find(':');
         auto key_pos = pos;
         while (key_pos != std::string::npos && std::isspace(line[--key_pos]))
             ;
@@ -183,7 +184,7 @@ void RawFile::parse_fname() {
     m_base_path = m_fname.parent_path();
     m_base_name = m_fname.stem();
     m_ext = m_fname.extension();
-    auto pos = m_base_name.rfind("_");
+    auto pos = m_base_name.rfind('_');
     m_findex = std::stoi(m_base_name.substr(pos + 1));
     pos = m_base_name.find("_master_");
     m_base_name.erase(pos);
@@ -200,7 +201,7 @@ void RawFile::get_frame_into(size_t frame_number, std::byte *frame_buffer) {
     if (frame_number > this->m_total_frames) {
         throw std::runtime_error(LOCATION + "Frame number out of range");
     }
-    int subfile_id = frame_number / this->max_frames_per_file;
+    size_t const subfile_id = frame_number / this->max_frames_per_file;
     // create frame and get its buffer
 
     if (this->geometry.col == 1) {
@@ -214,11 +215,11 @@ void RawFile::get_frame_into(size_t frame_number, std::byte *frame_buffer) {
     } else {
         // create a buffer that will hold a the frame part
         auto bytes_per_part = this->subfile_rows * this->subfile_cols * this->m_bitdepth / 8;
-        std::byte *part_buffer = new std::byte[bytes_per_part];
+        auto *part_buffer = new std::byte[bytes_per_part];
 
         for (size_t part_idx = 0; part_idx != this->n_subfile_parts; ++part_idx) {
             this->subfiles[subfile_id][part_idx]->get_part(part_buffer, frame_number % this->max_frames_per_file);
-            for (int cur_row = 0; cur_row < (this->subfile_rows); cur_row++) {
+            for (size_t cur_row = 0; cur_row < (this->subfile_rows); cur_row++) {
                 auto irow = cur_row + (part_idx / this->geometry.col) * this->subfile_rows;
                 auto icol = (part_idx % this->geometry.col) * this->subfile_cols;
                 auto dest = (irow * this->m_cols + icol);
@@ -252,13 +253,13 @@ size_t RawFile::frame_number(size_t frame_index) {
     if (frame_index > this->m_total_frames) {
         throw std::runtime_error(LOCATION + "Frame number out of range");
     }
-    int subfile_id = frame_index / this->max_frames_per_file;
+    size_t const subfile_id = frame_index / this->max_frames_per_file;
     return this->subfiles[subfile_id][0]->frame_number(frame_index % this->max_frames_per_file);
 }
 
 RawFile::~RawFile() {
     for (auto &vec : subfiles) {
-        for (auto subfile : vec) {
+        for (auto *subfile : vec) {
             delete subfile;
         }
     }

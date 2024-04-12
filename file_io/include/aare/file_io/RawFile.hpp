@@ -18,7 +18,7 @@ class RawFile : public FileInterface {
      * @param mode file mode (r, w)
      * @param cfg file configuration
      */
-    explicit RawFile(const std::filesystem::path &fname, const std::string &mode = "r", const FileConfig &cfg = {});
+    explicit RawFile(const std::filesystem::path &fname, const std::string &mode = "r", const FileConfig &config = {});
 
     /**
      * @brief write function is not implemented for RawFile
@@ -53,7 +53,7 @@ class RawFile : public FileInterface {
      * @brief check if the file is a master file
      * @param fpath path to the file
      */
-    static bool is_master_file(std::filesystem::path fpath);
+    static bool is_master_file(const std::filesystem::path& fpath);
 
     /**
      * @brief set the module gap row and column
@@ -83,7 +83,7 @@ class RawFile : public FileInterface {
      * @param file_id file id
      * @return path to the data file
      */
-    inline std::filesystem::path data_fname(int mod_id, int file_id);
+    inline std::filesystem::path data_fname(size_t mod_id, size_t file_id);
 
     /**
      * @brief destructor: will delete the subfiles
@@ -101,7 +101,7 @@ class RawFile : public FileInterface {
      * @param frame_number frame number to read
      * @param image_buf buffer to store the frame
      */
-    void get_frame_into(size_t frame_number, std::byte *image_buf);
+    void get_frame_into(size_t frame_number, std::byte *frame_buffer);
 
     /**
      * @brief get the frame at the given frame number
@@ -140,7 +140,7 @@ class RawFile : public FileInterface {
      * @param fname path to the data subfile
      * @return sls_detector_header
      */
-    sls_detector_header read_header(const std::filesystem::path &fname);
+    static sls_detector_header read_header(const std::filesystem::path &fname);
 
     /**
      * @brief open the subfiles
@@ -148,14 +148,14 @@ class RawFile : public FileInterface {
     void open_subfiles();
 
   
-    size_t n_subfiles;
-    size_t n_subfile_parts;
+    size_t n_subfiles{};
+    size_t n_subfile_parts{};
     std::vector<std::vector<SubFile *>> subfiles;
-    int subfile_rows, subfile_cols;
-    xy geometry;
+    size_t subfile_rows{}, subfile_cols{};
+    xy geometry{};
     std::vector<xy> positions;
     RawFileConfig cfg{0, 0};
-    TimingMode timing_mode;
+    TimingMode timing_mode{};
     bool quad{false};
 };
 
