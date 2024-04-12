@@ -33,7 +33,7 @@ size_t SubFile::get_part(std::byte *buffer, size_t frame_number) {
     fseek(fp, sizeof(sls_detector_header) + (sizeof(sls_detector_header) + bytes_per_part()) * frame_number, // NOLINT
           SEEK_SET);
     auto ret = (this->*read_impl)(buffer);
-    if (!fclose(fp))
+    if (fclose(fp))
         throw std::runtime_error(LOCATION + "Could not close file");
     return ret;
 }
@@ -97,9 +97,9 @@ size_t SubFile::frame_number(int frame_index) {
         throw std::runtime_error(LOCATION + fmt::format("Could not open: {} for reading", m_fname.c_str()));
     fseek(fp, (sizeof(sls_detector_header) + bytes_per_part()) * frame_index, SEEK_SET); // NOLINT
     size_t const rc = fread(reinterpret_cast<char *>(&h), sizeof(h), 1, fp);
-    if (rc != sizeof(h))
+    if (rc != 1)
         throw std::runtime_error(LOCATION + "Could not read header from file");
-    if (!fclose(fp)) {
+    if (fclose(fp)) {
         throw std::runtime_error(LOCATION + "Could not close file");
     }
 
