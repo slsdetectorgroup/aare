@@ -22,7 +22,7 @@ int main() {
         throw std::runtime_error("environment variable PROJECT_ROOT_DIR is not set");
     }
     std::filesystem::path const fpath(PROJECT_ROOT_DIR / "data" / "moench" /
-                                "moench04_noise_200V_sto_both_100us_no_light_thresh_900_master_0.raw");
+                                      "moench04_noise_200V_sto_both_100us_no_light_thresh_900_master_0.raw");
     File file(fpath, "r");
     test(file, 0);
     test(file, 2);
