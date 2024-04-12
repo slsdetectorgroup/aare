@@ -1,37 +1,41 @@
 ---
 Checks: '
-    # misc-include-cleaner (issues with includes from associated header files)
+
+
+
+    # DISABLE CHECKS:
+    # - misc-include-cleaner (issues with includes from associated header files)
     # (should fixed in 18.1.0 release)
-    # readability-magic-numbers
-    # cppcoreguidelines-avoid-magic-numbers
-    # cppcoreguidelines-owning-memory
-    # bugprone-easily-swappable-parameters
-    # cppcoreguidelines-non-private-member-variables-in-classes
+    # - readability-magic-numbers
+    # - cppcoreguidelines-avoid-magic-numbers
+    # - cppcoreguidelines-owning-memory
+    # - bugprone-easily-swappable-parameters
+    # - cppcoreguidelines-non-private-member-variables-in-classes
     # these two below are useful but make the code too verbose (maybe add them later)
-    # cppcoreguidelines-special-member-functions
-    # hicpp-special-member-functions
+    # - cppcoreguidelines-special-member-functions
+    # - hicpp-special-member-functions
 
 
 
-    abseil-cleanup-ctad
-    abseil-duration-addition
-    abseil-duration-comparison
-    abseil-duration-conversion-cast
-    abseil-duration-division
-    abseil-duration-factory-float
-    abseil-duration-factory-scale
-    abseil-duration-subtraction
-    abseil-duration-unnecessary-conversion
-    abseil-faster-strsplit-delimiter
-    abseil-no-internal-dependencies
-    abseil-no-namespace
-    abseil-redundant-strcat-calls
-    abseil-str-cat-append
-    abseil-string-find-startswith
-    abseil-string-find-str-contains
-    abseil-time-comparison
-    abseil-time-subtraction
-    abseil-upgrade-duration-conversions
+    # abseil-cleanup-ctad
+    # abseil-duration-addition
+    # abseil-duration-comparison
+    # abseil-duration-conversion-cast
+    # abseil-duration-division
+    # abseil-duration-factory-float
+    # abseil-duration-factory-scale
+    # abseil-duration-subtraction
+    # abseil-duration-unnecessary-conversion
+    # abseil-faster-strsplit-delimiter
+    # abseil-no-internal-dependencies
+    # abseil-no-namespace
+    # abseil-redundant-strcat-calls
+    # abseil-str-cat-append
+    # abseil-string-find-startswith
+    # abseil-string-find-str-contains
+    # abseil-time-comparison
+    # abseil-time-subtraction
+    # abseil-upgrade-duration-conversions
     android-cloexec-accept
     android-cloexec-accept4
     android-cloexec-creat

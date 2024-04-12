@@ -1,7 +1,6 @@
 #include "aare/file_io/RawFile.hpp"
 #include "aare/core/defs.hpp"
 #include "aare/utils/logger.hpp"
-#include "absl/strings/match.h"
 #include <fmt/format.h>
 #include <nlohmann/json.hpp>
 
@@ -54,7 +53,7 @@ sls_detector_header RawFile::read_header(const std::filesystem::path &fname) {
 }
 bool RawFile::is_master_file(const std::filesystem::path &fpath) {
     std::string const stem = fpath.stem();
-    return absl::StrContains(stem, "_master_");
+    return stem.find("_master_") != std::string::npos;
 }
 
 void RawFile::find_number_of_subfiles() {
