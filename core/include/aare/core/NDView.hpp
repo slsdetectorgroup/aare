@@ -55,10 +55,8 @@ template <typename T, ssize_t Ndim = 2> class NDView {
           size_(std::accumulate(std::begin(shape), std::end(shape), 1, std::multiplies<>())) {}
 
     NDView(T *buffer, const std::vector<ssize_t> &shape)
-        : buffer_(buffer), strides_(c_strides<Ndim>(make_array<Ndim>(shape))), shape_(make_array<Ndim>(shape)) {
-
-        size_ = std::accumulate(std::begin(shape), std::end(shape), 1, std::multiplies<>());
-    }
+        : buffer_(buffer), strides_(c_strides<Ndim>(make_array<Ndim>(shape))), shape_(make_array<Ndim>(shape)),
+          size_(std::accumulate(std::begin(shape), std::end(shape), 1, std::multiplies<>())) {}
 
     template <typename... Ix> std::enable_if_t<sizeof...(Ix) == Ndim, T &> operator()(Ix... index) {
         return buffer_[element_offset(strides_, index...)];
@@ -107,7 +105,7 @@ template <typename T, ssize_t Ndim = 2> class NDView {
         buffer_ = other.buffer_;
         return *this;
     }
-    
+
     NDView &operator=(NDView &&other) noexcept {
         if (this == &other)
             return *this;

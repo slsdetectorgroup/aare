@@ -11,5 +11,9 @@ jobs:
         # find all examples in build/examples and run them
         run: |
           pwd
+          mkdir build
+          cd build
+          cmake ..
+          cd ..
           # find \( -name "*.cpp" -o -name "*.hpp" \) -not -path "./build/*"  -not -path "./python/*" -not -name "*.test.cpp" | xargs -I {} -n 1 -P 10 clang-tidy --config-file=.clang-tidy -p build {}
           clang-tidy --config-file=.clang-tidy -p build core/src/Frame.cpp

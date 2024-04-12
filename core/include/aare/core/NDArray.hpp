@@ -45,7 +45,6 @@ template <typename T, ssize_t Ndim = 2> class NDArray {
         // fmt::print("NDArray(NDArray &&other)\n");
     }
 
-
     // Copy constructor
     NDArray(const NDArray &other)
         : shape_(other.shape_), strides_(c_strides<Ndim>(shape_)), size_(other.size_), data_(new T[size_]) {

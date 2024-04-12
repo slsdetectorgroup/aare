@@ -20,8 +20,8 @@ class File {
      * @param cfg file configuration
      * @throws std::runtime_error if the file cannot be opened
      * @throws std::invalid_argument if the file mode is not supported
-     * 
-    */
+     *
+     */
     File(std::filesystem::path fname, std::string mode, FileConfig cfg = {});
     void write(Frame &frame);
     Frame read();
@@ -42,12 +42,12 @@ class File {
     /**
      * @brief Move constructor
      * @param other File object to move from
-    */
+     */
     File(File &&other);
 
     /**
      * @brief destructor: will only delete the FileInterface object
-    */
+     */
     ~File();
 };
 
