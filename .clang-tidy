@@ -1,5 +1,13 @@
 ---
 Checks: '
+    # misc-include-cleaner (issues with includes from associated header files)
+    # (should fixed in 18.1.0 release)
+    # readability-magic-numbers
+    # cppcoreguidelines-avoid-magic-numbers
+    # cppcoreguidelines-owning-memory
+    # bugprone-easily-swappable-parameters
+
+
     abseil-cleanup-ctad
     abseil-duration-addition
     abseil-duration-comparison
@@ -43,7 +51,6 @@ Checks: '
     bugprone-copy-constructor-init
     bugprone-dangling-handle
     bugprone-dynamic-static-initializers
-    bugprone-easily-swappable-parameters
     bugprone-empty-catch
     bugprone-exception-escape
     bugprone-fold-init-type
@@ -266,7 +273,6 @@ Checks: '
     cppcoreguidelines-avoid-const-or-ref-data-members
     cppcoreguidelines-avoid-do-while
     cppcoreguidelines-avoid-goto
-    # cppcoreguidelines-avoid-magic-numbers
     cppcoreguidelines-avoid-non-const-global-variables
     cppcoreguidelines-avoid-reference-coroutine-parameters
     cppcoreguidelines-c-copy-assignment-signature
@@ -282,7 +288,6 @@ Checks: '
     cppcoreguidelines-noexcept-move-operations
     cppcoreguidelines-noexcept-swap
     cppcoreguidelines-non-private-member-variables-in-classes
-    # cppcoreguidelines-owning-memory
     cppcoreguidelines-prefer-member-initializer
     cppcoreguidelines-pro-type-const-cast
     cppcoreguidelines-pro-type-cstyle-cast
@@ -353,7 +358,6 @@ Checks: '
     misc-const-correctness
     misc-definitions-in-headers
     misc-header-include-cycle
-    misc-include-cleaner
     misc-misleading-bidirectional
     misc-misleading-identifier
     misc-misplaced-const
@@ -446,7 +450,6 @@ Checks: '
     readability-function-cognitive-complexity
     readability-function-size
     readability-inconsistent-declaration-parameter-name
-    # readability-magic-numbers
     readability-make-member-function-const
     readability-misleading-indentation
     readability-misplaced-array-index

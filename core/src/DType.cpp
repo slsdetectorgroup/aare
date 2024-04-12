@@ -1,8 +1,8 @@
 
 #include "aare/core/DType.hpp"
 #include "aare/utils/logger.hpp"
+#include <fmt/core.h>
 
-#include <fmt/format.h>
 
 namespace aare {
 
@@ -26,9 +26,7 @@ DType::DType(const std::type_info &t) {
         m_type = TypeIndex::INT32;
     else if (t == typeid(uint32_t))
         m_type = TypeIndex::UINT32;
-    else if (t == typeid(int64_t))
-        m_type = TypeIndex::INT64;
-    else if (t == typeid(long))
+    else if (t == typeid(int64_t) || t == typeid(long)) // NOLINT
         m_type = TypeIndex::INT64;
     else if (t == typeid(uint64_t))
         m_type = TypeIndex::UINT64;
@@ -130,7 +128,7 @@ DType::DType(std::string_view sv) {
  */
 std::string DType::str() const {
 
-    char ec;
+    char ec{};
     if (endian::native == endian::little)
         ec = '<';
     else

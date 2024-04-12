@@ -147,6 +147,12 @@ class Logger {
         delete standard_output;
         delete error_output;
     }
+    Logger(Logger &&) noexcept= default;
+    Logger(const Logger &) = delete;
+    Logger &operator=(Logger &&) noexcept= default;
+    Logger &operator=(const Logger &) = delete;
+
+
 
     /**
      * @brief log a message
@@ -194,9 +200,9 @@ class Logger {
      */
     template <LOGGING_LEVEL level> void log_() {
         if (level == LOGGING_LEVEL::ERROR) {
-            *error_output << std::endl;
+            *error_output << std::endl; // NOLINT
         } else {
-            *standard_output << std::endl;
+            *standard_output << std::endl; // NOLINT
         }
     }
 
@@ -225,7 +231,7 @@ namespace internal {
 /**
  * @brief global instance of the logger
  */
-extern aare::logger::Logger logger_instance;
+extern aare::logger::Logger logger_instance; // NOLINT
 } // namespace internal
 
 /**
