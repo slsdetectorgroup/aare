@@ -91,16 +91,13 @@ void ClusterFile::write(Cluster &cluster) { fwrite(&cluster, sizeof(Cluster), 1,
  * @return The cluster read from the file.
  */
 Cluster ClusterFile::read() {
+    if (tell() >= count()) {
+        throw std::runtime_error("cluster number out of range");
+    }
 
     Cluster cluster{};
     fread(&cluster, sizeof(Cluster), 1, fp);
     return cluster;
-}
-void verify_range(size_t cluster_number, size_t n_clusters_) {
-    if (cluster_number > n_clusters_) {
-        throw std::invalid_argument(fmt::format(
-            "cluster_number {} is greater than the number of clusters in the file {}", cluster_number, n_clusters_));
-    }
 }
 
 /**
@@ -112,7 +109,9 @@ void verify_range(size_t cluster_number, size_t n_clusters_) {
  * @return The cluster read from the file.
  */
 Cluster ClusterFile::iread(size_t cluster_number) {
-    verify_range(n_clusters, count());
+    if (cluster_number >= count()) {
+        throw std::runtime_error("cluster number out of range");
+    }
 
     auto old_pos = ftell(fp);
     this->seek(cluster_number);
@@ -131,7 +130,9 @@ Cluster ClusterFile::iread(size_t cluster_number) {
  * @return A vector of clusters read from the file.
  */
 std::vector<Cluster> ClusterFile::read(size_t n_clusters_) {
-    verify_range(n_clusters_ - 1, count());
+    if (n_clusters_ + tell() > count()) {
+        throw std::runtime_error("cluster number out of range");
+    }
     std::vector<Cluster> clusters(n_clusters_);
     fread(clusters.data(), sizeof(Cluster), n_clusters, fp);
     return clusters;
@@ -145,7 +146,9 @@ std::vector<Cluster> ClusterFile::read(size_t n_clusters_) {
  * @param cluster_number The number of the cluster to move the file pointer to.
  */
 void ClusterFile::seek(size_t cluster_number) {
-    verify_range(n_clusters, count());
+    if (cluster_number > count()) {
+        throw std::runtime_error("cluster number out of range");
+    }
 
     const auto offset = static_cast<int64_t>(sizeof(ClusterFileConfig) + cluster_number * sizeof(Cluster));
 
