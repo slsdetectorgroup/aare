@@ -11,6 +11,15 @@ Checks: '
     # - cppcoreguidelines-owning-memory
     # - bugprone-easily-swappable-parameters
     # - cppcoreguidelines-non-private-member-variables-in-classes
+
+    # cppcoreguidelines-special-member-functions
+    # hicpp-special-member-functions
+
+    # cert-err33-c # too much with c file api
+
+    # modernize-pass-by-value # contradicts with other checks
+
+
     # abseil-cleanup-ctad
     # abseil-duration-addition
     # abseil-duration-comparison
@@ -31,8 +40,7 @@ Checks: '
     # abseil-time-subtraction
     # abseil-upgrade-duration-conversions
     android-cloexec-accept
-    cppcoreguidelines-special-member-functions
-    hicpp-special-member-functions
+
     android-cloexec-accept4
     android-cloexec-creat
     android-cloexec-dup
@@ -131,7 +139,6 @@ Checks: '
     cert-dcl59-cpp
     cert-env33-c
     cert-err09-cpp
-    cert-err33-c
     cert-err34-c
     cert-err52-cpp
     cert-err58-cpp
@@ -384,7 +391,6 @@ Checks: '
     modernize-macro-to-enum
     modernize-make-shared
     modernize-make-unique
-    modernize-pass-by-value
     modernize-raw-string-literal
     modernize-redundant-void-arg
     modernize-replace-auto-ptr

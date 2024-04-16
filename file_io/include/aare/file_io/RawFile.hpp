@@ -24,7 +24,7 @@ class RawFile : public FileInterface {
      * @brief write function is not implemented for RawFile
      * @param frame frame to write
      */
-    void write(Frame & /*frame*/) override { throw std::runtime_error("Not implemented"); };
+    void write([[maybe_unused]] Frame &frame) override { throw std::runtime_error("Not implemented"); };
     Frame read() override { return get_frame(this->current_frame++); };
     std::vector<Frame> read(size_t n_frames) override;
     void read_into(std::byte *image_buf) override { return get_frame_into(this->current_frame++, image_buf); };

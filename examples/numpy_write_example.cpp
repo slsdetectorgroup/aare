@@ -1,9 +1,9 @@
 // Your First C++ Program
 #include "aare/core/Frame.hpp"
+#include "aare/examples/defs.hpp"
 #include "aare/file_io/File.hpp"
-#include <iostream>
 
-#define AARE_ROOT_DIR_VAR "PROJECT_ROOT_DIR"
+#include <iostream>
 
 using aare::File;
 using aare::FileConfig;

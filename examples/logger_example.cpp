@@ -1,4 +1,6 @@
+#include "aare/examples/defs.hpp"
 #include "aare/utils/logger.hpp"
+
 #include <fstream>
 #include <iostream>
 
@@ -11,7 +13,7 @@ int main() {
 
     // writing to file
     std::ofstream textfile;
-    textfile.open("Test.txt");
+    textfile.open("/tmp/Test.txt");
     aare::logger::set_streams(textfile.rdbuf());
     aare::logger::info(LOCATION, "info printed to file");
 
@@ -26,7 +28,7 @@ int main() {
 
     // setting file output by path
     // user doesn't have to close file
-    aare::logger::set_output_file("Test2.txt");
+    aare::logger::set_output_file("/tmp/Test2.txt");
     aare::logger::info(LOCATION, "info printed to Test2.txt");
     return 0;
 }

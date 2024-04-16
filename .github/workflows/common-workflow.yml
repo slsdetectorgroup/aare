@@ -43,7 +43,7 @@ jobs:
         # find all examples in build/examples and run them
         run: |
           pwd
-          export PROJECT_ROOT_DIR="."
+          export AARE_ROOT_DIR="$PWD"
           ls build/examples/*_example
           find build/examples -name "*_example" -not -name "zmq_*" | xargs -I {} -n 1 -t  bash -c {}
 
