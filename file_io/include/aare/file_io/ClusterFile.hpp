@@ -33,6 +33,9 @@ struct ClusterFileConfig {
         return frame_number == other.frame_number && n_clusters == other.n_clusters;
     }
     bool operator!=(const ClusterFileConfig &other) const { return !(*this == other); }
+    std::string to_string() const {
+        return "frame_number: " + std::to_string(frame_number) + " n_clusters: " + std::to_string(n_clusters) + "\n";
+    }
 };
 
 /**
@@ -51,6 +54,7 @@ class ClusterFile {
     size_t tell() const;
     size_t count() noexcept;
     int32_t frame() const;
+    void update_header() /* throws */;
     ~ClusterFile() noexcept;
 
   private:

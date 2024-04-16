@@ -32,7 +32,23 @@ int main() {
         data_offset += 9;
     }
 
-    //writing a file
+    // writing a file
+    std::filesystem::path const fpath_out("/tmp/file.clust");
+    aare::ClusterFile cf_out(fpath_out, "w", ClusterFileConfig(1, 44));
+    std::cout << "file opened for writing" << '\n';
+    std::vector<Cluster> clusters;
+    for (int i = 0; i < 1084; i++) {
+        Cluster c;
+        c.x = i;
+        c.y = i + 200;
+        for (int j = 0; j < 9; j++) {
+            c.data[j] = j;
+        }
+        clusters.push_back(c);
+    }
+    cf_out.write(clusters);
+    std::cout << "wrote 10 clusters" << '\n';
+    cf_out.update_header();
 
     return 0;
 }

@@ -1,7 +1,9 @@
 #include "aare/file_io/ClusterFile.hpp"
+#include "aare/utils/compare_files.hpp"
 #include "test_config.hpp"
 #include <catch2/catch_test_macros.hpp>
-
+#include <iostream>
+#include <random>
 using aare::Cluster;
 using aare::ClusterFile;
 using aare::ClusterFileConfig;
@@ -71,4 +73,42 @@ TEST_CASE("Read a cluster file") {
             data_offset += 9;
         }
     }
+}
+
+TEST_CASE("write a cluster file") {
+
+    auto const FRAME_NUMBER = 1461041991;
+    auto const TOTAL_CLUSTERS = 214748;
+
+    std::filesystem::path const fpath_out("/tmp/file.clust");
+    ClusterFile cf_out(fpath_out, "w", ClusterFileConfig(FRAME_NUMBER, TOTAL_CLUSTERS));
+    REQUIRE(cf_out.count() == 0);
+    REQUIRE(cf_out.frame() == FRAME_NUMBER);
+
+    // write file with random close to bounds values
+    int32_t offset = 0;
+    std::vector<Cluster> clusters(TOTAL_CLUSTERS);
+    for (int32_t i = 0; i < TOTAL_CLUSTERS; i++) {
+        Cluster c;
+        c.x = INT16_MAX - offset;
+        c.y = INT16_MAX - (offset + 200);
+        for (int32_t j = 0; j < 9; j++) {
+            if (j % 2 == 0)
+                c.data[j] = -(offset * 2);
+            else
+                c.data[j] = (offset * 2);
+        }
+        clusters[i] = c;
+        offset++;
+        offset %= INT16_MAX - 200;
+    }
+    cf_out.write(clusters);
+    REQUIRE(cf_out.count() == TOTAL_CLUSTERS);
+    REQUIRE(cf_out.frame() == FRAME_NUMBER);
+    cf_out.update_header();
+    REQUIRE(cf_out.count() == TOTAL_CLUSTERS);
+    REQUIRE(cf_out.frame() == FRAME_NUMBER);
+
+    auto data_file = test_data_path() / "clusters" / "test_writing.clust";
+    REQUIRE(aare::compare_files(fpath_out, data_file));
 }

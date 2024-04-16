@@ -15,25 +15,25 @@ namespace aare {
  * @param config Configuration for the file header.
  */
 ClusterFile::ClusterFile(const std::filesystem::path &fname_, const std::string &mode_, ClusterFileConfig config)
-    : fname{fname_}, mode{mode_} {
+    : fname{fname_}, mode{mode_}, frame_number{config.frame_number}, n_clusters{config.n_clusters} {
 
-    // check if the file exists and is a regular file
-    if (not std::filesystem::exists(fname)) {
-        throw std::invalid_argument(fmt::format("file {} does not exist", fname.c_str()));
-    }
-    if (not std::filesystem::is_regular_file(fname)) {
-        throw std::invalid_argument(fmt::format("file {} is not a regular file", fname.c_str()));
-    }
-    // check if the file size is a multiple of the cluster size
-    if ((std::filesystem::file_size(fname) - HEADER_BYTES) % sizeof(Cluster) != 0) {
-        aare::logger::warn("file", fname, "size is not a multiple of cluster size");
-    }
     // check if the file has the .clust extension
     if (fname.extension() != ".clust") {
         aare::logger::warn("file", fname, "does not have .clust extension");
     }
 
     if (mode == "r") {
+        // check if the file exists and is a regular file
+        if (not std::filesystem::exists(fname)) {
+            throw std::invalid_argument(fmt::format("file {} does not exist", fname.c_str()));
+        }
+        if (not std::filesystem::is_regular_file(fname)) {
+            throw std::invalid_argument(fmt::format("file {} is not a regular file", fname.c_str()));
+        }
+        // check if the file size is a multiple of the cluster size
+        if ((std::filesystem::file_size(fname) - HEADER_BYTES) % sizeof(Cluster) != 0) {
+            aare::logger::warn("file", fname, "size is not a multiple of cluster size");
+        }
         if (config != ClusterFileConfig()) {
             aare::logger::warn("ignored ClusterFileConfig for read mode");
         }
@@ -47,9 +47,8 @@ ClusterFile::ClusterFile(const std::filesystem::path &fname_, const std::string 
         if (rc != 1) {
             throw std::runtime_error(fmt::format("could not read header from file {}", fname.c_str()));
         }
-        n_clusters = config.n_clusters;
         frame_number = config.frame_number;
-
+        n_clusters = config.n_clusters;
     } else if (mode == "w") {
         // open file
         fp = fopen(fname.c_str(), "wb");
@@ -186,16 +185,28 @@ size_t ClusterFile::count() noexcept {
 }
 
 int32_t ClusterFile::frame() const { return frame_number; }
-
+void ClusterFile::update_header() {
+    if (mode == "r") {
+        throw std::runtime_error("update header is not implemented for read mode");
+    }
+    // update the header with the correct number of clusters
+    aare::logger::debug("updating header with correct number of clusters", count());
+    auto tmp_n_clusters = count();
+    fseek(fp, 0, SEEK_SET);
+    ClusterFileConfig config(frame_number, static_cast<int32_t>(tmp_n_clusters));
+    if (fwrite(&config, sizeof(config), 1, fp) != 1) {
+        throw std::runtime_error("could not write header to file");
+    }
+    if (fflush(fp) != 0) {
+        throw std::runtime_error("could not flush file");
+    }
+}
 ClusterFile::~ClusterFile() noexcept {
     if (mode == "w") {
-        // update the header with the correct number of clusters
-        aare::logger::info("updating header with correct number of clusters", count());
-        auto tmp_n_clusters = count();
-        fseek(fp, 0, SEEK_SET);
-        ClusterFileConfig config(frame_number, static_cast<int32_t>(tmp_n_clusters));
-        if (fwrite(&config, sizeof(config), 1, fp) != 1) {
-            aare::logger::warn("could not write header to file");
+        try {
+            update_header();
+        } catch (std::runtime_error &e) {
+            aare::logger::error("error updating header", e.what());
         }
     }
 
