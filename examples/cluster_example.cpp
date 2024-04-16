@@ -22,7 +22,6 @@ int main() {
     int offset = 0;
     int data_offset = 0;
     for (auto c : cluster) {
-        std::cout << "cluster " << c.x << '\n';
         assert(c.y == offset + 200);
         for (int i = 0; i < 9; i++) {
             assert(c.data[i] == data_offset + i);
@@ -33,7 +32,7 @@ int main() {
     }
 
     // writing a file
-    std::filesystem::path const fpath_out("/tmp/file.clust");
+    std::filesystem::path const fpath_out("/tmp/cluster_example_file.clust");
     aare::ClusterFile cf_out(fpath_out, "w", ClusterFileConfig(1, 44));
     std::cout << "file opened for writing" << '\n';
     std::vector<Cluster> clusters;
