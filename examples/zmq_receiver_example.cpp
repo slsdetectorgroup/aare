@@ -1,3 +1,4 @@
+#include "aare/examples/defs.hpp"
 #include "aare/network_io/ZmqSocketReceiver.hpp"
 #include "aare/network_io/defs.hpp"
 

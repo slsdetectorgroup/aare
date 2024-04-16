@@ -1,9 +1,8 @@
 // Your First C++ Program
+#include "aare/examples/defs.hpp"
 #include "aare/file_io/File.hpp"
 #include "aare/utils/logger.hpp"
 #include <iostream>
-
-#define AARE_ROOT_DIR_VAR "PROJECT_ROOT_DIR"
 
 using aare::File;
 using aare::Frame;
@@ -18,7 +17,7 @@ void test(File &f, int frame_number) {
 }
 
 int main() {
-    auto PROJECT_ROOT_DIR = std::filesystem::path(getenv(AARE_ROOT_DIR_VAR));
+    auto PROJECT_ROOT_DIR = std::filesystem::path(getenv(AARE_ROOT_DIR));
     std::filesystem::path const fpath(PROJECT_ROOT_DIR / "data" / "jungfrau" / "jungfrau_single_master_0.json");
     std::cout << fpath << '\n';
 

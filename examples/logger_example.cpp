@@ -1,4 +1,6 @@
+#include "aare/examples/defs.hpp"
 #include "aare/utils/logger.hpp"
+
 #include <fstream>
 #include <iostream>
 

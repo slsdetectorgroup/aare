@@ -244,7 +244,7 @@ extern aare::logger::Logger logger_instance; // NOLINT
  * @param s arguments to log
  * @return void
  */
-template <LOGGING_LEVEL level, typename... Strings> void log(const Strings... s) noexcept{
+template <LOGGING_LEVEL level, typename... Strings> void log(const Strings... s) noexcept {
     internal::logger_instance.log<level>(s...);
 }
 /**

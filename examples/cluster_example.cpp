@@ -1,13 +1,14 @@
 #include "aare/core/defs.hpp"
 #include "aare/file_io/ClusterFile.hpp"
+#include <cassert>
 #include <iostream>
-#include <cassert>  
 
 using namespace aare;
 int main() {
     auto PROJECT_ROOT_DIR = std::filesystem::path(getenv("AARE_ROOT_DIR"));
     std::filesystem::path const fpath(PROJECT_ROOT_DIR / "data" / "clusters" / "single_frame_97_clustrers.clust");
 
+    // reading a file
     aare::ClusterFile cf(fpath, "r");
     std::cout << "file opened " << '\n';
     std::cout << "n_clusters " << cf.count() << '\n';
@@ -16,8 +17,6 @@ int main() {
     cf.seek(0); // seek to the beginning of the file (this is the default behavior of the constructor)
 
     auto cluster = cf.read(97);
-
-
 
     std::cout << "read 10 clusters" << '\n';
     int offset = 0;
@@ -31,9 +30,9 @@ int main() {
 
         offset++;
         data_offset += 9;
+    }
 
-
-        }
+    //writing a file
 
     return 0;
 }

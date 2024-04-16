@@ -15,9 +15,9 @@ struct Cluster {
     int16_t x;
     int16_t y;
     std::array<int32_t, 9> data;
-    std::string to_string() const{
+    std::string to_string() const {
         std::string s = "x: " + std::to_string(x) + " y: " + std::to_string(y) + "\ndata: [";
-        for (auto d : data){
+        for (auto d : data) {
             s += std::to_string(d) + " ";
         }
         s += "]";
