@@ -19,6 +19,32 @@ jobs:
   build-and-test:
     runs-on: ubuntu-latest
     steps:
+      - name: Dump GitHub context
+        env:
+          GITHUB_CONTEXT: ${{ toJson(github) }}
+          JOB_CONTEXT: ${{ toJson(job) }}
+          STEPS_CONTEXT: ${{ toJson(steps) }}
+          RUNNER_CONTEXT: ${{ toJson(runner) }}
+        run: |
+          echo "$GITHUB_CONTEXT"
+          echo "$JOB_CONTEXT"
+          echo "$STEPS_CONTEXT"
+          echo "$RUNNER_CONTEXT"
+          echo "The job_id is: $GITHUB_JOB"   # reference the default environment variables
+          echo "The id of this action is: $GITHUB_ACTION"   # reference the default environment variables
+          echo "The run id is: $GITHUB_RUN_ID"
+          echo "The GitHub Actor's username is: $GITHUB_ACTOR"
+          echo "GitHub SHA: $GITHUB_SHA"
+      
+      - name: print inputs
+        run: |
+          echo "use-system-libraries: ${{inputs.use-system-libraries}}"
+          echo "build-type: ${{inputs.build-type}}"
+          echo "use-python-bindings: ${{inputs.use-python-bindings}}"
+
+
+
+
       - uses: actions/checkout@v4
       - uses: mamba-org/setup-micromamba@v1
         if: ${{ contains(inputs.use-system-libraries, 'ON')}}
