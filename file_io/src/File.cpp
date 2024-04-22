@@ -45,6 +45,9 @@ size_t File::bitdepth() const { return file_impl->bitdepth(); }
 File::~File() { delete file_impl; }
 
 Frame File::iread(size_t frame_number) { return file_impl->iread(frame_number); }
+std::vector<Frame> File::iread(size_t frame_number, size_t n_frames) {
+    return file_impl->iread(frame_number, n_frames);
+}
 
 File::File(File &&other) noexcept : file_impl(other.file_impl) { other.file_impl = nullptr; }
 

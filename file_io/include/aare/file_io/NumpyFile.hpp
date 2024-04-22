@@ -72,6 +72,21 @@ class NumpyFile : public FileInterface {
         }
         return arr;
     }
+    Frame iread(size_t frame_number) {
+        auto old_pos = tell();
+        seek(frame_number);
+        Frame tmp = read();
+        seek(old_pos);
+        return tmp;
+    };
+
+    std::vector<Frame> iread(size_t frame_number, size_t n_frames) {
+        auto old_pos = tell();
+        seek(frame_number);
+        std::vector<Frame> tmp = read(n_frames);
+        seek(old_pos);
+        return tmp;
+    }
 
     ~NumpyFile() noexcept override;
 
