@@ -76,7 +76,8 @@ class FileInterface {
     virtual void read_into(std::byte *image_buf, size_t n_frames) = 0;
 
     /**
-     * @brief get the frame number at the given frame index
+     * @brief get the frame number stored in the file at the given frame_index
+     * @note throws when subfiles have different frame numbers at the same index (note only relevant for RawFile)
      * @param frame_index index of the frame
      * @return frame number
      */

@@ -24,13 +24,14 @@ RawFile::RawFile(const std::filesystem::path &fname, const std::string &mode, co
     } else {
         throw std::runtime_error(LOCATION + "Unsupported mode");
     }
+    m_starting_frame = this->frame_number(0);
 }
 
 void RawFile::open_subfiles() {
     for (size_t i = 0; i != n_subfiles; ++i) {
         auto v = std::vector<SubFile *>(n_subfile_parts);
         for (size_t j = 0; j != n_subfile_parts; ++j) {
-            v[j] = new SubFile(data_fname(i, j), m_type, subfile_rows, subfile_cols, m_bitdepth);
+            v[j] = new SubFile(data_fname(i, j), m_type, subfile_rows, subfile_cols, m_bitdepth, i);
         }
         subfiles.push_back(v);
     }
@@ -200,15 +201,15 @@ void RawFile::get_frame_into(size_t frame_number, std::byte *frame_buffer) {
     if (frame_number > this->m_total_frames) {
         throw std::runtime_error(LOCATION + "Frame number out of range");
     }
-    size_t const subfile_id = frame_number / this->max_frames_per_file;
+    size_t const subfile_id = (frame_number - m_starting_frame) / this->max_frames_per_file;
     // create frame and get its buffer
 
     if (this->geometry.col == 1) {
         // get the part from each subfile and copy it to the frame
         for (size_t part_idx = 0; part_idx != this->n_subfile_parts; ++part_idx) {
+
             auto part_offset = this->subfiles[subfile_id][part_idx]->bytes_per_part();
-            this->subfiles[subfile_id][part_idx]->get_part(frame_buffer + part_idx * part_offset,
-                                                           frame_number % this->max_frames_per_file);
+            this->subfiles[subfile_id][part_idx]->get_part(frame_buffer + part_idx * part_offset, frame_number);
         }
 
     } else {
@@ -217,7 +218,7 @@ void RawFile::get_frame_into(size_t frame_number, std::byte *frame_buffer) {
         auto *part_buffer = new std::byte[bytes_per_part];
 
         for (size_t part_idx = 0; part_idx != this->n_subfile_parts; ++part_idx) {
-            this->subfiles[subfile_id][part_idx]->get_part(part_buffer, frame_number % this->max_frames_per_file);
+            this->subfiles[subfile_id][part_idx]->get_part(part_buffer, frame_number);
             for (size_t cur_row = 0; cur_row < (this->subfile_rows); cur_row++) {
                 auto irow = cur_row + (part_idx / this->geometry.col) * this->subfile_rows;
                 auto icol = (part_idx % this->geometry.col) * this->subfile_cols;
@@ -253,7 +254,17 @@ size_t RawFile::frame_number(size_t frame_index) {
         throw std::runtime_error(LOCATION + "Frame number out of range");
     }
     size_t const subfile_id = frame_index / this->max_frames_per_file;
-    return this->subfiles[subfile_id][0]->frame_number(frame_index % this->max_frames_per_file);
+    size_t prev_frame_nbr{};
+    bool first_time_in_loop = true;
+    for (auto &subfile_parts : this->subfiles[subfile_id]) {
+        auto cur_frame_nbr = subfile_parts->frame_number_in_file(frame_index % this->max_frames_per_file);
+        if ((not first_time_in_loop) && cur_frame_nbr != prev_frame_nbr) {
+            throw std::runtime_error(LOCATION + "Frame number different in subfiles");
+        }
+        prev_frame_nbr = cur_frame_nbr;
+        first_time_in_loop = false;
+    }
+    return prev_frame_nbr;
 }
 
 RawFile::~RawFile() {

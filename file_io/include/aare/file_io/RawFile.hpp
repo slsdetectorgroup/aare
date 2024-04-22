@@ -25,9 +25,13 @@ class RawFile : public FileInterface {
      * @param frame frame to write
      */
     void write([[maybe_unused]] Frame &frame) override { throw std::runtime_error("Not implemented"); };
-    Frame read() override { return get_frame(this->current_frame++); };
+    Frame read() override {
+        return get_frame(frame_number(this->current_frame++));
+    };
     std::vector<Frame> read(size_t n_frames) override;
-    void read_into(std::byte *image_buf) override { return get_frame_into(this->current_frame++, image_buf); };
+    void read_into(std::byte *image_buf) override {
+        return get_frame_into(frame_number(this->current_frame++), image_buf);
+    };
     void read_into(std::byte *image_buf, size_t n_frames) override;
     size_t frame_number(size_t frame_index) override;
 
@@ -156,6 +160,7 @@ class RawFile : public FileInterface {
     RawFileConfig cfg{0, 0};
     TimingMode timing_mode{};
     bool quad{false};
+    size_t m_starting_frame{};
 };
 
 } // namespace aare

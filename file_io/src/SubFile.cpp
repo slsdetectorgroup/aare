@@ -7,9 +7,11 @@
 
 namespace aare {
 
-SubFile::SubFile(const std::filesystem::path &fname, DetectorType detector, size_t rows, size_t cols, size_t bitdepth)
+SubFile::SubFile(const std::filesystem::path &fname, DetectorType detector, size_t rows, size_t cols, size_t bitdepth,
+                 int subfile_id)
     : m_bitdepth(bitdepth), m_fname(fname), m_rows(rows), m_cols(cols),
-      n_frames(std::filesystem::file_size(fname) / (sizeof(sls_detector_header) + rows * cols * bitdepth / 8)) {
+      n_frames(std::filesystem::file_size(fname) / (sizeof(sls_detector_header) + rows * cols * bitdepth / 8)),
+      m_subfile_id(subfile_id) {
 
     if (read_impl_map.find({detector, bitdepth}) == read_impl_map.end()) {
         auto error_msg = LOCATION + "No read_impl function found for detector: " + toString(detector) +
@@ -17,23 +19,36 @@ SubFile::SubFile(const std::filesystem::path &fname, DetectorType detector, size
         throw std::invalid_argument(error_msg);
     }
     this->read_impl = read_impl_map.at({detector, bitdepth});
+
+    if (!(fp = fopen(fname.c_str(), "rb"))) {
+        throw std::runtime_error(fmt::format(LOCATION + "Could not open: {} for reading", fname.c_str()));
+    }
+}
+
+size_t SubFile::correct_frame_number(size_t frame_number) {
+    sls_detector_header h{};
+    for (size_t offset = cached_offset; offset < n_frames; offset++) {
+        size_t ret = (frame_number + offset) % n_frames;
+        fseek(fp, (sizeof(sls_detector_header) + bytes_per_part()) * ret, SEEK_SET); // NOLINT
+        size_t const rc = fread(reinterpret_cast<char *>(&h), sizeof(h), 1, fp);
+        if (rc != 1)
+            throw std::runtime_error(LOCATION + "Could not read header from file");
+        if (h.frameNumber == frame_number) {
+            cached_offset = offset;
+            return ret;
+        }
+    }
+    aare::logger::error("m_subfile_id:", m_subfile_id);
+    aare::logger::error(LOCATION, ": frame:", h.frameNumber, "frame_number:", frame_number, "toto",
+                        (h.frameNumber - (m_subfile_id * n_frames)));
+    throw std::runtime_error(fmt::format(LOCATION + "Could not find frame {} in file", frame_number));
 }
 
 size_t SubFile::get_part(std::byte *buffer, size_t frame_number) {
-    if (frame_number >= n_frames) {
-        throw std::runtime_error("Frame number out of range");
-    }
-    // TODO: find a way to avoid opening and closing the file for each frame
     aare::logger::debug(LOCATION, "frame:", frame_number, "file:", m_fname.c_str());
-    fp = fopen(m_fname.c_str(), "rb");
-    if (!fp) {
-        throw std::runtime_error(fmt::format("Could not open: {} for reading", m_fname.c_str()));
-    }
-    fseek(fp, sizeof(sls_detector_header) + (sizeof(sls_detector_header) + bytes_per_part()) * frame_number, // NOLINT
-          SEEK_SET);
+    size_t tmp = correct_frame_number(frame_number);
+    fseek(fp, sizeof(sls_detector_header) + (sizeof(sls_detector_header) + bytes_per_part()) * tmp, SEEK_SET); // NOLINT
     auto ret = (this->*read_impl)(buffer);
-    if (fclose(fp))
-        throw std::runtime_error(LOCATION + "Could not close file");
     return ret;
 }
 
@@ -89,20 +104,20 @@ template <typename DataType> size_t SubFile::read_impl_flip(std::byte *buffer) {
     return rc;
 };
 
-size_t SubFile::frame_number(size_t frame_index) {
+size_t SubFile::frame_number_in_file(size_t frame_index) {
     sls_detector_header h{};
-    fp = fopen(this->m_fname.c_str(), "r");
-    if (!fp)
-        throw std::runtime_error(LOCATION + fmt::format("Could not open: {} for reading", m_fname.c_str()));
     fseek(fp, (sizeof(sls_detector_header) + bytes_per_part()) * frame_index, SEEK_SET); // NOLINT
     size_t const rc = fread(reinterpret_cast<char *>(&h), sizeof(h), 1, fp);
     if (rc != 1)
         throw std::runtime_error(LOCATION + "Could not read header from file");
-    if (fclose(fp)) {
-        throw std::runtime_error(LOCATION + "Could not close file");
-    }
-
     return h.frameNumber;
+}
+
+SubFile::~SubFile() noexcept {
+    if (fp) {
+        if (fclose(fp))
+            aare::logger::error(LOCATION, "Could not close file");
+    }
 }
 
 } // namespace aare
