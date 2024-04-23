@@ -32,7 +32,7 @@ TEST_CASE("Read frame numbers from a jungfrau raw file") {
     }
 }
 
-TEST_CASE("Read data from a jungfrau 500k single port raw file", "[debug]") {
+TEST_CASE("Read data from a jungfrau 500k single port raw file") {
     auto fpath = test_data_path() / "jungfrau" / "jungfrau_single_master_0.json";
     REQUIRE(std::filesystem::exists(fpath));
 
@@ -45,7 +45,6 @@ TEST_CASE("Read data from a jungfrau 500k single port raw file", "[debug]") {
         CHECK(frame.rows() == 512);
         CHECK(frame.cols() == 1024);
         CHECK(frame.view<uint16_t>()(0, 0) == pixel_0_0[i]);
-        // frame.view<uint16_t>();
     }
 }
 
