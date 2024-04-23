@@ -212,6 +212,17 @@ void RawFile::get_frame_into(size_t frame_number, std::byte *frame_buffer) {
         }
 
     } else {
+
+        // check that subfiles hold the same frame number
+        // TODO: How to handle this case? check commits e791992 and 1177fd1 in PR#66
+        auto test_frame_number = this->subfiles[subfile_id][0]->frame_number(frame_number % this->max_frames_per_file);
+        for (size_t part_idx = 1; part_idx != this->n_subfile_parts; ++part_idx) {
+            if (this->subfiles[subfile_id][part_idx]->frame_number(frame_number % this->max_frames_per_file) !=
+                test_frame_number) {
+                throw std::runtime_error(LOCATION + "Subfiles do not hold the same frame number");
+            }
+        }
+
         // create a buffer that will hold a the frame part
         auto bytes_per_part = this->subfile_rows * this->subfile_cols * this->m_bitdepth / 8;
         auto *part_buffer = new std::byte[bytes_per_part];
