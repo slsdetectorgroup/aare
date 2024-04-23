@@ -26,8 +26,8 @@ class RawFile : public FileInterface {
      */
     void write([[maybe_unused]] Frame &frame) override { throw std::runtime_error("Not implemented"); };
     Frame read() override {
-      std::cout << "Reading frame " << this->current_frame << std::endl;
-       return get_frame(frame_number(this->current_frame++)); };
+        return get_frame(frame_number(this->current_frame++));
+    };
     std::vector<Frame> read(size_t n_frames) override;
     void read_into(std::byte *image_buf) override {
         return get_frame_into(frame_number(this->current_frame++), image_buf);
@@ -48,13 +48,10 @@ class RawFile : public FileInterface {
     size_t pixels_per_frame() override { return m_rows * m_cols; }
 
     // goto frame number
-    void seek(size_t frame_number) override { this->current_frame = frame_number + m_starting_frame;
-    std::cout<<"Seeking to frame "<<frame_number<<std::endl;
-    std::cout<<"Current frame is "<<this->current_frame<<std::endl;
-    };
+    void seek(size_t frame_number) override { this->current_frame = frame_number; };
 
     // return the position of the file pointer (in number of frames)
-    size_t tell() override { return this->current_frame - m_starting_frame; };
+    size_t tell() override { return this->current_frame; };
 
     /**
      * @brief check if the file is a master file
@@ -101,21 +98,6 @@ class RawFile : public FileInterface {
     size_t rows() const override { return m_rows; }
     size_t cols() const override { return m_cols; }
     size_t bitdepth() const override { return m_bitdepth; }
-    Frame iread(size_t frame_number) override {
-        auto old_pos = tell();
-        seek(frame_number);
-        Frame tmp = read();
-        seek(old_pos);
-        return tmp;
-    }
-
-    std::vector<Frame> iread(size_t frame_number, size_t n_frames) override {
-        auto old_pos = tell();
-        seek(frame_number);
-        std::vector<Frame> tmp = read(n_frames);
-        seek(old_pos);
-        return tmp;
-    }
 
   private:
     /**

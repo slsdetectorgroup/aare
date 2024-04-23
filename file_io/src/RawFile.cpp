@@ -24,9 +24,7 @@ RawFile::RawFile(const std::filesystem::path &fname, const std::string &mode, co
     } else {
         throw std::runtime_error(LOCATION + "Unsupported mode");
     }
-    aare::logger::error("axxxsdasda", m_starting_frame);
     m_starting_frame = this->frame_number(0);
-    aare::logger::error("asdasda", m_starting_frame);
 }
 
 void RawFile::open_subfiles() {

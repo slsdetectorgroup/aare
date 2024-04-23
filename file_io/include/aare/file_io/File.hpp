@@ -26,7 +26,6 @@ class File {
     void write(Frame &frame);
     Frame read();
     Frame iread(size_t frame_number);
-    std::vector<Frame> iread(size_t frame_number, size_t n_frames);
     std::vector<Frame> read(size_t n_frames);
     void read_into(std::byte *image_buf);
     void read_into(std::byte *image_buf, size_t n_frames);

@@ -134,14 +134,28 @@ class FileInterface {
      * @param frame_number frame number to read
      * @return frame
      */
-    virtual Frame iread(size_t frame_number)=0;
+    Frame iread(size_t frame_number) {
+        auto old_pos = tell();
+        seek(frame_number);
+        Frame tmp = read();
+        seek(old_pos);
+        return tmp;
+    };
+
     /**
      * @brief read n_frames from the file starting at the given frame number
      * @param frame_number frame number to start reading from
      * @param n_frames number of frames to read
      * @return vector of frames
      */
-    virtual std::vector<Frame> iread(size_t frame_number, size_t n_frames)=0;
+    std::vector<Frame> iread(size_t frame_number, size_t n_frames) {
+        auto old_pos = tell();
+        seek(frame_number);
+        std::vector<Frame> tmp = read(n_frames);
+        seek(old_pos);
+        return tmp;
+    }
+
     // function to query the data type of the file
     /*virtual DataType dtype = 0; */
 
