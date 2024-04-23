@@ -39,6 +39,7 @@ class File {
     size_t rows() const;
     size_t cols() const;
     size_t bitdepth() const;
+    void set_total_frames(size_t total_frames);
 
     /**
      * @brief Move constructor

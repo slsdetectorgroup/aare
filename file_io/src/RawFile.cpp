@@ -46,7 +46,7 @@ RawFile::RawFile(const std::filesystem::path &fname, const std::string &mode, co
 
 void RawFile::parse_config(const FileConfig &config) {
     m_bitdepth = config.dtype.bitdepth();
-    m_total_frames = 0;
+    m_total_frames = config.total_frames;
     m_rows = config.rows;
     m_cols = config.cols;
     m_type = config.detector_type;

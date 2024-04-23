@@ -31,8 +31,8 @@ int main() {
     config.geometry = {1, 1};
     config.detector_type = aare::DetectorType::Moench;
     config.max_frames_per_file = 100;
-    config.rows = 1;
-    config.cols = 1;
+    config.rows = 1024;
+    config.cols = 512;
     config.dtype = aare::DType::UINT16;
     File file2(path2, "w", config);
     Frame frame(1024, 512, 16);
@@ -46,4 +46,5 @@ int main() {
     sls_detector_header header;
     header.frameNumber = 0;
     file2.write(frame, header);
+    file2.set_total_frames(1);
 }

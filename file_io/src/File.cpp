@@ -50,6 +50,7 @@ size_t File::tell() const { return file_impl->tell(); }
 size_t File::rows() const { return file_impl->rows(); }
 size_t File::cols() const { return file_impl->cols(); }
 size_t File::bitdepth() const { return file_impl->bitdepth(); }
+void File::set_total_frames(size_t total_frames) { return file_impl->set_total_frames(total_frames); }
 File::~File() { delete file_impl; }
 
 Frame File::iread(size_t frame_number) { return file_impl->iread(frame_number); }

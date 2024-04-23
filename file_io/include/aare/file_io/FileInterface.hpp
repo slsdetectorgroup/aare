@@ -29,6 +29,7 @@ struct FileConfig {
     xy geometry{1, 1};
     DetectorType detector_type{DetectorType::Unknown};
     int max_frames_per_file{};
+    size_t total_frames{};
 };
 
 /**
@@ -165,6 +166,8 @@ class FileInterface {
     /*virtual DataType dtype = 0; */
 
     virtual ~FileInterface() = default;
+
+    void set_total_frames(size_t total_frames) { m_total_frames = total_frames; }
 
   protected:
     std::string m_mode{};
