@@ -5,6 +5,19 @@
 
 namespace aare {
 
+struct ModuleConfig {
+    int module_gap_row{};
+    int module_gap_col{};
+
+    bool operator==(const ModuleConfig &other) const {
+        if (module_gap_col != other.module_gap_col)
+            return false;
+        if (module_gap_row != other.module_gap_row)
+            return false;
+        return true;
+    }
+};
+
 /**
  * @brief RawFile class to read .raw and .json files
  * @note derived from FileInterface
@@ -18,13 +31,14 @@ class RawFile : public FileInterface {
      * @param mode file mode (r, w)
      * @param cfg file configuration
      */
-    explicit RawFile(const std::filesystem::path &fname, const std::string &mode = "r", const FileConfig &config = {});
+    explicit RawFile(const std::filesystem::path &fname, const std::string &mode = "r",
+                     const FileConfig &config = FileConfig{});
 
     /**
      * @brief write function is not implemented for RawFile
      * @param frame frame to write
      */
-    void write([[maybe_unused]] Frame &frame) override { throw std::runtime_error("Not implemented"); };
+    void write(Frame &frame, sls_detector_header header);
     Frame read() override { return get_frame(this->current_frame++); };
     std::vector<Frame> read(size_t n_frames) override;
     void read_into(std::byte *image_buf) override { return get_frame_into(this->current_frame++, image_buf); };
@@ -44,7 +58,15 @@ class RawFile : public FileInterface {
     size_t pixels_per_frame() override { return m_rows * m_cols; }
 
     // goto frame number
-    void seek(size_t frame_number) override { this->current_frame = frame_number; };
+    void seek(size_t frame_number) override {
+        // check if the frame number is greater than the total frames
+        // if frame_number == total_frames, then the next read will throw an error
+        if (frame_number > this->total_frames()) {
+            throw std::runtime_error(
+                fmt::format("frame number {} is greater than total frames {}", frame_number, m_total_frames));
+        }
+        this->current_frame = frame_number;
+    };
 
     // return the position of the file pointer (in number of frames)
     size_t tell() override { return this->current_frame; };
@@ -88,7 +110,7 @@ class RawFile : public FileInterface {
     /**
      * @brief destructor: will delete the subfiles
      */
-    ~RawFile() override;
+    ~RawFile() noexcept override;
 
     size_t total_frames() const override { return m_total_frames; }
     size_t rows() const override { return m_rows; }
@@ -96,6 +118,7 @@ class RawFile : public FileInterface {
     size_t bitdepth() const override { return m_bitdepth; }
 
   private:
+    void write_master_file();
     /**
      * @brief read the frame at the given frame number into the image buffer
      * @param frame_number frame number to read
@@ -146,6 +169,7 @@ class RawFile : public FileInterface {
      * @brief open the subfiles
      */
     void open_subfiles();
+    void parse_config(const FileConfig &config);
 
     size_t n_subfiles{};
     size_t n_subfile_parts{};
@@ -153,7 +177,7 @@ class RawFile : public FileInterface {
     size_t subfile_rows{}, subfile_cols{};
     xy geometry{};
     std::vector<xy> positions;
-    RawFileConfig cfg{0, 0};
+    ModuleConfig cfg{0, 0};
     TimingMode timing_mode{};
     bool quad{false};
 };

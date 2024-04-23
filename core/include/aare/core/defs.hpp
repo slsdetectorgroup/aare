@@ -46,15 +46,16 @@ struct sls_detector_header {
 };
 
 struct xy {
-    int row;
-    int col;
+    size_t row;
+    size_t col;
     bool operator==(const xy &other) const { return row == other.row && col == other.col; }
     bool operator!=(const xy &other) const { return !(*this == other); }
+    std::string to_string() const { return "{ x: " + std::to_string(row) + " y: " + std::to_string(col) + " }"; }
 };
 
 using dynamic_shape = std::vector<ssize_t>;
 
-enum class DetectorType { Jungfrau, Eiger, Mythen3, Moench, ChipTestBoard };
+enum class DetectorType { Jungfrau, Eiger, Mythen3, Moench, ChipTestBoard, Unknown };
 
 enum class TimingMode { Auto, Trigger };
 
@@ -68,18 +69,5 @@ template <> std::string toString(DetectorType arg);
 template <> TimingMode StringTo(const std::string & /*mode*/);
 
 using DataTypeVariants = std::variant<uint16_t, uint32_t>;
-
-struct RawFileConfig {
-    int module_gap_row{};
-    int module_gap_col{};
-
-    bool operator==(const RawFileConfig &other) const {
-        if (module_gap_col != other.module_gap_col)
-            return false;
-        if (module_gap_row != other.module_gap_row)
-            return false;
-        return true;
-    }
-};
 
 } // namespace aare

@@ -15,14 +15,20 @@ namespace aare {
  * geometry: geometry of the file
  */
 struct FileConfig {
-    aare::DType dtype = aare::DType(typeid(uint16_t));
+    aare::DType dtype{typeid(uint16_t)};
     uint64_t rows{};
     uint64_t cols{};
-    xy geometry{1, 1};
     bool operator==(const FileConfig &other) const {
-        return dtype == other.dtype && rows == other.rows && cols == other.cols && geometry == other.geometry;
+        return dtype == other.dtype && rows == other.rows && cols == other.cols && geometry == other.geometry &&
+               detector_type == other.detector_type && max_frames_per_file == other.max_frames_per_file;
     }
     bool operator!=(const FileConfig &other) const { return !(*this == other); }
+
+    // rawfile specific
+    std::string version{};
+    xy geometry{1, 1};
+    DetectorType detector_type{DetectorType::Unknown};
+    int max_frames_per_file{};
 };
 
 /**
@@ -38,7 +44,7 @@ class FileInterface {
      * @return void
      * @throws std::runtime_error if the function is not implemented
      */
-    virtual void write(Frame &frame) = 0;
+    // virtual void write(Frame &frame) = 0;
 
     /**
      * @brief write a vector of frames to the file

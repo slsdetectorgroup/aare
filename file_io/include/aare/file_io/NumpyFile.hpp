@@ -27,7 +27,7 @@ class NumpyFile : public FileInterface {
      */
     explicit NumpyFile(const std::filesystem::path &fname, const std::string &mode = "r", FileConfig cfg = {});
 
-    void write(Frame &frame) override;
+    void write(Frame &frame);
     Frame read() override { return get_frame(this->current_frame++); }
 
     std::vector<Frame> read(size_t n_frames) override;

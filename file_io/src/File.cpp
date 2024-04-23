@@ -6,7 +6,7 @@
 
 namespace aare {
 
-File::File(const std::filesystem::path &fname, const std::string &mode, FileConfig cfg) {
+File::File(const std::filesystem::path &fname, const std::string &mode, const FileConfig &cfg) {
     if (mode != "r" && mode != "w" && mode != "a") {
         throw std::invalid_argument("Unsupported file mode");
     }
@@ -18,6 +18,7 @@ File::File(const std::filesystem::path &fname, const std::string &mode, FileConf
     if (fname.extension() == ".raw" || fname.extension() == ".json") {
         aare::logger::debug("Loading raw file");
         file_impl = new RawFile(fname, mode, cfg);
+        is_npy = false;
     }
     // check if extension is numpy
     else if (fname.extension() == ".npy") {
@@ -28,7 +29,14 @@ File::File(const std::filesystem::path &fname, const std::string &mode, FileConf
     }
 }
 
-void File::write(Frame &frame) { file_impl->write(frame); }
+void File::write(Frame &frame, sls_detector_header header) {
+    if (is_npy) {
+        aare::logger::info("ignoring header for npy file");
+        dynamic_cast<NumpyFile *>(file_impl)->write(frame);
+    } else {
+        dynamic_cast<RawFile *>(file_impl)->write(frame, header);
+    }
+}
 Frame File::read() { return file_impl->read(); }
 size_t File::total_frames() const { return file_impl->total_frames(); }
 std::vector<Frame> File::read(size_t n_frames) { return file_impl->read(n_frames); }

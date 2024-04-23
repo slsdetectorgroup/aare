@@ -1,5 +1,6 @@
 #include "aare/file_io/RawFile.hpp"
 #include "aare/core/defs.hpp"
+#include "aare/utils/json.hpp"
 #include "aare/utils/logger.hpp"
 #include <fmt/format.h>
 #include <nlohmann/json.hpp>
@@ -9,8 +10,9 @@ using json = nlohmann::json;
 namespace aare {
 
 RawFile::RawFile(const std::filesystem::path &fname, const std::string &mode, const FileConfig &config) {
+    m_mode = mode;
     m_fname = fname;
-    if (mode == "r") {
+    if (mode == "r" or mode == "r+") {
         if (config != FileConfig()) {
             aare::logger::warn(
                 "In read mode it is not necessary to provide a config, the provided config will be ignored");
@@ -21,17 +23,108 @@ RawFile::RawFile(const std::filesystem::path &fname, const std::string &mode, co
         find_geometry();
         open_subfiles();
 
+    } else if (mode == "w" or mode == "w+") {
+
+        if (std::filesystem::exists(fname)) {
+            // handle mode w as w+ (no overrwriting)
+            throw std::runtime_error(LOCATION + "File already exists");
+        }
+
+        parse_config(config);
+        parse_fname();
+        write_master_file();
+        n_subfiles = 1;
+        n_subfile_parts = 1;
+        subfile_cols = m_cols;
+        subfile_rows = m_rows;
+        open_subfiles();
+
     } else {
         throw std::runtime_error(LOCATION + "Unsupported mode");
     }
 }
 
+void RawFile::parse_config(const FileConfig &config) {
+    m_bitdepth = config.dtype.bitdepth();
+    m_total_frames = 0;
+    m_rows = config.rows;
+    m_cols = config.cols;
+    m_type = config.detector_type;
+    max_frames_per_file = config.max_frames_per_file;
+    geometry = config.geometry;
+    version = config.version;
+    subfile_rows = config.geometry.row;
+    subfile_cols = config.geometry.col;
+
+    if (geometry != aare::xy{1, 1}) {
+        throw std::runtime_error(LOCATION + "Only geometry {1,1} files are supported for writing");
+    }
+}
+void RawFile::write_master_file() {
+    if (m_ext != ".json") {
+        throw std::runtime_error(LOCATION + "only json master files are supported for writing");
+    }
+    std::ofstream ofs(master_fname(), std::ios::binary);
+    std::string ss;
+    ss.reserve(1024);
+    ss += "{\n\t";
+    aare::write_str(ss, "Version", version);
+    ss += "\n\t";
+    aare::write_digit(ss, "Total Frames", m_total_frames);
+    ss += "\n\t";
+    aare::write_str(ss, "Detector Type", toString(m_type));
+    ss += "\n\t";
+    aare::write_str(ss, "Geometry", geometry.to_string());
+    ss += "\n\t";
+
+    uint64_t img_size = (m_cols * m_rows) / (geometry.col * geometry.row);
+    img_size *= m_bitdepth;
+    aare::write_digit(ss, "Image Size in bytes", img_size);
+    ss += "\n\t";
+    aare::write_digit(ss, "Max Frames Per File", max_frames_per_file);
+    ss += "\n\t";
+    aare::write_digit(ss, "Dynamic Range", m_bitdepth);
+    ss += "\n\t";
+    const aare::xy pixels = {m_rows / geometry.row, m_cols / geometry.col};
+    aare::write_str(ss, "Pixels", pixels.to_string());
+    ss += "\n\t";
+    aare::write_digit(ss, "Number of rows", m_rows);
+    ss += "\n\t";
+    const std::string tmp = "{\n"
+                            "        \"Frame Number\": \"8 bytes\",\n"
+                            "        \"Exposure Length\": \"4 bytes\",\n"
+                            "        \"Packet Number\": \"4 bytes\",\n"
+                            "        \"Bunch Id\": \"8 bytes\",\n"
+                            "        \"Timestamp\": \"8 bytes\",\n"
+                            "        \"Module Id\": \"2 bytes\",\n"
+                            "        \"Row\": \"2 bytes\",\n"
+                            "        \"Column\": \"2 bytes\",\n"
+                            "        \"Reserved\": \"2 bytes\",\n"
+                            "        \"Debug\": \"4 bytes\",\n"
+                            "        \"RoundRNumber\": \"2 bytes\",\n"
+                            "        \"DetType\": \"1 byte\",\n"
+                            "        \"Version\": \"1 byte\",\n"
+                            "        \"Packet Mask\": \"64 bytes\"\n"
+                            "    }";
+
+    ss += "\"Frame Header Format\":" + tmp + "\n";
+    ss += "}";
+    ofs << ss;
+    ofs.close();
+}
+
 void RawFile::open_subfiles() {
-    for (size_t i = 0; i != n_subfiles; ++i) {
-        auto v = std::vector<SubFile *>(n_subfile_parts);
-        for (size_t j = 0; j != n_subfile_parts; ++j) {
-            v[j] = new SubFile(data_fname(i, j), m_type, subfile_rows, subfile_cols, m_bitdepth);
+    if (m_mode == "r")
+        for (size_t i = 0; i != n_subfiles; ++i) {
+            auto v = std::vector<SubFile *>(n_subfile_parts);
+            for (size_t j = 0; j != n_subfile_parts; ++j) {
+                v[j] = new SubFile(data_fname(i, j), m_type, subfile_rows, subfile_cols, m_bitdepth);
+            }
+            subfiles.push_back(v);
         }
+    else {
+        auto v = std::vector<SubFile *>(n_subfile_parts); // only one subfile is implemented
+        v[0] = new SubFile(data_fname(0, 0), m_type, m_rows, m_cols, m_bitdepth, "w");
         subfiles.push_back(v);
     }
 }
@@ -173,20 +266,36 @@ void RawFile::parse_raw_metadata() {
                 max_frames_per_file = std::stoi(value);
             } else if (key == "Geometry") {
                 pos = value.find(',');
-                geometry = {std::stoi(value.substr(1, pos)), std::stoi(value.substr(pos + 1))};
+                const size_t x = static_cast<size_t>(std::stoi(value.substr(1, pos)));
+                const size_t y = static_cast<size_t>(std::stoi(value.substr(pos + 1)));
+
+                geometry = {x, y};
             }
         }
     }
 }
 
 void RawFile::parse_fname() {
+    bool wrong_format = false;
     m_base_path = m_fname.parent_path();
     m_base_name = m_fname.stem();
     m_ext = m_fname.extension();
-    auto pos = m_base_name.rfind('_');
-    m_findex = std::stoi(m_base_name.substr(pos + 1));
-    pos = m_base_name.find("_master_");
-    m_base_name.erase(pos);
+    try {
+        auto pos = m_base_name.rfind('_');
+        m_findex = std::stoi(m_base_name.substr(pos + 1));
+    } catch (const std::invalid_argument &e) {
+        m_findex = 0;
+        wrong_format = true;
+    }
+    auto pos = m_base_name.find("_master_");
+    if (pos != std::string::npos) {
+        m_base_name.erase(pos);
+        wrong_format = true;
+    }
+    if (wrong_format and (m_mode == "w+" or m_mode == "w")) {
+        aare::logger::warn("Master Filename", m_fname, "is not in the correct format");
+        aare::logger::warn("using", master_fname(), "as the master file");
+    }
 }
 
 Frame RawFile::get_frame(size_t frame_number) {
@@ -203,6 +312,16 @@ void RawFile::get_frame_into(size_t frame_number, std::byte *frame_buffer) {
     size_t const subfile_id = frame_number / this->max_frames_per_file;
     // create frame and get its buffer
 
+    // check that subfiles hold the same frame number
+    // TODO: How to handle this case? check commits e791992 and 1177fd1 in PR#66
+    auto test_frame_number = this->subfiles[subfile_id][0]->frame_number(frame_number % this->max_frames_per_file);
+    for (size_t part_idx = 1; part_idx != this->n_subfile_parts; ++part_idx) {
+        if (this->subfiles[subfile_id][part_idx]->frame_number(frame_number % this->max_frames_per_file) !=
+            test_frame_number) {
+            throw std::runtime_error(LOCATION + "Subfiles do not hold the same frame number");
+        }
+    }
+
     if (this->geometry.col == 1) {
         // get the part from each subfile and copy it to the frame
         for (size_t part_idx = 0; part_idx != this->n_subfile_parts; ++part_idx) {
@@ -212,16 +331,6 @@ void RawFile::get_frame_into(size_t frame_number, std::byte *frame_buffer) {
         }
 
     } else {
-
-        // check that subfiles hold the same frame number
-        // TODO: How to handle this case? check commits e791992 and 1177fd1 in PR#66
-        auto test_frame_number = this->subfiles[subfile_id][0]->frame_number(frame_number % this->max_frames_per_file);
-        for (size_t part_idx = 1; part_idx != this->n_subfile_parts; ++part_idx) {
-            if (this->subfiles[subfile_id][part_idx]->frame_number(frame_number % this->max_frames_per_file) !=
-                test_frame_number) {
-                throw std::runtime_error(LOCATION + "Subfiles do not hold the same frame number");
-            }
-        }
 
         // create a buffer that will hold a the frame part
         auto bytes_per_part = this->subfile_rows * this->subfile_cols * this->m_bitdepth / 8;
@@ -240,6 +349,19 @@ void RawFile::get_frame_into(size_t frame_number, std::byte *frame_buffer) {
         }
         delete[] part_buffer;
     }
+}
+
+void RawFile::write(Frame &frame, sls_detector_header header) {
+    if (m_mode == "r") {
+        throw std::runtime_error(LOCATION + "File is open in read mode");
+    }
+    size_t const subfile_id = this->current_frame / this->max_frames_per_file;
+    for (size_t part_idx = 0; part_idx != this->n_subfile_parts; ++part_idx) {
+
+        this->subfiles[subfile_id][part_idx]->write_part(frame.data(), header,
+                                                         this->current_frame % this->max_frames_per_file);
+    }
+    this->current_frame++;
 }
 
 std::vector<Frame> RawFile::read(size_t n_frames) {
@@ -267,7 +389,17 @@ size_t RawFile::frame_number(size_t frame_index) {
     return this->subfiles[subfile_id][0]->frame_number(frame_index % this->max_frames_per_file);
 }
 
-RawFile::~RawFile() {
+RawFile::~RawFile() noexcept {
+
+    // update master file
+    if (m_mode == "w" or m_mode == "w+" or m_mode == "r+") {
+        try {
+            write_master_file();
+        } catch (...) {
+            aare::logger::warn(LOCATION + "Could not update master file");
+        }
+    }
+
     for (auto &vec : subfiles) {
         for (auto *subfile : vec) {
             delete subfile;
