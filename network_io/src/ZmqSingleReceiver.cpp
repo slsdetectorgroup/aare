@@ -1,4 +1,4 @@
-#include "aare/network_io/ZmqSocketReceiver.hpp"
+#include "aare/network_io/ZmqSingleReceiver.hpp"
 #include "aare/utils/logger.hpp"
 
 #include <fmt/core.h>
@@ -7,9 +7,9 @@
 namespace aare {
 
 /**
- * @brief Construct a new ZmqSocketReceiver object
+ * @brief Construct a new ZmqSingleReceiver object
  */
-ZmqSocketReceiver::ZmqSocketReceiver(const std::string &endpoint) {
+ZmqSingleReceiver::ZmqSingleReceiver(const std::string &endpoint) {
     m_endpoint = endpoint;
     memset(m_header_buffer, 0, m_max_header_size);
 }
@@ -18,7 +18,7 @@ ZmqSocketReceiver::ZmqSocketReceiver(const std::string &endpoint) {
  * @brief Connect to the given endpoint
  * subscribe to a Zmq published
  */
-void ZmqSocketReceiver::connect() {
+void ZmqSingleReceiver::connect() {
     m_context = zmq_ctx_new();
     m_socket = zmq_socket(m_context, ZMQ_SUB);
     fmt::print("Setting ZMQ_RCVHWM to {}\n", m_zmq_hwm);
@@ -40,7 +40,7 @@ void ZmqSocketReceiver::connect() {
  * @brief receive a ZmqHeader
  * @return ZmqHeader
  */
-ZmqHeader ZmqSocketReceiver::receive_header() {
+ZmqHeader ZmqSingleReceiver::receive_header() {
 
     // receive string ZmqHeader
     aare::logger::debug("Receiving header");
@@ -70,7 +70,7 @@ ZmqHeader ZmqSocketReceiver::receive_header() {
  * @param size size of data
  * @return ZmqHeader
  */
-int ZmqSocketReceiver::receive_data(std::byte *data, size_t size) {
+int ZmqSingleReceiver::receive_data(std::byte *data, size_t size) {
     int const data_bytes_received = zmq_recv(m_socket, data, size, 0);
     if (data_bytes_received == -1)
         throw network_io::NetworkError("Got half of a multipart msg!!!");
@@ -83,7 +83,7 @@ int ZmqSocketReceiver::receive_data(std::byte *data, size_t size) {
  * @brief receive a ZmqFrame (header and data)
  * @return ZmqFrame
  */
-ZmqFrame ZmqSocketReceiver::receive_zmqframe() {
+ZmqFrame ZmqSingleReceiver::receive_zmqframe() {
     // receive header from zmq and parse it
     ZmqHeader header = receive_header();
 
@@ -109,7 +109,7 @@ ZmqFrame ZmqSocketReceiver::receive_zmqframe() {
  * @brief receive multiple ZmqFrames (header and data)
  * @return std::vector<ZmqFrame>
  */
-std::vector<ZmqFrame> ZmqSocketReceiver::receive_n() {
+std::vector<ZmqFrame> ZmqSingleReceiver::receive_n() {
     std::vector<ZmqFrame> frames;
     while (true) {
         // receive header and frame

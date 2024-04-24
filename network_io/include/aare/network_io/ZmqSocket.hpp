@@ -11,7 +11,7 @@ class zmq_msg_t;
 namespace aare {
 
 /**
- * @brief parent class for ZmqSocketReceiver and ZmqSocketSender
+ * @brief parent class for ZmqSingleReceiver and ZmqSocketSender
  * contains common functions and variables
  */
 class ZmqSocket {
@@ -25,6 +25,7 @@ class ZmqSocket {
     void set_zmq_hwm(int hwm);
     void set_timeout_ms(int n);
     void set_potential_frame_size(size_t size);
+    void* get_socket();
 
   protected:
     void *m_context{nullptr};

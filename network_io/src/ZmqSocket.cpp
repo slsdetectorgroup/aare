@@ -17,13 +17,19 @@ void ZmqSocket::disconnect() {
 
 /**
  * @brief destructor
- * @note called from child classes (ZmqSocketReceiver and ZmqSocketSender)
+ * @note called from child classes (ZmqSingleReceiver and ZmqSocketSender)
  */
 ZmqSocket::~ZmqSocket() {
     if (m_socket)
         disconnect();
     delete[] m_header_buffer;
 }
+
+/**
+ * @brief get the socket
+ * @return void*
+ */
+void *ZmqSocket::get_socket() { return m_socket; }
 
 void ZmqSocket::set_zmq_hwm(int hwm) { m_zmq_hwm = hwm; }
 
