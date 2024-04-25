@@ -44,7 +44,7 @@ int main(int argc, char **argv) {
         return 1;
     }
     if (vm.count("port") != 1) {
-        aare::logger::error("file is required");
+        aare::logger::error("port is required");
         cout << desc << "\n";
         return 1;
     }

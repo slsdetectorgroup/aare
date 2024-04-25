@@ -14,6 +14,10 @@ namespace aare {
 struct ZmqFrame {
     ZmqHeader header;
     Frame frame;
+    std::string to_string() const {
+        return "ZmqFrame{header: " + header.to_string() + ", frame:\nrows: " + std::to_string(frame.rows()) + ", cols: " +
+               std::to_string(frame.cols()) + ", bitdepth: " + std::to_string(frame.bitdepth()) + "\n}";
+    }
 };
 
 namespace network_io {

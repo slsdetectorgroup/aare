@@ -25,6 +25,7 @@ class ZmqSingleReceiver : public ZmqSocket {
 
     ZmqFrame receive_zmqframe();
     ZmqHeader receive_header();
+    int receive_data(std::byte *data, size_t size);
 };
 
 } // namespace aare

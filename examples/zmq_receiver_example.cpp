@@ -36,7 +36,7 @@ int main(int argc, char **argv) {
 
     auto port = vm["port"].as<uint16_t>();
 
-    std::string const endpoint = "udp://127.0.0.1:" + std::to_string(port);
+    std::string const endpoint = "tcp://127.0.0.1:" + std::to_string(port);
     aare::ZmqSingleReceiver socket(endpoint);
     socket.connect();
     while (true) {

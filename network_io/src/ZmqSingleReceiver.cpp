@@ -26,12 +26,13 @@ void ZmqSingleReceiver::connect() {
     if (rc)
         throw network_io::NetworkError(fmt::format("Could not set ZMQ_RCVHWM: {}", zmq_strerror(errno)));
 
-    size_t bufsize = m_potential_frame_size * m_zmq_hwm;
+    int bufsize = m_potential_frame_size * m_zmq_hwm;
     fmt::print("Setting ZMQ_RCVBUF to: {} MB\n", bufsize / (static_cast<size_t>(1024) * 1024));
     rc = zmq_setsockopt(m_socket, ZMQ_RCVBUF, &bufsize, sizeof(bufsize));
-    if (rc)
+    if (rc) {
+        perror("zmq_setsockopt");
         throw network_io::NetworkError(fmt::format("Could not set ZMQ_RCVBUF: {}", zmq_strerror(errno)));
-
+    }
     zmq_connect(m_socket, m_endpoint.c_str());
     zmq_setsockopt(m_socket, ZMQ_SUBSCRIBE, "", 0);
 }
@@ -43,15 +44,13 @@ void ZmqSingleReceiver::connect() {
 ZmqHeader ZmqSingleReceiver::receive_header() {
 
     // receive string ZmqHeader
-    aare::logger::debug("Receiving header");
     int const header_bytes_received = zmq_recv(m_socket, m_header_buffer, m_max_header_size, 0);
-    aare::logger::debug("Bytes: ", header_bytes_received);
+    aare::logger::debug("Received header");
 
     m_header_buffer[header_bytes_received] = '\0'; // make sure we zero terminate
     if (header_bytes_received < 0) {
         throw network_io::NetworkError(LOCATION + "Error receiving header");
     }
-    aare::logger::debug("Bytes: ", header_bytes_received, ", Header: ", m_header_buffer);
 
     // parse header
     ZmqHeader header;
