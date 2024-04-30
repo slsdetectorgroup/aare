@@ -79,7 +79,7 @@ int main(int argc, char **argv) {
         header.data = true;
         header.npixelsx = frame.rows();
         header.npixelsy = frame.cols();
-        header.dynamicRange = frame.bitdepth();
+        header.bitmode = frame.bitdepth();
         header.size = frame.size();
 
         sender.send({header, frame});

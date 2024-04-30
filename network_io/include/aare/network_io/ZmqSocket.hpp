@@ -30,6 +30,7 @@ class ZmqSocket {
   protected:
     void *m_context{nullptr};
     void *m_socket{nullptr};
+    int m_socket_type{}; 
     std::string m_endpoint;
     int m_zmq_hwm{1000};
     int m_timeout_ms{1000};

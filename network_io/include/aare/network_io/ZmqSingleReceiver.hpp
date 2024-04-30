@@ -19,8 +19,9 @@ namespace aare {
  */
 class ZmqSingleReceiver : public ZmqSocket {
   public:
-    explicit ZmqSingleReceiver(const std::string &endpoint);
+    explicit ZmqSingleReceiver(const std::string &endpoint, int socket_type = 2 /* ZMQ_SUB */);
     void connect();
+    void bind();
     std::vector<ZmqFrame> receive_n();
 
     ZmqFrame receive_zmqframe();

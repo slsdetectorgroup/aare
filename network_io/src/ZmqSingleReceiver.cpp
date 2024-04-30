@@ -9,8 +9,9 @@ namespace aare {
 /**
  * @brief Construct a new ZmqSingleReceiver object
  */
-ZmqSingleReceiver::ZmqSingleReceiver(const std::string &endpoint) {
-    m_endpoint = endpoint;
+ZmqSingleReceiver::ZmqSingleReceiver(const std::string &endpoint, int socket_type) {
+    m_endpoint = (endpoint);
+    m_socket_type = (socket_type);
     memset(m_header_buffer, 0, m_max_header_size);
 }
 
@@ -20,7 +21,7 @@ ZmqSingleReceiver::ZmqSingleReceiver(const std::string &endpoint) {
  */
 void ZmqSingleReceiver::connect() {
     m_context = zmq_ctx_new();
-    m_socket = zmq_socket(m_context, ZMQ_SUB);
+    m_socket = zmq_socket(m_context, m_socket_type);
     fmt::print("Setting ZMQ_RCVHWM to {}\n", m_zmq_hwm);
     int rc = zmq_setsockopt(m_socket, ZMQ_RCVHWM, &m_zmq_hwm, sizeof(m_zmq_hwm)); // should be set before connect
     if (rc)
@@ -37,6 +38,17 @@ void ZmqSingleReceiver::connect() {
     zmq_setsockopt(m_socket, ZMQ_SUBSCRIBE, "", 0);
 }
 
+void ZmqSingleReceiver::bind() {
+    m_context = zmq_ctx_new();
+    m_socket = zmq_socket(m_context, m_socket_type);
+    size_t const rc = zmq_bind(m_socket, m_endpoint.c_str());
+    if (rc != 0) {
+        std::string const error = zmq_strerror(zmq_errno());
+        throw network_io::NetworkError("zmq_bind failed: " + error);
+    }
+}
+
+
 /**
  * @brief receive a ZmqHeader
  * @return ZmqHeader
@@ -45,7 +57,7 @@ ZmqHeader ZmqSingleReceiver::receive_header() {
 
     // receive string ZmqHeader
     int const header_bytes_received = zmq_recv(m_socket, m_header_buffer, m_max_header_size, 0);
-    aare::logger::debug("Received header");
+    aare::logger::debug("Header: ", m_header_buffer);
 
     m_header_buffer[header_bytes_received] = '\0'; // make sure we zero terminate
     if (header_bytes_received < 0) {
@@ -71,9 +83,12 @@ ZmqHeader ZmqSingleReceiver::receive_header() {
  */
 int ZmqSingleReceiver::receive_data(std::byte *data, size_t size) {
     int const data_bytes_received = zmq_recv(m_socket, data, size, 0);
-    if (data_bytes_received == -1)
-        throw network_io::NetworkError("Got half of a multipart msg!!!");
-    aare::logger::debug("Bytes: ", data_bytes_received);
+    if (data_bytes_received == -1){
+        logger::error(zmq_strerror(zmq_errno()));
+        // TODO: refactor this error message
+        throw network_io::NetworkError(LOCATION+"Error receiving data");
+    }
+    // aare::logger::debug("Bytes: ", data_bytes_received);
 
     return data_bytes_received;
 }
@@ -92,7 +107,13 @@ ZmqFrame ZmqSingleReceiver::receive_zmqframe() {
     }
 
     // receive frame data
-    Frame frame(header.npixelsx, header.npixelsy, header.dynamicRange);
+    if (header.npixelsx == 0 || header.npixelsy == 0 || header.bitmode == 0) {
+        logger::warn("Invalid header");
+    }
+    if (header.bitmode == 0) {
+        header.bitmode = 16;
+    }
+    Frame frame(header.npixelsx, header.npixelsy, header.bitmode);
     int bytes_received = receive_data(frame.data(), frame.size());
     if (bytes_received == -1) {
         throw network_io::NetworkError(LOCATION + "Error receiving frame");

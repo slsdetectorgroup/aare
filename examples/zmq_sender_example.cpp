@@ -26,7 +26,7 @@ int main() {
     header.npixelsx = 1024;
     header.npixelsy = 1024;
     header.size = sizeof(uint32_t) * 1024 * 1024;
-    header.dynamicRange = 32;
+    header.bitmode = 32;
 
     std::vector<ZmqFrame> zmq_frames;
     // send two exact frames
