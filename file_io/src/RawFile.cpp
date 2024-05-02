@@ -298,36 +298,55 @@ void RawFile::parse_fname() {
     }
 }
 
-Frame RawFile::get_frame(size_t frame_number) {
+Frame RawFile::get_frame(size_t frame_index) {
     auto f = Frame(this->m_rows, this->m_cols, this->m_bitdepth);
     std::byte *frame_buffer = f.data();
-    get_frame_into(frame_number, frame_buffer);
+    get_frame_into(frame_index, frame_buffer);
     return f;
 }
 
-void RawFile::get_frame_into(size_t frame_number, std::byte *frame_buffer) {
-    if (frame_number > this->m_total_frames) {
+void RawFile::get_frame_into(size_t frame_index, std::byte *frame_buffer) {
+    if (frame_index > this->m_total_frames) {
         throw std::runtime_error(LOCATION + "Frame number out of range");
     }
-    size_t const subfile_id = frame_number / this->max_frames_per_file;
-    // create frame and get its buffer
+    std::vector<size_t> frame_numbers(this->n_subfile_parts);
+    std::vector<size_t> frame_indices(this->n_subfile_parts, frame_index);
 
-    // check that subfiles hold the same frame number
-    // TODO: How to handle this case? check commits e791992 and 1177fd1 in PR#66
-    auto test_frame_number = this->subfiles[subfile_id][0]->frame_number(frame_number % this->max_frames_per_file);
-    for (size_t part_idx = 1; part_idx != this->n_subfile_parts; ++part_idx) {
-        if (this->subfiles[subfile_id][part_idx]->frame_number(frame_number % this->max_frames_per_file) !=
-            test_frame_number) {
-            throw std::runtime_error(LOCATION + "Subfiles do not hold the same frame number");
+
+
+    if (n_subfile_parts != 1) {
+        for (size_t part_idx = 0; part_idx != this->n_subfile_parts; ++part_idx) {
+            auto subfile_id = frame_index / this->max_frames_per_file;
+            frame_numbers[part_idx] = this->subfiles[subfile_id][part_idx]->frame_number(frame_index % this->max_frames_per_file);
+        }
+        while (true) {
+            // 4. if frame number vector is the same break
+            if (std::adjacent_find(frame_numbers.begin(), frame_numbers.end(), std::not_equal_to<size_t>()) ==
+                frame_numbers.end())
+                break;
+            // 1. find the minimum frame number,
+            auto min_frame_idx =
+                std::distance(frame_numbers.begin(), std::min_element(frame_numbers.begin(), frame_numbers.end()));
+            // 3. increase its index and update its respective frame number
+            frame_indices[min_frame_idx]++;
+            // 2. if we can't increase its index => throw error
+            if (frame_indices[min_frame_idx] >= this->m_total_frames) {
+                throw std::runtime_error(LOCATION + "Frame number out of range");
+            }
+            auto subfile_id = frame_indices[min_frame_idx] / this->max_frames_per_file;
+            frame_numbers[min_frame_idx] = this->subfiles[subfile_id][min_frame_idx]->frame_number(
+                frame_indices[min_frame_idx] % this->max_frames_per_file);
         }
     }
 
     if (this->geometry.col == 1) {
         // get the part from each subfile and copy it to the frame
         for (size_t part_idx = 0; part_idx != this->n_subfile_parts; ++part_idx) {
+            auto corrected_idx = frame_indices[part_idx];
+            auto subfile_id = corrected_idx / this->max_frames_per_file;
             auto part_offset = this->subfiles[subfile_id][part_idx]->bytes_per_part();
             this->subfiles[subfile_id][part_idx]->get_part(frame_buffer + part_idx * part_offset,
-                                                           frame_number % this->max_frames_per_file);
+                                                                corrected_idx % this->max_frames_per_file);
         }
 
     } else {
@@ -337,7 +356,10 @@ void RawFile::get_frame_into(size_t frame_number, std::byte *frame_buffer) {
         auto *part_buffer = new std::byte[bytes_per_part];
 
         for (size_t part_idx = 0; part_idx != this->n_subfile_parts; ++part_idx) {
-            this->subfiles[subfile_id][part_idx]->get_part(part_buffer, frame_number % this->max_frames_per_file);
+            auto corrected_idx = frame_indices[part_idx];
+            auto subfile_id = corrected_idx / this->max_frames_per_file;
+
+            this->subfiles[subfile_id][part_idx]->get_part(part_buffer, corrected_idx % this->max_frames_per_file);
             for (size_t cur_row = 0; cur_row < (this->subfile_rows); cur_row++) {
                 auto irow = cur_row + (part_idx / this->geometry.col) * this->subfile_rows;
                 auto icol = (part_idx % this->geometry.col) * this->subfile_cols;
