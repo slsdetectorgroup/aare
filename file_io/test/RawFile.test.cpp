@@ -105,3 +105,10 @@ TEST_CASE("Read multipart files") {
         CHECK(frame.view<uint16_t>()(511, 1023) == pixel_511_1023[i]);
     }
 }
+
+TEST_CASE("Read file with unordered frames") {
+    auto fpath = test_data_path() / "mythen" / "scan242_master_3.raw";
+    REQUIRE(std::filesystem::exists(fpath));
+    File f(fpath, "r");
+    REQUIRE_THROWS(f.read());
+}

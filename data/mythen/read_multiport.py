@@ -39,7 +39,7 @@ header = np.zeros((frames,parts), dtype = header_dt)
 frame = 0
 sync = True
 for part in range(parts):
-    file_name = f'CORRECTED_scan242_d{part}_f{frame//frame_per_file}_{3}.raw'
+    file_name = f'scan242_d{part}_f{frame//frame_per_file}_{3}.raw'
     with open(file_name) as f:
         offset = (frame%frame_per_file)*(header_dt.itemsize+part_rows*part_cols*bytes_per_pixel)
         # print(f"Reading file: {file_name} at offset {offset}")

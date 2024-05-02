@@ -312,24 +312,23 @@ void RawFile::get_frame_into(size_t frame_index, std::byte *frame_buffer) {
     std::vector<size_t> frame_numbers(this->n_subfile_parts);
     std::vector<size_t> frame_indices(this->n_subfile_parts, frame_index);
 
-
-
     if (n_subfile_parts != 1) {
         for (size_t part_idx = 0; part_idx != this->n_subfile_parts; ++part_idx) {
             auto subfile_id = frame_index / this->max_frames_per_file;
-            frame_numbers[part_idx] = this->subfiles[subfile_id][part_idx]->frame_number(frame_index % this->max_frames_per_file);
+            frame_numbers[part_idx] =
+                this->subfiles[subfile_id][part_idx]->frame_number(frame_index % this->max_frames_per_file);
         }
         while (true) {
-            // 4. if frame number vector is the same break
-            if (std::adjacent_find(frame_numbers.begin(), frame_numbers.end(), std::not_equal_to<size_t>()) ==
+            // 1. if frame number vector is the same break
+            if (std::adjacent_find(frame_numbers.begin(), frame_numbers.end(), std::not_equal_to<>()) ==
                 frame_numbers.end())
                 break;
-            // 1. find the minimum frame number,
+            // 2. find the minimum frame number,
             auto min_frame_idx =
                 std::distance(frame_numbers.begin(), std::min_element(frame_numbers.begin(), frame_numbers.end()));
             // 3. increase its index and update its respective frame number
             frame_indices[min_frame_idx]++;
-            // 2. if we can't increase its index => throw error
+            // 4. if we can't increase its index => throw error
             if (frame_indices[min_frame_idx] >= this->m_total_frames) {
                 throw std::runtime_error(LOCATION + "Frame number out of range");
             }
@@ -346,7 +345,7 @@ void RawFile::get_frame_into(size_t frame_index, std::byte *frame_buffer) {
             auto subfile_id = corrected_idx / this->max_frames_per_file;
             auto part_offset = this->subfiles[subfile_id][part_idx]->bytes_per_part();
             this->subfiles[subfile_id][part_idx]->get_part(frame_buffer + part_idx * part_offset,
-                                                                corrected_idx % this->max_frames_per_file);
+                                                           corrected_idx % this->max_frames_per_file);
         }
 
     } else {

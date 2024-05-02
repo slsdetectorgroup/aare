@@ -120,18 +120,18 @@ class RawFile : public FileInterface {
   private:
     void write_master_file();
     /**
-     * @brief read the frame at the given frame number into the image buffer
+     * @brief read the frame at the given frame index into the image buffer
      * @param frame_number frame number to read
      * @param image_buf buffer to store the frame
      */
-    void get_frame_into(size_t frame_number, std::byte *frame_buffer);
+    void get_frame_into(size_t frame_index, std::byte *frame_buffer);
 
     /**
-     * @brief get the frame at the given frame number
+     * @brief get the frame at the given frame index
      * @param frame_number frame number to read
      * @return Frame
      */
-    Frame get_frame(size_t frame_number);
+    Frame get_frame(size_t frame_index);
 
     /**
      * @brief parse the file name to get the extension, base name and index
