@@ -319,7 +319,7 @@ void RawFile::get_frame_into(size_t frame_index, std::byte *frame_buffer) {
                 this->subfiles[subfile_id][part_idx]->frame_number(frame_index % this->max_frames_per_file);
         }
         // 1. if frame number vector is the same break
-        while (std::adjacent_find(frame_numbers.begin(), frame_numbers.end(), std::not_equal_to<>()) ==
+        while (std::adjacent_find(frame_numbers.begin(), frame_numbers.end(), std::not_equal_to<>()) !=
                frame_numbers.end()) {
             // 2. find the index of the minimum frame number,
             auto min_frame_idx =
