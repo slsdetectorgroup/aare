@@ -1,6 +1,4 @@
 import numpy as np
-import matplotlib.pyplot as plt
-plt.ion()
 
 header_dt = np.dtype(
     [
@@ -23,9 +21,10 @@ header_dt = np.dtype(
 
 # Read three frames from a jungfrau file with a single interface
 
-frames = 1
+frames = 10
 parts = 2
-
+frame_per_file = 3
+bytes_per_pixel = 2
 frame_cols = 1024
 frame_rows = 512
 
@@ -39,14 +38,29 @@ header = np.zeros((frames,parts), dtype = header_dt)
 
 
 
+# verify that all parts have the same frame number
+for frame in range(frames):
+    for part in range(parts):
+        file_name = f'jungfrau_double_d{part}_f{frame//frame_per_file}_{0}.raw'
+        with open(file_name) as f:
+            offset = (frame%frame_per_file)*(header_dt.itemsize+part_rows*part_cols*bytes_per_pixel)
+            # print(f"Reading file: {file_name} at offset {offset}")
+            header[frame,part] = np.fromfile(f, dtype=header_dt, count = 1,offset=offset)
+            # print(f"Frame {frame} part {part} frame number: {header[frame,part]['Frame Number']}")
+            if part > 0:
+                assert header[frame,part]['Frame Number'] == header[frame,0]['Frame Number']
+
+print("[X] All parts have the same frame number\n")
+
 
 for frame in range(frames):
 
     for part in range(parts):
-        file_name = f'jungfrau_double_d{part}_f{frame}_{0}.raw'
-        print("Reading file:", file_name)
+        file_name = f'jungfrau_double_d{part}_f{frame//frame_per_file}_{0}.raw'
+        # print("Reading file:", file_name)
         with open(file_name) as f:
-            header[frame,part] = np.fromfile(f, dtype=header_dt, count = 1)
+            offset = (frame%frame_per_file)*(header_dt.itemsize+part_rows*part_cols*bytes_per_pixel)
+            header[frame,part] = np.fromfile(f, dtype=header_dt, count = 1, offset=offset)
             parts_data[frame,part] = np.fromfile(f, dtype=np.uint16,count = part_rows*part_cols).reshape(part_rows,part_cols)
 
     
@@ -54,27 +68,20 @@ for frame in range(frames):
 
 
 
-# for frame in range(frames):
-#     print("Frame:", frame)
-#     print("Data:\n", data[frame])
-
-# print(data[0,0,0])
-# print(data[0,0,1])
-# print(data[0,0,50])
-print(data[0,0,0])
-print(data[0,0,1])
-print(data[0,255,1023])
-
-print(data[0,511,1023])
-# print()
-# print(parts_data[0,0,0,0])
-# print(parts_data[0,0,0,1])
-# print(parts_data[0,0,1,0])
-
-# print(data.shape)
-
-
-
-#fig, ax = plt.subplots()
-#im = ax.imshow(data[0])
-#im.set_clim(2000,4000)
+pixel_0_0,pixel_0_1,pixel_1_0,pixel_255_1023,pixel_511_1023,= [],[],[],[],[]
+for frame in range(frames):
+    pixel_0_0.append(data[frame,0,0])
+    pixel_0_1.append(data[frame,0,1])
+    pixel_1_0.append(data[frame,1,0])
+    pixel_255_1023.append(data[frame,255,1023])
+    pixel_511_1023.append(data[frame,511,1023])
+print("upper left corner of each frame (pixel_0_0)")
+print(pixel_0_0)
+print("first pixel on new line of each frame (pixel_1_0)")
+print(pixel_1_0)
+print("second pixel of the first line of each frame (pixel_0_1)")
+print(pixel_0_1)
+print("first pixel of the second part on the last line of each frame (pixel_255_1023)")
+print(pixel_255_1023)
+print("lower right corner of each frame (pixel_511_1023)")
+print(pixel_511_1023)

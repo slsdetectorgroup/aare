@@ -1,5 +1,5 @@
 #pragma once
-#include "aare/network_io/ZmqSingleReceiver.hpp"
+#include "aare/network_io/ZmqSocketReceiver.hpp"
 #include "aare/network_io/defs.hpp"
 #include <unordered_map>
 
@@ -20,7 +20,7 @@ class ZmqMultiReceiver {
     ZmqFrame receive_zmqframe_(std::unordered_map<uint64_t, std::vector<ZmqFrame>> &frames_map);
     xy m_geometry;
     std::vector<std::string> m_endpoints;
-    std::vector<ZmqSingleReceiver *> m_receivers;
+    std::vector<ZmqSocketReceiver *> m_receivers;
     zmq_pollitem_t *items{};
 };
 

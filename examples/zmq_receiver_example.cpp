@@ -1,5 +1,5 @@
 #include "aare/examples/defs.hpp"
-#include "aare/network_io/ZmqSingleReceiver.hpp"
+#include "aare/network_io/ZmqSocketReceiver.hpp"
 #include "aare/network_io/defs.hpp"
 
 #include <boost/program_options.hpp>
@@ -37,7 +37,7 @@ int main(int argc, char **argv) {
     auto port = vm["port"].as<uint16_t>();
 
     std::string const endpoint = "tcp://127.0.0.1:" + std::to_string(port);
-    aare::ZmqSingleReceiver socket(endpoint);
+    aare::ZmqSocketReceiver socket(endpoint);
     socket.connect();
     while (true) {
         std::vector<ZmqFrame> v = socket.receive_n();

@@ -1,6 +1,6 @@
 #include "aare/examples/defs.hpp"
 #include "aare/network_io/ZmqMultiReceiver.hpp"
-#include "aare/network_io/ZmqSingleReceiver.hpp"
+#include "aare/network_io/ZmqSocketReceiver.hpp"
 #include "aare/network_io/defs.hpp"
 
 #include <boost/program_options.hpp>

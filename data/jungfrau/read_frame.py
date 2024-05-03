@@ -22,14 +22,15 @@ header_dt = np.dtype(
 )
 
 # Read three frames from a jungfrau file with a single interface
-rows = 512
-cols = 1024
-frames = 10
+rows = 1024
+cols = 512
+frames = 1
 
 data = np.zeros((frames,rows,cols), dtype = np.uint16)
 header = np.zeros(frames, dtype = header_dt)
-for file_id in range(4):
-    file_name = 'jungfrau_single_d0_f{}_0.raw'.format(file_id)
+for frame in range(frames):
+    
+    file_name = '/tmp/raw_example_writing_master_'
     print("Reading file:", file_name)
     with open(file_name) as f:
         for i in range(3 if file_id != 3 else 1):

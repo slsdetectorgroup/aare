@@ -1,6 +1,6 @@
 #pragma once
 
-#include "aare/network_io/ZmqSingleReceiver.hpp"
+#include "aare/network_io/ZmqSocketReceiver.hpp"
 
 namespace aare {
 
@@ -11,7 +11,7 @@ class ZmqSink {
     ~ZmqSink();
 
   private:
-    ZmqSingleReceiver *m_receiver;
+    ZmqSocketReceiver *m_receiver;
 };
 
 } // namespace aare

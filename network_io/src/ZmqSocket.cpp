@@ -17,7 +17,7 @@ void ZmqSocket::disconnect() {
 
 /**
  * @brief destructor
- * @note called from child classes (ZmqSingleReceiver and ZmqSocketSender)
+ * @note called from child classes (ZmqSocketReceiver and ZmqSocketSender)
  */
 ZmqSocket::~ZmqSocket() {
     if (m_socket)

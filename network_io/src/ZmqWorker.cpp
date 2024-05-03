@@ -1,12 +1,12 @@
 #include "aare/network_io/ZmqWorker.hpp"
-#include "aare/network_io/ZmqSingleReceiver.hpp"
+#include "aare/network_io/ZmqSocketReceiver.hpp"
 #include "aare/network_io/ZmqSocketSender.hpp"
 #include "aare/network_io/defs.hpp"
 #include "zmq.h"
 namespace aare {
 
 ZmqWorker::ZmqWorker(const std::string &ventilator_endpoint, const std::string &sink_endpoint)
-    : m_receiver(new ZmqSingleReceiver(ventilator_endpoint, ZMQ_PULL)), m_sender(nullptr) {
+    : m_receiver(new ZmqSocketReceiver(ventilator_endpoint, ZMQ_PULL)), m_sender(nullptr) {
     m_receiver->connect();
     if (not sink_endpoint.empty()) {
         m_sender = new ZmqSocketSender(sink_endpoint, ZMQ_PUSH);

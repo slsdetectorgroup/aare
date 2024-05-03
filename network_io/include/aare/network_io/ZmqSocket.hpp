@@ -11,7 +11,7 @@ class zmq_msg_t;
 namespace aare {
 
 /**
- * @brief parent class for ZmqSingleReceiver and ZmqSocketSender
+ * @brief parent class for ZmqSocketReceiver and ZmqSocketSender
  * contains common functions and variables
  */
 class ZmqSocket {

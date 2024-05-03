@@ -7,7 +7,7 @@ ZmqMultiReceiver::ZmqMultiReceiver(const std::vector<std::string> &endpoints, co
     : m_geometry(geometry), m_endpoints(endpoints) {
     assert(m_geometry.row * m_geometry.col == static_cast<uint32_t>(m_endpoints.size()));
     for (const auto &endpoint : m_endpoints) {
-        m_receivers.push_back(new ZmqSingleReceiver(endpoint));
+        m_receivers.push_back(new ZmqSocketReceiver(endpoint));
     }
 }
 

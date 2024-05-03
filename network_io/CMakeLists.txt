@@ -13,7 +13,7 @@ target_include_directories(simdjson SYSTEM INTERFACE ${_inc})
 
 
 add_library(network_io STATIC 
-    src/ZmqSingleReceiver.cpp
+    src/ZmqSocketReceiver.cpp
     src/ZmqSocketSender.cpp
     src/ZmqSocket.cpp
     src/ZmqHeader.cpp

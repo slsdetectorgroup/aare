@@ -1,65 +1,8 @@
 
 #include "aare/network_io/ZmqHeader.hpp"
+#include "aare/utils/json.hpp"
 
 #include "simdjson.h"
-
-// helper functions to write json
-// append to string for better performance (not tested)
-
-/**
- * @brief write a digit to a string
- * takes key and value and outputs->"key": value,
- * @tparam T type of value (int, uint32_t, ...)
- * @param s string to append to
- * @param key key to write
- * @param value value to write
- * @return void
- * @note
- * - can't use concepts here because we are using c++17
- */
-template <typename T> void write_digit(std::string &s, const std::string &key, const T &value) {
-    s += "\"";
-    s += key;
-    s += "\": ";
-    s += std::to_string(value);
-    s += ", ";
-}
-void write_str(std::string &s, const std::string &key, const std::string &value) {
-    s += "\"";
-    s += key;
-    s += "\": \"";
-    s += value;
-    s += "\", ";
-}
-void write_map(std::string &s, const std::string &key, const std::map<std::string, std::string> &value) {
-    s += "\"";
-    s += key;
-    s += "\": {";
-    for (const auto &kv : value) {
-        write_str(s, kv.first, kv.second);
-    }
-    // remove last comma or trailing spaces
-    for (size_t i = s.size() - 1; i > 0; i--) {
-        if (s[i] == ',' or s[i] == ' ') {
-            s.pop_back();
-        } else
-            break;
-    }
-    s += "}, ";
-}
-template <typename T, int N> void write_array(std::string &s, const std::string &key, const std::array<T, N> &value) {
-    s += "\"";
-    s += key;
-    s += "\": [";
-
-    for (size_t i = 0; i < N - 1; i++) {
-        s += std::to_string(value[i]);
-        s += ", ";
-    }
-    s += std::to_string(value[N - 1]);
-
-    s += "], ";
-}
 
 namespace aare {
 

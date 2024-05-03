@@ -1,4 +1,4 @@
-#include "aare/network_io/ZmqSingleReceiver.hpp"
+#include "aare/network_io/ZmqSocketReceiver.hpp"
 #include "aare/utils/logger.hpp"
 
 #include <fmt/core.h>
@@ -7,9 +7,9 @@
 namespace aare {
 
 /**
- * @brief Construct a new ZmqSingleReceiver object
+ * @brief Construct a new ZmqSocketReceiver object
  */
-ZmqSingleReceiver::ZmqSingleReceiver(const std::string &endpoint, int socket_type) {
+ZmqSocketReceiver::ZmqSocketReceiver(const std::string &endpoint, int socket_type) {
     m_endpoint = (endpoint);
     m_socket_type = (socket_type);
     memset(m_header_buffer, 0, m_max_header_size);
@@ -19,7 +19,7 @@ ZmqSingleReceiver::ZmqSingleReceiver(const std::string &endpoint, int socket_typ
  * @brief Connect to the given endpoint
  * subscribe to a Zmq published
  */
-void ZmqSingleReceiver::connect() {
+void ZmqSocketReceiver::connect() {
     m_context = zmq_ctx_new();
     m_socket = zmq_socket(m_context, m_socket_type);
     fmt::print("Setting ZMQ_RCVHWM to {}\n", m_zmq_hwm);
@@ -38,7 +38,7 @@ void ZmqSingleReceiver::connect() {
     zmq_setsockopt(m_socket, ZMQ_SUBSCRIBE, "", 0);
 }
 
-void ZmqSingleReceiver::bind() {
+void ZmqSocketReceiver::bind() {
     m_context = zmq_ctx_new();
     m_socket = zmq_socket(m_context, m_socket_type);
     size_t const rc = zmq_bind(m_socket, m_endpoint.c_str());
@@ -52,7 +52,7 @@ void ZmqSingleReceiver::bind() {
  * @brief receive a ZmqHeader
  * @return ZmqHeader
  */
-ZmqHeader ZmqSingleReceiver::receive_header() {
+ZmqHeader ZmqSocketReceiver::receive_header() {
 
     // receive string ZmqHeader
     int const header_bytes_received = zmq_recv(m_socket, m_header_buffer, m_max_header_size, 0);
@@ -80,7 +80,7 @@ ZmqHeader ZmqSingleReceiver::receive_header() {
  * @param size size of data
  * @return ZmqHeader
  */
-int ZmqSingleReceiver::receive_data(std::byte *data, size_t size) {
+int ZmqSocketReceiver::receive_data(std::byte *data, size_t size) {
     int const data_bytes_received = zmq_recv(m_socket, data, size, 0);
     if (data_bytes_received == -1) {
         logger::error(zmq_strerror(zmq_errno()));
@@ -96,7 +96,7 @@ int ZmqSingleReceiver::receive_data(std::byte *data, size_t size) {
  * @brief receive a ZmqFrame (header and data)
  * @return ZmqFrame
  */
-ZmqFrame ZmqSingleReceiver::receive_zmqframe() {
+ZmqFrame ZmqSocketReceiver::receive_zmqframe() {
     // receive header from zmq and parse it
     ZmqHeader header = receive_header();
 
@@ -128,7 +128,7 @@ ZmqFrame ZmqSingleReceiver::receive_zmqframe() {
  * @brief receive multiple ZmqFrames (header and data)
  * @return std::vector<ZmqFrame>
  */
-std::vector<ZmqFrame> ZmqSingleReceiver::receive_n() {
+std::vector<ZmqFrame> ZmqSocketReceiver::receive_n() {
     std::vector<ZmqFrame> frames;
     while (true) {
         // receive header and frame

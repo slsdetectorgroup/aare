@@ -4,7 +4,7 @@
 
 namespace aare {
 
-ZmqSink::ZmqSink(const std::string &sink_endpoint) : m_receiver(new ZmqSingleReceiver(sink_endpoint, ZMQ_PULL)) {
+ZmqSink::ZmqSink(const std::string &sink_endpoint) : m_receiver(new ZmqSocketReceiver(sink_endpoint, ZMQ_PULL)) {
     m_receiver->bind();
 };
 

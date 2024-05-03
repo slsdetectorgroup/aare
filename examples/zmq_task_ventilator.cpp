@@ -1,4 +1,4 @@
-#include "aare/network_io/ZmqSingleReceiver.hpp"
+#include "aare/network_io/ZmqSocketReceiver.hpp"
 #include "aare/network_io/ZmqVentilator.hpp"
 
 #include "zmq.h"
@@ -40,7 +40,7 @@ string setup(int argc, char **argv) {
 
 int process(const std::string &endpoint) {
     // 0. connect to slsReceiver
-    ZmqSingleReceiver receiver(endpoint, ZMQ_SUB);
+    ZmqSocketReceiver receiver(endpoint, ZMQ_SUB);
     receiver.connect();
 
     // 1. create ventilator

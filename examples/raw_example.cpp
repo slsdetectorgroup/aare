@@ -1,11 +1,9 @@
 // Your First C++ Program
+#include "aare/aare.hpp"
 #include "aare/examples/defs.hpp"
-#include "aare/file_io/File.hpp"
-#include "aare/utils/logger.hpp"
 #include <iostream>
 
-using aare::File;
-using aare::Frame;
+using namespace aare;
 
 void test(File &f, int frame_number) {
     std::cout << "frame number: " << frame_number << '\n';
@@ -26,4 +24,27 @@ int main() {
     test(file, 0);
     test(file, 2);
     test(file, 99);
+
+    std::filesystem::path const path2("/tmp/raw_example_writing.json");
+    aare::FileConfig config;
+    config.version = "1.0";
+    config.geometry = {1, 1};
+    config.detector_type = aare::DetectorType::Moench;
+    config.max_frames_per_file = 100;
+    config.rows = 1024;
+    config.cols = 512;
+    config.dtype = aare::DType::UINT16;
+    File file2(path2, "w", config);
+    Frame frame(1024, 512, 16);
+
+    for (int i = 0; i < 1024; i++) {
+        for (int j = 0; j < 512; j++) {
+            frame.set(i, j, (uint16_t)(i + j));
+        }
+    }
+
+    sls_detector_header header;
+    header.frameNumber = 0;
+    file2.write(frame, header);
+    file2.set_total_frames(1);
 }

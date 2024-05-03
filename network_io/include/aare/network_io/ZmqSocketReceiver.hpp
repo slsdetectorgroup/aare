@@ -17,9 +17,9 @@ namespace aare {
  * @brief Socket to receive data from a ZMQ publisher
  * @note needs to be in sync with the main library (or maybe better use the versioning in the header)
  */
-class ZmqSingleReceiver : public ZmqSocket {
+class ZmqSocketReceiver : public ZmqSocket {
   public:
-    explicit ZmqSingleReceiver(const std::string &endpoint, int socket_type = 2 /* ZMQ_SUB */);
+    explicit ZmqSocketReceiver(const std::string &endpoint, int socket_type = 2 /* ZMQ_SUB */);
     void connect();
     void bind();
     std::vector<ZmqFrame> receive_n();

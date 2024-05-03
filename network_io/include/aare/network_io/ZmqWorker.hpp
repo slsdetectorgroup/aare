@@ -1,4 +1,4 @@
-#include "aare/network_io/ZmqSingleReceiver.hpp"
+#include "aare/network_io/ZmqSocketReceiver.hpp"
 #include "aare/network_io/ZmqSocketSender.hpp"
 
 namespace aare {
@@ -11,7 +11,7 @@ class ZmqWorker {
     ~ZmqWorker();
 
   private:
-    ZmqSingleReceiver *m_receiver;
+    ZmqSocketReceiver *m_receiver;
     ZmqSocketSender *m_sender;
 };
 
