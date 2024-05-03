@@ -26,7 +26,10 @@ struct Task {
     size_t id{};
     int opcode{}; // operation to perform on the data (what type should this be? char*? enum?)
     size_t data_size{};
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wpedantic"
     std::byte payload[];
+#pragma GCC diagnostic pop
 
     static const size_t MAX_DATA_SIZE = 1024 * 1024; // 1MB
     size_t size() const { return sizeof(Task) + data_size; }

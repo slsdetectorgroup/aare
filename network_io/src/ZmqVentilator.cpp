@@ -4,12 +4,11 @@
 
 namespace aare {
 
-ZmqVentilator::ZmqVentilator(const std::string &endpoint) {
-    m_sender = new ZmqSocketSender(endpoint, ZMQ_PUSH);
+ZmqVentilator::ZmqVentilator(const std::string &endpoint) : m_sender(new ZmqSocketSender(endpoint, ZMQ_PUSH)) {
     m_sender->bind();
 }
 
-int ZmqVentilator::push(const Task *task) {
+size_t ZmqVentilator::push(const Task *task) {
     if (task->data_size > Task::MAX_DATA_SIZE) {
         throw network_io::NetworkError("Data size exceeds maximum allowed size");
     }

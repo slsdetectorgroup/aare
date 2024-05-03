@@ -71,9 +71,8 @@ std::string ZmqHeader::to_string() const {
     write_digit(s, "jsonversion", jsonversion);
     write_digit(s, "bitmode", bitmode);
     write_digit(s, "fileIndex", fileIndex);
-    write_digit(s, "ndetx", ndetx);
-    write_digit(s, "ndety", ndety);
-    write_array<uint32_t,2>(s, "shape", std::array<uint32_t, 2>{npixelsx, npixelsy});
+    write_array<uint32_t, 2>(s, "detshape", std::array<uint32_t, 2>{detshape.row, detshape.col});
+    write_array<uint32_t, 2>(s, "shape", std::array<uint32_t, 2>{shape.row, shape.col});
     write_digit(s, "size", size);
     write_digit(s, "acqIndex", acqIndex);
     write_digit(s, "frameIndex", frameIndex);
@@ -123,14 +122,14 @@ void ZmqHeader::from_string(std::string &s) { // NOLINT
             bitmode = static_cast<uint32_t>(field.value());
         } else if (key == "fileIndex") {
             fileIndex = static_cast<uint64_t>(field.value());
-        } else if (key == "ndetx") {
-            ndetx = static_cast<uint32_t>(field.value());
-        } else if (key == "ndety") {
-            ndety = static_cast<uint32_t>(field.value());
+        } else if (key == "detshape") {
+            std::array<uint32_t, 2> arr = simd_convert_array<uint32_t, 2>(field);
+            detshape.row = arr[0];
+            detshape.col = arr[1];
         } else if (key == "shape") {
             std::array<uint32_t, 2> arr = simd_convert_array<uint32_t, 2>(field);
-            npixelsx = arr[0];
-            npixelsy = arr[1];
+            shape.row = arr[0];
+            shape.col = arr[1];
         } else if (key == "size") {
             size = static_cast<uint32_t>(field.value());
         } else if (key == "acqIndex") {
@@ -183,15 +182,14 @@ void ZmqHeader::from_string(std::string &s) { // NOLINT
 }
 bool ZmqHeader::operator==(const ZmqHeader &other) const {
     return data == other.data && jsonversion == other.jsonversion && bitmode == other.bitmode &&
-           fileIndex == other.fileIndex && ndetx == other.ndetx && ndety == other.ndety && npixelsx == other.npixelsx &&
-           npixelsy == other.npixelsy && size == other.size && acqIndex == other.acqIndex &&
-           frameIndex == other.frameIndex && progress == other.progress && fname == other.fname &&
-           frameNumber == other.frameNumber && expLength == other.expLength && packetNumber == other.packetNumber &&
-           detSpec1 == other.detSpec1 && timestamp == other.timestamp && modId == other.modId && row == other.row &&
-           column == other.column && detSpec2 == other.detSpec2 && detSpec3 == other.detSpec3 &&
-           detSpec4 == other.detSpec4 && detType == other.detType && version == other.version &&
-           flipRows == other.flipRows && quad == other.quad && completeImage == other.completeImage &&
-           addJsonHeader == other.addJsonHeader && rx_roi == other.rx_roi;
+           fileIndex == other.fileIndex && detshape == other.detshape && shape == other.shape && size == other.size &&
+           acqIndex == other.acqIndex && frameIndex == other.frameIndex && progress == other.progress &&
+           fname == other.fname && frameNumber == other.frameNumber && expLength == other.expLength &&
+           packetNumber == other.packetNumber && detSpec1 == other.detSpec1 && timestamp == other.timestamp &&
+           modId == other.modId && row == other.row && column == other.column && detSpec2 == other.detSpec2 &&
+           detSpec3 == other.detSpec3 && detSpec4 == other.detSpec4 && detType == other.detType &&
+           version == other.version && flipRows == other.flipRows && quad == other.quad &&
+           completeImage == other.completeImage && addJsonHeader == other.addJsonHeader && rx_roi == other.rx_roi;
 }
 
 } // namespace aare

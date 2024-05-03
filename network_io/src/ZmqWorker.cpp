@@ -5,8 +5,8 @@
 #include "zmq.h"
 namespace aare {
 
-ZmqWorker::ZmqWorker(const std::string &ventilator_endpoint, const std::string &sink_endpoint) {
-    m_receiver = new ZmqSingleReceiver(ventilator_endpoint, ZMQ_PULL);
+ZmqWorker::ZmqWorker(const std::string &ventilator_endpoint, const std::string &sink_endpoint)
+    : m_receiver(new ZmqSingleReceiver(ventilator_endpoint, ZMQ_PULL)), m_sender(nullptr) {
     m_receiver->connect();
     if (not sink_endpoint.empty()) {
         m_sender = new ZmqSocketSender(sink_endpoint, ZMQ_PUSH);
@@ -15,13 +15,13 @@ ZmqWorker::ZmqWorker(const std::string &ventilator_endpoint, const std::string &
 }
 
 Task *ZmqWorker::pull() {
-    Task *task = (Task *)new std::byte[Task::MAX_DATA_SIZE + sizeof(Task)];
-    m_receiver->receive_data((std::byte *)task, Task::MAX_DATA_SIZE);
+    Task *task = reinterpret_cast<Task *>(new std::byte[Task::MAX_DATA_SIZE + sizeof(Task)]);
+    m_receiver->receive_data(reinterpret_cast<std::byte *>(task), Task::MAX_DATA_SIZE);
     logger::debug("Received task", task->id, task->data_size);
     return task;
 }
 
-int ZmqWorker::push(const Task *task) {
+size_t ZmqWorker::push(const Task *task) {
     if (m_sender == nullptr) {
         throw network_io::NetworkError("Worker not connected to sink: did you provide a sink endpoint?");
     }
@@ -33,9 +33,7 @@ int ZmqWorker::push(const Task *task) {
 
 ZmqWorker::~ZmqWorker() {
     delete m_receiver;
-    if (m_sender != nullptr) {
-        delete m_sender;
-    }
+    delete m_sender;
 }
 
 } // namespace aare

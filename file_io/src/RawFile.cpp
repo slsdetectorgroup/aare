@@ -173,7 +173,8 @@ void RawFile::parse_raw_metadata() {
                 max_frames_per_file = std::stoi(value);
             } else if (key == "Geometry") {
                 pos = value.find(',');
-                geometry = {std::stoi(value.substr(1, pos)), std::stoi(value.substr(pos + 1))};
+                geometry = {static_cast<uint32_t>(std::stoi(value.substr(1, pos))),
+                            static_cast<uint32_t>(std::stoi(value.substr(pos + 1)))};
             }
         }
     }

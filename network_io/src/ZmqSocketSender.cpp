@@ -26,7 +26,6 @@ void ZmqSocketSender::bind() {
     }
 }
 
-
 void ZmqSocketSender::connect() {
     m_context = zmq_ctx_new();
     m_socket = zmq_socket(m_context, m_socket_type);
@@ -35,7 +34,7 @@ void ZmqSocketSender::connect() {
     if (rc)
         throw network_io::NetworkError(fmt::format("Could not set ZMQ_RCVHWM: {}", zmq_strerror(errno)));
 
-    int bufsize = m_potential_frame_size * m_zmq_hwm;
+    int bufsize = static_cast<int>(m_potential_frame_size) * m_zmq_hwm;
     fmt::print("Setting ZMQ_RCVBUF to: {} MB\n", bufsize / (static_cast<size_t>(1024) * 1024));
     rc = zmq_setsockopt(m_socket, ZMQ_RCVBUF, &bufsize, sizeof(bufsize));
     if (rc) {

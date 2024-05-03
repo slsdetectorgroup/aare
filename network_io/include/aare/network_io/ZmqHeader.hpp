@@ -80,7 +80,6 @@ simdjson::ondemand::value::get() noexcept {
 } // namespace simdjson
 
 namespace aare {
-
 /** zmq header structure (from slsDetectorPackage)*/
 struct ZmqHeader {
     /** true if incoming data, false if end of acquisition */
@@ -88,14 +87,10 @@ struct ZmqHeader {
     uint32_t jsonversion{0};
     uint32_t bitmode{0};
     uint64_t fileIndex{0};
-    /** number of detectors/port in x axis */
-    uint32_t ndetx{0};
-    /** number of detectors/port in y axis */
-    uint32_t ndety{0};
-    /** number of pixels/channels in x axis for this zmq socket */
-    uint32_t npixelsx{0};
-    /** number of pixels/channels in y axis for this zmq socket */
-    uint32_t npixelsy{0};
+    /** number of detectors/port*/
+    t_xy<uint32_t> detshape{0, 0};
+    /** number of pixels/channels for this zmq socket */
+    t_xy<uint32_t> shape{0, 0};
     /** number of bytes for an image in this socket */
     uint32_t size{0};
     /** frame number from detector */
@@ -141,7 +136,7 @@ struct ZmqHeader {
  * @brief cast a simdjson::ondemand::value to a std::array<int,4>
  * useful for writing rx_roi from json header
  */
-template <typename T, int N,typename SIMDJSON_VALUE> std::array<T, N> simd_convert_array(SIMDJSON_VALUE field) {
+template <typename T, int N, typename SIMDJSON_VALUE> std::array<T, N> simd_convert_array(SIMDJSON_VALUE field) {
     simdjson::ondemand::array simd_array;
     auto err = field.value().get_array().get(simd_array);
     if (err)

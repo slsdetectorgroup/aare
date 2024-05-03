@@ -4,14 +4,13 @@
 
 namespace aare {
 
-ZmqSink::ZmqSink(const std::string &ventilator_endpoint) {
-    m_receiver = new ZmqSingleReceiver(ventilator_endpoint, ZMQ_PULL);
+ZmqSink::ZmqSink(const std::string &sink_endpoint) : m_receiver(new ZmqSingleReceiver(sink_endpoint, ZMQ_PULL)) {
     m_receiver->bind();
 };
 
 Task *ZmqSink::pull() {
-    Task *task = (Task *)new std::byte[Task::MAX_DATA_SIZE + sizeof(Task)];
-    m_receiver->receive_data((std::byte *)task, Task::MAX_DATA_SIZE);
+    Task *task = reinterpret_cast<Task *>(new std::byte[Task::MAX_DATA_SIZE + sizeof(Task)]);
+    m_receiver->receive_data(reinterpret_cast<std::byte *>(task), Task::MAX_DATA_SIZE);
     return task;
 };
 

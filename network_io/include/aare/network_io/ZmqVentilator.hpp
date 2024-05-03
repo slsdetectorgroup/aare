@@ -11,7 +11,7 @@ namespace aare {
 class ZmqVentilator {
   public:
     explicit ZmqVentilator(const std::string &endpoint);
-    int push(const Task* task);
+    size_t push(const Task *task);
     ~ZmqVentilator();
 
   private:

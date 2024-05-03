@@ -27,7 +27,7 @@ void ZmqSingleReceiver::connect() {
     if (rc)
         throw network_io::NetworkError(fmt::format("Could not set ZMQ_RCVHWM: {}", zmq_strerror(errno)));
 
-    int bufsize = m_potential_frame_size * m_zmq_hwm;
+    int bufsize = static_cast<int>(m_potential_frame_size) * m_zmq_hwm;
     fmt::print("Setting ZMQ_RCVBUF to: {} MB\n", bufsize / (static_cast<size_t>(1024) * 1024));
     rc = zmq_setsockopt(m_socket, ZMQ_RCVBUF, &bufsize, sizeof(bufsize));
     if (rc) {
@@ -47,7 +47,6 @@ void ZmqSingleReceiver::bind() {
         throw network_io::NetworkError("zmq_bind failed: " + error);
     }
 }
-
 
 /**
  * @brief receive a ZmqHeader
@@ -83,10 +82,10 @@ ZmqHeader ZmqSingleReceiver::receive_header() {
  */
 int ZmqSingleReceiver::receive_data(std::byte *data, size_t size) {
     int const data_bytes_received = zmq_recv(m_socket, data, size, 0);
-    if (data_bytes_received == -1){
+    if (data_bytes_received == -1) {
         logger::error(zmq_strerror(zmq_errno()));
         // TODO: refactor this error message
-        throw network_io::NetworkError(LOCATION+"Error receiving data");
+        throw network_io::NetworkError(LOCATION + "Error receiving data");
     }
     // aare::logger::debug("Bytes: ", data_bytes_received);
 
@@ -107,13 +106,13 @@ ZmqFrame ZmqSingleReceiver::receive_zmqframe() {
     }
 
     // receive frame data
-    if (header.npixelsx == 0 || header.npixelsy == 0 || header.bitmode == 0) {
+    if (header.shape == t_xy<uint32_t>{0, 0} || header.bitmode == 0) {
         logger::warn("Invalid header");
     }
     if (header.bitmode == 0) {
         header.bitmode = 16;
     }
-    Frame frame(header.npixelsx, header.npixelsy, header.bitmode);
+    Frame frame(header.shape.row, header.shape.col, header.bitmode);
     int bytes_received = receive_data(frame.data(), frame.size());
     if (bytes_received == -1) {
         throw network_io::NetworkError(LOCATION + "Error receiving frame");

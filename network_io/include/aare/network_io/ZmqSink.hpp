@@ -7,7 +7,7 @@ namespace aare {
 class ZmqSink {
   public:
     explicit ZmqSink(const std::string &sink_endpoint);
-    Task* pull();
+    Task *pull();
     ~ZmqSink();
 
   private:

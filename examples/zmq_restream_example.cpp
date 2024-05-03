@@ -77,8 +77,8 @@ int main(int argc, char **argv) {
         ZmqHeader header;
         header.frameNumber = frameidx;
         header.data = true;
-        header.npixelsx = frame.rows();
-        header.npixelsy = frame.cols();
+        header.shape.row = frame.rows();
+        header.shape.col = frame.cols();
         header.bitmode = frame.bitdepth();
         header.size = frame.size();
 

@@ -23,8 +23,7 @@ int main() {
         }
     }
     aare::ZmqHeader header;
-    header.npixelsx = 1024;
-    header.npixelsy = 1024;
+    header.shape = {1024, 1024};
     header.size = sizeof(uint32_t) * 1024 * 1024;
     header.bitmode = 32;
 
