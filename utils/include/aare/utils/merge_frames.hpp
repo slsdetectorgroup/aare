@@ -7,7 +7,7 @@
 
 namespace aare {
 void merge_frames(std::vector<std::byte *> &part_buffers, size_t part_size, std::byte *merged_frame, const xy &geometry,
-                  size_t cols = 0, size_t rows = 0, size_t bitdepth = 0) {
+                  size_t rows = 0, size_t cols = 0, size_t bitdepth = 0) {
 
     assert(part_buffers.size() == geometry.row * geometry.col);
 
@@ -20,6 +20,7 @@ void merge_frames(std::vector<std::byte *> &part_buffers, size_t part_size, std:
         }
 
     } else {
+        std::cout << "cols: " << cols << " rows: " << rows << " bitdepth: " << bitdepth << std::endl;
         assert(cols != 0 && rows != 0 && bitdepth != 0);
         size_t part_rows = rows / geometry.row;
         size_t part_cols = cols / geometry.col;

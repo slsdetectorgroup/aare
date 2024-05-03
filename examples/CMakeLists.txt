@@ -5,7 +5,7 @@ set(EXAMPLE_LIST "${EXAMPLE_LIST};cluster_example;zmq_multi_receiver;zmq_task_ve
 foreach(example ${EXAMPLE_LIST})
     add_executable(${example} ${example}.cpp)
     target_include_directories(${example} PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/include)
-    target_link_libraries(${example} PUBLIC aare PRIVATE aare_compiler_flags)
+    target_link_libraries(${example} PUBLIC aare PRIVATE aare_compiler_flags libzmq)
 endforeach()
 
 

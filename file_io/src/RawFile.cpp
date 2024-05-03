@@ -77,7 +77,7 @@ void RawFile::write_master_file() {
     aare::write_str(ss, "Geometry", geometry.to_string());
     ss += "\n\t";
 
-    uint64_t img_size = (m_cols * m_rows) / (geometry.col * geometry.row);
+    uint64_t img_size = (m_cols * m_rows) / (static_cast<size_t>(geometry.col * geometry.row));
     img_size *= m_bitdepth;
     aare::write_digit(ss, "Image Size in bytes", img_size);
     ss += "\n\t";
@@ -85,7 +85,8 @@ void RawFile::write_master_file() {
     ss += "\n\t";
     aare::write_digit(ss, "Dynamic Range", m_bitdepth);
     ss += "\n\t";
-    const aare::xy pixels = {m_rows / geometry.row, m_cols / geometry.col};
+    const aare::xy pixels = {static_cast<uint32_t>(m_rows / geometry.row),
+                             static_cast<uint32_t>(m_cols / geometry.col)};
     aare::write_str(ss, "Pixels", pixels.to_string());
     ss += "\n\t";
     aare::write_digit(ss, "Number of rows", m_rows);

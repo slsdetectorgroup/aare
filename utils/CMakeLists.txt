@@ -4,3 +4,11 @@ target_include_directories(utils PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/include)
 target_link_libraries(utils PUBLIC core)
 
 
+
+if(AARE_TESTS)
+    set(TestSources
+            ${CMAKE_CURRENT_SOURCE_DIR}/test/merge_frames.test.cpp
+        )
+    target_sources(tests PRIVATE ${TestSources} )
+    target_link_libraries(tests PRIVATE utils)
+endif()

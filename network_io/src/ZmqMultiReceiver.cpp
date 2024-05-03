@@ -87,7 +87,7 @@ ZmqFrame ZmqMultiReceiver::receive_zmqframe_(std::unordered_map<uint64_t, std::v
         part_buffers.push_back(zmq_frame.frame.data());
     }
     Frame const f(shape.row, shape.col, bitdepth);
-    merge_frames(part_buffers, part_size, f.data(), m_geometry, shape.col, shape.row, bitdepth);
+    merge_frames(part_buffers, part_size, f.data(), m_geometry, shape.row, shape.col, bitdepth);
     ZmqFrame zmq_frame = {std::move(frames[0].header), f};
     return zmq_frame;
 }

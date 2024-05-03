@@ -1,6 +1,6 @@
 
-#include "aare/network_io/ZmqSocketReceiver.hpp"
 #include "aare/network_io/ZmqSink.hpp"
+#include "aare/network_io/ZmqSocketReceiver.hpp"
 #include "aare/network_io/ZmqVentilator.hpp"
 #include "aare/network_io/ZmqWorker.hpp"
 
