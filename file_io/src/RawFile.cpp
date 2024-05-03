@@ -318,12 +318,10 @@ void RawFile::get_frame_into(size_t frame_index, std::byte *frame_buffer) {
             frame_numbers[part_idx] =
                 this->subfiles[subfile_id][part_idx]->frame_number(frame_index % this->max_frames_per_file);
         }
-        while (true) {
-            // 1. if frame number vector is the same break
-            if (std::adjacent_find(frame_numbers.begin(), frame_numbers.end(), std::not_equal_to<>()) ==
-                frame_numbers.end())
-                break;
-            // 2. find the minimum frame number,
+        // 1. if frame number vector is the same break
+        while (std::adjacent_find(frame_numbers.begin(), frame_numbers.end(), std::not_equal_to<>()) ==
+               frame_numbers.end()) {
+            // 2. find the index of the minimum frame number,
             auto min_frame_idx =
                 std::distance(frame_numbers.begin(), std::min_element(frame_numbers.begin(), frame_numbers.end()));
             // 3. increase its index and update its respective frame number
