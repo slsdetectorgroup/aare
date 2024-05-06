@@ -32,7 +32,7 @@ TEST_CASE("NDView") {
         data[i] = i;
     }
     SECTION("constructors") {
-        NDView<uint16_t, 2> ds(data, std::vector<ssize_t>({10, 10}));
+        NDView<uint16_t, 2> ds(data, std::array<ssize_t, 2>({10, 10}));
         for (int i = 0; i < 100; i++) {
             REQUIRE(ds(i / 10, i % 10) == data[i]);
         }

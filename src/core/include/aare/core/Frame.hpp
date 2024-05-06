@@ -79,10 +79,10 @@ class Frame {
         std::memcpy(m_data, other.m_data, m_rows * m_cols * m_bitdepth / 8);
     }
 
-    template <typename T> NDView<T> view() {
-        std::vector<ssize_t> shape = {static_cast<ssize_t>(m_rows), static_cast<ssize_t>(m_cols)};
+    template <typename T> NDView<T, 2> view() {
+        std::array<ssize_t, 2> shape = {static_cast<ssize_t>(m_rows), static_cast<ssize_t>(m_cols)};
         T *data = reinterpret_cast<T *>(m_data);
-        return NDView<T>(data, shape);
+        return NDView<T, 2>(data, shape);
     }
 
     template <typename T> NDArray<T> image() { return NDArray<T>(this->view<T>()); }

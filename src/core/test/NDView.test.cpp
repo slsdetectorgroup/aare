@@ -142,14 +142,14 @@ TEST_CASE("iterators") {
     }
 }
 
-TEST_CASE("shape from vector") {
-    std::vector<int> vec;
-    for (int i = 0; i != 12; ++i) {
-        vec.push_back(i);
-    }
-    std::vector<ssize_t> shape{3, 4};
-    NDView<int, 2> data(vec.data(), shape);
-}
+// TEST_CASE("shape from vector") {
+//     std::vector<int> vec;
+//     for (int i = 0; i != 12; ++i) {
+//         vec.push_back(i);
+//     }
+//     std::vector<ssize_t> shape{3, 4};
+//     NDView<int, 2> data(vec.data(), shape);
+// }
 
 TEST_CASE("divide with another span") {
     std::vector<int> vec0{9, 12, 3};

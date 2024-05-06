@@ -54,9 +54,9 @@ template <typename T, ssize_t Ndim = 2> class NDView {
         : buffer_(buffer), strides_(c_strides<Ndim>(shape)), shape_(shape),
           size_(std::accumulate(std::begin(shape), std::end(shape), 1, std::multiplies<>())) {}
 
-    NDView(T *buffer, const std::vector<ssize_t> &shape)
-        : buffer_(buffer), strides_(c_strides<Ndim>(make_array<Ndim>(shape))), shape_(make_array<Ndim>(shape)),
-          size_(std::accumulate(std::begin(shape), std::end(shape), 1, std::multiplies<>())) {}
+    // NDView(T *buffer, const std::vector<ssize_t> &shape)
+    //     : buffer_(buffer), strides_(c_strides<Ndim>(make_array<Ndim>(shape))), shape_(make_array<Ndim>(shape)),
+    //       size_(std::accumulate(std::begin(shape), std::end(shape), 1, std::multiplies<>())) {}
 
     template <typename... Ix> std::enable_if_t<sizeof...(Ix) == Ndim, T &> operator()(Ix... index) {
         return buffer_[element_offset(strides_, index...)];
@@ -70,8 +70,8 @@ template <typename T, ssize_t Ndim = 2> class NDView {
 
     T *begin() { return buffer_; }
     T *end() { return buffer_ + size_; }
-    T &operator()(ssize_t i) { return buffer_[i]; }
-    T &operator[](ssize_t i) { return buffer_[i]; }
+    T &operator()(ssize_t i) const { return buffer_[i]; }
+    T &operator[](ssize_t i) const { return buffer_[i]; }
 
     bool operator==(const NDView &other) const {
         if (size_ != other.size_)
@@ -141,7 +141,5 @@ template <typename T, ssize_t Ndim = 2> class NDView {
         return *this;
     }
 };
-
-template class NDView<uint16_t, 2>;
 
 } // namespace aare

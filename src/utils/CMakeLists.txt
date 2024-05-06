@@ -8,7 +8,9 @@ target_link_libraries(utils PUBLIC core)
 if(AARE_TESTS)
     set(TestSources
             ${CMAKE_CURRENT_SOURCE_DIR}/test/merge_frames.test.cpp
+            ${CMAKE_CURRENT_SOURCE_DIR}/test/floats.test.cpp
         )
     target_sources(tests PRIVATE ${TestSources} )
     target_link_libraries(tests PRIVATE utils)
+
 endif()
