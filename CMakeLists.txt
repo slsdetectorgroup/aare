@@ -173,10 +173,7 @@ if(AARE_TESTS)
     add_subdirectory(tests)
 endif()
 
-add_subdirectory(core)
-add_subdirectory(file_io)
-add_subdirectory(utils)
-add_subdirectory(network_io)
+add_subdirectory(src)
 
 
 #Overall target to link to when using the library
@@ -190,9 +187,6 @@ target_include_directories(aare INTERFACE
 add_subdirectory(examples)
 
 
-if(AARE_PYTHON_BINDINGS)
-    add_subdirectory(python)
-endif()
 
 
 # custom target to run check formatting with clang-format

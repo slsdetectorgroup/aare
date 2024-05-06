@@ -1,0 +1,7 @@
+add_subdirectory(core)
+add_subdirectory(file_io)
+add_subdirectory(utils)
+add_subdirectory(network_io)
+if(AARE_PYTHON_BINDINGS)
+    add_subdirectory(python)
+endif()

@@ -20,7 +20,6 @@ void merge_frames(std::vector<std::byte *> &part_buffers, size_t part_size, std:
         }
 
     } else {
-        std::cout << "cols: " << cols << " rows: " << rows << " bitdepth: " << bitdepth << std::endl;
         assert(cols != 0 && rows != 0 && bitdepth != 0);
         size_t part_rows = rows / geometry.row;
         size_t part_cols = cols / geometry.col;

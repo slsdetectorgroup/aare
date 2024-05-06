@@ -1,6 +1,5 @@
+#include "aare.hpp"
 #include "aare/examples/defs.hpp"
-#include "aare/network_io/ZmqSocketReceiver.hpp"
-#include "aare/network_io/defs.hpp"
 
 #include <boost/program_options.hpp>
 #include <cassert>

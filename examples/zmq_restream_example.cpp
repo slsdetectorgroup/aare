@@ -1,11 +1,9 @@
+#include "aare.hpp"
 #include "aare/examples/defs.hpp"
-#include <chrono>
-#include <thread>
-
-#include "aare/file_io/File.hpp"
-#include "aare/network_io/ZmqSocketSender.hpp"
 
 #include <boost/program_options.hpp>
+#include <chrono>
+#include <thread>
 
 using namespace aare;
 using namespace std;

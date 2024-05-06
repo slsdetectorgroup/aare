@@ -5,4 +5,5 @@
 #include "aare/network_io/ZmqSocketSender.hpp"
 #include "aare/network_io/ZmqVentilator.hpp"
 #include "aare/network_io/ZmqWorker.hpp"
+#include "aare/network_io/ZmqMultiReceiver.hpp"
 #include "aare/network_io/defs.hpp"

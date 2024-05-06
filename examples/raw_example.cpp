@@ -1,6 +1,6 @@
-// Your First C++ Program
-#include "aare/aare.hpp"
+#include "aare.hpp"
 #include "aare/examples/defs.hpp"
+
 #include <iostream>
 
 using namespace aare;
