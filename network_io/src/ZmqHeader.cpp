@@ -12,12 +12,10 @@ std::string ZmqHeader::to_string() const {
     s += "{";
     write_digit(s, "data", data ? 1 : 0);
     write_digit(s, "jsonversion", jsonversion);
-    write_digit(s, "dynamicRange", dynamicRange);
+    write_digit(s, "bitmode", bitmode);
     write_digit(s, "fileIndex", fileIndex);
-    write_digit(s, "ndetx", ndetx);
-    write_digit(s, "ndety", ndety);
-    write_digit(s, "npixelsx", npixelsx);
-    write_digit(s, "npixelsy", npixelsy);
+    write_array<uint32_t, 2>(s, "detshape", std::array<uint32_t, 2>{detshape.row, detshape.col});
+    write_array<uint32_t, 2>(s, "shape", std::array<uint32_t, 2>{shape.row, shape.col});
     write_digit(s, "size", size);
     write_digit(s, "acqIndex", acqIndex);
     write_digit(s, "frameIndex", frameIndex);
@@ -40,7 +38,7 @@ std::string ZmqHeader::to_string() const {
     write_digit(s, "quad", quad);
     write_digit(s, "completeImage", completeImage ? 1 : 0);
     write_map(s, "addJsonHeader", addJsonHeader);
-    write_array(s, "rx_roi", rx_roi);
+    write_array<int, 4>(s, "rx_roi", rx_roi);
     // remove last comma
     s.pop_back();
     s.pop_back();
@@ -63,18 +61,18 @@ void ZmqHeader::from_string(std::string &s) { // NOLINT
             data = static_cast<uint64_t>(field.value()) != 0;
         } else if (key == "jsonversion") {
             jsonversion = static_cast<uint32_t>(field.value());
-        } else if (key == "dynamicRange") {
-            dynamicRange = static_cast<uint32_t>(field.value());
+        } else if (key == "bitmode") {
+            bitmode = static_cast<uint32_t>(field.value());
         } else if (key == "fileIndex") {
             fileIndex = static_cast<uint64_t>(field.value());
-        } else if (key == "ndetx") {
-            ndetx = static_cast<uint32_t>(field.value());
-        } else if (key == "ndety") {
-            ndety = static_cast<uint32_t>(field.value());
-        } else if (key == "npixelsx") {
-            npixelsx = static_cast<uint32_t>(field.value());
-        } else if (key == "npixelsy") {
-            npixelsy = static_cast<uint32_t>(field.value());
+        } else if (key == "detshape") {
+            std::array<uint32_t, 2> arr = simd_convert_array<uint32_t, 2>(field);
+            detshape.row = arr[0];
+            detshape.col = arr[1];
+        } else if (key == "shape") {
+            std::array<uint32_t, 2> arr = simd_convert_array<uint32_t, 2>(field);
+            shape.row = arr[0];
+            shape.col = arr[1];
         } else if (key == "size") {
             size = static_cast<uint32_t>(field.value());
         } else if (key == "acqIndex") {
@@ -121,21 +119,20 @@ void ZmqHeader::from_string(std::string &s) { // NOLINT
         } else if (key == "addJsonHeader") {
             addJsonHeader = static_cast<std::map<std::string, std::string>>(field.value());
         } else if (key == "rx_roi") {
-            rx_roi = static_cast<std::array<int, 4>>(field.value());
+            rx_roi = simd_convert_array<int, 4>(field);
         }
     }
 }
 bool ZmqHeader::operator==(const ZmqHeader &other) const {
-    return data == other.data && jsonversion == other.jsonversion && dynamicRange == other.dynamicRange &&
-           fileIndex == other.fileIndex && ndetx == other.ndetx && ndety == other.ndety && npixelsx == other.npixelsx &&
-           npixelsy == other.npixelsy && size == other.size && acqIndex == other.acqIndex &&
-           frameIndex == other.frameIndex && progress == other.progress && fname == other.fname &&
-           frameNumber == other.frameNumber && expLength == other.expLength && packetNumber == other.packetNumber &&
-           detSpec1 == other.detSpec1 && timestamp == other.timestamp && modId == other.modId && row == other.row &&
-           column == other.column && detSpec2 == other.detSpec2 && detSpec3 == other.detSpec3 &&
-           detSpec4 == other.detSpec4 && detType == other.detType && version == other.version &&
-           flipRows == other.flipRows && quad == other.quad && completeImage == other.completeImage &&
-           addJsonHeader == other.addJsonHeader && rx_roi == other.rx_roi;
+    return data == other.data && jsonversion == other.jsonversion && bitmode == other.bitmode &&
+           fileIndex == other.fileIndex && detshape == other.detshape && shape == other.shape && size == other.size &&
+           acqIndex == other.acqIndex && frameIndex == other.frameIndex && progress == other.progress &&
+           fname == other.fname && frameNumber == other.frameNumber && expLength == other.expLength &&
+           packetNumber == other.packetNumber && detSpec1 == other.detSpec1 && timestamp == other.timestamp &&
+           modId == other.modId && row == other.row && column == other.column && detSpec2 == other.detSpec2 &&
+           detSpec3 == other.detSpec3 && detSpec4 == other.detSpec4 && detType == other.detType &&
+           version == other.version && flipRows == other.flipRows && quad == other.quad &&
+           completeImage == other.completeImage && addJsonHeader == other.addJsonHeader && rx_roi == other.rx_roi;
 }
 
 } // namespace aare

@@ -19,14 +19,14 @@ namespace aare {
  */
 class ZmqSocketReceiver : public ZmqSocket {
   public:
-    explicit ZmqSocketReceiver(const std::string &endpoint);
+    explicit ZmqSocketReceiver(const std::string &endpoint, int socket_type = 2 /* ZMQ_SUB */);
     void connect();
+    void bind();
     std::vector<ZmqFrame> receive_n();
 
-  private:
-    int receive_data(std::byte *data, size_t size);
     ZmqFrame receive_zmqframe();
     ZmqHeader receive_header();
+    int receive_data(std::byte *data, size_t size);
 };
 
 } // namespace aare

@@ -45,13 +45,14 @@ struct sls_detector_header {
     std::array<uint8_t, 64> packetMask;
 };
 
-struct xy {
-    size_t row;
-    size_t col;
-    bool operator==(const xy &other) const { return row == other.row && col == other.col; }
-    bool operator!=(const xy &other) const { return !(*this == other); }
+template <typename T> struct t_xy {
+    T row;
+    T col;
+    bool operator==(const t_xy &other) const { return row == other.row && col == other.col; }
+    bool operator!=(const t_xy &other) const { return !(*this == other); }
     std::string to_string() const { return "{ x: " + std::to_string(row) + " y: " + std::to_string(col) + " }"; }
 };
+typedef t_xy<uint32_t> xy;
 
 using dynamic_shape = std::vector<ssize_t>;
 

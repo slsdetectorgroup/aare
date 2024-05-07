@@ -25,6 +25,12 @@ ZmqSocket::~ZmqSocket() {
     delete[] m_header_buffer;
 }
 
+/**
+ * @brief get the socket
+ * @return void*
+ */
+void *ZmqSocket::get_socket() { return m_socket; }
+
 void ZmqSocket::set_zmq_hwm(int hwm) { m_zmq_hwm = hwm; }
 
 void ZmqSocket::set_timeout_ms(int n) { m_timeout_ms = n; }

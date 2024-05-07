@@ -50,17 +50,18 @@ inline void write_map(std::string &s, const std::string &key, const std::map<std
     }
     s += "}, ";
 }
-inline void write_array(std::string &s, const std::string &key, const std::array<int, 4> &value) {
+
+template <typename T, int N> void write_array(std::string &s, const std::string &key, const std::array<T, N> &value) {
     s += "\"";
     s += key;
     s += "\": [";
-    s += std::to_string(value[0]);
-    s += ", ";
-    s += std::to_string(value[1]);
-    s += ", ";
-    s += std::to_string(value[2]);
-    s += ", ";
-    s += std::to_string(value[3]);
+
+    for (size_t i = 0; i < N - 1; i++) {
+        s += std::to_string(value[i]);
+        s += ", ";
+    }
+    s += std::to_string(value[N - 1]);
+
     s += "], ";
 }
 

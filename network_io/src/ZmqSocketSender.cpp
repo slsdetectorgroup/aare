@@ -8,19 +8,47 @@ namespace aare {
  * Constructor
  * @param endpoint ZMQ endpoint
  */
-ZmqSocketSender::ZmqSocketSender(const std::string &endpoint) { m_endpoint = endpoint; }
+ZmqSocketSender::ZmqSocketSender(const std::string &endpoint, int socket_type) {
+    m_socket_type = socket_type;
+    m_endpoint = endpoint;
+}
 
 /**
  * bind to the given port
  */
 void ZmqSocketSender::bind() {
     m_context = zmq_ctx_new();
-    m_socket = zmq_socket(m_context, ZMQ_PUB);
+    m_socket = zmq_socket(m_context, m_socket_type);
     size_t const rc = zmq_bind(m_socket, m_endpoint.c_str());
     if (rc != 0) {
         std::string const error = zmq_strerror(zmq_errno());
         throw network_io::NetworkError("zmq_bind failed: " + error);
     }
+}
+
+void ZmqSocketSender::connect() {
+    m_context = zmq_ctx_new();
+    m_socket = zmq_socket(m_context, m_socket_type);
+    fmt::print("Setting ZMQ_RCVHWM to {}\n", m_zmq_hwm);
+    int rc = zmq_setsockopt(m_socket, ZMQ_RCVHWM, &m_zmq_hwm, sizeof(m_zmq_hwm)); // should be set before connect
+    if (rc)
+        throw network_io::NetworkError(fmt::format("Could not set ZMQ_RCVHWM: {}", zmq_strerror(errno)));
+
+    int bufsize = static_cast<int>(m_potential_frame_size) * m_zmq_hwm;
+    fmt::print("Setting ZMQ_RCVBUF to: {} MB\n", bufsize / (static_cast<size_t>(1024) * 1024));
+    rc = zmq_setsockopt(m_socket, ZMQ_RCVBUF, &bufsize, sizeof(bufsize));
+    if (rc) {
+        perror("zmq_setsockopt");
+        throw network_io::NetworkError(fmt::format("Could not set ZMQ_RCVBUF: {}", zmq_strerror(errno)));
+    }
+    zmq_connect(m_socket, m_endpoint.c_str());
+    zmq_setsockopt(m_socket, ZMQ_SUBSCRIBE, "", 0);
+}
+
+size_t ZmqSocketSender::send(const void *data, size_t size) {
+    size_t const rc2 = zmq_send(m_socket, data, size, 0);
+    assert(rc2 == size);
+    return rc2;
 }
 
 /**
@@ -30,7 +58,7 @@ void ZmqSocketSender::bind() {
  * @param size size of data
  * @return number of bytes sent
  */
-size_t ZmqSocketSender::send(const ZmqHeader &header, const std::byte *data, size_t size) {
+size_t ZmqSocketSender::send(const ZmqHeader &header, const void *data, size_t size) {
     size_t rc = 0;
     // if (serialize_header) {
     //     rc = zmq_send(m_socket, &header, sizeof(ZmqHeader), ZMQ_SNDMORE);

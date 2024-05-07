@@ -25,10 +25,12 @@ class ZmqSocket {
     void set_zmq_hwm(int hwm);
     void set_timeout_ms(int n);
     void set_potential_frame_size(size_t size);
+    void *get_socket();
 
   protected:
     void *m_context{nullptr};
     void *m_socket{nullptr};
+    int m_socket_type{};
     std::string m_endpoint;
     int m_zmq_hwm{1000};
     int m_timeout_ms{1000};

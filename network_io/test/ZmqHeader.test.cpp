@@ -5,14 +5,12 @@
 using namespace aare;
 TEST_CASE("Test ZmqHeader") {
     ZmqHeader header;
-    header.npixelsx = 10;
-    header.npixelsy = 15;
+    header.shape = {10, 15};
     header.data = 1;
-    header.jsonversion = 2;
-    header.dynamicRange = 32;
+    header.jsonversion = 5;
+    header.bitmode = 32;
     header.fileIndex = 4;
-    header.ndetx = 5;
-    header.ndety = 6;
+    header.detshape = {5, 6};
     header.size = 4800;
     header.acqIndex = 8;
     header.frameIndex = 9;
@@ -39,13 +37,11 @@ TEST_CASE("Test ZmqHeader") {
 
     std::string json_header = "{"
                               "\"data\": 1, "
-                              "\"jsonversion\": 2, "
-                              "\"dynamicRange\": 32, "
+                              "\"jsonversion\": 5, "
+                              "\"bitmode\": 32, "
                               "\"fileIndex\": 4, "
-                              "\"ndetx\": 5, "
-                              "\"ndety\": 6, "
-                              "\"npixelsx\": 10, "
-                              "\"npixelsy\": 15, "
+                              "\"detshape\": [5, 6], "
+                              "\"shape\": [10, 15], "
                               "\"size\": 4800, "
                               "\"acqIndex\": 8, "
                               "\"frameIndex\": 9, "

@@ -44,7 +44,7 @@ int main(int argc, char **argv) {
         return 1;
     }
     if (vm.count("port") != 1) {
-        aare::logger::error("file is required");
+        aare::logger::error("port is required");
         cout << desc << "\n";
         return 1;
     }
@@ -77,9 +77,9 @@ int main(int argc, char **argv) {
         ZmqHeader header;
         header.frameNumber = frameidx;
         header.data = true;
-        header.npixelsx = frame.rows();
-        header.npixelsy = frame.cols();
-        header.dynamicRange = frame.bitdepth();
+        header.shape.row = frame.rows();
+        header.shape.col = frame.cols();
+        header.bitmode = frame.bitdepth();
         header.size = frame.size();
 
         sender.send({header, frame});

@@ -17,6 +17,10 @@ add_library(network_io STATIC
     src/ZmqSocketSender.cpp
     src/ZmqSocket.cpp
     src/ZmqHeader.cpp
+    src/ZmqMultiReceiver.cpp
+    src/ZmqVentilator.cpp
+    src/ZmqWorker.cpp
+    src/ZmqSink.cpp
     )
 
 
