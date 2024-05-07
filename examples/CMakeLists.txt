@@ -7,7 +7,7 @@ set(EXAMPLE_LIST "${EXAMPLE_LIST};testing_pedestal;")
 foreach(example ${EXAMPLE_LIST})
     add_executable(${example} ${example}.cpp)
     target_include_directories(${example} PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/include)
-    target_link_libraries(${example} PUBLIC aare PRIVATE aare_compiler_flags libzmq)
+    target_link_libraries(${example} PUBLIC aare PRIVATE aare_compiler_flags libzmq )
 endforeach()
 
 

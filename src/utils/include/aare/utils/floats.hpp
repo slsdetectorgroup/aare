@@ -17,15 +17,9 @@ template <typename T = float> bool compare_floats(T A, T B, T maxRelDiff = -1) {
 
     // if user defined maxRelDiff then compare to it without scaling
     if (user_defined_diff) {
-        if (diff <= maxRelDiff) {
-            return true;
-        }
-        return false;
-    } else {
-        if (diff <= largest * maxRelDiff)
-            return true;
-        return false;
+        return diff <= maxRelDiff;
     }
+    return diff <= largest * maxRelDiff;
 }
 
 } // namespace aare

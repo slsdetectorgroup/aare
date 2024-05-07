@@ -144,7 +144,7 @@ template <typename T, int N, typename SIMDJSON_VALUE> std::array<T, N> simd_conv
     std::array<T, N> arr{};
     int i = 0;
     for (auto v : simd_array) {
-        int64_t tmp;
+        int64_t tmp{};
         err = v.get(tmp);
         if (err)
             throw std::runtime_error("error converting simdjson::ondemand::value");

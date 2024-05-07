@@ -71,7 +71,14 @@ jobs:
           pwd
           export AARE_ROOT_DIR="$PWD"
           ls build/examples/*_example
-          find build/examples -name "*_example" -not -name "zmq_*" | xargs -I {} -n 1 -t  bash -c {}
+          # examples to run
+          cd build/examples
+          examples=(raw_example cluster_example json_example logger_example multiport_example mythen_example)
+          examples+=(numpy_read_example numpy_write_example)
+          for example in "${examples[@]}"; do
+            echo "Running example: $example"
+            ./$example
+          done
 
 
 

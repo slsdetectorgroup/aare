@@ -28,13 +28,13 @@ struct Task {
     size_t data_size{};
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Wpedantic"
-    std::byte payload[];
+    std::byte payload[]; // NOLINT
 #pragma GCC diagnostic pop
 
     static const size_t MAX_DATA_SIZE = 1024 * 1024; // 1MB
     size_t size() const { return sizeof(Task) + data_size; }
     static Task *init(std::byte *data, size_t data_size) {
-        Task *task = (Task *)new std::byte[sizeof(Task) + data_size];
+        Task *task = reinterpret_cast<Task *>(new std::byte[sizeof(Task) + data_size]);
         task->data_size = data_size;
         if (data_size > 0)
             memcpy(task->payload, data, data_size);

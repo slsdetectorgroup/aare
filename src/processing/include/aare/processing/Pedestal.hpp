@@ -7,33 +7,14 @@
 namespace aare {
 class Pedestal {
   public:
-    Pedestal(int rows, int cols, size_t n_samples = 1000);
+    Pedestal(int rows, int cols, int n_samples = 1000);
     ~Pedestal();
-
-    // pixel level operations (should be refactored to allow users to implement their own pixel level operations)
-    template <typename T> inline void push(const int row, const int col, const T val) {
-        const int idx = index(row, col);
-        if (m_cur_samples[idx] < m_samples) {
-            m_sum[idx] += val;
-            m_sum2[idx] += val * val;
-            m_cur_samples[idx]++;
-        } else {
-            m_sum[idx] += val - m_sum[idx] / m_cur_samples[idx];
-            m_sum2[idx] += val * val - m_sum2[idx] / m_cur_samples[idx];
-        }
-
-    }
-    double mean(const int row, const int col) const;
-    double variance(const int row, const int col) const;
-    double standard_deviation(const int row, const int col) const;
-    int index(const int row, const int col) const;
-    void clear(const int row, const int col);
 
     // frame level operations
     template <typename T> void push(NDView<T, 2> frame) {
         assert(frame.size() == m_rows * m_cols);
         // TODO: test the effect of #pragma omp parallel for
-        for (ssize_t index = 0; index < m_rows * m_cols; index++) {
+        for (int index = 0; index < m_rows * m_cols; index++) {
             push<T>(index % m_cols, index / m_cols, frame(index));
         }
     }
@@ -53,6 +34,24 @@ class Pedestal {
     inline uint32_t *cur_samples() const { return m_cur_samples; }
     inline double *get_sum() const { return m_sum; }
     inline double *get_sum2() const { return m_sum2; }
+
+    // pixel level operations (should be refactored to allow users to implement their own pixel level operations)
+    template <typename T> inline void push(const int row, const int col, const T val) {
+        const int idx = index(row, col);
+        if (m_cur_samples[idx] < m_samples) {
+            m_sum[idx] += val;
+            m_sum2[idx] += val * val;
+            m_cur_samples[idx]++;
+        } else {
+            m_sum[idx] += val - m_sum[idx] / m_cur_samples[idx];
+            m_sum2[idx] += val * val - m_sum2[idx] / m_cur_samples[idx];
+        }
+    }
+    double mean(const int row, const int col) const;
+    double variance(const int row, const int col) const;
+    double standard_deviation(const int row, const int col) const;
+    inline int index(const int row, const int col) const { return row * m_cols + col; };
+    void clear(const int row, const int col);
 
   private:
     int m_rows;

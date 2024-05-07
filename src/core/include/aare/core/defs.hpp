@@ -52,7 +52,7 @@ template <typename T> struct t_xy {
     bool operator!=(const t_xy &other) const { return !(*this == other); }
     std::string to_string() const { return "{ x: " + std::to_string(row) + " y: " + std::to_string(col) + " }"; }
 };
-typedef t_xy<uint32_t> xy;
+using xy = t_xy<uint32_t>;
 
 using dynamic_shape = std::vector<ssize_t>;
 

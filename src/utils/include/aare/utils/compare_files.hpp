@@ -13,7 +13,7 @@ namespace aare {
  * @param p2 path to the second file
  * @return true if the files are the same, false otherwise
  */
-bool compare_files(const std::string &p1, const std::string &p2) {
+bool inline compare_files(const std::string &p1, const std::string &p2) {
     std::ifstream f1(p1, std::ifstream::binary | std::ifstream::ate);
     std::ifstream f2(p2, std::ifstream::binary | std::ifstream::ate);
 
@@ -31,7 +31,7 @@ bool compare_files(const std::string &p1, const std::string &p2) {
     return std::equal(std::istreambuf_iterator<char>(f1.rdbuf()), std::istreambuf_iterator<char>(),
                       std::istreambuf_iterator<char>(f2.rdbuf()));
 }
-bool compare_files(const std::filesystem::path &p1, const std::filesystem::path &p2) {
+bool inline compare_files(const std::filesystem::path &p1, const std::filesystem::path &p2) {
     return compare_files(p1.string(), p2.string());
 }
 } // namespace aare
