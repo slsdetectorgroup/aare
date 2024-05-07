@@ -40,7 +40,7 @@ int main() {
     File file(fpath, "r");
     test1(file, 0);
 
-    fpath = (PROJECT_ROOT_DIR / "data" / "mythen" / "scan242_master_3.raw");
+    fpath = (PROJECT_ROOT_DIR / "data" / "mythen" / "CORRECTED_scan242_master_3.raw");
     File file2(fpath, "r");
     test2(file2, 0);
 }

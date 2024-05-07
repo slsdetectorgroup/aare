@@ -11,6 +11,7 @@ namespace aare {
 class File {
   private:
     FileInterface *file_impl;
+    bool is_npy = true;
 
   public:
     /**
@@ -22,8 +23,8 @@ class File {
      * @throws std::invalid_argument if the file mode is not supported
      *
      */
-    File(const std::filesystem::path &fname, const std::string &mode, FileConfig cfg = {});
-    void write(Frame &frame);
+    File(const std::filesystem::path &fname, const std::string &mode, const FileConfig &cfg = {});
+    void write(Frame &frame, sls_detector_header header = {});
     Frame read();
     Frame iread(size_t frame_number);
     std::vector<Frame> read(size_t n_frames);
@@ -38,6 +39,7 @@ class File {
     size_t rows() const;
     size_t cols() const;
     size_t bitdepth() const;
+    void set_total_frames(size_t total_frames);
 
     /**
      * @brief Move constructor
