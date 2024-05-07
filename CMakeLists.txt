@@ -178,7 +178,7 @@ add_subdirectory(src)
 
 #Overall target to link to when using the library
 add_library(aare INTERFACE) 
-target_link_libraries(aare INTERFACE core file_io utils network_io ${Boost_LIBRARIES})
+target_link_libraries(aare INTERFACE core file_io utils network_io processing ${Boost_LIBRARIES})
 target_include_directories(aare INTERFACE 
     $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
     $<INSTALL_INTERFACE:include>

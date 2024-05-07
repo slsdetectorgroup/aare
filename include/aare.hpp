@@ -5,3 +5,4 @@
 #include "aare/file_io.hpp"
 #include "aare/network_io.hpp"
 #include "aare/utils.hpp"
+#include "aare/processing.hpp"
