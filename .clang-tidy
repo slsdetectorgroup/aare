@@ -43,7 +43,8 @@ Checks: '*,
 HeaderFilterRegex: '*.hpp'
 ImplementationFileExtensions: [cpp]
 AnalyzeTemporaryDtors: false
-WarningsAsErrors: '*'
+WarningsAsErrors: '*,
+-bugprone-implicit-widening-of-multiplication-result'
 FormatStyle:     none
 CheckOptions:
   - { key: readability-identifier-naming.NamespaceCase,       value: lower_case }

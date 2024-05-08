@@ -1,4 +1,5 @@
 #include "aare/network_io/ZmqHeader.hpp"
+#include "aare/network_io/ZmqMultiReceiver.hpp"
 #include "aare/network_io/ZmqSink.hpp"
 #include "aare/network_io/ZmqSocket.hpp"
 #include "aare/network_io/ZmqSocketReceiver.hpp"

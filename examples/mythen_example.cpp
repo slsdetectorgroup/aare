@@ -1,7 +1,5 @@
-// Your First C++ Program
+#include "aare.hpp"
 #include "aare/examples/defs.hpp"
-#include "aare/file_io/File.hpp"
-#include "aare/utils/logger.hpp"
 
 #include <iostream>
 

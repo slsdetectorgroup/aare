@@ -1,5 +1,5 @@
-#include "aare/network_io/ZmqSocketReceiver.hpp"
-#include "aare/network_io/ZmqVentilator.hpp"
+#include "aare.hpp"
+#include "aare/examples/defs.hpp"
 
 #include "zmq.h"
 #include <boost/program_options.hpp>

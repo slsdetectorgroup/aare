@@ -173,15 +173,12 @@ if(AARE_TESTS)
     add_subdirectory(tests)
 endif()
 
-add_subdirectory(core)
-add_subdirectory(file_io)
-add_subdirectory(utils)
-add_subdirectory(network_io)
+add_subdirectory(src)
 
 
 #Overall target to link to when using the library
 add_library(aare INTERFACE) 
-target_link_libraries(aare INTERFACE core file_io utils network_io ${Boost_LIBRARIES})
+target_link_libraries(aare INTERFACE core file_io utils network_io processing ${Boost_LIBRARIES})
 target_include_directories(aare INTERFACE 
     $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
     $<INSTALL_INTERFACE:include>
@@ -190,9 +187,6 @@ target_include_directories(aare INTERFACE
 add_subdirectory(examples)
 
 
-if(AARE_PYTHON_BINDINGS)
-    add_subdirectory(python)
-endif()
 
 
 # custom target to run check formatting with clang-format
@@ -222,7 +216,7 @@ endif()
 
 add_custom_target(
     clang-tidy
-    COMMAND find \( -path "./core/*" -o -path "./file_io/*" -o -path "./network_io/*" -o -path "./utils/*" \) -name "*.cpp" -not -name "*.test.cpp" -not -name "CircularFifo.hpp" -not -name "ProducerConsumerQueue.hpp" -not -name "VariableSizeClusterFinder.hpp" | xargs -I {} -n 1 -P 10 bash -c "${CLANG_TIDY_COMMAND} --config-file=.clang-tidy -p build {}"
+    COMMAND find \( -path "./src/*" -a -not -path "./src/python/*" -a \( -name "*.cpp"   -not -name "*.test.cpp"\)  \)    -not -name "CircularFifo.hpp" -not -name "ProducerConsumerQueue.hpp" -not -name "VariableSizeClusterFinder.hpp" | xargs -I {} -n 1 -P 10 bash -c "${CLANG_TIDY_COMMAND} --config-file=.clang-tidy -p build {}"
     WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
     COMMENT "linting with clang-tidy"
     VERBATIM

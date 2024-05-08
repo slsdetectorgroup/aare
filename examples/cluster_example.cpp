@@ -1,5 +1,6 @@
-#include "aare/core/defs.hpp"
-#include "aare/file_io/ClusterFile.hpp"
+#include "aare.hpp"
+#include "aare/examples/defs.hpp"
+
 #include <cassert>
 #include <iostream>
 
