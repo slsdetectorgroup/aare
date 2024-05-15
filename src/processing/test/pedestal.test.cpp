@@ -98,9 +98,9 @@ TEST_CASE("test pedestal with normal distribution") {
     for (int i = 0; i < 4; i++) {
         for (int j = 0; j < 4; j++) {
             // 10% tolerance
-            compare_floats<double>(mean(i, j), MEAN, MEAN * TOLERANCE);
-            compare_floats<double>(variance(i, j), VAR, VAR * TOLERANCE);
-            compare_floats<double>(standard_deviation(i, j), STD, STD * TOLERANCE);
+            REQUIRE(compare_floats<double>(mean(i, j), MEAN, MEAN * TOLERANCE));
+            REQUIRE(compare_floats<double>(variance(i, j), VAR, VAR * TOLERANCE));
+            REQUIRE(compare_floats<double>(standard_deviation(i, j), STD, STD * TOLERANCE)); // maybe sqrt of tolerance?
         }
     }
 }
