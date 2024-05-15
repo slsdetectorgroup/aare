@@ -11,12 +11,10 @@ TEST_CASE("test pedestal constructor") {
     REQUIRE(pedestal.cols() == 10);
     REQUIRE(pedestal.n_samples() == 5);
     REQUIRE(pedestal.cur_samples() != nullptr);
-    REQUIRE(pedestal.get_sum() != nullptr);
-    REQUIRE(pedestal.get_sum2() != nullptr);
     for (int i = 0; i < 10; i++) {
         for (int j = 0; j < 10; j++) {
-            REQUIRE(pedestal.get_sum()[pedestal.index(i, j)] == 0);
-            REQUIRE(pedestal.get_sum2()[pedestal.index(i, j)] == 0);
+            REQUIRE(pedestal.get_sum()(i, j) == 0);
+            REQUIRE(pedestal.get_sum2()(i, j) == 0);
             REQUIRE(pedestal.cur_samples()[pedestal.index(i, j)] == 0);
         }
     }
@@ -35,8 +33,8 @@ TEST_CASE("test pedestal push") {
     pedestal.push<uint16_t>(frame);
     for (int i = 0; i < 10; i++) {
         for (int j = 0; j < 10; j++) {
-            REQUIRE(pedestal.get_sum()[pedestal.index(i, j)] == i + j);
-            REQUIRE(pedestal.get_sum2()[pedestal.index(i, j)] == (i + j) * (i + j));
+            REQUIRE(pedestal.get_sum()(i, j) == i + j);
+            REQUIRE(pedestal.get_sum2()(i, j) == (i + j) * (i + j));
             REQUIRE(pedestal.cur_samples()[pedestal.index(i, j)] == 1);
         }
     }
@@ -45,8 +43,8 @@ TEST_CASE("test pedestal push") {
     pedestal.clear();
     for (int i = 0; i < 10; i++) {
         for (int j = 0; j < 10; j++) {
-            REQUIRE(pedestal.get_sum()[pedestal.index(i, j)] == 0);
-            REQUIRE(pedestal.get_sum2()[pedestal.index(i, j)] == 0);
+            REQUIRE(pedestal.get_sum()(i, j) == 0);
+            REQUIRE(pedestal.get_sum2()(i, j) == 0);
             REQUIRE(pedestal.cur_samples()[pedestal.index(i, j)] == 0);
         }
     }
@@ -58,12 +56,12 @@ TEST_CASE("test pedestal push") {
             for (int j = 0; j < 10; j++) {
                 if (k < 5) {
                     REQUIRE(pedestal.cur_samples()[pedestal.index(i, j)] == k + 1);
-                    REQUIRE(pedestal.get_sum()[pedestal.index(i, j)] == (k + 1) * (i + j));
-                    REQUIRE(pedestal.get_sum2()[pedestal.index(i, j)] == (k + 1) * (i + j) * (i + j));
+                    REQUIRE(pedestal.get_sum()(i, j) == (k + 1) * (i + j));
+                    REQUIRE(pedestal.get_sum2()(i, j) == (k + 1) * (i + j) * (i + j));
                 } else {
                     REQUIRE(pedestal.cur_samples()[pedestal.index(i, j)] == 5);
-                    REQUIRE(pedestal.get_sum()[pedestal.index(i, j)] == 5 * (i + j));
-                    REQUIRE(pedestal.get_sum2()[pedestal.index(i, j)] == 5 * (i + j) * (i + j));
+                    REQUIRE(pedestal.get_sum()(i, j) == 5 * (i + j));
+                    REQUIRE(pedestal.get_sum2()(i, j) == 5 * (i + j) * (i + j));
                 }
                 REQUIRE(pedestal.mean(i, j) == (i + j));
                 REQUIRE(pedestal.variance(i, j) == 0);
@@ -80,24 +78,22 @@ TEST_CASE("test pedestal with normal distribution") {
     std::default_random_engine generator(seed);
     std::normal_distribution<double> distribution(MEAN, STD);
 
-    aare::Pedestal pedestal(4, 4, 10000);
+    aare::Pedestal pedestal(3, 5, 10000);
     for (int i = 0; i < 10000; i++) {
-        aare::Frame frame(4, 4, 64);
-        for (int j = 0; j < 4; j++) {
-            for (int k = 0; k < 4; k++) {
+        aare::Frame frame(3, 5, 64);
+        for (int j = 0; j < 3; j++) {
+            for (int k = 0; k < 5; k++) {
                 frame.set<double>(j, k, distribution(generator));
             }
         }
         pedestal.push<double>(frame);
     }
-
     auto mean = pedestal.mean();
     auto variance = pedestal.variance();
     auto standard_deviation = pedestal.standard_deviation();
 
-    for (int i = 0; i < 4; i++) {
-        for (int j = 0; j < 4; j++) {
-            // 10% tolerance
+    for (int i = 0; i < 3; i++) {
+        for (int j = 0; j < 5; j++) {
             REQUIRE(compare_floats<double>(mean(i, j), MEAN, MEAN * TOLERANCE));
             REQUIRE(compare_floats<double>(variance(i, j), VAR, VAR * TOLERANCE));
             REQUIRE(compare_floats<double>(standard_deviation(i, j), STD, STD * TOLERANCE)); // maybe sqrt of tolerance?
