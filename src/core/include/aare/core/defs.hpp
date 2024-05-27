@@ -11,18 +11,29 @@
 
 namespace aare {
 
-struct Cluster {
+template <typename T> struct Cluster {
+    Cluster(int cluster_sizeX_, int cluster_sizeY_) : cluster_sizeX(cluster_sizeX_), cluster_sizeY(cluster_sizeY_) {
+        data = new T[cluster_sizeX * cluster_sizeY];
+    }
+    Cluster(const Cluster &other) : Cluster(other.cluster_sizeX, other.cluster_sizeY) {
+        x = other.x;
+        y = other.y;
+        mempcpy(data, other.data, cluster_sizeX * cluster_sizeY * sizeof(T));
+    }
     int16_t x;
     int16_t y;
-    std::array<int32_t, 9> data;
+    T *data;
+    int cluster_sizeX;
+    int cluster_sizeY;
     std::string to_string() const {
         std::string s = "x: " + std::to_string(x) + " y: " + std::to_string(y) + "\ndata: [";
-        for (auto d : data) {
-            s += std::to_string(d) + " ";
+        for (int i = 0; i < cluster_sizeX * cluster_sizeY; i++) {
+            s += std::to_string(data[i]) + " ";
         }
         s += "]";
         return s;
     }
+    ~Cluster() { delete[] data; }
 };
 
 /**

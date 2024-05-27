@@ -10,7 +10,8 @@ endif()
 
 if(AARE_TESTS)
     set(TestSources
-            ${CMAKE_CURRENT_SOURCE_DIR}/test/pedestal.test.cpp
+            ${CMAKE_CURRENT_SOURCE_DIR}/test/Pedestal.test.cpp
+            ${CMAKE_CURRENT_SOURCE_DIR}/test/ClusterFinder.test.cpp
         )
     target_sources(tests PRIVATE ${TestSources} )
     target_link_libraries(tests PRIVATE processing)
