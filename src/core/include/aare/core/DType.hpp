@@ -32,6 +32,7 @@ class DType {
     enum TypeIndex { INT8, UINT8, INT16, UINT16, INT32, UINT32, INT64, UINT64, FLOAT, DOUBLE, ERROR };
 
     uint8_t bitdepth() const;
+    uint8_t bytes() const;
 
     explicit DType(const std::type_info &t);
     explicit DType(std::string_view sv);
@@ -46,7 +47,7 @@ class DType {
 
     // bool operator==(DType::TypeIndex ti) const;
     // bool operator!=(DType::TypeIndex ti) const;
-    std::string str() const;
+    std::string to_string() const;
 
   private:
     TypeIndex m_type{TypeIndex::ERROR};

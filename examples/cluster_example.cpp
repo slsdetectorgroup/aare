@@ -34,6 +34,6 @@ int main() {
     aare::logger::info("nclusters:", clusters.size());
 
     for (auto &cluster : clusters) {
-        aare::logger::info("cluster center:", cluster.to_string());
+        aare::logger::info("cluster center:", cluster.to_string<double>());
     }
 }

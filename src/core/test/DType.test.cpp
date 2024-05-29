@@ -51,4 +51,4 @@ TEST_CASE("Construct from string with endianess") {
     REQUIRE_THROWS(DType(">i4") == typeid(int32_t));
 }
 
-TEST_CASE("Convert to string") { REQUIRE(DType(typeid(int)).str() == "<i4"); }
+TEST_CASE("Convert to string") { REQUIRE(DType(typeid(int)).to_string() == "<i4"); }

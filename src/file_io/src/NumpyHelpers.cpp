@@ -29,7 +29,7 @@ namespace aare {
 
 std::string NumpyHeader::to_string() const {
     std::stringstream sstm;
-    sstm << "dtype: " << dtype.str() << ", fortran_order: " << fortran_order << ' ';
+    sstm << "dtype: " << dtype.to_string() << ", fortran_order: " << fortran_order << ' ';
     sstm << "shape: (";
     for (auto item : shape)
         sstm << item << ',';
@@ -227,7 +227,7 @@ size_t write_header(const std::filesystem::path &fname, const NumpyHeader &heade
 }
 
 size_t write_header(std::ostream &out, const NumpyHeader &header) {
-    std::string const header_dict = write_header_dict(header.dtype.str(), header.fortran_order, header.shape);
+    std::string const header_dict = write_header_dict(header.dtype.to_string(), header.fortran_order, header.shape);
 
     size_t length = magic_string_length + 2 + 2 + header_dict.length() + 1;
 

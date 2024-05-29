@@ -67,6 +67,11 @@ uint8_t DType::bitdepth() const {
 }
 
 /**
+ * @brief Get the number of bytes of the data type
+ */
+uint8_t DType::bytes() const { return bitdepth() / 8; }
+
+/**
  * @brief Construct a DType object from a TypeIndex
  * @param ti TypeIndex
  *
@@ -125,7 +130,7 @@ DType::DType(std::string_view sv) {
  * @brief Get the string representation of the data type
  * @return string representation
  */
-std::string DType::str() const {
+std::string DType::to_string() const {
 
     char ec{};
     if (endian::native == endian::little)
