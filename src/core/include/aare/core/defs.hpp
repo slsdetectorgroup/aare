@@ -19,8 +19,9 @@ class Cluster {
   public:
     int cluster_sizeX;
     int cluster_sizeY;
+    int16_t x;
+    int16_t y;
     DType dt;
-    static const size_t pad_size = 0;
 
   private:
     std::byte *m_data;
@@ -28,14 +29,14 @@ class Cluster {
   public:
     Cluster(int cluster_sizeX_, int cluster_sizeY_, DType dt_ = DType(typeid(int32_t)))
         : cluster_sizeX(cluster_sizeX_), cluster_sizeY(cluster_sizeY_), dt(dt_) {
-        m_data = new std::byte[2 * sizeof(int16_t) + pad_size + cluster_sizeX * cluster_sizeY * dt.bytes()]{};
+        m_data = new std::byte[cluster_sizeX * cluster_sizeY * dt.bytes()]{};
     }
     Cluster() : Cluster(3, 3) {}
     Cluster(const Cluster &other) : Cluster(other.cluster_sizeX, other.cluster_sizeY, other.dt) {
         if (this == &other)
             return;
-        cluster_sizeX = other.cluster_sizeX;
-        cluster_sizeY = other.cluster_sizeY;
+        x = other.x;
+        y = other.y;
         mempcpy(m_data, other.m_data, other.size());
     }
     Cluster &operator=(const Cluster &other) {
@@ -47,22 +48,24 @@ class Cluster {
     }
     Cluster(Cluster &&other) noexcept : Cluster(other.cluster_sizeX, other.cluster_sizeY, other.dt) {
         std::swap(m_data, other.m_data);
+        std::swap(x, other.x);
+        std::swap(y, other.y);
         other.m_data = nullptr;
         other.dt = DType(DType::TypeIndex::ERROR);
     }
     ~Cluster() { delete[] m_data; }
     template <typename T> T get(int idx) {
         (sizeof(T) == dt.bytes()) ? 0 : throw std::invalid_argument("[ERROR] Type size mismatch");
-        return *reinterpret_cast<T *>(m_data + pad_size + 2 * sizeof(int16_t) + idx * dt.bytes());
+        return *reinterpret_cast<T *>(m_data + idx * dt.bytes());
     }
     template <typename T> auto set(int idx, T val) {
         (sizeof(T) == dt.bytes()) ? 0 : throw std::invalid_argument("[ERROR] Type size mismatch");
-        return memcpy(m_data + pad_size + 2 * sizeof(int16_t) + idx * dt.bytes(), &val, (size_t)dt.bytes());
+        return memcpy(m_data + idx * dt.bytes(), &val, (size_t)dt.bytes());
     }
-    int16_t x() const { return *reinterpret_cast<int16_t *>(m_data); }
-    int16_t y() const { return *reinterpret_cast<int16_t *>(m_data + sizeof(int16_t)); }
-    auto x(int16_t x_) { return memcpy(m_data, &x_, sizeof(int16_t)); }
-    auto y(int16_t y_) { return memcpy(m_data + sizeof(int16_t), &y_, sizeof(int16_t)); }
+    auto x() const { return x; }
+    auto y() const { return y; }
+    auto x(int16_t x_) { return x = x_; }
+    auto y(int16_t y_) { return y = y_; }
 
     template <typename T> std::string to_string() const {
         (sizeof(T) == dt.bytes()) ? 0 : throw std::invalid_argument("[ERROR] Type size mismatch");
