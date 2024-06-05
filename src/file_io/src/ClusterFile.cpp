@@ -39,7 +39,7 @@ ClusterFile::ClusterFile(const std::filesystem::path &fname_, const std::string 
             throw std::runtime_error(fmt::format("could not open file {}", fname.c_str()));
         }
         // read header
-        ClusterFileHeader header;
+        ClusterFileHeader header{};
         const size_t rc = fread(&header, sizeof(header), 1, fp);
         if (rc != 1) {
             throw std::runtime_error(fmt::format("could not read header from file {}", fname.c_str()));
@@ -62,7 +62,8 @@ ClusterFile::ClusterFile(const std::filesystem::path &fname_, const std::string 
         throw std::invalid_argument("mode must be 'r' or 'w'");
     }
 
-    m_cluster_size = 2 * sizeof(int16_t) + config.cluster_sizeX * config.cluster_sizeY * dt.bytes();
+    m_cluster_size =
+        2 * sizeof(int16_t) + static_cast<size_t>(config.cluster_sizeX * config.cluster_sizeY * dt.bytes());
 }
 /**
  * @brief Writes a vector of clusters to the file.
@@ -70,14 +71,13 @@ ClusterFile::ClusterFile(const std::filesystem::path &fname_, const std::string 
  * @param clusters The vector of clusters to write to the file.
  */
 void ClusterFile::write(std::vector<Cluster> &clusters) {
-    if (clusters.size() == 0) {
+    if (clusters.empty()) {
         return;
     }
     assert(clusters[0].dt == dt && "cluster data type mismatch");
 
     // prepare buffer to write to file
-    auto bytes_per_pixel = clusters[0].dt.bytes();
-    auto buffer = new std::byte[m_cluster_size * clusters.size()];
+    auto *buffer = new std::byte[m_cluster_size * clusters.size()];
     for (size_t i = 0; i < clusters.size(); i++) {
         auto &cluster = clusters[i];
         memcpy(buffer + i * m_cluster_size, &cluster.x, sizeof(int16_t));
@@ -94,7 +94,7 @@ void ClusterFile::write(std::vector<Cluster> &clusters) {
  */
 void ClusterFile::write(Cluster &cluster) {
     // prepare buffer to write to file
-    auto buffer = new std::byte[m_cluster_size];
+    auto *buffer = new std::byte[m_cluster_size];
     memcpy(buffer, &cluster.x, sizeof(int16_t));
     memcpy(buffer + sizeof(int16_t), &cluster.y, sizeof(int16_t));
     memcpy(buffer + 2 * sizeof(int16_t), cluster.data(), cluster.size());
@@ -112,7 +112,7 @@ Cluster ClusterFile::read() {
     }
 
     Cluster cluster(3, 3, DType::INT32);
-    auto tmp = new std::byte[cluster.size() + 2 * sizeof(int16_t)];
+    auto *tmp = new std::byte[cluster.size() + 2 * sizeof(int16_t)];
     fread(tmp, cluster.size() + 2 * sizeof(int16_t), 1, fp);
     memcpy(&cluster.x, tmp, sizeof(int16_t));
     memcpy(&cluster.y, tmp + sizeof(int16_t), sizeof(int16_t));
