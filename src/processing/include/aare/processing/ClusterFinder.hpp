@@ -1,8 +1,8 @@
 #pragma once
+#include "aare/core/DType.hpp"
 #include "aare/core/NDArray.hpp"
 #include "aare/core/NDView.hpp"
 #include "aare/processing/Pedestal.hpp"
-#include "aare/core/DType.hpp"
 #include <cstddef>
 
 namespace aare {
@@ -69,9 +69,9 @@ class ClusterFinder {
                 }
                 if (eventMask[iy][ix] == PHOTON and frame(iy, ix) - pedestal.mean(iy, ix) == max) {
                     eventMask[iy][ix] = PHOTON_MAX;
-                    Cluster cluster(m_cluster_sizeX, m_cluster_sizeY,  DType(typeid(FRAME_TYPE)));
-                    cluster.x(ix);
-                    cluster.y(iy);
+                    Cluster cluster(m_cluster_sizeX, m_cluster_sizeY, DType(typeid(FRAME_TYPE)));
+                    cluster.x = ix;
+                    cluster.y = iy;
                     short i = 0;
                     for (short ir = -(m_cluster_sizeY / 2); ir < (m_cluster_sizeY / 2) + 1; ir++) {
                         for (short ic = -(m_cluster_sizeX / 2); ic < (m_cluster_sizeX / 2) + 1; ic++) {
@@ -163,7 +163,7 @@ class ClusterFinder {
                 }
                 if (eventMask[iy][ix] == PHOTON and frame(iy, ix) - pedestal.mean(iy, ix) == max) {
                     eventMask[iy][ix] = PHOTON_MAX;
-                    Cluster cluster(m_cluster_sizeX, m_cluster_sizeY,typeid(FRAME_TYPE));
+                    Cluster cluster(m_cluster_sizeX, m_cluster_sizeY, typeid(FRAME_TYPE));
                     cluster.x = ix;
                     cluster.y = iy;
                     short i = 0;

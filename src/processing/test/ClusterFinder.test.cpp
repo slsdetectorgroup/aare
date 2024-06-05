@@ -44,14 +44,14 @@ TEST_CASE("test cluster finder") {
     frame(5, 5) = 10;
     clusters = clusterFinder.find_clusters(frame.span(), pedestal);
     REQUIRE(clusters.size() == 1);
-    REQUIRE(clusters[0].x() == 5);
-    REQUIRE(clusters[0].y() == 5);
+    REQUIRE(clusters[0].x == 5);
+    REQUIRE(clusters[0].y == 5);
     for (int i = 0; i < 3; i++) {
         for (int j = 0; j < 3; j++) {
             if (i == 1 && j == 1)
-                REQUIRE(clusters[0].get<double>(i*3+j) == 10);
+                REQUIRE(clusters[0].get<double>(i * 3 + j) == 10);
             else
-                REQUIRE(clusters[0].get<double>(i*3+j) == 0);
+                REQUIRE(clusters[0].get<double>(i * 3 + j) == 0);
         }
     }
 }

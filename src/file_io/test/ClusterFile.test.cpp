@@ -19,16 +19,16 @@ TEST_CASE("Read a cluster file") {
     }
     SECTION("Read a single cluster") {
         Cluster c = cf.read();
-        REQUIRE(c.x() == 1);
-        REQUIRE(c.y() == 200);
+        REQUIRE(c.x == 1);
+        REQUIRE(c.y == 200);
         for (int i = 0; i < 9; i++) {
             REQUIRE(c.get<int32_t>(i) == i);
         }
     }
     SECTION("Read a single cluster using iread") {
         Cluster c = cf.iread(0);
-        REQUIRE(c.x() == 1);
-        REQUIRE(c.y() == 200);
+        REQUIRE(c.x == 1);
+        REQUIRE(c.y == 200);
         for (int i = 0; i < 9; i++) {
             REQUIRE(c.get<int32_t>(i) == i);
         }
@@ -36,14 +36,14 @@ TEST_CASE("Read a cluster file") {
     SECTION("Read a cluster using seek") {
         cf.seek(0);
         Cluster c = cf.read();
-        REQUIRE(c.x() == 1);
-        REQUIRE(c.y() == 200);
+        REQUIRE(c.x == 1);
+        REQUIRE(c.y == 200);
         for (int i = 0; i < 9; i++) {
             REQUIRE(c.get<int32_t>(i) == i);
         }
         c = cf.read();
-        REQUIRE(c.x() == 2);
-        REQUIRE(c.y() == 201);
+        REQUIRE(c.x == 2);
+        REQUIRE(c.y == 201);
         for (int i = 0; i < 9; i++) {
             REQUIRE(c.get<int32_t>(i) == i + 9);
         }
@@ -63,8 +63,8 @@ TEST_CASE("Read a cluster file") {
         int offset = 0;
         int data_offset = 0;
         for (auto c : cluster) {
-            REQUIRE(c.x() == offset + 1);
-            REQUIRE(c.y() == offset + 200);
+            REQUIRE(c.x == offset + 1);
+            REQUIRE(c.y == offset + 200);
             for (int i = 0; i < 9; i++) {
                 REQUIRE(c.get<int32_t>(i) == data_offset + i);
             }
@@ -90,8 +90,8 @@ TEST_CASE("write a cluster file") {
     std::vector<Cluster> clusters(TOTAL_CLUSTERS);
     for (int32_t i = 0; i < TOTAL_CLUSTERS; i++) {
         Cluster c;
-        c.x(INT16_MAX - offset);
-        c.y(INT16_MAX - (offset + 200));
+        c.x = (INT16_MAX - offset);
+        c.y = (INT16_MAX - (offset + 200));
         for (int32_t j = 0; j < 9; j++) {
             if (j % 2 == 0)
                 c.set<int32_t>(j, -(offset * 2));

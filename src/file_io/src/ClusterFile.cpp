@@ -74,16 +74,18 @@ void ClusterFile::write(std::vector<Cluster> &clusters) {
         return;
     }
     assert(clusters[0].dt == dt && "cluster data type mismatch");
-    assert(clusters[0].size() == m_cluster_size && "cluster size mismatch");
 
     // prepare buffer to write to file
     auto bytes_per_pixel = clusters[0].dt.bytes();
-    std::byte buffer[m_cluster_size * clusters.size()];
+    auto buffer = new std::byte[m_cluster_size * clusters.size()];
     for (size_t i = 0; i < clusters.size(); i++) {
         auto &cluster = clusters[i];
-        std::memcpy(buffer + i * cluster.size(), cluster.data(), cluster.size());
+        memcpy(buffer + i * m_cluster_size, &cluster.x, sizeof(int16_t));
+        memcpy(buffer + i * m_cluster_size + sizeof(int16_t), &cluster.y, sizeof(int16_t));
+        memcpy(buffer + i * m_cluster_size + 2 * sizeof(int16_t), cluster.data(), cluster.size());
     }
-    fwrite(buffer, m_cluster_size * clusters.size(), clusters.size(), fp);
+    fwrite(buffer, m_cluster_size * clusters.size(), 1, fp);
+    delete[] buffer;
 }
 /**
  * @brief Writes a single cluster to the file.
@@ -92,7 +94,12 @@ void ClusterFile::write(std::vector<Cluster> &clusters) {
  */
 void ClusterFile::write(Cluster &cluster) {
     // prepare buffer to write to file
-    fwrite(cluster.data(), cluster.size(), 1, fp);
+    auto buffer = new std::byte[m_cluster_size];
+    memcpy(buffer, &cluster.x, sizeof(int16_t));
+    memcpy(buffer + sizeof(int16_t), &cluster.y, sizeof(int16_t));
+    memcpy(buffer + 2 * sizeof(int16_t), cluster.data(), cluster.size());
+    fwrite(buffer, m_cluster_size, 1, fp);
+    delete[] buffer;
 }
 /**
  * @brief Reads a single cluster from the file.
@@ -105,7 +112,12 @@ Cluster ClusterFile::read() {
     }
 
     Cluster cluster(3, 3, DType::INT32);
-    fread(cluster.data(), cluster.size(), 1, fp);
+    auto tmp = new std::byte[cluster.size() + 2 * sizeof(int16_t)];
+    fread(tmp, cluster.size() + 2 * sizeof(int16_t), 1, fp);
+    memcpy(&cluster.x, tmp, sizeof(int16_t));
+    memcpy(&cluster.y, tmp + sizeof(int16_t), sizeof(int16_t));
+    memcpy(cluster.data(), tmp + 2 * sizeof(int16_t), cluster.size());
+    delete[] tmp;
     return cluster;
 }
 
@@ -173,7 +185,7 @@ void ClusterFile::seek(size_t cluster_number) {
  *
  * @return The current position of the file pointer in terms of clusters.
  */
-size_t ClusterFile::tell() const { return ftell(fp) / m_cluster_size; }
+size_t ClusterFile::tell() const { return (ftell(fp) - sizeof(ClusterFileHeader)) / m_cluster_size; }
 
 /**
  * @brief Counts the number of clusters in the file.
@@ -189,7 +201,7 @@ size_t ClusterFile::count() noexcept {
     // save the current position
     auto old_pos = ftell(fp);
     fseek(fp, 0, SEEK_END);
-    const size_t n_clusters_ = ftell(fp) / m_cluster_size;
+    const size_t n_clusters_ = (ftell(fp) - sizeof(ClusterFileHeader)) / m_cluster_size;
     // restore the file position
     fseek(fp, old_pos, SEEK_SET);
     return n_clusters_;

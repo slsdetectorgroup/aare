@@ -46,10 +46,9 @@ class Cluster {
         new (this) Cluster(other);
         return *this;
     }
-    Cluster(Cluster &&other) noexcept : Cluster(other.cluster_sizeX, other.cluster_sizeY, other.dt) {
-        std::swap(m_data, other.m_data);
-        std::swap(x, other.x);
-        std::swap(y, other.y);
+    Cluster(Cluster &&other) noexcept
+        : cluster_sizeX(other.cluster_sizeX), cluster_sizeY(other.cluster_sizeY), x(other.x), y(other.y), dt(other.dt),
+          m_data(other.m_data) {
         other.m_data = nullptr;
         other.dt = DType(DType::TypeIndex::ERROR);
     }
@@ -62,14 +61,14 @@ class Cluster {
         (sizeof(T) == dt.bytes()) ? 0 : throw std::invalid_argument("[ERROR] Type size mismatch");
         return memcpy(m_data + idx * dt.bytes(), &val, (size_t)dt.bytes());
     }
-    auto x() const { return x; }
-    auto y() const { return y; }
-    auto x(int16_t x_) { return x = x_; }
-    auto y(int16_t y_) { return y = y_; }
+    // auto x() const { return x; }
+    // auto y() const { return y; }
+    // auto x(int16_t x_) { return x = x_; }
+    // auto y(int16_t y_) { return y = y_; }
 
     template <typename T> std::string to_string() const {
         (sizeof(T) == dt.bytes()) ? 0 : throw std::invalid_argument("[ERROR] Type size mismatch");
-        std::string s = "x: " + std::to_string(x()) + " y: " + std::to_string(y()) + "\nm_data: [";
+        std::string s = "x: " + std::to_string(x) + " y: " + std::to_string(y) + "\nm_data: [";
         for (int i = 0; i < cluster_sizeX * cluster_sizeY; i++) {
             s += std::to_string(*reinterpret_cast<T *>(m_data + i * dt.bytes())) + " ";
         }
@@ -79,9 +78,9 @@ class Cluster {
     /**
      * @brief size of the cluster in bytes when saved to a file
      */
-    size_t size() const { return cluster_sizeX * cluster_sizeY * dt.bytes() + 2 * sizeof(int16_t) + pad_size; }
-    auto begin() const { return m_data + 2 * sizeof(int16_t); }
-    auto end() const { return m_data + cluster_sizeX * cluster_sizeY * dt.bytes() + 2 * sizeof(int16_t) + pad_size; }
+    size_t size() const { return cluster_sizeX * cluster_sizeY * dt.bytes(); }
+    auto begin() const { return m_data; }
+    auto end() const { return m_data + cluster_sizeX * cluster_sizeY * dt.bytes(); }
     std::byte *data() { return m_data; }
 };
 
