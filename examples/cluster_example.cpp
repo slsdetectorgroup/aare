@@ -7,7 +7,7 @@
 using namespace aare;
 int main() {
     auto PROJECT_ROOT_DIR = std::filesystem::path(getenv("AARE_ROOT_DIR"));
-    // std::filesystem::path const fpath(PROJECT_ROOT_DIR / "data" / "clusters" / "single_frame_97_clustrers.clust");
+    std::filesystem::path const fpath("/mnt/sls_det_storage/moench_data/testNewFW20230714/cu_half_speed_master_4.json");
 
     NDArray<double, 2> frame({10, 10});
     frame = 0;

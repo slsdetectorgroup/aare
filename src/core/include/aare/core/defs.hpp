@@ -1,6 +1,7 @@
 #pragma once
 
 #include "aare/core/DType.hpp"
+#include "aare/utils/logger.hpp"
 
 #include <array>
 #include <stdexcept>
