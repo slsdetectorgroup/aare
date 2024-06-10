@@ -1,1 +1,6 @@
-
+sqlite_clusters.db
+fixed_size_clusters.bin
+numpy_clusters.npy
+sqlite_clusters.zip
+fixed_size_clusters.zip
+numpy_clusters.zip
