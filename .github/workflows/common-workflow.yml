@@ -54,6 +54,9 @@ jobs:
           init-shell: bash
           cache-environment: true
           post-cleanup: 'all'
+      - name: print mamba packages
+        shell: bash -el {0}
+        run: mamba list
       - name: build
         shell: bash -el {0}
         run: |
