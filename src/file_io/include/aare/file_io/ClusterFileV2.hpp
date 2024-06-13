@@ -1,30 +1,68 @@
 #pragma once
-#include <string>
-#include <filesystem>
 #include "aare/core/defs.hpp"
+#include <filesystem>
+#include <string>
 
-namespace aare{
-    /*
-     * ClusterV2 file format:
-     * 1. Header:
-     *     - magic number: 4 bytes
-     *    - version: 2 bytes
-     * 
-    */
+namespace aare {
+struct ClusterHeader {
+    int16_t frame_number;
+    int16_t n_clusters;
+};
 
-    class ClusterFileV2 {
-    public:
-        ClusterFileV2(std::filesystem::path const &fpath, std::string const &mode, ClusterFileConfig const &config);
-        ~ClusterFileV2();
-        void write(std::vector<Cluster> const &clusters);
-        std::vector<Cluster> read();
-        void close();
-    private:
-        void write_header();
-        void read_header();
-        std::filesystem::path m_fpath;
-        std::string m_mode;
-        FILE *fp;
+struct ClusterV2_ {
+    int16_t x;
+    int16_t y;
+    std::array<int32_t, 9> data;
+};
 
-    };
-}
+struct ClusterV2 {
+    ClusterV2_ cluster;
+    int16_t frame_number;
+};
+
+class ClusterFileV2 {
+  private:
+    bool m_closed = true;
+    std::filesystem::path m_fpath;
+    std::string m_mode;
+    FILE *fp;
+
+  public:
+    ClusterFileV2(std::filesystem::path const &fpath, std::string const &mode) {
+        m_fpath = fpath;
+        m_mode = mode;
+        fp = fopen(fpath.c_str(), "rb");
+        m_closed = false;
+    }
+    ~ClusterFileV2() { close(); }
+    std::vector<ClusterV2> read() {
+        ClusterHeader header;
+        fread(&header, sizeof(ClusterHeader), 1, fp);
+        std::vector<ClusterV2_> clusters_(header.n_clusters);
+        fread(clusters_.data(), sizeof(ClusterV2_), header.n_clusters, fp);
+        std::vector<ClusterV2> clusters;
+        for (auto &c : clusters_) {
+            ClusterV2 cluster;
+            cluster.cluster = std::move(c);
+            cluster.frame_number = header.frame_number;
+            clusters.push_back(cluster);
+        }
+
+        return clusters;
+    }
+    std::vector<std::vector<ClusterV2>> read(int n_frames) {
+        std::vector<std::vector<ClusterV2>> clusters;
+        for (int i = 0; i < n_frames; i++) {
+            clusters.push_back(read());
+        }
+        return clusters;
+    }
+    
+    void close() {
+        if (!m_closed) {
+            fclose(fp);
+            m_closed = true;
+        }
+    }
+};
+} // namespace aare
