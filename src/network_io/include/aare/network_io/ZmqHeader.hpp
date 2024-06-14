@@ -36,7 +36,7 @@ namespace simdjson {
  * adds a check for 32bit overflow
  */
 template <> simdjson_inline simdjson::simdjson_result<uint32_t> simdjson::ondemand::value::get() noexcept {
-    size_t val = 0;
+    uint64_t val = 0;
     auto error = get_uint64().get(val);
     if (error) {
         return error;

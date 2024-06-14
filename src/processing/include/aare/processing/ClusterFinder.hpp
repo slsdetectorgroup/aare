@@ -163,7 +163,7 @@ class ClusterFinder {
                 }
                 if (eventMask[iy][ix] == PHOTON and frame(iy, ix) - pedestal.mean(iy, ix) == max) {
                     eventMask[iy][ix] = PHOTON_MAX;
-                    Cluster cluster(m_cluster_sizeX, m_cluster_sizeY, typeid(FRAME_TYPE));
+                    Cluster cluster(m_cluster_sizeX, m_cluster_sizeY, DType(typeid(FRAME_TYPE)));
                     cluster.x = ix;
                     cluster.y = iy;
                     short i = 0;
