@@ -5,8 +5,8 @@
 
 namespace aare {
 struct ClusterHeader {
-    int16_t frame_number;
-    int16_t n_clusters;
+    int32_t frame_number;
+    int32_t n_clusters;
 };
 
 struct ClusterV2_ {

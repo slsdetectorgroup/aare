@@ -57,15 +57,15 @@ class RawFile : public FileInterface {
      */
     size_t pixels_per_frame() override { return m_rows * m_cols; }
 
-    // goto frame number
-    void seek(size_t frame_number) override {
+    // goto frame index
+    void seek(size_t frame_index) override {
         // check if the frame number is greater than the total frames
         // if frame_number == total_frames, then the next read will throw an error
-        if (frame_number > this->total_frames()) {
+        if (frame_index > this->total_frames()) {
             throw std::runtime_error(
-                fmt::format("frame number {} is greater than total frames {}", frame_number, m_total_frames));
+                fmt::format("frame number {} is greater than total frames {}", frame_index, m_total_frames));
         }
-        this->current_frame = frame_number;
+        this->current_frame = frame_index;
     };
 
     // return the position of the file pointer (in number of frames)

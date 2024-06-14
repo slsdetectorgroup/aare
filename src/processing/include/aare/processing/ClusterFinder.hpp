@@ -35,11 +35,12 @@ class ClusterFinder {
             eventMask.push_back(std::vector<eventType>(frame.shape(1)));
         }
         long double val;
+        long double max;
 
         for (int iy = 0; iy < frame.shape(0); iy++) {
             for (int ix = 0; ix < frame.shape(1); ix++) {
                 // initialize max and total
-                FRAME_TYPE max = std::numeric_limits<FRAME_TYPE>::min();
+                max = std::numeric_limits<FRAME_TYPE>::min();
                 long double total = 0;
                 eventMask[iy][ix] = PEDESTAL;
 
@@ -61,13 +62,15 @@ class ClusterFinder {
                     continue;
                 } else if (max > m_nSigma * rms) {
                     eventMask[iy][ix] = PHOTON;
+
+
                 } else if (total > c3 * m_nSigma * rms) {
                     eventMask[iy][ix] = PHOTON;
                 } else {
                     pedestal.push(iy, ix, frame(iy, ix));
                     continue;
                 }
-                if (eventMask[iy][ix] == PHOTON and frame(iy, ix) - pedestal.mean(iy, ix) == max) {
+                if (eventMask[iy][ix] == PHOTON and frame(iy, ix) - pedestal.mean(iy, ix) >= max) {
                     eventMask[iy][ix] = PHOTON_MAX;
                     Cluster cluster(m_cluster_sizeX, m_cluster_sizeY, DType(typeid(FRAME_TYPE)));
                     cluster.x = ix;

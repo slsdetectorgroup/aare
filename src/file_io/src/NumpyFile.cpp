@@ -30,8 +30,9 @@ NumpyFile::NumpyFile(const std::filesystem::path &fname, const std::string &mode
 
     m_bytes_per_frame = m_header.dtype.bitdepth() / 8 * m_pixels_per_frame;
 }
+void NumpyFile::write(Frame &frame) { write_impl(frame.data(), frame.size()); }
+void NumpyFile::write_impl(void *data, uint64_t size) {
 
-void NumpyFile::write(Frame &frame) {
     if (fp == nullptr) {
         throw std::runtime_error("File not open");
     }
@@ -40,10 +41,12 @@ void NumpyFile::write(Frame &frame) {
     }
     if (fseek(fp, 0, SEEK_END))
         throw std::runtime_error("Could not seek to end of file");
-    size_t const rc = fwrite(frame.data(), frame.size(), 1, fp);
+    size_t const rc = fwrite(data, size, 1, fp);
     if (rc != 1) {
         throw std::runtime_error("Error writing frame to file");
     }
+
+    m_header.shape[0]++;
 }
 
 Frame NumpyFile::get_frame(size_t frame_number) {
