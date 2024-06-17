@@ -1,4 +1,3 @@
-
 cmake_minimum_required(VERSION 3.12)
 
 set(CMAKE_CXX_STANDARD 17) #TODO! Global or per target?
@@ -144,6 +143,7 @@ else()
             -fno-sanitize-recover 
             # -D_FORTIFY_SOURCE=2 
             -fno-omit-frame-pointer
+            -lstdc++fs
     )
 endif()
 

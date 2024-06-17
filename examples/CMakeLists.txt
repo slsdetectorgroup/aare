@@ -2,7 +2,7 @@
 set(EXAMPLE_LIST "json_example;logger_example;numpy_read_example;multiport_example;raw_example;zmq_restream_example")
 set(EXAMPLE_LIST "${EXAMPLE_LIST};mythen_example;numpy_write_example;zmq_receiver_example;zmq_sender_example;")    
 set(EXAMPLE_LIST "${EXAMPLE_LIST};cluster_example;zmq_multi_receiver;zmq_task_ventilator;zmq_worker;zmq_sink")
-set(EXAMPLE_LIST "${EXAMPLE_LIST};testing_pedestal;")
+set(EXAMPLE_LIST "${EXAMPLE_LIST};testing_pedestal;cluster_finder_example;")
 
 foreach(example ${EXAMPLE_LIST})
     add_executable(${example} ${example}.cpp)

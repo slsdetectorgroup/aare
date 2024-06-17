@@ -22,7 +22,7 @@ TEST_CASE("Read a cluster file") {
         REQUIRE(c.x == 1);
         REQUIRE(c.y == 200);
         for (int i = 0; i < 9; i++) {
-            REQUIRE(c.data[i] == i);
+            REQUIRE(c.get<int32_t>(i) == i);
         }
     }
     SECTION("Read a single cluster using iread") {
@@ -30,7 +30,7 @@ TEST_CASE("Read a cluster file") {
         REQUIRE(c.x == 1);
         REQUIRE(c.y == 200);
         for (int i = 0; i < 9; i++) {
-            REQUIRE(c.data[i] == i);
+            REQUIRE(c.get<int32_t>(i) == i);
         }
     }
     SECTION("Read a cluster using seek") {
@@ -39,13 +39,13 @@ TEST_CASE("Read a cluster file") {
         REQUIRE(c.x == 1);
         REQUIRE(c.y == 200);
         for (int i = 0; i < 9; i++) {
-            REQUIRE(c.data[i] == i);
+            REQUIRE(c.get<int32_t>(i) == i);
         }
         c = cf.read();
         REQUIRE(c.x == 2);
         REQUIRE(c.y == 201);
         for (int i = 0; i < 9; i++) {
-            REQUIRE(c.data[i] == i + 9);
+            REQUIRE(c.get<int32_t>(i) == i + 9);
         }
     }
     SECTION("check out of bound reading") {
@@ -66,7 +66,7 @@ TEST_CASE("Read a cluster file") {
             REQUIRE(c.x == offset + 1);
             REQUIRE(c.y == offset + 200);
             for (int i = 0; i < 9; i++) {
-                REQUIRE(c.data[i] == data_offset + i);
+                REQUIRE(c.get<int32_t>(i) == data_offset + i);
             }
 
             offset++;
@@ -90,13 +90,13 @@ TEST_CASE("write a cluster file") {
     std::vector<Cluster> clusters(TOTAL_CLUSTERS);
     for (int32_t i = 0; i < TOTAL_CLUSTERS; i++) {
         Cluster c;
-        c.x = INT16_MAX - offset;
-        c.y = INT16_MAX - (offset + 200);
+        c.x = (INT16_MAX - offset);
+        c.y = (INT16_MAX - (offset + 200));
         for (int32_t j = 0; j < 9; j++) {
             if (j % 2 == 0)
-                c.data[j] = -(offset * 2);
+                c.set<int32_t>(j, -(offset * 2));
             else
-                c.data[j] = (offset * 2);
+                c.set<int32_t>(j, (offset * 2));
         }
         clusters[i] = c;
         offset++;

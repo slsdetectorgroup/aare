@@ -67,6 +67,7 @@ template <typename T, ssize_t Ndim = 2> class NDView {
     }
 
     ssize_t size() const { return size_; }
+    size_t total_bytes() const { return size_ * sizeof(T); }
 
     T *begin() { return buffer_; }
     T *end() { return buffer_ + size_; }

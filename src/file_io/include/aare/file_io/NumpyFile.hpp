@@ -72,6 +72,18 @@ class NumpyFile : public FileInterface {
         }
         return arr;
     }
+    template <typename A, typename TYPENAME, A Ndim> void write(NDView<TYPENAME, Ndim> &frame) {
+        write_impl(frame.data(), frame.total_bytes());
+    }
+    template <typename A, typename TYPENAME, A Ndim> void write(NDArray<TYPENAME, Ndim> &frame) {
+        write_impl(frame.data(), frame.total_bytes());
+    }
+    template <typename A, typename TYPENAME, A Ndim> void write(NDView<TYPENAME, Ndim> &&frame) {
+        write_impl(frame.data(), frame.total_bytes());
+    }
+    template <typename A, typename TYPENAME, A Ndim> void write(NDArray<TYPENAME, Ndim> &&frame) {
+        write_impl(frame.data(), frame.total_bytes());
+    }
 
     ~NumpyFile() noexcept override;
 
@@ -91,6 +103,7 @@ class NumpyFile : public FileInterface {
     void load_metadata();
     void get_frame_into(size_t /*frame_number*/, std::byte * /*image_buf*/);
     Frame get_frame(size_t frame_number);
+    void write_impl(void *data, uint64_t size);
 };
 
 } // namespace aare

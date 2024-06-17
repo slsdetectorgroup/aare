@@ -12,7 +12,7 @@
  * typedef struct {
  *  int16_t x;
  *  int16_t y;
- *  int32_t data[9];
+ *  int32_t data[n];
  *} Cluster ;
  *
  */
@@ -26,16 +26,29 @@ namespace aare {
 struct ClusterFileConfig {
     int32_t frame_number;
     int32_t n_clusters;
-    ClusterFileConfig(int32_t frame_number_, int32_t n_clusters_)
-        : frame_number(frame_number_), n_clusters(n_clusters_) {}
-    ClusterFileConfig() : frame_number(0), n_clusters(0) {}
+    int cluster_sizeX;
+    int cluster_sizeY;
+    DType dt;
+    ClusterFileConfig(int32_t frame_number_, int32_t n_clusters_, int cluster_sizeX_ = 3, int cluster_sizeY_ = 3,
+                      DType dt_ = DType::INT32)
+        : frame_number{frame_number_}, n_clusters{n_clusters_}, cluster_sizeX{cluster_sizeX_},
+          cluster_sizeY{cluster_sizeY_}, dt{dt_} {}
+    ClusterFileConfig() : ClusterFileConfig(0, 0) {}
     bool operator==(const ClusterFileConfig &other) const {
-        return frame_number == other.frame_number && n_clusters == other.n_clusters;
+        return frame_number == other.frame_number && n_clusters == other.n_clusters && dt == other.dt &&
+               cluster_sizeX == other.cluster_sizeX && cluster_sizeY == other.cluster_sizeY;
     }
     bool operator!=(const ClusterFileConfig &other) const { return !(*this == other); }
     std::string to_string() const {
-        return "frame_number: " + std::to_string(frame_number) + " n_clusters: " + std::to_string(n_clusters) + "\n";
+        return "frame_number: " + std::to_string(frame_number) + ", n_clusters: " + std::to_string(n_clusters) +
+               ", dt: " + dt.to_string() + "\n cluster_sizeX: " + std::to_string(cluster_sizeX) +
+               ", cluster_sizeY: " + std::to_string(cluster_sizeY);
     }
+};
+
+struct ClusterFileHeader {
+    int32_t frame_number;
+    int32_t n_clusters;
 };
 
 /**
@@ -65,6 +78,8 @@ class ClusterFile {
     int32_t frame_number{};
     int32_t n_clusters{};
     static const int HEADER_BYTES = 8;
+    DType dt;
+    size_t m_cluster_size{};
 };
 
 } // namespace aare

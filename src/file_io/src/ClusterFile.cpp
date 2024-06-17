@@ -15,7 +15,7 @@ namespace aare {
  * @param config Configuration for the file header.
  */
 ClusterFile::ClusterFile(const std::filesystem::path &fname_, const std::string &mode_, ClusterFileConfig config)
-    : fname{fname_}, mode{mode_}, frame_number{config.frame_number}, n_clusters{config.n_clusters} {
+    : fname{fname_}, mode{mode_}, frame_number{config.frame_number}, n_clusters{config.n_clusters}, dt{config.dt} {
 
     // check if the file has the .clust extension
     if (fname.extension() != ".clust") {
@@ -30,12 +30,8 @@ ClusterFile::ClusterFile(const std::filesystem::path &fname_, const std::string 
         if (not std::filesystem::is_regular_file(fname)) {
             throw std::invalid_argument(fmt::format("file {} is not a regular file", fname.c_str()));
         }
-        // check if the file size is a multiple of the cluster size
-        if ((std::filesystem::file_size(fname) - HEADER_BYTES) % sizeof(Cluster) != 0) {
-            aare::logger::warn("file", fname, "size is not a multiple of cluster size");
-        }
-        if (config != ClusterFileConfig()) {
-            aare::logger::warn("ignored ClusterFileConfig for read mode");
+        if (dt == DType(DType::TypeIndex::ERROR)) {
+            throw std::invalid_argument("data type not set in ClusterFileConfig");
         }
         // open file
         fp = fopen(fname.c_str(), "rb");
@@ -43,12 +39,13 @@ ClusterFile::ClusterFile(const std::filesystem::path &fname_, const std::string 
             throw std::runtime_error(fmt::format("could not open file {}", fname.c_str()));
         }
         // read header
-        const size_t rc = fread(&config, sizeof(config), 1, fp);
+        ClusterFileHeader header{};
+        const size_t rc = fread(&header, sizeof(header), 1, fp);
         if (rc != 1) {
             throw std::runtime_error(fmt::format("could not read header from file {}", fname.c_str()));
         }
-        frame_number = config.frame_number;
-        n_clusters = config.n_clusters;
+        frame_number = header.frame_number;
+        n_clusters = header.n_clusters;
     } else if (mode == "w") {
         // open file
         fp = fopen(fname.c_str(), "wb");
@@ -57,35 +54,55 @@ ClusterFile::ClusterFile(const std::filesystem::path &fname_, const std::string 
         }
 
         // write header
-        if (fwrite(&config, sizeof(config), 1, fp) != 1) {
+        ClusterFileHeader header{config.frame_number, config.n_clusters};
+        if (fwrite(&header, sizeof(header), 1, fp) != 1) {
             throw std::runtime_error(fmt::format("could not write header to file {}", fname.c_str()));
         }
     } else {
         throw std::invalid_argument("mode must be 'r' or 'w'");
     }
+
+    m_cluster_size =
+        2 * sizeof(int16_t) + static_cast<size_t>(config.cluster_sizeX * config.cluster_sizeY * dt.bytes());
 }
 /**
  * @brief Writes a vector of clusters to the file.
  *
- * Each cluster is written as a binary block of size sizeof(Cluster).
- *
  * @param clusters The vector of clusters to write to the file.
  */
 void ClusterFile::write(std::vector<Cluster> &clusters) {
-    fwrite(clusters.data(), sizeof(Cluster), clusters.size(), fp);
+    if (clusters.empty()) {
+        return;
+    }
+    assert(clusters[0].dt == dt && "cluster data type mismatch");
+
+    // prepare buffer to write to file
+    auto *buffer = new std::byte[m_cluster_size * clusters.size()];
+    for (size_t i = 0; i < clusters.size(); i++) {
+        auto &cluster = clusters[i];
+        memcpy(buffer + i * m_cluster_size, &cluster.x, sizeof(int16_t));
+        memcpy(buffer + i * m_cluster_size + sizeof(int16_t), &cluster.y, sizeof(int16_t));
+        memcpy(buffer + i * m_cluster_size + 2 * sizeof(int16_t), cluster.data(), cluster.size());
+    }
+    fwrite(buffer, m_cluster_size * clusters.size(), 1, fp);
+    delete[] buffer;
 }
 /**
  * @brief Writes a single cluster to the file.
  *
- * The cluster is written as a binary block of size sizeof(Cluster).
- *
  * @param cluster The cluster to write to the file.
  */
-void ClusterFile::write(Cluster &cluster) { fwrite(&cluster, sizeof(Cluster), 1, fp); }
+void ClusterFile::write(Cluster &cluster) {
+    // prepare buffer to write to file
+    auto *buffer = new std::byte[m_cluster_size];
+    memcpy(buffer, &cluster.x, sizeof(int16_t));
+    memcpy(buffer + sizeof(int16_t), &cluster.y, sizeof(int16_t));
+    memcpy(buffer + 2 * sizeof(int16_t), cluster.data(), cluster.size());
+    fwrite(buffer, m_cluster_size, 1, fp);
+    delete[] buffer;
+}
 /**
  * @brief Reads a single cluster from the file.
- *
- * The cluster is read as a binary block of size sizeof(Cluster).
  *
  * @return The cluster read from the file.
  */
@@ -94,15 +111,20 @@ Cluster ClusterFile::read() {
         throw std::runtime_error("cluster number out of range");
     }
 
-    Cluster cluster{};
-    fread(&cluster, sizeof(Cluster), 1, fp);
+    Cluster cluster(3, 3, DType::INT32);
+    auto *tmp = new std::byte[cluster.size() + 2 * sizeof(int16_t)];
+    fread(tmp, cluster.size() + 2 * sizeof(int16_t), 1, fp);
+    memcpy(&cluster.x, tmp, sizeof(int16_t));
+    memcpy(&cluster.y, tmp + sizeof(int16_t), sizeof(int16_t));
+    memcpy(cluster.data(), tmp + 2 * sizeof(int16_t), cluster.size());
+    delete[] tmp;
     return cluster;
 }
 
 /**
  * @brief Reads a specific cluster from the file.
  *
- * The file pointer is moved to the specific cluster, and the cluster is read as a binary block of size sizeof(Cluster).
+ * The file pointer is moved to the specific cluster
  *
  * @param cluster_number The number of the cluster to read from the file.
  * @return The cluster read from the file.
@@ -114,8 +136,7 @@ Cluster ClusterFile::iread(size_t cluster_number) {
 
     auto old_pos = ftell(fp);
     this->seek(cluster_number);
-    Cluster cluster{};
-    fread(&cluster, sizeof(Cluster), 1, fp);
+    Cluster cluster = read();
     fseek(fp, old_pos, SEEK_SET); // restore the file position
     return cluster;
 }
@@ -132,8 +153,12 @@ std::vector<Cluster> ClusterFile::read(size_t n_clusters_) {
     if (n_clusters_ + tell() > count()) {
         throw std::runtime_error("cluster number out of range");
     }
-    std::vector<Cluster> clusters(n_clusters_);
-    fread(clusters.data(), sizeof(Cluster), n_clusters, fp);
+    std::vector<Cluster> clusters(n_clusters_, Cluster(3, 3, DType::INT32));
+
+    // TODO: read all clusters at once if possible
+    for (size_t i = 0; i < n_clusters_; i++) {
+        clusters[i] = read();
+    }
     return clusters;
 }
 
@@ -148,21 +173,19 @@ void ClusterFile::seek(size_t cluster_number) {
     if (cluster_number > count()) {
         throw std::runtime_error("cluster number out of range");
     }
-
-    const auto offset = static_cast<int64_t>(sizeof(ClusterFileConfig) + cluster_number * sizeof(Cluster));
-
+    const auto offset = static_cast<int64_t>(sizeof(ClusterFileHeader) + cluster_number * m_cluster_size);
     fseek(fp, offset, SEEK_SET);
 }
 
 /**
  * @brief Gets the current position of the file pointer in terms of clusters.
  *
- * The position is calculated as the number of clusters from the beginning of the file to the current position of the
- * file pointer.
+ * The position is calculated as the number of clusters from the beginning of the file to the current position of
+ * the file pointer.
  *
  * @return The current position of the file pointer in terms of clusters.
  */
-size_t ClusterFile::tell() const { return ftell(fp) / sizeof(Cluster); }
+size_t ClusterFile::tell() const { return (ftell(fp) - sizeof(ClusterFileHeader)) / m_cluster_size; }
 
 /**
  * @brief Counts the number of clusters in the file.
@@ -178,7 +201,7 @@ size_t ClusterFile::count() noexcept {
     // save the current position
     auto old_pos = ftell(fp);
     fseek(fp, 0, SEEK_END);
-    const size_t n_clusters_ = ftell(fp) / sizeof(Cluster);
+    const size_t n_clusters_ = (ftell(fp) - sizeof(ClusterFileHeader)) / m_cluster_size;
     // restore the file position
     fseek(fp, old_pos, SEEK_SET);
     return n_clusters_;
@@ -193,8 +216,8 @@ void ClusterFile::update_header() {
     aare::logger::debug("updating header with correct number of clusters", count());
     auto tmp_n_clusters = count();
     fseek(fp, 0, SEEK_SET);
-    ClusterFileConfig config(frame_number, static_cast<int32_t>(tmp_n_clusters));
-    if (fwrite(&config, sizeof(config), 1, fp) != 1) {
+    ClusterFileHeader header{frame_number, static_cast<int32_t>(tmp_n_clusters)};
+    if (fwrite(&header, sizeof(ClusterFileHeader), 1, fp) != 1) {
         throw std::runtime_error("could not write header to file");
     }
     if (fflush(fp) != 0) {
