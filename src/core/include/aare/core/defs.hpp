@@ -103,6 +103,29 @@ struct sls_detector_header {
     uint8_t detType;
     uint8_t version;
     std::array<uint8_t, 64> packetMask;
+    std::string to_string(){
+        std::string packetMaskStr = "[";
+        for (auto &i : packetMask) {
+            packetMaskStr += std::to_string(i) + ", ";
+        }
+        packetMaskStr += "]";
+
+        return "frameNumber: " + std::to_string(frameNumber) + "\n"
+            + "expLength: " + std::to_string(expLength) + "\n"
+            + "packetNumber: " + std::to_string(packetNumber) + "\n"
+            + "bunchId: " + std::to_string(bunchId) + "\n"
+            + "timestamp: " + std::to_string(timestamp) + "\n"
+            + "modId: " + std::to_string(modId) + "\n"
+            + "row: " + std::to_string(row) + "\n"
+            + "column: " + std::to_string(column) + "\n"
+            + "reserved: " + std::to_string(reserved) + "\n"
+            + "debug: " + std::to_string(debug) + "\n"
+            + "roundRNumber: " + std::to_string(roundRNumber) + "\n"
+            + "detType: " + std::to_string(detType) + "\n"
+            + "version: " + std::to_string(version) + "\n"
+            + "packetMask: " + packetMaskStr + "\n";
+    
+    }
 };
 
 template <typename T> struct t_xy {
