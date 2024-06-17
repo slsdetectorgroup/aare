@@ -38,7 +38,7 @@ class Cluster {
             return;
         x = other.x;
         y = other.y;
-        mempcpy(m_data, other.m_data, other.size());
+        memcpy(m_data, other.m_data, other.size());
     }
     Cluster &operator=(const Cluster &other) {
         if (this == &other)
