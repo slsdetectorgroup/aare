@@ -57,7 +57,7 @@ class ClusterFileV2 {
         }
         return clusters;
     }
-    
+
     void close() {
         if (!m_closed) {
             fclose(fp);

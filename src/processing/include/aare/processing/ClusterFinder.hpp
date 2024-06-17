@@ -63,7 +63,6 @@ class ClusterFinder {
                 } else if (max > m_nSigma * rms) {
                     eventMask[iy][ix] = PHOTON;
 
-
                 } else if (total > c3 * m_nSigma * rms) {
                     eventMask[iy][ix] = PHOTON;
                 } else {

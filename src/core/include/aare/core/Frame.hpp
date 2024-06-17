@@ -58,7 +58,7 @@ class Frame {
         m_rows = other.rows();
         m_cols = other.cols();
         m_bitdepth = other.bitdepth();
-        if(m_data != nullptr) {
+        if (m_data != nullptr) {
             delete[] m_data;
         }
         m_data = other.m_data;

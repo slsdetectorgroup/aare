@@ -45,15 +45,12 @@ int main() {
     cfg.rows = p.rows();
     cfg.cols = p.cols();
 
-    NumpyFile np_pedestal("/home/l_bechir/tmp/testNewFW20230714/pedestal.npy", "w",cfg );
+    NumpyFile np_pedestal("/home/l_bechir/tmp/testNewFW20230714/pedestal.npy", "w", cfg);
     cfg.dtype = DType(typeid(uint16_t));
-    NumpyFile np_frame("/home/l_bechir/tmp/testNewFW20230714/frame.npy", "w",cfg );
+    NumpyFile np_frame("/home/l_bechir/tmp/testNewFW20230714/frame.npy", "w", cfg);
 
     np_pedestal.write(p.mean());
     np_frame.write(frame.view<uint16_t>());
-    
-
-
 
     auto clusters = clusterFinder.find_clusters(frame.view<uint16_t>(), p);
     logger::info("nclusters:", clusters.size());
