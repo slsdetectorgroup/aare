@@ -28,6 +28,10 @@ template <typename T, typename SUM_TYPE> void define_pedestal_push_bindings(py::
         NDView<T, 2> a(static_cast<T *>(info.ptr), arr_shape);
         pedestal.push(a);
     });
+
+    p.def("push", [](Pedestal<SUM_TYPE> &pedestal, const int row, const int col, const T val) {
+        pedestal.push(row, col, val);
+    });
 }
 template <typename SUM_TYPE> void define_pedestal_bindings(py::module &m) {
 
@@ -61,17 +65,19 @@ template <typename SUM_TYPE> void define_pedestal_bindings(py::module &m) {
     define_pedestal_push_bindings<double>(p);
 
     p.def("mean", py::overload_cast<>(&Pedestal<SUM_TYPE>::mean))
-        .def("mean", [](Pedestal<SUM_TYPE> &p, const int row, const int col) { return p.mean(row, col); })
+        .def("mean", [](Pedestal<SUM_TYPE> &pedestal, const int row, const int col) { return pedestal.mean(row, col); })
         .def("variance", py::overload_cast<>(&Pedestal<SUM_TYPE>::variance))
-        // .def("variance", py::overload_cast<const int, const int>(const &Pedestal<SUM_TYPE>::variance))
+        .def("variance", [](Pedestal<SUM_TYPE> &pedestal, const int row, const int col) { return pedestal.variance(row, col); })
         .def("standard_deviation", py::overload_cast<>(&Pedestal<SUM_TYPE>::standard_deviation))
-        // .def("standard_deviation", py::overload_cast<const int, const int>(const
-        // &Pedestal<SUM_TYPE>::standard_deviation))
+        .def("standard_deviation",
+             [](Pedestal<SUM_TYPE> &pedestal, const int row, const int col) { return pedestal.standard_deviation(row, col); })
         .def("clear", py::overload_cast<>(&Pedestal<SUM_TYPE>::clear))
         .def("clear", py::overload_cast<const int, const int>(&Pedestal<SUM_TYPE>::clear))
         .def("rows", &Pedestal<SUM_TYPE>::rows)
         .def("cols", &Pedestal<SUM_TYPE>::cols)
-        .def("n_samples", &Pedestal<SUM_TYPE>::n_samples);
+        .def("n_samples", &Pedestal<SUM_TYPE>::n_samples)
+        .def("index", &Pedestal<SUM_TYPE>::index);
+
 }
 
 void define_processing_bindings(py::module &m) { define_pedestal_bindings<double>(m); }
