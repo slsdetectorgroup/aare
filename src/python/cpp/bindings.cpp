@@ -24,7 +24,20 @@ PYBIND11_MODULE(_aare, m) {
         .def_property_readonly("cols", &Frame::cols)
         .def_property_readonly("bitdepth", &Frame::bitdepth)
         .def_property_readonly("size", &Frame::size)
-        .def_property_readonly("data", &Frame::data, py::return_value_policy::reference);
+        .def_property_readonly("data", &Frame::data, py::return_value_policy::reference)
+        .def("p",[&](Frame &f) -> void  {
+            py::print("int8", DType(DType::TypeIndex::INT8).format_descr()," ", py::format_descriptor<int8_t>::format());
+            py::print("uint8", DType(DType::TypeIndex::UINT8).format_descr()," ", py::format_descriptor<uint8_t>::format());
+            py::print("int16", DType(DType::TypeIndex::INT16).format_descr()," ", py::format_descriptor<int16_t>::format());
+            py::print("uint16", DType(DType::TypeIndex::UINT16).format_descr()," ", py::format_descriptor<uint16_t>::format());
+            py::print("int32", DType(DType::TypeIndex::INT32).format_descr()," ", py::format_descriptor<int32_t>::format());
+            py::print("uint32", DType(DType::TypeIndex::UINT32).format_descr()," ", py::format_descriptor<uint32_t>::format());
+            py::print("int64", DType(DType::TypeIndex::INT64).format_descr()," ", py::format_descriptor<int64_t>::format());
+            py::print("uint64", DType(DType::TypeIndex::UINT64).format_descr()," ", py::format_descriptor<uint64_t>::format());
+            py::print("float", DType(DType::TypeIndex::FLOAT).format_descr()," ", py::format_descriptor<float>::format());
+            py::print("double", DType(DType::TypeIndex::DOUBLE).format_descr()," ", py::format_descriptor<double>::format());
+
+        });
 
     py::class_<xy>(m, "xy")
         .def(py::init<>())
