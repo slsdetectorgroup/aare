@@ -11,15 +11,15 @@ namespace aare {
 // int8, uint8, int16, uint16, int32, uint32, int64, uint64, float, double
 // if it's windows
 #if defined(_WIN32) || defined(_WIN64)
-char DTYPE_FORMAT_DSC[] = {'b', 'B', 'h', 'H', 'l', 'L', 'q', 'Q', 'f', 'd'};
+const char DTYPE_FORMAT_DSC[] = {'b', 'B', 'h', 'H', 'l', 'L', 'q', 'Q', 'f', 'd'};
 
 // if it's apple of linux64
 #elif defined(__APPLE__) || (defined(__linux__) && (defined(__x86_64__) || defined(__ppc64__)))
-char DTYPE_FORMAT_DSC[] = {'b', 'B', 'h', 'H', 'i', 'I', 'l', 'L', 'f', 'd'};
+const char DTYPE_FORMAT_DSC[] = {'b', 'B', 'h', 'H', 'i', 'I', 'l', 'L', 'f', 'd'};
 
 // if it's linux32
 #elif defined(__linux__) && defined(__i386__)
-char DTYPE_FORMAT_DSC[] = {'b', 'B', 'h', 'H', 'l', 'L', 'q', 'Q', 'f', 'd'};
+const char DTYPE_FORMAT_DSC[] = {'b', 'B', 'h', 'H', 'l', 'L', 'q', 'Q', 'f', 'd'};
 #endif
 /**
  * @brief enum class to define the endianess of the system
@@ -50,7 +50,10 @@ class DType {
 
     uint8_t bitdepth() const;
     uint8_t bytes() const;
-    std::string format() const { return buffer_info_map.at(m_type); }
+    std::string format_descr() const { 
+        return std::string(1, DTYPE_FORMAT_DSC[static_cast<int>(m_type)]);
+    }
+
 
     explicit DType(const std::type_info &t);
     explicit DType(std::string_view sv);

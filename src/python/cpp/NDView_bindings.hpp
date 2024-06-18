@@ -27,7 +27,7 @@ void define_NDView_bindings(py::module_ &m)
                           std::array<ssize_t, Ndim> arr_shape;
                           std::move(info.shape.begin(), info.shape.end(), arr_shape.begin());
 
-                          NDView<ArrayType, Ndim> a(a.data(),arr_shape);
+                          NDView<ArrayType, Ndim> a(static_cast<ArrayType*>(info.ptr),arr_shape);
                           return a; }))
         .def("__getitem__", [](NDView<ArrayType, Ndim> &a, py::tuple index)
              {

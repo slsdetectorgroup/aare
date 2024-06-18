@@ -16,12 +16,12 @@ namespace aare {
 class Frame {
     size_t m_rows;
     size_t m_cols;
-    DType m_dtype;
+    size_t m_bitdepth;
     std::byte *m_data;
 
   public:
-    Frame(size_t rows, size_t cols, DType dtype);
-    Frame(std::byte *bytes, size_t rows, size_t cols, DType dtype);
+    Frame(size_t rows, size_t cols, size_t m_bitdepth);
+    Frame(std::byte *bytes, size_t rows, size_t cols, size_t m_bitdepth);
     std::byte *get(size_t row, size_t col);
 
     // TODO! can we, or even want to remove the template?
@@ -35,9 +35,8 @@ class Frame {
 
     size_t rows() const { return m_rows; }
     size_t cols() const { return m_cols; }
-    size_t bitdepth() const { return m_dtype.bitdepth(); }
-    DType dtype() const { return m_dtype; }
-    size_t size() const { return m_rows * m_cols * m_dtype.bitdepth() / 8; }
+    size_t bitdepth() const { return m_bitdepth; }
+    size_t size() const { return m_rows * m_cols * m_bitdepth / 8; }
     std::byte *data() const { return m_data; }
 
     Frame &operator=(const Frame &other) {
@@ -46,42 +45,41 @@ class Frame {
         }
         m_rows = other.rows();
         m_cols = other.cols();
-        m_dtype = other.m_dtype;
-        m_data = new std::byte[m_rows * m_cols * m_dtype.bitdepth() / 8];
+        m_bitdepth = other.bitdepth();
+        m_data = new std::byte[m_rows * m_cols * m_bitdepth / 8];
         if (m_data == nullptr) {
             throw std::bad_alloc();
         }
-        std::memcpy(m_data, other.m_data, m_rows * m_cols * m_dtype.bitdepth() / 8);
+        std::memcpy(m_data, other.m_data, m_rows * m_cols * m_bitdepth / 8);
         return *this;
     }
 
     Frame &operator=(Frame &&other) noexcept {
         m_rows = other.rows();
         m_cols = other.cols();
-        m_dtype = other.m_dtype;
+        m_bitdepth = other.bitdepth();
         if (m_data != nullptr) {
             delete[] m_data;
         }
         m_data = other.m_data;
         other.m_data = nullptr;
-        other.m_rows = other.m_cols  = 0;
-        other.m_dtype = DType(DType::TypeIndex::ERROR);
+        other.m_rows = other.m_cols = other.m_bitdepth = 0;
         return *this;
     }
 
     // add move constructor
     Frame(Frame &&other) noexcept
-        : m_rows(other.m_rows), m_cols(other.m_cols), m_dtype(other.m_dtype), m_data(other.m_data) {
+        : m_rows(other.rows()), m_cols(other.cols()), m_bitdepth(other.bitdepth()), m_data(other.m_data) {
 
         other.m_data = nullptr;
-        other.m_rows = other.m_cols = 0;
+        other.m_rows = other.m_cols = other.m_bitdepth = 0;
     }
     // copy constructor
     Frame(const Frame &other)
-        : m_rows(other.rows()), m_cols(other.cols()), m_dtype(other.m_dtype),
-          m_data(new std::byte[m_rows * m_cols * m_dtype.bitdepth() / 8]) {
+        : m_rows(other.rows()), m_cols(other.cols()), m_bitdepth(other.bitdepth()),
+          m_data(new std::byte[m_rows * m_cols * m_bitdepth / 8]) {
 
-        std::memcpy(m_data, other.m_data, m_rows * m_cols * m_dtype.bitdepth()/ 8);
+        std::memcpy(m_data, other.m_data, m_rows * m_cols * m_bitdepth / 8);
     }
 
     template <typename T> NDView<T, 2> view() {
