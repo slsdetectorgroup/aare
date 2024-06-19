@@ -8,7 +8,6 @@ TODO! Add expression templates for operators
 
 */
 #include "aare/core/NDView.hpp"
-
 #include <algorithm>
 #include <array>
 #include <cmath>
@@ -17,6 +16,7 @@ TODO! Add expression templates for operators
 #include <iomanip>
 #include <iostream>
 #include <numeric>
+
 
 namespace aare {
 
@@ -128,6 +128,7 @@ template <typename T, ssize_t Ndim = 2> class NDArray {
     std::array<ssize_t, Ndim> shape() const noexcept { return shape_; }
     ssize_t shape(ssize_t i) const noexcept { return shape_[i]; }
     std::array<ssize_t, Ndim> strides() const noexcept { return strides_; }
+    size_t bitdepth() const noexcept { return sizeof(T) * 8; }
     std::array<ssize_t, Ndim> byte_strides() const noexcept {
         auto byte_strides = strides_;
         for (auto &val : byte_strides)

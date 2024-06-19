@@ -40,7 +40,10 @@ template <typename SUM_TYPE = double> class Pedestal {
     template <typename T> inline void push(const int row, const int col, const T val) {
         const int idx = index(row, col);
 
-        if (m_cur_samples[idx] < m_samples) {
+                logger::info("row: ", row, " col: ", col, " idx: ", idx, " val: ", val);
+        logger::info("m_cur_samples[idx]: ", m_cur_samples[idx], " m_samples: ", m_samples);
+
+if (m_cur_samples[idx] < m_samples) {
             m_sum(idx) += val;
             m_sum2(idx) += val * val;
             m_cur_samples[idx]++;

@@ -46,6 +46,9 @@ void define_NDArray_bindings(py::module_ &m)
         .def("shape", [](NDArray<ArrayType, Ndim> &a)
              { return a.shape(); })
         .def("size", &NDArray<ArrayType, Ndim>::size)
+        .def("bitdepth", &NDArray<ArrayType, Ndim>::bitdepth)
+        .def("strides", &NDArray<ArrayType, Ndim>::strides)
+        .def("byte_strides", &NDArray<ArrayType, Ndim>::byte_strides)
         .def("__add__", [](NDArray<ArrayType, Ndim> &a, NDArray<ArrayType, Ndim> &b)
              { return a + b; })
         .def_buffer([](NDArray<ArrayType, Ndim> &a) -> py::buffer_info
@@ -55,6 +58,6 @@ void define_NDArray_bindings(py::module_ &m)
                           py::format_descriptor<ArrayType>::format(), /* Python struct-style format descriptor */
                           Ndim,                                       /* Number of dimensions */
                           a.shape(),                                  /* Buffer dimensions */
-                          a.strides()                                 /* Strides (in bytes) for each index */
+                          a.byte_strides()                              /* Strides (in bytes) for each index */
                       ); });
 }
