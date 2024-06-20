@@ -14,6 +14,7 @@ jobs:
         use-system-libraries: ["OFF","ON"]
         build-type: ["Debug","Release"]
         use-python-bindings: ["OFF","ON"]
+        runs-on: ["ubuntu-latest","macos-latest","windows-latest"]
         # exclude:
         #   # excludes combinations that are not supported
         #   - use-python-bindings: "ON"
