@@ -23,6 +23,6 @@ jobs:
     with:
       use-system-libraries: ${{ matrix.use-system-libraries }}
       build-type: ${{ matrix.build-type }}
-      # use-python-bindings: ${{ matrix.use-python-bindings }}
+      use-python-bindings: ${{ matrix.use-python-bindings }}
     secrets: inherit
 
