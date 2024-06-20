@@ -116,6 +116,7 @@ class RawFile : public FileInterface {
     size_t rows() const override { return m_rows; }
     size_t cols() const override { return m_cols; }
     size_t bitdepth() const override { return m_bitdepth; }
+    xy geometry() { return m_geometry; }
 
   private:
     void write_master_file();
@@ -175,7 +176,7 @@ class RawFile : public FileInterface {
     size_t n_subfile_parts{};
     std::vector<std::vector<SubFile *>> subfiles;
     size_t subfile_rows{}, subfile_cols{};
-    xy geometry{};
+    xy m_geometry{};
     std::vector<xy> positions;
     ModuleConfig cfg{0, 0};
     TimingMode timing_mode{};

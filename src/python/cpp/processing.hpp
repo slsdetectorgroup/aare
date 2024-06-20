@@ -85,9 +85,38 @@ template <typename SUM_TYPE> void define_pedestal_bindings(py::module &m) {
 
 template <typename VIEW_TYPE, typename PEDESTAL_TYPE = double>
 void define_cluster_finder_template_bindings(py::class_<ClusterFinder> &cf) {
-    cf.def("find_clusters_without_threshold",
-           &ClusterFinder::find_clusters_without_threshold<VIEW_TYPE, PEDESTAL_TYPE>);
-    cf.def("find_clusters_with_threshold", &ClusterFinder::find_clusters_with_threshold<VIEW_TYPE, PEDESTAL_TYPE>);
+    cf.def("find_clusters_without_threshold",py::overload_cast<NDView<VIEW_TYPE, 2>, Pedestal<PEDESTAL_TYPE> &>(&ClusterFinder::find_clusters_without_threshold<VIEW_TYPE, PEDESTAL_TYPE>));
+    cf.def("find_clusters_with_threshold", py::overload_cast<NDView<VIEW_TYPE, 2>, Pedestal<PEDESTAL_TYPE> &>(&ClusterFinder::find_clusters_with_threshold<VIEW_TYPE, PEDESTAL_TYPE>));
+
+    cf.def("find_clusters_without_threshold",[](ClusterFinder &self, py::array_t<VIEW_TYPE> &np_array, Pedestal<PEDESTAL_TYPE> &pedestal) {
+        py::buffer_info info = np_array.request();
+        if (info.format != py::format_descriptor<VIEW_TYPE>::format())
+            throw std::runtime_error(
+                "Incompatible format: different formats! (Are you sure the arrays are of the same type?)");
+        if (info.ndim != 2)
+            throw std::runtime_error("Incompatible dimension: expected a 2D array!");
+
+        std::array<ssize_t, 2> arr_shape;
+        std::copy(info.shape.begin(), info.shape.end(), arr_shape.begin());
+
+        NDView<VIEW_TYPE, 2> a(static_cast<VIEW_TYPE *>(info.ptr), arr_shape);
+        return self.find_clusters_without_threshold(a, pedestal);
+    });
+
+    cf.def("find_clusters_with_threshold",[](ClusterFinder &self, py::array_t<VIEW_TYPE> &np_array, Pedestal<PEDESTAL_TYPE> &pedestal) {
+        py::buffer_info info = np_array.request();
+        if (info.format != py::format_descriptor<VIEW_TYPE>::format())
+            throw std::runtime_error(
+                "Incompatible format: different formats! (Are you sure the arrays are of the same type?)");
+        if (info.ndim != 2)
+            throw std::runtime_error("Incompatible dimension: expected a 2D array!");
+
+        std::array<ssize_t, 2> arr_shape;
+        std::copy(info.shape.begin(), info.shape.end(), arr_shape.begin());
+
+        NDView<VIEW_TYPE, 2> a(static_cast<VIEW_TYPE *>(info.ptr), arr_shape);
+        return self.find_clusters_with_threshold(a, pedestal);
+    });
 }
 void define_cluster_finder_bindings(py::module &m) {
 
@@ -119,6 +148,9 @@ void define_processing_bindings(py::module &m) {
                  );
              })
         .def_readwrite("x", &Cluster::x)
-        .def_readwrite("y", &Cluster::y);
+        .def_readwrite("y", &Cluster::y)
+        .def("__repr__", [](const Cluster &a) {
+            return "<Cluster: x: " + std::to_string(a.x) + ", y: " + std::to_string(a.y) + ">";
+        });
     define_cluster_finder_bindings(m);
 }

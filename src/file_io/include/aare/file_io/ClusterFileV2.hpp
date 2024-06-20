@@ -31,7 +31,7 @@ struct ClusterV2_ {
 
 struct ClusterV2 {
     ClusterV2_ cluster;
-    int16_t frame_number;
+    int32_t frame_number;
     std::string to_string() const {
         return "frame_number: " + std::to_string(frame_number) + ", " + cluster.to_string();
     }
@@ -51,7 +51,7 @@ class ClusterFileV2 {
 
   public:
     ClusterFileV2(std::filesystem::path const &fpath, std::string const &mode) {
-        if (mode != "r" or mode != "w")
+        if (mode != "r" and mode != "w")
             throw std::invalid_argument("mode must be 'r' or 'w'");
         if (!std::filesystem::exists(fpath))
             throw std::invalid_argument("File does not exist");
@@ -129,9 +129,10 @@ class ClusterFileV2 {
     }
 
     int32_t frame_number() {
+        auto pos = ftell(fp);
         ClusterHeader header;
-        fseek(fp, 0, SEEK_SET);
         fread(&header, sizeof(ClusterHeader), 1, fp);
+        fseek(fp, pos, SEEK_SET);
         return header.frame_number;
     }
 

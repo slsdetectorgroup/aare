@@ -51,12 +51,12 @@ void RawFile::parse_config(const FileConfig &config) {
     m_cols = config.cols;
     m_type = config.detector_type;
     max_frames_per_file = config.max_frames_per_file;
-    geometry = config.geometry;
+    m_geometry = config.geometry;
     version = config.version;
     subfile_rows = config.geometry.row;
     subfile_cols = config.geometry.col;
 
-    if (geometry != aare::xy{1, 1}) {
+    if (m_geometry != aare::xy{1, 1}) {
         throw std::runtime_error(LOCATION + "Only geometry {1,1} files are supported for writing");
     }
 }
@@ -74,10 +74,10 @@ void RawFile::write_master_file() {
     ss += "\n\t";
     aare::write_str(ss, "Detector Type", toString(m_type));
     ss += "\n\t";
-    aare::write_str(ss, "Geometry", geometry.to_string());
+    aare::write_str(ss, "Geometry", m_geometry.to_string());
     ss += "\n\t";
 
-    uint64_t img_size = (m_cols * m_rows) / (static_cast<size_t>(geometry.col * geometry.row));
+    uint64_t img_size = (m_cols * m_rows) / (static_cast<size_t>(m_geometry.col * m_geometry.row));
     img_size *= m_bitdepth;
     aare::write_digit(ss, "Image Size in bytes", img_size);
     ss += "\n\t";
@@ -85,8 +85,8 @@ void RawFile::write_master_file() {
     ss += "\n\t";
     aare::write_digit(ss, "Dynamic Range", m_bitdepth);
     ss += "\n\t";
-    const aare::xy pixels = {static_cast<uint32_t>(m_rows / geometry.row),
-                             static_cast<uint32_t>(m_cols / geometry.col)};
+    const aare::xy pixels = {static_cast<uint32_t>(m_rows / m_geometry.row),
+                             static_cast<uint32_t>(m_cols / m_geometry.col)};
     aare::write_str(ss, "Pixels", pixels.to_string());
     ss += "\n\t";
     aare::write_digit(ss, "Number of rows", m_rows);
@@ -203,7 +203,7 @@ void RawFile::parse_metadata() {
     } else {
         throw std::runtime_error(LOCATION + "Unsupported file type");
     }
-    n_subfile_parts = static_cast<size_t>(geometry.row) * geometry.col;
+    n_subfile_parts = static_cast<size_t>(m_geometry.row) * m_geometry.col;
 }
 
 void RawFile::parse_json_metadata() {
@@ -228,7 +228,7 @@ void RawFile::parse_json_metadata() {
         quad = (j["Quad"] == 1);
     }
 
-    geometry = {j["Geometry"]["y"], j["Geometry"]["x"]};
+    m_geometry = {j["Geometry"]["y"], j["Geometry"]["x"]};
 }
 void RawFile::parse_raw_metadata() {
     std::ifstream ifs(master_fname());
@@ -267,7 +267,7 @@ void RawFile::parse_raw_metadata() {
                 max_frames_per_file = std::stoi(value);
             } else if (key == "Geometry") {
                 pos = value.find(',');
-                geometry = {static_cast<uint32_t>(std::stoi(value.substr(1, pos))),
+                m_geometry = {static_cast<uint32_t>(std::stoi(value.substr(1, pos))),
                             static_cast<uint32_t>(std::stoi(value.substr(pos + 1)))};
             }
         }
@@ -335,7 +335,7 @@ void RawFile::get_frame_into(size_t frame_index, std::byte *frame_buffer) {
         }
     }
 
-    if (this->geometry.col == 1) {
+    if (this->m_geometry.col == 1) {
         // get the part from each subfile and copy it to the frame
         for (size_t part_idx = 0; part_idx != this->n_subfile_parts; ++part_idx) {
             auto corrected_idx = frame_indices[part_idx];
@@ -357,8 +357,8 @@ void RawFile::get_frame_into(size_t frame_index, std::byte *frame_buffer) {
 
             this->subfiles[subfile_id][part_idx]->get_part(part_buffer, corrected_idx % this->max_frames_per_file);
             for (size_t cur_row = 0; cur_row < (this->subfile_rows); cur_row++) {
-                auto irow = cur_row + (part_idx / this->geometry.col) * this->subfile_rows;
-                auto icol = (part_idx % this->geometry.col) * this->subfile_cols;
+                auto irow = cur_row + (part_idx / this->m_geometry.col) * this->subfile_rows;
+                auto icol = (part_idx % this->m_geometry.col) * this->subfile_cols;
                 auto dest = (irow * this->m_cols + icol);
                 dest = dest * this->m_bitdepth / 8;
                 memcpy(frame_buffer + dest, part_buffer + cur_row * this->subfile_cols * this->m_bitdepth / 8,
