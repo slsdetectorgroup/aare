@@ -11,9 +11,10 @@ jobs:
       # fail-fast is true by default
       fail-fast: false
       matrix:
+        os: ["ubuntu-latest","macos-latest","windows-latest"]
         use-system-libraries: ["ON"]
         build-type: ["Release"]
-        # use-python-bindings: ["OFF","ON"]
+        use-python-bindings: ["OFF"]
         # exclude:
         #   # excludes combinations that are not supported
         #   - use-python-bindings: "ON"
@@ -23,6 +24,7 @@ jobs:
     with:
       use-system-libraries: ${{ matrix.use-system-libraries }}
       build-type: ${{ matrix.build-type }}
-      # use-python-bindings: ${{ matrix.use-python-bindings }}
+      use-python-bindings: ${{ matrix.use-python-bindings }}
+      os: ${{ matrix.os }}
     secrets: inherit
 

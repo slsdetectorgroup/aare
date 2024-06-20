@@ -11,17 +11,17 @@ on:
         type: string
         default: Debug
       use-python-bindings:
-        # required: true
+        required: true
         type: string
         default: OFF
+      os:
+        required: true
+        type: string
+        default: ubuntu-latest
 
 jobs:
   build-and-test:
-    strategy:
-      fail-fast: false
-      matrix:
-        os: ["ubuntu-latest","macos-latest","windows-latest"]
-    runs-on: ${{ matrix.os }}
+    runs-on: ${{ inputs.os }}
     steps:
       - name: Dump GitHub context
         env:

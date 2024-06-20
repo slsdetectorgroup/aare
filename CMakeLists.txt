@@ -143,29 +143,35 @@ else()
             -fno-sanitize-recover 
             # -D_FORTIFY_SOURCE=2 
             -fno-omit-frame-pointer
-            -lstdc++fs
     )
 endif()
 
 endif()
 
 if(AARE_USE_WARNINGS)
-    target_compile_options(
-        aare_compiler_flags 
-        INTERFACE 
-            -Wall 
-            -Wextra 
-            -pedantic 
-            -Wshadow 
-            -Wnon-virtual-dtor
-            -Woverloaded-virtual
-            -Wdouble-promotion
-            -Wformat=2
-            -Wredundant-decls
-            -Wvla
-            -Wdouble-promotion
-            -Werror=return-type #important can cause segfault in optimzed builds
+    if(MSVC)
+        target_compile_options(
+            aare_compiler_flags 
+            INTERFACE 
         )
+    else()
+        target_compile_options(
+            aare_compiler_flags 
+            INTERFACE 
+                -Wall 
+                -Wextra 
+                -pedantic 
+                -Wshadow 
+                -Wnon-virtual-dtor
+                -Woverloaded-virtual
+                -Wdouble-promotion
+                -Wformat=2
+                -Wredundant-decls
+                -Wvla
+                -Wdouble-promotion
+                -Werror=return-type #important can cause segfault in optimzed builds
+            )
+    endif()
 endif()
 
 if(AARE_TESTS)
