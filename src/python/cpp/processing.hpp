@@ -9,6 +9,7 @@
 #include "aare/core/defs.hpp"
 #include "aare/file_io/ClusterFileV2.hpp"
 #include "aare/file_io/File.hpp"
+#include "aare/processing/ClusterFinder.hpp"
 #include "aare/processing/Pedestal.hpp"
 
 namespace py = pybind11;
@@ -67,17 +68,57 @@ template <typename SUM_TYPE> void define_pedestal_bindings(py::module &m) {
     p.def("mean", py::overload_cast<>(&Pedestal<SUM_TYPE>::mean))
         .def("mean", [](Pedestal<SUM_TYPE> &pedestal, const int row, const int col) { return pedestal.mean(row, col); })
         .def("variance", py::overload_cast<>(&Pedestal<SUM_TYPE>::variance))
-        .def("variance", [](Pedestal<SUM_TYPE> &pedestal, const int row, const int col) { return pedestal.variance(row, col); })
+        .def("variance",
+             [](Pedestal<SUM_TYPE> &pedestal, const int row, const int col) { return pedestal.variance(row, col); })
         .def("standard_deviation", py::overload_cast<>(&Pedestal<SUM_TYPE>::standard_deviation))
-        .def("standard_deviation",
-             [](Pedestal<SUM_TYPE> &pedestal, const int row, const int col) { return pedestal.standard_deviation(row, col); })
+        .def("standard_deviation", [](Pedestal<SUM_TYPE> &pedestal, const int row,
+                                      const int col) { return pedestal.standard_deviation(row, col); })
         .def("clear", py::overload_cast<>(&Pedestal<SUM_TYPE>::clear))
         .def("clear", py::overload_cast<const int, const int>(&Pedestal<SUM_TYPE>::clear))
         .def("rows", &Pedestal<SUM_TYPE>::rows)
         .def("cols", &Pedestal<SUM_TYPE>::cols)
         .def("n_samples", &Pedestal<SUM_TYPE>::n_samples)
-        .def("index", &Pedestal<SUM_TYPE>::index);
-
+        .def("index", &Pedestal<SUM_TYPE>::index)
+        .def("get_sum", &Pedestal<SUM_TYPE>::get_sum)
+        .def("get_sum2", &Pedestal<SUM_TYPE>::get_sum2);
 }
 
-void define_processing_bindings(py::module &m) { define_pedestal_bindings<double>(m); }
+template <typename VIEW_TYPE, typename PEDESTAL_TYPE = double>
+void define_cluster_finder_template_bindings(py::class_<ClusterFinder> &cf) {
+    cf.def("find_clusters_without_threshold",
+           &ClusterFinder::find_clusters_without_threshold<VIEW_TYPE, PEDESTAL_TYPE>);
+    cf.def("find_clusters_with_threshold", &ClusterFinder::find_clusters_with_threshold<VIEW_TYPE, PEDESTAL_TYPE>);
+}
+void define_cluster_finder_bindings(py::module &m) {
+
+    py::class_<ClusterFinder> cf(m, "ClusterFinder");
+    cf.def(py::init<int, int, double, double>());
+    define_cluster_finder_template_bindings<uint8_t>(cf);
+    define_cluster_finder_template_bindings<uint16_t>(cf);
+    define_cluster_finder_template_bindings<uint32_t>(cf);
+    define_cluster_finder_template_bindings<uint64_t>(cf);
+    define_cluster_finder_template_bindings<int8_t>(cf);
+    define_cluster_finder_template_bindings<int16_t>(cf);
+    define_cluster_finder_template_bindings<int32_t>(cf);
+    define_cluster_finder_template_bindings<int64_t>(cf);
+    define_cluster_finder_template_bindings<float>(cf);
+    define_cluster_finder_template_bindings<double>(cf);
+}
+void define_processing_bindings(py::module &m) {
+    define_pedestal_bindings<double>(m);
+
+    py::class_<Cluster>(m, "Cluster")
+        .def(py::init<int, int, DType>())
+        .def("size", &Cluster::size)
+        .def("begin", &Cluster::begin)
+        .def("end", &Cluster::end)
+        .def("data",
+             [](Cluster &c) {
+                 return py::memoryview::from_memory(c.data(), // buffer pointer
+                                                    c.size()  // buffer size
+                 );
+             })
+        .def_readwrite("x", &Cluster::x)
+        .def_readwrite("y", &Cluster::y);
+    define_cluster_finder_bindings(m);
+}

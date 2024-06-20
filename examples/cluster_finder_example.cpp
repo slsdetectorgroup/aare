@@ -52,7 +52,7 @@ int main() {
     np_pedestal.write(p.mean());
     np_frame.write(frame.view<uint16_t>());
 
-    auto clusters = clusterFinder.find_clusters(frame.view<uint16_t>(), p);
+    auto clusters = clusterFinder.find_clusters_without_threshold(frame.view<uint16_t>(), p);
     logger::info("nclusters:", clusters.size());
 
     // aare::logger::info("nclusters:", clusters.size());

@@ -38,13 +38,13 @@ PYBIND11_MODULE(_aare, m) {
     
 
     define_NDView_bindings<double, 2>(m);
-    // define_NDView_bindings<float, 2>(m);
-    // define_NDView_bindings<uint8_t, 2>(m);
-    // define_NDView_bindings<uint16_t, 2>(m);
-    // define_NDView_bindings<uint32_t, 2>(m);
-    // define_NDView_bindings<uint64_t, 2>(m);
-    // define_NDView_bindings<int8_t, 2>(m);
-    // define_NDView_bindings<int16_t, 2>(m);
-    // define_NDView_bindings<int32_t, 2>(m);
-    // define_NDView_bindings<int64_t, 2>(m);
+    define_NDView_bindings<float, 2>(m);
+    define_NDView_bindings<uint8_t, 2>(m);
+    define_NDView_bindings<uint16_t, 2>(m);
+    define_NDView_bindings<uint32_t, 2>(m);
+    define_NDView_bindings<uint64_t, 2>(m);
+    define_NDView_bindings<int8_t, 2>(m);
+    define_NDView_bindings<int16_t, 2>(m);
+    define_NDView_bindings<int32_t, 2>(m);
+    define_NDView_bindings<int64_t, 2>(m);
 }

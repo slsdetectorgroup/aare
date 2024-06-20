@@ -37,12 +37,12 @@ TEST_CASE("test cluster finder") {
     frame = 0;
     ClusterFinder clusterFinder(3, 3, 1, 1); // 3x3 cluster, 1 nSigma, 1 threshold
 
-    auto clusters = clusterFinder.find_clusters(frame.span(), pedestal);
+    auto clusters = clusterFinder.find_clusters_without_threshold(frame.span(), pedestal);
 
     REQUIRE(clusters.size() == 0);
 
     frame(5, 5) = 10;
-    clusters = clusterFinder.find_clusters(frame.span(), pedestal);
+    clusters = clusterFinder.find_clusters_without_threshold(frame.span(), pedestal);
     REQUIRE(clusters.size() == 1);
     REQUIRE(clusters[0].x == 5);
     REQUIRE(clusters[0].y == 5);

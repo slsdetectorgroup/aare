@@ -31,6 +31,7 @@ void define_file_io_bindings(py::module &m) {
         .def("rows", &File::rows)
         .def("cols", &File::cols)
         .def("bitdepth", &File::bitdepth)
+        .def("detector_type", &File::detector_type)
         .def("set_total_frames", &File::set_total_frames);
 
     py::class_<FileConfig>(m, "FileConfig")

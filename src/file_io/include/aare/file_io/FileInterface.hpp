@@ -30,11 +30,11 @@ struct FileConfig {
     DetectorType detector_type{DetectorType::Unknown};
     int max_frames_per_file{};
     size_t total_frames{};
-    std::string  to_string() const {
+    std::string to_string() const {
         return "{ dtype: " + dtype.to_string() + ", rows: " + std::to_string(rows) + ", cols: " + std::to_string(cols) +
                ", geometry: " + geometry.to_string() + ", detector_type: " + toString(detector_type) +
-               ", max_frames_per_file: " + std::to_string(max_frames_per_file) + ", total_frames: " +
-                std::to_string(total_frames) + " }";
+               ", max_frames_per_file: " + std::to_string(max_frames_per_file) +
+               ", total_frames: " + std::to_string(total_frames) + " }";
     }
 };
 
@@ -167,6 +167,7 @@ class FileInterface {
         seek(old_pos);
         return tmp;
     }
+    DetectorType detector_type() const { return m_type; }
 
     // function to query the data type of the file
     /*virtual DataType dtype = 0; */
@@ -184,7 +185,7 @@ class FileInterface {
     size_t m_total_frames{};
     size_t max_frames_per_file{};
     std::string version{};
-    DetectorType m_type{};
+    DetectorType m_type{DetectorType::Unknown};
     size_t m_rows{};
     size_t m_cols{};
     size_t m_bitdepth{};

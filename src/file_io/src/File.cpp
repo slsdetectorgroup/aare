@@ -52,6 +52,7 @@ size_t File::cols() const { return file_impl->cols(); }
 size_t File::bitdepth() const { return file_impl->bitdepth(); }
 void File::set_total_frames(size_t total_frames) { return file_impl->set_total_frames(total_frames); }
 File::~File() { delete file_impl; }
+DetectorType File::detector_type() const { return file_impl->detector_type(); }
 
 Frame File::iread(size_t frame_number) { return file_impl->iread(frame_number); }
 

@@ -40,6 +40,7 @@ class File {
     size_t cols() const;
     size_t bitdepth() const;
     void set_total_frames(size_t total_frames);
+    DetectorType detector_type() const;
 
     /**
      * @brief Move constructor
