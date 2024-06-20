@@ -14,10 +14,10 @@ jobs:
         use-system-libraries: ["OFF","ON"]
         build-type: ["Debug","Release"]
         use-python-bindings: ["OFF","ON"]
-        exclude:
-          # excludes combinations that are not supported
-          - use-python-bindings: "ON"
-            use-sanitizers: "ON"
+        # exclude:
+        #   # excludes combinations that are not supported
+        #   - use-python-bindings: "ON"
+        #     use-sanitizers: "ON"
     
     uses: ./.github/workflows/common-workflow.yml # calls the one above 
     with:
