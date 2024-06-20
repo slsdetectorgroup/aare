@@ -28,7 +28,15 @@ class ClusterFinder {
     };
 
     template <typename FRAME_TYPE, typename PEDESTAL_TYPE>
-    std::vector<Cluster> find_clusters_without_threshold(NDView<FRAME_TYPE, 2> frame, Pedestal<PEDESTAL_TYPE> &pedestal) {
+    std::vector<Cluster> find_clusters_without_threshold(NDView<FRAME_TYPE, 2> frame,
+                                                         Pedestal<PEDESTAL_TYPE> &pedestal) {
+        struct pedestal_update {
+            int x;
+            int y;
+            FRAME_TYPE value;
+        };
+        std::vector<pedestal_update> pedestal_updates;
+
         std::vector<Cluster> clusters;
         std::vector<std::vector<eventType>> eventMask;
         for (int i = 0; i < frame.shape(0); i++) {
@@ -57,7 +65,7 @@ class ClusterFinder {
                 }
                 auto rms = pedestal.standard_deviation(iy, ix);
 
-                if (frame(iy, ix) < -m_nSigma * rms) {
+                if (frame(iy, ix) - pedestal.mean(iy, ix) < -m_nSigma * rms) {
                     eventMask[iy][ix] = NEGATIVE_PEDESTAL;
                     continue;
                 } else if (max > m_nSigma * rms) {
@@ -66,7 +74,7 @@ class ClusterFinder {
                 } else if (total > c3 * m_nSigma * rms) {
                     eventMask[iy][ix] = PHOTON;
                 } else {
-                    pedestal.push(iy, ix, frame(iy, ix));
+                    pedestal_updates.push_back({ix, iy, frame(iy, ix)});
                     continue;
                 }
                 if (eventMask[iy][ix] == PHOTON and frame(iy, ix) - pedestal.mean(iy, ix) >= max) {
@@ -87,6 +95,9 @@ class ClusterFinder {
                     clusters.push_back(cluster);
                 }
             }
+        }
+        for (auto &update : pedestal_updates) {
+            pedestal.push(update.y, update.x, update.value);
         }
         return clusters;
     }
