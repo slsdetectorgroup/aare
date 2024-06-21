@@ -1,24 +1,24 @@
-// #include "aare/core/NDView.hpp"
-// #include <catch2/catch_test_macros.hpp>
+#include "aare/core/NDView.hpp"
+#include <catch2/catch_test_macros.hpp>
 
-// #include <iostream>
-// #include <vector>
+#include <iostream>
+#include <vector>
 
-// using aare::NDView;
-// using aare::Shape;
+using aare::NDView;
+using aare::Shape;
 
-// TEST_CASE("Element reference 1D") {
-//     std::vector<int> vec;
-//     for (int i = 0; i != 10; ++i) {
-//         vec.push_back(i);
-//     }
-//     NDView<int, 1> data(vec.data(), Shape<1>{10});
-//     REQUIRE(vec.size() == static_cast<size_t>(data.size()));
-//     for (int i = 0; i != 10; ++i) {
-//         REQUIRE(data(i) == vec[i]);
-//         REQUIRE(data[i] == vec[i]);
-//     }
-// }
+TEST_CASE("Element reference 1D") {
+    std::vector<int> vec;
+    for (int i = 0; i != 10; ++i) {
+        vec.push_back(i);
+    }
+    NDView<int, 1> data(vec.data(), Shape<1>{10});
+    REQUIRE(vec.size() == static_cast<size_t>(data.size()));
+    for (int i = 0; i != 10; ++i) {
+        REQUIRE(data(i) == vec[i]);
+        REQUIRE(data[i] == vec[i]);
+    }
+}
 
 // TEST_CASE("Element reference 2D") {
 //     std::vector<int> vec;
