@@ -1,28 +1,28 @@
-// #include "aare/file_io/NumpyFile.hpp"
-// #include "aare/core/NDArray.hpp"
-// #include <catch2/catch_test_macros.hpp>
+#include "aare/file_io/NumpyFile.hpp"
+#include "aare/core/NDArray.hpp"
+#include <catch2/catch_test_macros.hpp>
 
-// #include "test_config.hpp"
+#include "test_config.hpp"
 
-// using aare::DType;
-// using aare::NumpyFile;
-// TEST_CASE("Read a 1D numpy file with int32 data type") {
+using aare::DType;
+using aare::NumpyFile;
+TEST_CASE("Read a 1D numpy file with int32 data type") {
 
-//     auto fpath = test_data_path() / "numpy" / "test_1d_int32.npy";
-//     REQUIRE(std::filesystem::exists(fpath));
+    auto fpath = test_data_path() / "numpy" / "test_1d_int32.npy";
+    REQUIRE(std::filesystem::exists(fpath));
 
-//     NumpyFile f(fpath);
+    NumpyFile f(fpath);
 
-//     // we know the file contains 10 elements of np.int32 containing values 0-9
-//     REQUIRE(f.dtype() == DType::INT32);
-//     REQUIRE(f.shape() == std::vector<size_t>{10});
+    // we know the file contains 10 elements of np.int32 containing values 0-9
+    REQUIRE(f.dtype() == DType::INT32);
+    REQUIRE(f.shape() == std::vector<size_t>{10});
 
-//     // use the load function to read the full file into a NDArray
-//     auto data = f.load<int32_t, 1>();
-//     for (int32_t i = 0; i < 10; i++) {
-//         REQUIRE(data(i) == i);
-//     }
-// }
+    // use the load function to read the full file into a NDArray
+    auto data = f.load<int32_t, 1>();
+    for (int32_t i = 0; i < 10; i++) {
+        REQUIRE(data(i) == i);
+    }
+}
 
 // TEST_CASE("Read a 3D numpy file with np.double data type") {
 
