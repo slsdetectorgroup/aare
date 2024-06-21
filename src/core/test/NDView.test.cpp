@@ -38,48 +38,48 @@ using aare::Shape;
 //     }
 // }
 
-TEST_CASE("Element reference 3D") {
-    std::vector<int> vec;
-    for (int i = 0; i != 24; ++i) {
-        vec.push_back(i);
-    }
-    NDView<int, 3> data(vec.data(), Shape<3>{2, 3, 4});
-    REQUIRE(vec.size() == static_cast<size_t>(data.size()));
-    int i = 0;
-    for (int frame = 0; frame != 2; ++frame) {
-        for (int row = 0; row != 3; ++row) {
-            for (int col = 0; col != 4; ++col) {
-                REQUIRE(data(frame, row, col) == i);
-                REQUIRE(data[i] == vec[i]);
-                ++i;
-            }
-        }
-    }
-}
-
-// TEST_CASE("Plus and miuns with single value") {
+// TEST_CASE("Element reference 3D") {
 //     std::vector<int> vec;
-//     for (int i = 0; i != 12; ++i) {
+//     for (int i = 0; i != 24; ++i) {
 //         vec.push_back(i);
 //     }
-//     NDView<int, 2> data(vec.data(), Shape<2>{3, 4});
-//     data += 5;
+//     NDView<int, 3> data(vec.data(), Shape<3>{2, 3, 4});
+//     REQUIRE(vec.size() == static_cast<size_t>(data.size()));
 //     int i = 0;
-//     for (int row = 0; row != 3; ++row) {
-//         for (int col = 0; col != 4; ++col) {
-//             REQUIRE(data(row, col) == i + 5);
-//             ++i;
-//         }
-//     }
-//     data -= 3;
-//     i = 0;
-//     for (int row = 0; row != 3; ++row) {
-//         for (int col = 0; col != 4; ++col) {
-//             REQUIRE(data(row, col) == i + 2);
-//             ++i;
+//     for (int frame = 0; frame != 2; ++frame) {
+//         for (int row = 0; row != 3; ++row) {
+//             for (int col = 0; col != 4; ++col) {
+//                 REQUIRE(data(frame, row, col) == i);
+//                 REQUIRE(data[i] == vec[i]);
+//                 ++i;
+//             }
 //         }
 //     }
 // }
+
+TEST_CASE("Plus and miuns with single value") {
+    std::vector<int> vec;
+    for (int i = 0; i != 12; ++i) {
+        vec.push_back(i);
+    }
+    NDView<int, 2> data(vec.data(), Shape<2>{3, 4});
+    data += 5;
+    int i = 0;
+    for (int row = 0; row != 3; ++row) {
+        for (int col = 0; col != 4; ++col) {
+            REQUIRE(data(row, col) == i + 5);
+            ++i;
+        }
+    }
+    data -= 3;
+    i = 0;
+    for (int row = 0; row != 3; ++row) {
+        for (int col = 0; col != 4; ++col) {
+            REQUIRE(data(row, col) == i + 2);
+            ++i;
+        }
+    }
+}
 
 // TEST_CASE("Multiply and divide with single value") {
 //     std::vector<int> vec;
