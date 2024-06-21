@@ -113,6 +113,12 @@ if(CMAKE_BUILD_TYPE STREQUAL "Release")
     target_compile_options(aare_compiler_flags INTERFACE /O2)
 else()
     message(STATUS "Debug build")
+    target_compile_options(
+        aare_compiler_flags 
+        INTERFACE 
+            /Od 
+            /Zi 
+    )
 endif()
 target_compile_options(
     aare_compiler_flags 
