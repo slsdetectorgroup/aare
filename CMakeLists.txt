@@ -100,36 +100,47 @@ else()
     find_package(Boost 1.80 REQUIRED COMPONENTS program_options)
 endif()
 
-if(MSVC)
-    add_compile_definitions(AARE_MSVC)
-endif()
-
 add_library(aare_compiler_flags INTERFACE)
 target_compile_features(aare_compiler_flags INTERFACE cxx_std_17)
 
-#TODO! Explicitly setting flags is not cross platform compatible
+#################
+# MSVC specific #
+#################
+if(MSVC)
+add_compile_definitions(AARE_MSVC)
 if(CMAKE_BUILD_TYPE STREQUAL "Release")
     message(STATUS "Release build")
-    if(MSVC)
-        target_compile_options(aare_compiler_flags INTERFACE /O2)
-    else()
-        target_compile_options(aare_compiler_flags INTERFACE -O3)
-    endif()
+    target_compile_options(aare_compiler_flags INTERFACE /O2)
 else()
     message(STATUS "Debug build")
-    if(MSVC)
-        # target_compile_options(aare_compiler_flags INTERFACE /Od /Zi)
-    else()
-        target_compile_options(
-            aare_compiler_flags 
-            INTERFACE 
-                -Og 
-                -ggdb3 
-                # -D_GLIBCXX_DEBUG # causes errors with boost
-                -D_GLIBCXX_DEBUG_PEDANTIC
-        )
+endif()
+target_compile_options(
+    aare_compiler_flags 
+    INTERFACE
+    /w # disable warnings
+)
 
-        if (NOT AARE_PYTHON_BINDINGS)
+
+else()
+######################
+# GCC/Clang specific #
+######################
+
+if(CMAKE_BUILD_TYPE STREQUAL "Release")
+    message(STATUS "Release build")
+    target_compile_options(aare_compiler_flags INTERFACE -O3)
+else()
+    message(STATUS "Debug build")
+    target_compile_options(
+        aare_compiler_flags 
+        INTERFACE 
+            -Og 
+            -ggdb3 
+            # -D_GLIBCXX_DEBUG # causes errors with boost
+            -D_GLIBCXX_DEBUG_PEDANTIC
+    )
+
+    if (NOT AARE_PYTHON_BINDINGS)
         target_compile_options(
             aare_compiler_flags
             INTERFACE
@@ -155,18 +166,10 @@ else()
                 -fno-omit-frame-pointer
         )
     endif()
-endif()
 
 endif()
 
 if(AARE_USE_WARNINGS)
-    if(MSVC)
-        target_compile_options(
-            aare_compiler_flags 
-            INTERFACE
-            /w
-        )
-    else()
         target_compile_options(
             aare_compiler_flags 
             INTERFACE 
@@ -183,8 +186,18 @@ if(AARE_USE_WARNINGS)
                 -Wdouble-promotion
                 -Werror=return-type #important can cause segfault in optimzed builds
             )
-    endif()
 endif()
+
+
+
+endif()
+
+
+
+
+
+
+
 
 if(AARE_TESTS)
     enable_testing()
