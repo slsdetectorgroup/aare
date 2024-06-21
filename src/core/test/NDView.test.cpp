@@ -105,42 +105,42 @@ using aare::Shape;
 //     }
 // }
 
-TEST_CASE("elementwise assign") {
-    std::vector<int> vec(25);
-    NDView<int, 2> data(vec.data(), Shape<2>{5, 5});
+// TEST_CASE("elementwise assign") {
+//     std::vector<int> vec(25);
+//     NDView<int, 2> data(vec.data(), Shape<2>{5, 5});
 
-    data = 3;
-    for (auto it : data) {
-        REQUIRE(it == 3);
-    }
-}
-
-// TEST_CASE("iterators") {
-//     std::vector<int> vec;
-//     for (int i = 0; i != 12; ++i) {
-//         vec.push_back(i);
-//     }
-//     NDView<int, 1> data(vec.data(), Shape<1>{12});
-//     int i = 0;
-//     for (const auto item : data) {
-//         REQUIRE(item == vec[i]);
-//         ++i;
-//     }
-//     REQUIRE(i == 12);
-
-//     for (auto ptr = data.begin(); ptr != data.end(); ++ptr) {
-//         *ptr += 1;
-//     }
-//     for (auto &item : data) {
-//         ++item;
-//     }
-
-//     i = 0;
-//     for (const auto item : data) {
-//         REQUIRE(item == i + 2);
-//         ++i;
+//     data = 3;
+//     for (auto it : data) {
+//         REQUIRE(it == 3);
 //     }
 // }
+
+TEST_CASE("iterators") {
+    std::vector<int> vec;
+    for (int i = 0; i != 12; ++i) {
+        vec.push_back(i);
+    }
+    NDView<int, 1> data(vec.data(), Shape<1>{12});
+    int i = 0;
+    for (const auto item : data) {
+        REQUIRE(item == vec[i]);
+        ++i;
+    }
+    REQUIRE(i == 12);
+
+    for (auto ptr = data.begin(); ptr != data.end(); ++ptr) {
+        *ptr += 1;
+    }
+    for (auto &item : data) {
+        ++item;
+    }
+
+    i = 0;
+    for (const auto item : data) {
+        REQUIRE(item == i + 2);
+        ++i;
+    }
+}
 
 // // TEST_CASE("shape from vector") {
 // //     std::vector<int> vec;
