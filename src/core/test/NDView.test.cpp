@@ -7,36 +7,36 @@
 using aare::NDView;
 using aare::Shape;
 
-TEST_CASE("Element reference 1D") {
-    std::vector<int> vec;
-    for (int i = 0; i != 10; ++i) {
-        vec.push_back(i);
-    }
-    NDView<int, 1> data(vec.data(), Shape<1>{10});
-    REQUIRE(vec.size() == static_cast<size_t>(data.size()));
-    for (int i = 0; i != 10; ++i) {
-        REQUIRE(data(i) == vec[i]);
-        REQUIRE(data[i] == vec[i]);
-    }
-}
-
-// TEST_CASE("Element reference 2D") {
+// TEST_CASE("Element reference 1D") {
 //     std::vector<int> vec;
-//     for (int i = 0; i != 12; ++i) {
+//     for (int i = 0; i != 10; ++i) {
 //         vec.push_back(i);
 //     }
-
-//     NDView<int, 2> data(vec.data(), Shape<2>{3, 4});
+//     NDView<int, 1> data(vec.data(), Shape<1>{10});
 //     REQUIRE(vec.size() == static_cast<size_t>(data.size()));
-//     int i = 0;
-//     for (int row = 0; row != 3; ++row) {
-//         for (int col = 0; col != 4; ++col) {
-//             REQUIRE(data(row, col) == i);
-//             REQUIRE(data[i] == vec[i]);
-//             ++i;
-//         }
+//     for (int i = 0; i != 10; ++i) {
+//         REQUIRE(data(i) == vec[i]);
+//         REQUIRE(data[i] == vec[i]);
 //     }
 // }
+
+TEST_CASE("Element reference 2D") {
+    std::vector<int> vec;
+    for (int i = 0; i != 12; ++i) {
+        vec.push_back(i);
+    }
+
+    NDView<int, 2> data(vec.data(), Shape<2>{3, 4});
+    REQUIRE(vec.size() == static_cast<size_t>(data.size()));
+    int i = 0;
+    for (int row = 0; row != 3; ++row) {
+        for (int col = 0; col != 4; ++col) {
+            REQUIRE(data(row, col) == i);
+            REQUIRE(data[i] == vec[i]);
+            ++i;
+        }
+    }
+}
 
 // TEST_CASE("Element reference 3D") {
 //     std::vector<int> vec;
