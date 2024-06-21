@@ -33,22 +33,22 @@ using aare::Shape;
 //     }
 // }
 
-TEST_CASE("1D image") {
-    std::array<int64_t, 1> shape{{20}};
-    NDArray<short, 1> img(shape, 3);
-    REQUIRE(img.size() == 20);
-    REQUIRE(img(5) == 3);
-}
-
-// TEST_CASE("Accessing a const object") {
-//     const NDArray<double, 3> img({3, 4, 5}, 0);
-//     REQUIRE(img(1, 1, 1) == 0);
-//     REQUIRE(img.size() == 3 * 4 * 5);
-//     REQUIRE(img.shape() == Shape<3>{3, 4, 5});
-//     REQUIRE(img.shape(0) == 3);
-//     REQUIRE(img.shape(1) == 4);
-//     REQUIRE(img.shape(2) == 5);
+// TEST_CASE("1D image") {
+//     std::array<int64_t, 1> shape{{20}};
+//     NDArray<short, 1> img(shape, 3);
+//     REQUIRE(img.size() == 20);
+//     REQUIRE(img(5) == 3);
 // }
+
+TEST_CASE("Accessing a const object") {
+    const NDArray<double, 3> img({3, 4, 5}, 0);
+    REQUIRE(img(1, 1, 1) == 0);
+    REQUIRE(img.size() == 3 * 4 * 5);
+    REQUIRE(img.shape() == Shape<3>{3, 4, 5});
+    REQUIRE(img.shape(0) == 3);
+    REQUIRE(img.shape(1) == 4);
+    REQUIRE(img.shape(2) == 5);
+}
 
 // TEST_CASE("Indexing of a 2D image") {
 //     std::array<int64_t, 2> shape{{3, 7}};
