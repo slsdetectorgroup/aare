@@ -54,7 +54,7 @@ size_t SubFile::write_part(std::byte *buffer, sls_detector_header header, size_t
     if (frame_index > n_frames) {
         throw std::runtime_error("Frame number out of range");
     }
-    fseek(fp, static_cast<ssize_t>((sizeof(sls_detector_header) + bytes_per_part()) * frame_index), SEEK_SET);
+    fseek(fp, static_cast<int64_t>((sizeof(sls_detector_header) + bytes_per_part()) * frame_index), SEEK_SET);
     auto wc = fwrite(reinterpret_cast<char *>(&header), sizeof(header), 1, fp);
     wc += fwrite(buffer, bytes_per_part(), 1, fp);
 

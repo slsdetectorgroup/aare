@@ -11,13 +11,13 @@ namespace py = pybind11;
 using namespace aare;
 using namespace std;
 
-template <typename ArrayType, ssize_t Ndim>
+template <typename ArrayType, int64_t Ndim>
 void define_NDArray_bindings(py::module_ &m)
 {
     std::string name= "NDArray_"+DType(typeid(ArrayType)).to_string()+"_"  +to_string(Ndim);
 
     py::class_<NDArray<ArrayType, Ndim>>(m, name.c_str(), py::buffer_protocol())
-        .def(py::init<array<ssize_t, Ndim>>())
+        .def(py::init<array<int64_t, Ndim>>())
         .def(py::init([](py::array_t<ArrayType, py::array::c_style | py::array::forcecast> &np_array)
                       {
                           py::buffer_info info = np_array.request();
@@ -26,7 +26,7 @@ void define_NDArray_bindings(py::module_ &m)
                           if (info.ndim != Ndim)
                               throw std::runtime_error("Incompatible dimension: expected a"+ to_string(Ndim) +" array!");
 
-                          std::array<ssize_t, Ndim> arr_shape;
+                          std::array<int64_t, Ndim> arr_shape;
                           std::move(info.shape.begin(), info.shape.end(), arr_shape.begin());
 
                           NDArray<ArrayType, Ndim> a(arr_shape);
@@ -39,7 +39,7 @@ void define_NDArray_bindings(py::module_ &m)
                 }
                 auto offset =0;
                 for(size_t i=0;i<Ndim;i++){
-                   offset+=index[i].cast<ssize_t>()*a.strides()[i];
+                   offset+=index[i].cast<int64_t>()*a.strides()[i];
                 }
                 return a(offset); })
 

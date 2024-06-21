@@ -83,7 +83,7 @@ class Frame {
     }
 
     template <typename T> NDView<T, 2> view() {
-        std::array<ssize_t, 2> shape = {static_cast<ssize_t>(m_rows), static_cast<ssize_t>(m_cols)};
+        std::array<int64_t, 2> shape = {static_cast<int64_t>(m_rows), static_cast<int64_t>(m_cols)};
         T *data = reinterpret_cast<T *>(m_data);
         return NDView<T, 2>(data, shape);
     }

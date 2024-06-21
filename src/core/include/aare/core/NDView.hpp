@@ -9,10 +9,10 @@
 
 namespace aare {
 
-template <ssize_t Ndim> using Shape = std::array<ssize_t, Ndim>;
+template <int64_t Ndim> using Shape = std::array<int64_t, Ndim>;
 
 // TODO! fix mismatch between signed and unsigned
-template <ssize_t Ndim> Shape<Ndim> make_shape(const std::vector<size_t> &shape) {
+template <int64_t Ndim> Shape<Ndim> make_shape(const std::vector<size_t> &shape) {
     if (shape.size() != Ndim)
         throw std::runtime_error("Shape size mismatch");
     Shape<Ndim> arr;
@@ -20,41 +20,41 @@ template <ssize_t Ndim> Shape<Ndim> make_shape(const std::vector<size_t> &shape)
     return arr;
 }
 
-template <ssize_t Dim = 0, typename Strides> ssize_t element_offset(const Strides & /*unused*/) { return 0; }
+template <int64_t Dim = 0, typename Strides> int64_t element_offset(const Strides & /*unused*/) { return 0; }
 
-template <ssize_t Dim = 0, typename Strides, typename... Ix>
-ssize_t element_offset(const Strides &strides, ssize_t i, Ix... index) {
+template <int64_t Dim = 0, typename Strides, typename... Ix>
+int64_t element_offset(const Strides &strides, int64_t i, Ix... index) {
     return i * strides[Dim] + element_offset<Dim + 1>(strides, index...);
 }
 
-template <ssize_t Ndim> std::array<ssize_t, Ndim> c_strides(const std::array<ssize_t, Ndim> &shape) {
-    std::array<ssize_t, Ndim> strides{};
+template <int64_t Ndim> std::array<int64_t, Ndim> c_strides(const std::array<int64_t, Ndim> &shape) {
+    std::array<int64_t, Ndim> strides{};
     std::fill(strides.begin(), strides.end(), 1);
-    for (ssize_t i = Ndim - 1; i > 0; --i) {
+    for (int64_t i = Ndim - 1; i > 0; --i) {
         strides[i - 1] = strides[i] * shape[i];
     }
     return strides;
 }
 
-template <ssize_t Ndim> std::array<ssize_t, Ndim> make_array(const std::vector<ssize_t> &vec) {
+template <int64_t Ndim> std::array<int64_t, Ndim> make_array(const std::vector<int64_t> &vec) {
     assert(vec.size() == Ndim);
-    std::array<ssize_t, Ndim> arr{};
+    std::array<int64_t, Ndim> arr{};
     std::copy_n(vec.begin(), Ndim, arr.begin());
     return arr;
 }
 
-template <typename T, ssize_t Ndim = 2> class NDView {
+template <typename T, int64_t Ndim = 2> class NDView {
   public:
     NDView() = default;
     ~NDView() = default;
     NDView(const NDView &) = default;
     NDView(NDView &&) = default;
 
-    NDView(T *buffer, std::array<ssize_t, Ndim> shape)
+    NDView(T *buffer, std::array<int64_t, Ndim> shape)
         : buffer_(buffer), strides_(c_strides<Ndim>(shape)), shape_(shape),
           size_(std::accumulate(std::begin(shape), std::end(shape), 1, std::multiplies<>())) {}
 
-    // NDView(T *buffer, const std::vector<ssize_t> &shape)
+    // NDView(T *buffer, const std::vector<int64_t> &shape)
     //     : buffer_(buffer), strides_(c_strides<Ndim>(make_array<Ndim>(shape))), shape_(make_array<Ndim>(shape)),
     //       size_(std::accumulate(std::begin(shape), std::end(shape), 1, std::multiplies<>())) {}
 
@@ -66,19 +66,19 @@ template <typename T, ssize_t Ndim = 2> class NDView {
         return buffer_[element_offset(strides_, index...)];
     }
 
-    ssize_t size() const { return size_; }
+    int64_t size() const { return size_; }
     size_t total_bytes() const { return size_ * sizeof(T); }
-    std::array<ssize_t, Ndim> strides() const noexcept { return strides_; }
+    std::array<int64_t, Ndim> strides() const noexcept { return strides_; }
 
     T *begin() { return buffer_; }
     T *end() { return buffer_ + size_; }
-    T &operator()(ssize_t i) const { return buffer_[i]; }
-    T &operator[](ssize_t i) const { return buffer_[i]; }
+    T &operator()(int64_t i) const { return buffer_[i]; }
+    T &operator[](int64_t i) const { return buffer_[i]; }
 
     bool operator==(const NDView &other) const {
         if (size_ != other.size_)
             return false;
-        for (ssize_t i = 0; i != size_; ++i) {
+        for (int64_t i = 0; i != size_; ++i) {
             if (buffer_[i] != other.buffer_[i])
                 return false;
         }
@@ -120,24 +120,24 @@ template <typename T, ssize_t Ndim = 2> class NDView {
     }
 
     auto &shape() { return shape_; }
-    auto shape(ssize_t i) const { return shape_[i]; }
+    auto shape(int64_t i) const { return shape_[i]; }
 
     T *data() { return buffer_; }
 
   private:
     T *buffer_{nullptr};
-    std::array<ssize_t, Ndim> strides_{};
-    std::array<ssize_t, Ndim> shape_{};
-    ssize_t size_{};
+    std::array<int64_t, Ndim> strides_{};
+    std::array<int64_t, Ndim> shape_{};
+    int64_t size_{};
 
     template <class BinaryOperation> NDView &elemenwise(T val, BinaryOperation op) {
-        for (ssize_t i = 0; i != size_; ++i) {
+        for (int64_t i = 0; i != size_; ++i) {
             buffer_[i] = op(buffer_[i], val);
         }
         return *this;
     }
     template <class BinaryOperation> NDView &elemenwise(const NDView &other, BinaryOperation op) {
-        for (ssize_t i = 0; i != size_; ++i) {
+        for (int64_t i = 0; i != size_; ++i) {
             buffer_[i] = op(buffer_[i], other.buffer_[i]);
         }
         return *this;

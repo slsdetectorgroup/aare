@@ -23,7 +23,7 @@ template <typename T, typename SUM_TYPE> void define_pedestal_push_bindings(py::
         if (info.ndim != 2)
             throw std::runtime_error("Incompatible dimension: expected a 2D array!");
 
-        std::array<ssize_t, 2> arr_shape;
+        std::array<int64_t, 2> arr_shape;
         std::move(info.shape.begin(), info.shape.end(), arr_shape.begin());
 
         NDView<T, 2> a(static_cast<T *>(info.ptr), arr_shape);
@@ -96,7 +96,7 @@ void define_cluster_finder_template_bindings(py::class_<ClusterFinder> &cf) {
         if (info.ndim != 2)
             throw std::runtime_error("Incompatible dimension: expected a 2D array!");
 
-        std::array<ssize_t, 2> arr_shape;
+        std::array<int64_t, 2> arr_shape;
         std::copy(info.shape.begin(), info.shape.end(), arr_shape.begin());
 
         NDView<VIEW_TYPE, 2> a(static_cast<VIEW_TYPE *>(info.ptr), arr_shape);
@@ -111,7 +111,7 @@ void define_cluster_finder_template_bindings(py::class_<ClusterFinder> &cf) {
         if (info.ndim != 2)
             throw std::runtime_error("Incompatible dimension: expected a 2D array!");
 
-        std::array<ssize_t, 2> arr_shape;
+        std::array<int64_t, 2> arr_shape;
         std::copy(info.shape.begin(), info.shape.end(), arr_shape.begin());
 
         NDView<VIEW_TYPE, 2> a(static_cast<VIEW_TYPE *>(info.ptr), arr_shape);

@@ -137,7 +137,7 @@ template <typename T> struct t_xy {
 };
 using xy = t_xy<uint32_t>;
 
-using dynamic_shape = std::vector<ssize_t>;
+using dynamic_shape = std::vector<int64_t>;
 
 enum class DetectorType { Jungfrau, Eiger, Mythen3, Moench, ChipTestBoard, Unknown };
 

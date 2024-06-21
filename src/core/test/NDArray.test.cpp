@@ -34,7 +34,7 @@ TEST_CASE("Construct from a DataSpan") {
 }
 
 TEST_CASE("1D image") {
-    std::array<ssize_t, 1> shape{{20}};
+    std::array<int64_t, 1> shape{{20}};
     NDArray<short, 1> img(shape, 3);
     REQUIRE(img.size() == 20);
     REQUIRE(img(5) == 3);
@@ -51,7 +51,7 @@ TEST_CASE("Accessing a const object") {
 }
 
 TEST_CASE("Indexing of a 2D image") {
-    std::array<ssize_t, 2> shape{{3, 7}};
+    std::array<int64_t, 2> shape{{3, 7}};
     NDArray<long> img(shape, 5);
     for (int i = 0; i != img.size(); ++i) {
         REQUIRE(img(i) == 5);
@@ -94,7 +94,7 @@ TEST_CASE("Divide double by int") {
 }
 
 TEST_CASE("Elementwise multiplication of 3D image") {
-    std::array<ssize_t, 3> shape{3, 4, 2};
+    std::array<int64_t, 3> shape{3, 4, 2};
     NDArray<double, 3> a{shape};
     NDArray<double, 3> b{shape};
     for (int i = 0; i != a.size(); ++i) {
@@ -125,9 +125,9 @@ TEST_CASE("Compare two images") {
 }
 
 TEST_CASE("Size and shape matches") {
-    ssize_t w = 15;
-    ssize_t h = 75;
-    std::array<ssize_t, 2> shape{w, h};
+    int64_t w = 15;
+    int64_t h = 75;
+    std::array<int64_t, 2> shape{w, h};
     NDArray<double> a{shape};
     REQUIRE(a.size() == w * h);
     REQUIRE(a.shape() == shape);
@@ -171,7 +171,7 @@ TEST_CASE("Bitwise and on data") {
 // TEST_CASE("Benchmarks")
 // {
 //     NDArray<double> img;
-//     std::array<ssize_t, 2> shape{ 512, 1024 };
+//     std::array<int64_t, 2> shape{ 512, 1024 };
 //     BENCHMARK("Allocate 500k double image")
 //     {
 //         NDArray<double>im{ shape };
@@ -204,7 +204,7 @@ TEST_CASE("Bitwise and on data") {
 // }
 
 TEST_CASE("Elementwise operatios on images") {
-    std::array<ssize_t, 2> shape{5, 5};
+    std::array<int64_t, 2> shape{5, 5};
     double a_val = 3.0;
     double b_val = 8.0;
 

@@ -10,7 +10,7 @@ namespace py = pybind11;
 using namespace aare;
 using namespace std;
 
-template <typename ArrayType, ssize_t Ndim>
+template <typename ArrayType, int64_t Ndim>
 void define_NDView_bindings(py::module_ &m)
 {
     std::string name= "NDView_"+DType(typeid(ArrayType)).to_string()+"_"  +to_string(Ndim);
@@ -24,7 +24,7 @@ void define_NDView_bindings(py::module_ &m)
                           if (info.ndim != Ndim)
                               throw std::runtime_error("Incompatible dimension: expected a"+ to_string(Ndim) +" array!");
 
-                          std::array<ssize_t, Ndim> arr_shape;
+                          std::array<int64_t, Ndim> arr_shape;
                           std::move(info.shape.begin(), info.shape.end(), arr_shape.begin());
 
                           NDView<ArrayType, Ndim> a(static_cast<ArrayType*>(info.ptr),arr_shape);
@@ -36,7 +36,7 @@ void define_NDView_bindings(py::module_ &m)
                 }
                 auto offset =0;
                 for(size_t i=0;i<Ndim;i++){
-                   offset+=index[i].cast<ssize_t>()*a.strides()[i];
+                   offset+=index[i].cast<int64_t>()*a.strides()[i];
                 }
                 return a(offset); })
 

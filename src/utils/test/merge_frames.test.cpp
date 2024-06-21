@@ -16,7 +16,7 @@ TEST_CASE("merge frames {2,1}") {
     merge_frames(part_buffers, part_size, f.data(), geo);
 
     auto v = f.view<uint32_t>();
-    for (ssize_t i = 0; i < v.size(); i++) {
+    for (int64_t i = 0; i < v.size(); i++) {
         REQUIRE(v[i] == i);
     }
 }
@@ -32,7 +32,7 @@ TEST_CASE("merge frames {1,2}") {
 
     auto v = f.view<uint32_t>();
 
-    for (ssize_t i = 0; i < v.size(); i++) {
+    for (int64_t i = 0; i < v.size(); i++) {
         REQUIRE(v[i] == i);
     }
 }
