@@ -156,9 +156,9 @@ if(AARE_USE_WARNINGS)
             aare_compiler_flags 
             INTERFACE
             /w
-            /wdC4244
-            /wdC4267
-            /wdD9002
+            /wo4244
+            /wo4267
+            /wo9002
         )
     else()
         target_compile_options(
