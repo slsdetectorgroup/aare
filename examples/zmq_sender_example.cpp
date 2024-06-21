@@ -4,7 +4,11 @@
 #include <ctime> // std::time
 #include <fmt/core.h>
 #include <string>
-#include <unistd.h> // sleep
+
+// sleep
+#include <chrono>
+#include <thread>
+
 using namespace aare;
 
 int main() {
@@ -26,6 +30,7 @@ int main() {
     std::vector<ZmqFrame> zmq_frames;
     // send two exact frames
 
+    std::chrono::milliseconds sleep_time(1); // or whatever
     int acqid = 0;
     while (true) {
         zmq_frames.clear();
@@ -42,7 +47,7 @@ int main() {
         }
         size_t const rc = socket.send(zmq_frames);
         aare::logger::info("Sent bytes", rc);
-        sleep(1);
+        std::this_thread::sleep_for(sleep_time);
     }
     return 0;
 }
