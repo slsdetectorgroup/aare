@@ -6,32 +6,32 @@ using aare::NDArray;
 using aare::NDView;
 using aare::Shape;
 
-TEST_CASE("Initial size is zero if no size is specified") {
-    NDArray<double> a;
-    REQUIRE(a.size() == 0);
-    REQUIRE(a.shape() == Shape<2>{0, 0});
-}
-
-// TEST_CASE("Construct from a DataSpan") {
-//     std::vector<int> some_data(9, 42);
-//     NDView<int, 2> view(some_data.data(), Shape<2>{3, 3});
-
-//     NDArray<int, 2> image(view);
-
-//     REQUIRE(image.shape() == view.shape());
-//     REQUIRE(image.size() == view.size());
-//     REQUIRE(image.data() != view.data());
-
-//     for (int i = 0; i < image.size(); ++i) {
-//         REQUIRE(image(i) == view(i));
-//     }
-
-//     // Changing the image doesn't change the view
-//     image = 43;
-//     for (int i = 0; i < image.size(); ++i) {
-//         REQUIRE(image(i) != view(i));
-//     }
+// TEST_CASE("Initial size is zero if no size is specified") {
+//     NDArray<double> a;
+//     REQUIRE(a.size() == 0);
+//     REQUIRE(a.shape() == Shape<2>{0, 0});
 // }
+
+TEST_CASE("Construct from a DataSpan") {
+    std::vector<int> some_data(9, 42);
+    NDView<int, 2> view(some_data.data(), Shape<2>{3, 3});
+
+    NDArray<int, 2> image(view);
+
+    REQUIRE(image.shape() == view.shape());
+    REQUIRE(image.size() == view.size());
+    REQUIRE(image.data() != view.data());
+
+    for (int i = 0; i < image.size(); ++i) {
+        REQUIRE(image(i) == view(i));
+    }
+
+    // Changing the image doesn't change the view
+    image = 43;
+    for (int i = 0; i < image.size(); ++i) {
+        REQUIRE(image(i) != view(i));
+    }
+}
 
 // TEST_CASE("1D image") {
 //     std::array<int64_t, 1> shape{{20}};
