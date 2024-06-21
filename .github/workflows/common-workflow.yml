@@ -68,7 +68,11 @@ jobs:
       - name: run tests
         run: |
           cd build/
-          ./run_tests
+          if [[ "${{ inputs.os }}" == "windows-latest" ]]; then
+            start run_tests
+          else
+            ./run_tests
+          fi
       - name: run examples
         # find all examples in build/examples and run them
         run: |

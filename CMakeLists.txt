@@ -125,7 +125,6 @@ else()
         aare_compiler_flags
         INTERFACE
             /DEBUG:FULL
-            /D_ITERATOR_DEBUG_LEVEL=2
             )
 endif()
 target_compile_options(
