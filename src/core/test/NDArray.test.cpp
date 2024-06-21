@@ -1,16 +1,16 @@
-// #include "aare/core/NDArray.hpp"
-// #include <array>
-// #include <catch2/catch_test_macros.hpp>
+#include "aare/core/NDArray.hpp"
+#include <array>
+#include <catch2/catch_test_macros.hpp>
 
-// using aare::NDArray;
-// using aare::NDView;
-// using aare::Shape;
+using aare::NDArray;
+using aare::NDView;
+using aare::Shape;
 
-// TEST_CASE("Initial size is zero if no size is specified") {
-//     NDArray<double> a;
-//     REQUIRE(a.size() == 0);
-//     REQUIRE(a.shape() == Shape<2>{0, 0});
-// }
+TEST_CASE("Initial size is zero if no size is specified") {
+    NDArray<double> a;
+    REQUIRE(a.size() == 0);
+    REQUIRE(a.shape() == Shape<2>{0, 0});
+}
 
 // TEST_CASE("Construct from a DataSpan") {
 //     std::vector<int> some_data(9, 42);
