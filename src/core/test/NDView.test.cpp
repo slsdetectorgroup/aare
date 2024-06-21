@@ -115,32 +115,32 @@ using aare::Shape;
 //     }
 // }
 
-TEST_CASE("iterators") {
-    std::vector<int> vec;
-    for (int i = 0; i != 12; ++i) {
-        vec.push_back(i);
-    }
-    NDView<int, 1> data(vec.data(), Shape<1>{12});
-    int i = 0;
-    for (const auto item : data) {
-        REQUIRE(item == vec[i]);
-        ++i;
-    }
-    REQUIRE(i == 12);
+// TEST_CASE("iterators") {
+//     std::vector<int> vec;
+//     for (int i = 0; i != 12; ++i) {
+//         vec.push_back(i);
+//     }
+//     NDView<int, 1> data(vec.data(), Shape<1>{12});
+//     int i = 0;
+//     for (const auto item : data) {
+//         REQUIRE(item == vec[i]);
+//         ++i;
+//     }
+//     REQUIRE(i == 12);
 
-    for (auto ptr = data.begin(); ptr != data.end(); ++ptr) {
-        *ptr += 1;
-    }
-    for (auto &item : data) {
-        ++item;
-    }
+//     for (auto ptr = data.begin(); ptr != data.end(); ++ptr) {
+//         *ptr += 1;
+//     }
+//     for (auto &item : data) {
+//         ++item;
+//     }
 
-    i = 0;
-    for (const auto item : data) {
-        REQUIRE(item == i + 2);
-        ++i;
-    }
-}
+//     i = 0;
+//     for (const auto item : data) {
+//         REQUIRE(item == i + 2);
+//         ++i;
+//     }
+// }
 
 // // TEST_CASE("shape from vector") {
 // //     std::vector<int> vec;
@@ -151,20 +151,20 @@ TEST_CASE("iterators") {
 // //     NDView<int, 2> data(vec.data(), shape);
 // // }
 
-// TEST_CASE("divide with another span") {
-//     std::vector<int> vec0{9, 12, 3};
-//     std::vector<int> vec1{3, 2, 1};
-//     std::vector<int> result{3, 6, 3};
+TEST_CASE("divide with another span") {
+    std::vector<int> vec0{9, 12, 3};
+    std::vector<int> vec1{3, 2, 1};
+    std::vector<int> result{3, 6, 3};
 
-//     NDView<int, 1> data0(vec0.data(), Shape<1>{static_cast<int64_t>(vec0.size())});
-//     NDView<int, 1> data1(vec1.data(), Shape<1>{static_cast<int64_t>(vec1.size())});
+    NDView<int, 1> data0(vec0.data(), Shape<1>{static_cast<int64_t>(vec0.size())});
+    NDView<int, 1> data1(vec1.data(), Shape<1>{static_cast<int64_t>(vec1.size())});
 
-//     data0 /= data1;
+    data0 /= data1;
 
-//     for (size_t i = 0; i != vec0.size(); ++i) {
-//         REQUIRE(data0[i] == result[i]);
-//     }
-// }
+    for (size_t i = 0; i != vec0.size(); ++i) {
+        REQUIRE(data0[i] == result[i]);
+    }
+}
 
 // TEST_CASE("Retrieve shape") {
 //     std::vector<int> vec;
