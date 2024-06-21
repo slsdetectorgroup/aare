@@ -40,7 +40,7 @@ Frame::Frame(size_t rows, size_t cols, size_t bitdepth)
  * @note the user should cast the pointer to the appropriate type
  */
 std::byte *Frame::get(size_t row, size_t col) {
-    if (row >= m_rows or col >= m_cols) {
+    if ((row >= m_rows) or (col >= m_cols)) {
         std::cerr << "Invalid row or column index" << '\n';
         return nullptr;
     }

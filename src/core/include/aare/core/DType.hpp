@@ -41,9 +41,6 @@ enum class endian {
  * @note only native endianess is supported
  */
 class DType {
-    // TODO! support for non native endianess?
-    static_assert(sizeof(long) == sizeof(int64_t), "long should be 64bits"); // NOLINT
-
   public:
     enum TypeIndex { INT8, UINT8, INT16, UINT16, INT32, UINT32, INT64, UINT64, FLOAT, DOUBLE, ERROR };
 

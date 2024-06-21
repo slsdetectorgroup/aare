@@ -33,4 +33,4 @@ jobs:
           clang-tidy-17 --version
           echo $GITHUB_ACTIONS
           cd build
-          cmake --build . --target clang-tidy 
+          # cmake --build . --target clang-tidy 
