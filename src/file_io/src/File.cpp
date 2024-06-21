@@ -13,7 +13,7 @@ File::File(const std::filesystem::path &fname, const std::string &mode, const Fi
     }
 
     if ((mode == "r" || mode == "a") && !std::filesystem::exists(fname)) {
-        throw std::runtime_error(fmt::format("File does not exist: {}", fname.c_str()));
+        throw std::runtime_error(fmt::format("File does not exist: {}", fname.string()));
     }
 
     if (fname.extension() == ".raw" || fname.extension() == ".json") {

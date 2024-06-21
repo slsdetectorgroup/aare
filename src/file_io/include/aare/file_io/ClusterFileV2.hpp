@@ -58,12 +58,12 @@ class ClusterFileV2 {
         m_fpath = fpath;
         m_mode = mode;
         if (mode == "r") {
-            fp = fopen(fpath.c_str(), "rb");
+            fp = fopen(fpath.string().c_str(), "rb");
         } else if (mode == "w") {
             if (std::filesystem::exists(fpath)) {
-                fp = fopen(fpath.c_str(), "r+b");
+                fp = fopen(fpath.string().c_str(), "r+b");
             } else {
-                fp = fopen(fpath.c_str(), "wb");
+                fp = fopen(fpath.string().c_str(), "wb");
             }
         }
         if(fp == nullptr) {

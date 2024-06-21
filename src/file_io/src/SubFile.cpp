@@ -44,7 +44,7 @@ size_t SubFile::get_part(std::byte *buffer, size_t frame_index) {
         throw std::runtime_error("Frame number out of range");
     }
     // TODO: find a way to avoid opening and closing the file for each frame
-    aare::logger::debug(LOCATION, "frame:", frame_index, "file:", m_fname.c_str());
+    aare::logger::debug(LOCATION, "frame:", frame_index, "file:", m_fname.string());
     fseek(fp, sizeof(sls_detector_header) + (sizeof(sls_detector_header) + bytes_per_part()) * frame_index, // NOLINT
           SEEK_SET);
     auto ret = (this->*read_impl)(buffer);
