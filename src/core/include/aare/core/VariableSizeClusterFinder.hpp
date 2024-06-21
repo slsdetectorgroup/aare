@@ -274,7 +274,7 @@ template <typename T> void ClusterFinder<T>::store_clusters() {
     std::unordered_map<int, Hit> h_size;
     for (int i = 0; i < shape_[0]; ++i) {
         for (int j = 0; j < shape_[1]; ++j) {
-            if (labeled_(i, j) != 0 or false
+            if (labeled_(i, j) != 0 || false
                 // (i-1 >= 0 and labeled_(i-1, j) != 0) or // another circle of peripheral pixels
                 // (j-1 >= 0 and labeled_(i, j-1) != 0) or
                 // (i+1 < shape_[0] and labeled_(i+1, j) != 0) or

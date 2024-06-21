@@ -27,7 +27,7 @@ class Frame {
     // TODO! can we, or even want to remove the template?
     template <typename T> void set(size_t row, size_t col, T data) {
         assert(sizeof(T) == m_bitdepth / 8);
-        if (row >= m_rows or col >= m_cols) {
+        if (row >= m_rows || col >= m_cols) {
             throw std::out_of_range("Invalid row or column index");
         }
         std::memcpy(m_data + (row * m_cols + col) * (m_bitdepth / 8), &data, m_bitdepth / 8);

@@ -51,7 +51,7 @@ class ClusterFileV2 {
 
   public:
     ClusterFileV2(std::filesystem::path const &fpath, std::string const &mode) {
-        if (mode != "r" and mode != "w")
+        if (mode != "r" && mode != "w")
             throw std::invalid_argument("mode must be 'r' or 'w'");
         if (!std::filesystem::exists(fpath))
             throw std::invalid_argument("File does not exist");

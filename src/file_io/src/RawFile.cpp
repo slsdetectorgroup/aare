@@ -291,7 +291,7 @@ void RawFile::parse_fname() {
         m_base_name.erase(pos);
         wrong_format = true;
     }
-    if (wrong_format and (m_mode == "w+" or m_mode == "w")) {
+    if (wrong_format && (m_mode == "w+" || m_mode == "w")) {
         aare::logger::warn("Master Filename", m_fname, "is not in the correct format");
         aare::logger::warn("using", master_fname(), "as the master file");
     }
@@ -410,7 +410,7 @@ size_t RawFile::frame_number(size_t frame_index) {
 RawFile::~RawFile() noexcept {
 
     // update master file
-    if (m_mode == "w" or m_mode == "w+" or m_mode == "r+") {
+    if (m_mode == "w" || m_mode == "w+" || m_mode == "r+") {
         try {
             write_master_file();
         } catch (...) {

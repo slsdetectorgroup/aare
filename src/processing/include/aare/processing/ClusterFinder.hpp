@@ -69,7 +69,7 @@ class ClusterFinder {
                     pedestal.push(iy, ix, frame(iy, ix));
                     continue;
                 }
-                if (eventMask[iy][ix] == PHOTON and frame(iy, ix) - pedestal.mean(iy, ix) >= max) {
+                if (eventMask[iy][ix] == PHOTON && frame(iy, ix) - pedestal.mean(iy, ix) >= max) {
                     eventMask[iy][ix] = PHOTON_MAX;
                     Cluster cluster(m_cluster_sizeX, m_cluster_sizeY, DType(typeid(FRAME_TYPE)));
                     cluster.x = ix;
@@ -163,7 +163,7 @@ class ClusterFinder {
                     pedestal.push(iy, ix, frame(iy, ix));
                     continue;
                 }
-                if (eventMask[iy][ix] == PHOTON and frame(iy, ix) - pedestal.mean(iy, ix) == max) {
+                if (eventMask[iy][ix] == PHOTON && frame(iy, ix) - pedestal.mean(iy, ix) == max) {
                     eventMask[iy][ix] = PHOTON_MAX;
                     Cluster cluster(m_cluster_sizeX, m_cluster_sizeY, DType(typeid(FRAME_TYPE)));
                     cluster.x = ix;
