@@ -63,9 +63,9 @@ struct Task {
 // TODO: check if this is the correct way to do this in msvc
 // maybe use #pragma pack(push, 1) and #pragma pack(pop)
 } __declspec(align(1));
-
+AAAAAAAAAAAAAAAAAA
 #else
-} __attribute__((packed));
+};
 #endif
 namespace network_io {
     /**
