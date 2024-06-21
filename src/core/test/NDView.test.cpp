@@ -57,53 +57,53 @@ using aare::Shape;
 //     }
 // }
 
-TEST_CASE("Plus and miuns with single value") {
-    std::vector<int> vec;
-    for (int i = 0; i != 12; ++i) {
-        vec.push_back(i);
-    }
-    NDView<int, 2> data(vec.data(), Shape<2>{3, 4});
-    data += 5;
-    int i = 0;
-    for (int row = 0; row != 3; ++row) {
-        for (int col = 0; col != 4; ++col) {
-            REQUIRE(data(row, col) == i + 5);
-            ++i;
-        }
-    }
-    data -= 3;
-    i = 0;
-    for (int row = 0; row != 3; ++row) {
-        for (int col = 0; col != 4; ++col) {
-            REQUIRE(data(row, col) == i + 2);
-            ++i;
-        }
-    }
-}
-
-// TEST_CASE("Multiply and divide with single value") {
+// TEST_CASE("Plus and miuns with single value") {
 //     std::vector<int> vec;
 //     for (int i = 0; i != 12; ++i) {
 //         vec.push_back(i);
 //     }
 //     NDView<int, 2> data(vec.data(), Shape<2>{3, 4});
-//     data *= 5;
+//     data += 5;
 //     int i = 0;
 //     for (int row = 0; row != 3; ++row) {
 //         for (int col = 0; col != 4; ++col) {
-//             REQUIRE(data(row, col) == i * 5);
+//             REQUIRE(data(row, col) == i + 5);
 //             ++i;
 //         }
 //     }
-//     data /= 3;
+//     data -= 3;
 //     i = 0;
 //     for (int row = 0; row != 3; ++row) {
 //         for (int col = 0; col != 4; ++col) {
-//             REQUIRE(data(row, col) == (i * 5) / 3);
+//             REQUIRE(data(row, col) == i + 2);
 //             ++i;
 //         }
 //     }
 // }
+
+TEST_CASE("Multiply and divide with single value") {
+    std::vector<int> vec;
+    for (int i = 0; i != 12; ++i) {
+        vec.push_back(i);
+    }
+    NDView<int, 2> data(vec.data(), Shape<2>{3, 4});
+    data *= 5;
+    int i = 0;
+    for (int row = 0; row != 3; ++row) {
+        for (int col = 0; col != 4; ++col) {
+            REQUIRE(data(row, col) == i * 5);
+            ++i;
+        }
+    }
+    data /= 3;
+    i = 0;
+    for (int row = 0; row != 3; ++row) {
+        for (int col = 0; col != 4; ++col) {
+            REQUIRE(data(row, col) == (i * 5) / 3);
+            ++i;
+        }
+    }
+}
 
 // TEST_CASE("elementwise assign") {
 //     std::vector<int> vec(25);
