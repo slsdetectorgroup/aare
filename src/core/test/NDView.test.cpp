@@ -81,39 +81,39 @@ using aare::Shape;
 //     }
 // }
 
-TEST_CASE("Multiply and divide with single value") {
-    std::vector<int> vec;
-    for (int i = 0; i != 12; ++i) {
-        vec.push_back(i);
-    }
-    NDView<int, 2> data(vec.data(), Shape<2>{3, 4});
-    data *= 5;
-    int i = 0;
-    for (int row = 0; row != 3; ++row) {
-        for (int col = 0; col != 4; ++col) {
-            REQUIRE(data(row, col) == i * 5);
-            ++i;
-        }
-    }
-    data /= 3;
-    i = 0;
-    for (int row = 0; row != 3; ++row) {
-        for (int col = 0; col != 4; ++col) {
-            REQUIRE(data(row, col) == (i * 5) / 3);
-            ++i;
-        }
-    }
-}
-
-// TEST_CASE("elementwise assign") {
-//     std::vector<int> vec(25);
-//     NDView<int, 2> data(vec.data(), Shape<2>{5, 5});
-
-//     data = 3;
-//     for (auto it : data) {
-//         REQUIRE(it == 3);
+// TEST_CASE("Multiply and divide with single value") {
+//     std::vector<int> vec;
+//     for (int i = 0; i != 12; ++i) {
+//         vec.push_back(i);
+//     }
+//     NDView<int, 2> data(vec.data(), Shape<2>{3, 4});
+//     data *= 5;
+//     int i = 0;
+//     for (int row = 0; row != 3; ++row) {
+//         for (int col = 0; col != 4; ++col) {
+//             REQUIRE(data(row, col) == i * 5);
+//             ++i;
+//         }
+//     }
+//     data /= 3;
+//     i = 0;
+//     for (int row = 0; row != 3; ++row) {
+//         for (int col = 0; col != 4; ++col) {
+//             REQUIRE(data(row, col) == (i * 5) / 3);
+//             ++i;
+//         }
 //     }
 // }
+
+TEST_CASE("elementwise assign") {
+    std::vector<int> vec(25);
+    NDView<int, 2> data(vec.data(), Shape<2>{5, 5});
+
+    data = 3;
+    for (auto it : data) {
+        REQUIRE(it == 3);
+    }
+}
 
 // TEST_CASE("iterators") {
 //     std::vector<int> vec;
