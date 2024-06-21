@@ -152,7 +152,8 @@ if(AARE_USE_WARNINGS)
     if(MSVC)
         target_compile_options(
             aare_compiler_flags 
-            INTERFACE 
+            INTERFACE
+            /w 
         )
     else()
         target_compile_options(
