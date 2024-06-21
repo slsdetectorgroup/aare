@@ -131,7 +131,7 @@ else()
             -fsanitize=address,undefined,pointer-compare 
             -fno-sanitize-recover 
             # -D_FORTIFY_SOURCE=2  # not needed for debug builds
-            # -fstack-protector  # cause errors wih folly (ProducerConsumerQueue.hpp)
+            # -fstack-protector  # cause errors wih folly? (ProducerConsumerQueue.hpp)
             -fno-omit-frame-pointer
     )
     
@@ -156,9 +156,6 @@ if(AARE_USE_WARNINGS)
             aare_compiler_flags 
             INTERFACE
             /w
-            /wo4244
-            /wo4267
-            /wo9002
         )
     else()
         target_compile_options(
