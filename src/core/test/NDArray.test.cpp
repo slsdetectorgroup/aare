@@ -40,49 +40,49 @@ using aare::Shape;
 //     REQUIRE(img(5) == 3);
 // }
 
-TEST_CASE("Accessing a const object") {
-    const NDArray<double, 3> img({3, 4, 5}, 0);
-    REQUIRE(img(1, 1, 1) == 0);
-    REQUIRE(img.size() == 3 * 4 * 5);
-    REQUIRE(img.shape() == Shape<3>{3, 4, 5});
-    REQUIRE(img.shape(0) == 3);
-    REQUIRE(img.shape(1) == 4);
-    REQUIRE(img.shape(2) == 5);
-}
-
-TEST_CASE("Indexing of a 2D image") {
-    std::array<int64_t, 2> shape{{3, 7}};
-    NDArray<long> img(shape, 5);
-    for (int i = 0; i != img.size(); ++i) {
-        REQUIRE(img(i) == 5);
-    }
-
-    for (int i = 0; i != img.size(); ++i) {
-        img(i) = i;
-    }
-    REQUIRE(img(0, 0) == 0);
-    REQUIRE(img(0, 1) == 1);
-    REQUIRE(img(1, 0) == 7);
-}
-
-// TEST_CASE("Indexing of a 3D image") {
-//     NDArray<float, 3> img{{{3, 4, 2}}, 5.0f};
-//     for (int i = 0; i != img.size(); ++i) {
-//         REQUIRE(img(i) == 5.0f);
-//     }
-
-//     // Double check general properties
-//     REQUIRE(img.size() == 3 * 4 * 2);
-
-//     for (int i = 0; i != img.size(); ++i) {
-//         img(i) = float(i);
-//     }
-//     REQUIRE(img(0, 0, 0) == 0);
-//     REQUIRE(img(0, 0, 1) == 1);
-//     REQUIRE(img(0, 1, 1) == 3);
-//     REQUIRE(img(1, 2, 0) == 12);
-//     REQUIRE(img(2, 3, 1) == 23);
+// TEST_CASE("Accessing a const object") {
+//     const NDArray<double, 3> img({3, 4, 5}, 0);
+//     REQUIRE(img(1, 1, 1) == 0);
+//     REQUIRE(img.size() == 3 * 4 * 5);
+//     REQUIRE(img.shape() == Shape<3>{3, 4, 5});
+//     REQUIRE(img.shape(0) == 3);
+//     REQUIRE(img.shape(1) == 4);
+//     REQUIRE(img.shape(2) == 5);
 // }
+
+// TEST_CASE("Indexing of a 2D image") {
+//     std::array<int64_t, 2> shape{{3, 7}};
+//     NDArray<long> img(shape, 5);
+//     for (int i = 0; i != img.size(); ++i) {
+//         REQUIRE(img(i) == 5);
+//     }
+
+//     for (int i = 0; i != img.size(); ++i) {
+//         img(i) = i;
+//     }
+//     REQUIRE(img(0, 0) == 0);
+//     REQUIRE(img(0, 1) == 1);
+//     REQUIRE(img(1, 0) == 7);
+// }
+
+TEST_CASE("Indexing of a 3D image") {
+    NDArray<float, 3> img{{{3, 4, 2}}, 5.0f};
+    for (int i = 0; i != img.size(); ++i) {
+        REQUIRE(img(i) == 5.0f);
+    }
+
+    // Double check general properties
+    REQUIRE(img.size() == 3 * 4 * 2);
+
+    for (int i = 0; i != img.size(); ++i) {
+        img(i) = float(i);
+    }
+    REQUIRE(img(0, 0, 0) == 0);
+    REQUIRE(img(0, 0, 1) == 1);
+    REQUIRE(img(0, 1, 1) == 3);
+    REQUIRE(img(1, 2, 0) == 12);
+    REQUIRE(img(2, 3, 1) == 23);
+}
 
 // TEST_CASE("Divide double by int") {
 //     NDArray<double, 1> a{{5}, 5};
