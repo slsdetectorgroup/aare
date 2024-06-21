@@ -166,28 +166,28 @@ using aare::Shape;
 //     }
 // }
 
-TEST_CASE("Retrieve shape") {
-    std::vector<int> vec;
-    for (int i = 0; i != 12; ++i) {
-        vec.push_back(i);
-    }
-    NDView<int, 2> data(vec.data(), Shape<2>{3, 4});
-    REQUIRE(data.shape()[0] == 3);
-    REQUIRE(data.shape()[1] == 4);
-}
-
-// TEST_CASE("compare two views") {
-//     std::vector<int> vec1;
+// TEST_CASE("Retrieve shape") {
+//     std::vector<int> vec;
 //     for (int i = 0; i != 12; ++i) {
-//         vec1.push_back(i);
+//         vec.push_back(i);
 //     }
-//     NDView<int, 2> view1(vec1.data(), Shape<2>{3, 4});
-
-//     std::vector<int> vec2;
-//     for (int i = 0; i != 12; ++i) {
-//         vec2.push_back(i);
-//     }
-//     NDView<int, 2> view2(vec2.data(), Shape<2>{3, 4});
-
-//     REQUIRE(view1 == view2);
+//     NDView<int, 2> data(vec.data(), Shape<2>{3, 4});
+//     REQUIRE(data.shape()[0] == 3);
+//     REQUIRE(data.shape()[1] == 4);
 // }
+
+TEST_CASE("compare two views") {
+    std::vector<int> vec1;
+    for (int i = 0; i != 12; ++i) {
+        vec1.push_back(i);
+    }
+    NDView<int, 2> view1(vec1.data(), Shape<2>{3, 4});
+
+    std::vector<int> vec2;
+    for (int i = 0; i != 12; ++i) {
+        vec2.push_back(i);
+    }
+    NDView<int, 2> view2(vec2.data(), Shape<2>{3, 4});
+
+    REQUIRE(view1 == view2);
+}
