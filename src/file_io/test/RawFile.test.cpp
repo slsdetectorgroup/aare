@@ -106,9 +106,9 @@ TEST_CASE("Read multipart files") {
     }
 }
 
-// TEST_CASE("Read file with unordered frames") {
-//     auto fpath = test_data_path() / "mythen" / "scan242_master_3.raw";
-//     REQUIRE(std::filesystem::exists(fpath));
-//     File f(fpath, "r");
-//     REQUIRE_THROWS(f.read());
-// }
+TEST_CASE("Read file with unordered frames") {
+    auto fpath = test_data_path() / "mythen" / "scan242_master_3.raw";
+    REQUIRE(std::filesystem::exists(fpath));
+    File f(fpath, "r");
+    REQUIRE_THROWS(f.read());
+}
