@@ -77,7 +77,7 @@ TEST_CASE("Compare reading from a numpy file with a raw file") {
     for (size_t i = 0; i < 10; ++i) {
         auto raw_frame = raw.read();
         auto npy_frame = npy.read();
-        CHECK(((raw_frame.view<uint16_t>()) == (npy_frame.view<uint16_t>())));
+        CHECK((raw_frame.view<uint16_t>() == npy_frame.view<uint16_t>()));
     }
 }
 
