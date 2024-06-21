@@ -9,9 +9,9 @@ NumpyFile::NumpyFile(const std::filesystem::path &fname, const std::string &mode
     m_fname = fname;
     m_mode = mode;
     if (mode == "r") {
-        fp = fopen(m_fname.c_str(), "rb");
+        fp = fopen(m_fname.string().c_str(), "rb");
         if (!fp) {
-            throw std::runtime_error(fmt::format("Could not open: {} for reading", m_fname.c_str()));
+            throw std::runtime_error(fmt::format("Could not open: {} for reading", m_fname.string()));
         }
         load_metadata();
     } else if (mode == "w") {
@@ -20,9 +20,9 @@ NumpyFile::NumpyFile(const std::filesystem::path &fname, const std::string &mode
         m_cols = cfg.cols;
         m_header = {cfg.dtype, false, {cfg.rows, cfg.cols}};
         m_header.shape = {0, cfg.rows, cfg.cols};
-        fp = fopen(m_fname.c_str(), "wb");
+        fp = fopen(m_fname.string().c_str(), "wb");
         if (!fp) {
-            throw std::runtime_error(fmt::format("Could not open: {} for reading", m_fname.c_str()));
+            throw std::runtime_error(fmt::format("Could not open: {} for reading", m_fname.string()));
         }
         initial_header_len = aare::NumpyHelpers::write_header(std::filesystem::path(m_fname.c_str()), m_header);
     }

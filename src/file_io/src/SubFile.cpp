@@ -24,14 +24,14 @@ SubFile::SubFile(const std::filesystem::path &fname, DetectorType detector, size
     }
 
     if (mode == "r") {
-        fp = fopen(m_fname.c_str(), "rb");
+        fp = fopen(m_fname.string().c_str(), "rb");
     } else {
         // if file exists, open in read/write mode (without truncating the file)
         // if file does not exist, open in write mode
         if (std::filesystem::exists(fname)) {
-            fp = fopen(m_fname.c_str(), "r+b");
+            fp = fopen(m_fname.string().c_str(), "r+b");
         } else {
-            fp = fopen(m_fname.c_str(), "wb");
+            fp = fopen(m_fname.string().c_str(), "wb");
         }
     }
     if (fp == nullptr) {

@@ -146,7 +146,7 @@ sls_detector_header RawFile::read_header(const std::filesystem::path &fname) {
     return h;
 }
 bool RawFile::is_master_file(const std::filesystem::path &fpath) {
-    std::string const stem = fpath.stem();
+    std::string const stem = fpath.stem().string();
     return stem.find("_master_") != std::string::npos;
 }
 
@@ -276,9 +276,9 @@ void RawFile::parse_raw_metadata() {
 
 void RawFile::parse_fname() {
     bool wrong_format = false;
-    m_base_path = m_fname.parent_path();
-    m_base_name = m_fname.stem();
-    m_ext = m_fname.extension();
+    m_base_path = m_fname.parent_path().string();
+    m_base_name = m_fname.stem().string();
+    m_ext = m_fname.extension().string();
     try {
         auto pos = m_base_name.rfind('_');
         m_findex = std::stoi(m_base_name.substr(pos + 1));
