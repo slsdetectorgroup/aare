@@ -119,11 +119,14 @@ else()
             /Od 
             /Zi 
             /MDd
+            /D_ITERATOR_DEBUG_LEVEL=2
     )
     target_link_options(
         aare_compiler_flags
         INTERFACE
-            /DEBUG:FULL)
+            /DEBUG:FULL
+            /D_ITERATOR_DEBUG_LEVEL=2
+            )
 endif()
 target_compile_options(
     aare_compiler_flags 
