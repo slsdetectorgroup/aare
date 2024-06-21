@@ -118,6 +118,7 @@ else()
         INTERFACE 
             /Od 
             /Zi 
+            /MDd
     )
 endif()
 target_compile_options(
