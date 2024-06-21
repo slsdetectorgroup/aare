@@ -132,7 +132,7 @@ void RawFile::open_subfiles() {
 
 sls_detector_header RawFile::read_header(const std::filesystem::path &fname) {
     sls_detector_header h{};
-    FILE *fp = fopen(fname.c_str(), "r");
+    FILE *fp = fopen(fname.native().c_str(), "r");
     if (!fp)
         throw std::runtime_error(fmt::format("Could not open: {} for reading", fname.native()));
 
