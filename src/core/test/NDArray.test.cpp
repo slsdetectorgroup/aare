@@ -84,30 +84,30 @@ using aare::Shape;
 //     REQUIRE(img(2, 3, 1) == 23);
 // }
 
-TEST_CASE("Divide double by int") {
-    NDArray<double, 1> a{{5}, 5};
-    NDArray<int, 1> b{{5}, 5};
-    a /= b;
-    for (auto it : a) {
-        REQUIRE(it == 1.0);
-    }
-}
-
-// TEST_CASE("Elementwise multiplication of 3D image") {
-//     std::array<int64_t, 3> shape{3, 4, 2};
-//     NDArray<double, 3> a{shape};
-//     NDArray<double, 3> b{shape};
-//     for (int i = 0; i != a.size(); ++i) {
-//         a(i) = i;
-//         b(i) = i;
+// TEST_CASE("Divide double by int") {
+//     NDArray<double, 1> a{{5}, 5};
+//     NDArray<int, 1> b{{5}, 5};
+//     a /= b;
+//     for (auto it : a) {
+//         REQUIRE(it == 1.0);
 //     }
-//     auto c = a * b;
-//     REQUIRE(c(0, 0, 0) == 0 * 0);
-//     REQUIRE(c(0, 0, 1) == 1 * 1);
-//     REQUIRE(c(0, 1, 1) == 3 * 3);
-//     REQUIRE(c(1, 2, 0) == 12 * 12);
-//     REQUIRE(c(2, 3, 1) == 23 * 23);
 // }
+
+TEST_CASE("Elementwise multiplication of 3D image") {
+    std::array<int64_t, 3> shape{3, 4, 2};
+    NDArray<double, 3> a{shape};
+    NDArray<double, 3> b{shape};
+    for (int i = 0; i != a.size(); ++i) {
+        a(i) = i;
+        b(i) = i;
+    }
+    auto c = a * b;
+    REQUIRE(c(0, 0, 0) == 0 * 0);
+    REQUIRE(c(0, 0, 1) == 1 * 1);
+    REQUIRE(c(0, 1, 1) == 3 * 3);
+    REQUIRE(c(1, 2, 0) == 12 * 12);
+    REQUIRE(c(2, 3, 1) == 23 * 23);
+}
 
 // TEST_CASE("Compare two images") {
 //     NDArray<int> a;
