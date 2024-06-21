@@ -50,20 +50,20 @@ TEST_CASE("Accessing a const object") {
     REQUIRE(img.shape(2) == 5);
 }
 
-// TEST_CASE("Indexing of a 2D image") {
-//     std::array<int64_t, 2> shape{{3, 7}};
-//     NDArray<long> img(shape, 5);
-//     for (int i = 0; i != img.size(); ++i) {
-//         REQUIRE(img(i) == 5);
-//     }
+TEST_CASE("Indexing of a 2D image") {
+    std::array<int64_t, 2> shape{{3, 7}};
+    NDArray<long> img(shape, 5);
+    for (int i = 0; i != img.size(); ++i) {
+        REQUIRE(img(i) == 5);
+    }
 
-//     for (int i = 0; i != img.size(); ++i) {
-//         img(i) = i;
-//     }
-//     REQUIRE(img(0, 0) == 0);
-//     REQUIRE(img(0, 1) == 1);
-//     REQUIRE(img(1, 0) == 7);
-// }
+    for (int i = 0; i != img.size(); ++i) {
+        img(i) = i;
+    }
+    REQUIRE(img(0, 0) == 0);
+    REQUIRE(img(0, 1) == 1);
+    REQUIRE(img(1, 0) == 7);
+}
 
 // TEST_CASE("Indexing of a 3D image") {
 //     NDArray<float, 3> img{{{3, 4, 2}}, 5.0f};
