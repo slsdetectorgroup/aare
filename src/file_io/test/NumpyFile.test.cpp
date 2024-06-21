@@ -24,27 +24,27 @@ TEST_CASE("Read a 1D numpy file with int32 data type") {
     }
 }
 
-// TEST_CASE("Read a 3D numpy file with np.double data type") {
+TEST_CASE("Read a 3D numpy file with np.double data type") {
 
-//     auto fpath = test_data_path() / "numpy" / "test_3d_double.npy";
-//     REQUIRE(std::filesystem::exists(fpath));
+    auto fpath = test_data_path() / "numpy" / "test_3d_double.npy";
+    REQUIRE(std::filesystem::exists(fpath));
 
-//     NumpyFile f(fpath);
+    NumpyFile f(fpath);
 
-//     // we know the file contains 10 elements of np.int32 containing values 0-9
-//     REQUIRE(f.dtype() == DType::DOUBLE);
-//     REQUIRE(f.shape() == std::vector<size_t>{3, 2, 5});
+    // we know the file contains 10 elements of np.int32 containing values 0-9
+    REQUIRE(f.dtype() == DType::DOUBLE);
+    REQUIRE(f.shape() == std::vector<size_t>{3, 2, 5});
 
-//     // use the load function to read the full file into a NDArray
-//     // numpy code to generate the array
-//     //  arr2[0,0,0] = 1.0
-//     //  arr2[0,0,1] = 2.0
-//     //  arr2[0,1,0] = 72.0
-//     //  arr2[2,0,4] = 63.0
+    // use the load function to read the full file into a NDArray
+    // numpy code to generate the array
+    //  arr2[0,0,0] = 1.0
+    //  arr2[0,0,1] = 2.0
+    //  arr2[0,1,0] = 72.0
+    //  arr2[2,0,4] = 63.0
 
-//     auto data = f.load<double, 3>();
-//     REQUIRE(data(0, 0, 0) == 1.0);
-//     REQUIRE(data(0, 0, 1) == 2.0);
-//     REQUIRE(data(0, 1, 0) == 72.0);
-//     REQUIRE(data(2, 0, 4) == 63.0);
-// }
+    auto data = f.load<double, 3>();
+    REQUIRE(data(0, 0, 0) == 1.0);
+    REQUIRE(data(0, 0, 1) == 2.0);
+    REQUIRE(data(0, 1, 0) == 72.0);
+    REQUIRE(data(2, 0, 4) == 63.0);
+}

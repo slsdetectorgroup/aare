@@ -1,36 +1,36 @@
-// #include "aare/file_io/File.hpp"
-// #include "aare/utils/logger.hpp"
-// #include <catch2/catch_test_macros.hpp>
-// #include <filesystem>
+#include "aare/file_io/File.hpp"
+#include "aare/utils/logger.hpp"
+#include <catch2/catch_test_macros.hpp>
+#include <filesystem>
 
-// #include "test_config.hpp"
+#include "test_config.hpp"
 
-// using aare::File;
+using aare::File;
 
-// TEST_CASE("Read number of frames from a jungfrau raw file") {
+TEST_CASE("Read number of frames from a jungfrau raw file") {
 
-//     auto fpath = test_data_path() / "jungfrau" / "jungfrau_single_master_0.json";
-//     REQUIRE(std::filesystem::exists(fpath));
+    auto fpath = test_data_path() / "jungfrau" / "jungfrau_single_master_0.json";
+    REQUIRE(std::filesystem::exists(fpath));
 
-//     File f(fpath, "r");
-//     REQUIRE(f.total_frames() == 10);
-// }
+    File f(fpath, "r");
+    REQUIRE(f.total_frames() == 10);
+}
 
-// TEST_CASE("Read frame numbers from a jungfrau raw file") {
-//     auto fpath = test_data_path() / "jungfrau" / "jungfrau_single_master_0.json";
-//     REQUIRE(std::filesystem::exists(fpath));
+TEST_CASE("Read frame numbers from a jungfrau raw file") {
+    auto fpath = test_data_path() / "jungfrau" / "jungfrau_single_master_0.json";
+    REQUIRE(std::filesystem::exists(fpath));
 
-//     File f(fpath, "r");
+    File f(fpath, "r");
 
-//     // we know this file has 10 frames with frame numbers 1 to 10
-//     // f0 1,2,3
-//     // f1 4,5,6
-//     // f2 7,8,9
-//     // f3 10
-//     for (size_t i = 0; i < 10; i++) {
-//         CHECK(f.frame_number(i) == i + 1);
-//     }
-// }
+    // we know this file has 10 frames with frame numbers 1 to 10
+    // f0 1,2,3
+    // f1 4,5,6
+    // f2 7,8,9
+    // f3 10
+    for (size_t i = 0; i < 10; i++) {
+        CHECK(f.frame_number(i) == i + 1);
+    }
+}
 
 // TEST_CASE("Read data from a jungfrau 500k single port raw file") {
 //     auto fpath = test_data_path() / "jungfrau" / "jungfrau_single_master_0.json";
