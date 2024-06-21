@@ -13,7 +13,7 @@ jobs:
       matrix:
         os: ["windows-latest"]
         use-system-libraries: ["ON"]
-        build-type: ["Release"]
+        build-type: ["Release", "Debug"]
         use-python-bindings: ["OFF"]
         # exclude:
         #   # excludes combinations that are not supported

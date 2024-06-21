@@ -110,42 +110,51 @@ target_compile_features(aare_compiler_flags INTERFACE cxx_std_17)
 #TODO! Explicitly setting flags is not cross platform compatible
 if(CMAKE_BUILD_TYPE STREQUAL "Release")
     message(STATUS "Release build")
-    target_compile_options(aare_compiler_flags INTERFACE -O3)
+    if(MSVC)
+        target_compile_options(aare_compiler_flags INTERFACE /O2)
+    else()
+        target_compile_options(aare_compiler_flags INTERFACE -O3)
+    endif()
 else()
-    target_compile_options(
-        aare_compiler_flags 
-        INTERFACE 
-            -Og 
-            -ggdb3 
-            # -D_GLIBCXX_DEBUG # causes errors with boost
-            -D_GLIBCXX_DEBUG_PEDANTIC
-    )
+    message(STATUS "Debug build")
+    if(MSVC)
+        # target_compile_options(aare_compiler_flags INTERFACE /Od /Zi)
+    else()
+        target_compile_options(
+            aare_compiler_flags 
+            INTERFACE 
+                -Og 
+                -ggdb3 
+                # -D_GLIBCXX_DEBUG # causes errors with boost
+                -D_GLIBCXX_DEBUG_PEDANTIC
+        )
 
-    if (NOT AARE_PYTHON_BINDINGS)
-    target_compile_options(
-        aare_compiler_flags
-        INTERFACE
-            -fdiagnostics-parseable-fixits
-            # -fdiagnostics-generate-patch 
-            -fdiagnostics-show-template-tree 
-            -fsanitize=address,undefined,pointer-compare 
-            -fno-sanitize-recover 
-            # -D_FORTIFY_SOURCE=2  # not needed for debug builds
-            # -fstack-protector  # cause errors wih folly? (ProducerConsumerQueue.hpp)
-            -fno-omit-frame-pointer
-    )
+        if (NOT AARE_PYTHON_BINDINGS)
+        target_compile_options(
+            aare_compiler_flags
+            INTERFACE
+                -fdiagnostics-parseable-fixits
+                # -fdiagnostics-generate-patch 
+                -fdiagnostics-show-template-tree 
+                -fsanitize=address,undefined,pointer-compare 
+                -fno-sanitize-recover 
+                # -D_FORTIFY_SOURCE=2  # not needed for debug builds
+                # -fstack-protector  # cause errors wih folly? (ProducerConsumerQueue.hpp)
+                -fno-omit-frame-pointer
+        )
     
-    target_link_libraries(
-        aare_compiler_flags
-        INTERFACE
-            -fdiagnostics-parseable-fixits
-            # -fdiagnostics-generate-patch 
-            -fdiagnostics-show-template-tree 
-            -fsanitize=address,undefined,pointer-compare 
-            -fno-sanitize-recover 
-            # -D_FORTIFY_SOURCE=2 
-            -fno-omit-frame-pointer
-    )
+        target_link_libraries(
+            aare_compiler_flags
+            INTERFACE
+                -fdiagnostics-parseable-fixits
+                # -fdiagnostics-generate-patch 
+                -fdiagnostics-show-template-tree 
+                -fsanitize=address,undefined,pointer-compare 
+                -fno-sanitize-recover 
+                # -D_FORTIFY_SOURCE=2 
+                -fno-omit-frame-pointer
+        )
+    endif()
 endif()
 
 endif()
