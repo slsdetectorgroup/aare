@@ -12,7 +12,7 @@ File::File(const std::filesystem::path &fname, const std::string &mode, const Fi
         throw std::invalid_argument("Unsupported file mode");
     }
 
-    if ((mode == "r" or mode == "a") and not std::filesystem::exists(fname)) {
+    if ((mode == "r" || mode == "a") && !std::filesystem::exists(fname)) {
         throw std::runtime_error(fmt::format("File does not exist: {}", fname.c_str()));
     }
 

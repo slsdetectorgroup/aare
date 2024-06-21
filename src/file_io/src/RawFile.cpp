@@ -12,7 +12,7 @@ namespace aare {
 RawFile::RawFile(const std::filesystem::path &fname, const std::string &mode, const FileConfig &config) {
     m_mode = mode;
     m_fname = fname;
-    if (mode == "r" or mode == "r+") {
+    if (mode == "r" || mode == "r+") {
         if (config != FileConfig()) {
             aare::logger::warn(
                 "In read mode it is not necessary to provide a config, the provided config will be ignored");
@@ -23,7 +23,7 @@ RawFile::RawFile(const std::filesystem::path &fname, const std::string &mode, co
         find_geometry();
         open_subfiles();
 
-    } else if (mode == "w" or mode == "w+") {
+    } else if (mode == "w" || mode == "w+") {
 
         if (std::filesystem::exists(fname)) {
             // handle mode w as w+ (no overrwriting)
