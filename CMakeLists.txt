@@ -155,7 +155,8 @@ if(AARE_USE_WARNINGS)
         target_compile_options(
             aare_compiler_flags 
             INTERFACE
-            /w 
+            /w
+            /W0
         )
     else()
         target_compile_options(
