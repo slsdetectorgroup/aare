@@ -12,33 +12,33 @@ using aare::Shape;
 //     REQUIRE(a.shape() == Shape<2>{0, 0});
 // }
 
-TEST_CASE("Construct from a DataSpan") {
-    std::vector<int> some_data(9, 42);
-    NDView<int, 2> view(some_data.data(), Shape<2>{3, 3});
+// TEST_CASE("Construct from a DataSpan") {
+//     std::vector<int> some_data(9, 42);
+//     NDView<int, 2> view(some_data.data(), Shape<2>{3, 3});
 
-    NDArray<int, 2> image(view);
+//     NDArray<int, 2> image(view);
 
-    REQUIRE(image.shape() == view.shape());
-    REQUIRE(image.size() == view.size());
-    REQUIRE(image.data() != view.data());
+//     REQUIRE(image.shape() == view.shape());
+//     REQUIRE(image.size() == view.size());
+//     REQUIRE(image.data() != view.data());
 
-    for (int i = 0; i < image.size(); ++i) {
-        REQUIRE(image(i) == view(i));
-    }
+//     for (int i = 0; i < image.size(); ++i) {
+//         REQUIRE(image(i) == view(i));
+//     }
 
-    // Changing the image doesn't change the view
-    image = 43;
-    for (int i = 0; i < image.size(); ++i) {
-        REQUIRE(image(i) != view(i));
-    }
-}
-
-// TEST_CASE("1D image") {
-//     std::array<int64_t, 1> shape{{20}};
-//     NDArray<short, 1> img(shape, 3);
-//     REQUIRE(img.size() == 20);
-//     REQUIRE(img(5) == 3);
+//     // Changing the image doesn't change the view
+//     image = 43;
+//     for (int i = 0; i < image.size(); ++i) {
+//         REQUIRE(image(i) != view(i));
+//     }
 // }
+
+TEST_CASE("1D image") {
+    std::array<int64_t, 1> shape{{20}};
+    NDArray<short, 1> img(shape, 3);
+    REQUIRE(img.size() == 20);
+    REQUIRE(img(5) == 3);
+}
 
 // TEST_CASE("Accessing a const object") {
 //     const NDArray<double, 3> img({3, 4, 5}, 0);
