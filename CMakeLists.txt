@@ -120,6 +120,10 @@ else()
             /Zi 
             /MDd
     )
+    target_link_options(
+        aare_compiler_flags
+        INTERFACE
+            /DEBUG:FULL)
 endif()
 target_compile_options(
     aare_compiler_flags 
