@@ -100,7 +100,9 @@ else()
     find_package(Boost 1.80 REQUIRED COMPONENTS program_options)
 endif()
 
-
+if(MSVC)
+    add_compile_definitions(AARE_MSVC)
+endif()
 
 add_library(aare_compiler_flags INTERFACE)
 target_compile_features(aare_compiler_flags INTERFACE cxx_std_17)
