@@ -38,9 +38,9 @@ using aare::File;
 
 //     File f(fpath, "r");
 
-//     // we know this file has 10 frames with pixel 0,0 being: 2123, 2051, 2109, 2117, 2089, 2095, 2072, 2126, 2097, 2102
-//     std::vector<uint16_t> pixel_0_0 = {2123, 2051, 2109, 2117, 2089, 2095, 2072, 2126, 2097, 2102};
-//     for (size_t i = 0; i < 10; i++) {
+//     // we know this file has 10 frames with pixel 0,0 being: 2123, 2051, 2109, 2117, 2089, 2095, 2072, 2126, 2097,
+//     2102 std::vector<uint16_t> pixel_0_0 = {2123, 2051, 2109, 2117, 2089, 2095, 2072, 2126, 2097, 2102}; for (size_t
+//     i = 0; i < 10; i++) {
 //         auto frame = f.read();
 //         CHECK(frame.rows() == 512);
 //         CHECK(frame.cols() == 1024);
@@ -77,7 +77,7 @@ TEST_CASE("Compare reading from a numpy file with a raw file") {
     for (size_t i = 0; i < 10; ++i) {
         auto raw_frame = raw.read();
         auto npy_frame = npy.read();
-        REQUIRE(raw_frame.view<uint16_t>() == npy_frame.view<uint16_t>());
+        CHECK(((raw_frame.view<uint16_t>()) == (npy_frame.view<uint16_t>())));
     }
 }
 
