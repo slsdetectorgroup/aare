@@ -6,6 +6,7 @@
 #include <numeric>
 #include <stdexcept>
 #include <vector>
+#include <functional>
 
 namespace aare {
 
