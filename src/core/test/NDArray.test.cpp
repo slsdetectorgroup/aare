@@ -112,16 +112,16 @@ using aare::Shape;
 TEST_CASE("Compare two images") {
     NDArray<int> a;
     NDArray<int> b;
-    CHECK(a == b);
+    CHECK((a == b));
 
     a = NDArray<int>{{5, 10}, 0};
-    CHECK(a != b);
+    CHECK((a != b));
 
     b = NDArray<int>{{5, 10}, 0};
-    CHECK(a == b);
+    CHECK((a == b));
 
     b(3, 3) = 7;
-    CHECK(a != b);
+    CHECK((a != b));
 }
 
 // TEST_CASE("Size and shape matches") {
