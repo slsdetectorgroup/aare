@@ -36,7 +36,7 @@ void NumpyFile::write_impl(void *data, uint64_t size) {
     if (fp == nullptr) {
         throw std::runtime_error("File not open");
     }
-    if (not(m_mode == "w" || m_mode == "a")) {
+    if (!(m_mode == "w" || m_mode == "a")) {
         throw std::invalid_argument("File not open for writing");
     }
     if (fseek(fp, 0, SEEK_END))
