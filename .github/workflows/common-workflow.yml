@@ -74,6 +74,8 @@ jobs:
         run: |
           cd build/
           dir
+          cd Debug/
+          dir
           start run_tests.exe
         if: ${{ inputs.os == 'windows-latest' }}
       - name: run examples
