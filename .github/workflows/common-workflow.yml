@@ -73,7 +73,7 @@ jobs:
           dir
           cd Debug/
           dir
-          start run_tests.exe
+          start /WAIT /B run_tests.exe
         if: ${{ inputs.os == 'windows-latest' }}
       - name: run examples
         if: ${{ inputs.os != 'windows-latest' }}
