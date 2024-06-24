@@ -11,6 +11,8 @@ if(AARE_TESTS)
     set(TestSources
             ${CMAKE_CURRENT_SOURCE_DIR}/test/merge_frames.test.cpp
             ${CMAKE_CURRENT_SOURCE_DIR}/test/floats.test.cpp
+            ${CMAKE_CURRENT_SOURCE_DIR}/test/logger.test.cpp
+            ${CMAKE_CURRENT_SOURCE_DIR}/test/arg_parser.test.cpp
         )
     target_sources(tests PRIVATE ${TestSources} )
     target_link_libraries(tests PRIVATE utils)

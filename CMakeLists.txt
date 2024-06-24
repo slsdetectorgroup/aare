@@ -33,7 +33,6 @@ option(AARE_FETCH_CATCH "Use FetchContent to download catch2" ON)
 option(AARE_FETCH_JSON "Use FetchContent to download nlohmann::json" ON)
 option(AARE_FETCH_ZMQ "Use FetchContent to download libzmq" ON)
 option(ENABLE_DRAFTS "Enable zmq drafts (depends on gnutls or nss)" OFF)
-option(AARE_FETCH_BOOST "Use FetchContent to download boost" ON)
 
 
 #Convenience option to use system libraries
@@ -45,7 +44,6 @@ if(AARE_SYSTEM_LIBRARIES)
     set(AARE_FETCH_CATCH OFF CACHE BOOL "Disabled FetchContent for catch2" FORCE)
     set(AARE_FETCH_JSON OFF CACHE BOOL "Disabled FetchContent for nlohmann::json" FORCE)
     set(AARE_FETCH_ZMQ OFF CACHE BOOL "Disabled FetchContent for libzmq" FORCE)
-    set(AARE_FETCH_BOOST OFF CACHE BOOL "Disabled FetchContent for boost" FORCE)
 
 endif()
 
@@ -88,22 +86,6 @@ else()
       find_package(fmt 6 REQUIRED)
 endif()
 
-
-if (AARE_FETCH_BOOST)
-    set(BOOST_INCLUDE_LIBRARIES program_options)
-    set(BOOST_ENABLE_CMAKE ON)
-    add_compile_definitions(BOOST_NO_CXX98_FUNCTION_BASE)
-    FetchContent_Declare(
-    Boost
-    GIT_REPOSITORY https://github.com/boostorg/boost.git
-    GIT_TAG boost-1.80.0
-    )
-    FetchContent_MakeAvailable(Boost)
-    set(Boost_LIBRARIES Boost::program_options)
-else()
-
-    find_package(Boost 1.80 REQUIRED COMPONENTS program_options)
-endif()
 
 add_library(aare_compiler_flags INTERFACE)
 target_compile_features(aare_compiler_flags INTERFACE cxx_std_17)
@@ -227,7 +209,7 @@ add_subdirectory(src)
 
 #Overall target to link to when using the library
 add_library(aare INTERFACE) 
-target_link_libraries(aare INTERFACE core file_io utils network_io processing ${Boost_LIBRARIES} aare_compiler_flags)
+target_link_libraries(aare INTERFACE core file_io utils network_io processing aare_compiler_flags)
 target_include_directories(aare INTERFACE 
     $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
     $<INSTALL_INTERFACE:include>
