@@ -92,6 +92,7 @@ endif()
 if (AARE_FETCH_BOOST)
     set(BOOST_INCLUDE_LIBRARIES program_options)
     set(BOOST_ENABLE_CMAKE ON)
+    add_compile_definitions(BOOST_NO_CXX98_FUNCTION_BASE)
     FetchContent_Declare(
     Boost
     GIT_REPOSITORY https://github.com/boostorg/boost.git
