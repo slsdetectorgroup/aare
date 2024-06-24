@@ -12,8 +12,8 @@ jobs:
       fail-fast: false
       matrix:
         os: ["macos-latest"]
-        use-system-libraries: ["ON", "OFF"]
         build-type: ["Release", "Debug"]
+        use-system-libraries: ["ON", "OFF"]
         use-python-bindings: ["OFF", "ON"]
         exclude:
           # excludes combinations that are not supported

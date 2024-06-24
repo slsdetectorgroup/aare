@@ -21,6 +21,7 @@ on:
 
 jobs:
   build-and-test:
+    name: "Build and test[os: ${{ inputs.os }}, build-type: ${{ inputs.build-type }}, use-system-libraries: ${{ inputs.use-system-libraries }}, use-python-bindings: ${{ inputs.use-python-bindings }}]"
     runs-on: ${{ inputs.os }}
     steps:
       - name: Dump GitHub context
@@ -47,6 +48,10 @@ jobs:
           echo "use-python-bindings: ${{inputs.use-python-bindings}}"
 
       - uses: actions/checkout@v4
+      - name: Install GnuTls on MacOS
+        if: ${{ inputs.os == 'macos-latest' }}
+        run: |
+          brew install gnutls
       - uses: mamba-org/setup-micromamba@v1
         if: ${{ contains(inputs.use-system-libraries, 'ON')}}
         with:
@@ -55,6 +60,7 @@ jobs:
           init-shell: bash
           cache-environment: true
           post-cleanup: 'all'
+        
       - name: build
         shell: bash -el {0}
         run: |
