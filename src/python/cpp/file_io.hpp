@@ -19,7 +19,7 @@ void define_file_io_bindings(py::module &m) {
             py::init([](const std::filesystem::path &fname, const std::string &mode) { return File(fname, mode, {}); }))
         .def(py::init<const std::filesystem::path &, const std::string &, const FileConfig &>())
         .def("read", py::overload_cast<>(&File::read))
-        .def("read", py::overload_cast<uint64_t>(&File::read))
+        .def("read", py::overload_cast<size_t>(&File::read))
         .def("iread", py::overload_cast<size_t>(&File::iread))
         .def("frame_number", &File::frame_number)
         .def("bytes_per_frame", &File::bytes_per_frame)
