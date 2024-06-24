@@ -32,6 +32,7 @@ option(AARE_FETCH_PYBIND11 "Use FetchContent to download pybind11" ON)
 option(AARE_FETCH_CATCH "Use FetchContent to download catch2" ON)
 option(AARE_FETCH_JSON "Use FetchContent to download nlohmann::json" ON)
 option(AARE_FETCH_ZMQ "Use FetchContent to download libzmq" ON)
+option(ENABLE_DRAFTS "Enable zmq drafts (depends on gnutls or nss)" OFF)
 option(AARE_FETCH_BOOST "Use FetchContent to download boost" ON)
 
 
@@ -52,7 +53,7 @@ endif()
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 
 if(AARE_FETCH_ZMQ)
-    set(ZMQ_USE_GNUTLS OFF CACHE BOOL "Disable GNUTLS")
+    
     FetchContent_Declare(
         libzmq
         GIT_REPOSITORY https://github.com/zeromq/libzmq.git
