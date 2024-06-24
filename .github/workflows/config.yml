@@ -11,7 +11,7 @@ jobs:
       # fail-fast is true by default
       fail-fast: false
       matrix:
-        os: ["macos-latest"]
+        os: ["macos-latest", "ubuntu-latest", "windows-latest"]
         build-type: ["Release", "Debug"]
         use-system-libraries: ["ON", "OFF"]
         use-python-bindings: ["OFF", "ON"]

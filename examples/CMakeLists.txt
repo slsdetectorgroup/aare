@@ -1,7 +1,8 @@
 
-set(EXAMPLE_LIST "json_example;logger_example;numpy_read_example;multiport_example;raw_example;zmq_restream_example")
-set(EXAMPLE_LIST "${EXAMPLE_LIST};mythen_example;numpy_write_example;zmq_receiver_example;zmq_sender_example;")    
-set(EXAMPLE_LIST "${EXAMPLE_LIST};cluster_example;zmq_multi_receiver;zmq_task_ventilator;zmq_worker;zmq_sink")
+set(EXAMPLE_LIST "json_example;logger_example;numpy_read_example;multiport_example;raw_example;")
+set(EXAMPLE_LIST "${EXAMPLE_LIST};mythen_example;numpy_write_example;zmq_sender_example;")    
+set(EXAMPLE_LIST "${EXAMPLE_LIST};cluster_example;zmq_multi_receiver;zmq_worker;zmq_sink")
+set(EXAMPLE_LIST "${EXAMPLE_LIST};zmq_task_ventilator;zmq_restream_example;zmq_receiver_example")
 set(EXAMPLE_LIST "${EXAMPLE_LIST};testing_pedestal;cluster_finder_example;")
 
 foreach(example ${EXAMPLE_LIST})
@@ -11,7 +12,6 @@ foreach(example ${EXAMPLE_LIST})
 endforeach()
 
 
-message(STATUS "Boost_LIBRARIES: ${Boost_LIBRARIES}")
 
 
 
