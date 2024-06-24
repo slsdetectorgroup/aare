@@ -52,6 +52,7 @@ endif()
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 
 if(AARE_FETCH_ZMQ)
+    set(ZMQ_USE_GNUTLS OFF CACHE BOOL "Disable GNUTLS")
     FetchContent_Declare(
         libzmq
         GIT_REPOSITORY https://github.com/zeromq/libzmq.git
@@ -60,7 +61,6 @@ if(AARE_FETCH_ZMQ)
     # TODO! Verify that this is what we want to do in aare
     # Using GetProperties and Populate to be able to exclude zmq
     # from install (not possible with FetchContent_MakeAvailable(libzmq))
-    set(ZMQ_USE_GNUTLS 0)
     FetchContent_GetProperties(libzmq)
     if(NOT libzmq_POPULATED)
         FetchContent_Populate(libzmq)
