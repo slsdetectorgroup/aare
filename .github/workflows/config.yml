@@ -11,14 +11,17 @@ jobs:
       # fail-fast is true by default
       fail-fast: false
       matrix:
-        os: ["windows-latest"]
+        os: ["windows-latest", "ubuntu-latest", "macos-latest"]
         use-system-libraries: ["ON", "OFF"]
         build-type: ["Release", "Debug"]
         use-python-bindings: ["OFF"]
-        # exclude:
-        #   # excludes combinations that are not supported
-        #   - use-python-bindings: "ON"
-        #     use-sanitizers: "ON"
+        exclude:
+          # excludes combinations that are not supported
+          - os: "windows-latest"
+            build-type: "Release" # TODO: fix this
+          - os: "windows-latest"
+            build-type: "Debug"
+            use-system-libraries: "ON" # different _ITERATOR_DEBUG_LEVEL for system libraries
     
     uses: ./.github/workflows/common-workflow.yml # calls the one above 
     with:

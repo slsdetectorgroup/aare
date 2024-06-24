@@ -21,7 +21,7 @@ include(FetchContent)
 include(cmake/helpers.cmake)
 default_build_type("Release")
 
-option(AARE_USE_WARNINGS "Eable warnings" ON)
+option(AARE_USE_WARNINGS "Enable warnings" ON)
 option(AARE_PYTHON_BINDINGS "Build python bindings" ON)
 option(AARE_TESTS "Build tests" ON)
 option(AARE_EXAMPLES "Build examples" ON)
@@ -203,7 +203,7 @@ endif()
 
 
 
-endif()
+endif() #GCC/Clang specific
 
 
 

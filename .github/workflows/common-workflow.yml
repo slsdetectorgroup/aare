@@ -46,9 +46,6 @@ jobs:
           echo "build-type: ${{inputs.build-type}}"
           echo "use-python-bindings: ${{inputs.use-python-bindings}}"
 
-
-
-
       - uses: actions/checkout@v4
       - uses: mamba-org/setup-micromamba@v1
         if: ${{ contains(inputs.use-system-libraries, 'ON')}}
@@ -69,7 +66,7 @@ jobs:
         run: |
           cd build/
           ./run_tests
-        if: ${{ inputs.os == 'ubuntu-latest' }}
+        if: ${{ inputs.os != 'windows-latest' }}
       - name: run tests
         run: |
           cd build/
@@ -79,6 +76,7 @@ jobs:
           start run_tests.exe
         if: ${{ inputs.os == 'windows-latest' }}
       - name: run examples
+        if: ${{ inputs.os != 'windows-latest' }}
         # find all examples in build/examples and run them
         run: |
           pwd
