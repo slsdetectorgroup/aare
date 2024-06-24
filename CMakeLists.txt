@@ -80,6 +80,7 @@ if (AARE_FETCH_FMT)
             USES_TERMINAL_DOWNLOAD TRUE
     )
     FetchContent_MakeAvailable(fmt)
+    set_property(TARGET fmt PROPERTY POSITION_INDEPENDENT_CODE ON)
 else()
       find_package(fmt 6 REQUIRED)
 endif()
