@@ -97,6 +97,7 @@ if (AARE_FETCH_BOOST)
     GIT_REPOSITORY https://github.com/boostorg/boost.git
     GIT_TAG boost-1.80.0
     )
+    add_compile_definitions(BOOST_NO_CXX98_FUNCTION_BASE)
     FetchContent_MakeAvailable(Boost)
     set(Boost_LIBRARIES Boost::program_options)
 else()
