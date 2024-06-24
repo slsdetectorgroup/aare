@@ -28,7 +28,8 @@ class ClusterFinder {
     };
 
     template <typename FRAME_TYPE, typename PEDESTAL_TYPE>
-    std::vector<Cluster> find_clusters_without_threshold(NDView<FRAME_TYPE, 2> frame, Pedestal<PEDESTAL_TYPE> &pedestal) {
+    std::vector<Cluster> find_clusters_without_threshold(NDView<FRAME_TYPE, 2> frame,
+                                                         Pedestal<PEDESTAL_TYPE> &pedestal) {
         std::vector<Cluster> clusters;
         std::vector<std::vector<eventType>> eventMask;
         for (int i = 0; i < frame.shape(0); i++) {

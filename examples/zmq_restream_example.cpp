@@ -22,8 +22,6 @@ int main(int argc, char **argv) {
     bool const loop = args["loop"] == "1";
     uint16_t const fps = std::stoi(args["fps"]);
 
-
-
     aare::logger::debug("ARGS: file:", path, "port:", port, "fps:", fps, "loop:", loop);
     auto d = round<std::chrono::milliseconds>(std::chrono::duration<double>{1. / fps});
     aare::logger::debug("sleeping for", d.count(), "ms");

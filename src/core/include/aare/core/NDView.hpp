@@ -3,10 +3,10 @@
 #include <array>
 #include <cassert>
 #include <cstdint>
+#include <functional>
 #include <numeric>
 #include <stdexcept>
 #include <vector>
-#include <functional>
 
 namespace aare {
 

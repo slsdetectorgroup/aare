@@ -268,7 +268,7 @@ void RawFile::parse_raw_metadata() {
             } else if (key == "Geometry") {
                 pos = value.find(',');
                 m_geometry = {static_cast<uint32_t>(std::stoi(value.substr(1, pos))),
-                            static_cast<uint32_t>(std::stoi(value.substr(pos + 1)))};
+                              static_cast<uint32_t>(std::stoi(value.substr(pos + 1)))};
             }
         }
     }

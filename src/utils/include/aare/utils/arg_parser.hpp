@@ -18,20 +18,21 @@ class ArgParser {
     std::map<std::string, option_> options;
     ArgParser(std::string program_description = "") : desc(program_description) {}
     /**
-     * @brief 
-     * 
+     * @brief
+     *
      * @param name name of the options and should be unique, can be used in argument with --name
      * @param short_name short name of the option and should be unique, can be used in argument with -short_name
-     * @param requires_value should be true if the option requires a value (e.g. --name value) and false if it does not (e.g. ls -l)
+     * @param requires_value should be true if the option requires a value (e.g. --name value) and false if it does not
+     * (e.g. ls -l)
      * @param required should be true if the option is required (cannot have a default value and must require a value)
-     * @param default_value 
+     * @param default_value
      * @param description description of the option
-     * @return ArgParser 
+     * @return ArgParser
      */
     ArgParser add_option(std::string name, std::string short_name, bool requires_value, bool required = false,
                          std::string default_value = "", std::string description = "") {
 
-        if(name == "" || short_name == "" ){
+        if (name == "" || short_name == "") {
             std::cerr << "Name and short name cannot be empty" << std::endl;
             exit(1);
         }

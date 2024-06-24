@@ -10,11 +10,10 @@ using namespace std;
 int main(int argc, char **argv) {
     aare::logger::set_verbosity(aare::logger::DEBUG);
 
-
     ArgParser parser("Zmq receiver example");
     parser.add_option("port", "p", true, false, "5555", "port number");
     auto args = parser.parse(argc, argv);
-    int port  = std::stoi(args["port"]);
+    int port = std::stoi(args["port"]);
 
     std::string const endpoint = "tcp://127.0.0.1:" + std::to_string(port);
     aare::ZmqSocketReceiver socket(endpoint);

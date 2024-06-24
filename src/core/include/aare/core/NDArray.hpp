@@ -17,7 +17,6 @@ TODO! Add expression templates for operators
 #include <iostream>
 #include <numeric>
 
-
 namespace aare {
 
 template <typename T, int64_t Ndim = 2> class NDArray {
