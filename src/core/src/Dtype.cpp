@@ -69,7 +69,7 @@ uint8_t Dtype::bitdepth() const {
 /**
  * @brief Get the number of bytes of the data type
  */
-uint8_t Dtype::bytes() const { return bitdepth() / 8; }
+size_t Dtype::bytes() const { return bitdepth() / 8; }
 
 /**
  * @brief Construct a DType object from a TypeIndex

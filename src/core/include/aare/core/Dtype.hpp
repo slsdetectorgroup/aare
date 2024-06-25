@@ -45,7 +45,7 @@ class Dtype {
     enum TypeIndex { INT8, UINT8, INT16, UINT16, INT32, UINT32, INT64, UINT64, FLOAT, DOUBLE, ERROR, NONE };
 
     uint8_t bitdepth() const;
-    uint8_t bytes() const;
+    size_t bytes() const;
     std::string format_descr() const { return std::string(1, DTYPE_FORMAT_DSC[static_cast<int>(m_type)]); }
 
     explicit Dtype(const std::type_info &t);

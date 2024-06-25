@@ -1,6 +1,7 @@
 
 #include <cstdint>
 #include <filesystem>
+#include <pybind11/numpy.h>
 #include <pybind11/pybind11.h>
 #include <pybind11/stl.h>
 #include <string>
@@ -17,24 +18,9 @@ void define_core_bindings(py::module &m) {
         .def_property_readonly("bitdepth", &Frame::bitdepth)
         .def_property_readonly("size", &Frame::size)
         .def_property_readonly("data", &Frame::data, py::return_value_policy::reference)
-        // TODO: add DType to Frame so that we can define def_buffer()
-        // we can use format_descr() to get the format descriptor
-        .def("array", [&](Frame &f) -> py::array {
-            py::array arr;
-            if (f.bitdepth() == 8) {
-                arr = py::array_t<uint8_t>({f.rows(), f.cols()});
-            } else if (f.bitdepth() == 16) {
-                arr = py::array_t<uint16_t>({f.rows(), f.cols()});
-            } else if (f.bitdepth() == 32) {
-                arr = py::array_t<uint32_t>({f.rows(), f.cols()});
-            } else if (f.bitdepth() == 64) {
-                arr = py::array_t<uint64_t>({f.rows(), f.cols()});
-            } else {
-                throw std::runtime_error("Unsupported bitdepth");
-            }
-
-            std::memcpy(arr.mutable_data(), f.data(), f.size());
-            return arr;
+        .def_buffer([](Frame &f) -> py::buffer_info {
+            return py::buffer_info(f.data(),(size_t) f.dtype().bytes(), f.dtype().format_descr(), 2, {f.rows(), f.cols()},
+                                   {f.cols() * f.dtype().bytes(), f.dtype().bytes()});
         });
 
     py::class_<xy>(m, "xy")
