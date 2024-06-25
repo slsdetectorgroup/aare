@@ -16,7 +16,7 @@ int main() {
     std::string const endpoint = "tcp://*:5555";
     aare::ZmqSocketSender socket(endpoint);
     socket.bind();
-    Frame frame(1024, 1024, sizeof(uint32_t) * 8);
+    Frame frame(1024, 1024, Dtype::UINT32);
     for (int i = 0; i < 1024; i++) {
         for (int j = 0; j < 1024; j++) {
             frame.set(i, j, i + j);

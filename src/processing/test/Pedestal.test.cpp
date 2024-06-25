@@ -22,7 +22,7 @@ TEST_CASE("test pedestal constructor") {
 
 TEST_CASE("test pedestal push") {
     aare::Pedestal pedestal(10, 10, 5);
-    aare::Frame frame(10, 10, 16);
+    aare::Frame frame(10, 10, Dtype::UINT16);
     for (int i = 0; i < 10; i++) {
         for (int j = 0; j < 10; j++) {
             frame.set<uint16_t>(i, j, i + j);
@@ -80,7 +80,7 @@ TEST_CASE("test pedestal with normal distribution") {
 
     aare::Pedestal pedestal(3, 5, 10000);
     for (int i = 0; i < 10000; i++) {
-        aare::Frame frame(3, 5, 64);
+        aare::Frame frame(3, 5, Dtype::DOUBLE);
         for (int j = 0; j < 3; j++) {
             for (int k = 0; k < 5; k++) {
                 frame.set<double>(j, k, distribution(generator));

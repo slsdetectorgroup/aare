@@ -102,7 +102,7 @@ ZmqFrame ZmqSocketReceiver::receive_zmqframe() {
 
     if (!header.data) {
         // no data following header
-        return {header, Frame(0, 0, 0)};
+        return {header, Frame(0, 0, Dtype::NONE)};
     }
 
     // receive frame data
@@ -112,7 +112,7 @@ ZmqFrame ZmqSocketReceiver::receive_zmqframe() {
     if (header.bitmode == 0) {
         header.bitmode = 16;
     }
-    Frame frame(header.shape.row, header.shape.col, header.bitmode);
+    Frame frame(header.shape.row, header.shape.col, Dtype::from_bitdepth(header.bitmode));
     int bytes_received = receive_data(frame.data(), frame.size());
     if (bytes_received == -1) {
         throw network_io::NetworkError(LOCATION + "Error receiving frame");

@@ -59,7 +59,7 @@ uint8_t Dtype::bitdepth() const {
         return 32;
     case TypeIndex::DOUBLE:
         return 64;
-    case TypeIndex::ERROR:
+    case TypeIndex::NONE:
         return 0;
     default:
         throw std::runtime_error(LOCATION + "Could not get bitdepth. Type not supported.");
@@ -123,9 +123,23 @@ Dtype::Dtype(std::string_view sv) {
     else if (sv == "f8")
         m_type = TypeIndex::DOUBLE;
     else
-        throw std::runtime_error("Could not construct data type. Type no supported.");
+        throw std::runtime_error("Cannot construct data type from string.");
 }
 
+Dtype Dtype::from_bitdepth(uint8_t bitdepth) {
+    switch (bitdepth) {
+    case 8:
+        return Dtype(TypeIndex::UINT8);
+    case 16:
+        return Dtype(TypeIndex::UINT16);
+    case 32:
+        return Dtype(TypeIndex::UINT32);
+    case 64:
+        return Dtype(TypeIndex::UINT64);
+    default:
+        throw std::runtime_error("Could not construct data type from bitdepth.");
+    }
+}
 /**
  * @brief Get the string representation of the data type
  * @return string representation
@@ -160,7 +174,9 @@ std::string Dtype::to_string() const {
     case TypeIndex::DOUBLE:
         return "f8";
     case TypeIndex::ERROR:
-        return "ERROR";
+        throw std::runtime_error("Could not get string representation. Type not supported.");
+    case TypeIndex::NONE:
+        throw std::runtime_error("Could not get string representation. Type not supported.");
     }
     return {};
 }

@@ -50,7 +50,7 @@ void NumpyFile::write_impl(void *data, uint64_t size) {
 }
 
 Frame NumpyFile::get_frame(size_t frame_number) {
-    Frame frame(m_header.shape[1], m_header.shape[2], m_header.dtype.bitdepth());
+    Frame frame(m_header.shape[1], m_header.shape[2], m_header.dtype);
     get_frame_into(frame_number, frame.data());
     return frame;
 }

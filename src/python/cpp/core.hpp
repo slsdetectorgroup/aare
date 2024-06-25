@@ -11,7 +11,7 @@
 
 void define_core_bindings(py::module &m) {
     py::class_<Frame>(m, "Frame")
-        .def(py::init<std::byte *, int64_t, int64_t, int64_t>())
+        .def(py::init<std::byte *, int64_t, int64_t, Dtype>())
         .def_property_readonly("rows", &Frame::rows)
         .def_property_readonly("cols", &Frame::cols)
         .def_property_readonly("bitdepth", &Frame::bitdepth)

@@ -13,10 +13,10 @@ namespace aare {
  * @param cols number of columns
  * @param bitdepth bitdepth of the pixels
  */
-Frame::Frame(std::byte *bytes, size_t rows, size_t cols, size_t bitdepth)
-    : m_rows(rows), m_cols(cols), m_bitdepth(bitdepth), m_data(new std::byte[rows * cols * bitdepth / 8]) {
+Frame::Frame(std::byte *bytes, size_t rows, size_t cols, Dtype dtype)
+    : m_rows(rows), m_cols(cols),m_dtype(dtype), m_data(new std::byte[rows * cols * m_dtype.bytes()]) {
 
-    std::memcpy(m_data, bytes, rows * cols * bitdepth / 8);
+    std::memcpy(m_data, bytes, rows * cols * m_dtype.bytes());
 }
 
 /**
@@ -26,10 +26,10 @@ Frame::Frame(std::byte *bytes, size_t rows, size_t cols, size_t bitdepth)
  * @param bitdepth bitdepth of the pixels
  * @note the data is initialized to zero
  */
-Frame::Frame(size_t rows, size_t cols, size_t bitdepth)
-    : m_rows(rows), m_cols(cols), m_bitdepth(bitdepth), m_data(new std::byte[rows * cols * bitdepth / 8]) {
+Frame::Frame(size_t rows, size_t cols, Dtype dtype)
+    : m_rows(rows), m_cols(cols), m_dtype(dtype), m_data(new std::byte[rows * cols * dtype.bytes()]) {
 
-    std::memset(m_data, 0, rows * cols * bitdepth / 8);
+    std::memset(m_data, 0, rows * cols * dtype.bytes());
 }
 
 /**
@@ -44,7 +44,7 @@ std::byte *Frame::get(size_t row, size_t col) {
         std::cerr << "Invalid row or column index" << '\n';
         return nullptr;
     }
-    return m_data + (row * m_cols + col) * (m_bitdepth / 8);
+    return m_data + (row * m_cols + col) * (m_dtype.bytes());
 }
 
 } // namespace aare

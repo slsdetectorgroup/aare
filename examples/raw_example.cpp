@@ -35,7 +35,7 @@ int main() {
     config.cols = 512;
     config.dtype = aare::Dtype::UINT16;
     File file2(path2, "w", config);
-    Frame frame(1024, 512, 16);
+    Frame frame(1024, 512, aare::Dtype::UINT16);
 
     for (int i = 0; i < 1024; i++) {
         for (int j = 0; j < 512; j++) {

@@ -42,7 +42,7 @@ enum class endian {
  */
 class Dtype {
   public:
-    enum TypeIndex { INT8, UINT8, INT16, UINT16, INT32, UINT32, INT64, UINT64, FLOAT, DOUBLE, ERROR };
+    enum TypeIndex { INT8, UINT8, INT16, UINT16, INT32, UINT32, INT64, UINT64, FLOAT, DOUBLE, ERROR, NONE };
 
     uint8_t bitdepth() const;
     uint8_t bytes() const;
@@ -50,6 +50,7 @@ class Dtype {
 
     explicit Dtype(const std::type_info &t);
     explicit Dtype(std::string_view sv);
+    static Dtype from_bitdepth(uint8_t bitdepth);    
 
     // not explicit to allow conversions form enum to DType
     Dtype(Dtype::TypeIndex ti); // NOLINT

@@ -15,7 +15,7 @@ int main() {
     logger::info("RAW file");
     logger::info("file rows:", file.rows(), "cols:", file.cols());
     logger::info(file.total_frames());
-    Frame frame(0, 0, 0);
+    Frame frame(0, 0, Dtype::NONE);
     for (auto i = 0; i < 10000; i++) {
         if (file.frame_number(i) == 23389) {
             logger::info("frame_number:", file.frame_number(i));

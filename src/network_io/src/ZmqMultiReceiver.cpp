@@ -66,7 +66,7 @@ ZmqFrame ZmqMultiReceiver::receive_zmqframe_(std::unordered_map<uint64_t, std::v
     }
     std::vector<ZmqFrame> &frames = ret_frames->second;
     if (!frames[0].header.data) {
-        return ZmqFrame{frames[0].header, Frame(0, 0, 0)};
+        return ZmqFrame{frames[0].header, Frame(0, 0, Dtype::NONE)};
     }
     // check that all frames have the same shape
     auto shape = frames[0].header.shape;
@@ -86,7 +86,7 @@ ZmqFrame ZmqMultiReceiver::receive_zmqframe_(std::unordered_map<uint64_t, std::v
     for (auto &zmq_frame : frames) {
         part_buffers.push_back(zmq_frame.frame.data());
     }
-    Frame const f(shape.row, shape.col, bitdepth);
+    Frame const f(shape.row, shape.col, Dtype::from_bitdepth(bitdepth));
     merge_frames(part_buffers, part_size, f.data(), m_geometry, shape.row, shape.col, bitdepth);
     ZmqFrame zmq_frame = {std::move(frames[0].header), f};
     return zmq_frame;

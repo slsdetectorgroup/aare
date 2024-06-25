@@ -1,14 +1,15 @@
 #include "aare/core/Frame.hpp"
+#include "aare/core/Dtype.hpp"
 #include <catch2/catch_test_macros.hpp>
 
-using aare::Frame;
+using namespace aare;
 
 TEST_CASE("Construct a frame") {
     size_t rows = 10;
     size_t cols = 10;
     size_t bitdepth = 8;
 
-    Frame frame(rows, cols, bitdepth);
+    Frame frame(rows, cols, Dtype::from_bitdepth(bitdepth));
 
     REQUIRE(frame.rows() == rows);
     REQUIRE(frame.cols() == cols);
@@ -30,7 +31,7 @@ TEST_CASE("Set a value in a 8 bit frame") {
     size_t cols = 10;
     size_t bitdepth = 8;
 
-    Frame frame(rows, cols, bitdepth);
+    Frame frame(rows, cols, Dtype::from_bitdepth(bitdepth));
 
     // set a value
     uint8_t value = 255;
@@ -55,7 +56,7 @@ TEST_CASE("Set a value in a 64 bit frame") {
     size_t cols = 10;
     size_t bitdepth = 64;
 
-    Frame frame(rows, cols, bitdepth);
+    Frame frame(rows, cols, Dtype::from_bitdepth(bitdepth));
 
     // set a value
     uint64_t value = 255;
@@ -80,7 +81,7 @@ TEST_CASE("Move construct a frame") {
     size_t cols = 10;
     size_t bitdepth = 8;
 
-    Frame frame(rows, cols, bitdepth);
+    Frame frame(rows, cols, Dtype::from_bitdepth(bitdepth));
     std::byte *data = frame.data();
 
     Frame frame2(std::move(frame));
@@ -88,8 +89,7 @@ TEST_CASE("Move construct a frame") {
     // state of the moved from object
     REQUIRE(frame.rows() == 0);
     REQUIRE(frame.cols() == 0);
-    REQUIRE(frame.bitdepth() == 0);
-    REQUIRE(frame.size() == 0);
+    REQUIRE(frame.dtype() == Dtype(Dtype::TypeIndex::ERROR));
     REQUIRE(frame.data() == nullptr);
 
     // state of the moved to object

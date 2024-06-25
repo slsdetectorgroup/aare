@@ -12,7 +12,7 @@ int main() {
     auto dtype = aare::Dtype(typeid(uint32_t));
     FileConfig const cfg = {dtype, 100, 100};
     File npy(path, "w", cfg);
-    Frame f(100, 100, dtype.bitdepth());
+    Frame f(100, 100, dtype);
     for (int i = 0; i < 10000; i++) {
         f.set<uint32_t>(i / 100, i % 100, i);
     }

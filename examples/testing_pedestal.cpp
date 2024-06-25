@@ -53,7 +53,7 @@ int main() {
     long double sum2 = 0;
     // fill 1000 first values of pedestal
     for (int x = 0; x < 1000; x++) {
-        Frame frame(rows, cols, 64);
+        Frame frame(rows, cols, Dtype::DOUBLE);
         double val = distribution(generator);
         frame.set<double>(0, 0, val);
         pedestal.push<double>(frame);
@@ -63,7 +63,7 @@ int main() {
     }
 
     for (int x = 0, aa = 0; x < 100000; x++, aa++) {
-        Frame frame(rows, cols, 64);
+        Frame frame(rows, cols, Dtype::DOUBLE);
         double val = distribution(generator);
         frame.set<double>(0, 0, val);
         pedestal.push<double>(frame);

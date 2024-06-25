@@ -298,7 +298,7 @@ void RawFile::parse_fname() {
 }
 
 Frame RawFile::get_frame(size_t frame_index) {
-    auto f = Frame(this->m_rows, this->m_cols, this->m_bitdepth);
+    auto f = Frame(this->m_rows, this->m_cols, Dtype::from_bitdepth(this->m_bitdepth));
     std::byte *frame_buffer = f.data();
     get_frame_into(frame_index, frame_buffer);
     return f;
