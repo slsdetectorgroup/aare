@@ -39,8 +39,8 @@ template <typename ArrayType, int64_t Ndim> void define_NDView_bindings(py::modu
                  return a(offset);
              })
 
-        .def("shape", [](NDView<ArrayType, Ndim> &a) { return a.shape(); })
-        .def("size", &NDView<ArrayType, Ndim>::size)
+        .def_property_readonly("shape", [](NDView<ArrayType, Ndim> &a) { return a.shape(); })
+        .def_property_readonly("size", &NDView<ArrayType, Ndim>::size)
         .def_buffer([](NDView<ArrayType, Ndim> &a) -> py::buffer_info {
             return py::buffer_info(
                 a.data(),                                   /* Pointer to buffer */

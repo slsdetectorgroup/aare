@@ -42,11 +42,11 @@ template <typename ArrayType, int64_t Ndim> void define_NDArray_bindings(py::mod
                  return a(offset);
              })
 
-        .def("shape", [](NDArray<ArrayType, Ndim> &a) { return a.shape(); })
-        .def("size", &NDArray<ArrayType, Ndim>::size)
-        .def("bitdepth", &NDArray<ArrayType, Ndim>::bitdepth)
-        .def("strides", &NDArray<ArrayType, Ndim>::strides)
-        .def("byte_strides", &NDArray<ArrayType, Ndim>::byte_strides)
+        .def_property_readonly("shape", [](NDArray<ArrayType, Ndim> &a) { return a.shape(); })
+        .def_property_readonly("size", &NDArray<ArrayType, Ndim>::size)
+        .def_property_readonly("bitdepth", &NDArray<ArrayType, Ndim>::bitdepth)
+        .def_property_readonly("strides", &NDArray<ArrayType, Ndim>::strides)
+        .def_property_readonly("byte_strides", &NDArray<ArrayType, Ndim>::byte_strides)
         .def("__add__", [](NDArray<ArrayType, Ndim> &a, NDArray<ArrayType, Ndim> &b) { return a + b; })
         .def_buffer([](NDArray<ArrayType, Ndim> &a) -> py::buffer_info {
             return py::buffer_info(
