@@ -9,7 +9,7 @@ using aare::Frame;
 
 int main() {
     auto path = std::filesystem::path("/tmp/test.npy");
-    auto dtype = aare::DType(typeid(uint32_t));
+    auto dtype = aare::Dtype(typeid(uint32_t));
     FileConfig const cfg = {dtype, 100, 100};
     File npy(path, "w", cfg);
     Frame f(100, 100, dtype.bitdepth());

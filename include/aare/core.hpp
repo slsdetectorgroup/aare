@@ -1,5 +1,5 @@
 #include "aare/core/CircularFifo.hpp"
-#include "aare/core/DType.hpp"
+#include "aare/core/Dtype.hpp"
 #include "aare/core/Frame.hpp"
 #include "aare/core/NDArray.hpp"
 #include "aare/core/NDView.hpp"

@@ -1,5 +1,5 @@
 #pragma once
-#include "aare/core/DType.hpp"
+#include "aare/core/Dtype.hpp"
 #include "aare/core/Frame.hpp"
 #include "aare/core/defs.hpp"
 #include <filesystem>
@@ -15,7 +15,7 @@ namespace aare {
  * geometry: geometry of the file
  */
 struct FileConfig {
-    aare::DType dtype{typeid(uint16_t)};
+    aare::Dtype dtype{typeid(uint16_t)};
     uint64_t rows{};
     uint64_t cols{};
     bool operator==(const FileConfig &other) const {

@@ -33,7 +33,7 @@ int main() {
     config.max_frames_per_file = 100;
     config.rows = 1024;
     config.cols = 512;
-    config.dtype = aare::DType::UINT16;
+    config.dtype = aare::Dtype::UINT16;
     File file2(path2, "w", config);
     Frame frame(1024, 512, 16);
 

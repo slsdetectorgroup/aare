@@ -67,26 +67,26 @@ void define_core_bindings(py::module &m) {
         .value("native", endian::native)
         .export_values();
 
-    py::enum_<DType::TypeIndex>(m, "DTypeIndex")
-        .value("INT8", DType::TypeIndex::INT8)
-        .value("UINT8", DType::TypeIndex::UINT8)
-        .value("INT16", DType::TypeIndex::INT16)
-        .value("UINT16", DType::TypeIndex::UINT16)
-        .value("INT32", DType::TypeIndex::INT32)
-        .value("UINT32", DType::TypeIndex::UINT32)
-        .value("INT64", DType::TypeIndex::INT64)
-        .value("UINT64", DType::TypeIndex::UINT64)
-        .value("FLOAT", DType::TypeIndex::FLOAT)
-        .value("DOUBLE", DType::TypeIndex::DOUBLE)
-        .value("ERROR", DType::TypeIndex::ERROR)
+    py::enum_<Dtype::TypeIndex>(m, "DTypeIndex")
+        .value("INT8", Dtype::TypeIndex::INT8)
+        .value("UINT8", Dtype::TypeIndex::UINT8)
+        .value("INT16", Dtype::TypeIndex::INT16)
+        .value("UINT16", Dtype::TypeIndex::UINT16)
+        .value("INT32", Dtype::TypeIndex::INT32)
+        .value("UINT32", Dtype::TypeIndex::UINT32)
+        .value("INT64", Dtype::TypeIndex::INT64)
+        .value("UINT64", Dtype::TypeIndex::UINT64)
+        .value("FLOAT", Dtype::TypeIndex::FLOAT)
+        .value("DOUBLE", Dtype::TypeIndex::DOUBLE)
+        .value("ERROR", Dtype::TypeIndex::ERROR)
         .export_values();
 
-    py::class_<DType>(m, "DType")
+    py::class_<Dtype>(m, "DType")
         .def(py::init<std::string_view>())
-        .def(py::init<DType::TypeIndex>())
-        .def("bitdepth", &DType::bitdepth)
-        .def("bytes", &DType::bytes)
-        .def("to_string", &DType::to_string);
+        .def(py::init<Dtype::TypeIndex>())
+        .def("bitdepth", &Dtype::bitdepth)
+        .def("bytes", &Dtype::bytes)
+        .def("to_string", &Dtype::to_string);
 
     py::class_<sls_detector_header>(m, "sls_detector_header")
         .def(py::init<>())

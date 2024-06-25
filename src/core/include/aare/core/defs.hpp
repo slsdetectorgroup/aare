@@ -1,6 +1,6 @@
 #pragma once
 
-#include "aare/core/DType.hpp"
+#include "aare/core/Dtype.hpp"
 #include "aare/utils/logger.hpp"
 
 #include <array>
@@ -22,13 +22,13 @@ class Cluster {
     int cluster_sizeY;
     int16_t x;
     int16_t y;
-    DType dt;
+    Dtype dt;
 
   private:
     std::byte *m_data;
 
   public:
-    Cluster(int cluster_sizeX_, int cluster_sizeY_, DType dt_ = DType(typeid(int32_t)))
+    Cluster(int cluster_sizeX_, int cluster_sizeY_, Dtype dt_ = Dtype(typeid(int32_t)))
         : cluster_sizeX(cluster_sizeX_), cluster_sizeY(cluster_sizeY_), dt(dt_) {
         m_data = new std::byte[cluster_sizeX * cluster_sizeY * dt.bytes()]{};
     }
@@ -51,7 +51,7 @@ class Cluster {
         : cluster_sizeX(other.cluster_sizeX), cluster_sizeY(other.cluster_sizeY), x(other.x), y(other.y), dt(other.dt),
           m_data(other.m_data) {
         other.m_data = nullptr;
-        other.dt = DType(DType::TypeIndex::ERROR);
+        other.dt = Dtype(Dtype::TypeIndex::ERROR);
     }
     ~Cluster() { delete[] m_data; }
     template <typename T> T get(int idx) {

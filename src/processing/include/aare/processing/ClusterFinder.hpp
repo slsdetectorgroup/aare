@@ -1,5 +1,5 @@
 #pragma once
-#include "aare/core/DType.hpp"
+#include "aare/core/Dtype.hpp"
 #include "aare/core/NDArray.hpp"
 #include "aare/core/NDView.hpp"
 #include "aare/processing/Pedestal.hpp"
@@ -83,7 +83,7 @@ class ClusterFinder {
                 }
                 if (eventMask[iy][ix] == PHOTON && (frame(iy, ix) - pedestal.mean(iy, ix)) >= max) {
                     eventMask[iy][ix] = PHOTON_MAX;
-                    Cluster cluster(m_cluster_sizeX, m_cluster_sizeY, DType(typeid(PEDESTAL_TYPE)));
+                    Cluster cluster(m_cluster_sizeX, m_cluster_sizeY, Dtype(typeid(PEDESTAL_TYPE)));
                     cluster.x = ix;
                     cluster.y = iy;
                     short i = 0;
@@ -180,7 +180,7 @@ class ClusterFinder {
                 }
                 if (eventMask[iy][ix] == PHOTON && frame(iy, ix) - pedestal.mean(iy, ix) >= max) {
                     eventMask[iy][ix] = PHOTON_MAX;
-                    Cluster cluster(m_cluster_sizeX, m_cluster_sizeY, DType(typeid(FRAME_TYPE)));
+                    Cluster cluster(m_cluster_sizeX, m_cluster_sizeY, Dtype(typeid(FRAME_TYPE)));
                     cluster.x = ix;
                     cluster.y = iy;
                     short i = 0;

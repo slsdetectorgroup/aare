@@ -2,7 +2,7 @@
 
 set(SourceFiles
     ${CMAKE_CURRENT_SOURCE_DIR}/src/defs.cpp
-    ${CMAKE_CURRENT_SOURCE_DIR}/src/DType.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/Dtype.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/src/Frame.cpp
 )
 
@@ -20,7 +20,7 @@ endif()
 if(AARE_TESTS)
     set(TestSources
             ${CMAKE_CURRENT_SOURCE_DIR}/test/defs.test.cpp
-            ${CMAKE_CURRENT_SOURCE_DIR}/test/DType.test.cpp
+            ${CMAKE_CURRENT_SOURCE_DIR}/test/Dtype.test.cpp
             ${CMAKE_CURRENT_SOURCE_DIR}/test/Frame.test.cpp
             ${CMAKE_CURRENT_SOURCE_DIR}/test/ProducerConsumerQueue.test.cpp
             ${CMAKE_CURRENT_SOURCE_DIR}/test/NDArray.test.cpp

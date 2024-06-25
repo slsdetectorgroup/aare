@@ -1,6 +1,7 @@
 #pragma once
 #include "aare/core/NDArray.hpp"
 #include "aare/core/defs.hpp"
+#include "aare/core/Dtype.hpp"
 #include <cstddef>
 #include <cstdint>
 #include <memory>

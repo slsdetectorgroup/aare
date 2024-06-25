@@ -2,7 +2,7 @@
 #include <pybind11/pybind11.h>
 #include <pybind11/stl.h>
 
-#include "aare/core/DType.hpp"
+#include "aare/core/Dtype.hpp"
 #include "aare/core/NDView.hpp"
 
 namespace py = pybind11;
@@ -10,7 +10,7 @@ using namespace aare;
 using namespace std;
 
 template <typename ArrayType, int64_t Ndim> void define_NDView_bindings(py::module_ &m) {
-    std::string name = "NDView_" + DType(typeid(ArrayType)).to_string() + "_" + to_string(Ndim);
+    std::string name = "NDView_" + Dtype(typeid(ArrayType)).to_string() + "_" + to_string(Ndim);
 
     py::class_<NDView<ArrayType, Ndim>>(m, name.c_str(), py::buffer_protocol())
         .def(py::init([](py::array_t<ArrayType, py::array::c_style | py::array::forcecast> &np_array) {

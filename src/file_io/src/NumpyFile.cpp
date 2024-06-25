@@ -182,7 +182,7 @@ void NumpyFile::load_metadata() {
     std::string const shape_s = dict_map["shape"];
 
     std::string const descr = aare::NumpyHelpers::parse_str(descr_s);
-    aare::DType const dtype = aare::NumpyHelpers::parse_descr(descr);
+    aare::Dtype const dtype = aare::NumpyHelpers::parse_descr(descr);
 
     // convert literal Python bool to C++ bool
     bool const fortran_order = aare::NumpyHelpers::parse_bool(fortran_s);

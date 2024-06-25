@@ -2,7 +2,7 @@
 #include <pybind11/pybind11.h>
 #include <pybind11/stl.h>
 
-#include "aare/core/DType.hpp"
+#include "aare/core/Dtype.hpp"
 #include "aare/core/NDArray.hpp"
 #include "aare/core/NDView.hpp"
 
@@ -11,7 +11,7 @@ using namespace aare;
 using namespace std;
 
 template <typename ArrayType, int64_t Ndim> void define_NDArray_bindings(py::module_ &m) {
-    std::string name = "NDArray_" + DType(typeid(ArrayType)).to_string() + "_" + to_string(Ndim);
+    std::string name = "NDArray_" + Dtype(typeid(ArrayType)).to_string() + "_" + to_string(Ndim);
 
     py::class_<NDArray<ArrayType, Ndim>>(m, name.c_str(), py::buffer_protocol())
         .def(py::init<array<int64_t, Ndim>>())

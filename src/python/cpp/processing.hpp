@@ -142,7 +142,7 @@ void define_processing_bindings(py::module &m) {
     define_pedestal_bindings<double>(m);
 
     py::class_<Cluster>(m, "Cluster")
-        .def(py::init<int, int, DType>())
+        .def(py::init<int, int, Dtype>())
         .def("size", &Cluster::size)
         .def("begin", &Cluster::begin)
         .def("end", &Cluster::end)

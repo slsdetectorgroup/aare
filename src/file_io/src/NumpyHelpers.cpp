@@ -90,7 +90,7 @@ std::unordered_map<std::string, std::string> parse_dict(std::string in, const st
     return map;
 }
 
-aare::DType parse_descr(std::string typestring) {
+aare::Dtype parse_descr(std::string typestring) {
 
     if (typestring.length() < 3) {
         throw std::runtime_error("invalid typestring (length)");
@@ -118,7 +118,7 @@ aare::DType parse_descr(std::string typestring) {
         throw std::runtime_error("invalid typestring (itemsize)");
     }
 
-    return aare::DType(typestring);
+    return aare::Dtype(typestring);
 }
 
 bool parse_bool(const std::string &in) {
