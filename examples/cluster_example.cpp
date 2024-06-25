@@ -19,11 +19,11 @@ int main() {
 
     std::cout << "-----------------" << std::endl;
     Pedestal p = Pedestal(frame.rows(), frame.cols());
-    p.push(0,0,f00);
-    p.push(0,1,f01);
-    p.push(1,0,f10);
-    p.push(1,1,f11);
+    p.push(0, 0, f00);
+    p.push(0, 1, f01);
+    p.push(1, 0, f10);
+    p.push(1, 1, f11);
 
-    std::cout<<p.mean(0,0)<<"\n "<<p.mean(0,1)<<std::endl;
-    std::cout<<p.mean(1,0)<<"\n "<<p.mean(1,1)<<std::endl;
+    std::cout << p.mean(0, 0) << "\n " << p.mean(0, 1) << std::endl;
+    std::cout << p.mean(1, 0) << "\n " << p.mean(1, 1) << std::endl;
 }

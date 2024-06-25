@@ -12,7 +12,7 @@ namespace aare {
 RawFile::RawFile(const std::filesystem::path &fname, const std::string &mode, const FileConfig &config) {
     m_mode = mode;
     m_fname = fname;
-    if (mode == "r" or mode == "r+") {
+    if (mode == "r" || mode == "r+") {
         if (config != FileConfig()) {
             aare::logger::warn(
                 "In read mode it is not necessary to provide a config, the provided config will be ignored");
@@ -23,7 +23,7 @@ RawFile::RawFile(const std::filesystem::path &fname, const std::string &mode, co
         find_geometry();
         open_subfiles();
 
-    } else if (mode == "w" or mode == "w+") {
+    } else if (mode == "w" || mode == "w+") {
 
         if (std::filesystem::exists(fname)) {
             // handle mode w as w+ (no overrwriting)
@@ -132,9 +132,9 @@ void RawFile::open_subfiles() {
 
 sls_detector_header RawFile::read_header(const std::filesystem::path &fname) {
     sls_detector_header h{};
-    FILE *fp = fopen(fname.c_str(), "r");
+    FILE *fp = fopen(fname.string().c_str(), "r");
     if (!fp)
-        throw std::runtime_error(fmt::format("Could not open: {} for reading", fname.c_str()));
+        throw std::runtime_error(fmt::format("Could not open: {} for reading", fname.string()));
 
     size_t const rc = fread(reinterpret_cast<char *>(&h), sizeof(h), 1, fp);
     if (rc != 1)
@@ -146,7 +146,7 @@ sls_detector_header RawFile::read_header(const std::filesystem::path &fname) {
     return h;
 }
 bool RawFile::is_master_file(const std::filesystem::path &fpath) {
-    std::string const stem = fpath.stem();
+    std::string const stem = fpath.stem().string();
     return stem.find("_master_") != std::string::npos;
 }
 
@@ -268,7 +268,7 @@ void RawFile::parse_raw_metadata() {
             } else if (key == "Geometry") {
                 pos = value.find(',');
                 m_geometry = {static_cast<uint32_t>(std::stoi(value.substr(1, pos))),
-                            static_cast<uint32_t>(std::stoi(value.substr(pos + 1)))};
+                              static_cast<uint32_t>(std::stoi(value.substr(pos + 1)))};
             }
         }
     }
@@ -276,9 +276,9 @@ void RawFile::parse_raw_metadata() {
 
 void RawFile::parse_fname() {
     bool wrong_format = false;
-    m_base_path = m_fname.parent_path();
-    m_base_name = m_fname.stem();
-    m_ext = m_fname.extension();
+    m_base_path = m_fname.parent_path().string();
+    m_base_name = m_fname.stem().string();
+    m_ext = m_fname.extension().string();
     try {
         auto pos = m_base_name.rfind('_');
         m_findex = std::stoi(m_base_name.substr(pos + 1));
@@ -291,7 +291,7 @@ void RawFile::parse_fname() {
         m_base_name.erase(pos);
         wrong_format = true;
     }
-    if (wrong_format and (m_mode == "w+" or m_mode == "w")) {
+    if (wrong_format && (m_mode == "w+" || m_mode == "w")) {
         aare::logger::warn("Master Filename", m_fname, "is not in the correct format");
         aare::logger::warn("using", master_fname(), "as the master file");
     }
@@ -410,7 +410,7 @@ size_t RawFile::frame_number(size_t frame_index) {
 RawFile::~RawFile() noexcept {
 
     // update master file
-    if (m_mode == "w" or m_mode == "w+" or m_mode == "r+") {
+    if (m_mode == "w" || m_mode == "w+" || m_mode == "r+") {
         try {
             write_master_file();
         } catch (...) {

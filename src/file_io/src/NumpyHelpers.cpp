@@ -245,7 +245,7 @@ size_t write_header(std::ostream &out, const NumpyHeader &header) {
     write_magic(out, version_major, version_minor);
 
     // write header length
-    if (version_major == 1 and version_minor == 0) {
+    if (version_major == 1 && version_minor == 0) {
         auto header_len = static_cast<uint16_t>(header_dict.length() + padding.length() + 1);
 
         std::array<uint8_t, 2> header_len_le16{static_cast<uint8_t>((header_len >> 0) & 0xff),

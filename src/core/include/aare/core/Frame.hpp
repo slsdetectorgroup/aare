@@ -27,7 +27,7 @@ class Frame {
     // TODO! can we, or even want to remove the template?
     template <typename T> void set(size_t row, size_t col, T data) {
         assert(sizeof(T) == m_bitdepth / 8);
-        if (row >= m_rows or col >= m_cols) {
+        if (row >= m_rows || col >= m_cols) {
             throw std::out_of_range("Invalid row or column index");
         }
         std::memcpy(m_data + (row * m_cols + col) * (m_bitdepth / 8), &data, m_bitdepth / 8);
@@ -83,7 +83,7 @@ class Frame {
     }
 
     template <typename T> NDView<T, 2> view() {
-        std::array<ssize_t, 2> shape = {static_cast<ssize_t>(m_rows), static_cast<ssize_t>(m_cols)};
+        std::array<int64_t, 2> shape = {static_cast<int64_t>(m_rows), static_cast<int64_t>(m_cols)};
         T *data = reinterpret_cast<T *>(m_data);
         return NDView<T, 2>(data, shape);
     }

@@ -24,14 +24,14 @@ SubFile::SubFile(const std::filesystem::path &fname, DetectorType detector, size
     }
 
     if (mode == "r") {
-        fp = fopen(m_fname.c_str(), "rb");
+        fp = fopen(m_fname.string().c_str(), "rb");
     } else {
         // if file exists, open in read/write mode (without truncating the file)
         // if file does not exist, open in write mode
         if (std::filesystem::exists(fname)) {
-            fp = fopen(m_fname.c_str(), "r+b");
+            fp = fopen(m_fname.string().c_str(), "r+b");
         } else {
-            fp = fopen(m_fname.c_str(), "wb");
+            fp = fopen(m_fname.string().c_str(), "wb");
         }
     }
     if (fp == nullptr) {
@@ -44,7 +44,7 @@ size_t SubFile::get_part(std::byte *buffer, size_t frame_index) {
         throw std::runtime_error("Frame number out of range");
     }
     // TODO: find a way to avoid opening and closing the file for each frame
-    aare::logger::debug(LOCATION, "frame:", frame_index, "file:", m_fname.c_str());
+    aare::logger::debug(LOCATION, "frame:", frame_index, "file:", m_fname.string());
     fseek(fp, sizeof(sls_detector_header) + (sizeof(sls_detector_header) + bytes_per_part()) * frame_index, // NOLINT
           SEEK_SET);
     auto ret = (this->*read_impl)(buffer);
@@ -54,7 +54,7 @@ size_t SubFile::write_part(std::byte *buffer, sls_detector_header header, size_t
     if (frame_index > n_frames) {
         throw std::runtime_error("Frame number out of range");
     }
-    fseek(fp, static_cast<ssize_t>((sizeof(sls_detector_header) + bytes_per_part()) * frame_index), SEEK_SET);
+    fseek(fp, static_cast<int64_t>((sizeof(sls_detector_header) + bytes_per_part()) * frame_index), SEEK_SET);
     auto wc = fwrite(reinterpret_cast<char *>(&header), sizeof(header), 1, fp);
     wc += fwrite(buffer, bytes_per_part(), 1, fp);
 

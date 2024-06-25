@@ -10,8 +10,8 @@
 
 #include "NDArray_bindings.hpp"
 #include "NDView_bindings.hpp"
-#include "file_io.hpp"
 #include "core.hpp"
+#include "file_io.hpp"
 #include "processing.hpp"
 
 namespace py = pybind11;
@@ -35,7 +35,6 @@ PYBIND11_MODULE(_aare, m) {
     define_NDArray_bindings<int16_t, 2>(m);
     define_NDArray_bindings<int32_t, 2>(m);
     define_NDArray_bindings<int64_t, 2>(m);
-    
 
     define_NDView_bindings<double, 2>(m);
     define_NDView_bindings<float, 2>(m);

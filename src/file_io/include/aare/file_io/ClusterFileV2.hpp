@@ -38,9 +38,9 @@ struct ClusterV2 {
 };
 
 /**
- * @brief 
+ * @brief
  * importtant not: fp always points to the clutsers header and does not point to individual clusters
- * 
+ *
  */
 class ClusterFileV2 {
   private:
@@ -51,22 +51,22 @@ class ClusterFileV2 {
 
   public:
     ClusterFileV2(std::filesystem::path const &fpath, std::string const &mode) {
-        if (mode != "r" and mode != "w")
+        if (mode != "r" && mode != "w")
             throw std::invalid_argument("mode must be 'r' or 'w'");
         if (!std::filesystem::exists(fpath))
             throw std::invalid_argument("File does not exist");
         m_fpath = fpath;
         m_mode = mode;
         if (mode == "r") {
-            fp = fopen(fpath.c_str(), "rb");
+            fp = fopen(fpath.string().c_str(), "rb");
         } else if (mode == "w") {
             if (std::filesystem::exists(fpath)) {
-                fp = fopen(fpath.c_str(), "r+b");
+                fp = fopen(fpath.string().c_str(), "r+b");
             } else {
-                fp = fopen(fpath.c_str(), "wb");
+                fp = fopen(fpath.string().c_str(), "wb");
             }
         }
-        if(fp == nullptr) {
+        if (fp == nullptr) {
             throw std::runtime_error("Failed to open file");
         }
         m_closed = false;
@@ -96,10 +96,10 @@ class ClusterFileV2 {
     }
 
     size_t write(std::vector<ClusterV2> const &clusters) {
-        if(m_mode != "w") {
+        if (m_mode != "w") {
             throw std::runtime_error("File not opened in write mode");
         }
-        if(clusters.empty()) {
+        if (clusters.empty()) {
             return 0;
         }
         ClusterHeader header;
@@ -111,22 +111,18 @@ class ClusterFileV2 {
     }
 
     size_t write(std::vector<std::vector<ClusterV2>> const &clusters) {
-        if(m_mode != "w") {
+        if (m_mode != "w") {
             throw std::runtime_error("File not opened in write mode");
         }
         size_t n_clusters = 0;
-        for(auto &c : clusters) {
+        for (auto &c : clusters) {
             n_clusters += write(c);
         }
         return n_clusters;
     }
 
-    int seek_to_begin() {
-        return fseek(fp, 0, SEEK_SET);
-    }
-    int seek_to_end() {
-        return fseek(fp, 0, SEEK_END);
-    }
+    int seek_to_begin() { return fseek(fp, 0, SEEK_SET); }
+    int seek_to_end() { return fseek(fp, 0, SEEK_END); }
 
     int32_t frame_number() {
         auto pos = ftell(fp);
@@ -135,7 +131,6 @@ class ClusterFileV2 {
         fseek(fp, pos, SEEK_SET);
         return header.frame_number;
     }
-
 
     void close() {
         if (!m_closed) {

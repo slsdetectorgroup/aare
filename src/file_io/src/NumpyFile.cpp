@@ -9,9 +9,9 @@ NumpyFile::NumpyFile(const std::filesystem::path &fname, const std::string &mode
     m_fname = fname;
     m_mode = mode;
     if (mode == "r") {
-        fp = fopen(m_fname.c_str(), "rb");
+        fp = fopen(m_fname.string().c_str(), "rb");
         if (!fp) {
-            throw std::runtime_error(fmt::format("Could not open: {} for reading", m_fname.c_str()));
+            throw std::runtime_error(fmt::format("Could not open: {} for reading", m_fname.string()));
         }
         load_metadata();
     } else if (mode == "w") {
@@ -20,9 +20,9 @@ NumpyFile::NumpyFile(const std::filesystem::path &fname, const std::string &mode
         m_cols = cfg.cols;
         m_header = {cfg.dtype, false, {cfg.rows, cfg.cols}};
         m_header.shape = {0, cfg.rows, cfg.cols};
-        fp = fopen(m_fname.c_str(), "wb");
+        fp = fopen(m_fname.string().c_str(), "wb");
         if (!fp) {
-            throw std::runtime_error(fmt::format("Could not open: {} for reading", m_fname.c_str()));
+            throw std::runtime_error(fmt::format("Could not open: {} for reading", m_fname.string()));
         }
         initial_header_len = aare::NumpyHelpers::write_header(std::filesystem::path(m_fname.c_str()), m_header);
     }
@@ -36,7 +36,7 @@ void NumpyFile::write_impl(void *data, uint64_t size) {
     if (fp == nullptr) {
         throw std::runtime_error("File not open");
     }
-    if (not(m_mode == "w" or m_mode == "a")) {
+    if (!(m_mode == "w" || m_mode == "a")) {
         throw std::invalid_argument("File not open for writing");
     }
     if (fseek(fp, 0, SEEK_END))
@@ -91,7 +91,7 @@ void NumpyFile::read_into(std::byte *image_buf, size_t n_frames) {
 }
 
 NumpyFile::~NumpyFile() noexcept {
-    if (m_mode == "w" or m_mode == "a") {
+    if (m_mode == "w" || m_mode == "a") {
         // determine number of frames
         if (fseek(fp, 0, SEEK_END)) {
             aare::logger::error("Could not seek to end of file");
