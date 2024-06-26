@@ -12,30 +12,6 @@ namespace aare {
  * @brief Class to read a subfile from a RawFile
  */
 class SubFile {
-  protected:
-    /**
-     * @brief type of the read_impl function pointer
-     * @param buffer pointer to the buffer to read the data into
-     * @return number of bytes read
-     */
-    using pfunc = size_t (SubFile::*)(std::byte *);
-    pfunc read_impl = nullptr;
-    /**
-     * @brief map to store the read_impl functions for different detectors
-     * @note the key is a pair of DetectorType and bitdepth
-     * @note the value is a pointer to the read_impl function specific for the detector
-     * @note the read_impl function will be set to the appropriate function in the constructor
-     */
-    std::map<std::pair<DetectorType, int>, pfunc> read_impl_map = {
-        {{DetectorType::Moench, 16}, &SubFile::read_impl_normal},
-        {{DetectorType::Jungfrau, 16}, &SubFile::read_impl_normal},
-        {{DetectorType::ChipTestBoard, 16}, &SubFile::read_impl_normal},
-        {{DetectorType::Mythen3, 32}, &SubFile::read_impl_normal},
-        {{DetectorType::Eiger, 32}, &SubFile::read_impl_normal},
-        {{DetectorType::Eiger, 16}, &SubFile::read_impl_normal}
-
-    };
-
   public:
     size_t write_part(std::byte *buffer, sls_detector_header header, size_t frame_index);
     /**

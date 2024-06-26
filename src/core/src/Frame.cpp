@@ -14,7 +14,7 @@ namespace aare {
  * @param bitdepth bitdepth of the pixels
  */
 Frame::Frame(std::byte *bytes, size_t rows, size_t cols, Dtype dtype)
-    : m_rows(rows), m_cols(cols),m_dtype(dtype), m_data(new std::byte[rows * cols * m_dtype.bytes()]) {
+    : m_rows(rows), m_cols(cols), m_dtype(dtype), m_data(new std::byte[rows * cols * m_dtype.bytes()]) {
 
     std::memcpy(m_data, bytes, rows * cols * m_dtype.bytes());
 }
@@ -32,6 +32,13 @@ Frame::Frame(size_t rows, size_t cols, Dtype dtype)
     std::memset(m_data, 0, rows * cols * dtype.bytes());
 }
 
+size_t Frame::rows() const { return m_rows; }
+size_t Frame::cols() const { return m_cols; }
+size_t Frame::bitdepth() const { return m_dtype.bitdepth(); }
+Dtype Frame::dtype() const { return m_dtype; }
+size_t Frame::size() const { return m_rows * m_cols * m_dtype.bytes(); }
+std::byte *Frame::data() const { return m_data; }
+
 /**
  * @brief Get the pointer to the pixel at the given row and column
  * @param row row index
@@ -47,4 +54,48 @@ std::byte *Frame::get(size_t row, size_t col) {
     return m_data + (row * m_cols + col) * (m_dtype.bytes());
 }
 
+Frame &Frame::operator=(const Frame &other) {
+    if (this == &other) {
+        return *this;
+    }
+    m_rows = other.rows();
+    m_cols = other.cols();
+    m_dtype = other.dtype();
+    m_data = new std::byte[m_rows * m_cols * m_dtype.bytes()];
+    if (m_data == nullptr) {
+        throw std::bad_alloc();
+    }
+    std::memcpy(m_data, other.m_data, m_rows * m_cols * m_dtype.bytes());
+    return *this;
+}
+Frame &Frame::operator=(Frame &&other) noexcept {
+    if (this == &other) {
+        return *this;
+    }
+    m_rows = other.rows();
+    m_cols = other.cols();
+    m_dtype = other.dtype();
+    if (m_data != nullptr) {
+        delete[] m_data;
+    }
+    m_data = other.m_data;
+    other.m_data = nullptr;
+    other.m_rows = other.m_cols = 0;
+    other.m_dtype = Dtype(Dtype::TypeIndex::ERROR);
+    return *this;
+}
+Frame::Frame(Frame &&other) noexcept
+    : m_rows(other.rows()), m_cols(other.cols()), m_dtype(other.dtype()), m_data(other.m_data) {
+
+    other.m_data = nullptr;
+    other.m_rows = other.m_cols = 0;
+    other.m_dtype = Dtype(Dtype::TypeIndex::ERROR);
+}
+Frame::Frame(const Frame &other)
+    : m_rows(other.rows()), m_cols(other.cols()), m_dtype(other.dtype()),
+      m_data(new std::byte[m_rows * m_cols * m_dtype.bytes()]) {
+
+    std::memcpy(m_data, other.m_data, m_rows * m_cols * m_dtype.bytes());
+}
+Frame::~Frame() noexcept { delete[] m_data; }
 } // namespace aare
