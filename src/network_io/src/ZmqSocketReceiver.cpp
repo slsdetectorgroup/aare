@@ -102,7 +102,8 @@ ZmqFrame ZmqSocketReceiver::receive_zmqframe() {
 
     if (!header.data) {
         // no data following header
-        return {header, Frame(0, 0, Dtype::NONE)};
+        Frame frame(0, 0, Dtype::NONE);
+        return {header, frame};
     }
 
     // receive frame data

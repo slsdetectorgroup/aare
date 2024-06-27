@@ -51,7 +51,7 @@ ZmqFrame ZmqMultiReceiver::receive_zmqframe_(std::unordered_map<uint64_t, std::v
             if (items[i].revents & ZMQ_POLLIN) {
                 auto new_frame = m_receivers[i]->receive_zmqframe();
                 if (frames_map.find(new_frame.header.frameNumber) == frames_map.end()) {
-                    frames_map[new_frame.header.frameNumber] = {};
+                    frames_map[new_frame.header.frameNumber] = std::vector<ZmqFrame>();
                 }
 
                 ret_frames = frames_map.find(new_frame.header.frameNumber);

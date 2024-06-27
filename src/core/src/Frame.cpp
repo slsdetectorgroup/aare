@@ -54,20 +54,20 @@ std::byte *Frame::get(size_t row, size_t col) {
     return m_data + (row * m_cols + col) * (m_dtype.bytes());
 }
 
-Frame &Frame::operator=(const Frame &other) {
-    if (this == &other) {
-        return *this;
-    }
-    m_rows = other.rows();
-    m_cols = other.cols();
-    m_dtype = other.dtype();
-    m_data = new std::byte[m_rows * m_cols * m_dtype.bytes()];
-    if (m_data == nullptr) {
-        throw std::bad_alloc();
-    }
-    std::memcpy(m_data, other.m_data, m_rows * m_cols * m_dtype.bytes());
-    return *this;
-}
+// Frame &Frame::operator=(const Frame &other) {
+//     if (this == &other) {
+//         return *this;
+//     }
+//     m_rows = other.rows();
+//     m_cols = other.cols();
+//     m_dtype = other.dtype();
+//     m_data = new std::byte[m_rows * m_cols * m_dtype.bytes()];
+//     if (m_data == nullptr) {
+//         throw std::bad_alloc();
+//     }
+//     std::memcpy(m_data, other.m_data, m_rows * m_cols * m_dtype.bytes());
+//     return *this;
+// }
 Frame &Frame::operator=(Frame &&other) noexcept {
     if (this == &other) {
         return *this;
@@ -91,11 +91,18 @@ Frame::Frame(Frame &&other) noexcept
     other.m_rows = other.m_cols = 0;
     other.m_dtype = Dtype(Dtype::TypeIndex::ERROR);
 }
-Frame::Frame(const Frame &other)
-    : m_rows(other.rows()), m_cols(other.cols()), m_dtype(other.dtype()),
-      m_data(new std::byte[m_rows * m_cols * m_dtype.bytes()]) {
+// Frame::Frame(const Frame &other)
+//     : m_rows(other.rows()), m_cols(other.cols()), m_dtype(other.dtype()),
+//       m_data(new std::byte[m_rows * m_cols * m_dtype.bytes()]) {
 
-    std::memcpy(m_data, other.m_data, m_rows * m_cols * m_dtype.bytes());
+//     std::memcpy(m_data, other.m_data, m_rows * m_cols * m_dtype.bytes());
+// }
+
+Frame Frame::copy() const {
+    Frame frame(m_rows, m_cols, m_dtype);
+    std::memcpy(frame.m_data, m_data, m_rows * m_cols * m_dtype.bytes());
+    return frame;
 }
+
 Frame::~Frame() noexcept { delete[] m_data; }
 } // namespace aare

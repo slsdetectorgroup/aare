@@ -12,13 +12,16 @@ namespace aare {
  * wrapper class to contain a ZmqHeader and a Frame
  */
 struct ZmqFrame {
-    ZmqHeader header;
-    Frame frame;
+    ZmqFrame(const ZmqHeader& header_, const Frame& frame_) : header(header_), frame(frame_) {}
+
+    const ZmqHeader& header;
+    const Frame& frame;
     std::string to_string() const {
         return "ZmqFrame{header: " + header.to_string() + ", frame:\nrows: " + std::to_string(frame.rows()) +
                ", cols: " + std::to_string(frame.cols()) + ", bitdepth: " + std::to_string(frame.bitdepth()) + "\n}";
     }
     size_t size() const { return frame.size() + header.size; }
+
 };
 
 struct Task {

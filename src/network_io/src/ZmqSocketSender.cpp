@@ -109,7 +109,7 @@ size_t ZmqSocketSender::send(const std::vector<ZmqFrame> &zmq_frames) {
             rc += send(header, frame.data(), frame.size());
         } else {
             // send header, frame and end of message header
-            rc += send({header, frame});
+            rc += send(ZmqFrame(header, frame));
         }
     }
     return rc;

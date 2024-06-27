@@ -99,3 +99,54 @@ TEST_CASE("Move construct a frame") {
     REQUIRE(frame2.size() == rows * cols * bitdepth / 8);
     REQUIRE(frame2.data() == data);
 }
+
+TEST_CASE("Move assign a frame") {
+    size_t rows = 10;
+    size_t cols = 10;
+    size_t bitdepth = 8;
+
+    Frame frame(rows, cols, Dtype::from_bitdepth(bitdepth));
+    std::byte *data = frame.data();
+
+    Frame frame2(5, 5, Dtype::from_bitdepth(16));
+
+    frame2 = std::move(frame);
+
+    // state of the moved from object
+    REQUIRE(frame.rows() == 0);
+    REQUIRE(frame.cols() == 0);
+    REQUIRE(frame.dtype() == Dtype(Dtype::TypeIndex::ERROR));
+    REQUIRE(frame.data() == nullptr);
+
+    // state of the moved to object
+    REQUIRE(frame2.rows() == rows);
+    REQUIRE(frame2.cols() == cols);
+    REQUIRE(frame2.bitdepth() == bitdepth);
+    REQUIRE(frame2.size() == rows * cols * bitdepth / 8);
+    REQUIRE(frame2.data() == data);
+}
+
+TEST_CASE("test explicit copy constructor") {
+    size_t rows = 10;
+    size_t cols = 10;
+    size_t bitdepth = 8;
+
+    Frame frame(rows, cols, Dtype::from_bitdepth(bitdepth));
+    std::byte *data = frame.data();
+
+    Frame frame2 = frame.copy();
+
+    // state of the original object
+    REQUIRE(frame.rows() == rows);
+    REQUIRE(frame.cols() == cols);
+    REQUIRE(frame.bitdepth() == bitdepth);
+    REQUIRE(frame.size() == rows * cols * bitdepth / 8);
+    REQUIRE(frame.data() == data);
+
+    // state of the copied object
+    REQUIRE(frame2.rows() == rows);
+    REQUIRE(frame2.cols() == cols);
+    REQUIRE(frame2.bitdepth() == bitdepth);
+    REQUIRE(frame2.size() == rows * cols * bitdepth / 8);
+    REQUIRE(frame2.data() != data);
+}

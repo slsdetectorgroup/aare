@@ -24,10 +24,17 @@ class Frame {
     Frame(size_t rows, size_t cols, Dtype dtype);
     Frame(std::byte *bytes, size_t rows, size_t cols, Dtype dtype);
     ~Frame() noexcept;
-    Frame &operator=(const Frame &other);
+
+    // disable copy and assignment
+    Frame &operator=(const Frame &other)=delete;
+    Frame(const Frame &other)=delete;
+
+    // enable move
     Frame &operator=(Frame &&other) noexcept;
     Frame(Frame &&other) noexcept;
-    Frame(const Frame &other);
+
+    // explicit copy
+    Frame copy() const;
 
     size_t rows() const;
     size_t cols() const;
