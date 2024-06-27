@@ -30,7 +30,7 @@ NumpyFile::NumpyFile(const std::filesystem::path &fname, const std::string &mode
 
     m_bytes_per_frame = m_header.dtype.bitdepth() / 8 * m_pixels_per_frame;
 }
-void NumpyFile::write(Frame &frame) { write_impl(frame.data(), frame.size()); }
+void NumpyFile::write(Frame &frame) { write_impl(frame.data(), frame.bytes()); }
 void NumpyFile::write_impl(void *data, uint64_t size) {
 
     if (fp == nullptr) {

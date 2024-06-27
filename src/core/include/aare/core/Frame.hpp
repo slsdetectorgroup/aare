@@ -15,14 +15,14 @@ namespace aare {
  * should be able to work with streams coming from files or network
  */
 class Frame {
-    size_t m_rows;
-    size_t m_cols;
+    uint32_t m_rows;
+    uint32_t m_cols;
     Dtype m_dtype;
     std::byte *m_data;
 
   public:
-    Frame(size_t rows, size_t cols, Dtype dtype);
-    Frame(std::byte *bytes, size_t rows, size_t cols, Dtype dtype);
+    Frame(uint32_t rows, uint32_t cols, Dtype dtype);
+    Frame(std::byte *bytes, uint32_t rows, uint32_t cols, Dtype dtype);
     ~Frame() noexcept;
 
     // disable copy and assignment
@@ -36,24 +36,25 @@ class Frame {
     // explicit copy
     Frame copy() const;
 
-    size_t rows() const;
-    size_t cols() const;
+    uint32_t rows() const;
+    uint32_t cols() const;
     size_t bitdepth() const;
     Dtype dtype() const;
     size_t size() const;
+    size_t bytes() const;
     std::byte *data() const;
 
-    std::byte *get(size_t row, size_t col);
+    std::byte *get(uint32_t row, uint32_t col);
 
     // TODO! can we, or even want to remove the template?
-    template <typename T> void set(size_t row, size_t col, T data) {
+    template <typename T> void set(uint32_t row, uint32_t col, T data) {
         assert(sizeof(T) == m_dtype.bytes());
         if (row >= m_rows || col >= m_cols) {
             throw std::out_of_range("Invalid row or column index");
         }
         std::memcpy(m_data + (row * m_cols + col) * m_dtype.bytes(), &data, m_dtype.bytes());
     }
-    template <typename T> T get_t(size_t row, size_t col) {
+    template <typename T> T get_t(uint32_t row, uint32_t col) {
         assert(sizeof(T) == m_dtype.bytes());
         if (row >= m_rows || col >= m_cols) {
             throw std::out_of_range("Invalid row or column index");

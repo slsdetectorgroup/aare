@@ -20,7 +20,7 @@ struct ZmqFrame {
         return "ZmqFrame{header: " + header.to_string() + ", frame:\nrows: " + std::to_string(frame.rows()) +
                ", cols: " + std::to_string(frame.cols()) + ", bitdepth: " + std::to_string(frame.bitdepth()) + "\n}";
     }
-    size_t size() const { return frame.size() + header.size; }
+    size_t size() const { return frame.bytes() + header.size; }
 
 };
 

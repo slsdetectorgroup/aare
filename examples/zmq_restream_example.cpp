@@ -48,7 +48,7 @@ int main(int argc, char **argv) {
         header.shape.row = frame.rows();
         header.shape.col = frame.cols();
         header.bitmode = frame.bitdepth();
-        header.size = frame.size();
+        header.size = frame.bytes();
 
         sender.send({header, frame});
         std::this_thread::sleep_for(d);

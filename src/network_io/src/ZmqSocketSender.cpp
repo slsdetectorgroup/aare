@@ -84,7 +84,7 @@ size_t ZmqSocketSender::send(const ZmqHeader &header, const void *data, size_t s
 size_t ZmqSocketSender::send(const ZmqFrame &zmq_frame) {
     const Frame &frame = zmq_frame.frame;
     // send frame
-    size_t const rc = send(zmq_frame.header, frame.data(), frame.size());
+    size_t const rc = send(zmq_frame.header, frame.data(), frame.bytes());
     // send end of message header
     ZmqHeader end_header = zmq_frame.header;
     end_header.data = false;
@@ -106,7 +106,7 @@ size_t ZmqSocketSender::send(const std::vector<ZmqFrame> &zmq_frames) {
         // send header and frame
         if (i < zmq_frames.size() - 1) {
             // send header and frame
-            rc += send(header, frame.data(), frame.size());
+            rc += send(header, frame.data(), frame.bytes());
         } else {
             // send header, frame and end of message header
             rc += send(ZmqFrame(header, frame));

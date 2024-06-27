@@ -114,7 +114,7 @@ ZmqFrame ZmqSocketReceiver::receive_zmqframe() {
         header.bitmode = 16;
     }
     Frame frame(header.shape.row, header.shape.col, Dtype::from_bitdepth(header.bitmode));
-    int bytes_received = receive_data(frame.data(), frame.size());
+    int bytes_received = receive_data(frame.data(), frame.bytes());
     if (bytes_received == -1) {
         throw network_io::NetworkError(LOCATION + "Error receiving frame");
     }

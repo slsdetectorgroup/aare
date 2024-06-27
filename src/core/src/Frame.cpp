@@ -13,7 +13,7 @@ namespace aare {
  * @param cols number of columns
  * @param bitdepth bitdepth of the pixels
  */
-Frame::Frame(std::byte *bytes, size_t rows, size_t cols, Dtype dtype)
+Frame::Frame(std::byte *bytes, uint32_t rows, uint32_t cols, Dtype dtype)
     : m_rows(rows), m_cols(cols), m_dtype(dtype), m_data(new std::byte[rows * cols * m_dtype.bytes()]) {
 
     std::memcpy(m_data, bytes, rows * cols * m_dtype.bytes());
@@ -26,17 +26,18 @@ Frame::Frame(std::byte *bytes, size_t rows, size_t cols, Dtype dtype)
  * @param bitdepth bitdepth of the pixels
  * @note the data is initialized to zero
  */
-Frame::Frame(size_t rows, size_t cols, Dtype dtype)
+Frame::Frame(uint32_t rows, uint32_t cols, Dtype dtype)
     : m_rows(rows), m_cols(cols), m_dtype(dtype), m_data(new std::byte[rows * cols * dtype.bytes()]) {
 
     std::memset(m_data, 0, rows * cols * dtype.bytes());
 }
 
-size_t Frame::rows() const { return m_rows; }
-size_t Frame::cols() const { return m_cols; }
+uint32_t Frame::rows() const { return m_rows; }
+uint32_t Frame::cols() const { return m_cols; }
 size_t Frame::bitdepth() const { return m_dtype.bitdepth(); }
 Dtype Frame::dtype() const { return m_dtype; }
-size_t Frame::size() const { return m_rows * m_cols * m_dtype.bytes(); }
+uint64_t Frame::size() const { return m_rows * m_cols; }
+size_t Frame::bytes() const { return m_rows * m_cols * m_dtype.bytes(); }
 std::byte *Frame::data() const { return m_data; }
 
 /**
@@ -46,7 +47,7 @@ std::byte *Frame::data() const { return m_data; }
  * @return pointer to the pixel
  * @note the user should cast the pointer to the appropriate type
  */
-std::byte *Frame::get(size_t row, size_t col) {
+std::byte *Frame::get(uint32_t row, uint32_t col) {
     if ((row >= m_rows) || (col >= m_cols)) {
         std::cerr << "Invalid row or column index" << '\n';
         return nullptr;

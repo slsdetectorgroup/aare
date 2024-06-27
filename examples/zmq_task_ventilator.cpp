@@ -35,7 +35,7 @@ int process(const std::string &endpoint) {
         logger::info(zframe.header.to_string());
 
         // 3. create task
-        Task *task = Task::init(zframe.frame.data(), zframe.frame.size());
+        Task *task = Task::init(zframe.frame.data(), zframe.frame.bytes());
         task->opcode = (size_t)Task::Operation::PEDESTAL;
         task->id = zframe.header.frameNumber;
 

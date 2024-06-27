@@ -39,7 +39,7 @@ int main() {
 
         aare::logger::info("acquisition:", header.acqIndex);
         aare::logger::info("Header size:", header.to_string().size());
-        aare::logger::info("Frame size:", frame.size());
+        aare::logger::info("Frame size:", frame.bytes());
         aare::logger::info("Number of frames:", n_frames);
 
         for (size_t i = 0; i < n_frames; i++) {

@@ -14,7 +14,7 @@ TEST_CASE("Construct a frame") {
     REQUIRE(frame.rows() == rows);
     REQUIRE(frame.cols() == cols);
     REQUIRE(frame.bitdepth() == bitdepth);
-    REQUIRE(frame.size() == rows * cols * bitdepth / 8);
+    REQUIRE(frame.bytes() == rows * cols * bitdepth / 8);
 
     // data should be initialized to 0
     for (size_t i = 0; i < rows; i++) {
@@ -96,7 +96,7 @@ TEST_CASE("Move construct a frame") {
     REQUIRE(frame2.rows() == rows);
     REQUIRE(frame2.cols() == cols);
     REQUIRE(frame2.bitdepth() == bitdepth);
-    REQUIRE(frame2.size() == rows * cols * bitdepth / 8);
+    REQUIRE(frame2.bytes() == rows * cols * bitdepth / 8);
     REQUIRE(frame2.data() == data);
 }
 
@@ -122,7 +122,7 @@ TEST_CASE("Move assign a frame") {
     REQUIRE(frame2.rows() == rows);
     REQUIRE(frame2.cols() == cols);
     REQUIRE(frame2.bitdepth() == bitdepth);
-    REQUIRE(frame2.size() == rows * cols * bitdepth / 8);
+    REQUIRE(frame2.bytes() == rows * cols * bitdepth / 8);
     REQUIRE(frame2.data() == data);
 }
 
@@ -140,13 +140,13 @@ TEST_CASE("test explicit copy constructor") {
     REQUIRE(frame.rows() == rows);
     REQUIRE(frame.cols() == cols);
     REQUIRE(frame.bitdepth() == bitdepth);
-    REQUIRE(frame.size() == rows * cols * bitdepth / 8);
+    REQUIRE(frame.bytes() == rows * cols * bitdepth / 8);
     REQUIRE(frame.data() == data);
 
     // state of the copied object
     REQUIRE(frame2.rows() == rows);
     REQUIRE(frame2.cols() == cols);
     REQUIRE(frame2.bitdepth() == bitdepth);
-    REQUIRE(frame2.size() == rows * cols * bitdepth / 8);
+    REQUIRE(frame2.bytes() == rows * cols * bitdepth / 8);
     REQUIRE(frame2.data() != data);
 }

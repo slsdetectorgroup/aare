@@ -1,14 +1,15 @@
 
 #include <cstdint>
 #include <filesystem>
+#include <pybind11/functional.h>
 #include <pybind11/numpy.h>
 #include <pybind11/pybind11.h>
 #include <pybind11/stl.h>
 #include <string>
 
 #include "aare/core/Frame.hpp"
+#include "aare/core/Transforms.hpp"
 #include "aare/core/defs.hpp"
-#include "aare/file_io/File.hpp"
 
 void define_core_bindings(py::module &m) {
     py::class_<Frame>(m, "Frame")
@@ -16,11 +17,18 @@ void define_core_bindings(py::module &m) {
         .def_property_readonly("rows", &Frame::rows)
         .def_property_readonly("cols", &Frame::cols)
         .def_property_readonly("bitdepth", &Frame::bitdepth)
-        .def_property_readonly("size", &Frame::size)
+        .def_property_readonly("size", &Frame::bytes)
         .def_property_readonly("data", &Frame::data, py::return_value_policy::reference)
         .def_buffer([](Frame &f) -> py::buffer_info {
-            return py::buffer_info(f.data(),(size_t) f.dtype().bytes(), f.dtype().format_descr(), 2, {f.rows(), f.cols()},
-                                   {f.cols() * f.dtype().bytes(), f.dtype().bytes()});
+            return {
+                f.data(),                 /* Pointer to buffer */
+                f.dtype().bytes(),        /* Size of one scalar */
+                f.dtype().format_descr(), /* Python struct-style format descriptor */
+                2,                        /* Number of dimensions */
+                {f.rows(), f.cols()},     /* Buffer dimensions */
+                {f.cols() * f.dtype().bytes(), f.dtype().bytes()}
+                /* Strides (in bytes) for each index */
+            };
         });
 
     py::class_<xy>(m, "xy")
@@ -91,4 +99,34 @@ void define_core_bindings(py::module &m) {
         .def_readwrite("version", &sls_detector_header::version)
         .def_readwrite("packetMask", &sls_detector_header::packetMask)
         .def("__repr__", &sls_detector_header::to_string);
+
+    py::class_<Transforms>(m, "Transforms")
+        .def(py::init<>())
+        .def_static("identity", &Transforms::identity)
+        .def_static("zero", &Transforms::zero)
+        .def_static("reorder", py::overload_cast<NDView<size_t, 2> &>(&Transforms::reorder))
+        .def_static("reorder", py::overload_cast<NDArray<size_t, 2> &>(&Transforms::reorder))
+        .def_static("reorder", py::overload_cast<std::vector<size_t> &>(&Transforms::reorder))
+        .def_static(
+            "reorder",
+            [](Transforms &self, py::array_t<size_t> &np_array) {
+                py::buffer_info info = np_array.request();
+                if (info.format != py::format_descriptor<size_t>::format())
+                    throw std::runtime_error(
+                        "Incompatible format: different formats! (Are you sure the arrays are of the same type?)");
+                if (info.ndim != 2)
+                    throw std::runtime_error("Incompatible dimension: expected a 2D array!");
+
+                std::array<int64_t, 2> arr_shape;
+                std::move(info.shape.begin(), info.shape.end(), arr_shape.begin());
+
+                NDView<size_t, 2> a(static_cast<size_t *>(info.ptr), arr_shape);
+                return self.reorder(a);
+            })
+        .def_static("flip_horizental", &Transforms::flip_horizental)
+        .def("add", [](Transforms &self, std::function<Frame &(Frame &)> transformation) { self.add(transformation); })
+        .def("add", [](Transforms &self,
+                       std::vector<std::function<Frame &(Frame &)>> transformations) { self.add(transformations); })
+        .def("__call__", &Transforms::apply);
+    ;
 }

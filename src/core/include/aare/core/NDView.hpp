@@ -4,10 +4,11 @@
 #include <cassert>
 #include <cstdint>
 #include <functional>
+#include <iomanip>
+#include <iostream>
 #include <numeric>
 #include <stdexcept>
 #include <vector>
-
 namespace aare {
 
 template <int64_t Ndim> using Shape = std::array<int64_t, Ndim>;
@@ -124,6 +125,7 @@ template <typename T, int64_t Ndim = 2> class NDView {
     auto shape(int64_t i) const { return shape_[i]; }
 
     T *data() { return buffer_; }
+    void print_all() const;
 
   private:
     T *buffer_{nullptr};
@@ -144,5 +146,14 @@ template <typename T, int64_t Ndim = 2> class NDView {
         return *this;
     }
 };
+template <typename T, int64_t Ndim> void NDView<T, Ndim>::print_all() const {
+    for (auto row = 0; row < shape_[0]; ++row) {
+        for (auto col = 0; col < shape_[1]; ++col) {
+            std::cout << std::setw(3);
+            std::cout << (*this)(row, col) << " ";
+        }
+        std::cout << "\n";
+    }
+}
 
 } // namespace aare

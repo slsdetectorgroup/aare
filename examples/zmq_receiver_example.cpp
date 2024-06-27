@@ -23,7 +23,7 @@ int main(int argc, char **argv) {
         aare::logger::info("Received ", v.size(), " frames");
         aare::logger::info("acquisition:", v[0].header.acqIndex);
         aare::logger::info("Header size:", v[0].header.to_string().size());
-        aare::logger::info("Frame size:", v[0].frame.size());
+        aare::logger::info("Frame size:", v[0].frame.bytes());
         aare::logger::info("Header:", v[0].header.to_string());
 
         // for (ZmqFrame zmq_frame : v) {
