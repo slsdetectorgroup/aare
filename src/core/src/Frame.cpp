@@ -13,7 +13,7 @@ namespace aare {
  * @param cols number of columns
  * @param bitdepth bitdepth of the pixels
  */
-Frame::Frame(std::byte *bytes, uint32_t rows, uint32_t cols, Dtype dtype)
+Frame::Frame(const std::byte *bytes, uint32_t rows, uint32_t cols, Dtype dtype)
     : m_rows(rows), m_cols(cols), m_dtype(dtype), m_data(new std::byte[rows * cols * m_dtype.bytes()]) {
 
     std::memcpy(m_data, bytes, rows * cols * m_dtype.bytes());

@@ -22,7 +22,7 @@ class Frame {
 
   public:
     Frame(uint32_t rows, uint32_t cols, Dtype dtype);
-    Frame(std::byte *bytes, uint32_t rows, uint32_t cols, Dtype dtype);
+    Frame(const std::byte *bytes, uint32_t rows, uint32_t cols, Dtype dtype);
     ~Frame() noexcept;
 
     // disable copy and assignment
@@ -40,7 +40,7 @@ class Frame {
     uint32_t cols() const;
     size_t bitdepth() const;
     Dtype dtype() const;
-    size_t size() const;
+    uint64_t size() const;
     size_t bytes() const;
     std::byte *data() const;
 

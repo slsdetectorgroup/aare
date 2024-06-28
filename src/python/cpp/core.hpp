@@ -11,9 +11,24 @@
 #include "aare/core/Transforms.hpp"
 #include "aare/core/defs.hpp"
 
+template <typename T> void define_to_frame(py::module &m) {
+    m.def("to_frame", [](py::array_t<T> &np_array) {
+        py::buffer_info info = np_array.request();
+        if (info.format != py::format_descriptor<T>::format())
+            throw std::runtime_error(
+                "Incompatible format: different formats! (Are you sure the arrays are of the same type?)");
+        if (info.ndim != 2)
+            throw std::runtime_error("Incompatible dimension: expected a 2D array!");
+
+        Frame f(info.shape[0], info.shape[1], Dtype(typeid(T)));
+        std::memcpy(f.data(), info.ptr, f.bytes());
+        return f;
+    });
+}
 void define_core_bindings(py::module &m) {
-    py::class_<Frame>(m, "Frame")
+    py::class_<Frame>(m, "Frame", py::buffer_protocol())
         .def(py::init<std::byte *, int64_t, int64_t, Dtype>())
+        .def(py::init<int64_t, int64_t, Dtype>())
         .def_property_readonly("rows", &Frame::rows)
         .def_property_readonly("cols", &Frame::cols)
         .def_property_readonly("bitdepth", &Frame::bitdepth)
@@ -61,7 +76,7 @@ void define_core_bindings(py::module &m) {
         .value("native", endian::native)
         .export_values();
 
-    py::enum_<Dtype::TypeIndex>(m, "DTypeIndex")
+    py::enum_<Dtype::TypeIndex>(m, "DtypeIndex")
         .value("INT8", Dtype::TypeIndex::INT8)
         .value("UINT8", Dtype::TypeIndex::UINT8)
         .value("INT16", Dtype::TypeIndex::INT16)
@@ -75,7 +90,7 @@ void define_core_bindings(py::module &m) {
         .value("ERROR", Dtype::TypeIndex::ERROR)
         .export_values();
 
-    py::class_<Dtype>(m, "DType")
+    py::class_<Dtype>(m, "Dtype")
         .def(py::init<std::string_view>())
         .def(py::init<Dtype::TypeIndex>())
         .def("bitdepth", &Dtype::bitdepth)
@@ -109,9 +124,9 @@ void define_core_bindings(py::module &m) {
         .def_static("reorder", py::overload_cast<std::vector<size_t> &>(&Transforms::reorder))
         .def_static(
             "reorder",
-            [](Transforms &self, py::array_t<size_t> &np_array) {
+            [](py::array_t<uint64_t> &np_array) {
                 py::buffer_info info = np_array.request();
-                if (info.format != py::format_descriptor<size_t>::format())
+                if (info.format != Dtype(Dtype::UINT64).format_descr())
                     throw std::runtime_error(
                         "Incompatible format: different formats! (Are you sure the arrays are of the same type?)");
                 if (info.ndim != 2)
@@ -120,13 +135,23 @@ void define_core_bindings(py::module &m) {
                 std::array<int64_t, 2> arr_shape;
                 std::move(info.shape.begin(), info.shape.end(), arr_shape.begin());
 
-                NDView<size_t, 2> a(static_cast<size_t *>(info.ptr), arr_shape);
-                return self.reorder(a);
+                NDView<uint64_t, 2> a(static_cast<uint64_t *>(info.ptr), arr_shape);
+                return Transforms::reorder(a);
             })
         .def_static("flip_horizental", &Transforms::flip_horizental)
         .def("add", [](Transforms &self, std::function<Frame &(Frame &)> transformation) { self.add(transformation); })
         .def("add", [](Transforms &self,
                        std::vector<std::function<Frame &(Frame &)>> transformations) { self.add(transformations); })
         .def("__call__", &Transforms::apply);
-    ;
+
+    define_to_frame<uint8_t>(m);
+    define_to_frame<uint16_t>(m);
+    define_to_frame<uint32_t>(m);
+    define_to_frame<uint64_t>(m);
+    define_to_frame<int8_t>(m);
+    define_to_frame<int16_t>(m);
+    define_to_frame<int32_t>(m);
+    define_to_frame<int64_t>(m);
+    define_to_frame<float>(m);
+    define_to_frame<double>(m);
 }
