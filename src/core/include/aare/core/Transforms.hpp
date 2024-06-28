@@ -59,17 +59,17 @@ class Transforms {
         };
     }
 
-    static std::function<Frame &(Frame &)> reorder(NDView<size_t, 2> &order_map) {
+    static std::function<Frame &(Frame &)> reorder(NDView<uint64_t, 2> &order_map) {
         if (order_map.size() == 0) {
             throw std::runtime_error("Order map is empty");
         }
         // verify that the order map doesn't have duplicates
-        std::unordered_set<size_t> seen(order_map.begin(), order_map.end());
+        std::unordered_set<uint64_t> seen(order_map.begin(), order_map.end());
         if (seen.size() != order_map.size()) {
             throw std::runtime_error("Order map has duplicates");
         }
         // verify that the order map has all the values from 0 to rows * cols
-        for (size_t i = 0; i < order_map.size(); i++) {
+        for (uint64_t i = 0; i < order_map.size(); i++) {
             if (order_map[i] >= order_map.size() || order_map[i] < 0) {
                 throw std::runtime_error("Order map has values less than 0 or greater than rows * cols");
             }
@@ -83,12 +83,12 @@ class Transforms {
             Frame frame_copy = frame.copy();
 
             // prepare variable for performance optimization (not tested)
-            const size_t pixel_depth = frame.bitdepth() / 8;
+            const uint64_t pixel_depth = frame.bitdepth() / 8;
             std::byte *const dst_data = frame.data();
             std::byte *const src_data = frame_copy.data();
-            const size_t size = order_map.size();
-            size_t idx = 0;
-            size_t new_idx;
+            const uint64_t size = order_map.size();
+            uint64_t idx = 0;
+            uint64_t new_idx;
             std::byte *src;
             std::byte *dst;
             // reorder the frame
@@ -102,7 +102,7 @@ class Transforms {
         };
     }
     static std::function<Frame &(Frame &)> reorder(std::vector<size_t> &order_map) {
-        ssize_t tmp = static_cast<ssize_t>(order_map.size());
+        int64_t tmp = static_cast<int64_t>(order_map.size());
         NDView<size_t, 2> order_map_view(order_map.data(), {tmp, 1});
         return reorder(order_map_view);
     }

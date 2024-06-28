@@ -38,7 +38,7 @@ void define_core_bindings(py::module &m) {
             Dtype dt = f.dtype();
             return {
                 f.data(),                           /* Pointer to buffer */
-                static_cast<ssize_t>(dt.bytes()),   /* Size of one scalar */
+                static_cast<int64_t>(dt.bytes()),   /* Size of one scalar */
                 dt.format_descr(),                  /* Python struct-style format descriptor */
                 2,                                  /* Number of dimensions */
                 {f.rows(), f.cols()},               /* Buffer dimensions */
@@ -123,6 +123,7 @@ void define_core_bindings(py::module &m) {
         .def_static("reorder", py::overload_cast<NDArray<size_t, 2> &>(&Transforms::reorder))
         .def_static("reorder", py::overload_cast<std::vector<size_t> &>(&Transforms::reorder))
         .def_static(
+            // only accept order_map of type uint64_t
             "reorder",
             [](py::array_t<uint64_t> &np_array) {
                 py::buffer_info info = np_array.request();
