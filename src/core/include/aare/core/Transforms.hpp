@@ -47,7 +47,7 @@ class Transforms {
             }
             std::byte *buffer = new std::byte[frame.cols() * frame.bitdepth() / 8];
 
-            for (size_t src = 0, dst = frame.rows() - 1; src < frame.rows() / 2; dst--, src++) {
+            for (uint64_t src = 0, dst = frame.rows() - 1; src < frame.rows() / 2; dst--, src++) {
                 auto src_ptr = frame.data() + src * frame.cols() * frame.bitdepth() / 8;
                 auto dst_ptr = frame.data() + dst * frame.cols() * frame.bitdepth() / 8;
                 std::memcpy(buffer, src_ptr, frame.cols() * frame.bitdepth() / 8);
@@ -101,13 +101,13 @@ class Transforms {
             return frame;
         };
     }
-    static std::function<Frame &(Frame &)> reorder(std::vector<size_t> &order_map) {
+    static std::function<Frame &(Frame &)> reorder(std::vector<uint64_t> &order_map) {
         int64_t tmp = static_cast<int64_t>(order_map.size());
-        NDView<size_t, 2> order_map_view(order_map.data(), {tmp, 1});
+        NDView<uint64_t, 2> order_map_view(order_map.data(), {tmp, 1});
         return reorder(order_map_view);
     }
-    static std::function<Frame &(Frame &)> reorder(NDArray<size_t, 2> &order_map) {
-        NDView<size_t, 2> order_map_view(order_map.data(), order_map.shape());
+    static std::function<Frame &(Frame &)> reorder(NDArray<uint64_t, 2> &order_map) {
+        NDView<uint64_t, 2> order_map_view(order_map.data(), order_map.shape());
         return reorder(order_map_view);
     }
 };

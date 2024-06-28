@@ -95,7 +95,7 @@ TEST_CASE("test reorder") {
         SECTION("change only two elements in the order map") {
 
             Frame tmp = f.copy();
-            NDArray<size_t, 2> order_map({10, 10});
+            NDArray<uint64_t, 2> order_map({10, 10});
             for (int i = 0; i < 10; i++) {
                 for (int j = 0; j < 10; j++) {
                     order_map(i, j) = i * 10 + j;
@@ -120,7 +120,7 @@ TEST_CASE("test reorder") {
         SECTION("test flip_horizental and reorder") {
             Frame tmp = f.copy();
             // flip frame horizontally
-            NDArray<size_t, 2> order_map({10, 10});
+            NDArray<uint64_t, 2> order_map({10, 10});
             for (int i = 0; i < 10; i++) {
                 for (int j = 0; j < 10; j++) {
                     order_map(i, j) = (9 - i) * 10 + j;
@@ -144,7 +144,7 @@ TEST_CASE("test reorder") {
         }
         // flip vertically
         Frame tmp = f.copy();
-        NDArray<size_t, 2> order_map({10, 10});
+        NDArray<uint64_t, 2> order_map({10, 10});
         for (int i = 0; i < 10; i++) {
             for (int j = 0; j < 10; j++) {
                 order_map(i, j) = i * 10 + (9 - j);
