@@ -127,7 +127,7 @@ void define_core_bindings(py::module &m) {
             "reorder",
             [](py::array_t<uint64_t> &np_array) {
                 py::buffer_info info = np_array.request();
-                if (info.format != Dtype(Dtype::UINT64).format_descr())
+                if (info.format != Dtype(Dtype::UINT64).numpy_descr())
                     throw std::runtime_error(
                         "Incompatible format: different formats! (Are you sure the arrays are of the same type?)");
                 if (info.ndim != 2)
