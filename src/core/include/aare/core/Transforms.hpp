@@ -102,7 +102,8 @@ class Transforms {
         };
     }
     static std::function<Frame &(Frame &)> reorder(std::vector<size_t> &order_map) {
-        NDView<size_t, 2> order_map_view(order_map.data(), {order_map.size(), 1});
+        ssize_t tmp = static_cast<ssize_t>(order_map.size());
+        NDView<size_t, 2> order_map_view(order_map.data(), {tmp, 1});
         return reorder(order_map_view);
     }
     static std::function<Frame &(Frame &)> reorder(NDArray<size_t, 2> &order_map) {

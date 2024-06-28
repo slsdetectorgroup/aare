@@ -35,14 +35,14 @@ void define_core_bindings(py::module &m) {
         .def_property_readonly("size", &Frame::bytes)
         .def_property_readonly("data", &Frame::data, py::return_value_policy::reference)
         .def_buffer([](Frame &f) -> py::buffer_info {
+            Dtype dt = f.dtype();
             return {
-                f.data(),                 /* Pointer to buffer */
-                f.dtype().bytes(),        /* Size of one scalar */
-                f.dtype().format_descr(), /* Python struct-style format descriptor */
-                2,                        /* Number of dimensions */
-                {f.rows(), f.cols()},     /* Buffer dimensions */
-                {f.cols() * f.dtype().bytes(), f.dtype().bytes()}
-                /* Strides (in bytes) for each index */
+                f.data(),                           /* Pointer to buffer */
+                static_cast<ssize_t>(dt.bytes()),   /* Size of one scalar */
+                dt.format_descr(),                  /* Python struct-style format descriptor */
+                2,                                  /* Number of dimensions */
+                {f.rows(), f.cols()},               /* Buffer dimensions */
+                {f.cols() * dt.bytes(), dt.bytes()} /* Strides (in bytes) for each index */
             };
         });
 
