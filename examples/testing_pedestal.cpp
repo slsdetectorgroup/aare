@@ -11,7 +11,7 @@ using namespace aare;
 
 void print_vpair(std::vector<std::pair<int, double>> &v) {
     std::cout << "[ ";
-    for (int i = 0; i < v.size(); i++) {
+    for (unsigned int i = 0; i < v.size(); i++) {
         std::cout << "(" << v[i].first << "," << v[i].second << "), ";
     }
     std::cout << "]" << std::endl;
@@ -19,7 +19,7 @@ void print_vpair(std::vector<std::pair<int, double>> &v) {
 int range(int min, int max, int i, int steps) { return min + (max - min) * i / steps; }
 int main() {
     const int rows = 1, cols = 1;
-    double MEAN = 5.0, STD = 1.0, VAR = STD * STD, TOLERANCE = 0.1;
+    double MEAN = 5.0, STD = 1.0;
 
     unsigned seed = std::chrono::system_clock::now().time_since_epoch().count();
     std::default_random_engine generator(seed);

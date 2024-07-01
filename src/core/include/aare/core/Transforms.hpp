@@ -12,6 +12,7 @@ class Transforms {
     std::vector<std::function<Frame &(Frame &)>> m_transformations{};
 
   public:
+    static NDArray<uint64_t, 2> MOENCH_ORDER_MAP;
     Transforms() = default;
     Transforms(std::vector<std::function<Frame &(Frame &)>> transformations_) : m_transformations(transformations_) {}
     void add(std::function<Frame &(Frame &)> transformation) { m_transformations.push_back(transformation); }
@@ -70,7 +71,7 @@ class Transforms {
         }
         // verify that the order map has all the values from 0 to rows * cols
         for (uint64_t i = 0; i < order_map.size(); i++) {
-            if (order_map[i] >= order_map.size() || order_map[i] < 0) {
+            if (order_map[i] >= order_map.size()) {
                 throw std::runtime_error("Order map has values less than 0 or greater than rows * cols");
             }
         }
@@ -110,6 +111,37 @@ class Transforms {
         NDView<uint64_t, 2> order_map_view(order_map.data(), order_map.shape());
         return reorder(order_map_view);
     }
+    static NDArray<uint64_t, 2> generate_moench_order_map() {
+        std::array<int, 32> const adc_nr = {300, 325, 350, 375, 300, 325, 350, 375, 200, 225, 250,
+                                            275, 200, 225, 250, 275, 100, 125, 150, 175, 100, 125,
+                                            150, 175, 0,   25,  50,  75,  0,   25,  50,  75};
+        int const sc_width = 25;
+        int const nadc = 32;
+        int const pixels_per_sc = 5000;
+        NDArray<uint64_t, 2> order_map({400, 400});
+
+        int pixel = 0;
+        for (int i = 0; i != pixels_per_sc; ++i) {
+            for (int i_adc = 0; i_adc != nadc; ++i_adc) {
+                int const col = adc_nr[i_adc] + (i % sc_width);
+                int row = 0;
+                if ((i_adc / 4) % 2 == 0)
+                    row = 199 - (i / sc_width);
+                else
+                    row = 200 + (i / sc_width);
+
+                order_map(row, col) = pixel;
+                pixel++;
+            }
+        }
+        return order_map;
+    }
+
+    static std::function<Frame &(Frame &)> reorder_moench() {
+        return reorder(MOENCH_ORDER_MAP);
+    }
 };
+
+NDArray<uint64_t,2> Transforms::MOENCH_ORDER_MAP = Transforms::generate_moench_order_map();
 
 } // namespace aare

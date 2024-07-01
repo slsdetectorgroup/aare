@@ -6,3 +6,4 @@
 #include "aare/core/defs.hpp"
 // #include "aare/core/VariableSizeClusterFinder.hpp"
 #include "aare/core/ProducerConsumerQueue.hpp"
+#include "aare/core/Transforms.hpp"

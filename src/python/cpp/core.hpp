@@ -119,6 +119,7 @@ void define_core_bindings(py::module &m) {
         .def(py::init<>())
         .def_static("identity", &Transforms::identity)
         .def_static("zero", &Transforms::zero)
+        .def_static("reorder_moench", &Transforms::reorder_moench)
         .def_static("reorder", py::overload_cast<NDView<uint64_t, 2> &>(&Transforms::reorder))
         .def_static("reorder", py::overload_cast<NDArray<uint64_t, 2> &>(&Transforms::reorder))
         .def_static("reorder", py::overload_cast<std::vector<uint64_t> &>(&Transforms::reorder))
