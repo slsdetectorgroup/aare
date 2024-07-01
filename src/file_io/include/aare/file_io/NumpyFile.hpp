@@ -1,5 +1,5 @@
 #pragma once
-#include "aare/core/DType.hpp"
+#include "aare/core/Dtype.hpp"
 #include "aare/core/defs.hpp"
 #include "aare/file_io/FileInterface.hpp"
 #include "aare/file_io/NumpyHelpers.hpp"
@@ -47,7 +47,7 @@ class NumpyFile : public FileInterface {
      * @brief get the data type of the numpy file
      * @return DType
      */
-    DType dtype() const { return m_header.dtype; }
+    Dtype dtype() const { return m_header.dtype; }
 
     /**
      * @brief get the shape of the numpy file

@@ -31,18 +31,18 @@ TEST_CASE("trim whitespace") {
 }
 
 TEST_CASE("parse data type descriptions") {
-    REQUIRE(parse_descr("<i1") == aare::DType::INT8);
-    REQUIRE(parse_descr("<i2") == aare::DType::INT16);
-    REQUIRE(parse_descr("<i4") == aare::DType::INT32);
-    REQUIRE(parse_descr("<i8") == aare::DType::INT64);
+    REQUIRE(parse_descr("<i1") == aare::Dtype::INT8);
+    REQUIRE(parse_descr("<i2") == aare::Dtype::INT16);
+    REQUIRE(parse_descr("<i4") == aare::Dtype::INT32);
+    REQUIRE(parse_descr("<i8") == aare::Dtype::INT64);
 
-    REQUIRE(parse_descr("<u1") == aare::DType::UINT8);
-    REQUIRE(parse_descr("<u2") == aare::DType::UINT16);
-    REQUIRE(parse_descr("<u4") == aare::DType::UINT32);
-    REQUIRE(parse_descr("<u8") == aare::DType::UINT64);
+    REQUIRE(parse_descr("<u1") == aare::Dtype::UINT8);
+    REQUIRE(parse_descr("<u2") == aare::Dtype::UINT16);
+    REQUIRE(parse_descr("<u4") == aare::Dtype::UINT32);
+    REQUIRE(parse_descr("<u8") == aare::Dtype::UINT64);
 
-    REQUIRE(parse_descr("<f4") == aare::DType::FLOAT);
-    REQUIRE(parse_descr("<f8") == aare::DType::DOUBLE);
+    REQUIRE(parse_descr("<f4") == aare::Dtype::FLOAT);
+    REQUIRE(parse_descr("<f8") == aare::Dtype::DOUBLE);
 }
 
 TEST_CASE("is element in array") {

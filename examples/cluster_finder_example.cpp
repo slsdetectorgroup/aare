@@ -15,7 +15,7 @@ int main() {
     logger::info("RAW file");
     logger::info("file rows:", file.rows(), "cols:", file.cols());
     logger::info(file.total_frames());
-    Frame frame(0, 0, 0);
+    Frame frame(0, 0, Dtype::NONE);
     for (auto i = 0; i < 10000; i++) {
         if (file.frame_number(i) == 23389) {
             logger::info("frame_number:", file.frame_number(i));
@@ -41,18 +41,18 @@ int main() {
     logger::info("Pedestal mean:", p.mean(0, 0), "std:", p.standard_deviation(0, 0));
     logger::info("Pedestal mean:", p.mean(200, 200), "std:", p.standard_deviation(200, 200));
     FileConfig cfg;
-    cfg.dtype = DType(typeid(double));
+    cfg.dtype = Dtype(typeid(double));
     cfg.rows = p.rows();
     cfg.cols = p.cols();
 
     NumpyFile np_pedestal("/home/l_bechir/tmp/testNewFW20230714/pedestal.npy", "w", cfg);
-    cfg.dtype = DType(typeid(uint16_t));
+    cfg.dtype = Dtype(typeid(uint16_t));
     NumpyFile np_frame("/home/l_bechir/tmp/testNewFW20230714/frame.npy", "w", cfg);
 
     np_pedestal.write(p.mean());
     np_frame.write(frame.view<uint16_t>());
 
-    auto clusters = clusterFinder.find_clusters(frame.view<uint16_t>(), p);
+    auto clusters = clusterFinder.find_clusters_without_threshold(frame.view<uint16_t>(), p);
     logger::info("nclusters:", clusters.size());
 
     // aare::logger::info("nclusters:", clusters.size());

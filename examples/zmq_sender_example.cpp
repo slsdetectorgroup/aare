@@ -4,7 +4,11 @@
 #include <ctime> // std::time
 #include <fmt/core.h>
 #include <string>
-#include <unistd.h> // sleep
+
+// sleep
+#include <chrono>
+#include <thread>
+
 using namespace aare;
 
 int main() {
@@ -12,7 +16,7 @@ int main() {
     std::string const endpoint = "tcp://*:5555";
     aare::ZmqSocketSender socket(endpoint);
     socket.bind();
-    Frame frame(1024, 1024, sizeof(uint32_t) * 8);
+    Frame frame(1024, 1024, Dtype::UINT32);
     for (int i = 0; i < 1024; i++) {
         for (int j = 0; j < 1024; j++) {
             frame.set(i, j, i + j);
@@ -26,6 +30,7 @@ int main() {
     std::vector<ZmqFrame> zmq_frames;
     // send two exact frames
 
+    std::chrono::milliseconds sleep_time(1); // or whatever
     int acqid = 0;
     while (true) {
         zmq_frames.clear();
@@ -34,7 +39,7 @@ int main() {
 
         aare::logger::info("acquisition:", header.acqIndex);
         aare::logger::info("Header size:", header.to_string().size());
-        aare::logger::info("Frame size:", frame.size());
+        aare::logger::info("Frame size:", frame.bytes());
         aare::logger::info("Number of frames:", n_frames);
 
         for (size_t i = 0; i < n_frames; i++) {
@@ -42,7 +47,7 @@ int main() {
         }
         size_t const rc = socket.send(zmq_frames);
         aare::logger::info("Sent bytes", rc);
-        sleep(1);
+        std::this_thread::sleep_for(sleep_time);
     }
     return 0;
 }

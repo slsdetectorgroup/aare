@@ -7,33 +7,23 @@
 using namespace aare;
 int main() {
     auto PROJECT_ROOT_DIR = std::filesystem::path(getenv("AARE_ROOT_DIR"));
-    std::filesystem::path const fpath("/mnt/sls_det_storage/moench_data/testNewFW20230714/cu_half_speed_master_4.json");
+    std::filesystem::path const fpath(PROJECT_ROOT_DIR / "data" / "jungfrau" / "jungfrau_single_master_0.json");
+    auto f = File(fpath, "r");
+    auto frame = f.iread(0);
+    auto f00 = *(uint16_t *)frame.get(0, 0);
+    auto f01 = *(uint16_t *)frame.get(0, 1);
+    auto f10 = *(uint16_t *)frame.get(1, 0);
+    auto f11 = *(uint16_t *)frame.get(1, 1);
+    std::cout << f00 << " " << f01 << std::endl;
+    std::cout << f10 << " " << f11 << std::endl;
 
-    NDArray<double, 2> frame({10, 10});
-    frame = 0;
+    std::cout << "-----------------" << std::endl;
+    Pedestal p = Pedestal(frame.rows(), frame.cols());
+    p.push(0, 0, f00);
+    p.push(0, 1, f01);
+    p.push(1, 0, f10);
+    p.push(1, 1, f11);
 
-    for (int i = 5; i < 8; i++) {
-        for (int j = 5; j < 8; j++) {
-            frame(i, j) = (i + j) % 10;
-        }
-    }
-
-    for (int i = 0; i < frame.shape(0); i++) {
-        for (int j = 0; j < frame.shape(1); j++) {
-            std::cout << frame(i, j) << " ";
-        }
-        std::cout << std::endl;
-    }
-
-    ClusterFinder clusterFinder(3, 3, 1, 1); // 3x3 cluster, 1 nSigma, 1 threshold
-
-    Pedestal p(10, 10);
-
-    auto clusters = clusterFinder.find_clusters(frame.span(), p);
-
-    aare::logger::info("nclusters:", clusters.size());
-
-    for (auto &cluster : clusters) {
-        aare::logger::info("cluster center:", cluster.to_string<double>());
-    }
+    std::cout << p.mean(0, 0) << "\n " << p.mean(0, 1) << std::endl;
+    std::cout << p.mean(1, 0) << "\n " << p.mean(1, 1) << std::endl;
 }

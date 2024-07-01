@@ -77,7 +77,7 @@ TEST_CASE("Compare reading from a numpy file with a raw file") {
     for (size_t i = 0; i < 10; ++i) {
         auto raw_frame = raw.read();
         auto npy_frame = npy.read();
-        CHECK(raw_frame.view<uint16_t>() == npy_frame.view<uint16_t>());
+        CHECK((raw_frame.view<uint16_t>() == npy_frame.view<uint16_t>()));
     }
 }
 
@@ -110,5 +110,5 @@ TEST_CASE("Read file with unordered frames") {
     auto fpath = test_data_path() / "mythen" / "scan242_master_3.raw";
     REQUIRE(std::filesystem::exists(fpath));
     File f(fpath, "r");
-    REQUIRE_THROWS(f.read());
+    REQUIRE_THROWS((f.read()));
 }

@@ -1,12 +1,10 @@
 #include "aare.hpp"
 #include "aare/examples/defs.hpp"
 
-#include <boost/program_options.hpp>
 #include <cassert>
 #include <fmt/core.h>
 #include <string>
 using namespace aare;
-namespace po = boost::program_options;
 using namespace std;
 
 int main() {

@@ -1,39 +1,19 @@
 #include "aare.hpp"
 #include "aare/examples/defs.hpp"
-
 #include "zmq.h"
-#include <boost/program_options.hpp>
 #include <cassert>
 #include <fmt/core.h>
 #include <string>
 using namespace aare;
-namespace po = boost::program_options;
 using namespace std;
 
 string setup(int argc, char **argv) {
     logger::set_verbosity(logger::DEBUG);
-    po::options_description desc("options");
-    desc.add_options()("help", "produce help message")("port,p", po::value<uint16_t>()->default_value(5555),
-                                                       "port number");
-    po::positional_options_description pd;
-    pd.add("port", 1);
-    po::variables_map vm;
-    try {
-        auto parsed = po::command_line_parser(argc, argv).options(desc).positional(pd).run();
-        po::store(parsed, vm);
-        po::notify(vm);
 
-    } catch (const boost::program_options::error &e) {
-        cout << e.what() << "\n";
-        cout << desc << "\n";
-        exit(1);
-    }
-    if (vm.count("help")) {
-        cout << desc << "\n";
-        exit(1);
-    }
-
-    auto port = vm["port"].as<uint16_t>();
+    ArgParser parser("Zmq task ventilator");
+    parser.add_option("port", "p", true, false, "5555", "port number");
+    auto args = parser.parse(argc, argv);
+    int port = std::stoi(args["port"]);
 
     return "tcp://127.0.0.1:" + to_string(port);
 }
@@ -55,7 +35,7 @@ int process(const std::string &endpoint) {
         logger::info(zframe.header.to_string());
 
         // 3. create task
-        Task *task = Task::init(zframe.frame.data(), zframe.frame.size());
+        Task *task = Task::init(zframe.frame.data(), zframe.frame.bytes());
         task->opcode = (size_t)Task::Operation::PEDESTAL;
         task->id = zframe.header.frameNumber;
 

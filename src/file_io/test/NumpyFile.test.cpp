@@ -4,7 +4,7 @@
 
 #include "test_config.hpp"
 
-using aare::DType;
+using aare::Dtype;
 using aare::NumpyFile;
 TEST_CASE("Read a 1D numpy file with int32 data type") {
 
@@ -14,7 +14,7 @@ TEST_CASE("Read a 1D numpy file with int32 data type") {
     NumpyFile f(fpath);
 
     // we know the file contains 10 elements of np.int32 containing values 0-9
-    REQUIRE(f.dtype() == DType::INT32);
+    REQUIRE(f.dtype() == Dtype::INT32);
     REQUIRE(f.shape() == std::vector<size_t>{10});
 
     // use the load function to read the full file into a NDArray
@@ -32,7 +32,7 @@ TEST_CASE("Read a 3D numpy file with np.double data type") {
     NumpyFile f(fpath);
 
     // we know the file contains 10 elements of np.int32 containing values 0-9
-    REQUIRE(f.dtype() == DType::DOUBLE);
+    REQUIRE(f.dtype() == Dtype::DOUBLE);
     REQUIRE(f.shape() == std::vector<size_t>{3, 2, 5});
 
     // use the load function to read the full file into a NDArray

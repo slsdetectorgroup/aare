@@ -8,7 +8,7 @@ namespace aare {
 ZmqWorker::ZmqWorker(const std::string &ventilator_endpoint, const std::string &sink_endpoint)
     : m_receiver(new ZmqSocketReceiver(ventilator_endpoint, ZMQ_PULL)), m_sender(nullptr) {
     m_receiver->connect();
-    if (not sink_endpoint.empty()) {
+    if (!sink_endpoint.empty()) {
         m_sender = new ZmqSocketSender(sink_endpoint, ZMQ_PUSH);
         m_sender->connect();
     }

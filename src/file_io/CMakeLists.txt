@@ -15,7 +15,6 @@ set(SourceFiles
     ${CMAKE_CURRENT_SOURCE_DIR}/src/SubFile.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/src/NumpyFile.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/src/NumpyHelpers.cpp
-    ${CMAKE_CURRENT_SOURCE_DIR}/src/ClusterFile.cpp
 )
 
 add_library(file_io STATIC ${SourceFiles})
@@ -32,7 +31,6 @@ if(AARE_TESTS)
             ${CMAKE_CURRENT_SOURCE_DIR}/test/NumpyFile.test.cpp
             ${CMAKE_CURRENT_SOURCE_DIR}/test/NumpyHelpers.test.cpp
             ${CMAKE_CURRENT_SOURCE_DIR}/test/RawFile.test.cpp
-            ${CMAKE_CURRENT_SOURCE_DIR}/test/ClusterFile.test.cpp
         )
     target_sources(tests PRIVATE ${TestSources} )
     target_link_libraries(tests PRIVATE core file_io)

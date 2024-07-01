@@ -1,56 +1,26 @@
 #include "aare.hpp"
 #include "aare/examples/defs.hpp"
 
-#include <boost/program_options.hpp>
 #include <chrono>
 #include <thread>
 
 using namespace aare;
 using namespace std;
-namespace po = boost::program_options;
 
 int main(int argc, char **argv) {
     aare::logger::set_verbosity(aare::logger::DEBUG);
 
-    po::options_description desc("Allowed options");
-    desc.add_options()("help", "produce help message")("file,f", po::value<string>(), "input file")(
-        "port,p", po::value<uint16_t>(), "port number")("fps", po::value<uint16_t>()->default_value(1),
-                                                        "frames per second (default 1)")("loop,l",
-                                                                                         "loop over the file");
-    po::positional_options_description pd;
-    pd.add("file", -1);
+    ArgParser parser("Zmq restream example");
+    parser.add_option("file", "f", true, true, "", "input file");
+    parser.add_option("port", "p", true, true, "", "port number");
+    parser.add_option("fps", "fp", true, false, "1", "frames per second");
+    parser.add_option("loop", "l", false, false, "", "loop over the file");
 
-    po::variables_map vm;
-    try {
-        auto parsed = po::command_line_parser(argc, argv).options(desc).positional(pd).run();
-        po::store(parsed, vm);
-        po::notify(vm);
-
-    } catch (const boost::program_options::error &e) {
-        cout << e.what() << "\n";
-        cout << desc << "\n";
-        return 1;
-    }
-
-    if (vm.count("help")) {
-        cout << desc << "\n";
-        return 1;
-    }
-    if (vm.count("file") != 1) {
-        aare::logger::error("file is required");
-        cout << desc << "\n";
-        return 1;
-    }
-    if (vm.count("port") != 1) {
-        aare::logger::error("port is required");
-        cout << desc << "\n";
-        return 1;
-    }
-
-    std::string const path = vm["file"].as<string>();
-    uint16_t const port = vm["port"].as<uint16_t>();
-    bool const loop = vm.count("loop") == 1;
-    uint16_t const fps = vm["fps"].as<uint16_t>();
+    auto args = parser.parse(argc, argv);
+    std::string const path = args["file"];
+    uint16_t const port = std::stoi(args["port"]);
+    bool const loop = args["loop"] == "1";
+    uint16_t const fps = std::stoi(args["fps"]);
 
     aare::logger::debug("ARGS: file:", path, "port:", port, "fps:", fps, "loop:", loop);
     auto d = round<std::chrono::milliseconds>(std::chrono::duration<double>{1. / fps});
@@ -78,7 +48,7 @@ int main(int argc, char **argv) {
         header.shape.row = frame.rows();
         header.shape.col = frame.cols();
         header.bitmode = frame.bitdepth();
-        header.size = frame.size();
+        header.size = frame.bytes();
 
         sender.send({header, frame});
         std::this_thread::sleep_for(d);

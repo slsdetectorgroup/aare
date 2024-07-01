@@ -90,7 +90,7 @@ std::unordered_map<std::string, std::string> parse_dict(std::string in, const st
     return map;
 }
 
-aare::DType parse_descr(std::string typestring) {
+aare::Dtype parse_descr(std::string typestring) {
 
     if (typestring.length() < 3) {
         throw std::runtime_error("invalid typestring (length)");
@@ -118,7 +118,7 @@ aare::DType parse_descr(std::string typestring) {
         throw std::runtime_error("invalid typestring (itemsize)");
     }
 
-    return aare::DType(typestring);
+    return aare::Dtype(typestring);
 }
 
 bool parse_bool(const std::string &in) {
@@ -245,7 +245,7 @@ size_t write_header(std::ostream &out, const NumpyHeader &header) {
     write_magic(out, version_major, version_minor);
 
     // write header length
-    if (version_major == 1 and version_minor == 0) {
+    if (version_major == 1 && version_minor == 0) {
         auto header_len = static_cast<uint16_t>(header_dict.length() + padding.length() + 1);
 
         std::array<uint8_t, 2> header_len_le16{static_cast<uint8_t>((header_len >> 0) & 0xff),

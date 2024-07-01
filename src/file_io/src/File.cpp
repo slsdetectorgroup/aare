@@ -6,13 +6,14 @@
 
 namespace aare {
 
-File::File(const std::filesystem::path &fname, const std::string &mode, const FileConfig &cfg) {
+File::File(const std::filesystem::path &fname, const std::string &mode, const FileConfig &cfg)
+    : file_impl(nullptr), is_npy(true) {
     if (mode != "r" && mode != "w" && mode != "a") {
         throw std::invalid_argument("Unsupported file mode");
     }
 
-    if ((mode == "r" or mode == "a") and not std::filesystem::exists(fname)) {
-        throw std::runtime_error(fmt::format("File does not exist: {}", fname.c_str()));
+    if ((mode == "r" || mode == "a") && !std::filesystem::exists(fname)) {
+        throw std::runtime_error(fmt::format("File does not exist: {}", fname.string()));
     }
 
     if (fname.extension() == ".raw" || fname.extension() == ".json") {
@@ -52,10 +53,17 @@ size_t File::cols() const { return file_impl->cols(); }
 size_t File::bitdepth() const { return file_impl->bitdepth(); }
 void File::set_total_frames(size_t total_frames) { return file_impl->set_total_frames(total_frames); }
 File::~File() { delete file_impl; }
+DetectorType File::detector_type() const { return file_impl->detector_type(); }
+xy File::geometry() const {
+    if (is_npy) {
+        return {1, 1};
+    }
+    return reinterpret_cast<RawFile *>(file_impl)->geometry();
+}
 
 Frame File::iread(size_t frame_number) { return file_impl->iread(frame_number); }
 
-File::File(File &&other) noexcept : file_impl(other.file_impl) { other.file_impl = nullptr; }
+File::File(File &&other) noexcept : file_impl(other.file_impl), is_npy(other.is_npy) { other.file_impl = nullptr; }
 
 // write move assignment operator
 

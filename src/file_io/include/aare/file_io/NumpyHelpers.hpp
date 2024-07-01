@@ -11,7 +11,7 @@
 #include <unordered_map>
 #include <vector>
 
-#include "aare/core/DType.hpp"
+#include "aare/core/Dtype.hpp"
 #include "aare/core/defs.hpp"
 
 namespace aare {
@@ -19,7 +19,7 @@ namespace aare {
 using shape_t = std::vector<size_t>;
 
 struct NumpyHeader {
-    DType dtype{aare::DType::ERROR};
+    Dtype dtype{aare::Dtype::ERROR};
     bool fortran_order{false};
     shape_t shape{};
 
@@ -50,7 +50,7 @@ template <typename T, size_t N> bool in_array(T val, const std::array<T, N> &arr
 }
 bool is_digits(const std::string &str);
 
-aare::DType parse_descr(std::string typestring);
+aare::Dtype parse_descr(std::string typestring);
 size_t write_header(const std::filesystem::path &fname, const NumpyHeader &header);
 size_t write_header(std::ostream &out, const NumpyHeader &header);
 
