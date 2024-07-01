@@ -38,7 +38,7 @@ class Cluster {
             return;
         x = other.x;
         y = other.y;
-        memcpy(m_data, other.m_data, other.size());
+        memcpy(m_data, other.m_data, other.bytes());
     }
     Cluster &operator=(const Cluster &other) {
         if (this == &other)
@@ -79,7 +79,8 @@ class Cluster {
     /**
      * @brief size of the cluster in bytes when saved to a file
      */
-    size_t size() const { return cluster_sizeX * cluster_sizeY * dt.bytes(); }
+    size_t size() const { return cluster_sizeX * cluster_sizeY ; }
+    size_t bytes() const { return cluster_sizeX * cluster_sizeY * dt.bytes(); }
     auto begin() const { return m_data; }
     auto end() const { return m_data + cluster_sizeX * cluster_sizeY * dt.bytes(); }
     std::byte *data() { return m_data; }

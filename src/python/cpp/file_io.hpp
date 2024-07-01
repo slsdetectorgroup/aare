@@ -73,4 +73,21 @@ void define_file_io_bindings(py::module &m) {
         .def("read", py::overload_cast<int>(&ClusterFileV2::read))
         .def("frame_number", &ClusterFileV2::frame_number)
         .def("close", &ClusterFileV2::close);
+
+    py::function(m, "to_clustV2").def(
+        "to_clustV2",
+        [](const std::vector<Cluster> &clusters, const int frame_number) {
+            std::vector<ClusterV2> clusters_;
+            for (auto &c : clusters) {
+                ClusterV2 cluster;
+                cluster.cluster.x = c.x;
+                cluster.cluster.y = c.y;
+                
+    
+                cluster.frame_number = frame_number;
+                clusters_.push_back(cluster);
+            }
+            return clusters_;
+        });
 }
+

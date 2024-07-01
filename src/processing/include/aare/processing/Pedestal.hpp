@@ -38,6 +38,9 @@ template <typename SUM_TYPE = double> class Pedestal {
 
     // pixel level operations (should be refactored to allow users to implement their own pixel level operations)
     template <typename T> inline void push(const int row, const int col, const T val) {
+        if (m_freeze) {
+            return;
+        }
         const int idx = index(row, col);
         if (m_cur_samples[idx] < m_samples) {
             m_sum(idx) += val;
@@ -53,10 +56,12 @@ template <typename SUM_TYPE = double> class Pedestal {
     SUM_TYPE standard_deviation(const int row, const int col) const;
     inline int index(const int row, const int col) const { return row * m_cols + col; };
     void clear(const int row, const int col);
+    void set_freeze(bool freeze) { m_freeze = freeze; }
 
   private:
     int m_rows;
     int m_cols;
+    bool m_freeze;
     uint32_t m_samples;
     uint32_t *m_cur_samples{nullptr};
     NDArray<SUM_TYPE, 2> m_sum;

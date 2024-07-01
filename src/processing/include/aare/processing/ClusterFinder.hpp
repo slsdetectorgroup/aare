@@ -86,12 +86,21 @@ class ClusterFinder {
                     Cluster cluster(m_cluster_sizeX, m_cluster_sizeY, Dtype(typeid(PEDESTAL_TYPE)));
                     cluster.x = ix;
                     cluster.y = iy;
+                    // if (ix == 1 && iy == 2) {
+                    //     std::cout << "max: " << max << std::endl;
+                    //     std::cout << "frame(iy, ix): " << frame(iy, ix) << std::endl;
+                    //     std::cout << "pedestal.mean(iy, ix): " << pedestal.mean(iy, ix) << std::endl;
+                    // }
                     short i = 0;
                     for (short ir = -(m_cluster_sizeY / 2); ir < (m_cluster_sizeY / 2) + 1; ir++) {
                         for (short ic = -(m_cluster_sizeX / 2); ic < (m_cluster_sizeX / 2) + 1; ic++) {
                             if (ix + ic >= 0 && ix + ic < frame.shape(1) && iy + ir >= 0 && iy + ir < frame.shape(0)) {
-                                PEDESTAL_TYPE tmp = frame(iy + ir, ix + ic) - pedestal.mean(iy + ir, ix + ic);
+                                PEDESTAL_TYPE tmp = static_cast<PEDESTAL_TYPE>(frame(iy + ir, ix + ic)) -
+                                                    pedestal.mean(iy + ir, ix + ic);
                                 cluster.set<PEDESTAL_TYPE>(i, tmp);
+                                // if(ix == 1 && iy == 2){
+                                //     std::cout << "(" << iy + ir << ", " << ix + ic << "): " << tmp << "\n";
+                                // }
                                 i++;
                             }
                         }
@@ -100,8 +109,10 @@ class ClusterFinder {
                 }
             }
         }
-        for (auto &update : pedestal_updates) {
-            pedestal.push(update.y, update.x, update.value);
+        if (late_update) {
+            for (auto &update : pedestal_updates) {
+                pedestal.push(update.y, update.x, update.value);
+            }
         }
         return clusters;
     }
