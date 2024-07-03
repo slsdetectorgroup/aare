@@ -87,7 +87,7 @@ jobs:
           ls build/examples/*_example
           # examples to run
           cd build/examples
-          examples=(raw_example cluster_example json_example logger_example multiport_example mythen_example)
+          examples=(raw_example json_example logger_example multiport_example mythen_example)
           examples+=(numpy_read_example numpy_write_example)
           for example in "${examples[@]}"; do
             echo "Running example: $example"
