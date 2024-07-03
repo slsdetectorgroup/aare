@@ -95,7 +95,7 @@ void define_cluster_finder_template_bindings(py::class_<ClusterFinder> &cf) {
     cf.def("find_clusters_without_threshold", [](ClusterFinder &self, py::array_t<VIEW_TYPE> &np_array,
                                                  Pedestal<PEDESTAL_TYPE> &pedestal, bool late_update) {
         py::buffer_info info = np_array.request();
-        if (info.format != py::format_descriptor<VIEW_TYPE>::format())
+        if (info.format != Dtype(typeid(VIEW_TYPE)).numpy_descr())
             throw std::runtime_error(
                 "Incompatible format: different formats! (Are you sure the arrays are of the same type?)");
         if (info.ndim != 2)

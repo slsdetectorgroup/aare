@@ -7,23 +7,26 @@
 using namespace aare;
 int main() {
     auto PROJECT_ROOT_DIR = std::filesystem::path(getenv("AARE_ROOT_DIR"));
-    std::filesystem::path const fpath(PROJECT_ROOT_DIR / "data" / "jungfrau" / "jungfrau_single_master_0.json");
+    std::filesystem::path const fpath("/home/l_bechir/tmp/testNewFW20230714/cu_half_speed_master_4.json");
     auto f = File(fpath, "r");
-    auto frame = f.iread(0);
-    auto f00 = *(uint16_t *)frame.get(0, 0);
-    auto f01 = *(uint16_t *)frame.get(0, 1);
-    auto f10 = *(uint16_t *)frame.get(1, 0);
-    auto f11 = *(uint16_t *)frame.get(1, 1);
-    std::cout << f00 << " " << f01 << std::endl;
-    std::cout << f10 << " " << f11 << std::endl;
+    // calculate pedestal
+    Pedestal pedestal(400,400,1000);
+    for (int i = 0; i < 1000; i++) {
+        auto frame = f.read();
+        pedestal.push<uint16_t>(frame);
+    }
+    // find clusters
+    ClusterFinder clusterFinder(3, 3, 5, 0);
+    f.seek(0);
+    std::vector<std::vector<Cluster>> clusters_vector;
+    auto start = std::chrono::high_resolution_clock::now();
+    for (int i = 0; i < 1000; i++) {
+        auto frame = f.iread(i);
+        auto clusters = clusterFinder.find_clusters_without_threshold(frame.view<uint16_t>(), pedestal,false);
+        clusters_vector.emplace_back(clusters);
+    }
+    auto end = std::chrono::high_resolution_clock::now();
+    std::chrono::duration<double> elapsed_seconds = end-start;
+    std::cout << "elapsed time: " << elapsed_seconds.count() << "s\n";
 
-    std::cout << "-----------------" << std::endl;
-    Pedestal p = Pedestal(frame.rows(), frame.cols());
-    p.push(0, 0, f00);
-    p.push(0, 1, f01);
-    p.push(1, 0, f10);
-    p.push(1, 1, f11);
-
-    std::cout << p.mean(0, 0) << "\n " << p.mean(0, 1) << std::endl;
-    std::cout << p.mean(1, 0) << "\n " << p.mean(1, 1) << std::endl;
 }

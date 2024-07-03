@@ -31,7 +31,8 @@ void define_file_io_bindings(py::module &m) {
         .def_property_readonly("cols", &File::cols)
         .def_property_readonly("bitdepth", &File::bitdepth)
         .def_property_readonly("detector_type", &File::detector_type)
-        .def_property_readonly("geometry", &File::geometry, py::call_guard<py::scoped_ostream_redirect, py::scoped_estream_redirect>())
+        .def_property_readonly("geometry", &File::geometry,
+                               py::call_guard<py::scoped_ostream_redirect, py::scoped_estream_redirect>())
         .def("set_total_frames", &File::set_total_frames);
 
     py::class_<FileConfig>(m, "FileConfig")
@@ -72,22 +73,23 @@ void define_file_io_bindings(py::module &m) {
         .def("read", py::overload_cast<>(&ClusterFileV2::read))
         .def("read", py::overload_cast<int>(&ClusterFileV2::read))
         .def("frame_number", &ClusterFileV2::frame_number)
+        .def("write", py::overload_cast<std::vector<ClusterV2> const &>(&ClusterFileV2::write))
+        
         .def("close", &ClusterFileV2::close);
 
-    py::function(m, "to_clustV2").def(
-        "to_clustV2",
-        [](const std::vector<Cluster> &clusters, const int frame_number) {
-            std::vector<ClusterV2> clusters_;
-            for (auto &c : clusters) {
-                ClusterV2 cluster;
-                cluster.cluster.x = c.x;
-                cluster.cluster.y = c.y;
-                
-    
-                cluster.frame_number = frame_number;
-                clusters_.push_back(cluster);
+    m.def("to_clustV2", [](std::vector<Cluster> &clusters, const int frame_number) {
+        std::vector<ClusterV2> clusters_;
+        for (auto &c : clusters) {
+            ClusterV2 cluster;
+            cluster.cluster.x = c.x;
+            cluster.cluster.y = c.y;
+            int i=0;
+            for(auto &d : cluster.cluster.data) {
+                d=c.get<double>(i++);
             }
-            return clusters_;
-        });
+            cluster.frame_number = frame_number;
+            clusters_.push_back(cluster);
+        }
+        return clusters_;
+    });
 }
-

@@ -106,7 +106,9 @@ class ClusterFileV2 {
         header.frame_number = clusters[0].frame_number;
         header.n_clusters = clusters.size();
         fwrite(&header, sizeof(ClusterHeader), 1, fp);
-        fwrite(clusters.data(), sizeof(ClusterV2), clusters.size(), fp);
+        for (auto &c : clusters) {
+            fwrite(&c.cluster, sizeof(ClusterV2_), 1, fp);
+        }
         return clusters.size();
     }
 
