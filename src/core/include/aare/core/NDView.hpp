@@ -68,7 +68,7 @@ template <typename T, int64_t Ndim = 2> class NDView {
         return buffer_[element_offset(strides_, index...)];
     }
 
-    int64_t size() const { return size_; }
+    uint64_t size() const { return size_; }
     size_t total_bytes() const { return size_ * sizeof(T); }
     std::array<int64_t, Ndim> strides() const noexcept { return strides_; }
 
@@ -80,7 +80,7 @@ template <typename T, int64_t Ndim = 2> class NDView {
     bool operator==(const NDView &other) const {
         if (size_ != other.size_)
             return false;
-        for (int64_t i = 0; i != size_; ++i) {
+        for (uint64_t i = 0; i != size_; ++i) {
             if (buffer_[i] != other.buffer_[i])
                 return false;
         }
@@ -131,16 +131,16 @@ template <typename T, int64_t Ndim = 2> class NDView {
     T *buffer_{nullptr};
     std::array<int64_t, Ndim> strides_{};
     std::array<int64_t, Ndim> shape_{};
-    int64_t size_{};
+    uint64_t size_{};
 
     template <class BinaryOperation> NDView &elemenwise(T val, BinaryOperation op) {
-        for (int64_t i = 0; i != size_; ++i) {
+        for (uint64_t i = 0; i != size_; ++i) {
             buffer_[i] = op(buffer_[i], val);
         }
         return *this;
     }
     template <class BinaryOperation> NDView &elemenwise(const NDView &other, BinaryOperation op) {
-        for (int64_t i = 0; i != size_; ++i) {
+        for (uint64_t i = 0; i != size_; ++i) {
             buffer_[i] = op(buffer_[i], other.buffer_[i]);
         }
         return *this;

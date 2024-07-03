@@ -50,10 +50,10 @@ TEST_CASE("test pedestal push") {
     }
 
     // test number of samples after multiple push
-    for (int k = 0; k < 50; k++) {
+    for (uint32_t k = 0; k < 50; k++) {
         pedestal.push<uint16_t>(frame);
-        for (int i = 0; i < 10; i++) {
-            for (int j = 0; j < 10; j++) {
+        for (uint32_t i = 0; i < 10; i++) {
+            for (uint32_t j = 0; j < 10; j++) {
                 if (k < 5) {
                     REQUIRE(pedestal.cur_samples()[pedestal.index(i, j)] == k + 1);
                     REQUIRE(pedestal.get_sum()(i, j) == (k + 1) * (i + j));

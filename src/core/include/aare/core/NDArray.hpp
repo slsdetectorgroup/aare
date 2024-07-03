@@ -122,7 +122,7 @@ template <typename T, int64_t Ndim = 2> class NDArray {
 
     T *data() { return data_; }
     std::byte *buffer() { return reinterpret_cast<std::byte *>(data_); }
-    int64_t size() const { return size_; }
+    uint64_t size() const { return size_; }
     size_t total_bytes() const { return size_ * sizeof(T); }
     std::array<int64_t, Ndim> shape() const noexcept { return shape_; }
     int64_t shape(int64_t i) const noexcept { return shape_[i]; }
@@ -152,7 +152,7 @@ template <typename T, int64_t Ndim = 2> class NDArray {
   private:
     std::array<int64_t, Ndim> shape_;
     std::array<int64_t, Ndim> strides_;
-    int64_t size_{};
+    uint64_t size_{};
     T *data_;
 };
 
