@@ -72,7 +72,7 @@ template <typename T, int64_t Ndim = 2> class NDArray {
     template <typename V> NDArray &operator/=(const NDArray<V, Ndim> &other) {
         // check shape
         if (shape_ == other.shape()) {
-            for (int i = 0; i < size_; ++i) {
+            for (uint32_t i = 0; i < size_; ++i) {
                 data_[i] /= other(i);
             }
             return *this;
@@ -177,7 +177,7 @@ template <typename T, int64_t Ndim> NDArray<T, Ndim> NDArray<T, Ndim>::operator+
 template <typename T, int64_t Ndim> NDArray<T, Ndim> &NDArray<T, Ndim>::operator+=(const NDArray<T, Ndim> &other) {
     // check shape
     if (shape_ == other.shape_) {
-        for (int i = 0; i < size_; ++i) {
+        for (uint32_t i = 0; i < size_; ++i) {
             data_[i] += other.data_[i];
         }
         return *this;
@@ -194,7 +194,7 @@ template <typename T, int64_t Ndim> NDArray<T, Ndim> NDArray<T, Ndim>::operator-
 template <typename T, int64_t Ndim> NDArray<T, Ndim> &NDArray<T, Ndim>::operator-=(const NDArray<T, Ndim> &other) {
     // check shape
     if (shape_ == other.shape_) {
-        for (int i = 0; i < size_; ++i) {
+        for (uint32_t i = 0; i < size_; ++i) {
             data_[i] -= other.data_[i];
         }
         return *this;
@@ -210,7 +210,7 @@ template <typename T, int64_t Ndim> NDArray<T, Ndim> NDArray<T, Ndim>::operator*
 template <typename T, int64_t Ndim> NDArray<T, Ndim> &NDArray<T, Ndim>::operator*=(const NDArray<T, Ndim> &other) {
     // check shape
     if (shape_ == other.shape_) {
-        for (int i = 0; i < size_; ++i) {
+        for (uint32_t i = 0; i < size_; ++i) {
             data_[i] *= other.data_[i];
         }
         return *this;
@@ -272,7 +272,7 @@ template <typename T, int64_t Ndim> bool NDArray<T, Ndim>::operator==(const NDAr
     if (shape_ != other.shape_)
         return false;
 
-    for (int i = 0; i != size_; ++i)
+    for (uint32_t i = 0; i != size_; ++i)
         if (data_[i] != other.data_[i])
             return false;
 
@@ -283,7 +283,7 @@ template <typename T, int64_t Ndim> bool NDArray<T, Ndim>::operator!=(const NDAr
     return !((*this) == other);
 }
 template <typename T, int64_t Ndim> NDArray<T, Ndim> &NDArray<T, Ndim>::operator++() {
-    for (int i = 0; i < size_; ++i)
+    for (uint32_t i = 0; i < size_; ++i)
         data_[i] += 1;
     return *this;
 }
@@ -293,7 +293,7 @@ template <typename T, int64_t Ndim> NDArray<T, Ndim> &NDArray<T, Ndim>::operator
 }
 
 template <typename T, int64_t Ndim> NDArray<T, Ndim> &NDArray<T, Ndim>::operator+=(const T &value) {
-    for (int i = 0; i < size_; ++i)
+    for (uint32_t i = 0; i < size_; ++i)
         data_[i] += value;
     return *this;
 }
@@ -304,7 +304,7 @@ template <typename T, int64_t Ndim> NDArray<T, Ndim> NDArray<T, Ndim>::operator+
     return result;
 }
 template <typename T, int64_t Ndim> NDArray<T, Ndim> &NDArray<T, Ndim>::operator-=(const T &value) {
-    for (int i = 0; i < size_; ++i)
+    for (uint32_t i = 0; i < size_; ++i)
         data_[i] -= value;
     return *this;
 }
@@ -315,7 +315,7 @@ template <typename T, int64_t Ndim> NDArray<T, Ndim> NDArray<T, Ndim>::operator-
 }
 
 template <typename T, int64_t Ndim> NDArray<T, Ndim> &NDArray<T, Ndim>::operator/=(const T &value) {
-    for (int i = 0; i < size_; ++i)
+    for (uint32_t i = 0; i < size_; ++i)
         data_[i] /= value;
     return *this;
 }
@@ -325,7 +325,7 @@ template <typename T, int64_t Ndim> NDArray<T, Ndim> NDArray<T, Ndim>::operator/
     return result;
 }
 template <typename T, int64_t Ndim> NDArray<T, Ndim> &NDArray<T, Ndim>::operator*=(const T &value) {
-    for (int i = 0; i < size_; ++i)
+    for (uint32_t i = 0; i < size_; ++i)
         data_[i] *= value;
     return *this;
 }

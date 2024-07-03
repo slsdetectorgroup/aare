@@ -22,13 +22,13 @@ TEST_CASE("Construct from a DataSpan") {
     REQUIRE(image.size() == view.size());
     REQUIRE(image.data() != view.data());
 
-    for (int i = 0; i < image.size(); ++i) {
+    for (uint32_t i = 0; i < image.size(); ++i) {
         REQUIRE(image(i) == view(i));
     }
 
     // Changing the image doesn't change the view
     image = 43;
-    for (int i = 0; i < image.size(); ++i) {
+    for (uint32_t i = 0; i < image.size(); ++i) {
         REQUIRE(image(i) != view(i));
     }
 }
@@ -53,11 +53,11 @@ TEST_CASE("Accessing a const object") {
 TEST_CASE("Indexing of a 2D image") {
     std::array<int64_t, 2> shape{{3, 7}};
     NDArray<long> img(shape, 5);
-    for (int i = 0; i != img.size(); ++i) {
+    for (uint32_t i = 0; i != img.size(); ++i) {
         REQUIRE(img(i) == 5);
     }
 
-    for (int i = 0; i != img.size(); ++i) {
+    for (uint32_t i = 0; i != img.size(); ++i) {
         img(i) = i;
     }
     REQUIRE(img(0, 0) == 0);
@@ -67,14 +67,14 @@ TEST_CASE("Indexing of a 2D image") {
 
 TEST_CASE("Indexing of a 3D image") {
     NDArray<float, 3> img{{{3, 4, 2}}, 5.0f};
-    for (int i = 0; i != img.size(); ++i) {
+    for (uint32_t i = 0; i != img.size(); ++i) {
         REQUIRE(img(i) == 5.0f);
     }
 
     // Double check general properties
     REQUIRE(img.size() == 3 * 4 * 2);
 
-    for (int i = 0; i != img.size(); ++i) {
+    for (uint32_t i = 0; i != img.size(); ++i) {
         img(i) = float(i);
     }
     REQUIRE(img(0, 0, 0) == 0);
@@ -97,7 +97,7 @@ TEST_CASE("Elementwise multiplication of 3D image") {
     std::array<int64_t, 3> shape{3, 4, 2};
     NDArray<double, 3> a{shape};
     NDArray<double, 3> b{shape};
-    for (int i = 0; i != a.size(); ++i) {
+    for (uint32_t i = 0; i != a.size(); ++i) {
         a(i) = i;
         b(i) = i;
     }
@@ -125,18 +125,18 @@ TEST_CASE("Compare two images") {
 }
 
 TEST_CASE("Size and shape matches") {
-    int64_t w = 15;
-    int64_t h = 75;
+    uint64_t w = 15;
+    uint64_t h = 75;
     std::array<int64_t, 2> shape{w, h};
     NDArray<double> a{shape};
-    REQUIRE(a.size() == w * h);
+    REQUIRE(a.size() == static_cast<uint32_t>(w) * h);
     REQUIRE(a.shape() == shape);
 }
 
 TEST_CASE("Initial value matches for all elements") {
     double v = 4.35;
     NDArray<double> a{{5, 5}, v};
-    for (int i = 0; i < a.size(); ++i) {
+    for (uint32_t i = 0; i < a.size(); ++i) {
         REQUIRE(a(i) == v);
     }
 }
@@ -146,10 +146,10 @@ TEST_CASE("Data layout of 3D image, fast index last") {
     REQUIRE(a.size() == 27);
     int *ptr = a.data();
 
-    for (int i = 0; i < 9; ++i) {
+    for (uint32_t i = 0; i < 9; ++i) {
         *ptr++ = 10 + i;
-        REQUIRE(a(0, 0, i) == 10 + i);
-        REQUIRE(a(i) == 10 + i);
+        REQUIRE(a(0, 0, i) == (uint32_t)10 + i);
+        REQUIRE(a(i) == (uint32_t)10 + i);
     }
 }
 
@@ -215,17 +215,17 @@ TEST_CASE("Elementwise operatios on images") {
         auto C = A + B;
 
         // Value of C matches
-        for (int i = 0; i < C.size(); ++i) {
+        for (uint32_t i = 0; i < C.size(); ++i) {
             REQUIRE(C(i) == a_val + b_val);
         }
 
         // Value of A is not changed
-        for (int i = 0; i < A.size(); ++i) {
+        for (uint32_t i = 0; i < A.size(); ++i) {
             REQUIRE(A(i) == a_val);
         }
 
         // Value of B is not changed
-        for (int i = 0; i < B.size(); ++i) {
+        for (uint32_t i = 0; i < B.size(); ++i) {
             REQUIRE(B(i) == b_val);
         }
 
@@ -239,17 +239,17 @@ TEST_CASE("Elementwise operatios on images") {
         auto C = A - B;
 
         // Value of C matches
-        for (int i = 0; i < C.size(); ++i) {
+        for (uint32_t i = 0; i < C.size(); ++i) {
             REQUIRE(C(i) == a_val - b_val);
         }
 
         // Value of A is not changed
-        for (int i = 0; i < A.size(); ++i) {
+        for (uint32_t i = 0; i < A.size(); ++i) {
             REQUIRE(A(i) == a_val);
         }
 
         // Value of B is not changed
-        for (int i = 0; i < B.size(); ++i) {
+        for (uint32_t i = 0; i < B.size(); ++i) {
             REQUIRE(B(i) == b_val);
         }
 
@@ -263,17 +263,17 @@ TEST_CASE("Elementwise operatios on images") {
         auto C = A * B;
 
         // Value of C matches
-        for (int i = 0; i < C.size(); ++i) {
+        for (uint32_t i = 0; i < C.size(); ++i) {
             REQUIRE(C(i) == a_val * b_val);
         }
 
         // Value of A is not changed
-        for (int i = 0; i < A.size(); ++i) {
+        for (uint32_t i = 0; i < A.size(); ++i) {
             REQUIRE(A(i) == a_val);
         }
 
         // Value of B is not changed
-        for (int i = 0; i < B.size(); ++i) {
+        for (uint32_t i = 0; i < B.size(); ++i) {
             REQUIRE(B(i) == b_val);
         }
 
@@ -287,17 +287,17 @@ TEST_CASE("Elementwise operatios on images") {
         auto C = A / B;
 
         // Value of C matches
-        for (int i = 0; i < C.size(); ++i) {
+        for (uint32_t i = 0; i < C.size(); ++i) {
             REQUIRE(C(i) == a_val / b_val);
         }
 
         // Value of A is not changed
-        for (int i = 0; i < A.size(); ++i) {
+        for (uint32_t i = 0; i < A.size(); ++i) {
             REQUIRE(A(i) == a_val);
         }
 
         // Value of B is not changed
-        for (int i = 0; i < B.size(); ++i) {
+        for (uint32_t i = 0; i < B.size(); ++i) {
             REQUIRE(B(i) == b_val);
         }
 
@@ -314,12 +314,12 @@ TEST_CASE("Elementwise operatios on images") {
         REQUIRE(C.data() != A.data());
 
         // Value of C matches
-        for (int i = 0; i < C.size(); ++i) {
+        for (uint32_t i = 0; i < C.size(); ++i) {
             REQUIRE(C(i) == a_val - v);
         }
 
         // Value of A is not changed
-        for (int i = 0; i < A.size(); ++i) {
+        for (uint32_t i = 0; i < A.size(); ++i) {
             REQUIRE(A(i) == a_val);
         }
     }
@@ -331,12 +331,12 @@ TEST_CASE("Elementwise operatios on images") {
         REQUIRE(C.data() != A.data());
 
         // Value of C matches
-        for (int i = 0; i < C.size(); ++i) {
+        for (uint32_t i = 0; i < C.size(); ++i) {
             REQUIRE(C(i) == a_val + v);
         }
 
         // Value of A is not changed
-        for (int i = 0; i < A.size(); ++i) {
+        for (uint32_t i = 0; i < A.size(); ++i) {
             REQUIRE(A(i) == a_val);
         }
     }
@@ -348,12 +348,12 @@ TEST_CASE("Elementwise operatios on images") {
         REQUIRE(C.data() != A.data());
 
         // Value of C matches
-        for (int i = 0; i < C.size(); ++i) {
+        for (uint32_t i = 0; i < C.size(); ++i) {
             REQUIRE(C(i) == a_val / v);
         }
 
         // Value of A is not changed
-        for (int i = 0; i < A.size(); ++i) {
+        for (uint32_t i = 0; i < A.size(); ++i) {
             REQUIRE(A(i) == a_val);
         }
     }
@@ -365,12 +365,12 @@ TEST_CASE("Elementwise operatios on images") {
         REQUIRE(C.data() != A.data());
 
         // Value of C matches
-        for (int i = 0; i < C.size(); ++i) {
+        for (uint32_t i = 0; i < C.size(); ++i) {
             REQUIRE(C(i) == a_val / v);
         }
 
         // Value of A is not changed
-        for (int i = 0; i < A.size(); ++i) {
+        for (uint32_t i = 0; i < A.size(); ++i) {
             REQUIRE(A(i) == a_val);
         }
     }
