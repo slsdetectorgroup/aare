@@ -73,7 +73,7 @@ class ClusterFinder {
 
                 } else if (total > c3 * m_nSigma * rms) {
                     eventMask[iy][ix] = PHOTON;
-                } else {
+                } else{
                     if (late_update) {
                         pedestal_updates.push_back({ix, iy, frame(iy, ix)});
                     } else {
