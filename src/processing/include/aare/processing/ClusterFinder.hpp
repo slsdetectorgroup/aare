@@ -73,7 +73,7 @@ class ClusterFinder {
 
                 } else if (total > c3 * m_nSigma * rms) {
                     eventMask[iy][ix] = PHOTON;
-                } else {
+                } else{
                     if (late_update) {
                         pedestal_updates.push_back({ix, iy, frame(iy, ix)});
                     } else {
@@ -87,10 +87,12 @@ class ClusterFinder {
                     cluster.x = ix;
                     cluster.y = iy;
                     short i = 0;
+
                     for (short ir = -(m_cluster_sizeY / 2); ir < (m_cluster_sizeY / 2) + 1; ir++) {
                         for (short ic = -(m_cluster_sizeX / 2); ic < (m_cluster_sizeX / 2) + 1; ic++) {
                             if (ix + ic >= 0 && ix + ic < frame.shape(1) && iy + ir >= 0 && iy + ir < frame.shape(0)) {
-                                PEDESTAL_TYPE tmp = frame(iy + ir, ix + ic) - pedestal.mean(iy + ir, ix + ic);
+                                PEDESTAL_TYPE tmp = static_cast<PEDESTAL_TYPE>(frame(iy + ir, ix + ic)) -
+                                                    pedestal.mean(iy + ir, ix + ic);
                                 cluster.set<PEDESTAL_TYPE>(i, tmp);
                                 i++;
                             }
@@ -100,8 +102,10 @@ class ClusterFinder {
                 }
             }
         }
-        for (auto &update : pedestal_updates) {
-            pedestal.push(update.y, update.x, update.value);
+        if (late_update) {
+            for (auto &update : pedestal_updates) {
+                pedestal.push(update.y, update.x, update.value);
+            }
         }
         return clusters;
     }

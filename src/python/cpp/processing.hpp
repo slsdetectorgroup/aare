@@ -41,16 +41,17 @@ template <typename SUM_TYPE> void define_pedestal_bindings(py::module &m) {
     // and we can know what type of values are stored in the frame
     p.def(py::init<int, int, int>())
         .def(py::init<int, int>())
+        .def("set_freeze", &Pedestal<SUM_TYPE>::set_freeze)
         .def("mean", py::overload_cast<>(&Pedestal<SUM_TYPE>::mean))
-        .def("mean", [](Pedestal<SUM_TYPE> &pedestal, const int row, const int col) { return pedestal.mean(row, col); })
+        .def("mean", [](Pedestal<SUM_TYPE> &pedestal, const uint32_t row, const uint32_t col) { return pedestal.mean(row, col); })
         .def("variance", py::overload_cast<>(&Pedestal<SUM_TYPE>::variance))
         .def("variance",
-             [](Pedestal<SUM_TYPE> &pedestal, const int row, const int col) { return pedestal.variance(row, col); })
+             [](Pedestal<SUM_TYPE> &pedestal, const uint32_t row, const uint32_t col) { return pedestal.variance(row, col); })
         .def("standard_deviation", py::overload_cast<>(&Pedestal<SUM_TYPE>::standard_deviation))
         .def("standard_deviation", [](Pedestal<SUM_TYPE> &pedestal, const int row,
                                       const int col) { return pedestal.standard_deviation(row, col); })
         .def("clear", py::overload_cast<>(&Pedestal<SUM_TYPE>::clear))
-        .def("clear", py::overload_cast<const int, const int>(&Pedestal<SUM_TYPE>::clear))
+        .def("clear", py::overload_cast<const uint32_t, const uint32_t>(&Pedestal<SUM_TYPE>::clear))
         .def_property_readonly("rows", &Pedestal<SUM_TYPE>::rows)
         .def_property_readonly("cols", &Pedestal<SUM_TYPE>::cols)
         .def_property_readonly("n_samples", &Pedestal<SUM_TYPE>::n_samples)
@@ -86,26 +87,26 @@ template <typename SUM_TYPE> void define_pedestal_bindings(py::module &m) {
 template <typename VIEW_TYPE, typename PEDESTAL_TYPE = double>
 void define_cluster_finder_template_bindings(py::class_<ClusterFinder> &cf) {
     cf.def("find_clusters_without_threshold",
-           py::overload_cast<NDView<VIEW_TYPE, 2>, Pedestal<PEDESTAL_TYPE> &,bool>(
+           py::overload_cast<NDView<VIEW_TYPE, 2>, Pedestal<PEDESTAL_TYPE> &, bool>(
                &ClusterFinder::find_clusters_without_threshold<VIEW_TYPE, PEDESTAL_TYPE>));
     cf.def("find_clusters_with_threshold", py::overload_cast<NDView<VIEW_TYPE, 2>, Pedestal<PEDESTAL_TYPE> &>(
                                                &ClusterFinder::find_clusters_with_threshold<VIEW_TYPE, PEDESTAL_TYPE>));
 
-    cf.def("find_clusters_without_threshold",
-           [](ClusterFinder &self, py::array_t<VIEW_TYPE> &np_array, Pedestal<PEDESTAL_TYPE> &pedestal,bool late_update) {
-               py::buffer_info info = np_array.request();
-               if (info.format != py::format_descriptor<VIEW_TYPE>::format())
-                   throw std::runtime_error(
-                       "Incompatible format: different formats! (Are you sure the arrays are of the same type?)");
-               if (info.ndim != 2)
-                   throw std::runtime_error("Incompatible dimension: expected a 2D array!");
+    cf.def("find_clusters_without_threshold", [](ClusterFinder &self, py::array_t<VIEW_TYPE> &np_array,
+                                                 Pedestal<PEDESTAL_TYPE> &pedestal, bool late_update) {
+        py::buffer_info info = np_array.request();
+        if (info.format != Dtype(typeid(VIEW_TYPE)).numpy_descr())
+            throw std::runtime_error(
+                "Incompatible format: different formats! (Are you sure the arrays are of the same type?)");
+        if (info.ndim != 2)
+            throw std::runtime_error("Incompatible dimension: expected a 2D array!");
 
-               std::array<int64_t, 2> arr_shape;
-               std::copy(info.shape.begin(), info.shape.end(), arr_shape.begin());
+        std::array<int64_t, 2> arr_shape;
+        std::copy(info.shape.begin(), info.shape.end(), arr_shape.begin());
 
-               NDView<VIEW_TYPE, 2> a(static_cast<VIEW_TYPE *>(info.ptr), arr_shape);
-               return self.find_clusters_without_threshold(a, pedestal,late_update);
-           });
+        NDView<VIEW_TYPE, 2> a(static_cast<VIEW_TYPE *>(info.ptr), arr_shape);
+        return self.find_clusters_without_threshold(a, pedestal, late_update);
+    });
 
     cf.def("find_clusters_with_threshold",
            [](ClusterFinder &self, py::array_t<VIEW_TYPE> &np_array, Pedestal<PEDESTAL_TYPE> &pedestal) {
@@ -141,19 +142,17 @@ void define_cluster_finder_bindings(py::module &m) {
 void define_processing_bindings(py::module &m) {
     define_pedestal_bindings<double>(m);
 
-    py::class_<Cluster>(m, "Cluster")
+    py::class_<Cluster>(m, "Cluster",py::buffer_protocol())
         .def(py::init<int, int, Dtype>())
         .def("size", &Cluster::size)
         .def("begin", &Cluster::begin)
         .def("end", &Cluster::end)
-        .def("data",
-             [](Cluster &c) {
-                 return py::memoryview::from_memory(c.data(), // buffer pointer
-                                                    c.size()  // buffer size
-                 );
-             })
         .def_readwrite("x", &Cluster::x)
         .def_readwrite("y", &Cluster::y)
+        .def_buffer([](Cluster &c) -> py::buffer_info {
+            return py::buffer_info(c.data(), c.dt.bytes(), c.dt.format_descr(), 1, {c.size()}, {c.dt.bytes()});
+        })
+
         .def("__repr__", [](const Cluster &a) {
             return "<Cluster: x: " + std::to_string(a.x) + ", y: " + std::to_string(a.y) + ">";
         });

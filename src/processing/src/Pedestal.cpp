@@ -5,7 +5,7 @@
 namespace aare {
 template <typename SUM_TYPE>
 Pedestal<SUM_TYPE>::Pedestal(uint32_t rows, uint32_t cols, uint32_t n_samples)
-    : m_rows(rows), m_cols(cols), m_samples(n_samples), m_sum(NDArray<SUM_TYPE, 2>({rows, cols})),
+    : m_freeze(false), m_rows(rows), m_cols(cols), m_samples(n_samples), m_sum(NDArray<SUM_TYPE, 2>({rows, cols})),
       m_sum2(NDArray<SUM_TYPE, 2>({rows, cols})), m_cur_samples(new uint32_t[rows * cols]{}) {
     assert(rows > 0 && cols > 0 && n_samples > 0);
     m_sum = 0;
