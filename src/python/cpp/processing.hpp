@@ -43,15 +43,15 @@ template <typename SUM_TYPE> void define_pedestal_bindings(py::module &m) {
         .def(py::init<int, int>())
         .def("set_freeze", &Pedestal<SUM_TYPE>::set_freeze)
         .def("mean", py::overload_cast<>(&Pedestal<SUM_TYPE>::mean))
-        .def("mean", [](Pedestal<SUM_TYPE> &pedestal, const int row, const int col) { return pedestal.mean(row, col); })
+        .def("mean", [](Pedestal<SUM_TYPE> &pedestal, const uint32_t row, const uint32_t col) { return pedestal.mean(row, col); })
         .def("variance", py::overload_cast<>(&Pedestal<SUM_TYPE>::variance))
         .def("variance",
-             [](Pedestal<SUM_TYPE> &pedestal, const int row, const int col) { return pedestal.variance(row, col); })
+             [](Pedestal<SUM_TYPE> &pedestal, const uint32_t row, const uint32_t col) { return pedestal.variance(row, col); })
         .def("standard_deviation", py::overload_cast<>(&Pedestal<SUM_TYPE>::standard_deviation))
         .def("standard_deviation", [](Pedestal<SUM_TYPE> &pedestal, const int row,
                                       const int col) { return pedestal.standard_deviation(row, col); })
         .def("clear", py::overload_cast<>(&Pedestal<SUM_TYPE>::clear))
-        .def("clear", py::overload_cast<const int, const int>(&Pedestal<SUM_TYPE>::clear))
+        .def("clear", py::overload_cast<const uint32_t, const uint32_t>(&Pedestal<SUM_TYPE>::clear))
         .def_property_readonly("rows", &Pedestal<SUM_TYPE>::rows)
         .def_property_readonly("cols", &Pedestal<SUM_TYPE>::cols)
         .def_property_readonly("n_samples", &Pedestal<SUM_TYPE>::n_samples)
