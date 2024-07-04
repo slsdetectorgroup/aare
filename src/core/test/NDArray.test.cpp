@@ -125,11 +125,11 @@ TEST_CASE("Compare two images") {
 }
 
 TEST_CASE("Size and shape matches") {
-    uint64_t w = 15;
-    uint64_t h = 75;
+    int64_t w = 15;
+    int64_t h = 75;
     std::array<int64_t, 2> shape{w, h};
     NDArray<double> a{shape};
-    REQUIRE(a.size() == static_cast<uint32_t>(w) * h);
+    REQUIRE(a.size() == static_cast<uint64_t>(w * h));
     REQUIRE(a.shape() == shape);
 }
 
@@ -146,10 +146,10 @@ TEST_CASE("Data layout of 3D image, fast index last") {
     REQUIRE(a.size() == 27);
     int *ptr = a.data();
 
-    for (uint32_t i = 0; i < 9; ++i) {
+    for (int i = 0; i < 9; ++i) {
         *ptr++ = 10 + i;
-        REQUIRE(a(0, 0, i) == (uint32_t)10 + i);
-        REQUIRE(a(i) == (uint32_t)10 + i);
+        REQUIRE(a(0, 0, i) == 10 + i);
+        REQUIRE(a(i) == 10 + i);
     }
 }
 
