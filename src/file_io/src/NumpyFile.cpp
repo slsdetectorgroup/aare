@@ -9,9 +9,9 @@ NumpyFile::NumpyFile(const std::filesystem::path &fname, const std::string &mode
     m_fname = fname;
     m_mode = mode;
     if (mode == "r") {
-        fp = fopen(m_fname.c_str(), "rb");
+        fp = fopen(m_fname.string().c_str(), "rb");
         if (!fp) {
-            throw std::runtime_error(fmt::format("Could not open: {} for reading", m_fname.c_str()));
+            throw std::runtime_error(fmt::format("Could not open: {} for reading", m_fname.string()));
         }
         load_metadata();
     } else if (mode == "w") {
@@ -20,9 +20,9 @@ NumpyFile::NumpyFile(const std::filesystem::path &fname, const std::string &mode
         m_cols = cfg.cols;
         m_header = {cfg.dtype, false, {cfg.rows, cfg.cols}};
         m_header.shape = {0, cfg.rows, cfg.cols};
-        fp = fopen(m_fname.c_str(), "wb");
+        fp = fopen(m_fname.string().c_str(), "wb");
         if (!fp) {
-            throw std::runtime_error(fmt::format("Could not open: {} for reading", m_fname.c_str()));
+            throw std::runtime_error(fmt::format("Could not open: {} for reading", m_fname.string()));
         }
         initial_header_len = aare::NumpyHelpers::write_header(std::filesystem::path(m_fname.c_str()), m_header);
     }
@@ -30,13 +30,13 @@ NumpyFile::NumpyFile(const std::filesystem::path &fname, const std::string &mode
 
     m_bytes_per_frame = m_header.dtype.bitdepth() / 8 * m_pixels_per_frame;
 }
-void NumpyFile::write(Frame &frame) { write_impl(frame.data(), frame.size()); }
+void NumpyFile::write(Frame &frame) { write_impl(frame.data(), frame.bytes()); }
 void NumpyFile::write_impl(void *data, uint64_t size) {
 
     if (fp == nullptr) {
         throw std::runtime_error("File not open");
     }
-    if (not(m_mode == "w" or m_mode == "a")) {
+    if (!(m_mode == "w" || m_mode == "a")) {
         throw std::invalid_argument("File not open for writing");
     }
     if (fseek(fp, 0, SEEK_END))
@@ -50,7 +50,7 @@ void NumpyFile::write_impl(void *data, uint64_t size) {
 }
 
 Frame NumpyFile::get_frame(size_t frame_number) {
-    Frame frame(m_header.shape[1], m_header.shape[2], m_header.dtype.bitdepth());
+    Frame frame(m_header.shape[1], m_header.shape[2], m_header.dtype);
     get_frame_into(frame_number, frame.data());
     return frame;
 }
@@ -91,7 +91,7 @@ void NumpyFile::read_into(std::byte *image_buf, size_t n_frames) {
 }
 
 NumpyFile::~NumpyFile() noexcept {
-    if (m_mode == "w" or m_mode == "a") {
+    if (m_mode == "w" || m_mode == "a") {
         // determine number of frames
         if (fseek(fp, 0, SEEK_END)) {
             aare::logger::error("Could not seek to end of file");
@@ -182,7 +182,7 @@ void NumpyFile::load_metadata() {
     std::string const shape_s = dict_map["shape"];
 
     std::string const descr = aare::NumpyHelpers::parse_str(descr_s);
-    aare::DType const dtype = aare::NumpyHelpers::parse_descr(descr);
+    aare::Dtype const dtype = aare::NumpyHelpers::parse_descr(descr);
 
     // convert literal Python bool to C++ bool
     bool const fortran_order = aare::NumpyHelpers::parse_bool(fortran_s);

@@ -1,5 +1,5 @@
 #pragma once
-#include "aare/core/DType.hpp"
+#include "aare/core/Dtype.hpp"
 #include "aare/core/NDArray.hpp"
 #include "aare/core/NDView.hpp"
 #include "aare/processing/Pedestal.hpp"
@@ -28,7 +28,15 @@ class ClusterFinder {
     };
 
     template <typename FRAME_TYPE, typename PEDESTAL_TYPE>
-    std::vector<Cluster> find_clusters(NDView<FRAME_TYPE, 2> frame, Pedestal<PEDESTAL_TYPE> &pedestal) {
+    std::vector<Cluster> find_clusters_without_threshold(NDView<FRAME_TYPE, 2> frame, Pedestal<PEDESTAL_TYPE> &pedestal,
+                                                         bool late_update = false) {
+        struct pedestal_update {
+            int x;
+            int y;
+            FRAME_TYPE value;
+        };
+        std::vector<pedestal_update> pedestal_updates;
+
         std::vector<Cluster> clusters;
         std::vector<std::vector<eventType>> eventMask;
         for (int i = 0; i < frame.shape(0); i++) {
@@ -57,7 +65,7 @@ class ClusterFinder {
                 }
                 auto rms = pedestal.standard_deviation(iy, ix);
 
-                if (frame(iy, ix) < -m_nSigma * rms) {
+                if (frame(iy, ix) - pedestal.mean(iy, ix) < -m_nSigma * rms) {
                     eventMask[iy][ix] = NEGATIVE_PEDESTAL;
                     continue;
                 } else if (max > m_nSigma * rms) {
@@ -65,27 +73,38 @@ class ClusterFinder {
 
                 } else if (total > c3 * m_nSigma * rms) {
                     eventMask[iy][ix] = PHOTON;
-                } else {
-                    pedestal.push(iy, ix, frame(iy, ix));
+                } else{
+                    if (late_update) {
+                        pedestal_updates.push_back({ix, iy, frame(iy, ix)});
+                    } else {
+                        pedestal.push(iy, ix, frame(iy, ix));
+                    }
                     continue;
                 }
-                if (eventMask[iy][ix] == PHOTON and frame(iy, ix) - pedestal.mean(iy, ix) >= max) {
+                if (eventMask[iy][ix] == PHOTON && (frame(iy, ix) - pedestal.mean(iy, ix)) >= max) {
                     eventMask[iy][ix] = PHOTON_MAX;
-                    Cluster cluster(m_cluster_sizeX, m_cluster_sizeY, DType(typeid(FRAME_TYPE)));
+                    Cluster cluster(m_cluster_sizeX, m_cluster_sizeY, Dtype(typeid(PEDESTAL_TYPE)));
                     cluster.x = ix;
                     cluster.y = iy;
                     short i = 0;
+
                     for (short ir = -(m_cluster_sizeY / 2); ir < (m_cluster_sizeY / 2) + 1; ir++) {
                         for (short ic = -(m_cluster_sizeX / 2); ic < (m_cluster_sizeX / 2) + 1; ic++) {
                             if (ix + ic >= 0 && ix + ic < frame.shape(1) && iy + ir >= 0 && iy + ir < frame.shape(0)) {
-                                FRAME_TYPE tmp = frame(iy + ir, ix + ic) - pedestal.mean(iy + ir, ix + ic);
-                                cluster.set<FRAME_TYPE>(i, tmp);
+                                PEDESTAL_TYPE tmp = static_cast<PEDESTAL_TYPE>(frame(iy + ir, ix + ic)) -
+                                                    pedestal.mean(iy + ir, ix + ic);
+                                cluster.set<PEDESTAL_TYPE>(i, tmp);
                                 i++;
                             }
                         }
                     }
                     clusters.push_back(cluster);
                 }
+            }
+        }
+        if (late_update) {
+            for (auto &update : pedestal_updates) {
+                pedestal.push(update.y, update.x, update.value);
             }
         }
         return clusters;
@@ -163,9 +182,9 @@ class ClusterFinder {
                     pedestal.push(iy, ix, frame(iy, ix));
                     continue;
                 }
-                if (eventMask[iy][ix] == PHOTON and frame(iy, ix) - pedestal.mean(iy, ix) == max) {
+                if (eventMask[iy][ix] == PHOTON && frame(iy, ix) - pedestal.mean(iy, ix) >= max) {
                     eventMask[iy][ix] = PHOTON_MAX;
-                    Cluster cluster(m_cluster_sizeX, m_cluster_sizeY, DType(typeid(FRAME_TYPE)));
+                    Cluster cluster(m_cluster_sizeX, m_cluster_sizeY, Dtype(typeid(FRAME_TYPE)));
                     cluster.x = ix;
                     cluster.y = iy;
                     short i = 0;

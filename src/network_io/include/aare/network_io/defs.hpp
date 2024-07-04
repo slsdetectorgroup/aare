@@ -12,13 +12,16 @@ namespace aare {
  * wrapper class to contain a ZmqHeader and a Frame
  */
 struct ZmqFrame {
-    ZmqHeader header;
-    Frame frame;
+    ZmqFrame(const ZmqHeader& header_, const Frame& frame_) : header(header_), frame(frame_) {}
+
+    const ZmqHeader& header;
+    const Frame& frame;
     std::string to_string() const {
         return "ZmqFrame{header: " + header.to_string() + ", frame:\nrows: " + std::to_string(frame.rows()) +
                ", cols: " + std::to_string(frame.cols()) + ", bitdepth: " + std::to_string(frame.bitdepth()) + "\n}";
     }
-    size_t size() const { return frame.size() + header.size; }
+    size_t size() const { return frame.bytes() + header.size; }
+
 };
 
 struct Task {
@@ -58,8 +61,15 @@ struct Task {
         PEDESTAL_AND_CLUSTER_AND_SAVE,
         COUNT,
     };
-} __attribute__((packed));
+#ifdef AARE_MSVC
+} __declspec(align(1));
+// msvc does not support packed attribute
+// TODO: check if this is the correct way to do this in msvc
+// maybe use #pragma pack(push, 1) and #pragma pack(pop)
 
+#else
+} __attribute__((packed));
+#endif
 namespace network_io {
 /**
  * @brief NetworkError exception class
@@ -73,7 +83,6 @@ class NetworkError : public std::runtime_error {
     explicit NetworkError(const std::string &msg) : std::runtime_error(msg), m_msg(strdup(msg.c_str())) {}
     const char *what() const noexcept override { return m_msg; }
 };
-
 } // namespace network_io
 
 } // namespace aare

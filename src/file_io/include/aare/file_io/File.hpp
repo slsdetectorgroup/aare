@@ -1,5 +1,6 @@
 #pragma once
 #include "aare/file_io/FileInterface.hpp"
+#include "aare/file_io/RawFile.hpp"
 
 namespace aare {
 
@@ -11,7 +12,7 @@ namespace aare {
 class File {
   private:
     FileInterface *file_impl;
-    bool is_npy = true;
+    bool is_npy;
 
   public:
     /**
@@ -40,6 +41,8 @@ class File {
     size_t cols() const;
     size_t bitdepth() const;
     void set_total_frames(size_t total_frames);
+    DetectorType detector_type() const;
+    xy geometry() const;
 
     /**
      * @brief Move constructor

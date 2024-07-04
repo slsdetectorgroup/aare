@@ -21,7 +21,7 @@ include(FetchContent)
 include(cmake/helpers.cmake)
 default_build_type("Release")
 
-option(AARE_USE_WARNINGS "Eable warnings" ON)
+option(AARE_USE_WARNINGS "Enable warnings" ON)
 option(AARE_PYTHON_BINDINGS "Build python bindings" ON)
 option(AARE_TESTS "Build tests" ON)
 option(AARE_EXAMPLES "Build examples" ON)
@@ -32,7 +32,7 @@ option(AARE_FETCH_PYBIND11 "Use FetchContent to download pybind11" ON)
 option(AARE_FETCH_CATCH "Use FetchContent to download catch2" ON)
 option(AARE_FETCH_JSON "Use FetchContent to download nlohmann::json" ON)
 option(AARE_FETCH_ZMQ "Use FetchContent to download libzmq" ON)
-option(AARE_FETCH_BOOST "Use FetchContent to download boost" ON)
+option(ENABLE_DRAFTS "Enable zmq drafts (depends on gnutls or nss)" OFF)
 
 
 #Convenience option to use system libraries
@@ -44,7 +44,6 @@ if(AARE_SYSTEM_LIBRARIES)
     set(AARE_FETCH_CATCH OFF CACHE BOOL "Disabled FetchContent for catch2" FORCE)
     set(AARE_FETCH_JSON OFF CACHE BOOL "Disabled FetchContent for nlohmann::json" FORCE)
     set(AARE_FETCH_ZMQ OFF CACHE BOOL "Disabled FetchContent for libzmq" FORCE)
-    set(AARE_FETCH_BOOST OFF CACHE BOOL "Disabled FetchContent for boost" FORCE)
 
 endif()
 
@@ -52,6 +51,7 @@ endif()
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 
 if(AARE_FETCH_ZMQ)
+    
     FetchContent_Declare(
         libzmq
         GIT_REPOSITORY https://github.com/zeromq/libzmq.git
@@ -65,6 +65,7 @@ if(AARE_FETCH_ZMQ)
         FetchContent_Populate(libzmq)
         add_subdirectory(${libzmq_SOURCE_DIR} ${libzmq_BINARY_DIR} EXCLUDE_FROM_ALL)
     endif()
+
 else()
     find_package(ZeroMQ 4 REQUIRED)
 endif()
@@ -80,36 +81,56 @@ if (AARE_FETCH_FMT)
             USES_TERMINAL_DOWNLOAD TRUE
     )
     FetchContent_MakeAvailable(fmt)
+    set_property(TARGET fmt PROPERTY POSITION_INDEPENDENT_CODE ON)
 else()
       find_package(fmt 6 REQUIRED)
 endif()
 
 
-if (AARE_FETCH_BOOST)
-    set(BOOST_INCLUDE_LIBRARIES program_options)
-    set(BOOST_ENABLE_CMAKE ON)
-    FetchContent_Declare(
-    Boost
-    GIT_REPOSITORY https://github.com/boostorg/boost.git
-    GIT_TAG boost-1.80.0
-    )
-    FetchContent_MakeAvailable(Boost)
-    set(Boost_LIBRARIES Boost::program_options)
-else()
-
-    find_package(Boost 1.80 REQUIRED COMPONENTS program_options)
-endif()
-
-
-
 add_library(aare_compiler_flags INTERFACE)
 target_compile_features(aare_compiler_flags INTERFACE cxx_std_17)
 
-#TODO! Explicitly setting flags is not cross platform compatible
+#################
+# MSVC specific #
+#################
+if(MSVC)
+add_compile_definitions(AARE_MSVC)
+if(CMAKE_BUILD_TYPE STREQUAL "Release")
+    message(STATUS "Release build")
+    target_compile_options(aare_compiler_flags INTERFACE /O2)
+else()
+    message(STATUS "Debug build")
+    target_compile_options(
+        aare_compiler_flags 
+        INTERFACE 
+            /Od 
+            /Zi 
+            /MDd
+            /D_ITERATOR_DEBUG_LEVEL=2
+    )
+    target_link_options(
+        aare_compiler_flags
+        INTERFACE
+            /DEBUG:FULL
+            )
+endif()
+target_compile_options(
+    aare_compiler_flags 
+    INTERFACE
+    /w # disable warnings
+)
+
+
+else()
+######################
+# GCC/Clang specific #
+######################
+
 if(CMAKE_BUILD_TYPE STREQUAL "Release")
     message(STATUS "Release build")
     target_compile_options(aare_compiler_flags INTERFACE -O3)
 else()
+    message(STATUS "Debug build")
     target_compile_options(
         aare_compiler_flags 
         INTERFACE 
@@ -120,53 +141,63 @@ else()
     )
 
     if (NOT AARE_PYTHON_BINDINGS)
-    target_compile_options(
-        aare_compiler_flags
-        INTERFACE
-            -fdiagnostics-parseable-fixits
-            # -fdiagnostics-generate-patch 
-            -fdiagnostics-show-template-tree 
-            -fsanitize=address,undefined,pointer-compare 
-            -fno-sanitize-recover 
-            # -D_FORTIFY_SOURCE=2  # not needed for debug builds
-            # -fstack-protector  # cause errors wih folly (ProducerConsumerQueue.hpp)
-            -fno-omit-frame-pointer
-    )
+        target_compile_options(
+            aare_compiler_flags
+            INTERFACE
+                -fdiagnostics-parseable-fixits
+                # -fdiagnostics-generate-patch 
+                -fdiagnostics-show-template-tree 
+                -fsanitize=address,undefined,pointer-compare 
+                -fno-sanitize-recover 
+                # -D_FORTIFY_SOURCE=2  # not needed for debug builds
+                # -fstack-protector  # cause errors wih folly? (ProducerConsumerQueue.hpp)
+                -fno-omit-frame-pointer
+        )
     
-    target_link_libraries(
-        aare_compiler_flags
-        INTERFACE
-            -fdiagnostics-parseable-fixits
-            # -fdiagnostics-generate-patch 
-            -fdiagnostics-show-template-tree 
-            -fsanitize=address,undefined,pointer-compare 
-            -fno-sanitize-recover 
-            # -D_FORTIFY_SOURCE=2 
-            -fno-omit-frame-pointer
-            -lstdc++fs
-    )
-endif()
+        target_link_libraries(
+            aare_compiler_flags
+            INTERFACE
+                -fdiagnostics-parseable-fixits
+                # -fdiagnostics-generate-patch 
+                -fdiagnostics-show-template-tree 
+                -fsanitize=address,undefined,pointer-compare 
+                -fno-sanitize-recover 
+                # -D_FORTIFY_SOURCE=2 
+                -fno-omit-frame-pointer
+        )
+    endif()
 
 endif()
 
 if(AARE_USE_WARNINGS)
-    target_compile_options(
-        aare_compiler_flags 
-        INTERFACE 
-            -Wall 
-            -Wextra 
-            -pedantic 
-            -Wshadow 
-            -Wnon-virtual-dtor
-            -Woverloaded-virtual
-            -Wdouble-promotion
-            -Wformat=2
-            -Wredundant-decls
-            -Wvla
-            -Wdouble-promotion
-            -Werror=return-type #important can cause segfault in optimzed builds
-        )
+        target_compile_options(
+            aare_compiler_flags 
+            INTERFACE 
+                -Wall 
+                -Wextra 
+                -pedantic 
+                -Wshadow 
+                -Wnon-virtual-dtor
+                -Woverloaded-virtual
+                -Wdouble-promotion
+                -Wformat=2
+                -Wredundant-decls
+                -Wvla
+                -Wdouble-promotion
+                -Werror=return-type #important can cause segfault in optimzed builds
+            )
 endif()
+
+
+
+endif() #GCC/Clang specific
+
+
+
+
+
+
+
 
 if(AARE_TESTS)
     enable_testing()
@@ -178,7 +209,7 @@ add_subdirectory(src)
 
 #Overall target to link to when using the library
 add_library(aare INTERFACE) 
-target_link_libraries(aare INTERFACE core file_io utils network_io processing ${Boost_LIBRARIES})
+target_link_libraries(aare INTERFACE core file_io utils network_io processing aare_compiler_flags)
 target_include_directories(aare INTERFACE 
     $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
     $<INSTALL_INTERFACE:include>

@@ -11,13 +11,18 @@ on:
         type: string
         default: Debug
       use-python-bindings:
-        # required: true
+        required: true
         type: string
         default: OFF
+      os:
+        required: true
+        type: string
+        default: ubuntu-latest
 
 jobs:
   build-and-test:
-    runs-on: ubuntu-latest
+    name: "Build and test[os: ${{ inputs.os }}, build-type: ${{ inputs.build-type }}, use-system-libraries: ${{ inputs.use-system-libraries }}, use-python-bindings: ${{ inputs.use-python-bindings }}]"
+    runs-on: ${{ inputs.os }}
     steps:
       - name: Dump GitHub context
         env:
@@ -42,9 +47,6 @@ jobs:
           echo "build-type: ${{inputs.build-type}}"
           echo "use-python-bindings: ${{inputs.use-python-bindings}}"
 
-
-
-
       - uses: actions/checkout@v4
       - uses: mamba-org/setup-micromamba@v1
         if: ${{ contains(inputs.use-system-libraries, 'ON')}}
@@ -54,6 +56,7 @@ jobs:
           init-shell: bash
           cache-environment: true
           post-cleanup: 'all'
+        
       - name: build
         shell: bash -el {0}
         run: |
@@ -65,7 +68,18 @@ jobs:
         run: |
           cd build/
           ./run_tests
+        if: ${{ inputs.os != 'windows-latest' }}
+      - name: run tests
+        run: |
+          cd build/
+          dir
+          cd Debug/
+          dir
+          start run_tests.exe
+          # start /B /WAIT "run_tests.exe"
+        if: ${{ inputs.os == 'windows-latest' }}
       - name: run examples
+        if: ${{ inputs.os != 'windows-latest' }}
         # find all examples in build/examples and run them
         run: |
           pwd
@@ -73,7 +87,7 @@ jobs:
           ls build/examples/*_example
           # examples to run
           cd build/examples
-          examples=(raw_example cluster_example json_example logger_example multiport_example mythen_example)
+          examples=(raw_example json_example logger_example multiport_example mythen_example)
           examples+=(numpy_read_example numpy_write_example)
           for example in "${examples[@]}"; do
             echo "Running example: $example"

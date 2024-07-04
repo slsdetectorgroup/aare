@@ -28,7 +28,7 @@ template <typename T> class ClusterFinder {
     };
 
   private:
-    const std::array<ssize_t, 2> shape_;
+    const std::array<int64_t, 2> shape_;
     NDView<T, 2> original_;
     NDArray<int, 2> labeled_;
     NDArray<int, 2> peripheral_labeled_;
@@ -250,7 +250,7 @@ template <typename T> void ClusterFinder<T>::first_pass() {
 
 template <typename T> void ClusterFinder<T>::second_pass() {
 
-    for (ssize_t i = 0; i != labeled_.size(); ++i) {
+    for (int64_t i = 0; i != labeled_.size(); ++i) {
         auto current_label = labeled_(i);
         if (current_label != 0) {
             auto it = child.find(current_label);
@@ -274,7 +274,7 @@ template <typename T> void ClusterFinder<T>::store_clusters() {
     std::unordered_map<int, Hit> h_size;
     for (int i = 0; i < shape_[0]; ++i) {
         for (int j = 0; j < shape_[1]; ++j) {
-            if (labeled_(i, j) != 0 or false
+            if (labeled_(i, j) != 0 || false
                 // (i-1 >= 0 and labeled_(i-1, j) != 0) or // another circle of peripheral pixels
                 // (j-1 >= 0 and labeled_(i, j-1) != 0) or
                 // (i+1 < shape_[0] and labeled_(i+1, j) != 0) or

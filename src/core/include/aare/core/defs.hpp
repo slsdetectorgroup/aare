@@ -1,6 +1,6 @@
 #pragma once
 
-#include "aare/core/DType.hpp"
+#include "aare/core/Dtype.hpp"
 #include "aare/utils/logger.hpp"
 
 #include <array>
@@ -22,13 +22,13 @@ class Cluster {
     int cluster_sizeY;
     int16_t x;
     int16_t y;
-    DType dt;
+    Dtype dt;
 
   private:
     std::byte *m_data;
 
   public:
-    Cluster(int cluster_sizeX_, int cluster_sizeY_, DType dt_ = DType(typeid(int32_t)))
+    Cluster(int cluster_sizeX_, int cluster_sizeY_, Dtype dt_ = Dtype(typeid(int32_t)))
         : cluster_sizeX(cluster_sizeX_), cluster_sizeY(cluster_sizeY_), dt(dt_) {
         m_data = new std::byte[cluster_sizeX * cluster_sizeY * dt.bytes()]{};
     }
@@ -38,7 +38,7 @@ class Cluster {
             return;
         x = other.x;
         y = other.y;
-        memcpy(m_data, other.m_data, other.size());
+        memcpy(m_data, other.m_data, other.bytes());
     }
     Cluster &operator=(const Cluster &other) {
         if (this == &other)
@@ -51,7 +51,7 @@ class Cluster {
         : cluster_sizeX(other.cluster_sizeX), cluster_sizeY(other.cluster_sizeY), x(other.x), y(other.y), dt(other.dt),
           m_data(other.m_data) {
         other.m_data = nullptr;
-        other.dt = DType(DType::TypeIndex::ERROR);
+        other.dt = Dtype(Dtype::TypeIndex::ERROR);
     }
     ~Cluster() { delete[] m_data; }
     template <typename T> T get(int idx) {
@@ -79,7 +79,8 @@ class Cluster {
     /**
      * @brief size of the cluster in bytes when saved to a file
      */
-    size_t size() const { return cluster_sizeX * cluster_sizeY * dt.bytes(); }
+    size_t size() const { return cluster_sizeX * cluster_sizeY ; }
+    size_t bytes() const { return cluster_sizeX * cluster_sizeY * dt.bytes(); }
     auto begin() const { return m_data; }
     auto end() const { return m_data + cluster_sizeX * cluster_sizeY * dt.bytes(); }
     std::byte *data() { return m_data; }
@@ -103,6 +104,21 @@ struct sls_detector_header {
     uint8_t detType;
     uint8_t version;
     std::array<uint8_t, 64> packetMask;
+    std::string to_string() {
+        std::string packetMaskStr = "[";
+        for (auto &i : packetMask) {
+            packetMaskStr += std::to_string(i) + ", ";
+        }
+        packetMaskStr += "]";
+
+        return "frameNumber: " + std::to_string(frameNumber) + "\n" + "expLength: " + std::to_string(expLength) + "\n" +
+               "packetNumber: " + std::to_string(packetNumber) + "\n" + "bunchId: " + std::to_string(bunchId) + "\n" +
+               "timestamp: " + std::to_string(timestamp) + "\n" + "modId: " + std::to_string(modId) + "\n" +
+               "row: " + std::to_string(row) + "\n" + "column: " + std::to_string(column) + "\n" +
+               "reserved: " + std::to_string(reserved) + "\n" + "debug: " + std::to_string(debug) + "\n" +
+               "roundRNumber: " + std::to_string(roundRNumber) + "\n" + "detType: " + std::to_string(detType) + "\n" +
+               "version: " + std::to_string(version) + "\n" + "packetMask: " + packetMaskStr + "\n";
+    }
 };
 
 template <typename T> struct t_xy {
@@ -114,7 +130,7 @@ template <typename T> struct t_xy {
 };
 using xy = t_xy<uint32_t>;
 
-using dynamic_shape = std::vector<ssize_t>;
+using dynamic_shape = std::vector<int64_t>;
 
 enum class DetectorType { Jungfrau, Eiger, Mythen3, Moench, ChipTestBoard, Unknown };
 
