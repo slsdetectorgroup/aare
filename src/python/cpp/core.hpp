@@ -8,6 +8,7 @@
 #include <string>
 
 #include "aare/core/Frame.hpp"
+#include "aare/core/MultiThread.hpp"
 #include "aare/core/Transforms.hpp"
 #include "aare/core/defs.hpp"
 
@@ -156,4 +157,21 @@ void define_core_bindings(py::module &m) {
     define_to_frame<int64_t>(m);
     define_to_frame<float>(m);
     define_to_frame<double>(m);
+
+    py::class_<MultiThread>(m, "MultiThread")
+        // .def(py::init([](std::vector<std::function<void()>> const &python_functions) {
+        //     std::vector<std::function<void()>> functions;
+        //     for (auto const &python_function : python_functions) {
+        //         std::function<void()> tmp = [python_function]() { python_function(); };
+        //         functions.emplace_back(tmp);
+        //     }
+        //     return std::unique_ptr<MultiThread>(new MultiThread(functions));
+        // }
+
+                    //   ))
+        .def(py::init<std::vector<std::function<void()>> const &>())
+        .def("run", [](MultiThread &self) {
+            py::gil_scoped_release release;
+            return self.run();
+        });
 }

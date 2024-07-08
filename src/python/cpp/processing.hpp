@@ -70,7 +70,7 @@ template <typename SUM_TYPE> void define_pedestal_bindings(py::module &m) {
         } else {
             throw std::runtime_error("Unsupported bitdepth");
         }
-    });
+    }, py::call_guard<py::gil_scoped_release>());
 
     define_pedestal_push_bindings<uint8_t>(p);
     define_pedestal_push_bindings<uint16_t>(p);
