@@ -28,11 +28,11 @@ template <typename T, typename SUM_TYPE> void define_pedestal_push_bindings(py::
 
         NDView<T, 2> a(static_cast<T *>(info.ptr), arr_shape);
         pedestal.push(a);
-    });
+    }, py::call_guard<py::gil_scoped_release>());
 
     p.def("push", [](Pedestal<SUM_TYPE> &pedestal, const int row, const int col, const T val) {
         pedestal.push(row, col, val);
-    });
+    }, py::call_guard<py::gil_scoped_release>());
 }
 template <typename SUM_TYPE> void define_pedestal_bindings(py::module &m) {
 
@@ -88,7 +88,7 @@ template <typename VIEW_TYPE, typename PEDESTAL_TYPE = double>
 void define_cluster_finder_template_bindings(py::class_<ClusterFinder> &cf) {
     cf.def("find_clusters_without_threshold",
            py::overload_cast<NDView<VIEW_TYPE, 2>, Pedestal<PEDESTAL_TYPE> &, bool>(
-               &ClusterFinder::find_clusters_without_threshold<VIEW_TYPE, PEDESTAL_TYPE>));
+               &ClusterFinder::find_clusters_without_threshold<VIEW_TYPE, PEDESTAL_TYPE>), py::call_guard<py::gil_scoped_release>());
     cf.def("find_clusters_with_threshold", py::overload_cast<NDView<VIEW_TYPE, 2>, Pedestal<PEDESTAL_TYPE> &>(
                                                &ClusterFinder::find_clusters_with_threshold<VIEW_TYPE, PEDESTAL_TYPE>));
 
@@ -106,7 +106,7 @@ void define_cluster_finder_template_bindings(py::class_<ClusterFinder> &cf) {
 
         NDView<VIEW_TYPE, 2> a(static_cast<VIEW_TYPE *>(info.ptr), arr_shape);
         return self.find_clusters_without_threshold(a, pedestal, late_update);
-    });
+    }, py::call_guard<py::gil_scoped_release>());
 
     cf.def("find_clusters_with_threshold",
            [](ClusterFinder &self, py::array_t<VIEW_TYPE> &np_array, Pedestal<PEDESTAL_TYPE> &pedestal) {
