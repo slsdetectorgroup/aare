@@ -47,16 +47,14 @@ class ClusterFileV2 {
     bool m_closed = true;
     std::filesystem::path m_fpath;
     std::string m_mode;
-    FILE *fp;
+    FILE *fp{nullptr};
 
   public:
-    ClusterFileV2(std::filesystem::path const &fpath, std::string const &mode) {
-        if (mode != "r" && mode != "w")
+    ClusterFileV2(std::filesystem::path const &fpath, std::string const &mode): m_fpath(fpath), m_mode(mode) {
+        if (m_mode != "r" && m_mode != "w")
             throw std::invalid_argument("mode must be 'r' or 'w'");
-        if (mode == "r" && !std::filesystem::exists(fpath))
+        if (m_mode == "r" && !std::filesystem::exists(m_fpath))
             throw std::invalid_argument("File does not exist");
-        m_fpath = fpath;
-        m_mode = mode;
         if (mode == "r") {
             fp = fopen(fpath.string().c_str(), "rb");
         } else if (mode == "w") {
