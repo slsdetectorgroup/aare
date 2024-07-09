@@ -10,12 +10,11 @@ TEST_CASE("test pedestal constructor") {
     REQUIRE(pedestal.rows() == 10);
     REQUIRE(pedestal.cols() == 10);
     REQUIRE(pedestal.n_samples() == 5);
-    REQUIRE(pedestal.cur_samples() != nullptr);
     for (int i = 0; i < 10; i++) {
         for (int j = 0; j < 10; j++) {
             REQUIRE(pedestal.get_sum()(i, j) == 0);
             REQUIRE(pedestal.get_sum2()(i, j) == 0);
-            REQUIRE(pedestal.cur_samples()[pedestal.index(i, j)] == 0);
+            REQUIRE(pedestal.cur_samples()(i, j) == 0);
         }
     }
 }
@@ -35,7 +34,7 @@ TEST_CASE("test pedestal push") {
         for (int j = 0; j < 10; j++) {
             REQUIRE(pedestal.get_sum()(i, j) == i + j);
             REQUIRE(pedestal.get_sum2()(i, j) == (i + j) * (i + j));
-            REQUIRE(pedestal.cur_samples()[pedestal.index(i, j)] == 1);
+            REQUIRE(pedestal.cur_samples()(i, j) == 1);
         }
     }
 
@@ -45,7 +44,7 @@ TEST_CASE("test pedestal push") {
         for (int j = 0; j < 10; j++) {
             REQUIRE(pedestal.get_sum()(i, j) == 0);
             REQUIRE(pedestal.get_sum2()(i, j) == 0);
-            REQUIRE(pedestal.cur_samples()[pedestal.index(i, j)] == 0);
+            REQUIRE(pedestal.cur_samples()(i, j) == 0);
         }
     }
 
@@ -55,11 +54,11 @@ TEST_CASE("test pedestal push") {
         for (uint32_t i = 0; i < 10; i++) {
             for (uint32_t j = 0; j < 10; j++) {
                 if (k < 5) {
-                    REQUIRE(pedestal.cur_samples()[pedestal.index(i, j)] == k + 1);
+                    REQUIRE(pedestal.cur_samples()(i, j) == k + 1);
                     REQUIRE(pedestal.get_sum()(i, j) == (k + 1) * (i + j));
                     REQUIRE(pedestal.get_sum2()(i, j) == (k + 1) * (i + j) * (i + j));
                 } else {
-                    REQUIRE(pedestal.cur_samples()[pedestal.index(i, j)] == 5);
+                    REQUIRE(pedestal.cur_samples()(i, j) == 5);
                     REQUIRE(pedestal.get_sum()(i, j) == 5 * (i + j));
                     REQUIRE(pedestal.get_sum2()(i, j) == 5 * (i + j) * (i + j));
                 }
