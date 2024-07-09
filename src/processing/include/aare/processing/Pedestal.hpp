@@ -9,9 +9,8 @@ namespace aare {
 template <typename SUM_TYPE = double> class Pedestal {
   public:
     Pedestal(uint32_t rows, uint32_t cols, uint32_t n_samples = 1000)
-        : m_rows(rows), m_cols(cols), m_freeze(false), m_samples(n_samples),
-          m_cur_samples(NDArray<uint32_t, 2>({rows, cols}, 0)), m_sum(NDArray<SUM_TYPE, 2>({rows, cols})),
-          m_sum2(NDArray<SUM_TYPE, 2>({rows, cols})) {
+        : m_rows(rows), m_cols(cols), m_freeze(false), m_samples(n_samples),           m_cur_samples(NDArray<uint32_t, 2>({rows, cols}, 0)),m_sum(NDArray<SUM_TYPE, 2>({rows, cols})),
+ m_sum2(NDArray<SUM_TYPE, 2>({rows, cols})) {
         assert(rows > 0 && cols > 0 && n_samples > 0);
         m_sum = 0;
         m_sum2 = 0;
@@ -92,10 +91,11 @@ template <typename SUM_TYPE = double> class Pedestal {
     inline NDArray<SUM_TYPE, 2> get_sum2() const { return m_sum2; }
 
     // pixel level operations (should be refactored to allow users to implement their own pixel level operations)
-    template <typename T> inline void push(const uint32_t row, const uint32_t col, const T val) {
+    template <typename T> inline void push(const uint32_t row, const uint32_t col, const T val_) {
         if (m_freeze) {
             return;
         }
+        SUM_TYPE val = static_cast<SUM_TYPE>(val_);
         const uint32_t idx = index(row, col);
         if (m_cur_samples(idx) < m_samples) {
             m_sum(idx) += val;
