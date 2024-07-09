@@ -44,7 +44,6 @@ struct ClusterV2 {
  */
 class ClusterFileV2 {
   private:
-    bool m_closed = true;
     std::filesystem::path m_fpath;
     std::string m_mode;
     FILE *fp{nullptr};
@@ -67,7 +66,6 @@ class ClusterFileV2 {
         if (fp == nullptr) {
             throw std::runtime_error("Failed to open file");
         }
-        m_closed = false;
     }
     ~ClusterFileV2() { close(); }
     std::vector<ClusterV2> read() {
@@ -133,9 +131,9 @@ class ClusterFileV2 {
     }
 
     void close() {
-        if (!m_closed) {
+        if (fp) {
             fclose(fp);
-            m_closed = true;
+            fp = nullptr;
         }
     }
 };
