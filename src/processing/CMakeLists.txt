@@ -1,7 +1,5 @@
 
-add_library(processing  ${CMAKE_CURRENT_SOURCE_DIR}/include/aare/processing/Pedestal.hpp
-                              ${CMAKE_CURRENT_SOURCE_DIR}/include/aare/processing/ClusterFinder.hpp
-                              )
+add_library(processing  ${CMAKE_CURRENT_SOURCE_DIR}/src/placeholder_processing.cpp)
 target_include_directories(processing PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/include)
 target_link_libraries(processing PUBLIC core)
 
