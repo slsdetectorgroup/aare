@@ -28,11 +28,11 @@ template <typename T, typename SUM_TYPE> void define_pedestal_push_bindings(py::
 
         NDView<T, 2> a(static_cast<T *>(info.ptr), arr_shape);
         pedestal.push(a);
-    }, py::call_guard<py::gil_scoped_release>());
+    });
 
     p.def("push", [](Pedestal<SUM_TYPE> &pedestal, const int row, const int col, const T val) {
         pedestal.push(row, col, val);
-    }, py::call_guard<py::gil_scoped_release>());
+    });
 }
 template <typename SUM_TYPE> void define_pedestal_bindings(py::module &m) {
 
@@ -43,10 +43,11 @@ template <typename SUM_TYPE> void define_pedestal_bindings(py::module &m) {
         .def(py::init<int, int>())
         .def("set_freeze", &Pedestal<SUM_TYPE>::set_freeze)
         .def("mean", py::overload_cast<>(&Pedestal<SUM_TYPE>::mean))
-        .def("mean", [](Pedestal<SUM_TYPE> &pedestal, const uint32_t row, const uint32_t col) { return pedestal.mean(row, col); })
+        .def("mean", [](Pedestal<SUM_TYPE> &pedestal, const uint32_t row,
+                        const uint32_t col) { return pedestal.mean(row, col); })
         .def("variance", py::overload_cast<>(&Pedestal<SUM_TYPE>::variance))
-        .def("variance",
-             [](Pedestal<SUM_TYPE> &pedestal, const uint32_t row, const uint32_t col) { return pedestal.variance(row, col); })
+        .def("variance", [](Pedestal<SUM_TYPE> &pedestal, const uint32_t row,
+                            const uint32_t col) { return pedestal.variance(row, col); })
         .def("standard_deviation", py::overload_cast<>(&Pedestal<SUM_TYPE>::standard_deviation))
         .def("standard_deviation", [](Pedestal<SUM_TYPE> &pedestal, const int row,
                                       const int col) { return pedestal.standard_deviation(row, col); })
@@ -57,20 +58,35 @@ template <typename SUM_TYPE> void define_pedestal_bindings(py::module &m) {
         .def_property_readonly("n_samples", &Pedestal<SUM_TYPE>::n_samples)
         .def_property_readonly("index", &Pedestal<SUM_TYPE>::index)
         .def_property_readonly("sum", &Pedestal<SUM_TYPE>::get_sum)
-        .def_property_readonly("sum2", &Pedestal<SUM_TYPE>::get_sum2);
-    p.def("push", [](Pedestal<SUM_TYPE> &pedestal, Frame &f) {
-        if (f.bitdepth() == 8) {
-            pedestal.template push<uint8_t>(f);
-        } else if (f.bitdepth() == 16) {
-            pedestal.template push<uint16_t>(f);
-        } else if (f.bitdepth() == 32) {
-            pedestal.template push<uint32_t>(f);
-        } else if (f.bitdepth() == 64) {
-            pedestal.template push<uint64_t>(f);
-        } else {
-            throw std::runtime_error("Unsupported bitdepth");
-        }
-    }, py::call_guard<py::gil_scoped_release>());
+        .def_property_readonly("sum2", &Pedestal<SUM_TYPE>::get_sum2)
+        .def(
+            "push",
+            [](Pedestal<SUM_TYPE> &pedestal, Frame &f) {
+                if (f.dtype() == Dtype(Dtype::INT8)) {
+                    pedestal.template push<int8_t>(f);
+                } else if (f.dtype() == Dtype(Dtype::INT16)) {
+                    pedestal.template push<int16_t>(f);
+                } else if (f.dtype() == Dtype(Dtype::INT32)) {
+                    pedestal.template push<int32_t>(f);
+                } else if (f.dtype() == Dtype(Dtype::INT64)) {
+                    pedestal.template push<int64_t>(f);
+                } else if (f.dtype() == Dtype(Dtype::UINT8)) {
+                    pedestal.template push<uint8_t>(f);
+                } else if (f.dtype() == Dtype(Dtype::UINT16)) {
+                    pedestal.template push<uint16_t>(f);
+                } else if (f.dtype() == Dtype(Dtype::UINT32)) {
+                    pedestal.template push<uint32_t>(f);
+                } else if (f.dtype() == Dtype(Dtype::UINT64)) {
+                    pedestal.template push<uint64_t>(f);
+                } else if (f.dtype() == Dtype(Dtype::FLOAT)) {
+                    pedestal.template push<float>(f);
+                } else if (f.dtype() == Dtype(Dtype::DOUBLE)) {
+                    pedestal.template push<double>(f);
+                } else {
+                    throw std::runtime_error("Unsupported data type");
+                }
+            },
+            py::call_guard<py::gil_scoped_release>());
 
     define_pedestal_push_bindings<uint8_t>(p);
     define_pedestal_push_bindings<uint16_t>(p);
@@ -88,7 +104,7 @@ template <typename VIEW_TYPE, typename PEDESTAL_TYPE = double>
 void define_cluster_finder_template_bindings(py::class_<ClusterFinder> &cf) {
     cf.def("find_clusters_without_threshold",
            py::overload_cast<NDView<VIEW_TYPE, 2>, Pedestal<PEDESTAL_TYPE> &, bool>(
-               &ClusterFinder::find_clusters_without_threshold<VIEW_TYPE, PEDESTAL_TYPE>), py::call_guard<py::gil_scoped_release>());
+               &ClusterFinder::find_clusters_without_threshold<VIEW_TYPE, PEDESTAL_TYPE>));
     cf.def("find_clusters_with_threshold", py::overload_cast<NDView<VIEW_TYPE, 2>, Pedestal<PEDESTAL_TYPE> &>(
                                                &ClusterFinder::find_clusters_with_threshold<VIEW_TYPE, PEDESTAL_TYPE>));
 
@@ -106,7 +122,7 @@ void define_cluster_finder_template_bindings(py::class_<ClusterFinder> &cf) {
 
         NDView<VIEW_TYPE, 2> a(static_cast<VIEW_TYPE *>(info.ptr), arr_shape);
         return self.find_clusters_without_threshold(a, pedestal, late_update);
-    }, py::call_guard<py::gil_scoped_release>());
+    });
 
     cf.def("find_clusters_with_threshold",
            [](ClusterFinder &self, py::array_t<VIEW_TYPE> &np_array, Pedestal<PEDESTAL_TYPE> &pedestal) {
@@ -142,7 +158,7 @@ void define_cluster_finder_bindings(py::module &m) {
 void define_processing_bindings(py::module &m) {
     define_pedestal_bindings<double>(m);
 
-    py::class_<Cluster>(m, "Cluster",py::buffer_protocol())
+    py::class_<Cluster>(m, "Cluster", py::buffer_protocol())
         .def(py::init<int, int, Dtype>())
         .def("size", &Cluster::size)
         .def("begin", &Cluster::begin)
@@ -157,4 +173,44 @@ void define_processing_bindings(py::module &m) {
             return "<Cluster: x: " + std::to_string(a.x) + ", y: " + std::to_string(a.y) + ">";
         });
     define_cluster_finder_bindings(m);
+
+    struct GILReleaseW {
+        GILReleaseW(): m_release{nullptr} {}
+        void release() { m_release = new py::gil_scoped_release(); }
+        ~GILReleaseW() { delete m_release; }
+        py::gil_scoped_release *m_release;
+    };
+
+    m.def("test_race_condition", [](py::array_t<int32_t> &np_array, bool parallelize, int trials) {
+        GILReleaseW gil_release;
+        // critical section start
+        py::buffer_info info = np_array.request();
+        if (info.format != py::format_descriptor<int32_t>::format())
+            throw std::runtime_error(
+                "Incompatible format: different formats! (Are you sure the arrays are of the same type?)");
+        if (info.ndim != 2)
+            throw std::runtime_error("Incompatible dimension: expected a 2D array!");
+
+        std::array<int64_t, 2> arr_shape;
+        std::copy(info.shape.begin(), info.shape.end(), arr_shape.begin());
+        NDView<int32_t, 2> arr(static_cast<int32_t *>(info.ptr), arr_shape);
+        // critical section end
+        if (parallelize) {
+            std::cout<<"Parallelizing\n";
+            gil_release.release();
+        }
+        for (int trials_ = 0; trials_ < trials; trials_++) {
+            for (int i = 0; i < arr.shape(0); i++) {
+                for (int j = 0; j < arr.shape(1); j++) {
+                    if (arr(i, j) % 2 == 0) {
+                        arr(i, j) = arr(i, j) * 5 + 1;
+                    } else {
+                        arr(i, j) = arr(i, j) - 5;
+                    }
+                }
+            }
+        }
+
+        return arr;
+    });
 }
