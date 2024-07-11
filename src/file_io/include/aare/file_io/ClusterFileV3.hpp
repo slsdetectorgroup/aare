@@ -10,8 +10,9 @@
 namespace aare {
 /**
  * in TEXT format:
- *    - magic_string: 4 bytes ("CLST")
- *    - header_length: 4 bytes (uint32)
+ *    - magic_string: 4 characters ("CLST")
+ *    - header_length: 5 characters (max 99999, must be prefixed with zeros if less than 5 digits
+ * (00123))
  *
  * in JSON format:
  *     - version: "0.1" (string max 3 chars)
@@ -48,13 +49,24 @@ namespace aare {
  */
 struct ClusterFileV3 {
     static constexpr std::string_view MAGIC_STRING = "CLST";
+    static constexpr int HEADER_LEN_CHARS = 5;
     struct Field {
+        enum ARRAY_TYPE { NOT_ARRAY = 0, FIXED_LENGTH_ARRAY = 1, VARIABLE_LENGTH_ARRAY = 2 };
+        static ARRAY_TYPE to_array_type(uint64_t i) {
+            if (i == 0)
+                return NOT_ARRAY;
+            if (i == 1)
+                return FIXED_LENGTH_ARRAY;
+            if (i == 2)
+                return VARIABLE_LENGTH_ARRAY;
+            throw std::invalid_argument("Invalid ARRAY_TYPE");
+        }
         Field() = default;
-        Field(std::string const &label, Dtype dtype, uint8_t is_array, uint32_t array_size)
-            : label(label), dtype(dtype), is_array(is_array), array_size(array_size) {}
+        Field(std::string const &label_, Dtype dtype_, ARRAY_TYPE is_array_, uint32_t array_size_)
+            : label(label_), dtype(dtype_), is_array(is_array_), array_size(array_size_) {}
         std::string label{};
         Dtype dtype{Dtype(Dtype::ERROR)};
-        uint8_t is_array{};
+        ARRAY_TYPE is_array{};
         uint32_t array_size{};
 
         std::string to_json() const {
@@ -70,8 +82,29 @@ struct ClusterFileV3 {
             json += "}";
             return json;
         }
+        void from_json(std::string hf) {
+            simdjson::padded_string const ps(hf.c_str(), hf.size());
+            simdjson::ondemand::parser parser;
+            simdjson::ondemand::document doc = parser.iterate(ps);
+            simdjson::ondemand::object object = doc.get_object();
+
+            for (auto field : object) {
+                std::string_view const key = field.unescaped_key();
+                if (key == "label") {
+                    this->label = field.value().get_string().value();
+                } else if (key == "dtype") {
+                    this->dtype = Dtype(field.value().get_string().value());
+                } else if (key == "is_array") {
+                    this->is_array = Field::to_array_type(field.value().get_uint64());
+                } else if (key == "array_size") {
+                    this->array_size = field.value().get_uint64();
+                }
+            }
+        }
     };
     struct Header {
+        static constexpr std::string_view CURRENT_VERSION = "0.1";
+        Header() : version{CURRENT_VERSION}, n_records{} {};
         std::string version;
         uint64_t n_records;
         std::map<std::string, std::string> metadata;
@@ -113,16 +146,16 @@ struct ClusterFileV3 {
             for (auto field : object) {
                 std::string_view const key = field.unescaped_key();
                 if (key == "version") {
-                    std::string_view version = field.value().get_string();
-                    if (version.size() != 3) {
+                    std::string_view version_sv = field.value().get_string();
+                    if (version_sv.size() != 3) {
                         throw std::runtime_error("Invalid version string");
                     }
-                    this->version = std::string(version.data(), version.size());
+                    this->version = std::string(version_sv.data(), version_sv.size());
                 } else if (key == "n_records") {
                     this->n_records = field.value().get_uint64();
                 } else if (key == "metadata") {
-                    simdjson::ondemand::object metadata = field.value().get_object();
-                    for (auto meta : metadata) {
+                    simdjson::ondemand::object metadata_obj = field.value().get_object();
+                    for (auto meta : metadata_obj) {
                         std::string_view key_view(meta.unescaped_key());
                         std::string const key_str(key_view.data(), key_view.size());
                         std::string_view value_view(meta.value().get_string());
@@ -130,41 +163,19 @@ struct ClusterFileV3 {
                         this->metadata[key_str] = value_str;
                     }
                 } else if (key == "header_fields") {
-                    simdjson::ondemand::array header_fields = field.value().get_array();
-                    for (auto hf : header_fields) {
+                    simdjson::ondemand::array header_fields_arr = field.value().get_array();
+                    for (auto hf : header_fields_arr) {
                         Field f;
-                        simdjson::ondemand::object field = hf.get_object();
-                        for (auto field : field) {
-                            std::string_view const key = field.unescaped_key();
-                            if (key == "label") {
-                                f.label = field.value().get_string().value();
-                            } else if (key == "dtype") {
-                                f.dtype = Dtype(field.value().get_string().value());
-                            } else if (key == "is_array") {
-                                f.is_array = field.value().get_uint64();
-                            } else if (key == "array_size") {
-                                f.array_size = field.value().get_uint64();
-                            }
-                        }
+                        std::string_view const sv = hf.raw_json();
+                        f.from_json(std::string(sv.data(), sv.size()));
                         this->header_fields.push_back(f);
                     }
                 } else if (key == "data_fields") {
-                    simdjson::ondemand::array data_fields = field.value().get_array();
-                    for (auto df : data_fields) {
+                    simdjson::ondemand::array data_fields_arr = field.value().get_array();
+                    for (auto df : data_fields_arr) {
                         Field f;
-                        simdjson::ondemand::object field = df.get_object();
-                        for (auto field : field) {
-                            std::string_view const key = field.unescaped_key();
-                            if (key == "label") {
-                                f.label = field.value().get_string().value();
-                            } else if (key == "dtype") {
-                                f.dtype = Dtype(field.value().get_string().value());
-                            } else if (key == "is_array") {
-                                f.is_array = field.value().get_uint64();
-                            } else if (key == "array_size") {
-                                f.array_size = field.value().get_uint64();
-                            }
-                        }
+                        std::string_view const sv = df.raw_json();
+                        f.from_json(std::string(sv.data(), sv.size()));
                         this->data_fields.push_back(f);
                     }
                 }
@@ -172,8 +183,7 @@ struct ClusterFileV3 {
         }
     };
 
-    ClusterFileV3(std::filesystem::path const &fpath, std::string const &mode,
-                  Header const &header = Header())
+    ClusterFileV3(std::filesystem::path const &fpath, std::string const &mode, Header const header = Header{})
         : m_closed(true), m_fpath(fpath), m_mode(mode), m_header(header) {
         if (mode != "r" && mode != "w")
             throw std::invalid_argument("mode must be 'r' or 'w'");
@@ -190,11 +200,36 @@ struct ClusterFileV3 {
             if (std::string_view(magic_string.data(), MAGIC_STRING.size()) != MAGIC_STRING) {
                 throw std::runtime_error("Invalid file format: magic string mismatch");
             }
+            std::array<char, HEADER_LEN_CHARS> header_length_arr;
+            fread(header_length_arr.data(), header_length_arr.size(), 1, m_fp);
             uint32_t header_length;
-            fread(&header_length, sizeof(uint32_t), 1, m_fp);
+            try {
+                header_length = std::stoi(std::string(header_length_arr.data(), header_length_arr.size()));
+            } catch (std::invalid_argument &e) {
+                throw std::runtime_error("Invalid file format: header length is not a number");
+            }
+
             std::string header_json(header_length, '\0');
             fread(header_json.data(), 1, header_length, m_fp);
             m_header.from_json(header_json);
+            if (header.header_fields.size() == 0 || header.data_fields.size() == 0) {
+                // TODO: verify if this condition is needed after finishing the implementation
+                throw std::runtime_error("Invalid file format: header fields or data fields are empty");
+            }
+            for (auto &f : m_header.header_fields) {
+                if (f.is_array == 2) {
+                    m_header_has_vlen_array = true;
+                    break;
+                }
+            }
+            for (auto &f : m_header.data_fields) {
+                if (f.is_array == 2) {
+                    m_data_has_vlen_array = true;
+                    break;
+                }
+            }
+            m_cluster_header_size = calculate_fixed_cluster_size(m_header.header_fields);
+            m_cluster_data_size = calculate_fixed_cluster_size(m_header.data_fields);
         }
     }
 
@@ -204,5 +239,23 @@ struct ClusterFileV3 {
     std::string m_mode;
     FILE *m_fp;
     Header m_header;
+    bool m_header_has_vlen_array{false};
+    bool m_data_has_vlen_array{false};
+    uint32_t m_cluster_header_size{0};
+    uint32_t m_cluster_data_size{0};
+
+    uint32_t calculate_fixed_cluster_size(std::vector<Field> const &fields) {
+        uint32_t size = 0;
+        for (auto &f : fields) {
+            if (f.is_array == 0) {
+                size += f.dtype.bytes();
+            } else if (f.is_array == 1) {
+                size += f.array_size * f.dtype.bytes();
+            } else {
+                throw std::runtime_error("Calculating Fixed size of variable length array");
+            }
+        }
+        return size;
+    }
 };
 } // namespace aare

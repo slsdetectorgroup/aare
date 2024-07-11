@@ -7,27 +7,43 @@ TEST_CASE("ClusterFileV3::Field::to_json") {
     ClusterFileV3::Field f;
     f.label = "TEST";
     f.dtype = Dtype::INT32;
-    f.is_array = 1;
+    f.is_array = f.FIXED_LENGTH_ARRAY;
     f.array_size = 10;
-    REQUIRE(f.to_json() ==
-            "{\"label\": \"TEST\", \"dtype\": \"<i4\", \"is_array\": 1, \"array_size\": 10}");
+    REQUIRE(f.to_json() == "{\"label\": \"TEST\", \"dtype\": \"<i4\", \"is_array\": 1, \"array_size\": 10}");
 }
 
 TEST_CASE("ClusterFileV3::Field::to_json2") {
     ClusterFileV3::Field f;
     f.label = "123abc";
     f.dtype = Dtype::DOUBLE;
-    f.is_array = 2;
+    f.is_array = f.VARIABLE_LENGTH_ARRAY;
     f.array_size = 0;
-    REQUIRE(f.to_json() ==
-            "{\"label\": \"123abc\", \"dtype\": \"f8\", \"is_array\": 2, \"array_size\": 0}");
+    REQUIRE(f.to_json() == "{\"label\": \"123abc\", \"dtype\": \"f8\", \"is_array\": 2, \"array_size\": 0}");
+}
+
+TEST_CASE("ClusterFileV3::Field::from_json") {
+    ClusterFileV3::Field f;
+    f.from_json("{\"label\": \"abc\", \"dtype\": \"<u1\", \"is_array\": 1, \"array_size\": 0}");
+    REQUIRE(f.label == "abc");
+    REQUIRE(f.dtype == Dtype::UINT8);
+    REQUIRE(f.is_array == f.FIXED_LENGTH_ARRAY);
+    REQUIRE(f.array_size == 0);
+}
+TEST_CASE("ClusterFileV3::Field::from_json2") {
+    ClusterFileV3::Field f;
+    f.from_json("{\n\n\n\n\n\t\"label\": \n\n\t\"abc\", \t\n\n\"dtype\": \"<u1\", \"is_array\": 1, \n\"array_size\":\n "
+                "0}\n\n\n\n\t");
+    REQUIRE(f.label == "abc");
+    REQUIRE(f.dtype == Dtype::UINT8);
+    REQUIRE(f.is_array == f.FIXED_LENGTH_ARRAY);
+    REQUIRE(f.array_size == 0);
 }
 
 TEST_CASE("ClusterFileV3::Header::from_json test empty string") {
     std::string json = "{         }";
     ClusterFileV3::Header h;
     h.from_json(json);
-    REQUIRE(h.version == "");
+    REQUIRE(h.version == h.CURRENT_VERSION);
     REQUIRE(h.n_records == 0);
     REQUIRE(h.metadata.size() == 0);
     REQUIRE(h.header_fields.size() == 0);
@@ -48,8 +64,7 @@ TEST_CASE("ClusterFileV3::Header::from_json metadata with \\n and \\t") {
                        "\t\n\n\"key2\":\t\n\n \"value2\"\t\n\t\n}\n }";
     ClusterFileV3::Header h;
     h.from_json(json);
-    REQUIRE(h.metadata ==
-            std::map<std::string, std::string>{{"key1", "value1"}, {"key2", "value2"}});
+    REQUIRE(h.metadata == std::map<std::string, std::string>{{"key1", "value1"}, {"key2", "value2"}});
 }
 
 TEST_CASE("ClusterFileV3::Header::from_json data field with \\n and \\t") {
@@ -60,25 +75,23 @@ TEST_CASE("ClusterFileV3::Header::from_json data field with \\n and \\t") {
     REQUIRE(h.data_fields.size() == 1);
     REQUIRE(h.data_fields[0].label == "XXXABC");
     REQUIRE(h.data_fields[0].dtype == Dtype::INT32);
-    REQUIRE(h.data_fields[0].is_array == 1);
+    REQUIRE(h.data_fields[0].is_array == ClusterFileV3::Field::FIXED_LENGTH_ARRAY);
     REQUIRE(h.data_fields[0].array_size == 10);
-    
 }
 
 TEST_CASE("ClusterFileV3::Header::from_json") {
-    std::string json =
-        "{"
-        "\"version\": \"1.2\","
-        "\"n_records\": 100,"
-        "\"metadata\": {\"key1\": \"value1\", \"key2\": \"value2\"},"
-        "\"header_fields\": "
-        "[{\"label\": \"TEST\", \"dtype\": \"<i4\", \"is_array\": 1, \"array_size\": 10},"
-        "{\"label\": \"123abc\", \"dtype\": \"f8\", \"is_array\": 2, \"array_size\": 0}],"
-        "\"data_fields\": "
-        "[{\"label\": \"TEST\", \"dtype\": \"<i4\", \"is_array\": 1, \"array_size\": 10},"
-        "{\"label\": \"123abc\", \"dtype\": \"f8\", \"is_array\": 2, \"array_size\": 0}]"
+    std::string json = "{"
+                       "\"version\": \"1.2\","
+                       "\"n_records\": 100,"
+                       "\"metadata\": {\"key1\": \"value1\", \"key2\": \"value2\"},"
+                       "\"header_fields\": "
+                       "[{\"label\": \"TEST\", \"dtype\": \"<i4\", \"is_array\": 1, \"array_size\": 10},"
+                       "{\"label\": \"123abc\", \"dtype\": \"f8\", \"is_array\": 2, \"array_size\": 0}],"
+                       "\"data_fields\": "
+                       "[{\"label\": \"TEST\", \"dtype\": \"<i4\", \"is_array\": 1, \"array_size\": 10},"
+                       "{\"label\": \"123abc\", \"dtype\": \"f8\", \"is_array\": 2, \"array_size\": 0}]"
 
-        "}";
+                       "}";
     ClusterFileV3::Header h;
     h.from_json(json);
     REQUIRE(h.version == "1.2");
@@ -89,19 +102,19 @@ TEST_CASE("ClusterFileV3::Header::from_json") {
     REQUIRE(h.header_fields.size() == 2);
     REQUIRE(h.header_fields[0].label == "TEST");
     REQUIRE(h.header_fields[0].dtype == Dtype::INT32);
-    REQUIRE(h.header_fields[0].is_array == 1);
+    REQUIRE(h.header_fields[0].is_array == ClusterFileV3::Field::FIXED_LENGTH_ARRAY);
     REQUIRE(h.header_fields[0].array_size == 10);
     REQUIRE(h.header_fields[1].label == "123abc");
     REQUIRE(h.header_fields[1].dtype == Dtype::DOUBLE);
-    REQUIRE(h.header_fields[1].is_array == 2);
+    REQUIRE(h.header_fields[1].is_array == ClusterFileV3::Field::VARIABLE_LENGTH_ARRAY);
     REQUIRE(h.header_fields[1].array_size == 0);
     REQUIRE(h.data_fields.size() == 2);
     REQUIRE(h.data_fields[0].label == "TEST");
     REQUIRE(h.data_fields[0].dtype == Dtype::INT32);
-    REQUIRE(h.data_fields[0].is_array == 1);
+    REQUIRE(h.data_fields[0].is_array == ClusterFileV3::Field::FIXED_LENGTH_ARRAY);
     REQUIRE(h.data_fields[0].array_size == 10);
     REQUIRE(h.data_fields[1].label == "123abc");
     REQUIRE(h.data_fields[1].dtype == Dtype::DOUBLE);
-    REQUIRE(h.data_fields[1].is_array == 2);
+    REQUIRE(h.data_fields[1].is_array == ClusterFileV3::Field::VARIABLE_LENGTH_ARRAY);
     REQUIRE(h.data_fields[1].array_size == 0);
 }
