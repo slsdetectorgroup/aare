@@ -9,6 +9,7 @@
 
 #include "aare/core/Frame.hpp"
 #include "aare/core/Transforms.hpp"
+#include "aare/core/Cluster.hpp"
 #include "aare/core/defs.hpp"
 
 template <typename T> void define_to_frame(py::module &m) {

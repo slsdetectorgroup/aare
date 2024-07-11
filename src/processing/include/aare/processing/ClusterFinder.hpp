@@ -3,6 +3,7 @@
 #include "aare/core/NDArray.hpp"
 #include "aare/core/NDView.hpp"
 #include "aare/processing/Pedestal.hpp"
+#include "aare/core/Cluster.hpp"
 #include <cstddef>
 
 namespace aare {

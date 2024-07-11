@@ -47,7 +47,8 @@ namespace aare {
  *     ...
  *
  */
-struct ClusterFileV3 {
+namespace v3{
+struct ClusterFile {
     static constexpr std::string_view MAGIC_STRING = "CLST";
     static constexpr int HEADER_LEN_CHARS = 5;
     struct Field {
@@ -187,12 +188,14 @@ struct ClusterFileV3 {
         }
 
         bool operator==(Header const &other) const {
-            return version == other.version && n_records == other.n_records && metadata == other.metadata &&
-                   header_fields == other.header_fields && data_fields == other.data_fields;
+            return version == other.version && n_records == other.n_records &&
+                   metadata == other.metadata && header_fields == other.header_fields &&
+                   data_fields == other.data_fields;
         }
     };
 
-    ClusterFileV3(std::filesystem::path const &fpath, std::string const &mode, Header const header = Header{})
+    ClusterFile(std::filesystem::path const &fpath, std::string const &mode,
+                  Header const header = Header{})
         : m_closed(true), m_fpath(fpath), m_mode(mode), m_header(header) {
         if (mode != "r" && mode != "w")
             throw std::invalid_argument("mode must be 'r' or 'w'");
@@ -213,7 +216,8 @@ struct ClusterFileV3 {
             fread(header_length_arr.data(), header_length_arr.size(), 1, m_fp);
             uint32_t header_length;
             try {
-                header_length = std::stoi(std::string(header_length_arr.data(), header_length_arr.size()));
+                header_length =
+                    std::stoi(std::string(header_length_arr.data(), header_length_arr.size()));
             } catch (std::invalid_argument &e) {
                 throw std::runtime_error("Invalid file format: header length is not a number");
             }
@@ -221,9 +225,10 @@ struct ClusterFileV3 {
             std::string header_json(header_length, '\0');
             fread(header_json.data(), 1, header_length, m_fp);
             m_header.from_json(header_json);
-            if (header.header_fields.size() == 0 || header.data_fields.size() == 0) {
+            if (m_header.header_fields.size() == 0 || m_header.data_fields.size() == 0) {
                 // TODO: verify if this condition is needed after finishing the implementation
-                throw std::runtime_error("Invalid file format: header fields or data fields are empty");
+                throw std::runtime_error(
+                    "Invalid file format: header fields or data fields are empty");
             }
             for (auto &f : m_header.header_fields) {
                 if (f.is_array == 2) {
@@ -239,7 +244,8 @@ struct ClusterFileV3 {
             }
         } else if (mode == "w") {
             if (m_header == Header{}) {
-                throw std::invalid_argument("Header must be provided when opening file in write mode");
+                throw std::invalid_argument(
+                    "Header must be provided when opening file in write mode");
             }
             m_fp = fopen(fpath.string().c_str(), "wb");
             if (m_fp == nullptr) {
@@ -254,6 +260,75 @@ struct ClusterFileV3 {
         }
         m_cluster_header_size = calculate_fixed_cluster_size(m_header.header_fields);
         m_cluster_data_size = calculate_fixed_cluster_size(m_header.data_fields);
+        m_closed = false;
+    }
+
+    template <typename ClusterHeaderType, typename ClusterDataType>
+    std::pair<ClusterHeaderType, std::vector<ClusterDataType>> read() {
+        if (m_mode != "r") {
+            throw std::invalid_argument("File not opened in read mode");
+        }
+        if (m_closed) {
+            throw std::invalid_argument("File is closed");
+        }
+
+        // read header
+        ClusterHeaderType cluster_header;
+        // check if structure has vlen array
+        if (!m_header_has_vlen_array) {
+            // read fixed size data
+            // check if we can read directly into the struct
+            if constexpr (ClusterHeaderType::has_data()) {
+                fread(cluster_header.data(), 1, m_cluster_header_size, m_fp);
+            } else {
+                // read into a temporary buffer and then call set() from the struct
+                std::array<std::byte, sizeof(ClusterHeaderType)> tmp;
+                fread(tmp.data(), 1, m_cluster_header_size, m_fp);
+                cluster_header.set(tmp.data());
+            }
+
+        } else {
+            throw std::runtime_error("Variable length array not implemented yet");
+        }
+
+        // read data
+        std::vector<ClusterDataType> cluster_data(cluster_header.data_count());
+        if (!m_data_has_vlen_array) {
+            // read fixed size data
+            if constexpr (ClusterDataType::has_data()) {
+                // read n_clusters directly into the vector
+                fread(cluster_data.data(), cluster_header.data_count(), m_cluster_data_size, m_fp);
+            } else {
+                std::array<std::byte, sizeof(ClusterDataType)> tmp;
+                for (int i = 0; i < cluster_header.data_count(); i++) {
+                    fread(tmp.data(), 1, m_cluster_data_size, m_fp);
+                    ClusterDataType &cd = cluster_data[i];
+                    cd.set(tmp.data());
+                }
+            }
+        } else {
+            throw std::runtime_error("Variable length array not implemented yet");
+        }
+        return {cluster_header, cluster_data};
+    }
+
+    int flush() { return fflush(m_fp); }
+    int close() {
+        int ret{};
+        if (!m_closed) {
+            ret = fclose(m_fp);
+            if (ret == 0) {
+                m_closed = true;
+            } else {
+                throw std::runtime_error("Failed to close file");
+            }
+        }
+        return ret;
+    }
+    ~ClusterFile() noexcept {
+        if (!m_closed) {
+            fclose(m_fp);
+        }
     }
 
   private:
@@ -281,4 +356,6 @@ struct ClusterFileV3 {
         return size;
     }
 };
+
+}
 } // namespace aare

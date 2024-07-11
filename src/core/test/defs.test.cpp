@@ -1,4 +1,5 @@
 #include "aare/core/defs.hpp"
+#include "aare/core/Cluster.hpp"
 #include "aare/utils/floats.hpp"
 #include <catch2/catch_test_macros.hpp>
 #include <string>
