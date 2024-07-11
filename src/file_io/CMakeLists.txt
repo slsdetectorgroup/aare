@@ -31,6 +31,7 @@ if(AARE_TESTS)
             ${CMAKE_CURRENT_SOURCE_DIR}/test/NumpyFile.test.cpp
             ${CMAKE_CURRENT_SOURCE_DIR}/test/NumpyHelpers.test.cpp
             ${CMAKE_CURRENT_SOURCE_DIR}/test/RawFile.test.cpp
+            ${CMAKE_CURRENT_SOURCE_DIR}/test/ClusterFileV3.test.cpp
         )
     target_sources(tests PRIVATE ${TestSources} )
     target_link_libraries(tests PRIVATE core file_io)
