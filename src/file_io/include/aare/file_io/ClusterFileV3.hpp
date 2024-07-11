@@ -101,6 +101,10 @@ struct ClusterFileV3 {
                 }
             }
         }
+        bool operator==(Field const &other) const {
+            return label == other.label && dtype == other.dtype && is_array == other.is_array &&
+                   array_size == other.array_size;
+        }
     };
     struct Header {
         static constexpr std::string_view CURRENT_VERSION = "0.1";
@@ -181,6 +185,11 @@ struct ClusterFileV3 {
                 }
             }
         }
+
+        bool operator==(Header const &other) const {
+            return version == other.version && n_records == other.n_records && metadata == other.metadata &&
+                   header_fields == other.header_fields && data_fields == other.data_fields;
+        }
     };
 
     ClusterFileV3(std::filesystem::path const &fpath, std::string const &mode, Header const header = Header{})
@@ -228,9 +237,23 @@ struct ClusterFileV3 {
                     break;
                 }
             }
-            m_cluster_header_size = calculate_fixed_cluster_size(m_header.header_fields);
-            m_cluster_data_size = calculate_fixed_cluster_size(m_header.data_fields);
+        } else if (mode == "w") {
+            if (m_header == Header{}) {
+                throw std::invalid_argument("Header must be provided when opening file in write mode");
+            }
+            m_fp = fopen(fpath.string().c_str(), "wb");
+            if (m_fp == nullptr) {
+                throw std::runtime_error("Failed to open file");
+            }
+            fwrite(MAGIC_STRING.data(), 1, MAGIC_STRING.size(), m_fp);
+            std::string header_json = header.to_json();
+            std::string header_len_str = std::to_string(header_json.size());
+            header_len_str.insert(0, HEADER_LEN_CHARS - header_len_str.size(), '0');
+            fwrite(header_len_str.data(), 1, HEADER_LEN_CHARS, m_fp);
+            fwrite(header_json.data(), 1, header_json.size(), m_fp);
         }
+        m_cluster_header_size = calculate_fixed_cluster_size(m_header.header_fields);
+        m_cluster_data_size = calculate_fixed_cluster_size(m_header.data_fields);
     }
 
   private:
