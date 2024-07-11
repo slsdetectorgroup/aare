@@ -2,6 +2,7 @@
 #include "aare/core/defs.hpp"
 #include <filesystem>
 #include <string>
+#include <fmt/format.h>
 
 namespace aare {
 struct ClusterHeader {
@@ -39,24 +40,25 @@ struct ClusterV2 {
 
 /**
  * @brief
- * importtant not: fp always points to the clutsers header and does not point to individual clusters
+ * important not: fp always points to the clusters header and does not point to individual clusters
  *
  */
 class ClusterFileV2 {
-  private:
-    bool m_closed = true;
-    std::filesystem::path m_fpath;
+    std::filesystem::path m_fpath; 
     std::string m_mode;
-    FILE *fp;
+    FILE *fp{nullptr};
+
+    void check_open(){
+        if (!fp)
+            throw std::runtime_error(fmt::format("File: {} not open", m_fpath.string()));
+    }
 
   public:
-    ClusterFileV2(std::filesystem::path const &fpath, std::string const &mode) {
-        if (mode != "r" && mode != "w")
+    ClusterFileV2(std::filesystem::path const &fpath, std::string const &mode): m_fpath(fpath), m_mode(mode) {
+        if (m_mode != "r" && m_mode != "w")
             throw std::invalid_argument("mode must be 'r' or 'w'");
-        if (mode == "r" && !std::filesystem::exists(fpath))
+        if (m_mode == "r" && !std::filesystem::exists(m_fpath))
             throw std::invalid_argument("File does not exist");
-        m_fpath = fpath;
-        m_mode = mode;
         if (mode == "r") {
             fp = fopen(fpath.string().c_str(), "rb");
         } else if (mode == "w") {
@@ -69,12 +71,13 @@ class ClusterFileV2 {
         if (fp == nullptr) {
             throw std::runtime_error("Failed to open file");
         }
-        m_closed = false;
     }
     ~ClusterFileV2() { close(); }
     std::vector<ClusterV2> read() {
+        check_open();
+
         ClusterHeader header;
-        fread(&header, sizeof(ClusterHeader), 1, fp);
+        fread(&header, sizeof(ClusterHeader), 1, fp); 
         std::vector<ClusterV2_> clusters_(header.n_clusters);
         fread(clusters_.data(), sizeof(ClusterV2_), header.n_clusters, fp);
         std::vector<ClusterV2> clusters;
@@ -96,12 +99,12 @@ class ClusterFileV2 {
     }
 
     size_t write(std::vector<ClusterV2> const &clusters) {
-        if (m_mode != "w") {
+        check_open();
+        if (m_mode != "w")
             throw std::runtime_error("File not opened in write mode");
-        }
-        if (clusters.empty()) {
+        if (clusters.empty())
             return 0;
-        }
+
         ClusterHeader header;
         header.frame_number = clusters[0].frame_number;
         header.n_clusters = clusters.size();
@@ -113,9 +116,10 @@ class ClusterFileV2 {
     }
 
     size_t write(std::vector<std::vector<ClusterV2>> const &clusters) {
-        if (m_mode != "w") {
+        check_open();
+        if (m_mode != "w") 
             throw std::runtime_error("File not opened in write mode");
-        }
+
         size_t n_clusters = 0;
         for (auto &c : clusters) {
             n_clusters += write(c);
@@ -135,9 +139,9 @@ class ClusterFileV2 {
     }
 
     void close() {
-        if (!m_closed) {
+        if (fp) {
             fclose(fp);
-            m_closed = true;
+            fp = nullptr;
         }
     }
 };
