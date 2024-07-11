@@ -44,6 +44,25 @@ template <class T> struct ProducerConsumerQueue {
     ProducerConsumerQueue(const ProducerConsumerQueue &) = delete;
     ProducerConsumerQueue &operator=(const ProducerConsumerQueue &) = delete;
 
+    
+    ProducerConsumerQueue(ProducerConsumerQueue &&other){
+        size_ = other.size_;
+        records_ = other.records_;
+        other.records_ = nullptr;
+        readIndex_ = other.readIndex_.load(std::memory_order_acquire);
+        writeIndex_ = other.writeIndex_.load(std::memory_order_acquire);
+    }
+    ProducerConsumerQueue &operator=(ProducerConsumerQueue &&other){
+        size_ = other.size_;
+        records_ = other.records_;
+        other.records_ = nullptr;
+        readIndex_ = other.readIndex_.load(std::memory_order_acquire);
+        writeIndex_ = other.writeIndex_.load(std::memory_order_acquire);
+        return *this;
+    }
+    
+    
+    ProducerConsumerQueue():ProducerConsumerQueue(2){};
     // size must be >= 2.
     //
     // Also, note that the number of usable slots in the queue at any
@@ -169,8 +188,10 @@ template <class T> struct ProducerConsumerQueue {
     using AtomicIndex = std::atomic<unsigned int>;
 
     char pad0_[hardware_destructive_interference_size];
-    const uint32_t size_;
-    T *const records_;
+    // const uint32_t size_;
+    uint32_t size_;
+    // T *const records_;
+    T* records_;
 
     alignas(hardware_destructive_interference_size) AtomicIndex readIndex_;
     alignas(hardware_destructive_interference_size) AtomicIndex writeIndex_;
