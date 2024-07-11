@@ -39,7 +39,7 @@ struct ClusterV2 {
 
 /**
  * @brief
- * importtant not: fp always points to the clutsers header and does not point to individual clusters
+ * important not: fp always points to the clutsers header and does not point to individual clusters
  *
  */
 class ClusterFileV2 {
