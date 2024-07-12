@@ -59,9 +59,7 @@ template <typename SUM_TYPE> void define_pedestal_bindings(py::module &m) {
         .def_property_readonly("index", &Pedestal<SUM_TYPE>::index)
         .def_property_readonly("sum", &Pedestal<SUM_TYPE>::get_sum)
         .def_property_readonly("sum2", &Pedestal<SUM_TYPE>::get_sum2)
-        .def("copy",[&](Pedestal<SUM_TYPE> &pedestal) {
-            return Pedestal<SUM_TYPE>(pedestal);
-        });
+        .def("copy", [&](Pedestal<SUM_TYPE> &pedestal) { return Pedestal<SUM_TYPE>(pedestal); });
     p.def("push", [](Pedestal<SUM_TYPE> &pedestal, Frame &f) {
         if (f.bitdepth() == 8) {
             pedestal.template push<uint8_t>(f);
@@ -142,32 +140,34 @@ void define_cluster_finder_bindings(py::module &m) {
     define_cluster_finder_template_bindings<int64_t>(cf);
     define_cluster_finder_template_bindings<float>(cf);
     define_cluster_finder_template_bindings<double>(cf);
-    cf.def("find_clusters_without_threshold",
-           [](ClusterFinder &self, Frame &f, Pedestal<double> &pedestal, bool late_update) {
-               if (f.dtype() == Dtype::INT8) {
-                   return self.find_clusters_without_threshold(f.view<int8_t>(), pedestal, late_update);
-               } else if (f.dtype() == Dtype::INT16) {
-                   return self.find_clusters_without_threshold(f.view<int16_t>(), pedestal, late_update);
-               } else if (f.dtype() == Dtype::INT32) {
-                   return self.find_clusters_without_threshold(f.view<int32_t>(), pedestal, late_update);
-               } else if (f.dtype() == Dtype::INT64) {
-                   return self.find_clusters_without_threshold(f.view<int64_t>(), pedestal, late_update);
-               } else if (f.dtype() == Dtype::UINT8) {
-                   return self.find_clusters_without_threshold(f.view<uint8_t>(), pedestal, late_update);
-               } else if (f.dtype() == Dtype::UINT16) {
-                   return self.find_clusters_without_threshold(f.view<uint16_t>(), pedestal, late_update);
-               } else if (f.dtype() == Dtype::UINT32) {
-                   return self.find_clusters_without_threshold(f.view<uint32_t>(), pedestal, late_update);
-               } else if (f.dtype() == Dtype::UINT64) {
-                   return self.find_clusters_without_threshold(f.view<uint64_t>(), pedestal, late_update);
-               } else if (f.dtype() == Dtype::FLOAT) {
-                   return self.find_clusters_without_threshold(f.view<float>(), pedestal, late_update);
-               } else if (f.dtype() == Dtype::DOUBLE) {
-                   return self.find_clusters_without_threshold(f.view<double>(), pedestal, late_update);
-               } else {
-                   throw std::runtime_error("Unsupported dtype");
-               }
-           },py::call_guard<py::gil_scoped_release>());
+    cf.def(
+        "find_clusters_without_threshold",
+        [](ClusterFinder &self, Frame &f, Pedestal<double> &pedestal, bool late_update) {
+            if (f.dtype() == Dtype::INT8) {
+                return self.find_clusters_without_threshold(f.view<int8_t>(), pedestal, late_update);
+            } else if (f.dtype() == Dtype::INT16) {
+                return self.find_clusters_without_threshold(f.view<int16_t>(), pedestal, late_update);
+            } else if (f.dtype() == Dtype::INT32) {
+                return self.find_clusters_without_threshold(f.view<int32_t>(), pedestal, late_update);
+            } else if (f.dtype() == Dtype::INT64) {
+                return self.find_clusters_without_threshold(f.view<int64_t>(), pedestal, late_update);
+            } else if (f.dtype() == Dtype::UINT8) {
+                return self.find_clusters_without_threshold(f.view<uint8_t>(), pedestal, late_update);
+            } else if (f.dtype() == Dtype::UINT16) {
+                return self.find_clusters_without_threshold(f.view<uint16_t>(), pedestal, late_update);
+            } else if (f.dtype() == Dtype::UINT32) {
+                return self.find_clusters_without_threshold(f.view<uint32_t>(), pedestal, late_update);
+            } else if (f.dtype() == Dtype::UINT64) {
+                return self.find_clusters_without_threshold(f.view<uint64_t>(), pedestal, late_update);
+            } else if (f.dtype() == Dtype::FLOAT) {
+                return self.find_clusters_without_threshold(f.view<float>(), pedestal, late_update);
+            } else if (f.dtype() == Dtype::DOUBLE) {
+                return self.find_clusters_without_threshold(f.view<double>(), pedestal, late_update);
+            } else {
+                throw std::runtime_error("Unsupported dtype");
+            }
+        },
+        py::call_guard<py::gil_scoped_release>());
 }
 void define_processing_bindings(py::module &m) {
     define_pedestal_bindings<double>(m);
