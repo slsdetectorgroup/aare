@@ -14,7 +14,7 @@ using Queue = folly::ProducerConsumerQueue<aare::Frame>;
 
 //Global constants, for easy tweaking
 constexpr size_t print_interval = 100;
-constexpr std::chrono::milliseconds default_wait(10);
+constexpr std::chrono::milliseconds default_wait(1);
 constexpr uint32_t queue_size = 1000;
 
 // Small wrapper to do cluster finding in a thread
@@ -40,7 +40,7 @@ class ThreadedClusterFinder {
         while (!m_stop_requested) {
             aare::Frame frame(1, 1, aare::Dtype("u4"));
             if (m_queue->read(frame)) {
-                auto clusters = cf.find_clusters_without_threshold(frame.view<uint16_t>(), m_pedestal, true);
+                auto clusters = cf.find_clusters_without_threshold(frame.view<uint16_t>(), m_pedestal, false);
                 m_frames_processed++;
                 if (m_frames_processed % print_interval == 0) {
                     fmt::print("{}:Found {} clusters\n", m_object_id, clusters.size());
@@ -107,7 +107,7 @@ int main(int argc, char **argv) {
             fmt::print("Queue {} is full, waiting\n", i % n_threads);
             std::this_thread::sleep_for(default_wait);
         }
-        queues[i % n_threads].write(f.iread(i));
+        queues[i % n_threads].write(f.iread(i+1000));
         if (i % 100 == 0) {
             fmt::print("Pushed frame {}\n", i);
         }
@@ -117,7 +117,7 @@ int main(int argc, char **argv) {
     // wait for all queues to be empty
     for (auto &q : queues) {
         while (!q.isEmpty()) {
-            fmt::print("Finish Queue not empty, waiting\n");
+            // fmt::print("Finish Queue not empty, waiting\n");
             std::this_thread::sleep_for(default_wait);
         }
     }
