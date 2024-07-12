@@ -47,155 +47,162 @@ namespace aare {
  *     ...
  *
  */
-namespace v3{
-struct ClusterFile {
+namespace v3 {
+
+struct Field {
+    enum ARRAY_TYPE { NOT_ARRAY = 0, FIXED_LENGTH_ARRAY = 1, VARIABLE_LENGTH_ARRAY = 2 };
+    static ARRAY_TYPE to_array_type(uint64_t i) {
+        if (i == 0)
+            return NOT_ARRAY;
+        if (i == 1)
+            return FIXED_LENGTH_ARRAY;
+        if (i == 2)
+            return VARIABLE_LENGTH_ARRAY;
+        throw std::invalid_argument("Invalid ARRAY_TYPE");
+    }
+    Field() = default;
+    Field(std::string const &label_, Dtype dtype_, ARRAY_TYPE is_array_, uint32_t array_size_)
+        : label(label_), dtype(dtype_), is_array(is_array_), array_size(array_size_) {}
+    std::string label{};
+    Dtype dtype{Dtype(Dtype::ERROR)};
+    ARRAY_TYPE is_array{};
+    uint32_t array_size{};
+
+    std::string to_json() const {
+        std::string json;
+        json.reserve(100);
+        json += "{";
+        write_str(json, "label", label);
+        write_str(json, "dtype", dtype.to_string());
+        write_digit(json, "is_array", is_array);
+        write_digit(json, "array_size", array_size);
+        json.pop_back();
+        json.pop_back();
+        json += "}";
+        return json;
+    }
+    void from_json(std::string hf) {
+        simdjson::padded_string const ps(hf.c_str(), hf.size());
+        simdjson::ondemand::parser parser;
+        simdjson::ondemand::document doc = parser.iterate(ps);
+        simdjson::ondemand::object object = doc.get_object();
+
+        for (auto field : object) {
+            std::string_view const key = field.unescaped_key();
+            if (key == "label") {
+                this->label = field.value().get_string().value();
+            } else if (key == "dtype") {
+                this->dtype = Dtype(field.value().get_string().value());
+            } else if (key == "is_array") {
+                this->is_array = Field::to_array_type(field.value().get_uint64());
+            } else if (key == "array_size") {
+                this->array_size = field.value().get_uint64();
+            }
+        }
+    }
+    bool operator==(Field const &other) const {
+        return label == other.label && dtype == other.dtype && is_array == other.is_array &&
+               array_size == other.array_size;
+    }
+};
+struct Header {
+    static constexpr std::string_view CURRENT_VERSION = "0.1";
+    Header() : version{CURRENT_VERSION}, n_records{} {};
+    std::string version;
+    uint64_t n_records;
+    std::map<std::string, std::string> metadata;
+    std::vector<Field> header_fields;
+    std::vector<Field> data_fields;
+
+    std::string to_json() const {
+        std::string json;
+        json.reserve(1024);
+        json += "{";
+        write_str(json, "version", version);
+        write_digit(json, "n_records", n_records);
+        write_map(json, "metadata", metadata);
+        json += "\"header_fields\": [";
+        for (auto &f : header_fields) {
+            json += f.to_json();
+            json += ", ";
+        }
+        json.pop_back();
+        json.pop_back();
+        json += "], ";
+        json += "\"data_fields\": [";
+        for (auto &f : data_fields) {
+            json += f.to_json();
+            json += ", ";
+        }
+        json.pop_back();
+        json.pop_back();
+        json += "]";
+        json += "}";
+        return json;
+    }
+
+    void from_json(std::string const &json) {
+        simdjson::padded_string const ps(json.c_str(), json.size());
+        simdjson::ondemand::parser parser;
+        simdjson::ondemand::document doc = parser.iterate(ps);
+        simdjson::ondemand::object object = doc.get_object();
+        for (auto field : object) {
+            std::string_view const key = field.unescaped_key();
+            if (key == "version") {
+                std::string_view version_sv = field.value().get_string();
+                if (version_sv.size() != 3) {
+                    throw std::runtime_error("Invalid version string");
+                }
+                this->version = std::string(version_sv.data(), version_sv.size());
+            } else if (key == "n_records") {
+                this->n_records = field.value().get_uint64();
+            } else if (key == "metadata") {
+                simdjson::ondemand::object metadata_obj = field.value().get_object();
+                for (auto meta : metadata_obj) {
+                    std::string_view key_view(meta.unescaped_key());
+                    std::string const key_str(key_view.data(), key_view.size());
+                    std::string_view value_view(meta.value().get_string());
+                    std::string const value_str(value_view.data(), value_view.size());
+                    this->metadata[key_str] = value_str;
+                }
+            } else if (key == "header_fields") {
+                simdjson::ondemand::array header_fields_arr = field.value().get_array();
+                for (auto hf : header_fields_arr) {
+                    Field f;
+                    std::string_view const sv = hf.raw_json();
+                    f.from_json(std::string(sv.data(), sv.size()));
+                    this->header_fields.push_back(f);
+                }
+            } else if (key == "data_fields") {
+                simdjson::ondemand::array data_fields_arr = field.value().get_array();
+                for (auto df : data_fields_arr) {
+                    Field f;
+                    std::string_view const sv = df.raw_json();
+                    f.from_json(std::string(sv.data(), sv.size()));
+                    this->data_fields.push_back(f);
+                }
+            }
+        }
+    }
+
+    bool operator==(Header const &other) const {
+        return version == other.version && n_records == other.n_records &&
+               metadata == other.metadata && header_fields == other.header_fields &&
+               data_fields == other.data_fields;
+    }
+};
+
+template <typename ClusterHeaderType, typename ClusterDataType> struct ClusterFile {
     static constexpr std::string_view MAGIC_STRING = "CLST";
     static constexpr int HEADER_LEN_CHARS = 5;
-    struct Field {
-        enum ARRAY_TYPE { NOT_ARRAY = 0, FIXED_LENGTH_ARRAY = 1, VARIABLE_LENGTH_ARRAY = 2 };
-        static ARRAY_TYPE to_array_type(uint64_t i) {
-            if (i == 0)
-                return NOT_ARRAY;
-            if (i == 1)
-                return FIXED_LENGTH_ARRAY;
-            if (i == 2)
-                return VARIABLE_LENGTH_ARRAY;
-            throw std::invalid_argument("Invalid ARRAY_TYPE");
-        }
-        Field() = default;
-        Field(std::string const &label_, Dtype dtype_, ARRAY_TYPE is_array_, uint32_t array_size_)
-            : label(label_), dtype(dtype_), is_array(is_array_), array_size(array_size_) {}
-        std::string label{};
-        Dtype dtype{Dtype(Dtype::ERROR)};
-        ARRAY_TYPE is_array{};
-        uint32_t array_size{};
 
-        std::string to_json() const {
-            std::string json;
-            json.reserve(100);
-            json += "{";
-            write_str(json, "label", label);
-            write_str(json, "dtype", dtype.to_string());
-            write_digit(json, "is_array", is_array);
-            write_digit(json, "array_size", array_size);
-            json.pop_back();
-            json.pop_back();
-            json += "}";
-            return json;
-        }
-        void from_json(std::string hf) {
-            simdjson::padded_string const ps(hf.c_str(), hf.size());
-            simdjson::ondemand::parser parser;
-            simdjson::ondemand::document doc = parser.iterate(ps);
-            simdjson::ondemand::object object = doc.get_object();
-
-            for (auto field : object) {
-                std::string_view const key = field.unescaped_key();
-                if (key == "label") {
-                    this->label = field.value().get_string().value();
-                } else if (key == "dtype") {
-                    this->dtype = Dtype(field.value().get_string().value());
-                } else if (key == "is_array") {
-                    this->is_array = Field::to_array_type(field.value().get_uint64());
-                } else if (key == "array_size") {
-                    this->array_size = field.value().get_uint64();
-                }
-            }
-        }
-        bool operator==(Field const &other) const {
-            return label == other.label && dtype == other.dtype && is_array == other.is_array &&
-                   array_size == other.array_size;
-        }
-    };
-    struct Header {
-        static constexpr std::string_view CURRENT_VERSION = "0.1";
-        Header() : version{CURRENT_VERSION}, n_records{} {};
-        std::string version;
-        uint64_t n_records;
-        std::map<std::string, std::string> metadata;
-        std::vector<Field> header_fields;
-        std::vector<Field> data_fields;
-
-        std::string to_json() const {
-            std::string json;
-            json.reserve(1024);
-            json += "{";
-            write_str(json, "version", version);
-            write_digit(json, "n_records", n_records);
-            write_map(json, "metadata", metadata);
-            json += "\"header_fields\": [";
-            for (auto &f : header_fields) {
-                json += f.to_json();
-                json += ", ";
-            }
-            json.pop_back();
-            json.pop_back();
-            json += "], ";
-            json += "\"data_fields\": [";
-            for (auto &f : data_fields) {
-                json += f.to_json();
-                json += ", ";
-            }
-            json.pop_back();
-            json.pop_back();
-            json += "]";
-            json += "}";
-            return json;
-        }
-
-        void from_json(std::string const &json) {
-            simdjson::padded_string const ps(json.c_str(), json.size());
-            simdjson::ondemand::parser parser;
-            simdjson::ondemand::document doc = parser.iterate(ps);
-            simdjson::ondemand::object object = doc.get_object();
-            for (auto field : object) {
-                std::string_view const key = field.unescaped_key();
-                if (key == "version") {
-                    std::string_view version_sv = field.value().get_string();
-                    if (version_sv.size() != 3) {
-                        throw std::runtime_error("Invalid version string");
-                    }
-                    this->version = std::string(version_sv.data(), version_sv.size());
-                } else if (key == "n_records") {
-                    this->n_records = field.value().get_uint64();
-                } else if (key == "metadata") {
-                    simdjson::ondemand::object metadata_obj = field.value().get_object();
-                    for (auto meta : metadata_obj) {
-                        std::string_view key_view(meta.unescaped_key());
-                        std::string const key_str(key_view.data(), key_view.size());
-                        std::string_view value_view(meta.value().get_string());
-                        std::string const value_str(value_view.data(), value_view.size());
-                        this->metadata[key_str] = value_str;
-                    }
-                } else if (key == "header_fields") {
-                    simdjson::ondemand::array header_fields_arr = field.value().get_array();
-                    for (auto hf : header_fields_arr) {
-                        Field f;
-                        std::string_view const sv = hf.raw_json();
-                        f.from_json(std::string(sv.data(), sv.size()));
-                        this->header_fields.push_back(f);
-                    }
-                } else if (key == "data_fields") {
-                    simdjson::ondemand::array data_fields_arr = field.value().get_array();
-                    for (auto df : data_fields_arr) {
-                        Field f;
-                        std::string_view const sv = df.raw_json();
-                        f.from_json(std::string(sv.data(), sv.size()));
-                        this->data_fields.push_back(f);
-                    }
-                }
-            }
-        }
-
-        bool operator==(Header const &other) const {
-            return version == other.version && n_records == other.n_records &&
-                   metadata == other.metadata && header_fields == other.header_fields &&
-                   data_fields == other.data_fields;
-        }
+    struct Result {
+        ClusterHeaderType header;
+        std::vector<ClusterDataType> data;
     };
 
     ClusterFile(std::filesystem::path const &fpath, std::string const &mode,
-                  Header const header = Header{})
+                Header const header = Header{})
         : m_closed(true), m_fpath(fpath), m_mode(mode), m_header(header) {
         if (mode != "r" && mode != "w")
             throw std::invalid_argument("mode must be 'r' or 'w'");
@@ -263,8 +270,9 @@ struct ClusterFile {
         m_closed = false;
     }
 
-    template <typename ClusterHeaderType, typename ClusterDataType>
-    std::pair<ClusterHeaderType, std::vector<ClusterDataType>> read() {
+    Header header() const { return m_header; }
+    Result read() {
+
         if (m_mode != "r") {
             throw std::invalid_argument("File not opened in read mode");
         }
@@ -312,6 +320,44 @@ struct ClusterFile {
         return {cluster_header, cluster_data};
     }
 
+    void write(ClusterHeaderType cluster_header, std::vector<ClusterDataType> cluster_data) {
+        if (m_mode != "w") {
+            throw std::invalid_argument("File not opened in write mode");
+        }
+        if (m_closed) {
+            throw std::invalid_argument("File is closed");
+        }
+        if (cluster_header.data_count() != cluster_data.size()) {
+            throw std::invalid_argument("Number of data records does not match the header");
+        }
+        // write header
+        if (!m_header_has_vlen_array) {
+            if constexpr (ClusterHeaderType::has_data()) {
+                fwrite(cluster_header.data(), 1, m_cluster_header_size, m_fp);
+            } else {
+                std::array<std::byte, sizeof(ClusterHeaderType)> tmp;
+                cluster_header.get(tmp.data());
+                fwrite(tmp.data(), 1, m_cluster_header_size, m_fp);
+            }
+        } else {
+            throw std::runtime_error("Variable length array not implemented yet");
+        }
+        // write data
+        if (!m_data_has_vlen_array) {
+            if constexpr (ClusterDataType::has_data()) {
+                fwrite(cluster_data.data(), cluster_header.data_count(), m_cluster_data_size, m_fp);
+            } else {
+                std::array<std::byte, sizeof(ClusterDataType)> tmp;
+                for (int i = 0; i < cluster_header.data_count(); i++) {
+                    cluster_data[i].get(tmp.data());
+                    fwrite(tmp.data(), 1, m_cluster_data_size, m_fp);
+                }
+            }
+        } else {
+            throw std::runtime_error("Variable length array not implemented yet");
+        }
+    }
+
     int flush() { return fflush(m_fp); }
     int close() {
         int ret{};
@@ -357,5 +403,5 @@ struct ClusterFile {
     }
 };
 
-}
+} // namespace v3
 } // namespace aare
