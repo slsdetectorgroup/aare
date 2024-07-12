@@ -69,7 +69,6 @@ jobs:
         run: |
           if [ "${{inputs.use-python-bindings}}" == "ON" ]; then
             cd build
-            mamba install numpy
             python ../src/python/example/mt_clusterFinder.py x 4           
           fi
       - name: run tests
