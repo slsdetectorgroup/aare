@@ -64,6 +64,13 @@ jobs:
           cd build
           cmake .. -DCMAKE_BUILD_TYPE=${{inputs.build-type}} -DAARE_PYTHON_BINDINGS=${{inputs.use-python-bindings}} -DAARE_SYSTEM_LIBRARIES=${{inputs.use-system-libraries}}
           cmake --build . -j
+      - name: run python
+        shell: bash -el {0}
+        run: |
+          if [ "${{inputs.use-python-bindings}}" == "ON" ]; then
+            cd build
+            python ../src/python/example/mt_clusterFinder.py x 4           
+          fi
       - name: run tests
         run: |
           cd build/

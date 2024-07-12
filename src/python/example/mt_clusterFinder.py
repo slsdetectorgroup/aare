@@ -15,21 +15,16 @@ else:
     file_path = sys.argv[1]
     N_THREADS = int(sys.argv[2])
 
-file = File(file_path)
 pedestal=Pedestal(400,400,1000)
-for i in range(1000):
-    frame = file.iread(i)
-    pedestal.push(frame)
 print("Pedestal done")
 
 def f(idx,n):
     def g():
         print("Hello from thread",idx)
-        f = File(file_path)
         p = pedestal.copy()
         cf = ClusterFinder(3,3,5.0,0)
         for i in range(idx,1000,n):
-            frame = f.iread(i)
+            frame = Frame(400,400,Dtype(DtypeIndex.DOUBLE))
             clusters=cf.find_clusters_without_threshold(frame,p,False)
 
         print("Goodbye from thread",idx)
