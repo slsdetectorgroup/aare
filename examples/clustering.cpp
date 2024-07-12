@@ -16,6 +16,7 @@ using Queue = folly::ProducerConsumerQueue<aare::Frame>;
 constexpr size_t print_interval = 100;
 constexpr std::chrono::milliseconds default_wait(1);
 constexpr uint32_t queue_size = 1000;
+constexpr int n_frames = 8000;
 
 // Small wrapper to do cluster finding in a thread
 // helps with keeping track of stopping tokens etc.
@@ -46,7 +47,7 @@ class ThreadedClusterFinder {
                     fmt::print("{}:Found {} clusters\n", m_object_id, clusters.size());
                 }
             } else {
-                fmt::print("{}:Queue empty\n", m_object_id);
+                // fmt::print("{}:Queue empty\n", m_object_id);
                 std::this_thread::sleep_for(default_wait);
             }
         }
@@ -100,11 +101,11 @@ int main(int argc, char **argv) {
     }
 
     // Push frames to the queues
-    const int n_frames = 1000;
+    
     for (int i = 0; i < n_frames; ++i) {
         // if the Queue is full, wait, there are better ways to do this =)
         while (queues[i % n_threads].isFull()) {
-            fmt::print("Queue {} is full, waiting\n", i % n_threads);
+            // fmt::print("Queue {} is full, waiting\n", i % n_threads);
             std::this_thread::sleep_for(default_wait);
         }
         queues[i % n_threads].write(f.iread(i+1000));
