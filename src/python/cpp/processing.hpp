@@ -43,10 +43,11 @@ template <typename SUM_TYPE> void define_pedestal_bindings(py::module &m) {
         .def(py::init<int, int>())
         .def("set_freeze", &Pedestal<SUM_TYPE>::set_freeze)
         .def("mean", py::overload_cast<>(&Pedestal<SUM_TYPE>::mean))
-        .def("mean", [](Pedestal<SUM_TYPE> &pedestal, const uint32_t row, const uint32_t col) { return pedestal.mean(row, col); })
+        .def("mean", [](Pedestal<SUM_TYPE> &pedestal, const uint32_t row,
+                        const uint32_t col) { return pedestal.mean(row, col); })
         .def("variance", py::overload_cast<>(&Pedestal<SUM_TYPE>::variance))
-        .def("variance",
-             [](Pedestal<SUM_TYPE> &pedestal, const uint32_t row, const uint32_t col) { return pedestal.variance(row, col); })
+        .def("variance", [](Pedestal<SUM_TYPE> &pedestal, const uint32_t row,
+                            const uint32_t col) { return pedestal.variance(row, col); })
         .def("standard_deviation", py::overload_cast<>(&Pedestal<SUM_TYPE>::standard_deviation))
         .def("standard_deviation", [](Pedestal<SUM_TYPE> &pedestal, const int row,
                                       const int col) { return pedestal.standard_deviation(row, col); })
@@ -57,7 +58,10 @@ template <typename SUM_TYPE> void define_pedestal_bindings(py::module &m) {
         .def_property_readonly("n_samples", &Pedestal<SUM_TYPE>::n_samples)
         .def_property_readonly("index", &Pedestal<SUM_TYPE>::index)
         .def_property_readonly("sum", &Pedestal<SUM_TYPE>::get_sum)
-        .def_property_readonly("sum2", &Pedestal<SUM_TYPE>::get_sum2);
+        .def_property_readonly("sum2", &Pedestal<SUM_TYPE>::get_sum2)
+        .def("copy",[&](Pedestal<SUM_TYPE> &pedestal) {
+            return Pedestal<SUM_TYPE>(pedestal);
+        });
     p.def("push", [](Pedestal<SUM_TYPE> &pedestal, Frame &f) {
         if (f.bitdepth() == 8) {
             pedestal.template push<uint8_t>(f);
@@ -138,11 +142,37 @@ void define_cluster_finder_bindings(py::module &m) {
     define_cluster_finder_template_bindings<int64_t>(cf);
     define_cluster_finder_template_bindings<float>(cf);
     define_cluster_finder_template_bindings<double>(cf);
+    cf.def("find_clusters_without_threshold",
+           [](ClusterFinder &self, Frame &f, Pedestal<double> &pedestal, bool late_update) {
+               if (f.dtype() == Dtype::INT8) {
+                   return self.find_clusters_without_threshold(f.view<int8_t>(), pedestal, late_update);
+               } else if (f.dtype() == Dtype::INT16) {
+                   return self.find_clusters_without_threshold(f.view<int16_t>(), pedestal, late_update);
+               } else if (f.dtype() == Dtype::INT32) {
+                   return self.find_clusters_without_threshold(f.view<int32_t>(), pedestal, late_update);
+               } else if (f.dtype() == Dtype::INT64) {
+                   return self.find_clusters_without_threshold(f.view<int64_t>(), pedestal, late_update);
+               } else if (f.dtype() == Dtype::UINT8) {
+                   return self.find_clusters_without_threshold(f.view<uint8_t>(), pedestal, late_update);
+               } else if (f.dtype() == Dtype::UINT16) {
+                   return self.find_clusters_without_threshold(f.view<uint16_t>(), pedestal, late_update);
+               } else if (f.dtype() == Dtype::UINT32) {
+                   return self.find_clusters_without_threshold(f.view<uint32_t>(), pedestal, late_update);
+               } else if (f.dtype() == Dtype::UINT64) {
+                   return self.find_clusters_without_threshold(f.view<uint64_t>(), pedestal, late_update);
+               } else if (f.dtype() == Dtype::FLOAT) {
+                   return self.find_clusters_without_threshold(f.view<float>(), pedestal, late_update);
+               } else if (f.dtype() == Dtype::DOUBLE) {
+                   return self.find_clusters_without_threshold(f.view<double>(), pedestal, late_update);
+               } else {
+                   throw std::runtime_error("Unsupported dtype");
+               }
+           },py::call_guard<py::gil_scoped_release>());
 }
 void define_processing_bindings(py::module &m) {
     define_pedestal_bindings<double>(m);
 
-    py::class_<Cluster>(m, "Cluster",py::buffer_protocol())
+    py::class_<Cluster>(m, "Cluster", py::buffer_protocol())
         .def(py::init<int, int, Dtype>())
         .def("size", &Cluster::size)
         .def("begin", &Cluster::begin)

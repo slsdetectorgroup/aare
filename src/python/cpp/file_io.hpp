@@ -20,7 +20,7 @@ void define_file_io_bindings(py::module &m) {
         .def(py::init<const std::filesystem::path &, const std::string &, const FileConfig &>())
         .def("read", py::overload_cast<>(&File::read))
         .def("read", py::overload_cast<size_t>(&File::read))
-        .def("iread", py::overload_cast<size_t>(&File::iread))
+        .def("iread", py::overload_cast<size_t>(&File::iread),py::call_guard<py::gil_scoped_release>())
         .def("frame_number", &File::frame_number)
         .def_property_readonly("bytes_per_frame", &File::bytes_per_frame)
         .def_property_readonly("pixels_per_frame", &File::pixels_per_frame)
