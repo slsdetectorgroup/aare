@@ -22,26 +22,19 @@ for i in range(1000):
     pedestal.push(frame)
 print("Pedestal done")
 
+def f(idx,n):
+    def g():
+        print("Hello from thread",idx)
+        f = File(file_path)
+        p = pedestal.copy()
+        cf = ClusterFinder(3,3,5.0,0)
+        for i in range(idx,1000,n):
+            frame = f.iread(i)
+            clusters=cf.find_clusters_without_threshold(frame,p,False)
 
-def g(idx,n):
-    print("Hello from thread",idx)
-    f = File(file_path)
-    p = pedestal.copy()
-    cf = ClusterFinder(3,3,5.0,0)
-    for i in range(idx,1000,n):
-        frame = f.iread(i)
-        clusters=cf.find_clusters_without_threshold(frame,p,False)
-
-    print("Goodbye from thread",idx)
+        print("Goodbye from thread",idx)
     return g
     
 
-thread_arr = []
-for i in range(N_THREADS):
-    thread_arr.append(Thread(target=g,args=(i,N_THREADS)))
-
-for t in thread_arr:
-    t.start()
-for t in thread_arr:
-    t.join()
-
+mt = MultiThread([f(i,N_THREADS) for i in range(N_THREADS)])
+mt.run()
