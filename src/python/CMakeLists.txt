@@ -11,7 +11,7 @@ if(AARE_FETCH_PYBIND11)
     )
     FetchContent_MakeAvailable(pybind11)
 else()
-    find_package(pybind11 2.11 REQUIRED)
+    find_package(pybind11 2.12 REQUIRED)
 endif()
 
 
