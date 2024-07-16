@@ -118,3 +118,59 @@ TEST_CASE("ClusterFileV3::Header::from_json") {
     REQUIRE(h.data_fields[1].is_array == v3::Field::VARIABLE_LENGTH_ARRAY);
     REQUIRE(h.data_fields[1].array_size == 0);
 }
+
+
+TEST_CASE("write file with fixed length data structure"){
+    v3::Header header;
+    header.metadata["nSigma"] = "77";
+    header.version = "0.7";
+    header.header_fields = v3::ClusterHeader::get_fields();
+    header.data_fields = v3::ClusterData<9>::get_fields();
+    v3::ClusterFile<v3::ClusterHeader, v3::ClusterData<9>> file("/tmp/test_vlen.clust2", "w", header);
+    
+    
+    for (int j = 0; j < 100; j++) {
+        v3::ClusterHeader clust_header;
+        std::vector<v3::ClusterData<9>> clust_data;
+
+        clust_header.frame_number = j;
+        clust_header.n_clusters = 500 + j;
+        for (int i = 0; i < clust_header.n_clusters; i++) {
+            v3::ClusterData c;
+            c.m_x = i;
+            c.m_y = j;
+            c.m_data = {1, 2, 3, 4, 5, 6, 7, 8, 9};
+            clust_data.push_back(c);
+        }
+        file.write(clust_header, clust_data);
+    }
+    file.close();
+
+    v3::ClusterFile<v3::ClusterHeader, v3::ClusterData<9>> file2("/tmp/test_vlen.clust2", "r");
+    auto header_ = file2.header();
+    REQUIRE(header_.metadata["nSigma"] == "77");
+    REQUIRE(header_.version == "0.7");
+    REQUIRE(header_.n_records == 1000);
+    REQUIRE(header_.header_fields == v3::ClusterHeader::get_fields());
+    REQUIRE(header_.data_fields == v3::ClusterData<9>::get_fields());
+
+    // for(int j = 0; j < 100; j++){
+    //     auto [header2, clusters2] = file2.read();
+    //     REQUIRE(header2.frame_number == j);
+    //     REQUIRE(header2.n_clusters == 500 + j);
+    //     for(int i = 0; i < header2.n_clusters; i++){
+    //         REQUIRE(clusters2[i].m_x == i);
+    //         REQUIRE(clusters2[i].m_y == j);
+    //         REQUIRE(clusters2[i].m_data == std::array<int32_t,9>{1, 2, 3, 4, 5, 6, 7, 8, 9});
+    //     }
+    // }
+    // REQUIRE_THROWS_AS(file2.read(), std::invalid_argument);
+
+
+
+
+
+
+
+
+}
