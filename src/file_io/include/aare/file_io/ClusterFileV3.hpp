@@ -1,3 +1,5 @@
+#pragma once
+
 #include <filesystem>
 #include <string>
 #include <vector>
@@ -50,6 +52,7 @@ namespace aare {
 namespace v3 {
 
 struct Field {
+    const static int VLEN_ARRAY_SIZE_BYTES = 4;
     enum ARRAY_TYPE { NOT_ARRAY = 0, FIXED_LENGTH_ARRAY = 1, VARIABLE_LENGTH_ARRAY = 2 };
     static ARRAY_TYPE to_array_type(uint64_t i) {
         if (i == 0)
@@ -296,7 +299,8 @@ template <typename ClusterHeaderType, typename ClusterDataType> struct ClusterFi
             }
 
         } else {
-            throw std::runtime_error("Variable length array not implemented yet");
+            std::vector<std::byte> tmp = read_vlen_array();
+            cluster_header.set(tmp.data());
         }
 
         // read data
@@ -310,12 +314,14 @@ template <typename ClusterHeaderType, typename ClusterDataType> struct ClusterFi
                 std::array<std::byte, sizeof(ClusterDataType)> tmp;
                 for (int i = 0; i < cluster_header.data_count(); i++) {
                     fread(tmp.data(), 1, m_cluster_data_size, m_fp);
-                    ClusterDataType &cd = cluster_data[i];
-                    cd.set(tmp.data());
+                    cluster_data[i].set(tmp.data());
                 }
             }
         } else {
-            throw std::runtime_error("Variable length array not implemented yet");
+            for (int i = 0; i < cluster_header.data_count(); i++) {
+                std::vector<std::byte> tmp = read_vlen_array();
+                cluster_data[i].set(tmp.data());
+            }
         }
         return {cluster_header, cluster_data};
     }
@@ -335,26 +341,33 @@ template <typename ClusterHeaderType, typename ClusterDataType> struct ClusterFi
             if constexpr (ClusterHeaderType::has_data()) {
                 fwrite(cluster_header.data(), 1, m_cluster_header_size, m_fp);
             } else {
-                std::array<std::byte, sizeof(ClusterHeaderType)> tmp;
+                std::array<std::byte, cluster_header.size()> tmp;
                 cluster_header.get(tmp.data());
-                fwrite(tmp.data(), 1, m_cluster_header_size, m_fp);
+                fwrite(tmp.data(), 1, cluster_header.size(), m_fp);
             }
         } else {
-            throw std::runtime_error("Variable length array not implemented yet");
+            std::array<std::byte, cluster_header.size()> tmp;
+            cluster_header.get(tmp.data());
+            fwrite(tmp.data(), 1, cluster_header.size(), m_fp);
         }
         // write data
         if (!m_data_has_vlen_array) {
             if constexpr (ClusterDataType::has_data()) {
                 fwrite(cluster_data.data(), cluster_header.data_count(), m_cluster_data_size, m_fp);
             } else {
-                std::array<std::byte, sizeof(ClusterDataType)> tmp;
+                std::array<std::byte, m_cluster_data_size> tmp;
                 for (int i = 0; i < cluster_header.data_count(); i++) {
                     cluster_data[i].get(tmp.data());
                     fwrite(tmp.data(), 1, m_cluster_data_size, m_fp);
                 }
             }
         } else {
-            throw std::runtime_error("Variable length array not implemented yet");
+            for(int i=0;i<cluster_header.data_count();i++){
+                std::array<std::byte, cluster_data[i].size()> tmp;
+                cluster_data[i].get(tmp.data());
+                fwrite(tmp.data(), 1, m_cluster_data_size, m_fp);
+
+            }
         }
     }
 
@@ -400,6 +413,40 @@ template <typename ClusterHeaderType, typename ClusterDataType> struct ClusterFi
             }
         }
         return size;
+    }
+    std::vector<std::byte> read_vlen_array(std::vector<Field> const &fields) {
+        std::vector<std::byte> tmp(10000);
+        uint32_t cur_byte = 0;
+        for (Field &field : fields) {
+            if (field.is_array == Field::NOT_ARRAY) {
+                if (cur_byte + field.dtype.bytes() > tmp.size()) {
+                    tmp.resize(tmp.size() * 2 + field.dtype.bytes());
+                }
+                fread(tmp.data() + cur_byte, 1, field.dtype.bytes(), m_fp);
+                cur_byte += field.dtype.bytes();
+
+            } else if (field.is_array == Field::FIXED_LENGTH_ARRAY) {
+                if (cur_byte + field.array_size * field.dtype.bytes() > tmp.size()) {
+                    tmp.resize(tmp.size() * 2 + field.array_size * field.dtype.bytes());
+                }
+                fread(tmp.data() + cur_byte, 1, field.array_size * field.dtype.bytes(), m_fp);
+                cur_byte += field.array_size * field.dtype.bytes();
+
+            } else {
+                if (cur_byte + Field::VLEN_ARRAY_SIZE_BYTES > tmp.size()) {
+                    tmp.resize(tmp.size() * 2 + Field::VLEN_ARRAY_SIZE_BYTES);
+                }
+                fread(tmp.data() + cur_byte, 1, Field::VLEN_ARRAY_SIZE_BYTES, m_fp);
+                uint32_t n_elements = *reinterpret_cast<uint32_t *>(tmp.data() + cur_byte);
+                cur_byte += Field::VLEN_ARRAY_SIZE_BYTES;
+                if (cur_byte + n_elements * field.dtype.bytes() > tmp.size()) {
+                    tmp.resize(tmp.size() * 2 + n_elements * field.dtype.bytes());
+                }
+                fread(tmp.data() + cur_byte, 1, n_elements * field.dtype.bytes(), m_fp);
+                cur_byte += n_elements * field.dtype.bytes();
+            }
+        }
+        return tmp;
     }
 };
 

@@ -93,7 +93,7 @@ struct ClusterHeader {
     ClusterHeader() : frame_number(0), n_clusters(0) {}
     ClusterHeader(int32_t frame_number_, int32_t n_clusters_)
         : frame_number(frame_number_), n_clusters(n_clusters_) {}
-    
+
     // interface functions (mandatory)
     void set(std::byte *data_) {
         // std::copy(data, data + sizeof(frame_number), &frame_number);
@@ -112,6 +112,7 @@ struct ClusterHeader {
     // e.g. fread(header.data(), sizeof(header), 1, file);
     constexpr static bool has_data() { return true; }
     std::byte *data() { return reinterpret_cast<std::byte *>(this); }
+    constexpr size_t size() { return sizeof(frame_number) + sizeof(n_clusters); }
 
     // interface functions (optional)
     std::string to_string() const {
@@ -141,6 +142,7 @@ struct ClusterData {
     }
     constexpr static bool has_data() { return true; }
     std::byte *data() { return reinterpret_cast<std::byte *>(this); }
+    constexpr size_t size() { return sizeof(m_x) + sizeof(m_x) + 9 * sizeof(int32_t); }
 
     std::string to_string() const {
         std::string s = "x: " + std::to_string(m_x) + " y: " + std::to_string(m_y) + "\ndata: [";
