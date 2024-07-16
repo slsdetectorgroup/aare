@@ -63,7 +63,7 @@ int main(int argc, char **argv) {
     }
 
     std::filesystem::path fname(argv[1]);
-    fmt::print("Loading {}\n", fname.c_str());
+    fmt::print("Loading {}\n", fname.string());
     const int n_threads = std::stoi(argv[2]);
 
     aare::Pedestal<double> pd(400, 400, 1000);
