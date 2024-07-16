@@ -122,27 +122,27 @@ struct ClusterHeader {
 };
 
 // class to hold the data of the old cluster format
-struct ClusterData {
+template <int cluster_size=9> struct ClusterData {
     int16_t m_x;
     int16_t m_y;
-    std::array<int32_t, 9> m_data;
+    std::array<int32_t, cluster_size> m_data;
 
     ClusterData() : m_x(0), m_y(0), m_data({}) {}
-    ClusterData(int16_t x_, int16_t y_, std::array<int32_t, 9> data_)
+    ClusterData(int16_t x_, int16_t y_, std::array<int32_t, cluster_size> data_)
         : m_x(x_), m_y(y_), m_data(data_) {}
     void set(std::byte *data_) {
         std::memcpy(&m_x, data_, sizeof(m_x));
         std::memcpy(&m_y, data_ + sizeof(m_x), sizeof(m_y));
-        std::memcpy(m_data.data(), data_ + 2 * sizeof(m_x), 9 * sizeof(int32_t));
+        std::memcpy(m_data.data(), data_ + 2 * sizeof(m_x), cluster_size * sizeof(int32_t));
     }
     void get(std::byte *data_) {
         std::memcpy(data_, &m_x, sizeof(m_x));
         std::memcpy(data_ + sizeof(m_x), &m_y, sizeof(m_y));
-        std::memcpy(data_ + 2 * sizeof(m_x), m_data.data(), 9 * sizeof(int32_t));
+        std::memcpy(data_ + 2 * sizeof(m_x), m_data.data(), cluster_size * sizeof(int32_t));
     }
     constexpr static bool has_data() { return true; }
     std::byte *data() { return reinterpret_cast<std::byte *>(this); }
-    constexpr size_t size() { return sizeof(m_x) + sizeof(m_x) + 9 * sizeof(int32_t); }
+    constexpr size_t size() { return sizeof(m_x) + sizeof(m_x) + cluster_size * sizeof(int32_t); }
 
     std::string to_string() const {
         std::string s = "x: " + std::to_string(m_x) + " y: " + std::to_string(m_y) + "\ndata: [";

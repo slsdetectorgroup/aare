@@ -17,10 +17,10 @@ int main() {
     header.data_fields.push_back(
         {"data", Dtype::INT32, v3::Field::FIXED_LENGTH_ARRAY, 9});
 
-    v3::ClusterFile<v3::ClusterHeader,v3::ClusterData> file("/tmp/test_cluster2.clust2", "w", header);
+    v3::ClusterFile<v3::ClusterHeader,v3::ClusterData<9>> file("/tmp/test_cluster2.clust2", "w", header);
     for (int j = 0; j < 1000; j++) {
         v3::ClusterHeader clust_header;
-        std::vector<v3::ClusterData> clust_data;
+        std::vector<v3::ClusterData<9>> clust_data;
 
         clust_header.frame_number = j;
         clust_header.n_clusters = 500 + j;

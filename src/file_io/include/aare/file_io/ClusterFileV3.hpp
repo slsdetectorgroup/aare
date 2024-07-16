@@ -283,7 +283,10 @@ template <typename ClusterHeaderType, typename ClusterDataType> struct ClusterFi
             throw std::invalid_argument("File is closed");
         }
 
-        // read header
+        /***************************
+         *** read cluster header ***
+         ***************************
+         */
         ClusterHeaderType cluster_header;
         // check if structure has vlen array
         if (!m_header_has_vlen_array) {
@@ -299,11 +302,14 @@ template <typename ClusterHeaderType, typename ClusterDataType> struct ClusterFi
             }
 
         } else {
-            std::vector<std::byte> tmp = read_vlen_array();
+            std::vector<std::byte> tmp = read_vlen_array(m_header.header_fields);
             cluster_header.set(tmp.data());
         }
 
-        // read data
+        /*************************
+         *** read cluster data ***
+         *************************
+         */
         std::vector<ClusterDataType> cluster_data(cluster_header.data_count());
         if (!m_data_has_vlen_array) {
             // read fixed size data
@@ -319,7 +325,7 @@ template <typename ClusterHeaderType, typename ClusterDataType> struct ClusterFi
             }
         } else {
             for (int i = 0; i < cluster_header.data_count(); i++) {
-                std::vector<std::byte> tmp = read_vlen_array();
+                std::vector<std::byte> tmp = read_vlen_array(m_header.data_fields);
                 cluster_data[i].set(tmp.data());
             }
         }
@@ -333,40 +339,36 @@ template <typename ClusterHeaderType, typename ClusterDataType> struct ClusterFi
         if (m_closed) {
             throw std::invalid_argument("File is closed");
         }
-        if (cluster_header.data_count() != cluster_data.size()) {
+        if (static_cast<uint64_t>(cluster_header.data_count()) != cluster_data.size()) {
             throw std::invalid_argument("Number of data records does not match the header");
         }
-        // write header
-        if (!m_header_has_vlen_array) {
-            if constexpr (ClusterHeaderType::has_data()) {
-                fwrite(cluster_header.data(), 1, m_cluster_header_size, m_fp);
-            } else {
-                std::array<std::byte, cluster_header.size()> tmp;
-                cluster_header.get(tmp.data());
-                fwrite(tmp.data(), 1, cluster_header.size(), m_fp);
-            }
-        } else {
-            std::array<std::byte, cluster_header.size()> tmp;
-            cluster_header.get(tmp.data());
-            fwrite(tmp.data(), 1, cluster_header.size(), m_fp);
-        }
-        // write data
-        if (!m_data_has_vlen_array) {
-            if constexpr (ClusterDataType::has_data()) {
-                fwrite(cluster_data.data(), cluster_header.data_count(), m_cluster_data_size, m_fp);
-            } else {
-                std::array<std::byte, m_cluster_data_size> tmp;
-                for (int i = 0; i < cluster_header.data_count(); i++) {
-                    cluster_data[i].get(tmp.data());
-                    fwrite(tmp.data(), 1, m_cluster_data_size, m_fp);
-                }
-            }
-        } else {
-            for(int i=0;i<cluster_header.data_count();i++){
-                std::array<std::byte, cluster_data[i].size()> tmp;
-                cluster_data[i].get(tmp.data());
-                fwrite(tmp.data(), 1, m_cluster_data_size, m_fp);
 
+        /****************************
+         *** write cluster header ***
+         ****************************
+         */
+        if (ClusterHeaderType::has_data() && !m_header_has_vlen_array) {
+            fwrite(cluster_header.data(), 1, m_cluster_header_size, m_fp);
+        } else {
+            // either the header has vlen array or we can't read into the struct directly
+            auto tmp = new std::byte[cluster_header.size()];
+            cluster_header.get(tmp);
+            fwrite(tmp, 1, cluster_header.size(), m_fp);
+            delete[] tmp;
+        }
+
+        /**************************
+         *** write cluster data ***
+         **************************
+         */
+        if (ClusterDataType::has_data() && !m_data_has_vlen_array) {
+            fwrite(cluster_data.data(), cluster_header.data_count(), m_cluster_data_size, m_fp);
+        } else {
+            for (int i = 0; i < cluster_header.data_count(); i++) {
+                auto tmp = new std::byte[cluster_data[i].size()];
+                cluster_data[i].get(tmp);
+                fwrite(tmp, 1, m_cluster_data_size, m_fp);
+                delete[] tmp;
             }
         }
     }
@@ -417,7 +419,7 @@ template <typename ClusterHeaderType, typename ClusterDataType> struct ClusterFi
     std::vector<std::byte> read_vlen_array(std::vector<Field> const &fields) {
         std::vector<std::byte> tmp(10000);
         uint32_t cur_byte = 0;
-        for (Field &field : fields) {
+        for (const Field &field : fields) {
             if (field.is_array == Field::NOT_ARRAY) {
                 if (cur_byte + field.dtype.bytes() > tmp.size()) {
                     tmp.resize(tmp.size() * 2 + field.dtype.bytes());
