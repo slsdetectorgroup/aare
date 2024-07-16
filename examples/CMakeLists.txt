@@ -5,7 +5,7 @@ set(EXAMPLE_LIST "${EXAMPLE_LIST};cluster_example;zmq_multi_receiver;zmq_worker;
 set(EXAMPLE_LIST "${EXAMPLE_LIST};zmq_task_ventilator;zmq_restream_example;zmq_receiver_example")
 set(EXAMPLE_LIST "${EXAMPLE_LIST};testing_pedestal;cluster_finder_example;reorder_moench_example")
 set(EXAMPLE_LIST "${EXAMPLE_LIST};clusterFileV3_read_example")
-set(EXAMPLE_LIST "${EXAMPLE_LIST};clusterFileV3_write_example")
+set(EXAMPLE_LIST "${EXAMPLE_LIST};clusterFileV3_write_example;vlen_cluster_example")
 
 foreach(example ${EXAMPLE_LIST})
     add_executable(${example} ${example}.cpp)

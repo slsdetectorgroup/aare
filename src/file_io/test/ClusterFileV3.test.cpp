@@ -50,7 +50,7 @@ TEST_CASE("ClusterFileV3::Header::from_json test empty string") {
     REQUIRE(h.data_fields.size() == 0);
 }
 TEST_CASE("ClusterFileV3::Header::from_json test with \\n and \\t") {
-    std::string json = "{\n\t\"version\":   \"0.1\",\n\n\t  \"n_records\":     100    \n}";
+    std::string json = "{\n\t\"version\":   \"0.1\",\n\n\t  \"n_records\":     \"100\"    \n}";
     v3::Header h;
     h.from_json(json);
     REQUIRE(h.version == "0.1");
@@ -82,7 +82,7 @@ TEST_CASE("ClusterFileV3::Header::from_json data field with \\n and \\t") {
 TEST_CASE("ClusterFileV3::Header::from_json") {
     std::string json = "{"
                        "\"version\": \"1.2\","
-                       "\"n_records\": 100,"
+                       "\"n_records\": \"100\","
                        "\"metadata\": {\"key1\": \"value1\", \"key2\": \"value2\"},"
                        "\"header_fields\": "
                        "[{\"label\": \"TEST\", \"dtype\": \"<i4\", \"is_array\": 1, \"array_size\": 10},"

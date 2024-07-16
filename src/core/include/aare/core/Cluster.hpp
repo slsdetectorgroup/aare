@@ -1,9 +1,12 @@
 #pragma once
 #include "aare/core/Dtype.hpp"
+#include "aare/utils/json.hpp"
 #include <array>
 #include <cstdint>
 #include <cstring>
+#include <simdjson.h>
 #include <stdexcept>
+#include <vector>
 
 namespace aare {
 
@@ -81,12 +84,96 @@ class Cluster {
 };
 
 /*
- * new Cluster class
+ * new Cluster classes
  *
  */
 
 // class to hold the header of the old cluster format
 namespace v3 {
+struct Field {
+    const static int VLEN_ARRAY_SIZE_BYTES = 4;
+    enum ARRAY_TYPE { NOT_ARRAY = 0, FIXED_LENGTH_ARRAY = 1, VARIABLE_LENGTH_ARRAY = 2 };
+    static ARRAY_TYPE to_array_type(uint64_t i) {
+        if (i == 0)
+            return NOT_ARRAY;
+        if (i == 1)
+            return FIXED_LENGTH_ARRAY;
+        if (i == 2)
+            return VARIABLE_LENGTH_ARRAY;
+        throw std::invalid_argument("Invalid ARRAY_TYPE");
+    }
+    Field() = default;
+    Field(std::string const &label_, Dtype dtype_, ARRAY_TYPE is_array_, uint32_t array_size_)
+        : label(label_), dtype(dtype_), is_array(is_array_), array_size(array_size_) {}
+    std::string label{};
+    Dtype dtype{Dtype(Dtype::ERROR)};
+    ARRAY_TYPE is_array{};
+    uint32_t array_size{};
+
+    std::string to_json() const {
+        std::string json;
+        json.reserve(100);
+        json += "{";
+        write_str(json, "label", label);
+        write_str(json, "dtype", dtype.to_string());
+        write_digit(json, "is_array", is_array);
+        write_digit(json, "array_size", array_size);
+        json.pop_back();
+        json.pop_back();
+        json += "}";
+        return json;
+    }
+    void from_json(std::string hf) {
+        simdjson::padded_string const ps(hf.c_str(), hf.size());
+        simdjson::ondemand::parser parser;
+        simdjson::ondemand::document doc = parser.iterate(ps);
+        simdjson::ondemand::object object = doc.get_object();
+
+        for (auto field : object) {
+            std::string_view const key = field.unescaped_key();
+            if (key == "label") {
+                this->label = field.value().get_string().value();
+            } else if (key == "dtype") {
+                this->dtype = Dtype(field.value().get_string().value());
+            } else if (key == "is_array") {
+                this->is_array = Field::to_array_type(field.value().get_uint64());
+            } else if (key == "array_size") {
+                this->array_size = field.value().get_uint64();
+            }
+        }
+    }
+    bool operator==(Field const &other) const {
+        return label == other.label && dtype == other.dtype && is_array == other.is_array &&
+               array_size == other.array_size;
+    }
+};
+
+/*
+Header Interface{
+    // mandatory functions
+    void set(std::byte *data);
+    void get(std::byte *data);
+    int data_count() const;
+    constexpr size_t size();
+    constexpr static bool has_data();
+
+    // optional
+    std::byte *data();
+    std::string to_string() const;
+}
+
+Data Interface{
+// mandatory functions
+    void set(std::byte *data);
+    void get(std::byte *data);
+    size_t size();
+    bool has_data();
+
+    // optional
+    std::byte *data();
+    std::string to_string() const;
+}
+*/
 struct ClusterHeader {
     int32_t frame_number;
     int32_t n_clusters;
@@ -119,10 +206,14 @@ struct ClusterHeader {
         return "frame_number: " + std::to_string(frame_number) +
                " n_clusters: " + std::to_string(n_clusters);
     }
+    static std::vector<Field> get_fields() {
+        return {Field{"frame_number", Dtype(Dtype::INT32), Field::NOT_ARRAY, 0},
+                Field{"n_clusters", Dtype(Dtype::INT32), Field::NOT_ARRAY, 0}};
+    }
 };
 
 // class to hold the data of the old cluster format
-template <int cluster_size=9> struct ClusterData {
+template <int cluster_size = 9> struct ClusterData {
     int16_t m_x;
     int16_t m_y;
     std::array<int32_t, cluster_size> m_data;
@@ -148,6 +239,89 @@ template <int cluster_size=9> struct ClusterData {
         std::string s = "x: " + std::to_string(m_x) + " y: " + std::to_string(m_y) + "\ndata: [";
         for (auto &d : m_data) {
             s += std::to_string(d) + " ";
+        }
+        s += "]";
+        return s;
+    }
+    static std::vector<Field> get_fields() {
+        return {Field{"x", Dtype(Dtype::INT16), Field::NOT_ARRAY, 0},
+                Field{"y", Dtype(Dtype::INT16), Field::NOT_ARRAY, 0},
+                Field{"data", Dtype(Dtype::INT32), Field::FIXED_LENGTH_ARRAY, cluster_size}};
+    }
+};
+
+// vlen cluster data
+struct ClusterDataVlen {
+    std::vector<int16_t> x;
+    std::vector<int16_t> y;
+    std::vector<int32_t> energy;
+
+    ClusterDataVlen() : x({}), y({}), energy({}) {}
+    ClusterDataVlen(std::vector<int16_t> x_, std::vector<int16_t> y_, std::vector<int32_t> energy_)
+        : x(x_), y(y_), energy(energy_) {}
+    void set(std::byte *data_) {
+        uint32_t n = 0;
+        size_t offset = 0;
+        // read m_x array size
+        std::memcpy(&n, data_, sizeof(n));
+        x.resize(n);
+        // read m_x array
+        std::memcpy(x.data(), data_ + sizeof(n), n * sizeof(int16_t));
+        offset = sizeof(n) + n * sizeof(int16_t);
+        // read m_y array size
+        std::memcpy(&n, data_ + offset, sizeof(n));
+        y.resize(n);
+        // read m_y array
+        std::memcpy(y.data(), data_ + offset + sizeof(n), n * sizeof(int16_t));
+        offset += sizeof(n) + n * sizeof(int16_t);
+        // read m_energy array size
+        std::memcpy(&n, data_ + offset, sizeof(n));
+        energy.resize(n);
+        // read m_energy array
+        std::memcpy(energy.data(), data_ + offset + sizeof(n), n * sizeof(int32_t));
+    }
+    void get(std::byte *data_) {
+        uint32_t n = x.size();
+        // write m_x array size
+        std::memcpy(data_, &n, sizeof(n));
+        // write m_x array
+        std::memcpy(data_ + sizeof(n), x.data(), n * sizeof(int16_t));
+        size_t offset = sizeof(n) + n * sizeof(int16_t);
+        n = y.size();
+        // write m_y array size
+        std::memcpy(data_ + offset, &n, sizeof(n));
+        // write m_y array
+        std::memcpy(data_ + offset + sizeof(n), y.data(), n * sizeof(int16_t));
+        offset += sizeof(n) + n * sizeof(int16_t);
+        n = energy.size();
+        // write m_energy array size
+        std::memcpy(data_ + offset, &n, sizeof(n));
+        // write m_energy array
+        std::memcpy(data_ + offset + sizeof(n), energy.data(), n * sizeof(int32_t));
+    }
+    size_t size() const {
+        return sizeof(uint32_t) + x.size() * sizeof(int16_t) + sizeof(uint32_t) +
+               y.size() * sizeof(int16_t) + sizeof(uint32_t) + energy.size() * sizeof(int32_t);
+    }
+    constexpr static bool has_data() { return false; }
+
+    static std::vector<Field> get_fields() {
+        return {Field{"x", Dtype(Dtype::INT16), Field::VARIABLE_LENGTH_ARRAY, 0},
+                Field{"y", Dtype(Dtype::INT16), Field::VARIABLE_LENGTH_ARRAY, 0},
+                Field{"data", Dtype(Dtype::INT32), Field::VARIABLE_LENGTH_ARRAY, 0}};
+    }
+    std::string to_string() const {
+        std::string s = "x: [";
+        for (auto &d : x) {
+            s += std::to_string(d) + ", ";
+        }
+        s += "]\ny: [";
+        for (auto &d : y) {
+            s += std::to_string(d) + ", ";
+        }
+        s += "]\nenergy: [";
+        for (auto &d : energy) {
+            s += std::to_string(d) + ", ";
         }
         s += "]";
         return s;

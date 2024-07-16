@@ -145,25 +145,26 @@ else()
             aare_compiler_flags
             INTERFACE
                 -fdiagnostics-parseable-fixits
-                # -fdiagnostics-generate-patch 
+                -fdiagnostics-generate-patch 
                 -fdiagnostics-show-template-tree 
                 -fsanitize=address,undefined,pointer-compare 
                 -fno-sanitize-recover 
-                # -D_FORTIFY_SOURCE=2  # not needed for debug builds
-                # -fstack-protector  # cause errors wih folly? (ProducerConsumerQueue.hpp)
                 -fno-omit-frame-pointer
+                -D_GLIBCXX_DEBUG
+                -D_GLIBCXX_DEBUG_PEDANTIC
         )
     
         target_link_libraries(
             aare_compiler_flags
             INTERFACE
                 -fdiagnostics-parseable-fixits
-                # -fdiagnostics-generate-patch 
+                -fdiagnostics-generate-patch 
                 -fdiagnostics-show-template-tree 
                 -fsanitize=address,undefined,pointer-compare 
                 -fno-sanitize-recover 
-                # -D_FORTIFY_SOURCE=2 
                 -fno-omit-frame-pointer
+                -D_GLIBCXX_DEBUG
+                -D_GLIBCXX_DEBUG_PEDANTIC
         )
     endif()
 

@@ -55,12 +55,12 @@ void define_file_io_bindings(py::module &m) {
         .def_readwrite("n_clusters", &ClusterHeader::n_clusters)
         .def("__repr__", [](const ClusterHeader &a) { return "<ClusterHeader: " + a.to_string() + ">"; });
 
-    py::class_<ClusterV2_>(m, "ClusterV2_")
+    py::class_<Cluster_>(m, "Cluster_")
         .def(py::init<>())
-        .def_readwrite("x", &ClusterV2_::x)
-        .def_readwrite("y", &ClusterV2_::y)
-        .def_readwrite("data", &ClusterV2_::data)
-        .def("__repr__", [](const ClusterV2_ &a) { return "<ClusterV2_: " + a.to_string(false) + ">"; });
+        .def_readwrite("x", &Cluster_::x)
+        .def_readwrite("y", &Cluster_::y)
+        .def_readwrite("data", &Cluster_::data)
+        .def("__repr__", [](const Cluster_ &a) { return "<Cluster_: " + a.to_string(false) + ">"; });
 
     py::class_<ClusterV2>(m, "ClusterV2")
         .def(py::init<>())

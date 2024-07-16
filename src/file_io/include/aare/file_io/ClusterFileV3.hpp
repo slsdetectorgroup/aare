@@ -6,6 +6,7 @@
 
 #include "simdjson.h"
 
+#include "aare/core/Cluster.hpp"
 #include "aare/core/Dtype.hpp"
 #include "aare/core/defs.hpp"
 #include "aare/utils/json.hpp"
@@ -18,7 +19,8 @@ namespace aare {
  *
  * in JSON format:
  *     - version: "0.1" (string max 3 chars)
- *     - n_records (number doesn't exceed 2^64 unsigned)
+ *     - n_records (string doesn't exceed 4*10^9 unsigned should be padded with zeroes if less than
+ * 9 digits)
  *     - metadata: metadata (json string max 2^16 chars. no nested json objects, only key-value
  * pairs of strings)
  *     - header_fields (array of field objects):
@@ -51,68 +53,11 @@ namespace aare {
  */
 namespace v3 {
 
-struct Field {
-    const static int VLEN_ARRAY_SIZE_BYTES = 4;
-    enum ARRAY_TYPE { NOT_ARRAY = 0, FIXED_LENGTH_ARRAY = 1, VARIABLE_LENGTH_ARRAY = 2 };
-    static ARRAY_TYPE to_array_type(uint64_t i) {
-        if (i == 0)
-            return NOT_ARRAY;
-        if (i == 1)
-            return FIXED_LENGTH_ARRAY;
-        if (i == 2)
-            return VARIABLE_LENGTH_ARRAY;
-        throw std::invalid_argument("Invalid ARRAY_TYPE");
-    }
-    Field() = default;
-    Field(std::string const &label_, Dtype dtype_, ARRAY_TYPE is_array_, uint32_t array_size_)
-        : label(label_), dtype(dtype_), is_array(is_array_), array_size(array_size_) {}
-    std::string label{};
-    Dtype dtype{Dtype(Dtype::ERROR)};
-    ARRAY_TYPE is_array{};
-    uint32_t array_size{};
-
-    std::string to_json() const {
-        std::string json;
-        json.reserve(100);
-        json += "{";
-        write_str(json, "label", label);
-        write_str(json, "dtype", dtype.to_string());
-        write_digit(json, "is_array", is_array);
-        write_digit(json, "array_size", array_size);
-        json.pop_back();
-        json.pop_back();
-        json += "}";
-        return json;
-    }
-    void from_json(std::string hf) {
-        simdjson::padded_string const ps(hf.c_str(), hf.size());
-        simdjson::ondemand::parser parser;
-        simdjson::ondemand::document doc = parser.iterate(ps);
-        simdjson::ondemand::object object = doc.get_object();
-
-        for (auto field : object) {
-            std::string_view const key = field.unescaped_key();
-            if (key == "label") {
-                this->label = field.value().get_string().value();
-            } else if (key == "dtype") {
-                this->dtype = Dtype(field.value().get_string().value());
-            } else if (key == "is_array") {
-                this->is_array = Field::to_array_type(field.value().get_uint64());
-            } else if (key == "array_size") {
-                this->array_size = field.value().get_uint64();
-            }
-        }
-    }
-    bool operator==(Field const &other) const {
-        return label == other.label && dtype == other.dtype && is_array == other.is_array &&
-               array_size == other.array_size;
-    }
-};
 struct Header {
     static constexpr std::string_view CURRENT_VERSION = "0.1";
     Header() : version{CURRENT_VERSION}, n_records{} {};
     std::string version;
-    uint64_t n_records;
+    uint32_t n_records;
     std::map<std::string, std::string> metadata;
     std::vector<Field> header_fields;
     std::vector<Field> data_fields;
@@ -122,7 +67,10 @@ struct Header {
         json.reserve(1024);
         json += "{";
         write_str(json, "version", version);
-        write_digit(json, "n_records", n_records);
+        std::string n_records_str = std::to_string(n_records);
+        n_records_str.insert(0, 9 - n_records_str.size(), '0');
+        write_str(json, "n_records", n_records_str);
+
         write_map(json, "metadata", metadata);
         json += "\"header_fields\": [";
         for (auto &f : header_fields) {
@@ -158,7 +106,14 @@ struct Header {
                 }
                 this->version = std::string(version_sv.data(), version_sv.size());
             } else if (key == "n_records") {
-                this->n_records = field.value().get_uint64();
+                std::string_view tmp = field.value().get_string();
+                try {
+
+                    this->n_records = std::stoi(std::string(tmp.data(), tmp.size()));
+                } catch (std::invalid_argument &e) {
+                    throw std::runtime_error("Invalid n_records value");
+                }
+
             } else if (key == "metadata") {
                 simdjson::ondemand::object metadata_obj = field.value().get_object();
                 for (auto meta : metadata_obj) {
@@ -193,6 +148,7 @@ struct Header {
                metadata == other.metadata && header_fields == other.header_fields &&
                data_fields == other.data_fields;
     }
+    bool operator!=(Header const &other) const { return !(*this == other); }
 };
 
 template <typename ClusterHeaderType, typename ClusterDataType> struct ClusterFile {
@@ -205,11 +161,15 @@ template <typename ClusterHeaderType, typename ClusterDataType> struct ClusterFi
     };
 
     ClusterFile(std::filesystem::path const &fpath, std::string const &mode,
-                Header const header = Header{})
-        : m_closed(true), m_fpath(fpath), m_mode(mode), m_header(header) {
+                Header header = Header{})
+        : m_closed(true), m_fpath(fpath), m_mode(mode), m_n_records{},m_cur_index{}, m_header(header) {
         if (mode != "r" && mode != "w")
             throw std::invalid_argument("mode must be 'r' or 'w'");
         if (mode == "r") {
+            if (header != Header{}) {
+                header = {};
+                logger::warn("Ignoring provided header when opening file in read mode");
+            }
             if (!std::filesystem::exists(fpath)) {
                 throw std::invalid_argument("File does not exist");
             }
@@ -252,6 +212,7 @@ template <typename ClusterHeaderType, typename ClusterDataType> struct ClusterFi
                     break;
                 }
             }
+            m_n_records = m_header.n_records;
         } else if (mode == "w") {
             if (m_header == Header{}) {
                 throw std::invalid_argument(
@@ -282,6 +243,9 @@ template <typename ClusterHeaderType, typename ClusterDataType> struct ClusterFi
         if (m_closed) {
             throw std::invalid_argument("File is closed");
         }
+        if( m_cur_index >= m_n_records){
+            throw std::invalid_argument("End of file reached");
+        }
 
         /***************************
          *** read cluster header ***
@@ -302,10 +266,11 @@ template <typename ClusterHeaderType, typename ClusterDataType> struct ClusterFi
             }
 
         } else {
-            std::vector<std::byte> tmp = read_vlen_array(m_header.header_fields);
-            cluster_header.set(tmp.data());
+            std::vector<std::byte> *tmp = read_vlen_array(m_header.header_fields);
+            cluster_header.set(tmp->data());
+            delete tmp;
         }
-
+        cluster_header.data_count();
         /*************************
          *** read cluster data ***
          *************************
@@ -319,16 +284,18 @@ template <typename ClusterHeaderType, typename ClusterDataType> struct ClusterFi
             } else {
                 std::array<std::byte, sizeof(ClusterDataType)> tmp;
                 for (int i = 0; i < cluster_header.data_count(); i++) {
-                    fread(tmp.data(), 1, m_cluster_data_size, m_fp);
+                    fread(tmp.data(), 1, cluster_data[i].size(), m_fp);
                     cluster_data[i].set(tmp.data());
                 }
             }
         } else {
             for (int i = 0; i < cluster_header.data_count(); i++) {
-                std::vector<std::byte> tmp = read_vlen_array(m_header.data_fields);
-                cluster_data[i].set(tmp.data());
+                std::vector<std::byte> *tmp = read_vlen_array(m_header.data_fields);
+                cluster_data[i].set(tmp->data());
+                delete tmp;
             }
         }
+        m_cur_index++;
         return {cluster_header, cluster_data};
     }
 
@@ -348,7 +315,7 @@ template <typename ClusterHeaderType, typename ClusterDataType> struct ClusterFi
          ****************************
          */
         if (ClusterHeaderType::has_data() && !m_header_has_vlen_array) {
-            fwrite(cluster_header.data(), 1, m_cluster_header_size, m_fp);
+            fwrite(cluster_header.data(), 1, cluster_header.size(), m_fp);
         } else {
             // either the header has vlen array or we can't read into the struct directly
             auto tmp = new std::byte[cluster_header.size()];
@@ -367,36 +334,46 @@ template <typename ClusterHeaderType, typename ClusterDataType> struct ClusterFi
             for (int i = 0; i < cluster_header.data_count(); i++) {
                 auto tmp = new std::byte[cluster_data[i].size()];
                 cluster_data[i].get(tmp);
-                fwrite(tmp, 1, m_cluster_data_size, m_fp);
+                fwrite(tmp, 1, cluster_data[i].size(), m_fp);
                 delete[] tmp;
             }
         }
+        m_n_records++;
     }
+    void set_n_records(uint32_t n_records) { m_n_records = n_records; }
 
     int flush() { return fflush(m_fp); }
-    int close() {
+    void update_header() {
+        fseek(m_fp, MAGIC_STRING.size(), SEEK_SET);
+        m_header.n_records = m_n_records;
+        std::string header_json = m_header.to_json();
+        std::string header_len_str = std::to_string(header_json.size());
+        header_len_str.insert(0, HEADER_LEN_CHARS - header_len_str.size(), '0');
+        fwrite(header_len_str.data(), 1, HEADER_LEN_CHARS, m_fp);
+        fwrite(header_json.data(), 1, header_json.size(), m_fp);
+    }
+    int close(bool throws = true) {
         int ret{};
         if (!m_closed) {
+            update_header();
             ret = fclose(m_fp);
             if (ret == 0) {
                 m_closed = true;
-            } else {
-                throw std::runtime_error("Failed to close file");
+            } else if (throws) {
+                throw std::runtime_error("Failed to close file") ;
             }
         }
         return ret;
     }
-    ~ClusterFile() noexcept {
-        if (!m_closed) {
-            fclose(m_fp);
-        }
-    }
+    ~ClusterFile() noexcept { close(false); }
 
   private:
     bool m_closed;
     std::filesystem::path m_fpath;
     std::string m_mode;
     FILE *m_fp;
+    uint32_t m_n_records;
+    u_int32_t m_cur_index;
     Header m_header;
     bool m_header_has_vlen_array{false};
     bool m_data_has_vlen_array{false};
@@ -406,45 +383,46 @@ template <typename ClusterHeaderType, typename ClusterDataType> struct ClusterFi
     uint32_t calculate_fixed_cluster_size(std::vector<Field> const &fields) {
         uint32_t size = 0;
         for (auto &f : fields) {
-            if (f.is_array == 0) {
+            if (f.is_array == Field::NOT_ARRAY) {
                 size += f.dtype.bytes();
-            } else if (f.is_array == 1) {
+            } else if (f.is_array == Field::FIXED_LENGTH_ARRAY) {
                 size += f.array_size * f.dtype.bytes();
             } else {
-                throw std::runtime_error("Calculating Fixed size of variable length array");
+                return 0;
             }
         }
         return size;
     }
-    std::vector<std::byte> read_vlen_array(std::vector<Field> const &fields) {
-        std::vector<std::byte> tmp(10000);
+    std::vector<std::byte> *read_vlen_array(std::vector<Field> const &fields) {
+        std::vector<std::byte> *tmp = new std::vector<std::byte>(1000);
         uint32_t cur_byte = 0;
         for (const Field &field : fields) {
             if (field.is_array == Field::NOT_ARRAY) {
-                if (cur_byte + field.dtype.bytes() > tmp.size()) {
-                    tmp.resize(tmp.size() * 2 + field.dtype.bytes());
+                if (cur_byte + field.dtype.bytes() > tmp->size()) {
+                    tmp->resize(tmp->size() * 2 + field.dtype.bytes());
                 }
-                fread(tmp.data() + cur_byte, 1, field.dtype.bytes(), m_fp);
+                fread(tmp->data() + cur_byte, 1, field.dtype.bytes(), m_fp);
                 cur_byte += field.dtype.bytes();
 
             } else if (field.is_array == Field::FIXED_LENGTH_ARRAY) {
-                if (cur_byte + field.array_size * field.dtype.bytes() > tmp.size()) {
-                    tmp.resize(tmp.size() * 2 + field.array_size * field.dtype.bytes());
+                if (cur_byte + field.array_size * field.dtype.bytes() > tmp->size()) {
+                    tmp->resize(tmp->size() * 2 + field.array_size * field.dtype.bytes());
                 }
-                fread(tmp.data() + cur_byte, 1, field.array_size * field.dtype.bytes(), m_fp);
+                fread(tmp->data() + cur_byte, 1, field.array_size * field.dtype.bytes(), m_fp);
                 cur_byte += field.array_size * field.dtype.bytes();
 
             } else {
-                if (cur_byte + Field::VLEN_ARRAY_SIZE_BYTES > tmp.size()) {
-                    tmp.resize(tmp.size() * 2 + Field::VLEN_ARRAY_SIZE_BYTES);
+                if (cur_byte + Field::VLEN_ARRAY_SIZE_BYTES > tmp->size()) {
+                    tmp->resize(tmp->size() * 2 + Field::VLEN_ARRAY_SIZE_BYTES);
                 }
-                fread(tmp.data() + cur_byte, 1, Field::VLEN_ARRAY_SIZE_BYTES, m_fp);
-                uint32_t n_elements = *reinterpret_cast<uint32_t *>(tmp.data() + cur_byte);
+                uint32_t n_elements;
+                fread(&n_elements, 1, Field::VLEN_ARRAY_SIZE_BYTES, m_fp);
+                memcpy(tmp->data() + cur_byte, &n_elements, Field::VLEN_ARRAY_SIZE_BYTES);
                 cur_byte += Field::VLEN_ARRAY_SIZE_BYTES;
-                if (cur_byte + n_elements * field.dtype.bytes() > tmp.size()) {
-                    tmp.resize(tmp.size() * 2 + n_elements * field.dtype.bytes());
+                if (cur_byte + n_elements * field.dtype.bytes() > tmp->size()) {
+                    tmp->resize(tmp->size() * 2 + n_elements * field.dtype.bytes());
                 }
-                fread(tmp.data() + cur_byte, 1, n_elements * field.dtype.bytes(), m_fp);
+                fread(tmp->data() + cur_byte, 1, n_elements * field.dtype.bytes(), m_fp);
                 cur_byte += n_elements * field.dtype.bytes();
             }
         }
