@@ -373,7 +373,7 @@ template <typename ClusterHeaderType, typename ClusterDataType> struct ClusterFi
     std::string m_mode;
     FILE *m_fp;
     uint32_t m_n_records;
-    u_int32_t m_cur_index;
+    uint32_t m_cur_index;
     Header m_header;
     bool m_header_has_vlen_array{false};
     bool m_data_has_vlen_array{false};
