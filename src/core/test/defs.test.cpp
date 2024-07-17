@@ -9,14 +9,14 @@ TEST_CASE("Enum to string conversion") {
     REQUIRE(toString(aare::DetectorType::Jungfrau) == "Jungfrau");
 }
 
-TEST_CASE("Cluster creation") {
-    aare::Cluster c(13, 15);
+TEST_CASE("deprecated::Cluster creation") {
+    aare::deprecated::Cluster c(13, 15);
     REQUIRE(c.cluster_sizeX == 13);
     REQUIRE(c.cluster_sizeY == 15);
     REQUIRE(c.dt == aare::Dtype(typeid(int32_t)));
     REQUIRE(c.data() != nullptr);
 
-    aare::Cluster c2(c);
+    aare::deprecated::Cluster c2(c);
     REQUIRE(c2.cluster_sizeX == 13);
     REQUIRE(c2.cluster_sizeY == 15);
     REQUIRE(c2.dt == aare::Dtype(typeid(int32_t)));
@@ -25,7 +25,7 @@ TEST_CASE("Cluster creation") {
 
 TEST_CASE("cluster set and get data") {
 
-    aare::Cluster c2(33, 44, aare::Dtype(typeid(double)));
+    aare::deprecated::Cluster c2(33, 44, aare::Dtype(typeid(double)));
     REQUIRE(c2.cluster_sizeX == 33);
     REQUIRE(c2.cluster_sizeY == 44);
     REQUIRE(c2.dt == aare::Dtype::DOUBLE);

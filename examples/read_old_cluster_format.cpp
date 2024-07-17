@@ -7,7 +7,7 @@ int main() {
     auto PROJECT_ROOT_DIR = std::filesystem::path(getenv("AARE_ROOT_DIR"));
     std::filesystem::path const fpath(PROJECT_ROOT_DIR / "data" / "clusters" /
                                       "single_frame_97_clustrers.clust");
-    auto f = ClusterFileV2(fpath, "r");
+    auto f = deprecated::ClusterFile(fpath, "r");
     auto frame_number = f.frame_number();
     auto clusters = f.read();
     std::cout<<"READING WITH OLD CLUSTER FILE READER"<<std::endl;

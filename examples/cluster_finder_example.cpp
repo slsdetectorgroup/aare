@@ -24,7 +24,7 @@ int main() {
     }
     logger::info("frame", frame.rows(), frame.cols(), frame.bitdepth());
 
-    ClusterFileV2 cf(fpath_cluster, "r");
+    deprecated::ClusterFile cf(fpath_cluster, "r");
     auto anna_clusters = cf.read();
     logger::info("Cluster file");
     logger::info("nclusters:", anna_clusters.size());

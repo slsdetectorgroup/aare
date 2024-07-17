@@ -7,7 +7,7 @@
 using namespace aare;
 int main() {
     auto PROJECT_ROOT_DIR = std::filesystem::path(getenv("AARE_ROOT_DIR"));
-    std::filesystem::path const fpath("/home/l_bechir/tmp/testNewFW20230714/cu_half_speed_master_4.json");
+    std::filesystem::path const fpath("/home/bb/tmp/testNewFW20230714/cu_half_speed_master_4.json");
     auto f = File(fpath, "r");
     // calculate pedestal
     Pedestal pedestal(400,400,1000);
@@ -18,7 +18,7 @@ int main() {
     // find clusters
     ClusterFinder clusterFinder(3, 3, 5, 0);
     f.seek(0);
-    std::vector<std::vector<Cluster>> clusters_vector;
+    std::vector<std::vector<deprecated::Cluster>> clusters_vector;
     auto start = std::chrono::high_resolution_clock::now();
     for (int i = 0; i < 1000; i++) {
         auto frame = f.iread(i);

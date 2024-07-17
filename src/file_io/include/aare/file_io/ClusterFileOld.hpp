@@ -4,15 +4,18 @@
 #include <string>
 
 namespace aare {
+namespace deprecated {
+
 struct ClusterHeader {
     int32_t frame_number;
     int32_t n_clusters;
     std::string to_string() const {
-        return "frame_number: " + std::to_string(frame_number) + ", n_clusters: " + std::to_string(n_clusters);
+        return "frame_number: " + std::to_string(frame_number) +
+               ", n_clusters: " + std::to_string(n_clusters);
     }
 };
 
-struct ClusterV2_ {
+struct Cluster_ {
     int16_t x;
     int16_t y;
     std::array<int32_t, 9> data;
@@ -30,7 +33,7 @@ struct ClusterV2_ {
 };
 
 struct ClusterV2 {
-    ClusterV2_ cluster;
+    Cluster_ cluster;
     int32_t frame_number;
     std::string to_string() const {
         return "frame_number: " + std::to_string(frame_number) + ", " + cluster.to_string();
@@ -42,7 +45,7 @@ struct ClusterV2 {
  * important not: fp always points to the clutsers header and does not point to individual clusters
  *
  */
-class ClusterFileV2 {
+class ClusterFile {
   private:
     bool m_closed = true;
     std::filesystem::path m_fpath;
@@ -50,7 +53,7 @@ class ClusterFileV2 {
     FILE *fp;
 
   public:
-    ClusterFileV2(std::filesystem::path const &fpath, std::string const &mode) {
+    ClusterFile(std::filesystem::path const &fpath, std::string const &mode) {
         if (mode != "r" && mode != "w")
             throw std::invalid_argument("mode must be 'r' or 'w'");
         if (mode == "r" && !std::filesystem::exists(fpath))
@@ -71,12 +74,12 @@ class ClusterFileV2 {
         }
         m_closed = false;
     }
-    ~ClusterFileV2() { close(); }
+    ~ClusterFile() { close(); }
     std::vector<ClusterV2> read() {
         ClusterHeader header;
         fread(&header, sizeof(ClusterHeader), 1, fp);
-        std::vector<ClusterV2_> clusters_(header.n_clusters);
-        fread(clusters_.data(), sizeof(ClusterV2_), header.n_clusters, fp);
+        std::vector<Cluster_> clusters_(header.n_clusters);
+        fread(clusters_.data(), sizeof(Cluster_), header.n_clusters, fp);
         std::vector<ClusterV2> clusters;
         for (auto &c : clusters_) {
             ClusterV2 cluster;
@@ -107,7 +110,7 @@ class ClusterFileV2 {
         header.n_clusters = clusters.size();
         fwrite(&header, sizeof(ClusterHeader), 1, fp);
         for (auto &c : clusters) {
-            fwrite(&c.cluster, sizeof(ClusterV2_), 1, fp);
+            fwrite(&c.cluster, sizeof(Cluster_), 1, fp);
         }
         return clusters.size();
     }
@@ -141,4 +144,5 @@ class ClusterFileV2 {
         }
     }
 };
+} // namespace deprecated
 } // namespace aare

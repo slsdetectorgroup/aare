@@ -29,7 +29,7 @@ class ClusterFinder {
     };
 
     template <typename FRAME_TYPE, typename PEDESTAL_TYPE>
-    std::vector<Cluster> find_clusters_without_threshold(NDView<FRAME_TYPE, 2> frame, Pedestal<PEDESTAL_TYPE> &pedestal,
+    std::vector<deprecated::Cluster> find_clusters_without_threshold(NDView<FRAME_TYPE, 2> frame, Pedestal<PEDESTAL_TYPE> &pedestal,
                                                          bool late_update = false) {
         struct pedestal_update {
             int x;
@@ -38,7 +38,7 @@ class ClusterFinder {
         };
         std::vector<pedestal_update> pedestal_updates;
 
-        std::vector<Cluster> clusters;
+        std::vector<deprecated::Cluster> clusters;
         std::vector<std::vector<eventType>> eventMask;
         for (int i = 0; i < frame.shape(0); i++) {
             eventMask.push_back(std::vector<eventType>(frame.shape(1)));
@@ -84,7 +84,7 @@ class ClusterFinder {
                 }
                 if (eventMask[iy][ix] == PHOTON && (frame(iy, ix) - pedestal.mean(iy, ix)) >= max) {
                     eventMask[iy][ix] = PHOTON_MAX;
-                    Cluster cluster(m_cluster_sizeX, m_cluster_sizeY, Dtype(typeid(PEDESTAL_TYPE)));
+                    deprecated::Cluster cluster(m_cluster_sizeX, m_cluster_sizeY, Dtype(typeid(PEDESTAL_TYPE)));
                     cluster.x = ix;
                     cluster.y = iy;
                     short i = 0;
@@ -112,9 +112,9 @@ class ClusterFinder {
     }
 
     template <typename FRAME_TYPE, typename PEDESTAL_TYPE>
-    std::vector<Cluster> find_clusters_with_threshold(NDView<FRAME_TYPE, 2> frame, Pedestal<PEDESTAL_TYPE> &pedestal) {
+    std::vector<deprecated::Cluster> find_clusters_with_threshold(NDView<FRAME_TYPE, 2> frame, Pedestal<PEDESTAL_TYPE> &pedestal) {
         assert(m_threshold > 0);
-        std::vector<Cluster> clusters;
+        std::vector<deprecated::Cluster> clusters;
         std::vector<std::vector<eventType>> eventMask;
         for (int i = 0; i < frame.shape(0); i++) {
             eventMask.push_back(std::vector<eventType>(frame.shape(1)));
@@ -185,7 +185,7 @@ class ClusterFinder {
                 }
                 if (eventMask[iy][ix] == PHOTON && frame(iy, ix) - pedestal.mean(iy, ix) >= max) {
                     eventMask[iy][ix] = PHOTON_MAX;
-                    Cluster cluster(m_cluster_sizeX, m_cluster_sizeY, Dtype(typeid(FRAME_TYPE)));
+                    deprecated::Cluster cluster(m_cluster_sizeX, m_cluster_sizeY, Dtype(typeid(FRAME_TYPE)));
                     cluster.x = ix;
                     cluster.y = iy;
                     short i = 0;

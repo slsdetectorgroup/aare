@@ -13,6 +13,9 @@ namespace aare {
 /*
  * TODO: Should be removed
  */
+
+namespace deprecated {
+
 class Cluster {
   public:
     int cluster_sizeX;
@@ -82,6 +85,7 @@ class Cluster {
     auto end() const { return m_data + cluster_sizeX * cluster_sizeY * dt.bytes(); }
     std::byte *data() { return m_data; }
 };
+} // namespace deprecated
 
 /*
  * new Cluster classes
