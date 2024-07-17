@@ -93,7 +93,6 @@ class Cluster {
  */
 
 // class to hold the header of the old cluster format
-namespace v3 {
 struct Field {
     const static int VLEN_ARRAY_SIZE_BYTES = 4;
     enum ARRAY_TYPE { NOT_ARRAY = 0, FIXED_LENGTH_ARRAY = 1, VARIABLE_LENGTH_ARRAY = 2 };
@@ -332,6 +331,5 @@ struct ClusterDataVlen {
     }
 };
 
-} // namespace v3
 
 } // namespace aare

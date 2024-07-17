@@ -51,7 +51,6 @@ namespace aare {
  *     ...
  *
  */
-namespace v3 {
 
 struct ClusterFileHeader {
     static constexpr std::string_view CURRENT_VERSION = "0.1";
@@ -111,5 +110,4 @@ template <typename ClusterHeaderType, typename ClusterDataType> struct ClusterFi
     std::vector<std::byte> *read_vlen_array(std::vector<Field> const &fields);
 };
 
-} // namespace v3
 } // namespace aare

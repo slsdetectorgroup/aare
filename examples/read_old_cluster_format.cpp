@@ -18,10 +18,10 @@ int main() {
     }
     std::cout<<"\n\n";
     std::cout<<"READING WITH NEW CLUSTER FILE READER"<<std::endl;
-    v3::ClusterFileHeader file_header;
-    file_header.header_fields = v3::ClusterHeader::get_fields();
-    file_header.data_fields = v3::ClusterData<9>::get_fields();
-    auto f2 = v3::ClusterFile<v3::ClusterHeader,v3::ClusterData<>>("/tmp/test_old_format.clust", "r",file_header,true);
+    ClusterFileHeader file_header;
+    file_header.header_fields = ClusterHeader::get_fields();
+    file_header.data_fields = ClusterData<9>::get_fields();
+    auto f2 = ClusterFile<ClusterHeader,ClusterData<>>("/tmp/test_old_format.clust", "r",file_header,true);
     auto [header, data] = f2.read();
     std::cout << header.to_string() << std::endl;
     std::cout << data.size() << '\n';

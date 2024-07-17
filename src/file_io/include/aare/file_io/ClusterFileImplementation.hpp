@@ -1,7 +1,6 @@
 #pragma once
-#include "aare/file_io/ClusterFileV3.hpp"
+#include "aare/file_io/ClusterFile.hpp"
 namespace aare {
-namespace v3 {
 
 // ClusterFile public functions
 
@@ -302,6 +301,5 @@ ClusterFile<ClusterHeaderType, ClusterDataType>::read_vlen_array(std::vector<Fie
     return tmp;
 }
 
-} // namespace v3
 
 } // namespace aare

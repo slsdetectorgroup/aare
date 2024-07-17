@@ -1,6 +1,5 @@
-#include "aare/file_io/ClusterFileV3.hpp"
+#include "aare/file_io/ClusterFile.hpp"
 namespace aare {
-namespace v3 {
 
 // ClusterFileHeader functions
 std::string ClusterFileHeader::to_json() const {
@@ -90,5 +89,4 @@ bool ClusterFileHeader::operator==(ClusterFileHeader const &other) const {
 
 
 
-} // namespace v3
 } // namespace aare
