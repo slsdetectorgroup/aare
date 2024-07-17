@@ -15,11 +15,12 @@ set(SourceFiles
     ${CMAKE_CURRENT_SOURCE_DIR}/src/SubFile.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/src/NumpyFile.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/src/NumpyHelpers.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/ClusterFileV3.cpp
 )
 
 add_library(file_io STATIC ${SourceFiles})
 target_include_directories(file_io PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/include)
-target_link_libraries(file_io PRIVATE fmt::fmt core utils nlohmann_json::nlohmann_json aare_compiler_flags)
+target_link_libraries(file_io PRIVATE fmt::fmt core utils nlohmann_json::nlohmann_json simdjson aare_compiler_flags)
 
 if(AARE_PYTHON_BINDINGS)
 set_property(TARGET file_io PROPERTY POSITION_INDEPENDENT_CODE ON)

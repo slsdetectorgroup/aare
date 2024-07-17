@@ -4,7 +4,7 @@
 using namespace aare;
 
 int main() {
-    v3::Header header;
+    v3::ClusterFileHeader header;
     header.version = "0.1";
     header.n_records = 100;
     header.metadata["test"] = "test";

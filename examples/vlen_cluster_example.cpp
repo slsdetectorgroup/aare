@@ -7,7 +7,7 @@
 using namespace aare;
 int main() {
 
-    v3::Header header;
+    v3::ClusterFileHeader header;
     header.metadata["nSigma"] = "77";
 
     header.header_fields = v3::ClusterHeader::get_fields();

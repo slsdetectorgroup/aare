@@ -1,4 +1,6 @@
 #include "aare/file_io/ClusterFileV3.hpp"
+#include "aare/file_io/ClusterFileV3Implementation.hpp"
+#include "test_config.hpp"
 #include <catch2/catch_test_macros.hpp>
 
 using namespace aare;
@@ -42,9 +44,9 @@ TEST_CASE("ClusterFileV3::Field::from_json2") {
     REQUIRE(f.array_size == 0);
 }
 
-TEST_CASE("ClusterFileV3::Header::from_json test empty string") {
+TEST_CASE("ClusterFileV3::ClusterFileHeader::from_json test empty string") {
     std::string json = "{         }";
-    v3::Header h;
+    v3::ClusterFileHeader h;
     h.from_json(json);
     REQUIRE(h.version == h.CURRENT_VERSION);
     REQUIRE(h.n_records == 0);
@@ -52,9 +54,9 @@ TEST_CASE("ClusterFileV3::Header::from_json test empty string") {
     REQUIRE(h.header_fields.size() == 0);
     REQUIRE(h.data_fields.size() == 0);
 }
-TEST_CASE("ClusterFileV3::Header::from_json test with \\n and \\t") {
+TEST_CASE("ClusterFileV3::ClusterFileHeader::from_json test with \\n and \\t") {
     std::string json = "{\n\t\"version\":   \"0.1\",\n\n\t  \"n_records\":     \"100\"    \n}";
-    v3::Header h;
+    v3::ClusterFileHeader h;
     h.from_json(json);
     REQUIRE(h.version == "0.1");
     REQUIRE(h.n_records == 100);
@@ -62,20 +64,20 @@ TEST_CASE("ClusterFileV3::Header::from_json test with \\n and \\t") {
     REQUIRE(h.header_fields.size() == 0);
     REQUIRE(h.data_fields.size() == 0);
 }
-TEST_CASE("ClusterFileV3::Header::from_json metadata with \\n and \\t") {
+TEST_CASE("ClusterFileV3::ClusterFileHeader::from_json metadata with \\n and \\t") {
     std::string json = "{\n\t\n\t\n\t \"metadata\":\n\t\n {\n\t\"key1\":\n \"value1\", "
                        "\t\n\n\"key2\":\t\n\n \"value2\"\t\n\t\n}\n }";
-    v3::Header h;
+    v3::ClusterFileHeader h;
     h.from_json(json);
     REQUIRE(h.metadata ==
             std::map<std::string, std::string>{{"key1", "value1"}, {"key2", "value2"}});
 }
 
-TEST_CASE("ClusterFileV3::Header::from_json data field with \\n and \\t") {
+TEST_CASE("ClusterFileV3::ClusterFileHeader::from_json data field with \\n and \\t") {
     std::string json =
         "{ \n\n\"data_fields\": [\n {\n \"label\":\n\t \"XXXABC\", \n\t\"dtype\":\t\n \"<i4\", "
         "\"is_array\": 1, \"array_size\": 10\n } \n ]\n }\n";
-    v3::Header h;
+    v3::ClusterFileHeader h;
     h.from_json(json);
     REQUIRE(h.data_fields.size() == 1);
     REQUIRE(h.data_fields[0].label == "XXXABC");
@@ -84,7 +86,7 @@ TEST_CASE("ClusterFileV3::Header::from_json data field with \\n and \\t") {
     REQUIRE(h.data_fields[0].array_size == 10);
 }
 
-TEST_CASE("ClusterFileV3::Header::from_json") {
+TEST_CASE("ClusterFileV3::ClusterFileHeader::from_json") {
     std::string json =
         "{"
         "\"version\": \"1.2\","
@@ -98,7 +100,7 @@ TEST_CASE("ClusterFileV3::Header::from_json") {
         "{\"label\": \"123abc\", \"dtype\": \"f8\", \"is_array\": 2, \"array_size\": 0}]"
 
         "}";
-    v3::Header h;
+    v3::ClusterFileHeader h;
     h.from_json(json);
     REQUIRE(h.version == "1.2");
     REQUIRE(h.n_records == 100);
@@ -126,7 +128,7 @@ TEST_CASE("ClusterFileV3::Header::from_json") {
 }
 
 TEST_CASE("write file with fixed length data structure") {
-    v3::Header header;
+    v3::ClusterFileHeader header;
     header.metadata["nSigma"] = "77";
     header.version = "0.7";
     header.header_fields = v3::ClusterHeader::get_fields();
@@ -174,7 +176,7 @@ TEST_CASE("write file with fixed length data structure") {
 }
 
 TEST_CASE("write/read clust2 file with variable data") {
-    v3::Header header;
+    v3::ClusterFileHeader header;
     header.metadata["hello world"] = "testing11";
 
     header.header_fields = v3::ClusterHeader::get_fields();
@@ -212,4 +214,62 @@ TEST_CASE("write/read clust2 file with variable data") {
         REQUIRE(clusters2[i].energy == std::vector<int32_t>(i + 1, 20.0 + i));
     }
     REQUIRE_THROWS_AS(file2.read(), std::invalid_argument);
+}
+
+TEST_CASE("Read old cluster format") {
+    auto fpath = test_data_path() / "clusters" / "single_frame_97_clustrers.clust";
+    v3::ClusterFileHeader file_header;
+    file_header.header_fields = v3::ClusterHeader::get_fields();
+    file_header.data_fields = v3::ClusterData<9>::get_fields();
+    auto f2 = v3::ClusterFile<v3::ClusterHeader, v3::ClusterData<9>>(fpath, "r", file_header, true);
+    auto [header, data] = f2.read();
+    REQUIRE(header.frame_number == 135);
+    REQUIRE(header.n_clusters == 97);
+    REQUIRE(data.size() == 97);
+    for (int i = 0; i < 97; i++) {
+        REQUIRE(data[i].m_x == 1 + i);
+        REQUIRE(data[i].m_y == 200 + i);
+        std::array<int32_t, 9> expected = {0, 1, 2, 3, 4, 5, 6, 7, 8};
+        for (int j = 0; j < 9; j++) {
+            expected[j] += 9 * i;
+        }
+
+        REQUIRE(data[i].m_data == expected);
+    }
+}
+
+TEST_CASE("read/write old cluster format"){
+    auto fpath = "/tmp/test_old_format.clust";
+    v3::ClusterFileHeader file_header;
+    file_header.header_fields = v3::ClusterHeader::get_fields();
+    file_header.data_fields = v3::ClusterData<9>::get_fields();
+    auto f2 = v3::ClusterFile<v3::ClusterHeader, v3::ClusterData<9>>(fpath, "w", file_header, true);
+    for (int i = 0; i < 100; i++) {
+        v3::ClusterHeader header;
+        header.frame_number = i;
+        header.n_clusters = 100 + i;
+        std::vector<v3::ClusterData<9>> data;
+        for (int j = 0; j < header.n_clusters; j++) {
+            v3::ClusterData<9> d;
+            d.m_x = j;
+            d.m_y = i;
+            d.m_data = {1, 2, 3, 4, 5, 6, 7, 8, 9};
+            data.push_back(d);
+        }
+        f2.write(header, data);
+    }
+    f2.close();
+
+    auto f3 = v3::ClusterFile<v3::ClusterHeader, v3::ClusterData<9>>(fpath, "r", file_header, true);
+    for (int i = 0; i < 100; i++) {
+        auto [header, data] = f3.read();
+        REQUIRE(header.frame_number == i);
+        REQUIRE(header.n_clusters == 100 + i);
+        for (int j = 0; j < header.n_clusters; j++) {
+            REQUIRE(data[j].m_x == j);
+            REQUIRE(data[j].m_y == i);
+            REQUIRE(data[j].m_data == std::array<int32_t, 9>{1, 2, 3, 4, 5, 6, 7, 8, 9});
+        }
+    }
+
 }

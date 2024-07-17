@@ -1,4 +1,5 @@
 #include "aare/file_io/ClusterFileV3.hpp"
+#include "aare/file_io/ClusterFileV3Implementation.hpp"
 #include "aare/file_io/ClusterFileV2.hpp"
 #include "aare/file_io/File.hpp"
 #include "aare/file_io/FileInterface.hpp"
