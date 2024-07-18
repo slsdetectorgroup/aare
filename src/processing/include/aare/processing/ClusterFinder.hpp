@@ -29,12 +29,12 @@ class ClusterFinder {
     };
 
     template <typename FRAME_TYPE, typename PEDESTAL_TYPE>
-    std::vector<deprecated::Cluster> find_clusters_without_threshold(NDView<FRAME_TYPE, 2> frame, Pedestal<PEDESTAL_TYPE> &pedestal,
+    std::vector<ClusterData<PEDESTAL_TYPE,9>> find_clusters_without_threshold(NDView<FRAME_TYPE, 2> frame, Pedestal<PEDESTAL_TYPE> &pedestal,
                                                          bool late_update = false) {
         struct pedestal_update {
             int x;
             int y;
-            FRAME_TYPE value;
+            PEDESTAL_TYPE value;
         };
         std::vector<pedestal_update> pedestal_updates;
 

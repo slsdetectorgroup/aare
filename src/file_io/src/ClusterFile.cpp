@@ -87,6 +87,4 @@ bool ClusterFileHeader::operator==(ClusterFileHeader const &other) const {
            header_fields == other.header_fields && data_fields == other.data_fields;
 }
 
-
-
 } // namespace aare
