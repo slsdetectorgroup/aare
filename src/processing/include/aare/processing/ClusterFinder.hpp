@@ -81,7 +81,8 @@ class ClusterFinder {
                     eventMask[iy][ix] = PHOTON;
                 } else {
                     if (late_update) {
-                        pedestal_updates.push_back({ix, iy, frame(iy, ix)});
+                        pedestal_updates.push_back(
+                            {ix, iy, static_cast<PEDESTAL_TYPE>(frame(iy, ix))});
                     } else {
                         pedestal.push(iy, ix, frame(iy, ix));
                     }
