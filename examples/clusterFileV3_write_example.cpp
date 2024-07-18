@@ -8,27 +8,24 @@ int main() {
     header.version = "0.1";
     header.n_records = 100;
     header.metadata["test"] = "test";
-    header.header_fields.push_back(
-        {"frame_number", Dtype::INT32, Field::NOT_ARRAY, 1});
-    header.header_fields.push_back(
-        {"n_clusters", Dtype::INT32, Field::NOT_ARRAY, 1});
+    header.header_fields.push_back({"frame_number", Dtype::INT32, Field::NOT_ARRAY, 1});
+    header.header_fields.push_back({"n_clusters", Dtype::INT32, Field::NOT_ARRAY, 1});
     header.data_fields.push_back({"x", Dtype::INT16, Field::NOT_ARRAY, 1});
     header.data_fields.push_back({"y", Dtype::INT16, Field::NOT_ARRAY, 1});
-    header.data_fields.push_back(
-        {"data", Dtype::INT32, Field::FIXED_LENGTH_ARRAY, 9});
-
-    ClusterFile<ClusterHeader,ClusterData<9>> file("/tmp/test_cluster2.clust2", "w", header);
+    header.data_fields.push_back({"data", Dtype::INT32, Field::FIXED_LENGTH_ARRAY, 9});
+    using CLUSTER_TYPE = ClusterData<int32_t, 9>;
+    ClusterFile<ClusterHeader, CLUSTER_TYPE> file("/tmp/test_cluster2.clust2", "w", header);
     for (int j = 0; j < 1000; j++) {
         ClusterHeader clust_header;
-        std::vector<ClusterData<9>> clust_data;
+        std::vector<CLUSTER_TYPE> clust_data;
 
         clust_header.frame_number = j;
         clust_header.n_clusters = 500 + j;
         for (int i = 0; i < clust_header.n_clusters; i++) {
-            ClusterData c;
-            c.m_x = i;
-            c.m_y = j;
-            c.m_data = {1, 2, 3, 4, 5, 6, 7, 8, 9};
+            CLUSTER_TYPE c;
+            c.x = i;
+            c.y = j;
+            c.array = {1, 2, 3, 4, 5, 6, 7, 8, 9};
             clust_data.push_back(c);
         }
         file.write(clust_header, clust_data);

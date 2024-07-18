@@ -7,10 +7,10 @@
 
 using namespace aare;
 
-class ClusterFinderUnitTest : public ClusterFinder {
+class ClusterFinderUnitTest : public ClusterFinder<55, 100> {
   public:
-    ClusterFinderUnitTest(int cluster_sizeX, int cluster_sizeY, double nSigma = 5.0, double threshold = 0.0)
-        : ClusterFinder(cluster_sizeX, cluster_sizeY, nSigma, threshold) {}
+    ClusterFinderUnitTest(double nSigma = 5.0, double threshold = 0.0)
+        : ClusterFinder(nSigma, threshold) {}
     double get_c2() { return c2; }
     double get_c3() { return c3; }
     auto get_threshold() { return m_threshold; }
@@ -20,9 +20,7 @@ class ClusterFinderUnitTest : public ClusterFinder {
 };
 
 TEST_CASE("test ClusterFinder constructor") {
-    ClusterFinderUnitTest cf(55, 100);
-    REQUIRE(cf.get_cluster_sizeX() == 55);
-    REQUIRE(cf.get_cluster_sizeY() == 100);
+    ClusterFinderUnitTest cf(5,0);
     REQUIRE(cf.get_threshold() == 0.0);
     REQUIRE(cf.get_nSigma() == 5.0);
     double c2 = sqrt((100 + 1) / 2 * (55 + 1) / 2);
@@ -35,7 +33,7 @@ TEST_CASE("test cluster finder") {
     aare::Pedestal pedestal(10, 10, 5);
     NDArray<double, 2> frame({10, 10});
     frame = 0;
-    ClusterFinder clusterFinder(3, 3, 1, 1); // 3x3 cluster, 1 nSigma, 1 threshold
+    ClusterFinder<3, 3> clusterFinder(1, 1); // 3x3 cluster, 1 nSigma, 1 threshold
 
     auto clusters = clusterFinder.find_clusters_without_threshold(frame.span(), pedestal);
 
@@ -49,9 +47,9 @@ TEST_CASE("test cluster finder") {
     for (int i = 0; i < 3; i++) {
         for (int j = 0; j < 3; j++) {
             if (i == 1 && j == 1)
-                REQUIRE(clusters[0].get<double>(i * 3 + j) == 10);
+                REQUIRE(clusters[0].array[i * 3 + j] == 10);
             else
-                REQUIRE(clusters[0].get<double>(i * 3 + j) == 0);
+                REQUIRE(clusters[0].array[i * 3 + j] == 0);
         }
     }
 }

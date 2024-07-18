@@ -30,7 +30,7 @@ int main() {
     logger::info("nclusters:", anna_clusters.size());
     logger::info("frame_number", anna_clusters[0].frame_number);
 
-    ClusterFinder clusterFinder(3, 3, 5, 0);
+    ClusterFinder<3,3> clusterFinder( 5, 0);
     Pedestal p(file.rows(), file.cols());
     file.seek(0);
     logger::info("Starting Pedestal calculation");

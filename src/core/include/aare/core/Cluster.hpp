@@ -203,89 +203,34 @@ struct ClusterHeader {
                 Field{"n_clusters", Dtype(Dtype::INT32), Field::NOT_ARRAY, 0}};
     }
 };
-template <typename ArrayType> class Cluster {
-    void* m_cluster{nullptr};
-    Dtype m_dt;
- 
-    void f(template <typename T> std::function<void()> function){
-        if constexpr (std::is_same<ArrayType, int32_t>::value) {
-            function<T>();
-        } else if constexpr (std::is_same<ArrayType, int16_t>::value) {
-            function<T>();
-        } 
-        else if(std::is_same<ArrayType, float>::value){
-            function<T>();
-        }
-        else if(std::is_same<ArrayType, double>::value){
-            function<T>();
-        }
-        else if (std::is_same<ArrayType, int8_t>::value) {
-            function<T>();
-        }else if (std::is_same<ArrayType, int16_t>::value) {
-            function<T>();
-    }else if(std::is_same<ArrayType, uint32_t>::value){
-        function<T>();
-    }
-      
-        
-    }
-  public:
-    Cluster(int cluster_size, Dtype dt) : m_dt(dt){
-        f([this, cluster_size](){
-            m_cluster = new ClusterData<ArrayType, >();
-        });
-        
-    }
-    int16_t x() const { return m_cluster->x; }
-    int16_t y() const { return m_cluster->y; }
-    void x(int16_t x_) { m_cluster->x = x_; }
-    void y(int16_t y_) { m_cluster->y = y_; }
-    void set(int idx, ArrayType val) { m_cluster->set(idx, &val); }
-    ArrayType get(int idx) {
-        return *reinterpret_cast<ArrayType *>(m_cluster->data() + idx * sizeof(ArrayType));
-    }
-    std::string to_string() const { return m_cluster->to_string(); }
-    void set(std::byte *data) { m_cluster->set(data); }
-    void get(std::byte *data) { m_cluster->get(data); }
-    std::byte *data() { return m_cluster->data(); }
-    size_t size() { return m_cluster->size(); }
-    ~Cluster() { delete m_cluster; }
-};
-struct ClusterInterface {
-    // mandatory functions
-    virtual void set(int idx, void *val) = 0;
-    virtual bool has_data() { return false; };
-    virtual std::byte *data() { return nullptr; };
-    virtual std::string to_string() const { return "Cluster"; };
-};
-}
 // class to hold the data of the old cluster format
-template <typename DataType = int32_t, int CLUSTER_SIZE = 9>
-struct ClusterData : public aare::ClusterFinderClusterInterface {
-    int16_t m_x;
-    int16_t m_y;
-    std::array<DataType, CLUSTER_SIZE> m_data;
+template <typename DataType = int32_t, int CLUSTER_SIZE = 9> struct ClusterData {
+    int16_t x;
+    int16_t y;
+    std::array<DataType, CLUSTER_SIZE> array;
 
-    ClusterData() : m_x(0), m_y(0), m_data({}) {}
-    ClusterData(int16_t x_, int16_t y_, std::array<int32_t, CLUSTER_SIZE> data_)
-        : m_x(x_), m_y(y_), m_data(data_) {}
-    virtual void set(std::byte *data_) override {
-        std::memcpy(&m_x, data_, sizeof(m_x));
-        std::memcpy(&m_y, data_ + sizeof(m_x), sizeof(m_y));
-        std::memcpy(m_data.data(), data_ + 2 * sizeof(m_x), CLUSTER_SIZE * sizeof(DataType));
+    ClusterData() : x(0), y(0), array({}) {}
+    ClusterData(int16_t x_, int16_t y_, std::array<int32_t, CLUSTER_SIZE> array_)
+        : x(x_), y(y_), array(array_) {}
+    void set(std::byte *data_) {
+        std::memcpy(&x, data_, sizeof(x));
+        std::memcpy(&y, data_ + sizeof(x), sizeof(y));
+        std::memcpy(array.data(), data_ + 2 * sizeof(x), CLUSTER_SIZE * sizeof(DataType));
     }
-    virtual void get(std::byte *data_) override {
-        std::memcpy(data_, &m_x, sizeof(m_x));
-        std::memcpy(data_ + sizeof(m_x), &m_y, sizeof(m_y));
-        std::memcpy(data_ + 2 * sizeof(m_x), m_data.data(), CLUSTER_SIZE * sizeof(DataType));
+    void get(std::byte *data_) {
+        std::memcpy(data_, &x, sizeof(x));
+        std::memcpy(data_ + sizeof(x), &y, sizeof(y));
+        std::memcpy(data_ + 2 * sizeof(x), array.data(), CLUSTER_SIZE * sizeof(DataType));
     }
-    virtual constexpr bool has_data() override { return true; }
+    static constexpr bool has_data() { return true; }
     std::byte *data() { return reinterpret_cast<std::byte *>(this); }
-    constexpr size_t size() { return sizeof(m_x) + sizeof(m_x) + CLUSTER_SIZE * sizeof(DataType); }
+    static constexpr size_t size() {
+        return sizeof(x) + sizeof(x) + CLUSTER_SIZE * sizeof(DataType);
+    }
 
     std::string to_string() const {
-        std::string s = "x: " + std::to_string(m_x) + " y: " + std::to_string(m_y) + "\ndata: [";
-        for (auto &d : m_data) {
+        std::string s = "x: " + std::to_string(x) + " y: " + std::to_string(y) + "\ndata: [";
+        for (auto &d : array) {
             s += std::to_string(d) + " ";
         }
         s += "]";

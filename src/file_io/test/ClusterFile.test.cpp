@@ -132,44 +132,44 @@ TEST_CASE("write file with fixed length data structure") {
     header.metadata["nSigma"] = "77";
     header.version = "0.7";
     header.header_fields = ClusterHeader::get_fields();
-    header.data_fields = ClusterData<9>::get_fields();
-    ClusterFile<ClusterHeader, ClusterData<9>> file("/tmp/test_fixed_112233.clust2",
+    header.data_fields = ClusterData<int32_t,9>::get_fields();
+    ClusterFile<ClusterHeader, ClusterData<int32_t,9>> file("/tmp/test_fixed_112233.clust2",
                                                                 "w", header);
 
     for (int j = 0; j < 100; j++) {
         ClusterHeader clust_header;
-        std::vector<ClusterData<9>> clust_data;
+        std::vector<ClusterData<int32_t,9>> clust_data;
 
         clust_header.frame_number = j;
         clust_header.n_clusters = 500 + j;
         for (int i = 0; i < clust_header.n_clusters; i++) {
             ClusterData c;
-            c.m_x = i;
-            c.m_y = j;
-            c.m_data = {1, 2, 3, 4, 5, 6, 7, 8, 9};
+            c.x = i;
+            c.y = j;
+            c.array = {1, 2, 3, 4, 5, 6, 7, 8, 9};
             clust_data.push_back(c);
         }
         file.write(clust_header, clust_data);
     }
     file.close();
 
-    ClusterFile<ClusterHeader, ClusterData<9>> file2("/tmp/test_fixed_112233.clust2",
+    ClusterFile<ClusterHeader, ClusterData<int32_t,9>> file2("/tmp/test_fixed_112233.clust2",
                                                                  "r");
     auto header_ = file2.header();
     REQUIRE(header_.metadata["nSigma"] == "77");
     REQUIRE(header_.version == "0.7");
     REQUIRE(header_.n_records == 100);
     REQUIRE((header_.header_fields == ClusterHeader::get_fields()));
-    REQUIRE((header_.data_fields == ClusterData<9>::get_fields()));
+    REQUIRE((header_.data_fields == ClusterData<int32_t,9>::get_fields()));
 
     for (int j = 0; j < 100; j++) {
         auto [header2, clusters2] = file2.read();
         REQUIRE(header2.frame_number == j);
         REQUIRE(header2.n_clusters == 500 + j);
         for (int i = 0; i < header2.n_clusters; i++) {
-            REQUIRE(clusters2[i].m_x == i);
-            REQUIRE(clusters2[i].m_y == j);
-            REQUIRE(clusters2[i].m_data == std::array<int32_t, 9>{1, 2, 3, 4, 5, 6, 7, 8, 9});
+            REQUIRE(clusters2[i].x == i);
+            REQUIRE(clusters2[i].y == j);
+            REQUIRE(clusters2[i].array == std::array<int32_t, 9>{1, 2, 3, 4, 5, 6, 7, 8, 9});
         }
     }
     REQUIRE_THROWS_AS(file2.read(), std::invalid_argument);
@@ -220,21 +220,21 @@ TEST_CASE("Read old cluster format") {
     auto fpath = test_data_path() / "clusters" / "single_frame_97_clustrers.clust";
     ClusterFileHeader file_header;
     file_header.header_fields = ClusterHeader::get_fields();
-    file_header.data_fields = ClusterData<9>::get_fields();
-    auto f2 = ClusterFile<ClusterHeader, ClusterData<9>>(fpath, "r", file_header, true);
+    file_header.data_fields = ClusterData<int32_t,9>::get_fields();
+    auto f2 = ClusterFile<ClusterHeader, ClusterData<int32_t,9>>(fpath, "r", file_header, true);
     auto [header, data] = f2.read();
     REQUIRE(header.frame_number == 135);
     REQUIRE(header.n_clusters == 97);
     REQUIRE(data.size() == 97);
     for (int i = 0; i < 97; i++) {
-        REQUIRE(data[i].m_x == 1 + i);
-        REQUIRE(data[i].m_y == 200 + i);
+        REQUIRE(data[i].x == 1 + i);
+        REQUIRE(data[i].y == 200 + i);
         std::array<int32_t, 9> expected = {0, 1, 2, 3, 4, 5, 6, 7, 8};
         for (int j = 0; j < 9; j++) {
             expected[j] += 9 * i;
         }
 
-        REQUIRE(data[i].m_data == expected);
+        REQUIRE(data[i].array == expected);
     }
 }
 
@@ -242,33 +242,33 @@ TEST_CASE("read/write old cluster format"){
     auto fpath = "/tmp/test_old_format.clust";
     ClusterFileHeader file_header;
     file_header.header_fields = ClusterHeader::get_fields();
-    file_header.data_fields = ClusterData<9>::get_fields();
-    auto f2 = ClusterFile<ClusterHeader, ClusterData<9>>(fpath, "w", file_header, true);
+    file_header.data_fields = ClusterData<int32_t,9>::get_fields();
+    auto f2 = ClusterFile<ClusterHeader, ClusterData<int32_t,9>>(fpath, "w", file_header, true);
     for (int i = 0; i < 100; i++) {
         ClusterHeader header;
         header.frame_number = i;
         header.n_clusters = 100 + i;
-        std::vector<ClusterData<9>> data;
+        std::vector<ClusterData<int32_t,9>> data;
         for (int j = 0; j < header.n_clusters; j++) {
-            ClusterData<9> d;
-            d.m_x = j;
-            d.m_y = i;
-            d.m_data = {1, 2, 3, 4, 5, 6, 7, 8, 9};
+            ClusterData<int32_t,9> d;
+            d.x = j;
+            d.y = i;
+            d.array = {1, 2, 3, 4, 5, 6, 7, 8, 9};
             data.push_back(d);
         }
         f2.write(header, data);
     }
     f2.close();
 
-    auto f3 = ClusterFile<ClusterHeader, ClusterData<9>>(fpath, "r", file_header, true);
+    auto f3 = ClusterFile<ClusterHeader, ClusterData<int32_t,9>>(fpath, "r", file_header, true);
     for (int i = 0; i < 100; i++) {
         auto [header, data] = f3.read();
         REQUIRE(header.frame_number == i);
         REQUIRE(header.n_clusters == 100 + i);
         for (int j = 0; j < header.n_clusters; j++) {
-            REQUIRE(data[j].m_x == j);
-            REQUIRE(data[j].m_y == i);
-            REQUIRE(data[j].m_data == std::array<int32_t, 9>{1, 2, 3, 4, 5, 6, 7, 8, 9});
+            REQUIRE(data[j].x == j);
+            REQUIRE(data[j].y == i);
+            REQUIRE(data[j].array == std::array<int32_t, 9>{1, 2, 3, 4, 5, 6, 7, 8, 9});
         }
     }
 
