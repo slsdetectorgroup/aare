@@ -208,7 +208,7 @@ class ClusterFinder {
                                 iy + ir < frame.shape(0)) {
                                 auto tmp =
                                     frame(iy + ir, ix + ic) - pedestal.mean(iy + ir, ix + ic);
-                                cluster.array[i, tmp];
+                                cluster.array[i]=tmp;
                                 i++;
                             }
                         }

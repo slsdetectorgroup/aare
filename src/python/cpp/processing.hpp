@@ -89,16 +89,16 @@ template <typename SUM_TYPE> void define_pedestal_bindings(py::module &m) {
 }
 
 template <typename VIEW_TYPE, typename PEDESTAL_TYPE = double>
-void define_cluster_finder_template_bindings(py::class_<ClusterFinder> &cf) {
+void define_cluster_finder_template_bindings(py::class_<ClusterFinder<3,3>> &cf) {
     cf.def("find_clusters_without_threshold",
            py::overload_cast<NDView<VIEW_TYPE, 2>, Pedestal<PEDESTAL_TYPE> &, bool>(
-               &ClusterFinder::find_clusters_without_threshold<VIEW_TYPE, PEDESTAL_TYPE>));
+               &ClusterFinder<3,3>::find_clusters_without_threshold<VIEW_TYPE, PEDESTAL_TYPE>));
     cf.def("find_clusters_with_threshold",
            py::overload_cast<NDView<VIEW_TYPE, 2>, Pedestal<PEDESTAL_TYPE> &>(
-               &ClusterFinder::find_clusters_with_threshold<VIEW_TYPE, PEDESTAL_TYPE>));
+               &ClusterFinder<3,3>::find_clusters_with_threshold<VIEW_TYPE, PEDESTAL_TYPE>));
 
     cf.def("find_clusters_without_threshold",
-           [](ClusterFinder &self, py::array_t<VIEW_TYPE> &np_array,
+           [](ClusterFinder<3,3> &self, py::array_t<VIEW_TYPE> &np_array,
               Pedestal<PEDESTAL_TYPE> &pedestal, bool late_update) {
                py::buffer_info info = np_array.request();
                if (info.format != Dtype(typeid(VIEW_TYPE)).numpy_descr())
@@ -114,7 +114,7 @@ void define_cluster_finder_template_bindings(py::class_<ClusterFinder> &cf) {
                return self.find_clusters_without_threshold(a, pedestal, late_update);
            });
 
-    cf.def("find_clusters_with_threshold", [](ClusterFinder &self, py::array_t<VIEW_TYPE> &np_array,
+    cf.def("find_clusters_with_threshold", [](ClusterFinder<3,3> &self, py::array_t<VIEW_TYPE> &np_array,
                                               Pedestal<PEDESTAL_TYPE> &pedestal) {
         py::buffer_info info = np_array.request();
         if (info.format != py::format_descriptor<VIEW_TYPE>::format())
@@ -138,7 +138,7 @@ void define_cluster_finder_bindings(py::module &m) {
             std::string class_name = "ClusterFinder" + std::to_string(cluster_size_x) + "x" +
                                      std::to_string(cluster_size_y);
             
-            py::class_<ClusterFinder<x, y>> cf(m, class_name.c_str());
+            py::class_<ClusterFinder<3, 3>> cf(m, class_name.c_str());
             cf.def(py::init<double, double>());
             define_cluster_finder_template_bindings<uint8_t>(cf);
             define_cluster_finder_template_bindings<uint16_t>(cf);
