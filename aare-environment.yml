@@ -3,8 +3,10 @@ channels:
   - conda-forge
   - defaults
 dependencies:
-  - fmt
-  - pybind11
-  - nlohmann_json # should be removed
-  - catch2
-  - zeromq
+  - fmt==11.0.1
+  - pybind11==2.13.1
+  - nlohmann_json==3.11.3 # should be removed
+  - catch2==3.6.0
+  - zeromq==4.3.5
+  - simdjson==3.8.0
+  - gxx==14.1.0
