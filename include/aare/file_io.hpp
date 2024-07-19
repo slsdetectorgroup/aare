@@ -1,6 +1,5 @@
 #include "aare/file_io/ClusterFile.hpp"
 #include "aare/file_io/ClusterFileImplementation.hpp"
-#include "aare/file_io/ClusterFileOld.hpp"
 #include "aare/file_io/File.hpp"
 #include "aare/file_io/FileInterface.hpp"
 #include "aare/file_io/NumpyFile.hpp"

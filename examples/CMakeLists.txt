@@ -3,7 +3,7 @@ set(EXAMPLE_LIST "json_example;logger_example;numpy_read_example;multiport_examp
 set(EXAMPLE_LIST "${EXAMPLE_LIST};mythen_example;numpy_write_example;zmq_sender_example;")    
 set(EXAMPLE_LIST "${EXAMPLE_LIST};cluster_example;zmq_multi_receiver;zmq_worker;zmq_sink")
 set(EXAMPLE_LIST "${EXAMPLE_LIST};zmq_task_ventilator;zmq_restream_example;zmq_receiver_example")
-set(EXAMPLE_LIST "${EXAMPLE_LIST};testing_pedestal;cluster_finder_example;reorder_moench_example")
+set(EXAMPLE_LIST "${EXAMPLE_LIST};testing_pedestal;reorder_moench_example")
 set(EXAMPLE_LIST "${EXAMPLE_LIST};clusterFileV3_read_example")
 set(EXAMPLE_LIST "${EXAMPLE_LIST};clusterFileV3_write_example;vlen_cluster_example")
 set(EXAMPLE_LIST "${EXAMPLE_LIST};read_old_cluster_format")

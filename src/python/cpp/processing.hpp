@@ -7,7 +7,6 @@
 #include "aare/core/Frame.hpp"
 #include "aare/core/NDView.hpp"
 #include "aare/core/defs.hpp"
-#include "aare/file_io/ClusterFileOld.hpp"
 #include "aare/file_io/File.hpp"
 #include "aare/processing/ClusterFinder.hpp"
 #include "aare/processing/Pedestal.hpp"
@@ -155,21 +154,5 @@ void define_cluster_finder_bindings(py::module &m) {
 }
 void define_processing_bindings(py::module &m) {
     define_pedestal_bindings<double>(m);
-
-    py::class_<deprecated::Cluster>(m, "ClusterOld", py::buffer_protocol())
-        .def(py::init<int, int, Dtype>())
-        .def("size", &deprecated::Cluster::size)
-        .def("begin", &deprecated::Cluster::begin)
-        .def("end", &deprecated::Cluster::end)
-        .def_readwrite("x", &deprecated::Cluster::x)
-        .def_readwrite("y", &deprecated::Cluster::y)
-        .def_buffer([](deprecated::Cluster &c) -> py::buffer_info {
-            return py::buffer_info(c.data(), c.dt.bytes(), c.dt.format_descr(), 1, {c.size()},
-                                   {c.dt.bytes()});
-        })
-
-        .def("__repr__", [](const deprecated::Cluster &a) {
-            return "<ClusterOld: x: " + std::to_string(a.x) + ", y: " + std::to_string(a.y) + ">";
-        });
     define_cluster_finder_bindings(m);
 }

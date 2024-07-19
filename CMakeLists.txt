@@ -86,9 +86,32 @@ else()
       find_package(fmt 6 REQUIRED)
 endif()
 
+if(AARE_FETCH_JSON)
+    FetchContent_Declare(json
+        GIT_REPOSITORY https://github.com/nlohmann/json
+        GIT_TAG v3.11.3
+    )
+    FetchContent_MakeAvailable(json)
+else()
+    find_package(nlohmann_json 3 REQUIRED)
+endif()
 
 add_library(aare_compiler_flags INTERFACE)
 target_compile_features(aare_compiler_flags INTERFACE cxx_std_17)
+
+
+FetchContent_Declare(
+    simdjson
+    GIT_REPOSITORY https://github.com/simdjson/simdjson.git
+    GIT_TAG  tags/v3.8.0
+    GIT_SHALLOW TRUE
+)
+
+FetchContent_MakeAvailable(simdjson)
+set_target_properties(simdjson PROPERTIES POSITION_INDEPENDENT_CODE ON)
+# hide simdjson warnings by making the includes system includes
+get_target_property(_inc simdjson INTERFACE_INCLUDE_DIRECTORIES)
+target_include_directories(simdjson SYSTEM INTERFACE ${_inc})
 
 #################
 # MSVC specific #

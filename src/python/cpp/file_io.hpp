@@ -1,6 +1,5 @@
 #include "aare/core/Frame.hpp"
 #include "aare/core/defs.hpp"
-#include "aare/file_io/ClusterFileOld.hpp"
 #include "aare/file_io/File.hpp"
 #include <cstdint>
 #include <filesystem>
@@ -51,53 +50,4 @@ void define_file_io_bindings(py::module &m) {
         .def("__ne__", &FileConfig::operator!=)
         .def("__repr__", [](const FileConfig &a) { return "<FileConfig: " + a.to_string() + ">"; });
 
-    py::class_<deprecated::ClusterHeader>(m, "ClusterHeader")
-        .def(py::init<>())
-        .def_readwrite("frame_number", &deprecated::ClusterHeader::frame_number)
-        .def_readwrite("n_clusters", &deprecated::ClusterHeader::n_clusters)
-        .def("__repr__", [](const deprecated::ClusterHeader &a) {
-            return "<ClusterHeader: " + a.to_string() + ">";
-        });
-
-    py::class_<deprecated::Cluster_>(m, "Cluster_")
-        .def(py::init<>())
-        .def_readwrite("x", &deprecated::Cluster_::x)
-        .def_readwrite("y", &deprecated::Cluster_::y)
-        .def_readwrite("data", &deprecated::Cluster_::data)
-        .def("__repr__", [](const deprecated::Cluster_ &a) {
-            return "<Cluster_: " + a.to_string(false) + ">";
-        });
-
-    py::class_<deprecated::ClusterV2>(m, "ClusterV2")
-        .def(py::init<>())
-        .def_readwrite("cluster", &deprecated::ClusterV2::cluster)
-        .def_readwrite("frame_number", &deprecated::ClusterV2::frame_number)
-        .def("__repr__",
-             [](const deprecated::ClusterV2 &a) { return "<ClusterV2: " + a.to_string() + ">"; });
-
-    py::class_<deprecated::ClusterFile>(m, "ClusterFileOld")
-        .def(py::init<const std::filesystem::path &, const std::string &>())
-        .def("read", py::overload_cast<>(&deprecated::ClusterFile::read))
-        .def("read", py::overload_cast<int>(&deprecated::ClusterFile::read))
-        .def("frame_number", &deprecated::ClusterFile::frame_number)
-        .def("write", py::overload_cast<std::vector<deprecated::ClusterV2> const &>(
-                          &deprecated::ClusterFile::write))
-
-        .def("close", &deprecated::ClusterFile::close);
-
-    m.def("to_clustV2", [](std::vector<deprecated::Cluster> &clusters, const int frame_number) {
-        std::vector<deprecated::ClusterV2> clusters_;
-        for (auto &c : clusters) {
-            deprecated::ClusterV2 cluster;
-            cluster.cluster.x = c.x;
-            cluster.cluster.y = c.y;
-            int i = 0;
-            for (auto &d : cluster.cluster.data) {
-                d = c.get<double>(i++);
-            }
-            cluster.frame_number = frame_number;
-            clusters_.push_back(cluster);
-        }
-        return clusters_;
-    });
 }

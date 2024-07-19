@@ -1,16 +1,4 @@
 
-FetchContent_Declare(
-    simdjson
-    GIT_REPOSITORY https://github.com/simdjson/simdjson.git
-    GIT_TAG  tags/v3.8.0
-    GIT_SHALLOW TRUE
-)
-
-FetchContent_MakeAvailable(simdjson)
-# hide simdjson warnings by making the includes system includes
-get_target_property(_inc simdjson INTERFACE_INCLUDE_DIRECTORIES)
-target_include_directories(simdjson SYSTEM INTERFACE ${_inc})
-
 
 add_library(network_io STATIC 
     src/ZmqSocketReceiver.cpp

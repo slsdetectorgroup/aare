@@ -4,19 +4,6 @@ using namespace std;
 using namespace aare;
 
 int main() {
-    auto PROJECT_ROOT_DIR = std::filesystem::path(getenv("AARE_ROOT_DIR"));
-    std::filesystem::path const fpath(PROJECT_ROOT_DIR / "data" / "clusters" /
-                                      "single_frame_97_clustrers.clust");
-    auto f = deprecated::ClusterFile(fpath, "r");
-    auto frame_number = f.frame_number();
-    auto clusters = f.read();
-    std::cout << "READING WITH OLD CLUSTER FILE READER" << std::endl;
-    std::cout << "frame number: " << frame_number << std::endl;
-    std::cout << "number of clusters: " << clusters.size() << std::endl;
-    for (auto &cluster : clusters) {
-        cout << cluster.to_string() << endl;
-    }
-    std::cout << "\n\n";
     std::cout << "READING WITH NEW CLUSTER FILE READER" << std::endl;
     ClusterFileHeader file_header;
     file_header.header_fields = ClusterHeader::get_fields();
