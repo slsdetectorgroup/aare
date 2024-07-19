@@ -32,7 +32,6 @@ option(AARE_FETCH_PYBIND11 "Use FetchContent to download pybind11" ON)
 option(AARE_FETCH_CATCH "Use FetchContent to download catch2" ON)
 option(AARE_FETCH_JSON "Use FetchContent to download nlohmann::json" ON)
 option(AARE_FETCH_ZMQ "Use FetchContent to download libzmq" ON)
-option(AARE_FETCH_SIMDJSON "Use FetchContent to download simdjson" ON)
 option(ENABLE_DRAFTS "Enable zmq drafts (depends on gnutls or nss)" OFF)
 
 
@@ -45,7 +44,6 @@ if(AARE_SYSTEM_LIBRARIES)
     set(AARE_FETCH_CATCH OFF CACHE BOOL "Disabled FetchContent for catch2" FORCE)
     set(AARE_FETCH_JSON OFF CACHE BOOL "Disabled FetchContent for nlohmann::json" FORCE)
     set(AARE_FETCH_ZMQ OFF CACHE BOOL "Disabled FetchContent for libzmq" FORCE)
-    set(AARE_FETCH_SIMDJSON OFF CACHE BOOL "Disabled FetchContent for simdjson" FORCE)
 
 endif()
 
@@ -101,7 +99,6 @@ endif()
 add_library(aare_compiler_flags INTERFACE)
 target_compile_features(aare_compiler_flags INTERFACE cxx_std_17)
 
-if(AARE_FETCH_SIMDJSON)
 FetchContent_Declare(
     simdjson
     GIT_REPOSITORY https://github.com/simdjson/simdjson.git
@@ -114,9 +111,6 @@ set_target_properties(simdjson PROPERTIES POSITION_INDEPENDENT_CODE ON)
 # hide simdjson warnings by making the includes system includes
 get_target_property(_inc simdjson INTERFACE_INCLUDE_DIRECTORIES)
 target_include_directories(simdjson SYSTEM INTERFACE ${_inc})
-else()
-find_package(simdjson 3.8.0 REQUIRED)
-endif()
 
 #################
 # MSVC specific #

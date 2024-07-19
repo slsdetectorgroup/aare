@@ -138,7 +138,7 @@ template <typename DataType = int32_t, int CLUSTER_SIZE = 9> struct ClusterData 
     std::array<DataType, CLUSTER_SIZE> array;
 
     ClusterData() : x(0), y(0), array({}) {}
-    ClusterData(int16_t x_, int16_t y_, std::array<int32_t, CLUSTER_SIZE> array_)
+    ClusterData(int16_t x_, int16_t y_, std::array<DataType, CLUSTER_SIZE> array_)
         : x(x_), y(y_), array(array_) {}
     void set(std::byte *data_) {
         std::memcpy(&x, data_, sizeof(x));

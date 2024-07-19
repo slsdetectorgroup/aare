@@ -9,4 +9,4 @@ dependencies:
   - catch2==3.6.0
   - zeromq==4.3.5
   - simdjson==3.8.0
-  # - gxx==14 avaialable for linux and windows but not for mac
+  # - gxx==14.1.0

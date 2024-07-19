@@ -1,4 +1,8 @@
 
+#include "aare/core/Cluster.hpp"
+#include "aare/core/Frame.hpp"
+#include "aare/core/Transforms.hpp"
+#include "aare/core/defs.hpp"
 #include <cstdint>
 #include <filesystem>
 #include <pybind11/functional.h>
@@ -7,17 +11,69 @@
 #include <pybind11/stl.h>
 #include <string>
 
-#include "aare/core/Frame.hpp"
-#include "aare/core/Transforms.hpp"
-#include "aare/core/Cluster.hpp"
-#include "aare/core/defs.hpp"
+template <typename T, int N> void define_clusterData_bindings(py::module &m) {
+    std::string class_name =
+        "ClusterData_" + Dtype(typeid(T)).to_string() + "_" + std::to_string(N);
+    py::class_<ClusterData<T, N>>(m, class_name.c_str())
+        .def(py::init<>())
+        .def(py::init<int16_t, int16_t, std::array<T, N>>())
+        .def_readwrite("x", &ClusterData<T, N>::x)
+        .def_readwrite("y", &ClusterData<T, N>::y)
+        .def_readwrite("array", &ClusterData<T, N>::array)
+        .def_static("get_fields", &ClusterData<T, N>::get_fields)
+        .def("__repr__", &ClusterData<T, N>::to_string);
+}
+template <int N> void LOOP_DEFINE_CLUSTERDATA_BINDINGS(py::module &m) {
+    define_clusterData_bindings<int8_t, N>(m);
+    define_clusterData_bindings<int16_t, N>(m);
+    define_clusterData_bindings<int32_t, N>(m);
+    define_clusterData_bindings<int64_t, N>(m);
+    define_clusterData_bindings<uint8_t, N>(m);
+    define_clusterData_bindings<uint16_t, N>(m);
+    define_clusterData_bindings<uint32_t, N>(m);
+    define_clusterData_bindings<uint64_t, N>(m);
+    define_clusterData_bindings<float, N>(m);
+    define_clusterData_bindings<double, N>(m);
+    LOOP_DEFINE_CLUSTERDATA_BINDINGS<N - 1>(m);
+}
+template <> void LOOP_DEFINE_CLUSTERDATA_BINDINGS<0>(py::module &m) {}
+void define_cluster_bindings(py::module &m) {
+    py::class_<Field>(m, "Field")
+        .def(py::init<>())
+        .def(py::init<std::string const &, Dtype, Field::ARRAY_TYPE, uint32_t>())
+        .def_readwrite("label", &Field::label)
+        .def_readwrite("dtype", &Field::dtype)
+        .def_readwrite("is_array", &Field::is_array)
+        .def_readwrite("array_size", &Field::array_size)
+        .def("to_json", &Field::to_json)
+        .def("from_json", &Field::from_json);
+
+    py::class_<ClusterHeader>(m, "ClusterHeader")
+        .def(py::init<>())
+        .def(py::init<int32_t, int32_t>())
+        .def("__repr__", &ClusterHeader::to_string)
+        .def_static("get_fields", &ClusterHeader::get_fields)
+        .def_readwrite("frame_number", &ClusterHeader::frame_number)
+        .def_readwrite("n_clusters", &ClusterHeader::n_clusters);
+
+    py::class_<ClusterDataVlen>(m, "ClusterDataVlen")
+        .def(py::init<>())
+        .def(py::init<std::vector<int16_t>, std::vector<int16_t>, std::vector<int32_t>>())
+        .def_readwrite("x", &ClusterDataVlen::x)
+        .def_readwrite("y", &ClusterDataVlen::y)
+        .def_readwrite("energy", &ClusterDataVlen::energy)
+        .def_static("get_fields", &ClusterDataVlen::get_fields)
+        .def("__repr__", &ClusterDataVlen::to_string);
+
+    LOOP_DEFINE_CLUSTERDATA_BINDINGS<50>(m);
+}
 
 template <typename T> void define_to_frame(py::module &m) {
     m.def("to_frame", [](py::array_t<T> &np_array) {
         py::buffer_info info = np_array.request();
         if (info.format != py::format_descriptor<T>::format())
-            throw std::runtime_error(
-                "Incompatible format: different formats! (Are you sure the arrays are of the same type?)");
+            throw std::runtime_error("Incompatible format: different formats! (Are you sure the "
+                                     "arrays are of the same type?)");
         if (info.ndim != 2)
             throw std::runtime_error("Incompatible dimension: expected a 2D array!");
 
@@ -54,8 +110,9 @@ void define_core_bindings(py::module &m) {
         .def_readwrite("col", &xy::col)
         .def("__eq__", &xy::operator==)
         .def("__ne__", &xy::operator!=)
-        .def("__repr__",
-             [](const xy &a) { return "<xy: row=" + std::to_string(a.row) + ", col=" + std::to_string(a.col) + ">"; });
+        .def("__repr__", [](const xy &a) {
+            return "<xy: row=" + std::to_string(a.row) + ", col=" + std::to_string(a.col) + ">";
+        });
 
     py::enum_<DetectorType>(m, "DetectorType")
         .value("Jungfrau", DetectorType::Jungfrau)
@@ -130,8 +187,8 @@ void define_core_bindings(py::module &m) {
             [](py::array_t<uint64_t> &np_array) {
                 py::buffer_info info = np_array.request();
                 if (info.format != Dtype(Dtype::UINT64).numpy_descr())
-                    throw std::runtime_error(
-                        "Incompatible format: different formats! (Are you sure the arrays are of the same type?)");
+                    throw std::runtime_error("Incompatible format: different formats! (Are you "
+                                             "sure the arrays are of the same type?)");
                 if (info.ndim != 2)
                     throw std::runtime_error("Incompatible dimension: expected a 2D array!");
 
@@ -142,9 +199,14 @@ void define_core_bindings(py::module &m) {
                 return Transforms::reorder(a);
             })
         .def_static("flip_horizental", &Transforms::flip_horizental)
-        .def("add", [](Transforms &self, std::function<Frame &(Frame &)> transformation) { self.add(transformation); })
-        .def("add", [](Transforms &self,
-                       std::vector<std::function<Frame &(Frame &)>> transformations) { self.add(transformations); })
+        .def("add",
+             [](Transforms &self, std::function<Frame &(Frame &)> transformation) {
+                 self.add(transformation);
+             })
+        .def("add",
+             [](Transforms &self, std::vector<std::function<Frame &(Frame &)>> transformations) {
+                 self.add(transformations);
+             })
         .def("__call__", &Transforms::apply);
 
     define_to_frame<uint8_t>(m);
