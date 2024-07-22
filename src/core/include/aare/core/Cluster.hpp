@@ -182,14 +182,7 @@ struct DynamicClusterData : public ClusterInterface {
     DynamicClusterData(const DynamicClusterData &other) {
         if (&other == this)
             return;
-        if (array != nullptr)
-            delete[] array;
-        x = other.x;
-        y = other.y;
-        count = other.count;
-        dtype = other.dtype;
-        array = new std::byte[count * dtype.bytes()];
-        std::memcpy(array, other.array, count * dtype.bytes());
+        *this = other;
     }
     DynamicClusterData(DynamicClusterData &&other) noexcept {
         if (&other == this)
@@ -206,6 +199,20 @@ struct DynamicClusterData : public ClusterInterface {
         std::memcpy(arr.data(), array, count * dtype.bytes());
         return arr;
     }
+    DynamicClusterData &operator=(const DynamicClusterData &other) {
+        if (&other == this)
+            return *this;
+        if (array != nullptr)
+            delete[] array;
+        x = other.x;
+        y = other.y;
+        count = other.count;
+        dtype = other.dtype;
+        array = new std::byte[count * dtype.bytes()];
+        std::memcpy(array, other.array, count * dtype.bytes());
+        return *this;
+    }
+
     void set_fields(const std::vector<Field> &fields) {
         for (auto &field : fields) {
             if (field.label == "data") {

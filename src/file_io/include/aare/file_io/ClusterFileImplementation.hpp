@@ -138,7 +138,7 @@ ClusterFile<ClusterHeaderType, ClusterDataType>::read() {
         } else {
             // read into a temporary buffer and then call set() from the struct
             cluster_header.set_fields(m_header.header_fields);
-            std::array<std::byte, sizeof(ClusterHeaderType)> tmp;
+            std::vector<std::byte> tmp(cluster_header.size());
             fread(tmp.data(), 1, m_cluster_header_size, m_fp);
             cluster_header.set(tmp.data());
         }

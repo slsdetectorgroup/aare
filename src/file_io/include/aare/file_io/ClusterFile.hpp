@@ -76,6 +76,11 @@ template <typename ClusterHeaderType, typename ClusterDataType> struct ClusterFi
     struct Result {
         ClusterHeaderType header;
         std::vector<ClusterDataType> data;
+        Result &operator=(const Result &other) {
+            header = other.header;
+            data = other.data;
+            return *this;
+        }
     };
 
     ClusterFile(std::filesystem::path const &fpath, std::string const &mode,
