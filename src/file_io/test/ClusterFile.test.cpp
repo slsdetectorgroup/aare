@@ -5,44 +5,6 @@
 
 using namespace aare;
 
-TEST_CASE("ClusterFileV3::Field::to_json") {
-    Field f;
-    f.label = "TEST";
-    f.dtype = Dtype::INT32;
-    f.is_array = f.FIXED_LENGTH_ARRAY;
-    f.array_size = 10;
-    REQUIRE(f.to_json() ==
-            "{\"label\": \"TEST\", \"dtype\": \"<i4\", \"is_array\": 1, \"array_size\": 10}");
-}
-
-TEST_CASE("ClusterFileV3::Field::to_json2") {
-    Field f;
-    f.label = "123abc";
-    f.dtype = Dtype::DOUBLE;
-    f.is_array = f.VARIABLE_LENGTH_ARRAY;
-    f.array_size = 0;
-    REQUIRE(f.to_json() ==
-            "{\"label\": \"123abc\", \"dtype\": \"f8\", \"is_array\": 2, \"array_size\": 0}");
-}
-
-TEST_CASE("ClusterFileV3::Field::from_json") {
-    Field f;
-    f.from_json("{\"label\": \"abc\", \"dtype\": \"<u1\", \"is_array\": 1, \"array_size\": 0}");
-    REQUIRE(f.label == "abc");
-    REQUIRE(f.dtype == Dtype::UINT8);
-    REQUIRE(f.is_array == f.FIXED_LENGTH_ARRAY);
-    REQUIRE(f.array_size == 0);
-}
-TEST_CASE("ClusterFileV3::Field::from_json2") {
-    Field f;
-    f.from_json("{\n\n\n\n\n\t\"label\": \n\n\t\"abc\", \t\n\n\"dtype\": \"<u1\", \"is_array\": 1, "
-                "\n\"array_size\":\n "
-                "0}\n\n\n\n\t");
-    REQUIRE(f.label == "abc");
-    REQUIRE(f.dtype == Dtype::UINT8);
-    REQUIRE(f.is_array == f.FIXED_LENGTH_ARRAY);
-    REQUIRE(f.array_size == 0);
-}
 
 TEST_CASE("ClusterFileV3::ClusterFileHeader::from_json test empty string") {
     std::string json = "{         }";
@@ -132,18 +94,18 @@ TEST_CASE("write file with fixed length data structure") {
     header.metadata["nSigma"] = "77";
     header.version = "0.7";
     header.header_fields = ClusterHeader::get_fields();
-    header.data_fields = ClusterData<int32_t,9>::get_fields();
-    ClusterFile<ClusterHeader, ClusterData<int32_t,9>> file("/tmp/test_fixed_112233.clust2",
+    header.data_fields = tClusterData<int32_t,9>::get_fields();
+    ClusterFile<ClusterHeader, tClusterData<int32_t,9>> file("/tmp/test_fixed_112233.clust2",
                                                                 "w", header);
 
     for (int j = 0; j < 100; j++) {
         ClusterHeader clust_header;
-        std::vector<ClusterData<int32_t,9>> clust_data;
+        std::vector<tClusterData<int32_t,9>> clust_data;
 
         clust_header.frame_number = j;
         clust_header.n_clusters = 500 + j;
         for (int i = 0; i < clust_header.n_clusters; i++) {
-            ClusterData c;
+            tClusterData c;
             c.x = i;
             c.y = j;
             c.array = {1, 2, 3, 4, 5, 6, 7, 8, 9};
@@ -153,14 +115,14 @@ TEST_CASE("write file with fixed length data structure") {
     }
     file.close();
 
-    ClusterFile<ClusterHeader, ClusterData<int32_t,9>> file2("/tmp/test_fixed_112233.clust2",
+    ClusterFile<ClusterHeader, tClusterData<int32_t,9>> file2("/tmp/test_fixed_112233.clust2",
                                                                  "r");
     auto header_ = file2.header();
     REQUIRE(header_.metadata["nSigma"] == "77");
     REQUIRE(header_.version == "0.7");
     REQUIRE(header_.n_records == 100);
     REQUIRE((header_.header_fields == ClusterHeader::get_fields()));
-    REQUIRE((header_.data_fields == ClusterData<int32_t,9>::get_fields()));
+    REQUIRE((header_.data_fields == tClusterData<int32_t,9>::get_fields()));
 
     for (int j = 0; j < 100; j++) {
         auto [header2, clusters2] = file2.read();
@@ -220,21 +182,29 @@ TEST_CASE("Read old cluster format") {
     auto fpath = test_data_path() / "clusters" / "single_frame_97_clustrers.clust";
     ClusterFileHeader file_header;
     file_header.header_fields = ClusterHeader::get_fields();
-    file_header.data_fields = ClusterData<int32_t,9>::get_fields();
-    auto f2 = ClusterFile<ClusterHeader, ClusterData<int32_t,9>>(fpath, "r", file_header, true);
-    auto [header, data] = f2.read();
-    REQUIRE(header.frame_number == 135);
-    REQUIRE(header.n_clusters == 97);
-    REQUIRE(data.size() == 97);
+    file_header.data_fields = tClusterData<int32_t,9>::get_fields();
+    auto f1 = ClusterFile<ClusterHeader, DynamicClusterData>(fpath, "r", file_header, true);
+    auto f2 = ClusterFile<ClusterHeader, tClusterData<int32_t,9>>(fpath, "r", file_header, true);
+    auto [header1, data1] = f1.read();
+    auto [header2, data2] = f2.read();
+    REQUIRE(header1.frame_number == 135);
+    REQUIRE(header2.frame_number == 135);
+    REQUIRE(header1.n_clusters == 97);
+    REQUIRE(header2.n_clusters == 97);
+    REQUIRE(data1.size() == 97);
+    REQUIRE(data2.size() == 97);
+
     for (int i = 0; i < 97; i++) {
-        REQUIRE(data[i].x == 1 + i);
-        REQUIRE(data[i].y == 200 + i);
+        REQUIRE(data1[i].x == 1 + i);
+        REQUIRE(data1[i].y == 200 + i);
+        REQUIRE(data2[i].x == 1 + i);
+        REQUIRE(data2[i].y == 200 + i);
         std::array<int32_t, 9> expected = {0, 1, 2, 3, 4, 5, 6, 7, 8};
         for (int j = 0; j < 9; j++) {
             expected[j] += 9 * i;
         }
-
-        REQUIRE(data[i].array == expected);
+        REQUIRE(data1[i].get_array<int32_t,9>() == expected);
+        REQUIRE(data2[i].array == expected);
     }
 }
 
@@ -242,15 +212,15 @@ TEST_CASE("read/write old cluster format"){
     auto fpath = "/tmp/test_old_format.clust";
     ClusterFileHeader file_header;
     file_header.header_fields = ClusterHeader::get_fields();
-    file_header.data_fields = ClusterData<int32_t,9>::get_fields();
-    auto f2 = ClusterFile<ClusterHeader, ClusterData<int32_t,9>>(fpath, "w", file_header, true);
+    file_header.data_fields = tClusterData<int32_t,9>::get_fields();
+    auto f2 = ClusterFile<ClusterHeader, tClusterData<int32_t,9>>(fpath, "w", file_header, true);
     for (int i = 0; i < 100; i++) {
         ClusterHeader header;
         header.frame_number = i;
         header.n_clusters = 100 + i;
-        std::vector<ClusterData<int32_t,9>> data;
+        std::vector<tClusterData<int32_t,9>> data;
         for (int j = 0; j < header.n_clusters; j++) {
-            ClusterData<int32_t,9> d;
+            tClusterData<int32_t,9> d;
             d.x = j;
             d.y = i;
             d.array = {1, 2, 3, 4, 5, 6, 7, 8, 9};
@@ -260,7 +230,7 @@ TEST_CASE("read/write old cluster format"){
     }
     f2.close();
 
-    auto f3 = ClusterFile<ClusterHeader, ClusterData<int32_t,9>>(fpath, "r", file_header, true);
+    auto f3 = ClusterFile<ClusterHeader, tClusterData<int32_t,9>>(fpath, "r", file_header, true);
     for (int i = 0; i < 100; i++) {
         auto [header, data] = f3.read();
         REQUIRE(header.frame_number == i);

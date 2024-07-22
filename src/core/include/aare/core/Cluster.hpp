@@ -1,7 +1,9 @@
 #pragma once
 #include "aare/core/Dtype.hpp"
 #include "aare/utils/json.hpp"
+#include "aare/utils/logger.hpp"
 #include <array>
+#include <cstddef>
 #include <cstdint>
 #include <cstring>
 #include <simdjson.h>
@@ -10,17 +12,6 @@
 
 namespace aare {
 
-/*
- * TODO: Should be removed
- */
-
-
-/*
- * new Cluster classes
- *
- */
-
-// class to hold the header of the old cluster format
 struct Field {
     const static int VLEN_ARRAY_SIZE_BYTES = 4;
     enum ARRAY_TYPE { NOT_ARRAY = 0, FIXED_LENGTH_ARRAY = 1, VARIABLE_LENGTH_ARRAY = 2 };
@@ -79,25 +70,28 @@ struct Field {
     }
 };
 
-/*
-Header Interface{
-    // mandatory functions
-    void set(std::byte *data);
-    void get(std::byte *data);
-    int data_count() const;
-    constexpr size_t size();
-    constexpr static bool has_data();
-
-    // optional
-    std::byte *data();
-    std::string to_string() const;
-}
-
-*/
-struct ClusterHeader {
+class ClusterInterface {
+  public:
+    void set([[maybe_unused]] std::byte *data) {
+        throw std::runtime_error(LOCATION + "Not Implemented");
+    }
+    void get([[maybe_unused]] std::byte *data) {
+        throw std::runtime_error(LOCATION + "Not Implemented");
+    }
+    constexpr int data_count() const { return 0; }
+    constexpr static bool has_data() { return false; }
+    std::byte *data() { throw std::runtime_error(LOCATION + "Not Implemented"); }
+    constexpr size_t size() { return 0; }
+    std::string to_string() const { return "Cluster"; }
+    std::vector<Field> get_fields() { throw std::runtime_error(LOCATION + "Not Implemented"); }
+    void set_fields([[maybe_unused]] std::vector<Field>) {
+        throw std::runtime_error(LOCATION + "Not Implemented");
+    }
+};
+struct ClusterHeader : public ClusterInterface {
     int32_t frame_number;
     int32_t n_clusters;
-    ClusterHeader() : frame_number(0), n_clusters(0) {}
+    ClusterHeader() {}
     ClusterHeader(int32_t frame_number_, int32_t n_clusters_)
         : frame_number(frame_number_), n_clusters(n_clusters_) {}
 
@@ -131,14 +125,16 @@ struct ClusterHeader {
                 Field{"n_clusters", Dtype(Dtype::INT32), Field::NOT_ARRAY, 0}};
     }
 };
+
 // class to hold the data of the old cluster format
-template <typename DataType = int32_t, int CLUSTER_SIZE = 9> struct ClusterData {
+template <typename DataType = int32_t, int CLUSTER_SIZE = 9>
+struct tClusterData : public ClusterInterface {
     int16_t x;
     int16_t y;
     std::array<DataType, CLUSTER_SIZE> array;
 
-    ClusterData() : x(0), y(0), array({}) {}
-    ClusterData(int16_t x_, int16_t y_, std::array<DataType, CLUSTER_SIZE> array_)
+    tClusterData() = default;
+    tClusterData(int16_t x_, int16_t y_, std::array<DataType, CLUSTER_SIZE> array_)
         : x(x_), y(y_), array(array_) {}
     void set(std::byte *data_) {
         std::memcpy(&x, data_, sizeof(x));
@@ -171,8 +167,133 @@ template <typename DataType = int32_t, int CLUSTER_SIZE = 9> struct ClusterData 
     }
 };
 
+struct DynamicClusterData : public ClusterInterface {
+    int16_t x;
+    int16_t y;
+    std::byte *array{nullptr};
+    uint8_t count{};                  // only stored in file header once
+    Dtype dtype{Dtype(Dtype::ERROR)}; // only stored in file header once
+    DynamicClusterData() = default;
+    DynamicClusterData(const std::vector<Field> &fields) { set_fields(fields); }
+    DynamicClusterData(uint8_t count_, Dtype dtype_) : count(count_), dtype(dtype_) {
+        array = new std::byte[count * dtype.bytes()];
+    }
+    ~DynamicClusterData() { delete[] array; }
+    DynamicClusterData(const DynamicClusterData &other) {
+        if (&other == this)
+            return;
+        if (array != nullptr)
+            delete[] array;
+        x = other.x;
+        y = other.y;
+        count = other.count;
+        dtype = other.dtype;
+        array = new std::byte[count * dtype.bytes()];
+        std::memcpy(array, other.array, count * dtype.bytes());
+    }
+    DynamicClusterData(DynamicClusterData &&other) noexcept {
+        if (&other == this)
+            return;
+        x = other.x;
+        y = other.y;
+        count = other.count;
+        dtype = other.dtype;
+        array = other.array;
+        other.array = nullptr;
+    }
+    template <typename T, int SIZE> std::array<T, SIZE> get_array() {
+        std::array<T, SIZE> arr;
+        std::memcpy(arr.data(), array, count * dtype.bytes());
+        return arr;
+    }
+    void set_fields(const std::vector<Field> &fields) {
+        for (auto &field : fields) {
+            if (field.label == "data") {
+                count = field.array_size;
+                dtype = Dtype(field.dtype);
+                if (array != nullptr)
+                    delete[] array;
+                array = new std::byte[count * dtype.bytes()];
+            }
+        }
+    }
+    void set(std::byte *data_) {
+        std::memcpy(&x, data_, sizeof(x));
+        std::memcpy(&y, data_ + sizeof(x), sizeof(y));
+        std::memcpy(array, data_ + 2 * sizeof(x), count * dtype.bytes());
+    }
+    void get(std::byte *data_) {
+        std::memcpy(data_, &x, sizeof(x));
+        std::memcpy(data_ + sizeof(x), &y, sizeof(y));
+        std::memcpy(data_ + 2 * sizeof(x), array, count * dtype.bytes());
+    }
+    template <typename T> void set_array(const int &idx, T val) {
+        if (idx >= count) {
+            throw std::out_of_range("Index out of range");
+        }
+        assert(dtype.type() == Dtype(typeid(T)).type());
+        std::memcpy(array + idx * dtype.bytes(), &val, dtype.bytes());
+    }
+    template <typename T> T get_array(const int &idx) {
+        if (idx >= count) {
+            throw std::out_of_range("Index out of range");
+        }
+        assert(dtype.type() == Dtype(typeid(T)).type());
+        T val;
+        std::memcpy(&val, array + idx * dtype.bytes(), dtype.bytes());
+        return val;
+    }
+    int32_t data_count() const { return count; }
+    constexpr static bool has_data() { return false; }
+    std::byte *data() { return array; }
+    size_t size() { return sizeof(x) + sizeof(y) + count * dtype.bytes(); }
+
+    std::vector<Field> get_fields() {
+        return {Field{"x", Dtype(Dtype::INT16), Field::NOT_ARRAY, 0},
+                Field{"y", Dtype(Dtype::INT16), Field::NOT_ARRAY, 0},
+                Field{"data", dtype, Field::FIXED_LENGTH_ARRAY, count}};
+    }
+    std::string to_string() const {
+        switch (dtype.type()) {
+        case Dtype::INT8:
+            return to_string_<int8_t>();
+        case Dtype::INT16:
+            return to_string_<int16_t>();
+        case Dtype::INT32:
+            return to_string_<int32_t>();
+        case Dtype::INT64:
+            return to_string_<int64_t>();
+        case Dtype::UINT8:
+            return to_string_<uint8_t>();
+        case Dtype::UINT16:
+            return to_string_<uint16_t>();
+        case Dtype::UINT32:
+            return to_string_<uint32_t>();
+        case Dtype::UINT64:
+            return to_string_<uint64_t>();
+        case Dtype::FLOAT:
+            return to_string_<float>();
+        case Dtype::DOUBLE:
+            return to_string_<double>();
+        default:
+            return "Unsupported data type";
+        }
+    }
+
+  private:
+    template <typename T> std::string to_string_() const {
+        std::string s = "x: " + std::to_string(x) + " y: " + std::to_string(y) + "\ndata: [";
+        T *arr = reinterpret_cast<T *>(array);
+        for (int i = 0; i < count; i++) {
+            s += std::to_string(arr[i]) + " ";
+        }
+        s += "]";
+        return s;
+    }
+};
+
 // vlen cluster data
-struct ClusterDataVlen {
+struct ClusterDataVlen : public ClusterInterface {
     std::vector<int16_t> x;
     std::vector<int16_t> y;
     std::vector<int32_t> energy;
@@ -180,6 +301,7 @@ struct ClusterDataVlen {
     ClusterDataVlen() : x({}), y({}), energy({}) {}
     ClusterDataVlen(std::vector<int16_t> x_, std::vector<int16_t> y_, std::vector<int32_t> energy_)
         : x(x_), y(y_), energy(energy_) {}
+    void set_fields([[maybe_unused]] const std::vector<Field> &fields) {}
     void set(std::byte *data_) {
         uint32_t n = 0;
         size_t offset = 0;

@@ -11,32 +11,6 @@
 #include <pybind11/stl.h>
 #include <string>
 
-template <typename T, int N> void define_clusterData_bindings(py::module &m) {
-    std::string class_name =
-        "ClusterData_" + Dtype(typeid(T)).to_string() + "_" + std::to_string(N);
-    py::class_<ClusterData<T, N>>(m, class_name.c_str())
-        .def(py::init<>())
-        .def(py::init<int16_t, int16_t, std::array<T, N>>())
-        .def_readwrite("x", &ClusterData<T, N>::x)
-        .def_readwrite("y", &ClusterData<T, N>::y)
-        .def_readwrite("array", &ClusterData<T, N>::array)
-        .def_static("get_fields", &ClusterData<T, N>::get_fields)
-        .def("__repr__", &ClusterData<T, N>::to_string);
-}
-template <int N> void LOOP_DEFINE_CLUSTERDATA_BINDINGS(py::module &m) {
-    define_clusterData_bindings<int8_t, N>(m);
-    define_clusterData_bindings<int16_t, N>(m);
-    define_clusterData_bindings<int32_t, N>(m);
-    define_clusterData_bindings<int64_t, N>(m);
-    define_clusterData_bindings<uint8_t, N>(m);
-    define_clusterData_bindings<uint16_t, N>(m);
-    define_clusterData_bindings<uint32_t, N>(m);
-    define_clusterData_bindings<uint64_t, N>(m);
-    define_clusterData_bindings<float, N>(m);
-    define_clusterData_bindings<double, N>(m);
-    LOOP_DEFINE_CLUSTERDATA_BINDINGS<N - 1>(m);
-}
-template <> void LOOP_DEFINE_CLUSTERDATA_BINDINGS<0>(py::module &m) {}
 void define_cluster_bindings(py::module &m) {
     py::class_<Field>(m, "Field")
         .def(py::init<>())
@@ -65,7 +39,14 @@ void define_cluster_bindings(py::module &m) {
         .def_static("get_fields", &ClusterDataVlen::get_fields)
         .def("__repr__", &ClusterDataVlen::to_string);
 
-    LOOP_DEFINE_CLUSTERDATA_BINDINGS<50>(m);
+    py::class_<DynamicClusterData>(m, "Cluster")
+        .def(py::init())
+        .def_readwrite("x", &DynamicClusterData::x)
+        .def_readwrite("y", &DynamicClusterData::y)
+        .def("data", &DynamicClusterData::data, py::return_value_policy::reference)
+        .def_readwrite("dtype", &DynamicClusterData::dtype)
+        .def_readwrite("count", &DynamicClusterData::count)
+        .def("__repr__", &DynamicClusterData::to_string);
 }
 
 template <typename T> void define_to_frame(py::module &m) {

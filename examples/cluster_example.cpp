@@ -16,10 +16,9 @@ int main() {
         pedestal.push<uint16_t>(frame);
     }
     // find clusters
-    ClusterFinder<3, 3> clusterFinder(5, 0);
+    ClusterFinder clusterFinder(3,3,5, 0);
     f.seek(0);
-    using CLUSTER_TYPE = ClusterData<double, 9>;
-    std::vector<std::vector<CLUSTER_TYPE>> clusters_vector;
+    std::vector<std::vector<DynamicClusterData>> clusters_vector;
     auto start = std::chrono::high_resolution_clock::now();
     for (int i = 0; i < 1000; i++) {
         auto frame = f.iread(i);

@@ -88,6 +88,10 @@ template <typename ClusterHeaderType, typename ClusterDataType> struct ClusterFi
     uint32_t tell() { return m_cur_index; }
     int flush() { return fflush(m_fp); }
     void update_header();
+    void reset() {
+        m_cur_index = 0;
+        fseek(m_fp, M_DATA_POSITION, SEEK_SET);
+    }
     int close(bool throws = true);
     ~ClusterFile() noexcept { close(false); }
 

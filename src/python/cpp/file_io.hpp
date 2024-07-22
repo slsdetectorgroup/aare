@@ -50,4 +50,11 @@ void define_file_io_bindings(py::module &m) {
         .def("__ne__", &FileConfig::operator!=)
         .def("__repr__", [](const FileConfig &a) { return "<FileConfig: " + a.to_string() + ">"; });
 
+    py::class_<ClusterFile<ClusterHeader, DynamicCluster>>(m, "ClusterFile")
+        .def(py::init<const std::filesystem::path &, const std::string &, ClusterFileHeader, bool>())
+        .def("header", &ClusterFile<ClusterHeader, DynamicCluster>::header)
+        .def("read", &ClusterFile<ClusterHeader, DynamicCluster>::read)
+        .def("write", &ClusterFile<ClusterHeader, DynamicCluster>::write)
+        .def("set_n_records", &ClusterFile<ClusterHeader, DynamicCluster>::set_n_records)
+        .def("tell", &ClusterFile<ClusterHeader, DynamicCluster>::tell);
 }

@@ -75,6 +75,7 @@ class Dtype {
     // bool operator!=(DType::TypeIndex ti) const;
     std::string to_string() const;
     void set_type(Dtype::TypeIndex ti) { m_type = ti; }
+    TypeIndex type() const { return m_type; }
 
   private:
     TypeIndex m_type{TypeIndex::ERROR};

@@ -8,7 +8,7 @@ int main() {
     // std::filesystem::path const fpath(PROJECT_ROOT_DIR / "data" / "clusters" /
     //                                   "test_cluster.clust2");
     std::filesystem::path const fpath("/tmp/test_cluster2.clust2");
-    ClusterFile<ClusterHeader,ClusterData<>> file(fpath, "r");
+    ClusterFile<ClusterHeader,tClusterData<>> file(fpath, "r");
     auto result = file.read();
 
     std::cout << result.header.to_string() << std::endl;

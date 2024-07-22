@@ -7,8 +7,8 @@ int main() {
     std::cout << "READING WITH NEW CLUSTER FILE READER" << std::endl;
     ClusterFileHeader file_header;
     file_header.header_fields = ClusterHeader::get_fields();
-    file_header.data_fields = ClusterData<int32_t, 9>::get_fields();
-    auto f2 = ClusterFile<ClusterHeader, ClusterData<>>("/tmp/test_old_format.clust", "r",
+    file_header.data_fields = tClusterData<int32_t, 9>::get_fields();
+    auto f2 = ClusterFile<ClusterHeader, tClusterData<>>("/tmp/test_old_format.clust", "r",
                                                         file_header, true);
     auto [header, data] = f2.read();
     std::cout << header.to_string() << std::endl;

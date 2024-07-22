@@ -13,7 +13,7 @@ int main() {
     header.data_fields.push_back({"x", Dtype::INT16, Field::NOT_ARRAY, 1});
     header.data_fields.push_back({"y", Dtype::INT16, Field::NOT_ARRAY, 1});
     header.data_fields.push_back({"data", Dtype::INT32, Field::FIXED_LENGTH_ARRAY, 9});
-    using CLUSTER_TYPE = ClusterData<int32_t, 9>;
+    using CLUSTER_TYPE = tClusterData<int32_t, 9>;
     ClusterFile<ClusterHeader, CLUSTER_TYPE> file("/tmp/test_cluster2.clust2", "w", header);
     for (int j = 0; j < 1000; j++) {
         ClusterHeader clust_header;
@@ -36,16 +36,16 @@ int main() {
     // std::filesystem::path const fpath(PROJECT_ROOT_DIR / "data" / "clusters" /
     //                                   "test_cluster.clust2");
     // ClusterFile file2(fpath, "r");
-    // std::pair<ClusterHeader, std::vector<ClusterData>> result =
-    //     file2.read<ClusterHeader, ClusterData>();
+    // std::pair<ClusterHeader, std::vector<tClusterData>> result =
+    //     file2.read<ClusterHeader, tClusterData>();
 
     // // read data file
     // auto PROJECT_ROOT_DIR = std::filesystem::path(getenv("AARE_ROOT_DIR"));
     // std::filesystem::path const fpath(PROJECT_ROOT_DIR / "data" / "clusters" /
     //                                   "test_cluster.clust2");
     // ClusterFile file2(fpath, "r");
-    // std::pair<ClusterHeader, std::vector<ClusterData>> result =
-    //     file2.read<ClusterHeader, ClusterData>();
+    // std::pair<ClusterHeader, std::vector<tClusterData>> result =
+    //     file2.read<ClusterHeader, tClusterData>();
     // std::cout << result.first.to_string() << std::endl;
     // std::cout << result.second.size() << '\n';
     // for (auto &c : result.second) {

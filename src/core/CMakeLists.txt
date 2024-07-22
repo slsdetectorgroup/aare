@@ -26,6 +26,7 @@ if(AARE_TESTS)
             ${CMAKE_CURRENT_SOURCE_DIR}/test/NDView.test.cpp
             ${CMAKE_CURRENT_SOURCE_DIR}/test/wrappers.test.cpp
             ${CMAKE_CURRENT_SOURCE_DIR}/test/Transforms.test.cpp
+            ${CMAKE_CURRENT_SOURCE_DIR}/test/Cluster.test.cpp
 
         )
     target_sources(tests PRIVATE ${TestSources} )

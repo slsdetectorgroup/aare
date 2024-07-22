@@ -7,20 +7,21 @@
 
 using namespace aare;
 
-class ClusterFinderUnitTest : public ClusterFinder<55, 100> {
+class ClusterFinderUnitTest : public ClusterFinder {
   public:
-    ClusterFinderUnitTest(double nSigma = 5.0, double threshold = 0.0)
-        : ClusterFinder(nSigma, threshold) {}
+    ClusterFinderUnitTest(int cluster_size_x, int cluster_size_y, double nSigma = 5.0,
+                          double threshold = 0.0)
+        : ClusterFinder(cluster_size_x, cluster_size_y, nSigma, threshold) {}
     double get_c2() { return c2; }
     double get_c3() { return c3; }
     auto get_threshold() { return m_threshold; }
     auto get_nSigma() { return m_nSigma; }
-    auto get_cluster_sizeX() { return m_cluster_sizeX; }
-    auto get_cluster_sizeY() { return m_cluster_sizeY; }
+    auto get_cluster_sizeX() { return m_cluster_size_x; }
+    auto get_cluster_sizeY() { return m_cluster_size_y; }
 };
 
 TEST_CASE("test ClusterFinder constructor") {
-    ClusterFinderUnitTest cf(5,0);
+    ClusterFinderUnitTest cf(55, 100, 5, 0);
     REQUIRE(cf.get_threshold() == 0.0);
     REQUIRE(cf.get_nSigma() == 5.0);
     double c2 = sqrt((100 + 1) / 2 * (55 + 1) / 2);
@@ -33,7 +34,7 @@ TEST_CASE("test cluster finder") {
     aare::Pedestal pedestal(10, 10, 5);
     NDArray<double, 2> frame({10, 10});
     frame = 0;
-    ClusterFinder<3, 3> clusterFinder(1, 1); // 3x3 cluster, 1 nSigma, 1 threshold
+    ClusterFinder clusterFinder(3, 3, 1, 1); // 3x3 cluster, 1 nSigma, 1 threshold
 
     auto clusters = clusterFinder.find_clusters_without_threshold(frame.span(), pedestal);
 
@@ -47,9 +48,9 @@ TEST_CASE("test cluster finder") {
     for (int i = 0; i < 3; i++) {
         for (int j = 0; j < 3; j++) {
             if (i == 1 && j == 1)
-                REQUIRE(clusters[0].array[i * 3 + j] == 10);
+                REQUIRE(clusters[0].get_array<double>(i * 3 + j) == 10);
             else
-                REQUIRE(clusters[0].array[i * 3 + j] == 0);
+                REQUIRE(clusters[0].get_array<double>(i * 3 + j) == 0);
         }
     }
 }

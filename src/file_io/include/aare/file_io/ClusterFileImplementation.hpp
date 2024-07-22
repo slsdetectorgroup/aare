@@ -137,17 +137,18 @@ ClusterFile<ClusterHeaderType, ClusterDataType>::read() {
             fread(cluster_header.data(), 1, m_cluster_header_size, m_fp);
         } else {
             // read into a temporary buffer and then call set() from the struct
+            cluster_header.set_fields(m_header.header_fields);
             std::array<std::byte, sizeof(ClusterHeaderType)> tmp;
             fread(tmp.data(), 1, m_cluster_header_size, m_fp);
             cluster_header.set(tmp.data());
         }
 
     } else {
+        cluster_header.set_fields(m_header.header_fields);
         std::vector<std::byte> *tmp = read_vlen_array(m_header.header_fields);
         cluster_header.set(tmp->data());
         delete tmp;
     }
-    cluster_header.data_count();
     /*************************
      *** read cluster data ***
      *************************
@@ -159,8 +160,9 @@ ClusterFile<ClusterHeaderType, ClusterDataType>::read() {
             // read n_clusters directly into the vector
             fread(cluster_data.data(), cluster_header.data_count(), m_cluster_data_size, m_fp);
         } else {
-            std::array<std::byte, sizeof(ClusterDataType)> tmp;
+            std::vector<std::byte> tmp(m_cluster_data_size);
             for (int i = 0; i < cluster_header.data_count(); i++) {
+                cluster_data[i].set_fields(m_header.data_fields);
                 fread(tmp.data(), 1, cluster_data[i].size(), m_fp);
                 cluster_data[i].set(tmp.data());
             }
@@ -168,6 +170,7 @@ ClusterFile<ClusterHeaderType, ClusterDataType>::read() {
     } else {
         for (int i = 0; i < cluster_header.data_count(); i++) {
             std::vector<std::byte> *tmp = read_vlen_array(m_header.data_fields);
+            cluster_data[i].set_fields(m_header.data_fields);
             cluster_data[i].set(tmp->data());
             delete tmp;
         }
@@ -300,6 +303,5 @@ ClusterFile<ClusterHeaderType, ClusterDataType>::read_vlen_array(std::vector<Fie
     }
     return tmp;
 }
-
 
 } // namespace aare
