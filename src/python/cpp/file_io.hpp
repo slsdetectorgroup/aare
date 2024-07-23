@@ -52,16 +52,30 @@ void define_file_io_bindings(py::module &m) {
         .def("__ne__", &FileConfig::operator!=)
         .def("__repr__", [](const FileConfig &a) { return "<FileConfig: " + a.to_string() + ">"; });
 
-    py::class_<ClusterFile<ClusterHeader, DynamicClusterData>::Result>(m, "ClusterFileResult")
-        .def_readwrite("header", &ClusterFile<ClusterHeader, DynamicClusterData>::Result::header)
-        .def_readwrite("data", &ClusterFile<ClusterHeader, DynamicClusterData>::Result::data);
+    py::class_<ClusterFileHeader>(m, "ClusterFileHeader")
+        .def(py::init<>())
+        .def_readwrite("version", &ClusterFileHeader::version)
+        .def_readwrite("n_records", &ClusterFileHeader::n_records)
+        .def_readwrite("metadata", &ClusterFileHeader::metadata)
+        .def_readwrite("header_fields", &ClusterFileHeader::header_fields)
+        .def_readwrite("data_fields", &ClusterFileHeader::data_fields)
+        .def("to_json", &ClusterFileHeader::to_json)
+        .def("from_json", &ClusterFileHeader::from_json)
+        .def("__eq__", &ClusterFileHeader::operator==)
+        .def("__ne__", &ClusterFileHeader::operator!=)
+        .def("__repr__",
+             [](const ClusterFileHeader &a) { return "<ClusterFileHeader: " + a.to_json() + ">"; });
 
     py::class_<ClusterFile<ClusterHeader, DynamicClusterData>>(m, "ClusterFile")
         .def(
             py::init<const std::filesystem::path &, const std::string &, ClusterFileHeader, bool>())
         .def("header", &ClusterFile<ClusterHeader, DynamicClusterData>::header)
-        .def("read", &ClusterFile<ClusterHeader, DynamicClusterData>::read)
         .def("write", &ClusterFile<ClusterHeader, DynamicClusterData>::write)
+        .def("read",
+             [](ClusterFile<ClusterHeader, DynamicClusterData> &cf) {
+                 ClusterFile<ClusterHeader, DynamicClusterData>::Result result = cf.read();
+                 return std::pair(std::move(result.header), std::move(result.data));
+             })
         .def("set_n_records", &ClusterFile<ClusterHeader, DynamicClusterData>::set_n_records)
         .def("tell", &ClusterFile<ClusterHeader, DynamicClusterData>::tell);
 }

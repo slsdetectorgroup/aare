@@ -35,7 +35,7 @@ namespace aare {
  *            - variable_length_array: 4 bytes (number of elements) + number_of_elements *
  * dtype.bytes()
  *
- *     - header_fields (array of field objects):
+ *     - data_fields (array of field objects):
  *         - field_label: field_label_length bytes (string max 256 chars)
  *         - dtype: 3 chars (string)
  *         - is_array: (number) 0: not array, 1:fixed_length_array, 2:variable_length_array

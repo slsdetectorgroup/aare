@@ -17,7 +17,17 @@ void define_cluster_bindings(py::module &m) {
         .def(py::init<std::string const &, Dtype, Field::ARRAY_TYPE, uint32_t>())
         .def_readwrite("label", &Field::label)
         .def_readwrite("dtype", &Field::dtype)
-        .def_readwrite("is_array", &Field::is_array)
+        .def_property(
+            "is_array", [](const Field &f) { return f.is_array; },
+            [](Field &f, bool is_array) {
+                if (is_array == 0) {
+                    f.is_array = Field::NOT_ARRAY;
+                } else if (is_array == 1) {
+                    f.array_size = Field::FIXED_LENGTH_ARRAY;
+                } else if (is_array == 2) {
+                    f.array_size = Field::VARIABLE_LENGTH_ARRAY;
+                }
+            })
         .def_readwrite("array_size", &Field::array_size)
         .def("to_json", &Field::to_json)
         .def("from_json", &Field::from_json);
@@ -39,14 +49,26 @@ void define_cluster_bindings(py::module &m) {
         .def_static("get_fields", &ClusterDataVlen::get_fields)
         .def("__repr__", &ClusterDataVlen::to_string);
 
-    py::class_<DynamicClusterData>(m, "Cluster")
-        .def(py::init())
+    py::class_<DynamicClusterData>(m, "Cluster", py::buffer_protocol())
+        .def(py::init<uint8_t, Dtype>())
         .def_readwrite("x", &DynamicClusterData::x)
         .def_readwrite("y", &DynamicClusterData::y)
-        .def("data", &DynamicClusterData::data, py::return_value_policy::reference)
-        .def_readwrite("dtype", &DynamicClusterData::dtype)
-        .def_readwrite("count", &DynamicClusterData::count)
+        .def("data",
+             [](DynamicClusterData &c) {
+                 return py::memoryview::from_memory(c.data(), c.count * c.dtype.bytes());
+             })
+        .def_readonly("dtype", &DynamicClusterData::dtype)
+        .def_readonly("count", &DynamicClusterData::count)
         .def("__repr__", &DynamicClusterData::to_string);
+
+    py::class_<tClusterData<int32_t, 9>>(m, "OldCluster")
+        .def(py::init())
+        .def_readwrite("x", &tClusterData<int32_t, 9>::x)
+        .def_readwrite("y", &tClusterData<int32_t, 9>::y)
+        .def("data", &tClusterData<int32_t, 9>::data, py::return_value_policy::reference)
+        .def_readwrite("array", &tClusterData<int32_t, 9>::array)
+        .def("get_fields", &tClusterData<int32_t, 9>::get_fields)
+        .def("__repr__", &tClusterData<int32_t, 9>::to_string);
 }
 
 template <typename T> void define_to_frame(py::module &m) {
@@ -200,4 +222,6 @@ void define_core_bindings(py::module &m) {
     define_to_frame<int64_t>(m);
     define_to_frame<float>(m);
     define_to_frame<double>(m);
+
+    define_cluster_bindings(m);
 }
