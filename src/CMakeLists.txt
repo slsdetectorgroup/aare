@@ -23,6 +23,8 @@ if(AARE_TESTS)
             # ${CMAKE_CURRENT_SOURCE_DIR}/test/ProducerConsumerQueue.test.cpp
             ${CMAKE_CURRENT_SOURCE_DIR}/NDArray.test.cpp
             ${CMAKE_CURRENT_SOURCE_DIR}/NDView.test.cpp
+            ${CMAKE_CURRENT_SOURCE_DIR}/ClusterFinder.test.cpp
+            ${CMAKE_CURRENT_SOURCE_DIR}/Pedestal.test.cpp
             # ${CMAKE_CURRENT_SOURCE_DIR}/test/CircularFifo.test.cpp
             # ${CMAKE_CURRENT_SOURCE_DIR}/test/wrappers.test.cpp
             # ${CMAKE_CURRENT_SOURCE_DIR}/test/Transforms.test.cpp
