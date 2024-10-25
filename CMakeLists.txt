@@ -21,11 +21,16 @@ include(FetchContent)
 include(cmake/helpers.cmake)
 default_build_type("Release")
 
+
+
+set(CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/cmake" ${CMAKE_MODULE_PATH})
+
 option(AARE_USE_WARNINGS "Enable warnings" ON)
 option(AARE_PYTHON_BINDINGS "Build python bindings" ON)
 option(AARE_TESTS "Build tests" ON)
 option(AARE_EXAMPLES "Build examples" ON)
 option(AARE_IN_GITHUB_ACTIONS "Running in Github Actions" OFF)
+option(AARE_DOCS "Build documentation" OFF)
 
 option(AARE_FETCH_FMT "Use FetchContent to download fmt" ON)
 option(AARE_FETCH_PYBIND11 "Use FetchContent to download pybind11" ON)
@@ -217,7 +222,9 @@ target_include_directories(aare INTERFACE
 
 # add_subdirectory(examples)
 
-
+if(AARE_DOCS)
+    add_subdirectory(docs)
+endif()
 
 
 # custom target to run check formatting with clang-format
