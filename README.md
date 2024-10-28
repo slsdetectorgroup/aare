@@ -2,6 +2,11 @@
 Data analysis library for PSI hybrid detectors
 
 
+## Status
+
+- [ ] Build with CMake on RH8
+- [ ] conda package
+
 
 ## Project structure 
 

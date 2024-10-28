@@ -15,5 +15,5 @@ cp build/install/lib/* $PREFIX/lib/
 # cp build/install/bin/slsMultiReceiver $PREFIX/bin/.
 
 
-cp build/install/include/aare/* $PREFIX/include/sls
+cp build/install/include/aare/* $PREFIX/include/aare
 cp -rv build/install/share $PREFIX

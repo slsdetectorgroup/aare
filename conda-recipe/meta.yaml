@@ -35,8 +35,8 @@ requirements:
     # - expat
 
   host:
-    - libstdcxx-ng
-    - libgcc-ng
+    # - libstdcxx-ng
+    # - libgcc-ng
     # - xorg-libx11
     # - xorg-libice
     # - xorg-libxext
@@ -47,8 +47,8 @@ requirements:
     # - expat
 
   run:
-    - libstdcxx-ng
-    - libgcc-ng 
+    # - libstdcxx-ng
+    # - libgcc-ng 
 
 
 outputs:
@@ -59,13 +59,16 @@ outputs:
       build:
         - {{ compiler('c') }}
         - {{compiler('cxx')}}
-        - libstdcxx-ng
-        - libgcc-ng
+        - catch2
+        - zstd
+
+        # - libstdcxx-ng
+        # - libgcc-ng
 
 
       run: 
-        - libstdcxx-ng
-        - libgcc-ng
+        # - libstdcxx-ng
+        # - libgcc-ng
 
   # - name: aare
 
