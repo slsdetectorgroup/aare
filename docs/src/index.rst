@@ -13,3 +13,6 @@ AARE
     NDView
     Frame
     Dtype
+    ClusterFinder
+    Pedestal
+    VarClusterFinder

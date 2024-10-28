@@ -10,7 +10,7 @@
 const int MAX_CLUSTER_SIZE = 200;
 namespace aare {
 
-template <typename T> class ClusterFinder {
+template <typename T> class VarClusterFinder {
   public:
     struct Hit {
         int16_t size{};
@@ -49,7 +49,7 @@ template <typename T> class ClusterFinder {
     int check_neighbours(int i, int j);
 
   public:
-    ClusterFinder(image_shape shape, T threshold)
+    VarClusterFinder(image_shape shape, T threshold)
         : shape_(shape), labeled_(shape, 0), peripheral_labeled_(shape, 0), binary_(shape), threshold_(threshold) {
         hits.reserve(2000);
     }
@@ -112,7 +112,7 @@ template <typename T> class ClusterFinder {
         }
     }
 };
-template <typename T> int ClusterFinder<T>::check_neighbours(int i, int j) {
+template <typename T> int VarClusterFinder<T>::check_neighbours(int i, int j) {
     std::vector<int> neighbour_labels;
 
     for (int k = 0; k < 4; ++k) {
@@ -144,7 +144,7 @@ template <typename T> int ClusterFinder<T>::check_neighbours(int i, int j) {
     }
 }
 
-template <typename T> void ClusterFinder<T>::find_clusters(NDView<T, 2> img) {
+template <typename T> void VarClusterFinder<T>::find_clusters(NDView<T, 2> img) {
     original_ = img;
     labeled_ = 0;
     peripheral_labeled_ = 0;
@@ -156,7 +156,7 @@ template <typename T> void ClusterFinder<T>::find_clusters(NDView<T, 2> img) {
     store_clusters();
 }
 
-template <typename T> void ClusterFinder<T>::find_clusters_X(NDView<T, 2> img) {
+template <typename T> void VarClusterFinder<T>::find_clusters_X(NDView<T, 2> img) {
     original_ = img;
     int clusterIndex = 0;
     for (int i = 0; i < shape_[0]; ++i) {
@@ -175,7 +175,7 @@ template <typename T> void ClusterFinder<T>::find_clusters_X(NDView<T, 2> img) {
     h_size.clear();
 }
 
-template <typename T> void ClusterFinder<T>::rec_FillHit(int clusterIndex, int i, int j) {
+template <typename T> void VarClusterFinder<T>::rec_FillHit(int clusterIndex, int i, int j) {
     // printf("original_(%d, %d)=%f\n", i, j, original_(i,j));
     // printf("h_size[%d].size=%d\n", clusterIndex, h_size[clusterIndex].size);
     if (h_size[clusterIndex].size < MAX_CLUSTER_SIZE) {
@@ -213,7 +213,7 @@ template <typename T> void ClusterFinder<T>::rec_FillHit(int clusterIndex, int i
     }
 }
 
-template <typename T> void ClusterFinder<T>::single_pass(NDView<T, 2> img) {
+template <typename T> void VarClusterFinder<T>::single_pass(NDView<T, 2> img) {
     original_ = img;
     labeled_ = 0;
     current_label = 0;
@@ -224,7 +224,7 @@ template <typename T> void ClusterFinder<T>::single_pass(NDView<T, 2> img) {
     // store_clusters();
 }
 
-template <typename T> void ClusterFinder<T>::first_pass() {
+template <typename T> void VarClusterFinder<T>::first_pass() {
 
     for (int i = 0; i < original_.size(); ++i) {
         if (use_noise_map)
@@ -248,7 +248,7 @@ template <typename T> void ClusterFinder<T>::first_pass() {
     }
 }
 
-template <typename T> void ClusterFinder<T>::second_pass() {
+template <typename T> void VarClusterFinder<T>::second_pass() {
 
     for (int64_t i = 0; i != labeled_.size(); ++i) {
         auto current_label = labeled_(i);
@@ -265,7 +265,7 @@ template <typename T> void ClusterFinder<T>::second_pass() {
     }
 }
 
-template <typename T> void ClusterFinder<T>::store_clusters() {
+template <typename T> void VarClusterFinder<T>::store_clusters() {
 
     // Accumulate hit information in a map
     // Do we always have monotonic increasing

@@ -16,6 +16,9 @@ set(SPHINX_SOURCE_FILES
   src/NDView.rst
   src/Frame.rst
   src/Dtype.rst
+  src/ClusterFinder.rst
+  src/Pedestal.rst
+  src/VarClusterFinder.rst
 )
 
 foreach(filename ${SPHINX_SOURCE_FILES})

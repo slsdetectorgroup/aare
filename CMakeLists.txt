@@ -56,7 +56,6 @@ endif()
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 
 if(AARE_FETCH_ZMQ)
-    
     FetchContent_Declare(
         libzmq
         GIT_REPOSITORY https://github.com/zeromq/libzmq.git
@@ -70,7 +69,6 @@ if(AARE_FETCH_ZMQ)
         FetchContent_Populate(libzmq)
         add_subdirectory(${libzmq_SOURCE_DIR} ${libzmq_BINARY_DIR} EXCLUDE_FROM_ALL)
     endif()
-
 else()
     find_package(ZeroMQ 4 REQUIRED)
 endif()
@@ -91,9 +89,14 @@ else()
       find_package(fmt 6 REQUIRED)
 endif()
 
+find_package(nlohmann_json 3.11.3 REQUIRED)
 
 add_library(aare_compiler_flags INTERFACE)
 target_compile_features(aare_compiler_flags INTERFACE cxx_std_17)
+
+if(AARE_PYTHON_BINDINGS)
+    add_subdirectory(python)
+endif()
 
 #################
 # MSVC specific #
@@ -144,33 +147,6 @@ else()
             # -D_GLIBCXX_DEBUG # causes errors with boost
             -D_GLIBCXX_DEBUG_PEDANTIC
     )
-
-    if (NOT AARE_PYTHON_BINDINGS)
-        target_compile_options(
-            aare_compiler_flags
-            INTERFACE
-                -fdiagnostics-parseable-fixits
-                # -fdiagnostics-generate-patch 
-                -fdiagnostics-show-template-tree 
-                -fsanitize=address,undefined,pointer-compare 
-                -fno-sanitize-recover 
-                # -D_FORTIFY_SOURCE=2  # not needed for debug builds
-                # -fstack-protector  # cause errors wih folly? (ProducerConsumerQueue.hpp)
-                -fno-omit-frame-pointer
-        )
-    
-        target_link_libraries(
-            aare_compiler_flags
-            INTERFACE
-                -fdiagnostics-parseable-fixits
-                # -fdiagnostics-generate-patch 
-                -fdiagnostics-show-template-tree 
-                -fsanitize=address,undefined,pointer-compare 
-                -fno-sanitize-recover 
-                # -D_FORTIFY_SOURCE=2 
-                -fno-omit-frame-pointer
-        )
-    endif()
 
 endif()
 
