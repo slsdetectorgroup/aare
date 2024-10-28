@@ -10,8 +10,25 @@ else()
 endif()
 
 
-pybind11_add_module(_aare src/module.cpp)
+pybind11_add_module(
+    _aare 
+    src/module.cpp
+    )
 set_target_properties(_aare PROPERTIES
     LIBRARY_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}
 )
 target_link_libraries(_aare PRIVATE aare_core aare_compiler_flags)
+
+set( PYTHON_FILES
+    aare/__init__.py
+)
+
+foreach(FILE ${PYTHON_FILES})
+    configure_file( ${FILE}  
+    ${CMAKE_BINARY_DIR}/${FILE}  )
+endforeach(FILE ${PYTHON_FILES})
+
+
+configure_file( examples/play.py  
+    ${CMAKE_BINARY_DIR}/play.py 
+)
