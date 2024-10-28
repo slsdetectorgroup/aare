@@ -12,6 +12,7 @@ AARE
     NDArray
     NDView
     Frame
+    File
     Dtype
     ClusterFinder
     Pedestal
