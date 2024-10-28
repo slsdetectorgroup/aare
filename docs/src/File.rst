@@ -2,4 +2,6 @@ File
 =============
 
 
-.. doxygenfile:: File.hpp
+.. doxygenclass:: aare::File
+   :members:
+   :undoc-members:

@@ -2,4 +2,6 @@ NDArray
 =============
 
 
-.. doxygenfile:: NDArray.hpp
+.. doxygenclass:: aare::NDArray
+   :members:
+   :undoc-members:

@@ -1,17 +1,19 @@
-cmake_minimum_required(VERSION 3.12)
-
-set(CMAKE_CXX_STANDARD 17) #TODO! Global or per target?
-set(CMAKE_CXX_STANDARD_REQUIRED ON)
-set(CMAKE_CXX_EXTENSIONS OFF)
+cmake_minimum_required(VERSION 3.14)
 
 project(aare 
-    VERSION 0.1
+    VERSION 1.0.0
     DESCRIPTION "Data processing library for PSI detectors"
     HOMEPAGE_URL "https://github.com/slsdetectorgroup/aare"
     LANGUAGES C CXX 
 )
 
-cmake_policy(SET CMP0135 NEW)
+set(CMAKE_CXX_STANDARD 17) 
+set(CMAKE_CXX_STANDARD_REQUIRED ON)
+set(CMAKE_CXX_EXTENSIONS OFF)
+
+if (${CMAKE_VERSION} VERSION_GREATER "3.24")
+    cmake_policy(SET CMP0135 NEW) #Fetch content download timestamp
+endif()
 cmake_policy(SET CMP0079 NEW)
 
 include(GNUInstallDirs)
@@ -61,6 +63,15 @@ if(AARE_FETCH_ZMQ)
         GIT_REPOSITORY https://github.com/zeromq/libzmq.git
         GIT_TAG        v4.3.4
     )
+    # Disable unwanted options from libzmq
+    set(BUILD_TESTS OFF CACHE BOOL "Switch off libzmq test build")
+    set(BUILD_SHARED OFF CACHE BOOL "Switch off libzmq shared libs")
+    set(WITH_PERF_TOOL OFF CACHE BOOL "")
+    set(ENABLE_CPACK OFF CACHE BOOL "")
+    set(ENABLE_CLANG OFF CACHE BOOL "")
+    set(ENABLE_CURVE OFF CACHE BOOL "")
+    set(ENABLE_DRAFTS OFF CACHE BOOL "")
+
     # TODO! Verify that this is what we want to do in aare
     # Using GetProperties and Populate to be able to exclude zmq
     # from install (not possible with FetchContent_MakeAvailable(libzmq))
@@ -89,7 +100,33 @@ else()
       find_package(fmt 6 REQUIRED)
 endif()
 
+#TODO! Add options for nlohmann_json as well
 find_package(nlohmann_json 3.11.3 REQUIRED)
+
+
+include(GNUInstallDirs)
+
+# If conda build, always set lib dir to 'lib'
+if($ENV{CONDA_BUILD})
+  set(CMAKE_INSTALL_LIBDIR "lib")
+endif()
+
+# Set lower / upper case project names
+string(TOUPPER "${PROJECT_NAME}" PROJECT_NAME_UPPER)
+string(TOLOWER "${PROJECT_NAME}" PROJECT_NAME_LOWER)
+
+
+# Set targets export name (used by slsDetectorPackage and dependencies)
+set(TARGETS_EXPORT_NAME "${PROJECT_NAME_LOWER}-targets")
+set(namespace "aare::")
+
+set(CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/cmake" ${CMAKE_MODULE_PATH})
+
+# Check if project is being used directly or via add_subdirectory
+set(AARE_MASTER_PROJECT OFF)
+if (CMAKE_CURRENT_SOURCE_DIR STREQUAL CMAKE_SOURCE_DIR)
+    set(AARE_MASTER_PROJECT ON)
+endif()
 
 add_library(aare_compiler_flags INTERFACE)
 target_compile_features(aare_compiler_flags INTERFACE cxx_std_17)
@@ -185,7 +222,94 @@ if(AARE_TESTS)
     add_subdirectory(tests)
 endif()
 
-add_subdirectory(src)
+###------------------------------------------------------------------------------MAIN LIBRARY
+###------------------------------------------------------------------------------------------
+
+set(PUBLICHEADERS
+    include/aare/ClusterFinder.hpp
+    include/aare/defs.hpp
+    include/aare/Dtype.hpp
+    include/aare/File.hpp
+    include/aare/FileInterface.hpp
+    include/aare/Frame.hpp
+    include/aare/json.hpp
+    include/aare/NDArray.hpp
+    include/aare/NDView.hpp
+    include/aare/NumpyFile.hpp
+    include/aare/NumpyHelpers.hpp
+    include/aare/Pedestal.hpp
+    include/aare/RawFile.hpp
+    include/aare/SubFile.hpp
+    include/aare/VarClusterFinder.hpp
+
+)
+
+
+set(SourceFiles
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/defs.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/Dtype.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/Frame.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/File.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/NumpyFile.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/RawFile.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/SubFile.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/NumpyHelpers.cpp
+)
+
+
+add_library(aare_core STATIC ${SourceFiles})
+target_include_directories(aare_core PUBLIC 
+    "$<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>" 
+    "$<INSTALL_INTERFACE:${CMAKE_INSTALL_INCLUDEDIR}>"
+)
+
+target_link_libraries(aare_core PUBLIC fmt::fmt PRIVATE aare_compiler_flags nlohmann_json::nlohmann_json)
+
+set_target_properties(aare_core PROPERTIES
+    # ARCHIVE_OUTPUT_NAME SlsDetectorStatic
+    ARCHIVE_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}
+    PUBLIC_HEADER "${PUBLICHEADERS}"
+)
+
+if (AARE_PYTHON_BINDINGS)
+    set_property(TARGET aare_core PROPERTY POSITION_INDEPENDENT_CODE ON)
+endif()
+
+if(AARE_TESTS)
+    set(TestSources
+            ${CMAKE_CURRENT_SOURCE_DIR}/src/defs.test.cpp
+            ${CMAKE_CURRENT_SOURCE_DIR}/src/Dtype.test.cpp
+            ${CMAKE_CURRENT_SOURCE_DIR}/src/Frame.test.cpp
+            ${CMAKE_CURRENT_SOURCE_DIR}/src/NDArray.test.cpp
+            ${CMAKE_CURRENT_SOURCE_DIR}/src/NDView.test.cpp
+            ${CMAKE_CURRENT_SOURCE_DIR}/src/ClusterFinder.test.cpp
+            ${CMAKE_CURRENT_SOURCE_DIR}/src/Pedestal.test.cpp
+            ${CMAKE_CURRENT_SOURCE_DIR}/src/NumpyFile.test.cpp
+            ${CMAKE_CURRENT_SOURCE_DIR}/src/NumpyHelpers.test.cpp
+            ${CMAKE_CURRENT_SOURCE_DIR}/src/RawFile.test.cpp
+
+        )
+    target_sources(tests PRIVATE ${TestSources} )
+endif()
+
+
+
+###------------------------------------------------------------------------------------------
+###------------------------------------------------------------------------------------------
+
+
+if(AARE_MASTER_PROJECT)
+    install(TARGETS aare_core aare_compiler_flags 
+        EXPORT "${TARGETS_EXPORT_NAME}"
+        LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR}
+        ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR}
+        PUBLIC_HEADER DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}/aare
+    )
+endif()
+
+set(CMAKE_POSITION_INDEPENDENT_CODE ON)
+set(CMAKE_INSTALL_RPATH $ORIGIN)
+set(CMAKE_BUILD_WITH_INSTALL_RPATH FALSE)
 
 
 #Overall target to link to when using the library
@@ -236,3 +360,8 @@ add_custom_target(
     VERBATIM
 )
 
+if(AARE_MASTER_PROJECT)
+    set(CMAKE_INSTALL_DIR "share/cmake/${PROJECT_NAME}")
+    set(PROJECT_LIBRARIES slsSupportShared slsDetectorShared slsReceiverShared)
+    include(cmake/package_config.cmake)
+endif()

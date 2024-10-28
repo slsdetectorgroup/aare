@@ -2,4 +2,6 @@ Dtype
 =============
 
 
-.. doxygenfile:: Dtype.hpp
+.. doxygenclass:: aare::Dtype
+   :members:
+   :undoc-members:

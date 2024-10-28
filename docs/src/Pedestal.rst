@@ -2,4 +2,6 @@ Pedestal
 =============
 
 
-.. doxygenfile:: Pedestal.hpp
+.. doxygenclass:: aare::Pedestal
+   :members:
+   :undoc-members:

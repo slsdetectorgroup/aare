@@ -17,3 +17,9 @@ AARE
     ClusterFinder
     Pedestal
     VarClusterFinder
+
+.. toctree::
+    :caption: Python API
+    :maxdepth: 1
+    
+    pyFile

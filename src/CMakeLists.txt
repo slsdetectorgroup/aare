@@ -13,7 +13,13 @@ set(SourceFiles
 
 
 add_library(aare_core STATIC ${SourceFiles})
-target_include_directories(aare_core PUBLIC ${CMAKE_SOURCE_DIR}/include)
+target_include_directories(aare_core PUBLIC 
+    "$<BUILD_INTERFACE:${CMAKE_SOURCE_DIR}/include>"
+    "$<INSTALL_INTERFACE:${CMAKE_INSTALL_INCLUDEDIR}>"
+)
+
+
+    
 target_link_libraries(aare_core PUBLIC fmt::fmt PRIVATE aare_compiler_flags nlohmann_json::nlohmann_json)
 
 if (AARE_PYTHON_BINDINGS)

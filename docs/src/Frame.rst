@@ -2,4 +2,6 @@ Frame
 =============
 
 
-.. doxygenfile:: Frame.hpp
+.. doxygenclass:: aare::Frame
+   :members:
+   :undoc-members:

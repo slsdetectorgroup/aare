@@ -13,13 +13,14 @@ set(SPHINX_BUILD ${CMAKE_CURRENT_BINARY_DIR})
 set(SPHINX_SOURCE_FILES
   src/index.rst
   src/NDArray.rst
-#   src/NDView.rst
-#   src/File.rst
-#   src/Frame.rst
-#   src/Dtype.rst
-#   src/ClusterFinder.rst
-#   src/Pedestal.rst
-#   src/VarClusterFinder.rst
+  src/NDView.rst
+  src/File.rst
+  src/Frame.rst
+  src/Dtype.rst
+  src/ClusterFinder.rst
+  src/Pedestal.rst
+  src/VarClusterFinder.rst
+  src/pyFile.rst
 )
 
 foreach(filename ${SPHINX_SOURCE_FILES})

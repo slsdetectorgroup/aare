@@ -2,4 +2,6 @@ VarClusterFinder
 ====================
 
 
-.. doxygenfile:: VarClusterFinder.hpp
+.. doxygenclass:: aare::VarClusterFinder
+   :members:
+   :undoc-members:

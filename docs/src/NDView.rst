@@ -2,4 +2,6 @@ NDView
 =============
 
 
-.. doxygenfile:: NDView.hpp
+.. doxygenclass:: aare::NDView
+   :members:
+   :undoc-members:

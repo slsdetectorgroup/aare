@@ -2,4 +2,6 @@ ClusterFinder
 =============
 
 
-.. doxygenfile:: ClusterFinder.hpp
+.. doxygenclass:: aare::ClusterFinder
+   :members:
+   :undoc-members:
