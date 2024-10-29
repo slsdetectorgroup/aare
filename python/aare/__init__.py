@@ -1,3 +1,2 @@
-
-
-from _aare import File
+# Make the compiled classes that live in _aare available from aare.
+from ._aare import File

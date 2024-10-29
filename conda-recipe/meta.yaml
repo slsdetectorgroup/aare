@@ -1,104 +1,44 @@
-
-
 package:
-  name: aare_software
-  version: {{ environ.get('GIT_DESCRIBE_TAG', '') }}
+  name: aare
+  version: 2024.10.29.dev0 #TODO! how to not duplicate this?
 
 source:
-  - path: ..
+  path: ..
 
 build:
   number: 0
-  binary_relocation: True
-  rpaths:
-    - lib/
+  script:
+    - unset CMAKE_GENERATOR && {{ PYTHON }} -m pip install . -vv  # [not win]
+    - {{ PYTHON }} -m pip install . -vv  # [win]
 
 requirements:
   build:
-    - {{ compiler('c') }}
-    - {{compiler('cxx')}}
-    - cmake
-    # - qt 5.*
-    # - xorg-libx11
-    # - xorg-libice
-    # - xorg-libxext
-    # - xorg-libsm
-    # - xorg-libxau
-    # - xorg-libxrender
-    # - xorg-libxfixes
-    # - {{ cdt('mesa-libgl-devel') }}      # [linux]
-    # - {{ cdt('mesa-libegl-devel') }}     # [linux]
-    # - {{ cdt('mesa-dri-drivers') }}      # [linux]
-    # - {{ cdt('libselinux') }}            # [linux]
-    # - {{ cdt('libxdamage') }}            # [linux]
-    # - {{ cdt('libxxf86vm') }}            # [linux]
-    # - expat
+    - python
+    - {{ compiler('cxx') }}
 
   host:
-    # - libstdcxx-ng
-    # - libgcc-ng
-    # - xorg-libx11
-    # - xorg-libice
-    # - xorg-libxext
-    # - xorg-libsm
-    # - xorg-libxau
-    # - xorg-libxrender
-    # - xorg-libxfixes
-    # - expat
+    - cmake
+    - ninja
+    - python
+    - pip
+    - scikit-build-core
+    - pybind11 >=2.13.0
+    - fmt
 
   run:
-    # - libstdcxx-ng
-    # - libgcc-ng 
+    - python
 
 
-outputs:
-  - name: aarelib
-    script: copy_lib.sh
+test:
+  imports:
+    - aare
+  # requires:
+  #   - pytest
+  # source_files:
+  #   - tests
+  # commands:
+  #   - pytest tests
 
-    requirements:
-      build:
-        - {{ compiler('c') }}
-        - {{compiler('cxx')}}
-        - catch2
-        - zstd
-
-        # - libstdcxx-ng
-        # - libgcc-ng
-
-
-      run: 
-        # - libstdcxx-ng
-        # - libgcc-ng
-
-  # - name: aare
-
-  #   script: build_pylib.sh
-
-  #   requirements:
-  #     build:
-  #       - python
-  #       - {{ compiler('c') }}
-  #       - {{compiler('cxx')}}
-  #       - {{ pin_subpackage('slsdetlib', exact=True) }}
-  #       - setuptools
-  #       - pybind11=2.11
-
-  #     host:
-  #       - python
-  #       - {{ pin_subpackage('slsdetlib', exact=True) }}
-  #       - pybind11=2.11
-
-
-  #     run:
-  #       - libstdcxx-ng
-  #       - libgcc-ng
-  #       - python
-  #       - numpy
-  #       - {{ pin_subpackage('slsdetlib', exact=True) }}
-
-
-  #   test:
-  #     imports:
-  #       - slsdet
-
-  
+about:
+  summary: An example project built with pybind11 and scikit-build.
+  # license_file: LICENSE

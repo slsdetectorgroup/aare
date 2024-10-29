@@ -1,0 +1,14 @@
+[build-system]
+requires = ["scikit-build-core>=0.10", "pybind11"]
+build-backend = "scikit_build_core.build"
+
+[project]
+name = "aare"
+version = "2024.10.29.dev0"
+
+[tool.scikit-build]
+cmake.verbose = true
+
+[tool.scikit-build.cmake.define]
+AARE_PYTHON_BINDINGS = "ON"
+AARE_SYSTEM_LIBRARIES = "ON"
