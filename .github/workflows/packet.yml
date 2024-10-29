@@ -39,9 +39,8 @@ jobs:
 
       - name: Build
         env:
-          CONDA_USERNAME: ${{ secrets.CONDA_USERNAME }}
           CONDA_TOKEN: ${{ secrets.CONDA_TOKEN }}
-        run: conda build . --user ${CONDA_USERNAME} --token ${CONDA_TOKEN}
+        run: conda build . --user slsdetectorgroup --token ${CONDA_TOKEN}
 
       # - name: Install
       #   run: conda install -c ${CONDA_PREFIX}/conda-bld/ scikit_build_example
