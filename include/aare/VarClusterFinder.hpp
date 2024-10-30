@@ -49,7 +49,7 @@ template <typename T> class VarClusterFinder {
     int check_neighbours(int i, int j);
 
   public:
-    VarClusterFinder(image_shape shape, T threshold)
+    VarClusterFinder(Shape<2> shape, T threshold)
         : shape_(shape), labeled_(shape, 0), peripheral_labeled_(shape, 0), binary_(shape), threshold_(threshold) {
         hits.reserve(2000);
     }
