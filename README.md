@@ -2,10 +2,28 @@
 Data analysis library for PSI hybrid detectors
 
 
-## Status
 
-- [ ] Build with CMake on RH8
-- [ ] conda package
+## Development install (for Python)
+
+```bash
+git clone git@github.com:slsdetectorgroup/aare.git --branch=v1 #or using http...
+mkdir build
+cd build
+
+#configure using cmake
+cmake ../aare
+
+#build (replace 4 with the number of threads you want to use)
+make -j4 
+```
+
+Now you can use the Python module from your build directory
+
+```python
+import aare
+
+f = aare.File('Some/File/I/Want_to_open_master_0.json')
+```
 
 
 ## Project structure 

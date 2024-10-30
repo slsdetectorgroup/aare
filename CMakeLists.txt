@@ -56,6 +56,9 @@ endif()
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 
 if(AARE_FETCH_ZMQ)
+    # Fetchcontent_Declare is deprecated need to find a way to update this
+    # for now setting the policy to old is enough
+    cmake_policy(SET CMP0169 OLD)
     FetchContent_Declare(
         libzmq
         GIT_REPOSITORY https://github.com/zeromq/libzmq.git
@@ -98,9 +101,16 @@ else()
       find_package(fmt 6 REQUIRED)
 endif()
 
-#TODO! Add options for nlohmann_json as well
-find_package(nlohmann_json 3.11.3 REQUIRED)
 
+if (AARE_FETCH_JSON)
+    FetchContent_Declare(
+        json 
+        URL https://github.com/nlohmann/json/releases/download/v3.11.3/json.tar.xz
+    )
+    FetchContent_MakeAvailable(json)
+else()
+    find_package(nlohmann_json 3.11.3 REQUIRED)
+endif()
 
 include(GNUInstallDirs)
 
@@ -304,13 +314,13 @@ set(CMAKE_INSTALL_RPATH $ORIGIN)
 set(CMAKE_BUILD_WITH_INSTALL_RPATH FALSE)
 
 
-#Overall target to link to when using the library
-add_library(aare INTERFACE) 
-target_link_libraries(aare INTERFACE aare_core aare_compiler_flags)
-target_include_directories(aare INTERFACE 
-    $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
-    $<INSTALL_INTERFACE:include>
-)
+# #Overall target to link to when using the library
+# add_library(aare INTERFACE) 
+# target_link_libraries(aare INTERFACE aare_core aare_compiler_flags)
+# target_include_directories(aare INTERFACE 
+#     $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
+#     $<INSTALL_INTERFACE:include>
+# )
 
 # add_subdirectory(examples)
 
@@ -352,8 +362,8 @@ add_custom_target(
     VERBATIM
 )
 
-if(AARE_MASTER_PROJECT)
-    set(CMAKE_INSTALL_DIR "share/cmake/${PROJECT_NAME}")
-    set(PROJECT_LIBRARIES slsSupportShared slsDetectorShared slsReceiverShared)
-    include(cmake/package_config.cmake)
-endif()
+# if(AARE_MASTER_PROJECT)
+#     set(CMAKE_INSTALL_DIR "share/cmake/${PROJECT_NAME}")
+#     set(PROJECT_LIBRARIES slsSupportShared slsDetectorShared slsReceiverShared)
+#     include(cmake/package_config.cmake)
+# endif()
