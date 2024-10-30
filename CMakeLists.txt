@@ -58,6 +58,7 @@ set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 if(AARE_FETCH_ZMQ)
     # Fetchcontent_Declare is deprecated need to find a way to update this
     # for now setting the policy to old is enough
+    if (${CMAKE_VERSION} VERSION_GREATER_EQUAL "3.30")
     cmake_policy(SET CMP0169 OLD)
     FetchContent_Declare(
         libzmq

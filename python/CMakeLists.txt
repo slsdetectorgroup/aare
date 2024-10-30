@@ -1,5 +1,5 @@
 
-find_package (Python 3.6 COMPONENTS Interpreter Development)
+find_package (Python 3.10 COMPONENTS Interpreter Development)
 
 # Download or find pybind11 depending on configuration
 if(AARE_FETCH_PYBIND11)
