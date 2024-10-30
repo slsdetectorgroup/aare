@@ -32,7 +32,7 @@ jobs:
           channels: conda-forge
 
       - name: Prepare
-        run: conda install doxygen sphinx breathe pybind11 sphinx_rtd_theme furo nlohmann_json zeromq
+        run: conda install doxygen sphinx breathe pybind11 sphinx_rtd_theme furo nlohmann_json zeromq fmt
 
       - name: Build library 
         run: |
