@@ -75,7 +75,7 @@ void NumpyFile::get_frame_into(size_t frame_number, std::byte *image_buf) {
 size_t NumpyFile::pixels_per_frame() { return m_pixels_per_frame; };
 size_t NumpyFile::bytes_per_frame() { return m_bytes_per_frame; };
 
-std::vector<Frame> NumpyFile::read(size_t n_frames) {
+std::vector<Frame> NumpyFile::read_n(size_t n_frames) {
     // TODO: implement this in a more efficient way
     std::vector<Frame> frames;
     for (size_t i = 0; i < n_frames; i++) {

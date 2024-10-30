@@ -41,7 +41,7 @@ TEST_CASE("Read data from a jungfrau 500k single port raw file") {
     // we know this file has 10 frames with pixel 0,0 being: 2123, 2051, 2109, 2117, 2089, 2095, 2072, 2126, 2097, 2102
     std::vector<uint16_t> pixel_0_0 = {2123, 2051, 2109, 2117, 2089, 2095, 2072, 2126, 2097, 2102};
     for (size_t i = 0; i < 10; i++) {
-        auto frame = f.read();
+        auto frame = f.read_frame();
         CHECK(frame.rows() == 512);
         CHECK(frame.cols() == 1024);
         CHECK(frame.view<uint16_t>()(0, 0) == pixel_0_0[i]);
@@ -75,8 +75,8 @@ TEST_CASE("Compare reading from a numpy file with a raw file") {
     CHECK(npy.total_frames() == 10);
 
     for (size_t i = 0; i < 10; ++i) {
-        auto raw_frame = raw.read();
-        auto npy_frame = npy.read();
+        auto raw_frame = raw.read_frame();
+        auto npy_frame = npy.read_frame();
         CHECK((raw_frame.view<uint16_t>() == npy_frame.view<uint16_t>()));
     }
 }
@@ -95,7 +95,7 @@ TEST_CASE("Read multipart files") {
     std::vector<uint16_t> pixel_1_0 = {2748, 2614, 2665, 2629, 2618, 2630, 2631, 2634, 2577, 2598};
 
     for (size_t i = 0; i < 10; i++) {
-        auto frame = f.read();
+        auto frame = f.read_frame();
         CHECK(frame.rows() == 512);
         CHECK(frame.cols() == 1024);
         CHECK(frame.view<uint16_t>()(0, 0) == pixel_0_0[i]);
@@ -110,5 +110,5 @@ TEST_CASE("Read file with unordered frames") {
     auto fpath = test_data_path() / "mythen" / "scan242_master_3.raw";
     REQUIRE(std::filesystem::exists(fpath));
     File f(fpath, "r");
-    REQUIRE_THROWS((f.read()));
+    REQUIRE_THROWS((f.read_frame()));
 }

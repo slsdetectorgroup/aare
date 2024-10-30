@@ -16,25 +16,12 @@ namespace py = pybind11;
 using namespace::aare;
 
 void define_file_io_bindings(py::module &m) {
-    py::class_<xy>(m, "xy")
-        .def(py::init<>())
-        .def(py::init<uint32_t, uint32_t>())
-        .def_readwrite("row", &xy::row)
-        .def_readwrite("col", &xy::col)
-        .def("__eq__", &xy::operator==)
-        .def("__ne__", &xy::operator!=)
-        .def("__repr__",
-             [](const xy &a) { return "<xy: row=" + std::to_string(a.row) + ", col=" + std::to_string(a.col) + ">"; });
-
-
     py::class_<File>(m, "File")
         .def(py::init([](const std::filesystem::path &fname) { return File(fname, "r", {}); }))
         .def(
             py::init([](const std::filesystem::path &fname, const std::string &mode) { return File(fname, mode, {}); }))
         .def(py::init<const std::filesystem::path &, const std::string &, const FileConfig &>())
-        // .def("read", py::overload_cast<>(&File::read))
-        // .def("read", py::overload_cast<size_t>(&File::read))
-        .def("iread", py::overload_cast<size_t>(&File::iread),py::call_guard<py::gil_scoped_release>())
+
         .def("frame_number", &File::frame_number)
         .def_property_readonly("bytes_per_frame", &File::bytes_per_frame)
         .def_property_readonly("pixels_per_frame", &File::pixels_per_frame)
@@ -44,10 +31,8 @@ void define_file_io_bindings(py::module &m) {
         .def_property_readonly("rows", &File::rows)
         .def_property_readonly("cols", &File::cols)
         .def_property_readonly("bitdepth", &File::bitdepth)
+        .def_property_readonly("bytes_per_pixel", &File::bytes_per_pixel)
         .def_property_readonly("detector_type", &File::detector_type)
-        .def_property_readonly("geometry", &File::geometry,
-                               py::call_guard<py::scoped_ostream_redirect, py::scoped_estream_redirect>())
-        // .def("set_total_frames", &File::set_total_frames)
         .def("read_frame", [](File &self) {
             const uint8_t item_size = self.bytes_per_pixel();
             py::array image;
@@ -63,6 +48,42 @@ void define_file_io_bindings(py::module &m) {
                 image = py::array_t<uint32_t>(shape);
             }
             self.read_into(reinterpret_cast<std::byte *>(image.mutable_data()));
+            return image;
+        })
+        .def("read_frame", [](File &self, size_t frame_number) {
+            self.seek(frame_number);
+            const uint8_t item_size = self.bytes_per_pixel();
+            py::array image;
+            std::vector<ssize_t> shape;
+            shape.reserve(2);
+            shape.push_back(self.rows());
+            shape.push_back(self.cols());
+            if (item_size == 1) {
+                image = py::array_t<uint8_t>(shape);
+            } else if (item_size == 2) {
+                image = py::array_t<uint16_t>(shape);
+            } else if (item_size == 4) {
+                image = py::array_t<uint32_t>(shape);
+            }
+            self.read_into(reinterpret_cast<std::byte *>(image.mutable_data()));
+            return image;
+        })
+        .def("read_n", [](File &self, size_t n_frames) {
+            const uint8_t item_size = self.bytes_per_pixel();
+            py::array image;
+            std::vector<ssize_t> shape;
+            shape.reserve(3);
+            shape.push_back(n_frames);
+            shape.push_back(self.rows());
+            shape.push_back(self.cols());
+            if (item_size == 1) {
+                image = py::array_t<uint8_t>(shape);
+            } else if (item_size == 2) {
+                image = py::array_t<uint16_t>(shape);
+            } else if (item_size == 4) {
+                image = py::array_t<uint32_t>(shape);
+            }
+            self.read_into(reinterpret_cast<std::byte *>(image.mutable_data()), n_frames);
             return image;
         });
 

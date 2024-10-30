@@ -59,7 +59,8 @@ if(AARE_FETCH_ZMQ)
     # Fetchcontent_Declare is deprecated need to find a way to update this
     # for now setting the policy to old is enough
     if (${CMAKE_VERSION} VERSION_GREATER_EQUAL "3.30")
-    cmake_policy(SET CMP0169 OLD)
+        cmake_policy(SET CMP0169 OLD)
+    endif()
     FetchContent_Declare(
         libzmq
         GIT_REPOSITORY https://github.com/zeromq/libzmq.git

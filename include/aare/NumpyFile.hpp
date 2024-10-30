@@ -31,9 +31,10 @@ class NumpyFile : public FileInterface {
     explicit NumpyFile(const std::filesystem::path &fname, const std::string &mode = "r", FileConfig cfg = {});
 
     void write(Frame &frame);
-    Frame read() override { return get_frame(this->current_frame++); }
+    Frame read_frame() override { return get_frame(this->current_frame++); }
+    Frame read_frame(size_t frame_number) override { return get_frame(frame_number); }
 
-    std::vector<Frame> read(size_t n_frames) override;
+    std::vector<Frame> read_n(size_t n_frames) override;
     void read_into(std::byte *image_buf) override { return get_frame_into(this->current_frame++, image_buf); }
     void read_into(std::byte *image_buf, size_t n_frames) override;
     size_t frame_number(size_t frame_index) override { return frame_index; };

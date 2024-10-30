@@ -12,7 +12,6 @@ namespace aare {
 class File {
   private:
     FileInterface *file_impl;
-    bool is_npy;
 
   public:
     /**
@@ -24,14 +23,16 @@ class File {
      * @throws std::invalid_argument if the file mode is not supported
      *
      */
-    File(const std::filesystem::path &fname, const std::string &mode, const FileConfig &cfg = {});
-    void write(Frame &frame, sls_detector_header header = {});
-    Frame read();
-    Frame iread(size_t frame_number);
-    std::vector<Frame> read(size_t n_frames);
+    File(const std::filesystem::path &fname, const std::string &mode="r", const FileConfig &cfg = {});
+      
+    Frame read_frame();                       //!< read one frame from the file at the current position
+    Frame read_frame(size_t frame_number);    //!< read the frame at the position given by frame number
+    std::vector<Frame> read_n(size_t n_frames); //!< read n_frames from the file at the current position
+
     void read_into(std::byte *image_buf);
     void read_into(std::byte *image_buf, size_t n_frames);
-    size_t frame_number(size_t frame_index);
+    
+    size_t frame_number(size_t frame_index);  //!< get the frame number at the given frame index
     size_t bytes_per_frame();
     size_t pixels_per_frame();
     void seek(size_t frame_number);
@@ -43,17 +44,8 @@ class File {
     size_t bytes_per_pixel() const;
     void set_total_frames(size_t total_frames);
     DetectorType detector_type() const;
-    xy geometry() const;
 
-    /**
-     * @brief Move constructor
-     * @param other File object to move from
-     */
     File(File &&other) noexcept;
-
-    /**
-     * @brief destructor: will only delete the FileInterface object
-     */
     ~File();
 };
 

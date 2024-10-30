@@ -382,7 +382,7 @@ void RawFile::write(Frame &frame, sls_detector_header header) {
     this->current_frame++;
 }
 
-std::vector<Frame> RawFile::read(size_t n_frames) {
+std::vector<Frame> RawFile::read_n(size_t n_frames) {
     // TODO: implement this in a more efficient way
     std::vector<Frame> frames;
     for (size_t i = 0; i < n_frames; i++) {

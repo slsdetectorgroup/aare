@@ -39,8 +39,12 @@ class RawFile : public FileInterface {
      * @param frame frame to write
      */
     void write(Frame &frame, sls_detector_header header);
-    Frame read() override { return get_frame(this->current_frame++); };
-    std::vector<Frame> read(size_t n_frames) override;
+    Frame read_frame() override { return get_frame(this->current_frame++); };
+    Frame read_frame(size_t frame_number) override{
+        seek(frame_number);
+        return read_frame();
+    }
+    std::vector<Frame> read_n(size_t n_frames) override;
     void read_into(std::byte *image_buf) override { return get_frame_into(this->current_frame++, image_buf); };
     void read_into(std::byte *image_buf, size_t n_frames) override;
     size_t frame_number(size_t frame_index) override;

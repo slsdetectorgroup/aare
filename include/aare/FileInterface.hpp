@@ -47,32 +47,24 @@ struct FileConfig {
 class FileInterface {
   public:
     /**
-     * @brief write a frame to the file
-     * @param frame frame to write
-     * @return void
-     * @throws std::runtime_error if the function is not implemented
-     */
-    // virtual void write(Frame &frame) = 0;
-
-    /**
-     * @brief write a vector of frames to the file
-     * @param frames vector of frames to write
-     * @return void
-     */
-    // virtual void write(std::vector<Frame> &frames) = 0;
-
-    /**
-     * @brief read one frame from the file at the current position
+     * @brief  one frame from the file at the current position
      * @return Frame
      */
-    virtual Frame read() = 0;
+    virtual Frame read_frame() = 0;
+
+    /**
+     * @brief read one frame from the file at the given frame number
+     * @param frame_number frame number to read
+     * @return frame
+     */
+    virtual Frame read_frame(size_t frame_number) = 0;
 
     /**
      * @brief read n_frames from the file at the current position
      * @param n_frames number of frames to read
      * @return vector of frames
      */
-    virtual std::vector<Frame> read(size_t n_frames) = 0; // Is this the right interface?
+    virtual std::vector<Frame> read_n(size_t n_frames) = 0; // Is this the right interface?
 
     /**
      * @brief read one frame from the file at the current position and store it in the provided buffer
@@ -142,40 +134,13 @@ class FileInterface {
      */
     virtual size_t bitdepth() const = 0;
 
-    /**
-     * @brief read one frame from the file at the given frame number
-     * @param frame_number frame number to read
-     * @return frame
-     */
-    Frame iread(size_t frame_number) {
-        auto old_pos = tell();
-        seek(frame_number);
-        Frame tmp = read();
-        seek(old_pos);
-        return tmp;
-    };
 
-    /**
-     * @brief read n_frames from the file starting at the given frame number
-     * @param frame_number frame number to start reading from
-     * @param n_frames number of frames to read
-     * @return vector of frames
-     */
-    std::vector<Frame> iread(size_t frame_number, size_t n_frames) {
-        auto old_pos = tell();
-        seek(frame_number);
-        std::vector<Frame> tmp = read(n_frames);
-        seek(old_pos);
-        return tmp;
-    }
     DetectorType detector_type() const { return m_type; }
 
     // function to query the data type of the file
     /*virtual DataType dtype = 0; */
 
     virtual ~FileInterface() = default;
-
-    void set_total_frames(size_t total_frames) { m_total_frames = total_frames; }
 
   protected:
     std::string m_mode{};
