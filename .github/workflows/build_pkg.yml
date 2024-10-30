@@ -1,4 +1,4 @@
-name: Deploy to slsdetectorgroup conda channel
+name: Build packages but don't deploy
 
 on:
   workflow_dispatch:
