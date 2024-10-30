@@ -23,3 +23,4 @@ AARE
     :maxdepth: 1
     
     pyFile
+    pyVarClusterFinder

@@ -20,6 +20,7 @@ set(SPHINX_SOURCE_FILES
   src/ClusterFinder.rst
   src/Pedestal.rst
   src/VarClusterFinder.rst
+  src/pyVarClusterFinder.rst
   src/pyFile.rst
 )
 
