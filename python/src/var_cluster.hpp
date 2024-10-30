@@ -18,6 +18,9 @@ using namespace::aare;
 
 
 void define_var_cluster_finder_bindings(py::module &m) {
+    PYBIND11_NUMPY_DTYPE(pl::ClusterFinder<double>::Hit, size, row, col,
+                         reserved, energy, max);
+
     py::class_<VarClusterFinder<double>>(m, "VarClusterFinder")
         .def(py::init<Shape<2>, double>())
         .def("labeled",
