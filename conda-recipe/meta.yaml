@@ -27,9 +27,11 @@ requirements:
     - zeromq
     - nlohmann_json
     - catch2
+    - numpy
 
   run:
     - python
+    - numpy
 
 
 test:
