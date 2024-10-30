@@ -1,11 +1,11 @@
-name: Conda
+name: Deploy to slsdetectorgroup conda channel
 
 on:
   workflow_dispatch:
   push:
     branches:
-      - v1
-  pull_request:
+     - v1
+    #run on PRs as well?
 
 jobs:
   build:
@@ -13,7 +13,7 @@ jobs:
       fail-fast: false
       matrix:
         platform: [ubuntu-latest, ] # macos-12, windows-2019]
-        python-version: ["3.12",]
+        python-version: ["3.11", "3.12", "3.13",]
 
     runs-on: ${{ matrix.platform }}
 
@@ -34,16 +34,8 @@ jobs:
       - name: Prepare
         run: conda install conda-build conda-verify pytest anaconda-client
 
-      - name: Enable upload
-        run: conda config --set anaconda_upload yes
-
       - name: Build
         env:
           CONDA_TOKEN: ${{ secrets.CONDA_TOKEN }}
-        run: conda build . --user slsdetectorgroup --token ${CONDA_TOKEN}
+        run: conda build conda-recipe
 
-      # - name: Install
-      #   run: conda install -c ${CONDA_PREFIX}/conda-bld/ scikit_build_example
-
-      # - name: Test
-      #   run: pytest tests
