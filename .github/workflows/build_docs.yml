@@ -32,7 +32,7 @@ jobs:
           channels: conda-forge
 
       - name: Prepare
-        run: conda install conda-build conda-verify pytest anaconda-client sphinx breathe pybind11 sphinx_rtd_theme nlohmann_json zeromq
+        run: conda install conda-build conda-verify pytest doxygen anaconda-client sphinx breathe pybind11 sphinx_rtd_theme nlohmann_json zeromq
 
       - name: Build library 
         run: mkdir build && cd build && cmake .. -DAARE_SYSTEM_LIBRARIES=ON -DAARE_DOCS=ON && make -j 2
