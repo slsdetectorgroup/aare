@@ -23,26 +23,25 @@ include(FetchContent)
 include(cmake/helpers.cmake)
 default_build_type("Release")
 
-
-
 set(CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/cmake" ${CMAKE_MODULE_PATH})
 
-option(AARE_USE_WARNINGS "Enable warnings" ON)
+
+# General options
 option(AARE_PYTHON_BINDINGS "Build python bindings" ON)
-option(AARE_TESTS "Build tests" ON)
-option(AARE_EXAMPLES "Build examples" ON)
+option(AARE_TESTS "Build tests" OFF)
+option(AARE_EXAMPLES "Build examples" OFF)
 option(AARE_IN_GITHUB_ACTIONS "Running in Github Actions" OFF)
 option(AARE_DOCS "Build documentation" OFF)
 
+# Configure which of the dependencies to use FetchContent for
 option(AARE_FETCH_FMT "Use FetchContent to download fmt" ON)
 option(AARE_FETCH_PYBIND11 "Use FetchContent to download pybind11" ON)
 option(AARE_FETCH_CATCH "Use FetchContent to download catch2" ON)
 option(AARE_FETCH_JSON "Use FetchContent to download nlohmann::json" ON)
 option(AARE_FETCH_ZMQ "Use FetchContent to download libzmq" ON)
-option(ENABLE_DRAFTS "Enable zmq drafts (depends on gnutls or nss)" OFF)
 
 
-#Convenience option to use system libraries
+#Convenience option to use system libraries only (no FetchContent)
 option(AARE_SYSTEM_LIBRARIES "Use system libraries" OFF)
 if(AARE_SYSTEM_LIBRARIES)
     message(STATUS "Build using system libraries")
@@ -51,7 +50,6 @@ if(AARE_SYSTEM_LIBRARIES)
     set(AARE_FETCH_CATCH OFF CACHE BOOL "Disabled FetchContent for catch2" FORCE)
     set(AARE_FETCH_JSON OFF CACHE BOOL "Disabled FetchContent for nlohmann::json" FORCE)
     set(AARE_FETCH_ZMQ OFF CACHE BOOL "Disabled FetchContent for libzmq" FORCE)
-
 endif()
 
 
@@ -181,32 +179,27 @@ else()
         INTERFACE 
             -Og 
             -ggdb3 
-            # -D_GLIBCXX_DEBUG # causes errors with boost
-            -D_GLIBCXX_DEBUG_PEDANTIC
     )
 
 endif()
 
-if(AARE_USE_WARNINGS)
-        target_compile_options(
-            aare_compiler_flags 
-            INTERFACE 
-                -Wall 
-                -Wextra 
-                -pedantic 
-                -Wshadow 
-                -Wnon-virtual-dtor
-                -Woverloaded-virtual
-                -Wdouble-promotion
-                -Wformat=2
-                -Wredundant-decls
-                -Wvla
-                -Wdouble-promotion
-                -Werror=return-type #important can cause segfault in optimzed builds
-            )
-endif()
-
-
+# Common flags for GCC and Clang
+target_compile_options(
+    aare_compiler_flags 
+    INTERFACE 
+        -Wall 
+        -Wextra 
+        -pedantic 
+        -Wshadow 
+        -Wnon-virtual-dtor
+        -Woverloaded-virtual
+        -Wdouble-promotion
+        -Wformat=2
+        -Wredundant-decls
+        -Wvla
+        -Wdouble-promotion
+        -Werror=return-type #important can cause segfault in optimzed builds
+    )
 
 endif() #GCC/Clang specific
 
@@ -266,7 +259,6 @@ target_include_directories(aare_core PUBLIC
 target_link_libraries(aare_core PUBLIC fmt::fmt PRIVATE aare_compiler_flags nlohmann_json::nlohmann_json)
 
 set_target_properties(aare_core PROPERTIES
-    # ARCHIVE_OUTPUT_NAME SlsDetectorStatic
     ARCHIVE_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}
     PUBLIC_HEADER "${PUBLICHEADERS}"
 )

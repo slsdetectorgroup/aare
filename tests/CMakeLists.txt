@@ -1,4 +1,5 @@
 
+# Download catch2 if configured to do so
 if (AARE_FETCH_CATCH)
     FetchContent_Declare(
         Catch2
@@ -8,6 +9,7 @@ if (AARE_FETCH_CATCH)
     )
     FetchContent_MakeAvailable(Catch2)
 else()
+    # Otherwise look for installed catch2
     find_package(Catch2 3 REQUIRED)
 endif()
 
@@ -32,9 +34,7 @@ set(TestSources
 target_sources(tests PRIVATE ${TestSources} )
 
 #Work around to remove, this is not the way to do it =) 
-# target_include_directories(tests PRIVATE ${CMAKE_SOURCE_DIR}/include/common)
 target_link_libraries(tests PRIVATE aare_core aare_compiler_flags)
-
 
 
 #configure a header to pass test file paths
