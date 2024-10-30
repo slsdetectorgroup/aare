@@ -64,3 +64,8 @@ make install
  cmake .. -DCMAKE_PREFIX_PATH=SOME_PATH
 ```
 
+### Local build of conda pkgs
+
+```bash
+conda build . --variants="{python: [3.11, 3.12, 3.13]}"
+```
