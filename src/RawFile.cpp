@@ -223,6 +223,28 @@ void RawFile::parse_json_metadata() {
     } catch (const json::out_of_range &e) {
         m_bitdepth = 16;
     }
+
+    try {
+        m_analog_samples = j.at("Analog Samples");
+    }catch (const json::out_of_range &e) {
+        m_analog_samples = 0;
+    }
+    try {
+        m_digital_samples = j.at("Digital Samples");
+        }catch (const json::out_of_range &e) {
+        m_digital_samples = 0;
+    }
+
+    //Update detector type for Moench
+    if (m_type == DetectorType::Moench && m_analog_samples == 0 && m_rows == 400) {
+        m_type = DetectorType::Moench03;
+    }else if (m_type == DetectorType::Moench && m_rows == 400 && m_analog_samples == 5000) {
+        m_type = DetectorType::Moench03_old;
+    }else{
+        throw std::runtime_error(LOCATION + "Could not determine Moench detector type");
+    }
+
+
     // only Eiger had quad
     if (m_type == DetectorType::Eiger) {
         quad = (j["Quad"] == 1);
@@ -301,6 +323,10 @@ Frame RawFile::get_frame(size_t frame_index) {
     auto f = Frame(this->m_rows, this->m_cols, Dtype::from_bitdepth(this->m_bitdepth));
     std::byte *frame_buffer = f.data();
     get_frame_into(frame_index, frame_buffer);
+
+    //here would be the place to run a transform before returning the frame
+    if (m_type == DetectorType::Moench03_old)
+        fmt::print("Moench03_old\n");
     return f;
 }
 

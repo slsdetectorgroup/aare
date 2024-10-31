@@ -19,6 +19,10 @@ template <> std::string toString(DetectorType arg) {
         return "Mythen3";
     case DetectorType::Moench:
         return "Moench";
+    case DetectorType::Moench03:
+        return "Moench03";
+    case DetectorType::Moench03_old:
+        return "Moench03_old";
     case DetectorType::ChipTestBoard:
         return "ChipTestBoard";
     default:
@@ -41,6 +45,10 @@ template <> DetectorType StringTo(const std::string &arg) {
         return DetectorType::Mythen3;
     if (arg == "Moench")
         return DetectorType::Moench;
+    if (arg == "Moench03")
+        return DetectorType::Moench03;
+    if (arg == "Moench03_old")
+        return DetectorType::Moench03_old;
     if (arg == "ChipTestBoard")
         return DetectorType::ChipTestBoard;
     throw std::runtime_error("Could not decode dector from: \"" + arg + "\"");

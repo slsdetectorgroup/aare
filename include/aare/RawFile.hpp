@@ -24,6 +24,20 @@ struct ModuleConfig {
  * @note documentation can also be found in the FileInterface class
  */
 class RawFile : public FileInterface {
+    size_t n_subfiles{};
+    size_t n_subfile_parts{};
+    std::vector<std::vector<SubFile *>> subfiles;
+    size_t subfile_rows{}, subfile_cols{};
+    xy m_geometry{};
+    std::vector<xy> positions;
+    ModuleConfig cfg{0, 0};
+    TimingMode timing_mode{};
+    bool quad{false};
+
+    //Stuff that we might need with Ctb files
+    uint32_t m_analog_samples{};
+    uint32_t m_digital_samples{};
+
   public:
     /**
      * @brief RawFile constructor
@@ -176,15 +190,7 @@ class RawFile : public FileInterface {
     void open_subfiles();
     void parse_config(const FileConfig &config);
 
-    size_t n_subfiles{};
-    size_t n_subfile_parts{};
-    std::vector<std::vector<SubFile *>> subfiles;
-    size_t subfile_rows{}, subfile_cols{};
-    xy m_geometry{};
-    std::vector<xy> positions;
-    ModuleConfig cfg{0, 0};
-    TimingMode timing_mode{};
-    bool quad{false};
+
 };
 
 } // namespace aare
