@@ -16,6 +16,10 @@ void define_pixel_map_bindings(py::module &m) {
     m.def("GenerateMoench03PixelMap", []() {
         auto ptr = new NDArray<size_t,2>(GenerateMoench03PixelMap());
         return return_image_data(ptr);
+    })
+    .def("GenerateMoench05PixelMap", []() {
+        auto ptr = new NDArray<size_t,2>(GenerateMoench05PixelMap());
+        return return_image_data(ptr);
     });
 
 }

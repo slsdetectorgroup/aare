@@ -40,6 +40,7 @@ class RawFile : public FileInterface {
     //Stuff that we might need with Ctb files
     uint32_t m_analog_samples{};
     uint32_t m_digital_samples{};
+    uint32_t m_adc_mask{};
     
 
   public:
@@ -49,14 +50,10 @@ class RawFile : public FileInterface {
      * @param mode file mode (r, w)
      * @param cfg file configuration
      */
-    explicit RawFile(const std::filesystem::path &fname, const std::string &mode = "r",
+    RawFile(const std::filesystem::path &fname, const std::string &mode = "r",
                      const FileConfig &config = FileConfig{});
 
-    /**
-     * @brief write function is not implemented for RawFile
-     * @param frame frame to write
-     */
-    void write(Frame &frame, sls_detector_header header);
+
     Frame read_frame() override { return get_frame(this->current_frame++); };
     Frame read_frame(size_t frame_number) override{
         seek(frame_number);
@@ -141,7 +138,6 @@ class RawFile : public FileInterface {
     xy geometry() { return m_geometry; }
 
   private:
-    void write_master_file();
     /**
      * @brief read the frame at the given frame index into the image buffer
      * @param frame_number frame number to read
@@ -192,8 +188,6 @@ class RawFile : public FileInterface {
      * @brief open the subfiles
      */
     void open_subfiles();
-    void parse_config(const FileConfig &config);
-
 
 };
 

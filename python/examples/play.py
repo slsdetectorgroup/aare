@@ -14,8 +14,12 @@ from pathlib import Path
 # im = ax.imshow(frame, cmap='viridis')
 
 
-fpath = Path('/Users/erik/data/Moench03old/test_034_irradiated_noise_g4_hg_exptime_2000us_master_0.json')
+# fpath = Path('/Users/erik/data/Moench03old/test_034_irradiated_noise_g4_hg_exptime_2000us_master_0.json')
+fpath = Path('/Users/erik/data/Moench05/moench05_master_0.json')
 f = aare.File(fpath)
+f.seek(437)
 frame = f.read_frame()
 
-plt.imshow(frame)
+m = aare.GenerateMoench05PixelMap()
+img = np.take(frame, m.astype(np.int64))
+

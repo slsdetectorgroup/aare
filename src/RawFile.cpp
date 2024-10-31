@@ -13,7 +13,7 @@ namespace aare {
 RawFile::RawFile(const std::filesystem::path &fname, const std::string &mode, const FileConfig &config) {
     m_mode = mode;
     m_fname = fname;
-    if (mode == "r" || mode == "r+") {
+    if (mode == "r") {
         if (config != FileConfig()) {
             // aare::logger::warn(
             //     "In read mode it is not necessary to provide a config, the provided config will be ignored");
@@ -23,97 +23,11 @@ RawFile::RawFile(const std::filesystem::path &fname, const std::string &mode, co
         find_number_of_subfiles();
         find_geometry();
         open_subfiles();
-
-    } else if (mode == "w" || mode == "w+") {
-
-        if (std::filesystem::exists(fname)) {
-            // handle mode w as w+ (no overrwriting)
-            throw std::runtime_error(LOCATION + "File already exists");
-        }
-
-        parse_config(config);
-        parse_fname();
-        write_master_file();
-        n_subfiles = 1;
-        n_subfile_parts = 1;
-        subfile_cols = m_cols;
-        subfile_rows = m_rows;
-        open_subfiles();
-
     } else {
-        throw std::runtime_error(LOCATION + "Unsupported mode");
+        throw std::runtime_error(LOCATION + "Unsupported mode. Can only read RawFiles.");
     }
 }
 
-void RawFile::parse_config(const FileConfig &config) {
-    m_bitdepth = config.dtype.bitdepth();
-    m_total_frames = config.total_frames;
-    m_rows = config.rows;
-    m_cols = config.cols;
-    m_type = config.detector_type;
-    max_frames_per_file = config.max_frames_per_file;
-    m_geometry = config.geometry;
-    version = config.version;
-    subfile_rows = config.geometry.row;
-    subfile_cols = config.geometry.col;
-
-    if (m_geometry != aare::xy{1, 1}) {
-        throw std::runtime_error(LOCATION + "Only geometry {1,1} files are supported for writing");
-    }
-}
-void RawFile::write_master_file() {
-    if (m_ext != ".json") {
-        throw std::runtime_error(LOCATION + "only json master files are supported for writing");
-    }
-    std::ofstream ofs(master_fname(), std::ios::binary);
-    std::string ss;
-    ss.reserve(1024);
-    ss += "{\n\t";
-    aare::write_str(ss, "Version", version);
-    ss += "\n\t";
-    aare::write_digit(ss, "Total Frames", m_total_frames);
-    ss += "\n\t";
-    aare::write_str(ss, "Detector Type", ToString(m_type));
-    ss += "\n\t";
-    aare::write_str(ss, "Geometry", m_geometry.to_string());
-    ss += "\n\t";
-
-    uint64_t img_size = (m_cols * m_rows) / (static_cast<size_t>(m_geometry.col * m_geometry.row));
-    img_size *= m_bitdepth;
-    aare::write_digit(ss, "Image Size in bytes", img_size);
-    ss += "\n\t";
-    aare::write_digit(ss, "Max Frames Per File", max_frames_per_file);
-    ss += "\n\t";
-    aare::write_digit(ss, "Dynamic Range", m_bitdepth);
-    ss += "\n\t";
-    const aare::xy pixels = {static_cast<uint32_t>(m_rows / m_geometry.row),
-                             static_cast<uint32_t>(m_cols / m_geometry.col)};
-    aare::write_str(ss, "Pixels", pixels.to_string());
-    ss += "\n\t";
-    aare::write_digit(ss, "Number of rows", m_rows);
-    ss += "\n\t";
-    const std::string tmp = "{\n"
-                            "        \"Frame Number\": \"8 bytes\",\n"
-                            "        \"Exposure Length\": \"4 bytes\",\n"
-                            "        \"Packet Number\": \"4 bytes\",\n"
-                            "        \"Bunch Id\": \"8 bytes\",\n"
-                            "        \"Timestamp\": \"8 bytes\",\n"
-                            "        \"Module Id\": \"2 bytes\",\n"
-                            "        \"Row\": \"2 bytes\",\n"
-                            "        \"Column\": \"2 bytes\",\n"
-                            "        \"Reserved\": \"2 bytes\",\n"
-                            "        \"Debug\": \"4 bytes\",\n"
-                            "        \"RoundRNumber\": \"2 bytes\",\n"
-                            "        \"DetType\": \"1 byte\",\n"
-                            "        \"Version\": \"1 byte\",\n"
-                            "        \"Packet Mask\": \"64 bytes\"\n"
-                            "    }";
-
-    ss += "\"Frame Header Format\":" + tmp + "\n";
-    ss += "}";
-    ofs << ss;
-    ofs.close();
-}
 
 void RawFile::open_subfiles() {
     if (m_mode == "r")
@@ -230,6 +144,15 @@ void RawFile::parse_json_metadata() {
     }catch (const json::out_of_range &e) {
         m_analog_samples = 0;
     }
+    try{
+        std::string adc_mask = j.at("ADC Mask");
+        m_adc_mask = std::stoul(adc_mask, nullptr, 16);
+        // fmt::print("ADC Mask: {}, n_set: {}\n", m_adc_mask, __builtin_popcount(m_adc_mask));
+    }catch (const json::out_of_range &e) {
+        m_adc_mask = 0;
+    }
+
+
     try {
         m_digital_samples = j.at("Digital Samples");
         }catch (const json::out_of_range &e) {
@@ -244,6 +167,12 @@ void RawFile::parse_json_metadata() {
         m_type = DetectorType::Moench03_old;
     }
 
+    //Here we know we have a ChipTestBoard file update the geometry?
+    //TODO! Carry on information about digtial, and transceivers
+    if (m_type == DetectorType::ChipTestBoard) {
+       subfile_rows = 1;
+       subfile_cols = m_analog_samples*__builtin_popcount(m_adc_mask);
+    }
     
 
 
@@ -393,30 +322,7 @@ void RawFile::get_frame_into(size_t frame_index, std::byte *frame_buffer) {
         }
         delete[] part_buffer;
     }
-
-    //TODO! deal with ROI!
-
-    // if (m_type == DetectorType::Moench03_old) {
-    //     auto *data = reinterpret_cast<uint16_t *>(frame_buffer);
-    //     for (size_t i = 0; i < m_rows * m_cols; i++) {
-    //         data[i] = pixel_map[data[i]];
-    //     }
-    // }
-
     
-}
-
-void RawFile::write(Frame &frame, sls_detector_header header) {
-    if (m_mode == "r") {
-        throw std::runtime_error(LOCATION + "File is open in read mode");
-    }
-    size_t const subfile_id = this->current_frame / this->max_frames_per_file;
-    for (size_t part_idx = 0; part_idx != this->n_subfile_parts; ++part_idx) {
-
-        this->subfiles[subfile_id][part_idx]->write_part(frame.data(), header,
-                                                         this->current_frame % this->max_frames_per_file);
-    }
-    this->current_frame++;
 }
 
 std::vector<Frame> RawFile::read_n(size_t n_frames) {
@@ -450,15 +356,7 @@ size_t RawFile::frame_number(size_t frame_index) {
 
 RawFile::~RawFile() noexcept {
 
-    // update master file
-    if (m_mode == "w" || m_mode == "w+" || m_mode == "r+") {
-        try {
-            write_master_file();
-        } catch (...) {
-            // aare::logger::warn(LOCATION + "Could not update master file");
-        }
-    }
-
+    //TODO! Fix this, for file closing
     for (auto &vec : subfiles) {
         for (auto *subfile : vec) {
             delete subfile;
