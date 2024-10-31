@@ -232,10 +232,12 @@ endif()
 
 set(PUBLICHEADERS
     include/aare/ClusterFinder.hpp
+    include/aare/CtbRawFile.hpp
     include/aare/defs.hpp
     include/aare/Dtype.hpp
     include/aare/File.hpp
     include/aare/FileInterface.hpp
+    include/aare/file_utils.hpp
     include/aare/Frame.hpp
     include/aare/json.hpp
     include/aare/NDArray.hpp
@@ -253,9 +255,11 @@ set(PUBLICHEADERS
 
 set(SourceFiles
     ${CMAKE_CURRENT_SOURCE_DIR}/src/defs.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/CtbRawFile.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/src/Dtype.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/src/Frame.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/src/File.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/file_utils.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/src/NumpyFile.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/src/PixelMap.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/src/RawFile.cpp
@@ -286,6 +290,7 @@ if(AARE_TESTS)
             ${CMAKE_CURRENT_SOURCE_DIR}/src/defs.test.cpp
             ${CMAKE_CURRENT_SOURCE_DIR}/src/Dtype.test.cpp
             ${CMAKE_CURRENT_SOURCE_DIR}/src/Frame.test.cpp
+            ${CMAKE_CURRENT_SOURCE_DIR}/src/file_utils.test.cpp
             ${CMAKE_CURRENT_SOURCE_DIR}/src/NDArray.test.cpp
             ${CMAKE_CURRENT_SOURCE_DIR}/src/NDView.test.cpp
             ${CMAKE_CURRENT_SOURCE_DIR}/src/ClusterFinder.test.cpp

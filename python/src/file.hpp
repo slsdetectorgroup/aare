@@ -1,5 +1,6 @@
 #include "aare/Frame.hpp"
 #include "aare/File.hpp"
+#include "aare/CtbRawFile.hpp"
 #include "aare/defs.hpp"
 // #include "aare/fClusterFileV2.hpp"
 
@@ -16,6 +17,11 @@ namespace py = pybind11;
 using namespace::aare;
 
 void define_file_io_bindings(py::module &m) {
+
+    py::class_<CtbRawFile>(m, "CtbRawFile")
+        .def(py::init<const std::filesystem::path &>());
+        
+
     py::class_<File>(m, "File")
         .def(py::init([](const std::filesystem::path &fname) { return File(fname, "r", {}); }))
         .def(

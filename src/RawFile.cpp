@@ -71,11 +71,11 @@ void RawFile::find_number_of_subfiles() {
         ;
     n_subfiles = n_mod;
 }
-inline std::filesystem::path RawFile::data_fname(size_t mod_id, size_t file_id) {
+std::filesystem::path RawFile::data_fname(size_t mod_id, size_t file_id) {
     return this->m_base_path / fmt::format("{}_d{}_f{}_{}.raw", this->m_base_name, file_id, mod_id, this->m_findex);
 }
 
-inline std::filesystem::path RawFile::master_fname() {
+std::filesystem::path RawFile::master_fname() {
     return this->m_base_path / fmt::format("{}_master_{}{}", this->m_base_name, this->m_findex, this->m_ext);
 }
 
