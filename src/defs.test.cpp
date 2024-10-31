@@ -6,7 +6,7 @@
 TEST_CASE("Enum to string conversion") {
     // By the way I don't think the enum string conversions should be in the defs.hpp file
     // but let's use this to show a test
-    REQUIRE(toString(aare::DetectorType::Jungfrau) == "Jungfrau");
+    REQUIRE(ToString(aare::DetectorType::Jungfrau) == "Jungfrau");
 }
 
 TEST_CASE("Cluster creation") {

@@ -33,7 +33,7 @@ struct FileConfig {
     size_t total_frames{};
     std::string to_string() const {
         return "{ dtype: " + dtype.to_string() + ", rows: " + std::to_string(rows) + ", cols: " + std::to_string(cols) +
-               ", geometry: " + geometry.to_string() + ", detector_type: " + toString(detector_type) +
+               ", geometry: " + geometry.to_string() + ", detector_type: " + ToString(detector_type) +
                ", max_frames_per_file: " + std::to_string(max_frames_per_file) +
                ", total_frames: " + std::to_string(total_frames) + " }";
     }

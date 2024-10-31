@@ -72,7 +72,7 @@ void RawFile::write_master_file() {
     ss += "\n\t";
     aare::write_digit(ss, "Total Frames", m_total_frames);
     ss += "\n\t";
-    aare::write_str(ss, "Detector Type", toString(m_type));
+    aare::write_str(ss, "Detector Type", ToString(m_type));
     ss += "\n\t";
     aare::write_str(ss, "Geometry", m_geometry.to_string());
     ss += "\n\t";
@@ -240,8 +240,6 @@ void RawFile::parse_json_metadata() {
         m_type = DetectorType::Moench03;
     }else if (m_type == DetectorType::Moench && m_rows == 400 && m_analog_samples == 5000) {
         m_type = DetectorType::Moench03_old;
-    }else{
-        throw std::runtime_error(LOCATION + "Could not determine Moench detector type");
     }
 
 

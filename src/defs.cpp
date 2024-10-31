@@ -9,7 +9,7 @@ namespace aare {
  * @param type DetectorType
  * @return string representation of the DetectorType
  */
-template <> std::string toString(DetectorType arg) {
+template <> std::string ToString(DetectorType arg) {
     switch (arg) {
     case DetectorType::Jungfrau:
         return "Jungfrau";

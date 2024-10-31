@@ -181,10 +181,10 @@ enum class TimingMode { Auto, Trigger };
 
 template <class T> T StringTo(const std::string &arg) { return T(arg); }
 
-template <class T> std::string toString(T arg) { return T(arg); }
+template <class T> std::string ToString(T arg) { return T(arg); }
 
 template <> DetectorType StringTo(const std::string & /*name*/);
-template <> std::string toString(DetectorType arg);
+template <> std::string ToString(DetectorType arg);
 
 template <> TimingMode StringTo(const std::string & /*mode*/);
 
