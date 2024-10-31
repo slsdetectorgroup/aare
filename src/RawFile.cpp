@@ -400,10 +400,13 @@ void RawFile::read_into(std::byte *image_buf, size_t n_frames) {
 }
 
 size_t RawFile::frame_number(size_t frame_index) {
-    if (frame_index > this->m_total_frames) {
-        throw std::runtime_error(LOCATION + "Frame number out of range");
+    if (frame_index >= this->m_total_frames) {
+        throw std::runtime_error(LOCATION + " Frame number out of range");
     }
-    size_t const subfile_id = frame_index / this->max_frames_per_file;
+    size_t subfile_id = frame_index / this->max_frames_per_file;
+    if(subfile_id >= this->subfiles.size()){
+        throw std::runtime_error(LOCATION + " Subfile out of range. Possible missing data.");
+    }
     return this->subfiles[subfile_id][0]->frame_number(frame_index % this->max_frames_per_file);
 }
 

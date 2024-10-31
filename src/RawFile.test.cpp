@@ -32,6 +32,41 @@ TEST_CASE("Read frame numbers from a jungfrau raw file") {
     }
 }
 
+TEST_CASE("Read a frame number too high throws") {
+    auto fpath = test_data_path() / "jungfrau" / "jungfrau_single_master_0.json";
+    REQUIRE(std::filesystem::exists(fpath));
+
+    File f(fpath, "r");
+
+    // we know this file has 10 frames with frame numbers 1 to 10
+    // f0 1,2,3
+    // f1 4,5,6
+    // f2 7,8,9
+    // f3 10
+    REQUIRE_THROWS(f.frame_number(10));
+}
+
+TEST_CASE("Read a frame numbers where the subfile is missing throws") {
+    auto fpath = test_data_path() / "jungfrau" / "jungfrau_missing_subfile_master_0.json";
+    REQUIRE(std::filesystem::exists(fpath));
+
+    File f(fpath, "r");
+
+    // we know this file has 10 frames with frame numbers 1 to 10
+    // f0 1,2,3
+    // f1 4,5,6 - but files f1-f3 are missing
+    // f2 7,8,9 - gone  
+    // f3 10    - gone
+    REQUIRE(f.frame_number(0) == 1);
+    REQUIRE(f.frame_number(1) == 2);
+    REQUIRE(f.frame_number(2) == 3);
+    REQUIRE_THROWS(f.frame_number(4));
+    REQUIRE_THROWS(f.frame_number(7));
+    REQUIRE_THROWS(f.frame_number(937));
+    // REQUIRE_THROWS(f.frame_number(10));
+}
+
+
 TEST_CASE("Read data from a jungfrau 500k single port raw file") {
     auto fpath = test_data_path() / "jungfrau" / "jungfrau_single_master_0.json";
     REQUIRE(std::filesystem::exists(fpath));
