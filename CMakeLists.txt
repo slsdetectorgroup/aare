@@ -243,6 +243,7 @@ set(PUBLICHEADERS
     include/aare/NumpyFile.hpp
     include/aare/NumpyHelpers.hpp
     include/aare/Pedestal.hpp
+    include/aare/PixelMap.hpp
     include/aare/RawFile.hpp
     include/aare/SubFile.hpp
     include/aare/VarClusterFinder.hpp
@@ -256,6 +257,7 @@ set(SourceFiles
     ${CMAKE_CURRENT_SOURCE_DIR}/src/Frame.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/src/File.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/src/NumpyFile.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/PixelMap.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/src/RawFile.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/src/SubFile.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/src/NumpyHelpers.cpp
