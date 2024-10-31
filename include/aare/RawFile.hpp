@@ -1,7 +1,10 @@
 #pragma once
 #include "aare/Frame.hpp"
+#include "aare/NDArray.hpp" //for pixel map
 #include "aare/FileInterface.hpp"
 #include "aare/SubFile.hpp"
+
+#include <optional>
 
 namespace aare {
 
@@ -37,6 +40,7 @@ class RawFile : public FileInterface {
     //Stuff that we might need with Ctb files
     uint32_t m_analog_samples{};
     uint32_t m_digital_samples{};
+    
 
   public:
     /**

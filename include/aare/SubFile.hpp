@@ -5,7 +5,8 @@
 #include <cstdint>
 #include <filesystem>
 #include <map>
-#include <variant>
+#include <optional>
+
 
 namespace aare {
 
@@ -72,6 +73,8 @@ class SubFile {
     std::string m_mode;
     size_t n_frames{};
     int m_sub_file_index_{};
+    DetectorType m_detector_type;
+    std::optional<NDArray<size_t, 2>> pixel_map;
 };
 
 } // namespace aare

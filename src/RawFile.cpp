@@ -1,6 +1,7 @@
 #include "aare/RawFile.hpp"
 #include "aare/defs.hpp"
 #include "aare/json.hpp"
+#include "aare/PixelMap.hpp"
 
 #include <fmt/format.h>
 #include <nlohmann/json.hpp>
@@ -236,11 +237,14 @@ void RawFile::parse_json_metadata() {
     }
 
     //Update detector type for Moench
-    if (m_type == DetectorType::Moench && m_analog_samples == 0 && m_rows == 400) {
+    //TODO! How does this work with old .raw master files?
+    if (m_type == DetectorType::Moench && m_analog_samples == 0 && subfile_rows == 400) {
         m_type = DetectorType::Moench03;
-    }else if (m_type == DetectorType::Moench && m_rows == 400 && m_analog_samples == 5000) {
+    }else if (m_type == DetectorType::Moench && subfile_rows == 400 && m_analog_samples == 5000) {
         m_type = DetectorType::Moench03_old;
     }
+
+    
 
 
     // only Eiger had quad
@@ -321,10 +325,6 @@ Frame RawFile::get_frame(size_t frame_index) {
     auto f = Frame(this->m_rows, this->m_cols, Dtype::from_bitdepth(this->m_bitdepth));
     std::byte *frame_buffer = f.data();
     get_frame_into(frame_index, frame_buffer);
-
-    //here would be the place to run a transform before returning the frame
-    if (m_type == DetectorType::Moench03_old)
-        fmt::print("Moench03_old\n");
     return f;
 }
 
@@ -375,6 +375,8 @@ void RawFile::get_frame_into(size_t frame_index, std::byte *frame_buffer) {
         auto bytes_per_part = this->subfile_rows * this->subfile_cols * this->m_bitdepth / 8;
         auto *part_buffer = new std::byte[bytes_per_part];
 
+        //TODO! if we have many submodules we should reorder them on the module level
+
         for (size_t part_idx = 0; part_idx != this->n_subfile_parts; ++part_idx) {
             auto corrected_idx = frame_indices[part_idx];
             auto subfile_id = corrected_idx / this->max_frames_per_file;
@@ -391,6 +393,17 @@ void RawFile::get_frame_into(size_t frame_index, std::byte *frame_buffer) {
         }
         delete[] part_buffer;
     }
+
+    //TODO! deal with ROI!
+
+    // if (m_type == DetectorType::Moench03_old) {
+    //     auto *data = reinterpret_cast<uint16_t *>(frame_buffer);
+    //     for (size_t i = 0; i < m_rows * m_cols; i++) {
+    //         data[i] = pixel_map[data[i]];
+    //     }
+    // }
+
+    
 }
 
 void RawFile::write(Frame &frame, sls_detector_header header) {
@@ -417,6 +430,7 @@ std::vector<Frame> RawFile::read_n(size_t n_frames) {
 }
 void RawFile::read_into(std::byte *image_buf, size_t n_frames) {
     // TODO: implement this in a more efficient way
+
     for (size_t i = 0; i < n_frames; i++) {
         this->get_frame_into(this->current_frame++, image_buf);
         image_buf += this->bytes_per_frame();
