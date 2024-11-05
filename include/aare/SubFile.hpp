@@ -15,7 +15,7 @@ namespace aare {
  */
 class SubFile {
   public:
-    size_t write_part(std::byte *buffer, sls_detector_header header, size_t frame_index);
+    size_t write_part(std::byte *buffer, DetectorHeader header, size_t frame_index);
     /**
      * @brief SubFile constructor
      * @param fname path to the subfile

@@ -180,9 +180,9 @@ class RawFile : public FileInterface {
     /**
      * @brief read the header of the file
      * @param fname path to the data subfile
-     * @return sls_detector_header
+     * @return DetectorHeader
      */
-    static sls_detector_header read_header(const std::filesystem::path &fname);
+    static DetectorHeader read_header(const std::filesystem::path &fname);
 
     /**
      * @brief open the subfiles

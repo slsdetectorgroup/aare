@@ -111,7 +111,7 @@ class Cluster {
 /**
  * @brief header contained in parts of frames
  */
-struct sls_detector_header {
+struct DetectorHeader {
     uint64_t frameNumber;
     uint32_t expLength;
     uint32_t packetNumber;
@@ -166,6 +166,7 @@ using xy = t_xy<uint32_t>;
 
 using dynamic_shape = std::vector<int64_t>;
 
+//TODO! Can we uniform enums between the libraries?
 enum class DetectorType {
     Jungfrau,
     Eiger,
@@ -178,6 +179,7 @@ enum class DetectorType {
 };
 
 enum class TimingMode { Auto, Trigger };
+enum class FrameDiscardPolicy { NoDiscard, Discard };
 
 template <class T> T StringTo(const std::string &arg) { return T(arg); }
 
@@ -187,6 +189,8 @@ template <> DetectorType StringTo(const std::string & /*name*/);
 template <> std::string ToString(DetectorType arg);
 
 template <> TimingMode StringTo(const std::string & /*mode*/);
+
+template <> FrameDiscardPolicy StringTo(const std::string & /*mode*/);
 
 using DataTypeVariants = std::variant<uint16_t, uint32_t>;
 

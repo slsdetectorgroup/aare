@@ -27,6 +27,8 @@ target_link_libraries(_aare PRIVATE aare_core aare_compiler_flags)
 # List of python files to be copied to the build directory
 set( PYTHON_FILES
     aare/__init__.py
+    aare/CtbRawFile.py
+    aare/transform.py
 )
 
 # Copy the python files to the build directory

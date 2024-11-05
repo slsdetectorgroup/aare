@@ -3,6 +3,10 @@ import numpy as np
 plt.ion()
 
 import aare
+from aare import CtbRawFile
+print('aare imported')
+from aare import transform
+print('transform imported')
 from pathlib import Path
 
 # p = Path('/Users/erik/data/aare_test_data/jungfrau/jungfrau_single_master_0.json')
@@ -15,11 +19,14 @@ from pathlib import Path
 
 
 # fpath = Path('/Users/erik/data/Moench03old/test_034_irradiated_noise_g4_hg_exptime_2000us_master_0.json')
-fpath = Path('/Users/erik/data/Moench05/moench05_master_0.json')
-f = aare.File(fpath)
-f.seek(437)
-frame = f.read_frame()
+fpath = Path('/Users/erik/data/Moench05/moench05_multifile_master_0.json')
 
-m = aare.GenerateMoench05PixelMap()
-img = np.take(frame, m.astype(np.int64))
+
+# f = aare.CtbRawFile(fpath, transform = transform.moench05)
+
+
+
+with CtbRawFile(fpath, transform = transform.moench05) as f:
+    for header, image in f:
+        print(f'Frame number: {header["frameNumber"]}')
 

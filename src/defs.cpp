@@ -68,6 +68,14 @@ template <> TimingMode StringTo(const std::string &arg) {
     throw std::runtime_error("Could not decode timing mode from: \"" + arg + "\"");
 }
 
+template <> FrameDiscardPolicy StringTo(const std::string &arg) {
+    if (arg == "nodiscard")
+        return FrameDiscardPolicy::NoDiscard;
+    if (arg == "discard")
+        return FrameDiscardPolicy::Discard;
+    throw std::runtime_error("Could not decode frame discard policy from: \"" + arg + "\"");
+}
+
 // template <> TimingMode StringTo<TimingMode>(std::string mode);
 
 } // namespace aare
