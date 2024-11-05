@@ -100,6 +100,7 @@ class CtbRawFile(_aare.CtbRawFile):
         return super().tell()
 
 
+    @property
     def image_size_in_bytes(self) -> int:
         """Return the size of the image in bytes.
 
@@ -116,6 +117,7 @@ class CtbRawFile(_aare.CtbRawFile):
         """
         return super().frames_in_file
     
+    @property
     def frames_in_file(self) -> int:
         """Return the number of frames in the file.
 
