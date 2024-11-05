@@ -106,7 +106,7 @@ class CtbRawFile(_aare.CtbRawFile):
         Returns:
             int: Size of image in bytes.
         """
-        return super().image_size_in_bytes()
+        return super().image_size_in_bytes
 
     def __len__(self) -> int:
         """Return the number of frames in the file.
@@ -114,7 +114,7 @@ class CtbRawFile(_aare.CtbRawFile):
         Returns:
             int: Number of frames in file.
         """
-        return super().frames_in_file()
+        return super().frames_in_file
     
     def frames_in_file(self) -> int:
         """Return the number of frames in the file.
@@ -122,7 +122,7 @@ class CtbRawFile(_aare.CtbRawFile):
         Returns:
             int: Number of frames in file.
         """
-        return super().frames_in_file()
+        return super().frames_in_file
 
     def __enter__(self):
         return self
