@@ -3,6 +3,7 @@
 #include <filesystem>
 #include <fmt/format.h>
 #include <fstream>
+#include <optional>
 
 #include <nlohmann/json.hpp>
 using json = nlohmann::json;
