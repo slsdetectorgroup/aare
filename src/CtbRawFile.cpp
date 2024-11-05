@@ -4,9 +4,6 @@
 namespace aare {
 
 CtbRawFile::CtbRawFile(const std::filesystem::path &fname) : m_master(fname) {
-
-    
-
     if (m_master.detector_type() != DetectorType::ChipTestBoard) {
         throw std::runtime_error(LOCATION + "Not a Ctb file");
     }
@@ -17,7 +14,24 @@ CtbRawFile::CtbRawFile(const std::filesystem::path &fname) : m_master(fname) {
     m_file.open(m_master.data_fname(0, 0), std::ios::binary);
 }
 
-size_t CtbRawFile::tell() const { return m_current_frame; }
+void CtbRawFile::read_into(std::byte *image_buf, DetectorHeader* header) {
+    if(m_current_frame >= m_master.frames_in_file()){
+        throw std::runtime_error(LOCATION + "End of file reached");
+    }
+
+    if(m_current_frame != 0 && m_current_frame % m_master.max_frames_per_file() == 0){
+        open_data_file(m_current_subfile+1);
+    }
+    
+    if(header){
+        m_file.read(reinterpret_cast<char *>(header), sizeof(DetectorHeader));
+    }else{
+        m_file.seekg(sizeof(DetectorHeader), std::ios::cur);
+    }
+
+    m_file.read(reinterpret_cast<char *>(image_buf), m_master.image_size_in_bytes());
+    m_current_frame++;
+}
 
 void CtbRawFile::seek(size_t frame_number) {
     if (auto index = sub_file_index(frame_number); index != m_current_subfile) {
@@ -27,6 +41,12 @@ void CtbRawFile::seek(size_t frame_number) {
     m_file.seekg((sizeof(DetectorHeader)+m_master.image_size_in_bytes()) * frame_number_in_file);
     m_current_frame = frame_number;
 }
+
+size_t CtbRawFile::tell() const { return m_current_frame; }
+
+size_t CtbRawFile::image_size_in_bytes() const { return m_master.image_size_in_bytes(); }
+
+size_t CtbRawFile::frames_in_file() const { return m_master.frames_in_file(); }
 
 void CtbRawFile::find_subfiles() {
     // we can semi safely assume that there is only one module for CTB
@@ -47,26 +67,6 @@ void CtbRawFile::open_data_file(size_t subfile_index) {
     }
 }
 
-void CtbRawFile::read_into(std::byte *image_buf, DetectorHeader* header) {
-    if(m_current_frame >= m_master.frames_in_file()){
-        throw std::runtime_error(LOCATION + "End of file reached");
-    }
 
-    if(m_current_frame != 0 && m_current_frame % m_master.max_frames_per_file() == 0){
-        open_data_file(m_current_subfile+1);
-    }
-    
-    if(header){
-        m_file.read(reinterpret_cast<char *>(header), sizeof(DetectorHeader));
-    }else{
-        m_file.seekg(sizeof(DetectorHeader), std::ios::cur);
-    }
-
-    m_file.read(reinterpret_cast<char *>(image_buf), m_master.image_size_in_bytes());
-    m_current_frame++;
-
-    
-
-}
 
 } // namespace aare

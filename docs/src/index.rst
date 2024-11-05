@@ -16,6 +16,7 @@ AARE
     Dtype
     ClusterFinder
     Pedestal
+    RawMasterFile
     VarClusterFinder
 
 .. toctree::

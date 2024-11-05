@@ -19,6 +19,7 @@ set(SPHINX_SOURCE_FILES
   src/Dtype.rst
   src/ClusterFinder.rst
   src/Pedestal.rst
+  src/RawMasterFile.rst
   src/VarClusterFinder.rst
   src/pyVarClusterFinder.rst
   src/pyFile.rst

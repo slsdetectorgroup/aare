@@ -46,7 +46,9 @@ void define_file_io_bindings(py::module &m) {
                  return py::make_tuple(header, image);
              })
         .def("seek", &CtbRawFile::seek)
-        .def("tell", &CtbRawFile::tell);
+        .def("tell", &CtbRawFile::tell)
+        .def("image_size_in_bytes", &CtbRawFile::image_size_in_bytes)
+        .def("frames_in_file", &CtbRawFile::frames_in_file);
 
     py::class_<File>(m, "File")
         .def(py::init([](const std::filesystem::path &fname) {

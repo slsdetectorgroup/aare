@@ -3,19 +3,35 @@ from . import _aare
 import numpy as np
 
 class CtbRawFile(_aare.CtbRawFile):
+    """File reader for the CTB raw file format.
+    
+    Args:  
+            fname (pathlib.Path | str): Path to the file to be read.
+            transform (function): Function to apply to the data after reading it. 
+                The function should take a numpy array of type uint8 and return one
+                or several numpy arrays.
+    """
     def __init__(self, fname, transform = None):
         super().__init__(fname)
         self.transform = transform
 
 
-    def read_frame(self, frame_index = None):
-        """Read one frame from the file.
+    def read_frame(self, frame_index: int | None = None ) -> tuple:
+        """Read one frame from the file and then advance the file pointer.
+
+        .. note::
+
+            Uses the position of the file pointer :py:meth:`~CtbRawFile.tell` to determine
+            which frame to read unless frame_index is specified.
 
         Args:
             frame_index (int): If not None, seek to this frame before reading.
 
         Returns:
             tuple: header, data
+
+        Raises:
+            RuntimeError: If the file is at the end.
         """
         if frame_index is not None:
             self.seek(frame_index)
@@ -32,7 +48,23 @@ class CtbRawFile(_aare.CtbRawFile):
             else:
                 return header, res
             
-    def read_n(self, n_frames):
+    def read_n(self, n_frames:int) -> tuple:
+        """Read several frames from the file.
+
+        .. note::
+
+            Uses the position of the file pointer :py:meth:`~CtbRawFile.tell` to determine
+            where to start reading from.
+
+        Args:
+            n_frames (int): Number of frames to read.
+
+        Returns:
+            tuple: header, data
+
+        Raises:
+            RuntimeError: If EOF is reached.
+        """
         # Do the first read to figure out what we have
         tmp_header, tmp_data = self.read_frame()
         
@@ -50,6 +82,47 @@ class CtbRawFile(_aare.CtbRawFile):
 
         return header, data
 
+
+    def seek(self, frame_index:int) -> None:
+        """Seek to a specific frame in the file.
+
+        Args:
+            frame_index (int): Frame position in file to seek to.
+        """
+        super().seek(frame_index)
+
+    def tell() -> int:
+        """Return the current frame position in the file.
+
+        Returns:
+            int: Frame position in file.
+        """
+        return super().tell()
+
+
+    def image_size_in_bytes(self) -> int:
+        """Return the size of the image in bytes.
+
+        Returns:
+            int: Size of image in bytes.
+        """
+        return super().image_size_in_bytes()
+
+    def __len__(self) -> int:
+        """Return the number of frames in the file.
+
+        Returns:
+            int: Number of frames in file.
+        """
+        return super().frames_in_file()
+    
+    def frames_in_file(self) -> int:
+        """Return the number of frames in the file.
+
+        Returns:
+            int: Number of frames in file.
+        """
+        return super().frames_in_file()
 
     def __enter__(self):
         return self

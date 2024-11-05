@@ -9,6 +9,7 @@
 
 namespace aare{
 
+
 class CtbRawFile{
     RawMasterFile m_master;
     std::ifstream m_file;
@@ -24,8 +25,8 @@ public:
 
     // in the specific class we can expose more functionality
 
-    size_t image_size_in_bytes() const { return m_master.image_size_in_bytes(); }
-
+    size_t image_size_in_bytes() const;
+    size_t frames_in_file() const;
 private:
     void find_subfiles();
     size_t sub_file_index(size_t frame_index) const {
