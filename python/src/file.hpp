@@ -48,6 +48,7 @@ void define_file_io_bindings(py::module &m) {
              })
         .def("seek", &CtbRawFile::seek)
         .def("tell", &CtbRawFile::tell)
+        .def("master", &CtbRawFile::master)
         .def_property_readonly("image_size_in_bytes", &CtbRawFile::image_size_in_bytes)
         .def_property_readonly("frames_in_file", &CtbRawFile::frames_in_file);
 
@@ -167,7 +168,8 @@ void define_file_io_bindings(py::module &m) {
         .def_property_readonly("bitdepth", &RawMasterFile::bitdepth)
         .def_property_readonly("analog_samples", &RawMasterFile::analog_samples)
         .def_property_readonly("digital_samples",
-                               &RawMasterFile::digital_samples);
+                               &RawMasterFile::digital_samples)
+        .def_property_readonly("transceiver_samples", &RawMasterFile::transceiver_samples);
 
     // py::class_<ClusterHeader>(m, "ClusterHeader")
     //     .def(py::init<>())

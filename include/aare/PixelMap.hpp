@@ -5,7 +5,11 @@
 
 namespace aare {
 
-NDArray<size_t, 2> GenerateMoench03PixelMap();
-NDArray<size_t, 2> GenerateMoench05PixelMap();
+NDArray<ssize_t, 2> GenerateMoench03PixelMap();
+NDArray<ssize_t, 2> GenerateMoench05PixelMap();
+
+NDArray<ssize_t, 2>GenerateMH02SingleCounterPixelMap();
+NDArray<ssize_t, 3> GenerateMH02FourCounterPixelMap();
+
 
 } // namespace aare

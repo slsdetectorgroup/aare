@@ -36,6 +36,7 @@ class CtbRawFile(_aare.CtbRawFile):
         if frame_index is not None:
             self.seek(frame_index)
 
+
         header, data = super().read_frame()
         if header.shape == (1,):
             header = header[0]
@@ -47,6 +48,8 @@ class CtbRawFile(_aare.CtbRawFile):
                 return header, *res
             else:
                 return header, res
+        else:
+            return header, data
             
     def read_n(self, n_frames:int) -> tuple:
         """Read several frames from the file.
@@ -82,6 +85,13 @@ class CtbRawFile(_aare.CtbRawFile):
 
         return header, data
 
+    def read(self) -> tuple:
+        """Read the entire file.
+
+        Returns:
+            tuple: header, data
+        """
+        return self.read_n(self.frames_in_file)
 
     def seek(self, frame_index:int) -> None:
         """Seek to a specific frame in the file.

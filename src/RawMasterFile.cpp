@@ -109,6 +109,10 @@ std::optional<size_t> RawMasterFile::digital_samples() const {
     return m_digital_samples;
 }
 
+std::optional<size_t> RawMasterFile::transceiver_samples() const {
+    return m_transceiver_samples;
+}
+
 void RawMasterFile::parse_json(const std::filesystem::path &fpath) {
     std::ifstream ifs(fpath);
     json j;
@@ -187,6 +191,15 @@ void RawMasterFile::parse_json(const std::filesystem::path &fpath) {
             m_digital_samples = j.at("Digital Samples");
         }
     } catch (const json::out_of_range &e) {
+        // keep the optional empty
+    }
+
+    try{
+        m_transceiver_flag = j.at("Transceiver Flag");
+        if(m_transceiver_flag){
+            m_transceiver_samples = j.at("Transceiver Samples");
+        }
+    }catch (const json::out_of_range &e) {
         // keep the optional empty
     }
 

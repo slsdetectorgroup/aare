@@ -48,6 +48,8 @@ size_t CtbRawFile::image_size_in_bytes() const { return m_master.image_size_in_b
 
 size_t CtbRawFile::frames_in_file() const { return m_master.frames_in_file(); }
 
+RawMasterFile CtbRawFile::master() const { return m_master; }
+
 void CtbRawFile::find_subfiles() {
     // we can semi safely assume that there is only one module for CTB
     while (std::filesystem::exists(m_master.data_fname(0, m_num_subfiles)))

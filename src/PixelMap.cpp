@@ -3,7 +3,7 @@
 #include <array>
 
 namespace aare {
-NDArray<size_t, 2> GenerateMoench03PixelMap() {
+NDArray<ssize_t, 2> GenerateMoench03PixelMap() {
     std::array<int, 32> const adc_nr = {300, 325, 350, 375, 300, 325, 350, 375,
                                         200, 225, 250, 275, 200, 225, 250, 275,
                                         100, 125, 150, 175, 100, 125, 150, 175,
@@ -11,7 +11,7 @@ NDArray<size_t, 2> GenerateMoench03PixelMap() {
     int const sc_width = 25;
     int const nadc = 32;
     int const pixels_per_sc = 5000;
-    NDArray<size_t, 2> order_map({400, 400});
+    NDArray<ssize_t, 2> order_map({400, 400});
 
     int pixel = 0;
     for (int i = 0; i != pixels_per_sc; ++i) {
@@ -30,9 +30,9 @@ NDArray<size_t, 2> GenerateMoench03PixelMap() {
     return order_map;
 }
 
-NDArray<size_t, 2> GenerateMoench05PixelMap() {
+NDArray<ssize_t, 2> GenerateMoench05PixelMap() {
     std::array<int, 3> adc_numbers = {9, 13, 1};
-    NDArray<size_t, 2> order_map({160, 150});
+    NDArray<ssize_t, 2> order_map({160, 150});
     int n_pixel = 0;
     for (int row = 0; row < 160; row++) {
         for (int i_col = 0; i_col < 50; i_col++) {
@@ -46,6 +46,28 @@ NDArray<size_t, 2> GenerateMoench05PixelMap() {
                 // analog_frame[row * 150 + col] = analog_data[i_analog] & 0x3FFF;
                 order_map(row, col) = i_analog;
                 
+            }
+        }
+    }
+    return order_map;
+}
+
+NDArray<ssize_t, 2>GenerateMH02SingleCounterPixelMap(){
+    NDArray<ssize_t, 2> order_map({48, 48});
+    for(int row = 0; row < 48; row++){
+        for(int col = 0; col < 48; col++){
+            order_map(row, col) = row*48 + col;
+        }
+    }
+    return order_map;
+}
+
+NDArray<ssize_t, 3> GenerateMH02FourCounterPixelMap(){
+    NDArray<ssize_t, 3> order_map({4, 48, 48});
+    for (int counter=0; counter<4; counter++){
+        for(int row = 0; row < 48; row++){
+            for(int col = 0; col < 48; col++){
+                order_map(counter, row, col) = counter*48*48 + row*48 + col;
             }
         }
     }

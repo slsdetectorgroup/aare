@@ -27,6 +27,8 @@ public:
 
     size_t image_size_in_bytes() const;
     size_t frames_in_file() const;
+
+    RawMasterFile master() const;
 private:
     void find_subfiles();
     size_t sub_file_index(size_t frame_index) const {

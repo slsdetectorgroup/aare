@@ -74,7 +74,7 @@ class SubFile {
     size_t n_frames{};
     int m_sub_file_index_{};
     DetectorType m_detector_type;
-    std::optional<NDArray<size_t, 2>> pixel_map;
+    std::optional<NDArray<ssize_t, 2>> pixel_map;
 };
 
 } // namespace aare
