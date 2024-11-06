@@ -19,11 +19,13 @@ set(SPHINX_SOURCE_FILES
   src/Dtype.rst
   src/ClusterFinder.rst
   src/Pedestal.rst
+  src/RawFile.rst
   src/RawMasterFile.rst
   src/VarClusterFinder.rst
   src/pyVarClusterFinder.rst
   src/pyFile.rst
   src/pyCtbRawFile.rst
+  src/pyRawMasterFile.rst
 )
 
 foreach(filename ${SPHINX_SOURCE_FILES})

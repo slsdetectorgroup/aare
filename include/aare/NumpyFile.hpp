@@ -47,6 +47,8 @@ class NumpyFile : public FileInterface {
     size_t cols() const override { return m_header.shape[2]; }
     size_t bitdepth() const override { return m_header.dtype.bitdepth(); }
 
+    DetectorType detector_type() const override { return DetectorType::Unknown; }
+
     /**
      * @brief get the data type of the numpy file
      * @return DType
@@ -103,6 +105,10 @@ class NumpyFile : public FileInterface {
     uint8_t minor_ver_{};
     size_t m_bytes_per_frame{};
     size_t m_pixels_per_frame{};
+
+    size_t m_cols;
+    size_t m_rows;
+    size_t m_bitdepth;
 
     void load_metadata();
     void get_frame_into(size_t /*frame_number*/, std::byte * /*image_buf*/);

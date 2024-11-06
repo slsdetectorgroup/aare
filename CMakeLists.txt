@@ -32,6 +32,7 @@ option(AARE_TESTS "Build tests" OFF)
 option(AARE_EXAMPLES "Build examples" OFF)
 option(AARE_IN_GITHUB_ACTIONS "Running in Github Actions" OFF)
 option(AARE_DOCS "Build documentation" OFF)
+option(AARE_VERBOSE "Verbose output" OFF)
 
 # Configure which of the dependencies to use FetchContent for
 option(AARE_FETCH_FMT "Use FetchContent to download fmt" ON)
@@ -50,6 +51,10 @@ if(AARE_SYSTEM_LIBRARIES)
     set(AARE_FETCH_CATCH OFF CACHE BOOL "Disabled FetchContent for catch2" FORCE)
     set(AARE_FETCH_JSON OFF CACHE BOOL "Disabled FetchContent for nlohmann::json" FORCE)
     set(AARE_FETCH_ZMQ OFF CACHE BOOL "Disabled FetchContent for libzmq" FORCE)
+endif()
+
+if(AARE_VERBOSE)
+    add_compile_definitions(AARE_VERBOSE)
 endif()
 
 

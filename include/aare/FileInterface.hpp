@@ -135,7 +135,7 @@ class FileInterface {
     virtual size_t bitdepth() const = 0;
 
 
-    DetectorType detector_type() const { return m_type; }
+    virtual DetectorType detector_type() const = 0;
 
     // function to query the data type of the file
     /*virtual DataType dtype = 0; */
@@ -144,18 +144,18 @@ class FileInterface {
 
   protected:
     std::string m_mode{};
-    std::filesystem::path m_fname{};
-    std::filesystem::path m_base_path{};
-    std::string m_base_name{}, m_ext{};
-    int m_findex{};
-    size_t m_total_frames{};
-    size_t max_frames_per_file{};
-    std::string version{};
-    DetectorType m_type{DetectorType::Unknown};
-    size_t m_rows{};
-    size_t m_cols{};
-    size_t m_bitdepth{};
-    size_t current_frame{};
+    // std::filesystem::path m_fname{};
+    // std::filesystem::path m_base_path{};
+    // std::string m_base_name{}, m_ext{};
+    // int m_findex{};
+    // size_t m_total_frames{};
+    // size_t max_frames_per_file{};
+    // std::string version{};
+    // DetectorType m_type{DetectorType::Unknown};
+    // size_t m_rows{};
+    // size_t m_cols{};
+    // size_t m_bitdepth{};
+    // size_t current_frame{};
 };
 
 } // namespace aare

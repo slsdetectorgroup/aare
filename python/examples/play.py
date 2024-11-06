@@ -26,7 +26,8 @@ fpath = Path('/Users/erik/data/Moench05/moench05_multifile_master_0.json')
 
 
 
-with CtbRawFile(fpath, transform = transform.moench05) as f:
-    for header, image in f:
-        print(f'Frame number: {header["frameNumber"]}')
+# with CtbRawFile(fpath, transform = transform.moench05) as f:
+#     for header, image in f:
+#         print(f'Frame number: {header["frameNumber"]}')
 
+f = aare.RawMasterFile(fpath)

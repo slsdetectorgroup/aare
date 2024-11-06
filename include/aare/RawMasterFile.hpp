@@ -10,6 +10,9 @@ using json = nlohmann::json;
 
 namespace aare {
 
+/**
+ * @brief Implementation used in RawMasterFile to parse the file name
+ */
 class RawFileNameComponents {
     std::filesystem::path m_base_path{};
     std::string m_base_name{};
@@ -18,20 +21,21 @@ class RawFileNameComponents {
 
   public:
     RawFileNameComponents(const std::filesystem::path &fname);
-    std::filesystem::path master_fname() const {
-        return m_base_path /
-               fmt::format("{}_master_{}{}", m_base_name, m_file_index, m_ext);
-    }
 
-    std::filesystem::path data_fname(size_t mod_id, size_t file_id) const{
-        return m_base_path / fmt::format("{}_d{}_f{}_{}.raw", m_base_name,
-                                         mod_id, file_id, m_file_index);
-    }
+    /// @brief Get the filename including path of the master file.
+    /// (i.e. what was passed in to the constructor)) 
+    std::filesystem::path master_fname() const;
 
-    const std::filesystem::path &base_path() const { return m_base_path; }
-    const std::string &base_name() const { return m_base_name; }
-    const std::string &ext() const { return m_ext; }
-    int file_index() const { return m_file_index; }
+    /// @brief Get the filename including path of the data file.
+    /// @param mod_id module id run_d[module_id]_f0_0
+    /// @param file_id file id run_d0_f[file_id]_0
+    std::filesystem::path data_fname(size_t mod_id, size_t file_id) const;
+
+
+    const std::filesystem::path &base_path() const;
+    const std::string &base_name() const;
+    const std::string &ext() const;
+    int file_index() const;
 };
 
 
@@ -44,19 +48,28 @@ class RawMasterFile {
     DetectorType m_type;
     TimingMode m_timing_mode;
 
-    size_t m_image_size_in_bytes;
-    size_t m_frames_in_file;
-    size_t m_pixels_y;
-    size_t m_pixels_x;
-    size_t m_bitdepth;
+    size_t m_image_size_in_bytes{};
+    size_t m_frames_in_file{};
+    size_t m_total_frames_expected{};
+    size_t m_pixels_y{};
+    size_t m_pixels_x{};
+    size_t m_bitdepth{};
 
-    size_t m_max_frames_per_file;
-    uint32_t m_adc_mask;
-    FrameDiscardPolicy m_frame_discard_policy;
-    size_t m_frame_padding;
+    xy m_geometry;
+
+    size_t m_max_frames_per_file{};
+    uint32_t m_adc_mask{};
+    FrameDiscardPolicy m_frame_discard_policy{};
+    size_t m_frame_padding{};
+
+    //TODO! should these be bool?
+    uint8_t m_analog_flag{};
+    uint8_t m_digital_flag{};
 
     std::optional<size_t> m_analog_samples;
     std::optional<size_t> m_digital_samples;
+    std::optional<size_t> m_number_of_rows;
+    std::optional<uint8_t> m_quad;
 
   public:
     RawMasterFile(const std::filesystem::path &fpath);
@@ -75,11 +88,13 @@ class RawMasterFile {
     size_t frame_padding() const;
     const FrameDiscardPolicy &frame_discard_policy() const;
 
+    size_t total_frames_expected() const;
+    xy geometry() const;
+
     std::optional<size_t> analog_samples() const;
     std::optional<size_t> digital_samples() const;
-
-    
-
+    std::optional<size_t> number_of_rows() const;
+    std::optional<uint8_t> quad() const;
   private:
     void parse_json(const std::filesystem::path &fpath);
     void parse_raw(const std::filesystem::path &fpath);

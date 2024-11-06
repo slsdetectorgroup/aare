@@ -22,7 +22,7 @@ File::File(const std::filesystem::path &fname, const std::string &mode,
     // TODO! How do we read raw files directly?
     if (fname.extension() == ".raw" || fname.extension() == ".json") {
         // file_impl = new RawFile(fname, mode, cfg);
-        file_impl = std::make_unique<RawFile>(fname, mode, cfg);
+        file_impl = std::make_unique<RawFile>(fname, mode);
     }
     else if (fname.extension() == ".npy") {
         // file_impl = new NumpyFile(fname, mode, cfg);

@@ -16,6 +16,7 @@ AARE
     Dtype
     ClusterFinder
     Pedestal
+    RawFile
     RawMasterFile
     VarClusterFinder
 
@@ -25,5 +26,6 @@ AARE
     
     pyFile
     pyCtbRawFile
+    pyRawMasterFile
     pyVarClusterFinder
 

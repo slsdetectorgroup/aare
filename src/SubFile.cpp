@@ -25,17 +25,15 @@ SubFile::SubFile(const std::filesystem::path &fname, DetectorType detector, size
     if (mode == "r") {
         fp = fopen(m_fname.string().c_str(), "rb");
     } else {
-        // if file exists, open in read/write mode (without truncating the file)
-        // if file does not exist, open in write mode
-        if (std::filesystem::exists(fname)) {
-            fp = fopen(m_fname.string().c_str(), "r+b");
-        } else {
-            fp = fopen(m_fname.string().c_str(), "wb");
-        }
+        throw std::runtime_error(LOCATION + "Unsupported mode. Can only read RawFiles.");
     }
     if (fp == nullptr) {
-        throw std::runtime_error(LOCATION + "Could not open file for writing");
+        throw std::runtime_error(LOCATION + fmt::format("Could not open file {}", m_fname.string()));
     }
+#ifdef AARE_VERBOSE
+    fmt::print("Opened file: {} with {} frames\n", m_fname.string(), n_frames);
+    fmt::print("m_rows: {}, m_cols: {}, m_bitdepth: {}\n", m_rows, m_cols, m_bitdepth);
+#endif
 }
 
 size_t SubFile::get_part(std::byte *buffer, size_t frame_index) {

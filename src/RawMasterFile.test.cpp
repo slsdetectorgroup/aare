@@ -11,6 +11,15 @@ TEST_CASE("Parse a master file fname"){
     REQUIRE(m.base_name() == "test");
     REQUIRE(m.ext() == ".json");
     REQUIRE(m.file_index() == 1);
+    REQUIRE(m.base_path() == "");
+}
+
+TEST_CASE("Extraction of base path works"){
+    RawFileNameComponents m("some/path/test_master_73.json");
+    REQUIRE(m.base_name() == "test");
+    REQUIRE(m.ext() == ".json");
+    REQUIRE(m.file_index() == 73);
+    REQUIRE(m.base_path() == "some/path");
 }
 
 TEST_CASE("Construction of master file name and data files"){
@@ -22,8 +31,14 @@ TEST_CASE("Construction of master file name and data files"){
     REQUIRE(m.data_fname(1, 1) == "test_d1_f1_1.raw");
 }
 
+TEST_CASE("Master file name does not fit pattern"){
+    REQUIRE_THROWS(RawFileNameComponents("somefile.json"));
+    REQUIRE_THROWS(RawFileNameComponents("another_test_d0_f0_1.raw"));
+    REQUIRE_THROWS(RawFileNameComponents("test_master_1.txt"));
+}
 
-TEST_CASE("Parse a master file"){
+
+TEST_CASE("Parse a master file in .json format"){
     auto fpath = test_data_path() / "jungfrau" / "jungfrau_single_master_0.json";
     REQUIRE(std::filesystem::exists(fpath));
     RawMasterFile f(fpath);
@@ -35,10 +50,13 @@ TEST_CASE("Parse a master file"){
     REQUIRE(f.detector_type() == DetectorType::Jungfrau);
     // "Timing Mode": "auto",
     REQUIRE(f.timing_mode() == TimingMode::Auto);
+    
     // "Geometry": {
     //     "x": 1,
     //     "y": 1
     // },
+    REQUIRE(f.geometry().col == 1);
+    REQUIRE(f.geometry().row == 1);
 
     // "Image Size in bytes": 1048576,
     REQUIRE(f.image_size_in_bytes() == 1048576);
@@ -54,10 +72,15 @@ TEST_CASE("Parse a master file"){
 
     //Jungfrau doesn't write but it is 16
     REQUIRE(f.bitdepth() == 16);
+
+
     // "Frame Discard Policy": "nodiscard",
+
     // "Frame Padding": 1,
+    REQUIRE(f.frame_padding() == 1);
     // "Scan Parameters": "[disabled]",
     // "Total Frames": 10,
+    REQUIRE(f.total_frames_expected() == 10);
     // "Receiver Roi": {
     //     "xmin": 4294967295,
     //     "xmax": 4294967295,
@@ -68,7 +91,11 @@ TEST_CASE("Parse a master file"){
     // "Period": "1ms",
     // "Number of UDP Interfaces": 1,
     // "Number of rows": 512,
+    REQUIRE(f.number_of_rows() == 512);
     // "Frames in File": 10,
+    REQUIRE(f.frames_in_file() == 10);
+
+    //TODO! Should we parse this? 
     // "Frame Header Format": {
     //     "Frame Number": "8 bytes",
     //     "SubFrame Number/ExpLength": "4 bytes",
@@ -89,6 +116,70 @@ TEST_CASE("Parse a master file"){
 
     REQUIRE_FALSE(f.analog_samples());
     REQUIRE_FALSE(f.digital_samples());                
+
+}
+
+TEST_CASE("Parse a master file in .raw format"){
+    
+    auto fpath = test_data_path() / "moench/moench04_noise_200V_sto_both_100us_no_light_thresh_900_master_0.raw";
+    REQUIRE(std::filesystem::exists(fpath));
+    RawMasterFile f(fpath);
+
+    // Version                    : 6.4
+    REQUIRE(f.version() == "6.4");
+    // TimeStamp                  : Wed Aug 31 09:08:49 2022
+
+    // Detector Type              : ChipTestBoard
+    REQUIRE(f.detector_type() == DetectorType::ChipTestBoard);
+    // Timing Mode                : auto
+    REQUIRE(f.timing_mode() == TimingMode::Auto);
+    // Geometry                   : [1, 1]
+    REQUIRE(f.geometry().col == 1);
+    REQUIRE(f.geometry().row == 1);
+    // Image Size                 : 360000 bytes
+    REQUIRE(f.image_size_in_bytes() == 360000);
+    // Pixels                     : [96, 1]
+    REQUIRE(f.pixels_x() == 96);
+    REQUIRE(f.pixels_y() == 1);
+    // Max Frames Per File        : 20000
+    REQUIRE(f.max_frames_per_file() == 20000);
+    // Frame Discard Policy       : nodiscard
+    // Frame Padding              : 1
+    REQUIRE(f.frame_padding() == 1);
+    // Scan Parameters            : [disabled]
+    // Total Frames               : 100
+    REQUIRE(f.total_frames_expected() == 100);
+    // Exptime                    : 100us
+    // Period                     : 4ms
+    // Ten Giga                   : 1
+    // ADC Mask                   : 0xffffffff
+    // Analog Flag                : 1
+    // Analog Samples             : 5000
+    REQUIRE(f.analog_samples() == 5000);
+    // Digital Flag               : 1
+    // Digital Samples            : 5000
+    REQUIRE(f.digital_samples() == 5000);
+    // Dbit Offset                : 0
+    // Dbit Bitset                : 0
+    // Frames in File             : 100
+    REQUIRE(f.frames_in_file() == 100);
+
+    // #Frame Header
+    // Frame Number               : 8 bytes
+    // SubFrame Number/ExpLength  : 4 bytes
+    // Packet Number              : 4 bytes
+    // Bunch ID                   : 8 bytes
+    // Timestamp                  : 8 bytes
+    // Module Id                  : 2 bytes
+    // Row                        : 2 bytes
+    // Column                     : 2 bytes
+    // Reserved                   : 2 bytes
+    // Debug                      : 4 bytes
+    // Round Robin Number         : 2 bytes
+    // Detector Type              : 1 byte
+    // Header Version             : 1 byte
+    // Packets Caught Mask        : 64 bytes
+
 
 }
 

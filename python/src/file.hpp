@@ -1,4 +1,5 @@
 #include "aare/CtbRawFile.hpp"
+#include "aare/RawMasterFile.hpp"
 #include "aare/File.hpp"
 #include "aare/Frame.hpp"
 #include "aare/defs.hpp"
@@ -148,6 +149,25 @@ void define_file_io_bindings(py::module &m) {
         .def("__repr__", [](const FileConfig &a) {
             return "<FileConfig: " + a.to_string() + ">";
         });
+
+
+    py::class_<RawMasterFile>(m, "RawMasterFile")
+        .def(py::init<const std::filesystem::path &>())
+        .def("data_fname", &RawMasterFile::data_fname)
+        .def_property_readonly("version", &RawMasterFile::version)
+        .def_property_readonly("detector_type", &RawMasterFile::detector_type)
+        .def_property_readonly("timing_mode", &RawMasterFile::timing_mode)
+        .def_property_readonly("image_size_in_bytes",
+                               &RawMasterFile::image_size_in_bytes)
+        .def_property_readonly("frames_in_file", &RawMasterFile::frames_in_file)
+        .def_property_readonly("pixels_y", &RawMasterFile::pixels_y)
+        .def_property_readonly("pixels_x", &RawMasterFile::pixels_x)
+        .def_property_readonly("max_frames_per_file",
+                               &RawMasterFile::max_frames_per_file)
+        .def_property_readonly("bitdepth", &RawMasterFile::bitdepth)
+        .def_property_readonly("analog_samples", &RawMasterFile::analog_samples)
+        .def_property_readonly("digital_samples",
+                               &RawMasterFile::digital_samples);
 
     // py::class_<ClusterHeader>(m, "ClusterHeader")
     //     .def(py::init<>())

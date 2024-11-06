@@ -63,7 +63,7 @@ TEST_CASE("Read a frame numbers where the subfile is missing throws") {
     REQUIRE_THROWS(f.frame_number(4));
     REQUIRE_THROWS(f.frame_number(7));
     REQUIRE_THROWS(f.frame_number(937));
-    // REQUIRE_THROWS(f.frame_number(10));
+    REQUIRE_THROWS(f.frame_number(10));
 }
 
 
@@ -142,8 +142,9 @@ TEST_CASE("Read multipart files") {
 }
 
 TEST_CASE("Read file with unordered frames") {
+    //TODO! Better explanation and error message
     auto fpath = test_data_path() / "mythen" / "scan242_master_3.raw";
     REQUIRE(std::filesystem::exists(fpath));
-    File f(fpath, "r");
+    File f(fpath);
     REQUIRE_THROWS((f.read_frame()));
 }
