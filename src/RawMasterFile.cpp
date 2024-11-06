@@ -32,20 +32,24 @@ RawFileNameComponents::RawFileNameComponents(
 }
 
 std::filesystem::path RawFileNameComponents::master_fname() const {
-        return m_base_path /
-               fmt::format("{}_master_{}{}", m_base_name, m_file_index, m_ext);
-    }
+    return m_base_path /
+           fmt::format("{}_master_{}{}", m_base_name, m_file_index, m_ext);
+}
 
-std::filesystem::path RawFileNameComponents::data_fname(size_t mod_id, size_t file_id) const{
-        return m_base_path / fmt::format("{}_d{}_f{}_{}.raw", m_base_name,
-                                         mod_id, file_id, m_file_index);
-    }
+std::filesystem::path RawFileNameComponents::data_fname(size_t mod_id,
+                                                        size_t file_id) const {
+    return m_base_path / fmt::format("{}_d{}_f{}_{}.raw", m_base_name, mod_id,
+                                     file_id, m_file_index);
+}
 
-const std::filesystem::path& RawFileNameComponents::base_path() const { return m_base_path; }
-    const std::string& RawFileNameComponents::base_name() const { return m_base_name; }
-    const std::string& RawFileNameComponents::ext() const { return m_ext; }
-    int RawFileNameComponents::file_index() const { return m_file_index; }
-
+const std::filesystem::path &RawFileNameComponents::base_path() const {
+    return m_base_path;
+}
+const std::string &RawFileNameComponents::base_name() const {
+    return m_base_name;
+}
+const std::string &RawFileNameComponents::ext() const { return m_ext; }
+int RawFileNameComponents::file_index() const { return m_file_index; }
 
 RawMasterFile::RawMasterFile(const std::filesystem::path &fpath)
     : m_fnc(fpath) {
@@ -153,9 +157,9 @@ void RawMasterFile::parse_json(const std::filesystem::path &fpath) {
         // keep the optional empty
     }
 
-    try{
+    try {
         m_quad = j.at("Quad");
-    }catch (const json::out_of_range &e) {
+    } catch (const json::out_of_range &e) {
         // keep the optional empty
     }
     // try{
@@ -174,29 +178,15 @@ void RawMasterFile::parse_json(const std::filesystem::path &fpath) {
         // keep the optional empty
     }
 
-    // //Update detector type for Moench
-    // //TODO! How does this work with old .raw master files?
-    // if (m_type == DetectorType::Moench && m_analog_samples == 0 &&
-    // m_subfile_rows == 400) {
-    //     m_type = DetectorType::Moench03;
-    // }else if (m_type == DetectorType::Moench && m_subfile_rows == 400 &&
-    // m_analog_samples == 5000) {
-    //     m_type = DetectorType::Moench03_old;
-    // }
-
-    // //Here we know we have a ChipTestBoard file update the geometry?
-    // //TODO! Carry on information about digtial, and transceivers
-    // if (m_type == DetectorType::ChipTestBoard) {
-    //    subfile_rows = 1;
-    //    subfile_cols = m_analog_samples*__builtin_popcount(m_adc_mask);
-    // }
-
-    // // only Eiger had quad
-    // if (m_type == DetectorType::Eiger) {
-    //     quad = (j["Quad"] == 1);
-    // }
-
-    // m_geometry = {j["Geometry"]["y"], j["Geometry"]["x"]};
+    // Update detector type for Moench
+    // TODO! How does this work with old .raw master files?
+    if (m_type == DetectorType::Moench && !m_analog_samples &&
+        m_pixels_y == 400) {
+        m_type = DetectorType::Moench03;
+    } else if (m_type == DetectorType::Moench && m_pixels_y == 400 &&
+               m_analog_samples == 5000) {
+        m_type = DetectorType::Moench03_old;
+    }
 }
 void RawMasterFile::parse_raw(const std::filesystem::path &fpath) {
 
@@ -222,12 +212,13 @@ void RawMasterFile::parse_raw(const std::filesystem::path &fpath) {
                 m_timing_mode = StringTo<TimingMode>(value);
             } else if (key == "Image Size") {
                 m_image_size_in_bytes = std::stoi(value);
-            } else if (key == "Frame Padding"){
+            } else if (key == "Frame Padding") {
                 m_frame_padding = std::stoi(value);
-            // } else if (key == "Frame Discard Policy"){
-            //     m_frame_discard_policy = StringTo<FrameDiscardPolicy>(value);
-            // } else if (key == "Number of rows"){
-            //     m_number_of_rows = std::stoi(value);
+                // } else if (key == "Frame Discard Policy"){
+                //     m_frame_discard_policy =
+                //     StringTo<FrameDiscardPolicy>(value);
+                // } else if (key == "Number of rows"){
+                //     m_number_of_rows = std::stoi(value);
             } else if (key == "Analog Flag") {
                 m_analog_flag = std::stoi(value);
             } else if (key == "Digital Flag") {
@@ -243,8 +234,8 @@ void RawMasterFile::parse_raw(const std::filesystem::path &fpath) {
                 }
             } else if (key == "Frames in File") {
                 m_frames_in_file = std::stoi(value);
-            // } else if (key == "ADC Mask") {
-            //     m_adc_mask = std::stoi(value, nullptr, 16);
+                // } else if (key == "ADC Mask") {
+                //     m_adc_mask = std::stoi(value, nullptr, 16);
             } else if (key == "Pixels") {
                 // Total number of pixels cannot be found yet looking at
                 // submodule
