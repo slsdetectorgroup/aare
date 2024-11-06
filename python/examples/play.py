@@ -18,16 +18,14 @@ from pathlib import Path
 # im = ax.imshow(frame, cmap='viridis')
 
 
-# fpath = Path('/Users/erik/data/Moench03old/test_034_irradiated_noise_g4_hg_exptime_2000us_master_0.json')
-fpath = Path('/Users/erik/data/Moench05/moench05_multifile_master_0.json')
+fpath = Path('/Users/erik/data/Moench03old/test_034_irradiated_noise_g4_hg_exptime_2000us_master_0.json')
+# fpath = Path('/Users/erik/data/Moench05/moench05_multifile_master_0.json')
 
 
 # f = aare.CtbRawFile(fpath, transform = transform.moench05)
-
-
-
 # with CtbRawFile(fpath, transform = transform.moench05) as f:
 #     for header, image in f:
 #         print(f'Frame number: {header["frameNumber"]}')
 
-f = aare.RawMasterFile(fpath)
+m = aare.RawMasterFile(fpath)
+f = aare.File(fpath)
