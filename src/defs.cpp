@@ -73,6 +73,8 @@ template <> FrameDiscardPolicy StringTo(const std::string &arg) {
         return FrameDiscardPolicy::NoDiscard;
     if (arg == "discard")
         return FrameDiscardPolicy::Discard;
+    if (arg == "discardpartial")
+        return FrameDiscardPolicy::DiscardPartial;
     throw std::runtime_error("Could not decode frame discard policy from: \"" + arg + "\"");
 }
 

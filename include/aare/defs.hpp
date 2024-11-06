@@ -179,7 +179,7 @@ enum class DetectorType {
 };
 
 enum class TimingMode { Auto, Trigger };
-enum class FrameDiscardPolicy { NoDiscard, Discard };
+enum class FrameDiscardPolicy { NoDiscard, Discard, DiscardPartial };
 
 template <class T> T StringTo(const std::string &arg) { return T(arg); }
 
