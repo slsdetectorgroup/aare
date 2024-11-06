@@ -66,7 +66,7 @@ TEST_CASE("test pedestal push") {
                 }
                 REQUIRE(pedestal.mean(i, j) == (i + j));
                 REQUIRE(pedestal.variance(i, j) == 0);
-                REQUIRE(pedestal.standard_deviation(i, j) == 0);
+                REQUIRE(pedestal.std(i, j) == 0);
             }
         }
     }
@@ -91,7 +91,7 @@ TEST_CASE("test pedestal with normal distribution") {
     }
     auto mean = pedestal.mean();
     auto variance = pedestal.variance();
-    auto standard_deviation = pedestal.standard_deviation();
+    auto standard_deviation = pedestal.std();
 
     for (int i = 0; i < 3; i++) {
         for (int j = 0; j < 5; j++) {

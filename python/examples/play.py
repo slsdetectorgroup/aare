@@ -27,5 +27,18 @@ fpath = Path('/Users/erik/data/Moench03old/test_034_irradiated_noise_g4_hg_expti
 #     for header, image in f:
 #         print(f'Frame number: {header["frameNumber"]}')
 
-m = aare.RawMasterFile(fpath)
+# m = aare.RawMasterFile(fpath)
 f = aare.File(fpath)
+
+
+
+cf = aare.ClusterFinder((400,400),(3,3))
+
+for i in range(100):
+    cf.push_pedestal_frame(f.read_frame())
+
+
+f.seek(0)
+pd = f.read_n(100).mean(axis=0)
+
+clusters = cf.find_clusters_without_threshold(f.read_frame())
