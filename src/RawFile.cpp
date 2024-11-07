@@ -13,9 +13,10 @@ RawFile::RawFile(const std::filesystem::path &fname, const std::string &mode)
     : m_master(fname) {
     m_mode = mode;
     if (mode == "r") {
-        find_number_of_subfiles();
-        n_subfile_parts = m_master.geometry().col * m_master.geometry().row;
+        n_subfiles = find_number_of_subfiles(); //f0,f1...fn
+        n_subfile_parts = m_master.geometry().col * m_master.geometry().row; // d0,d1...dn
         find_geometry();
+        //update_geometry_from_roi();
         open_subfiles();
     } else {
         throw std::runtime_error(LOCATION +
@@ -107,27 +108,41 @@ bool RawFile::is_master_file(const std::filesystem::path &fpath) {
     return stem.find("_master_") != std::string::npos;
 }
 
-void RawFile::find_number_of_subfiles() {
-    int n_mod = 0;
-    while (std::filesystem::exists(m_master.data_fname(0, ++n_mod)))
+int RawFile::find_number_of_subfiles() {
+    int n_files = 0;
+    // f0,f1...fn How many files is the data split into?
+    while (std::filesystem::exists(m_master.data_fname(0, ++n_files)))
         ;
-    n_subfiles = n_mod;
+
     #ifdef AARE_VERBOSE
     fmt::print("Found: {} subfiles\n", n_subfiles);
     #endif
+    return n_files;
 }
 
 void RawFile::find_geometry() {
     uint16_t r{};
     uint16_t c{};
+    // for (size_t i = 0; i < n_subfile_parts; i++) {
+    //     for (size_t j = 0; j != n_subfiles; ++j) {
+    //         auto h = this->read_header(m_master.data_fname(i, j));
+    //         r = std::max(r, h.row);
+    //         c = std::max(c, h.column);
+
+    //         positions.push_back({h.row, h.column});
+    //     }
+    // }
+
+
+    std::vector<xy> module_position;
+
     for (size_t i = 0; i < n_subfile_parts; i++) {
-        for (size_t j = 0; j != n_subfiles; ++j) {
-            auto h = this->read_header(m_master.data_fname(i, j));
+            auto h = this->read_header(m_master.data_fname(i, 0));
             r = std::max(r, h.row);
             c = std::max(c, h.column);
-
             positions.push_back({h.row, h.column});
-        }
+            xy pos = {h.row * m_master.pixels_y(), h.column* m_master.pixels_x()};
+            module_position.emplace_back(pos);
     }
 
     r++;
@@ -137,6 +152,10 @@ void RawFile::find_geometry() {
     m_cols = (c * m_master.pixels_x());
 
     m_rows += static_cast<size_t>((r - 1) * cfg.module_gap_row);
+
+    for (size_t i=0; i < module_position.size(); i++){
+        fmt::print("Module {} at position: ({},{})\n", i, module_position[i].row, module_position[i].col);
+    }
 }
 
 Frame RawFile::get_frame(size_t frame_index) {

@@ -61,16 +61,7 @@ size_t SubFile::get_part(std::byte *buffer, size_t frame_index) {
     }
     
 }
-size_t SubFile::write_part(std::byte *buffer, DetectorHeader header, size_t frame_index) {
-    if (frame_index > n_frames) {
-        throw std::runtime_error("Frame number out of range");
-    }
-    fseek(fp, static_cast<int64_t>((sizeof(DetectorHeader) + bytes_per_part()) * frame_index), SEEK_SET);
-    auto wc = fwrite(reinterpret_cast<char *>(&header), sizeof(header), 1, fp);
-    wc += fwrite(buffer, bytes_per_part(), 1, fp);
 
-    return wc;
-}
 
 size_t SubFile::frame_number(size_t frame_index) {
     DetectorHeader h{};

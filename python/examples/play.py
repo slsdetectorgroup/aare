@@ -89,11 +89,11 @@ def get_Mh02_frames(fname):
 
 
 
-base = Path('/Users/erik/data/matterhorn/raw')
-fpath = Path(base / 'scan_15keV_vrf700_vrsh700_th0_master_0.json')
-f = aare.CtbRawFile(fpath, transform=transform.matterhorn02)
-f.seek(100)
-header1, image1 = f.read_frame()
+# base = Path('/Users/erik/data/matterhorn/raw')
+# fpath = Path(base / 'scan_15keV_vrf700_vrsh700_th0_master_0.json')
+# f = aare.CtbRawFile(fpath, transform=transform.matterhorn02)
+# f.seek(100)
+# header1, image1 = f.read_frame()
 
 # fpath = Path(base / 'scan_all15keV_vrf500_vrsh700_th0_master_0.json')
 
@@ -133,4 +133,7 @@ header1, image1 = f.read_frame()
 # f2 = aare.CtbRawFile(fpath, transform=transform.matterhorn02)
 # header, data = f2.read()
 # plt.plot(data[:,0,20,20])
-
+from aare import RawMasterFile, File
+fpath = Path('/mnt/sls_det_storage/matterhorn_data/aare_test_data/Jungfrau10/Jungfrau_DoubleModule_1UDP_ROI/SideBySide/241019_JF_12keV_Si_FF_GaAs_FF_7p88mmFilter_PedestalStart_ZPos_5.5_master_0.json')
+m = RawMasterFile(fpath)
+f = File(fpath)

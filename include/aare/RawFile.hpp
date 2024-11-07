@@ -29,9 +29,10 @@ struct ModuleConfig {
  * Consider using that unless you need raw file specific functionality.
  */
 class RawFile : public FileInterface {
-    size_t n_subfiles{};
-    size_t n_subfile_parts{};
-    std::vector<std::vector<SubFile *>> subfiles;
+    size_t n_subfiles{}; //f0,f1...fn
+    size_t n_subfile_parts{}; // d0,d1...dn
+    //TODO! move to vector of SubFile instead of pointers
+    std::vector<std::vector<SubFile *>> subfiles; //subfiles[f0,f1...fn][d0,d1...dn]
     std::vector<xy> positions;
     ModuleConfig cfg{0, 0};
 
@@ -102,7 +103,7 @@ class RawFile : public FileInterface {
     static DetectorHeader read_header(const std::filesystem::path &fname);
 
 
-    void find_number_of_subfiles();
+    int find_number_of_subfiles();
     void open_subfiles();
     void find_geometry();
 };
