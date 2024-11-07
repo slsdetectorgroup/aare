@@ -95,11 +95,11 @@ f = aare.CtbRawFile(fpath, transform=transform.matterhorn02)
 f.seek(100)
 header1, image1 = f.read_frame()
 
-fpath = Path(base / 'scan_all15keV_vrf500_vrsh700_th0_master_0.json')
+# fpath = Path(base / 'scan_all15keV_vrf500_vrsh700_th0_master_0.json')
 
-f = aare.CtbRawFile(fpath, transform=transform.matterhorn02)
-f.seek(100)
-header4, image4 = f.read_frame()
+# f = aare.CtbRawFile(fpath, transform=transform.matterhorn02)
+# f.seek(100)
+# header4, image4 = f.read_frame()
 
 # n_counters = image.shape[1] / 48**2 / 2
 
@@ -112,7 +112,7 @@ header4, image4 = f.read_frame()
 
 
 #Data come in "blocks" of 4 pixels/receiver
-data = get_Mh02_frames(fpath.as_posix())
+# data = get_Mh02_frames(fpath.as_posix())
 
 # rawi = np.zeros(48*48*4+56, dtype = np.uint16)
 # for i,v in enumerate(rawi[56:]):
@@ -130,7 +130,7 @@ data = get_Mh02_frames(fpath.as_posix())
 #             pm[counter, row, col] = row*48 + col+counter*48*48
 
 
-f2 = aare.CtbRawFile(fpath, transform=transform.matterhorn02)
-header, data = f2.read()
-plt.plot(data[:,0,20,20])
+# f2 = aare.CtbRawFile(fpath, transform=transform.matterhorn02)
+# header, data = f2.read()
+# plt.plot(data[:,0,20,20])
 

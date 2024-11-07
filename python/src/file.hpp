@@ -166,11 +166,29 @@ void define_file_io_bindings(py::module &m) {
         .def_property_readonly("max_frames_per_file",
                                &RawMasterFile::max_frames_per_file)
         .def_property_readonly("bitdepth", &RawMasterFile::bitdepth)
+        .def_property_readonly("frame_padding", &RawMasterFile::frame_padding)
+        .def_property_readonly("frame_discard_policy",
+                               &RawMasterFile::frame_discard_policy)
+        .def_property_readonly("total_frames_expected", &RawMasterFile::total_frames_expected)
+        .def_property_readonly("geometry", &RawMasterFile::geometry)
         .def_property_readonly("analog_samples", &RawMasterFile::analog_samples)
         .def_property_readonly("digital_samples",
                                &RawMasterFile::digital_samples)
-        .def_property_readonly("transceiver_samples", &RawMasterFile::transceiver_samples);
+        .def_property_readonly("transceiver_samples", &RawMasterFile::transceiver_samples)
+        .def_property_readonly("number_of_rows", &RawMasterFile::number_of_rows)
+        .def_property_readonly("quad", &RawMasterFile::quad)
+        .def_property_readonly("scan_parameters", &RawMasterFile::scan_parameters);
 
+
+
+    py::class_<ScanParameters>(m, "ScanParameters")
+        .def(py::init<const std::string &>())
+        .def(py::init<const ScanParameters&>())
+        .def_property_readonly("enabled", &ScanParameters::enabled)
+        .def_property_readonly("dac", &ScanParameters::dac)
+        .def_property_readonly("start", &ScanParameters::start)
+        .def_property_readonly("stop", &ScanParameters::stop)
+        .def_property_readonly("step", &ScanParameters::step);
     // py::class_<ClusterHeader>(m, "ClusterHeader")
     //     .def(py::init<>())
     //     .def_readwrite("frame_number", &ClusterHeader::frame_number)

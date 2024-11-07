@@ -23,7 +23,7 @@ class RawFileNameComponents {
     RawFileNameComponents(const std::filesystem::path &fname);
 
     /// @brief Get the filename including path of the master file.
-    /// (i.e. what was passed in to the constructor)) 
+    /// (i.e. what was passed in to the constructor))
     std::filesystem::path master_fname() const;
 
     /// @brief Get the filename including path of the data file.
@@ -31,16 +31,36 @@ class RawFileNameComponents {
     /// @param file_id file id run_d0_f[file_id]_0
     std::filesystem::path data_fname(size_t mod_id, size_t file_id) const;
 
-
     const std::filesystem::path &base_path() const;
     const std::string &base_name() const;
     const std::string &ext() const;
     int file_index() const;
 };
 
+class ScanParameters {
+    bool m_enabled = false;
+    std::string m_dac;
+    int m_start = 0;
+    int m_stop = 0;
+    int m_step = 0;
+    //TODO! add settleTime, requires string to time conversion
+
+  public:
+    ScanParameters(const std::string &par);
+    ScanParameters() = default;
+    ScanParameters(const ScanParameters &) = default;
+    ScanParameters &operator=(const ScanParameters &) = default;
+    ScanParameters(ScanParameters &&) = default;
+    int start() const;
+    int stop() const;
+    int step() const;
+    const std::string &dac() const;
+    bool enabled() const;
+};
 
 /**
- * @brief Class for parsing a master file either in our .json format or the old .raw format
+ * @brief Class for parsing a master file either in our .json format or the old
+ * .raw format
  */
 class RawMasterFile {
     RawFileNameComponents m_fnc;
@@ -62,10 +82,12 @@ class RawMasterFile {
     FrameDiscardPolicy m_frame_discard_policy{};
     size_t m_frame_padding{};
 
-    //TODO! should these be bool?
+    // TODO! should these be bool?
     uint8_t m_analog_flag{};
     uint8_t m_digital_flag{};
     uint8_t m_transceiver_flag{};
+
+    ScanParameters m_scan_parameters;
 
     std::optional<size_t> m_analog_samples;
     std::optional<size_t> m_digital_samples;
@@ -78,7 +100,7 @@ class RawMasterFile {
 
     std::filesystem::path data_fname(size_t mod_id, size_t file_id) const;
 
-    const std::string &version() const; //!< For example "7.2" 
+    const std::string &version() const; //!< For example "7.2"
     const DetectorType &detector_type() const;
     const TimingMode &timing_mode() const;
     size_t image_size_in_bytes() const;
@@ -98,6 +120,9 @@ class RawMasterFile {
     std::optional<size_t> transceiver_samples() const;
     std::optional<size_t> number_of_rows() const;
     std::optional<uint8_t> quad() const;
+
+    ScanParameters scan_parameters() const;
+
   private:
     void parse_json(const std::filesystem::path &fpath);
     void parse_raw(const std::filesystem::path &fpath);

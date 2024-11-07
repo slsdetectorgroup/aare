@@ -1,7 +1,7 @@
 
 from . import _aare
 import numpy as np
-
+from .ScanParameters import ScanParameters
 class CtbRawFile(_aare.CtbRawFile):
     """File reader for the CTB raw file format.
     
@@ -108,7 +108,24 @@ class CtbRawFile(_aare.CtbRawFile):
             int: Frame position in file.
         """
         return super().tell()
+    
+    @property
+    def scan_parameters(self):
+        """Return the scan parameters.
 
+        Returns:
+            ScanParameters: Scan parameters.
+        """
+        return ScanParameters(self.master.scan_parameters)
+
+    @property
+    def master(self):
+        """Return the master file.
+
+        Returns:
+            RawMasterFile: Master file.
+        """
+        return super().master()
 
     @property
     def image_size_in_bytes(self) -> int:

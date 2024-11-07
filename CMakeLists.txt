@@ -244,7 +244,6 @@ set(PUBLICHEADERS
     include/aare/FileInterface.hpp
     include/aare/RawMasterFile.hpp
     include/aare/Frame.hpp
-    include/aare/json.hpp
     include/aare/NDArray.hpp
     include/aare/NDView.hpp
     include/aare/NumpyFile.hpp

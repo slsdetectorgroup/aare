@@ -5,7 +5,6 @@ from . import _aare
 class Moench05Transform:
     #Could be moved to C++ without changing the interface
     def __init__(self):
-        print('map created')
         self.pixel_map = _aare.GenerateMoench05PixelMap()
 
     def __call__(self, data):
@@ -22,6 +21,7 @@ class Matterhorn02Transform:
             return np.take(data.view(np.uint16), self.pixel_map[0])
         else:
             return np.take(data.view(np.uint16), self.pixel_map[0:counters])
+
 
 #on import generate the pixel maps to avoid doing it every time
 moench05 = Moench05Transform()

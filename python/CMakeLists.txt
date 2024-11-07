@@ -29,6 +29,7 @@ set( PYTHON_FILES
     aare/__init__.py
     aare/CtbRawFile.py
     aare/transform.py
+    aare/ScanParameters.py
 )
 
 # Copy the python files to the build directory

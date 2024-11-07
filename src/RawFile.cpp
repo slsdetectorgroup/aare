@@ -1,7 +1,6 @@
 #include "aare/RawFile.hpp"
 #include "aare/PixelMap.hpp"
 #include "aare/defs.hpp"
-#include "aare/json.hpp"
 
 #include <fmt/format.h>
 #include <nlohmann/json.hpp>
