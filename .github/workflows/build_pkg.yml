@@ -1,0 +1,41 @@
+name: Build packages but don't deploy
+
+on:
+  workflow_dispatch:
+  push:
+    branches:
+     - v1
+    #run on PRs as well?
+
+jobs:
+  build:
+    strategy:
+      fail-fast: false
+      matrix:
+        platform: [ubuntu-latest, ] # macos-12, windows-2019]
+        python-version: ["3.12",]
+
+    runs-on: ${{ matrix.platform }}
+
+    # The setup-miniconda action needs this to activate miniconda
+    defaults:
+      run:
+        shell: "bash -l {0}"
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Get conda
+        uses: conda-incubator/setup-miniconda@v3.0.4
+        with:
+          python-version: ${{ matrix.python-version }}
+          channels: conda-forge
+
+      - name: Prepare
+        run: conda install conda-build conda-verify pytest anaconda-client
+
+      - name: Build
+        env:
+          CONDA_TOKEN: ${{ secrets.CONDA_TOKEN }}
+        run: conda build conda-recipe
+
