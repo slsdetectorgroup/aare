@@ -3,7 +3,8 @@
 #include "aare/RawMasterFile.hpp"
 #include "aare/Frame.hpp"
 #include "aare/NDArray.hpp" //for pixel map
-#include "aare/SubFile.hpp"
+#include "aare/RawSubFile.hpp"
+
 
 #include <optional>
 
@@ -29,10 +30,12 @@ struct ModuleConfig {
  * Consider using that unless you need raw file specific functionality.
  */
 class RawFile : public FileInterface {
-    size_t n_subfiles{};
-    size_t n_subfile_parts{};
-    std::vector<std::vector<SubFile *>> subfiles;
+    size_t n_subfiles{}; //f0,f1...fn
+    size_t n_subfile_parts{}; // d0,d1...dn
+    //TODO! move to vector of SubFile instead of pointers
+    std::vector<std::vector<RawSubFile *>> subfiles; //subfiles[f0,f1...fn][d0,d1...dn]
     std::vector<xy> positions;
+    std::vector<ModuleGeometry> m_module_pixel_0;
     ModuleConfig cfg{0, 0};
 
     RawMasterFile m_master;
@@ -56,6 +59,11 @@ class RawFile : public FileInterface {
     std::vector<Frame> read_n(size_t n_frames) override;
     void read_into(std::byte *image_buf) override;
     void read_into(std::byte *image_buf, size_t n_frames) override;
+
+    //TODO! do we need to adapt the API? 
+    void read_into(std::byte *image_buf, DetectorHeader *header);
+
+
     size_t frame_number(size_t frame_index) override;
     size_t bytes_per_frame() override;
     size_t pixels_per_frame() override;
@@ -65,7 +73,10 @@ class RawFile : public FileInterface {
     size_t rows() const override;
     size_t cols() const override;
     size_t bitdepth() const override;
+    size_t bytes_per_pixel() const;
     xy geometry();
+    size_t n_mod() const;
+
 
     DetectorType detector_type() const override;
 
@@ -83,7 +94,9 @@ class RawFile : public FileInterface {
      * @param frame_number frame number to read
      * @param image_buf buffer to store the frame
      */
-    void get_frame_into(size_t frame_index, std::byte *frame_buffer);
+
+    void get_frame_into(size_t frame_index, std::byte *frame_buffer, DetectorHeader *header = nullptr);
+
 
     /**
      * @brief get the frame at the given frame index
@@ -101,8 +114,9 @@ class RawFile : public FileInterface {
      */
     static DetectorHeader read_header(const std::filesystem::path &fname);
 
+    void update_geometry_with_roi();
+    int find_number_of_subfiles();
 
-    void find_number_of_subfiles();
     void open_subfiles();
     void find_geometry();
 };

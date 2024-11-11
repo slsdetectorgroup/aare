@@ -58,6 +58,17 @@ class ScanParameters {
     bool enabled() const;
 };
 
+
+struct ROI{
+  size_t xmin{};
+  size_t xmax{};
+  size_t ymin{};
+  size_t ymax{};
+
+  size_t height() const { return ymax - ymin; }
+  size_t width() const { return xmax - xmin; }
+};
+
 /**
  * @brief Class for parsing a master file either in our .json format or the old
  * .raw format
@@ -95,6 +106,9 @@ class RawMasterFile {
     std::optional<size_t> m_number_of_rows;
     std::optional<uint8_t> m_quad;
 
+    std::optional<ROI> m_roi;
+
+
   public:
     RawMasterFile(const std::filesystem::path &fpath);
 
@@ -120,6 +134,10 @@ class RawMasterFile {
     std::optional<size_t> transceiver_samples() const;
     std::optional<size_t> number_of_rows() const;
     std::optional<uint8_t> quad() const;
+
+
+    std::optional<ROI> roi() const;
+
 
     ScanParameters scan_parameters() const;
 

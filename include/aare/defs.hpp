@@ -14,6 +14,7 @@
 #include <variant>
 #include <vector>
 
+
 /**
  * @brief LOCATION macro to get the current location in the code
  */
@@ -21,7 +22,24 @@
     std::string(__FILE__) + std::string(":") + std::to_string(__LINE__) +      \
         ":" + std::string(__func__) + ":"
 
+
+
+#ifdef AARE_CUSTOM_ASSERT
+#define AARE_ASSERT(expr)\
+    if (expr)\
+        {}\
+    else\
+        aare::assert_failed(LOCATION + " Assertion failed: " + #expr + "\n");
+#else
+#define AARE_ASSERT(cond)\
+    do { (void)sizeof(cond); } while(0)
+#endif
+
+
 namespace aare {
+
+void assert_failed(const std::string &msg);
+
 
 class Cluster {
   public:
@@ -163,6 +181,15 @@ template <typename T> struct t_xy {
     }
 };
 using xy = t_xy<uint32_t>;
+
+
+struct ModuleGeometry{
+    int x{};
+    int y{};
+    int height{};
+    int width{};
+};
+
 
 using dynamic_shape = std::vector<int64_t>;
 

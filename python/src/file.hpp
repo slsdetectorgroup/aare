@@ -1,7 +1,10 @@
 #include "aare/CtbRawFile.hpp"
-#include "aare/RawMasterFile.hpp"
 #include "aare/File.hpp"
 #include "aare/Frame.hpp"
+#include "aare/RawFile.hpp"
+#include "aare/RawMasterFile.hpp"
+#include "aare/RawSubFile.hpp"
+
 #include "aare/defs.hpp"
 // #include "aare/fClusterFileV2.hpp"
 
@@ -18,6 +21,18 @@ namespace py = pybind11;
 using namespace ::aare;
 
 void define_file_io_bindings(py::module &m) {
+
+
+    py::enum_<DetectorType>(m, "DetectorType")
+        .value("Jungfrau", DetectorType::Jungfrau)
+        .value("Eiger", DetectorType::Eiger)
+        .value("Mythen3", DetectorType::Mythen3)
+        .value("Moench", DetectorType::Moench)
+        .value("Moench03", DetectorType::Moench03)
+        .value("Moench03_old", DetectorType::Moench03_old)
+        .value("ChipTestBoard", DetectorType::ChipTestBoard)
+        .value("Unknown", DetectorType::Unknown);
+
 
     PYBIND11_NUMPY_DTYPE(DetectorHeader, frameNumber, expLength, packetNumber,
                          bunchId, timestamp, modId, row, column, reserved,
@@ -36,7 +51,6 @@ void define_file_io_bindings(py::module &m) {
 
                  py::array_t<DetectorHeader> header(1);
 
-
                  // always read bytes
                  image = py::array_t<uint8_t>(shape);
 
@@ -49,7 +63,10 @@ void define_file_io_bindings(py::module &m) {
         .def("seek", &CtbRawFile::seek)
         .def("tell", &CtbRawFile::tell)
         .def("master", &CtbRawFile::master)
-        .def_property_readonly("image_size_in_bytes", &CtbRawFile::image_size_in_bytes)
+
+        .def_property_readonly("image_size_in_bytes",
+                               &CtbRawFile::image_size_in_bytes)
+
         .def_property_readonly("frames_in_file", &CtbRawFile::frames_in_file);
 
     py::class_<File>(m, "File")
@@ -169,26 +186,107 @@ void define_file_io_bindings(py::module &m) {
         .def_property_readonly("frame_padding", &RawMasterFile::frame_padding)
         .def_property_readonly("frame_discard_policy",
                                &RawMasterFile::frame_discard_policy)
-        .def_property_readonly("total_frames_expected", &RawMasterFile::total_frames_expected)
+
+        .def_property_readonly("total_frames_expected",
+                               &RawMasterFile::total_frames_expected)
         .def_property_readonly("geometry", &RawMasterFile::geometry)
         .def_property_readonly("analog_samples", &RawMasterFile::analog_samples)
         .def_property_readonly("digital_samples",
                                &RawMasterFile::digital_samples)
-        .def_property_readonly("transceiver_samples", &RawMasterFile::transceiver_samples)
+
+        .def_property_readonly("transceiver_samples",
+                               &RawMasterFile::transceiver_samples)
         .def_property_readonly("number_of_rows", &RawMasterFile::number_of_rows)
         .def_property_readonly("quad", &RawMasterFile::quad)
-        .def_property_readonly("scan_parameters", &RawMasterFile::scan_parameters);
-
-
+        .def_property_readonly("scan_parameters",
+                               &RawMasterFile::scan_parameters)
+        .def_property_readonly("roi", &RawMasterFile::roi);
 
     py::class_<ScanParameters>(m, "ScanParameters")
         .def(py::init<const std::string &>())
-        .def(py::init<const ScanParameters&>())
+        .def(py::init<const ScanParameters &>())
+
         .def_property_readonly("enabled", &ScanParameters::enabled)
         .def_property_readonly("dac", &ScanParameters::dac)
         .def_property_readonly("start", &ScanParameters::start)
         .def_property_readonly("stop", &ScanParameters::stop)
         .def_property_readonly("step", &ScanParameters::step);
+
+
+    py::class_<ROI>(m, "ROI")
+        .def(py::init<>())
+        .def_readwrite("xmin", &ROI::xmin)
+        .def_readwrite("xmax", &ROI::xmax)
+        .def_readwrite("ymin", &ROI::ymin)
+        .def_readwrite("ymax", &ROI::ymax)
+        .def("__str__", [](const ROI& self){
+            return fmt::format("ROI: xmin: {} xmax: {} ymin: {} ymax: {}", self.xmin, self.xmax, self.ymin, self.ymax);
+        });
+
+    py::class_<RawFile>(m, "RawFile")
+        .def(py::init<const std::filesystem::path &>())
+        .def("read_frame",
+             [](RawFile &self) {
+                 size_t image_size = self.bytes_per_frame();
+                 const uint8_t item_size = self.bytes_per_pixel();
+                 py::array image;
+                 std::vector<ssize_t> shape;
+                 shape.reserve(2);
+                 shape.push_back(self.rows());
+                 shape.push_back(self.cols());
+
+
+                //return headers from all subfiles
+                 py::array_t<DetectorHeader> header(self.n_mod());
+
+                 if (item_size == 1) {
+                     image = py::array_t<uint8_t>(shape);
+                 } else if (item_size == 2) {
+                     image = py::array_t<uint16_t>(shape);
+                 } else if (item_size == 4) {
+                     image = py::array_t<uint32_t>(shape);
+                 }
+                 fmt::print("item_size: {} rows: {} cols: {}\n", item_size, self.rows(), self.cols());
+
+                 self.read_into(
+                     reinterpret_cast<std::byte *>(image.mutable_data()),
+                     header.mutable_data());
+
+                 return py::make_tuple(header, image);
+             });
+
+    py::class_<RawSubFile>(m, "RawSubFile")
+        .def(py::init<const std::filesystem::path &, DetectorType, size_t,
+                      size_t, size_t>())
+        .def_property_readonly("bytes_per_frame", &RawSubFile::bytes_per_frame)
+        .def_property_readonly("pixels_per_frame",
+                               &RawSubFile::pixels_per_frame)
+        .def("seek", &RawSubFile::seek)
+        .def("tell", &RawSubFile::tell)
+        .def_property_readonly("rows", &RawSubFile::rows)
+        .def_property_readonly("cols", &RawSubFile::cols)
+        .def("read_frame",
+             [](RawSubFile &self) {
+                 const uint8_t item_size = self.bytes_per_pixel();
+                 py::array image;
+                 std::vector<ssize_t> shape;
+                 shape.reserve(2);
+                 shape.push_back(self.rows());
+                 shape.push_back(self.cols());
+                 if (item_size == 1) {
+                     image = py::array_t<uint8_t>(shape);
+                 } else if (item_size == 2) {
+                     image = py::array_t<uint16_t>(shape);
+                 } else if (item_size == 4) {
+                     image = py::array_t<uint32_t>(shape);
+                 }
+                 fmt::print("item_size: {} rows: {} cols: {}\n", item_size, self.rows(), self.cols());
+                 self.read_into(
+                     reinterpret_cast<std::byte *>(image.mutable_data()));
+                 return image;
+             });
+
+
     // py::class_<ClusterHeader>(m, "ClusterHeader")
     //     .def(py::init<>())
     //     .def_readwrite("frame_number", &ClusterHeader::frame_number)

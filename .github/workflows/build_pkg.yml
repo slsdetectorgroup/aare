@@ -4,7 +4,9 @@ on:
   workflow_dispatch:
   push:
     branches:
-     - v1
+     - main
+     - developer
+
     #run on PRs as well?
 
 jobs:

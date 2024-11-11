@@ -143,6 +143,10 @@ ScanParameters RawMasterFile::scan_parameters() const {
     return m_scan_parameters;
 }
 
+
+std::optional<ROI> RawMasterFile::roi() const { return m_roi; }
+
+
 void RawMasterFile::parse_json(const std::filesystem::path &fpath) {
     std::ifstream ifs(fpath);
     json j;
@@ -239,6 +243,40 @@ void RawMasterFile::parse_json(const std::filesystem::path &fpath) {
     }catch (const json::out_of_range &e) {
         // not a scan
     }
+
+
+    try{
+        ROI tmp_roi;
+        auto obj = j.at("Receiver Roi");
+        tmp_roi.xmin = obj.at("xmin");
+        tmp_roi.xmax = obj.at("xmax");
+        tmp_roi.ymin = obj.at("ymin");
+        tmp_roi.ymax = obj.at("ymax");
+
+        //if any of the values are set update the roi
+        if (tmp_roi.xmin != 4294967295 || tmp_roi.xmax != 4294967295 ||
+            tmp_roi.ymin != 4294967295 || tmp_roi.ymax != 4294967295) {
+            
+            if(v<7.21){
+                tmp_roi.xmax++;
+                tmp_roi.ymax++;
+            }
+            
+            m_roi = tmp_roi;
+        }
+
+
+    }catch (const json::out_of_range &e) {
+        // leave the optional empty
+    }
+
+    //if we have an roi we need to update the geometry for the subfiles
+    if (m_roi){
+
+    }
+
+
+
 
     // Update detector type for Moench
     // TODO! How does this work with old .raw master files?
