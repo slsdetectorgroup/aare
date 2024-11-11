@@ -219,7 +219,6 @@ void define_file_io_bindings(py::module &m) {
              [](RawFile &self) {
                  size_t image_size = self.bytes_per_frame();
                  const uint8_t item_size = self.bytes_per_pixel();
-                 fmt::print("Image size in bytes: {}\n", image_size);
                  py::array image;
                  std::vector<ssize_t> shape;
                  shape.reserve(2);

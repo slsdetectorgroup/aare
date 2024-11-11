@@ -53,11 +53,9 @@ size_t RawSubFile::tell() {
 
 void RawSubFile::read_into(std::byte *image_buf, DetectorHeader *header) {
     if(header){
-        fmt::print("Reading header\n");
          m_file.read(reinterpret_cast<char *>(header), sizeof(DetectorHeader));
     } else {
         m_file.seekg(sizeof(DetectorHeader), std::ios::cur);
-        fmt::print("Skipping heading header\n");
     }
 
     //TODO! expand support for different bitdepths

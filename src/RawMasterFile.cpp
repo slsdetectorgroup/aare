@@ -247,7 +247,6 @@ void RawMasterFile::parse_json(const std::filesystem::path &fpath) {
     try{
         ROI tmp_roi;
         auto obj = j.at("Receiver Roi");
-        fmt::print("Receiver ROI: {}\n", obj.dump());
         tmp_roi.xmin = obj.at("xmin");
         tmp_roi.xmax = obj.at("xmax");
         tmp_roi.ymin = obj.at("ymin");
