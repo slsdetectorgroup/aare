@@ -33,6 +33,7 @@ option(AARE_EXAMPLES "Build examples" OFF)
 option(AARE_IN_GITHUB_ACTIONS "Running in Github Actions" OFF)
 option(AARE_DOCS "Build documentation" OFF)
 option(AARE_VERBOSE "Verbose output" OFF)
+option(AARE_CUSTOM_ASSERT "Use custom assert" OFF)
 
 # Configure which of the dependencies to use FetchContent for
 option(AARE_FETCH_FMT "Use FetchContent to download fmt" ON)
@@ -57,6 +58,9 @@ if(AARE_VERBOSE)
     add_compile_definitions(AARE_VERBOSE)
 endif()
 
+if(AARE_CUSTOM_ASSERT)
+    add_compile_definitions(AARE_CUSTOM_ASSERT)
+endif()
 
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 
@@ -242,7 +246,6 @@ set(PUBLICHEADERS
     include/aare/Dtype.hpp
     include/aare/File.hpp
     include/aare/FileInterface.hpp
-    include/aare/RawMasterFile.hpp
     include/aare/Frame.hpp
     include/aare/NDArray.hpp
     include/aare/NDView.hpp
@@ -251,7 +254,8 @@ set(PUBLICHEADERS
     include/aare/Pedestal.hpp
     include/aare/PixelMap.hpp
     include/aare/RawFile.hpp
-    include/aare/SubFile.hpp
+    include/aare/RawSubFile.hpp
+    include/aare/RawMasterFile.hpp
     include/aare/VarClusterFinder.hpp
 
 )
@@ -263,11 +267,11 @@ set(SourceFiles
     ${CMAKE_CURRENT_SOURCE_DIR}/src/Dtype.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/src/Frame.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/src/File.cpp
-    ${CMAKE_CURRENT_SOURCE_DIR}/src/RawMasterFile.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/src/NumpyFile.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/src/PixelMap.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/src/RawFile.cpp
-    ${CMAKE_CURRENT_SOURCE_DIR}/src/SubFile.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/RawSubFile.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/RawMasterFile.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/src/NumpyHelpers.cpp
 )
 

@@ -1,8 +1,16 @@
 #include "aare/defs.hpp"
 #include <stdexcept>
 #include <string>
-
+#include <fmt/core.h>
 namespace aare {
+
+
+void assert_failed(const std::string &msg)
+ {
+    fmt::print(msg);
+    exit(1);
+}
+
 
 /**
  * @brief Convert a DetectorType to a string

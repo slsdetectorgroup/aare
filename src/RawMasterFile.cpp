@@ -8,6 +8,8 @@ RawFileNameComponents::RawFileNameComponents(
     m_base_name = fname.stem();
     m_ext = fname.extension();
 
+    AARE_ASSERT(false);
+
     if (m_ext != ".json" && m_ext != ".raw") {
         throw std::runtime_error(LOCATION +
                                  "Unsupported file type. (only .json or .raw)");
@@ -254,6 +256,12 @@ void RawMasterFile::parse_json(const std::filesystem::path &fpath) {
         //if any of the values are set update the roi
         if (tmp_roi.xmin != 4294967295 || tmp_roi.xmax != 4294967295 ||
             tmp_roi.ymin != 4294967295 || tmp_roi.ymax != 4294967295) {
+            
+            if(v<7.21){
+                tmp_roi.xmax++;
+                tmp_roi.ymax++;
+            }
+            
             m_roi = tmp_roi;
         }
 

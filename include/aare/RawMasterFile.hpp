@@ -63,6 +63,9 @@ struct ROI{
   size_t xmax{};
   size_t ymin{};
   size_t ymax{};
+
+  size_t height() const { return ymax - ymin; }
+  size_t width() const { return xmax - xmin; }
 };
 
 /**
