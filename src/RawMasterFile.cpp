@@ -8,8 +8,6 @@ RawFileNameComponents::RawFileNameComponents(
     m_base_name = fname.stem();
     m_ext = fname.extension();
 
-    AARE_ASSERT(false);
-
     if (m_ext != ".json" && m_ext != ".raw") {
         throw std::runtime_error(LOCATION +
                                  "Unsupported file type. (only .json or .raw)");
@@ -145,7 +143,9 @@ ScanParameters RawMasterFile::scan_parameters() const {
     return m_scan_parameters;
 }
 
+
 std::optional<ROI> RawMasterFile::roi() const { return m_roi; }
+
 
 void RawMasterFile::parse_json(const std::filesystem::path &fpath) {
     std::ifstream ifs(fpath);
@@ -244,6 +244,7 @@ void RawMasterFile::parse_json(const std::filesystem::path &fpath) {
         // not a scan
     }
 
+
     try{
         ROI tmp_roi;
         auto obj = j.at("Receiver Roi");
@@ -273,6 +274,7 @@ void RawMasterFile::parse_json(const std::filesystem::path &fpath) {
     if (m_roi){
 
     }
+
 
 
 

@@ -6,6 +6,7 @@ on:
     branches:
      - main
      - developer
+
     #run on PRs as well?
 
 jobs:

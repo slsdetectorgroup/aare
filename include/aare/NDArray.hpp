@@ -342,6 +342,7 @@ template <typename T, int64_t Ndim> void NDArray<T, Ndim>::Print() {
         Print_some();
 }
 
+
 template <typename T, int64_t Ndim>
 std::ostream& operator <<(std::ostream& os, const NDArray<T, Ndim>& arr){
     for (auto row = 0; row < arr.shape(0); ++row) {
@@ -353,6 +354,7 @@ std::ostream& operator <<(std::ostream& os, const NDArray<T, Ndim>& arr){
     }
     return os;
 }
+
 
 template <typename T, int64_t Ndim> void NDArray<T, Ndim>::Print_all() {
     for (auto row = 0; row < shape_[0]; ++row) {

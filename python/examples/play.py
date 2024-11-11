@@ -52,6 +52,7 @@ def get_Mh02_frames(fname):
 # [frame, counter, row, col]
 # plt.imshow(data[0,0])
 
+
 base = Path('/mnt/sls_det_storage/matterhorn_data/aare_test_data/ci/aare_test_data')
 # p = Path(base / 'jungfrau/jungfrau_single_master_0.json')
 

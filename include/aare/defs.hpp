@@ -15,16 +15,13 @@
 #include <vector>
 
 
-
-
-
-
 /**
  * @brief LOCATION macro to get the current location in the code
  */
 #define LOCATION                                                               \
     std::string(__FILE__) + std::string(":") + std::to_string(__LINE__) +      \
         ":" + std::string(__func__) + ":"
+
 
 
 #ifdef AARE_CUSTOM_ASSERT
@@ -42,6 +39,7 @@
 namespace aare {
 
 void assert_failed(const std::string &msg);
+
 
 class Cluster {
   public:
@@ -191,6 +189,7 @@ struct ModuleGeometry{
     int height{};
     int width{};
 };
+
 
 using dynamic_shape = std::vector<int64_t>;
 

@@ -5,6 +5,7 @@
 #include "aare/NDArray.hpp" //for pixel map
 #include "aare/RawSubFile.hpp"
 
+
 #include <optional>
 
 namespace aare {
@@ -62,6 +63,7 @@ class RawFile : public FileInterface {
     //TODO! do we need to adapt the API? 
     void read_into(std::byte *image_buf, DetectorHeader *header);
 
+
     size_t frame_number(size_t frame_index) override;
     size_t bytes_per_frame() override;
     size_t pixels_per_frame() override;
@@ -74,6 +76,7 @@ class RawFile : public FileInterface {
     size_t bytes_per_pixel() const;
     xy geometry();
     size_t n_mod() const;
+
 
     DetectorType detector_type() const override;
 
@@ -91,7 +94,9 @@ class RawFile : public FileInterface {
      * @param frame_number frame number to read
      * @param image_buf buffer to store the frame
      */
+
     void get_frame_into(size_t frame_index, std::byte *frame_buffer, DetectorHeader *header = nullptr);
+
 
     /**
      * @brief get the frame at the given frame index
@@ -111,6 +116,7 @@ class RawFile : public FileInterface {
 
     void update_geometry_with_roi();
     int find_number_of_subfiles();
+
     void open_subfiles();
     void find_geometry();
 };

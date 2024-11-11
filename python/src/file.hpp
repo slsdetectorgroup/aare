@@ -4,6 +4,7 @@
 #include "aare/RawFile.hpp"
 #include "aare/RawMasterFile.hpp"
 #include "aare/RawSubFile.hpp"
+
 #include "aare/defs.hpp"
 // #include "aare/fClusterFileV2.hpp"
 
@@ -21,6 +22,7 @@ using namespace ::aare;
 
 void define_file_io_bindings(py::module &m) {
 
+
     py::enum_<DetectorType>(m, "DetectorType")
         .value("Jungfrau", DetectorType::Jungfrau)
         .value("Eiger", DetectorType::Eiger)
@@ -30,6 +32,7 @@ void define_file_io_bindings(py::module &m) {
         .value("Moench03_old", DetectorType::Moench03_old)
         .value("ChipTestBoard", DetectorType::ChipTestBoard)
         .value("Unknown", DetectorType::Unknown);
+
 
     PYBIND11_NUMPY_DTYPE(DetectorHeader, frameNumber, expLength, packetNumber,
                          bunchId, timestamp, modId, row, column, reserved,
@@ -60,8 +63,10 @@ void define_file_io_bindings(py::module &m) {
         .def("seek", &CtbRawFile::seek)
         .def("tell", &CtbRawFile::tell)
         .def("master", &CtbRawFile::master)
+
         .def_property_readonly("image_size_in_bytes",
                                &CtbRawFile::image_size_in_bytes)
+
         .def_property_readonly("frames_in_file", &CtbRawFile::frames_in_file);
 
     py::class_<File>(m, "File")
@@ -163,6 +168,7 @@ void define_file_io_bindings(py::module &m) {
             return "<FileConfig: " + a.to_string() + ">";
         });
 
+
     py::class_<RawMasterFile>(m, "RawMasterFile")
         .def(py::init<const std::filesystem::path &>())
         .def("data_fname", &RawMasterFile::data_fname)
@@ -180,12 +186,14 @@ void define_file_io_bindings(py::module &m) {
         .def_property_readonly("frame_padding", &RawMasterFile::frame_padding)
         .def_property_readonly("frame_discard_policy",
                                &RawMasterFile::frame_discard_policy)
+
         .def_property_readonly("total_frames_expected",
                                &RawMasterFile::total_frames_expected)
         .def_property_readonly("geometry", &RawMasterFile::geometry)
         .def_property_readonly("analog_samples", &RawMasterFile::analog_samples)
         .def_property_readonly("digital_samples",
                                &RawMasterFile::digital_samples)
+
         .def_property_readonly("transceiver_samples",
                                &RawMasterFile::transceiver_samples)
         .def_property_readonly("number_of_rows", &RawMasterFile::number_of_rows)
@@ -197,11 +205,13 @@ void define_file_io_bindings(py::module &m) {
     py::class_<ScanParameters>(m, "ScanParameters")
         .def(py::init<const std::string &>())
         .def(py::init<const ScanParameters &>())
+
         .def_property_readonly("enabled", &ScanParameters::enabled)
         .def_property_readonly("dac", &ScanParameters::dac)
         .def_property_readonly("start", &ScanParameters::start)
         .def_property_readonly("stop", &ScanParameters::stop)
         .def_property_readonly("step", &ScanParameters::step);
+
 
     py::class_<ROI>(m, "ROI")
         .def(py::init<>())
@@ -275,6 +285,7 @@ void define_file_io_bindings(py::module &m) {
                      reinterpret_cast<std::byte *>(image.mutable_data()));
                  return image;
              });
+
 
     // py::class_<ClusterHeader>(m, "ClusterHeader")
     //     .def(py::init<>())

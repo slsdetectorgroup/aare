@@ -58,6 +58,7 @@ class ScanParameters {
     bool enabled() const;
 };
 
+
 struct ROI{
   size_t xmin{};
   size_t xmax{};
@@ -107,6 +108,7 @@ class RawMasterFile {
 
     std::optional<ROI> m_roi;
 
+
   public:
     RawMasterFile(const std::filesystem::path &fpath);
 
@@ -133,7 +135,9 @@ class RawMasterFile {
     std::optional<size_t> number_of_rows() const;
     std::optional<uint8_t> quad() const;
 
+
     std::optional<ROI> roi() const;
+
 
     ScanParameters scan_parameters() const;
 

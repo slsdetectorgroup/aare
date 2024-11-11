@@ -156,6 +156,7 @@ template <typename T, int64_t Ndim> void NDView<T, Ndim>::print_all() const {
     }
 }
 
+
 template <typename T, int64_t Ndim>
 std::ostream& operator <<(std::ostream& os, const NDView<T, Ndim>& arr){
     for (auto row = 0; row < arr.shape(0); ++row) {
@@ -167,5 +168,6 @@ std::ostream& operator <<(std::ostream& os, const NDView<T, Ndim>& arr){
     }
     return os;
 }
+
 
 } // namespace aare

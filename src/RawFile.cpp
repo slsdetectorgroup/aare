@@ -13,11 +13,13 @@ RawFile::RawFile(const std::filesystem::path &fname, const std::string &mode)
     : m_master(fname) {
     m_mode = mode;
     if (mode == "r") {
+
         n_subfiles = find_number_of_subfiles(); // f0,f1...fn
         n_subfile_parts =
             m_master.geometry().col * m_master.geometry().row; // d0,d1...dn
         find_geometry();
         update_geometry_with_roi();
+
         open_subfiles();
     } else {
         throw std::runtime_error(LOCATION +
@@ -41,10 +43,10 @@ void RawFile::read_into(std::byte *image_buf, size_t n_frames) {
     }
 }
 
-
 void RawFile::read_into(std::byte *image_buf) {
     return get_frame_into(m_current_frame++, image_buf);
 };
+
 
 void RawFile::read_into(std::byte *image_buf, DetectorHeader *header) {
 
@@ -52,6 +54,7 @@ void RawFile::read_into(std::byte *image_buf, DetectorHeader *header) {
 };
 
 size_t RawFile::n_mod() const { return n_subfile_parts; }
+
 
 size_t RawFile::bytes_per_frame() {
     return m_rows * m_cols * m_master.bitdepth() / 8;
@@ -88,6 +91,7 @@ void RawFile::open_subfiles() {
                 v[j] = new RawSubFile(m_master.data_fname(j, i),
                                       m_master.detector_type(), pos.height,
                                       pos.width, m_master.bitdepth());
+
             }
             subfiles.push_back(v);
         }
@@ -128,11 +132,13 @@ int RawFile::find_number_of_subfiles() {
     fmt::print("Found: {} subfiles\n", n_files);
 #endif
     return n_files;
+
 }
 
 void RawFile::find_geometry() {
     uint16_t r{};
     uint16_t c{};
+
 
     for (size_t i = 0; i < n_subfile_parts; i++) {
         auto h = this->read_header(m_master.data_fname(i, 0));
@@ -145,6 +151,7 @@ void RawFile::find_geometry() {
         g.width = m_master.pixels_x();
         g.height = m_master.pixels_y();
         m_module_pixel_0.push_back(g);
+
     }
 
     r++;
@@ -154,6 +161,7 @@ void RawFile::find_geometry() {
     m_cols = (c * m_master.pixels_x());
 
     m_rows += static_cast<size_t>((r - 1) * cfg.module_gap_row);
+
 #ifdef AARE_VERBOSE
     fmt::print("\nRawFile::find_geometry()\n");
     for (size_t i = 0; i < m_module_pixel_0.size(); i++) {
@@ -227,6 +235,7 @@ void RawFile::update_geometry_with_roi() {
     fmt::print("Updated image size: {}x{}\n\n", m_rows, m_cols);
     fmt::print("\n");
 #endif
+
 }
 
 Frame RawFile::get_frame(size_t frame_index) {
@@ -236,18 +245,22 @@ Frame RawFile::get_frame(size_t frame_index) {
     return f;
 }
 
+
 size_t RawFile::bytes_per_pixel() const {
     return m_master.bitdepth() / 8;
 }
 
 void RawFile::get_frame_into(size_t frame_index, std::byte *frame_buffer, DetectorHeader *header) {
+
     if (frame_index > total_frames()) {
         throw std::runtime_error(LOCATION + "Frame number out of range");
     }
     std::vector<size_t> frame_numbers(n_subfile_parts);
     std::vector<size_t> frame_indices(n_subfile_parts, frame_index);
 
+
     // sync the frame numbers
+
     if (n_subfile_parts != 1) {
         for (size_t part_idx = 0; part_idx != n_subfile_parts; ++part_idx) {
             auto subfile_id = frame_index / m_master.max_frames_per_file();
@@ -302,6 +315,7 @@ void RawFile::get_frame_into(size_t frame_index, std::byte *frame_buffer, Detect
         //TODO! should we read row by row?
 
         // create a buffer large enough to hold a full module
+
         auto bytes_per_part = m_master.pixels_y() * m_master.pixels_x() *
                               m_master.bitdepth() /
                               8; // TODO! replace with image_size_in_bytes
@@ -331,6 +345,7 @@ void RawFile::get_frame_into(size_t frame_index, std::byte *frame_buffer, Detect
                        part_buffer + cur_row * pos.width *
                                          m_master.bitdepth() / 8,
                        pos.width * m_master.bitdepth() / 8);
+
             }
         }
         delete[] part_buffer;

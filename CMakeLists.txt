@@ -35,6 +35,7 @@ option(AARE_DOCS "Build documentation" OFF)
 option(AARE_VERBOSE "Verbose output" OFF)
 option(AARE_CUSTOM_ASSERT "Use custom assert" OFF)
 
+
 # Configure which of the dependencies to use FetchContent for
 option(AARE_FETCH_FMT "Use FetchContent to download fmt" ON)
 option(AARE_FETCH_PYBIND11 "Use FetchContent to download pybind11" ON)
@@ -61,6 +62,7 @@ endif()
 if(AARE_CUSTOM_ASSERT)
     add_compile_definitions(AARE_CUSTOM_ASSERT)
 endif()
+
 
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 
@@ -256,6 +258,7 @@ set(PUBLICHEADERS
     include/aare/RawFile.hpp
     include/aare/RawSubFile.hpp
     include/aare/RawMasterFile.hpp
+    include/aare/SubFile.hpp
     include/aare/VarClusterFinder.hpp
 
 )
