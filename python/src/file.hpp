@@ -169,39 +169,7 @@ void define_file_io_bindings(py::module &m) {
         });
 
 
-    py::class_<RawMasterFile>(m, "RawMasterFile")
-        .def(py::init<const std::filesystem::path &>())
-        .def("data_fname", &RawMasterFile::data_fname)
-        .def_property_readonly("version", &RawMasterFile::version)
-        .def_property_readonly("detector_type", &RawMasterFile::detector_type)
-        .def_property_readonly("timing_mode", &RawMasterFile::timing_mode)
-        .def_property_readonly("image_size_in_bytes",
-                               &RawMasterFile::image_size_in_bytes)
-        .def_property_readonly("frames_in_file", &RawMasterFile::frames_in_file)
-        .def_property_readonly("pixels_y", &RawMasterFile::pixels_y)
-        .def_property_readonly("pixels_x", &RawMasterFile::pixels_x)
-        .def_property_readonly("max_frames_per_file",
-                               &RawMasterFile::max_frames_per_file)
-        .def_property_readonly("bitdepth", &RawMasterFile::bitdepth)
-        .def_property_readonly("frame_padding", &RawMasterFile::frame_padding)
-        .def_property_readonly("frame_discard_policy",
-                               &RawMasterFile::frame_discard_policy)
-
-        .def_property_readonly("total_frames_expected",
-                               &RawMasterFile::total_frames_expected)
-        .def_property_readonly("geometry", &RawMasterFile::geometry)
-        .def_property_readonly("analog_samples", &RawMasterFile::analog_samples)
-        .def_property_readonly("digital_samples",
-                               &RawMasterFile::digital_samples)
-
-        .def_property_readonly("transceiver_samples",
-                               &RawMasterFile::transceiver_samples)
-        .def_property_readonly("number_of_rows", &RawMasterFile::number_of_rows)
-        .def_property_readonly("quad", &RawMasterFile::quad)
-        .def_property_readonly("scan_parameters",
-                               &RawMasterFile::scan_parameters)
-        .def_property_readonly("roi", &RawMasterFile::roi);
-
+    
     py::class_<ScanParameters>(m, "ScanParameters")
         .def(py::init<const std::string &>())
         .def(py::init<const ScanParameters &>())
@@ -221,39 +189,15 @@ void define_file_io_bindings(py::module &m) {
         .def_readwrite("ymax", &ROI::ymax)
         .def("__str__", [](const ROI& self){
             return fmt::format("ROI: xmin: {} xmax: {} ymin: {} ymax: {}", self.xmin, self.xmax, self.ymin, self.ymax);
+        })
+        .def("__repr__", [](const ROI& self){
+            return fmt::format("<ROI: xmin: {} xmax: {} ymin: {} ymax: {}>", self.xmin, self.xmax, self.ymin, self.ymax);
+        })
+        .def("__iter__", [](const ROI &self) {
+            return py::make_iterator(&self.xmin, &self.ymax+1);
         });
 
-    py::class_<RawFile>(m, "RawFile")
-        .def(py::init<const std::filesystem::path &>())
-        .def("read_frame",
-             [](RawFile &self) {
-                 size_t image_size = self.bytes_per_frame();
-                 const uint8_t item_size = self.bytes_per_pixel();
-                 py::array image;
-                 std::vector<ssize_t> shape;
-                 shape.reserve(2);
-                 shape.push_back(self.rows());
-                 shape.push_back(self.cols());
-
-
-                //return headers from all subfiles
-                 py::array_t<DetectorHeader> header(self.n_mod());
-
-                 if (item_size == 1) {
-                     image = py::array_t<uint8_t>(shape);
-                 } else if (item_size == 2) {
-                     image = py::array_t<uint16_t>(shape);
-                 } else if (item_size == 4) {
-                     image = py::array_t<uint32_t>(shape);
-                 }
-                 fmt::print("item_size: {} rows: {} cols: {}\n", item_size, self.rows(), self.cols());
-
-                 self.read_into(
-                     reinterpret_cast<std::byte *>(image.mutable_data()),
-                     header.mutable_data());
-
-                 return py::make_tuple(header, image);
-             });
+    
 
     py::class_<RawSubFile>(m, "RawSubFile")
         .def(py::init<const std::filesystem::path &, DetectorType, size_t,

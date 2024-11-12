@@ -56,6 +56,7 @@ class ScanParameters {
     int step() const;
     const std::string &dac() const;
     bool enabled() const;
+    void increment_stop();
 };
 
 
@@ -67,7 +68,7 @@ struct ROI{
 
   size_t height() const { return ymax - ymin; }
   size_t width() const { return xmax - xmin; }
-};
+}__attribute__((packed));
 
 /**
  * @brief Class for parsing a master file either in our .json format or the old

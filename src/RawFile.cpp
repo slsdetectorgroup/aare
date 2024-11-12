@@ -49,8 +49,18 @@ void RawFile::read_into(std::byte *image_buf) {
 
 
 void RawFile::read_into(std::byte *image_buf, DetectorHeader *header) {
-
     return get_frame_into(m_current_frame++, image_buf, header);
+};
+
+void RawFile::read_into(std::byte *image_buf, size_t n_frames, DetectorHeader *header) {
+    // return get_frame_into(m_current_frame++, image_buf, header);
+
+    for (size_t i = 0; i < n_frames; i++) {
+        this->get_frame_into(m_current_frame++, image_buf, header);
+        image_buf += bytes_per_frame();
+        if(header) 
+            header+=n_mod();
+    }
 };
 
 size_t RawFile::n_mod() const { return n_subfile_parts; }
@@ -117,10 +127,7 @@ DetectorHeader RawFile::read_header(const std::filesystem::path &fname) {
 
     return h;
 }
-bool RawFile::is_master_file(const std::filesystem::path &fpath) {
-    std::string const stem = fpath.stem().string();
-    return stem.find("_master_") != std::string::npos;
-}
+
 
 int RawFile::find_number_of_subfiles() {
     int n_files = 0;
@@ -134,6 +141,8 @@ int RawFile::find_number_of_subfiles() {
     return n_files;
 
 }
+
+RawMasterFile RawFile::master() const { return m_master; }
 
 void RawFile::find_geometry() {
     uint16_t r{};
@@ -208,8 +217,8 @@ void RawFile::update_geometry_with_roi() {
                 if (m.y + m.height < roi.ymin) {
                     m.height = 0;
                 } else {
-                    if (roi.ymin < m.y + m.height) {
-                        m.height -= roi.ymin;
+                    if ((roi.ymin > m.y) && (roi.ymin < m.y + m.height)) {
+                        m.height -= roi.ymin - m.y;
                     }
                     if (roi.ymax < m.y + m.height) {
                         m.height -= m.y + original_height - roi.ymax;
