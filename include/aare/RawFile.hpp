@@ -64,6 +64,7 @@ class RawFile : public FileInterface {
     void read_into(std::byte *image_buf, DetectorHeader *header);
     void read_into(std::byte *image_buf, size_t n_frames, DetectorHeader *header);
 
+
     size_t frame_number(size_t frame_index) override;
     size_t bytes_per_frame() override;
     size_t pixels_per_frame() override;
@@ -74,11 +75,11 @@ class RawFile : public FileInterface {
     size_t rows() const override;
     size_t cols() const override;
     size_t bitdepth() const override;
-    
     xy geometry();
     size_t n_mod() const;
     
     RawMasterFile master() const;
+
 
 
     DetectorType detector_type() const override;

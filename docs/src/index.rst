@@ -26,6 +26,16 @@ AARE
 
 
 .. toctree::
+    :caption: Python API
+    :maxdepth: 1
+    
+    pyFile
+    pyCtbRawFile
+    pyRawMasterFile
+    pyVarClusterFinder
+
+
+.. toctree::
     :caption: C++ API
     :maxdepth: 1
     

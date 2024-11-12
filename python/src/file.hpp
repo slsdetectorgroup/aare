@@ -169,7 +169,7 @@ void define_file_io_bindings(py::module &m) {
         });
 
 
-    
+
     py::class_<ScanParameters>(m, "ScanParameters")
         .def(py::init<const std::string &>())
         .def(py::init<const ScanParameters &>())
@@ -198,6 +198,7 @@ void define_file_io_bindings(py::module &m) {
         });
 
     
+
 
     py::class_<RawSubFile>(m, "RawSubFile")
         .def(py::init<const std::filesystem::path &, DetectorType, size_t,

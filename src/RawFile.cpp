@@ -49,6 +49,7 @@ void RawFile::read_into(std::byte *image_buf) {
 
 
 void RawFile::read_into(std::byte *image_buf, DetectorHeader *header) {
+
     return get_frame_into(m_current_frame++, image_buf, header);
 };
 
@@ -61,6 +62,7 @@ void RawFile::read_into(std::byte *image_buf, size_t n_frames, DetectorHeader *h
         if(header) 
             header+=n_mod();
     }
+
 };
 
 size_t RawFile::n_mod() const { return n_subfile_parts; }
@@ -127,7 +129,6 @@ DetectorHeader RawFile::read_header(const std::filesystem::path &fname) {
 
     return h;
 }
-
 
 int RawFile::find_number_of_subfiles() {
     int n_files = 0;
@@ -219,6 +220,7 @@ void RawFile::update_geometry_with_roi() {
                 } else {
                     if ((roi.ymin > m.y) && (roi.ymin < m.y + m.height)) {
                         m.height -= roi.ymin - m.y;
+
                     }
                     if (roi.ymax < m.y + m.height) {
                         m.height -= m.y + original_height - roi.ymax;
