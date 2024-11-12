@@ -22,9 +22,23 @@ namespace py = pybind11;
 using namespace ::aare;
 
 void define_raw_master_file_bindings(py::module &m) {
-py::class_<RawMasterFile>(m, "RawMasterFile")
+    py::class_<RawMasterFile>(m, "RawMasterFile")
         .def(py::init<const std::filesystem::path &>())
-        .def("data_fname", &RawMasterFile::data_fname)
+        .def("data_fname", &RawMasterFile::data_fname, R"(
+
+            Parameters
+            ------------
+                module_index : int 
+                        module index (d0, d1 .. dN)
+                file_index : int 
+                        file index (f0, f1 .. fN)
+
+            Returns
+            ----------
+                os.PathLike
+                        The name of the data file.
+
+            )")
         .def_property_readonly("version", &RawMasterFile::version)
         .def_property_readonly("detector_type", &RawMasterFile::detector_type)
         .def_property_readonly("timing_mode", &RawMasterFile::timing_mode)
@@ -43,9 +57,23 @@ py::class_<RawMasterFile>(m, "RawMasterFile")
         .def_property_readonly("total_frames_expected",
                                &RawMasterFile::total_frames_expected)
         .def_property_readonly("geometry", &RawMasterFile::geometry)
-        .def_property_readonly("analog_samples", &RawMasterFile::analog_samples)
+        .def_property_readonly("analog_samples", &RawMasterFile::analog_samples, R"(
+            Number of analog samples
+
+            Returns
+            ----------
+                int | None
+                    The number of analog samples in the file (or None if not enabled)
+            )")
         .def_property_readonly("digital_samples",
-                               &RawMasterFile::digital_samples)
+                               &RawMasterFile::digital_samples,  R"(
+            Number of digital samples
+
+            Returns
+            ----------
+                int | None
+                    The number of digital samples in the file (or None if not enabled)
+            )")
 
         .def_property_readonly("transceiver_samples",
                                &RawMasterFile::transceiver_samples)
@@ -54,5 +82,4 @@ py::class_<RawMasterFile>(m, "RawMasterFile")
         .def_property_readonly("scan_parameters",
                                &RawMasterFile::scan_parameters)
         .def_property_readonly("roi", &RawMasterFile::roi);
-
 }

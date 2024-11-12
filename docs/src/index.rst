@@ -5,12 +5,22 @@ AARE
 
     Hello
 
+
+.. toctree::
+    :caption: Installation
+    :maxdepth: 1
+    
+    Installation
+    Requirements
+
+
 .. toctree::
     :caption: Python API
     :maxdepth: 1
     
     pyFile
     pyCtbRawFile
+    pyRawFile
     pyRawMasterFile
     pyVarClusterFinder
 
