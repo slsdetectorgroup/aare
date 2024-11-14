@@ -72,6 +72,9 @@ ScanParameters::ScanParameters(const std::string& par){
 
 int ScanParameters::start() const { return m_start; }
 int ScanParameters::stop() const { return m_stop; }
+void ScanParameters::increment_stop(){
+    m_stop += 1;
+};
 int ScanParameters::step() const { return m_step; }
 const std::string &ScanParameters::dac() const { return m_dac; }
 bool ScanParameters::enabled() const { return m_enabled; }
@@ -240,6 +243,9 @@ void RawMasterFile::parse_json(const std::filesystem::path &fpath) {
     try{
         std::string scan_parameters = j.at("Scan Parameters");
         m_scan_parameters = ScanParameters(scan_parameters);
+        if(v<7.21){
+                m_scan_parameters.increment_stop(); //adjust for endpoint being included
+            }
     }catch (const json::out_of_range &e) {
         // not a scan
     }

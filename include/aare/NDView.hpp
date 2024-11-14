@@ -74,6 +74,8 @@ template <typename T, int64_t Ndim = 2> class NDView {
 
     T *begin() { return buffer_; }
     T *end() { return buffer_ + size_; }
+    T const *begin() const { return buffer_; }
+    T const *end() const { return buffer_ + size_; }
     T &operator()(int64_t i) const { return buffer_[i]; }
     T &operator[](int64_t i) const { return buffer_[i]; }
 
@@ -121,7 +123,7 @@ template <typename T, int64_t Ndim = 2> class NDView {
         return *this;
     }
 
-    auto &shape() { return shape_; }
+    auto &shape() const { return shape_; }
     auto shape(int64_t i) const { return shape_[i]; }
 
     T *data() { return buffer_; }

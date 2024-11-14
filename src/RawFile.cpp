@@ -53,6 +53,18 @@ void RawFile::read_into(std::byte *image_buf, DetectorHeader *header) {
     return get_frame_into(m_current_frame++, image_buf, header);
 };
 
+void RawFile::read_into(std::byte *image_buf, size_t n_frames, DetectorHeader *header) {
+    // return get_frame_into(m_current_frame++, image_buf, header);
+
+    for (size_t i = 0; i < n_frames; i++) {
+        this->get_frame_into(m_current_frame++, image_buf, header);
+        image_buf += bytes_per_frame();
+        if(header) 
+            header+=n_mod();
+    }
+
+};
+
 size_t RawFile::n_mod() const { return n_subfile_parts; }
 
 
@@ -87,10 +99,14 @@ void RawFile::open_subfiles() {
         for (size_t i = 0; i != n_subfiles; ++i) {
             auto v = std::vector<RawSubFile *>(n_subfile_parts);
             for (size_t j = 0; j != n_subfile_parts; ++j) {
+                fmt::print("{} pos: {},{}\n", j,positions[j].row, positions[j].col);
+                
                 auto pos = m_module_pixel_0[j];
+                fmt::print("{} pos: {},{}\n", j,pos.y, pos.x);
                 v[j] = new RawSubFile(m_master.data_fname(j, i),
                                       m_master.detector_type(), pos.height,
-                                      pos.width, m_master.bitdepth());
+                                      pos.width, m_master.bitdepth(),
+                                      positions[j].row, positions[j].col);
 
             }
             subfiles.push_back(v);
@@ -117,10 +133,6 @@ DetectorHeader RawFile::read_header(const std::filesystem::path &fname) {
 
     return h;
 }
-bool RawFile::is_master_file(const std::filesystem::path &fpath) {
-    std::string const stem = fpath.stem().string();
-    return stem.find("_master_") != std::string::npos;
-}
 
 int RawFile::find_number_of_subfiles() {
     int n_files = 0;
@@ -134,6 +146,8 @@ int RawFile::find_number_of_subfiles() {
     return n_files;
 
 }
+
+RawMasterFile RawFile::master() const { return m_master; }
 
 void RawFile::find_geometry() {
     uint16_t r{};
@@ -208,8 +222,9 @@ void RawFile::update_geometry_with_roi() {
                 if (m.y + m.height < roi.ymin) {
                     m.height = 0;
                 } else {
-                    if (roi.ymin < m.y + m.height) {
-                        m.height -= roi.ymin;
+                    if ((roi.ymin > m.y) && (roi.ymin < m.y + m.height)) {
+                        m.height -= roi.ymin - m.y;
+
                     }
                     if (roi.ymax < m.y + m.height) {
                         m.height -= m.y + original_height - roi.ymax;

@@ -62,32 +62,29 @@ class RawFile : public FileInterface {
 
     //TODO! do we need to adapt the API? 
     void read_into(std::byte *image_buf, DetectorHeader *header);
+    void read_into(std::byte *image_buf, size_t n_frames, DetectorHeader *header);
 
 
     size_t frame_number(size_t frame_index) override;
     size_t bytes_per_frame() override;
     size_t pixels_per_frame() override;
+    size_t bytes_per_pixel() const;
     void seek(size_t frame_index) override;
     size_t tell() override;
     size_t total_frames() const override;
     size_t rows() const override;
     size_t cols() const override;
     size_t bitdepth() const override;
-    size_t bytes_per_pixel() const;
     xy geometry();
     size_t n_mod() const;
+    
+    RawMasterFile master() const;
+
 
 
     DetectorType detector_type() const override;
 
   private:
-  /**
-     * @brief check if the file is a master file
-     * @param fpath path to the file
-     */
-    static bool is_master_file(const std::filesystem::path &fpath);
-
-        // TODO! Deal with fast quad and missing files
 
     /**
      * @brief read the frame at the given frame index into the image buffer

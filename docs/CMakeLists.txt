@@ -12,6 +12,8 @@ set(SPHINX_BUILD ${CMAKE_CURRENT_BINARY_DIR})
 
 set(SPHINX_SOURCE_FILES
   src/index.rst
+  src/Installation.rst
+  src/Requirements.rst
   src/NDArray.rst
   src/NDView.rst
   src/File.rst
@@ -26,6 +28,7 @@ set(SPHINX_SOURCE_FILES
   src/pyVarClusterFinder.rst
   src/pyFile.rst
   src/pyCtbRawFile.rst
+  src/pyRawFile.rst
   src/pyRawMasterFile.rst
 )
 

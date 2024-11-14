@@ -256,26 +256,25 @@ set(PUBLICHEADERS
     include/aare/Pedestal.hpp
     include/aare/PixelMap.hpp
     include/aare/RawFile.hpp
-    include/aare/RawSubFile.hpp
     include/aare/RawMasterFile.hpp
-    include/aare/SubFile.hpp
+    include/aare/RawSubFile.hpp
     include/aare/VarClusterFinder.hpp
 
 )
 
 
 set(SourceFiles
-    ${CMAKE_CURRENT_SOURCE_DIR}/src/defs.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/src/CtbRawFile.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/defs.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/src/Dtype.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/src/Frame.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/src/File.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/src/NumpyFile.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/NumpyHelpers.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/src/PixelMap.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/src/RawFile.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/src/RawSubFile.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/src/RawMasterFile.cpp
-    ${CMAKE_CURRENT_SOURCE_DIR}/src/NumpyHelpers.cpp
 )
 
 
