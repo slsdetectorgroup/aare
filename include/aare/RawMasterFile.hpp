@@ -70,6 +70,7 @@ struct ROI{
   size_t width() const { return xmax - xmin; }
 }__attribute__((packed));
 
+
 /**
  * @brief Class for parsing a master file either in our .json format or the old
  * .raw format

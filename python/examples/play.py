@@ -78,6 +78,8 @@ base = Path('/mnt/sls_det_storage/matterhorn_data/aare_test_data/ci/aare_test_da
 # # cols = 1024-roi.xmin
 # # sf = RawSubFile(base / raw, DetectorType.Jungfrau, rows, cols, 16)
 
+from aare import RawFile
+
 
 
 from aare import RawFile, File
@@ -86,6 +88,7 @@ base = Path('/mnt/sls_det_storage/matterhorn_data/aare_test_data/Jungfrau10/Jung
 fname = base / Path('SideBySide/241019_JF_12keV_Si_FF_GaAs_FF_7p88mmFilter_PedestalStart_ZPos_5.5_master_0.json')
 # fname = Path(base / 'jungfrau/jungfrau_single_master_0.json')
 # fname = base / 'Stacked/241024_JF10_m450_m367_KnifeEdge_TestBesom_9keV_750umFilter_PedestalStart_ZPos_-6_master_0.json'
+
 
 f = RawFile(fname)
 h,img = f.read_frame()
