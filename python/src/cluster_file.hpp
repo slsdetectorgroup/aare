@@ -18,7 +18,7 @@ void define_cluster_file_io_bindings(py::module &m) {
     PYBIND11_NUMPY_DTYPE(Cluster, x, y, data);
 
     py::class_<ClusterFile>(m, "ClusterFile")
-        .def(py::init<const std::filesystem::path &>())
+        .def(py::init<const std::filesystem::path &, size_t>(), py::arg(), py::arg("chunk_size") = 1000)
         .def("read_clusters",
              [](ClusterFile &self, size_t n_clusters) {
                  auto* vec = new std::vector<Cluster>(self.read_clusters(n_clusters));
@@ -29,6 +29,16 @@ void define_cluster_file_io_bindings(py::module &m) {
                  auto view = make_view_2d(noise_map);
                  auto* vec = new std::vector<Cluster>(self.read_cluster_with_cut(n_clusters, view.data(), nx, ny));
                  return return_vector(vec);
-             });
+             })
+        .def("__enter__", [](ClusterFile &self) { return &self; })
+        .def("__exit__", [](ClusterFile &self, py::args args) { return; })
+        .def("__iter__", [](ClusterFile &self) { return &self; })
+        .def("__next__", [](ClusterFile &self) {
+            auto vec =  new std::vector<Cluster>(self.read_clusters(self.chunk_size()));
+            if(vec->size() == 0) {
+                throw py::stop_iteration();
+            }
+            return return_vector(vec);
+        });
 
 }

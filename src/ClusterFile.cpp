@@ -2,7 +2,7 @@
 
 namespace aare {
 
-ClusterFile::ClusterFile(const std::filesystem::path &fname) {
+ClusterFile::ClusterFile(const std::filesystem::path &fname, size_t chunk_size): m_chunk_size(chunk_size) {
     fp = fopen(fname.c_str(), "rb");
     if (!fp) {
         throw std::runtime_error("Could not open file: " + fname.string());
