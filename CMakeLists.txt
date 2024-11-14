@@ -243,6 +243,7 @@ endif()
 
 set(PUBLICHEADERS
     include/aare/ClusterFinder.hpp
+    include/aare/ClusterFile.hpp
     include/aare/CtbRawFile.hpp
     include/aare/defs.hpp
     include/aare/Dtype.hpp
@@ -265,6 +266,7 @@ set(PUBLICHEADERS
 
 set(SourceFiles
     ${CMAKE_CURRENT_SOURCE_DIR}/src/CtbRawFile.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/ClusterFile.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/src/defs.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/src/Dtype.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/src/Frame.cpp
