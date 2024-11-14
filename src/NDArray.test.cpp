@@ -12,7 +12,7 @@ TEST_CASE("Initial size is zero if no size is specified") {
     REQUIRE(a.shape() == Shape<2>{0, 0});
 }
 
-TEST_CASE("Construct from a DataSpan") {
+TEST_CASE("Construct from an NDView") {
     std::vector<int> some_data(9, 42);
     NDView<int, 2> view(some_data.data(), Shape<2>{3, 3});
 
@@ -168,42 +168,8 @@ TEST_CASE("Bitwise and on data") {
     REQUIRE(a(2) == 384);
 }
 
-// TEST_CASE("Benchmarks")
-// {
-//     NDArray<double> img;
-//     std::array<int64_t, 2> shape{ 512, 1024 };
-//     BENCHMARK("Allocate 500k double image")
-//     {
-//         NDArray<double>im{ shape };
-//     }
-//     BENCHMARK("Allocate 500k double image with initial value")
-//     {
-//         NDArray<double>im{ shape, 3.14 };
-//     }
 
-//     NDArray<double> a{ shape, 1.2 };
-//     NDArray<double> b{ shape, 53. };
-//     auto c = a + b;
-//     c      = a * b;
-//     BENCHMARK("Multiply two images")
-//     {
-//         c = a * b;
-//     }
-//     BENCHMARK("Divide two images")
-//     {
-//         c = a / b;
-//     }
-//     BENCHMARK("Add two images")
-//     {
-//         c = a + b;
-//     }
-//     BENCHMARK("Subtract two images")
-//     {
-//         c = a - b;
-//     }
-// }
-
-TEST_CASE("Elementwise operatios on images") {
+TEST_CASE("Elementwise operations on images") {
     std::array<int64_t, 2> shape{5, 5};
     double a_val = 3.0;
     double b_val = 8.0;

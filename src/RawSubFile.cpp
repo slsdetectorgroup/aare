@@ -8,12 +8,15 @@ namespace aare {
 
 RawSubFile::RawSubFile(const std::filesystem::path &fname,
                        DetectorType detector, size_t rows, size_t cols,
-                       size_t bitdepth)
+                       size_t bitdepth, uint32_t pos_row, uint32_t pos_col)
     : m_bitdepth(bitdepth), m_fname(fname), m_rows(rows), m_cols(cols),
       m_detector_type(detector),
-      m_bytes_per_frame((m_bitdepth / 8) * m_rows * m_cols) {
+      m_bytes_per_frame((m_bitdepth / 8) * m_rows * m_cols), m_pos_row(pos_row), m_pos_col(pos_col) {
     if (m_detector_type == DetectorType::Moench03_old) {
-        pixel_map = GenerateMoench03PixelMap();
+        m_pixel_map = GenerateMoench03PixelMap();
+    }else if(m_detector_type == DetectorType::Eiger && m_pos_row % 2 == 0){
+        m_pixel_map = GenerateEigerFlipRowsPixelMap();
+        fmt::print("Flipping rows\n");
     }
 
     if (std::filesystem::exists(fname)) {
@@ -59,7 +62,7 @@ void RawSubFile::read_into(std::byte *image_buf, DetectorHeader *header) {
     }
 
     //TODO! expand support for different bitdepths
-    if(pixel_map){
+    if(m_pixel_map){
         // read into a temporary buffer and then copy the data to the buffer
         // in the correct order
         // currently this only supports 16 bit data!
@@ -68,7 +71,7 @@ void RawSubFile::read_into(std::byte *image_buf, DetectorHeader *header) {
         auto *data = reinterpret_cast<uint16_t *>(image_buf);
         auto *part_data = reinterpret_cast<uint16_t *>(part_buffer);
         for (size_t i = 0; i < pixels_per_frame(); i++) {
-            data[i] = part_data[(*pixel_map)(i)];
+            data[i] = part_data[(*m_pixel_map)(i)];
         }
         delete[] part_buffer;
     } else {

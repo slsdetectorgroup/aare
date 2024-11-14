@@ -97,10 +97,14 @@ void RawFile::open_subfiles() {
         for (size_t i = 0; i != n_subfiles; ++i) {
             auto v = std::vector<RawSubFile *>(n_subfile_parts);
             for (size_t j = 0; j != n_subfile_parts; ++j) {
+                fmt::print("{} pos: {},{}\n", j,positions[j].row, positions[j].col);
+                
                 auto pos = m_module_pixel_0[j];
+                fmt::print("{} pos: {},{}\n", j,pos.y, pos.x);
                 v[j] = new RawSubFile(m_master.data_fname(j, i),
                                       m_master.detector_type(), pos.height,
-                                      pos.width, m_master.bitdepth());
+                                      pos.width, m_master.bitdepth(),
+                                      positions[j].row, positions[j].col);
 
             }
             subfiles.push_back(v);

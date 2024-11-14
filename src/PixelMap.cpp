@@ -52,6 +52,16 @@ NDArray<ssize_t, 2> GenerateMoench05PixelMap() {
     return order_map;
 }
 
+NDArray<ssize_t, 2>GenerateEigerFlipRowsPixelMap(){
+    NDArray<ssize_t, 2> order_map({256, 512});
+    for(int row = 0; row < 256; row++){
+        for(int col = 0; col < 512; col++){
+            order_map(row, col) = 255*512-row*512 + col;
+        }
+    }
+    return order_map;
+}
+
 NDArray<ssize_t, 2>GenerateMH02SingleCounterPixelMap(){
     NDArray<ssize_t, 2> order_map({48, 48});
     for(int row = 0; row < 48; row++){

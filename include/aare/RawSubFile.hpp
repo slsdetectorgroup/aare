@@ -22,9 +22,11 @@ class RawSubFile {
     size_t m_cols{};
     size_t m_bytes_per_frame{};
     size_t n_frames{};
+    uint32_t m_pos_row{};
+    uint32_t m_pos_col{};
  
     DetectorType m_detector_type;
-    std::optional<NDArray<ssize_t, 2>> pixel_map;
+    std::optional<NDArray<ssize_t, 2>> m_pixel_map;
 
   public:
     /**
@@ -37,7 +39,7 @@ class RawSubFile {
      * @throws std::invalid_argument if the detector,type pair is not supported
      */
     RawSubFile(const std::filesystem::path &fname, DetectorType detector,
-               size_t rows, size_t cols, size_t bitdepth);
+               size_t rows, size_t cols, size_t bitdepth, uint32_t pos_row = 0, uint32_t pos_col = 0);
 
     ~RawSubFile() = default;
     /**
