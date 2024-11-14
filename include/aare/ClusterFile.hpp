@@ -41,9 +41,10 @@ struct ClusterAnalysis {
 class ClusterFile {
     FILE *fp{};
     uint32_t m_num_left{};
+    size_t m_chunk_size{};
 
   public:
-    ClusterFile(const std::filesystem::path &fname);
+    ClusterFile(const std::filesystem::path &fname, size_t chunk_size = 1000);
     std::vector<Cluster> read_clusters(size_t n_clusters);
     std::vector<Cluster>
     read_cluster_with_cut(size_t n_clusters, double *noise_map, int nx, int ny);
@@ -53,6 +54,8 @@ class ClusterFile {
     int analyze_cluster(Cluster cl, int32_t *t2, int32_t *t3, char *quad,
                     double *eta2x, double *eta2y, double *eta3x,
                     double *eta3y);
+
+    size_t chunk_size() const { return m_chunk_size; }
 
 };
 
