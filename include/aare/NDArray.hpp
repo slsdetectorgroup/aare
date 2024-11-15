@@ -31,7 +31,9 @@ template <typename T, int64_t Ndim = 2> class NDArray {
      * @brief Default constructor. Will construct an empty NDArray.
      *
      */
-    NDArray() : shape_(), strides_(c_strides<Ndim>(shape_)), data_(nullptr) {};
+    NDArray() : shape_(), strides_(c_strides<Ndim>(shape_)), data_(nullptr) {
+        // fmt::print("NDArray()\n");
+    };
 
     /**
      * @brief Construct a new NDArray object with a given shape.
@@ -43,7 +45,12 @@ template <typename T, int64_t Ndim = 2> class NDArray {
         : shape_(shape), strides_(c_strides<Ndim>(shape_)),
           size_(std::accumulate(shape_.begin(), shape_.end(), 1,
                                 std::multiplies<>())),
-          data_(new T[size_]) {};
+          data_(new T[size_]) {
+        // fmt::print("NDArray(");
+        // for (auto &val : shape_)
+        //     fmt::print("{}, ", val);
+        // fmt::print(")\n");
+    }
 
     /**
      * @brief Construct a new NDArray object with a shape and value.
@@ -53,6 +60,7 @@ template <typename T, int64_t Ndim = 2> class NDArray {
      */
     NDArray(std::array<int64_t, Ndim> shape, T value) : NDArray(shape) {
         this->operator=(value);
+        // fmt::print("NDArray(std::array<int64_t, Ndim> shape, T value): {}\n", value);
     }
 
     /**
@@ -62,6 +70,7 @@ template <typename T, int64_t Ndim = 2> class NDArray {
      * @param v view of data to initialize the NDArray with
      */
     explicit NDArray(const NDView<T, Ndim> v) : NDArray(v.shape()) {
+        // fmt::print("NDArray(const NDView<T, Ndim> v)\n");
         std::copy(v.begin(), v.end(), begin());
     }
 
@@ -69,7 +78,7 @@ template <typename T, int64_t Ndim = 2> class NDArray {
     NDArray(NDArray &&other) noexcept
         : shape_(other.shape_), strides_(c_strides<Ndim>(shape_)),
           size_(other.size_), data_(other.data_) {
-
+        // fmt::print("NDArray(NDArray &&other)\n");
         other.reset();
     }
 
@@ -81,7 +90,10 @@ template <typename T, int64_t Ndim = 2> class NDArray {
         // fmt::print("NDArray(const NDArray &other)\n");
     }
 
-    ~NDArray() { delete[] data_; }
+    ~NDArray() {
+        delete[] data_;
+        // fmt::print("~NDArray()\n");
+    }
 
     auto begin() { return data_; }
     auto end() { return data_ + size_; }
@@ -206,20 +218,26 @@ NDArray<T, Ndim>::operator=(NDArray<T, Ndim> &&other) noexcept {
 
 template <typename T, int64_t Ndim>
 NDArray<T, Ndim> NDArray<T, Ndim>::operator+(const NDArray &other) {
-    NDArray result(*this);
-    result += other;
+    // fmt::print("NDArray<T, Ndim>::operator+()\n");
+    // NDArray result(*this);
+    // result += other;
+    NDArray result(shape_);
+    for (size_t i = 0; i < size_; ++i) {
+        result.data_[i] = data_[i] + other.data_[i];
+    }
     return result;
 }
 template <typename T, int64_t Ndim>
 NDArray<T, Ndim> &NDArray<T, Ndim>::operator+=(const NDArray<T, Ndim> &other) {
     // check shape
-    if (shape_ == other.shape_) {
-        for (uint32_t i = 0; i < size_; ++i) {
+    // fmt::print("NDArray<T, Ndim>::operator+=()\n");
+    // if (shape_ == other.shape_) {
+        for (size_t i = 0; i < size_; ++i) {
             data_[i] += other.data_[i];
         }
         return *this;
-    }
-    throw(std::runtime_error("Shape of ImageDatas must match"));
+    // }
+    // throw(std::runtime_error("Shape of ImageDatas must match"));
 }
 
 template <typename T, int64_t Ndim>
@@ -323,6 +341,7 @@ NDArray<T, Ndim> &NDArray<T, Ndim>::operator++() {
 template <typename T, int64_t Ndim>
 NDArray<T, Ndim> &NDArray<T, Ndim>::operator=(const T &value) {
     std::fill_n(data_, size_, value);
+    // fmt::print("filling with value: {}\n", value);
     return *this;
 }
 

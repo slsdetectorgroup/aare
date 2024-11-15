@@ -9,43 +9,16 @@ from aare import transform
 print('transform imported')
 from pathlib import Path
 
-import json
+base = Path('~/data/aare_test_data/clusters').expanduser()
 
-def decode(frames, rawdata):
-    # rawdata = np.fromfile(f, dtype = np.uint16)
-    counters = int((np.shape(rawdata)[0]/frames-56)/(48*48))
-    print('Counters:', counters)
-    rawdata = rawdata.reshape(frames,-1)[:,56:]
-    rawdata = rawdata.reshape(frames,576*counters,4) #Data come in "blocks" of 4 pixels/receiver
-    tr1 = rawdata[:,0:576*counters:2] #Transceiver1
-    tr1=tr1.reshape((frames,48*counters,24)) 
 
-    tr2 = rawdata[:,1:576*counters:2] #Transceiver2
-    tr2=tr2.reshape((frames,48*counters,24))     
-    
-    data = np.append(tr1,tr2,axis=2)
-    return data
+# with ClusterFile(base / 'beam_En700eV_-40deg_300V_10us_d0_f0_100.clust') as f:
+#     clusters = f.read_clusters(100)
 
-def get_Mh02_frames(fname):
-    # this function gives you the data from a file that is not a scan
-    # it returns a (frames,48*counters,48)
 
-    jsonf = open(fname)
-    jsonpar = json.load(jsonf)
-    jsonf.close()
-
-    frames=jsonpar["Frames in File"]
-    print('Frames:', frames)
-
-    rawf = fname.replace('master','d0_f0')	
-    rawf = rawf.replace('.json','.raw')	
-
-    with open(rawf, 'rb') as f:
-        rawdata = np.fromfile(f, dtype = np.uint16)
-        data = decode(frames, rawdata) 
-        print('Data:', np.shape(data))
-        
-        return data
+with ClusterFile(base / 'single_frame_97_clustrers.clust', chunk_size=10) as f:
+    for clusters in f:
+        print(clusters.size)
 
 
 #target format

@@ -64,6 +64,10 @@ if(AARE_CUSTOM_ASSERT)
     add_compile_definitions(AARE_CUSTOM_ASSERT)
 endif()
 
+if(AARE_BENCHMARKS)
+    add_subdirectory(benchmarks)
+endif()
+
 
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 

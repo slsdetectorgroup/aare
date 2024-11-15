@@ -1,5 +1,6 @@
 #include "aare/NDArray.hpp"
 #include <array>
+#include <catch2/benchmark/catch_benchmark.hpp>
 #include <catch2/catch_test_macros.hpp>
 
 using aare::NDArray;
@@ -109,6 +110,39 @@ TEST_CASE("Elementwise multiplication of 3D image") {
     REQUIRE(c(2, 3, 1) == 23 * 23);
 }
 
+NDArray<int> MultiplyNDArrayUsingOperator(NDArray<int> &a, NDArray<int> &b) {
+    // return a * a * b * b;
+    NDArray<int>c =  a*b;
+    return c;
+}
+
+NDArray<int> MultiplyNDArrayUsingIndex(NDArray<int> &a, NDArray<int> &b) {
+    NDArray<int> res(a.shape());
+    for (uint32_t i = 0; i < a.size(); i++) {
+        // res(i) = a(i) * a(i) * b(i) * b(i);
+        res(i) = a(i) * b(i);
+    }
+    return res;
+}
+
+NDArray<int> AddNDArrayUsingOperator(NDArray<int> &a, NDArray<int> &b) {
+    // return a * a * b * b;
+    // NDArray<int>c = a+b;
+    NDArray<int> c(a.shape());
+    c = a + b;
+    return c;
+}
+
+NDArray<int> AddNDArrayUsingIndex(NDArray<int> &a, NDArray<int> &b) {
+    NDArray<int> res(a.shape());
+    for (uint32_t i = 0; i < a.size(); i++) {
+        // res(i) = a(i) * a(i) * b(i) * b(i);
+        res(i) = a(i) + b(i);
+    }
+    return res;
+}
+
+
 TEST_CASE("Compare two images") {
     NDArray<int> a;
     NDArray<int> b;
@@ -167,7 +201,6 @@ TEST_CASE("Bitwise and on data") {
     REQUIRE(a(1) == 300);
     REQUIRE(a(2) == 384);
 }
-
 
 TEST_CASE("Elementwise operations on images") {
     std::array<int64_t, 2> shape{5, 5};
