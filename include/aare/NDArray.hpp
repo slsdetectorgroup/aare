@@ -21,6 +21,7 @@ TODO! Add expression templates for operators
 
 namespace aare {
 
+
 template <typename T, int64_t Ndim = 2>
 class NDArray : public ArrayExpr<NDArray<T, Ndim>, Ndim> {
     std::array<int64_t, Ndim> shape_;
@@ -47,6 +48,7 @@ class NDArray : public ArrayExpr<NDArray<T, Ndim>, Ndim> {
                                 std::multiplies<>())),
           data_(new T[size_]) {}
 
+
     /**
      * @brief Construct a new NDArray object with a shape and value.
      *
@@ -72,6 +74,7 @@ class NDArray : public ArrayExpr<NDArray<T, Ndim>, Ndim> {
         : shape_(other.shape_), strides_(c_strides<Ndim>(shape_)),
           size_(other.size_), data_(other.data_) {
         other.reset(); // TODO! is this necessary?
+
     }
 
     // Copy constructor

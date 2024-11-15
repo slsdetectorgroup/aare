@@ -203,6 +203,7 @@ TEST_CASE("Bitwise and on data") {
     REQUIRE(a(2) == 384);
 }
 
+
 TEST_CASE("Elementwise operations on images") {
     std::array<int64_t, 2> shape{5, 5};
     double a_val = 3.0;
