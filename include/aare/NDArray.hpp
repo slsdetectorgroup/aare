@@ -7,8 +7,8 @@ memory.
 TODO! Add expression templates for operators
 
 */
-#include "aare/NDView.hpp"
 #include "aare/ArrayExpr.hpp"
+#include "aare/NDView.hpp"
 
 #include <algorithm>
 #include <array>
@@ -21,8 +21,8 @@ TODO! Add expression templates for operators
 
 namespace aare {
 
-
-template <typename T, int64_t Ndim=2> class NDArray : public ArrayExpr<NDArray<T, Ndim>, Ndim> {
+template <typename T, int64_t Ndim = 2>
+class NDArray : public ArrayExpr<NDArray<T, Ndim>, Ndim> {
     std::array<int64_t, Ndim> shape_;
     std::array<int64_t, Ndim> strides_;
     size_t size_{};
@@ -33,10 +33,7 @@ template <typename T, int64_t Ndim=2> class NDArray : public ArrayExpr<NDArray<T
      * @brief Default constructor. Will construct an empty NDArray.
      *
      */
-    NDArray()
-        : shape_(), strides_(c_strides<Ndim>(shape_)), data_(nullptr) {
-              // fmt::print("NDArray()\n");
-          };
+    NDArray() : shape_(), strides_(c_strides<Ndim>(shape_)), data_(nullptr) {};
 
     /**
      * @brief Construct a new NDArray object with a given shape.
@@ -48,12 +45,7 @@ template <typename T, int64_t Ndim=2> class NDArray : public ArrayExpr<NDArray<T
         : shape_(shape), strides_(c_strides<Ndim>(shape_)),
           size_(std::accumulate(shape_.begin(), shape_.end(), 1,
                                 std::multiplies<>())),
-          data_(new T[size_]) {
-        // fmt::print("NDArray(");
-        // for (auto &val : shape_)
-        //     fmt::print("{}, ", val);
-        // fmt::print(")\n");
-    }
+          data_(new T[size_]) {}
 
     /**
      * @brief Construct a new NDArray object with a shape and value.
@@ -63,8 +55,6 @@ template <typename T, int64_t Ndim=2> class NDArray : public ArrayExpr<NDArray<T
      */
     NDArray(std::array<int64_t, Ndim> shape, T value) : NDArray(shape) {
         this->operator=(value);
-        // fmt::print("NDArray(std::array<int64_t, Ndim> shape, T value): {}\n",
-        // value);
     }
 
     /**
@@ -74,7 +64,6 @@ template <typename T, int64_t Ndim=2> class NDArray : public ArrayExpr<NDArray<T
      * @param v view of data to initialize the NDArray with
      */
     explicit NDArray(const NDView<T, Ndim> v) : NDArray(v.shape()) {
-        // fmt::print("NDArray(const NDView<T, Ndim> v)\n");
         std::copy(v.begin(), v.end(), begin());
     }
 
@@ -82,8 +71,7 @@ template <typename T, int64_t Ndim=2> class NDArray : public ArrayExpr<NDArray<T
     NDArray(NDArray &&other) noexcept
         : shape_(other.shape_), strides_(c_strides<Ndim>(shape_)),
           size_(other.size_), data_(other.data_) {
-        // fmt::print("NDArray(NDArray &&other)\n");
-        other.reset();
+        other.reset(); // TODO! is this necessary?
     }
 
     // Copy constructor
@@ -91,23 +79,17 @@ template <typename T, int64_t Ndim=2> class NDArray : public ArrayExpr<NDArray<T
         : shape_(other.shape_), strides_(c_strides<Ndim>(shape_)),
           size_(other.size_), data_(new T[size_]) {
         std::copy(other.data_, other.data_ + size_, data_);
-        // fmt::print("NDArray(const NDArray &other)\n");
     }
 
-    //Conversion operator from array expression to array
+    // Conversion operator from array expression to array
     template <typename E>
-    NDArray(ArrayExpr<E, Ndim> &&expr) : NDArray(expr.shape())
-    {
-        for (int i = 0; i < size_; ++i)
-        {
+    NDArray(ArrayExpr<E, Ndim> &&expr) : NDArray(expr.shape()) {
+        for (int i = 0; i < size_; ++i) {
             data_[i] = expr[i];
         }
     }
 
-    ~NDArray() {
-        delete[] data_;
-        // fmt::print("~NDArray()\n");
-    }
+    ~NDArray() { delete[] data_; }
 
     auto begin() { return data_; }
     auto end() { return data_ + size_; }
@@ -173,12 +155,12 @@ template <typename T, int64_t Ndim=2> class NDArray : public ArrayExpr<NDArray<T
         return data_[element_offset(strides_, index...)];
     }
 
-    //TODO! is int the right type for index?
+    // TODO! is int the right type for index?
     T &operator()(int i) { return data_[i]; }
     const T &operator()(int i) const { return data_[i]; }
 
-    T& operator[](int i) { return data_[i]; }
-    const T& operator[](int i) const { return data_[i]; }
+    T &operator[](int i) { return data_[i]; }
+    const T &operator[](int i) const { return data_[i]; }
 
     T *data() { return data_; }
     std::byte *buffer() { return reinterpret_cast<std::byte *>(data_); }
@@ -233,16 +215,14 @@ NDArray<T, Ndim>::operator=(NDArray<T, Ndim> &&other) noexcept {
 template <typename T, int64_t Ndim>
 NDArray<T, Ndim> &NDArray<T, Ndim>::operator+=(const NDArray<T, Ndim> &other) {
     // check shape
-    // fmt::print("NDArray<T, Ndim>::operator+=()\n");
-    // if (shape_ == other.shape_) {
-    for (size_t i = 0; i < size_; ++i) {
-        data_[i] += other.data_[i];
+    if (shape_ == other.shape_) {
+        for (size_t i = 0; i < size_; ++i) {
+            data_[i] += other.data_[i];
+        }
+        return *this;
     }
-    return *this;
-    // }
-    // throw(std::runtime_error("Shape of ImageDatas must match"));
+    throw(std::runtime_error("Shape of ImageDatas must match"));
 }
-
 
 template <typename T, int64_t Ndim>
 NDArray<T, Ndim> &NDArray<T, Ndim>::operator-=(const NDArray<T, Ndim> &other) {
@@ -256,7 +236,6 @@ NDArray<T, Ndim> &NDArray<T, Ndim>::operator-=(const NDArray<T, Ndim> &other) {
     throw(std::runtime_error("Shape of ImageDatas must match"));
 }
 
-
 template <typename T, int64_t Ndim>
 NDArray<T, Ndim> &NDArray<T, Ndim>::operator*=(const NDArray<T, Ndim> &other) {
     // check shape
@@ -268,8 +247,6 @@ NDArray<T, Ndim> &NDArray<T, Ndim>::operator*=(const NDArray<T, Ndim> &other) {
     }
     throw(std::runtime_error("Shape of ImageDatas must match"));
 }
-
-
 
 template <typename T, int64_t Ndim>
 NDArray<T, Ndim> &NDArray<T, Ndim>::operator&=(const T &mask) {
@@ -328,7 +305,6 @@ NDArray<T, Ndim> &NDArray<T, Ndim>::operator++() {
 template <typename T, int64_t Ndim>
 NDArray<T, Ndim> &NDArray<T, Ndim>::operator=(const T &value) {
     std::fill_n(data_, size_, value);
-    // fmt::print("filling with value: {}\n", value);
     return *this;
 }
 
