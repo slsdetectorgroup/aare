@@ -13,14 +13,9 @@ std::vector<Cluster> ClusterFile::read_clusters(size_t n_clusters) {
     std::vector<Cluster> clusters(n_clusters);
 
     int32_t iframe = 0; // frame number needs to be 4 bytes!
-
     size_t nph_read = 0;
-
-    //     uint32_t nn = *n_left;
     uint32_t nn = m_num_left;
-    //     uint32_t nph = *n_left; // number of clusters in frame needs to be 4
-    //     bytes!
-    uint32_t nph = m_num_left;
+    uint32_t nph = m_num_left; // number of clusters in frame needs to be 4
 
     auto buf = reinterpret_cast<Cluster *>(clusters.data());
     // if there are photons left from previous frame read them first
@@ -59,6 +54,28 @@ std::vector<Cluster> ClusterFile::read_clusters(size_t n_clusters) {
     // No new allocation, only change bounds.
     clusters.resize(nph_read);
     return clusters;
+}
+
+std::vector<Cluster> ClusterFile::read_frame(int32_t &out_fnum) {
+    if (m_num_left) {
+        throw std::runtime_error("There are still photons left in the last frame");
+    }
+
+    if (fread(&out_fnum, sizeof(out_fnum), 1, fp) != 1) {
+        throw std::runtime_error("Could not read frame number");
+    }
+
+    int n_clusters;
+    if (fread(&n_clusters, sizeof(n_clusters), 1, fp) != 1) {
+        throw std::runtime_error("Could not read number of clusters");
+    }
+    std::vector<Cluster> clusters(n_clusters);
+
+    if (fread(clusters.data(), sizeof(Cluster), n_clusters, fp) != n_clusters) {
+        throw std::runtime_error("Could not read clusters");
+    }
+    return clusters;
+
 }
 
 std::vector<Cluster> ClusterFile::read_cluster_with_cut(size_t n_clusters,

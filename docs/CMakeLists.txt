@@ -10,31 +10,35 @@ configure_file(${DOXYGEN_IN} ${DOXYGEN_OUT} @ONLY)
 set(SPHINX_SOURCE ${CMAKE_CURRENT_SOURCE_DIR}/src)
 set(SPHINX_BUILD ${CMAKE_CURRENT_BINARY_DIR})
 
-set(SPHINX_SOURCE_FILES
-  src/index.rst
-  src/Installation.rst
-  src/Requirements.rst
-  src/NDArray.rst
-  src/NDView.rst
-  src/File.rst
-  src/Frame.rst
-  src/Dtype.rst
-  src/ClusterFinder.rst
-  src/Pedestal.rst
-  src/RawFile.rst
-  src/RawSubFile.rst
-  src/RawMasterFile.rst
-  src/VarClusterFinder.rst
-  src/pyVarClusterFinder.rst
-  src/pyFile.rst
-  src/pyCtbRawFile.rst
-  src/pyRawFile.rst
-  src/pyRawMasterFile.rst
-)
+
+file(GLOB SPHINX_SOURCE_FILES CONFIGURE_DEPENDS "src/*.rst")
+# set(SPHINX_SOURCE_FILES
+#   src/index.rst
+#   src/Installation.rst
+#   src/Requirements.rst
+#   src/NDArray.rst
+#   src/NDView.rst
+#   src/File.rst
+#   src/Frame.rst
+#   src/Dtype.rst
+#   src/ClusterFinder.rst
+#   src/ClusterFile.rst
+#   src/Pedestal.rst
+#   src/RawFile.rst
+#   src/RawSubFile.rst
+#   src/RawMasterFile.rst
+#   src/VarClusterFinder.rst
+#   src/pyVarClusterFinder.rst
+#   src/pyFile.rst
+#   src/pyCtbRawFile.rst
+#   src/pyRawFile.rst
+#   src/pyRawMasterFile.rst
+# )
 
 foreach(filename ${SPHINX_SOURCE_FILES})
-configure_file(${CMAKE_CURRENT_SOURCE_DIR}/${filename} 
-              "${SPHINX_BUILD}/${filename}")
+    get_filename_component(fname ${filename} NAME)
+    message(STATUS "Copying ${filename} to ${SPHINX_BUILD}/src/${fname}")
+    configure_file(${filename} "${SPHINX_BUILD}/src/${fname}")  
 endforeach(filename ${SPHINX_SOURCE_FILES})
 
 configure_file(

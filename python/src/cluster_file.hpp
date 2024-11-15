@@ -24,6 +24,12 @@ void define_cluster_file_io_bindings(py::module &m) {
                  auto* vec = new std::vector<Cluster>(self.read_clusters(n_clusters));
                  return return_vector(vec);
              })
+        .def("read_frame",
+             [](ClusterFile &self) {
+                 int32_t frame_number;
+                 auto* vec = new std::vector<Cluster>(self.read_frame(frame_number));
+                 return py::make_tuple(frame_number, return_vector(vec));
+             })
         .def("read_cluster_with_cut",
              [](ClusterFile &self, size_t n_clusters, py::array_t<double> noise_map, int nx, int ny) {
                  auto view = make_view_2d(noise_map);
