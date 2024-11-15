@@ -247,6 +247,7 @@ endif()
 ###------------------------------------------------------------------------------------------
 
 set(PUBLICHEADERS
+    include/aare/ArrayExpr.hpp
     include/aare/ClusterFinder.hpp
     include/aare/CtbRawFile.hpp
     include/aare/defs.hpp
