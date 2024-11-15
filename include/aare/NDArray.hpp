@@ -7,6 +7,7 @@ memory.
 TODO! Add expression templates for operators
 
 */
+#include "aare/ArrayExpr.hpp"
 #include "aare/NDView.hpp"
 
 #include <algorithm>
@@ -20,7 +21,8 @@ TODO! Add expression templates for operators
 
 namespace aare {
 
-template <typename T, int64_t Ndim = 2> class NDArray {
+template <typename T, int64_t Ndim = 2>
+class NDArray : public ArrayExpr<NDArray<T, Ndim>, Ndim> {
     std::array<int64_t, Ndim> shape_;
     std::array<int64_t, Ndim> strides_;
     size_t size_{};
@@ -43,7 +45,7 @@ template <typename T, int64_t Ndim = 2> class NDArray {
         : shape_(shape), strides_(c_strides<Ndim>(shape_)),
           size_(std::accumulate(shape_.begin(), shape_.end(), 1,
                                 std::multiplies<>())),
-          data_(new T[size_]) {};
+          data_(new T[size_]) {}
 
     /**
      * @brief Construct a new NDArray object with a shape and value.
@@ -69,8 +71,7 @@ template <typename T, int64_t Ndim = 2> class NDArray {
     NDArray(NDArray &&other) noexcept
         : shape_(other.shape_), strides_(c_strides<Ndim>(shape_)),
           size_(other.size_), data_(other.data_) {
-
-        other.reset();
+        other.reset(); // TODO! is this necessary?
     }
 
     // Copy constructor
@@ -78,7 +79,14 @@ template <typename T, int64_t Ndim = 2> class NDArray {
         : shape_(other.shape_), strides_(c_strides<Ndim>(shape_)),
           size_(other.size_), data_(new T[size_]) {
         std::copy(other.data_, other.data_ + size_, data_);
-        // fmt::print("NDArray(const NDArray &other)\n");
+    }
+
+    // Conversion operator from array expression to array
+    template <typename E>
+    NDArray(ArrayExpr<E, Ndim> &&expr) : NDArray(expr.shape()) {
+        for (int i = 0; i < size_; ++i) {
+            data_[i] = expr[i];
+        }
     }
 
     ~NDArray() { delete[] data_; }
@@ -90,14 +98,10 @@ template <typename T, int64_t Ndim = 2> class NDArray {
 
     NDArray &operator=(NDArray &&other) noexcept; // Move assign
     NDArray &operator=(const NDArray &other);     // Copy assign
-
-    NDArray operator+(const NDArray &other);
     NDArray &operator+=(const NDArray &other);
-    NDArray operator-(const NDArray &other);
     NDArray &operator-=(const NDArray &other);
-    NDArray operator*(const NDArray &other);
     NDArray &operator*=(const NDArray &other);
-    NDArray operator/(const NDArray &other);
+
     // NDArray& operator/=(const NDArray& other);
 
     template <typename V> NDArray &operator/=(const NDArray<V, Ndim> &other) {
@@ -151,12 +155,16 @@ template <typename T, int64_t Ndim = 2> class NDArray {
         return data_[element_offset(strides_, index...)];
     }
 
+    // TODO! is int the right type for index?
     T &operator()(int i) { return data_[i]; }
     const T &operator()(int i) const { return data_[i]; }
 
+    T &operator[](int i) { return data_[i]; }
+    const T &operator[](int i) const { return data_[i]; }
+
     T *data() { return data_; }
     std::byte *buffer() { return reinterpret_cast<std::byte *>(data_); }
-    uint64_t size() const { return size_; }
+    size_t size() const { return size_; }
     size_t total_bytes() const { return size_ * sizeof(T); }
     std::array<int64_t, Ndim> shape() const noexcept { return shape_; }
     int64_t shape(int64_t i) const noexcept { return shape_[i]; }
@@ -205,28 +213,15 @@ NDArray<T, Ndim>::operator=(NDArray<T, Ndim> &&other) noexcept {
 }
 
 template <typename T, int64_t Ndim>
-NDArray<T, Ndim> NDArray<T, Ndim>::operator+(const NDArray &other) {
-    NDArray result(*this);
-    result += other;
-    return result;
-}
-template <typename T, int64_t Ndim>
 NDArray<T, Ndim> &NDArray<T, Ndim>::operator+=(const NDArray<T, Ndim> &other) {
     // check shape
     if (shape_ == other.shape_) {
-        for (uint32_t i = 0; i < size_; ++i) {
+        for (size_t i = 0; i < size_; ++i) {
             data_[i] += other.data_[i];
         }
         return *this;
     }
     throw(std::runtime_error("Shape of ImageDatas must match"));
-}
-
-template <typename T, int64_t Ndim>
-NDArray<T, Ndim> NDArray<T, Ndim>::operator-(const NDArray &other) {
-    NDArray result{*this};
-    result -= other;
-    return result;
 }
 
 template <typename T, int64_t Ndim>
@@ -239,12 +234,6 @@ NDArray<T, Ndim> &NDArray<T, Ndim>::operator-=(const NDArray<T, Ndim> &other) {
         return *this;
     }
     throw(std::runtime_error("Shape of ImageDatas must match"));
-}
-template <typename T, int64_t Ndim>
-NDArray<T, Ndim> NDArray<T, Ndim>::operator*(const NDArray &other) {
-    NDArray result = *this;
-    result *= other;
-    return result;
 }
 
 template <typename T, int64_t Ndim>
@@ -260,13 +249,6 @@ NDArray<T, Ndim> &NDArray<T, Ndim>::operator*=(const NDArray<T, Ndim> &other) {
 }
 
 template <typename T, int64_t Ndim>
-NDArray<T, Ndim> NDArray<T, Ndim>::operator/(const NDArray &other) {
-    NDArray result = *this;
-    result /= other;
-    return result;
-}
-
-template <typename T, int64_t Ndim>
 NDArray<T, Ndim> &NDArray<T, Ndim>::operator&=(const T &mask) {
     for (auto it = begin(); it != end(); ++it)
         *it &= mask;
@@ -276,7 +258,7 @@ NDArray<T, Ndim> &NDArray<T, Ndim>::operator&=(const T &mask) {
 template <typename T, int64_t Ndim>
 NDArray<bool, Ndim> NDArray<T, Ndim>::operator>(const NDArray &other) {
     if (shape_ == other.shape_) {
-        NDArray<bool> result{shape_};
+        NDArray<bool, Ndim> result{shape_};
         for (int i = 0; i < size_; ++i) {
             result(i) = (data_[i] > other.data_[i]);
         }

@@ -58,7 +58,7 @@ TEST_CASE("A disabled scan"){
 }
 
 
-TEST_CASE("Parse a master file in .json format"){
+TEST_CASE("Parse a master file in .json format", "[.integration]"){
     auto fpath = test_data_path() / "jungfrau" / "jungfrau_single_master_0.json";
     REQUIRE(std::filesystem::exists(fpath));
     RawMasterFile f(fpath);
@@ -139,7 +139,7 @@ TEST_CASE("Parse a master file in .json format"){
 
 }
 
-TEST_CASE("Parse a master file in .raw format"){
+TEST_CASE("Parse a master file in .raw format", "[.integration]"){
     
     auto fpath = test_data_path() / "moench/moench04_noise_200V_sto_both_100us_no_light_thresh_900_master_0.raw";
     REQUIRE(std::filesystem::exists(fpath));
@@ -204,7 +204,7 @@ TEST_CASE("Parse a master file in .raw format"){
 }
 
 
-TEST_CASE("Read eiger master file"){
+TEST_CASE("Read eiger master file", "[.integration]"){
 auto fpath = test_data_path() / "eiger" / "eiger_500k_32bit_master_0.json";
     REQUIRE(std::filesystem::exists(fpath));
     RawMasterFile f(fpath);

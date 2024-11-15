@@ -6,7 +6,7 @@
 
 using aare::Dtype;
 using aare::NumpyFile;
-TEST_CASE("Read a 1D numpy file with int32 data type") {
+TEST_CASE("Read a 1D numpy file with int32 data type", "[.integration]") {
 
     auto fpath = test_data_path() / "numpy" / "test_1d_int32.npy";
     REQUIRE(std::filesystem::exists(fpath));
@@ -23,8 +23,8 @@ TEST_CASE("Read a 1D numpy file with int32 data type") {
         REQUIRE(data(i) == i);
     }
 }
-
-TEST_CASE("Read a 3D numpy file with np.double data type") {
+ 
+TEST_CASE("Read a 3D numpy file with np.double data type", "[.integration]") {
 
     auto fpath = test_data_path() / "numpy" / "test_3d_double.npy";
     REQUIRE(std::filesystem::exists(fpath));
