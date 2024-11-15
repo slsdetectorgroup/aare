@@ -102,7 +102,8 @@ TEST_CASE("Elementwise multiplication of 3D image") {
         a(i) = i;
         b(i) = i;
     }
-    auto c = a * b;
+    // auto c = a * b; // This works but the result is a lazy ArrayMul object
+    NDArray<double, 3> c = a * b;
     REQUIRE(c(0, 0, 0) == 0 * 0);
     REQUIRE(c(0, 0, 1) == 1 * 1);
     REQUIRE(c(0, 1, 1) == 3 * 3);
@@ -211,7 +212,8 @@ TEST_CASE("Elementwise operations on images") {
         NDArray<double> A(shape, a_val);
         NDArray<double> B(shape, b_val);
 
-        auto C = A + B;
+        NDArray<double> C = A + B;
+        // auto C = A+B; // This works but the result is a lazy ArraySum object
 
         // Value of C matches
         for (uint32_t i = 0; i < C.size(); ++i) {
@@ -235,7 +237,8 @@ TEST_CASE("Elementwise operations on images") {
     SECTION("Subtract two images") {
         NDArray<double> A(shape, a_val);
         NDArray<double> B(shape, b_val);
-        auto C = A - B;
+        NDArray<double> C = A - B;
+        // auto C = A - B; // This works but the result is a lazy ArraySub object
 
         // Value of C matches
         for (uint32_t i = 0; i < C.size(); ++i) {
@@ -259,7 +262,8 @@ TEST_CASE("Elementwise operations on images") {
     SECTION("Multiply two images") {
         NDArray<double> A(shape, a_val);
         NDArray<double> B(shape, b_val);
-        auto C = A * B;
+        // auto C = A * B; // This works but the result is a lazy ArrayMul object
+        NDArray<double> C = A * B;
 
         // Value of C matches
         for (uint32_t i = 0; i < C.size(); ++i) {
@@ -283,7 +287,8 @@ TEST_CASE("Elementwise operations on images") {
     SECTION("Divide two images") {
         NDArray<double> A(shape, a_val);
         NDArray<double> B(shape, b_val);
-        auto C = A / B;
+        // auto C = A / B; // This works but the result is a lazy ArrayDiv object
+        NDArray<double> C = A / B;
 
         // Value of C matches
         for (uint32_t i = 0; i < C.size(); ++i) {

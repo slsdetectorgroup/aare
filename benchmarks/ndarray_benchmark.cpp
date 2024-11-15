@@ -4,69 +4,131 @@
 
 using aare::NDArray;
 
+constexpr ssize_t size = 1024;
+class TwoArrays : public benchmark::Fixture {
+public:
+    NDArray<int,2> a{{size,size},0};
+    NDArray<int,2> b{{size,size},0};
+  void SetUp(::benchmark::State& state) {
+    for(uint32_t i = 0; i < size; i++){
+        a(i)= i;
+        b(i)= i;
+    }
+  }
 
-NDArray<int,2> AddArrayWithOperator(NDArray<int,2> &a, NDArray<int,2> &b){
-    return a+b;
+  // void TearDown(::benchmark::State& state) {
+  // }
+};
+
+
+
+
+BENCHMARK_F(TwoArrays, AddWithOperator)(benchmark::State& st) {
+   for (auto _ : st) {
+    // This code gets timed
+    NDArray<int,2> res = a+b;
+    benchmark::DoNotOptimize(res);
+  }
 }
-
-NDArray<int,2> SubtractArrayWithOperator(NDArray<int,2> &a, NDArray<int,2> &b){
-    return a-b;
-}
-
-NDArray<int,2> MultiplyArrayWithOperator(NDArray<int,2> &a, NDArray<int,2> &b){
-    return a*b;
-}
-
-NDArray<int,2> DivideArrayWithOperator(NDArray<int,2> &a, NDArray<int,2> &b){
-    return a/b;
-}
-
-NDArray<int,2> AddArrayWithIndex(NDArray<int,2> &a, NDArray<int,2> &b){
+BENCHMARK_F(TwoArrays, AddWithIndex)(benchmark::State& st) {
+   for (auto _ : st) {
+    // This code gets timed
     NDArray<int,2> res(a.shape());
     for (uint32_t i = 0; i < a.size(); i++) {
         res(i) = a(i) + b(i);
     }
-    return res;
-}
-
-constexpr ssize_t size = 1024;
-
-static void BM_AddArrayWithOperator(benchmark::State& state) {
-  // Perform setup here
-    NDArray<int,2> a{{size,size},0};
-    NDArray<int,2> b{{size,size},0};
-  for (auto _ : state) {
-    // This code gets timed
-    NDArray<int,2> res = AddArrayWithOperator(a,b);
     benchmark::DoNotOptimize(res);
   }
 }
 
-static void BM_SubtractArrayWithOperator(benchmark::State& state) {
-  // Perform setup here
-    NDArray<int,2> a{{size,size},0};
-    NDArray<int,2> b{{size,size},0};
-  for (auto _ : state) {
+BENCHMARK_F(TwoArrays, SubtractWithOperator)(benchmark::State& st) {
+   for (auto _ : st) {
     // This code gets timed
-    NDArray<int,2> res = SubtractArrayWithOperator(a,b);
+    NDArray<int,2> res = a-b;
+    benchmark::DoNotOptimize(res);
+  }
+}
+BENCHMARK_F(TwoArrays, SubtractWithIndex)(benchmark::State& st) {
+   for (auto _ : st) {
+    // This code gets timed
+    NDArray<int,2> res(a.shape());
+    for (uint32_t i = 0; i < a.size(); i++) {
+        res(i) = a(i) - b(i);
+    }
     benchmark::DoNotOptimize(res);
   }
 }
 
-static void BM_AddArrayWithIndex(benchmark::State& state) {
-  // Perform setup here
-    NDArray<int,2> a{{size,size},0};
-    NDArray<int,2> b{{size,size},0};
-  for (auto _ : state) {
+BENCHMARK_F(TwoArrays, MultiplyWithOperator)(benchmark::State& st) {
+   for (auto _ : st) {
     // This code gets timed
-    NDArray<int,2> res = AddArrayWithIndex(a,b);
+    NDArray<int,2> res = a*b;
     benchmark::DoNotOptimize(res);
-    
   }
 }
-// Register the function as a benchmark
-BENCHMARK(BM_AddArrayWithOperator);
-BENCHMARK(BM_AddArrayWithIndex);
-BENCHMARK(BM_SubtractArrayWithOperator);
-// Run the benchmark
+BENCHMARK_F(TwoArrays, MultiplyWithIndex)(benchmark::State& st) {
+   for (auto _ : st) {
+    // This code gets timed
+    NDArray<int,2> res(a.shape());
+    for (uint32_t i = 0; i < a.size(); i++) {
+        res(i) = a(i) * b(i);
+    }
+    benchmark::DoNotOptimize(res);
+  }
+}
+
+BENCHMARK_F(TwoArrays, DivideWithOperator)(benchmark::State& st) {
+   for (auto _ : st) {
+    // This code gets timed
+    NDArray<int,2> res = a/b;
+    benchmark::DoNotOptimize(res);
+  }
+}
+BENCHMARK_F(TwoArrays, DivideWithIndex)(benchmark::State& st) {
+   for (auto _ : st) {
+    // This code gets timed
+    NDArray<int,2> res(a.shape());
+    for (uint32_t i = 0; i < a.size(); i++) {
+        res(i) = a(i) / b(i);
+    }
+    benchmark::DoNotOptimize(res);
+  }
+}
+
+BENCHMARK_F(TwoArrays, FourAddWithOperator)(benchmark::State& st) {
+   for (auto _ : st) {
+    // This code gets timed
+    NDArray<int,2> res = a+b+a+b;
+    benchmark::DoNotOptimize(res);
+  }
+}
+BENCHMARK_F(TwoArrays, FourAddWithIndex)(benchmark::State& st) {
+   for (auto _ : st) {
+    // This code gets timed
+    NDArray<int,2> res(a.shape());
+    for (uint32_t i = 0; i < a.size(); i++) {
+        res(i) = a(i) + b(i) + a(i) + b(i);
+    }
+    benchmark::DoNotOptimize(res);
+  }
+}
+
+BENCHMARK_F(TwoArrays, MultiplyAddDivideWithOperator)(benchmark::State& st) {
+   for (auto _ : st) {
+    // This code gets timed
+    NDArray<int,2> res = a*a+b/a;
+    benchmark::DoNotOptimize(res);
+  }
+}
+BENCHMARK_F(TwoArrays, MultiplyAddDivideWithIndex)(benchmark::State& st) {
+   for (auto _ : st) {
+    // This code gets timed
+    NDArray<int,2> res(a.shape());
+    for (uint32_t i = 0; i < a.size(); i++) {
+        res(i) = a(i) * a(i) + b(i) / a(i);
+    }
+    benchmark::DoNotOptimize(res);
+  }
+}
+
 BENCHMARK_MAIN();
