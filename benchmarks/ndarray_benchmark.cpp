@@ -11,8 +11,10 @@ public:
     NDArray<int,2> b{{size,size},0};
   void SetUp(::benchmark::State& state) {
     for(uint32_t i = 0; i < size; i++){
-        a(i)= i;
-        b(i)= i;
+      for(uint32_t j = 0; j < size; j++){
+        a(i, j)= i*j+1;
+        b(i, j)= i*j+1;
+      }
     }
   }
 
