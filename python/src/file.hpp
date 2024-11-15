@@ -264,7 +264,7 @@ void define_file_io_bindings(py::module &m) {
 
     //     .def("close", &ClusterFileV2::close);
 
-    // m.def("to_clustV2", [](std::vector<Cluster> &clusters, const int
+    // m.def("to_clustV2", [](std::vector<DynamicCluster> &clusters, const int
     // frame_number) {
     //     std::vector<ClusterV2> clusters_;
     //     for (auto &c : clusters) {

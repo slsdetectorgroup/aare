@@ -33,20 +33,20 @@ void define_cluster_finder_bindings(py::module &m) {
                  return clusters;
              });
 
-    py::class_<Cluster>(m, "Cluster", py::buffer_protocol())
+    py::class_<DynamicCluster>(m, "DynamicCluster", py::buffer_protocol())
         .def(py::init<int, int, Dtype>())
-        .def("size", &Cluster::size)
-        .def("begin", &Cluster::begin)
-        .def("end", &Cluster::end)
-        .def_readwrite("x", &Cluster::x)
-        .def_readwrite("y", &Cluster::y)
-        .def_buffer([](Cluster &c) -> py::buffer_info {
+        .def("size", &DynamicCluster::size)
+        .def("begin", &DynamicCluster::begin)
+        .def("end", &DynamicCluster::end)
+        .def_readwrite("x", &DynamicCluster::x)
+        .def_readwrite("y", &DynamicCluster::y)
+        .def_buffer([](DynamicCluster &c) -> py::buffer_info {
             return py::buffer_info(c.data(), c.dt.bytes(), c.dt.format_descr(),
                                    1, {c.size()}, {c.dt.bytes()});
         })
 
-        .def("__repr__", [](const Cluster &a) {
-            return "<Cluster: x: " + std::to_string(a.x) +
+        .def("__repr__", [](const DynamicCluster &a) {
+            return "<DynamicCluster: x: " + std::to_string(a.x) +
                    ", y: " + std::to_string(a.y) + ">";
         });
 }

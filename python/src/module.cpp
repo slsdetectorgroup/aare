@@ -6,6 +6,7 @@
 #include "pixel_map.hpp"
 #include "pedestal.hpp"
 #include "cluster.hpp"
+#include "cluster_file.hpp"
 
 //Pybind stuff
 #include <pybind11/pybind11.h>
@@ -22,4 +23,5 @@ PYBIND11_MODULE(_aare, m) {
     define_pedestal_bindings<double>(m, "Pedestal");
     define_pedestal_bindings<float>(m, "Pedestal_float32");
     define_cluster_finder_bindings(m);
+    define_cluster_file_io_bindings(m);
 }
