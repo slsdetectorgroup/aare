@@ -14,23 +14,15 @@ AARE
     Requirements
 
 
+
 .. toctree::
     :caption: Python API
     :maxdepth: 1
     
     pyFile
     pyCtbRawFile
+    pyClusterFile
     pyRawFile
-    pyRawMasterFile
-    pyVarClusterFinder
-
-
-.. toctree::
-    :caption: Python API
-    :maxdepth: 1
-    
-    pyFile
-    pyCtbRawFile
     pyRawMasterFile
     pyVarClusterFinder
 
@@ -45,6 +37,7 @@ AARE
     File
     Dtype
     ClusterFinder
+    ClusterFile
     Pedestal
     RawFile
     RawSubFile

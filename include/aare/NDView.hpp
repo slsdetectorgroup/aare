@@ -1,4 +1,7 @@
 #pragma once
+
+#include "aare/ArrayExpr.hpp"
+
 #include <algorithm>
 #include <array>
 #include <cassert>
@@ -45,7 +48,7 @@ template <int64_t Ndim> std::array<int64_t, Ndim> make_array(const std::vector<i
     return arr;
 }
 
-template <typename T, int64_t Ndim = 2> class NDView {
+template <typename T, int64_t Ndim = 2> class NDView : public ArrayExpr<NDView<T, Ndim>, Ndim> {
   public:
     NDView() = default;
     ~NDView() = default;
@@ -68,7 +71,7 @@ template <typename T, int64_t Ndim = 2> class NDView {
         return buffer_[element_offset(strides_, index...)];
     }
 
-    uint64_t size() const { return size_; }
+    size_t size() const { return size_; }
     size_t total_bytes() const { return size_ * sizeof(T); }
     std::array<int64_t, Ndim> strides() const noexcept { return strides_; }
 

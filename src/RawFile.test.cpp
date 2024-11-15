@@ -7,7 +7,7 @@
 
 using aare::File;
 
-TEST_CASE("Read number of frames from a jungfrau raw file") {
+TEST_CASE("Read number of frames from a jungfrau raw file", "[.integration]") {
 
     auto fpath = test_data_path() / "jungfrau" / "jungfrau_single_master_0.json";
     REQUIRE(std::filesystem::exists(fpath));
@@ -16,7 +16,7 @@ TEST_CASE("Read number of frames from a jungfrau raw file") {
     REQUIRE(f.total_frames() == 10);
 }
 
-TEST_CASE("Read frame numbers from a jungfrau raw file") {
+TEST_CASE("Read frame numbers from a jungfrau raw file", "[.integration]") {
     auto fpath = test_data_path() / "jungfrau" / "jungfrau_single_master_0.json";
     REQUIRE(std::filesystem::exists(fpath));
 
@@ -32,7 +32,7 @@ TEST_CASE("Read frame numbers from a jungfrau raw file") {
     }
 }
 
-TEST_CASE("Read a frame number too high throws") {
+TEST_CASE("Read a frame number too high throws", "[.integration]") {
     auto fpath = test_data_path() / "jungfrau" / "jungfrau_single_master_0.json";
     REQUIRE(std::filesystem::exists(fpath));
 
@@ -46,7 +46,7 @@ TEST_CASE("Read a frame number too high throws") {
     REQUIRE_THROWS(f.frame_number(10));
 }
 
-TEST_CASE("Read a frame numbers where the subfile is missing throws") {
+TEST_CASE("Read a frame numbers where the subfile is missing throws", "[.integration]") {
     auto fpath = test_data_path() / "jungfrau" / "jungfrau_missing_subfile_master_0.json";
     REQUIRE(std::filesystem::exists(fpath));
 
@@ -67,7 +67,7 @@ TEST_CASE("Read a frame numbers where the subfile is missing throws") {
 }
 
 
-TEST_CASE("Read data from a jungfrau 500k single port raw file") {
+TEST_CASE("Read data from a jungfrau 500k single port raw file", "[.integration]") {
     auto fpath = test_data_path() / "jungfrau" / "jungfrau_single_master_0.json";
     REQUIRE(std::filesystem::exists(fpath));
 
@@ -83,7 +83,7 @@ TEST_CASE("Read data from a jungfrau 500k single port raw file") {
     }
 }
 
-TEST_CASE("Read frame numbers from a raw file") {
+TEST_CASE("Read frame numbers from a raw file", "[.integration]") {
     auto fpath = test_data_path() / "eiger" / "eiger_500k_16bit_master_0.json";
     REQUIRE(std::filesystem::exists(fpath));
 
@@ -96,7 +96,7 @@ TEST_CASE("Read frame numbers from a raw file") {
     }
 }
 
-TEST_CASE("Compare reading from a numpy file with a raw file") {
+TEST_CASE("Compare reading from a numpy file with a raw file", "[.integration]") {
     auto fpath_raw = test_data_path() / "jungfrau" / "jungfrau_single_master_0.json";
     REQUIRE(std::filesystem::exists(fpath_raw));
 
@@ -116,7 +116,7 @@ TEST_CASE("Compare reading from a numpy file with a raw file") {
     }
 }
 
-TEST_CASE("Read multipart files") {
+TEST_CASE("Read multipart files", "[.integration]") {
     auto fpath = test_data_path() / "jungfrau" / "jungfrau_double_master_0.json";
     REQUIRE(std::filesystem::exists(fpath));
 
@@ -141,7 +141,7 @@ TEST_CASE("Read multipart files") {
     }
 }
 
-TEST_CASE("Read file with unordered frames") {
+TEST_CASE("Read file with unordered frames", "[.integration]") {
     //TODO! Better explanation and error message
     auto fpath = test_data_path() / "mythen" / "scan242_master_3.raw";
     REQUIRE(std::filesystem::exists(fpath));

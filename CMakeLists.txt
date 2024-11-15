@@ -29,6 +29,7 @@ set(CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/cmake" ${CMAKE_MODULE_PATH})
 # General options
 option(AARE_PYTHON_BINDINGS "Build python bindings" ON)
 option(AARE_TESTS "Build tests" OFF)
+option(AARE_BENCHMARKS "Build benchmarks" OFF)
 option(AARE_EXAMPLES "Build examples" OFF)
 option(AARE_IN_GITHUB_ACTIONS "Running in Github Actions" OFF)
 option(AARE_DOCS "Build documentation" OFF)
@@ -61,6 +62,10 @@ endif()
 
 if(AARE_CUSTOM_ASSERT)
     add_compile_definitions(AARE_CUSTOM_ASSERT)
+endif()
+
+if(AARE_BENCHMARKS)
+    add_subdirectory(benchmarks)
 endif()
 
 
@@ -242,7 +247,9 @@ endif()
 ###------------------------------------------------------------------------------------------
 
 set(PUBLICHEADERS
+    include/aare/ArrayExpr.hpp
     include/aare/ClusterFinder.hpp
+    include/aare/ClusterFile.hpp
     include/aare/CtbRawFile.hpp
     include/aare/defs.hpp
     include/aare/Dtype.hpp
@@ -265,6 +272,7 @@ set(PUBLICHEADERS
 
 set(SourceFiles
     ${CMAKE_CURRENT_SOURCE_DIR}/src/CtbRawFile.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/ClusterFile.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/src/defs.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/src/Dtype.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/src/Frame.cpp
