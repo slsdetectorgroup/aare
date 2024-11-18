@@ -21,9 +21,11 @@ include(FetchContent)
 
 #Set default build type if none was specified
 include(cmake/helpers.cmake)
+
+
 default_build_type("Release")
-link_std_fs()
-message(STATUS fs_lib:${STD_FS_LIB})
+set_std_fs_lib()
+message(STATUS "Extra linking to fs lib:${STD_FS_LIB}")
 
 set(CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/cmake" ${CMAKE_MODULE_PATH})
 
