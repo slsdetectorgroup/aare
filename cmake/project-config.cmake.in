@@ -12,8 +12,10 @@ include(CMakeFindDependencyMacro)
 
 set(SLS_USE_HDF5 "@SLS_USE_HDF5@")
 
-
+# List dependencies
 find_dependency(Threads)
+find_dependency(fmt)
+find_dependency(nlohmann_json)
 
 # Add optional dependencies here
 if (SLS_USE_HDF5)
