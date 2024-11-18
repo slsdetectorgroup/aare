@@ -1,8 +1,17 @@
+****************
 Installation
-===============
+****************
+
+.. attention ::
+
+    - https://cliutils.gitlab.io/modern-cmake/README.html
 
 conda/mamaba
-~~~~~~~~~~~~~~~~
+~~~~~~~~~~~~~~~~~~
+
+This is the recommended way to install aare. Using a package manager makes it easy to 
+switch between versions and is (one of) the most convenient way to install up to date
+dependencies on older distributions.
 
 .. note ::
 
@@ -16,8 +25,11 @@ conda/mamaba
     conda install aare=2024.11.11.dev0 -c slsdetectorgroup
 
 
-cmake (development install)
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+cmake build (development install)
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+If you are working on aare or want to test our a version that doesn't yet have
+a conda package. Build using cmake and then run from the build folder.
 
 .. code-block:: bash
 
@@ -32,30 +44,23 @@ cmake (development install)
     make -j4 
 
 
-    # add the build folder to your PYTHONPATH
+    # add the build folder to your PYTHONPATH and then you should be able to
+    # import aare in python
 
-cmake install and use in your C++ project
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+cmake build + install and use in your C++ project
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-.. code-block:: bash
+.. warning ::
 
-    #build and install aare 
-    git clone git@github.com:slsdetectorgroup/aare.git --branch=v1 #or using http...
-    mkdir build
-    cd build
-
-    #configure using cmake
-    cmake ../aare -DCMAKE_INSTALL_PREFIX=/where/to/put/aare
-
-    #build (replace 4 with the number of threads you want to use)
-    make -j4 
-
-    #install
-    make install
+    When building aare with default settings we also include fmt and nlohmann_json.
+    Installation to a custom location is highly recommended.
 
 
-    #Now configure your project
-    cmake .. -DCMAKE_PREFIX_PATH=SOME_PATH
+.. note ::
+
+    It is also possible to install aare with conda and then use in your C++ project.
+
+.. include:: _install.rst
 
 
 cmake options

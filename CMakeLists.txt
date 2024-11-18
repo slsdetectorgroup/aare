@@ -21,7 +21,11 @@ include(FetchContent)
 
 #Set default build type if none was specified
 include(cmake/helpers.cmake)
+
+
 default_build_type("Release")
+set_std_fs_lib()
+message(STATUS "Extra linking to fs lib:${STD_FS_LIB}")
 
 set(CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/cmake" ${CMAKE_MODULE_PATH})
 
@@ -113,8 +117,17 @@ if (AARE_FETCH_FMT)
             GIT_PROGRESS    TRUE
             USES_TERMINAL_DOWNLOAD TRUE
     )
+    set(FMT_INSTALL ON CACHE BOOL "")
+    # set(FMT_CMAKE_DIR "")
     FetchContent_MakeAvailable(fmt)
     set_property(TARGET fmt PROPERTY POSITION_INDEPENDENT_CODE ON)
+    install(TARGETS fmt 
+        EXPORT ${project}-targets
+        LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR}
+        ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR}
+        RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR}
+        INCLUDES DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}
+)
 else()
       find_package(fmt 6 REQUIRED)
 endif()
@@ -125,7 +138,16 @@ if (AARE_FETCH_JSON)
         json 
         URL https://github.com/nlohmann/json/releases/download/v3.11.3/json.tar.xz
     )
+    set(JSON_Install ON CACHE BOOL "")
     FetchContent_MakeAvailable(json)
+    set(NLOHMANN_JSON_TARGET_NAME nlohmann_json)
+    
+    install(
+        TARGETS nlohmann_json
+        EXPORT "${TARGETS_EXPORT_NAME}"
+        
+    )
+    message(STATUS "target: ${NLOHMANN_JSON_TARGET_NAME}")
 else()
     find_package(nlohmann_json 3.11.3 REQUIRED)
 endif()
@@ -292,7 +314,15 @@ target_include_directories(aare_core PUBLIC
     "$<INSTALL_INTERFACE:${CMAKE_INSTALL_INCLUDEDIR}>"
 )
 
-target_link_libraries(aare_core PUBLIC fmt::fmt PRIVATE aare_compiler_flags nlohmann_json::nlohmann_json)
+target_link_libraries(
+    aare_core 
+    PUBLIC 
+    fmt::fmt 
+    nlohmann_json::nlohmann_json 
+    ${STD_FS_LIB} # from helpers.cmake
+    PRIVATE 
+    aare_compiler_flags 
+)
 
 set_target_properties(aare_core PROPERTIES
     ARCHIVE_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}
@@ -389,8 +419,8 @@ add_custom_target(
     VERBATIM
 )
 
-# if(AARE_MASTER_PROJECT)
-#     set(CMAKE_INSTALL_DIR "share/cmake/${PROJECT_NAME}")
-#     set(PROJECT_LIBRARIES slsSupportShared slsDetectorShared slsReceiverShared)
-#     include(cmake/package_config.cmake)
-# endif()
+if(AARE_MASTER_PROJECT)
+    set(CMAKE_INSTALL_DIR "share/cmake/${PROJECT_NAME}")
+    set(PROJECT_LIBRARIES aare-core aare-compiler-flags )
+    include(cmake/package_config.cmake)
+endif()

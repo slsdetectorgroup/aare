@@ -8,10 +8,12 @@ AARE
 
 .. toctree::
     :caption: Installation
-    :maxdepth: 1
+    :maxdepth: 3
     
     Installation
     Requirements
+    Consume
+
 
 
 
