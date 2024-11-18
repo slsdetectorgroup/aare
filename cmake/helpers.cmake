@@ -5,7 +5,7 @@ if (NOT CMAKE_BUILD_TYPE AND NOT CMAKE_CONFIGURATION_TYPES)
 endif()
 endfunction()
 
-function(link_std_fs)
+function(set_std_fs_lib)
 # from pybind11
 # Check if we need to add -lstdc++fs or -lc++fs or nothing
 if(DEFINED CMAKE_CXX_STANDARD AND CMAKE_CXX_STANDARD LESS 17)
@@ -34,11 +34,11 @@ else()
 endif()
 
 if(${STD_FS_NEEDS_STDCXXFS})
-  set(STD_FS_LIB stdc++fs)
+  set(STD_FS_LIB stdc++fs PARENT_SCOPE)
 elseif(${STD_FS_NEEDS_CXXFS})
-  set(STD_FS_LIB c++fs)
+  set(STD_FS_LIB c++fs PARENT_SCOPE)
 elseif(${STD_FS_NO_LIB_NEEDED})
-  set(STD_FS_LIB "")
+  set(STD_FS_LIB "" PARENT_SCOPE)
 else()
   message(WARNING "Unknown C++17 compiler - not passing -lstdc++fs")
   set(STD_FS_LIB "")
