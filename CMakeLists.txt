@@ -114,6 +114,7 @@ if (AARE_FETCH_FMT)
             USES_TERMINAL_DOWNLOAD TRUE
     )
     set(FMT_INSTALL ON CACHE BOOL "")
+    set(FMT_CMAKE_DIR "")
     FetchContent_MakeAvailable(fmt)
     set_property(TARGET fmt PROPERTY POSITION_INDEPENDENT_CODE ON)
     install(TARGETS fmt 
