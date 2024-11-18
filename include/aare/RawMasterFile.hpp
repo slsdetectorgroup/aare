@@ -61,14 +61,14 @@ class ScanParameters {
 
 
 struct ROI{
-  size_t xmin{};
-  size_t xmax{};
-  size_t ymin{};
-  size_t ymax{};
+  int64_t xmin{};
+  int64_t xmax{};
+  int64_t ymin{};
+  int64_t ymax{};
 
-  size_t height() const { return ymax - ymin; }
-  size_t width() const { return xmax - xmin; }
-}__attribute__((packed));
+  int64_t height() const { return ymax - ymin; }
+  int64_t width() const { return xmax - xmin; }
+};
 
 
 /**
@@ -91,7 +91,7 @@ class RawMasterFile {
     xy m_geometry;
 
     size_t m_max_frames_per_file{};
-    uint32_t m_adc_mask{};
+    // uint32_t m_adc_mask{}; // TODO! implement reading
     FrameDiscardPolicy m_frame_discard_policy{};
     size_t m_frame_padding{};
 

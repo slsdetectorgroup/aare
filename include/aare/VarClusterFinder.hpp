@@ -226,7 +226,7 @@ template <typename T> void VarClusterFinder<T>::single_pass(NDView<T, 2> img) {
 
 template <typename T> void VarClusterFinder<T>::first_pass() {
 
-    for (int i = 0; i < original_.size(); ++i) {
+    for (size_t i = 0; i < original_.size(); ++i) {
         if (use_noise_map)
             threshold_ = 5 * noiseMap(i);
         binary_(i) = (original_(i) > threshold_);
@@ -250,17 +250,17 @@ template <typename T> void VarClusterFinder<T>::first_pass() {
 
 template <typename T> void VarClusterFinder<T>::second_pass() {
 
-    for (int64_t i = 0; i != labeled_.size(); ++i) {
-        auto current_label = labeled_(i);
-        if (current_label != 0) {
-            auto it = child.find(current_label);
+    for (size_t i = 0; i != labeled_.size(); ++i) {
+        auto cl = labeled_(i);
+        if (cl != 0) {
+            auto it = child.find(cl);
             while (it != child.end()) {
-                current_label = it->second;
-                it = child.find(current_label);
+                cl = it->second;
+                it = child.find(cl);
                 // do this once before doing the second pass?
                 // all values point to the final one...
             }
-            labeled_(i) = current_label;
+            labeled_(i) = cl;
         }
     }
 }
@@ -271,7 +271,7 @@ template <typename T> void VarClusterFinder<T>::store_clusters() {
     // Do we always have monotonic increasing
     // labels? Then vector?
     // here the translation is label -> Hit
-    std::unordered_map<int, Hit> h_size;
+    std::unordered_map<int, Hit> h_map;
     for (int i = 0; i < shape_[0]; ++i) {
         for (int j = 0; j < shape_[1]; ++j) {
             if (labeled_(i, j) != 0 || false
@@ -280,7 +280,7 @@ template <typename T> void VarClusterFinder<T>::store_clusters() {
                 // (i+1 < shape_[0] and labeled_(i+1, j) != 0) or
                 // (j+1 < shape_[1] and labeled_(i, j+1) != 0)
             ) {
-                Hit &record = h_size[labeled_(i, j)];
+                Hit &record = h_map[labeled_(i, j)];
                 if (record.size < MAX_CLUSTER_SIZE) {
                     record.rows[record.size] = i;
                     record.cols[record.size] = j;
@@ -300,7 +300,7 @@ template <typename T> void VarClusterFinder<T>::store_clusters() {
         }
     }
 
-    for (const auto &h : h_size)
+    for (const auto &h : h_map)
         hits.push_back(h.second);
 }
 

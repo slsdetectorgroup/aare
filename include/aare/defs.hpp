@@ -93,7 +93,7 @@ class DynamicCluster {
         (sizeof(T) == dt.bytes())
             ? 0
             : throw std::invalid_argument("[ERROR] Type size mismatch");
-        return memcpy(m_data + idx * dt.bytes(), &val, (size_t)dt.bytes());
+        return memcpy(m_data + idx * dt.bytes(), &val, dt.bytes());
     }
 
     template <typename T> std::string to_string() const {

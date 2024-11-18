@@ -194,7 +194,7 @@ void define_file_io_bindings(py::module &m) {
             return fmt::format("<ROI: xmin: {} xmax: {} ymin: {} ymax: {}>", self.xmin, self.xmax, self.ymin, self.ymax);
         })
         .def("__iter__", [](const ROI &self) {
-            return py::make_iterator(&self.xmin, &self.ymax+1);
+            return py::make_iterator(&self.xmin, &self.ymax+1); //NOLINT
         });
 
     

@@ -16,6 +16,7 @@ namespace aare {
 class RawSubFile {
   protected:
     std::ifstream m_file;
+    DetectorType m_detector_type;
     size_t m_bitdepth;
     std::filesystem::path m_fname;
     size_t m_rows{};
@@ -25,7 +26,7 @@ class RawSubFile {
     uint32_t m_pos_row{};
     uint32_t m_pos_col{};
  
-    DetectorType m_detector_type;
+    
     std::optional<NDArray<ssize_t, 2>> m_pixel_map;
 
   public:

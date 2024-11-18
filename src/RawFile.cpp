@@ -349,7 +349,7 @@ void RawFile::get_frame_into(size_t frame_index, std::byte *frame_buffer, Detect
             if(header)
                 ++header;
 
-            for (size_t cur_row = 0; cur_row < (pos.height);
+            for (size_t cur_row = 0; cur_row < static_cast<size_t>(pos.height);
                  cur_row++) {
 
                 auto irow = (pos.y + cur_row);

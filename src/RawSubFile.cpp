@@ -9,8 +9,7 @@ namespace aare {
 RawSubFile::RawSubFile(const std::filesystem::path &fname,
                        DetectorType detector, size_t rows, size_t cols,
                        size_t bitdepth, uint32_t pos_row, uint32_t pos_col)
-    : m_bitdepth(bitdepth), m_fname(fname), m_rows(rows), m_cols(cols),
-      m_detector_type(detector),
+    : m_detector_type(detector), m_bitdepth(bitdepth), m_fname(fname), m_rows(rows), m_cols(cols),
       m_bytes_per_frame((m_bitdepth / 8) * m_rows * m_cols), m_pos_row(pos_row), m_pos_col(pos_col) {
     if (m_detector_type == DetectorType::Moench03_old) {
         m_pixel_map = GenerateMoench03PixelMap();

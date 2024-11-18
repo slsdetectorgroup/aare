@@ -9,6 +9,17 @@ ClusterFile::ClusterFile(const std::filesystem::path &fname, size_t chunk_size):
     }
 }
 
+ClusterFile::~ClusterFile() {
+    close();
+}
+
+void ClusterFile::close(){
+    if (fp){
+        fclose(fp);
+        fp = nullptr;
+    }  
+}
+
 std::vector<Cluster> ClusterFile::read_clusters(size_t n_clusters) {
     std::vector<Cluster> clusters(n_clusters);
 
@@ -27,7 +38,7 @@ std::vector<Cluster> ClusterFile::read_clusters(size_t n_clusters) {
         } else {
             nn = nph;
         }
-        nph_read += fread((void *)(buf + nph_read), sizeof(Cluster), nn, fp);
+        nph_read += fread(reinterpret_cast<void *>(buf + nph_read), sizeof(Cluster), nn, fp);
         m_num_left = nph - nn; // write back the number of photons left
     }
 
@@ -42,7 +53,7 @@ std::vector<Cluster> ClusterFile::read_clusters(size_t n_clusters) {
                     nn = nph;
 
                 nph_read +=
-                    fread((void *)(buf + nph_read), sizeof(Cluster), nn, fp);
+                    fread(reinterpret_cast<void *>(buf + nph_read), sizeof(Cluster), nn, fp);
                 m_num_left = nph - nn;
             }
             if (nph_read >= n_clusters)
@@ -65,13 +76,13 @@ std::vector<Cluster> ClusterFile::read_frame(int32_t &out_fnum) {
         throw std::runtime_error("Could not read frame number");
     }
 
-    int n_clusters;
+    int32_t n_clusters; // Saved as 32bit integer in the cluster file
     if (fread(&n_clusters, sizeof(n_clusters), 1, fp) != 1) {
         throw std::runtime_error("Could not read number of clusters");
     }
     std::vector<Cluster> clusters(n_clusters);
 
-    if (fread(clusters.data(), sizeof(Cluster), n_clusters, fp) != n_clusters) {
+    if (fread(clusters.data(), sizeof(Cluster), n_clusters, fp) != static_cast<size_t>(n_clusters)) {
         throw std::runtime_error("Could not read clusters");
     }
     return clusters;
@@ -113,7 +124,7 @@ std::vector<Cluster> ClusterFile::read_cluster_with_cut(size_t n_clusters,
         }
         for (size_t iph = 0; iph < nn; iph++) {
             // read photons 1 by 1
-            size_t n_read = fread((void *)(ptr), sizeof(Cluster), 1, fp);
+            size_t n_read = fread(reinterpret_cast<void *>(ptr), sizeof(Cluster), 1, fp);
             if (n_read != 1) {
                 clusters.resize(nph_read);
                 return clusters;
@@ -158,7 +169,7 @@ std::vector<Cluster> ClusterFile::read_cluster_with_cut(size_t n_clusters,
                     for (size_t iph = 0; iph < nph; iph++) {
     //                     // read photons 1 by 1
                         size_t n_read =
-                            fread((void *)(ptr), sizeof(Cluster), 1, fp);
+                            fread(reinterpret_cast<void *>(ptr), sizeof(Cluster), 1, fp);
                         if (n_read != 1) {
                             clusters.resize(nph_read);
                             return clusters;
@@ -269,27 +280,27 @@ int ClusterFile::analyze_data(int32_t *data, int32_t *t2, int32_t *t3, char *qua
         switch (c) {
         case cBottomLeft:
             if (eta2x && (data[3] + data[4]) != 0)
-                *eta2x = (double)(data[4]) / (data[3] + data[4]);
+                *eta2x = static_cast<double>(data[4]) / (data[3] + data[4]);
             if (eta2y && (data[1] + data[4]) != 0)
-                *eta2y = (double)(data[4]) / (data[1] + data[4]);
+                *eta2y = static_cast<double>(data[4]) / (data[1] + data[4]);
             break;
         case cBottomRight:
             if (eta2x && (data[2] + data[5]) != 0)
-                *eta2x = (double)(data[5]) / (data[4] + data[5]);
+                *eta2x = static_cast<double>(data[5]) / (data[4] + data[5]);
             if (eta2y && (data[1] + data[4]) != 0)
-                *eta2y = (double)(data[4]) / (data[1] + data[4]);
+                *eta2y = static_cast<double>(data[4]) / (data[1] + data[4]);
             break;
         case cTopLeft:
             if (eta2x && (data[7] + data[4]) != 0)
-                *eta2x = (double)(data[4]) / (data[3] + data[4]);
+                *eta2x = static_cast<double>(data[4]) / (data[3] + data[4]);
             if (eta2y && (data[7] + data[4]) != 0)
-                *eta2y = (double)(data[7]) / (data[7] + data[4]);
+                *eta2y = static_cast<double>(data[7]) / (data[7] + data[4]);
             break;
         case cTopRight:
             if (eta2x && t2max != 0)
-                *eta2x = (double)(data[5]) / (data[5] + data[4]);
+                *eta2x = static_cast<double>(data[5]) / (data[5] + data[4]);
             if (eta2y && t2max != 0)
-                *eta2y = (double)(data[7]) / (data[7] + data[4]);
+                *eta2y = static_cast<double>(data[7]) / (data[7] + data[4]);
             break;
         default:;
         }
@@ -297,10 +308,10 @@ int ClusterFile::analyze_data(int32_t *data, int32_t *t2, int32_t *t3, char *qua
 
     if (eta3x || eta3y) {
         if (eta3x && (data[3] + data[4] + data[5]) != 0)
-            *eta3x = (double)(-data[3] + data[3 + 2]) /
+            *eta3x = static_cast<double>(-data[3] + data[3 + 2]) /
                      (data[3] + data[4] + data[5]);
         if (eta3y && (data[1] + data[4] + data[7]) != 0)
-            *eta3y = (double)(-data[1] + data[2 * 3 + 1]) /
+            *eta3y = static_cast<double>(-data[1] + data[2 * 3 + 1]) /
                      (data[1] + data[4] + data[7]);
     }
 
