@@ -113,8 +113,16 @@ if (AARE_FETCH_FMT)
             GIT_PROGRESS    TRUE
             USES_TERMINAL_DOWNLOAD TRUE
     )
+    set(FMT_INSTALL ON CACHE BOOL "")
     FetchContent_MakeAvailable(fmt)
     set_property(TARGET fmt PROPERTY POSITION_INDEPENDENT_CODE ON)
+    install(TARGETS fmt 
+        EXPORT ${project}-targets
+        LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR}
+        ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR}
+        RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR}
+        INCLUDES DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}
+)
 else()
       find_package(fmt 6 REQUIRED)
 endif()
@@ -125,7 +133,16 @@ if (AARE_FETCH_JSON)
         json 
         URL https://github.com/nlohmann/json/releases/download/v3.11.3/json.tar.xz
     )
+    set(JSON_Install ON CACHE BOOL "")
     FetchContent_MakeAvailable(json)
+    set(NLOHMANN_JSON_TARGET_NAME nlohmann_json)
+    
+    install(
+        TARGETS nlohmann_json
+        EXPORT "${TARGETS_EXPORT_NAME}"
+        
+    )
+    message(STATUS "target: ${NLOHMANN_JSON_TARGET_NAME}")
 else()
     find_package(nlohmann_json 3.11.3 REQUIRED)
 endif()
@@ -389,8 +406,8 @@ add_custom_target(
     VERBATIM
 )
 
-# if(AARE_MASTER_PROJECT)
-#     set(CMAKE_INSTALL_DIR "share/cmake/${PROJECT_NAME}")
-#     set(PROJECT_LIBRARIES slsSupportShared slsDetectorShared slsReceiverShared)
-#     include(cmake/package_config.cmake)
-# endif()
+if(AARE_MASTER_PROJECT)
+    set(CMAKE_INSTALL_DIR "share/cmake/${PROJECT_NAME}")
+    set(PROJECT_LIBRARIES aare-core aare-compiler-flags )
+    include(cmake/package_config.cmake)
+endif()
