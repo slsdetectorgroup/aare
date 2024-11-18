@@ -35,6 +35,7 @@ file(GLOB SPHINX_SOURCE_FILES CONFIGURE_DEPENDS "src/*.rst")
 #   src/pyRawMasterFile.rst
 # )
 
+
 foreach(filename ${SPHINX_SOURCE_FILES})
     get_filename_component(fname ${filename} NAME)
     message(STATUS "Copying ${filename} to ${SPHINX_BUILD}/src/${fname}")
