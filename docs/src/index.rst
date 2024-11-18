@@ -2,8 +2,14 @@ AARE
 ==============================================
 
 .. note :: 
+    
+    **Examples:**
 
-    Hello
+    - `jupyter notebooks <https://github.com/slsdetectorgroup/aare-notebooks>`_
+    - `cmake+install <https://github.com/slsdetectorgroup/aare-examples>`_
+    - `git submodule <https://github.com/slsdetectorgroup/aare-submodule>`_
+
+
 
 
 .. toctree::
