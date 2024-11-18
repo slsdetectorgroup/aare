@@ -22,6 +22,8 @@ include(FetchContent)
 #Set default build type if none was specified
 include(cmake/helpers.cmake)
 default_build_type("Release")
+link_std_fs()
+message(STATUS fs_lib:${STD_FS_LIB})
 
 set(CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/cmake" ${CMAKE_MODULE_PATH})
 
@@ -310,7 +312,15 @@ target_include_directories(aare_core PUBLIC
     "$<INSTALL_INTERFACE:${CMAKE_INSTALL_INCLUDEDIR}>"
 )
 
-target_link_libraries(aare_core PUBLIC fmt::fmt nlohmann_json::nlohmann_json PRIVATE aare_compiler_flags )
+target_link_libraries(
+    aare_core 
+    PUBLIC 
+    fmt::fmt 
+    nlohmann_json::nlohmann_json 
+    ${STD_FS_LIB} # from helpers.cmake
+    PRIVATE 
+    aare_compiler_flags 
+)
 
 set_target_properties(aare_core PROPERTIES
     ARCHIVE_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}
