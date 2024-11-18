@@ -292,7 +292,7 @@ target_include_directories(aare_core PUBLIC
     "$<INSTALL_INTERFACE:${CMAKE_INSTALL_INCLUDEDIR}>"
 )
 
-target_link_libraries(aare_core PUBLIC fmt::fmt PRIVATE aare_compiler_flags nlohmann_json::nlohmann_json)
+target_link_libraries(aare_core PUBLIC fmt::fmt nlohmann_json::nlohmann_json PRIVATE aare_compiler_flags )
 
 set_target_properties(aare_core PROPERTIES
     ARCHIVE_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}
