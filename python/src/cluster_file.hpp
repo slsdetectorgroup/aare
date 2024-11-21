@@ -37,7 +37,7 @@ void define_cluster_file_io_bindings(py::module &m) {
                  return return_vector(vec);
              })
         .def("__enter__", [](ClusterFile &self) { return &self; })
-        .def("__exit__", [](ClusterFile &self, py::args args) { return; })
+        .def("__exit__", [](ClusterFile &self) {  self.close();})
         .def("__iter__", [](ClusterFile &self) { return &self; })
         .def("__next__", [](ClusterFile &self) {
             auto vec =  new std::vector<Cluster>(self.read_clusters(self.chunk_size()));

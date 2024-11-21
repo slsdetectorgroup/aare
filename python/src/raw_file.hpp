@@ -25,7 +25,6 @@ void define_raw_file_io_bindings(py::module &m) {
         .def(py::init<const std::filesystem::path &>())
         .def("read_frame",
              [](RawFile &self) {
-                 size_t image_size = self.bytes_per_frame();
                  py::array image;
                  std::vector<ssize_t> shape;
                  shape.reserve(2);

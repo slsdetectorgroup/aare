@@ -47,6 +47,7 @@ class ClusterFile {
 
   public:
     ClusterFile(const std::filesystem::path &fname, size_t chunk_size = 1000);
+    ~ClusterFile();
     std::vector<Cluster> read_clusters(size_t n_clusters);
     std::vector<Cluster> read_frame(int32_t &out_fnum);
     std::vector<Cluster>
@@ -59,6 +60,7 @@ class ClusterFile {
                     double *eta3y);
 
     size_t chunk_size() const { return m_chunk_size; }
+    void close();
 
 };
 
