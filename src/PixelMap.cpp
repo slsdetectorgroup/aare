@@ -31,6 +31,49 @@ NDArray<ssize_t, 2> GenerateMoench03PixelMap() {
 }
 
 NDArray<ssize_t, 2> GenerateMoench05PixelMap() {
+    std::array<int, 3> adc_numbers = {5, 9, 1};  
+    NDArray<ssize_t, 2> order_map({160, 150});
+    int n_pixel = 0;
+    for (int row = 0; row < 160; row++) {
+        for (int i_col = 0; i_col < 50; i_col++) {
+            n_pixel = row * 50 + i_col;
+            for (int i_sc = 0; i_sc < 3; i_sc++) {
+                int col = 50 * i_sc + i_col;
+                int adc_nr = adc_numbers[i_sc];
+                int i_analog = n_pixel * 12 + adc_nr;  
+
+                // analog_frame[row * 150 + col] = analog_data[i_analog] & 0x3FFF;
+                order_map(row, col) = i_analog;
+                
+            }
+        }
+    }
+    return order_map;
+}
+
+NDArray<ssize_t, 2> GenerateMoench05PixelMap1g() {
+    std::array<int, 3> adc_numbers = {1, 2, 0}; 
+    NDArray<ssize_t, 2> order_map({160, 150});
+    int n_pixel = 0;
+    for (int row = 0; row < 160; row++) {
+        for (int i_col = 0; i_col < 50; i_col++) {
+            n_pixel = row * 50 + i_col;
+            for (int i_sc = 0; i_sc < 3; i_sc++) {
+                int col = 50 * i_sc + i_col;
+                int adc_nr = adc_numbers[i_sc];
+                int i_analog = n_pixel * 3 + adc_nr;  
+
+
+                // analog_frame[row * 150 + col] = analog_data[i_analog] & 0x3FFF;
+                order_map(row, col) = i_analog;
+                
+            }
+        }
+    }
+    return order_map;
+}
+
+NDArray<ssize_t, 2> GenerateMoench05PixelMapOld() {
     std::array<int, 3> adc_numbers = {9, 13, 1};
     NDArray<ssize_t, 2> order_map({160, 150});
     int n_pixel = 0;
