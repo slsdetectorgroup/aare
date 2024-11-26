@@ -1,7 +1,10 @@
-name: Deploy to slsdetectorgroup conda channel
+name: Build pkgs and deploy if on main
 
 on:
-  workflow_dispatch
+  push:
+    branches:
+     - main
+     - developer
 
 jobs:
   build:
@@ -28,9 +31,10 @@ jobs:
           channels: conda-forge
 
       - name: Prepare
-        run: conda install conda-build conda-verify pytest anaconda-client
+        run: conda install conda-build=24.9 conda-verify pytest anaconda-client
 
       - name: Enable upload
+        if: github.ref == 'refs/heads/main'
         run: conda config --set anaconda_upload yes
 
       - name: Build
