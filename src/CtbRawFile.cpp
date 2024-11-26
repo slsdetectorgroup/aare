@@ -16,7 +16,7 @@ CtbRawFile::CtbRawFile(const std::filesystem::path &fname) : m_master(fname) {
 
 void CtbRawFile::read_into(std::byte *image_buf, DetectorHeader* header) {
     if(m_current_frame >= m_master.frames_in_file()){
-        throw std::runtime_error(LOCATION + "End of file reached");
+        throw std::runtime_error(LOCATION + " End of file reached");
     }
 
     if(m_current_frame != 0 && m_current_frame % m_master.max_frames_per_file() == 0){
