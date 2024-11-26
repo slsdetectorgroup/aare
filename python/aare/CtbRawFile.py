@@ -2,6 +2,7 @@
 from . import _aare
 import numpy as np
 from .ScanParameters import ScanParameters
+
 class CtbRawFile(_aare.CtbRawFile):
     """File reader for the CTB raw file format.
     
@@ -11,9 +12,10 @@ class CtbRawFile(_aare.CtbRawFile):
                 The function should take a numpy array of type uint8 and return one
                 or several numpy arrays.
     """
-    def __init__(self, fname, transform = None):
+    def __init__(self, fname, transform = None, chunk_size = 1):
         super().__init__(fname)
         self.transform = transform
+        self._chunk_size = chunk_size
 
 
     def read_frame(self, frame_index: int | None = None ) -> tuple:
@@ -59,6 +61,10 @@ class CtbRawFile(_aare.CtbRawFile):
             Uses the position of the file pointer :py:meth:`~CtbRawFile.tell` to determine
             where to start reading from.
 
+        If the number of frames requested is larger than the number of frames left in the file,
+        the function will read the remaining frames. If no frames are left in the file
+        a RuntimeError is raised.
+
         Args:
             n_frames (int): Number of frames to read.
 
@@ -68,6 +74,12 @@ class CtbRawFile(_aare.CtbRawFile):
         Raises:
             RuntimeError: If EOF is reached.
         """
+        # Calculate the number of frames to actually read
+        n_frames = min(n_frames, self.frames_in_file - self.tell())
+        if n_frames == 0:
+            raise RuntimeError("No frames left in file.")
+
+
         # Do the first read to figure out what we have
         tmp_header, tmp_data = self.read_frame()
         
@@ -87,10 +99,12 @@ class CtbRawFile(_aare.CtbRawFile):
 
     def read(self) -> tuple:
         """Read the entire file.
+        Seeks to the beginning of the file before reading.
 
         Returns:
             tuple: header, data
         """
+        self.seek(0)
         return self.read_n(self.frames_in_file)
 
     def seek(self, frame_index:int) -> None:
@@ -101,7 +115,7 @@ class CtbRawFile(_aare.CtbRawFile):
         """
         super().seek(frame_index)
 
-    def tell() -> int:
+    def tell(self) -> int:
         """Return the current frame position in the file.
 
         Returns:
@@ -164,7 +178,12 @@ class CtbRawFile(_aare.CtbRawFile):
     
     def __next__(self):
         try:
-            return self.read_frame()
+            if self._chunk_size == 1:
+                return self.read_frame()
+            else:
+                return self.read_n(self._chunk_size)
+            
+                
         except RuntimeError:
             # TODO! find a good way to check that we actually have the right exception
             raise StopIteration
