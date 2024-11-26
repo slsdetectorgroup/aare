@@ -21,6 +21,14 @@ void define_pixel_map_bindings(py::module &m) {
         auto ptr = new NDArray<ssize_t,2>(GenerateMoench05PixelMap());
         return return_image_data(ptr);
     })
+        .def("GenerateMoench05PixelMap1g", []() {
+        auto ptr = new NDArray<ssize_t,2>(GenerateMoench05PixelMap1g());
+        return return_image_data(ptr);
+    })
+    .def("GenerateMoench05PixelMapOld", []() {
+        auto ptr = new NDArray<ssize_t,2>(GenerateMoench05PixelMapOld());
+        return return_image_data(ptr);
+    })
     .def("GenerateMH02SingleCounterPixelMap", []() {
         auto ptr = new NDArray<ssize_t,2>(GenerateMH02SingleCounterPixelMap());
         return return_image_data(ptr);
