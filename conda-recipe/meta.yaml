@@ -1,6 +1,6 @@
 package:
   name: aare
-  version: 2024.11.26.dev0 #TODO! how to not duplicate this?
+  version: 2024.11.27.dev0 #TODO! how to not duplicate this?
 
 
 source:
