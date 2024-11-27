@@ -14,6 +14,7 @@ namespace aare {
  * @brief Implementation used in RawMasterFile to parse the file name
  */
 class RawFileNameComponents {
+    bool m_old_scheme{false};
     std::filesystem::path m_base_path{};
     std::string m_base_name{};
     std::string m_ext{};
@@ -35,6 +36,7 @@ class RawFileNameComponents {
     const std::string &base_name() const;
     const std::string &ext() const;
     int file_index() const;
+    void set_old_scheme(bool old_scheme);
 };
 
 class ScanParameters {
@@ -88,7 +90,7 @@ class RawMasterFile {
     size_t m_pixels_x{};
     size_t m_bitdepth{};
 
-    xy m_geometry;
+    xy m_geometry{};
 
     size_t m_max_frames_per_file{};
     // uint32_t m_adc_mask{}; // TODO! implement reading

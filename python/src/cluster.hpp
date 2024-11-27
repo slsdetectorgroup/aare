@@ -21,9 +21,9 @@ void define_cluster_finder_bindings(py::module &m) {
              })
         .def("pedestal",
              [](ClusterFinder<uint16_t, double> &self) {
-                 auto m = new NDArray<double, 2>{};
-                 *m = self.pedestal();
-                 return return_image_data(m);
+                 auto pd = new NDArray<double, 2>{};
+                 *pd = self.pedestal();
+                 return return_image_data(pd);
              })
         .def("find_clusters_without_threshold",
              [](ClusterFinder<uint16_t, double> &self,

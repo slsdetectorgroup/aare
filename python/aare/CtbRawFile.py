@@ -8,14 +8,15 @@ class CtbRawFile(_aare.CtbRawFile):
     
     Args:  
             fname (pathlib.Path | str): Path to the file to be read.
+            chunk_size (int): Number of frames to read at a time. Default is 1.
             transform (function): Function to apply to the data after reading it. 
                 The function should take a numpy array of type uint8 and return one
                 or several numpy arrays.
     """
-    def __init__(self, fname, transform = None, chunk_size = 1):
+    def __init__(self, fname, chunk_size = 1, transform = None):
         super().__init__(fname)
-        self.transform = transform
         self._chunk_size = chunk_size
+        self._transform = transform
 
 
     def read_frame(self, frame_index: int | None = None ) -> tuple:
@@ -44,8 +45,8 @@ class CtbRawFile(_aare.CtbRawFile):
             header = header[0]
 
 
-        if self.transform:
-            res = self.transform(data)
+        if self._transform:
+            res = self._transform(data)
             if isinstance(res, tuple):
                 return header, *res
             else:

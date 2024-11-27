@@ -17,6 +17,9 @@ RawFile::RawFile(const std::filesystem::path &fname, const std::string &mode)
         n_subfiles = find_number_of_subfiles(); // f0,f1...fn
         n_subfile_parts =
             m_master.geometry().col * m_master.geometry().row; // d0,d1...dn
+
+        
+
         find_geometry();
         update_geometry_with_roi();
 

@@ -37,9 +37,22 @@ std::filesystem::path RawFileNameComponents::master_fname() const {
 }
 
 std::filesystem::path RawFileNameComponents::data_fname(size_t mod_id,
-                                                        size_t file_id) const {
-    return m_base_path / fmt::format("{}_d{}_f{}_{}.raw", m_base_name, mod_id,
+                                                        size_t file_id
+                                                        ) const {
+    
+    
+    
+    std::string fmt = "{}_d{}_f{}_{}.raw";
+    //Before version X we used to name the data files f000000000000
+    if (m_old_scheme) {
+        fmt = "{}_d{}_f{:012}_{}.raw";
+    }
+    return m_base_path / fmt::format(fmt, m_base_name, mod_id,
                                      file_id, m_file_index);
+}
+
+void RawFileNameComponents::set_old_scheme(bool old_scheme) {
+    m_old_scheme = old_scheme;
 }
 
 const std::filesystem::path &RawFileNameComponents::base_path() const {
@@ -314,10 +327,22 @@ void RawMasterFile::parse_raw(const std::filesystem::path &fpath) {
             // do the actual parsing
             if (key == "Version") {
                 m_version = value;
+
+                //TODO!: How old versions can we handle?
+                auto v = std::stod(value);
+
+                //TODO! figure out exactly when we did the change
+                //This enables padding of f to 12 digits
+                if (v<4.0)
+                    m_fnc.set_old_scheme(true);
+
             } else if (key == "TimeStamp") {
 
             } else if (key == "Detector Type") {
                 m_type = StringTo<DetectorType>(value);
+                if(m_type==DetectorType::Moench){
+                    m_type = DetectorType::Moench03_old;
+                }
             } else if (key == "Timing Mode") {
                 m_timing_mode = StringTo<TimingMode>(value);
             } else if (key == "Image Size") {
@@ -352,6 +377,12 @@ void RawMasterFile::parse_raw(const std::filesystem::path &fpath) {
                 pos = value.find(',');
                 m_pixels_x = std::stoi(value.substr(1, pos));
                 m_pixels_y = std::stoi(value.substr(pos + 1));
+            }else if(key == "row"){
+                pos = value.find('p');
+                m_pixels_y = std::stoi(value.substr(0, pos));
+            }else if(key == "col"){
+                pos = value.find('p');
+                m_pixels_x = std::stoi(value.substr(0, pos));
             } else if (key == "Total Frames") {
                 m_total_frames_expected = std::stoi(value);
             } else if (key == "Dynamic Range") {
@@ -359,6 +390,9 @@ void RawMasterFile::parse_raw(const std::filesystem::path &fpath) {
             } else if (key == "Quad") {
                 m_quad = std::stoi(value);
             } else if (key == "Max Frames Per File") {
+                m_max_frames_per_file = std::stoi(value);
+            }else if(key == "Max. Frames Per File"){
+                //Version 3.0 way of writing it
                 m_max_frames_per_file = std::stoi(value);
             } else if (key == "Geometry") {
                 pos = value.find(',');
@@ -368,5 +402,19 @@ void RawMasterFile::parse_raw(const std::filesystem::path &fpath) {
             }
         }
     }
+    if (m_pixels_x == 400 && m_pixels_y == 400) {
+        m_type = DetectorType::Moench03_old;
+    }
+
+
+    //TODO! Look for d0, d1...dn and update geometry
+    if(m_geometry.col == 0 && m_geometry.row == 0){
+        m_geometry = {1,1};
+        fmt::print("Warning: No geometry found in master file. Assuming 1x1\n");
+    }
+
+    //TODO! Read files and find actual frames
+    if(m_frames_in_file==0)
+        m_frames_in_file = m_total_frames_expected;
 }
 } // namespace aare

@@ -15,19 +15,19 @@ template <typename SUM_TYPE> void define_pedestal_bindings(py::module &m, const 
         .def(py::init<int, int>())
         .def("mean",
              [](Pedestal<SUM_TYPE> &self) {
-                 auto m = new NDArray<SUM_TYPE, 2>{};
-                 *m = self.mean();
-                 return return_image_data(m);
+                 auto mea = new NDArray<SUM_TYPE, 2>{};
+                 *mea = self.mean();
+                 return return_image_data(mea);
              })
         .def("variance", [](Pedestal<SUM_TYPE> &self) {
-            auto m = new NDArray<SUM_TYPE, 2>{};
-            *m = self.variance();
-            return return_image_data(m);
+            auto var = new NDArray<SUM_TYPE, 2>{};
+            *var = self.variance();
+            return return_image_data(var);
         })
         .def("std", [](Pedestal<SUM_TYPE> &self) {
-            auto m = new NDArray<SUM_TYPE, 2>{};
-            *m = self.std();
-            return return_image_data(m);
+            auto std = new NDArray<SUM_TYPE, 2>{};
+            *std = self.std();
+            return return_image_data(std);
         })
         .def("clear", py::overload_cast<>(&Pedestal<SUM_TYPE>::clear))
         .def_property_readonly("rows", &Pedestal<SUM_TYPE>::rows)

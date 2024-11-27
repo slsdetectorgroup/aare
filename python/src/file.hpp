@@ -38,36 +38,7 @@ void define_file_io_bindings(py::module &m) {
                          bunchId, timestamp, modId, row, column, reserved,
                          debug, roundRNumber, detType, version, packetMask);
 
-    py::class_<CtbRawFile>(m, "CtbRawFile")
-        .def(py::init<const std::filesystem::path &>())
-        .def("read_frame",
-             [](CtbRawFile &self) {
-                 size_t image_size = self.image_size_in_bytes();
-                 py::array image;
-                 std::vector<ssize_t> shape;
-                 shape.reserve(2);
-                 shape.push_back(1);
-                 shape.push_back(image_size);
-
-                 py::array_t<DetectorHeader> header(1);
-
-                 // always read bytes
-                 image = py::array_t<uint8_t>(shape);
-
-                 self.read_into(
-                     reinterpret_cast<std::byte *>(image.mutable_data()),
-                     header.mutable_data());
-
-                 return py::make_tuple(header, image);
-             })
-        .def("seek", &CtbRawFile::seek)
-        .def("tell", &CtbRawFile::tell)
-        .def("master", &CtbRawFile::master)
-
-        .def_property_readonly("image_size_in_bytes",
-                               &CtbRawFile::image_size_in_bytes)
-
-        .def_property_readonly("frames_in_file", &CtbRawFile::frames_in_file);
+   
 
     py::class_<File>(m, "File")
         .def(py::init([](const std::filesystem::path &fname) {
@@ -133,13 +104,15 @@ void define_file_io_bindings(py::module &m) {
                  return image;
              })
         .def("read_n", [](File &self, size_t n_frames) {
-            const uint8_t item_size = self.bytes_per_pixel();
+            //adjust for actual frames left in the file
+            n_frames = std::min(n_frames, self.total_frames()-self.tell());
+            if(n_frames == 0){
+                throw std::runtime_error("No frames left in file");
+            }
+            std::vector<size_t> shape{n_frames, self.rows(), self.cols()};
+            
             py::array image;
-            std::vector<ssize_t> shape;
-            shape.reserve(3);
-            shape.push_back(n_frames);
-            shape.push_back(self.rows());
-            shape.push_back(self.cols());
+            const uint8_t item_size = self.bytes_per_pixel();
             if (item_size == 1) {
                 image = py::array_t<uint8_t>(shape);
             } else if (item_size == 2) {

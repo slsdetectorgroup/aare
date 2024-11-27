@@ -31,6 +31,16 @@ TEST_CASE("Construction of master file name and data files"){
     REQUIRE(m.data_fname(1, 1) == "test_d1_f1_1.raw");
 }
 
+TEST_CASE("Construction of master file name and data files using old scheme"){
+    RawFileNameComponents m("test_master_1.raw");
+    m.set_old_scheme(true);
+    REQUIRE(m.master_fname() == "test_master_1.raw");
+    REQUIRE(m.data_fname(0, 0) == "test_d0_f000000000000_1.raw");
+    REQUIRE(m.data_fname(1, 0) == "test_d1_f000000000000_1.raw");
+    REQUIRE(m.data_fname(0, 1) == "test_d0_f000000000001_1.raw");
+    REQUIRE(m.data_fname(1, 1) == "test_d1_f000000000001_1.raw");
+}
+
 TEST_CASE("Master file name does not fit pattern"){
     REQUIRE_THROWS(RawFileNameComponents("somefile.json"));
     REQUIRE_THROWS(RawFileNameComponents("another_test_d0_f0_1.raw"));
