@@ -49,4 +49,11 @@ set_target_properties(_aare PROPERTIES
 configure_file(examples/play.py ${CMAKE_BINARY_DIR}/play.py)
 
 
-install(TARGETS _aare DESTINATION aare)
+if(AARE_INSTALL_PYTHONEXT)
+    install(TARGETS _aare
+        EXPORT "${TARGETS_EXPORT_NAME}"
+        LIBRARY DESTINATION ${CMAKE_INSTALL_PREFIX}/aare
+    )
+
+    install(FILES ${PYTHON_FILES} DESTINATION ${CMAKE_INSTALL_PREFIX}/aare)
+endif()
