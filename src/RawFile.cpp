@@ -266,8 +266,7 @@ size_t RawFile::bytes_per_pixel() const {
 }
 
 void RawFile::get_frame_into(size_t frame_index, std::byte *frame_buffer, DetectorHeader *header) {
-
-    if (frame_index > total_frames()) {
+    if (frame_index >= total_frames()) {
         throw std::runtime_error(LOCATION + "Frame number out of range");
     }
     std::vector<size_t> frame_numbers(n_subfile_parts);
@@ -319,7 +318,8 @@ void RawFile::get_frame_into(size_t frame_index, std::byte *frame_buffer, Detect
 
             if (m_module_pixel_0[part_idx].x!=0)
                 throw std::runtime_error(LOCATION + "Implementation error. x pos not 0.");
-
+            
+            //TODO! Risk for out of range access
             subfiles[subfile_id][part_idx]->seek(corrected_idx % m_master.max_frames_per_file());
             subfiles[subfile_id][part_idx]->read_into(frame_buffer + offset, header);
             if (header)
