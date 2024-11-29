@@ -21,23 +21,37 @@ void assert_failed(const std::string &msg)
  */
 template <> std::string ToString(DetectorType arg) {
     switch (arg) {
-    case DetectorType::Jungfrau:
-        return "Jungfrau";
+    case DetectorType::Generic:
+        return "Generic";
     case DetectorType::Eiger:
         return "Eiger";
-    case DetectorType::Mythen3:
-        return "Mythen3";
+    case DetectorType::Gotthard:
+        return "Gotthard";
+    case DetectorType::Jungfrau:
+        return "Jungfrau";
+    case DetectorType::ChipTestBoard:
+        return "ChipTestBoard";
     case DetectorType::Moench:
         return "Moench";
+    case DetectorType::Mythen3:
+        return "Mythen3";
+    case DetectorType::Gotthard2:
+        return "Gotthard2";
+    case DetectorType::Xilinx_ChipTestBoard:
+        return "Xilinx_ChipTestBoard";
+
+    //Custom ones
     case DetectorType::Moench03:
         return "Moench03";
     case DetectorType::Moench03_old:
         return "Moench03_old";
-    case DetectorType::ChipTestBoard:
-        return "ChipTestBoard";
-    default:
+    case DetectorType::Unknown:
         return "Unknown";
+
+    //no default case to trigger compiler warning if not all 
+    //enum values are handled
     }
+    throw std::runtime_error("Could not decode detector to string");
 }
 
 /**
@@ -47,21 +61,34 @@ template <> std::string ToString(DetectorType arg) {
  * @throw runtime_error if the string does not match any DetectorType
  */
 template <> DetectorType StringTo(const std::string &arg) {
-    if (arg == "Jungfrau")
-        return DetectorType::Jungfrau;
+    if (arg == "Generic")
+        return DetectorType::Generic;
     if (arg == "Eiger")
         return DetectorType::Eiger;
-    if (arg == "Mythen3")
-        return DetectorType::Mythen3;
+    if (arg == "Gotthard")
+        return DetectorType::Gotthard;
+    if (arg == "Jungfrau")
+        return DetectorType::Jungfrau;
+    if (arg == "ChipTestBoard")
+        return DetectorType::ChipTestBoard;
     if (arg == "Moench")
         return DetectorType::Moench;
+    if (arg == "Mythen3")
+        return DetectorType::Mythen3;
+    if (arg == "Gotthard2")
+        return DetectorType::Gotthard2;
+    if (arg == "Xilinx_ChipTestBoard")
+        return DetectorType::Xilinx_ChipTestBoard;
+
+    //Custom ones
     if (arg == "Moench03")
         return DetectorType::Moench03;
     if (arg == "Moench03_old")
         return DetectorType::Moench03_old;
-    if (arg == "ChipTestBoard")
-        return DetectorType::ChipTestBoard;
-    throw std::runtime_error("Could not decode dector from: \"" + arg + "\"");
+    if (arg == "Unknown")
+        return DetectorType::Unknown;
+    
+    throw std::runtime_error("Could not decode detector from: \"" + arg + "\"");
 }
 
 /**
