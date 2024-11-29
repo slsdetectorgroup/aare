@@ -52,8 +52,8 @@ configure_file(examples/play.py ${CMAKE_BINARY_DIR}/play.py)
 if(AARE_INSTALL_PYTHONEXT)
     install(TARGETS _aare
         EXPORT "${TARGETS_EXPORT_NAME}"
-        LIBRARY DESTINATION ${CMAKE_INSTALL_PREFIX}/aare
+        LIBRARY DESTINATION aare
     )
 
-    install(FILES ${PYTHON_FILES} DESTINATION ${CMAKE_INSTALL_PREFIX}/aare)
+    install(FILES ${PYTHON_FILES} DESTINATION aare)
 endif()
