@@ -190,14 +190,27 @@ struct ModuleGeometry{
 using dynamic_shape = std::vector<int64_t>;
 
 //TODO! Can we uniform enums between the libraries?
+
+/**
+ * @brief Enum class to identify different detectors. 
+ * The values are the same as in slsDetectorPackage
+ * Different spelling to avoid confusion with the slsDetectorPackage
+ */
 enum class DetectorType {
-    Jungfrau,
+    //Standard detectors match the enum values from slsDetectorPackage
+    Generic,
     Eiger,
-    Mythen3,
-    Moench,
-    Moench03,
-    Moench03_old,
+    Gotthard,
+    Jungfrau,
     ChipTestBoard,
+    Moench,
+    Mythen3,
+    Gotthard2,
+    Xilinx_ChipTestBoard,
+
+    //Additional detectors used for defining processing. Variants of the standard ones.
+    Moench03=100,
+    Moench03_old,
     Unknown
 };
 
