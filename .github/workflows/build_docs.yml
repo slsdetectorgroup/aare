@@ -36,13 +36,13 @@ jobs:
           channels: conda-forge
 
       - name: Prepare
-        run: conda install doxygen sphinx=7.1.2 breathe pybind11 sphinx_rtd_theme furo nlohmann_json zeromq fmt numpy
+        run: conda install doxygen sphinx=7.1.2 breathe pybind11 sphinx_rtd_theme furo nlohmann_json zeromq fmt numpy catch2
 
       - name: Build 
         run: |
             mkdir build 
             cd build 
-            cmake .. -DAARE_SYSTEM_LIBRARIES=ON -DAARE_DOCS=ON 
+            cmake .. -DAARE_SYSTEM_LIBRARIES=ON -DAARE_TESTS=ON -DAARE_DOCS=ON 
             make -j 2 
             make docs
 
