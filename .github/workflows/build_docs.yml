@@ -1,4 +1,4 @@
-name: Build the package using cmake then documentation
+name: Build package and docs, test, deploy if on main
 
 on:
   workflow_dispatch:
