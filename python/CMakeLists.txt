@@ -1,5 +1,5 @@
 
-find_package (Python 3.10 COMPONENTS Interpreter Development)
+find_package (Python 3.10 COMPONENTS Interpreter Development REQUIRED)
 
 # Download or find pybind11 depending on configuration
 if(AARE_FETCH_PYBIND11)
@@ -49,4 +49,11 @@ set_target_properties(_aare PROPERTIES
 configure_file(examples/play.py ${CMAKE_BINARY_DIR}/play.py)
 
 
-install(TARGETS _aare DESTINATION aare)
+if(AARE_INSTALL_PYTHONEXT)
+    install(TARGETS _aare
+        EXPORT "${TARGETS_EXPORT_NAME}"
+        LIBRARY DESTINATION aare
+    )
+
+    install(FILES ${PYTHON_FILES} DESTINATION aare)
+endif()
