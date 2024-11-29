@@ -34,7 +34,7 @@ class RawFile(_aare.RawFile):
         Returns:
             RawMasterFile: Master file.
         """
-        return super().master()
+        return super().master
     
     def __len__(self) -> int:
         """Return the number of frames in the file.
