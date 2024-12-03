@@ -92,6 +92,24 @@ template <> DetectorType StringTo(const std::string &arg) {
 }
 
 /**
+ * @brief Convert a TimingMode to a string
+ * @param type TimingMode
+ * @return string representation of the TimingMode
+ */
+template <> std::string ToString(TimingMode arg) {
+    switch (arg) {
+    case TimingMode::Auto:
+        return "Auto";
+    case TimingMode::Trigger:
+        return "Trigger";
+
+        // no default case to trigger compiler warning if not all
+        // enum values are handled
+    }
+    throw std::runtime_error("Could not decode timing mode to string");
+}
+
+/**
  * @brief Convert a string to a TimingMode
  * @param mode string representation of the TimingMode
  * @return TimingMode
@@ -103,6 +121,26 @@ template <> TimingMode StringTo(const std::string &arg) {
     if (arg == "trigger")
         return TimingMode::Trigger;
     throw std::runtime_error("Could not decode timing mode from: \"" + arg + "\"");
+}
+
+/**
+ * @brief Convert a FrameDiscardPolicy to a string
+ * @param type FrameDiscardPolicy
+ * @return string representation of the FrameDiscardPolicy
+ */
+template <> std::string ToString(FrameDiscardPolicy arg) {
+    switch (arg) {
+    case FrameDiscardPolicy::NoDiscard:
+        return "nodiscard";
+    case FrameDiscardPolicy::Discard:
+        return "discard";
+    case FrameDiscardPolicy::DiscardPartial:
+        return "discardpartial";
+
+        // no default case to trigger compiler warning if not all
+        // enum values are handled
+    }
+    throw std::runtime_error("Could not decode frame discard policy to string");
 }
 
 template <> FrameDiscardPolicy StringTo(const std::string &arg) {

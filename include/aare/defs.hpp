@@ -225,8 +225,10 @@ template <> DetectorType StringTo(const std::string & /*name*/);
 template <> std::string ToString(DetectorType arg);
 
 template <> TimingMode StringTo(const std::string & /*mode*/);
+template <> std::string ToString(TimingMode arg);
 
 template <> FrameDiscardPolicy StringTo(const std::string & /*mode*/);
+template <> std::string ToString(FrameDiscardPolicy arg);
 
 using DataTypeVariants = std::variant<uint16_t, uint32_t>;
 

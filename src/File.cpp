@@ -1,4 +1,7 @@
 #include "aare/File.hpp"
+#ifdef HDF5_FOUND
+#include "aare/Hdf5File.hpp"
+#endif
 #include "aare/NumpyFile.hpp"
 #include "aare/RawFile.hpp"
 
@@ -27,7 +30,17 @@ File::File(const std::filesystem::path &fname, const std::string &mode,
     else if (fname.extension() == ".npy") {
         // file_impl = new NumpyFile(fname, mode, cfg);
         file_impl = std::make_unique<NumpyFile>(fname, mode, cfg);
-    } else {
+    }
+#ifdef HDF5_FOUND
+    else if (fname.extension() == ".h5") {
+        file_impl = std::make_unique<Hdf5File>(fname, mode);
+    }
+#else
+    else if (fname.extension() == ".h5") {
+        throw std::runtime_error("Enable HDF5 compile option: AARE_HDF5=ON");
+    }
+#endif
+    else {
         throw std::runtime_error("Unsupported file type");
     }
 }

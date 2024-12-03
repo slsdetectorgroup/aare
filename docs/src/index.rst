@@ -32,6 +32,8 @@ AARE
     pyClusterFile
     pyRawFile
     pyRawMasterFile
+    pyHdf5File
+    pyHdf5MasterFile
     pyVarClusterFinder
 
 
@@ -50,6 +52,8 @@ AARE
     RawFile
     RawSubFile
     RawMasterFile
+    Hdf5File
+    Hdf5MasterFile
     VarClusterFinder
 
 

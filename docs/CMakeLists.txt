@@ -27,12 +27,17 @@ file(GLOB SPHINX_SOURCE_FILES CONFIGURE_DEPENDS "src/*.rst")
 #   src/RawFile.rst
 #   src/RawSubFile.rst
 #   src/RawMasterFile.rst
+#   src/Hdf5File.rst
+#   src/Hdf5SubFile.rst
+#   src/Hdf5MasterFile.rst
 #   src/VarClusterFinder.rst
 #   src/pyVarClusterFinder.rst
 #   src/pyFile.rst
 #   src/pyCtbRawFile.rst
 #   src/pyRawFile.rst
 #   src/pyRawMasterFile.rst
+#   src/pyHdf5File.rst
+#   src/pyHdf5MasterFile.rst
 # )
 
 

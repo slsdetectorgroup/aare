@@ -40,6 +40,7 @@ option(AARE_DOCS "Build documentation" OFF)
 option(AARE_VERBOSE "Verbose output" OFF)
 option(AARE_CUSTOM_ASSERT "Use custom assert" OFF)
 option(AARE_INSTALL_PYTHONEXT "Install the python extension in the install tree under CMAKE_INSTALL_PREFIX/aare/" OFF)
+option(AARE_HDF5 "Hdf5 File Format" OFF)
 
 
 # Configure which of the dependencies to use FetchContent for
@@ -309,6 +310,21 @@ set(SourceFiles
     ${CMAKE_CURRENT_SOURCE_DIR}/src/RawMasterFile.cpp
 )
 
+# HDF5
+if (AARE_HDF5)
+    find_package(HDF5 1.10 COMPONENTS CXX REQUIRED)
+	    add_definitions( 
+	        ${HDF5_DEFINITIONS}
+	    )
+	    list (APPEND PUBLICHEADERS 
+            include/aare/Hdf5File.hpp
+            include/aare/Hdf5MasterFile.hpp
+	    )
+	    list (APPEND SourceFiles 
+            ${CMAKE_CURRENT_SOURCE_DIR}/src/Hdf5File.cpp
+            ${CMAKE_CURRENT_SOURCE_DIR}/src/Hdf5MasterFile.cpp
+	    )
+endif (AARE_HDF5)
 
 add_library(aare_core STATIC ${SourceFiles})
 target_include_directories(aare_core PUBLIC 
@@ -325,6 +341,16 @@ target_link_libraries(
     PRIVATE 
     aare_compiler_flags 
 )
+
+if (AARE_HDF5 AND HDF5_FOUND)
+    add_definitions(-DHDF5_FOUND)
+    target_link_libraries(aare_core PUBLIC 
+        ${HDF5_LIBRARIES}
+    )
+    target_include_directories(aare_core PUBLIC
+        ${HDF5_INCLUDE_DIRS}
+    )
+endif()
 
 set_target_properties(aare_core PROPERTIES
     ARCHIVE_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}
@@ -348,10 +374,16 @@ if(AARE_TESTS)
             ${CMAKE_CURRENT_SOURCE_DIR}/src/NumpyFile.test.cpp
             ${CMAKE_CURRENT_SOURCE_DIR}/src/NumpyHelpers.test.cpp
             ${CMAKE_CURRENT_SOURCE_DIR}/src/RawFile.test.cpp
-
         )
+    if(HDF5_FOUND)
+        list (APPEND TestSources 
+            ${CMAKE_CURRENT_SOURCE_DIR}/src/Hdf5MasterFile.test.cpp
+            ${CMAKE_CURRENT_SOURCE_DIR}/src/Hdf5File.test.cpp
+        )
+    endif() 
     target_sources(tests PRIVATE ${TestSources} )
 endif()
+
 
 
 
