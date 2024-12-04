@@ -1,5 +1,6 @@
 #include "aare/Hdf5MasterFile.hpp"
 #include <sstream>
+#include <iomanip>
 namespace aare {
 
 Hdf5FileNameComponents::Hdf5FileNameComponents(
