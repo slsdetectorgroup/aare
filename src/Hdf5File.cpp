@@ -18,7 +18,7 @@ Hdf5File::Hdf5File(const std::filesystem::path &fname, const std::string &mode)
     }
 }
 
-Frame Hdf5File::read_frame() { return get_frame(m_current_frame++); };
+Frame Hdf5File::read_frame() { return get_frame(m_current_frame++); }
 
 Frame Hdf5File::read_frame(size_t frame_number) {
     seek(frame_number);
@@ -36,12 +36,12 @@ void Hdf5File::read_into(std::byte *image_buf, size_t n_frames) {
 
 void Hdf5File::read_into(std::byte *image_buf) {
     return get_frame_into(m_current_frame++, image_buf);
-};
+}
 
 void Hdf5File::read_into(std::byte *image_buf, DetectorHeader *header) {
 
     return get_frame_into(m_current_frame++, image_buf, header);
-};
+}
 
 void Hdf5File::read_into(std::byte *image_buf, size_t n_frames,
                          DetectorHeader *header) {
@@ -53,7 +53,7 @@ void Hdf5File::read_into(std::byte *image_buf, size_t n_frames,
         if (header)
             header += n_mod();
     }
-};
+}
 
 size_t Hdf5File::n_mod() const { return 1; }
 
@@ -72,9 +72,9 @@ void Hdf5File::seek(size_t frame_index) {
         m_header_files[i]->seek(frame_index);
     }
     m_current_frame = frame_index;
-};
+}
 
-size_t Hdf5File::tell() { return m_current_frame; };
+size_t Hdf5File::tell() { return m_current_frame; }
 
 size_t Hdf5File::total_frames() const { return m_total_frames; }
 size_t Hdf5File::rows() const { return m_rows; }

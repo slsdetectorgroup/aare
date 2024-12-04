@@ -30,7 +30,7 @@ RawFile::RawFile(const std::filesystem::path &fname, const std::string &mode)
     }
 }
 
-Frame RawFile::read_frame() { return get_frame(m_current_frame++); };
+Frame RawFile::read_frame() { return get_frame(m_current_frame++); }
 
 Frame RawFile::read_frame(size_t frame_number) {
     seek(frame_number);
@@ -48,13 +48,13 @@ void RawFile::read_into(std::byte *image_buf, size_t n_frames) {
 
 void RawFile::read_into(std::byte *image_buf) {
     return get_frame_into(m_current_frame++, image_buf);
-};
+}
 
 
 void RawFile::read_into(std::byte *image_buf, DetectorHeader *header) {
 
     return get_frame_into(m_current_frame++, image_buf, header);
-};
+}
 
 void RawFile::read_into(std::byte *image_buf, size_t n_frames, DetectorHeader *header) {
     // return get_frame_into(m_current_frame++, image_buf, header);
@@ -66,7 +66,7 @@ void RawFile::read_into(std::byte *image_buf, size_t n_frames, DetectorHeader *h
             header+=n_mod();
     }
 
-};
+}
 
 size_t RawFile::n_mod() const { return n_subfile_parts; }
 
@@ -87,9 +87,9 @@ void RawFile::seek(size_t frame_index) {
                         frame_index, total_frames()));
     }
     m_current_frame = frame_index;
-};
+}
 
-size_t RawFile::tell() { return m_current_frame; };
+size_t RawFile::tell() { return m_current_frame; }
 
 size_t RawFile::total_frames() const { return m_master.frames_in_file(); }
 size_t RawFile::rows() const { return m_rows; }

@@ -29,7 +29,7 @@ struct H5Handles {
     datatype(dataset.getDataType())
   {
     if (dataspace.getSimpleExtentNdims() != rank) {
-      throw std::runtime_error(LOCATION + "Expected rank of " + dname + " dataset to be 1. Got " + std::to_string(rank));
+      throw std::runtime_error(LOCATION + "Expected rank of " + dname + " dataset to be " + std::to_string(rank) + ". Got " + std::to_string(dataspace.getSimpleExtentNdims()));
     }
     dims.resize(rank);
     dataspace.getSimpleExtentDims(dims.data(), nullptr);
