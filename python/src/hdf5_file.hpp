@@ -1,3 +1,4 @@
+#include "H5Cpp.h"
 #include "aare/File.hpp"
 #include "aare/Frame.hpp"
 #include "aare/Hdf5File.hpp"

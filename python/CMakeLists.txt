@@ -34,30 +34,22 @@ set( PYTHON_FILES
     aare/utils.py
 )
 
-# Conditionally add HDF5-related Python files
-# HDF5
-# if (AARE_HDF5)
-#     find_package(h5py REQUIRED)
 
-#     find_package(HDF5 1.10 COMPONENTS CXX REQUIRED)
-#     add_definitions( 
-#         ${HDF5_DEFINITIONS}
-#     )
-#     list(APPEND PYTHON_FILES
-#         aare/Hdf5File.py
-#     )
-#     if(HDF5_FOUND)
-#         target_sources(_aare PRIVATE
-#             ${CMAKE_CURRENT_SOURCE_DIR}/src/Hdf5File.cpp
-#             ${CMAKE_CURRENT_SOURCE_DIR}/src/Hdf5MasterFile.cpp
-#         )
-#         target_link_libraries(_aare PUBLIC ${HDF5_LIBRARIES})
-#         target_include_directories(_aare PUBLIC ${HDF5_INCLUDE_DIRS})    
-#     endif()
-#     if(H5PY_FOUND)
-#         set(H5PY_INCLUDE_DIRS ${H5PY_INCLUDE_DIR})
-#         set(H5PY_LIBRARIES ${PYTHON_LIBRARIES})
-# endif()
+#HDF5
+if (AARE_HDF5)
+    find_package(HDF5 1.10 COMPONENTS CXX REQUIRED)
+    add_definitions( 
+        ${HDF5_DEFINITIONS}
+    )
+    list(APPEND PYTHON_FILES
+        aare/Hdf5File.py
+    )
+    if(HDF5_FOUND)
+        add_definitions(-DHDF5_FOUND)
+        target_link_libraries(_aare PUBLIC ${HDF5_LIBRARIES})
+        target_include_directories(_aare PUBLIC ${HDF5_INCLUDE_DIRS})    
+    endif()
+endif()
 
 # Copy the python files to the build directory
 foreach(FILE ${PYTHON_FILES})

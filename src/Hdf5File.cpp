@@ -55,7 +55,7 @@ void Hdf5File::read_into(std::byte *image_buf, size_t n_frames,
     }
 };
 
-size_t Hdf5File::n_mod() const { return 1; } // n_subfile_parts; }
+size_t Hdf5File::n_mod() const { return 1; }
 
 size_t Hdf5File::bytes_per_frame() {
     return m_rows * m_cols * m_master.bitdepth() / 8;
@@ -149,7 +149,7 @@ void Hdf5File::get_frame_into(size_t frame_index, std::byte *frame_buffer,
 
 void Hdf5File::get_data_into(size_t frame_index, std::byte *frame_buffer) {
     m_data_file->get_frame_into(frame_index, frame_buffer);
-    fmt::print("Read 2D data for frame {}\n", frame_index);
+    //fmt::print("Read 2D data for frame {}\n", frame_index);
 }
 
 void Hdf5File::get_header_into(size_t frame_index, DetectorHeader *header) {
@@ -218,8 +218,8 @@ void Hdf5File::open_data_file() {
         m_total_frames = m_data_file->dims[0];
         m_rows = m_data_file->dims[1];
         m_cols = m_data_file->dims[2];
-        fmt::print("Data Dataset dimensions: frames = {}, rows = {}, cols = {}\n",
-                   m_total_frames, m_rows, m_cols);
+        //fmt::print("Data Dataset dimensions: frames = {}, rows = {}, cols = {}\n",
+                  // m_total_frames, m_rows, m_cols);
     } catch (const H5::Exception &e) {
         m_data_file.reset();
         fmt::print("Exception type: {}\n", typeid(e).name());
@@ -236,8 +236,8 @@ void Hdf5File::open_header_files() {
     try {
         for (size_t i = 0; i != header_dataset_names.size(); ++i) {
             m_header_files.push_back(std::make_unique<H5Handles>(m_master.master_fname().string(), metadata_group_name + header_dataset_names[i], 1));
-            fmt::print("{} Dataset dimensions: size = {}\n",
-                   header_dataset_names[i], m_header_files[i]->dims[0]);
+            //fmt::print("{} Dataset dimensions: size = {}\n",
+             //      header_dataset_names[i], m_header_files[i]->dims[0]);
         }
     } catch (const H5::Exception &e) {
         m_header_files.clear();
