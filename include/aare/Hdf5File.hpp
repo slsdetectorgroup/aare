@@ -20,7 +20,7 @@ struct H5Handles {
   std::vector<hsize_t> count;
   std::vector<hsize_t> offset;
 
-  H5Handles(const std::string& fname, const std::string& dname, int rank):
+  H5Handles(const std::string& fname, const std::string& dname):
     file_name(fname),
     dataset_name(dname),
     file(fname, H5F_ACC_RDONLY),
@@ -28,9 +28,8 @@ struct H5Handles {
     dataspace(dataset.getSpace()),
     datatype(dataset.getDataType())
   {
-    if (dataspace.getSimpleExtentNdims() != rank) {
-      throw std::runtime_error(LOCATION + "Expected rank of " + dname + " dataset to be " + std::to_string(rank) + ". Got " + std::to_string(dataspace.getSimpleExtentNdims()));
-    }
+    // get dimensions
+    int rank = dataspace.getSimpleExtentNdims();
     dims.resize(rank);
     dataspace.getSimpleExtentDims(dims.data(), nullptr);
 
@@ -41,6 +40,13 @@ struct H5Handles {
     // header datasets
     if (rank == 1) {
       memspace = std::make_unique<H5::DataSpace>(H5S_SCALAR);
+    }  
+    // header virtual datasets
+    else if (rank == 2) {
+      hsize_t dimsm[1] = {dims[1]};
+      memspace = std::make_unique<H5::DataSpace>(1, dimsm);
+      count.push_back(dims[1]);
+      offset.push_back(0);
     } 
     // data dataset
     else {

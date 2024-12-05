@@ -87,7 +87,7 @@ DetectorHeader Hdf5File::read_header(const std::filesystem::path &fname) {
     std::vector<std::unique_ptr<H5Handles>> handles;
     try {
         for (size_t i = 0; i != header_dataset_names.size(); ++i) {
-            handles.push_back(std::make_unique<H5Handles>(fname.string(), metadata_group_name+ header_dataset_names[i], 1));
+            handles.push_back(std::make_unique<H5Handles>(fname.string(), metadata_group_name+ header_dataset_names[i]));
         }
         handles[0]->get_frame_into(0, reinterpret_cast<std::byte *>(&(h.frameNumber)));
         handles[1]->get_frame_into(0, reinterpret_cast<std::byte *>(&(h.expLength)));
@@ -213,7 +213,7 @@ void Hdf5File::open_data_file() {
         throw std::runtime_error(LOCATION +
                                  "Unsupported mode. Can only read Hdf5 files.");
     try {
-        m_data_file = std::make_unique<H5Handles>(m_master.master_fname().string(), metadata_group_name + "/data", 3);
+        m_data_file = std::make_unique<H5Handles>(m_master.master_fname().string(), metadata_group_name + "/data");
 
         m_total_frames = m_data_file->dims[0];
         m_rows = m_data_file->dims[1];
@@ -235,7 +235,7 @@ void Hdf5File::open_header_files() {
                                  "Unsupported mode. Can only read Hdf5 files.");
     try {
         for (size_t i = 0; i != header_dataset_names.size(); ++i) {
-            m_header_files.push_back(std::make_unique<H5Handles>(m_master.master_fname().string(), metadata_group_name + header_dataset_names[i], 1));
+            m_header_files.push_back(std::make_unique<H5Handles>(m_master.master_fname().string(), metadata_group_name + header_dataset_names[i]));
             //fmt::print("{} Dataset dimensions: size = {}\n",
              //      header_dataset_names[i], m_header_files[i]->dims[0]);
         }
