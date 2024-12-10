@@ -23,7 +23,7 @@ enum class eventType {
     UNDEFINED_EVENT = -1 /** undefined */
 };
 
-template <typename FRAME_TYPE = uint16_t, typename PEDESTAL_TYPE = double>
+template <typename FRAME_TYPE = uint16_t, typename PEDESTAL_TYPE = double, typename CT = int32_t>
 class ClusterFinder {
     Shape<2> m_image_size;
     const int m_cluster_sizeX;
@@ -33,6 +33,8 @@ class ClusterFinder {
     const double c2;
     const double c3;
     Pedestal<PEDESTAL_TYPE> m_pedestal;
+    ClusterVector<CT> m_clusters;
+
 
   public:
     ClusterFinder(Shape<2> image_size, Shape<2> cluster_size,
@@ -42,9 +44,10 @@ class ClusterFinder {
           m_nSigma(nSigma),
           c2(sqrt((m_cluster_sizeY + 1) / 2 * (m_cluster_sizeX + 1) / 2)),
           c3(sqrt(m_cluster_sizeX * m_cluster_sizeY)),
-          m_pedestal(image_size[0], image_size[1]) {
-        fmt::print("TypeIndex: {}\n", sizeof(Dtype));
-    };
+          m_pedestal(image_size[0], image_size[1]),
+          m_clusters(m_cluster_sizeX, m_cluster_sizeY, 1'000'000) {
+            // clusters = ClusterVector<CT>(m_cluster_sizeX, m_cluster_sizeY, 2000);
+          };
 
     void push_pedestal_frame(NDView<FRAME_TYPE, 2> frame) {
         m_pedestal.push(frame);
@@ -54,17 +57,20 @@ class ClusterFinder {
 
     NDArray<PEDESTAL_TYPE, 2> noise() { return m_pedestal.std(); }
 
-    ClusterVector<PEDESTAL_TYPE>
-    find_clusters_without_threshold(NDView<FRAME_TYPE, 2> frame) {
-        // std::vector<DynamicCluster> clusters;
-        // std::vector<Cluster> clusters; //Hard coded 3x3 cluster
-        // clusters.reserve(2000);
-        ClusterVector<PEDESTAL_TYPE> clusters(m_cluster_sizeX, m_cluster_sizeY);
+    ClusterVector<CT> steal_clusters() {
+        ClusterVector<CT> tmp = std::move(m_clusters);
+        m_clusters = ClusterVector<CT>(m_cluster_sizeX, m_cluster_sizeY, 2000);
+        return tmp;
+    }
+    void
+    find_clusters(NDView<FRAME_TYPE, 2> frame) {
+        // // size_t capacity = 2000;
+        // // ClusterVector<CT> clusters(m_cluster_sizeX, m_cluster_sizeY, capacity);
         eventType event_type = eventType::PEDESTAL;
 
-        // TODO! deal with even size clusters
-        // currently 3,3 -> +/- 1
-        //  4,4 -> +/- 2
+        // // TODO! deal with even size clusters
+        // // currently 3,3 -> +/- 1
+        // //  4,4 -> +/- 2
         short dy = m_cluster_sizeY / 2;
         short dx = m_cluster_sizeX / 2;
 
@@ -108,29 +114,29 @@ class ClusterFinder {
                     event_type = eventType::PHOTON_MAX;
 
                     short i = 0;
-                    std::vector<PEDESTAL_TYPE> cluster_data(m_cluster_sizeX *
+                    std::vector<CT> cluster_data(m_cluster_sizeX *
                                                             m_cluster_sizeY);
 
                     for (short ir = -dy; ir < dy + 1; ir++) {
                         for (short ic = -dx; ic < dx + 1; ic++) {
                             if (ix + ic >= 0 && ix + ic < frame.shape(1) &&
                                 iy + ir >= 0 && iy + ir < frame.shape(0)) {
-                                PEDESTAL_TYPE tmp =
-                                    static_cast<PEDESTAL_TYPE>(
+                                CT tmp =
+                                    static_cast<CT>(
                                         frame(iy + ir, ix + ic)) -
                                     m_pedestal.mean(iy + ir, ix + ic);
-                                cluster_data[i] = tmp;
+                                cluster_data[i] = tmp; //Watch for out of bounds access
                                 i++;
                             }
                         }
                     }
-                    clusters.push_back(
+                    m_clusters.push_back(
                         ix, iy,
                         reinterpret_cast<std::byte *>(cluster_data.data()));
                 }
             }
         }
-        return clusters;
+        // return clusters;
     }
 
     // template <typename FRAME_TYPE, typename PEDESTAL_TYPE>

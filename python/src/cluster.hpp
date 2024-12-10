@@ -26,12 +26,15 @@ void define_cluster_vector(py::module &m, const std::string &typestr) {
                      "i:x:\ni:y:\n({},{}){}:data:", v.cluster_size_x(),
                      v.cluster_size_y(), typestr);
              })
-        .def("sum", &ClusterVector<T>::sum)
+        .def("sum", [](ClusterVector<T> &self) {
+            auto *vec = new std::vector<T>(self.sum());
+            return return_vector(vec);
+        })
         .def_buffer([typestr](ClusterVector<T> &v) -> py::buffer_info {
             return py::buffer_info(
                 v.data(),           /* Pointer to buffer */
                 v.element_offset(), /* Size of one scalar */
-                fmt::format("i:x:\ni:y:\n({},{}){}:data:", v.cluster_size_x(),
+                fmt::format("i:x:\ni:y:\n{}{}:data:", v.cluster_size_x()*
                             v.cluster_size_y(),
                             typestr), /* Format descriptor */
                 1,                    /* Number of dimensions */
@@ -62,13 +65,17 @@ void define_cluster_finder_bindings(py::module &m) {
                  *arr = self.noise();
                  return return_image_data(arr);
              })
-        .def("find_clusters_without_threshold",
+        .def("steal_clusters",
+             [](ClusterFinder<uint16_t, pd_type> &self) {
+                 auto v = new ClusterVector<int>(self.steal_clusters());
+                 return v;
+             })
+        .def("find_clusters",
              [](ClusterFinder<uint16_t, pd_type> &self,
                 py::array_t<uint16_t> frame) {
                  auto view = make_view_2d(frame);
-                 auto *vec = new ClusterVector<pd_type>(
-                     self.find_clusters_without_threshold(view));
-                 return vec;
+                 self.find_clusters(view);
+                 return;
              });
 
     m.def("hello", []() {

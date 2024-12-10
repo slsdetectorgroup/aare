@@ -22,7 +22,9 @@ im = ax.imshow(cf.pedestal())
 cf.pedestal()
 cf.noise()
 
-N = 200
+
+
+N = 500
 t0 = time.perf_counter()
 hist1 = bh.Histogram(bh.axis.Regular(40, -2, 4000))
 f.seek(0)
@@ -31,23 +33,26 @@ t0 = time.perf_counter()
 data = f.read_n(N)
 t_elapsed = time.perf_counter()-t0
 
-print(f'Reading {N} frames took {t_elapsed:.3f}s {N/t_elapsed:.0f} FPS')
 
-clusters = []
+n_bytes = data.itemsize*data.size
+
+print(f'Reading {N} frames took {t_elapsed:.3f}s {N/t_elapsed:.0f} FPS, {n_bytes/1024**2:.4f} GB/s')
+
+
 for frame in data:
-    clusters += [cf.find_clusters_without_threshold(frame)]
+    a = cf.find_clusters(frame)
 
+clusters = cf.steal_clusters()
 
-t_elapsed = time.perf_counter()-t0
-print(f'Clustering {N} frames took {t_elapsed:.2f}s  {N/t_elapsed:.0f} FPS')
-
-
-t0 = time.perf_counter()
-total_clusters = 0
-for cl in clusters:
-        arr = np.array(cl, copy = False)
-        hist1.fill(arr['data'].sum(axis = 1).sum(axis = 1))
-        total_clusters += cl.size
 # t_elapsed = time.perf_counter()-t0
-print(f'Filling histogram with {total_clusters} clusters took: {t_elapsed:.3f}s')
-print(f'Cluster per frame {total_clusters/N:.3f}')
+# print(f'Clustering {N} frames took {t_elapsed:.2f}s  {N/t_elapsed:.0f} FPS')
+
+
+# t0 = time.perf_counter()
+# total_clusters = clusters.size
+
+# hist1.fill(clusters.sum())
+
+# t_elapsed = time.perf_counter()-t0
+# print(f'Filling histogram with the sum of {total_clusters} clusters took: {t_elapsed:.3f}s, {total_clusters/t_elapsed:.3g} clust/s')
+# print(f'Average number of clusters per frame {total_clusters/N:.3f}')
