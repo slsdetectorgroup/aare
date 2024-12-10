@@ -1,4 +1,4 @@
-
+#pragma once
 
 #include "aare/defs.hpp"
 #include <filesystem>

@@ -18,6 +18,8 @@ template <typename SUM_TYPE = double> class Pedestal {
 
     uint32_t m_samples;
     NDArray<uint32_t, 2> m_cur_samples;
+    
+    //TODO! in case of int needs to be changed to uint64_t
     NDArray<SUM_TYPE, 2> m_sum;
     NDArray<SUM_TYPE, 2> m_sum2;
 

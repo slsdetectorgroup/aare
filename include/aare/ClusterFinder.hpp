@@ -1,4 +1,6 @@
 #pragma once
+#include "aare/ClusterFile.hpp"
+#include "aare/ClusterVector.hpp"
 #include "aare/Dtype.hpp"
 #include "aare/NDArray.hpp"
 #include "aare/NDView.hpp"
@@ -9,7 +11,7 @@
 namespace aare {
 
 /** enum to define the event types */
-enum eventType {
+enum class eventType {
     PEDESTAL,   /** pedestal */
     NEIGHBOUR,  /** neighbour i.e. below threshold, but in the cluster of a
                    photon */
@@ -33,116 +35,99 @@ class ClusterFinder {
     Pedestal<PEDESTAL_TYPE> m_pedestal;
 
   public:
-    ClusterFinder(Shape<2> image_size, Shape<2>cluster_size, double nSigma = 5.0,
-                  double threshold = 0.0)
-        : m_image_size(image_size), m_cluster_sizeX(cluster_size[0]), m_cluster_sizeY(cluster_size[1]),
-          m_threshold(threshold), m_nSigma(nSigma),
+    ClusterFinder(Shape<2> image_size, Shape<2> cluster_size,
+                  double nSigma = 5.0, double threshold = 0.0)
+        : m_image_size(image_size), m_cluster_sizeX(cluster_size[0]),
+          m_cluster_sizeY(cluster_size[1]), m_threshold(threshold),
+          m_nSigma(nSigma),
           c2(sqrt((m_cluster_sizeY + 1) / 2 * (m_cluster_sizeX + 1) / 2)),
           c3(sqrt(m_cluster_sizeX * m_cluster_sizeY)),
           m_pedestal(image_size[0], image_size[1]) {
-
-              // c2 = sqrt((cluster_sizeY + 1) / 2 * (cluster_sizeX + 1) / 2);
-              // c3 = sqrt(cluster_sizeX * cluster_sizeY);
-          };
+        fmt::print("TypeIndex: {}\n", sizeof(Dtype));
+    };
 
     void push_pedestal_frame(NDView<FRAME_TYPE, 2> frame) {
         m_pedestal.push(frame);
     }
 
-    NDArray<PEDESTAL_TYPE, 2> pedestal() {
-        return m_pedestal.mean();
-    }
+    NDArray<PEDESTAL_TYPE, 2> pedestal() { return m_pedestal.mean(); }
 
-    std::vector<DynamicCluster>
-    find_clusters_without_threshold(NDView<FRAME_TYPE, 2> frame,
-                                    // Pedestal<PEDESTAL_TYPE> &pedestal,
-                                    bool late_update = false) {
-        struct pedestal_update {
-            int x;
-            int y;
-            FRAME_TYPE value;
-        };
-        std::vector<pedestal_update> pedestal_updates;
+    NDArray<PEDESTAL_TYPE, 2> noise() { return m_pedestal.std(); }
 
-        std::vector<DynamicCluster> clusters;
-        std::vector<std::vector<eventType>> eventMask;
-        for (int i = 0; i < frame.shape(0); i++) {
-            eventMask.push_back(std::vector<eventType>(frame.shape(1)));
-        }
-        long double val;
-        long double max;
+    ClusterVector<PEDESTAL_TYPE>
+    find_clusters_without_threshold(NDView<FRAME_TYPE, 2> frame) {
+        // std::vector<DynamicCluster> clusters;
+        // std::vector<Cluster> clusters; //Hard coded 3x3 cluster
+        // clusters.reserve(2000);
+        ClusterVector<PEDESTAL_TYPE> clusters(m_cluster_sizeX, m_cluster_sizeY);
+        eventType event_type = eventType::PEDESTAL;
+
+        // TODO! deal with even size clusters
+        // currently 3,3 -> +/- 1
+        //  4,4 -> +/- 2
+        short dy = m_cluster_sizeY / 2;
+        short dx = m_cluster_sizeX / 2;
 
         for (int iy = 0; iy < frame.shape(0); iy++) {
             for (int ix = 0; ix < frame.shape(1); ix++) {
-                // initialize max and total
-                max = std::numeric_limits<FRAME_TYPE>::min();
-                long double total = 0;
-                eventMask[iy][ix] = PEDESTAL;
+                PEDESTAL_TYPE max = std::numeric_limits<FRAME_TYPE>::min();
+                PEDESTAL_TYPE total = 0;
 
-                for (short ir = -(m_cluster_sizeY / 2);
-                     ir < (m_cluster_sizeY / 2) + 1; ir++) {
-                    for (short ic = -(m_cluster_sizeX / 2);
-                         ic < (m_cluster_sizeX / 2) + 1; ic++) {
+                for (short ir = -dy; ir < dy + 1; ir++) {
+                    for (short ic = -dx; ic < dx + 1; ic++) {
                         if (ix + ic >= 0 && ix + ic < frame.shape(1) &&
                             iy + ir >= 0 && iy + ir < frame.shape(0)) {
-                            val = frame(iy + ir, ix + ic) -
-                                  m_pedestal.mean(iy + ir, ix + ic);
+                            PEDESTAL_TYPE val =
+                                frame(iy + ir, ix + ic) -
+                                m_pedestal.mean(iy + ir, ix + ic);
+
                             total += val;
-                            if (val > max) {
-                                max = val;
-                            }
+                            max = std::max(max, val);
                         }
                     }
                 }
-                auto rms = m_pedestal.std(iy, ix);
+                PEDESTAL_TYPE rms = m_pedestal.std(iy, ix);
+                PEDESTAL_TYPE value = (frame(iy, ix) - m_pedestal.mean(iy, ix));
 
-                if (frame(iy, ix) - m_pedestal.mean(iy, ix) < -m_nSigma * rms) {
-                    eventMask[iy][ix] = NEGATIVE_PEDESTAL;
-                    continue;
+                if (value < -m_nSigma * rms) {
+                    continue; // NEGATIVE_PEDESTAL go to next pixel
+                              // TODO! No pedestal update???
                 } else if (max > m_nSigma * rms) {
-                    eventMask[iy][ix] = PHOTON;
-
+                    event_type = eventType::PHOTON;
+                    if (value < max)
+                        continue; // Not max go to the next pixel
                 } else if (total > c3 * m_nSigma * rms) {
-                    eventMask[iy][ix] = PHOTON;
+                    event_type = eventType::PHOTON;
                 } else {
-                    if (late_update) {
-                        pedestal_updates.push_back({ix, iy, frame(iy, ix)});
-                    } else {
-                        m_pedestal.push(iy, ix, frame(iy, ix));
-                    }
-                    continue;
+                    m_pedestal.push(iy, ix, frame(iy, ix));
+                    continue; // It was a pedestal value nothing to store
                 }
-                if (eventMask[iy][ix] == PHOTON &&
-                    (frame(iy, ix) - m_pedestal.mean(iy, ix)) >= max) {
-                    eventMask[iy][ix] = PHOTON_MAX;
-                    DynamicCluster cluster(m_cluster_sizeX, m_cluster_sizeY,
-                                    Dtype(typeid(PEDESTAL_TYPE)));
-                    cluster.x = ix;
-                    cluster.y = iy;
-                    short i = 0;
 
-                    for (short ir = -(m_cluster_sizeY / 2);
-                         ir < (m_cluster_sizeY / 2) + 1; ir++) {
-                        for (short ic = -(m_cluster_sizeX / 2);
-                             ic < (m_cluster_sizeX / 2) + 1; ic++) {
+                // Store cluster
+                if (event_type == eventType::PHOTON && value >= max) {
+                    event_type = eventType::PHOTON_MAX;
+
+                    short i = 0;
+                    std::vector<PEDESTAL_TYPE> cluster_data(m_cluster_sizeX *
+                                                            m_cluster_sizeY);
+
+                    for (short ir = -dy; ir < dy + 1; ir++) {
+                        for (short ic = -dx; ic < dx + 1; ic++) {
                             if (ix + ic >= 0 && ix + ic < frame.shape(1) &&
                                 iy + ir >= 0 && iy + ir < frame.shape(0)) {
                                 PEDESTAL_TYPE tmp =
                                     static_cast<PEDESTAL_TYPE>(
                                         frame(iy + ir, ix + ic)) -
                                     m_pedestal.mean(iy + ir, ix + ic);
-                                cluster.set<PEDESTAL_TYPE>(i, tmp);
+                                cluster_data[i] = tmp;
                                 i++;
                             }
                         }
                     }
-                    clusters.push_back(cluster);
+                    clusters.push_back(
+                        ix, iy,
+                        reinterpret_cast<std::byte *>(cluster_data.data()));
                 }
-            }
-        }
-        if (late_update) {
-            for (auto &update : pedestal_updates) {
-                m_pedestal.push(update.y, update.x, update.value);
             }
         }
         return clusters;
@@ -176,7 +161,7 @@ class ClusterFinder {
         // iterate over frame pixels
         for (int iy = 0; iy < frame.shape(0); iy++) {
             for (int ix = 0; ix < frame.shape(1); ix++) {
-                eventMask[iy][ix] = PEDESTAL;
+                eventMask[iy][ix] = eventType::PEDESTAL;
                 // initialize max and total
                 FRAME_TYPE max = std::numeric_limits<FRAME_TYPE>::min();
                 long double total = 0;
@@ -184,7 +169,7 @@ class ClusterFinder {
                     pedestal.push(iy, ix, frame(iy, ix));
                     continue;
                 }
-                eventMask[iy][ix] = NEIGHBOUR;
+                eventMask[iy][ix] = eventType::NEIGHBOUR;
                 // iterate over cluster pixels around the current pixel (ix,iy)
                 for (short ir = -(m_cluster_sizeY / 2);
                      ir < (m_cluster_sizeY / 2) + 1; ir++) {
@@ -220,18 +205,18 @@ class ClusterFinder {
                         tthr2 = tthr - tthr2;
                 }
                 if (total > tthr1 || max > tthr) {
-                    eventMask[iy][ix] = PHOTON;
+                    eventMask[iy][ix] = eventType::PHOTON;
                     nph(iy, ix) += 1;
                     rest(iy, ix) -= m_threshold;
                 } else {
                     pedestal.push(iy, ix, frame(iy, ix));
                     continue;
                 }
-                if (eventMask[iy][ix] == PHOTON &&
+                if (eventMask[iy][ix] == eventType::PHOTON &&
                     frame(iy, ix) - pedestal.mean(iy, ix) >= max) {
-                    eventMask[iy][ix] = PHOTON_MAX;
+                    eventMask[iy][ix] = eventType::PHOTON_MAX;
                     DynamicCluster cluster(m_cluster_sizeX, m_cluster_sizeY,
-                                    Dtype(typeid(FRAME_TYPE)));
+                                           Dtype(typeid(FRAME_TYPE)));
                     cluster.x = ix;
                     cluster.y = iy;
                     short i = 0;
