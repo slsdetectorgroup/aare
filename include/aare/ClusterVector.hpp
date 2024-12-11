@@ -6,14 +6,25 @@
 #include <fmt/core.h>
 
 template <typename T> class ClusterVector {
-    int32_t m_cluster_size_x;
-    int32_t m_cluster_size_y;
+    using value_type = T;
+    using coord_t = int16_t;
+    coord_t m_cluster_size_x;
+    coord_t m_cluster_size_y;
     std::byte *m_data{};
     size_t m_size{0};
     size_t m_capacity;
+    /*
+    Format string used in the python bindings to create a numpy
+    array from the buffer
+    = - native byte order
+    h - short
+    d - double
+    i - int
+    */
+    constexpr static char m_fmt_base[] = "=h:x:\nh:y:\n({},{}){}:data:" ;
 
   public:
-    ClusterVector(int32_t cluster_size_x, int32_t cluster_size_y,
+    ClusterVector(coord_t cluster_size_x, coord_t cluster_size_y,
                   size_t capacity = 1024)
         : m_cluster_size_x(cluster_size_x), m_cluster_size_y(cluster_size_y),
           m_capacity(capacity) {
@@ -25,15 +36,8 @@ template <typename T> class ClusterVector {
         delete[] m_data;
     }
 
-    // ClusterVector(const ClusterVector & other){
-    //     m_cluster_size_x = other.m_cluster_size_x;
-    //     m_cluster_size_y = other.m_cluster_size_y;
-    //     m_data = new std::byte[other.m_capacity];
-    //     std::copy(other.m_data, other.m_data + other.m_capacity, m_data);
-    //     m_size = other.m_size;
-    //     m_capacity = other.m_capacity;
-    // }
-
+   
+    //Move constructor
     ClusterVector(ClusterVector &&other) noexcept
         : m_cluster_size_x(other.m_cluster_size_x),
           m_cluster_size_y(other.m_cluster_size_y), m_data(other.m_data),
@@ -66,15 +70,15 @@ template <typename T> class ClusterVector {
     }
 
     // data better hold data of the right size!
-    void push_back(int32_t x, int32_t y, const std::byte *data) {
+    void push_back(coord_t x, coord_t y, const std::byte *data) {
         if (m_size == m_capacity) {
             allocate_buffer(m_capacity * 2);
         }
         std::byte *ptr = element_ptr(m_size);
-        *reinterpret_cast<int32_t *>(ptr) = x;
-        ptr += sizeof(int32_t);
-        *reinterpret_cast<int32_t *>(ptr) = y;
-        ptr += sizeof(int32_t);
+        *reinterpret_cast<coord_t *>(ptr) = x;
+        ptr += sizeof(coord_t);
+        *reinterpret_cast<coord_t *>(ptr) = y;
+        ptr += sizeof(coord_t);
 
         std::copy(data, data + m_cluster_size_x * m_cluster_size_y * sizeof(T),
                   ptr);
@@ -85,7 +89,7 @@ template <typename T> class ClusterVector {
         std::vector<T> sums(m_size);
         const size_t stride = element_offset();
         const size_t n_pixels = m_cluster_size_x * m_cluster_size_y;
-        std::byte *ptr = m_data + 2 * sizeof(int32_t); // skip x and y
+        std::byte *ptr = m_data + 2 * sizeof(coord_t); // skip x and y
 
         for (size_t i = 0; i < m_size; i++) {
             sums[i] =
@@ -109,6 +113,12 @@ template <typename T> class ClusterVector {
     int16_t cluster_size_y() const { return m_cluster_size_y; }
 
     std::byte *data() { return m_data; }
+    const std::byte *data() const { return m_data; }
+
+    const std::string_view fmt_base() const {
+        //TODO! how do we match on coord_t?
+        return m_fmt_base;
+    }
 
   private:
     void allocate_buffer(size_t new_capacity) {

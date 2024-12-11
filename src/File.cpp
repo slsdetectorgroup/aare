@@ -58,6 +58,8 @@ void File::read_into(std::byte *image_buf) { file_impl->read_into(image_buf); }
 void File::read_into(std::byte *image_buf, size_t n_frames) {
     file_impl->read_into(image_buf, n_frames);
 }
+
+size_t File::frame_number() { return file_impl->frame_number(tell()); }
 size_t File::frame_number(size_t frame_index) {
     return file_impl->frame_number(frame_index);
 }

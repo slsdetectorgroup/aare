@@ -21,25 +21,25 @@ void define_cluster_vector(py::module &m, const std::string &typestr) {
         .def("element_offset",
              py::overload_cast<>(&ClusterVector<T>::element_offset, py::const_))
         .def_property_readonly("fmt",
-             [typestr](ClusterVector<T> &v) {
+             [typestr](ClusterVector<T> &self) {
                  return fmt::format(
-                     "i:x:\ni:y:\n({},{}){}:data:", v.cluster_size_x(),
-                     v.cluster_size_y(), typestr);
+                     self.fmt_base(), self.cluster_size_x(),
+                     self.cluster_size_y(), typestr);
              })
         .def("sum", [](ClusterVector<T> &self) {
             auto *vec = new std::vector<T>(self.sum());
             return return_vector(vec);
         })
-        .def_buffer([typestr](ClusterVector<T> &v) -> py::buffer_info {
+        .def_buffer([typestr](ClusterVector<T> &self) -> py::buffer_info {
             return py::buffer_info(
-                v.data(),           /* Pointer to buffer */
-                v.element_offset(), /* Size of one scalar */
-                fmt::format("i:x:\ni:y:\n{}{}:data:", v.cluster_size_x()*
-                            v.cluster_size_y(),
+                self.data(),           /* Pointer to buffer */
+                self.element_offset(), /* Size of one scalar */
+                fmt::format(self.fmt_base(), self.cluster_size_x(),
+                            self.cluster_size_y(),
                             typestr), /* Format descriptor */
                 1,                    /* Number of dimensions */
-                {v.size()},           /* Buffer dimensions */
-                {v.element_offset()}  /* Strides (in bytes) for each index */
+                {self.size()},           /* Buffer dimensions */
+                {self.element_offset()}  /* Strides (in bytes) for each index */
             );
         });
 }
