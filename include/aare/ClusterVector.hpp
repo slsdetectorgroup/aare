@@ -2,9 +2,18 @@
 #include <cstddef>
 #include <cstdint>
 #include <numeric>
+#include <vector>
 
 #include <fmt/core.h>
 
+namespace aare {
+
+/**
+ * @brief ClusterVector is a container for clusters of various sizes. It uses a 
+ * contiguous memory buffer to store the clusters. 
+ * @note push_back can invalidate pointers to elements in the container
+ * @tparam T data type of the pixels in the cluster
+ */
 template <typename T> class ClusterVector {
     using value_type = T;
     using coord_t = int16_t;
@@ -24,6 +33,12 @@ template <typename T> class ClusterVector {
     constexpr static char m_fmt_base[] = "=h:x:\nh:y:\n({},{}){}:data:" ;
 
   public:
+    /**
+     * @brief Construct a new ClusterVector object
+     * @param cluster_size_x size of the cluster in x direction
+     * @param cluster_size_y size of the cluster in y direction
+     * @param capacity initial capacity of the buffer in number of clusters
+     */
     ClusterVector(coord_t cluster_size_x, coord_t cluster_size_y,
                   size_t capacity = 1024)
         : m_cluster_size_x(cluster_size_x), m_cluster_size_y(cluster_size_y),
@@ -31,8 +46,6 @@ template <typename T> class ClusterVector {
         allocate_buffer(capacity);
     }
     ~ClusterVector() {
-        fmt::print("~ClusterVector - size: {}, capacity: {}\n", m_size,
-                   m_capacity);
         delete[] m_data;
     }
 
@@ -63,13 +76,24 @@ template <typename T> class ClusterVector {
         return *this;
     }
 
+    /**
+     * @brief Reserve space for at least capacity clusters
+     * @param capacity number of clusters to reserve space for
+     * @note If capacity is less than the current capacity, the function does nothing. 
+     */
     void reserve(size_t capacity) {
         if (capacity > m_capacity) {
             allocate_buffer(capacity);
         }
     }
 
-    // data better hold data of the right size!
+    /**
+     * @brief Add a cluster to the vector
+     * @param x x-coordinate of the cluster
+     * @param y y-coordinate of the cluster
+     * @param data pointer to the data of the cluster
+     * @warning The data pointer must point to a buffer of size cluster_size_x * cluster_size_y * sizeof(T)
+     */
     void push_back(coord_t x, coord_t y, const std::byte *data) {
         if (m_size == m_capacity) {
             allocate_buffer(m_capacity * 2);
@@ -85,6 +109,10 @@ template <typename T> class ClusterVector {
         m_size++;
     }
 
+    /**
+     * @brief Sum the pixels in each cluster
+     * @return std::vector<T> vector of sums for each cluster
+     */
     std::vector<T> sum() {
         std::vector<T> sums(m_size);
         const size_t stride = element_offset();
@@ -101,12 +129,23 @@ template <typename T> class ClusterVector {
     }
 
     size_t size() const { return m_size; }
+    size_t capacity() const { return m_capacity; }
+    
+    /**
+     * @brief Return the offset in bytes for a single cluster
+     */
     size_t element_offset() const {
         return sizeof(m_cluster_size_x) + sizeof(m_cluster_size_y) +
                m_cluster_size_x * m_cluster_size_y * sizeof(T);
     }
+    /**
+     * @brief Return the offset in bytes for the i-th cluster
+     */
     size_t element_offset(size_t i) const { return element_offset() * i; }
 
+    /**
+     * @brief Return a pointer to the i-th cluster
+     */
     std::byte *element_ptr(size_t i) { return m_data + element_offset(i); }
 
     int16_t cluster_size_x() const { return m_cluster_size_x; }
@@ -123,9 +162,6 @@ template <typename T> class ClusterVector {
   private:
     void allocate_buffer(size_t new_capacity) {
         size_t num_bytes = element_offset() * new_capacity;
-        fmt::print(
-            "ClusterVector allocating {} elements for a total of {} bytes\n",
-            new_capacity, num_bytes);
         std::byte *new_data = new std::byte[num_bytes]{};
         std::copy(m_data, m_data + element_offset() * m_size, new_data);
         delete[] m_data;
@@ -133,3 +169,5 @@ template <typename T> class ClusterVector {
         m_capacity = new_capacity;
     }
 };
+
+} // namespace aare

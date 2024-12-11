@@ -46,6 +46,7 @@ AARE
     Dtype
     ClusterFinder
     ClusterFile
+    ClusterVector
     Pedestal
     RawFile
     RawSubFile

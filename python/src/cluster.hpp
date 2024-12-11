@@ -10,7 +10,7 @@
 #include <pybind11/stl.h>
 
 namespace py = pybind11;
-using pd_type = double;
+using pd_type = float;
 
 template <typename T>
 void define_cluster_vector(py::module &m, const std::string &typestr) {
@@ -46,7 +46,9 @@ void define_cluster_vector(py::module &m, const std::string &typestr) {
 
 void define_cluster_finder_bindings(py::module &m) {
     py::class_<ClusterFinder<uint16_t, pd_type>>(m, "ClusterFinder")
-        .def(py::init<Shape<2>, Shape<2>>())
+        .def(py::init<Shape<2>, Shape<2>, pd_type, size_t>(), py::arg("image_size"),
+             py::arg("cluster_size"), py::arg("n_sigma") = 5.0,
+             py::arg("capacity") = 1'000'000)
         .def("push_pedestal_frame",
              [](ClusterFinder<uint16_t, pd_type> &self,
                 py::array_t<uint16_t> frame) {
@@ -66,10 +68,10 @@ void define_cluster_finder_bindings(py::module &m) {
                  return return_image_data(arr);
              })
         .def("steal_clusters",
-             [](ClusterFinder<uint16_t, pd_type> &self) {
-                 auto v = new ClusterVector<int>(self.steal_clusters());
+             [](ClusterFinder<uint16_t, pd_type> &self, bool realloc_same_capacity) {
+                 auto v = new ClusterVector<int>(self.steal_clusters(realloc_same_capacity));
                  return v;
-             })
+             }, py::arg("realloc_same_capacity") = false)
         .def("find_clusters",
              [](ClusterFinder<uint16_t, pd_type> &self,
                 py::array_t<uint16_t> frame) {
@@ -78,36 +80,11 @@ void define_cluster_finder_bindings(py::module &m) {
                  return;
              });
 
-    m.def("hello", []() {
-        fmt::print("Hello from C++\n");
-        auto v = new ClusterVector<int>(3, 3);
-        int data[] = {1, 2, 3, 4, 5, 6, 7, 8, 9};
-        v->push_back(5, 30, reinterpret_cast<std::byte *>(data));
-        v->push_back(5, 55, reinterpret_cast<std::byte *>(data));
-        v->push_back(5, 20, reinterpret_cast<std::byte *>(data));
-        v->push_back(5, 30, reinterpret_cast<std::byte *>(data));
-
-        return v;
-    });
-
+   
     define_cluster_vector<int>(m, "i");
     define_cluster_vector<double>(m, "d");
+    define_cluster_vector<float>(m, "f");
 
-    // py::class_<ClusterVector<int>>(m, "ClusterVector", py::buffer_protocol())
-    //     .def(py::init<int, int>())
-    //     .def("size", &ClusterVector<int>::size)
-    //     .def("element_offset",
-    //     py::overload_cast<>(&ClusterVector<int>::element_offset, py::const_))
-    //     .def_buffer([](ClusterVector<int> &v) -> py::buffer_info {
-    //         return py::buffer_info(
-    //             v.data(),            /* Pointer to buffer */
-    //             v.element_offset(),  /* Size of one scalar */
-    //             fmt::format("h:x:\nh:y:\n({},{})i:data:", v.cluster_size_x(),
-    //             v.cluster_size_y()), /* Format descriptor */ 1, /* Number of
-    //             dimensions */ {v.size()},          /* Buffer dimensions */
-    //             {v.element_offset()} /* Strides (in bytes) for each index */
-    //         );
-    //     });
 
     py::class_<DynamicCluster>(m, "DynamicCluster", py::buffer_protocol())
         .def(py::init<int, int, Dtype>())
