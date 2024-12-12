@@ -82,8 +82,8 @@ class ClusterFinder {
         // // TODO! deal with even size clusters
         // // currently 3,3 -> +/- 1
         // //  4,4 -> +/- 2
-        short dy = m_cluster_sizeY / 2;
-        short dx = m_cluster_sizeX / 2;
+        int dy = m_cluster_sizeY / 2;
+        int dx = m_cluster_sizeX / 2;
 
         std::vector<CT> cluster_data(m_cluster_sizeX * m_cluster_sizeY);
         for (int iy = 0; iy < frame.shape(0); iy++) {
@@ -100,8 +100,8 @@ class ClusterFinder {
                     continue; // NEGATIVE_PEDESTAL go to next pixel
                               // TODO! No pedestal update???
 
-                for (short ir = -dy; ir < dy + 1; ir++) {
-                    for (short ic = -dx; ic < dx + 1; ic++) {
+                for (int ir = -dy; ir < dy + 1; ir++) {
+                    for (int ic = -dx; ic < dx + 1; ic++) {
                         if (ix + ic >= 0 && ix + ic < frame.shape(1) &&
                             iy + ir >= 0 && iy + ir < frame.shape(0)) {
                             PEDESTAL_TYPE val =

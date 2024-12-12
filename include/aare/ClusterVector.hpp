@@ -13,12 +13,12 @@ namespace aare {
  * contiguous memory buffer to store the clusters. 
  * @note push_back can invalidate pointers to elements in the container
  * @tparam T data type of the pixels in the cluster
+ * @tparam CoordType data type of the x and y coordinates of the cluster (normally int16_t)
  */
-template <typename T> class ClusterVector {
+template <typename T, typename CoordType=int16_t> class ClusterVector {
     using value_type = T;
-    using coord_t = int16_t;
-    coord_t m_cluster_size_x;
-    coord_t m_cluster_size_y;
+    size_t m_cluster_size_x;
+    size_t m_cluster_size_y;
     std::byte *m_data{};
     size_t m_size{0};
     size_t m_capacity;
@@ -39,7 +39,7 @@ template <typename T> class ClusterVector {
      * @param cluster_size_y size of the cluster in y direction
      * @param capacity initial capacity of the buffer in number of clusters
      */
-    ClusterVector(coord_t cluster_size_x, coord_t cluster_size_y,
+    ClusterVector(size_t cluster_size_x, size_t cluster_size_y,
                   size_t capacity = 1024)
         : m_cluster_size_x(cluster_size_x), m_cluster_size_y(cluster_size_y),
           m_capacity(capacity) {
@@ -94,20 +94,21 @@ template <typename T> class ClusterVector {
      * @param data pointer to the data of the cluster
      * @warning The data pointer must point to a buffer of size cluster_size_x * cluster_size_y * sizeof(T)
      */
-    void push_back(coord_t x, coord_t y, const std::byte *data) {
+    void push_back(CoordType x, CoordType y, const std::byte *data) {
         if (m_size == m_capacity) {
             allocate_buffer(m_capacity * 2);
         }
         std::byte *ptr = element_ptr(m_size);
-        *reinterpret_cast<coord_t *>(ptr) = x;
-        ptr += sizeof(coord_t);
-        *reinterpret_cast<coord_t *>(ptr) = y;
-        ptr += sizeof(coord_t);
+        *reinterpret_cast<CoordType *>(ptr) = x;
+        ptr += sizeof(CoordType);
+        *reinterpret_cast<CoordType *>(ptr) = y;
+        ptr += sizeof(CoordType);
 
         std::copy(data, data + m_cluster_size_x * m_cluster_size_y * sizeof(T),
                   ptr);
         m_size++;
     }
+
 
     /**
      * @brief Sum the pixels in each cluster
@@ -117,7 +118,7 @@ template <typename T> class ClusterVector {
         std::vector<T> sums(m_size);
         const size_t stride = element_offset();
         const size_t n_pixels = m_cluster_size_x * m_cluster_size_y;
-        std::byte *ptr = m_data + 2 * sizeof(coord_t); // skip x and y
+        std::byte *ptr = m_data + 2 * sizeof(CoordType); // skip x and y
 
         for (size_t i = 0; i < m_size; i++) {
             sums[i] =
@@ -135,7 +136,7 @@ template <typename T> class ClusterVector {
      * @brief Return the offset in bytes for a single cluster
      */
     size_t element_offset() const {
-        return sizeof(m_cluster_size_x) + sizeof(m_cluster_size_y) +
+        return 2*sizeof(CoordType)  +
                m_cluster_size_x * m_cluster_size_y * sizeof(T);
     }
     /**
@@ -148,8 +149,8 @@ template <typename T> class ClusterVector {
      */
     std::byte *element_ptr(size_t i) { return m_data + element_offset(i); }
 
-    int16_t cluster_size_x() const { return m_cluster_size_x; }
-    int16_t cluster_size_y() const { return m_cluster_size_y; }
+    size_t cluster_size_x() const { return m_cluster_size_x; }
+    size_t cluster_size_y() const { return m_cluster_size_y; }
 
     std::byte *data() { return m_data; }
     const std::byte *data() const { return m_data; }

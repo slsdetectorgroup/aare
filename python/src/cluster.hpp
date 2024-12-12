@@ -80,7 +80,26 @@ void define_cluster_finder_bindings(py::module &m) {
                  return;
              });
 
-   
+    m.def("hitmap", [](std::array<size_t, 2> image_size, ClusterVector<int32_t>& cv){
+        
+        py::array_t<int32_t> hitmap(image_size);
+        auto r = hitmap.mutable_unchecked<2>(); 
+
+        // Initialize hitmap to 0
+        for (py::ssize_t i = 0; i < r.shape(0); i++)
+            for (py::ssize_t j = 0; j < r.shape(1); j++)
+                r(i, j) = 0;
+
+        size_t stride = cv.element_offset();
+        auto ptr = cv.data();
+        for(size_t i=0; i<cv.size(); i++){
+            auto x = *reinterpret_cast<int16_t*>(ptr);
+            auto y = *reinterpret_cast<int16_t*>(ptr+sizeof(int16_t));
+            r(y, x) += 1;
+            ptr += stride;
+        }
+        return hitmap;
+    });
     define_cluster_vector<int>(m, "i");
     define_cluster_vector<double>(m, "d");
     define_cluster_vector<float>(m, "f");

@@ -3,9 +3,10 @@ from . import _aare
 
 
 from ._aare import File, RawMasterFile, RawSubFile
-from ._aare import Pedestal, ClusterFinder, VarClusterFinder
+from ._aare import Pedestal_d, Pedestal_f, ClusterFinder, VarClusterFinder
 from ._aare import DetectorType
 from ._aare import ClusterFile
+from ._aare import hitmap
 
 from .CtbRawFile import CtbRawFile
 from .RawFile import RawFile

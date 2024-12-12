@@ -87,7 +87,7 @@ class NDArray : public ArrayExpr<NDArray<T, Ndim>, Ndim> {
     // Conversion operator from array expression to array
     template <typename E>
     NDArray(ArrayExpr<E, Ndim> &&expr) : NDArray(expr.shape()) {
-        for (int i = 0; i < size_; ++i) {
+        for (size_t i = 0; i < size_; ++i) {
             data_[i] = expr[i];
         }
     }
@@ -159,11 +159,11 @@ class NDArray : public ArrayExpr<NDArray<T, Ndim>, Ndim> {
     }
 
     // TODO! is int the right type for index?
-    T &operator()(int i) { return data_[i]; }
-    const T &operator()(int i) const { return data_[i]; }
+    T &operator()(int64_t i) { return data_[i]; }
+    const T &operator()(int64_t i) const { return data_[i]; }
 
-    T &operator[](int i) { return data_[i]; }
-    const T &operator[](int i) const { return data_[i]; }
+    T &operator[](int64_t i) { return data_[i]; }
+    const T &operator[](int64_t i) const { return data_[i]; }
 
     T *data() { return data_; }
     std::byte *buffer() { return reinterpret_cast<std::byte *>(data_); }

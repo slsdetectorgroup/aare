@@ -17,8 +17,8 @@ endif()
 list(APPEND CMAKE_MODULE_PATH ${Catch2_SOURCE_DIR}/extras)
 
 add_executable(tests test.cpp)
-target_link_libraries(tests PRIVATE Catch2::Catch2WithMain)
-
+target_link_libraries(tests PRIVATE Catch2::Catch2WithMain aare_core aare_compiler_flags)
+# target_compile_options(tests PRIVATE -fno-omit-frame-pointer -fsanitize=address)
 set_target_properties(tests PROPERTIES
         RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}
         OUTPUT_NAME run_tests
@@ -34,7 +34,7 @@ set(TestSources
 target_sources(tests PRIVATE ${TestSources} )
 
 #Work around to remove, this is not the way to do it =) 
-target_link_libraries(tests PRIVATE aare_core aare_compiler_flags)
+# target_link_libraries(tests PRIVATE aare_core aare_compiler_flags)
 
 
 #configure a header to pass test file paths

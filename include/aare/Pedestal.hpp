@@ -23,31 +23,43 @@ template <typename SUM_TYPE = double> class Pedestal {
     NDArray<SUM_TYPE, 2> m_sum;
     NDArray<SUM_TYPE, 2> m_sum2;
 
+    //Cache mean since it is used over and over in the ClusterFinder
+    //This optimization is related to the access pattern of the ClusterFinder
+    //Relies on having more reads than pushes to the pedestal
+    NDArray<SUM_TYPE, 2> m_mean; 
+
   public:
     Pedestal(uint32_t rows, uint32_t cols, uint32_t n_samples = 1000)
         : m_rows(rows), m_cols(cols), m_samples(n_samples),
           m_cur_samples(NDArray<uint32_t, 2>({rows, cols}, 0)),
           m_sum(NDArray<SUM_TYPE, 2>({rows, cols})),
-          m_sum2(NDArray<SUM_TYPE, 2>({rows, cols})) {
+          m_sum2(NDArray<SUM_TYPE, 2>({rows, cols})),
+          m_mean(NDArray<SUM_TYPE, 2>({rows, cols})) {
         assert(rows > 0 && cols > 0 && n_samples > 0);
         m_sum = 0;
         m_sum2 = 0;
+        m_mean = 0;
     }
     ~Pedestal() = default;
 
     NDArray<SUM_TYPE, 2> mean() {
-        NDArray<SUM_TYPE, 2> mean_array({m_rows, m_cols});
-        for (uint32_t i = 0; i < m_rows * m_cols; i++) {
-            mean_array(i / m_cols, i % m_cols) = mean(i / m_cols, i % m_cols);
-        }
-        return mean_array;
+        return m_mean;
     }
 
     SUM_TYPE mean(const uint32_t row, const uint32_t col) const {
+        return m_mean(row, col);
+    }
+
+    SUM_TYPE std(const uint32_t row, const uint32_t col) const {
+        return std::sqrt(variance(row, col));
+    }
+
+    SUM_TYPE variance(const uint32_t row, const uint32_t col) const {
         if (m_cur_samples(row, col) == 0) {
             return 0.0;
         }
-        return m_sum(row, col) / m_cur_samples(row, col);
+        return m_sum2(row, col) / m_cur_samples(row, col) -
+               mean(row, col) * mean(row, col);
     }
 
     NDArray<SUM_TYPE, 2> variance() {
@@ -59,13 +71,7 @@ template <typename SUM_TYPE = double> class Pedestal {
         return variance_array;
     }
 
-    SUM_TYPE variance(const uint32_t row, const uint32_t col) const {
-        if (m_cur_samples(row, col) == 0) {
-            return 0.0;
-        }
-        return m_sum2(row, col) / m_cur_samples(row, col) -
-               mean(row, col) * mean(row, col);
-    }
+    
 
     NDArray<SUM_TYPE, 2> std() {
         NDArray<SUM_TYPE, 2> standard_deviation_array({m_rows, m_cols});
@@ -77,14 +83,12 @@ template <typename SUM_TYPE = double> class Pedestal {
         return standard_deviation_array;
     }
 
-    SUM_TYPE std(const uint32_t row, const uint32_t col) const {
-        return std::sqrt(variance(row, col));
-    }
+    
 
     void clear() {
-        for (uint32_t i = 0; i < m_rows * m_cols; i++) {
-            clear(i / m_cols, i % m_cols);
-        }
+        m_sum = 0;
+        m_sum2 = 0;
+        m_cur_samples = 0;
     }
 
     
@@ -104,8 +108,8 @@ template <typename SUM_TYPE = double> class Pedestal {
                 "Frame shape does not match pedestal shape");
         }
 
-        for (uint32_t row = 0; row < m_rows; row++) {
-            for (uint32_t col = 0; col < m_cols; col++) {
+        for (size_t row = 0; row < m_rows; row++) {
+            for (size_t col = 0; col < m_cols; col++) {
                 push<T>(row, col, frame(row, col));
             }
         }
@@ -134,18 +138,17 @@ template <typename SUM_TYPE = double> class Pedestal {
     template <typename T>
     void push(const uint32_t row, const uint32_t col, const T val_) {
         SUM_TYPE val = static_cast<SUM_TYPE>(val_);
-        const uint32_t idx = index(row, col);
-        if (m_cur_samples(idx) < m_samples) {
-            m_sum(idx) += val;
-            m_sum2(idx) += val * val;
-            m_cur_samples(idx)++;
+        if (m_cur_samples(row, col) < m_samples) {
+            m_sum(row, col) += val;
+            m_sum2(row, col) += val * val;
+            m_cur_samples(row, col)++;
         } else {
-            m_sum(idx) += val - m_sum(idx) / m_cur_samples(idx);
-            m_sum2(idx) += val * val - m_sum2(idx) / m_cur_samples(idx);
+            m_sum(row, col) += val - m_sum(row, col) / m_cur_samples(row, col);
+            m_sum2(row, col) += val * val - m_sum2(row, col) / m_cur_samples(row, col);
         }
+        //Since we just did a push we know that m_cur_samples(row, col) is at least 1
+        m_mean(row, col) = m_sum(row, col) / m_cur_samples(row, col);
     }
-    uint32_t index(const uint32_t row, const uint32_t col) const {
-        return row * m_cols + col;
-    };
+
 };
 } // namespace aare

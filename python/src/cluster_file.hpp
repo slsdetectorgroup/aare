@@ -10,6 +10,12 @@
 #include <pybind11/stl/filesystem.h>
 #include <string>
 
+//Disable warnings for unused parameters, as we ignore some
+//in the __exit__ method
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wunused-parameter"
+
+
 namespace py = pybind11;
 using namespace ::aare;
 
@@ -61,3 +67,5 @@ void define_cluster_file_io_bindings(py::module &m) {
             return return_vector(vec);
         });
 }
+
+#pragma GCC diagnostic pop

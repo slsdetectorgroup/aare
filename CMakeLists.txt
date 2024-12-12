@@ -40,7 +40,7 @@ option(AARE_DOCS "Build documentation" OFF)
 option(AARE_VERBOSE "Verbose output" OFF)
 option(AARE_CUSTOM_ASSERT "Use custom assert" OFF)
 option(AARE_INSTALL_PYTHONEXT "Install the python extension in the install tree under CMAKE_INSTALL_PREFIX/aare/" OFF)
-
+option(AARE_ASAN "Enable AddressSanitizer" OFF)
 
 # Configure which of the dependencies to use FetchContent for
 option(AARE_FETCH_FMT "Use FetchContent to download fmt" ON)
@@ -225,13 +225,6 @@ if(CMAKE_BUILD_TYPE STREQUAL "Release")
     target_compile_options(aare_compiler_flags INTERFACE -O3)
 else()
     message(STATUS "Debug build")
-    target_compile_options(
-        aare_compiler_flags 
-        INTERFACE 
-            -Og 
-            -ggdb3 
-    )
-
 endif()
 
 # Common flags for GCC and Clang
@@ -256,7 +249,21 @@ target_compile_options(
 endif() #GCC/Clang specific
 
 
-
+if(AARE_ASAN)
+    message(STATUS "AddressSanitizer enabled")
+    target_compile_options(
+        aare_compiler_flags 
+        INTERFACE 
+            -fsanitize=address,undefined,pointer-compare 
+            -fno-omit-frame-pointer
+    )
+    target_link_libraries(
+        aare_compiler_flags 
+        INTERFACE 
+            -fsanitize=address,undefined,pointer-compare 
+            -fno-omit-frame-pointer
+    )
+endif()
 
 
 
@@ -315,6 +322,8 @@ target_include_directories(aare_core PUBLIC
     "$<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>" 
     "$<INSTALL_INTERFACE:${CMAKE_INSTALL_INCLUDEDIR}>"
 )
+
+
 
 target_link_libraries(
     aare_core 
