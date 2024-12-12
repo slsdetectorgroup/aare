@@ -98,7 +98,9 @@ template <typename SUM_TYPE = double> class Pedestal {
         m_sum2(row, col) = 0;
         m_cur_samples(row, col) = 0;
     }
-    // frame level operations
+    
+
+
     template <typename T> void push(NDView<T, 2> frame) {
         assert(frame.size() == m_rows * m_cols);
 
@@ -113,12 +115,32 @@ template <typename SUM_TYPE = double> class Pedestal {
                 push<T>(row, col, frame(row, col));
             }
         }
-
-        // // TODO: test the effect of #pragma omp parallel for
-        // for (uint32_t index = 0; index < m_rows * m_cols; index++) {
-        //     push<T>(index / m_cols, index % m_cols, frame(index));
-        // }
     }
+
+    /**
+     * Push but don't update the cached mean. Speeds up the process
+     * when intitializing the pedestal.
+     * 
+     */
+    template <typename T> void push_no_update(NDView<T, 2> frame) {
+        assert(frame.size() == m_rows * m_cols);
+
+        // TODO! move away from m_rows, m_cols
+        if (frame.shape() != std::array<int64_t, 2>{m_rows, m_cols}) {
+            throw std::runtime_error(
+                "Frame shape does not match pedestal shape");
+        }
+
+        for (size_t row = 0; row < m_rows; row++) {
+            for (size_t col = 0; col < m_cols; col++) {
+                push_no_update<T>(row, col, frame(row, col));
+            }
+        }
+    }
+
+
+
+
     template <typename T> void push(Frame &frame) {
         assert(frame.rows() == static_cast<size_t>(m_rows) &&
                frame.cols() == static_cast<size_t>(m_cols));
@@ -148,6 +170,37 @@ template <typename SUM_TYPE = double> class Pedestal {
         }
         //Since we just did a push we know that m_cur_samples(row, col) is at least 1
         m_mean(row, col) = m_sum(row, col) / m_cur_samples(row, col);
+    }
+
+    template <typename T>
+    void push_no_update(const uint32_t row, const uint32_t col, const T val_) {
+        SUM_TYPE val = static_cast<SUM_TYPE>(val_);
+        if (m_cur_samples(row, col) < m_samples) {
+            m_sum(row, col) += val;
+            m_sum2(row, col) += val * val;
+            m_cur_samples(row, col)++;
+        } else {
+            m_sum(row, col) += val - m_sum(row, col) / m_cur_samples(row, col);
+            m_sum2(row, col) += val * val - m_sum2(row, col) / m_cur_samples(row, col);
+        }
+    }
+
+    /**
+     * @brief Update the mean of the pedestal. This is used after having done
+     * push_no_update. It is not necessary to call this function after push.
+     */
+    void update_mean(){
+        m_mean = m_sum / m_cur_samples;
+    }
+
+    template<typename T>
+    void push_fast(const uint32_t row, const uint32_t col, const T val_){
+        //Assume we reached the steady state where all pixels have
+        //m_samples samples
+        SUM_TYPE val = static_cast<SUM_TYPE>(val_);
+        m_sum(row, col) += val - m_sum(row, col) / m_samples;
+        m_sum2(row, col) += val * val - m_sum2(row, col) / m_samples;
+        m_mean(row, col) = m_sum(row, col) / m_samples;
     }
 
 };

@@ -121,7 +121,8 @@ class ClusterFinder {
                 } else if (total > c3 * m_nSigma * rms) {
                     // pass
                 } else {
-                    m_pedestal.push(iy, ix, frame(iy, ix));
+                    // m_pedestal.push(iy, ix, frame(iy, ix));
+                    m_pedestal.push_fast(iy, ix, frame(iy, ix));
                     continue; // It was a pedestal value nothing to store
                 }
 

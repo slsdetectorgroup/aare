@@ -43,5 +43,10 @@ template <typename SUM_TYPE> void define_pedestal_bindings(py::module &m, const 
         .def("push", [](Pedestal<SUM_TYPE> &pedestal, py::array_t<uint16_t> &f) {
             auto v = make_view_2d(f);
             pedestal.push(v);
-        });
+        })
+        .def("push_no_update", [](Pedestal<SUM_TYPE> &pedestal, py::array_t<uint16_t, py::array::c_style> &f) {
+            auto v = make_view_2d(f);
+            pedestal.push_no_update(v);
+        }, py::arg().noconvert())
+        .def("update_mean", &Pedestal<SUM_TYPE>::update_mean);
 }
