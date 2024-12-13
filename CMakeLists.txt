@@ -282,6 +282,7 @@ set(PUBLICHEADERS
     include/aare/ClusterFinder.hpp
     include/aare/ClusterFile.hpp
     include/aare/CtbRawFile.hpp
+    include/aare/ClusterVector.hpp
     include/aare/defs.hpp
     include/aare/Dtype.hpp
     include/aare/File.hpp
