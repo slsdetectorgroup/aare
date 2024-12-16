@@ -20,7 +20,7 @@ namespace py = pybind11;
 using namespace ::aare;
 
 void define_cluster_file_io_bindings(py::module &m) {
-    PYBIND11_NUMPY_DTYPE(Cluster, x, y, data);
+    PYBIND11_NUMPY_DTYPE(Cluster3x3, x, y, data);
 
     py::class_<ClusterFile>(m, "ClusterFile")
         .def(py::init<const std::filesystem::path &, size_t,
@@ -29,14 +29,14 @@ void define_cluster_file_io_bindings(py::module &m) {
         .def("read_clusters",
              [](ClusterFile &self, size_t n_clusters) {
                  auto *vec =
-                     new std::vector<Cluster>(self.read_clusters(n_clusters));
+                     new std::vector<Cluster3x3>(self.read_clusters(n_clusters));
                  return return_vector(vec);
              })
         .def("read_frame",
              [](ClusterFile &self) {
                  int32_t frame_number;
                  auto *vec =
-                     new std::vector<Cluster>(self.read_frame(frame_number));
+                     new std::vector<Cluster3x3>(self.read_frame(frame_number));
                  return py::make_tuple(frame_number, return_vector(vec));
              })
         .def("write_frame", &ClusterFile::write_frame)
@@ -45,7 +45,7 @@ void define_cluster_file_io_bindings(py::module &m) {
                 py::array_t<double> noise_map, int nx, int ny) {
                  auto view = make_view_2d(noise_map);
                  auto *vec =
-                     new std::vector<Cluster>(self.read_cluster_with_cut(
+                     new std::vector<Cluster3x3>(self.read_cluster_with_cut(
                          n_clusters, view.data(), nx, ny));
                  return return_vector(vec);
              })
@@ -60,11 +60,16 @@ void define_cluster_file_io_bindings(py::module &m) {
         .def("__iter__", [](ClusterFile &self) { return &self; })
         .def("__next__", [](ClusterFile &self) {
             auto vec =
-                new std::vector<Cluster>(self.read_clusters(self.chunk_size()));
+                new std::vector<Cluster3x3>(self.read_clusters(self.chunk_size()));
             if (vec->size() == 0) {
                 throw py::stop_iteration();
             }
             return return_vector(vec);
+        });
+
+        m.def("calculate_eta2", []( aare::ClusterVector<int32_t> &clusters) {
+            auto eta2 = new NDArray<double, 2>(calculate_eta2(clusters));
+            return return_image_data(eta2);
         });
 }
 

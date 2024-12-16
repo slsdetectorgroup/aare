@@ -148,12 +148,18 @@ template <typename T, typename CoordType=int16_t> class ClusterVector {
      * @brief Return a pointer to the i-th cluster
      */
     std::byte *element_ptr(size_t i) { return m_data + element_offset(i); }
+     const std::byte *  element_ptr(size_t i) const { return m_data + element_offset(i); }
 
     size_t cluster_size_x() const { return m_cluster_size_x; }
     size_t cluster_size_y() const { return m_cluster_size_y; }
 
     std::byte *data() { return m_data; }
-    const std::byte *data() const { return m_data; }
+    std::byte const *data() const { return m_data; }
+
+    template<typename V>
+    V& at(size_t i) {
+        return *reinterpret_cast<V*>(element_ptr(i));
+    }
 
     const std::string_view fmt_base() const {
         //TODO! how do we match on coord_t?
