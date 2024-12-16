@@ -51,7 +51,8 @@ void define_file_io_bindings(py::module &m) {
         .def(py::init<const std::filesystem::path &, const std::string &,
                       const FileConfig &>())
 
-        .def("frame_number", &File::frame_number)
+        .def("frame_number", py::overload_cast<>(&File::frame_number))
+        .def("frame_number", py::overload_cast<size_t>(&File::frame_number))
         .def_property_readonly("bytes_per_frame", &File::bytes_per_frame)
         .def_property_readonly("pixels_per_frame", &File::pixels_per_frame)
         .def("seek", &File::seek)

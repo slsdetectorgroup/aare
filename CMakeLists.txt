@@ -39,7 +39,8 @@ option(AARE_IN_GITHUB_ACTIONS "Running in Github Actions" OFF)
 option(AARE_DOCS "Build documentation" OFF)
 option(AARE_VERBOSE "Verbose output" OFF)
 option(AARE_CUSTOM_ASSERT "Use custom assert" OFF)
-
+option(AARE_INSTALL_PYTHONEXT "Install the python extension in the install tree under CMAKE_INSTALL_PREFIX/aare/" OFF)
+option(AARE_ASAN "Enable AddressSanitizer" OFF)
 
 # Configure which of the dependencies to use FetchContent for
 option(AARE_FETCH_FMT "Use FetchContent to download fmt" ON)
@@ -224,13 +225,6 @@ if(CMAKE_BUILD_TYPE STREQUAL "Release")
     target_compile_options(aare_compiler_flags INTERFACE -O3)
 else()
     message(STATUS "Debug build")
-    target_compile_options(
-        aare_compiler_flags 
-        INTERFACE 
-            -Og 
-            -ggdb3 
-    )
-
 endif()
 
 # Common flags for GCC and Clang
@@ -255,7 +249,21 @@ target_compile_options(
 endif() #GCC/Clang specific
 
 
-
+if(AARE_ASAN)
+    message(STATUS "AddressSanitizer enabled")
+    target_compile_options(
+        aare_compiler_flags 
+        INTERFACE 
+            -fsanitize=address,undefined,pointer-compare 
+            -fno-omit-frame-pointer
+    )
+    target_link_libraries(
+        aare_compiler_flags 
+        INTERFACE 
+            -fsanitize=address,undefined,pointer-compare 
+            -fno-omit-frame-pointer
+    )
+endif()
 
 
 
@@ -274,6 +282,7 @@ set(PUBLICHEADERS
     include/aare/ClusterFinder.hpp
     include/aare/ClusterFile.hpp
     include/aare/CtbRawFile.hpp
+    include/aare/ClusterVector.hpp
     include/aare/defs.hpp
     include/aare/Dtype.hpp
     include/aare/File.hpp
@@ -315,6 +324,8 @@ target_include_directories(aare_core PUBLIC
     "$<INSTALL_INTERFACE:${CMAKE_INSTALL_INCLUDEDIR}>"
 )
 
+
+
 target_link_libraries(
     aare_core 
     PUBLIC 
@@ -343,6 +354,7 @@ if(AARE_TESTS)
             ${CMAKE_CURRENT_SOURCE_DIR}/src/NDArray.test.cpp
             ${CMAKE_CURRENT_SOURCE_DIR}/src/NDView.test.cpp
             ${CMAKE_CURRENT_SOURCE_DIR}/src/ClusterFinder.test.cpp
+            ${CMAKE_CURRENT_SOURCE_DIR}/src/ClusterVector.test.cpp
             ${CMAKE_CURRENT_SOURCE_DIR}/src/Pedestal.test.cpp
             ${CMAKE_CURRENT_SOURCE_DIR}/src/NumpyFile.test.cpp
             ${CMAKE_CURRENT_SOURCE_DIR}/src/NumpyHelpers.test.cpp

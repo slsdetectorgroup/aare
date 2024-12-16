@@ -19,7 +19,7 @@ TEST_CASE("Construct a frame") {
     // data should be initialized to 0
     for (size_t i = 0; i < rows; i++) {
         for (size_t j = 0; j < cols; j++) {
-            uint8_t *data = (uint8_t *)frame.pixel_ptr(i, j);
+            uint8_t *data = reinterpret_cast<uint8_t *>(frame.pixel_ptr(i, j));
             REQUIRE(data != nullptr);
             REQUIRE(*data == 0);
         }
@@ -40,7 +40,7 @@ TEST_CASE("Set a value in a 8 bit frame") {
     // only the value we did set should be non-zero
     for (size_t i = 0; i < rows; i++) {
         for (size_t j = 0; j < cols; j++) {
-            uint8_t *data = (uint8_t *)frame.pixel_ptr(i, j);
+            uint8_t *data = reinterpret_cast<uint8_t *>(frame.pixel_ptr(i, j));
             REQUIRE(data != nullptr);
             if (i == 5 && j == 7) {
                 REQUIRE(*data == value);
@@ -65,7 +65,7 @@ TEST_CASE("Set a value in a 64 bit frame") {
     // only the value we did set should be non-zero
     for (size_t i = 0; i < rows; i++) {
         for (size_t j = 0; j < cols; j++) {
-            uint64_t *data = (uint64_t *)frame.pixel_ptr(i, j);
+            uint64_t *data = reinterpret_cast<uint64_t *>(frame.pixel_ptr(i, j));
             REQUIRE(data != nullptr);
             if (i == 5 && j == 7) {
                 REQUIRE(*data == value);
@@ -150,3 +150,4 @@ TEST_CASE("test explicit copy constructor") {
     REQUIRE(frame2.bytes() == rows * cols * bitdepth / 8);
     REQUIRE(frame2.data() != data);
 }
+

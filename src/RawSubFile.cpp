@@ -15,7 +15,6 @@ RawSubFile::RawSubFile(const std::filesystem::path &fname,
         m_pixel_map = GenerateMoench03PixelMap();
     }else if(m_detector_type == DetectorType::Eiger && m_pos_row % 2 == 0){
         m_pixel_map = GenerateEigerFlipRowsPixelMap();
-        fmt::print("Flipping rows\n");
     }
 
     if (std::filesystem::exists(fname)) {

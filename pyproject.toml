@@ -4,8 +4,7 @@ build-backend = "scikit_build_core.build"
 
 [project]
 name = "aare"
-version = "2024.11.28.dev0"
-
+version = "2024.12.16.dev0"
 
 [tool.scikit-build]
 cmake.verbose = true
@@ -13,3 +12,4 @@ cmake.verbose = true
 [tool.scikit-build.cmake.define]
 AARE_PYTHON_BINDINGS = "ON"
 AARE_SYSTEM_LIBRARIES = "ON"
+AARE_INSTALL_PYTHONEXT = "ON"
