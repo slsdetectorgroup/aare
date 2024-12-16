@@ -22,8 +22,8 @@ PYBIND11_MODULE(_aare, m) {
     define_raw_master_file_bindings(m);
     define_var_cluster_finder_bindings(m);
     define_pixel_map_bindings(m);
-    define_pedestal_bindings<double>(m, "Pedestal");
-    define_pedestal_bindings<float>(m, "Pedestal_float32");
+    define_pedestal_bindings<double>(m, "Pedestal_d");
+    define_pedestal_bindings<float>(m, "Pedestal_f");
     define_cluster_finder_bindings(m);
     define_cluster_file_io_bindings(m);
 }

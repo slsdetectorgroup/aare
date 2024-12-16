@@ -47,7 +47,7 @@ class DynamicCluster {
     int cluster_sizeY;
     int16_t x;
     int16_t y;
-    Dtype dt;
+    Dtype dt; // 4 bytes
 
   private:
     std::byte *m_data;
