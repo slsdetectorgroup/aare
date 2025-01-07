@@ -256,7 +256,7 @@ std::vector<Cluster3x3> ClusterFile::read_cluster_with_cut(size_t n_clusters,
 }
 
 NDArray<double, 2> calculate_eta2(ClusterVector<int> &clusters) {
-    NDArray<double, 2> eta2({clusters.size(), 2});
+    NDArray<double, 2> eta2({static_cast<int64_t>(clusters.size()), 2});
     for (size_t i = 0; i < clusters.size(); i++) {
         // int32_t t2;
         // auto* ptr = reinterpret_cast<int32_t*> (clusters.element_ptr(i) + 2 *
