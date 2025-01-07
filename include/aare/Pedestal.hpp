@@ -165,8 +165,8 @@ template <typename SUM_TYPE = double> class Pedestal {
             m_sum2(row, col) += val * val;
             m_cur_samples(row, col)++;
         } else {
-            m_sum(row, col) += val - m_sum(row, col) / m_cur_samples(row, col);
-            m_sum2(row, col) += val * val - m_sum2(row, col) / m_cur_samples(row, col);
+            m_sum(row, col) += val - m_sum(row, col) / m_samples;
+            m_sum2(row, col) += val * val - m_sum2(row, col) / m_samples;
         }
         //Since we just did a push we know that m_cur_samples(row, col) is at least 1
         m_mean(row, col) = m_sum(row, col) / m_cur_samples(row, col);
