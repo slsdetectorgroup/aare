@@ -10,26 +10,12 @@
 
 namespace aare {
 
-/** enum to define the event types */
-enum class eventType {
-    PEDESTAL,   /** pedestal */
-    NEIGHBOUR,  /** neighbour i.e. below threshold, but in the cluster of a
-                   photon */
-    PHOTON,     /** photon i.e. above threshold */
-    PHOTON_MAX, /** maximum of a cluster satisfying the photon conditions */
-    NEGATIVE_PEDESTAL, /** negative value, will not be accounted for as pedestal
-                          in order to avoid drift of the pedestal towards
-                          negative values */
-    UNDEFINED_EVENT = -1 /** undefined */
-};
-
 template <typename FRAME_TYPE = uint16_t, typename PEDESTAL_TYPE = double,
           typename CT = int32_t>
 class ClusterFinder {
     Shape<2> m_image_size;
     const int m_cluster_sizeX;
     const int m_cluster_sizeY;
-    // const PEDESTAL_TYPE m_threshold;
     const PEDESTAL_TYPE m_nSigma;
     const PEDESTAL_TYPE c2;
     const PEDESTAL_TYPE c3;

@@ -22,6 +22,7 @@ template <typename T, typename CoordType=int16_t> class ClusterVector {
     std::byte *m_data{};
     size_t m_size{0};
     size_t m_capacity;
+    uint64_t m_frame_number{0}; //TODO! Check frame number size and type
     /*
     Format string used in the python bindings to create a numpy
     array from the buffer
@@ -39,7 +40,7 @@ template <typename T, typename CoordType=int16_t> class ClusterVector {
      * @param cluster_size_y size of the cluster in y direction
      * @param capacity initial capacity of the buffer in number of clusters
      */
-    ClusterVector(size_t cluster_size_x, size_t cluster_size_y,
+    ClusterVector(size_t cluster_size_x = 3, size_t cluster_size_y = 3,
                   size_t capacity = 1024)
         : m_cluster_size_x(cluster_size_x), m_cluster_size_y(cluster_size_y),
           m_capacity(capacity) {
@@ -108,7 +109,14 @@ template <typename T, typename CoordType=int16_t> class ClusterVector {
                   ptr);
         m_size++;
     }
-
+    ClusterVector& operator+=(const ClusterVector& other){
+        if (m_size + other.m_size > m_capacity) {
+            allocate_buffer(m_capacity + other.m_size);
+        }
+        std::copy(other.m_data, other.m_data + other.m_size * element_offset(), m_data + m_size * element_offset());
+        m_size += other.m_size;
+        return *this;
+    }
 
     /**
      * @brief Sum the pixels in each cluster
@@ -165,6 +173,9 @@ template <typename T, typename CoordType=int16_t> class ClusterVector {
         //TODO! how do we match on coord_t?
         return m_fmt_base;
     }
+
+    uint64_t frame_number() const { return m_frame_number; }
+    void set_frame_number(uint64_t frame_number) { m_frame_number = frame_number; }
 
   private:
     void allocate_buffer(size_t new_capacity) {
