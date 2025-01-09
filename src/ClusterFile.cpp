@@ -34,8 +34,7 @@ void ClusterFile::close() {
     }
 }
 
-void ClusterFile::write_frame(int32_t frame_number,
-                              const ClusterVector<int32_t> &clusters) {
+void ClusterFile::write_frame(const ClusterVector<int32_t> &clusters) {
     if (m_mode != "w") {
         throw std::runtime_error("File not opened for writing");
     }
@@ -43,26 +42,27 @@ void ClusterFile::write_frame(int32_t frame_number,
         !(clusters.cluster_size_y() == 3)) {
         throw std::runtime_error("Only 3x3 clusters are supported");
     }
+    int32_t frame_number = clusters.frame_number();
     fwrite(&frame_number, sizeof(frame_number), 1, fp);
     uint32_t n_clusters = clusters.size();
     fwrite(&n_clusters, sizeof(n_clusters), 1, fp);
     fwrite(clusters.data(), clusters.element_offset(), clusters.size(), fp);
-    // write clusters
-    // fwrite(clusters.data(), sizeof(Cluster), clusters.size(), fp);
 }
 
-std::vector<Cluster3x3> ClusterFile::read_clusters(size_t n_clusters) {
+ClusterVector<int32_t> ClusterFile::read_clusters(size_t n_clusters) {
     if (m_mode != "r") {
         throw std::runtime_error("File not opened for reading");
     }
-    std::vector<Cluster3x3> clusters(n_clusters);
+    
+    ClusterVector<int32_t> clusters(3,3, n_clusters);
 
     int32_t iframe = 0; // frame number needs to be 4 bytes!
     size_t nph_read = 0;
     uint32_t nn = m_num_left;
     uint32_t nph = m_num_left; // number of clusters in frame needs to be 4
 
-    auto buf = reinterpret_cast<Cluster3x3 *>(clusters.data());
+    // auto buf = reinterpret_cast<Cluster3x3 *>(clusters.data());
+    auto buf = clusters.data();
     // if there are photons left from previous frame read them first
     if (nph) {
         if (nph > n_clusters) {
@@ -73,7 +73,7 @@ std::vector<Cluster3x3> ClusterFile::read_clusters(size_t n_clusters) {
             nn = nph;
         }
         nph_read += fread(reinterpret_cast<void *>(buf + nph_read),
-                          sizeof(Cluster3x3), nn, fp);
+                          clusters.item_size(), nn, fp);
         m_num_left = nph - nn; // write back the number of photons left
     }
 
@@ -88,7 +88,7 @@ std::vector<Cluster3x3> ClusterFile::read_clusters(size_t n_clusters) {
                     nn = nph;
 
                 nph_read += fread(reinterpret_cast<void *>(buf + nph_read),
-                                  sizeof(Cluster3x3), nn, fp);
+                                  clusters.item_size(), nn, fp);
                 m_num_left = nph - nn;
             }
             if (nph_read >= n_clusters)
@@ -102,7 +102,7 @@ std::vector<Cluster3x3> ClusterFile::read_clusters(size_t n_clusters) {
     return clusters;
 }
 
-std::vector<Cluster3x3> ClusterFile::read_frame(int32_t &out_fnum) {
+ClusterVector<int32_t> ClusterFile::read_frame() {
     if (m_mode != "r") {
         throw std::runtime_error("File not opened for reading");
     }
@@ -110,8 +110,8 @@ std::vector<Cluster3x3> ClusterFile::read_frame(int32_t &out_fnum) {
         throw std::runtime_error(
             "There are still photons left in the last frame");
     }
-
-    if (fread(&out_fnum, sizeof(out_fnum), 1, fp) != 1) {
+    int32_t frame_number;
+    if (fread(&frame_number, sizeof(frame_number), 1, fp) != 1) {
         throw std::runtime_error("Could not read frame number");
     }
 
@@ -119,14 +119,18 @@ std::vector<Cluster3x3> ClusterFile::read_frame(int32_t &out_fnum) {
     if (fread(&n_clusters, sizeof(n_clusters), 1, fp) != 1) {
         throw std::runtime_error("Could not read number of clusters");
     }
-    std::vector<Cluster3x3> clusters(n_clusters);
+    // std::vector<Cluster3x3> clusters(n_clusters);
+    ClusterVector<int32_t> clusters(3, 3, n_clusters);
+    clusters.set_frame_number(frame_number);
 
-    if (fread(clusters.data(), sizeof(Cluster3x3), n_clusters, fp) !=
+    if (fread(clusters.data(), clusters.item_size(), n_clusters, fp) !=
         static_cast<size_t>(n_clusters)) {
         throw std::runtime_error("Could not read clusters");
     }
+    clusters.resize(n_clusters);
     return clusters;
 }
+
 
 std::vector<Cluster3x3> ClusterFile::read_cluster_with_cut(size_t n_clusters,
                                                            double *noise_map,

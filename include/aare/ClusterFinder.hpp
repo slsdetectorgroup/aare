@@ -10,26 +10,12 @@
 
 namespace aare {
 
-/** enum to define the event types */
-enum class eventType {
-    PEDESTAL,   /** pedestal */
-    NEIGHBOUR,  /** neighbour i.e. below threshold, but in the cluster of a
-                   photon */
-    PHOTON,     /** photon i.e. above threshold */
-    PHOTON_MAX, /** maximum of a cluster satisfying the photon conditions */
-    NEGATIVE_PEDESTAL, /** negative value, will not be accounted for as pedestal
-                          in order to avoid drift of the pedestal towards
-                          negative values */
-    UNDEFINED_EVENT = -1 /** undefined */
-};
-
 template <typename FRAME_TYPE = uint16_t, typename PEDESTAL_TYPE = double,
           typename CT = int32_t>
 class ClusterFinder {
     Shape<2> m_image_size;
     const int m_cluster_sizeX;
     const int m_cluster_sizeY;
-    // const PEDESTAL_TYPE m_threshold;
     const PEDESTAL_TYPE m_nSigma;
     const PEDESTAL_TYPE c2;
     const PEDESTAL_TYPE c3;
@@ -78,13 +64,13 @@ class ClusterFinder {
             m_clusters = ClusterVector<CT>(m_cluster_sizeX, m_cluster_sizeY);
         return tmp;
     }
-    void find_clusters(NDView<FRAME_TYPE, 2> frame) {
+    void find_clusters(NDView<FRAME_TYPE, 2> frame, uint64_t frame_number = 0) {
         // // TODO! deal with even size clusters
         // // currently 3,3 -> +/- 1
         // //  4,4 -> +/- 2
         int dy = m_cluster_sizeY / 2;
         int dx = m_cluster_sizeX / 2;
-
+        m_clusters.set_frame_number(frame_number);
         std::vector<CT> cluster_data(m_cluster_sizeX * m_cluster_sizeY);
         for (int iy = 0; iy < frame.shape(0); iy++) {
             for (int ix = 0; ix < frame.shape(1); ix++) {

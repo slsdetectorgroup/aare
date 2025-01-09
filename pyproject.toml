@@ -4,7 +4,7 @@ build-backend = "scikit_build_core.build"
 
 [project]
 name = "aare"
-version = "2025.1.7.dev0"
+version = "2025.1.9.dev0"
 
 [tool.scikit-build]
 cmake.verbose = true

@@ -36,6 +36,8 @@ class File {
     File(File &&other) noexcept;
     File& operator=(File &&other) noexcept;
     ~File() = default;
+
+    // void close();                             //!< close the file
       
     Frame read_frame();                       //!< read one frame from the file at the current position
     Frame read_frame(size_t frame_index);     //!< read one frame at the position given by frame number
