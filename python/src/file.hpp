@@ -124,7 +124,40 @@ void define_file_io_bindings(py::module &m) {
             self.read_into(reinterpret_cast<std::byte *>(image.mutable_data()),
                            n_frames);
             return image;
+        })
+        .def("__enter__", [](File &self) { return &self; })
+        .def("__exit__",
+             [](File &self,
+                const std::optional<pybind11::type> &exc_type,
+                const std::optional<pybind11::object> &exc_value,
+                const std::optional<pybind11::object> &traceback) {
+                //  self.close();
+             })
+        .def("__iter__", [](File &self) { return &self; })
+        .def("__next__", [](File &self) {
+
+            try{
+                const uint8_t item_size = self.bytes_per_pixel();
+                 py::array image;
+                 std::vector<ssize_t> shape;
+                 shape.reserve(2);
+                 shape.push_back(self.rows());
+                 shape.push_back(self.cols());
+                 if (item_size == 1) {
+                     image = py::array_t<uint8_t>(shape);
+                 } else if (item_size == 2) {
+                     image = py::array_t<uint16_t>(shape);
+                 } else if (item_size == 4) {
+                     image = py::array_t<uint32_t>(shape);
+                 }
+                 self.read_into(
+                     reinterpret_cast<std::byte *>(image.mutable_data()));
+                 return image;
+            }catch(std::runtime_error &e){
+                throw py::stop_iteration();
+            }
         });
+
 
     py::class_<FileConfig>(m, "FileConfig")
         .def(py::init<>())

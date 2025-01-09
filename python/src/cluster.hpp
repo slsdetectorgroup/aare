@@ -1,7 +1,8 @@
+#include "aare/ClusterCollector.hpp"
+#include "aare/ClusterFileSink.hpp"
 #include "aare/ClusterFinder.hpp"
 #include "aare/ClusterFinderMT.hpp"
 #include "aare/ClusterVector.hpp"
-#include "aare/ClusterCollector.hpp"
 #include "aare/NDView.hpp"
 #include "aare/Pedestal.hpp"
 #include "np_helper.hpp"
@@ -9,12 +10,11 @@
 #include <cstdint>
 #include <filesystem>
 #include <pybind11/pybind11.h>
-#include <pybind11/stl_bind.h>
 #include <pybind11/stl.h>
+#include <pybind11/stl_bind.h>
 
 namespace py = pybind11;
 using pd_type = double;
-
 
 template <typename T>
 void define_cluster_vector(py::module &m, const std::string &typestr) {
@@ -64,42 +64,51 @@ void define_cluster_finder_mt_bindings(py::module &m) {
                  auto view = make_view_2d(frame);
                  self.push_pedestal_frame(view);
              })
-        .def("find_clusters",
-             [](ClusterFinderMT<uint16_t, pd_type> &self,
-                py::array_t<uint16_t> frame) {
-                 auto view = make_view_2d(frame);
-                 self.find_clusters(view);
-                 return;
-             })
-        .def("sync", &ClusterFinderMT<uint16_t, pd_type>::sync)
         .def(
-            "steal_clusters",
+            "find_clusters",
             [](ClusterFinderMT<uint16_t, pd_type> &self,
-               bool realloc_same_capacity) {
-                auto v = new ClusterVector<int>(
-                    self.steal_clusters(realloc_same_capacity));
-                return v;
+               py::array_t<uint16_t> frame, uint64_t frame_number) {
+                auto view = make_view_2d(frame);
+                self.find_clusters(view, frame_number);
+                return;
             },
-            py::arg("realloc_same_capacity") = false)
-        .def("stop", &ClusterFinderMT<uint16_t, pd_type>::stop);
+            py::arg(), py::arg("frame_number") = 0)
+        .def("sync", &ClusterFinderMT<uint16_t, pd_type>::sync)
+        .def("stop", &ClusterFinderMT<uint16_t, pd_type>::stop)
+        .def_property_readonly("pedestal",
+                               [](ClusterFinderMT<uint16_t, pd_type> &self) {
+                                   auto pd = new NDArray<pd_type, 2>{};
+                                   *pd = self.pedestal();
+                                   return return_image_data(pd);
+                               })
+        .def_property_readonly("noise",
+                               [](ClusterFinderMT<uint16_t, pd_type> &self) {
+                                   auto arr = new NDArray<pd_type, 2>{};
+                                   *arr = self.noise();
+                                   return return_image_data(arr);
+                               });
 }
-
 
 void define_cluster_collector_bindings(py::module &m) {
     py::class_<ClusterCollector>(m, "ClusterCollector")
-        .def(py::init<ClusterFinderMT<uint16_t, double, int32_t>*>())
+        .def(py::init<ClusterFinderMT<uint16_t, double, int32_t> *>())
         .def("stop", &ClusterCollector::stop)
-        .def("steal_clusters",
-             [](ClusterCollector &self) {
-                 auto v = new std::vector<ClusterVector<int>>(
-                     self.steal_clusters());
-                 return v;
-             }, py::return_value_policy::take_ownership);
-
-
-
+        .def(
+            "steal_clusters",
+            [](ClusterCollector &self) {
+                auto v =
+                    new std::vector<ClusterVector<int>>(self.steal_clusters());
+                return v;
+            },
+            py::return_value_policy::take_ownership);
 }
 
+void define_cluster_file_sink_bindings(py::module &m) {
+    py::class_<ClusterFileSink>(m, "ClusterFileSink")
+        .def(py::init<ClusterFinderMT<uint16_t, double, int32_t> *,
+                      const std::filesystem::path &>())
+        .def("stop", &ClusterFileSink::stop);
+}
 
 void define_cluster_finder_bindings(py::module &m) {
     py::class_<ClusterFinder<uint16_t, pd_type>>(m, "ClusterFinder")
@@ -133,12 +142,15 @@ void define_cluster_finder_bindings(py::module &m) {
                 return v;
             },
             py::arg("realloc_same_capacity") = false)
-        .def("find_clusters", [](ClusterFinder<uint16_t, pd_type> &self,
-                                 py::array_t<uint16_t> frame) {
-            auto view = make_view_2d(frame);
-            self.find_clusters(view);
-            return;
-        });
+        .def(
+            "find_clusters",
+            [](ClusterFinder<uint16_t, pd_type> &self,
+               py::array_t<uint16_t> frame, uint64_t frame_number) {
+                auto view = make_view_2d(frame);
+                self.find_clusters(view);
+                return;
+            },
+            py::arg(), py::arg("frame_number") = 0);
 
     m.def("hitmap",
           [](std::array<size_t, 2> image_size, ClusterVector<int32_t> &cv) {

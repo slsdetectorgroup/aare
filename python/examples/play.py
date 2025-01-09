@@ -8,18 +8,19 @@ import numpy as np
 import boost_histogram as bh
 import time
 
-from aare import File, ClusterFinder, VarClusterFinder
+from aare import File, ClusterFinder, VarClusterFinder, ClusterFile
 
 base = Path('/mnt/sls_det_storage/matterhorn_data/aare_test_data/')
 
 f = File(base/'Moench03new/cu_half_speed_master_4.json')
 
 
-from aare._aare import ClusterFinderMT, ClusterCollector
+from aare._aare import ClusterFinderMT, ClusterCollector, ClusterFileSink
 
 
 cf = ClusterFinderMT((400,400), (3,3), n_threads = 3)
-collector = ClusterCollector(cf)
+# collector = ClusterCollector(cf)
+out_file = ClusterFileSink(cf, "test.clust")
 
 for i in range(1000):
     img = f.read_frame()
@@ -34,11 +35,11 @@ for i in range(100):
 
 # time.sleep(1)
 cf.stop()  
-collector.stop()
-cv = collector.steal_clusters()
-print(f'Processed {len(cv)} frames')
-
+out_file.stop()
 print('Done')
+
+
+cfile = ClusterFile("test.clust")
 
 
 

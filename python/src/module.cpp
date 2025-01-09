@@ -28,5 +28,6 @@ PYBIND11_MODULE(_aare, m) {
     define_cluster_finder_mt_bindings(m);
     define_cluster_file_io_bindings(m);
     define_cluster_collector_bindings(m);
+    define_cluster_file_sink_bindings(m);
 
 }

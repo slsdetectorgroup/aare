@@ -59,10 +59,9 @@ class ClusterFile {
     ClusterFile(const std::filesystem::path &fname, size_t chunk_size = 1000,
                 const std::string &mode = "r");
     ~ClusterFile();
-    std::vector<Cluster3x3> read_clusters(size_t n_clusters);
-    std::vector<Cluster3x3> read_frame(int32_t &out_fnum);
-    void write_frame(int32_t frame_number,
-                     const ClusterVector<int32_t> &clusters);
+    ClusterVector<int32_t> read_clusters(size_t n_clusters);
+    ClusterVector<int32_t> read_frame();
+    void write_frame(const ClusterVector<int32_t> &clusters);
     std::vector<Cluster3x3>
     read_cluster_with_cut(size_t n_clusters, double *noise_map, int nx, int ny);
 

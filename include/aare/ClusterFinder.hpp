@@ -64,13 +64,13 @@ class ClusterFinder {
             m_clusters = ClusterVector<CT>(m_cluster_sizeX, m_cluster_sizeY);
         return tmp;
     }
-    void find_clusters(NDView<FRAME_TYPE, 2> frame) {
+    void find_clusters(NDView<FRAME_TYPE, 2> frame, uint64_t frame_number = 0) {
         // // TODO! deal with even size clusters
         // // currently 3,3 -> +/- 1
         // //  4,4 -> +/- 2
         int dy = m_cluster_sizeY / 2;
         int dx = m_cluster_sizeX / 2;
-
+        m_clusters.set_frame_number(frame_number);
         std::vector<CT> cluster_data(m_cluster_sizeX * m_cluster_sizeY);
         for (int iy = 0; iy < frame.shape(0); iy++) {
             for (int ix = 0; ix < frame.shape(1); ix++) {

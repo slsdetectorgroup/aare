@@ -28,16 +28,13 @@ void define_cluster_file_io_bindings(py::module &m) {
              py::arg(), py::arg("chunk_size") = 1000, py::arg("mode") = "r")
         .def("read_clusters",
              [](ClusterFile &self, size_t n_clusters) {
-                 auto *vec =
-                     new std::vector<Cluster3x3>(self.read_clusters(n_clusters));
-                 return return_vector(vec);
+                auto v = new ClusterVector<int32_t>(self.read_clusters(n_clusters));
+                return v;
              })
         .def("read_frame",
              [](ClusterFile &self) {
-                 int32_t frame_number;
-                 auto *vec =
-                     new std::vector<Cluster3x3>(self.read_frame(frame_number));
-                 return py::make_tuple(frame_number, return_vector(vec));
+                auto v = new ClusterVector<int32_t>(self.read_frame());
+                return v;
              })
         .def("write_frame", &ClusterFile::write_frame)
         .def("read_cluster_with_cut",
@@ -59,12 +56,11 @@ void define_cluster_file_io_bindings(py::module &m) {
              })
         .def("__iter__", [](ClusterFile &self) { return &self; })
         .def("__next__", [](ClusterFile &self) {
-            auto vec =
-                new std::vector<Cluster3x3>(self.read_clusters(self.chunk_size()));
-            if (vec->size() == 0) {
+            auto v = new ClusterVector<int32_t>(self.read_clusters(self.chunk_size()));
+            if (v->size() == 0) {
                 throw py::stop_iteration();
             }
-            return return_vector(vec);
+            return v;
         });
 
         m.def("calculate_eta2", []( aare::ClusterVector<int32_t> &clusters) {

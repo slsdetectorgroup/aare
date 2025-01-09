@@ -41,9 +41,9 @@ template <typename T, typename CoordType=int16_t> class ClusterVector {
      * @param capacity initial capacity of the buffer in number of clusters
      */
     ClusterVector(size_t cluster_size_x = 3, size_t cluster_size_y = 3,
-                  size_t capacity = 1024)
+                  size_t capacity = 1024, uint64_t frame_number = 0)
         : m_cluster_size_x(cluster_size_x), m_cluster_size_y(cluster_size_y),
-          m_capacity(capacity) {
+          m_capacity(capacity), m_frame_number(frame_number) {
         allocate_buffer(capacity);
     }
     ~ClusterVector() {
@@ -55,7 +55,7 @@ template <typename T, typename CoordType=int16_t> class ClusterVector {
     ClusterVector(ClusterVector &&other) noexcept
         : m_cluster_size_x(other.m_cluster_size_x),
           m_cluster_size_y(other.m_cluster_size_y), m_data(other.m_data),
-          m_size(other.m_size), m_capacity(other.m_capacity) {
+          m_size(other.m_size), m_capacity(other.m_capacity), m_frame_number(other.m_frame_number) {
         other.m_data = nullptr;
         other.m_size = 0;
         other.m_capacity = 0;
@@ -70,9 +70,11 @@ template <typename T, typename CoordType=int16_t> class ClusterVector {
             m_data = other.m_data;
             m_size = other.m_size;
             m_capacity = other.m_capacity;
+            m_frame_number = other.m_frame_number;
             other.m_data = nullptr;
             other.m_size = 0;
             other.m_capacity = 0;
+            other.m_frame_number = 0;
         }
         return *this;
     }
@@ -147,6 +149,12 @@ template <typename T, typename CoordType=int16_t> class ClusterVector {
         return 2*sizeof(CoordType)  +
                m_cluster_size_x * m_cluster_size_y * sizeof(T);
     }
+
+    /**
+     * @brief Return the size in bytes of a single cluster
+     */
+    size_t item_size() const { return element_offset(); }
+
     /**
      * @brief Return the offset in bytes for the i-th cluster
      */
@@ -176,6 +184,12 @@ template <typename T, typename CoordType=int16_t> class ClusterVector {
 
     uint64_t frame_number() const { return m_frame_number; }
     void set_frame_number(uint64_t frame_number) { m_frame_number = frame_number; }
+    void resize(size_t new_size) {
+        if (new_size > m_capacity) {
+            allocate_buffer(new_size);
+        }
+        m_size = new_size;
+    }
 
   private:
     void allocate_buffer(size_t new_capacity) {
