@@ -39,14 +39,14 @@ void define_cluster_vector(py::module &m, const std::string &typestr) {
                       &ClusterVector<T>::set_frame_number)
         .def_buffer([typestr](ClusterVector<T> &self) -> py::buffer_info {
             return py::buffer_info(
-                self.data(),           /* Pointer to buffer */
+                self.data(),      /* Pointer to buffer */
                 self.item_size(), /* Size of one scalar */
                 fmt::format(self.fmt_base(), self.cluster_size_x(),
                             self.cluster_size_y(),
-                            typestr),   /* Format descriptor */
-                1,                      /* Number of dimensions */
-                {self.size()},          /* Buffer dimensions */
-                {self.item_size()} /* Strides (in bytes) for each index */
+                            typestr), /* Format descriptor */
+                1,                    /* Number of dimensions */
+                {self.size()},        /* Buffer dimensions */
+                {self.item_size()}    /* Strides (in bytes) for each index */
             );
         });
 }
@@ -75,18 +75,18 @@ void define_cluster_finder_mt_bindings(py::module &m) {
         .def("sync", &ClusterFinderMT<uint16_t, pd_type>::sync)
         .def("stop", &ClusterFinderMT<uint16_t, pd_type>::stop)
         .def("start", &ClusterFinderMT<uint16_t, pd_type>::start)
-        .def_property_readonly("pedestal",
-                               [](ClusterFinderMT<uint16_t, pd_type> &self) {
-                                   auto pd = new NDArray<pd_type, 2>{};
-                                   *pd = self.pedestal();
-                                   return return_image_data(pd);
-                               })
-        .def_property_readonly("noise",
-                               [](ClusterFinderMT<uint16_t, pd_type> &self) {
-                                   auto arr = new NDArray<pd_type, 2>{};
-                                   *arr = self.noise();
-                                   return return_image_data(arr);
-                               });
+        .def("pedestal",
+             [](ClusterFinderMT<uint16_t, pd_type> &self, size_t thread_index) {
+                 auto pd = new NDArray<pd_type, 2>{};
+                 *pd = self.pedestal(thread_index);
+                 return return_image_data(pd);
+             },py::arg("thread_index") = 0)
+        .def("noise",
+             [](ClusterFinderMT<uint16_t, pd_type> &self, size_t thread_index) {
+                 auto arr = new NDArray<pd_type, 2>{};
+                 *arr = self.noise(thread_index);
+                 return return_image_data(arr);
+             },py::arg("thread_index") = 0);
 }
 
 void define_cluster_collector_bindings(py::module &m) {

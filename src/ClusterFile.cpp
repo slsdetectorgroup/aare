@@ -72,7 +72,7 @@ ClusterVector<int32_t> ClusterFile::read_clusters(size_t n_clusters) {
         } else {
             nn = nph;
         }
-        nph_read += fread(reinterpret_cast<void *>(buf + nph_read),
+        nph_read += fread((buf + nph_read*clusters.item_size()),
                           clusters.item_size(), nn, fp);
         m_num_left = nph - nn; // write back the number of photons left
     }
@@ -87,7 +87,7 @@ ClusterVector<int32_t> ClusterFile::read_clusters(size_t n_clusters) {
                 else
                     nn = nph;
 
-                nph_read += fread(reinterpret_cast<void *>(buf + nph_read),
+                nph_read += fread((buf + nph_read*clusters.item_size()),
                                   clusters.item_size(), nn, fp);
                 m_num_left = nph - nn;
             }
