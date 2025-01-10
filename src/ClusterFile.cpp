@@ -46,7 +46,7 @@ void ClusterFile::write_frame(const ClusterVector<int32_t> &clusters) {
     fwrite(&frame_number, sizeof(frame_number), 1, fp);
     uint32_t n_clusters = clusters.size();
     fwrite(&n_clusters, sizeof(n_clusters), 1, fp);
-    fwrite(clusters.data(), clusters.element_offset(), clusters.size(), fp);
+    fwrite(clusters.data(), clusters.item_size(), clusters.size(), fp);
 }
 
 ClusterVector<int32_t> ClusterFile::read_clusters(size_t n_clusters) {

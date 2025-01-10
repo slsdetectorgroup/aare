@@ -5,9 +5,9 @@
 #include <thread>
 #include <vector>
 
+#include "aare/ClusterFinder.hpp"
 #include "aare/NDArray.hpp"
 #include "aare/ProducerConsumerQueue.hpp"
-#include "aare/ClusterFinder.hpp"
 
 namespace aare {
 
@@ -22,6 +22,14 @@ struct FrameWrapper {
     NDArray<uint16_t, 2> data;
 };
 
+/**
+ * @brief ClusterFinderMT is a multi-threaded version of ClusterFinder. It uses
+ * a producer-consumer queue to distribute the frames to the threads. The
+ * clusters are collected in a single output queue.
+ * @tparam FRAME_TYPE type of the frame data
+ * @tparam PEDESTAL_TYPE type of the pedestal data
+ * @tparam CT type of the cluster data
+ */
 template <typename FRAME_TYPE = uint16_t, typename PEDESTAL_TYPE = double,
           typename CT = int32_t>
 class ClusterFinderMT {
@@ -43,30 +51,27 @@ class ClusterFinderMT {
     std::atomic<bool> m_stop_requested{false};
     std::atomic<bool> m_processing_threads_stopped{true};
 
+    /**
+     * @brief Function called by the processing threads. It reads the frames
+     * from the input queue and processes them.
+     */
     void process(int thread_id) {
         auto cf = m_cluster_finders[thread_id].get();
         auto q = m_input_queues[thread_id].get();
-        // TODO! Avoid indexing into the vector every time
-        fmt::print("Thread {} started\n", thread_id);
-        // TODO! is this check enough to make sure we process all the frames?
+        bool realloc_same_capacity = true;
+
         while (!m_stop_requested || !q->isEmpty()) {
             if (FrameWrapper *frame = q->frontPtr(); frame != nullptr) {
-                // fmt::print("Thread {} got frame {}, type: {}\n", thread_id,
-                //    frame->frame_number, static_cast<int>(frame->type));
 
                 switch (frame->type) {
                 case FrameType::DATA:
                     cf->find_clusters(frame->data.view(), frame->frame_number);
-                    m_output_queues[thread_id]->write(cf->steal_clusters());
-
+                    m_output_queues[thread_id]->write(cf->steal_clusters(realloc_same_capacity));
                     break;
 
                 case FrameType::PEDESTAL:
                     m_cluster_finders[thread_id]->push_pedestal_frame(
                         frame->data.view());
-                    break;
-
-                default:
                     break;
                 }
 
@@ -76,7 +81,6 @@ class ClusterFinderMT {
                 std::this_thread::sleep_for(m_default_wait);
             }
         }
-        fmt::print("Thread {} stopped\n", thread_id);
     }
 
     /**
@@ -101,11 +105,19 @@ class ClusterFinderMT {
     }
 
   public:
+    /**
+     * @brief Construct a new ClusterFinderMT object
+     * @param image_size size of the image
+     * @param cluster_size size of the cluster
+     * @param nSigma number of sigma above the pedestal to consider a photon
+     * @param capacity initial capacity of the cluster vector. Should match
+     * expected number of clusters in a frame per frame.
+     * @param n_threads number of threads to use
+     */
     ClusterFinderMT(Shape<2> image_size, Shape<2> cluster_size,
                     PEDESTAL_TYPE nSigma = 5.0, size_t capacity = 2000,
                     size_t n_threads = 3)
         : m_n_threads(n_threads) {
-        fmt::print("ClusterFinderMT: using {} threads\n", n_threads);
         for (size_t i = 0; i < n_threads; i++) {
             m_cluster_finders.push_back(
                 std::make_unique<ClusterFinder<FRAME_TYPE, PEDESTAL_TYPE, CT>>(
@@ -115,39 +127,48 @@ class ClusterFinderMT {
             m_input_queues.emplace_back(std::make_unique<InputQueue>(200));
             m_output_queues.emplace_back(std::make_unique<OutputQueue>(200));
         }
-
+        //TODO! Should we start automatically?
         start();
     }
 
+    /**
+     * @brief Return the sink queue where all the clusters are collected
+     * @warning You need to empty this queue otherwise the cluster finder will wait forever
+     */
     ProducerConsumerQueue<ClusterVector<int>> *sink() { return &m_sink; }
 
     /**
-     * @brief Start all threads
+     * @brief Start all processing threads
      */
-
     void start() {
+        m_processing_threads_stopped = false;
+        m_stop_requested = false;
+
         for (size_t i = 0; i < m_n_threads; i++) {
             m_threads.push_back(
                 std::thread(&ClusterFinderMT::process, this, i));
         }
-        m_processing_threads_stopped = false;
+
         m_collect_thread = std::thread(&ClusterFinderMT::collect, this);
     }
 
     /**
-     * @brief Stop all threads
+     * @brief Stop all processing threads
      */
     void stop() {
         m_stop_requested = true;
+
         for (auto &thread : m_threads) {
             thread.join();
         }
+        m_threads.clear();
+
         m_processing_threads_stopped = true;
         m_collect_thread.join();
     }
 
     /**
-     * @brief Wait for all the queues to be empty
+     * @brief Wait for all the queues to be empty. Mostly used for timing tests.
      */
     void sync() {
         for (auto &q : m_input_queues) {
@@ -194,24 +215,38 @@ class ClusterFinderMT {
         m_current_thread++;
     }
 
-    auto pedestal() { 
+    /**
+     * @brief Return the pedestal currently used by the cluster finder
+     * @param thread_index index of the thread
+     */
+    auto pedestal(size_t thread_index = 0) {
         if (m_cluster_finders.empty()) {
             throw std::runtime_error("No cluster finders available");
         }
-        if(!m_processing_threads_stopped){
+        if (!m_processing_threads_stopped) {
             throw std::runtime_error("ClusterFinderMT is still running");
         }
-        return m_cluster_finders[0]->pedestal(); 
+        if (thread_index >= m_cluster_finders.size()) {
+            throw std::runtime_error("Thread index out of range");
+        }
+        return m_cluster_finders[thread_index]->pedestal();
     }
 
-    auto noise() { 
+    /**
+     * @brief Return the noise currently used by the cluster finder
+     * @param thread_index index of the thread
+     */
+    auto noise(size_t thread_index = 0) {
         if (m_cluster_finders.empty()) {
             throw std::runtime_error("No cluster finders available");
         }
-        if(!m_processing_threads_stopped){
+        if (!m_processing_threads_stopped) {
             throw std::runtime_error("ClusterFinderMT is still running");
         }
-        return m_cluster_finders[0]->noise(); 
+        if (thread_index >= m_cluster_finders.size()) {
+            throw std::runtime_error("Thread index out of range");
+        }
+        return m_cluster_finders[thread_index]->noise();
     }
 
     // void push(FrameWrapper&& frame) {

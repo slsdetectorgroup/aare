@@ -35,11 +35,34 @@ for i in range(100):
 
 # time.sleep(1)
 cf.stop()  
+time.sleep(1)
+print('Second run')
+cf.start()
+for i in range(100):
+    img = f.read_frame()
+    cf.find_clusters(img)
+
+cf.stop()
+print('Third run')
+cf.start()
+for i in range(129):
+    img = f.read_frame()
+    cf.find_clusters(img)
+
+cf.stop()
 out_file.stop()
 print('Done')
 
 
 cfile = ClusterFile("test.clust")
+i = 0
+while True:
+    try:
+        cv = cfile.read_frame()
+        i+=1
+    except RuntimeError:
+        break
+print(f'Read {i} frames') 
 
 
 
