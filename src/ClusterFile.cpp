@@ -262,19 +262,19 @@ std::vector<Cluster3x3> ClusterFile::read_cluster_with_cut(size_t n_clusters,
 NDArray<double, 2> calculate_eta2(ClusterVector<int> &clusters) {
     NDArray<double, 2> eta2({static_cast<int64_t>(clusters.size()), 2});
     for (size_t i = 0; i < clusters.size(); i++) {
-        // int32_t t2;
-        // auto* ptr = reinterpret_cast<int32_t*> (clusters.element_ptr(i) + 2 *
-        // sizeof(int16_t)); analyze_cluster(clusters.at<Cluster3x3>(i), &t2,
-        // nullptr, nullptr, &eta2(i,0), &eta2(i,1) , nullptr, nullptr);
-        auto [x, y] = calculate_eta2(clusters.at<Cluster3x3>(i));
-        eta2(i, 0) = x;
-        eta2(i, 1) = y;
+        auto e = calculate_eta2(clusters.at<Cluster3x3>(i));
+        eta2(i, 0) = e.x;
+        eta2(i, 1) = e.y;
     }
     return eta2;
 }
 
-std::array<double, 2> calculate_eta2(Cluster3x3 &cl) {
-    std::array<double, 2> eta2{};
+/** 
+ * @brief Calculate the eta2 values for a 3x3 cluster and return them in a Eta2 struct
+ * containing etay, etax and the corner of the cluster. 
+*/
+Eta2 calculate_eta2(Cluster3x3 &cl) {
+    Eta2 eta{};
 
     std::array<int32_t, 4> tot2;
     tot2[0] = cl.data[0] + cl.data[1] + cl.data[3] + cl.data[4];
@@ -287,39 +287,43 @@ std::array<double, 2> calculate_eta2(Cluster3x3 &cl) {
     switch (c) {
     case cBottomLeft:
         if ((cl.data[3] + cl.data[4]) != 0)
-            eta2[0] =
+            eta.x =
                 static_cast<double>(cl.data[4]) / (cl.data[3] + cl.data[4]);
         if ((cl.data[1] + cl.data[4]) != 0)
-            eta2[1] =
+            eta.y =
                 static_cast<double>(cl.data[4]) / (cl.data[1] + cl.data[4]);
+        eta.c = cBottomLeft;
         break;
     case cBottomRight:
         if ((cl.data[2] + cl.data[5]) != 0)
-            eta2[0] =
+            eta.x =
                 static_cast<double>(cl.data[5]) / (cl.data[4] + cl.data[5]);
         if ((cl.data[1] + cl.data[4]) != 0)
-            eta2[1] =
+            eta.y =
                 static_cast<double>(cl.data[4]) / (cl.data[1] + cl.data[4]);
+        eta.c = cBottomRight;
         break;
     case cTopLeft:
         if ((cl.data[7] + cl.data[4]) != 0)
-            eta2[0] =
+            eta.x =
                 static_cast<double>(cl.data[4]) / (cl.data[3] + cl.data[4]);
         if ((cl.data[7] + cl.data[4]) != 0)
-            eta2[1] =
+            eta.y =
                 static_cast<double>(cl.data[7]) / (cl.data[7] + cl.data[4]);
+        eta.c = cTopLeft;
         break;
     case cTopRight:
         if ((cl.data[5] + cl.data[4]) != 0)
-            eta2[0] =
+            eta.x =
                 static_cast<double>(cl.data[5]) / (cl.data[5] + cl.data[4]);
         if ((cl.data[7] + cl.data[4]) != 0)
-            eta2[1] =
+            eta.y =
                 static_cast<double>(cl.data[7]) / (cl.data[7] + cl.data[4]);
+        eta.c = cTopRight;
         break;
-    // default:;
+    // no default to allow compiler to warn about missing cases
     }
-    return eta2;
+    return eta;
 }
 
 int analyze_cluster(Cluster3x3 &cl, int32_t *t2, int32_t *t3, char *quad,

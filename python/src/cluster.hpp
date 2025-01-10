@@ -72,6 +72,7 @@ void define_cluster_finder_mt_bindings(py::module &m) {
                 return;
             },
             py::arg(), py::arg("frame_number") = 0)
+        .def("clear_pedestal", &ClusterFinderMT<uint16_t, pd_type>::clear_pedestal)
         .def("sync", &ClusterFinderMT<uint16_t, pd_type>::sync)
         .def("stop", &ClusterFinderMT<uint16_t, pd_type>::stop)
         .def("start", &ClusterFinderMT<uint16_t, pd_type>::start)
@@ -121,6 +122,7 @@ void define_cluster_finder_bindings(py::module &m) {
                  auto view = make_view_2d(frame);
                  self.push_pedestal_frame(view);
              })
+        .def("clear_pedestal", &ClusterFinder<uint16_t, pd_type>::clear_pedestal)
         .def_property_readonly("pedestal",
                                [](ClusterFinder<uint16_t, pd_type> &self) {
                                    auto pd = new NDArray<pd_type, 2>{};

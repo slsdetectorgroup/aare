@@ -33,6 +33,12 @@ typedef enum {
     pTopRight = 8
 } pixel;
 
+struct Eta2 {
+    double x;
+    double y;
+    corner c;
+};
+
 struct ClusterAnalysis {
     uint32_t c;
     int32_t tot;
@@ -74,7 +80,8 @@ int analyze_data(int32_t *data, int32_t *t2, int32_t *t3, char *quad,
 int analyze_cluster(Cluster3x3& cl, int32_t *t2, int32_t *t3, char *quad,
                     double *eta2x, double *eta2y, double *eta3x, double *eta3y);
 
+
 NDArray<double, 2> calculate_eta2( ClusterVector<int>& clusters);
-std::array<double,2> calculate_eta2( Cluster3x3& cl);
+Eta2 calculate_eta2( Cluster3x3& cl);
 
 } // namespace aare

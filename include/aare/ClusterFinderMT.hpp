@@ -215,6 +215,15 @@ class ClusterFinderMT {
         m_current_thread++;
     }
 
+    void clear_pedestal() {
+        if (!m_processing_threads_stopped) {
+            throw std::runtime_error("ClusterFinderMT is still running");
+        }
+        for (auto &cf : m_cluster_finders) {
+            cf->clear_pedestal();
+        }
+    }
+
     /**
      * @brief Return the pedestal currently used by the cluster finder
      * @param thread_index index of the thread
