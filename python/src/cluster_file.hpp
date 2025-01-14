@@ -30,7 +30,7 @@ void define_cluster_file_io_bindings(py::module &m) {
              [](ClusterFile &self, size_t n_clusters) {
                 auto v = new ClusterVector<int32_t>(self.read_clusters(n_clusters));
                 return v;
-             })
+             },py::return_value_policy::take_ownership)
         .def("read_frame",
              [](ClusterFile &self) {
                 auto v = new ClusterVector<int32_t>(self.read_frame());

@@ -47,6 +47,7 @@ class ClusterFinder {
 
     NDArray<PEDESTAL_TYPE, 2> pedestal() { return m_pedestal.mean(); }
     NDArray<PEDESTAL_TYPE, 2> noise() { return m_pedestal.std(); }
+    void clear_pedestal() { m_pedestal.clear(); }
 
     /**
      * @brief Move the clusters from the ClusterVector in the ClusterFinder to a

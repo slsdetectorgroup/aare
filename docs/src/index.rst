@@ -30,6 +30,7 @@ AARE
     pyFile
     pyCtbRawFile
     pyClusterFile
+    pyClusterVector
     pyRawFile
     pyRawMasterFile
     pyVarClusterFinder
@@ -45,6 +46,7 @@ AARE
     File
     Dtype
     ClusterFinder
+    ClusterFinderMT
     ClusterFile
     ClusterVector
     Pedestal

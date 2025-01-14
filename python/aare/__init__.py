@@ -8,7 +8,7 @@ from ._aare import DetectorType
 from ._aare import ClusterFile
 from ._aare import hitmap
 
-from ._aare import ClusterFinderMT, ClusterCollector, ClusterFileSink
+from ._aare import ClusterFinderMT, ClusterCollector, ClusterFileSink, ClusterVector_i
 
 from .CtbRawFile import CtbRawFile
 from .RawFile import RawFile

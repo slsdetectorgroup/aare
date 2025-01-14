@@ -278,6 +278,10 @@ void RawFile::get_frame_into(size_t frame_index, std::byte *frame_buffer, Detect
     if (n_subfile_parts != 1) {
         for (size_t part_idx = 0; part_idx != n_subfile_parts; ++part_idx) {
             auto subfile_id = frame_index / m_master.max_frames_per_file();
+            if (subfile_id >= subfiles.size()) {
+                throw std::runtime_error(LOCATION +
+                                         " Subfile out of range. Possible missing data.");
+            }
             frame_numbers[part_idx] =
                 subfiles[subfile_id][part_idx]->frame_number(
                     frame_index % m_master.max_frames_per_file());
@@ -311,6 +315,10 @@ void RawFile::get_frame_into(size_t frame_index, std::byte *frame_buffer, Detect
         for (size_t part_idx = 0; part_idx != n_subfile_parts; ++part_idx) {
             auto corrected_idx = frame_indices[part_idx];
             auto subfile_id = corrected_idx / m_master.max_frames_per_file();
+            if (subfile_id >= subfiles.size()) {
+                throw std::runtime_error(LOCATION +
+                                         " Subfile out of range. Possible missing data.");
+            }
 
             // This is where we start writing
             auto offset = (m_module_pixel_0[part_idx].y * m_cols +
@@ -343,6 +351,10 @@ void RawFile::get_frame_into(size_t frame_index, std::byte *frame_buffer, Detect
             auto pos = m_module_pixel_0[part_idx];
             auto corrected_idx = frame_indices[part_idx];
             auto subfile_id = corrected_idx / m_master.max_frames_per_file();
+            if (subfile_id >= subfiles.size()) {
+                throw std::runtime_error(LOCATION +
+                                         " Subfile out of range. Possible missing data.");
+            }
 
             subfiles[subfile_id][part_idx]->seek(corrected_idx % m_master.max_frames_per_file());
             subfiles[subfile_id][part_idx]->read_into(part_buffer, header);
