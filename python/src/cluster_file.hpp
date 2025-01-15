@@ -37,15 +37,15 @@ void define_cluster_file_io_bindings(py::module &m) {
                 return v;
              })
         .def("write_frame", &ClusterFile::write_frame)
-        .def("read_cluster_with_cut",
-             [](ClusterFile &self, size_t n_clusters,
-                py::array_t<double> noise_map, int nx, int ny) {
-                 auto view = make_view_2d(noise_map);
-                 auto *vec =
-                     new std::vector<Cluster3x3>(self.read_cluster_with_cut(
-                         n_clusters, view.data(), nx, ny));
-                 return return_vector(vec);
-             })
+        // .def("read_cluster_with_cut",
+        //      [](ClusterFile &self, size_t n_clusters,
+        //         py::array_t<double> noise_map, int nx, int ny) {
+        //          auto view = make_view_2d(noise_map);
+        //          auto *vec =
+        //              new std::vector<Cluster3x3>(self.read_cluster_with_cut(
+        //                  n_clusters, view.data(), nx, ny));
+        //          return return_vector(vec);
+        //      })
         .def("__enter__", [](ClusterFile &self) { return &self; })
         .def("__exit__",
              [](ClusterFile &self,

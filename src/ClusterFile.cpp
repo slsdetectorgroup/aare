@@ -20,6 +20,12 @@ ClusterFile::ClusterFile(const std::filesystem::path &fname, size_t chunk_size,
             throw std::runtime_error("Could not open file for writing: " +
                                      fname.string());
         }
+    } else if (mode == "a") {
+        fp = fopen(fname.c_str(), "ab");
+        if (!fp) {
+            throw std::runtime_error("Could not open file for appending: " +
+                                     fname.string());
+        }
     } else {
         throw std::runtime_error("Unsupported mode: " + mode);
     }
@@ -35,7 +41,7 @@ void ClusterFile::close() {
 }
 
 void ClusterFile::write_frame(const ClusterVector<int32_t> &clusters) {
-    if (m_mode != "w") {
+    if (m_mode != "w" && m_mode != "a") {
         throw std::runtime_error("File not opened for writing");
     }
     if (!(clusters.cluster_size_x() == 3) &&
@@ -132,134 +138,135 @@ ClusterVector<int32_t> ClusterFile::read_frame() {
 }
 
 
-std::vector<Cluster3x3> ClusterFile::read_cluster_with_cut(size_t n_clusters,
-                                                           double *noise_map,
-                                                           int nx, int ny) {
-    if (m_mode != "r") {
-        throw std::runtime_error("File not opened for reading");
-    }
-    std::vector<Cluster3x3> clusters(n_clusters);
-    // size_t read_clusters_with_cut(FILE *fp, size_t n_clusters, Cluster *buf,
-    //                               uint32_t *n_left, double *noise_map, int
-    //                               nx, int ny) {
-    int iframe = 0;
-    //     uint32_t nph = *n_left;
-    uint32_t nph = m_num_left;
-    //     uint32_t nn = *n_left;
-    uint32_t nn = m_num_left;
-    size_t nph_read = 0;
+// std::vector<Cluster3x3> ClusterFile::read_cluster_with_cut(size_t n_clusters,
+//                                                            double *noise_map,
+//                                                            int nx, int ny) {
+//     if (m_mode != "r") {
+//         throw std::runtime_error("File not opened for reading");
+//     }
+//     std::vector<Cluster3x3> clusters(n_clusters);
+//     // size_t read_clusters_with_cut(FILE *fp, size_t n_clusters, Cluster *buf,
+//     //                               uint32_t *n_left, double *noise_map, int
+//     //                               nx, int ny) {
+//     int iframe = 0;
+//     //     uint32_t nph = *n_left;
+//     uint32_t nph = m_num_left;
+//     //     uint32_t nn = *n_left;
+//     uint32_t nn = m_num_left;
+//     size_t nph_read = 0;
 
-    int32_t t2max, tot1;
-    int32_t tot3;
-    // Cluster *ptr = buf;
-    Cluster3x3 *ptr = clusters.data();
-    int good = 1;
-    double noise;
-    // read photons left from previous frame
-    if (noise_map)
-        printf("Using noise map\n");
+//     int32_t t2max, tot1;
+//     int32_t tot3;
+//     // Cluster *ptr = buf;
+//     Cluster3x3 *ptr = clusters.data();
+//     int good = 1;
+//     double noise;
+//     // read photons left from previous frame
+//     if (noise_map)
+//         printf("Using noise map\n");
 
-    if (nph) {
-        if (nph > n_clusters) {
-            // if we have more photons left in the frame then photons to
-            // read we read directly the requested number
-            nn = n_clusters;
-        } else {
-            nn = nph;
-        }
-        for (size_t iph = 0; iph < nn; iph++) {
-            // read photons 1 by 1
-            size_t n_read =
-                fread(reinterpret_cast<void *>(ptr), sizeof(Cluster3x3), 1, fp);
-            if (n_read != 1) {
-                clusters.resize(nph_read);
-                return clusters;
-            }
-            // TODO! error handling on read
-            good = 1;
-            if (noise_map) {
-                if (ptr->x >= 0 && ptr->x < nx && ptr->y >= 0 && ptr->y < ny) {
-                    tot1 = ptr->data[4];
-                    analyze_cluster(*ptr, &t2max, &tot3, NULL, NULL, NULL, NULL,
-                                    NULL);
-                    noise = noise_map[ptr->y * nx + ptr->x];
-                    if (tot1 > noise || t2max > 2 * noise || tot3 > 3 * noise) {
-                        ;
-                    } else {
-                        good = 0;
-                        printf("%d %d %f %d %d %d\n", ptr->x, ptr->y, noise,
-                               tot1, t2max, tot3);
-                    }
-                } else {
-                    printf("Bad pixel number %d %d\n", ptr->x, ptr->y);
-                    good = 0;
-                }
-            }
-            if (good) {
-                ptr++;
-                nph_read++;
-            }
-            (m_num_left)--;
-            if (nph_read >= n_clusters)
-                break;
-        }
-    }
-    if (nph_read < n_clusters) {
-        //         // keep on reading frames and photons until reaching
-        //         n_clusters
-        while (fread(&iframe, sizeof(iframe), 1, fp)) {
-            //             // printf("%d\n",nph_read);
+//     if (nph) {
+//         if (nph > n_clusters) {
+//             // if we have more photons left in the frame then photons to
+//             // read we read directly the requested number
+//             nn = n_clusters;
+//         } else {
+//             nn = nph;
+//         }
+//         for (size_t iph = 0; iph < nn; iph++) {
+//             // read photons 1 by 1
+//             size_t n_read =
+//                 fread(reinterpret_cast<void *>(ptr), sizeof(Cluster3x3), 1, fp);
+//             if (n_read != 1) {
+//                 clusters.resize(nph_read);
+//                 return clusters;
+//             }
+//             // TODO! error handling on read
+//             good = 1;
+//             if (noise_map) {
+//                 if (ptr->x >= 0 && ptr->x < nx && ptr->y >= 0 && ptr->y < ny) {
+//                     tot1 = ptr->data[4];
+//                     analyze_cluster(*ptr, &t2max, &tot3, NULL, NULL, NULL, NULL,
+//                                     NULL);
+//                     noise = noise_map[ptr->y * nx + ptr->x];
+//                     if (tot1 > noise || t2max > 2 * noise || tot3 > 3 * noise) {
+//                         ;
+//                     } else {
+//                         good = 0;
+//                         printf("%d %d %f %d %d %d\n", ptr->x, ptr->y, noise,
+//                                tot1, t2max, tot3);
+//                     }
+//                 } else {
+//                     printf("Bad pixel number %d %d\n", ptr->x, ptr->y);
+//                     good = 0;
+//                 }
+//             }
+//             if (good) {
+//                 ptr++;
+//                 nph_read++;
+//             }
+//             (m_num_left)--;
+//             if (nph_read >= n_clusters)
+//                 break;
+//         }
+//     }
+//     if (nph_read < n_clusters) {
+//         //         // keep on reading frames and photons until reaching
+//         //         n_clusters
+//         while (fread(&iframe, sizeof(iframe), 1, fp)) {
+//             //             // printf("%d\n",nph_read);
 
-            if (fread(&nph, sizeof(nph), 1, fp)) {
-                //                 // printf("** %d\n",nph);
-                m_num_left = nph;
-                for (size_t iph = 0; iph < nph; iph++) {
-                    //                     // read photons 1 by 1
-                    size_t n_read = fread(reinterpret_cast<void *>(ptr),
-                                          sizeof(Cluster3x3), 1, fp);
-                    if (n_read != 1) {
-                        clusters.resize(nph_read);
-                        return clusters;
-                        // return nph_read;
-                    }
-                    good = 1;
-                    if (noise_map) {
-                        if (ptr->x >= 0 && ptr->x < nx && ptr->y >= 0 &&
-                            ptr->y < ny) {
-                            tot1 = ptr->data[4];
-                            analyze_cluster(*ptr, &t2max, &tot3, NULL, NULL,
-                                            NULL, NULL, NULL);
-                            // noise = noise_map[ptr->y * nx + ptr->x];
-                            noise = noise_map[ptr->y + ny * ptr->x];
-                            if (tot1 > noise || t2max > 2 * noise ||
-                                tot3 > 3 * noise) {
-                                ;
-                            } else
-                                good = 0;
-                        } else {
-                            printf("Bad pixel number %d %d\n", ptr->x, ptr->y);
-                            good = 0;
-                        }
-                    }
-                    if (good) {
-                        ptr++;
-                        nph_read++;
-                    }
-                    (m_num_left)--;
-                    if (nph_read >= n_clusters)
-                        break;
-                }
-            }
-            if (nph_read >= n_clusters)
-                break;
-        }
-    }
-    // printf("%d\n",nph_read);
-    clusters.resize(nph_read);
-    return clusters;
-}
+//             if (fread(&nph, sizeof(nph), 1, fp)) {
+//                 //                 // printf("** %d\n",nph);
+//                 m_num_left = nph;
+//                 for (size_t iph = 0; iph < nph; iph++) {
+//                     //                     // read photons 1 by 1
+//                     size_t n_read = fread(reinterpret_cast<void *>(ptr),
+//                                           sizeof(Cluster3x3), 1, fp);
+//                     if (n_read != 1) {
+//                         clusters.resize(nph_read);
+//                         return clusters;
+//                         // return nph_read;
+//                     }
+//                     good = 1;
+//                     if (noise_map) {
+//                         if (ptr->x >= 0 && ptr->x < nx && ptr->y >= 0 &&
+//                             ptr->y < ny) {
+//                             tot1 = ptr->data[4];
+//                             analyze_cluster(*ptr, &t2max, &tot3, NULL, NULL,
+//                                             NULL, NULL, NULL);
+//                             // noise = noise_map[ptr->y * nx + ptr->x];
+//                             noise = noise_map[ptr->y + ny * ptr->x];
+//                             if (tot1 > noise || t2max > 2 * noise ||
+//                                 tot3 > 3 * noise) {
+//                                 ;
+//                             } else
+//                                 good = 0;
+//                         } else {
+//                             printf("Bad pixel number %d %d\n", ptr->x, ptr->y);
+//                             good = 0;
+//                         }
+//                     }
+//                     if (good) {
+//                         ptr++;
+//                         nph_read++;
+//                     }
+//                     (m_num_left)--;
+//                     if (nph_read >= n_clusters)
+//                         break;
+//                 }
+//             }
+//             if (nph_read >= n_clusters)
+//                 break;
+//         }
+//     }
+//     // printf("%d\n",nph_read);
+//     clusters.resize(nph_read);
+//     return clusters;
+// }
 
 NDArray<double, 2> calculate_eta2(ClusterVector<int> &clusters) {
+    //TOTO! make work with 2x2 clusters
     NDArray<double, 2> eta2({static_cast<int64_t>(clusters.size()), 2});
     for (size_t i = 0; i < clusters.size(); i++) {
         auto e = calculate_eta2(clusters.at<Cluster3x3>(i));
