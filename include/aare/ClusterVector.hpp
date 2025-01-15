@@ -149,6 +149,12 @@ template <typename T, typename CoordType = int16_t> class ClusterVector {
         return sums;
     }
 
+    /**
+     * @brief Return the maximum sum of the 2x2 subclusters in each cluster
+     * @return std::vector<T> vector of sums for each cluster
+     * @throws std::runtime_error if the cluster size is not 3x3
+     * @warning Only 3x3 clusters are supported for the 2x2 sum.
+     */
     std::vector<T> sum_2x2() {
         std::vector<T> sums(m_size);
         const size_t stride = item_size();
