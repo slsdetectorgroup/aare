@@ -1,4 +1,6 @@
 #pragma once
+#include <algorithm>
+#include <array>
 #include <cstddef>
 #include <cstdint>
 #include <numeric>
@@ -147,24 +149,51 @@ template <typename T, typename CoordType = int16_t> class ClusterVector {
         return sums;
     }
 
+    std::vector<T> sum_2x2() {
+        std::vector<T> sums(m_size);
+        const size_t stride = item_size();
+
+        if (m_cluster_size_x != 3 || m_cluster_size_y != 3) {
+            throw std::runtime_error(
+                "Only 3x3 clusters are supported for the 2x2 sum.");
+        }
+        const size_t n_pixels = m_cluster_size_x * m_cluster_size_y;
+        std::byte *ptr = m_data + 2 * sizeof(CoordType); // skip x and y
+
+        for (size_t i = 0; i < m_size; i++) {
+            std::array<T, 4> total;
+            auto T_ptr = reinterpret_cast<T *>(ptr);
+            total[0] = T_ptr[0] + T_ptr[1] + T_ptr[3] + T_ptr[4];
+            total[1] = T_ptr[1] + T_ptr[2] + T_ptr[4] + T_ptr[5];
+            total[2] = T_ptr[3] + T_ptr[4] + T_ptr[6] + T_ptr[7];
+            total[3] = T_ptr[4] + T_ptr[5] + T_ptr[7] + T_ptr[8];
+
+            sums[i] = *std::max_element(total.begin(), total.end());
+            ptr += stride;
+        }
+
+        return sums;
+    }
+
     /**
      * @brief Return the number of clusters in the vector
      */
     size_t size() const { return m_size; }
 
     /**
-     * @brief Return the capacity of the buffer in number of clusters. This is 
-     * the number of clusters that can be stored in the current buffer without reallocation.
+     * @brief Return the capacity of the buffer in number of clusters. This is
+     * the number of clusters that can be stored in the current buffer without
+     * reallocation.
      */
     size_t capacity() const { return m_capacity; }
 
     /**
      * @brief Return the size in bytes of a single cluster
      */
-    size_t item_size() const { 
+    size_t item_size() const {
         return 2 * sizeof(CoordType) +
                m_cluster_size_x * m_cluster_size_y * sizeof(T);
-     }
+    }
 
     /**
      * @brief Return the offset in bytes for the i-th cluster
@@ -203,8 +232,8 @@ template <typename T, typename CoordType = int16_t> class ClusterVector {
     }
 
     /**
-     * @brief Return the frame number of the clusters. 0 is used to indicate that
-     * the clusters come from many frames
+     * @brief Return the frame number of the clusters. 0 is used to indicate
+     * that the clusters come from many frames
      */
     uint64_t frame_number() const { return m_frame_number; }
 
@@ -213,13 +242,14 @@ template <typename T, typename CoordType = int16_t> class ClusterVector {
     }
 
     /**
-     * @brief Resize the vector to contain new_size clusters. If new_size is greater than the current capacity, a new buffer is allocated.
-     * If the size is smaller no memory is freed, size is just updated.
+     * @brief Resize the vector to contain new_size clusters. If new_size is
+     * greater than the current capacity, a new buffer is allocated. If the size
+     * is smaller no memory is freed, size is just updated.
      * @param new_size new size of the vector
      * @warning The additional clusters are not initialized
      */
     void resize(size_t new_size) {
-        //TODO! Should we initialize the new clusters?
+        // TODO! Should we initialize the new clusters?
         if (new_size > m_capacity) {
             allocate_buffer(new_size);
         }

@@ -10,16 +10,18 @@ import time
 
 from aare import File, ClusterFinder, VarClusterFinder, ClusterFile
 
-base = Path('/mnt/sls_det_storage/matterhorn_data/aare_test_data/')
+base = Path('/mnt/sls_det_storage/matterhorn_data/aare_test_data/ci/aare_test_data/clusters/')
 
-f = File(base/'Moench03new/cu_half_speed_master_4.json')
+f = ClusterFile(base/'beam_En700eV_-40deg_300V_10us_d0_f0_100.clust')
 
-for i, frame in enumerate(f):
-    print(f'{i}', end='\r')
-print()
+c = f.read_clusters(100)
+
+# for i, frame in enumerate(f):
+#     print(f'{i}', end='\r')
+# print()
 
 
-from aare._aare import ClusterFinderMT, ClusterCollector, ClusterFileSink
+# from aare._aare import ClusterFinderMT, ClusterCollector, ClusterFileSink
 
 
 # cf = ClusterFinderMT((400,400), (3,3), n_threads = 3)

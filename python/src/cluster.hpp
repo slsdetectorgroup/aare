@@ -34,6 +34,10 @@ void define_cluster_vector(py::module &m, const std::string &typestr) {
                  auto *vec = new std::vector<T>(self.sum());
                  return return_vector(vec);
              })
+        .def("sum_2x2", [](ClusterVector<T> &self) {
+            auto *vec = new std::vector<T>(self.sum_2x2());
+            return return_vector(vec);
+        })
         .def_property_readonly("capacity", &ClusterVector<T>::capacity)
         .def_property("frame_number", &ClusterVector<T>::frame_number,
                       &ClusterVector<T>::set_frame_number)
