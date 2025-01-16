@@ -8,17 +8,44 @@ import numpy as np
 import boost_histogram as bh
 import time
 
-from aare import File, ClusterFinder, VarClusterFinder, ClusterFile
+from aare import File, ClusterFinder, VarClusterFinder, ClusterFile, CtbRawFile
 
-base = Path('/mnt/sls_det_storage/matterhorn_data/aare_test_data/ci/aare_test_data/clusters/')
+base = Path('/mnt/sls_det_storage/moench_data/Julian/MOENCH05/20250113_xrays_scan_energy/raw_files/')
+cluster_file = Path('/home/l_msdetect/erik/tmp/Cu.clust')
+pedestal_file = base/'moench05_noise_Cu_10_us_master_0.json'
+data_file = base/'moench05_xray_Cu_10_us_master_0.json'
 
-f = ClusterFile(base/'beam_En700eV_-40deg_300V_10us_d0_f0_100.clust')
+from aare._aare import fit_gaus
+from aare.transform import moench05
 
-c = f.read_clusters(100)
+offset = -0.5
+hist3d = bh.Histogram(
+    bh.axis.Regular(160, 0+offset, 160+offset),  #x
+    bh.axis.Regular(150, 0+offset, 150+offset),  #y
+    bh.axis.Regular(100, 3000, 4000), #ADU
+)
 
-# for i, frame in enumerate(f):
-#     print(f'{i}', end='\r')
-# print()
+
+rows = np.zeros(160*150)
+cols = np.zeros(160*150)
+
+for row in range(160):
+    for col in range(150):
+        rows[row*150+col] = row
+        cols[row*150+col] = col
+
+#TODO how can we speed up the filling of the 3d histogram?
+with CtbRawFile(pedestal_file, transform=moench05) as f:
+    for i in range(1000):
+        print(f'{i}', end='\r')
+        frame_number, frame = f.read_frame()
+        hist3d.fill(rows, cols, frame.flat)
+
+data = hist3d.values()
+x = hist3d.axes[2].centers
+a = fit_gaus(data, x)
+
+
 
 
 # from aare._aare import ClusterFinderMT, ClusterCollector, ClusterFileSink

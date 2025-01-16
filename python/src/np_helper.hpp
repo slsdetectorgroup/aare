@@ -111,6 +111,13 @@ template <class T, int Flags> auto get_shape_2d(py::array_t<T, Flags> arr) {
     return aare::Shape<2>{arr.shape(0), arr.shape(1)};
 }
 
+template <class T, int Flags> auto get_shape_1d(py::array_t<T, Flags> arr) {
+    return aare::Shape<1>{arr.shape(0)};
+}
+
 template <class T, int Flags> auto make_view_2d(py::array_t<T, Flags> arr) {
     return aare::NDView<T, 2>(arr.mutable_data(), get_shape_2d<T, Flags>(arr));
+}
+template <class T, int Flags> auto make_view_1d(py::array_t<T, Flags> arr) {
+    return aare::NDView<T, 1>(arr.mutable_data(), get_shape_1d<T, Flags>(arr));
 }
