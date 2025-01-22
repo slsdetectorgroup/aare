@@ -21,3 +21,6 @@ def random_pixel(xmin=0, xmax=512, ymin=0, ymax=1024):
         tuple: (row, col)
     """
     return random_pixels(1, xmin, xmax, ymin, ymax)[0]
+
+def flat_list(xss):
+    return [x for xs in xss for x in xs]

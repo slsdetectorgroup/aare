@@ -28,6 +28,7 @@ target_link_libraries(_aare PRIVATE aare_core aare_compiler_flags)
 set( PYTHON_FILES
     aare/__init__.py
     aare/CtbRawFile.py
+    aare/func.py
     aare/RawFile.py
     aare/transform.py
     aare/ScanParameters.py
@@ -43,10 +44,17 @@ set_target_properties(_aare PROPERTIES
     LIBRARY_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/aare
 )
 
+set(PYTHON_EXAMPLES
+    examples/play.py
+    examples/fits.py
+)
 
 
-# Copy the examples/scripts to the build directory
-configure_file(examples/play.py ${CMAKE_BINARY_DIR}/play.py)
+
+# Copy the python examples to the build directory
+foreach(FILE ${PYTHON_EXAMPLES})
+    configure_file(${FILE} ${CMAKE_BINARY_DIR}/${FILE}  )
+endforeach(FILE ${PYTHON_EXAMPLES})
 
 
 if(AARE_INSTALL_PYTHONEXT)

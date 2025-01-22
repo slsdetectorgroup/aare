@@ -10,10 +10,14 @@ from ._aare import hitmap
 
 from ._aare import ClusterFinderMT, ClusterCollector, ClusterFileSink, ClusterVector_i
 
-from ._aare import fit_gaus, fit_gaus2, fit_affine
+from ._aare import fit_gaus, fit_affine
 
 from .CtbRawFile import CtbRawFile
 from .RawFile import RawFile
 from .ScanParameters import ScanParameters
 
-from .utils import random_pixels, random_pixel
+from .utils import random_pixels, random_pixel, flat_list
+
+
+#make functions available in the top level API
+from .func import *
