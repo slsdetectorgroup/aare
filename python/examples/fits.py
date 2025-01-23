@@ -1,18 +1,12 @@
 import matplotlib.pyplot as plt
 import numpy as np
-from aare import fit_gaus2, fit_affine
+from aare import fit_gaus, fit_affine
+from aare import gaus, affine
 
 textpm = f"±"  #
 textmu = f"μ"  #
 textsigma = f"σ"  #
 
-
-def affine(x, a, b):
-    return a * x + b
-
-
-def gauss(x, a, x0, sigma):
-    return a * np.exp(-0.5 * ((x - x0) / sigma)**2)
 
 
 # ================================= Gauss fit =================================
@@ -34,22 +28,24 @@ fig0, ax0 = plt.subplots(1, 1, num=0, figsize=(12, 8))
 x = np.histogram(data, bins=30)[1][:-1] + 0.05
 y = np.histogram(data, bins=30)[0]
 yerr = errors[:30]
-# yerr = np.zeros_like(y)
+
 
 # Add the errors as error bars in the step plot
 ax0.errorbar(x, y, yerr=yerr, fmt=". ", capsize=5)
 ax0.grid()
 
-results = fit_gaus2(y, x, yerr)
-print(results)
+par, err = fit_gaus(x, y, yerr)
+print(par, err)
 
 x = np.linspace(x[0], x[-1], 1000)
-ax0.plot(x, gauss(x, *results[:3]), marker="")
-ax0.set(xlabel="x", ylabel="Counts", title=f"A0 = {results[0]:0.2f}{textpm}{results[3]:0.2f}\n"
-                                           f"{textmu} = {results[1]:0.2f}{textpm}{results[4]:0.2f}\n"
-                                           f"{textsigma} = {results[2]:0.2f}{textpm}{results[5]:0.2f}\n"
+ax0.plot(x, gaus(x, par), marker="")
+ax0.set(xlabel="x", ylabel="Counts", title=f"A0 = {par[0]:0.2f}{textpm}{err[0]:0.2f}\n"
+                                           f"{textmu} = {par[1]:0.2f}{textpm}{err[1]:0.2f}\n"
+                                           f"{textsigma} = {par[2]:0.2f}{textpm}{err[2]:0.2f}\n"
                                            f"(init: {textmu}: {mu:0.2f}, {textsigma}: {sigma:0.2f})")
 fig0.tight_layout()
+
+
 
 # ================================= Affine fit =================================
 # Parameters
@@ -69,14 +65,15 @@ y_values = slope * x_values + intercept + var_points
 
 fig1, ax1 = plt.subplots(1, 1, num=1, figsize=(12, 8))
 ax1.errorbar(x_values, y_values, yerr=errors, fmt=". ", capsize=5)
-results = fit_affine(y_values, x_values, errors)
-print(results)
+par, err = fit_affine(x_values, y_values, errors)
+
 
 x = np.linspace(np.min(x_values), np.max(x_values), 1000)
-ax1.plot(x, affine(x, *results[:2]), marker="")
-ax1.set(xlabel="x", ylabel="y", title=f"a = {results[0]:0.2f}{textpm}{results[2]:0.2f}\n"
-                                      f"b = {results[1]:0.2f}{textpm}{results[3]:0.2f}\n"
+ax1.plot(x, affine(x, par), marker="")
+ax1.set(xlabel="x", ylabel="y", title=f"a = {par[0]:0.2f}{textpm}{err[0]:0.2f}\n"
+                                      f"b = {par[1]:0.2f}{textpm}{err[1]:0.2f}\n"
                                       f"(init: {slope:0.2f}, {intercept:0.2f})")
 fig1.tight_layout()
 
 plt.show()
+
