@@ -36,6 +36,10 @@ jobs:
       - name: Enable upload
         if: github.ref == 'refs/heads/main'
         run: conda config --set anaconda_upload yes
+        
+      - name: Disable upload
+        if: github.ref == 'refs/heads/main'
+        run: conda config --set anaconda_upload no
 
       - name: Build
         env:
