@@ -2,7 +2,7 @@
 
 namespace aare {
 
-uint16_t decode_adc(uint64_t input){
+uint16_t adc_sar_05_decode64to16(uint64_t input){
 
     //we want bits 29,19,28,18,31,21,27,20,24,23,25,22 and then pad to 16
     uint16_t output = 0;
@@ -21,10 +21,10 @@ uint16_t decode_adc(uint64_t input){
     return output;
 }
 
-void decode_adc(NDView<uint64_t, 2> input, NDView<uint16_t,2> output){
+void adc_sar_05_decode64to16(NDView<uint64_t, 2> input, NDView<uint16_t,2> output){
     for(size_t i = 0; i < input.shape(0); i++){
         for(size_t j = 0; j < input.shape(1); j++){
-            output(i,j) = decode_adc(input(i,j));
+            output(i,j) = adc_sar_05_decode64to16(input(i,j));
         }
     }
 }

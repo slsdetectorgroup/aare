@@ -24,7 +24,7 @@ using namespace ::aare;
 
 void define_ctb_raw_file_io_bindings(py::module &m) {
 
-m.def("decode_adc", [](py::array_t<uint8_t> input) {
+m.def("adc_sar_05_decode64to16", [](py::array_t<uint8_t> input) {
 
     
     if(input.ndim() != 2){
@@ -40,7 +40,7 @@ m.def("decode_adc", [](py::array_t<uint8_t> input) {
 
     NDView<uint16_t, 2> output_view(output.mutable_data(), {output.shape(0), output.shape(1)});
 
-    decode_adc(input_view, output_view);
+    adc_sar_05_decode64to16(input_view, output_view);
     // for (size_t i=0; i!=input_view.size(); ++i) {
     //     output_view(i) = decode_adc(input_view(i));
     // }
