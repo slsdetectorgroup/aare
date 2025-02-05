@@ -3,7 +3,6 @@ name: Build pkgs and deploy if on main
 on:
   push:
     branches:
-     - main
      - developer
 
 jobs:
@@ -37,7 +36,5 @@ jobs:
         run: conda config --set anaconda_upload no
 
       - name: Build
-        env:
-          CONDA_TOKEN: ${{ secrets.CONDA_TOKEN }}
         run: conda build conda-recipe 
 
