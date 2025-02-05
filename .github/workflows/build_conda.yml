@@ -33,18 +33,11 @@ jobs:
       - name: Prepare
         run: conda install conda-build=24.9 conda-verify pytest anaconda-client
 
-
       - name: Disable upload
         run: conda config --set anaconda_upload no
-
-      - name: Enable upload
-        if: github.ref == 'refs/heads/main'
-        run: conda config --set anaconda_upload yes
-
-
 
       - name: Build
         env:
           CONDA_TOKEN: ${{ secrets.CONDA_TOKEN }}
-        run: conda build conda-recipe --user slsdetectorgroup --token ${CONDA_TOKEN}
+        run: conda build conda-recipe 
 
