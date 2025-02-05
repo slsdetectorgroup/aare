@@ -7,6 +7,7 @@
 #include "aare/RawSubFile.hpp"
 
 #include "aare/defs.hpp"
+#include "aare/decode.hpp"
 // #include "aare/fClusterFileV2.hpp"
 
 #include <cstdint>
@@ -22,6 +23,32 @@ namespace py = pybind11;
 using namespace ::aare;
 
 void define_ctb_raw_file_io_bindings(py::module &m) {
+
+m.def("adc_sar_05_decode64to16", [](py::array_t<uint8_t> input) {
+
+    
+    if(input.ndim() != 2){
+        throw std::runtime_error("Only 2D arrays are supported at this moment"); 
+    }
+
+    //Create a 2D output array with the same shape as the input
+    std::vector<ssize_t> shape{input.shape(0), input.shape(1)/8};
+    py::array_t<uint16_t> output(shape);
+
+    //Create a view of the input and output arrays
+    NDView<uint64_t, 2> input_view(reinterpret_cast<uint64_t*>(input.mutable_data()), {output.shape(0), output.shape(1)});
+
+    NDView<uint16_t, 2> output_view(output.mutable_data(), {output.shape(0), output.shape(1)});
+
+    adc_sar_05_decode64to16(input_view, output_view);
+    // for (size_t i=0; i!=input_view.size(); ++i) {
+    //     output_view(i) = decode_adc(input_view(i));
+    // }
+
+
+
+    return output;
+});
 
  py::class_<CtbRawFile>(m, "CtbRawFile")
         .def(py::init<const std::filesystem::path &>())

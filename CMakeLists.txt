@@ -310,6 +310,7 @@ set(PUBLICHEADERS
     include/aare/ClusterFile.hpp
     include/aare/CtbRawFile.hpp
     include/aare/ClusterVector.hpp
+    include/aare/decode.hpp
     include/aare/defs.hpp
     include/aare/Dtype.hpp
     include/aare/File.hpp
@@ -335,6 +336,7 @@ set(SourceFiles
     ${CMAKE_CURRENT_SOURCE_DIR}/src/ClusterFile.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/src/defs.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/src/Dtype.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/decode.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/src/Frame.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/src/File.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/src/Fit.cpp
