@@ -2,6 +2,10 @@ import numpy as np
 from . import _aare
 
 
+class AdcSar05Transform64to16:
+    def __call__(self, data):
+        return _aare.adc_sar_05_decode64to16(data)
+
 class Moench05Transform:
     #Could be moved to C++ without changing the interface
     def __init__(self):
@@ -46,3 +50,4 @@ moench05 = Moench05Transform()
 moench05_1g = Moench05Transform1g()
 moench05_old = Moench05TransformOld()
 matterhorn02 = Matterhorn02Transform()
+adc_sar_05_64to16 = AdcSar05Transform64to16()
