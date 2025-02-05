@@ -212,7 +212,7 @@ void RawFile::update_geometry_with_roi() {
                     if (roi.xmin > m.x) {
                         m.width -= roi.xmin - m.x;
                     }
-                    if (roi.xmax < m.x + m.width) {
+                    if (roi.xmax < m.x + original_width) {
                         m.width -= m.x + original_width - roi.xmax;
                     }
                     m.x = pos_x;
@@ -226,7 +226,7 @@ void RawFile::update_geometry_with_roi() {
                         m.height -= roi.ymin - m.y;
 
                     }
-                    if (roi.ymax < m.y + m.height) {
+                    if (roi.ymax < m.y + original_height) {
                         m.height -= m.y + original_height - roi.ymax;
                     }
                     m.y = pos_y;
