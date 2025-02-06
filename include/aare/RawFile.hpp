@@ -111,7 +111,7 @@ class RawFile : public FileInterface {
      */
     static DetectorHeader read_header(const std::filesystem::path &fname);
 
-    void update_geometry_with_roi();
+    // void update_geometry_with_roi();
     int find_number_of_subfiles();
 
     void open_subfiles();

@@ -1,6 +1,7 @@
 #include "aare/RawFile.hpp"
 #include "aare/PixelMap.hpp"
 #include "aare/defs.hpp"
+#include "aare/geo_helpers.hpp"
 
 #include <fmt/format.h>
 #include <nlohmann/json.hpp>
@@ -21,7 +22,27 @@ RawFile::RawFile(const std::filesystem::path &fname, const std::string &mode)
         
 
         find_geometry();
-        update_geometry_with_roi();
+        // update_geometry_with_roi();
+        
+        if (m_master.roi()){
+            //TODO! Refactor RawFile to have a DetectorGeometry member
+
+            //Set up a DetectorGeometry object for the update call
+            DetectorGeometry geo;
+            geo.module_pixel_0 = m_module_pixel_0;
+            geo.modules_x = m_master.geometry().col;
+            geo.modules_y = m_master.geometry().row;
+            geo.pixels_x = m_cols;
+            geo.pixels_y = m_rows;
+
+            auto updated_geo = update_geometry_with_roi(geo, m_master.roi().value());
+            
+            //Side effects on the class
+            m_module_pixel_0 = updated_geo.module_pixel_0;
+            m_cols = updated_geo.pixels_x;
+            m_rows = updated_geo.pixels_y;
+        }
+        
 
         open_subfiles();
     } else {
@@ -186,72 +207,72 @@ void RawFile::find_geometry() {
 #endif
 }
 
-void RawFile::update_geometry_with_roi() {
-    // TODO! implement this
-    if (m_master.roi()) {
-        auto roi = m_master.roi().value();
+// void RawFile::update_geometry_with_roi() {
+//     // TODO! implement this
+//     if (m_master.roi()) {
+//         auto roi = m_master.roi().value();
 
-        // TODO! can we do this cleaner?
-        int pos_y = 0;
-        int pos_y_increment = 0;
-        for (size_t row = 0; row < m_master.geometry().row; row++) {
-            int pos_x = 0;
-            for (size_t col = 0; col < m_master.geometry().col; col++) {
-                auto &m = m_module_pixel_0[row * m_master.geometry().col + col];
-                auto original_height = m.height;
-                auto original_width = m.width;
+//         // TODO! can we do this cleaner?
+//         int pos_y = 0;
+//         int pos_y_increment = 0;
+//         for (size_t row = 0; row < m_master.geometry().row; row++) {
+//             int pos_x = 0;
+//             for (size_t col = 0; col < m_master.geometry().col; col++) {
+//                 auto &m = m_module_pixel_0[row * m_master.geometry().col + col];
+//                 auto original_height = m.height;
+//                 auto original_width = m.width;
 
-                // module is to the left of the roi
-                if (m.x + m.width < roi.xmin) {
-                    m.width = 0;
+//                 // module is to the left of the roi
+//                 if (m.x + m.width < roi.xmin) {
+//                     m.width = 0;
 
-                    // roi is in module
-                } else {
-                    // here we only arrive when the roi is in or to the left of
-                    // the module
-                    if (roi.xmin > m.x) {
-                        m.width -= roi.xmin - m.x;
-                    }
-                    if (roi.xmax < m.x + original_width) {
-                        m.width -= m.x + original_width - roi.xmax;
-                    }
-                    m.x = pos_x;
-                    pos_x += m.width;
-                }
+//                     // roi is in module
+//                 } else {
+//                     // here we only arrive when the roi is in or to the left of
+//                     // the module
+//                     if (roi.xmin > m.x) {
+//                         m.width -= roi.xmin - m.x;
+//                     }
+//                     if (roi.xmax < m.x + original_width) {
+//                         m.width -= m.x + original_width - roi.xmax;
+//                     }
+//                     m.x = pos_x;
+//                     pos_x += m.width;
+//                 }
 
-                if (m.y + m.height < roi.ymin) {
-                    m.height = 0;
-                } else {
-                    if ((roi.ymin > m.y) && (roi.ymin < m.y + m.height)) {
-                        m.height -= roi.ymin - m.y;
+//                 if (m.y + m.height < roi.ymin) {
+//                     m.height = 0;
+//                 } else {
+//                     if ((roi.ymin > m.y) && (roi.ymin < m.y + m.height)) {
+//                         m.height -= roi.ymin - m.y;
 
-                    }
-                    if (roi.ymax < m.y + original_height) {
-                        m.height -= m.y + original_height - roi.ymax;
-                    }
-                    m.y = pos_y;
-                    pos_y_increment = m.height;
-                }
-            }
-            // increment pos_y
-            pos_y += pos_y_increment;
-        }
+//                     }
+//                     if (roi.ymax < m.y + original_height) {
+//                         m.height -= m.y + original_height - roi.ymax;
+//                     }
+//                     m.y = pos_y;
+//                     pos_y_increment = m.height;
+//                 }
+//             }
+//             // increment pos_y
+//             pos_y += pos_y_increment;
+//         }
 
-        m_rows = roi.height();
-        m_cols = roi.width();
-    }
+//         m_rows = roi.height();
+//         m_cols = roi.width();
+//     }
 
-#ifdef AARE_VERBOSE
-    fmt::print("RawFile::update_geometry_with_roi()\n");
-    for (const auto &m : m_module_pixel_0) {
-        fmt::print("Module at position: (r:{}, c:{}, h:{}, w:{})\n", m.y, m.x,
-                   m.height, m.width);
-    }
-    fmt::print("Updated image size: {}x{}\n\n", m_rows, m_cols);
-    fmt::print("\n");
-#endif
+// #ifdef AARE_VERBOSE
+//     fmt::print("RawFile::update_geometry_with_roi()\n");
+//     for (const auto &m : m_module_pixel_0) {
+//         fmt::print("Module at position: (r:{}, c:{}, h:{}, w:{})\n", m.y, m.x,
+//                    m.height, m.width);
+//     }
+//     fmt::print("Updated image size: {}x{}\n\n", m_rows, m_cols);
+//     fmt::print("\n");
+// #endif
 
-}
+// }
 
 Frame RawFile::get_frame(size_t frame_index) {
     auto f = Frame(m_rows, m_cols, Dtype::from_bitdepth(m_master.bitdepth()));

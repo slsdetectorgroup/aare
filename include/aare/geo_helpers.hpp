@@ -3,7 +3,14 @@
 #include "aare/RawMasterFile.hpp" //ROI refactor away
 namespace aare{
 
-DetectorGeometry geometry_from_roi(DetectorGeometry geo, ROI roi);
+/**
+ * @brief Update the detector geometry given a region of interest
+ * 
+ * @param geo 
+ * @param roi 
+ * @return DetectorGeometry 
+ */
+DetectorGeometry update_geometry_with_roi(DetectorGeometry geo, ROI roi);
 
 
 } // namespace aare

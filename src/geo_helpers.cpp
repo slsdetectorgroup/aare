@@ -4,7 +4,7 @@
 
 namespace aare{
 
-DetectorGeometry geometry_from_roi(DetectorGeometry geo, aare::ROI roi) {
+DetectorGeometry update_geometry_with_roi(DetectorGeometry geo, aare::ROI roi) {
     int pos_y = 0;
     int pos_y_increment = 0;
     for (size_t row = 0; row < geo.modules_y; row++) {
