@@ -289,6 +289,7 @@ set(PUBLICHEADERS
     include/aare/File.hpp
     include/aare/FileInterface.hpp
     include/aare/Frame.hpp
+    include/aare/geo_helpers.hpp
     include/aare/NDArray.hpp
     include/aare/NDView.hpp
     include/aare/NumpyFile.hpp
@@ -311,6 +312,7 @@ set(SourceFiles
     ${CMAKE_CURRENT_SOURCE_DIR}/src/decode.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/src/Frame.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/src/File.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/geo_helpers.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/src/NumpyFile.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/src/NumpyHelpers.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/src/PixelMap.cpp
@@ -352,6 +354,7 @@ if(AARE_TESTS)
             ${CMAKE_CURRENT_SOURCE_DIR}/src/defs.test.cpp
             ${CMAKE_CURRENT_SOURCE_DIR}/src/Dtype.test.cpp
             ${CMAKE_CURRENT_SOURCE_DIR}/src/Frame.test.cpp
+            ${CMAKE_CURRENT_SOURCE_DIR}/src/geo_helpers.test.cpp
             ${CMAKE_CURRENT_SOURCE_DIR}/src/RawMasterFile.test.cpp
             ${CMAKE_CURRENT_SOURCE_DIR}/src/NDArray.test.cpp
             ${CMAKE_CURRENT_SOURCE_DIR}/src/NDView.test.cpp

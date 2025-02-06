@@ -118,4 +118,5 @@ class RawFile : public FileInterface {
     void find_geometry();
 };
 
+
 } // namespace aare

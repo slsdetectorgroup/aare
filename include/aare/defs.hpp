@@ -186,6 +186,16 @@ struct ModuleGeometry{
     int width{};
 };
 
+struct DetectorGeometry{
+    int modules_x{};
+    int modules_y{};
+    int pixels_x{};
+    int pixels_y{};
+    int module_gap_row{};
+    int module_gap_col{};
+    std::vector<ModuleGeometry> module_pixel_0;
+};
+
 
 using dynamic_shape = std::vector<int64_t>;
 

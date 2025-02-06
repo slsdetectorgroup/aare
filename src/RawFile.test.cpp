@@ -1,9 +1,12 @@
 #include "aare/File.hpp"
+#include "aare/RawMasterFile.hpp" //needed for ROI
+#include "aare/RawFile.hpp"
 
 #include <catch2/catch_test_macros.hpp>
 #include <filesystem>
 
 #include "test_config.hpp"
+
 
 using aare::File;
 
@@ -148,3 +151,5 @@ TEST_CASE("Read file with unordered frames", "[.integration]") {
     File f(fpath);
     REQUIRE_THROWS((f.read_frame()));
 }
+
+
