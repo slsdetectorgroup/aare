@@ -196,6 +196,16 @@ struct DetectorGeometry{
     std::vector<ModuleGeometry> module_pixel_0;
 };
 
+struct ROI{
+    int64_t xmin{};
+    int64_t xmax{};
+    int64_t ymin{};
+    int64_t ymax{};
+  
+    int64_t height() const { return ymax - ymin; }
+    int64_t width() const { return xmax - xmin; }
+  };
+
 
 using dynamic_shape = std::vector<int64_t>;
 

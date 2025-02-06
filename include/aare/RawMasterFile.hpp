@@ -62,17 +62,6 @@ class ScanParameters {
 };
 
 
-struct ROI{
-  int64_t xmin{};
-  int64_t xmax{};
-  int64_t ymin{};
-  int64_t ymax{};
-
-  int64_t height() const { return ymax - ymin; }
-  int64_t width() const { return xmax - xmin; }
-};
-
-
 /**
  * @brief Class for parsing a master file either in our .json format or the old
  * .raw format
