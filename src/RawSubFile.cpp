@@ -44,7 +44,7 @@ RawSubFile::RawSubFile(const std::filesystem::path &fname,
 
 void RawSubFile::seek(size_t frame_index) {
     if (frame_index >= n_frames) {
-        throw std::runtime_error("Frame number out of range");
+        throw std::runtime_error(LOCATION + fmt::format("Frame index {} out of range in a file with {} frames", frame_index, n_frames));
     }
     m_file.seekg((sizeof(DetectorHeader) + bytes_per_frame()) * frame_index);
 }

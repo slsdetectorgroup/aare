@@ -8,6 +8,7 @@ import numpy as np
 import boost_histogram as bh
 import time
 
+<<<<<<< HEAD
 from aare import File, ClusterFinder, VarClusterFinder, ClusterFile, CtbRawFile
 from aare import gaus, fit_gaus
 
@@ -28,6 +29,17 @@ with ClusterFile(cluster_file, chunk_size = 1000) as f:
         arr = np.array(clusters)
         total_clusters += clusters.size
         hist3d.fill(arr['y'],arr['x'], clusters.sum_2x2()) #python talks [row, col] cluster finder [x,y]
+=======
+from aare import RawFile
+
+f = RawFile('/mnt/sls_det_storage/jungfrau_data1/vadym_tests/jf12_M431/laser_scan/laserScan_pedestal_G0_master_0.json')
+
+print(f'{f.frame_number(1)}')
+
+for i in range(10):
+    header, img = f.read_frame()
+    print(header['frameNumber'], img.shape)
+>>>>>>> developer
 
         
 t_elapsed = time.perf_counter()-t0
