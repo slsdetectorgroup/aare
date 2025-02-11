@@ -1,7 +1,7 @@
 import matplotlib.pyplot as plt
 import numpy as np
-from aare import fit_gaus, fit_affine
-from aare import gaus, affine
+from aare import fit_gaus, fit_pol1
+from aare import gaus, pol1
 
 textpm = f"±"  #
 textmu = f"μ"  #
@@ -47,7 +47,7 @@ fig0.tight_layout()
 
 
 
-# ================================= Affine fit =================================
+# ================================= pol1 fit =================================
 # Parameters
 n_points = 40
 
@@ -65,11 +65,11 @@ y_values = slope * x_values + intercept + var_points
 
 fig1, ax1 = plt.subplots(1, 1, num=1, figsize=(12, 8))
 ax1.errorbar(x_values, y_values, yerr=errors, fmt=". ", capsize=5)
-par, err = fit_affine(x_values, y_values, errors)
+par, err = fit_pol1(x_values, y_values, errors)
 
 
 x = np.linspace(np.min(x_values), np.max(x_values), 1000)
-ax1.plot(x, affine(x, par), marker="")
+ax1.plot(x, pol1(x, par), marker="")
 ax1.set(xlabel="x", ylabel="y", title=f"a = {par[0]:0.2f}{textpm}{err[0]:0.2f}\n"
                                       f"b = {par[1]:0.2f}{textpm}{err[1]:0.2f}\n"
                                       f"(init: {slope:0.2f}, {intercept:0.2f})")

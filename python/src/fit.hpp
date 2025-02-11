@@ -17,40 +17,40 @@ void define_fit_bindings(py::module &m) {
            py::array_t<double, py::array::c_style | py::array::forcecast> par) {
             auto x_view = make_view_1d(x);
             auto par_view = make_view_1d(par);
-            auto y = new NDArray<double, 1>{aare::func::gauss(x_view, par_view)};
+            auto y = new NDArray<double, 1>{aare::func::gaus(x_view, par_view)};
             return return_image_data(y);
         });
 
-    m.def("affine",
+    m.def("pol1",
           [](py::array_t<double, py::array::c_style | py::array::forcecast> x,
              py::array_t<double, py::array::c_style | py::array::forcecast> par) {
               auto x_view = make_view_1d(x);
               auto par_view = make_view_1d(par);
-              auto y = new NDArray<double, 1>{aare::func::affine(x_view, par_view)};
+              auto y = new NDArray<double, 1>{aare::func::pol1(x_view, par_view)};
               return return_image_data(y);
           });
 
     m.def(
         "fit_gaus",
         [](py::array_t<double, py::array::c_style | py::array::forcecast> x,
-           py::array_t<double, py::array::c_style | py::array::forcecast> data) {
-            if (data.ndim() == 3) {
+           py::array_t<double, py::array::c_style | py::array::forcecast> y) {
+            if (y.ndim() == 3) {
                 auto par = new NDArray<double, 3>{};
-                auto data_view = make_view_3d(data);
+                auto y_view = make_view_3d(y);
                 auto x_view = make_view_1d(x);
-                *par = aare::fit_gaus(data_view, x_view);
+                *par = aare::fit_gaus(x_view, y_view);
                 return return_image_data(par);
-            } else if (data.ndim() == 1) {
+            } else if (y.ndim() == 1) {
                 auto par = new NDArray<double, 1>{};
-                auto data_view = make_view_1d(data);
+                auto y_view = make_view_1d(y);
                 auto x_view = make_view_1d(x);
-                *par = aare::fit_gaus(data_view, x_view);
+                *par = aare::fit_gaus(x_view, y_view);
                 return return_image_data(par);
             } else {
                 throw std::runtime_error("Data must be 1D or 3D");
             }
         },
-        py::arg("data"), py::arg("x"));
+        py::arg("x"), py::arg("y"));
 
     m.def(
         "fit_gaus",
@@ -89,11 +89,35 @@ void define_fit_bindings(py::module &m) {
                 throw std::runtime_error("Data must be 1D or 3D");
             }
         },
-        py::arg("data"), py::arg("x"), py::arg("data_err"));
+        py::arg("x"), py::arg("y"), py::arg("y_err"));
     
 
         m.def(
-        "fit_affine",
+            "fit_pol1",
+            [](py::array_t<double, py::array::c_style | py::array::forcecast> x,
+               py::array_t<double, py::array::c_style | py::array::forcecast> y) {
+                if (y.ndim() == 3) {
+                    auto par = new NDArray<double, 3>{};
+        
+                    auto x_view = make_view_1d(x);
+                    auto y_view = make_view_3d(y);
+                    *par = aare::fit_pol1(x_view, y_view);
+                    return return_image_data(par);
+                } else if (y.ndim() == 1) {
+                    auto par = new NDArray<double, 1>{};
+                    auto x_view = make_view_1d(x);
+                    auto y_view = make_view_1d(y);
+                    *par = aare::fit_pol1(x_view, y_view);
+                    return return_image_data(par);
+                } else {
+                    throw std::runtime_error("Data must be 1D or 3D");
+                }
+            },
+            py::arg("x"), py::arg("y"));
+
+
+        m.def(
+        "fit_pol1",
         [](py::array_t<double, py::array::c_style | py::array::forcecast> x,
            py::array_t<double, py::array::c_style | py::array::forcecast> data,
            py::array_t<double, py::array::c_style | py::array::forcecast>
@@ -106,7 +130,7 @@ void define_fit_bindings(py::module &m) {
                 auto data_view_err = make_view_3d(data_err);
                 auto x_view = make_view_1d(x);
 
-                aare::fit_affine(x_view, data_view, data_view_err, par->view(), par_err->view());
+                aare::fit_pol1(x_view, data_view, data_view_err, par->view(), par_err->view());
                 return py::make_tuple(return_image_data(par), return_image_data(par_err));
  
             } else if (data.ndim() == 1) {
@@ -117,7 +141,7 @@ void define_fit_bindings(py::module &m) {
                 auto data_view_err = make_view_1d(data_err);
                 auto x_view = make_view_1d(x);
 
-                aare::fit_affine(x_view, data_view, data_view_err, par->view(), par_err->view());
+                aare::fit_pol1(x_view, data_view, data_view_err, par->view(), par_err->view());
                 return py::make_tuple(return_image_data(par), return_image_data(par_err));
             } else {
                 throw std::runtime_error("Data must be 1D or 3D");
