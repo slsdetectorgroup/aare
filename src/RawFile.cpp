@@ -22,28 +22,11 @@ RawFile::RawFile(const std::filesystem::path &fname, const std::string &mode)
         
 
         find_geometry();
-        // update_geometry_with_roi();
-        
+
         if (m_master.roi()){
-            //TODO! Refactor RawFile to have a DetectorGeometry member
-
-            //Set up a DetectorGeometry object for the update call
-            DetectorGeometry geo;
-            geo.module_pixel_0 = m_module_pixel_0;
-            geo.modules_x = m_master.geometry().col;
-            geo.modules_y = m_master.geometry().row;
-            geo.pixels_x = m_cols;
-            geo.pixels_y = m_rows;
-
-            auto updated_geo = update_geometry_with_roi(geo, m_master.roi().value());
-            
-            //Side effects on the class
-            m_module_pixel_0 = updated_geo.module_pixel_0;
-            m_cols = updated_geo.pixels_x;
-            m_rows = updated_geo.pixels_y;
+            m_geometry = update_geometry_with_roi(m_geometry, m_master.roi().value());
         }
         
-
         open_subfiles();
     } else {
         throw std::runtime_error(LOCATION +
@@ -93,9 +76,13 @@ size_t RawFile::n_mod() const { return n_subfile_parts; }
 
 
 size_t RawFile::bytes_per_frame() {
-    return m_rows * m_cols * m_master.bitdepth() / 8;
+    // return m_rows * m_cols * m_master.bitdepth() / 8;
+    return m_geometry.pixels_x * m_geometry.pixels_y * m_master.bitdepth() / 8;
 }
-size_t RawFile::pixels_per_frame() { return m_rows * m_cols; }
+size_t RawFile::pixels_per_frame() { 
+    // return m_rows * m_cols; 
+    return m_geometry.pixels_x * m_geometry.pixels_y;
+}
 
 DetectorType RawFile::detector_type() const { return m_master.detector_type(); }
 
@@ -113,8 +100,8 @@ void RawFile::seek(size_t frame_index) {
 size_t RawFile::tell() { return m_current_frame; };
 
 size_t RawFile::total_frames() const { return m_master.frames_in_file(); }
-size_t RawFile::rows() const { return m_rows; }
-size_t RawFile::cols() const { return m_cols; }
+size_t RawFile::rows() const { return m_geometry.pixels_y; }
+size_t RawFile::cols() const { return m_geometry.pixels_x; }
 size_t RawFile::bitdepth() const { return m_master.bitdepth(); }
 xy RawFile::geometry() { return m_master.geometry(); }
 
@@ -123,11 +110,12 @@ void RawFile::open_subfiles() {
         for (size_t i = 0; i != n_subfiles; ++i) {
             auto v = std::vector<RawSubFile *>(n_subfile_parts);
             for (size_t j = 0; j != n_subfile_parts; ++j) {
-                auto pos = m_module_pixel_0[j];
+                auto pos = m_geometry.module_pixel_0[j];
+                fmt::println("POS: {} {} {} {}", pos.origin_x, pos.origin_y, pos.width, pos.height);
                 v[j] = new RawSubFile(m_master.data_fname(j, i),
                                       m_master.detector_type(), pos.height,
                                       pos.width, m_master.bitdepth(),
-                                      positions[j].row, positions[j].col);
+                                      pos.row_index, pos.col_index);
 
             }
             subfiles.push_back(v);
@@ -170,112 +158,49 @@ int RawFile::find_number_of_subfiles() {
 
 RawMasterFile RawFile::master() const { return m_master; }
 
+/**
+ * @brief Find the geometry of the detector by opening all the subfiles and
+ * reading the headers. 
+ */
 void RawFile::find_geometry() {
+    
+    //Hold the maximal row and column number found
+    //Later used for calculating the total number of rows and columns
     uint16_t r{};
     uint16_t c{};
 
 
     for (size_t i = 0; i < n_subfile_parts; i++) {
-        auto h = this->read_header(m_master.data_fname(i, 0));
+        auto h = read_header(m_master.data_fname(i, 0));
         r = std::max(r, h.row);
         c = std::max(c, h.column);
-        positions.push_back({h.row, h.column});
+        // positions.push_back({h.row, h.column});
+       
         ModuleGeometry g;
-        g.x = h.column * m_master.pixels_x();
-        g.y = h.row * m_master.pixels_y();
+        g.origin_x = h.column * m_master.pixels_x();
+        g.origin_y = h.row * m_master.pixels_y();
+        g.row_index = h.row;
+        g.col_index = h.column;
         g.width = m_master.pixels_x();
         g.height = m_master.pixels_y();
-        m_module_pixel_0.push_back(g);
+        m_geometry.module_pixel_0.push_back(g);
 
     }
 
     r++;
     c++;
 
-    m_rows = (r * m_master.pixels_y());
-    m_cols = (c * m_master.pixels_x());
+    m_geometry.pixels_y = (r * m_master.pixels_y());
+    m_geometry.pixels_x  = (c * m_master.pixels_x());
+    m_geometry.modules_x = c;
+    m_geometry.modules_y = r;
+    m_geometry.pixels_y += static_cast<size_t>((r - 1) * cfg.module_gap_row);
 
-    m_rows += static_cast<size_t>((r - 1) * cfg.module_gap_row);
-
-#ifdef AARE_VERBOSE
-    fmt::print("\nRawFile::find_geometry()\n");
-    for (size_t i = 0; i < m_module_pixel_0.size(); i++) {
-        fmt::print("Module {} at position: (r:{},c:{})\n", i,
-                   m_module_pixel_0[i].y, m_module_pixel_0[i].x);
-    }
-    fmt::print("Image size: {}x{}\n\n", m_rows, m_cols);
-#endif
 }
 
-// void RawFile::update_geometry_with_roi() {
-//     // TODO! implement this
-//     if (m_master.roi()) {
-//         auto roi = m_master.roi().value();
-
-//         // TODO! can we do this cleaner?
-//         int pos_y = 0;
-//         int pos_y_increment = 0;
-//         for (size_t row = 0; row < m_master.geometry().row; row++) {
-//             int pos_x = 0;
-//             for (size_t col = 0; col < m_master.geometry().col; col++) {
-//                 auto &m = m_module_pixel_0[row * m_master.geometry().col + col];
-//                 auto original_height = m.height;
-//                 auto original_width = m.width;
-
-//                 // module is to the left of the roi
-//                 if (m.x + m.width < roi.xmin) {
-//                     m.width = 0;
-
-//                     // roi is in module
-//                 } else {
-//                     // here we only arrive when the roi is in or to the left of
-//                     // the module
-//                     if (roi.xmin > m.x) {
-//                         m.width -= roi.xmin - m.x;
-//                     }
-//                     if (roi.xmax < m.x + original_width) {
-//                         m.width -= m.x + original_width - roi.xmax;
-//                     }
-//                     m.x = pos_x;
-//                     pos_x += m.width;
-//                 }
-
-//                 if (m.y + m.height < roi.ymin) {
-//                     m.height = 0;
-//                 } else {
-//                     if ((roi.ymin > m.y) && (roi.ymin < m.y + m.height)) {
-//                         m.height -= roi.ymin - m.y;
-
-//                     }
-//                     if (roi.ymax < m.y + original_height) {
-//                         m.height -= m.y + original_height - roi.ymax;
-//                     }
-//                     m.y = pos_y;
-//                     pos_y_increment = m.height;
-//                 }
-//             }
-//             // increment pos_y
-//             pos_y += pos_y_increment;
-//         }
-
-//         m_rows = roi.height();
-//         m_cols = roi.width();
-//     }
-
-// #ifdef AARE_VERBOSE
-//     fmt::print("RawFile::update_geometry_with_roi()\n");
-//     for (const auto &m : m_module_pixel_0) {
-//         fmt::print("Module at position: (r:{}, c:{}, h:{}, w:{})\n", m.y, m.x,
-//                    m.height, m.width);
-//     }
-//     fmt::print("Updated image size: {}x{}\n\n", m_rows, m_cols);
-//     fmt::print("\n");
-// #endif
-
-// }
 
 Frame RawFile::get_frame(size_t frame_index) {
-    auto f = Frame(m_rows, m_cols, Dtype::from_bitdepth(m_master.bitdepth()));
+    auto f = Frame(m_geometry.pixels_y, m_geometry.pixels_x, Dtype::from_bitdepth(m_master.bitdepth()));
     std::byte *frame_buffer = f.data();
     get_frame_into(frame_index, frame_buffer);
     return f;
@@ -342,10 +267,10 @@ void RawFile::get_frame_into(size_t frame_index, std::byte *frame_buffer, Detect
             }
 
             // This is where we start writing
-            auto offset = (m_module_pixel_0[part_idx].y * m_cols +
-                          m_module_pixel_0[part_idx].x)*m_master.bitdepth()/8;
+            auto offset = (m_geometry.module_pixel_0[part_idx].origin_y * m_geometry.pixels_x +
+                m_geometry.module_pixel_0[part_idx].origin_x)*m_master.bitdepth()/8;
 
-            if (m_module_pixel_0[part_idx].x!=0)
+            if (m_geometry.module_pixel_0[part_idx].origin_x!=0)
                 throw std::runtime_error(LOCATION + "Implementation error. x pos not 0.");
             
             //TODO! Risk for out of range access
@@ -369,7 +294,7 @@ void RawFile::get_frame_into(size_t frame_index, std::byte *frame_buffer, Detect
         // level
 
         for (size_t part_idx = 0; part_idx != n_subfile_parts; ++part_idx) {
-            auto pos = m_module_pixel_0[part_idx];
+            auto pos = m_geometry.module_pixel_0[part_idx];
             auto corrected_idx = frame_indices[part_idx];
             auto subfile_id = corrected_idx / m_master.max_frames_per_file();
             if (subfile_id >= subfiles.size()) {
@@ -385,9 +310,9 @@ void RawFile::get_frame_into(size_t frame_index, std::byte *frame_buffer, Detect
             for (size_t cur_row = 0; cur_row < static_cast<size_t>(pos.height);
                  cur_row++) {
 
-                auto irow = (pos.y + cur_row);
-                auto icol = pos.x;
-                auto dest = (irow * this->m_cols + icol);
+                auto irow = (pos.origin_y + cur_row);
+                auto icol = pos.origin_x;
+                auto dest = (irow * this->m_geometry.pixels_x + icol);
                 dest = dest * m_master.bitdepth() / 8;
                 memcpy(frame_buffer + dest,
                        part_buffer + cur_row * pos.width *

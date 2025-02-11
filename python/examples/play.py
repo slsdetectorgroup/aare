@@ -12,6 +12,8 @@ from aare import RawFile
 
 f = RawFile('/mnt/sls_det_storage/jungfrau_data1/vadym_tests/jf12_M431/laser_scan/laserScan_pedestal_G0_master_0.json')
 
+print(f'{f.frame_number(1)}')
+
 for i in range(10):
     header, img = f.read_frame()
     print(header['frameNumber'], img.shape)

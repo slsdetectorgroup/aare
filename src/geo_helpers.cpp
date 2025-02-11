@@ -5,6 +5,12 @@
 namespace aare{
 
 DetectorGeometry update_geometry_with_roi(DetectorGeometry geo, aare::ROI roi) {
+    #ifdef AARE_VERBOSE
+    fmt::println("update_geometry_with_roi() called with ROI: {} {} {} {}",
+                 roi.xmin, roi.xmax, roi.ymin, roi.ymax);
+    fmt::println("Geometry: {} {} {} {} {} {}",
+                 geo.modules_x, geo.modules_y, geo.pixels_x, geo.pixels_y, geo.module_gap_row, geo.module_gap_col);
+    #endif
     int pos_y = 0;
     int pos_y_increment = 0;
     for (size_t row = 0; row < geo.modules_y; row++) {
@@ -15,36 +21,39 @@ DetectorGeometry update_geometry_with_roi(DetectorGeometry geo, aare::ROI roi) {
             auto original_width = m.width;
 
             // module is to the left of the roi
-            if (m.x + m.width < roi.xmin) {
+            if (m.origin_x + m.width < roi.xmin) {
                 m.width = 0;
 
                 // roi is in module
             } else {
                 // here we only arrive when the roi is in or to the left of
                 // the module
-                if (roi.xmin > m.x) {
-                    m.width -= roi.xmin - m.x;
+                if (roi.xmin > m.origin_x) {
+                    m.width -= roi.xmin - m.origin_x;
                 }
-                if (roi.xmax < m.x + original_width) {
-                    m.width -= m.x + original_width - roi.xmax;
+                if (roi.xmax < m.origin_x + original_width) {
+                    m.width -= m.origin_x + original_width - roi.xmax;
                 }
-                m.x = pos_x;
+                m.origin_x = pos_x;
                 pos_x += m.width;
             }
 
-            if (m.y + m.height < roi.ymin) {
+            if (m.origin_y + m.height < roi.ymin) {
                 m.height = 0;
             } else {
-                if ((roi.ymin > m.y) && (roi.ymin < m.y + m.height)) {
-                    m.height -= roi.ymin - m.y;
+                if ((roi.ymin > m.origin_y) && (roi.ymin < m.origin_y + m.height)) {
+                    m.height -= roi.ymin - m.origin_y;
 
                 }
-                if (roi.ymax < m.y + original_height) {
-                    m.height -= m.y + original_height - roi.ymax;
+                if (roi.ymax < m.origin_y + original_height) {
+                    m.height -= m.origin_y + original_height - roi.ymax;
                 }
-                m.y = pos_y;
+                m.origin_y = pos_y;
                 pos_y_increment = m.height;
             }
+            #ifdef AARE_VERBOSE
+    fmt::println("Module {} {} {} {}", m.origin_x, m.origin_y, m.width, m.height);
+    #endif
         }
         // increment pos_y
         pos_y += pos_y_increment;

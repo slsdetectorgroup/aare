@@ -179,13 +179,22 @@ template <typename T> struct t_xy {
 using xy = t_xy<uint32_t>;
 
 
+/**
+ * @brief Class to hold the geometry of a module. Where pixel 0 is located and the size of the module
+ */
 struct ModuleGeometry{
-    int x{};
-    int y{};
+    int origin_x{};
+    int origin_y{};
     int height{};
     int width{};
+    int row_index{};
+    int col_index{}; 
 };
 
+/**
+ * @brief Class to hold the geometry of a detector. Number of modules, their size and where pixel 0 
+ * for each module is located
+ */
 struct DetectorGeometry{
     int modules_x{};
     int modules_y{};
