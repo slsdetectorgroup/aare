@@ -22,8 +22,8 @@ uint16_t adc_sar_05_decode64to16(uint64_t input){
 }
 
 void adc_sar_05_decode64to16(NDView<uint64_t, 2> input, NDView<uint16_t,2> output){
-    for(size_t i = 0; i < input.shape(0); i++){
-        for(size_t j = 0; j < input.shape(1); j++){
+    for(int64_t i = 0; i < input.shape(0); i++){
+        for(int64_t j = 0; j < input.shape(1); j++){
             output(i,j) = adc_sar_05_decode64to16(input(i,j));
         }
     }

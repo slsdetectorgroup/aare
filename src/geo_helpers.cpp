@@ -13,9 +13,9 @@ DetectorGeometry update_geometry_with_roi(DetectorGeometry geo, aare::ROI roi) {
     #endif
     int pos_y = 0;
     int pos_y_increment = 0;
-    for (size_t row = 0; row < geo.modules_y; row++) {
+    for (int row = 0; row < geo.modules_y; row++) {
         int pos_x = 0;
-        for (size_t col = 0; col < geo.modules_x; col++) {
+        for (int col = 0; col < geo.modules_x; col++) {
             auto &m = geo.module_pixel_0[row * geo.modules_x + col];
             auto original_height = m.height;
             auto original_width = m.width;
