@@ -179,12 +179,41 @@ template <typename T> struct t_xy {
 using xy = t_xy<uint32_t>;
 
 
+/**
+ * @brief Class to hold the geometry of a module. Where pixel 0 is located and the size of the module
+ */
 struct ModuleGeometry{
-    int x{};
-    int y{};
+    int origin_x{};
+    int origin_y{};
     int height{};
     int width{};
+    int row_index{};
+    int col_index{}; 
 };
+
+/**
+ * @brief Class to hold the geometry of a detector. Number of modules, their size and where pixel 0 
+ * for each module is located
+ */
+struct DetectorGeometry{
+    int modules_x{};
+    int modules_y{};
+    int pixels_x{};
+    int pixels_y{};
+    int module_gap_row{};
+    int module_gap_col{};
+    std::vector<ModuleGeometry> module_pixel_0;
+};
+
+struct ROI{
+    int64_t xmin{};
+    int64_t xmax{};
+    int64_t ymin{};
+    int64_t ymax{};
+  
+    int64_t height() const { return ymax - ymin; }
+    int64_t width() const { return xmax - xmin; }
+  };
 
 
 using dynamic_shape = std::vector<int64_t>;

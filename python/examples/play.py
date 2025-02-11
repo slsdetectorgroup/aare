@@ -8,13 +8,15 @@ import numpy as np
 import boost_histogram as bh
 import time
 
-from aare import File, ClusterFinder, VarClusterFinder, ClusterFile
+from aare import RawFile
 
-base = Path('/mnt/sls_det_storage/matterhorn_data/aare_test_data/ci/aare_test_data/clusters/')
+f = RawFile('/mnt/sls_det_storage/jungfrau_data1/vadym_tests/jf12_M431/laser_scan/laserScan_pedestal_G0_master_0.json')
 
-f = ClusterFile(base/'beam_En700eV_-40deg_300V_10us_d0_f0_100.clust')
+print(f'{f.frame_number(1)}')
 
-c = f.read_clusters(100)
+for i in range(10):
+    header, img = f.read_frame()
+    print(header['frameNumber'], img.shape)
 
 # for i, frame in enumerate(f):
 #     print(f'{i}', end='\r')

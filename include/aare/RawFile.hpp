@@ -34,15 +34,19 @@ class RawFile : public FileInterface {
     size_t n_subfile_parts{}; // d0,d1...dn
     //TODO! move to vector of SubFile instead of pointers
     std::vector<std::vector<RawSubFile *>> subfiles; //subfiles[f0,f1...fn][d0,d1...dn]
-    std::vector<xy> positions;
-    std::vector<ModuleGeometry> m_module_pixel_0;
+    // std::vector<xy> positions;
+    
     ModuleConfig cfg{0, 0};
 
     RawMasterFile m_master;
 
     size_t m_current_frame{};
-    size_t m_rows{};
-    size_t m_cols{};
+
+    // std::vector<ModuleGeometry> m_module_pixel_0;
+    // size_t m_rows{};
+    // size_t m_cols{};
+
+    DetectorGeometry m_geometry;
 
   public:
     /**
@@ -111,11 +115,12 @@ class RawFile : public FileInterface {
      */
     static DetectorHeader read_header(const std::filesystem::path &fname);
 
-    void update_geometry_with_roi();
+    // void update_geometry_with_roi();
     int find_number_of_subfiles();
 
     void open_subfiles();
     void find_geometry();
 };
+
 
 } // namespace aare
