@@ -271,6 +271,7 @@ target_compile_options(
         -Wvla
         -Wdouble-promotion
         -Werror=return-type #important can cause segfault in optimzed builds
+        -flto=auto
     )
 
 endif() #GCC/Clang specific

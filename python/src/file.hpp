@@ -20,6 +20,11 @@
 namespace py = pybind11;
 using namespace ::aare;
 
+//Disable warnings for unused parameters, as we ignore some
+//in the __exit__ method
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wunused-parameter"
+
 void define_file_io_bindings(py::module &m) {
 
 
@@ -238,7 +243,7 @@ void define_file_io_bindings(py::module &m) {
                  return image;
              });
 
-
+#pragma GCC diagnostic pop
     // py::class_<ClusterHeader>(m, "ClusterHeader")
     //     .def(py::init<>())
     //     .def_readwrite("frame_number", &ClusterHeader::frame_number)
