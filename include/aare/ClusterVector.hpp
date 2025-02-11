@@ -163,7 +163,6 @@ template <typename T, typename CoordType = int16_t> class ClusterVector {
             throw std::runtime_error(
                 "Only 3x3 clusters are supported for the 2x2 sum.");
         }
-        const size_t n_pixels = m_cluster_size_x * m_cluster_size_y;
         std::byte *ptr = m_data + 2 * sizeof(CoordType); // skip x and y
 
         for (size_t i = 0; i < m_size; i++) {

@@ -153,7 +153,7 @@ void define_cluster_finder_bindings(py::module &m) {
             [](ClusterFinder<uint16_t, pd_type> &self,
                py::array_t<uint16_t> frame, uint64_t frame_number) {
                 auto view = make_view_2d(frame);
-                self.find_clusters(view);
+                self.find_clusters(view, frame_number);
                 return;
             },
             py::arg(), py::arg("frame_number") = 0);
