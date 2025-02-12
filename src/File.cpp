@@ -45,6 +45,8 @@ File& File::operator=(File &&other) noexcept {
     return *this;
 }
 
+// void File::close() { file_impl->close(); }
+
 Frame File::read_frame() { return file_impl->read_frame(); }
 Frame File::read_frame(size_t frame_index) {
     return file_impl->read_frame(frame_index);

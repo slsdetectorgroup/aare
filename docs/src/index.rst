@@ -30,9 +30,12 @@ AARE
     pyFile
     pyCtbRawFile
     pyClusterFile
+    pyClusterVector
     pyRawFile
     pyRawMasterFile
     pyVarClusterFinder
+
+    pyFit
 
 
 .. toctree::
@@ -45,6 +48,7 @@ AARE
     File
     Dtype
     ClusterFinder
+    ClusterFinderMT
     ClusterFile
     ClusterVector
     Pedestal

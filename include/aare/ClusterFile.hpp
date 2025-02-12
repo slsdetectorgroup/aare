@@ -33,6 +33,12 @@ typedef enum {
     pTopRight = 8
 } pixel;
 
+struct Eta2 {
+    double x;
+    double y;
+    corner c;
+};
+
 struct ClusterAnalysis {
     uint32_t c;
     int32_t tot;
@@ -49,6 +55,19 @@ int32_t frame_number
 uint32_t number_of_clusters
 ....
 */
+
+/**
+ * @brief Class to read and write cluster files
+ * Expects data to be laid out as:
+ *
+ *
+ *       int32_t frame_number
+ *       uint32_t number_of_clusters
+ *       int16_t x, int16_t y, int32_t data[9] x number_of_clusters
+ *       int32_t frame_number
+ *       uint32_t number_of_clusters
+ *       etc.
+ */
 class ClusterFile {
     FILE *fp{};
     uint32_t m_num_left{};
@@ -56,26 +75,61 @@ class ClusterFile {
     const std::string m_mode;
 
   public:
+    /**
+     * @brief Construct a new Cluster File object
+     * @param fname path to the file
+     * @param chunk_size number of clusters to read at a time when iterating
+     * over the file
+     * @param mode mode to open the file in. "r" for reading, "w" for writing,
+     * "a" for appending
+     * @throws std::runtime_error if the file could not be opened
+     */
     ClusterFile(const std::filesystem::path &fname, size_t chunk_size = 1000,
                 const std::string &mode = "r");
+    
+    
     ~ClusterFile();
-    std::vector<Cluster3x3> read_clusters(size_t n_clusters);
-    std::vector<Cluster3x3> read_frame(int32_t &out_fnum);
-    void write_frame(int32_t frame_number,
-                     const ClusterVector<int32_t> &clusters);
-    std::vector<Cluster3x3>
-    read_cluster_with_cut(size_t n_clusters, double *noise_map, int nx, int ny);
 
+    /**
+     * @brief Read n_clusters clusters from the file discarding frame numbers.
+     * If EOF is reached the returned vector will have less than n_clusters
+     * clusters
+     */
+    ClusterVector<int32_t> read_clusters(size_t n_clusters);
+
+    /**
+     * @brief Read a single frame from the file and return the clusters. The
+     * cluster vector will have the frame number set.
+     * @throws std::runtime_error if the file is not opened for reading or the file pointer not
+     * at the beginning of a frame
+     */
+    ClusterVector<int32_t> read_frame();
+
+
+    void write_frame(const ClusterVector<int32_t> &clusters);
+    
+    // Need to be migrated to support NDArray and return a ClusterVector
+    // std::vector<Cluster3x3>
+    // read_cluster_with_cut(size_t n_clusters, double *noise_map, int nx, int ny);
+
+    /**
+     * @brief Return the chunk size
+     */
     size_t chunk_size() const { return m_chunk_size; }
+    
+    
+    /**
+     * @brief Close the file. If not closed the file will be closed in the destructor
+     */
     void close();
 };
 
 int analyze_data(int32_t *data, int32_t *t2, int32_t *t3, char *quad,
                  double *eta2x, double *eta2y, double *eta3x, double *eta3y);
-int analyze_cluster(Cluster3x3& cl, int32_t *t2, int32_t *t3, char *quad,
+int analyze_cluster(Cluster3x3 &cl, int32_t *t2, int32_t *t3, char *quad,
                     double *eta2x, double *eta2y, double *eta3x, double *eta3y);
 
-NDArray<double, 2> calculate_eta2( ClusterVector<int>& clusters);
-std::array<double,2> calculate_eta2( Cluster3x3& cl);
+NDArray<double, 2> calculate_eta2(ClusterVector<int> &clusters);
+Eta2 calculate_eta2(Cluster3x3 &cl);
 
 } // namespace aare

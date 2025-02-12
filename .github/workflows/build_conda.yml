@@ -3,7 +3,6 @@ name: Build pkgs and deploy if on main
 on:
   push:
     branches:
-     - main
      - developer
 
 jobs:
@@ -33,12 +32,9 @@ jobs:
       - name: Prepare
         run: conda install conda-build=24.9 conda-verify pytest anaconda-client
 
-      - name: Enable upload
-        if: github.ref == 'refs/heads/main'
-        run: conda config --set anaconda_upload yes
+      - name: Disable upload
+        run: conda config --set anaconda_upload no
 
       - name: Build
-        env:
-          CONDA_TOKEN: ${{ secrets.CONDA_TOKEN }}
-        run: conda build conda-recipe --user slsdetectorgroup --token ${CONDA_TOKEN}
+        run: conda build conda-recipe 
 

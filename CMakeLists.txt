@@ -48,6 +48,7 @@ option(AARE_FETCH_PYBIND11 "Use FetchContent to download pybind11" ON)
 option(AARE_FETCH_CATCH "Use FetchContent to download catch2" ON)
 option(AARE_FETCH_JSON "Use FetchContent to download nlohmann::json" ON)
 option(AARE_FETCH_ZMQ "Use FetchContent to download libzmq" ON)
+option(AARE_FETCH_LMFIT "Use FetchContent to download lmfit" ON)
 
 
 #Convenience option to use system libraries only (no FetchContent)
@@ -75,6 +76,34 @@ endif()
 
 
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
+
+if(AARE_FETCH_LMFIT)
+    set(lmfit_patch git apply ${CMAKE_CURRENT_SOURCE_DIR}/patches/lmfit.patch)
+    FetchContent_Declare(
+        lmfit
+        GIT_REPOSITORY https://jugit.fz-juelich.de/mlz/lmfit.git
+        GIT_TAG        main
+        PATCH_COMMAND ${lmfit_patch}
+        UPDATE_DISCONNECTED 1
+        EXCLUDE_FROM_ALL
+    )
+    #Disable what we don't need from lmfit
+    set(BUILD_TESTING OFF CACHE BOOL "")
+    set(LMFIT_CPPTEST OFF CACHE BOOL "")
+    set(LIB_MAN OFF CACHE BOOL "")
+    set(LMFIT_CPPTEST OFF CACHE BOOL "")
+    set(BUILD_SHARED_LIBS OFF CACHE BOOL "")
+
+    
+    FetchContent_MakeAvailable(lmfit)
+    set_property(TARGET lmfit PROPERTY POSITION_INDEPENDENT_CODE ON)
+
+    target_include_directories (lmfit PUBLIC "${libzmq_SOURCE_DIR}/lib")
+    message(STATUS "lmfit include dir: ${lmfit_SOURCE_DIR}/lib")
+else()
+    find_package(lmfit REQUIRED)
+endif()
+
 
 if(AARE_FETCH_ZMQ)
     # Fetchcontent_Declare is deprecated need to find a way to update this
@@ -127,8 +156,8 @@ if (AARE_FETCH_FMT)
         LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR}
         ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR}
         RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR}
-        INCLUDES DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}
-)
+        INCLUDES DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}   
+    )  
 else()
       find_package(fmt 6 REQUIRED)
 endif()
@@ -146,7 +175,6 @@ if (AARE_FETCH_JSON)
     install(
         TARGETS nlohmann_json
         EXPORT "${TARGETS_EXPORT_NAME}"
-        
     )
     message(STATUS "target: ${NLOHMANN_JSON_TARGET_NAME}")
 else()
@@ -283,11 +311,14 @@ set(PUBLICHEADERS
     include/aare/ClusterFile.hpp
     include/aare/CtbRawFile.hpp
     include/aare/ClusterVector.hpp
+    include/aare/decode.hpp
     include/aare/defs.hpp
     include/aare/Dtype.hpp
     include/aare/File.hpp
+    include/aare/Fit.hpp
     include/aare/FileInterface.hpp
     include/aare/Frame.hpp
+    include/aare/geo_helpers.hpp
     include/aare/NDArray.hpp
     include/aare/NDView.hpp
     include/aare/NumpyFile.hpp
@@ -298,6 +329,7 @@ set(PUBLICHEADERS
     include/aare/RawMasterFile.hpp
     include/aare/RawSubFile.hpp
     include/aare/VarClusterFinder.hpp
+    include/aare/utils/task.hpp
 
 )
 
@@ -307,14 +339,18 @@ set(SourceFiles
     ${CMAKE_CURRENT_SOURCE_DIR}/src/ClusterFile.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/src/defs.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/src/Dtype.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/decode.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/src/Frame.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/src/File.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/Fit.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/geo_helpers.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/src/NumpyFile.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/src/NumpyHelpers.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/src/PixelMap.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/src/RawFile.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/src/RawSubFile.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/src/RawMasterFile.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/utils/task.cpp
 )
 
 
@@ -334,6 +370,7 @@ target_link_libraries(
     ${STD_FS_LIB} # from helpers.cmake
     PRIVATE 
     aare_compiler_flags 
+    lmfit
 )
 
 set_target_properties(aare_core PROPERTIES
@@ -350,6 +387,7 @@ if(AARE_TESTS)
             ${CMAKE_CURRENT_SOURCE_DIR}/src/defs.test.cpp
             ${CMAKE_CURRENT_SOURCE_DIR}/src/Dtype.test.cpp
             ${CMAKE_CURRENT_SOURCE_DIR}/src/Frame.test.cpp
+            ${CMAKE_CURRENT_SOURCE_DIR}/src/geo_helpers.test.cpp
             ${CMAKE_CURRENT_SOURCE_DIR}/src/RawMasterFile.test.cpp
             ${CMAKE_CURRENT_SOURCE_DIR}/src/NDArray.test.cpp
             ${CMAKE_CURRENT_SOURCE_DIR}/src/NDView.test.cpp
@@ -359,6 +397,7 @@ if(AARE_TESTS)
             ${CMAKE_CURRENT_SOURCE_DIR}/src/NumpyFile.test.cpp
             ${CMAKE_CURRENT_SOURCE_DIR}/src/NumpyHelpers.test.cpp
             ${CMAKE_CURRENT_SOURCE_DIR}/src/RawFile.test.cpp
+            ${CMAKE_CURRENT_SOURCE_DIR}/src/utils/task.test.cpp
 
         )
     target_sources(tests PRIVATE ${TestSources} )

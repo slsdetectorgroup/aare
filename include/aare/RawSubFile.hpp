@@ -66,6 +66,9 @@ class RawSubFile {
     size_t pixels_per_frame() const { return m_rows * m_cols; }
     size_t bytes_per_pixel() const { return m_bitdepth / 8; }
 
+private:
+  template <typename T>
+  void read_with_map(std::byte *image_buf);
 
 };
 

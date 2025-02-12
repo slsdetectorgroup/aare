@@ -89,6 +89,7 @@ template <typename SUM_TYPE = double> class Pedestal {
         m_sum = 0;
         m_sum2 = 0;
         m_cur_samples = 0;
+        m_mean = 0;
     }
 
     
@@ -97,6 +98,7 @@ template <typename SUM_TYPE = double> class Pedestal {
         m_sum(row, col) = 0;
         m_sum2(row, col) = 0;
         m_cur_samples(row, col) = 0;
+        m_mean(row, col) = 0;
     }
     
 
@@ -119,7 +121,7 @@ template <typename SUM_TYPE = double> class Pedestal {
 
     /**
      * Push but don't update the cached mean. Speeds up the process
-     * when intitializing the pedestal.
+     * when initializing the pedestal.
      * 
      */
     template <typename T> void push_no_update(NDView<T, 2> frame) {
@@ -165,8 +167,8 @@ template <typename SUM_TYPE = double> class Pedestal {
             m_sum2(row, col) += val * val;
             m_cur_samples(row, col)++;
         } else {
-            m_sum(row, col) += val - m_sum(row, col) / m_cur_samples(row, col);
-            m_sum2(row, col) += val * val - m_sum2(row, col) / m_cur_samples(row, col);
+            m_sum(row, col) += val - m_sum(row, col) / m_samples;
+            m_sum2(row, col) += val * val - m_sum2(row, col) / m_samples;
         }
         //Since we just did a push we know that m_cur_samples(row, col) is at least 1
         m_mean(row, col) = m_sum(row, col) / m_cur_samples(row, col);
