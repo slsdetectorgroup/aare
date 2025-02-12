@@ -35,6 +35,8 @@ AARE
     pyRawMasterFile
     pyVarClusterFinder
 
+    pyFit
+
 
 .. toctree::
     :caption: C++ API

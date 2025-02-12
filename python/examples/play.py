@@ -8,6 +8,28 @@ import numpy as np
 import boost_histogram as bh
 import time
 
+<<<<<<< HEAD
+from aare import File, ClusterFinder, VarClusterFinder, ClusterFile, CtbRawFile
+from aare import gaus, fit_gaus
+
+base = Path('/mnt/sls_det_storage/moench_data/Julian/MOENCH05/20250113_first_xrays_redo/raw_files/')
+cluster_file = Path('/home/l_msdetect/erik/tmp/Cu.clust')
+
+t0 = time.perf_counter()
+offset= -0.5
+hist3d = bh.Histogram(
+    bh.axis.Regular(160, 0+offset, 160+offset),  #x
+    bh.axis.Regular(150, 0+offset, 150+offset),  #y
+    bh.axis.Regular(200, 0, 6000), #ADU
+)
+
+total_clusters = 0
+with ClusterFile(cluster_file, chunk_size = 1000) as f:
+    for i, clusters in enumerate(f):
+        arr = np.array(clusters)
+        total_clusters += clusters.size
+        hist3d.fill(arr['y'],arr['x'], clusters.sum_2x2()) #python talks [row, col] cluster finder [x,y]
+=======
 from aare import RawFile
 
 f = RawFile('/mnt/sls_det_storage/jungfrau_data1/vadym_tests/jf12_M431/laser_scan/laserScan_pedestal_G0_master_0.json')
@@ -17,104 +39,30 @@ print(f'{f.frame_number(1)}')
 for i in range(10):
     header, img = f.read_frame()
     print(header['frameNumber'], img.shape)
+>>>>>>> developer
 
-# for i, frame in enumerate(f):
-#     print(f'{i}', end='\r')
-# print()
+        
+t_elapsed = time.perf_counter()-t0
+print(f'Histogram filling took: {t_elapsed:.3f}s {total_clusters/t_elapsed/1e6:.3f}M clusters/s')
 
+histogram_data = hist3d.counts()
+x = hist3d.axes[2].edges[:-1]
 
-# from aare._aare import ClusterFinderMT, ClusterCollector, ClusterFileSink
+y = histogram_data[100,100,:]
+xx = np.linspace(x[0], x[-1])
+# fig, ax = plt.subplots()
+# ax.step(x, y, where = 'post')
 
+y_err = np.sqrt(y)
+y_err = np.zeros(y.size)
+y_err += 1
 
-# cf = ClusterFinderMT((400,400), (3,3), n_threads = 3)
-# # collector = ClusterCollector(cf)
-# out_file = ClusterFileSink(cf, "test.clust")
+# par = fit_gaus2(y,x, y_err)
+# ax.plot(xx, gaus(xx,par))
+# print(par)
 
-# for i in range(1000):
-#     img = f.read_frame()
-#     cf.push_pedestal_frame(img)
-# print('Pedestal done')
-# cf.sync()
+res = fit_gaus(y,x)
+res2 = fit_gaus(y,x, y_err)
+print(res)
+print(res2)
 
-# for i in range(100):
-#     img = f.read_frame()
-#     cf.find_clusters(img)
-
-
-# # time.sleep(1)
-# cf.stop()  
-# time.sleep(1)
-# print('Second run')
-# cf.start()
-# for i in range(100):
-#     img = f.read_frame()
-#     cf.find_clusters(img)
-
-# cf.stop()
-# print('Third run')
-# cf.start()
-# for i in range(129):
-#     img = f.read_frame()
-#     cf.find_clusters(img)
-
-# cf.stop()
-# out_file.stop()
-# print('Done')
-
-
-# cfile = ClusterFile("test.clust")
-# i = 0
-# while True:
-#     try:
-#         cv = cfile.read_frame()
-#         i+=1
-#     except RuntimeError:
-#         break
-# print(f'Read {i} frames') 
-
-
-
-
-# # cf = ClusterFinder((400,400), (3,3))
-# # for i in range(1000):
-# #     cf.push_pedestal_frame(f.read_frame())
-
-# # fig, ax = plt.subplots()
-# # im = ax.imshow(cf.pedestal())
-# # cf.pedestal()
-# # cf.noise()
-
-
-
-# # N = 500
-# # t0 = time.perf_counter()
-# # hist1 = bh.Histogram(bh.axis.Regular(40, -2, 4000))
-# # f.seek(0)
-
-# # t0 = time.perf_counter()
-# # data = f.read_n(N)
-# # t_elapsed = time.perf_counter()-t0
-
-
-# # n_bytes = data.itemsize*data.size
-
-# # print(f'Reading {N} frames took {t_elapsed:.3f}s {N/t_elapsed:.0f} FPS, {n_bytes/1024**2:.4f} GB/s')
-
-
-# # for frame in data:
-# #     a = cf.find_clusters(frame)
-
-# # clusters = cf.steal_clusters()
-
-# # t_elapsed = time.perf_counter()-t0
-# # print(f'Clustering {N} frames took {t_elapsed:.2f}s  {N/t_elapsed:.0f} FPS')
-
-
-# # t0 = time.perf_counter()
-# # total_clusters = clusters.size
-
-# # hist1.fill(clusters.sum())
-
-# # t_elapsed = time.perf_counter()-t0
-# # print(f'Filling histogram with the sum of {total_clusters} clusters took: {t_elapsed:.3f}s, {total_clusters/t_elapsed:.3g} clust/s')
-# # print(f'Average number of clusters per frame {total_clusters/N:.3f}')

@@ -8,6 +8,7 @@
 #include "pedestal.hpp"
 #include "cluster.hpp"
 #include "cluster_file.hpp"
+#include "fit.hpp"
 
 //Pybind stuff
 #include <pybind11/pybind11.h>
@@ -29,5 +30,6 @@ PYBIND11_MODULE(_aare, m) {
     define_cluster_file_io_bindings(m);
     define_cluster_collector_bindings(m);
     define_cluster_file_sink_bindings(m);
+    define_fit_bindings(m);
 
 }
