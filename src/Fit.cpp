@@ -1,6 +1,10 @@
 #include "aare/Fit.hpp"
+#include "aare/utils/task.hpp"
+
 #include <lmcurve2.h>
 #include <lmfit.hpp>
+
+#include <thread>
 
 namespace aare {
 
@@ -51,8 +55,6 @@ NDArray<double, 1> fit_gaus(NDView<double, 1> x, NDView<double, 1> y) {
                       [e, delta](double val) { return val > *e / 2; }) *
         delta / 2.35;
 
-    // fmt::print("start_par: {} {} {}\n", start_par[0], start_par[1],
-    // start_par[2]);
     lmfit::result_t res(start_par);
     lmcurve(res.par.size(), res.par.data(), x.size(), x.data(), y.data(),
             aare::func::gaus, &control, &res.status);
@@ -64,32 +66,59 @@ NDArray<double, 1> fit_gaus(NDView<double, 1> x, NDView<double, 1> y) {
     return result;
 }
 
-NDArray<double, 3> fit_gaus(NDView<double, 1> x, NDView<double, 3> y) {
+NDArray<double, 3> fit_gaus(NDView<double, 1> x, NDView<double, 3> y,
+                            int n_threads) {
     NDArray<double, 3> result({y.shape(0), y.shape(1), 3}, 0);
-    for (ssize_t row = 0; row < y.shape(0); row++) {
-        for (ssize_t col = 0; col < y.shape(1); col++) {
-            NDView<double, 1> values(&y(row, col, 0), {y.shape(2)});
-            auto res = fit_gaus(x, values);
-            result(row, col, 0) = res(0);
-            result(row, col, 1) = res(1);
-            result(row, col, 2) = res(2);
+
+    auto process = [&x, &y, &result](ssize_t first_row, ssize_t last_row) {
+        for (ssize_t row = first_row; row < last_row; row++) {
+            for (ssize_t col = 0; col < y.shape(1); col++) {
+                NDView<double, 1> values(&y(row, col, 0), {y.shape(2)});
+                auto res = fit_gaus(x, values);
+                result(row, col, 0) = res(0);
+                result(row, col, 1) = res(1);
+                result(row, col, 2) = res(2);
+            }
         }
+    };
+    auto tasks = split_task(0, y.shape(0), n_threads);
+    std::vector<std::thread> threads;
+    for (auto &task : tasks) {
+        threads.push_back(std::thread(process, task.first, task.second));
     }
+    for (auto &thread : threads) {
+        thread.join();
+    }
+
     return result;
 }
 
 void fit_gaus(NDView<double, 1> x, NDView<double, 3> y, NDView<double, 3> y_err,
-              NDView<double, 3> par_out, NDView<double, 3> par_err_out) {
-    for (ssize_t row = 0; row < y.shape(0); row++) {
-        for (ssize_t col = 0; col < y.shape(1); col++) {
-            NDView<double, 1> y_view(&y(row, col, 0), {y.shape(2)});
-            NDView<double, 1> y_err_view(&y_err(row, col, 0), {y_err.shape(2)});
-            NDView<double, 1> par_out_view(&par_out(row, col, 0),
-                                           {par_out.shape(2)});
-            NDView<double, 1> par_err_out_view(&par_err_out(row, col, 0),
-                                               {par_err_out.shape(2)});
-            fit_gaus(x, y_view, y_err_view, par_out_view, par_err_out_view);
+              NDView<double, 3> par_out, NDView<double, 3> par_err_out,
+              int n_threads) {
+
+    auto process = [&](ssize_t first_row, ssize_t last_row) {
+        for (ssize_t row = first_row; row < last_row; row++) {
+            for (ssize_t col = 0; col < y.shape(1); col++) {
+                NDView<double, 1> y_view(&y(row, col, 0), {y.shape(2)});
+                NDView<double, 1> y_err_view(&y_err(row, col, 0),
+                                             {y_err.shape(2)});
+                NDView<double, 1> par_out_view(&par_out(row, col, 0),
+                                               {par_out.shape(2)});
+                NDView<double, 1> par_err_out_view(&par_err_out(row, col, 0),
+                                                   {par_err_out.shape(2)});
+                fit_gaus(x, y_view, y_err_view, par_out_view, par_err_out_view);
+            }
         }
+    };
+
+    auto tasks = split_task(0, y.shape(0), n_threads);
+    std::vector<std::thread> threads;
+    for (auto &task : tasks) {
+        threads.push_back(std::thread(process, task.first, task.second));
+    }
+    for (auto &thread : threads) {
+        thread.join();
     }
 }
 
@@ -182,17 +211,31 @@ void fit_pol1(NDView<double, 1> x, NDView<double, 1> y, NDView<double, 1> y_err,
 }
 
 void fit_pol1(NDView<double, 1> x, NDView<double, 3> y, NDView<double, 3> y_err,
-              NDView<double, 3> par_out, NDView<double, 3> par_err_out) {
-    for (ssize_t row = 0; row < y.shape(0); row++) {
-        for (ssize_t col = 0; col < y.shape(1); col++) {
-            NDView<double, 1> y_view(&y(row, col, 0), {y.shape(2)});
-            NDView<double, 1> y_err_view(&y_err(row, col, 0), {y_err.shape(2)});
-            NDView<double, 1> par_out_view(&par_out(row, col, 0),
-                                           {par_out.shape(2)});
-            NDView<double, 1> par_err_out_view(&par_err_out(row, col, 0),
-                                               {par_err_out.shape(2)});
-            fit_pol1(x, y_view, y_err_view, par_out_view, par_err_out_view);
+              NDView<double, 3> par_out, NDView<double, 3> par_err_out,
+              int n_threads) {
+
+    auto process = [&](ssize_t first_row, ssize_t last_row) {
+        for (ssize_t row = first_row; row < last_row; row++) {
+            for (ssize_t col = 0; col < y.shape(1); col++) {
+                NDView<double, 1> y_view(&y(row, col, 0), {y.shape(2)});
+                NDView<double, 1> y_err_view(&y_err(row, col, 0),
+                                             {y_err.shape(2)});
+                NDView<double, 1> par_out_view(&par_out(row, col, 0),
+                                               {par_out.shape(2)});
+                NDView<double, 1> par_err_out_view(&par_err_out(row, col, 0),
+                                                   {par_err_out.shape(2)});
+                fit_pol1(x, y_view, y_err_view, par_out_view, par_err_out_view);
+            }
         }
+    };
+
+    auto tasks = split_task(0, y.shape(0), n_threads);
+    std::vector<std::thread> threads;
+    for (auto &task : tasks) {
+        threads.push_back(std::thread(process, task.first, task.second));
+    }
+    for (auto &thread : threads) {
+        thread.join();
     }
 }
 
@@ -220,7 +263,6 @@ NDArray<double, 1> fit_pol1(NDView<double, 1> x, NDView<double, 1> y) {
 
     lmfit::result_t res(start_par);
 
-
     lmcurve(res.par.size(), res.par.data(), x.size(), x.data(), y.data(),
             aare::func::pol1, &control, &res.status);
 
@@ -229,15 +271,28 @@ NDArray<double, 1> fit_pol1(NDView<double, 1> x, NDView<double, 1> y) {
     return par;
 }
 
-NDArray<double, 3> fit_pol1(NDView<double, 1> x, NDView<double, 3> y) {
+NDArray<double, 3> fit_pol1(NDView<double, 1> x, NDView<double, 3> y,
+                            int n_threads) {
     NDArray<double, 3> result({y.shape(0), y.shape(1), 2}, 0);
-    for (ssize_t row = 0; row < y.shape(0); row++) {
-        for (ssize_t col = 0; col < y.shape(1); col++) {
-            NDView<double, 1> values(&y(row, col, 0), {y.shape(2)});
-            auto res = fit_pol1(x, values);
-            result(row, col, 0) = res(0);
-            result(row, col, 1) = res(1);
+
+    auto process = [&](ssize_t first_row, ssize_t last_row) {
+        for (ssize_t row = first_row; row < last_row; row++) {
+            for (ssize_t col = 0; col < y.shape(1); col++) {
+                NDView<double, 1> values(&y(row, col, 0), {y.shape(2)});
+                auto res = fit_pol1(x, values);
+                result(row, col, 0) = res(0);
+                result(row, col, 1) = res(1);
+            }
         }
+    };
+
+    auto tasks = split_task(0, y.shape(0), n_threads);
+    std::vector<std::thread> threads;
+    for (auto &task : tasks) {
+        threads.push_back(std::thread(process, task.first, task.second));
+    }
+    for (auto &thread : threads) {
+        thread.join();
     }
     return result;
 }

@@ -329,6 +329,7 @@ set(PUBLICHEADERS
     include/aare/RawMasterFile.hpp
     include/aare/RawSubFile.hpp
     include/aare/VarClusterFinder.hpp
+    include/aare/utils/task.hpp
 
 )
 
@@ -349,6 +350,7 @@ set(SourceFiles
     ${CMAKE_CURRENT_SOURCE_DIR}/src/RawFile.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/src/RawSubFile.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/src/RawMasterFile.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/utils/task.cpp
 )
 
 
@@ -395,6 +397,7 @@ if(AARE_TESTS)
             ${CMAKE_CURRENT_SOURCE_DIR}/src/NumpyFile.test.cpp
             ${CMAKE_CURRENT_SOURCE_DIR}/src/NumpyHelpers.test.cpp
             ${CMAKE_CURRENT_SOURCE_DIR}/src/RawFile.test.cpp
+            ${CMAKE_CURRENT_SOURCE_DIR}/src/utils/task.test.cpp
 
         )
     target_sources(tests PRIVATE ${TestSources} )

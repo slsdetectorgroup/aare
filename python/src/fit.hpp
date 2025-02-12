@@ -33,12 +33,13 @@ void define_fit_bindings(py::module &m) {
     m.def(
         "fit_gaus",
         [](py::array_t<double, py::array::c_style | py::array::forcecast> x,
-           py::array_t<double, py::array::c_style | py::array::forcecast> y) {
+           py::array_t<double, py::array::c_style | py::array::forcecast> y,
+           int n_threads) {
             if (y.ndim() == 3) {
                 auto par = new NDArray<double, 3>{};
                 auto y_view = make_view_3d(y);
                 auto x_view = make_view_1d(x);
-                *par = aare::fit_gaus(x_view, y_view);
+                *par = aare::fit_gaus(x_view, y_view, n_threads);
                 return return_image_data(par);
             } else if (y.ndim() == 1) {
                 auto par = new NDArray<double, 1>{};
@@ -50,7 +51,7 @@ void define_fit_bindings(py::module &m) {
                 throw std::runtime_error("Data must be 1D or 3D");
             }
         },
-        py::arg("x"), py::arg("y"));
+        py::arg("x"), py::arg("y"), py::arg("n_threads") = 4);
 
     m.def(
         "fit_gaus",
