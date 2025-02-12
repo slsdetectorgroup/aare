@@ -85,6 +85,7 @@ if(AARE_FETCH_LMFIT)
         GIT_TAG        main
         PATCH_COMMAND ${lmfit_patch}
         UPDATE_DISCONNECTED 1
+        EXCLUDE_FROM_ALL
     )
     #Disable what we don't need from lmfit
     set(BUILD_TESTING OFF CACHE BOOL "")
