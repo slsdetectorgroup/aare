@@ -111,7 +111,6 @@ void RawFile::open_subfiles() {
             auto v = std::vector<RawSubFile *>(n_subfile_parts);
             for (size_t j = 0; j != n_subfile_parts; ++j) {
                 auto pos = m_geometry.module_pixel_0[j];
-                fmt::println("POS: {} {} {} {}", pos.origin_x, pos.origin_y, pos.width, pos.height);
                 v[j] = new RawSubFile(m_master.data_fname(j, i),
                                       m_master.detector_type(), pos.height,
                                       pos.width, m_master.bitdepth(),
