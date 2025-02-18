@@ -196,10 +196,15 @@ n_threads : int, optional
                 auto y_view_err = make_view_3d(y_err);
                 auto x_view = make_view_1d(x);
 
+                auto chi2 = new NDArray<double, 2>({y.shape(0), y.shape(1)});
+
                 aare::fit_pol1(x_view, y_view, y_view_err, par->view(),
-                               par_err->view(), n_threads);
-                return py::make_tuple(return_image_data(par),
-                                      return_image_data(par_err));
+                               par_err->view(), chi2->view(), n_threads);
+                return py::dict("par"_a = return_image_data(par),
+                                "par_err"_a = return_image_data(par_err), 
+                                "chi2"_a = return_image_data(chi2),
+                                "Ndf"_a = y.shape(2) - 2);
+
 
             } else if (y.ndim() == 1) {
                 auto par = new NDArray<double, 1>({2});
@@ -209,10 +214,13 @@ n_threads : int, optional
                 auto y_view_err = make_view_1d(y_err);
                 auto x_view = make_view_1d(x);
 
+                double chi2 = 0;
+
                 aare::fit_pol1(x_view, y_view, y_view_err, par->view(),
-                               par_err->view());
-                return py::make_tuple(return_image_data(par),
-                                      return_image_data(par_err));
+                               par_err->view(), chi2);
+                return py::dict("par"_a = return_image_data(par),
+                                "par_err"_a = return_image_data(par_err),
+                                "chi2"_a = chi2, "Ndf"_a = y.size() - 2);
             } else {
                 throw std::runtime_error("Data must be 1D or 3D");
             }

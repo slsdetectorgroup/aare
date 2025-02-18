@@ -22,6 +22,8 @@ NDArray<double, 1> pol1(NDView<double, 1> x, NDView<double, 1> par);
  */
 std::array<double, 3> gaus_init_par(const NDView<double, 1> x, const NDView<double, 1> y);
 
+std::array<double, 2> pol1_init_par(const NDView<double, 1> x, const NDView<double, 1> y);
+
 static constexpr int DEFAULT_NUM_THREADS = 4;
 
 /**
@@ -39,6 +41,8 @@ NDArray<double, 1> fit_gaus(NDView<double, 1> x, NDView<double, 1> y);
  */
 NDArray<double, 3> fit_gaus(NDView<double, 1> x, NDView<double, 3> y,
                             int n_threads = DEFAULT_NUM_THREADS);
+
+
 
 /**
  * @brief Fit a 1D Gaussian with error estimates
@@ -73,11 +77,11 @@ NDArray<double, 3> fit_pol1(NDView<double, 1> x, NDView<double, 3> y,
                             int n_threads = DEFAULT_NUM_THREADS);
 
 void fit_pol1(NDView<double, 1> x, NDView<double, 1> y, NDView<double, 1> y_err,
-              NDView<double, 1> par_out, NDView<double, 1> par_err_out);
+              NDView<double, 1> par_out, NDView<double, 1> par_err_out, double& chi2);
 
 // TODO! not sure we need to offer the different version in C++
 void fit_pol1(NDView<double, 1> x, NDView<double, 3> y, NDView<double, 3> y_err,
-              NDView<double, 3> par_out, NDView<double, 3> par_err_out,
+              NDView<double, 3> par_out, NDView<double, 3> par_err_out,NDView<double, 2> chi2_out,
               int n_threads = DEFAULT_NUM_THREADS);
 
 } // namespace aare
