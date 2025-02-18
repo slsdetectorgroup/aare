@@ -7,6 +7,7 @@
 #include "aare/Fit.hpp"
 
 namespace py = pybind11;
+using namespace pybind11::literals;
 
 void define_fit_bindings(py::module &m) {
 
@@ -29,7 +30,8 @@ void define_fit_bindings(py::module &m) {
             The points at which to evaluate the Gaussian function.
         par : array_like
             The parameters of the Gaussian function. The first element is the amplitude, the second element is the mean, and the third element is the standard deviation.
-        )", py::arg("x"), py::arg("par"));
+        )",
+        py::arg("x"), py::arg("par"));
 
     m.def(
         "pol1",
@@ -49,7 +51,8 @@ void define_fit_bindings(py::module &m) {
             The points at which to evaluate the polynomial function.
         par : array_like
             The parameters of the polynomial function. The first element is the intercept, and the second element is the slope.    
-        )", py::arg("x"), py::arg("par"));
+        )",
+        py::arg("x"), py::arg("par"));
 
     m.def(
         "fit_gaus",
@@ -72,7 +75,7 @@ void define_fit_bindings(py::module &m) {
                 throw std::runtime_error("Data must be 1D or 3D");
             }
         },
-R"(
+        R"(
 Fit a 1D Gaussian to data.
 
 Parameters
@@ -90,8 +93,8 @@ n_threads : int, optional
         "fit_gaus",
         [](py::array_t<double, py::array::c_style | py::array::forcecast> x,
            py::array_t<double, py::array::c_style | py::array::forcecast> y,
-           py::array_t<double, py::array::c_style | py::array::forcecast>
-               y_err, int n_threads) {
+           py::array_t<double, py::array::c_style | py::array::forcecast> y_err,
+           int n_threads) {
             if (y.ndim() == 3) {
                 // Allocate memory for the output
                 // Need to have pointers to allow python to manage
@@ -99,15 +102,20 @@ n_threads : int, optional
                 auto par = new NDArray<double, 3>({y.shape(0), y.shape(1), 3});
                 auto par_err =
                     new NDArray<double, 3>({y.shape(0), y.shape(1), 3});
+                auto chi2 = new NDArray<double, 2>({y.shape(0), y.shape(1)});
 
+                // Make views of the numpy arrays
                 auto y_view = make_view_3d(y);
                 auto y_view_err = make_view_3d(y_err);
                 auto x_view = make_view_1d(x);
+
                 aare::fit_gaus(x_view, y_view, y_view_err, par->view(),
-                               par_err->view(), n_threads);
-                // return return_image_data(par);
-                return py::make_tuple(return_image_data(par),
-                                      return_image_data(par_err));
+                               par_err->view(), chi2->view(), n_threads);
+
+                return py::dict("par"_a = return_image_data(par),
+                                "par_err"_a = return_image_data(par_err),
+                                "chi2"_a = return_image_data(chi2),
+                                "Ndf"_a = y.shape(2) - 3);
             } else if (y.ndim() == 1) {
                 // Allocate memory for the output
                 // Need to have pointers to allow python to manage
@@ -120,15 +128,20 @@ n_threads : int, optional
                 auto y_view_err = make_view_1d(y_err);
                 auto x_view = make_view_1d(x);
 
+
+                double chi2 = 0;
                 aare::fit_gaus(x_view, y_view, y_view_err, par->view(),
-                               par_err->view());
-                return py::make_tuple(return_image_data(par),
-                                      return_image_data(par_err));
+                               par_err->view(), chi2);
+
+                return py::dict("par"_a = return_image_data(par),
+                                "par_err"_a = return_image_data(par_err),
+                                "chi2"_a = chi2, "Ndf"_a = y.size() - 3);
+
             } else {
                 throw std::runtime_error("Data must be 1D or 3D");
             }
         },
-R"(
+        R"(
 Fit a 1D Gaussian to data with error estimates.
 
 Parameters
@@ -172,11 +185,10 @@ n_threads : int, optional
         "fit_pol1",
         [](py::array_t<double, py::array::c_style | py::array::forcecast> x,
            py::array_t<double, py::array::c_style | py::array::forcecast> y,
-           py::array_t<double, py::array::c_style | py::array::forcecast>
-               y_err, int n_threads) {
+           py::array_t<double, py::array::c_style | py::array::forcecast> y_err,
+           int n_threads) {
             if (y.ndim() == 3) {
-                auto par =
-                    new NDArray<double, 3>({y.shape(0), y.shape(1), 2});
+                auto par = new NDArray<double, 3>({y.shape(0), y.shape(1), 2});
                 auto par_err =
                     new NDArray<double, 3>({y.shape(0), y.shape(1), 2});
 
@@ -184,10 +196,15 @@ n_threads : int, optional
                 auto y_view_err = make_view_3d(y_err);
                 auto x_view = make_view_1d(x);
 
-                aare::fit_pol1(x_view, y_view,y_view_err, par->view(),
-                               par_err->view(), n_threads);
-                return py::make_tuple(return_image_data(par),
-                                      return_image_data(par_err));
+                auto chi2 = new NDArray<double, 2>({y.shape(0), y.shape(1)});
+
+                aare::fit_pol1(x_view, y_view, y_view_err, par->view(),
+                               par_err->view(), chi2->view(), n_threads);
+                return py::dict("par"_a = return_image_data(par),
+                                "par_err"_a = return_image_data(par_err), 
+                                "chi2"_a = return_image_data(chi2),
+                                "Ndf"_a = y.shape(2) - 2);
+
 
             } else if (y.ndim() == 1) {
                 auto par = new NDArray<double, 1>({2});
@@ -197,15 +214,18 @@ n_threads : int, optional
                 auto y_view_err = make_view_1d(y_err);
                 auto x_view = make_view_1d(x);
 
+                double chi2 = 0;
+
                 aare::fit_pol1(x_view, y_view, y_view_err, par->view(),
-                               par_err->view());
-                return py::make_tuple(return_image_data(par),
-                                      return_image_data(par_err));
+                               par_err->view(), chi2);
+                return py::dict("par"_a = return_image_data(par),
+                                "par_err"_a = return_image_data(par_err),
+                                "chi2"_a = chi2, "Ndf"_a = y.size() - 2);
             } else {
                 throw std::runtime_error("Data must be 1D or 3D");
             }
         },
-R"(
+        R"(
 Fit a 1D polynomial to data with error estimates.
 
 Parameters

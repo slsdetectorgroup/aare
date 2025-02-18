@@ -1,10 +1,12 @@
 #include "aare/Fit.hpp"
 #include "aare/utils/task.hpp"
+#include "aare/utils/par.hpp"
 
 #include <lmcurve2.h>
 #include <lmfit.hpp>
 
 #include <thread>
+#include <array>
 
 namespace aare {
 
@@ -35,33 +37,11 @@ NDArray<double, 1> pol1(NDView<double, 1> x, NDView<double, 1> par) {
 } // namespace func
 
 NDArray<double, 1> fit_gaus(NDView<double, 1> x, NDView<double, 1> y) {
-    NDArray<double, 1> result({3}, 0);
-    lm_control_struct control = lm_control_double;
+    NDArray<double, 1> result = gaus_init_par(x, y);
+    lm_status_struct status;
 
-    // Estimate the initial parameters for the fit
-    std::vector<double> start_par{0, 0, 0};
-    auto e = std::max_element(y.begin(), y.end());
-    auto idx = std::distance(y.begin(), e);
-
-    start_par[0] = *e; // For amplitude we use the maximum value
-    start_par[1] =
-        x[idx]; // For the mean we use the x value of the maximum value
-
-    // For sigma we estimate the fwhm and divide by 2.35
-    // assuming equally spaced x values
-    auto delta = x[1] - x[0];
-    start_par[2] =
-        std::count_if(y.begin(), y.end(),
-                      [e, delta](double val) { return val > *e / 2; }) *
-        delta / 2.35;
-
-    lmfit::result_t res(start_par);
-    lmcurve(res.par.size(), res.par.data(), x.size(), x.data(), y.data(),
-            aare::func::gaus, &control, &res.status);
-
-    result(0) = res.par[0];
-    result(1) = res.par[1];
-    result(2) = res.par[2];
+    lmcurve(result.size(), result.data(), x.size(), x.data(), y.data(),
+            aare::func::gaus, &lm_control_double, &status);
 
     return result;
 }
@@ -81,65 +61,17 @@ NDArray<double, 3> fit_gaus(NDView<double, 1> x, NDView<double, 3> y,
             }
         }
     };
-    auto tasks = split_task(0, y.shape(0), n_threads);
-    std::vector<std::thread> threads;
-    for (auto &task : tasks) {
-        threads.push_back(std::thread(process, task.first, task.second));
-    }
-    for (auto &thread : threads) {
-        thread.join();
-    }
 
+    auto tasks = split_task(0, y.shape(0), n_threads);
+    RunInParallel(process, tasks);
     return result;
 }
 
-void fit_gaus(NDView<double, 1> x, NDView<double, 3> y, NDView<double, 3> y_err,
-              NDView<double, 3> par_out, NDView<double, 3> par_err_out,
-              int n_threads) {
-
-    auto process = [&](ssize_t first_row, ssize_t last_row) {
-        for (ssize_t row = first_row; row < last_row; row++) {
-            for (ssize_t col = 0; col < y.shape(1); col++) {
-                NDView<double, 1> y_view(&y(row, col, 0), {y.shape(2)});
-                NDView<double, 1> y_err_view(&y_err(row, col, 0),
-                                             {y_err.shape(2)});
-                NDView<double, 1> par_out_view(&par_out(row, col, 0),
-                                               {par_out.shape(2)});
-                NDView<double, 1> par_err_out_view(&par_err_out(row, col, 0),
-                                                   {par_err_out.shape(2)});
-                fit_gaus(x, y_view, y_err_view, par_out_view, par_err_out_view);
-            }
-        }
-    };
-
-    auto tasks = split_task(0, y.shape(0), n_threads);
-    std::vector<std::thread> threads;
-    for (auto &task : tasks) {
-        threads.push_back(std::thread(process, task.first, task.second));
-    }
-    for (auto &thread : threads) {
-        thread.join();
-    }
-}
-
-void fit_gaus(NDView<double, 1> x, NDView<double, 1> y, NDView<double, 1> y_err,
-              NDView<double, 1> par_out, NDView<double, 1> par_err_out) {
-    // Check that we have the correct sizes
-    if (y.size() != x.size() || y.size() != y_err.size() ||
-        par_out.size() != 3 || par_err_out.size() != 3) {
-        throw std::runtime_error("Data, x, data_err must have the same size "
-                                 "and par_out, par_err_out must have size 3");
-    }
-
-    lm_control_struct control = lm_control_double;
-
-    // Estimate the initial parameters for the fit
-    std::vector<double> start_par{0, 0, 0};
-    std::vector<double> start_par_err{0, 0, 0};
-    std::vector<double> start_cov{0, 0, 0, 0, 0, 0, 0, 0, 0};
-
+std::array<double, 3> gaus_init_par(const NDView<double, 1> x, const NDView<double, 1> y) {
+    std::array<double, 3> start_par{0, 0, 0};
     auto e = std::max_element(y.begin(), y.end());
     auto idx = std::distance(y.begin(), e);
+
     start_par[0] = *e; // For amplitude we use the maximum value
     start_par[1] =
         x[idx]; // For the mean we use the x value of the maximum value
@@ -152,66 +84,82 @@ void fit_gaus(NDView<double, 1> x, NDView<double, 1> y, NDView<double, 1> y_err,
                       [e, delta](double val) { return val > *e / 2; }) *
         delta / 2.35;
 
-    lmfit::result_t res(start_par);
-    lmfit::result_t res_err(start_par_err);
-    lmfit::result_t cov(start_cov);
-
-    // TODO can we make lmcurve write the result directly where is should be?
-    lmcurve2(res.par.size(), res.par.data(), res_err.par.data(), cov.par.data(),
-             x.size(), x.data(), y.data(), y_err.data(), aare::func::gaus,
-             &control, &res.status);
-
-    par_out(0) = res.par[0];
-    par_out(1) = res.par[1];
-    par_out(2) = res.par[2];
-    par_err_out(0) = res_err.par[0];
-    par_err_out(1) = res_err.par[1];
-    par_err_out(2) = res_err.par[2];
+    return start_par;
 }
 
-void fit_pol1(NDView<double, 1> x, NDView<double, 1> y, NDView<double, 1> y_err,
-              NDView<double, 1> par_out, NDView<double, 1> par_err_out) {
+
+std::array<double, 2> pol1_init_par(const NDView<double, 1> x, const NDView<double, 1> y){
+        // Estimate the initial parameters for the fit
+        std::array<double, 2> start_par{0, 0};
+
+    
+        auto y2 = std::max_element(y.begin(), y.end());
+        auto x2 = x[std::distance(y.begin(), y2)];
+        auto y1 = std::min_element(y.begin(), y.end());
+        auto x1 = x[std::distance(y.begin(), y1)];
+    
+        start_par[0] =
+            (*y2 - *y1) / (x2 - x1); // For amplitude we use the maximum value
+        start_par[1] =
+            *y1 - ((*y2 - *y1) / (x2 - x1)) *
+                      x1; // For the mean we use the x value of the maximum value
+        return start_par;
+}
+
+void fit_gaus(NDView<double, 1> x, NDView<double, 1> y, NDView<double, 1> y_err,
+              NDView<double, 1> par_out, NDView<double, 1> par_err_out,
+              double &chi2) {
+
     // Check that we have the correct sizes
     if (y.size() != x.size() || y.size() != y_err.size() ||
-        par_out.size() != 2 || par_err_out.size() != 2) {
+        par_out.size() != 3 || par_err_out.size() != 3) {
         throw std::runtime_error("Data, x, data_err must have the same size "
-                                 "and par_out, par_err_out must have size 2");
+                                 "and par_out, par_err_out must have size 3");
     }
 
-    lm_control_struct control = lm_control_double;
 
-    // Estimate the initial parameters for the fit
-    std::vector<double> start_par{0, 0};
-    std::vector<double> start_par_err{0, 0};
-    std::vector<double> start_cov{0, 0, 0, 0};
+    // /* Collection of output parameters for status info. */
+    // typedef struct {
+    //     double fnorm;  /* norm of the residue vector fvec. */
+    //     int nfev;      /* actual number of iterations. */
+    //     int outcome;   /* Status indicator. Nonnegative values are used as
+    //     index
+    //                     for the message text lm_infmsg, set in lmmin.c. */
+    //     int userbreak; /* Set when function evaluation requests termination.
+    //     */
+    // } lm_status_struct;
 
-    auto y2 = std::max_element(y.begin(), y.end());
-    auto x2 = x[std::distance(y.begin(), y2)];
-    auto y1 = std::min_element(y.begin(), y.end());
-    auto x1 = x[std::distance(y.begin(), y1)];
 
-    start_par[0] =
-        (*y2 - *y1) / (x2 - x1); // For amplitude we use the maximum value
-    start_par[1] =
-        *y1 - ((*y2 - *y1) / (x2 - x1)) *
-                  x1; // For the mean we use the x value of the maximum value
+    lm_status_struct status;
+    par_out = gaus_init_par(x, y);
+    std::array<double, 9> cov{0, 0, 0, 0, 0, 0, 0 , 0 , 0};
 
-    lmfit::result_t res(start_par);
-    lmfit::result_t res_err(start_par_err);
-    lmfit::result_t cov(start_cov);
+    // void lmcurve2( const int n_par, double *par, double *parerr, double *covar, const int m_dat, const double *t, const double *y, const double *dy, double (*f)( const double ti, const double *par ), const lm_control_struct *control, lm_status_struct *status);
+    // n_par - Number of free variables. Length of parameter vector par.
+    // par - Parameter vector. On input, it must contain a reasonable guess. On output, it contains the solution found to minimize ||r||.
+    // parerr - Parameter uncertainties vector. Array of length n_par or NULL. On output, unless it or covar is NULL, it contains the weighted parameter uncertainties for the found parameters.
+    // covar - Covariance matrix. Array of length n_par * n_par or NULL. On output, unless it is NULL, it contains the covariance matrix.
+    // m_dat - Number of data points. Length of vectors t, y, dy. Must statisfy n_par <= m_dat.
+    // t - Array of length m_dat. Contains the abcissae (time, or "x") for which function f will be evaluated.
+    // y - Array of length m_dat. Contains the ordinate values that shall be fitted.
+    // dy - Array of length m_dat. Contains the standard deviations of the values y.
+    // f - A user-supplied parametric function f(ti;par).
+    // control - Parameter collection for tuning the fit procedure. In most cases, the default &lm_control_double is adequate. If f is only computed with single-precision accuracy, &lm_control_float should be used. Parameters are explained in lmmin2(3).
+    // status - A record used to return information about the minimization process: For details, see lmmin2(3).
 
-    lmcurve2(res.par.size(), res.par.data(), res_err.par.data(), cov.par.data(),
-             x.size(), x.data(), y.data(), y_err.data(), aare::func::pol1,
-             &control, &res.status);
+    lmcurve2(par_out.size(), par_out.data(), par_err_out.data(), cov.data(),
+             x.size(), x.data(), y.data(), y_err.data(), aare::func::gaus,
+             &lm_control_double, &status);
 
-    par_out(0) = res.par[0];
-    par_out(1) = res.par[1];
-    par_err_out(0) = res_err.par[0];
-    par_err_out(1) = res_err.par[1];
+    // Calculate chi2
+    chi2 = 0;
+    for (size_t i = 0; i < y.size(); i++) {
+        chi2 += std::pow((y(i) - func::gaus(x(i), par_out.data())) / y_err(i), 2);
+    }
 }
 
-void fit_pol1(NDView<double, 1> x, NDView<double, 3> y, NDView<double, 3> y_err,
-              NDView<double, 3> par_out, NDView<double, 3> par_err_out,
+void fit_gaus(NDView<double, 1> x, NDView<double, 3> y, NDView<double, 3> y_err,
+              NDView<double, 3> par_out, NDView<double, 3> par_err_out,  NDView<double, 2> chi2_out,
               int n_threads) {
 
     auto process = [&](ssize_t first_row, ssize_t last_row) {
@@ -224,19 +172,62 @@ void fit_pol1(NDView<double, 1> x, NDView<double, 3> y, NDView<double, 3> y_err,
                                                {par_out.shape(2)});
                 NDView<double, 1> par_err_out_view(&par_err_out(row, col, 0),
                                                    {par_err_out.shape(2)});
-                fit_pol1(x, y_view, y_err_view, par_out_view, par_err_out_view);
+ 
+                fit_gaus(x, y_view, y_err_view, par_out_view, par_err_out_view,
+                         chi2_out(row, col));
             }
         }
     };
 
     auto tasks = split_task(0, y.shape(0), n_threads);
-    std::vector<std::thread> threads;
-    for (auto &task : tasks) {
-        threads.push_back(std::thread(process, task.first, task.second));
+    RunInParallel(process, tasks);
+}
+
+void fit_pol1(NDView<double, 1> x, NDView<double, 1> y, NDView<double, 1> y_err,
+              NDView<double, 1> par_out, NDView<double, 1> par_err_out, double& chi2) {
+    // Check that we have the correct sizes
+    if (y.size() != x.size() || y.size() != y_err.size() ||
+        par_out.size() != 2 || par_err_out.size() != 2) {
+        throw std::runtime_error("Data, x, data_err must have the same size "
+                                 "and par_out, par_err_out must have size 2");
     }
-    for (auto &thread : threads) {
-        thread.join();
+
+    lm_status_struct status;
+    par_out = pol1_init_par(x, y);
+    std::array<double, 4> cov{0, 0, 0, 0};
+
+    lmcurve2(par_out.size(), par_out.data(), par_err_out.data(), cov.data(),
+             x.size(), x.data(), y.data(), y_err.data(), aare::func::pol1,
+             &lm_control_double, &status);
+
+    // Calculate chi2
+    chi2 = 0;
+    for (size_t i = 0; i < y.size(); i++) {
+        chi2 += std::pow((y(i) - func::pol1(x(i), par_out.data())) / y_err(i), 2);
     }
+}
+
+void fit_pol1(NDView<double, 1> x, NDView<double, 3> y, NDView<double, 3> y_err,
+              NDView<double, 3> par_out, NDView<double, 3> par_err_out, NDView<double, 2> chi2_out,
+              int n_threads) {
+
+    auto process = [&](ssize_t first_row, ssize_t last_row) {
+        for (ssize_t row = first_row; row < last_row; row++) {
+            for (ssize_t col = 0; col < y.shape(1); col++) {
+                NDView<double, 1> y_view(&y(row, col, 0), {y.shape(2)});
+                NDView<double, 1> y_err_view(&y_err(row, col, 0),
+                                             {y_err.shape(2)});
+                NDView<double, 1> par_out_view(&par_out(row, col, 0),
+                                               {par_out.shape(2)});
+                NDView<double, 1> par_err_out_view(&par_err_out(row, col, 0),
+                                                   {par_err_out.shape(2)});
+                fit_pol1(x, y_view, y_err_view, par_out_view, par_err_out_view, chi2_out(row, col));
+            }
+        }
+    };
+
+    auto tasks = split_task(0, y.shape(0), n_threads);
+    RunInParallel(process, tasks);
 }
 
 NDArray<double, 1> fit_pol1(NDView<double, 1> x, NDView<double, 1> y) {
@@ -246,28 +237,11 @@ NDArray<double, 1> fit_pol1(NDView<double, 1> x, NDView<double, 1> y) {
     // throw std::runtime_error("Data, x, data_err must have the same size "
     //                      "and par_out, par_err_out must have size 2");
     // }
-    NDArray<double, 1> par({2}, 0);
+    NDArray<double, 1> par = pol1_init_par(x, y);
 
-    lm_control_struct control = lm_control_double;
-
-    // Estimate the initial parameters for the fit
-    std::vector<double> start_par{0, 0};
-
-    auto y2 = std::max_element(y.begin(), y.end());
-    auto x2 = x[std::distance(y.begin(), y2)];
-    auto y1 = std::min_element(y.begin(), y.end());
-    auto x1 = x[std::distance(y.begin(), y1)];
-
-    start_par[0] = (*y2 - *y1) / (x2 - x1);
-    start_par[1] = *y1 - ((*y2 - *y1) / (x2 - x1)) * x1;
-
-    lmfit::result_t res(start_par);
-
-    lmcurve(res.par.size(), res.par.data(), x.size(), x.data(), y.data(),
-            aare::func::pol1, &control, &res.status);
-
-    par(0) = res.par[0];
-    par(1) = res.par[1];
+    lm_status_struct status;
+    lmcurve(par.size(), par.data(), x.size(), x.data(), y.data(),
+            aare::func::pol1, &lm_control_double, &status);
     return par;
 }
 
@@ -287,13 +261,7 @@ NDArray<double, 3> fit_pol1(NDView<double, 1> x, NDView<double, 3> y,
     };
 
     auto tasks = split_task(0, y.shape(0), n_threads);
-    std::vector<std::thread> threads;
-    for (auto &task : tasks) {
-        threads.push_back(std::thread(process, task.first, task.second));
-    }
-    for (auto &thread : threads) {
-        thread.join();
-    }
+    RunInParallel(process, tasks);
     return result;
 }
 
