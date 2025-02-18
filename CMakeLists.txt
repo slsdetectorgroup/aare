@@ -98,8 +98,6 @@ if(AARE_FETCH_LMFIT)
     FetchContent_MakeAvailable(lmfit)
     set_property(TARGET lmfit PROPERTY POSITION_INDEPENDENT_CODE ON)
 
-    target_include_directories (lmfit PUBLIC "${libzmq_SOURCE_DIR}/lib")
-    message(STATUS "lmfit include dir: ${lmfit_SOURCE_DIR}/lib")
 else()
     find_package(lmfit REQUIRED)
 endif()
@@ -370,7 +368,7 @@ target_link_libraries(
     ${STD_FS_LIB} # from helpers.cmake
     PRIVATE 
     aare_compiler_flags 
-    lmfit
+    "$<BUILD_INTERFACE:lmfit>"
 )
 
 set_target_properties(aare_core PROPERTIES
