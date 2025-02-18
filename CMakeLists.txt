@@ -98,7 +98,6 @@ if(AARE_FETCH_LMFIT)
     FetchContent_MakeAvailable(lmfit)
     set_property(TARGET lmfit PROPERTY POSITION_INDEPENDENT_CODE ON)
 
-    message(STATUS "lmfit include dir: ${lmfit_SOURCE_DIR}/lib")
 else()
     find_package(lmfit REQUIRED)
 endif()
