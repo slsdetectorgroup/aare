@@ -49,6 +49,7 @@ set(PYTHON_EXAMPLES
     examples/fits.py
 )
 
+
 # Copy the python examples to the build directory
 foreach(FILE ${PYTHON_EXAMPLES})
     configure_file(${FILE} ${CMAKE_BINARY_DIR}/${FILE}  )

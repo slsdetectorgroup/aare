@@ -1,12 +1,12 @@
 #include "aare/Fit.hpp"
 #include "aare/utils/task.hpp"
 #include "aare/utils/par.hpp"
-
 #include <lmcurve2.h>
 #include <lmfit.hpp>
-
 #include <thread>
+
 #include <array>
+
 
 namespace aare {
 
@@ -160,6 +160,7 @@ void fit_gaus(NDView<double, 1> x, NDView<double, 1> y, NDView<double, 1> y_err,
 
 void fit_gaus(NDView<double, 1> x, NDView<double, 3> y, NDView<double, 3> y_err,
               NDView<double, 3> par_out, NDView<double, 3> par_err_out,  NDView<double, 2> chi2_out,
+
               int n_threads) {
 
     auto process = [&](ssize_t first_row, ssize_t last_row) {
@@ -175,6 +176,7 @@ void fit_gaus(NDView<double, 1> x, NDView<double, 3> y, NDView<double, 3> y_err,
  
                 fit_gaus(x, y_view, y_err_view, par_out_view, par_err_out_view,
                          chi2_out(row, col));
+
             }
         }
     };
@@ -185,6 +187,7 @@ void fit_gaus(NDView<double, 1> x, NDView<double, 3> y, NDView<double, 3> y_err,
 
 void fit_pol1(NDView<double, 1> x, NDView<double, 1> y, NDView<double, 1> y_err,
               NDView<double, 1> par_out, NDView<double, 1> par_err_out, double& chi2) {
+
     // Check that we have the correct sizes
     if (y.size() != x.size() || y.size() != y_err.size() ||
         par_out.size() != 2 || par_err_out.size() != 2) {
@@ -221,13 +224,16 @@ void fit_pol1(NDView<double, 1> x, NDView<double, 3> y, NDView<double, 3> y_err,
                                                {par_out.shape(2)});
                 NDView<double, 1> par_err_out_view(&par_err_out(row, col, 0),
                                                    {par_err_out.shape(2)});
+
                 fit_pol1(x, y_view, y_err_view, par_out_view, par_err_out_view, chi2_out(row, col));
+
             }
         }
     };
 
     auto tasks = split_task(0, y.shape(0), n_threads);
     RunInParallel(process, tasks);
+
 }
 
 NDArray<double, 1> fit_pol1(NDView<double, 1> x, NDView<double, 1> y) {
@@ -242,6 +248,7 @@ NDArray<double, 1> fit_pol1(NDView<double, 1> x, NDView<double, 1> y) {
     lm_status_struct status;
     lmcurve(par.size(), par.data(), x.size(), x.data(), y.data(),
             aare::func::pol1, &lm_control_double, &status);
+
     return par;
 }
 
@@ -261,6 +268,7 @@ NDArray<double, 3> fit_pol1(NDView<double, 1> x, NDView<double, 3> y,
     };
 
     auto tasks = split_task(0, y.shape(0), n_threads);
+
     RunInParallel(process, tasks);
     return result;
 }

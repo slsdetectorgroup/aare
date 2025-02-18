@@ -17,6 +17,7 @@ NDArray<double, 1> pol1(NDView<double, 1> x, NDView<double, 1> par);
 
 } // namespace func
 
+
 /**
  * @brief Estimate the initial parameters for a Gaussian fit
  */
@@ -33,14 +34,17 @@ static constexpr int DEFAULT_NUM_THREADS = 4;
  */
 NDArray<double, 1> fit_gaus(NDView<double, 1> x, NDView<double, 1> y);
 
+
 /**
  * @brief Fit a 1D Gaussian to each pixel. Data layout [row, col, values]
  * @param x x values
  * @param y y vales, layout [row, col, values]
  * @param n_threads number of threads to use
  */
+
 NDArray<double, 3> fit_gaus(NDView<double, 1> x, NDView<double, 3> y,
                             int n_threads = DEFAULT_NUM_THREADS);
+
 
 
 
@@ -83,5 +87,6 @@ void fit_pol1(NDView<double, 1> x, NDView<double, 1> y, NDView<double, 1> y_err,
 void fit_pol1(NDView<double, 1> x, NDView<double, 3> y, NDView<double, 3> y_err,
               NDView<double, 3> par_out, NDView<double, 3> par_err_out,NDView<double, 2> chi2_out,
               int n_threads = DEFAULT_NUM_THREADS);
+
 
 } // namespace aare

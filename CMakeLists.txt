@@ -97,7 +97,6 @@ if(AARE_FETCH_LMFIT)
     
     FetchContent_MakeAvailable(lmfit)
     set_property(TARGET lmfit PROPERTY POSITION_INDEPENDENT_CODE ON)
-
 else()
     find_package(lmfit REQUIRED)
 endif()
@@ -369,6 +368,7 @@ target_link_libraries(
     PRIVATE 
     aare_compiler_flags 
     "$<BUILD_INTERFACE:lmfit>"
+
 )
 
 set_target_properties(aare_core PROPERTIES

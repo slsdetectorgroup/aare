@@ -9,6 +9,7 @@
 namespace py = pybind11;
 using namespace pybind11::literals;
 
+
 void define_fit_bindings(py::module &m) {
 
     // TODO! Evaluate without converting to double
@@ -54,6 +55,7 @@ void define_fit_bindings(py::module &m) {
         )",
         py::arg("x"), py::arg("par"));
 
+
     m.def(
         "fit_gaus",
         [](py::array_t<double, py::array::c_style | py::array::forcecast> x,
@@ -76,6 +78,7 @@ void define_fit_bindings(py::module &m) {
             }
         },
         R"(
+
 Fit a 1D Gaussian to data.
 
 Parameters
@@ -95,6 +98,7 @@ n_threads : int, optional
            py::array_t<double, py::array::c_style | py::array::forcecast> y,
            py::array_t<double, py::array::c_style | py::array::forcecast> y_err,
            int n_threads) {
+
             if (y.ndim() == 3) {
                 // Allocate memory for the output
                 // Need to have pointers to allow python to manage
@@ -142,6 +146,7 @@ n_threads : int, optional
             }
         },
         R"(
+
 Fit a 1D Gaussian to data with error estimates.
 
 Parameters
@@ -189,6 +194,7 @@ n_threads : int, optional
            int n_threads) {
             if (y.ndim() == 3) {
                 auto par = new NDArray<double, 3>({y.shape(0), y.shape(1), 2});
+
                 auto par_err =
                     new NDArray<double, 3>({y.shape(0), y.shape(1), 2});
 
@@ -221,6 +227,7 @@ n_threads : int, optional
                 return py::dict("par"_a = return_image_data(par),
                                 "par_err"_a = return_image_data(par_err),
                                 "chi2"_a = chi2, "Ndf"_a = y.size() - 2);
+
             } else {
                 throw std::runtime_error("Data must be 1D or 3D");
             }
