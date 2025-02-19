@@ -7,7 +7,7 @@
 
 #include "aare/NDArray.hpp"
 
-const int MAX_CLUSTER_SIZE = 200;
+const int MAX_CLUSTER_SIZE = 50;
 namespace aare {
 
 template <typename T> class VarClusterFinder {
