@@ -69,6 +69,11 @@ class NDArray : public ArrayExpr<NDArray<T, Ndim>, Ndim> {
         std::copy(v.begin(), v.end(), begin());
     }
 
+    template<size_t Size>
+    NDArray(const std::array<T, Size>& arr) : NDArray<T,1>({Size}) {
+        std::copy(arr.begin(), arr.end(), begin());
+    }
+
     // Move constructor
     NDArray(NDArray &&other) noexcept
         : shape_(other.shape_), strides_(c_strides<Ndim>(shape_)),
@@ -105,6 +110,20 @@ class NDArray : public ArrayExpr<NDArray<T, Ndim>, Ndim> {
     NDArray &operator-=(const NDArray &other);
     NDArray &operator*=(const NDArray &other);
 
+    //Write directly to the data array, or create a new one
+    template<size_t Size>
+    NDArray<T,1>& operator=(const std::array<T,Size> &other){
+        if(Size != size_){
+            delete[] data_;
+            size_ = Size;
+            data_ = new T[size_];
+        }
+        for (size_t i = 0; i < Size; ++i) {
+            data_[i] = other[i];
+        }
+        return *this;
+    }
+
     // NDArray& operator/=(const NDArray& other);
 
     template <typename V> NDArray &operator/=(const NDArray<V, Ndim> &other) {
@@ -134,6 +153,11 @@ class NDArray : public ArrayExpr<NDArray<T, Ndim>, Ndim> {
     NDArray operator/(const T & /*value*/);
 
     NDArray &operator&=(const T & /*mask*/);
+
+  
+
+
+    
 
     void sqrt() {
         for (int i = 0; i < size_; ++i) {
@@ -318,6 +342,9 @@ NDArray<T, Ndim> &NDArray<T, Ndim>::operator+=(const T &value) {
     return *this;
 }
 
+
+
+
 template <typename T, int64_t Ndim>
 NDArray<T, Ndim> NDArray<T, Ndim>::operator+(const T &value) {
     NDArray result = *this;
@@ -417,5 +444,7 @@ NDArray<T, Ndim> load(const std::string &pathname,
     f.close();
     return img;
 }
+
+
 
 } // namespace aare

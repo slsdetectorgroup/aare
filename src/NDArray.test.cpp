@@ -380,3 +380,31 @@ TEST_CASE("Elementwise operations on images") {
         }
     }
 }
+
+TEST_CASE("Assign an std::array to a 1D NDArray") {
+    NDArray<int, 1> a{{5}, 0};
+    std::array<int, 5> b{1, 2, 3, 4, 5};
+    a = b;
+    for (uint32_t i = 0; i < a.size(); ++i) {
+        REQUIRE(a(i) == b[i]);
+    }
+}
+
+TEST_CASE("Assign an std::array to a 1D NDArray of a different size") {
+    NDArray<int, 1> a{{3}, 0};
+    std::array<int, 5> b{1, 2, 3, 4, 5};
+    a = b;
+
+    REQUIRE(a.size() == 5);
+    for (uint32_t i = 0; i < a.size(); ++i) {
+        REQUIRE(a(i) == b[i]);
+    }
+}
+
+TEST_CASE("Construct an NDArray from an std::array") {
+    std::array<int, 5> b{1, 2, 3, 4, 5};
+    NDArray<int, 1> a(b);
+    for (uint32_t i = 0; i < a.size(); ++i) {
+        REQUIRE(a(i) == b[i]);
+    }
+}

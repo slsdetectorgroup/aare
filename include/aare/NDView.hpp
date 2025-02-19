@@ -1,5 +1,5 @@
 #pragma once
-
+#include "aare/defs.hpp"
 #include "aare/ArrayExpr.hpp"
 
 #include <algorithm>
@@ -98,6 +98,15 @@ template <typename T, int64_t Ndim = 2> class NDView : public ArrayExpr<NDView<T
     NDView &operator/=(const T val) { return elemenwise(val, std::divides<T>()); }
 
     NDView &operator/=(const NDView &other) { return elemenwise(other, std::divides<T>()); }
+
+
+    template<size_t Size>
+    NDView& operator=(const std::array<T, Size> &arr) {
+        if(size() != arr.size())
+            throw std::runtime_error(LOCATION + "Array and NDView size mismatch");
+        std::copy(arr.begin(), arr.end(), begin());
+        return *this;
+    }
 
     NDView &operator=(const T val) {
         for (auto it = begin(); it != end(); ++it)
