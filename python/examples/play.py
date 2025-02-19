@@ -8,38 +8,20 @@ import numpy as np
 import boost_histogram as bh
 import time
 
-<<<<<<< HEAD
-from aare import File, ClusterFinder, VarClusterFinder, ClusterFile, CtbRawFile
-from aare import gaus, fit_gaus
 
-base = Path('/mnt/sls_det_storage/moench_data/Julian/MOENCH05/20250113_first_xrays_redo/raw_files/')
-cluster_file = Path('/home/l_msdetect/erik/tmp/Cu.clust')
+import aare
 
-t0 = time.perf_counter()
-offset= -0.5
-hist3d = bh.Histogram(
-    bh.axis.Regular(160, 0+offset, 160+offset),  #x
-    bh.axis.Regular(150, 0+offset, 150+offset),  #y
-    bh.axis.Regular(200, 0, 6000), #ADU
-)
+data = np.random.normal(10, 1, 1000)
 
-total_clusters = 0
-with ClusterFile(cluster_file, chunk_size = 1000) as f:
-    for i, clusters in enumerate(f):
-        arr = np.array(clusters)
-        total_clusters += clusters.size
-        hist3d.fill(arr['y'],arr['x'], clusters.sum_2x2()) #python talks [row, col] cluster finder [x,y]
-=======
-from aare import RawFile
+hist = bh.Histogram(bh.axis.Regular(10, 0, 20))
+hist.fill(data)
 
-f = RawFile('/mnt/sls_det_storage/jungfrau_data1/vadym_tests/jf12_M431/laser_scan/laserScan_pedestal_G0_master_0.json')
 
-print(f'{f.frame_number(1)}')
+x = hist.axes[0].centers
+y = hist.values()
+y_err = np.sqrt(y)+1
+res = aare.fit_gaus(x, y, y_err, chi2 = True)
 
-for i in range(10):
-    header, img = f.read_frame()
-    print(header['frameNumber'], img.shape)
->>>>>>> developer
 
         
 t_elapsed = time.perf_counter()-t0

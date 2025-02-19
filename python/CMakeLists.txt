@@ -50,10 +50,10 @@ set(PYTHON_EXAMPLES
 )
 
 
-
 # Copy the python examples to the build directory
 foreach(FILE ${PYTHON_EXAMPLES})
     configure_file(${FILE} ${CMAKE_BINARY_DIR}/${FILE}  )
+    message(STATUS "Copying ${FILE} to ${CMAKE_BINARY_DIR}/${FILE}")
 endforeach(FILE ${PYTHON_EXAMPLES})
 
 
