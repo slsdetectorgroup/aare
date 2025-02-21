@@ -38,6 +38,8 @@
 
 namespace aare {
 
+inline constexpr size_t bits_per_byte = 8;
+
 void assert_failed(const std::string &msg);
 
 

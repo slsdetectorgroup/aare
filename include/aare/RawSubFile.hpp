@@ -64,7 +64,7 @@ class RawSubFile {
 
     size_t bytes_per_frame() const { return m_bytes_per_frame; }
     size_t pixels_per_frame() const { return m_rows * m_cols; }
-    size_t bytes_per_pixel() const { return m_bitdepth / 8; }
+    size_t bytes_per_pixel() const { return m_bitdepth / bits_per_byte; }
 
 private:
   template <typename T>

@@ -25,7 +25,7 @@ void define_var_cluster_finder_bindings(py::module &m) {
         .def(py::init<Shape<2>, double>())
         .def("labeled",
              [](VarClusterFinder<double> &self) {
-                 auto ptr = new NDArray<int, 2>(self.labeled());
+                 auto *ptr = new NDArray<int, 2>(self.labeled());
                  return return_image_data(ptr);
              })
         .def("set_noiseMap",

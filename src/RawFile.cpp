@@ -76,8 +76,7 @@ size_t RawFile::n_mod() const { return n_subfile_parts; }
 
 
 size_t RawFile::bytes_per_frame() {
-    // return m_rows * m_cols * m_master.bitdepth() / 8;
-    return m_geometry.pixels_x * m_geometry.pixels_y * m_master.bitdepth() / 8;
+    return m_geometry.pixels_x * m_geometry.pixels_y * m_master.bitdepth() / bits_per_byte;
 }
 size_t RawFile::pixels_per_frame() { 
     // return m_rows * m_cols; 
