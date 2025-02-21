@@ -34,6 +34,30 @@ NDArray<double, 1> pol1(NDView<double, 1> x, NDView<double, 1> par) {
     return y;
 }
 
+double scurve(const double x, const double * par) {
+    return (par[0] + par[1] * x) + 0.5 * (1 + erf((x - par[2]) / (sqrt(2) * par[3]))) * (par[4] + par[5] * (x - par[2]));
+}
+
+NDArray<double, 1> scurve(NDView<double, 1> x, NDView<double, 1> par) {
+    NDArray<double, 1> y({x.shape()}, 0);
+    for (size_t i = 0; i < x.size(); i++) {
+        y(i) = scurve(x(i), par.data());
+    }
+    return y;
+}
+
+double scurve2(const double x, const double * par) {
+    return (par[0] + par[1] * x) + 0.5 * (1 - erf((x - par[2]) / (sqrt(2) * par[3]))) * (par[4] + par[5] * (x - par[2]));
+}
+
+NDArray<double, 1> scurve2(NDView<double, 1> x, NDView<double, 1> par) {
+    NDArray<double, 1> y({x.shape()}, 0);
+    for (size_t i = 0; i < x.size(); i++) {
+        y(i) = scurve2(x(i), par.data());
+    }
+    return y;
+}
+
 } // namespace func
 
 NDArray<double, 1> fit_gaus(NDView<double, 1> x, NDView<double, 1> y) {
@@ -271,6 +295,231 @@ NDArray<double, 3> fit_pol1(NDView<double, 1> x, NDView<double, 3> y,
 
     RunInParallel(process, tasks);
     return result;
+}
+
+// ~~ S-CURVES ~~
+
+// SCURVE --
+std::array<double, 6> scurve_init_par(const NDView<double, 1> x, const NDView<double, 1> y){
+        // Estimate the initial parameters for the fit
+        std::array<double, 6> start_par{0, 0, 0, 0, 0, 0};
+
+        auto ymax = std::max_element(y.begin(), y.end());
+        auto ymin = std::min_element(y.begin(), y.end());
+        start_par[4] = *ymin + (*ymax - *ymin) / 2;
+        
+        // Find the first x where the corresponding y value is above the threshold (start_par[4])
+        for (size_t i = 0; i < y.size(); ++i) {
+            if (y[i] >= start_par[4]) {
+                start_par[2] = x[i];
+                break; // Exit the loop after finding the first valid x
+            }
+        }
+
+        start_par[3] = 2 * sqrt(start_par[2]); 
+        start_par[0] = 100; 
+        start_par[1] = 0.25;
+        start_par[5] = 1;
+        return start_par;
+}
+
+// - No error
+NDArray<double, 1> fit_scurve(NDView<double, 1> x, NDView<double, 1> y) {
+    NDArray<double, 1> result = scurve_init_par(x, y);
+    lm_status_struct status;
+
+    lmcurve(result.size(), result.data(), x.size(), x.data(), y.data(),
+            aare::func::scurve, &lm_control_double, &status);
+
+    return result;
+}
+
+NDArray<double, 3> fit_scurve(NDView<double, 1> x, NDView<double, 3> y, int n_threads) {
+    NDArray<double, 3> result({y.shape(0), y.shape(1), 6}, 0);
+
+    auto process = [&x, &y, &result](ssize_t first_row, ssize_t last_row) {
+        for (ssize_t row = first_row; row < last_row; row++) {
+            for (ssize_t col = 0; col < y.shape(1); col++) {
+                NDView<double, 1> values(&y(row, col, 0), {y.shape(2)});
+                auto res = fit_scurve(x, values);
+                result(row, col, 0) = res(0);
+                result(row, col, 1) = res(1);
+                result(row, col, 2) = res(2);
+                result(row, col, 3) = res(3);
+                result(row, col, 4) = res(4);
+                result(row, col, 5) = res(5);
+            }
+        }
+    };
+
+    auto tasks = split_task(0, y.shape(0), n_threads);
+    RunInParallel(process, tasks);
+    return result;
+}
+
+// - Error
+void fit_scurve(NDView<double, 1> x, NDView<double, 1> y, NDView<double, 1> y_err,
+              NDView<double, 1> par_out, NDView<double, 1> par_err_out, double& chi2) {
+
+    // Check that we have the correct sizes
+    if (y.size() != x.size() || y.size() != y_err.size() ||
+        par_out.size() != 6 || par_err_out.size() != 6) {
+        throw std::runtime_error("Data, x, data_err must have the same size "
+                                 "and par_out, par_err_out must have size 6");
+    }
+
+    lm_status_struct status;
+    par_out = scurve_init_par(x, y);
+    std::array<double, 36> cov = {0}; // size 6x6
+    // std::array<double, 4> cov{0, 0, 0, 0};
+
+    lmcurve2(par_out.size(), par_out.data(), par_err_out.data(), cov.data(),
+             x.size(), x.data(), y.data(), y_err.data(), aare::func::scurve,
+             &lm_control_double, &status);
+
+    // Calculate chi2
+    chi2 = 0;
+    for (size_t i = 0; i < y.size(); i++) {
+        chi2 += std::pow((y(i) - func::pol1(x(i), par_out.data())) / y_err(i), 2);
+    }
+}
+
+void fit_scurve(NDView<double, 1> x, NDView<double, 3> y, NDView<double, 3> y_err,
+              NDView<double, 3> par_out, NDView<double, 3> par_err_out, NDView<double, 2> chi2_out,
+              int n_threads) {
+
+    auto process = [&](ssize_t first_row, ssize_t last_row) {
+        for (ssize_t row = first_row; row < last_row; row++) {
+            for (ssize_t col = 0; col < y.shape(1); col++) {
+                NDView<double, 1> y_view(&y(row, col, 0), {y.shape(2)});
+                NDView<double, 1> y_err_view(&y_err(row, col, 0),
+                                             {y_err.shape(2)});
+                NDView<double, 1> par_out_view(&par_out(row, col, 0),
+                                               {par_out.shape(2)});
+                NDView<double, 1> par_err_out_view(&par_err_out(row, col, 0),
+                                                   {par_err_out.shape(2)});
+
+                fit_scurve(x, y_view, y_err_view, par_out_view, par_err_out_view, chi2_out(row, col));
+
+            }
+        }
+    };
+
+    auto tasks = split_task(0, y.shape(0), n_threads);
+    RunInParallel(process, tasks);
+
+}
+
+// SCURVE2 ---
+
+std::array<double, 6> scurve2_init_par(const NDView<double, 1> x, const NDView<double, 1> y){
+        // Estimate the initial parameters for the fit
+        std::array<double, 6> start_par{0, 0, 0, 0, 0, 0};
+
+        auto ymax = std::max_element(y.begin(), y.end());
+        auto ymin = std::min_element(y.begin(), y.end());
+        start_par[4] = *ymin + (*ymax - *ymin) / 2;
+        
+        // Find the first x where the corresponding y value is above the threshold (start_par[4])
+        for (size_t i = 0; i < y.size(); ++i) {
+            if (y[i] <= start_par[4]) {
+                start_par[2] = x[i];
+                break; // Exit the loop after finding the first valid x
+            }
+        }
+
+        start_par[3] = 2 * sqrt(start_par[2]); 
+        start_par[0] = 100; 
+        start_par[1] = 0.25;
+        start_par[5] = -1;
+        return start_par;
+}
+
+// - No error
+NDArray<double, 1> fit_scurve2(NDView<double, 1> x, NDView<double, 1> y) {
+    NDArray<double, 1> result = scurve2_init_par(x, y);
+    lm_status_struct status;
+
+    lmcurve(result.size(), result.data(), x.size(), x.data(), y.data(),
+            aare::func::scurve2, &lm_control_double, &status);
+
+    return result;
+}
+
+NDArray<double, 3> fit_scurve2(NDView<double, 1> x, NDView<double, 3> y, int n_threads) {
+    NDArray<double, 3> result({y.shape(0), y.shape(1), 6}, 0);
+
+    auto process = [&x, &y, &result](ssize_t first_row, ssize_t last_row) {
+        for (ssize_t row = first_row; row < last_row; row++) {
+            for (ssize_t col = 0; col < y.shape(1); col++) {
+                NDView<double, 1> values(&y(row, col, 0), {y.shape(2)});
+                auto res = fit_scurve2(x, values);
+                result(row, col, 0) = res(0);
+                result(row, col, 1) = res(1);
+                result(row, col, 2) = res(2);
+                result(row, col, 3) = res(3);
+                result(row, col, 4) = res(4);
+                result(row, col, 5) = res(5);
+            }
+        }
+    };
+
+    auto tasks = split_task(0, y.shape(0), n_threads);
+    RunInParallel(process, tasks);
+    return result;
+}
+
+// - Error
+void fit_scurve2(NDView<double, 1> x, NDView<double, 1> y, NDView<double, 1> y_err,
+              NDView<double, 1> par_out, NDView<double, 1> par_err_out, double& chi2) {
+
+    // Check that we have the correct sizes
+    if (y.size() != x.size() || y.size() != y_err.size() ||
+        par_out.size() != 6 || par_err_out.size() != 6) {
+        throw std::runtime_error("Data, x, data_err must have the same size "
+                                 "and par_out, par_err_out must have size 6");
+    }
+
+    lm_status_struct status;
+    par_out = scurve2_init_par(x, y);
+    std::array<double, 36> cov = {0}; // size 6x6
+    // std::array<double, 4> cov{0, 0, 0, 0};
+
+    lmcurve2(par_out.size(), par_out.data(), par_err_out.data(), cov.data(),
+             x.size(), x.data(), y.data(), y_err.data(), aare::func::scurve2,
+             &lm_control_double, &status);
+
+    // Calculate chi2
+    chi2 = 0;
+    for (size_t i = 0; i < y.size(); i++) {
+        chi2 += std::pow((y(i) - func::pol1(x(i), par_out.data())) / y_err(i), 2);
+    }
+}
+
+void fit_scurve2(NDView<double, 1> x, NDView<double, 3> y, NDView<double, 3> y_err,
+              NDView<double, 3> par_out, NDView<double, 3> par_err_out, NDView<double, 2> chi2_out,
+              int n_threads) {
+
+    auto process = [&](ssize_t first_row, ssize_t last_row) {
+        for (ssize_t row = first_row; row < last_row; row++) {
+            for (ssize_t col = 0; col < y.shape(1); col++) {
+                NDView<double, 1> y_view(&y(row, col, 0), {y.shape(2)});
+                NDView<double, 1> y_err_view(&y_err(row, col, 0),
+                                             {y_err.shape(2)});
+                NDView<double, 1> par_out_view(&par_out(row, col, 0),
+                                               {par_out.shape(2)});
+                NDView<double, 1> par_err_out_view(&par_err_out(row, col, 0),
+                                                   {par_err_out.shape(2)});
+
+                fit_scurve2(x, y_view, y_err_view, par_out_view, par_err_out_view, chi2_out(row, col));
+
+            }
+        }
+    };
+
+    auto tasks = split_task(0, y.shape(0), n_threads);
+    RunInParallel(process, tasks);
+
 }
 
 } // namespace aare

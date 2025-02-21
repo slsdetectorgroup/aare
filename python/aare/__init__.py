@@ -10,7 +10,7 @@ from ._aare import hitmap
 
 from ._aare import ClusterFinderMT, ClusterCollector, ClusterFileSink, ClusterVector_i
 
-from ._aare import fit_gaus, fit_pol1
+from ._aare import fit_gaus, fit_pol1, fit_scurve, fit_scurve2
 
 from .CtbRawFile import CtbRawFile
 from .RawFile import RawFile
