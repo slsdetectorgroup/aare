@@ -20,7 +20,13 @@ template <typename T>
 void define_cluster_vector(py::module &m, const std::string &typestr) {
     auto class_name = fmt::format("ClusterVector_{}", typestr);
     py::class_<ClusterVector<T>>(m, class_name.c_str(), py::buffer_protocol())
-        .def(py::init<int, int>())
+        .def(py::init<int, int>(),
+    py::arg("cluster_size_x") = 3, py::arg("cluster_size_y") = 3)
+        .def("push_back",
+             [](ClusterVector<T> &self, int x, int y, py::array_t<T> data) {
+                //  auto view = make_view_2d(data);
+                 self.push_back(x, y, reinterpret_cast<const std::byte*>(data.data()));
+             })
         .def_property_readonly("size", &ClusterVector<T>::size)
         .def("item_size", &ClusterVector<T>::item_size)
         .def_property_readonly("fmt",
@@ -38,6 +44,8 @@ void define_cluster_vector(py::module &m, const std::string &typestr) {
             auto *vec = new std::vector<T>(self.sum_2x2());
             return return_vector(vec);
         })
+        .def_property_readonly("cluster_size_x", &ClusterVector<T>::cluster_size_x)
+        .def_property_readonly("cluster_size_y", &ClusterVector<T>::cluster_size_y)
         .def_property_readonly("capacity", &ClusterVector<T>::capacity)
         .def_property("frame_number", &ClusterVector<T>::frame_number,
                       &ClusterVector<T>::set_frame_number)

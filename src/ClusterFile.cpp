@@ -108,6 +108,79 @@ ClusterVector<int32_t> ClusterFile::read_clusters(size_t n_clusters) {
     return clusters;
 }
 
+ClusterVector<int32_t> ClusterFile::read_clusters(size_t n_clusters, ROI roi) {
+    if (m_mode != "r") {
+        throw std::runtime_error("File not opened for reading");
+    }
+    
+    ClusterVector<int32_t> clusters(3,3);
+    clusters.reserve(n_clusters);
+
+    int32_t iframe = 0; // frame number needs to be 4 bytes!
+    size_t nph_read = 0;
+    uint32_t nn = m_num_left;
+    uint32_t nph = m_num_left; // number of clusters in frame needs to be 4
+
+    // auto buf = reinterpret_cast<Cluster3x3 *>(clusters.data());
+    // auto buf = clusters.data();
+
+    Cluster3x3 tmp; //this would break if the cluster size changes
+
+    // if there are photons left from previous frame read them first
+    if (nph) {
+        if (nph > n_clusters) {
+            // if we have more photons left in the frame then photons to read we
+            // read directly the requested number
+            nn = n_clusters;
+        } else {
+            nn = nph;
+        }
+        //Read one cluster, in the ROI push back 
+        // nph_read += fread((buf + nph_read*clusters.item_size()),
+        //                   clusters.item_size(), nn, fp);
+        for(size_t i = 0; i < nn; i++){
+            fread(&tmp, sizeof(tmp), 1, fp);
+            if(tmp.x >= roi.xmin && tmp.x <= roi.xmax && tmp.y >= roi.ymin && tmp.y <= roi.ymax){
+                clusters.push_back(tmp.x, tmp.y, reinterpret_cast<std::byte*>(tmp.data));
+                nph_read++;
+            }
+        }
+
+        m_num_left = nph - nn; // write back the number of photons left
+    }
+
+    if (nph_read < n_clusters) {
+        // keep on reading frames and photons until reaching n_clusters
+        while (fread(&iframe, sizeof(iframe), 1, fp)) {
+            // read number of clusters in frame
+            if (fread(&nph, sizeof(nph), 1, fp)) {
+                if (nph > (n_clusters - nph_read))
+                    nn = n_clusters - nph_read;
+                else
+                    nn = nph;
+
+                // nph_read += fread((buf + nph_read*clusters.item_size()),
+                //                   clusters.item_size(), nn, fp);
+                for(size_t i = 0; i < nn; i++){
+                    fread(&tmp, sizeof(tmp), 1, fp);
+                    if(tmp.x >= roi.xmin && tmp.x <= roi.xmax && tmp.y >= roi.ymin && tmp.y <= roi.ymax){
+                        clusters.push_back(tmp.x, tmp.y, reinterpret_cast<std::byte*>(tmp.data));
+                        nph_read++;
+                    }
+                }
+                m_num_left = nph - nn;
+            }
+            if (nph_read >= n_clusters)
+                break;
+        }
+    }
+
+    // Resize the vector to the number of clusters.
+    // No new allocation, only change bounds.
+    clusters.resize(nph_read);
+    return clusters;
+}
+
 ClusterVector<int32_t> ClusterFile::read_frame() {
     if (m_mode != "r") {
         throw std::runtime_error("File not opened for reading");
@@ -268,11 +341,23 @@ ClusterVector<int32_t> ClusterFile::read_frame() {
 NDArray<double, 2> calculate_eta2(ClusterVector<int> &clusters) {
     //TOTO! make work with 2x2 clusters
     NDArray<double, 2> eta2({static_cast<int64_t>(clusters.size()), 2});
-    for (size_t i = 0; i < clusters.size(); i++) {
-        auto e = calculate_eta2(clusters.at<Cluster3x3>(i));
-        eta2(i, 0) = e.x;
-        eta2(i, 1) = e.y;
+    
+    if (clusters.cluster_size_x() == 3 || clusters.cluster_size_y() == 3) {
+        for (size_t i = 0; i < clusters.size(); i++) {
+            auto e = calculate_eta2(clusters.at<Cluster3x3>(i));
+            eta2(i, 0) = e.x;
+            eta2(i, 1) = e.y;
+        }
+    }else if(clusters.cluster_size_x() == 2 || clusters.cluster_size_y() == 2){
+        for (size_t i = 0; i < clusters.size(); i++) {
+            auto e = calculate_eta2(clusters.at<Cluster2x2>(i));
+            eta2(i, 0) = e.x;
+            eta2(i, 1) = e.y;
+        }
+    }else{
+        throw std::runtime_error("Only 3x3 and 2x2 clusters are supported");
     }
+    
     return eta2;
 }
 
@@ -290,7 +375,7 @@ Eta2 calculate_eta2(Cluster3x3 &cl) {
     tot2[3] = cl.data[4] + cl.data[5] + cl.data[7] + cl.data[8];
 
     auto c = std::max_element(tot2.begin(), tot2.end()) - tot2.begin();
-
+    eta.sum = tot2[c];
     switch (c) {
     case cBottomLeft:
         if ((cl.data[3] + cl.data[4]) != 0)
@@ -332,6 +417,19 @@ Eta2 calculate_eta2(Cluster3x3 &cl) {
     }
     return eta;
 }
+
+
+Eta2 calculate_eta2(Cluster2x2 &cl) {
+    Eta2 eta{};
+
+    eta.x = static_cast<double>(cl.data[0]) / (cl.data[0] + cl.data[1]);
+    eta.y = static_cast<double>(cl.data[0]) / (cl.data[0] + cl.data[2]);
+    eta.sum = cl.data[0] + cl.data[1] + cl.data[2]+ cl.data[3];
+    eta.c = cBottomLeft; //TODO! This is not correct
+    return eta;
+}
+
+
 
 int analyze_cluster(Cluster3x3 &cl, int32_t *t2, int32_t *t3, char *quad,
                     double *eta2x, double *eta2y, double *eta3x,

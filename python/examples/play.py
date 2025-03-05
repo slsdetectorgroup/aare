@@ -1,50 +1,40 @@
 import sys
 sys.path.append('/home/l_msdetect/erik/aare/build')
 
+
 #Our normal python imports
 from pathlib import Path
 import matplotlib.pyplot as plt
+from mpl_toolkits.axes_grid1 import make_axes_locatable
 import numpy as np
 import boost_histogram as bh
 import time
 
+import tifffile
 
-import aare
-
-data = np.random.normal(10, 1, 1000)
-
-hist = bh.Histogram(bh.axis.Regular(10, 0, 20))
-hist.fill(data)
+#Directly import what we need from aare
+from aare import File, ClusterFile, hitmap
+from aare._aare import calculate_eta2, ClusterFinderMT, ClusterCollector
 
 
-x = hist.axes[0].centers
-y = hist.values()
-y_err = np.sqrt(y)+1
-res = aare.fit_gaus(x, y, y_err, chi2 = True)
+base = Path('/mnt/sls_det_storage/moench_data/tomcat_nanoscope_21042020/09_Moench_650um/')
 
+# for f in base.glob('*'):
+#     print(f.name)
 
-        
-t_elapsed = time.perf_counter()-t0
-print(f'Histogram filling took: {t_elapsed:.3f}s {total_clusters/t_elapsed/1e6:.3f}M clusters/s')
+cluster_fname = base/'acq_interp_center_3.8Mfr_200V.clust'
+flatfield_fname = base/'flatfield_center_200_d0_f000000000000_0.clust'
 
-histogram_data = hist3d.counts()
-x = hist3d.axes[2].edges[:-1]
+cluster_fname.stat().st_size/1e6/4
 
-y = histogram_data[100,100,:]
-xx = np.linspace(x[0], x[-1])
-# fig, ax = plt.subplots()
-# ax.step(x, y, where = 'post')
-
-y_err = np.sqrt(y)
-y_err = np.zeros(y.size)
-y_err += 1
-
-# par = fit_gaus2(y,x, y_err)
-# ax.plot(xx, gaus(xx,par))
-# print(par)
-
-res = fit_gaus(y,x)
-res2 = fit_gaus(y,x, y_err)
-print(res)
-print(res2)
-
+image = np.zeros((400,400))
+with ClusterFile(cluster_fname, chunk_size = 1000000) as f:
+    for clusters in f:
+        test = hitmap(image.shape, clusters)
+        break
+        # image += hitmap(image.shape, clusters)
+        # break
+print('We are back in python')
+# fig, ax = plt.subplots(figsize = (7,7))
+# im = ax.imshow(image)
+# im.set_clim(0,1)
