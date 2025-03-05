@@ -139,12 +139,14 @@ std::vector<Photon> Interpolator::interpolate(const ClusterVector<int32_t>& clus
             };
             auto ix = find_index(m_etabinsx, eta.x)-1;
             auto iy = find_index(m_etabinsy, eta.y)-1;    
+            if(ix<0) ix=0;
+            if(iy<0) iy=0;
 
-            photon.x += (1-m_ietax(ix, iy, idx))*2; //eta goes between 0 and 1 but we could move the hit anywhere in the 2x2
-            photon.y += (1-m_ietay(ix, iy, idx))*2;
+            photon.x += m_ietax(ix, iy, 0)*2; //eta goes between 0 and 1 but we could move the hit anywhere in the 2x2
+            photon.y += m_ietay(ix, iy, 0)*2;
 
             // photon.x = ix;
-            // photon.y = iy;
+            // photon.y = idx;
             photons.push_back(photon);
         }
         
