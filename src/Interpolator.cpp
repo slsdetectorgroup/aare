@@ -1,4 +1,5 @@
 #include "aare/Interpolator.hpp"
+#include "aare/algorithm.hpp"
 
 namespace aare {
 
@@ -68,16 +69,17 @@ std::vector<Photon> Interpolator::interpolate(const ClusterVector<int32_t>& clus
             photon.y = cluster.y;
             photon.energy = eta.sum;
     
-            //Now do some actual interpolation. 
-            //Find which energy bin the cluster is in
-            //TODO! Could we use boost-histogram Axis.index here? 
-            ssize_t idx = std::lower_bound(m_energy_bins.begin(), m_energy_bins.end(), photon.energy)-m_energy_bins.begin();
-            auto ix = std::lower_bound(m_etabinsx.begin(), m_etabinsx.end(), eta.x)- m_etabinsx.begin();
-            auto iy = std::lower_bound(m_etabinsy.begin(), m_etabinsy.end(), eta.y)- m_etabinsy.begin();
-    
+            // auto ie = nearest_index(m_energy_bins, photon.energy)-1;
+            // auto ix = nearest_index(m_etabinsx, eta.x)-1;
+            // auto iy = nearest_index(m_etabinsy, eta.y)-1;   
+            //Finding the index of the last element that is smaller
+            //should work fine as long as we have many bins
+            auto ie = last_smaller(m_energy_bins, photon.energy);
+            auto ix = last_smaller(m_etabinsx, eta.x);
+            auto iy = last_smaller(m_etabinsy, eta.y); 
+
+            // fmt::print("ex: {}, ix: {}, iy: {}\n", ie, ix, iy);
             
-            // ibx=(np.abs(etabinsx - ex)).argmin() #Find out which bin the eta should land in 
-            // iby=(np.abs(etabinsy - ey)).argmin()
             double dX, dY;
             int ex, ey;
             // cBottomLeft = 0,
@@ -98,21 +100,16 @@ std::vector<Photon> Interpolator::interpolate(const ClusterVector<int32_t>& clus
                 dY = -1.;
                 break;
             case cBottomRight:
-                dX = 0;
+                dX = 0.; 
                 dY = -1.;
                 break;
             }
-            photon.x += m_ietax(ix, iy, idx) + dX + 0.5;
-            photon.y += m_ietay(ix, iy, idx) + dY + 0.5;
-    
-    
-            // fmt::print("x: {}, y: {}, energy: {}\n", photon.x, photon.y, photon.energy);
+            photon.x += m_ietax(ix, iy, 0)*2 + dX;
+            photon.y += m_ietay(ix, iy, 0)*2 + dY;
             photons.push_back(photon);
         }
     }else if(clusters.cluster_size_x() == 2 || clusters.cluster_size_y() == 2){
-        //TODO! Implement 2x2 interpolation
         for (size_t i = 0; i<clusters.size(); i++){
-
             auto cluster = clusters.at<Cluster2x2>(i);
             Eta2 eta= calculate_eta2(cluster);
     
@@ -123,30 +120,17 @@ std::vector<Photon> Interpolator::interpolate(const ClusterVector<int32_t>& clus
     
             //Now do some actual interpolation. 
             //Find which energy bin the cluster is in
-            //TODO! Could we use boost-histogram Axis.index here? 
-            ssize_t idx = std::lower_bound(m_energy_bins.begin(), m_energy_bins.end(), photon.energy)-m_energy_bins.begin();
-            // auto ix = std::lower_bound(m_etabinsx.begin(), m_etabinsx.end(), eta.x)- m_etabinsx.begin();
-            // auto iy = std::lower_bound(m_etabinsy.begin(), m_etabinsy.end(), eta.y)- m_etabinsy.begin();
-            // if(ix<0) ix=0;
-            // if(iy<0) iy=0;
-
-            auto find_index = [](NDArray<double, 1>& etabins, double val){
-                auto iter = std::min_element(etabins.begin(), etabins.end(),
-                [val,etabins](double a, double b) {
-                    return std::abs(a - val) < std::abs(b - val);
-                });
-                return std::distance(etabins.begin(), iter);
-            };
-            auto ix = find_index(m_etabinsx, eta.x)-1;
-            auto iy = find_index(m_etabinsy, eta.y)-1;    
-            if(ix<0) ix=0;
-            if(iy<0) iy=0;
+            // auto ie = nearest_index(m_energy_bins, photon.energy)-1;
+            // auto ix = nearest_index(m_etabinsx, eta.x)-1;
+            // auto iy = nearest_index(m_etabinsy, eta.y)-1;  
+            //Finding the index of the last element that is smaller
+            //should work fine as long as we have many bins
+            auto ie = last_smaller(m_energy_bins, photon.energy);
+            auto ix = last_smaller(m_etabinsx, eta.x);
+            auto iy = last_smaller(m_etabinsy, eta.y); 
 
             photon.x += m_ietax(ix, iy, 0)*2; //eta goes between 0 and 1 but we could move the hit anywhere in the 2x2
             photon.y += m_ietay(ix, iy, 0)*2;
-
-            // photon.x = ix;
-            // photon.y = idx;
             photons.push_back(photon);
         }
         
