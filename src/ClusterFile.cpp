@@ -421,9 +421,10 @@ Eta2 calculate_eta2(Cluster3x3 &cl) {
 
 Eta2 calculate_eta2(Cluster2x2 &cl) {
     Eta2 eta{};
-
-    eta.x = static_cast<double>(cl.data[1]) / (cl.data[0] + cl.data[1]);
-    eta.y = static_cast<double>(cl.data[2]) / (cl.data[0] + cl.data[2]);
+    if ((cl.data[0] + cl.data[1]) != 0)
+        eta.x = static_cast<double>(cl.data[1]) / (cl.data[0] + cl.data[1]);
+    if ((cl.data[0] + cl.data[2]) != 0)
+        eta.y = static_cast<double>(cl.data[2]) / (cl.data[0] + cl.data[2]);
     eta.sum = cl.data[0] + cl.data[1] + cl.data[2]+ cl.data[3];
     eta.c = cBottomLeft; //TODO! This is not correct, but need to put something
     return eta;
