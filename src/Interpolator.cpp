@@ -12,46 +12,45 @@ Interpolator::Interpolator(NDView<double, 3> etacube, NDView<double, 1> xbins,
             "The shape of the etacube does not match the shape of the bins");
     }
 
-    // Cumulative sum in the x direction, can maybe be combined with a copy?
-    for (ssize_t k = 0; k < m_ietax.shape(2); k++) {
+    // Cumulative sum in the x direction
+    for (ssize_t i = 1; i < m_ietax.shape(0); i++) {
         for (ssize_t j = 0; j < m_ietax.shape(1); j++) {
-            for (ssize_t i = 1; i < m_ietax.shape(0); i++) {
+            for (ssize_t k = 0; k < m_ietax.shape(2); k++) {
                 m_ietax(i, j, k) += m_ietax(i - 1, j, k);
             }
         }
     }
 
     // Normalize by the highest row, if norm less than 1 don't do anything
-    for (ssize_t k = 0; k < m_ietax.shape(2); k++) {
+    for (ssize_t i = 0; i < m_ietax.shape(0); i++) {
         for (ssize_t j = 0; j < m_ietax.shape(1); j++) {
-            auto val = m_ietax(m_ietax.shape(0) - 1, j, k);
-            double norm = val < 1 ? 1 : val;
-            for (ssize_t i = 0; i < m_ietax.shape(0); i++) {
+            for (ssize_t k = 0; k < m_ietax.shape(2); k++) {
+                auto val = m_ietax(m_ietax.shape(0) - 1, j, k);
+                double norm = val < 1 ? 1 : val;
                 m_ietax(i, j, k) /= norm;
             }
         }
     }
 
     // Cumulative sum in the y direction
-    for (ssize_t k = 0; k < m_ietay.shape(2); k++) {
-        for (ssize_t i = 0; i < m_ietay.shape(0); i++) {
-            for (ssize_t j = 1; j < m_ietay.shape(1); j++) {
+    for (ssize_t i = 0; i < m_ietay.shape(0); i++) {
+        for (ssize_t j = 1; j < m_ietay.shape(1); j++) {
+            for (ssize_t k = 0; k < m_ietay.shape(2); k++) {
                 m_ietay(i, j, k) += m_ietay(i, j - 1, k);
             }
         }
     }
 
     // Normalize by the highest column, if norm less than 1 don't do anything
-    for (ssize_t k = 0; k < m_ietay.shape(2); k++) {
-        for (ssize_t i = 0; i < m_ietay.shape(0); i++) {
-            auto val = m_ietay(i, m_ietay.shape(1) - 1, k);
-            double norm = val < 1 ? 1 : val;
-            for (ssize_t j = 0; j < m_ietay.shape(1); j++) {
+    for (ssize_t i = 0; i < m_ietay.shape(0); i++) {
+        for (ssize_t j = 0; j < m_ietay.shape(1); j++) {
+            for (ssize_t k = 0; k < m_ietay.shape(2); k++) {
+                auto val = m_ietay(i, m_ietay.shape(1) - 1, k);
+                double norm = val < 1 ? 1 : val;
                 m_ietay(i, j, k) /= norm;
             }
         }
     }
-
 }
 
 std::vector<Photon> Interpolator::interpolate(const ClusterVector<int32_t>& clusters) {
@@ -89,11 +88,11 @@ std::vector<Photon> Interpolator::interpolate(const ClusterVector<int32_t>& clus
             switch (eta.c) {
             case cTopLeft:
                 dX = -1.;
-                dY = 0;
+                dY = 0.;
                 break;
             case cTopRight:;
-                dX = 0;
-                dY = 0;
+                dX = 0.;
+                dY = 0.;
                 break;
             case cBottomLeft:
                 dX = -1.;
@@ -104,8 +103,8 @@ std::vector<Photon> Interpolator::interpolate(const ClusterVector<int32_t>& clus
                 dY = -1.;
                 break;
             }
-            photon.x += m_ietax(ix, iy, 0)*2 + dX;
-            photon.y += m_ietay(ix, iy, 0)*2 + dY;
+            photon.x += m_ietax(ix, iy, ie)*2 + dX;
+            photon.y += m_ietay(ix, iy, ie)*2 + dY;
             photons.push_back(photon);
         }
     }else if(clusters.cluster_size_x() == 2 || clusters.cluster_size_y() == 2){
@@ -129,8 +128,8 @@ std::vector<Photon> Interpolator::interpolate(const ClusterVector<int32_t>& clus
             auto ix = last_smaller(m_etabinsx, eta.x);
             auto iy = last_smaller(m_etabinsy, eta.y); 
 
-            photon.x += m_ietax(ix, iy, 0)*2; //eta goes between 0 and 1 but we could move the hit anywhere in the 2x2
-            photon.y += m_ietay(ix, iy, 0)*2;
+            photon.x += m_ietax(ix, iy, ie)*2; //eta goes between 0 and 1 but we could move the hit anywhere in the 2x2
+            photon.y += m_ietay(ix, iy, ie)*2;
             photons.push_back(photon);
         }
         
