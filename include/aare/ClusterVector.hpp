@@ -231,6 +231,10 @@ template <typename T, typename CoordType = int16_t> class ClusterVector {
         return *reinterpret_cast<V *>(element_ptr(i));
     }
 
+    template <typename V> const V &at(size_t i) const {
+        return *reinterpret_cast<const V *>(element_ptr(i));
+    }
+
     const std::string_view fmt_base() const {
         // TODO! how do we match on coord_t?
         return m_fmt_base;

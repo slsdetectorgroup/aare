@@ -346,6 +346,7 @@ set(SourceFiles
     ${CMAKE_CURRENT_SOURCE_DIR}/src/geo_helpers.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/src/NumpyFile.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/src/NumpyHelpers.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/Interpolator.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/src/PixelMap.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/src/RawFile.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/src/RawSubFile.cpp
@@ -385,6 +386,7 @@ endif()
 
 if(AARE_TESTS)
     set(TestSources
+            ${CMAKE_CURRENT_SOURCE_DIR}/src/algorithm.test.cpp
             ${CMAKE_CURRENT_SOURCE_DIR}/src/defs.test.cpp
             ${CMAKE_CURRENT_SOURCE_DIR}/src/Dtype.test.cpp
             ${CMAKE_CURRENT_SOURCE_DIR}/src/Frame.test.cpp

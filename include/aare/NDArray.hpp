@@ -102,6 +102,9 @@ class NDArray : public ArrayExpr<NDArray<T, Ndim>, Ndim> {
     auto begin() { return data_; }
     auto end() { return data_ + size_; }
 
+    auto begin() const { return data_; }
+    auto end() const { return data_ + size_; }
+
     using value_type = T;
 
     NDArray &operator=(NDArray &&other) noexcept; // Move assign
