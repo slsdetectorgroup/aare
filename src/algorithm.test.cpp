@@ -17,7 +17,7 @@ TEST_CASE("Find the closed index in a 1D array", "[algorithm]") {
     REQUIRE(aare::nearest_index(arr, -1.0) == 0);
 }
 
-TEST_CASE("Passing integers to nearest_index works"){
+TEST_CASE("Passing integers to nearest_index works", "[algorithm]"){
     aare::NDArray<int, 1> arr({5});
     for (size_t i = 0; i < arr.size(); i++) {
         arr[i] = i;
@@ -31,7 +31,7 @@ TEST_CASE("Passing integers to nearest_index works"){
 }
 
 
-TEST_CASE("nearest_index works with std::vector"){
+TEST_CASE("nearest_index works with std::vector", "[algorithm]"){
     std::vector<double> vec = {0, 1, 2, 3, 4};
     REQUIRE(aare::nearest_index(vec, 2.123) == 2);
     REQUIRE(aare::nearest_index(vec, 2.66) == 3);
@@ -40,7 +40,7 @@ TEST_CASE("nearest_index works with std::vector"){
     REQUIRE(aare::nearest_index(vec, -10.0) == 0);
 }
 
-TEST_CASE("nearest index works with std::array"){
+TEST_CASE("nearest index works with std::array", "[algorithm]"){
     std::array<double, 5> arr = {0, 1, 2, 3, 4};
     REQUIRE(aare::nearest_index(arr, 2.123) == 2);
     REQUIRE(aare::nearest_index(arr, 2.501) == 3);
@@ -50,7 +50,7 @@ TEST_CASE("nearest index works with std::array"){
 }
 
 
-TEST_CASE("last smaller"){
+TEST_CASE("last smaller", "[algorithm]"){
     aare::NDArray<double, 1> arr({5});
     for (size_t i = 0; i < arr.size(); i++) {
         arr[i] = i;
@@ -60,4 +60,14 @@ TEST_CASE("last smaller"){
     REQUIRE(aare::last_smaller(arr, 0.0) == 0);
     REQUIRE(aare::last_smaller(arr, 2.3) == 2);
     REQUIRE(aare::last_smaller(arr, 253.) == 4);
+}
+
+TEST_CASE("returns last bin strictly smaller", "[algorithm]"){
+    aare::NDArray<double, 1> arr({5});
+    for (size_t i = 0; i < arr.size(); i++) {
+        arr[i] = i;
+    }
+    // arr 0, 1, 2, 3, 4
+    REQUIRE(aare::last_smaller(arr, 2.0) == 2);
+
 }
