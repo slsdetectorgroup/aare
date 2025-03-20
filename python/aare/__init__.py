@@ -7,11 +7,12 @@ from ._aare import Pedestal_d, Pedestal_f, ClusterFinder, VarClusterFinder
 from ._aare import DetectorType
 from ._aare import ClusterFile
 from ._aare import hitmap
+from ._aare import ROI
 
 from ._aare import ClusterFinderMT, ClusterCollector, ClusterFileSink, ClusterVector_i
 
 from ._aare import fit_gaus, fit_pol1
-
+from ._aare import Interpolator
 from .CtbRawFile import CtbRawFile
 from .RawFile import RawFile
 from .ScanParameters import ScanParameters

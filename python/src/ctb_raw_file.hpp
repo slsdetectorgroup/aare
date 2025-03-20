@@ -32,7 +32,7 @@ m.def("adc_sar_05_decode64to16", [](py::array_t<uint8_t> input) {
     }
 
     //Create a 2D output array with the same shape as the input
-    std::vector<ssize_t> shape{input.shape(0), input.shape(1)/8};
+    std::vector<ssize_t> shape{input.shape(0), input.shape(1)/static_cast<int64_t>(bits_per_byte)};
     py::array_t<uint16_t> output(shape);
 
     //Create a view of the input and output arrays
@@ -53,7 +53,7 @@ m.def("adc_sar_04_decode64to16", [](py::array_t<uint8_t> input) {
     }
 
     //Create a 2D output array with the same shape as the input
-    std::vector<ssize_t> shape{input.shape(0), input.shape(1)/8};
+    std::vector<ssize_t> shape{input.shape(0), input.shape(1)/static_cast<int64_t>(bits_per_byte)};
     py::array_t<uint16_t> output(shape);
 
     //Create a view of the input and output arrays

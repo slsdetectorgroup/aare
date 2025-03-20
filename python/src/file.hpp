@@ -195,6 +195,8 @@ void define_file_io_bindings(py::module &m) {
 
     py::class_<ROI>(m, "ROI")
         .def(py::init<>())
+        .def(py::init<int64_t, int64_t, int64_t, int64_t>(), py::arg("xmin"),
+             py::arg("xmax"), py::arg("ymin"), py::arg("ymax"))
         .def_readwrite("xmin", &ROI::xmin)
         .def_readwrite("xmax", &ROI::xmax)
         .def_readwrite("ymin", &ROI::ymin)
