@@ -10,6 +10,8 @@
 
 namespace aare {
 
+template <typename ClusterType> class ClusterVector; // Forward declaration
+
 /**
  * @brief ClusterVector is a container for clusters of various sizes. It uses a
  * contiguous memory buffer to store the clusters. It is templated on the data
@@ -21,10 +23,12 @@ namespace aare {
  * @tparam CoordType data type of the x and y coordinates of the cluster
  * (normally int16_t)
  */
-template <typename T, typename CoordType = int16_t> class ClusterVector {
+template <typename T, uint8_t ClusterSizeX, uint8_t ClusterSizeY,
+          typename CoordType>
+class ClusterVector<Cluster<T, ClusterSizeX, ClusterSizeY, CoordType>> {
     using value_type = T;
-    size_t m_cluster_size_x;
-    size_t m_cluster_size_y;
+    // size_t m_cluster_size_x;
+    // size_t m_cluster_size_y;
     std::byte *m_data{};
     size_t m_size{0};
     size_t m_capacity;
@@ -40,6 +44,8 @@ template <typename T, typename CoordType = int16_t> class ClusterVector {
     constexpr static char m_fmt_base[] = "=h:x:\nh:y:\n({},{}){}:data:";
 
   public:
+    using ClusterType = Cluster<T, SizeX, SizeY>;
+
     /**
      * @brief Construct a new ClusterVector object
      * @param cluster_size_x size of the cluster in x direction
@@ -48,10 +54,8 @@ template <typename T, typename CoordType = int16_t> class ClusterVector {
      * @param frame_number frame number of the clusters. Default is 0, which is
      * also used to indicate that the clusters come from many frames
      */
-    ClusterVector(size_t cluster_size_x = 3, size_t cluster_size_y = 3,
-                  size_t capacity = 1024, uint64_t frame_number = 0)
-        : m_cluster_size_x(cluster_size_x), m_cluster_size_y(cluster_size_y),
-          m_capacity(capacity), m_frame_number(frame_number) {
+    ClusterVector(size_t capacity = 1024, uint64_t frame_number = 0)
+        : m_capacity(capacity), m_frame_number(frame_number) {
         allocate_buffer(capacity);
     }
 
@@ -59,10 +63,8 @@ template <typename T, typename CoordType = int16_t> class ClusterVector {
 
     // Move constructor
     ClusterVector(ClusterVector &&other) noexcept
-        : m_cluster_size_x(other.m_cluster_size_x),
-          m_cluster_size_y(other.m_cluster_size_y), m_data(other.m_data),
-          m_size(other.m_size), m_capacity(other.m_capacity),
-          m_frame_number(other.m_frame_number) {
+        : m_data(other.m_data), m_size(other.m_size),
+          m_capacity(other.m_capacity), m_frame_number(other.m_frame_number) {
         other.m_data = nullptr;
         other.m_size = 0;
         other.m_capacity = 0;
@@ -72,8 +74,6 @@ template <typename T, typename CoordType = int16_t> class ClusterVector {
     ClusterVector &operator=(ClusterVector &&other) noexcept {
         if (this != &other) {
             delete[] m_data;
-            m_cluster_size_x = other.m_cluster_size_x;
-            m_cluster_size_y = other.m_cluster_size_y;
             m_data = other.m_data;
             m_size = other.m_size;
             m_capacity = other.m_capacity;
@@ -116,8 +116,7 @@ template <typename T, typename CoordType = int16_t> class ClusterVector {
         *reinterpret_cast<CoordType *>(ptr) = y;
         ptr += sizeof(CoordType);
 
-        std::copy(data, data + m_cluster_size_x * m_cluster_size_y * sizeof(T),
-                  ptr);
+        std::copy(data, data + ClusterSizeX * ClusterSizeY * sizeof(T), ptr);
         m_size++;
     }
     ClusterVector &operator+=(const ClusterVector &other) {
@@ -137,7 +136,7 @@ template <typename T, typename CoordType = int16_t> class ClusterVector {
     std::vector<T> sum() {
         std::vector<T> sums(m_size);
         const size_t stride = item_size();
-        const size_t n_pixels = m_cluster_size_x * m_cluster_size_y;
+        const size_t n_pixels = ClusterSizeX * ClusterSizeY;
         std::byte *ptr = m_data + 2 * sizeof(CoordType); // skip x and y
 
         for (size_t i = 0; i < m_size; i++) {
@@ -159,7 +158,7 @@ template <typename T, typename CoordType = int16_t> class ClusterVector {
         std::vector<T> sums(m_size);
         const size_t stride = item_size();
 
-        if (m_cluster_size_x != 3 || m_cluster_size_y != 3) {
+        if (ClusterSizeX != 3 || ClusterSizeY != 3) {
             throw std::runtime_error(
                 "Only 3x3 clusters are supported for the 2x2 sum.");
         }
@@ -196,8 +195,7 @@ template <typename T, typename CoordType = int16_t> class ClusterVector {
      * @brief Return the size in bytes of a single cluster
      */
     size_t item_size() const {
-        return 2 * sizeof(CoordType) +
-               m_cluster_size_x * m_cluster_size_y * sizeof(T);
+        return 2 * sizeof(CoordType) + ClusterSizeX * ClusterSizeY * sizeof(T);
     }
 
     /**
@@ -217,8 +215,8 @@ template <typename T, typename CoordType = int16_t> class ClusterVector {
         return m_data + element_offset(i);
     }
 
-    size_t cluster_size_x() const { return m_cluster_size_x; }
-    size_t cluster_size_y() const { return m_cluster_size_y; }
+    // size_t cluster_size_x() const { return m_cluster_size_x; }
+    // size_t cluster_size_y() const { return m_cluster_size_y; }
 
     std::byte *data() { return m_data; }
     std::byte const *data() const { return m_data; }
@@ -227,12 +225,12 @@ template <typename T, typename CoordType = int16_t> class ClusterVector {
      * @brief Return a reference to the i-th cluster casted to type V
      * @tparam V type of the cluster
      */
-    template <typename V> V &at(size_t i) {
-        return *reinterpret_cast<V *>(element_ptr(i));
+    ClusterType &at(size_t i) {
+        return *reinterpret_cast<ClusterType *>(element_ptr(i));
     }
 
-    template <typename V> const V &at(size_t i) const {
-        return *reinterpret_cast<const V *>(element_ptr(i));
+    const ClusterType &at(size_t i) const {
+        return *reinterpret_cast<const ClusterType *>(element_ptr(i));
     }
 
     const std::string_view fmt_base() const {

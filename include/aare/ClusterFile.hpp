@@ -8,16 +8,12 @@
 
 namespace aare {
 
-//TODO! Template this? 
-struct Cluster3x3 {
-    int16_t x;
-    int16_t y;
-    int32_t data[9];
-};
-struct Cluster2x2 {
-    int16_t x;
-    int16_t y;
-    int32_t data[4];
+template <typename T, uint8_t ClusterSizeX, uint8_t ClusterSizeY,
+          typename CoordType = int16_t>
+struct Cluster {
+    CoordType x;
+    CoordType y;
+    T data[ClusterSizeX * ClusterSizeY];
 };
 
 typedef enum {
@@ -93,8 +89,7 @@ class ClusterFile {
      */
     ClusterFile(const std::filesystem::path &fname, size_t chunk_size = 1000,
                 const std::string &mode = "r");
-    
-    
+
     ~ClusterFile();
 
     /**
@@ -109,26 +104,26 @@ class ClusterFile {
     /**
      * @brief Read a single frame from the file and return the clusters. The
      * cluster vector will have the frame number set.
-     * @throws std::runtime_error if the file is not opened for reading or the file pointer not
-     * at the beginning of a frame
+     * @throws std::runtime_error if the file is not opened for reading or the
+     * file pointer not at the beginning of a frame
      */
     ClusterVector<int32_t> read_frame();
 
-
     void write_frame(const ClusterVector<int32_t> &clusters);
-    
+
     // Need to be migrated to support NDArray and return a ClusterVector
     // std::vector<Cluster3x3>
-    // read_cluster_with_cut(size_t n_clusters, double *noise_map, int nx, int ny);
+    // read_cluster_with_cut(size_t n_clusters, double *noise_map, int nx, int
+    // ny);
 
     /**
      * @brief Return the chunk size
      */
     size_t chunk_size() const { return m_chunk_size; }
-    
-    
+
     /**
-     * @brief Close the file. If not closed the file will be closed in the destructor
+     * @brief Close the file. If not closed the file will be closed in the
+     * destructor
      */
     void close();
 };
@@ -138,8 +133,17 @@ int analyze_data(int32_t *data, int32_t *t2, int32_t *t3, char *quad,
 int analyze_cluster(Cluster3x3 &cl, int32_t *t2, int32_t *t3, char *quad,
                     double *eta2x, double *eta2y, double *eta3x, double *eta3y);
 
-NDArray<double, 2> calculate_eta2(ClusterVector<int> &clusters);
-Eta2 calculate_eta2(Cluster3x3 &cl);
+template <typename ClusterType>
+NDArray<double, 2> calculate_eta2(ClusterVector<ClusterType> &clusters);
+
+template <typename T> Eta2 calculate_eta2(Cluster<T, 3, 3> &cl);
+
 Eta2 calculate_eta2(Cluster2x2 &cl);
+
+template <typename ClusterType> Eta2 calculate_eta2(ClusterType &cl);
+
+template <typename T, uint8_t ClusterSizeX, uint8_t ClusterSizeY,
+          typename CoordType>
+Eta2 calculate_eta2(Cluster<T, ClusterSizeX, ClusterSizeY, CoordType> &cl);
 
 } // namespace aare

@@ -59,8 +59,8 @@ ClusterVector<int32_t> ClusterFile::read_clusters(size_t n_clusters) {
     if (m_mode != "r") {
         throw std::runtime_error("File not opened for reading");
     }
-    
-    ClusterVector<int32_t> clusters(3,3, n_clusters);
+
+    ClusterVector<int32_t> clusters(3, 3, n_clusters);
 
     int32_t iframe = 0; // frame number needs to be 4 bytes!
     size_t nph_read = 0;
@@ -78,7 +78,7 @@ ClusterVector<int32_t> ClusterFile::read_clusters(size_t n_clusters) {
         } else {
             nn = nph;
         }
-        nph_read += fread((buf + nph_read*clusters.item_size()),
+        nph_read += fread((buf + nph_read * clusters.item_size()),
                           clusters.item_size(), nn, fp);
         m_num_left = nph - nn; // write back the number of photons left
     }
@@ -93,7 +93,7 @@ ClusterVector<int32_t> ClusterFile::read_clusters(size_t n_clusters) {
                 else
                     nn = nph;
 
-                nph_read += fread((buf + nph_read*clusters.item_size()),
+                nph_read += fread((buf + nph_read * clusters.item_size()),
                                   clusters.item_size(), nn, fp);
                 m_num_left = nph - nn;
             }
@@ -112,8 +112,8 @@ ClusterVector<int32_t> ClusterFile::read_clusters(size_t n_clusters, ROI roi) {
     if (m_mode != "r") {
         throw std::runtime_error("File not opened for reading");
     }
-    
-    ClusterVector<int32_t> clusters(3,3);
+
+    ClusterVector<int32_t> clusters(3, 3);
     clusters.reserve(n_clusters);
 
     int32_t iframe = 0; // frame number needs to be 4 bytes!
@@ -124,7 +124,7 @@ ClusterVector<int32_t> ClusterFile::read_clusters(size_t n_clusters, ROI roi) {
     // auto buf = reinterpret_cast<Cluster3x3 *>(clusters.data());
     // auto buf = clusters.data();
 
-    Cluster3x3 tmp; //this would break if the cluster size changes
+    Cluster3x3 tmp; // this would break if the cluster size changes
 
     // if there are photons left from previous frame read them first
     if (nph) {
@@ -135,13 +135,15 @@ ClusterVector<int32_t> ClusterFile::read_clusters(size_t n_clusters, ROI roi) {
         } else {
             nn = nph;
         }
-        //Read one cluster, in the ROI push back 
-        // nph_read += fread((buf + nph_read*clusters.item_size()),
-        //                   clusters.item_size(), nn, fp);
-        for(size_t i = 0; i < nn; i++){
+        // Read one cluster, in the ROI push back
+        //  nph_read += fread((buf + nph_read*clusters.item_size()),
+        //                    clusters.item_size(), nn, fp);
+        for (size_t i = 0; i < nn; i++) {
             fread(&tmp, sizeof(tmp), 1, fp);
-            if(tmp.x >= roi.xmin && tmp.x <= roi.xmax && tmp.y >= roi.ymin && tmp.y <= roi.ymax){
-                clusters.push_back(tmp.x, tmp.y, reinterpret_cast<std::byte*>(tmp.data));
+            if (tmp.x >= roi.xmin && tmp.x <= roi.xmax && tmp.y >= roi.ymin &&
+                tmp.y <= roi.ymax) {
+                clusters.push_back(tmp.x, tmp.y,
+                                   reinterpret_cast<std::byte *>(tmp.data));
                 nph_read++;
             }
         }
@@ -161,10 +163,13 @@ ClusterVector<int32_t> ClusterFile::read_clusters(size_t n_clusters, ROI roi) {
 
                 // nph_read += fread((buf + nph_read*clusters.item_size()),
                 //                   clusters.item_size(), nn, fp);
-                for(size_t i = 0; i < nn; i++){
+                for (size_t i = 0; i < nn; i++) {
                     fread(&tmp, sizeof(tmp), 1, fp);
-                    if(tmp.x >= roi.xmin && tmp.x <= roi.xmax && tmp.y >= roi.ymin && tmp.y <= roi.ymax){
-                        clusters.push_back(tmp.x, tmp.y, reinterpret_cast<std::byte*>(tmp.data));
+                    if (tmp.x >= roi.xmin && tmp.x <= roi.xmax &&
+                        tmp.y >= roi.ymin && tmp.y <= roi.ymax) {
+                        clusters.push_back(
+                            tmp.x, tmp.y,
+                            reinterpret_cast<std::byte *>(tmp.data));
                         nph_read++;
                     }
                 }
@@ -210,7 +215,6 @@ ClusterVector<int32_t> ClusterFile::read_frame() {
     return clusters;
 }
 
-
 // std::vector<Cluster3x3> ClusterFile::read_cluster_with_cut(size_t n_clusters,
 //                                                            double *noise_map,
 //                                                            int nx, int ny) {
@@ -218,7 +222,8 @@ ClusterVector<int32_t> ClusterFile::read_frame() {
 //         throw std::runtime_error("File not opened for reading");
 //     }
 //     std::vector<Cluster3x3> clusters(n_clusters);
-//     // size_t read_clusters_with_cut(FILE *fp, size_t n_clusters, Cluster *buf,
+//     // size_t read_clusters_with_cut(FILE *fp, size_t n_clusters, Cluster
+//     *buf,
 //     //                               uint32_t *n_left, double *noise_map, int
 //     //                               nx, int ny) {
 //     int iframe = 0;
@@ -249,7 +254,8 @@ ClusterVector<int32_t> ClusterFile::read_frame() {
 //         for (size_t iph = 0; iph < nn; iph++) {
 //             // read photons 1 by 1
 //             size_t n_read =
-//                 fread(reinterpret_cast<void *>(ptr), sizeof(Cluster3x3), 1, fp);
+//                 fread(reinterpret_cast<void *>(ptr), sizeof(Cluster3x3), 1,
+//                 fp);
 //             if (n_read != 1) {
 //                 clusters.resize(nph_read);
 //                 return clusters;
@@ -257,12 +263,15 @@ ClusterVector<int32_t> ClusterFile::read_frame() {
 //             // TODO! error handling on read
 //             good = 1;
 //             if (noise_map) {
-//                 if (ptr->x >= 0 && ptr->x < nx && ptr->y >= 0 && ptr->y < ny) {
+//                 if (ptr->x >= 0 && ptr->x < nx && ptr->y >= 0 && ptr->y < ny)
+//                 {
 //                     tot1 = ptr->data[4];
-//                     analyze_cluster(*ptr, &t2max, &tot3, NULL, NULL, NULL, NULL,
+//                     analyze_cluster(*ptr, &t2max, &tot3, NULL, NULL, NULL,
+//                     NULL,
 //                                     NULL);
 //                     noise = noise_map[ptr->y * nx + ptr->x];
-//                     if (tot1 > noise || t2max > 2 * noise || tot3 > 3 * noise) {
+//                     if (tot1 > noise || t2max > 2 * noise || tot3 > 3 *
+//                     noise) {
 //                         ;
 //                     } else {
 //                         good = 0;
@@ -316,8 +325,8 @@ ClusterVector<int32_t> ClusterFile::read_frame() {
 //                             } else
 //                                 good = 0;
 //                         } else {
-//                             printf("Bad pixel number %d %d\n", ptr->x, ptr->y);
-//                             good = 0;
+//                             printf("Bad pixel number %d %d\n", ptr->x,
+//                             ptr->y); good = 0;
 //                         }
 //                     }
 //                     if (good) {
@@ -338,37 +347,81 @@ ClusterVector<int32_t> ClusterFile::read_frame() {
 //     return clusters;
 // }
 
-NDArray<double, 2> calculate_eta2(ClusterVector<int> &clusters) {
-    //TOTO! make work with 2x2 clusters
+template <typename ClusterType>
+NDArray<double, 2> calculate_eta2(ClusterVector<ClusterType> &clusters) {
+    // TOTO! make work with 2x2 clusters
     NDArray<double, 2> eta2({static_cast<int64_t>(clusters.size()), 2});
-    
-    if (clusters.cluster_size_x() == 3 || clusters.cluster_size_y() == 3) {
-        for (size_t i = 0; i < clusters.size(); i++) {
-            auto e = calculate_eta2(clusters.at<Cluster3x3>(i));
-            eta2(i, 0) = e.x;
-            eta2(i, 1) = e.y;
-        }
-    }else if(clusters.cluster_size_x() == 2 || clusters.cluster_size_y() == 2){
-        for (size_t i = 0; i < clusters.size(); i++) {
-            auto e = calculate_eta2(clusters.at<Cluster2x2>(i));
-            eta2(i, 0) = e.x;
-            eta2(i, 1) = e.y;
-        }
-    }else{
-        throw std::runtime_error("Only 3x3 and 2x2 clusters are supported");
+
+    for (size_t i = 0; i < clusters.size(); i++) {
+        auto e = calculate_eta2<ClusterType>(clusters.at(i));
+        eta2(i, 0) = e.x;
+        eta2(i, 1) = e.y;
     }
-    
+
     return eta2;
 }
 
-/** 
- * @brief Calculate the eta2 values for a 3x3 cluster and return them in a Eta2 struct
- * containing etay, etax and the corner of the cluster. 
-*/
-Eta2 calculate_eta2(Cluster3x3 &cl) {
+/**
+ * @brief Calculate the eta2 values for a generic sized cluster and return them
+ * in a Eta2 struct containing etay, etax and the index of the respective 2x2
+ * subcluster.
+ */
+template <typename T, uint8_t ClusterSizeX, uint8_t ClusterSizeY,
+          typename CoordType>
+Eta2 calculate_eta2(Cluster<T, ClusterSizeX, ClusterSizeY, CoordType> &cl) {
     Eta2 eta{};
 
-    std::array<int32_t, 4> tot2;
+    // TODO loads of overhead for a 2x2 clsuter maybe keep 2x2 calculation
+    size_t num_2x2_subclusters = (ClusterSizeX - 1) * (ClusterSizeY - 1);
+    std::array<int32_t, num_2x2_subclusters> sum_2x2_subcluster;
+    for (size_t i = 0; i < ClusterSizeY - 1; ++i) {
+        for (size_t j = 0; j < ClusterSizeX - 1; ++j)
+            sum_2x2_subcluster[i * (ClusterSizeX - 1) + j] =
+                cl.data[i * ClusterSizeX + j] +
+                cl.data[i * ClusterSizeX + j + 1] +
+                cl.data[(i + 1) * ClusterSizeX + j] +
+                cl.data[(i + 1) * ClusterSizeX + j + 1];
+    }
+
+    auto c = std::max_element(sum_2x2_subclusters.begin(),
+                              sum_2x2_subcluster.end()) -
+             sum_2x2_subcluster.begin();
+
+    eta.sum = sum_2x2_subcluster[c];
+
+    eta.x = static_cast<double>(cl.data[(c + 1) * ClusterSizeX + 1]) /
+            (cl.data[0] + cl.data[1]);
+
+    size_t index_top_left_2x2_subcluster =
+        (int(c / (ClusterSizeX - 1)) + 1) * ClusterSizeX +
+        c % (ClusterSizeX - 1) * 2 + 1;
+    if ((cl.data[index_top_left_2x2_subcluster] +
+         cl.data[index_top_left_2x2_subcluster - 1]) != 0)
+        eta.x =
+            static_cast<double>(cl.data[index_top_left_2x2_subcluster] /
+                                (cl.data[index_top_left_2x2_subcluster] +
+                                 cl.data[index_top_left_2x2_subcluster - 1]));
+
+    if ((cl.data[index_top_left_2x2_subcluster] +
+         cl.data[index_top_left_2x2_subcluster - ClusterSizeX]) != 0)
+        eta.y = static_cast<double>(
+            cl.data[index_top_left_2x2_subcluster] /
+            (cl.data[index_top_left_2x2_subcluster] +
+             cl.data[index_top_left_2x2_subcluster - ClusterSizeX]));
+
+    eta.c = c; // TODO only supported for 2x2 and 3x3 clusters -> at least no
+               // underyling enum class
+    return eta;
+}
+
+/**
+ * @brief Calculate the eta2 values for a 3x3 cluster and return them in a Eta2
+ * struct containing etay, etax and the corner of the cluster.
+ */
+template <typename T> Eta2 calculate_eta2(Cluster<T, 3, 3> &cl) {
+    Eta2 eta{};
+
+    std::array<T, 4> tot2;
     tot2[0] = cl.data[0] + cl.data[1] + cl.data[3] + cl.data[4];
     tot2[1] = cl.data[1] + cl.data[2] + cl.data[4] + cl.data[5];
     tot2[2] = cl.data[3] + cl.data[4] + cl.data[6] + cl.data[7];
@@ -379,57 +432,46 @@ Eta2 calculate_eta2(Cluster3x3 &cl) {
     switch (c) {
     case cBottomLeft:
         if ((cl.data[3] + cl.data[4]) != 0)
-            eta.x =
-                static_cast<double>(cl.data[4]) / (cl.data[3] + cl.data[4]);
+            eta.x = static_cast<double>(cl.data[4]) / (cl.data[3] + cl.data[4]);
         if ((cl.data[1] + cl.data[4]) != 0)
-            eta.y =
-                static_cast<double>(cl.data[4]) / (cl.data[1] + cl.data[4]);
+            eta.y = static_cast<double>(cl.data[4]) / (cl.data[1] + cl.data[4]);
         eta.c = cBottomLeft;
         break;
     case cBottomRight:
         if ((cl.data[2] + cl.data[5]) != 0)
-            eta.x =
-                static_cast<double>(cl.data[5]) / (cl.data[4] + cl.data[5]);
+            eta.x = static_cast<double>(cl.data[5]) / (cl.data[4] + cl.data[5]);
         if ((cl.data[1] + cl.data[4]) != 0)
-            eta.y =
-                static_cast<double>(cl.data[4]) / (cl.data[1] + cl.data[4]);
+            eta.y = static_cast<double>(cl.data[4]) / (cl.data[1] + cl.data[4]);
         eta.c = cBottomRight;
         break;
     case cTopLeft:
         if ((cl.data[7] + cl.data[4]) != 0)
-            eta.x =
-                static_cast<double>(cl.data[4]) / (cl.data[3] + cl.data[4]);
+            eta.x = static_cast<double>(cl.data[4]) / (cl.data[3] + cl.data[4]);
         if ((cl.data[7] + cl.data[4]) != 0)
-            eta.y =
-                static_cast<double>(cl.data[7]) / (cl.data[7] + cl.data[4]);
+            eta.y = static_cast<double>(cl.data[7]) / (cl.data[7] + cl.data[4]);
         eta.c = cTopLeft;
         break;
     case cTopRight:
         if ((cl.data[5] + cl.data[4]) != 0)
-            eta.x =
-                static_cast<double>(cl.data[5]) / (cl.data[5] + cl.data[4]);
+            eta.x = static_cast<double>(cl.data[5]) / (cl.data[5] + cl.data[4]);
         if ((cl.data[7] + cl.data[4]) != 0)
-            eta.y =
-                static_cast<double>(cl.data[7]) / (cl.data[7] + cl.data[4]);
+            eta.y = static_cast<double>(cl.data[7]) / (cl.data[7] + cl.data[4]);
         eta.c = cTopRight;
         break;
-    // no default to allow compiler to warn about missing cases
+        // no default to allow compiler to warn about missing cases
     }
     return eta;
 }
 
-
-Eta2 calculate_eta2(Cluster2x2 &cl) {
+template <typename T> Eta2 calculate_eta2(Cluster<T, 2, 2> &cl) {
     Eta2 eta{};
 
     eta.x = static_cast<double>(cl.data[1]) / (cl.data[0] + cl.data[1]);
     eta.y = static_cast<double>(cl.data[2]) / (cl.data[0] + cl.data[2]);
-    eta.sum = cl.data[0] + cl.data[1] + cl.data[2]+ cl.data[3];
-    eta.c = cBottomLeft; //TODO! This is not correct, but need to put something
+    eta.sum = cl.data[0] + cl.data[1] + cl.data[2] + cl.data[3];
+    eta.c = cBottomLeft; // TODO! This is not correct, but need to put something
     return eta;
 }
-
-
 
 int analyze_cluster(Cluster3x3 &cl, int32_t *t2, int32_t *t3, char *quad,
                     double *eta2x, double *eta2y, double *eta3x,
