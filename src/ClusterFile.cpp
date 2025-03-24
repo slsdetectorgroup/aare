@@ -115,69 +115,57 @@ ClusterVector<int32_t> ClusterFile::read_clusters(size_t n_clusters, ROI roi) {
     
     ClusterVector<int32_t> clusters(3,3);
     clusters.reserve(n_clusters);
-
-    int32_t iframe = 0; // frame number needs to be 4 bytes!
-    size_t nph_read = 0;
-    uint32_t nn = m_num_left;
-    uint32_t nph = m_num_left; // number of clusters in frame needs to be 4
-
-    // auto buf = reinterpret_cast<Cluster3x3 *>(clusters.data());
-    // auto buf = clusters.data();
-
+    
     Cluster3x3 tmp; //this would break if the cluster size changes
 
+    
     // if there are photons left from previous frame read them first
-    if (nph) {
-        if (nph > n_clusters) {
-            // if we have more photons left in the frame then photons to read we
-            // read directly the requested number
-            nn = n_clusters;
-        } else {
-            nn = nph;
-        }
-        //Read one cluster, in the ROI push back 
-        // nph_read += fread((buf + nph_read*clusters.item_size()),
-        //                   clusters.item_size(), nn, fp);
-        for(size_t i = 0; i < nn; i++){
+    if (m_num_left) {
+        size_t nph_read = 0;
+        while(nph_read < m_num_left && clusters.size() < n_clusters){
             fread(&tmp, sizeof(tmp), 1, fp);
+            nph_read++;
             if(tmp.x >= roi.xmin && tmp.x <= roi.xmax && tmp.y >= roi.ymin && tmp.y <= roi.ymax){
                 clusters.push_back(tmp.x, tmp.y, reinterpret_cast<std::byte*>(tmp.data));
-                nph_read++;
             }
         }
-
-        m_num_left = nph - nn; // write back the number of photons left
+        m_num_left -= nph_read;
     }
 
-    if (nph_read < n_clusters) {
-        // keep on reading frames and photons until reaching n_clusters
-        while (fread(&iframe, sizeof(iframe), 1, fp)) {
-            // read number of clusters in frame
-            if (fread(&nph, sizeof(nph), 1, fp)) {
-                if (nph > (n_clusters - nph_read))
-                    nn = n_clusters - nph_read;
-                else
-                    nn = nph;
 
-                // nph_read += fread((buf + nph_read*clusters.item_size()),
-                //                   clusters.item_size(), nn, fp);
-                for(size_t i = 0; i < nn; i++){
+    if (clusters.size() < n_clusters) {
+        if (m_num_left) {
+            throw std::runtime_error(LOCATION + "Entered second loop with clusters left\n");
+        }
+        // we did not have enough clusters left in the previous frame
+        // keep on reading frames until reaching n_clusters
+
+        int32_t frame_number = 0; // frame number needs to be 4 bytes!
+        while (fread(&frame_number, sizeof(frame_number), 1, fp)) {
+            uint32_t nph_in_frame = 0; //number of photons we can read until next frame number
+            size_t nph_read = 0;       //number of photons read in this frame
+
+            if (fread(&nph_in_frame, sizeof(nph_in_frame), 1, fp)) {
+                if(frame_number != 1){
+                    throw std::runtime_error("Frame number is not 1");
+                }
+
+                while(nph_read < nph_in_frame && clusters.size() < n_clusters){
                     fread(&tmp, sizeof(tmp), 1, fp);
+                    nph_read++;
                     if(tmp.x >= roi.xmin && tmp.x <= roi.xmax && tmp.y >= roi.ymin && tmp.y <= roi.ymax){
                         clusters.push_back(tmp.x, tmp.y, reinterpret_cast<std::byte*>(tmp.data));
-                        nph_read++;
                     }
                 }
-                m_num_left = nph - nn;
+                m_num_left = nph_in_frame - nph_read;
             }
-            if (nph_read >= n_clusters)
-                break;
-        }
-    }
 
-    // Resize the vector to the number of clusters.
-    // No new allocation, only change bounds.
-    clusters.resize(nph_read);
+            if (clusters.size() >= n_clusters){
+                break;
+            }
+        }
+
+    }
     return clusters;
 }
 
