@@ -31,6 +31,18 @@ ClusterFile::ClusterFile(const std::filesystem::path &fname, size_t chunk_size,
     }
 }
 
+void ClusterFile::set_roi(ROI roi){
+    m_roi = roi;
+}
+
+void ClusterFile::set_noise_map(const NDView<int32_t, 2> noise_map){
+    m_noise_map = NDArray<int32_t, 2>(noise_map);
+}
+
+void ClusterFile::set_gain_map(const NDView<double, 2> gain_map){
+    m_gain_map = NDArray<double, 2>(gain_map);
+}
+
 ClusterFile::~ClusterFile() { close(); }
 
 void ClusterFile::close() {
@@ -55,7 +67,19 @@ void ClusterFile::write_frame(const ClusterVector<int32_t> &clusters) {
     fwrite(clusters.data(), clusters.item_size(), clusters.size(), fp);
 }
 
-ClusterVector<int32_t> ClusterFile::read_clusters(size_t n_clusters) {
+
+ClusterVector<int32_t> ClusterFile::read_clusters(size_t n_clusters){
+    if (m_mode != "r") {
+        throw std::runtime_error("File not opened for reading");
+    }
+    if (m_noise_map || m_roi){
+        return read_clusters_with_cut(n_clusters);
+    }else{
+        return read_clusters_without_cut(n_clusters);
+    }
+}
+
+ClusterVector<int32_t> ClusterFile::read_clusters_without_cut(size_t n_clusters) {
     if (m_mode != "r") {
         throw std::runtime_error("File not opened for reading");
     }
@@ -105,68 +129,67 @@ ClusterVector<int32_t> ClusterFile::read_clusters(size_t n_clusters) {
     // Resize the vector to the number of clusters.
     // No new allocation, only change bounds.
     clusters.resize(nph_read);
+    if(m_gain_map)
+        clusters.apply_gain_map(m_gain_map->view());
     return clusters;
 }
 
-ClusterVector<int32_t> ClusterFile::read_clusters(size_t n_clusters, ROI roi) {
-    if (m_mode != "r") {
-        throw std::runtime_error("File not opened for reading");
-    }
-    
+
+
+ClusterVector<int32_t> ClusterFile::read_clusters_with_cut(size_t n_clusters) {
     ClusterVector<int32_t> clusters(3,3);
     clusters.reserve(n_clusters);
-    
-    Cluster3x3 tmp; //this would break if the cluster size changes
 
-    
     // if there are photons left from previous frame read them first
     if (m_num_left) {
-        size_t nph_read = 0;
-        while(nph_read < m_num_left && clusters.size() < n_clusters){
-            fread(&tmp, sizeof(tmp), 1, fp);
-            nph_read++;
-            if(tmp.x >= roi.xmin && tmp.x <= roi.xmax && tmp.y >= roi.ymin && tmp.y <= roi.ymax){
-                clusters.push_back(tmp.x, tmp.y, reinterpret_cast<std::byte*>(tmp.data));
+        while(m_num_left && clusters.size() < n_clusters){
+            Cluster3x3 c = read_one_cluster();
+            if(is_selected(c)){
+                clusters.push_back(c.x, c.y, reinterpret_cast<std::byte*>(c.data));
             }
         }
-        m_num_left -= nph_read;
     }
 
-
+    // we did not have enough clusters left in the previous frame
+    // keep on reading frames until reaching n_clusters
     if (clusters.size() < n_clusters) {
+        // sanity check
         if (m_num_left) {
             throw std::runtime_error(LOCATION + "Entered second loop with clusters left\n");
         }
-        // we did not have enough clusters left in the previous frame
-        // keep on reading frames until reaching n_clusters
-
+        
         int32_t frame_number = 0; // frame number needs to be 4 bytes!
         while (fread(&frame_number, sizeof(frame_number), 1, fp)) {
-            uint32_t nph_in_frame = 0; //number of photons we can read until next frame number
-            size_t nph_read = 0;       //number of photons read in this frame
-
-            if (fread(&nph_in_frame, sizeof(nph_in_frame), 1, fp)) {
-                if(frame_number != 1){
-                    throw std::runtime_error("Frame number is not 1");
-                }
-
-                while(nph_read < nph_in_frame && clusters.size() < n_clusters){
-                    fread(&tmp, sizeof(tmp), 1, fp);
-                    nph_read++;
-                    if(tmp.x >= roi.xmin && tmp.x <= roi.xmax && tmp.y >= roi.ymin && tmp.y <= roi.ymax){
-                        clusters.push_back(tmp.x, tmp.y, reinterpret_cast<std::byte*>(tmp.data));
+            if (fread(&m_num_left, sizeof(m_num_left), 1, fp)) {
+                clusters.set_frame_number(frame_number); //cluster vector will hold the last frame number
+                while(m_num_left && clusters.size() < n_clusters){
+                    Cluster3x3 c = read_one_cluster();
+                    if(is_selected(c)){
+                        clusters.push_back(c.x, c.y, reinterpret_cast<std::byte*>(c.data));
                     }
                 }
-                m_num_left = nph_in_frame - nph_read;
             }
 
-            if (clusters.size() >= n_clusters){
+            // we have enough clusters, break out of the outer while loop
+            if (clusters.size() >= n_clusters)
                 break;
-            }
         }
 
     }
+    if(m_gain_map)
+        clusters.apply_gain_map(m_gain_map->view());
+
     return clusters;
+}
+
+Cluster3x3 ClusterFile::read_one_cluster(){
+    Cluster3x3 c;
+    auto rc = fread(&c, sizeof(c), 1, fp);
+    if (rc != 1) {
+        throw std::runtime_error(LOCATION + "Could not read cluster");
+    }
+    --m_num_left;
+    return c;
 }
 
 ClusterVector<int32_t> ClusterFile::read_frame() {
@@ -198,6 +221,26 @@ ClusterVector<int32_t> ClusterFile::read_frame() {
     return clusters;
 }
 
+bool ClusterFile::is_selected(Cluster3x3 &cl) {
+    //Should fail fast
+    if (m_roi) {
+        if (!(m_roi->contains(cl.x, cl.y))) {
+            return false;
+        }
+    }
+    if (m_noise_map){
+        int32_t sum_1x1 = cl.data[4]; // central pixel
+        int32_t sum_2x2 = cl.sum_2x2(); // highest sum of 2x2 subclusters
+        int32_t sum_3x3 = cl.sum(); // sum of all pixels
+
+        auto noise = (*m_noise_map)(cl.y, cl.x); //TODO! check if this is correct
+        if (sum_1x1 <= noise || sum_2x2 <= 2 * noise || sum_3x3 <= 3 * noise) {
+            return false;
+        }
+    }
+    //we passed all checks
+    return true;
+}
 
 // std::vector<Cluster3x3> ClusterFile::read_cluster_with_cut(size_t n_clusters,
 //                                                            double *noise_map,

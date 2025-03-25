@@ -6,6 +6,9 @@
 #include <array>
 #include <stdexcept>
 
+// #include <algorithm>
+// #include <array>
+// #include <numeric>
 #include <cassert>
 #include <cstdint>
 #include <cstring>
@@ -41,6 +44,7 @@ namespace aare {
 inline constexpr size_t bits_per_byte = 8;
 
 void assert_failed(const std::string &msg);
+
 
 
 class DynamicCluster {
@@ -215,6 +219,9 @@ struct ROI{
   
     int64_t height() const { return ymax - ymin; }
     int64_t width() const { return xmax - xmin; }
+    bool contains(int64_t x, int64_t y) const {
+        return x >= xmin && x < xmax && y >= ymin && y < ymax;
+    }
   };
 
 

@@ -1,24 +1,15 @@
 #pragma once
 
+#include "aare/Cluster.hpp"
 #include "aare/ClusterVector.hpp"
 #include "aare/NDArray.hpp"
 #include "aare/defs.hpp"
 #include <filesystem>
 #include <fstream>
+#include <optional>
 
 namespace aare {
 
-//TODO! Template this? 
-struct Cluster3x3 {
-    int16_t x;
-    int16_t y;
-    int32_t data[9];
-};
-struct Cluster2x2 {
-    int16_t x;
-    int16_t y;
-    int32_t data[4];
-};
 
 typedef enum {
     cBottomLeft = 0,
@@ -80,6 +71,9 @@ class ClusterFile {
     uint32_t m_num_left{};
     size_t m_chunk_size{};
     const std::string m_mode;
+    std::optional<ROI> m_roi;
+    std::optional<NDArray<int32_t, 2>> m_noise_map;
+    std::optional<NDArray<double, 2>> m_gain_map;
 
   public:
     /**
@@ -104,7 +98,9 @@ class ClusterFile {
      */
     ClusterVector<int32_t> read_clusters(size_t n_clusters);
 
-    ClusterVector<int32_t> read_clusters(size_t n_clusters, ROI roi);
+    
+
+
 
     /**
      * @brief Read a single frame from the file and return the clusters. The
@@ -125,12 +121,24 @@ class ClusterFile {
      * @brief Return the chunk size
      */
     size_t chunk_size() const { return m_chunk_size; }
+
+    void set_roi(ROI roi);
+
+    void set_noise_map(const NDView<int32_t, 2> noise_map);
+
+    void set_gain_map(const NDView<double, 2> gain_map);
     
     
     /**
      * @brief Close the file. If not closed the file will be closed in the destructor
      */
     void close();
+
+    private:
+        ClusterVector<int32_t> read_clusters_with_cut(size_t n_clusters);
+        ClusterVector<int32_t> read_clusters_without_cut(size_t n_clusters);
+        bool is_selected(Cluster3x3 &cl);
+        Cluster3x3 read_one_cluster();
 };
 
 int analyze_data(int32_t *data, int32_t *t2, int32_t *t3, char *quad,
@@ -141,5 +149,7 @@ int analyze_cluster(Cluster3x3 &cl, int32_t *t2, int32_t *t3, char *quad,
 NDArray<double, 2> calculate_eta2(ClusterVector<int> &clusters);
 Eta2 calculate_eta2(Cluster3x3 &cl);
 Eta2 calculate_eta2(Cluster2x2 &cl);
+
+
 
 } // namespace aare

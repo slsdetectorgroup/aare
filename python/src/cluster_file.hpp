@@ -31,26 +31,22 @@ void define_cluster_file_io_bindings(py::module &m) {
                 auto v = new ClusterVector<int32_t>(self.read_clusters(n_clusters));
                 return v;
              },py::return_value_policy::take_ownership)
-        .def("read_clusters",
-                [](ClusterFile &self, size_t n_clusters, ROI roi) {
-                   auto v = new ClusterVector<int32_t>(self.read_clusters(n_clusters, roi));
-                   return v;
-                },py::return_value_policy::take_ownership)
         .def("read_frame",
              [](ClusterFile &self) {
                 auto v = new ClusterVector<int32_t>(self.read_frame());
                 return v;
              })
+        .def("set_roi", &ClusterFile::set_roi)
+        .def("set_noise_map", [](ClusterFile &self, py::array_t<int32_t> noise_map) {
+            auto view = make_view_2d(noise_map);
+            self.set_noise_map(view);
+        })
+        .def("set_gain_map", [](ClusterFile &self, py::array_t<double> gain_map) {
+            auto view = make_view_2d(gain_map);
+            self.set_gain_map(view);
+        })
+        .def("close", &ClusterFile::close)
         .def("write_frame", &ClusterFile::write_frame)
-        // .def("read_cluster_with_cut",
-        //      [](ClusterFile &self, size_t n_clusters,
-        //         py::array_t<double> noise_map, int nx, int ny) {
-        //          auto view = make_view_2d(noise_map);
-        //          auto *vec =
-        //              new std::vector<Cluster3x3>(self.read_cluster_with_cut(
-        //                  n_clusters, view.data(), nx, ny));
-        //          return return_vector(vec);
-        //      })
         .def("__enter__", [](ClusterFile &self) { return &self; })
         .def("__exit__",
              [](ClusterFile &self,
