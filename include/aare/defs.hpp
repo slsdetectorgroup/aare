@@ -1,14 +1,9 @@
 #pragma once
 
 #include "aare/Dtype.hpp"
-// #include "aare/utils/logger.hpp"
 
 #include <array>
 #include <stdexcept>
-
-// #include <algorithm>
-// #include <array>
-// #include <numeric>
 #include <cassert>
 #include <cstdint>
 #include <cstring>
