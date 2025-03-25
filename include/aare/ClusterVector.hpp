@@ -1,4 +1,5 @@
 #pragma once
+#include "aare/Cluster.hpp" //TODO maybe store in seperate file !!!
 #include <algorithm>
 #include <array>
 #include <cstddef>
@@ -10,7 +11,9 @@
 
 namespace aare {
 
-template <typename ClusterType> class ClusterVector; // Forward declaration
+template <typename ClusterType,
+          typename = std::enable_if_t<is_cluster_v<ClusterType>>>
+class ClusterVector; // Forward declaration
 
 /**
  * @brief ClusterVector is a container for clusters of various sizes. It uses a
@@ -44,12 +47,10 @@ class ClusterVector<Cluster<T, ClusterSizeX, ClusterSizeY, CoordType>> {
     constexpr static char m_fmt_base[] = "=h:x:\nh:y:\n({},{}){}:data:";
 
   public:
-    using ClusterType = Cluster<T, SizeX, SizeY>;
+    using ClusterType = Cluster<T, ClusterSizeX, ClusterSizeY, CoordType>;
 
     /**
      * @brief Construct a new ClusterVector object
-     * @param cluster_size_x size of the cluster in x direction
-     * @param cluster_size_y size of the cluster in y direction
      * @param capacity initial capacity of the buffer in number of clusters
      * @param frame_number frame number of the clusters. Default is 0, which is
      * also used to indicate that the clusters come from many frames
@@ -183,6 +184,10 @@ class ClusterVector<Cluster<T, ClusterSizeX, ClusterSizeY, CoordType>> {
      * @brief Return the number of clusters in the vector
      */
     size_t size() const { return m_size; }
+
+    uint8_t cluster_size_x() const { return ClusterSizeX; }
+
+    uint8_t cluster_size_y() const { return ClusterSizeY; }
 
     /**
      * @brief Return the capacity of the buffer in number of clusters. This is

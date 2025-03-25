@@ -4,8 +4,11 @@
 
 namespace aare {
 
-ClusterFile::ClusterFile(const std::filesystem::path &fname, size_t chunk_size,
-                         const std::string &mode)
+template <typename ClusterType,
+          typename = std::enable_if_t<is_cluster_v<ClusterType>>>
+ClusterFile<ClusterType>::ClusterFile(const std::filesystem::path &fname,
+                                      size_t chunk_size,
+                                      const std::string &mode)
     : m_chunk_size(chunk_size), m_mode(mode) {
 
     if (mode == "r") {
@@ -31,16 +34,21 @@ ClusterFile::ClusterFile(const std::filesystem::path &fname, size_t chunk_size,
     }
 }
 
-ClusterFile::~ClusterFile() { close(); }
+template <typename ClusterType> ClusterFile<ClusterType>::~ClusterFile() {
+    close();
+}
 
-void ClusterFile::close() {
+template <typename ClusterType> void ClusterFile<ClusterType>::close() {
     if (fp) {
         fclose(fp);
         fp = nullptr;
     }
 }
 
-void ClusterFile::write_frame(const ClusterVector<int32_t> &clusters) {
+// TODO generally supported for all clsuter types
+template <typename ClusterType>
+void ClusterFile<ClusterType>::write_frame(
+    const ClusterVector<ClusterType> &clusters) {
     if (m_mode != "w" && m_mode != "a") {
         throw std::runtime_error("File not opened for writing");
     }
@@ -55,12 +63,14 @@ void ClusterFile::write_frame(const ClusterVector<int32_t> &clusters) {
     fwrite(clusters.data(), clusters.item_size(), clusters.size(), fp);
 }
 
-ClusterVector<int32_t> ClusterFile::read_clusters(size_t n_clusters) {
+template <typename ClusterType>
+ClusterVector<ClusterType>
+ClusterFile<ClusterType>::read_clusters(size_t n_clusters) {
     if (m_mode != "r") {
         throw std::runtime_error("File not opened for reading");
     }
 
-    ClusterVector<int32_t> clusters(3, 3, n_clusters);
+    ClusterVector<ClusterType> clusters(n_clusters);
 
     int32_t iframe = 0; // frame number needs to be 4 bytes!
     size_t nph_read = 0;
@@ -108,12 +118,14 @@ ClusterVector<int32_t> ClusterFile::read_clusters(size_t n_clusters) {
     return clusters;
 }
 
-ClusterVector<int32_t> ClusterFile::read_clusters(size_t n_clusters, ROI roi) {
+template <typename ClusterType>
+ClusterVector<ClusterType>
+ClusterFile<ClusterType>::read_clusters(size_t n_clusters, ROI roi) {
     if (m_mode != "r") {
         throw std::runtime_error("File not opened for reading");
     }
 
-    ClusterVector<int32_t> clusters(3, 3);
+    ClusterVector<ClusterType> clusters;
     clusters.reserve(n_clusters);
 
     int32_t iframe = 0; // frame number needs to be 4 bytes!
@@ -124,7 +136,7 @@ ClusterVector<int32_t> ClusterFile::read_clusters(size_t n_clusters, ROI roi) {
     // auto buf = reinterpret_cast<Cluster3x3 *>(clusters.data());
     // auto buf = clusters.data();
 
-    Cluster3x3 tmp; // this would break if the cluster size changes
+    ClusterType tmp; // this would break if the cluster size changes
 
     // if there are photons left from previous frame read them first
     if (nph) {
@@ -186,7 +198,8 @@ ClusterVector<int32_t> ClusterFile::read_clusters(size_t n_clusters, ROI roi) {
     return clusters;
 }
 
-ClusterVector<int32_t> ClusterFile::read_frame() {
+template <typename ClusterType>
+ClusterVector<ClusterType> ClusterFile<ClusterType>::read_frame() {
     if (m_mode != "r") {
         throw std::runtime_error("File not opened for reading");
     }
@@ -204,7 +217,7 @@ ClusterVector<int32_t> ClusterFile::read_frame() {
         throw std::runtime_error("Could not read number of clusters");
     }
     // std::vector<Cluster3x3> clusters(n_clusters);
-    ClusterVector<int32_t> clusters(3, 3, n_clusters);
+    ClusterVector<ClusterType> clusters(n_clusters);
     clusters.set_frame_number(frame_number);
 
     if (fread(clusters.data(), clusters.item_size(), n_clusters, fp) !=
@@ -372,8 +385,9 @@ Eta2 calculate_eta2(Cluster<T, ClusterSizeX, ClusterSizeY, CoordType> &cl) {
     Eta2 eta{};
 
     // TODO loads of overhead for a 2x2 clsuter maybe keep 2x2 calculation
-    size_t num_2x2_subclusters = (ClusterSizeX - 1) * (ClusterSizeY - 1);
-    std::array<int32_t, num_2x2_subclusters> sum_2x2_subcluster;
+    constexpr size_t num_2x2_subclusters =
+        (ClusterSizeX - 1) * (ClusterSizeY - 1);
+    std::array<T, num_2x2_subclusters> sum_2x2_subcluster;
     for (size_t i = 0; i < ClusterSizeY - 1; ++i) {
         for (size_t j = 0; j < ClusterSizeX - 1; ++j)
             sum_2x2_subcluster[i * (ClusterSizeX - 1) + j] =
@@ -383,9 +397,9 @@ Eta2 calculate_eta2(Cluster<T, ClusterSizeX, ClusterSizeY, CoordType> &cl) {
                 cl.data[(i + 1) * ClusterSizeX + j + 1];
     }
 
-    auto c = std::max_element(sum_2x2_subclusters.begin(),
-                              sum_2x2_subcluster.end()) -
-             sum_2x2_subcluster.begin();
+    auto c =
+        std::max_element(sum_2x2_subcluster.begin(), sum_2x2_subcluster.end()) -
+        sum_2x2_subcluster.begin();
 
     eta.sum = sum_2x2_subcluster[c];
 
@@ -458,7 +472,6 @@ template <typename T> Eta2 calculate_eta2(Cluster<T, 3, 3> &cl) {
             eta.y = static_cast<double>(cl.data[7]) / (cl.data[7] + cl.data[4]);
         eta.c = cTopRight;
         break;
-        // no default to allow compiler to warn about missing cases
     }
     return eta;
 }
@@ -473,8 +486,9 @@ template <typename T> Eta2 calculate_eta2(Cluster<T, 2, 2> &cl) {
     return eta;
 }
 
-int analyze_cluster(Cluster3x3 &cl, int32_t *t2, int32_t *t3, char *quad,
-                    double *eta2x, double *eta2y, double *eta3x,
+// TODO complicated API simplify?
+int analyze_cluster(Cluster<int32_t, 3, 3> &cl, int32_t *t2, int32_t *t3,
+                    char *quad, double *eta2x, double *eta2y, double *eta3x,
                     double *eta3y) {
 
     return analyze_data(cl.data, t2, t3, quad, eta2x, eta2y, eta3x, eta3y);
