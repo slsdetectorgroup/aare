@@ -28,10 +28,11 @@ typedef enum {
     pTopRight = 8
 } pixel;
 
+// TODO: maybe template this!!!!!! why int32_t????
 struct Eta2 {
     double x;
     double y;
-    corner c;
+    int c;
     int32_t sum;
 };
 
@@ -131,22 +132,22 @@ int analyze_cluster(Cluster<int32_t, 3, 3> &cl, int32_t *t2, int32_t *t3,
                     char *quad, double *eta2x, double *eta2y, double *eta3x,
                     double *eta3y);
 
-template <typename ClusterType,
-          typename = std::enable_if_t<is_cluster_v<ClusterType>>>
-NDArray<double, 2> calculate_eta2(ClusterVector<ClusterType> &clusters);
+// template <typename ClusterType,
+// typename = std::enable_if_t<is_cluster_v<ClusterType>>>
+// NDArray<double, 2> calculate_eta2(ClusterVector<ClusterType> &clusters);
 
 // TODO: do we need rquire clauses?
-template <typename T> Eta2 calculate_eta2(const Cluster<T, 3, 3> &cl);
+// template <typename T> Eta2 calculate_eta2(const Cluster<T, 3, 3> &cl);
 
-template <typename T> Eta2 calculate_eta2(const Cluster<T, 2, 2> &cl);
+// template <typename T> Eta2 calculate_eta2(const Cluster<T, 2, 2> &cl);
 
-template <typename ClusterType, std::enable_if_t<is_cluster_v<ClusterType>>>
-Eta2 calculate_eta2(const ClusterType &cl);
+// template <typename ClusterType, std::enable_if_t<is_cluster_v<ClusterType>>>
+// Eta2 calculate_eta2(const ClusterType &cl);
 
-template <typename T, uint8_t ClusterSizeX, uint8_t ClusterSizeY,
-          typename CoordType>
-Eta2 calculate_eta2(
-    const Cluster<T, ClusterSizeX, ClusterSizeY, CoordType> &cl);
+// template <typename T, uint8_t ClusterSizeX, uint8_t ClusterSizeY,
+// typename CoordType>
+// Eta2 calculate_eta2(
+// const Cluster<T, ClusterSizeX, ClusterSizeY, CoordType> &cl);
 
 template <typename ClusterType, typename Enable>
 ClusterFile<ClusterType, Enable>::ClusterFile(
@@ -379,7 +380,7 @@ NDArray<double, 2> calculate_eta2(const ClusterVector<ClusterType> &clusters) {
     NDArray<double, 2> eta2({static_cast<int64_t>(clusters.size()), 2});
 
     for (size_t i = 0; i < clusters.size(); i++) {
-        auto e = calculate_eta2<ClusterType>(clusters.at(i));
+        auto e = calculate_eta2(clusters.at(i));
         eta2(i, 0) = e.x;
         eta2(i, 1) = e.y;
     }
@@ -417,25 +418,23 @@ Eta2 calculate_eta2(
 
     eta.sum = sum_2x2_subcluster[c];
 
-    eta.x = static_cast<double>(cl.data[(c + 1) * ClusterSizeX + 1]) /
-            (cl.data[0] + cl.data[1]);
+    size_t index_bottom_left_max_2x2_subcluster =
+        (int(c / (ClusterSizeX - 1))) * ClusterSizeX + c % (ClusterSizeX - 1);
 
-    size_t index_top_left_2x2_subcluster =
-        (int(c / (ClusterSizeX - 1)) + 1) * ClusterSizeX +
-        c % (ClusterSizeX - 1) * 2 + 1;
-    if ((cl.data[index_top_left_2x2_subcluster] +
-         cl.data[index_top_left_2x2_subcluster - 1]) != 0)
-        eta.x =
-            static_cast<double>(cl.data[index_top_left_2x2_subcluster] /
-                                (cl.data[index_top_left_2x2_subcluster] +
-                                 cl.data[index_top_left_2x2_subcluster - 1]));
+    if ((cl.data[index_bottom_left_max_2x2_subcluster] +
+         cl.data[index_bottom_left_max_2x2_subcluster + 1]) != 0)
+        eta.x = static_cast<double>(
+                    cl.data[index_bottom_left_max_2x2_subcluster + 1]) /
+                (cl.data[index_bottom_left_max_2x2_subcluster] +
+                 cl.data[index_bottom_left_max_2x2_subcluster + 1]);
 
-    if ((cl.data[index_top_left_2x2_subcluster] +
-         cl.data[index_top_left_2x2_subcluster - ClusterSizeX]) != 0)
-        eta.y = static_cast<double>(
-            cl.data[index_top_left_2x2_subcluster] /
-            (cl.data[index_top_left_2x2_subcluster] +
-             cl.data[index_top_left_2x2_subcluster - ClusterSizeX]));
+    if ((cl.data[index_bottom_left_max_2x2_subcluster] +
+         cl.data[index_bottom_left_max_2x2_subcluster + ClusterSizeX]) != 0)
+        eta.y =
+            static_cast<double>(
+                cl.data[index_bottom_left_max_2x2_subcluster + ClusterSizeX]) /
+            (cl.data[index_bottom_left_max_2x2_subcluster] +
+             cl.data[index_bottom_left_max_2x2_subcluster + ClusterSizeX]);
 
     eta.c = c; // TODO only supported for 2x2 and 3x3 clusters -> at least no
                // underyling enum class
@@ -446,6 +445,7 @@ Eta2 calculate_eta2(
  * @brief Calculate the eta2 values for a 3x3 cluster and return them in a Eta2
  * struct containing etay, etax and the corner of the cluster.
  */
+/*
 template <typename T> Eta2 calculate_eta2(const Cluster<T, 3, 3> &cl) {
     Eta2 eta{};
 
@@ -489,7 +489,9 @@ template <typename T> Eta2 calculate_eta2(const Cluster<T, 3, 3> &cl) {
     }
     return eta;
 }
+*/
 
+/*
 template <typename T> Eta2 calculate_eta2(const Cluster<T, 2, 2> &cl) {
     Eta2 eta{};
 
@@ -499,6 +501,7 @@ template <typename T> Eta2 calculate_eta2(const Cluster<T, 2, 2> &cl) {
     eta.c = cBottomLeft; // TODO! This is not correct, but need to put something
     return eta;
 }
+*/
 
 // TODO complicated API simplify?
 int analyze_cluster(Cluster<int32_t, 3, 3> &cl, int32_t *t2, int32_t *t3,
