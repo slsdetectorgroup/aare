@@ -16,8 +16,9 @@ namespace aare {
 // requires clause c++20 maybe update
 template <typename T, uint8_t ClusterSizeX, uint8_t ClusterSizeY,
           typename CoordType = int16_t,
-          typename Enable = std::enable_if_t<std::is_arithmetic_v<T> &&
-                                             std::is_integral_v<CoordType>>>
+          typename Enable = std::enable_if_t<
+              std::is_arithmetic_v<T> && std::is_integral_v<CoordType> &&
+              (ClusterSizeX > 1) && (ClusterSizeY > 1)>>
 struct Cluster {
     CoordType x;
     CoordType y;
