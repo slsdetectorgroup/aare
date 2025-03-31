@@ -307,6 +307,7 @@ endif()
 
 set(PUBLICHEADERS
     include/aare/ArrayExpr.hpp
+    include/aare/CalculateEta.hpp
     include/aare/Cluster.hpp
     #include/aare/ClusterFinder.hpp
     include/aare/ClusterFile.hpp
@@ -331,7 +332,6 @@ set(PUBLICHEADERS
     include/aare/RawSubFile.hpp
     #include/aare/VarClusterFinder.hpp
     include/aare/utils/task.hpp
-
 )
 
 
@@ -361,8 +361,6 @@ target_include_directories(aare_core PUBLIC
     "$<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>" 
     "$<INSTALL_INTERFACE:${CMAKE_INSTALL_INCLUDEDIR}>" PRIVATE ${lmfit_SOURCE_DIR}/lib
 )
-
-
 
 target_link_libraries(
     aare_core 

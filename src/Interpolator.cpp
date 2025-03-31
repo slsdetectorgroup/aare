@@ -1,4 +1,5 @@
 #include "aare/Interpolator.hpp"
+#include "aare/CalculateEta.hpp"
 #include "aare/algorithm.hpp"
 
 namespace aare {

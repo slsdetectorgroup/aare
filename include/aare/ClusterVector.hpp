@@ -30,8 +30,7 @@ template <typename T, uint8_t ClusterSizeX, uint8_t ClusterSizeY,
           typename CoordType>
 class ClusterVector<Cluster<T, ClusterSizeX, ClusterSizeY, CoordType>> {
     using value_type = T;
-    // size_t m_cluster_size_x;
-    // size_t m_cluster_size_y;
+
     std::byte *m_data{};
     size_t m_size{0};
     size_t m_capacity;
@@ -155,30 +154,32 @@ class ClusterVector<Cluster<T, ClusterSizeX, ClusterSizeY, CoordType>> {
      * @throws std::runtime_error if the cluster size is not 3x3
      * @warning Only 3x3 clusters are supported for the 2x2 sum.
      */
-    std::vector<T> sum_2x2() {
-        std::vector<T> sums(m_size);
-        const size_t stride = item_size();
+    /* only needed to calculate eta
+        std::vector<T> sum_2x2() {
+            std::vector<T> sums(m_size);
+            const size_t stride = item_size();
 
-        if (ClusterSizeX != 3 || ClusterSizeY != 3) {
-            throw std::runtime_error(
-                "Only 3x3 clusters are supported for the 2x2 sum.");
+            if (ClusterSizeX != 3 || ClusterSizeY != 3) {
+                throw std::runtime_error(
+                    "Only 3x3 clusters are supported for the 2x2 sum.");
+            }
+            std::byte *ptr = m_data + 2 * sizeof(CoordType); // skip x and y
+
+            for (size_t i = 0; i < m_size; i++) {
+                std::array<T, 4> total;
+                auto T_ptr = reinterpret_cast<T *>(ptr);
+                total[0] = T_ptr[0] + T_ptr[1] + T_ptr[3] + T_ptr[4];
+                total[1] = T_ptr[1] + T_ptr[2] + T_ptr[4] + T_ptr[5];
+                total[2] = T_ptr[3] + T_ptr[4] + T_ptr[6] + T_ptr[7];
+                total[3] = T_ptr[4] + T_ptr[5] + T_ptr[7] + T_ptr[8];
+
+                sums[i] = *std::max_element(total.begin(), total.end());
+                ptr += stride;
+            }
+
+            return sums;
         }
-        std::byte *ptr = m_data + 2 * sizeof(CoordType); // skip x and y
-
-        for (size_t i = 0; i < m_size; i++) {
-            std::array<T, 4> total;
-            auto T_ptr = reinterpret_cast<T *>(ptr);
-            total[0] = T_ptr[0] + T_ptr[1] + T_ptr[3] + T_ptr[4];
-            total[1] = T_ptr[1] + T_ptr[2] + T_ptr[4] + T_ptr[5];
-            total[2] = T_ptr[3] + T_ptr[4] + T_ptr[6] + T_ptr[7];
-            total[3] = T_ptr[4] + T_ptr[5] + T_ptr[7] + T_ptr[8];
-
-            sums[i] = *std::max_element(total.begin(), total.end());
-            ptr += stride;
-        }
-
-        return sums;
-    }
+    */
 
     /**
      * @brief Return the number of clusters in the vector

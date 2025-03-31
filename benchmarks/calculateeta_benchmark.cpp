@@ -1,3 +1,4 @@
+#include "aare/CalculateEta.hpp"
 #include "aare/ClusterFile.hpp"
 #include <benchmark/benchmark.h>
 
