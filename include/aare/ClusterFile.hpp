@@ -445,7 +445,7 @@ Eta2 calculate_eta2(
  * @brief Calculate the eta2 values for a 3x3 cluster and return them in a Eta2
  * struct containing etay, etax and the corner of the cluster.
  */
-/*
+
 template <typename T> Eta2 calculate_eta2(const Cluster<T, 3, 3> &cl) {
     Eta2 eta{};
 
@@ -489,9 +489,7 @@ template <typename T> Eta2 calculate_eta2(const Cluster<T, 3, 3> &cl) {
     }
     return eta;
 }
-*/
 
-/*
 template <typename T> Eta2 calculate_eta2(const Cluster<T, 2, 2> &cl) {
     Eta2 eta{};
 
@@ -501,7 +499,6 @@ template <typename T> Eta2 calculate_eta2(const Cluster<T, 2, 2> &cl) {
     eta.c = cBottomLeft; // TODO! This is not correct, but need to put something
     return eta;
 }
-*/
 
 // calculates Eta3 for 3x3 cluster based on code from analyze_cluster
 // TODO only supported for 3x3 Clusters

@@ -81,14 +81,14 @@ set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 
 if(AARE_FETCH_LMFIT)
     #TODO! Should we fetch lmfit from the web or inlcude a tar.gz in the repo?
-    set(lmfit_patch git apply ${CMAKE_CURRENT_SOURCE_DIR}/patches/lmfit.patch)
+    #set(lmfit_patch git apply ${CMAKE_CURRENT_SOURCE_DIR}/patches/lmfit.patch)
     FetchContent_Declare(
         lmfit
         GIT_REPOSITORY https://jugit.fz-juelich.de/mlz/lmfit.git
         GIT_TAG        main
-        PATCH_COMMAND ${lmfit_patch}
-        UPDATE_DISCONNECTED 1
-        EXCLUDE_FROM_ALL 1
+        #PATCH_COMMAND ${lmfit_patch}
+        #UPDATE_DISCONNECTED 1
+        #EXCLUDE_FROM_ALL 1
     )
     #Disable what we don't need from lmfit
     set(BUILD_TESTING OFF CACHE BOOL "")
@@ -359,7 +359,7 @@ set(SourceFiles
 add_library(aare_core STATIC ${SourceFiles})
 target_include_directories(aare_core PUBLIC 
     "$<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>" 
-    "$<INSTALL_INTERFACE:${CMAKE_INSTALL_INCLUDEDIR}>"
+    "$<INSTALL_INTERFACE:${CMAKE_INSTALL_INCLUDEDIR}>" PRIVATE ${lmfit_SOURCE_DIR}/lib
 )
 
 
