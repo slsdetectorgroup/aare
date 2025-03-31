@@ -503,111 +503,34 @@ template <typename T> Eta2 calculate_eta2(const Cluster<T, 2, 2> &cl) {
 }
 */
 
-// TODO complicated API simplify?
-int analyze_cluster(Cluster<int32_t, 3, 3> &cl, int32_t *t2, int32_t *t3,
-                    char *quad, double *eta2x, double *eta2y, double *eta3x,
-                    double *eta3y) {
+// calculates Eta3 for 3x3 cluster based on code from analyze_cluster
+// TODO only supported for 3x3 Clusters
+template <typename T> Eta2 calculate_eta3(const Cluster<T, 3, 3> &cl) {
 
-    return analyze_data(cl.data, t2, t3, quad, eta2x, eta2y, eta3x, eta3y);
-}
+    Eta2 eta{};
 
-int analyze_data(int32_t *data, int32_t *t2, int32_t *t3, char *quad,
-                 double *eta2x, double *eta2y, double *eta3x, double *eta3y) {
+    T sum = 0;
 
-    int ok = 1;
+    std::for_each(std::begin(cl.data), std::end(cl.data),
+                  [&sum](T x) { sum += x; });
 
-    int32_t tot2[4];
-    int32_t t2max = 0;
-    char c = 0;
-    int32_t val, tot3;
+    eta.sum = sum;
 
-    tot3 = 0;
-    for (int i = 0; i < 4; i++)
-        tot2[i] = 0;
+    eta.c = corner::cBottomLeft;
 
-    for (int ix = 0; ix < 3; ix++) {
-        for (int iy = 0; iy < 3; iy++) {
-            val = data[iy * 3 + ix];
-            //	printf ("%d ",data[iy * 3 + ix]);
-            tot3 += val;
-            if (ix <= 1 && iy <= 1)
-                tot2[cBottomLeft] += val;
-            if (ix >= 1 && iy <= 1)
-                tot2[cBottomRight] += val;
-            if (ix <= 1 && iy >= 1)
-                tot2[cTopLeft] += val;
-            if (ix >= 1 && iy >= 1)
-                tot2[cTopRight] += val;
-        }
-        //	printf ("\n");
-    }
-    // printf ("\n");
+    if ((cl.data[3] + cl.data[4] + cl.data[5]) != 0)
 
-    if (t2 || quad) {
+        eta.x = static_cast<double>(-cl.data[3] + cl.data[3 + 2]) /
 
-        t2max = tot2[0];
-        c = cBottomLeft;
-        for (int i = 1; i < 4; i++) {
-            if (tot2[i] > t2max) {
-                t2max = tot2[i];
-                c = i;
-            }
-        }
-        // printf("*** %d %d %d %d --
-        // %d\n",tot2[0],tot2[1],tot2[2],tot2[3],t2max);
-        if (quad)
-            *quad = c;
-        if (t2)
-            *t2 = t2max;
-    }
+                (cl.data[3] + cl.data[4] + cl.data[5]);
 
-    if (t3)
-        *t3 = tot3;
+    if ((cl.data[1] + cl.data[4] + cl.data[7]) != 0)
 
-    if (eta2x || eta2y) {
-        if (eta2x)
-            *eta2x = 0;
-        if (eta2y)
-            *eta2y = 0;
-        switch (c) {
-        case cBottomLeft:
-            if (eta2x && (data[3] + data[4]) != 0)
-                *eta2x = static_cast<double>(data[4]) / (data[3] + data[4]);
-            if (eta2y && (data[1] + data[4]) != 0)
-                *eta2y = static_cast<double>(data[4]) / (data[1] + data[4]);
-            break;
-        case cBottomRight:
-            if (eta2x && (data[2] + data[5]) != 0)
-                *eta2x = static_cast<double>(data[5]) / (data[4] + data[5]);
-            if (eta2y && (data[1] + data[4]) != 0)
-                *eta2y = static_cast<double>(data[4]) / (data[1] + data[4]);
-            break;
-        case cTopLeft:
-            if (eta2x && (data[7] + data[4]) != 0)
-                *eta2x = static_cast<double>(data[4]) / (data[3] + data[4]);
-            if (eta2y && (data[7] + data[4]) != 0)
-                *eta2y = static_cast<double>(data[7]) / (data[7] + data[4]);
-            break;
-        case cTopRight:
-            if (eta2x && t2max != 0)
-                *eta2x = static_cast<double>(data[5]) / (data[5] + data[4]);
-            if (eta2y && t2max != 0)
-                *eta2y = static_cast<double>(data[7]) / (data[7] + data[4]);
-            break;
-        default:;
-        }
-    }
+        eta.y = static_cast<double>(-cl.data[1] + cl.data[2 * 3 + 1]) /
 
-    if (eta3x || eta3y) {
-        if (eta3x && (data[3] + data[4] + data[5]) != 0)
-            *eta3x = static_cast<double>(-data[3] + data[3 + 2]) /
-                     (data[3] + data[4] + data[5]);
-        if (eta3y && (data[1] + data[4] + data[7]) != 0)
-            *eta3y = static_cast<double>(-data[1] + data[2 * 3 + 1]) /
-                     (data[1] + data[4] + data[7]);
-    }
+                (cl.data[1] + cl.data[4] + cl.data[7]);
 
-    return ok;
+    return eta;
 }
 
 } // namespace aare
