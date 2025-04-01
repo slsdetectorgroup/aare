@@ -82,14 +82,28 @@ set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 if(AARE_FETCH_LMFIT)
     #TODO! Should we fetch lmfit from the web or inlcude a tar.gz in the repo?
     set(LMFIT_PATCH_COMMAND git apply ${CMAKE_CURRENT_SOURCE_DIR}/patches/lmfit.patch)
-    FetchContent_Declare(
-        lmfit
-        GIT_REPOSITORY https://jugit.fz-juelich.de/mlz/lmfit.git
-        GIT_TAG        main
-        PATCH_COMMAND ${LMFIT_PATCH_COMMAND}
-        UPDATE_DISCONNECTED 1
-        EXCLUDE_FROM_ALL 1
-    )
+
+    # For cmake < 3.28 we can't supply EXCLUDE_FROM_ALL to FetchContent_Declare
+    # so we need this workaround
+    if (${CMAKE_VERSION} VERSION_LESS "3.28")
+        FetchContent_Declare(
+            lmfit
+            GIT_REPOSITORY https://jugit.fz-juelich.de/mlz/lmfit.git
+            GIT_TAG        main
+            PATCH_COMMAND ${LMFIT_PATCH_COMMAND}
+            UPDATE_DISCONNECTED 1
+        )
+    else()
+        FetchContent_Declare(
+            lmfit
+            GIT_REPOSITORY https://jugit.fz-juelich.de/mlz/lmfit.git
+            GIT_TAG        main
+            PATCH_COMMAND ${LMFIT_PATCH_COMMAND}
+            UPDATE_DISCONNECTED 1
+            EXCLUDE_FROM_ALL 1
+        )
+    endif()
+    
     #Disable what we don't need from lmfit
     set(BUILD_TESTING OFF CACHE BOOL "")
     set(LMFIT_CPPTEST OFF CACHE BOOL "")
@@ -97,8 +111,15 @@ if(AARE_FETCH_LMFIT)
     set(LMFIT_CPPTEST OFF CACHE BOOL "")
     set(BUILD_SHARED_LIBS OFF CACHE BOOL "")
 
+    if (${CMAKE_VERSION} VERSION_LESS "3.28")
+        if(NOT lmfit_POPULATED)
+            FetchContent_Populate(lmfit)
+            add_subdirectory(${lmfit_SOURCE_DIR} ${lmfit_BINARY_DIR} EXCLUDE_FROM_ALL)
+        endif()
+    else()
+        FetchContent_MakeAvailable(lmfit)
+    endif()
     
-    FetchContent_MakeAvailable(lmfit)
     set_property(TARGET lmfit PROPERTY POSITION_INDEPENDENT_CODE ON)
 else()
     find_package(lmfit REQUIRED)
@@ -117,6 +138,7 @@ if(AARE_FETCH_ZMQ)
         GIT_REPOSITORY https://github.com/zeromq/libzmq.git
         GIT_TAG        v4.3.4
         PATCH_COMMAND ${ZMQ_PATCH_COMMAND}
+        UPDATE_DISCONNECTED 1
     )
     # Disable unwanted options from libzmq
     set(BUILD_TESTS OFF CACHE BOOL "Switch off libzmq test build")
