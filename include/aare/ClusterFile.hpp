@@ -10,6 +10,7 @@
 
 namespace aare {
 
+
 //TODO! Legacy enums, migrate to enum class
 typedef enum {
     cBottomLeft = 0,
@@ -90,6 +91,8 @@ class ClusterFile {
      */
     ClusterVector<int32_t> read_clusters(size_t n_clusters);
 
+    ClusterVector<int32_t> read_clusters(size_t n_clusters, ROI roi);
+
     /**
      * @brief Read a single frame from the file and return the clusters. The
      * cluster vector will have the frame number set.
@@ -144,7 +147,6 @@ class ClusterFile {
 NDArray<double, 2> calculate_eta2(ClusterVector<int> &clusters);
 Eta2 calculate_eta2(Cluster3x3 &cl);
 Eta2 calculate_eta2(Cluster2x2 &cl);
-
 
 
 } // namespace aare

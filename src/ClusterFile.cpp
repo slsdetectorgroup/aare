@@ -147,7 +147,6 @@ ClusterVector<int32_t> ClusterFile::read_clusters_without_cut(size_t n_clusters)
 }
 
 
-
 ClusterVector<int32_t> ClusterFile::read_clusters_with_cut(size_t n_clusters) {
     ClusterVector<int32_t> clusters(3,3);
     clusters.reserve(n_clusters);
