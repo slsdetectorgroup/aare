@@ -55,11 +55,26 @@ TEST_CASE("Read clusters from single frame file", "[.integration]") {
     auto fpath = test_data_path() / "clusters" / "single_frame_97_clustrers.clust";
     REQUIRE(std::filesystem::exists(fpath));
 
-    ClusterFile f(fpath);
-    auto clusters = f.read_clusters(500);
-    REQUIRE(clusters.size() == 97);
+    SECTION("Read fewer clusters than available") {
+        ClusterFile f(fpath);
+        auto clusters = f.read_clusters(50);
+        REQUIRE(clusters.size() == 50);
+         REQUIRE(clusters.frame_number() == 135);
+    }
+    SECTION("Read more clusters than available") {
+        ClusterFile f(fpath);
+        // 100 is the maximum number of clusters read
+        auto clusters = f.read_clusters(100);
+        REQUIRE(clusters.size() == 97);
+        REQUIRE(clusters.frame_number() == 135);
+    }
+    SECTION("Read all clusters") {
+        ClusterFile f(fpath);
+        auto clusters = f.read_clusters(97);
+        REQUIRE(clusters.size() == 97);
+        REQUIRE(clusters.frame_number() == 135);
+    }
 
 
-    //Cluster vector should hold the last read frame number:
-    REQUIRE(clusters.frame_number() == 135);
+    
 }
