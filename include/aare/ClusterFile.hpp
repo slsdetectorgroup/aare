@@ -243,8 +243,9 @@ ClusterFile<ClusterType, Enable>::read_clusters(size_t n_clusters, ROI roi) {
             fread(&tmp, sizeof(tmp), 1, fp);
             if (tmp.x >= roi.xmin && tmp.x <= roi.xmax && tmp.y >= roi.ymin &&
                 tmp.y <= roi.ymax) {
-                clusters.push_back(tmp.x, tmp.y,
-                                   reinterpret_cast<std::byte *>(tmp.data));
+                // clusters.push_back(tmp.x, tmp.y,
+                // reinterpret_cast<std::byte *>(tmp.data));
+                clusters.push_back(tmp);
                 nph_read++;
             }
         }
@@ -268,9 +269,10 @@ ClusterFile<ClusterType, Enable>::read_clusters(size_t n_clusters, ROI roi) {
                     fread(&tmp, sizeof(tmp), 1, fp);
                     if (tmp.x >= roi.xmin && tmp.x <= roi.xmax &&
                         tmp.y >= roi.ymin && tmp.y <= roi.ymax) {
-                        clusters.push_back(
-                            tmp.x, tmp.y,
-                            reinterpret_cast<std::byte *>(tmp.data));
+                        // clusters.push_back(
+                        // tmp.x, tmp.y,
+                        // reinterpret_cast<std::byte *>(tmp.data));
+                        clusters.push_back(tmp);
                         nph_read++;
                     }
                 }

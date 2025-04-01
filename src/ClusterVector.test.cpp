@@ -7,7 +7,8 @@
 using aare::Cluster;
 using aare::ClusterVector;
 
-TEST_CASE("ClusterVector 2x2 int32_t capacity 4, push back then read") {
+TEST_CASE("ClusterVector 2x2 int32_t capacity 4, push back then read",
+          "[.ClusterVector]") {
 
     ClusterVector<Cluster<int32_t, 2, 2>> cv(4);
     REQUIRE(cv.capacity() == 4);
@@ -19,7 +20,7 @@ TEST_CASE("ClusterVector 2x2 int32_t capacity 4, push back then read") {
 
     // Create a cluster and push back into the vector
     Cluster<int32_t, 2, 2> c1 = {1, 2, {3, 4, 5, 6}};
-    cv.push_back(c1.x, c1.y, reinterpret_cast<std::byte *>(&c1.data[0]));
+    cv.push_back(c1);
     REQUIRE(cv.size() == 1);
     REQUIRE(cv.capacity() == 4);
 
@@ -36,7 +37,7 @@ TEST_CASE("ClusterVector 2x2 int32_t capacity 4, push back then read") {
     }
 }
 
-TEST_CASE("Summing 3x1 clusters of int64") {
+TEST_CASE("Summing 3x1 clusters of int64", "[.ClusterVector]") {
     ClusterVector<Cluster<int32_t, 3, 1>> cv(2);
     REQUIRE(cv.capacity() == 2);
     REQUIRE(cv.size() == 0);
@@ -45,17 +46,17 @@ TEST_CASE("Summing 3x1 clusters of int64") {
 
     // Create a cluster and push back into the vector
     Cluster<int32_t, 3, 1> c1 = {1, 2, {3, 4, 5}};
-    cv.push_back(c1.x, c1.y, reinterpret_cast<std::byte *>(&c1.data[0]));
+    cv.push_back(c1);
     REQUIRE(cv.capacity() == 2);
     REQUIRE(cv.size() == 1);
 
     Cluster<int32_t, 3, 1> c2 = {6, 7, {8, 9, 10}};
-    cv.push_back(c2.x, c2.y, reinterpret_cast<std::byte *>(&c2.data[0]));
+    cv.push_back(c2);
     REQUIRE(cv.capacity() == 2);
     REQUIRE(cv.size() == 2);
 
     Cluster<int32_t, 3, 1> c3 = {11, 12, {13, 14, 15}};
-    cv.push_back(c3.x, c3.y, reinterpret_cast<std::byte *>(&c3.data[0]));
+    cv.push_back(c3);
     REQUIRE(cv.capacity() == 4);
     REQUIRE(cv.size() == 3);
 
@@ -66,7 +67,7 @@ TEST_CASE("Summing 3x1 clusters of int64") {
     REQUIRE(sums[2] == 42);
 }
 
-TEST_CASE("Storing floats") {
+TEST_CASE("Storing floats", "[.ClusterVector]") {
     ClusterVector<Cluster<float, 2, 4>> cv(10);
     REQUIRE(cv.capacity() == 10);
     REQUIRE(cv.size() == 0);
@@ -75,13 +76,13 @@ TEST_CASE("Storing floats") {
 
     // Create a cluster and push back into the vector
     Cluster<float, 2, 4> c1 = {1, 2, {3.0, 4.0, 5.0, 6.0, 3.0, 4.0, 5.0, 6.0}};
-    cv.push_back(c1.x, c1.y, reinterpret_cast<std::byte *>(&c1.data[0]));
+    cv.push_back(c1);
     REQUIRE(cv.capacity() == 10);
     REQUIRE(cv.size() == 1);
 
     Cluster<float, 2, 4> c2 = {
         6, 7, {8.0, 9.0, 10.0, 11.0, 8.0, 9.0, 10.0, 11.0}};
-    cv.push_back(c2.x, c2.y, reinterpret_cast<std::byte *>(&c2.data[0]));
+    cv.push_back(c2);
     REQUIRE(cv.capacity() == 10);
     REQUIRE(cv.size() == 2);
 
@@ -91,22 +92,22 @@ TEST_CASE("Storing floats") {
     REQUIRE_THAT(sums[1], Catch::Matchers::WithinAbs(76.0, 1e-6));
 }
 
-TEST_CASE("Push back more than initial capacity") {
+TEST_CASE("Push back more than initial capacity", "[.ClusterVector]") {
 
     ClusterVector<Cluster<int32_t, 2, 2>> cv(2);
     auto initial_data = cv.data();
     Cluster<int32_t, 2, 2> c1 = {1, 2, {3, 4, 5, 6}};
-    cv.push_back(c1.x, c1.y, reinterpret_cast<std::byte *>(&c1.data[0]));
+    cv.push_back(c1);
     REQUIRE(cv.size() == 1);
     REQUIRE(cv.capacity() == 2);
 
     Cluster<int32_t, 2, 2> c2 = {6, 7, {8, 9, 10, 11}};
-    cv.push_back(c2.x, c2.y, reinterpret_cast<std::byte *>(&c2.data[0]));
+    cv.push_back(c2);
     REQUIRE(cv.size() == 2);
     REQUIRE(cv.capacity() == 2);
 
     Cluster<int32_t, 2, 2> c3 = {11, 12, {13, 14, 15, 16}};
-    cv.push_back(c3.x, c3.y, reinterpret_cast<std::byte *>(&c3.data[0]));
+    cv.push_back(c3);
     REQUIRE(cv.size() == 3);
     REQUIRE(cv.capacity() == 4);
 
@@ -124,19 +125,19 @@ TEST_CASE("Push back more than initial capacity") {
     REQUIRE(initial_data != cv.data());
 }
 
-TEST_CASE(
-    "Concatenate two cluster vectors where the first has enough capacity") {
+TEST_CASE("Concatenate two cluster vectors where the first has enough capacity",
+          "[.ClusterVector]") {
     ClusterVector<Cluster<int32_t, 2, 2>> cv1(12);
     Cluster<int32_t, 2, 2> c1 = {1, 2, {3, 4, 5, 6}};
-    cv1.push_back(c1.x, c1.y, reinterpret_cast<std::byte *>(&c1.data[0]));
+    cv1.push_back(c1);
     Cluster<int32_t, 2, 2> c2 = {6, 7, {8, 9, 10, 11}};
-    cv1.push_back(c2.x, c2.y, reinterpret_cast<std::byte *>(&c2.data[0]));
+    cv1.push_back(c2);
 
     ClusterVector<Cluster<int32_t, 2, 2>> cv2(2);
     Cluster<int32_t, 2, 2> c3 = {11, 12, {13, 14, 15, 16}};
-    cv2.push_back(c3.x, c3.y, reinterpret_cast<std::byte *>(&c3.data[0]));
+    cv2.push_back(c3);
     Cluster<int32_t, 2, 2> c4 = {16, 17, {18, 19, 20, 21}};
-    cv2.push_back(c4.x, c4.y, reinterpret_cast<std::byte *>(&c4.data[0]));
+    cv2.push_back(c4);
 
     cv1 += cv2;
     REQUIRE(cv1.size() == 4);
@@ -154,18 +155,19 @@ TEST_CASE(
     REQUIRE(ptr[3].y == 17);
 }
 
-TEST_CASE("Concatenate two cluster vectors where we need to allocate") {
+TEST_CASE("Concatenate two cluster vectors where we need to allocate",
+          "[.ClusterVector]") {
     ClusterVector<Cluster<int32_t, 2, 2>> cv1(2);
     Cluster<int32_t, 2, 2> c1 = {1, 2, {3, 4, 5, 6}};
-    cv1.push_back(c1.x, c1.y, reinterpret_cast<std::byte *>(&c1.data[0]));
+    cv1.push_back(c1);
     Cluster<int32_t, 2, 2> c2 = {6, 7, {8, 9, 10, 11}};
-    cv1.push_back(c2.x, c2.y, reinterpret_cast<std::byte *>(&c2.data[0]));
+    cv1.push_back(c2);
 
     ClusterVector<Cluster<int32_t, 2, 2>> cv2(2);
     Cluster<int32_t, 2, 2> c3 = {11, 12, {13, 14, 15, 16}};
-    cv2.push_back(c3.x, c3.y, reinterpret_cast<std::byte *>(&c3.data[0]));
+    cv2.push_back(c3);
     Cluster<int32_t, 2, 2> c4 = {16, 17, {18, 19, 20, 21}};
-    cv2.push_back(c4.x, c4.y, reinterpret_cast<std::byte *>(&c4.data[0]));
+    cv2.push_back(c4);
 
     cv1 += cv2;
     REQUIRE(cv1.size() == 4);

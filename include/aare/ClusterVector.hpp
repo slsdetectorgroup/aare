@@ -100,25 +100,22 @@ class ClusterVector<Cluster<T, ClusterSizeX, ClusterSizeY, CoordType>> {
 
     /**
      * @brief Add a cluster to the vector
-     * @param x x-coordinate of the cluster
-     * @param y y-coordinate of the cluster
-     * @param data pointer to the data of the cluster
-     * @warning The data pointer must point to a buffer of size cluster_size_x *
-     * cluster_size_y * sizeof(T)
      */
-    void push_back(CoordType x, CoordType y, const std::byte *data) {
+    void push_back(const ClusterType &cluster) {
         if (m_size == m_capacity) {
             allocate_buffer(m_capacity * 2);
         }
         std::byte *ptr = element_ptr(m_size);
-        *reinterpret_cast<CoordType *>(ptr) = x;
+        *reinterpret_cast<CoordType *>(ptr) = cluster.x;
         ptr += sizeof(CoordType);
-        *reinterpret_cast<CoordType *>(ptr) = y;
+        *reinterpret_cast<CoordType *>(ptr) = cluster.y;
         ptr += sizeof(CoordType);
 
-        std::copy(data, data + ClusterSizeX * ClusterSizeY * sizeof(T), ptr);
+        std::memcpy(ptr, cluster.data, ClusterSizeX * ClusterSizeY * sizeof(T));
+
         m_size++;
     }
+
     ClusterVector &operator+=(const ClusterVector &other) {
         if (m_size + other.m_size > m_capacity) {
             allocate_buffer(m_capacity + other.m_size);
@@ -154,10 +151,9 @@ class ClusterVector<Cluster<T, ClusterSizeX, ClusterSizeY, CoordType>> {
      * @throws std::runtime_error if the cluster size is not 3x3
      * @warning Only 3x3 clusters are supported for the 2x2 sum.
      */
-    /* only needed to calculate eta
-        std::vector<T> sum_2x2() {
-            std::vector<T> sums(m_size);
-            const size_t stride = item_size();
+    /* only needed to calculate eta TODO: in previous PR already added calculate
+       sum in PR std::vector<T> sum_2x2() { std::vector<T> sums(m_size); const
+       size_t stride = item_size();
 
             if (ClusterSizeX != 3 || ClusterSizeY != 3) {
                 throw std::runtime_error(

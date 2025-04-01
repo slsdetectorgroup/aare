@@ -140,9 +140,14 @@ class ClusterFinder {
                     }
 
                     // Add the cluster to the output ClusterVector
+                    /*
                     m_clusters.push_back(
                         ix, iy,
                         reinterpret_cast<std::byte *>(cluster_data.data()));
+                    */
+                    m_clusters.push_back(
+                        Cluster<CT, ClusterSizeX, ClusterSizeY>{
+                            ix, iy, cluster_data.data()});
                 }
             }
         }
