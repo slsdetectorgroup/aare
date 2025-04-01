@@ -1,25 +1,17 @@
 #pragma once
 
+#include "aare/Cluster.hpp"
 #include "aare/ClusterVector.hpp"
 #include "aare/NDArray.hpp"
 #include "aare/defs.hpp"
 #include <filesystem>
 #include <fstream>
+#include <optional>
 
 namespace aare {
 
-//TODO! Template this? 
-struct Cluster3x3 {
-    int16_t x;
-    int16_t y;
-    int32_t data[9];
-};
-struct Cluster2x2 {
-    int16_t x;
-    int16_t y;
-    int32_t data[4];
-};
 
+//TODO! Legacy enums, migrate to enum class
 typedef enum {
     cBottomLeft = 0,
     cBottomRight = 1,
@@ -53,15 +45,7 @@ struct ClusterAnalysis {
     double etay;
 };
 
-/*
-Binary cluster file. Expects data to be layed out as:
-int32_t frame_number
-uint32_t number_of_clusters
-int16_t x, int16_t y, int32_t data[9] x number_of_clusters
-int32_t frame_number
-uint32_t number_of_clusters
-....
-*/
+
 
 /**
  * @brief Class to read and write cluster files
@@ -70,16 +54,19 @@ uint32_t number_of_clusters
  *
  *       int32_t frame_number
  *       uint32_t number_of_clusters
- *       int16_t x, int16_t y, int32_t data[9] x number_of_clusters
+ *       int16_t x, int16_t y, int32_t data[9] * number_of_clusters
  *       int32_t frame_number
  *       uint32_t number_of_clusters
  *       etc.
  */
 class ClusterFile {
     FILE *fp{};
-    uint32_t m_num_left{};
-    size_t m_chunk_size{};
-    const std::string m_mode;
+    uint32_t m_num_left{};            /*Number of photons left in frame*/
+    size_t m_chunk_size{};            /*Number of clusters to read at a time*/
+    const std::string m_mode;         /*Mode to open the file in*/
+    std::optional<ROI> m_roi;         /*Region of interest, will be applied if set*/
+    std::optional<NDArray<int32_t, 2>> m_noise_map; /*Noise map to cut photons, will be applied if set*/
+    std::optional<NDArray<double, 2>> m_gain_map; /*Gain map to apply to the clusters, will be applied if set*/
 
   public:
     /**
@@ -117,29 +104,49 @@ class ClusterFile {
 
     void write_frame(const ClusterVector<int32_t> &clusters);
     
-    // Need to be migrated to support NDArray and return a ClusterVector
-    // std::vector<Cluster3x3>
-    // read_cluster_with_cut(size_t n_clusters, double *noise_map, int nx, int ny);
-
     /**
      * @brief Return the chunk size
      */
     size_t chunk_size() const { return m_chunk_size; }
+
+    /**
+     * @brief Set the region of interest to use when reading clusters. If set only clusters within
+     * the ROI will be read.
+     */
+    void set_roi(ROI roi);
+
+    /**
+     * @brief Set the noise map to use when reading clusters. If set clusters below the noise
+     * level will be discarded. Selection criteria one of: Central pixel above noise, highest
+     * 2x2 sum above 2 * noise, total sum above 3 * noise.
+     */
+    void set_noise_map(const NDView<int32_t, 2> noise_map);
+
+    /**
+     * @brief Set the gain map to use when reading clusters. If set the gain map will be applied
+     * to the clusters that pass ROI and noise_map selection.
+     */
+    void set_gain_map(const NDView<double, 2> gain_map);
     
     
     /**
      * @brief Close the file. If not closed the file will be closed in the destructor
      */
     void close();
+
+    private:
+        ClusterVector<int32_t> read_clusters_with_cut(size_t n_clusters);
+        ClusterVector<int32_t> read_clusters_without_cut(size_t n_clusters);
+        ClusterVector<int32_t> read_frame_with_cut();
+        ClusterVector<int32_t> read_frame_without_cut();
+        bool is_selected(Cluster3x3 &cl);
+        Cluster3x3 read_one_cluster();
 };
 
-int analyze_data(int32_t *data, int32_t *t2, int32_t *t3, char *quad,
-                 double *eta2x, double *eta2y, double *eta3x, double *eta3y);
-int analyze_cluster(Cluster3x3 &cl, int32_t *t2, int32_t *t3, char *quad,
-                    double *eta2x, double *eta2y, double *eta3x, double *eta3y);
-
+//TODO! helper functions that doesn't really belong here
 NDArray<double, 2> calculate_eta2(ClusterVector<int> &clusters);
 Eta2 calculate_eta2(Cluster3x3 &cl);
 Eta2 calculate_eta2(Cluster2x2 &cl);
+
 
 } // namespace aare
