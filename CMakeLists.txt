@@ -309,7 +309,7 @@ set(PUBLICHEADERS
     include/aare/ArrayExpr.hpp
     include/aare/CalculateEta.hpp
     include/aare/Cluster.hpp
-    #include/aare/ClusterFinder.hpp
+    include/aare/ClusterFinder.hpp
     include/aare/ClusterFile.hpp
     include/aare/CtbRawFile.hpp
     include/aare/ClusterVector.hpp
@@ -330,14 +330,13 @@ set(PUBLICHEADERS
     include/aare/RawFile.hpp
     include/aare/RawMasterFile.hpp
     include/aare/RawSubFile.hpp
-    #include/aare/VarClusterFinder.hpp
+    include/aare/VarClusterFinder.hpp
     include/aare/utils/task.hpp
 )
 
 
 set(SourceFiles
     ${CMAKE_CURRENT_SOURCE_DIR}/src/CtbRawFile.cpp
-    #${CMAKE_CURRENT_SOURCE_DIR}/src/ClusterFile.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/src/defs.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/src/Dtype.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/src/decode.cpp
@@ -393,8 +392,8 @@ if(AARE_TESTS)
             ${CMAKE_CURRENT_SOURCE_DIR}/src/RawMasterFile.test.cpp
             ${CMAKE_CURRENT_SOURCE_DIR}/src/NDArray.test.cpp
             ${CMAKE_CURRENT_SOURCE_DIR}/src/NDView.test.cpp
-            #${CMAKE_CURRENT_SOURCE_DIR}/src/ClusterFinder.test.cpp
-            #${CMAKE_CURRENT_SOURCE_DIR}/src/ClusterVector.test.cpp
+            ${CMAKE_CURRENT_SOURCE_DIR}/src/ClusterFinder.test.cpp
+            ${CMAKE_CURRENT_SOURCE_DIR}/src/ClusterVector.test.cpp
             ${CMAKE_CURRENT_SOURCE_DIR}/src/Cluster.test.cpp
             ${CMAKE_CURRENT_SOURCE_DIR}/src/Pedestal.test.cpp
             ${CMAKE_CURRENT_SOURCE_DIR}/src/NumpyFile.test.cpp

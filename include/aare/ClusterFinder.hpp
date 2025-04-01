@@ -10,17 +10,16 @@
 
 namespace aare {
 
-template <typename FRAME_TYPE = uint16_t, typename PEDESTAL_TYPE = double,
-          typename CT = int32_t>
+template <typename CT = int32_t, uint8_t ClusterSizeX = 3,
+          uint8_t ClusterSizeY = 3, typename FRAME_TYPE = uint16_t,
+          typename PEDESTAL_TYPE = double>
 class ClusterFinder {
     Shape<2> m_image_size;
-    const int m_cluster_sizeX;
-    const int m_cluster_sizeY;
     const PEDESTAL_TYPE m_nSigma;
     const PEDESTAL_TYPE c2;
     const PEDESTAL_TYPE c3;
     Pedestal<PEDESTAL_TYPE> m_pedestal;
-    ClusterVector<CT> m_clusters;
+    ClusterVector<Cluster<CT, ClusterSizeX, ClusterSizeY>> m_clusters;
 
   public:
     /**
@@ -31,15 +30,12 @@ class ClusterFinder {
      * @param capacity initial capacity of the cluster vector
      *
      */
-    ClusterFinder(Shape<2> image_size, Shape<2> cluster_size,
-                  PEDESTAL_TYPE nSigma = 5.0, size_t capacity = 1000000)
-        : m_image_size(image_size), m_cluster_sizeX(cluster_size[0]),
-          m_cluster_sizeY(cluster_size[1]),
-          m_nSigma(nSigma),
-          c2(sqrt((m_cluster_sizeY + 1) / 2 * (m_cluster_sizeX + 1) / 2)),
-          c3(sqrt(m_cluster_sizeX * m_cluster_sizeY)),
-          m_pedestal(image_size[0], image_size[1]),
-          m_clusters(m_cluster_sizeX, m_cluster_sizeY, capacity) {};
+    ClusterFinder(Shape<2> image_size, PEDESTAL_TYPE nSigma = 5.0,
+                  size_t capacity = 1000000)
+        : m_image_size(image_size), m_nSigma(nSigma),
+          c2(sqrt((ClusterSizeY + 1) / 2 * (ClusterSizeX + 1) / 2)),
+          c3(sqrt(ClusterSizeX * ClusterSizeY)),
+          m_pedestal(image_size[0], image_size[1]), m_clusters(capacity) {};
 
     void push_pedestal_frame(NDView<FRAME_TYPE, 2> frame) {
         m_pedestal.push(frame);
@@ -56,23 +52,26 @@ class ClusterFinder {
      * same capacity as the old one
      *
      */
-    ClusterVector<CT> steal_clusters(bool realloc_same_capacity = false) {
-        ClusterVector<CT> tmp = std::move(m_clusters);
+    ClusterVector<Cluster<CT, ClusterSizeX, ClusterSizeY>>
+    steal_clusters(bool realloc_same_capacity = false) {
+        ClusterVector<Cluster<CT, ClusterSizeX, ClusterSizeY>> tmp =
+            std::move(m_clusters);
         if (realloc_same_capacity)
-            m_clusters = ClusterVector<CT>(m_cluster_sizeX, m_cluster_sizeY,
-                                           tmp.capacity());
+            m_clusters = ClusterVector<Cluster<CT, ClusterSizeX, ClusterSizeY>>(
+                tmp.capacity());
         else
-            m_clusters = ClusterVector<CT>(m_cluster_sizeX, m_cluster_sizeY);
+            m_clusters =
+                ClusterVector<Cluster<CT, ClusterSizeX, ClusterSizeY>>{};
         return tmp;
     }
     void find_clusters(NDView<FRAME_TYPE, 2> frame, uint64_t frame_number = 0) {
         // // TODO! deal with even size clusters
         // // currently 3,3 -> +/- 1
         // //  4,4 -> +/- 2
-        int dy = m_cluster_sizeY / 2;
-        int dx = m_cluster_sizeX / 2;
+        int dy = ClusterSizeY / 2;
+        int dx = ClusterSizeX / 2;
         m_clusters.set_frame_number(frame_number);
-        std::vector<CT> cluster_data(m_cluster_sizeX * m_cluster_sizeY);
+        std::vector<CT> cluster_data(ClusterSizeX * ClusterSizeY);
         for (int iy = 0; iy < frame.shape(0); iy++) {
             for (int ix = 0; ix < frame.shape(1); ix++) {
 
@@ -109,8 +108,12 @@ class ClusterFinder {
                     // pass
                 } else {
                     // m_pedestal.push(iy, ix, frame(iy, ix));   // Safe option
-                    m_pedestal.push_fast(iy, ix, frame(iy, ix)); // Assume we have reached n_samples in the pedestal, slight performance improvement
-                    continue; // It was a pedestal value nothing to store
+                    m_pedestal.push_fast(
+                        iy, ix,
+                        frame(iy,
+                              ix)); // Assume we have reached n_samples in the
+                                    // pedestal, slight performance improvement
+                    continue;       // It was a pedestal value nothing to store
                 }
 
                 // Store cluster

@@ -4,6 +4,7 @@
  ***********************************************/
 
 #include "aare/Cluster.hpp"
+#include "aare/CalculateEta.hpp"
 #include "aare/ClusterFile.hpp"
 
 // #include "catch.hpp"
@@ -13,26 +14,24 @@
 
 using namespace aare;
 
-/*
 TEST_CASE("Correct Instantiation of Cluster and ClusterVector",
           "[.cluster][.instantiation]") {
 
+    CHECK(is_valid_cluster<double, 3, 3>);
+    CHECK(is_valid_cluster<double, 3, 2>);
+    CHECK(not is_valid_cluster<int, 0, 0>);
+    CHECK(not is_valid_cluster<std::string, 2, 2>);
+    CHECK(not is_valid_cluster<int, 2, 2, double>);
 
-    REQUIRE(not std::is_constructible_v<aare::Cluster<std::string, 4, 4>>);
-
-    // all 1,2 and 0,4 are not defined!!
-    std::make_tuple(Cluster<int, 1, 1>, ),
-                 std::make_tuple(Cluster<int, 0, 0>, )
-
-
+    CHECK(not is_cluster_v<int>);
+    CHECK(is_cluster_v<Cluster<int, 3, 3>>);
 }
-*/
 
 using ClusterTypes =
     std::variant<Cluster<int, 2, 2>, Cluster<int, 3, 3>, Cluster<int, 5, 5>,
                  Cluster<int, 4, 2>, Cluster<int, 2, 3>>;
 
-TEST_CASE("calculate_eta2", "[.cluster][.instantiation]") {
+TEST_CASE("calculate_eta2", "[.cluster][.eta_calculation]") {
 
     // weird expect cluster_start to be in bottom_left corner -> row major ->
     // check how its used should be an image!!
