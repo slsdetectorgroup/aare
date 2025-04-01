@@ -4,7 +4,8 @@ build-backend = "scikit_build_core.build"
 
 [project]
 name = "aare"
-version = "2025.2.18"
+version = "2025.4.1"
+
 
 
 [tool.scikit-build]

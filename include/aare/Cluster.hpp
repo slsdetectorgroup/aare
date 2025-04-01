@@ -8,7 +8,9 @@
 
 #pragma once
 
+#include <algorithm>
 #include <cstdint>
+#include <numeric>
 #include <type_traits>
 
 namespace aare {
@@ -28,6 +30,61 @@ struct Cluster {
     CoordType x;
     CoordType y;
     T data[ClusterSizeX * ClusterSizeY];
+
+    T sum() const {
+        return std::accumulate(data, data + ClusterSizeX * ClusterSizeY, 0);
+    }
+
+    T max_sum_2x2() const {
+
+        constexpr size_t num_2x2_subclusters =
+            (ClusterSizeX - 1) * (ClusterSizeY - 1);
+        std::array<T, num_2x2_subclusters> sum_2x2_subcluster;
+        for (size_t i = 0; i < ClusterSizeY - 1; ++i) {
+            for (size_t j = 0; j < ClusterSizeX - 1; ++j)
+                sum_2x2_subcluster[i * (ClusterSizeX - 1) + j] =
+                    data[i * ClusterSizeX + j] +
+                    data[i * ClusterSizeX + j + 1] +
+                    data[(i + 1) * ClusterSizeX + j] +
+                    data[(i + 1) * ClusterSizeX + j + 1];
+        }
+
+        return *std::max_element(sum_2x2_subcluster.begin(),
+                                 sum_2x2_subcluster.end());
+    }
+};
+
+// Specialization for 2x2 clusters (only one sum exists)
+template <typename T> struct Cluster<T, 2, 2, int16_t> {
+    int16_t x;
+    int16_t y;
+    T data[4];
+
+    T sum() const { return std::accumulate(data, data + 4, 0); }
+
+    T max_sum_2x2() const {
+        return data[0] + data[1] + data[2] +
+               data[3]; // Only one possible 2x2 sum
+    }
+};
+
+// Specialization for 3x3 clusters
+template <typename T> struct Cluster<T, 3, 3, int16_t> {
+    int16_t x;
+    int16_t y;
+    T data[9];
+
+    T sum() const { return std::accumulate(data, data + 9, 0); }
+
+    T max_sum_2x2() const {
+        std::array<T, 4> sum_2x2_subclusters;
+        sum_2x2_subclusters[0] = data[0] + data[1] + data[3] + data[4];
+        sum_2x2_subclusters[1] = data[1] + data[2] + data[4] + data[5];
+        sum_2x2_subclusters[2] = data[3] + data[4] + data[6] + data[7];
+        sum_2x2_subclusters[3] = data[4] + data[5] + data[7] + data[8];
+        return *std::max_element(sum_2x2_subclusters.begin(),
+                                 sum_2x2_subclusters.end());
+    }
 };
 
 // Type Traits for is_cluster_type

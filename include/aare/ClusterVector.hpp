@@ -9,6 +9,9 @@
 
 #include <fmt/core.h>
 
+#include "aare/Cluster.hpp"
+#include "aare/NDView.hpp"
+
 namespace aare {
 
 template <typename ClusterType,
@@ -235,6 +238,10 @@ class ClusterVector<Cluster<T, ClusterSizeX, ClusterSizeY, CoordType>> {
         return *reinterpret_cast<const ClusterType *>(element_ptr(i));
     }
 
+    template <typename V> const V &at(size_t i) const {
+        return *reinterpret_cast<const V *>(element_ptr(i));
+    }
+
     const std::string_view fmt_base() const {
         // TODO! how do we match on coord_t?
         return m_fmt_base;
@@ -263,6 +270,28 @@ class ClusterVector<Cluster<T, ClusterSizeX, ClusterSizeY, CoordType>> {
             allocate_buffer(new_size);
         }
         m_size = new_size;
+    }
+
+    void apply_gain_map(const NDView<double> gain_map){
+        //in principle we need to know the size of the image for this lookup
+        //TODO! check orientations
+        std::array<int64_t, 9> xcorr = {-1, 0, 1, -1, 0, 1, -1, 0, 1};
+        std::array<int64_t, 9> ycorr = {-1, -1, -1, 0, 0, 0, 1, 1, 1};
+        for (size_t i=0; i<m_size; i++){
+            auto& cl = at<Cluster3x3>(i);
+
+            if (cl.x > 0 && cl.y > 0 && cl.x < gain_map.shape(1)-1 && cl.y < gain_map.shape(0)-1){
+                for (size_t j=0; j<9; j++){
+                    size_t x = cl.x + xcorr[j];
+                    size_t y = cl.y + ycorr[j];
+                    cl.data[j] = static_cast<T>(cl.data[j] * gain_map(y, x));
+                }
+            }else{
+                memset(cl.data, 0, 9*sizeof(T)); //clear edge clusters
+            }
+
+            
+        }
     }
 
   private:
