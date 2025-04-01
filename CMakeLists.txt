@@ -81,12 +81,12 @@ set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 
 if(AARE_FETCH_LMFIT)
     #TODO! Should we fetch lmfit from the web or inlcude a tar.gz in the repo?
-    set(lmfit_patch git apply ${CMAKE_CURRENT_SOURCE_DIR}/patches/lmfit.patch)
+    set(LMFIT_PATCH_COMMAND git apply ${CMAKE_CURRENT_SOURCE_DIR}/patches/lmfit.patch)
     FetchContent_Declare(
         lmfit
         GIT_REPOSITORY https://jugit.fz-juelich.de/mlz/lmfit.git
         GIT_TAG        main
-        PATCH_COMMAND ${lmfit_patch}
+        PATCH_COMMAND ${LMFIT_PATCH_COMMAND}
         UPDATE_DISCONNECTED 1
         EXCLUDE_FROM_ALL 1
     )
@@ -111,10 +111,12 @@ if(AARE_FETCH_ZMQ)
     if (${CMAKE_VERSION} VERSION_GREATER_EQUAL "3.30")
         cmake_policy(SET CMP0169 OLD)
     endif()
+    set(ZMQ_PATCH_COMMAND git apply ${CMAKE_CURRENT_SOURCE_DIR}/patches/libzmq_cmake_version.patch)
     FetchContent_Declare(
         libzmq
         GIT_REPOSITORY https://github.com/zeromq/libzmq.git
         GIT_TAG        v4.3.4
+        PATCH_COMMAND ${ZMQ_PATCH_COMMAND}
     )
     # Disable unwanted options from libzmq
     set(BUILD_TESTS OFF CACHE BOOL "Switch off libzmq test build")
