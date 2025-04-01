@@ -415,10 +415,12 @@ bool ClusterFile<ClusterType, Enable>::is_selected(ClusterType &cl) {
             return false;
         }
     }
+    // TODO types are wrong generalize
     if (m_noise_map) {
-        int32_t sum_1x1 = cl.data[4];       // central pixel
-        int32_t sum_2x2 = cl.max_sum_2x2(); // highest sum of 2x2 subclusters
-        int32_t sum_3x3 = cl.sum();         // sum of all pixels
+        int32_t sum_1x1 = cl.data[4]; // central pixel
+        int32_t sum_2x2 =
+            cl.max_sum_2x2().first; // highest sum of 2x2 subclusters
+        int32_t sum_3x3 = cl.sum(); // sum of all pixels
 
         auto noise =
             (*m_noise_map)(cl.y, cl.x); // TODO! check if this is correct

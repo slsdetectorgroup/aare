@@ -149,38 +149,6 @@ class ClusterVector<Cluster<T, ClusterSizeX, ClusterSizeY, CoordType>> {
     }
 
     /**
-     * @brief Return the maximum sum of the 2x2 subclusters in each cluster
-     * @return std::vector<T> vector of sums for each cluster
-     * @throws std::runtime_error if the cluster size is not 3x3
-     * @warning Only 3x3 clusters are supported for the 2x2 sum.
-     */
-    /* only needed to calculate eta TODO: in previous PR already added calculate
-       sum in PR std::vector<T> sum_2x2() { std::vector<T> sums(m_size); const
-       size_t stride = item_size();
-
-            if (ClusterSizeX != 3 || ClusterSizeY != 3) {
-                throw std::runtime_error(
-                    "Only 3x3 clusters are supported for the 2x2 sum.");
-            }
-            std::byte *ptr = m_data + 2 * sizeof(CoordType); // skip x and y
-
-            for (size_t i = 0; i < m_size; i++) {
-                std::array<T, 4> total;
-                auto T_ptr = reinterpret_cast<T *>(ptr);
-                total[0] = T_ptr[0] + T_ptr[1] + T_ptr[3] + T_ptr[4];
-                total[1] = T_ptr[1] + T_ptr[2] + T_ptr[4] + T_ptr[5];
-                total[2] = T_ptr[3] + T_ptr[4] + T_ptr[6] + T_ptr[7];
-                total[3] = T_ptr[4] + T_ptr[5] + T_ptr[7] + T_ptr[8];
-
-                sums[i] = *std::max_element(total.begin(), total.end());
-                ptr += stride;
-            }
-
-            return sums;
-        }
-    */
-
-    /**
      * @brief Return the number of clusters in the vector
      */
     size_t size() const { return m_size; }
@@ -219,9 +187,6 @@ class ClusterVector<Cluster<T, ClusterSizeX, ClusterSizeY, CoordType>> {
     const std::byte *element_ptr(size_t i) const {
         return m_data + element_offset(i);
     }
-
-    // size_t cluster_size_x() const { return m_cluster_size_x; }
-    // size_t cluster_size_y() const { return m_cluster_size_y; }
 
     std::byte *data() { return m_data; }
     std::byte const *data() const { return m_data; }
@@ -272,7 +237,7 @@ class ClusterVector<Cluster<T, ClusterSizeX, ClusterSizeY, CoordType>> {
         m_size = new_size;
     }
 
-    // TODO: Generalize !!!!
+    // TODO: Generalize !!!! Maybe move somewhere else
     void apply_gain_map(const NDView<double> gain_map) {
         // in principle we need to know the size of the image for this lookup
         // TODO! check orientations

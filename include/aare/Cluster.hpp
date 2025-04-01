@@ -35,7 +35,7 @@ struct Cluster {
         return std::accumulate(data, data + ClusterSizeX * ClusterSizeY, 0);
     }
 
-    T max_sum_2x2() const {
+    std::pair<T, int> max_sum_2x2() const {
 
         constexpr size_t num_2x2_subclusters =
             (ClusterSizeX - 1) * (ClusterSizeY - 1);
@@ -49,8 +49,10 @@ struct Cluster {
                     data[(i + 1) * ClusterSizeX + j + 1];
         }
 
-        return *std::max_element(sum_2x2_subcluster.begin(),
-                                 sum_2x2_subcluster.end());
+        int index = std::max_element(sum_2x2_subcluster.begin(),
+                                     sum_2x2_subcluster.end()) -
+                    sum_2x2_subcluster.begin();
+        return std::make_pair(sum_2x2_subcluster[index], index);
     }
 };
 
@@ -62,9 +64,9 @@ template <typename T> struct Cluster<T, 2, 2, int16_t> {
 
     T sum() const { return std::accumulate(data, data + 4, 0); }
 
-    T max_sum_2x2() const {
-        return data[0] + data[1] + data[2] +
-               data[3]; // Only one possible 2x2 sum
+    std::pair<T, int> max_sum_2x2() const {
+        return std::make_pair(data[0] + data[1] + data[2] + data[3],
+                              0); // Only one possible 2x2 sum
     }
 };
 
@@ -76,14 +78,16 @@ template <typename T> struct Cluster<T, 3, 3, int16_t> {
 
     T sum() const { return std::accumulate(data, data + 9, 0); }
 
-    T max_sum_2x2() const {
+    std::pair<T, int> max_sum_2x2() const {
         std::array<T, 4> sum_2x2_subclusters;
         sum_2x2_subclusters[0] = data[0] + data[1] + data[3] + data[4];
         sum_2x2_subclusters[1] = data[1] + data[2] + data[4] + data[5];
         sum_2x2_subclusters[2] = data[3] + data[4] + data[6] + data[7];
         sum_2x2_subclusters[3] = data[4] + data[5] + data[7] + data[8];
-        return *std::max_element(sum_2x2_subclusters.begin(),
-                                 sum_2x2_subclusters.end());
+        int index = std::max_element(sum_2x2_subclusters.begin(),
+                                     sum_2x2_subclusters.end()) -
+                    sum_2x2_subclusters.begin();
+        return std::make_pair(sum_2x2_subclusters[index], index);
     }
 };
 

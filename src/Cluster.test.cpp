@@ -33,9 +33,6 @@ using ClusterTypes =
 
 TEST_CASE("calculate_eta2", "[.cluster][.eta_calculation]") {
 
-    // weird expect cluster_start to be in bottom_left corner -> row major ->
-    // check how its used should be an image!!
-
     auto [cluster, expected_eta] = GENERATE(
         std::make_tuple(ClusterTypes{Cluster<int, 2, 2>{0, 0, {1, 2, 3, 1}}},
                         Eta2{2. / 3, 3. / 4, corner::cBottomLeft, 7}),
