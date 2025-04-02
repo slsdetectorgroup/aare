@@ -11,7 +11,7 @@ jobs:
   buildh:
     runs-on: "ubuntu-latest"
     container:
-      image: container.psi.ch/images/rhel9-developer-gitea-actions
+      image: gitea.psi.ch/images/rhel9-developer-gitea-actions
     steps:
       - uses: actions/checkout@v4
 
