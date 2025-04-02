@@ -67,7 +67,7 @@ Eta2 calculate_eta2(
     size_t index_bottom_left_max_2x2_subcluster =
         (int(c / (ClusterSizeX - 1))) * ClusterSizeX + c % (ClusterSizeX - 1);
 
-    if ((cl.data[index_bottom_left_max_2x2_subcluster] +
+    if ((cl.data[index_bottom_left_max_2x2_subcluster] +s
          cl.data[index_bottom_left_max_2x2_subcluster + 1]) != 0)
         eta.x = static_cast<double>(
                     cl.data[index_bottom_left_max_2x2_subcluster + 1]) /

@@ -70,6 +70,12 @@ class ClusterFinder {
         // //  4,4 -> +/- 2
         int dy = ClusterSizeY / 2;
         int dx = ClusterSizeX / 2;
+        int has_center_pixel_x =
+            ClusterSizeX %
+            2; // for even sized clusters there is no proper cluster center and
+               // even amount of pixels around the center
+        int has_center_pixel_y = ClusterSizeY % 2;
+
         m_clusters.set_frame_number(frame_number);
         std::vector<CT> cluster_data(ClusterSizeX * ClusterSizeY);
         for (int iy = 0; iy < frame.shape(0); iy++) {
@@ -86,8 +92,8 @@ class ClusterFinder {
                     continue; // NEGATIVE_PEDESTAL go to next pixel
                               // TODO! No pedestal update???
 
-                for (int ir = -dy; ir < dy + 1; ir++) {
-                    for (int ic = -dx; ic < dx + 1; ic++) {
+                for (int ir = -dy; ir < dy + has_center_pixel_y; ir++) {
+                    for (int ic = -dx; ic < dx + has_center_pixel_x; ic++) {
                         if (ix + ic >= 0 && ix + ic < frame.shape(1) &&
                             iy + ir >= 0 && iy + ir < frame.shape(0)) {
                             PEDESTAL_TYPE val =
@@ -125,8 +131,8 @@ class ClusterFinder {
                     // It's worth redoing the look since most of the time we
                     // don't have a photon
                     int i = 0;
-                    for (int ir = -dy; ir < dy + 1; ir++) {
-                        for (int ic = -dx; ic < dx + 1; ic++) {
+                    for (int ir = -dy; ir < dy + has_center_pixel_y; ir++) {
+                        for (int ic = -dx; ic < dx + has_center_pixel_y; ic++) {
                             if (ix + ic >= 0 && ix + ic < frame.shape(1) &&
                                 iy + ir >= 0 && iy + ir < frame.shape(0)) {
                                 CT tmp =
@@ -140,11 +146,6 @@ class ClusterFinder {
                     }
 
                     // Add the cluster to the output ClusterVector
-                    /*
-                    m_clusters.push_back(
-                        ix, iy,
-                        reinterpret_cast<std::byte *>(cluster_data.data()));
-                    */
                     m_clusters.push_back(
                         Cluster<CT, ClusterSizeX, ClusterSizeY>{
                             ix, iy, cluster_data.data()});
