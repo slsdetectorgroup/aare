@@ -419,6 +419,7 @@ if(AARE_TESTS)
             ${CMAKE_CURRENT_SOURCE_DIR}/src/ClusterFinder.test.cpp
             ${CMAKE_CURRENT_SOURCE_DIR}/src/ClusterVector.test.cpp
             ${CMAKE_CURRENT_SOURCE_DIR}/src/Cluster.test.cpp
+            ${CMAKE_CURRENT_SOURCE_DIR}/src/CalculateEta.test.cpp
             ${CMAKE_CURRENT_SOURCE_DIR}/src/ClusterFile.test.cpp
             ${CMAKE_CURRENT_SOURCE_DIR}/src/Pedestal.test.cpp
             ${CMAKE_CURRENT_SOURCE_DIR}/src/NumpyFile.test.cpp

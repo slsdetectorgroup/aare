@@ -25,12 +25,11 @@ typedef enum {
     pTopRight = 8
 } pixel;
 
-// TODO: maybe template this!!!!!! why int32_t????
-struct Eta2 {
+template <typename T> struct Eta2 {
     double x;
     double y;
     int c;
-    int32_t sum;
+    T sum;
 };
 
 /**
@@ -56,9 +55,9 @@ NDArray<double, 2> calculate_eta2(const ClusterVector<ClusterType> &clusters) {
  */
 template <typename T, uint8_t ClusterSizeX, uint8_t ClusterSizeY,
           typename CoordType>
-Eta2 calculate_eta2(
-    const Cluster<T, ClusterSizeX, ClusterSizeY, CoordType> &cl) {
-    Eta2 eta{};
+Eta2<T>
+calculate_eta2(const Cluster<T, ClusterSizeX, ClusterSizeY, CoordType> &cl) {
+    Eta2<T> eta{};
 
     auto max_sum = cl.max_sum_2x2();
     eta.sum = max_sum.first;
@@ -67,7 +66,7 @@ Eta2 calculate_eta2(
     size_t index_bottom_left_max_2x2_subcluster =
         (int(c / (ClusterSizeX - 1))) * ClusterSizeX + c % (ClusterSizeX - 1);
 
-    if ((cl.data[index_bottom_left_max_2x2_subcluster] +s
+    if ((cl.data[index_bottom_left_max_2x2_subcluster] +
          cl.data[index_bottom_left_max_2x2_subcluster + 1]) != 0)
         eta.x = static_cast<double>(
                     cl.data[index_bottom_left_max_2x2_subcluster + 1]) /
@@ -89,9 +88,9 @@ Eta2 calculate_eta2(
 
 // calculates Eta3 for 3x3 cluster based on code from analyze_cluster
 // TODO only supported for 3x3 Clusters
-template <typename T> Eta2 calculate_eta3(const Cluster<T, 3, 3> &cl) {
+template <typename T> Eta2<T> calculate_eta3(const Cluster<T, 3, 3> &cl) {
 
-    Eta2 eta{};
+    Eta2<T> eta{};
 
     T sum = 0;
 

@@ -68,7 +68,7 @@ Interpolator::interpolate(const ClusterVector<ClusterType> &clusters) {
         for (size_t i = 0; i < clusters.size(); i++) {
 
             auto cluster = clusters.at(i);
-            Eta2 eta = calculate_eta2(cluster);
+            auto eta = calculate_eta2(cluster);
 
             Photon photon;
             photon.x = cluster.x;
@@ -118,7 +118,7 @@ Interpolator::interpolate(const ClusterVector<ClusterType> &clusters) {
                clusters.cluster_size_y() == 2) {
         for (size_t i = 0; i < clusters.size(); i++) {
             auto cluster = clusters.at(i);
-            Eta2 eta = calculate_eta2(cluster);
+            auto eta = calculate_eta2(cluster);
 
             Photon photon;
             photon.x = cluster.x;
