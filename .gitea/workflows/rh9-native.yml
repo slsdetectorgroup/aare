@@ -16,7 +16,7 @@ jobs:
       - uses: actions/checkout@v4
       - name: Setup dev env
         run: |
-            yum install -y cmake gcc gcc-c++ make
+            dnf install -y cmake gcc gcc-c++ make
 
 
       - name: Build library 
