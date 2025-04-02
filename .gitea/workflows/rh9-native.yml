@@ -14,15 +14,11 @@ jobs:
       image: container.psi.ch/images/rhel9-developer-github-actions
     steps:
       - uses: actions/checkout@v4
-      - name: Setup dev env
-        run: |
-            dnf install -y cmake gcc gcc-c++ make
-
 
       - name: Build library 
         run: |
             mkdir build 
             cd build 
-            cmake .. 
+            cmake3 .. 
             make -j 2 
 
