@@ -344,6 +344,7 @@ set(PUBLICHEADERS
     include/aare/Fit.hpp
     include/aare/FileInterface.hpp
     include/aare/Frame.hpp
+    include/aare/GainMap.hpp
     include/aare/geo_helpers.hpp
     include/aare/NDArray.hpp
     include/aare/NDView.hpp

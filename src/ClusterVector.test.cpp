@@ -1,6 +1,7 @@
 #include "aare/ClusterVector.hpp"
 #include <cstdint>
 
+#include <catch2/catch_all.hpp>
 #include <catch2/catch_test_macros.hpp>
 #include <catch2/matchers/catch_matchers_floating_point.hpp>
 
@@ -183,4 +184,49 @@ TEST_CASE("Concatenate two cluster vectors where we need to allocate",
     REQUIRE(ptr[2].y == 12);
     REQUIRE(ptr[3].x == 16);
     REQUIRE(ptr[3].y == 17);
+}
+
+struct ClusterTestData {
+    int8_t ClusterSizeX;
+    int8_t ClusterSizeY;
+    std::vector<int64_t> index_map_x;
+    std::vector<int64_t> index_map_y;
+};
+
+TEST_CASE("Gain Map Calculation Index Map", "[.ClusterVector][.gain_map]") {
+
+    auto clustertestdata = GENERATE(
+        ClusterTestData{3,
+                        3,
+                        {-1, 0, 1, -1, 0, 1, -1, 0, 1},
+                        {-1, -1, -1, 0, 0, 0, 1, 1, 1}},
+        ClusterTestData{
+            4,
+            4,
+            {-2, -1, 0, 1, -2, -1, 0, 1, -2, -1, 0, 1, -2, -1, 0, 1},
+            {-2, -2, -2, -2, -1, -1, -1, -1, 0, 0, 0, 0, 1, 1, 1, 1}},
+        ClusterTestData{2, 2, {-1, 0, -1, 0}, {-1, -1, 0, 0}},
+        ClusterTestData{5,
+                        5,
+                        {-2, -1, 0,  1,  2, -2, -1, 0,  1,  2, -2, -1, 0,
+                         1,  2,  -2, -1, 0, 1,  2,  -2, -1, 0, 1,  2},
+                        {-2, -2, -2, -2, -2, -1, -1, -1, -1, -1, 0, 0, 0,
+                         0,  0,  1,  1,  1,  1,  1,  2,  2,  2,  2, 2}});
+
+    int8_t ClusterSizeX = clustertestdata.ClusterSizeX;
+    int8_t ClusterSizeY = clustertestdata.ClusterSizeY;
+
+    std::vector<int64_t> index_map_x(ClusterSizeX * ClusterSizeY);
+    std::vector<int64_t> index_map_y(ClusterSizeX * ClusterSizeY);
+
+    int64_t index_cluster_center_x = ClusterSizeX / 2;
+    int64_t index_cluster_center_y = ClusterSizeY / 2;
+
+    for (size_t j = 0; j < ClusterSizeX * ClusterSizeY; j++) {
+        index_map_x[j] = j % ClusterSizeX - index_cluster_center_x;
+        index_map_y[j] = j / ClusterSizeX - index_cluster_center_y;
+    }
+
+    CHECK(index_map_x == clustertestdata.index_map_x);
+    CHECK(index_map_y == clustertestdata.index_map_y);
 }

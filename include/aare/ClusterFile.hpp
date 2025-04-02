@@ -2,6 +2,7 @@
 
 #include "aare/Cluster.hpp"
 #include "aare/ClusterVector.hpp"
+#include "aare/GainMap.hpp"
 #include "aare/NDArray.hpp"
 #include "aare/defs.hpp"
 #include <filesystem>
@@ -44,9 +45,8 @@ class ClusterFile {
     std::optional<ROI> m_roi; /*Region of interest, will be applied if set*/
     std::optional<NDArray<int32_t, 2>>
         m_noise_map; /*Noise map to cut photons, will be applied if set*/
-    std::optional<NDArray<double, 2>>
-        m_gain_map; /*Gain map to apply to the clusters, will be applied if
-                       set*/
+    std::optional<GainMap> m_gain_map; /*Gain map to apply to the clusters, will
+                                          be applied if set*/
 
   public:
     /**
@@ -106,6 +106,10 @@ class ClusterFile {
      * will be applied to the clusters that pass ROI and noise_map selection.
      */
     void set_gain_map(const NDView<double, 2> gain_map);
+
+    void set_gain_map(const GainMap &gain_map);
+
+    void set_gain_map(const GainMap &&gain_map);
 
     /**
      * @brief Close the file. If not closed the file will be closed in the
@@ -175,7 +179,17 @@ void ClusterFile<ClusterType, Enable>::set_noise_map(
 template <typename ClusterType, typename Enable>
 void ClusterFile<ClusterType, Enable>::set_gain_map(
     const NDView<double, 2> gain_map) {
-    m_gain_map = NDArray<double, 2>(gain_map);
+    m_gain_map = GainMap(gain_map);
+}
+
+template <typename ClusterType, typename Enable>
+void ClusterFile<ClusterType, Enable>::set_gain_map(const GainMap &gain_map) {
+    m_gain_map = gain_map;
+}
+
+template <typename ClusterType, typename Enable>
+void ClusterFile<ClusterType, Enable>::set_gain_map(const GainMap &&gain_map) {
+    m_gain_map = gain_map;
 }
 
 // TODO generally supported for all clsuter types
@@ -263,7 +277,7 @@ ClusterFile<ClusterType, Enable>::read_clusters_without_cut(size_t n_clusters) {
     // No new allocation, only change bounds.
     clusters.resize(nph_read);
     if (m_gain_map)
-        clusters.apply_gain_map(m_gain_map->view());
+        m_gain_map->apply_gain_map(clusters);
     return clusters;
 }
 
@@ -312,7 +326,7 @@ ClusterFile<ClusterType, Enable>::read_clusters_with_cut(size_t n_clusters) {
         }
     }
     if (m_gain_map)
-        clusters.apply_gain_map(m_gain_map->view());
+        m_gain_map->apply_gain_map(clusters);
 
     return clusters;
 }
@@ -370,7 +384,7 @@ ClusterFile<ClusterType, Enable>::read_frame_without_cut() {
     }
     clusters.resize(n_clusters);
     if (m_gain_map)
-        clusters.apply_gain_map(m_gain_map->view());
+        m_gain_map->apply_gain_map(clusters);
     return clusters;
 }
 
@@ -403,7 +417,7 @@ ClusterFile<ClusterType, Enable>::read_frame_with_cut() {
         }
     }
     if (m_gain_map)
-        clusters.apply_gain_map(m_gain_map->view());
+        m_gain_map->apply_gain_map(clusters);
     return clusters;
 }
 
