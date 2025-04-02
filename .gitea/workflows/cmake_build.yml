@@ -5,7 +5,6 @@ on:
   push:
     
 
-
 permissions:
   contents: read
   pages: write
@@ -16,12 +15,12 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        platform: [ubuntu-latest, ] # macos-12, windows-2019]
-        python-version: ["3.12",]
+        platform: [ubuntu-latest, ] 
+        python-version: ["3.12", ] 
 
     runs-on: ${{ matrix.platform }}
 
-    # The setup-miniconda action needs this to activate miniconda
+
     defaults:
       run:
         shell: "bash -l {0}"
@@ -50,6 +49,12 @@ jobs:
             cmake .. -DAARE_SYSTEM_LIBRARIES=ON -DAARE_DOCS=ON 
             make -j 2 
             make docs
+
+      - name: Upload static files as artifact
+        id: deployment
+        uses: actions/upload-pages-artifact@v4 
+        with:
+         path: build/docs/html/
 
 
 
