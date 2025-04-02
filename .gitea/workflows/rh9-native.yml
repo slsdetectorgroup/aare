@@ -14,11 +14,6 @@ jobs:
       image: container.psi.ch/images/rhel9-developer-github-actions
     steps:
       - uses: actions/checkout@v4
-      - name: Setup dev env
-        run: |
-            sudo apt-get update
-            sudo apt-get -y install cmake gcc g++
-      
 
       - name: Build library 
         run: |
