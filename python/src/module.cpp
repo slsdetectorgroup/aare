@@ -1,17 +1,17 @@
-//Files with bindings to the different classes
-#include "file.hpp"
-#include "raw_file.hpp"
-#include "ctb_raw_file.hpp"
-#include "raw_master_file.hpp"
-#include "var_cluster.hpp"
-#include "pixel_map.hpp"
-#include "pedestal.hpp"
+// Files with bindings to the different classes
 #include "cluster.hpp"
 #include "cluster_file.hpp"
+#include "ctb_raw_file.hpp"
+#include "file.hpp"
 #include "fit.hpp"
 #include "interpolation.hpp"
+#include "pedestal.hpp"
+#include "pixel_map.hpp"
+#include "raw_file.hpp"
+#include "raw_master_file.hpp"
+#include "var_cluster.hpp"
 
-//Pybind stuff
+// Pybind stuff
 #include <pybind11/pybind11.h>
 #include <pybind11/stl.h>
 
@@ -33,5 +33,4 @@ PYBIND11_MODULE(_aare, m) {
     define_cluster_file_sink_bindings(m);
     define_fit_bindings(m);
     define_interpolation_bindings(m);
-
 }
