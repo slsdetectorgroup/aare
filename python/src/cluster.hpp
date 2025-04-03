@@ -21,9 +21,8 @@ using namespace aare;
 template <typename ClusterType>
 void define_cluster_vector(py::module &m, const std::string &typestr) {
 
-    using T = typename extract_template_arguments<ClusterType>::value_type;
-
     auto class_name = fmt::format("ClusterVector_{}", typestr);
+
     py::class_<ClusterVector<ClusterType>>(m, class_name.c_str(),
                                            py::buffer_protocol())
         .def(py::init<int, int>(), py::arg("cluster_size_x") = 3,
@@ -41,6 +40,7 @@ void define_cluster_vector(py::module &m, const std::string &typestr) {
                                        self.fmt_base(), self.cluster_size_x(),
                                        self.cluster_size_y(), typestr);
                                })
+        /*
         .def("sum",
              [](ClusterVector<ClusterType> &self) {
                  auto *vec = new std::vector<T>(self.sum());
@@ -51,6 +51,7 @@ void define_cluster_vector(py::module &m, const std::string &typestr) {
                  auto *vec = new std::vector<T>(self.sum_2x2());
                  return return_vector(vec);
              })
+        */
         .def_property_readonly("cluster_size_x",
                                &ClusterVector<ClusterType>::cluster_size_x)
         .def_property_readonly("cluster_size_y",
@@ -75,13 +76,16 @@ void define_cluster_vector(py::module &m, const std::string &typestr) {
 }
 
 template <typename ClusterType>
-void define_cluster_finder_mt_bindings(py::module &m) {
+void define_cluster_finder_mt_bindings(py::module &m,
+                                       const std::string &typestr) {
+
+    auto class_name = fmt::format("ClusterFinderMT_{}", typestr);
+
     py::class_<ClusterFinderMT<ClusterType, uint16_t, pd_type>>(
-        m, "ClusterFinderMT")
-        .def(py::init<Shape<2>, Shape<2>, pd_type, size_t, size_t>(),
-             py::arg("image_size"), py::arg("cluster_size"),
-             py::arg("n_sigma") = 5.0, py::arg("capacity") = 2048,
-             py::arg("n_threads") = 3)
+        m, class_name.c_str())
+        .def(py::init<Shape<2>, pd_type, size_t, size_t>(),
+             py::arg("image_size"), py::arg("n_sigma") = 5.0,
+             py::arg("capacity") = 2048, py::arg("n_threads") = 3)
         .def("push_pedestal_frame",
              [](ClusterFinderMT<ClusterType, uint16_t, pd_type> &self,
                 py::array_t<uint16_t> frame) {
@@ -123,8 +127,12 @@ void define_cluster_finder_mt_bindings(py::module &m) {
 }
 
 template <typename ClusterType>
-void define_cluster_collector_bindings(py::module &m) {
-    py::class_<ClusterCollector<ClusterType>>(m, "ClusterCollector")
+void define_cluster_collector_bindings(py::module &m,
+                                       const std::string &typestr) {
+
+    auto class_name = fmt::format("ClusterCollector_{}", typestr);
+
+    py::class_<ClusterCollector<ClusterType>>(m, class_name.c_str())
         .def(py::init<ClusterFinderMT<ClusterType, uint16_t, double> *>())
         .def("stop", &ClusterCollector<ClusterType>::stop)
         .def(
@@ -138,19 +146,25 @@ void define_cluster_collector_bindings(py::module &m) {
 }
 
 template <typename ClusterType>
-void define_cluster_file_sink_bindings(py::module &m) {
-    py::class_<ClusterFileSink<ClusterType>>(m, "ClusterFileSink")
+void define_cluster_file_sink_bindings(py::module &m,
+                                       const std::string &typestr) {
+
+    auto class_name = fmt::format("ClusterFileSink_{}", typestr);
+
+    py::class_<ClusterFileSink<ClusterType>>(m, class_name.c_str())
         .def(py::init<ClusterFinderMT<ClusterType, uint16_t, double> *,
                       const std::filesystem::path &>())
         .def("stop", &ClusterFileSink<ClusterType>::stop);
 }
 
 template <typename ClusterType>
-void define_cluster_finder_bindings(py::module &m) {
-    py::class_<ClusterFinder<ClusterType, uint16_t, pd_type>>(m,
-                                                              "ClusterFinder")
-        .def(py::init<Shape<2>, Shape<2>, pd_type, size_t>(),
-             py::arg("image_size"), py::arg("cluster_size"),
+void define_cluster_finder_bindings(py::module &m, const std::string &typestr) {
+
+    auto class_name = fmt::format("ClusterFinder_{}", typestr);
+
+    py::class_<ClusterFinder<ClusterType, uint16_t, pd_type>>(
+        m, class_name.c_str())
+        .def(py::init<Shape<2>, pd_type, size_t>(), py::arg("image_size"),
              py::arg("n_sigma") = 5.0, py::arg("capacity") = 1'000'000)
         .def("push_pedestal_frame",
              [](ClusterFinder<ClusterType, uint16_t, pd_type> &self,
@@ -213,9 +227,6 @@ void define_cluster_finder_bindings(py::module &m) {
               }
               return hitmap;
           });
-    define_cluster_vector<int>(m, "i");
-    define_cluster_vector<double>(m, "d");
-    define_cluster_vector<float>(m, "f");
 
     py::class_<DynamicCluster>(m, "DynamicCluster", py::buffer_protocol())
         .def(py::init<int, int, Dtype>())

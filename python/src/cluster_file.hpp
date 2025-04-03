@@ -1,3 +1,4 @@
+#include "aare/CalculateEta.hpp"
 #include "aare/ClusterFile.hpp"
 #include "aare/defs.hpp"
 
@@ -19,10 +20,14 @@ namespace py = pybind11;
 using namespace ::aare;
 
 template <typename ClusterType>
-void define_cluster_file_io_bindings(py::module &m) {
-    PYBIND11_NUMPY_DTYPE(Cluster3x3, x, y, data);
+void define_cluster_file_io_bindings(py::module &m,
+                                     const std::string &typestr) {
+    // PYBIND11_NUMPY_DTYPE(Cluster<int, 3, 3>, x, y,
+    // data); // is this used - maybe use as cluster type
 
-    py::class_<ClusterFile<ClusterType>>(m, "ClusterFile")
+    auto class_name = fmt::format("ClusterFile_{}", typestr);
+
+    py::class_<ClusterFile<ClusterType>>(m, class_name.c_str())
         .def(py::init<const std::filesystem::path &, size_t,
                       const std::string &>(),
              py::arg(), py::arg("chunk_size") = 1000, py::arg("mode") = "r")
@@ -84,12 +89,11 @@ void define_cluster_file_io_bindings(py::module &m) {
             return v;
         });
 
-    /*
-    m.def("calculate_eta2", []( aare::ClusterVector<ClusterType> &clusters) {
-        auto eta2 = new NDArray<double, 2>(calculate_eta2(clusters));
-        return return_image_data(eta2);
-    });
-    */ //add in different file
+    m.def("calculate_eta2",
+          [](const aare::ClusterVector<ClusterType> &clusters) {
+              auto eta2 = new NDArray<double, 2>(calculate_eta2(clusters));
+              return return_image_data(eta2);
+          });
 }
 
 #pragma GCC diagnostic pop

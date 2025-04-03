@@ -9,39 +9,53 @@
 
 namespace py = pybind11;
 
+template <typename ClusterType>
+void register_interpolate(py::class_<aare::Interpolator> &interpolator) {
+    std::string name =
+        fmt::format("interpolate_{}", typeid(ClusterType).name());
+
+    interpolator.def(name.c_str(),
+                     [](aare::Interpolator &self,
+                        const ClusterVector<ClusterType> &clusters) {
+                         auto photons = self.interpolate<ClusterType>(clusters);
+                         auto *ptr = new std::vector<Photon>{photons};
+                         return return_vector(ptr);
+                     });
+}
+
 void define_interpolation_bindings(py::module &m) {
 
     PYBIND11_NUMPY_DTYPE(aare::Photon, x, y, energy);
 
-    py::class_<aare::Interpolator>(m, "Interpolator")
-        .def(py::init(
-            [](py::array_t<double, py::array::c_style | py::array::forcecast>
-                   etacube,
-               py::array_t<double> xbins, py::array_t<double> ybins,
-               py::array_t<double> ebins) {
+    auto interpolator =
+        py::class_<aare::Interpolator>(m, "Interpolator")
+            .def(py::init([](py::array_t<double, py::array::c_style |
+                                                     py::array::forcecast>
+                                 etacube,
+                             py::array_t<double> xbins,
+                             py::array_t<double> ybins,
+                             py::array_t<double> ebins) {
                 return Interpolator(make_view_3d(etacube), make_view_1d(xbins),
                                     make_view_1d(ybins), make_view_1d(ebins));
             }))
-        .def("get_ietax",
-             [](Interpolator &self) {
-                 auto *ptr = new NDArray<double, 3>{};
-                 *ptr = self.get_ietax();
-                 return return_image_data(ptr);
-             })
-        .def("get_ietay",
-             [](Interpolator &self) {
-                 auto *ptr = new NDArray<double, 3>{};
-                 *ptr = self.get_ietay();
-                 return return_image_data(ptr);
-             })
+            .def("get_ietax",
+                 [](Interpolator &self) {
+                     auto *ptr = new NDArray<double, 3>{};
+                     *ptr = self.get_ietax();
+                     return return_image_data(ptr);
+                 })
+            .def("get_ietay", [](Interpolator &self) {
+                auto *ptr = new NDArray<double, 3>{};
+                *ptr = self.get_ietay();
+                return return_image_data(ptr);
+            });
 
-        // TODO take care of clustertype template
-        .def("interpolate",
-             [](Interpolator &self, const ClusterVector<auto> &clusters) {
-                 auto photons = self.interpolate<ClusterType>(clusters);
-                 auto *ptr = new std::vector<Photon>{photons};
-                 return return_vector(ptr);
-             });
+    register_interpolate<Cluster<int, 3, 3>>(interpolator);
+    register_interpolate<Cluster<float, 3, 3>>(interpolator);
+    register_interpolate<Cluster<double, 3, 3>>(interpolator);
+    register_interpolate<Cluster<int, 2, 2>>(interpolator);
+    register_interpolate<Cluster<float, 2, 2>>(interpolator);
+    register_interpolate<Cluster<double, 2, 2>>(interpolator);
 
     // TODO! Evaluate without converting to double
     m.def(

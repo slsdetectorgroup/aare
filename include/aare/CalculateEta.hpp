@@ -35,7 +35,8 @@ template <typename T> struct Eta2 {
 /**
  * @brief Calculate the eta2 values for all clusters in a Clsutervector
  */
-template <typename ClusterType, std::enable_if_t<is_cluster_v<ClusterType>>>
+template <typename ClusterType,
+          typename = std::enable_if_t<is_cluster_v<ClusterType>>>
 NDArray<double, 2> calculate_eta2(const ClusterVector<ClusterType> &clusters) {
     NDArray<double, 2> eta2({static_cast<int64_t>(clusters.size()), 2});
 
@@ -70,16 +71,18 @@ calculate_eta2(const Cluster<T, ClusterSizeX, ClusterSizeY, CoordType> &cl) {
          cl.data[index_bottom_left_max_2x2_subcluster + 1]) != 0)
         eta.x = static_cast<double>(
                     cl.data[index_bottom_left_max_2x2_subcluster + 1]) /
-                (cl.data[index_bottom_left_max_2x2_subcluster] +
-                 cl.data[index_bottom_left_max_2x2_subcluster + 1]);
+                static_cast<double>(
+                    (cl.data[index_bottom_left_max_2x2_subcluster] +
+                     cl.data[index_bottom_left_max_2x2_subcluster + 1]));
 
     if ((cl.data[index_bottom_left_max_2x2_subcluster] +
          cl.data[index_bottom_left_max_2x2_subcluster + ClusterSizeX]) != 0)
         eta.y =
             static_cast<double>(
                 cl.data[index_bottom_left_max_2x2_subcluster + ClusterSizeX]) /
-            (cl.data[index_bottom_left_max_2x2_subcluster] +
-             cl.data[index_bottom_left_max_2x2_subcluster + ClusterSizeX]);
+            static_cast<double>(
+                (cl.data[index_bottom_left_max_2x2_subcluster] +
+                 cl.data[index_bottom_left_max_2x2_subcluster + ClusterSizeX]));
 
     eta.c = c; // TODO only supported for 2x2 and 3x3 clusters -> at least no
                // underyling enum class

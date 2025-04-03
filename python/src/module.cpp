@@ -26,11 +26,48 @@ PYBIND11_MODULE(_aare, m) {
     define_pixel_map_bindings(m);
     define_pedestal_bindings<double>(m, "Pedestal_d");
     define_pedestal_bindings<float>(m, "Pedestal_f");
-    define_cluster_finder_bindings(m);
-    define_cluster_finder_mt_bindings(m);
-    define_cluster_file_io_bindings(m);
-    define_cluster_collector_bindings(m);
-    define_cluster_file_sink_bindings(m);
     define_fit_bindings(m);
     define_interpolation_bindings(m);
+
+    define_cluster_file_io_bindings<Cluster<int, 3, 3>>(m, "Cluster3x3i");
+    define_cluster_file_io_bindings<Cluster<double, 3, 3>>(m, "Cluster3x3d");
+    define_cluster_file_io_bindings<Cluster<float, 3, 3>>(m, "Cluster3x3f");
+    define_cluster_file_io_bindings<Cluster<int, 2, 2>>(m, "Cluster2x2i");
+    define_cluster_file_io_bindings<Cluster<float, 2, 2>>(m, "Cluster2x2f");
+    define_cluster_file_io_bindings<Cluster<double, 2, 2>>(m, "Cluster2x2d");
+
+    define_cluster_vector<Cluster<int, 3, 3>>(m, "Cluster3x3i");
+    define_cluster_vector<Cluster<double, 3, 3>>(m, "Cluster3x3d");
+    define_cluster_vector<Cluster<float, 3, 3>>(m, "Cluster3x3f");
+    define_cluster_vector<Cluster<int, 2, 2>>(m, "Cluster2x2i");
+    define_cluster_vector<Cluster<double, 2, 2>>(m, "Cluster2x2d");
+    define_cluster_vector<Cluster<float, 2, 2>>(m, "Cluster2x2f");
+
+    define_cluster_finder_bindings<Cluster<int, 3, 3>>(m, "Cluster3x3i");
+    define_cluster_finder_bindings<Cluster<double, 3, 3>>(m, "Cluster3x3d");
+    define_cluster_finder_bindings<Cluster<float, 3, 3>>(m, "Cluster3x3f");
+    define_cluster_finder_bindings<Cluster<int, 2, 2>>(m, "Cluster2x2i");
+    define_cluster_finder_bindings<Cluster<double, 2, 2>>(m, "Cluster2x2d");
+    define_cluster_finder_bindings<Cluster<float, 2, 2>>(m, "Cluster2x2f");
+
+    define_cluster_finder_mt_bindings<Cluster<int, 3, 3>>(m, "Cluster3x3i");
+    define_cluster_finder_mt_bindings<Cluster<double, 3, 3>>(m, "Cluster3x3d");
+    define_cluster_finder_mt_bindings<Cluster<float, 3, 3>>(m, "Cluster3x3f");
+    define_cluster_finder_mt_bindings<Cluster<int, 2, 2>>(m, "Cluster2x2i");
+    define_cluster_finder_mt_bindings<Cluster<double, 2, 2>>(m, "Cluster2x2d");
+    define_cluster_finder_mt_bindings<Cluster<float, 2, 2>>(m, "Cluster2x2f");
+
+    define_cluster_file_sink_bindings<Cluster<int, 3, 3>>(m, "Cluster3x3i");
+    define_cluster_file_sink_bindings<Cluster<double, 3, 3>>(m, "Cluster3x3d");
+    define_cluster_file_sink_bindings<Cluster<float, 3, 3>>(m, "Cluster3x3f");
+    define_cluster_file_sink_bindings<Cluster<int, 2, 2>>(m, "Cluster2x2i");
+    define_cluster_file_sink_bindings<Cluster<double, 2, 2>>(m, "Cluster2x2d");
+    define_cluster_file_sink_bindings<Cluster<float, 2, 2>>(m, "Cluster2x2f");
+
+    define_cluster_collector_bindings<Cluster<int, 3, 3>>(m, "Cluster3x3i");
+    define_cluster_collector_bindings<Cluster<double, 3, 3>>(m, "Cluster3x3f");
+    define_cluster_collector_bindings<Cluster<float, 3, 3>>(m, "Cluster3x3d");
+    define_cluster_collector_bindings<Cluster<int, 2, 2>>(m, "Cluster2x2i");
+    define_cluster_collector_bindings<Cluster<double, 2, 2>>(m, "Cluster2x2f");
+    define_cluster_collector_bindings<Cluster<float, 2, 2>>(m, "Cluster2x2d");
 }

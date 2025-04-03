@@ -139,7 +139,8 @@ class ClusterFinder {
                                 iy + ir >= 0 && iy + ir < frame.shape(0)) {
                                 CT tmp =
                                     static_cast<CT>(frame(iy + ir, ix + ic)) -
-                                    m_pedestal.mean(iy + ir, ix + ic);
+                                    static_cast<CT>(
+                                        m_pedestal.mean(iy + ir, ix + ic));
                                 cluster_data[i] =
                                     tmp; // Watch for out of bounds access
                                 i++;
@@ -147,9 +148,13 @@ class ClusterFinder {
                         }
                     }
 
+                    ClusterType new_cluster{};
+                    new_cluster.x = ix;
+                    new_cluster.y = iy;
+                    std::copy(cluster_data.begin(), cluster_data.end(),
+                              new_cluster.data);
                     // Add the cluster to the output ClusterVector
-                    m_clusters.push_back(
-                        ClusterType{ix, iy, cluster_data.data()});
+                    m_clusters.push_back(new_cluster);
                 }
             }
         }

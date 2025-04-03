@@ -117,14 +117,14 @@ class ClusterFinderMT {
      * expected number of clusters in a frame per frame.
      * @param n_threads number of threads to use
      */
-    ClusterFinderMT(Shape<2> image_size, Shape<2> cluster_size,
-                    PEDESTAL_TYPE nSigma = 5.0, size_t capacity = 2000,
-                    size_t n_threads = 3)
+    ClusterFinderMT(Shape<2> image_size, PEDESTAL_TYPE nSigma = 5.0,
+                    size_t capacity = 2000, size_t n_threads = 3)
         : m_n_threads(n_threads) {
         for (size_t i = 0; i < n_threads; i++) {
             m_cluster_finders.push_back(
-                std::make_unique<ClusterFinder<FRAME_TYPE, PEDESTAL_TYPE, CT>>(
-                    image_size, cluster_size, nSigma, capacity));
+                std::make_unique<
+                    ClusterFinder<ClusterType, FRAME_TYPE, PEDESTAL_TYPE>>(
+                    image_size, nSigma, capacity));
         }
         for (size_t i = 0; i < n_threads; i++) {
             m_input_queues.emplace_back(std::make_unique<InputQueue>(200));

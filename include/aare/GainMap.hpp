@@ -41,7 +41,7 @@ class GainMap {
                 for (size_t j = 0; j < ClusterSizeX * ClusterSizeY; j++) {
                     size_t x = cl.x + j % ClusterSizeX - index_cluster_center_x;
                     size_t y = cl.y + j / ClusterSizeX - index_cluster_center_y;
-                    cl.data[j] = static_cast<T>(cl.data[j] * m_gain_map(y, x));
+                    cl.data[j] = cl.data[j] * static_cast<T>(m_gain_map(y, x));
                 }
             } else {
                 memset(cl.data, 0,
