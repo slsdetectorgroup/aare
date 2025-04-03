@@ -5,6 +5,7 @@
 #include "aare/ClusterVector.hpp"
 #include "aare/NDArray.hpp"
 #include "aare/NDView.hpp"
+
 namespace aare {
 
 struct Photon {
@@ -27,8 +28,7 @@ class Interpolator {
     NDArray<double, 3> get_ietax() { return m_ietax; }
     NDArray<double, 3> get_ietay() { return m_ietay; }
 
-    template <typename ClusterType,
-              typename = std::enable_if_t<is_cluster_v<ClusterType>>>
+    template <typename ClusterType>
     std::vector<Photon> interpolate(const ClusterVector<ClusterType> &clusters);
 };
 

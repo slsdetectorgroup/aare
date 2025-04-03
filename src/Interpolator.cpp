@@ -57,8 +57,7 @@ Interpolator::Interpolator(NDView<double, 3> etacube, NDView<double, 1> xbins,
 
 // TODO: generalize to support any clustertype!!! otherwise add std::enable_if_t
 // to only take Cluster2x2 and Cluster3x3
-template <typename ClusterType,
-          typename = std::enable_if_t<is_cluster_v<ClusterType>>>
+template <typename ClusterType>
 std::vector<Photon>
 Interpolator::interpolate(const ClusterVector<ClusterType> &clusters) {
     std::vector<Photon> photons;
