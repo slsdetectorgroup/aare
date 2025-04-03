@@ -429,16 +429,24 @@ bool ClusterFile<ClusterType, Enable>::is_selected(ClusterType &cl) {
             return false;
         }
     }
-    // TODO types are wrong generalize
+
+    auto cluster_size_x = extract_template_arguments<
+        std::remove_reference_t<decltype(cl)>>::cluster_size_x;
+    auto cluster_size_y = extract_template_arguments<
+        std::remove_reference_t<decltype(cl)>>::cluster_size_y;
+
+    size_t cluster_center_index =
+        (cluster_size_x / 2) + (cluster_size_y / 2) * cluster_size_x;
+
     if (m_noise_map) {
-        int32_t sum_1x1 = cl.data[4]; // central pixel
-        int32_t sum_2x2 =
-            cl.max_sum_2x2().first; // highest sum of 2x2 subclusters
-        int32_t sum_3x3 = cl.sum(); // sum of all pixels
+        auto sum_1x1 = cl.data[cluster_center_index]; // central pixel
+        auto sum_2x2 = cl.max_sum_2x2().first; // highest sum of 2x2 subclusters
+        auto total_sum = cl.sum();             // sum of all pixels
 
         auto noise =
             (*m_noise_map)(cl.y, cl.x); // TODO! check if this is correct
-        if (sum_1x1 <= noise || sum_2x2 <= 2 * noise || sum_3x3 <= 3 * noise) {
+        if (sum_1x1 <= noise || sum_2x2 <= 2 * noise ||
+            total_sum <= 3 * noise) {
             return false;
         }
     }

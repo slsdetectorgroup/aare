@@ -187,8 +187,8 @@ TEST_CASE("Concatenate two cluster vectors where we need to allocate",
 }
 
 struct ClusterTestData {
-    int8_t ClusterSizeX;
-    int8_t ClusterSizeY;
+    uint8_t ClusterSizeX;
+    uint8_t ClusterSizeY;
     std::vector<int64_t> index_map_x;
     std::vector<int64_t> index_map_y;
 };
@@ -213,8 +213,8 @@ TEST_CASE("Gain Map Calculation Index Map", "[.ClusterVector][.gain_map]") {
                         {-2, -2, -2, -2, -2, -1, -1, -1, -1, -1, 0, 0, 0,
                          0,  0,  1,  1,  1,  1,  1,  2,  2,  2,  2, 2}});
 
-    int8_t ClusterSizeX = clustertestdata.ClusterSizeX;
-    int8_t ClusterSizeY = clustertestdata.ClusterSizeY;
+    uint8_t ClusterSizeX = clustertestdata.ClusterSizeX;
+    uint8_t ClusterSizeY = clustertestdata.ClusterSizeY;
 
     std::vector<int64_t> index_map_x(ClusterSizeX * ClusterSizeY);
     std::vector<int64_t> index_map_y(ClusterSizeX * ClusterSizeY);
