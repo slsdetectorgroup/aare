@@ -1,9 +1,13 @@
 #include "aare/JungfrauDataFile.hpp"
 #include "aare/defs.hpp"
 
+#include <fmt/format.h>
+
 namespace aare{
 
 JungfrauDataFile::JungfrauDataFile(const std::filesystem::path& fname){
+
+    //setup geometry
     auto frame_size = guess_frame_size(fname);    
     if (frame_size == module_data_size) {
         m_rows = 512;
@@ -17,8 +21,31 @@ JungfrauDataFile::JungfrauDataFile(const std::filesystem::path& fname){
     } else {
         throw std::runtime_error(LOCATION + "Cannot guess frame size: file size is not a multiple of any known frame size");
     }      
+
+    m_base_path = fname.parent_path();
+    m_base_name = fname.stem();
+
+    //need to know the first 
+
+    //remove digits
+    while(std::isdigit(m_base_name.back())){
+        m_base_name.pop_back();
+    }
+
+    //find how many files we have 
+    // size_t frame_index = 0;
+    // while (std::filesystem::exists(get_frame_path(m_base_path, m_base_name, frame_index))) {
+    //     auto n_frames =
+    //     m_frames_in_file.push_back(n_frames);
+    //     ++frame_index;
+    // }
+
 }
 
+
+std::string JungfrauDataFile::base_name() const {
+    return m_base_name;
+}
 
 size_t JungfrauDataFile::bytes_per_frame() const{
     return m_rows * m_cols * bytes_per_pixel();
@@ -67,9 +94,11 @@ size_t JungfrauDataFile::guess_frame_size(const std::filesystem::path& fname)  {
     } else {
         throw std::runtime_error(LOCATION + "Cannot guess frame size: file size is not a multiple of any known frame size");
     }
-
-
 }
 
+std::filesystem::path JungfrauDataFile::get_frame_path(const std::filesystem::path& path, const std::string& base_name, size_t frame_index) {
+    auto fname = fmt::format("{}{:0{}}.dat", base_name, frame_index, n_digits_in_file_index);
+    return path / fname;
+}
 
 } // namespace aare

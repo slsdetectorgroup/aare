@@ -23,7 +23,14 @@ void define_jungfrau_data_file_io_bindings(py::module &m) {
                  return JungfrauDataFile::guess_frame_size(fname);
              })
         .def_property_readonly("rows", &JungfrauDataFile::rows)
-        .def_property_readonly("cols", &JungfrauDataFile::cols);
+        .def_property_readonly("cols", &JungfrauDataFile::cols)
+        .def_property_readonly("base_name", &JungfrauDataFile::base_name)
+        .def("get_frame_path",
+             [](const std::filesystem::path &path, const std::string &base_name,
+                size_t frame_index) {
+                 return JungfrauDataFile::get_frame_path(path, base_name,
+                                                        frame_index);
+             });
         // .def("read_frame",
         //      [](RawFile &self) {
         //          py::array image;
