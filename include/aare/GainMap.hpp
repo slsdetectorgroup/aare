@@ -26,7 +26,6 @@ class GainMap {
               typename = std::enable_if_t<is_cluster_v<ClusterType>>>
     void apply_gain_map(ClusterVector<ClusterType> &clustervec) {
         // in principle we need to know the size of the image for this lookup
-        // TODO! check orientations
         size_t ClusterSizeX = clustervec.cluster_size_x();
         size_t ClusterSizeY = clustervec.cluster_size_y();
 

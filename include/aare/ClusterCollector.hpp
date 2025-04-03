@@ -35,7 +35,7 @@ class ClusterCollector {
     }
 
   public:
-    ClusterCollector(ClusterFinderMT<uint16_t, double, int32_t> *source) {
+    ClusterCollector(ClusterFinderMT<ClusterType, uint16_t, double> *source) {
         m_source = source->sink();
         m_thread = std::thread(&ClusterCollector::process, this);
     }

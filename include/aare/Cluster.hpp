@@ -100,8 +100,8 @@ struct is_cluster<Cluster<T, X, Y, CoordType>> : std::true_type {}; // Cluster
 
 template <typename T> constexpr bool is_cluster_v = is_cluster<T>::value;
 
-template <typename ClusterType,
-          typename = std::enable_if_t<is_cluster_v<ClusterType>>>
+template <typename ClusterType>
+// typename = std::enable_if_t<is_cluster_v<ClusterType>>>
 struct extract_template_arguments; // Forward declaration
 
 // helper struct to extract template argument
@@ -110,7 +110,7 @@ template <typename T, uint8_t ClusterSizeX, uint8_t ClusterSizeY,
 struct extract_template_arguments<
     Cluster<T, ClusterSizeX, ClusterSizeY, CoordType>> {
 
-    using type = T;
+    using value_type = T;
     static constexpr int cluster_size_x = ClusterSizeX;
     static constexpr int cluster_size_y = ClusterSizeY;
     using coordtype = CoordType;

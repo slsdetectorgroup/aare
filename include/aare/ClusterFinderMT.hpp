@@ -30,14 +30,16 @@ struct FrameWrapper {
  * @tparam PEDESTAL_TYPE type of the pedestal data
  * @tparam CT type of the cluster data
  */
-template <typename FRAME_TYPE = uint16_t, typename PEDESTAL_TYPE = double,
-          typename CT = int32_t>
+template <typename ClusterType = Cluster<int32_t, 3, 3>,
+          typename FRAME_TYPE = uint16_t, typename PEDESTAL_TYPE = double>
 class ClusterFinderMT {
+
+    using CT = typename extract_template_arguments<ClusterType>::value_type;
     size_t m_current_thread{0};
     size_t m_n_threads{0};
-    using Finder = ClusterFinder<FRAME_TYPE, PEDESTAL_TYPE, CT>;
+    using Finder = ClusterFinder<ClusterType, FRAME_TYPE, PEDESTAL_TYPE>;
     using InputQueue = ProducerConsumerQueue<FrameWrapper>;
-    using OutputQueue = ProducerConsumerQueue<ClusterVector<int>>;
+    using OutputQueue = ProducerConsumerQueue<ClusterVector<ClusterType>>;
     std::vector<std::unique_ptr<InputQueue>> m_input_queues;
     std::vector<std::unique_ptr<OutputQueue>> m_output_queues;
 
@@ -66,7 +68,8 @@ class ClusterFinderMT {
                 switch (frame->type) {
                 case FrameType::DATA:
                     cf->find_clusters(frame->data.view(), frame->frame_number);
-                    m_output_queues[thread_id]->write(cf->steal_clusters(realloc_same_capacity));
+                    m_output_queues[thread_id]->write(
+                        cf->steal_clusters(realloc_same_capacity));
                     break;
 
                 case FrameType::PEDESTAL:
@@ -127,15 +130,18 @@ class ClusterFinderMT {
             m_input_queues.emplace_back(std::make_unique<InputQueue>(200));
             m_output_queues.emplace_back(std::make_unique<OutputQueue>(200));
         }
-        //TODO! Should we start automatically?
+        // TODO! Should we start automatically?
         start();
     }
 
     /**
      * @brief Return the sink queue where all the clusters are collected
-     * @warning You need to empty this queue otherwise the cluster finder will wait forever
+     * @warning You need to empty this queue otherwise the cluster finder will
+     * wait forever
      */
-    ProducerConsumerQueue<ClusterVector<int>> *sink() { return &m_sink; }
+    ProducerConsumerQueue<ClusterVector<ClusterType>> *sink() {
+        return &m_sink;
+    }
 
     /**
      * @brief Start all processing threads

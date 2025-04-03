@@ -10,16 +10,21 @@
 
 namespace aare {
 
-template <typename CT = int32_t, uint8_t ClusterSizeX = 3,
-          uint8_t ClusterSizeY = 3, typename FRAME_TYPE = uint16_t,
-          typename PEDESTAL_TYPE = double>
+template <typename ClusterType = Cluster<int32_t, 3, 3>,
+          typename FRAME_TYPE = uint16_t, typename PEDESTAL_TYPE = double>
 class ClusterFinder {
     Shape<2> m_image_size;
     const PEDESTAL_TYPE m_nSigma;
     const PEDESTAL_TYPE c2;
     const PEDESTAL_TYPE c3;
     Pedestal<PEDESTAL_TYPE> m_pedestal;
-    ClusterVector<Cluster<CT, ClusterSizeX, ClusterSizeY>> m_clusters;
+    ClusterVector<ClusterType> m_clusters;
+
+    static const uint8_t ClusterSizeX =
+        extract_template_arguments<ClusterType>::cluster_size_x;
+    static const uint8_t ClusterSizeY =
+        extract_template_arguments<ClusterType>::cluster_size_x;
+    using CT = typename extract_template_arguments<ClusterType>::value_type;
 
   public:
     /**
@@ -52,16 +57,13 @@ class ClusterFinder {
      * same capacity as the old one
      *
      */
-    ClusterVector<Cluster<CT, ClusterSizeX, ClusterSizeY>>
+    ClusterVector<ClusterType>
     steal_clusters(bool realloc_same_capacity = false) {
-        ClusterVector<Cluster<CT, ClusterSizeX, ClusterSizeY>> tmp =
-            std::move(m_clusters);
+        ClusterVector<ClusterType> tmp = std::move(m_clusters);
         if (realloc_same_capacity)
-            m_clusters = ClusterVector<Cluster<CT, ClusterSizeX, ClusterSizeY>>(
-                tmp.capacity());
+            m_clusters = ClusterVector<ClusterType>(tmp.capacity());
         else
-            m_clusters =
-                ClusterVector<Cluster<CT, ClusterSizeX, ClusterSizeY>>{};
+            m_clusters = ClusterVector<ClusterType>{};
         return tmp;
     }
     void find_clusters(NDView<FRAME_TYPE, 2> frame, uint64_t frame_number = 0) {
@@ -147,8 +149,7 @@ class ClusterFinder {
 
                     // Add the cluster to the output ClusterVector
                     m_clusters.push_back(
-                        Cluster<CT, ClusterSizeX, ClusterSizeY>{
-                            ix, iy, cluster_data.data()});
+                        ClusterType{ix, iy, cluster_data.data()});
                 }
             }
         }

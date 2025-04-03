@@ -149,6 +149,20 @@ class ClusterVector<Cluster<T, ClusterSizeX, ClusterSizeY, CoordType>> {
     }
 
     /**
+     * @brief Sum the pixels in the 2x2 subcluster with the biggest pixel sum in
+     * each cluster
+     * @return std::vector<T> vector of sums for each cluster
+     */ //TODO if underlying container is a vector use std::for_each
+    std::vector<T> sum_2x2() {
+        std::vector<T> sums_2x2(m_size);
+
+        for (size_t i = 0; i < m_size; i++) {
+            sums_2x2[i] = at(i).max_sum_2x2;
+        }
+        return sums_2x2;
+    }
+
+    /**
      * @brief Return the number of clusters in the vector
      */
     size_t size() const { return m_size; }

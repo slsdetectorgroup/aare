@@ -10,8 +10,8 @@
 namespace aare {
 
 template <typename ClusterType,
-          typename = std::enable_if_t <
-                     is_cluster_v<ClusterType> class ClusterFileSink {
+          typename = std::enable_if_t<is_cluster_v<ClusterType>>>
+class ClusterFileSink {
     ProducerConsumerQueue<ClusterVector<ClusterType>> *m_source;
     std::atomic<bool> m_stop_requested{false};
     std::atomic<bool> m_stopped{true};
@@ -46,7 +46,7 @@ template <typename ClusterType,
     }
 
   public:
-    ClusterFileSink(ClusterFinderMT<uint16_t, double, int32_t> *source,
+    ClusterFileSink(ClusterFinderMT<ClusterType, uint16_t, double> *source,
                     const std::filesystem::path &fname) {
         m_source = source->sink();
         m_thread = std::thread(&ClusterFileSink::process, this);
