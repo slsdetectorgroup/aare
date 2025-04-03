@@ -18,7 +18,7 @@ jobs:
 
       - name: Install dependencies
         run: |
-          dnf install -y cmake python3.12 python3.12-pip
+          dnf install -y cmake python3.12 python3.12-devel python3.12-pip
 
       - name: Build library 
         run: |
