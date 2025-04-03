@@ -27,4 +27,5 @@ jobs:
             make -j 2 
 
       - name: C++ unit tests
+        working-directory: ${{gitea.workspace}}/build
         run: ctest
