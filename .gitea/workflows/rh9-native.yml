@@ -15,8 +15,10 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-
-
+      - name: Install dependencies
+        run: |
+          dnf install -y cmake
+          
       - name: Build library 
         run: |
             mkdir build 
