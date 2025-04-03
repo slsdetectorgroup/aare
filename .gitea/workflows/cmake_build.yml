@@ -2,7 +2,7 @@ name: Build the package using cmake then documentation
 
 on:
   workflow_dispatch:
-  push:
+
     
 
 permissions:
