@@ -9,7 +9,10 @@ class ClusterFixture : public benchmark::Fixture {
     Cluster<int, 2, 2> cluster_2x2{};
     Cluster<int, 3, 3> cluster_3x3{};
 
-    void SetUp(::benchmark::State &state) {
+  private:
+    using benchmark::Fixture::SetUp;
+
+    void SetUp([[maybe_unused]] const benchmark::State &state) override {
         int temp_data[4] = {1, 2, 3, 1};
         std::copy(std::begin(temp_data), std::end(temp_data),
                   std::begin(cluster_2x2.data));
