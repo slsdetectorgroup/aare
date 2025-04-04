@@ -1,104 +1,162 @@
 #include "aare/JungfrauDataFile.hpp"
 #include "aare/defs.hpp"
+#include "aare/algorithm.hpp"
 
 #include <fmt/format.h>
+#include <cerrno>
 
-namespace aare{
+namespace aare {
 
-JungfrauDataFile::JungfrauDataFile(const std::filesystem::path& fname){
+JungfrauDataFile::JungfrauDataFile(const std::filesystem::path &fname) {
 
-    //setup geometry
-    auto frame_size = guess_frame_size(fname);    
-    if (frame_size == module_data_size) {
-        m_rows = 512;
-        m_cols = 1024;
-    } else if (frame_size == half_data_size) {
-        m_rows = 256;
-        m_cols = 1024;
-    } else if (frame_size == chip_data_size) {
-        m_rows = 256;
-        m_cols = 256;
-    } else {
-        throw std::runtime_error(LOCATION + "Cannot guess frame size: file size is not a multiple of any known frame size");
-    }      
-
-    m_base_path = fname.parent_path();
-    m_base_name = fname.stem();
-
-    //need to know the first 
-
-    //remove digits
-    while(std::isdigit(m_base_name.back())){
-        m_base_name.pop_back();
+    if (!std::filesystem::exists(fname)) {
+        throw std::runtime_error(LOCATION +
+                                 "File does not exist: " + fname.string());
     }
-
-    //find how many files we have 
-    // size_t frame_index = 0;
-    // while (std::filesystem::exists(get_frame_path(m_base_path, m_base_name, frame_index))) {
-    //     auto n_frames =
-    //     m_frames_in_file.push_back(n_frames);
-    //     ++frame_index;
-    // }
-
+    find_frame_size(fname);
+    parse_fname(fname);
+    scan_files();
+    open_file(m_current_file_index);
 }
 
+std::string JungfrauDataFile::base_name() const { return m_base_name; }
 
-std::string JungfrauDataFile::base_name() const {
-    return m_base_name;
+size_t JungfrauDataFile::bytes_per_frame() const {
+    return m_bytes_per_frame;
 }
 
-size_t JungfrauDataFile::bytes_per_frame() const{
-    return m_rows * m_cols * bytes_per_pixel();
-}          
+size_t JungfrauDataFile::pixels_per_frame() const { return m_rows * m_cols; }
 
-size_t JungfrauDataFile::pixels_per_frame()const {
-    return m_rows * m_cols;
-}
+size_t JungfrauDataFile::bytes_per_pixel() const { return sizeof(pixel_type); }
 
-size_t JungfrauDataFile::bytes_per_pixel() const {
-    return 2;
-}
+size_t JungfrauDataFile::bitdepth() const { return bytes_per_pixel()*bits_per_byte; }
 
-size_t JungfrauDataFile::bitdepth()const {
-    return 16;
-}
-void seek(size_t frame_index){};          //!< seek to the given frame index
+void JungfrauDataFile::seek(size_t frame_index) {
+    if (frame_index >= m_total_frames) {
+        throw std::runtime_error(LOCATION +
+                                 "Frame index out of range: " + std::to_string(frame_index));
+    }
+    m_current_frame = frame_index;
+    auto file_index = first_larger(m_frame_index, frame_index);
 
-size_t JungfrauDataFile::tell() const{
-    return 0;
-}                    //!< get the frame index of the file pointer
-size_t JungfrauDataFile::total_frames() const {
-    return m_total_frames;
-}
-size_t JungfrauDataFile::rows() const {
-    return m_rows;
-}
-size_t JungfrauDataFile::cols() const {
-    return m_cols;
-}
+    if(file_index != m_current_file_index)
+        open_file(file_index);
 
-size_t JungfrauDataFile::guess_frame_size(const std::filesystem::path& fname)  { 
+    auto frame_offset = (file_index) ? frame_index - m_frame_index[file_index-1] : frame_index;
+    auto byte_offset = frame_offset * (m_bytes_per_frame + header_size);
+    m_fp.seek(byte_offset);
+}; 
+
+size_t JungfrauDataFile::tell() const {
+    return m_current_frame;
+} 
+size_t JungfrauDataFile::total_frames() const { return m_total_frames; }
+size_t JungfrauDataFile::rows() const { return m_rows; }
+size_t JungfrauDataFile::cols() const { return m_cols; }
+
+void JungfrauDataFile::find_frame_size(const std::filesystem::path &fname) {
     auto file_size = std::filesystem::file_size(fname);
     if (file_size == 0) {
-        throw std::runtime_error(LOCATION + "Cannot guess frame size: file is empty");
+        throw std::runtime_error(LOCATION +
+                                 "Cannot guess frame size: file is empty");
     }
 
-    
-
     if (file_size % module_data_size == 0) {
-        return module_data_size;
+        m_rows = 512;
+        m_cols = 1024;
+        m_bytes_per_frame = module_data_size-header_size;
     } else if (file_size % half_data_size == 0) {
-        return half_data_size;
+        m_rows = 256;
+        m_cols = 1024;
+        m_bytes_per_frame = half_data_size-header_size;
     } else if (file_size % chip_data_size == 0) {
-        return chip_data_size;
+        m_rows = 256;
+        m_cols = 256;
+        m_bytes_per_frame = chip_data_size-header_size;
     } else {
-        throw std::runtime_error(LOCATION + "Cannot guess frame size: file size is not a multiple of any known frame size");
+        throw std::runtime_error(LOCATION +
+                                 "Cannot find frame size: file size is not a "
+                                 "multiple of any known frame size");
     }
 }
 
-std::filesystem::path JungfrauDataFile::get_frame_path(const std::filesystem::path& path, const std::string& base_name, size_t frame_index) {
-    auto fname = fmt::format("{}{:0{}}.dat", base_name, frame_index, n_digits_in_file_index);
-    return path / fname;
+void JungfrauDataFile::parse_fname(const std::filesystem::path &fname) {
+    m_path = fname.parent_path();
+    m_base_name = fname.stem();
+
+    // find file index, then remove if from the base name
+    if (auto pos = m_base_name.find_last_of('_'); pos != std::string::npos) {
+        m_offset =
+            std::stoul(m_base_name.substr(pos+1));
+        m_base_name.erase(pos);
+    }
+}
+
+void JungfrauDataFile::scan_files() {
+    // find how many files we have and the number of frames in each file
+    m_frame_index.clear();
+    size_t file_index = m_offset;
+    while (std::filesystem::exists(fpath(file_index))) {
+        auto n_frames =
+            std::filesystem::file_size(fpath(file_index)) / (m_bytes_per_frame +
+                                                             header_size);
+        m_frame_index.push_back(n_frames);
+        ++file_index;
+    }
+
+    // find where we need to open the next file and total number of frames
+    m_frame_index = cumsum(m_frame_index);
+    m_total_frames = m_frame_index.back();
+
+}
+
+void JungfrauDataFile::read_into(std::byte *image_buf,
+                                 JungfrauDataHeader *header) {
+
+    //read header
+    if(auto rc = fread(header, sizeof(JungfrauDataHeader), 1, m_fp.get()); rc!= 1){
+        throw std::runtime_error(LOCATION +
+                                 "Could not read header from file:" + m_fp.error_msg());
+    }
+
+
+    //read data
+    if(auto rc = fread(image_buf, 1, m_bytes_per_frame, m_fp.get()); rc != m_bytes_per_frame){
+        throw std::runtime_error(LOCATION +
+                                 "Could not read image from file" + m_fp.error_msg());
+    }
+
+
+    // prepare for next read
+    // if we are at the end of the file, open the next file
+    ++ m_current_frame;
+    if(m_current_frame >= m_frame_index[m_current_file_index]){
+        ++m_current_file_index;
+        open_file(m_current_file_index);
+    }    
+}
+
+void JungfrauDataFile::read_into(std::byte *image_buf, size_t n_frames,
+                                 JungfrauDataHeader *header) {
+
+    for (size_t i = 0; i < n_frames; ++i) {
+        read_into(image_buf + i * m_bytes_per_frame, header + i);
+    }
+
+}
+
+
+void JungfrauDataFile::open_file(size_t file_index) {
+    // fmt::print(stderr, "Opening file: {}\n", fpath(file_index+m_offset).string());
+    m_fp = FilePtr(fpath(file_index+m_offset), "rb");
+    m_current_file_index = file_index;
+}
+
+std::filesystem::path
+JungfrauDataFile::fpath(size_t file_index) const{
+    auto fname = fmt::format("{}_{:0{}}.dat", m_base_name, file_index,
+                             n_digits_in_file_index);
+    return m_path / fname;
 }
 
 } // namespace aare

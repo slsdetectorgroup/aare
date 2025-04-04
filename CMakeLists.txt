@@ -342,6 +342,7 @@ set(PUBLICHEADERS
     include/aare/File.hpp
     include/aare/Fit.hpp
     include/aare/FileInterface.hpp
+    include/aare/FiltPtr.hpp
     include/aare/Frame.hpp
     include/aare/geo_helpers.hpp
     include/aare/JungfrauDataFile.hpp
@@ -368,6 +369,7 @@ set(SourceFiles
     ${CMAKE_CURRENT_SOURCE_DIR}/src/decode.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/src/Frame.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/src/File.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/FilePtr.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/src/Fit.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/src/geo_helpers.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/src/JungfrauDataFile.cpp

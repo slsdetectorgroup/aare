@@ -71,3 +71,29 @@ TEST_CASE("returns last bin strictly smaller", "[algorithm]"){
     REQUIRE(aare::last_smaller(arr, 2.0) == 2);
 
 }
+
+TEST_CASE("cumsum works", "[algorithm]"){
+    std::vector<double> vec = {0, 1, 2, 3, 4};
+    auto result = aare::cumsum(vec);
+    REQUIRE(result.size() == vec.size());
+    REQUIRE(result[0] == 0);
+    REQUIRE(result[1] == 1);
+    REQUIRE(result[2] == 3);
+    REQUIRE(result[3] == 6);
+    REQUIRE(result[4] == 10);
+}
+TEST_CASE("cumsum works with empty vector", "[algorithm]"){
+    std::vector<double> vec = {};
+    auto result = aare::cumsum(vec);
+    REQUIRE(result.size() == 0);
+}
+TEST_CASE("cumsum works with negative numbers", "[algorithm]"){
+    std::vector<double> vec = {0, -1, -2, -3, -4};
+    auto result = aare::cumsum(vec);
+    REQUIRE(result.size() == vec.size());
+    REQUIRE(result[0] == 0);
+    REQUIRE(result[1] == -1);
+    REQUIRE(result[2] == -3);
+    REQUIRE(result[3] == -6);
+    REQUIRE(result[4] == -10);
+}
