@@ -133,6 +133,7 @@ class ClusterVector<Cluster<T, ClusterSizeX, ClusterSizeY, CoordType>> {
      * @brief Sum the pixels in each cluster
      * @return std::vector<T> vector of sums for each cluster
      */
+    /*
     std::vector<T> sum() {
         std::vector<T> sums(m_size);
         const size_t stride = item_size();
@@ -147,12 +148,14 @@ class ClusterVector<Cluster<T, ClusterSizeX, ClusterSizeY, CoordType>> {
         }
         return sums;
     }
+    */
 
     /**
      * @brief Sum the pixels in the 2x2 subcluster with the biggest pixel sum in
      * each cluster
      * @return std::vector<T> vector of sums for each cluster
      */ //TODO if underlying container is a vector use std::for_each
+    /*
     std::vector<T> sum_2x2() {
         std::vector<T> sums_2x2(m_size);
 
@@ -161,6 +164,7 @@ class ClusterVector<Cluster<T, ClusterSizeX, ClusterSizeY, CoordType>> {
         }
         return sums_2x2;
     }
+    */
 
     /**
      * @brief Return the number of clusters in the vector

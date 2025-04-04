@@ -40,6 +40,7 @@ struct Cluster {
 
         constexpr size_t num_2x2_subclusters =
             (ClusterSizeX - 1) * (ClusterSizeY - 1);
+
         std::array<T, num_2x2_subclusters> sum_2x2_subcluster;
         for (size_t i = 0; i < ClusterSizeY - 1; ++i) {
             for (size_t j = 0; j < ClusterSizeX - 1; ++j)

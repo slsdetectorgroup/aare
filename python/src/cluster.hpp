@@ -18,20 +18,81 @@ using pd_type = double;
 
 using namespace aare;
 
+template <typename Type, uint8_t ClusterSizeX, uint8_t ClusterSizeY,
+          typename CoordType>
+void define_cluster(py::module &m, const std::string &typestr) {
+    auto class_name = fmt::format("Cluster{}", typestr);
+
+    using ClusterType =
+        Cluster<Type, ClusterSizeX, ClusterSizeY, CoordType, void>;
+    py::class_<Cluster<Type, ClusterSizeX, ClusterSizeY, CoordType, void>>(
+        m, class_name.c_str())
+
+        .def(py::init([](uint8_t x, uint8_t y, py::array_t<Type> data) {
+            py::buffer_info buf_info = data.request();
+            Type *ptr = static_cast<Type *>(buf_info.ptr);
+            Cluster<Type, ClusterSizeX, ClusterSizeY, CoordType, void> cluster;
+            cluster.x = x;
+            cluster.y = y;
+            std::copy(ptr, ptr + ClusterSizeX * ClusterSizeY,
+                      cluster.data); // Copy array contents
+            return cluster;
+        }))
+
+        //.def(py::init<>())
+        .def_readwrite("x", &ClusterType::x)
+        .def_readwrite("y", &ClusterType::y)
+        .def_property(
+            "data",
+            [](ClusterType &c) -> py::array {
+                return py::array(py::buffer_info(
+                    c.data, sizeof(Type),
+                    py::format_descriptor<Type>::format(), // Type
+                                                           // format
+                    1, // Number of dimensions
+                    {static_cast<ssize_t>(ClusterSizeX *
+                                          ClusterSizeY)}, // Shape (flattened)
+                    {sizeof(Type)} // Stride (step size between elements)
+                    ));
+            },
+            [](ClusterType &c, py::array_t<Type> arr) {
+                py::buffer_info buf_info = arr.request();
+                Type *ptr = static_cast<Type *>(buf_info.ptr);
+                std::copy(ptr, ptr + ClusterSizeX * ClusterSizeY, c.data);
+            });
+}
+
 template <typename ClusterType>
 void define_cluster_vector(py::module &m, const std::string &typestr) {
-
     auto class_name = fmt::format("ClusterVector_{}", typestr);
 
     py::class_<ClusterVector<ClusterType>>(m, class_name.c_str(),
                                            py::buffer_protocol())
-        .def(py::init<int, int>(), py::arg("cluster_size_x") = 3,
-             py::arg("cluster_size_y") = 3) // TODO change!!!
+        .def(py::init()) // TODO change!!!
+                         /*
+                         .def("push_back",
+                              [](ClusterVector<ClusterType> &self, ClusterType &cl) {
+                                  //  auto view = make_view_2d(data);
+                                  self.push_back(cl);
+                              })
+                         */
+        /*
+        .def(
+            "push_back",
+            [](ClusterVector<ClusterType> &self, py::object obj) {
+                ClusterType &cl = py::cast<ClusterType &>(obj);
+                self.push_back(cl);
+            },
+            py::arg("cluster"))
+        */
+        /*
         .def("push_back",
-             [](ClusterVector<ClusterType> &self, ClusterType &cl) {
-                 //  auto view = make_view_2d(data);
-                 self.push_back(cl);
+             [](ClusterVector<ClusterType> &self, const ClusterType &cluster) {
+                 self.push_back(cluster);
              })
+        */
+        //.def("push_back", &ClusterVector<ClusterType>::push_back) //TODO
+        //implement push_back
         .def_property_readonly("size", &ClusterVector<ClusterType>::size)
         .def("item_size", &ClusterVector<ClusterType>::item_size)
         .def_property_readonly("fmt",
@@ -78,7 +139,6 @@ void define_cluster_vector(py::module &m, const std::string &typestr) {
 template <typename ClusterType>
 void define_cluster_finder_mt_bindings(py::module &m,
                                        const std::string &typestr) {
-
     auto class_name = fmt::format("ClusterFinderMT_{}", typestr);
 
     py::class_<ClusterFinderMT<ClusterType, uint16_t, pd_type>>(
@@ -129,7 +189,6 @@ void define_cluster_finder_mt_bindings(py::module &m,
 template <typename ClusterType>
 void define_cluster_collector_bindings(py::module &m,
                                        const std::string &typestr) {
-
     auto class_name = fmt::format("ClusterCollector_{}", typestr);
 
     py::class_<ClusterCollector<ClusterType>>(m, class_name.c_str())
@@ -148,7 +207,6 @@ void define_cluster_collector_bindings(py::module &m,
 template <typename ClusterType>
 void define_cluster_file_sink_bindings(py::module &m,
                                        const std::string &typestr) {
-
     auto class_name = fmt::format("ClusterFileSink_{}", typestr);
 
     py::class_<ClusterFileSink<ClusterType>>(m, class_name.c_str())
@@ -159,7 +217,6 @@ void define_cluster_file_sink_bindings(py::module &m,
 
 template <typename ClusterType>
 void define_cluster_finder_bindings(py::module &m, const std::string &typestr) {
-
     auto class_name = fmt::format("ClusterFinder_{}", typestr);
 
     py::class_<ClusterFinder<ClusterType, uint16_t, pd_type>>(
@@ -227,21 +284,4 @@ void define_cluster_finder_bindings(py::module &m, const std::string &typestr) {
               }
               return hitmap;
           });
-
-    py::class_<DynamicCluster>(m, "DynamicCluster", py::buffer_protocol())
-        .def(py::init<int, int, Dtype>())
-        .def("size", &DynamicCluster::size)
-        .def("begin", &DynamicCluster::begin)
-        .def("end", &DynamicCluster::end)
-        .def_readwrite("x", &DynamicCluster::x)
-        .def_readwrite("y", &DynamicCluster::y)
-        .def_buffer([](DynamicCluster &c) -> py::buffer_info {
-            return py::buffer_info(c.data(), c.dt.bytes(), c.dt.format_descr(),
-                                   1, {c.size()}, {c.dt.bytes()});
-        })
-
-        .def("__repr__", [](const DynamicCluster &a) {
-            return "<DynamicCluster: x: " + std::to_string(a.x) +
-                   ", y: " + std::to_string(a.y) + ">";
-        });
 }

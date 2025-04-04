@@ -36,7 +36,7 @@ uint32_t number_of_clusters
  *       etc.
  */
 template <typename ClusterType,
-          typename Enable = std::enable_if_t<is_cluster_v<ClusterType>, bool>>
+          typename Enable = std::enable_if_t<is_cluster_v<ClusterType>>>
 class ClusterFile {
     FILE *fp{};
     uint32_t m_num_left{};    /*Number of photons left in frame*/
@@ -69,8 +69,6 @@ class ClusterFile {
      * clusters
      */
     ClusterVector<ClusterType> read_clusters(size_t n_clusters);
-
-    ClusterVector<ClusterType> read_clusters(size_t n_clusters, ROI roi);
 
     /**
      * @brief Read a single frame from the file and return the clusters. The

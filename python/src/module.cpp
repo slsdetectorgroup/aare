@@ -70,4 +70,11 @@ PYBIND11_MODULE(_aare, m) {
     define_cluster_collector_bindings<Cluster<int, 2, 2>>(m, "Cluster2x2i");
     define_cluster_collector_bindings<Cluster<double, 2, 2>>(m, "Cluster2x2f");
     define_cluster_collector_bindings<Cluster<float, 2, 2>>(m, "Cluster2x2d");
+
+    define_cluster<int, 3, 3, uint16_t>(m, "3x3i");
+    define_cluster<float, 3, 3, uint16_t>(m, "3x3f");
+    define_cluster<double, 3, 3, uint16_t>(m, "3x3d");
+    define_cluster<int, 2, 2, uint16_t>(m, "2x2i");
+    define_cluster<float, 2, 2, uint16_t>(m, "2x2f");
+    define_cluster<double, 2, 2, uint16_t>(m, "2x2d");
 }

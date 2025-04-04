@@ -61,11 +61,13 @@ TEST_CASE("Summing 3x1 clusters of int64", "[.ClusterVector]") {
     REQUIRE(cv.capacity() == 4);
     REQUIRE(cv.size() == 3);
 
+    /*
     auto sums = cv.sum();
     REQUIRE(sums.size() == 3);
     REQUIRE(sums[0] == 12);
     REQUIRE(sums[1] == 27);
     REQUIRE(sums[2] == 42);
+    */
 }
 
 TEST_CASE("Storing floats", "[.ClusterVector]") {
@@ -87,10 +89,12 @@ TEST_CASE("Storing floats", "[.ClusterVector]") {
     REQUIRE(cv.capacity() == 10);
     REQUIRE(cv.size() == 2);
 
+    /*
     auto sums = cv.sum();
     REQUIRE(sums.size() == 2);
     REQUIRE_THAT(sums[0], Catch::Matchers::WithinAbs(36.0, 1e-6));
     REQUIRE_THAT(sums[1], Catch::Matchers::WithinAbs(76.0, 1e-6));
+    */
 }
 
 TEST_CASE("Push back more than initial capacity", "[.ClusterVector]") {
