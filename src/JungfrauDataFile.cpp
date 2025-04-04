@@ -130,7 +130,7 @@ void JungfrauDataFile::read_into(std::byte *image_buf,
     // prepare for next read
     // if we are at the end of the file, open the next file
     ++ m_current_frame;
-    if(m_current_frame >= m_frame_index[m_current_file_index]){
+    if(m_current_frame >= m_frame_index[m_current_file_index] && (m_current_frame < m_total_frames)){
         ++m_current_file_index;
         open_file(m_current_file_index);
     }    
