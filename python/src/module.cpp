@@ -36,12 +36,12 @@ PYBIND11_MODULE(_aare, m) {
     define_cluster_file_io_bindings<Cluster<float, 2, 2>>(m, "Cluster2x2f");
     define_cluster_file_io_bindings<Cluster<double, 2, 2>>(m, "Cluster2x2d");
 
-    define_cluster_vector<Cluster<int, 3, 3>>(m, "Cluster3x3i");
-    define_cluster_vector<Cluster<double, 3, 3>>(m, "Cluster3x3d");
-    define_cluster_vector<Cluster<float, 3, 3>>(m, "Cluster3x3f");
-    define_cluster_vector<Cluster<int, 2, 2>>(m, "Cluster2x2i");
-    define_cluster_vector<Cluster<double, 2, 2>>(m, "Cluster2x2d");
-    define_cluster_vector<Cluster<float, 2, 2>>(m, "Cluster2x2f");
+    define_cluster_vector<int, 3, 3, uint16_t>(m, "Cluster3x3i");
+    define_cluster_vector<double, 3, 3, uint16_t>(m, "Cluster3x3d");
+    define_cluster_vector<float, 3, 3, uint16_t>(m, "Cluster3x3f");
+    define_cluster_vector<int, 2, 2, uint16_t>(m, "Cluster2x2i");
+    define_cluster_vector<double, 2, 2, uint16_t>(m, "Cluster2x2d");
+    define_cluster_vector<float, 2, 2, uint16_t>(m, "Cluster2x2f");
 
     define_cluster_finder_bindings<Cluster<int, 3, 3>>(m, "Cluster3x3i");
     define_cluster_finder_bindings<Cluster<double, 3, 3>>(m, "Cluster3x3d");

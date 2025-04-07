@@ -63,8 +63,11 @@ void define_cluster(py::module &m, const std::string &typestr) {
             });
 }
 
-template <typename ClusterType>
+template <typename Type, uint8_t ClusterSizeX, uint8_t ClusterSizeY,
+          typename CoordType = uint16_t>
 void define_cluster_vector(py::module &m, const std::string &typestr) {
+    using ClusterType =
+        Cluster<Type, ClusterSizeX, ClusterSizeY, uint16_t, void>;
     auto class_name = fmt::format("ClusterVector_{}", typestr);
 
     py::class_<ClusterVector<ClusterType>>(m, class_name.c_str(),
