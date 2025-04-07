@@ -20,14 +20,11 @@ using namespace ::aare;
 #pragma GCC diagnostic ignored "-Wunused-parameter"
 
 auto read_dat_frame(JungfrauDataFile &self) {
-    std::vector<ssize_t> shape;
-    shape.reserve(2);
-    shape.push_back(self.rows());
-    shape.push_back(self.cols());
-
-    // return headers from all subfiles
     py::array_t<JungfrauDataHeader> header(1);
-    py::array_t<uint16_t> image(shape);
+    py::array_t<uint16_t> image({
+        self.rows(), 
+        self.cols() 
+    });
 
     self.read_into(reinterpret_cast<std::byte *>(image.mutable_data()),
                    header.mutable_data());
@@ -41,12 +38,11 @@ auto read_n_dat_frames(JungfrauDataFile &self, size_t n_frames) {
     if (n_frames == 0) {
         throw std::runtime_error("No frames left in file");
     }
-    std::vector<size_t> shape{n_frames, self.rows(), self.cols()};
 
-    // return headers from all subfiles
     py::array_t<JungfrauDataHeader> header(n_frames);
-
-    py::array_t<uint16_t> image(shape);
+    py::array_t<uint16_t> image({
+        n_frames, self.rows(), 
+        self.cols()});
 
     self.read_into(reinterpret_cast<std::byte *>(image.mutable_data()),
                    n_frames, header.mutable_data());

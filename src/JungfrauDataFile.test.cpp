@@ -67,3 +67,28 @@ TEST_CASE("Seek in a JungfrauDataFile", "[.files]"){
 
     REQUIRE_THROWS(f.seek(86356)); //out of range
 }
+
+TEST_CASE("Open a Jungfrau data file with non zero file index", "[.files]"){
+
+    auto fpath = test_data_path() / "dat" / "AldoJF65k_000003.dat";
+    REQUIRE(std::filesystem::exists(fpath));
+
+    JungfrauDataFile f(fpath);
+
+    //18 files per data file, opening the 3rd file we ignore the first 3
+    REQUIRE(f.total_frames() == 113-18*3);
+    REQUIRE(f.tell() == 0);
+
+    //Frame numbers start at 1 in the first file
+    REQUIRE(f.read_header().framenum == 18*3+1);
+
+    // moving relative to the third file
+    f.seek(5);
+    REQUIRE(f.read_header().framenum == 18*3+1+5);
+
+    // ignoring the first 3 files
+    REQUIRE(f.n_files() == 4);
+
+    REQUIRE(f.current_file().stem() == "AldoJF65k_000003");
+
+}
