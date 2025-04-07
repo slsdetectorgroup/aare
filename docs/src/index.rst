@@ -40,6 +40,7 @@ AARE
     :caption: C++ API
     :maxdepth: 1
     
+    algorithm
     NDArray
     NDView
     Frame

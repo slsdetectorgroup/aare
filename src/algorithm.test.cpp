@@ -49,6 +49,16 @@ TEST_CASE("nearest index works with std::array", "[algorithm]"){
     REQUIRE(aare::nearest_index(arr, -10.0) == 0);
 }
 
+TEST_CASE("nearest index when there is no different uses the first element", "[algorithm]"){
+    std::vector<int> vec = {5, 5, 5, 5, 5};
+    REQUIRE(aare::nearest_index(vec, 5) == 0);
+}
+
+TEST_CASE("nearest index when there is no different uses the first element also when all smaller", "[algorithm]"){
+    std::vector<int> vec = {5, 5, 5, 5, 5};
+    REQUIRE(aare::nearest_index(vec, 10) == 0);
+}
+
 
 TEST_CASE("last smaller", "[algorithm]"){
     aare::NDArray<double, 1> arr({5});
@@ -68,8 +78,57 @@ TEST_CASE("returns last bin strictly smaller", "[algorithm]"){
         arr[i] = i;
     }
     // arr 0, 1, 2, 3, 4
-    REQUIRE(aare::last_smaller(arr, 2.0) == 2);
+    REQUIRE(aare::last_smaller(arr, 2.0) == 1);
 
+}
+
+TEST_CASE("last_smaller with all elements smaller returns last element", "[algorithm]"){
+    aare::NDArray<double, 1> arr({5});
+    for (size_t i = 0; i < arr.size(); i++) {
+        arr[i] = i;
+    }
+    // arr 0, 1, 2, 3, 4
+    REQUIRE(aare::last_smaller(arr, 50.) == 4);
+}
+
+TEST_CASE("last_smaller with all elements bigger returns first element", "[algorithm]"){
+    aare::NDArray<double, 1> arr({5});
+    for (size_t i = 0; i < arr.size(); i++) {
+        arr[i] = i;
+    }
+    // arr 0, 1, 2, 3, 4
+    REQUIRE(aare::last_smaller(arr, -50.) == 0);
+}
+
+TEST_CASE("last smaller with all elements equal returns the first element", "[algorithm]"){
+    std::vector<int> vec = {5,5,5,5,5,5,5};
+    REQUIRE(aare::last_smaller(vec, 5) == 0);
+}
+
+
+TEST_CASE("first_lager with vector", "[algorithm]"){
+    std::vector<double> vec = {0, 1, 2, 3, 4};
+    REQUIRE(aare::first_larger(vec, 2.5) == 3);
+}
+
+TEST_CASE("first_lager with all elements smaller returns last element", "[algorithm]"){
+    std::vector<double> vec = {0, 1, 2, 3, 4};
+    REQUIRE(aare::first_larger(vec, 50.) == 4);
+}
+
+TEST_CASE("first_lager with all elements bigger returns first element", "[algorithm]"){
+    std::vector<double> vec = {0, 1, 2, 3, 4};
+    REQUIRE(aare::first_larger(vec, -50.) == 0);
+}
+
+TEST_CASE("first_lager with all elements the same as the check returns last", "[algorithm]"){
+    std::vector<int> vec = {14, 14, 14, 14, 14};
+    REQUIRE(aare::first_larger(vec, 14) == 4);
+}
+
+TEST_CASE("first larger with the same element", "[algorithm]"){
+    std::vector<int> vec = {7,8,9,10,11};
+    REQUIRE(aare::first_larger(vec, 9) == 3);
 }
 
 TEST_CASE("cumsum works", "[algorithm]"){
@@ -97,3 +156,4 @@ TEST_CASE("cumsum works with negative numbers", "[algorithm]"){
     REQUIRE(result[3] == -6);
     REQUIRE(result[4] == -10);
 }
+

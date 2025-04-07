@@ -7,13 +7,20 @@
 
 namespace aare {
 /**
- * @brief Find the index of the last element smaller than val
- * assume a sorted array
+ * @brief Index of the last element that is smaller than val.
+ * Requires a sorted array. Uses >= for ordering. If all elements
+ * are smaller it returns the last element and if all elements are
+ * larger it returns the first element.
+ * @param first iterator to the first element
+ * @param last iterator to the last element
+ * @param val value to compare
+ * @return index of the last element that is smaller than val
+ * 
  */
 template <typename T>
 size_t last_smaller(const T* first, const T* last, T val) {
     for (auto iter = first+1; iter != last; ++iter) {
-        if (*iter > val) {
+        if (*iter >= val) {
             return std::distance(first, iter-1);
         }
     }
@@ -25,6 +32,21 @@ size_t last_smaller(const NDArray<T, 1>& arr, T val) {
     return last_smaller(arr.begin(), arr.end(), val);
 }
 
+template <typename T>
+size_t last_smaller(const std::vector<T>& vec, T val) {
+    return last_smaller(vec.data(), vec.data()+vec.size(), val);
+}
+
+/**
+ * @brief Index of the first element that is larger than val.
+ * Requires a sorted array. Uses > for ordering. If all elements
+ * are larger it returns the first element and if all elements are
+ * smaller it returns the last element.
+ * @param first iterator to the first element
+ * @param last iterator to the last element
+ * @param val value to compare
+ * @return index of the first element that is larger than val
+ */
 template <typename T>
 size_t first_larger(const T* first, const T* last, T val) {
     for (auto iter = first; iter != last; ++iter) {
@@ -45,6 +67,14 @@ size_t first_larger(const std::vector<T>& vec, T val) {
     return first_larger(vec.data(), vec.data()+vec.size(), val);
 }
 
+/**
+ * @brief Index of the nearest element to val.
+ * Requires a sorted array. If there is no difference it takes the first element.
+ * @param first iterator to the first element
+ * @param last iterator to the last element
+ * @param val value to compare
+ * @return index of the nearest element
+ */
 template <typename T>
 size_t nearest_index(const T* first, const T* last, T val) {
     auto iter = std::min_element(first, last,
