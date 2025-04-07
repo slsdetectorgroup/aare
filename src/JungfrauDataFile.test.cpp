@@ -25,12 +25,45 @@ TEST_CASE("Open a Jungfrau data file", "[.files]") {
     REQUIRE(f.total_frames() == 24);
     REQUIRE(f.current_file() == fpath);
 
+    //Check that the frame number and buch id is read correctly
     for (size_t i = 0; i < 24; ++i) {
         JungfrauDataHeader header;
-        auto image = f.read_frame(header);
+        auto image = f.read_frame(&header);
         REQUIRE(header.framenum == i + 1);
         REQUIRE(header.bunchid == (i + 1) * (i + 1));
         REQUIRE(image.shape(0) == 512);
         REQUIRE(image.shape(1) == 1024);
     }
+}
+
+TEST_CASE("Seek in a JungfrauDataFile", "[.files]"){
+    auto fpath = test_data_path() / "dat" / "AldoJF65k_000000.dat";
+    REQUIRE(std::filesystem::exists(fpath));
+
+    JungfrauDataFile f(fpath);
+
+    //The file should have 113 frames
+    f.seek(19);
+    REQUIRE(f.tell() == 19);
+    auto h = f.read_header();
+    REQUIRE(h.framenum == 19+1);
+
+    //Reading again does not change the file pointer
+    auto h2 = f.read_header();
+    REQUIRE(h2.framenum == 19+1);
+
+    f.seek(59);
+    REQUIRE(f.tell() == 59);
+    auto h3 = f.read_header();
+    REQUIRE(h3.framenum == 59+1);
+
+    JungfrauDataHeader h4;
+    auto image = f.read_frame(&h4);
+    REQUIRE(h4.framenum == 59+1);
+
+    //now we should be on the next frame
+    REQUIRE(f.tell() == 60);
+    REQUIRE(f.read_header().framenum == 60+1);
+
+    REQUIRE_THROWS(f.seek(86356)); //out of range
 }

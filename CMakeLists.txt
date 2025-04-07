@@ -342,7 +342,7 @@ set(PUBLICHEADERS
     include/aare/File.hpp
     include/aare/Fit.hpp
     include/aare/FileInterface.hpp
-    include/aare/FiltPtr.hpp
+    include/aare/FilePtr.hpp
     include/aare/Frame.hpp
     include/aare/geo_helpers.hpp
     include/aare/JungfrauDataFile.hpp

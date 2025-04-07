@@ -60,8 +60,14 @@ void define_jungfrau_data_file_io_bindings(py::module &m) {
 
     py::class_<JungfrauDataFile>(m, "JungfrauDataFile")
         .def(py::init<const std::filesystem::path &>())
-        .def("seek", &JungfrauDataFile::seek)
-        .def("tell", &JungfrauDataFile::tell)
+        .def("seek", &JungfrauDataFile::seek,
+             R"(
+               Seek to the given frame index.
+               )")
+        .def("tell", &JungfrauDataFile::tell,
+             R"(
+               Get the current frame index.
+               )")
         .def_property_readonly("rows", &JungfrauDataFile::rows)
         .def_property_readonly("cols", &JungfrauDataFile::cols)
         .def_property_readonly("base_name", &JungfrauDataFile::base_name)
@@ -75,12 +81,11 @@ void define_jungfrau_data_file_io_bindings(py::module &m) {
         .def_property_readonly("current_file", &JungfrauDataFile::current_file)
         .def_property_readonly("total_frames", &JungfrauDataFile::total_frames)
         .def_property_readonly("n_files", &JungfrauDataFile::n_files)
-        .def("read_frame",
-             [](JungfrauDataFile &self) { return read_dat_frame(self); })
-        .def("read_n",
-             [](JungfrauDataFile &self, size_t n_frames) {
-                 return read_n_dat_frames(self, n_frames);
-             },
+        .def("read_frame", &read_dat_frame,
+             R"(
+               Read a single frame from the file.
+               )")
+        .def("read_n", &read_n_dat_frames,
              R"(
                Read maximum n_frames frames from the file.
                )")
