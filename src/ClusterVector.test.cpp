@@ -25,10 +25,7 @@ TEST_CASE("ClusterVector 2x2 int32_t capacity 4, push back then read",
     REQUIRE(cv.size() == 1);
     REQUIRE(cv.capacity() == 4);
 
-    // Read the cluster back out using copy. TODO! Can we improve the API?
-    Cluster<int32_t, 2, 2> c2;
-    std::byte *ptr = cv.element_ptr(0);
-    std::copy(ptr, ptr + cv.item_size(), reinterpret_cast<std::byte *>(&c2));
+    auto c2 = cv.at(0);
 
     // Check that the data is the same
     REQUIRE(c1.x == c2.x);

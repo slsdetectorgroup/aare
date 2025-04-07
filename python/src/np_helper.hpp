@@ -10,6 +10,7 @@
 #include "aare/NDView.hpp"
 
 namespace py = pybind11;
+using namespace aare;
 
 // Pass image data back to python as a numpy array
 template <typename T, int64_t Ndim>
@@ -65,3 +66,21 @@ template <class T, int Flags> auto make_view_2d(py::array_t<T, Flags> &arr) {
 template <class T, int Flags> auto make_view_1d(py::array_t<T, Flags> &arr) {
     return aare::NDView<T, 1>(arr.mutable_data(), get_shape_1d<T, Flags>(arr));
 }
+
+template <typename ClusterType> struct fmt_format_trait; // forward declaration
+
+template <typename T, uint8_t ClusterSizeX, uint8_t ClusterSizeY,
+          typename CoordType>
+struct fmt_format_trait<Cluster<T, ClusterSizeX, ClusterSizeY, CoordType>> {
+
+    static std::string value() {
+        return fmt::format("T{{{}:x;{}:y;{}:data;}}",
+                           py::format_descriptor<CoordType>::format(),
+                           py::format_descriptor<CoordType>::format(),
+                           fmt::format("{}{}", ClusterSizeX * ClusterSizeY,
+                                       py::format_descriptor<T>::format()));
+    }
+};
+
+template <typename ClusterType>
+auto fmt_format = fmt_format_trait<ClusterType>::value();

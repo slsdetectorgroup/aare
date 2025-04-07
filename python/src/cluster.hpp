@@ -58,7 +58,8 @@ void define_cluster(py::module &m, const std::string &typestr) {
             [](ClusterType &c, py::array_t<Type> arr) {
                 py::buffer_info buf_info = arr.request();
                 Type *ptr = static_cast<Type *>(buf_info.ptr);
-                std::copy(ptr, ptr + ClusterSizeX * ClusterSizeY, c.data);
+                std::copy(ptr, ptr + ClusterSizeX * ClusterSizeY,
+                          c.data); // TODO dont iterate over centers!!!
             });
 }
 
@@ -68,14 +69,15 @@ void define_cluster_vector(py::module &m, const std::string &typestr) {
 
     py::class_<ClusterVector<ClusterType>>(m, class_name.c_str(),
                                            py::buffer_protocol())
+
         .def(py::init()) // TODO change!!!
-                         /*
-                         .def("push_back",
-                              [](ClusterVector<ClusterType> &self, ClusterType &cl) {
-                                  //  auto view = make_view_2d(data);
-                                  self.push_back(cl);
-                              })
-                         */
+        /*
+        .def("push_back",
+             [](ClusterVector<ClusterType> &self, ClusterType &cl) {
+                 //  auto view = make_view_2d(data);
+                 self.push_back(cl);
+             })
+        */
         /*
         .def(
             "push_back",
@@ -92,15 +94,11 @@ void define_cluster_vector(py::module &m, const std::string &typestr) {
              })
         */
         //.def("push_back", &ClusterVector<ClusterType>::push_back) //TODO
-        //implement push_back
+        // implement push_back
         .def_property_readonly("size", &ClusterVector<ClusterType>::size)
         .def("item_size", &ClusterVector<ClusterType>::item_size)
         .def_property_readonly("fmt",
-                               [typestr](ClusterVector<ClusterType> &self) {
-                                   return fmt::format(
-                                       self.fmt_base(), self.cluster_size_x(),
-                                       self.cluster_size_y(), typestr);
-                               })
+                               [typestr]() { return fmt_format<ClusterType>; })
         /*
         .def("sum",
              [](ClusterVector<ClusterType> &self) {
@@ -124,13 +122,11 @@ void define_cluster_vector(py::module &m, const std::string &typestr) {
         .def_buffer(
             [typestr](ClusterVector<ClusterType> &self) -> py::buffer_info {
                 return py::buffer_info(
-                    self.data(),      /* Pointer to buffer */
-                    self.item_size(), /* Size of one scalar */
-                    fmt::format(self.fmt_base(), self.cluster_size_x(),
-                                self.cluster_size_y(),
-                                typestr), /* Format descriptor */
-                    1,                    /* Number of dimensions */
-                    {self.size()},        /* Buffer dimensions */
+                    self.data(),             /* Pointer to buffer */
+                    self.item_size(),        /* Size of one scalar */
+                    fmt_format<ClusterType>, /* Format descriptor */
+                    1,                       /* Number of dimensions */
+                    {self.size()},           /* Buffer dimensions */
                     {self.item_size()} /* Strides (in bytes) for each index */
                 );
             });
