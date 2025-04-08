@@ -1,4 +1,5 @@
 #include "aare/File.hpp"
+#include "aare/JungfrauDataFile.hpp"
 #include "aare/NumpyFile.hpp"
 #include "aare/RawFile.hpp"
 
@@ -27,6 +28,8 @@ File::File(const std::filesystem::path &fname, const std::string &mode,
     else if (fname.extension() == ".npy") {
         // file_impl = new NumpyFile(fname, mode, cfg);
         file_impl = std::make_unique<NumpyFile>(fname, mode, cfg);
+    }else if(fname.extension() == ".dat"){
+        file_impl = std::make_unique<JungfrauDataFile>(fname);
     } else {
         throw std::runtime_error("Unsupported file type");
     }

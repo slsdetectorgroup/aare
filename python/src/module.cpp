@@ -11,6 +11,8 @@
 #include "fit.hpp"
 #include "interpolation.hpp"
 
+#include "jungfrau_data_file.hpp"
+
 //Pybind stuff
 #include <pybind11/pybind11.h>
 #include <pybind11/stl.h>
@@ -33,5 +35,6 @@ PYBIND11_MODULE(_aare, m) {
     define_cluster_file_sink_bindings(m);
     define_fit_bindings(m);
     define_interpolation_bindings(m);
+    define_jungfrau_data_file_io_bindings(m);
 
 }

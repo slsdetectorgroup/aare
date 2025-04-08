@@ -2,7 +2,7 @@
 from . import _aare
 
 
-from ._aare import File, RawMasterFile, RawSubFile
+from ._aare import File, RawMasterFile, RawSubFile, JungfrauDataFile
 from ._aare import Pedestal_d, Pedestal_f, ClusterFinder, VarClusterFinder
 from ._aare import DetectorType
 from ._aare import ClusterFile
