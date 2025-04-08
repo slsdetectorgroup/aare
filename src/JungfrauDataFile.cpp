@@ -37,8 +37,9 @@ Frame JungfrauDataFile::read_frame(size_t frame_number){
 
 std::vector<Frame> JungfrauDataFile::read_n(size_t n_frames) {
     std::vector<Frame> frames;
-    throw std::runtime_error(LOCATION +
-                                 "Not implemented yet");
+    for(size_t i = 0; i < n_frames; ++i){
+        frames.push_back(read_frame());
+    }
     return frames;
 }
 
@@ -52,6 +53,10 @@ void JungfrauDataFile::read_into(std::byte *image_buf, size_t n_frames) {
 size_t JungfrauDataFile::frame_number(size_t frame_index) {
     seek(frame_index);
     return read_header().framenum;
+}
+
+std::array<ssize_t, 2> JungfrauDataFile::shape() const {
+    return {static_cast<ssize_t>(rows()), static_cast<ssize_t>(cols())};
 }
 
 DetectorType JungfrauDataFile::detector_type() const { return DetectorType::Jungfrau; }
@@ -198,22 +203,13 @@ void JungfrauDataFile::read_into(std::byte *image_buf, size_t n_frames,
 }
 
 void JungfrauDataFile::read_into(NDArray<uint16_t>* image, JungfrauDataHeader* header) {
-    if(!(rows() == image->shape(0) && cols() == image->shape(1))){
+    if(image->shape()!=shape()){
         throw std::runtime_error(LOCATION +
             "Image shape does not match file size: " + std::to_string(rows()) + "x" + std::to_string(cols()));
     }
     read_into(reinterpret_cast<std::byte *>(image->data()), header);
 }
 
-NDArray<uint16_t> JungfrauDataFile::read_frame(JungfrauDataHeader* header) {
-    Shape<2> shape{rows(), cols()};
-    NDArray<uint16_t> image(shape);
-
-    read_into(reinterpret_cast<std::byte *>(image.data()),
-            header);
-
-    return image;
-}
 
 JungfrauDataHeader JungfrauDataFile::read_header() {
     JungfrauDataHeader header;

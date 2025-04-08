@@ -6,8 +6,8 @@ namespace aare {
 Interpolator::Interpolator(NDView<double, 3> etacube, NDView<double, 1> xbins,
                            NDView<double, 1> ybins, NDView<double, 1> ebins)
     : m_ietax(etacube), m_ietay(etacube), m_etabinsx(xbins), m_etabinsy(ybins), m_energy_bins(ebins) {
-    if (etacube.shape(0) != xbins.size() || etacube.shape(1) != ybins.size() ||
-        etacube.shape(2) != ebins.size()) {
+    if (etacube.shape(0) != xbins.ssize() || etacube.shape(1) != ybins.ssize() ||
+        etacube.shape(2) != ebins.ssize()) {
         throw std::invalid_argument(
             "The shape of the etacube does not match the shape of the bins");
     }
@@ -68,19 +68,14 @@ std::vector<Photon> Interpolator::interpolate(const ClusterVector<int32_t>& clus
             photon.y = cluster.y;
             photon.energy = eta.sum;
     
-            // auto ie = nearest_index(m_energy_bins, photon.energy)-1;
-            // auto ix = nearest_index(m_etabinsx, eta.x)-1;
-            // auto iy = nearest_index(m_etabinsy, eta.y)-1;   
+
             //Finding the index of the last element that is smaller
             //should work fine as long as we have many bins
             auto ie = last_smaller(m_energy_bins, photon.energy);
             auto ix = last_smaller(m_etabinsx, eta.x);
             auto iy = last_smaller(m_etabinsy, eta.y); 
-
-            // fmt::print("ex: {}, ix: {}, iy: {}\n", ie, ix, iy);
             
-            double dX, dY;
-            int ex, ey;
+            double dX{}, dY{};
             // cBottomLeft = 0,
             // cBottomRight = 1,
             // cTopLeft = 2,

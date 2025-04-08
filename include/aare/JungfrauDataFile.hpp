@@ -49,6 +49,7 @@ class JungfrauDataFile : public FileInterface {
     size_t total_frames() const override;
     size_t rows() const override;
     size_t cols() const override;
+    std::array<ssize_t,2> shape() const;
     size_t n_files() const; //!< get the number of files in the series. 
 
     // Extra functions needed for FileInterface
@@ -80,13 +81,6 @@ class JungfrauDataFile : public FileInterface {
      * @param image NDArray to read the frame into.
      */
     void read_into(NDArray<uint16_t>* image, JungfrauDataHeader* header = nullptr);
-
-    /**
-     * @brief Read a single frame from the file. Allocated a new NDArray for the output data
-     * @param header pointer to a JungfrauDataHeader or nullptr to skip header)
-     * @return NDArray with the image data
-     */
-    NDArray<uint16_t> read_frame(JungfrauDataHeader* header = nullptr);
 
     JungfrauDataHeader read_header();
     std::filesystem::path current_file() const { return fpath(m_current_file_index+m_offset); }

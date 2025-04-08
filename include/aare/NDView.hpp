@@ -72,6 +72,7 @@ template <typename T, int64_t Ndim = 2> class NDView : public ArrayExpr<NDView<T
     }
 
     size_t size() const { return size_; }
+    ssize_t ssize() const { return static_cast<ssize_t>(size_); }
     size_t total_bytes() const { return size_ * sizeof(T); }
     std::array<int64_t, Ndim> strides() const noexcept { return strides_; }
 
