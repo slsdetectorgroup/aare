@@ -14,7 +14,7 @@ C++
     cmake .. -DAARE_TESTS=ON
     make -j 4
 
-    export AARE_TEST_DATA_DIR=/path/to/test/data
+    export AARE_TEST_DATA=/path/to/test/data
     ./run_test [.files] #or using ctest, [.files] is the option to include tests needing data
 
 
