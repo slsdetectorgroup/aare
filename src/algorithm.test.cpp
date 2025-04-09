@@ -6,7 +6,7 @@
 
 TEST_CASE("Find the closed index in a 1D array", "[algorithm]") {
     aare::NDArray<double, 1> arr({5});
-    for (size_t i = 0; i < arr.size(); i++) {
+    for (ssize_t i = 0; i < arr.size(); i++) {
         arr[i] = i;
     }
     // arr 0, 1, 2, 3, 4
@@ -19,7 +19,7 @@ TEST_CASE("Find the closed index in a 1D array", "[algorithm]") {
 
 TEST_CASE("Passing integers to nearest_index works", "[algorithm]"){
     aare::NDArray<int, 1> arr({5});
-    for (size_t i = 0; i < arr.size(); i++) {
+    for (ssize_t i = 0; i < arr.size(); i++) {
         arr[i] = i;
     }
     // arr 0, 1, 2, 3, 4
@@ -62,7 +62,7 @@ TEST_CASE("nearest index when there is no different uses the first element also 
 
 TEST_CASE("last smaller", "[algorithm]"){
     aare::NDArray<double, 1> arr({5});
-    for (size_t i = 0; i < arr.size(); i++) {
+    for (ssize_t i = 0; i < arr.size(); i++) {
         arr[i] = i;
     }
     // arr 0, 1, 2, 3, 4
@@ -74,7 +74,7 @@ TEST_CASE("last smaller", "[algorithm]"){
 
 TEST_CASE("returns last bin strictly smaller", "[algorithm]"){
     aare::NDArray<double, 1> arr({5});
-    for (size_t i = 0; i < arr.size(); i++) {
+    for (ssize_t i = 0; i < arr.size(); i++) {
         arr[i] = i;
     }
     // arr 0, 1, 2, 3, 4
@@ -84,7 +84,7 @@ TEST_CASE("returns last bin strictly smaller", "[algorithm]"){
 
 TEST_CASE("last_smaller with all elements smaller returns last element", "[algorithm]"){
     aare::NDArray<double, 1> arr({5});
-    for (size_t i = 0; i < arr.size(); i++) {
+    for (ssize_t i = 0; i < arr.size(); i++) {
         arr[i] = i;
     }
     // arr 0, 1, 2, 3, 4
@@ -93,7 +93,7 @@ TEST_CASE("last_smaller with all elements smaller returns last element", "[algor
 
 TEST_CASE("last_smaller with all elements bigger returns first element", "[algorithm]"){
     aare::NDArray<double, 1> arr({5});
-    for (size_t i = 0; i < arr.size(); i++) {
+    for (ssize_t i = 0; i < arr.size(); i++) {
         arr[i] = i;
     }
     // arr 0, 1, 2, 3, 4

@@ -194,7 +194,7 @@ class NDArray : public ArrayExpr<NDArray<T, Ndim>, Ndim> {
 
     T *data() { return data_; }
     std::byte *buffer() { return reinterpret_cast<std::byte *>(data_); }
-    size_t size() const { return size_; }
+    ssize_t size() const { return static_cast<ssize_t>(size_); }
     size_t total_bytes() const { return size_ * sizeof(T); }
     std::array<int64_t, Ndim> shape() const noexcept { return shape_; }
     int64_t shape(int64_t i) const noexcept { return shape_[i]; }

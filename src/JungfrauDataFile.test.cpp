@@ -28,7 +28,8 @@ TEST_CASE("Open a Jungfrau data file", "[.files]") {
     //Check that the frame number and buch id is read correctly
     for (size_t i = 0; i < 24; ++i) {
         JungfrauDataHeader header;
-        auto image = f.read_frame(&header);
+        aare::NDArray<uint16_t> image(f.shape());
+        f.read_into(&image, &header);
         REQUIRE(header.framenum == i + 1);
         REQUIRE(header.bunchid == (i + 1) * (i + 1));
         REQUIRE(image.shape(0) == 512);
@@ -58,7 +59,8 @@ TEST_CASE("Seek in a JungfrauDataFile", "[.files]"){
     REQUIRE(h3.framenum == 59+1);
 
     JungfrauDataHeader h4;
-    auto image = f.read_frame(&h4);
+    aare::NDArray<uint16_t> image(f.shape());
+    f.read_into(&image, &h4);
     REQUIRE(h4.framenum == 59+1);
 
     //now we should be on the next frame
@@ -90,5 +92,23 @@ TEST_CASE("Open a Jungfrau data file with non zero file index", "[.files]"){
     REQUIRE(f.n_files() == 4);
 
     REQUIRE(f.current_file().stem() == "AldoJF65k_000003");
+
+}
+
+TEST_CASE("Read into throws if size doesn't match", "[.files]"){
+    auto fpath = test_data_path() / "dat" / "AldoJF65k_000000.dat";
+    REQUIRE(std::filesystem::exists(fpath));
+
+    JungfrauDataFile f(fpath);
+
+    aare::NDArray<uint16_t> image({39, 85});
+    JungfrauDataHeader header;
+
+    REQUIRE_THROWS(f.read_into(&image, &header));
+    REQUIRE_THROWS(f.read_into(&image, nullptr));
+    REQUIRE_THROWS(f.read_into(&image));
+
+    REQUIRE(f.tell() == 0);
+
 
 }

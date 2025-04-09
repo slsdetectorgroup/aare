@@ -68,19 +68,14 @@ std::vector<Photon> Interpolator::interpolate(const ClusterVector<int32_t>& clus
             photon.y = cluster.y;
             photon.energy = eta.sum;
     
-            // auto ie = nearest_index(m_energy_bins, photon.energy)-1;
-            // auto ix = nearest_index(m_etabinsx, eta.x)-1;
-            // auto iy = nearest_index(m_etabinsy, eta.y)-1;   
+
             //Finding the index of the last element that is smaller
             //should work fine as long as we have many bins
             auto ie = last_smaller(m_energy_bins, photon.energy);
             auto ix = last_smaller(m_etabinsx, eta.x);
             auto iy = last_smaller(m_etabinsy, eta.y); 
-
-            // fmt::print("ex: {}, ix: {}, iy: {}\n", ie, ix, iy);
             
-            double dX, dY;
-            int ex, ey;
+            double dX{}, dY{};
             // cBottomLeft = 0,
             // cBottomRight = 1,
             // cTopLeft = 2,
