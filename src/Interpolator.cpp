@@ -6,8 +6,8 @@ namespace aare {
 Interpolator::Interpolator(NDView<double, 3> etacube, NDView<double, 1> xbins,
                            NDView<double, 1> ybins, NDView<double, 1> ebins)
     : m_ietax(etacube), m_ietay(etacube), m_etabinsx(xbins), m_etabinsy(ybins), m_energy_bins(ebins) {
-    if (etacube.shape(0) != xbins.ssize() || etacube.shape(1) != ybins.ssize() ||
-        etacube.shape(2) != ebins.ssize()) {
+    if (etacube.shape(0) != xbins.size() || etacube.shape(1) != ybins.size() ||
+        etacube.shape(2) != ebins.size()) {
         throw std::invalid_argument(
             "The shape of the etacube does not match the shape of the bins");
     }
