@@ -13,6 +13,7 @@ jobs:
     container:
       image: gitea.psi.ch/images/rhel8-developer-gitea-actions
     steps:
+      # workaround until actions/checkout@v4 is available for RH8
       # - uses: actions/checkout@v4
       - name: Clone repository
         run: |
