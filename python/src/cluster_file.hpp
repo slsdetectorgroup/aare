@@ -80,7 +80,12 @@ void define_cluster_file_io_bindings(py::module &m,
             }
             return v;
         });
+}
 
+template <typename Type, uint8_t CoordSizeX, uint8_t CoordSizeY,
+          typename CoordType = uint16_t>
+void register_calculate_eta(py::module &m) {
+    using ClusterType = Cluster<Type, CoordSizeX, CoordSizeY, CoordType>;
     m.def("calculate_eta2",
           [](const aare::ClusterVector<ClusterType> &clusters) {
               auto eta2 = new NDArray<double, 2>(calculate_eta2(clusters));

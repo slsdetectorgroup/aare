@@ -9,12 +9,13 @@
 
 namespace py = pybind11;
 
-template <typename ClusterType>
-void register_interpolate(py::class_<aare::Interpolator> &interpolator,
-                          const std::string &typestr) {
-    auto name = fmt::format("interpolate_{}", typestr);
+template <typename Type, uint8_t CoordSizeX, uint8_t CoordSizeY,
+          typename CoordType = uint16_t>
+void register_interpolate(py::class_<aare::Interpolator> &interpolator) {
 
-    interpolator.def(name.c_str(),
+    using ClusterType = Cluster<Type, CoordSizeX, CoordSizeY, CoordType>;
+
+    interpolator.def("interpolate",
                      [](aare::Interpolator &self,
                         const ClusterVector<ClusterType> &clusters) {
                          auto photons = self.interpolate<ClusterType>(clusters);
@@ -50,12 +51,12 @@ void define_interpolation_bindings(py::module &m) {
                 return return_image_data(ptr);
             });
 
-    register_interpolate<Cluster<int, 3, 3>>(interpolator, "Cluster3x3i");
-    register_interpolate<Cluster<float, 3, 3>>(interpolator, "Cluster3x3f");
-    register_interpolate<Cluster<double, 3, 3>>(interpolator, "Cluster3x3d");
-    register_interpolate<Cluster<int, 2, 2>>(interpolator, "Cluster2x2i");
-    register_interpolate<Cluster<float, 2, 2>>(interpolator, "Cluster2x2f");
-    register_interpolate<Cluster<double, 2, 2>>(interpolator, "Cluster2x2d");
+    register_interpolate<int, 3, 3, uint16_t>(interpolator);
+    register_interpolate<float, 3, 3, uint16_t>(interpolator);
+    register_interpolate<double, 3, 3, uint16_t>(interpolator);
+    register_interpolate<int, 2, 2, uint16_t>(interpolator);
+    register_interpolate<float, 2, 2, uint16_t>(interpolator);
+    register_interpolate<double, 2, 2, uint16_t>(interpolator);
 
     // TODO! Evaluate without converting to double
     m.def(
