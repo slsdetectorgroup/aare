@@ -3,7 +3,7 @@ from . import _aare
 
 
 from ._aare import File, RawMasterFile, RawSubFile, JungfrauDataFile
-from ._aare import Pedestal_d, Pedestal_f, ClusterFinder, VarClusterFinder
+from ._aare import Pedestal_d, Pedestal_f, ClusterFinder_Cluster3x3i, VarClusterFinder
 from ._aare import DetectorType
 from ._aare import ClusterFile_Cluster3x3i as ClusterFile
 from ._aare import hitmap

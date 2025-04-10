@@ -11,7 +11,6 @@
 
 namespace aare {
 
-<<<<<<< HEAD
 /*
 Binary cluster file. Expects data to be layed out as:
 int32_t frame_number
@@ -21,44 +20,6 @@ int32_t frame_number
 uint32_t number_of_clusters
 ....
 */
-=======
-
-// TODO! Legacy enums, migrate to enum class
-typedef enum {
-    cBottomLeft = 0,
-    cBottomRight = 1,
-    cTopLeft = 2,
-    cTopRight = 3
-} corner;
-
-typedef enum {
-    pBottomLeft = 0,
-    pBottom = 1,
-    pBottomRight = 2,
-    pLeft = 3,
-    pCenter = 4,
-    pRight = 5,
-    pTopLeft = 6,
-    pTop = 7,
-    pTopRight = 8
-} pixel;
-
-struct Eta2 {
-    double x;
-    double y;
-    corner c;
-    int32_t sum;
-};
-
-struct ClusterAnalysis {
-    uint32_t c;
-    int32_t tot;
-    double etax;
-    double etay;
-};
-
-
->>>>>>> developer
 
 // TODO: change to support any type of clusters, e.g. header line with
 // clsuter_size_x, cluster_size_y,
@@ -108,8 +69,6 @@ class ClusterFile {
      * clusters
      */
     ClusterVector<ClusterType> read_clusters(size_t n_clusters);
-
-    ClusterVector<int32_t> read_clusters(size_t n_clusters, ROI roi);
 
     /**
      * @brief Read a single frame from the file and return the clusters. The

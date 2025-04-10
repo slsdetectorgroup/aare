@@ -19,11 +19,12 @@
 namespace py = pybind11;
 using namespace ::aare;
 
-template <typename ClusterType>
+template <typename Type, uint8_t CoordSizeX, uint8_t CoordSizeY,
+          typename CoordType = uint16_t>
 void define_cluster_file_io_bindings(py::module &m,
                                      const std::string &typestr) {
-    // PYBIND11_NUMPY_DTYPE(Cluster<int, 3, 3>, x, y,
-    // data); // is this used - maybe use as cluster type
+
+    using ClusterType = Cluster<Type, CoordSizeX, CoordSizeY, CoordType>;
 
     auto class_name = fmt::format("ClusterFile_{}", typestr);
 

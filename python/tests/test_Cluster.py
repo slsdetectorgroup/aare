@@ -1,7 +1,9 @@
 import pytest 
 import numpy as np
 
-import aare._aare as aare #import ClusterVector_Cluster3x3i, ClusterVector_Cluster2x2i, Interpolator, Cluster3x3i, ClusterFinder_Cluster3x3i, Cluster2x2i, ClusterFile_Cluster3x3i, Cluster3x3f, calculate_eta2
+import aare._aare as aare
+from conftest import test_data_path
+
 
 def test_ClusterVector(): 
     """Test ClusterVector""" 
@@ -64,15 +66,19 @@ def test_Interpolator():
     assert interpolated_photons[0]["energy"] == 4
 
 @pytest.mark.files
-def test_cluster_file(): 
+def test_cluster_file(test_data_path): 
     """Test ClusterFile""" 
-    cluster_file = aare.ClusterFile_Cluster3x3i(test_data_path() / "clust/single_frame_97_clustrers.clust") 
-    clustervector = cluster_file.read_clusters() #conversion does not work
+    cluster_file = aare.ClusterFile_Cluster3x3i(test_data_path / "clust/single_frame_97_clustrers.clust") 
+    clustervector = cluster_file.read_clusters(10) #conversion does not work
 
     cluster_file.close()
 
+    assert clustervector.size == 10
+
     ###reading with wrong file
-    cluster_file = ClusterFile_Cluster2x2i(test_data_path() / "clust/single_frame_97_clustrers.clust") #TODO check behavior! 
+    with pytest.raises(TypeError): 
+        cluster_file = aare.ClusterFile_Cluster2x2i(test_data_path / "clust/single_frame_97_clustrers.clust") 
+        cluster_file.close()
 
 def test_calculate_eta(): 
     """Calculate Eta""" 
@@ -103,6 +109,7 @@ def test_cluster_finder():
     assert clusters.size == 0
 
 
+#TODO dont understand behavior
 def test_cluster_collector(): 
     """Test ClusterCollector"""
 
