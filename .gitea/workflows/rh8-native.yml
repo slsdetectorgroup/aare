@@ -16,8 +16,8 @@ jobs:
       # - uses: actions/checkout@v4
       - name: Clone repository
         run: |
-          echo Cloning {{ github.ref_name }}
-          git clone https://${{secrets.GITHUB_TOKEN}}@gitea.psi.ch/${{ github.repository }}.git --branch={{ github.ref_name }} .
+          echo Cloning ${{ github.ref_name }}
+          git clone https://${{secrets.GITHUB_TOKEN}}@gitea.psi.ch/${{ github.repository }}.git --branch=${{ github.ref_name }} .
 
 
       - name: Install dependencies
