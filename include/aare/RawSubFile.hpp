@@ -22,7 +22,7 @@ class RawSubFile {
     size_t m_rows{};
     size_t m_cols{};
     size_t m_bytes_per_frame{};
-    size_t n_frames{};
+    size_t m_num_frames{};
     uint32_t m_pos_row{};
     uint32_t m_pos_col{};
  
@@ -53,6 +53,7 @@ class RawSubFile {
     size_t tell();
 
     void read_into(std::byte *image_buf, DetectorHeader *header = nullptr);
+    void read_into(std::byte *image_buf, size_t n_frames, DetectorHeader *header= nullptr);
     void get_part(std::byte *buffer, size_t frame_index);
     
     void read_header(DetectorHeader *header);
@@ -66,7 +67,7 @@ class RawSubFile {
     size_t pixels_per_frame() const { return m_rows * m_cols; }
     size_t bytes_per_pixel() const { return m_bitdepth / bits_per_byte; }
 
-    size_t frames_in_file() const { return n_frames; }
+    size_t frames_in_file() const { return m_num_frames; }
 
 private:
   template <typename T>
