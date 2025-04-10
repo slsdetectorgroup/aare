@@ -80,11 +80,12 @@ void define_cluster_vector(py::module &m, const std::string &typestr) {
                  self.push_back(cluster);
              })
 
+
         // implement push_back
         .def_property_readonly("size", &ClusterVector<ClusterType>::size)
         .def("item_size", &ClusterVector<ClusterType>::item_size)
         .def_property_readonly("fmt",
-                               [typestr]() { return fmt_format<ClusterType>; })
+                               [typestr](ClusterVector<ClusterType> &self) { return fmt_format<ClusterType>; })
 
         .def_property_readonly("cluster_size_x",
                                &ClusterVector<ClusterType>::cluster_size_x)

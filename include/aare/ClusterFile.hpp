@@ -236,7 +236,7 @@ ClusterFile<ClusterType, Enable>::read_clusters_without_cut(size_t n_clusters) {
     uint32_t nph = m_num_left; // number of clusters in frame needs to be 4
 
     // auto buf = reinterpret_cast<Cluster3x3 *>(clusters.data());
-    auto buf = clusters.data();
+    auto buf = reinterpret_cast<char*>(clusters.data());
     // if there are photons left from previous frame read them first
     if (nph) {
         if (nph > n_clusters) {

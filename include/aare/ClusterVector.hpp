@@ -299,7 +299,7 @@ class ClusterVector<Cluster<T, ClusterSizeX, ClusterSizeY, CoordType>> {
      */
     ClusterVector(size_t capacity = 1024, uint64_t frame_number = 0)
         : m_frame_number(frame_number) {
-        m_data.reserve(capacity);
+        m_data.resize(capacity);
     }
 
     // Move constructor
