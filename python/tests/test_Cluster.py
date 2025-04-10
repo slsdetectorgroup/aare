@@ -5,6 +5,12 @@ import aare._aare as aare
 from conftest import test_data_path
 
 
+def test_cluster_vector_can_be_converted_to_numpy():
+    cv = aare.ClusterVector_Cluster3x3i()
+    arr = np.array(cv, copy=False)
+    assert arr.shape == (0,)  # 4 for x, y, size, energy and 9 for the cluster data
+
+
 def test_ClusterVector(): 
     """Test ClusterVector""" 
 
