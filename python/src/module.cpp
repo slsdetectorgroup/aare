@@ -11,6 +11,8 @@
 #include "raw_master_file.hpp"
 #include "var_cluster.hpp"
 
+#include "jungfrau_data_file.hpp"
+
 // Pybind stuff
 #include <pybind11/pybind11.h>
 #include <pybind11/stl.h>
@@ -28,6 +30,7 @@ PYBIND11_MODULE(_aare, m) {
     define_pedestal_bindings<float>(m, "Pedestal_f");
     define_fit_bindings(m);
     define_interpolation_bindings(m);
+    define_jungfrau_data_file_io_bindings(m);
 
     define_cluster_file_io_bindings<Cluster<int, 3, 3>>(m, "Cluster3x3i");
     define_cluster_file_io_bindings<Cluster<double, 3, 3>>(m, "Cluster3x3d");

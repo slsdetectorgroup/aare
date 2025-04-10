@@ -2,8 +2,8 @@
 from . import _aare
 
 
-# from ._aare import File, RawMasterFile, RawSubFile
-# from ._aare import Pedestal_d, Pedestal_f, ClusterFinder, VarClusterFinder
+from ._aare import File, RawMasterFile, RawSubFile, JungfrauDataFile
+from ._aare import Pedestal_d, Pedestal_f, ClusterFinder, VarClusterFinder
 from ._aare import DetectorType
 from ._aare import ClusterFile_Cluster3x3i as ClusterFile
 from ._aare import hitmap
@@ -17,7 +17,7 @@ from .CtbRawFile import CtbRawFile
 from .RawFile import RawFile
 from .ScanParameters import ScanParameters
 
-from .utils import random_pixels, random_pixel, flat_list
+from .utils import random_pixels, random_pixel, flat_list, add_colorbar
 
 
 #make functions available in the top level API

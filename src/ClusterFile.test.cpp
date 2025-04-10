@@ -8,10 +8,9 @@
 using aare::Cluster;
 using aare::ClusterFile;
 
-TEST_CASE("Read one frame from a a cluster file", "[.integration]") {
+TEST_CASE("Read one frame from a a cluster file", "[.files]") {
     // We know that the frame has 97 clusters
-    auto fpath =
-        test_data_path() / "clusters" / "single_frame_97_clustrers.clust";
+    auto fpath = test_data_path() / "clust" / "single_frame_97_clustrers.clust";
     REQUIRE(std::filesystem::exists(fpath));
 
     ClusterFile<Cluster<int32_t, 3, 3>> f(fpath);
@@ -20,10 +19,9 @@ TEST_CASE("Read one frame from a a cluster file", "[.integration]") {
     REQUIRE(clusters.frame_number() == 135);
 }
 
-TEST_CASE("Read one frame using ROI", "[.integration]") {
+TEST_CASE("Read one frame using ROI", "[.files]") {
     // We know that the frame has 97 clusters
-    auto fpath =
-        test_data_path() / "clusters" / "single_frame_97_clustrers.clust";
+    auto fpath = test_data_path() / "clust" / "single_frame_97_clustrers.clust";
     REQUIRE(std::filesystem::exists(fpath));
 
     ClusterFile<Cluster<int32_t, 3, 3>> f(fpath);
@@ -47,10 +45,9 @@ TEST_CASE("Read one frame using ROI", "[.integration]") {
     }
 }
 
-TEST_CASE("Read clusters from single frame file", "[.integration]") {
+TEST_CASE("Read clusters from single frame file", "[.files]") {
 
-    auto fpath =
-        test_data_path() / "clusters" / "single_frame_97_clustrers.clust";
+    auto fpath = test_data_path() / "clust" / "single_frame_97_clustrers.clust";
     REQUIRE(std::filesystem::exists(fpath));
 
     SECTION("Read fewer clusters than available") {

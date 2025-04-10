@@ -20,9 +20,6 @@ AARE
     Requirements
     Consume
 
-
-
-
 .. toctree::
     :caption: Python API
     :maxdepth: 1
@@ -31,6 +28,7 @@ AARE
     pyCtbRawFile
     pyClusterFile
     pyClusterVector
+    pyJungfrauDataFile
     pyRawFile
     pyRawMasterFile
     pyVarClusterFinder
@@ -42,6 +40,7 @@ AARE
     :caption: C++ API
     :maxdepth: 1
     
+    algorithm
     NDArray
     NDView
     Frame
@@ -51,6 +50,7 @@ AARE
     ClusterFinderMT
     ClusterFile
     ClusterVector
+    JungfrauDataFile
     Pedestal
     RawFile
     RawSubFile
@@ -59,4 +59,8 @@ AARE
 
 
 
-
+.. toctree::
+    :caption: Developer
+    :maxdepth: 3
+    
+    Tests

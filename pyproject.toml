@@ -8,6 +8,7 @@ version = "2025.4.1"
 
 
 
+
 [tool.scikit-build]
 cmake.verbose = true
 
@@ -15,3 +16,8 @@ cmake.verbose = true
 AARE_PYTHON_BINDINGS = "ON"
 AARE_SYSTEM_LIBRARIES = "ON"
 AARE_INSTALL_PYTHONEXT = "ON"
+
+[tool.pytest.ini_options]
+markers = [
+    "files: marks tests that need additional data (deselect with '-m \"not files\"')",
+]
