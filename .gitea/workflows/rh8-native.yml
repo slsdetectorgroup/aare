@@ -13,7 +13,9 @@ jobs:
     container:
       image: gitea.psi.ch/images/rhel8-developer-gitea-actions
     steps:
-      - uses: actions/checkout@v4
+      # - uses: actions/checkout@v4
+      - name: Clone repository
+        run: git clone https://${{secrets.GITHUB_TOKEN}}@gitea.psi.ch/${{ github.repository }}.git .
 
 
       - name: Install dependencies
