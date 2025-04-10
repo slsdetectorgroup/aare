@@ -1,12 +1,13 @@
 
 find_package (Python 3.10 COMPONENTS Interpreter Development REQUIRED)
+set(PYBIND11_FINDPYTHON ON)
 
 # Download or find pybind11 depending on configuration
 if(AARE_FETCH_PYBIND11)
     FetchContent_Declare(
         pybind11
         GIT_REPOSITORY https://github.com/pybind/pybind11
-        GIT_TAG        v2.13.0
+        GIT_TAG        v2.13.6
     )
     FetchContent_MakeAvailable(pybind11)
 else()
