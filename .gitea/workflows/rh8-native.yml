@@ -1,6 +1,7 @@
 name: Build on RHEL8
 
 on:
+  push:
   workflow_dispatch:
 
 permissions:
