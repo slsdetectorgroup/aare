@@ -229,6 +229,7 @@ ClusterFile<ClusterType, Enable>::read_clusters_without_cut(size_t n_clusters) {
     }
 
     ClusterVector<ClusterType> clusters(n_clusters);
+    clusters.resize(n_clusters);
 
     int32_t iframe = 0; // frame number needs to be 4 bytes!
     size_t nph_read = 0;
@@ -283,7 +284,7 @@ template <typename ClusterType, typename Enable>
 ClusterVector<ClusterType>
 ClusterFile<ClusterType, Enable>::read_clusters_with_cut(size_t n_clusters) {
     ClusterVector<ClusterType> clusters;
-    clusters.reserve(n_clusters);
+    clusters.resize(n_clusters);
 
     // if there are photons left from previous frame read them first
     if (m_num_left) {
