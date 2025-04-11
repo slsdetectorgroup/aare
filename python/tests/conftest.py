@@ -25,5 +25,10 @@ def pytest_collection_modifyitems(config, items):
 
 @pytest.fixture
 def test_data_path():
-    return Path(os.environ["AARE_TEST_DATA"])
+    env_value = os.environ.get("AARE_TEST_DATA")
+    if not env_value:
+        raise RuntimeError("Environment variable AARE_TEST_DATA is not set or is empty")
+
+    return Path(env_value)
+
 

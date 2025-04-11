@@ -8,31 +8,55 @@
 #include <pybind11/stl.h>
 
 namespace py = pybind11;
+
+template <typename Type, uint8_t CoordSizeX, uint8_t CoordSizeY,
+          typename CoordType = uint16_t>
+void register_interpolate(py::class_<aare::Interpolator> &interpolator) {
+
+    using ClusterType = Cluster<Type, CoordSizeX, CoordSizeY, CoordType>;
+
+    interpolator.def("interpolate",
+                     [](aare::Interpolator &self,
+                        const ClusterVector<ClusterType> &clusters) {
+                         auto photons = self.interpolate<ClusterType>(clusters);
+                         auto *ptr = new std::vector<Photon>{photons};
+                         return return_vector(ptr);
+                     });
+}
+
 void define_interpolation_bindings(py::module &m) {
 
-    PYBIND11_NUMPY_DTYPE(aare::Photon, x,y,energy);
+    PYBIND11_NUMPY_DTYPE(aare::Photon, x, y, energy);
 
-    py::class_<aare::Interpolator>(m, "Interpolator")
-        .def(py::init([](py::array_t<double, py::array::c_style | py::array::forcecast> etacube, py::array_t<double> xbins,
-                         py::array_t<double> ybins, py::array_t<double> ebins) {
-            return Interpolator(make_view_3d(etacube), make_view_1d(xbins),
-                                make_view_1d(ybins), make_view_1d(ebins));
-        }))
-        .def("get_ietax", [](Interpolator& self){
-            auto*ptr = new NDArray<double,3>{};
-            *ptr = self.get_ietax();
-            return return_image_data(ptr);
-        })
-        .def("get_ietay", [](Interpolator& self){
-            auto*ptr = new NDArray<double,3>{};
-            *ptr = self.get_ietay();
-            return return_image_data(ptr);
-        })
-        .def("interpolate", [](Interpolator& self, const ClusterVector<int32_t>& clusters){
-            auto photons = self.interpolate(clusters);
-            auto* ptr = new std::vector<Photon>{photons};
-            return return_vector(ptr);
-        });
+    auto interpolator =
+        py::class_<aare::Interpolator>(m, "Interpolator")
+            .def(py::init([](py::array_t<double, py::array::c_style |
+                                                     py::array::forcecast>
+                                 etacube,
+                             py::array_t<double> xbins,
+                             py::array_t<double> ybins,
+                             py::array_t<double> ebins) {
+                return Interpolator(make_view_3d(etacube), make_view_1d(xbins),
+                                    make_view_1d(ybins), make_view_1d(ebins));
+            }))
+            .def("get_ietax",
+                 [](Interpolator &self) {
+                     auto *ptr = new NDArray<double, 3>{};
+                     *ptr = self.get_ietax();
+                     return return_image_data(ptr);
+                 })
+            .def("get_ietay", [](Interpolator &self) {
+                auto *ptr = new NDArray<double, 3>{};
+                *ptr = self.get_ietay();
+                return return_image_data(ptr);
+            });
+
+    register_interpolate<int, 3, 3, uint16_t>(interpolator);
+    register_interpolate<float, 3, 3, uint16_t>(interpolator);
+    register_interpolate<double, 3, 3, uint16_t>(interpolator);
+    register_interpolate<int, 2, 2, uint16_t>(interpolator);
+    register_interpolate<float, 2, 2, uint16_t>(interpolator);
+    register_interpolate<double, 2, 2, uint16_t>(interpolator);
 
     // TODO! Evaluate without converting to double
     m.def(

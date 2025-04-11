@@ -1,15 +1,16 @@
 #pragma once
 #include "aare/core/defs.hpp"
 #include <filesystem>
-#include <string>
 #include <fmt/format.h>
+#include <string>
 
 namespace aare {
 struct ClusterHeader {
     int32_t frame_number;
     int32_t n_clusters;
     std::string to_string() const {
-        return "frame_number: " + std::to_string(frame_number) + ", n_clusters: " + std::to_string(n_clusters);
+        return "frame_number: " + std::to_string(frame_number) +
+               ", n_clusters: " + std::to_string(n_clusters);
     }
 };
 
@@ -24,7 +25,8 @@ struct ClusterV2_ {
                 data_str += std::to_string(d) + ", ";
             }
             data_str += "]";
-            return "x: " + std::to_string(x) + ", y: " + std::to_string(y) + ", data: " + data_str;
+            return "x: " + std::to_string(x) + ", y: " + std::to_string(y) +
+                   ", data: " + data_str;
         }
         return "x: " + std::to_string(x) + ", y: " + std::to_string(y);
     }
@@ -34,27 +36,31 @@ struct ClusterV2 {
     ClusterV2_ cluster;
     int32_t frame_number;
     std::string to_string() const {
-        return "frame_number: " + std::to_string(frame_number) + ", " + cluster.to_string();
+        return "frame_number: " + std::to_string(frame_number) + ", " +
+               cluster.to_string();
     }
 };
 
 /**
  * @brief
- * important not: fp always points to the clusters header and does not point to individual clusters
+ * important not: fp always points to the clusters header and does not point to
+ * individual clusters
  *
  */
 class ClusterFileV2 {
-    std::filesystem::path m_fpath; 
+    std::filesystem::path m_fpath;
     std::string m_mode;
     FILE *fp{nullptr};
 
-    void check_open(){
+    void check_open() {
         if (!fp)
-            throw std::runtime_error(fmt::format("File: {} not open", m_fpath.string()));
+            throw std::runtime_error(
+                fmt::format("File: {} not open", m_fpath.string()));
     }
 
   public:
-    ClusterFileV2(std::filesystem::path const &fpath, std::string const &mode): m_fpath(fpath), m_mode(mode) {
+    ClusterFileV2(std::filesystem::path const &fpath, std::string const &mode)
+        : m_fpath(fpath), m_mode(mode) {
         if (m_mode != "r" && m_mode != "w")
             throw std::invalid_argument("mode must be 'r' or 'w'");
         if (m_mode == "r" && !std::filesystem::exists(m_fpath))
@@ -77,7 +83,7 @@ class ClusterFileV2 {
         check_open();
 
         ClusterHeader header;
-        fread(&header, sizeof(ClusterHeader), 1, fp); 
+        fread(&header, sizeof(ClusterHeader), 1, fp);
         std::vector<ClusterV2_> clusters_(header.n_clusters);
         fread(clusters_.data(), sizeof(ClusterV2_), header.n_clusters, fp);
         std::vector<ClusterV2> clusters;
@@ -117,7 +123,7 @@ class ClusterFileV2 {
 
     size_t write(std::vector<std::vector<ClusterV2>> const &clusters) {
         check_open();
-        if (m_mode != "w") 
+        if (m_mode != "w")
             throw std::runtime_error("File not opened in write mode");
 
         size_t n_clusters = 0;

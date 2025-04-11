@@ -10,6 +10,7 @@
 #include "aare/NDView.hpp"
 
 namespace py = pybind11;
+using namespace aare;
 
 // Pass image data back to python as a numpy array
 template <typename T, int64_t Ndim>
@@ -40,25 +41,46 @@ template <typename T> py::array return_vector(std::vector<T> *vec) {
 }
 
 // todo rewrite generic
-template <class T, int Flags> auto get_shape_3d(const py::array_t<T, Flags>& arr) {
+template <class T, int Flags>
+auto get_shape_3d(const py::array_t<T, Flags> &arr) {
     return aare::Shape<3>{arr.shape(0), arr.shape(1), arr.shape(2)};
 }
 
-template <class T, int Flags> auto make_view_3d(py::array_t<T, Flags>& arr) {
+template <class T, int Flags> auto make_view_3d(py::array_t<T, Flags> &arr) {
     return aare::NDView<T, 3>(arr.mutable_data(), get_shape_3d<T, Flags>(arr));
 }
 
-template <class T, int Flags> auto get_shape_2d(const py::array_t<T, Flags>& arr) {
+template <class T, int Flags>
+auto get_shape_2d(const py::array_t<T, Flags> &arr) {
     return aare::Shape<2>{arr.shape(0), arr.shape(1)};
 }
 
-template <class T, int Flags> auto get_shape_1d(const py::array_t<T, Flags>& arr) {
+template <class T, int Flags>
+auto get_shape_1d(const py::array_t<T, Flags> &arr) {
     return aare::Shape<1>{arr.shape(0)};
 }
 
-template <class T, int Flags> auto make_view_2d(py::array_t<T, Flags>& arr) {
+template <class T, int Flags> auto make_view_2d(py::array_t<T, Flags> &arr) {
     return aare::NDView<T, 2>(arr.mutable_data(), get_shape_2d<T, Flags>(arr));
 }
-template <class T, int Flags> auto make_view_1d(py::array_t<T, Flags>& arr) {
+template <class T, int Flags> auto make_view_1d(py::array_t<T, Flags> &arr) {
     return aare::NDView<T, 1>(arr.mutable_data(), get_shape_1d<T, Flags>(arr));
 }
+
+template <typename ClusterType> struct fmt_format_trait; // forward declaration
+
+template <typename T, uint8_t ClusterSizeX, uint8_t ClusterSizeY,
+          typename CoordType>
+struct fmt_format_trait<Cluster<T, ClusterSizeX, ClusterSizeY, CoordType>> {
+
+    static std::string value() {
+        return fmt::format("T{{{}:x:{}:y:{}:data:}}",
+                           py::format_descriptor<CoordType>::format(),
+                           py::format_descriptor<CoordType>::format(),
+                           fmt::format("({},{}){}", ClusterSizeX, ClusterSizeY,
+                                       py::format_descriptor<T>::format()));
+    }
+};
+
+template <typename ClusterType>
+auto fmt_format = fmt_format_trait<ClusterType>::value();
