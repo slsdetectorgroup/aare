@@ -1,5 +1,5 @@
 
-find_package (Python 3.10 COMPONENTS Interpreter Development REQUIRED)
+find_package (Python 3.10 COMPONENTS Interpreter Development.Module REQUIRED)
 set(PYBIND11_FINDPYTHON ON) # Needed for RH8
 
 # Download or find pybind11 depending on configuration

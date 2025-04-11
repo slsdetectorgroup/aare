@@ -17,7 +17,7 @@ Testing/
 ctbDict.cpp
 ctbDict.h
 
-
+wheelhouse/
 
 *.pyc
 */__pycache__/*

@@ -14,8 +14,8 @@ cmake.verbose = true
 
 [tool.scikit-build.cmake.define]
 AARE_PYTHON_BINDINGS = "ON"
-AARE_SYSTEM_LIBRARIES = "ON"
 AARE_INSTALL_PYTHONEXT = "ON"
+
 
 [tool.pytest.ini_options]
 markers = [
