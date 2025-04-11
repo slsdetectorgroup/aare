@@ -18,6 +18,7 @@ ctbDict.cpp
 ctbDict.h
 
 wheelhouse/
+dist/
 
 *.pyc
 */__pycache__/*
