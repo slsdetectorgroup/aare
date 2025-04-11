@@ -236,8 +236,7 @@ ClusterFile<ClusterType, Enable>::read_clusters_without_cut(size_t n_clusters) {
     uint32_t nn = m_num_left;
     uint32_t nph = m_num_left; // number of clusters in frame needs to be 4
 
-    // auto buf = reinterpret_cast<Cluster3x3 *>(clusters.data());
-    auto buf = reinterpret_cast<char*>(clusters.data());
+    auto buf = clusters.data();
     // if there are photons left from previous frame read them first
     if (nph) {
         if (nph > n_clusters) {
@@ -247,8 +246,7 @@ ClusterFile<ClusterType, Enable>::read_clusters_without_cut(size_t n_clusters) {
         } else {
             nn = nph;
         }
-        nph_read += fread((buf + nph_read * clusters.item_size()),
-                          clusters.item_size(), nn, fp);
+        nph_read += fread((buf + nph_read), clusters.item_size(), nn, fp);
         m_num_left = nph - nn; // write back the number of photons left
     }
 
@@ -263,8 +261,8 @@ ClusterFile<ClusterType, Enable>::read_clusters_without_cut(size_t n_clusters) {
                 else
                     nn = nph;
 
-                nph_read += fread((buf + nph_read * clusters.item_size()),
-                                  clusters.item_size(), nn, fp);
+                nph_read +=
+                    fread((buf + nph_read), clusters.item_size(), nn, fp);
                 m_num_left = nph - nn;
             }
             if (nph_read >= n_clusters)
