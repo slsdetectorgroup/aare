@@ -4,13 +4,24 @@ build-backend = "scikit_build_core.build"
 
 [project]
 name = "aare"
-version = "2025.4.1"
+version = "2025.4.2"
+requires-python = ">=3.11"
+dependencies = [
+    "numpy",
+    "matplotlib",
+]
 
+
+[tool.cibuildwheel]
+
+build = "cp{311,312,313}-manylinux_x86_64"
 
 
 
 [tool.scikit-build]
-cmake.verbose = true
+build.verbose = true
+cmake.build-type = "Release"
+install.components = ["python"]
 
 [tool.scikit-build.cmake.define]
 AARE_PYTHON_BINDINGS = "ON"

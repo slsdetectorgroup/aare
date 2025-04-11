@@ -59,10 +59,16 @@ endforeach(FILE ${PYTHON_EXAMPLES})
 
 
 if(AARE_INSTALL_PYTHONEXT)
-    install(TARGETS _aare
+    install(
+        TARGETS _aare
         EXPORT "${TARGETS_EXPORT_NAME}"
         LIBRARY DESTINATION aare
+        COMPONENT python
     )
 
-    install(FILES ${PYTHON_FILES} DESTINATION aare)
+    install(
+        FILES ${PYTHON_FILES} 
+        DESTINATION aare
+        COMPONENT python
+        )
 endif()
