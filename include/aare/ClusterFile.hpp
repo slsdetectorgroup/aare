@@ -229,13 +229,13 @@ ClusterFile<ClusterType, Enable>::read_clusters_without_cut(size_t n_clusters) {
     }
 
     ClusterVector<ClusterType> clusters(n_clusters);
+    clusters.resize(n_clusters);
 
     int32_t iframe = 0; // frame number needs to be 4 bytes!
     size_t nph_read = 0;
     uint32_t nn = m_num_left;
     uint32_t nph = m_num_left; // number of clusters in frame needs to be 4
 
-    // auto buf = reinterpret_cast<Cluster3x3 *>(clusters.data());
     auto buf = clusters.data();
     // if there are photons left from previous frame read them first
     if (nph) {
@@ -246,8 +246,7 @@ ClusterFile<ClusterType, Enable>::read_clusters_without_cut(size_t n_clusters) {
         } else {
             nn = nph;
         }
-        nph_read += fread((buf + nph_read * clusters.item_size()),
-                          clusters.item_size(), nn, fp);
+        nph_read += fread((buf + nph_read), clusters.item_size(), nn, fp);
         m_num_left = nph - nn; // write back the number of photons left
     }
 
@@ -262,8 +261,8 @@ ClusterFile<ClusterType, Enable>::read_clusters_without_cut(size_t n_clusters) {
                 else
                     nn = nph;
 
-                nph_read += fread((buf + nph_read * clusters.item_size()),
-                                  clusters.item_size(), nn, fp);
+                nph_read +=
+                    fread((buf + nph_read), clusters.item_size(), nn, fp);
                 m_num_left = nph - nn;
             }
             if (nph_read >= n_clusters)
@@ -283,7 +282,7 @@ template <typename ClusterType, typename Enable>
 ClusterVector<ClusterType>
 ClusterFile<ClusterType, Enable>::read_clusters_with_cut(size_t n_clusters) {
     ClusterVector<ClusterType> clusters;
-    clusters.reserve(n_clusters);
+    clusters.resize(n_clusters);
 
     // if there are photons left from previous frame read them first
     if (m_num_left) {

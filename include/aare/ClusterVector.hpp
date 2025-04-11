@@ -297,7 +297,7 @@ class ClusterVector<Cluster<T, ClusterSizeX, ClusterSizeY, CoordType>> {
      * @param frame_number frame number of the clusters. Default is 0, which is
      * also used to indicate that the clusters come from many frames
      */
-    ClusterVector(size_t capacity = 1024, uint64_t frame_number = 0)
+    ClusterVector(size_t capacity = 300, uint64_t frame_number = 0)
         : m_frame_number(frame_number) {
         m_data.reserve(capacity);
     }

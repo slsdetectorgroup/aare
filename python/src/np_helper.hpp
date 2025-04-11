@@ -74,10 +74,10 @@ template <typename T, uint8_t ClusterSizeX, uint8_t ClusterSizeY,
 struct fmt_format_trait<Cluster<T, ClusterSizeX, ClusterSizeY, CoordType>> {
 
     static std::string value() {
-        return fmt::format("T{{{}:x;{}:y;{}:data;}}",
+        return fmt::format("T{{{}:x:{}:y:{}:data:}}",
                            py::format_descriptor<CoordType>::format(),
                            py::format_descriptor<CoordType>::format(),
-                           fmt::format("{}{}", ClusterSizeX * ClusterSizeY,
+                           fmt::format("({},{}){}", ClusterSizeX, ClusterSizeY,
                                        py::format_descriptor<T>::format()));
     }
 };

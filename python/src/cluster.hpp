@@ -18,6 +18,9 @@ using pd_type = double;
 
 using namespace aare;
 
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wunused-parameter"
+
 template <typename Type, uint8_t ClusterSizeX, uint8_t ClusterSizeY,
           typename CoordType>
 void define_cluster(py::module &m, const std::string &typestr) {
@@ -84,7 +87,9 @@ void define_cluster_vector(py::module &m, const std::string &typestr) {
         .def_property_readonly("size", &ClusterVector<ClusterType>::size)
         .def("item_size", &ClusterVector<ClusterType>::item_size)
         .def_property_readonly("fmt",
-                               [typestr]() { return fmt_format<ClusterType>; })
+                               [typestr](ClusterVector<ClusterType> &self) {
+                                   return fmt_format<ClusterType>;
+                               })
 
         .def_property_readonly("cluster_size_x",
                                &ClusterVector<ClusterType>::cluster_size_x)
@@ -268,3 +273,4 @@ void define_cluster_finder_bindings(py::module &m, const std::string &typestr) {
               return hitmap;
           });
 }
+#pragma GCC diagnostic pop
