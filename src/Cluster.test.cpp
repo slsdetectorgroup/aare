@@ -26,3 +26,9 @@ TEST_CASE("Correct Instantiation of Cluster and ClusterVector",
     CHECK(not is_cluster_v<int>);
     CHECK(is_cluster_v<Cluster<int, 3, 3>>);
 }
+
+TEST_CASE("Test sum of Cluster", "[.cluster]") {
+    Cluster<int, 2, 2> cluster{0, 0, {1, 2, 3, 4}};
+
+    CHECK(cluster.sum() == 10);
+}

@@ -83,6 +83,17 @@ void define_cluster_vector(py::module &m, const std::string &typestr) {
                  self.push_back(cluster);
              })
 
+        .def("sum",
+             [](ClusterVector<ClusterType> &self) {
+                 auto *vec = new std::vector<Type>(self.sum());
+                 return return_vector(vec);
+             })
+        .def("sum_2x2",
+             [](ClusterVector<ClusterType> &self) {
+                 auto *vec = new std::vector<Type>(self.sum_2x2());
+                 return return_vector(vec);
+             })
+
         // implement push_back
         .def_property_readonly("size", &ClusterVector<ClusterType>::size)
         .def("item_size", &ClusterVector<ClusterType>::item_size)

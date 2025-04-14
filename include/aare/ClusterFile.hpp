@@ -39,9 +39,10 @@ template <typename ClusterType,
           typename Enable = std::enable_if_t<is_cluster_v<ClusterType>>>
 class ClusterFile {
     FILE *fp{};
+    const std::string m_filename{};
     uint32_t m_num_left{};    /*Number of photons left in frame*/
     size_t m_chunk_size{};    /*Number of clusters to read at a time*/
-    const std::string m_mode; /*Mode to open the file in*/
+    std::string m_mode;       /*Mode to open the file in*/
     std::optional<ROI> m_roi; /*Region of interest, will be applied if set*/
     std::optional<NDArray<int32_t, 2>>
         m_noise_map; /*Noise map to cut photons, will be applied if set*/
@@ -115,6 +116,11 @@ class ClusterFile {
      */
     void close();
 
+    /** @brief Open the file in specific mode
+     *
+     */
+    void open(const std::string &mode);
+
   private:
     ClusterVector<ClusterType> read_clusters_with_cut(size_t n_clusters);
     ClusterVector<ClusterType> read_clusters_without_cut(size_t n_clusters);
@@ -128,25 +134,25 @@ template <typename ClusterType, typename Enable>
 ClusterFile<ClusterType, Enable>::ClusterFile(
     const std::filesystem::path &fname, size_t chunk_size,
     const std::string &mode)
-    : m_chunk_size(chunk_size), m_mode(mode) {
+    : m_filename(fname.string()), m_chunk_size(chunk_size), m_mode(mode) {
 
     if (mode == "r") {
-        fp = fopen(fname.c_str(), "rb");
+        fp = fopen(m_filename.c_str(), "rb");
         if (!fp) {
             throw std::runtime_error("Could not open file for reading: " +
-                                     fname.string());
+                                     m_filename);
         }
     } else if (mode == "w") {
-        fp = fopen(fname.c_str(), "wb");
+        fp = fopen(m_filename.c_str(), "wb");
         if (!fp) {
             throw std::runtime_error("Could not open file for writing: " +
-                                     fname.string());
+                                     m_filename);
         }
     } else if (mode == "a") {
-        fp = fopen(fname.c_str(), "ab");
+        fp = fopen(m_filename.c_str(), "ab");
         if (!fp) {
             throw std::runtime_error("Could not open file for appending: " +
-                                     fname.string());
+                                     m_filename);
         }
     } else {
         throw std::runtime_error("Unsupported mode: " + mode);
@@ -165,6 +171,39 @@ void ClusterFile<ClusterType, Enable>::close() {
         fp = nullptr;
     }
 }
+
+template <typename ClusterType, typename Enable>
+void ClusterFile<ClusterType, Enable>::open(const std::string &mode) {
+    if (fp) {
+        close();
+    }
+
+    if (mode == "r") {
+        fp = fopen(m_filename.c_str(), "rb");
+        if (!fp) {
+            throw std::runtime_error("Could not open file for reading: " +
+                                     m_filename);
+        }
+        m_mode = "r";
+    } else if (mode == "w") {
+        fp = fopen(m_filename.c_str(), "wb");
+        if (!fp) {
+            throw std::runtime_error("Could not open file for writing: " +
+                                     m_filename);
+        }
+        m_mode = "w";
+    } else if (mode == "a") {
+        fp = fopen(m_filename.c_str(), "ab");
+        if (!fp) {
+            throw std::runtime_error("Could not open file for appending: " +
+                                     m_filename);
+        }
+        m_mode = "a";
+    } else {
+        throw std::runtime_error("Unsupported mode: " + mode);
+    }
+}
+
 template <typename ClusterType, typename Enable>
 void ClusterFile<ClusterType, Enable>::set_roi(ROI roi) {
     m_roi = roi;
@@ -197,10 +236,7 @@ void ClusterFile<ClusterType, Enable>::write_frame(
     if (m_mode != "w" && m_mode != "a") {
         throw std::runtime_error("File not opened for writing");
     }
-    if (!(clusters.cluster_size_x() == 3) &&
-        !(clusters.cluster_size_y() == 3)) {
-        throw std::runtime_error("Only 3x3 clusters are supported");
-    }
+
     int32_t frame_number = clusters.frame_number();
     fwrite(&frame_number, sizeof(frame_number), 1, fp);
     uint32_t n_clusters = clusters.size();
@@ -270,7 +306,7 @@ ClusterFile<ClusterType, Enable>::read_clusters_without_cut(size_t n_clusters) {
         }
     }
 
-    // Resize the vector to the number of clusters.
+    // Resize the vector to the number o f clusters.
     // No new allocation, only change bounds.
     clusters.resize(nph_read);
     if (m_gain_map)
@@ -282,7 +318,7 @@ template <typename ClusterType, typename Enable>
 ClusterVector<ClusterType>
 ClusterFile<ClusterType, Enable>::read_clusters_with_cut(size_t n_clusters) {
     ClusterVector<ClusterType> clusters;
-    clusters.resize(n_clusters);
+    clusters.reserve(n_clusters);
 
     // if there are photons left from previous frame read them first
     if (m_num_left) {
@@ -375,11 +411,13 @@ ClusterFile<ClusterType, Enable>::read_frame_without_cut() {
     ClusterVector<ClusterType> clusters(n_clusters);
     clusters.set_frame_number(frame_number);
 
+    clusters.resize(n_clusters);
+
     if (fread(clusters.data(), clusters.item_size(), n_clusters, fp) !=
         static_cast<size_t>(n_clusters)) {
         throw std::runtime_error(LOCATION + "Could not read clusters");
     }
-    clusters.resize(n_clusters);
+
     if (m_gain_map)
         m_gain_map->apply_gain_map(clusters);
     return clusters;
