@@ -66,6 +66,7 @@ void define_cluster(py::module &m, const std::string &typestr) {
 
 
 
+
 template <typename T, uint8_t ClusterSizeX, uint8_t ClusterSizeY,
           typename CoordType = uint16_t>
 void define_cluster_finder_mt_bindings(py::module &m,

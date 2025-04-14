@@ -33,7 +33,7 @@ template <typename T> struct Eta2 {
 };
 
 /**
- * @brief Calculate the eta2 values for all clusters in a Clsutervector
+ * @brief Calculate the eta2 values for all clusters in a Clustervector
  */
 template <typename ClusterType,
           typename = std::enable_if_t<is_cluster_v<ClusterType>>>
