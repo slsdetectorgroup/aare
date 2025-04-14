@@ -282,7 +282,7 @@ template <typename ClusterType, typename Enable>
 ClusterVector<ClusterType>
 ClusterFile<ClusterType, Enable>::read_clusters_with_cut(size_t n_clusters) {
     ClusterVector<ClusterType> clusters;
-    clusters.resize(n_clusters);
+    clusters.reserve(n_clusters);
 
     // if there are photons left from previous frame read them first
     if (m_num_left) {

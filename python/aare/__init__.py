@@ -11,8 +11,12 @@ from ._aare import ROI
 
 # from ._aare import ClusterFinderMT, ClusterCollector, ClusterFileSink, ClusterVector_i
 
+from .ClusterFinder import ClusterFinder
+from .ClusterVector import ClusterVector
+
 from ._aare import fit_gaus, fit_pol1
 from ._aare import Interpolator
+from ._aare import calculate_eta2
 from .CtbRawFile import CtbRawFile
 from .RawFile import RawFile
 from .ScanParameters import ScanParameters

@@ -1,4 +1,9 @@
 // Files with bindings to the different classes
+
+//New style file naming
+#include "bind_ClusterVector.hpp"
+
+//TODO! migrate the other names
 #include "cluster.hpp"
 #include "cluster_file.hpp"
 #include "ctb_raw_file.hpp"
@@ -39,12 +44,12 @@ PYBIND11_MODULE(_aare, m) {
     define_cluster_file_io_bindings<float, 2, 2, uint16_t>(m, "Cluster2x2f");
     define_cluster_file_io_bindings<double, 2, 2, uint16_t>(m, "Cluster2x2d");
 
-    define_cluster_vector<int, 3, 3, uint16_t>(m, "Cluster3x3i");
-    define_cluster_vector<double, 3, 3, uint16_t>(m, "Cluster3x3d");
-    define_cluster_vector<float, 3, 3, uint16_t>(m, "Cluster3x3f");
-    define_cluster_vector<int, 2, 2, uint16_t>(m, "Cluster2x2i");
-    define_cluster_vector<double, 2, 2, uint16_t>(m, "Cluster2x2d");
-    define_cluster_vector<float, 2, 2, uint16_t>(m, "Cluster2x2f");
+    define_ClusterVector<int, 3, 3, uint16_t>(m, "Cluster3x3i");
+    define_ClusterVector<double, 3, 3, uint16_t>(m, "Cluster3x3d");
+    define_ClusterVector<float, 3, 3, uint16_t>(m, "Cluster3x3f");
+    define_ClusterVector<int, 2, 2, uint16_t>(m, "Cluster2x2i");
+    define_ClusterVector<double, 2, 2, uint16_t>(m, "Cluster2x2d");
+    define_ClusterVector<float, 2, 2, uint16_t>(m, "Cluster2x2f");
 
     define_cluster_finder_bindings<int, 3, 3, uint16_t>(m, "Cluster3x3i");
     define_cluster_finder_bindings<double, 3, 3, uint16_t>(m, "Cluster3x3d");
