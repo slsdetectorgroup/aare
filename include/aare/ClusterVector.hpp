@@ -162,14 +162,6 @@ class ClusterVector<Cluster<T, ClusterSizeX, ClusterSizeY, CoordType>> {
     void set_frame_number(int32_t frame_number) {
         m_frame_number = frame_number;
     }
-
-    std::vector<T> sum() {
-        std::vector<T> sums(m_data.size());
-        for (size_t i = 0; i < m_data.size(); i++) {
-            sums[i] = m_data[i].sum();
-        }
-        return sums;
-    }
 };
 
 } // namespace aare
