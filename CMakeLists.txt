@@ -384,7 +384,6 @@ set(SourceFiles
     ${CMAKE_CURRENT_SOURCE_DIR}/src/utils/task.cpp
 )
 
-
 add_library(aare_core STATIC ${SourceFiles})
 target_include_directories(aare_core PUBLIC 
     "$<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>" 

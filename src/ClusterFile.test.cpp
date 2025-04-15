@@ -2,21 +2,29 @@
 #include "test_config.hpp"
 
 #include "aare/defs.hpp"
+#include <algorithm>
 #include <catch2/catch_test_macros.hpp>
 #include <filesystem>
 
 using aare::Cluster;
 using aare::ClusterFile;
+using aare::ClusterVector;
 
-TEST_CASE("Read one frame from a a cluster file", "[.files]") {
+TEST_CASE("Read one frame from a cluster file", "[.files]") {
     // We know that the frame has 97 clusters
     auto fpath = test_data_path() / "clust" / "single_frame_97_clustrers.clust";
     REQUIRE(std::filesystem::exists(fpath));
 
     ClusterFile<Cluster<int32_t, 3, 3>> f(fpath);
     auto clusters = f.read_frame();
-    REQUIRE(clusters.size() == 97);
-    REQUIRE(clusters.frame_number() == 135);
+    CHECK(clusters.size() == 97);
+    CHECK(clusters.frame_number() == 135);
+    CHECK(clusters.at(0).x == 1);
+    CHECK(clusters.at(0).y == 200);
+    int32_t expected_cluster_data[] = {0, 1, 2, 3, 4, 5, 6, 7, 8};
+    CHECK(std::equal(std::begin(clusters.at(0).data),
+                     std::end(clusters.at(0).data),
+                     std::begin(expected_cluster_data)));
 }
 
 TEST_CASE("Read one frame using ROI", "[.files]") {
@@ -43,6 +51,13 @@ TEST_CASE("Read one frame using ROI", "[.files]") {
         REQUIRE(c.y >= roi.ymin);
         REQUIRE(c.y <= roi.ymax);
     }
+
+    CHECK(clusters.at(0).x == 1);
+    CHECK(clusters.at(0).y == 200);
+    int32_t expected_cluster_data[] = {0, 1, 2, 3, 4, 5, 6, 7, 8};
+    CHECK(std::equal(std::begin(clusters.at(0).data),
+                     std::end(clusters.at(0).data),
+                     std::begin(expected_cluster_data)));
 }
 
 TEST_CASE("Read clusters from single frame file", "[.files]") {
@@ -154,6 +169,12 @@ TEST_CASE("Read clusters from single frame file", "[.files]") {
         auto clusters = f.read_clusters(50);
         REQUIRE(clusters.size() == 50);
         REQUIRE(clusters.frame_number() == 135);
+        int32_t expected_cluster_data[] = {0, 1, 2, 3, 4, 5, 6, 7, 8};
+        REQUIRE(clusters.at(0).x == 1);
+        REQUIRE(clusters.at(0).y == 200);
+        CHECK(std::equal(std::begin(clusters.at(0).data),
+                         std::end(clusters.at(0).data),
+                         std::begin(expected_cluster_data)));
     }
     SECTION("Read more clusters than available") {
         ClusterFile<Cluster<int32_t, 3, 3>> f(fpath);
@@ -161,24 +182,169 @@ TEST_CASE("Read clusters from single frame file", "[.files]") {
         auto clusters = f.read_clusters(100);
         REQUIRE(clusters.size() == 97);
         REQUIRE(clusters.frame_number() == 135);
+        int32_t expected_cluster_data[] = {0, 1, 2, 3, 4, 5, 6, 7, 8};
+        REQUIRE(clusters.at(0).x == 1);
+        REQUIRE(clusters.at(0).y == 200);
+        CHECK(std::equal(std::begin(clusters.at(0).data),
+                         std::end(clusters.at(0).data),
+                         std::begin(expected_cluster_data)));
     }
     SECTION("Read all clusters") {
         ClusterFile<Cluster<int32_t, 3, 3>> f(fpath);
         auto clusters = f.read_clusters(97);
         REQUIRE(clusters.size() == 97);
         REQUIRE(clusters.frame_number() == 135);
-
         REQUIRE(clusters.at(0).x == 1);
         REQUIRE(clusters.at(0).y == 200);
+        int32_t expected_cluster_data[] = {0, 1, 2, 3, 4, 5, 6, 7, 8};
+        CHECK(std::equal(std::begin(clusters.at(0).data),
+                         std::end(clusters.at(0).data),
+                         std::begin(expected_cluster_data)));
     }
 }
 
-TEST_CASE("Read clusters", "[.files]") {
-    // beam_En700eV_-40deg_300V_10us_d0_f0_100.clust
-    auto fpath = test_data_path() / "clust" /
-                 "beam_En700eV_-40deg_300V_10us_d0_f0_100.clust";
+TEST_CASE("Read clusters from single frame file with ROI", "[.files]") {
+    auto fpath = test_data_path() / "clust" / "single_frame_97_clustrers.clust";
     REQUIRE(std::filesystem::exists(fpath));
 
     ClusterFile<Cluster<int32_t, 3, 3>> f(fpath);
-    auto clusters = f.read_clusters(500);
+
+    aare::ROI roi;
+    roi.xmin = 0;
+    roi.xmax = 50;
+    roi.ymin = 200;
+    roi.ymax = 249;
+    f.set_roi(roi);
+
+    auto clusters = f.read_clusters(10);
+
+    CHECK(clusters.size() == 10);
+    CHECK(clusters.frame_number() == 135);
+    CHECK(clusters.at(0).x == 1);
+    CHECK(clusters.at(0).y == 200);
+    int32_t expected_cluster_data[] = {0, 1, 2, 3, 4, 5, 6, 7, 8};
+    CHECK(std::equal(std::begin(clusters.at(0).data),
+                     std::end(clusters.at(0).data),
+                     std::begin(expected_cluster_data)));
+}
+
+TEST_CASE("Read cluster from multiple frame file", "[.files]") {
+
+    using ClusterType = Cluster<double, 2, 2>;
+
+    auto fpath =
+        test_data_path() / "clust" / "Two_frames_2x2double_test_clusters.clust";
+
+    REQUIRE(std::filesystem::exists(fpath));
+
+    // Two_frames_2x2double_test_clusters.clust
+    //  frame number, num_clusters 0, 4
+    //[10, 20], {0. ,0., 0., 0.}
+    //[11, 30], {1., 1., 1., 1.}
+    //[12, 40], {2., 2., 2., 2.}
+    //[13, 50], {3., 3., 3., 3.}
+    //  1,4
+    //[10, 20], {4., 4., 4., 4.}
+    //[11, 30], {5., 5., 5., 5.}
+    //[12, 40], {6., 6., 6., 6.}
+    //[13, 50], {7., 7., 7., 7.}
+
+    SECTION("Read clusters from both frames") {
+        ClusterFile<ClusterType> f(fpath);
+        auto clusters = f.read_clusters(2);
+        REQUIRE(clusters.size() == 2);
+        REQUIRE(clusters.frame_number() == 0);
+
+        auto clusters1 = f.read_clusters(3);
+
+        REQUIRE(clusters1.size() == 3);
+        REQUIRE(clusters1.frame_number() == 1);
+    }
+
+    SECTION("Read all clusters") {
+        ClusterFile<ClusterType> f(fpath);
+        auto clusters = f.read_clusters(8);
+        REQUIRE(clusters.size() == 8);
+        REQUIRE(clusters.frame_number() == 1);
+    }
+
+    SECTION("Read clusters from one frame") {
+        ClusterFile<ClusterType> f(fpath);
+        auto clusters = f.read_clusters(2);
+        REQUIRE(clusters.size() == 2);
+        REQUIRE(clusters.frame_number() == 0);
+
+        auto clusters1 = f.read_clusters(1);
+
+        REQUIRE(clusters1.size() == 1);
+        REQUIRE(clusters1.frame_number() == 0);
+    }
+}
+
+TEST_CASE("Write cluster with potential padding", "[.files][.ClusterFile]") {
+
+    using ClusterType = Cluster<double, 3, 3>;
+
+    REQUIRE(std::filesystem::exists(test_data_path() / "clust"));
+
+    auto fpath = test_data_path() / "clust" / "single_frame_2_clusters.clust";
+
+    ClusterFile<ClusterType> file(fpath, 1000, "w");
+
+    ClusterVector<ClusterType> clustervec(2);
+    int16_t coordinate = 5;
+    clustervec.push_back(ClusterType{
+        coordinate, coordinate, {0., 0., 0., 0., 0., 0., 0., 0., 0.}});
+    clustervec.push_back(ClusterType{
+        coordinate, coordinate, {0., 0., 0., 0., 0., 0., 0., 0., 0.}});
+
+    file.write_frame(clustervec);
+
+    file.close();
+
+    file.open("r");
+
+    auto read_cluster_vector = file.read_frame();
+
+    CHECK(read_cluster_vector.size() == 2);
+    CHECK(read_cluster_vector.frame_number() == 0);
+
+    CHECK(read_cluster_vector.at(0).x == clustervec.at(0).x);
+    CHECK(read_cluster_vector.at(0).y == clustervec.at(0).y);
+    CHECK(std::equal(clustervec.at(0).data, clustervec.at(0).data + 9,
+                     read_cluster_vector.at(0).data, [](double a, double b) {
+                         return std::abs(a - b) <
+                                std::numeric_limits<double>::epsilon();
+                     }));
+
+    CHECK(read_cluster_vector.at(1).x == clustervec.at(1).x);
+    CHECK(read_cluster_vector.at(1).y == clustervec.at(1).y);
+    CHECK(std::equal(clustervec.at(1).data, std::end(clustervec.at(1).data),
+                     read_cluster_vector.at(1).data, [](double a, double b) {
+                         return std::abs(a - b) <
+                                std::numeric_limits<double>::epsilon();
+                     }));
+}
+
+TEST_CASE("Read frame and modify cluster data", "[.files][.ClusterFile]") {
+    auto fpath = test_data_path() / "clust" / "single_frame_97_clustrers.clust";
+    REQUIRE(std::filesystem::exists(fpath));
+
+    ClusterFile<Cluster<int32_t, 3, 3>> f(fpath);
+
+    auto clusters = f.read_frame();
+    CHECK(clusters.size() == 97);
+    CHECK(clusters.frame_number() == 135);
+
+    int32_t expected_cluster_data[] = {0, 1, 2, 3, 4, 5, 6, 7, 8};
+    clusters.push_back(
+        Cluster<int32_t, 3, 3>{0, 0, {0, 1, 2, 3, 4, 5, 6, 7, 8}});
+
+    CHECK(clusters.size() == 98);
+    CHECK(clusters.at(0).x == 1);
+    CHECK(clusters.at(0).y == 200);
+
+    CHECK(std::equal(std::begin(clusters.at(0).data),
+                     std::end(clusters.at(0).data),
+                     std::begin(expected_cluster_data)));
 }

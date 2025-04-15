@@ -8,15 +8,14 @@
 using aare::Cluster;
 using aare::ClusterVector;
 
-
-TEST_CASE("item_size return the size of the cluster stored"){
+TEST_CASE("item_size return the size of the cluster stored") {
     using C1 = Cluster<int32_t, 2, 2>;
     ClusterVector<C1> cv(4);
     CHECK(cv.item_size() == sizeof(C1));
 
-    //Sanity check 
-    //2*2*4 = 16 bytes of data for the cluster
-    // 2*2 = 4 bytes for the x and y coordinates
+    // Sanity check
+    // 2*2*4 = 16 bytes of data for the cluster
+    //  2*2 = 4 bytes for the x and y coordinates
     REQUIRE(cv.item_size() == 20);
 
     using C2 = Cluster<int32_t, 3, 3>;
@@ -30,6 +29,18 @@ TEST_CASE("item_size return the size of the cluster stored"){
     using C4 = Cluster<char, 10, 5>;
     ClusterVector<C4> cv4(4);
     CHECK(cv4.item_size() == sizeof(C4));
+
+    using C5 = Cluster<int32_t, 2, 3>;
+    ClusterVector<C5> cv5(4);
+    CHECK(cv5.item_size() == sizeof(C5));
+
+    using C6 = Cluster<double, 5, 5>;
+    ClusterVector<C6> cv6(4);
+    CHECK(cv6.item_size() == sizeof(C6));
+
+    using C7 = Cluster<double, 3, 3>;
+    ClusterVector<C7> cv7(4);
+    CHECK(cv7.item_size() == sizeof(C7));
 }
 
 TEST_CASE("ClusterVector 2x2 int32_t capacity 4, push back then read",
