@@ -62,7 +62,7 @@ TEST_CASE("calculate_eta2", "[eta_calculation]") {
 }
 
 
-//3x3 cluster layout (in case of cBottomLeft etc corner):
+//3x3 cluster layout (rotated to match the cBottomLeft enum):
 // 6, 7, 8
 // 3, 4, 5
 // 0, 1, 2
