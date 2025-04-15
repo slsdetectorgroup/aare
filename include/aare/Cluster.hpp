@@ -32,6 +32,11 @@ struct Cluster {
     CoordType y;
     T data[ClusterSizeX * ClusterSizeY];
 
+    static constexpr uint8_t cluster_size_x = ClusterSizeX;
+    static constexpr uint8_t cluster_size_y = ClusterSizeY;
+    using value_type = T;
+    using coord_type = CoordType;
+
     T sum() const {
         return std::accumulate(data, data + ClusterSizeX * ClusterSizeY, 0);
     }
@@ -64,6 +69,11 @@ template <typename T> struct Cluster<T, 2, 2, int16_t> {
     int16_t y;
     T data[4];
 
+    static constexpr uint8_t cluster_size_x = 2;
+    static constexpr uint8_t cluster_size_y = 2;
+    using value_type = T;
+    using coord_type = int16_t;
+
     T sum() const { return std::accumulate(data, data + 4, 0); }
 
     std::pair<T, int> max_sum_2x2() const {
@@ -77,6 +87,10 @@ template <typename T> struct Cluster<T, 3, 3, int16_t> {
     int16_t x;
     int16_t y;
     T data[9];
+    static constexpr uint8_t cluster_size_x = 3;
+    static constexpr uint8_t cluster_size_y = 3;
+    using value_type = T;
+    using coord_type = int16_t;
 
     T sum() const { return std::accumulate(data, data + 9, 0); }
 
@@ -101,21 +115,5 @@ template <typename T, uint8_t X, uint8_t Y, typename CoordType>
 struct is_cluster<Cluster<T, X, Y, CoordType>> : std::true_type {}; // Cluster
 
 template <typename T> constexpr bool is_cluster_v = is_cluster<T>::value;
-
-template <typename ClusterType,
-          typename = std::enable_if_t<is_cluster_v<ClusterType>>>
-struct extract_template_arguments; // Forward declaration
-
-// helper struct to extract template argument
-template <typename T, uint8_t ClusterSizeX, uint8_t ClusterSizeY,
-          typename CoordType>
-struct extract_template_arguments<
-    Cluster<T, ClusterSizeX, ClusterSizeY, CoordType>> {
-
-    using value_type = T;
-    static constexpr int cluster_size_x = ClusterSizeX;
-    static constexpr int cluster_size_y = ClusterSizeY;
-    using coordtype = CoordType;
-};
 
 } // namespace aare

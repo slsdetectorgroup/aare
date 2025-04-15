@@ -20,11 +20,9 @@ class ClusterFinder {
     Pedestal<PEDESTAL_TYPE> m_pedestal;
     ClusterVector<ClusterType> m_clusters;
 
-    static const uint8_t ClusterSizeX =
-        extract_template_arguments<ClusterType>::cluster_size_x;
-    static const uint8_t ClusterSizeY =
-        extract_template_arguments<ClusterType>::cluster_size_x;
-    using CT = typename extract_template_arguments<ClusterType>::value_type;
+    static const uint8_t ClusterSizeX = ClusterType::cluster_size_x;
+    static const uint8_t ClusterSizeY = ClusterType::cluster_size_y;
+    using CT = typename ClusterType::value_type;
 
   public:
     /**

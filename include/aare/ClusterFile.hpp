@@ -465,13 +465,9 @@ bool ClusterFile<ClusterType, Enable>::is_selected(ClusterType &cl) {
         }
     }
 
-    auto cluster_size_x = extract_template_arguments<
-        std::remove_reference_t<decltype(cl)>>::cluster_size_x;
-    auto cluster_size_y = extract_template_arguments<
-        std::remove_reference_t<decltype(cl)>>::cluster_size_y;
-
     size_t cluster_center_index =
-        (cluster_size_x / 2) + (cluster_size_y / 2) * cluster_size_x;
+        (ClusterType::cluster_size_x / 2) +
+        (ClusterType::cluster_size_y / 2) * ClusterType::cluster_size_x;
 
     if (m_noise_map) {
         auto sum_1x1 = cl.data[cluster_center_index]; // central pixel

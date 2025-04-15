@@ -34,7 +34,7 @@ template <typename ClusterType = Cluster<int32_t, 3, 3>,
           typename FRAME_TYPE = uint16_t, typename PEDESTAL_TYPE = double>
 class ClusterFinderMT {
 
-    using CT = typename extract_template_arguments<ClusterType>::value_type;
+    using CT = typename ClusterType::value_type;
     size_t m_current_thread{0};
     size_t m_n_threads{0};
     using Finder = ClusterFinder<ClusterType, FRAME_TYPE, PEDESTAL_TYPE>;
