@@ -64,64 +64,8 @@ void define_cluster(py::module &m, const std::string &typestr) {
     */
 }
 
-template <typename Type, uint8_t ClusterSizeX, uint8_t ClusterSizeY,
-          typename CoordType = uint16_t>
-void define_cluster_vector(py::module &m, const std::string &typestr) {
-    using ClusterType =
-        Cluster<Type, ClusterSizeX, ClusterSizeY, CoordType, void>;
-    auto class_name = fmt::format("ClusterVector_{}", typestr);
 
-    py::class_<ClusterVector<
-        Cluster<Type, ClusterSizeX, ClusterSizeY, CoordType, void>, void>>(
-        m, class_name.c_str(),
-        py::buffer_protocol())
 
-        .def(py::init()) // TODO change!!!
-
-        .def("push_back",
-             [](ClusterVector<ClusterType> &self, const ClusterType &cluster) {
-                 self.push_back(cluster);
-             })
-
-        .def("sum",
-             [](ClusterVector<ClusterType> &self) {
-                 auto *vec = new std::vector<Type>(self.sum());
-                 return return_vector(vec);
-             })
-        .def("sum_2x2",
-             [](ClusterVector<ClusterType> &self) {
-                 auto *vec = new std::vector<Type>(self.sum_2x2());
-                 return return_vector(vec);
-             })
-
-        // implement push_back
-        .def_property_readonly("size", &ClusterVector<ClusterType>::size)
-        .def("item_size", &ClusterVector<ClusterType>::item_size)
-        .def_property_readonly("fmt",
-                               [typestr](ClusterVector<ClusterType> &self) {
-                                   return fmt_format<ClusterType>;
-                               })
-
-        .def_property_readonly("cluster_size_x",
-                               &ClusterVector<ClusterType>::cluster_size_x)
-        .def_property_readonly("cluster_size_y",
-                               &ClusterVector<ClusterType>::cluster_size_y)
-        .def_property_readonly("capacity",
-                               &ClusterVector<ClusterType>::capacity)
-        .def_property("frame_number", &ClusterVector<ClusterType>::frame_number,
-                      &ClusterVector<ClusterType>::set_frame_number)
-        .def_buffer(
-            [typestr](ClusterVector<ClusterType> &self) -> py::buffer_info {
-                return py::buffer_info(
-                    self.data(),             /* Pointer to buffer */
-                    self.item_size(),        /* Size of one scalar */
-                    fmt_format<ClusterType>, /* Format descriptor */
-                    1,                       /* Number of dimensions */
-                    {self.size()},           /* Buffer dimensions */
-                    {self.item_size()} /* Strides (in bytes) for each index */
-                );
-            });
-}
 
 template <typename T, uint8_t ClusterSizeX, uint8_t ClusterSizeY,
           typename CoordType = uint16_t>
@@ -263,25 +207,5 @@ void define_cluster_finder_bindings(py::module &m, const std::string &typestr) {
             },
             py::arg(), py::arg("frame_number") = 0);
 
-    m.def("hitmap",
-          [](std::array<size_t, 2> image_size, ClusterVector<ClusterType> &cv) {
-              py::array_t<int32_t> hitmap(image_size);
-              auto r = hitmap.mutable_unchecked<2>();
-
-              // Initialize hitmap to 0
-              for (py::ssize_t i = 0; i < r.shape(0); i++)
-                  for (py::ssize_t j = 0; j < r.shape(1); j++)
-                      r(i, j) = 0;
-
-              size_t stride = cv.item_size();
-              auto ptr = cv.data();
-              for (size_t i = 0; i < cv.size(); i++) {
-                  auto x = *reinterpret_cast<int16_t *>(ptr);
-                  auto y = *reinterpret_cast<int16_t *>(ptr + sizeof(int16_t));
-                  r(y, x) += 1;
-                  ptr += stride;
-              }
-              return hitmap;
-          });
 }
 #pragma GCC diagnostic pop
