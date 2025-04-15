@@ -60,26 +60,81 @@ class ClusterFile {
      * @throws std::runtime_error if the file could not be opened
      */
     ClusterFile(const std::filesystem::path &fname, size_t chunk_size = 1000,
-                const std::string &mode = "r");
+                const std::string &mode = "r")
 
-    ~ClusterFile();
+        : m_filename(fname.string()), m_chunk_size(chunk_size), m_mode(mode) {
+
+        if (mode == "r") {
+            fp = fopen(m_filename.c_str(), "rb");
+            if (!fp) {
+                throw std::runtime_error("Could not open file for reading: " +
+                                         m_filename);
+            }
+        } else if (mode == "w") {
+            fp = fopen(m_filename.c_str(), "wb");
+            if (!fp) {
+                throw std::runtime_error("Could not open file for writing: " +
+                                         m_filename);
+            }
+        } else if (mode == "a") {
+            fp = fopen(m_filename.c_str(), "ab");
+            if (!fp) {
+                throw std::runtime_error("Could not open file for appending: " +
+                                         m_filename);
+            }
+        } else {
+            throw std::runtime_error("Unsupported mode: " + mode);
+        }
+    }
+
+    ~ClusterFile() { close(); }
 
     /**
-     * @brief Read n_clusters clusters from the file discarding frame numbers.
-     * If EOF is reached the returned vector will have less than n_clusters
-     * clusters
+     * @brief Read n_clusters clusters from the file discarding
+     * frame numbers. If EOF is reached the returned vector will
+     * have less than n_clusters clusters
      */
-    ClusterVector<ClusterType> read_clusters(size_t n_clusters);
+    ClusterVector<ClusterType> read_clusters(size_t n_clusters) {
+        if (m_mode != "r") {
+            throw std::runtime_error("File not opened for reading");
+        }
+        if (m_noise_map || m_roi) {
+            return read_clusters_with_cut(n_clusters);
+        } else {
+            return read_clusters_without_cut(n_clusters);
+        }
+    }
 
     /**
-     * @brief Read a single frame from the file and return the clusters. The
-     * cluster vector will have the frame number set.
-     * @throws std::runtime_error if the file is not opened for reading or the
-     * file pointer not at the beginning of a frame
+     * @brief Read a single frame from the file and return the
+     * clusters. The cluster vector will have the frame number
+     * set.
+     * @throws std::runtime_error if the file is not opened for
+     * reading or the file pointer not at the beginning of a
+     * frame
      */
-    ClusterVector<ClusterType> read_frame();
+    ClusterVector<ClusterType> read_frame() {
+        if (m_mode != "r") {
+            throw std::runtime_error(LOCATION + "File not opened for reading");
+        }
+        if (m_noise_map || m_roi) {
+            return read_frame_with_cut();
+        } else {
+            return read_frame_without_cut();
+        }
+    }
 
-    void write_frame(const ClusterVector<ClusterType> &clusters);
+    void write_frame(const ClusterVector<ClusterType> &clusters) {
+        if (m_mode != "w" && m_mode != "a") {
+            throw std::runtime_error("File not opened for writing");
+        }
+
+        int32_t frame_number = clusters.frame_number();
+        fwrite(&frame_number, sizeof(frame_number), 1, fp);
+        uint32_t n_clusters = clusters.size();
+        fwrite(&n_clusters, sizeof(n_clusters), 1, fp);
+        fwrite(clusters.data(), clusters.item_size(), clusters.size(), fp);
+    }
 
     /**
      * @brief Return the chunk size
@@ -87,39 +142,80 @@ class ClusterFile {
     size_t chunk_size() const { return m_chunk_size; }
 
     /**
-     * @brief Set the region of interest to use when reading clusters. If set
-     * only clusters within the ROI will be read.
+     * @brief Set the region of interest to use when reading
+     * clusters. If set only clusters within the ROI will be
+     * read.
      */
-    void set_roi(ROI roi);
+    void set_roi(ROI roi) { m_roi = roi; }
 
     /**
-     * @brief Set the noise map to use when reading clusters. If set clusters
-     * below the noise level will be discarded. Selection criteria one of:
-     * Central pixel above noise, highest 2x2 sum above 2 * noise, total sum
-     * above 3 * noise.
+     * @brief Set the noise map to use when reading clusters. If
+     * set clusters below the noise level will be discarded.
+     * Selection criteria one of: Central pixel above noise,
+     * highest 2x2 sum above 2 * noise, total sum above 3 *
+     * noise.
      */
-    void set_noise_map(const NDView<int32_t, 2> noise_map);
+    void set_noise_map(const NDView<int32_t, 2> noise_map) {
+        m_noise_map = NDArray<int32_t, 2>(noise_map);
+    }
 
     /**
-     * @brief Set the gain map to use when reading clusters. If set the gain map
-     * will be applied to the clusters that pass ROI and noise_map selection.
+     * @brief Set the gain map to use when reading clusters. If
+     * set the gain map will be applied to the clusters that
+     * pass ROI and noise_map selection.
      */
-    void set_gain_map(const NDView<double, 2> gain_map);
+    void set_gain_map(const NDView<double, 2> gain_map) {
+        m_gain_map = GainMap(gain_map);
+    }
 
-    void set_gain_map(const GainMap &gain_map);
+    void set_gain_map(const GainMap &gain_map) { m_gain_map = gain_map; }
 
-    void set_gain_map(const GainMap &&gain_map);
+    void set_gain_map(const GainMap &&gain_map) { m_gain_map = gain_map; }
 
     /**
-     * @brief Close the file. If not closed the file will be closed in the
-     * destructor
+     * @brief Close the file. If not closed the file will be
+     * closed in the destructor
      */
-    void close();
+    void close() {
+        if (fp) {
+            fclose(fp);
+            fp = nullptr;
+        }
+    }
 
     /** @brief Open the file in specific mode
      *
      */
-    void open(const std::string &mode);
+    void open(const std::string &mode) {
+        if (fp) {
+            close();
+        }
+
+        if (mode == "r") {
+            fp = fopen(m_filename.c_str(), "rb");
+            if (!fp) {
+                throw std::runtime_error("Could not open file for reading: " +
+                                         m_filename);
+            }
+            m_mode = "r";
+        } else if (mode == "w") {
+            fp = fopen(m_filename.c_str(), "wb");
+            if (!fp) {
+                throw std::runtime_error("Could not open file for writing: " +
+                                         m_filename);
+            }
+            m_mode = "w";
+        } else if (mode == "a") {
+            fp = fopen(m_filename.c_str(), "ab");
+            if (!fp) {
+                throw std::runtime_error("Could not open file for appending: " +
+                                         m_filename);
+            }
+            m_mode = "a";
+        } else {
+            throw std::runtime_error("Unsupported mode: " + mode);
+        }
+    }
 
   private:
     ClusterVector<ClusterType> read_clusters_with_cut(size_t n_clusters);
@@ -129,133 +225,6 @@ class ClusterFile {
     bool is_selected(ClusterType &cl);
     ClusterType read_one_cluster();
 };
-
-template <typename ClusterType, typename Enable>
-ClusterFile<ClusterType, Enable>::ClusterFile(
-    const std::filesystem::path &fname, size_t chunk_size,
-    const std::string &mode)
-    : m_filename(fname.string()), m_chunk_size(chunk_size), m_mode(mode) {
-
-    if (mode == "r") {
-        fp = fopen(m_filename.c_str(), "rb");
-        if (!fp) {
-            throw std::runtime_error("Could not open file for reading: " +
-                                     m_filename);
-        }
-    } else if (mode == "w") {
-        fp = fopen(m_filename.c_str(), "wb");
-        if (!fp) {
-            throw std::runtime_error("Could not open file for writing: " +
-                                     m_filename);
-        }
-    } else if (mode == "a") {
-        fp = fopen(m_filename.c_str(), "ab");
-        if (!fp) {
-            throw std::runtime_error("Could not open file for appending: " +
-                                     m_filename);
-        }
-    } else {
-        throw std::runtime_error("Unsupported mode: " + mode);
-    }
-}
-
-template <typename ClusterType, typename Enable>
-ClusterFile<ClusterType, Enable>::~ClusterFile() {
-    close();
-}
-
-template <typename ClusterType, typename Enable>
-void ClusterFile<ClusterType, Enable>::close() {
-    if (fp) {
-        fclose(fp);
-        fp = nullptr;
-    }
-}
-
-template <typename ClusterType, typename Enable>
-void ClusterFile<ClusterType, Enable>::open(const std::string &mode) {
-    if (fp) {
-        close();
-    }
-
-    if (mode == "r") {
-        fp = fopen(m_filename.c_str(), "rb");
-        if (!fp) {
-            throw std::runtime_error("Could not open file for reading: " +
-                                     m_filename);
-        }
-        m_mode = "r";
-    } else if (mode == "w") {
-        fp = fopen(m_filename.c_str(), "wb");
-        if (!fp) {
-            throw std::runtime_error("Could not open file for writing: " +
-                                     m_filename);
-        }
-        m_mode = "w";
-    } else if (mode == "a") {
-        fp = fopen(m_filename.c_str(), "ab");
-        if (!fp) {
-            throw std::runtime_error("Could not open file for appending: " +
-                                     m_filename);
-        }
-        m_mode = "a";
-    } else {
-        throw std::runtime_error("Unsupported mode: " + mode);
-    }
-}
-
-template <typename ClusterType, typename Enable>
-void ClusterFile<ClusterType, Enable>::set_roi(ROI roi) {
-    m_roi = roi;
-}
-template <typename ClusterType, typename Enable>
-void ClusterFile<ClusterType, Enable>::set_noise_map(
-    const NDView<int32_t, 2> noise_map) {
-    m_noise_map = NDArray<int32_t, 2>(noise_map);
-}
-template <typename ClusterType, typename Enable>
-void ClusterFile<ClusterType, Enable>::set_gain_map(
-    const NDView<double, 2> gain_map) {
-    m_gain_map = GainMap(gain_map);
-}
-
-template <typename ClusterType, typename Enable>
-void ClusterFile<ClusterType, Enable>::set_gain_map(const GainMap &gain_map) {
-    m_gain_map = gain_map;
-}
-
-template <typename ClusterType, typename Enable>
-void ClusterFile<ClusterType, Enable>::set_gain_map(const GainMap &&gain_map) {
-    m_gain_map = gain_map;
-}
-
-// TODO generally supported for all clsuter types
-template <typename ClusterType, typename Enable>
-void ClusterFile<ClusterType, Enable>::write_frame(
-    const ClusterVector<ClusterType> &clusters) {
-    if (m_mode != "w" && m_mode != "a") {
-        throw std::runtime_error("File not opened for writing");
-    }
-
-    int32_t frame_number = clusters.frame_number();
-    fwrite(&frame_number, sizeof(frame_number), 1, fp);
-    uint32_t n_clusters = clusters.size();
-    fwrite(&n_clusters, sizeof(n_clusters), 1, fp);
-    fwrite(clusters.data(), clusters.item_size(), clusters.size(), fp);
-}
-
-template <typename ClusterType, typename Enable>
-ClusterVector<ClusterType>
-ClusterFile<ClusterType, Enable>::read_clusters(size_t n_clusters) {
-    if (m_mode != "r") {
-        throw std::runtime_error("File not opened for reading");
-    }
-    if (m_noise_map || m_roi) {
-        return read_clusters_with_cut(n_clusters);
-    } else {
-        return read_clusters_without_cut(n_clusters);
-    }
-}
 
 template <typename ClusterType, typename Enable>
 ClusterVector<ClusterType>
@@ -276,8 +245,8 @@ ClusterFile<ClusterType, Enable>::read_clusters_without_cut(size_t n_clusters) {
     // if there are photons left from previous frame read them first
     if (nph) {
         if (nph > n_clusters) {
-            // if we have more photons left in the frame then photons to read we
-            // read directly the requested number
+            // if we have more photons left in the frame then photons to
+            // read we read directly the requested number
             nn = n_clusters;
         } else {
             nn = nph;
@@ -343,8 +312,8 @@ ClusterFile<ClusterType, Enable>::read_clusters_with_cut(size_t n_clusters) {
         while (fread(&frame_number, sizeof(frame_number), 1, fp)) {
             if (fread(&m_num_left, sizeof(m_num_left), 1, fp)) {
                 clusters.set_frame_number(
-                    frame_number); // cluster vector will hold the last frame
-                                   // number
+                    frame_number); // cluster vector will hold the last
+                                   // frame number
                 while (m_num_left && clusters.size() < n_clusters) {
                     ClusterType c = read_one_cluster();
                     if (is_selected(c)) {
@@ -373,18 +342,6 @@ ClusterType ClusterFile<ClusterType, Enable>::read_one_cluster() {
     }
     --m_num_left;
     return c;
-}
-
-template <typename ClusterType, typename Enable>
-ClusterVector<ClusterType> ClusterFile<ClusterType, Enable>::read_frame() {
-    if (m_mode != "r") {
-        throw std::runtime_error(LOCATION + "File not opened for reading");
-    }
-    if (m_noise_map || m_roi) {
-        return read_frame_with_cut();
-    } else {
-        return read_frame_without_cut();
-    }
 }
 
 template <typename ClusterType, typename Enable>
