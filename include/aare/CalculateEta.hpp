@@ -64,28 +64,75 @@ calculate_eta2(const Cluster<T, ClusterSizeX, ClusterSizeY, CoordType> &cl) {
     eta.sum = max_sum.first;
     auto c = max_sum.second;
 
+    size_t cluster_center_index =
+        (ClusterSizeX / 2) + (ClusterSizeY / 2) * ClusterSizeX;
+
     size_t index_bottom_left_max_2x2_subcluster =
         (int(c / (ClusterSizeX - 1))) * ClusterSizeX + c % (ClusterSizeX - 1);
 
-    if ((cl.data[index_bottom_left_max_2x2_subcluster] +
-         cl.data[index_bottom_left_max_2x2_subcluster + 1]) != 0)
-        eta.x = static_cast<double>(
-                    cl.data[index_bottom_left_max_2x2_subcluster + 1]) /
-                static_cast<double>(
-                    (cl.data[index_bottom_left_max_2x2_subcluster] +
-                     cl.data[index_bottom_left_max_2x2_subcluster + 1]));
+    // check that cluster center is in max subcluster
+    if (cluster_center_index != index_bottom_left_max_2x2_subcluster &&
+        cluster_center_index != index_bottom_left_max_2x2_subcluster + 1 &&
+        cluster_center_index !=
+            index_bottom_left_max_2x2_subcluster + ClusterSizeX &&
+        cluster_center_index !=
+            index_bottom_left_max_2x2_subcluster + ClusterSizeX + 1)
+        throw std::runtime_error("Photon center is not in max 2x2_subcluster");
 
-    if ((cl.data[index_bottom_left_max_2x2_subcluster] +
-         cl.data[index_bottom_left_max_2x2_subcluster + ClusterSizeX]) != 0)
-        eta.y =
-            static_cast<double>(
-                cl.data[index_bottom_left_max_2x2_subcluster + ClusterSizeX]) /
-            static_cast<double>(
-                (cl.data[index_bottom_left_max_2x2_subcluster] +
-                 cl.data[index_bottom_left_max_2x2_subcluster + ClusterSizeX]));
+    if ((cluster_center_index - index_bottom_left_max_2x2_subcluster) %
+            ClusterSizeX ==
+        0) {
+        if ((cl.data[cluster_center_index + 1] +
+             cl.data[cluster_center_index]) != 0)
+
+            eta.x = static_cast<double>(cl.data[cluster_center_index + 1]) /
+                    static_cast<double>((cl.data[cluster_center_index + 1] +
+                                         cl.data[cluster_center_index]));
+    } else {
+        if ((cl.data[cluster_center_index] +
+             cl.data[cluster_center_index - 1]) != 0)
+
+            eta.x = static_cast<double>(cl.data[cluster_center_index]) /
+                    static_cast<double>((cl.data[cluster_center_index - 1] +
+                                         cl.data[cluster_center_index]));
+    }
+    if ((cluster_center_index - index_bottom_left_max_2x2_subcluster) /
+            ClusterSizeX <
+        1) {
+        assert(cluster_center_index + ClusterSizeX <
+               ClusterSizeX * ClusterSizeY); // suppress warning
+        if ((cl.data[cluster_center_index] +
+             cl.data[cluster_center_index + ClusterSizeX]) != 0)
+            eta.y = static_cast<double>(
+                        cl.data[cluster_center_index + ClusterSizeX]) /
+                    static_cast<double>(
+                        (cl.data[cluster_center_index] +
+                         cl.data[cluster_center_index + ClusterSizeX]));
+    } else {
+        if ((cl.data[cluster_center_index] +
+             cl.data[cluster_center_index - ClusterSizeX]) != 0)
+            eta.y = static_cast<double>(cl.data[cluster_center_index]) /
+                    static_cast<double>(
+                        (cl.data[cluster_center_index] +
+                         cl.data[cluster_center_index - ClusterSizeX]));
+    }
 
     eta.c = c; // TODO only supported for 2x2 and 3x3 clusters -> at least no
                // underyling enum class
+    return eta;
+}
+
+// Dont get why this is correct - photon center should be top right corner
+template <typename T>
+Eta2<T> calculate_eta2(const Cluster<T, 2, 2, int16_t> &cl) {
+    Eta2<T> eta{};
+
+    if ((cl.data[0] + cl.data[1]) != 0)
+        eta.x = static_cast<double>(cl.data[1]) / (cl.data[0] + cl.data[1]);
+    if ((cl.data[0] + cl.data[2]) != 0)
+        eta.y = static_cast<double>(cl.data[2]) / (cl.data[0] + cl.data[2]);
+    eta.sum = cl.sum();
+    eta.c = cBottomLeft; // TODO! This is not correct, but need to put something
     return eta;
 }
 

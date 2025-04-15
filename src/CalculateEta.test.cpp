@@ -26,15 +26,15 @@ auto get_test_parameters() {
             ClusterTypes{Cluster<int, 3, 3>{0, 0, {1, 2, 3, 4, 5, 6, 1, 2, 7}}},
             Eta2<int>{6. / 11, 2. / 7, corner::cTopRight, 20}),
         std::make_tuple(ClusterTypes{Cluster<int, 5, 5>{
-                            0, 0, {1, 6, 7, 6, 5, 4, 3, 2, 1, 8, 8, 9, 2,
+                            0, 0, {1, 6, 7, 6, 5, 4, 3, 2, 1, 2, 8, 9, 8,
                                    1, 4, 5, 6, 7, 8, 4, 1, 1, 1, 1, 1}}},
-                        Eta2<int>{9. / 17, 5. / 13, 8, 28}),
+                        Eta2<int>{8. / 17, 7. / 15, 9, 30}),
         std::make_tuple(
             ClusterTypes{Cluster<int, 4, 2>{0, 0, {1, 4, 7, 2, 5, 6, 4, 3}}},
-            Eta2<int>{7. / 11, 6. / 10, 1, 21}),
+            Eta2<int>{4. / 10, 4. / 11, 1, 21}),
         std::make_tuple(
             ClusterTypes{Cluster<int, 2, 3>{0, 0, {1, 3, 2, 3, 4, 2}}},
-            Eta2<int>{3. / 5, 4. / 6, 1, 11}));
+            Eta2<int>{3. / 5, 2. / 5, 1, 11}));
 }
 
 TEST_CASE("compute_largest_2x2_subcluster", "[eta_calculation]") {
