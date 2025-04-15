@@ -21,10 +21,12 @@ using ClusterTypes =
 auto get_test_parameters() {
     return GENERATE(
         std::make_tuple(ClusterTypes{Cluster<int, 2, 2>{0, 0, {1, 2, 3, 1}}},
-                        Eta2<int>{2. / 3, 3. / 4, corner::cBottomLeft, 7}),
+                        Eta2<int>{2. / 3, 3. / 4,
+                                  static_cast<int>(corner::cBottomLeft), 7}),
         std::make_tuple(
             ClusterTypes{Cluster<int, 3, 3>{0, 0, {1, 2, 3, 4, 5, 6, 1, 2, 7}}},
-            Eta2<int>{6. / 11, 2. / 7, corner::cTopRight, 20}),
+            Eta2<int>{6. / 11, 2. / 7, static_cast<int>(corner::cTopRight),
+                      20}),
         std::make_tuple(ClusterTypes{Cluster<int, 5, 5>{
                             0, 0, {1, 6, 7, 6, 5, 4, 3, 2, 1, 2, 8, 9, 8,
                                    1, 4, 5, 6, 7, 8, 4, 1, 1, 1, 1, 1}}},
@@ -61,14 +63,13 @@ TEST_CASE("calculate_eta2", "[eta_calculation]") {
     CHECK(eta.sum == expected_eta.sum);
 }
 
+// 3x3 cluster layout (rotated to match the cBottomLeft enum):
+//  6, 7, 8
+//  3, 4, 5
+//  0, 1, 2
 
-//3x3 cluster layout (rotated to match the cBottomLeft enum):
-// 6, 7, 8
-// 3, 4, 5
-// 0, 1, 2
-
-
-TEST_CASE("Calculate eta2 for a 3x3 int32 cluster with the largest 2x2 sum in the bottom left",
+TEST_CASE("Calculate eta2 for a 3x3 int32 cluster with the largest 2x2 sum in "
+          "the bottom left",
           "[eta_calculation]") {
 
     // Create a 3x3 cluster
@@ -84,45 +85,43 @@ TEST_CASE("Calculate eta2 for a 3x3 int32 cluster with the largest 2x2 sum in th
     cl.data[6] = 8;
     cl.data[7] = 2;
     cl.data[8] = 3;
-    
+
     // 8, 2, 3
     // 20, 50, 3
     // 30, 23, 5
 
     auto eta = calculate_eta2(cl);
-    CHECK(eta.c == corner::cBottomLeft);
+    CHECK(eta.c == static_cast<int>(corner::cBottomLeft));
     CHECK(eta.x == 50.0 / (20 + 50)); // 4/(3+4)
     CHECK(eta.y == 50.0 / (23 + 50)); // 4/(1+4)
-    CHECK(eta.sum == 30+23+20+50);
-
+    CHECK(eta.sum == 30 + 23 + 20 + 50);
 }
 
-TEST_CASE("Calculate eta2 for a 3x3 int32 cluster with the largest 2x2 sum in the top left",
-    "[eta_calculation]") {
+TEST_CASE("Calculate eta2 for a 3x3 int32 cluster with the largest 2x2 sum in "
+          "the top left",
+          "[eta_calculation]") {
 
-// Create a 3x3 cluster
-Cluster<int32_t, 3, 3> cl;
-cl.x = 0;
-cl.y = 0;
-cl.data[0] = 8;
-cl.data[1] = 12;
-cl.data[2] = 5;
-cl.data[3] = 77;
-cl.data[4] = 80;
-cl.data[5] = 3;
-cl.data[6] = 82;
-cl.data[7] = 91;
-cl.data[8] = 3;
+    // Create a 3x3 cluster
+    Cluster<int32_t, 3, 3> cl;
+    cl.x = 0;
+    cl.y = 0;
+    cl.data[0] = 8;
+    cl.data[1] = 12;
+    cl.data[2] = 5;
+    cl.data[3] = 77;
+    cl.data[4] = 80;
+    cl.data[5] = 3;
+    cl.data[6] = 82;
+    cl.data[7] = 91;
+    cl.data[8] = 3;
 
-// 82, 91, 3
-// 77, 80, 3
-// 8, 12, 5
+    // 82, 91, 3
+    // 77, 80, 3
+    // 8, 12, 5
 
-auto eta = calculate_eta2(cl);
-CHECK(eta.c == corner::cTopLeft);
-CHECK(eta.x == 80. / (77 + 80)); // 4/(3+4)
-CHECK(eta.y == 91.0 / (91 + 80)); // 7/(7+4)
-CHECK(eta.sum == 77+80+82+91);
-
+    auto eta = calculate_eta2(cl);
+    CHECK(eta.c == static_cast<int>(corner::cTopLeft));
+    CHECK(eta.x == 80. / (77 + 80));  // 4/(3+4)
+    CHECK(eta.y == 91.0 / (91 + 80)); // 7/(7+4)
+    CHECK(eta.sum == 77 + 80 + 82 + 91);
 }
-

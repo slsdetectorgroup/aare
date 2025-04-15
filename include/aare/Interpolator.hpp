@@ -70,20 +70,20 @@ Interpolator::interpolate(const ClusterVector<ClusterType> &clusters) {
             // cBottomRight = 1,
             // cTopLeft = 2,
             // cTopRight = 3
-            switch (eta.c) {
-            case cTopLeft:
+            switch (static_cast<corner>(eta.c)) {
+            case corner::cTopLeft:
                 dX = -1.;
                 dY = 0;
                 break;
-            case cTopRight:;
+            case corner::cTopRight:;
                 dX = 0;
                 dY = 0;
                 break;
-            case cBottomLeft:
+            case corner::cBottomLeft:
                 dX = -1.;
                 dY = -1.;
                 break;
-            case cBottomRight:
+            case corner::cBottomRight:
                 dX = 0.;
                 dY = -1.;
                 break;

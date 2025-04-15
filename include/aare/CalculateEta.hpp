@@ -6,14 +6,14 @@
 
 namespace aare {
 
-typedef enum {
+enum class corner : int {
     cBottomLeft = 0,
     cBottomRight = 1,
     cTopLeft = 2,
     cTopRight = 3
-} corner;
+};
 
-typedef enum {
+enum class pixel : int {
     pBottomLeft = 0,
     pBottom = 1,
     pBottomRight = 2,
@@ -23,7 +23,7 @@ typedef enum {
     pTopLeft = 6,
     pTop = 7,
     pTopRight = 8
-} pixel;
+};
 
 template <typename T> struct Eta2 {
     double x;
@@ -132,7 +132,8 @@ Eta2<T> calculate_eta2(const Cluster<T, 2, 2, int16_t> &cl) {
     if ((cl.data[0] + cl.data[2]) != 0)
         eta.y = static_cast<double>(cl.data[2]) / (cl.data[0] + cl.data[2]);
     eta.sum = cl.sum();
-    eta.c = cBottomLeft; // TODO! This is not correct, but need to put something
+    eta.c = static_cast<int>(corner::cBottomLeft); // TODO! This is not correct,
+                                                   // but need to put something
     return eta;
 }
 
