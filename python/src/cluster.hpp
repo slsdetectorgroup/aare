@@ -26,17 +26,18 @@ template <typename Type, uint8_t ClusterSizeX, uint8_t ClusterSizeY,
 void define_cluster(py::module &m, const std::string &typestr) {
     auto class_name = fmt::format("Cluster{}", typestr);
 
-    py::class_<Cluster<Type, ClusterSizeX, ClusterSizeY, CoordType, void>>(
+    py::class_<Cluster<Type, ClusterSizeX, ClusterSizeY, CoordType>>(
         m, class_name.c_str(), py::buffer_protocol())
 
         .def(py::init([](uint8_t x, uint8_t y, py::array_t<Type> data) {
             py::buffer_info buf_info = data.request();
-            Type *ptr = static_cast<Type *>(buf_info.ptr);
-            Cluster<Type, ClusterSizeX, ClusterSizeY, CoordType, void> cluster;
+            Cluster<Type, ClusterSizeX, ClusterSizeY, CoordType> cluster;
             cluster.x = x;
             cluster.y = y;
-            std::copy(ptr, ptr + ClusterSizeX * ClusterSizeY,
-                      cluster.data); // Copy array contents
+            auto r = data.template unchecked<1>(); // no bounds checks
+            for (py::ssize_t i = 0; i < data.size(); ++i) {
+                cluster.data[i] = r(i);
+            }
             return cluster;
         }));
 
@@ -63,9 +64,6 @@ void define_cluster(py::module &m, const std::string &typestr) {
         });
     */
 }
-
-
-
 
 template <typename T, uint8_t ClusterSizeX, uint8_t ClusterSizeY,
           typename CoordType = uint16_t>
@@ -206,6 +204,5 @@ void define_cluster_finder_bindings(py::module &m, const std::string &typestr) {
                 return;
             },
             py::arg(), py::arg("frame_number") = 0);
-
 }
 #pragma GCC diagnostic pop

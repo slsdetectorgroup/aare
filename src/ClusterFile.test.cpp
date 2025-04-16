@@ -311,19 +311,19 @@ TEST_CASE("Write cluster with potential padding", "[.files][.ClusterFile]") {
 
     CHECK(read_cluster_vector.at(0).x == clustervec.at(0).x);
     CHECK(read_cluster_vector.at(0).y == clustervec.at(0).y);
-    CHECK(std::equal(clustervec.at(0).data, clustervec.at(0).data + 9,
-                     read_cluster_vector.at(0).data, [](double a, double b) {
-                         return std::abs(a - b) <
-                                std::numeric_limits<double>::epsilon();
-                     }));
+    CHECK(std::equal(
+        clustervec.at(0).data.begin(), clustervec.at(0).data.end(),
+        read_cluster_vector.at(0).data.begin(), [](double a, double b) {
+            return std::abs(a - b) < std::numeric_limits<double>::epsilon();
+        }));
 
     CHECK(read_cluster_vector.at(1).x == clustervec.at(1).x);
     CHECK(read_cluster_vector.at(1).y == clustervec.at(1).y);
-    CHECK(std::equal(clustervec.at(1).data, std::end(clustervec.at(1).data),
-                     read_cluster_vector.at(1).data, [](double a, double b) {
-                         return std::abs(a - b) <
-                                std::numeric_limits<double>::epsilon();
-                     }));
+    CHECK(std::equal(
+        clustervec.at(1).data.begin(), clustervec.at(1).data.end(),
+        read_cluster_vector.at(1).data.begin(), [](double a, double b) {
+            return std::abs(a - b) < std::numeric_limits<double>::epsilon();
+        }));
 }
 
 TEST_CASE("Read frame and modify cluster data", "[.files][.ClusterFile]") {

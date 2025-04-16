@@ -44,9 +44,8 @@ class GainMap {
                     cl.data[j] = cl.data[j] * static_cast<T>(m_gain_map(y, x));
                 }
             } else {
-                memset(cl.data, 0,
-                       ClusterSizeX * ClusterSizeY *
-                           sizeof(T)); // clear edge clusters
+                // clear edge clusters
+                cl.data.fill(0);
             }
         }
     }

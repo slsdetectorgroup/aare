@@ -21,16 +21,14 @@ using namespace aare;
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Wunused-parameter"
 
-
 template <typename Type, uint8_t ClusterSizeX, uint8_t ClusterSizeY,
           typename CoordType = uint16_t>
 void define_ClusterVector(py::module &m, const std::string &typestr) {
-    using ClusterType =
-        Cluster<Type, ClusterSizeX, ClusterSizeY, CoordType, void>;
+    using ClusterType = Cluster<Type, ClusterSizeX, ClusterSizeY, CoordType>;
     auto class_name = fmt::format("ClusterVector_{}", typestr);
 
     py::class_<ClusterVector<
-        Cluster<Type, ClusterSizeX, ClusterSizeY, CoordType, void>, void>>(
+        Cluster<Type, ClusterSizeX, ClusterSizeY, CoordType>, void>>(
         m, class_name.c_str(),
         py::buffer_protocol())
 
@@ -41,10 +39,11 @@ void define_ClusterVector(py::module &m, const std::string &typestr) {
                  self.push_back(cluster);
              })
 
-        .def("sum", [](ClusterVector<ClusterType> &self) {
-            auto *vec = new std::vector<Type>(self.sum());
-            return return_vector(vec);
-        })
+        .def("sum",
+             [](ClusterVector<ClusterType> &self) {
+                 auto *vec = new std::vector<Type>(self.sum());
+                 return return_vector(vec);
+             })
         .def_property_readonly("size", &ClusterVector<ClusterType>::size)
         .def("item_size", &ClusterVector<ClusterType>::item_size)
         .def_property_readonly("fmt",
@@ -72,32 +71,30 @@ void define_ClusterVector(py::module &m, const std::string &typestr) {
                 );
             });
 
-        // Free functions using ClusterVector
-        m.def("hitmap",
-            [](std::array<size_t, 2> image_size, ClusterVector<ClusterType> &cv) {
-                
-                // Create a numpy array to hold the hitmap
-                // The shape of the array is (image_size[0], image_size[1])
-                // note that the python array is passed as [row, col] which
-                // is the opposite of the clusters [x,y]
-                py::array_t<int32_t> hitmap(image_size);
-                auto r = hitmap.mutable_unchecked<2>();
-    
-                // Initialize hitmap to 0
-                for (py::ssize_t i = 0; i < r.shape(0); i++)
-                    for (py::ssize_t j = 0; j < r.shape(1); j++)
-                        r(i, j) = 0;
-    
+    // Free functions using ClusterVector
+    m.def("hitmap",
+          [](std::array<size_t, 2> image_size, ClusterVector<ClusterType> &cv) {
+              // Create a numpy array to hold the hitmap
+              // The shape of the array is (image_size[0], image_size[1])
+              // note that the python array is passed as [row, col] which
+              // is the opposite of the clusters [x,y]
+              py::array_t<int32_t> hitmap(image_size);
+              auto r = hitmap.mutable_unchecked<2>();
 
-                // Loop over the clusters and increment the hitmap
-                // Skip out of bound clusters
-                for (const auto& cluster : cv) {
-                    auto x = cluster.x;
-                    auto y = cluster.y;
-                    if(x<image_size[1] && y<image_size[0])
-                        r(cluster.y, cluster.x) += 1;
-                }
+              // Initialize hitmap to 0
+              for (py::ssize_t i = 0; i < r.shape(0); i++)
+                  for (py::ssize_t j = 0; j < r.shape(1); j++)
+                      r(i, j) = 0;
 
-                return hitmap;
-            });
+              // Loop over the clusters and increment the hitmap
+              // Skip out of bound clusters
+              for (const auto &cluster : cv) {
+                  auto x = cluster.x;
+                  auto y = cluster.y;
+                  if (x < image_size[1] && y < image_size[0])
+                      r(cluster.y, cluster.x) += 1;
+              }
+
+              return hitmap;
+          });
 }

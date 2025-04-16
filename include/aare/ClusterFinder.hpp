@@ -77,7 +77,6 @@ class ClusterFinder {
         int has_center_pixel_y = ClusterSizeY % 2;
 
         m_clusters.set_frame_number(frame_number);
-        std::vector<CT> cluster_data(ClusterSizeX * ClusterSizeY);
         for (int iy = 0; iy < frame.shape(0); iy++) {
             for (int ix = 0; ix < frame.shape(1); ix++) {
 
@@ -124,8 +123,9 @@ class ClusterFinder {
 
                 // Store cluster
                 if (value == max) {
-                    // Zero out the cluster data
-                    std::fill(cluster_data.begin(), cluster_data.end(), 0);
+                    ClusterType cluster{};
+                    cluster.x = ix;
+                    cluster.y = iy;
 
                     // Fill the cluster data since we have a photon to store
                     // It's worth redoing the look since most of the time we
@@ -139,20 +139,15 @@ class ClusterFinder {
                                     static_cast<CT>(frame(iy + ir, ix + ic)) -
                                     static_cast<CT>(
                                         m_pedestal.mean(iy + ir, ix + ic));
-                                cluster_data[i] =
+                                cluster.data[i] =
                                     tmp; // Watch for out of bounds access
                                 i++;
                             }
                         }
                     }
 
-                    ClusterType new_cluster{};
-                    new_cluster.x = ix;
-                    new_cluster.y = iy;
-                    std::copy(cluster_data.begin(), cluster_data.end(),
-                              new_cluster.data);
                     // Add the cluster to the output ClusterVector
-                    m_clusters.push_back(new_cluster);
+                    m_clusters.push_back(cluster);
                 }
             }
         }
