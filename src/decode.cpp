@@ -1,5 +1,5 @@
 #include "aare/decode.hpp"
-
+#include <cmath>
 namespace aare {
 
 uint16_t adc_sar_05_decode64to16(uint64_t input){
@@ -22,6 +22,10 @@ uint16_t adc_sar_05_decode64to16(uint64_t input){
 }
 
 void adc_sar_05_decode64to16(NDView<uint64_t, 2> input, NDView<uint16_t,2> output){
+    if(input.shape() != output.shape()){
+        throw std::invalid_argument(LOCATION + " input and output shapes must match");
+    }
+
     for(int64_t i = 0; i < input.shape(0); i++){
         for(int64_t j = 0; j < input.shape(1); j++){
             output(i,j) = adc_sar_05_decode64to16(input(i,j));
@@ -49,9 +53,37 @@ uint16_t adc_sar_04_decode64to16(uint64_t input){
 }
 
 void adc_sar_04_decode64to16(NDView<uint64_t, 2> input, NDView<uint16_t,2> output){
+    if(input.shape() != output.shape()){
+        throw std::invalid_argument(LOCATION + " input and output shapes must match");
+    }
     for(int64_t i = 0; i < input.shape(0); i++){
         for(int64_t j = 0; j < input.shape(1); j++){
             output(i,j) = adc_sar_04_decode64to16(input(i,j));
+        }
+    }
+}
+
+
+double apply_custom_weights(uint16_t input, const NDView<double, 1> weights) {
+    if(weights.size() > 16){
+        throw std::invalid_argument("weights size must be less than or equal to 16");
+    }
+
+    double result = 0.0;
+    for (ssize_t i = 0; i < weights.size(); ++i) {
+        result += ((input >> i) & 1) * std::pow(weights[i], i);
+    }
+    return result;
+
+}
+
+void apply_custom_weights(NDView<uint16_t, 2> input, NDView<double, 2> output, const NDView<double,1> weights) {
+    if(input.shape() != output.shape()){
+        throw std::invalid_argument(LOCATION + " input and output shapes must match");
+    }
+    for (int64_t i = 0; i < input.shape(0); i++) {
+        for (int64_t j = 0; j < input.shape(1); j++) {
+            output(i, j) = apply_custom_weights(input(i, j), weights);
         }
     }
 }

@@ -10,6 +10,8 @@
 #include "aare/decode.hpp"
 // #include "aare/fClusterFileV2.hpp"
 
+#include "np_helper.hpp"
+
 #include <cstdint>
 #include <filesystem>
 #include <pybind11/iostream.h>
@@ -61,6 +63,27 @@ m.def("adc_sar_04_decode64to16", [](py::array_t<uint8_t> input) {
     NDView<uint16_t, 2> output_view(output.mutable_data(), {output.shape(0), output.shape(1)});
 
     adc_sar_04_decode64to16(input_view, output_view);
+
+    return output;
+});
+
+
+m.def("apply_custom_weights", [](py::array_t<uint16_t> input, py::array_t<double> weights) {
+    if (input.ndim() != 2) {
+        throw std::runtime_error("Only 2D arrays are supported at this moment");
+    }
+
+    // Create a 2D output array with the same shape as the input
+    std::vector<ssize_t> shape{input.shape(0), input.shape(1)};
+    py::array_t<double> output(shape);
+
+    auto weights_view = make_view_1d(weights);
+
+    // Create a view of the input and output arrays
+    NDView<uint16_t, 2> input_view(input.mutable_data(), {input.shape(0), input.shape(1)});
+    NDView<double, 2> output_view(output.mutable_data(), {output.shape(0), output.shape(1)});
+
+    apply_custom_weights(input_view, output_view, weights_view);
 
     return output;
 });
