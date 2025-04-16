@@ -68,7 +68,7 @@ m.def("adc_sar_04_decode64to16", [](py::array_t<uint8_t> input) {
 });
 
 
-m.def("apply_custom_weights", [](py::array_t<uint16_t> input, py::array_t<double> weights) {
+m.def("apply_custom_weights", [](py::array_t<uint16_t>& input, py::array_t<double>& weights) {
     if (input.ndim() != 2) {
         throw std::runtime_error("Only 2D arrays are supported at this moment");
     }
