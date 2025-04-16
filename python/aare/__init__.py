@@ -11,8 +11,9 @@ from ._aare import ROI
 
 # from ._aare import ClusterFinderMT, ClusterCollector, ClusterFileSink, ClusterVector_i
 
-from .ClusterFinder import ClusterFinder
+from .ClusterFinder import ClusterFinder, ClusterCollector, ClusterFinderMT
 from .ClusterVector import ClusterVector
+
 
 from ._aare import fit_gaus, fit_pol1
 from ._aare import Interpolator
