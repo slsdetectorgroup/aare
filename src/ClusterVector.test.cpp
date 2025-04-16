@@ -30,6 +30,21 @@ TEST_CASE("item_size return the size of the cluster stored"){
     using C4 = Cluster<char, 10, 5>;
     ClusterVector<C4> cv4(4);
     CHECK(cv4.item_size() == sizeof(C4));
+<<<<<<< Updated upstream
+=======
+
+    using C5 = Cluster<int32_t, 2, 3>;
+    ClusterVector<C5> cv5(4);
+    CHECK(cv5.item_size() == sizeof(C5));
+
+    using C6 = Cluster<double, 5, 5>;
+    ClusterVector<C6> cv6(4);
+    CHECK(cv6.item_size() == sizeof(C6)); // double uses padding!!!
+
+    using C7 = Cluster<double, 3, 3>;
+    ClusterVector<C7> cv7(4);
+    CHECK(cv7.item_size() == sizeof(C7));
+>>>>>>> Stashed changes
 }
 
 TEST_CASE("ClusterVector 2x2 int32_t capacity 4, push back then read",
@@ -209,6 +224,32 @@ TEST_CASE("Concatenate two cluster vectors where we need to allocate",
     REQUIRE(ptr[2].y == 12);
     REQUIRE(ptr[3].x == 16);
     REQUIRE(ptr[3].y == 17);
+}
+
+TEST_CASE("calculate cluster sum", "[.ClusterVector]") {
+    ClusterVector<Cluster<int32_t, 2, 2>> cv1(2);
+    Cluster<int32_t, 2, 2> c1 = {1, 2, {3, 4, 5, 6}};
+    cv1.push_back(c1);
+    Cluster<int32_t, 2, 2> c2 = {6, 7, {8, 9, 10, 11}};
+    cv1.push_back(c2);
+
+    auto sum1 = cv1.sum();
+
+    std::vector<int32_t> expected_sum1{18, 38};
+
+    CHECK(sum1 == expected_sum1);
+
+    ClusterVector<Cluster<int32_t, 3, 3>> cv2(2);
+    Cluster<int32_t, 3, 3> c3 = {1, 2, {3, 4, 5, 6, 1, 7, 8, 1, 1}};
+    cv2.push_back(c3);
+    Cluster<int32_t, 3, 3> c4 = {6, 7, {8, 9, 10, 11, 13, 5, 12, 2, 4}};
+    cv2.push_back(c4);
+
+    auto sum2 = cv2.sum();
+
+    std::vector<int32_t> expected_sum2{36, 74};
+
+    CHECK(sum2 == expected_sum2);
 }
 
 struct ClusterTestData {

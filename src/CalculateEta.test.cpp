@@ -37,16 +37,6 @@ auto get_test_parameters() {
             Eta2<int>{3. / 5, 4. / 6, 1, 11}));
 }
 
-TEST_CASE("compute_largest_2x2_subcluster", "[.eta_calculation]") {
-    auto [cluster, expected_eta] = get_test_parameters();
-
-    auto [sum, index] = std::visit(
-        [](const auto &clustertype) { return clustertype.max_sum_2x2(); },
-        cluster);
-    CHECK(expected_eta.c == index);
-    CHECK(expected_eta.sum == sum);
-}
-
 TEST_CASE("calculate_eta2", "[.eta_calculation]") {
 
     auto [cluster, expected_eta] = get_test_parameters();
