@@ -34,6 +34,7 @@ template <typename ClusterType = Cluster<int32_t, 3, 3>,
           typename FRAME_TYPE = uint16_t, typename PEDESTAL_TYPE = double>
 class ClusterFinderMT {
 
+  protected:
     using CT = typename ClusterType::value_type;
     size_t m_current_thread{0};
     size_t m_n_threads{0};
@@ -50,6 +51,7 @@ class ClusterFinderMT {
     std::thread m_collect_thread;
     std::chrono::milliseconds m_default_wait{1};
 
+  private:
     std::atomic<bool> m_stop_requested{false};
     std::atomic<bool> m_processing_threads_stopped{true};
 
@@ -120,6 +122,7 @@ class ClusterFinderMT {
     ClusterFinderMT(Shape<2> image_size, PEDESTAL_TYPE nSigma = 5.0,
                     size_t capacity = 2000, size_t n_threads = 3)
         : m_n_threads(n_threads) {
+
         for (size_t i = 0; i < n_threads; i++) {
             m_cluster_finders.push_back(
                 std::make_unique<

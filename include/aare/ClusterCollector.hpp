@@ -37,7 +37,11 @@ class ClusterCollector {
   public:
     ClusterCollector(ClusterFinderMT<ClusterType, uint16_t, double> *source) {
         m_source = source->sink();
-        m_thread = std::thread(&ClusterCollector::process, this);
+        m_thread =
+            std::thread(&ClusterCollector::process,
+                        this); // only one process does that so why isnt it
+                               // automatically written to m_cluster in collect
+                               // - instead of writing first to m_sink?
     }
     void stop() {
         m_stop_requested = true;

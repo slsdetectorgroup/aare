@@ -275,7 +275,7 @@ else()
 
 if(CMAKE_BUILD_TYPE STREQUAL "Release")
     message(STATUS "Release build")
-    target_compile_options(aare_compiler_flags INTERFACE -O3)
+    target_compile_options(aare_compiler_flags INTERFACE -O3 -g)
 else()
     message(STATUS "Debug build")
 endif()
@@ -426,6 +426,7 @@ if(AARE_TESTS)
             ${CMAKE_CURRENT_SOURCE_DIR}/src/Cluster.test.cpp
             ${CMAKE_CURRENT_SOURCE_DIR}/src/CalculateEta.test.cpp
             ${CMAKE_CURRENT_SOURCE_DIR}/src/ClusterFile.test.cpp
+            ${CMAKE_CURRENT_SOURCE_DIR}/src/ClusterFinderMT.test.cpp
             ${CMAKE_CURRENT_SOURCE_DIR}/src/Pedestal.test.cpp
             ${CMAKE_CURRENT_SOURCE_DIR}/src/JungfrauDataFile.test.cpp
             ${CMAKE_CURRENT_SOURCE_DIR}/src/NumpyFile.test.cpp
