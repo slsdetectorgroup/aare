@@ -69,19 +69,19 @@ m.def("adc_sar_04_decode64to16", [](py::array_t<uint8_t> input) {
 
 
 m.def("apply_custom_weights", [](py::array_t<uint16_t>& input, py::array_t<double>& weights) {
-    if (input.ndim() != 2) {
-        throw std::runtime_error("Only 2D arrays are supported at this moment");
+    if (input.ndim() != 1) {
+        throw std::runtime_error("Only 1D arrays are supported at this moment");
     }
 
-    // Create a 2D output array with the same shape as the input
-    std::vector<ssize_t> shape{input.shape(0), input.shape(1)};
+    // Create a 1D output array with the same shape as the input
+    std::vector<ssize_t> shape{input.shape(0)};
     py::array_t<double> output(shape);
 
     auto weights_view = make_view_1d(weights);
 
     // Create a view of the input and output arrays
-    NDView<uint16_t, 2> input_view(input.mutable_data(), {input.shape(0), input.shape(1)});
-    NDView<double, 2> output_view(output.mutable_data(), {output.shape(0), output.shape(1)});
+    NDView<uint16_t, 1> input_view(input.mutable_data(), {input.shape(0)});
+    NDView<double, 1> output_view(output.mutable_data(), {output.shape(0)});
 
     apply_custom_weights(input_view, output_view, weights_view);
 

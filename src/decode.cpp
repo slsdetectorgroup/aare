@@ -63,7 +63,6 @@ void adc_sar_04_decode64to16(NDView<uint64_t, 2> input, NDView<uint16_t,2> outpu
     }
 }
 
-
 double apply_custom_weights(uint16_t input, const NDView<double, 1> weights) {
     if(weights.size() > 16){
         throw std::invalid_argument("weights size must be less than or equal to 16");
@@ -77,7 +76,7 @@ double apply_custom_weights(uint16_t input, const NDView<double, 1> weights) {
 
 }
 
-void apply_custom_weights(NDView<uint16_t, 2> input, NDView<double, 2> output, const NDView<double,1> weights) {
+void apply_custom_weights(NDView<uint16_t, 1> input, NDView<double, 1> output, const NDView<double,1> weights) {
     if(input.shape() != output.shape()){
         throw std::invalid_argument(LOCATION + " input and output shapes must match");
     }
@@ -89,15 +88,12 @@ void apply_custom_weights(NDView<uint16_t, 2> input, NDView<double, 2> output, c
     }
 
     // Apply custom weights to each element in the input array
-    for (ssize_t i = 0; i < input.shape(0); i++) {
-        for (ssize_t j = 0; j < input.shape(1); j++) {
-            
-            double result = 0.0;
-            for (ssize_t bit_index = 0; bit_index < weights_powers.size(); ++bit_index) {
-                result += ((input(i,j) >> bit_index) & 1) * weights_powers[bit_index];
-            }
-            output(i,j) = result;
+    for (ssize_t i = 0; i < input.shape(0); i++) {            
+        double result = 0.0;
+        for (ssize_t bit_index = 0; bit_index < weights_powers.size(); ++bit_index) {
+            result += ((input(i) >> bit_index) & 1) * weights_powers[bit_index];
         }
+        output(i) = result;
     }
 }
 

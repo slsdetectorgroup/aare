@@ -21,6 +21,6 @@ void adc_sar_04_decode64to16(NDView<uint64_t, 2> input, NDView<uint16_t,2> outpu
  */
 double apply_custom_weights(uint16_t input, const NDView<double, 1> weights);
 
-void apply_custom_weights(NDView<uint16_t, 2> input, NDView<double, 2> output, const NDView<double, 1> weights);
+void apply_custom_weights(NDView<uint16_t, 1> input, NDView<double, 1> output, const NDView<double, 1> weights);
 
 } // namespace aare
