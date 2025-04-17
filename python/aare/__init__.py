@@ -13,6 +13,10 @@ from ._aare import ClusterFinderMT, ClusterCollector, ClusterFileSink, ClusterVe
 
 from ._aare import fit_gaus, fit_pol1
 from ._aare import Interpolator
+
+
+from ._aare import apply_custom_weights
+
 from .CtbRawFile import CtbRawFile
 from .RawFile import RawFile
 from .ScanParameters import ScanParameters
