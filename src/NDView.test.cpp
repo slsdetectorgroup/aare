@@ -191,3 +191,15 @@ TEST_CASE("compare two views") {
 
     REQUIRE((view1 == view2));
 }
+
+
+TEST_CASE("Create a view over a vector"){
+    std::vector<int> vec;
+    for (int i = 0; i != 12; ++i) {
+        vec.push_back(i);
+    }
+    auto v = aare::make_view(vec);
+    REQUIRE(v.shape()[0] == 12);
+    REQUIRE(v[0] == 0);
+    REQUIRE(v[11] == 11);
+}

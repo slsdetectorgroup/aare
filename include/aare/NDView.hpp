@@ -184,4 +184,9 @@ std::ostream& operator <<(std::ostream& os, const NDView<T, Ndim>& arr){
 }
 
 
+template <typename T>
+NDView<T,1> make_view(std::vector<T>& vec){
+    return NDView<T,1>(vec.data(), {static_cast<int64_t>(vec.size())});
+}
+
 } // namespace aare
