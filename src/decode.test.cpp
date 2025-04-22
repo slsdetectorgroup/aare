@@ -64,12 +64,12 @@ TEST_CASE("test_adc_sar_05_decode64to16"){
     double output = aare::apply_custom_weights(input, weights);
     CHECK_THAT(output, WithinAbs(1.0, 0.001));
 
-    input = 1UL << 1;
+    input = 1 << 1;
     output = aare::apply_custom_weights(input, weights);
     CHECK_THAT(output, WithinAbs(2.1, 0.001));
 
 
-    input = 1UL << 2;
+    input = 1 << 2;
     output = aare::apply_custom_weights(input, weights);
     CHECK_THAT(output, WithinAbs(3.24, 0.001));
 

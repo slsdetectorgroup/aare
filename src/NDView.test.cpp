@@ -3,6 +3,7 @@
 
 #include <iostream>
 #include <vector>
+#include <numeric>
 
 using aare::NDView;
 using aare::Shape;
@@ -21,10 +22,8 @@ TEST_CASE("Element reference 1D") {
 }
 
 TEST_CASE("Element reference 2D") {
-    std::vector<int> vec;
-    for (int i = 0; i != 12; ++i) {
-        vec.push_back(i);
-    }
+    std::vector<int> vec(12);
+    std::iota(vec.begin(), vec.end(), 0);
 
     NDView<int, 2> data(vec.data(), Shape<2>{3, 4});
     REQUIRE(vec.size() == static_cast<size_t>(data.size()));
@@ -58,10 +57,8 @@ TEST_CASE("Element reference 3D") {
 }
 
 TEST_CASE("Plus and miuns with single value") {
-    std::vector<int> vec;
-    for (int i = 0; i != 12; ++i) {
-        vec.push_back(i);
-    }
+    std::vector<int> vec(12);
+    std::iota(vec.begin(), vec.end(), 0);
     NDView<int, 2> data(vec.data(), Shape<2>{3, 4});
     data += 5;
     int i = 0;
@@ -116,10 +113,8 @@ TEST_CASE("elementwise assign") {
 }
 
 TEST_CASE("iterators") {
-    std::vector<int> vec;
-    for (int i = 0; i != 12; ++i) {
-        vec.push_back(i);
-    }
+    std::vector<int> vec(12);
+    std::iota(vec.begin(), vec.end(), 0);
     NDView<int, 1> data(vec.data(), Shape<1>{12});
     int i = 0;
     for (const auto item : data) {
@@ -167,26 +162,20 @@ TEST_CASE("divide with another span") {
 }
 
 TEST_CASE("Retrieve shape") {
-    std::vector<int> vec;
-    for (int i = 0; i != 12; ++i) {
-        vec.push_back(i);
-    }
+    std::vector<int> vec(12);
+    std::iota(vec.begin(), vec.end(), 0);
     NDView<int, 2> data(vec.data(), Shape<2>{3, 4});
     REQUIRE(data.shape()[0] == 3);
     REQUIRE(data.shape()[1] == 4);
 }
 
 TEST_CASE("compare two views") {
-    std::vector<int> vec1;
-    for (int i = 0; i != 12; ++i) {
-        vec1.push_back(i);
-    }
+    std::vector<int> vec1(12);
+    std::iota(vec1.begin(), vec1.end(), 0);
     NDView<int, 2> view1(vec1.data(), Shape<2>{3, 4});
 
-    std::vector<int> vec2;
-    for (int i = 0; i != 12; ++i) {
-        vec2.push_back(i);
-    }
+    std::vector<int> vec2(12);
+    std::iota(vec2.begin(), vec2.end(), 0);
     NDView<int, 2> view2(vec2.data(), Shape<2>{3, 4});
 
     REQUIRE((view1 == view2));
@@ -194,10 +183,8 @@ TEST_CASE("compare two views") {
 
 
 TEST_CASE("Create a view over a vector"){
-    std::vector<int> vec;
-    for (int i = 0; i != 12; ++i) {
-        vec.push_back(i);
-    }
+    std::vector<int> vec(12);
+    std::iota(vec.begin(), vec.end(), 0);
     auto v = aare::make_view(vec);
     REQUIRE(v.shape()[0] == 12);
     REQUIRE(v[0] == 0);
