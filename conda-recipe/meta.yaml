@@ -38,6 +38,7 @@ requirements:
   run:
     - python {{python}}
     - numpy {{ numpy }}
+    - matplotlib
 
 
 test:
