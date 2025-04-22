@@ -124,7 +124,7 @@ class ClusterFile {
 
     /**
      * @brief Set the gain map to use when reading clusters. If set the gain map will be applied
-     * to the clusters that pass ROI and noise_map selection.
+     * to the clusters that pass ROI and noise_map selection. The gain map is expected to be in ADU/energy.
      */
     void set_gain_map(const NDView<double, 2> gain_map);
     
