@@ -2,9 +2,8 @@ name: Build the package using cmake then documentation
 
 on:
   workflow_dispatch:
-  push:
-    
 
+    
 
 permissions:
   contents: read
@@ -16,12 +15,12 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        platform: [ubuntu-latest, ] # macos-12, windows-2019]
-        python-version: ["3.12",]
+        platform: [ubuntu-latest, ] 
+        python-version: ["3.12", ] 
 
     runs-on: ${{ matrix.platform }}
 
-    # The setup-miniconda action needs this to activate miniconda
+
     defaults:
       run:
         shell: "bash -l {0}"
@@ -35,13 +34,13 @@ jobs:
             sudo apt-get -y install cmake gcc g++
 
       - name: Get conda
-        uses: conda-incubator/setup-miniconda@v3.0.4
+        uses: conda-incubator/setup-miniconda@v3
         with:
           python-version: ${{ matrix.python-version }}
+          environment-file: etc/dev-env.yml
+          miniforge-version: latest
           channels: conda-forge
-
-      - name: Prepare
-        run: conda install doxygen sphinx=7.1.2 breathe pybind11 sphinx_rtd_theme furo nlohmann_json zeromq fmt numpy
+          conda-remove-defaults: "true"
 
       - name: Build library 
         run: |
@@ -50,6 +49,7 @@ jobs:
             cmake .. -DAARE_SYSTEM_LIBRARIES=ON -DAARE_DOCS=ON 
             make -j 2 
             make docs
+
 
 
 

@@ -2,7 +2,7 @@
 from . import _aare
 
 
-from ._aare import File, RawMasterFile, RawSubFile
+from ._aare import File, RawMasterFile, RawSubFile, JungfrauDataFile
 from ._aare import Pedestal_d, Pedestal_f, ClusterFinder, VarClusterFinder
 from ._aare import DetectorType
 from ._aare import ClusterFile
@@ -13,11 +13,15 @@ from ._aare import ClusterFinderMT, ClusterCollector, ClusterFileSink, ClusterVe
 
 from ._aare import fit_gaus, fit_pol1
 from ._aare import Interpolator
+
+
+from ._aare import apply_custom_weights
+
 from .CtbRawFile import CtbRawFile
 from .RawFile import RawFile
 from .ScanParameters import ScanParameters
 
-from .utils import random_pixels, random_pixel, flat_list
+from .utils import random_pixels, random_pixel, flat_list, add_colorbar
 
 
 #make functions available in the top level API

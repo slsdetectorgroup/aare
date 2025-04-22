@@ -41,6 +41,12 @@ void ClusterFile::set_noise_map(const NDView<int32_t, 2> noise_map){
 
 void ClusterFile::set_gain_map(const NDView<double, 2> gain_map){
     m_gain_map = NDArray<double, 2>(gain_map);
+    
+    // Gain map is passed as ADU/keV to avoid dividing in when applying the gain
+    // map we invert it here
+    for (auto &item : m_gain_map->view()) {
+        item = 1.0 / item;
+    }
 }
 
 ClusterFile::~ClusterFile() { close(); }

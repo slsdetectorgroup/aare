@@ -183,14 +183,14 @@ TEST_CASE("Size and shape matches") {
     int64_t h = 75;
     std::array<int64_t, 2> shape{w, h};
     NDArray<double> a{shape};
-    REQUIRE(a.size() == static_cast<uint64_t>(w * h));
+    REQUIRE(a.size() == w * h);
     REQUIRE(a.shape() == shape);
 }
 
 TEST_CASE("Initial value matches for all elements") {
     double v = 4.35;
     NDArray<double> a{{5, 5}, v};
-    for (uint32_t i = 0; i < a.size(); ++i) {
+    for (int i = 0; i < a.size(); ++i) {
         REQUIRE(a(i) == v);
     }
 }

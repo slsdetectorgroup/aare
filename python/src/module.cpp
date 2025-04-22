@@ -10,6 +10,9 @@
 #include "cluster_file.hpp"
 #include "fit.hpp"
 #include "interpolation.hpp"
+#include "raw_sub_file.hpp"
+
+#include "jungfrau_data_file.hpp"
 
 //Pybind stuff
 #include <pybind11/pybind11.h>
@@ -20,6 +23,7 @@ namespace py = pybind11;
 PYBIND11_MODULE(_aare, m) {
     define_file_io_bindings(m);
     define_raw_file_io_bindings(m);
+    define_raw_sub_file_io_bindings(m);
     define_ctb_raw_file_io_bindings(m);
     define_raw_master_file_bindings(m);
     define_var_cluster_finder_bindings(m);
@@ -33,5 +37,6 @@ PYBIND11_MODULE(_aare, m) {
     define_cluster_file_sink_bindings(m);
     define_fit_bindings(m);
     define_interpolation_bindings(m);
+    define_jungfrau_data_file_io_bindings(m);
 
 }
