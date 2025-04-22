@@ -275,7 +275,7 @@ else()
 
 if(CMAKE_BUILD_TYPE STREQUAL "Release")
     message(STATUS "Release build")
-    target_compile_options(aare_compiler_flags INTERFACE -O3 -g)
+    target_compile_options(aare_compiler_flags INTERFACE -O3)
 else()
     message(STATUS "Debug build")
 endif()
