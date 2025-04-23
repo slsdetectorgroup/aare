@@ -2,55 +2,49 @@ package:
   name: aare
   version: 2025.4.22 #TODO! how to not duplicate this?
 
-
-
-
-
-
 source:
   path: ..
 
 build:
   number: 0
   script:
-    - unset CMAKE_GENERATOR && {{ PYTHON }} -m pip install . -vv  # [not win]
-    - {{ PYTHON }} -m pip install . -vv  # [win]
+    - unset CMAKE_GENERATOR && {{ PYTHON }} -m pip install . -vv 
 
 requirements:
   build:
-    - python {{python}}
-    - numpy {{ numpy }}
     - {{ compiler('cxx') }}
+    - cmake
+    - ninja
+    - pip
+    - catch2
 
 
   host:
-    - cmake
-    - ninja
     - python {{python}}
-    - numpy {{ numpy }}
-    - pip
+    - numpy {{numpy}}
     - scikit-build-core
     - pybind11 >=2.13.0
     - fmt
     - zeromq
     - nlohmann_json
-    - catch2
+    - matplotlib # needed in host to solve the environment for run
 
   run:
     - python {{python}}
-    - numpy {{ numpy }}
+    - {{ pin_compatible('numpy') }}
     - matplotlib
+    
 
 
 test:
   imports:
     - aare
-  # requires:
-  #   - pytest
-  # source_files:
-  #   - tests
-  # commands:
-  #   - pytest tests
+  requires:
+    - pytest
+  source_files:
+    - python/tests
+  commands:
+    - python -m pytest python/tests
 
 about:
   summary: An example project built with pybind11 and scikit-build.
