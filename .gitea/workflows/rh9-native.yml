@@ -8,7 +8,7 @@ permissions:
   contents: read
 
 jobs:
-  buildh:
+  build:
     runs-on: "ubuntu-latest"
     container:
       image: gitea.psi.ch/images/rhel9-developer-gitea-actions

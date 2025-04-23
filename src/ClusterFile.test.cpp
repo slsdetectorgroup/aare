@@ -27,6 +27,7 @@ TEST_CASE("Read one frame from a cluster file", "[.files]") {
                      std::begin(expected_cluster_data)));
 }
 
+
 TEST_CASE("Read one frame using ROI", "[.files]") {
     // We know that the frame has 97 clusters
     auto fpath = test_data_path() / "clust" / "single_frame_97_clustrers.clust";
@@ -59,6 +60,8 @@ TEST_CASE("Read one frame using ROI", "[.files]") {
                      std::end(clusters.at(0).data),
                      std::begin(expected_cluster_data)));
 }
+
+
 
 TEST_CASE("Read clusters from single frame file", "[.files]") {
 
@@ -162,6 +165,7 @@ TEST_CASE("Read clusters from single frame file", "[.files]") {
     // [ 97 296] [864 865 866 867 868 869 870 871 872]
 
     auto fpath = test_data_path() / "clust" / "single_frame_97_clustrers.clust";
+
     REQUIRE(std::filesystem::exists(fpath));
 
     SECTION("Read fewer clusters than available") {

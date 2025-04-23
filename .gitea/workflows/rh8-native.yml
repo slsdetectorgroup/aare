@@ -1,18 +1,24 @@
 name: Build on RHEL8
 
 on:
+  push:
   workflow_dispatch:
 
 permissions:
   contents: read
 
 jobs:
-  buildh:
+  build:
     runs-on: "ubuntu-latest"
     container:
       image: gitea.psi.ch/images/rhel8-developer-gitea-actions
     steps:
-      - uses: actions/checkout@v4
+      # workaround until actions/checkout@v4 is available for RH8
+      # - uses: actions/checkout@v4
+      - name: Clone repository
+        run: |
+          echo Cloning ${{ github.ref_name }}
+          git clone https://${{secrets.GITHUB_TOKEN}}@gitea.psi.ch/${{ github.repository }}.git --branch=${{ github.ref_name }} .
 
 
       - name: Install dependencies
@@ -22,7 +28,7 @@ jobs:
       - name: Build library 
         run: |
             mkdir build && cd build
-            cmake .. -DAARE_PYTHON_BINDINGS=ON -DAARE_TESTS=ON
+            cmake .. -DAARE_PYTHON_BINDINGS=ON -DAARE_TESTS=ON -DPython_FIND_VIRTUALENV=FIRST
             make -j 2 
 
       - name: C++ unit tests
