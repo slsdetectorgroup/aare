@@ -1,4 +1,4 @@
-cmake_minimum_required(VERSION 3.14)
+cmake_minimum_required(VERSION 3.15)
 
 project(aare 
     VERSION 1.0.0
@@ -10,6 +10,14 @@ project(aare
 set(CMAKE_CXX_STANDARD 17) 
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_CXX_EXTENSIONS OFF)
+
+execute_process(
+        COMMAND git log -1 --format=%h
+        WORKING_DIRECTORY ${CMAKE_CURRENT_LIST_DIR}
+        OUTPUT_VARIABLE GIT_HASH
+        OUTPUT_STRIP_TRAILING_WHITESPACE
+        )
+message(STATUS "Building from git hash: ${GIT_HASH}")
 
 if (${CMAKE_VERSION} VERSION_GREATER "3.24")
     cmake_policy(SET CMP0135 NEW) #Fetch content download timestamp
@@ -381,7 +389,9 @@ set(SourceFiles
     ${CMAKE_CURRENT_SOURCE_DIR}/src/RawFile.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/src/RawSubFile.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/src/RawMasterFile.cpp
+
     ${CMAKE_CURRENT_SOURCE_DIR}/src/utils/task.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/utils/ifstream_helpers.cpp
 )
 
 add_library(aare_core STATIC ${SourceFiles})
@@ -415,6 +425,7 @@ if(AARE_TESTS)
     set(TestSources
             ${CMAKE_CURRENT_SOURCE_DIR}/src/algorithm.test.cpp
             ${CMAKE_CURRENT_SOURCE_DIR}/src/defs.test.cpp
+            ${CMAKE_CURRENT_SOURCE_DIR}/src/decode.test.cpp
             ${CMAKE_CURRENT_SOURCE_DIR}/src/Dtype.test.cpp
             ${CMAKE_CURRENT_SOURCE_DIR}/src/Frame.test.cpp
             ${CMAKE_CURRENT_SOURCE_DIR}/src/geo_helpers.test.cpp

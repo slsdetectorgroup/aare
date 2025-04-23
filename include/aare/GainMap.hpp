@@ -16,10 +16,18 @@ class GainMap {
 
   public:
     explicit GainMap(const NDArray<double, 2> &gain_map)
-        : m_gain_map(gain_map) {};
+        : m_gain_map(gain_map) {
+            for (auto &item : m_gain_map) {
+            item = 1.0 / item;
+        }
+
+        };
 
     explicit GainMap(const NDView<double, 2> gain_map) {
         m_gain_map = NDArray<double, 2>(gain_map);
+        for (auto &item : m_gain_map) {
+            item = 1.0 / item;
+        }
     }
 
     template <typename ClusterType,
@@ -41,7 +49,7 @@ class GainMap {
                 for (size_t j = 0; j < ClusterSizeX * ClusterSizeY; j++) {
                     size_t x = cl.x + j % ClusterSizeX - index_cluster_center_x;
                     size_t y = cl.y + j / ClusterSizeX - index_cluster_center_y;
-                    cl.data[j] = cl.data[j] * static_cast<T>(m_gain_map(y, x));
+                    cl.data[j] = static_cast<T>(cl.data[j] * m_gain_map(y, x)); //cast after conversion to keep precision
                 }
             } else {
                 // clear edge clusters
