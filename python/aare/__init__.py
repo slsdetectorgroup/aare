@@ -18,6 +18,8 @@ from .ClusterVector import ClusterVector
 from ._aare import fit_gaus, fit_pol1
 from ._aare import Interpolator
 from ._aare import calculate_eta2
+
+
 from ._aare import apply_custom_weights
 
 from .CtbRawFile import CtbRawFile

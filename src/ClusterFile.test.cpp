@@ -62,6 +62,8 @@ TEST_CASE("Read one frame using ROI", "[.files]") {
                      std::begin(expected_cluster_data)));
 }
 
+
+
 TEST_CASE("Read clusters from single frame file", "[.files]") {
 
     //  frame_number, num_clusters   [135] 97
