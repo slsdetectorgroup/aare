@@ -44,7 +44,6 @@ void define_ClusterVector(py::module &m, const std::string &typestr) {
                  auto *vec = new std::vector<Type>(self.sum());
                  return return_vector(vec);
              })
-
         .def("sum_2x2", [](ClusterVector<ClusterType> &self){
             auto *vec = new std::vector<Type>(self.sum_2x2());
             return return_vector(vec);
