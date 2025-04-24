@@ -15,22 +15,19 @@ requirements:
     - {{ compiler('cxx') }}
     - cmake
     - ninja
-    - pip
     - catch2
 
 
   host:
-    - python {{python}}
-    - numpy {{numpy}}
+    - python
+    - pip
+    - numpy=2.1
     - scikit-build-core
     - pybind11 >=2.13.0
-    - fmt
-    - zeromq
-    - nlohmann_json
     - matplotlib # needed in host to solve the environment for run
 
   run:
-    - python {{python}}
+    - python
     - {{ pin_compatible('numpy') }}
     - matplotlib
     
@@ -47,5 +44,4 @@ test:
     - python -m pytest python/tests
 
 about:
-  summary: An example project built with pybind11 and scikit-build.
-  # license_file: LICENSE
+  summary: Data analysis library for hybrid pixel detectors from PSI 
