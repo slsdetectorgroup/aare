@@ -15,8 +15,6 @@ requirements:
     - {{ compiler('cxx') }}
     - cmake
     - ninja
-    - catch2
-
 
   host:
     - python
