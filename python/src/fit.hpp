@@ -321,10 +321,10 @@ n_threads : int, optional
            py::array_t<double, py::array::c_style | py::array::forcecast> y_err,
            int n_threads) {
             if (y.ndim() == 3) {
-                auto par = new NDArray<double, 3>({y.shape(0), y.shape(1), 2});
+                auto par = new NDArray<double, 3>({y.shape(0), y.shape(1), 6});
 
                 auto par_err =
-                    new NDArray<double, 3>({y.shape(0), y.shape(1), 2});
+                    new NDArray<double, 3>({y.shape(0), y.shape(1), 6});
 
                 auto y_view = make_view_3d(y);
                 auto y_view_err = make_view_3d(y_err);
@@ -408,10 +408,10 @@ n_threads : int, optional
            py::array_t<double, py::array::c_style | py::array::forcecast> y_err,
            int n_threads) {
             if (y.ndim() == 3) {
-                auto par = new NDArray<double, 3>({y.shape(0), y.shape(1), 2});
+                auto par = new NDArray<double, 3>({y.shape(0), y.shape(1), 6});
 
                 auto par_err =
-                    new NDArray<double, 3>({y.shape(0), y.shape(1), 2});
+                    new NDArray<double, 3>({y.shape(0), y.shape(1), 6});
 
                 auto y_view = make_view_3d(y);
                 auto y_view_err = make_view_3d(y_err);
@@ -428,8 +428,8 @@ n_threads : int, optional
 
 
             } else if (y.ndim() == 1) {
-                auto par = new NDArray<double, 1>({2});
-                auto par_err = new NDArray<double, 1>({2});
+                auto par = new NDArray<double, 1>({6});
+                auto par_err = new NDArray<double, 1>({6});
 
                 auto y_view = make_view_1d(y);
                 auto y_view_err = make_view_1d(y_err);

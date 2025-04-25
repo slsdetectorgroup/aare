@@ -40,7 +40,7 @@ double scurve(const double x, const double * par) {
 
 NDArray<double, 1> scurve(NDView<double, 1> x, NDView<double, 1> par) {
     NDArray<double, 1> y({x.shape()}, 0);
-    for (size_t i = 0; i < x.size(); i++) {
+    for (ssize_t i = 0; i < x.size(); i++) {
         y(i) = scurve(x(i), par.data());
     }
     return y;
@@ -52,7 +52,7 @@ double scurve2(const double x, const double * par) {
 
 NDArray<double, 1> scurve2(NDView<double, 1> x, NDView<double, 1> par) {
     NDArray<double, 1> y({x.shape()}, 0);
-    for (size_t i = 0; i < x.size(); i++) {
+    for (ssize_t i = 0; i < x.size(); i++) {
         y(i) = scurve2(x(i), par.data());
     }
     return y;
@@ -309,7 +309,7 @@ std::array<double, 6> scurve_init_par(const NDView<double, 1> x, const NDView<do
         start_par[4] = *ymin + (*ymax - *ymin) / 2;
         
         // Find the first x where the corresponding y value is above the threshold (start_par[4])
-        for (size_t i = 0; i < y.size(); ++i) {
+        for (ssize_t i = 0; i < y.size(); ++i) {
             if (y[i] >= start_par[4]) {
                 start_par[2] = x[i];
                 break; // Exit the loop after finding the first valid x
@@ -379,7 +379,7 @@ void fit_scurve(NDView<double, 1> x, NDView<double, 1> y, NDView<double, 1> y_er
 
     // Calculate chi2
     chi2 = 0;
-    for (size_t i = 0; i < y.size(); i++) {
+    for (ssize_t i = 0; i < y.size(); i++) {
         chi2 += std::pow((y(i) - func::pol1(x(i), par_out.data())) / y_err(i), 2);
     }
 }
@@ -421,7 +421,7 @@ std::array<double, 6> scurve2_init_par(const NDView<double, 1> x, const NDView<d
         start_par[4] = *ymin + (*ymax - *ymin) / 2;
         
         // Find the first x where the corresponding y value is above the threshold (start_par[4])
-        for (size_t i = 0; i < y.size(); ++i) {
+        for (ssize_t i = 0; i < y.size(); ++i) {
             if (y[i] <= start_par[4]) {
                 start_par[2] = x[i];
                 break; // Exit the loop after finding the first valid x
@@ -491,7 +491,7 @@ void fit_scurve2(NDView<double, 1> x, NDView<double, 1> y, NDView<double, 1> y_e
 
     // Calculate chi2
     chi2 = 0;
-    for (size_t i = 0; i < y.size(); i++) {
+    for (ssize_t i = 0; i < y.size(); i++) {
         chi2 += std::pow((y(i) - func::pol1(x(i), par_out.data())) / y_err(i), 2);
     }
 }
