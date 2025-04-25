@@ -271,8 +271,8 @@ template <typename T, typename CoordType = int16_t> class ClusterVector {
     void apply_gain_map(const NDView<double> gain_map){
         //in principle we need to know the size of the image for this lookup
         //TODO! check orientations
-        std::array<int64_t, 9> xcorr = {-1, 0, 1, -1, 0, 1, -1, 0, 1};
-        std::array<int64_t, 9> ycorr = {-1, -1, -1, 0, 0, 0, 1, 1, 1};
+        std::array<ssize_t, 9> xcorr = {-1, 0, 1, -1, 0, 1, -1, 0, 1};
+        std::array<ssize_t, 9> ycorr = {-1, -1, -1, 0, 0, 0, 1, 1, 1};
         for (size_t i=0; i<m_size; i++){
             auto& cl = at<Cluster3x3>(i);
 

@@ -308,7 +308,7 @@ bool ClusterFile::is_selected(Cluster3x3 &cl) {
 
 NDArray<double, 2> calculate_eta2(ClusterVector<int> &clusters) {
     //TOTO! make work with 2x2 clusters
-    NDArray<double, 2> eta2({static_cast<int64_t>(clusters.size()), 2});
+    NDArray<double, 2> eta2({static_cast<ssize_t>(clusters.size()), 2});
     
     if (clusters.cluster_size_x() == 3 || clusters.cluster_size_y() == 3) {
         for (size_t i = 0; i < clusters.size(); i++) {

@@ -142,7 +142,7 @@ TEST_CASE("iterators") {
 //     for (int i = 0; i != 12; ++i) {
 //         vec.push_back(i);
 //     }
-//     std::vector<int64_t> shape{3, 4};
+//     std::vector<ssize_t> shape{3, 4};
 //     NDView<int, 2> data(vec.data(), shape);
 // }
 
@@ -151,8 +151,8 @@ TEST_CASE("divide with another span") {
     std::vector<int> vec1{3, 2, 1};
     std::vector<int> result{3, 6, 3};
 
-    NDView<int, 1> data0(vec0.data(), Shape<1>{static_cast<int64_t>(vec0.size())});
-    NDView<int, 1> data1(vec1.data(), Shape<1>{static_cast<int64_t>(vec1.size())});
+    NDView<int, 1> data0(vec0.data(), Shape<1>{static_cast<ssize_t>(vec0.size())});
+    NDView<int, 1> data1(vec1.data(), Shape<1>{static_cast<ssize_t>(vec1.size())});
 
     data0 /= data1;
 
