@@ -3,16 +3,21 @@ from . import _aare
 
 
 from ._aare import File, RawMasterFile, RawSubFile, JungfrauDataFile
-from ._aare import Pedestal_d, Pedestal_f, ClusterFinder, VarClusterFinder
+from ._aare import Pedestal_d, Pedestal_f, ClusterFinder_Cluster3x3i, VarClusterFinder
 from ._aare import DetectorType
-from ._aare import ClusterFile
+from ._aare import ClusterFile_Cluster3x3i as ClusterFile
 from ._aare import hitmap
 from ._aare import ROI
 
-from ._aare import ClusterFinderMT, ClusterCollector, ClusterFileSink, ClusterVector_i
+# from ._aare import ClusterFinderMT, ClusterCollector, ClusterFileSink, ClusterVector_i
+
+from .ClusterFinder import ClusterFinder, ClusterCollector, ClusterFinderMT, ClusterFileSink
+from .ClusterVector import ClusterVector
+
 
 from ._aare import fit_gaus, fit_pol1, fit_scurve, fit_scurve2
 from ._aare import Interpolator
+from ._aare import calculate_eta2
 
 
 from ._aare import apply_custom_weights
