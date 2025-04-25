@@ -40,8 +40,8 @@ template <typename ClusterType,
 NDArray<double, 2> calculate_eta2(const ClusterVector<ClusterType> &clusters) {
     NDArray<double, 2> eta2({static_cast<int64_t>(clusters.size()), 2});
 
-    for (const ClusterType &cluster : clusters) {
-        auto e = calculate_eta2(cluster);
+    for (size_t i = 0; i < clusters.size(); i++) {
+        auto e = calculate_eta2(clusters[i]);
         eta2(i, 0) = e.x;
         eta2(i, 1) = e.y;
     }

@@ -76,8 +76,9 @@ class ClusterVector<Cluster<T, ClusterSizeX, ClusterSizeY, CoordType>> {
     std::vector<T> sum() {
         std::vector<T> sums(m_data.size());
 
-        std::transform(m_data.begin(), m_data.end(), sums.begin(),
-                       [](const T &cluster) { return cluster.sum(); });
+        std::transform(
+            m_data.begin(), m_data.end(), sums.begin(),
+            [](const ClusterType &cluster) { return cluster.sum(); });
 
         return sums;
     }
@@ -90,9 +91,10 @@ class ClusterVector<Cluster<T, ClusterSizeX, ClusterSizeY, CoordType>> {
     std::vector<T> sum_2x2() {
         std::vector<T> sums_2x2(m_data.size());
 
-        std::transform(
-            m_data.begin(), m_data.end(), sums_2x2.begin(),
-            [](const T &cluster) { return cluster.max_sum_2x2().first; });
+        std::transform(m_data.begin(), m_data.end(), sums_2x2.begin(),
+                       [](const ClusterType &cluster) {
+                           return cluster.max_sum_2x2().first;
+                       });
 
         return sums_2x2;
     }

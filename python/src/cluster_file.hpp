@@ -59,9 +59,6 @@ void define_cluster_file_io_bindings(py::module &m,
                  self.set_gain_map(view);
              })
 
-        // void set_gain_map(const GainMap &gain_map); //TODO do i need a
-        // gainmap constructor?
-
         .def("close", &ClusterFile<ClusterType>::close)
         .def("write_frame", &ClusterFile<ClusterType>::write_frame)
         .def("__enter__", [](ClusterFile<ClusterType> &self) { return &self; })

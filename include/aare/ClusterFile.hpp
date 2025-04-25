@@ -46,8 +46,8 @@ class ClusterFile {
     std::optional<ROI> m_roi; /*Region of interest, will be applied if set*/
     std::optional<NDArray<int32_t, 2>>
         m_noise_map; /*Noise map to cut photons, will be applied if set*/
-    std::optional<GainMap> m_gain_map; /*Gain map to apply to the clusters, will
-                                          be applied if set*/
+    std::optional<InvertedGainMap> m_gain_map; /*Gain map to apply to the
+                                          clusters, will be applied if set*/
 
   public:
     /**
@@ -160,16 +160,21 @@ class ClusterFile {
     }
 
     /**
-     * @brief Set the gain map to use when reading clusters. If set the gain map will be applied
-     * to the clusters that pass ROI and noise_map selection. The gain map is expected to be in ADU/energy.
+     * @brief Set the gain map to use when reading clusters. If set the gain map
+     * will be applied to the clusters that pass ROI and noise_map selection.
+     * The gain map is expected to be in ADU/energy.
      */
     void set_gain_map(const NDView<double, 2> gain_map) {
-        m_gain_map = GainMap(gain_map);
+        m_gain_map = InvertedGainMap(gain_map);
     }
 
-    void set_gain_map(const GainMap &gain_map) { m_gain_map = gain_map; }
+    void set_gain_map(const InvertedGainMap &gain_map) {
+        m_gain_map = gain_map;
+    }
 
-    void set_gain_map(const GainMap &&gain_map) { m_gain_map = gain_map; }
+    void set_gain_map(const InvertedGainMap &&gain_map) {
+        m_gain_map = gain_map;
+    }
 
     /**
      * @brief Close the file. If not closed the file will be

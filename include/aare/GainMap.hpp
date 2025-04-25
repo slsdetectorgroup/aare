@@ -1,6 +1,7 @@
 /************************************************
- * @file ApplyGainMap.hpp
- * @short function to apply gain map of image size to a vector of clusters
+ * @file GainMap.hpp
+ * @short function to apply gain map of image size to a vector of clusters -
+ *note stored gainmap is inverted for efficient aaplication to images
  ***********************************************/
 
 #pragma once
@@ -12,18 +13,17 @@
 
 namespace aare {
 
-class GainMap {
+class InvertedGainMap {
 
   public:
-    explicit GainMap(const NDArray<double, 2> &gain_map)
+    explicit InvertedGainMap(const NDArray<double, 2> &gain_map)
         : m_gain_map(gain_map) {
-            for (auto &item : m_gain_map) {
+        for (auto &item : m_gain_map) {
             item = 1.0 / item;
         }
+    };
 
-        };
-
-    explicit GainMap(const NDView<double, 2> gain_map) {
+    explicit InvertedGainMap(const NDView<double, 2> gain_map) {
         m_gain_map = NDArray<double, 2>(gain_map);
         for (auto &item : m_gain_map) {
             item = 1.0 / item;
@@ -41,14 +41,18 @@ class GainMap {
 
         int64_t index_cluster_center_x = ClusterSizeX / 2;
         int64_t index_cluster_center_y = ClusterSizeY / 2;
-        for (T &cl : clustervec) {
+        for (size_t i = 0; i < clustervec.size(); i++) {
+            auto &cl = clustervec[i];
 
             if (cl.x > 0 && cl.y > 0 && cl.x < m_gain_map.shape(1) - 1 &&
                 cl.y < m_gain_map.shape(0) - 1) {
                 for (size_t j = 0; j < ClusterSizeX * ClusterSizeY; j++) {
                     size_t x = cl.x + j % ClusterSizeX - index_cluster_center_x;
                     size_t y = cl.y + j / ClusterSizeX - index_cluster_center_y;
-                    cl.data[j] = static_cast<T>(cl.data[j] * m_gain_map(y, x)); //cast after conversion to keep precision
+                    cl.data[j] = static_cast<T>(
+                        static_cast<double>(cl.data[j]) *
+                        m_gain_map(
+                            y, x)); // cast after conversion to keep precision
                 }
             } else {
                 // clear edge clusters
