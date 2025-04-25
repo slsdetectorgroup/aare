@@ -20,6 +20,9 @@
 namespace py = pybind11;
 using namespace ::aare;
 
+
+
+
 //Disable warnings for unused parameters, as we ignore some
 //in the __exit__ method
 #pragma GCC diagnostic push
@@ -195,6 +198,8 @@ void define_file_io_bindings(py::module &m) {
 
     py::class_<ROI>(m, "ROI")
         .def(py::init<>())
+        .def(py::init<int64_t, int64_t, int64_t, int64_t>(), py::arg("xmin"),
+             py::arg("xmax"), py::arg("ymin"), py::arg("ymax"))
         .def_readwrite("xmin", &ROI::xmin)
         .def_readwrite("xmax", &ROI::xmax)
         .def_readwrite("ymin", &ROI::ymin)
@@ -212,36 +217,9 @@ void define_file_io_bindings(py::module &m) {
     
 
 
-    py::class_<RawSubFile>(m, "RawSubFile")
-        .def(py::init<const std::filesystem::path &, DetectorType, size_t,
-                      size_t, size_t>())
-        .def_property_readonly("bytes_per_frame", &RawSubFile::bytes_per_frame)
-        .def_property_readonly("pixels_per_frame",
-                               &RawSubFile::pixels_per_frame)
-        .def("seek", &RawSubFile::seek)
-        .def("tell", &RawSubFile::tell)
-        .def_property_readonly("rows", &RawSubFile::rows)
-        .def_property_readonly("cols", &RawSubFile::cols)
-        .def("read_frame",
-             [](RawSubFile &self) {
-                 const uint8_t item_size = self.bytes_per_pixel();
-                 py::array image;
-                 std::vector<ssize_t> shape;
-                 shape.reserve(2);
-                 shape.push_back(self.rows());
-                 shape.push_back(self.cols());
-                 if (item_size == 1) {
-                     image = py::array_t<uint8_t>(shape);
-                 } else if (item_size == 2) {
-                     image = py::array_t<uint16_t>(shape);
-                 } else if (item_size == 4) {
-                     image = py::array_t<uint32_t>(shape);
-                 }
-                 fmt::print("item_size: {} rows: {} cols: {}\n", item_size, self.rows(), self.cols());
-                 self.read_into(
-                     reinterpret_cast<std::byte *>(image.mutable_data()));
-                 return image;
-             });
+
+
+
 
 #pragma GCC diagnostic pop
     // py::class_<ClusterHeader>(m, "ClusterHeader")

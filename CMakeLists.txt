@@ -1,4 +1,4 @@
-cmake_minimum_required(VERSION 3.14)
+cmake_minimum_required(VERSION 3.15)
 
 project(aare 
     VERSION 1.0.0
@@ -10,6 +10,14 @@ project(aare
 set(CMAKE_CXX_STANDARD 17) 
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_CXX_EXTENSIONS OFF)
+
+execute_process(
+        COMMAND git log -1 --format=%h
+        WORKING_DIRECTORY ${CMAKE_CURRENT_LIST_DIR}
+        OUTPUT_VARIABLE GIT_HASH
+        OUTPUT_STRIP_TRAILING_WHITESPACE
+        )
+message(STATUS "Building from git hash: ${GIT_HASH}")
 
 if (${CMAKE_VERSION} VERSION_GREATER "3.24")
     cmake_policy(SET CMP0135 NEW) #Fetch content download timestamp
@@ -60,6 +68,8 @@ if(AARE_SYSTEM_LIBRARIES)
     set(AARE_FETCH_CATCH OFF CACHE BOOL "Disabled FetchContent for catch2" FORCE)
     set(AARE_FETCH_JSON OFF CACHE BOOL "Disabled FetchContent for nlohmann::json" FORCE)
     set(AARE_FETCH_ZMQ OFF CACHE BOOL "Disabled FetchContent for libzmq" FORCE)
+    # Still fetch lmfit when setting AARE_SYSTEM_LIBRARIES since this is not available
+    # on conda-forge
 endif()
 
 if(AARE_VERBOSE)
@@ -78,15 +88,31 @@ endif()
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 
 if(AARE_FETCH_LMFIT)
-    set(lmfit_patch git apply ${CMAKE_CURRENT_SOURCE_DIR}/patches/lmfit.patch)
-    FetchContent_Declare(
-        lmfit
-        GIT_REPOSITORY https://jugit.fz-juelich.de/mlz/lmfit.git
-        GIT_TAG        main
-        PATCH_COMMAND ${lmfit_patch}
-        UPDATE_DISCONNECTED 1
-        EXCLUDE_FROM_ALL 1
-    )
+    #TODO! Should we fetch lmfit from the web or inlcude a tar.gz in the repo?
+    set(LMFIT_PATCH_COMMAND git apply ${CMAKE_CURRENT_SOURCE_DIR}/patches/lmfit.patch)
+
+    # For cmake < 3.28 we can't supply EXCLUDE_FROM_ALL to FetchContent_Declare
+    # so we need this workaround
+    if (${CMAKE_VERSION} VERSION_LESS "3.28")
+        FetchContent_Declare(
+            lmfit
+            GIT_REPOSITORY https://jugit.fz-juelich.de/mlz/lmfit.git
+            GIT_TAG        main
+            PATCH_COMMAND ${LMFIT_PATCH_COMMAND}
+            UPDATE_DISCONNECTED 1
+        )
+    else()
+        FetchContent_Declare(
+            lmfit
+            GIT_REPOSITORY https://jugit.fz-juelich.de/mlz/lmfit.git
+            GIT_TAG        main
+            PATCH_COMMAND ${LMFIT_PATCH_COMMAND}
+            UPDATE_DISCONNECTED 1
+            EXCLUDE_FROM_ALL 1
+        )
+    endif()
+    
+
     #Disable what we don't need from lmfit
     set(BUILD_TESTING OFF CACHE BOOL "")
     set(LMFIT_CPPTEST OFF CACHE BOOL "")
@@ -94,8 +120,15 @@ if(AARE_FETCH_LMFIT)
     set(LMFIT_CPPTEST OFF CACHE BOOL "")
     set(BUILD_SHARED_LIBS OFF CACHE BOOL "")
 
+    if (${CMAKE_VERSION} VERSION_LESS "3.28")
+        if(NOT lmfit_POPULATED)
+            FetchContent_Populate(lmfit)
+            add_subdirectory(${lmfit_SOURCE_DIR} ${lmfit_BINARY_DIR} EXCLUDE_FROM_ALL)
+        endif()
+    else()
+        FetchContent_MakeAvailable(lmfit)
+    endif()
     
-    FetchContent_MakeAvailable(lmfit)
     set_property(TARGET lmfit PROPERTY POSITION_INDEPENDENT_CODE ON)
 else()
     find_package(lmfit REQUIRED)
@@ -108,10 +141,13 @@ if(AARE_FETCH_ZMQ)
     if (${CMAKE_VERSION} VERSION_GREATER_EQUAL "3.30")
         cmake_policy(SET CMP0169 OLD)
     endif()
+    set(ZMQ_PATCH_COMMAND git apply ${CMAKE_CURRENT_SOURCE_DIR}/patches/libzmq_cmake_version.patch)
     FetchContent_Declare(
         libzmq
         GIT_REPOSITORY https://github.com/zeromq/libzmq.git
         GIT_TAG        v4.3.4
+        PATCH_COMMAND ${ZMQ_PATCH_COMMAND}
+        UPDATE_DISCONNECTED 1
     )
     # Disable unwanted options from libzmq
     set(BUILD_TESTS OFF CACHE BOOL "Switch off libzmq test build")
@@ -314,8 +350,10 @@ set(PUBLICHEADERS
     include/aare/File.hpp
     include/aare/Fit.hpp
     include/aare/FileInterface.hpp
+    include/aare/FilePtr.hpp
     include/aare/Frame.hpp
     include/aare/geo_helpers.hpp
+    include/aare/JungfrauDataFile.hpp
     include/aare/NDArray.hpp
     include/aare/NDView.hpp
     include/aare/NumpyFile.hpp
@@ -339,15 +377,20 @@ set(SourceFiles
     ${CMAKE_CURRENT_SOURCE_DIR}/src/decode.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/src/Frame.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/src/File.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/FilePtr.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/src/Fit.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/src/geo_helpers.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/JungfrauDataFile.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/src/NumpyFile.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/src/NumpyHelpers.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/Interpolator.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/src/PixelMap.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/src/RawFile.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/src/RawSubFile.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/src/RawMasterFile.cpp
+
     ${CMAKE_CURRENT_SOURCE_DIR}/src/utils/task.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/utils/ifstream_helpers.cpp
 )
 
 
@@ -382,7 +425,9 @@ endif()
 
 if(AARE_TESTS)
     set(TestSources
+            ${CMAKE_CURRENT_SOURCE_DIR}/src/algorithm.test.cpp
             ${CMAKE_CURRENT_SOURCE_DIR}/src/defs.test.cpp
+            ${CMAKE_CURRENT_SOURCE_DIR}/src/decode.test.cpp
             ${CMAKE_CURRENT_SOURCE_DIR}/src/Dtype.test.cpp
             ${CMAKE_CURRENT_SOURCE_DIR}/src/Frame.test.cpp
             ${CMAKE_CURRENT_SOURCE_DIR}/src/geo_helpers.test.cpp
@@ -391,7 +436,9 @@ if(AARE_TESTS)
             ${CMAKE_CURRENT_SOURCE_DIR}/src/NDView.test.cpp
             ${CMAKE_CURRENT_SOURCE_DIR}/src/ClusterFinder.test.cpp
             ${CMAKE_CURRENT_SOURCE_DIR}/src/ClusterVector.test.cpp
+            ${CMAKE_CURRENT_SOURCE_DIR}/src/ClusterFile.test.cpp
             ${CMAKE_CURRENT_SOURCE_DIR}/src/Pedestal.test.cpp
+            ${CMAKE_CURRENT_SOURCE_DIR}/src/JungfrauDataFile.test.cpp
             ${CMAKE_CURRENT_SOURCE_DIR}/src/NumpyFile.test.cpp
             ${CMAKE_CURRENT_SOURCE_DIR}/src/NumpyHelpers.test.cpp
             ${CMAKE_CURRENT_SOURCE_DIR}/src/RawFile.test.cpp

@@ -1,8 +1,11 @@
 #include "aare/RawSubFile.hpp"
 #include "aare/PixelMap.hpp"
+#include "aare/utils/ifstream_helpers.hpp"
 #include <cstring> // memcpy
 #include <fmt/core.h>
 #include <iostream>
+
+
 
 namespace aare {
 
@@ -20,7 +23,7 @@ RawSubFile::RawSubFile(const std::filesystem::path &fname,
     }
 
     if (std::filesystem::exists(fname)) {
-        n_frames = std::filesystem::file_size(fname) /
+        m_num_frames = std::filesystem::file_size(fname) /
                    (sizeof(DetectorHeader) + rows * cols * bitdepth / 8);
     } else {
         throw std::runtime_error(
@@ -35,7 +38,7 @@ RawSubFile::RawSubFile(const std::filesystem::path &fname,
     }
 
 #ifdef AARE_VERBOSE
-    fmt::print("Opened file: {} with {} frames\n", m_fname.string(), n_frames);
+    fmt::print("Opened file: {} with {} frames\n", m_fname.string(), m_num_frames);
     fmt::print("m_rows: {}, m_cols: {}, m_bitdepth: {}\n", m_rows, m_cols,
                m_bitdepth);
     fmt::print("file size: {}\n", std::filesystem::file_size(fname));
@@ -43,8 +46,8 @@ RawSubFile::RawSubFile(const std::filesystem::path &fname,
 }
 
 void RawSubFile::seek(size_t frame_index) {
-    if (frame_index >= n_frames) {
-        throw std::runtime_error(LOCATION + fmt::format("Frame index {} out of range in a file with {} frames", frame_index, n_frames));
+    if (frame_index >= m_num_frames) {
+        throw std::runtime_error(LOCATION + fmt::format("Frame index {} out of range in a file with {} frames", frame_index, m_num_frames));
     }
     m_file.seekg((sizeof(DetectorHeader) + bytes_per_frame()) * frame_index);
 }
@@ -58,6 +61,10 @@ void RawSubFile::read_into(std::byte *image_buf, DetectorHeader *header) {
         m_file.read(reinterpret_cast<char *>(header), sizeof(DetectorHeader));
     } else {
         m_file.seekg(sizeof(DetectorHeader), std::ios::cur);
+    }
+
+    if (m_file.fail()){
+        throw std::runtime_error(LOCATION + ifstream_error_msg(m_file));
     }
 
     // TODO! expand support for different bitdepths
@@ -79,7 +86,23 @@ void RawSubFile::read_into(std::byte *image_buf, DetectorHeader *header) {
         // read directly into the buffer
         m_file.read(reinterpret_cast<char *>(image_buf), bytes_per_frame());
     }
+
+    if (m_file.fail()){
+        throw std::runtime_error(LOCATION + ifstream_error_msg(m_file));
+    }
 }
+
+void RawSubFile::read_into(std::byte *image_buf, size_t n_frames, DetectorHeader *header) {
+    for (size_t i = 0; i < n_frames; i++) {
+        read_into(image_buf, header);
+        image_buf += bytes_per_frame();
+        if (header) {
+            ++header;
+        }
+    }
+}
+
+
 
 template <typename T>
 void RawSubFile::read_with_map(std::byte *image_buf) {

@@ -2,6 +2,7 @@
 #include <array>
 #include <catch2/benchmark/catch_benchmark.hpp>
 #include <catch2/catch_test_macros.hpp>
+#include <numeric>
 
 using aare::NDArray;
 using aare::NDView;
@@ -31,6 +32,24 @@ TEST_CASE("Construct from an NDView") {
     image = 43;
     for (uint32_t i = 0; i < image.size(); ++i) {
         REQUIRE(image(i) != view(i));
+    }
+}
+
+TEST_CASE("3D NDArray from NDView"){
+    std::vector<int> data(27);
+    std::iota(data.begin(), data.end(), 0);
+    NDView<int, 3> view(data.data(), Shape<3>{3, 3, 3});
+    NDArray<int, 3> image(view);
+    REQUIRE(image.shape() == view.shape());
+    REQUIRE(image.size() == view.size());
+    REQUIRE(image.data() != view.data());
+
+    for(int64_t i=0; i<image.shape(0); i++){
+        for(int64_t j=0; j<image.shape(1); j++){
+            for(int64_t k=0; k<image.shape(2); k++){
+                REQUIRE(image(i, j, k) == view(i, j, k));
+            }
+        }
     }
 }
 
@@ -164,14 +183,14 @@ TEST_CASE("Size and shape matches") {
     int64_t h = 75;
     std::array<int64_t, 2> shape{w, h};
     NDArray<double> a{shape};
-    REQUIRE(a.size() == static_cast<uint64_t>(w * h));
+    REQUIRE(a.size() == w * h);
     REQUIRE(a.shape() == shape);
 }
 
 TEST_CASE("Initial value matches for all elements") {
     double v = 4.35;
     NDArray<double> a{{5, 5}, v};
-    for (uint32_t i = 0; i < a.size(); ++i) {
+    for (int i = 0; i < a.size(); ++i) {
         REQUIRE(a(i) == v);
     }
 }

@@ -102,6 +102,9 @@ class NDArray : public ArrayExpr<NDArray<T, Ndim>, Ndim> {
     auto begin() { return data_; }
     auto end() { return data_ + size_; }
 
+    auto begin() const { return data_; }
+    auto end() const { return data_ + size_; }
+
     using value_type = T;
 
     NDArray &operator=(NDArray &&other) noexcept; // Move assign
@@ -191,7 +194,7 @@ class NDArray : public ArrayExpr<NDArray<T, Ndim>, Ndim> {
 
     T *data() { return data_; }
     std::byte *buffer() { return reinterpret_cast<std::byte *>(data_); }
-    size_t size() const { return size_; }
+    ssize_t size() const { return static_cast<ssize_t>(size_); }
     size_t total_bytes() const { return size_ * sizeof(T); }
     std::array<int64_t, Ndim> shape() const noexcept { return shape_; }
     int64_t shape(int64_t i) const noexcept { return shape_[i]; }
@@ -388,12 +391,12 @@ NDArray<T, Ndim> NDArray<T, Ndim>::operator*(const T &value) {
     result *= value;
     return result;
 }
-template <typename T, int64_t Ndim> void NDArray<T, Ndim>::Print() {
-    if (shape_[0] < 20 && shape_[1] < 20)
-        Print_all();
-    else
-        Print_some();
-}
+// template <typename T, int64_t Ndim> void NDArray<T, Ndim>::Print() {
+//     if (shape_[0] < 20 && shape_[1] < 20)
+//         Print_all();
+//     else
+//         Print_some();
+// }
 
 template <typename T, int64_t Ndim>
 std::ostream &operator<<(std::ostream &os, const NDArray<T, Ndim> &arr) {

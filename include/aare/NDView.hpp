@@ -71,7 +71,7 @@ template <typename T, int64_t Ndim = 2> class NDView : public ArrayExpr<NDView<T
         return buffer_[element_offset(strides_, index...)];
     }
 
-    size_t size() const { return size_; }
+    ssize_t size() const { return static_cast<ssize_t>(size_); }
     size_t total_bytes() const { return size_ * sizeof(T); }
     std::array<int64_t, Ndim> strides() const noexcept { return strides_; }
 
@@ -102,7 +102,7 @@ template <typename T, int64_t Ndim = 2> class NDView : public ArrayExpr<NDView<T
 
     template<size_t Size>
     NDView& operator=(const std::array<T, Size> &arr) {
-        if(size() != arr.size())
+        if(size() != static_cast<ssize_t>(arr.size()))
             throw std::runtime_error(LOCATION + "Array and NDView size mismatch");
         std::copy(arr.begin(), arr.end(), begin());
         return *this;
@@ -183,5 +183,10 @@ std::ostream& operator <<(std::ostream& os, const NDView<T, Ndim>& arr){
     return os;
 }
 
+
+template <typename T>
+NDView<T,1> make_view(std::vector<T>& vec){
+    return NDView<T,1>(vec.data(), {static_cast<int64_t>(vec.size())});
+}
 
 } // namespace aare

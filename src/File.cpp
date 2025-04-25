@@ -1,4 +1,5 @@
 #include "aare/File.hpp"
+#include "aare/JungfrauDataFile.hpp"
 #include "aare/NumpyFile.hpp"
 #include "aare/RawFile.hpp"
 
@@ -27,6 +28,8 @@ File::File(const std::filesystem::path &fname, const std::string &mode,
     else if (fname.extension() == ".npy") {
         // file_impl = new NumpyFile(fname, mode, cfg);
         file_impl = std::make_unique<NumpyFile>(fname, mode, cfg);
+    }else if(fname.extension() == ".dat"){
+        file_impl = std::make_unique<JungfrauDataFile>(fname);
     } else {
         throw std::runtime_error("Unsupported file type");
     }
@@ -73,7 +76,7 @@ size_t File::tell() const { return file_impl->tell(); }
 size_t File::rows() const { return file_impl->rows(); }
 size_t File::cols() const { return file_impl->cols(); }
 size_t File::bitdepth() const { return file_impl->bitdepth(); }
-size_t File::bytes_per_pixel() const { return file_impl->bitdepth() / 8; }
+size_t File::bytes_per_pixel() const { return file_impl->bitdepth() / bits_per_byte; }
 
 DetectorType File::detector_type() const { return file_impl->detector_type(); }
 

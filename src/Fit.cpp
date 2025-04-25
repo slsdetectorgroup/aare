@@ -18,7 +18,7 @@ double gaus(const double x, const double *par) {
 
 NDArray<double, 1> gaus(NDView<double, 1> x, NDView<double, 1> par) {
     NDArray<double, 1> y({x.shape(0)}, 0);
-    for (size_t i = 0; i < x.size(); i++) {
+    for (ssize_t i = 0; i < x.size(); i++) {
         y(i) = gaus(x(i), par.data());
     }
     return y;
@@ -28,7 +28,7 @@ double pol1(const double x, const double *par) { return par[0] * x + par[1]; }
 
 NDArray<double, 1> pol1(NDView<double, 1> x, NDView<double, 1> par) {
     NDArray<double, 1> y({x.shape()}, 0);
-    for (size_t i = 0; i < x.size(); i++) {
+    for (ssize_t i = 0; i < x.size(); i++) {
         y(i) = pol1(x(i), par.data());
     }
     return y;
@@ -177,7 +177,7 @@ void fit_gaus(NDView<double, 1> x, NDView<double, 1> y, NDView<double, 1> y_err,
 
     // Calculate chi2
     chi2 = 0;
-    for (size_t i = 0; i < y.size(); i++) {
+    for (ssize_t i = 0; i < y.size(); i++) {
         chi2 += std::pow((y(i) - func::gaus(x(i), par_out.data())) / y_err(i), 2);
     }
 }
@@ -229,7 +229,7 @@ void fit_pol1(NDView<double, 1> x, NDView<double, 1> y, NDView<double, 1> y_err,
 
     // Calculate chi2
     chi2 = 0;
-    for (size_t i = 0; i < y.size(); i++) {
+    for (ssize_t i = 0; i < y.size(); i++) {
         chi2 += std::pow((y(i) - func::pol1(x(i), par_out.data())) / y_err(i), 2);
     }
 }
