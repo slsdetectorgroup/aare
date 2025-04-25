@@ -20,11 +20,10 @@ TEST_CASE("Read one frame from a cluster file", "[.files]") {
     auto clusters = f.read_frame();
     CHECK(clusters.size() == 97);
     CHECK(clusters.frame_number() == 135);
-    CHECK(clusters.at(0).x == 1);
-    CHECK(clusters.at(0).y == 200);
+    CHECK(clusters[0].x == 1);
+    CHECK(clusters[0].y == 200);
     int32_t expected_cluster_data[] = {0, 1, 2, 3, 4, 5, 6, 7, 8};
-    CHECK(std::equal(std::begin(clusters.at(0).data),
-                     std::end(clusters.at(0).data),
+    CHECK(std::equal(std::begin(clusters[0].data), std::end(clusters[0].data),
                      std::begin(expected_cluster_data)));
 }
 
@@ -47,18 +46,17 @@ TEST_CASE("Read one frame using ROI", "[.files]") {
 
     // Check that all clusters are within the ROI
     for (size_t i = 0; i < clusters.size(); i++) {
-        auto c = clusters.at(i);
+        auto c = clusters[i];
         REQUIRE(c.x >= roi.xmin);
         REQUIRE(c.x <= roi.xmax);
         REQUIRE(c.y >= roi.ymin);
         REQUIRE(c.y <= roi.ymax);
     }
 
-    CHECK(clusters.at(0).x == 1);
-    CHECK(clusters.at(0).y == 200);
+    CHECK(clusters[0].x == 1);
+    CHECK(clusters[0].y == 200);
     int32_t expected_cluster_data[] = {0, 1, 2, 3, 4, 5, 6, 7, 8};
-    CHECK(std::equal(std::begin(clusters.at(0).data),
-                     std::end(clusters.at(0).data),
+    CHECK(std::equal(std::begin(clusters[0].data), std::end(clusters[0].data),
                      std::begin(expected_cluster_data)));
 }
 
@@ -175,10 +173,10 @@ TEST_CASE("Read clusters from single frame file", "[.files]") {
         REQUIRE(clusters.size() == 50);
         REQUIRE(clusters.frame_number() == 135);
         int32_t expected_cluster_data[] = {0, 1, 2, 3, 4, 5, 6, 7, 8};
-        REQUIRE(clusters.at(0).x == 1);
-        REQUIRE(clusters.at(0).y == 200);
-        CHECK(std::equal(std::begin(clusters.at(0).data),
-                         std::end(clusters.at(0).data),
+        REQUIRE(clusters[0].x == 1);
+        REQUIRE(clusters[0].y == 200);
+        CHECK(std::equal(std::begin(clusters[0].data),
+                         std::end(clusters[0].data),
                          std::begin(expected_cluster_data)));
     }
     SECTION("Read more clusters than available") {
@@ -188,10 +186,10 @@ TEST_CASE("Read clusters from single frame file", "[.files]") {
         REQUIRE(clusters.size() == 97);
         REQUIRE(clusters.frame_number() == 135);
         int32_t expected_cluster_data[] = {0, 1, 2, 3, 4, 5, 6, 7, 8};
-        REQUIRE(clusters.at(0).x == 1);
-        REQUIRE(clusters.at(0).y == 200);
-        CHECK(std::equal(std::begin(clusters.at(0).data),
-                         std::end(clusters.at(0).data),
+        REQUIRE(clusters[0].x == 1);
+        REQUIRE(clusters[0].y == 200);
+        CHECK(std::equal(std::begin(clusters[0].data),
+                         std::end(clusters[0].data),
                          std::begin(expected_cluster_data)));
     }
     SECTION("Read all clusters") {
@@ -199,11 +197,11 @@ TEST_CASE("Read clusters from single frame file", "[.files]") {
         auto clusters = f.read_clusters(97);
         REQUIRE(clusters.size() == 97);
         REQUIRE(clusters.frame_number() == 135);
-        REQUIRE(clusters.at(0).x == 1);
-        REQUIRE(clusters.at(0).y == 200);
+        REQUIRE(clusters[0].x == 1);
+        REQUIRE(clusters[0].y == 200);
         int32_t expected_cluster_data[] = {0, 1, 2, 3, 4, 5, 6, 7, 8};
-        CHECK(std::equal(std::begin(clusters.at(0).data),
-                         std::end(clusters.at(0).data),
+        CHECK(std::equal(std::begin(clusters[0].data),
+                         std::end(clusters[0].data),
                          std::begin(expected_cluster_data)));
     }
 }
@@ -225,11 +223,10 @@ TEST_CASE("Read clusters from single frame file with ROI", "[.files]") {
 
     CHECK(clusters.size() == 10);
     CHECK(clusters.frame_number() == 135);
-    CHECK(clusters.at(0).x == 1);
-    CHECK(clusters.at(0).y == 200);
+    CHECK(clusters[0].x == 1);
+    CHECK(clusters[0].y == 200);
     int32_t expected_cluster_data[] = {0, 1, 2, 3, 4, 5, 6, 7, 8};
-    CHECK(std::equal(std::begin(clusters.at(0).data),
-                     std::end(clusters.at(0).data),
+    CHECK(std::equal(std::begin(clusters[0].data), std::end(clusters[0].data),
                      std::begin(expected_cluster_data)));
 }
 
@@ -314,19 +311,19 @@ TEST_CASE("Write cluster with potential padding", "[.files][.ClusterFile]") {
     CHECK(read_cluster_vector.size() == 2);
     CHECK(read_cluster_vector.frame_number() == 0);
 
-    CHECK(read_cluster_vector.at(0).x == clustervec.at(0).x);
-    CHECK(read_cluster_vector.at(0).y == clustervec.at(0).y);
+    CHECK(read_cluster_vector[0].x == clustervec[0].x);
+    CHECK(read_cluster_vector[0].y == clustervec[0].y);
     CHECK(std::equal(
-        clustervec.at(0).data.begin(), clustervec.at(0).data.end(),
-        read_cluster_vector.at(0).data.begin(), [](double a, double b) {
+        clustervec[0].data.begin(), clustervec[0].data.end(),
+        read_cluster_vector[0].data.begin(), [](double a, double b) {
             return std::abs(a - b) < std::numeric_limits<double>::epsilon();
         }));
 
-    CHECK(read_cluster_vector.at(1).x == clustervec.at(1).x);
-    CHECK(read_cluster_vector.at(1).y == clustervec.at(1).y);
+    CHECK(read_cluster_vector[1].x == clustervec[1].x);
+    CHECK(read_cluster_vector[1].y == clustervec[1].y);
     CHECK(std::equal(
-        clustervec.at(1).data.begin(), clustervec.at(1).data.end(),
-        read_cluster_vector.at(1).data.begin(), [](double a, double b) {
+        clustervec[1].data.begin(), clustervec[1].data.end(),
+        read_cluster_vector[1].data.begin(), [](double a, double b) {
             return std::abs(a - b) < std::numeric_limits<double>::epsilon();
         }));
 }
@@ -346,10 +343,9 @@ TEST_CASE("Read frame and modify cluster data", "[.files][.ClusterFile]") {
         Cluster<int32_t, 3, 3>{0, 0, {0, 1, 2, 3, 4, 5, 6, 7, 8}});
 
     CHECK(clusters.size() == 98);
-    CHECK(clusters.at(0).x == 1);
-    CHECK(clusters.at(0).y == 200);
+    CHECK(clusters[0].x == 1);
+    CHECK(clusters[0].y == 200);
 
-    CHECK(std::equal(std::begin(clusters.at(0).data),
-                     std::end(clusters.at(0).data),
+    CHECK(std::equal(std::begin(clusters[0].data), std::end(clusters[0].data),
                      std::begin(expected_cluster_data)));
 }

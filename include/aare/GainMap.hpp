@@ -41,8 +41,7 @@ class GainMap {
 
         int64_t index_cluster_center_x = ClusterSizeX / 2;
         int64_t index_cluster_center_y = ClusterSizeY / 2;
-        for (size_t i = 0; i < clustervec.size(); i++) {
-            auto &cl = clustervec.at(i);
+        for (T &cl : clustervec) {
 
             if (cl.x > 0 && cl.y > 0 && cl.x < m_gain_map.shape(1) - 1 &&
                 cl.y < m_gain_map.shape(0) - 1) {

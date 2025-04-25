@@ -76,9 +76,9 @@ class ClusterVector<Cluster<T, ClusterSizeX, ClusterSizeY, CoordType>> {
     std::vector<T> sum() {
         std::vector<T> sums(m_data.size());
 
-        for (size_t i = 0; i < m_data.size(); i++) {
-            sums[i] = at(i).sum();
-        }
+        std::transform(m_data.begin(), m_data.end(), sums.begin(),
+                       [](const T &cluster) { return cluster.sum(); });
+
         return sums;
     }
 
@@ -86,13 +86,14 @@ class ClusterVector<Cluster<T, ClusterSizeX, ClusterSizeY, CoordType>> {
      * @brief Sum the pixels in the 2x2 subcluster with the biggest pixel sum in
      * each cluster
      * @return std::vector<T> vector of sums for each cluster
-     */ //TODO if underlying container is a vector use std::for_each
+     */
     std::vector<T> sum_2x2() {
         std::vector<T> sums_2x2(m_data.size());
 
-        for (size_t i = 0; i < m_data.size(); i++) {
-            sums_2x2[i] = at(i).max_sum_2x2().first;
-        }
+        std::transform(
+            m_data.begin(), m_data.end(), sums_2x2.begin(),
+            [](const T &cluster) { return cluster.max_sum_2x2().first; });
+
         return sums_2x2;
     }
 
@@ -149,9 +150,9 @@ class ClusterVector<Cluster<T, ClusterSizeX, ClusterSizeY, CoordType>> {
      * @brief Return a reference to the i-th cluster casted to type V
      * @tparam V type of the cluster
      */
-    ClusterType &at(size_t i) { return m_data[i]; }
+    ClusterType &operator[](size_t i) { return m_data[i]; }
 
-    const ClusterType &at(size_t i) const { return m_data[i]; }
+    const ClusterType &operator[](size_t i) const { return m_data[i]; }
 
     /**
      * @brief Return the frame number of the clusters. 0 is used to indicate

@@ -44,9 +44,8 @@ Interpolator::interpolate(const ClusterVector<ClusterType> &clusters) {
     photons.reserve(clusters.size());
 
     if (clusters.cluster_size_x() == 3 || clusters.cluster_size_y() == 3) {
-        for (size_t i = 0; i < clusters.size(); i++) {
+        for (const ClusterType &cluster : clusters) {
 
-            auto cluster = clusters.at(i);
             auto eta = calculate_eta2(cluster);
 
             Photon photon;
@@ -94,8 +93,7 @@ Interpolator::interpolate(const ClusterVector<ClusterType> &clusters) {
         }
     } else if (clusters.cluster_size_x() == 2 ||
                clusters.cluster_size_y() == 2) {
-        for (size_t i = 0; i < clusters.size(); i++) {
-            auto cluster = clusters.at(i);
+        for (const ClusterType &cluster : clusters) {
             auto eta = calculate_eta2(cluster);
 
             Photon photon;

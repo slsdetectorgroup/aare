@@ -60,7 +60,7 @@ TEST_CASE("ClusterVector 2x2 int32_t capacity 4, push back then read",
     REQUIRE(cv.size() == 1);
     REQUIRE(cv.capacity() == 4);
 
-    auto c2 = cv.at(0);
+    auto c2 = cv[0];
 
     // Check that the data is the same
     REQUIRE(c1.x == c2.x);

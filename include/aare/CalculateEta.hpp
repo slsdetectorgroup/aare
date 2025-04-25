@@ -40,8 +40,8 @@ template <typename ClusterType,
 NDArray<double, 2> calculate_eta2(const ClusterVector<ClusterType> &clusters) {
     NDArray<double, 2> eta2({static_cast<int64_t>(clusters.size()), 2});
 
-    for (size_t i = 0; i < clusters.size(); i++) {
-        auto e = calculate_eta2(clusters.at(i));
+    for (const ClusterType &cluster : clusters) {
+        auto e = calculate_eta2(cluster);
         eta2(i, 0) = e.x;
         eta2(i, 1) = e.y;
     }
@@ -122,7 +122,7 @@ calculate_eta2(const Cluster<T, ClusterSizeX, ClusterSizeY, CoordType> &cl) {
     return eta;
 }
 
-// Dont get why this is correct - photon center should be top right corner
+// TODO! Look up eta2 calculation - photon center should be top right corner
 template <typename T>
 Eta2<T> calculate_eta2(const Cluster<T, 2, 2, int16_t> &cl) {
     Eta2<T> eta{};
