@@ -36,6 +36,7 @@ test:
     - aare
   requires:
     - pytest
+    - boost-histogram 
   source_files:
     - python/tests
   commands:
