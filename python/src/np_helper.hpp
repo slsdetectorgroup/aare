@@ -13,7 +13,7 @@ namespace py = pybind11;
 using namespace aare;
 
 // Pass image data back to python as a numpy array
-template <typename T, int64_t Ndim>
+template <typename T, ssize_t Ndim>
 py::array return_image_data(aare::NDArray<T, Ndim> *image) {
 
     py::capsule free_when_done(image, [](void *f) {
