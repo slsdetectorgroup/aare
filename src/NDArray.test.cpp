@@ -44,9 +44,9 @@ TEST_CASE("3D NDArray from NDView"){
     REQUIRE(image.size() == view.size());
     REQUIRE(image.data() != view.data());
 
-    for(int64_t i=0; i<image.shape(0); i++){
-        for(int64_t j=0; j<image.shape(1); j++){
-            for(int64_t k=0; k<image.shape(2); k++){
+    for(ssize_t i=0; i<image.shape(0); i++){
+        for(ssize_t j=0; j<image.shape(1); j++){
+            for(ssize_t k=0; k<image.shape(2); k++){
                 REQUIRE(image(i, j, k) == view(i, j, k));
             }
         }
@@ -54,7 +54,7 @@ TEST_CASE("3D NDArray from NDView"){
 }
 
 TEST_CASE("1D image") {
-    std::array<int64_t, 1> shape{{20}};
+    std::array<ssize_t, 1> shape{{20}};
     NDArray<short, 1> img(shape, 3);
     REQUIRE(img.size() == 20);
     REQUIRE(img(5) == 3);
@@ -71,7 +71,7 @@ TEST_CASE("Accessing a const object") {
 }
 
 TEST_CASE("Indexing of a 2D image") {
-    std::array<int64_t, 2> shape{{3, 7}};
+    std::array<ssize_t, 2> shape{{3, 7}};
     NDArray<long> img(shape, 5);
     for (uint32_t i = 0; i != img.size(); ++i) {
         REQUIRE(img(i) == 5);
@@ -114,7 +114,7 @@ TEST_CASE("Divide double by int") {
 }
 
 TEST_CASE("Elementwise multiplication of 3D image") {
-    std::array<int64_t, 3> shape{3, 4, 2};
+    std::array<ssize_t, 3> shape{3, 4, 2};
     NDArray<double, 3> a{shape};
     NDArray<double, 3> b{shape};
     for (uint32_t i = 0; i != a.size(); ++i) {
@@ -179,9 +179,9 @@ TEST_CASE("Compare two images") {
 }
 
 TEST_CASE("Size and shape matches") {
-    int64_t w = 15;
-    int64_t h = 75;
-    std::array<int64_t, 2> shape{w, h};
+    ssize_t w = 15;
+    ssize_t h = 75;
+    std::array<ssize_t, 2> shape{w, h};
     NDArray<double> a{shape};
     REQUIRE(a.size() == w * h);
     REQUIRE(a.shape() == shape);
@@ -224,7 +224,7 @@ TEST_CASE("Bitwise and on data") {
 
 
 TEST_CASE("Elementwise operations on images") {
-    std::array<int64_t, 2> shape{5, 5};
+    std::array<ssize_t, 2> shape{5, 5};
     double a_val = 3.0;
     double b_val = 8.0;
 

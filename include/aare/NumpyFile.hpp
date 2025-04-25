@@ -69,7 +69,7 @@ class NumpyFile : public FileInterface {
      */
     template <typename T, size_t NDim> NDArray<T, NDim> load() {
         NDArray<T, NDim> arr(make_shape<NDim>(m_header.shape));
-        if (fseek(fp, static_cast<int64_t>(header_size), SEEK_SET)) {
+        if (fseek(fp, static_cast<long>(header_size), SEEK_SET)) {
             throw std::runtime_error(LOCATION + "Error seeking to the start of the data");
         }
         size_t rc = fread(arr.data(), sizeof(T), arr.size(), fp);

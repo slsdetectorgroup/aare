@@ -28,7 +28,7 @@ template <typename T> class VarClusterFinder {
     };
 
   private:
-    const std::array<int64_t, 2> shape_;
+    const std::array<ssize_t, 2> shape_;
     NDView<T, 2> original_;
     NDArray<int, 2> labeled_;
     NDArray<int, 2> peripheral_labeled_;
