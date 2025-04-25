@@ -1,9 +1,11 @@
 #pragma once
-#include <cstdint> //ssize_t
-#include <cstddef> //size_t
+#include <cstdint> 
+#include <cstddef> 
 #include <array> 
-
 #include <cassert>
+#include "aare/defs.hpp"
+
+
 namespace aare {
 
 template <typename E, ssize_t Ndim> class ArrayExpr {
