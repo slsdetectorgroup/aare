@@ -39,7 +39,7 @@ set(CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/cmake" ${CMAKE_MODULE_PATH})
 
 
 # General options
-option(AARE_PYTHON_BINDINGS "Build python bindings" ON)
+option(AARE_PYTHON_BINDINGS "Build python bindings" OFF)
 option(AARE_TESTS "Build tests" OFF)
 option(AARE_BENCHMARKS "Build benchmarks" OFF)
 option(AARE_EXAMPLES "Build examples" OFF)
@@ -340,6 +340,8 @@ endif()
 
 set(PUBLICHEADERS
     include/aare/ArrayExpr.hpp
+    include/aare/CalculateEta.hpp
+    include/aare/Cluster.hpp
     include/aare/ClusterFinder.hpp
     include/aare/ClusterFile.hpp
     include/aare/CtbRawFile.hpp
@@ -352,6 +354,7 @@ set(PUBLICHEADERS
     include/aare/FileInterface.hpp
     include/aare/FilePtr.hpp
     include/aare/Frame.hpp
+    include/aare/GainMap.hpp
     include/aare/geo_helpers.hpp
     include/aare/JungfrauDataFile.hpp
     include/aare/NDArray.hpp
@@ -365,13 +368,11 @@ set(PUBLICHEADERS
     include/aare/RawSubFile.hpp
     include/aare/VarClusterFinder.hpp
     include/aare/utils/task.hpp
-
 )
 
 
 set(SourceFiles
     ${CMAKE_CURRENT_SOURCE_DIR}/src/CtbRawFile.cpp
-    ${CMAKE_CURRENT_SOURCE_DIR}/src/ClusterFile.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/src/defs.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/src/Dtype.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/src/decode.cpp
@@ -393,14 +394,11 @@ set(SourceFiles
     ${CMAKE_CURRENT_SOURCE_DIR}/src/utils/ifstream_helpers.cpp
 )
 
-
 add_library(aare_core STATIC ${SourceFiles})
 target_include_directories(aare_core PUBLIC 
     "$<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>" 
-    "$<INSTALL_INTERFACE:${CMAKE_INSTALL_INCLUDEDIR}>"
+    "$<INSTALL_INTERFACE:${CMAKE_INSTALL_INCLUDEDIR}>" 
 )
-
-
 
 target_link_libraries(
     aare_core 
@@ -410,7 +408,7 @@ target_link_libraries(
     ${STD_FS_LIB} # from helpers.cmake
     PRIVATE 
     aare_compiler_flags 
-    "$<BUILD_INTERFACE:lmfit>"
+    $<BUILD_INTERFACE:lmfit>
 
 )
 
@@ -436,7 +434,10 @@ if(AARE_TESTS)
             ${CMAKE_CURRENT_SOURCE_DIR}/src/NDView.test.cpp
             ${CMAKE_CURRENT_SOURCE_DIR}/src/ClusterFinder.test.cpp
             ${CMAKE_CURRENT_SOURCE_DIR}/src/ClusterVector.test.cpp
+            ${CMAKE_CURRENT_SOURCE_DIR}/src/Cluster.test.cpp
+            ${CMAKE_CURRENT_SOURCE_DIR}/src/CalculateEta.test.cpp
             ${CMAKE_CURRENT_SOURCE_DIR}/src/ClusterFile.test.cpp
+            ${CMAKE_CURRENT_SOURCE_DIR}/src/ClusterFinderMT.test.cpp
             ${CMAKE_CURRENT_SOURCE_DIR}/src/Pedestal.test.cpp
             ${CMAKE_CURRENT_SOURCE_DIR}/src/JungfrauDataFile.test.cpp
             ${CMAKE_CURRENT_SOURCE_DIR}/src/NumpyFile.test.cpp
