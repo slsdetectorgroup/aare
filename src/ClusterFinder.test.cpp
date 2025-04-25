@@ -1,19 +1,18 @@
 #include "aare/ClusterFinder.hpp"
 #include "aare/Pedestal.hpp"
-#include <catch2/matchers/catch_matchers_floating_point.hpp>
 #include <catch2/catch_test_macros.hpp>
+#include <catch2/matchers/catch_matchers_floating_point.hpp>
 #include <chrono>
 #include <random>
 
 using namespace aare;
 
-//TODO! Find a way to test the cluster finder
-
-
+// TODO! Find a way to test the cluster finder
 
 // class ClusterFinderUnitTest : public ClusterFinder {
 //   public:
-//     ClusterFinderUnitTest(int cluster_sizeX, int cluster_sizeY, double nSigma = 5.0, double threshold = 0.0)
+//     ClusterFinderUnitTest(int cluster_sizeX, int cluster_sizeY, double nSigma
+//     = 5.0, double threshold = 0.0)
 //         : ClusterFinder(cluster_sizeX, cluster_sizeY, nSigma, threshold) {}
 //     double get_c2() { return c2; }
 //     double get_c3() { return c3; }
@@ -37,8 +36,8 @@ using namespace aare;
 //     REQUIRE_THAT(cf.get_c3(), Catch::Matchers::WithinRel(c3, 1e-9));
 // }
 
-TEST_CASE("Construct a cluster finder"){
-    ClusterFinder clusterFinder({400,400}, {3,3});
+TEST_CASE("Construct a cluster finder") {
+    ClusterFinder clusterFinder({400, 400});
     // REQUIRE(clusterFinder.get_cluster_sizeX() == 3);
     // REQUIRE(clusterFinder.get_cluster_sizeY() == 3);
     // REQUIRE(clusterFinder.get_threshold() == 1);
@@ -49,16 +48,17 @@ TEST_CASE("Construct a cluster finder"){
 //     aare::Pedestal pedestal(10, 10, 5);
 //     NDArray<double, 2> frame({10, 10});
 //     frame = 0;
-//     ClusterFinder clusterFinder(3, 3, 1, 1); // 3x3 cluster, 1 nSigma, 1 threshold
+//     ClusterFinder clusterFinder(3, 3, 1, 1); // 3x3 cluster, 1 nSigma, 1
+//     threshold
 
-//     auto clusters = clusterFinder.find_clusters_without_threshold(frame.span(), pedestal);
+//     auto clusters =
+//     clusterFinder.find_clusters_without_threshold(frame.span(), pedestal);
 
 //     REQUIRE(clusters.size() == 0);
 
 //     frame(5, 5) = 10;
-//     clusters = clusterFinder.find_clusters_without_threshold(frame.span(), pedestal);
-//     REQUIRE(clusters.size() == 1);
-//     REQUIRE(clusters[0].x == 5);
+//     clusters = clusterFinder.find_clusters_without_threshold(frame.span(),
+//     pedestal); REQUIRE(clusters.size() == 1); REQUIRE(clusters[0].x == 5);
 //     REQUIRE(clusters[0].y == 5);
 //     for (int i = 0; i < 3; i++) {
 //         for (int j = 0; j < 3; j++) {
