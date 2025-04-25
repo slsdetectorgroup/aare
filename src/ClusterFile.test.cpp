@@ -10,8 +10,9 @@ using aare::Cluster;
 using aare::ClusterFile;
 using aare::ClusterVector;
 
+
 TEST_CASE("Read one frame from a cluster file", "[.files]") {
-    // We know that the frame has 97 clusters
+    //We know that the frame has 97 clusters
     auto fpath = test_data_path() / "clust" / "single_frame_97_clustrers.clust";
     REQUIRE(std::filesystem::exists(fpath));
 

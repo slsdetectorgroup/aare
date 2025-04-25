@@ -11,7 +11,7 @@ from ._aare import ROI
 
 # from ._aare import ClusterFinderMT, ClusterCollector, ClusterFileSink, ClusterVector_i
 
-from .ClusterFinder import ClusterFinder, ClusterCollector, ClusterFinderMT
+from .ClusterFinder import ClusterFinder, ClusterCollector, ClusterFinderMT, ClusterFileSink
 from .ClusterVector import ClusterVector
 
 

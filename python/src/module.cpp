@@ -10,13 +10,12 @@
 #include "file.hpp"
 #include "fit.hpp"
 #include "interpolation.hpp"
-#include "pedestal.hpp"
-#include "pixel_map.hpp"
-#include "raw_file.hpp"
-#include "raw_master_file.hpp"
-#include "var_cluster.hpp"
 #include "raw_sub_file.hpp"
-
+#include "raw_master_file.hpp"
+#include "raw_file.hpp"
+#include "pixel_map.hpp"
+#include "var_cluster.hpp"
+#include "pedestal.hpp"
 #include "jungfrau_data_file.hpp"
 
 // Pybind stuff

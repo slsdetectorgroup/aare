@@ -93,6 +93,9 @@ void define_cluster_finder_mt_bindings(py::module &m,
                 return;
             },
             py::arg(), py::arg("frame_number") = 0)
+        .def_property_readonly("cluster_size", [](ClusterFinderMT<ClusterType, uint16_t, pd_type> &self){
+            return py::make_tuple(ClusterSizeX, ClusterSizeY);
+        })
         .def("clear_pedestal",
              &ClusterFinderMT<ClusterType, uint16_t, pd_type>::clear_pedestal)
         .def("sync", &ClusterFinderMT<ClusterType, uint16_t, pd_type>::sync)
