@@ -1,6 +1,7 @@
 #include "aare/RawFile.hpp"
 #include "aare/PixelMap.hpp"
 #include "aare/defs.hpp"
+#include "aare/logger.hpp"
 #include "aare/geo_helpers.hpp"
 
 #include <fmt/format.h>
@@ -183,7 +184,7 @@ size_t RawFile::bytes_per_pixel() const {
 }
 
 void RawFile::get_frame_into(size_t frame_index, std::byte *frame_buffer, DetectorHeader *header) {
-    
+    LOG(logDEBUG) << "RawFile::get_frame_into(" << frame_index << ")";
     if (frame_index >= total_frames()) {
         throw std::runtime_error(LOCATION + "Frame number out of range");
     }
@@ -195,36 +196,27 @@ void RawFile::get_frame_into(size_t frame_index, std::byte *frame_buffer, Detect
 
     if (n_modules() != 1) { //if we have more than one module
         for (size_t part_idx = 0; part_idx != n_modules(); ++part_idx) {
-            // auto subfile_id = frame_index / m_master.max_frames_per_file();
-            // if (subfile_id >= n_subfiles) {
-            //     throw std::runtime_error(LOCATION +
-            //                              " Subfile out of range. Possible missing data.");
-            // }
-
-            //Check and open the correct subfile???
-
-            // frame_numbers[part_idx] =
-            //     subfiles[subfile_id][part_idx]->frame_number(
-            //         frame_index % m_master.max_frames_per_file());
             frame_numbers[part_idx] = m_subfiles[part_idx]->frame_number(frame_index); 
         }
+
         // 1. if frame number vector is the same break
         while (std::adjacent_find(frame_numbers.begin(), frame_numbers.end(),
                                   std::not_equal_to<>()) !=
                frame_numbers.end()) {
+
             // 2. find the index of the minimum frame number,
             auto min_frame_idx = std::distance(
                 frame_numbers.begin(),
                 std::min_element(frame_numbers.begin(), frame_numbers.end()));
+
             // 3. increase its index and update its respective frame number
             frame_indices[min_frame_idx]++;
+
             // 4. if we can't increase its index => throw error
             if (frame_indices[min_frame_idx] >= total_frames()) {
                 throw std::runtime_error(LOCATION +
                                          "Frame number out of range");
             }
-            auto subfile_id =
-                frame_indices[min_frame_idx] / m_master.max_frames_per_file();
 
             frame_numbers[min_frame_idx] =
                 m_subfiles[min_frame_idx]->frame_number(frame_indices[min_frame_idx]);
@@ -236,16 +228,14 @@ void RawFile::get_frame_into(size_t frame_index, std::byte *frame_buffer, Detect
         for (size_t part_idx = 0; part_idx != n_modules(); ++part_idx) {
             auto corrected_idx = frame_indices[part_idx];
       
-
-
             // This is where we start writing
             auto offset = (m_geometry.module_pixel_0[part_idx].origin_y * m_geometry.pixels_x +
                 m_geometry.module_pixel_0[part_idx].origin_x)*m_master.bitdepth()/8;
 
             if (m_geometry.module_pixel_0[part_idx].origin_x!=0)
-                throw std::runtime_error(LOCATION + "Implementation error. x pos not 0.");
+                throw std::runtime_error(LOCATION + " Implementation error. x pos not 0.");
             
-            //TODO! Risk for out of range access
+            //TODO! What if the files don't match?
             m_subfiles[part_idx]->seek(corrected_idx);
             m_subfiles[part_idx]->read_into(frame_buffer + offset, header);
             if (header)
@@ -256,10 +246,10 @@ void RawFile::get_frame_into(size_t frame_index, std::byte *frame_buffer, Detect
         //TODO! should we read row by row?
 
         // create a buffer large enough to hold a full module
-
         auto bytes_per_part = m_master.pixels_y() * m_master.pixels_x() *
                               m_master.bitdepth() /
                               8; // TODO! replace with image_size_in_bytes
+
         auto *part_buffer = new std::byte[bytes_per_part];
 
         // TODO! if we have many submodules we should reorder them on the module
@@ -268,8 +258,6 @@ void RawFile::get_frame_into(size_t frame_index, std::byte *frame_buffer, Detect
         for (size_t part_idx = 0; part_idx != n_modules(); ++part_idx) {
             auto pos = m_geometry.module_pixel_0[part_idx];
             auto corrected_idx = frame_indices[part_idx];
-
-
 
             m_subfiles[part_idx]->seek(corrected_idx);
             m_subfiles[part_idx]->read_into(part_buffer, header);
@@ -311,19 +299,6 @@ size_t RawFile::frame_number(size_t frame_index) {
     }
     return m_subfiles[0]->frame_number(frame_index);
 }
-
-RawFile::~RawFile() {
-
-    // // TODO! Fix this, for file closing
-    // for (auto &vec : subfiles) {
-    //     for (auto *subfile : vec) {
-    //         delete subfile;
-    //     }
-    // }
-}
-
-
-
 
 
 } // namespace aare

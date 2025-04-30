@@ -45,7 +45,7 @@ class RawFile : public FileInterface {
 
      */
     RawFile(const std::filesystem::path &fname, const std::string &mode = "r");
-    virtual ~RawFile() override;
+    virtual ~RawFile() override = default;
 
     Frame read_frame() override;
     Frame read_frame(size_t frame_number) override;
@@ -103,7 +103,7 @@ class RawFile : public FileInterface {
      * @return DetectorHeader
      */
     static DetectorHeader read_header(const std::filesystem::path &fname);
-    
+
     void open_subfiles();
     void find_geometry();
 };

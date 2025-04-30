@@ -31,7 +31,7 @@ RawSubFile::RawSubFile(const std::filesystem::path &fname,
 
     parse_fname(fname);
     scan_files();
-    open_file(m_offset); // open the first file
+    open_file(m_current_file_index); // open the first file
 }
 
 void RawSubFile::seek(size_t frame_index) {
@@ -54,10 +54,13 @@ void RawSubFile::seek(size_t frame_index) {
 }
 
 size_t RawSubFile::tell() {
-    return m_file.tellg() / (sizeof(DetectorHeader) + bytes_per_frame());
+    LOG(logDEBUG) << "RawSubFile::tell():" << m_current_frame_index;
+    return m_current_frame_index;
 }
 
 void RawSubFile::read_into(std::byte *image_buf, DetectorHeader *header) {
+    LOG(logDEBUG) << "RawSubFile::read_into()";
+
     if (header) {
         m_file.read(reinterpret_cast<char *>(header), sizeof(DetectorHeader));
     } else {
@@ -90,6 +93,13 @@ void RawSubFile::read_into(std::byte *image_buf, DetectorHeader *header) {
 
     if (m_file.fail()){
         throw std::runtime_error(LOCATION + ifstream_error_msg(m_file));
+    }
+
+    ++ m_current_frame_index;
+    if (m_current_frame_index >= m_last_frame_in_file[m_current_file_index] &&
+        (m_current_frame_index < m_total_frames)) {
+        ++m_current_file_index;
+        open_file(m_current_file_index);
     }
 }
 
@@ -163,7 +173,7 @@ std::filesystem::path RawSubFile::fpath(size_t file_index) const {
 
 void RawSubFile::open_file(size_t file_index) {
     m_file.close();
-    auto fname = fpath(file_index);
+    auto fname = fpath(file_index+m_offset);
     LOG(logDEBUG) << "RawSubFile::open_file():  " << fname.string();
     m_file.open(fname, std::ios::binary);
     if (!m_file.is_open()) {

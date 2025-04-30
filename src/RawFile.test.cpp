@@ -99,11 +99,11 @@ TEST_CASE("Read frame numbers from a raw file", "[.integration]") {
     }
 }
 
-TEST_CASE("Compare reading from a numpy file with a raw file", "[.integration]") {
-    auto fpath_raw = test_data_path() / "jungfrau" / "jungfrau_single_master_0.json";
+TEST_CASE("Compare reading from a numpy file with a raw file", "[.files]") {
+    auto fpath_raw = test_data_path() / "raw/jungfrau" / "jungfrau_single_master_0.json";
     REQUIRE(std::filesystem::exists(fpath_raw));
 
-    auto fpath_npy = test_data_path() / "jungfrau" / "jungfrau_single_0.npy";
+    auto fpath_npy = test_data_path() / "raw/jungfrau" / "jungfrau_single_0.npy";
     REQUIRE(std::filesystem::exists(fpath_npy));
 
     File raw(fpath_raw, "r");
@@ -113,6 +113,7 @@ TEST_CASE("Compare reading from a numpy file with a raw file", "[.integration]")
     CHECK(npy.total_frames() == 10);
 
     for (size_t i = 0; i < 10; ++i) {
+        CHECK(raw.tell() == i);
         auto raw_frame = raw.read_frame();
         auto npy_frame = npy.read_frame();
         CHECK((raw_frame.view<uint16_t>() == npy_frame.view<uint16_t>()));

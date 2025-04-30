@@ -6,9 +6,9 @@ from aare import RawSubFile, DetectorType, RawFile
 
 from pathlib import Path
 path = Path("/home/l_msdetect/erik/data/aare-test-data/raw/jungfrau/")
-# f = RawSubFile(path/"jungfrau_single_d0_f0_0.raw", DetectorType.Jungfrau, 512, 1024, 16)
+f = RawSubFile(path/"jungfrau_single_d0_f0_0.raw", DetectorType.Jungfrau, 512, 1024, 16)
 
-f = RawFile(path/"jungfrau_single_master_0.json")
+# f = RawFile(path/"jungfrau_single_master_0.json")
 
 
 # from aare._aare import ClusterVector_i, Interpolator

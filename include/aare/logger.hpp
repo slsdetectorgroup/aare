@@ -61,11 +61,11 @@ enum TLogLevel {
 
 class Logger {
     std::ostringstream os;
-    TLogLevel level = AARE_LOG_LEVEL;
+    TLogLevel m_level = AARE_LOG_LEVEL;
 
   public:
     Logger() = default;
-    explicit Logger(TLogLevel level) : level(level){};
+    explicit Logger(TLogLevel level) : m_level(level){};
     ~Logger() {
         // output in the destructor to allow for << syntax
         os << RESET << '\n';
@@ -103,7 +103,7 @@ class Logger {
     }
 
     std::ostringstream &Get() {
-        os << Color(level) << "- " << Timestamp() << " " << ToString(level)
+        os << Color(m_level) << "- " << Timestamp() << " " << ToString(m_level)
            << ": ";
         return os;
     }
