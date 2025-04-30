@@ -160,3 +160,11 @@ TEST_CASE("cumsum works with negative numbers", "[algorithm]") {
     REQUIRE(result[3] == -6);
     REQUIRE(result[4] == -10);
 }
+
+
+TEST_CASE("cumsum on an empty vector", "[algorithm]") {
+    std::vector<double> vec = {};
+    auto result = aare::cumsum(vec);
+    REQUIRE(result.size() == 0);
+
+}

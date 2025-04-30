@@ -84,6 +84,8 @@ if(AARE_BENCHMARKS)
     add_subdirectory(benchmarks)
 endif()
 
+#Set the log level for the library
+add_compile_definitions(AARE_LOG_LEVEL=aare::logINFO)
 
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 
