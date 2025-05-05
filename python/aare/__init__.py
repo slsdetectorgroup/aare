@@ -15,7 +15,7 @@ from .ClusterFinder import ClusterFinder, ClusterCollector, ClusterFinderMT, Clu
 from .ClusterVector import ClusterVector
 
 
-from ._aare import fit_gaus, fit_pol1
+from ._aare import fit_gaus, fit_pol1, fit_scurve, fit_scurve2
 from ._aare import Interpolator
 from ._aare import calculate_eta2
 
