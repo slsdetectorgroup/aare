@@ -6,11 +6,21 @@ Script to update VERSION file with semantic versioning if provided as an argumen
 
 import sys
 import os
+import re
 
 from packaging.version import Version, InvalidVersion
 
 
 SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
+
+def is_integer(value): 
+    try:
+        int(value)
+    except ValueError:
+        return False
+    else:
+        return True
+
 
 def get_version():
 
@@ -21,9 +31,14 @@ def get_version():
     version = sys.argv[1]
 
     try:
-        v = Version(version)  # normalizcheck if version follows PEP 440 specification
-        #replace -
-        return version.replace("-", ".")
+        v = Version(version)  # normalize check if version follows PEP 440 specification
+        
+        version_normalized = version.replace("-", ".")
+
+        version_normalized =  re.sub(r'0*(\d+)', lambda m : str(int(m.group(0))), version_normalized) #remove leading zeros 
+
+        return version_normalized 
+
     except InvalidVersion as e:
         print(f"Invalid version {version}. Version format must follow semantic versioning format of python PEP 440 version identification specification.")
         sys.exit(1)
