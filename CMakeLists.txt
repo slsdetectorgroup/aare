@@ -1,11 +1,16 @@
 cmake_minimum_required(VERSION 3.15)
 
 project(aare 
-    VERSION 1.0.0
     DESCRIPTION "Data processing library for PSI detectors"
     HOMEPAGE_URL "https://github.com/slsdetectorgroup/aare"
     LANGUAGES C CXX 
 )
+
+# Read VERSION file into project version
+set(VERSION_FILE "${CMAKE_CURRENT_SOURCE_DIR}/VERSION")
+file(READ "${VERSION_FILE}" VERSION_CONTENT)
+string(STRIP "${VERSION_CONTENT}" PROJECT_VERSION_STRING)
+set(PROJECT_VERSION ${PROJECT_VERSION_STRING})
 
 set(CMAKE_CXX_STANDARD 17) 
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
@@ -404,6 +409,9 @@ target_include_directories(aare_core PUBLIC
     "$<INSTALL_INTERFACE:${CMAKE_INSTALL_INCLUDEDIR}>" 
 )
 
+set(THREADS_PREFER_PTHREAD_FLAG ON)
+find_package(Threads REQUIRED)
+
 target_link_libraries(
     aare_core 
     PUBLIC 
@@ -412,6 +420,7 @@ target_link_libraries(
     ${STD_FS_LIB} # from helpers.cmake
     PRIVATE 
     aare_compiler_flags 
+    Threads::Threads
     $<BUILD_INTERFACE:lmfit>
 
 )
