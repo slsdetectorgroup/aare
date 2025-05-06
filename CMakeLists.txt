@@ -405,6 +405,9 @@ target_include_directories(aare_core PUBLIC
     "$<INSTALL_INTERFACE:${CMAKE_INSTALL_INCLUDEDIR}>" 
 )
 
+set(THREADS_PREFER_PTHREAD_FLAG ON)
+find_package(Threads REQUIRED)
+
 target_link_libraries(
     aare_core 
     PUBLIC 
@@ -413,6 +416,7 @@ target_link_libraries(
     ${STD_FS_LIB} # from helpers.cmake
     PRIVATE 
     aare_compiler_flags 
+    Threads::Threads
     $<BUILD_INTERFACE:lmfit>
 
 )

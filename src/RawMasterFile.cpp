@@ -87,7 +87,7 @@ int ScanParameters::start() const { return m_start; }
 int ScanParameters::stop() const { return m_stop; }
 void ScanParameters::increment_stop(){
     m_stop += 1;
-};
+}
 int ScanParameters::step() const { return m_step; }
 const std::string &ScanParameters::dac() const { return m_dac; }
 bool ScanParameters::enabled() const { return m_enabled; }

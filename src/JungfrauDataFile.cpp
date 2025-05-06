@@ -89,7 +89,7 @@ void JungfrauDataFile::seek(size_t frame_index) {
                             : frame_index;
     auto byte_offset = frame_offset * (m_bytes_per_frame + header_size);
     m_fp.seek(byte_offset);
-};
+}
 
 size_t JungfrauDataFile::tell() { return m_current_frame_index; }
 size_t JungfrauDataFile::total_frames() const { return m_total_frames; }
