@@ -140,6 +140,10 @@ std::optional<size_t> RawMasterFile::number_of_rows() const {
 
 xy RawMasterFile::geometry() const { return m_geometry; }
 
+size_t RawMasterFile::n_modules() const {
+    return m_geometry.row * m_geometry.col;
+}
+
 std::optional<uint8_t> RawMasterFile::quad() const { return m_quad; }
 
 // optional values, these may or may not be present in the master file
