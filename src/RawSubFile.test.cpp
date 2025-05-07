@@ -67,7 +67,9 @@ TEST_CASE("Read frames directly from a RawSubFile starting at the second file", 
     for (size_t i = 0; i < 7; ++i) {
         CHECK(f.tell() == i);
         f.read_into(image.buffer(), &header);
-        CHECK(header.frameNumber == i + 4);
+        // frame numbers start at 1 frame index at 0 
+        // adding 3 + 1 to verify the frame number
+        CHECK(header.frameNumber == i + 4); 
         auto npy_frame = npy.read_frame();
         CHECK((image.view() == npy_frame.view<uint16_t>()));
     }
