@@ -133,9 +133,9 @@ class ClusterVector<Cluster<T, ClusterSizeX, ClusterSizeY, CoordType>> {
      */
     size_t capacity() const { return m_data.capacity(); }
 
-    const auto begin() const { return m_data.begin(); }
+    auto begin() const { return m_data.begin(); }
 
-    const auto end() const { return m_data.end(); }
+    auto end() const { return m_data.end(); }
 
     /**
      * @brief Return the size in bytes of a single cluster
