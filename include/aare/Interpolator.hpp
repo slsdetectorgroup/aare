@@ -51,7 +51,7 @@ Interpolator::interpolate(const ClusterVector<ClusterType> &clusters) {
             Photon photon;
             photon.x = cluster.x;
             photon.y = cluster.y;
-            photon.energy = eta.sum;
+            photon.energy = static_cast<decltype(photon.energy)>(eta.sum);
 
             // auto ie = nearest_index(m_energy_bins, photon.energy)-1;
             // auto ix = nearest_index(m_etabinsx, eta.x)-1;
@@ -99,7 +99,7 @@ Interpolator::interpolate(const ClusterVector<ClusterType> &clusters) {
             Photon photon;
             photon.x = cluster.x;
             photon.y = cluster.y;
-            photon.energy = eta.sum;
+            photon.energy = static_cast<decltype(photon.energy)>(eta.sum);
 
             // Now do some actual interpolation.
             // Find which energy bin the cluster is in
