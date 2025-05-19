@@ -344,6 +344,7 @@ endif()
 ###------------------------------------------------------------------------------------------
 
 set(PUBLICHEADERS
+    include/aare/AngleCalibration.hpp
     include/aare/ArrayExpr.hpp
     include/aare/CalculateEta.hpp
     include/aare/Cluster.hpp
@@ -433,6 +434,7 @@ endif()
 if(AARE_TESTS)
     set(TestSources
             ${CMAKE_CURRENT_SOURCE_DIR}/src/algorithm.test.cpp
+            ${CMAKE_CURRENT_SOURCE_DIR}/src/AngleCalibration.test.cpp
             ${CMAKE_CURRENT_SOURCE_DIR}/src/defs.test.cpp
             ${CMAKE_CURRENT_SOURCE_DIR}/src/decode.test.cpp
             ${CMAKE_CURRENT_SOURCE_DIR}/src/Dtype.test.cpp
