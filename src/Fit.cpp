@@ -105,7 +105,7 @@ std::array<double, 3> gaus_init_par(const NDView<double, 1> x, const NDView<doub
     auto delta = x[1] - x[0];
     start_par[2] =
         std::count_if(y.begin(), y.end(),
-                      [e, delta](double val) { return val > *e / 2; }) *
+                      [e](double val) { return val > *e / 2; }) *
         delta / 2.35;
 
     return start_par;
