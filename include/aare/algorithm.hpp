@@ -107,5 +107,16 @@ std::vector<T> cumsum(const std::vector<T>& vec) {
 }
 
 
+template <typename Container> bool all_equal(const Container &c) {
+    if (!c.empty() &&
+        std::all_of(begin(c), end(c),
+                    [c](const typename Container::value_type &element) {
+                        return element == c.front();
+                    }))
+        return true;
+    return false;
+}
+
+
 
 } // namespace aare

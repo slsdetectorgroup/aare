@@ -1,4 +1,5 @@
 #include "aare/RawFile.hpp"
+#include "aare/algorithm.hpp"
 #include "aare/PixelMap.hpp"
 #include "aare/defs.hpp"
 #include "aare/logger.hpp"
@@ -200,9 +201,7 @@ void RawFile::get_frame_into(size_t frame_index, std::byte *frame_buffer, Detect
         }
 
         // 1. if frame number vector is the same break
-        while (std::adjacent_find(frame_numbers.begin(), frame_numbers.end(),
-                                  std::not_equal_to<>()) !=
-               frame_numbers.end()) {
+        while (!all_equal(frame_numbers)) {
 
             // 2. find the index of the minimum frame number,
             auto min_frame_idx = std::distance(
