@@ -398,7 +398,6 @@ set(SourceFiles
     ${CMAKE_CURRENT_SOURCE_DIR}/src/RawFile.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/src/RawSubFile.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/src/RawMasterFile.cpp
-
     ${CMAKE_CURRENT_SOURCE_DIR}/src/utils/task.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/src/utils/ifstream_helpers.cpp
 )
