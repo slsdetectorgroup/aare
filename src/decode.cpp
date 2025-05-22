@@ -26,8 +26,8 @@ void adc_sar_05_decode64to16(NDView<uint64_t, 2> input, NDView<uint16_t,2> outpu
         throw std::invalid_argument(LOCATION + " input and output shapes must match");
     }
 
-    for(int64_t i = 0; i < input.shape(0); i++){
-        for(int64_t j = 0; j < input.shape(1); j++){
+    for(ssize_t i = 0; i < input.shape(0); i++){
+        for(ssize_t j = 0; j < input.shape(1); j++){
             output(i,j) = adc_sar_05_decode64to16(input(i,j));
         }
     }
@@ -56,8 +56,8 @@ void adc_sar_04_decode64to16(NDView<uint64_t, 2> input, NDView<uint16_t,2> outpu
     if(input.shape() != output.shape()){
         throw std::invalid_argument(LOCATION + " input and output shapes must match");
     }
-    for(int64_t i = 0; i < input.shape(0); i++){
-        for(int64_t j = 0; j < input.shape(1); j++){
+    for(ssize_t i = 0; i < input.shape(0); i++){
+        for(ssize_t j = 0; j < input.shape(1); j++){
             output(i,j) = adc_sar_04_decode64to16(input(i,j));
         }
     }

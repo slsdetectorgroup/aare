@@ -1,11 +1,16 @@
 cmake_minimum_required(VERSION 3.15)
 
 project(aare 
-    VERSION 1.0.0
     DESCRIPTION "Data processing library for PSI detectors"
     HOMEPAGE_URL "https://github.com/slsdetectorgroup/aare"
     LANGUAGES C CXX 
 )
+
+# Read VERSION file into project version
+set(VERSION_FILE "${CMAKE_CURRENT_SOURCE_DIR}/VERSION")
+file(READ "${VERSION_FILE}" VERSION_CONTENT)
+string(STRIP "${VERSION_CONTENT}" PROJECT_VERSION_STRING)
+set(PROJECT_VERSION ${PROJECT_VERSION_STRING})
 
 set(CMAKE_CXX_STANDARD 17) 
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
@@ -39,7 +44,7 @@ set(CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/cmake" ${CMAKE_MODULE_PATH})
 
 
 # General options
-option(AARE_PYTHON_BINDINGS "Build python bindings" ON)
+option(AARE_PYTHON_BINDINGS "Build python bindings" OFF)
 option(AARE_TESTS "Build tests" OFF)
 option(AARE_BENCHMARKS "Build benchmarks" OFF)
 option(AARE_EXAMPLES "Build examples" OFF)
@@ -74,6 +79,9 @@ endif()
 
 if(AARE_VERBOSE)
     add_compile_definitions(AARE_VERBOSE)
+    add_compile_definitions(AARE_LOG_LEVEL=aare::logDEBUG5)
+else()
+    add_compile_definitions(AARE_LOG_LEVEL=aare::logERROR)
 endif()
 
 if(AARE_CUSTOM_ASSERT)
@@ -83,6 +91,7 @@ endif()
 if(AARE_BENCHMARKS)
     add_subdirectory(benchmarks)
 endif()
+
 
 
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
@@ -340,6 +349,8 @@ endif()
 
 set(PUBLICHEADERS
     include/aare/ArrayExpr.hpp
+    include/aare/CalculateEta.hpp
+    include/aare/Cluster.hpp
     include/aare/ClusterFinder.hpp
     include/aare/ClusterFile.hpp
     include/aare/CtbRawFile.hpp
@@ -352,6 +363,7 @@ set(PUBLICHEADERS
     include/aare/FileInterface.hpp
     include/aare/FilePtr.hpp
     include/aare/Frame.hpp
+    include/aare/GainMap.hpp
     include/aare/geo_helpers.hpp
     include/aare/JungfrauDataFile.hpp
     include/aare/NDArray.hpp
@@ -365,13 +377,11 @@ set(PUBLICHEADERS
     include/aare/RawSubFile.hpp
     include/aare/VarClusterFinder.hpp
     include/aare/utils/task.hpp
-
 )
 
 
 set(SourceFiles
     ${CMAKE_CURRENT_SOURCE_DIR}/src/CtbRawFile.cpp
-    ${CMAKE_CURRENT_SOURCE_DIR}/src/ClusterFile.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/src/defs.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/src/Dtype.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/src/decode.cpp
@@ -388,19 +398,18 @@ set(SourceFiles
     ${CMAKE_CURRENT_SOURCE_DIR}/src/RawFile.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/src/RawSubFile.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/src/RawMasterFile.cpp
-
     ${CMAKE_CURRENT_SOURCE_DIR}/src/utils/task.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/src/utils/ifstream_helpers.cpp
 )
 
-
 add_library(aare_core STATIC ${SourceFiles})
 target_include_directories(aare_core PUBLIC 
     "$<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>" 
-    "$<INSTALL_INTERFACE:${CMAKE_INSTALL_INCLUDEDIR}>"
+    "$<INSTALL_INTERFACE:${CMAKE_INSTALL_INCLUDEDIR}>" 
 )
 
-
+set(THREADS_PREFER_PTHREAD_FLAG ON)
+find_package(Threads REQUIRED)
 
 target_link_libraries(
     aare_core 
@@ -410,7 +419,8 @@ target_link_libraries(
     ${STD_FS_LIB} # from helpers.cmake
     PRIVATE 
     aare_compiler_flags 
-    "$<BUILD_INTERFACE:lmfit>"
+    Threads::Threads
+    $<BUILD_INTERFACE:lmfit>
 
 )
 
@@ -436,12 +446,16 @@ if(AARE_TESTS)
             ${CMAKE_CURRENT_SOURCE_DIR}/src/NDView.test.cpp
             ${CMAKE_CURRENT_SOURCE_DIR}/src/ClusterFinder.test.cpp
             ${CMAKE_CURRENT_SOURCE_DIR}/src/ClusterVector.test.cpp
+            ${CMAKE_CURRENT_SOURCE_DIR}/src/Cluster.test.cpp
+            ${CMAKE_CURRENT_SOURCE_DIR}/src/CalculateEta.test.cpp
             ${CMAKE_CURRENT_SOURCE_DIR}/src/ClusterFile.test.cpp
+            ${CMAKE_CURRENT_SOURCE_DIR}/src/ClusterFinderMT.test.cpp
             ${CMAKE_CURRENT_SOURCE_DIR}/src/Pedestal.test.cpp
             ${CMAKE_CURRENT_SOURCE_DIR}/src/JungfrauDataFile.test.cpp
             ${CMAKE_CURRENT_SOURCE_DIR}/src/NumpyFile.test.cpp
             ${CMAKE_CURRENT_SOURCE_DIR}/src/NumpyHelpers.test.cpp
             ${CMAKE_CURRENT_SOURCE_DIR}/src/RawFile.test.cpp
+            ${CMAKE_CURRENT_SOURCE_DIR}/src/RawSubFile.test.cpp
             ${CMAKE_CURRENT_SOURCE_DIR}/src/utils/task.test.cpp
 
         )

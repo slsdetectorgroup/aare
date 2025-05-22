@@ -18,8 +18,8 @@ class FilePtr {
     FilePtr(FilePtr &&other);
     FilePtr &operator=(FilePtr &&other);
     FILE *get();
-    int64_t tell();
-    void seek(int64_t offset, int whence = SEEK_SET) {
+    ssize_t tell();
+    void seek(ssize_t offset, int whence = SEEK_SET) {
         if (fseek(fp_, offset, whence) != 0)
             throw std::runtime_error("Error seeking in file");
     }

@@ -30,22 +30,11 @@ struct ModuleConfig {
  * Consider using that unless you need raw file specific functionality.
  */
 class RawFile : public FileInterface {
-    size_t n_subfiles{}; //f0,f1...fn
-    size_t n_subfile_parts{}; // d0,d1...dn
-    //TODO! move to vector of SubFile instead of pointers
-    std::vector<std::vector<RawSubFile *>> subfiles; //subfiles[f0,f1...fn][d0,d1...dn]
-    // std::vector<xy> positions;
-    
+    std::vector<std::unique_ptr<RawSubFile>> m_subfiles;
     ModuleConfig cfg{0, 0};
-
     RawMasterFile m_master;
-
     size_t m_current_frame{};
-
-    // std::vector<ModuleGeometry> m_module_pixel_0;
-    // size_t m_rows{};
-    // size_t m_cols{};
-
+    size_t m_current_subfile{};
     DetectorGeometry m_geometry;
 
   public:
@@ -56,7 +45,7 @@ class RawFile : public FileInterface {
 
      */
     RawFile(const std::filesystem::path &fname, const std::string &mode = "r");
-    virtual ~RawFile() override;
+    virtual ~RawFile() override = default;
 
     Frame read_frame() override;
     Frame read_frame(size_t frame_number) override;
@@ -80,7 +69,7 @@ class RawFile : public FileInterface {
     size_t cols() const override;
     size_t bitdepth() const override;
     xy geometry();
-    size_t n_mod() const;
+    size_t n_modules() const;
     
     RawMasterFile master() const;
 
@@ -114,9 +103,6 @@ class RawFile : public FileInterface {
      * @return DetectorHeader
      */
     static DetectorHeader read_header(const std::filesystem::path &fname);
-
-    // void update_geometry_with_roi();
-    int find_number_of_subfiles();
 
     void open_subfiles();
     void find_geometry();

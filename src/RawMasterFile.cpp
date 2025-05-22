@@ -87,7 +87,7 @@ int ScanParameters::start() const { return m_start; }
 int ScanParameters::stop() const { return m_stop; }
 void ScanParameters::increment_stop(){
     m_stop += 1;
-};
+}
 int ScanParameters::step() const { return m_step; }
 const std::string &ScanParameters::dac() const { return m_dac; }
 bool ScanParameters::enabled() const { return m_enabled; }
@@ -139,6 +139,10 @@ std::optional<size_t> RawMasterFile::number_of_rows() const {
 }
 
 xy RawMasterFile::geometry() const { return m_geometry; }
+
+size_t RawMasterFile::n_modules() const {
+    return m_geometry.row * m_geometry.col;
+}
 
 std::optional<uint8_t> RawMasterFile::quad() const { return m_quad; }
 

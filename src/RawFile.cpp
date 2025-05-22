@@ -1,6 +1,8 @@
 #include "aare/RawFile.hpp"
+#include "aare/algorithm.hpp"
 #include "aare/PixelMap.hpp"
 #include "aare/defs.hpp"
+#include "aare/logger.hpp"
 #include "aare/geo_helpers.hpp"
 
 #include <fmt/format.h>
@@ -14,27 +16,18 @@ RawFile::RawFile(const std::filesystem::path &fname, const std::string &mode)
     : m_master(fname) {
     m_mode = mode;
     if (mode == "r") {
-
-        n_subfiles = find_number_of_subfiles(); // f0,f1...fn
-        n_subfile_parts =
-            m_master.geometry().col * m_master.geometry().row; // d0,d1...dn
-
-        
-
         find_geometry();
-
         if (m_master.roi()){
             m_geometry = update_geometry_with_roi(m_geometry, m_master.roi().value());
         }
-        
         open_subfiles();
     } else {
         throw std::runtime_error(LOCATION +
-                                 "Unsupported mode. Can only read RawFiles.");
+                                 " Unsupported mode. Can only read RawFiles.");
     }
 }
 
-Frame RawFile::read_frame() { return get_frame(m_current_frame++); };
+Frame RawFile::read_frame() { return get_frame(m_current_frame++); }
 
 Frame RawFile::read_frame(size_t frame_number) {
     seek(frame_number);
@@ -52,13 +45,13 @@ void RawFile::read_into(std::byte *image_buf, size_t n_frames) {
 
 void RawFile::read_into(std::byte *image_buf) {
     return get_frame_into(m_current_frame++, image_buf);
-};
+}
 
 
 void RawFile::read_into(std::byte *image_buf, DetectorHeader *header) {
 
     return get_frame_into(m_current_frame++, image_buf, header);
-};
+}
 
 void RawFile::read_into(std::byte *image_buf, size_t n_frames, DetectorHeader *header) {
     // return get_frame_into(m_current_frame++, image_buf, header);
@@ -67,12 +60,12 @@ void RawFile::read_into(std::byte *image_buf, size_t n_frames, DetectorHeader *h
         this->get_frame_into(m_current_frame++, image_buf, header);
         image_buf += bytes_per_frame();
         if(header) 
-            header+=n_mod();
+            header+=n_modules();
     }
 
-};
+}
 
-size_t RawFile::n_mod() const { return n_subfile_parts; }
+size_t RawFile::n_modules() const { return m_master.n_modules(); }
 
 
 size_t RawFile::bytes_per_frame() {
@@ -94,9 +87,9 @@ void RawFile::seek(size_t frame_index) {
                         frame_index, total_frames()));
     }
     m_current_frame = frame_index;
-};
+}
 
-size_t RawFile::tell() { return m_current_frame; };
+size_t RawFile::tell() { return m_current_frame; }
 
 size_t RawFile::total_frames() const { return m_master.frames_in_file(); }
 size_t RawFile::rows() const { return m_geometry.pixels_y; }
@@ -106,17 +99,11 @@ xy RawFile::geometry() { return m_master.geometry(); }
 
 void RawFile::open_subfiles() {
     if (m_mode == "r")
-        for (size_t i = 0; i != n_subfiles; ++i) {
-            auto v = std::vector<RawSubFile *>(n_subfile_parts);
-            for (size_t j = 0; j != n_subfile_parts; ++j) {
-                auto pos = m_geometry.module_pixel_0[j];
-                v[j] = new RawSubFile(m_master.data_fname(j, i),
-                                      m_master.detector_type(), pos.height,
-                                      pos.width, m_master.bitdepth(),
-                                      pos.row_index, pos.col_index);
-
-            }
-            subfiles.push_back(v);
+        for (size_t i = 0; i != n_modules(); ++i) {
+            auto pos = m_geometry.module_pixel_0[i];
+            m_subfiles.emplace_back(std::make_unique<RawSubFile>(
+                m_master.data_fname(i, 0), m_master.detector_type(), pos.height,
+                pos.width, m_master.bitdepth(), pos.row_index, pos.col_index));
         }
     else {
         throw std::runtime_error(LOCATION +
@@ -141,18 +128,6 @@ DetectorHeader RawFile::read_header(const std::filesystem::path &fname) {
     return h;
 }
 
-int RawFile::find_number_of_subfiles() {
-    int n_files = 0;
-    // f0,f1...fn How many files is the data split into?
-    while (std::filesystem::exists(m_master.data_fname(0, n_files)))
-        n_files++; // increment after test
-
-#ifdef AARE_VERBOSE
-    fmt::print("Found: {} subfiles\n", n_files);
-#endif
-    return n_files;
-
-}
 
 RawMasterFile RawFile::master() const { return m_master; }
 
@@ -168,7 +143,7 @@ void RawFile::find_geometry() {
     uint16_t c{};
 
 
-    for (size_t i = 0; i < n_subfile_parts; i++) {
+    for (size_t i = 0; i < n_modules(); i++) {
         auto h = read_header(m_master.data_fname(i, 0));
         r = std::max(r, h.row);
         c = std::max(c, h.column);
@@ -210,70 +185,58 @@ size_t RawFile::bytes_per_pixel() const {
 }
 
 void RawFile::get_frame_into(size_t frame_index, std::byte *frame_buffer, DetectorHeader *header) {
+    LOG(logDEBUG) << "RawFile::get_frame_into(" << frame_index << ")";
     if (frame_index >= total_frames()) {
         throw std::runtime_error(LOCATION + "Frame number out of range");
     }
-    std::vector<size_t> frame_numbers(n_subfile_parts);
-    std::vector<size_t> frame_indices(n_subfile_parts, frame_index);
+    std::vector<size_t> frame_numbers(n_modules());
+    std::vector<size_t> frame_indices(n_modules(), frame_index);
 
 
     // sync the frame numbers
 
-    if (n_subfile_parts != 1) {
-        for (size_t part_idx = 0; part_idx != n_subfile_parts; ++part_idx) {
-            auto subfile_id = frame_index / m_master.max_frames_per_file();
-            if (subfile_id >= subfiles.size()) {
-                throw std::runtime_error(LOCATION +
-                                         " Subfile out of range. Possible missing data.");
-            }
-            frame_numbers[part_idx] =
-                subfiles[subfile_id][part_idx]->frame_number(
-                    frame_index % m_master.max_frames_per_file());
+    if (n_modules() != 1) { //if we have more than one module
+        for (size_t part_idx = 0; part_idx != n_modules(); ++part_idx) {
+            frame_numbers[part_idx] = m_subfiles[part_idx]->frame_number(frame_index); 
         }
+
         // 1. if frame number vector is the same break
-        while (std::adjacent_find(frame_numbers.begin(), frame_numbers.end(),
-                                  std::not_equal_to<>()) !=
-               frame_numbers.end()) {
+        while (!all_equal(frame_numbers)) {
+
             // 2. find the index of the minimum frame number,
             auto min_frame_idx = std::distance(
                 frame_numbers.begin(),
                 std::min_element(frame_numbers.begin(), frame_numbers.end()));
+
             // 3. increase its index and update its respective frame number
             frame_indices[min_frame_idx]++;
+
             // 4. if we can't increase its index => throw error
             if (frame_indices[min_frame_idx] >= total_frames()) {
                 throw std::runtime_error(LOCATION +
                                          "Frame number out of range");
             }
-            auto subfile_id =
-                frame_indices[min_frame_idx] / m_master.max_frames_per_file();
+
             frame_numbers[min_frame_idx] =
-                subfiles[subfile_id][min_frame_idx]->frame_number(
-                    frame_indices[min_frame_idx] %
-                    m_master.max_frames_per_file());
+                m_subfiles[min_frame_idx]->frame_number(frame_indices[min_frame_idx]);
         }
     }
 
     if (m_master.geometry().col == 1) {
         // get the part from each subfile and copy it to the frame
-        for (size_t part_idx = 0; part_idx != n_subfile_parts; ++part_idx) {
+        for (size_t part_idx = 0; part_idx != n_modules(); ++part_idx) {
             auto corrected_idx = frame_indices[part_idx];
-            auto subfile_id = corrected_idx / m_master.max_frames_per_file();
-            if (subfile_id >= subfiles.size()) {
-                throw std::runtime_error(LOCATION +
-                                         " Subfile out of range. Possible missing data.");
-            }
-
+      
             // This is where we start writing
             auto offset = (m_geometry.module_pixel_0[part_idx].origin_y * m_geometry.pixels_x +
                 m_geometry.module_pixel_0[part_idx].origin_x)*m_master.bitdepth()/8;
 
             if (m_geometry.module_pixel_0[part_idx].origin_x!=0)
-                throw std::runtime_error(LOCATION + "Implementation error. x pos not 0.");
+                throw std::runtime_error(LOCATION + " Implementation error. x pos not 0.");
             
-            //TODO! Risk for out of range access
-            subfiles[subfile_id][part_idx]->seek(corrected_idx % m_master.max_frames_per_file());
-            subfiles[subfile_id][part_idx]->read_into(frame_buffer + offset, header);
+            //TODO! What if the files don't match?
+            m_subfiles[part_idx]->seek(corrected_idx);
+            m_subfiles[part_idx]->read_into(frame_buffer + offset, header);
             if (header)
                 ++header;
         }
@@ -282,26 +245,21 @@ void RawFile::get_frame_into(size_t frame_index, std::byte *frame_buffer, Detect
         //TODO! should we read row by row?
 
         // create a buffer large enough to hold a full module
-
         auto bytes_per_part = m_master.pixels_y() * m_master.pixels_x() *
                               m_master.bitdepth() /
                               8; // TODO! replace with image_size_in_bytes
+
         auto *part_buffer = new std::byte[bytes_per_part];
 
         // TODO! if we have many submodules we should reorder them on the module
         // level
 
-        for (size_t part_idx = 0; part_idx != n_subfile_parts; ++part_idx) {
+        for (size_t part_idx = 0; part_idx != n_modules(); ++part_idx) {
             auto pos = m_geometry.module_pixel_0[part_idx];
             auto corrected_idx = frame_indices[part_idx];
-            auto subfile_id = corrected_idx / m_master.max_frames_per_file();
-            if (subfile_id >= subfiles.size()) {
-                throw std::runtime_error(LOCATION +
-                                         " Subfile out of range. Possible missing data.");
-            }
 
-            subfiles[subfile_id][part_idx]->seek(corrected_idx % m_master.max_frames_per_file());
-            subfiles[subfile_id][part_idx]->read_into(part_buffer, header);
+            m_subfiles[part_idx]->seek(corrected_idx);
+            m_subfiles[part_idx]->read_into(part_buffer, header);
             if(header)
                 ++header;
 
@@ -321,6 +279,7 @@ void RawFile::get_frame_into(size_t frame_index, std::byte *frame_buffer, Detect
         }
         delete[] part_buffer;
     }
+        
 }
 
 std::vector<Frame> RawFile::read_n(size_t n_frames) {
@@ -337,27 +296,8 @@ size_t RawFile::frame_number(size_t frame_index) {
     if (frame_index >= m_master.frames_in_file()) {
         throw std::runtime_error(LOCATION + " Frame number out of range");
     }
-    size_t subfile_id = frame_index / m_master.max_frames_per_file();
-    if (subfile_id >= subfiles.size()) {
-        throw std::runtime_error(
-            LOCATION + " Subfile out of range. Possible missing data.");
-    }
-    return subfiles[subfile_id][0]->frame_number(
-        frame_index % m_master.max_frames_per_file());
+    return m_subfiles[0]->frame_number(frame_index);
 }
-
-RawFile::~RawFile() {
-
-    // TODO! Fix this, for file closing
-    for (auto &vec : subfiles) {
-        for (auto *subfile : vec) {
-            delete subfile;
-        }
-    }
-}
-
-
-
 
 
 } // namespace aare

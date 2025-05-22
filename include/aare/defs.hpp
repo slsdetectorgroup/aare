@@ -204,23 +204,25 @@ struct DetectorGeometry{
     int module_gap_row{};
     int module_gap_col{};
     std::vector<ModuleGeometry> module_pixel_0;
+    
+    auto size() const { return module_pixel_0.size(); }
 };
 
 struct ROI{
-    int64_t xmin{};
-    int64_t xmax{};
-    int64_t ymin{};
-    int64_t ymax{};
+    ssize_t xmin{};
+    ssize_t xmax{};
+    ssize_t ymin{};
+    ssize_t ymax{};
   
-    int64_t height() const { return ymax - ymin; }
-    int64_t width() const { return xmax - xmin; }
-    bool contains(int64_t x, int64_t y) const {
+    ssize_t height() const { return ymax - ymin; }
+    ssize_t width() const { return xmax - xmin; }
+    bool contains(ssize_t x, ssize_t y) const {
         return x >= xmin && x < xmax && y >= ymin && y < ymax;
     }
   };
 
 
-using dynamic_shape = std::vector<int64_t>;
+using dynamic_shape = std::vector<ssize_t>;
 
 //TODO! Can we uniform enums between the libraries?
 

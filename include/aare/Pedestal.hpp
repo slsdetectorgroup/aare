@@ -107,7 +107,7 @@ template <typename SUM_TYPE = double> class Pedestal {
         assert(frame.size() == m_rows * m_cols);
 
         // TODO! move away from m_rows, m_cols
-        if (frame.shape() != std::array<int64_t, 2>{m_rows, m_cols}) {
+        if (frame.shape() != std::array<ssize_t, 2>{m_rows, m_cols}) {
             throw std::runtime_error(
                 "Frame shape does not match pedestal shape");
         }
@@ -128,7 +128,7 @@ template <typename SUM_TYPE = double> class Pedestal {
         assert(frame.size() == m_rows * m_cols);
 
         // TODO! move away from m_rows, m_cols
-        if (frame.shape() != std::array<int64_t, 2>{m_rows, m_cols}) {
+        if (frame.shape() != std::array<ssize_t, 2>{m_rows, m_cols}) {
             throw std::runtime_error(
                 "Frame shape does not match pedestal shape");
         }

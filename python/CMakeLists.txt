@@ -29,12 +29,16 @@ target_link_libraries(_aare PRIVATE aare_core aare_compiler_flags)
 set( PYTHON_FILES
     aare/__init__.py
     aare/CtbRawFile.py
+    aare/ClusterFinder.py
+    aare/ClusterVector.py
+
     aare/func.py
     aare/RawFile.py
     aare/transform.py
     aare/ScanParameters.py
     aare/utils.py
 )
+
 
 # Copy the python files to the build directory
 foreach(FILE ${PYTHON_FILES})
