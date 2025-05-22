@@ -79,6 +79,9 @@ endif()
 
 if(AARE_VERBOSE)
     add_compile_definitions(AARE_VERBOSE)
+    add_compile_definitions(AARE_LOG_LEVEL=aare::logDEBUG5)
+else()
+    add_compile_definitions(AARE_LOG_LEVEL=aare::logERROR)
 endif()
 
 if(AARE_CUSTOM_ASSERT)
@@ -88,6 +91,7 @@ endif()
 if(AARE_BENCHMARKS)
     add_subdirectory(benchmarks)
 endif()
+
 
 
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
@@ -452,6 +456,7 @@ if(AARE_TESTS)
             ${CMAKE_CURRENT_SOURCE_DIR}/src/NumpyFile.test.cpp
             ${CMAKE_CURRENT_SOURCE_DIR}/src/NumpyHelpers.test.cpp
             ${CMAKE_CURRENT_SOURCE_DIR}/src/RawFile.test.cpp
+            ${CMAKE_CURRENT_SOURCE_DIR}/src/RawSubFile.test.cpp
             ${CMAKE_CURRENT_SOURCE_DIR}/src/utils/task.test.cpp
 
         )

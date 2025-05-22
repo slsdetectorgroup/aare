@@ -160,3 +160,36 @@ TEST_CASE("cumsum works with negative numbers", "[algorithm]") {
     REQUIRE(result[3] == -6);
     REQUIRE(result[4] == -10);
 }
+
+
+TEST_CASE("cumsum on an empty vector", "[algorithm]") {
+    std::vector<double> vec = {};
+    auto result = aare::cumsum(vec);
+    REQUIRE(result.size() == 0);
+
+}
+
+TEST_CASE("All equal on an empty vector is false", "[algorithm]") {
+    std::vector<int> vec = {};
+    REQUIRE(aare::all_equal(vec) == false);
+}
+
+TEST_CASE("All equal on a vector with 1 element is true", "[algorithm]") {
+    std::vector<int> vec = {1};
+    REQUIRE(aare::all_equal(vec) == true);
+}
+
+TEST_CASE("All equal on a vector with 2 elements is true", "[algorithm]") {
+    std::vector<int> vec = {1, 1};
+    REQUIRE(aare::all_equal(vec) == true);
+}
+
+TEST_CASE("All equal on a vector with two different  elements is false", "[algorithm]") {
+    std::vector<int> vec = {1, 2};
+    REQUIRE(aare::all_equal(vec) == false);
+}
+
+TEST_CASE("Last element is different", "[algorithm]") {
+    std::vector<int> vec = {1, 1, 1, 1, 2};
+    REQUIRE(aare::all_equal(vec) == false);
+}
