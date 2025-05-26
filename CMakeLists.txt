@@ -62,6 +62,7 @@ option(AARE_FETCH_CATCH "Use FetchContent to download catch2" ON)
 option(AARE_FETCH_JSON "Use FetchContent to download nlohmann::json" ON)
 option(AARE_FETCH_ZMQ "Use FetchContent to download libzmq" ON)
 option(AARE_FETCH_LMFIT "Use FetchContent to download lmfit" ON)
+option(AARE_FETCH_HDF5 "Use FetchContent to download hdf5-devel" OFF)
 
 
 #Convenience option to use system libraries only (no FetchContent)
@@ -73,6 +74,7 @@ if(AARE_SYSTEM_LIBRARIES)
     set(AARE_FETCH_CATCH OFF CACHE BOOL "Disabled FetchContent for catch2" FORCE)
     set(AARE_FETCH_JSON OFF CACHE BOOL "Disabled FetchContent for nlohmann::json" FORCE)
     set(AARE_FETCH_ZMQ OFF CACHE BOOL "Disabled FetchContent for libzmq" FORCE)
+    set(AARE_FETCH_HDF5 OFF CACHE BOOL "Disabled FetchContent for hdf5" FORCE)
     # Still fetch lmfit when setting AARE_SYSTEM_LIBRARIES since this is not available
     # on conda-forge
 endif()
@@ -219,6 +221,23 @@ else()
     find_package(nlohmann_json 3.11.3 REQUIRED)
 endif()
 
+if(AARE_FETCH_HDF5)
+    message(FATAL_ERROR "Fetching HDF5 via FetchContent is not supported here. Please install it via your system. 
+    For Ubuntu: sudo apt install libhdf5-dev
+    For Red Hat: sudo dnf install hdf5-devel
+    For MacOS: brew install hdf5")
+else()
+    find_package(HDF5 QUIET COMPONENTS CXX)
+    if (HDF5_FOUND)
+        message(STATUS "Found HDF5: ${HDF5_INCLUDE_DIRS}")
+    else()
+        message(FATAL_ERROR "HDF5 was NOT found! Please install it via your system  
+            For Ubuntu: sudo apt install libhdf5-dev
+            For Red Hat: sudo dnf install hdf5-devel
+            For MacOS: brew install hdf5")
+    endif()
+endif()
+
 include(GNUInstallDirs)
 
 # If conda build, always set lib dir to 'lib'
@@ -331,10 +350,6 @@ if(AARE_ASAN)
     )
 endif()
 
-
-
-
-
 if(AARE_TESTS)
     enable_testing()
     add_subdirectory(tests)
@@ -362,6 +377,7 @@ set(PUBLICHEADERS
     include/aare/Frame.hpp
     include/aare/GainMap.hpp
     include/aare/geo_helpers.hpp
+    include/aare/Hdf5FileReader.hpp
     include/aare/JungfrauDataFile.hpp
     include/aare/NDArray.hpp
     include/aare/NDView.hpp
@@ -414,6 +430,7 @@ target_link_libraries(
     PUBLIC 
     fmt::fmt 
     nlohmann_json::nlohmann_json 
+    HDF5::HDF5
     ${STD_FS_LIB} # from helpers.cmake
     PRIVATE 
     aare_compiler_flags 
@@ -441,6 +458,7 @@ if(AARE_TESTS)
             ${CMAKE_CURRENT_SOURCE_DIR}/src/Frame.test.cpp
             ${CMAKE_CURRENT_SOURCE_DIR}/src/geo_helpers.test.cpp
             ${CMAKE_CURRENT_SOURCE_DIR}/src/RawMasterFile.test.cpp
+            ${CMAKE_CURRENT_SOURCE_DIR}/src/Hdf5FileReader.test.cpp
             ${CMAKE_CURRENT_SOURCE_DIR}/src/NDArray.test.cpp
             ${CMAKE_CURRENT_SOURCE_DIR}/src/NDView.test.cpp
             ${CMAKE_CURRENT_SOURCE_DIR}/src/ClusterFinder.test.cpp

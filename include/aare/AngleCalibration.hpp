@@ -12,23 +12,23 @@
 
 // function read flatfield store in ff_corr probably correlation field
 
-// class variables:
-
 namespace aare {
 
 using parameters =
     std::tuple<std::vector<double>, std::vector<double>, std::vector<double>>;
 
-// TODO: can i have a static struct, constexpr?
 struct MythenSpecifications {
 
     static constexpr int32_t max_modules = 48;
-    static constexpr int32_t channels_per_module = 1280;
+    static constexpr int32_t strips_per_module = 1280;
     static constexpr double pitch = 0.05; // strip width [mm] ?? TODO: not sure
-    static constexpr double ttmin = -180.0; // what is this the angle
+    static constexpr double ttmin = -180.0; // what is this?
     static constexpr float ttmax = 180.0;
     static constexpr float ttstep =
-        0.0036; // probably here to calculate bin size
+        0.0036; // probably here to calculate bin size, what is this?
+
+    static constexpr double bloffset =
+        1.532; // what is this? detector offset relative to what?
 };
 
 // number_of_activated_modules
@@ -50,19 +50,53 @@ class AngleCalibration {
     /** converts DG parameters to easy EE parameters e.g.geometric parameters */
     parameters convert_to_EE_parameters();
 
-    /** converts DG parameters to easy BC parameters e.g. best computing
+    std::tuple<double, double, double>
+    convert_to_EE_parameters(const size_t module_index);
+
+    /** converts DG parameters to BC parameters e.g. best computing
      * parameters */
     parameters convert_to_BC_parameters();
 
+    /** calculates diffraction angle from EE module parameters (used in Beer's
+     * Law)
+     * @param strip_index local strip index of module
+     */
+    double diffraction_angle_from_EE_parameters(
+        const double normal_distance, const double module_center_distance,
+        const double angle, const size_t strip_index);
+
+    /** calculated the strip width expressed as angle [degrees]
+     * @param strip_index gloabl strip index of detector
+     */
+    double angular_strip_width(const size_t strip_index);
+
+    /** converts global strip index to local strip index of that module */
+    size_t
+    global_to_local_strip_index_conversion(const size_t global_strip_index) {
+        const size_t module_index =
+            global_strip_index / MythenSpecifications::strips_per_module;
+        // local strip index in module
+        size_t local_strip_index =
+            global_strip_index -
+            module_index * MythenSpecifications::strips_per_module;
+        // switch if indexing is in clock-wise direction
+        local_strip_index =
+            signbit(conversions[module_index])
+                ? MythenSpecifications::strips_per_module - local_strip_index
+                : local_strip_index;
+
+        return local_strip_index;
+    }
+
   protected:
-    // TODO: Design maybe have a struct with three vectors, store all three sets
-    // of parameters
+    // TODO: Design maybe have a struct with three vectors, store all three
+    // sets of parameters as member variables
 
     // TODO: check if interpretation and units are correct
     // historical DG parameters
-    std::vector<double>
-        centers; // orthogonal projection of sample onto detector (given in
-                 // strip number) [mm] D/pitch
+    std::vector<double> centers; // orthogonal projection of sample onto
+                                 // detector (given in strip number) [mm]
+                                 // D/pitch
     std::vector<double>
         conversions; // pitch/(normal distance from sample to detector (R)) [mm]
                      // //used for easy conversion
@@ -113,8 +147,7 @@ void AngleCalibration::read_initial_calibration_from_file(
 
         file.close();
     } catch (const std::exception &e) {
-        std::cerr << "Error: " << e.what()
-                  << std::endl; // TODO: replace with log
+        std::cerr << "Error: " << e.what() << std::endl;
     }
 }
 
@@ -130,19 +163,87 @@ parameters AngleCalibration::convert_to_EE_parameters() {
     std::vector<double> angles(centers.size());
 
     for (size_t i = 0; i < centers.size(); ++i) {
-        normal_distances[i] = centers[i] * MythenSpecifications::pitch;
-        module_center_distances[i] =
-            MythenSpecifications::pitch / std::abs(conversions[i]);
-        angles[i] =
-            offsets[i] + 180.0 / M_PI * centers[i] * std::abs(conversions[i]);
+        auto [normal_distance, module_center_distance, angle] =
+            convert_to_EE_parameters(i);
+        normal_distances[i] = normal_distance;
+        module_center_distances[i] = module_center_distance;
+        angles[i] = angle;
     }
-    // TODO: maybe add function rad_to_deg
 
     return std::make_tuple(normal_distances, module_center_distances, angles);
 }
+
+std::tuple<double, double, double>
+AngleCalibration::convert_to_EE_parameters(const size_t module_index) {
+    const double normal_distance =
+        centers[module_index] * MythenSpecifications::pitch;
+    const double module_center_distance =
+        MythenSpecifications::pitch / std::abs(conversions[module_index]);
+    const double angle =
+        offsets[module_index] +
+        180.0 / M_PI * centers[module_index] *
+            std::abs(conversions[module_index]); // TODO: maybe add function
+                                                 // rad_to_deg
+
+    return std::make_tuple(normal_distance, module_center_distance, angle);
+}
+
 /*
 parameters
 AngleCalibration::convert_to_BC_parameters() {}
+*/
+
+double AngleCalibration::diffraction_angle_from_EE_parameters(
+    const double normal_distance, const double module_center_distance,
+    const double angle, const size_t strip_index) {
+
+    return angle - 180.0 / M_PI *
+                       atan((module_center_distance -
+                             MythenSpecifications::pitch * strip_index) /
+                            normal_distance); // TODO: why is it minus
+                                              // is it defined counter
+                                              // clockwise? thought
+                                              // should have a flipped
+                                              // sign
+}
+
+double AngleCalibration::angular_strip_width(const size_t strip_index) {
+
+    const size_t module_index =
+        strip_index / MythenSpecifications::strips_per_module;
+
+    const auto [normal_distance, module_center_distance, angle] =
+        convert_to_EE_parameters(module_index);
+
+    const size_t local_strip_index =
+        global_to_local_strip_index_conversion(strip_index);
+
+    return 180.0 / M_PI *
+           std::abs(diffraction_angle_from_EE_parameters(
+                        normal_distance, module_center_distance, angle,
+                        local_strip_index - 0.5) -
+                    diffraction_angle_from_EE_parameters(
+                        normal_distance, module_center_distance, angle,
+                        local_strip_index + 0.5));
+    // TODO: again not sure about division order - taking abs anyway
+}
+
+/*
+void AngleCalibration::Calibrate() {
+
+    // iterates over each strip
+    // skips the one which are not enabled or have a bad channel
+    // get module index
+    // get index of strip in module - make sure to use function correctly based
+    // on sign
+
+    // then I read some images - probably the histogram - h5 file - need a
+    // reader need to read the filesystem!! -
+
+    // we modify it with ff_corr computed by flatfield why?
+
+
+}
 */
 
 } // namespace aare
