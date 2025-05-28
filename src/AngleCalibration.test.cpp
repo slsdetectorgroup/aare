@@ -16,7 +16,10 @@ using namespace aare;
 class AngleCalibrationTestClass : public aare::AngleCalibration {
 
   public:
-    AngleCalibrationTestClass() = default;
+    AngleCalibrationTestClass(
+        std::shared_ptr<MythenDetectorSpecifications> mythen_detector_,
+        std::shared_ptr<FlatField> flat_field_)
+        : aare::AngleCalibration(mythen_detector_, flat_field_) {}
     ~AngleCalibrationTestClass() = default;
 
     std::vector<double> get_centers() { return centers; }
@@ -29,7 +32,14 @@ class AngleCalibrationTestClass : public aare::AngleCalibration {
 TEST_CASE("read initial angle calibration file",
           "[.anglecalibration][.fileread]") {
 
-    AngleCalibrationTestClass anglecalibration;
+    std::shared_ptr<MythenDetectorSpecifications> mythen_detector_ptr =
+        std::make_shared<MythenDetectorSpecifications>();
+
+    std::shared_ptr<FlatField> flat_field_ptr =
+        std::make_shared<FlatField>(mythen_detector_ptr);
+
+    AngleCalibrationTestClass anglecalibration(mythen_detector_ptr,
+                                               flat_field_ptr);
 
     std::string filename =
         "/home/mazzol_a/Documents/mythen3tools/beamline/"
