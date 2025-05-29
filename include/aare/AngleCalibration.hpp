@@ -101,14 +101,22 @@ class MythenDetectorSpecifications {
 
     static constexpr double exposure_time() { return exposure_time_; }
 
+    static constexpr double bloffset() { return bloffset_; }
+
+    static constexpr double dtt0() { return dtt0_; }
+
+    static constexpr double min_angle() { return min_angle_; }
+
+    static constexpr double max_angle() { return max_angle_; }
+
     ssize_t num_strips() { return num_strips_; }
 
   private:
     static constexpr size_t max_modules_ = 48;
     static constexpr size_t strips_per_module_ = 1280;
     static constexpr double pitch_ = 0.05; // strip width [mm] ?? TODO: not sure
-    static constexpr double ttmin_ = -180.0; // what is this?
-    static constexpr float ttmax_ = 180.0;
+    static constexpr double min_angle_ = -180.0; // what is this?
+    static constexpr double max_angle_ = 180.0;
     static constexpr float ttstep_ =
         0.0036; // probably here to calculate bin size, what is this?
 
@@ -226,10 +234,14 @@ class AngleCalibration {
         centers.reserve(MythenDetectorSpecifications::max_modules());
         conversions.reserve(MythenDetectorSpecifications::max_modules());
         offsets.reserve(MythenDetectorSpecifications::max_modules());
-
-        num_strips = MythenDetectorSpecifications::max_modules() *
-                     MythenDetectorSpecifications::strips_per_module();
     }
+
+    /** set the histogram bin width [degrees] */
+    void set_histogram_bin_width(double bin_width) {
+        histogram_bin_width = bin_width;
+    }
+
+    double get_histogram_bin_width() { return histogram_bin_width; }
 
     /** reads the historical Detector Group (DG) parameters from file **/
     void read_initial_calibration_from_file(const std::string &filename);
@@ -287,13 +299,19 @@ class AngleCalibration {
     }
 
     /**
+     * calculates new histogram with fixed sized angle bins
+     * for several acquisitions at different detector angles
+     */
+    void calculate_fixed_bin_angle_width_histogram();
+
+    /**
      * redistributes photon counts with of histogram using one bin per strip to
      * histogram with fixed size angle bins
      * @param filename where histogram is stored
      */
     // TODO: pass frame or filename?
-    void
-    redistribute_photon_counts_to_fixed_angle_bins(const std::string &filename);
+    void redistribute_photon_counts_to_fixed_angle_bins(
+        const std::string &filename, NDView<double, 2> new_photon_counts);
 
   protected:
     // TODO: Design maybe have a struct with three vectors, store all three
@@ -316,7 +334,9 @@ class AngleCalibration {
 
     std::shared_ptr<FlatField> flat_field;
 
-    ssize_t num_strips{};
+    NDArray<double, 2> new_photon_count_histogram;
+
+    double histogram_bin_width = 0.0036; // [degrees]
 
     double exposure_rate = 1. / MythenDetectorSpecifications::exposure_time();
 };
@@ -394,10 +414,8 @@ AngleCalibration::convert_to_EE_parameters(const size_t module_index) {
         MythenDetectorSpecifications::pitch() /
         std::abs(conversions[module_index]);
     const double angle =
-        offsets[module_index] +
-        180.0 / M_PI * centers[module_index] *
-            std::abs(conversions[module_index]); // TODO: maybe add function
-                                                 // rad_to_deg
+        offsets[module_index] + 180.0 / M_PI * centers[module_index] *
+                                    std::abs(conversions[module_index]);
 
     return std::make_tuple(normal_distance, module_center_distance, angle);
 }
@@ -452,8 +470,26 @@ double AngleCalibration::angular_strip_width(const size_t strip_index) {
 }
 
 /*
+void AngleCalibration::calculate_fixed_bin_angle_width_histogram() {
+
+    ssize_t num_bins = mythen_detector->max_angle() / histogram_bin_width -
+                       mythen_detector->min_angle() /
+                           histogram_bin_width; // TODO only works if negative
+                                                // and positive angle
+    new_photon_count_histogram =
+        NDArray<double, 2>(std::array<ssize_t, 2>{num_bins, 2});
+
+    NDArray<double, 2> new_photon_counts(std::array<ssize_t, 2>(num_bins, 3),
+0.0);
+
+
+
+
+}
+*/
+
 void AngleCalibration::redistribute_photon_counts_to_fixed_angle_bins(
-    const std::string &filename) {
+    const std::string &filename, NDView<double, 2> new_photon_counts) {
 
     // TODO: do i want to have a MythenReader that reads everything e.g. angle
     // in read_frame()
@@ -464,38 +500,97 @@ void AngleCalibration::redistribute_photon_counts_to_fixed_angle_bins(
     NDArray<uint32_t, 2> photon_counts; // read from file e.g read frame - maybe
                                         // keep it as a frame and not an NDArray
 
-    ssize_t strategy = 0; // photon_counts is 2d do we have to loop over all
-                          // strategies as well - probably
+    ssize_t channel = 0; // read from file photon_counts is 2d do we have to
+                         // loop over all strategies as well - probably
 
-    if (photon_counts.shape()[0] != num_strips) {
+    if (photon_counts.shape()[0] != mythen_detector->num_strips()) {
         throw std::runtime_error("wrong number of strips read");
     }
 
-    NDArray<uint32_t, 2> inverse_normalized_flatfield =
+    NDArray<double, 1> inverse_normalized_flatfield =
         flat_field->inverse_normalized_flatfield();
 
-    for (size_t strip_index = 0; strip_index < num_strips; ++strip_index) {
+    ssize_t num_bins1 = mythen_detector->min_angle() / histogram_bin_width;
+    ssize_t num_bins2 = mythen_detector->max_angle() / histogram_bin_width;
+
+    for (ssize_t strip_index = 0; strip_index < mythen_detector->num_strips();
+         ++strip_index) {
 
         size_t module_index =
-            strip_index / MythenDetectorSpecifications::strips_per_module;
+            strip_index / MythenDetectorSpecifications::strips_per_module();
 
-        if (mythen_detector->bad_channels[strip_index] ||
-            !mythen_detector->enabled_modules[module_index])
+        if (mythen_detector->get_bad_channels()[strip_index] ||
+            !mythen_detector->get_connected_modules()[module_index])
             continue;
 
-        double poisson_error =
-            sqrt(photon_counts[strip_index, strategy];) *
-            inverse_normalized_flatfield[strip_index, strategy] *
-            exposure_rate; // not sure what this is
+        double poisson_error = sqrt(photon_counts(strip_index, channel)) *
+                               inverse_normalized_flatfield(strip_index) *
+                               exposure_rate; // not sure what this is
         double corrected_photon_count =
-            photon_counts[strip_index, strategy] *
-            inverse_normalized_flatfield[strip_index, strategy] *
-            exposure_rate; // not sure what this is
+            photon_counts(strip_index, channel) *
+            inverse_normalized_flatfield(strip_index) * exposure_rate;
 
         size_t local_strip_index =
             global_to_local_strip_index_conversion(strip_index);
+
+        double diffraction_angle = diffraction_angle_from_DG_parameters(
+            centers[module_index], conversions[module_index],
+            offsets[module_index], local_strip_index);
+
+        diffraction_angle += (detector_angle + mythen_detector->dtt0() +
+                              mythen_detector->bloffset());
+
+        if (diffraction_angle < mythen_detector->min_angle() ||
+            diffraction_angle > mythen_detector->max_angle())
+            continue;
+
+        double angle_covered_by_strip = angular_strip_width(strip_index);
+
+        double photon_count_per_bin = histogram_bin_width *
+                                      corrected_photon_count /
+                                      angle_covered_by_strip;
+        double error_photon_count_per_bin =
+            histogram_bin_width * poisson_error / angle_covered_by_strip;
+
+        double statistical_weights =
+            1.0 / pow(error_photon_count_per_bin, 2); // 1./sigma²
+
+        double strip_boundary_left =
+            diffraction_angle - 0.5 * angle_covered_by_strip;
+        double strip_boundary_right =
+            diffraction_angle + 0.5 * angle_covered_by_strip;
+
+        ssize_t left_bin_index = std::max(
+            num_bins1,
+            static_cast<ssize_t>(
+                std::floor(strip_boundary_left / histogram_bin_width) - 1));
+        ssize_t right_bin_index = std::min(
+            num_bins2,
+            static_cast<ssize_t>(
+                std::ceil(strip_boundary_right / histogram_bin_width) + 1));
+
+        // TODO should it be < or <=
+        for (ssize_t bin = left_bin_index; bin <= right_bin_index; ++bin) {
+            double bin_coverage = std::min(strip_boundary_right,
+                                           (bin + 0.5) * histogram_bin_width) -
+                                  std::max(strip_boundary_left,
+                                           (bin - 0.5) * histogram_bin_width);
+
+            double bin_coverage_factor = bin_coverage / histogram_bin_width;
+
+            ssize_t bin_index = bin - num_bins1;
+            if (bin_coverage > 0.0001) {
+                new_photon_counts(bin_index, 0) +=
+                    statistical_weights * bin_coverage_factor;
+                new_photon_counts(bin_index, 1) += statistical_weights *
+                                                   bin_coverage_factor *
+                                                   photon_count_per_bin;
+                new_photon_counts(bin_index, 2) += statistical_weights *
+                                                   bin_coverage_factor *
+                                                   pow(photon_count_per_bin, 2);
+            }
+        }
     }
 }
-*/
 
 } // namespace aare
