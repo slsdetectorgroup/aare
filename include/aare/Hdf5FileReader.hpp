@@ -3,6 +3,8 @@
  * @short HDF5FileReader based on H5File object
  ***********************************************/
 
+#pragma once
+
 #include "Frame.hpp"
 #include "NDArray.hpp"
 #include <H5Cpp.h>
@@ -13,7 +15,7 @@
 namespace aare {
 
 // return std::type_info
-const std::type_info &deduce_cpp_type(const H5::DataType datatype) {
+inline const std::type_info &deduce_cpp_type(const H5::DataType datatype) {
     if (H5Tequal(datatype.getId(), H5::PredType::NATIVE_UINT8.getId())) {
         return typeid(uint8_t);
     } else if (H5Tequal(datatype.getId(),
@@ -175,13 +177,18 @@ class HDF5Dataset {
 class HDF5FileReader {
 
   public:
-    HDF5FileReader(const std::string &filename_) : filename(filename_) {
+    HDF5FileReader() = default;
+
+    void open_file(const std::string &filename_) {
+        filename = filename_;
         try {
             file = H5::H5File(filename, H5F_ACC_RDONLY);
         } catch (H5::Exception &e) {
             std::cerr << "Error: " << e.getDetailMsg() << std::endl;
         }
     }
+
+    void close_file() { file.close(); }
 
     HDF5Dataset get_dataset(const std::string &dataset_name) {
         H5::DataSet dataset;

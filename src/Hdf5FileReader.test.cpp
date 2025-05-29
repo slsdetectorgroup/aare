@@ -24,9 +24,11 @@ TEST_CASE("read hdf5 file", "[.hdf5file]") {
 
     REQUIRE(std::filesystem::exists(filename));
 
-    HDF5FileReader file(filename);
+    HDF5FileReader file_reader;
 
-    auto dataset = file.get_dataset("/entry/data/data");
+    file_reader.open_file(filename);
+
+    auto dataset = file_reader.get_dataset("/entry/data/data");
 
     auto shape = dataset.get_shape();
 

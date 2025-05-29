@@ -1,5 +1,8 @@
+#pragma once
 #include <algorithm>
+#include <bitset>
 #include <cstdint>
+#include <filesystem>
 #include <fstream>
 #include <iostream>
 #include <math.h>
@@ -8,6 +11,7 @@
 #include <string>
 #include <vector>
 
+#include "Hdf5FileReader.hpp"
 #include "NDArray.hpp"
 
 namespace aare {
@@ -224,6 +228,69 @@ class FlatField {
     std::shared_ptr<MythenDetectorSpecifications> mythen_detector;
 };
 
+struct MythenFrame {
+    NDArray<uint32_t, 1> photon_counts;
+    double detector_angle{};
+    // double reference_intensity{}; not needed
+    std::array<bool, 3> channel_mask{};
+};
+
+/** minimal version for a mythen file reader */
+class MythenFileReader : public HDF5FileReader {
+
+  public:
+    MythenFileReader(const std::filesystem::path &file_path_,
+                     const std::string &file_prefix_)
+        : m_base_path(file_path_), file_prefix(file_prefix_) {};
+
+    MythenFrame read_frame(ssize_t frame_index) {
+        std::string current_file_name = m_base_path.string() + file_prefix +
+                                        std::to_string(frame_index) + ".h5";
+
+        open_file(current_file_name);
+
+        auto dataset_photon_count =
+            get_dataset("/entry/instrument/detector/data");
+
+        NDArray photon_counts =
+            dataset_photon_count.store_as_ndarray<uint32_t, 1>();
+
+        auto dataset_detector_angle =
+            get_dataset("/entry/instrument/NDAttributes/DetectorAngle");
+
+        double detector_angle;
+
+        dataset_detector_angle.read_into_buffer(
+            reinterpret_cast<std::byte *>(&detector_angle));
+
+        auto dataset_channel_number =
+            get_dataset("/entry/instrument/NDAttributes/CounterMask");
+
+        uint8_t channel_number;
+
+        dataset_channel_number.read_into_buffer(
+            reinterpret_cast<std::byte *>(&channel_number));
+
+        std::bitset<3> binary_channel_numbers(channel_number); // 1 0 0
+
+        // binary_channel_numbers.flip(); // TODO not sure where most
+        // significant
+        //  bit is ask Anna again
+
+        std::array<bool, 3> channel_mask{binary_channel_numbers[2],
+                                         binary_channel_numbers[1],
+                                         binary_channel_numbers[0]};
+
+        close_file();
+
+        return MythenFrame{photon_counts, detector_angle, channel_mask};
+    }
+
+  private:
+    std::filesystem::path m_base_path{};
+    std::string file_prefix{};
+};
+
 class AngleCalibration {
 
   public:
@@ -300,18 +367,26 @@ class AngleCalibration {
 
     /**
      * calculates new histogram with fixed sized angle bins
-     * for several acquisitions at different detector angles
+     * for several acquisitions at different detector angles for given frame
+     * indices
+     * @param start_frame_index, end_frame_index gives range of frames
      */
-    void calculate_fixed_bin_angle_width_histogram();
+    void
+    calculate_fixed_bin_angle_width_histogram(const size_t start_frame_index,
+                                              const size_t end_frame_index);
 
     /**
      * redistributes photon counts with of histogram using one bin per strip to
      * histogram with fixed size angle bins
-     * @param filename where histogram is stored
+     * @param frame MythenFrame storing data from image
+     * @param bin_counts accumulate new photon counts
+     * @param new_statistical_weights accumulate new statistical weights
+     * @param new_errors accumulate new_errors
      */
-    // TODO: pass frame or filename?
     void redistribute_photon_counts_to_fixed_angle_bins(
-        const std::string &filename, NDView<double, 2> new_photon_counts);
+        const MythenFrame &frame, NDView<double, 1> bin_counts,
+        NDView<double, 1> new_statistical_weights,
+        NDView<double, 1> new_errors);
 
   protected:
     // TODO: Design maybe have a struct with three vectors, store all three
@@ -334,11 +409,16 @@ class AngleCalibration {
 
     std::shared_ptr<FlatField> flat_field;
 
-    NDArray<double, 2> new_photon_count_histogram;
+    NDArray<double, 1> new_photon_counts;
+    NDArray<double, 1> new_photon_count_errors;
 
     double histogram_bin_width = 0.0036; // [degrees]
 
-    double exposure_rate = 1. / MythenDetectorSpecifications::exposure_time();
+    double exposure_rate =
+        1. / MythenDetectorSpecifications::exposure_time(); // TODO change
+
+    std::shared_ptr<MythenFileReader>
+        mythen_file_reader; // TODO replace by FileInterface ptr
 };
 
 void AngleCalibration::read_initial_calibration_from_file(
@@ -469,41 +549,45 @@ double AngleCalibration::angular_strip_width(const size_t strip_index) {
     // TODO: again not sure about division order - taking abs anyway
 }
 
-/*
-void AngleCalibration::calculate_fixed_bin_angle_width_histogram() {
+void AngleCalibration::calculate_fixed_bin_angle_width_histogram(
+    const size_t start_frame_index, const size_t end_frame_index) {
 
     ssize_t num_bins = mythen_detector->max_angle() / histogram_bin_width -
                        mythen_detector->min_angle() /
                            histogram_bin_width; // TODO only works if negative
                                                 // and positive angle
-    new_photon_count_histogram =
-        NDArray<double, 2>(std::array<ssize_t, 2>{num_bins, 2});
+    new_photon_counts = NDArray<double, 1>(std::array<ssize_t, 1>{num_bins});
 
-    NDArray<double, 2> new_photon_counts(std::array<ssize_t, 2>(num_bins, 3),
-0.0);
+    new_photon_count_errors =
+        NDArray<double, 1>(std::array<ssize_t, 1>{num_bins});
 
+    NDArray<double, 1> bin_counts(std::array<ssize_t, 1>{num_bins}, 0.0);
+    NDArray<double, 1> new_statistical_weights(std::array<ssize_t, 1>{num_bins},
+                                               1.0);
 
+    NDArray<double, 1> new_errors(std::array<ssize_t, 1>{num_bins}, 0.0);
 
+    for (size_t frame_index = start_frame_index; frame_index < end_frame_index;
+         ++frame_index) {
+        MythenFrame frame = mythen_file_reader->read_frame(frame_index);
+        redistribute_photon_counts_to_fixed_angle_bins(
+            frame, new_photon_counts.view(), new_statistical_weights.view(),
+            new_errors.view());
+    }
 
+    for (ssize_t i = 0; i < new_photon_counts.size(); ++i) {
+        new_photon_counts[i] = bin_counts[i] / new_statistical_weights[i];
+        new_photon_count_errors[i] = 1.0 / sqrt(bin_counts[i]);
+    }
 }
-*/
 
 void AngleCalibration::redistribute_photon_counts_to_fixed_angle_bins(
-    const std::string &filename, NDView<double, 2> new_photon_counts) {
+    const MythenFrame &frame, NDView<double, 1> bin_counts,
+    NDView<double, 1> new_statistical_weights, NDView<double, 1> new_errors) {
 
-    // TODO: do i want to have a MythenReader that reads everything e.g. angle
-    // in read_frame()
-    double detector_angle;      // read from file
-    double reference_intensity; // read from file - Whats the difference between
-                                // this and flatfield
+    ssize_t channel = 0; // TODO handle mask - FlatField still 1d
 
-    NDArray<uint32_t, 2> photon_counts; // read from file e.g read frame - maybe
-                                        // keep it as a frame and not an NDArray
-
-    ssize_t channel = 0; // read from file photon_counts is 2d do we have to
-                         // loop over all strategies as well - probably
-
-    if (photon_counts.shape()[0] != mythen_detector->num_strips()) {
+    if (frame.photon_counts.shape()[0] != mythen_detector->num_strips()) {
         throw std::runtime_error("wrong number of strips read");
     }
 
@@ -523,11 +607,11 @@ void AngleCalibration::redistribute_photon_counts_to_fixed_angle_bins(
             !mythen_detector->get_connected_modules()[module_index])
             continue;
 
-        double poisson_error = sqrt(photon_counts(strip_index, channel)) *
+        double poisson_error = sqrt(frame.photon_counts(strip_index)) *
                                inverse_normalized_flatfield(strip_index) *
                                exposure_rate; // not sure what this is
         double corrected_photon_count =
-            photon_counts(strip_index, channel) *
+            frame.photon_counts(strip_index) *
             inverse_normalized_flatfield(strip_index) * exposure_rate;
 
         size_t local_strip_index =
@@ -537,7 +621,7 @@ void AngleCalibration::redistribute_photon_counts_to_fixed_angle_bins(
             centers[module_index], conversions[module_index],
             offsets[module_index], local_strip_index);
 
-        diffraction_angle += (detector_angle + mythen_detector->dtt0() +
+        diffraction_angle += (frame.detector_angle + mythen_detector->dtt0() +
                               mythen_detector->bloffset());
 
         if (diffraction_angle < mythen_detector->min_angle() ||
@@ -580,14 +664,15 @@ void AngleCalibration::redistribute_photon_counts_to_fixed_angle_bins(
 
             ssize_t bin_index = bin - num_bins1;
             if (bin_coverage > 0.0001) {
-                new_photon_counts(bin_index, 0) +=
-                    statistical_weights * bin_coverage_factor;
-                new_photon_counts(bin_index, 1) += statistical_weights *
-                                                   bin_coverage_factor *
-                                                   photon_count_per_bin;
-                new_photon_counts(bin_index, 2) += statistical_weights *
-                                                   bin_coverage_factor *
-                                                   pow(photon_count_per_bin, 2);
+                new_statistical_weights(bin_index) +=
+                    statistical_weights * bin_coverage_factor -
+                    1.0; //- 1 to avoid division by zero - initiallized with 1.
+                bin_counts(bin_index) += statistical_weights *
+                                         bin_coverage_factor *
+                                         photon_count_per_bin;
+                new_errors(bin_index) += statistical_weights *
+                                         bin_coverage_factor *
+                                         pow(photon_count_per_bin, 2);
             }
         }
     }
