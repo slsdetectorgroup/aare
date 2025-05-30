@@ -19,7 +19,6 @@ namespace aare {
 using parameters =
     std::tuple<std::vector<double>, std::vector<double>, std::vector<double>>;
 
-// TODO: some of these should be configurable - read them from a config file
 class MythenDetectorSpecifications {
 
   public:
@@ -33,8 +32,24 @@ class MythenDetectorSpecifications {
         bad_channels =
             NDArray<bool, 1>(std::array<ssize_t, 1>{num_strips_}, false);
 
-        connected_modules =
-            NDArray<bool, 1>(std::array<ssize_t, 1>{max_modules_}, true);
+        connected_modules = NDArray<bool, 1>(
+            std::array<ssize_t, 1>{static_cast<ssize_t>(max_modules_)}, true);
+    }
+
+    MythenDetectorSpecifications(const size_t max_modules,
+                                 const double exposure_time,
+                                 const double bloffset)
+        : max_modules_(max_modules), exposure_time_(exposure_time),
+          bloffset_(bloffset) {
+        num_strips_ = max_modules_ * strips_per_module_;
+
+        num_connected_modules_ = max_modules_;
+
+        bad_channels =
+            NDArray<bool, 1>(std::array<ssize_t, 1>{num_strips_}, false);
+
+        connected_modules = NDArray<bool, 1>(
+            std::array<ssize_t, 1>{static_cast<ssize_t>(max_modules_)}, true);
     }
 
     void read_bad_channels_from_file(const std::string &filename) {
@@ -101,13 +116,13 @@ class MythenDetectorSpecifications {
 
     static constexpr size_t strips_per_module() { return strips_per_module_; }
 
-    static constexpr size_t max_modules() { return max_modules_; }
+    size_t max_modules() { return max_modules_; }
 
-    static constexpr double exposure_time() { return exposure_time_; }
+    double exposure_time() { return exposure_time_; }
 
-    static constexpr double bloffset() { return bloffset_; }
+    double bloffset() { return bloffset_; }
 
-    static constexpr double dtt0() { return dtt0_; }
+    double dtt0() { return dtt0_; }
 
     static constexpr double min_angle() { return min_angle_; }
 
@@ -116,22 +131,19 @@ class MythenDetectorSpecifications {
     ssize_t num_strips() { return num_strips_; }
 
   private:
-    static constexpr size_t max_modules_ = 48;
-    static constexpr size_t strips_per_module_ = 1280;
-    static constexpr double pitch_ = 0.05; // strip width [mm] ?? TODO: not sure
-    static constexpr double min_angle_ = -180.0; // what is this?
+        static constexpr size_t strips_per_module_ = 1280;
+    static constexpr double pitch_ = 0.05; // strip width [mm]
+    static constexpr double min_angle_ =
+        -180.0; // maybe shoudnt be static but configurable
     static constexpr double max_angle_ = 180.0;
-    static constexpr float ttstep_ =
-        0.0036; // probably here to calculate bin size, what is this?
+    static constexpr double dtt0_ =
+        0.0; // No idea what this is - probably configurable
 
-    static constexpr double bloffset_ =
-        1.532; // what is this? detector offset relative to what?
+    size_t max_modules_ = 48;
 
-    static constexpr double exposure_time_ =
-        5.0; // TODO: could read from acquired file but maybe should be
-             // configurable
-
-    static constexpr double dtt0_ = 0.0; // No idea what this is
+    double exposure_time_ = 5.0; // TODO: could read from acquired file but
+                                 // maybe should be configurable
+    double bloffset_ = 1.532; // what is this? detector offset relative to what?
 
     size_t num_connected_modules_{};
 
@@ -237,9 +249,11 @@ class AngleCalibration {
         std::shared_ptr<MythenFileReader> mythen_file_reader_)
         : mythen_detector(mythen_detector_), flat_field(flat_field_),
           mythen_file_reader(mythen_file_reader_) {
-        centers.reserve(MythenDetectorSpecifications::max_modules());
-        conversions.reserve(MythenDetectorSpecifications::max_modules());
-        offsets.reserve(MythenDetectorSpecifications::max_modules());
+        centers.reserve(mythen_detector->max_modules());
+        conversions.reserve(mythen_detector->max_modules());
+        offsets.reserve(mythen_detector->max_modules());
+
+        exposure_rate = 1. / mythen_detector->exposure_time();
     }
 
     /** set the histogram bin width [degrees] */
@@ -337,8 +351,7 @@ class AngleCalibration {
 
     double histogram_bin_width = 0.0036; // [degrees]
 
-    double exposure_rate =
-        1. / MythenDetectorSpecifications::exposure_time(); // TODO change
+    double exposure_rate;
 
     std::shared_ptr<MythenFileReader>
         mythen_file_reader; // TODO replace by FileInterface ptr
