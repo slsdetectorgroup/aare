@@ -151,10 +151,6 @@ double AngleCalibration::angular_strip_width(const size_t strip_index) {
 void AngleCalibration::calculate_fixed_bin_angle_width_histogram(
     const size_t start_frame_index, const size_t end_frame_index) {
 
-    ssize_t num_bins = mythen_detector->max_angle() / histogram_bin_width -
-                       mythen_detector->min_angle() /
-                           histogram_bin_width; // TODO only works if negative
-                                                // and positive angle
     new_photon_counts = NDArray<double, 1>(std::array<ssize_t, 1>{num_bins});
 
     new_photon_count_errors =
@@ -276,4 +272,21 @@ void AngleCalibration::redistribute_photon_counts_to_fixed_angle_bins(
         }
     }
 }
+
+void AngleCalibration::write_to_file(const std::string &filename) {
+    std::ofstream output_file(filename);
+
+    if (!output_file) {
+        std::cerr << "Error opening file!"
+                  << std::endl; // TODO: replace with log
+    }
+
+    output_file << std::fixed << std::setprecision(6);
+    for (ssize_t i = 0; i < num_bins; ++i) {
+        output_file << i * histogram_bin_width << " " << new_photon_counts[i]
+                    << " " << new_photon_count_errors[i] << std::endl;
+    }
+    output_file.close();
+}
+
 } // namespace aare

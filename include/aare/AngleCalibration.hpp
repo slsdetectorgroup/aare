@@ -5,6 +5,7 @@
 #include <cstdint>
 
 #include <fstream>
+#include <iomanip>
 #include <iostream>
 #include <memory>
 #include <sstream>
@@ -131,7 +132,7 @@ class MythenDetectorSpecifications {
     ssize_t num_strips() { return num_strips_; }
 
   private:
-        static constexpr size_t strips_per_module_ = 1280;
+    static constexpr size_t strips_per_module_ = 1280;
     static constexpr double pitch_ = 0.05; // strip width [mm]
     static constexpr double min_angle_ =
         -180.0; // maybe shoudnt be static but configurable
@@ -254,11 +255,21 @@ class AngleCalibration {
         offsets.reserve(mythen_detector->max_modules());
 
         exposure_rate = 1. / mythen_detector->exposure_time();
+
+        num_bins = mythen_detector->max_angle() / histogram_bin_width -
+                   mythen_detector->min_angle() /
+                       histogram_bin_width; // TODO only works if negative
+                                            // and positive angle
     }
 
     /** set the histogram bin width [degrees] */
     void set_histogram_bin_width(double bin_width) {
         histogram_bin_width = bin_width;
+
+        num_bins = mythen_detector->max_angle() / histogram_bin_width -
+                   mythen_detector->min_angle() /
+                       histogram_bin_width; // TODO only works if negative
+                                            // and positive angle
     }
 
     double get_histogram_bin_width() { return histogram_bin_width; }
@@ -325,6 +336,8 @@ class AngleCalibration {
         NDView<double, 1> new_statistical_weights,
         NDView<double, 1> new_errors);
 
+    void write_to_file(const std::string &filename);
+
   protected:
     // TODO: Design maybe have a struct with three vectors, store all three
     // sets of parameters as member variables
@@ -350,6 +363,8 @@ class AngleCalibration {
     NDArray<double, 1> new_photon_count_errors;
 
     double histogram_bin_width = 0.0036; // [degrees]
+
+    ssize_t num_bins{};
 
     double exposure_rate;
 
