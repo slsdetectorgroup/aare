@@ -18,8 +18,10 @@ class AngleCalibrationTestClass : public aare::AngleCalibration {
   public:
     AngleCalibrationTestClass(
         std::shared_ptr<MythenDetectorSpecifications> mythen_detector_,
-        std::shared_ptr<FlatField> flat_field_)
-        : aare::AngleCalibration(mythen_detector_, flat_field_) {}
+        std::shared_ptr<FlatField> flat_field_,
+        std::shared_ptr<MythenFileReader> mythen_file_reader_)
+        : aare::AngleCalibration(mythen_detector_, flat_field_,
+                                 mythen_file_reader_) {}
     ~AngleCalibrationTestClass() = default;
 
     std::vector<double> get_centers() { return centers; }
@@ -38,8 +40,14 @@ TEST_CASE("read initial angle calibration file",
     std::shared_ptr<FlatField> flat_field_ptr =
         std::make_shared<FlatField>(mythen_detector_ptr);
 
-    AngleCalibrationTestClass anglecalibration(mythen_detector_ptr,
-                                               flat_field_ptr);
+    std::shared_ptr<MythenFileReader> mythen_file_reader_ptr =
+        std::make_shared<MythenFileReader>(
+            std::filesystem::path{
+                "/home/mazzola/Documents/mythen3tools/beamline/TDATA"},
+            "ang1up_22keV_LaB60p3mm_48M_a_0");
+
+    AngleCalibrationTestClass anglecalibration(
+        mythen_detector_ptr, flat_field_ptr, mythen_file_reader_ptr);
 
     std::string filename =
         "/home/mazzol_a/Documents/mythen3tools/beamline/"

@@ -379,6 +379,7 @@ set(PUBLICHEADERS
     include/aare/geo_helpers.hpp
     include/aare/Hdf5FileReader.hpp
     include/aare/JungfrauDataFile.hpp
+    include/aare/MythenFileReader.hpp
     include/aare/NDArray.hpp
     include/aare/NDView.hpp
     include/aare/NumpyFile.hpp
@@ -394,6 +395,7 @@ set(PUBLICHEADERS
 
 
 set(SourceFiles
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/AngleCalibration.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/src/CtbRawFile.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/src/defs.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/src/Dtype.cpp
