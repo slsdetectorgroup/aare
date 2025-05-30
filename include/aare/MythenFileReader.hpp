@@ -3,6 +3,7 @@
  * @short minimal file reader to read mythen files
  ***********************************************/
 
+#include <bitset>
 #include <filesystem>
 #include <string>
 
@@ -15,7 +16,7 @@ struct MythenFrame {
     NDArray<uint32_t, 1> photon_counts;
     double detector_angle{};
     // double reference_intensity{}; not needed
-    std::array<bool, 3> channel_mask{};
+    std::array<uint8_t, 3> channel_mask{};
 };
 
 /** minimal version for a mythen file reader */
@@ -30,8 +31,8 @@ class MythenFileReader : public HDF5FileReader {
         // TODO not a good design fixed number of digits in file name for frame
         // number -> pad with zeros
         //  not even sure if files have the same name
-        std::string current_file_name = m_base_path.string() + file_prefix +
-                                        std::to_string(frame_index) + ".h5";
+        std::string current_file_name =
+            m_base_path / (file_prefix + std::to_string(frame_index) + ".h5");
 
         open_file(current_file_name);
 
@@ -63,9 +64,9 @@ class MythenFileReader : public HDF5FileReader {
         // significant
         //  bit is ask Anna again
 
-        std::array<bool, 3> channel_mask{binary_channel_numbers[2],
-                                         binary_channel_numbers[1],
-                                         binary_channel_numbers[0]};
+        std::array<uint8_t, 3> channel_mask{binary_channel_numbers[0],
+                                            binary_channel_numbers[1],
+                                            binary_channel_numbers[2]};
 
         close_file();
 

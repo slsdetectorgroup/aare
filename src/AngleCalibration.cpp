@@ -283,8 +283,11 @@ void AngleCalibration::write_to_file(const std::string &filename) {
 
     output_file << std::fixed << std::setprecision(6);
     for (ssize_t i = 0; i < num_bins; ++i) {
-        output_file << i * histogram_bin_width << " " << new_photon_counts[i]
-                    << " " << new_photon_count_errors[i] << std::endl;
+        if (new_photon_counts[i] == 0)
+            continue;
+        output_file << mythen_detector->min_angle() + i * histogram_bin_width
+                    << " " << new_photon_counts[i] << " "
+                    << new_photon_count_errors[i] << std::endl;
     }
     output_file.close();
 }

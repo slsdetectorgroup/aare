@@ -5,6 +5,8 @@
 
 #include <filesystem>
 
+#include "test_config.hpp"
+
 #include <H5Cpp.h>
 
 #include "aare/Hdf5FileReader.hpp"
@@ -16,11 +18,11 @@
 
 using namespace aare;
 
-TEST_CASE("read hdf5 file", "[.hdf5file]") {
+TEST_CASE("read hdf5 file", "[.hdf5file][.files]") {
 
     // TODO generalize datasetpath
-    std::string filename = "/home/mazzol_a/Documents/mythen3tools/beamline/"
-                           "TDATA/ang1up_22keV_LaB60p3mm_48M_a_0320.h5";
+    std::string filename = test_data_path() / "AngleCalibration_Test_Data" /
+                           "ang1up_22keV_LaB60p3mm_48M_a_0320.h5";
 
     REQUIRE(std::filesystem::exists(filename));
 

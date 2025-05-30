@@ -471,6 +471,7 @@ if(AARE_TESTS)
             ${CMAKE_CURRENT_SOURCE_DIR}/src/ClusterFinderMT.test.cpp
             ${CMAKE_CURRENT_SOURCE_DIR}/src/Pedestal.test.cpp
             ${CMAKE_CURRENT_SOURCE_DIR}/src/JungfrauDataFile.test.cpp
+            ${CMAKE_CURRENT_SOURCE_DIR}/src/MythenFileReader.test.cpp
             ${CMAKE_CURRENT_SOURCE_DIR}/src/NumpyFile.test.cpp
             ${CMAKE_CURRENT_SOURCE_DIR}/src/NumpyHelpers.test.cpp
             ${CMAKE_CURRENT_SOURCE_DIR}/src/RawFile.test.cpp

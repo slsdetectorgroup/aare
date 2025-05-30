@@ -1,6 +1,5 @@
 #pragma once
 #include <algorithm>
-#include <bitset>
 #include <cmath>
 #include <cstdint>
 
@@ -162,13 +161,13 @@ class FlatField {
         : mythen_detector(mythen_detector_) {
 
         flat_field = NDArray<uint32_t, 1>(
-            std::array<ssize_t, 1>{mythen_detector->num_strips()});
+            std::array<ssize_t, 1>{mythen_detector->num_strips()}, 0);
     }
 
     void read_flatfield_from_file(const std::string &filename) {
 
         std::string word;
-        uint32_t module_number{};
+        uint32_t strip_number{};
 
         try {
             std::ifstream file(filename, std::ios_base::in);
@@ -181,11 +180,11 @@ class FlatField {
 
             while (file_buffer >> word) {
 
-                module_number = std::stoi(word);
+                strip_number = std::stoi(word);
 
                 file_buffer >> word;
-                if (!mythen_detector->get_bad_channels()[module_number])
-                    flat_field[module_number] = std::stod(word);
+                if (!mythen_detector->get_bad_channels()[strip_number])
+                    flat_field[strip_number] = std::stod(word);
             }
 
             file.close();
@@ -193,6 +192,8 @@ class FlatField {
             std::cerr << "Error: " << e.what() << std::endl;
         }
     }
+
+    NDView<uint32_t, 1> get_flatfield() { return flat_field.view(); }
 
     double calculate_mean(double tolerance = 0.001) {
         auto [sum, count] = std::accumulate(
@@ -212,9 +213,20 @@ class FlatField {
 
         NDArray<double, 1> inverse_normalized_flatfield(flat_field.shape());
 
+        /*
         std::transform(flat_field.begin(), flat_field.end(),
                        inverse_normalized_flatfield.begin(),
-                       [&mean](const auto element) { return mean / element; });
+                       [&mean](const auto element) {
+                           return element == 0 ? 0.0 : mean / element;
+                       });
+        */
+
+        for (ssize_t i = 0; i < flat_field.size(); ++i) {
+            inverse_normalized_flatfield[i] =
+                (flat_field[i] == 0 ? 0.0 : mean / flat_field[i]);
+            if (inverse_normalized_flatfield[i] < tolerance)
+                mythen_detector->get_bad_channels()[i] = true;
+        }
 
         return inverse_normalized_flatfield; // TODO: better to have a copy in
                                              // this context but unneccessary
@@ -228,14 +240,20 @@ class FlatField {
 
         NDArray<double, 1> normalized_flatfield(flat_field.shape());
 
+        /*
         std::transform(flat_field.begin(), flat_field.end(),
                        normalized_flatfield.begin(),
                        [&mean](const auto element) { return element / mean; });
+        */
 
+        for (ssize_t i = 0; i < flat_field.size(); ++i) {
+            normalized_flatfield[i] = (flat_field[i] == flat_field[i] / mean);
+            if (normalized_flatfield[i] < tolerance)
+                mythen_detector->get_bad_channels()[i] = true;
+        }
         return normalized_flatfield;
     }
 
-    // TODO: update is bad channels
   private:
     NDArray<uint32_t, 1> flat_field; // TODO: should be 2d
     std::shared_ptr<MythenDetectorSpecifications> mythen_detector;
@@ -277,7 +295,8 @@ class AngleCalibration {
     /** reads the historical Detector Group (DG) parameters from file **/
     void read_initial_calibration_from_file(const std::string &filename);
 
-    /** converts DG parameters to easy EE parameters e.g.geometric parameters */
+    /** converts DG parameters to easy EE parameters e.g.geometric
+     * parameters */
     parameters convert_to_EE_parameters();
 
     std::tuple<double, double, double>
@@ -287,16 +306,16 @@ class AngleCalibration {
      * parameters */
     parameters convert_to_BC_parameters();
 
-    /** calculates diffraction angle from EE module parameters (used in Beer's
-     * Law)
+    /** calculates diffraction angle from EE module parameters (used in
+     * Beer's Law)
      * @param strip_index local strip index of module
      */
     double diffraction_angle_from_EE_parameters(
         const double normal_distance, const double module_center_distance,
         const double angle, const size_t strip_index);
 
-    /** calculates diffraction angle from EE module parameters (used in Beer's
-     * Law)
+    /** calculates diffraction angle from EE module parameters (used in
+     * Beer's Law)
      * @param strip_index local strip index of module
      */
     double diffraction_angle_from_DG_parameters(const double center,
@@ -324,8 +343,8 @@ class AngleCalibration {
                                               const size_t end_frame_index);
 
     /**
-     * redistributes photon counts with of histogram using one bin per strip to
-     * histogram with fixed size angle bins
+     * redistributes photon counts with of histogram using one bin per strip
+     * to histogram with fixed size angle bins
      * @param frame MythenFrame storing data from image
      * @param bin_counts accumulate new photon counts
      * @param new_statistical_weights accumulate new statistical weights
@@ -345,15 +364,15 @@ class AngleCalibration {
     // TODO: check if interpretation and units are correct
     // historical DG parameters
     // TODO change to NDArray
-    std::vector<double> centers; // orthogonal projection of sample onto
-                                 // detector (given in strip number) [mm]
-                                 // D/pitch
+    std::vector<double> centers;     // orthogonal projection of sample onto
+                                     // detector (given in strip number) [mm]
+                                     // D/pitch
+    std::vector<double> conversions; // pitch/(normal distance from sample
+                                     // to detector (R)) [mm]
+                                     // //used for easy conversion
     std::vector<double>
-        conversions; // pitch/(normal distance from sample to detector (R)) [mm]
-                     // //used for easy conversion
-    std::vector<double>
-        offsets; // position of strip zero relative to sample [degrees] phi -
-                 // 180/pi*D/R TODO: expected an arcsin(D/R)?
+        offsets; // position of strip zero relative to sample [degrees] phi
+                 // - 180/pi*D/R TODO: expected an arcsin(D/R)?
 
     std::shared_ptr<MythenDetectorSpecifications> mythen_detector;
 
