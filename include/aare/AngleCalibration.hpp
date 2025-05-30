@@ -1,11 +1,11 @@
 #pragma once
 #include <algorithm>
 #include <bitset>
+#include <cmath>
 #include <cstdint>
 #include <filesystem>
 #include <fstream>
 #include <iostream>
-#include <math.h>
 #include <memory>
 #include <sstream>
 #include <string>
@@ -357,7 +357,7 @@ class AngleCalibration {
             module_index * MythenDetectorSpecifications::strips_per_module();
         // switch if indexing is in clock-wise direction
         local_strip_index =
-            signbit(conversions[module_index])
+            std::signbit(conversions[module_index])
                 ? MythenDetectorSpecifications::strips_per_module() -
                       local_strip_index
                 : local_strip_index;
@@ -577,7 +577,7 @@ void AngleCalibration::calculate_fixed_bin_angle_width_histogram(
 
     for (ssize_t i = 0; i < new_photon_counts.size(); ++i) {
         new_photon_counts[i] = bin_counts[i] / new_statistical_weights[i];
-        new_photon_count_errors[i] = 1.0 / sqrt(bin_counts[i]);
+        new_photon_count_errors[i] = 1.0 / std::sqrt(bin_counts[i]);
     }
 }
 
@@ -607,7 +607,7 @@ void AngleCalibration::redistribute_photon_counts_to_fixed_angle_bins(
             !mythen_detector->get_connected_modules()[module_index])
             continue;
 
-        double poisson_error = sqrt(frame.photon_counts(strip_index)) *
+        double poisson_error = std::sqrt(frame.photon_counts(strip_index)) *
                                inverse_normalized_flatfield(strip_index) *
                                exposure_rate; // not sure what this is
         double corrected_photon_count =
@@ -637,7 +637,7 @@ void AngleCalibration::redistribute_photon_counts_to_fixed_angle_bins(
             histogram_bin_width * poisson_error / angle_covered_by_strip;
 
         double statistical_weights =
-            1.0 / pow(error_photon_count_per_bin, 2); // 1./sigma²
+            1.0 / std::pow(error_photon_count_per_bin, 2); // 1./sigma²
 
         double strip_boundary_left =
             diffraction_angle - 0.5 * angle_covered_by_strip;
@@ -672,7 +672,7 @@ void AngleCalibration::redistribute_photon_counts_to_fixed_angle_bins(
                                          photon_count_per_bin;
                 new_errors(bin_index) += statistical_weights *
                                          bin_coverage_factor *
-                                         pow(photon_count_per_bin, 2);
+                                         std::pow(photon_count_per_bin, 2);
             }
         }
     }
