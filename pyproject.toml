@@ -1,15 +1,41 @@
+[tool.scikit-build.metadata.version]
+provider = "scikit_build_core.metadata.regex"
+input = "VERSION"
+regex = '^(?P<version>\d+(?:\.\d+)*(?:[\.\+\w]+)?)$'
+result = "{version}" 
+
 [build-system]
 requires = ["scikit-build-core>=0.10", "pybind11", "numpy"]
 build-backend = "scikit_build_core.build"
 
 [project]
 name = "aare"
-version = "2024.11.28.dev0"
+dynamic = ["version"]
+requires-python = ">=3.11"
+dependencies = [
+    "numpy",
+    "matplotlib",
+]
+
+
+[tool.cibuildwheel]
+
+build = "cp{311,312,313}-manylinux_x86_64"
+
+
+
 
 [tool.scikit-build]
-cmake.verbose = true
+build.verbose = true
+cmake.build-type = "Release"
+install.components = ["python"]
 
 [tool.scikit-build.cmake.define]
 AARE_PYTHON_BINDINGS = "ON"
-AARE_SYSTEM_LIBRARIES = "ON"
 AARE_INSTALL_PYTHONEXT = "ON"
+
+
+[tool.pytest.ini_options]
+markers = [
+    "files: marks tests that need additional data (deselect with '-m \"not files\"')",
+]

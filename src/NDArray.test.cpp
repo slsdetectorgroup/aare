@@ -2,6 +2,7 @@
 #include <array>
 #include <catch2/benchmark/catch_benchmark.hpp>
 #include <catch2/catch_test_macros.hpp>
+#include <numeric>
 
 using aare::NDArray;
 using aare::NDView;
@@ -34,8 +35,26 @@ TEST_CASE("Construct from an NDView") {
     }
 }
 
+TEST_CASE("3D NDArray from NDView"){
+    std::vector<int> data(27);
+    std::iota(data.begin(), data.end(), 0);
+    NDView<int, 3> view(data.data(), Shape<3>{3, 3, 3});
+    NDArray<int, 3> image(view);
+    REQUIRE(image.shape() == view.shape());
+    REQUIRE(image.size() == view.size());
+    REQUIRE(image.data() != view.data());
+
+    for(ssize_t i=0; i<image.shape(0); i++){
+        for(ssize_t j=0; j<image.shape(1); j++){
+            for(ssize_t k=0; k<image.shape(2); k++){
+                REQUIRE(image(i, j, k) == view(i, j, k));
+            }
+        }
+    }
+}
+
 TEST_CASE("1D image") {
-    std::array<int64_t, 1> shape{{20}};
+    std::array<ssize_t, 1> shape{{20}};
     NDArray<short, 1> img(shape, 3);
     REQUIRE(img.size() == 20);
     REQUIRE(img(5) == 3);
@@ -52,7 +71,7 @@ TEST_CASE("Accessing a const object") {
 }
 
 TEST_CASE("Indexing of a 2D image") {
-    std::array<int64_t, 2> shape{{3, 7}};
+    std::array<ssize_t, 2> shape{{3, 7}};
     NDArray<long> img(shape, 5);
     for (uint32_t i = 0; i != img.size(); ++i) {
         REQUIRE(img(i) == 5);
@@ -95,7 +114,7 @@ TEST_CASE("Divide double by int") {
 }
 
 TEST_CASE("Elementwise multiplication of 3D image") {
-    std::array<int64_t, 3> shape{3, 4, 2};
+    std::array<ssize_t, 3> shape{3, 4, 2};
     NDArray<double, 3> a{shape};
     NDArray<double, 3> b{shape};
     for (uint32_t i = 0; i != a.size(); ++i) {
@@ -160,18 +179,18 @@ TEST_CASE("Compare two images") {
 }
 
 TEST_CASE("Size and shape matches") {
-    int64_t w = 15;
-    int64_t h = 75;
-    std::array<int64_t, 2> shape{w, h};
+    ssize_t w = 15;
+    ssize_t h = 75;
+    std::array<ssize_t, 2> shape{w, h};
     NDArray<double> a{shape};
-    REQUIRE(a.size() == static_cast<uint64_t>(w * h));
+    REQUIRE(a.size() == w * h);
     REQUIRE(a.shape() == shape);
 }
 
 TEST_CASE("Initial value matches for all elements") {
     double v = 4.35;
     NDArray<double> a{{5, 5}, v};
-    for (uint32_t i = 0; i < a.size(); ++i) {
+    for (int i = 0; i < a.size(); ++i) {
         REQUIRE(a(i) == v);
     }
 }
@@ -205,7 +224,7 @@ TEST_CASE("Bitwise and on data") {
 
 
 TEST_CASE("Elementwise operations on images") {
-    std::array<int64_t, 2> shape{5, 5};
+    std::array<ssize_t, 2> shape{5, 5};
     double a_val = 3.0;
     double b_val = 8.0;
 
@@ -378,5 +397,33 @@ TEST_CASE("Elementwise operations on images") {
         for (uint32_t i = 0; i < A.size(); ++i) {
             REQUIRE(A(i) == a_val);
         }
+    }
+}
+
+TEST_CASE("Assign an std::array to a 1D NDArray") {
+    NDArray<int, 1> a{{5}, 0};
+    std::array<int, 5> b{1, 2, 3, 4, 5};
+    a = b;
+    for (uint32_t i = 0; i < a.size(); ++i) {
+        REQUIRE(a(i) == b[i]);
+    }
+}
+
+TEST_CASE("Assign an std::array to a 1D NDArray of a different size") {
+    NDArray<int, 1> a{{3}, 0};
+    std::array<int, 5> b{1, 2, 3, 4, 5};
+    a = b;
+
+    REQUIRE(a.size() == 5);
+    for (uint32_t i = 0; i < a.size(); ++i) {
+        REQUIRE(a(i) == b[i]);
+    }
+}
+
+TEST_CASE("Construct an NDArray from an std::array") {
+    std::array<int, 5> b{1, 2, 3, 4, 5};
+    NDArray<int, 1> a(b);
+    for (uint32_t i = 0; i < a.size(); ++i) {
+        REQUIRE(a(i) == b[i]);
     }
 }

@@ -2,6 +2,7 @@
 #ifdef HDF5_FOUND
 #include "aare/Hdf5File.hpp"
 #endif
+#include "aare/JungfrauDataFile.hpp"
 #include "aare/NumpyFile.hpp"
 #include "aare/RawFile.hpp"
 
@@ -40,7 +41,9 @@ File::File(const std::filesystem::path &fname, const std::string &mode,
         throw std::runtime_error("Enable HDF5 compile option: AARE_HDF5=ON");
     }
 #endif
-    else {
+    else if(fname.extension() == ".dat"){
+        file_impl = std::make_unique<JungfrauDataFile>(fname);
+    } else {
         throw std::runtime_error("Unsupported file type");
     }
 }
@@ -58,6 +61,8 @@ File& File::operator=(File &&other) noexcept {
     return *this;
 }
 
+// void File::close() { file_impl->close(); }
+
 Frame File::read_frame() { return file_impl->read_frame(); }
 Frame File::read_frame(size_t frame_index) {
     return file_impl->read_frame(frame_index);
@@ -71,6 +76,8 @@ void File::read_into(std::byte *image_buf) { file_impl->read_into(image_buf); }
 void File::read_into(std::byte *image_buf, size_t n_frames) {
     file_impl->read_into(image_buf, n_frames);
 }
+
+size_t File::frame_number() { return file_impl->frame_number(tell()); }
 size_t File::frame_number(size_t frame_index) {
     return file_impl->frame_number(frame_index);
 }
@@ -82,7 +89,7 @@ size_t File::tell() const { return file_impl->tell(); }
 size_t File::rows() const { return file_impl->rows(); }
 size_t File::cols() const { return file_impl->cols(); }
 size_t File::bitdepth() const { return file_impl->bitdepth(); }
-size_t File::bytes_per_pixel() const { return file_impl->bitdepth() / 8; }
+size_t File::bytes_per_pixel() const { return file_impl->bitdepth() / bits_per_byte; }
 
 DetectorType File::detector_type() const { return file_impl->detector_type(); }
 

@@ -1,0 +1,58 @@
+name: Build the package using cmake then documentation
+
+on:
+  workflow_dispatch:
+
+    
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+jobs:
+  build:
+    strategy:
+      fail-fast: false
+      matrix:
+        platform: [ubuntu-latest, ] 
+        python-version: ["3.12", ] 
+
+    runs-on: ${{ matrix.platform }}
+
+
+    defaults:
+      run:
+        shell: "bash -l {0}"
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup dev env
+        run: |
+            sudo apt-get update
+            sudo apt-get -y install cmake gcc g++
+
+      - name: Get conda
+        uses: conda-incubator/setup-miniconda@v3
+        with:
+          python-version: ${{ matrix.python-version }}
+          environment-file: etc/dev-env.yml
+          miniforge-version: latest
+          channels: conda-forge
+          conda-remove-defaults: "true"
+
+      - name: Build library 
+        run: |
+            mkdir build 
+            cd build 
+            cmake .. -DAARE_SYSTEM_LIBRARIES=ON -DAARE_DOCS=ON 
+            make -j 2 
+            make docs
+
+
+
+
+
+
+

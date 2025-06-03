@@ -25,6 +25,14 @@
 namespace py = pybind11;
 using namespace ::aare;
 
+
+
+
+//Disable warnings for unused parameters, as we ignore some
+//in the __exit__ method
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wunused-parameter"
+
 void define_file_io_bindings(py::module &m) {
 
 
@@ -56,7 +64,8 @@ void define_file_io_bindings(py::module &m) {
         .def(py::init<const std::filesystem::path &, const std::string &,
                       const FileConfig &>())
 
-        .def("frame_number", &File::frame_number)
+        .def("frame_number", py::overload_cast<>(&File::frame_number))
+        .def("frame_number", py::overload_cast<size_t>(&File::frame_number))
         .def_property_readonly("bytes_per_frame", &File::bytes_per_frame)
         .def_property_readonly("pixels_per_frame", &File::pixels_per_frame)
         .def("seek", &File::seek)
@@ -128,7 +137,40 @@ void define_file_io_bindings(py::module &m) {
             self.read_into(reinterpret_cast<std::byte *>(image.mutable_data()),
                            n_frames);
             return image;
+        })
+        .def("__enter__", [](File &self) { return &self; })
+        .def("__exit__",
+             [](File &self,
+                const std::optional<pybind11::type> &exc_type,
+                const std::optional<pybind11::object> &exc_value,
+                const std::optional<pybind11::object> &traceback) {
+                //  self.close();
+             })
+        .def("__iter__", [](File &self) { return &self; })
+        .def("__next__", [](File &self) {
+
+            try{
+                const uint8_t item_size = self.bytes_per_pixel();
+                 py::array image;
+                 std::vector<ssize_t> shape;
+                 shape.reserve(2);
+                 shape.push_back(self.rows());
+                 shape.push_back(self.cols());
+                 if (item_size == 1) {
+                     image = py::array_t<uint8_t>(shape);
+                 } else if (item_size == 2) {
+                     image = py::array_t<uint16_t>(shape);
+                 } else if (item_size == 4) {
+                     image = py::array_t<uint32_t>(shape);
+                 }
+                 self.read_into(
+                     reinterpret_cast<std::byte *>(image.mutable_data()));
+                 return image;
+            }catch(std::runtime_error &e){
+                throw py::stop_iteration();
+            }
         });
+
 
     py::class_<FileConfig>(m, "FileConfig")
         .def(py::init<>())
@@ -161,6 +203,8 @@ void define_file_io_bindings(py::module &m) {
 
     py::class_<ROI>(m, "ROI")
         .def(py::init<>())
+        .def(py::init<ssize_t, ssize_t, ssize_t, ssize_t>(), py::arg("xmin"),
+             py::arg("xmax"), py::arg("ymin"), py::arg("ymax"))
         .def_readwrite("xmin", &ROI::xmin)
         .def_readwrite("xmax", &ROI::xmax)
         .def_readwrite("ymin", &ROI::ymin)
@@ -178,38 +222,11 @@ void define_file_io_bindings(py::module &m) {
     
 
 
-    py::class_<RawSubFile>(m, "RawSubFile")
-        .def(py::init<const std::filesystem::path &, DetectorType, size_t,
-                      size_t, size_t>())
-        .def_property_readonly("bytes_per_frame", &RawSubFile::bytes_per_frame)
-        .def_property_readonly("pixels_per_frame",
-                               &RawSubFile::pixels_per_frame)
-        .def("seek", &RawSubFile::seek)
-        .def("tell", &RawSubFile::tell)
-        .def_property_readonly("rows", &RawSubFile::rows)
-        .def_property_readonly("cols", &RawSubFile::cols)
-        .def("read_frame",
-             [](RawSubFile &self) {
-                 const uint8_t item_size = self.bytes_per_pixel();
-                 py::array image;
-                 std::vector<ssize_t> shape;
-                 shape.reserve(2);
-                 shape.push_back(self.rows());
-                 shape.push_back(self.cols());
-                 if (item_size == 1) {
-                     image = py::array_t<uint8_t>(shape);
-                 } else if (item_size == 2) {
-                     image = py::array_t<uint16_t>(shape);
-                 } else if (item_size == 4) {
-                     image = py::array_t<uint32_t>(shape);
-                 }
-                 fmt::print("item_size: {} rows: {} cols: {}\n", item_size, self.rows(), self.cols());
-                 self.read_into(
-                     reinterpret_cast<std::byte *>(image.mutable_data()));
-                 return image;
-             });
 
 
+
+
+#pragma GCC diagnostic pop
     // py::class_<ClusterHeader>(m, "ClusterHeader")
     //     .def(py::init<>())
     //     .def_readwrite("frame_number", &ClusterHeader::frame_number)

@@ -1,0 +1,13 @@
+name: dev-environment
+channels:
+  - conda-forge
+dependencies:
+  - anaconda-client
+  - conda-build
+  - doxygen 
+  - sphinx=7.1.2 
+  - breathe 
+  - sphinx_rtd_theme 
+  - furo 
+  - zeromq 
+

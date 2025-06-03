@@ -7,7 +7,7 @@
 
 #include "aare/NDArray.hpp"
 
-const int MAX_CLUSTER_SIZE = 200;
+const int MAX_CLUSTER_SIZE = 50;
 namespace aare {
 
 template <typename T> class VarClusterFinder {
@@ -28,7 +28,7 @@ template <typename T> class VarClusterFinder {
     };
 
   private:
-    const std::array<int64_t, 2> shape_;
+    const std::array<ssize_t, 2> shape_;
     NDView<T, 2> original_;
     NDArray<int, 2> labeled_;
     NDArray<int, 2> peripheral_labeled_;
@@ -226,7 +226,7 @@ template <typename T> void VarClusterFinder<T>::single_pass(NDView<T, 2> img) {
 
 template <typename T> void VarClusterFinder<T>::first_pass() {
 
-    for (size_t i = 0; i < original_.size(); ++i) {
+    for (ssize_t i = 0; i < original_.size(); ++i) {
         if (use_noise_map)
             threshold_ = 5 * noiseMap(i);
         binary_(i) = (original_(i) > threshold_);
@@ -250,7 +250,7 @@ template <typename T> void VarClusterFinder<T>::first_pass() {
 
 template <typename T> void VarClusterFinder<T>::second_pass() {
 
-    for (size_t i = 0; i != labeled_.size(); ++i) {
+    for (ssize_t i = 0; i != labeled_.size(); ++i) {
         auto cl = labeled_(i);
         if (cl != 0) {
             auto it = child.find(cl);

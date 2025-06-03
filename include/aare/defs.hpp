@@ -1,11 +1,9 @@
 #pragma once
 
 #include "aare/Dtype.hpp"
-// #include "aare/utils/logger.hpp"
 
 #include <array>
 #include <stdexcept>
-
 #include <cassert>
 #include <cstdint>
 #include <cstring>
@@ -38,7 +36,10 @@
 
 namespace aare {
 
+inline constexpr size_t bits_per_byte = 8;
+
 void assert_failed(const std::string &msg);
+
 
 
 class DynamicCluster {
@@ -47,7 +48,7 @@ class DynamicCluster {
     int cluster_sizeY;
     int16_t x;
     int16_t y;
-    Dtype dt;
+    Dtype dt; // 4 bytes
 
   private:
     std::byte *m_data;
@@ -179,15 +180,49 @@ template <typename T> struct t_xy {
 using xy = t_xy<uint32_t>;
 
 
+/**
+ * @brief Class to hold the geometry of a module. Where pixel 0 is located and the size of the module
+ */
 struct ModuleGeometry{
-    int x{};
-    int y{};
+    int origin_x{};
+    int origin_y{};
     int height{};
     int width{};
+    int row_index{};
+    int col_index{}; 
 };
 
+/**
+ * @brief Class to hold the geometry of a detector. Number of modules, their size and where pixel 0 
+ * for each module is located
+ */
+struct DetectorGeometry{
+    int modules_x{};
+    int modules_y{};
+    int pixels_x{};
+    int pixels_y{};
+    int module_gap_row{};
+    int module_gap_col{};
+    std::vector<ModuleGeometry> module_pixel_0;
+    
+    auto size() const { return module_pixel_0.size(); }
+};
 
-using dynamic_shape = std::vector<int64_t>;
+struct ROI{
+    ssize_t xmin{};
+    ssize_t xmax{};
+    ssize_t ymin{};
+    ssize_t ymax{};
+  
+    ssize_t height() const { return ymax - ymin; }
+    ssize_t width() const { return xmax - xmin; }
+    bool contains(ssize_t x, ssize_t y) const {
+        return x >= xmin && x < xmax && y >= ymin && y < ymax;
+    }
+  };
+
+
+using dynamic_shape = std::vector<ssize_t>;
 
 //TODO! Can we uniform enums between the libraries?
 

@@ -36,6 +36,8 @@ class File {
     File(File &&other) noexcept;
     File& operator=(File &&other) noexcept;
     ~File() = default;
+
+    // void close();                             //!< close the file
       
     Frame read_frame();                       //!< read one frame from the file at the current position
     Frame read_frame(size_t frame_index);     //!< read one frame at the position given by frame number
@@ -44,6 +46,7 @@ class File {
     void read_into(std::byte *image_buf);
     void read_into(std::byte *image_buf, size_t n_frames);
     
+    size_t frame_number();                    //!< get the frame number at the current position
     size_t frame_number(size_t frame_index);  //!< get the frame number at the given frame index
     size_t bytes_per_frame() const;           
     size_t pixels_per_frame() const;    

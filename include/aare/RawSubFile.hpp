@@ -18,11 +18,20 @@ class RawSubFile {
     std::ifstream m_file;
     DetectorType m_detector_type;
     size_t m_bitdepth;
-    std::filesystem::path m_fname;
+    std::filesystem::path m_path;     //!< path to the subfile
+    std::string m_base_name;          //!< base name used for formatting file names
+    size_t m_offset{}; //!< file index of the first file, allow starting at non zero file
+    size_t m_total_frames{};    //!< total number of frames in the series of files
     size_t m_rows{};
     size_t m_cols{};
     size_t m_bytes_per_frame{};
-    size_t n_frames{};
+
+
+    int m_module_index{};
+    size_t m_current_file_index{};   //!< The index of the open file
+    size_t m_current_frame_index{};  //!< The index of the current frame (with reference to all files)
+    std::vector<size_t> m_last_frame_in_file{}; //!< Used for seeking to the correct file
+
     uint32_t m_pos_row{};
     uint32_t m_pos_col{};
  
@@ -53,6 +62,7 @@ class RawSubFile {
     size_t tell();
 
     void read_into(std::byte *image_buf, DetectorHeader *header = nullptr);
+    void read_into(std::byte *image_buf, size_t n_frames, DetectorHeader *header= nullptr);
     void get_part(std::byte *buffer, size_t frame_index);
     
     void read_header(DetectorHeader *header);
@@ -64,8 +74,18 @@ class RawSubFile {
 
     size_t bytes_per_frame() const { return m_bytes_per_frame; }
     size_t pixels_per_frame() const { return m_rows * m_cols; }
-    size_t bytes_per_pixel() const { return m_bitdepth / 8; }
+    size_t bytes_per_pixel() const { return m_bitdepth / bits_per_byte; }
 
+    size_t frames_in_file() const { return m_total_frames; }
+
+private:
+  template <typename T>
+  void read_with_map(std::byte *image_buf);
+
+  void parse_fname(const std::filesystem::path &fname);
+  void scan_files();
+  void open_file(size_t file_index);
+  std::filesystem::path fpath(size_t file_index) const;
 
 };
 

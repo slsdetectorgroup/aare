@@ -1,15 +1,28 @@
-cmake_minimum_required(VERSION 3.14)
+cmake_minimum_required(VERSION 3.15)
 
 project(aare 
-    VERSION 1.0.0
     DESCRIPTION "Data processing library for PSI detectors"
     HOMEPAGE_URL "https://github.com/slsdetectorgroup/aare"
     LANGUAGES C CXX 
 )
 
+# Read VERSION file into project version
+set(VERSION_FILE "${CMAKE_CURRENT_SOURCE_DIR}/VERSION")
+file(READ "${VERSION_FILE}" VERSION_CONTENT)
+string(STRIP "${VERSION_CONTENT}" PROJECT_VERSION_STRING)
+set(PROJECT_VERSION ${PROJECT_VERSION_STRING})
+
 set(CMAKE_CXX_STANDARD 17) 
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_CXX_EXTENSIONS OFF)
+
+execute_process(
+        COMMAND git log -1 --format=%h
+        WORKING_DIRECTORY ${CMAKE_CURRENT_LIST_DIR}
+        OUTPUT_VARIABLE GIT_HASH
+        OUTPUT_STRIP_TRAILING_WHITESPACE
+        )
+message(STATUS "Building from git hash: ${GIT_HASH}")
 
 if (${CMAKE_VERSION} VERSION_GREATER "3.24")
     cmake_policy(SET CMP0135 NEW) #Fetch content download timestamp
@@ -31,7 +44,7 @@ set(CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/cmake" ${CMAKE_MODULE_PATH})
 
 
 # General options
-option(AARE_PYTHON_BINDINGS "Build python bindings" ON)
+option(AARE_PYTHON_BINDINGS "Build python bindings" OFF)
 option(AARE_TESTS "Build tests" OFF)
 option(AARE_BENCHMARKS "Build benchmarks" OFF)
 option(AARE_EXAMPLES "Build examples" OFF)
@@ -41,7 +54,7 @@ option(AARE_VERBOSE "Verbose output" OFF)
 option(AARE_CUSTOM_ASSERT "Use custom assert" OFF)
 option(AARE_INSTALL_PYTHONEXT "Install the python extension in the install tree under CMAKE_INSTALL_PREFIX/aare/" OFF)
 option(AARE_HDF5 "Hdf5 File Format" OFF)
-
+option(AARE_ASAN "Enable AddressSanitizer" OFF)
 
 # Configure which of the dependencies to use FetchContent for
 option(AARE_FETCH_FMT "Use FetchContent to download fmt" ON)
@@ -49,6 +62,7 @@ option(AARE_FETCH_PYBIND11 "Use FetchContent to download pybind11" ON)
 option(AARE_FETCH_CATCH "Use FetchContent to download catch2" ON)
 option(AARE_FETCH_JSON "Use FetchContent to download nlohmann::json" ON)
 option(AARE_FETCH_ZMQ "Use FetchContent to download libzmq" ON)
+option(AARE_FETCH_LMFIT "Use FetchContent to download lmfit" ON)
 
 
 #Convenience option to use system libraries only (no FetchContent)
@@ -60,10 +74,15 @@ if(AARE_SYSTEM_LIBRARIES)
     set(AARE_FETCH_CATCH OFF CACHE BOOL "Disabled FetchContent for catch2" FORCE)
     set(AARE_FETCH_JSON OFF CACHE BOOL "Disabled FetchContent for nlohmann::json" FORCE)
     set(AARE_FETCH_ZMQ OFF CACHE BOOL "Disabled FetchContent for libzmq" FORCE)
+    # Still fetch lmfit when setting AARE_SYSTEM_LIBRARIES since this is not available
+    # on conda-forge
 endif()
 
 if(AARE_VERBOSE)
     add_compile_definitions(AARE_VERBOSE)
+    add_compile_definitions(AARE_LOG_LEVEL=aare::logDEBUG5)
+else()
+    add_compile_definitions(AARE_LOG_LEVEL=aare::logERROR)
 endif()
 
 if(AARE_CUSTOM_ASSERT)
@@ -75,7 +94,56 @@ if(AARE_BENCHMARKS)
 endif()
 
 
+
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
+
+if(AARE_FETCH_LMFIT)
+    #TODO! Should we fetch lmfit from the web or inlcude a tar.gz in the repo?
+    set(LMFIT_PATCH_COMMAND git apply ${CMAKE_CURRENT_SOURCE_DIR}/patches/lmfit.patch)
+
+    # For cmake < 3.28 we can't supply EXCLUDE_FROM_ALL to FetchContent_Declare
+    # so we need this workaround
+    if (${CMAKE_VERSION} VERSION_LESS "3.28")
+        FetchContent_Declare(
+            lmfit
+            GIT_REPOSITORY https://jugit.fz-juelich.de/mlz/lmfit.git
+            GIT_TAG        main
+            PATCH_COMMAND ${LMFIT_PATCH_COMMAND}
+            UPDATE_DISCONNECTED 1
+        )
+    else()
+        FetchContent_Declare(
+            lmfit
+            GIT_REPOSITORY https://jugit.fz-juelich.de/mlz/lmfit.git
+            GIT_TAG        main
+            PATCH_COMMAND ${LMFIT_PATCH_COMMAND}
+            UPDATE_DISCONNECTED 1
+            EXCLUDE_FROM_ALL 1
+        )
+    endif()
+    
+
+    #Disable what we don't need from lmfit
+    set(BUILD_TESTING OFF CACHE BOOL "")
+    set(LMFIT_CPPTEST OFF CACHE BOOL "")
+    set(LIB_MAN OFF CACHE BOOL "")
+    set(LMFIT_CPPTEST OFF CACHE BOOL "")
+    set(BUILD_SHARED_LIBS OFF CACHE BOOL "")
+
+    if (${CMAKE_VERSION} VERSION_LESS "3.28")
+        if(NOT lmfit_POPULATED)
+            FetchContent_Populate(lmfit)
+            add_subdirectory(${lmfit_SOURCE_DIR} ${lmfit_BINARY_DIR} EXCLUDE_FROM_ALL)
+        endif()
+    else()
+        FetchContent_MakeAvailable(lmfit)
+    endif()
+    
+    set_property(TARGET lmfit PROPERTY POSITION_INDEPENDENT_CODE ON)
+else()
+    find_package(lmfit REQUIRED)
+endif()
+
 
 if(AARE_FETCH_ZMQ)
     # Fetchcontent_Declare is deprecated need to find a way to update this
@@ -83,10 +151,13 @@ if(AARE_FETCH_ZMQ)
     if (${CMAKE_VERSION} VERSION_GREATER_EQUAL "3.30")
         cmake_policy(SET CMP0169 OLD)
     endif()
+    set(ZMQ_PATCH_COMMAND git apply ${CMAKE_CURRENT_SOURCE_DIR}/patches/libzmq_cmake_version.patch)
     FetchContent_Declare(
         libzmq
         GIT_REPOSITORY https://github.com/zeromq/libzmq.git
         GIT_TAG        v4.3.4
+        PATCH_COMMAND ${ZMQ_PATCH_COMMAND}
+        UPDATE_DISCONNECTED 1
     )
     # Disable unwanted options from libzmq
     set(BUILD_TESTS OFF CACHE BOOL "Switch off libzmq test build")
@@ -128,8 +199,8 @@ if (AARE_FETCH_FMT)
         LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR}
         ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR}
         RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR}
-        INCLUDES DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}
-)
+        INCLUDES DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}   
+    )  
 else()
       find_package(fmt 6 REQUIRED)
 endif()
@@ -147,7 +218,6 @@ if (AARE_FETCH_JSON)
     install(
         TARGETS nlohmann_json
         EXPORT "${TARGETS_EXPORT_NAME}"
-        
     )
     message(STATUS "target: ${NLOHMANN_JSON_TARGET_NAME}")
 else()
@@ -226,13 +296,6 @@ if(CMAKE_BUILD_TYPE STREQUAL "Release")
     target_compile_options(aare_compiler_flags INTERFACE -O3)
 else()
     message(STATUS "Debug build")
-    target_compile_options(
-        aare_compiler_flags 
-        INTERFACE 
-            -Og 
-            -ggdb3 
-    )
-
 endif()
 
 # Common flags for GCC and Clang
@@ -257,7 +320,21 @@ target_compile_options(
 endif() #GCC/Clang specific
 
 
-
+if(AARE_ASAN)
+    message(STATUS "AddressSanitizer enabled")
+    target_compile_options(
+        aare_compiler_flags 
+        INTERFACE 
+            -fsanitize=address,undefined,pointer-compare 
+            -fno-omit-frame-pointer
+    )
+    target_link_libraries(
+        aare_compiler_flags 
+        INTERFACE 
+            -fsanitize=address,undefined,pointer-compare 
+            -fno-omit-frame-pointer
+    )
+endif()
 
 
 
@@ -273,14 +350,23 @@ endif()
 
 set(PUBLICHEADERS
     include/aare/ArrayExpr.hpp
+    include/aare/CalculateEta.hpp
+    include/aare/Cluster.hpp
     include/aare/ClusterFinder.hpp
     include/aare/ClusterFile.hpp
     include/aare/CtbRawFile.hpp
+    include/aare/ClusterVector.hpp
+    include/aare/decode.hpp
     include/aare/defs.hpp
     include/aare/Dtype.hpp
     include/aare/File.hpp
+    include/aare/Fit.hpp
     include/aare/FileInterface.hpp
+    include/aare/FilePtr.hpp
     include/aare/Frame.hpp
+    include/aare/GainMap.hpp
+    include/aare/geo_helpers.hpp
+    include/aare/JungfrauDataFile.hpp
     include/aare/NDArray.hpp
     include/aare/NDView.hpp
     include/aare/NumpyFile.hpp
@@ -291,23 +377,30 @@ set(PUBLICHEADERS
     include/aare/RawMasterFile.hpp
     include/aare/RawSubFile.hpp
     include/aare/VarClusterFinder.hpp
-
+    include/aare/utils/task.hpp
 )
 
 
 set(SourceFiles
     ${CMAKE_CURRENT_SOURCE_DIR}/src/CtbRawFile.cpp
-    ${CMAKE_CURRENT_SOURCE_DIR}/src/ClusterFile.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/src/defs.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/src/Dtype.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/decode.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/src/Frame.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/src/File.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/FilePtr.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/Fit.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/geo_helpers.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/JungfrauDataFile.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/src/NumpyFile.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/src/NumpyHelpers.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/Interpolator.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/src/PixelMap.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/src/RawFile.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/src/RawSubFile.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/src/RawMasterFile.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/utils/task.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/utils/ifstream_helpers.cpp
 )
 
 # HDF5
@@ -329,8 +422,11 @@ endif (AARE_HDF5)
 add_library(aare_core STATIC ${SourceFiles})
 target_include_directories(aare_core PUBLIC 
     "$<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>" 
-    "$<INSTALL_INTERFACE:${CMAKE_INSTALL_INCLUDEDIR}>"
+    "$<INSTALL_INTERFACE:${CMAKE_INSTALL_INCLUDEDIR}>" 
 )
+
+set(THREADS_PREFER_PTHREAD_FLAG ON)
+find_package(Threads REQUIRED)
 
 target_link_libraries(
     aare_core 
@@ -340,6 +436,9 @@ target_link_libraries(
     ${STD_FS_LIB} # from helpers.cmake
     PRIVATE 
     aare_compiler_flags 
+    Threads::Threads
+    $<BUILD_INTERFACE:lmfit>
+
 )
 
 if (AARE_HDF5 AND HDF5_FOUND)
@@ -363,17 +462,29 @@ endif()
 
 if(AARE_TESTS)
     set(TestSources
+            ${CMAKE_CURRENT_SOURCE_DIR}/src/algorithm.test.cpp
             ${CMAKE_CURRENT_SOURCE_DIR}/src/defs.test.cpp
+            ${CMAKE_CURRENT_SOURCE_DIR}/src/decode.test.cpp
             ${CMAKE_CURRENT_SOURCE_DIR}/src/Dtype.test.cpp
             ${CMAKE_CURRENT_SOURCE_DIR}/src/Frame.test.cpp
+            ${CMAKE_CURRENT_SOURCE_DIR}/src/geo_helpers.test.cpp
             ${CMAKE_CURRENT_SOURCE_DIR}/src/RawMasterFile.test.cpp
             ${CMAKE_CURRENT_SOURCE_DIR}/src/NDArray.test.cpp
             ${CMAKE_CURRENT_SOURCE_DIR}/src/NDView.test.cpp
             ${CMAKE_CURRENT_SOURCE_DIR}/src/ClusterFinder.test.cpp
+            ${CMAKE_CURRENT_SOURCE_DIR}/src/ClusterVector.test.cpp
+            ${CMAKE_CURRENT_SOURCE_DIR}/src/Cluster.test.cpp
+            ${CMAKE_CURRENT_SOURCE_DIR}/src/CalculateEta.test.cpp
+            ${CMAKE_CURRENT_SOURCE_DIR}/src/ClusterFile.test.cpp
+            ${CMAKE_CURRENT_SOURCE_DIR}/src/ClusterFinderMT.test.cpp
             ${CMAKE_CURRENT_SOURCE_DIR}/src/Pedestal.test.cpp
+            ${CMAKE_CURRENT_SOURCE_DIR}/src/JungfrauDataFile.test.cpp
             ${CMAKE_CURRENT_SOURCE_DIR}/src/NumpyFile.test.cpp
             ${CMAKE_CURRENT_SOURCE_DIR}/src/NumpyHelpers.test.cpp
             ${CMAKE_CURRENT_SOURCE_DIR}/src/RawFile.test.cpp
+            ${CMAKE_CURRENT_SOURCE_DIR}/src/RawSubFile.test.cpp
+            ${CMAKE_CURRENT_SOURCE_DIR}/src/utils/task.test.cpp
+
         )
     if(HDF5_FOUND)
         list (APPEND TestSources 

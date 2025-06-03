@@ -1,7 +1,10 @@
+source:
+  path: ../
+
+{% set version = load_file_regex(load_file = 'VERSION', regex_pattern = '(\d+(?:\.\d+)*(?:[\+\w\.]+))').group(1) %}
 package:
   name: aare
-  version: 2024.11.28.dev0 #TODO! how to not duplicate this?
-
+  version: {{version}}
 
 source:
   path: ..
@@ -9,44 +12,39 @@ source:
 build:
   number: 0
   script:
-    - unset CMAKE_GENERATOR && {{ PYTHON }} -m pip install . -vv  # [not win]
-    - {{ PYTHON }} -m pip install . -vv  # [win]
+    - unset CMAKE_GENERATOR && {{ PYTHON }} -m pip install . -vv 
 
 requirements:
   build:
-    - python {{python}}
-    - numpy {{ numpy }}
     - {{ compiler('cxx') }}
-
-
-  host:
     - cmake
     - ninja
-    - python {{python}}
-    - numpy {{ numpy }}
+
+  host:
+    - python
     - pip
+    - numpy=2.1
     - scikit-build-core
     - pybind11 >=2.13.0
-    - fmt
-    - zeromq
-    - nlohmann_json
-    - catch2
+    - matplotlib # needed in host to solve the environment for run
 
   run:
-    - python {{python}}
-    - numpy {{ numpy }}
+    - python
+    - {{ pin_compatible('numpy') }}
+    - matplotlib
+    
 
 
 test:
   imports:
     - aare
-  # requires:
-  #   - pytest
-  # source_files:
-  #   - tests
-  # commands:
-  #   - pytest tests
+  requires:
+    - pytest
+    - boost-histogram 
+  source_files:
+    - python/tests
+  commands:
+    - python -m pytest python/tests
 
 about:
-  summary: An example project built with pybind11 and scikit-build.
-  # license_file: LICENSE
+  summary: Data analysis library for hybrid pixel detectors from PSI 
