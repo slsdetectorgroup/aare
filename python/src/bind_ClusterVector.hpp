@@ -102,3 +102,5 @@ void define_ClusterVector(py::module &m, const std::string &typestr) {
               return hitmap;
           });
 }
+
+#pragma GCC diagnostic pop

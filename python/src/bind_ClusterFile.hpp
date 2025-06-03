@@ -21,7 +21,7 @@ using namespace ::aare;
 
 template <typename Type, uint8_t CoordSizeX, uint8_t CoordSizeY,
           typename CoordType = uint16_t>
-void define_cluster_file_io_bindings(py::module &m,
+void define_ClusterFile(py::module &m,
                                      const std::string &typestr) {
 
     using ClusterType = Cluster<Type, CoordSizeX, CoordSizeY, CoordType>;

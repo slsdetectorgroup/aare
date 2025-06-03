@@ -1,11 +1,15 @@
 // Files with bindings to the different classes
 
 //New style file naming
+#include "bind_Cluster.hpp"
+#include "bind_ClusterCollector.hpp"
+#include "bind_ClusterFinder.hpp"
+#include "bind_ClusterFinderMT.hpp"
+#include "bind_ClusterFile.hpp"
+#include "bind_ClusterFileSink.hpp"
 #include "bind_ClusterVector.hpp"
 
 //TODO! migrate the other names
-#include "cluster.hpp"
-#include "cluster_file.hpp"
 #include "ctb_raw_file.hpp"
 #include "file.hpp"
 #include "fit.hpp"
@@ -38,12 +42,12 @@ PYBIND11_MODULE(_aare, m) {
     define_interpolation_bindings(m);
     define_jungfrau_data_file_io_bindings(m);
 
-    define_cluster_file_io_bindings<int, 3, 3, uint16_t>(m, "Cluster3x3i");
-    define_cluster_file_io_bindings<double, 3, 3, uint16_t>(m, "Cluster3x3d");
-    define_cluster_file_io_bindings<float, 3, 3, uint16_t>(m, "Cluster3x3f");
-    define_cluster_file_io_bindings<int, 2, 2, uint16_t>(m, "Cluster2x2i");
-    define_cluster_file_io_bindings<float, 2, 2, uint16_t>(m, "Cluster2x2f");
-    define_cluster_file_io_bindings<double, 2, 2, uint16_t>(m, "Cluster2x2d");
+    define_ClusterFile<int, 3, 3, uint16_t>(m, "Cluster3x3i");
+    define_ClusterFile<double, 3, 3, uint16_t>(m, "Cluster3x3d");
+    define_ClusterFile<float, 3, 3, uint16_t>(m, "Cluster3x3f");
+    define_ClusterFile<int, 2, 2, uint16_t>(m, "Cluster2x2i");
+    define_ClusterFile<float, 2, 2, uint16_t>(m, "Cluster2x2f");
+    define_ClusterFile<double, 2, 2, uint16_t>(m, "Cluster2x2d");
 
     define_ClusterVector<int, 3, 3, uint16_t>(m, "Cluster3x3i");
     define_ClusterVector<double, 3, 3, uint16_t>(m, "Cluster3x3d");
@@ -52,40 +56,40 @@ PYBIND11_MODULE(_aare, m) {
     define_ClusterVector<double, 2, 2, uint16_t>(m, "Cluster2x2d");
     define_ClusterVector<float, 2, 2, uint16_t>(m, "Cluster2x2f");
 
-    define_cluster_finder_bindings<int, 3, 3, uint16_t>(m, "Cluster3x3i");
-    define_cluster_finder_bindings<double, 3, 3, uint16_t>(m, "Cluster3x3d");
-    define_cluster_finder_bindings<float, 3, 3, uint16_t>(m, "Cluster3x3f");
-    define_cluster_finder_bindings<int, 2, 2, uint16_t>(m, "Cluster2x2i");
-    define_cluster_finder_bindings<double, 2, 2, uint16_t>(m, "Cluster2x2d");
-    define_cluster_finder_bindings<float, 2, 2, uint16_t>(m, "Cluster2x2f");
+    define_ClusterFinder<int, 3, 3, uint16_t>(m, "Cluster3x3i");
+    define_ClusterFinder<double, 3, 3, uint16_t>(m, "Cluster3x3d");
+    define_ClusterFinder<float, 3, 3, uint16_t>(m, "Cluster3x3f");
+    define_ClusterFinder<int, 2, 2, uint16_t>(m, "Cluster2x2i");
+    define_ClusterFinder<double, 2, 2, uint16_t>(m, "Cluster2x2d");
+    define_ClusterFinder<float, 2, 2, uint16_t>(m, "Cluster2x2f");
 
-    define_cluster_finder_mt_bindings<int, 3, 3, uint16_t>(m, "Cluster3x3i");
-    define_cluster_finder_mt_bindings<double, 3, 3, uint16_t>(m, "Cluster3x3d");
-    define_cluster_finder_mt_bindings<float, 3, 3, uint16_t>(m, "Cluster3x3f");
-    define_cluster_finder_mt_bindings<int, 2, 2, uint16_t>(m, "Cluster2x2i");
-    define_cluster_finder_mt_bindings<double, 2, 2, uint16_t>(m, "Cluster2x2d");
-    define_cluster_finder_mt_bindings<float, 2, 2, uint16_t>(m, "Cluster2x2f");
+    define_ClusterFinderMT<int, 3, 3, uint16_t>(m, "Cluster3x3i");
+    define_ClusterFinderMT<double, 3, 3, uint16_t>(m, "Cluster3x3d");
+    define_ClusterFinderMT<float, 3, 3, uint16_t>(m, "Cluster3x3f");
+    define_ClusterFinderMT<int, 2, 2, uint16_t>(m, "Cluster2x2i");
+    define_ClusterFinderMT<double, 2, 2, uint16_t>(m, "Cluster2x2d");
+    define_ClusterFinderMT<float, 2, 2, uint16_t>(m, "Cluster2x2f");
 
-    define_cluster_file_sink_bindings<int, 3, 3, uint16_t>(m, "Cluster3x3i");
-    define_cluster_file_sink_bindings<double, 3, 3, uint16_t>(m, "Cluster3x3d");
-    define_cluster_file_sink_bindings<float, 3, 3, uint16_t>(m, "Cluster3x3f");
-    define_cluster_file_sink_bindings<int, 2, 2, uint16_t>(m, "Cluster2x2i");
-    define_cluster_file_sink_bindings<double, 2, 2, uint16_t>(m, "Cluster2x2d");
-    define_cluster_file_sink_bindings<float, 2, 2, uint16_t>(m, "Cluster2x2f");
+    define_ClusterFileSink<int, 3, 3, uint16_t>(m, "Cluster3x3i");
+    define_ClusterFileSink<double, 3, 3, uint16_t>(m, "Cluster3x3d");
+    define_ClusterFileSink<float, 3, 3, uint16_t>(m, "Cluster3x3f");
+    define_ClusterFileSink<int, 2, 2, uint16_t>(m, "Cluster2x2i");
+    define_ClusterFileSink<double, 2, 2, uint16_t>(m, "Cluster2x2d");
+    define_ClusterFileSink<float, 2, 2, uint16_t>(m, "Cluster2x2f");
 
-    define_cluster_collector_bindings<int, 3, 3, uint16_t>(m, "Cluster3x3i");
-    define_cluster_collector_bindings<double, 3, 3, uint16_t>(m, "Cluster3x3f");
-    define_cluster_collector_bindings<float, 3, 3, uint16_t>(m, "Cluster3x3d");
-    define_cluster_collector_bindings<int, 2, 2, uint16_t>(m, "Cluster2x2i");
-    define_cluster_collector_bindings<double, 2, 2, uint16_t>(m, "Cluster2x2f");
-    define_cluster_collector_bindings<float, 2, 2, uint16_t>(m, "Cluster2x2d");
+    define_ClusterCollector<int, 3, 3, uint16_t>(m, "Cluster3x3i");
+    define_ClusterCollector<double, 3, 3, uint16_t>(m, "Cluster3x3d");
+    define_ClusterCollector<float, 3, 3, uint16_t>(m, "Cluster3x3f");
+    define_ClusterCollector<int, 2, 2, uint16_t>(m, "Cluster2x2i");
+    define_ClusterCollector<double, 2, 2, uint16_t>(m, "Cluster2x2d");
+    define_ClusterCollector<float, 2, 2, uint16_t>(m, "Cluster2x2f");
 
-    define_cluster<int, 3, 3, uint16_t>(m, "3x3i");
-    define_cluster<float, 3, 3, uint16_t>(m, "3x3f");
-    define_cluster<double, 3, 3, uint16_t>(m, "3x3d");
-    define_cluster<int, 2, 2, uint16_t>(m, "2x2i");
-    define_cluster<float, 2, 2, uint16_t>(m, "2x2f");
-    define_cluster<double, 2, 2, uint16_t>(m, "2x2d");
+    define_Cluster<int, 3, 3, uint16_t>(m, "3x3i");
+    define_Cluster<float, 3, 3, uint16_t>(m, "3x3f");
+    define_Cluster<double, 3, 3, uint16_t>(m, "3x3d");
+    define_Cluster<int, 2, 2, uint16_t>(m, "2x2i");
+    define_Cluster<float, 2, 2, uint16_t>(m, "2x2f");
+    define_Cluster<double, 2, 2, uint16_t>(m, "2x2d");
 
     register_calculate_eta<int, 3, 3, uint16_t>(m);
     register_calculate_eta<float, 3, 3, uint16_t>(m);
