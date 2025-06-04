@@ -27,30 +27,21 @@ Frame Hdf5File::read_frame(size_t frame_number) {
 }
 
 void Hdf5File::read_into(std::byte *image_buf, size_t n_frames) {
-    // TODO: implement this in a more efficient way
-
-    for (size_t i = 0; i < n_frames; i++) {
-        get_frame_into(m_current_frame++, image_buf);
-        image_buf += bytes_per_frame();
-    }
+    get_frame_into(m_current_frame++, image_buf, n_frames);
 }
 
 void Hdf5File::read_into(std::byte *image_buf) {
-    return get_frame_into(m_current_frame++, image_buf);
+    get_frame_into(m_current_frame++, image_buf);
 }
 
 void Hdf5File::read_into(std::byte *image_buf, DetectorHeader *header) {
 
-    return get_frame_into(m_current_frame++, image_buf, header);
+    get_frame_into(m_current_frame, image_buf, 1, header);
 }
 
 void Hdf5File::read_into(std::byte *image_buf, size_t n_frames,
                          DetectorHeader *header) {
-    for (size_t i = 0; i < n_frames; i++) {
-        get_frame_into(m_current_frame++, image_buf, header);
-        image_buf += bytes_per_frame();
-        header += n_modules();
-    }
+    get_frame_into(m_current_frame++, image_buf, n_frames, header);
 }
 
 size_t Hdf5File::bytes_per_frame() {
@@ -119,30 +110,25 @@ DetectorHeader Hdf5File::read_header(const std::filesystem::path &fname) {
 }
 
 
-Frame Hdf5File::get_frame(size_t frame_index) {
-    auto f = Frame(m_rows, m_cols, Dtype::from_bitdepth(m_master.bitdepth()));
-    std::byte *frame_buffer = f.data();
-    get_frame_into(frame_index, frame_buffer);
-    return f;
-}
 
-
-void Hdf5File::get_frame_into(size_t frame_index, std::byte *frame_buffer,
-                              DetectorHeader *header) {
-    if (frame_index >= m_master.frames_in_file()) {
+void Hdf5File::get_frame_into(size_t frame_index, std::byte *frame_buffer, size_t n_frames, DetectorHeader *header) {
+    if ((frame_index + n_frames - 1) >= m_master.frames_in_file()) {
         throw std::runtime_error(LOCATION + "Frame number out of range");
     }
     get_data_into(frame_index, frame_buffer);
+    m_current_frame += n_frames;
     if (header) {
-        for (size_t part_idx = 0; part_idx != m_master.n_modules(); ++part_idx) {
-            get_header_into(frame_index, part_idx, header);
-            header++;
+        for (size_t i = 0; i < n_frames; i++) {
+            for (size_t part_idx = 0; part_idx != m_master.n_modules(); ++part_idx) {
+                get_header_into(frame_index + i, part_idx, header);
+                header++;
+            }
         }
     }
 }
 
-void Hdf5File::get_data_into(size_t frame_index, std::byte *frame_buffer) {
-    m_data_file->get_data_into(frame_index, frame_buffer);
+void Hdf5File::get_data_into(size_t frame_index, std::byte *frame_buffer, size_t n_frames) {
+    m_data_file->get_data_into(frame_index, frame_buffer, n_frames);
 }
 
 void Hdf5File::get_header_into(size_t frame_index, int part_index, DetectorHeader *header) {
@@ -168,6 +154,13 @@ void Hdf5File::get_header_into(size_t frame_index, int part_index, DetectorHeade
         throw std::runtime_error(
             LOCATION + "\nCould not to access header datasets in given file.");
     }
+}
+
+Frame Hdf5File::get_frame(size_t frame_index) {
+    auto f = Frame(m_rows, m_cols, Dtype::from_bitdepth(m_master.bitdepth()));
+    std::byte *frame_buffer = f.data();
+    get_frame_into(frame_index, frame_buffer);
+    return f;
 }
 
 std::vector<Frame> Hdf5File::read_n(size_t n_frames) {

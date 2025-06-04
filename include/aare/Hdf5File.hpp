@@ -38,8 +38,9 @@ struct H5Handles {
     offset[0] = static_cast<hsize_t>(frame_index);
   }
 
-  void get_data_into(size_t frame_index, std::byte *frame_buffer) {
+  void get_data_into(size_t frame_index, std::byte *frame_buffer, size_t n_frames = 1) {
     seek(frame_index);
+    count[0] = static_cast<hsize_t>(n_frames);
     //std::cout << "offset:" << offset << " count:" << count << std::endl;
     dataspace.selectHyperslab(H5S_SELECT_SET, count.data(), offset.data());
     dataset.read(frame_buffer, datatype, *memspace, dataspace);
@@ -137,17 +138,18 @@ class Hdf5File : public FileInterface {
     /**
      * @brief read the frame at the given frame index into the image buffer
      * @param frame_number frame number to read
+     * @param n_frames number of frames to read (default is 1)
      * @param image_buf buffer to store the frame
      */
-    void get_frame_into(size_t frame_index, std::byte *frame_buffer,
-                        DetectorHeader *header = nullptr);
+    void get_frame_into(size_t frame_index, std::byte *frame_buffer, size_t n_frames = 1, DetectorHeader *header = nullptr);
     
     /**
      * @brief read the frame at the given frame index into the image buffer
      * @param frame_index frame number to read
+     * @param n_frames number of frames to read (default is 1)
      * @param frame_buffer buffer to store the frame
      */
-    void get_data_into(size_t frame_index, std::byte *frame_buffer);
+    void get_data_into(size_t frame_index, std::byte *frame_buffer, size_t n_frames = 1);
     
     /**
      * @brief read the header at the given frame index into the header buffer
