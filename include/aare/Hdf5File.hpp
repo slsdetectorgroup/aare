@@ -9,13 +9,13 @@
 namespace aare {
 
 struct H5Handles {
-  std::string file_name{};
-  std::string dataset_name{};
+  std::string file_name;
+  std::string dataset_name;
   H5::H5File file;
   H5::DataSet dataset;
   H5::DataSpace dataspace;
   H5::DataType datatype;
-  std::unique_ptr<H5::DataSpace> memspace{nullptr};
+  std::unique_ptr<H5::DataSpace> memspace;
   std::vector<hsize_t>dims;
   std::vector<hsize_t> count;
   std::vector<hsize_t> offset;
@@ -26,59 +26,60 @@ struct H5Handles {
     file(fname, H5F_ACC_RDONLY),
     dataset(file.openDataSet(dname)),
     dataspace(dataset.getSpace()),
-    datatype(dataset.getDataType())
-  {
-    // get dimensions
-    int rank = dataspace.getSimpleExtentNdims();
-    dims.resize(rank);
-    dataspace.getSimpleExtentDims(dims.data(), nullptr);
-
-    // to slice 1 frame with hyperslab    
-    count.push_back(1);
-    offset.push_back(0);
-
-    // header datasets
-    if (rank == 1) {
-      memspace = std::make_unique<H5::DataSpace>(H5S_SCALAR);
-    }  
-    // header virtual datasets
-    else if (rank == 2) {
-      memspace = std::make_unique<H5::DataSpace>(H5S_SCALAR);
-      count.push_back(1);
-      offset.push_back(0);
-    } 
-    // data dataset
-    else {
-      hsize_t dimsm[2] = {dims[1], dims[2]};
-      memspace = std::make_unique<H5::DataSpace>(2, dimsm);
-      count.push_back(dims[1]);
-      count.push_back(dims[2]);
-      offset.push_back(0);
-      offset.push_back(0);
+    datatype(dataset.getDataType()) {
+      intialize_dimensions();
+      initialize_memspace();
     }
-  };
 
   void seek(size_t frame_index) {
     if (frame_index >= dims[0]) {
         throw std::runtime_error(LOCATION + "Invalid frame number");
     }
     offset[0] = static_cast<hsize_t>(frame_index);
-  };
+  }
 
-  void get_frame_into(size_t frame_index, std::byte *frame_buffer) {
+  void get_data_into(size_t frame_index, std::byte *frame_buffer) {
     seek(frame_index);
-    //LOG(logDEBUG) << "data offset:" << offset << " count:" << count;
+    //std::cout << "offset:" << offset << " count:" << count << std::endl;
     dataspace.selectHyperslab(H5S_SELECT_SET, count.data(), offset.data());
     dataset.read(frame_buffer, datatype, *memspace, dataspace);
-  };
+  }
 
   void get_header_into(size_t frame_index, int part_index, std::byte *header_buffer) {
     seek(frame_index);
-    offset[1] = part_index;
-    //LOG(logDEBUG) << "header offset:" << offset << " count:" << count;
+    offset[1] = static_cast<hsize_t>(part_index);
+    //std::cout << "offset:" << offset << " count:" << count << std::endl;
     dataspace.selectHyperslab(H5S_SELECT_SET, count.data(), offset.data());
     dataset.read(header_buffer, datatype, *memspace, dataspace);
-  };
+  }
+
+  private:
+  void intialize_dimensions() {
+    int rank = dataspace.getSimpleExtentNdims();
+    dims.resize(rank);
+    dataspace.getSimpleExtentDims(dims.data(), nullptr);
+  }
+
+  void initialize_memspace() {
+    int rank = dataspace.getSimpleExtentNdims();
+    count.clear();
+    offset.clear();
+
+    // header datasets or header virtual datasets
+    if (rank == 1 || rank == 2) {
+      count = std::vector<hsize_t>(rank, 1); // slice 1 value
+      offset = std::vector<hsize_t>(rank, 0);
+      memspace = std::make_unique<H5::DataSpace>(H5S_SCALAR);
+    } else if (rank >= 3) {
+      // data dataset (frame x height x width)
+      count = {1, dims[1], dims[2]};
+      offset = {0, 0, 0};
+      hsize_t dims_image[2] = {dims[1], dims[2]};
+      memspace = std::make_unique<H5::DataSpace>(2, dims_image);
+    } else {
+      throw std::runtime_error(LOCATION + "Invalid rank for dataset: " + std::to_string(rank));
+    }
+  }
 };
 
 /**

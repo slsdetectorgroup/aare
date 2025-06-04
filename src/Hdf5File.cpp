@@ -79,6 +79,8 @@ size_t Hdf5File::bitdepth() const { return m_master.bitdepth(); }
 xy Hdf5File::geometry() { return m_master.geometry(); }
 size_t Hdf5File::n_modules() const { return m_master.n_modules(); }
 Hdf5MasterFile Hdf5File::master() const { return m_master; }
+size_t Hdf5File::bytes_per_pixel() const { return m_master.bitdepth() / 8; }
+
 
 DetectorHeader Hdf5File::read_header(const std::filesystem::path &fname) {
     DetectorHeader h{};
@@ -113,20 +115,6 @@ DetectorHeader Hdf5File::read_header(const std::filesystem::path &fname) {
             LOCATION + "\nCould not to access header datasets in given file.");
     }
 
-
-
-    FILE *fp = fopen(fname.string().c_str(), "r");
-    if (!fp)
-        throw std::runtime_error(
-            fmt::format("Could not open: {} for reading", fname.string()));
-
-    size_t const rc = fread(reinterpret_cast<char *>(&h), sizeof(h), 1, fp);
-    if (rc != 1)
-        throw std::runtime_error(LOCATION + "Could not read header from file");
-    if (fclose(fp)) {
-        throw std::runtime_error(LOCATION + "Could not close file");
-    }
-
     return h;
 }
 
@@ -138,18 +126,15 @@ Frame Hdf5File::get_frame(size_t frame_index) {
     return f;
 }
 
-size_t Hdf5File::bytes_per_pixel() const { return m_master.bitdepth() / 8; }
 
 void Hdf5File::get_frame_into(size_t frame_index, std::byte *frame_buffer,
                               DetectorHeader *header) {
     if (frame_index >= m_master.frames_in_file()) {
         throw std::runtime_error(LOCATION + "Frame number out of range");
     }
-    LOG(logINFOBLUE) << "Reading frame " << frame_index;
     get_data_into(frame_index, frame_buffer);
     if (header) {
         for (size_t part_idx = 0; part_idx != m_master.n_modules(); ++part_idx) {
-            // fmt::print("Reading header for module {}\n", part_idx);
             get_header_into(frame_index, part_idx, header);
             header++;
         }
@@ -157,7 +142,7 @@ void Hdf5File::get_frame_into(size_t frame_index, std::byte *frame_buffer,
 }
 
 void Hdf5File::get_data_into(size_t frame_index, std::byte *frame_buffer) {
-    m_data_file->get_frame_into(frame_index, frame_buffer);
+    m_data_file->get_data_into(frame_index, frame_buffer);
 }
 
 void Hdf5File::get_header_into(size_t frame_index, int part_index, DetectorHeader *header) {
@@ -176,7 +161,7 @@ void Hdf5File::get_header_into(size_t frame_index, int part_index, DetectorHeade
         m_header_files[11]->get_header_into(frame_index, part_index, reinterpret_cast<std::byte *>(&(header->detType)));
         m_header_files[12]->get_header_into(frame_index, part_index, reinterpret_cast<std::byte *>(&(header->version)));
         m_header_files[13]->get_header_into(frame_index, part_index, reinterpret_cast<std::byte *>(&(header->packetMask)));
-        LOG(logDEBUG5) << "Read 1D header for frame " << frame_index;
+        LOG(logDEBUG) << "Read 1D header for frame " << frame_index;
     } catch (const H5::Exception &e) {
         fmt::print("Exception type: {}\n", typeid(e).name());
         e.printErrorStack();
