@@ -1,5 +1,7 @@
 #pragma once
+// #include "aare/RawFile.hpp"
 #include "aare/defs.hpp"
+#include <algorithm>
 #include <filesystem>
 #include <fmt/format.h>
 #include <fstream>
@@ -45,7 +47,7 @@ class ScanParameters {
     int m_start = 0;
     int m_stop = 0;
     int m_step = 0;
-    //TODO! add settleTime, requires string to time conversion
+    // TODO! add settleTime, requires string to time conversion
 
   public:
     ScanParameters(const std::string &par);
@@ -61,6 +63,7 @@ class ScanParameters {
     void increment_stop();
 };
 
+class RawFile; // forward declaration
 
 /**
  * @brief Class for parsing a master file either in our .json format or the old
@@ -101,7 +104,6 @@ class RawMasterFile {
 
     std::optional<ROI> m_roi;
 
-
   public:
     RawMasterFile(const std::filesystem::path &fpath);
 
@@ -129,15 +131,14 @@ class RawMasterFile {
     std::optional<size_t> number_of_rows() const;
     std::optional<uint8_t> quad() const;
 
-
     std::optional<ROI> roi() const;
-
 
     ScanParameters scan_parameters() const;
 
   private:
     void parse_json(const std::filesystem::path &fpath);
     void parse_raw(const std::filesystem::path &fpath);
+    void retrieve_geometry();
 };
 
 } // namespace aare
