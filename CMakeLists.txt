@@ -367,6 +367,7 @@ set(PUBLICHEADERS
     include/aare/GainMap.hpp
     include/aare/geo_helpers.hpp
     include/aare/JungfrauDataFile.hpp
+    include/aare/logger.hpp
     include/aare/NDArray.hpp
     include/aare/NDView.hpp
     include/aare/NumpyFile.hpp

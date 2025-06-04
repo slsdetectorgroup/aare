@@ -30,7 +30,7 @@ void Hdf5File::read_into(std::byte *image_buf, size_t n_frames) {
     // TODO: implement this in a more efficient way
 
     for (size_t i = 0; i < n_frames; i++) {
-        this->get_frame_into(m_current_frame++, image_buf);
+        get_frame_into(m_current_frame++, image_buf);
         image_buf += bytes_per_frame();
     }
 }
@@ -46,13 +46,10 @@ void Hdf5File::read_into(std::byte *image_buf, DetectorHeader *header) {
 
 void Hdf5File::read_into(std::byte *image_buf, size_t n_frames,
                          DetectorHeader *header) {
-    // return get_frame_into(m_current_frame++, image_buf, header);
-
     for (size_t i = 0; i < n_frames; i++) {
-        this->get_frame_into(m_current_frame++, image_buf, header);
+        get_frame_into(m_current_frame++, image_buf, header);
         image_buf += bytes_per_frame();
-        if (header)
-            header += n_modules();
+        header += n_modules();
     }
 }
 
@@ -90,20 +87,23 @@ DetectorHeader Hdf5File::read_header(const std::filesystem::path &fname) {
         for (size_t i = 0; i != header_dataset_names.size(); ++i) {
             handles.push_back(std::make_unique<H5Handles>(fname.string(), metadata_group_name+ header_dataset_names[i]));
         }
-        handles[0]->get_frame_into(0, reinterpret_cast<std::byte *>(&(h.frameNumber)));
-        handles[1]->get_frame_into(0, reinterpret_cast<std::byte *>(&(h.expLength)));
-        handles[2]->get_frame_into(0, reinterpret_cast<std::byte *>(&(h.packetNumber)));
-        handles[3]->get_frame_into(0, reinterpret_cast<std::byte *>(&(h.bunchId)));
-        handles[4]->get_frame_into(0, reinterpret_cast<std::byte *>(&(h.timestamp)));
-        handles[5]->get_frame_into(0, reinterpret_cast<std::byte *>(&(h.modId)));
-        handles[6]->get_frame_into(0, reinterpret_cast<std::byte *>(&(h.row)));
-        handles[7]->get_frame_into(0, reinterpret_cast<std::byte *>(&(h.column)));
-        handles[8]->get_frame_into(0, reinterpret_cast<std::byte *>(&(h.reserved)));
-        handles[9]->get_frame_into(0, reinterpret_cast<std::byte *>(&(h.debug)));
-        handles[10]->get_frame_into(0, reinterpret_cast<std::byte *>(&(h.roundRNumber)));
-        handles[11]->get_frame_into(0, reinterpret_cast<std::byte *>(&(h.detType)));
-        handles[12]->get_frame_into(0, reinterpret_cast<std::byte *>(&(h.version)));
-        handles[13]->get_frame_into(0, reinterpret_cast<std::byte *>(&(h.packetMask)));
+        // reading first header and assuming first part
+        size_t frame_index = 0;
+        int part_index = 0;
+        handles[0]->get_header_into(frame_index, part_index, reinterpret_cast<std::byte *>(&(h.frameNumber)));
+        handles[1]->get_header_into(frame_index, part_index, reinterpret_cast<std::byte *>(&(h.expLength)));
+        handles[2]->get_header_into(frame_index, part_index, reinterpret_cast<std::byte *>(&(h.packetNumber)));
+        handles[3]->get_header_into(frame_index, part_index, reinterpret_cast<std::byte *>(&(h.bunchId)));
+        handles[4]->get_header_into(frame_index, part_index, reinterpret_cast<std::byte *>(&(h.timestamp)));
+        handles[5]->get_header_into(frame_index, part_index, reinterpret_cast<std::byte *>(&(h.modId)));
+        handles[6]->get_header_into(frame_index, part_index, reinterpret_cast<std::byte *>(&(h.row)));
+        handles[7]->get_header_into(frame_index, part_index, reinterpret_cast<std::byte *>(&(h.column)));
+        handles[8]->get_header_into(frame_index, part_index, reinterpret_cast<std::byte *>(&(h.reserved)));
+        handles[9]->get_header_into(frame_index, part_index, reinterpret_cast<std::byte *>(&(h.debug)));
+        handles[10]->get_header_into(frame_index, part_index, reinterpret_cast<std::byte *>(&(h.roundRNumber)));
+        handles[11]->get_header_into(frame_index, part_index, reinterpret_cast<std::byte *>(&(h.detType)));
+        handles[12]->get_header_into(frame_index, part_index, reinterpret_cast<std::byte *>(&(h.version)));
+        handles[13]->get_header_into(frame_index, part_index, reinterpret_cast<std::byte *>(&(h.packetMask)));
         LOG(logDEBUG5) << "Read 1D header for frame 0";
     } catch (const H5::Exception &e) {
         handles.clear();
@@ -142,7 +142,10 @@ size_t Hdf5File::bytes_per_pixel() const { return m_master.bitdepth() / 8; }
 
 void Hdf5File::get_frame_into(size_t frame_index, std::byte *frame_buffer,
                               DetectorHeader *header) {
-
+    if (frame_index >= m_master.frames_in_file()) {
+        throw std::runtime_error(LOCATION + "Frame number out of range");
+    }
+    LOG(logINFOBLUE) << "Reading frame " << frame_index;
     get_data_into(frame_index, frame_buffer);
     if (header) {
         for (size_t part_idx = 0; part_idx != m_master.n_modules(); ++part_idx) {
@@ -193,8 +196,14 @@ std::vector<Frame> Hdf5File::read_n(size_t n_frames) {
 }
 
 size_t Hdf5File::frame_number(size_t frame_index) {
+    //TODO: check if it should check total_Frames() at any point
+    // check why this->read_into.. as in RawFile
+    if (frame_index >= m_master.frames_in_file()) {
+        throw std::runtime_error(LOCATION + " Frame number out of range");
+    }
     uint64_t fnum{0};
-    m_header_files[0]->get_frame_into(frame_index, reinterpret_cast<std::byte *>(&fnum));
+    int part_index = 0; // assuming first part
+    m_header_files[0]->get_header_into(frame_index, part_index, reinterpret_cast<std::byte *>(&fnum));
     return fnum;
 }
 

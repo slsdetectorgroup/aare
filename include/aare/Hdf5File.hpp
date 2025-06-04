@@ -66,16 +66,16 @@ struct H5Handles {
   };
 
   void get_frame_into(size_t frame_index, std::byte *frame_buffer) {
-    offset[0] = frame_index;
-    LOG(logDEBUG) << "data offset:" << offset << " count:" << count;
+    seek(frame_index);
+    //LOG(logDEBUG) << "data offset:" << offset << " count:" << count;
     dataspace.selectHyperslab(H5S_SELECT_SET, count.data(), offset.data());
     dataset.read(frame_buffer, datatype, *memspace, dataspace);
   };
 
   void get_header_into(size_t frame_index, int part_index, std::byte *header_buffer) {
-    offset[0] = frame_index;
+    seek(frame_index);
     offset[1] = part_index;
-    LOG(logDEBUG) << "header offset:" << offset << " count:" << count;
+    //LOG(logDEBUG) << "header offset:" << offset << " count:" << count;
     dataspace.selectHyperslab(H5S_SELECT_SET, count.data(), offset.data());
     dataset.read(header_buffer, datatype, *memspace, dataspace);
   };
