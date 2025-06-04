@@ -9,11 +9,57 @@
 
 #include "test_config.hpp"
 
+#include <iomanip>
+
 #include <catch2/catch_all.hpp>
 #include <catch2/catch_test_macros.hpp>
 #include <catch2/matchers/catch_matchers_floating_point.hpp>
 
 using namespace aare;
+
+template <typename T, ssize_t Ndim = 1>
+NDArray<T, Ndim> read_into_array(const std::string &filename,
+                                 const std::array<ssize_t, 1> size) {
+    std::string word;
+    NDArray<T, Ndim> array(size);
+    try {
+        std::ifstream file(filename, std::ios_base::in);
+        if (!file.good()) {
+            throw std::logic_error("file does not exist");
+        }
+
+        std::stringstream file_buffer;
+        file_buffer << file.rdbuf();
+
+        ssize_t counter = 0;
+        while (file_buffer >> word) {
+            array[counter] = std::stod(word); // TODO change for different Types
+            ++counter;
+        }
+
+        file.close();
+    } catch (const std::exception &e) {
+        std::cerr << "Error: " << e.what() << std::endl;
+    }
+
+    return array;
+}
+
+template <typename T, ssize_t Ndim>
+bool check_equality_of_arrays(NDView<T, Ndim> array1, NDView<T, Ndim> array2) {
+    bool equal = true;
+    for (ssize_t i = 0; i < array1.size(); ++i) {
+        if (std::abs(array1[i] - array2[i]) > 1e-10) {
+            std::cout << "index: " << i << std::endl;
+            std::cout << std::setprecision(15) << array1[i] << std::endl;
+            std::cout << std::setprecision(15) << array2[i] << std::endl;
+            equal = false;
+            break;
+        }
+    }
+
+    return equal;
+}
 
 class AngleCalibrationTestClass : public AngleCalibration {
 
@@ -144,6 +190,110 @@ TEST_CASE("read flatfield", "[.anglecalibration][.flatfield][.files]") {
     CHECK(flatfield_data[21] == 4234186);
 }
 
+TEST_CASE("check flatfield values", "[.anglecalibration][.flatfield][.files]") {
+    auto fpath = test_data_path() / "AngleCalibration_Test_Data";
+
+    REQUIRE(std::filesystem::exists(fpath));
+
+    std::shared_ptr<MythenDetectorSpecifications> mythen_detector_ptr =
+        std::make_shared<MythenDetectorSpecifications>();
+
+    std::string bad_channels_filename = fpath / "bc2023_003_RING.chans";
+
+    REQUIRE(std::filesystem::exists(bad_channels_filename));
+
+    mythen_detector_ptr->read_bad_channels_from_file(bad_channels_filename);
+
+    FlatField flatfield(mythen_detector_ptr);
+
+    std::string flatfield_filename =
+        fpath /
+        "Flatfield_E22p0keV_T11000eV_up_48M_a_LONG_Feb2023_open_WS_SUMC.raw";
+
+    REQUIRE(std::filesystem::exists(flatfield_filename));
+
+    flatfield.read_flatfield_from_file(flatfield_filename);
+
+    auto flatfield_data = flatfield.get_flatfield();
+
+    std::string expected_flatfield_filename = fpath / "flatfield.txt";
+
+    REQUIRE(std::filesystem::exists(expected_flatfield_filename));
+
+    NDArray<double, 1> expected_flatfield = read_into_array<double, 1>(
+        expected_flatfield_filename, flatfield_data.shape());
+
+    auto bad_channels = mythen_detector_ptr->get_bad_channels();
+
+    bool equal_flatfield = true;
+    for (ssize_t i = 0; i < flatfield_data.size(); ++i) {
+        if (!bad_channels[i] &&
+            std::abs(flatfield_data[i] - expected_flatfield[i]) >
+                std::numeric_limits<double>::epsilon()) {
+            std::cout << "index: " << i << std::endl;
+            std::cout << flatfield_data[i] << std::endl;
+            std::cout << expected_flatfield[i] << std::endl;
+            equal_flatfield = false;
+            break;
+        }
+    }
+    CHECK(equal_flatfield);
+}
+
+TEST_CASE("check inverse flatfield values",
+          "[.anglecalibration][.flatfield][.files]") {
+    auto fpath = test_data_path() / "AngleCalibration_Test_Data";
+
+    REQUIRE(std::filesystem::exists(fpath));
+
+    std::shared_ptr<MythenDetectorSpecifications> mythen_detector_ptr =
+        std::make_shared<MythenDetectorSpecifications>();
+
+    std::string bad_channels_filename = fpath / "bc2023_003_RING.chans";
+
+    REQUIRE(std::filesystem::exists(bad_channels_filename));
+
+    mythen_detector_ptr->read_bad_channels_from_file(bad_channels_filename);
+
+    FlatField flatfield(mythen_detector_ptr);
+
+    std::string flatfield_filename =
+        fpath /
+        "Flatfield_E22p0keV_T11000eV_up_48M_a_LONG_Feb2023_open_WS_SUMC.raw";
+
+    REQUIRE(std::filesystem::exists(flatfield_filename));
+
+    flatfield.read_flatfield_from_file(flatfield_filename);
+
+    auto inverse_flatfield = flatfield.inverse_normalized_flatfield();
+
+    std::string expected_inverseflatfield_filename =
+        fpath / "inverseflatfield.txt";
+
+    REQUIRE(std::filesystem::exists(expected_inverseflatfield_filename));
+
+    NDArray<double, 1> expected_inverseflatfield = read_into_array<double, 1>(
+        expected_inverseflatfield_filename, inverse_flatfield.shape());
+
+    auto bad_channels = mythen_detector_ptr->get_bad_channels();
+
+    bool equal = true;
+    for (ssize_t i = 0; i < inverse_flatfield.size(); ++i) {
+        if (!bad_channels[i] &&
+            std::abs(inverse_flatfield[i] - expected_inverseflatfield[i]) >
+                1e-10) {
+            std::cout << "index: " << i << std::endl;
+            std::cout << std::setprecision(15) << inverse_flatfield[i]
+                      << std::endl;
+            std::cout << std::setprecision(15) << expected_inverseflatfield[i]
+                      << std::endl;
+            equal = false;
+            break;
+        }
+    }
+    CHECK(equal);
+}
+
 TEST_CASE("calculate new fixed angle width bins histogram",
           "[.anglecalibration] [.files]") {
 
@@ -196,4 +346,94 @@ TEST_CASE("calculate new fixed angle width bins histogram",
 
     anglecalibration.write_to_file(
         "cpp_new_photon_counts.xye"); // TODO adjust output path
+}
+
+TEST_CASE("check diffraction angles") {
+    auto expected_diffraction_angle_filename = test_data_path() /
+                                               "AngleCalibration_Test_Data" /
+                                               "diffraction_angle.txt";
+
+    REQUIRE(std::filesystem::exists(expected_diffraction_angle_filename));
+
+    auto expected_angles =
+        read_into_array<double, 1>(expected_diffraction_angle_filename.string(),
+                                   std::array<ssize_t, 1>{61440});
+
+    auto diffraction_angle_filename =
+        std::filesystem::current_path() / "../build/diffraction_angles.txt";
+
+    auto angles = load<double, 1>(diffraction_angle_filename,
+                                  std::array<ssize_t, 1>{61440});
+
+    CHECK(check_equality_of_arrays(angles.view(), expected_angles.view()));
+}
+
+TEST_CASE("check angle widths") {
+    auto expected_filename =
+        test_data_path() / "AngleCalibration_Test_Data" / "angle_width.txt";
+
+    REQUIRE(std::filesystem::exists(expected_filename));
+
+    auto expected_array = read_into_array<double, 1>(
+        expected_filename.string(), std::array<ssize_t, 1>{61440});
+
+    auto filename =
+        std::filesystem::current_path() / "../build/angle_widths.txt";
+
+    auto array = load<double, 1>(filename, std::array<ssize_t, 1>{61440});
+
+    CHECK(check_equality_of_arrays(array.view(), expected_array.view()));
+}
+
+TEST_CASE("check conversion from DG to EE parameters",
+          "[.anglecalibration][.files]") {
+
+    auto fpath = test_data_path() / "AngleCalibration_Test_Data";
+
+    REQUIRE(std::filesystem::exists(fpath));
+
+    std::shared_ptr<MythenDetectorSpecifications> mythen_detector_ptr =
+        std::make_shared<MythenDetectorSpecifications>();
+
+    std::shared_ptr<FlatField> flat_field_ptr =
+        std::make_shared<FlatField>(mythen_detector_ptr);
+
+    std::shared_ptr<MythenFileReader> mythen_file_reader_ptr =
+        std::make_shared<MythenFileReader>(fpath,
+                                           "ang1up_22keV_LaB60p3mm_48M_a_0");
+
+    AngleCalibration anglecalibration(mythen_detector_ptr, flat_field_ptr,
+                                      mythen_file_reader_ptr);
+
+    // DG parameters
+    double center = 642.197591224993;
+    double conversion = 0.657694036246975e-4;
+    double offset = 5.004892881251670;
+
+    double global_strip_index =
+        MythenDetectorSpecifications::strips_per_module() + 1;
+
+    double diffraction_angle_DG_param =
+        anglecalibration.diffraction_angle_from_DG_parameters(
+            center, conversion, offset, 1);
+
+    auto [distance_center, normal_distance, angle] =
+        anglecalibration.convert_to_EE_parameters(center, conversion, offset);
+
+    double diffraction_angle_EE_param =
+        anglecalibration.diffraction_angle_from_EE_parameters(
+            distance_center, normal_distance, angle, 1);
+
+    CHECK(diffraction_angle_EE_param ==
+          Catch::Approx(diffraction_angle_DG_param));
+
+    double strip_width_DG_param =
+        anglecalibration.angular_strip_width_from_DG_parameters(
+            center, conversion, offset, global_strip_index);
+
+    double strip_width_EE_param =
+        anglecalibration.angular_strip_width_from_EE_parameters(
+            distance_center, normal_distance, angle, global_strip_index);
+
+    CHECK(strip_width_DG_param == Catch::Approx(strip_width_EE_param));
 }

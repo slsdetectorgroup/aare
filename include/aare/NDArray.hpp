@@ -423,7 +423,7 @@ template <typename T, ssize_t Ndim>
 void save(NDArray<T, Ndim> &img, std::string &pathname) {
     std::ofstream f;
     f.open(pathname, std::ios::binary);
-    f.write(img.buffer(), img.size() * sizeof(T));
+    f.write(reinterpret_cast<char *>(img.buffer()), img.size() * sizeof(T));
     f.close();
 }
 
@@ -433,7 +433,7 @@ NDArray<T, Ndim> load(const std::string &pathname,
     NDArray<T, Ndim> img{shape};
     std::ifstream f;
     f.open(pathname, std::ios::binary);
-    f.read(img.buffer(), img.size() * sizeof(T));
+    f.read(reinterpret_cast<char *>(img.buffer()), img.size() * sizeof(T));
     f.close();
     return img;
 }

@@ -69,7 +69,7 @@ class MythenDetectorSpecifications {
                 } else {
                     size_t line_size = line.size();
                     for (int i = std::stoi(line.substr(0, pos));
-                         i < std::stoi(line.substr(pos + 1, line_size - pos));
+                         i <= std::stoi(line.substr(pos + 1, line_size - pos));
                          ++i)
                         bad_channels(i) = true;
                 }
@@ -200,16 +200,20 @@ class FlatField {
             flat_field.begin(), flat_field.end(),
             std::make_pair<double, ssize_t>(0.0, 0),
             [&tolerance](std::pair<double, ssize_t> acc, const auto &element) {
-                return element < tolerance ? acc
-                                           : std::make_pair(acc.first + element,
-                                                            acc.second + 1);
+                return element == 0 ? acc
+                                    : std::make_pair(acc.first + element,
+                                                     acc.second + 1);
             });
 
+        std::cout << "sum: " << sum << std::endl;
+        std::cout << "count: " << count << std::endl;
         return sum / count;
     }
 
     NDArray<double, 1> inverse_normalized_flatfield(double tolerance = 0.001) {
         double mean = calculate_mean(tolerance);
+
+        std::cout << "mean: " << mean << std::endl;
 
         NDArray<double, 1> inverse_normalized_flatfield(flat_field.shape());
 
@@ -223,7 +227,7 @@ class FlatField {
 
         for (ssize_t i = 0; i < flat_field.size(); ++i) {
             inverse_normalized_flatfield[i] =
-                (flat_field[i] == 0 ? 0.0 : mean / flat_field[i]);
+                (flat_field[i] <= tolerance ? 0.0 : mean / flat_field[i]);
             if (inverse_normalized_flatfield[i] < tolerance)
                 mythen_detector->get_bad_channels()[i] = true;
         }
@@ -274,20 +278,22 @@ class AngleCalibration {
 
         exposure_rate = 1. / mythen_detector->exposure_time();
 
-        num_bins = mythen_detector->max_angle() / histogram_bin_width -
-                   mythen_detector->min_angle() /
-                       histogram_bin_width; // TODO only works if negative
-                                            // and positive angle
+        num_bins =
+            std::floor(mythen_detector->max_angle() / histogram_bin_width) -
+            std::floor(mythen_detector->min_angle() / histogram_bin_width) +
+            1; // TODO only works if negative
+               // and positive angle
     }
 
     /** set the histogram bin width [degrees] */
     void set_histogram_bin_width(double bin_width) {
         histogram_bin_width = bin_width;
 
-        num_bins = mythen_detector->max_angle() / histogram_bin_width -
-                   mythen_detector->min_angle() /
-                       histogram_bin_width; // TODO only works if negative
-                                            // and positive angle
+        num_bins =
+            std::floor(mythen_detector->max_angle() / histogram_bin_width) -
+            std::floor(mythen_detector->min_angle() / histogram_bin_width) +
+            1; // TODO only works if negative
+               // and positive angle
     }
 
     double get_histogram_bin_width() { return histogram_bin_width; }
@@ -295,12 +301,22 @@ class AngleCalibration {
     /** reads the historical Detector Group (DG) parameters from file **/
     void read_initial_calibration_from_file(const std::string &filename);
 
+    std::vector<double> get_centers() { return centers; }
+
+    std::vector<double> get_conversions() { return conversions; }
+
+    std::vector<double> get_offsets() { return offsets; }
+
     /** converts DG parameters to easy EE parameters e.g.geometric
      * parameters */
     parameters convert_to_EE_parameters();
 
     std::tuple<double, double, double>
     convert_to_EE_parameters(const size_t module_index);
+
+    std::tuple<double, double, double>
+    convert_to_EE_parameters(const double center, const double conversion,
+                             const double offset);
 
     /** converts DG parameters to BC parameters e.g. best computing
      * parameters */
@@ -311,22 +327,38 @@ class AngleCalibration {
      * @param strip_index local strip index of module
      */
     double diffraction_angle_from_EE_parameters(
-        const double normal_distance, const double module_center_distance,
-        const double angle, const size_t strip_index);
+        const double module_center_distance, const double normal_distance,
+        const double angle, const size_t strip_index,
+        const double distance_to_strip = 0);
 
     /** calculates diffraction angle from EE module parameters (used in
      * Beer's Law)
+     * @param center module center
+     * @param conversion module conversion
+     * @param offset module offset
      * @param strip_index local strip index of module
+     * @param distance_to_strip distance to strip given by strip_index and
+     * module -> note needs to be small enough to be in the respective module
      */
-    double diffraction_angle_from_DG_parameters(const double center,
-                                                const double conversion,
-                                                const double offset,
-                                                const size_t strip_index);
+    double diffraction_angle_from_DG_parameters(
+        const double center, const double conversion, const double offset,
+        const size_t strip_index, const double distance_to_strip = 0);
 
     /** calculated the strip width expressed as angle [degrees]
      * @param strip_index gloabl strip index of detector
      */
-    double angular_strip_width(const size_t strip_index);
+    double angular_strip_width_from_DG_parameters(const size_t strip_index);
+
+    double angular_strip_width_from_DG_parameters(const double center,
+                                                  const double conversion,
+                                                  const double offset,
+                                                  const size_t strip_index);
+
+    double angular_strip_width_from_EE_parameters(const size_t strip_index);
+
+    double angular_strip_width_from_EE_parameters(
+        const double module_center_distance, const double normal_distance,
+        const double angle, const size_t strip_index);
 
     /** converts global strip index to local strip index of that module */
     size_t
@@ -352,8 +384,8 @@ class AngleCalibration {
      */
     void redistribute_photon_counts_to_fixed_angle_bins(
         const MythenFrame &frame, NDView<double, 1> bin_counts,
-        NDView<double, 1> new_statistical_weights,
-        NDView<double, 1> new_errors);
+        NDView<double, 1> new_statistical_weights, NDView<double, 1> new_errors,
+        NDView<double, 1> inverse_nromalized_flatfield);
 
     void write_to_file(const std::string &filename);
 
@@ -385,7 +417,7 @@ class AngleCalibration {
 
     ssize_t num_bins{};
 
-    double exposure_rate;
+    double exposure_rate{};
 
     std::shared_ptr<MythenFileReader>
         mythen_file_reader; // TODO replace by FileInterface ptr
