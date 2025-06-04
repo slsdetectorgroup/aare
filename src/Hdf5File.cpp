@@ -198,6 +198,7 @@ std::vector<Frame> Hdf5File::read_n(size_t n_frames) {
 size_t Hdf5File::frame_number(size_t frame_index) {
     //TODO: check if it should check total_Frames() at any point
     // check why this->read_into.. as in RawFile
+    // refactor multiple frame reads into a single one using hyperslab
     if (frame_index >= m_master.frames_in_file()) {
         throw std::runtime_error(LOCATION + " Frame number out of range");
     }
