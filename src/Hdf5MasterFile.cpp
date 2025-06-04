@@ -137,6 +137,10 @@ std::optional<size_t> Hdf5MasterFile::number_of_rows() const {
 
 xy Hdf5MasterFile::geometry() const { return m_geometry; }
 
+size_t Hdf5MasterFile::n_modules() const {
+        return m_geometry.row * m_geometry.col;
+}
+
 std::optional<uint8_t> Hdf5MasterFile::quad() const { return m_quad; }
 
 // optional values, these may or may not be present in the master file

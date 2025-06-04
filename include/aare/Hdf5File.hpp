@@ -43,9 +43,8 @@ struct H5Handles {
     }  
     // header virtual datasets
     else if (rank == 2) {
-      hsize_t dimsm[1] = {dims[1]};
-      memspace = std::make_unique<H5::DataSpace>(1, dimsm);
-      count.push_back(dims[1]);
+      memspace = std::make_unique<H5::DataSpace>(H5S_SCALAR);
+      count.push_back(1);
       offset.push_back(0);
     } 
     // data dataset
@@ -67,11 +66,19 @@ struct H5Handles {
   };
 
   void get_frame_into(size_t frame_index, std::byte *frame_buffer) {
-    seek(frame_index);
+    offset[0] = frame_index;
+    LOG(logDEBUG) << "data offset:" << offset << " count:" << count;
     dataspace.selectHyperslab(H5S_SELECT_SET, count.data(), offset.data());
     dataset.read(frame_buffer, datatype, *memspace, dataspace);
   };
 
+  void get_header_into(size_t frame_index, int part_index, std::byte *header_buffer) {
+    offset[0] = frame_index;
+    offset[1] = part_index;
+    LOG(logDEBUG) << "header offset:" << offset << " count:" << count;
+    dataspace.selectHyperslab(H5S_SELECT_SET, count.data(), offset.data());
+    dataset.read(header_buffer, datatype, *memspace, dataspace);
+  };
 };
 
 /**
@@ -120,8 +127,7 @@ class Hdf5File : public FileInterface {
     size_t cols() const override;
     size_t bitdepth() const override;
     xy geometry();
-    size_t n_mod() const;
-
+    size_t n_modules() const;
     Hdf5MasterFile master() const;
 
     DetectorType detector_type() const override;
@@ -145,9 +151,10 @@ class Hdf5File : public FileInterface {
     /**
      * @brief read the header at the given frame index into the header buffer
      * @param frame_index frame number to read
+     * @param part_index part index to read (for virtual datasets)
      * @param header buffer to store the header
      */
-    void get_header_into(size_t frame_index, DetectorHeader *header);
+    void get_header_into(size_t frame_index, int part_index, DetectorHeader *header);
     
     /**
      * @brief get the frame at the given frame index

@@ -82,7 +82,7 @@ if(AARE_VERBOSE)
     add_compile_definitions(AARE_VERBOSE)
     add_compile_definitions(AARE_LOG_LEVEL=aare::logDEBUG5)
 else()
-    add_compile_definitions(AARE_LOG_LEVEL=aare::logERROR)
+    add_compile_definitions(AARE_LOG_LEVEL=aare::logINFOBLUE)
 endif()
 
 if(AARE_CUSTOM_ASSERT)

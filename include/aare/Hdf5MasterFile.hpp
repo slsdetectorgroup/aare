@@ -143,6 +143,7 @@ class Hdf5MasterFile {
 
     size_t total_frames_expected() const;
     xy geometry() const;
+    size_t n_modules() const;
 
     std::optional<size_t> analog_samples() const;
     std::optional<size_t> digital_samples() const;
