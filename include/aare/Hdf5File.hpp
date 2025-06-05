@@ -83,6 +83,24 @@ struct H5Handles {
   }
 };
 
+template <typename Fn>
+void read_hdf5_header_fields(DetectorHeader *header, Fn &&fn_read_field) {
+    fn_read_field(0, reinterpret_cast<std::byte *>(&(header->frameNumber)));
+    fn_read_field(1, reinterpret_cast<std::byte *>(&(header->expLength)));
+    fn_read_field(2, reinterpret_cast<std::byte *>(&(header->packetNumber)));
+    fn_read_field(3, reinterpret_cast<std::byte *>(&(header->bunchId)));
+    fn_read_field(4, reinterpret_cast<std::byte *>(&(header->timestamp)));
+    fn_read_field(5, reinterpret_cast<std::byte *>(&(header->modId)));
+    fn_read_field(6, reinterpret_cast<std::byte *>(&(header->row)));
+    fn_read_field(7, reinterpret_cast<std::byte *>(&(header->column)));
+    fn_read_field(8, reinterpret_cast<std::byte *>(&(header->reserved)));
+    fn_read_field(9, reinterpret_cast<std::byte *>(&(header->debug)));
+    fn_read_field(10, reinterpret_cast<std::byte *>(&(header->roundRNumber)));
+    fn_read_field(11, reinterpret_cast<std::byte *>(&(header->detType)));
+    fn_read_field(12, reinterpret_cast<std::byte *>(&(header->version)));
+    fn_read_field(13, reinterpret_cast<std::byte *>(&(header->packetMask)));
+}
+
 /**
  * @brief Class to read .h5 files. The class will parse the master file
  * to find the correct geometry for the frames.
@@ -96,6 +114,11 @@ class Hdf5File : public FileInterface {
     size_t m_total_frames{};
     size_t m_rows{};
     size_t m_cols{};
+
+    static const std::string metadata_group_name;
+    static const std::vector<std::string> header_dataset_names;
+    std::unique_ptr<H5Handles> m_data_file{nullptr};
+    std::vector<std::unique_ptr<H5Handles>> m_header_files;
 
   public:
     /**
@@ -136,30 +159,6 @@ class Hdf5File : public FileInterface {
 
   private:
     /**
-     * @brief read the frame at the given frame index into the image buffer
-     * @param frame_number frame number to read
-     * @param n_frames number of frames to read (default is 1)
-     * @param image_buf buffer to store the frame
-     */
-    void get_frame_into(size_t frame_index, std::byte *frame_buffer, size_t n_frames = 1, DetectorHeader *header = nullptr);
-    
-    /**
-     * @brief read the frame at the given frame index into the image buffer
-     * @param frame_index frame number to read
-     * @param n_frames number of frames to read (default is 1)
-     * @param frame_buffer buffer to store the frame
-     */
-    void get_data_into(size_t frame_index, std::byte *frame_buffer, size_t n_frames = 1);
-    
-    /**
-     * @brief read the header at the given frame index into the header buffer
-     * @param frame_index frame number to read
-     * @param part_index part index to read (for virtual datasets)
-     * @param header buffer to store the header
-     */
-    void get_header_into(size_t frame_index, int part_index, DetectorHeader *header);
-    
-    /**
      * @brief get the frame at the given frame index
      * @param frame_number frame number to read
      * @return Frame
@@ -167,17 +166,38 @@ class Hdf5File : public FileInterface {
     Frame get_frame(size_t frame_index);
 
     /**
+     * @brief read the frame at the given frame index into the image buffer
+     * @param frame_number frame number to read
+     * @param n_frames number of frames to read (default is 1)
+     * @param image_buf buffer to store the frame
+     */
+    void get_frame_into(size_t frame_index, std::byte *frame_buffer,
+                        size_t n_frames = 1, DetectorHeader *header = nullptr);
+
+    /**
+     * @brief read the frame at the given frame index into the image buffer
+     * @param frame_index frame number to read
+     * @param n_frames number of frames to read (default is 1)
+     * @param frame_buffer buffer to store the frame
+     */
+    void get_data_into(size_t frame_index, std::byte *frame_buffer,
+                       size_t n_frames = 1);
+
+    /**
+     * @brief read the header at the given frame index into the header buffer
+     * @param frame_index frame number to read
+     * @param part_index part index to read (for virtual datasets)
+     * @param header buffer to store the header
+     */
+    void get_header_into(size_t frame_index, int part_index,
+                         DetectorHeader *header);
+
+    /**
      * @brief read the header of the file
      * @param fname path to the data subfile
      * @return DetectorHeader
      */
     static DetectorHeader read_header(const std::filesystem::path &fname);
-
-    static const std::string metadata_group_name;
-    static const std::vector<std::string> header_dataset_names;
-
-    std::unique_ptr<H5Handles> m_data_file{nullptr};
-    std::vector<std::unique_ptr<H5Handles>> m_header_files;
 
     void open_data_file();
     void open_header_files();
