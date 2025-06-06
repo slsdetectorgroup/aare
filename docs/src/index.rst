@@ -63,4 +63,6 @@ AARE
     :caption: Developer
     :maxdepth: 3
     
+    Philosophy
+    Workflow
     Tests
