@@ -12,7 +12,8 @@
 #include <variant>
 #include <vector>
 #include <iostream>
-
+#include <sstream>  
+#include <optional>
 
 /**
  * @brief LOCATION macro to get the current location in the code
@@ -225,6 +226,46 @@ struct ROI{
 
 using dynamic_shape = std::vector<ssize_t>;
 
+
+class ScanParameters {
+    bool m_enabled = false;
+    std::string m_dac;
+    int m_start = 0;
+    int m_stop = 0;
+    int m_step = 0;
+    //TODO! add settleTime, requires string to time conversion
+
+  public:
+    // "[enabled\ndac dac 4\nstart 500\nstop 2200\nstep 5\nsettleTime 100us\n]"
+    ScanParameters(const std::string &par) {
+        std::istringstream iss(par.substr(1, par.size()-2));
+        std::string line;
+        while(std::getline(iss, line)){
+            if(line == "enabled"){
+                m_enabled = true;
+            }else if(line.find("dac") != std::string::npos){
+                m_dac = line.substr(4);
+            }else if(line.find("start") != std::string::npos){
+                m_start = std::stoi(line.substr(6));
+            }else if(line.find("stop") != std::string::npos){
+                m_stop = std::stoi(line.substr(5));
+            }else if(line.find("step") != std::string::npos){
+                m_step = std::stoi(line.substr(5));
+            }
+        }   
+    };
+    ScanParameters() = default;
+    ScanParameters(const ScanParameters &) = default;
+    ScanParameters &operator=(const ScanParameters &) = default;
+    ScanParameters(ScanParameters &&) = default;
+    int start() const { return m_start; };
+    int stop() const { return m_stop; };
+    int step() const { return m_step; };
+    const std::string &dac() const { return m_dac; };
+    bool enabled() const { return m_enabled; };
+    void increment_stop() { m_stop += 1; };
+};
+
 //TODO! Can we uniform enums between the libraries?
 
 /**
@@ -266,6 +307,8 @@ template <> std::string ToString(TimingMode arg);
 template <> FrameDiscardPolicy StringTo(const std::string & /*mode*/);
 template <> std::string ToString(FrameDiscardPolicy arg);
 
+template <> std::string ToString(ScanParameters arg);
+
 using DataTypeVariants = std::variant<uint16_t, uint32_t>;
 
 template <typename T>
@@ -277,6 +320,15 @@ std::ostream &operator<<(std::ostream &os, const std::vector<T> &vec) {
             os << ", ";
     }
     os << "]";
+    return os;
+}
+
+template <typename T>
+std::ostream &operator<<(std::ostream &os, const std::optional<T> &opt) {
+    if (opt)
+        os << *opt;
+    else
+        os << "nullopt";
     return os;
 }
 

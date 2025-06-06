@@ -6,18 +6,6 @@
 #include <fstream>
 #include <optional>
 
-namespace fmt {
-template <typename T> struct formatter<std::optional<T>> : formatter<T> {
-    template <typename FormatContext>
-    auto format(const std::optional<T> &opt, FormatContext &ctx) {
-        if (opt) {
-            return formatter<T>::format(*opt, ctx);
-        } else {
-            return format_to(ctx.out(), "nullopt");
-        }
-    }
-};
-} // namespace fmt
 
 namespace aare {
 
@@ -29,7 +17,7 @@ class Hdf5FileNameComponents {
     std::filesystem::path m_base_path{};
     std::string m_base_name{};
     std::string m_ext{};
-    int m_file_index{}; // TODO! is this measurement_index?
+    int m_file_index{}; 
 
   public:
     Hdf5FileNameComponents(const std::filesystem::path &fname);
@@ -50,39 +38,6 @@ class Hdf5FileNameComponents {
     void set_old_scheme(bool old_scheme);
 };
 
-/*
-class ScanParameters {
-    bool m_enabled = false;
-    std::string m_dac;
-    int m_start = 0;
-    int m_stop = 0;
-    int m_step = 0;
-    // TODO! add settleTime, requires string to time conversion
-
-  public:
-    ScanParameters(const std::string &par);
-    ScanParameters() = default;
-    ScanParameters(const ScanParameters &) = default;
-    ScanParameters &operator=(const ScanParameters &) = default;
-    ScanParameters(ScanParameters &&) = default;
-    int start() const;
-    int stop() const;
-    int step() const;
-    const std::string &dac() const;
-    bool enabled() const;
-    void increment_stop();
-};
-
-struct ROI {
-    int64_t xmin{};
-    int64_t xmax{};
-    int64_t ymin{};
-    int64_t ymax{};
-
-    int64_t height() const { return ymax - ymin; }
-    int64_t width() const { return xmax - xmin; }
-};
-*/
 
 /**
  * @brief Class for parsing a master file either in our .json format or the old
@@ -104,7 +59,7 @@ class Hdf5MasterFile {
     xy m_geometry{};
 
     size_t m_max_frames_per_file{};
-    // uint32_t m_adc_mask{}; // TODO! implement reading
+    uint32_t m_adc_mask{}; // TODO! implement reading
     FrameDiscardPolicy m_frame_discard_policy{};
     size_t m_frame_padding{};
 
@@ -113,7 +68,7 @@ class Hdf5MasterFile {
     uint8_t m_digital_flag{};
     uint8_t m_transceiver_flag{};
 
-    // ScanParameters m_scan_parameters;
+    ScanParameters m_scan_parameters;
 
     std::optional<size_t> m_analog_samples;
     std::optional<size_t> m_digital_samples;
@@ -121,7 +76,7 @@ class Hdf5MasterFile {
     std::optional<size_t> m_number_of_rows;
     std::optional<uint8_t> m_quad;
 
-    // std::optional<ROI> m_roi;
+    std::optional<ROI> m_roi;
 
   public:
     Hdf5MasterFile(const std::filesystem::path &fpath);
@@ -151,9 +106,9 @@ class Hdf5MasterFile {
     std::optional<size_t> number_of_rows() const;
     std::optional<uint8_t> quad() const;
 
-    // std::optional<ROI> roi() const;
+    std::optional<ROI> roi() const;
 
-    // ScanParameters scan_parameters() const;
+    ScanParameters scan_parameters() const;
 
   private:
     static const std::string metadata_group_name;

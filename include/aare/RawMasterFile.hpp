@@ -39,28 +39,6 @@ class RawFileNameComponents {
     void set_old_scheme(bool old_scheme);
 };
 
-class ScanParameters {
-    bool m_enabled = false;
-    std::string m_dac;
-    int m_start = 0;
-    int m_stop = 0;
-    int m_step = 0;
-    //TODO! add settleTime, requires string to time conversion
-
-  public:
-    ScanParameters(const std::string &par);
-    ScanParameters() = default;
-    ScanParameters(const ScanParameters &) = default;
-    ScanParameters &operator=(const ScanParameters &) = default;
-    ScanParameters(ScanParameters &&) = default;
-    int start() const;
-    int stop() const;
-    int step() const;
-    const std::string &dac() const;
-    bool enabled() const;
-    void increment_stop();
-};
-
 
 /**
  * @brief Class for parsing a master file either in our .json format or the old
@@ -131,7 +109,6 @@ class RawMasterFile {
 
 
     std::optional<ROI> roi() const;
-
 
     ScanParameters scan_parameters() const;
 

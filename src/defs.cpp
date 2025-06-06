@@ -1,6 +1,7 @@
 #include "aare/defs.hpp"
 #include <stdexcept>
 #include <string>
+#include <chrono>
 
 #include <fmt/core.h>
 namespace aare {
@@ -152,6 +153,31 @@ template <> FrameDiscardPolicy StringTo(const std::string &arg) {
         return FrameDiscardPolicy::DiscardPartial;
     throw std::runtime_error("Could not decode frame discard policy from: \"" + arg + "\"");
 }
+
+/**
+ * @brief Convert a ScanParameters to a string
+ * @param type ScanParameters
+ * @return string representation of the ScanParameters
+ */
+template <> std::string ToString(ScanParameters arg) {
+    std::ostringstream oss;
+    oss << '[';
+    if (arg.enable) {
+        oss << "enabled" << std::endl
+            << "dac " << ToString(arg.dacInd) << std::endl
+            << "start " << arg.startOffset << std::endl
+            << "stop " << arg.stopOffset << std::endl
+            << "step " << arg.stepSize << std::endl
+            << "settleTime "
+            << ToString(std::chrono::nanoseconds{arg.dacSettleTime_ns})
+            << std::endl;
+    } else {
+        oss << "disabled";
+    }
+    oss << ']';
+    return oss.str();
+}
+
 
 // template <> TimingMode StringTo<TimingMode>(std::string mode);
 

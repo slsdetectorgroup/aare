@@ -8,7 +8,7 @@
 
 namespace aare {
 
-struct H5Handles {
+class H5Handles {
   std::string file_name;
   std::string dataset_name;
   H5::H5File file;
@@ -20,6 +20,7 @@ struct H5Handles {
   std::vector<hsize_t> count;
   std::vector<hsize_t> offset;
 
+  public:
   H5Handles(const std::string& fname, const std::string& dname):
     file_name(fname),
     dataset_name(dname),
@@ -30,6 +31,10 @@ struct H5Handles {
       intialize_dimensions();
       initialize_memspace();
     }
+
+  std::vector<hsize_t> get_dims() const {
+    return dims;
+  }
 
   void seek(size_t frame_index) {
     if (frame_index >= dims[0]) {

@@ -193,9 +193,9 @@ void Hdf5File::open_data_file() {
     try {
         m_data_file = std::make_unique<H5Handles>(m_master.master_fname().string(), metadata_group_name + "/data");
 
-        m_total_frames = m_data_file->dims[0];
-        m_rows = m_data_file->dims[1];
-        m_cols = m_data_file->dims[2];
+        m_total_frames = m_data_file->get_dims()[0];
+        m_rows = m_data_file->get_dims()[1];
+        m_cols = m_data_file->get_dims()[2];
         //fmt::print("Data Dataset dimensions: frames = {}, rows = {}, cols = {}\n",
                   // m_total_frames, m_rows, m_cols);
     } catch (const H5::Exception &e) {

@@ -64,34 +64,6 @@ const std::string &RawFileNameComponents::base_name() const {
 const std::string &RawFileNameComponents::ext() const { return m_ext; }
 int RawFileNameComponents::file_index() const { return m_file_index; }
 
-// "[enabled\ndac dac 4\nstart 500\nstop 2200\nstep 5\nsettleTime 100us\n]"
-ScanParameters::ScanParameters(const std::string& par){
-    std::istringstream iss(par.substr(1, par.size()-2));
-    std::string line;
-    while(std::getline(iss, line)){
-        if(line == "enabled"){
-            m_enabled = true;
-        }else if(line.find("dac") != std::string::npos){
-            m_dac = line.substr(4);
-        }else if(line.find("start") != std::string::npos){
-            m_start = std::stoi(line.substr(6));
-        }else if(line.find("stop") != std::string::npos){
-            m_stop = std::stoi(line.substr(5));
-        }else if(line.find("step") != std::string::npos){
-            m_step = std::stoi(line.substr(5));
-        }
-    }
-}
-
-int ScanParameters::start() const { return m_start; }
-int ScanParameters::stop() const { return m_stop; }
-void ScanParameters::increment_stop(){
-    m_stop += 1;
-}
-int ScanParameters::step() const { return m_step; }
-const std::string &ScanParameters::dac() const { return m_dac; }
-bool ScanParameters::enabled() const { return m_enabled; }
-
 
 RawMasterFile::RawMasterFile(const std::filesystem::path &fpath)
     : m_fnc(fpath) {
