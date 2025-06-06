@@ -81,6 +81,7 @@ class RawMasterFile {
     size_t m_pixels_y{};
     size_t m_pixels_x{};
     size_t m_bitdepth{};
+    size_t m_num_udp_interfaces_per_module = 1;
 
     xy m_geometry{};
 
@@ -119,6 +120,7 @@ class RawMasterFile {
     size_t max_frames_per_file() const;
     size_t bitdepth() const;
     size_t frame_padding() const;
+    size_t num_udp_interfaces_per_module() const;
     const FrameDiscardPolicy &frame_discard_policy() const;
 
     size_t total_frames_expected() const;

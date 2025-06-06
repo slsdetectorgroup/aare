@@ -36,8 +36,11 @@ class RawFile : public FileInterface {
     RawMasterFile m_master;
     size_t m_current_frame{};
     size_t m_current_subfile{};
-    DetectorGeometry m_geometry;
+
     std::vector<ssize_t> m_modules_in_roi{};
+
+  protected:
+    DetectorGeometry m_geometry;
 
   public:
     /**
@@ -95,15 +98,17 @@ class RawFile : public FileInterface {
      */
     Frame get_frame(size_t frame_index);
 
+    void open_subfiles();
+
+  protected:
+    void find_geometry();
+
     /**
      * @brief read the header of the file
      * @param fname path to the data subfile
      * @return DetectorHeader
      */
     static DetectorHeader read_header(const std::filesystem::path &fname);
-
-    void open_subfiles();
-    void find_geometry();
 };
 
 } // namespace aare

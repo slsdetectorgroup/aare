@@ -139,6 +139,10 @@ size_t RawMasterFile::n_modules() const {
     return m_geometry.row * m_geometry.col;
 }
 
+size_t RawMasterFile::num_udp_interfaces_per_module() const {
+    return m_num_udp_interfaces_per_module;
+}
+
 std::optional<uint8_t> RawMasterFile::quad() const { return m_quad; }
 
 // optional values, these may or may not be present in the master file
@@ -262,6 +266,12 @@ void RawMasterFile::parse_json(const std::filesystem::path &fpath) {
     } catch (const json::out_of_range &e) {
         // not a scan
     }
+    try {
+        m_num_udp_interfaces_per_module = j.at("Number of UDP Interfaces");
+    } catch (const json::out_of_range &e) {
+        if (m_type == DetectorType::Eiger)
+            m_num_udp_interfaces_per_module = 2;
+    }
 
     try {
         ROI tmp_roi;
@@ -276,14 +286,14 @@ void RawMasterFile::parse_json(const std::filesystem::path &fpath) {
             tmp_roi.ymin != 4294967295 || tmp_roi.ymax != 4294967295) {
 
             if (v < 7.21) {
-                tmp_roi.xmax++;
+                tmp_roi.xmax++; // why is it updated
                 tmp_roi.ymax++;
             }
-
             m_roi = tmp_roi;
         }
 
     } catch (const json::out_of_range &e) {
+        std::cout << e.what() << std::endl;
         // leave the optional empty
     }
 
@@ -336,6 +346,9 @@ void RawMasterFile::parse_raw(const std::filesystem::path &fpath) {
                 m_type = StringTo<DetectorType>(value);
                 if (m_type == DetectorType::Moench) {
                     m_type = DetectorType::Moench03_old;
+                }
+                if (m_type == DetectorType::Eiger) {
+                    m_num_udp_interfaces_per_module = 2;
                 }
             } else if (key == "Timing Mode") {
                 m_timing_mode = StringTo<TimingMode>(value);
@@ -393,6 +406,8 @@ void RawMasterFile::parse_raw(const std::filesystem::path &fpath) {
                 m_geometry = {
                     static_cast<uint32_t>(std::stoi(value.substr(1, pos))),
                     static_cast<uint32_t>(std::stoi(value.substr(pos + 1)))};
+            } else if (key == "Number of UDP Interfaces") {
+                m_num_udp_interfaces_per_module = std::stoi(value);
             }
         }
     }
@@ -417,15 +432,18 @@ void RawMasterFile::retrieve_geometry() {
     uint16_t rows = 0;
     uint16_t cols = 0;
     // TODO use case for Eiger
+
     while (std::filesystem::exists(data_fname(module_index, 0))) {
+
         auto header = RawFile::read_header(data_fname(module_index, 0));
 
         rows = std::max(rows, header.row);
         cols = std::max(cols, header.column);
-        ++rows;
-        ++cols;
+
         ++module_index;
     }
+    ++rows;
+    ++cols;
 
     m_geometry = {rows, cols};
 }

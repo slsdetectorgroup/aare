@@ -24,8 +24,8 @@ RawFile::RawFile(const std::filesystem::path &fname, const std::string &mode)
             m_modules_in_roi.reserve(n_modules());
             for (size_t module_index = 0; module_index < n_modules();
                  ++module_index) {
-                if (m_geometry.module_pixel_0[module_index].width == 0 &&
-                    m_geometry.module_pixel_0[module_index].height == 0)
+                if (m_geometry.module_pixel_0[module_index].width != 0 &&
+                    m_geometry.module_pixel_0[module_index].height != 0)
                     m_modules_in_roi.push_back(module_index);
             }
         } else {
@@ -148,17 +148,20 @@ RawMasterFile RawFile::master() const { return m_master; }
  */
 void RawFile::find_geometry() {
 
-    // TODO potentially update for Eiger
-    for (size_t col = 0; col < m_master.geometry().col; ++col)
+    for (size_t col = 0; col < m_master.geometry().col;
+         col += m_master.num_udp_interfaces_per_module())
         for (size_t row = 0; row < m_master.geometry().row; ++row) {
-            ModuleGeometry g;
-            g.origin_x = col * m_master.pixels_x();
-            g.origin_y = row * m_master.pixels_y();
-            g.row_index = row;
-            g.col_index = col;
-            g.width = m_master.pixels_x();
-            g.height = m_master.pixels_y();
-            m_geometry.module_pixel_0.push_back(g);
+            for (size_t port = 0;
+                 port < m_master.num_udp_interfaces_per_module(); ++port) {
+                ModuleGeometry g;
+                g.origin_x = (col + port) * m_master.pixels_x();
+                g.origin_y = row * m_master.pixels_y();
+                g.row_index = row;
+                g.col_index = col + port;
+                g.width = m_master.pixels_x();
+                g.height = m_master.pixels_y();
+                m_geometry.module_pixel_0.push_back(g);
+            }
         }
 
     m_geometry.pixels_y = (m_master.geometry().row * m_master.pixels_y());
