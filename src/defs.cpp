@@ -162,14 +162,14 @@ template <> FrameDiscardPolicy StringTo(const std::string &arg) {
 template <> std::string ToString(ScanParameters arg) {
     std::ostringstream oss;
     oss << '[';
-    if (arg.enable) {
+    if (arg.enabled()) {
         oss << "enabled" << std::endl
-            << "dac " << ToString(arg.dacInd) << std::endl
-            << "start " << arg.startOffset << std::endl
-            << "stop " << arg.stopOffset << std::endl
-            << "step " << arg.stepSize << std::endl
-            << "settleTime "
-            << ToString(std::chrono::nanoseconds{arg.dacSettleTime_ns})
+            << "dac " << arg.dac() << std::endl
+            << "start " << arg.start() << std::endl
+            << "stop " << arg.stop() << std::endl
+            << "step " << arg.step() << std::endl
+            //<< "settleTime "
+           // << ToString(std::chrono::nanoseconds{arg.dacSettleTime_ns})
             << std::endl;
     } else {
         oss << "disabled";
@@ -178,6 +178,30 @@ template <> std::string ToString(ScanParameters arg) {
     return oss.str();
 }
 
+std::ostream &operator<<(std::ostream &os,
+                         const ScanParameters &r) {
+    return os << ToString(r);
+}
+
+
+/**
+ * @brief Convert a ROI to a string
+ * @param type ROI
+ * @return string representation of the ROI
+ */
+template <> std::string ToString(ROI arg) {
+    std::ostringstream oss;
+    oss << '[' << arg.xmin << ", " << arg.xmax;
+    if (arg.ymin != -1 || arg.ymax != -1) {
+        oss << ", " << arg.ymin << ", " << arg.ymax;
+    }
+    oss << ']';
+    return oss.str();
+}
+
+std::ostream &operator<<(std::ostream &os, const ROI &roi) {
+    return os << ToString(roi);
+}
 
 // template <> TimingMode StringTo<TimingMode>(std::string mode);
 

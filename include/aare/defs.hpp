@@ -294,6 +294,8 @@ enum class DetectorType {
 enum class TimingMode { Auto, Trigger };
 enum class FrameDiscardPolicy { NoDiscard, Discard, DiscardPartial };
 
+
+
 template <class T> T StringTo(const std::string &arg) { return T(arg); }
 
 template <class T> std::string ToString(T arg) { return T(arg); }
@@ -306,8 +308,11 @@ template <> std::string ToString(TimingMode arg);
 
 template <> FrameDiscardPolicy StringTo(const std::string & /*mode*/);
 template <> std::string ToString(FrameDiscardPolicy arg);
-
+std::ostream &operator<<(std::ostream &os,
+                         const ScanParameters &r);
 template <> std::string ToString(ScanParameters arg);
+std::ostream &operator<<(std::ostream &os, const ROI &roi);
+template <> std::string ToString(ROI arg);
 
 using DataTypeVariants = std::variant<uint16_t, uint32_t>;
 

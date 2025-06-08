@@ -48,35 +48,54 @@ class Hdf5MasterFile {
     std::string m_version;
     DetectorType m_type;
     TimingMode m_timing_mode;
-
+    xy m_geometry{};
     size_t m_image_size_in_bytes{};
-    size_t m_frames_in_file{};
-    size_t m_total_frames_expected{};
     size_t m_pixels_y{};
     size_t m_pixels_x{};
-    size_t m_bitdepth{};
-
-    xy m_geometry{};
-
     size_t m_max_frames_per_file{};
-    uint32_t m_adc_mask{}; // TODO! implement reading
     FrameDiscardPolicy m_frame_discard_policy{};
     size_t m_frame_padding{};
+    ScanParameters m_scan_parameters;
+    size_t m_total_frames_expected{};
+    // exptime
+    // period
+    // burst mode
+    // num udp interfaces
+    size_t m_bitdepth{};
+    // ten giga
+    // thresholdenergy
+    // thresholdall energy
+    // subexptime
+    // subperiod
+    std::optional<uint8_t> m_quad;
+    std::optional<size_t> m_number_of_rows;
+    // ratecorr
+    uint32_t m_adc_mask{}; // TODO! implement reading
+    uint8_t m_analog_flag{};
+    std::optional<size_t> m_analog_samples;
+    uint8_t m_digital_flag{};
+    std::optional<size_t> m_digital_samples;
+    // dbitoffset
+    // dbitlist
+    // transceiver mask
+    uint8_t m_transceiver_flag{};
+    std::optional<size_t> m_transceiver_samples;
+    // g1 roi
+    std::optional<ROI> m_roi;
+    // counter mask
+    // exptimearray
+    // gatedelay array
+    // gates
+    // additional json header
+    size_t m_frames_in_file{};
+
+
+
 
     // TODO! should these be bool?
-    uint8_t m_analog_flag{};
-    uint8_t m_digital_flag{};
-    uint8_t m_transceiver_flag{};
 
-    ScanParameters m_scan_parameters;
 
-    std::optional<size_t> m_analog_samples;
-    std::optional<size_t> m_digital_samples;
-    std::optional<size_t> m_transceiver_samples;
-    std::optional<size_t> m_number_of_rows;
-    std::optional<uint8_t> m_quad;
 
-    std::optional<ROI> m_roi;
 
   public:
     Hdf5MasterFile(const std::filesystem::path &fpath);
@@ -87,28 +106,48 @@ class Hdf5MasterFile {
     const std::string &version() const; //!< For example "7.2"
     const DetectorType &detector_type() const;
     const TimingMode &timing_mode() const;
+    xy geometry() const;
     size_t image_size_in_bytes() const;
-    size_t frames_in_file() const;
     size_t pixels_y() const;
     size_t pixels_x() const;
     size_t max_frames_per_file() const;
-    size_t bitdepth() const;
-    size_t frame_padding() const;
     const FrameDiscardPolicy &frame_discard_policy() const;
-
+    size_t frame_padding() const;
+    ScanParameters scan_parameters() const;
     size_t total_frames_expected() const;
-    xy geometry() const;
+    // exptime
+    // period
+    // burst mode
+    // num udp interfaces 
+    size_t bitdepth() const;
+    // ten giga
+    // thresholdenergy
+    // thresholdall energy
+    // subexptime
+    // subperiod
+    std::optional<uint8_t> quad() const;
+    std::optional<size_t> number_of_rows() const;
+    // ratecorr
+    std::optional<uint32_t> adc_mask() const; // TODO! implement reading
+    std::optional<uint8_t> analog_flag() const;
+    std::optional<size_t> analog_samples() const;
+    std::optional<uint8_t> digital_flag() const;
+    std::optional<size_t> digital_samples() const;
+    // dbitoffset
+    // dbitlist
+    // transceiver mask    
+    std::optional<uint8_t> transceiver_flag() const;
+    std::optional<size_t> transceiver_samples() const;
+    // g1 roi
+    std::optional<ROI> roi() const;
+    // counter mask
+    // exptimearray
+    // gatedelay array
+    // gates
+    // additional json header
+    size_t frames_in_file() const;
     size_t n_modules() const;
 
-    std::optional<size_t> analog_samples() const;
-    std::optional<size_t> digital_samples() const;
-    std::optional<size_t> transceiver_samples() const;
-    std::optional<size_t> number_of_rows() const;
-    std::optional<uint8_t> quad() const;
-
-    std::optional<ROI> roi() const;
-
-    ScanParameters scan_parameters() const;
 
   private:
     static const std::string metadata_group_name;
