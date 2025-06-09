@@ -203,6 +203,19 @@ std::ostream &operator<<(std::ostream &os, const ROI &roi) {
     return os << ToString(roi);
 }
 
+std::string RemoveUnit(std::string &str) {
+    auto it = str.begin();
+    while (it != str.end()) {
+        if (std::isalpha(*it))
+            break;
+        ++it;
+    }
+    auto pos = it - str.begin();
+    auto unit = str.substr(pos);
+    str.erase(it, end(str));
+    return unit;
+}
+
 // template <> TimingMode StringTo<TimingMode>(std::string mode);
 
 } // namespace aare

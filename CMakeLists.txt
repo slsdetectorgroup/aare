@@ -357,6 +357,7 @@ set(PUBLICHEADERS
     include/aare/CtbRawFile.hpp
     include/aare/ClusterVector.hpp
     include/aare/decode.hpp
+    include/aare/type_traits.hpp
     include/aare/defs.hpp
     include/aare/Dtype.hpp
     include/aare/File.hpp

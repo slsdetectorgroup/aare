@@ -7,8 +7,10 @@
 #include <optional>
 
 
+
 namespace aare {
 
+using ns = std::chrono::nanoseconds;
 /**
  * @brief Implementation used in Hdf5MasterFile to parse the file name
  */
@@ -44,6 +46,7 @@ class Hdf5FileNameComponents {
  * .Hdf5 format
  */
 class Hdf5MasterFile {
+    
     Hdf5FileNameComponents m_fnc;
     std::string m_version;
     DetectorType m_type;
@@ -57,16 +60,16 @@ class Hdf5MasterFile {
     size_t m_frame_padding{};
     ScanParameters m_scan_parameters;
     size_t m_total_frames_expected{};
-    // exptime
-    // period
+    std::optional<ns> m_exptime{};
+    std::optional<ns> m_period{};
     // burst mode
     // num udp interfaces
     size_t m_bitdepth{};
     // ten giga
     // thresholdenergy
     // thresholdall energy
-    // subexptime
-    // subperiod
+    std::optional<ns> m_subexptime{};
+    std::optional<ns> m_subperiod{};
     std::optional<uint8_t> m_quad;
     std::optional<size_t> m_number_of_rows;
     // ratecorr
@@ -115,16 +118,16 @@ class Hdf5MasterFile {
     size_t frame_padding() const;
     ScanParameters scan_parameters() const;
     size_t total_frames_expected() const;
-    // exptime
-    // period
+    std::optional<ns> exptime() const;
+    std::optional<ns> period() const;
     // burst mode
     // num udp interfaces 
     size_t bitdepth() const;
-    // ten giga
+    // ten giga 
     // thresholdenergy
     // thresholdall energy
-    // subexptime
-    // subperiod
+    std::optional<ns> subexptime() const;
+    std::optional<ns> subperiod() const;
     std::optional<uint8_t> quad() const;
     std::optional<size_t> number_of_rows() const;
     // ratecorr

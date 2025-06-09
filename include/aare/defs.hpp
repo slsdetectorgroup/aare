@@ -1,6 +1,7 @@
 #pragma once
 
 #include "aare/Dtype.hpp"
+#include "aare/type_traits.hpp"
 
 #include <array>
 #include <stdexcept>
@@ -14,6 +15,7 @@
 #include <iostream>
 #include <sstream>  
 #include <optional>
+#include <chrono>
 
 /**
  * @brief LOCATION macro to get the current location in the code
@@ -294,11 +296,86 @@ enum class DetectorType {
 enum class TimingMode { Auto, Trigger };
 enum class FrameDiscardPolicy { NoDiscard, Discard, DiscardPartial };
 
+std::string RemoveUnit(std::string &str);
 
+/** Convert std::chrono::duration with specified output unit */
+template <typename T, typename Rep = double>
+typename std::enable_if<is_duration<T>::value, std::string>::type
+ToString(T t, const std::string &unit) {
+    using std::chrono::duration;
+    using std::chrono::duration_cast;
+    std::ostringstream os;
+    if (unit == "ns")
+        os << duration_cast<duration<Rep, std::nano>>(t).count() << unit;
+    else if (unit == "us")
+        os << duration_cast<duration<Rep, std::micro>>(t).count() << unit;
+    else if (unit == "ms")
+        os << duration_cast<duration<Rep, std::milli>>(t).count() << unit;
+    else if (unit == "s")
+        os << duration_cast<duration<Rep>>(t).count() << unit;
+    else
+        throw std::runtime_error("Unknown unit: " + unit);
+    return os.str();
+}
 
-template <class T> T StringTo(const std::string &arg) { return T(arg); }
+/** Convert std::chrono::duration automatically selecting the unit */
+template <typename From>
+typename std::enable_if<is_duration<From>::value, std::string>::type
+ToString(From t) {
 
-template <class T> std::string ToString(T arg) { return T(arg); }
+    using std::chrono::duration_cast;
+    using std::chrono::abs;
+    using std::chrono::nanoseconds;
+    using std::chrono::microseconds;
+    using std::chrono::milliseconds;
+    auto tns = duration_cast<nanoseconds>(t);
+    if (abs(tns) <microseconds(1)) {
+        return ToString(tns, "ns");
+    } else if (abs(tns) < milliseconds(1)) {
+        return ToString(tns, "us");
+    } else if (abs(tns) < milliseconds(99)) {
+        return ToString(tns, "ms");
+    } else {
+        return ToString(tns, "s");
+    }
+}
+
+template <typename T>
+T StringTo(const std::string &t, const std::string &unit) {
+    double tval{0};
+    try {
+        tval = std::stod(t);
+    } catch (const std::invalid_argument &e) {
+        throw std::invalid_argument("[ERROR] Could not convert string to time");
+    }
+
+    using std::chrono::duration;
+    using std::chrono::duration_cast;
+    if (unit == "ns") {
+        return duration_cast<T>(duration<double, std::nano>(tval));
+    } else if (unit == "us") {
+        return duration_cast<T>(duration<double, std::micro>(tval));
+    } else if (unit == "ms") {
+        return duration_cast<T>(duration<double, std::milli>(tval));
+    } else if (unit == "s" || unit.empty()) {
+        return duration_cast<T>(std::chrono::duration<double>(tval));
+    } else {
+        throw std::invalid_argument("[ERROR] Invalid unit in conversion from string to std::chrono::duration");
+    }
+}
+
+template <typename T, std::enable_if_t<is_duration<T>::value, int> = 0 > 
+T StringTo(const std::string &t) {
+    std::string tmp{t};
+    auto unit = RemoveUnit(tmp);
+    return StringTo<T>(tmp, unit);
+}
+
+template <typename T, std::enable_if_t<!is_duration<T>::value, int> = 0 > 
+T StringTo(const std::string &arg) { return T(arg); }
+
+template <class T, typename = std::enable_if_t<!is_duration<T>::value>> 
+std::string ToString(T arg) { return T(arg); }
 
 template <> DetectorType StringTo(const std::string & /*name*/);
 template <> std::string ToString(DetectorType arg);
@@ -336,6 +413,16 @@ std::ostream &operator<<(std::ostream &os, const std::optional<T> &opt) {
         os << "nullopt";
     return os;
 }
+
+
+template <class T>
+std::string ToString(const std::optional<T>& opt)
+{
+    return opt ? ToString(*opt) : "nullopt";
+}
+
+
+
 
 
 } // namespace aare

@@ -106,16 +106,24 @@ ScanParameters Hdf5MasterFile::scan_parameters() const {
 size_t Hdf5MasterFile::total_frames_expected() const {
     return m_total_frames_expected;
 }
-// exptime
-// period
+std::optional<ns> Hdf5MasterFile::exptime() const {
+    return m_exptime;
+}
+std::optional<ns> Hdf5MasterFile::period() const {
+    return m_period;
+}
 // burst mode
 // num udp interfaces 
 size_t Hdf5MasterFile::bitdepth() const { return m_bitdepth; }
 // ten giga
 // thresholdenergy
 // thresholdall energy
-// subexptime
-// subperiod
+std::optional<ns> Hdf5MasterFile::subexptime() const {
+    return m_subexptime;
+}
+std::optional<ns> Hdf5MasterFile::subperiod() const {
+    return m_subperiod;
+}
 std::optional<uint8_t> Hdf5MasterFile::quad() const { return m_quad; }
 std::optional<size_t> Hdf5MasterFile::number_of_rows() const {
     return m_number_of_rows;
@@ -272,8 +280,28 @@ void Hdf5MasterFile::parse_acquisition_metadata(
             file, std::string(metadata_group_name + "Total Frames"));
         LOG(logDEBUG) << "Total Frames: " << m_total_frames_expected;
 
-        // exptime
-        // period
+        // Exptime
+        H5::Exception::dontPrint();
+        try {
+            m_exptime = StringTo<ns>(h5_get_scalar_dataset<std::string>(
+                file, std::string(metadata_group_name + "Exposure Time")));
+        } catch (H5::FileIException &e) {
+            // keep the optional empty
+        }
+        LOG(logDEBUG) << "Exptime: " <<  ToString(m_exptime);
+        H5Eset_auto(H5E_DEFAULT, reinterpret_cast<H5E_auto2_t>(H5Eprint2), stderr);
+
+        // Period
+        H5::Exception::dontPrint();
+        try {
+            m_period = StringTo<ns>(h5_get_scalar_dataset<std::string>(
+                file, std::string(metadata_group_name + "Acquisition Period")));
+        } catch (H5::FileIException &e) {
+            // keep the optional empty
+        }
+        LOG(logDEBUG) << "Period: " << ToString(m_period);
+        H5Eset_auto(H5E_DEFAULT, reinterpret_cast<H5E_auto2_t>(H5Eprint2), stderr);
+
         // burst mode
         // num udp interfaces 
 
@@ -293,8 +321,28 @@ void Hdf5MasterFile::parse_acquisition_metadata(
         // ten giga
         // thresholdenergy
         // thresholdall energy
-        // subexptime
-        // subperiod
+
+        // Subexptime
+        H5::Exception::dontPrint();
+        try {
+            m_subexptime = StringTo<ns>(h5_get_scalar_dataset<std::string>(
+                file, std::string(metadata_group_name + "Sub Exposure Time")));
+        } catch (H5::FileIException &e) {
+            // keep the optional empty
+        }
+        LOG(logDEBUG) << "Subexptime: " << ToString(m_subexptime);
+        H5Eset_auto(H5E_DEFAULT, reinterpret_cast<H5E_auto2_t>(H5Eprint2), stderr);
+
+        // Subperiod
+        H5::Exception::dontPrint();
+        try {
+            m_subperiod = StringTo<ns>(h5_get_scalar_dataset<std::string>(
+                file, std::string(metadata_group_name + "Sub Period")));
+        } catch (H5::FileIException &e) {
+            // keep the optional empty
+        }
+        LOG(logDEBUG) << "Subperiod: " << ToString(m_subperiod);
+        H5Eset_auto(H5E_DEFAULT, reinterpret_cast<H5E_auto2_t>(H5Eprint2), stderr);
 
         // Quad
         H5::Exception::dontPrint();
