@@ -295,6 +295,9 @@ enum class DetectorType {
 
 enum class TimingMode { Auto, Trigger };
 enum class FrameDiscardPolicy { NoDiscard, Discard, DiscardPartial };
+enum class BurstMode { Burst_Interal, Burst_External, Continuous_Internal,
+                       Continuous_External };
+
 
 std::string RemoveUnit(std::string &str);
 
@@ -385,11 +388,17 @@ template <> std::string ToString(TimingMode arg);
 
 template <> FrameDiscardPolicy StringTo(const std::string & /*mode*/);
 template <> std::string ToString(FrameDiscardPolicy arg);
+
+template <> BurstMode StringTo(const std::string & /*mode*/);
+template <> std::string ToString(BurstMode arg);
+
 std::ostream &operator<<(std::ostream &os,
                          const ScanParameters &r);
 template <> std::string ToString(ScanParameters arg);
+
 std::ostream &operator<<(std::ostream &os, const ROI &roi);
 template <> std::string ToString(ROI arg);
+
 
 using DataTypeVariants = std::variant<uint16_t, uint32_t>;
 

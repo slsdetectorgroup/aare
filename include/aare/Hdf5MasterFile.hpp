@@ -62,10 +62,10 @@ class Hdf5MasterFile {
     size_t m_total_frames_expected{};
     std::optional<ns> m_exptime{};
     std::optional<ns> m_period{};
-    // burst mode
-    // num udp interfaces
+    std::optional<BurstMode> m_burst_mode;
+    std::optional<size_t> m_number_of_udp_interfaces;
     size_t m_bitdepth{};
-    // ten giga
+    std::optional<size_t> m_ten_giga;
     // thresholdenergy
     // thresholdall energy
     std::optional<ns> m_subexptime{};
@@ -120,10 +120,10 @@ class Hdf5MasterFile {
     size_t total_frames_expected() const;
     std::optional<ns> exptime() const;
     std::optional<ns> period() const;
-    // burst mode
-    // num udp interfaces 
+    std::optional<BurstMode> burst_mode() const;
+    std::optional<size_t> number_of_udp_interfaces() const;
     size_t bitdepth() const;
-    // ten giga 
+    std::optional<size_t> ten_giga() const;
     // thresholdenergy
     // thresholdall energy
     std::optional<ns> subexptime() const;

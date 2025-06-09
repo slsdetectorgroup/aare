@@ -155,6 +155,37 @@ template <> FrameDiscardPolicy StringTo(const std::string &arg) {
 }
 
 /**
+ * @brief Convert a BurstMode to a string
+ * @param type BurstMode
+ * @return string representation of the BurstMode
+ */
+template <> std::string ToString(BurstMode arg) {
+    switch (arg) {
+    case BurstMode::Burst_Interal:
+        return "burst_internal";
+    case BurstMode::Burst_External:
+        return "burst_external";
+    case BurstMode::Continuous_Internal:
+        return "continuous_internal";
+    case BurstMode::Continuous_External:
+        return "continuous_external";
+    }
+    throw std::runtime_error("Could not decode burst mode to string");
+}
+
+template <> BurstMode StringTo(const std::string &arg) {
+    if (arg == "burst_internal")
+        return BurstMode::Burst_Interal;
+    if (arg == "burst_external")
+        return BurstMode::Burst_External;
+    if (arg == "continuous_internal")
+        return BurstMode::Continuous_Internal;
+    if (arg == "continuous_external")
+        return BurstMode::Continuous_External;
+    throw std::runtime_error("Could not decode burst mode from: \"" + arg + "\"");
+}
+
+/**
  * @brief Convert a ScanParameters to a string
  * @param type ScanParameters
  * @return string representation of the ScanParameters

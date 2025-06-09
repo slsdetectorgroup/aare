@@ -112,10 +112,16 @@ std::optional<ns> Hdf5MasterFile::exptime() const {
 std::optional<ns> Hdf5MasterFile::period() const {
     return m_period;
 }
-// burst mode
-// num udp interfaces 
+std::optional<BurstMode> Hdf5MasterFile::burst_mode() const {
+    return m_burst_mode;
+}
+std::optional<size_t> Hdf5MasterFile::number_of_udp_interfaces() const {
+    return m_number_of_udp_interfaces;
+}
 size_t Hdf5MasterFile::bitdepth() const { return m_bitdepth; }
-// ten giga
+std::optional<size_t> Hdf5MasterFile::ten_giga() const {
+    return m_ten_giga;
+}
 // thresholdenergy
 // thresholdall energy
 std::optional<ns> Hdf5MasterFile::subexptime() const {
@@ -303,7 +309,24 @@ void Hdf5MasterFile::parse_acquisition_metadata(
         H5Eset_auto(H5E_DEFAULT, reinterpret_cast<H5E_auto2_t>(H5Eprint2), stderr);
 
         // burst mode
-        // num udp interfaces 
+        m_burst_mode = StringTo<BurstMode>(h5_get_scalar_dataset<std::string>(
+            file, std::string(metadata_group_name + "Burst Mode")));
+        LOG(logDEBUG) << "Burst Mode: " << ToString(m_burst_mode);
+
+
+        // Number of UDP Interfaces
+        // Not all detectors write the Number of UDP Interfaces but in case
+        H5::Exception::dontPrint();
+        try {
+            m_number_of_udp_interfaces = h5_get_scalar_dataset<int>(
+                file, std::string(metadata_group_name + "Number of UDP Interfaces"));
+        } catch (H5::FileIException &e) {
+            // keep the optional empty
+        }
+        LOG(logDEBUG) << "Number of UDP Interfaces: " << m_number_of_udp_interfaces;
+        H5Eset_auto(H5E_DEFAULT, reinterpret_cast<H5E_auto2_t>(H5Eprint2),
+                    stderr);
+
 
         // Bit Depth
         // Not all detectors write the bitdepth but in case
@@ -318,7 +341,17 @@ void Hdf5MasterFile::parse_acquisition_metadata(
         LOG(logDEBUG) << "Bit Depth: " << m_bitdepth;
         H5Eset_auto(H5E_DEFAULT, reinterpret_cast<H5E_auto2_t>(H5Eprint2), stderr);
 
-        // ten giga
+        // Ten Giga
+        H5::Exception::dontPrint();
+        try {
+            m_ten_giga = h5_get_scalar_dataset<int>(
+                file, std::string(metadata_group_name + "Ten Giga"));
+        } catch (H5::FileIException &e) {
+            // keep the optional empty
+        }
+        LOG(logDEBUG) << "Ten Giga: " << ToString(m_ten_giga);
+        H5Eset_auto(H5E_DEFAULT, reinterpret_cast<H5E_auto2_t>(H5Eprint2), stderr);
+        
         // thresholdenergy
         // thresholdall energy
 
