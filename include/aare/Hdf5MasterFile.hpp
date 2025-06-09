@@ -78,9 +78,9 @@ class Hdf5MasterFile {
     std::optional<size_t> m_analog_samples;
     uint8_t m_digital_flag{};
     std::optional<size_t> m_digital_samples;
-    // dbitoffset
+    std::optional<size_t> m_dbit_offset;
     // dbitlist
-    // transceiver mask
+    std::optional<size_t> m_transceiver_mask;
     uint8_t m_transceiver_flag{};
     std::optional<size_t> m_transceiver_samples;
     // g1 roi
@@ -136,9 +136,9 @@ class Hdf5MasterFile {
     std::optional<size_t> analog_samples() const;
     std::optional<uint8_t> digital_flag() const;
     std::optional<size_t> digital_samples() const;
-    // dbitoffset
+    std::optional<size_t> dbit_offset() const;
     // dbitlist
-    // transceiver mask    
+    std::optional<size_t> transceiver_mask() const; 
     std::optional<uint8_t> transceiver_flag() const;
     std::optional<size_t> transceiver_samples() const;
     // g1 roi

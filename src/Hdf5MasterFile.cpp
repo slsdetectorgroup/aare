@@ -143,9 +143,13 @@ std::optional<uint8_t> Hdf5MasterFile::digital_flag() const { return m_digital_f
 std::optional<size_t> Hdf5MasterFile::digital_samples() const {
     return m_digital_samples;
 }
-// dbitoffset
+std::optional<size_t> Hdf5MasterFile::dbit_offset() const {
+    return m_dbit_offset;
+}
 // dbitlist
-// transceiver mask  
+std::optional<size_t> Hdf5MasterFile::transceiver_mask() const {
+    return m_transceiver_mask;
+}
 std::optional<uint8_t> Hdf5MasterFile::transceiver_flag() const { return m_transceiver_flag; }
 std::optional<size_t> Hdf5MasterFile::transceiver_samples() const {
     return m_transceiver_samples;
@@ -349,9 +353,9 @@ void Hdf5MasterFile::parse_acquisition_metadata(
         } catch (H5::FileIException &e) {
             // keep the optional empty
         }
-        LOG(logDEBUG) << "Ten Giga: " << ToString(m_ten_giga);
+        LOG(logDEBUG) << "Ten Giga: " << m_ten_giga;
         H5Eset_auto(H5E_DEFAULT, reinterpret_cast<H5E_auto2_t>(H5Eprint2), stderr);
-        
+
         // thresholdenergy
         // thresholdall energy
 
@@ -466,9 +470,31 @@ void Hdf5MasterFile::parse_acquisition_metadata(
         H5Eset_auto(H5E_DEFAULT, reinterpret_cast<H5E_auto2_t>(H5Eprint2),
                     stderr);
 
-        // dbitoffset
+        // Dbit Offset
+        H5::Exception::dontPrint();
+        try {
+            m_dbit_offset = h5_get_scalar_dataset<int>(
+                file, std::string(metadata_group_name + "Dbit Offset"));
+        } catch (H5::FileIException &e) {
+            // keep the optional empty
+        }   
+        LOG(logDEBUG) << "Dbit Offset: " << m_dbit_offset;
+        H5Eset_auto(H5E_DEFAULT, reinterpret_cast<H5E_auto2_t>(H5Eprint2),
+                    stderr);
+
         // dbitlist
-        // transceiver mask  
+
+        // Transceiver Mask
+        H5::Exception::dontPrint();
+        try {
+            m_transceiver_mask = h5_get_scalar_dataset<int>(
+                file, std::string(metadata_group_name + "Transceiver Mask"));
+        } catch (H5::FileIException &e) {
+            // keep the optional empty  
+        }
+        LOG(logDEBUG) << "Transceiver Mask: " << m_transceiver_mask;
+        H5Eset_auto(H5E_DEFAULT, reinterpret_cast<H5E_auto2_t>(H5Eprint2),
+                    stderr);    
 
         // Transceiver Flag, Transceiver Samples
         H5::Exception::dontPrint();
