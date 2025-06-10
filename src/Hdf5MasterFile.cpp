@@ -122,7 +122,9 @@ size_t Hdf5MasterFile::bitdepth() const { return m_bitdepth; }
 std::optional<size_t> Hdf5MasterFile::ten_giga() const {
     return m_ten_giga;
 }
-// thresholdenergy
+std::optional<size_t> Hdf5MasterFile::threshold_energy() const {
+    return m_threshold_energy;
+}
 // thresholdall energy
 std::optional<ns> Hdf5MasterFile::subexptime() const {
     return m_subexptime;
@@ -351,7 +353,15 @@ void Hdf5MasterFile::parse_acquisition_metadata(
             // keep the optional empty
         }
 
-        // thresholdenergy
+        // Threshold Energy
+        try {
+            m_threshold_energy = h5_get_scalar_dataset<int>(
+                file, std::string(metadata_group_name + "Threshold Energy"));
+            LOG(logDEBUG) << "Threshold Energy: " << m_threshold_energy;
+        } catch (H5::FileIException &e) {
+            // keep the optional empty
+        }
+
         // thresholdall energy
 
         // Subexptime

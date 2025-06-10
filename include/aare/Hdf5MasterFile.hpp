@@ -66,7 +66,7 @@ class Hdf5MasterFile {
     std::optional<size_t> m_number_of_udp_interfaces;
     size_t m_bitdepth{};
     std::optional<size_t> m_ten_giga;
-    // thresholdenergy
+    std::optional<size_t> m_threshold_energy;
     // thresholdall energy
     std::optional<ns> m_subexptime{};
     std::optional<ns> m_subperiod{};
@@ -124,7 +124,7 @@ class Hdf5MasterFile {
     std::optional<size_t> number_of_udp_interfaces() const;
     size_t bitdepth() const;
     std::optional<size_t> ten_giga() const;
-    // thresholdenergy
+    std::optional<size_t> threshold_energy() const;
     // thresholdall energy
     std::optional<ns> subexptime() const;
     std::optional<ns> subperiod() const;
