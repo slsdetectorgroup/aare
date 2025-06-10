@@ -3,15 +3,14 @@
 #include "aare/Dtype.hpp"
 
 #include <array>
-#include <stdexcept>
 #include <cassert>
 #include <cstdint>
 #include <cstring>
+#include <stdexcept>
 #include <string>
 #include <string_view>
 #include <variant>
 #include <vector>
-
 
 /**
  * @brief LOCATION macro to get the current location in the code
@@ -20,27 +19,23 @@
     std::string(__FILE__) + std::string(":") + std::to_string(__LINE__) +      \
         ":" + std::string(__func__) + ":"
 
-
-
 #ifdef AARE_CUSTOM_ASSERT
-#define AARE_ASSERT(expr)\
-    if (expr)\
-        {}\
-    else\
+#define AARE_ASSERT(expr)                                                      \
+    if (expr) {                                                                \
+    } else                                                                     \
         aare::assert_failed(LOCATION + " Assertion failed: " + #expr + "\n");
 #else
-#define AARE_ASSERT(cond)\
-    do { (void)sizeof(cond); } while(0)
+#define AARE_ASSERT(cond)                                                      \
+    do {                                                                       \
+        (void)sizeof(cond);                                                    \
+    } while (0)
 #endif
-
 
 namespace aare {
 
 inline constexpr size_t bits_per_byte = 8;
 
 void assert_failed(const std::string &msg);
-
-
 
 class DynamicCluster {
   public:
@@ -55,7 +50,7 @@ class DynamicCluster {
 
   public:
     DynamicCluster(int cluster_sizeX_, int cluster_sizeY_,
-            Dtype dt_ = Dtype(typeid(int32_t)))
+                   Dtype dt_ = Dtype(typeid(int32_t)))
         : cluster_sizeX(cluster_sizeX_), cluster_sizeY(cluster_sizeY_),
           dt(dt_) {
         m_data = new std::byte[cluster_sizeX * cluster_sizeY * dt.bytes()]{};
@@ -179,24 +174,24 @@ template <typename T> struct t_xy {
 };
 using xy = t_xy<uint32_t>;
 
-
 /**
- * @brief Class to hold the geometry of a module. Where pixel 0 is located and the size of the module
+ * @brief Class to hold the geometry of a module. Where pixel 0 is located and
+ * the size of the module
  */
-struct ModuleGeometry{
+struct ModuleGeometry {
     int origin_x{};
     int origin_y{};
     int height{};
     int width{};
     int row_index{};
-    int col_index{}; 
+    int col_index{};
 };
 
 /**
- * @brief Class to hold the geometry of a detector. Number of modules, their size and where pixel 0 
- * for each module is located
+ * @brief Class to hold the geometry of a detector. Number of modules, their
+ * size and where pixel 0 for each module is located
  */
-struct DetectorGeometry{
+struct DetectorGeometry {
     int modules_x{};
     int modules_y{};
     int pixels_x{};
@@ -204,35 +199,34 @@ struct DetectorGeometry{
     int module_gap_row{};
     int module_gap_col{};
     std::vector<ModuleGeometry> module_pixel_0;
-    
+
     auto size() const { return module_pixel_0.size(); }
 };
 
-struct ROI{
+struct ROI {
     ssize_t xmin{};
     ssize_t xmax{};
     ssize_t ymin{};
     ssize_t ymax{};
-  
+
     ssize_t height() const { return ymax - ymin; }
     ssize_t width() const { return xmax - xmin; }
     bool contains(ssize_t x, ssize_t y) const {
         return x >= xmin && x < xmax && y >= ymin && y < ymax;
     }
-  };
-
+};
 
 using dynamic_shape = std::vector<ssize_t>;
 
-//TODO! Can we uniform enums between the libraries?
+// TODO! Can we uniform enums between the libraries?
 
 /**
- * @brief Enum class to identify different detectors. 
+ * @brief Enum class to identify different detectors.
  * The values are the same as in slsDetectorPackage
  * Different spelling to avoid confusion with the slsDetectorPackage
  */
 enum class DetectorType {
-    //Standard detectors match the enum values from slsDetectorPackage
+    // Standard detectors match the enum values from slsDetectorPackage
     Generic,
     Eiger,
     Gotthard,
@@ -243,8 +237,9 @@ enum class DetectorType {
     Gotthard2,
     Xilinx_ChipTestBoard,
 
-    //Additional detectors used for defining processing. Variants of the standard ones.
-    Moench03=100,
+    // Additional detectors used for defining processing. Variants of the
+    // standard ones.
+    Moench03 = 100,
     Moench03_old,
     Unknown
 };

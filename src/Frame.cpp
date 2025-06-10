@@ -29,15 +29,13 @@ uint64_t Frame::size() const { return m_rows * m_cols; }
 size_t Frame::bytes() const { return m_rows * m_cols * m_dtype.bytes(); }
 std::byte *Frame::data() const { return m_data; }
 
-
-std::byte *Frame::pixel_ptr(uint32_t row, uint32_t col) const{
+std::byte *Frame::pixel_ptr(uint32_t row, uint32_t col) const {
     if ((row >= m_rows) || (col >= m_cols)) {
         std::cerr << "Invalid row or column index" << '\n';
         return nullptr;
     }
     return m_data + (row * m_cols + col) * (m_dtype.bytes());
 }
-
 
 Frame &Frame::operator=(Frame &&other) noexcept {
     if (this == &other) {
@@ -69,6 +67,5 @@ Frame Frame::clone() const {
     std::memcpy(frame.m_data, m_data, m_rows * m_cols * m_dtype.bytes());
     return frame;
 }
-
 
 } // namespace aare

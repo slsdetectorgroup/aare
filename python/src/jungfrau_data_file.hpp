@@ -21,10 +21,7 @@ using namespace ::aare;
 
 auto read_dat_frame(JungfrauDataFile &self) {
     py::array_t<JungfrauDataHeader> header(1);
-    py::array_t<uint16_t> image({
-        self.rows(), 
-        self.cols() 
-    });
+    py::array_t<uint16_t> image({self.rows(), self.cols()});
 
     self.read_into(reinterpret_cast<std::byte *>(image.mutable_data()),
                    header.mutable_data());
@@ -40,9 +37,7 @@ auto read_n_dat_frames(JungfrauDataFile &self, size_t n_frames) {
     }
 
     py::array_t<JungfrauDataHeader> header(n_frames);
-    py::array_t<uint16_t> image({
-        n_frames, self.rows(), 
-        self.cols()});
+    py::array_t<uint16_t> image({n_frames, self.rows(), self.cols()});
 
     self.read_into(reinterpret_cast<std::byte *>(image.mutable_data()),
                    n_frames, header.mutable_data());

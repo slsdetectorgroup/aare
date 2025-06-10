@@ -1,10 +1,9 @@
 #pragma once
 #include "aare/FileInterface.hpp"
-#include "aare/RawMasterFile.hpp"
 #include "aare/Frame.hpp"
 #include "aare/NDArray.hpp" //for pixel map
+#include "aare/RawMasterFile.hpp"
 #include "aare/RawSubFile.hpp"
-
 
 #include <optional>
 
@@ -53,10 +52,10 @@ class RawFile : public FileInterface {
     void read_into(std::byte *image_buf) override;
     void read_into(std::byte *image_buf, size_t n_frames) override;
 
-    //TODO! do we need to adapt the API? 
+    // TODO! do we need to adapt the API?
     void read_into(std::byte *image_buf, DetectorHeader *header);
-    void read_into(std::byte *image_buf, size_t n_frames, DetectorHeader *header);
-
+    void read_into(std::byte *image_buf, size_t n_frames,
+                   DetectorHeader *header);
 
     size_t frame_number(size_t frame_index) override;
     size_t bytes_per_frame() override;
@@ -70,23 +69,20 @@ class RawFile : public FileInterface {
     size_t bitdepth() const override;
     xy geometry();
     size_t n_modules() const;
-    
+
     RawMasterFile master() const;
-
-
 
     DetectorType detector_type() const override;
 
   private:
-
     /**
      * @brief read the frame at the given frame index into the image buffer
      * @param frame_number frame number to read
      * @param image_buf buffer to store the frame
      */
 
-    void get_frame_into(size_t frame_index, std::byte *frame_buffer, DetectorHeader *header = nullptr);
-
+    void get_frame_into(size_t frame_index, std::byte *frame_buffer,
+                        DetectorHeader *header = nullptr);
 
     /**
      * @brief get the frame at the given frame index
@@ -94,8 +90,6 @@ class RawFile : public FileInterface {
      * @return Frame
      */
     Frame get_frame(size_t frame_index);
-
-
 
     /**
      * @brief read the header of the file
@@ -107,6 +101,5 @@ class RawFile : public FileInterface {
     void open_subfiles();
     void find_geometry();
 };
-
 
 } // namespace aare

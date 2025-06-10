@@ -1,6 +1,6 @@
 #include "aare/File.hpp"
-#include "aare/RawMasterFile.hpp" //needed for ROI
 #include "aare/RawFile.hpp"
+#include "aare/RawMasterFile.hpp" //needed for ROI
 
 #include <catch2/catch_test_macros.hpp>
 #include <filesystem>
@@ -8,26 +8,24 @@
 #include "aare/geo_helpers.hpp"
 #include "test_config.hpp"
 
-TEST_CASE("Simple ROIs on one module"){
-    // DetectorGeometry update_geometry_with_roi(DetectorGeometry geo, aare::ROI roi)
+TEST_CASE("Simple ROIs on one module") {
+    // DetectorGeometry update_geometry_with_roi(DetectorGeometry geo, aare::ROI
+    // roi)
     aare::DetectorGeometry geo;
-    
 
-    aare::ModuleGeometry mod; 
+    aare::ModuleGeometry mod;
     mod.origin_x = 0;
     mod.origin_y = 0;
     mod.width = 1024;
     mod.height = 512;
 
-
-    
     geo.pixels_x = 1024;
     geo.pixels_y = 512;
     geo.modules_x = 1;
     geo.modules_y = 1;
     geo.module_pixel_0.push_back(mod);
 
-    SECTION("ROI is the whole module"){
+    SECTION("ROI is the whole module") {
         aare::ROI roi;
         roi.xmin = 0;
         roi.xmax = 1024;
@@ -42,7 +40,7 @@ TEST_CASE("Simple ROIs on one module"){
         REQUIRE(updated_geo.module_pixel_0[0].height == 512);
         REQUIRE(updated_geo.module_pixel_0[0].width == 1024);
     }
-    SECTION("ROI is the top left corner of the module"){
+    SECTION("ROI is the top left corner of the module") {
         aare::ROI roi;
         roi.xmin = 100;
         roi.xmax = 200;
@@ -58,7 +56,7 @@ TEST_CASE("Simple ROIs on one module"){
         REQUIRE(updated_geo.module_pixel_0[0].width == 100);
     }
 
-    SECTION("ROI is a small square"){
+    SECTION("ROI is a small square") {
         aare::ROI roi;
         roi.xmin = 1000;
         roi.xmax = 1010;
@@ -73,7 +71,7 @@ TEST_CASE("Simple ROIs on one module"){
         REQUIRE(updated_geo.module_pixel_0[0].height == 10);
         REQUIRE(updated_geo.module_pixel_0[0].width == 10);
     }
-    SECTION("ROI is a few columns"){
+    SECTION("ROI is a few columns") {
         aare::ROI roi;
         roi.xmin = 750;
         roi.xmax = 800;
@@ -90,14 +88,12 @@ TEST_CASE("Simple ROIs on one module"){
     }
 }
 
-
-
-TEST_CASE("Two modules side by side"){
-    // DetectorGeometry update_geometry_with_roi(DetectorGeometry geo, aare::ROI roi)
+TEST_CASE("Two modules side by side") {
+    // DetectorGeometry update_geometry_with_roi(DetectorGeometry geo, aare::ROI
+    // roi)
     aare::DetectorGeometry geo;
-    
 
-    aare::ModuleGeometry mod; 
+    aare::ModuleGeometry mod;
     mod.origin_x = 0;
     mod.origin_y = 0;
     mod.width = 1024;
@@ -112,7 +108,7 @@ TEST_CASE("Two modules side by side"){
     mod.origin_x = 1024;
     geo.module_pixel_0.push_back(mod);
 
-    SECTION("ROI is the whole image"){
+    SECTION("ROI is the whole image") {
         aare::ROI roi;
         roi.xmin = 0;
         roi.xmax = 2048;
@@ -125,7 +121,7 @@ TEST_CASE("Two modules side by side"){
         REQUIRE(updated_geo.modules_x == 2);
         REQUIRE(updated_geo.modules_y == 1);
     }
-    SECTION("rectangle on both modules"){
+    SECTION("rectangle on both modules") {
         aare::ROI roi;
         roi.xmin = 800;
         roi.xmax = 1300;
@@ -141,11 +137,12 @@ TEST_CASE("Two modules side by side"){
         REQUIRE(updated_geo.module_pixel_0[0].width == 224);
         REQUIRE(updated_geo.module_pixel_0[1].height == 299);
         REQUIRE(updated_geo.module_pixel_0[1].width == 276);
-    }   
+    }
 }
 
-TEST_CASE("Three modules side by side"){
-    // DetectorGeometry update_geometry_with_roi(DetectorGeometry geo, aare::ROI roi)
+TEST_CASE("Three modules side by side") {
+    // DetectorGeometry update_geometry_with_roi(DetectorGeometry geo, aare::ROI
+    // roi)
     aare::DetectorGeometry geo;
     aare::ROI roi;
     roi.xmin = 700;
@@ -153,7 +150,7 @@ TEST_CASE("Three modules side by side"){
     roi.ymin = 0;
     roi.ymax = 123;
 
-    aare::ModuleGeometry mod; 
+    aare::ModuleGeometry mod;
     mod.origin_x = 0;
     mod.origin_y = 0;
     mod.width = 1024;
@@ -184,8 +181,9 @@ TEST_CASE("Three modules side by side"){
     REQUIRE(updated_geo.module_pixel_0[2].width == 452);
 }
 
-TEST_CASE("Four modules as a square"){
-    // DetectorGeometry update_geometry_with_roi(DetectorGeometry geo, aare::ROI roi)
+TEST_CASE("Four modules as a square") {
+    // DetectorGeometry update_geometry_with_roi(DetectorGeometry geo, aare::ROI
+    // roi)
     aare::DetectorGeometry geo;
     aare::ROI roi;
     roi.xmin = 500;
@@ -193,7 +191,7 @@ TEST_CASE("Four modules as a square"){
     roi.ymin = 500;
     roi.ymax = 600;
 
-    aare::ModuleGeometry mod; 
+    aare::ModuleGeometry mod;
     mod.origin_x = 0;
     mod.origin_y = 0;
     mod.width = 1024;

@@ -7,8 +7,8 @@
 
 #include "aare/ClusterFinder.hpp"
 #include "aare/NDArray.hpp"
-#include "aare/logger.hpp"
 #include "aare/ProducerConsumerQueue.hpp"
+#include "aare/logger.hpp"
 
 namespace aare {
 
@@ -125,10 +125,10 @@ class ClusterFinderMT {
         : m_n_threads(n_threads) {
 
         LOG(logDEBUG1) << "ClusterFinderMT: "
-            << "image_size: " << image_size[0] << "x" << image_size[1]
-            << ", nSigma: " << nSigma
-            << ", capacity: " << capacity
-            << ", n_threads: " << n_threads;
+                       << "image_size: " << image_size[0] << "x"
+                       << image_size[1] << ", nSigma: " << nSigma
+                       << ", capacity: " << capacity
+                       << ", n_threads: " << n_threads;
 
         for (size_t i = 0; i < n_threads; i++) {
             m_cluster_finders.push_back(
