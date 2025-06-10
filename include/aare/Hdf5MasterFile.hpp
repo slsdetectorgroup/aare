@@ -58,37 +58,37 @@ class Hdf5MasterFile {
     size_t m_max_frames_per_file{};
     FrameDiscardPolicy m_frame_discard_policy{};
     size_t m_frame_padding{};
-    std::optional<ScanParameters> m_scan_parameters;
+    std::optional<ScanParameters> m_scan_parameters{};
     size_t m_total_frames_expected{};
     std::optional<ns> m_exptime{};
     std::optional<ns> m_period{};
-    std::optional<BurstMode> m_burst_mode;
-    std::optional<size_t> m_number_of_udp_interfaces;
+    std::optional<BurstMode> m_burst_mode{};
+    std::optional<size_t> m_number_of_udp_interfaces{};
     size_t m_bitdepth{};
-    std::optional<size_t> m_ten_giga;
-    std::optional<size_t> m_threshold_energy;
-    // thresholdall energy
+    std::optional<size_t> m_ten_giga{};
+    std::optional<size_t> m_threshold_energy{};
+    std::optional<std::vector<size_t>> m_threshold_energy_all{};
     std::optional<ns> m_subexptime{};
     std::optional<ns> m_subperiod{};
-    std::optional<uint8_t> m_quad;
-    std::optional<size_t> m_number_of_rows;
-    // ratecorr
-    uint32_t m_adc_mask{}; // TODO! implement reading
+    std::optional<uint8_t> m_quad{};
+    std::optional<size_t> m_number_of_rows{};
+    std::optional<std::vector<size_t>> m_rate_corrections{};
+    size_t m_adc_mask{};
     uint8_t m_analog_flag{};
-    std::optional<size_t> m_analog_samples;
+    std::optional<size_t> m_analog_samples{};
     uint8_t m_digital_flag{};
-    std::optional<size_t> m_digital_samples;
-    std::optional<size_t> m_dbit_offset;
-    // dbitlist
-    std::optional<size_t> m_transceiver_mask;
+    std::optional<size_t> m_digital_samples{};
+    std::optional<size_t> m_dbit_offset{};
+    std::optional<size_t> m_dbit_list{};
+    std::optional<size_t> m_transceiver_mask{};
     uint8_t m_transceiver_flag{};
-    std::optional<size_t> m_transceiver_samples;
+    std::optional<size_t> m_transceiver_samples{};
     // g1 roi
-    std::optional<ROI> m_roi;
-    std::optional<size_t> m_counter_mask;
+    std::optional<ROI> m_roi{};
+    std::optional<size_t> m_counter_mask{};
     // exptimearray
     // gatedelay array
-    // gates
+    std::optional<size_t> m_gates{};
     // additional json header
     size_t m_frames_in_file{};
 
@@ -125,19 +125,19 @@ class Hdf5MasterFile {
     size_t bitdepth() const;
     std::optional<size_t> ten_giga() const;
     std::optional<size_t> threshold_energy() const;
-    // thresholdall energy
+    std::optional<std::vector<size_t>> threshold_energy_all() const;
     std::optional<ns> subexptime() const;
     std::optional<ns> subperiod() const;
     std::optional<uint8_t> quad() const;
     std::optional<size_t> number_of_rows() const;
-    // ratecorr
-    std::optional<uint32_t> adc_mask() const; // TODO! implement reading
+    std::optional<std::vector<size_t>> rate_corrections() const;
+    std::optional<size_t> adc_mask() const;
     std::optional<uint8_t> analog_flag() const;
     std::optional<size_t> analog_samples() const;
     std::optional<uint8_t> digital_flag() const;
     std::optional<size_t> digital_samples() const;
     std::optional<size_t> dbit_offset() const;
-    // dbitlist
+    std::optional<size_t> dbit_list() const;
     std::optional<size_t> transceiver_mask() const; 
     std::optional<uint8_t> transceiver_flag() const;
     std::optional<size_t> transceiver_samples() const;
@@ -146,7 +146,7 @@ class Hdf5MasterFile {
     std::optional<size_t> counter_mask() const;
     // exptimearray
     // gatedelay array
-    // gates
+    std::optional<size_t> gates() const;
     // additional json header
     size_t frames_in_file() const;
     size_t n_modules() const;

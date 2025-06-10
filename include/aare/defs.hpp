@@ -3,19 +3,20 @@
 #include "aare/Dtype.hpp"
 #include "aare/type_traits.hpp"
 
+#include <algorithm>
 #include <array>
-#include <stdexcept>
 #include <cassert>
+#include <chrono>
 #include <cstdint>
 #include <cstring>
+#include <iostream>
+#include <optional>
+#include <sstream>
+#include <stdexcept>
 #include <string>
 #include <string_view>
 #include <variant>
 #include <vector>
-#include <iostream>
-#include <sstream>  
-#include <optional>
-#include <chrono>
 
 /**
  * @brief LOCATION macro to get the current location in the code
@@ -377,8 +378,44 @@ T StringTo(const std::string &t) {
 template <typename T, std::enable_if_t<!is_duration<T>::value, int> = 0 > 
 T StringTo(const std::string &arg) { return T(arg); }
 
+// so that StringTo<std::vector<size_t>> below doesnt complain about the above
+// generic overload
+template <> inline size_t StringTo(const std::string &arg) {
+    return std::stoi(arg);
+}
+
+template <> inline std::vector<size_t> StringTo(const std::string &s) {
+    std::vector<size_t> result;
+    std::string str = s;
+    // Remove brackets and spaces
+    str.erase(std::remove_if(str.begin(), str.end(),
+                             [](unsigned char c) {
+                                 return c == '[' || c == ']' || std::isspace(c);
+                             }),
+              str.end());
+    std::stringstream ss(str);
+    std::string item;
+    while (std::getline(ss, item, ',')) {
+        if (!item.empty())
+            result.push_back(StringTo<size_t>(item));
+    }
+    return result;
+}
+
 template <class T, typename = std::enable_if_t<!is_duration<T>::value>> 
 std::string ToString(T arg) { return T(arg); }
+
+template <typename T> std::string ToString(const std::vector<T> &vec) {
+    std::ostringstream oss;
+    oss << "[";
+    for (size_t i = 0; i < vec.size(); ++i) {
+        oss << vec[i];
+        if (i != vec.size() - 1)
+            oss << ", ";
+    }
+    oss << "]";
+    return oss.str();
+}
 
 template <> DetectorType StringTo(const std::string & /*name*/);
 template <> std::string ToString(DetectorType arg);
@@ -399,19 +436,8 @@ template <> std::string ToString(ScanParameters arg);
 std::ostream &operator<<(std::ostream &os, const ROI &roi);
 template <> std::string ToString(ROI arg);
 
-
-using DataTypeVariants = std::variant<uint16_t, uint32_t>;
-
-template <typename T>
-std::ostream &operator<<(std::ostream &os, const std::vector<T> &vec) {
-    os << "[";
-    for (size_t i = 0; i < vec.size(); ++i) {
-        os << vec[i];
-        if (i != vec.size() - 1)
-            os << ", ";
-    }
-    os << "]";
-    return os;
+template <class T> std::string ToString(const std::optional<T> &opt) {
+    return opt ? ToString(*opt) : "nullopt";
 }
 
 template <typename T>
@@ -423,15 +449,6 @@ std::ostream &operator<<(std::ostream &os, const std::optional<T> &opt) {
     return os;
 }
 
-
-template <class T>
-std::string ToString(const std::optional<T>& opt)
-{
-    return opt ? ToString(*opt) : "nullopt";
-}
-
-
-
-
+using DataTypeVariants = std::variant<uint16_t, uint32_t>;
 
 } // namespace aare

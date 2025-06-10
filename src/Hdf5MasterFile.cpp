@@ -125,7 +125,10 @@ std::optional<size_t> Hdf5MasterFile::ten_giga() const {
 std::optional<size_t> Hdf5MasterFile::threshold_energy() const {
     return m_threshold_energy;
 }
-// thresholdall energy
+std::optional<std::vector<size_t>>
+Hdf5MasterFile::threshold_energy_all() const {
+    return m_threshold_energy_all;
+}
 std::optional<ns> Hdf5MasterFile::subexptime() const {
     return m_subexptime;
 }
@@ -136,7 +139,10 @@ std::optional<uint8_t> Hdf5MasterFile::quad() const { return m_quad; }
 std::optional<size_t> Hdf5MasterFile::number_of_rows() const {
     return m_number_of_rows;
 }
-std::optional<uint32_t> Hdf5MasterFile::adc_mask() const { return m_adc_mask;}
+std::optional<std::vector<size_t>> Hdf5MasterFile::rate_corrections() const {
+    return m_rate_corrections;
+}
+std::optional<size_t> Hdf5MasterFile::adc_mask() const { return m_adc_mask; }
 std::optional<uint8_t> Hdf5MasterFile::analog_flag() const { return m_analog_flag; }  
 std::optional<size_t> Hdf5MasterFile::analog_samples() const {
     return m_analog_samples;
@@ -148,7 +154,7 @@ std::optional<size_t> Hdf5MasterFile::digital_samples() const {
 std::optional<size_t> Hdf5MasterFile::dbit_offset() const {
     return m_dbit_offset;
 }
-// dbitlist
+std::optional<size_t> Hdf5MasterFile::dbit_list() const { return m_dbit_list; }
 std::optional<size_t> Hdf5MasterFile::transceiver_mask() const {
     return m_transceiver_mask;
 }
@@ -161,7 +167,7 @@ std::optional<ROI> Hdf5MasterFile::roi() const { return m_roi; }
 std::optional<size_t> Hdf5MasterFile::counter_mask() const { return m_counter_mask; }
 // exptimearray
 // gatedelay array
-// gates
+std::optional<size_t> Hdf5MasterFile::gates() const { return m_gates; }
 // additional json header
 size_t Hdf5MasterFile::frames_in_file() const { return m_frames_in_file; }
 size_t Hdf5MasterFile::n_modules() const {
@@ -234,32 +240,32 @@ void Hdf5MasterFile::parse_acquisition_metadata(
         LOG(logDEBUG) << "Timing Mode: " << ToString(m_timing_mode);
 
         // Geometry
-        m_geometry.row = h5_get_scalar_dataset<int>(
+        m_geometry.row = h5_get_scalar_dataset<size_t>(
             file, std::string(metadata_group_name + "Geometry in y axis"));
-        m_geometry.col = h5_get_scalar_dataset<int>(
+        m_geometry.col = h5_get_scalar_dataset<size_t>(
             file, std::string(metadata_group_name + "Geometry in x axis"));
         LOG(logDEBUG) << "Geometry: " << m_geometry.to_string();
 
 
         // Image Size
-        m_image_size_in_bytes = h5_get_scalar_dataset<int>(
+        m_image_size_in_bytes = h5_get_scalar_dataset<size_t>(
             file, std::string(metadata_group_name + "Image Size"));
         LOG(logDEBUG) << "Image size: {}\n" << m_image_size_in_bytes;
 
         // Pixels y
-        m_pixels_y = h5_get_scalar_dataset<int>(
+        m_pixels_y = h5_get_scalar_dataset<size_t>(
             file,
             std::string(metadata_group_name + "Number of pixels in y axis"));
         LOG(logDEBUG) << "Pixels in y: " << m_pixels_y;
 
         // Pixels x
-        m_pixels_x = h5_get_scalar_dataset<int>(
+        m_pixels_x = h5_get_scalar_dataset<size_t>(
             file,
             std::string(metadata_group_name + "Number of pixels in x axis"));
         LOG(logDEBUG) << "Pixels in x: " << m_pixels_x;
 
         // Max Frames Per File
-        m_max_frames_per_file = h5_get_scalar_dataset<int>(
+        m_max_frames_per_file = h5_get_scalar_dataset<size_t>(
             file, std::string(metadata_group_name + "Maximum frames per file"));
         LOG(logDEBUG) << "Max frames per File: " << m_max_frames_per_file;
 
@@ -271,7 +277,7 @@ void Hdf5MasterFile::parse_acquisition_metadata(
         LOG(logDEBUG) << "Frame Discard Policy: " << ToString(m_frame_discard_policy);
 
         // Frame Padding
-        m_frame_padding = h5_get_scalar_dataset<int>(
+        m_frame_padding = h5_get_scalar_dataset<size_t>(
             file, std::string(metadata_group_name + "Frame Padding"));
         LOG(logDEBUG) << "Frame Padding: " << m_frame_padding;
 
@@ -290,7 +296,7 @@ void Hdf5MasterFile::parse_acquisition_metadata(
         }
 
         // Total Frames Expected
-        m_total_frames_expected = h5_get_scalar_dataset<uint64_t>(
+        m_total_frames_expected = h5_get_scalar_dataset<size_t>(
             file, std::string(metadata_group_name + "Total Frames"));
         LOG(logDEBUG) << "Total Frames: " << m_total_frames_expected;
 
@@ -325,8 +331,9 @@ void Hdf5MasterFile::parse_acquisition_metadata(
         // Number of UDP Interfaces
         // Not all detectors write the Number of UDP Interfaces but in case
         try {
-            m_number_of_udp_interfaces = h5_get_scalar_dataset<int>(
-                file, std::string(metadata_group_name + "Number of UDP Interfaces"));
+            m_number_of_udp_interfaces = h5_get_scalar_dataset<size_t>(
+                file,
+                std::string(metadata_group_name + "Number of UDP Interfaces"));
             LOG(logDEBUG) << "Number of UDP Interfaces: "
                           << m_number_of_udp_interfaces;
         } catch (H5::FileIException &e) {
@@ -337,7 +344,7 @@ void Hdf5MasterFile::parse_acquisition_metadata(
         // Not all detectors write the bitdepth but in case
         // its not there it is 16
         try {
-            m_bitdepth = h5_get_scalar_dataset<int>(
+            m_bitdepth = h5_get_scalar_dataset<size_t>(
                 file, std::string(metadata_group_name + "Dynamic Range"));
             LOG(logDEBUG) << "Bit Depth: " << m_bitdepth;
         } catch (H5::FileIException &e) {
@@ -346,7 +353,7 @@ void Hdf5MasterFile::parse_acquisition_metadata(
 
         // Ten Giga
         try {
-            m_ten_giga = h5_get_scalar_dataset<int>(
+            m_ten_giga = h5_get_scalar_dataset<size_t>(
                 file, std::string(metadata_group_name + "Ten Giga"));
             LOG(logDEBUG) << "Ten Giga: " << m_ten_giga;
         } catch (H5::FileIException &e) {
@@ -355,14 +362,24 @@ void Hdf5MasterFile::parse_acquisition_metadata(
 
         // Threshold Energy
         try {
-            m_threshold_energy = h5_get_scalar_dataset<int>(
+            m_threshold_energy = h5_get_scalar_dataset<size_t>(
                 file, std::string(metadata_group_name + "Threshold Energy"));
             LOG(logDEBUG) << "Threshold Energy: " << m_threshold_energy;
         } catch (H5::FileIException &e) {
             // keep the optional empty
         }
 
-        // thresholdall energy
+        // Threshold All Energy
+        try {
+            m_threshold_energy_all = StringTo<std::vector<size_t>>(
+                h5_get_scalar_dataset<std::string>(
+                    file,
+                    std::string(metadata_group_name + "Threshold Energies")));
+            LOG(logDEBUG) << "Threshold Energies: "
+                          << ToString(m_threshold_energy_all);
+        } catch (H5::FileIException &e) {
+            // keep the optional empty
+        }
 
         // Subexptime
         try {
@@ -384,7 +401,7 @@ void Hdf5MasterFile::parse_acquisition_metadata(
 
         // Quad
         try {
-            m_quad = h5_get_scalar_dataset<int>(
+            m_quad = h5_get_scalar_dataset<uint8_t>(
                 file, std::string(metadata_group_name + "Quad"));
             LOG(logDEBUG) << "Quad: " << m_quad;
         } catch (H5::FileIException &e) {
@@ -394,18 +411,28 @@ void Hdf5MasterFile::parse_acquisition_metadata(
         // Number of Rows
         // Not all detectors write the Number of rows but in case
         try {
-            m_number_of_rows = h5_get_scalar_dataset<int>(
+            m_number_of_rows = h5_get_scalar_dataset<size_t>(
                 file, std::string(metadata_group_name + "Number of rows"));
             LOG(logDEBUG) << "Number of rows: " << m_number_of_rows;
         } catch (H5::FileIException &e) {
             // keep the optional empty
         }
 
-        // ratecorr
+        // Rate Corrections
+        try {
+            m_rate_corrections = StringTo<std::vector<size_t>>(
+                h5_get_scalar_dataset<std::string>(
+                    file,
+                    std::string(metadata_group_name + "Rate Corrections")));
+            LOG(logDEBUG) << "Rate Corrections: "
+                          << ToString(m_rate_corrections);
+        } catch (H5::FileIException &e) {
+            // keep the optional empty
+        }
 
         // ADC Mask
         try {
-            m_adc_mask = h5_get_scalar_dataset<uint32_t>(
+            m_adc_mask = h5_get_scalar_dataset<size_t>(
                 file, std::string(metadata_group_name + "ADC Mask"));
         } catch (H5::FileIException &e) {
             // keep the optional empty
@@ -416,7 +443,7 @@ void Hdf5MasterFile::parse_acquisition_metadata(
         // ----------------------------------------------------------------
         // Special treatment of analog flag because of Moench03
         try {
-            m_analog_flag = h5_get_scalar_dataset<int>(
+            m_analog_flag = h5_get_scalar_dataset<uint8_t>(
                 file, std::string(metadata_group_name + "Analog Flag"));
             LOG(logDEBUG) << "Analog Flag: " << m_analog_flag;
         } catch (H5::FileIException &e) {
@@ -428,7 +455,7 @@ void Hdf5MasterFile::parse_acquisition_metadata(
         // Analog Samples
         try {
             if (m_analog_flag) {
-                m_analog_samples = h5_get_scalar_dataset<int>(
+                m_analog_samples = h5_get_scalar_dataset<size_t>(
                     file, std::string(metadata_group_name + "Analog Samples"));
                 LOG(logDEBUG) << "Analog Samples: " << m_analog_samples;
             }
@@ -441,11 +468,11 @@ void Hdf5MasterFile::parse_acquisition_metadata(
 
         // Digital Flag, Digital Samples
         try {
-            m_digital_flag = h5_get_scalar_dataset<int>(
+            m_digital_flag = h5_get_scalar_dataset<uint8_t>(
                 file, std::string(metadata_group_name + "Digital Flag"));
             LOG(logDEBUG) << "Digital Flag: " << m_digital_flag;
         if (m_digital_flag) {
-            m_digital_samples = h5_get_scalar_dataset<int>(
+            m_digital_samples = h5_get_scalar_dataset<size_t>(
                 file, std::string(metadata_group_name + "Digital Samples"));
         }
             LOG(logDEBUG) << "Digital Samples: " << m_digital_samples;
@@ -455,18 +482,25 @@ void Hdf5MasterFile::parse_acquisition_metadata(
 
         // Dbit Offset
         try {
-            m_dbit_offset = h5_get_scalar_dataset<int>(
+            m_dbit_offset = h5_get_scalar_dataset<size_t>(
                 file, std::string(metadata_group_name + "Dbit Offset"));
             LOG(logDEBUG) << "Dbit Offset: " << m_dbit_offset;
         } catch (H5::FileIException &e) {
             // keep the optional empty
         }
 
-        // dbitlist
+        // Dbit List
+        try {
+            m_dbit_list = h5_get_scalar_dataset<size_t>(
+                file, std::string(metadata_group_name + "Dbit Bitset List"));
+            LOG(logDEBUG) << "Dbit list: " << m_dbit_list;
+        } catch (H5::FileIException &e) {
+            // keep the optional empty
+        }
 
         // Transceiver Mask
         try {
-            m_transceiver_mask = h5_get_scalar_dataset<int>(
+            m_transceiver_mask = h5_get_scalar_dataset<size_t>(
                 file, std::string(metadata_group_name + "Transceiver Mask"));
             LOG(logDEBUG) << "Transceiver Mask: " << m_transceiver_mask;
         } catch (H5::FileIException &e) {
@@ -475,11 +509,11 @@ void Hdf5MasterFile::parse_acquisition_metadata(
 
         // Transceiver Flag, Transceiver Samples
         try {
-            m_transceiver_flag = h5_get_scalar_dataset<int>(
+            m_transceiver_flag = h5_get_scalar_dataset<uint8_t>(
                 file, std::string(metadata_group_name + "Transceiver Flag"));
             LOG(logDEBUG) << "Transceiver Flag: " << m_transceiver_flag;
             if (m_transceiver_flag) {
-                m_transceiver_samples = h5_get_scalar_dataset<int>(
+                m_transceiver_samples = h5_get_scalar_dataset<size_t>(
                     file,
                     std::string(metadata_group_name + "Transceiver Samples"));
                 LOG(logDEBUG)
@@ -492,13 +526,13 @@ void Hdf5MasterFile::parse_acquisition_metadata(
         // Rx ROI
         try{
             ROI tmp_roi;
-            tmp_roi.xmin = h5_get_scalar_dataset<int>(
+            tmp_roi.xmin = h5_get_scalar_dataset<size_t>(
                 file, std::string(metadata_group_name + "receiver roi xmin"));
-            tmp_roi.xmax = h5_get_scalar_dataset<int>(
+            tmp_roi.xmax = h5_get_scalar_dataset<size_t>(
                 file, std::string(metadata_group_name + "receiver roi xmax"));
-            tmp_roi.ymin = h5_get_scalar_dataset<int>(
+            tmp_roi.ymin = h5_get_scalar_dataset<size_t>(
                 file, std::string(metadata_group_name + "receiver roi ymin"));
-            tmp_roi.ymax = h5_get_scalar_dataset<int>(
+            tmp_roi.ymax = h5_get_scalar_dataset<size_t>(
                 file, std::string(metadata_group_name + "receiver roi ymax"));
 
             //if any of the values are set update the roi
@@ -536,7 +570,7 @@ void Hdf5MasterFile::parse_acquisition_metadata(
 
         // Counter Mask
         try {
-            m_counter_mask = h5_get_scalar_dataset<int>(
+            m_counter_mask = h5_get_scalar_dataset<size_t>(
                 file, std::string(metadata_group_name + "Counter Mask"));
             LOG(logDEBUG) << "Counter Mask: " << m_counter_mask;
         } catch (H5::FileIException &e) {
@@ -545,11 +579,20 @@ void Hdf5MasterFile::parse_acquisition_metadata(
 
         // exptimearray
         // gatedelay array
-        // gates
+
+        // Gates
+        try {
+            m_gates = h5_get_scalar_dataset<size_t>(
+                file, std::string(metadata_group_name + "Gates"));
+            LOG(logDEBUG) << "Gates: " << m_gates;
+        } catch (H5::FileIException &e) {
+            // keep the optional empty
+        }
+
         // additional json header
 
         // Frames in File
-        m_frames_in_file = h5_get_scalar_dataset<uint64_t>(
+        m_frames_in_file = h5_get_scalar_dataset<size_t>(
             file, std::string(metadata_group_name + "Frames in File"));
         LOG(logDEBUG) << "Frames in File: " << m_frames_in_file;
 

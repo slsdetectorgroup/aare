@@ -46,7 +46,8 @@ class H5Handles {
   void get_data_into(size_t frame_index, std::byte *frame_buffer, size_t n_frames = 1) {
     seek(frame_index);
     count[0] = static_cast<hsize_t>(n_frames);
-    //std::cout << "offset:" << offset << " count:" << count << std::endl;
+    // std::cout << "offset:" << ToString(offset) << " count:" <<
+    // ToString(count) << std::endl;
     dataspace.selectHyperslab(H5S_SELECT_SET, count.data(), offset.data());
     dataset.read(frame_buffer, datatype, *memspace, dataspace);
   }
@@ -54,7 +55,8 @@ class H5Handles {
   void get_header_into(size_t frame_index, int part_index, std::byte *header_buffer) {
     seek(frame_index);
     offset[1] = static_cast<hsize_t>(part_index);
-    //std::cout << "offset:" << offset << " count:" << count << std::endl;
+    // std::cout << "offset:" << ToString(offset) << " count:" <<
+    // ToString(count) << std::endl;
     dataspace.selectHyperslab(H5S_SELECT_SET, count.data(), offset.data());
     dataset.read(header_buffer, datatype, *memspace, dataspace);
   }
