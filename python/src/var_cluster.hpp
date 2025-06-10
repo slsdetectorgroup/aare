@@ -12,10 +12,8 @@
 // #include <pybind11/stl/filesystem.h>
 // #include <string>
 
-
 namespace py = pybind11;
-using namespace::aare;
-
+using namespace ::aare;
 
 void define_var_cluster_finder_bindings(py::module &m) {
     PYBIND11_NUMPY_DTYPE(VarClusterFinder<double>::Hit, size, row, col,
@@ -29,12 +27,12 @@ void define_var_cluster_finder_bindings(py::module &m) {
                  return return_image_data(ptr);
              })
         .def("set_noiseMap",
-            [](VarClusterFinder<double> &self,
+             [](VarClusterFinder<double> &self,
                 py::array_t<double, py::array::c_style | py::array::forcecast>
                     noise_map) {
-                auto noise_map_span = make_view_2d(noise_map);
-                self.set_noiseMap(noise_map_span);
-            })
+                 auto noise_map_span = make_view_2d(noise_map);
+                 self.set_noiseMap(noise_map_span);
+             })
         .def("set_peripheralThresholdFactor",
              &VarClusterFinder<double>::set_peripheralThresholdFactor)
         .def("find_clusters",
@@ -65,9 +63,7 @@ void define_var_cluster_finder_bindings(py::module &m) {
                  return return_vector(ptr);
              })
         .def("clear_hits",
-             [](VarClusterFinder<double> &self) {
-                 self.clear_hits();
-             })
+             [](VarClusterFinder<double> &self) { self.clear_hits(); })
         .def("steal_hits",
              [](VarClusterFinder<double> &self) {
                  auto ptr = new std::vector<VarClusterFinder<double>::Hit>(
@@ -75,5 +71,4 @@ void define_var_cluster_finder_bindings(py::module &m) {
                  return return_vector(ptr);
              })
         .def("total_clusters", &VarClusterFinder<double>::total_clusters);
-
 }

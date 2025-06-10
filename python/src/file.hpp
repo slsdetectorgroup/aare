@@ -20,16 +20,12 @@
 namespace py = pybind11;
 using namespace ::aare;
 
-
-
-
-//Disable warnings for unused parameters, as we ignore some
-//in the __exit__ method
+// Disable warnings for unused parameters, as we ignore some
+// in the __exit__ method
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Wunused-parameter"
 
 void define_file_io_bindings(py::module &m) {
-
 
     py::enum_<DetectorType>(m, "DetectorType")
         .value("Jungfrau", DetectorType::Jungfrau)
@@ -41,12 +37,9 @@ void define_file_io_bindings(py::module &m) {
         .value("ChipTestBoard", DetectorType::ChipTestBoard)
         .value("Unknown", DetectorType::Unknown);
 
-
     PYBIND11_NUMPY_DTYPE(DetectorHeader, frameNumber, expLength, packetNumber,
                          bunchId, timestamp, modId, row, column, reserved,
                          debug, roundRNumber, detType, version, packetMask);
-
-   
 
     py::class_<File>(m, "File")
         .def(py::init([](const std::filesystem::path &fname) {
@@ -112,45 +105,18 @@ void define_file_io_bindings(py::module &m) {
                      reinterpret_cast<std::byte *>(image.mutable_data()));
                  return image;
              })
-        .def("read_n", [](File &self, size_t n_frames) {
-            //adjust for actual frames left in the file
-            n_frames = std::min(n_frames, self.total_frames()-self.tell());
-            if(n_frames == 0){
-                throw std::runtime_error("No frames left in file");
-            }
-            std::vector<size_t> shape{n_frames, self.rows(), self.cols()};
-            
-            py::array image;
-            const uint8_t item_size = self.bytes_per_pixel();
-            if (item_size == 1) {
-                image = py::array_t<uint8_t>(shape);
-            } else if (item_size == 2) {
-                image = py::array_t<uint16_t>(shape);
-            } else if (item_size == 4) {
-                image = py::array_t<uint32_t>(shape);
-            }
-            self.read_into(reinterpret_cast<std::byte *>(image.mutable_data()),
-                           n_frames);
-            return image;
-        })
-        .def("__enter__", [](File &self) { return &self; })
-        .def("__exit__",
-             [](File &self,
-                const std::optional<pybind11::type> &exc_type,
-                const std::optional<pybind11::object> &exc_value,
-                const std::optional<pybind11::object> &traceback) {
-                //  self.close();
-             })
-        .def("__iter__", [](File &self) { return &self; })
-        .def("__next__", [](File &self) {
+        .def("read_n",
+             [](File &self, size_t n_frames) {
+                 // adjust for actual frames left in the file
+                 n_frames =
+                     std::min(n_frames, self.total_frames() - self.tell());
+                 if (n_frames == 0) {
+                     throw std::runtime_error("No frames left in file");
+                 }
+                 std::vector<size_t> shape{n_frames, self.rows(), self.cols()};
 
-            try{
-                const uint8_t item_size = self.bytes_per_pixel();
                  py::array image;
-                 std::vector<ssize_t> shape;
-                 shape.reserve(2);
-                 shape.push_back(self.rows());
-                 shape.push_back(self.cols());
+                 const uint8_t item_size = self.bytes_per_pixel();
                  if (item_size == 1) {
                      image = py::array_t<uint8_t>(shape);
                  } else if (item_size == 2) {
@@ -159,13 +125,40 @@ void define_file_io_bindings(py::module &m) {
                      image = py::array_t<uint32_t>(shape);
                  }
                  self.read_into(
-                     reinterpret_cast<std::byte *>(image.mutable_data()));
+                     reinterpret_cast<std::byte *>(image.mutable_data()),
+                     n_frames);
                  return image;
-            }catch(std::runtime_error &e){
+             })
+        .def("__enter__", [](File &self) { return &self; })
+        .def("__exit__",
+             [](File &self, const std::optional<pybind11::type> &exc_type,
+                const std::optional<pybind11::object> &exc_value,
+                const std::optional<pybind11::object> &traceback) {
+                 //  self.close();
+             })
+        .def("__iter__", [](File &self) { return &self; })
+        .def("__next__", [](File &self) {
+            try {
+                const uint8_t item_size = self.bytes_per_pixel();
+                py::array image;
+                std::vector<ssize_t> shape;
+                shape.reserve(2);
+                shape.push_back(self.rows());
+                shape.push_back(self.cols());
+                if (item_size == 1) {
+                    image = py::array_t<uint8_t>(shape);
+                } else if (item_size == 2) {
+                    image = py::array_t<uint16_t>(shape);
+                } else if (item_size == 4) {
+                    image = py::array_t<uint32_t>(shape);
+                }
+                self.read_into(
+                    reinterpret_cast<std::byte *>(image.mutable_data()));
+                return image;
+            } catch (std::runtime_error &e) {
                 throw py::stop_iteration();
             }
         });
-
 
     py::class_<FileConfig>(m, "FileConfig")
         .def(py::init<>())
@@ -183,8 +176,6 @@ void define_file_io_bindings(py::module &m) {
             return "<FileConfig: " + a.to_string() + ">";
         });
 
-
-
     py::class_<ScanParameters>(m, "ScanParameters")
         .def(py::init<const std::string &>())
         .def(py::init<const ScanParameters &>())
@@ -195,7 +186,6 @@ void define_file_io_bindings(py::module &m) {
         .def_property_readonly("stop", &ScanParameters::stop)
         .def_property_readonly("step", &ScanParameters::step);
 
-
     py::class_<ROI>(m, "ROI")
         .def(py::init<>())
         .def(py::init<ssize_t, ssize_t, ssize_t, ssize_t>(), py::arg("xmin"),
@@ -204,22 +194,20 @@ void define_file_io_bindings(py::module &m) {
         .def_readwrite("xmax", &ROI::xmax)
         .def_readwrite("ymin", &ROI::ymin)
         .def_readwrite("ymax", &ROI::ymax)
-        .def("__str__", [](const ROI& self){
-            return fmt::format("ROI: xmin: {} xmax: {} ymin: {} ymax: {}", self.xmin, self.xmax, self.ymin, self.ymax);
-        })
-        .def("__repr__", [](const ROI& self){
-            return fmt::format("<ROI: xmin: {} xmax: {} ymin: {} ymax: {}>", self.xmin, self.xmax, self.ymin, self.ymax);
-        })
+        .def("__str__",
+             [](const ROI &self) {
+                 return fmt::format("ROI: xmin: {} xmax: {} ymin: {} ymax: {}",
+                                    self.xmin, self.xmax, self.ymin, self.ymax);
+             })
+        .def("__repr__",
+             [](const ROI &self) {
+                 return fmt::format(
+                     "<ROI: xmin: {} xmax: {} ymin: {} ymax: {}>", self.xmin,
+                     self.xmax, self.ymin, self.ymax);
+             })
         .def("__iter__", [](const ROI &self) {
-            return py::make_iterator(&self.xmin, &self.ymax+1); //NOLINT
+            return py::make_iterator(&self.xmin, &self.ymax + 1); // NOLINT
         });
-
-    
-
-
-
-
-
 
 #pragma GCC diagnostic pop
     // py::class_<ClusterHeader>(m, "ClusterHeader")

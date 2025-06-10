@@ -21,11 +21,9 @@ using namespace aare;
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Wunused-parameter"
 
-
 template <typename T, uint8_t ClusterSizeX, uint8_t ClusterSizeY,
           typename CoordType = uint16_t>
-void define_ClusterCollector(py::module &m,
-                                       const std::string &typestr) {
+void define_ClusterCollector(py::module &m, const std::string &typestr) {
     auto class_name = fmt::format("ClusterCollector_{}", typestr);
 
     using ClusterType = Cluster<T, ClusterSizeX, ClusterSizeY, CoordType>;

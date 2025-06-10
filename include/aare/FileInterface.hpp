@@ -20,8 +20,10 @@ struct FileConfig {
     uint64_t rows{};
     uint64_t cols{};
     bool operator==(const FileConfig &other) const {
-        return dtype == other.dtype && rows == other.rows && cols == other.cols && geometry == other.geometry &&
-               detector_type == other.detector_type && max_frames_per_file == other.max_frames_per_file;
+        return dtype == other.dtype && rows == other.rows &&
+               cols == other.cols && geometry == other.geometry &&
+               detector_type == other.detector_type &&
+               max_frames_per_file == other.max_frames_per_file;
     }
     bool operator!=(const FileConfig &other) const { return !(*this == other); }
 
@@ -32,8 +34,11 @@ struct FileConfig {
     int max_frames_per_file{};
     size_t total_frames{};
     std::string to_string() const {
-        return "{ dtype: " + dtype.to_string() + ", rows: " + std::to_string(rows) + ", cols: " + std::to_string(cols) +
-               ", geometry: " + geometry.to_string() + ", detector_type: " + ToString(detector_type) +
+        return "{ dtype: " + dtype.to_string() +
+               ", rows: " + std::to_string(rows) +
+               ", cols: " + std::to_string(cols) +
+               ", geometry: " + geometry.to_string() +
+               ", detector_type: " + ToString(detector_type) +
                ", max_frames_per_file: " + std::to_string(max_frames_per_file) +
                ", total_frames: " + std::to_string(total_frames) + " }";
     }
@@ -42,7 +47,8 @@ struct FileConfig {
 /**
  * @brief FileInterface class to define the interface for file operations
  * @note parent class for NumpyFile and RawFile
- * @note all functions are pure virtual and must be implemented by the derived classes
+ * @note all functions are pure virtual and must be implemented by the derived
+ * classes
  */
 class FileInterface {
   public:
@@ -64,17 +70,20 @@ class FileInterface {
      * @param n_frames number of frames to read
      * @return vector of frames
      */
-    virtual std::vector<Frame> read_n(size_t n_frames) = 0; // Is this the right interface?
+    virtual std::vector<Frame>
+    read_n(size_t n_frames) = 0; // Is this the right interface?
 
     /**
-     * @brief read one frame from the file at the current position and store it in the provided buffer
+     * @brief read one frame from the file at the current position and store it
+     * in the provided buffer
      * @param image_buf buffer to store the frame
      * @return void
      */
     virtual void read_into(std::byte *image_buf) = 0;
 
     /**
-     * @brief read n_frames from the file at the current position and store them in the provided buffer
+     * @brief read n_frames from the file at the current position and store them
+     * in the provided buffer
      * @param image_buf buffer to store the frames
      * @param n_frames number of frames to read
      * @return void
@@ -133,7 +142,6 @@ class FileInterface {
      * @return bitdepth of the file
      */
     virtual size_t bitdepth() const = 0;
-
 
     virtual DetectorType detector_type() const = 0;
 

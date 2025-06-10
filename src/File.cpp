@@ -19,28 +19,24 @@ File::File(const std::filesystem::path &fname, const std::string &mode,
             fmt::format("File does not exist: {}", fname.string()));
     }
 
-    // Assuming we are pointing at a master file? 
+    // Assuming we are pointing at a master file?
     // TODO! How do we read raw files directly?
     if (fname.extension() == ".raw" || fname.extension() == ".json") {
         // file_impl = new RawFile(fname, mode, cfg);
         file_impl = std::make_unique<RawFile>(fname, mode);
-    }
-    else if (fname.extension() == ".npy") {
+    } else if (fname.extension() == ".npy") {
         // file_impl = new NumpyFile(fname, mode, cfg);
         file_impl = std::make_unique<NumpyFile>(fname, mode, cfg);
-    }else if(fname.extension() == ".dat"){
+    } else if (fname.extension() == ".dat") {
         file_impl = std::make_unique<JungfrauDataFile>(fname);
     } else {
         throw std::runtime_error("Unsupported file type");
     }
 }
 
+File::File(File &&other) noexcept { std::swap(file_impl, other.file_impl); }
 
-File::File(File &&other) noexcept{
-    std::swap(file_impl, other.file_impl);
-}
-
-File& File::operator=(File &&other) noexcept {
+File &File::operator=(File &&other) noexcept {
     if (this != &other) {
         File tmp(std::move(other));
         std::swap(file_impl, tmp.file_impl);
@@ -70,15 +66,16 @@ size_t File::frame_number(size_t frame_index) {
 }
 
 size_t File::bytes_per_frame() const { return file_impl->bytes_per_frame(); }
-size_t File::pixels_per_frame() const{ return file_impl->pixels_per_frame(); }
+size_t File::pixels_per_frame() const { return file_impl->pixels_per_frame(); }
 void File::seek(size_t frame_index) { file_impl->seek(frame_index); }
 size_t File::tell() const { return file_impl->tell(); }
 size_t File::rows() const { return file_impl->rows(); }
 size_t File::cols() const { return file_impl->cols(); }
 size_t File::bitdepth() const { return file_impl->bitdepth(); }
-size_t File::bytes_per_pixel() const { return file_impl->bitdepth() / bits_per_byte; }
+size_t File::bytes_per_pixel() const {
+    return file_impl->bitdepth() / bits_per_byte;
+}
 
 DetectorType File::detector_type() const { return file_impl->detector_type(); }
-
 
 } // namespace aare

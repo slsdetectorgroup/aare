@@ -2,9 +2,9 @@
 #include <cmath>
 namespace aare {
 
-uint16_t adc_sar_05_decode64to16(uint64_t input){
+uint16_t adc_sar_05_decode64to16(uint64_t input) {
 
-    //we want bits 29,19,28,18,31,21,27,20,24,23,25,22 and then pad to 16
+    // we want bits 29,19,28,18,31,21,27,20,24,23,25,22 and then pad to 16
     uint16_t output = 0;
     output |= ((input >> 22) & 1) << 11;
     output |= ((input >> 25) & 1) << 10;
@@ -21,19 +21,21 @@ uint16_t adc_sar_05_decode64to16(uint64_t input){
     return output;
 }
 
-void adc_sar_05_decode64to16(NDView<uint64_t, 2> input, NDView<uint16_t,2> output){
-    if(input.shape() != output.shape()){
-        throw std::invalid_argument(LOCATION + " input and output shapes must match");
+void adc_sar_05_decode64to16(NDView<uint64_t, 2> input,
+                             NDView<uint16_t, 2> output) {
+    if (input.shape() != output.shape()) {
+        throw std::invalid_argument(LOCATION +
+                                    " input and output shapes must match");
     }
 
-    for(ssize_t i = 0; i < input.shape(0); i++){
-        for(ssize_t j = 0; j < input.shape(1); j++){
-            output(i,j) = adc_sar_05_decode64to16(input(i,j));
+    for (ssize_t i = 0; i < input.shape(0); i++) {
+        for (ssize_t j = 0; j < input.shape(1); j++) {
+            output(i, j) = adc_sar_05_decode64to16(input(i, j));
         }
     }
 }
 
-uint16_t adc_sar_04_decode64to16(uint64_t input){
+uint16_t adc_sar_04_decode64to16(uint64_t input) {
 
     // bit_map = array([15,17,19,21,23,4,6,8,10,12,14,16] LSB->MSB
     uint16_t output = 0;
@@ -52,20 +54,23 @@ uint16_t adc_sar_04_decode64to16(uint64_t input){
     return output;
 }
 
-void adc_sar_04_decode64to16(NDView<uint64_t, 2> input, NDView<uint16_t,2> output){
-    if(input.shape() != output.shape()){
-        throw std::invalid_argument(LOCATION + " input and output shapes must match");
+void adc_sar_04_decode64to16(NDView<uint64_t, 2> input,
+                             NDView<uint16_t, 2> output) {
+    if (input.shape() != output.shape()) {
+        throw std::invalid_argument(LOCATION +
+                                    " input and output shapes must match");
     }
-    for(ssize_t i = 0; i < input.shape(0); i++){
-        for(ssize_t j = 0; j < input.shape(1); j++){
-            output(i,j) = adc_sar_04_decode64to16(input(i,j));
+    for (ssize_t i = 0; i < input.shape(0); i++) {
+        for (ssize_t j = 0; j < input.shape(1); j++) {
+            output(i, j) = adc_sar_04_decode64to16(input(i, j));
         }
     }
 }
 
 double apply_custom_weights(uint16_t input, const NDView<double, 1> weights) {
-    if(weights.size() > 16){
-        throw std::invalid_argument("weights size must be less than or equal to 16");
+    if (weights.size() > 16) {
+        throw std::invalid_argument(
+            "weights size must be less than or equal to 16");
     }
 
     double result = 0.0;
@@ -73,30 +78,30 @@ double apply_custom_weights(uint16_t input, const NDView<double, 1> weights) {
         result += ((input >> i) & 1) * std::pow(weights[i], i);
     }
     return result;
-
 }
 
-void apply_custom_weights(NDView<uint16_t, 1> input, NDView<double, 1> output, const NDView<double,1> weights) {
-    if(input.shape() != output.shape()){
-        throw std::invalid_argument(LOCATION + " input and output shapes must match");
+void apply_custom_weights(NDView<uint16_t, 1> input, NDView<double, 1> output,
+                          const NDView<double, 1> weights) {
+    if (input.shape() != output.shape()) {
+        throw std::invalid_argument(LOCATION +
+                                    " input and output shapes must match");
     }
 
-    //Calculate weights to avoid repeatedly calling std::pow
+    // Calculate weights to avoid repeatedly calling std::pow
     std::vector<double> weights_powers(weights.size());
     for (ssize_t i = 0; i < weights.size(); ++i) {
         weights_powers[i] = std::pow(weights[i], i);
     }
 
     // Apply custom weights to each element in the input array
-    for (ssize_t i = 0; i < input.shape(0); i++) {            
+    for (ssize_t i = 0; i < input.shape(0); i++) {
         double result = 0.0;
-        for (size_t bit_index = 0; bit_index < weights_powers.size(); ++bit_index) {
+        for (size_t bit_index = 0; bit_index < weights_powers.size();
+             ++bit_index) {
             result += ((input(i) >> bit_index) & 1) * weights_powers[bit_index];
         }
         output(i) = result;
     }
 }
-
-
 
 } // namespace aare
