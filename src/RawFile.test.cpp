@@ -200,9 +200,27 @@ TEST_CASE("check find_geometry", "[.integration][.files][.rawfile]") {
                                  ModuleGeometry{0, 0, 256, 512, 0, 0},
                                  ModuleGeometry{512, 0, 256, 512, 0, 1},
                                  ModuleGeometry{0, 256, 256, 512, 1, 0},
-                                 ModuleGeometry{512, 256, 256, 512, 1, 1}}}});
+                                 ModuleGeometry{512, 256, 256, 512, 1, 1}}}},
+
+        TestParameters{
+            "raw/jungfrau_2modules_2interfaces/run_master_0.json", 4,
+            DetectorGeometry{1, 4, 1024, 1024, 0, 0,
+                             std::vector<ModuleGeometry>{
+                                 ModuleGeometry{0, 0, 256, 1024, 0, 0},
+                                 ModuleGeometry{0, 256, 256, 1024, 1, 0},
+                                 ModuleGeometry{0, 512, 256, 1024, 2, 0},
+                                 ModuleGeometry{0, 768, 256, 1024, 3, 0}}}},
+        TestParameters{
+            "raw/W13_230320/"
+            "W13_vthreshscan_m21C_300V_800eV_vrpre3400_master_0.json",
+            2,
+            DetectorGeometry{1, 2, 512, 512, 0, 0,
+                             std::vector<ModuleGeometry>{
+                                 ModuleGeometry{0, 0, 256, 512, 0, 0},
+                                 ModuleGeometry{0, 256, 256, 512, 1, 0}}}});
 
     auto fpath = test_data_path() / test_parameters.master_filename;
+
     REQUIRE(std::filesystem::exists(fpath));
 
     RawFileTestWrapper f(fpath, "r");
@@ -242,7 +260,7 @@ TEST_CASE("check find_geometry", "[.integration][.files][.rawfile]") {
 TEST_CASE("Open multi module file with ROI",
           "[.integration][.files][.rawfile]") {
 
-    auto fpath = test_data_path() / "SingleChipROI/Data_master_0.json";
+    auto fpath = test_data_path() / "raw/SingleChipROI/Data_master_0.json";
     REQUIRE(std::filesystem::exists(fpath));
 
     RawFile f(fpath, "r");

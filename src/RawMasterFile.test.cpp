@@ -153,7 +153,7 @@ TEST_CASE("Parse a master file in old .raw format",
     REQUIRE(std::filesystem::exists(fpath));
     RawMasterFile f(fpath);
 
-    CHECK(f.num_udp_interfaces_per_module() == 1);
+    CHECK(f.udp_interfaces_per_module() == xy{1, 1});
     CHECK(f.n_modules() == 2);
     CHECK(f.geometry().row == 2);
     CHECK(f.geometry().col == 1);

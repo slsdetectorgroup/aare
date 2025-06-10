@@ -139,11 +139,11 @@ size_t RawMasterFile::n_modules() const {
     return m_geometry.row * m_geometry.col;
 }
 
-size_t RawMasterFile::num_udp_interfaces_per_module() const {
-    return m_num_udp_interfaces_per_module;
+xy RawMasterFile::udp_interfaces_per_module() const {
+    return m_udp_interfaces_per_module;
 }
 
-std::optional<uint8_t> RawMasterFile::quad() const { return m_quad; }
+uint8_t RawMasterFile::quad() const { return m_quad; }
 
 // optional values, these may or may not be present in the master file
 // and are therefore modeled as std::optional
@@ -267,10 +267,13 @@ void RawMasterFile::parse_json(const std::filesystem::path &fpath) {
         // not a scan
     }
     try {
-        m_num_udp_interfaces_per_module = j.at("Number of UDP Interfaces");
+        m_udp_interfaces_per_module = {j.at("Number of UDP Interfaces"), 1};
     } catch (const json::out_of_range &e) {
-        if (m_type == DetectorType::Eiger)
-            m_num_udp_interfaces_per_module = 2;
+        if (m_type == DetectorType::Eiger && m_quad == 1)
+            m_udp_interfaces_per_module = {2, 1};
+        else if (m_type == DetectorType::Eiger) {
+            m_udp_interfaces_per_module = {1, 2};
+        }
     }
 
     try {
@@ -347,9 +350,6 @@ void RawMasterFile::parse_raw(const std::filesystem::path &fpath) {
                 if (m_type == DetectorType::Moench) {
                     m_type = DetectorType::Moench03_old;
                 }
-                if (m_type == DetectorType::Eiger) {
-                    m_num_udp_interfaces_per_module = 2;
-                }
             } else if (key == "Timing Mode") {
                 m_timing_mode = StringTo<TimingMode>(value);
             } else if (key == "Image Size") {
@@ -407,10 +407,18 @@ void RawMasterFile::parse_raw(const std::filesystem::path &fpath) {
                     static_cast<uint32_t>(std::stoi(value.substr(1, pos))),
                     static_cast<uint32_t>(std::stoi(value.substr(pos + 1)))};
             } else if (key == "Number of UDP Interfaces") {
-                m_num_udp_interfaces_per_module = std::stoi(value);
+                m_udp_interfaces_per_module = {
+                    static_cast<uint32_t>(std::stoi(value)), 1};
             }
         }
     }
+
+    if (m_type == DetectorType::Eiger && m_quad == 1) {
+        m_udp_interfaces_per_module = {2, 1};
+    } else if (m_type == DetectorType::Eiger) {
+        m_udp_interfaces_per_module = {1, 2};
+    }
+
     if (m_pixels_x == 400 && m_pixels_y == 400) {
         m_type = DetectorType::Moench03_old;
     }

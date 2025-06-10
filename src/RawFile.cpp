@@ -149,19 +149,27 @@ RawMasterFile RawFile::master() const { return m_master; }
 void RawFile::find_geometry() {
 
     for (size_t col = 0; col < m_master.geometry().col;
-         col += m_master.num_udp_interfaces_per_module())
-        for (size_t row = 0; row < m_master.geometry().row; ++row) {
-            for (size_t port = 0;
-                 port < m_master.num_udp_interfaces_per_module(); ++port) {
-                ModuleGeometry g;
-                g.origin_x = (col + port) * m_master.pixels_x();
-                g.origin_y = row * m_master.pixels_y();
-                g.row_index = row;
-                g.col_index = col + port;
-                g.width = m_master.pixels_x();
-                g.height = m_master.pixels_y();
-                m_geometry.module_pixel_0.push_back(g);
-            }
+         col += m_master.udp_interfaces_per_module().col)
+        for (size_t row = 0; row < m_master.geometry().row;
+             row += m_master.udp_interfaces_per_module().row) {
+            for (size_t port_row = 0;
+                 port_row < m_master.udp_interfaces_per_module().row;
+                 ++port_row)
+                for (size_t port_col = 0;
+                     port_col < m_master.udp_interfaces_per_module().col;
+                     ++port_col) {
+                    ModuleGeometry g;
+                    g.origin_x = (col + port_col) * m_master.pixels_x();
+                    g.origin_y = (row + port_row) *
+                                 m_master.pixels_y(); // TODO: quad doesnt seem
+                                                      // to have an effect
+                    g.row_index = m_master.quad() ? (row + port_row + 1) % 2
+                                                  : (row + port_row);
+                    g.col_index = col + port_col;
+                    g.width = m_master.pixels_x();
+                    g.height = m_master.pixels_y();
+                    m_geometry.module_pixel_0.push_back(g);
+                }
         }
 
     m_geometry.pixels_y = (m_master.geometry().row * m_master.pixels_y());
