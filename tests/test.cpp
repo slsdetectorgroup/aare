@@ -2,8 +2,8 @@
 #include <catch2/catch_test_macros.hpp>
 #include <climits>
 #include <filesystem>
-#include <fstream>
 #include <fmt/core.h>
+#include <fstream>
 
 TEST_CASE("Test suite can find data assets", "[.integration]") {
     auto fpath = test_data_path() / "numpy" / "test_numpy_file.npy";

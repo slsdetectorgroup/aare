@@ -1,35 +1,29 @@
 #include "aare/RawSubFile.hpp"
 #include "aare/PixelMap.hpp"
 #include "aare/algorithm.hpp"
-#include "aare/utils/ifstream_helpers.hpp"
 #include "aare/logger.hpp"
-
+#include "aare/utils/ifstream_helpers.hpp"
 
 #include <cstring> // memcpy
 #include <fmt/core.h>
 #include <iostream>
 #include <regex>
 
-
-
-
 namespace aare {
 
 RawSubFile::RawSubFile(const std::filesystem::path &fname,
                        DetectorType detector, size_t rows, size_t cols,
                        size_t bitdepth, uint32_t pos_row, uint32_t pos_col)
-    : m_detector_type(detector), m_bitdepth(bitdepth),
-      m_rows(rows), m_cols(cols),
-      m_bytes_per_frame((m_bitdepth / 8) * m_rows * m_cols), m_pos_row(pos_row),
-      m_pos_col(pos_col) {
+    : m_detector_type(detector), m_bitdepth(bitdepth), m_rows(rows),
+      m_cols(cols), m_bytes_per_frame((m_bitdepth / 8) * m_rows * m_cols),
+      m_pos_row(pos_row), m_pos_col(pos_col) {
 
-    LOG(logDEBUG) << "RawSubFile::RawSubFile()";  
+    LOG(logDEBUG) << "RawSubFile::RawSubFile()";
     if (m_detector_type == DetectorType::Moench03_old) {
         m_pixel_map = GenerateMoench03PixelMap();
     } else if (m_detector_type == DetectorType::Eiger && m_pos_row % 2 == 0) {
         m_pixel_map = GenerateEigerFlipRowsPixelMap();
     }
-
 
     parse_fname(fname);
     scan_files();
@@ -51,7 +45,8 @@ void RawSubFile::seek(size_t frame_index) {
     auto frame_offset = (file_index)
                             ? frame_index - m_last_frame_in_file[file_index - 1]
                             : frame_index;
-    auto byte_offset = frame_offset * (m_bytes_per_frame + sizeof(DetectorHeader));
+    auto byte_offset =
+        frame_offset * (m_bytes_per_frame + sizeof(DetectorHeader));
     m_file.seekg(byte_offset);
 }
 
@@ -69,7 +64,7 @@ void RawSubFile::read_into(std::byte *image_buf, DetectorHeader *header) {
         m_file.seekg(sizeof(DetectorHeader), std::ios::cur);
     }
 
-    if (m_file.fail()){
+    if (m_file.fail()) {
         throw std::runtime_error(LOCATION + ifstream_error_msg(m_file));
     }
 
@@ -78,14 +73,15 @@ void RawSubFile::read_into(std::byte *image_buf, DetectorHeader *header) {
         // read into a temporary buffer and then copy the data to the buffer
         // in the correct order
         // TODO! add 4 bit support
-        if(m_bitdepth == 8){
+        if (m_bitdepth == 8) {
             read_with_map<uint8_t>(image_buf);
-        }else if (m_bitdepth == 16) {
+        } else if (m_bitdepth == 16) {
             read_with_map<uint16_t>(image_buf);
         } else if (m_bitdepth == 32) {
             read_with_map<uint32_t>(image_buf);
-        }else{
-            throw std::runtime_error("Unsupported bitdepth for read with pixel map");
+        } else {
+            throw std::runtime_error(
+                "Unsupported bitdepth for read with pixel map");
         }
 
     } else {
@@ -93,11 +89,11 @@ void RawSubFile::read_into(std::byte *image_buf, DetectorHeader *header) {
         m_file.read(reinterpret_cast<char *>(image_buf), bytes_per_frame());
     }
 
-    if (m_file.fail()){
+    if (m_file.fail()) {
         throw std::runtime_error(LOCATION + ifstream_error_msg(m_file));
     }
 
-    ++ m_current_frame_index;
+    ++m_current_frame_index;
     if (m_current_frame_index >= m_last_frame_in_file[m_current_file_index] &&
         (m_current_frame_index < m_total_frames)) {
         ++m_current_file_index;
@@ -105,7 +101,8 @@ void RawSubFile::read_into(std::byte *image_buf, DetectorHeader *header) {
     }
 }
 
-void RawSubFile::read_into(std::byte *image_buf, size_t n_frames, DetectorHeader *header) {
+void RawSubFile::read_into(std::byte *image_buf, size_t n_frames,
+                           DetectorHeader *header) {
     for (size_t i = 0; i < n_frames; i++) {
         read_into(image_buf, header);
         image_buf += bytes_per_frame();
@@ -115,10 +112,7 @@ void RawSubFile::read_into(std::byte *image_buf, size_t n_frames, DetectorHeader
     }
 }
 
-
-
-template <typename T>
-void RawSubFile::read_with_map(std::byte *image_buf) {
+template <typename T> void RawSubFile::read_with_map(std::byte *image_buf) {
     auto part_buffer = new std::byte[bytes_per_frame()];
     m_file.read(reinterpret_cast<char *>(part_buffer), bytes_per_frame());
     auto *data = reinterpret_cast<T *>(image_buf);
@@ -157,14 +151,17 @@ void RawSubFile::parse_fname(const std::filesystem::path &fname) {
     std::smatch match;
 
     if (std::regex_match(m_base_name, match, pattern)) {
-        m_offset = std::stoi(match[4].str()); // find the first file index in case of a truncated series
-        m_base_name = match[1].str() + match[2].str() + match[3].str() + "{}" + match[5].str();
+        m_offset = std::stoi(match[4].str()); // find the first file index in
+                                              // case of a truncated series
+        m_base_name = match[1].str() + match[2].str() + match[3].str() + "{}" +
+                      match[5].str();
         LOG(logDEBUG) << "Base name: " << m_base_name;
         LOG(logDEBUG) << "Offset: " << m_offset;
         LOG(logDEBUG) << "Path: " << m_path.string();
     } else {
         throw std::runtime_error(
-            LOCATION + fmt::format("Could not parse file name {}", fname.string()));
+            LOCATION +
+            fmt::format("Could not parse file name {}", fname.string()));
     }
 }
 
@@ -175,12 +172,13 @@ std::filesystem::path RawSubFile::fpath(size_t file_index) const {
 
 void RawSubFile::open_file(size_t file_index) {
     m_file.close();
-    auto fname = fpath(file_index+m_offset);
+    auto fname = fpath(file_index + m_offset);
     LOG(logDEBUG) << "RawSubFile::open_file():  " << fname.string();
     m_file.open(fname, std::ios::binary);
     if (!m_file.is_open()) {
         throw std::runtime_error(
-            LOCATION + fmt::format("Could not open file {}", fpath(file_index).string()));
+            LOCATION +
+            fmt::format("Could not open file {}", fpath(file_index).string()));
     }
     m_current_file_index = file_index;
 }
@@ -190,20 +188,21 @@ void RawSubFile::scan_files() {
     // find how many files we have and the number of frames in each file
     m_last_frame_in_file.clear();
     size_t file_index = m_offset;
-    
+
     while (std::filesystem::exists(fpath(file_index))) {
         auto n_frames = std::filesystem::file_size(fpath(file_index)) /
                         (m_bytes_per_frame + sizeof(DetectorHeader));
         m_last_frame_in_file.push_back(n_frames);
-        LOG(logDEBUG) << "Found: " << n_frames << " frames in file: " << fpath(file_index).string();
+        LOG(logDEBUG) << "Found: " << n_frames
+                      << " frames in file: " << fpath(file_index).string();
         ++file_index;
     }
 
     // find where we need to open the next file and total number of frames
     m_last_frame_in_file = cumsum(m_last_frame_in_file);
-    if(m_last_frame_in_file.empty()){
+    if (m_last_frame_in_file.empty()) {
         m_total_frames = 0;
-    }else{
+    } else {
         m_total_frames = m_last_frame_in_file.back();
     }
 }

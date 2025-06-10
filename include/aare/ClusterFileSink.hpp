@@ -49,8 +49,8 @@ class ClusterFileSink {
     ClusterFileSink(ClusterFinderMT<ClusterType, uint16_t, double> *source,
                     const std::filesystem::path &fname) {
         LOG(logDEBUG) << "ClusterFileSink: "
-                       << "source: " << source->sink()
-                       << ", file: " << fname.string();
+                      << "source: " << source->sink()
+                      << ", file: " << fname.string();
         m_source = source->sink();
         m_thread = std::thread(&ClusterFileSink::process, this);
         m_file.open(fname, std::ios::binary);

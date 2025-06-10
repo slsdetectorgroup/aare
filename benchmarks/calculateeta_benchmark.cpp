@@ -41,8 +41,8 @@ BENCHMARK_F(ClusterFixture, Calculate2x2Eta)(benchmark::State &st) {
 }
 
 // almost takes double the time
-BENCHMARK_F(ClusterFixture,
-            CalculateGeneralEtaFor2x2Cluster)(benchmark::State &st) {
+BENCHMARK_F(ClusterFixture, CalculateGeneralEtaFor2x2Cluster)
+(benchmark::State &st) {
     for (auto _ : st) {
         // This code gets timed
         Eta2 eta = calculate_eta2<int, 2, 2>(cluster_2x2);
@@ -59,8 +59,8 @@ BENCHMARK_F(ClusterFixture, Calculate3x3Eta)(benchmark::State &st) {
 }
 
 // almost takes double the time
-BENCHMARK_F(ClusterFixture,
-            CalculateGeneralEtaFor3x3Cluster)(benchmark::State &st) {
+BENCHMARK_F(ClusterFixture, CalculateGeneralEtaFor3x3Cluster)
+(benchmark::State &st) {
     for (auto _ : st) {
         // This code gets timed
         Eta2 eta = calculate_eta2<int, 3, 3>(cluster_3x3);

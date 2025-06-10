@@ -371,8 +371,8 @@ ClusterFile<ClusterType, Enable>::read_frame_without_cut() {
                                  "Could not read number of clusters");
     }
 
-    LOG(logDEBUG1) << "Reading " << n_clusters
-                  << " clusters from frame " << frame_number;
+    LOG(logDEBUG1) << "Reading " << n_clusters << " clusters from frame "
+                   << frame_number;
 
     ClusterVector<ClusterType> clusters(n_clusters);
     clusters.set_frame_number(frame_number);

@@ -45,7 +45,7 @@ class ScanParameters {
     int m_start = 0;
     int m_stop = 0;
     int m_step = 0;
-    //TODO! add settleTime, requires string to time conversion
+    // TODO! add settleTime, requires string to time conversion
 
   public:
     ScanParameters(const std::string &par);
@@ -60,7 +60,6 @@ class ScanParameters {
     bool enabled() const;
     void increment_stop();
 };
-
 
 /**
  * @brief Class for parsing a master file either in our .json format or the old
@@ -101,7 +100,6 @@ class RawMasterFile {
 
     std::optional<ROI> m_roi;
 
-
   public:
     RawMasterFile(const std::filesystem::path &fpath);
 
@@ -129,9 +127,7 @@ class RawMasterFile {
     std::optional<size_t> number_of_rows() const;
     std::optional<uint8_t> quad() const;
 
-
     std::optional<ROI> roi() const;
-
 
     ScanParameters scan_parameters() const;
 
