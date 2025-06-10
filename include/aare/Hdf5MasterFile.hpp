@@ -58,7 +58,7 @@ class Hdf5MasterFile {
     size_t m_max_frames_per_file{};
     FrameDiscardPolicy m_frame_discard_policy{};
     size_t m_frame_padding{};
-    ScanParameters m_scan_parameters;
+    std::optional<ScanParameters> m_scan_parameters;
     size_t m_total_frames_expected{};
     std::optional<ns> m_exptime{};
     std::optional<ns> m_period{};
@@ -116,7 +116,7 @@ class Hdf5MasterFile {
     size_t max_frames_per_file() const;
     const FrameDiscardPolicy &frame_discard_policy() const;
     size_t frame_padding() const;
-    ScanParameters scan_parameters() const;
+    std::optional<ScanParameters> scan_parameters() const;
     size_t total_frames_expected() const;
     std::optional<ns> exptime() const;
     std::optional<ns> period() const;

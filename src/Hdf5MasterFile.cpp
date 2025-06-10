@@ -100,7 +100,7 @@ const FrameDiscardPolicy &Hdf5MasterFile::frame_discard_policy() const {
     return m_frame_discard_policy;
 }
 size_t Hdf5MasterFile::frame_padding() const { return m_frame_padding; }
-ScanParameters Hdf5MasterFile::scan_parameters() const {
+std::optional<ScanParameters> Hdf5MasterFile::scan_parameters() const {
     return m_scan_parameters;
 }
 size_t Hdf5MasterFile::total_frames_expected() const {
@@ -273,17 +273,21 @@ void Hdf5MasterFile::parse_acquisition_metadata(
 
 
         // Scan Parameters
+        H5::Exception::dontPrint();
         try {
             std::string scan_parameters = h5_get_scalar_dataset<std::string>(
             file, std::string(metadata_group_name + "Scan Parameters"));
             m_scan_parameters = ScanParameters(scan_parameters);
             if (dVersion < 6.61){
-                m_scan_parameters.increment_stop(); //adjust for endpoint being included
+                m_scan_parameters
+                    ->increment_stop(); // adjust for endpoint being included
             }
+            LOG(logDEBUG) << "Scan Parameters: " << ToString(m_scan_parameters);
         } catch (H5::FileIException &e) {
             // keep the optional empty
         }
-        LOG(logDEBUG) << "Scan Parameters: " << ToString(m_scan_parameters);
+        H5Eset_auto(H5E_DEFAULT, reinterpret_cast<H5E_auto2_t>(H5Eprint2),
+                    stderr);
 
         // Total Frames Expected
         m_total_frames_expected = h5_get_scalar_dataset<uint64_t>(
@@ -295,10 +299,10 @@ void Hdf5MasterFile::parse_acquisition_metadata(
         try {
             m_exptime = StringTo<ns>(h5_get_scalar_dataset<std::string>(
                 file, std::string(metadata_group_name + "Exposure Time")));
+            LOG(logDEBUG) << "Exptime: " << ToString(m_exptime);
         } catch (H5::FileIException &e) {
             // keep the optional empty
         }
-        LOG(logDEBUG) << "Exptime: " <<  ToString(m_exptime);
         H5Eset_auto(H5E_DEFAULT, reinterpret_cast<H5E_auto2_t>(H5Eprint2), stderr);
 
         // Period
@@ -313,10 +317,17 @@ void Hdf5MasterFile::parse_acquisition_metadata(
         H5Eset_auto(H5E_DEFAULT, reinterpret_cast<H5E_auto2_t>(H5Eprint2), stderr);
 
         // burst mode
-        m_burst_mode = StringTo<BurstMode>(h5_get_scalar_dataset<std::string>(
-            file, std::string(metadata_group_name + "Burst Mode")));
-        LOG(logDEBUG) << "Burst Mode: " << ToString(m_burst_mode);
-
+        H5::Exception::dontPrint();
+        try {
+            m_burst_mode =
+                StringTo<BurstMode>(h5_get_scalar_dataset<std::string>(
+                    file, std::string(metadata_group_name + "Burst Mode")));
+            LOG(logDEBUG) << "Burst Mode: " << ToString(m_burst_mode);
+        } catch (H5::FileIException &e) {
+            // keep the optional empty
+        }
+        H5Eset_auto(H5E_DEFAULT, reinterpret_cast<H5E_auto2_t>(H5Eprint2),
+                    stderr);
 
         // Number of UDP Interfaces
         // Not all detectors write the Number of UDP Interfaces but in case
