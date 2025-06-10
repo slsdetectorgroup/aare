@@ -2,15 +2,16 @@
 #include "aare/geo_helpers.hpp"
 #include "fmt/core.h"
 
-namespace aare{
+namespace aare {
 
 DetectorGeometry update_geometry_with_roi(DetectorGeometry geo, aare::ROI roi) {
-    #ifdef AARE_VERBOSE
+#ifdef AARE_VERBOSE
     fmt::println("update_geometry_with_roi() called with ROI: {} {} {} {}",
                  roi.xmin, roi.xmax, roi.ymin, roi.ymax);
-    fmt::println("Geometry: {} {} {} {} {} {}",
-                 geo.modules_x, geo.modules_y, geo.pixels_x, geo.pixels_y, geo.module_gap_row, geo.module_gap_col);
-    #endif
+    fmt::println("Geometry: {} {} {} {} {} {}", geo.modules_x, geo.modules_y,
+                 geo.pixels_x, geo.pixels_y, geo.module_gap_row,
+                 geo.module_gap_col);
+#endif
     int pos_y = 0;
     int pos_y_increment = 0;
     for (int row = 0; row < geo.modules_y; row++) {
@@ -41,9 +42,9 @@ DetectorGeometry update_geometry_with_roi(DetectorGeometry geo, aare::ROI roi) {
             if (m.origin_y + m.height < roi.ymin) {
                 m.height = 0;
             } else {
-                if ((roi.ymin > m.origin_y) && (roi.ymin < m.origin_y + m.height)) {
+                if ((roi.ymin > m.origin_y) &&
+                    (roi.ymin < m.origin_y + m.height)) {
                     m.height -= roi.ymin - m.origin_y;
-
                 }
                 if (roi.ymax < m.origin_y + original_height) {
                     m.height -= m.origin_y + original_height - roi.ymax;
@@ -51,9 +52,10 @@ DetectorGeometry update_geometry_with_roi(DetectorGeometry geo, aare::ROI roi) {
                 m.origin_y = pos_y;
                 pos_y_increment = m.height;
             }
-            #ifdef AARE_VERBOSE
-    fmt::println("Module {} {} {} {}", m.origin_x, m.origin_y, m.width, m.height);
-    #endif
+#ifdef AARE_VERBOSE
+            fmt::println("Module {} {} {} {}", m.origin_x, m.origin_y, m.width,
+                         m.height);
+#endif
         }
         // increment pos_y
         pos_y += pos_y_increment;
@@ -65,7 +67,6 @@ DetectorGeometry update_geometry_with_roi(DetectorGeometry geo, aare::ROI roi) {
     geo.pixels_y = roi.height();
 
     return geo;
-
 }
 
 } // namespace aare

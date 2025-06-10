@@ -40,15 +40,18 @@ bool parse_bool(const std::string &in);
 
 std::string get_value_from_map(const std::string &mapstr);
 
-std::unordered_map<std::string, std::string> parse_dict(std::string in, const std::vector<std::string> &keys);
+std::unordered_map<std::string, std::string>
+parse_dict(std::string in, const std::vector<std::string> &keys);
 
-template <typename T, size_t N> bool in_array(T val, const std::array<T, N> &arr) {
+template <typename T, size_t N>
+bool in_array(T val, const std::array<T, N> &arr) {
     return std::find(std::begin(arr), std::end(arr), val) != std::end(arr);
 }
 bool is_digits(const std::string &str);
 
 aare::Dtype parse_descr(std::string typestring);
-size_t write_header(const std::filesystem::path &fname, const NumpyHeader &header);
+size_t write_header(const std::filesystem::path &fname,
+                    const NumpyHeader &header);
 size_t write_header(std::ostream &out, const NumpyHeader &header);
 
 } // namespace NumpyHelpers

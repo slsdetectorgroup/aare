@@ -19,7 +19,9 @@ TEST_CASE("Check for quotes and return stripped string") {
     REQUIRE(parse_str("''") == "");
 }
 
-TEST_CASE("parsing a string without quotes throws") { REQUIRE_THROWS(parse_str("hej")); }
+TEST_CASE("parsing a string without quotes throws") {
+    REQUIRE_THROWS(parse_str("hej"));
+}
 
 TEST_CASE("trim whitespace") {
     REQUIRE(trim(" hej ") == "hej");
@@ -53,7 +55,8 @@ TEST_CASE("is element in array") {
 }
 
 TEST_CASE("Parse numpy dict") {
-    std::string in = "{'descr': '<f4', 'fortran_order': False, 'shape': (3, 4)}";
+    std::string in =
+        "{'descr': '<f4', 'fortran_order': False, 'shape': (3, 4)}";
     std::vector<std::string> keys{"descr", "fortran_order", "shape"};
     auto map = parse_dict(in, keys);
     REQUIRE(map["descr"] == "'<f4'");

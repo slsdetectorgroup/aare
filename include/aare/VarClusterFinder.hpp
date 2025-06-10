@@ -38,11 +38,13 @@ template <typename T> class VarClusterFinder {
     bool use_noise_map = false;
     int peripheralThresholdFactor_ = 5;
     int current_label;
-    const std::array<int, 4> di{{0, -1, -1, -1}};              // row ### 8-neighbour by scaning from left to right
-    const std::array<int, 4> dj{{-1, -1, 0, 1}};               // col ### 8-neighbour by scaning from top to bottom
+    const std::array<int, 4> di{
+        {0, -1, -1, -1}}; // row ### 8-neighbour by scaning from left to right
+    const std::array<int, 4> dj{
+        {-1, -1, 0, 1}}; // col ### 8-neighbour by scaning from top to bottom
     const std::array<int, 8> di_{{0, 0, -1, 1, -1, 1, -1, 1}}; // row
     const std::array<int, 8> dj_{{-1, 1, 0, 0, 1, -1, -1, 1}}; // col
-    std::map<int, int> child;                                  // heirachy: key: child; val: parent
+    std::map<int, int> child; // heirachy: key: child; val: parent
     std::unordered_map<int, Hit> h_size;
     std::vector<Hit> hits;
     // std::vector<std::vector<int16_t>> row
@@ -50,7 +52,8 @@ template <typename T> class VarClusterFinder {
 
   public:
     VarClusterFinder(Shape<2> shape, T threshold)
-        : shape_(shape), labeled_(shape, 0), peripheral_labeled_(shape, 0), binary_(shape), threshold_(threshold) {
+        : shape_(shape), labeled_(shape, 0), peripheral_labeled_(shape, 0),
+          binary_(shape), threshold_(threshold) {
         hits.reserve(2000);
     }
 
@@ -60,7 +63,9 @@ template <typename T> class VarClusterFinder {
         noiseMap = noise_map;
         use_noise_map = true;
     }
-    void set_peripheralThresholdFactor(int factor) { peripheralThresholdFactor_ = factor; }
+    void set_peripheralThresholdFactor(int factor) {
+        peripheralThresholdFactor_ = factor;
+    }
     void find_clusters(NDView<T, 2> img);
     void find_clusters_X(NDView<T, 2> img);
     void rec_FillHit(int clusterIndex, int i, int j);
@@ -144,7 +149,8 @@ template <typename T> int VarClusterFinder<T>::check_neighbours(int i, int j) {
     }
 }
 
-template <typename T> void VarClusterFinder<T>::find_clusters(NDView<T, 2> img) {
+template <typename T>
+void VarClusterFinder<T>::find_clusters(NDView<T, 2> img) {
     original_ = img;
     labeled_ = 0;
     peripheral_labeled_ = 0;
@@ -156,7 +162,8 @@ template <typename T> void VarClusterFinder<T>::find_clusters(NDView<T, 2> img) 
     store_clusters();
 }
 
-template <typename T> void VarClusterFinder<T>::find_clusters_X(NDView<T, 2> img) {
+template <typename T>
+void VarClusterFinder<T>::find_clusters_X(NDView<T, 2> img) {
     original_ = img;
     int clusterIndex = 0;
     for (int i = 0; i < shape_[0]; ++i) {
@@ -175,7 +182,8 @@ template <typename T> void VarClusterFinder<T>::find_clusters_X(NDView<T, 2> img
     h_size.clear();
 }
 
-template <typename T> void VarClusterFinder<T>::rec_FillHit(int clusterIndex, int i, int j) {
+template <typename T>
+void VarClusterFinder<T>::rec_FillHit(int clusterIndex, int i, int j) {
     // printf("original_(%d, %d)=%f\n", i, j, original_(i,j));
     // printf("h_size[%d].size=%d\n", clusterIndex, h_size[clusterIndex].size);
     if (h_size[clusterIndex].size < MAX_CLUSTER_SIZE) {
@@ -203,11 +211,15 @@ template <typename T> void VarClusterFinder<T>::rec_FillHit(int clusterIndex, in
             } else {
                 // if (h_size[clusterIndex].size < MAX_CLUSTER_SIZE){
                 //     h_size[clusterIndex].size += 1;
-                //     h_size[clusterIndex].rows[h_size[clusterIndex].size] = row;
-                //     h_size[clusterIndex].cols[h_size[clusterIndex].size] = col;
-                //     h_size[clusterIndex].enes[h_size[clusterIndex].size] = original_(row, col);
+                //     h_size[clusterIndex].rows[h_size[clusterIndex].size] =
+                //     row; h_size[clusterIndex].cols[h_size[clusterIndex].size]
+                //     = col;
+                //     h_size[clusterIndex].enes[h_size[clusterIndex].size] =
+                //     original_(row, col);
                 // }// ? weather to include peripheral pixels
-                original_(row, col) = 0; // remove peripheral pixels, to avoid potential influence for pedestal updating
+                original_(row, col) =
+                    0; // remove peripheral pixels, to avoid potential influence
+                       // for pedestal updating
             }
         }
     }
@@ -275,8 +287,8 @@ template <typename T> void VarClusterFinder<T>::store_clusters() {
     for (int i = 0; i < shape_[0]; ++i) {
         for (int j = 0; j < shape_[1]; ++j) {
             if (labeled_(i, j) != 0 || false
-                // (i-1 >= 0 and labeled_(i-1, j) != 0) or // another circle of peripheral pixels
-                // (j-1 >= 0 and labeled_(i, j-1) != 0) or
+                // (i-1 >= 0 and labeled_(i-1, j) != 0) or // another circle of
+                // peripheral pixels (j-1 >= 0 and labeled_(i, j-1) != 0) or
                 // (i+1 < shape_[0] and labeled_(i+1, j) != 0) or
                 // (j+1 < shape_[1] and labeled_(i, j+1) != 0)
             ) {

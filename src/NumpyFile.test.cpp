@@ -1,8 +1,8 @@
 #include "aare/NumpyFile.hpp"
 #include "aare/NDArray.hpp"
 
-#include <catch2/catch_test_macros.hpp>
 #include "test_config.hpp"
+#include <catch2/catch_test_macros.hpp>
 
 using aare::Dtype;
 using aare::NumpyFile;
@@ -23,7 +23,7 @@ TEST_CASE("Read a 1D numpy file with int32 data type", "[.integration]") {
         REQUIRE(data(i) == i);
     }
 }
- 
+
 TEST_CASE("Read a 3D numpy file with np.double data type", "[.integration]") {
 
     auto fpath = test_data_path() / "numpy" / "test_3d_double.npy";
