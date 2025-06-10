@@ -13,9 +13,9 @@ users using the Python interface.
 Live at head
 ~~~~~~~~~~~~~~~~~~
 
-As a user of the library you should be able to, and is expected to use the latest version. Bug fixes will rarely be backported
-to older releases. By upgrading frequently you will benefit from the latest features and minimize the effort due so changes 
-in the API. 
+As a user of the library you should be able to, and is expected to, use the latest version. Bug fixes will rarely be backported
+to older releases. By upgrading frequently you will benefit from the latest features and minimize the effort to maintain your scripts/code 
+by doing several small upgrades instead of one big upgrade.
 
 
 API
