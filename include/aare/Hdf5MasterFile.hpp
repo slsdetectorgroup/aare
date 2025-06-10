@@ -85,7 +85,7 @@ class Hdf5MasterFile {
     std::optional<size_t> m_transceiver_samples;
     // g1 roi
     std::optional<ROI> m_roi;
-    // counter mask
+    std::optional<size_t> m_counter_mask;
     // exptimearray
     // gatedelay array
     // gates
@@ -143,7 +143,7 @@ class Hdf5MasterFile {
     std::optional<size_t> transceiver_samples() const;
     // g1 roi
     std::optional<ROI> roi() const;
-    // counter mask
+    std::optional<size_t> counter_mask() const;
     // exptimearray
     // gatedelay array
     // gates

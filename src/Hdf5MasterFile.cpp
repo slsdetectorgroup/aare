@@ -156,7 +156,7 @@ std::optional<size_t> Hdf5MasterFile::transceiver_samples() const {
 }
 // g1 roi
 std::optional<ROI> Hdf5MasterFile::roi() const { return m_roi; }
-// counter mask
+std::optional<size_t> Hdf5MasterFile::counter_mask() const { return m_counter_mask; }
 // exptimearray
 // gatedelay array
 // gates
@@ -254,7 +254,7 @@ void Hdf5MasterFile::parse_acquisition_metadata(
             std::string(metadata_group_name + "Number of pixels in x axis"));
         LOG(logDEBUG) << "Pixels in x: " << m_pixels_x;
 
-        // Image Size in Bytes
+        // Max Frames Per File
         m_max_frames_per_file = h5_get_scalar_dataset<int>(
             file, std::string(metadata_group_name + "Maximum frames per file"));
         LOG(logDEBUG) << "Max frames per File: " << m_max_frames_per_file;
@@ -411,10 +411,10 @@ void Hdf5MasterFile::parse_acquisition_metadata(
         // ADC Mask
         H5::Exception::dontPrint();
         try {
-            m_adc_mask = h5_get_scalar_dataset<int>(
+            m_adc_mask = h5_get_scalar_dataset<uint32_t>(
                 file, std::string(metadata_group_name + "ADC Mask"));
         } catch (H5::FileIException &e) {
-            m_adc_mask = 0;
+            // keep the optional empty
         }
         LOG(logDEBUG) << "ADC Mask: " << m_adc_mask;
         H5Eset_auto(H5E_DEFAULT, reinterpret_cast<H5E_auto2_t>(H5Eprint2),
@@ -514,19 +514,7 @@ void Hdf5MasterFile::parse_acquisition_metadata(
         H5Eset_auto(H5E_DEFAULT, reinterpret_cast<H5E_auto2_t>(H5Eprint2),
                     stderr);
 
-        // ROI
-        try {
-            std::string scan_parameters = h5_get_scalar_dataset<std::string>(
-            file, std::string(metadata_group_name + "Scan Parameters"));
-            m_scan_parameters = ScanParameters(scan_parameters);
-            if (dVersion < 6.61){
-                m_scan_parameters.increment_stop(); //adjust for endpoint being included
-            }
-        } catch (H5::FileIException &e) {
-            // keep the optional empty
-        }
-        LOG(logDEBUG) << "Scan Parameters: " << ToString(m_scan_parameters);
-
+        // Rx ROI
         try{
             ROI tmp_roi;
             tmp_roi.xmin = h5_get_scalar_dataset<int>(
@@ -574,7 +562,18 @@ void Hdf5MasterFile::parse_acquisition_metadata(
             m_type = DetectorType::Moench03_old;
         }
 
-        // counter mask
+        // Counter Mask
+        H5::Exception::dontPrint();
+        try {
+            m_counter_mask = h5_get_scalar_dataset<int>(
+                file, std::string(metadata_group_name + "Counter Mask"));
+        } catch (H5::FileIException &e) {
+            // keep the optional empty
+        }
+        LOG(logDEBUG) << "Counter Mask: " << m_counter_mask;
+        H5Eset_auto(H5E_DEFAULT, reinterpret_cast<H5E_auto2_t>(H5Eprint2),
+                    stderr);
+
         // exptimearray
         // gatedelay array
         // gates
