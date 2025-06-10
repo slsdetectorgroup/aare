@@ -219,6 +219,8 @@ void Hdf5MasterFile::parse_acquisition_metadata(
         }
 
         // Scalar Dataset
+        H5::Exception::dontPrint();
+
         // Detector Type
         m_type = StringTo<DetectorType>(h5_get_scalar_dataset<std::string>(
             file, std::string(metadata_group_name + "Detector Type")));
@@ -271,14 +273,12 @@ void Hdf5MasterFile::parse_acquisition_metadata(
             file, std::string(metadata_group_name + "Frame Padding"));
         LOG(logDEBUG) << "Frame Padding: " << m_frame_padding;
 
-
         // Scan Parameters
-        H5::Exception::dontPrint();
         try {
             std::string scan_parameters = h5_get_scalar_dataset<std::string>(
-            file, std::string(metadata_group_name + "Scan Parameters"));
+                file, std::string(metadata_group_name + "Scan Parameters"));
             m_scan_parameters = ScanParameters(scan_parameters);
-            if (dVersion < 6.61){
+            if (dVersion < 6.61) {
                 m_scan_parameters
                     ->increment_stop(); // adjust for endpoint being included
             }
@@ -286,8 +286,6 @@ void Hdf5MasterFile::parse_acquisition_metadata(
         } catch (H5::FileIException &e) {
             // keep the optional empty
         }
-        H5Eset_auto(H5E_DEFAULT, reinterpret_cast<H5E_auto2_t>(H5Eprint2),
-                    stderr);
 
         // Total Frames Expected
         m_total_frames_expected = h5_get_scalar_dataset<uint64_t>(
@@ -295,7 +293,6 @@ void Hdf5MasterFile::parse_acquisition_metadata(
         LOG(logDEBUG) << "Total Frames: " << m_total_frames_expected;
 
         // Exptime
-        H5::Exception::dontPrint();
         try {
             m_exptime = StringTo<ns>(h5_get_scalar_dataset<std::string>(
                 file, std::string(metadata_group_name + "Exposure Time")));
@@ -303,21 +300,17 @@ void Hdf5MasterFile::parse_acquisition_metadata(
         } catch (H5::FileIException &e) {
             // keep the optional empty
         }
-        H5Eset_auto(H5E_DEFAULT, reinterpret_cast<H5E_auto2_t>(H5Eprint2), stderr);
 
         // Period
-        H5::Exception::dontPrint();
         try {
             m_period = StringTo<ns>(h5_get_scalar_dataset<std::string>(
                 file, std::string(metadata_group_name + "Acquisition Period")));
+            LOG(logDEBUG) << "Period: " << ToString(m_period);
         } catch (H5::FileIException &e) {
             // keep the optional empty
         }
-        LOG(logDEBUG) << "Period: " << ToString(m_period);
-        H5Eset_auto(H5E_DEFAULT, reinterpret_cast<H5E_auto2_t>(H5Eprint2), stderr);
 
         // burst mode
-        H5::Exception::dontPrint();
         try {
             m_burst_mode =
                 StringTo<BurstMode>(h5_get_scalar_dataset<std::string>(
@@ -326,101 +319,81 @@ void Hdf5MasterFile::parse_acquisition_metadata(
         } catch (H5::FileIException &e) {
             // keep the optional empty
         }
-        H5Eset_auto(H5E_DEFAULT, reinterpret_cast<H5E_auto2_t>(H5Eprint2),
-                    stderr);
 
         // Number of UDP Interfaces
         // Not all detectors write the Number of UDP Interfaces but in case
-        H5::Exception::dontPrint();
         try {
             m_number_of_udp_interfaces = h5_get_scalar_dataset<int>(
                 file, std::string(metadata_group_name + "Number of UDP Interfaces"));
+            LOG(logDEBUG) << "Number of UDP Interfaces: "
+                          << m_number_of_udp_interfaces;
         } catch (H5::FileIException &e) {
             // keep the optional empty
         }
-        LOG(logDEBUG) << "Number of UDP Interfaces: " << m_number_of_udp_interfaces;
-        H5Eset_auto(H5E_DEFAULT, reinterpret_cast<H5E_auto2_t>(H5Eprint2),
-                    stderr);
-
 
         // Bit Depth
         // Not all detectors write the bitdepth but in case
         // its not there it is 16
-        H5::Exception::dontPrint();
         try {
             m_bitdepth = h5_get_scalar_dataset<int>(
                 file, std::string(metadata_group_name + "Dynamic Range"));
+            LOG(logDEBUG) << "Bit Depth: " << m_bitdepth;
         } catch (H5::FileIException &e) {
             m_bitdepth = 16;
         }
-        LOG(logDEBUG) << "Bit Depth: " << m_bitdepth;
-        H5Eset_auto(H5E_DEFAULT, reinterpret_cast<H5E_auto2_t>(H5Eprint2), stderr);
 
         // Ten Giga
-        H5::Exception::dontPrint();
         try {
             m_ten_giga = h5_get_scalar_dataset<int>(
                 file, std::string(metadata_group_name + "Ten Giga"));
+            LOG(logDEBUG) << "Ten Giga: " << m_ten_giga;
         } catch (H5::FileIException &e) {
             // keep the optional empty
         }
-        LOG(logDEBUG) << "Ten Giga: " << m_ten_giga;
-        H5Eset_auto(H5E_DEFAULT, reinterpret_cast<H5E_auto2_t>(H5Eprint2), stderr);
 
         // thresholdenergy
         // thresholdall energy
 
         // Subexptime
-        H5::Exception::dontPrint();
         try {
             m_subexptime = StringTo<ns>(h5_get_scalar_dataset<std::string>(
                 file, std::string(metadata_group_name + "Sub Exposure Time")));
+            LOG(logDEBUG) << "Subexptime: " << ToString(m_subexptime);
         } catch (H5::FileIException &e) {
             // keep the optional empty
         }
-        LOG(logDEBUG) << "Subexptime: " << ToString(m_subexptime);
-        H5Eset_auto(H5E_DEFAULT, reinterpret_cast<H5E_auto2_t>(H5Eprint2), stderr);
 
         // Subperiod
-        H5::Exception::dontPrint();
         try {
             m_subperiod = StringTo<ns>(h5_get_scalar_dataset<std::string>(
                 file, std::string(metadata_group_name + "Sub Period")));
+            LOG(logDEBUG) << "Subperiod: " << ToString(m_subperiod);
         } catch (H5::FileIException &e) {
             // keep the optional empty
         }
-        LOG(logDEBUG) << "Subperiod: " << ToString(m_subperiod);
-        H5Eset_auto(H5E_DEFAULT, reinterpret_cast<H5E_auto2_t>(H5Eprint2), stderr);
 
         // Quad
-        H5::Exception::dontPrint();
         try {
             m_quad = h5_get_scalar_dataset<int>(
                 file, std::string(metadata_group_name + "Quad"));
+            LOG(logDEBUG) << "Quad: " << m_quad;
         } catch (H5::FileIException &e) {
             // keep the optional empty
         }
-        LOG(logDEBUG) << "Quad: " << m_quad;
-        H5Eset_auto(H5E_DEFAULT, reinterpret_cast<H5E_auto2_t>(H5Eprint2),
-                    stderr);
 
         // Number of Rows
         // Not all detectors write the Number of rows but in case
-        H5::Exception::dontPrint();
         try {
             m_number_of_rows = h5_get_scalar_dataset<int>(
                 file, std::string(metadata_group_name + "Number of rows"));
+            LOG(logDEBUG) << "Number of rows: " << m_number_of_rows;
         } catch (H5::FileIException &e) {
             // keep the optional empty
         }
-        LOG(logDEBUG) << "Number of rows: " << m_number_of_rows;
-        H5Eset_auto(H5E_DEFAULT, reinterpret_cast<H5E_auto2_t>(H5Eprint2),
-                    stderr);
 
         // ratecorr
-    
+
         // ADC Mask
-        H5::Exception::dontPrint();
         try {
             m_adc_mask = h5_get_scalar_dataset<uint32_t>(
                 file, std::string(metadata_group_name + "ADC Mask"));
@@ -428,102 +401,83 @@ void Hdf5MasterFile::parse_acquisition_metadata(
             // keep the optional empty
         }
         LOG(logDEBUG) << "ADC Mask: " << m_adc_mask;
-        H5Eset_auto(H5E_DEFAULT, reinterpret_cast<H5E_auto2_t>(H5Eprint2),
-                    stderr);
 
         // Analog Flag
         // ----------------------------------------------------------------
         // Special treatment of analog flag because of Moench03
-        H5::Exception::dontPrint();
         try {
             m_analog_flag = h5_get_scalar_dataset<int>(
                 file, std::string(metadata_group_name + "Analog Flag"));
+            LOG(logDEBUG) << "Analog Flag: " << m_analog_flag;
         } catch (H5::FileIException &e) {
             // if it doesn't work still set it to one
             // to try to decode analog samples (Old Moench03)
             m_analog_flag = 1;
         }
-        LOG(logDEBUG) << "Analog Flag: " << m_analog_flag;
-        H5Eset_auto(H5E_DEFAULT, reinterpret_cast<H5E_auto2_t>(H5Eprint2),
-                    stderr);
 
         // Analog Samples
-        H5::Exception::dontPrint();
         try {
             if (m_analog_flag) {
                 m_analog_samples = h5_get_scalar_dataset<int>(
                     file, std::string(metadata_group_name + "Analog Samples"));
+                LOG(logDEBUG) << "Analog Samples: " << m_analog_samples;
             }
         } catch (H5::FileIException &e) {
             // keep the optional empty
             // and set analog flag to 0
             m_analog_flag = 0;
         }
-        H5Eset_auto(H5E_DEFAULT, reinterpret_cast<H5E_auto2_t>(H5Eprint2),
-                    stderr);
-        LOG(logDEBUG) << "Analog Samples: " << m_analog_samples;
         //-----------------------------------------------------------------
 
         // Digital Flag, Digital Samples
-        H5::Exception::dontPrint();
         try {
             m_digital_flag = h5_get_scalar_dataset<int>(
                 file, std::string(metadata_group_name + "Digital Flag"));
-            if (m_digital_flag) {
-                m_digital_samples = h5_get_scalar_dataset<int>(
-                    file, std::string(metadata_group_name + "Digital Samples"));
-            }
+            LOG(logDEBUG) << "Digital Flag: " << m_digital_flag;
+        if (m_digital_flag) {
+            m_digital_samples = h5_get_scalar_dataset<int>(
+                file, std::string(metadata_group_name + "Digital Samples"));
+        }
+            LOG(logDEBUG) << "Digital Samples: " << m_digital_samples;
         } catch (H5::FileIException &e) {
             // keep the optional empty
         }
-        LOG(logDEBUG) << "Digital Flag: " << m_digital_flag;
-        LOG(logDEBUG) << "Digital Samples: " << m_digital_samples;
-        H5Eset_auto(H5E_DEFAULT, reinterpret_cast<H5E_auto2_t>(H5Eprint2),
-                    stderr);
 
         // Dbit Offset
-        H5::Exception::dontPrint();
         try {
             m_dbit_offset = h5_get_scalar_dataset<int>(
                 file, std::string(metadata_group_name + "Dbit Offset"));
+            LOG(logDEBUG) << "Dbit Offset: " << m_dbit_offset;
         } catch (H5::FileIException &e) {
             // keep the optional empty
-        }   
-        LOG(logDEBUG) << "Dbit Offset: " << m_dbit_offset;
-        H5Eset_auto(H5E_DEFAULT, reinterpret_cast<H5E_auto2_t>(H5Eprint2),
-                    stderr);
+        }
 
         // dbitlist
 
         // Transceiver Mask
-        H5::Exception::dontPrint();
         try {
             m_transceiver_mask = h5_get_scalar_dataset<int>(
                 file, std::string(metadata_group_name + "Transceiver Mask"));
+            LOG(logDEBUG) << "Transceiver Mask: " << m_transceiver_mask;
         } catch (H5::FileIException &e) {
-            // keep the optional empty  
+            // keep the optional empty
         }
-        LOG(logDEBUG) << "Transceiver Mask: " << m_transceiver_mask;
-        H5Eset_auto(H5E_DEFAULT, reinterpret_cast<H5E_auto2_t>(H5Eprint2),
-                    stderr);    
 
         // Transceiver Flag, Transceiver Samples
-        H5::Exception::dontPrint();
         try {
             m_transceiver_flag = h5_get_scalar_dataset<int>(
                 file, std::string(metadata_group_name + "Transceiver Flag"));
+            LOG(logDEBUG) << "Transceiver Flag: " << m_transceiver_flag;
             if (m_transceiver_flag) {
                 m_transceiver_samples = h5_get_scalar_dataset<int>(
                     file,
                     std::string(metadata_group_name + "Transceiver Samples"));
+                LOG(logDEBUG)
+                    << "Transceiver Samples: " << m_transceiver_samples;
             }
         } catch (H5::FileIException &e) {
             // keep the optional empty
         }
-        LOG(logDEBUG) << "Transceiver Flag: " << m_transceiver_flag;
-        LOG(logDEBUG) << "Transceiver Samples: " << m_transceiver_samples;
-        H5Eset_auto(H5E_DEFAULT, reinterpret_cast<H5E_auto2_t>(H5Eprint2),
-                    stderr);
 
         // Rx ROI
         try{
@@ -546,17 +500,14 @@ void Hdf5MasterFile::parse_acquisition_metadata(
                 }
                 m_roi = tmp_roi;
             }
+            // Not Done TODO
+            // if we have an roi we need to update the geometry for the subfiles
+            if (m_roi) {
+            }
+            LOG(logDEBUG) << "ROI: " << m_roi;
         } catch (H5::FileIException &e) {
             // keep the optional empty
         }
-
-        // Not Done TODO
-        //if we have an roi we need to update the geometry for the subfiles
-        if (m_roi){
-
-        }
-        LOG(logDEBUG) << "ROI: " << m_roi;
-
 
         // Update detector type for Moench
         // TODO! How does this work with old .h5 master files?
@@ -574,16 +525,13 @@ void Hdf5MasterFile::parse_acquisition_metadata(
         }
 
         // Counter Mask
-        H5::Exception::dontPrint();
         try {
             m_counter_mask = h5_get_scalar_dataset<int>(
                 file, std::string(metadata_group_name + "Counter Mask"));
+            LOG(logDEBUG) << "Counter Mask: " << m_counter_mask;
         } catch (H5::FileIException &e) {
             // keep the optional empty
         }
-        LOG(logDEBUG) << "Counter Mask: " << m_counter_mask;
-        H5Eset_auto(H5E_DEFAULT, reinterpret_cast<H5E_auto2_t>(H5Eprint2),
-                    stderr);
 
         // exptimearray
         // gatedelay array
@@ -595,6 +543,8 @@ void Hdf5MasterFile::parse_acquisition_metadata(
             file, std::string(metadata_group_name + "Frames in File"));
         LOG(logDEBUG) << "Frames in File: " << m_frames_in_file;
 
+        H5Eset_auto(H5E_DEFAULT, reinterpret_cast<H5E_auto2_t>(H5Eprint2),
+                    stderr);
 
     } catch (const H5::Exception &e) {
         fmt::print("Exception type: {}\n", typeid(e).name());
