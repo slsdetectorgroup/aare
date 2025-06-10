@@ -21,7 +21,7 @@ class ClusterFileSink {
 
     void process() {
         m_stopped = false;
-        fmt::print("ClusterFileSink started\n");
+        LOG(logDEBUG) << "ClusterFileSink started";
         while (!m_stop_requested || !m_source->isEmpty()) {
             if (ClusterVector<ClusterType> *clusters = m_source->frontPtr();
                 clusters != nullptr) {
@@ -41,13 +41,16 @@ class ClusterFileSink {
                 std::this_thread::sleep_for(m_default_wait);
             }
         }
-        fmt::print("ClusterFileSink stopped\n");
+        LOG(logDEBUG) << "ClusterFileSink stopped";
         m_stopped = true;
     }
 
   public:
     ClusterFileSink(ClusterFinderMT<ClusterType, uint16_t, double> *source,
                     const std::filesystem::path &fname) {
+        LOG(logDEBUG) << "ClusterFileSink: "
+                       << "source: " << source->sink()
+                       << ", file: " << fname.string();
         m_source = source->sink();
         m_thread = std::thread(&ClusterFileSink::process, this);
         m_file.open(fname, std::ios::binary);

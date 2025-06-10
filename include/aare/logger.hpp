@@ -37,7 +37,7 @@ enum TLogLevel {
     logINFOCYAN,
     logINFOMAGENTA,
     logINFO,
-    logDEBUG,
+    logDEBUG,  // constructors, destructors etc. should still give too much output
     logDEBUG1,
     logDEBUG2,
     logDEBUG3,
