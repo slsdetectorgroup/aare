@@ -230,7 +230,7 @@ void Hdf5MasterFile::parse_acquisition_metadata(
             std::ostringstream oss;
             oss << std::fixed << std::setprecision(1) << dVersion;
             m_version = oss.str();
-            LOG(logINFOBLUE) << "Version: " << m_version;
+            LOG(logDEBUG) << "Version: " << m_version;
         }
 
         // Scalar Dataset
@@ -239,54 +239,54 @@ void Hdf5MasterFile::parse_acquisition_metadata(
         // Detector Type
         m_type = StringTo<DetectorType>(h5_get_scalar_dataset<std::string>(
             file, std::string(metadata_group_name + "Detector Type")));
-        LOG(logINFOBLUE) << "Detector Type: " << ToString(m_type);
+        LOG(logDEBUG) << "Detector Type: " << ToString(m_type);
 
         // Timing Mode
         m_timing_mode = StringTo<TimingMode>(h5_get_scalar_dataset<std::string>(
             file, std::string(metadata_group_name + "Timing Mode")));
-        LOG(logINFOBLUE) << "Timing Mode: " << ToString(m_timing_mode);
+        LOG(logDEBUG) << "Timing Mode: " << ToString(m_timing_mode);
 
         // Geometry
         m_geometry.row = h5_get_scalar_dataset<int>(
             file, std::string(metadata_group_name + "Geometry in y axis"));
         m_geometry.col = h5_get_scalar_dataset<int>(
             file, std::string(metadata_group_name + "Geometry in x axis"));
-        LOG(logINFOBLUE) << "Geometry: " << m_geometry.to_string();
+        LOG(logDEBUG) << "Geometry: " << m_geometry.to_string();
 
 
         // Image Size
         m_image_size_in_bytes = h5_get_scalar_dataset<int>(
             file, std::string(metadata_group_name + "Image Size"));
-        LOG(logINFOBLUE) << "Image size: {}\n" << m_image_size_in_bytes;
+        LOG(logDEBUG) << "Image size: " << m_image_size_in_bytes;
 
         // Pixels y
         m_pixels_y = h5_get_scalar_dataset<int>(
             file,
             std::string(metadata_group_name + "Number of pixels in y axis"));
-        LOG(logINFOBLUE) << "Pixels in y: " << m_pixels_y;
+        LOG(logDEBUG) << "Pixels in y: " << m_pixels_y;
 
         // Pixels x
         m_pixels_x = h5_get_scalar_dataset<int>(
             file,
             std::string(metadata_group_name + "Number of pixels in x axis"));
-        LOG(logINFOBLUE) << "Pixels in x: " << m_pixels_x;
+        LOG(logDEBUG) << "Pixels in x: " << m_pixels_x;
 
         // Max Frames Per File
         m_max_frames_per_file = h5_get_scalar_dataset<int>(
             file, std::string(metadata_group_name + "Maximum frames per file"));
-        LOG(logINFOBLUE) << "Max frames per File: " << m_max_frames_per_file;
+        LOG(logDEBUG) << "Max frames per File: " << m_max_frames_per_file;
 
         // Frame Discard Policy
         m_frame_discard_policy =
             StringTo<FrameDiscardPolicy>(h5_get_scalar_dataset<std::string>(
                 file,
                 std::string(metadata_group_name + "Frame Discard Policy")));
-        LOG(logINFOBLUE) << "Frame Discard Policy: " << ToString(m_frame_discard_policy);
+        LOG(logDEBUG) << "Frame Discard Policy: " << ToString(m_frame_discard_policy);
 
         // Frame Padding
         m_frame_padding = h5_get_scalar_dataset<int>(
             file, std::string(metadata_group_name + "Frame Padding"));
-        LOG(logINFOBLUE) << "Frame Padding: " << m_frame_padding;
+        LOG(logDEBUG) << "Frame Padding: " << m_frame_padding;
 
         // Scan Parameters
         try {
@@ -297,7 +297,7 @@ void Hdf5MasterFile::parse_acquisition_metadata(
                 m_scan_parameters
                     ->increment_stop(); // adjust for endpoint being included
             }
-            LOG(logINFOBLUE) << "Scan Parameters: " << ToString(m_scan_parameters);
+            LOG(logDEBUG) << "Scan Parameters: " << ToString(m_scan_parameters);
         } catch (H5::FileIException &e) {
             // keep the optional empty
         }
@@ -305,13 +305,13 @@ void Hdf5MasterFile::parse_acquisition_metadata(
         // Total Frames Expected
         m_total_frames_expected = h5_get_scalar_dataset<size_t>(
             file, std::string(metadata_group_name + "Total Frames"));
-        LOG(logINFOBLUE) << "Total Frames: " << m_total_frames_expected;
+        LOG(logDEBUG) << "Total Frames: " << m_total_frames_expected;
 
         // Exptime
         try {
             m_exptime = StringTo<ns>(h5_get_scalar_dataset<std::string>(
                 file, std::string(metadata_group_name + "Exposure Time")));
-            LOG(logINFOBLUE) << "Exptime: " << ToString(m_exptime);
+            LOG(logDEBUG) << "Exptime: " << ToString(m_exptime);
         } catch (H5::FileIException &e) {
             // keep the optional empty
         }
@@ -320,7 +320,7 @@ void Hdf5MasterFile::parse_acquisition_metadata(
         try {
             m_period = StringTo<ns>(h5_get_scalar_dataset<std::string>(
                 file, std::string(metadata_group_name + "Acquisition Period")));
-            LOG(logINFOBLUE) << "Period: " << ToString(m_period);
+            LOG(logDEBUG) << "Period: " << ToString(m_period);
         } catch (H5::FileIException &e) {
             // keep the optional empty
         }
@@ -330,7 +330,7 @@ void Hdf5MasterFile::parse_acquisition_metadata(
             m_burst_mode =
                 StringTo<BurstMode>(h5_get_scalar_dataset<std::string>(
                     file, std::string(metadata_group_name + "Burst Mode")));
-            LOG(logINFOBLUE) << "Burst Mode: " << ToString(m_burst_mode);
+            LOG(logDEBUG) << "Burst Mode: " << ToString(m_burst_mode);
         } catch (H5::FileIException &e) {
             // keep the optional empty
         }
@@ -341,7 +341,7 @@ void Hdf5MasterFile::parse_acquisition_metadata(
             m_number_of_udp_interfaces = h5_get_scalar_dataset<int>(
                 file,
                 std::string(metadata_group_name + "Number of UDP Interfaces"));
-            LOG(logINFOBLUE) << "Number of UDP Interfaces: "
+            LOG(logDEBUG) << "Number of UDP Interfaces: "
                           << m_number_of_udp_interfaces;
         } catch (H5::FileIException &e) {
             // keep the optional empty
@@ -353,7 +353,7 @@ void Hdf5MasterFile::parse_acquisition_metadata(
         try {
             m_bitdepth = h5_get_scalar_dataset<int>(
                 file, std::string(metadata_group_name + "Dynamic Range"));
-            LOG(logINFOBLUE) << "Bit Depth: " << m_bitdepth;
+            LOG(logDEBUG) << "Bit Depth: " << m_bitdepth;
         } catch (H5::FileIException &e) {
             m_bitdepth = 16;
         }
@@ -362,7 +362,7 @@ void Hdf5MasterFile::parse_acquisition_metadata(
         try {
             m_ten_giga = h5_get_scalar_dataset<bool>(
                 file, std::string(metadata_group_name + "Ten Giga Enable"));
-            LOG(logINFOBLUE) << "Ten Giga Enable: " << m_ten_giga;
+            LOG(logDEBUG) << "Ten Giga Enable: " << m_ten_giga;
         } catch (H5::FileIException &e) {
             // keep the optional empty
         }
@@ -371,7 +371,7 @@ void Hdf5MasterFile::parse_acquisition_metadata(
         try {
             m_threshold_energy = h5_get_scalar_dataset<int>(
                 file, std::string(metadata_group_name + "Threshold Energy"));
-            LOG(logINFOBLUE) << "Threshold Energy: " << m_threshold_energy;
+            LOG(logDEBUG) << "Threshold Energy: " << m_threshold_energy;
         } catch (H5::FileIException &e) {
             // keep the optional empty
         }
@@ -382,7 +382,7 @@ void Hdf5MasterFile::parse_acquisition_metadata(
                 h5_get_scalar_dataset<std::string>(
                     file,
                     std::string(metadata_group_name + "Threshold Energies")));
-            LOG(logINFOBLUE) << "Threshold Energies: "
+            LOG(logDEBUG) << "Threshold Energies: "
                           << ToString(m_threshold_energy_all);
         } catch (H5::FileIException &e) {
             std::cout << "No Threshold Energies found in file: "
@@ -394,7 +394,7 @@ void Hdf5MasterFile::parse_acquisition_metadata(
         try {
             m_subexptime = StringTo<ns>(h5_get_scalar_dataset<std::string>(
                 file, std::string(metadata_group_name + "Sub Exposure Time")));
-            LOG(logINFOBLUE) << "Subexptime: " << ToString(m_subexptime);
+            LOG(logDEBUG) << "Subexptime: " << ToString(m_subexptime);
         } catch (H5::FileIException &e) {
             // keep the optional empty
         }
@@ -403,7 +403,7 @@ void Hdf5MasterFile::parse_acquisition_metadata(
         try {
             m_subperiod = StringTo<ns>(h5_get_scalar_dataset<std::string>(
                 file, std::string(metadata_group_name + "Sub Period")));
-            LOG(logINFOBLUE) << "Subperiod: " << ToString(m_subperiod);
+            LOG(logDEBUG) << "Subperiod: " << ToString(m_subperiod);
         } catch (H5::FileIException &e) {
             // keep the optional empty
         }
@@ -412,7 +412,7 @@ void Hdf5MasterFile::parse_acquisition_metadata(
         try {
             m_quad = h5_get_scalar_dataset<bool>(
                 file, std::string(metadata_group_name + "Quad"));
-            LOG(logINFOBLUE) << "Quad: " << m_quad;
+            LOG(logDEBUG) << "Quad: " << m_quad;
         } catch (H5::FileIException &e) {
             // keep the optional empty
         }
@@ -422,7 +422,7 @@ void Hdf5MasterFile::parse_acquisition_metadata(
         try {
             m_number_of_rows = h5_get_scalar_dataset<int>(
                 file, std::string(metadata_group_name + "Number of rows"));
-            LOG(logINFOBLUE) << "Number of rows: " << m_number_of_rows;
+            LOG(logDEBUG) << "Number of rows: " << m_number_of_rows;
         } catch (H5::FileIException &e) {
             // keep the optional empty
         }
@@ -433,7 +433,7 @@ void Hdf5MasterFile::parse_acquisition_metadata(
                 h5_get_scalar_dataset<std::string>(
                     file,
                     std::string(metadata_group_name + "Rate Corrections")));
-            LOG(logINFOBLUE) << "Rate Corrections: "
+            LOG(logDEBUG) << "Rate Corrections: "
                           << ToString(m_rate_corrections);
         } catch (H5::FileIException &e) {
             // keep the optional empty
@@ -446,7 +446,7 @@ void Hdf5MasterFile::parse_acquisition_metadata(
         } catch (H5::FileIException &e) {
             // keep the optional empty
         }
-        LOG(logINFOBLUE) << "ADC Mask: " << m_adc_mask;
+        LOG(logDEBUG) << "ADC Mask: " << m_adc_mask;
 
         // Analog Flag
         // ----------------------------------------------------------------
@@ -454,7 +454,7 @@ void Hdf5MasterFile::parse_acquisition_metadata(
         try {
             m_analog_flag = h5_get_scalar_dataset<uint8_t>(
                 file, std::string(metadata_group_name + "Analog Flag"));
-            LOG(logINFOBLUE) << "Analog Flag: " << m_analog_flag;
+            LOG(logDEBUG) << "Analog Flag: " << m_analog_flag;
         } catch (H5::FileIException &e) {
             // if it doesn't work still set it to one
             // to try to decode analog samples (Old Moench03)
@@ -466,7 +466,7 @@ void Hdf5MasterFile::parse_acquisition_metadata(
             if (m_analog_flag) {
                 m_analog_samples = h5_get_scalar_dataset<int>(
                     file, std::string(metadata_group_name + "Analog Samples"));
-                LOG(logINFOBLUE) << "Analog Samples: " << m_analog_samples;
+                LOG(logDEBUG) << "Analog Samples: " << m_analog_samples;
             }
         } catch (H5::FileIException &e) {
             // keep the optional empty
@@ -479,12 +479,12 @@ void Hdf5MasterFile::parse_acquisition_metadata(
         try {
             m_digital_flag = h5_get_scalar_dataset<bool>(
                 file, std::string(metadata_group_name + "Digital Flag"));
-            LOG(logINFOBLUE) << "Digital Flag: " << m_digital_flag;
+            LOG(logDEBUG) << "Digital Flag: " << m_digital_flag;
             if (m_digital_flag) {
                 m_digital_samples = h5_get_scalar_dataset<int>(
                     file, std::string(metadata_group_name + "Digital Samples"));
             }
-            LOG(logINFOBLUE) << "Digital Samples: " << m_digital_samples;
+            LOG(logDEBUG) << "Digital Samples: " << m_digital_samples;
         } catch (H5::FileIException &e) {
             m_digital_flag = false;
         }
@@ -493,7 +493,7 @@ void Hdf5MasterFile::parse_acquisition_metadata(
         try {
             m_dbit_offset = h5_get_scalar_dataset<int>(
                 file, std::string(metadata_group_name + "Dbit Offset"));
-            LOG(logINFOBLUE) << "Dbit Offset: " << m_dbit_offset;
+            LOG(logDEBUG) << "Dbit Offset: " << m_dbit_offset;
         } catch (H5::FileIException &e) {
             // keep the optional empty
         }
@@ -502,7 +502,7 @@ void Hdf5MasterFile::parse_acquisition_metadata(
         try {
             m_dbit_list = h5_get_scalar_dataset<size_t>(
                 file, std::string(metadata_group_name + "Dbit Bitset List"));
-            LOG(logINFOBLUE) << "Dbit list: " << m_dbit_list;
+            LOG(logDEBUG) << "Dbit list: " << m_dbit_list;
         } catch (H5::FileIException &e) {
             // keep the optional empty
         }
@@ -511,7 +511,7 @@ void Hdf5MasterFile::parse_acquisition_metadata(
         try {
             m_transceiver_mask = h5_get_scalar_dataset<int>(
                 file, std::string(metadata_group_name + "Transceiver Mask"));
-            LOG(logINFOBLUE) << "Transceiver Mask: " << m_transceiver_mask;
+            LOG(logDEBUG) << "Transceiver Mask: " << m_transceiver_mask;
         } catch (H5::FileIException &e) {
             // keep the optional empty
         }
@@ -520,12 +520,12 @@ void Hdf5MasterFile::parse_acquisition_metadata(
         try {
             m_transceiver_flag = h5_get_scalar_dataset<bool>(
                 file, std::string(metadata_group_name + "Transceiver Flag"));
-            LOG(logINFOBLUE) << "Transceiver Flag: " << m_transceiver_flag;
+            LOG(logDEBUG) << "Transceiver Flag: " << m_transceiver_flag;
             if (m_transceiver_flag) {
                 m_transceiver_samples = h5_get_scalar_dataset<int>(
                     file,
                     std::string(metadata_group_name + "Transceiver Samples"));
-                LOG(logINFOBLUE)
+                LOG(logDEBUG)
                     << "Transceiver Samples: " << m_transceiver_samples;
             }
         } catch (H5::FileIException &e) {
@@ -557,7 +557,7 @@ void Hdf5MasterFile::parse_acquisition_metadata(
             // if we have an roi we need to update the geometry for the subfiles
             if (m_roi) {
             }
-            LOG(logINFOBLUE) << "ROI: " << m_roi;
+            LOG(logDEBUG) << "ROI: " << m_roi;
         } catch (H5::FileIException &e) {
             // keep the optional empty
         }
@@ -581,7 +581,7 @@ void Hdf5MasterFile::parse_acquisition_metadata(
         try {
             m_counter_mask = h5_get_scalar_dataset<int>(
                 file, std::string(metadata_group_name + "Counter Mask"));
-            LOG(logINFOBLUE) << "Counter Mask: " << m_counter_mask;
+            LOG(logDEBUG) << "Counter Mask: " << m_counter_mask;
         } catch (H5::FileIException &e) {
             // keep the optional empty
         }
@@ -591,7 +591,7 @@ void Hdf5MasterFile::parse_acquisition_metadata(
             m_exptime_array = StringTo<std::vector<ns>>(
                 h5_get_scalar_dataset<std::string>(
                     file, std::string(metadata_group_name + "Exposure Times")));
-            LOG(logINFOBLUE) << "Exposure Times: " << ToString(m_exptime_array);
+            LOG(logDEBUG) << "Exposure Times: " << ToString(m_exptime_array);
         } catch (H5::FileIException &e) {
             // keep the optional empty
         }
@@ -601,7 +601,7 @@ void Hdf5MasterFile::parse_acquisition_metadata(
             m_gate_delay_array = StringTo<std::vector<ns>>(
                 h5_get_scalar_dataset<std::string>(
                     file, std::string(metadata_group_name + "Gate Delays")));
-            LOG(logINFOBLUE) << "Gate Delays: " << ToString(m_gate_delay_array);
+            LOG(logDEBUG) << "Gate Delays: " << ToString(m_gate_delay_array);
         } catch (H5::FileIException &e) {
             // keep the optional empty
         }
@@ -610,7 +610,7 @@ void Hdf5MasterFile::parse_acquisition_metadata(
         try {
             m_gates = h5_get_scalar_dataset<int>(
                 file, std::string(metadata_group_name + "Gates"));
-            LOG(logINFOBLUE) << "Gates: " << m_gates;
+            LOG(logDEBUG) << "Gates: " << m_gates;
         } catch (H5::FileIException &e) {
             // keep the optional empty
         }
@@ -619,7 +619,7 @@ void Hdf5MasterFile::parse_acquisition_metadata(
         try {
             m_additional_json_header = StringTo<std::map<std::string, std::string>>(h5_get_scalar_dataset<std::string>(
                 file, std::string(metadata_group_name + "Additional JSON Header")));
-            LOG(logINFOBLUE) << "Additional JSON Header: " << ToString(m_additional_json_header);
+            LOG(logDEBUG) << "Additional JSON Header: " << ToString(m_additional_json_header);
         } catch (H5::FileIException &e) {
             // keep the optional empty
         }
@@ -627,7 +627,7 @@ void Hdf5MasterFile::parse_acquisition_metadata(
         // Frames in File
         m_frames_in_file = h5_get_scalar_dataset<size_t>(
             file, std::string(metadata_group_name + "Frames in File"));
-        LOG(logINFOBLUE) << "Frames in File: " << m_frames_in_file;
+        LOG(logDEBUG) << "Frames in File: " << m_frames_in_file;
 
         H5Eset_auto(H5E_DEFAULT, reinterpret_cast<H5E_auto2_t>(H5Eprint2),
                     stderr);
