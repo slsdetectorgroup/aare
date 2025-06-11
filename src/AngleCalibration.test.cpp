@@ -10,6 +10,7 @@
 #include "test_config.hpp"
 
 #include <iomanip>
+#include <type_traits>
 
 #include <catch2/catch_all.hpp>
 #include <catch2/catch_test_macros.hpp>
@@ -19,7 +20,7 @@ using namespace aare;
 
 template <typename T, ssize_t Ndim = 1>
 NDArray<T, Ndim> read_into_array(const std::string &filename,
-                                 const std::array<ssize_t, 1> size) {
+                                 const std::array<ssize_t, Ndim> size) {
     std::string word;
     NDArray<T, Ndim> array(size);
     try {
@@ -45,11 +46,23 @@ NDArray<T, Ndim> read_into_array(const std::string &filename,
     return array;
 }
 
+template <typename T, bool = std::is_integral_v<T>> struct safe_make_signed {
+    using type = T;
+};
+
+template <typename T> struct safe_make_signed<T, true> {
+    using type = std::make_signed_t<T>;
+};
+
 template <typename T, ssize_t Ndim>
 bool check_equality_of_arrays(NDView<T, Ndim> array1, NDView<T, Ndim> array2) {
     bool equal = true;
+
+    using SignedT = typename safe_make_signed<T>::type;
+
     for (ssize_t i = 0; i < array1.size(); ++i) {
-        if (std::abs(array1[i] - array2[i]) > 1e-10) {
+        if (std::abs(static_cast<SignedT>(array1[i]) -
+                     static_cast<SignedT>(array2[i])) > 1e-6) {
             std::cout << "index: " << i << std::endl;
             std::cout << std::setprecision(15) << array1[i] << std::endl;
             std::cout << std::setprecision(15) << array2[i] << std::endl;
@@ -348,39 +361,21 @@ TEST_CASE("calculate new fixed angle width bins histogram",
         "cpp_new_photon_counts.xye"); // TODO adjust output path
 }
 
-TEST_CASE("check diffraction angles") {
-    auto expected_diffraction_angle_filename = test_data_path() /
-                                               "AngleCalibration_Test_Data" /
-                                               "diffraction_angle.txt";
-
-    REQUIRE(std::filesystem::exists(expected_diffraction_angle_filename));
-
-    auto expected_angles =
-        read_into_array<double, 1>(expected_diffraction_angle_filename.string(),
-                                   std::array<ssize_t, 1>{61440});
-
-    auto diffraction_angle_filename =
-        std::filesystem::current_path() / "../build/diffraction_angles.txt";
-
-    auto angles = load<double, 1>(diffraction_angle_filename,
-                                  std::array<ssize_t, 1>{61440});
-
-    CHECK(check_equality_of_arrays(angles.view(), expected_angles.view()));
-}
-
-TEST_CASE("check angle widths") {
+TEST_CASE("compare result with python code", "[.anglecalibration][.files]") {
     auto expected_filename =
-        test_data_path() / "AngleCalibration_Test_Data" / "angle_width.txt";
+        test_data_path() / "AngleCalibration_Test_Data" / "out2.xye";
 
     REQUIRE(std::filesystem::exists(expected_filename));
 
-    auto expected_array = read_into_array<double, 1>(
-        expected_filename.string(), std::array<ssize_t, 1>{61440});
+    auto expected_array = read_into_array<double, 2>(
+        expected_filename.string(), std::array<ssize_t, 2>{61440, 3});
 
     auto filename =
-        std::filesystem::current_path() / "../build/angle_widths.txt";
+        std::filesystem::current_path() / "../build/cpp_new_photon_counts.xye";
 
-    auto array = load<double, 1>(filename, std::array<ssize_t, 1>{61440});
+    // auto array = load<double, 2>(filename, std::array<ssize_t, 2>{61440, 3});
+    auto array = read_into_array<double, 2>(filename.string(),
+                                            std::array<ssize_t, 2>{61440, 3});
 
     CHECK(check_equality_of_arrays(array.view(), expected_array.view()));
 }

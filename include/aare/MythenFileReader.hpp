@@ -34,21 +34,22 @@ class MythenFileReader : public HDF5FileReader {
         std::string current_file_name =
             m_base_path / (file_prefix + std::to_string(frame_index) + ".h5");
 
+        MythenFrame frame;
         open_file(current_file_name);
 
         auto dataset_photon_count =
             get_dataset("/entry/instrument/detector/data");
 
-        NDArray photon_counts =
+        frame.photon_counts =
             dataset_photon_count.store_as_ndarray<uint32_t, 1>();
+
+        ++frame.photon_counts;
 
         auto dataset_detector_angle =
             get_dataset("/entry/instrument/NDAttributes/DetectorAngle");
 
-        double detector_angle;
-
         dataset_detector_angle.read_into_buffer(
-            reinterpret_cast<std::byte *>(&detector_angle));
+            reinterpret_cast<std::byte *>(&frame.detector_angle));
 
         auto dataset_channel_number =
             get_dataset("/entry/instrument/NDAttributes/CounterMask");
@@ -64,13 +65,13 @@ class MythenFileReader : public HDF5FileReader {
         // significant
         //  bit is ask Anna again
 
-        std::array<uint8_t, 3> channel_mask{binary_channel_numbers[0],
-                                            binary_channel_numbers[1],
-                                            binary_channel_numbers[2]};
+        frame.channel_mask = std::array<uint8_t, 3>{binary_channel_numbers[0],
+                                                    binary_channel_numbers[1],
+                                                    binary_channel_numbers[2]};
 
         close_file();
 
-        return MythenFrame{photon_counts, detector_angle, channel_mask};
+        return frame;
     }
 
   private:

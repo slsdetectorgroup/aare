@@ -236,16 +236,11 @@ void AngleCalibration::redistribute_photon_counts_to_fixed_angle_bins(
         throw std::runtime_error("wrong number of strips read");
     }
 
-    // NDArray<double, 1> diffraction_angles(
-    // std::array<ssize_t, 1>{mythen_detector->num_strips()}, 0.0);
-
-    // NDArray<double, 1> angle_widths(
-    // std::array<ssize_t, 1>{mythen_detector->num_strips()}, 0.0);
-
     ssize_t num_bins1 = mythen_detector->min_angle() / histogram_bin_width;
     ssize_t num_bins2 = mythen_detector->max_angle() / histogram_bin_width;
 
-    std::cout << "position: " << frame.detector_angle << std::endl;
+    std::cout << "position: " << frame.detector_angle
+              << std::endl; // replace with log
 
     for (ssize_t strip_index = 0; strip_index < mythen_detector->num_strips();
          ++strip_index) {
@@ -274,16 +269,12 @@ void AngleCalibration::redistribute_photon_counts_to_fixed_angle_bins(
         diffraction_angle += (frame.detector_angle + mythen_detector->dtt0() +
                               mythen_detector->bloffset());
 
-        // diffraction_angles[strip_index] = diffraction_angle;
-
         if (diffraction_angle < mythen_detector->min_angle() ||
             diffraction_angle > mythen_detector->max_angle())
             continue;
 
         double angle_covered_by_strip =
             angular_strip_width_from_DG_parameters(strip_index);
-
-        // angle_widths[strip_index] = angle_covered_by_strip;
 
         double photon_count_per_bin = histogram_bin_width *
                                       corrected_photon_count /
@@ -331,9 +322,6 @@ void AngleCalibration::redistribute_photon_counts_to_fixed_angle_bins(
             }
         }
     }
-
-    // std::string filename = "angle_widths.txt";
-    // save(angle_widths, filename);
 }
 
 void AngleCalibration::write_to_file(const std::string &filename) {

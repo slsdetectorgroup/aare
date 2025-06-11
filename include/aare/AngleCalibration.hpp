@@ -205,15 +205,11 @@ class FlatField {
                                                      acc.second + 1);
             });
 
-        std::cout << "sum: " << sum << std::endl;
-        std::cout << "count: " << count << std::endl;
         return sum / count;
     }
 
     NDArray<double, 1> inverse_normalized_flatfield(double tolerance = 0.001) {
         double mean = calculate_mean(tolerance);
-
-        std::cout << "mean: " << mean << std::endl;
 
         NDArray<double, 1> inverse_normalized_flatfield(flat_field.shape());
 
