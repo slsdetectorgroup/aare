@@ -80,7 +80,7 @@ void define_hdf5_master_file_bindings(py::module &m) {
         .def_property_readonly("number_of_rows",
                                &Hdf5MasterFile::number_of_rows)
         .def_property_readonly("quad", &Hdf5MasterFile::quad);
-        //.def_property_readonly("scan_parameters",
-        //                       &Hdf5MasterFile::scan_parameters)
-        //.def_property_readonly("roi", &Hdf5MasterFile::roi);
+    //.def_property_readonly("scan_parameters",
+    //                       &Hdf5MasterFile::scan_parameters)
+    //.def_property_readonly("roi", &Hdf5MasterFile::roi);
 }

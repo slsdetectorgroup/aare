@@ -40,7 +40,7 @@ File::File(const std::filesystem::path &fname, const std::string &mode,
         throw std::runtime_error("Enable HDF5 compile option: AARE_HDF5=ON");
     }
 #endif
-    else if(fname.extension() == ".dat"){
+    else if (fname.extension() == ".dat") {
         file_impl = std::make_unique<JungfrauDataFile>(fname);
     } else {
         throw std::runtime_error("Unsupported file type");

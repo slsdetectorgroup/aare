@@ -64,7 +64,7 @@ size_t Hdf5File::frame_number(size_t frame_index) {
     uint64_t fnum{0};
     int part_index = 0; // assuming first part
     m_header_datasets[0]->get_header_into(frame_index, part_index,
-                                       reinterpret_cast<std::byte *>(&fnum));
+                                          reinterpret_cast<std::byte *>(&fnum));
     return fnum;
 }
 
@@ -129,11 +129,11 @@ void Hdf5File::get_data_into(size_t frame_index, std::byte *frame_buffer,
 void Hdf5File::get_header_into(size_t frame_index, int part_index,
                                DetectorHeader *header) {
     try {
-        read_hdf5_header_fields(header,
-                                [&](size_t iParameter, std::byte *dest) {
-                                    m_header_datasets[iParameter]->get_header_into(
-                                        frame_index, part_index, dest);
-                                });
+        read_hdf5_header_fields(header, [&](size_t iParameter,
+                                            std::byte *dest) {
+            m_header_datasets[iParameter]->get_header_into(frame_index,
+                                                           part_index, dest);
+        });
         LOG(logDEBUG5) << "Read 1D header for frame " << frame_index;
     } catch (const H5::Exception &e) {
         fmt::print("Exception type: {}\n", typeid(e).name());
@@ -169,7 +169,7 @@ DetectorHeader Hdf5File::read_header(const std::filesystem::path &fname) {
 Hdf5File::~Hdf5File() {}
 
 const std::string Hdf5File::metadata_group_name = "/entry/data/";
-const std::vector<std::string> Hdf5File::header_dataset_names = {        
+const std::vector<std::string> Hdf5File::header_dataset_names = {
     "frame number",
     "exp length or sub exposure time",
     "packets caught",
@@ -183,21 +183,22 @@ const std::vector<std::string> Hdf5File::header_dataset_names = {
     "detector specific 4",
     "detector type",
     "detector header version",
-    "packets caught bit mask"
-};
+    "packets caught bit mask"};
 
 void Hdf5File::open_data_file() {
     if (m_mode != "r")
         throw std::runtime_error(LOCATION +
                                  "Unsupported mode. Can only read Hdf5 files.");
     try {
-        m_data_dataset = std::make_unique<H5Handles>(m_master.master_fname().string(), metadata_group_name + "/data");
+        m_data_dataset = std::make_unique<H5Handles>(
+            m_master.master_fname().string(), metadata_group_name + "/data");
 
         m_total_frames = m_data_dataset->get_dims()[0];
         m_rows = m_data_dataset->get_dims()[1];
         m_cols = m_data_dataset->get_dims()[2];
-        //fmt::print("Data Dataset dimensions: frames = {}, rows = {}, cols = {}\n",
-                  // m_total_frames, m_rows, m_cols);
+        // fmt::print("Data Dataset dimensions: frames = {}, rows = {}, cols =
+        // {}\n",
+        //  m_total_frames, m_rows, m_cols);
     } catch (const H5::Exception &e) {
         m_data_dataset.reset();
         fmt::print("Exception type: {}\n", typeid(e).name());
@@ -213,8 +214,12 @@ void Hdf5File::open_header_files() {
                                  "Unsupported mode. Can only read Hdf5 files.");
     try {
         for (size_t i = 0; i != header_dataset_names.size(); ++i) {
-            m_header_datasets.push_back(std::make_unique<H5Handles>(m_master.master_fname().string(), metadata_group_name + header_dataset_names[i]));
-            LOG(logDEBUG) << header_dataset_names[i] << " Dataset dimensions: size = " << m_header_datasets[i]->get_dims()[0];
+            m_header_datasets.push_back(std::make_unique<H5Handles>(
+                m_master.master_fname().string(),
+                metadata_group_name + header_dataset_names[i]));
+            LOG(logDEBUG) << header_dataset_names[i]
+                          << " Dataset dimensions: size = "
+                          << m_header_datasets[i]->get_dims()[0];
         }
     } catch (const H5::Exception &e) {
         m_header_datasets.clear();

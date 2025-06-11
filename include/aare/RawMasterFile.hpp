@@ -39,7 +39,6 @@ class RawFileNameComponents {
     void set_old_scheme(bool old_scheme);
 };
 
-
 /**
  * @brief Class for parsing a master file either in our .json format or the old
  * .raw format

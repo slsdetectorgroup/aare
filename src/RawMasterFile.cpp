@@ -61,7 +61,6 @@ const std::string &RawFileNameComponents::base_name() const {
 const std::string &RawFileNameComponents::ext() const { return m_ext; }
 int RawFileNameComponents::file_index() const { return m_file_index; }
 
-
 RawMasterFile::RawMasterFile(const std::filesystem::path &fpath)
     : m_fnc(fpath) {
     if (!std::filesystem::exists(fpath)) {

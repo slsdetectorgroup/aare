@@ -224,33 +224,32 @@ struct ROI {
 
 using dynamic_shape = std::vector<ssize_t>;
 
-
 class ScanParameters {
     bool m_enabled = false;
     std::string m_dac;
     int m_start = 0;
     int m_stop = 0;
     int m_step = 0;
-    //TODO! add settleTime, requires string to time conversion
+    // TODO! add settleTime, requires string to time conversion
 
   public:
     // "[enabled\ndac dac 4\nstart 500\nstop 2200\nstep 5\nsettleTime 100us\n]"
     ScanParameters(const std::string &par) {
-        std::istringstream iss(par.substr(1, par.size()-2));
+        std::istringstream iss(par.substr(1, par.size() - 2));
         std::string line;
-        while(std::getline(iss, line)){
-            if(line == "enabled"){
+        while (std::getline(iss, line)) {
+            if (line == "enabled") {
                 m_enabled = true;
-            }else if(line.find("dac") != std::string::npos){
+            } else if (line.find("dac") != std::string::npos) {
                 m_dac = line.substr(4);
-            }else if(line.find("start") != std::string::npos){
+            } else if (line.find("start") != std::string::npos) {
                 m_start = std::stoi(line.substr(6));
-            }else if(line.find("stop") != std::string::npos){
+            } else if (line.find("stop") != std::string::npos) {
                 m_stop = std::stoi(line.substr(5));
-            }else if(line.find("step") != std::string::npos){
+            } else if (line.find("step") != std::string::npos) {
                 m_step = std::stoi(line.substr(5));
             }
-        }   
+        }
     };
     ScanParameters() = default;
     ScanParameters(const ScanParameters &) = default;
@@ -264,7 +263,7 @@ class ScanParameters {
     void increment_stop() { m_stop += 1; };
 };
 
-//TODO! Can we uniform enums between the libraries?
+// TODO! Can we uniform enums between the libraries?
 
 /**
  * @brief Enum class to identify different detectors.
@@ -292,29 +291,38 @@ enum class DetectorType {
 
 enum class TimingMode { Auto, Trigger };
 enum class FrameDiscardPolicy { NoDiscard, Discard, DiscardPartial };
-enum class BurstMode { Burst_Interal, Burst_External, Continuous_Internal,
-                       Continuous_External };
-
+enum class BurstMode {
+    Burst_Interal,
+    Burst_External,
+    Continuous_Internal,
+    Continuous_External
+};
 
 /** ToString and StringTo Conversions */
 
-
 // generic
-template <class T, typename = std::enable_if_t<!is_duration<T>::value>> 
-std::string ToString(T arg) { return T(arg); }
+template <class T, typename = std::enable_if_t<!is_duration<T>::value>>
+std::string ToString(T arg) {
+    return T(arg);
+}
 
-template <typename T, std::enable_if_t<
-!is_duration<T>::value && !is_container<T>::value, int> = 0 > 
-T StringTo(const std::string &arg) { return T(arg); }
+template <typename T,
+          std::enable_if_t<!is_duration<T>::value && !is_container<T>::value,
+                           int> = 0>
+T StringTo(const std::string &arg) {
+    return T(arg);
+}
 
 // time
 std::string RemoveUnit(std::string &str);
-inline void TrimWhiteSpaces(std::string& s) {
-    s.erase(s.begin(), std::find_if(s.begin(), s.end(),
-               [](unsigned char c) { return !std::isspace(c); }));
+inline void TrimWhiteSpaces(std::string &s) {
+    s.erase(s.begin(), std::find_if(s.begin(), s.end(), [](unsigned char c) {
+                return !std::isspace(c);
+            }));
     s.erase(std::find_if(s.rbegin(), s.rend(),
-               [](unsigned char c) { return !std::isspace(c); }).base(),
-               s.end());
+                         [](unsigned char c) { return !std::isspace(c); })
+                .base(),
+            s.end());
 }
 
 /** Convert std::chrono::duration with specified output unit */
@@ -342,13 +350,13 @@ template <typename From>
 typename std::enable_if<is_duration<From>::value, std::string>::type
 ToString(From t) {
 
-    using std::chrono::duration_cast;
     using std::chrono::abs;
-    using std::chrono::nanoseconds;
+    using std::chrono::duration_cast;
     using std::chrono::microseconds;
     using std::chrono::milliseconds;
+    using std::chrono::nanoseconds;
     auto tns = duration_cast<nanoseconds>(t);
-    if (abs(tns) <microseconds(1)) {
+    if (abs(tns) < microseconds(1)) {
         return ToString(tns, "ns");
     } else if (abs(tns) < milliseconds(1)) {
         return ToString(tns, "us");
@@ -359,8 +367,8 @@ ToString(From t) {
     }
 }
 template <class Rep, class Period>
-std::ostream& operator<<(std::ostream& os,
-                         const std::chrono::duration<Rep, Period>& d) {
+std::ostream &operator<<(std::ostream &os,
+                         const std::chrono::duration<Rep, Period> &d) {
     return os << ToString(d);
 }
 
@@ -384,11 +392,12 @@ T StringTo(const std::string &t, const std::string &unit) {
     } else if (unit == "s" || unit.empty()) {
         return duration_cast<T>(std::chrono::duration<double>(tval));
     } else {
-        throw std::invalid_argument("[ERROR] Invalid unit in conversion from string to std::chrono::duration");
+        throw std::invalid_argument("[ERROR] Invalid unit in conversion from "
+                                    "string to std::chrono::duration");
     }
 }
 
-template <typename T, std::enable_if_t<is_duration<T>::value, int> = 0 > 
+template <typename T, std::enable_if_t<is_duration<T>::value, int> = 0>
 T StringTo(const std::string &t) {
     std::string tmp{t};
     auto unit = RemoveUnit(tmp);
@@ -413,7 +422,7 @@ template <> inline uint8_t StringTo(const std::string &s) {
     if (value < std::numeric_limits<uint8_t>::min() ||
         value > std::numeric_limits<uint8_t>::max()) {
         throw std::runtime_error("Cannot scan uint8_t from string '" + s +
-                           "'. Value must be in range 0 - 255.");
+                                 "'. Value must be in range 0 - 255.");
     }
     return static_cast<uint8_t>(value);
 }
@@ -424,7 +433,7 @@ template <> inline uint16_t StringTo(const std::string &s) {
     if (value < std::numeric_limits<uint16_t>::min() ||
         value > std::numeric_limits<uint16_t>::max()) {
         throw std::runtime_error("Cannot scan uint16_t from string '" + s +
-                           "'. Value must be in range 0 - 65535.");
+                                 "'. Value must be in range 0 - 65535.");
     }
     return static_cast<uint16_t>(value);
 }
@@ -449,8 +458,6 @@ template <> inline int StringTo(const std::string &s) {
     return std::stoull(s, nullptr, base);
 }*/
 
-
-
 // vector
 template <typename T> std::string ToString(const std::vector<T> &vec) {
     std::ostringstream oss;
@@ -465,23 +472,25 @@ template <typename T> std::string ToString(const std::vector<T> &vec) {
 }
 
 template <typename T>
-std::ostream& operator<<(std::ostream& os, const std::vector<T>& v) {
+std::ostream &operator<<(std::ostream &os, const std::vector<T> &v) {
     return os << ToString(v);
 }
 
-template <
-    typename Container,
-    std::enable_if_t<is_container<Container>::value && 
-    !is_std_string_v<Container> /*&&
-    !is_map_v<Container>*/,
-    int> = 0>
-Container StringTo(const std::string& s) {
+template <typename Container,
+          std::enable_if_t<is_container<Container>::value &&
+                               !is_std_string_v<Container> /*&&
+                               !is_map_v<Container>*/
+                           ,
+                           int> = 0>
+Container StringTo(const std::string &s) {
     using Value = typename Container::value_type;
 
     // strip outer brackets
     std::string str = s;
-    str.erase(std::remove_if(str.begin(), str.end(),
-              [](unsigned char c){ return c=='[' || c==']'; }), str.end());
+    str.erase(
+        std::remove_if(str.begin(), str.end(),
+                       [](unsigned char c) { return c == '[' || c == ']'; }),
+        str.end());
 
     std::stringstream ss(str);
     std::string item;
@@ -491,11 +500,10 @@ Container StringTo(const std::string& s) {
         TrimWhiteSpaces(item);
         if (!item.empty()) {
             result.push_back(StringTo<Value>(item));
-        } 
+        }
     }
     return result;
 }
-
 
 // map
 template <typename KeyType, typename ValueType>
@@ -515,7 +523,8 @@ std::string ToString(const std::map<KeyType, ValueType> &m) {
     return os.str();
 }
 
-template <> inline std::map<std::string, std::string> StringTo(const std::string &s) {
+template <>
+inline std::map<std::string, std::string> StringTo(const std::string &s) {
     std::map<std::string, std::string> result;
     std::string str = s;
 
@@ -531,7 +540,7 @@ template <> inline std::map<std::string, std::string> StringTo(const std::string
         auto colon_pos = item.find(':');
         if (colon_pos == std::string::npos)
             throw std::runtime_error("Missing ':' in item: " + item);
-        
+
         std::string key = item.substr(0, colon_pos);
         std::string value = item.substr(colon_pos + 1);
 
@@ -542,7 +551,6 @@ template <> inline std::map<std::string, std::string> StringTo(const std::string
     }
     return result;
 }
-
 
 // optional
 template <class T> std::string ToString(const std::optional<T> &opt) {
@@ -571,13 +579,11 @@ template <> std::string ToString(FrameDiscardPolicy arg);
 template <> BurstMode StringTo(const std::string & /*mode*/);
 template <> std::string ToString(BurstMode arg);
 
-std::ostream &operator<<(std::ostream &os,
-                         const ScanParameters &r);
+std::ostream &operator<<(std::ostream &os, const ScanParameters &r);
 template <> std::string ToString(ScanParameters arg);
 
 std::ostream &operator<<(std::ostream &os, const ROI &roi);
 template <> std::string ToString(ROI arg);
-
 
 using DataTypeVariants = std::variant<uint16_t, uint32_t>;
 

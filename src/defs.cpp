@@ -1,7 +1,7 @@
 #include "aare/defs.hpp"
+#include <chrono>
 #include <stdexcept>
 #include <string>
-#include <chrono>
 
 #include <fmt/core.h>
 namespace aare {
@@ -180,7 +180,8 @@ template <> BurstMode StringTo(const std::string &arg) {
         return BurstMode::Continuous_Internal;
     if (arg == "continuous_external")
         return BurstMode::Continuous_External;
-    throw std::runtime_error("Could not decode burst mode from: \"" + arg + "\"");
+    throw std::runtime_error("Could not decode burst mode from: \"" + arg +
+                             "\"");
 }
 
 /**
@@ -196,9 +197,10 @@ template <> std::string ToString(ScanParameters arg) {
             << "dac " << arg.dac() << std::endl
             << "start " << arg.start() << std::endl
             << "stop " << arg.stop() << std::endl
-            << "step " << arg.step() << std::endl
+            << "step " << arg.step()
+            << std::endl
             //<< "settleTime "
-           // << ToString(std::chrono::nanoseconds{arg.dacSettleTime_ns})
+            // << ToString(std::chrono::nanoseconds{arg.dacSettleTime_ns})
             << std::endl;
     } else {
         oss << "disabled";
@@ -207,11 +209,9 @@ template <> std::string ToString(ScanParameters arg) {
     return oss.str();
 }
 
-std::ostream &operator<<(std::ostream &os,
-                         const ScanParameters &r) {
+std::ostream &operator<<(std::ostream &os, const ScanParameters &r) {
     return os << ToString(r);
 }
-
 
 /**
  * @brief Convert a ROI to a string
@@ -244,7 +244,6 @@ std::string RemoveUnit(std::string &str) {
     str.erase(it, end(str));
     return unit;
 }
-
 
 // template <> TimingMode StringTo<TimingMode>(std::string mode);
 

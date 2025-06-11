@@ -6,8 +6,6 @@
 #include <fstream>
 #include <optional>
 
-
-
 namespace aare {
 
 using ns = std::chrono::nanoseconds;
@@ -19,7 +17,7 @@ class Hdf5FileNameComponents {
     std::filesystem::path m_base_path{};
     std::string m_base_name{};
     std::string m_ext{};
-    int m_file_index{}; 
+    int m_file_index{};
 
   public:
     Hdf5FileNameComponents(const std::filesystem::path &fname);
@@ -40,13 +38,12 @@ class Hdf5FileNameComponents {
     void set_old_scheme(bool old_scheme);
 };
 
-
 /**
  * @brief Class for parsing a master file either in our .json format or the old
  * .Hdf5 format
  */
 class Hdf5MasterFile {
-    
+
     Hdf5FileNameComponents m_fnc;
     std::string m_version;
     DetectorType m_type;
@@ -89,16 +86,11 @@ class Hdf5MasterFile {
     std::optional<std::vector<ns>> m_exptime_array{};
     std::optional<std::vector<ns>> m_gate_delay_array{};
     std::optional<int> m_gates{};
-    std::optional<std::map<std::string, std::string>> m_additional_json_header{};
+    std::optional<std::map<std::string, std::string>>
+        m_additional_json_header{};
     size_t m_frames_in_file{};
 
-
-
-
     // TODO! should these be bool?
-
-
-
 
   public:
     Hdf5MasterFile(const std::filesystem::path &fpath);
@@ -138,7 +130,7 @@ class Hdf5MasterFile {
     std::optional<int> digital_samples() const;
     std::optional<int> dbit_offset() const;
     std::optional<size_t> dbit_list() const;
-    std::optional<int> transceiver_mask() const; 
+    std::optional<int> transceiver_mask() const;
     bool transceiver_flag() const;
     std::optional<int> transceiver_samples() const;
     // g1 roi - will not be implemented?
@@ -147,10 +139,10 @@ class Hdf5MasterFile {
     std::optional<std::vector<ns>> exptime_array() const;
     std::optional<std::vector<ns>> gate_delay_array() const;
     std::optional<int> gates() const;
-    std::optional<std::map<std::string, std::string>> additional_json_header() const;
+    std::optional<std::map<std::string, std::string>>
+    additional_json_header() const;
     size_t frames_in_file() const;
     size_t n_modules() const;
-
 
   private:
     static const std::string metadata_group_name;

@@ -49,7 +49,6 @@ struct is_container<
                decltype(std::declval<T>().empty())>,
            void>::type> : public std::true_type {};
 
-
 /**
  * Type trait to evaluate if template parameter is
  * complying with a std::string
@@ -62,8 +61,7 @@ inline constexpr bool is_std_string_v =
  * Type trait to evaluate if template parameter is
  * complying with std::map
  */
-template <typename T>
-struct is_map : std::false_type {};
+template <typename T> struct is_map : std::false_type {};
 
 template <typename K, typename V, typename... Args>
 struct is_map<std::map<K, V, Args...>> : std::true_type {};
@@ -71,4 +69,4 @@ struct is_map<std::map<K, V, Args...>> : std::true_type {};
 template <typename T>
 inline constexpr bool is_map_v = is_map<std::decay_t<T>>::value;
 
-} // namsespace aare
+} // namespace aare

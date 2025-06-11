@@ -1,7 +1,7 @@
 #include "aare/Hdf5MasterFile.hpp"
 #include "aare/logger.hpp"
-#include <sstream>
 #include <iomanip>
+#include <sstream>
 namespace aare {
 
 Hdf5FileNameComponents::Hdf5FileNameComponents(
@@ -106,12 +106,8 @@ std::optional<ScanParameters> Hdf5MasterFile::scan_parameters() const {
 size_t Hdf5MasterFile::total_frames_expected() const {
     return m_total_frames_expected;
 }
-std::optional<ns> Hdf5MasterFile::exptime() const {
-    return m_exptime;
-}
-std::optional<ns> Hdf5MasterFile::period() const {
-    return m_period;
-}
+std::optional<ns> Hdf5MasterFile::exptime() const { return m_exptime; }
+std::optional<ns> Hdf5MasterFile::period() const { return m_period; }
 std::optional<BurstMode> Hdf5MasterFile::burst_mode() const {
     return m_burst_mode;
 }
@@ -119,22 +115,15 @@ std::optional<int> Hdf5MasterFile::number_of_udp_interfaces() const {
     return m_number_of_udp_interfaces;
 }
 int Hdf5MasterFile::bitdepth() const { return m_bitdepth; }
-std::optional<bool> Hdf5MasterFile::ten_giga() const {
-    return m_ten_giga;
-}
+std::optional<bool> Hdf5MasterFile::ten_giga() const { return m_ten_giga; }
 std::optional<int> Hdf5MasterFile::threshold_energy() const {
     return m_threshold_energy;
 }
-std::optional<std::vector<int>>
-Hdf5MasterFile::threshold_energy_all() const {
+std::optional<std::vector<int>> Hdf5MasterFile::threshold_energy_all() const {
     return m_threshold_energy_all;
 }
-std::optional<ns> Hdf5MasterFile::subexptime() const {
-    return m_subexptime;
-}
-std::optional<ns> Hdf5MasterFile::subperiod() const {
-    return m_subperiod;
-}
+std::optional<ns> Hdf5MasterFile::subexptime() const { return m_subexptime; }
+std::optional<ns> Hdf5MasterFile::subperiod() const { return m_subperiod; }
 std::optional<bool> Hdf5MasterFile::quad() const { return m_quad; }
 std::optional<int> Hdf5MasterFile::number_of_rows() const {
     return m_number_of_rows;
@@ -143,7 +132,7 @@ std::optional<std::vector<size_t>> Hdf5MasterFile::rate_corrections() const {
     return m_rate_corrections;
 }
 std::optional<uint32_t> Hdf5MasterFile::adc_mask() const { return m_adc_mask; }
-bool Hdf5MasterFile::analog_flag() const { return m_analog_flag; }  
+bool Hdf5MasterFile::analog_flag() const { return m_analog_flag; }
 std::optional<int> Hdf5MasterFile::analog_samples() const {
     return m_analog_samples;
 }
@@ -151,9 +140,7 @@ bool Hdf5MasterFile::digital_flag() const { return m_digital_flag; }
 std::optional<int> Hdf5MasterFile::digital_samples() const {
     return m_digital_samples;
 }
-std::optional<int> Hdf5MasterFile::dbit_offset() const {
-    return m_dbit_offset;
-}
+std::optional<int> Hdf5MasterFile::dbit_offset() const { return m_dbit_offset; }
 std::optional<size_t> Hdf5MasterFile::dbit_list() const { return m_dbit_list; }
 std::optional<int> Hdf5MasterFile::transceiver_mask() const {
     return m_transceiver_mask;
@@ -164,7 +151,9 @@ std::optional<int> Hdf5MasterFile::transceiver_samples() const {
 }
 // g1 roi
 std::optional<ROI> Hdf5MasterFile::roi() const { return m_roi; }
-std::optional<int> Hdf5MasterFile::counter_mask() const { return m_counter_mask; }
+std::optional<int> Hdf5MasterFile::counter_mask() const {
+    return m_counter_mask;
+}
 std::optional<std::vector<ns>> Hdf5MasterFile::exptime_array() const {
     return m_exptime_array;
 }
@@ -172,12 +161,13 @@ std::optional<std::vector<ns>> Hdf5MasterFile::gate_delay_array() const {
     return m_gate_delay_array;
 }
 std::optional<int> Hdf5MasterFile::gates() const { return m_gates; }
-std::optional<std::map<std::string, std::string>> Hdf5MasterFile::additional_json_header() const {
+std::optional<std::map<std::string, std::string>>
+Hdf5MasterFile::additional_json_header() const {
     return m_additional_json_header;
 }
 size_t Hdf5MasterFile::frames_in_file() const { return m_frames_in_file; }
 size_t Hdf5MasterFile::n_modules() const {
-        return m_geometry.row * m_geometry.col;
+    return m_geometry.row * m_geometry.col;
 }
 
 // optional values, these may or may not be present in the master file
@@ -253,7 +243,6 @@ void Hdf5MasterFile::parse_acquisition_metadata(
             file, std::string(metadata_group_name + "Geometry in x axis"));
         LOG(logDEBUG) << "Geometry: " << m_geometry.to_string();
 
-
         // Image Size
         m_image_size_in_bytes = h5_get_scalar_dataset<int>(
             file, std::string(metadata_group_name + "Image Size"));
@@ -281,7 +270,8 @@ void Hdf5MasterFile::parse_acquisition_metadata(
             StringTo<FrameDiscardPolicy>(h5_get_scalar_dataset<std::string>(
                 file,
                 std::string(metadata_group_name + "Frame Discard Policy")));
-        LOG(logDEBUG) << "Frame Discard Policy: " << ToString(m_frame_discard_policy);
+        LOG(logDEBUG) << "Frame Discard Policy: "
+                      << ToString(m_frame_discard_policy);
 
         // Frame Padding
         m_frame_padding = h5_get_scalar_dataset<int>(
@@ -378,15 +368,15 @@ void Hdf5MasterFile::parse_acquisition_metadata(
 
         // Threshold All Energy
         try {
-            m_threshold_energy_all = StringTo<std::vector<int>>(
-                h5_get_scalar_dataset<std::string>(
+            m_threshold_energy_all =
+                StringTo<std::vector<int>>(h5_get_scalar_dataset<std::string>(
                     file,
                     std::string(metadata_group_name + "Threshold Energies")));
             LOG(logDEBUG) << "Threshold Energies: "
                           << ToString(m_threshold_energy_all);
         } catch (H5::FileIException &e) {
-            std::cout << "No Threshold Energies found in file: "
-                      << fpath << std::endl;
+            std::cout << "No Threshold Energies found in file: " << fpath
+                      << std::endl;
             // keep the optional empty
         }
 
@@ -533,7 +523,7 @@ void Hdf5MasterFile::parse_acquisition_metadata(
         }
 
         // Rx ROI
-        try{
+        try {
             ROI tmp_roi;
             tmp_roi.xmin = h5_get_scalar_dataset<int>(
                 file, std::string(metadata_group_name + "receiver roi xmin"));
@@ -544,10 +534,11 @@ void Hdf5MasterFile::parse_acquisition_metadata(
             tmp_roi.ymax = h5_get_scalar_dataset<int>(
                 file, std::string(metadata_group_name + "receiver roi ymax"));
 
-            //if any of the values are set update the roi
-            if (tmp_roi.xmin != 4294967295 || tmp_roi.xmax != 4294967295 || tmp_roi.ymin != 4294967295 || tmp_roi.ymax != 4294967295) {
-                //why?? TODO
-                if(dVersion < 6.61){
+            // if any of the values are set update the roi
+            if (tmp_roi.xmin != 4294967295 || tmp_roi.xmax != 4294967295 ||
+                tmp_roi.ymin != 4294967295 || tmp_roi.ymax != 4294967295) {
+                // why?? TODO
+                if (dVersion < 6.61) {
                     tmp_roi.xmax++;
                     tmp_roi.ymax++;
                 }
@@ -588,8 +579,8 @@ void Hdf5MasterFile::parse_acquisition_metadata(
 
         // Exposure Time Array
         try {
-            m_exptime_array = StringTo<std::vector<ns>>(
-                h5_get_scalar_dataset<std::string>(
+            m_exptime_array =
+                StringTo<std::vector<ns>>(h5_get_scalar_dataset<std::string>(
                     file, std::string(metadata_group_name + "Exposure Times")));
             LOG(logDEBUG) << "Exposure Times: " << ToString(m_exptime_array);
         } catch (H5::FileIException &e) {
@@ -598,8 +589,8 @@ void Hdf5MasterFile::parse_acquisition_metadata(
 
         // Gate Delay Array
         try {
-            m_gate_delay_array = StringTo<std::vector<ns>>(
-                h5_get_scalar_dataset<std::string>(
+            m_gate_delay_array =
+                StringTo<std::vector<ns>>(h5_get_scalar_dataset<std::string>(
                     file, std::string(metadata_group_name + "Gate Delays")));
             LOG(logDEBUG) << "Gate Delays: " << ToString(m_gate_delay_array);
         } catch (H5::FileIException &e) {
@@ -617,9 +608,13 @@ void Hdf5MasterFile::parse_acquisition_metadata(
 
         // Additional Json Header
         try {
-            m_additional_json_header = StringTo<std::map<std::string, std::string>>(h5_get_scalar_dataset<std::string>(
-                file, std::string(metadata_group_name + "Additional JSON Header")));
-            LOG(logDEBUG) << "Additional JSON Header: " << ToString(m_additional_json_header);
+            m_additional_json_header =
+                StringTo<std::map<std::string, std::string>>(
+                    h5_get_scalar_dataset<std::string>(
+                        file, std::string(metadata_group_name +
+                                          "Additional JSON Header")));
+            LOG(logDEBUG) << "Additional JSON Header: "
+                          << ToString(m_additional_json_header);
         } catch (H5::FileIException &e) {
             // keep the optional empty
         }
