@@ -26,7 +26,7 @@ make sure your feature branch merges with main regularly to avoid large merge co
     The main branch is expected to always work. Feel free to pull from main instead of sticking to a 
     release
 
-    
+
 Releases
 ~~~~~~~~~~~~~~~~~~
 
@@ -44,6 +44,7 @@ Checklists for deployment
 #. Create a new issue for the feature (label feature)
 #. Create a new branch from main.
 #. Implement the feature including test and documentation
+#. Add the feature to RELEASE.md under head
 #. Create a pull request linked to the issue
 #. Code is reviewed by at least one other person
 #. Once approved, the branch is merged into main
@@ -59,6 +60,7 @@ a failing test that demonstrates the bug.
 #. **Write a test that fails for the bug**
 #. Implement the fix
 #. **Run the test to ensure it passes**
+#. Add the bugfix to RELEASE.md under head
 #. Create a pull request linked to the issue.
 #. Code is reviewed by at least one other person
 #. Once approved, the branch is merged into main
@@ -66,6 +68,7 @@ a failing test that demonstrates the bug.
 **Release:**
 
 #. Once "enough" new features have been implemented, a release is created
+#. Update RELEASE.md with the tag of the release and verify that it is complete
 #. Create the release in GitHub describing the new features and bug fixes
 #. CI makes magic
 
