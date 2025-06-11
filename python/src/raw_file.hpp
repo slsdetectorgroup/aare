@@ -58,13 +58,14 @@ void define_raw_file_io_bindings(py::module &m) {
                     throw std::runtime_error("No frames left in file");
                 }
                 std::vector<size_t> shape{n_frames, self.rows(), self.cols()};
-            
+
                 // return headers from all subfiles
                 py::array_t<DetectorHeader> header;
                 if (self.n_modules() == 1) {
                     header = py::array_t<DetectorHeader>(n_frames);
                 } else {
-                    header = py::array_t<DetectorHeader>({self.n_modules(), n_frames});
+                    header = py::array_t<DetectorHeader>(
+                        {self.n_modules(), n_frames});
                 }
                 // py::array_t<DetectorHeader> header({self.n_mod(), n_frames});
 

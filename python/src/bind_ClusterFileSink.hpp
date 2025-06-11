@@ -21,15 +21,9 @@ using namespace aare;
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Wunused-parameter"
 
-
-
-
-
-
 template <typename T, uint8_t ClusterSizeX, uint8_t ClusterSizeY,
           typename CoordType = uint16_t>
-void define_ClusterFileSink(py::module &m,
-                                       const std::string &typestr) {
+void define_ClusterFileSink(py::module &m, const std::string &typestr) {
     auto class_name = fmt::format("ClusterFileSink_{}", typestr);
 
     using ClusterType = Cluster<T, ClusterSizeX, ClusterSizeY, CoordType>;
@@ -39,6 +33,5 @@ void define_ClusterFileSink(py::module &m,
                       const std::filesystem::path &>())
         .def("stop", &ClusterFileSink<ClusterType>::stop);
 }
-
 
 #pragma GCC diagnostic pop

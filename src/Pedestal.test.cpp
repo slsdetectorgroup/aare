@@ -1,8 +1,7 @@
 #include "aare/Pedestal.hpp"
 
-
-#include <catch2/matchers/catch_matchers_floating_point.hpp>
 #include <catch2/catch_test_macros.hpp>
+#include <catch2/matchers/catch_matchers_floating_point.hpp>
 #include <chrono>
 #include <random>
 
@@ -58,7 +57,8 @@ TEST_CASE("test pedestal push") {
                 if (k < 5) {
                     REQUIRE(pedestal.cur_samples()(i, j) == k + 1);
                     REQUIRE(pedestal.get_sum()(i, j) == (k + 1) * (i + j));
-                    REQUIRE(pedestal.get_sum2()(i, j) == (k + 1) * (i + j) * (i + j));
+                    REQUIRE(pedestal.get_sum2()(i, j) ==
+                            (k + 1) * (i + j) * (i + j));
                 } else {
                     REQUIRE(pedestal.cur_samples()(i, j) == 5);
                     REQUIRE(pedestal.get_sum()(i, j) == 5 * (i + j));
@@ -95,9 +95,12 @@ TEST_CASE("test pedestal with normal distribution") {
 
     for (int i = 0; i < 3; i++) {
         for (int j = 0; j < 5; j++) {
-            REQUIRE_THAT(mean(i, j), Catch::Matchers::WithinAbs(MEAN, MEAN * TOLERANCE));
-            REQUIRE_THAT(variance(i, j), Catch::Matchers::WithinAbs(VAR, VAR * TOLERANCE));
-            REQUIRE_THAT(standard_deviation(i, j), Catch::Matchers::WithinAbs(STD, STD * TOLERANCE));
+            REQUIRE_THAT(mean(i, j),
+                         Catch::Matchers::WithinAbs(MEAN, MEAN * TOLERANCE));
+            REQUIRE_THAT(variance(i, j),
+                         Catch::Matchers::WithinAbs(VAR, VAR * TOLERANCE));
+            REQUIRE_THAT(standard_deviation(i, j),
+                         Catch::Matchers::WithinAbs(STD, STD * TOLERANCE));
         }
     }
 }

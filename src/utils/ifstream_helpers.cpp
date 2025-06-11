@@ -10,7 +10,7 @@ std::string ifstream_error_msg(std::ifstream &ifs) {
         return " Bad file stream";
     } else if (state & std::ios_base::failbit) {
         return " File read failed";
-    }else{
+    } else {
         return " Unknown/no error";
     }
 }

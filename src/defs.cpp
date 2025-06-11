@@ -6,14 +6,10 @@
 #include <fmt/core.h>
 namespace aare {
 
-
-void assert_failed(const std::string &msg)
- {
+void assert_failed(const std::string &msg) {
     fmt::print(msg);
     exit(1);
 }
-
-
 
 /**
  * @brief Convert a DetectorType to a string
@@ -41,7 +37,7 @@ template <> std::string ToString(DetectorType arg) {
     case DetectorType::Xilinx_ChipTestBoard:
         return "Xilinx_ChipTestBoard";
 
-    //Custom ones
+    // Custom ones
     case DetectorType::Moench03:
         return "Moench03";
     case DetectorType::Moench03_old:
@@ -49,8 +45,8 @@ template <> std::string ToString(DetectorType arg) {
     case DetectorType::Unknown:
         return "Unknown";
 
-    //no default case to trigger compiler warning if not all 
-    //enum values are handled
+        // no default case to trigger compiler warning if not all
+        // enum values are handled
     }
     throw std::runtime_error("Could not decode detector to string");
 }
@@ -81,14 +77,14 @@ template <> DetectorType StringTo(const std::string &arg) {
     if (arg == "Xilinx_ChipTestBoard")
         return DetectorType::Xilinx_ChipTestBoard;
 
-    //Custom ones
+    // Custom ones
     if (arg == "Moench03")
         return DetectorType::Moench03;
     if (arg == "Moench03_old")
         return DetectorType::Moench03_old;
     if (arg == "Unknown")
         return DetectorType::Unknown;
-    
+
     throw std::runtime_error("Could not decode detector from: \"" + arg + "\"");
 }
 
@@ -121,7 +117,8 @@ template <> TimingMode StringTo(const std::string &arg) {
         return TimingMode::Auto;
     if (arg == "trigger")
         return TimingMode::Trigger;
-    throw std::runtime_error("Could not decode timing mode from: \"" + arg + "\"");
+    throw std::runtime_error("Could not decode timing mode from: \"" + arg +
+                             "\"");
 }
 
 /**
@@ -151,7 +148,8 @@ template <> FrameDiscardPolicy StringTo(const std::string &arg) {
         return FrameDiscardPolicy::Discard;
     if (arg == "discardpartial")
         return FrameDiscardPolicy::DiscardPartial;
-    throw std::runtime_error("Could not decode frame discard policy from: \"" + arg + "\"");
+    throw std::runtime_error("Could not decode frame discard policy from: \"" +
+                             arg + "\"");
 }
 
 /**

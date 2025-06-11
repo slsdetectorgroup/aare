@@ -21,7 +21,6 @@ TODO! Add expression templates for operators
 
 namespace aare {
 
-
 template <typename T, ssize_t Ndim = 2>
 class NDArray : public ArrayExpr<NDArray<T, Ndim>, Ndim> {
     std::array<ssize_t, Ndim> shape_;
@@ -34,7 +33,7 @@ class NDArray : public ArrayExpr<NDArray<T, Ndim>, Ndim> {
      * @brief Default constructor. Will construct an empty NDArray.
      *
      */
-    NDArray() : shape_(), strides_(c_strides<Ndim>(shape_)), data_(nullptr) {};
+    NDArray() : shape_(), strides_(c_strides<Ndim>(shape_)), data_(nullptr){};
 
     /**
      * @brief Construct a new NDArray object with a given shape.
@@ -47,7 +46,6 @@ class NDArray : public ArrayExpr<NDArray<T, Ndim>, Ndim> {
           size_(std::accumulate(shape_.begin(), shape_.end(), 1,
                                 std::multiplies<>())),
           data_(new T[size_]) {}
-
 
     /**
      * @brief Construct a new NDArray object with a shape and value.
@@ -69,8 +67,8 @@ class NDArray : public ArrayExpr<NDArray<T, Ndim>, Ndim> {
         std::copy(v.begin(), v.end(), begin());
     }
 
-    template<size_t Size>
-    NDArray(const std::array<T, Size>& arr) : NDArray<T,1>({Size}) {
+    template <size_t Size>
+    NDArray(const std::array<T, Size> &arr) : NDArray<T, 1>({Size}) {
         std::copy(arr.begin(), arr.end(), begin());
     }
 
@@ -79,7 +77,6 @@ class NDArray : public ArrayExpr<NDArray<T, Ndim>, Ndim> {
         : shape_(other.shape_), strides_(c_strides<Ndim>(shape_)),
           size_(other.size_), data_(other.data_) {
         other.reset(); // TODO! is this necessary?
-
     }
 
     // Copy constructor
@@ -113,10 +110,10 @@ class NDArray : public ArrayExpr<NDArray<T, Ndim>, Ndim> {
     NDArray &operator-=(const NDArray &other);
     NDArray &operator*=(const NDArray &other);
 
-    //Write directly to the data array, or create a new one
-    template<size_t Size>
-    NDArray<T,1>& operator=(const std::array<T,Size> &other){
-        if(Size != size_){
+    // Write directly to the data array, or create a new one
+    template <size_t Size>
+    NDArray<T, 1> &operator=(const std::array<T, Size> &other) {
+        if (Size != size_) {
             delete[] data_;
             size_ = Size;
             data_ = new T[size_];
@@ -156,11 +153,6 @@ class NDArray : public ArrayExpr<NDArray<T, Ndim>, Ndim> {
     NDArray operator/(const T & /*value*/);
 
     NDArray &operator&=(const T & /*mask*/);
-
-  
-
-
-    
 
     void sqrt() {
         for (int i = 0; i < size_; ++i) {
@@ -345,9 +337,6 @@ NDArray<T, Ndim> &NDArray<T, Ndim>::operator+=(const T &value) {
     return *this;
 }
 
-
-
-
 template <typename T, ssize_t Ndim>
 NDArray<T, Ndim> NDArray<T, Ndim>::operator+(const T &value) {
     NDArray result = *this;
@@ -447,7 +436,5 @@ NDArray<T, Ndim> load(const std::string &pathname,
     f.close();
     return img;
 }
-
-
 
 } // namespace aare

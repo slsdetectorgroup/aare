@@ -35,7 +35,7 @@ TEST_CASE("Construct from an NDView") {
     }
 }
 
-TEST_CASE("3D NDArray from NDView"){
+TEST_CASE("3D NDArray from NDView") {
     std::vector<int> data(27);
     std::iota(data.begin(), data.end(), 0);
     NDView<int, 3> view(data.data(), Shape<3>{3, 3, 3});
@@ -44,9 +44,9 @@ TEST_CASE("3D NDArray from NDView"){
     REQUIRE(image.size() == view.size());
     REQUIRE(image.data() != view.data());
 
-    for(ssize_t i=0; i<image.shape(0); i++){
-        for(ssize_t j=0; j<image.shape(1); j++){
-            for(ssize_t k=0; k<image.shape(2); k++){
+    for (ssize_t i = 0; i < image.shape(0); i++) {
+        for (ssize_t j = 0; j < image.shape(1); j++) {
+            for (ssize_t k = 0; k < image.shape(2); k++) {
                 REQUIRE(image(i, j, k) == view(i, j, k));
             }
         }
@@ -132,7 +132,7 @@ TEST_CASE("Elementwise multiplication of 3D image") {
 
 NDArray<int> MultiplyNDArrayUsingOperator(NDArray<int> &a, NDArray<int> &b) {
     // return a * a * b * b;
-    NDArray<int>c =  a*b;
+    NDArray<int> c = a * b;
     return c;
 }
 
@@ -161,7 +161,6 @@ NDArray<int> AddNDArrayUsingIndex(NDArray<int> &a, NDArray<int> &b) {
     }
     return res;
 }
-
 
 TEST_CASE("Compare two images") {
     NDArray<int> a;
@@ -222,7 +221,6 @@ TEST_CASE("Bitwise and on data") {
     REQUIRE(a(2) == 384);
 }
 
-
 TEST_CASE("Elementwise operations on images") {
     std::array<ssize_t, 2> shape{5, 5};
     double a_val = 3.0;
@@ -258,7 +256,8 @@ TEST_CASE("Elementwise operations on images") {
         NDArray<double> A(shape, a_val);
         NDArray<double> B(shape, b_val);
         NDArray<double> C = A - B;
-        // auto C = A - B; // This works but the result is a lazy ArraySub object
+        // auto C = A - B; // This works but the result is a lazy ArraySub
+        // object
 
         // Value of C matches
         for (uint32_t i = 0; i < C.size(); ++i) {
@@ -282,7 +281,8 @@ TEST_CASE("Elementwise operations on images") {
     SECTION("Multiply two images") {
         NDArray<double> A(shape, a_val);
         NDArray<double> B(shape, b_val);
-        // auto C = A * B; // This works but the result is a lazy ArrayMul object
+        // auto C = A * B; // This works but the result is a lazy ArrayMul
+        // object
         NDArray<double> C = A * B;
 
         // Value of C matches
@@ -307,7 +307,8 @@ TEST_CASE("Elementwise operations on images") {
     SECTION("Divide two images") {
         NDArray<double> A(shape, a_val);
         NDArray<double> B(shape, b_val);
-        // auto C = A / B; // This works but the result is a lazy ArrayDiv object
+        // auto C = A / B; // This works but the result is a lazy ArrayDiv
+        // object
         NDArray<double> C = A / B;
 
         // Value of C matches
