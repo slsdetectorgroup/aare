@@ -89,7 +89,7 @@ class Hdf5MasterFile {
     // exptimearray
     // gatedelay array
     std::optional<size_t> m_gates{};
-    // additional json header
+    std::optional<std::map<std::string, std::string>> m_additional_json_header{};
     size_t m_frames_in_file{};
 
 
@@ -147,7 +147,7 @@ class Hdf5MasterFile {
     // exptimearray
     // gatedelay array
     std::optional<size_t> gates() const;
-    // additional json header
+    std::optional<std::map<std::string, std::string>> additional_json_header() const;
     size_t frames_in_file() const;
     size_t n_modules() const;
 

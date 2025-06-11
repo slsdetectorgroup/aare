@@ -168,7 +168,9 @@ std::optional<size_t> Hdf5MasterFile::counter_mask() const { return m_counter_ma
 // exptimearray
 // gatedelay array
 std::optional<size_t> Hdf5MasterFile::gates() const { return m_gates; }
-// additional json header
+std::optional<std::map<std::string, std::string>> Hdf5MasterFile::additional_json_header() const {
+    return m_additional_json_header;
+}
 size_t Hdf5MasterFile::frames_in_file() const { return m_frames_in_file; }
 size_t Hdf5MasterFile::n_modules() const {
         return m_geometry.row * m_geometry.col;
@@ -578,6 +580,9 @@ void Hdf5MasterFile::parse_acquisition_metadata(
         }
 
         // exptimearray
+        //std::vector<ns> exptimearray = {std::chrono::nanoseconds(10), std::chrono::milliseconds(500)};
+        //std::cout << "exptimearray: " << ToString(exptimearray) << std::endl;
+
         // gatedelay array
 
         // Gates
@@ -590,6 +595,13 @@ void Hdf5MasterFile::parse_acquisition_metadata(
         }
 
         // additional json header
+        try {
+            m_additional_json_header = StringTo<std::map<std::string, std::string>>(h5_get_scalar_dataset<std::string>(
+                file, std::string(metadata_group_name + "Additional JSON Header")));
+            LOG(logDEBUG) << "Additional JSON Header: " << ToString(m_additional_json_header);
+        } catch (H5::FileIException &e) {
+            // keep the optional empty
+        }
 
         // Frames in File
         m_frames_in_file = h5_get_scalar_dataset<size_t>(

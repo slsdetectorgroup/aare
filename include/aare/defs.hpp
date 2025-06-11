@@ -300,6 +300,108 @@ enum class BurstMode { Burst_Interal, Burst_External, Continuous_Internal,
                        Continuous_External };
 
 
+/** ToString and StringTo Conversions */
+
+
+// generic
+template <class T, typename = std::enable_if_t<!is_duration<T>::value>> 
+std::string ToString(T arg) { return T(arg); }
+
+template <typename T, std::enable_if_t<!is_duration<T>::value, int> = 0 > 
+T StringTo(const std::string &arg) { return T(arg); }
+
+
+// so that StringTo<std::vector<size_t>> below doesnt complain about the above
+// generic overload
+template <> inline size_t StringTo(const std::string &arg) {
+    return std::stoi(arg);
+}
+
+
+// vector
+template <typename T> std::string ToString(const std::vector<T> &vec) {
+    std::ostringstream oss;
+    oss << "[";
+    for (size_t i = 0; i < vec.size(); ++i) {
+        oss << vec[i];
+        if (i != vec.size() - 1)
+            oss << ", ";
+    }
+    oss << "]";
+    return oss.str();
+}
+template <> inline std::vector<size_t> StringTo(const std::string &s) {
+    std::vector<size_t> result;
+    std::string str = s;
+    // Remove brackets and spaces
+    str.erase(std::remove_if(str.begin(), str.end(),
+                             [](unsigned char c) {
+                                 return c == '[' || c == ']' || std::isspace(c);
+                             }),
+              str.end());
+    std::stringstream ss(str);
+    std::string item;
+    while (std::getline(ss, item, ',')) {
+        if (!item.empty())
+            result.push_back(StringTo<size_t>(item));
+    }
+    return result;
+}
+
+
+// map
+template <typename KeyType, typename ValueType>
+std::string ToString(const std::map<KeyType, ValueType> &m) {
+    std::ostringstream os;
+    os << '{';
+    if (!m.empty()) {
+        auto it = m.cbegin();
+        os << ToString(it->first) << ": " << ToString(it->second);
+        it++;
+        while (it != m.cend()) {
+            os << ", " << ToString(it->first) << ": " << ToString(it->second);
+            it++;
+        }
+    }
+    os << '}';
+    return os.str();
+}
+template <> inline std::map<std::string, std::string> StringTo(const std::string &s) {
+    std::map<std::string, std::string> result;
+    std::string str = s;
+
+    // Remove outer braces if present
+    if (!str.empty() && str.front() == '{' && str.back() == '}') {
+        str = str.substr(1, str.size() - 2);
+    }
+
+    std::stringstream ss(str);
+    std::string item;
+
+    auto trim = [](std::string& t) {
+        // trim leading white spaces
+        t.erase(t.begin(), std::find_if(t.begin(), t.end(), [](unsigned char c){ return !std::isspace(c); }));
+        // trim trailing white spaces
+        t.erase(std::find_if(t.rbegin(), t.rend(), [](unsigned char c){ return !std::isspace(c); }).base(), t.end());
+    };
+
+    while (std::getline(ss, item, ',')) {
+        auto colon_pos = item.find(':');
+        if (colon_pos == std::string::npos)
+            throw std::runtime_error("Missing ':' in item: " + item);
+        
+        std::string key = item.substr(0, colon_pos);
+        std::string value = item.substr(colon_pos + 1);
+
+        trim(key);
+        trim(value);
+
+        result[key] = value;
+    }
+    return result;
+}
+
+// time
 std::string RemoveUnit(std::string &str);
 
 /** Convert std::chrono::duration with specified output unit */
@@ -375,48 +477,20 @@ T StringTo(const std::string &t) {
     return StringTo<T>(tmp, unit);
 }
 
-template <typename T, std::enable_if_t<!is_duration<T>::value, int> = 0 > 
-T StringTo(const std::string &arg) { return T(arg); }
-
-// so that StringTo<std::vector<size_t>> below doesnt complain about the above
-// generic overload
-template <> inline size_t StringTo(const std::string &arg) {
-    return std::stoi(arg);
+// optional
+template <class T> std::string ToString(const std::optional<T> &opt) {
+    return opt ? ToString(*opt) : "nullopt";
+}
+template <typename T>
+std::ostream &operator<<(std::ostream &os, const std::optional<T> &opt) {
+    if (opt)
+        os << *opt;
+    else
+        os << "nullopt";
+    return os;
 }
 
-template <> inline std::vector<size_t> StringTo(const std::string &s) {
-    std::vector<size_t> result;
-    std::string str = s;
-    // Remove brackets and spaces
-    str.erase(std::remove_if(str.begin(), str.end(),
-                             [](unsigned char c) {
-                                 return c == '[' || c == ']' || std::isspace(c);
-                             }),
-              str.end());
-    std::stringstream ss(str);
-    std::string item;
-    while (std::getline(ss, item, ',')) {
-        if (!item.empty())
-            result.push_back(StringTo<size_t>(item));
-    }
-    return result;
-}
-
-template <class T, typename = std::enable_if_t<!is_duration<T>::value>> 
-std::string ToString(T arg) { return T(arg); }
-
-template <typename T> std::string ToString(const std::vector<T> &vec) {
-    std::ostringstream oss;
-    oss << "[";
-    for (size_t i = 0; i < vec.size(); ++i) {
-        oss << vec[i];
-        if (i != vec.size() - 1)
-            oss << ", ";
-    }
-    oss << "]";
-    return oss.str();
-}
-
+// enums
 template <> DetectorType StringTo(const std::string & /*name*/);
 template <> std::string ToString(DetectorType arg);
 
@@ -436,18 +510,6 @@ template <> std::string ToString(ScanParameters arg);
 std::ostream &operator<<(std::ostream &os, const ROI &roi);
 template <> std::string ToString(ROI arg);
 
-template <class T> std::string ToString(const std::optional<T> &opt) {
-    return opt ? ToString(*opt) : "nullopt";
-}
-
-template <typename T>
-std::ostream &operator<<(std::ostream &os, const std::optional<T> &opt) {
-    if (opt)
-        os << *opt;
-    else
-        os << "nullopt";
-    return os;
-}
 
 using DataTypeVariants = std::variant<uint16_t, uint32_t>;
 
