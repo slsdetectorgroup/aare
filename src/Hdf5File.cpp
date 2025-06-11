@@ -63,7 +63,7 @@ size_t Hdf5File::frame_number(size_t frame_index) {
     }
     uint64_t fnum{0};
     int part_index = 0; // assuming first part
-    m_header_files[0]->get_header_into(frame_index, part_index,
+    m_header_datasets[0]->get_header_into(frame_index, part_index,
                                        reinterpret_cast<std::byte *>(&fnum));
     return fnum;
 }
@@ -76,9 +76,9 @@ size_t Hdf5File::pixels_per_frame() { return m_rows * m_cols; }
 size_t Hdf5File::bytes_per_pixel() const { return m_master.bitdepth() / 8; }
 
 void Hdf5File::seek(size_t frame_index) {
-    m_data_file->seek(frame_index);
+    m_data_dataset->seek(frame_index);
     for (size_t i = 0; i != header_dataset_names.size(); ++i) {
-        m_header_files[i]->seek(frame_index);
+        m_header_datasets[i]->seek(frame_index);
     }
     m_current_frame = frame_index;
 }
@@ -123,7 +123,7 @@ void Hdf5File::get_frame_into(size_t frame_index, std::byte *frame_buffer,
 
 void Hdf5File::get_data_into(size_t frame_index, std::byte *frame_buffer,
                              size_t n_frames) {
-    m_data_file->get_data_into(frame_index, frame_buffer, n_frames);
+    m_data_dataset->get_data_into(frame_index, frame_buffer, n_frames);
 }
 
 void Hdf5File::get_header_into(size_t frame_index, int part_index,
@@ -131,7 +131,7 @@ void Hdf5File::get_header_into(size_t frame_index, int part_index,
     try {
         read_hdf5_header_fields(header,
                                 [&](size_t iParameter, std::byte *dest) {
-                                    m_header_files[iParameter]->get_header_into(
+                                    m_header_datasets[iParameter]->get_header_into(
                                         frame_index, part_index, dest);
                                 });
         LOG(logDEBUG5) << "Read 1D header for frame " << frame_index;
@@ -191,15 +191,15 @@ void Hdf5File::open_data_file() {
         throw std::runtime_error(LOCATION +
                                  "Unsupported mode. Can only read Hdf5 files.");
     try {
-        m_data_file = std::make_unique<H5Handles>(m_master.master_fname().string(), metadata_group_name + "/data");
+        m_data_dataset = std::make_unique<H5Handles>(m_master.master_fname().string(), metadata_group_name + "/data");
 
-        m_total_frames = m_data_file->get_dims()[0];
-        m_rows = m_data_file->get_dims()[1];
-        m_cols = m_data_file->get_dims()[2];
+        m_total_frames = m_data_dataset->get_dims()[0];
+        m_rows = m_data_dataset->get_dims()[1];
+        m_cols = m_data_dataset->get_dims()[2];
         //fmt::print("Data Dataset dimensions: frames = {}, rows = {}, cols = {}\n",
                   // m_total_frames, m_rows, m_cols);
     } catch (const H5::Exception &e) {
-        m_data_file.reset();
+        m_data_dataset.reset();
         fmt::print("Exception type: {}\n", typeid(e).name());
         e.printErrorStack();
         throw std::runtime_error(
@@ -213,13 +213,12 @@ void Hdf5File::open_header_files() {
                                  "Unsupported mode. Can only read Hdf5 files.");
     try {
         for (size_t i = 0; i != header_dataset_names.size(); ++i) {
-            m_header_files.push_back(std::make_unique<H5Handles>(m_master.master_fname().string(), metadata_group_name + header_dataset_names[i]));
-            //fmt::print("{} Dataset dimensions: size = {}\n",
-             //      header_dataset_names[i], m_header_files[i]->dims[0]);
+            m_header_datasets.push_back(std::make_unique<H5Handles>(m_master.master_fname().string(), metadata_group_name + header_dataset_names[i]));
+            LOG(logDEBUG) << header_dataset_names[i] << " Dataset dimensions: size = " << m_header_datasets[i]->get_dims()[0];
         }
     } catch (const H5::Exception &e) {
-        m_header_files.clear();
-        m_data_file.reset();
+        m_header_datasets.clear();
+        m_data_dataset.reset();
         fmt::print("Exception type: {}\n", typeid(e).name());
         e.printErrorStack();
         throw std::runtime_error(

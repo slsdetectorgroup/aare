@@ -90,6 +90,8 @@ class H5Handles {
   }
 };
 
+
+
 template <typename Fn>
 void read_hdf5_header_fields(DetectorHeader *header, Fn &&fn_read_field) {
     fn_read_field(0, reinterpret_cast<std::byte *>(&(header->frameNumber)));
@@ -124,8 +126,8 @@ class Hdf5File : public FileInterface {
 
     static const std::string metadata_group_name;
     static const std::vector<std::string> header_dataset_names;
-    std::unique_ptr<H5Handles> m_data_file{nullptr};
-    std::vector<std::unique_ptr<H5Handles>> m_header_files;
+    std::unique_ptr<H5Handles> m_data_dataset{nullptr};
+    std::vector<std::unique_ptr<H5Handles>> m_header_datasets{};
 
   public:
     /**

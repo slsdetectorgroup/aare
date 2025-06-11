@@ -247,6 +247,7 @@ std::string RemoveUnit(std::string &str) {
     return unit;
 }
 
+
 // template <> TimingMode StringTo<TimingMode>(std::string mode);
 
 } // namespace aare
