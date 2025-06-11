@@ -9,42 +9,13 @@
 namespace aare {
 
 using ns = std::chrono::nanoseconds;
-/**
- * @brief Implementation used in Hdf5MasterFile to parse the file name
- */
-class Hdf5FileNameComponents {
-    bool m_old_scheme{false};
-    std::filesystem::path m_base_path{};
-    std::string m_base_name{};
-    std::string m_ext{};
-    int m_file_index{};
-
-  public:
-    Hdf5FileNameComponents(const std::filesystem::path &fname);
-
-    /// @brief Get the filename including path of the master file.
-    /// (i.e. what was passed in to the constructor))
-    std::filesystem::path master_fname() const;
-
-    /// @brief Get the filename including path of the data file.
-    /// @param mod_id module id run_d[module_id]_f0_0
-    /// @param file_id file id run_d0_f[file_id]_0
-    std::filesystem::path data_fname(size_t mod_id, size_t file_id) const;
-
-    const std::filesystem::path &base_path() const;
-    const std::string &base_name() const;
-    const std::string &ext() const;
-    int file_index() const;
-    void set_old_scheme(bool old_scheme);
-};
 
 /**
  * @brief Class for parsing a master file either in our .json format or the old
  * .Hdf5 format
  */
 class Hdf5MasterFile {
-
-    Hdf5FileNameComponents m_fnc;
+    std::filesystem::path m_file_name{};
     std::string m_version;
     DetectorType m_type;
     TimingMode m_timing_mode;
@@ -95,8 +66,7 @@ class Hdf5MasterFile {
   public:
     Hdf5MasterFile(const std::filesystem::path &fpath);
 
-    std::filesystem::path master_fname() const;
-    std::filesystem::path data_fname(size_t mod_id, size_t file_id) const;
+    std::filesystem::path file_name() const;
 
     const std::string &version() const; //!< For example "7.2"
     const DetectorType &detector_type() const;

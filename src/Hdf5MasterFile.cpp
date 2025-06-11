@@ -4,84 +4,16 @@
 #include <sstream>
 namespace aare {
 
-Hdf5FileNameComponents::Hdf5FileNameComponents(
-    const std::filesystem::path &fname) {
-    m_base_path = fname.parent_path();
-    m_base_name = fname.stem();
-    m_ext = fname.extension();
-
-    if (m_ext != ".h5") {
-        throw std::runtime_error(LOCATION +
-                                 "Unsupported file type. (only .h5)");
-    }
-
-    // parse file index
-    try {
-        auto pos = m_base_name.rfind('_');
-        m_file_index = std::stoi(m_base_name.substr(pos + 1));
-    } catch (const std::invalid_argument &e) {
-        throw std::runtime_error(LOCATION + "Could not parse file index");
-    }
-
-    // remove master from base name
-    auto pos = m_base_name.find("_master_");
-    if (pos != std::string::npos) {
-        m_base_name.erase(pos);
-    } else {
-        throw std::runtime_error(LOCATION +
-                                 "Could not find _master_ in file name");
-    }
-}
-
-std::filesystem::path Hdf5FileNameComponents::master_fname() const {
-    return m_base_path /
-           fmt::format("{}_master_{}{}", m_base_name, m_file_index, m_ext);
-}
-
-std::filesystem::path Hdf5FileNameComponents::data_fname(size_t mod_id,
-                                                         size_t file_id) const {
-
-    std::string fmt = "{}_d{}_f{}_{}.h5";
-    // Before version X we used to name the data files f000000000000
-    if (m_old_scheme) {
-        fmt = "{}_d{}_f{:012}_{}.h5";
-    }
-    return m_base_path /
-           fmt::format(fmt, m_base_name, mod_id, file_id, m_file_index);
-}
-
-void Hdf5FileNameComponents::set_old_scheme(bool old_scheme) {
-    m_old_scheme = old_scheme;
-}
-
-const std::filesystem::path &Hdf5FileNameComponents::base_path() const {
-    return m_base_path;
-}
-const std::string &Hdf5FileNameComponents::base_name() const {
-    return m_base_name;
-}
-const std::string &Hdf5FileNameComponents::ext() const { return m_ext; }
-int Hdf5FileNameComponents::file_index() const { return m_file_index; }
-
 Hdf5MasterFile::Hdf5MasterFile(const std::filesystem::path &fpath)
-    : m_fnc(fpath) {
+    : m_file_name(fpath) {
     if (!std::filesystem::exists(fpath)) {
         throw std::runtime_error(LOCATION + " File does not exist");
     }
-    if (m_fnc.ext() == ".h5") {
-        parse_acquisition_metadata(fpath);
-    } else {
-        throw std::runtime_error(LOCATION + "Unsupported file type");
-    }
+    parse_acquisition_metadata(fpath);
 }
 
-std::filesystem::path Hdf5MasterFile::master_fname() const {
-    return m_fnc.master_fname();
-}
-
-std::filesystem::path Hdf5MasterFile::data_fname(size_t mod_id,
-                                                 size_t file_id) const {
-    return m_fnc.data_fname(mod_id, file_id);
+std::filesystem::path Hdf5MasterFile::file_name() const {
+    return m_file_name;
 }
 
 const std::string &Hdf5MasterFile::version() const { return m_version; }

@@ -191,7 +191,7 @@ void Hdf5File::open_data_file() {
                                  "Unsupported mode. Can only read Hdf5 files.");
     try {
         m_data_dataset = std::make_unique<H5Handles>(
-            m_master.master_fname().string(), metadata_group_name + "/data");
+            m_master.file_name().string(), metadata_group_name + "/data");
 
         m_total_frames = m_data_dataset->get_dims()[0];
         m_rows = m_data_dataset->get_dims()[1];
@@ -215,7 +215,7 @@ void Hdf5File::open_header_files() {
     try {
         for (size_t i = 0; i != header_dataset_names.size(); ++i) {
             m_header_datasets.push_back(std::make_unique<H5Handles>(
-                m_master.master_fname().string(),
+                m_master.file_name().string(),
                 metadata_group_name + header_dataset_names[i]));
             LOG(logDEBUG) << header_dataset_names[i]
                           << " Dataset dimensions: size = "
