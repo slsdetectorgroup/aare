@@ -7,11 +7,7 @@ namespace aare {
 /**
  * @brief RAII File class for reading, and in the future potentially writing
  * image files in various formats. Minimal generic interface. For specail
-<<<<<<< HEAD
  * fuctions plase use the RawFile, NumpyFile or Hdf5File classes directly. Wraps
-=======
- * fuctions plase use the RawFile or NumpyFile classes directly. Wraps
->>>>>>> main
  * FileInterface to abstract the underlying file format
  * @note **frame_number** refers the the frame number sent by the detector while
  * **frame_index** is the position of the frame in the file
