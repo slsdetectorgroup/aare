@@ -1,5 +1,6 @@
 #include "aare/Hdf5MasterFile.hpp"
 #include "aare/logger.hpp"
+#include "aare/to_string.hpp"
 #include <iomanip>
 #include <sstream>
 namespace aare {

@@ -1,4 +1,5 @@
 #include "aare/RawMasterFile.hpp"
+#include "aare/to_string.hpp"
 #include <sstream>
 namespace aare {
 

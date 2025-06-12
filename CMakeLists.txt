@@ -358,6 +358,9 @@ set(PUBLICHEADERS
     include/aare/ClusterVector.hpp
     include/aare/decode.hpp
     include/aare/type_traits.hpp
+    include/aare/scan_parameters.hpp
+    include/aare/to_string.hpp
+    include/aare/string_utils.hpp
     include/aare/defs.hpp
     include/aare/Dtype.hpp
     include/aare/File.hpp
@@ -386,6 +389,8 @@ set(PUBLICHEADERS
 set(SourceFiles
     ${CMAKE_CURRENT_SOURCE_DIR}/src/CtbRawFile.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/src/defs.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/to_string.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/string_utils.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/src/Dtype.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/src/decode.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/src/Frame.cpp
@@ -466,6 +471,7 @@ if(AARE_TESTS)
     set(TestSources
             ${CMAKE_CURRENT_SOURCE_DIR}/src/algorithm.test.cpp
             ${CMAKE_CURRENT_SOURCE_DIR}/src/defs.test.cpp
+            ${CMAKE_CURRENT_SOURCE_DIR}/src/to_string.test.cpp
             ${CMAKE_CURRENT_SOURCE_DIR}/src/decode.test.cpp
             ${CMAKE_CURRENT_SOURCE_DIR}/src/Dtype.test.cpp
             ${CMAKE_CURRENT_SOURCE_DIR}/src/Frame.test.cpp
