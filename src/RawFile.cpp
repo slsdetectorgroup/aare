@@ -148,7 +148,7 @@ RawMasterFile RawFile::master() const { return m_master; }
  */
 void RawFile::find_geometry() {
 
-    m_geometry.reserve(n_modules());
+    m_geometry.module_pixel_0.reserve(n_modules());
     for (size_t col = 0; col < m_master.geometry().col;
          col += m_master.udp_interfaces_per_module().col)
         for (size_t row = 0; row < m_master.geometry().row;

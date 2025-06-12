@@ -164,21 +164,6 @@ TEST_CASE("Read multipart files", "[.integration]") {
     }
 }
 
-// dummy test class for easy member access
-class RawFileTestWrapper : public RawFile {
-  public:
-    RawFileTestWrapper(const std::filesystem::path &fname,
-                       const std::string &mode = "r")
-        : RawFile(fname, mode) {}
-    void find_geometry() { RawFile::find_geometry(); }
-
-    DetectorGeometry get_geometry() { return this->m_geometry; }
-
-    static DetectorHeader read_header(const std::filesystem::path &fname) {
-        return RawFile::read_header(fname);
-    }
-};
-
 struct TestParameters {
     const std::string master_filename{};
     const uint8_t num_ports{};
@@ -227,6 +212,7 @@ TEST_CASE_PRIVATE(aare, check_find_geometry, "check find_geometry",
 
     RawFile f(fpath, "r");
 
+    f.m_geometry.module_pixel_0.clear();
     f.find_geometry();
 
     auto geometry = f.m_geometry;
@@ -244,7 +230,7 @@ TEST_CASE_PRIVATE(aare, check_find_geometry, "check find_geometry",
         auto subfile1_path = f.master().data_fname(i, 0);
         REQUIRE(std::filesystem::exists(subfile1_path));
 
-        auto header = RawFileTestWrapper::read_header(subfile1_path);
+        auto header = RawFile::read_header(subfile1_path);
 
         CHECK(header.column == geometry.module_pixel_0[i].col_index);
         CHECK(header.row == geometry.module_pixel_0[i].row_index);
@@ -263,8 +249,9 @@ TEST_CASE_PRIVATE(aare, check_find_geometry, "check find_geometry",
 
 } // close the namespace
 
-TEST_CASE("Open multi module file with ROI",
-          "[.integration][.files][.rawfile]") {
+TEST_CASE_PRIVATE(aare, open_multi_module_file_with_roi,
+                  "Open multi module file with ROI",
+                  "[.integration][.files][.rawfile]") {
 
     auto fpath = test_data_path() / "raw/SingleChipROI/Data_master_0.json";
     REQUIRE(std::filesystem::exists(fpath));
@@ -278,6 +265,7 @@ TEST_CASE("Open multi module file with ROI",
 
     CHECK(f.n_modules_in_roi() == 1);
 }
+} // close namespace aare
 
 TEST_CASE("Read file with unordered frames", "[.integration]") {
     // TODO! Better explanation and error message

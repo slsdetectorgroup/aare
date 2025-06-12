@@ -27,6 +27,7 @@ struct ModuleConfig {
 };
 #ifdef AARE_TESTS
 TEST_CASE_PRIVATE_FWD(check_find_geometry) // forward declaration
+TEST_CASE_PRIVATE_FWD(open_multi_module_file_with_roi)
 #endif
 
 /**
@@ -39,6 +40,7 @@ class RawFile : public FileInterface {
 
 #ifdef AARE_TESTS
     FRIEND_TEST(check_find_geometry)
+    FRIEND_TEST(open_multi_module_file_with_roi)
 #endif
     std::vector<std::unique_ptr<RawSubFile>> m_subfiles;
     ModuleConfig cfg{0, 0};
@@ -48,7 +50,6 @@ class RawFile : public FileInterface {
 
     std::vector<ssize_t> m_modules_in_roi{};
 
-  protected:
     DetectorGeometry m_geometry;
 
   public:
@@ -84,7 +85,6 @@ class RawFile : public FileInterface {
     size_t bitdepth() const override;
     xy geometry();
     size_t n_modules() const;
-    size_t n_modules_in_roi() const;
 
     RawMasterFile master() const;
 
@@ -116,7 +116,8 @@ class RawFile : public FileInterface {
 
     void open_subfiles();
 
-  protected:
+    size_t n_modules_in_roi() const;
+
     void find_geometry();
 };
 
