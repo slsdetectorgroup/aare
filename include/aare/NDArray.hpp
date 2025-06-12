@@ -21,7 +21,6 @@ TODO! Add expression templates for operators
 
 namespace aare {
 
-
 template <typename T, ssize_t Ndim = 2>
 class NDArray : public ArrayExpr<NDArray<T, Ndim>, Ndim> {
     std::array<ssize_t, Ndim> shape_;
@@ -48,7 +47,6 @@ class NDArray : public ArrayExpr<NDArray<T, Ndim>, Ndim> {
                                 std::multiplies<>())),
           data_(new T[size_]) {}
 
-
     /**
      * @brief Construct a new NDArray object with a shape and value.
      *
@@ -69,8 +67,8 @@ class NDArray : public ArrayExpr<NDArray<T, Ndim>, Ndim> {
         std::copy(v.begin(), v.end(), begin());
     }
 
-    template<size_t Size>
-    NDArray(const std::array<T, Size>& arr) : NDArray<T,1>({Size}) {
+    template <size_t Size>
+    NDArray(const std::array<T, Size> &arr) : NDArray<T, 1>({Size}) {
         std::copy(arr.begin(), arr.end(), begin());
     }
 
@@ -79,7 +77,6 @@ class NDArray : public ArrayExpr<NDArray<T, Ndim>, Ndim> {
         : shape_(other.shape_), strides_(c_strides<Ndim>(shape_)),
           size_(other.size_), data_(other.data_) {
         other.reset(); // TODO! is this necessary?
-
     }
 
     // Copy constructor
@@ -113,10 +110,10 @@ class NDArray : public ArrayExpr<NDArray<T, Ndim>, Ndim> {
     NDArray &operator-=(const NDArray &other);
     NDArray &operator*=(const NDArray &other);
 
-    //Write directly to the data array, or create a new one
-    template<size_t Size>
-    NDArray<T,1>& operator=(const std::array<T,Size> &other){
-        if(Size != size_){
+    // Write directly to the data array, or create a new one
+    template <size_t Size>
+    NDArray<T, 1> &operator=(const std::array<T, Size> &other) {
+        if (Size != size_) {
             delete[] data_;
             size_ = Size;
             data_ = new T[size_];
@@ -142,6 +139,9 @@ class NDArray : public ArrayExpr<NDArray<T, Ndim>, Ndim> {
 
     NDArray<bool, Ndim> operator>(const NDArray &other);
 
+    bool equals(const NDArray<T, Ndim> &other,
+                const T tolerance = std::numeric_limits<T>::epsilon()) const;
+
     bool operator==(const NDArray &other) const;
     bool operator!=(const NDArray &other) const;
 
@@ -156,11 +156,6 @@ class NDArray : public ArrayExpr<NDArray<T, Ndim>, Ndim> {
     NDArray operator/(const T & /*value*/);
 
     NDArray &operator&=(const T & /*mask*/);
-
-  
-
-
-    
 
     void sqrt() {
         for (int i = 0; i < size_; ++i) {
@@ -345,9 +340,6 @@ NDArray<T, Ndim> &NDArray<T, Ndim>::operator+=(const T &value) {
     return *this;
 }
 
-
-
-
 template <typename T, ssize_t Ndim>
 NDArray<T, Ndim> NDArray<T, Ndim>::operator+(const T &value) {
     NDArray result = *this;
@@ -391,6 +383,7 @@ NDArray<T, Ndim> NDArray<T, Ndim>::operator*(const T &value) {
     result *= value;
     return result;
 }
+
 // template <typename T, ssize_t Ndim> void NDArray<T, Ndim>::Print() {
 //     if (shape_[0] < 20 && shape_[1] < 20)
 //         Print_all();
@@ -433,7 +426,7 @@ template <typename T, ssize_t Ndim>
 void save(NDArray<T, Ndim> &img, std::string &pathname) {
     std::ofstream f;
     f.open(pathname, std::ios::binary);
-    f.write(img.buffer(), img.size() * sizeof(T));
+    f.write(reinterpret_cast<char *>(img.buffer()), img.size() * sizeof(T));
     f.close();
 }
 
@@ -443,11 +436,38 @@ NDArray<T, Ndim> load(const std::string &pathname,
     NDArray<T, Ndim> img{shape};
     std::ifstream f;
     f.open(pathname, std::ios::binary);
-    f.read(img.buffer(), img.size() * sizeof(T));
+    f.read(reinterpret_cast<char *>(img.buffer()), img.size() * sizeof(T));
     f.close();
     return img;
 }
 
+template <typename T, ssize_t Ndim = 1>
+NDArray<T, Ndim> load_non_binary_file(const std::string &filename,
+                                      const std::array<ssize_t, Ndim> shape) {
+    std::string word;
+    NDArray<T, Ndim> array(shape);
+    try {
+        std::ifstream file(filename, std::ios_base::in);
+        if (!file.good()) {
+            throw std::logic_error("file does not exist");
+        }
 
+        std::stringstream file_buffer;
+        file_buffer << file.rdbuf();
+
+        ssize_t counter = 0;
+        while (file_buffer >> word && counter < size) {
+            array[counter] = static_cast<T>(
+                std::stod(word)); // TODO change for different Types
+            ++counter;
+        }
+
+        file.close();
+    } catch (const std::exception &e) {
+        std::cerr << "Error: " << e.what() << std::endl;
+    }
+
+    return array;
+}
 
 } // namespace aare
