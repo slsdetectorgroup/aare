@@ -1,7 +1,6 @@
 #pragma once
 
 #include "aare/Dtype.hpp"
-#include "aare/scan_parameters.hpp"
 #include "aare/type_traits.hpp"
 
 #include <algorithm>

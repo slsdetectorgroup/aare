@@ -4,6 +4,7 @@
 
 using namespace aare;
 
+// TODO: Move these to to_string.test.cpp once ToSTring is implemented
 TEST_CASE("Parse scan parameters") {
     ScanParameters s("[enabled\ndac dac 4\nstart 500\nstop 2200\nstep "
                      "5\nsettleTime 100us\n]");
@@ -22,3 +23,4 @@ TEST_CASE("A disabled scan") {
     REQUIRE(s.stop() == 0);
     REQUIRE(s.step() == 0);
 }
+

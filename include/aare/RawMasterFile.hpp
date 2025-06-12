@@ -1,5 +1,7 @@
 #pragma once
 #include "aare/defs.hpp"
+#include "aare/scan_parameters.hpp"
+
 #include <filesystem>
 #include <fmt/format.h>
 #include <fstream>

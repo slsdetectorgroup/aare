@@ -3,7 +3,6 @@
 #include <string>
 #include <sstream>
 
-
 namespace aare {
 
 class ScanParameters {
@@ -12,10 +11,14 @@ class ScanParameters {
     int m_start = 0;
     int m_stop = 0;
     int m_step = 0;
-    // TODO! add settleTime, requires string to time conversion
+    // ns m_dac_settle_time{0};
+    //  TODO! add settleTime, requires string to time conversion
 
   public:
     // "[enabled\ndac dac 4\nstart 500\nstop 2200\nstep 5\nsettleTime 100us\n]"
+    // TODO: use StringTo<ScanParameters> and move this to to_string
+    // add ways of setting the members of the class
+
     ScanParameters(const std::string &par) {
         std::istringstream iss(par.substr(1, par.size() - 2));
         std::string line;

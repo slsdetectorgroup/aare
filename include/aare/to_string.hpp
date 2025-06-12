@@ -1,6 +1,7 @@
 #pragma once
 
 #include "aare/defs.hpp"
+#include "aare/scan_parameters.hpp"
 #include "aare/string_utils.hpp"
 
 #include <optional>
@@ -266,22 +267,22 @@ std::ostream &operator<<(std::ostream &os, const std::optional<T> &opt) {
 }
 
 // enums
-template <> DetectorType StringTo(const std::string & /*name*/);
 template <> std::string ToString(DetectorType arg);
+template <> DetectorType StringTo(const std::string & /*name*/);
 
-template <> TimingMode StringTo(const std::string & /*mode*/);
 template <> std::string ToString(TimingMode arg);
+template <> TimingMode StringTo(const std::string & /*mode*/);
 
-template <> FrameDiscardPolicy StringTo(const std::string & /*mode*/);
 template <> std::string ToString(FrameDiscardPolicy arg);
+template <> FrameDiscardPolicy StringTo(const std::string & /*mode*/);
 
-template <> BurstMode StringTo(const std::string & /*mode*/);
 template <> std::string ToString(BurstMode arg);
+template <> BurstMode StringTo(const std::string & /*mode*/);
 
-std::ostream &operator<<(std::ostream &os, const ScanParameters &r);
-template <> std::string ToString(ScanParameters arg);
-
-std::ostream &operator<<(std::ostream &os, const ROI &roi);
 template <> std::string ToString(ROI arg);
+std::ostream &operator<<(std::ostream &os, const ROI &roi);
+
+template <> std::string ToString(ScanParameters arg);
+std::ostream &operator<<(std::ostream &os, const ScanParameters &r);
 
 } // namespace aare

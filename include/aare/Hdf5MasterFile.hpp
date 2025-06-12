@@ -1,6 +1,8 @@
 #pragma once
-#include "H5Cpp.h"
 #include "aare/defs.hpp"
+#include "aare/scan_parameters.hpp"
+
+#include "H5Cpp.h"
 #include <filesystem>
 #include <fmt/format.h>
 #include <fstream>
