@@ -19,6 +19,7 @@ will lead to garbage data being read.
 Below is the API of the ClusterFile_Cluster3x3i but all variants share the same API.
 
 .. autoclass:: aare._aare.ClusterFile_Cluster3x3i
+    :special-members: __init__
     :members:
     :undoc-members:
     :show-inheritance:
