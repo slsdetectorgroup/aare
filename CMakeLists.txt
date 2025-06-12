@@ -335,13 +335,10 @@ if(AARE_ASAN)
     )
 endif()
 
-
-
-
-
 if(AARE_TESTS)
     enable_testing()
     add_subdirectory(tests)
+    target_compile_definitions(tests PRIVATE AARE_TESTS)
 endif()
 
 ###------------------------------------------------------------------------------MAIN LIBRARY
@@ -423,6 +420,10 @@ target_link_libraries(
     $<BUILD_INTERFACE:lmfit>
 
 )
+
+if(AARE_TESTS)
+    target_compile_definitions(aare_core PRIVATE AARE_TESTS)
+endif()
 
 set_target_properties(aare_core PROPERTIES
     ARCHIVE_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}

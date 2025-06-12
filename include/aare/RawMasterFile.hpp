@@ -1,5 +1,4 @@
 #pragma once
-// #include "aare/RawFile.hpp"
 #include "aare/defs.hpp"
 #include <algorithm>
 #include <filesystem>
@@ -63,7 +62,7 @@ class ScanParameters {
     void increment_stop();
 };
 
-class RawFile; // forward declaration
+// class RawFile; // forward declaration
 
 /**
  * @brief Class for parsing a master file either in our .json format or the old

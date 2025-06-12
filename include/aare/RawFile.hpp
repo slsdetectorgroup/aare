@@ -5,6 +5,10 @@
 #include "aare/RawMasterFile.hpp"
 #include "aare/RawSubFile.hpp"
 
+#ifdef AARE_TESTS
+#include "../tests/friend_test.hpp"
+#endif
+
 #include <optional>
 
 namespace aare {
@@ -21,6 +25,9 @@ struct ModuleConfig {
         return true;
     }
 };
+#ifdef AARE_TESTS
+TEST_CASE_PRIVATE_FWD(check_find_geometry) // forward declaration
+#endif
 
 /**
  * @brief Class to read .raw files. The class will parse the master file
@@ -30,7 +37,9 @@ struct ModuleConfig {
  */
 class RawFile : public FileInterface {
 
-    friend class RawMasterFile;
+#ifdef AARE_TESTS
+    FRIEND_TEST(check_find_geometry)
+#endif
     std::vector<std::unique_ptr<RawSubFile>> m_subfiles;
     ModuleConfig cfg{0, 0};
     RawMasterFile m_master;
@@ -81,6 +90,13 @@ class RawFile : public FileInterface {
 
     DetectorType detector_type() const override;
 
+    /**
+     * @brief read the header of the file
+     * @param fname path to the data subfile
+     * @return DetectorHeader
+     */
+    static DetectorHeader read_header(const std::filesystem::path &fname);
+
   private:
     /**
      * @brief read the frame at the given frame index into the image buffer
@@ -102,13 +118,6 @@ class RawFile : public FileInterface {
 
   protected:
     void find_geometry();
-
-    /**
-     * @brief read the header of the file
-     * @param fname path to the data subfile
-     * @return DetectorHeader
-     */
-    static DetectorHeader read_header(const std::filesystem::path &fname);
 };
 
 } // namespace aare

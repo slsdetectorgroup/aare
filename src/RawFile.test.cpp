@@ -7,6 +7,7 @@
 #include <filesystem>
 
 #include "test_config.hpp"
+#include "test_macros.hpp"
 
 using aare::File;
 using aare::RawFile;
@@ -184,7 +185,8 @@ struct TestParameters {
     const DetectorGeometry geometry{};
 };
 
-TEST_CASE("check find_geometry", "[.integration][.files][.rawfile]") {
+TEST_CASE_PRIVATE(aare, check_find_geometry, "check find_geometry",
+                  "[.integration][.files][.rawfile]") {
 
     auto test_parameters = GENERATE(
         TestParameters{
@@ -223,9 +225,11 @@ TEST_CASE("check find_geometry", "[.integration][.files][.rawfile]") {
 
     REQUIRE(std::filesystem::exists(fpath));
 
-    RawFileTestWrapper f(fpath, "r");
+    RawFile f(fpath, "r");
 
-    auto geometry = f.get_geometry();
+    f.find_geometry();
+
+    auto geometry = f.m_geometry;
 
     CHECK(geometry.modules_x == test_parameters.geometry.modules_x);
     CHECK(geometry.modules_y == test_parameters.geometry.modules_y);
@@ -256,6 +260,8 @@ TEST_CASE("check find_geometry", "[.integration][.files][.rawfile]") {
               test_parameters.geometry.module_pixel_0[i].origin_y);
     }
 }
+
+} // close the namespace
 
 TEST_CASE("Open multi module file with ROI",
           "[.integration][.files][.rawfile]") {
