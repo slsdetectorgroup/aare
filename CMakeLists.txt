@@ -374,11 +374,13 @@ set(PUBLICHEADERS
     include/aare/Fit.hpp
     include/aare/FileInterface.hpp
     include/aare/FilePtr.hpp
+    include/aare/FlatField.hpp
     include/aare/Frame.hpp
     include/aare/GainMap.hpp
     include/aare/geo_helpers.hpp
     include/aare/Hdf5FileReader.hpp
     include/aare/JungfrauDataFile.hpp
+    include/aare/MythenDetectorSpecifications.hpp
     include/aare/MythenFileReader.hpp
     include/aare/NDArray.hpp
     include/aare/NDView.hpp

@@ -2,6 +2,53 @@
 
 namespace aare {
 
+AngleCalibration::AngleCalibration(
+    std::shared_ptr<MythenDetectorSpecifications> mythen_detector_,
+    std::shared_ptr<FlatField> flat_field_,
+    std::shared_ptr<MythenFileReader> mythen_file_reader_)
+    : mythen_detector(mythen_detector_), flat_field(flat_field_),
+      mythen_file_reader(mythen_file_reader_) {
+    centers.reserve(mythen_detector->max_modules());
+    conversions.reserve(mythen_detector->max_modules());
+    offsets.reserve(mythen_detector->max_modules());
+
+    num_bins = std::floor(mythen_detector->max_angle() / histogram_bin_width) -
+               std::floor(mythen_detector->min_angle() / histogram_bin_width) +
+               1; // TODO only works if negative
+                  // and positive angle
+}
+
+void AngleCalibration::set_histogram_bin_width(double bin_width) {
+    histogram_bin_width = bin_width;
+
+    num_bins = std::floor(mythen_detector->max_angle() / histogram_bin_width) -
+               std::floor(mythen_detector->min_angle() / histogram_bin_width) +
+               1; // TODO only works if negative
+                  // and positive angle
+}
+
+double AngleCalibration::get_histogram_bin_width() const {
+    return histogram_bin_width;
+}
+
+ssize_t AngleCalibration::get_new_num_bins() const { return num_bins; }
+
+std::vector<double> AngleCalibration::get_centers() const { return centers; }
+
+std::vector<double> AngleCalibration::get_conversions() const {
+    return conversions;
+}
+
+std::vector<double> AngleCalibration::get_offsets() const { return offsets; }
+
+NDView<double, 1> AngleCalibration::get_new_photon_counts() const {
+    return new_photon_counts.view();
+}
+
+NDView<double, 1> AngleCalibration::get_new_statistical_errors() const {
+    return new_photon_count_errors.view();
+}
+
 void AngleCalibration::read_initial_calibration_from_file(
     const std::string &filename) {
 
@@ -45,7 +92,7 @@ void AngleCalibration::read_initial_calibration_from_file(
     }
 }
 
-parameters AngleCalibration::convert_to_EE_parameters() {
+parameters AngleCalibration::convert_to_EE_parameters() const {
 
     // normal distance between sample and detector (R)
     std::vector<double> normal_distances(centers.size());
@@ -68,14 +115,14 @@ parameters AngleCalibration::convert_to_EE_parameters() {
 }
 
 std::tuple<double, double, double>
-AngleCalibration::convert_to_EE_parameters(const size_t module_index) {
+AngleCalibration::convert_to_EE_parameters(const size_t module_index) const {
     return convert_to_EE_parameters(centers[module_index],
                                     conversions[module_index],
                                     offsets[module_index]);
 }
 
 std::tuple<double, double, double> AngleCalibration::convert_to_EE_parameters(
-    const double center, const double conversion, const double offset) {
+    const double center, const double conversion, const double offset) const {
     const double module_center_distance =
         center * MythenDetectorSpecifications::pitch();
     const double normal_distance =
@@ -86,7 +133,7 @@ std::tuple<double, double, double> AngleCalibration::convert_to_EE_parameters(
 }
 
 size_t AngleCalibration::global_to_local_strip_index_conversion(
-    const size_t global_strip_index) {
+    const size_t global_strip_index) const {
     const size_t module_index =
         global_strip_index / MythenDetectorSpecifications::strips_per_module();
     // local strip index in module
@@ -110,7 +157,7 @@ AngleCalibration::convert_to_BC_parameters() {}
 
 double AngleCalibration::diffraction_angle_from_DG_parameters(
     const double center, const double conversion, const double offset,
-    const size_t strip_index, const double distance_to_strip) {
+    const size_t strip_index, const double distance_to_strip) const {
 
     return offset + 180.0 / M_PI *
                         (center * std::abs(conversion) -
@@ -121,7 +168,7 @@ double AngleCalibration::diffraction_angle_from_DG_parameters(
 double AngleCalibration::diffraction_angle_from_EE_parameters(
     const double module_center_distance, const double normal_distance,
     const double angle, const size_t strip_index,
-    const double distance_to_strip) {
+    const double distance_to_strip) const {
 
     return angle - 180.0 / M_PI *
                        atan((module_center_distance -
@@ -135,22 +182,8 @@ double AngleCalibration::diffraction_angle_from_EE_parameters(
 }
 
 double AngleCalibration::angular_strip_width_from_DG_parameters(
-    const size_t strip_index) {
-
-    const size_t module_index =
-        strip_index / MythenDetectorSpecifications::strips_per_module();
-
-    return angular_strip_width_from_DG_parameters(
-        centers[module_index], conversions[module_index], offsets[module_index],
-        strip_index);
-}
-
-double AngleCalibration::angular_strip_width_from_DG_parameters(
     const double center, const double conversion, const double offset,
-    const size_t strip_index) {
-
-    const size_t local_strip_index =
-        global_to_local_strip_index_conversion(strip_index);
+    const size_t local_strip_index) const {
 
     return std::abs(diffraction_angle_from_DG_parameters(
                         center, conversion, offset, local_strip_index, -0.5) -
@@ -159,24 +192,8 @@ double AngleCalibration::angular_strip_width_from_DG_parameters(
 }
 
 double AngleCalibration::angular_strip_width_from_EE_parameters(
-    const size_t strip_index) {
-
-    const size_t module_index =
-        strip_index / MythenDetectorSpecifications::strips_per_module();
-
-    const auto [module_center_distance, normal_distance, angle] =
-        convert_to_EE_parameters(module_index);
-
-    return angular_strip_width_from_EE_parameters(
-        module_center_distance, normal_distance, angle, strip_index);
-}
-
-double AngleCalibration::angular_strip_width_from_EE_parameters(
     const double module_center_distance, const double normal_distance,
-    const double angle, const size_t strip_index) {
-
-    const size_t local_strip_index =
-        global_to_local_strip_index_conversion(strip_index);
+    const double angle, const size_t local_strip_index) const {
 
     return std::abs(diffraction_angle_from_EE_parameters(
                         module_center_distance, normal_distance, angle,
@@ -196,10 +213,10 @@ void AngleCalibration::calculate_fixed_bin_angle_width_histogram(
     new_photon_count_errors =
         NDArray<double, 1>(std::array<ssize_t, 1>{num_bins});
 
+    // TODO: maybe group these into a 2d array - better cache usage
     NDArray<double, 1> bin_counts(std::array<ssize_t, 1>{num_bins}, 0.0);
     NDArray<double, 1> new_statistical_weights(std::array<ssize_t, 1>{num_bins},
                                                0.0);
-
     NDArray<double, 1> new_errors(std::array<ssize_t, 1>{num_bins}, 0.0);
 
     NDArray<double, 1> inverse_normalized_flatfield =
@@ -228,7 +245,7 @@ void AngleCalibration::calculate_fixed_bin_angle_width_histogram(
 void AngleCalibration::redistribute_photon_counts_to_fixed_angle_bins(
     const MythenFrame &frame, NDView<double, 1> bin_counts,
     NDView<double, 1> new_statistical_weights, NDView<double, 1> new_errors,
-    NDView<double, 1> inverse_normalized_flatfield) {
+    NDView<double, 1> inverse_normalized_flatfield) const {
 
     ssize_t channel = 0; // TODO handle mask - FlatField still 1d
 
@@ -242,6 +259,8 @@ void AngleCalibration::redistribute_photon_counts_to_fixed_angle_bins(
     std::cout << "position: " << frame.detector_angle
               << std::endl; // replace with log
 
+    double exposure_rate = 1. / mythen_detector->exposure_time();
+
     for (ssize_t strip_index = 0; strip_index < mythen_detector->num_strips();
          ++strip_index) {
 
@@ -254,7 +273,8 @@ void AngleCalibration::redistribute_photon_counts_to_fixed_angle_bins(
 
         double poisson_error = std::sqrt(frame.photon_counts(strip_index)) *
                                inverse_normalized_flatfield(strip_index) *
-                               exposure_rate; // not sure what this is
+                               exposure_rate;
+
         double corrected_photon_count =
             frame.photon_counts(strip_index) *
             inverse_normalized_flatfield(strip_index) * exposure_rate;
@@ -273,8 +293,9 @@ void AngleCalibration::redistribute_photon_counts_to_fixed_angle_bins(
             diffraction_angle > mythen_detector->max_angle())
             continue;
 
-        double angle_covered_by_strip =
-            angular_strip_width_from_DG_parameters(strip_index);
+        double angle_covered_by_strip = angular_strip_width_from_DG_parameters(
+            centers[module_index], conversions[module_index],
+            offsets[module_index], local_strip_index);
 
         double photon_count_per_bin = histogram_bin_width *
                                       corrected_photon_count /
@@ -324,8 +345,11 @@ void AngleCalibration::redistribute_photon_counts_to_fixed_angle_bins(
     }
 }
 
-void AngleCalibration::write_to_file(const std::string &filename) {
-    std::ofstream output_file(filename);
+void AngleCalibration::write_to_file(
+    const std::string &filename, const bool store_nonzero_bins,
+    const std::filesystem::path &filepath) const {
+
+    std::ofstream output_file(filepath / filename);
 
     if (!output_file) {
         std::cerr << "Error opening file!"
@@ -335,7 +359,8 @@ void AngleCalibration::write_to_file(const std::string &filename) {
     output_file << std::fixed << std::setprecision(15);
 
     for (ssize_t i = 0; i < num_bins; ++i) {
-        if (new_photon_counts[i] <= std::numeric_limits<double>::epsilon()) {
+        if (new_photon_counts[i] <= std::numeric_limits<double>::epsilon() &&
+            store_nonzero_bins) {
             continue;
         }
 

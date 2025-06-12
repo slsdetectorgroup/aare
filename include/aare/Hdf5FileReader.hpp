@@ -75,21 +75,22 @@ class HDF5Dataset {
         dataspace.getSimpleExtentDims(shape.data(), nullptr);
     }
 
-    hsize_t get_shape(ssize_t index) { return shape[index]; }
+    hsize_t get_shape(ssize_t index) const { return shape[index]; }
 
-    std::vector<hsize_t> get_shape() { return shape; }
+    std::vector<hsize_t> get_shape() const { return shape; }
 
-    H5::DataType get_datatype() { return datatype; }
+    H5::DataType get_datatype() const { return datatype; }
 
-    const std::type_info *get_cpp_type() { return cpp_type; }
+    const std::type_info *get_cpp_type() const { return cpp_type; }
 
     /**
      * Reads subset of dataset into the buffer
      * e.g. to read one 2d frame pass Subset({shape[1], shape[2]}, {frame_index,
      * 0,0})
      */
-    void read_into_buffer(std::byte *buffer,
-                          std::optional<const Subset> subset = std::nullopt) {
+    void
+    read_into_buffer(std::byte *buffer,
+                     std::optional<const Subset> subset = std::nullopt) const {
 
         if (subset) {
             // TODO treat scalar cases
@@ -119,7 +120,7 @@ class HDF5Dataset {
         }
     }
 
-    Frame store_as_frame() {
+    Frame store_as_frame() const {
         uint32_t rows{}, cols{};
         if (rank == 1) {
             rows = 1;
@@ -139,7 +140,8 @@ class HDF5Dataset {
         return frame;
     }
 
-    template <typename T, ssize_t NDim> NDArray<T, NDim> store_as_ndarray() {
+    template <typename T, ssize_t NDim>
+    NDArray<T, NDim> store_as_ndarray() const {
         if (NDim != rank) {
             std::cout
                 << "Warning: dataset dimension and array dimension mismatch"
@@ -190,7 +192,7 @@ class HDF5FileReader {
 
     void close_file() { file.close(); }
 
-    HDF5Dataset get_dataset(const std::string &dataset_name) {
+    HDF5Dataset get_dataset(const std::string &dataset_name) const {
         H5::DataSet dataset;
         try {
             dataset = file.openDataSet(dataset_name);

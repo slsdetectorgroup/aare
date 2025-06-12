@@ -139,6 +139,9 @@ class NDArray : public ArrayExpr<NDArray<T, Ndim>, Ndim> {
 
     NDArray<bool, Ndim> operator>(const NDArray &other);
 
+    bool equals(const NDArray<T, Ndim> &other,
+                const T tolerance = std::numeric_limits<T>::epsilon()) const;
+
     bool operator==(const NDArray &other) const;
     bool operator!=(const NDArray &other) const;
 
@@ -436,6 +439,35 @@ NDArray<T, Ndim> load(const std::string &pathname,
     f.read(reinterpret_cast<char *>(img.buffer()), img.size() * sizeof(T));
     f.close();
     return img;
+}
+
+template <typename T, ssize_t Ndim = 1>
+NDArray<T, Ndim> load_non_binary_file(const std::string &filename,
+                                      const std::array<ssize_t, Ndim> shape) {
+    std::string word;
+    NDArray<T, Ndim> array(shape);
+    try {
+        std::ifstream file(filename, std::ios_base::in);
+        if (!file.good()) {
+            throw std::logic_error("file does not exist");
+        }
+
+        std::stringstream file_buffer;
+        file_buffer << file.rdbuf();
+
+        ssize_t counter = 0;
+        while (file_buffer >> word && counter < size) {
+            array[counter] = static_cast<T>(
+                std::stod(word)); // TODO change for different Types
+            ++counter;
+        }
+
+        file.close();
+    } catch (const std::exception &e) {
+        std::cerr << "Error: " << e.what() << std::endl;
+    }
+
+    return array;
 }
 
 } // namespace aare

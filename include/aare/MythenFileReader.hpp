@@ -43,7 +43,7 @@ class MythenFileReader : public HDF5FileReader {
         frame.photon_counts =
             dataset_photon_count.store_as_ndarray<uint32_t, 1>();
 
-        ++frame.photon_counts;
+        ++frame.photon_counts; // Why though?
 
         auto dataset_detector_angle =
             get_dataset("/entry/instrument/NDAttributes/DetectorAngle");
