@@ -1,15 +1,7 @@
-
-# from ._aare import ClusterFinder_Cluster3x3i, ClusterFinder_Cluster2x2i, ClusterFinderMT_Cluster3x3i, ClusterFinderMT_Cluster2x2i, ClusterCollector_Cluster3x3i, ClusterCollector_Cluster2x2i
-
-
-# from ._aare import ClusterFileSink_Cluster3x3i, ClusterFileSink_Cluster2x2i
-
 from . import _aare
 import numpy as np
 
 _supported_cluster_sizes = [(2,2), (3,3), (5,5), (7,7), (9,9),]
-
-# def _get_class()
 
 def _type_to_char(dtype):
     if dtype == np.int32:
