@@ -211,7 +211,7 @@ TEST_CASE("check find_geometry", "[.integration][.files][.rawfile]") {
                                  ModuleGeometry{0, 512, 256, 1024, 2, 0},
                                  ModuleGeometry{0, 768, 256, 1024, 3, 0}}}},
         TestParameters{
-            "raw/W13_230320/"
+            "raw/eiger_quad_data/"
             "W13_vthreshscan_m21C_300V_800eV_vrpre3400_master_0.json",
             2,
             DetectorGeometry{1, 2, 512, 512, 0, 0,
