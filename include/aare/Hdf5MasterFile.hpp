@@ -43,7 +43,7 @@ class Hdf5MasterFile {
     std::optional<bool> m_quad{};
     std::optional<int> m_number_of_rows{};
     std::optional<std::vector<size_t>> m_rate_corrections{};
-    uint32_t m_adc_mask{};
+    std::optional<uint32_t> m_adc_mask{};
     bool m_analog_flag{};
     std::optional<int> m_analog_samples{};
     bool m_digital_flag{};

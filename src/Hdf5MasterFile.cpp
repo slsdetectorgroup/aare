@@ -308,8 +308,6 @@ void Hdf5MasterFile::parse_acquisition_metadata(
             LOG(logDEBUG) << "Threshold Energies: "
                           << ToString(m_threshold_energy_all);
         } catch (H5::FileIException &e) {
-            std::cout << "No Threshold Energies found in file: " << fpath
-                      << std::endl;
             // keep the optional empty
         }
 
@@ -366,10 +364,10 @@ void Hdf5MasterFile::parse_acquisition_metadata(
         try {
             m_adc_mask = h5_get_scalar_dataset<uint32_t>(
                 file, std::string(metadata_group_name + "ADC Mask"));
+            LOG(logDEBUG) << "ADC Mask: " << m_adc_mask;
         } catch (H5::FileIException &e) {
             // keep the optional empty
         }
-        LOG(logDEBUG) << "ADC Mask: " << m_adc_mask;
 
         // Analog Flag
         // ----------------------------------------------------------------
@@ -468,19 +466,16 @@ void Hdf5MasterFile::parse_acquisition_metadata(
                 file, std::string(metadata_group_name + "receiver roi ymax"));
 
             // if any of the values are set update the roi
-            if (tmp_roi.xmin != 4294967295 || tmp_roi.xmax != 4294967295 ||
-                tmp_roi.ymin != 4294967295 || tmp_roi.ymax != 4294967295) {
+            if (tmp_roi.xmin != -1 || tmp_roi.xmax != -1 ||
+                tmp_roi.ymin != -1 || tmp_roi.ymax != -1) {
                 // why?? TODO
-                if (dVersion < 6.61) {
+                //if (dVersion < 6.6) {
                     tmp_roi.xmax++;
                     tmp_roi.ymax++;
-                }
+                //}
                 m_roi = tmp_roi;
             }
-            // Not Done TODO
-            // if we have an roi we need to update the geometry for the subfiles
-            if (m_roi) {
-            }
+
             LOG(logDEBUG) << "ROI: " << m_roi;
         } catch (H5::FileIException &e) {
             // keep the optional empty
