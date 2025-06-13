@@ -58,8 +58,10 @@ class ClusterFinderMTWrapper
 };
 
 TEST_CASE("multithreaded cluster finder", "[.files][.ClusterFinder]") {
-    auto fpath = "/mnt/sls_det_storage/matterhorn_data/aare_test_data/"
-                 "Moench03new/cu_half_speed_master_4.json";
+    auto fpath =
+        test_data_path() / "clust/Moench03new/cu_half_speed_master_4.json";
+
+    REQUIRE(std::filesystem::exists(fpath));
 
     File file(fpath);
 

@@ -1,26 +1,23 @@
 #pragma once
+#include "aare/DetectorGeometry.hpp"
 #include "aare/FileInterface.hpp"
 #include "aare/Frame.hpp"
 #include "aare/NDArray.hpp" //for pixel map
 #include "aare/RawMasterFile.hpp"
 #include "aare/RawSubFile.hpp"
 
+#ifdef AARE_TESTS
+#include "../tests/friend_test.hpp"
+#endif
+
 #include <optional>
 
 namespace aare {
 
-struct ModuleConfig {
-    int module_gap_row{};
-    int module_gap_col{};
-
-    bool operator==(const ModuleConfig &other) const {
-        if (module_gap_col != other.module_gap_col)
-            return false;
-        if (module_gap_row != other.module_gap_row)
-            return false;
-        return true;
-    }
-};
+#ifdef AARE_TESTS
+TEST_CASE_PRIVATE_FWD(check_find_geometry) // forward declaration
+TEST_CASE_PRIVATE_FWD(open_multi_module_file_with_roi)
+#endif
 
 /**
  * @brief Class to read .raw files. The class will parse the master file
@@ -29,11 +26,17 @@ struct ModuleConfig {
  * Consider using that unless you need raw file specific functionality.
  */
 class RawFile : public FileInterface {
+
+#ifdef AARE_TESTS
+    FRIEND_TEST(check_find_geometry)
+    FRIEND_TEST(open_multi_module_file_with_roi)
+#endif
     std::vector<std::unique_ptr<RawSubFile>> m_subfiles;
-    ModuleConfig cfg{0, 0};
+
     RawMasterFile m_master;
     size_t m_current_frame{};
     size_t m_current_subfile{};
+
     DetectorGeometry m_geometry;
 
   public:
@@ -74,6 +77,13 @@ class RawFile : public FileInterface {
 
     DetectorType detector_type() const override;
 
+    /**
+     * @brief read the header of the file
+     * @param fname path to the data subfile
+     * @return DetectorHeader
+     */
+    static DetectorHeader read_header(const std::filesystem::path &fname);
+
   private:
     /**
      * @brief read the frame at the given frame index into the image buffer
@@ -91,15 +101,7 @@ class RawFile : public FileInterface {
      */
     Frame get_frame(size_t frame_index);
 
-    /**
-     * @brief read the header of the file
-     * @param fname path to the data subfile
-     * @return DetectorHeader
-     */
-    static DetectorHeader read_header(const std::filesystem::path &fname);
-
     void open_subfiles();
-    void find_geometry();
 };
 
 } // namespace aare
