@@ -5,7 +5,7 @@ dependencies:
   - anaconda-client
   - conda-build
   - doxygen 
-  - sphinx=7.1.2 
+  - sphinx
   - breathe 
   - sphinx_rtd_theme 
   - furo 
