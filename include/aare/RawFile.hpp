@@ -1,4 +1,5 @@
 #pragma once
+#include "aare/DetectorGeometry.hpp"
 #include "aare/FileInterface.hpp"
 #include "aare/Frame.hpp"
 #include "aare/NDArray.hpp" //for pixel map
@@ -13,18 +14,6 @@
 
 namespace aare {
 
-struct ModuleConfig {
-    int module_gap_row{};
-    int module_gap_col{};
-
-    bool operator==(const ModuleConfig &other) const {
-        if (module_gap_col != other.module_gap_col)
-            return false;
-        if (module_gap_row != other.module_gap_row)
-            return false;
-        return true;
-    }
-};
 #ifdef AARE_TESTS
 TEST_CASE_PRIVATE_FWD(check_find_geometry) // forward declaration
 TEST_CASE_PRIVATE_FWD(open_multi_module_file_with_roi)
@@ -43,12 +32,10 @@ class RawFile : public FileInterface {
     FRIEND_TEST(open_multi_module_file_with_roi)
 #endif
     std::vector<std::unique_ptr<RawSubFile>> m_subfiles;
-    ModuleConfig cfg{0, 0};
+
     RawMasterFile m_master;
     size_t m_current_frame{};
     size_t m_current_subfile{};
-
-    std::vector<ssize_t> m_modules_in_roi{};
 
     DetectorGeometry m_geometry;
 
@@ -84,7 +71,6 @@ class RawFile : public FileInterface {
     size_t cols() const override;
     size_t bitdepth() const override;
     xy geometry();
-    size_t n_modules() const;
 
     RawMasterFile master() const;
 
@@ -115,10 +101,6 @@ class RawFile : public FileInterface {
     Frame get_frame(size_t frame_index);
 
     void open_subfiles();
-
-    size_t n_modules_in_roi() const;
-
-    void find_geometry();
 };
 
 } // namespace aare

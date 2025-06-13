@@ -167,44 +167,45 @@ TEST_CASE("Read multipart files", "[.integration]") {
 struct TestParameters {
     const std::string master_filename{};
     const uint8_t num_ports{};
-    const DetectorGeometry geometry{};
+    const size_t modules_x{};
+    const size_t modules_y{};
+    const size_t pixels_x{};
+    const size_t pixels_y{};
+    std::vector<ModuleGeometry> module_geometries{};
 };
 
 TEST_CASE_PRIVATE(aare, check_find_geometry, "check find_geometry",
                   "[.integration][.files][.rawfile]") {
 
     auto test_parameters = GENERATE(
+        TestParameters{"raw/jungfrau_2modules_version6.1.2/run_master_0.raw", 2,
+                       1, 2, 1024, 1024,
+                       std::vector<ModuleGeometry>{
+                           ModuleGeometry{0, 0, 512, 1024, 0, 0},
+                           ModuleGeometry{0, 512, 512, 1024, 0, 1}}},
         TestParameters{
-            "raw/jungfrau_2modules_version6.1.2/run_master_0.raw", 2,
-            DetectorGeometry{1, 2, 1024, 1024, 0, 0,
-                             std::vector<ModuleGeometry>{
-                                 ModuleGeometry{0, 0, 512, 1024, 0, 0},
-                                 ModuleGeometry{0, 512, 512, 1024, 0, 1}}}},
-        TestParameters{
-            "raw/eiger_1_module_version7.0.0/eiger_1mod_master_7.json", 4,
-            DetectorGeometry{2, 2, 1024, 512, 0, 0,
-                             std::vector<ModuleGeometry>{
-                                 ModuleGeometry{0, 0, 256, 512, 0, 0},
-                                 ModuleGeometry{512, 0, 256, 512, 0, 1},
-                                 ModuleGeometry{0, 256, 256, 512, 1, 0},
-                                 ModuleGeometry{512, 256, 256, 512, 1, 1}}}},
+            "raw/eiger_1_module_version7.0.0/eiger_1mod_master_7.json", 4, 2, 2,
+            1024, 512,
+            std::vector<ModuleGeometry>{
+                ModuleGeometry{0, 0, 256, 512, 0, 0},
+                ModuleGeometry{512, 0, 256, 512, 0, 1},
+                ModuleGeometry{0, 256, 256, 512, 1, 0},
+                ModuleGeometry{512, 256, 256, 512, 1, 1}}},
 
-        TestParameters{
-            "raw/jungfrau_2modules_2interfaces/run_master_0.json", 4,
-            DetectorGeometry{1, 4, 1024, 1024, 0, 0,
-                             std::vector<ModuleGeometry>{
-                                 ModuleGeometry{0, 0, 256, 1024, 0, 0},
-                                 ModuleGeometry{0, 256, 256, 1024, 1, 0},
-                                 ModuleGeometry{0, 512, 256, 1024, 2, 0},
-                                 ModuleGeometry{0, 768, 256, 1024, 3, 0}}}},
+        TestParameters{"raw/jungfrau_2modules_2interfaces/run_master_0.json", 4,
+                       1, 4, 1024, 1024,
+                       std::vector<ModuleGeometry>{
+                           ModuleGeometry{0, 0, 256, 1024, 0, 0},
+                           ModuleGeometry{0, 256, 256, 1024, 1, 0},
+                           ModuleGeometry{0, 512, 256, 1024, 2, 0},
+                           ModuleGeometry{0, 768, 256, 1024, 3, 0}}},
         TestParameters{
             "raw/eiger_quad_data/"
             "W13_vthreshscan_m21C_300V_800eV_vrpre3400_master_0.json",
-            2,
-            DetectorGeometry{1, 2, 512, 512, 0, 0,
-                             std::vector<ModuleGeometry>{
-                                 ModuleGeometry{0, 0, 256, 512, 0, 0},
-                                 ModuleGeometry{0, 256, 256, 512, 1, 0}}}});
+            2, 1, 2, 512, 512,
+            std::vector<ModuleGeometry>{
+                ModuleGeometry{0, 0, 256, 512, 0, 0},
+                ModuleGeometry{0, 256, 256, 512, 1, 0}}});
 
     auto fpath = test_data_path() / test_parameters.master_filename;
 
@@ -212,17 +213,15 @@ TEST_CASE_PRIVATE(aare, check_find_geometry, "check find_geometry",
 
     RawFile f(fpath, "r");
 
-    f.m_geometry.module_pixel_0.clear();
-    f.find_geometry();
-
     auto geometry = f.m_geometry;
 
-    CHECK(geometry.modules_x == test_parameters.geometry.modules_x);
-    CHECK(geometry.modules_y == test_parameters.geometry.modules_y);
-    CHECK(geometry.pixels_x == test_parameters.geometry.pixels_x);
-    CHECK(geometry.pixels_y == test_parameters.geometry.pixels_y);
+    CHECK(geometry.modules_x() == test_parameters.modules_x);
+    CHECK(geometry.modules_y() == test_parameters.modules_y);
+    CHECK(geometry.pixels_x() == test_parameters.pixels_x);
+    CHECK(geometry.pixels_y() == test_parameters.pixels_y);
 
-    REQUIRE(geometry.module_pixel_0.size() == test_parameters.num_ports);
+    REQUIRE(geometry.get_module_geometries().size() ==
+            test_parameters.num_ports);
 
     // compare to data stored in header
     for (size_t i = 0; i < test_parameters.num_ports; ++i) {
@@ -232,18 +231,18 @@ TEST_CASE_PRIVATE(aare, check_find_geometry, "check find_geometry",
 
         auto header = RawFile::read_header(subfile1_path);
 
-        CHECK(header.column == geometry.module_pixel_0[i].col_index);
-        CHECK(header.row == geometry.module_pixel_0[i].row_index);
+        CHECK(header.column == geometry.get_module_geometries(i).col_index);
+        CHECK(header.row == geometry.get_module_geometries(i).row_index);
 
-        CHECK(geometry.module_pixel_0[i].height ==
-              test_parameters.geometry.module_pixel_0[i].height);
-        CHECK(geometry.module_pixel_0[i].width ==
-              test_parameters.geometry.module_pixel_0[i].width);
+        CHECK(geometry.get_module_geometries(i).height ==
+              test_parameters.module_geometries[i].height);
+        CHECK(geometry.get_module_geometries(i).width ==
+              test_parameters.module_geometries[i].width);
 
-        CHECK(geometry.module_pixel_0[i].origin_x ==
-              test_parameters.geometry.module_pixel_0[i].origin_x);
-        CHECK(geometry.module_pixel_0[i].origin_y ==
-              test_parameters.geometry.module_pixel_0[i].origin_y);
+        CHECK(geometry.get_module_geometries(i).origin_x ==
+              test_parameters.module_geometries[i].origin_x);
+        CHECK(geometry.get_module_geometries(i).origin_y ==
+              test_parameters.module_geometries[i].origin_y);
     }
 }
 
@@ -261,9 +260,9 @@ TEST_CASE_PRIVATE(aare, open_multi_module_file_with_roi,
     REQUIRE(f.master().roi().value().width() == 256);
     REQUIRE(f.master().roi().value().height() == 256);
 
-    CHECK(f.n_modules() == 2);
+    CHECK(f.m_geometry.n_modules() == 2);
 
-    CHECK(f.n_modules_in_roi() == 1);
+    CHECK(f.m_geometry.n_modules_in_roi() == 1);
 }
 } // close namespace aare
 
