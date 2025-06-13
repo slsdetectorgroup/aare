@@ -21,8 +21,8 @@ RawFile::RawFile(const std::filesystem::path &fname, const std::string &mode)
     if (mode == "r") {
         if (m_master.roi()) {
             m_geometry.update_geometry_with_roi(m_master.roi().value());
-            open_subfiles();
         }
+        open_subfiles();
     } else {
         throw std::runtime_error(LOCATION +
                                  " Unsupported mode. Can only read RawFiles.");
