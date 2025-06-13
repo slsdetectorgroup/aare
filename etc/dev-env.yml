@@ -11,4 +11,6 @@ dependencies:
   - furo 
   - zeromq 
   - pybind11
+  - numpy
+  - matplotlib
 
