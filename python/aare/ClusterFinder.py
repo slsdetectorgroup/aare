@@ -70,6 +70,17 @@ def ClusterFile(fname, cluster_size=(3,3), dtype=np.int32, chunk_size = 1000):
     """
     Factory function to create a ClusterFile object. Provides a cleaner syntax for
     the templated ClusterFile in C++.
+
+    .. code-block:: python
+
+        from aare import ClusterFile
+        
+        with ClusterFile("clusters.clust", cluster_size=(3,3), dtype=np.int32) as cf:
+            # cf is now a ClusterFile_Cluster3x3i object but you don't need to know that.
+            for clusters in cf:
+                # Loop over clusters in chunks of 1000 
+                # The type of clusters will be a ClusterVector_Cluster3x3i in this case
+
     """
 
     cls = _get_class("ClusterFile", cluster_size, dtype)

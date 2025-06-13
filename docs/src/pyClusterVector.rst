@@ -2,8 +2,10 @@ ClusterVector
 ================
 
 The ClusterVector, holds clusters from the ClusterFinder. Since it is templated
-in C++  we use a suffix indicating the data type in python. The suffix is
-``_i`` for integer, ``_f`` for float, and ``_d`` for double.
+in C++  we use a suffix indicating the type of cluster it holds. The suffix follows
+the same pattern as for ClusterFile i.e. ``ClusterVector_Cluster3x3i``
+for a vector holding 3x3 integer clusters.
+
 
 At the moment the functionality from python is limited and it is not supported
 to push_back clusters to the vector. The intended use case is to pass it to 
@@ -26,7 +28,8 @@ C++ functions that support the ClusterVector or to view it as a numpy array.
 
 .. py:currentmodule:: aare
 
-.. autoclass:: ClusterVector_i
+.. autoclass::  aare._aare.ClusterVector_Cluster3x3i
+    :special-members: __init__
     :members:
     :undoc-members:
     :show-inheritance:

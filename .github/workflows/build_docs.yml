@@ -43,7 +43,7 @@ jobs:
         run: |
             mkdir build 
             cd build 
-            cmake .. -DAARE_SYSTEM_LIBRARIES=ON -DAARE_DOCS=ON 
+            cmake .. -DAARE_SYSTEM_LIBRARIES=ON -DAARE_PYTHON_BINDINGS=ON -DAARE_DOCS=ON 
             make -j 2 
             make docs
 
