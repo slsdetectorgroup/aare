@@ -1,7 +1,7 @@
 #pragma once
 #include "aare/Dtype.hpp"
 #include "aare/Frame.hpp"
-#include "aare/defs.hpp"
+#include "aare/to_string.hpp"
 
 #include <filesystem>
 #include <vector>
@@ -46,7 +46,7 @@ struct FileConfig {
 
 /**
  * @brief FileInterface class to define the interface for file operations
- * @note parent class for NumpyFile and RawFile
+ * @note parent class for NumpyFile, RawFile and Hdf5File
  * @note all functions are pure virtual and must be implemented by the derived
  * classes
  */

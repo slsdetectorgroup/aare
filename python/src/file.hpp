@@ -5,6 +5,11 @@
 #include "aare/RawMasterFile.hpp"
 #include "aare/RawSubFile.hpp"
 
+#ifdef HDF5_FOUND
+#include "aare/Hdf5File.hpp"
+#include "aare/Hdf5MasterFile.hpp"
+#endif
+
 #include "aare/defs.hpp"
 // #include "aare/fClusterFileV2.hpp"
 
