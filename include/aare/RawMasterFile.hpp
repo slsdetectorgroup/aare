@@ -62,8 +62,6 @@ class ScanParameters {
     void increment_stop();
 };
 
-// class RawFile; // forward declaration
-
 /**
  * @brief Class for parsing a master file either in our .json format or the old
  * .raw format

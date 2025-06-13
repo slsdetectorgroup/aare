@@ -66,11 +66,6 @@ void RawFile::read_into(std::byte *image_buf, size_t n_frames,
     }
 }
 
-// size_t RawFile::n_modules() const { return m_master.n_modules(); }
-
-// size_t RawFile::n_modules_in_roi() const { return
-// m_modules_in_roi.size(); }
-
 size_t RawFile::bytes_per_frame() {
     return m_geometry.pixels_x() * m_geometry.pixels_y() * m_master.bitdepth() /
            bits_per_byte;
