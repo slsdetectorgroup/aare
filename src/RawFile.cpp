@@ -97,6 +97,8 @@ size_t RawFile::cols() const { return m_geometry.pixels_x(); }
 size_t RawFile::bitdepth() const { return m_master.bitdepth(); }
 xy RawFile::geometry() { return m_master.geometry(); }
 
+size_t RawFile::n_modules() const { return m_geometry.n_modules(); };
+
 void RawFile::open_subfiles() {
     if (m_mode == "r")
         for (size_t i : m_geometry.get_modules_in_roi()) {
