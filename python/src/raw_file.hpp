@@ -101,7 +101,6 @@ void define_raw_file_io_bindings(py::module &m) {
         .def_property_readonly("cols", &RawFile::cols)
         .def_property_readonly("bitdepth", &RawFile::bitdepth)
         .def_property_readonly("geometry", &RawFile::geometry)
-        .def_property_readonly("n_modules", &RawFile::n_modules)
         .def_property_readonly("detector_type", &RawFile::detector_type)
         .def_property_readonly("master", &RawFile::master);
 }
