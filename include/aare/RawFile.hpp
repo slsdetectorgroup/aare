@@ -72,6 +72,7 @@ class RawFile : public FileInterface {
     size_t bitdepth() const override;
     xy geometry();
     size_t n_modules() const;
+    size_t n_modules_in_roi() const;
 
     RawMasterFile master() const;
 

@@ -257,12 +257,21 @@ TEST_CASE_PRIVATE(aare, open_multi_module_file_with_roi,
 
     RawFile f(fpath, "r");
 
-    REQUIRE(f.master().roi().value().width() == 256);
-    REQUIRE(f.master().roi().value().height() == 256);
+    SECTION("read 2 frames") {
+        REQUIRE(f.master().roi().value().width() == 256);
+        REQUIRE(f.master().roi().value().height() == 256);
 
-    CHECK(f.m_geometry.n_modules() == 2);
+        CHECK(f.m_geometry.n_modules() == 2);
 
-    CHECK(f.m_geometry.n_modules_in_roi() == 1);
+        CHECK(f.m_geometry.n_modules_in_roi() == 1);
+
+        auto frames = f.read_n(2);
+
+        CHECK(frames.size() == 2);
+
+        CHECK(frames[0].rows() == 256);
+        CHECK(frames[1].cols() == 256);
+    }
 }
 } // close namespace aare
 

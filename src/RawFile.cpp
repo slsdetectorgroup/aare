@@ -62,7 +62,7 @@ void RawFile::read_into(std::byte *image_buf, size_t n_frames,
         this->get_frame_into(m_current_frame++, image_buf, header);
         image_buf += bytes_per_frame();
         if (header)
-            header += m_geometry.n_modules();
+            header += m_geometry.n_modules_in_roi();
     }
 }
 
@@ -98,6 +98,9 @@ size_t RawFile::bitdepth() const { return m_master.bitdepth(); }
 xy RawFile::geometry() { return m_master.geometry(); }
 
 size_t RawFile::n_modules() const { return m_geometry.n_modules(); };
+size_t RawFile::n_modules_in_roi() const {
+    return m_geometry.n_modules_in_roi();
+};
 
 void RawFile::open_subfiles() {
     if (m_mode == "r")
