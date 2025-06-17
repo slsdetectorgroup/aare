@@ -14,7 +14,6 @@ set(SPHINX_BUILD ${CMAKE_CURRENT_BINARY_DIR})
 file(GLOB SPHINX_SOURCE_FILES CONFIGURE_DEPENDS "src/*.rst")
 
 
-
 foreach(filename ${SPHINX_SOURCE_FILES})
     get_filename_component(fname ${filename} NAME)
     message(STATUS "Copying ${filename} to ${SPHINX_BUILD}/src/${fname}")

@@ -1,11 +1,15 @@
 #pragma once
 
 #include "aare/Dtype.hpp"
+#include "aare/type_traits.hpp"
 
+#include <algorithm>
 #include <array>
 #include <cassert>
 #include <cstdint>
 #include <cstring>
+#include <iostream>
+#include <sstream>
 #include <stdexcept>
 #include <string>
 #include <string_view>
@@ -246,17 +250,12 @@ enum class DetectorType {
 
 enum class TimingMode { Auto, Trigger };
 enum class FrameDiscardPolicy { NoDiscard, Discard, DiscardPartial };
-
-template <class T> T StringTo(const std::string &arg) { return T(arg); }
-
-template <class T> std::string ToString(T arg) { return T(arg); }
-
-template <> DetectorType StringTo(const std::string & /*name*/);
-template <> std::string ToString(DetectorType arg);
-
-template <> TimingMode StringTo(const std::string & /*mode*/);
-
-template <> FrameDiscardPolicy StringTo(const std::string & /*mode*/);
+enum class BurstMode {
+    Burst_Interal,
+    Burst_External,
+    Continuous_Internal,
+    Continuous_External
+};
 
 using DataTypeVariants = std::variant<uint16_t, uint32_t>;
 
