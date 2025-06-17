@@ -77,17 +77,6 @@ if(AARE_SYSTEM_LIBRARIES)
     # on conda-forge
 endif()
 
-if(AARE_VERBOSE)
-    add_compile_definitions(AARE_VERBOSE)
-    add_compile_definitions(AARE_LOG_LEVEL=aare::logDEBUG5)
-else()
-    add_compile_definitions(AARE_LOG_LEVEL=aare::logERROR)
-endif()
-
-if(AARE_CUSTOM_ASSERT)
-    add_compile_definitions(AARE_CUSTOM_ASSERT)
-endif()
-
 if(AARE_BENCHMARKS)
     add_subdirectory(benchmarks)
 endif()
@@ -366,6 +355,7 @@ set(PUBLICHEADERS
     include/aare/GainMap.hpp
     include/aare/geo_helpers.hpp
     include/aare/JungfrauDataFile.hpp
+    include/aare/logger.hpp
     include/aare/NDArray.hpp
     include/aare/NDView.hpp
     include/aare/NumpyFile.hpp
@@ -424,6 +414,17 @@ target_link_libraries(
 
 )
 
+target_compile_definitions(aare_core PUBLIC AARE_VERBOSE)
+
+if(AARE_VERBOSE)
+    target_compile_definitions(aare_core PUBLIC AARE_LOG_LEVEL=aare::logDEBUG5)
+else()
+    target_compile_definitions(aare_core PUBLIC AARE_LOG_LEVEL=aare::logERROR)
+endif()
+
+target_compile_definitions(aare_core PUBLIC AARE_CUSTOM_ASSERT)
+
+
 set_target_properties(aare_core PROPERTIES
     ARCHIVE_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}
     PUBLIC_HEADER "${PUBLICHEADERS}"
@@ -466,7 +467,6 @@ endif()
 
 ###------------------------------------------------------------------------------------------
 ###------------------------------------------------------------------------------------------
-
 
 if(AARE_MASTER_PROJECT)
     install(TARGETS aare_core aare_compiler_flags 
