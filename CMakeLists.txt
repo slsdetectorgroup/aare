@@ -414,16 +414,16 @@ target_link_libraries(
 
 )
 
-target_compile_definitions(aare_core PUBLIC AARE_VERBOSE)
-
 if(AARE_VERBOSE)
+    target_compile_definitions(aare_core PUBLIC AARE_VERBOSE)
     target_compile_definitions(aare_core PUBLIC AARE_LOG_LEVEL=aare::logDEBUG5)
 else()
     target_compile_definitions(aare_core PUBLIC AARE_LOG_LEVEL=aare::logERROR)
 endif()
 
-target_compile_definitions(aare_core PUBLIC AARE_CUSTOM_ASSERT)
-
+if(AARE_CUSTOM_ASSERT)
+    target_compile_definitions(aare_core PUBLIC AARE_CUSTOM_ASSERT)
+endif()
 
 set_target_properties(aare_core PROPERTIES
     ARCHIVE_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}
