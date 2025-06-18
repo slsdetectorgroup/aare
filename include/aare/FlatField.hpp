@@ -20,6 +20,17 @@
 
 namespace aare {
 
+template <class CustomFile> struct custom_file_compatibility {
+    static constexpr bool value =
+        std::is_base_of<FileInterface, CustomFile>::value &&
+        std::is_constructible<CustomFile, std::string, ssize_t, ssize_t,
+                              std::string>::value;
+};
+
+template <class CustomFile>
+constexpr bool custom_file_compatibility_v =
+    custom_file_compatibility<CustomFile>::value;
+
 class FlatField {
 
   public:
@@ -91,10 +102,14 @@ class FlatField {
      * data the list should contain multiple acquisitions for different detector
      * angles
      * @tparam CustomFile: Fileclass that inherits from aare::FileInterface
-     * class needs to overload read_frame() //TODO: constructor needs to be the
-     * same - ugly
+     * class needs to overload read_frame and constructor needs to have the
+     * signature CustomFile(std::string filename, ssize_t rows, ssize_t cols,
+     * std::string reading_mode) rows, and cols define the intended image size
+     * to read
      */
-    template <class CustomFile>
+    template <class CustomFile,
+              typename = std::enable_if_t<
+                  custom_file_compatibility_v<CustomFile>, void>>
     void create_flatfield_from_filelist(const std::filesystem::path &filelist) {
         std::ifstream file_filelist(filelist);
 
@@ -128,9 +143,15 @@ class FlatField {
 
     /**
      * @tparam CustomFile: Fileclass that inherits from aare::FileInterface
-     * class needs to overload read_into()
+     * class needs to overload read_frame and constructor needs to have the
+     * signature CustomFile(std::string filename, ssize_t rows, ssize_t cols,
+     * std::string reading_mode) rows, and cols define the intended image size
+     * to read
      */
-    template <class CustomFile>
+
+    template <class CustomFile,
+              typename = std::enable_if_t<
+                  custom_file_compatibility_v<CustomFile>, void>>
     void read_flatfield_from_file(const std::string &filename) {
         CustomFile file(filename, mythen_detector->num_strips(), 1);
         file.read_into(reinterpret_cast<std::byte *>(flat_field.data()));
