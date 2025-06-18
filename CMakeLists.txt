@@ -367,6 +367,7 @@ set(PUBLICHEADERS
     include/aare/ClusterFile.hpp
     include/aare/CtbRawFile.hpp
     include/aare/ClusterVector.hpp
+    include/aare/CustomFiles.hpp
     include/aare/decode.hpp
     include/aare/defs.hpp
     include/aare/Dtype.hpp
@@ -399,6 +400,7 @@ set(PUBLICHEADERS
 set(SourceFiles
     ${CMAKE_CURRENT_SOURCE_DIR}/src/AngleCalibration.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/src/CtbRawFile.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/CustomFiles.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/src/defs.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/src/Dtype.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/src/decode.cpp

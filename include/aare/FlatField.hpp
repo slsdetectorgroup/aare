@@ -7,17 +7,19 @@
 #include <cmath>
 #include <cstdint>
 
+#include <filesystem>
 #include <fstream>
 #include <iostream>
 #include <memory>
 #include <sstream>
 #include <string>
 
+#include "File.hpp"
 #include "MythenDetectorSpecifications.hpp"
 #include "NDArray.hpp"
 
 namespace aare {
-// TODO maybe template now its uint32
+
 class FlatField {
 
   public:
@@ -28,38 +30,116 @@ class FlatField {
             std::array<ssize_t, 1>{mythen_detector->num_strips()}, 0);
     }
 
-    void read_flatfield_from_file(const std::string &filename) {
-
-        std::string word;
-        uint32_t strip_number{};
+    /**
+     * @brief sums up the photon counts for multiple acquisitions
+     * @param file_path: path to filesystem - the filesystem should contain
+     * multiple acqisitions for different detector angles acquired using
+     * slsReceiver and mythen3Detector //TODO: constructor needs to be the same
+     * - ugly
+     */
+    // TODO unsure about design - maybe scientist has to give file with paths
+    // one wants to accumulate - what to do with strange file format?
+    // TODO: adjust for different counters!!!!
+    void create_flatfield_from_rawfilesystem(
+        const std::filesystem::path &file_path) {
 
         try {
-            std::ifstream file(filename, std::ios_base::in);
-            if (!file.good()) {
-                throw std::logic_error("file does not exist");
+            for (const auto &file_in_path :
+                 std::filesystem::recursive_directory_iterator(file_path)) {
+                if (file_in_path.is_regular_file()) {
+                    std::string filename =
+                        file_in_path.path().filename().string();
+                    if (filename.find("master") != std::string::npos) {
+                        File f(filename);
+                        auto frames = f.read_n(f.total_frames());
+                        for (const auto &frame : frames) {
+                            if (frame.rows() * frame.cols() !=
+                                mythen_detector->num_strips()) {
+                                throw std::runtime_error(fmt::format(
+                                    "sizes mismatch. Expect a size of "
+                                    "{} - frame has a size of {}",
+                                    mythen_detector->num_strips(),
+                                    frame.rows() * frame.cols()));
+                            }
+                            for (ssize_t row = 0; row < frame.rows(); ++row)
+                                for (ssize_t col = 0; col < frame.cols();
+                                     ++col) {
+                                    flat_field(row * frame.cols() + col) +=
+                                        *reinterpret_cast<uint32_t *>(
+                                            frame.pixel_ptr(
+                                                row,
+                                                col)); // TODO inefficient as
+                                                       // one has to copy twice
+                                                       // into frame and into
+                                                       // flat_field
+                                }
+                        }
+                    }
+                }
             }
-
-            std::stringstream file_buffer;
-            file_buffer << file.rdbuf();
-
-            while (file_buffer >> word) {
-
-                strip_number = std::stoi(word);
-
-                file_buffer >> word;
-                if (!mythen_detector->get_bad_channels()[strip_number])
-                    flat_field[strip_number] = std::stod(word);
-            }
-
-            file.close();
+        } catch (const std::filesystem::filesystem_error &e) {
+            std::cerr << "Filesystem error: " << e.what()
+                      << '\n'; // TODO replace with log
         } catch (const std::exception &e) {
-            std::cerr << "Error: " << e.what() << std::endl;
+            std::cerr << "Runtime error: " << e.what() << '\n';
         }
+    }
+
+    /**
+     * @brief sums up the photon counts for multiple acquisitions
+     * @param filelist: path to file that stores the file paths to the aquired
+     * data the list should contain multiple acquisitions for different detector
+     * angles
+     * @tparam CustomFile: Fileclass that inherits from aare::FileInterface
+     * class needs to overload read_frame() //TODO: constructor needs to be the
+     * same - ugly
+     */
+    template <class CustomFile>
+    void create_flatfield_from_filelist(const std::filesystem::path &filelist) {
+        std::ifstream file_filelist(filelist);
+
+        try {
+            std::string filename;
+            while (std::getline(file_filelist, filename)) {
+                CustomFile file(filename, mythen_detector->num_strips(), 1);
+                Frame frame = file.read_frame();
+                if (frame.rows() * frame.cols() !=
+                    mythen_detector->num_strips()) {
+                    throw std::runtime_error(
+                        fmt::format("sizes mismatch. Expect a size of "
+                                    "{} - frame has a size of {}",
+                                    mythen_detector->num_strips(),
+                                    frame.rows() * frame.cols()));
+                }
+                for (ssize_t row = 0; row < frame.rows(); ++row)
+                    for (ssize_t col = 0; col < frame.cols(); ++col) {
+                        flat_field(row * frame.cols() + col) +=
+                            *reinterpret_cast<uint32_t *>(frame.pixel_ptr(
+                                row,
+                                col)); // TODO inefficient as one has to copy
+                                       // twice into frame and into flat_field
+                    }
+            }
+            file_filelist.close();
+        } catch (const std::exception &e) {
+            std::cerr << "Error: " << e.what() << '\n';
+        }
+    }
+
+    /**
+     * @tparam CustomFile: Fileclass that inherits from aare::FileInterface
+     * class needs to overload read_into()
+     */
+    template <class CustomFile>
+    void read_flatfield_from_file(const std::string &filename) {
+        CustomFile file(filename, mythen_detector->num_strips(), 1);
+        file.read_into(reinterpret_cast<std::byte *>(flat_field.data()));
     }
 
     NDView<uint32_t, 1> get_flatfield() const { return flat_field.view(); }
 
-    double calculate_mean(double tolerance = 0.001) const {
+    // TODO: remove tolerance
+    double calculate_mean(double tolerance) const {
         auto [sum, count] = std::accumulate(
             flat_field.begin(), flat_field.end(),
             std::make_pair<double, ssize_t>(0.0, 0),
@@ -73,7 +153,7 @@ class FlatField {
     }
 
     NDArray<double, 1>
-    inverse_normalized_flatfield(double tolerance = 0.001) const {
+    inverse_normalized_flatfield(double tolerance = 0.0001) const {
         double mean = calculate_mean(tolerance);
 
         NDArray<double, 1> inverse_normalized_flatfield(flat_field.shape());
@@ -92,7 +172,7 @@ class FlatField {
         // maybe store as member variable access with view
     }
 
-    NDArray<double, 1> normalized_flatfield(double tolerance = 0.001) const {
+    NDArray<double, 1> normalized_flatfield(double tolerance = 0.0001) const {
         double mean = calculate_mean(tolerance);
 
         NDArray<double, 1> normalized_flatfield(flat_field.shape());

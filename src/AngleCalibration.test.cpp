@@ -4,6 +4,8 @@
  ***********************************************/
 
 #include "aare/AngleCalibration.hpp"
+#include "aare/CustomFiles.hpp"
+#include "aare/FlatField.hpp"
 
 #include <filesystem>
 
@@ -104,7 +106,7 @@ TEST_CASE("read flatfield", "[.anglecalibration][.flatfield][.files]") {
 
     REQUIRE(std::filesystem::exists(flatfield_filename));
 
-    flatfield.read_flatfield_from_file(flatfield_filename);
+    flatfield.read_flatfield_from_file<CustomMythenFile>(flatfield_filename);
 
     auto flatfield_data = flatfield.get_flatfield();
 
@@ -145,7 +147,8 @@ TEST_CASE("compare result with python code", "[.anglecalibration] [.files]") {
 
     REQUIRE(std::filesystem::exists(flatfield_filename));
 
-    flat_field_ptr->read_flatfield_from_file(flatfield_filename);
+    flat_field_ptr->read_flatfield_from_file<CustomMythenFile>(
+        flatfield_filename);
 
     std::shared_ptr<MythenFileReader> mythen_file_reader_ptr =
         std::make_shared<MythenFileReader>(fpath,

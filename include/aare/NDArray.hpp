@@ -446,6 +446,7 @@ NDArray<T, Ndim> load_non_binary_file(const std::string &filename,
                                       const std::array<ssize_t, Ndim> shape) {
     std::string word;
     NDArray<T, Ndim> array(shape);
+
     try {
         std::ifstream file(filename, std::ios_base::in);
         if (!file.good()) {
@@ -456,7 +457,7 @@ NDArray<T, Ndim> load_non_binary_file(const std::string &filename,
         file_buffer << file.rdbuf();
 
         ssize_t counter = 0;
-        while (file_buffer >> word && counter < size) {
+        while (file_buffer >> word && counter < array.size()) {
             array[counter] = static_cast<T>(
                 std::stod(word)); // TODO change for different Types
             ++counter;
