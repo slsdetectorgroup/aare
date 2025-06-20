@@ -5,6 +5,8 @@
 #include "aare/GainMap.hpp"
 #include "aare/NDArray.hpp"
 #include "aare/defs.hpp"
+#include "aare/logger.hpp"
+
 #include <filesystem>
 #include <fstream>
 #include <optional>
@@ -369,10 +371,14 @@ ClusterFile<ClusterType, Enable>::read_frame_without_cut() {
                                  "Could not read number of clusters");
     }
 
+    LOG(logDEBUG1) << "Reading " << n_clusters << " clusters from frame "
+                   << frame_number;
+
     ClusterVector<ClusterType> clusters(n_clusters);
     clusters.set_frame_number(frame_number);
-
     clusters.resize(n_clusters);
+
+    LOG(logDEBUG1) << "clusters.item_size(): " << clusters.item_size();
 
     if (fread(clusters.data(), clusters.item_size(), n_clusters, fp) !=
         static_cast<size_t>(n_clusters)) {

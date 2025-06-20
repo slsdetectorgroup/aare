@@ -29,7 +29,8 @@ namespace aare {
 
 std::string NumpyHeader::to_string() const {
     std::stringstream sstm;
-    sstm << "dtype: " << dtype.to_string() << ", fortran_order: " << fortran_order << ' ';
+    sstm << "dtype: " << dtype.to_string()
+         << ", fortran_order: " << fortran_order << ' ';
     sstm << "shape: (";
     for (auto item : shape)
         sstm << item << ',';
@@ -37,10 +38,10 @@ std::string NumpyHeader::to_string() const {
     return sstm.str();
 }
 
-
 namespace NumpyHelpers {
 
-std::unordered_map<std::string, std::string> parse_dict(std::string in, const std::vector<std::string> &keys) {
+std::unordered_map<std::string, std::string>
+parse_dict(std::string in, const std::vector<std::string> &keys) {
     std::unordered_map<std::string, std::string> map;
     if (keys.empty())
         return map;
@@ -100,7 +101,8 @@ aare::Dtype parse_descr(std::string typestring) {
     constexpr char little_endian_char = '<';
     constexpr char big_endian_char = '>';
     constexpr char no_endian_char = '|';
-    constexpr std::array<char, 3> endian_chars = {little_endian_char, big_endian_char, no_endian_char};
+    constexpr std::array<char, 3> endian_chars = {
+        little_endian_char, big_endian_char, no_endian_char};
     constexpr std::array<char, 4> numtype_chars = {'f', 'i', 'u', 'c'};
 
     const char byteorder_c = typestring[0];
@@ -139,7 +141,9 @@ std::string get_value_from_map(const std::string &mapstr) {
     return trim(tmp);
 }
 
-bool is_digits(const std::string &str) { return std::all_of(str.begin(), str.end(), ::isdigit); }
+bool is_digits(const std::string &str) {
+    return std::all_of(str.begin(), str.end(), ::isdigit);
+}
 
 std::vector<std::string> parse_tuple(std::string in) {
     std::vector<std::string> v;
@@ -215,20 +219,25 @@ inline std::string write_boolean(bool b) {
     return "False";
 }
 
-inline std::string write_header_dict(const std::string &descr, bool fortran_order, const std::vector<size_t> &shape) {
+inline std::string write_header_dict(const std::string &descr,
+                                     bool fortran_order,
+                                     const std::vector<size_t> &shape) {
     std::string const s_fortran_order = write_boolean(fortran_order);
     std::string const shape_s = write_tuple(shape);
 
-    return "{'descr': '" + descr + "', 'fortran_order': " + s_fortran_order + ", 'shape': " + shape_s + ", }";
+    return "{'descr': '" + descr + "', 'fortran_order': " + s_fortran_order +
+           ", 'shape': " + shape_s + ", }";
 }
 
-size_t write_header(const std::filesystem::path &fname, const NumpyHeader &header) {
+size_t write_header(const std::filesystem::path &fname,
+                    const NumpyHeader &header) {
     std::ofstream out(fname, std::ios::binary | std::ios::out);
     return write_header(out, header);
 }
 
 size_t write_header(std::ostream &out, const NumpyHeader &header) {
-    std::string const header_dict = write_header_dict(header.dtype.to_string(), header.fortran_order, header.shape);
+    std::string const header_dict = write_header_dict(
+        header.dtype.to_string(), header.fortran_order, header.shape);
 
     size_t length = magic_string_length + 2 + 2 + header_dict.length() + 1;
 
@@ -247,17 +256,22 @@ size_t write_header(std::ostream &out, const NumpyHeader &header) {
 
     // write header length
     if (version_major == 1 && version_minor == 0) {
-        auto header_len = static_cast<uint16_t>(header_dict.length() + padding.length() + 1);
+        auto header_len =
+            static_cast<uint16_t>(header_dict.length() + padding.length() + 1);
 
-        std::array<uint8_t, 2> header_len_le16{static_cast<uint8_t>((header_len >> 0) & 0xff),
-                                               static_cast<uint8_t>((header_len >> 8) & 0xff)};
+        std::array<uint8_t, 2> header_len_le16{
+            static_cast<uint8_t>((header_len >> 0) & 0xff),
+            static_cast<uint8_t>((header_len >> 8) & 0xff)};
         out.write(reinterpret_cast<char *>(header_len_le16.data()), 2);
     } else {
-        auto header_len = static_cast<uint32_t>(header_dict.length() + padding.length() + 1);
+        auto header_len =
+            static_cast<uint32_t>(header_dict.length() + padding.length() + 1);
 
         std::array<uint8_t, 4> header_len_le32{
-            static_cast<uint8_t>((header_len >> 0) & 0xff), static_cast<uint8_t>((header_len >> 8) & 0xff),
-            static_cast<uint8_t>((header_len >> 16) & 0xff), static_cast<uint8_t>((header_len >> 24) & 0xff)};
+            static_cast<uint8_t>((header_len >> 0) & 0xff),
+            static_cast<uint8_t>((header_len >> 8) & 0xff),
+            static_cast<uint8_t>((header_len >> 16) & 0xff),
+            static_cast<uint8_t>((header_len >> 24) & 0xff)};
         out.write(reinterpret_cast<char *>(header_len_le32.data()), 4);
     }
 

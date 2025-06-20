@@ -2,7 +2,10 @@ name: Build the package using cmake then documentation
 
 on:
   workflow_dispatch:
-  push:
+  pull_request:
+  release:
+    types:
+      - published
     
 
 permissions:
@@ -40,7 +43,7 @@ jobs:
         run: |
             mkdir build 
             cd build 
-            cmake .. -DAARE_SYSTEM_LIBRARIES=ON -DAARE_DOCS=ON 
+            cmake .. -DAARE_SYSTEM_LIBRARIES=ON -DAARE_PYTHON_BINDINGS=ON -DAARE_DOCS=ON 
             make -j 2 
             make docs
 
@@ -55,7 +58,7 @@ jobs:
       url: ${{ steps.deployment.outputs.page_url }}
     runs-on: ubuntu-latest
     needs: build
-    if: github.ref == 'refs/heads/main'
+    if: (github.event_name == 'release' && github.event.action == 'published') || (github.event_name == 'workflow_dispatch' )
     steps:
       - name: Deploy to GitHub Pages
         id: deployment

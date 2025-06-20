@@ -38,7 +38,11 @@ class ClusterFinder {
         : m_image_size(image_size), m_nSigma(nSigma),
           c2(sqrt((ClusterSizeY + 1) / 2 * (ClusterSizeX + 1) / 2)),
           c3(sqrt(ClusterSizeX * ClusterSizeY)),
-          m_pedestal(image_size[0], image_size[1]), m_clusters(capacity) {};
+          m_pedestal(image_size[0], image_size[1]), m_clusters(capacity) {
+        LOG(logDEBUG) << "ClusterFinder: "
+                      << "image_size: " << image_size[0] << "x" << image_size[1]
+                      << ", nSigma: " << nSigma << ", capacity: " << capacity;
+    }
 
     void push_pedestal_frame(NDView<FRAME_TYPE, 2> frame) {
         m_pedestal.push(frame);

@@ -57,7 +57,8 @@ void define_raw_master_file_bindings(py::module &m) {
         .def_property_readonly("total_frames_expected",
                                &RawMasterFile::total_frames_expected)
         .def_property_readonly("geometry", &RawMasterFile::geometry)
-        .def_property_readonly("analog_samples", &RawMasterFile::analog_samples, R"(
+        .def_property_readonly("analog_samples", &RawMasterFile::analog_samples,
+                               R"(
             Number of analog samples
 
             Returns
@@ -66,7 +67,7 @@ void define_raw_master_file_bindings(py::module &m) {
                     The number of analog samples in the file (or None if not enabled)
             )")
         .def_property_readonly("digital_samples",
-                               &RawMasterFile::digital_samples,  R"(
+                               &RawMasterFile::digital_samples, R"(
             Number of digital samples
 
             Returns

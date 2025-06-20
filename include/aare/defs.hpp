@@ -200,6 +200,8 @@ struct DetectorGeometry {
     int module_gap_row{};
     int module_gap_col{};
     std::vector<ModuleGeometry> module_pixel_0;
+
+    auto size() const { return module_pixel_0.size(); }
 };
 
 struct ROI {

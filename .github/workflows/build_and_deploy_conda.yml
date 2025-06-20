@@ -1,9 +1,9 @@
 name: Build pkgs and deploy if on main
 
 on:
-  push:
-    branches:
-     - main
+  release:
+      types:
+        - published
 
 jobs:
   build:
