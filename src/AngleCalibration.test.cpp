@@ -21,7 +21,7 @@
 using namespace aare;
 
 TEST_CASE("read initial angle calibration file",
-          "[.anglecalibration] [.files]") {
+          "[anglecalibration] [.files]") {
 
     std::shared_ptr<MythenDetectorSpecifications> mythen_detector_ptr =
         std::make_shared<MythenDetectorSpecifications>();
@@ -53,7 +53,7 @@ TEST_CASE("read initial angle calibration file",
 }
 
 TEST_CASE("read bad channels",
-          "[.anglecalibration][.mythenspecifications][.files]") {
+          "[anglecalibration][mythenspecifications][.files]") {
 
     MythenDetectorSpecifications mythen_detector;
 
@@ -74,7 +74,7 @@ TEST_CASE("read bad channels",
 }
 
 TEST_CASE("read unconnected modules",
-          "[.anglecalibration][.mythenspecifications][.files]") {
+          "[anglecalibration][mythenspecifications][.files]") {
 
     MythenDetectorSpecifications mythen_detector;
 
@@ -93,7 +93,7 @@ TEST_CASE("read unconnected modules",
                       [](const bool element) { return element; }));
 }
 
-TEST_CASE("read flatfield", "[.anglecalibration][.flatfield][.files]") {
+TEST_CASE("read flatfield", "[anglecalibration][flatfield][.files]") {
 
     std::shared_ptr<MythenDetectorSpecifications> mythen_detector_ptr =
         std::make_shared<MythenDetectorSpecifications>();
@@ -116,7 +116,35 @@ TEST_CASE("read flatfield", "[.anglecalibration][.flatfield][.files]") {
     CHECK(flatfield_data[21] == 4234186);
 }
 
-TEST_CASE("compare result with python code", "[.anglecalibration] [.files]") {
+TEST_CASE("create flatfield", "[anglecalibration], [flatfield], [.files]") {
+
+    ssize_t n_modules = 2;
+    double exposure_time = 5.0;
+    size_t n_counters = 1;
+    std::shared_ptr<MythenDetectorSpecifications> mythen_detector_ptr =
+        std::make_shared<MythenDetectorSpecifications>(n_modules, exposure_time,
+                                                       n_counters);
+
+    FlatField flatfield(mythen_detector_ptr);
+
+    auto data_path = test_data_path() / "AngleCalibration_Test_Data" /
+                     "Flatfieldacquisition";
+
+    REQUIRE(std::filesystem::exists(data_path));
+
+    CHECK_NOTHROW(flatfield.create_flatfield_from_rawfilesystem(data_path));
+
+    auto flatfield_data = flatfield.get_flatfield();
+
+    CHECK(flatfield_data.size() == n_modules * 1280);
+
+    CHECK(flatfield_data[0] == 0);
+    CHECK(flatfield_data[21] ==
+          2 * 3 *
+              21); // virtual data 2 angles, 3 frames - 21 as increasing numbers
+}
+
+TEST_CASE("compare result with python code", "[anglecalibration] [.files]") {
 
     auto fpath = test_data_path() / "AngleCalibration_Test_Data";
 
@@ -196,7 +224,7 @@ TEST_CASE("compare result with python code", "[.anglecalibration] [.files]") {
         1e-8)); //
 }
 
-TEST_CASE("check conversion from DG to EE parameters", "[.anglecalibration]") {
+TEST_CASE("check conversion from DG to EE parameters", "[anglecalibration]") {
 
     std::shared_ptr<MythenDetectorSpecifications> mythen_detector_ptr =
         std::make_shared<MythenDetectorSpecifications>();

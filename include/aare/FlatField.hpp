@@ -61,15 +61,17 @@ class FlatField {
                     std::string filename =
                         file_in_path.path().filename().string();
                     if (filename.find("master") != std::string::npos) {
-                        File f(filename);
+                        File f(file_in_path);
                         auto frames = f.read_n(f.total_frames());
                         for (const auto &frame : frames) {
                             if (frame.rows() * frame.cols() !=
-                                mythen_detector->num_strips()) {
+                                mythen_detector->num_strips() *
+                                    mythen_detector->num_counters()) {
                                 throw std::runtime_error(fmt::format(
                                     "sizes mismatch. Expect a size of "
                                     "{} - frame has a size of {}",
-                                    mythen_detector->num_strips(),
+                                    mythen_detector->num_strips() *
+                                        mythen_detector->num_counters(),
                                     frame.rows() * frame.cols()));
                             }
                             for (ssize_t row = 0; row < frame.rows(); ++row)

@@ -30,9 +30,10 @@ class MythenDetectorSpecifications {
 
     MythenDetectorSpecifications(const size_t max_modules,
                                  const double exposure_time,
-                                 const double bloffset)
-        : max_modules_(max_modules), exposure_time_(exposure_time),
-          bloffset_(bloffset) {
+                                 const double num_counters = 1,
+                                 double bloffset = 1.532)
+        : max_modules_(max_modules), num_counters_(num_counters),
+          exposure_time_(exposure_time), bloffset_(bloffset) {
         num_strips_ = max_modules_ * strips_per_module_;
 
         num_connected_modules_ = max_modules_;
@@ -44,6 +45,7 @@ class MythenDetectorSpecifications {
             std::array<ssize_t, 1>{static_cast<ssize_t>(max_modules_)}, true);
     }
 
+    // TODO templated on filereader
     void read_bad_channels_from_file(const std::string &filename) {
         std::string line;
 
@@ -73,6 +75,7 @@ class MythenDetectorSpecifications {
         }
     }
 
+    // TODO template on filereader
     void read_unconnected_modules_from_file(const std::string &filename) {
         std::string line;
 
@@ -112,6 +115,8 @@ class MythenDetectorSpecifications {
 
     size_t max_modules() const { return max_modules_; }
 
+    size_t num_counters() const { return num_counters_; }
+
     double exposure_time() const { return exposure_time_; }
 
     double bloffset() const { return bloffset_; }
@@ -134,6 +139,8 @@ class MythenDetectorSpecifications {
         0.0; // No idea what this is - probably configurable
 
     size_t max_modules_ = 48;
+
+    size_t num_counters_ = 1;
 
     double exposure_time_ = 5.0; // TODO: could read from acquired file but
                                  // maybe should be configurable
