@@ -1,15 +1,7 @@
-
-# from ._aare import ClusterFinder_Cluster3x3i, ClusterFinder_Cluster2x2i, ClusterFinderMT_Cluster3x3i, ClusterFinderMT_Cluster2x2i, ClusterCollector_Cluster3x3i, ClusterCollector_Cluster2x2i
-
-
-# from ._aare import ClusterFileSink_Cluster3x3i, ClusterFileSink_Cluster2x2i
-
 from . import _aare
 import numpy as np
 
 _supported_cluster_sizes = [(2,2), (3,3), (5,5), (7,7), (9,9),]
-
-# def _get_class()
 
 def _type_to_char(dtype):
     if dtype == np.int32:
@@ -74,11 +66,22 @@ def ClusterFileSink(clusterfindermt, cluster_file, dtype=np.int32):
     return cls(clusterfindermt, cluster_file)
 
 
-def ClusterFile(fname, cluster_size=(3,3), dtype=np.int32):
+def ClusterFile(fname, cluster_size=(3,3), dtype=np.int32, chunk_size = 1000):
     """
     Factory function to create a ClusterFile object. Provides a cleaner syntax for
     the templated ClusterFile in C++.
+
+    .. code-block:: python
+
+        from aare import ClusterFile
+        
+        with ClusterFile("clusters.clust", cluster_size=(3,3), dtype=np.int32) as cf:
+            # cf is now a ClusterFile_Cluster3x3i object but you don't need to know that.
+            for clusters in cf:
+                # Loop over clusters in chunks of 1000 
+                # The type of clusters will be a ClusterVector_Cluster3x3i in this case
+
     """
 
     cls = _get_class("ClusterFile", cluster_size, dtype)
-    return cls(fname)
+    return cls(fname, chunk_size=chunk_size)
