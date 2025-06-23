@@ -95,7 +95,10 @@ size_t RawFile::total_frames() const { return m_master.frames_in_file(); }
 size_t RawFile::rows() const { return m_geometry.pixels_y(); }
 size_t RawFile::cols() const { return m_geometry.pixels_x(); }
 size_t RawFile::bitdepth() const { return m_master.bitdepth(); }
-xy RawFile::geometry() { return m_master.geometry(); }
+xy RawFile::geometry() const {
+    return xy{static_cast<uint32_t>(m_geometry.modules_y()),
+              static_cast<uint32_t>(m_geometry.modules_x())};
+}
 
 size_t RawFile::n_modules() const { return m_geometry.n_modules(); };
 size_t RawFile::n_modules_in_roi() const {

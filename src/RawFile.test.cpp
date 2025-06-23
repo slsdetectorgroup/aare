@@ -174,8 +174,7 @@ struct TestParameters {
     std::vector<ModuleGeometry> module_geometries{};
 };
 
-TEST_CASE_PRIVATE(aare, check_find_geometry, "check find_geometry",
-                  "[.integration][.files][.rawfile]") {
+TEST_CASE("check find_geometry", "[.integration][.files][.rawfile]") {
 
     auto test_parameters = GENERATE(
         TestParameters{"raw/jungfrau_2modules_version6.1.2/run_master_0.raw", 2,
@@ -211,9 +210,11 @@ TEST_CASE_PRIVATE(aare, check_find_geometry, "check find_geometry",
 
     REQUIRE(std::filesystem::exists(fpath));
 
-    RawFile f(fpath, "r");
+    RawMasterFile master_file(fpath);
 
-    auto geometry = f.m_geometry;
+    auto geometry = DetectorGeometry(
+        master_file.geometry(), master_file.pixels_x(), master_file.pixels_y(),
+        master_file.udp_interfaces_per_module(), master_file.quad());
 
     CHECK(geometry.modules_x() == test_parameters.modules_x);
     CHECK(geometry.modules_y() == test_parameters.modules_y);
@@ -224,6 +225,7 @@ TEST_CASE_PRIVATE(aare, check_find_geometry, "check find_geometry",
             test_parameters.num_ports);
 
     // compare to data stored in header
+    RawFile f(fpath, "r");
     for (size_t i = 0; i < test_parameters.num_ports; ++i) {
 
         auto subfile1_path = f.master().data_fname(i, 0);
@@ -246,11 +248,8 @@ TEST_CASE_PRIVATE(aare, check_find_geometry, "check find_geometry",
     }
 }
 
-} // close the namespace
-
-TEST_CASE_PRIVATE(aare, open_multi_module_file_with_roi,
-                  "Open multi module file with ROI",
-                  "[.integration][.files][.rawfile]") {
+TEST_CASE("Open multi module file with ROI",
+          "[.integration][.files][.rawfile]") {
 
     auto fpath = test_data_path() / "raw/SingleChipROI/Data_master_0.json";
     REQUIRE(std::filesystem::exists(fpath));
@@ -261,9 +260,9 @@ TEST_CASE_PRIVATE(aare, open_multi_module_file_with_roi,
         REQUIRE(f.master().roi().value().width() == 256);
         REQUIRE(f.master().roi().value().height() == 256);
 
-        CHECK(f.m_geometry.n_modules() == 2);
+        CHECK(f.n_modules() == 2);
 
-        CHECK(f.m_geometry.n_modules_in_roi() == 1);
+        CHECK(f.n_modules_in_roi() == 1);
 
         auto frames = f.read_n(2);
 
@@ -273,7 +272,6 @@ TEST_CASE_PRIVATE(aare, open_multi_module_file_with_roi,
         CHECK(frames[1].cols() == 256);
     }
 }
-} // close namespace aare
 
 TEST_CASE("Read file with unordered frames", "[.integration]") {
     // TODO! Better explanation and error message

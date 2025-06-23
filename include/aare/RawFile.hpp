@@ -14,11 +14,6 @@
 
 namespace aare {
 
-#ifdef AARE_TESTS
-TEST_CASE_PRIVATE_FWD(check_find_geometry) // forward declaration
-TEST_CASE_PRIVATE_FWD(open_multi_module_file_with_roi)
-#endif
-
 /**
  * @brief Class to read .raw files. The class will parse the master file
  * to find the correct geometry for the frames.
@@ -27,10 +22,6 @@ TEST_CASE_PRIVATE_FWD(open_multi_module_file_with_roi)
  */
 class RawFile : public FileInterface {
 
-#ifdef AARE_TESTS
-    FRIEND_TEST(check_find_geometry)
-    FRIEND_TEST(open_multi_module_file_with_roi)
-#endif
     std::vector<std::unique_ptr<RawSubFile>> m_subfiles;
 
     RawMasterFile m_master;
@@ -69,9 +60,9 @@ class RawFile : public FileInterface {
     size_t rows() const override;
     size_t cols() const override;
     size_t bitdepth() const override;
-    xy geometry();
     size_t n_modules() const;
     size_t n_modules_in_roi() const;
+    xy geometry() const;
 
     RawMasterFile master() const;
 
