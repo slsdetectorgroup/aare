@@ -8,7 +8,7 @@
                           test_tags_str)                                       \
     namespace namespace_name {                                                 \
     void test_name##_impl();                                                   \
-    namespace {                                                                \
+                                                                               \
     struct test_name##_Invoker : Catch::ITestInvoker {                         \
         void invoke() const override { test_name##_impl(); }                   \
     };                                                                         \
@@ -16,5 +16,5 @@
         autoReg_##test_name(Catch::Detail::make_unique<test_name##_Invoker>(), \
                             Catch::SourceLineInfo(__FILE__, __LINE__), "",     \
                             Catch::NameAndTags{test_name_str, test_tags_str}); \
-    }                                                                          \
+                                                                               \
     void test_name##_impl()

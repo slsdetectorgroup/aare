@@ -35,7 +35,6 @@ class RawFile : public FileInterface {
 
     RawMasterFile m_master;
     size_t m_current_frame{};
-    size_t m_current_subfile{};
 
     DetectorGeometry m_geometry;
 

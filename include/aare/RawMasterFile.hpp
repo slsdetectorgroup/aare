@@ -78,7 +78,6 @@ class RawMasterFile {
     size_t m_pixels_y{};
     size_t m_pixels_x{};
     size_t m_bitdepth{};
-    size_t m_num_udp_interfaces_per_module = 1;
     uint8_t m_quad = 0;
 
     xy m_geometry{};
