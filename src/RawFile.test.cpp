@@ -202,9 +202,8 @@ TEST_CASE("check find_geometry", "[.integration][.files][.rawfile]") {
             "raw/eiger_quad_data/"
             "W13_vthreshscan_m21C_300V_800eV_vrpre3400_master_0.json",
             2, 1, 2, 512, 512,
-            std::vector<ModuleGeometry>{
-                ModuleGeometry{0, 0, 256, 512, 0, 0},
-                ModuleGeometry{0, 256, 256, 512, 1, 0}}});
+            std::vector<ModuleGeometry>{ModuleGeometry{0, 256, 256, 512, 1, 0},
+                                        ModuleGeometry{0, 0, 256, 512, 0, 0}}});
 
     auto fpath = test_data_path() / test_parameters.master_filename;
 

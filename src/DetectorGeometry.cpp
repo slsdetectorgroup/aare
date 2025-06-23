@@ -23,13 +23,12 @@ DetectorGeometry::DetectorGeometry(const xy &geometry,
                 for (size_t port_col = 0;
                      port_col < udp_interfaces_per_module.col; ++port_col) {
                     ModuleGeometry g;
-                    g.origin_x = (col + port_col) * module_pixels_x;
-                    g.origin_y = (row + port_row) *
-                                 module_pixels_y; // TODO: quad doesnt seem
-                                                  // to have an effect
                     g.row_index =
                         quad ? (row + port_row + 1) % 2 : (row + port_row);
                     g.col_index = col + port_col;
+                    g.origin_x = g.col_index * module_pixels_x;
+                    g.origin_y = g.row_index * module_pixels_y;
+
                     g.width = module_pixels_x;
                     g.height = module_pixels_y;
                     module_geometries.push_back(g);
