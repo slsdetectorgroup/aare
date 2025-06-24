@@ -324,13 +324,10 @@ if(AARE_ASAN)
     )
 endif()
 
-
-
-
-
 if(AARE_TESTS)
     enable_testing()
     add_subdirectory(tests)
+    target_compile_definitions(tests PRIVATE AARE_TESTS)
 endif()
 
 ###------------------------------------------------------------------------------MAIN LIBRARY
@@ -353,7 +350,7 @@ set(PUBLICHEADERS
     include/aare/FilePtr.hpp
     include/aare/Frame.hpp
     include/aare/GainMap.hpp
-    include/aare/geo_helpers.hpp
+    include/aare/DetectorGeometry.hpp
     include/aare/JungfrauDataFile.hpp
     include/aare/logger.hpp
     include/aare/NDArray.hpp
@@ -379,7 +376,7 @@ set(SourceFiles
     ${CMAKE_CURRENT_SOURCE_DIR}/src/File.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/src/FilePtr.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/src/Fit.cpp
-    ${CMAKE_CURRENT_SOURCE_DIR}/src/geo_helpers.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/DetectorGeometry.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/src/JungfrauDataFile.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/src/NumpyFile.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/src/NumpyHelpers.cpp
@@ -414,6 +411,9 @@ target_link_libraries(
 
 )
 
+if(AARE_TESTS)
+    target_compile_definitions(aare_core PRIVATE AARE_TESTS)
+endif()
 if(AARE_VERBOSE)
     target_compile_definitions(aare_core PUBLIC AARE_VERBOSE)
     target_compile_definitions(aare_core PUBLIC AARE_LOG_LEVEL=aare::logDEBUG5)
@@ -441,7 +441,7 @@ if(AARE_TESTS)
             ${CMAKE_CURRENT_SOURCE_DIR}/src/decode.test.cpp
             ${CMAKE_CURRENT_SOURCE_DIR}/src/Dtype.test.cpp
             ${CMAKE_CURRENT_SOURCE_DIR}/src/Frame.test.cpp
-            ${CMAKE_CURRENT_SOURCE_DIR}/src/geo_helpers.test.cpp
+            ${CMAKE_CURRENT_SOURCE_DIR}/src/DetectorGeometry.test.cpp
             ${CMAKE_CURRENT_SOURCE_DIR}/src/RawMasterFile.test.cpp
             ${CMAKE_CURRENT_SOURCE_DIR}/src/NDArray.test.cpp
             ${CMAKE_CURRENT_SOURCE_DIR}/src/NDView.test.cpp
@@ -462,11 +462,6 @@ if(AARE_TESTS)
         )
     target_sources(tests PRIVATE ${TestSources} )
 endif()
-
-
-
-###------------------------------------------------------------------------------------------
-###------------------------------------------------------------------------------------------
 
 if(AARE_MASTER_PROJECT)
     install(TARGETS aare_core aare_compiler_flags 
