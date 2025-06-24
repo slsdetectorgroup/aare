@@ -413,6 +413,7 @@ target_link_libraries(
 
 if(AARE_TESTS)
     target_compile_definitions(aare_core PRIVATE AARE_TESTS)
+endif()
 if(AARE_VERBOSE)
     target_compile_definitions(aare_core PUBLIC AARE_VERBOSE)
     target_compile_definitions(aare_core PUBLIC AARE_LOG_LEVEL=aare::logDEBUG5)
