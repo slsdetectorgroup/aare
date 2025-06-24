@@ -1,6 +1,8 @@
 #include "aare/RawMasterFile.hpp"
 #include "aare/RawFile.hpp"
+#include "aare/logger.hpp"
 #include <sstream>
+
 namespace aare {
 
 RawFileNameComponents::RawFileNameComponents(
@@ -425,9 +427,9 @@ void RawMasterFile::parse_raw(const std::filesystem::path &fpath) {
 
     if (m_geometry.col == 0 && m_geometry.row == 0) {
         retrieve_geometry();
-        fmt::print("Warning: No geometry found in master file. Retrieved "
-                   "geometry of {}x{}\n",
-                   m_geometry.row, m_geometry.col);
+        LOG(TLogLevel::logWARNING)
+            << "No geometry found in master file. Retrieved geometry of "
+            << m_geometry.row << " x " << m_geometry.col << "\n ";
     }
 
     // TODO! Read files and find actual frames
