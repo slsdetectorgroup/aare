@@ -56,7 +56,7 @@ void NumpyFile::write_impl(void *data, uint64_t size) {
 }
 
 Frame NumpyFile::get_frame(size_t frame_number) {
-    Frame frame(m_header.shape[1], m_header.shape[2], m_header.dtype);
+    Frame frame(m_header.shape[0], m_header.shape[1], m_header.dtype);
     get_frame_into(frame_number, frame.data());
     return frame;
 }
@@ -67,7 +67,7 @@ void NumpyFile::get_frame_into(size_t frame_number, std::byte *image_buf) {
     if (frame_number > m_header.shape[0]) {
         throw std::invalid_argument("Frame number out of range");
     }
-    if (fseek(fp, header_size + frame_number * m_bytes_per_frame,
+    if (fseek(fp, frame_number * m_bytes_per_frame,
               SEEK_SET)) // NOLINT
         throw std::runtime_error("Could not seek to frame");
 

@@ -111,25 +111,65 @@ TEST_CASE("Read frame numbers from a raw file", "[.integration]") {
 }
 
 TEST_CASE("Compare reading from a numpy file with a raw file", "[.files]") {
-    auto fpath_raw =
-        test_data_path() / "raw/jungfrau" / "jungfrau_single_master_0.json";
-    REQUIRE(std::filesystem::exists(fpath_raw));
 
-    auto fpath_npy =
-        test_data_path() / "raw/jungfrau" / "jungfrau_single_0.npy";
-    REQUIRE(std::filesystem::exists(fpath_npy));
+    SECTION("jungfrau data") {
+        auto fpath_raw =
+            test_data_path() / "raw/jungfrau" / "jungfrau_single_master_0.json";
+        REQUIRE(std::filesystem::exists(fpath_raw));
 
-    File raw(fpath_raw, "r");
-    File npy(fpath_npy, "r");
+        auto fpath_npy =
+            test_data_path() / "raw/jungfrau" / "jungfrau_single_0.npy";
+        REQUIRE(std::filesystem::exists(fpath_npy));
 
-    CHECK(raw.total_frames() == 10);
-    CHECK(npy.total_frames() == 10);
+        File raw(fpath_raw, "r");
+        File npy(fpath_npy, "r");
 
-    for (size_t i = 0; i < 10; ++i) {
-        CHECK(raw.tell() == i);
+        CHECK(raw.total_frames() == 10);
+        CHECK(npy.total_frames() == 10);
+
+        for (size_t i = 0; i < 10; ++i) {
+            CHECK(raw.tell() == i);
+            auto raw_frame = raw.read_frame();
+            auto npy_frame = npy.read_frame();
+            CHECK((raw_frame.view<uint16_t>() == npy_frame.view<uint16_t>()));
+        }
+    }
+
+    SECTION("eiger quad data") {
+        auto fpath_raw =
+            test_data_path() / "raw/eiger_quad_data" /
+            "W13_vrpreampscan_m21C_300V_800eV_vthre2000_master_0.json";
+        REQUIRE(std::filesystem::exists(fpath_raw));
+
+        auto fpath_npy = test_data_path() / "raw/eiger_quad_data" /
+                         "W13_vrpreampscan_m21C_300V_800eV_vthre2000.npy";
+        REQUIRE(std::filesystem::exists(fpath_npy));
+
+        File raw(fpath_raw, "r");
+        File npy(fpath_npy, "r");
+
+        raw.seek(20);
         auto raw_frame = raw.read_frame();
+
         auto npy_frame = npy.read_frame();
-        CHECK((raw_frame.view<uint16_t>() == npy_frame.view<uint16_t>()));
+        CHECK((raw_frame.view<uint32_t>() == npy_frame.view<uint32_t>()));
+    }
+    SECTION("eiger data") {
+        auto fpath_raw = test_data_path() / "raw/eiger" /
+                         "Lab6_20500eV_2deg_20240629_master_7.json";
+        REQUIRE(std::filesystem::exists(fpath_raw));
+
+        auto fpath_npy =
+            test_data_path() / "raw/eiger" / "Lab6_20500eV_2deg_20240629_7.npy";
+        REQUIRE(std::filesystem::exists(fpath_npy));
+
+        File raw(fpath_raw, "r");
+        File npy(fpath_npy, "r");
+
+        auto raw_frame = raw.read_frame();
+
+        auto npy_frame = npy.read_frame();
+        CHECK((raw_frame.view<uint32_t>() == npy_frame.view<uint32_t>()));
     }
 }
 
