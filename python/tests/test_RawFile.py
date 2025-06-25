@@ -2,7 +2,7 @@ import pytest
 from aare import RawFile
 import numpy as np
 
-@pytest.mark.files
+@pytest.mark.withdata
 def test_read_rawfile_with_roi(test_data_path):
 
    with RawFile(test_data_path / "raw/SingleChipROI/Data_master_0.json") as f:
@@ -11,7 +11,7 @@ def test_read_rawfile_with_roi(test_data_path):
     assert headers.size == 10100
     assert frames.shape == (10100, 256, 256)
     
-@pytest.mark.files
+@pytest.mark.withdata
 def test_read_rawfile_quad_eiger_and_compare_to_numpy(test_data_path): 
     
     d0 = test_data_path/'raw/eiger_quad_data/W13_vrpreampscan_m21C_300V_800eV_vthre2000_d0_f0_0.raw'
@@ -36,7 +36,7 @@ def test_read_rawfile_quad_eiger_and_compare_to_numpy(test_data_path):
     assert (image == image1).all()
 
 
-@pytest.mark.files
+@pytest.mark.withdata
 def test_read_rawfile_eiger_and_compare_to_numpy(test_data_path): 
     d0 = test_data_path/'raw/eiger/Lab6_20500eV_2deg_20240629_d0_f0_7.raw'
     d1 = test_data_path/'raw/eiger/Lab6_20500eV_2deg_20240629_d1_f0_7.raw'

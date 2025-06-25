@@ -2,7 +2,7 @@ import pytest
 import numpy as np
 from aare import JungfrauDataFile
 
-@pytest.mark.files
+@pytest.mark.withdata
 def test_jfungfrau_dat_read_number_of_frames(test_data_path):
     with JungfrauDataFile(test_data_path / "dat/AldoJF500k_000000.dat") as dat_file:
         assert dat_file.total_frames == 24
@@ -14,7 +14,7 @@ def test_jfungfrau_dat_read_number_of_frames(test_data_path):
         assert dat_file.total_frames == 113
 
 
-@pytest.mark.files
+@pytest.mark.withdata
 def test_jfungfrau_dat_read_number_of_file(test_data_path):
     with JungfrauDataFile(test_data_path / "dat/AldoJF500k_000000.dat") as dat_file:
         assert dat_file.n_files == 4
@@ -26,7 +26,7 @@ def test_jfungfrau_dat_read_number_of_file(test_data_path):
         assert dat_file.n_files == 7
 
 
-@pytest.mark.files
+@pytest.mark.withdata
 def test_read_module(test_data_path):
     """
     Read all frames from the series of .dat files. Compare to canned data in npz format. 
@@ -50,7 +50,7 @@ def test_read_module(test_data_path):
     assert np.all(ref_header == header)
     assert np.all(ref_data == data)
 
-@pytest.mark.files
+@pytest.mark.withdata
 def test_read_half_module(test_data_path):
 
     # Read all frames from the .dat file
@@ -71,7 +71,7 @@ def test_read_half_module(test_data_path):
     assert np.all(ref_data == data)
 
 
-@pytest.mark.files
+@pytest.mark.withdata
 def test_read_single_chip(test_data_path):
 
     # Read all frames from the .dat file

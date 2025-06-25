@@ -147,7 +147,7 @@ TEST_CASE("Parse a master file in .json format", "[.integration]") {
 }
 
 TEST_CASE("Parse a master file in old .raw format",
-          "[.integration][.files][.rawmasterfile]") {
+          "[.integration][.with-data][.rawmasterfile]") {
     auto fpath = test_data_path() /
                  "raw/jungfrau_2modules_version6.1.2/run_master_0.raw";
     REQUIRE(std::filesystem::exists(fpath));
