@@ -139,9 +139,6 @@ class NDArray : public ArrayExpr<NDArray<T, Ndim>, Ndim> {
 
     NDArray<bool, Ndim> operator>(const NDArray &other);
 
-    bool equals(const NDArray<T, Ndim> &other,
-                const T tolerance = std::numeric_limits<T>::epsilon()) const;
-
     bool operator==(const NDArray &other) const;
     bool operator!=(const NDArray &other) const;
 
