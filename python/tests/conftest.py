@@ -6,7 +6,7 @@ import pytest
 
 def pytest_addoption(parser):
     parser.addoption(
-        "--with-data", action="store_true", default=False, help="run slow tests"
+        "--with-data", action="store_true", default=False, help="Run tests that require additional data"
     )
 
 

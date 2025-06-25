@@ -25,7 +25,7 @@ Python
 .. code-block:: bash
 
     #From the root dir of the library
-    python -m pytest python/tests --with-data # passing --with-dat will run the tests needing data
+    python -m pytest python/tests --with-data # passing --with-data will run the tests needing data
 
 
 
