@@ -65,7 +65,7 @@ void define_raw_file_io_bindings(py::module &m) {
                     header = py::array_t<DetectorHeader>(n_frames);
                 } else {
                     header = py::array_t<DetectorHeader>(
-                        {self.n_modules(), n_frames});
+                        {self.n_modules_in_roi(), n_frames});
                 }
                 // py::array_t<DetectorHeader> header({self.n_mod(), n_frames});
 
@@ -101,7 +101,8 @@ void define_raw_file_io_bindings(py::module &m) {
         .def_property_readonly("cols", &RawFile::cols)
         .def_property_readonly("bitdepth", &RawFile::bitdepth)
         .def_property_readonly("geometry", &RawFile::geometry)
-        .def_property_readonly("n_modules", &RawFile::n_modules)
         .def_property_readonly("detector_type", &RawFile::detector_type)
-        .def_property_readonly("master", &RawFile::master);
+        .def_property_readonly("master", &RawFile::master)
+        .def_property_readonly("n_modules", &RawFile::n_modules)
+        .def_property_readonly("n_modules_in_roi", &RawFile::n_modules_in_roi);
 }

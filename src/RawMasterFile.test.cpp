@@ -2,6 +2,7 @@
 
 #include "test_config.hpp"
 #include <catch2/catch_test_macros.hpp>
+#include <iostream>
 
 using namespace aare;
 
@@ -143,6 +144,19 @@ TEST_CASE("Parse a master file in .json format", "[.integration]") {
 
     REQUIRE_FALSE(f.analog_samples());
     REQUIRE_FALSE(f.digital_samples());
+}
+
+TEST_CASE("Parse a master file in old .raw format",
+          "[.integration][.files][.rawmasterfile]") {
+    auto fpath = test_data_path() /
+                 "raw/jungfrau_2modules_version6.1.2/run_master_0.raw";
+    REQUIRE(std::filesystem::exists(fpath));
+    RawMasterFile f(fpath);
+
+    CHECK(f.udp_interfaces_per_module() == xy{1, 1});
+    CHECK(f.n_modules() == 2);
+    CHECK(f.geometry().row == 2);
+    CHECK(f.geometry().col == 1);
 }
 
 TEST_CASE("Parse a master file in .raw format", "[.integration]") {
