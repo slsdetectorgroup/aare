@@ -6,20 +6,20 @@ import pytest
 
 def pytest_addoption(parser):
     parser.addoption(
-        "--files", action="store_true", default=False, help="run slow tests"
+        "--with-data", action="store_true", default=False, help="Run tests that require additional data"
     )
 
 
 def pytest_configure(config):
-    config.addinivalue_line("markers", "files: mark test as needing image files to run")
+    config.addinivalue_line("markers", "withdata: mark test as needing image files to run")
 
 
 def pytest_collection_modifyitems(config, items):
-    if config.getoption("--files"):
+    if config.getoption("--with-data"):
         return
-    skip = pytest.mark.skip(reason="need --files option to run")
+    skip = pytest.mark.skip(reason="need --with-data option to run")
     for item in items:
-        if "files" in item.keywords:
+        if "withdata" in item.keywords:
             item.add_marker(skip)
 
 

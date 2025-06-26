@@ -3,7 +3,7 @@ import numpy as np
 from aare import RawSubFile, DetectorType
 
 
-@pytest.mark.files
+@pytest.mark.withdata
 def test_read_a_jungfrau_RawSubFile(test_data_path):
 
     # Starting with f1 there is now 7 frames left in the series of files
@@ -23,7 +23,7 @@ def test_read_a_jungfrau_RawSubFile(test_data_path):
     data = np.load(test_data_path / "raw/jungfrau/jungfrau_single_0.npy")
     assert np.all(data[3:] == frames)
 
-@pytest.mark.files
+@pytest.mark.withdata
 def test_iterate_over_a_jungfrau_RawSubFile(test_data_path):
 
     data = np.load(test_data_path / "raw/jungfrau/jungfrau_single_0.npy")

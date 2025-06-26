@@ -57,9 +57,9 @@ class ClusterFinderMTWrapper
     size_t m_sink_size() const { return this->m_sink.sizeGuess(); }
 };
 
-TEST_CASE("multithreaded cluster finder", "[.files][.ClusterFinder]") {
+TEST_CASE("multithreaded cluster finder", "[.with-data]") {
     auto fpath =
-        test_data_path() / "clust/Moench03new/cu_half_speed_master_4.json";
+        test_data_path() / "raw/moench03/cu_half_speed_master_4.json";
 
     REQUIRE(std::filesystem::exists(fpath));
 

@@ -6,7 +6,7 @@
 
 using namespace aare;
 
-TEST_CASE("Read frames directly from a RawSubFile", "[.files]") {
+TEST_CASE("Read frames directly from a RawSubFile", "[.with-data]") {
     auto fpath_raw =
         test_data_path() / "raw/jungfrau" / "jungfrau_single_d0_f0_0.raw";
     REQUIRE(std::filesystem::exists(fpath_raw));
@@ -40,7 +40,7 @@ TEST_CASE("Read frames directly from a RawSubFile", "[.files]") {
 }
 
 TEST_CASE("Read frames directly from a RawSubFile starting at the second file",
-          "[.files]") {
+          "[.with-data]") {
     // we know this file has 10 frames with frame numbers 1 to 10
     // f0 1,2,3
     // f1 4,5,6 <-- starting here

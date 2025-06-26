@@ -5,7 +5,7 @@
 
 using aare::JungfrauDataFile;
 using aare::JungfrauDataHeader;
-TEST_CASE("Open a Jungfrau data file", "[.files]") {
+TEST_CASE("Open a Jungfrau data file", "[.with-data]") {
     // we know we have 4 files with 7, 7, 7, and 3 frames
     // firs frame number if 1 and the bunch id is frame_number**2
     // so we can check the header
@@ -37,7 +37,7 @@ TEST_CASE("Open a Jungfrau data file", "[.files]") {
     }
 }
 
-TEST_CASE("Seek in a JungfrauDataFile", "[.files]") {
+TEST_CASE("Seek in a JungfrauDataFile", "[.with-data]") {
     auto fpath = test_data_path() / "dat" / "AldoJF65k_000000.dat";
     REQUIRE(std::filesystem::exists(fpath));
 
@@ -70,7 +70,7 @@ TEST_CASE("Seek in a JungfrauDataFile", "[.files]") {
     REQUIRE_THROWS(f.seek(86356)); // out of range
 }
 
-TEST_CASE("Open a Jungfrau data file with non zero file index", "[.files]") {
+TEST_CASE("Open a Jungfrau data file with non zero file index", "[.with-data]") {
 
     auto fpath = test_data_path() / "dat" / "AldoJF65k_000003.dat";
     REQUIRE(std::filesystem::exists(fpath));
@@ -94,7 +94,7 @@ TEST_CASE("Open a Jungfrau data file with non zero file index", "[.files]") {
     REQUIRE(f.current_file().stem() == "AldoJF65k_000003");
 }
 
-TEST_CASE("Read into throws if size doesn't match", "[.files]") {
+TEST_CASE("Read into throws if size doesn't match", "[.with-data]") {
     auto fpath = test_data_path() / "dat" / "AldoJF65k_000000.dat";
     REQUIRE(std::filesystem::exists(fpath));
 
