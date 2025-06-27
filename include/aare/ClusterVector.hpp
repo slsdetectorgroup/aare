@@ -32,7 +32,8 @@ class ClusterVector; // Forward declaration
  */
 template <typename T, uint8_t ClusterSizeX, uint8_t ClusterSizeY,
           typename CoordType>
-class ClusterVector<Cluster<T, ClusterSizeX, ClusterSizeY, CoordType>> {
+class ClusterVector<Cluster<T, ClusterSizeX, ClusterSizeY, CoordType>> 
+{
 
     std::vector<Cluster<T, ClusterSizeX, ClusterSizeY, CoordType>> m_data{};
     int32_t m_frame_number{0}; // TODO! Check frame number size and type
@@ -121,6 +122,11 @@ class ClusterVector<Cluster<T, ClusterSizeX, ClusterSizeY, CoordType>> {
      * @brief Return the number of clusters in the vector
      */
     size_t size() const { return m_data.size(); }
+
+    /**
+     * @brief Check if the vector is empty
+     */
+    bool empty() const { return m_data.empty(); }
 
     uint8_t cluster_size_x() const { return ClusterSizeX; }
 
