@@ -33,7 +33,7 @@ class NDArray : public ArrayExpr<NDArray<T, Ndim>, Ndim> {
      * @brief Default constructor. Will construct an empty NDArray.
      *
      */
-    NDArray() : shape_(), strides_(c_strides<Ndim>(shape_)), data_(nullptr){};
+    NDArray() : shape_(), strides_(c_strides<Ndim>(shape_)), data_(nullptr) {};
 
     /**
      * @brief Construct a new NDArray object with a given shape.
@@ -380,6 +380,7 @@ NDArray<T, Ndim> NDArray<T, Ndim>::operator*(const T &value) {
     result *= value;
     return result;
 }
+
 // template <typename T, ssize_t Ndim> void NDArray<T, Ndim>::Print() {
 //     if (shape_[0] < 20 && shape_[1] < 20)
 //         Print_all();
@@ -422,7 +423,7 @@ template <typename T, ssize_t Ndim>
 void save(NDArray<T, Ndim> &img, std::string &pathname) {
     std::ofstream f;
     f.open(pathname, std::ios::binary);
-    f.write(img.buffer(), img.size() * sizeof(T));
+    f.write(reinterpret_cast<char *>(img.buffer()), img.size() * sizeof(T));
     f.close();
 }
 
@@ -432,9 +433,39 @@ NDArray<T, Ndim> load(const std::string &pathname,
     NDArray<T, Ndim> img{shape};
     std::ifstream f;
     f.open(pathname, std::ios::binary);
-    f.read(img.buffer(), img.size() * sizeof(T));
+    f.read(reinterpret_cast<char *>(img.buffer()), img.size() * sizeof(T));
     f.close();
     return img;
+}
+
+template <typename T, ssize_t Ndim = 1>
+NDArray<T, Ndim> load_non_binary_file(const std::string &filename,
+                                      const std::array<ssize_t, Ndim> shape) {
+    std::string word;
+    NDArray<T, Ndim> array(shape);
+
+    try {
+        std::ifstream file(filename, std::ios_base::in);
+        if (!file.good()) {
+            throw std::logic_error("file does not exist");
+        }
+
+        std::stringstream file_buffer;
+        file_buffer << file.rdbuf();
+
+        ssize_t counter = 0;
+        while (file_buffer >> word && counter < array.size()) {
+            array[counter] = static_cast<T>(
+                std::stod(word)); // TODO change for different Types
+            ++counter;
+        }
+
+        file.close();
+    } catch (const std::exception &e) {
+        std::cerr << "Error: " << e.what() << std::endl;
+    }
+
+    return array;
 }
 
 } // namespace aare

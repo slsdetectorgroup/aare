@@ -6,6 +6,7 @@
 #include <array>
 #include <cassert>
 #include <cstdint>
+#include <fstream>
 #include <functional>
 #include <iomanip>
 #include <iostream>
@@ -99,6 +100,20 @@ class NDView : public ArrayExpr<NDView<T, Ndim>, Ndim> {
             if (buffer_[i] != other.buffer_[i])
                 return false;
         }
+        return true;
+    }
+
+    bool equals(const NDView<T, Ndim> &other, const T tolerance) const {
+        if (shape_ != other.shape_)
+            return false;
+
+        using SignedT = typename make_signed<T>::type;
+
+        for (uint32_t i = 0; i != size_; ++i)
+            if (std::abs(static_cast<SignedT>(buffer_[i]) -
+                         static_cast<SignedT>(other.buffer_[i])) > tolerance)
+                return false;
+
         return true;
     }
 
@@ -203,6 +218,14 @@ std::ostream &operator<<(std::ostream &os, const NDView<T, Ndim> &arr) {
 
 template <typename T> NDView<T, 1> make_view(std::vector<T> &vec) {
     return NDView<T, 1>(vec.data(), {static_cast<ssize_t>(vec.size())});
+}
+
+template <typename T, ssize_t Ndim>
+void save(NDView<T, Ndim> img, const std::string &pathname) {
+    std::ofstream f;
+    f.open(pathname, std::ios::binary);
+    f.write(reinterpret_cast<char *>(img.data()), img.size() * sizeof(T));
+    f.close();
 }
 
 } // namespace aare
