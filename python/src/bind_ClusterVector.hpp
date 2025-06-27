@@ -104,4 +104,14 @@ void define_ClusterVector(py::module &m, const std::string &typestr) {
           });
 }
 
+void define_reduction(py::module &m) {
+    m.def("reduce_3x3_to_2x2", [](const ClusterVector<Cluster<int, 3, 3, uint16_t>> &cv) {
+        return new ClusterVector<Cluster<int, 2, 2, uint16_t>>(reduce_3x3_to_2x2(cv));
+        // return new ClusterVector<Cluster<int, 3, 3>>();
+    })
+    .def("reduce_5x5_to_3x3", [](const ClusterVector<Cluster<int, 5, 5, uint16_t>> &cv) {
+        return new ClusterVector<Cluster<int, 3, 3, uint16_t>>(reduce_5x5_to_3x3(cv));
+    });
+}
+
 #pragma GCC diagnostic pop
