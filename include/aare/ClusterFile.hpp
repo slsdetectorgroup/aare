@@ -14,7 +14,7 @@
 namespace aare {
 
 /*
-Binary cluster file. Expects data to be layed out as:
+Binary cluster file. Expects data to be laid out as:
 int32_t frame_number
 uint32_t number_of_clusters
 int16_t x, int16_t y, int32_t data[9] x number_of_clusters

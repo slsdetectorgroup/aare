@@ -6,6 +6,7 @@
 Features:
 
 - Cluster finder now works with 5x5, 7x7 and 9x9 clusters
+- Added ClusterVector::empty() member
 
 
 ### 2025.05.22
@@ -17,6 +18,7 @@ Features:
 Bugfixes:
 
 - Fixed crash when opening raw files with large number of data files
+- Fixed reading RawFiles with ROI fully excluding some sub files. 
 
 
 
