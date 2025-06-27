@@ -7,9 +7,21 @@
 
 using aare::Cluster;
 using aare::ClusterVector;
+using C1 = Cluster<int32_t, 2, 2>;
+
+
+TEST_CASE("A newly created ClusterVector is empty") {
+    ClusterVector<C1> cv(4);
+    REQUIRE(cv.empty());
+}
+
+TEST_CASE("After pushing back one element the ClusterVector is not empty") {
+    ClusterVector<C1> cv(4);
+    cv.push_back(C1{1, 2, {3, 4}});
+    REQUIRE(!cv.empty());
+}
 
 TEST_CASE("item_size return the size of the cluster stored") {
-    using C1 = Cluster<int32_t, 2, 2>;
     ClusterVector<C1> cv(4);
     CHECK(cv.item_size() == sizeof(C1));
 
@@ -43,8 +55,7 @@ TEST_CASE("item_size return the size of the cluster stored") {
     CHECK(cv7.item_size() == sizeof(C7));
 }
 
-TEST_CASE("ClusterVector 2x2 int32_t capacity 4, push back then read",
-          "[.ClusterVector]") {
+TEST_CASE("ClusterVector 2x2 int32_t capacity 4, push back then read") {
 
     ClusterVector<Cluster<int32_t, 2, 2>> cv(4);
     REQUIRE(cv.capacity() == 4);
@@ -70,7 +81,7 @@ TEST_CASE("ClusterVector 2x2 int32_t capacity 4, push back then read",
     }
 }
 
-TEST_CASE("Summing 3x1 clusters of int64", "[.ClusterVector]") {
+TEST_CASE("Summing 3x1 clusters of int64") {
     ClusterVector<Cluster<int32_t, 3, 1>> cv(2);
     REQUIRE(cv.capacity() == 2);
     REQUIRE(cv.size() == 0);
@@ -102,7 +113,7 @@ TEST_CASE("Summing 3x1 clusters of int64", "[.ClusterVector]") {
     */
 }
 
-TEST_CASE("Storing floats", "[.ClusterVector]") {
+TEST_CASE("Storing floats") {
     ClusterVector<Cluster<float, 2, 4>> cv(10);
     REQUIRE(cv.capacity() == 10);
     REQUIRE(cv.size() == 0);
@@ -129,7 +140,7 @@ TEST_CASE("Storing floats", "[.ClusterVector]") {
     */
 }
 
-TEST_CASE("Push back more than initial capacity", "[.ClusterVector]") {
+TEST_CASE("Push back more than initial capacity") {
 
     ClusterVector<Cluster<int32_t, 2, 2>> cv(2);
     auto initial_data = cv.data();
@@ -162,8 +173,7 @@ TEST_CASE("Push back more than initial capacity", "[.ClusterVector]") {
     REQUIRE(initial_data != cv.data());
 }
 
-TEST_CASE("Concatenate two cluster vectors where the first has enough capacity",
-          "[.ClusterVector]") {
+TEST_CASE("Concatenate two cluster vectors where the first has enough capacity") {
     ClusterVector<Cluster<int32_t, 2, 2>> cv1(12);
     Cluster<int32_t, 2, 2> c1 = {1, 2, {3, 4, 5, 6}};
     cv1.push_back(c1);
@@ -192,8 +202,7 @@ TEST_CASE("Concatenate two cluster vectors where the first has enough capacity",
     REQUIRE(ptr[3].y == 17);
 }
 
-TEST_CASE("Concatenate two cluster vectors where we need to allocate",
-          "[.ClusterVector]") {
+TEST_CASE("Concatenate two cluster vectors where we need to allocate") {
     ClusterVector<Cluster<int32_t, 2, 2>> cv1(2);
     Cluster<int32_t, 2, 2> c1 = {1, 2, {3, 4, 5, 6}};
     cv1.push_back(c1);
@@ -229,7 +238,7 @@ struct ClusterTestData {
     std::vector<int64_t> index_map_y;
 };
 
-TEST_CASE("Gain Map Calculation Index Map", "[.ClusterVector][.gain_map]") {
+TEST_CASE("Gain Map Calculation Index Map") {
 
     auto clustertestdata = GENERATE(
         ClusterTestData{3,
