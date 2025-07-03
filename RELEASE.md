@@ -10,6 +10,7 @@ Features:
 
 Bugfixes:
 - Fixed reading RawFiles with ROI fully excluding some sub files. 
+- Removed unused file: ClusterFile.cpp 
 
 ### 2025.05.22
 
