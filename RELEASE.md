@@ -10,6 +10,7 @@ Features:
 
 Bugfixes:
 - Fixed reading RawFiles with ROI fully excluding some sub files. 
+- Decoding of MH02 files placed the pixels in wrong position
 
 ### 2025.05.22
 
