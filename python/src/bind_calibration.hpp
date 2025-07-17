@@ -31,4 +31,7 @@ py::array_t<DataType> pybind_apply_calibration(
 void bind_calibration(py::module &m) {
     m.def("apply_calibration", &pybind_apply_calibration<float>, py::arg().noconvert(),
           py::arg().noconvert(), py::arg().noconvert(), py::arg() = 4);
+
+    m.def("apply_calibration", &pybind_apply_calibration<double>, py::arg().noconvert(),
+          py::arg().noconvert(), py::arg().noconvert(), py::arg() = 4);
 }

@@ -31,4 +31,7 @@ from .utils import random_pixels, random_pixel, flat_list, add_colorbar
 #make functions available in the top level API
 from .func import *
 
+from .calibration import *
 from ._aare import apply_calibration
+
+from ._aare import VarClusterFinder
