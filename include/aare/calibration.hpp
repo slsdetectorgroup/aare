@@ -61,10 +61,9 @@ void apply_calibration_impl(NDView<T, 3> res, NDView<uint16_t, 3> raw_data,
     for (int frame_nr = start; frame_nr != stop; ++frame_nr) {
         for (int row = 0; row != raw_data.shape(1); ++row) {
             for (int col = 0; col != raw_data.shape(2); ++col) {
-                auto gain = get_gain(raw_data(frame_nr, row, col));
-                auto value = get_value(raw_data(frame_nr, row, col));
+                auto [value, gain] = get_value_and_gain(raw_data(frame_nr, row, col));
                 res(frame_nr, row, col) =
-                    (value - ped(gain, row, col)) / cal(gain, row, col);
+                    (value - ped(gain, row, col)) / cal(gain, row, col); //TODO! use multiplication
             }
         }
     }

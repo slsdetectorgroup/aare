@@ -27,12 +27,12 @@ def test_apply_calibration_small_data():
 
     
 
-    data = apply_calibration(raw, pedestal, calibration)
+    data = apply_calibration(raw, pd = pedestal, cal = calibration)
 
 
     # The formula that is applied is:
     # calibrated = (raw - pedestal) / calibration
-    assert data.shape == (3, 4, 5)
+    assert data.shape == (10, 4, 5)
     assert data[0, 0, 0] == (100 - 10) / 43.7
     assert data[2, 3, 3] ==  (1000 - 500) / 2.0
     assert data[1, 1, 4] == (857 - 100) / 3.0
