@@ -104,22 +104,34 @@ NDArray<ssize_t, 2> GenerateEigerFlipRowsPixelMap() {
 }
 
 NDArray<ssize_t, 2> GenerateMH02SingleCounterPixelMap() {
+    // This is the pixel map for a single counter Matterhorn02, i.e. 48x48 pixels.
+    // Data is read from two transceivers in blocks of 4 pixels.
     NDArray<ssize_t, 2> order_map({48, 48});
+    size_t offset = 0;
+    size_t nSamples = 4;
     for (int row = 0; row < 48; row++) {
-        for (int col = 0; col < 48; col++) {
-            order_map(row, col) = row * 48 + col;
+        for (int col = 0; col < 24; col++) {
+            for (int iTrans = 0; iTrans < 2; iTrans++) {
+                order_map(row, iTrans * 24 + col) = offset + nSamples * iTrans;
+            }
+            offset += 1;
+            if ((col + 1) % nSamples == 0) {
+                offset += nSamples;
+            }
         }
     }
     return order_map;
 }
 
 NDArray<ssize_t, 3> GenerateMH02FourCounterPixelMap() {
+    auto single_counter_map = GenerateMH02SingleCounterPixelMap();
     NDArray<ssize_t, 3> order_map({4, 48, 48});
     for (int counter = 0; counter < 4; counter++) {
         for (int row = 0; row < 48; row++) {
             for (int col = 0; col < 48; col++) {
                 order_map(counter, row, col) =
-                    counter * 48 * 48 + row * 48 + col;
+                    single_counter_map(row, col) +
+                    counter * 48 * 48;
             }
         }
     }
