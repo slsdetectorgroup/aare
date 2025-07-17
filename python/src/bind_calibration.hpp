@@ -16,6 +16,7 @@ py::array_t<DataType> pybind_apply_calibration(
     py::array_t<DataType, py::array::c_style | py::array::forcecast>
         calibration,
     int n_threads = 4) {
+`
     auto data_span = make_view_3d(data);
     auto ped = make_view_3d(pedestal);
     auto cal = make_view_3d(calibration);
@@ -36,6 +37,7 @@ void bind_calibration(py::module &m) {
           py::arg("n_threads") = 4);
 
     m.def("apply_calibration", &pybind_apply_calibration<double>,
-          py::arg("raw_data").noconvert(), py::kw_only(), py::arg("pd").noconvert(),
-          py::arg("cal").noconvert(), py::arg("n_threads") = 4);
+          py::arg("raw_data").noconvert(), py::kw_only(),
+          py::arg("pd").noconvert(), py::arg("cal").noconvert(),
+          py::arg("n_threads") = 4);
 }
