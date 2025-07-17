@@ -9,6 +9,7 @@
 #include <stdexcept>
 #include <string>
 #include <string_view>
+#include <type_traits>
 #include <variant>
 #include <vector>
 
@@ -230,5 +231,13 @@ template <> TimingMode StringTo(const std::string & /*mode*/);
 template <> FrameDiscardPolicy StringTo(const std::string & /*mode*/);
 
 using DataTypeVariants = std::variant<uint16_t, uint32_t>;
+
+template <typename T, bool = std::is_integral_v<T>> struct make_signed {
+    using type = T;
+};
+
+template <typename T> struct make_signed<T, true> {
+    using type = std::make_signed_t<T>;
+};
 
 } // namespace aare
