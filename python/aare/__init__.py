@@ -30,3 +30,5 @@ from .utils import random_pixels, random_pixel, flat_list, add_colorbar
 
 #make functions available in the top level API
 from .func import *
+
+from ._aare import apply_calibration

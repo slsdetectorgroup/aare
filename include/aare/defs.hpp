@@ -231,4 +231,6 @@ template <> FrameDiscardPolicy StringTo(const std::string & /*mode*/);
 
 using DataTypeVariants = std::variant<uint16_t, uint32_t>;
 
+constexpr uint16_t ADC_MASK = 0x3FFF; // used to mask out the gain bits in Jungfrau
+
 } // namespace aare
