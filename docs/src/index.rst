@@ -25,6 +25,7 @@ AARE
     :maxdepth: 1
     
     pyFile
+    pycalibration
     pyCtbRawFile
     pyClusterFile
     pyClusterVector
