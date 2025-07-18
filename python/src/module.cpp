@@ -8,6 +8,7 @@
 #include "bind_ClusterFinder.hpp"
 #include "bind_ClusterFinderMT.hpp"
 #include "bind_ClusterVector.hpp"
+#include "bind_calibration.hpp"
 
 // TODO! migrate the other names
 #include "ctb_raw_file.hpp"
@@ -61,6 +62,8 @@ PYBIND11_MODULE(_aare, m) {
     define_fit_bindings(m);
     define_interpolation_bindings(m);
     define_jungfrau_data_file_io_bindings(m);
+
+    bind_calibration(m);
 
     DEFINE_CLUSTER_BINDINGS(int, 3, 3, uint16_t, i);
     DEFINE_CLUSTER_BINDINGS(double, 3, 3, uint16_t, d);
