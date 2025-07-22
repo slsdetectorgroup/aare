@@ -25,13 +25,13 @@ TEST_CASE("Construct from an NDView") {
     REQUIRE(image.data() != view.data());
 
     for (uint32_t i = 0; i < image.size(); ++i) {
-        REQUIRE(image(i) == view(i));
+        REQUIRE(image[i] == view[i]);
     }
 
     // Changing the image doesn't change the view
     image = 43;
     for (uint32_t i = 0; i < image.size(); ++i) {
-        REQUIRE(image(i) != view(i));
+        REQUIRE(image[i] != view[i]);
     }
 }
 

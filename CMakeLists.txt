@@ -368,6 +368,7 @@ set(PUBLICHEADERS
 
 
 set(SourceFiles
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/calibration.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/src/CtbRawFile.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/src/decode.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/src/defs.cpp

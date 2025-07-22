@@ -240,14 +240,14 @@ template <typename T> void VarClusterFinder<T>::first_pass() {
 
     for (ssize_t i = 0; i < original_.size(); ++i) {
         if (use_noise_map)
-            threshold_ = 5 * noiseMap(i);
-        binary_(i) = (original_(i) > threshold_);
+            threshold_ = 5 * noiseMap[i];
+        binary_[i] = (original_[i] > threshold_);
     }
 
     for (int i = 0; i < shape_[0]; ++i) {
         for (int j = 0; j < shape_[1]; ++j) {
 
-            // do we have someting to process?
+            // do we have something to process?
             if (binary_(i, j)) {
                 auto tmp = check_neighbours(i, j);
                 if (tmp != 0) {
