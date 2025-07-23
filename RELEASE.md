@@ -1,6 +1,15 @@
 # Release notes
 
 
+### head
+
+Features:
+
+- Apply calibration works in G0 if passes a 2D calibration and pedestal
+- count pixels that switch
+- calculate pedestal (also g0 version)
+
+
 ### 2025.07.18
 
 Features:

@@ -72,29 +72,82 @@ py::array_t<T> pybind_calculate_pedestal_g0(
 }
 
 void bind_calibration(py::module &m) {
-    m.def("apply_calibration", &pybind_apply_calibration<float>,
-          py::arg("raw_data").noconvert(), py::kw_only(),
-          py::arg("pd").noconvert(), py::arg("cal").noconvert(),
-          py::arg("n_threads") = 4);
-
     m.def("apply_calibration", &pybind_apply_calibration<double>,
           py::arg("raw_data").noconvert(), py::kw_only(),
           py::arg("pd").noconvert(), py::arg("cal").noconvert(),
           py::arg("n_threads") = 4);
 
+    m.def("apply_calibration", &pybind_apply_calibration<float>,
+          py::arg("raw_data").noconvert(), py::kw_only(),
+          py::arg("pd").noconvert(), py::arg("cal").noconvert(),
+          py::arg("n_threads") = 4);
+
     m.def("count_switching_pixels", &pybind_count_switching_pixels,
+          R"(
+        Count the number of time each pixel switches to G1 or G2.
+
+        Parameters
+        ----------
+        raw_data : array_like
+            3D array of shape (frames, rows, cols) to count the switching pixels from.
+        n_threads : int 
+            The number of threads to use for the calculation.
+        )",
           py::arg("raw_data").noconvert(), py::kw_only(),
           py::arg("n_threads") = 4);
 
-    m.def("calculate_pedestal_float", &pybind_calculate_pedestal<float>,
+    m.def("calculate_pedestal", &pybind_calculate_pedestal<double>,
+          R"(
+        Calculate the pedestal for all three gains and return the result as a 3D array of doubles.
+
+        Parameters
+        ----------
+        raw_data : array_like
+            3D array of shape (frames, rows, cols) to calculate the pedestal from.
+            Needs to contain data for all three gains (G0, G1, G2).
+        n_threads : int 
+            The number of threads to use for the calculation.
+        )",
           py::arg("raw_data").noconvert(), py::arg("n_threads") = 4);
 
-    m.def("calculate_pedestal", &pybind_calculate_pedestal<double>,
+    m.def("calculate_pedestal_float", &pybind_calculate_pedestal<float>,
+          R"(
+        Same as `calculate_pedestal` but returns a 3D array of floats.
+
+        Parameters
+        ----------
+        raw_data : array_like
+            3D array of shape (frames, rows, cols) to calculate the pedestal from.
+            Needs to contain data for all three gains (G0, G1, G2).
+        n_threads : int 
+            The number of threads to use for the calculation.
+        )",
           py::arg("raw_data").noconvert(), py::arg("n_threads") = 4);
 
     m.def("calculate_pedestal_g0", &pybind_calculate_pedestal_g0<double>,
+          R"(
+        Calculate the pedestal for G0 and return the result as a 2D array of doubles.
+        Pixels in G1 and G2 are ignored.
+
+        Parameters
+        ----------
+        raw_data : array_like
+            3D array of shape (frames, rows, cols) to calculate the pedestal from.
+        n_threads : int 
+            The number of threads to use for the calculation.
+        )",
           py::arg("raw_data").noconvert(), py::arg("n_threads") = 4);
 
     m.def("calculate_pedestal_g0_float", &pybind_calculate_pedestal_g0<float>,
+          R"(
+        Same as `calculate_pedestal_g0` but returns a 2D array of floats.
+
+        Parameters
+        ----------
+        raw_data : array_like
+            3D array of shape (frames, rows, cols) to calculate the pedestal from.
+        n_threads : int 
+            The number of threads to use for the calculation.
+        )",
           py::arg("raw_data").noconvert(), py::arg("n_threads") = 4);
 }
