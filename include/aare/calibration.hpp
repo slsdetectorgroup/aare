@@ -124,45 +124,6 @@ sum_and_count_per_gain(NDView<uint16_t, 3> raw_data);
 std::pair<NDArray<size_t, 2>, NDArray<size_t, 2>>
 sum_and_count_g0(NDView<uint16_t, 3> raw_data);
 
-template <typename T>
-NDArray<T, 3> calculate_pedestal(NDView<uint16_t, 3> raw_data) {
-    auto [accumulator, count] = sum_and_count_per_gain(raw_data);
-
-    NDArray<T, 3> pedestal(
-        std::array<ssize_t, 3>{3, raw_data.shape(1), raw_data.shape(2)}, 0);
-    for (int gain = 0; gain < 3; ++gain) {
-        for (int row = 0; row < raw_data.shape(1); ++row) {
-            for (int col = 0; col < raw_data.shape(2); ++col) {
-                if (count(gain, row, col) != 0) {
-                    pedestal(gain, row, col) =
-                        static_cast<T>(accumulator(gain, row, col)) /
-                        static_cast<T>(count(gain, row, col));
-                }
-            }
-        }
-    }
-    return pedestal;
-}
-
-template <typename T>
-NDArray<T, 2> calculate_pedestal_g0(NDView<uint16_t, 3> raw_data) {
-    auto [accumulator, count] = sum_and_count_g0(raw_data);
-
-    NDArray<T, 2> pedestal(
-        std::array<ssize_t, 2>{raw_data.shape(1), raw_data.shape(2)}, 0);
-    for (int row = 0; row < raw_data.shape(1); ++row) {
-        for (int col = 0; col < raw_data.shape(2); ++col) {
-            if (count(row, col) != 0) {
-                pedestal(row, col) =
-                    static_cast<T>(accumulator(row, col)) /
-                    static_cast<T>(count(row, col));
-            }
-        }
-    }
-    return pedestal;
-}
-
-
 
 template <typename T>
 NDArray<T, 2> calculate_pedestal_g0(NDView<uint16_t, 3> raw_data,
