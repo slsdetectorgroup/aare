@@ -161,6 +161,9 @@ NDArray<T, 2> calculate_pedestal_g0(NDView<uint16_t, 3> raw_data) {
     }
     return pedestal;
 }
+
+
+
 template <typename T>
 NDArray<T, 2> calculate_pedestal_g0(NDView<uint16_t, 3> raw_data,
                                  ssize_t n_threads) {
@@ -191,20 +194,8 @@ NDArray<T, 2> calculate_pedestal_g0(NDView<uint16_t, 3> raw_data,
         accumulator += acc;
         count += cnt;
     }
-    NDArray<T, 2> pedestal(
-        std::array<ssize_t,2>{raw_data.shape(1), raw_data.shape(2)}, 0);
-    for (int gain = 0; gain < 3; ++gain) {
-        for (int row = 0; row < raw_data.shape(1); ++row) {
-            for (int col = 0; col < raw_data.shape(2); ++col) {
-                if (count(row, col) != 0) {
-                    pedestal(row, col) =
-                        static_cast<T>(accumulator(row, col)) /
-                        static_cast<T>(count(row, col));
-                }
-            }
-        }
-    }
-    return pedestal;
+
+    return safe_divide<T>(accumulator, count);
 
 }
 
@@ -212,8 +203,6 @@ NDArray<T, 2> calculate_pedestal_g0(NDView<uint16_t, 3> raw_data,
 template <typename T>
 NDArray<T, 3> calculate_pedestal(NDView<uint16_t, 3> raw_data,
                                  ssize_t n_threads) {
-    NDArray<int, 2> switched(
-        std::array<ssize_t, 2>{raw_data.shape(1), raw_data.shape(2)}, 0);
     std::vector<std::future<std::pair<NDArray<size_t, 3>, NDArray<size_t, 3>>>>
         futures;
     futures.reserve(n_threads);
@@ -244,20 +233,7 @@ NDArray<T, 3> calculate_pedestal(NDView<uint16_t, 3> raw_data,
         count += cnt;
     }
 
-    NDArray<T, 3> pedestal(
-        std::array<ssize_t, 3>{3, raw_data.shape(1), raw_data.shape(2)}, 0);
-    for (int gain = 0; gain < 3; ++gain) {
-        for (int row = 0; row < raw_data.shape(1); ++row) {
-            for (int col = 0; col < raw_data.shape(2); ++col) {
-                if (count(gain, row, col) != 0) {
-                    pedestal(gain, row, col) =
-                        static_cast<T>(accumulator(gain, row, col)) /
-                        static_cast<T>(count(gain, row, col));
-                }
-            }
-        }
-    }
-    return pedestal;
+    return safe_divide<T>(accumulator, count);
 }
 
 /**
