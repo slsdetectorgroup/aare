@@ -56,14 +56,8 @@ NDArray<int, 2> count_switching_pixels(NDView<uint16_t, 3> raw_data, ssize_t n_t
     NDArray<int, 2> switched(std::array<ssize_t, 2>{raw_data.shape(1), raw_data.shape(2)},0);
     std::vector<std::future<NDArray<int, 2>>> futures;
     futures.reserve(n_threads);
-    auto limits = split_task(0, raw_data.shape(0), n_threads);
 
-    // make subviews for each thread
-    std::vector<NDView<uint16_t, 3>> subviews;
-    for (const auto &lim : limits) {
-        subviews.emplace_back(raw_data.data() + lim.first * raw_data.strides()[0],
-                              std::array<ssize_t, 3>{lim.second-lim.first, raw_data.shape(1), raw_data.shape(2)});
-    }
+    auto subviews = make_subviews(raw_data, n_threads);
 
     for (auto view : subviews) {
         futures.push_back(std::async(static_cast<NDArray<int, 2>(*)(NDView<uint16_t, 3>)>(&count_switching_pixels), view));
