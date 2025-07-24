@@ -3,6 +3,7 @@
 #include "aare/NDArray.hpp"
 #include "aare/NDView.hpp"
 #include "aare/defs.hpp"
+#include "aare/utils/par.hpp"
 #include "aare/utils/task.hpp"
 #include <cstdint>
 #include <future>
@@ -111,12 +112,14 @@ void apply_calibration(NDView<T, 3> res, NDView<uint16_t, 3> raw_data,
     for (const auto &lim : limits)
         futures.push_back(std::async(
             static_cast<void (*)(NDView<T, 3>, NDView<uint16_t, 3>,
-                                 NDView<T, Ndim>, NDView<T, Ndim>, int, int)>(
+                                 NDView<T, Ndim>, NDView<T, Ndim>, int,
+                                 int)>(
                 apply_calibration_impl),
             res, raw_data, ped, cal, lim.first, lim.second));
     for (auto &f : futures)
         f.get();
 }
+
 
 std::pair<NDArray<size_t, 3>, NDArray<size_t, 3>>
 sum_and_count_per_gain(NDView<uint16_t, 3> raw_data);
@@ -124,22 +127,15 @@ sum_and_count_per_gain(NDView<uint16_t, 3> raw_data);
 std::pair<NDArray<size_t, 2>, NDArray<size_t, 2>>
 sum_and_count_g0(NDView<uint16_t, 3> raw_data);
 
-
 template <typename T>
 NDArray<T, 2> calculate_pedestal_g0(NDView<uint16_t, 3> raw_data,
-                                 ssize_t n_threads) {
+                                    ssize_t n_threads) {
     std::vector<std::future<std::pair<NDArray<size_t, 2>, NDArray<size_t, 2>>>>
         futures;
     futures.reserve(n_threads);
-    auto limits = split_task(0, raw_data.shape(0), n_threads);  
-    // make subviews for each thread
-    std::vector<NDView<uint16_t, 3>> subviews;
-    for (const auto &lim : limits) {
-        subviews.emplace_back(
-            raw_data.data() + lim.first * raw_data.strides()[0],
-            std::array<ssize_t, 3>{lim.second - lim.first, raw_data.shape(1),
-                                   raw_data.shape(2)});
-    }
+
+    auto subviews = make_subviews(raw_data, n_threads);
+
     for (auto view : subviews) {
         futures.push_back(std::async(
             static_cast<std::pair<NDArray<size_t, 2>, NDArray<size_t, 2>> (*)(
@@ -157,9 +153,7 @@ NDArray<T, 2> calculate_pedestal_g0(NDView<uint16_t, 3> raw_data,
     }
 
     return safe_divide<T>(accumulator, count);
-
 }
-
 
 template <typename T>
 NDArray<T, 3> calculate_pedestal(NDView<uint16_t, 3> raw_data,
@@ -167,16 +161,9 @@ NDArray<T, 3> calculate_pedestal(NDView<uint16_t, 3> raw_data,
     std::vector<std::future<std::pair<NDArray<size_t, 3>, NDArray<size_t, 3>>>>
         futures;
     futures.reserve(n_threads);
-    auto limits = split_task(0, raw_data.shape(0), n_threads);
 
-    // make subviews for each thread
-    std::vector<NDView<uint16_t, 3>> subviews;
-    for (const auto &lim : limits) {
-        subviews.emplace_back(
-            raw_data.data() + lim.first * raw_data.strides()[0],
-            std::array<ssize_t, 3>{lim.second - lim.first, raw_data.shape(1),
-                                   raw_data.shape(2)});
-    }
+    auto subviews = make_subviews(raw_data, n_threads);
+
     for (auto view : subviews) {
         futures.push_back(std::async(
             static_cast<std::pair<NDArray<size_t, 3>, NDArray<size_t, 3>> (*)(

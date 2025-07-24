@@ -178,6 +178,22 @@ class NDView : public ArrayExpr<NDView<T, Ndim>, Ndim> {
     const T *data() const { return buffer_; }
     void print_all() const;
 
+    /**
+     * @brief Create a subview of a range of the first dimension. 
+     * This is useful for splitting a batches of frames in parallel processing.
+     * @param first The first index of the subview (inclusive).
+     * @param last The last index of the subview (exclusive).
+     * @return A new NDView that is a subview of the current view.
+     * @throws std::runtime_error if the range is invalid.
+     */
+    NDView sub_view(ssize_t first, ssize_t last) const {
+        if (first < 0 || last > shape_[0] || first >= last)
+            throw std::runtime_error(LOCATION + "Invalid sub_view range");
+        auto new_shape = shape_;
+        new_shape[0] = last - first;
+        return NDView(buffer_ + first * strides_[0], new_shape);
+    }
+
   private:
     T *buffer_{nullptr};
     std::array<ssize_t, Ndim> strides_{};
