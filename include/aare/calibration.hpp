@@ -92,11 +92,12 @@ void apply_calibration_impl(NDView<T, 3> res, NDView<uint16_t, 3> raw_data,
                 // ADU/keV is the standard unit for the calibration which
                 // means rewriting the formula is not worth it.
 
-                // ignore anything that is not gain 0
-                // TODO! deal with fixed gain?
+                // Set the value to 0 if the gain is not 0
                 if (gain == 0)
                     res(frame_nr, row, col) =
                         (value - ped(row, col)) / cal(row, col);
+                else
+                    res(frame_nr, row, col) = 0;
             }
         }
     }
