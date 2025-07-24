@@ -56,7 +56,7 @@ py::array_t<T> pybind_calculate_pedestal(
 
     auto data_span = make_view_3d(data);
     auto arr = new NDArray<T, 3>{};
-    *arr = aare::calculate_pedestal<T>(data_span, n_threads);
+    *arr = aare::calculate_pedestal<T, false>(data_span, n_threads);
     return return_image_data(arr);
 }
 
@@ -67,7 +67,7 @@ py::array_t<T> pybind_calculate_pedestal_g0(
 
     auto data_span = make_view_3d(data);
     auto arr = new NDArray<T, 2>{};
-    *arr = aare::calculate_pedestal_g0<T>(data_span, n_threads);
+    *arr = aare::calculate_pedestal<T, true>(data_span, n_threads);
     return return_image_data(arr);
 }
 

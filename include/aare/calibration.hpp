@@ -103,7 +103,7 @@ void apply_calibration_impl(NDView<T, 3> res, NDView<uint16_t, 3> raw_data,
     }
 }
 
-template <class T, ssize_t Ndim=3>
+template <class T, ssize_t Ndim = 3>
 void apply_calibration(NDView<T, 3> res, NDView<uint16_t, 3> raw_data,
                        NDView<T, Ndim> ped, NDView<T, Ndim> cal,
                        ssize_t n_threads = 4) {
@@ -113,52 +113,44 @@ void apply_calibration(NDView<T, 3> res, NDView<uint16_t, 3> raw_data,
     for (const auto &lim : limits)
         futures.push_back(std::async(
             static_cast<void (*)(NDView<T, 3>, NDView<uint16_t, 3>,
-                                 NDView<T, Ndim>, NDView<T, Ndim>, int,
-                                 int)>(
+                                 NDView<T, Ndim>, NDView<T, Ndim>, int, int)>(
                 apply_calibration_impl),
             res, raw_data, ped, cal, lim.first, lim.second));
     for (auto &f : futures)
         f.get();
 }
 
-
+template <bool only_gain0>
 std::pair<NDArray<size_t, 3>, NDArray<size_t, 3>>
-sum_and_count_per_gain(NDView<uint16_t, 3> raw_data);
-
-std::pair<NDArray<size_t, 2>, NDArray<size_t, 2>>
-sum_and_count_g0(NDView<uint16_t, 3> raw_data);
-
-template <typename T>
-NDArray<T, 2> calculate_pedestal_g0(NDView<uint16_t, 3> raw_data,
-                                    ssize_t n_threads) {
-    std::vector<std::future<std::pair<NDArray<size_t, 2>, NDArray<size_t, 2>>>>
-        futures;
-    futures.reserve(n_threads);
-
-    auto subviews = make_subviews(raw_data, n_threads);
-
-    for (auto view : subviews) {
-        futures.push_back(std::async(
-            static_cast<std::pair<NDArray<size_t, 2>, NDArray<size_t, 2>> (*)(
-                NDView<uint16_t, 3>)>(&sum_and_count_g0),
-            view));
-    }
-    NDArray<size_t, 2> accumulator(
-        std::array<ssize_t, 2>{raw_data.shape(1), raw_data.shape(2)}, 0);
-    NDArray<size_t, 2> count(
-        std::array<ssize_t, 2>{raw_data.shape(1), raw_data.shape(2)}, 0);
-    for (auto &f : futures) {
-        auto [acc, cnt] = f.get();
-        accumulator += acc;
-        count += cnt;
+sum_and_count_per_gain(NDView<uint16_t, 3> raw_data) {
+    constexpr ssize_t num_gains = only_gain0 ? 1 : 3;
+    NDArray<size_t, 3> accumulator(
+        std::array<ssize_t, 3>{num_gains, raw_data.shape(1), raw_data.shape(2)},
+        0);
+    NDArray<size_t, 3> count(
+        std::array<ssize_t, 3>{num_gains, raw_data.shape(1), raw_data.shape(2)},
+        0);
+    for (int frame_nr = 0; frame_nr != raw_data.shape(0); ++frame_nr) {
+        for (int row = 0; row != raw_data.shape(1); ++row) {
+            for (int col = 0; col != raw_data.shape(2); ++col) {
+                auto [value, gain] =
+                    get_value_and_gain(raw_data(frame_nr, row, col));
+                if (gain != 0 && only_gain0)
+                    continue;
+                accumulator(gain, row, col) += value;
+                count(gain, row, col) += 1;
+            }
+        }
     }
 
-    return safe_divide<T>(accumulator, count);
+    return {std::move(accumulator), std::move(count)};
 }
 
-template <typename T>
-NDArray<T, 3> calculate_pedestal(NDView<uint16_t, 3> raw_data,
-                                 ssize_t n_threads) {
+template <typename T, bool only_gain0 = false>
+NDArray<T, 3 - static_cast<ssize_t>(only_gain0)>
+calculate_pedestal(NDView<uint16_t, 3> raw_data, ssize_t n_threads) {
+
+    constexpr ssize_t num_gains = only_gain0 ? 1 : 3;
     std::vector<std::future<std::pair<NDArray<size_t, 3>, NDArray<size_t, 3>>>>
         futures;
     futures.reserve(n_threads);
@@ -168,21 +160,27 @@ NDArray<T, 3> calculate_pedestal(NDView<uint16_t, 3> raw_data,
     for (auto view : subviews) {
         futures.push_back(std::async(
             static_cast<std::pair<NDArray<size_t, 3>, NDArray<size_t, 3>> (*)(
-                NDView<uint16_t, 3>)>(&sum_and_count_per_gain),
+                NDView<uint16_t, 3>)>(&sum_and_count_per_gain<only_gain0>),
             view));
     }
 
     NDArray<size_t, 3> accumulator(
-        std::array<ssize_t, 3>{3, raw_data.shape(1), raw_data.shape(2)}, 0);
+        std::array<ssize_t, 3>{num_gains, raw_data.shape(1), raw_data.shape(2)},
+        0);
     NDArray<size_t, 3> count(
-        std::array<ssize_t, 3>{3, raw_data.shape(1), raw_data.shape(2)}, 0);
+        std::array<ssize_t, 3>{num_gains, raw_data.shape(1), raw_data.shape(2)},
+        0);
     for (auto &f : futures) {
         auto [acc, cnt] = f.get();
         accumulator += acc;
         count += cnt;
     }
 
-    return safe_divide<T>(accumulator, count);
+    if constexpr (only_gain0) {
+        return safe_divide<T>(accumulator, count).drop_dimension();
+    } else {
+        return safe_divide<T>(accumulator, count);
+    }
 }
 
 /**
@@ -204,5 +202,10 @@ NDArray<int, 2> count_switching_pixels(NDView<uint16_t, 3> raw_data);
  */
 NDArray<int, 2> count_switching_pixels(NDView<uint16_t, 3> raw_data,
                                        ssize_t n_threads);
+
+template <typename T>
+auto calculate_pedestal_g0(NDView<uint16_t, 3> raw_data, ssize_t n_threads) {
+    return calculate_pedestal<T, true>(raw_data, n_threads);
+}
 
 } // namespace aare
