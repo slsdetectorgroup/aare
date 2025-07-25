@@ -26,6 +26,33 @@ Shape<Ndim> make_shape(const std::vector<size_t> &shape) {
     return arr;
 }
 
+
+/**
+ * @brief Helper function to drop the first dimension of a shape.
+ * This is useful when you want to create a 2D view from a 3D array.
+ * @param shape The shape to drop the first dimension from.
+ * @return A new shape with the first dimension dropped.
+ */
+template<size_t Ndim>
+Shape<Ndim-1> drop_first_dim(const Shape<Ndim> &shape) {
+    static_assert(Ndim > 1, "Cannot drop first dimension from a 1D shape");
+    Shape<Ndim - 1> new_shape;
+    std::copy(shape.begin() + 1, shape.end(), new_shape.begin());
+    return new_shape;
+}
+
+/**
+ * @brief Helper function when constructing NDArray/NDView. Calculates the number
+ * of elements in the resulting array from a shape.
+ * @param shape The shape to calculate the number of elements for.
+ * @return The number of elements in and NDArray/NDView of that shape.
+ */
+template <size_t Ndim>
+size_t num_elements(const Shape<Ndim> &shape) {
+    return std::accumulate(shape.begin(), shape.end(), 1,
+                           std::multiplies<size_t>());
+}
+
 template <ssize_t Dim = 0, typename Strides>
 ssize_t element_offset(const Strides & /*unused*/) {
     return 0;
