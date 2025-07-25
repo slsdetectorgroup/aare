@@ -202,7 +202,6 @@ class NDArray : public ArrayExpr<NDArray<T, Ndim>, Ndim> {
     const T &operator[](ssize_t i) const { return data_[i]; }
 
     T *data() { return data_; }
-    T *&data_ref() { return data_; }
     std::byte *buffer() { return reinterpret_cast<std::byte *>(data_); }
     ssize_t size() const { return static_cast<ssize_t>(size_); }
     size_t total_bytes() const { return size_ * sizeof(T); }
