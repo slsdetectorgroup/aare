@@ -25,7 +25,7 @@ template <typename T, ssize_t Ndim = 2>
 class NDArray : public ArrayExpr<NDArray<T, Ndim>, Ndim> {
     std::array<ssize_t, Ndim> shape_;
     std::array<ssize_t, Ndim> strides_;
-    size_t size_{};
+    size_t size_{}; //TODO! do we need to store size when we have shape?
     T *data_;
 
   public:
@@ -33,7 +33,7 @@ class NDArray : public ArrayExpr<NDArray<T, Ndim>, Ndim> {
      * @brief Default constructor. Will construct an empty NDArray.
      *
      */
-    NDArray() : shape_(), strides_(c_strides<Ndim>(shape_)), data_(nullptr){};
+    NDArray() : shape_(), strides_(c_strides<Ndim>(shape_)), data_(nullptr) {};
 
     /**
      * @brief Construct a new NDArray object with a given shape.
@@ -43,8 +43,7 @@ class NDArray : public ArrayExpr<NDArray<T, Ndim>, Ndim> {
      */
     explicit NDArray(std::array<ssize_t, Ndim> shape)
         : shape_(shape), strides_(c_strides<Ndim>(shape_)),
-          size_(std::accumulate(shape_.begin(), shape_.end(), 1,
-                                std::multiplies<>())),
+          size_(num_elements(shape_)),
           data_(new T[size_]) {}
 
     /**
@@ -77,6 +76,24 @@ class NDArray : public ArrayExpr<NDArray<T, Ndim>, Ndim> {
         : shape_(other.shape_), strides_(c_strides<Ndim>(shape_)),
           size_(other.size_), data_(other.data_) {
         other.reset(); // TODO! is this necessary?
+    }
+
+
+    //Move constructor from an an array with Ndim + 1
+    template <ssize_t M, typename = std::enable_if_t<(M == Ndim + 1)>>
+    NDArray(NDArray<T, M> &&other) 
+        : shape_(drop_first_dim(other.shape())),
+          strides_(c_strides<Ndim>(shape_)), size_(num_elements(shape_)),
+          data_(other.data()) {
+
+            // For now only allow move if the size matches, to avoid unreachable data
+            // if the use case arises we can remove this check
+            if(size() != other.size()) {
+                data_ = nullptr; // avoid double free, other will clean up the memory in it's destructor
+                throw std::runtime_error(LOCATION +
+                                         "Size mismatch in move constructor of NDArray<T, Ndim-1>");
+            }
+        other.reset();
     }
 
     // Copy constructor
@@ -380,12 +397,6 @@ NDArray<T, Ndim> NDArray<T, Ndim>::operator*(const T &value) {
     result *= value;
     return result;
 }
-// template <typename T, ssize_t Ndim> void NDArray<T, Ndim>::Print() {
-//     if (shape_[0] < 20 && shape_[1] < 20)
-//         Print_all();
-//     else
-//         Print_some();
-// }
 
 template <typename T, ssize_t Ndim>
 std::ostream &operator<<(std::ostream &os, const NDArray<T, Ndim> &arr) {
@@ -435,6 +446,25 @@ NDArray<T, Ndim> load(const std::string &pathname,
     f.read(img.buffer(), img.size() * sizeof(T));
     f.close();
     return img;
+}
+
+template <typename RT, typename NT, typename DT, ssize_t Ndim>
+NDArray<RT, Ndim> safe_divide(const NDArray<NT, Ndim> &numerator,
+                              const NDArray<DT, Ndim> &denominator) {
+    if (numerator.shape() != denominator.shape()) {
+        throw std::runtime_error(
+            "Shapes of numerator and denominator must match");
+    }
+    NDArray<RT, Ndim> result(numerator.shape());
+    for (ssize_t i = 0; i < numerator.size(); ++i) {
+        if (denominator[i] != 0) {
+            result[i] =
+                static_cast<RT>(numerator[i]) / static_cast<RT>(denominator[i]);
+        } else {
+            result[i] = RT{0}; // or handle division by zero as needed
+        }
+    }
+    return result;
 }
 
 } // namespace aare
