@@ -430,6 +430,7 @@ TEST_CASE("Construct an NDArray from an std::array") {
 }
 
 
+
 TEST_CASE("Move construct from an array with Ndim + 1") {
     NDArray<int, 3> a({{1,2,2}}, 0);
     a(0, 0, 0) = 1;
@@ -452,3 +453,4 @@ TEST_CASE("Move construct from an array with Ndim + 1 throws on size mismatch") 
     NDArray<int, 3> a({{2,2,2}}, 0);
     REQUIRE_THROWS(NDArray<int, 2>(std::move(a)));
 }
+
