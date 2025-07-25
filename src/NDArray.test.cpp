@@ -429,19 +429,28 @@ TEST_CASE("Construct an NDArray from an std::array") {
     }
 }
 
-TEST_CASE("Drop dimension") {
-    NDArray<int, 3> array(std::array<ssize_t, 3>{2, 2, 2});
 
-    std::fill(array.begin(), array.begin() + 4, 0);
-    std::fill(array.begin() + 4, array.end(), 1);
 
-    auto new_array = std::move(array).drop_dimension();
+TEST_CASE("Move construct from an array with Ndim + 1") {
+    NDArray<int, 3> a({{1,2,2}}, 0);
+    a(0, 0, 0) = 1;
+    a(0, 0, 1) = 2;
+    a(0, 1, 0) = 3;
+    a(0, 1, 1) = 4;
 
-    CHECK(new_array.shape() == std::array<ssize_t, 2>{2, 2});
-    CHECK(new_array.size() == 4);
 
-    std::for_each(new_array.begin(), new_array.end(),
-                  [](int &element) { CHECK(element == 0); });
+    NDArray<int, 2> b(std::move(a));
+    REQUIRE(b.shape() == Shape<2>{2,2});
+    REQUIRE(b.size() == 4);
+    REQUIRE(b(0, 0) == 1);
+    REQUIRE(b(0, 1) == 2);
+    REQUIRE(b(1, 0) == 3);
+    REQUIRE(b(1, 1) == 4);
 
-    CHECK(array.size() == 0); // array was moved
 }
+
+TEST_CASE("Move construct from an array with Ndim + 1 throws on size mismatch") {
+    NDArray<int, 3> a({{2,2,2}}, 0);
+    REQUIRE_THROWS(NDArray<int, 2>(std::move(a)));
+}
+
