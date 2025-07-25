@@ -428,3 +428,20 @@ TEST_CASE("Construct an NDArray from an std::array") {
         REQUIRE(a(i) == b[i]);
     }
 }
+
+TEST_CASE("Drop dimension") {
+    NDArray<int, 3> array(std::array<ssize_t, 3>{2, 2, 2});
+
+    std::fill(array.begin(), array.begin() + 4, 0);
+    std::fill(array.begin() + 4, array.end(), 1);
+
+    auto new_array = std::move(array).drop_dimension();
+
+    CHECK(new_array.shape() == std::array<ssize_t, 2>{2, 2});
+    CHECK(new_array.size() == 4);
+
+    std::for_each(new_array.begin(), new_array.end(),
+                  [](int &element) { CHECK(element == 0); });
+
+    CHECK(array.size() == 0); // array was moved
+}
