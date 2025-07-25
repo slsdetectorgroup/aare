@@ -35,6 +35,7 @@ Shape<Ndim> make_shape(const std::vector<size_t> &shape) {
  */
 template<size_t Ndim>
 Shape<Ndim-1> drop_first_dim(const Shape<Ndim> &shape) {
+    static_assert(Ndim > 1, "Cannot drop first dimension from a 1D shape");
     Shape<Ndim - 1> new_shape;
     std::copy(shape.begin() + 1, shape.end(), new_shape.begin());
     return new_shape;
