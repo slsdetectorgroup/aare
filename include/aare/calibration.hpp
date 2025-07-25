@@ -163,24 +163,22 @@ calculate_pedestal(NDView<uint16_t, 3> raw_data, ssize_t n_threads) {
                 NDView<uint16_t, 3>)>(&sum_and_count_per_gain<only_gain0>),
             view));
     }
+    Shape<3> shape{num_gains, raw_data.shape(1), raw_data.shape(2)};
+    NDArray<size_t, 3> accumulator(shape, 0);
+    NDArray<size_t, 3> count(shape, 0);
 
-    NDArray<size_t, 3> accumulator(
-        std::array<ssize_t, 3>{num_gains, raw_data.shape(1), raw_data.shape(2)},
-        0);
-    NDArray<size_t, 3> count(
-        std::array<ssize_t, 3>{num_gains, raw_data.shape(1), raw_data.shape(2)},
-        0);
+    // Combine the results from the futures
     for (auto &f : futures) {
         auto [acc, cnt] = f.get();
         accumulator += acc;
         count += cnt;
     }
 
-    if constexpr (only_gain0) {
-        return safe_divide<T>(accumulator, count).drop_dimension();
-    } else {
-        return safe_divide<T>(accumulator, count);
-    }
+
+    // Will move to a NDArray<T, 3 - static_cast<ssize_t>(only_gain0)>
+    // if only_gain0 is true
+    return safe_divide<T>(accumulator, count);
+
 }
 
 /**
