@@ -10,9 +10,8 @@ using aare::Cluster;
 using aare::ClusterFile;
 using aare::ClusterVector;
 
-
-TEST_CASE("Read one frame from a cluster file", "[.files]") {
-    //We know that the frame has 97 clusters
+TEST_CASE("Read one frame from a cluster file", "[.with-data]") {
+    // We know that the frame has 97 clusters
     auto fpath = test_data_path() / "clust" / "single_frame_97_clustrers.clust";
     REQUIRE(std::filesystem::exists(fpath));
 
@@ -27,8 +26,7 @@ TEST_CASE("Read one frame from a cluster file", "[.files]") {
                      std::begin(expected_cluster_data)));
 }
 
-
-TEST_CASE("Read one frame using ROI", "[.files]") {
+TEST_CASE("Read one frame using ROI", "[.with-data]") {
     // We know that the frame has 97 clusters
     auto fpath = test_data_path() / "clust" / "single_frame_97_clustrers.clust";
     REQUIRE(std::filesystem::exists(fpath));
@@ -60,9 +58,7 @@ TEST_CASE("Read one frame using ROI", "[.files]") {
                      std::begin(expected_cluster_data)));
 }
 
-
-
-TEST_CASE("Read clusters from single frame file", "[.files]") {
+TEST_CASE("Read clusters from single frame file", "[.with-data]") {
 
     //  frame_number, num_clusters   [135] 97
     // [  1 200] [0 1 2 3 4 5 6 7 8]
@@ -206,7 +202,7 @@ TEST_CASE("Read clusters from single frame file", "[.files]") {
     }
 }
 
-TEST_CASE("Read clusters from single frame file with ROI", "[.files]") {
+TEST_CASE("Read clusters from single frame file with ROI", "[.with-data]") {
     auto fpath = test_data_path() / "clust" / "single_frame_97_clustrers.clust";
     REQUIRE(std::filesystem::exists(fpath));
 
@@ -230,7 +226,7 @@ TEST_CASE("Read clusters from single frame file with ROI", "[.files]") {
                      std::begin(expected_cluster_data)));
 }
 
-TEST_CASE("Read cluster from multiple frame file", "[.files]") {
+TEST_CASE("Read cluster from multiple frame file", "[.with-data]") {
 
     using ClusterType = Cluster<double, 2, 2>;
 
@@ -283,7 +279,7 @@ TEST_CASE("Read cluster from multiple frame file", "[.files]") {
     }
 }
 
-TEST_CASE("Write cluster with potential padding", "[.files][.ClusterFile]") {
+TEST_CASE("Write cluster with potential padding", "[.with-data][.ClusterFile]") {
 
     using ClusterType = Cluster<double, 3, 3>;
 
@@ -328,7 +324,7 @@ TEST_CASE("Write cluster with potential padding", "[.files][.ClusterFile]") {
         }));
 }
 
-TEST_CASE("Read frame and modify cluster data", "[.files][.ClusterFile]") {
+TEST_CASE("Read frame and modify cluster data", "[.with-data][.ClusterFile]") {
     auto fpath = test_data_path() / "clust" / "single_frame_97_clustrers.clust";
     REQUIRE(std::filesystem::exists(fpath));
 

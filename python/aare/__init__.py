@@ -30,3 +30,9 @@ from .utils import random_pixels, random_pixel, flat_list, add_colorbar
 
 #make functions available in the top level API
 from .func import *
+
+from .calibration import *
+from ._aare import apply_calibration, count_switching_pixels
+from ._aare import calculate_pedestal, calculate_pedestal_float, calculate_pedestal_g0, calculate_pedestal_g0_float
+
+from ._aare import VarClusterFinder

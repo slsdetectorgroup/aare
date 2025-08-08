@@ -1,7 +1,6 @@
 #pragma once
 /*Utility to log to console*/
 
-
 #include <iostream>
 #include <sstream>
 #include <sys/time.h>
@@ -27,7 +26,6 @@ namespace aare {
 #define RESET      "\x1b[0m"
 #define BOLD       "\x1b[1m"
 
-
 enum TLogLevel {
     logERROR,
     logWARNING,
@@ -37,7 +35,8 @@ enum TLogLevel {
     logINFOCYAN,
     logINFOMAGENTA,
     logINFO,
-    logDEBUG,  // constructors, destructors etc. should still give too much output
+    logDEBUG, // constructors, destructors etc. should still give too much
+              // output
     logDEBUG1,
     logDEBUG2,
     logDEBUG3,
@@ -47,7 +46,9 @@ enum TLogLevel {
 
 // Compiler should optimize away anything below this value
 #ifndef AARE_LOG_LEVEL
-#define AARE_LOG_LEVEL "LOG LEVEL NOT SET IN CMAKE" //This is configured in the main CMakeLists.txt
+#define AARE_LOG_LEVEL                                                         \
+    "LOG LEVEL NOT SET IN CMAKE" // This is configured in the main
+                                 // CMakeLists.txt
 #endif
 
 #define __AT__                                                                 \
@@ -72,7 +73,8 @@ class Logger {
         std::clog << os.str() << std::flush; // Single write
     }
 
-    static TLogLevel &ReportingLevel() { // singelton eeh TODO! Do we need a runtime option?
+    static TLogLevel &
+    ReportingLevel() { // singelton eeh TODO! Do we need a runtime option?
         static TLogLevel reportingLevel = logDEBUG5;
         return reportingLevel;
     }

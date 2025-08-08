@@ -21,8 +21,7 @@ using namespace ::aare;
 
 template <typename Type, uint8_t CoordSizeX, uint8_t CoordSizeY,
           typename CoordType = uint16_t>
-void define_ClusterFile(py::module &m,
-                                     const std::string &typestr) {
+void define_ClusterFile(py::module &m, const std::string &typestr) {
 
     using ClusterType = Cluster<Type, CoordSizeX, CoordSizeY, CoordType>;
 
@@ -39,19 +38,20 @@ void define_ClusterFile(py::module &m,
                     self.read_clusters(n_clusters));
                 return v;
             },
-            py::return_value_policy::take_ownership)
+            py::return_value_policy::take_ownership, py::arg("n_clusters"))
         .def("read_frame",
              [](ClusterFile<ClusterType> &self) {
                  auto v = new ClusterVector<ClusterType>(self.read_frame());
                  return v;
              })
-        .def("set_roi", &ClusterFile<ClusterType>::set_roi)
+        .def("set_roi", &ClusterFile<ClusterType>::set_roi,
+             py::arg("roi"))
         .def(
             "set_noise_map",
             [](ClusterFile<ClusterType> &self, py::array_t<int32_t> noise_map) {
                 auto view = make_view_2d(noise_map);
                 self.set_noise_map(view);
-            })
+            }, py::arg("noise_map"))
 
         .def("set_gain_map",
              [](ClusterFile<ClusterType> &self, py::array_t<double> gain_map) {

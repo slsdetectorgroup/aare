@@ -58,13 +58,14 @@ void define_raw_file_io_bindings(py::module &m) {
                     throw std::runtime_error("No frames left in file");
                 }
                 std::vector<size_t> shape{n_frames, self.rows(), self.cols()};
-            
+
                 // return headers from all subfiles
                 py::array_t<DetectorHeader> header;
                 if (self.n_modules() == 1) {
                     header = py::array_t<DetectorHeader>(n_frames);
                 } else {
-                    header = py::array_t<DetectorHeader>({self.n_modules(), n_frames});
+                    header = py::array_t<DetectorHeader>(
+                        {self.n_modules_in_roi(), n_frames});
                 }
                 // py::array_t<DetectorHeader> header({self.n_mod(), n_frames});
 
@@ -100,7 +101,8 @@ void define_raw_file_io_bindings(py::module &m) {
         .def_property_readonly("cols", &RawFile::cols)
         .def_property_readonly("bitdepth", &RawFile::bitdepth)
         .def_property_readonly("geometry", &RawFile::geometry)
-        .def_property_readonly("n_modules", &RawFile::n_modules)
         .def_property_readonly("detector_type", &RawFile::detector_type)
-        .def_property_readonly("master", &RawFile::master);
+        .def_property_readonly("master", &RawFile::master)
+        .def_property_readonly("n_modules", &RawFile::n_modules)
+        .def_property_readonly("n_modules_in_roi", &RawFile::n_modules_in_roi);
 }

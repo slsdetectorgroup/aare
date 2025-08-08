@@ -32,6 +32,7 @@ set( PYTHON_FILES
     aare/ClusterFinder.py
     aare/ClusterVector.py
 
+    aare/calibration.py
     aare/func.py
     aare/RawFile.py
     aare/transform.py

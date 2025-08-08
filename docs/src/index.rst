@@ -25,6 +25,7 @@ AARE
     :maxdepth: 1
     
     pyFile
+    pycalibration
     pyCtbRawFile
     pyClusterFile
     pyClusterVector
@@ -63,4 +64,6 @@ AARE
     :caption: Developer
     :maxdepth: 3
     
+    Philosophy
+    Workflow
     Tests

@@ -1,5 +1,8 @@
 #include "aare/RawMasterFile.hpp"
-#include <sstream>  
+#include "aare/RawFile.hpp"
+#include "aare/logger.hpp"
+#include <sstream>
+
 namespace aare {
 
 RawFileNameComponents::RawFileNameComponents(
@@ -37,18 +40,15 @@ std::filesystem::path RawFileNameComponents::master_fname() const {
 }
 
 std::filesystem::path RawFileNameComponents::data_fname(size_t mod_id,
-                                                        size_t file_id
-                                                        ) const {
-    
-    
-    
+                                                        size_t file_id) const {
+
     std::string fmt = "{}_d{}_f{}_{}.raw";
-    //Before version X we used to name the data files f000000000000
+    // Before version X we used to name the data files f000000000000
     if (m_old_scheme) {
         fmt = "{}_d{}_f{:012}_{}.raw";
     }
-    return m_base_path / fmt::format(fmt, m_base_name, mod_id,
-                                     file_id, m_file_index);
+    return m_base_path /
+           fmt::format(fmt, m_base_name, mod_id, file_id, m_file_index);
 }
 
 void RawFileNameComponents::set_old_scheme(bool old_scheme) {
@@ -65,19 +65,19 @@ const std::string &RawFileNameComponents::ext() const { return m_ext; }
 int RawFileNameComponents::file_index() const { return m_file_index; }
 
 // "[enabled\ndac dac 4\nstart 500\nstop 2200\nstep 5\nsettleTime 100us\n]"
-ScanParameters::ScanParameters(const std::string& par){
-    std::istringstream iss(par.substr(1, par.size()-2));
+ScanParameters::ScanParameters(const std::string &par) {
+    std::istringstream iss(par.substr(1, par.size() - 2));
     std::string line;
-    while(std::getline(iss, line)){
-        if(line == "enabled"){
+    while (std::getline(iss, line)) {
+        if (line == "enabled") {
             m_enabled = true;
-        }else if(line.find("dac") != std::string::npos){
+        } else if (line.find("dac") != std::string::npos) {
             m_dac = line.substr(4);
-        }else if(line.find("start") != std::string::npos){
+        } else if (line.find("start") != std::string::npos) {
             m_start = std::stoi(line.substr(6));
-        }else if(line.find("stop") != std::string::npos){
+        } else if (line.find("stop") != std::string::npos) {
             m_stop = std::stoi(line.substr(5));
-        }else if(line.find("step") != std::string::npos){
+        } else if (line.find("step") != std::string::npos) {
             m_step = std::stoi(line.substr(5));
         }
     }
@@ -85,13 +85,10 @@ ScanParameters::ScanParameters(const std::string& par){
 
 int ScanParameters::start() const { return m_start; }
 int ScanParameters::stop() const { return m_stop; }
-void ScanParameters::increment_stop(){
-    m_stop += 1;
-}
+void ScanParameters::increment_stop() { m_stop += 1; }
 int ScanParameters::step() const { return m_step; }
 const std::string &ScanParameters::dac() const { return m_dac; }
 bool ScanParameters::enabled() const { return m_enabled; }
-
 
 RawMasterFile::RawMasterFile(const std::filesystem::path &fpath)
     : m_fnc(fpath) {
@@ -144,7 +141,11 @@ size_t RawMasterFile::n_modules() const {
     return m_geometry.row * m_geometry.col;
 }
 
-std::optional<uint8_t> RawMasterFile::quad() const { return m_quad; }
+xy RawMasterFile::udp_interfaces_per_module() const {
+    return m_udp_interfaces_per_module;
+}
+
+uint8_t RawMasterFile::quad() const { return m_quad; }
 
 // optional values, these may or may not be present in the master file
 // and are therefore modeled as std::optional
@@ -163,9 +164,7 @@ ScanParameters RawMasterFile::scan_parameters() const {
     return m_scan_parameters;
 }
 
-
 std::optional<ROI> RawMasterFile::roi() const { return m_roi; }
-
 
 void RawMasterFile::parse_json(const std::filesystem::path &fpath) {
     std::ifstream ifs(fpath);
@@ -177,7 +176,10 @@ void RawMasterFile::parse_json(const std::filesystem::path &fpath) {
     m_type = StringTo<DetectorType>(j["Detector Type"].get<std::string>());
     m_timing_mode = StringTo<TimingMode>(j["Timing Mode"].get<std::string>());
 
-    m_geometry = {j["Geometry"]["y"], j["Geometry"]["x"]};
+    m_geometry = {
+        j["Geometry"]["y"],
+        j["Geometry"]["x"]}; // TODO: isnt it only available for version > 7.1?
+                             // - try block default should be 1x1
 
     m_image_size_in_bytes = j["Image Size in bytes"];
     m_frames_in_file = j["Frames in File"];
@@ -205,17 +207,16 @@ void RawMasterFile::parse_json(const std::filesystem::path &fpath) {
         // keep the optional empty
     }
 
-
     // ----------------------------------------------------------------
     // Special treatment of analog flag because of Moench03
-    try{
+    try {
         m_analog_flag = j.at("Analog Flag");
-    }catch (const json::out_of_range &e) {
+    } catch (const json::out_of_range &e) {
         // if it doesn't work still set it to one
         // to try to decode analog samples (Old Moench03)
         m_analog_flag = 1;
     }
-    try {        
+    try {
         if (m_analog_flag) {
             m_analog_samples = j.at("Analog Samples");
         }
@@ -248,27 +249,36 @@ void RawMasterFile::parse_json(const std::filesystem::path &fpath) {
         // keep the optional empty
     }
 
-    try{
+    try {
         m_transceiver_flag = j.at("Transceiver Flag");
-        if(m_transceiver_flag){
+        if (m_transceiver_flag) {
             m_transceiver_samples = j.at("Transceiver Samples");
         }
-    }catch (const json::out_of_range &e) {
+    } catch (const json::out_of_range &e) {
         // keep the optional empty
     }
 
-    try{
+    try {
         std::string scan_parameters = j.at("Scan Parameters");
         m_scan_parameters = ScanParameters(scan_parameters);
-        if(v<7.21){
-                m_scan_parameters.increment_stop(); //adjust for endpoint being included
-            }
-    }catch (const json::out_of_range &e) {
+        if (v < 7.21) {
+            m_scan_parameters
+                .increment_stop(); // adjust for endpoint being included
+        }
+    } catch (const json::out_of_range &e) {
         // not a scan
     }
+    try {
+        m_udp_interfaces_per_module = {j.at("Number of UDP Interfaces"), 1};
+    } catch (const json::out_of_range &e) {
+        if (m_type == DetectorType::Eiger && m_quad == 1)
+            m_udp_interfaces_per_module = {2, 1};
+        else if (m_type == DetectorType::Eiger) {
+            m_udp_interfaces_per_module = {1, 2};
+        }
+    }
 
-
-    try{
+    try {
         ROI tmp_roi;
         auto obj = j.at("Receiver Roi");
         tmp_roi.xmin = obj.at("xmin");
@@ -276,37 +286,32 @@ void RawMasterFile::parse_json(const std::filesystem::path &fpath) {
         tmp_roi.ymin = obj.at("ymin");
         tmp_roi.ymax = obj.at("ymax");
 
-        //if any of the values are set update the roi
+        // if any of the values are set update the roi
         if (tmp_roi.xmin != 4294967295 || tmp_roi.xmax != 4294967295 ||
             tmp_roi.ymin != 4294967295 || tmp_roi.ymax != 4294967295) {
-            
-            if(v<7.21){
-                tmp_roi.xmax++;
+
+            if (v < 7.21) {
+                tmp_roi.xmax++; // why is it updated
                 tmp_roi.ymax++;
             }
-            
             m_roi = tmp_roi;
         }
 
-
-    }catch (const json::out_of_range &e) {
+    } catch (const json::out_of_range &e) {
+        std::cout << e.what() << std::endl;
         // leave the optional empty
     }
 
-    //if we have an roi we need to update the geometry for the subfiles
-    if (m_roi){
-
+    // if we have an roi we need to update the geometry for the subfiles
+    if (m_roi) {
     }
 
-
-
-
-    // Update detector type for Moench
-    // TODO! How does this work with old .raw master files?
-    #ifdef AARE_VERBOSE
+// Update detector type for Moench
+// TODO! How does this work with old .raw master files?
+#ifdef AARE_VERBOSE
     fmt::print("Detecting Moench03: m_pixels_y: {}, m_analog_samples: {}\n",
                m_pixels_y, m_analog_samples.value_or(0));
-    #endif
+#endif
     if (m_type == DetectorType::Moench && !m_analog_samples &&
         m_pixels_y == 400) {
         m_type = DetectorType::Moench03;
@@ -332,19 +337,19 @@ void RawMasterFile::parse_raw(const std::filesystem::path &fpath) {
             if (key == "Version") {
                 m_version = value;
 
-                //TODO!: How old versions can we handle?
+                // TODO!: How old versions can we handle?
                 auto v = std::stod(value);
 
-                //TODO! figure out exactly when we did the change
-                //This enables padding of f to 12 digits
-                if (v<4.0)
+                // TODO! figure out exactly when we did the change
+                // This enables padding of f to 12 digits
+                if (v < 4.0)
                     m_fnc.set_old_scheme(true);
 
             } else if (key == "TimeStamp") {
 
             } else if (key == "Detector Type") {
                 m_type = StringTo<DetectorType>(value);
-                if(m_type==DetectorType::Moench){
+                if (m_type == DetectorType::Moench) {
                     m_type = DetectorType::Moench03_old;
                 }
             } else if (key == "Timing Mode") {
@@ -381,10 +386,10 @@ void RawMasterFile::parse_raw(const std::filesystem::path &fpath) {
                 pos = value.find(',');
                 m_pixels_x = std::stoi(value.substr(1, pos));
                 m_pixels_y = std::stoi(value.substr(pos + 1));
-            }else if(key == "row"){
+            } else if (key == "row") {
                 pos = value.find('p');
                 m_pixels_y = std::stoi(value.substr(0, pos));
-            }else if(key == "col"){
+            } else if (key == "col") {
                 pos = value.find('p');
                 m_pixels_x = std::stoi(value.substr(0, pos));
             } else if (key == "Total Frames") {
@@ -395,30 +400,62 @@ void RawMasterFile::parse_raw(const std::filesystem::path &fpath) {
                 m_quad = std::stoi(value);
             } else if (key == "Max Frames Per File") {
                 m_max_frames_per_file = std::stoi(value);
-            }else if(key == "Max. Frames Per File"){
-                //Version 3.0 way of writing it
+            } else if (key == "Max. Frames Per File") {
+                // Version 3.0 way of writing it
                 m_max_frames_per_file = std::stoi(value);
             } else if (key == "Geometry") {
                 pos = value.find(',');
                 m_geometry = {
                     static_cast<uint32_t>(std::stoi(value.substr(1, pos))),
                     static_cast<uint32_t>(std::stoi(value.substr(pos + 1)))};
+            } else if (key == "Number of UDP Interfaces") {
+                m_udp_interfaces_per_module = {
+                    static_cast<uint32_t>(std::stoi(value)), 1};
             }
         }
     }
+
+    if (m_type == DetectorType::Eiger && m_quad == 1) {
+        m_udp_interfaces_per_module = {2, 1};
+    } else if (m_type == DetectorType::Eiger) {
+        m_udp_interfaces_per_module = {1, 2};
+    }
+
     if (m_pixels_x == 400 && m_pixels_y == 400) {
         m_type = DetectorType::Moench03_old;
     }
 
-
-    //TODO! Look for d0, d1...dn and update geometry
-    if(m_geometry.col == 0 && m_geometry.row == 0){
-        m_geometry = {1,1};
-        fmt::print("Warning: No geometry found in master file. Assuming 1x1\n");
+    if (m_geometry.col == 0 && m_geometry.row == 0) {
+        retrieve_geometry();
+        LOG(TLogLevel::logWARNING)
+            << "No geometry found in master file. Retrieved geometry of "
+            << m_geometry.row << " x " << m_geometry.col << "\n ";
     }
 
-    //TODO! Read files and find actual frames
-    if(m_frames_in_file==0)
+    // TODO! Read files and find actual frames
+    if (m_frames_in_file == 0)
         m_frames_in_file = m_total_frames_expected;
 }
+
+void RawMasterFile::retrieve_geometry() {
+    uint32_t module_index = 0;
+    uint16_t rows = 0;
+    uint16_t cols = 0;
+    // TODO use case for Eiger
+
+    while (std::filesystem::exists(data_fname(module_index, 0))) {
+
+        auto header = RawFile::read_header(data_fname(module_index, 0));
+
+        rows = std::max(rows, header.row);
+        cols = std::max(cols, header.column);
+
+        ++module_index;
+    }
+    ++rows;
+    ++cols;
+
+    m_geometry = {rows, cols};
+}
+
 } // namespace aare

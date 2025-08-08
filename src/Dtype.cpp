@@ -10,7 +10,8 @@ namespace aare {
  * @brief Construct a DType object from a type_info object
  * @param t type_info object
  * @throw runtime_error if the type is not supported
- * @note supported types are: int8_t, uint8_t, int16_t, uint16_t, int32_t, uint32_t, int64_t, uint64_t, float, double
+ * @note supported types are: int8_t, uint8_t, int16_t, uint16_t, int32_t,
+ * uint32_t, int64_t, uint64_t, float, double
  * @note the type_info object is obtained using typeid (e.g. typeid(int))
  */
 Dtype::Dtype(const std::type_info &t) {
@@ -35,7 +36,8 @@ Dtype::Dtype(const std::type_info &t) {
     else if (t == typeid(double))
         m_type = TypeIndex::DOUBLE;
     else
-        throw std::runtime_error("Could not construct data type. Type not supported.");
+        throw std::runtime_error(
+            "Could not construct data type. Type not supported.");
 }
 
 /**
@@ -63,7 +65,8 @@ uint8_t Dtype::bitdepth() const {
     case TypeIndex::NONE:
         return 0;
     default:
-        throw std::runtime_error(LOCATION + "Could not get bitdepth. Type not supported.");
+        throw std::runtime_error(LOCATION +
+                                 "Could not get bitdepth. Type not supported.");
     }
 }
 
@@ -138,7 +141,8 @@ Dtype Dtype::from_bitdepth(uint8_t bitdepth) {
     case 64:
         return Dtype(TypeIndex::UINT64);
     default:
-        throw std::runtime_error("Could not construct data type from bitdepth.");
+        throw std::runtime_error(
+            "Could not construct data type from bitdepth.");
     }
 }
 /**
@@ -175,17 +179,27 @@ std::string Dtype::to_string() const {
     case TypeIndex::DOUBLE:
         return "f8";
     case TypeIndex::ERROR:
-        throw std::runtime_error("Could not get string representation. Type not supported.");
+        throw std::runtime_error(
+            "Could not get string representation. Type not supported.");
     case TypeIndex::NONE:
-        throw std::runtime_error("Could not get string representation. Type not supported.");
+        throw std::runtime_error(
+            "Could not get string representation. Type not supported.");
     }
     return {};
 }
 
-bool Dtype::operator==(const Dtype &other) const noexcept { return m_type == other.m_type; }
-bool Dtype::operator!=(const Dtype &other) const noexcept { return !(*this == other); }
+bool Dtype::operator==(const Dtype &other) const noexcept {
+    return m_type == other.m_type;
+}
+bool Dtype::operator!=(const Dtype &other) const noexcept {
+    return !(*this == other);
+}
 
-bool Dtype::operator==(const std::type_info &t) const { return Dtype(t) == *this; }
-bool Dtype::operator!=(const std::type_info &t) const { return Dtype(t) != *this; }
+bool Dtype::operator==(const std::type_info &t) const {
+    return Dtype(t) == *this;
+}
+bool Dtype::operator!=(const std::type_info &t) const {
+    return Dtype(t) != *this;
+}
 
 } // namespace aare

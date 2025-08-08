@@ -9,7 +9,6 @@
 namespace py = pybind11;
 using namespace pybind11::literals;
 
-
 void define_fit_bindings(py::module &m) {
 
     // TODO! Evaluate without converting to double
@@ -61,7 +60,8 @@ void define_fit_bindings(py::module &m) {
            py::array_t<double, py::array::c_style | py::array::forcecast> par) {
             auto x_view = make_view_1d(x);
             auto par_view = make_view_1d(par);
-            auto y = new NDArray<double, 1>{aare::func::scurve(x_view, par_view)};
+            auto y =
+                new NDArray<double, 1>{aare::func::scurve(x_view, par_view)};
             return return_image_data(y);
         },
         R"(
@@ -82,7 +82,8 @@ void define_fit_bindings(py::module &m) {
            py::array_t<double, py::array::c_style | py::array::forcecast> par) {
             auto x_view = make_view_1d(x);
             auto par_view = make_view_1d(par);
-            auto y = new NDArray<double, 1>{aare::func::scurve2(x_view, par_view)};
+            auto y =
+                new NDArray<double, 1>{aare::func::scurve2(x_view, par_view)};
             return return_image_data(y);
         },
         R"(
@@ -139,7 +140,6 @@ n_threads : int, optional
            py::array_t<double, py::array::c_style | py::array::forcecast> y,
            py::array_t<double, py::array::c_style | py::array::forcecast> y_err,
            int n_threads) {
-
             if (y.ndim() == 3) {
                 // Allocate memory for the output
                 // Need to have pointers to allow python to manage
@@ -172,7 +172,6 @@ n_threads : int, optional
                 auto y_view = make_view_1d(y);
                 auto y_view_err = make_view_1d(y_err);
                 auto x_view = make_view_1d(x);
-
 
                 double chi2 = 0;
                 aare::fit_gaus(x_view, y_view, y_view_err, par->view(),
@@ -248,10 +247,9 @@ n_threads : int, optional
                 aare::fit_pol1(x_view, y_view, y_view_err, par->view(),
                                par_err->view(), chi2->view(), n_threads);
                 return py::dict("par"_a = return_image_data(par),
-                                "par_err"_a = return_image_data(par_err), 
+                                "par_err"_a = return_image_data(par_err),
                                 "chi2"_a = return_image_data(chi2),
                                 "Ndf"_a = y.shape(2) - 2);
-
 
             } else if (y.ndim() == 1) {
                 auto par = new NDArray<double, 1>({2});
@@ -289,7 +287,7 @@ n_threads : int, optional
 )",
         py::arg("x"), py::arg("y"), py::arg("y_err"), py::arg("n_threads") = 4);
 
-//=========
+    //=========
     m.def(
         "fit_scurve",
         [](py::array_t<double, py::array::c_style | py::array::forcecast> x,
@@ -333,12 +331,11 @@ n_threads : int, optional
                 auto chi2 = new NDArray<double, 2>({y.shape(0), y.shape(1)});
 
                 aare::fit_scurve(x_view, y_view, y_view_err, par->view(),
-                               par_err->view(), chi2->view(), n_threads);
+                                 par_err->view(), chi2->view(), n_threads);
                 return py::dict("par"_a = return_image_data(par),
-                                "par_err"_a = return_image_data(par_err), 
+                                "par_err"_a = return_image_data(par_err),
                                 "chi2"_a = return_image_data(chi2),
                                 "Ndf"_a = y.shape(2) - 2);
-
 
             } else if (y.ndim() == 1) {
                 auto par = new NDArray<double, 1>({2});
@@ -351,7 +348,7 @@ n_threads : int, optional
                 double chi2 = 0;
 
                 aare::fit_scurve(x_view, y_view, y_view_err, par->view(),
-                               par_err->view(), chi2);
+                                 par_err->view(), chi2);
                 return py::dict("par"_a = return_image_data(par),
                                 "par_err"_a = return_image_data(par_err),
                                 "chi2"_a = chi2, "Ndf"_a = y.size() - 2);
@@ -375,7 +372,6 @@ n_threads : int, optional
     The number of threads to use. Default is 4.
 )",
         py::arg("x"), py::arg("y"), py::arg("y_err"), py::arg("n_threads") = 4);
-    
 
     m.def(
         "fit_scurve2",
@@ -420,12 +416,11 @@ n_threads : int, optional
                 auto chi2 = new NDArray<double, 2>({y.shape(0), y.shape(1)});
 
                 aare::fit_scurve2(x_view, y_view, y_view_err, par->view(),
-                               par_err->view(), chi2->view(), n_threads);
+                                  par_err->view(), chi2->view(), n_threads);
                 return py::dict("par"_a = return_image_data(par),
-                                "par_err"_a = return_image_data(par_err), 
+                                "par_err"_a = return_image_data(par_err),
                                 "chi2"_a = return_image_data(chi2),
                                 "Ndf"_a = y.shape(2) - 2);
-
 
             } else if (y.ndim() == 1) {
                 auto par = new NDArray<double, 1>({6});
@@ -438,7 +433,7 @@ n_threads : int, optional
                 double chi2 = 0;
 
                 aare::fit_scurve2(x_view, y_view, y_view_err, par->view(),
-                               par_err->view(), chi2);
+                                  par_err->view(), chi2);
                 return py::dict("par"_a = return_image_data(par),
                                 "par_err"_a = return_image_data(par_err),
                                 "chi2"_a = chi2, "Ndf"_a = y.size() - 2);

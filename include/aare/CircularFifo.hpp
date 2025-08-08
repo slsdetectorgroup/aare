@@ -17,7 +17,8 @@ template <class ItemType> class CircularFifo {
 
   public:
     CircularFifo() : CircularFifo(100){};
-    CircularFifo(uint32_t size) : fifo_size(size), free_slots(size + 1), filled_slots(size + 1) {
+    CircularFifo(uint32_t size)
+        : fifo_size(size), free_slots(size + 1), filled_slots(size + 1) {
 
         // TODO! how do we deal with alignment for writing? alignas???
         // Do we give the user a chance to provide memory locations?
@@ -55,7 +56,8 @@ template <class ItemType> class CircularFifo {
 
     bool try_pop_free(ItemType &v) { return free_slots.read(v); }
 
-    ItemType pop_value(std::chrono::nanoseconds wait, std::atomic<bool> &stopped) {
+    ItemType pop_value(std::chrono::nanoseconds wait,
+                       std::atomic<bool> &stopped) {
         ItemType v;
         while (!filled_slots.read(v) && !stopped) {
             std::this_thread::sleep_for(wait);

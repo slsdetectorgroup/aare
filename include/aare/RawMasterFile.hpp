@@ -1,5 +1,6 @@
 #pragma once
 #include "aare/defs.hpp"
+#include <algorithm>
 #include <filesystem>
 #include <fmt/format.h>
 #include <fstream>
@@ -45,7 +46,7 @@ class ScanParameters {
     int m_start = 0;
     int m_stop = 0;
     int m_step = 0;
-    //TODO! add settleTime, requires string to time conversion
+    // TODO! add settleTime, requires string to time conversion
 
   public:
     ScanParameters(const std::string &par);
@@ -60,7 +61,6 @@ class ScanParameters {
     bool enabled() const;
     void increment_stop();
 };
-
 
 /**
  * @brief Class for parsing a master file either in our .json format or the old
@@ -78,8 +78,10 @@ class RawMasterFile {
     size_t m_pixels_y{};
     size_t m_pixels_x{};
     size_t m_bitdepth{};
+    uint8_t m_quad = 0;
 
     xy m_geometry{};
+    xy m_udp_interfaces_per_module{1, 1};
 
     size_t m_max_frames_per_file{};
     // uint32_t m_adc_mask{}; // TODO! implement reading
@@ -97,10 +99,8 @@ class RawMasterFile {
     std::optional<size_t> m_digital_samples;
     std::optional<size_t> m_transceiver_samples;
     std::optional<size_t> m_number_of_rows;
-    std::optional<uint8_t> m_quad;
 
     std::optional<ROI> m_roi;
-
 
   public:
     RawMasterFile(const std::filesystem::path &fpath);
@@ -117,27 +117,27 @@ class RawMasterFile {
     size_t max_frames_per_file() const;
     size_t bitdepth() const;
     size_t frame_padding() const;
+    xy udp_interfaces_per_module() const;
     const FrameDiscardPolicy &frame_discard_policy() const;
 
     size_t total_frames_expected() const;
     xy geometry() const;
     size_t n_modules() const;
+    uint8_t quad() const;
 
     std::optional<size_t> analog_samples() const;
     std::optional<size_t> digital_samples() const;
     std::optional<size_t> transceiver_samples() const;
     std::optional<size_t> number_of_rows() const;
-    std::optional<uint8_t> quad() const;
-
 
     std::optional<ROI> roi() const;
-
 
     ScanParameters scan_parameters() const;
 
   private:
     void parse_json(const std::filesystem::path &fpath);
     void parse_raw(const std::filesystem::path &fpath);
+    void retrieve_geometry();
 };
 
 } // namespace aare

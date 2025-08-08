@@ -9,7 +9,7 @@ import pickle
 from aare import ClusterFile
 from conftest import test_data_path
 
-@pytest.mark.files
+@pytest.mark.withdata
 def test_cluster_file(test_data_path): 
     """Test ClusterFile""" 
     f =  ClusterFile(test_data_path / "clust/single_frame_97_clustrers.clust") 
@@ -39,7 +39,7 @@ def test_cluster_file(test_data_path):
     for i in range(10):
         assert arr[i]['x'] == i+1
 
-@pytest.mark.files
+@pytest.mark.withdata
 def test_read_clusters_and_fill_histogram(test_data_path): 
     # Create the histogram
     n_bins = 100

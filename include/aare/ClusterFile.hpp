@@ -14,7 +14,7 @@
 namespace aare {
 
 /*
-Binary cluster file. Expects data to be layed out as:
+Binary cluster file. Expects data to be laid out as:
 int32_t frame_number
 uint32_t number_of_clusters
 int16_t x, int16_t y, int32_t data[9] x number_of_clusters
@@ -371,8 +371,8 @@ ClusterFile<ClusterType, Enable>::read_frame_without_cut() {
                                  "Could not read number of clusters");
     }
 
-    LOG(logDEBUG1) << "Reading " << n_clusters
-                  << " clusters from frame " << frame_number;
+    LOG(logDEBUG1) << "Reading " << n_clusters << " clusters from frame "
+                   << frame_number;
 
     ClusterVector<ClusterType> clusters(n_clusters);
     clusters.set_frame_number(frame_number);
