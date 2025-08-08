@@ -58,8 +58,9 @@ class ClusterFinderMTWrapper
 };
 
 TEST_CASE("multithreaded cluster finder", "[.files][.ClusterFinder]") {
-    auto fpath = "/mnt/sls_det_storage/matterhorn_data/aare_test_data/"
-                 "Moench03new/cu_half_speed_master_4.json";
+    auto fpath = test_data_path() / "raw/moench03/cu_half_speed_master_4.json";
+
+    REQUIRE(std::filesystem::exists(fpath));
 
     File file(fpath);
 
@@ -79,7 +80,8 @@ TEST_CASE("multithreaded cluster finder", "[.files][.ClusterFinder]") {
     CHECK(cf.m_input_queues_are_empty() == true);
 
     for (size_t i = 0; i < n_frames_pd; ++i) {
-        cf.find_clusters(file.read_frame().view<uint16_t>());
+        auto frame = file.read_frame();
+        cf.find_clusters(frame.view<uint16_t>());
     }
 
     cf.stop();

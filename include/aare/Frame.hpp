@@ -19,7 +19,7 @@ class Frame {
     uint32_t m_cols;
     Dtype m_dtype;
     std::byte *m_data;
-    //TODO! Add frame number?
+    // TODO! Add frame number?
 
   public:
     /**
@@ -39,7 +39,7 @@ class Frame {
      * @param dtype data type of the pixels
      */
     Frame(const std::byte *bytes, uint32_t rows, uint32_t cols, Dtype dtype);
-    ~Frame(){ delete[] m_data; };
+    ~Frame() { delete[] m_data; };
 
     /** @warning Copy is disabled to ensure performance when passing
      * frames around. Can discuss enabling it.
@@ -51,7 +51,6 @@ class Frame {
     // enable move
     Frame &operator=(Frame &&other) noexcept;
     Frame(Frame &&other) noexcept;
-
 
     Frame clone() const; //<- Explicit copy
 
@@ -93,7 +92,7 @@ class Frame {
         if (row >= m_rows || col >= m_cols) {
             throw std::out_of_range("Invalid row or column index");
         }
-        //TODO! add tests then reimplement using pixel_ptr
+        // TODO! add tests then reimplement using pixel_ptr
         T data;
         std::memcpy(&data, m_data + (row * m_cols + col) * m_dtype.bytes(),
                     m_dtype.bytes());
@@ -102,18 +101,18 @@ class Frame {
     /**
      * @brief Return an NDView of the frame. This is the preferred way to access
      * data in the frame.
-     * 
+     *
      * @tparam T type of the pixels
-     * @return NDView<T, 2> 
+     * @return NDView<T, 2>
      */
-    template <typename T> NDView<T, 2> view() {
+    template <typename T> NDView<T, 2> view() & {
         std::array<ssize_t, 2> shape = {static_cast<ssize_t>(m_rows),
                                         static_cast<ssize_t>(m_cols)};
         T *data = reinterpret_cast<T *>(m_data);
         return NDView<T, 2>(data, shape);
     }
 
-    /** 
+    /**
      * @brief Copy the frame data into a new NDArray. This is a deep copy.
      */
     template <typename T> NDArray<T> image() {
