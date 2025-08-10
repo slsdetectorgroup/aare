@@ -4,7 +4,8 @@
 #include "aare/Dtype.hpp"
 #include "aare/NDArray.hpp"
 #include "aare/NDView.hpp"
-#include "aare/Pedestal.hpp"
+// #include "aare/Pedestal.hpp"
+#include "aare/ChunkedPedestal.hpp"
 #include "aare/defs.hpp"
 #include <cstddef>
 
@@ -17,7 +18,7 @@ class ClusterFinder {
     const PEDESTAL_TYPE m_nSigma;
     const PEDESTAL_TYPE c2;
     const PEDESTAL_TYPE c3;
-    Pedestal<PEDESTAL_TYPE> m_pedestal;
+    ChunkedPedestal<PEDESTAL_TYPE> m_pedestal;
     ClusterVector<ClusterType> m_clusters;
 
     static const uint8_t ClusterSizeX = ClusterType::cluster_size_x;
@@ -34,18 +35,25 @@ class ClusterFinder {
      *
      */
     ClusterFinder(Shape<2> image_size, PEDESTAL_TYPE nSigma = 5.0,
-                  size_t capacity = 1000000)
+                  size_t capacity = 1000000,
+                  uint32_t chunk_size = 50000, uint32_t n_chunks = 10)
         : m_image_size(image_size), m_nSigma(nSigma),
           c2(sqrt((ClusterSizeY + 1) / 2 * (ClusterSizeX + 1) / 2)),
           c3(sqrt(ClusterSizeX * ClusterSizeY)),
-          m_pedestal(image_size[0], image_size[1]), m_clusters(capacity) {
+          m_pedestal(image_size[0], image_size[1], chunk_size, n_chunks), m_clusters(capacity) {
         LOG(logDEBUG) << "ClusterFinder: "
                       << "image_size: " << image_size[0] << "x" << image_size[1]
                       << ", nSigma: " << nSigma << ", capacity: " << capacity;
     }
 
-    void push_pedestal_frame(NDView<FRAME_TYPE, 2> frame) {
-        m_pedestal.push(frame);
+    // void push_pedestal_frame(NDView<FRAME_TYPE, 2> frame) {
+    //     m_pedestal.push(frame);
+    // }
+    void push_pedestal_mean(NDView<FRAME_TYPE, 2> frame, uint32_t chunk_number) {
+        m_pedestal.push_mean(frame, chunk_number);
+    }
+    void push_pedestal_std(NDView<FRAME_TYPE, 2> frame, uint32_t chunk_number) {
+        m_pedestal.push_std(frame, chunk_number);
     }
 
     NDArray<PEDESTAL_TYPE, 2> pedestal() { return m_pedestal.mean(); }
@@ -81,6 +89,7 @@ class ClusterFinder {
         int has_center_pixel_y = ClusterSizeY % 2;
 
         m_clusters.set_frame_number(frame_number);
+        m_pedestal.set_frame_number(frame_number);
         for (int iy = 0; iy < frame.shape(0); iy++) {
             for (int ix = 0; ix < frame.shape(1); ix++) {
 
@@ -101,7 +110,7 @@ class ClusterFinder {
                             iy + ir >= 0 && iy + ir < frame.shape(0)) {
                             PEDESTAL_TYPE val =
                                 frame(iy + ir, ix + ic) -
-                                m_pedestal.mean(iy + ir, ix + ic);
+                                m_pedestal.mean(iy + ir, ix + ic, frame_number);
 
                             total += val;
                             max = std::max(max, val);
@@ -117,11 +126,13 @@ class ClusterFinder {
                     // pass
                 } else {
                     // m_pedestal.push(iy, ix, frame(iy, ix));   // Safe option
-                    m_pedestal.push_fast(
-                        iy, ix,
-                        frame(iy,
-                              ix)); // Assume we have reached n_samples in the
-                                    // pedestal, slight performance improvement
+
+                    //Not needed for chunked pedestal
+                    // m_pedestal.push_fast(
+                    //     iy, ix,
+                    //     frame(iy,
+                    //           ix)); // Assume we have reached n_samples in the
+                    //                 // pedestal, slight performance improvement
                     continue;       // It was a pedestal value nothing to store
                 }
 
