@@ -50,10 +50,10 @@ class ClusterFinder {
     // void push_pedestal_frame(NDView<FRAME_TYPE, 2> frame) {
     //     m_pedestal.push(frame);
     // }
-    void push_pedestal_mean(NDView<FRAME_TYPE, 2> frame, uint32_t chunk_number) {
+    void push_pedestal_mean(NDView<PEDESTAL_TYPE, 2> frame, uint32_t chunk_number) {
         m_pedestal.push_mean(frame, chunk_number);
     }
-    void push_pedestal_std(NDView<FRAME_TYPE, 2> frame, uint32_t chunk_number) {
+    void push_pedestal_std(NDView<PEDESTAL_TYPE, 2> frame, uint32_t chunk_number) {
         m_pedestal.push_std(frame, chunk_number);
     }
     //This is here purely to keep the compiler happy for now
@@ -96,11 +96,13 @@ class ClusterFinder {
         for (int iy = 0; iy < frame.shape(0); iy++) {
             for (int ix = 0; ix < frame.shape(1); ix++) {
 
+                PEDESTAL_TYPE rms = m_pedestal.std(iy, ix);
+                if (rms == 0) continue;
+
                 PEDESTAL_TYPE max = std::numeric_limits<FRAME_TYPE>::min();
                 PEDESTAL_TYPE total = 0;
 
-                // What can we short circuit here?
-                PEDESTAL_TYPE rms = m_pedestal.std(iy, ix);
+                // What can we short circuit here?                
                 PEDESTAL_TYPE value = (frame(iy, ix) - m_pedestal.mean(iy, ix));
 
                 if (value < -m_nSigma * rms)
@@ -111,6 +113,8 @@ class ClusterFinder {
                     for (int ic = -dx; ic < dx + has_center_pixel_x; ic++) {
                         if (ix + ic >= 0 && ix + ic < frame.shape(1) &&
                             iy + ir >= 0 && iy + ir < frame.shape(0)) {
+                            if (m_pedestal.std(iy + ir, ix + ic) == 0) continue;
+
                             PEDESTAL_TYPE val =
                                 frame(iy + ir, ix + ic) -
                                 m_pedestal.mean(iy + ir, ix + ic);
@@ -134,27 +138,30 @@ class ClusterFinder {
                     // m_pedestal.push_fast(
                     //     iy, ix,
                     //     frame(iy,
-                    //           ix)); /std::cout << "max: " << max << std::endl;
+                    //           ix)); // Assume we have reached n_samples in the
+                    //                 // pedestal, slight performance improvement
+                    continue;       // It was a pedestal value nothing to store
+
+                }
 
                 // Store cluster
                 if (value == max) {
-
-                    /*
-                    if (total < 0)
-                    {
-                        // std::cout << "";                
-                        std::cout << "ix: " << ix << std::endl;
-                        std::cout << "iy: " << iy << std::endl;
-                        std::cout << "frame(iy, ix): " << frame(iy, ix) << std::endl;
-                        std::cout << "m_pedestal.mean(iy, ix): " << m_pedestal.mean(iy, ix) << std::endl;
-                        std::cout << "m_pedestal.std(iy, ix): " << m_pedestal.std(iy, ix) << std::endl;
-                        std::cout << "max: " << max << std::endl;
-                        std::cout << "value: " << value << std::endl;
-                        std::cout << "m_nSigma * rms: " << (m_nSigma * rms) << std::endl;
-                        std::cout << "total: " << total << std::endl;
-                        std::cout << "c3 * m_nSigma * rms: " << (c3 * m_nSigma * rms) << std::endl;
-                    }
-                    */
+                    
+                    // if (total < 0)
+                    // {
+                    //     std::cout << "" << std::endl;   
+                    //     std::cout << "frame_number: " << frame_number << std::endl;                                        
+                    //     std::cout << "ix: " << ix << std::endl;
+                    //     std::cout << "iy: " << iy << std::endl;
+                    //     std::cout << "frame(iy, ix): " << frame(iy, ix) << std::endl;
+                    //     std::cout << "m_pedestal.mean(iy, ix): " << m_pedestal.mean(iy, ix) << std::endl;
+                    //     std::cout << "m_pedestal.std(iy, ix): " << m_pedestal.std(iy, ix) << std::endl;
+                    //     std::cout << "max: " << max << std::endl;
+                    //     std::cout << "value: " << value << std::endl;
+                    //     std::cout << "m_nSigma * rms: " << (m_nSigma * rms) << std::endl;
+                    //     std::cout << "total: " << total << std::endl;
+                    //     std::cout << "c3 * m_nSigma * rms: " << (c3 * m_nSigma * rms) << std::endl;
+                    // }                    
 
                     ClusterType cluster{};
                     cluster.x = ix;
@@ -168,6 +175,8 @@ class ClusterFinder {
                         for (int ic = -dx; ic < dx + has_center_pixel_y; ic++) {
                             if (ix + ic >= 0 && ix + ic < frame.shape(1) &&
                                 iy + ir >= 0 && iy + ir < frame.shape(0)) {
+                                if (m_pedestal.std(iy + ir, ix + ic) == 0) continue;
+
                                 CT tmp =
                                     static_cast<CT>(frame(iy + ir, ix + ic)) -
                                     static_cast<CT>(

@@ -40,6 +40,8 @@ template <typename SUM_TYPE = double> class ChunkedPedestal {
         assert(rows > 0 && cols > 0 && chunk_size > 0);
         m_mean = 0;
         m_std = 0;
+        m_current_frame_number = 0;
+        m_current_chunk_number = 0;
     }
     ~ChunkedPedestal() = default;
 
