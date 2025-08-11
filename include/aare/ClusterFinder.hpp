@@ -125,11 +125,12 @@ class ClusterFinder {
                     }
                 }
 
-                if ((max > m_nSigma * rms)) {
-                    if (value < max)
-                        continue; // Not max go to the next pixel
-                                  // but also no pedestal update
-                } else if (total > c3 * m_nSigma * rms) {
+                // if ((max > m_nSigma * rms)) {
+                //     if (value < max)
+                //         continue; // Not max go to the next pixel
+                //                   // but also no pedestal update
+                // } else 
+                if (total > c3 * m_nSigma * rms) {
                     // pass
                 } else {
                     // m_pedestal.push(iy, ix, frame(iy, ix));   // Safe option
