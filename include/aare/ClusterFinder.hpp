@@ -8,6 +8,7 @@
 #include "aare/ChunkedPedestal.hpp"
 #include "aare/defs.hpp"
 #include <cstddef>
+#include <iostream>
 
 namespace aare {
 
@@ -55,6 +56,8 @@ class ClusterFinder {
     void push_pedestal_std(NDView<FRAME_TYPE, 2> frame, uint32_t chunk_number) {
         m_pedestal.push_std(frame, chunk_number);
     }
+    //This is here purely to keep the compiler happy for now
+    void push_pedestal_frame(NDView<FRAME_TYPE, 2> frame) {}
 
     NDArray<PEDESTAL_TYPE, 2> pedestal() { return m_pedestal.mean(); }
     NDArray<PEDESTAL_TYPE, 2> noise() { return m_pedestal.std(); }
@@ -110,7 +113,7 @@ class ClusterFinder {
                             iy + ir >= 0 && iy + ir < frame.shape(0)) {
                             PEDESTAL_TYPE val =
                                 frame(iy + ir, ix + ic) -
-                                m_pedestal.mean(iy + ir, ix + ic, frame_number);
+                                m_pedestal.mean(iy + ir, ix + ic);
 
                             total += val;
                             max = std::max(max, val);
@@ -131,13 +134,28 @@ class ClusterFinder {
                     // m_pedestal.push_fast(
                     //     iy, ix,
                     //     frame(iy,
-                    //           ix)); // Assume we have reached n_samples in the
-                    //                 // pedestal, slight performance improvement
-                    continue;       // It was a pedestal value nothing to store
-                }
+                    //           ix)); /std::cout << "max: " << max << std::endl;
 
                 // Store cluster
                 if (value == max) {
+
+                    /*
+                    if (total < 0)
+                    {
+                        // std::cout << "";                
+                        std::cout << "ix: " << ix << std::endl;
+                        std::cout << "iy: " << iy << std::endl;
+                        std::cout << "frame(iy, ix): " << frame(iy, ix) << std::endl;
+                        std::cout << "m_pedestal.mean(iy, ix): " << m_pedestal.mean(iy, ix) << std::endl;
+                        std::cout << "m_pedestal.std(iy, ix): " << m_pedestal.std(iy, ix) << std::endl;
+                        std::cout << "max: " << max << std::endl;
+                        std::cout << "value: " << value << std::endl;
+                        std::cout << "m_nSigma * rms: " << (m_nSigma * rms) << std::endl;
+                        std::cout << "total: " << total << std::endl;
+                        std::cout << "c3 * m_nSigma * rms: " << (c3 * m_nSigma * rms) << std::endl;
+                    }
+                    */
+
                     ClusterType cluster{};
                     cluster.x = ix;
                     cluster.y = iy;

@@ -2,7 +2,6 @@
 #include "aare/Frame.hpp"
 #include "aare/NDArray.hpp"
 #include "aare/NDView.hpp"
-#include <fmath>
 #include <cstddef>
 
 //JMulvey
@@ -26,34 +25,34 @@ namespace aare {
 template <typename SUM_TYPE = double> class ChunkedPedestal {
     uint32_t m_rows;
     uint32_t m_cols;
-    uint32_t m_n_chunks
-    uint64_t m_current_frame_number
-    uint64_t m_current_chunk_number
+    uint32_t m_n_chunks;
+    uint64_t m_current_frame_number;
+    uint64_t m_current_chunk_number;
 
     NDArray<SUM_TYPE, 3> m_mean;
     NDArray<SUM_TYPE, 3> m_std;
-    uint32_t m_chunk_size
+    uint32_t m_chunk_size;
 
   public:
-    Pedestal(uint32_t rows, uint32_t cols, uint32_t chunk_size = 50000, uint32_t n_chunks = 10)
-        : m_rows(rows), m_cols(cols), m_chunk_size(chunk_size), m_n_chunks(n_chunks)    
-          m_mean(NDArray<SUM_TYPE, 2>({rows, cols, n_chunks})) {
+    ChunkedPedestal(uint32_t rows, uint32_t cols, uint32_t chunk_size = 50000, uint32_t n_chunks = 10)
+        : m_rows(rows), m_cols(cols), m_chunk_size(chunk_size), m_n_chunks(n_chunks),    
+          m_mean(NDArray<SUM_TYPE, 3>({rows, cols, n_chunks})), m_std(NDArray<SUM_TYPE, 3>({rows, cols, n_chunks})) {
         assert(rows > 0 && cols > 0 && chunk_size > 0);
         m_mean = 0;
         m_std = 0;
     }
-    ~Pedestal() = default;
+    ~ChunkedPedestal() = default;
 
     NDArray<SUM_TYPE, 3> mean() { return m_mean; }
     NDArray<SUM_TYPE, 3> std() { return m_std; }
 
     void set_frame_number (uint64_t frame_number) {
-        m_current_frame_number = frame_number
-        uint32_t chunk_number = floor(frame_number / m_chunk_size)
+        m_current_frame_number = frame_number;
+        m_current_chunk_number = std::floor(frame_number / m_chunk_size);
 
-        if (chunk_number >= m_n_chunks) 
+        if (m_current_chunk_number >= m_n_chunks) 
         {
-            chunk_number = 0;
+            m_current_chunk_number = 0;
             throw std::runtime_error(
                 "Chunk number exceeds the number of chunks");
         }
@@ -64,11 +63,7 @@ template <typename SUM_TYPE = double> class ChunkedPedestal {
     }
 
     SUM_TYPE std(const uint32_t row, const uint32_t col) const {
-
-        uint32_t chunk_number = floor(frame_number / m_chunk_size)
-        if (chunk_number >= m_n_chunks) return 0;
-
-        return m_std(row, col, chunk_number);
+        return m_std(row, col, m_current_chunk_number);
     }
 
     void clear() {
@@ -81,6 +76,10 @@ template <typename SUM_TYPE = double> class ChunkedPedestal {
     template <typename T> void push_mean(NDView<T, 2> frame, uint32_t chunk_number) {
         assert(frame.size() == m_rows * m_cols);
 
+        if (chunk_number >= m_n_chunks)
+            throw std::runtime_error(
+                "Chunk number is larger than the number of chunks");
+
         // TODO! move away from m_rows, m_cols
         if (frame.shape() != std::array<ssize_t, 2>{m_rows, m_cols}) {
             throw std::runtime_error(
@@ -92,10 +91,15 @@ template <typename SUM_TYPE = double> class ChunkedPedestal {
                 push_mean<T>(row, col, chunk_number, frame(row, col));
             }
         }
+       
     }
     
     template <typename T> void push_std(NDView<T, 2> frame, uint32_t chunk_number) {
         assert(frame.size() == m_rows * m_cols);
+
+        if (chunk_number >= m_n_chunks)
+            throw std::runtime_error(
+                "Chunk number is larger than the number of chunks");
 
         // TODO! move away from m_rows, m_cols
         if (frame.shape() != std::array<ssize_t, 2>{m_rows, m_cols}) {
@@ -108,18 +112,19 @@ template <typename SUM_TYPE = double> class ChunkedPedestal {
                 push_std<T>(row, col, chunk_number, frame(row, col));
             }
         }
+        
     }
 
     // pixel level operations (should be refactored to allow users to implement
     // their own pixel level operations)
     template <typename T>
     void push_mean(const uint32_t row, const uint32_t col, const uint32_t chunk_number, const T val_) {        
-        m_mean(row, col, chunk_number) = val_
+        m_mean(row, col, chunk_number) = val_;
     }
 
     template <typename T>
     void push_std(const uint32_t row, const uint32_t col, const uint32_t chunk_number, const T val_) {        
-        m_std(row, col, chunk_number) = val_
+        m_std(row, col, chunk_number) = val_;
     }
 
     // getter functions
