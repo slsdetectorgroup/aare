@@ -36,7 +36,7 @@ template <typename SUM_TYPE = double> class ChunkedPedestal {
   public:
     ChunkedPedestal(uint32_t rows, uint32_t cols, uint32_t chunk_size = 50000, uint32_t n_chunks = 10)
         : m_rows(rows), m_cols(cols), m_chunk_size(chunk_size), m_n_chunks(n_chunks),    
-          m_mean(NDArray<SUM_TYPE, 3>({rows, cols, n_chunks})), m_std(NDArray<SUM_TYPE, 3>({rows, cols, n_chunks})) {
+          m_mean(NDArray<SUM_TYPE, 3>({n_chunks, rows, cols})), m_std(NDArray<SUM_TYPE, 3>({n_chunks, rows, cols})) {
         assert(rows > 0 && cols > 0 && chunk_size > 0);
         m_mean = 0;
         m_std = 0;
@@ -61,11 +61,19 @@ template <typename SUM_TYPE = double> class ChunkedPedestal {
     }
 
     SUM_TYPE mean(const uint32_t row, const uint32_t col) const {    
-        return m_mean(row, col, m_current_chunk_number);
+        return m_mean(m_current_chunk_number, row, col);
     }
 
     SUM_TYPE std(const uint32_t row, const uint32_t col) const {
-        return m_std(row, col, m_current_chunk_number);
+        return m_std(m_current_chunk_number, row, col);
+    }
+
+    SUM_TYPE* get_mean_chunk_ptr() {
+        return &m_mean(m_current_chunk_number, 0, 0);
+    }
+
+    SUM_TYPE* get_std_chunk_ptr() {
+        return &m_std(m_current_chunk_number, 0, 0);
     }
 
     void clear() {
@@ -121,12 +129,12 @@ template <typename SUM_TYPE = double> class ChunkedPedestal {
     // their own pixel level operations)
     template <typename T>
     void push_mean(const uint32_t row, const uint32_t col, const uint32_t chunk_number, const T val_) {        
-        m_mean(row, col, chunk_number) = val_;
+        m_mean(chunk_number, row, col) = val_;
     }
 
     template <typename T>
     void push_std(const uint32_t row, const uint32_t col, const uint32_t chunk_number, const T val_) {        
-        m_std(row, col, chunk_number) = val_;
+        m_std(chunk_number, row, col) = val_;
     }
 
     // getter functions

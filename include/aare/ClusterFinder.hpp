@@ -93,31 +93,38 @@ class ClusterFinder {
 
         m_clusters.set_frame_number(frame_number);
         m_pedestal.set_frame_number(frame_number);
+        auto mean_ptr = m_pedestal.get_mean_chunk_ptr();
+        auto std_ptr = m_pedestal.get_std_chunk_ptr();
+
         for (int iy = 0; iy < frame.shape(0); iy++) {
+            size_t row_offset = iy * frame.shape(1); 
             for (int ix = 0; ix < frame.shape(1); ix++) {
 
-                PEDESTAL_TYPE rms = m_pedestal.std(iy, ix);
+                // PEDESTAL_TYPE rms = m_pedestal.std(iy, ix);
+                PEDESTAL_TYPE rms = std_ptr[row_offset + ix];
                 if (rms == 0) continue;
 
                 PEDESTAL_TYPE max = std::numeric_limits<FRAME_TYPE>::min();
                 PEDESTAL_TYPE total = 0;
 
                 // What can we short circuit here?                
-                PEDESTAL_TYPE value = (frame(iy, ix) - m_pedestal.mean(iy, ix));
+                // PEDESTAL_TYPE value = (frame(iy, ix) - m_pedestal.mean(iy, ix));
+                PEDESTAL_TYPE value = (frame(iy, ix) - mean_ptr[row_offset + ix]);
 
                 if (value < -m_nSigma * rms)
                     continue; // NEGATIVE_PEDESTAL go to next pixel
                               // TODO! No pedestal update???
 
                 for (int ir = -dy; ir < dy + has_center_pixel_y; ir++) {
+                    size_t inner_row_offset = row_offset + (ir * frame.shape(1));
                     for (int ic = -dx; ic < dx + has_center_pixel_x; ic++) {
                         if (ix + ic >= 0 && ix + ic < frame.shape(1) &&
                             iy + ir >= 0 && iy + ir < frame.shape(0)) {
-                            if (m_pedestal.std(iy + ir, ix + ic) == 0) continue;
+                            // if (m_pedestal.std(iy + ir, ix + ic) == 0) continue;
+                            if (std_ptr[inner_row_offset + ix + ic] == 0) continue;
 
-                            PEDESTAL_TYPE val =
-                                frame(iy + ir, ix + ic) -
-                                m_pedestal.mean(iy + ir, ix + ic);
+                            // PEDESTAL_TYPE val = frame(iy + ir, ix + ic) - m_pedestal.mean(iy + ir, ix + ic);
+                            PEDESTAL_TYPE val = frame(iy + ir, ix + ic) - mean_ptr[inner_row_offset + ix + ic];
 
                             total += val;
                             max = std::max(max, val);
@@ -173,17 +180,17 @@ class ClusterFinder {
                     // don't have a photon
                     int i = 0;
                     for (int ir = -dy; ir < dy + has_center_pixel_y; ir++) {
+                        size_t inner_row_offset = row_offset + (ir * frame.shape(1));
                         for (int ic = -dx; ic < dx + has_center_pixel_y; ic++) {
                             if (ix + ic >= 0 && ix + ic < frame.shape(1) &&
                                 iy + ir >= 0 && iy + ir < frame.shape(0)) {
-                                if (m_pedestal.std(iy + ir, ix + ic) == 0) continue;
+                                // if (m_pedestal.std(iy + ir, ix + ic) == 0) continue;
+                                if (std_ptr[inner_row_offset + ix + ic] == 0) continue;
 
-                                CT tmp =
-                                    static_cast<CT>(frame(iy + ir, ix + ic)) -
-                                    static_cast<CT>(
-                                        m_pedestal.mean(iy + ir, ix + ic));
-                                cluster.data[i] =
-                                    tmp; // Watch for out of bounds access
+                                // CT tmp = static_cast<CT>(frame(iy + ir, ix + ic)) - static_cast<CT>(m_pedestal.mean(iy + ir, ix + ic));
+                                CT tmp = static_cast<CT>(frame(iy + ir, ix + ic)) - static_cast<CT>(mean_ptr[inner_row_offset + ix + ic]);
+
+                                cluster.data[i] = tmp; // Watch for out of bounds access
                                 i++;
                             }
                         }
