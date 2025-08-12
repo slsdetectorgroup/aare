@@ -42,8 +42,8 @@ void define_ClusterFinder(py::module &m, const std::string &typestr) {
 
         .def("push_pedestal_mean",
              [](ClusterFinder<ClusterType, uint16_t, pd_type> &self,
-                py::array_t<double> frame, uint32_t chunk_number) {
-                 auto view = make_view_2d(frame);                 
+                py::array_t<double> frame, uint32_t chunk_number) {            
+                 auto view = make_view_2d(frame);             
                  self.push_pedestal_mean(view, chunk_number);
              })
         .def("push_pedestal_std",

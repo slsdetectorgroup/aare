@@ -20,8 +20,14 @@ enum class FrameType {
 struct FrameWrapper {
     FrameType type;
     uint64_t frame_number;
+    // NDArray<T, 2> data;
     NDArray<uint16_t, 2> data;
+    // NDArray<double, 2> data;
+    // void* data_ptr;
+    // std::type_index data_type;
+    uint32_t chunk_number;
 };
+
 
 /**
  * @brief ClusterFinderMT is a multi-threaded version of ClusterFinder. It uses
@@ -67,6 +73,7 @@ class ClusterFinderMT {
 
         while (!m_stop_requested || !q->isEmpty()) {
             if (FrameWrapper *frame = q->frontPtr(); frame != nullptr) {
+
 
                 switch (frame->type) {
                 case FrameType::DATA:
@@ -121,7 +128,8 @@ class ClusterFinderMT {
      * @param n_threads number of threads to use
      */
     ClusterFinderMT(Shape<2> image_size, PEDESTAL_TYPE nSigma = 5.0,
-                    size_t capacity = 2000, size_t n_threads = 3)
+                    size_t capacity = 2000, size_t n_threads = 3,
+                    uint32_t chunk_size = 50000, uint32_t n_chunks = 10)
         : m_n_threads(n_threads) {
 
         LOG(logDEBUG1) << "ClusterFinderMT: "
@@ -134,7 +142,7 @@ class ClusterFinderMT {
             m_cluster_finders.push_back(
                 std::make_unique<
                     ClusterFinder<ClusterType, FRAME_TYPE, PEDESTAL_TYPE>>(
-                    image_size, nSigma, capacity));
+                    image_size, nSigma, capacity, chunk_size, n_chunks));
         }
         for (size_t i = 0; i < n_threads; i++) {
             m_input_queues.emplace_back(std::make_unique<InputQueue>(200));
@@ -208,12 +216,29 @@ class ClusterFinderMT {
      */
     void push_pedestal_frame(NDView<FRAME_TYPE, 2> frame) {
         FrameWrapper fw{FrameType::PEDESTAL, 0,
-                        NDArray(frame)}; // TODO! copies the data!
+                        NDArray(frame), 0}; // TODO! copies the data!
 
         for (auto &queue : m_input_queues) {
             while (!queue->write(fw)) {
                 std::this_thread::sleep_for(m_default_wait);
             }
+        }
+    }
+
+    void push_pedestal_mean(NDView<PEDESTAL_TYPE, 2> frame, uint32_t chunk_number) {
+        if (!m_processing_threads_stopped) {
+            throw std::runtime_error("ClusterFinderMT is still running");
+        }
+        for (auto &cf : m_cluster_finders) {
+            cf->push_pedestal_mean(frame, chunk_number);
+        }
+    }
+    void push_pedestal_std(NDView<PEDESTAL_TYPE, 2> frame, uint32_t chunk_number) {
+        if (!m_processing_threads_stopped) {
+            throw std::runtime_error("ClusterFinderMT is still running");
+        }
+        for (auto &cf : m_cluster_finders) {
+            cf->push_pedestal_std(frame, chunk_number);
         }
     }
 
@@ -224,7 +249,7 @@ class ClusterFinderMT {
      */
     void find_clusters(NDView<FRAME_TYPE, 2> frame, uint64_t frame_number = 0) {
         FrameWrapper fw{FrameType::DATA, frame_number,
-                        NDArray(frame)}; // TODO! copies the data!
+                        NDArray(frame), 0}; // TODO! copies the data!
         while (!m_input_queues[m_current_thread % m_n_threads]->write(fw)) {
             std::this_thread::sleep_for(m_default_wait);
         }
