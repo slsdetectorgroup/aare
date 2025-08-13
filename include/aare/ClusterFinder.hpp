@@ -195,13 +195,14 @@ class ClusterFinder {
 
                                 // CT tmp = static_cast<CT>(frame(iy + ir, ix + ic)) - static_cast<CT>(m_pedestal.mean(iy + ir, ix + ic));
 
-                                CT tmp = 0;
+                                // CT tmp = 0;
                                 if (std_ptr[inner_row_offset + ix + ic] != 0)
-                                    tmp = static_cast<CT>(frame(iy + ir, ix + ic)) - static_cast<CT>(mean_ptr[inner_row_offset + ix + ic]);                                
-
-                                cluster.data[i] = tmp; // Watch for out of bounds access
-                                i++;
+                                {                                
+                                    CT tmp = static_cast<CT>(frame(iy + ir, ix + ic)) - static_cast<CT>(mean_ptr[inner_row_offset + ix + ic]);                                
+                                    cluster.data[i] = tmp; // Watch for out of bounds access                                
+                                }
                             }
+                            i++;
                         }
                     }
 
