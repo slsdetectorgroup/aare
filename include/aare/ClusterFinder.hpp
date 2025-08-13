@@ -21,9 +21,11 @@ class ClusterFinder {
     const PEDESTAL_TYPE c3;
     ChunkedPedestal<PEDESTAL_TYPE> m_pedestal;
     ClusterVector<ClusterType> m_clusters;
+    const uint32_t ClusterSizeX;
+    const uint32_t ClusterSizeY;
 
-    static const uint8_t ClusterSizeX = ClusterType::cluster_size_x;
-    static const uint8_t ClusterSizeY = ClusterType::cluster_size_y;
+    static const uint8_t SavedClusterSizeX = ClusterType::cluster_size_x;
+    static const uint8_t SavedClusterSizeY = ClusterType::cluster_size_y;
     using CT = typename ClusterType::value_type;
 
   public:
@@ -37,10 +39,12 @@ class ClusterFinder {
      */
     ClusterFinder(Shape<2> image_size, PEDESTAL_TYPE nSigma = 5.0,
                   size_t capacity = 1000000,
-                  uint32_t chunk_size = 50000, uint32_t n_chunks = 10)
+                  uint32_t chunk_size = 50000, uint32_t n_chunks = 10,
+                  uint32_t cluster_size_x = 3, uint32_t cluster_size_y = 3)
         : m_image_size(image_size), m_nSigma(nSigma),
-          c2(sqrt((ClusterSizeY + 1) / 2 * (ClusterSizeX + 1) / 2)),
-          c3(sqrt(ClusterSizeX * ClusterSizeY)),
+          c2(sqrt((cluster_size_y + 1) / 2 * (cluster_size_x + 1) / 2)),
+          c3(sqrt(cluster_size_x * cluster_size_y)),
+          ClusterSizeX(cluster_size_x), ClusterSizeY(cluster_size_y),
           m_pedestal(image_size[0], image_size[1], chunk_size, n_chunks), m_clusters(capacity) {
         LOG(logDEBUG) << "ClusterFinder: "
                       << "image_size: " << image_size[0] << "x" << image_size[1]
@@ -63,7 +67,7 @@ class ClusterFinder {
     NDArray<PEDESTAL_TYPE, 2> noise() { return m_pedestal.std(); }
     void clear_pedestal() { m_pedestal.clear(); }
 
-    /**
+     /**
      * @brief Move the clusters from the ClusterVector in the ClusterFinder to a
      * new ClusterVector and return it.
      * @param realloc_same_capacity if true the new ClusterVector will have the
@@ -80,11 +84,13 @@ class ClusterFinder {
         return tmp;
     }
     void find_clusters(NDView<FRAME_TYPE, 2> frame, uint64_t frame_number = 0) {
-        // // TODO! deal with even size clusters
         // // currently 3,3 -> +/- 1
         // //  4,4 -> +/- 2
         int dy = ClusterSizeY / 2;
         int dx = ClusterSizeX / 2;
+        int dy2 = SavedClusterSizeY / 2;
+        int dx2 = SavedClusterSizeX / 2;
+
         int has_center_pixel_x =
             ClusterSizeX %
             2; // for even sized clusters there is no proper cluster center and
@@ -179,16 +185,19 @@ class ClusterFinder {
                     // It's worth redoing the look since most of the time we
                     // don't have a photon
                     int i = 0;
-                    for (int ir = -dy; ir < dy + has_center_pixel_y; ir++) {
+                    for (int ir = -dy2; ir < dy2 + has_center_pixel_y; ir++) {
                         size_t inner_row_offset = row_offset + (ir * frame.shape(1));
-                        for (int ic = -dx; ic < dx + has_center_pixel_y; ic++) {
+                        for (int ic = -dx2; ic < dx2 + has_center_pixel_y; ic++) {
                             if (ix + ic >= 0 && ix + ic < frame.shape(1) &&
                                 iy + ir >= 0 && iy + ir < frame.shape(0)) {
                                 // if (m_pedestal.std(iy + ir, ix + ic) == 0) continue;
-                                if (std_ptr[inner_row_offset + ix + ic] == 0) continue;
+                                // if (std_ptr[inner_row_offset + ix + ic] == 0) continue;
 
                                 // CT tmp = static_cast<CT>(frame(iy + ir, ix + ic)) - static_cast<CT>(m_pedestal.mean(iy + ir, ix + ic));
-                                CT tmp = static_cast<CT>(frame(iy + ir, ix + ic)) - static_cast<CT>(mean_ptr[inner_row_offset + ix + ic]);
+
+                                CT tmp = 0;
+                                if (std_ptr[inner_row_offset + ix + ic] != 0)
+                                    tmp = static_cast<CT>(frame(iy + ir, ix + ic)) - static_cast<CT>(mean_ptr[inner_row_offset + ix + ic]);                                
 
                                 cluster.data[i] = tmp; // Watch for out of bounds access
                                 i++;
