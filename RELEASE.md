@@ -10,6 +10,10 @@ Features:
 - calculate pedestal (also g0 version)
 
 
+Bugfixes:
+
+- Now using glibc 2.17 in conda builds (was using the host)
+
 ### 2025.07.18
 
 Features:
