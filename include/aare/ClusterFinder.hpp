@@ -144,9 +144,9 @@ class ClusterFinder {
                                     static_cast<CT>(
                                         m_pedestal.mean(iy + ir, ix + ic));
                                 cluster.data[i] =
-                                    tmp; // Watch for out of bounds access
-                                i++;
+                                    tmp; // Watch for out of bounds access                                
                             }
+                            i++;
                         }
                     }
 
