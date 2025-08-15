@@ -52,6 +52,12 @@ template <typename SUM_TYPE = double> class ChunkedPedestal {
         m_current_frame_number = frame_number;
         m_current_chunk_number = std::floor(frame_number / m_chunk_size);
 
+        //Debug
+        // if (frame_number % 10000 == 0)
+        // {
+        //     std::cout << "frame_number: " << frame_number << " -> chunk_number: " << m_current_chunk_number << " pedestal at (100, 100): " << m_mean(m_current_chunk_number, 100, 100) << std::endl;
+        // }
+
         if (m_current_chunk_number >= m_n_chunks) 
         {
             m_current_chunk_number = 0;
