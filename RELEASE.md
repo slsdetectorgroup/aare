@@ -8,11 +8,13 @@ Features:
 - Apply calibration works in G0 if passes a 2D calibration and pedestal
 - count pixels that switch
 - calculate pedestal (also g0 version)
+- NDArray::view() needs an lvalue to reduce issues with the view outliving the array
 
 
 Bugfixes:
 
 - Now using glibc 2.17 in conda builds (was using the host)
+- Fixed shifted pixels in clusters close to the edge of a frame
 
 ### 2025.07.18
 
