@@ -8,6 +8,7 @@
 
 #pragma once
 
+#include "logger.hpp"
 #include <algorithm>
 #include <array>
 #include <cstdint>
@@ -74,104 +75,149 @@ struct Cluster {
     }
 };
 
-template<typename T>
-Cluster<T, 2, 2, uint16_t> reduce_3x3_to_2x2(const Cluster<T, 3, 3, uint16_t> &c) {
-    Cluster<T, 2, 2, uint16_t> result;
-    
-    auto [s, i] = c.max_sum_2x2();
-    switch (i) {
-        case 0:
-            result.x = c.x-1;
-            result.y = c.y+1;
-            result.data = {c.data[0], c.data[1], c.data[3], c.data[4]};
-            break;
-        case 1:
-            result.x = c.x;
-            result.y = c.y + 1;
-            result.data = {c.data[1], c.data[2], c.data[4], c.data[5]};
-            break;
-        case 2:
-            result.x = c.x -1;
-            result.y = c.y;
-            result.data = {c.data[3], c.data[4], c.data[6], c.data[7]};
-            break;
-        case 3:
-            result.x = c.x;
-            result.y = c.y;
-            result.data = {c.data[4], c.data[5], c.data[7], c.data[8]};
-            break;
-    }
+/**
+ * @brief Reduce a cluster to a 2x2 cluster by selecting the 2x2 block with the
+ * highest sum.
+ * @param c Cluster to reduce
+ * @return Cluster<T, 2, 2, uint16_t> reduced cluster
+ */
+template <typename T, uint8_t ClusterSizeX, uint8_t ClusterSizeY,
+          typename CoordType = int16_t>
+Cluster<T, 2, 2, CoordType>
+reduce_to_2x2(const Cluster<T, ClusterSizeX, ClusterSizeY, CoordType> &c) {
 
-    // do some stuff
+    static_assert(ClusterSizeX >= 2 && ClusterSizeY >= 2,
+                  "Cluster sizes must be at least 2x2 for reduction to 2x2");
+
+    Cluster<T, 2, 2, CoordType> result;
+
+    auto [sum, index] = c.max_sum_2x2();
+
+    int16_t cluster_center_index =
+        (ClusterSizeX / 2) + (ClusterSizeY / 2) * ClusterSizeX;
+
+    int16_t index_bottom_left_max_2x2_subcluster =
+        (int(index / (ClusterSizeX - 1))) * ClusterSizeX +
+        index % (ClusterSizeX - 1);
+
+    result.x =
+        c.x + (index_bottom_left_max_2x2_subcluster - cluster_center_index) %
+                  ClusterSizeX;
+
+    result.y =
+        c.y - (index_bottom_left_max_2x2_subcluster - cluster_center_index) /
+                  ClusterSizeX;
+    result.data = {
+        c.data[index_bottom_left_max_2x2_subcluster],
+        c.data[index_bottom_left_max_2x2_subcluster + 1],
+        c.data[index_bottom_left_max_2x2_subcluster + ClusterSizeX],
+        c.data[index_bottom_left_max_2x2_subcluster + ClusterSizeX + 1]};
     return result;
 }
 
-template<typename T>
-Cluster<T, 3, 3, uint16_t> reduce_5x5_to_3x3(const Cluster<T, 5, 5, uint16_t> &c) {
+template <typename T>
+Cluster<T, 3, 3, uint16_t>
+reduce_5x5_to_3x3(const Cluster<T, 5, 5, uint16_t> &c) {
     Cluster<T, 3, 3, uint16_t> result;
 
-    // Reduce the 5x5 cluster to a 3x3 cluster by selecting the 3x3 block with the highest sum
+    // Reduce the 5x5 cluster to a 3x3 cluster by selecting the 3x3 block with
+    // the highest sum
     std::array<T, 9> sum_3x3_subclusters;
 
-    //Write out the sums in the hope that the compiler can optimize this
-    sum_3x3_subclusters[0] = c.data[0] + c.data[1] + c.data[2] + c.data[5] + c.data[6] + c.data[7] + c.data[10] + c.data[11] + c.data[12];
-    sum_3x3_subclusters[1] = c.data[1] + c.data[2] + c.data[3] + c.data[6] + c.data[7] + c.data[8] + c.data[11] + c.data[12] + c.data[13];
-    sum_3x3_subclusters[2] = c.data[2] + c.data[3] + c.data[4] + c.data[7] + c.data[8] + c.data[9] + c.data[12] + c.data[13] + c.data[14];
-    sum_3x3_subclusters[3] = c.data[5] + c.data[6] + c.data[7] + c.data[10] + c.data[11] + c.data[12] + c.data[15] + c.data[16] + c.data[17];
-    sum_3x3_subclusters[4] = c.data[6] + c.data[7] + c.data[8] + c.data[11] + c.data[12] + c.data[13] + c.data[16] + c.data[17] + c.data[18];
-    sum_3x3_subclusters[5] = c.data[7] + c.data[8] + c.data[9] + c.data[12] + c.data[13] + c.data[14] + c.data[17] + c.data[18] + c.data[19];
-    sum_3x3_subclusters[6] = c.data[10] + c.data[11] + c.data[12] + c.data[15] + c.data[16] + c.data[17] + c.data[20] + c.data[21] + c.data[22];
-    sum_3x3_subclusters[7] = c.data[11] + c.data[12] + c.data[13] + c.data[16] + c.data[17] + c.data[18] + c.data[21] + c.data[22] + c.data[23];
-    sum_3x3_subclusters[8] = c.data[12] + c.data[13] + c.data[14] + c.data[17] + c.data[18] + c.data[19] + c.data[22] + c.data[23] + c.data[24];
+    // Write out the sums in the hope that the compiler can optimize this
+    sum_3x3_subclusters[0] = c.data[0] + c.data[1] + c.data[2] + c.data[5] +
+                             c.data[6] + c.data[7] + c.data[10] + c.data[11] +
+                             c.data[12];
+    sum_3x3_subclusters[1] = c.data[1] + c.data[2] + c.data[3] + c.data[6] +
+                             c.data[7] + c.data[8] + c.data[11] + c.data[12] +
+                             c.data[13];
+    sum_3x3_subclusters[2] = c.data[2] + c.data[3] + c.data[4] + c.data[7] +
+                             c.data[8] + c.data[9] + c.data[12] + c.data[13] +
+                             c.data[14];
+    sum_3x3_subclusters[3] = c.data[5] + c.data[6] + c.data[7] + c.data[10] +
+                             c.data[11] + c.data[12] + c.data[15] + c.data[16] +
+                             c.data[17];
+    sum_3x3_subclusters[4] = c.data[6] + c.data[7] + c.data[8] + c.data[11] +
+                             c.data[12] + c.data[13] + c.data[16] + c.data[17] +
+                             c.data[18];
+    sum_3x3_subclusters[5] = c.data[7] + c.data[8] + c.data[9] + c.data[12] +
+                             c.data[13] + c.data[14] + c.data[17] + c.data[18] +
+                             c.data[19];
+    sum_3x3_subclusters[6] = c.data[10] + c.data[11] + c.data[12] + c.data[15] +
+                             c.data[16] + c.data[17] + c.data[20] + c.data[21] +
+                             c.data[22];
+    sum_3x3_subclusters[7] = c.data[11] + c.data[12] + c.data[13] + c.data[16] +
+                             c.data[17] + c.data[18] + c.data[21] + c.data[22] +
+                             c.data[23];
+    sum_3x3_subclusters[8] = c.data[12] + c.data[13] + c.data[14] + c.data[17] +
+                             c.data[18] + c.data[19] + c.data[22] + c.data[23] +
+                             c.data[24];
 
-    auto index = std::max_element(sum_3x3_subclusters.begin(), sum_3x3_subclusters.end()) - sum_3x3_subclusters.begin();
+    auto index = std::max_element(sum_3x3_subclusters.begin(),
+                                  sum_3x3_subclusters.end()) -
+                 sum_3x3_subclusters.begin();
 
     switch (index) {
-        case 0:
-            result.x = c.x - 1;
-            result.y = c.y + 1;
-            result.data = {c.data[0], c.data[1], c.data[2], c.data[5], c.data[6], c.data[7], c.data[10], c.data[11], c.data[12]};
-            break;
-        case 1:
-            result.x = c.x;
-            result.y = c.y + 1;
-            result.data = {c.data[1], c.data[2], c.data[3], c.data[6], c.data[7], c.data[8], c.data[11], c.data[12], c.data[13]};
-            break;
-        case 2:
-            result.x = c.x + 1;
-            result.y = c.y + 1;
-            result.data = {c.data[2], c.data[3], c.data[4], c.data[7], c.data[8], c.data[9], c.data[12], c.data[13], c.data[14]};
-            break;
-        case 3:
-            result.x = c.x - 1;
-            result.y = c.y;
-            result.data = {c.data[5], c.data[6], c.data[7], c.data[10], c.data[11], c.data[12], c.data[15], c.data[16], c.data[17]};
-            break;
-        case 4:
-            result.x = c.x + 1;
-            result.y = c.y;
-            result.data = {c.data[6], c.data[7], c.data[8], c.data[11], c.data[12], c.data[13], c.data[16], c.data[17], c.data[18]};
-            break;
-        case 5:
-            result.x = c.x + 1;
-            result.y = c.y;
-            result.data = {c.data[7], c.data[8], c.data[9], c.data[12], c.data[13], c.data[14], c.data[17], c.data[18], c.data[19]};
-            break;
-        case 6:
-            result.x = c.x + 1;
-            result.y = c.y -1;
-            result.data = {c.data[10], c.data[11], c.data[12], c.data[15], c.data[16], c.data[17], c.data[20], c.data[21], c.data[22]};
-            break;
-        case 7:
-            result.x = c.x + 1;
-            result.y = c.y-1;
-            result.data = {c.data[11], c.data[12], c.data[13], c.data[16], c.data[17], c.data[18], c.data[21], c.data[22], c.data[23]};
-            break;
-        case 8:
-            result.x = c.x + 1;
-            result.y = c.y-1;
-            result.data = {c.data[12], c.data[13], c.data[14], c.data[17], c.data[18], c.data[19], c.data[22], c.data[23], c.data[24]};
-            break;
+    case 0:
+        result.x = c.x - 1;
+        result.y = c.y + 1;
+        result.data = {c.data[0], c.data[1],  c.data[2],  c.data[5], c.data[6],
+                       c.data[7], c.data[10], c.data[11], c.data[12]};
+        break;
+    case 1:
+        result.x = c.x;
+        result.y = c.y + 1;
+        result.data = {c.data[1], c.data[2],  c.data[3],  c.data[6], c.data[7],
+                       c.data[8], c.data[11], c.data[12], c.data[13]};
+        break;
+    case 2:
+        result.x = c.x + 1;
+        result.y = c.y + 1;
+        result.data = {c.data[2], c.data[3],  c.data[4],  c.data[7], c.data[8],
+                       c.data[9], c.data[12], c.data[13], c.data[14]};
+        break;
+    case 3:
+        result.x = c.x - 1;
+        result.y = c.y;
+        result.data = {c.data[5],  c.data[6],  c.data[7],
+                       c.data[10], c.data[11], c.data[12],
+                       c.data[15], c.data[16], c.data[17]};
+        break;
+    case 4:
+        result.x = c.x + 1;
+        result.y = c.y;
+        result.data = {c.data[6],  c.data[7],  c.data[8],
+                       c.data[11], c.data[12], c.data[13],
+                       c.data[16], c.data[17], c.data[18]};
+        break;
+    case 5:
+        result.x = c.x + 1;
+        result.y = c.y;
+        result.data = {c.data[7],  c.data[8],  c.data[9],
+                       c.data[12], c.data[13], c.data[14],
+                       c.data[17], c.data[18], c.data[19]};
+        break;
+    case 6:
+        result.x = c.x + 1;
+        result.y = c.y - 1;
+        result.data = {c.data[10], c.data[11], c.data[12],
+                       c.data[15], c.data[16], c.data[17],
+                       c.data[20], c.data[21], c.data[22]};
+        break;
+    case 7:
+        result.x = c.x + 1;
+        result.y = c.y - 1;
+        result.data = {c.data[11], c.data[12], c.data[13],
+                       c.data[16], c.data[17], c.data[18],
+                       c.data[21], c.data[22], c.data[23]};
+        break;
+    case 8:
+        result.x = c.x + 1;
+        result.y = c.y - 1;
+        result.data = {c.data[12], c.data[13], c.data[14],
+                       c.data[17], c.data[18], c.data[19],
+                       c.data[22], c.data[23], c.data[24]};
+        break;
     }
 
     // do some stuff

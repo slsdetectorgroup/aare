@@ -32,8 +32,7 @@ class ClusterVector; // Forward declaration
  */
 template <typename T, uint8_t ClusterSizeX, uint8_t ClusterSizeY,
           typename CoordType>
-class ClusterVector<Cluster<T, ClusterSizeX, ClusterSizeY, CoordType>> 
-{
+class ClusterVector<Cluster<T, ClusterSizeX, ClusterSizeY, CoordType>> {
 
     std::vector<Cluster<T, ClusterSizeX, ClusterSizeY, CoordType>> m_data{};
     int32_t m_frame_number{0}; // TODO! Check frame number size and type
@@ -173,17 +172,21 @@ class ClusterVector<Cluster<T, ClusterSizeX, ClusterSizeY, CoordType>>
     }
 };
 
-template<typename T>
-ClusterVector<Cluster<T, 2, 2, uint16_t>> reduce_3x3_to_2x2(const ClusterVector<Cluster<T, 3, 3, uint16_t>> &cv) {
-    ClusterVector<Cluster<T, 2, 2, uint16_t>> result;
+template <typename T, uint8_t ClusterSizeX, uint8_t ClusterSizeY,
+          typename CoordType>
+ClusterVector<Cluster<T, 2, 2, CoordType>> reduce_to_2x2(
+    const ClusterVector<Cluster<T, ClusterSizeX, ClusterSizeY, CoordType>>
+        &cv) {
+    ClusterVector<Cluster<T, 2, 2, CoordType>> result;
     for (const auto &c : cv) {
-        result.push_back(reduce_3x3_to_2x2(c));
+        result.push_back(reduce_to_2x2(c));
     }
     return result;
 }
 
-template<typename T>
-ClusterVector<Cluster<T, 3, 3, uint16_t>> reduce_5x5_to_3x3(const ClusterVector<Cluster<T, 5, 5, uint16_t>> &cv) {
+template <typename T>
+ClusterVector<Cluster<T, 3, 3, uint16_t>>
+reduce_5x5_to_3x3(const ClusterVector<Cluster<T, 5, 5, uint16_t>> &cv) {
     ClusterVector<Cluster<T, 3, 3, uint16_t>> result;
     for (const auto &c : cv) {
         result.push_back(reduce_5x5_to_3x3(c));

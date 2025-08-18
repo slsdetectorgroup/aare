@@ -47,7 +47,8 @@ double, 'f' for float)
     define_ClusterFileSink<T, N, M, U>(m, "Cluster" #N "x" #M #TYPE_CODE);     \
     define_ClusterCollector<T, N, M, U>(m, "Cluster" #N "x" #M #TYPE_CODE);    \
     define_Cluster<T, N, M, U>(m, #N "x" #M #TYPE_CODE);                       \
-    register_calculate_eta<T, N, M, U>(m);
+    register_calculate_eta<T, N, M, U>(m);                                     \
+    define_reduction<T, N, M, U>(m);
 
 PYBIND11_MODULE(_aare, m) {
     define_file_io_bindings(m);
@@ -85,7 +86,5 @@ PYBIND11_MODULE(_aare, m) {
     DEFINE_CLUSTER_BINDINGS(double, 9, 9, uint16_t, d);
     DEFINE_CLUSTER_BINDINGS(float, 9, 9, uint16_t, f);
 
-
-    define_reduction(m);
-
+    define_3x3_reduction(m);
 }
