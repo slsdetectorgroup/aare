@@ -106,7 +106,7 @@ void define_ClusterVector(py::module &m, const std::string &typestr) {
 
 template <typename Type, uint8_t ClusterSizeX, uint8_t ClusterSizeY,
           typename CoordType = uint16_t>
-void define_reduction(py::module &m) {
+void define_2x2_reduction(py::module &m) {
     m.def("reduce_to_2x2",
           [](const ClusterVector<
               Cluster<Type, ClusterSizeX, ClusterSizeY, CoordType>> &cv) {
@@ -115,11 +115,15 @@ void define_reduction(py::module &m) {
           });
 }
 
+template <typename Type, uint8_t ClusterSizeX, uint8_t ClusterSizeY,
+          typename CoordType = uint16_t>
 void define_3x3_reduction(py::module &m) {
-    m.def("reduce_5x5_to_3x3",
-          [](const ClusterVector<Cluster<int, 5, 5, uint16_t>> &cv) {
-              return new ClusterVector<Cluster<int, 3, 3, uint16_t>>(
-                  reduce_5x5_to_3x3(cv));
+
+    m.def("reduce_to_3x3",
+          [](const ClusterVector<
+              Cluster<Type, ClusterSizeX, ClusterSizeY, CoordType>> &cv) {
+              return new ClusterVector<Cluster<Type, 3, 3, CoordType>>(
+                  reduce_to_3x3(cv));
           });
 }
 
