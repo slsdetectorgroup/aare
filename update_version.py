@@ -7,6 +7,7 @@ Script to update VERSION file with semantic versioning if provided as an argumen
 import sys
 import os
 import re
+from datetime import datetime
 
 from packaging.version import Version, InvalidVersion
 
@@ -26,9 +27,9 @@ def get_version():
 
     # Check at least one argument is passed
     if len(sys.argv) < 2:
-        return "0.0.0"
-
-    version = sys.argv[1]
+        version =   datetime.today().strftime('%Y.%-m.%-d')
+    else: 
+        version = sys.argv[1]
 
     try:
         v = Version(version)  # normalize check if version follows PEP 440 specification
