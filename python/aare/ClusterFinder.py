@@ -46,14 +46,16 @@ def ClusterFinderMT(image_size, cluster_size = (3,3), dtype=np.int32, n_sigma=5,
     return cls(image_size, n_sigma=n_sigma, capacity=capacity, n_threads=n_threads)
 
 
-
 def ClusterCollector(clusterfindermt, cluster_size = (3,3), dtype=np.int32): 
     """ 
     Factory function to create a ClusterCollector object. Provides a cleaner syntax for 
     the templated ClusterCollector in C++.
     """
 
-    cls = _get_class("ClusterCollector", cluster_size, dtype)
+    if cluster_size != clusterfindermt.cluster_size:
+        raise Warning(f"Cluster size mismatch: ClusterCollector size {cluster_size} does not match ClusterFinderMT size {clusterfindermt.cluster_size}, using {clusterfindermt.cluster_size} instead.")
+    
+    cls = _get_class("ClusterCollector", clusterfindermt.cluster_size, dtype)
     return cls(clusterfindermt)
 
 def ClusterFileSink(clusterfindermt, cluster_file, dtype=np.int32): 
