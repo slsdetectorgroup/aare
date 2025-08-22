@@ -116,6 +116,37 @@ reduce_to_2x2(const Cluster<T, ClusterSizeX, ClusterSizeY, CoordType> &c) {
     return result;
 }
 
+template <typename T>
+Cluster<T, 2, 2, int16_t> reduce_to_2x2(const Cluster<T, 3, 3, int16_t> &c) {
+    Cluster<T, 2, 2, int16_t> result;
+
+    auto [s, i] = c.max_sum_2x2();
+    switch (i) {
+    case 0:
+        result.x = c.x - 1;
+        result.y = c.y + 1;
+        result.data = {c.data[0], c.data[1], c.data[3], c.data[4]};
+        break;
+    case 1:
+        result.x = c.x;
+        result.y = c.y + 1;
+        result.data = {c.data[1], c.data[2], c.data[4], c.data[5]};
+        break;
+    case 2:
+        result.x = c.x - 1;
+        result.y = c.y;
+        result.data = {c.data[3], c.data[4], c.data[6], c.data[7]};
+        break;
+    case 3:
+        result.x = c.x;
+        result.y = c.y;
+        result.data = {c.data[4], c.data[5], c.data[7], c.data[8]};
+        break;
+    }
+
+    return result;
+}
+
 template <typename T, uint8_t ClusterSizeX, uint8_t ClusterSizeY,
           typename CoordType = int16_t>
 inline std::pair<T, uint16_t>
