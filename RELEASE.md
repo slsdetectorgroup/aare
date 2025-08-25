@@ -1,7 +1,7 @@
 # Release notes
 
 
-### head
+### 2025.8.22
 
 Features:
 
@@ -16,7 +16,7 @@ Bugfixes:
 - Now using glibc 2.17 in conda builds (was using the host)
 - Fixed shifted pixels in clusters close to the edge of a frame
 
-### 2025.07.18
+### 2025.7.18
 
 Features:
 
@@ -30,7 +30,7 @@ Bugfixes:
 - Removed unused file: ClusterFile.cpp 
 
 
-### 2025.05.22
+### 2025.5.22
 
 Features:
 
