@@ -107,24 +107,44 @@ void define_ClusterVector(py::module &m, const std::string &typestr) {
 template <typename Type, uint8_t ClusterSizeX, uint8_t ClusterSizeY,
           typename CoordType = uint16_t>
 void define_2x2_reduction(py::module &m) {
-    m.def("reduce_to_2x2",
-          [](const ClusterVector<
-              Cluster<Type, ClusterSizeX, ClusterSizeY, CoordType>> &cv) {
-              return new ClusterVector<Cluster<Type, 2, 2, CoordType>>(
-                  reduce_to_2x2(cv));
-          });
+    m.def(
+        "reduce_to_2x2",
+        [](const ClusterVector<
+            Cluster<Type, ClusterSizeX, ClusterSizeY, CoordType>> &cv) {
+            return new ClusterVector<Cluster<Type, 2, 2, CoordType>>(
+                reduce_to_2x2(cv));
+        },
+        R"(
+        
+        Reduce cluster to 2x2 subcluster by taking the 2x2 subcluster with 
+        the highest photon energy."
+        Parameters
+        ----------
+        cv : ClusterVector   
+        )",
+        py::arg("clustervector"));
 }
 
 template <typename Type, uint8_t ClusterSizeX, uint8_t ClusterSizeY,
           typename CoordType = uint16_t>
 void define_3x3_reduction(py::module &m) {
 
-    m.def("reduce_to_3x3",
-          [](const ClusterVector<
-              Cluster<Type, ClusterSizeX, ClusterSizeY, CoordType>> &cv) {
-              return new ClusterVector<Cluster<Type, 3, 3, CoordType>>(
-                  reduce_to_3x3(cv));
-          });
+    m.def(
+        "reduce_to_3x3",
+        [](const ClusterVector<
+            Cluster<Type, ClusterSizeX, ClusterSizeY, CoordType>> &cv) {
+            return new ClusterVector<Cluster<Type, 3, 3, CoordType>>(
+                reduce_to_3x3(cv));
+        },
+        R"(
+        
+        Reduce cluster to 3x3 subcluster by taking the 3x3 subcluster with 
+        the highest photon energy."
+        Parameters
+        ----------
+        cv : ClusterVector   
+        )",
+        py::arg("clustervector"));
 }
 
 #pragma GCC diagnostic pop

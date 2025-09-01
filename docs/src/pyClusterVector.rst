@@ -34,3 +34,16 @@ C++ functions that support the ClusterVector or to view it as a numpy array.
     :undoc-members:
     :show-inheritance:
     :inherited-members:
+
+
+**Free Functions:** 
+
+.. autofunction:: reduce_to_3x3
+   :noindex:
+
+   Reduce a single Cluster to 3x3 by taking the 3x3 subcluster with highest photon energy.
+
+.. autofunction:: reduce_to_2x2
+   :noindex:
+
+   Reduce a single Cluster to 2x2 by taking the 2x2 subcluster with highest photon energy.

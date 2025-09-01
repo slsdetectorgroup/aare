@@ -24,7 +24,8 @@ void define_Cluster(py::module &m, const std::string &typestr) {
     py::class_<Cluster<Type, ClusterSizeX, ClusterSizeY, CoordType>>(
         m, class_name.c_str(), py::buffer_protocol())
 
-        .def(py::init([](uint8_t x, uint8_t y, py::array_t<Type> data) {
+        .def(py::init([](uint8_t x, uint8_t y,
+                         py::array_t<Type, py::array::forcecast> data) {
             py::buffer_info buf_info = data.request();
             Cluster<Type, ClusterSizeX, ClusterSizeY, CoordType> cluster;
             cluster.x = x;
@@ -69,7 +70,9 @@ void reduce_to_3x3(py::module &m) {
         [](const Cluster<T, ClusterSizeX, ClusterSizeY, CoordType> &cl) {
             return reduce_to_3x3(cl);
         },
-        py::return_value_policy::move);
+        py::return_value_policy::move,
+        "Reduce cluster to 3x3 subcluster by taking the 3x3 subcluster with "
+        "the highest photon energy.");
 }
 
 template <typename T, uint8_t ClusterSizeX, uint8_t ClusterSizeY,
@@ -81,7 +84,9 @@ void reduce_to_2x2(py::module &m) {
         [](const Cluster<T, ClusterSizeX, ClusterSizeY, CoordType> &cl) {
             return reduce_to_2x2(cl);
         },
-        py::return_value_policy::move);
+        py::return_value_policy::move,
+        "Reduce cluster to 2x2 subcluster by taking the 2x2 subcluster with "
+        "the highest photon energy.");
 }
 
 #pragma GCC diagnostic pop

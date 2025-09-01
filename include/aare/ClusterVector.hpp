@@ -172,6 +172,12 @@ class ClusterVector<Cluster<T, ClusterSizeX, ClusterSizeY, CoordType>> {
     }
 };
 
+/**
+ * @brief Reduce a cluster to a 2x2 cluster by selecting the 2x2 block with the
+ * highest sum.
+ * @param cv Clustervector containing clusters to reduce
+ * @return Clustervector with reduced clusters
+ */
 template <typename T, uint8_t ClusterSizeX, uint8_t ClusterSizeY,
           typename CoordType = uint16_t>
 ClusterVector<Cluster<T, 2, 2, CoordType>> reduce_to_2x2(
@@ -184,6 +190,12 @@ ClusterVector<Cluster<T, 2, 2, CoordType>> reduce_to_2x2(
     return result;
 }
 
+/**
+ * @brief Reduce a cluster to a 3x3 cluster by selecting the 3x3 block with the
+ * highest sum.
+ * @param cv Clustervector containing clusters to reduce
+ * @return Clustervector with reduced clusters
+ */
 template <typename T, uint8_t ClusterSizeX, uint8_t ClusterSizeY,
           typename CoordType = uint16_t>
 ClusterVector<Cluster<T, 3, 3, CoordType>> reduce_to_3x3(
