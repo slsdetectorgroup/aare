@@ -34,31 +34,54 @@ void define_Cluster(py::module &m, const std::string &typestr) {
                 cluster.data[i] = r(i);
             }
             return cluster;
-        }));
+        }))
 
-    /*
-    //TODO! Review if to keep or not
-    .def_property(
-        "data",
-        [](ClusterType &c) -> py::array {
-            return py::array(py::buffer_info(
-                c.data, sizeof(Type),
-                py::format_descriptor<Type>::format(), // Type
-                                                       // format
-                1, // Number of dimensions
-                {static_cast<ssize_t>(ClusterSizeX *
-                                      ClusterSizeY)}, // Shape (flattened)
-                {sizeof(Type)} // Stride (step size between elements)
-                ));
+        // TODO! Review if to keep or not
+        .def_property_readonly(
+            "data",
+            [](Cluster<Type, ClusterSizeX, ClusterSizeY, CoordType> &c)
+                -> py::array {
+                return py::array(py::buffer_info(
+                    c.data.data(), sizeof(Type),
+                    py::format_descriptor<Type>::format(), // Type
+                                                           // format
+                    2, // Number of dimensions
+                    {static_cast<ssize_t>(ClusterSizeX),
+                     static_cast<ssize_t>(ClusterSizeY)}, // Shape (flattened)
+                    {sizeof(Type) * ClusterSizeY, sizeof(Type)}
+                    // Stride (step size between elements)
+                    ));
+            })
+
+        .def_readonly("x",
+                      &Cluster<Type, ClusterSizeX, ClusterSizeY, CoordType>::x)
+
+        .def_readonly("y",
+                      &Cluster<Type, ClusterSizeX, ClusterSizeY, CoordType>::y);
+}
+
+template <typename T, uint8_t ClusterSizeX, uint8_t ClusterSizeY,
+          typename CoordType = int16_t>
+void reduce_to_3x3(py::module &m) {
+
+    m.def(
+        "reduce_to_3x3",
+        [](const Cluster<T, ClusterSizeX, ClusterSizeY, CoordType> &cl) {
+            return reduce_to_3x3(cl);
         },
-        [](ClusterType &c, py::array_t<Type> arr) {
-            py::buffer_info buf_info = arr.request();
-            Type *ptr = static_cast<Type *>(buf_info.ptr);
-            std::copy(ptr, ptr + ClusterSizeX * ClusterSizeY,
-                      c.data); // TODO dont iterate over centers!!!
+        py::return_value_policy::move);
+}
 
-        });
-    */
+template <typename T, uint8_t ClusterSizeX, uint8_t ClusterSizeY,
+          typename CoordType = int16_t>
+void reduce_to_2x2(py::module &m) {
+
+    m.def(
+        "reduce_to_2x2",
+        [](const Cluster<T, ClusterSizeX, ClusterSizeY, CoordType> &cl) {
+            return reduce_to_2x2(cl);
+        },
+        py::return_value_policy::move);
 }
 
 #pragma GCC diagnostic pop

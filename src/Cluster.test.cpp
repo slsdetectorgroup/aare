@@ -65,7 +65,7 @@ TEST_CASE("Test reduce to 2x2 Cluster", "[.cluster]") {
                      expected_reduced_cluster.data.begin()));
 }
 
-TEST_CASE("Test reduce to 3x3 Clsuter", "[.cluster]") {
+TEST_CASE("Test reduce to 3x3 Cluster", "[.cluster]") {
     auto [cluster, expected_reduced_cluster] = GENERATE(
         std::make_tuple(ClusterTypesLargerThan2x2{Cluster<int, 3, 3>{
                             5, 5, {1, 1, 1, 1, 3, 1, 1, 1, 1}}},
