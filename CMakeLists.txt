@@ -390,6 +390,8 @@ set(SourceFiles
     ${CMAKE_CURRENT_SOURCE_DIR}/src/utils/ifstream_helpers.cpp
 )
 
+set(CMAKE_POSITION_INDEPENDENT_CODE ON) 
+
 add_library(aare_core STATIC ${SourceFiles})
 target_include_directories(aare_core PUBLIC 
     "$<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>" 
@@ -465,6 +467,7 @@ if(AARE_TESTS)
     target_sources(tests PRIVATE ${TestSources} )
 endif()
 
+
 if(AARE_MASTER_PROJECT)
     install(TARGETS aare_core aare_compiler_flags 
         EXPORT "${TARGETS_EXPORT_NAME}"
@@ -474,7 +477,6 @@ if(AARE_MASTER_PROJECT)
     )
 endif()
 
-set(CMAKE_POSITION_INDEPENDENT_CODE ON)
 set(CMAKE_INSTALL_RPATH $ORIGIN)
 set(CMAKE_BUILD_WITH_INSTALL_RPATH FALSE)
 
