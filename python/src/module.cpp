@@ -47,7 +47,9 @@ double, 'f' for float)
     define_ClusterFileSink<T, N, M, U>(m, "Cluster" #N "x" #M #TYPE_CODE);     \
     define_ClusterCollector<T, N, M, U>(m, "Cluster" #N "x" #M #TYPE_CODE);    \
     define_Cluster<T, N, M, U>(m, #N "x" #M #TYPE_CODE);                       \
-    register_calculate_eta<T, N, M, U>(m);
+    register_calculate_eta<T, N, M, U>(m);                                     \
+    define_2x2_reduction<T, N, M, U>(m);                                       \
+    reduce_to_2x2<T, N, M, U>(m);
 
 PYBIND11_MODULE(_aare, m) {
     define_file_io_bindings(m);
@@ -85,7 +87,29 @@ PYBIND11_MODULE(_aare, m) {
     DEFINE_CLUSTER_BINDINGS(double, 9, 9, uint16_t, d);
     DEFINE_CLUSTER_BINDINGS(float, 9, 9, uint16_t, f);
 
+    define_3x3_reduction<int, 3, 3, uint16_t>(m);
+    define_3x3_reduction<double, 3, 3, uint16_t>(m);
+    define_3x3_reduction<float, 3, 3, uint16_t>(m);
+    define_3x3_reduction<int, 5, 5, uint16_t>(m);
+    define_3x3_reduction<double, 5, 5, uint16_t>(m);
+    define_3x3_reduction<float, 5, 5, uint16_t>(m);
+    define_3x3_reduction<int, 7, 7, uint16_t>(m);
+    define_3x3_reduction<double, 7, 7, uint16_t>(m);
+    define_3x3_reduction<float, 7, 7, uint16_t>(m);
+    define_3x3_reduction<int, 9, 9, uint16_t>(m);
+    define_3x3_reduction<double, 9, 9, uint16_t>(m);
+    define_3x3_reduction<float, 9, 9, uint16_t>(m);
 
-    define_reduction(m);
-
+    reduce_to_3x3<int, 3, 3, uint16_t>(m);
+    reduce_to_3x3<double, 3, 3, uint16_t>(m);
+    reduce_to_3x3<float, 3, 3, uint16_t>(m);
+    reduce_to_3x3<int, 5, 5, uint16_t>(m);
+    reduce_to_3x3<double, 5, 5, uint16_t>(m);
+    reduce_to_3x3<float, 5, 5, uint16_t>(m);
+    reduce_to_3x3<int, 7, 7, uint16_t>(m);
+    reduce_to_3x3<double, 7, 7, uint16_t>(m);
+    reduce_to_3x3<float, 7, 7, uint16_t>(m);
+    reduce_to_3x3<int, 9, 9, uint16_t>(m);
+    reduce_to_3x3<double, 9, 9, uint16_t>(m);
+    reduce_to_3x3<float, 9, 9, uint16_t>(m);
 }

@@ -28,7 +28,7 @@ enum class pixel : int {
 template <typename T> struct Eta2 {
     double x;
     double y;
-    int c;
+    int c{0};
     T sum;
 };
 
@@ -69,6 +69,8 @@ calculate_eta2(const Cluster<T, ClusterSizeX, ClusterSizeY, CoordType> &cl) {
 
     size_t index_bottom_left_max_2x2_subcluster =
         (int(c / (ClusterSizeX - 1))) * ClusterSizeX + c % (ClusterSizeX - 1);
+
+    // calculate direction of gradient
 
     // check that cluster center is in max subcluster
     if (cluster_center_index != index_bottom_left_max_2x2_subcluster &&
@@ -128,12 +130,15 @@ Eta2<T> calculate_eta2(const Cluster<T, 2, 2, int16_t> &cl) {
     Eta2<T> eta{};
 
     if ((cl.data[0] + cl.data[1]) != 0)
-        eta.x = static_cast<double>(cl.data[1]) / (cl.data[0] + cl.data[1]);
+        eta.x = static_cast<double>(cl.data[1]) /
+                (cl.data[0] + cl.data[1]); // between (0,1) the closer to zero
+                                           // left value probably larger
     if ((cl.data[0] + cl.data[2]) != 0)
-        eta.y = static_cast<double>(cl.data[2]) / (cl.data[0] + cl.data[2]);
+        eta.y = static_cast<double>(cl.data[2]) /
+                (cl.data[0] + cl.data[2]); // between (0,1) the closer to zero
+                                           // bottom value probably larger
     eta.sum = cl.sum();
-    eta.c = static_cast<int>(corner::cBottomLeft); // TODO! This is not correct,
-                                                   // but need to put something
+
     return eta;
 }
 
@@ -150,13 +155,11 @@ template <typename T> Eta2<T> calculate_eta3(const Cluster<T, 3, 3> &cl) {
 
     eta.sum = sum;
 
-    eta.c = corner::cBottomLeft;
-
     if ((cl.data[3] + cl.data[4] + cl.data[5]) != 0)
 
         eta.x = static_cast<double>(-cl.data[3] + cl.data[3 + 2]) /
 
-                (cl.data[3] + cl.data[4] + cl.data[5]);
+                (cl.data[3] + cl.data[4] + cl.data[5]); // (-1,1)
 
     if ((cl.data[1] + cl.data[4] + cl.data[7]) != 0)
 
