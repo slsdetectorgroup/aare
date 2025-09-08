@@ -25,13 +25,13 @@ TEST_CASE("Construct from an NDView") {
     REQUIRE(image.data() != view.data());
 
     for (uint32_t i = 0; i < image.size(); ++i) {
-        REQUIRE(image(i) == view(i));
+        REQUIRE(image[i] == view[i]);
     }
 
     // Changing the image doesn't change the view
     image = 43;
     for (uint32_t i = 0; i < image.size(); ++i) {
-        REQUIRE(image(i) != view(i));
+        REQUIRE(image[i] != view[i]);
     }
 }
 
@@ -428,3 +428,29 @@ TEST_CASE("Construct an NDArray from an std::array") {
         REQUIRE(a(i) == b[i]);
     }
 }
+
+
+
+TEST_CASE("Move construct from an array with Ndim + 1") {
+    NDArray<int, 3> a({{1,2,2}}, 0);
+    a(0, 0, 0) = 1;
+    a(0, 0, 1) = 2;
+    a(0, 1, 0) = 3;
+    a(0, 1, 1) = 4;
+
+
+    NDArray<int, 2> b(std::move(a));
+    REQUIRE(b.shape() == Shape<2>{2,2});
+    REQUIRE(b.size() == 4);
+    REQUIRE(b(0, 0) == 1);
+    REQUIRE(b(0, 1) == 2);
+    REQUIRE(b(1, 0) == 3);
+    REQUIRE(b(1, 1) == 4);
+
+}
+
+TEST_CASE("Move construct from an array with Ndim + 1 throws on size mismatch") {
+    NDArray<int, 3> a({{2,2,2}}, 0);
+    REQUIRE_THROWS(NDArray<int, 2>(std::move(a)));
+}
+
