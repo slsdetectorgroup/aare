@@ -24,7 +24,8 @@ void define_Cluster(py::module &m, const std::string &typestr) {
     py::class_<Cluster<Type, ClusterSizeX, ClusterSizeY, CoordType>>(
         m, class_name.c_str(), py::buffer_protocol())
 
-        .def(py::init([](uint8_t x, uint8_t y, py::array_t<Type> data) {
+        .def(py::init([](uint8_t x, uint8_t y,
+                         py::array_t<Type, py::array::forcecast> data) {
             py::buffer_info buf_info = data.request();
             Cluster<Type, ClusterSizeX, ClusterSizeY, CoordType> cluster;
             cluster.x = x;
@@ -34,31 +35,58 @@ void define_Cluster(py::module &m, const std::string &typestr) {
                 cluster.data[i] = r(i);
             }
             return cluster;
-        }));
+        }))
 
-    /*
-    //TODO! Review if to keep or not
-    .def_property(
-        "data",
-        [](ClusterType &c) -> py::array {
-            return py::array(py::buffer_info(
-                c.data, sizeof(Type),
-                py::format_descriptor<Type>::format(), // Type
-                                                       // format
-                1, // Number of dimensions
-                {static_cast<ssize_t>(ClusterSizeX *
-                                      ClusterSizeY)}, // Shape (flattened)
-                {sizeof(Type)} // Stride (step size between elements)
-                ));
+        // TODO! Review if to keep or not
+        .def_property_readonly(
+            "data",
+            [](Cluster<Type, ClusterSizeX, ClusterSizeY, CoordType> &c)
+                -> py::array {
+                return py::array(py::buffer_info(
+                    c.data.data(), sizeof(Type),
+                    py::format_descriptor<Type>::format(), // Type
+                                                           // format
+                    2, // Number of dimensions
+                    {static_cast<ssize_t>(ClusterSizeX),
+                     static_cast<ssize_t>(ClusterSizeY)}, // Shape (flattened)
+                    {sizeof(Type) * ClusterSizeY, sizeof(Type)}
+                    // Stride (step size between elements)
+                    ));
+            })
+
+        .def_readonly("x",
+                      &Cluster<Type, ClusterSizeX, ClusterSizeY, CoordType>::x)
+
+        .def_readonly("y",
+                      &Cluster<Type, ClusterSizeX, ClusterSizeY, CoordType>::y);
+}
+
+template <typename T, uint8_t ClusterSizeX, uint8_t ClusterSizeY,
+          typename CoordType = int16_t>
+void reduce_to_3x3(py::module &m) {
+
+    m.def(
+        "reduce_to_3x3",
+        [](const Cluster<T, ClusterSizeX, ClusterSizeY, CoordType> &cl) {
+            return reduce_to_3x3(cl);
         },
-        [](ClusterType &c, py::array_t<Type> arr) {
-            py::buffer_info buf_info = arr.request();
-            Type *ptr = static_cast<Type *>(buf_info.ptr);
-            std::copy(ptr, ptr + ClusterSizeX * ClusterSizeY,
-                      c.data); // TODO dont iterate over centers!!!
+        py::return_value_policy::move,
+        "Reduce cluster to 3x3 subcluster by taking the 3x3 subcluster with "
+        "the highest photon energy.");
+}
 
-        });
-    */
+template <typename T, uint8_t ClusterSizeX, uint8_t ClusterSizeY,
+          typename CoordType = int16_t>
+void reduce_to_2x2(py::module &m) {
+
+    m.def(
+        "reduce_to_2x2",
+        [](const Cluster<T, ClusterSizeX, ClusterSizeY, CoordType> &cl) {
+            return reduce_to_2x2(cl);
+        },
+        py::return_value_policy::move,
+        "Reduce cluster to 2x2 subcluster by taking the 2x2 subcluster with "
+        "the highest photon energy.");
 }
 
 #pragma GCC diagnostic pop

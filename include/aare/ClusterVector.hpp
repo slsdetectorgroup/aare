@@ -32,8 +32,7 @@ class ClusterVector; // Forward declaration
  */
 template <typename T, uint8_t ClusterSizeX, uint8_t ClusterSizeY,
           typename CoordType>
-class ClusterVector<Cluster<T, ClusterSizeX, ClusterSizeY, CoordType>> 
-{
+class ClusterVector<Cluster<T, ClusterSizeX, ClusterSizeY, CoordType>> {
 
     std::vector<Cluster<T, ClusterSizeX, ClusterSizeY, CoordType>> m_data{};
     int32_t m_frame_number{0}; // TODO! Check frame number size and type
@@ -172,5 +171,41 @@ class ClusterVector<Cluster<T, ClusterSizeX, ClusterSizeY, CoordType>>
         m_frame_number = frame_number;
     }
 };
+
+/**
+ * @brief Reduce a cluster to a 2x2 cluster by selecting the 2x2 block with the
+ * highest sum.
+ * @param cv Clustervector containing clusters to reduce
+ * @return Clustervector with reduced clusters
+ */
+template <typename T, uint8_t ClusterSizeX, uint8_t ClusterSizeY,
+          typename CoordType = uint16_t>
+ClusterVector<Cluster<T, 2, 2, CoordType>> reduce_to_2x2(
+    const ClusterVector<Cluster<T, ClusterSizeX, ClusterSizeY, CoordType>>
+        &cv) {
+    ClusterVector<Cluster<T, 2, 2, CoordType>> result;
+    for (const auto &c : cv) {
+        result.push_back(reduce_to_2x2(c));
+    }
+    return result;
+}
+
+/**
+ * @brief Reduce a cluster to a 3x3 cluster by selecting the 3x3 block with the
+ * highest sum.
+ * @param cv Clustervector containing clusters to reduce
+ * @return Clustervector with reduced clusters
+ */
+template <typename T, uint8_t ClusterSizeX, uint8_t ClusterSizeY,
+          typename CoordType = uint16_t>
+ClusterVector<Cluster<T, 3, 3, CoordType>> reduce_to_3x3(
+    const ClusterVector<Cluster<T, ClusterSizeX, ClusterSizeY, CoordType>>
+        &cv) {
+    ClusterVector<Cluster<T, 3, 3, CoordType>> result;
+    for (const auto &c : cv) {
+        result.push_back(reduce_to_3x3(c));
+    }
+    return result;
+}
 
 } // namespace aare
