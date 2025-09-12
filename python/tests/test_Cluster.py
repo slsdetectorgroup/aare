@@ -101,6 +101,27 @@ def test_cluster_finder():
     assert clusters.size == 0
 
 
+def test_2x2_reduction(): 
+    """Test 2x2 Reduction"""
+    cluster = _aare.Cluster3x3i(5,5,np.array([1, 1, 1, 2, 3, 1, 2, 2, 1], dtype=np.int32))
+
+    reduced_cluster = _aare.reduce_to_2x2(cluster) 
+
+    assert reduced_cluster.x == 4
+    assert reduced_cluster.y == 5
+    assert (reduced_cluster.data == np.array([[2, 3], [2, 2]], dtype=np.int32)).all()
+    
+    
+def test_3x3_reduction(): 
+    """Test 3x3 Reduction"""
+    cluster = _aare.Cluster5x5d(5,5,np.array([1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 2.0, 1.0, 1.0, 1.0, 2.0, 2.0, 3.0,
+                                   1.0, 1.0, 1.0, 2.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0], dtype=np.double))
+
+    reduced_cluster = _aare.reduce_to_3x3(cluster) 
+
+    assert reduced_cluster.x == 4
+    assert reduced_cluster.y == 5
+    assert (reduced_cluster.data == np.array([[1.0, 2.0, 1.0], [2.0, 2.0, 3.0], [1.0, 2.0, 1.0]], dtype=np.double)).all()
 
 
 
