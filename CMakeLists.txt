@@ -388,7 +388,7 @@ set(SourceFiles
     ${CMAKE_CURRENT_SOURCE_DIR}/src/RawSubFile.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/src/utils/task.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/src/utils/ifstream_helpers.cpp
-)
+) 
 
 add_library(aare_core STATIC ${SourceFiles})
 target_include_directories(aare_core PUBLIC 
@@ -412,6 +412,8 @@ target_link_libraries(
 
 )
 
+set_property(TARGET aare_core PROPERTY POSITION_INDEPENDENT_CODE ON)
+
 if(AARE_TESTS)
     target_compile_definitions(aare_core PRIVATE AARE_TESTS)
 endif()
@@ -430,10 +432,6 @@ set_target_properties(aare_core PROPERTIES
     ARCHIVE_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}
     PUBLIC_HEADER "${PUBLICHEADERS}"
 )
-
-if (AARE_PYTHON_BINDINGS)
-    set_property(TARGET aare_core PROPERTY POSITION_INDEPENDENT_CODE ON)
-endif()
 
 if(AARE_TESTS)
     set(TestSources
@@ -465,6 +463,7 @@ if(AARE_TESTS)
     target_sources(tests PRIVATE ${TestSources} )
 endif()
 
+
 if(AARE_MASTER_PROJECT)
     install(TARGETS aare_core aare_compiler_flags 
         EXPORT "${TARGETS_EXPORT_NAME}"
@@ -474,7 +473,6 @@ if(AARE_MASTER_PROJECT)
     )
 endif()
 
-set(CMAKE_POSITION_INDEPENDENT_CODE ON)
 set(CMAKE_INSTALL_RPATH $ORIGIN)
 set(CMAKE_BUILD_WITH_INSTALL_RPATH FALSE)
 
