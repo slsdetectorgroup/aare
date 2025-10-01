@@ -224,12 +224,14 @@ TEST_CASE("Parse a master file in .raw format", "[.integration]") {
     // Packets Caught Mask        : 64 bytes
 }
 
-TEST_CASE("Parse a master file in new .json format", "[.integration][.width-data]") {
+TEST_CASE("Parse a master file in new .json format",
+          "[.integration][.width-data]") {
 
-    auto file_path = test_data_path() / "raw" / "newmythen03" / "run_87_master_0.json";
+    auto file_path =
+        test_data_path() / "raw" / "newmythen03" / "run_87_master_0.json";
     REQUIRE(std::filesystem::exists(file_path));
 
-    RawMasterFile f(file_path);  
+    RawMasterFile f(file_path);
 
     // Version                    : 8.0
     REQUIRE(f.version() == "8.0");
@@ -245,7 +247,7 @@ TEST_CASE("Parse a master file in new .json format", "[.integration][.width-data
 
     REQUIRE(f.scan_parameters().enabled() == false);
     REQUIRE(f.scan_parameters().dac() == DACIndex::DAC_0);
-    REQUIRE(f.scan_parameters().start() == 0); 
+    REQUIRE(f.scan_parameters().start() == 0);
     REQUIRE(f.scan_parameters().stop() == 0);
     REQUIRE(f.scan_parameters().step() == 0);
     REQUIRE(f.scan_parameters().settleTime() == 0);
@@ -326,4 +328,3 @@ TEST_CASE("Read eiger master file", "[.integration]") {
     //     }
     // }
 }
-

@@ -99,7 +99,8 @@ TEST_CASE("Read data from a jungfrau 500k single port raw file",
 }
 
 TEST_CASE("Read frame numbers from a raw file", "[.with-data]") {
-    auto fpath = test_data_path() / "raw/eiger" / "eiger_500k_16bit_master_0.json";
+    auto fpath =
+        test_data_path() / "raw/eiger" / "eiger_500k_16bit_master_0.json";
     REQUIRE(std::filesystem::exists(fpath));
 
     // we know this file has 3 frames with frame numbers 14, 15, 16
@@ -288,8 +289,7 @@ TEST_CASE("check find_geometry", "[.with-data]") {
     }
 }
 
-TEST_CASE("Open multi module file with ROI",
-          "[.with-data]") {
+TEST_CASE("Open multi module file with ROI", "[.with-data]") {
 
     auto fpath = test_data_path() / "raw/SingleChipROI/Data_master_0.json";
     REQUIRE(std::filesystem::exists(fpath));

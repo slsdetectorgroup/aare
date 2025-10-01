@@ -42,7 +42,7 @@ class RawFileNameComponents {
 
 class ScanParameters {
     bool m_enabled = false;
-    DACIndex m_dac = DACIndex::DAC_2; 
+    DACIndex m_dac = DACIndex::DAC_2;
     int m_start = 0;
     int m_stop = 0;
     int m_step = 0;
@@ -50,7 +50,8 @@ class ScanParameters {
 
   public:
     ScanParameters(const std::string &par);
-    ScanParameters(const bool enabled, const DACIndex dac, const int start, const int stop, const int step, const int64_t settleTime); 
+    ScanParameters(const bool enabled, const DACIndex dac, const int start,
+                   const int stop, const int step, const int64_t settleTime);
     ScanParameters() = default;
     ScanParameters(const ScanParameters &) = default;
     ScanParameters &operator=(const ScanParameters &) = default;
@@ -59,9 +60,9 @@ class ScanParameters {
     int stop() const;
     int step() const;
     DACIndex dac() const;
-    bool enabled() const; 
+    bool enabled() const;
     int64_t settleTime() const;
-    void increment_stop();   
+    void increment_stop();
 };
 
 /**

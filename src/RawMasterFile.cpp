@@ -64,7 +64,11 @@ const std::string &RawFileNameComponents::base_name() const {
 const std::string &RawFileNameComponents::ext() const { return m_ext; }
 int RawFileNameComponents::file_index() const { return m_file_index; }
 
-ScanParameters::ScanParameters(const bool enabled, const DACIndex dac, const int start, const int stop, const int step, const int64_t settleTime) : m_enabled(enabled), m_dac(dac), m_start(start), m_stop(stop), m_step(step), m_settleTime(settleTime) {};
+ScanParameters::ScanParameters(const bool enabled, const DACIndex dac,
+                               const int start, const int stop, const int step,
+                               const int64_t settleTime)
+    : m_enabled(enabled), m_dac(dac), m_start(start), m_stop(stop),
+      m_step(step), m_settleTime(settleTime){};
 
 // "[enabled\ndac dac 4\nstart 500\nstop 2200\nstep 5\nsettleTime 100us\n]"
 ScanParameters::ScanParameters(const std::string &par) {
@@ -91,7 +95,7 @@ void ScanParameters::increment_stop() { m_stop += 1; }
 int ScanParameters::step() const { return m_step; }
 DACIndex ScanParameters::dac() const { return m_dac; }
 bool ScanParameters::enabled() const { return m_enabled; }
-int64_t ScanParameters::settleTime() const {return m_settleTime; }
+int64_t ScanParameters::settleTime() const { return m_settleTime; }
 
 RawMasterFile::RawMasterFile(const std::filesystem::path &fpath)
     : m_fnc(fpath) {
@@ -185,8 +189,9 @@ void RawMasterFile::parse_json(const std::filesystem::path &fpath) {
         j["Geometry"]["x"]}; // TODO: isnt it only available for version > 7.1?
                              // - try block default should be 1x1
 
-    m_image_size_in_bytes = v < 8.0 ? j["Image Size in bytes"] : j["Image Size"];
-    
+    m_image_size_in_bytes =
+        v < 8.0 ? j["Image Size in bytes"] : j["Image Size"];
+
     m_frames_in_file = j["Frames in File"];
     m_pixels_y = j["Pixels"]["y"];
     m_pixels_x = j["Pixels"]["x"];
@@ -259,13 +264,18 @@ void RawMasterFile::parse_json(const std::filesystem::path &fpath) {
         // keep the optional empty
     }
     try {
-        if(v < 8.0) {
+        if (v < 8.0) {
             std::string scan_parameters = j.at("Scan Parameters");
             m_scan_parameters = ScanParameters(scan_parameters);
-        }
-        else {
+        } else {
             auto json_obj = j.at("Scan Parameters");
-            m_scan_parameters = ScanParameters(json_obj.at("enable").get<int>(), static_cast<DACIndex>(json_obj.at("dacInd").get<int>()), json_obj.at("start offset").get<int>(), json_obj.at("stop offset").get<int>(), json_obj.at("step size").get<int>(), json_obj.at("dac settle time ns").get<int>());
+            m_scan_parameters = ScanParameters(
+                json_obj.at("enable").get<int>(),
+                static_cast<DACIndex>(json_obj.at("dacInd").get<int>()),
+                json_obj.at("start offset").get<int>(),
+                json_obj.at("stop offset").get<int>(),
+                json_obj.at("step size").get<int>(),
+                json_obj.at("dac settle time ns").get<int>());
         }
         if (v < 7.21) {
             m_scan_parameters
@@ -283,18 +293,17 @@ void RawMasterFile::parse_json(const std::filesystem::path &fpath) {
         else if (m_type == DetectorType::Eiger) {
             m_udp_interfaces_per_module = {1, 2};
         }
-    } 
+    }
     try {
         ROI tmp_roi;
-        if(v < 8.0) {
+        if (v < 8.0) {
             auto obj = j.at("Receiver Roi");
             tmp_roi.xmin = obj.at("xmin");
             tmp_roi.xmax = obj.at("xmax");
             tmp_roi.ymin = obj.at("ymin");
             tmp_roi.ymax = obj.at("ymax");
-        }
-        else {
-            //TODO: for now only handle single ROI
+        } else {
+            // TODO: for now only handle single ROI
             auto obj = j.at("Receiver Rois");
             tmp_roi.xmin = obj[0].at("xmin");
             tmp_roi.xmax = obj[0].at("xmax");
@@ -315,7 +324,7 @@ void RawMasterFile::parse_json(const std::filesystem::path &fpath) {
 
     } catch (const json::out_of_range &e) {
         LOG(TLogLevel::logERROR) << e.what() << std::endl;
-        // leave the optional empty 
+        // leave the optional empty
     }
 
 // Update detector type for Moench
