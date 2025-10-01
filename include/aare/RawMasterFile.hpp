@@ -42,7 +42,7 @@ class RawFileNameComponents {
 
 class ScanParameters {
     bool m_enabled = false;
-    DACIndex m_dac = DACIndex::DAC_2;
+    DACIndex m_dac{};
     int m_start = 0;
     int m_stop = 0;
     int m_step = 0;
