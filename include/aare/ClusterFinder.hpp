@@ -138,6 +138,25 @@ class ClusterFinder {
                     }
                 }
 
+//                 if (frame_number < 1)
+//                     if ( (ix == 115 && iy == 122) )
+//                     if ( (ix == 175 && iy == 175) )
+//                     {
+// //                         std::cout << std::endl;
+// //                         std::cout << std::endl;
+// //                         std::cout << "frame_number: " << frame_number << std::endl;
+// //                         std::cout << "(" << ix << ", " << iy << "): " << std::endl;
+// //                         std::cout << "frame.shape: (" << frame.shape(0) << ", " << frame.shape(1) << "): " << std::endl;
+// //                         std::cout << "frame(175, 175): " << frame(175, 175) << std::endl;
+// //                         std::cout << "frame(77, 98): " << frame(77, 98) << std::endl;
+// //                         std::cout << "frame(82, 100): " << frame(82, 100) << std::endl;
+// //                         std::cout << "frame(iy, ix): " << frame(iy, ix) << std::endl;
+// //                         std::cout << "mean_ptr[row_offset + ix]: " << mean_ptr[row_offset + ix] << std::endl;
+// //                         std::cout << "total: " << total << std::endl;
+
+//                         std::cout << "(" << ix << ", " << iy << "): " << frame(iy, ix) << std::endl;
+//                     }
+
                 // if ((max > m_nSigma * rms)) {
                 //     if (value < max)
                 //         continue; // Not max go to the next pixel

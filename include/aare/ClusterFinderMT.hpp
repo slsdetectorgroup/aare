@@ -251,6 +251,9 @@ class ClusterFinderMT {
     void find_clusters(NDView<FRAME_TYPE, 2> frame, uint64_t frame_number = 0) {
         FrameWrapper fw{FrameType::DATA, frame_number,
                         NDArray(frame), 0}; // TODO! copies the data!
+
+        // std::cout << "frame(122, 115): " << frame(122, 115) << std::endl;
+
         while (!m_input_queues[m_current_thread % m_n_threads]->write(fw)) {
             std::this_thread::sleep_for(m_default_wait);
         }
