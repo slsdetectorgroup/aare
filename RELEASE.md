@@ -1,5 +1,10 @@
 # Release notes
 
+### 2025.10.1
+
+Bugfixes: 
+
+- File supports reading new master json file format (multiple ROI's not supported yet)
 
 ### 2025.8.22
 
@@ -39,6 +44,9 @@ Features:
 Bugfixes:
 
 - Fixed crash when opening raw files with large number of data files
+
+
+
 
 
 
