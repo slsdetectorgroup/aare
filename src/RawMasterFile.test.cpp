@@ -51,7 +51,7 @@ TEST_CASE("Parse scan parameters") {
     ScanParameters s("[enabled\ndac dac 4\nstart 500\nstop 2200\nstep "
                      "5\nsettleTime 100us\n]");
     REQUIRE(s.enabled());
-    REQUIRE(s.dac() == "dac 4");
+    REQUIRE(s.dac() == DACIndex::DAC_4);
     REQUIRE(s.start() == 500);
     REQUIRE(s.stop() == 2200);
     REQUIRE(s.step() == 5);
@@ -60,7 +60,7 @@ TEST_CASE("Parse scan parameters") {
 TEST_CASE("A disabled scan") {
     ScanParameters s("[disabled]");
     REQUIRE_FALSE(s.enabled());
-    REQUIRE(s.dac() == "");
+    REQUIRE(s.dac() == DACIndex::DAC_0);
     REQUIRE(s.start() == 0);
     REQUIRE(s.stop() == 0);
     REQUIRE(s.step() == 0);
@@ -68,7 +68,7 @@ TEST_CASE("A disabled scan") {
 
 TEST_CASE("Parse a master file in .json format", "[.integration]") {
     auto fpath =
-        test_data_path() / "jungfrau" / "jungfrau_single_master_0.json";
+        test_data_path() / "raw" / "jungfrau" / "jungfrau_single_master_0.json";
     REQUIRE(std::filesystem::exists(fpath));
     RawMasterFile f(fpath);
 
@@ -224,6 +224,39 @@ TEST_CASE("Parse a master file in .raw format", "[.integration]") {
     // Packets Caught Mask        : 64 bytes
 }
 
+TEST_CASE("Parse a master file in new .json format", "[.integration][.width-data]") {
+
+    auto file_path = test_data_path() / "raw" / "newmythen03" / "run_87_master_0.json";
+    REQUIRE(std::filesystem::exists(file_path));
+
+    RawMasterFile f(file_path);  
+
+    // Version                    : 8.0
+    REQUIRE(f.version() == "8.0");
+
+    REQUIRE(f.detector_type() == DetectorType::Mythen3);
+    // Timing Mode                : auto
+    REQUIRE(f.timing_mode() == TimingMode::Auto);
+    // Geometry                   : [2, 1]
+    REQUIRE(f.geometry().col == 2);
+    REQUIRE(f.geometry().row == 1);
+    // Image Size                 : 5120 bytes
+    REQUIRE(f.image_size_in_bytes() == 5120);
+
+    REQUIRE(f.scan_parameters().enabled() == false);
+    REQUIRE(f.scan_parameters().dac() == DACIndex::DAC_0);
+    REQUIRE(f.scan_parameters().start() == 0); 
+    REQUIRE(f.scan_parameters().stop() == 0);
+    REQUIRE(f.scan_parameters().step() == 0);
+    REQUIRE(f.scan_parameters().settleTime() == 0);
+
+    auto roi = f.roi().value();
+    REQUIRE(roi.xmin == 0);
+    REQUIRE(roi.xmax == 2559);
+    REQUIRE(roi.ymin == -1);
+    REQUIRE(roi.ymax == -1);
+}
+
 TEST_CASE("Read eiger master file", "[.integration]") {
     auto fpath = test_data_path() / "eiger" / "eiger_500k_32bit_master_0.json";
     REQUIRE(std::filesystem::exists(fpath));
@@ -293,3 +326,4 @@ TEST_CASE("Read eiger master file", "[.integration]") {
     //     }
     // }
 }
+

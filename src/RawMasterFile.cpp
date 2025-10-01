@@ -64,6 +64,8 @@ const std::string &RawFileNameComponents::base_name() const {
 const std::string &RawFileNameComponents::ext() const { return m_ext; }
 int RawFileNameComponents::file_index() const { return m_file_index; }
 
+ScanParameters::ScanParameters(const bool enabled, const DACIndex dac, const int start, const int stop, const int step, const int64_t settleTime) : m_enabled(enabled), m_dac(dac), m_start(start), m_stop(stop), m_step(step), m_settleTime(settleTime) {};
+
 // "[enabled\ndac dac 4\nstart 500\nstop 2200\nstep 5\nsettleTime 100us\n]"
 ScanParameters::ScanParameters(const std::string &par) {
     std::istringstream iss(par.substr(1, par.size() - 2));
@@ -72,7 +74,7 @@ ScanParameters::ScanParameters(const std::string &par) {
         if (line == "enabled") {
             m_enabled = true;
         } else if (line.find("dac") != std::string::npos) {
-            m_dac = line.substr(4);
+            m_dac = StringTo<DACIndex>(line.substr(4));
         } else if (line.find("start") != std::string::npos) {
             m_start = std::stoi(line.substr(6));
         } else if (line.find("stop") != std::string::npos) {
@@ -87,8 +89,9 @@ int ScanParameters::start() const { return m_start; }
 int ScanParameters::stop() const { return m_stop; }
 void ScanParameters::increment_stop() { m_stop += 1; }
 int ScanParameters::step() const { return m_step; }
-const std::string &ScanParameters::dac() const { return m_dac; }
+DACIndex ScanParameters::dac() const { return m_dac; }
 bool ScanParameters::enabled() const { return m_enabled; }
+int64_t ScanParameters::settleTime() const {return m_settleTime; }
 
 RawMasterFile::RawMasterFile(const std::filesystem::path &fpath)
     : m_fnc(fpath) {
@@ -170,6 +173,7 @@ void RawMasterFile::parse_json(const std::filesystem::path &fpath) {
     std::ifstream ifs(fpath);
     json j;
     ifs >> j;
+
     double v = j["Version"];
     m_version = fmt::format("{:.1f}", v);
 
@@ -181,7 +185,8 @@ void RawMasterFile::parse_json(const std::filesystem::path &fpath) {
         j["Geometry"]["x"]}; // TODO: isnt it only available for version > 7.1?
                              // - try block default should be 1x1
 
-    m_image_size_in_bytes = j["Image Size in bytes"];
+    m_image_size_in_bytes = v < 8.0 ? j["Image Size in bytes"] : j["Image Size"];
+    
     m_frames_in_file = j["Frames in File"];
     m_pixels_y = j["Pixels"]["y"];
     m_pixels_x = j["Pixels"]["x"];
@@ -206,7 +211,6 @@ void RawMasterFile::parse_json(const std::filesystem::path &fpath) {
     } catch (const json::out_of_range &e) {
         // keep the optional empty
     }
-
     // ----------------------------------------------------------------
     // Special treatment of analog flag because of Moench03
     try {
@@ -227,7 +231,6 @@ void RawMasterFile::parse_json(const std::filesystem::path &fpath) {
         m_analog_flag = 0;
     }
     //-----------------------------------------------------------------
-
     try {
         m_quad = j.at("Quad");
     } catch (const json::out_of_range &e) {
@@ -239,7 +242,6 @@ void RawMasterFile::parse_json(const std::filesystem::path &fpath) {
     // }catch (const json::out_of_range &e) {
     //     m_adc_mask = 0;
     // }
-
     try {
         int digital_flag = j.at("Digital Flag");
         if (digital_flag) {
@@ -248,7 +250,6 @@ void RawMasterFile::parse_json(const std::filesystem::path &fpath) {
     } catch (const json::out_of_range &e) {
         // keep the optional empty
     }
-
     try {
         m_transceiver_flag = j.at("Transceiver Flag");
         if (m_transceiver_flag) {
@@ -257,10 +258,15 @@ void RawMasterFile::parse_json(const std::filesystem::path &fpath) {
     } catch (const json::out_of_range &e) {
         // keep the optional empty
     }
-
     try {
-        std::string scan_parameters = j.at("Scan Parameters");
-        m_scan_parameters = ScanParameters(scan_parameters);
+        if(v < 8.0) {
+            std::string scan_parameters = j.at("Scan Parameters");
+            m_scan_parameters = ScanParameters(scan_parameters);
+        }
+        else {
+            auto json_obj = j.at("Scan Parameters");
+            m_scan_parameters = ScanParameters(json_obj.at("enable").get<int>(), static_cast<DACIndex>(json_obj.at("dacInd").get<int>()), json_obj.at("start offset").get<int>(), json_obj.at("stop offset").get<int>(), json_obj.at("step size").get<int>(), json_obj.at("dac settle time ns").get<int>());
+        }
         if (v < 7.21) {
             m_scan_parameters
                 .increment_stop(); // adjust for endpoint being included
@@ -268,6 +274,7 @@ void RawMasterFile::parse_json(const std::filesystem::path &fpath) {
     } catch (const json::out_of_range &e) {
         // not a scan
     }
+
     try {
         m_udp_interfaces_per_module = {j.at("Number of UDP Interfaces"), 1};
     } catch (const json::out_of_range &e) {
@@ -276,15 +283,24 @@ void RawMasterFile::parse_json(const std::filesystem::path &fpath) {
         else if (m_type == DetectorType::Eiger) {
             m_udp_interfaces_per_module = {1, 2};
         }
-    }
-
+    } 
     try {
         ROI tmp_roi;
-        auto obj = j.at("Receiver Roi");
-        tmp_roi.xmin = obj.at("xmin");
-        tmp_roi.xmax = obj.at("xmax");
-        tmp_roi.ymin = obj.at("ymin");
-        tmp_roi.ymax = obj.at("ymax");
+        if(v < 8.0) {
+            auto obj = j.at("Receiver Roi");
+            tmp_roi.xmin = obj.at("xmin");
+            tmp_roi.xmax = obj.at("xmax");
+            tmp_roi.ymin = obj.at("ymin");
+            tmp_roi.ymax = obj.at("ymax");
+        }
+        else {
+            //TODO: for now only handle single ROI
+            auto obj = j.at("Receiver Rois");
+            tmp_roi.xmin = obj[0].at("xmin");
+            tmp_roi.xmax = obj[0].at("xmax");
+            tmp_roi.ymin = obj[0].at("ymin");
+            tmp_roi.ymax = obj[0].at("ymax");
+        }
 
         // if any of the values are set update the roi
         if (tmp_roi.xmin != 4294967295 || tmp_roi.xmax != 4294967295 ||
@@ -298,12 +314,8 @@ void RawMasterFile::parse_json(const std::filesystem::path &fpath) {
         }
 
     } catch (const json::out_of_range &e) {
-        std::cout << e.what() << std::endl;
-        // leave the optional empty
-    }
-
-    // if we have an roi we need to update the geometry for the subfiles
-    if (m_roi) {
+        LOG(TLogLevel::logERROR) << e.what() << std::endl;
+        // leave the optional empty 
     }
 
 // Update detector type for Moench
