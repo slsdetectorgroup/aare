@@ -42,14 +42,16 @@ class RawFileNameComponents {
 
 class ScanParameters {
     bool m_enabled = false;
-    std::string m_dac;
+    DACIndex m_dac{};
     int m_start = 0;
     int m_stop = 0;
     int m_step = 0;
-    // TODO! add settleTime, requires string to time conversion
+    int64_t m_settleTime = 0; // [ns]
 
   public:
     ScanParameters(const std::string &par);
+    ScanParameters(const bool enabled, const DACIndex dac, const int start,
+                   const int stop, const int step, const int64_t settleTime);
     ScanParameters() = default;
     ScanParameters(const ScanParameters &) = default;
     ScanParameters &operator=(const ScanParameters &) = default;
@@ -57,8 +59,9 @@ class ScanParameters {
     int start() const;
     int stop() const;
     int step() const;
-    const std::string &dac() const;
+    DACIndex dac() const;
     bool enabled() const;
+    int64_t settleTime() const;
     void increment_stop();
 };
 
