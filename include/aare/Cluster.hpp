@@ -8,7 +8,6 @@
 
 #pragma once
 
-#include "logger.hpp"
 #include <algorithm>
 #include <array>
 #include <cstdint>
@@ -19,7 +18,7 @@ namespace aare {
 
 // requires clause c++20 maybe update
 template <typename T, uint8_t ClusterSizeX, uint8_t ClusterSizeY,
-          typename CoordType = int16_t>
+          typename CoordType = uint16_t>
 struct Cluster {
 
     static_assert(std::is_arithmetic_v<T>, "T needs to be an arithmetic type");
@@ -39,6 +38,13 @@ struct Cluster {
 
     T sum() const { return std::accumulate(data.begin(), data.end(), T{}); }
 
+    // TODO: handle 1 dimensional clusters
+    // TODO: change int to corner
+    /**
+     * @brief sum of 2x2 subcluster with highest energy
+     * @return photon energy of subcluster, 2x2 subcluster index relative to
+     * cluster center
+     */
     std::pair<T, int> max_sum_2x2() const {
 
         if constexpr (cluster_size_x == 3 && cluster_size_y == 3) {
@@ -54,17 +60,38 @@ struct Cluster {
         } else if constexpr (cluster_size_x == 2 && cluster_size_y == 2) {
             return std::make_pair(data[0] + data[1] + data[2] + data[3], 0);
         } else {
-            constexpr size_t num_2x2_subclusters =
-                (ClusterSizeX - 1) * (ClusterSizeY - 1);
+            constexpr size_t cluster_center_index =
+                (ClusterSizeX / 2) + (ClusterSizeY / 2) * ClusterSizeX;
 
-            std::array<T, num_2x2_subclusters> sum_2x2_subcluster;
-            for (size_t i = 0; i < ClusterSizeY - 1; ++i) {
-                for (size_t j = 0; j < ClusterSizeX - 1; ++j)
-                    sum_2x2_subcluster[i * (ClusterSizeX - 1) + j] =
-                        data[i * ClusterSizeX + j] +
-                        data[i * ClusterSizeX + j + 1] +
-                        data[(i + 1) * ClusterSizeX + j] +
-                        data[(i + 1) * ClusterSizeX + j + 1];
+            std::array<T, 4> sum_2x2_subcluster{0};
+            // subcluster top left from center
+            sum_2x2_subcluster[0] =
+                data[cluster_center_index] + data[cluster_center_index - 1] +
+                data[cluster_center_index - ClusterSizeX] +
+                data[cluster_center_index - 1 - ClusterSizeX];
+            // subcluster top right from center
+            if (ClusterSizeX > 2) {
+                sum_2x2_subcluster[1] =
+                    data[cluster_center_index] +
+                    data[cluster_center_index + 1] +
+                    data[cluster_center_index - ClusterSizeX] +
+                    data[cluster_center_index - ClusterSizeX + 1];
+            }
+            // subcluster bottom left from center
+            if (ClusterSizeY > 2) {
+                sum_2x2_subcluster[2] =
+                    data[cluster_center_index] +
+                    data[cluster_center_index - 1] +
+                    data[cluster_center_index + ClusterSizeX] +
+                    data[cluster_center_index + ClusterSizeX - 1];
+            }
+            // subcluster bottom right from center
+            if (ClusterSizeX > 2 && ClusterSizeY > 2) {
+                sum_2x2_subcluster[3] =
+                    data[cluster_center_index] +
+                    data[cluster_center_index + 1] +
+                    data[cluster_center_index + ClusterSizeX] +
+                    data[cluster_center_index + ClusterSizeX + 1];
             }
 
             int index = std::max_element(sum_2x2_subcluster.begin(),
