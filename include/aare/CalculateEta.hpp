@@ -7,10 +7,10 @@
 namespace aare {
 
 enum class corner : int {
-    cBottomLeft = 0,
-    cBottomRight = 1,
-    cTopLeft = 2,
-    cTopRight = 3
+    cTopLeft = 0,
+    cTopRight = 1,
+    cBottomLeft = 2,
+    cBottomRight = 3
 };
 
 enum class pixel : int {
@@ -58,88 +58,124 @@ template <typename T, uint8_t ClusterSizeX, uint8_t ClusterSizeY,
           typename CoordType>
 Eta2<T>
 calculate_eta2(const Cluster<T, ClusterSizeX, ClusterSizeY, CoordType> &cl) {
-    Eta2<T> eta{};
 
-    auto max_sum = cl.max_sum_2x2();
-    eta.sum = max_sum.first;
-    auto c = max_sum.second;
+    static_assert(ClusterSizeX > 1 && ClusterSizeY > 1);
+    Eta2<T> eta{};
 
     size_t cluster_center_index =
         (ClusterSizeX / 2) + (ClusterSizeY / 2) * ClusterSizeX;
 
-    size_t index_bottom_left_max_2x2_subcluster =
-        (int(c / (ClusterSizeX - 1))) * ClusterSizeX + c % (ClusterSizeX - 1);
+    auto max_sum = cl.max_sum_2x2();
+    eta.sum = max_sum.first;
+    int c = max_sum.second;
 
-    // calculate direction of gradient
-
-    // check that cluster center is in max subcluster
-    if (cluster_center_index != index_bottom_left_max_2x2_subcluster &&
-        cluster_center_index != index_bottom_left_max_2x2_subcluster + 1 &&
-        cluster_center_index !=
-            index_bottom_left_max_2x2_subcluster + ClusterSizeX &&
-        cluster_center_index !=
-            index_bottom_left_max_2x2_subcluster + ClusterSizeX + 1)
-        throw std::runtime_error("Photon center is not in max 2x2_subcluster");
-
-    if ((cluster_center_index - index_bottom_left_max_2x2_subcluster) %
-            ClusterSizeX ==
-        0) {
-        if ((cl.data[cluster_center_index + 1] +
+    // subcluster top right from center
+    switch (static_cast<corner>(c)) {
+    case (corner::cTopLeft):
+        if ((cl.data[cluster_center_index - 1] +
              cl.data[cluster_center_index]) != 0)
+            eta.x = static_cast<double>(cl.data[cluster_center_index - 1]) /
+                    static_cast<double>(cl.data[cluster_center_index - 1] +
+                                        cl.data[cluster_center_index]);
+        if ((cl.data[cluster_center_index - ClusterSizeX] +
+             cl.data[cluster_center_index]) != 0)
+            eta.y = static_cast<double>(
+                        cl.data[cluster_center_index - ClusterSizeX]) /
+                    static_cast<double>(
+                        cl.data[cluster_center_index - ClusterSizeX] +
+                        cl.data[cluster_center_index]);
 
-            eta.x = static_cast<double>(cl.data[cluster_center_index + 1]) /
-                    static_cast<double>((cl.data[cluster_center_index + 1] +
-                                         cl.data[cluster_center_index]));
-    } else {
-        if ((cl.data[cluster_center_index] +
-             cl.data[cluster_center_index - 1]) != 0)
-
+        // dx = 0
+        // dy = 0
+        break;
+    case (corner::cTopRight):
+        if (cl.data[cluster_center_index] + cl.data[cluster_center_index + 1] !=
+            0)
             eta.x = static_cast<double>(cl.data[cluster_center_index]) /
-                    static_cast<double>((cl.data[cluster_center_index - 1] +
-                                         cl.data[cluster_center_index]));
-    }
-    if ((cluster_center_index - index_bottom_left_max_2x2_subcluster) /
-            ClusterSizeX <
-        1) {
-        assert(cluster_center_index + ClusterSizeX <
-               ClusterSizeX * ClusterSizeY); // suppress warning
+                    static_cast<double>(cl.data[cluster_center_index] +
+                                        cl.data[cluster_center_index + 1]);
+        if ((cl.data[cluster_center_index - ClusterSizeX] +
+             cl.data[cluster_center_index]) != 0)
+            eta.y = static_cast<double>(
+                        cl.data[cluster_center_index - ClusterSizeX]) /
+                    static_cast<double>(
+                        cl.data[cluster_center_index - ClusterSizeX] +
+                        cl.data[cluster_center_index]);
+        // dx = 1
+        // dy = 0
+        break;
+    case (corner::cBottomLeft):
+        if ((cl.data[cluster_center_index - 1] +
+             cl.data[cluster_center_index]) != 0)
+            eta.x = static_cast<double>(cl.data[cluster_center_index - 1]) /
+                    static_cast<double>(cl.data[cluster_center_index - 1] +
+                                        cl.data[cluster_center_index]);
         if ((cl.data[cluster_center_index] +
              cl.data[cluster_center_index + ClusterSizeX]) != 0)
-            eta.y = static_cast<double>(
-                        cl.data[cluster_center_index + ClusterSizeX]) /
-                    static_cast<double>(
-                        (cl.data[cluster_center_index] +
-                         cl.data[cluster_center_index + ClusterSizeX]));
-    } else {
-        if ((cl.data[cluster_center_index] +
-             cl.data[cluster_center_index - ClusterSizeX]) != 0)
             eta.y = static_cast<double>(cl.data[cluster_center_index]) /
                     static_cast<double>(
-                        (cl.data[cluster_center_index] +
-                         cl.data[cluster_center_index - ClusterSizeX]));
+                        cl.data[cluster_center_index] +
+                        cl.data[cluster_center_index + ClusterSizeX]);
+        // dx = 0
+        // dy = 1
+        break;
+    case (corner::cBottomRight):
+        if (cl.data[cluster_center_index] + cl.data[cluster_center_index + 1] !=
+            0)
+            eta.x = static_cast<double>(cl.data[cluster_center_index]) /
+                    static_cast<double>(cl.data[cluster_center_index] +
+                                        cl.data[cluster_center_index + 1]);
+        if ((cl.data[cluster_center_index] +
+             cl.data[cluster_center_index + ClusterSizeX]) != 0)
+            eta.y = static_cast<double>(cl.data[cluster_center_index]) /
+                    static_cast<double>(
+                        cl.data[cluster_center_index] +
+                        cl.data[cluster_center_index + ClusterSizeX]);
+        // dx = 1
+        // dy = 1
+        break;
     }
 
-    eta.c = c; // TODO only supported for 2x2 and 3x3 clusters -> at least no
-               // underyling enum class
+    eta.c = c;
+
     return eta;
 }
 
-// TODO! Look up eta2 calculation - photon center should be top right corner
+// TODO! Look up eta2 calculation - photon center should be bottom right corner
 template <typename T>
 Eta2<T> calculate_eta2(const Cluster<T, 2, 2, int16_t> &cl) {
     Eta2<T> eta{};
 
     if ((cl.data[0] + cl.data[1]) != 0)
-        eta.x = static_cast<double>(cl.data[1]) /
-                (cl.data[0] + cl.data[1]); // between (0,1) the closer to zero
+        eta.x = static_cast<double>(cl.data[2]) /
+                (cl.data[2] + cl.data[3]); // between (0,1) the closer to zero
                                            // left value probably larger
     if ((cl.data[0] + cl.data[2]) != 0)
-        eta.y = static_cast<double>(cl.data[2]) /
-                (cl.data[0] + cl.data[2]); // between (0,1) the closer to zero
+        eta.y = static_cast<double>(cl.data[1]) /
+                (cl.data[1] + cl.data[3]); // between (0,1) the closer to zero
                                            // bottom value probably larger
     eta.sum = cl.sum();
 
     return eta;
+}
+
+// TODO generalize
+template <typename T>
+Eta2<T> calculate_eta2(const Cluster<T, 1, 2, int16_t> &cl) {
+    Eta2<T> eta{};
+
+    eta.x = 0;
+    eta.y = static_cast<double>(cl.data[0]) / cl.data[1];
+    eta.sum = cl.sum();
+}
+
+template <typename T>
+Eta2<T> calculate_eta2(const Cluster<T, 2, 1, int16_t> &cl) {
+    Eta2<T> eta{};
+
+    eta.x = static_cast<double>(cl.data[0]) / cl.data[1];
+    eta.y = 0;
+    eta.sum = cl.sum();
 }
 
 // calculates Eta3 for 3x3 cluster based on code from analyze_cluster

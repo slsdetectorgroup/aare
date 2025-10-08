@@ -24,7 +24,7 @@ void define_Cluster(py::module &m, const std::string &typestr) {
     py::class_<Cluster<Type, ClusterSizeX, ClusterSizeY, CoordType>>(
         m, class_name.c_str(), py::buffer_protocol())
 
-        .def(py::init([](uint8_t x, uint8_t y,
+        .def(py::init([](CoordType x, CoordType y,
                          py::array_t<Type, py::array::forcecast> data) {
             py::buffer_info buf_info = data.request();
             Cluster<Type, ClusterSizeX, ClusterSizeY, CoordType> cluster;

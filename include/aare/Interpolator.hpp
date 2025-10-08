@@ -69,26 +69,27 @@ Interpolator::interpolate(const ClusterVector<ClusterType> &clusters) {
             // cBottomRight = 1,
             // cTopLeft = 2,
             // cTopRight = 3
+            // TODO: could also chaneg the sign of the eta calculation
             switch (static_cast<corner>(eta.c)) {
             case corner::cTopLeft:
-                dX = -1.;
-                dY = 0;
+                dX = 0.0;
+                dY = 0.0;
                 break;
             case corner::cTopRight:;
-                dX = 0;
-                dY = 0;
+                dX = 1.0;
+                dY = 0.0;
                 break;
             case corner::cBottomLeft:
-                dX = -1.;
-                dY = -1.;
+                dX = 0.0;
+                dY = 1.0;
                 break;
             case corner::cBottomRight:
-                dX = 0.;
-                dY = -1.;
+                dX = 1.0;
+                dY = 1.0;
                 break;
             }
-            photon.x += m_ietax(ix, iy, ie) * 2 + dX;
-            photon.y += m_ietay(ix, iy, ie) * 2 + dY;
+            photon.x -= m_ietax(ix, iy, ie) - dX;
+            photon.y -= m_ietay(ix, iy, ie) - dY;
             photons.push_back(photon);
         }
     } else if (clusters.cluster_size_x() == 2 ||
@@ -112,10 +113,11 @@ Interpolator::interpolate(const ClusterVector<ClusterType> &clusters) {
             auto ix = last_smaller(m_etabinsx, eta.x);
             auto iy = last_smaller(m_etabinsy, eta.y);
 
-            photon.x += m_ietax(ix, iy, ie) *
-                        2; // eta goes between 0 and 1 but we could move the hit
-                           // anywhere in the 2x2
-            photon.y += m_ietay(ix, iy, ie) * 2;
+            // TODO: why 2?
+            photon.x -=
+                m_ietax(ix, iy, ie); // eta goes between 0 and 1 but we could
+                                     // move the hit anywhere in the 2x2
+            photon.y -= m_ietay(ix, iy, ie);
             photons.push_back(photon);
         }
 
