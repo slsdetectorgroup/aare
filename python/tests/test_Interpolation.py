@@ -23,8 +23,8 @@ def create_photon_hit_with_gaussian_distribution(mean, covariance_matrix, data_p
     return (probability_values.reshape(X.shape)).round() #python bindings only support frame types of uint16_t
 
 def photon_hit_in_euclidean_space(cluster_center, pixels_per_superpixel, photon_hit): 
-    scaled_photon_hit_x = cluster_center - (1 - photon_hit[0][0])*0.5*pixels_per_superpixel*pixel_width 
-    scaled_photon_hit_y = cluster_center - (1 - photon_hit[0][1])*0.5*pixels_per_superpixel*pixel_width
+    scaled_photon_hit_x = cluster_center - (1 - photon_hit[0][0])*pixels_per_superpixel*pixel_width 
+    scaled_photon_hit_y = cluster_center - (1 - photon_hit[0][1])*pixels_per_superpixel*pixel_width
     return (scaled_photon_hit_x, scaled_photon_hit_y)
 
 def create_2x2cluster_from_frame(frame, pixels_per_superpixel):

@@ -88,8 +88,8 @@ Interpolator::interpolate(const ClusterVector<ClusterType> &clusters) {
                 dY = 1.0;
                 break;
             }
-            photon.x -= m_ietax(ix, iy, ie) * 2 - dX;
-            photon.y -= m_ietay(ix, iy, ie) * 2 - dY;
+            photon.x -= m_ietax(ix, iy, ie) - dX;
+            photon.y -= m_ietay(ix, iy, ie) - dY;
             photons.push_back(photon);
         }
     } else if (clusters.cluster_size_x() == 2 ||
@@ -114,10 +114,10 @@ Interpolator::interpolate(const ClusterVector<ClusterType> &clusters) {
             auto iy = last_smaller(m_etabinsy, eta.y);
 
             // TODO: why 2?
-            photon.x -= m_ietax(ix, iy, ie) *
-                        2; // eta goes between 0 and 1 but we could move the hit
-                           // anywhere in the 2x2
-            photon.y -= m_ietay(ix, iy, ie) * 2;
+            photon.x -=
+                m_ietax(ix, iy, ie); // eta goes between 0 and 1 but we could
+                                     // move the hit anywhere in the 2x2
+            photon.y -= m_ietay(ix, iy, ie);
             photons.push_back(photon);
         }
 
