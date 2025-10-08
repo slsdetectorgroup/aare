@@ -59,7 +59,7 @@ template <typename T, uint8_t ClusterSizeX, uint8_t ClusterSizeY,
 Eta2<T>
 calculate_eta2(const Cluster<T, ClusterSizeX, ClusterSizeY, CoordType> &cl) {
 
-    assert(ClusterSizeX > 1 && ClusterSizeY > 1);
+    static_assert(ClusterSizeX > 1 && ClusterSizeY > 1);
     Eta2<T> eta{};
 
     size_t cluster_center_index =

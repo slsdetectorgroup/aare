@@ -17,6 +17,8 @@ data_points = np.stack([X.ravel(), Y.ravel()], axis=1)
 variance = 10*pixel_width
 covariance_matrix = np.array([[variance, 0],[0, variance]])
 
+
+
 def create_photon_hit_with_gaussian_distribution(mean, covariance_matrix, data_points):
     gaussian = multivariate_normal(mean=mean, cov=covariance_matrix)
     probability_values = gaussian.pdf(data_points)
@@ -46,14 +48,14 @@ def create_3x3cluster_from_frame(frame, pixels_per_superpixel):
                                     frame[2*pixels_per_superpixel:3*pixels_per_superpixel, 2*pixels_per_superpixel:3*pixels_per_superpixel].sum()], dtype=np.float64))
 
 
-def calculate_eta_distribution(num_frames, pixels_per_superpixel, cluster_2x2 = True): 
+def calculate_eta_distribution(num_frames, pixels_per_superpixel, random_number_generator, cluster_2x2 = True): 
     hist = bh.Histogram(
     bh.axis.Regular(100, -0.2, 1.2), 
     bh.axis.Regular(100, -0.2, 1.2), bh.axis.Regular(1, 0, num_pixels*num_pixels*1/(variance*2*np.pi))) 
 
-    for frame_index in range(0, num_frames):
-        mean_x = np.random.uniform(pixels_per_superpixel*pixel_width, 2*pixels_per_superpixel*pixel_width)
-        mean_y = np.random.uniform(pixels_per_superpixel*pixel_width, 2*pixels_per_superpixel*pixel_width)
+    for _ in range(0, num_frames):
+        mean_x = random_number_generator.uniform(pixels_per_superpixel*pixel_width, 2*pixels_per_superpixel*pixel_width)
+        mean_y = random_number_generator.uniform(pixels_per_superpixel*pixel_width, 2*pixels_per_superpixel*pixel_width)
         frame = create_photon_hit_with_gaussian_distribution(np.array([mean_x, mean_y]), variance, data_points)
 
         cluster = None
@@ -81,7 +83,9 @@ def test_interpolation_of_2x2_cluster(test_data_path):
 
     num_frames = 1000
     pixels_per_superpixel = int(num_pixels*0.5)
-    eta_distribution = calculate_eta_distribution(num_frames, pixels_per_superpixel)
+    random_number_generator = np.random.default_rng(42)
+
+    eta_distribution = calculate_eta_distribution(num_frames, pixels_per_superpixel, random_number_generator)
 
     interpolation = Interpolator(eta_distribution, eta_distribution.axes[0].edges[:-1], eta_distribution.axes[1].edges[:-1], eta_distribution.axes[2].edges[:-1])
 
@@ -118,7 +122,8 @@ def test_interpolation_of_3x3_cluster(test_data_path):
 
     num_frames = 1000
     pixels_per_superpixel = int(num_pixels/3)
-    eta_distribution = calculate_eta_distribution(num_frames, pixels_per_superpixel, False)
+    random_number_generator = np.random.default_rng(42)
+    eta_distribution = calculate_eta_distribution(num_frames, pixels_per_superpixel, random_number_generator, False)
 
     interpolation = Interpolator(eta_distribution, eta_distribution.axes[0].edges[:-1], eta_distribution.axes[1].edges[:-1], eta_distribution.axes[2].edges[:-1])
 
