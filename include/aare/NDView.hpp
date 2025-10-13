@@ -93,6 +93,12 @@ class NDView : public ArrayExpr<NDView<T, Ndim>, Ndim> {
         : buffer_(buffer), strides_(c_strides<Ndim>(shape)), shape_(shape),
           size_(std::accumulate(std::begin(shape), std::end(shape), 1,
                                 std::multiplies<>())) {}
+
+    // stride-aware constructor
+    NDView(T* buffer, std::array<ssize_t, Ndim> shape, std::array<ssize_t, Ndim> strides)
+        : buffer_(buffer), shape_(shape), strides_(strides),
+          size_(std::accumulate(std::begin(shape), std::end(shape), 1,
+                                std::multiplies<>())) {}
                    
     template <typename... Ix>
     std::enable_if_t<sizeof...(Ix) == Ndim, T &> operator()(Ix... index) {
