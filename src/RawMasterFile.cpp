@@ -314,11 +314,8 @@ void RawMasterFile::parse_json(const std::filesystem::path &fpath) {
         // if any of the values are set update the roi
         if (tmp_roi.xmin != 4294967295 || tmp_roi.xmax != 4294967295 ||
             tmp_roi.ymin != 4294967295 || tmp_roi.ymax != 4294967295) {
-
-            if (v < 7.21) {
-                tmp_roi.xmax++; // why is it updated
-                tmp_roi.ymax++;
-            }
+            tmp_roi.xmax++;
+            tmp_roi.ymax++;
             m_roi = tmp_roi;
         }
 
