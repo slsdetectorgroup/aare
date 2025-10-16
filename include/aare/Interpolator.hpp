@@ -28,9 +28,22 @@ class Interpolator {
     Interpolator(NDView<double, 3> etacube, NDView<double, 1> xbins,
                  NDView<double, 1> ybins, NDView<double, 1> ebins);
 
+    /**
+     * @brief Constructor for the Interpolator class
+     * @param xbins bin edges for etaX
+     * @param ybins bin edges for etaY
+     * @param ebins bin edges for photon energy
+     */
     Interpolator(NDView<double, 1> xbins, NDView<double, 1> ybins,
                  NDView<double, 1> ebins);
 
+    /**
+     * @brief transforms the joint eta distribution of etaX and etaY to the two
+     * independant uniform distributions based on the Roseblatt transform for
+     * each energy level
+     * @param etacube joint distribution of etaX, etaY and photon energy
+     * @note note first dimension is etaX, second etaY, third photon energy
+     */
     void rosenblatttransform(NDView<double, 3> etacube);
 
     NDArray<double, 3> get_ietax() { return m_ietax; }
