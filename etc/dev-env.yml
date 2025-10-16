@@ -13,4 +13,5 @@ dependencies:
   - pybind11
   - numpy
   - matplotlib
+  - nlohmann_json
 
