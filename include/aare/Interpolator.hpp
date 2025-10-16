@@ -27,6 +27,12 @@ class Interpolator {
   public:
     Interpolator(NDView<double, 3> etacube, NDView<double, 1> xbins,
                  NDView<double, 1> ybins, NDView<double, 1> ebins);
+
+    Interpolator(NDView<double, 1> xbins, NDView<double, 1> ybins,
+                 NDView<double, 1> ebins);
+
+    void rosenblatttransform(NDView<double, 3> etacube);
+
     NDArray<double, 3> get_ietax() { return m_ietax; }
     NDArray<double, 3> get_ietay() { return m_ietay; }
 

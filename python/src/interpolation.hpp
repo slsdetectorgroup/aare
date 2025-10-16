@@ -39,6 +39,20 @@ void define_interpolation_bindings(py::module &m) {
                 return Interpolator(make_view_3d(etacube), make_view_1d(xbins),
                                     make_view_1d(ybins), make_view_1d(ebins));
             }))
+
+            .def(py::init([](py::array_t<double> xbins,
+                             py::array_t<double> ybins,
+                             py::array_t<double> ebins) {
+                return Interpolator(make_view_1d(xbins), make_view_1d(ybins),
+                                    make_view_1d(ebins));
+            }))
+            .def("rosenblatttransform",
+                 [](Interpolator &self,
+                    py::array_t<double,
+                                py::array::c_style | py::array::forcecast>
+                        etacube) {
+                     return self.rosenblatttransform(make_view_3d(etacube));
+                 })
             .def("get_ietax",
                  [](Interpolator &self) {
                      auto *ptr = new NDArray<double, 3>{};
