@@ -53,8 +53,8 @@ def test_Interpolator():
 
     assert interpolated_photons.size == 1
 
-    assert interpolated_photons[0]["x"] == -1 
-    assert interpolated_photons[0]["y"] == -1
+    assert interpolated_photons[0]["x"] == 0 
+    assert interpolated_photons[0]["y"] == 0
     assert interpolated_photons[0]["energy"] == 4 #eta_sum = 4, dx, dy = -1,-1 m_ietax = 0, m_ietay = 0
 
     clustervector = _aare.ClusterVector_Cluster2x2i()
@@ -84,7 +84,7 @@ def test_calculate_eta():
     assert eta2[0,0] == 0.5
     assert eta2[0,1] == 0.5
     assert eta2[1,0] == 0.5
-    assert eta2[1,1] == 0.6 #1/5
+    assert eta2[1,1] == 0.4 #2/5
 
 def test_cluster_finder(): 
     """Test ClusterFinder""" 

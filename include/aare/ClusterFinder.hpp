@@ -136,7 +136,7 @@ class ClusterFinder {
                     // don't have a photon
                     int i = 0;
                     for (int ir = -dy; ir < dy + has_center_pixel_y; ir++) {
-                        for (int ic = -dx; ic < dx + has_center_pixel_y; ic++) {
+                        for (int ic = -dx; ic < dx + has_center_pixel_x; ic++) {
                             if (ix + ic >= 0 && ix + ic < frame.shape(1) &&
                                 iy + ir >= 0 && iy + ir < frame.shape(0)) {
                                 CT tmp =
@@ -144,7 +144,7 @@ class ClusterFinder {
                                     static_cast<CT>(
                                         m_pedestal.mean(iy + ir, ix + ic));
                                 cluster.data[i] =
-                                    tmp; // Watch for out of bounds access                                
+                                    tmp; // Watch for out of bounds access
                             }
                             i++;
                         }
