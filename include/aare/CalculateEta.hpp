@@ -146,11 +146,11 @@ template <typename T>
 Eta2<T> calculate_eta2(const Cluster<T, 2, 2, int16_t> &cl) {
     Eta2<T> eta{};
 
-    if ((cl.data[0] + cl.data[1]) != 0)
+    if ((cl.data[2] + cl.data[3]) != 0)
         eta.x = static_cast<double>(cl.data[2]) /
                 (cl.data[2] + cl.data[3]); // between (0,1) the closer to zero
                                            // left value probably larger
-    if ((cl.data[0] + cl.data[2]) != 0)
+    if ((cl.data[1] + cl.data[3]) != 0)
         eta.y = static_cast<double>(cl.data[1]) /
                 (cl.data[1] + cl.data[3]); // between (0,1) the closer to zero
                                            // bottom value probably larger
