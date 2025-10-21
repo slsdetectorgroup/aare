@@ -8,6 +8,7 @@
 
 #pragma once
 
+#include "logger.hpp"
 #include <algorithm>
 #include <array>
 #include <cstdint>
@@ -18,7 +19,7 @@ namespace aare {
 
 // requires clause c++20 maybe update
 template <typename T, uint8_t ClusterSizeX, uint8_t ClusterSizeY,
-          typename CoordType = uint16_t>
+          typename CoordType = int16_t>
 struct Cluster {
 
     static_assert(std::is_arithmetic_v<T>, "T needs to be an arithmetic type");
@@ -38,13 +39,6 @@ struct Cluster {
 
     T sum() const { return std::accumulate(data.begin(), data.end(), T{}); }
 
-    // TODO: handle 1 dimensional clusters
-    // TODO: change int to corner
-    /**
-     * @brief sum of 2x2 subcluster with highest energy
-     * @return photon energy of subcluster, 2x2 subcluster index relative to
-     * cluster center
-     */
     std::pair<T, int> max_sum_2x2() const {
 
         if constexpr (cluster_size_x == 3 && cluster_size_y == 3) {
@@ -60,38 +54,17 @@ struct Cluster {
         } else if constexpr (cluster_size_x == 2 && cluster_size_y == 2) {
             return std::make_pair(data[0] + data[1] + data[2] + data[3], 0);
         } else {
-            constexpr size_t cluster_center_index =
-                (ClusterSizeX / 2) + (ClusterSizeY / 2) * ClusterSizeX;
+            constexpr size_t num_2x2_subclusters =
+                (ClusterSizeX - 1) * (ClusterSizeY - 1);
 
-            std::array<T, 4> sum_2x2_subcluster{0};
-            // subcluster top left from center
-            sum_2x2_subcluster[0] =
-                data[cluster_center_index] + data[cluster_center_index - 1] +
-                data[cluster_center_index - ClusterSizeX] +
-                data[cluster_center_index - 1 - ClusterSizeX];
-            // subcluster top right from center
-            if (ClusterSizeX > 2) {
-                sum_2x2_subcluster[1] =
-                    data[cluster_center_index] +
-                    data[cluster_center_index + 1] +
-                    data[cluster_center_index - ClusterSizeX] +
-                    data[cluster_center_index - ClusterSizeX + 1];
-            }
-            // subcluster bottom left from center
-            if (ClusterSizeY > 2) {
-                sum_2x2_subcluster[2] =
-                    data[cluster_center_index] +
-                    data[cluster_center_index - 1] +
-                    data[cluster_center_index + ClusterSizeX] +
-                    data[cluster_center_index + ClusterSizeX - 1];
-            }
-            // subcluster bottom right from center
-            if (ClusterSizeX > 2 && ClusterSizeY > 2) {
-                sum_2x2_subcluster[3] =
-                    data[cluster_center_index] +
-                    data[cluster_center_index + 1] +
-                    data[cluster_center_index + ClusterSizeX] +
-                    data[cluster_center_index + ClusterSizeX + 1];
+            std::array<T, num_2x2_subclusters> sum_2x2_subcluster;
+            for (size_t i = 0; i < ClusterSizeY - 1; ++i) {
+                for (size_t j = 0; j < ClusterSizeX - 1; ++j)
+                    sum_2x2_subcluster[i * (ClusterSizeX - 1) + j] =
+                        data[i * ClusterSizeX + j] +
+                        data[i * ClusterSizeX + j + 1] +
+                        data[(i + 1) * ClusterSizeX + j] +
+                        data[(i + 1) * ClusterSizeX + j + 1];
             }
 
             int index = std::max_element(sum_2x2_subcluster.begin(),
@@ -135,6 +108,7 @@ reduce_to_2x2(const Cluster<T, ClusterSizeX, ClusterSizeY, CoordType> &c) {
     result.y =
         c.y - (index_bottom_left_max_2x2_subcluster - cluster_center_index) /
                   ClusterSizeX;
+
     result.data = {
         c.data[index_bottom_left_max_2x2_subcluster],
         c.data[index_bottom_left_max_2x2_subcluster + 1],
@@ -228,24 +202,35 @@ reduce_to_3x3(const Cluster<T, ClusterSizeX, ClusterSizeY, CoordType> &c) {
 
     auto [sum, index] = max_3x3_sum(c);
 
+    std::cout << "sum: " << sum << ", index: " << index << std::endl;
+
     int16_t cluster_center_index =
         (ClusterSizeX / 2) + (ClusterSizeY / 2) * ClusterSizeX;
 
     int16_t index_center_max_3x3_subcluster =
         (int(index / (ClusterSizeX - 2))) * ClusterSizeX + ClusterSizeX +
-        index % (ClusterSizeX - 2) + 1;
+        index % (ClusterSizeX - 2) +
+        1; // center of 3x3 subcluster with max energy
 
-    int16_t index_3x3_subcluster_cluster_center =
-        int((cluster_center_index - 1 - ClusterSizeX) / ClusterSizeX) *
-            (ClusterSizeX - 2) +
-        (cluster_center_index - 1 - ClusterSizeX) % ClusterSizeX;
+    // Note this is not the maximum photon in the found cluster - photon
+    // centers shifts completely
+    result.x = c.x + index_center_max_3x3_subcluster % ClusterSizeX -
+               cluster_center_index % ClusterSizeX;
 
-    result.x =
-        c.x + (index % (ClusterSizeX - 2) -
-               (index_3x3_subcluster_cluster_center % (ClusterSizeX - 2)));
-    result.y =
-        c.y - (index / (ClusterSizeX - 2) -
-               (index_3x3_subcluster_cluster_center / (ClusterSizeX - 2)));
+    // TODO: this should be + once other PR merged change and adapt tests !!!
+    result.y = c.y - (index_center_max_3x3_subcluster / ClusterSizeX -
+                      cluster_center_index / ClusterSizeX);
+
+    std::cout << "resul center: " << result.x << ", " << result.y << std::endl;
+
+    // If one of the new coordinates is negative, we have negative photon
+    // energies. Assume noise is too high and keep original 3x3 subcluster at
+    // center
+    if (result.x < 0 || result.y < 0) {
+        result.x = c.x;
+        result.y = c.y;
+        index_center_max_3x3_subcluster = cluster_center_index;
+    }
 
     result.data = {c.data[index_center_max_3x3_subcluster - ClusterSizeX - 1],
                    c.data[index_center_max_3x3_subcluster - ClusterSizeX],

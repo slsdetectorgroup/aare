@@ -1,3 +1,4 @@
+#include "aare/CalculateEta.hpp"
 #include "aare/Interpolator.hpp"
 #include "aare/NDArray.hpp"
 #include "aare/NDView.hpp"
@@ -10,18 +11,21 @@
 namespace py = pybind11;
 
 template <typename Type, uint8_t CoordSizeX, uint8_t CoordSizeY,
-          typename CoordType = uint16_t>
-void register_interpolate(py::class_<aare::Interpolator> &interpolator) {
+          typename CoordType = uint16_t, auto EtaFunction>
+void register_interpolate(py::class_<aare::Interpolator> &interpolator,
+                          const std::string &typestr = "") {
 
     using ClusterType = Cluster<Type, CoordSizeX, CoordSizeY, CoordType>;
 
-    interpolator.def("interpolate",
-                     [](aare::Interpolator &self,
-                        const ClusterVector<ClusterType> &clusters) {
-                         auto photons = self.interpolate<ClusterType>(clusters);
-                         auto *ptr = new std::vector<Photon>{photons};
-                         return return_vector(ptr);
-                     });
+    auto function_name = fmt::format("interpolate{}", typestr);
+
+    interpolator.def(
+        function_name.c_str(), [](aare::Interpolator &self,
+                                  const ClusterVector<ClusterType> &clusters) {
+            auto photons = self.interpolate<ClusterType, EtaFunction>(clusters);
+            auto *ptr = new std::vector<Photon>{photons};
+            return return_vector(ptr);
+        });
 }
 
 void define_interpolation_bindings(py::module &m) {
@@ -65,12 +69,40 @@ void define_interpolation_bindings(py::module &m) {
                 return return_image_data(ptr);
             });
 
-    register_interpolate<int, 3, 3, uint16_t>(interpolator);
-    register_interpolate<float, 3, 3, uint16_t>(interpolator);
-    register_interpolate<double, 3, 3, uint16_t>(interpolator);
-    register_interpolate<int, 2, 2, uint16_t>(interpolator);
-    register_interpolate<float, 2, 2, uint16_t>(interpolator);
-    register_interpolate<double, 2, 2, uint16_t>(interpolator);
+    register_interpolate<int, 3, 3, uint16_t,
+                         aare::calculate_eta2<int, 3, 3, uint16_t>>(
+        interpolator);
+    register_interpolate<float, 3, 3, uint16_t,
+                         aare::calculate_eta2<float, 3, 3, uint16_t>>(
+        interpolator);
+    register_interpolate<double, 3, 3, uint16_t,
+                         aare::calculate_eta2<double, 3, 3, uint16_t>>(
+        interpolator);
+    register_interpolate<int, 2, 2, uint16_t,
+                         aare::calculate_eta2<int, 2, 2, uint16_t>>(
+        interpolator);
+    register_interpolate<float, 2, 2, uint16_t,
+                         aare::calculate_eta2<float, 2, 2, uint16_t>>(
+        interpolator);
+    register_interpolate<double, 2, 2, uint16_t,
+                         aare::calculate_eta2<double, 2, 2, uint16_t>>(
+        interpolator);
+
+    register_interpolate<int, 3, 3, uint16_t, aare::calculate_eta3<int>>(
+        interpolator, "_eta3x3");
+    register_interpolate<float, 3, 3, uint16_t, aare::calculate_eta3<float>>(
+        interpolator, "_eta3x3");
+    register_interpolate<double, 3, 3, uint16_t, aare::calculate_eta3<double>>(
+        interpolator, "_eta3x3");
+
+    register_interpolate<int, 3, 3, uint16_t, aare::calculate_cross_eta3<int>>(
+        interpolator, "_cross_eta3x3");
+    register_interpolate<float, 3, 3, uint16_t,
+                         aare::calculate_cross_eta3<float>>(interpolator,
+                                                            "_cross_eta3x3");
+    register_interpolate<double, 3, 3, uint16_t,
+                         aare::calculate_cross_eta3<double>>(interpolator,
+                                                             "_cross_eta3x3");
 
     // TODO! Evaluate without converting to double
     m.def(

@@ -50,6 +50,44 @@ NDArray<double, 2> calculate_eta2(const ClusterVector<ClusterType> &clusters) {
 }
 
 /**
+ * @brief Calculate eta3 for all 3x3 clusters in a ClusterVector
+ */
+template <
+    typename T, typename CoordType,
+    typename = std::enable_if_t<is_cluster_v<Cluster<T, 3, 3, CoordType>>>>
+NDArray<double, 2>
+calculate_eta3(const ClusterVector<Cluster<T, 3, 3, CoordType>> &clusters) {
+    NDArray<double, 2> eta({static_cast<int64_t>(clusters.size()), 2});
+
+    for (size_t i = 0; i < clusters.size(); i++) {
+        auto e = calculate_eta3(clusters[i]);
+        eta(i, 0) = e.x;
+        eta(i, 1) = e.y;
+    }
+
+    return eta;
+}
+
+/**
+ * @brief Calculate cross eta3 for all 3x3 clusters in a ClusterVector
+ */
+template <
+    typename T, typename CoordType,
+    typename = std::enable_if_t<is_cluster_v<Cluster<T, 3, 3, CoordType>>>>
+NDArray<double, 2> calculate_cross_eta3(
+    const ClusterVector<Cluster<T, 3, 3, CoordType>> &clusters) {
+    NDArray<double, 2> eta({static_cast<int64_t>(clusters.size()), 2});
+
+    for (size_t i = 0; i < clusters.size(); i++) {
+        auto e = calculate_cross_eta3(clusters[i]);
+        eta(i, 0) = e.x;
+        eta(i, 1) = e.y;
+    }
+
+    return eta;
+}
+
+/**
  * @brief Calculate the eta2 values for a generic sized cluster and return them
  * in a Eta2 struct containing etay, etax and the index of the respective 2x2
  * subcluster.
@@ -178,30 +216,62 @@ Eta2<T> calculate_eta2(const Cluster<T, 2, 1, int16_t> &cl) {
     eta.sum = cl.sum();
 }
 
-// calculates Eta3 for 3x3 cluster based on code from analyze_cluster
-// TODO only supported for 3x3 Clusters
-template <typename T> Eta2<T> calculate_eta3(const Cluster<T, 3, 3> &cl) {
+/**
+ * @brief calculates cross Eta3 for 3x3 cluster
+ * cross Eta3 calculates the eta by taking into account only the cross pixels
+ * {top, bottom, left, right, center}
+ */
+template <typename T, typename CoordType = uint16_t>
+Eta2<T> calculate_cross_eta3(const Cluster<T, 3, 3, CoordType> &cl) {
 
     Eta2<T> eta{};
 
-    T sum = 0;
+    T photon_energy = cl.sum();
 
-    std::for_each(std::begin(cl.data), std::end(cl.data),
-                  [&sum](T x) { sum += x; });
-
-    eta.sum = sum;
+    eta.sum = photon_energy;
 
     if ((cl.data[3] + cl.data[4] + cl.data[5]) != 0)
 
-        eta.x = static_cast<double>(-cl.data[3] + cl.data[3 + 2]) /
+        eta.x =
+            static_cast<double>(-cl.data[3] + cl.data[3 + 2]) /
 
-                (cl.data[3] + cl.data[4] + cl.data[5]); // (-1,1)
+            static_cast<double>(cl.data[3] + cl.data[4] + cl.data[5]); // (-1,1)
 
     if ((cl.data[1] + cl.data[4] + cl.data[7]) != 0)
 
         eta.y = static_cast<double>(-cl.data[1] + cl.data[2 * 3 + 1]) /
 
-                (cl.data[1] + cl.data[4] + cl.data[7]);
+                static_cast<double>(cl.data[1] + cl.data[4] + cl.data[7]);
+
+    return eta;
+}
+
+/**
+ * @brief calculates Eta3 for 3x3 cluster
+ * It calculates the eta by taking into account all pixels in the 3x3 cluster
+ */
+template <typename T, typename CoordType = uint16_t>
+Eta2<T> calculate_eta3(const Cluster<T, 3, 3, CoordType> &cl) {
+
+    Eta2<T> eta{};
+
+    T photon_energy = cl.sum();
+
+    eta.sum = photon_energy;
+
+    if (photon_energy != 0) {
+        std::array<T, 2> column_sums{cl.data[0] + cl.data[3] + cl.data[6],
+                                     cl.data[2] + cl.data[5] + cl.data[8]};
+
+        eta.x = static_cast<double>(-column_sums[0] + column_sums[1]) /
+                static_cast<double>(photon_energy);
+
+        std::array<T, 2> row_sums{cl.data[0] + cl.data[1] + cl.data[2],
+                                  cl.data[6] + cl.data[7] + cl.data[8]};
+
+        eta.y = static_cast<double>(-row_sums[0] + row_sums[1]) /
+                static_cast<double>(photon_energy);
+    }
 
     return eta;
 }

@@ -8,6 +8,7 @@
 #include "bind_ClusterFinder.hpp"
 #include "bind_ClusterFinderMT.hpp"
 #include "bind_ClusterVector.hpp"
+#include "bind_Eta.hpp"
 #include "bind_calibration.hpp"
 
 // TODO! migrate the other names
@@ -47,7 +48,7 @@ double, 'f' for float)
     define_ClusterFileSink<T, N, M, U>(m, "Cluster" #N "x" #M #TYPE_CODE);     \
     define_ClusterCollector<T, N, M, U>(m, "Cluster" #N "x" #M #TYPE_CODE);    \
     define_Cluster<T, N, M, U>(m, #N "x" #M #TYPE_CODE);                       \
-    register_calculate_eta<T, N, M, U>(m);                                     \
+    register_calculate_2x2eta<T, N, M, U>(m);                                  \
     define_2x2_reduction<T, N, M, U>(m);                                       \
     reduce_to_2x2<T, N, M, U>(m);
 
@@ -87,8 +88,6 @@ PYBIND11_MODULE(_aare, m) {
     DEFINE_CLUSTER_BINDINGS(double, 9, 9, uint16_t, d);
     DEFINE_CLUSTER_BINDINGS(float, 9, 9, uint16_t, f);
 
-    // DEFINE_CLUSTER_BINDINGS(double, 2, 1, uint16_t, d);
-
     define_3x3_reduction<int, 3, 3, uint16_t>(m);
     define_3x3_reduction<double, 3, 3, uint16_t>(m);
     define_3x3_reduction<float, 3, 3, uint16_t>(m);
@@ -114,4 +113,8 @@ PYBIND11_MODULE(_aare, m) {
     reduce_to_3x3<int, 9, 9, uint16_t>(m);
     reduce_to_3x3<double, 9, 9, uint16_t>(m);
     reduce_to_3x3<float, 9, 9, uint16_t>(m);
+
+    register_calculate_3x3eta<int, uint16_t>(m);
+    register_calculate_3x3eta<double, uint16_t>(m);
+    register_calculate_3x3eta<float, uint16_t>(m);
 }

@@ -49,103 +49,102 @@ class Interpolator {
     NDArray<double, 3> get_ietax() { return m_ietax; }
     NDArray<double, 3> get_ietay() { return m_ietay; }
 
-    template <typename ClusterType,
+    /**
+     * @brief interpolates the cluster centers for all clusters to a better
+     * precision
+     * @tparam ClusterType Type of Clusters to interpolate
+     * @tparam Etafunction Function object that calculates desired eta default:
+     * calculate_eta2x2
+     * @warning
+     */
+    template <typename ClusterType, auto EtaFUnction = calculate_eta2,
               typename Eanble = std::enable_if_t<is_cluster_v<ClusterType>>>
     std::vector<Photon> interpolate(const ClusterVector<ClusterType> &clusters);
+
+  private:
+    // TODO: is it better to use a functor? with template specialization if the
+    // template argument is actually not used?
+
+    /**
+     * @brief implements underlying interpolation logic based on EtaFunction
+     * Type
+     * @tparam EtaType Type of Eta
+     * @tparam EtaFunction Function object that calculates desired eta default:
+     */
+    template <typename ClusterType, auto EtaFunction, typename EtaType>
+    void interpolation_logic(Photon &photon, const size_t ix, const size_t iy,
+                             const size_t ie, const EtaType &eta);
 };
 
-// TODO: generalize to support any clustertype!!! otherwise add std::enable_if_t
-// to only take Cluster2x2 and Cluster3x3
-template <typename ClusterType, typename Enable>
+template <typename ClusterType, auto EtaFunction, typename Enable>
 std::vector<Photon>
 Interpolator::interpolate(const ClusterVector<ClusterType> &clusters) {
     std::vector<Photon> photons;
     photons.reserve(clusters.size());
 
-    if (clusters.cluster_size_x() == 3 || clusters.cluster_size_y() == 3) {
-        for (const ClusterType &cluster : clusters) {
+    for (const ClusterType &cluster : clusters) {
 
-            auto eta = calculate_eta2(cluster);
+        auto eta = EtaFunction(cluster);
 
-            Photon photon;
-            photon.x = cluster.x;
-            photon.y = cluster.y;
-            photon.energy = static_cast<decltype(photon.energy)>(eta.sum);
+        Photon photon;
+        photon.x = cluster.x;
+        photon.y = cluster.y;
+        photon.energy = static_cast<decltype(photon.energy)>(eta.sum);
 
-            // auto ie = nearest_index(m_energy_bins, photon.energy)-1;
-            // auto ix = nearest_index(m_etabinsx, eta.x)-1;
-            // auto iy = nearest_index(m_etabinsy, eta.y)-1;
-            // Finding the index of the last element that is smaller
-            // should work fine as long as we have many bins
-            auto ie = last_smaller(m_energy_bins, photon.energy);
-            auto ix = last_smaller(m_etabinsx, eta.x);
-            auto iy = last_smaller(m_etabinsy, eta.y);
+        // Finding the index of the last element that is smaller
+        // should work fine as long as we have many bins
+        // TODO only works for rosenblatt
+        auto ie = last_smaller(m_energy_bins, photon.energy);
+        auto ix = last_smaller(m_etabinsx, eta.x);
+        auto iy = last_smaller(m_etabinsy, eta.y);
 
-            // fmt::print("ex: {}, ix: {}, iy: {}\n", ie, ix, iy);
+        ix = m_etabinsx.shape(0) == m_ietax.shape(0) ? ix : ix + 1;
+        iy = m_etabinsy.shape(0) == m_ietay.shape(1) ? iy : iy + 1;
+        interpolation_logic<ClusterType, EtaFunction>(photon, ix, iy, ie, eta);
 
-            double dX, dY;
-            // cBottomLeft = 0,
-            // cBottomRight = 1,
-            // cTopLeft = 2,
-            // cTopRight = 3
-            // TODO: could also chaneg the sign of the eta calculation
-            switch (static_cast<corner>(eta.c)) {
-            case corner::cTopLeft:
-                dX = 0.0;
-                dY = 0.0;
-                break;
-            case corner::cTopRight:;
-                dX = 1.0;
-                dY = 0.0;
-                break;
-            case corner::cBottomLeft:
-                dX = 0.0;
-                dY = 1.0;
-                break;
-            case corner::cBottomRight:
-                dX = 1.0;
-                dY = 1.0;
-                break;
-            }
-            photon.x -= m_ietax(ix, iy, ie) - dX;
-            photon.y -= m_ietay(ix, iy, ie) - dY;
-            photons.push_back(photon);
-        }
-    } else if (clusters.cluster_size_x() == 2 ||
-               clusters.cluster_size_y() == 2) {
-        for (const ClusterType &cluster : clusters) {
-            auto eta = calculate_eta2(cluster);
-
-            Photon photon;
-            photon.x = cluster.x;
-            photon.y = cluster.y;
-            photon.energy = static_cast<decltype(photon.energy)>(eta.sum);
-
-            // Now do some actual interpolation.
-            // Find which energy bin the cluster is in
-            //  auto ie = nearest_index(m_energy_bins, photon.energy)-1;
-            //  auto ix = nearest_index(m_etabinsx, eta.x)-1;
-            //  auto iy = nearest_index(m_etabinsy, eta.y)-1;
-            // Finding the index of the last element that is smaller
-            // should work fine as long as we have many bins
-            auto ie = last_smaller(m_energy_bins, photon.energy);
-            auto ix = last_smaller(m_etabinsx, eta.x);
-            auto iy = last_smaller(m_etabinsy, eta.y);
-
-            // TODO: why 2?
-            photon.x -=
-                m_ietax(ix, iy, ie); // eta goes between 0 and 1 but we could
-                                     // move the hit anywhere in the 2x2
-            photon.y -= m_ietay(ix, iy, ie);
-            photons.push_back(photon);
-        }
-
-    } else {
-        throw std::runtime_error(
-            "Only 3x3 and 2x2 clusters are supported for interpolation");
+        photons.push_back(photon);
     }
 
     return photons;
+}
+
+template <typename ClusterType, auto EtaFunction, typename EtaType>
+void Interpolator::interpolation_logic(Photon &photon, const size_t ix,
+                                       const size_t iy, const size_t ie,
+                                       const EtaType &eta) {
+
+    // try to call this with std::is_same_v and have it constexpr if possible
+    if (EtaFunction ==
+        &calculate_eta2<
+            typename ClusterType::value_type, ClusterType::cluster_size_x,
+            ClusterType::cluster_size_y, typename ClusterType::coord_type>) {
+        double dX, dY;
+
+        // TODO: could also chaneg the sign of the eta calculation
+        switch (static_cast<corner>(eta.c)) {
+        case corner::cTopLeft:
+            dX = 0.0;
+            dY = 0.0;
+            break;
+        case corner::cTopRight:;
+            dX = 1.0;
+            dY = 0.0;
+            break;
+        case corner::cBottomLeft:
+            dX = 0.0;
+            dY = 1.0;
+            break;
+        case corner::cBottomRight:
+            dX = 1.0;
+            dY = 1.0;
+            break;
+        }
+        photon.x -= m_ietax(ix, iy, ie) - dX;
+        photon.y -= m_ietay(ix, iy, ie) - dY;
+    } else {
+        photon.x += m_ietax(ix, iy, ie);
+        photon.y += m_ietay(ix, iy, ie);
+    }
 }
 
 } // namespace aare
