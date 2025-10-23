@@ -8,6 +8,7 @@
 
 #pragma once
 
+#include "defs.hpp"
 #include <algorithm>
 #include <array>
 #include <cstdint>
@@ -45,7 +46,7 @@ struct Cluster {
      * @return photon energy of subcluster, 2x2 subcluster index relative to
      * cluster center
      */
-    std::pair<T, int> max_sum_2x2() const {
+    Sum_index_pair<T, int> max_sum_2x2() const {
 
         if constexpr (cluster_size_x == 3 && cluster_size_y == 3) {
             std::array<T, 4> sum_2x2_subclusters;
@@ -56,9 +57,10 @@ struct Cluster {
             int index = std::max_element(sum_2x2_subclusters.begin(),
                                          sum_2x2_subclusters.end()) -
                         sum_2x2_subclusters.begin();
-            return std::make_pair(sum_2x2_subclusters[index], index);
+            return Sum_index_pair<T, int>{sum_2x2_subclusters[index], index};
         } else if constexpr (cluster_size_x == 2 && cluster_size_y == 2) {
-            return std::make_pair(data[0] + data[1] + data[2] + data[3], 0);
+            return Sum_index_pair<T, int>{data[0] + data[1] + data[2] + data[3],
+                                          0};
         } else {
             constexpr size_t cluster_center_index =
                 (ClusterSizeX / 2) + (ClusterSizeY / 2) * ClusterSizeX;
@@ -97,7 +99,7 @@ struct Cluster {
             int index = std::max_element(sum_2x2_subcluster.begin(),
                                          sum_2x2_subcluster.end()) -
                         sum_2x2_subcluster.begin();
-            return std::make_pair(sum_2x2_subcluster[index], index);
+            return Sum_index_pair<T, int>{sum_2x2_subcluster[index], index};
         }
     }
 };

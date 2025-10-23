@@ -9,6 +9,7 @@
 #include "bind_ClusterFinderMT.hpp"
 #include "bind_ClusterVector.hpp"
 #include "bind_calibration.hpp"
+#include "utils/bind_Vector.hpp"
 
 // TODO! migrate the other names
 #include "ctb_raw_file.hpp"
@@ -114,4 +115,19 @@ PYBIND11_MODULE(_aare, m) {
     reduce_to_3x3<int, 9, 9, uint16_t>(m);
     reduce_to_3x3<double, 9, 9, uint16_t>(m);
     reduce_to_3x3<float, 9, 9, uint16_t>(m);
+
+    define_Vector<Sum_index_pair<double, int>>(
+        m, "Sum_index_pair_d",
+        fmt::format("T{{{}:sum:i:index}}",
+                    py::format_descriptor<double>::format()));
+
+    define_Vector<Sum_index_pair<float, int>>(
+        m, "Sum_index_pair_f",
+        fmt::format("T{{{}:sum:i:index}}",
+                    py::format_descriptor<double>::format()));
+
+    define_Vector<Sum_index_pair<int, int>>(
+        m, "Sum_index_pair_i",
+        fmt::format("T{{{}:sum:i:index}}",
+                    py::format_descriptor<double>::format()));
 }

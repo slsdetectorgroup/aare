@@ -58,7 +58,11 @@ void define_Cluster(py::module &m, const std::string &typestr) {
                       &Cluster<Type, ClusterSizeX, ClusterSizeY, CoordType>::x)
 
         .def_readonly("y",
-                      &Cluster<Type, ClusterSizeX, ClusterSizeY, CoordType>::y);
+                      &Cluster<Type, ClusterSizeX, ClusterSizeY, CoordType>::y)
+
+        .def(
+            "max_sum_2x2",
+            &Cluster<Type, ClusterSizeX, ClusterSizeY, CoordType>::max_sum_2x2);
 }
 
 template <typename T, uint8_t ClusterSizeX, uint8_t ClusterSizeY,

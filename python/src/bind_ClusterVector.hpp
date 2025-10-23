@@ -6,12 +6,15 @@
 #include "aare/NDView.hpp"
 #include "aare/Pedestal.hpp"
 #include "np_helper.hpp"
+#include "utils/bind_Vector.hpp"
 
 #include <cstdint>
 #include <filesystem>
+#define PYBIND11_DETAILED_ERROR_MESSAGES
+#define PYBIND11_DISABLE_STL_CONTAINERS
 #include <pybind11/pybind11.h>
-#include <pybind11/stl.h>
-#include <pybind11/stl_bind.h>
+// #include <pybind11/stl.h>
+// #include <pybind11/stl_bind.h>
 
 namespace py = pybind11;
 using pd_type = double;
@@ -46,8 +49,31 @@ void define_ClusterVector(py::module &m, const std::string &typestr) {
              })
         .def("sum_2x2",
              [](ClusterVector<ClusterType> &self) {
-                 auto *vec = new std::vector<Type>(self.sum_2x2());
-                 return return_vector(vec);
+                 // auto *vec =
+                 // new std::vector<Sum_index_pair<Type, int>>(self.sum_2x2());
+
+                 /*
+                 py::capsule free_when_done(vec, [](void *f) {
+                     std::vector<std::pair<Type, int>> *foo =
+                         reinterpret_cast<std::vector<std::pair<Type, int>> *>(
+                             f);
+                     delete foo;
+                 });
+
+                 py::buffer result(
+                     vec->data(),
+                     static_cast<py::ssize_t>(sizeof(std::pair<Type, int>)),
+                     fmt::format("T{{{}:sum:i:index}}",
+                                 py::format_descriptor<Type>::format()),
+                     static_cast<py::ssize_t>(1),
+                     std::vector<py::ssize_t>{
+                         static_cast<py::ssize_t>(vec->size())},
+                     std::vector<py::ssize_t>{static_cast<py::ssize_t>(
+                         sizeof(std::pair<Type, int>))});
+                 //,static_cast<py::object>(free_when_done));
+                 */
+
+                 return self.sum_2x2(); // return_vector(vec);
              })
         .def_property_readonly("size", &ClusterVector<ClusterType>::size)
         .def("item_size", &ClusterVector<ClusterType>::item_size)

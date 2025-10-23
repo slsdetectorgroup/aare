@@ -331,6 +331,12 @@ enum DACIndex {
     SLOW_ADC_TEMP
 };
 
+// helper pair class to easily expose in python
+template <typename T1, typename T2> struct Sum_index_pair {
+    T1 sum;
+    T2 index;
+};
+
 enum class TimingMode { Auto, Trigger };
 enum class FrameDiscardPolicy { NoDiscard, Discard, DiscardPartial };
 

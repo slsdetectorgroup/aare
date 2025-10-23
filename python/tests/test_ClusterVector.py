@@ -32,6 +32,17 @@ def test_push_back_on_cluster_vector():
     assert arr[0]['y'] == 22
 
 
+def test_max_2x2_sum(): 
+    """max_2x2_sum"""
+    cv = _aare.ClusterVector_Cluster3x3i()
+    cv.push_back(_aare.Cluster3x3i(19, 22, np.array([0,1,0,2,3,0,2,1,0], dtype=np.int32)))
+    cv.push_back(_aare.Cluster3x3i(19, 22, np.ones(9, dtype=np.int32)))
+    assert cv.size == 2
+    max_2x2 = cv.sum_2x2()
+    assert max_2x2.size == 2
+    print(max_2x2[0])
+
+
 def test_make_a_hitmap_from_cluster_vector():
     cv = _aare.ClusterVector_Cluster3x3i()
 
