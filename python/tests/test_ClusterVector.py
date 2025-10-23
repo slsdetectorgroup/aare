@@ -40,7 +40,8 @@ def test_max_2x2_sum():
     assert cv.size == 2
     max_2x2 = cv.sum_2x2()
     assert max_2x2.size == 2
-    print(max_2x2[0])
+    assert max_2x2[0]["sum"] == 8
+    assert max_2x2[0]["index"] == 2
 
 
 def test_make_a_hitmap_from_cluster_vector():

@@ -130,4 +130,11 @@ PYBIND11_MODULE(_aare, m) {
         m, "Sum_index_pair_i",
         fmt::format("T{{{}:sum:i:index}}",
                     py::format_descriptor<double>::format()));
+
+    using Sum_index_pair_d = Sum_index_pair<double, corner>;
+    PYBIND11_NUMPY_DTYPE(Sum_index_pair_d, sum, index);
+    using Sum_index_pair_f = Sum_index_pair<float, corner>;
+    PYBIND11_NUMPY_DTYPE(Sum_index_pair_f, sum, index);
+    using Sum_index_pair_i = Sum_index_pair<int, corner>;
+    PYBIND11_NUMPY_DTYPE(Sum_index_pair_i, sum, index);
 }

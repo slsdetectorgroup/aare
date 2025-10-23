@@ -438,8 +438,8 @@ bool ClusterFile<ClusterType, Enable>::is_selected(ClusterType &cl) {
 
     if (m_noise_map) {
         auto sum_1x1 = cl.data[cluster_center_index]; // central pixel
-        auto sum_2x2 = cl.max_sum_2x2().first; // highest sum of 2x2 subclusters
-        auto total_sum = cl.sum();             // sum of all pixels
+        auto sum_2x2 = cl.max_sum_2x2().sum; // highest sum of 2x2 subclusters
+        auto total_sum = cl.sum();           // sum of all pixels
 
         auto noise =
             (*m_noise_map)(cl.y, cl.x); // TODO! check if this is correct

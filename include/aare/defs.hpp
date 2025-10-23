@@ -337,6 +337,13 @@ template <typename T1, typename T2> struct Sum_index_pair {
     T2 index;
 };
 
+enum class corner : int {
+    cTopLeft = 0,
+    cTopRight = 1,
+    cBottomLeft = 2,
+    cBottomRight = 3
+};
+
 enum class TimingMode { Auto, Trigger };
 enum class FrameDiscardPolicy { NoDiscard, Discard, DiscardPartial };
 

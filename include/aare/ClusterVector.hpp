@@ -88,8 +88,8 @@ class ClusterVector<Cluster<T, ClusterSizeX, ClusterSizeY, CoordType>> {
      * each cluster
      * @return vector of sums index pairs for each cluster
      */
-    std::vector<Sum_index_pair<T, int>> sum_2x2() {
-        std::vector<Sum_index_pair<T, int>> sums_2x2(m_data.size());
+    std::vector<Sum_index_pair<T, corner>> sum_2x2() {
+        std::vector<Sum_index_pair<T, corner>> sums_2x2(m_data.size());
 
         std::transform(
             m_data.begin(), m_data.end(), sums_2x2.begin(),
