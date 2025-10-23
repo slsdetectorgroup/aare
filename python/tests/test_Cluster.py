@@ -86,6 +86,17 @@ def test_calculate_eta():
     assert eta2[1,0] == 0.5
     assert eta2[1,1] == 0.4 #2/5
 
+
+def test_max_sum(): 
+    """Max 2x2 Sum"""
+    cluster = _aare.Cluster3x3i(5,5,np.array([1, 1, 1, 2, 3, 1, 2, 2, 1], dtype=np.int32))
+
+    max_sum = cluster.max_sum_2x2()
+
+    assert max_sum[0] == 9
+    assert max_sum[1] == 2
+
+
 def test_cluster_finder(): 
     """Test ClusterFinder""" 
 
