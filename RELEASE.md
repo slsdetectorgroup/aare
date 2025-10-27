@@ -13,6 +13,7 @@ Features:
 Bugfixes: 
 
 - File supports reading new master json file format (multiple ROI's not supported yet)
+- Added tell to ClusterFile. Returns position in bytes for debugging
 
 ### 2025.8.22
 

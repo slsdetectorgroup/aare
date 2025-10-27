@@ -189,6 +189,16 @@ class ClusterFile {
         }
     }
 
+    /**
+     * @brief Return the current position in the file (bytes)
+     */
+    int64_t tell() {
+        if (!fp) {
+            throw std::runtime_error(LOCATION + "File not opened");
+        }
+        return ftell(fp);
+    }
+
     /** @brief Open the file in specific mode
      *
      */
@@ -354,15 +364,20 @@ template <typename ClusterType, typename Enable>
 ClusterVector<ClusterType>
 ClusterFile<ClusterType, Enable>::read_frame_without_cut() {
     if (m_mode != "r") {
-        throw std::runtime_error("File not opened for reading");
+        throw std::runtime_error(LOCATION + "File not opened for reading");
     }
     if (m_num_left) {
         throw std::runtime_error(
-            "There are still photons left in the last frame");
+            LOCATION + "There are still photons left in the last frame");
     }
     int32_t frame_number;
     if (fread(&frame_number, sizeof(frame_number), 1, fp) != 1) {
-        throw std::runtime_error(LOCATION + "Could not read frame number");
+        if (feof(fp))
+            throw std::runtime_error(LOCATION + "Unexpected end of file");
+        else if (ferror(fp))
+            throw std::runtime_error(LOCATION + "Error reading from file");
+
+        throw std::runtime_error(LOCATION + "Unexpected error (not feof or ferror) when reading frame number");
     }
 
     int32_t n_clusters; // Saved as 32bit integer in the cluster file
