@@ -117,15 +117,22 @@ Interpolator::interpolate(const ClusterVector<ClusterType> &clusters) {
             {m_ietay(ix, iy, ie), m_ietay(ix + 1, iy, ie)}, eta.x);
         double ietay_interp_right = linear_interpolation(
             {m_etabinsx(ix), m_etabinsx(ix + 1)},
-            {m_ietax(ix, iy + 1, ie), m_ietax(ix, iy + 1, ie)}, eta.x);
+            {m_ietax(ix, iy + 1, ie), m_ietax(ix + 1, iy + 1, ie)}, eta.x);
 
         // transformed photon position y between [0,1]
         double ietay_interpolated = linear_interpolation(
             {m_etabinsy(iy), m_etabinsy(iy + 1)},
             {ietay_interp_left, ietay_interp_right}, eta.y);
 
+        // double u = m_ietax(ix, iy, ie);
+
+        // double v = m_ietay(ix, iy, ie);
+
         interpolation_logic<ClusterType, EtaFunction>(
             photon, ietax_interpolated, ietay_interpolated, eta);
+
+        // interpolation_logic<ClusterType, EtaFunction>(
+        // photon, u, v, eta);
 
         photons.push_back(photon);
     }
