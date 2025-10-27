@@ -70,10 +70,12 @@ class Interpolator {
      * Type
      * @tparam EtaType Type of Eta
      * @tparam EtaFunction Function object that calculates desired eta default:
+     * @param u: transformed photon position in x between [0,1]
+     * @param v: transformed photon position in y between [0,1]
      */
     template <typename ClusterType, auto EtaFunction, typename EtaType>
-    void interpolation_logic(Photon &photon, const size_t ix, const size_t iy,
-                             const size_t ie, const EtaType &eta);
+    void interpolation_logic(Photon &photon, const double u, const double v,
+                             const EtaType &eta);
 };
 
 template <typename ClusterType, auto EtaFunction, typename Enable>
@@ -93,14 +95,37 @@ Interpolator::interpolate(const ClusterVector<ClusterType> &clusters) {
 
         // Finding the index of the last element that is smaller
         // should work fine as long as we have many bins
-        // TODO only works for rosenblatt
         auto ie = last_smaller(m_energy_bins, photon.energy);
         auto ix = last_smaller(m_etabinsx, eta.x);
         auto iy = last_smaller(m_etabinsy, eta.y);
 
-        ix = m_etabinsx.shape(0) == m_ietax.shape(0) ? ix : ix + 1;
-        iy = m_etabinsy.shape(0) == m_ietay.shape(1) ? iy : iy + 1;
-        interpolation_logic<ClusterType, EtaFunction>(photon, ix, iy, ie, eta);
+        // bilinear interpolation
+        double ietax_interp_left = linear_interpolation(
+            {m_etabinsy(iy), m_etabinsy(iy + 1)},
+            {m_ietax(ix, iy, ie), m_ietax(ix, iy + 1, ie)}, eta.y);
+        double ietax_interp_right = linear_interpolation(
+            {m_etabinsy(iy), m_etabinsy(iy + 1)},
+            {m_ietax(ix + 1, iy, ie), m_ietax(ix + 1, iy + 1, ie)}, eta.y);
+
+        // transformed photon position x between [0,1]
+        double ietax_interpolated = linear_interpolation(
+            {m_etabinsx(ix), m_etabinsx(ix + 1)},
+            {ietax_interp_left, ietax_interp_right}, eta.x);
+
+        double ietay_interp_left = linear_interpolation(
+            {m_etabinsx(ix), m_etabinsx(ix + 1)},
+            {m_ietay(ix, iy, ie), m_ietay(ix + 1, iy, ie)}, eta.x);
+        double ietay_interp_right = linear_interpolation(
+            {m_etabinsx(ix), m_etabinsx(ix + 1)},
+            {m_ietax(ix, iy + 1, ie), m_ietax(ix, iy + 1, ie)}, eta.x);
+
+        // transformed photon position y between [0,1]
+        double ietay_interpolated = linear_interpolation(
+            {m_etabinsy(iy), m_etabinsy(iy + 1)},
+            {ietay_interp_left, ietay_interp_right}, eta.y);
+
+        interpolation_logic<ClusterType, EtaFunction>(
+            photon, ietax_interpolated, ietay_interpolated, eta);
 
         photons.push_back(photon);
     }
@@ -109,9 +134,8 @@ Interpolator::interpolate(const ClusterVector<ClusterType> &clusters) {
 }
 
 template <typename ClusterType, auto EtaFunction, typename EtaType>
-void Interpolator::interpolation_logic(Photon &photon, const size_t ix,
-                                       const size_t iy, const size_t ie,
-                                       const EtaType &eta) {
+void Interpolator::interpolation_logic(Photon &photon, const double u,
+                                       const double v, const EtaType &eta) {
 
     // try to call this with std::is_same_v and have it constexpr if possible
     if (EtaFunction ==
@@ -139,11 +163,11 @@ void Interpolator::interpolation_logic(Photon &photon, const size_t ix,
             dY = 1.0;
             break;
         }
-        photon.x -= m_ietax(ix, iy, ie) - dX;
-        photon.y -= m_ietay(ix, iy, ie) - dY;
+        photon.x -= u - dX;
+        photon.y -= v - dY;
     } else {
-        photon.x += m_ietax(ix, iy, ie);
-        photon.y += m_ietay(ix, iy, ie);
+        photon.x += u;
+        photon.y += v;
     }
 }
 
