@@ -3,15 +3,9 @@
 #include "aare/Cluster.hpp"
 #include "aare/ClusterVector.hpp"
 #include "aare/NDArray.hpp"
+#include "aare/defs.hpp"
 
 namespace aare {
-
-enum class corner : int {
-    cTopLeft = 0,
-    cTopRight = 1,
-    cBottomLeft = 2,
-    cBottomRight = 3
-};
 
 enum class pixel : int {
     pBottomLeft = 0,
@@ -28,7 +22,7 @@ enum class pixel : int {
 template <typename T> struct Eta2 {
     double x;
     double y;
-    int c{0};
+    corner c{0};
     T sum;
 };
 
@@ -66,11 +60,11 @@ calculate_eta2(const Cluster<T, ClusterSizeX, ClusterSizeY, CoordType> &cl) {
         (ClusterSizeX / 2) + (ClusterSizeY / 2) * ClusterSizeX;
 
     auto max_sum = cl.max_sum_2x2();
-    eta.sum = max_sum.first;
-    int c = max_sum.second;
+    eta.sum = max_sum.sum;
+    corner c = max_sum.index;
 
     // subcluster top right from center
-    switch (static_cast<corner>(c)) {
+    switch (c) {
     case (corner::cTopLeft):
         if ((cl.data[cluster_center_index - 1] +
              cl.data[cluster_center_index]) != 0)

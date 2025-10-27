@@ -114,4 +114,11 @@ PYBIND11_MODULE(_aare, m) {
     reduce_to_3x3<int, 9, 9, uint16_t>(m);
     reduce_to_3x3<double, 9, 9, uint16_t>(m);
     reduce_to_3x3<float, 9, 9, uint16_t>(m);
+
+    using Sum_index_pair_d = Sum_index_pair<double, corner>;
+    PYBIND11_NUMPY_DTYPE(Sum_index_pair_d, sum, index);
+    using Sum_index_pair_f = Sum_index_pair<float, corner>;
+    PYBIND11_NUMPY_DTYPE(Sum_index_pair_f, sum, index);
+    using Sum_index_pair_i = Sum_index_pair<int, corner>;
+    PYBIND11_NUMPY_DTYPE(Sum_index_pair_i, sum, index);
 }

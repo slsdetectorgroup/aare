@@ -86,15 +86,14 @@ class ClusterVector<Cluster<T, ClusterSizeX, ClusterSizeY, CoordType>> {
     /**
      * @brief Sum the pixels in the 2x2 subcluster with the biggest pixel sum in
      * each cluster
-     * @return std::vector<T> vector of sums for each cluster
+     * @return vector of sums index pairs for each cluster
      */
-    std::vector<T> sum_2x2() {
-        std::vector<T> sums_2x2(m_data.size());
+    std::vector<Sum_index_pair<T, corner>> sum_2x2() {
+        std::vector<Sum_index_pair<T, corner>> sums_2x2(m_data.size());
 
-        std::transform(m_data.begin(), m_data.end(), sums_2x2.begin(),
-                       [](const ClusterType &cluster) {
-                           return cluster.max_sum_2x2().first;
-                       });
+        std::transform(
+            m_data.begin(), m_data.end(), sums_2x2.begin(),
+            [](const ClusterType &cluster) { return cluster.max_sum_2x2(); });
 
         return sums_2x2;
     }

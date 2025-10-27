@@ -1,6 +1,10 @@
 # aare
 Data analysis library for PSI hybrid detectors
 
+## Documentation 
+
+Detailed documentation including installation can be found in [Documentation](https://slsdetectorgroup.github.io/aare/)
+
 
 ## Build and install
 
