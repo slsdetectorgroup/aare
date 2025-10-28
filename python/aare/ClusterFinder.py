@@ -65,7 +65,7 @@ def ClusterFileSink(clusterfindermt, cluster_file, dtype=np.int32):
     return cls(clusterfindermt, cluster_file)
 
 
-def ClusterFile(fname, cluster_size=(3,3), dtype=np.int32, chunk_size = 1000):
+def ClusterFile(fname, cluster_size=(3,3), dtype=np.int32, chunk_size = 1000, mode = "r"):
     """
     Factory function to create a ClusterFile object. Provides a cleaner syntax for
     the templated ClusterFile in C++.
@@ -83,4 +83,4 @@ def ClusterFile(fname, cluster_size=(3,3), dtype=np.int32, chunk_size = 1000):
     """
 
     cls = _get_class("ClusterFile", cluster_size, dtype)
-    return cls(fname, chunk_size=chunk_size)
+    return cls(fname, chunk_size=chunk_size, mode=mode)
