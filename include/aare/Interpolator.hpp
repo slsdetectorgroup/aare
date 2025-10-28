@@ -117,7 +117,7 @@ Interpolator::interpolate(const ClusterVector<ClusterType> &clusters) {
             {m_ietay(ix, iy, ie), m_ietay(ix + 1, iy, ie)}, eta.x);
         double ietay_interp_right = linear_interpolation(
             {m_etabinsx(ix), m_etabinsx(ix + 1)},
-            {m_ietax(ix, iy + 1, ie), m_ietax(ix + 1, iy + 1, ie)}, eta.x);
+            {m_ietay(ix, iy + 1, ie), m_ietay(ix + 1, iy + 1, ie)}, eta.x);
 
         // transformed photon position y between [0,1]
         double ietay_interpolated = linear_interpolation(
@@ -131,8 +131,7 @@ Interpolator::interpolate(const ClusterVector<ClusterType> &clusters) {
         interpolation_logic<ClusterType, EtaFunction>(
             photon, ietax_interpolated, ietay_interpolated, eta);
 
-        // interpolation_logic<ClusterType, EtaFunction>(
-        // photon, u, v, eta);
+        // interpolation_logic<ClusterType, EtaFunction>(photon, u, v, eta);
 
         photons.push_back(photon);
     }
@@ -170,8 +169,10 @@ void Interpolator::interpolation_logic(Photon &photon, const double u,
             dY = 1.0;
             break;
         }
-        photon.x -= u - dX;
-        photon.y -= v - dY;
+        photon.x = photon.x + 0.5 - u + dX; // use pixel center + 0.5
+        photon.y = photon.y + 0.5 - v +
+                   dY; // eta2 calculates the ratio between bottom and sum of
+                       // bottom and top  shift by 1 add eta value correctly
     } else {
         photon.x += u;
         photon.y += v;
