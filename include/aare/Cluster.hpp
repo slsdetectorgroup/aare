@@ -8,7 +8,7 @@
 
 #pragma once
 
-#include "logger.hpp"
+#include "defs.hpp"
 #include <algorithm>
 #include <array>
 #include <cstdint>
@@ -19,7 +19,7 @@ namespace aare {
 
 // requires clause c++20 maybe update
 template <typename T, uint8_t ClusterSizeX, uint8_t ClusterSizeY,
-          typename CoordType = int16_t>
+          typename CoordType = uint16_t>
 struct Cluster {
 
     static_assert(std::is_arithmetic_v<T>, "T needs to be an arithmetic type");
@@ -39,7 +39,14 @@ struct Cluster {
 
     T sum() const { return std::accumulate(data.begin(), data.end(), T{}); }
 
-    std::pair<T, int> max_sum_2x2() const {
+    // TODO: handle 1 dimensional clusters
+    // TODO: change int to corner
+    /**
+     * @brief sum of 2x2 subcluster with highest energy
+     * @return photon energy of subcluster, 2x2 subcluster index relative to
+     * cluster center
+     */
+    Sum_index_pair<T, corner> max_sum_2x2() const {
 
         if constexpr (cluster_size_x == 3 && cluster_size_y == 3) {
             std::array<T, 4> sum_2x2_subclusters;
@@ -50,27 +57,51 @@ struct Cluster {
             int index = std::max_element(sum_2x2_subclusters.begin(),
                                          sum_2x2_subclusters.end()) -
                         sum_2x2_subclusters.begin();
-            return std::make_pair(sum_2x2_subclusters[index], index);
+            return Sum_index_pair<T, corner>{sum_2x2_subclusters[index],
+                                             corner{index}};
         } else if constexpr (cluster_size_x == 2 && cluster_size_y == 2) {
-            return std::make_pair(data[0] + data[1] + data[2] + data[3], 0);
+            return Sum_index_pair<T, corner>{
+                data[0] + data[1] + data[2] + data[3], corner{0}};
         } else {
-            constexpr size_t num_2x2_subclusters =
-                (ClusterSizeX - 1) * (ClusterSizeY - 1);
+            constexpr size_t cluster_center_index =
+                (ClusterSizeX / 2) + (ClusterSizeY / 2) * ClusterSizeX;
 
-            std::array<T, num_2x2_subclusters> sum_2x2_subcluster;
-            for (size_t i = 0; i < ClusterSizeY - 1; ++i) {
-                for (size_t j = 0; j < ClusterSizeX - 1; ++j)
-                    sum_2x2_subcluster[i * (ClusterSizeX - 1) + j] =
-                        data[i * ClusterSizeX + j] +
-                        data[i * ClusterSizeX + j + 1] +
-                        data[(i + 1) * ClusterSizeX + j] +
-                        data[(i + 1) * ClusterSizeX + j + 1];
+            std::array<T, 4> sum_2x2_subcluster{0};
+            // subcluster top left from center
+            sum_2x2_subcluster[0] =
+                data[cluster_center_index] + data[cluster_center_index - 1] +
+                data[cluster_center_index - ClusterSizeX] +
+                data[cluster_center_index - 1 - ClusterSizeX];
+            // subcluster top right from center
+            if (ClusterSizeX > 2) {
+                sum_2x2_subcluster[1] =
+                    data[cluster_center_index] +
+                    data[cluster_center_index + 1] +
+                    data[cluster_center_index - ClusterSizeX] +
+                    data[cluster_center_index - ClusterSizeX + 1];
+            }
+            // subcluster bottom left from center
+            if (ClusterSizeY > 2) {
+                sum_2x2_subcluster[2] =
+                    data[cluster_center_index] +
+                    data[cluster_center_index - 1] +
+                    data[cluster_center_index + ClusterSizeX] +
+                    data[cluster_center_index + ClusterSizeX - 1];
+            }
+            // subcluster bottom right from center
+            if (ClusterSizeX > 2 && ClusterSizeY > 2) {
+                sum_2x2_subcluster[3] =
+                    data[cluster_center_index] +
+                    data[cluster_center_index + 1] +
+                    data[cluster_center_index + ClusterSizeX] +
+                    data[cluster_center_index + ClusterSizeX + 1];
             }
 
             int index = std::max_element(sum_2x2_subcluster.begin(),
                                          sum_2x2_subcluster.end()) -
                         sum_2x2_subcluster.begin();
-            return std::make_pair(sum_2x2_subcluster[index], index);
+            return Sum_index_pair<T, corner>{sum_2x2_subcluster[index],
+                                             corner{index}};
         }
     }
 };
@@ -98,8 +129,8 @@ reduce_to_2x2(const Cluster<T, ClusterSizeX, ClusterSizeY, CoordType> &c) {
         (ClusterSizeX / 2) + (ClusterSizeY / 2) * ClusterSizeX;
 
     int16_t index_bottom_left_max_2x2_subcluster =
-        (int(index / (ClusterSizeX - 1))) * ClusterSizeX +
-        index % (ClusterSizeX - 1);
+        (int(static_cast<int>(index) / (ClusterSizeX - 1))) * ClusterSizeX +
+        static_cast<int>(index) % (ClusterSizeX - 1);
 
     result.x =
         c.x + (index_bottom_left_max_2x2_subcluster - cluster_center_index) %
@@ -123,22 +154,22 @@ Cluster<T, 2, 2, int16_t> reduce_to_2x2(const Cluster<T, 3, 3, int16_t> &c) {
 
     auto [s, i] = c.max_sum_2x2();
     switch (i) {
-    case 0:
+    case corner::cTopLeft:
         result.x = c.x - 1;
         result.y = c.y + 1;
         result.data = {c.data[0], c.data[1], c.data[3], c.data[4]};
         break;
-    case 1:
+    case corner::cTopRight:
         result.x = c.x;
         result.y = c.y + 1;
         result.data = {c.data[1], c.data[2], c.data[4], c.data[5]};
         break;
-    case 2:
+    case corner::cBottomLeft:
         result.x = c.x - 1;
         result.y = c.y;
         result.data = {c.data[3], c.data[4], c.data[6], c.data[7]};
         break;
-    case 3:
+    case corner::cBottomRight:
         result.x = c.x;
         result.y = c.y;
         result.data = {c.data[4], c.data[5], c.data[7], c.data[8]};

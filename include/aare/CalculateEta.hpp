@@ -3,15 +3,9 @@
 #include "aare/Cluster.hpp"
 #include "aare/ClusterVector.hpp"
 #include "aare/NDArray.hpp"
+#include "aare/defs.hpp"
 
 namespace aare {
-
-enum class corner : int {
-    cTopLeft = 0,
-    cTopRight = 1,
-    cBottomLeft = 2,
-    cBottomRight = 3
-};
 
 enum class pixel : int {
     pBottomLeft = 0,
@@ -33,7 +27,7 @@ template <typename T> struct Eta2 {
     double x;
     /// @brief eta in y direction
     double y;
-    int c{0};
+    corner c{0};
     /// @brief photon energy (cluster sum)
     T sum;
 };
@@ -110,11 +104,19 @@ calculate_eta2(const Cluster<T, ClusterSizeX, ClusterSizeY, CoordType> &cl) {
         (ClusterSizeX / 2) + (ClusterSizeY / 2) * ClusterSizeX;
 
     auto max_sum = cl.max_sum_2x2();
+<<<<<<< HEAD
     eta.sum = max_sum.first;
     int c = max_sum.second;
 
     // subcluster top right from center
     switch (static_cast<corner>(c)) {
+=======
+    eta.sum = max_sum.sum;
+    corner c = max_sum.index;
+
+    // subcluster top right from center
+    switch (c) {
+>>>>>>> main
     case (corner::cTopLeft):
         if ((cl.data[cluster_center_index - 1] +
              cl.data[cluster_center_index]) != 0)
@@ -185,15 +187,27 @@ calculate_eta2(const Cluster<T, ClusterSizeX, ClusterSizeY, CoordType> &cl) {
     return eta;
 }
 
+<<<<<<< HEAD
+=======
+// TODO! Look up eta2 calculation - photon center should be bottom right corner
+>>>>>>> main
 template <typename T>
 Eta2<T> calculate_eta2(const Cluster<T, 2, 2, int16_t> &cl) {
     Eta2<T> eta{};
 
+<<<<<<< HEAD
     if ((cl.data[2] + cl.data[3]) != 0)
         eta.x = static_cast<double>(cl.data[2]) /
                 (cl.data[2] + cl.data[3]); // between (0,1) the closer to zero
                                            // left value probably larger
     if ((cl.data[1] + cl.data[3]) != 0)
+=======
+    if ((cl.data[0] + cl.data[1]) != 0)
+        eta.x = static_cast<double>(cl.data[2]) /
+                (cl.data[2] + cl.data[3]); // between (0,1) the closer to zero
+                                           // left value probably larger
+    if ((cl.data[0] + cl.data[2]) != 0)
+>>>>>>> main
         eta.y = static_cast<double>(cl.data[1]) /
                 (cl.data[1] + cl.data[3]); // between (0,1) the closer to zero
                                            // bottom value probably larger
@@ -221,6 +235,7 @@ Eta2<T> calculate_eta2(const Cluster<T, 2, 1, int16_t> &cl) {
     eta.sum = cl.sum();
 }
 
+<<<<<<< HEAD
 /**
  * @brief calculates cross Eta3 for 3x3 cluster
  * cross Eta3 calculates the eta by taking into account only the cross pixels
@@ -228,6 +243,11 @@ Eta2<T> calculate_eta2(const Cluster<T, 2, 1, int16_t> &cl) {
  */
 template <typename T, typename CoordType = uint16_t>
 Eta2<T> calculate_cross_eta3(const Cluster<T, 3, 3, CoordType> &cl) {
+=======
+// calculates Eta3 for 3x3 cluster based on code from analyze_cluster
+// TODO only supported for 3x3 Clusters
+template <typename T> Eta2<T> calculate_eta3(const Cluster<T, 3, 3> &cl) {
+>>>>>>> main
 
     Eta2<T> eta{};
 

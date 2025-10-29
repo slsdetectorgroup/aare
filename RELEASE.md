@@ -11,11 +11,20 @@ Bugfixes:
 
 - eta interpolation 
 
+### 2025.10.27
+
+Features: 
+
+- max_sum_2x2 including index of subcluster with highest energy is now available from Python API 
+- eta stores corner as enum class cTopLeft, cTopRight, BottomLeft, cBottomRight indicating 2x2 subcluster with largest energy relative to cluster center 
+- max_sum_2x2 returns corner as index
+
 ### 2025.10.1
 
 Bugfixes: 
 
 - File supports reading new master json file format (multiple ROI's not supported yet)
+- Added tell to ClusterFile. Returns position in bytes for debugging
 
 ### 2025.8.22
 

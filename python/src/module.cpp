@@ -88,6 +88,8 @@ PYBIND11_MODULE(_aare, m) {
     DEFINE_CLUSTER_BINDINGS(double, 9, 9, uint16_t, d);
     DEFINE_CLUSTER_BINDINGS(float, 9, 9, uint16_t, f);
 
+    // DEFINE_CLUSTER_BINDINGS(double, 2, 1, uint16_t, d);
+
     define_3x3_reduction<int, 3, 3, uint16_t>(m);
     define_3x3_reduction<double, 3, 3, uint16_t>(m);
     define_3x3_reduction<float, 3, 3, uint16_t>(m);
@@ -117,4 +119,11 @@ PYBIND11_MODULE(_aare, m) {
     register_calculate_3x3eta<int, uint16_t>(m);
     register_calculate_3x3eta<double, uint16_t>(m);
     register_calculate_3x3eta<float, uint16_t>(m);
+
+    using Sum_index_pair_d = Sum_index_pair<double, corner>;
+    PYBIND11_NUMPY_DTYPE(Sum_index_pair_d, sum, index);
+    using Sum_index_pair_f = Sum_index_pair<float, corner>;
+    PYBIND11_NUMPY_DTYPE(Sum_index_pair_f, sum, index);
+    using Sum_index_pair_i = Sum_index_pair<int, corner>;
+    PYBIND11_NUMPY_DTYPE(Sum_index_pair_i, sum, index);
 }

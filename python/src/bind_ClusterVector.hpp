@@ -44,11 +44,16 @@ void define_ClusterVector(py::module &m, const std::string &typestr) {
                  auto *vec = new std::vector<Type>(self.sum());
                  return return_vector(vec);
              })
-        .def("sum_2x2",
-             [](ClusterVector<ClusterType> &self) {
-                 auto *vec = new std::vector<Type>(self.sum_2x2());
-                 return return_vector(vec);
-             })
+        .def(
+            "sum_2x2",
+            [](ClusterVector<ClusterType> &self) {
+                auto *vec = new std::vector<Sum_index_pair<Type, corner>>(
+                    self.sum_2x2());
+
+                return return_vector(vec);
+            },
+            R"(calculates sum of 2x2 subcluster with highest energy and index relative to cluster center 0: top_left, 1: top_right, 2: bottom_left, 3: bottom_right
+            )")
         .def_property_readonly("size", &ClusterVector<ClusterType>::size)
         .def("item_size", &ClusterVector<ClusterType>::item_size)
         .def_property_readonly("fmt",

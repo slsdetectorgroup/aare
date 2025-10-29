@@ -58,7 +58,17 @@ void define_Cluster(py::module &m, const std::string &typestr) {
                       &Cluster<Type, ClusterSizeX, ClusterSizeY, CoordType>::x)
 
         .def_readonly("y",
-                      &Cluster<Type, ClusterSizeX, ClusterSizeY, CoordType>::y);
+                      &Cluster<Type, ClusterSizeX, ClusterSizeY, CoordType>::y)
+
+        .def(
+            "max_sum_2x2",
+            [](Cluster<Type, ClusterSizeX, ClusterSizeY, CoordType> &self) {
+                auto max_sum = self.max_sum_2x2();
+                return py::make_tuple(max_sum.sum,
+                                      static_cast<int>(max_sum.index));
+            },
+            R"(calculates sum of 2x2 subcluster with highest energy and index relative to cluster center 0: top_left, 1: top_right, 2: bottom_left, 3: bottom_right
+            )");
 }
 
 template <typename T, uint8_t ClusterSizeX, uint8_t ClusterSizeY,
