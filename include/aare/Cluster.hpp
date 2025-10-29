@@ -40,7 +40,6 @@ struct Cluster {
     T sum() const { return std::accumulate(data.begin(), data.end(), T{}); }
 
     // TODO: handle 1 dimensional clusters
-    // TODO: change int to corner
     /**
      * @brief sum of 2x2 subcluster with highest energy
      * @return photon energy of subcluster, 2x2 subcluster index relative to
@@ -233,8 +232,6 @@ reduce_to_3x3(const Cluster<T, ClusterSizeX, ClusterSizeY, CoordType> &c) {
 
     auto [sum, index] = max_3x3_sum(c);
 
-    std::cout << "sum: " << sum << ", index: " << index << std::endl;
-
     int16_t cluster_center_index =
         (ClusterSizeX / 2) + (ClusterSizeY / 2) * ClusterSizeX;
 
@@ -251,8 +248,6 @@ reduce_to_3x3(const Cluster<T, ClusterSizeX, ClusterSizeY, CoordType> &c) {
     // TODO: this should be + once other PR merged change and adapt tests !!!
     result.y = c.y - (index_center_max_3x3_subcluster / ClusterSizeX -
                       cluster_center_index / ClusterSizeX);
-
-    std::cout << "resul center: " << result.x << ", " << result.y << std::endl;
 
     // If one of the new coordinates is negative, we have negative photon
     // energies. Assume noise is too high and keep original 3x3 subcluster at

@@ -45,10 +45,7 @@ void define_ClusterFile(py::module &m, const std::string &typestr) {
                  return v;
              })
         .def("set_roi", &ClusterFile<ClusterType>::set_roi, py::arg("roi"))
-<<<<<<< HEAD
-=======
         .def("tell", &ClusterFile<ClusterType>::tell)
->>>>>>> main
         .def(
             "set_noise_map",
             [](ClusterFile<ClusterType> &self, py::array_t<int32_t> noise_map) {
