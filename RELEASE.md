@@ -1,5 +1,16 @@
 # Release notes
 
+### 2025.10.29
+
+Features:
+
+- interpolator class supports using cross eta3x3 and eta3x3 on full cluster 
+- interpolator class has option to calculate the rosenblatt transform 
+
+Bugfixes: 
+
+- eta interpolation 
+
 ### 2025.10.1
 
 Bugfixes: 
