@@ -71,8 +71,8 @@ void reduce_to_3x3(py::module &m) {
             return reduce_to_3x3(cl);
         },
         py::return_value_policy::move,
-        "Reduce cluster to 3x3 subcluster by taking the 3x3 subcluster with "
-        "the highest photon energy.");
+        R"(Reduce cluster to 3x3 subcluster by taking the 3x3 subcluster with 
+        the highest photon energy.)");
 }
 
 template <typename T, uint8_t ClusterSizeX, uint8_t ClusterSizeY,
@@ -85,8 +85,8 @@ void reduce_to_2x2(py::module &m) {
             return reduce_to_2x2(cl);
         },
         py::return_value_policy::move,
-        "Reduce cluster to 2x2 subcluster by taking the 2x2 subcluster with "
-        "the highest photon energy.");
+        R"(Reduce cluster to 2x2 subcluster by taking the 2x2 subcluster with 
+        "the highest photon energy.)");
 }
 
 #pragma GCC diagnostic pop

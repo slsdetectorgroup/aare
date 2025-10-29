@@ -29,6 +29,7 @@ AARE
     pyCtbRawFile
     pyClusterFile
     pyClusterVector
+    pyInterpolation
     pyJungfrauDataFile
     pyRawFile
     pyRawMasterFile
@@ -51,6 +52,7 @@ AARE
     ClusterFinderMT
     ClusterFile
     ClusterVector
+    Interpolation
     JungfrauDataFile
     Pedestal
     RawFile

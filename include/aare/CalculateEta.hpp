@@ -25,15 +25,21 @@ enum class pixel : int {
     pTopRight = 8
 };
 
+/**
+ * eta struct
+ */
 template <typename T> struct Eta2 {
+    /// @brief eta in x direction
     double x;
+    /// @brief eta in y direction
     double y;
     int c{0};
+    /// @brief photon energy (cluster sum)
     T sum;
 };
 
 /**
- * @brief Calculate the eta2 values for all clusters in a Clustervector
+ * @brief Calculate the eta2 values for all clusters in a ClusterVector
  */
 template <typename ClusterType,
           typename = std::enable_if_t<is_cluster_v<ClusterType>>>
@@ -89,8 +95,8 @@ NDArray<double, 2> calculate_cross_eta3(
 
 /**
  * @brief Calculate the eta2 values for a generic sized cluster and return them
- * in a Eta2 struct containing etay, etax and the index of the respective 2x2
- * subcluster.
+ * in a Eta2 struct containing etay, etax and the index (as corner) of the
+ * respective 2x2 subcluster relative to the cluster center.
  */
 template <typename T, uint8_t ClusterSizeX, uint8_t ClusterSizeY,
           typename CoordType>
@@ -179,7 +185,6 @@ calculate_eta2(const Cluster<T, ClusterSizeX, ClusterSizeY, CoordType> &cl) {
     return eta;
 }
 
-// TODO! Look up eta2 calculation - photon center should be bottom right corner
 template <typename T>
 Eta2<T> calculate_eta2(const Cluster<T, 2, 2, int16_t> &cl) {
     Eta2<T> eta{};

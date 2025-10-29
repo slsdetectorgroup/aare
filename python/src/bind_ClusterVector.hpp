@@ -115,11 +115,11 @@ void define_2x2_reduction(py::module &m) {
                 reduce_to_2x2(cv));
         },
         R"(
-        
         Reduce cluster to 2x2 subcluster by taking the 2x2 subcluster with 
-        the highest photon energy."
+        the highest photon energy.
+
         Parameters
-        ----------
+
         cv : ClusterVector   
         )",
         py::arg("clustervector"));
@@ -137,11 +137,11 @@ void define_3x3_reduction(py::module &m) {
                 reduce_to_3x3(cv));
         },
         R"(
-        
         Reduce cluster to 3x3 subcluster by taking the 3x3 subcluster with 
-        the highest photon energy."
+        the highest photon energy.
+
         Parameters
-        ----------
+        
         cv : ClusterVector   
         )",
         py::arg("clustervector"));

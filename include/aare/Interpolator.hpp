@@ -17,7 +17,10 @@ struct Photon {
 };
 
 class Interpolator {
+    // marginal CDF of eta_x (if rosenblatt applied), conditional
+    // CDF of eta_x conditioned on eta_y
     NDArray<double, 3> m_ietax;
+    // conditional CDF of eta_y conditioned on eta_x
     NDArray<double, 3> m_ietay;
 
     NDArray<double, 1> m_etabinsx;
@@ -25,6 +28,14 @@ class Interpolator {
     NDArray<double, 1> m_energy_bins;
 
   public:
+    /**
+     * @brief Constructor for the Interpolator class
+     * @param etacube joint distribution of etaX, etaY and photon energy
+     * @param xbins bin edges for etaX
+     * @param ybins bin edges for etaY
+     * @param ebins bin edges for photon energy
+     * @note note first dimension is etaX, second etaY, third photon energy
+     */
     Interpolator(NDView<double, 3> etacube, NDView<double, 1> xbins,
                  NDView<double, 1> ybins, NDView<double, 1> ebins);
 
@@ -54,17 +65,13 @@ class Interpolator {
      * precision
      * @tparam ClusterType Type of Clusters to interpolate
      * @tparam Etafunction Function object that calculates desired eta default:
-     * calculate_eta2x2
-     * @warning
+     * calculate_eta2
      */
     template <typename ClusterType, auto EtaFUnction = calculate_eta2,
               typename Eanble = std::enable_if_t<is_cluster_v<ClusterType>>>
     std::vector<Photon> interpolate(const ClusterVector<ClusterType> &clusters);
 
   private:
-    // TODO: is it better to use a functor? with template specialization if the
-    // template argument is actually not used?
-
     /**
      * @brief implements underlying interpolation logic based on EtaFunction
      * Type
@@ -143,7 +150,8 @@ template <typename ClusterType, auto EtaFunction, typename EtaType>
 void Interpolator::interpolation_logic(Photon &photon, const double u,
                                        const double v, const EtaType &eta) {
 
-    // try to call this with std::is_same_v and have it constexpr if possible
+    // TODO: try to call this with std::is_same_v and have it constexpr if
+    // possible
     if (EtaFunction ==
         &calculate_eta2<
             typename ClusterType::value_type, ClusterType::cluster_size_x,
