@@ -17,51 +17,32 @@ Interpolator::Interpolator(NDView<double, 3> etacube, NDView<double, 1> xbins,
     }
     m_ietax = NDArray<double, 3>(
         std::array<ssize_t, 3>{xbins.size(), ybins.size(), ebins.size()}, 0.0);
-    // m_ietax(0, 0, 0) = 0.0;
 
-    // Cumulative sum in the x direction
+    m_ietay = NDArray<double, 3>(
+        std::array<ssize_t, 3>{xbins.size(), ybins.size(), ebins.size()}, 0.0);
+
+    // Cumulative sum
     for (ssize_t i = 1; i < m_ietax.shape(0); i++) {
-        for (ssize_t j = 0; j < m_ietax.shape(1); j++) {
+        for (ssize_t j = 1; j < m_ietax.shape(1); j++) {
             for (ssize_t k = 0; k < m_ietax.shape(2); k++) {
-                m_ietax(i, j, k) = etacube(i - 1, j, k);
-                m_ietax(i, j, k) += m_ietax(i - 1, j, k);
+                m_ietax(i, j - 1, k) = etacube(i - 1, j - 1, k);
+                m_ietax(i, j - 1, k) += m_ietax(i - 1, j - 1, k);
+
+                m_ietay(i - 1, j, k) = etacube(i - 1, j - 1, k);
+                m_ietay(i - 1, j, k) += m_ietay(i - 1, j - 1, k);
             }
         }
     }
-
     // Normalize by the highest row, if norm less than 1 don't do anything
     for (ssize_t i = 0; i < m_ietax.shape(0); i++) {
         for (ssize_t j = 0; j < m_ietax.shape(1); j++) {
             for (ssize_t k = 0; k < m_ietax.shape(2); k++) {
-                auto val = m_ietax(m_ietax.shape(0) - 1, j, k);
-                double norm = val < 1 ? 1 : val;
-                m_ietax(i, j, k) /= norm;
-            }
-        }
-    }
-
-    m_ietay = NDArray<double, 3>(
-        std::array<ssize_t, 3>{xbins.size(), ybins.size(), ebins.size()}, 0.0);
-    // m_ietay(0, 0, 0) = 0.0;
-
-    // TODO: collapse this loop with first one
-    //  Cumulative sum in the y direction
-    for (ssize_t i = 0; i < m_ietay.shape(0); i++) {
-        for (ssize_t j = 1; j < m_ietay.shape(1); j++) {
-            for (ssize_t k = 0; k < m_ietay.shape(2); k++) {
-                m_ietay(i, j, k) = etacube(i, j - 1, k);
-                m_ietay(i, j, k) += m_ietay(i, j - 1, k);
-            }
-        }
-    }
-
-    // Normalize by the highest column, if norm less than 1 don't do anything
-    for (ssize_t i = 0; i < m_ietay.shape(0); i++) {
-        for (ssize_t j = 0; j < m_ietay.shape(1); j++) {
-            for (ssize_t k = 0; k < m_ietay.shape(2); k++) {
-                auto val = m_ietay(i, m_ietay.shape(1) - 1, k);
-                double norm = val < 1 ? 1 : val;
-                m_ietay(i, j, k) /= norm;
+                auto val_etax = m_ietax(m_ietax.shape(0) - 1, j, k);
+                double norm_etax = val_etax < 1 ? 1 : val_etax;
+                m_ietax(i, j, k) /= norm_etax;
+                auto val_etay = m_ietay(i, m_ietay.shape(1) - 1, k);
+                double norm_etay = val_etay < 1 ? 1 : val_etay;
+                m_ietay(i, j, k) /= norm_etay;
             }
         }
     }
