@@ -50,6 +50,24 @@ NDArray<double, 2> calculate_eta2(const ClusterVector<ClusterType> &clusters) {
 }
 
 /**
+ * @brief Calculate the full eta2 values for all clusters in a ClusterVector
+ */
+template <typename ClusterType,
+          typename = std::enable_if_t<is_cluster_v<ClusterType>>>
+NDArray<double, 2>
+calculate_full_eta2(const ClusterVector<ClusterType> &clusters) {
+    NDArray<double, 2> eta2({static_cast<int64_t>(clusters.size()), 2});
+
+    for (size_t i = 0; i < clusters.size(); i++) {
+        auto e = calculate_full_eta2(clusters[i]);
+        eta2(i, 0) = e.x;
+        eta2(i, 1) = e.y;
+    }
+
+    return eta2;
+}
+
+/**
  * @brief Calculate eta3 for all 3x3 clusters in a ClusterVector
  */
 template <
@@ -179,6 +197,90 @@ calculate_eta2(const Cluster<T, ClusterSizeX, ClusterSizeY, CoordType> &cl) {
     return eta;
 }
 
+/**
+ * @brief Calculate the eta2 values for a generic sized cluster and return them
+ * in a Eta2 struct containing etay, etax and the index (as corner) of the
+ * respective 2x2 subcluster relative to the cluster center.
+ */
+template <typename T, uint8_t ClusterSizeX, uint8_t ClusterSizeY,
+          typename CoordType>
+Eta2<T> calculate_full_eta2(
+    const Cluster<T, ClusterSizeX, ClusterSizeY, CoordType> &cl) {
+
+    static_assert(ClusterSizeX > 1 && ClusterSizeY > 1);
+    Eta2<T> eta{};
+
+    size_t cluster_center_index =
+        (ClusterSizeX / 2) + (ClusterSizeY / 2) * ClusterSizeX;
+
+    auto max_sum = cl.max_sum_2x2();
+    eta.sum = max_sum.sum;
+    corner c = max_sum.index;
+
+    // subcluster top right from center
+    switch (c) {
+    case (corner::cTopLeft):
+        if (eta.sum() != 0) {
+            eta.x = static_cast<double>(
+                        cl.data[cluster_center_index - 1] +
+                        cl.data[cluster_center_index - 1 - ClusterSizeX]) /
+                    eta.sum;
+
+            eta.y = static_cast<double>(
+                        cl.data[cluster_center_index - 1 - ClusterSizeX] +
+                        cl.data[cluster_center_index - ClusterSizeX]) /
+                    eta.sum;
+        }
+        // dx = 0
+        // dy = 0
+        break;
+    case (corner::cTopRight):
+        if (eta.sum() != 0) {
+            eta.x = static_cast<double>(
+                        cl.data[cluster_center_index] +
+                        cl.data[cluster_center_index - ClusterSizeX]) /
+                    eta.sum;
+            eta.y = static_cast<double>(
+                        cl.data[cluster_center_index - ClusterSizeX] +
+                        cl.data[cluster_center_index - ClusterSizeX + 1]) /
+                    eta.sum;
+        }
+        // dx = 1
+        // dy = 0
+        break;
+    case (corner::cBottomLeft):
+        if (eta.sum != 0) {
+            eta.x = static_cast<double>(
+                        cl.data[cluster_center_index - 1] +
+                        cl.data[cluster_center_index - 1 + ClusterSizeX]) /
+                    eta.sum;
+            eta.y = static_cast<double>(cl.data[cluster_center_index - 1] +
+                                        cl.data[cluster_center_index]) /
+                    eta.sum;
+        }
+        // dx = 0
+        // dy = 1
+        break;
+    case (corner::cBottomRight):
+        if (eta.sum != 0) {
+            eta.x = static_cast<double>(
+                        cl.data[cluster_center_index] +
+                        cl.data[cluster_center_index + ClusterSizeX]) /
+                    eta.sum;
+            eta.y = static_cast<double>(cl.data[cluster_center_index] +
+                                        cl.data[cluster_center_index + 1]) /
+                    eta.sum;
+        }
+        // dx = 1
+        // dy = 1
+        break;
+    }
+
+    eta.c = c;
+
+    return eta;
+}
+
 template <typename T>
 Eta2<T> calculate_eta2(const Cluster<T, 2, 2, int16_t> &cl) {
     Eta2<T> eta{};
@@ -193,6 +295,23 @@ Eta2<T> calculate_eta2(const Cluster<T, 2, 2, int16_t> &cl) {
                                            // bottom value probably larger
     eta.sum = cl.sum();
 
+    return eta;
+}
+
+template <typename T>
+Eta2<T> calculate_full_eta2(const Cluster<T, 2, 2, int16_t> &cl) {
+    Eta2<T> eta{};
+
+    eta.sum = cl.sum();
+
+    if (eta.sum != 0)
+        eta.x = static_cast<double>(cl.data[0] + cl.data[2]) /
+                eta.sum; // between (0,1) the closer to zero
+                         // left value probably larger
+    if (eta.sum != 0)
+        eta.y = static_cast<double>(cl.data[0] + cl.data[1]) /
+                eta.sum; // between (0,1) the closer to zero
+                         // bottom value probably larger
     return eta;
 }
 
