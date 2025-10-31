@@ -43,14 +43,16 @@ double, 'f' for float)
 #define DEFINE_CLUSTER_BINDINGS(T, N, M, U, TYPE_CODE)                         \
     define_ClusterFile<T, N, M, U>(m, "Cluster" #N "x" #M #TYPE_CODE);         \
     define_ClusterVector<T, N, M, U>(m, "Cluster" #N "x" #M #TYPE_CODE);       \
-    define_ClusterFinder<T, N, M, U>(m, "Cluster" #N "x" #M #TYPE_CODE);       \
-    define_ClusterFinderMT<T, N, M, U>(m, "Cluster" #N "x" #M #TYPE_CODE);     \
-    define_ClusterFileSink<T, N, M, U>(m, "Cluster" #N "x" #M #TYPE_CODE);     \
-    define_ClusterCollector<T, N, M, U>(m, "Cluster" #N "x" #M #TYPE_CODE);    \
     define_Cluster<T, N, M, U>(m, #N "x" #M #TYPE_CODE);                       \
     register_calculate_2x2eta<T, N, M, U>(m);                                  \
     define_2x2_reduction<T, N, M, U>(m);                                       \
     reduce_to_2x2<T, N, M, U>(m);
+
+#define DEFINE_BINDINGS_CLUSTERFINDER(T, N, M, U, TYPE_CODE)                   \
+    define_ClusterFinder<T, N, M, U>(m, "Cluster" #N "x" #M #TYPE_CODE);       \
+    define_ClusterFinderMT<T, N, M, U>(m, "Cluster" #N "x" #M #TYPE_CODE);     \
+    define_ClusterFileSink<T, N, M, U>(m, "Cluster" #N "x" #M #TYPE_CODE);     \
+    define_ClusterCollector<T, N, M, U>(m, "Cluster" #N "x" #M #TYPE_CODE);
 
 PYBIND11_MODULE(_aare, m) {
     define_file_io_bindings(m);
@@ -88,7 +90,21 @@ PYBIND11_MODULE(_aare, m) {
     DEFINE_CLUSTER_BINDINGS(double, 9, 9, uint16_t, d);
     DEFINE_CLUSTER_BINDINGS(float, 9, 9, uint16_t, f);
 
-    // DEFINE_CLUSTER_BINDINGS(double, 2, 1, uint16_t, d);
+    DEFINE_BINDINGS_CLUSTERFINDER(int, 3, 3, uint16_t, i);
+    DEFINE_BINDINGS_CLUSTERFINDER(double, 3, 3, uint16_t, d);
+    DEFINE_BINDINGS_CLUSTERFINDER(float, 3, 3, uint16_t, f);
+
+    DEFINE_BINDINGS_CLUSTERFINDER(int, 5, 5, uint16_t, i);
+    DEFINE_BINDINGS_CLUSTERFINDER(double, 5, 5, uint16_t, d);
+    DEFINE_BINDINGS_CLUSTERFINDER(float, 5, 5, uint16_t, f);
+
+    DEFINE_BINDINGS_CLUSTERFINDER(int, 7, 7, uint16_t, i);
+    DEFINE_BINDINGS_CLUSTERFINDER(double, 7, 7, uint16_t, d);
+    DEFINE_BINDINGS_CLUSTERFINDER(float, 7, 7, uint16_t, f);
+
+    DEFINE_BINDINGS_CLUSTERFINDER(int, 9, 9, uint16_t, i);
+    DEFINE_BINDINGS_CLUSTERFINDER(double, 9, 9, uint16_t, d);
+    DEFINE_BINDINGS_CLUSTERFINDER(float, 9, 9, uint16_t, f);
 
     define_3x3_reduction<int, 3, 3, uint16_t>(m);
     define_3x3_reduction<double, 3, 3, uint16_t>(m);
