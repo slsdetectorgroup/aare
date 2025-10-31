@@ -66,6 +66,9 @@ class Interpolator {
      * @tparam ClusterType Type of Clusters to interpolate
      * @tparam Etafunction Function object that calculates desired eta default:
      * calculate_eta2
+     * @return interpolated photons (photon positions are given as double but
+     * following row column format e.g. x=0, y=0 means top row and first column
+     * of frame)
      */
     template <typename ClusterType, auto EtaFUnction = calculate_eta2,
               typename Eanble = std::enable_if_t<is_cluster_v<ClusterType>>>

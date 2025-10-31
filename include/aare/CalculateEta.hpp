@@ -27,6 +27,7 @@ template <typename T> struct Eta2 {
     double x;
     /// @brief eta in y direction
     double y;
+    /// @brief index of subcluster given as corner relative to cluster center
     corner c{0};
     /// @brief photon energy (cluster sum)
     T sum;
