@@ -220,7 +220,7 @@ Eta2<T> calculate_full_eta2(
     // subcluster top right from center
     switch (c) {
     case (corner::cTopLeft):
-        if (eta.sum() != 0) {
+        if (eta.sum != 0) {
             eta.x = static_cast<double>(
                         cl.data[cluster_center_index - 1] +
                         cl.data[cluster_center_index - 1 - ClusterSizeX]) /
@@ -235,7 +235,7 @@ Eta2<T> calculate_full_eta2(
         // dy = 0
         break;
     case (corner::cTopRight):
-        if (eta.sum() != 0) {
+        if (eta.sum != 0) {
             eta.x = static_cast<double>(
                         cl.data[cluster_center_index] +
                         cl.data[cluster_center_index - ClusterSizeX]) /
@@ -304,14 +304,15 @@ Eta2<T> calculate_full_eta2(const Cluster<T, 2, 2, int16_t> &cl) {
 
     eta.sum = cl.sum();
 
-    if (eta.sum != 0)
+    if (eta.sum != 0) {
         eta.x = static_cast<double>(cl.data[0] + cl.data[2]) /
                 eta.sum; // between (0,1) the closer to zero
                          // left value probably larger
-    if (eta.sum != 0)
+
         eta.y = static_cast<double>(cl.data[0] + cl.data[1]) /
                 eta.sum; // between (0,1) the closer to zero
                          // bottom value probably larger
+    }
     return eta;
 }
 

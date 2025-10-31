@@ -123,3 +123,37 @@ TEST_CASE("Calculate eta2 for a 3x3 int32 cluster with the largest 2x2 sum in "
     CHECK(eta.y == 91.0 / (91 + 80)); // 7/(7+4)
     CHECK(eta.sum == 77 + 80 + 82 + 91);
 }
+
+auto get_test_parameters_fulleta2x2() {
+    return GENERATE(
+        std::make_tuple(ClusterTypes{Cluster<int, 2, 2>{0, 0, {1, 2, 3, 1}}},
+                        Eta2<int>{4. / 7, 3. / 7, corner::cTopLeft, 7}),
+        std::make_tuple(
+            ClusterTypes{Cluster<int, 3, 3>{0, 0, {1, 2, 3, 4, 5, 6, 1, 2, 7}}},
+            Eta2<int>{7. / 20, 11. / 20, corner::cBottomRight, 20}),
+        std::make_tuple(ClusterTypes{Cluster<int, 5, 5>{
+                            0, 0, {1, 1, 1, 1, 1, 1, 1, 2, 1, 2, 1, 9, 8,
+                                   1, 4, 1, 6, 7, 8, 1, 1, 1, 1, 1, 1}}},
+                        Eta2<int>{15. / 30, 17. / 30, corner::cBottomLeft, 30}),
+        std::make_tuple(
+            ClusterTypes{Cluster<int, 4, 2>{0, 0, {1, 4, 7, 2, 5, 6, 4, 3}}},
+            Eta2<int>{10. / 21, 11. / 21, corner::cTopLeft, 21}),
+        std::make_tuple(
+            ClusterTypes{Cluster<int, 2, 3>{0, 0, {1, 3, 2, 3, 4, 2}}},
+            Eta2<int>{6. / 11, 5. / 11, corner::cBottomLeft, 11}));
+}
+
+TEST_CASE("Calculate full eta2") {
+
+    auto [test_cluster, expected_eta] = get_test_parameters_fulleta2x2();
+
+    auto eta = std::visit(
+        [](const auto &clustertype) {
+            return calculate_full_eta2(clustertype);
+        },
+        test_cluster);
+    CHECK(expected_eta.c == eta.c);
+    CHECK(expected_eta.sum == eta.sum);
+    CHECK(expected_eta.x == eta.x);
+    CHECK(expected_eta.y == eta.y);
+}
