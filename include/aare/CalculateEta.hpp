@@ -224,12 +224,12 @@ Eta2<T> calculate_full_eta2(
             eta.x = static_cast<double>(
                         cl.data[cluster_center_index - 1] +
                         cl.data[cluster_center_index - 1 - ClusterSizeX]) /
-                    eta.sum;
+                    static_cast<double>(eta.sum);
 
             eta.y = static_cast<double>(
                         cl.data[cluster_center_index - 1 - ClusterSizeX] +
                         cl.data[cluster_center_index - ClusterSizeX]) /
-                    eta.sum;
+                    static_cast<double>(eta.sum);
         }
         // dx = 0
         // dy = 0
@@ -239,11 +239,11 @@ Eta2<T> calculate_full_eta2(
             eta.x = static_cast<double>(
                         cl.data[cluster_center_index] +
                         cl.data[cluster_center_index - ClusterSizeX]) /
-                    eta.sum;
+                    static_cast<double>(eta.sum);
             eta.y = static_cast<double>(
                         cl.data[cluster_center_index - ClusterSizeX] +
                         cl.data[cluster_center_index - ClusterSizeX + 1]) /
-                    eta.sum;
+                    static_cast<double>(eta.sum);
         }
         // dx = 1
         // dy = 0
@@ -253,10 +253,10 @@ Eta2<T> calculate_full_eta2(
             eta.x = static_cast<double>(
                         cl.data[cluster_center_index - 1] +
                         cl.data[cluster_center_index - 1 + ClusterSizeX]) /
-                    eta.sum;
+                    static_cast<double>(eta.sum);
             eta.y = static_cast<double>(cl.data[cluster_center_index - 1] +
                                         cl.data[cluster_center_index]) /
-                    eta.sum;
+                    static_cast<double>(eta.sum);
         }
         // dx = 0
         // dy = 1
@@ -266,10 +266,10 @@ Eta2<T> calculate_full_eta2(
             eta.x = static_cast<double>(
                         cl.data[cluster_center_index] +
                         cl.data[cluster_center_index + ClusterSizeX]) /
-                    eta.sum;
+                    static_cast<double>(eta.sum);
             eta.y = static_cast<double>(cl.data[cluster_center_index] +
                                         cl.data[cluster_center_index + 1]) /
-                    eta.sum;
+                    static_cast<double>(eta.sum);
         }
         // dx = 1
         // dy = 1
@@ -306,12 +306,13 @@ Eta2<T> calculate_full_eta2(const Cluster<T, 2, 2, int16_t> &cl) {
 
     if (eta.sum != 0) {
         eta.x = static_cast<double>(cl.data[0] + cl.data[2]) /
-                eta.sum; // between (0,1) the closer to zero
-                         // left value probably larger
+                static_cast<double>(eta.sum); // between (0,1) the closer to
+                                              // zero left value probably larger
 
-        eta.y = static_cast<double>(cl.data[0] + cl.data[1]) /
-                eta.sum; // between (0,1) the closer to zero
-                         // bottom value probably larger
+        eta.y =
+            static_cast<double>(cl.data[0] + cl.data[1]) /
+            static_cast<double>(eta.sum); // between (0,1) the closer to zero
+                                          // bottom value probably larger
     }
     return eta;
 }

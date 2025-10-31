@@ -28,6 +28,23 @@ void register_calculate_2x2eta(py::module &m) {
             return py::make_tuple(eta2.x, eta2.y, eta2.sum);
         },
         R"(calculates eta2x2)", py::arg("cluster"));
+
+    m.def(
+        "calculate_full_eta2",
+        [](const aare::Cluster<Type, CoordSizeX, CoordSizeY, CoordType>
+               &cluster) {
+            auto eta2 = calculate_full_eta2(cluster);
+            return py::make_tuple(eta2.x, eta2.y, eta2.sum);
+        },
+        R"(calculates full eta2x2)", py::arg("cluster"));
+
+    m.def(
+        "calculate_full_eta2",
+        [](const aare::ClusterVector<ClusterType> &clusters) {
+            auto eta2 = new NDArray<double, 2>(calculate_full_eta2(clusters));
+            return return_image_data(eta2);
+        },
+        R"(calculates full eta2x2)", py::arg("clusters"));
 }
 
 template <typename Type, typename CoordType = uint16_t>
