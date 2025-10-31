@@ -83,7 +83,7 @@ def test_interpolation_of_2x2_cluster(test_data_path):
 
     eta_distribution = calculate_eta_distribution(num_frames, pixels_per_superpixel, random_number_generator, bin_edges_x = bh.axis.Regular(100, -0.1, 0.6), bin_edges_y = bh.axis.Regular(100, -0.1, 0.6))
 
-    interpolation = Interpolator(eta_distribution, eta_distribution.axes[0].edges, eta_distribution.axes[1].edges, eta_distribution.axes[2].edges[:-1])
+    interpolation = Interpolator(eta_distribution, eta_distribution.axes[0].edges, eta_distribution.axes[1].edges, eta_distribution.axes[2].edges)
 
     #actual photon hit
     mean = 1.2*pixels_per_superpixel*pixel_width
@@ -121,7 +121,7 @@ def test_interpolation_of_3x3_cluster(test_data_path):
     random_number_generator = np.random.default_rng(42)
     eta_distribution = calculate_eta_distribution(num_frames, pixels_per_superpixel, random_number_generator, bin_edges_x = bh.axis.Regular(100, -0.1, 1.1), bin_edges_y = bh.axis.Regular(100, -0.1, 1.1), cluster_2x2 = False)
 
-    interpolation = Interpolator(eta_distribution, eta_distribution.axes[0].edges, eta_distribution.axes[1].edges, eta_distribution.axes[2].edges[:-1])
+    interpolation = Interpolator(eta_distribution, eta_distribution.axes[0].edges, eta_distribution.axes[1].edges, eta_distribution.axes[2].edges)
 
     #actual photon hit
     mean_x = (1 + 0.8)*pixels_per_superpixel*pixel_width

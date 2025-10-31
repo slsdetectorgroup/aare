@@ -70,7 +70,7 @@ class Interpolator {
      * following row column format e.g. x=0, y=0 means top row and first column
      * of frame)
      */
-    template <typename ClusterType, auto EtaFUnction = calculate_eta2,
+    template <auto EtaFunction = calculate_eta2, typename ClusterType,
               typename Eanble = std::enable_if_t<is_cluster_v<ClusterType>>>
     std::vector<Photon> interpolate(const ClusterVector<ClusterType> &clusters);
 
@@ -78,17 +78,17 @@ class Interpolator {
     /**
      * @brief implements underlying interpolation logic based on EtaFunction
      * Type
-     * @tparam EtaType Type of Eta
      * @tparam EtaFunction Function object that calculates desired eta default:
      * @param u: transformed photon position in x between [0,1]
      * @param v: transformed photon position in y between [0,1]
+     * @param c: corner of eta
      */
-    template <typename ClusterType, auto EtaFunction, typename EtaType>
+    template <auto EtaFunction, typename ClusterType>
     void interpolation_logic(Photon &photon, const double u, const double v,
-                             const EtaType &eta);
+                             const corner c = corner::cTopLeft);
 };
 
-template <typename ClusterType, auto EtaFunction, typename Enable>
+template <auto EtaFunction, typename ClusterType, typename Enable>
 std::vector<Photon>
 Interpolator::interpolate(const ClusterVector<ClusterType> &clusters) {
     std::vector<Photon> photons;
@@ -134,14 +134,8 @@ Interpolator::interpolate(const ClusterVector<ClusterType> &clusters) {
             {m_etabinsy(iy), m_etabinsy(iy + 1)},
             {ietay_interp_left, ietay_interp_right}, eta.y);
 
-        // double u = m_ietax(ix, iy, ie);
-
-        // double v = m_ietay(ix, iy, ie);
-
-        interpolation_logic<ClusterType, EtaFunction>(
-            photon, ietax_interpolated, ietay_interpolated, eta);
-
-        // interpolation_logic<ClusterType, EtaFunction>(photon, u, v, eta);
+        interpolation_logic<EtaFunction, ClusterType>(
+            photon, ietax_interpolated, ietay_interpolated, eta.c);
 
         photons.push_back(photon);
     }
@@ -149,9 +143,9 @@ Interpolator::interpolate(const ClusterVector<ClusterType> &clusters) {
     return photons;
 }
 
-template <typename ClusterType, auto EtaFunction, typename EtaType>
+template <auto EtaFunction, typename ClusterType>
 void Interpolator::interpolation_logic(Photon &photon, const double u,
-                                       const double v, const EtaType &eta) {
+                                       const double v, const corner c) {
 
     // TODO: try to call this with std::is_same_v and have it constexpr if
     // possible
@@ -159,10 +153,10 @@ void Interpolator::interpolation_logic(Photon &photon, const double u,
         &calculate_eta2<
             typename ClusterType::value_type, ClusterType::cluster_size_x,
             ClusterType::cluster_size_y, typename ClusterType::coord_type>) {
-        double dX, dY;
+        double dX{}, dY{};
 
         // TODO: could also chaneg the sign of the eta calculation
-        switch (static_cast<corner>(eta.c)) {
+        switch (c) {
         case corner::cTopLeft:
             dX = 0.0;
             dY = 0.0;

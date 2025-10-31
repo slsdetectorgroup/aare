@@ -112,7 +112,7 @@ NDArray<double, 2> calculate_cross_eta3(
  * respective 2x2 subcluster relative to the cluster center.
  */
 template <typename T, uint8_t ClusterSizeX, uint8_t ClusterSizeY,
-          typename CoordType>
+          typename CoordType = uint16_t>
 Eta2<T>
 calculate_eta2(const Cluster<T, ClusterSizeX, ClusterSizeY, CoordType> &cl) {
 

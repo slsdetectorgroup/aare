@@ -11,7 +11,7 @@ Interpolator::Interpolator(NDView<double, 3> etacube, NDView<double, 1> xbins,
     : m_etabinsx(xbins), m_etabinsy(ybins), m_energy_bins(ebins) {
     if (etacube.shape(0) + 1 != xbins.size() ||
         etacube.shape(1) + 1 != ybins.size() ||
-        etacube.shape(2) != ebins.size()) {
+        etacube.shape(2) + 1 != ebins.size()) {
         throw std::invalid_argument(
             "The shape of the etacube does not match the shape of the bins");
     }
@@ -52,7 +52,7 @@ void Interpolator::rosenblatttransform(NDView<double, 3> etacube) {
 
     if (etacube.shape(0) + 1 != m_etabinsx.size() ||
         etacube.shape(1) + 1 != m_etabinsy.size() ||
-        etacube.shape(2) != m_energy_bins.size()) {
+        etacube.shape(2) + 1 != m_energy_bins.size()) {
         throw std::invalid_argument(
             "The shape of the etacube does not match the shape of the bins");
     }

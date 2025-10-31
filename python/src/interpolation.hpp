@@ -40,7 +40,7 @@ void register_interpolate(py::class_<aare::Interpolator> &interpolator,
         function_name.c_str(),
         [](aare::Interpolator &self,
            const ClusterVector<ClusterType> &clusters) {
-            auto photons = self.interpolate<ClusterType, EtaFunction>(clusters);
+            auto photons = self.interpolate<EtaFunction, ClusterType>(clusters);
             auto *ptr = new std::vector<Photon>{photons};
             return return_vector(ptr);
         },
