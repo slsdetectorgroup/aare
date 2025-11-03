@@ -13,6 +13,7 @@ from ._aare import corner
 
 from .ClusterFinder import ClusterFinder, ClusterCollector, ClusterFinderMT, ClusterFileSink, ClusterFile
 from .ClusterVector import ClusterVector
+from .Cluster import Cluster
 
 
 from ._aare import fit_gaus, fit_pol1, fit_scurve, fit_scurve2
