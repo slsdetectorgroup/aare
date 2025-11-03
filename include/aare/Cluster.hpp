@@ -18,6 +18,10 @@
 namespace aare {
 
 // requires clause c++20 maybe update
+
+/**
+ * @brief Cluster struct
+ */
 template <typename T, uint8_t ClusterSizeX, uint8_t ClusterSizeY,
           typename CoordType = uint16_t>
 struct Cluster {
@@ -28,8 +32,11 @@ struct Cluster {
     static_assert(ClusterSizeX > 0 && ClusterSizeY > 0,
                   "Cluster sizes must be bigger than zero");
 
+    /// @brief Cluster center x coordinate (in pixel coordinates)
     CoordType x;
+    /// @brief Cluster center y coordinate (in pixel coordinates)
     CoordType y;
+    /// @brief Cluster data stored in row-major order starting from top-left
     std::array<T, ClusterSizeX * ClusterSizeY> data;
 
     static constexpr uint8_t cluster_size_x = ClusterSizeX;
@@ -37,6 +44,9 @@ struct Cluster {
     using value_type = T;
     using coord_type = CoordType;
 
+    /**
+     * @brief Sum of all elements in the cluster
+     */
     T sum() const { return std::accumulate(data.begin(), data.end(), T{}); }
 
     // TODO: handle 1 dimensional clusters

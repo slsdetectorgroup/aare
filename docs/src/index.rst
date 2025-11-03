@@ -29,6 +29,7 @@ AARE
     pyCtbRawFile
     pyClusterFile
     pyClusterVector
+    pyCluster
     pyInterpolation
     pyJungfrauDataFile
     pyRawFile
@@ -48,6 +49,7 @@ AARE
     Frame
     File
     Dtype
+    Cluster
     ClusterFinder
     ClusterFinderMT
     ClusterFile
