@@ -19,6 +19,7 @@ enum class pixel : int {
     pTopRight = 8
 };
 
+// TODO: better to have sum after x,y
 /**
  * eta struct
  */
@@ -38,13 +39,15 @@ template <typename T> struct Eta2 {
  */
 template <typename ClusterType,
           typename = std::enable_if_t<is_cluster_v<ClusterType>>>
-NDArray<double, 2> calculate_eta2(const ClusterVector<ClusterType> &clusters) {
-    NDArray<double, 2> eta2({static_cast<int64_t>(clusters.size()), 2});
+std::vector<Eta2<typename ClusterType::value_type>>
+calculate_eta2(const ClusterVector<ClusterType> &clusters) {
+
+    std::vector<Eta2<typename ClusterType::value_type>> eta2{};
+    eta2.reserve(clusters.size());
 
     for (size_t i = 0; i < clusters.size(); i++) {
         auto e = calculate_eta2(clusters[i]);
-        eta2(i, 0) = e.x;
-        eta2(i, 1) = e.y;
+        eta2.push_back(e);
     }
 
     return eta2;
@@ -55,14 +58,14 @@ NDArray<double, 2> calculate_eta2(const ClusterVector<ClusterType> &clusters) {
  */
 template <typename ClusterType,
           typename = std::enable_if_t<is_cluster_v<ClusterType>>>
-NDArray<double, 2>
+std::vector<Eta2<typename ClusterType::value_type>>
 calculate_full_eta2(const ClusterVector<ClusterType> &clusters) {
-    NDArray<double, 2> eta2({static_cast<int64_t>(clusters.size()), 2});
+    std::vector<Eta2<typename ClusterType::value_type>> eta2{};
+    eta2.reserve(clusters.size());
 
     for (size_t i = 0; i < clusters.size(); i++) {
         auto e = calculate_full_eta2(clusters[i]);
-        eta2(i, 0) = e.x;
-        eta2(i, 1) = e.y;
+        eta2.push_back(e);
     }
 
     return eta2;
@@ -74,17 +77,17 @@ calculate_full_eta2(const ClusterVector<ClusterType> &clusters) {
 template <
     typename T, typename CoordType,
     typename = std::enable_if_t<is_cluster_v<Cluster<T, 3, 3, CoordType>>>>
-NDArray<double, 2>
+std::vector<Eta2<T>>
 calculate_eta3(const ClusterVector<Cluster<T, 3, 3, CoordType>> &clusters) {
-    NDArray<double, 2> eta({static_cast<int64_t>(clusters.size()), 2});
+    std::vector<Eta2<T>> eta2{};
+    eta2.reserve(clusters.size());
 
     for (size_t i = 0; i < clusters.size(); i++) {
         auto e = calculate_eta3(clusters[i]);
-        eta(i, 0) = e.x;
-        eta(i, 1) = e.y;
+        eta2.push_back(e);
     }
 
-    return eta;
+    return eta2;
 }
 
 /**
@@ -93,17 +96,17 @@ calculate_eta3(const ClusterVector<Cluster<T, 3, 3, CoordType>> &clusters) {
 template <
     typename T, typename CoordType,
     typename = std::enable_if_t<is_cluster_v<Cluster<T, 3, 3, CoordType>>>>
-NDArray<double, 2> calculate_cross_eta3(
+std::vector<Eta2<T>> calculate_cross_eta3(
     const ClusterVector<Cluster<T, 3, 3, CoordType>> &clusters) {
-    NDArray<double, 2> eta({static_cast<int64_t>(clusters.size()), 2});
+    std::vector<Eta2<T>> eta2{};
+    eta2.reserve(clusters.size());
 
     for (size_t i = 0; i < clusters.size(); i++) {
         auto e = calculate_cross_eta3(clusters[i]);
-        eta(i, 0) = e.x;
-        eta(i, 1) = e.y;
+        eta2.push_back(e);
     }
 
-    return eta;
+    return eta2;
 }
 
 /**

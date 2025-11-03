@@ -5,7 +5,7 @@ import time
 from pathlib import Path
 import pickle
 
-from aare import ClusterFile, ClusterVector
+from aare import ClusterFile, ClusterVector, calculate_eta2
 from aare import _aare
 from conftest import test_data_path
 
@@ -42,6 +42,19 @@ def test_max_2x2_sum():
     assert max_2x2.size == 2
     assert max_2x2[0]["sum"] == 8
     assert max_2x2[0]["index"] == 2
+
+
+def test_eta2(): 
+    """calculate eta2"""
+    cv = _aare.ClusterVector_Cluster3x3i()
+    cv.push_back(_aare.Cluster3x3i(19, 22, np.ones(9, dtype=np.int32)))
+    assert cv.size == 1
+    eta2 = calculate_eta2(cv)
+    assert eta2.size == 1
+    assert eta2[0]["x"] == 0.5
+    assert eta2[0]["y"] == 0.5
+    assert eta2[0]["c"] == 0
+    assert eta2[0]["sum"] == 4
 
 
 def test_make_a_hitmap_from_cluster_vector():

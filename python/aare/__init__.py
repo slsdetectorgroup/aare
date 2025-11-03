@@ -7,6 +7,7 @@ from ._aare import Pedestal_d, Pedestal_f, ClusterFinder_Cluster3x3i, VarCluster
 from ._aare import DetectorType
 from ._aare import hitmap
 from ._aare import ROI
+from ._aare import corner 
 
 # from ._aare import ClusterFinderMT, ClusterCollector, ClusterFileSink, ClusterVector_i
 

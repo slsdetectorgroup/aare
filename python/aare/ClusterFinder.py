@@ -26,7 +26,7 @@ def _get_class(name, cluster_size, dtype):
 
 
 
-def ClusterFinder(image_size, cluster_size, n_sigma=5, dtype = np.int32, capacity = 1024):
+def ClusterFinder(image_size, cluster_size=(3,3), n_sigma=5, dtype = np.int32, capacity = 1024):
     """
     Factory function to create a ClusterFinder object. Provides a cleaner syntax for 
     the templated ClusterFinder in C++.
