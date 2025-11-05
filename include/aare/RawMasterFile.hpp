@@ -103,6 +103,7 @@ class RawMasterFile {
     std::optional<size_t> m_digital_samples;
     std::optional<size_t> m_transceiver_samples;
     std::optional<size_t> m_number_of_rows;
+    std::optional<uint8_t> m_counter_mask;
 
     std::optional<ROI> m_roi;
 
@@ -133,6 +134,7 @@ class RawMasterFile {
     std::optional<size_t> digital_samples() const;
     std::optional<size_t> transceiver_samples() const;
     std::optional<size_t> number_of_rows() const;
+    std::optional<uint8_t> counter_mask() const;
 
     std::optional<ROI> roi() const;
 

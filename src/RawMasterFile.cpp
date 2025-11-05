@@ -143,6 +143,10 @@ std::optional<size_t> RawMasterFile::number_of_rows() const {
     return m_number_of_rows;
 }
 
+std::optional<uint8_t> RawMasterFile::counter_mask() const {
+    return m_counter_mask;
+}
+
 xy RawMasterFile::geometry() const { return m_geometry; }
 
 size_t RawMasterFile::n_modules() const {
@@ -325,6 +329,12 @@ void RawMasterFile::parse_json(const std::filesystem::path &fpath) {
             m_roi = tmp_roi;
         }
 
+    } catch (const json::out_of_range &e) {
+        // leave the optional empty
+    }
+    try {
+        // TODO: what is the best format to handle
+        m_counter_mask = j.at("Counter Mask");
     } catch (const json::out_of_range &e) {
         // leave the optional empty
     }
