@@ -326,7 +326,6 @@ void RawMasterFile::parse_json(const std::filesystem::path &fpath) {
         }
 
     } catch (const json::out_of_range &e) {
-        LOG(TLogLevel::logERROR) << e.what() << std::endl;
         // leave the optional empty
     }
 
