@@ -313,10 +313,15 @@ void RawMasterFile::parse_json(const std::filesystem::path &fpath) {
         }
 
         // if any of the values are set update the roi
+        // TODO: doesnt it write garbage if one of them is not set
         if (tmp_roi.xmin != 4294967295 || tmp_roi.xmax != 4294967295 ||
             tmp_roi.ymin != 4294967295 || tmp_roi.ymax != 4294967295) {
             tmp_roi.xmax++;
-            tmp_roi.ymax++;
+            // Handle Mythen
+            if (tmp_roi.ymin == -1 && tmp_roi.ymax == -1) {
+                tmp_roi.ymin = 0;
+                tmp_roi.ymax = 1;
+            }
             m_roi = tmp_roi;
         }
 
