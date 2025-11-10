@@ -324,8 +324,9 @@ void RawMasterFile::parse_json(const std::filesystem::path &fpath) {
             // Handle Mythen
             if (tmp_roi.ymin == -1 && tmp_roi.ymax == -1) {
                 tmp_roi.ymin = 0;
-                tmp_roi.ymax = 1;
+                tmp_roi.ymax = 0;
             }
+            tmp_roi.ymin++;
             m_roi = tmp_roi;
         }
 
