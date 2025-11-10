@@ -383,15 +383,19 @@ Eta2<T> calculate_eta3(const Cluster<T, 3, 3, CoordType> &cl) {
 
     eta.sum = photon_energy;
 
+    // TODO: how do we handle potential arithmetic overflows? - T could be
+    // uint16
     if (photon_energy != 0) {
-        std::array<T, 2> column_sums{cl.data[0] + cl.data[3] + cl.data[6],
-                                     cl.data[2] + cl.data[5] + cl.data[8]};
+        std::array<T, 2> column_sums{
+            static_cast<T>(cl.data[0] + cl.data[3] + cl.data[6]),
+            static_cast<T>(cl.data[2] + cl.data[5] + cl.data[8])};
 
         eta.x = static_cast<double>(-column_sums[0] + column_sums[1]) /
                 static_cast<double>(photon_energy);
 
-        std::array<T, 2> row_sums{cl.data[0] + cl.data[1] + cl.data[2],
-                                  cl.data[6] + cl.data[7] + cl.data[8]};
+        std::array<T, 2> row_sums{
+            static_cast<T>(cl.data[0] + cl.data[3] + cl.data[6]),
+            static_cast<T>(cl.data[1] + cl.data[4] + cl.data[7])};
 
         eta.y = static_cast<double>(-row_sums[0] + row_sums[1]) /
                 static_cast<double>(photon_energy);
