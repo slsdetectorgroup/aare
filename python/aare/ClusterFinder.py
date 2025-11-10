@@ -10,6 +10,8 @@ def _type_to_char(dtype):
         return 'f'
     elif dtype == np.float64:
         return 'd'
+    elif dtype == np.int16:
+        return 'i16'
     else:
         raise ValueError(f"Unsupported dtype: {dtype}. Only np.int32, np.float32, and np.float64 are supported.")
 

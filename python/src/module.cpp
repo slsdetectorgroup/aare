@@ -90,6 +90,8 @@ PYBIND11_MODULE(_aare, m) {
     DEFINE_CLUSTER_BINDINGS(double, 9, 9, uint16_t, d);
     DEFINE_CLUSTER_BINDINGS(float, 9, 9, uint16_t, f);
 
+    DEFINE_CLUSTER_BINDINGS(int16_t, 3, 3, uint16_t, i16);
+
     DEFINE_BINDINGS_CLUSTERFINDER(int, 3, 3, uint16_t, i);
     DEFINE_BINDINGS_CLUSTERFINDER(double, 3, 3, uint16_t, d);
     DEFINE_BINDINGS_CLUSTERFINDER(float, 3, 3, uint16_t, f);
@@ -135,6 +137,7 @@ PYBIND11_MODULE(_aare, m) {
     register_calculate_3x3eta<int, uint16_t>(m);
     register_calculate_3x3eta<double, uint16_t>(m);
     register_calculate_3x3eta<float, uint16_t>(m);
+    register_calculate_3x3eta<int16_t, uint16_t>(m);
 
     using Sum_index_pair_d = Sum_index_pair<double, corner>;
     PYBIND11_NUMPY_DTYPE(Sum_index_pair_d, sum, index);
@@ -149,9 +152,12 @@ PYBIND11_MODULE(_aare, m) {
     PYBIND11_NUMPY_DTYPE(eta_i, x, y, c, sum);
     using eta_f = Eta2<float>;
     PYBIND11_NUMPY_DTYPE(eta_f, x, y, c, sum);
+    using eta_i16 = Eta2<int16_t>;
+    PYBIND11_NUMPY_DTYPE(eta_i16, x, y, c, sum);
 
     define_corner_enum(m);
     define_eta<float>(m, "f");
     define_eta<double>(m, "d");
     define_eta<int>(m, "i");
+    define_eta<int16_t>(m, "i16");
 }
