@@ -313,6 +313,11 @@ Eta2<T> calculate_full_eta2(const Cluster<T, 2, 2, uint16_t> &cl) {
 
     eta.sum = cl.sum();
 
+    const uint8_t photon_hit_index =
+        std::max_element(cl.data.begin(), cl.data.end()) - cl.data.begin();
+
+    eta.c = static_cast<corner>(3 - photon_hit_index);
+
     if (eta.sum != 0) {
         eta.x = static_cast<double>(cl.data[1] + cl.data[3]) /
                 static_cast<double>(eta.sum);
