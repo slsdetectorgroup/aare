@@ -33,8 +33,8 @@ class ClustersForReduceFixture : public benchmark::Fixture {
 };
 
 template <typename T>
-Cluster<T, 3, 3, int16_t> reduce_to_3x3(const Cluster<T, 5, 5, int16_t> &c) {
-    Cluster<T, 3, 3, int16_t> result;
+Cluster<T, 3, 3, uint16_t> reduce_to_3x3(const Cluster<T, 5, 5, uint16_t> &c) {
+    Cluster<T, 3, 3, uint16_t> result;
 
     // Write out the sums in the hope that the compiler can optimize this
     std::array<T, 9> sum_3x3_subclusters;
@@ -140,7 +140,7 @@ Cluster<T, 3, 3, int16_t> reduce_to_3x3(const Cluster<T, 5, 5, int16_t> &c) {
 BENCHMARK_F(ClustersForReduceFixture, Reduce2x2)(benchmark::State &st) {
     for (auto _ : st) {
         // This code gets timed
-        benchmark::DoNotOptimize(reduce_to_2x2<int, 3, 3, int16_t>(
+        benchmark::DoNotOptimize(reduce_to_2x2<int, 3, 3, uint16_t>(
             cluster_3x3)); // make sure compiler evaluates the expression
     }
 }
@@ -156,7 +156,7 @@ BENCHMARK_F(ClustersForReduceFixture, Reduce3x3)(benchmark::State &st) {
     for (auto _ : st) {
         // This code gets timed
         benchmark::DoNotOptimize(
-            reduce_to_3x3<int, 5, 5, int16_t>(cluster_5x5));
+            reduce_to_3x3<int, 5, 5, uint16_t>(cluster_5x5));
     }
 }
 
