@@ -110,6 +110,29 @@ std::vector<Eta2<T>> calculate_cross_eta3(
 }
 
 /**
+ * @brief helper function to calculate eta2 x and y values
+ * @param eta reference to the Eta2 object to update
+ * @param left_x value of the left pixel
+ * @param right_x value of the right pixel
+ * @param bottom_y value of the bottom pixel
+ * @param top_y value of the top pixel
+ */
+template <typename T>
+inline void calculate_eta2(Eta2<T> &eta, const T left_x, const T right_x,
+                           const T bottom_y, const T top_y) {
+    if ((right_x + left_x) != 0)
+        eta.x = static_cast<double>(right_x) /
+                static_cast<double>(right_x + left_x); // between (0,1) the
+                                                       // closer to zero left
+                                                       // value probably larger
+    if ((top_y + bottom_y) != 0)
+        eta.y = static_cast<double>(top_y) /
+                static_cast<double>(top_y + bottom_y); // between (0,1) the
+                                                       // closer to zero bottom
+                                                       // value probably larger
+}
+
+/**
  * @brief Calculate the eta2 values for a generic sized cluster and return them
  * in a Eta2 struct containing etay, etax and the index (as corner) of the
  * respective 2x2 subcluster relative to the cluster center.
@@ -132,65 +155,34 @@ calculate_eta2(const Cluster<T, ClusterSizeX, ClusterSizeY, CoordType> &cl) {
     // subcluster top right from center
     switch (c) {
     case (corner::cTopLeft):
-        if ((cl.data[cluster_center_index - 1] +
-             cl.data[cluster_center_index]) != 0)
-            eta.x = static_cast<double>(cl.data[cluster_center_index]) /
-                    static_cast<double>(cl.data[cluster_center_index - 1] +
-                                        cl.data[cluster_center_index]);
-        if ((cl.data[cluster_center_index - ClusterSizeX] +
-             cl.data[cluster_center_index]) != 0)
-            eta.y = static_cast<double>(cl.data[cluster_center_index]) /
-                    static_cast<double>(
-                        cl.data[cluster_center_index - ClusterSizeX] +
-                        cl.data[cluster_center_index]);
-
+        calculate_eta2(eta, cl.data[cluster_center_index - 1],
+                       cl.data[cluster_center_index],
+                       cl.data[cluster_center_index - ClusterSizeX],
+                       cl.data[cluster_center_index]);
         // dx = -1
         // dy = -1
         break;
     case (corner::cTopRight):
-        if (cl.data[cluster_center_index] + cl.data[cluster_center_index + 1] !=
-            0)
-            eta.x = static_cast<double>(cl.data[cluster_center_index + 1]) /
-                    static_cast<double>(cl.data[cluster_center_index] +
-                                        cl.data[cluster_center_index + 1]);
-        if ((cl.data[cluster_center_index - ClusterSizeX] +
-             cl.data[cluster_center_index]) != 0)
-            eta.y = static_cast<double>(cl.data[cluster_center_index]) /
-                    static_cast<double>(
-                        cl.data[cluster_center_index - ClusterSizeX] +
-                        cl.data[cluster_center_index]);
+        calculate_eta2(eta, cl.data[cluster_center_index],
+                       cl.data[cluster_center_index + 1],
+                       cl.data[cluster_center_index - ClusterSizeX],
+                       cl.data[cluster_center_index]);
         // dx = 0
         // dy = -1
         break;
     case (corner::cBottomLeft):
-        if ((cl.data[cluster_center_index - 1] +
-             cl.data[cluster_center_index]) != 0)
-            eta.x = static_cast<double>(cl.data[cluster_center_index]) /
-                    static_cast<double>(cl.data[cluster_center_index - 1] +
-                                        cl.data[cluster_center_index]);
-        if ((cl.data[cluster_center_index] +
-             cl.data[cluster_center_index + ClusterSizeX]) != 0)
-            eta.y = static_cast<double>(
-                        cl.data[cluster_center_index + ClusterSizeX]) /
-                    static_cast<double>(
-                        cl.data[cluster_center_index] +
-                        cl.data[cluster_center_index + ClusterSizeX]);
+        calculate_eta2(eta, cl.data[cluster_center_index - 1],
+                       cl.data[cluster_center_index],
+                       cl.data[cluster_center_index],
+                       cl.data[cluster_center_index + ClusterSizeX]);
         // dx = -1
         // dy = 0
         break;
     case (corner::cBottomRight):
-        if (cl.data[cluster_center_index] + cl.data[cluster_center_index + 1] !=
-            0)
-            eta.x = static_cast<double>(cl.data[cluster_center_index + 1]) /
-                    static_cast<double>(cl.data[cluster_center_index] +
-                                        cl.data[cluster_center_index + 1]);
-        if ((cl.data[cluster_center_index] +
-             cl.data[cluster_center_index + ClusterSizeX]) != 0)
-            eta.y = static_cast<double>(
-                        cl.data[cluster_center_index + ClusterSizeX]) /
-                    static_cast<double>(
-                        cl.data[cluster_center_index] +
-                        cl.data[cluster_center_index + ClusterSizeX]);
+        calculate_eta2(eta, cl.data[cluster_center_index],
+                       cl.data[cluster_center_index + 1],
+                       cl.data[cluster_center_index],
+                       cl.data[cluster_center_index + ClusterSizeX]);
         // dx = 0
         // dy = 0
         break;
@@ -283,30 +275,6 @@ Eta2<T> calculate_full_eta2(
     eta.c = c;
 
     return eta;
-}
-
-// TODO: use this as well for generalization
-/**
- * @brief helper function to calculate eta2 x and y values
- * @param eta reference to the Eta2 object to update
- * @param left_x value of the left pixel
- * @param right_x value of the right pixel
- * @param bottom_y value of the bottom pixel
- * @param top_y value of the top pixel
- */
-template <typename T>
-inline void calculate_eta2(Eta2<T> &eta, const T left_x, const T right_x,
-                           const T bottom_y, const T top_y) {
-    if ((right_x + left_x) != 0)
-        eta.x = static_cast<double>(right_x) /
-                static_cast<double>(right_x + left_x); // between (0,1) the
-                                                       // closer to zero left
-                                                       // value probably larger
-    if ((top_y + bottom_y) != 0)
-        eta.y = static_cast<double>(top_y) /
-                static_cast<double>(top_y + bottom_y); // between (0,1) the
-                                                       // closer to zero bottom
-                                                       // value probably larger
 }
 
 template <typename T>
