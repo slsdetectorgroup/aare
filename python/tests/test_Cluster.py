@@ -116,7 +116,7 @@ def test_2x2_reduction():
 
     reduced_cluster = _aare.reduce_to_2x2(cluster) 
 
-    assert reduced_cluster.x == 4
+    assert reduced_cluster.x == 5
     assert reduced_cluster.y == 5
     assert (reduced_cluster.data == np.array([[2, 3], [2, 2]], dtype=np.int32)).all()
     

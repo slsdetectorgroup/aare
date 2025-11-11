@@ -93,8 +93,15 @@ void reduce_to_2x2(py::module &m) {
             return reduce_to_2x2(cl);
         },
         py::return_value_policy::move,
-        R"(Reduce cluster to 2x2 subcluster by taking the 2x2 subcluster with 
-        "the highest photon energy.)");
+        R"(
+        Reduce cluster to 2x2 subcluster by taking the 2x2 subcluster with 
+        the highest photon energy.
+
+        RETURN: 
+        
+        reduced cluster (cluster is filled in row major ordering starting at the top left. Thus for a max subcluster in the top left corner the photon hit is at the fourth position.)
+        
+        )");
 }
 
 #pragma GCC diagnostic pop

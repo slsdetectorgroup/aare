@@ -125,7 +125,8 @@ void define_2x2_reduction(py::module &m) {
 
         Parameters
 
-        cv : ClusterVector   
+        cv : ClusterVector (clusters are filled in row-major ordering starting at the top left. Thus for a max subcluster in the top left corner the photon hit is at the fourth position.)
+
         )",
         py::arg("clustervector"));
 }
@@ -142,8 +143,7 @@ void define_3x3_reduction(py::module &m) {
                 reduce_to_3x3(cv));
         },
         R"(
-        Reduce cluster to 3x3 subcluster by taking the 3x3 subcluster with 
-        the highest photon energy.
+        Reduce cluster to 3x3 subcluster 
 
         Parameters
         

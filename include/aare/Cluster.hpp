@@ -120,67 +120,71 @@ struct Cluster {
  * highest sum.
  * @param c Cluster to reduce
  * @return reduced cluster
+ * @note The cluster is filled using row major ordering starting at the top-left
+ * (thus for a max subcluster in the top left cornern the photon hit is at
+ * the fourth position)
  */
 template <typename T, uint8_t ClusterSizeX, uint8_t ClusterSizeY,
-          typename CoordType = int16_t>
+          typename CoordType = uint16_t>
 Cluster<T, 2, 2, CoordType>
 reduce_to_2x2(const Cluster<T, ClusterSizeX, ClusterSizeY, CoordType> &c) {
 
     static_assert(ClusterSizeX >= 2 && ClusterSizeY >= 2,
                   "Cluster sizes must be at least 2x2 for reduction to 2x2");
 
-    // TODO maybe add sanity check and check that center is in max subcluster
-    Cluster<T, 2, 2, CoordType> result;
+    Cluster<T, 2, 2, CoordType> result{};
 
     auto [sum, index] = c.max_sum_2x2();
 
     int16_t cluster_center_index =
         (ClusterSizeX / 2) + (ClusterSizeY / 2) * ClusterSizeX;
 
-    int16_t index_bottom_left_max_2x2_subcluster =
-        (int(static_cast<int>(index) / (ClusterSizeX - 1))) * ClusterSizeX +
-        static_cast<int>(index) % (ClusterSizeX - 1);
+    int16_t index_top_left_max_2x2_subcluster = cluster_center_index;
+    switch (index) {
+    case corner::cTopLeft:
+        index_top_left_max_2x2_subcluster -= (ClusterSizeX + 1);
+        break;
+    case corner::cTopRight:
+        index_top_left_max_2x2_subcluster -= ClusterSizeX;
+        break;
+    case corner::cBottomLeft:
+        index_top_left_max_2x2_subcluster -= 1;
+        break;
+    case corner::cBottomRight:
+        // no change needed
+        break;
+    }
 
-    result.x =
-        c.x + (index_bottom_left_max_2x2_subcluster - cluster_center_index) %
-                  ClusterSizeX;
-
-    result.y =
-        c.y - (index_bottom_left_max_2x2_subcluster - cluster_center_index) /
-                  ClusterSizeX;
+    result.x = c.x;
+    result.y = c.y;
 
     result.data = {
-        c.data[index_bottom_left_max_2x2_subcluster],
-        c.data[index_bottom_left_max_2x2_subcluster + 1],
-        c.data[index_bottom_left_max_2x2_subcluster + ClusterSizeX],
-        c.data[index_bottom_left_max_2x2_subcluster + ClusterSizeX + 1]};
+        c.data[index_top_left_max_2x2_subcluster],
+        c.data[index_top_left_max_2x2_subcluster + 1],
+        c.data[index_top_left_max_2x2_subcluster + ClusterSizeX],
+        c.data[index_top_left_max_2x2_subcluster + ClusterSizeX + 1]};
+
     return result;
 }
 
 template <typename T>
-Cluster<T, 2, 2, int16_t> reduce_to_2x2(const Cluster<T, 3, 3, int16_t> &c) {
-    Cluster<T, 2, 2, int16_t> result;
+Cluster<T, 2, 2, uint16_t> reduce_to_2x2(const Cluster<T, 3, 3, uint16_t> &c) {
+    Cluster<T, 2, 2, uint16_t> result{};
 
     auto [s, i] = c.max_sum_2x2();
+    result.x = c.x;
+    result.y = c.y;
     switch (i) {
     case corner::cTopLeft:
-        result.x = c.x - 1;
-        result.y = c.y + 1;
         result.data = {c.data[0], c.data[1], c.data[3], c.data[4]};
         break;
     case corner::cTopRight:
-        result.x = c.x;
-        result.y = c.y + 1;
         result.data = {c.data[1], c.data[2], c.data[4], c.data[5]};
         break;
     case corner::cBottomLeft:
-        result.x = c.x - 1;
-        result.y = c.y;
         result.data = {c.data[3], c.data[4], c.data[6], c.data[7]};
         break;
     case corner::cBottomRight:
-        result.x = c.x;
-        result.y = c.y;
         result.data = {c.data[4], c.data[5], c.data[7], c.data[8]};
         break;
     }
