@@ -13,10 +13,12 @@ void define_eta(py::module &m, const std::string &typestr) {
 
     py::class_<Eta2<T>>(m, class_name.c_str())
         .def(py::init<>())
-        .def_readonly("x", &Eta2<T>::x)
-        .def_readonly("y", &Eta2<T>::y)
-        .def_readonly("c", &Eta2<T>::c)
-        .def_readonly("sum", &Eta2<T>::sum);
+        .def_readonly("x", &Eta2<T>::x, "eta x value")
+        .def_readonly("y", &Eta2<T>::y, "eta y value")
+        .def_readonly("c", &Eta2<T>::c,
+                      "eta corner value cTopLeft, cTopRight, "
+                      "cBottomLeft, cBottomRight")
+        .def_readonly("sum", &Eta2<T>::sum, "photon energy of cluster");
 }
 
 void define_corner_enum(py::module &m) {

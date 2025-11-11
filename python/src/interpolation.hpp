@@ -30,7 +30,7 @@ void register_interpolate(py::class_<aare::Interpolator> &interpolator,
 
     using ClusterType = Cluster<Type, CoordSizeX, CoordSizeY, CoordType>;
 
-    const std::string docstring = "interpolation based on" +
+    const std::string docstring = "interpolation based on " +
                                   doc_string_etatype +
                                   "\n\nReturns:\n interpolated photons";
 
@@ -63,7 +63,7 @@ void define_interpolation_bindings(py::module &m) {
                         make_view_3d(etacube), make_view_1d(xbins),
                         make_view_1d(ybins), make_view_1d(ebins));
                 }), 
-                R"(
+                R"doc(
                 Constructor 
 
                 Args:
@@ -76,7 +76,7 @@ void define_interpolation_bindings(py::module &m) {
                     bin edges of etay
                 ebins: 
                     bin edges of photon energy
-                )",
+                )doc",
                 py::arg("etacube"),
                 py::arg("xbins"), py::arg("ybins"),
                 py::arg("ebins"))
@@ -111,8 +111,6 @@ void define_interpolation_bindings(py::module &m) {
                 },
                 R"(
                 calculated the rosenblatttransform for the given distribution
-
-                Args: 
                 
                 etacube: 
                     joint distribution of eta_x, eta_y and photon energy (**Note:** for the joint distribution first dimension is eta_x, second: eta_y, third: energy bins.)
