@@ -214,7 +214,7 @@ Eta2<T> calculate_full_eta2(
     static_assert(ClusterSizeX > 1 && ClusterSizeY > 1);
     Eta2<T> eta{};
 
-    size_t cluster_center_index =
+    constexpr size_t cluster_center_index =
         (ClusterSizeX / 2) + (ClusterSizeY / 2) * ClusterSizeX;
 
     auto max_sum = cl.max_sum_2x2();
@@ -285,48 +285,79 @@ Eta2<T> calculate_full_eta2(
     return eta;
 }
 
+// TODO: use this as well for generalization
+/**
+ * @brief helper function to calculate eta2 x and y values
+ * @param eta reference to the Eta2 object to update
+ * @param left_x value of the left pixel
+ * @param right_x value of the right pixel
+ * @param bottom_y value of the bottom pixel
+ * @param top_y value of the top pixel
+ */
+template <typename T>
+inline void calculate_eta2(Eta2<T> &eta, const T left_x, const T right_x,
+                           const T bottom_y, const T top_y) {
+    if ((right_x + left_x) != 0)
+        eta.x = static_cast<double>(right_x) /
+                static_cast<double>(right_x + left_x); // between (0,1) the
+                                                       // closer to zero left
+                                                       // value probably larger
+    if ((top_y + bottom_y) != 0)
+        eta.y = static_cast<double>(top_y) /
+                static_cast<double>(top_y + bottom_y); // between (0,1) the
+                                                       // closer to zero bottom
+                                                       // value probably larger
+}
+
 template <typename T>
 Eta2<T> calculate_eta2(const Cluster<T, 2, 2, uint16_t> &cl) {
     Eta2<T> eta{};
 
-    if ((cl.data[2] + cl.data[3]) != 0)
-        eta.x = static_cast<double>(cl.data[3]) /
-                static_cast<double>(
-                    cl.data[2] + cl.data[3]); // between (0,1) the closer to
-                                              // zero left value probably larger
-    if ((cl.data[1] + cl.data[3]) != 0)
-        eta.y =
-            static_cast<double>(cl.data[3]) /
-            static_cast<double>(cl.data[1] +
-                                cl.data[3]); // between (0,1) the closer to zero
-                                             // bottom value probably larger
+    // TODO: maybe have as member function of cluster
+    const uint8_t photon_hit_index =
+        std::max_element(cl.data.begin(), cl.data.end()) - cl.data.begin();
+
+    eta.c = static_cast<corner>(3 - photon_hit_index);
+
+    switch (eta.c) {
+    case corner::cTopLeft:
+        calculate_eta2(eta, cl.data[2], cl.data[3], cl.data[1], cl.data[3]);
+        break;
+    case corner::cTopRight:
+        calculate_eta2(eta, cl.data[2], cl.data[3], cl.data[0], cl.data[2]);
+        break;
+    case corner::cBottomLeft:
+        calculate_eta2(eta, cl.data[0], cl.data[1], cl.data[1], cl.data[3]);
+        break;
+    case corner::cBottomRight:
+        calculate_eta2(eta, cl.data[0], cl.data[1], cl.data[0], cl.data[2]);
+        break;
+    }
+
     eta.sum = cl.sum();
 
     return eta;
 }
 
 template <typename T>
-Eta2<T> calculate_full_eta2(const Cluster<T, 2, 2, int16_t> &cl) {
+Eta2<T> calculate_full_eta2(const Cluster<T, 2, 2, uint16_t> &cl) {
     Eta2<T> eta{};
 
     eta.sum = cl.sum();
 
     if (eta.sum != 0) {
-        eta.x = static_cast<double>(cl.data[3] + cl.data[1]) /
-                static_cast<double>(eta.sum); // between (0,1) the closer to
-                                              // zero left value probably larger
-
-        eta.y =
-            static_cast<double>(cl.data[2] + cl.data[3]) /
-            static_cast<double>(eta.sum); // between (0,1) the closer to zero
-                                          // bottom value probably larger
+        eta.x = static_cast<double>(cl.data[1] + cl.data[3]) /
+                static_cast<double>(eta.sum);
+        eta.y = static_cast<double>(cl.data[2] + cl.data[3]) /
+                static_cast<double>(eta.sum);
     }
+
     return eta;
 }
 
 // TODO generalize
 template <typename T>
-Eta2<T> calculate_eta2(const Cluster<T, 1, 2, int16_t> &cl) {
+Eta2<T> calculate_eta2(const Cluster<T, 1, 2, uint16_t> &cl) {
     Eta2<T> eta{};
 
     eta.x = 0;
@@ -335,7 +366,7 @@ Eta2<T> calculate_eta2(const Cluster<T, 1, 2, int16_t> &cl) {
 }
 
 template <typename T>
-Eta2<T> calculate_eta2(const Cluster<T, 2, 1, int16_t> &cl) {
+Eta2<T> calculate_eta2(const Cluster<T, 2, 1, uint16_t> &cl) {
     Eta2<T> eta{};
 
     eta.x = static_cast<double>(cl.data[1]) / cl.data[0];

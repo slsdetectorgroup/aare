@@ -136,7 +136,7 @@ reduce_to_2x2(const Cluster<T, ClusterSizeX, ClusterSizeY, CoordType> &c) {
 
     auto [sum, index] = c.max_sum_2x2();
 
-    int16_t cluster_center_index =
+    constexpr int16_t cluster_center_index =
         (ClusterSizeX / 2) + (ClusterSizeY / 2) * ClusterSizeX;
 
     int16_t index_top_left_max_2x2_subcluster = cluster_center_index;
