@@ -47,7 +47,7 @@ def test_Interpolator():
     assert interpolator.get_ietay().shape == (30,30,20)
     clustervector = _aare.ClusterVector_Cluster3x3i()
     
-    cluster = _aare.Cluster3x3i(0,0, np.ones(9, dtype=np.int32))
+    cluster = _aare.Cluster3x3i(1,1, np.ones(9, dtype=np.int32))
     clustervector.push_back(cluster) 
 
     interpolated_photons = interpolator.interpolate(clustervector)
@@ -60,7 +60,7 @@ def test_Interpolator():
 
     clustervector = _aare.ClusterVector_Cluster2x2i()
 
-    cluster = _aare.Cluster2x2i(0,0, np.ones(4, dtype=np.int32))
+    cluster = _aare.Cluster2x2i(1,1, np.ones(4, dtype=np.int32))
     clustervector.push_back(cluster) 
 
     interpolated_photons = interpolator.interpolate(clustervector)
