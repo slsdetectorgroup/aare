@@ -1,6 +1,12 @@
 Interpolation 
 ==============
 
+Interpolation class for :math:`\eta` Interpolation. 
+
+The Interpolator class provides methods to interpolate the positions of photons based on their :math:`\eta` values. 
+
+.. warning:: 
+   The interpolation might lead to erroneous photon positions for clusters at the boarders of a frame. Make sure to filter out such cases. 
 
 Below is an example of the Eta class of type ``double``. Supported are ``Etaf`` of type ``float`` and ``Etai`` of type ``int``. 
 
@@ -74,6 +80,9 @@ Supported are the following :math:`\eta`-functions:
 
 Interpolation class for :math:`\eta`-Interpolation 
 ----------------------------------------------------
+
+.. Warning:: 
+    Make sure to use the same :math:`\eta`-function during interpolation as given by the joint :math:`\eta`-distribution passed to the constructor. 
 
 .. py:currentmodule:: aare
 
