@@ -109,6 +109,8 @@ Interpolator::interpolate(const ClusterVector<ClusterType> &clusters) {
         auto ix = last_smaller(m_etabinsx, eta.x);
         auto iy = last_smaller(m_etabinsy, eta.y);
 
+        std::cout << "ix: " << ix << " iy: " << iy << std::endl;
+
         // bilinear interpolation
         double ietax_interp_left = linear_interpolation(
             {m_etabinsy(iy), m_etabinsy(iy + 1)},
@@ -146,6 +148,8 @@ Interpolator::interpolate(const ClusterVector<ClusterType> &clusters) {
 template <auto EtaFunction, typename ClusterType>
 void Interpolator::interpolation_logic(Photon &photon, const double u,
                                        const double v, const corner c) {
+
+    std::cout << "u: " << u << " v: " << v << std::endl;
 
     // TODO: try to call this with std::is_same_v and have it constexpr if
     // possible

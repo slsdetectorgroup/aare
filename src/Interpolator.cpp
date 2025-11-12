@@ -16,23 +16,26 @@ Interpolator::Interpolator(NDView<double, 3> etacube, NDView<double, 1> xbins,
             "The shape of the etacube does not match the shape of the bins");
     }
     m_ietax = NDArray<double, 3>(
-        std::array<ssize_t, 3>{xbins.size(), ybins.size(), ebins.size()}, 0.0);
+        std::array<ssize_t, 3>{xbins.size(), ybins.size(), ebins.size() - 1},
+        0.0);
 
     m_ietay = NDArray<double, 3>(
-        std::array<ssize_t, 3>{xbins.size(), ybins.size(), ebins.size()}, 0.0);
+        std::array<ssize_t, 3>{xbins.size(), ybins.size(), ebins.size() - 1},
+        0.0);
 
     // Cumulative sum
     for (ssize_t i = 1; i < m_ietax.shape(0); i++) {
         for (ssize_t j = 1; j < m_ietax.shape(1); j++) {
             for (ssize_t k = 0; k < m_ietax.shape(2); k++) {
-                m_ietax(i, j - 1, k) = etacube(i - 1, j - 1, k);
-                m_ietax(i, j - 1, k) += m_ietax(i - 1, j - 1, k);
+                m_ietax(i, j, k) = etacube(i - 1, j - 1, k);
+                m_ietax(i, j, k) += m_ietax(i - 1, j, k);
 
-                m_ietay(i - 1, j, k) = etacube(i - 1, j - 1, k);
-                m_ietay(i - 1, j, k) += m_ietay(i - 1, j - 1, k);
+                m_ietay(i, j, k) = etacube(i - 1, j - 1, k);
+                m_ietay(i, j, k) += m_ietay(i, j - 1, k);
             }
         }
     }
+
     // Normalize by the highest row, if norm less than 1 don't do anything
     for (ssize_t i = 0; i < m_ietax.shape(0); i++) {
         for (ssize_t j = 0; j < m_ietax.shape(1); j++) {
@@ -65,23 +68,23 @@ void Interpolator::rosenblatttransform(NDView<double, 3> etacube) {
 
     // marginal CDF for eta_x
     NDArray<double, 2> marg_CDF_EtaX(
-        std::array<ssize_t, 2>{m_etabinsx.size(), m_energy_bins.size()},
+        std::array<ssize_t, 2>{m_etabinsx.size(), m_energy_bins.size() - 1},
         0.0); // simulate proper probability distribution with zero at start
 
     // conditional CDF for eta_y
     NDArray<double, 3> cond_CDF_EtaY(
         std::array<ssize_t, 3>{m_etabinsx.size(), m_etabinsy.size(),
-                               m_energy_bins.size()},
+                               m_energy_bins.size() - 1},
         0.0); // simulate proper probability distribution with zero at start
 
     // TODO: after changing loop orders check if faster to iterate twice during
     // normalization than storing total sums
     NDArray<double, 1> total_sum_etax(
-        std::array<ssize_t, 1>{m_energy_bins.size()},
+        std::array<ssize_t, 1>{m_energy_bins.size() - 1},
         0.0); // for nomalization of etax
 
     NDArray<double, 2> total_sum_etay(
-        std::array<ssize_t, 2>{m_etabinsx.size(), m_energy_bins.size()},
+        std::array<ssize_t, 2>{m_etabinsx.size(), m_energy_bins.size() - 1},
         0.0); // for normalization of etay
 
     for (ssize_t i = 1; i < m_etabinsx.size(); ++i) {
@@ -128,7 +131,7 @@ void Interpolator::rosenblatttransform(NDView<double, 3> etacube) {
     // TODO: should actually be only 2dimensional keep three dimension due to
     // consistency with Annas code change though
     m_ietax = NDArray<double, 3>(std::array<ssize_t, 3>{
-        m_etabinsx.size(), m_etabinsy.size(), m_energy_bins.size()});
+        m_etabinsx.size(), m_etabinsy.size(), m_energy_bins.size() - 1});
 
     for (ssize_t i = 0; i < m_etabinsx.size(); ++i)
         for (ssize_t j = 0; j < m_etabinsy.size(); ++j)
