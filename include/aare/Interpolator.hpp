@@ -157,7 +157,7 @@ Interpolator::interpolate(const ClusterVector<ClusterType> &clusters) {
         photon.y = cluster.y;
         photon.energy = static_cast<decltype(photon.energy)>(eta.sum);
 
-        std::cout << "eta.x: " << eta.x << " eta.y: " << eta.y << std::endl;
+        // std::cout << "eta.x: " << eta.x << " eta.y: " << eta.y << std::endl;
 
         // Finding the index of the last element that is smaller
         // should work fine as long as we have many bins
@@ -165,7 +165,7 @@ Interpolator::interpolate(const ClusterVector<ClusterType> &clusters) {
         auto ix = last_smaller(m_etabinsx, eta.x);
         auto iy = last_smaller(m_etabinsy, eta.y);
 
-        std::cout << "ix: " << ix << " iy: " << iy << std::endl;
+        // std::cout << "ix: " << ix << " iy: " << iy << std::endl;
 
         // TODO: only works if all bins have a value - truncate in constructor
         //  auto [ietax_interpolated, ietay_interpolated] =
@@ -187,14 +187,18 @@ template <auto EtaFunction, typename ClusterType>
 void Interpolator::interpolation_logic(Photon &photon, const double u,
                                        const double v, const corner c) {
 
-    std::cout << "u: " << u << " v: " << v << std::endl;
+    // std::cout << "u: " << u << " v: " << v << std::endl;
 
     // TODO: try to call this with std::is_same_v and have it constexpr if
     // possible
-    if (EtaFunction ==
-        &calculate_eta2<
-            typename ClusterType::value_type, ClusterType::cluster_size_x,
-            ClusterType::cluster_size_y, typename ClusterType::coord_type>) {
+    if (EtaFunction == &calculate_eta2<typename ClusterType::value_type,
+                                       ClusterType::cluster_size_x,
+                                       ClusterType::cluster_size_y,
+                                       typename ClusterType::coord_type> ||
+        EtaFunction == &calculate_full_eta2<typename ClusterType::value_type,
+                                            ClusterType::cluster_size_x,
+                                            ClusterType::cluster_size_y,
+                                            typename ClusterType::coord_type>) {
         double dX{}, dY{};
 
         // TODO: could also chaneg the sign of the eta calculation
@@ -221,7 +225,6 @@ void Interpolator::interpolation_logic(Photon &photon, const double u,
                    dY; // eta2 calculates the ratio between bottom and sum of
                        // bottom and top  shift by 1 add eta value correctly
     } else {
-        std::cout << "im in here: " << std::endl;
         photon.x += u;
         photon.y += v;
     }
