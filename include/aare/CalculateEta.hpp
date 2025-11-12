@@ -351,22 +351,8 @@ Eta2<T> calculate_eta2(const Cluster<T, 2, 1, uint16_t> &cl) {
  * cross Eta3 calculates the eta by taking into account only the cross pixels
  * {top, bottom, left, right, center}
  */
-template <typename T, uint8_t ClusterSizeX, uint8_t ClusterSizeY,
-          typename CoordType = uint16_t>
-Eta2<T> calculate_cross_eta3(
-    const Cluster<T, ClusterSizeX, ClusterSizeY, CoordType> &cl) {
-
-    static_assert(ClusterSizeX > 2 && ClusterSizeY > 2,
-                  "calculate_eta3 only defined for clusters larger than 2x2");
-
-    auto reduced_cluster =
-        std::move(cl); // mmh copy should I move how is move implemented for
-                       // std::array? - dont devalidate cl - const anyway -
-                       // should complain
-
-    if constexpr (ClusterSizeX != 3 || ClusterSizeY != 3) {
-        reduced_cluster = reduce_cluster_to_3x3(cl);
-    }
+template <typename T, typename CoordType = uint16_t>
+Eta2<T> calculate_cross_eta3(const Cluster<T, 3, 3, CoordType> &cl) {
 
     Eta2<T> eta{};
 
@@ -390,23 +376,28 @@ Eta2<T> calculate_cross_eta3(
     return eta;
 }
 
-/**
- * @brief calculates Eta3 for 3x3 cluster
- * It calculates the eta by taking into account all pixels in the 3x3 cluster
- */
 template <typename T, uint8_t ClusterSizeX, uint8_t ClusterSizeY,
           typename CoordType = uint16_t>
-Eta2<T>
-calculate_eta3(const Cluster<T, ClusterSizeX, ClusterSizeY, CoordType> &cl) {
+Eta2<T> calculate_cross_eta3(
+    const Cluster<T, ClusterSizeX, ClusterSizeY, CoordType> &cl) {
 
     static_assert(ClusterSizeX > 2 && ClusterSizeY > 2,
                   "calculate_eta3 only defined for clusters larger than 2x2");
 
-    auto reduced_cluster = std::move(cl);
-
     if constexpr (ClusterSizeX != 3 || ClusterSizeY != 3) {
-        reduced_cluster = reduce_cluster_to_3x3(cl);
+        auto reduced_cluster = reduce_cluster_to_3x3(cl);
+        return calculate_cross_eta3(reduced_cluster);
+    } else {
+        return calculate_cross_eta3(cl);
     }
+}
+
+/**
+ * @brief calculates Eta3 for 3x3 cluster
+ * It calculates the eta by taking into account all pixels in the 3x3 cluster
+ */
+template <typename T, typename CoordType = uint16_t>
+Eta2<T> calculate_eta3(const Cluster<T, 3, 3, CoordType> &cl) {
 
     Eta2<T> eta{};
 
@@ -433,6 +424,22 @@ calculate_eta3(const Cluster<T, ClusterSizeX, ClusterSizeY, CoordType> &cl) {
     }
 
     return eta;
+}
+
+template <typename T, uint8_t ClusterSizeX, uint8_t ClusterSizeY,
+          typename CoordType = uint16_t>
+Eta2<T>
+calculate_eta3(const Cluster<T, ClusterSizeX, ClusterSizeY, CoordType> &cl) {
+
+    static_assert(ClusterSizeX > 2 && ClusterSizeY > 2,
+                  "calculate_eta3 only defined for clusters larger than 2x2");
+
+    if constexpr (ClusterSizeX != 3 || ClusterSizeY != 3) {
+        auto reduced_cluster = reduce_cluster_to_3x3(cl);
+        return calculate_eta3(reduced_cluster);
+    } else {
+        return calculate_eta3(cl);
+    }
 }
 
 } // namespace aare
