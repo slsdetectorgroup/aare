@@ -211,6 +211,12 @@ TEST_CASE("Linear interpolation", "[algorithm]") {
             aare::linear_interpolation({0.0, 1.0}, {4.0, 6.0}, 1.0);
         REQUIRE(interpolated_value == 6.0);
     }
+
+    SECTION("interpolate the same value") {
+        const double interpolated_value =
+            aare::linear_interpolation({0.0, 1.0}, {4.0, 4.0}, 0.5);
+        REQUIRE(interpolated_value == 4.0);
+    }
 }
 
 TEST_CASE("Bilinear interpolation", "[algorithm]") {

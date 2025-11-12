@@ -86,7 +86,61 @@ class Interpolator {
     template <auto EtaFunction, typename ClusterType>
     void interpolation_logic(Photon &photon, const double u, const double v,
                              const corner c = corner::cTopLeft);
+
+    /**
+     *  @brief bilinear interpolation of the transformed eta values
+     * @param ix index of etaX bin
+     * @param iy index of etaY bin
+     * @param ie index of energy bin
+     * @return pair of interpolated transformed eta values (ietax, ietay)
+     */
+    template <typename T>
+    std::pair<double, double>
+    bilinear_interpolation(const size_t ix, const size_t iy, const size_t ie,
+                           const Eta2<T> &eta);
 };
+
+template <typename T>
+std::pair<double, double>
+Interpolator::bilinear_interpolation(const size_t ix, const size_t iy,
+                                     const size_t ie, const Eta2<T> &eta) {
+    auto next_index_y = static_cast<ssize_t>(iy + 1) >= m_ietax.shape(1)
+                            ? m_ietax.shape(1) - 1
+                            : iy + 1;
+    auto next_index_x = static_cast<ssize_t>(ix + 1) >= m_ietax.shape(0)
+                            ? m_ietax.shape(0) - 1
+                            : ix + 1;
+
+    // bilinear interpolation
+    double ietax_interp_left = linear_interpolation(
+        {m_etabinsy(iy), m_etabinsy(iy + 1)},
+        {m_ietax(ix, iy, ie), m_ietax(ix, next_index_y, ie)}, eta.y);
+    double ietax_interp_right = linear_interpolation(
+        {m_etabinsy(iy), m_etabinsy(iy + 1)},
+        {m_ietax(next_index_x, iy, ie), m_ietax(ix + 1, next_index_y, ie)},
+        eta.y);
+
+    // transformed photon position x between [0,1]
+    double ietax_interpolated =
+        linear_interpolation({m_etabinsx(ix), m_etabinsx(ix + 1)},
+                             {ietax_interp_left, ietax_interp_right}, eta.x);
+
+    double ietay_interp_left = linear_interpolation(
+        {m_etabinsx(ix), m_etabinsx(ix + 1)},
+        {m_ietay(ix, iy, ie), m_ietay(next_index_x, iy, ie)}, eta.x);
+    double ietay_interp_right =
+        linear_interpolation({m_etabinsx(ix), m_etabinsx(ix + 1)},
+                             {m_ietay(ix, next_index_y, ie),
+                              m_ietay(next_index_x, next_index_y, ie)},
+                             eta.x);
+
+    // transformed photon position y between [0,1]
+    double ietay_interpolated =
+        linear_interpolation({m_etabinsy(iy), m_etabinsy(iy + 1)},
+                             {ietay_interp_left, ietay_interp_right}, eta.y);
+
+    return {ietax_interpolated, ietay_interpolated};
+}
 
 template <auto EtaFunction, typename ClusterType, typename Enable>
 std::vector<Photon>
@@ -103,6 +157,8 @@ Interpolator::interpolate(const ClusterVector<ClusterType> &clusters) {
         photon.y = cluster.y;
         photon.energy = static_cast<decltype(photon.energy)>(eta.sum);
 
+        std::cout << "eta.x: " << eta.x << " eta.y: " << eta.y << std::endl;
+
         // Finding the index of the last element that is smaller
         // should work fine as long as we have many bins
         auto ie = last_smaller(m_energy_bins, photon.energy);
@@ -111,30 +167,12 @@ Interpolator::interpolate(const ClusterVector<ClusterType> &clusters) {
 
         std::cout << "ix: " << ix << " iy: " << iy << std::endl;
 
-        // bilinear interpolation
-        double ietax_interp_left = linear_interpolation(
-            {m_etabinsy(iy), m_etabinsy(iy + 1)},
-            {m_ietax(ix, iy, ie), m_ietax(ix, iy + 1, ie)}, eta.y);
-        double ietax_interp_right = linear_interpolation(
-            {m_etabinsy(iy), m_etabinsy(iy + 1)},
-            {m_ietax(ix + 1, iy, ie), m_ietax(ix + 1, iy + 1, ie)}, eta.y);
+        // TODO: only works if all bins have a value - truncate in constructor
+        //  auto [ietax_interpolated, ietay_interpolated] =
+        //  bilinear_interpolation(ix, iy, ie);
 
-        // transformed photon position x between [0,1]
-        double ietax_interpolated = linear_interpolation(
-            {m_etabinsx(ix), m_etabinsx(ix + 1)},
-            {ietax_interp_left, ietax_interp_right}, eta.x);
-
-        double ietay_interp_left = linear_interpolation(
-            {m_etabinsx(ix), m_etabinsx(ix + 1)},
-            {m_ietay(ix, iy, ie), m_ietay(ix + 1, iy, ie)}, eta.x);
-        double ietay_interp_right = linear_interpolation(
-            {m_etabinsx(ix), m_etabinsx(ix + 1)},
-            {m_ietay(ix, iy + 1, ie), m_ietay(ix + 1, iy + 1, ie)}, eta.x);
-
-        // transformed photon position y between [0,1]
-        double ietay_interpolated = linear_interpolation(
-            {m_etabinsy(iy), m_etabinsy(iy + 1)},
-            {ietay_interp_left, ietay_interp_right}, eta.y);
+        double ietax_interpolated = m_ietax(ix, iy, ie);
+        double ietay_interpolated = m_ietay(ix, iy, ie);
 
         interpolation_logic<EtaFunction, ClusterType>(
             photon, ietax_interpolated, ietay_interpolated, eta.c);
@@ -183,6 +221,7 @@ void Interpolator::interpolation_logic(Photon &photon, const double u,
                    dY; // eta2 calculates the ratio between bottom and sum of
                        // bottom and top  shift by 1 add eta value correctly
     } else {
+        std::cout << "im in here: " << std::endl;
         photon.x += u;
         photon.y += v;
     }

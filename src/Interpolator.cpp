@@ -15,36 +15,36 @@ Interpolator::Interpolator(NDView<double, 3> etacube, NDView<double, 1> xbins,
         throw std::invalid_argument(
             "The shape of the etacube does not match the shape of the bins");
     }
-    m_ietax = NDArray<double, 3>(
-        std::array<ssize_t, 3>{xbins.size(), ybins.size(), ebins.size() - 1},
-        0.0);
 
-    m_ietay = NDArray<double, 3>(
-        std::array<ssize_t, 3>{xbins.size(), ybins.size(), ebins.size() - 1},
-        0.0);
+    m_ietax = NDArray<double, 3>(etacube);
 
-    // Cumulative sum
-    for (ssize_t i = 1; i < m_ietax.shape(0); i++) {
-        for (ssize_t j = 1; j < m_ietax.shape(1); j++) {
+    m_ietay = NDArray<double, 3>(etacube);
+
+    // prefix sum - conditional CDF
+    for (ssize_t i = 0; i < m_ietax.shape(0); i++) {
+        for (ssize_t j = 0; j < m_ietax.shape(1); j++) {
             for (ssize_t k = 0; k < m_ietax.shape(2); k++) {
-                m_ietax(i, j, k) = etacube(i - 1, j - 1, k);
-                m_ietax(i, j, k) += m_ietax(i - 1, j, k);
+                m_ietax(i, j, k) += (i == 0) ? 0 : m_ietax(i - 1, j, k);
 
-                m_ietay(i, j, k) = etacube(i - 1, j - 1, k);
-                m_ietay(i, j, k) += m_ietay(i, j - 1, k);
+                m_ietay(i, j, k) += (j == 0) ? 0 : m_ietay(i, j - 1, k);
             }
         }
     }
 
-    // Normalize by the highest row, if norm less than 1 don't do anything
+    // Standardize, if norm less than 1 don't do anything
     for (ssize_t i = 0; i < m_ietax.shape(0); i++) {
         for (ssize_t j = 0; j < m_ietax.shape(1); j++) {
             for (ssize_t k = 0; k < m_ietax.shape(2); k++) {
-                auto val_etax = m_ietax(m_ietax.shape(0) - 1, j, k);
-                double norm_etax = val_etax < 1 ? 1 : val_etax;
+                auto shift_x = etacube(0, j, k);
+                auto val_etax = m_ietax(m_ietax.shape(0) - 1, j, k) - shift_x;
+                double norm_etax = val_etax == 0 ? 1 : val_etax;
+                m_ietax(i, j, k) -= shift_x;
                 m_ietax(i, j, k) /= norm_etax;
-                auto val_etay = m_ietay(i, m_ietay.shape(1) - 1, k);
-                double norm_etay = val_etay < 1 ? 1 : val_etay;
+                auto shift_y = etacube(i, 0, k);
+                auto val_etay = m_ietay(i, m_ietay.shape(1) - 1, k) - shift_y;
+                double norm_etay = val_etay == 0 ? 1 : val_etay;
+                m_ietay(i, j, k) -= shift_y;
+
                 m_ietay(i, j, k) /= norm_etay;
             }
         }
