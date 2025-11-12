@@ -425,8 +425,8 @@ calculate_eta3(const Cluster<T, ClusterSizeX, ClusterSizeY, CoordType> &cl) {
                 static_cast<double>(photon_energy);
 
         std::array<T, 2> row_sums{
-            static_cast<T>(cl.data[0] + cl.data[3] + cl.data[6]),
-            static_cast<T>(cl.data[1] + cl.data[4] + cl.data[7])};
+            static_cast<T>(cl.data[0] + cl.data[1] + cl.data[2]),
+            static_cast<T>(cl.data[6] + cl.data[7] + cl.data[8])};
 
         eta.y = static_cast<double>(-row_sums[0] + row_sums[1]) /
                 static_cast<double>(photon_energy);
