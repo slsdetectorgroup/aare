@@ -17,9 +17,9 @@ namespace py = pybind11;
         interpolator, "", "eta2");
 
 #define REGISTER_INTERPOLATOR_ETA3(T, N, M, U)                                 \
-    register_interpolate<T, N, M, U, aare::calculate_full_eta2<T, N, M, U>>(   \
+    register_interpolate<T, N, M, U, aare::calculate_eta3<T, N, M, U>>(        \
         interpolator, "_eta3", "full eta3");                                   \
-    register_interpolate<T, N, M, U, aare::calculate_eta2<T, N, M, U>>(        \
+    register_interpolate<T, N, M, U, aare::calculate_cross_eta3<T, N, M, U>>(  \
         interpolator, "_cross_eta3", "cross eta3");
 
 template <typename Type, uint8_t CoordSizeX, uint8_t CoordSizeY,
@@ -128,16 +128,16 @@ void define_interpolation_bindings(py::module &m) {
                 return return_image_data(ptr);
             }, R"(conditional CDF of etay conditioned on etax)");
 
+    REGISTER_INTERPOLATOR_ETA3(int, 3, 3, uint16_t);
+    REGISTER_INTERPOLATOR_ETA3(float, 3, 3, uint16_t);
+    REGISTER_INTERPOLATOR_ETA3(double, 3, 3, uint16_t);
+
     REGISTER_INTERPOLATOR_ETA2(int, 3, 3, uint16_t);
     REGISTER_INTERPOLATOR_ETA2(float, 3, 3, uint16_t);
     REGISTER_INTERPOLATOR_ETA2(double, 3, 3, uint16_t);
     REGISTER_INTERPOLATOR_ETA2(int, 2, 2, uint16_t);
     REGISTER_INTERPOLATOR_ETA2(float, 2, 2, uint16_t);
     REGISTER_INTERPOLATOR_ETA2(double, 2, 2, uint16_t);
-
-    REGISTER_INTERPOLATOR_ETA3(int, 3, 3, uint16_t);
-    REGISTER_INTERPOLATOR_ETA3(float, 3, 3, uint16_t);
-    REGISTER_INTERPOLATOR_ETA3(double, 3, 3, uint16_t);
 
     // TODO! Evaluate without converting to double
     m.def(

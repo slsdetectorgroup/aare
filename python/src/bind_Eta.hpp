@@ -66,9 +66,10 @@ void register_calculate_2x2eta(py::module &m) {
         R"(calculates full eta2x2)", py::arg("clusters"));
 }
 
-template <typename Type, typename CoordType = uint16_t>
+template <typename Type, uint8_t ClusterSizeX, uint8_t ClusterSizeY,
+          typename CoordType = uint16_t>
 void register_calculate_3x3eta(py::module &m) {
-    using ClusterType = Cluster<Type, 3, 3, CoordType>;
+    using ClusterType = Cluster<Type, ClusterSizeX, ClusterSizeY, CoordType>;
 
     m.def(
         "calculate_eta3",

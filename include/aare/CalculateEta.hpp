@@ -74,12 +74,11 @@ calculate_full_eta2(const ClusterVector<ClusterType> &clusters) {
 /**
  * @brief Calculate eta3 for all 3x3 clusters in a ClusterVector
  */
-template <
-    typename T, typename CoordType,
-    typename = std::enable_if_t<is_cluster_v<Cluster<T, 3, 3, CoordType>>>>
-std::vector<Eta2<T>>
-calculate_eta3(const ClusterVector<Cluster<T, 3, 3, CoordType>> &clusters) {
-    std::vector<Eta2<T>> eta2{};
+template <typename ClusterType,
+          typename = std::enable_if_t<is_cluster_v<ClusterType>>>
+std::vector<Eta2<typename ClusterType::value_type>>
+calculate_eta3(const ClusterVector<ClusterType> &clusters) {
+    std::vector<Eta2<typename ClusterType::value_type>> eta2{};
     eta2.reserve(clusters.size());
 
     for (size_t i = 0; i < clusters.size(); i++) {
@@ -93,12 +92,11 @@ calculate_eta3(const ClusterVector<Cluster<T, 3, 3, CoordType>> &clusters) {
 /**
  * @brief Calculate cross eta3 for all 3x3 clusters in a ClusterVector
  */
-template <
-    typename T, typename CoordType,
-    typename = std::enable_if_t<is_cluster_v<Cluster<T, 3, 3, CoordType>>>>
-std::vector<Eta2<T>> calculate_cross_eta3(
-    const ClusterVector<Cluster<T, 3, 3, CoordType>> &clusters) {
-    std::vector<Eta2<T>> eta2{};
+template <typename ClusterType,
+          typename = std::enable_if_t<is_cluster_v<ClusterType>>>
+std::vector<Eta2<typename ClusterType::value_type>>
+calculate_cross_eta3(const ClusterVector<ClusterType> &clusters) {
+    std::vector<Eta2<typename ClusterType::value_type>> eta2{};
     eta2.reserve(clusters.size());
 
     for (size_t i = 0; i < clusters.size(); i++) {
@@ -309,6 +307,7 @@ Eta2<T> calculate_eta2(const Cluster<T, 2, 2, uint16_t> &cl) {
 
 template <typename T>
 Eta2<T> calculate_full_eta2(const Cluster<T, 2, 2, uint16_t> &cl) {
+
     Eta2<T> eta{};
 
     eta.sum = cl.sum();
@@ -352,8 +351,22 @@ Eta2<T> calculate_eta2(const Cluster<T, 2, 1, uint16_t> &cl) {
  * cross Eta3 calculates the eta by taking into account only the cross pixels
  * {top, bottom, left, right, center}
  */
-template <typename T, typename CoordType = uint16_t>
-Eta2<T> calculate_cross_eta3(const Cluster<T, 3, 3, CoordType> &cl) {
+template <typename T, uint8_t ClusterSizeX, uint8_t ClusterSizeY,
+          typename CoordType = uint16_t>
+Eta2<T> calculate_cross_eta3(
+    const Cluster<T, ClusterSizeX, ClusterSizeY, CoordType> &cl) {
+
+    static_assert(ClusterSizeX > 2 && ClusterSizeY > 2,
+                  "calculate_eta3 only defined for clusters larger than 2x2");
+
+    auto reduced_cluster =
+        std::move(cl); // mmh copy should I move how is move implemented for
+                       // std::array? - dont devalidate cl - const anyway -
+                       // should complain
+
+    if constexpr (ClusterSizeX != 3 || ClusterSizeY != 3) {
+        reduced_cluster = reduce_cluster_to_3x3(cl);
+    }
 
     Eta2<T> eta{};
 
@@ -381,8 +394,19 @@ Eta2<T> calculate_cross_eta3(const Cluster<T, 3, 3, CoordType> &cl) {
  * @brief calculates Eta3 for 3x3 cluster
  * It calculates the eta by taking into account all pixels in the 3x3 cluster
  */
-template <typename T, typename CoordType = uint16_t>
-Eta2<T> calculate_eta3(const Cluster<T, 3, 3, CoordType> &cl) {
+template <typename T, uint8_t ClusterSizeX, uint8_t ClusterSizeY,
+          typename CoordType = uint16_t>
+Eta2<T>
+calculate_eta3(const Cluster<T, ClusterSizeX, ClusterSizeY, CoordType> &cl) {
+
+    static_assert(ClusterSizeX > 2 && ClusterSizeY > 2,
+                  "calculate_eta3 only defined for clusters larger than 2x2");
+
+    auto reduced_cluster = std::move(cl);
+
+    if constexpr (ClusterSizeX != 3 || ClusterSizeY != 3) {
+        reduced_cluster = reduce_cluster_to_3x3(cl);
+    }
 
     Eta2<T> eta{};
 
