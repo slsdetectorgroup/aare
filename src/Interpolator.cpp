@@ -68,59 +68,62 @@ void Interpolator::rosenblatttransform(NDView<double, 3> etacube) {
 
     // marginal CDF for eta_x
     NDArray<double, 2> marg_CDF_EtaX(
-        std::array<ssize_t, 2>{m_etabinsx.size(), m_energy_bins.size() - 1},
+        std::array<ssize_t, 2>{m_etabinsx.size() - 1, m_energy_bins.size() - 1},
         0.0); // simulate proper probability distribution with zero at start
 
     // conditional CDF for eta_y
-    NDArray<double, 3> cond_CDF_EtaY(
-        std::array<ssize_t, 3>{m_etabinsx.size(), m_etabinsy.size(),
-                               m_energy_bins.size() - 1},
-        0.0); // simulate proper probability distribution with zero at start
+    NDArray<double, 3> cond_CDF_EtaY(etacube);
 
-    // TODO: after changing loop orders check if faster to iterate twice during
-    // normalization than storing total sums
-    NDArray<double, 1> total_sum_etax(
-        std::array<ssize_t, 1>{m_energy_bins.size() - 1},
-        0.0); // for nomalization of etax
-
-    NDArray<double, 2> total_sum_etay(
-        std::array<ssize_t, 2>{m_etabinsx.size(), m_energy_bins.size() - 1},
-        0.0); // for normalization of etay
-
-    for (ssize_t i = 1; i < m_etabinsx.size(); ++i) {
-        for (ssize_t j = 1; j < m_etabinsy.size(); ++j) {
-            for (ssize_t k = 0; k < m_energy_bins.size(); ++k) {
+    for (ssize_t i = 0; i < cond_CDF_EtaY.shape(0); ++i) {
+        for (ssize_t j = 0; j < cond_CDF_EtaY.shape(1); ++j) {
+            for (ssize_t k = 0; k < cond_CDF_EtaY.shape(2); ++k) {
+                // cumsum along y-axis
                 marg_CDF_EtaX(i, k) +=
-                    etacube(i - 1, j - 1, k); // marginal probability for etaX
-                total_sum_etax(k) += etacube(i - 1, j - 1, k);
-                cond_CDF_EtaY(i, j, k) += etacube(
-                    i - 1, j - 1, k); // joint probability for etaY and etaX
-                total_sum_etay(i, k) += etacube(i - 1, j - 1, k);
+                    etacube(i, j,
+                            k); // marginal probability for etaX
+
+                // cumsum along y-axis
+                cond_CDF_EtaY(i, j, k) +=
+                    (j == 0) ? 0 : cond_CDF_EtaY(i, j - 1, k);
             }
         }
     }
 
-    // calculate marginal CDF for etaX
-    for (ssize_t i = 1; i < m_etabinsx.size(); ++i) {
-        for (ssize_t k = 0; k < m_energy_bins.size(); ++k) {
-            double norm = total_sum_etax(k) < 1 ? 1 : total_sum_etax(k);
-            marg_CDF_EtaX(i, k) /=
-                norm; // first element is zero no need to normalize
+    // cumsum along x-axis
+    for (ssize_t i = 1; i < marg_CDF_EtaX.shape(0); ++i) {
+        for (ssize_t k = 0; k < marg_CDF_EtaX.shape(1); ++k) {
+            marg_CDF_EtaX(0, k) =
+                0.0; // shift by first value to ensure values between 0 and 1
+
             marg_CDF_EtaX(i, k) += marg_CDF_EtaX(i - 1, k);
         }
     }
 
-    // calculate conditional CDF for etaY
+    // normalize marg_CDF_EtaX
+    for (ssize_t i = 1; i < marg_CDF_EtaX.shape(0); ++i) {
+        for (ssize_t k = 0; k < marg_CDF_EtaX.shape(1); ++k) {
+            double norm = marg_CDF_EtaX(marg_CDF_EtaX.shape(0) - 1, k) == 0
+                              ? 1
+                              : marg_CDF_EtaX(marg_CDF_EtaX.shape(0) - 1, k);
+            marg_CDF_EtaX(i, k) /= norm;
+        }
+    }
+
+    // standardize, normalize conditional CDF for etaY
     // Note P(EtaY|EtaX) = P(EtaY,EtaX)/P(EtaX) we dont divide by P(EtaX) as it
     // cancels out during normalization
-    for (ssize_t i = 1; i < m_etabinsx.size(); ++i) {
-        for (ssize_t j = 1; j < m_etabinsy.size(); ++j) {
-            for (ssize_t k = 0; k < m_energy_bins.size(); ++k) {
-                // if smaller than 1 keep zero conditional probability undefined
+    for (ssize_t i = 0; i < cond_CDF_EtaY.shape(0); ++i) {
+        for (ssize_t j = 0; j < cond_CDF_EtaY.shape(1); ++j) {
+            for (ssize_t k = 0; k < cond_CDF_EtaY.shape(2); ++k) {
+                double shift = etacube(i, 0, k);
                 double norm =
-                    total_sum_etay(i, k) < 1 ? 1 : total_sum_etay(i, k);
+                    (cond_CDF_EtaY(i, cond_CDF_EtaY.shape(1) - 1, k) - shift) ==
+                            0
+                        ? 1
+                        : cond_CDF_EtaY(i, cond_CDF_EtaY.shape(1) - 1, k) -
+                              shift;
+                cond_CDF_EtaY(i, j, k) -= shift;
                 cond_CDF_EtaY(i, j, k) /= norm;
-                cond_CDF_EtaY(i, j, k) += cond_CDF_EtaY(i, j - 1, k);
             }
         }
     }
@@ -130,12 +133,13 @@ void Interpolator::rosenblatttransform(NDView<double, 3> etacube) {
 
     // TODO: should actually be only 2dimensional keep three dimension due to
     // consistency with Annas code change though
-    m_ietax = NDArray<double, 3>(std::array<ssize_t, 3>{
-        m_etabinsx.size(), m_etabinsy.size(), m_energy_bins.size() - 1});
+    m_ietax = NDArray<double, 3>(
+        std::array<ssize_t, 3>{m_etabinsx.size() - 1, m_etabinsy.size() - 1,
+                               m_energy_bins.size() - 1});
 
-    for (ssize_t i = 0; i < m_etabinsx.size(); ++i)
-        for (ssize_t j = 0; j < m_etabinsy.size(); ++j)
-            for (ssize_t k = 0; k < m_energy_bins.size(); ++k)
+    for (ssize_t i = 0; i < m_etabinsx.size() - 1; ++i)
+        for (ssize_t j = 0; j < m_etabinsy.size() - 1; ++j)
+            for (ssize_t k = 0; k < m_energy_bins.size() - 1; ++k)
                 m_ietax(i, j, k) = marg_CDF_EtaX(i, k);
 }
 

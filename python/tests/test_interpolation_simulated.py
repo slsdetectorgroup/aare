@@ -88,7 +88,58 @@ def test_eta2_interpolation(load_data, check):
         assert residuals_interpolated_x.std() <= 0.05
     with check:
         assert residuals_interpolated_y.std() <= 0.05
-    
+
+@pytest.mark.withdata
+def test_eta2_interpolation_rosenblatt(load_data, check):
+    """Test eta2 interpolation on simulated data using Rosenblatt transform""" 
+
+    cv, ground_truths = load_data
+
+    num_bins = 201
+    eta_distribution = calculate_eta_distribution(cv, calculate_eta2, edges_x=[-0.1,1.1], edges_y=[-0.1,1.1], nbins=num_bins) 
+
+    interpolator = Interpolator(eta_distribution.axes[0].edges, eta_distribution.axes[1].edges, eta_distribution.axes[2].edges)
+
+    interpolator.rosenblatttransform(eta_distribution)
+
+    assert interpolator.get_ietax().shape == (num_bins,num_bins,1)
+    assert interpolator.get_ietay().shape == (num_bins,num_bins,1)
+
+    interpolated_photons = interpolator.interpolate(cv)
+
+    assert interpolated_photons.size == cv.size
+
+    interpolated_photons["x"] += 1.0 #groud truth label uses 5x5 clusters 
+    interpolated_photons["y"] += 1.0
+
+    residuals_interpolated_x = abs(ground_truths[:, 0] - interpolated_photons["x"])
+    residuals_interpolated_y = abs(ground_truths[:, 1] - interpolated_photons["y"])
+
+    """
+    residuals_center_pixel_x = abs(ground_truths[:, 0] - 2.5)
+    residuals_center_pixel_y = abs(ground_truths[:, 1] - 2.5)
+
+    # interpolation needs to perform better than center pixel assignment - not true for photon close to the center 
+    assert (residuals_interpolated_x < residuals_center_pixel_x).all()
+    assert (residuals_interpolated_y < residuals_center_pixel_y).all()
+    """ 
+
+    # check within photon hit pixel for all
+    with check:
+        assert np.allclose(interpolated_photons["x"], ground_truths[:, 0], atol=5e-1)
+    with check:
+        assert np.allclose(interpolated_photons["y"], ground_truths[:, 1], atol=5e-1)
+
+    # check mean and std of residuals
+    with check:
+        assert residuals_interpolated_y.mean() <= 0.1
+    with check:
+        assert residuals_interpolated_x.mean() <= 0.1
+    with check:
+        assert residuals_interpolated_x.std() <= 0.055 #performs slightly worse
+    with check:
+        assert residuals_interpolated_y.std() <= 0.055 #performs slightly worse
+
 
 @pytest.mark.withdata
 def test_cross_eta_interpolation(load_data, check):
