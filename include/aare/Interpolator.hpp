@@ -115,10 +115,11 @@ Interpolator::bilinear_interpolation(const size_t ix, const size_t iy,
     double ietax_interp_left = linear_interpolation(
         {m_etabinsy(iy), m_etabinsy(iy + 1)},
         {m_ietax(ix, iy, ie), m_ietax(ix, next_index_y, ie)}, eta.y);
-    double ietax_interp_right = linear_interpolation(
-        {m_etabinsy(iy), m_etabinsy(iy + 1)},
-        {m_ietax(next_index_x, iy, ie), m_ietax(ix + 1, next_index_y, ie)},
-        eta.y);
+    double ietax_interp_right =
+        linear_interpolation({m_etabinsy(iy), m_etabinsy(iy + 1)},
+                             {m_ietax(next_index_x, iy, ie),
+                              m_ietax(next_index_x, next_index_y, ie)},
+                             eta.y);
 
     // transformed photon position x between [0,1]
     double ietax_interpolated =
@@ -167,9 +168,12 @@ Interpolator::interpolate(const ClusterVector<ClusterType> &clusters) {
 
         // std::cout << "ix: " << ix << " iy: " << iy << std::endl;
 
-        // TODO: only works if all bins have a value - truncate in constructor
-        //  auto [ietax_interpolated, ietay_interpolated] =
-        //  bilinear_interpolation(ix, iy, ie);
+        // TODO: bilinear interpolation only works if all bins have a size > 1 -
+        // otherwise bilinear interpolation with zero values which skew the
+        // results
+        // TODO: maybe trim the bins at the edges with zero values beforehand
+        // auto [ietax_interpolated, ietay_interpolated] =
+        // bilinear_interpolation(ix, iy, ie, eta);
 
         double ietax_interpolated = m_ietax(ix, iy, ie);
         double ietay_interpolated = m_ietay(ix, iy, ie);

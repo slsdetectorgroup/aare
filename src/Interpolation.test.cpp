@@ -72,6 +72,53 @@ TEST_CASE("Test constructor", "[Interpolation]") {
     }
 }
 
+TEST_CASE("Test constructor with zero bins at borders", "[Interpolation]") {
+    NDArray<double, 1> energy_bins(std::array<ssize_t, 1>{2});
+    NDArray<double, 1> etax_bins(std::array<ssize_t, 1>{5}, 0.0);
+    NDArray<double, 1> etay_bins(std::array<ssize_t, 1>{5}, 0.0);
+    NDArray<double, 3> eta_distribution(std::array<ssize_t, 3>{4, 4, 1}, 0.0);
+
+    eta_distribution(1, 1, 0) = 1.0;
+    eta_distribution(1, 2, 0) = 2.0;
+    eta_distribution(2, 1, 0) = 3.0;
+    eta_distribution(2, 2, 0) = 4.0;
+
+    Interpolator interpolator(eta_distribution.view(), etax_bins.view(),
+                              etay_bins.view(), energy_bins.view());
+
+    auto ietax = interpolator.get_ietax();
+    auto ietay = interpolator.get_ietay();
+
+    CHECK(ietax.shape(0) == 4);
+    CHECK(ietax.shape(1) == 4);
+    CHECK(ietax.shape(2) == 1);
+
+    CHECK(ietay.shape(0) == 4);
+    CHECK(ietay.shape(1) == 4);
+    CHECK(ietay.shape(2) == 1);
+
+    std::array<double, 16> expected_ietax{
+        0.0, 0.0, 0.0, 0.0, 0.0, 1.0 / 4.0, 2.0 / 6.0, 0.0,
+        0.0, 1.0, 1.0, 0.0, 0.0, 1.0,       1.0,       0.0};
+
+    std::array<double, 16> expected_ietay{
+        0.0, 0.0,       0.0, 0.0, 0.0, 1.0 / 3.0, 1.0, 1.0,
+        0.0, 3.0 / 7.0, 1.0, 1.0, 0.0, 0.0,       0.0, 0.0};
+
+    for (ssize_t i = 0; i < ietax.shape(0); i++) {
+        for (ssize_t j = 0; j < ietax.shape(1); j++) {
+            CHECK(ietax(i, j, 0) ==
+                  Catch::Approx(expected_ietax[i * ietax.shape(1) + j]));
+        }
+    }
+    for (ssize_t i = 0; i < ietay.shape(0); i++) {
+        for (ssize_t j = 0; j < ietay.shape(1); j++) {
+            CHECK(ietay(i, j, 0) ==
+                  Catch::Approx(expected_ietay[i * ietay.shape(1) + j]));
+        }
+    }
+}
+
 TEST_CASE("Test Rosenblatt", "[Interpolation]") {
     NDArray<double, 1> energy_bins(std::array<ssize_t, 1>{2});
     NDArray<double, 1> etax_bins(std::array<ssize_t, 1>{4}, 0.0);
