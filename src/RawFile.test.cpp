@@ -321,3 +321,13 @@ TEST_CASE("Read file with unordered frames", "[.with-data]") {
     File f(fpath);
     REQUIRE_THROWS((f.read_frame()));
 }
+
+TEST_CASE("Read Mythenframe", "[.with-data]") {
+    auto fpath = test_data_path() / "raw/newmythen03/run_2_master_1.json";
+    REQUIRE(std::filesystem::exists(fpath));
+    RawFile f(fpath);
+    REQUIRE(f.master().roi().value().width() == 2560);
+    REQUIRE(f.master().roi().value().height() == 1);
+    auto frame = f.read_frame();
+    REQUIRE(frame.cols() == 2560);
+}

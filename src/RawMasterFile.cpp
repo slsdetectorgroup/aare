@@ -326,7 +326,7 @@ void RawMasterFile::parse_json(const std::filesystem::path &fpath) {
                 tmp_roi.ymin = 0;
                 tmp_roi.ymax = 0;
             }
-            tmp_roi.ymin++;
+            tmp_roi.ymax++;
             m_roi = tmp_roi;
         }
 
