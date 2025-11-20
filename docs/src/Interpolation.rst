@@ -5,6 +5,9 @@ Interpolation class for :math:`\eta` Interpolation.
 
 The Interpolator class provides methods to interpolate the positions of photons based on their :math:`\eta` values. 
 
+.. warning:: 
+   The interpolation might lead to erroneous photon positions for clusters at the boarders of a frame. Make sure to filter out such cases. 
+
 :math:`\eta`-Functions: 
 ---------------------------
 

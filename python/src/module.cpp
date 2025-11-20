@@ -134,10 +134,10 @@ PYBIND11_MODULE(_aare, m) {
     reduce_to_3x3<double, 9, 9, uint16_t>(m);
     reduce_to_3x3<float, 9, 9, uint16_t>(m);
 
-    register_calculate_3x3eta<int, uint16_t>(m);
-    register_calculate_3x3eta<double, uint16_t>(m);
-    register_calculate_3x3eta<float, uint16_t>(m);
-    register_calculate_3x3eta<int16_t, uint16_t>(m);
+    register_calculate_3x3eta<int, 3, 3, uint16_t>(m);
+    register_calculate_3x3eta<double, 3, 3, uint16_t>(m);
+    register_calculate_3x3eta<float, 3, 3, uint16_t>(m);
+    register_calculate_3x3eta<int16_t, 3, 3, uint16_t>(m);
 
     using Sum_index_pair_d = Sum_index_pair<double, corner>;
     PYBIND11_NUMPY_DTYPE(Sum_index_pair_d, sum, index);

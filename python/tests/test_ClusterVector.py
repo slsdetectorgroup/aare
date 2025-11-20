@@ -87,11 +87,11 @@ def test_2x2_reduction():
     reduced_cv = np.array(_aare.reduce_to_2x2(cv), copy=False) 
 
     assert reduced_cv.size == 2
-    assert reduced_cv[0]["x"] == 4
+    assert reduced_cv[0]["x"] == 5
     assert reduced_cv[0]["y"] == 5
     assert (reduced_cv[0]["data"] == np.array([[2, 3], [2, 2]], dtype=np.int32)).all()
-    assert reduced_cv[1]["x"] == 4
-    assert reduced_cv[1]["y"] == 6
+    assert reduced_cv[1]["x"] == 5
+    assert reduced_cv[1]["y"] == 5
     assert (reduced_cv[1]["data"] == np.array([[2, 2], [2, 3]], dtype=np.int32)).all()
     
     
@@ -106,6 +106,6 @@ def test_3x3_reduction():
     reduced_cv = np.array(_aare.reduce_to_3x3(cv), copy=False)  
 
     assert reduced_cv.size == 2
-    assert reduced_cv[0]["x"] == 4
+    assert reduced_cv[0]["x"] == 5
     assert reduced_cv[0]["y"] == 5
-    assert (reduced_cv[0]["data"] == np.array([[1.0, 2.0, 1.0], [2.0, 2.0, 3.0], [1.0, 2.0, 1.0]], dtype=np.double)).all()
+    assert (reduced_cv[0]["data"] == np.array([[2.0, 1.0, 1.0], [2.0, 3.0, 1.0], [2.0, 1.0, 1.0]], dtype=np.double)).all()

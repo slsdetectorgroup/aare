@@ -120,67 +120,71 @@ struct Cluster {
  * highest sum.
  * @param c Cluster to reduce
  * @return reduced cluster
+ * @note The cluster is filled using row major ordering starting at the top-left
+ * (thus for a max subcluster in the top left cornern the photon hit is at
+ * the fourth position)
  */
 template <typename T, uint8_t ClusterSizeX, uint8_t ClusterSizeY,
-          typename CoordType = int16_t>
+          typename CoordType = uint16_t>
 Cluster<T, 2, 2, CoordType>
 reduce_to_2x2(const Cluster<T, ClusterSizeX, ClusterSizeY, CoordType> &c) {
 
     static_assert(ClusterSizeX >= 2 && ClusterSizeY >= 2,
                   "Cluster sizes must be at least 2x2 for reduction to 2x2");
 
-    // TODO maybe add sanity check and check that center is in max subcluster
-    Cluster<T, 2, 2, CoordType> result;
+    Cluster<T, 2, 2, CoordType> result{};
 
     auto [sum, index] = c.max_sum_2x2();
 
-    int16_t cluster_center_index =
+    constexpr int16_t cluster_center_index =
         (ClusterSizeX / 2) + (ClusterSizeY / 2) * ClusterSizeX;
 
-    int16_t index_bottom_left_max_2x2_subcluster =
-        (int(static_cast<int>(index) / (ClusterSizeX - 1))) * ClusterSizeX +
-        static_cast<int>(index) % (ClusterSizeX - 1);
+    int16_t index_top_left_max_2x2_subcluster = cluster_center_index;
+    switch (index) {
+    case corner::cTopLeft:
+        index_top_left_max_2x2_subcluster -= (ClusterSizeX + 1);
+        break;
+    case corner::cTopRight:
+        index_top_left_max_2x2_subcluster -= ClusterSizeX;
+        break;
+    case corner::cBottomLeft:
+        index_top_left_max_2x2_subcluster -= 1;
+        break;
+    case corner::cBottomRight:
+        // no change needed
+        break;
+    }
 
-    result.x =
-        c.x + (index_bottom_left_max_2x2_subcluster - cluster_center_index) %
-                  ClusterSizeX;
-
-    result.y =
-        c.y - (index_bottom_left_max_2x2_subcluster - cluster_center_index) /
-                  ClusterSizeX;
+    result.x = c.x;
+    result.y = c.y;
 
     result.data = {
-        c.data[index_bottom_left_max_2x2_subcluster],
-        c.data[index_bottom_left_max_2x2_subcluster + 1],
-        c.data[index_bottom_left_max_2x2_subcluster + ClusterSizeX],
-        c.data[index_bottom_left_max_2x2_subcluster + ClusterSizeX + 1]};
+        c.data[index_top_left_max_2x2_subcluster],
+        c.data[index_top_left_max_2x2_subcluster + 1],
+        c.data[index_top_left_max_2x2_subcluster + ClusterSizeX],
+        c.data[index_top_left_max_2x2_subcluster + ClusterSizeX + 1]};
+
     return result;
 }
 
 template <typename T>
-Cluster<T, 2, 2, int16_t> reduce_to_2x2(const Cluster<T, 3, 3, int16_t> &c) {
-    Cluster<T, 2, 2, int16_t> result;
+Cluster<T, 2, 2, uint16_t> reduce_to_2x2(const Cluster<T, 3, 3, uint16_t> &c) {
+    Cluster<T, 2, 2, uint16_t> result{};
 
     auto [s, i] = c.max_sum_2x2();
+    result.x = c.x;
+    result.y = c.y;
     switch (i) {
     case corner::cTopLeft:
-        result.x = c.x - 1;
-        result.y = c.y + 1;
         result.data = {c.data[0], c.data[1], c.data[3], c.data[4]};
         break;
     case corner::cTopRight:
-        result.x = c.x;
-        result.y = c.y + 1;
         result.data = {c.data[1], c.data[2], c.data[4], c.data[5]};
         break;
     case corner::cBottomLeft:
-        result.x = c.x - 1;
-        result.y = c.y;
         result.data = {c.data[3], c.data[4], c.data[6], c.data[7]};
         break;
     case corner::cBottomRight:
-        result.x = c.x;
-        result.y = c.y;
         result.data = {c.data[4], c.data[5], c.data[7], c.data[8]};
         break;
     }
@@ -188,43 +192,8 @@ Cluster<T, 2, 2, int16_t> reduce_to_2x2(const Cluster<T, 3, 3, int16_t> &c) {
     return result;
 }
 
-template <typename T, uint8_t ClusterSizeX, uint8_t ClusterSizeY,
-          typename CoordType = int16_t>
-inline std::pair<T, uint16_t>
-max_3x3_sum(const Cluster<T, ClusterSizeX, ClusterSizeY, CoordType> &cluster) {
-
-    if constexpr (ClusterSizeX == 3 && ClusterSizeY == 3) {
-        return std::make_pair(cluster.sum(), 0);
-    } else {
-
-        size_t index = 0;
-        T max_3x3_subcluster_sum = 0;
-        for (size_t i = 0; i < ClusterSizeY - 2; ++i) {
-            for (size_t j = 0; j < ClusterSizeX - 2; ++j) {
-
-                T sum = cluster.data[i * ClusterSizeX + j] +
-                        cluster.data[i * ClusterSizeX + j + 1] +
-                        cluster.data[i * ClusterSizeX + j + 2] +
-                        cluster.data[(i + 1) * ClusterSizeX + j] +
-                        cluster.data[(i + 1) * ClusterSizeX + j + 1] +
-                        cluster.data[(i + 1) * ClusterSizeX + j + 2] +
-                        cluster.data[(i + 2) * ClusterSizeX + j] +
-                        cluster.data[(i + 2) * ClusterSizeX + j + 1] +
-                        cluster.data[(i + 2) * ClusterSizeX + j + 2];
-                if (sum > max_3x3_subcluster_sum) {
-                    max_3x3_subcluster_sum = sum;
-                    index = i * (ClusterSizeX - 2) + j;
-                }
-            }
-        }
-
-        return std::make_pair(max_3x3_subcluster_sum, index);
-    }
-}
-
 /**
- * @brief Reduce a cluster to a 3x3 cluster by selecting the 3x3 block with the
- * highest sum.
+ * @brief Reduce a cluster to a 3x3 cluster
  * @param c Cluster to reduce
  * @return reduced cluster
  */
@@ -236,47 +205,24 @@ reduce_to_3x3(const Cluster<T, ClusterSizeX, ClusterSizeY, CoordType> &c) {
     static_assert(ClusterSizeX >= 3 && ClusterSizeY >= 3,
                   "Cluster sizes must be at least 3x3 for reduction to 3x3");
 
-    Cluster<T, 3, 3, CoordType> result;
-
-    // TODO maybe add sanity check and check that center is in max subcluster
-
-    auto [sum, index] = max_3x3_sum(c);
+    Cluster<T, 3, 3, CoordType> result{};
 
     int16_t cluster_center_index =
         (ClusterSizeX / 2) + (ClusterSizeY / 2) * ClusterSizeX;
 
-    int16_t index_center_max_3x3_subcluster =
-        (int(index / (ClusterSizeX - 2))) * ClusterSizeX + ClusterSizeX +
-        index % (ClusterSizeX - 2) +
-        1; // center of 3x3 subcluster with max energy
+    result.x = c.x;
+    result.y = c.y;
 
-    // Note this is not the maximum photon in the found cluster - photon
-    // centers shifts completely
-    result.x = c.x + index_center_max_3x3_subcluster % ClusterSizeX -
-               cluster_center_index % ClusterSizeX;
+    result.data = {c.data[cluster_center_index - ClusterSizeX - 1],
+                   c.data[cluster_center_index - ClusterSizeX],
+                   c.data[cluster_center_index - ClusterSizeX + 1],
+                   c.data[cluster_center_index - 1],
+                   c.data[cluster_center_index],
+                   c.data[cluster_center_index + 1],
+                   c.data[cluster_center_index + ClusterSizeX - 1],
+                   c.data[cluster_center_index + ClusterSizeX],
+                   c.data[cluster_center_index + ClusterSizeX + 1]};
 
-    // TODO: this should be + once other PR merged change and adapt tests !!!
-    result.y = c.y - (index_center_max_3x3_subcluster / ClusterSizeX -
-                      cluster_center_index / ClusterSizeX);
-
-    // If one of the new coordinates is negative, we have negative photon
-    // energies. Assume noise is too high and keep original 3x3 subcluster at
-    // center
-    if (result.x < 0 || result.y < 0) {
-        result.x = c.x;
-        result.y = c.y;
-        index_center_max_3x3_subcluster = cluster_center_index;
-    }
-
-    result.data = {c.data[index_center_max_3x3_subcluster - ClusterSizeX - 1],
-                   c.data[index_center_max_3x3_subcluster - ClusterSizeX],
-                   c.data[index_center_max_3x3_subcluster - ClusterSizeX + 1],
-                   c.data[index_center_max_3x3_subcluster - 1],
-                   c.data[index_center_max_3x3_subcluster],
-                   c.data[index_center_max_3x3_subcluster + 1],
-                   c.data[index_center_max_3x3_subcluster + ClusterSizeX - 1],
-                   c.data[index_center_max_3x3_subcluster + ClusterSizeX],
-                   c.data[index_center_max_3x3_subcluster + ClusterSizeX + 1]};
     return result;
 }
 

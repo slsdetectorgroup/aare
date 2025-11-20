@@ -1,5 +1,15 @@
 # Release notes
 
+### 2025.13.11
+
+Features: 
+    - Calculate Eta3 supports all cluster Types 
+    - Eta Interpolation tested with simulated data 
+
+BugFixes: 
+    - fixed constructor for eta interpolation
+    - cluster reduction operations don't change the position of the photon hit  
+
 ### 2025.11.11
 
 Fixes: 
