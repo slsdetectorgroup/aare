@@ -158,24 +158,24 @@ void Interpolator::interpolation_logic(Photon &photon, const double u,
         // TODO: could also chaneg the sign of the eta calculation
         switch (c) {
         case corner::cTopLeft:
-            dX = 0.0;
-            dY = 0.0;
+            dX = -1.0;
+            dY = -1.0;
             break;
         case corner::cTopRight:;
-            dX = 1.0;
-            dY = 0.0;
+            dX = 0.0;
+            dY = -1.0;
             break;
         case corner::cBottomLeft:
-            dX = 0.0;
-            dY = 1.0;
+            dX = -1.0;
+            dY = 0.0;
             break;
         case corner::cBottomRight:
-            dX = 1.0;
-            dY = 1.0;
+            dX = 0.0;
+            dY = 0.0;
             break;
         }
-        photon.x = photon.x + 0.5 - u + dX; // use pixel center + 0.5
-        photon.y = photon.y + 0.5 - v +
+        photon.x = photon.x + 0.5 + u + dX; // use pixel center + 0.5
+        photon.y = photon.y + 0.5 + v +
                    dY; // eta2 calculates the ratio between bottom and sum of
                        // bottom and top  shift by 1 add eta value correctly
     } else {

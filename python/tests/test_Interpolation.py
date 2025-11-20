@@ -62,7 +62,7 @@ def calculate_eta_distribution(num_frames, pixels_per_superpixel, random_number_
             cluster = create_3x3cluster_from_frame(frame, pixels_per_superpixel)
 
         eta2 = calculate_eta2(cluster)
-        hist.fill(eta2[0], eta2[1], eta2[2])
+        hist.fill(eta2.x, eta2.y, eta2.sum)
 
     return hist
 

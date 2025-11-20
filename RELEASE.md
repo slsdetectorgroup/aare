@@ -1,5 +1,10 @@
 # Release notes
 
+### 2025.11.11
+
+Fixes: 
+- calculate_eta coincides with the theoretical definition
+
 ### 2025.10.29
 
 Features:
