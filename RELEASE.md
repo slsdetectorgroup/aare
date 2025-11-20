@@ -33,6 +33,10 @@ Features:
 - max_sum_2x2 including index of subcluster with highest energy is now available from Python API 
 - eta stores corner as enum class cTopLeft, cTopRight, BottomLeft, cBottomRight indicating 2x2 subcluster with largest energy relative to cluster center 
 - max_sum_2x2 returns corner as index
+- interpolation can be used with eta3, cross eta3, eta2 and full eta2
+- interpolation supports bilinear interpolation of eta values for more fine grained transformed uniform coordinates
+- interpolation can use rosenblatt transform 
+- interpolation is documented 
 
 ### 2025.10.1
 
