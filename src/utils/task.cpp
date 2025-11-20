@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: MPL-2.0
 #include "aare/utils/task.hpp"
 
 namespace aare {

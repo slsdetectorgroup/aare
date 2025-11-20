@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: MPL-2.0
 // Files with bindings to the different classes
 
 // New style file naming

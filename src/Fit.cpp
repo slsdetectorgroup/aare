@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: MPL-2.0
 #include "aare/Fit.hpp"
 #include "aare/utils/par.hpp"
 #include "aare/utils/task.hpp"

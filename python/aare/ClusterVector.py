@@ -1,3 +1,4 @@
+# SPDX-License-Identifier: MPL-2.0
 
 
 from ._aare import ClusterVector_Cluster3x3i

@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: MPL-2.0
 #include "aare/RawSubFile.hpp"
 #include "aare/File.hpp"
 #include "aare/NDArray.hpp"

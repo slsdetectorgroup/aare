@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: MPL-2.0
 #include "aare/NDArray.hpp"
 #include <array>
 #include <catch2/benchmark/catch_benchmark.hpp>

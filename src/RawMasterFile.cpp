@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: MPL-2.0
 #include "aare/RawMasterFile.hpp"
 #include "aare/RawFile.hpp"
 #include "aare/logger.hpp"

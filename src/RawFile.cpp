@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: MPL-2.0
 #include "aare/RawFile.hpp"
 #include "aare/DetectorGeometry.hpp"
 #include "aare/PixelMap.hpp"
