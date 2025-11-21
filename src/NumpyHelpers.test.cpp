@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: MPL-2.0
 #include "aare/NumpyHelpers.hpp" //Is this really a public header?
 #include <catch2/catch_test_macros.hpp>
 

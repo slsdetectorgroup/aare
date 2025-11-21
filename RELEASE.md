@@ -6,6 +6,7 @@ This document describes the difference between Release 2025.8.22 and RELEASE_DAT
 
 ### New Features: 
 
+- Added SPDX-License-Identifier: MPL-2.0 to source files
 - Calculate Eta3 supports all cluster types 
 - interpolation class supports using cross eta3x3 and eta3x3 on full cluster as well as eta2x2 on full cluster
 - interpolation class has option to calculate the rosenblatt transform 

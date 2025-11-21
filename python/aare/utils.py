@@ -1,3 +1,4 @@
+# SPDX-License-Identifier: MPL-2.0
 import numpy as np
 import matplotlib.pyplot as plt
 from mpl_toolkits.axes_grid1 import make_axes_locatable

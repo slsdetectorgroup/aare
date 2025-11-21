@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: MPL-2.0
 #pragma once
 #include "aare/Cluster.hpp" //TODO maybe store in seperate file !!!
 #include <algorithm>

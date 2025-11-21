@@ -1,3 +1,4 @@
+# SPDX-License-Identifier: MPL-2.0
 # Make the compiled classes that live in _aare available from aare.
 from . import _aare
 

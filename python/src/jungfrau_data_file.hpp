@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: MPL-2.0
 
 #include "aare/JungfrauDataFile.hpp"
 #include "aare/defs.hpp"

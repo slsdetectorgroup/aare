@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: MPL-2.0
 /************************************************
  * @file CalculateEta.test.cpp
  * @short test case to calculate_eta2

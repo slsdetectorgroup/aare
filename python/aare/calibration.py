@@ -1,3 +1,4 @@
+# SPDX-License-Identifier: MPL-2.0
 #Calibration related functions
 import numpy as np
 def load_calibration(fname, hg0=False):

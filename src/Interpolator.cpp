@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: MPL-2.0
 #include "aare/Interpolator.hpp"
 
 namespace aare {

@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: MPL-2.0
 /*
  * Copyright (c) Meta Platforms, Inc. and affiliates.
  *

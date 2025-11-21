@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: MPL-2.0
 #include "aare/File.hpp"
 #include "aare/JungfrauDataFile.hpp"
 #include "aare/NumpyFile.hpp"

@@ -16,6 +16,7 @@ dependencies = [
     "numpy",
     "matplotlib",
 ]
+license = { file = "LICENSE" }
 
 
 [tool.cibuildwheel]

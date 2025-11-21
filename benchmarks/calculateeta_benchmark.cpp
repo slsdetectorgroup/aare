@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: MPL-2.0
 #include "aare/CalculateEta.hpp"
 #include "aare/ClusterFile.hpp"
 #include <benchmark/benchmark.h>

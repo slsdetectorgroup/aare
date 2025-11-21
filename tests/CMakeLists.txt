@@ -1,3 +1,4 @@
+# SPDX-License-Identifier: MPL-2.0
 
 # Download catch2 if configured to do so
 if (AARE_FETCH_CATCH)
