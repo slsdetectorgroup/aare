@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: MPL-2.0
 #pragma once
 /*
 Container holding image data, or a time series of image data in contigious

@@ -4,7 +4,7 @@ import fnmatch
 import os
 from pathlib import Path
 
-CPP_PATTERNS = ["*.h", "*.cpp"]
+CPP_PATTERNS = ["*.h", "*.hpp", "*.cpp"]
 PY_PATTERNS = ["*.py"]
 CMAKE_PATTERNS = ["CMakeLists.txt"]
 

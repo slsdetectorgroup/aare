@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: MPL-2.0
 #pragma once
 #include "aare/ClusterFile.hpp"
 #include "aare/ClusterVector.hpp"

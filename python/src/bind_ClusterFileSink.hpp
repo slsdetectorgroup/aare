@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: MPL-2.0
 #include "aare/ClusterCollector.hpp"
 #include "aare/ClusterFileSink.hpp"
 #include "aare/ClusterFinder.hpp"
