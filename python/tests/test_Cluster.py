@@ -3,6 +3,7 @@ import pytest
 import numpy as np
 
 from aare import _aare #import the C++ module
+from aare import corner 
 from conftest import test_data_path
 
 
@@ -40,52 +41,49 @@ def test_Interpolator():
     xbins = np.linspace(0, 5, 30, dtype=np.float64)
     ybins = np.linspace(0, 5, 30, dtype=np.float64)
 
-    etacube = np.zeros(shape=[30, 30, 20], dtype=np.float64)
+    etacube = np.zeros(shape=[29, 29, 19], dtype=np.float64)
     interpolator = _aare.Interpolator(etacube, xbins, ybins, ebins)
 
     assert interpolator.get_ietax().shape == (30,30,20)
     assert interpolator.get_ietay().shape == (30,30,20)
     clustervector = _aare.ClusterVector_Cluster3x3i()
     
-    cluster = _aare.Cluster3x3i(0,0, np.ones(9, dtype=np.int32))
+    cluster = _aare.Cluster3x3i(1,1, np.ones(9, dtype=np.int32))
     clustervector.push_back(cluster) 
 
     interpolated_photons = interpolator.interpolate(clustervector)
 
     assert interpolated_photons.size == 1
 
-    assert interpolated_photons[0]["x"] == 0 
-    assert interpolated_photons[0]["y"] == 0
+    assert interpolated_photons[0]["x"] == 0.5 
+    assert interpolated_photons[0]["y"] == 0.5
     assert interpolated_photons[0]["energy"] == 4 #eta_sum = 4, dx, dy = -1,-1 m_ietax = 0, m_ietay = 0
 
     clustervector = _aare.ClusterVector_Cluster2x2i()
 
-    cluster = _aare.Cluster2x2i(0,0, np.ones(4, dtype=np.int32))
+    cluster = _aare.Cluster2x2i(1,1, np.ones(4, dtype=np.int32))
     clustervector.push_back(cluster) 
 
     interpolated_photons = interpolator.interpolate(clustervector)
 
     assert interpolated_photons.size == 1
 
-    assert interpolated_photons[0]["x"] == 0
-    assert interpolated_photons[0]["y"] == 0
+    assert interpolated_photons[0]["x"] == 0.5
+    assert interpolated_photons[0]["y"] == 0.5
     assert interpolated_photons[0]["energy"] == 4
 
 
 
 def test_calculate_eta(): 
     """Calculate Eta""" 
-    clusters = _aare.ClusterVector_Cluster3x3i() 
-    clusters.push_back(_aare.Cluster3x3i(0,0, np.ones(9, dtype=np.int32)))
-    clusters.push_back(_aare.Cluster3x3i(0,0, np.array([1,1,1,2,2,2,3,3,3])))
+    cluster = _aare.Cluster3x3i(0,0, np.ones(9, dtype=np.int32)) 
 
-    eta2 = _aare.calculate_eta2(clusters)
+    eta2 = _aare.calculate_eta2(cluster)
 
-    assert eta2.shape == (2,2)
-    assert eta2[0,0] == 0.5
-    assert eta2[0,1] == 0.5
-    assert eta2[1,0] == 0.5
-    assert eta2[1,1] == 0.4 #2/5
+    assert eta2.x == 0.5
+    assert eta2.y == 0.5
+    assert eta2.c == corner.cTopLeft
+    assert eta2.sum == 4
 
 
 def test_max_sum(): 
@@ -119,7 +117,7 @@ def test_2x2_reduction():
 
     reduced_cluster = _aare.reduce_to_2x2(cluster) 
 
-    assert reduced_cluster.x == 4
+    assert reduced_cluster.x == 5
     assert reduced_cluster.y == 5
     assert (reduced_cluster.data == np.array([[2, 3], [2, 2]], dtype=np.int32)).all()
     
@@ -131,9 +129,9 @@ def test_3x3_reduction():
 
     reduced_cluster = _aare.reduce_to_3x3(cluster) 
 
-    assert reduced_cluster.x == 4
+    assert reduced_cluster.x == 5
     assert reduced_cluster.y == 5
-    assert (reduced_cluster.data == np.array([[1.0, 2.0, 1.0], [2.0, 2.0, 3.0], [1.0, 2.0, 1.0]], dtype=np.double)).all()
+    assert (reduced_cluster.data == np.array([[2.0, 1.0, 1.0], [2.0, 3.0, 1.0], [2.0, 1.0, 1.0]], dtype=np.double)).all()
 
 
 

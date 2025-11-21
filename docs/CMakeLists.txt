@@ -28,6 +28,8 @@ configure_file(
     @ONLY
 )
 
+file(COPY "${CMAKE_CURRENT_SOURCE_DIR}/figures"
+     DESTINATION "${SPHINX_BUILD}") 
 
 configure_file(
     "${CMAKE_CURRENT_SOURCE_DIR}/static/extra.css"

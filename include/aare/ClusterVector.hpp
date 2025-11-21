@@ -29,7 +29,7 @@ class ClusterVector; // Forward declaration
  * needed.
  * @tparam T data type of the pixels in the cluster
  * @tparam CoordType data type of the x and y coordinates of the cluster
- * (normally int16_t)
+ * (normally uint16_t)
  */
 template <typename T, uint8_t ClusterSizeX, uint8_t ClusterSizeY,
           typename CoordType>
@@ -177,9 +177,12 @@ class ClusterVector<Cluster<T, ClusterSizeX, ClusterSizeY, CoordType>> {
  * highest sum.
  * @param cv Clustervector containing clusters to reduce
  * @return Clustervector with reduced clusters
+ * @note The cluster is filled using row major ordering starting at the top-left
+ * (thus for a max subcluster in the top left cornern the photon hit is at
+ * the fourth position)
  */
 template <typename T, uint8_t ClusterSizeX, uint8_t ClusterSizeY,
-          typename CoordType = uint16_t>
+          typename CoordType>
 ClusterVector<Cluster<T, 2, 2, CoordType>> reduce_to_2x2(
     const ClusterVector<Cluster<T, ClusterSizeX, ClusterSizeY, CoordType>>
         &cv) {
@@ -191,13 +194,12 @@ ClusterVector<Cluster<T, 2, 2, CoordType>> reduce_to_2x2(
 }
 
 /**
- * @brief Reduce a cluster to a 3x3 cluster by selecting the 3x3 block with the
- * highest sum.
+ * @brief Reduce a cluster to a 3x3 cluster
  * @param cv Clustervector containing clusters to reduce
  * @return Clustervector with reduced clusters
  */
 template <typename T, uint8_t ClusterSizeX, uint8_t ClusterSizeY,
-          typename CoordType = uint16_t>
+          typename CoordType>
 ClusterVector<Cluster<T, 3, 3, CoordType>> reduce_to_3x3(
     const ClusterVector<Cluster<T, ClusterSizeX, ClusterSizeY, CoordType>>
         &cv) {

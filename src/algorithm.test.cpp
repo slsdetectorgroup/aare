@@ -193,3 +193,43 @@ TEST_CASE("Last element is different", "[algorithm]") {
     std::vector<int> vec = {1, 1, 1, 1, 2};
     REQUIRE(aare::all_equal(vec) == false);
 }
+
+TEST_CASE("Linear interpolation", "[algorithm]") {
+    SECTION("interpolated mean value") {
+        const double interpolated_value =
+            aare::linear_interpolation({0.0, 1.0}, {4.0, 6.0}, 0.5);
+        REQUIRE(interpolated_value == 5.0);
+    }
+
+    SECTION("interpolate left value") {
+        const double interpolated_value =
+            aare::linear_interpolation({0.0, 1.0}, {4.0, 6.0}, 0.0);
+        REQUIRE(interpolated_value == 4.0);
+    }
+
+    SECTION("interpolate right value") {
+        const double interpolated_value =
+            aare::linear_interpolation({0.0, 1.0}, {4.0, 6.0}, 1.0);
+        REQUIRE(interpolated_value == 6.0);
+    }
+
+    SECTION("interpolate the same value") {
+        const double interpolated_value =
+            aare::linear_interpolation({0.0, 1.0}, {4.0, 4.0}, 0.5);
+        REQUIRE(interpolated_value == 4.0);
+    }
+}
+
+TEST_CASE("Bilinear interpolation", "[algorithm]") {
+    SECTION("interpolated mean value") {
+        const double interpolated_value_left =
+            aare::linear_interpolation({0.0, 1.0}, {4.0, 6.0}, 0.5);
+        const double interpolated_value_right =
+            aare::linear_interpolation({0.0, 1.0}, {5.0, 6.0}, 0.5);
+
+        const double interpolated_value = aare::linear_interpolation(
+            {0.5, 1.0}, {interpolated_value_left, interpolated_value_right},
+            0.75);
+        REQUIRE(interpolated_value == 5.25);
+    }
+}

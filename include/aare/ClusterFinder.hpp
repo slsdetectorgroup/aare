@@ -11,8 +11,16 @@
 
 namespace aare {
 
+template <typename ClusterType,
+          typename = std::enable_if_t<is_cluster_v<ClusterType>>>
+struct no_2x2_cluster {
+    constexpr static bool value =
+        ClusterType::cluster_size_x > 2 && ClusterType::cluster_size_y > 2;
+};
+
 template <typename ClusterType = Cluster<int32_t, 3, 3>,
-          typename FRAME_TYPE = uint16_t, typename PEDESTAL_TYPE = double>
+          typename FRAME_TYPE = uint16_t, typename PEDESTAL_TYPE = double,
+          typename = std::enable_if_t<no_2x2_cluster<ClusterType>::value>>
 class ClusterFinder {
     Shape<2> m_image_size;
     const PEDESTAL_TYPE m_nSigma;

@@ -9,6 +9,7 @@ class ClusterFixture : public benchmark::Fixture {
   public:
     Cluster<int, 2, 2> cluster_2x2{};
     Cluster<int, 3, 3> cluster_3x3{};
+    Cluster<int, 4, 4> cluster_4x4{};
 
   private:
     using benchmark::Fixture::SetUp;
@@ -27,6 +28,13 @@ class ClusterFixture : public benchmark::Fixture {
 
         cluster_3x3.x = 0;
         cluster_3x3.y = 0;
+
+        int temp_data3[16] = {1, 2,  3,  4,  5,  6,  7,  8,
+                              9, 10, 11, 12, 13, 14, 15, 16};
+        std::copy(std::begin(temp_data3), std::end(temp_data3),
+                  std::begin(cluster_4x4.data));
+        cluster_4x4.x = 0;
+        cluster_4x4.y = 0;
     }
 
     // void TearDown(::benchmark::State& state) {
@@ -68,4 +76,29 @@ BENCHMARK_F(ClusterFixture, CalculateGeneralEtaFor3x3Cluster)
         benchmark::DoNotOptimize(eta);
     }
 }
+
+BENCHMARK_F(ClusterFixture, Calculate2x2Etawithreduction)
+(benchmark::State &st) {
+    for (auto _ : st) {
+        // This code gets timed
+        auto reduced_cluster = reduce_to_2x2(cluster_4x4);
+        Eta2 eta = calculate_eta2(reduced_cluster);
+        auto reduced_cluster_from_3x3 = reduce_to_2x2(cluster_3x3);
+        Eta2 eta2 = calculate_eta2(reduced_cluster_from_3x3);
+        benchmark::DoNotOptimize(eta);
+        benchmark::DoNotOptimize(eta2);
+    }
+}
+
+BENCHMARK_F(ClusterFixture, Calculate2x2Etawithoutreduction)
+(benchmark::State &st) {
+    for (auto _ : st) {
+        // This code gets timed
+        Eta2 eta = calculate_eta2(cluster_4x4);
+        Eta2 eta2 = calculate_eta2(cluster_3x3);
+        benchmark::DoNotOptimize(eta);
+        benchmark::DoNotOptimize(eta2);
+    }
+}
+
 // BENCHMARK_MAIN();

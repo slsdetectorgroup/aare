@@ -443,6 +443,7 @@ if(AARE_TESTS)
             ${CMAKE_CURRENT_SOURCE_DIR}/src/Dtype.test.cpp
             ${CMAKE_CURRENT_SOURCE_DIR}/src/Frame.test.cpp
             ${CMAKE_CURRENT_SOURCE_DIR}/src/DetectorGeometry.test.cpp
+            ${CMAKE_CURRENT_SOURCE_DIR}/src/Interpolation.test.cpp
             ${CMAKE_CURRENT_SOURCE_DIR}/src/RawMasterFile.test.cpp
             ${CMAKE_CURRENT_SOURCE_DIR}/src/NDArray.test.cpp
             ${CMAKE_CURRENT_SOURCE_DIR}/src/NDView.test.cpp

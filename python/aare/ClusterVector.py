@@ -1,12 +1,22 @@
 # SPDX-License-Identifier: MPL-2.0
 
 
-from ._aare import ClusterVector_Cluster3x3i
+from . import _aare 
 import numpy as np
+from .ClusterFinder import _get_class
 
-def ClusterVector(cluster_size, dtype = np.int32):
+def ClusterVector(cluster_size=(3,3), dtype = np.int32):
+    """
+    Factory function to create a ClusterVector object. Provides a cleaner syntax for
+    the templated ClusterVector in C++.
 
-    if dtype == np.int32 and cluster_size == (3,3):
-        return ClusterVector_Cluster3x3i()
-    else:
-        raise ValueError(f"Unsupported dtype: {dtype}. Only np.int32 is supported.")
+    .. code-block:: python
+
+        from aare import ClusterVector
+        
+        ClusterVector(cluster_size=(3,3), dtype=np.float64)
+    """
+
+    cls = _get_class("ClusterVector", cluster_size, dtype)
+    return cls()
+
