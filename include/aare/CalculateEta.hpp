@@ -25,13 +25,13 @@ enum class pixel : int {
  */
 template <typename T> struct Eta2 {
     /// @brief eta in x direction
-    double x;
+    double x{};
     /// @brief eta in y direction
-    double y;
+    double y{};
     /// @brief index of subcluster given as corner relative to cluster center
     corner c{0};
     /// @brief photon energy (cluster sum)
-    T sum;
+    T sum{};
 };
 
 /**
