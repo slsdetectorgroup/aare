@@ -7,16 +7,18 @@ from ._aare import Pedestal_d, Pedestal_f, ClusterFinder_Cluster3x3i, VarCluster
 from ._aare import DetectorType
 from ._aare import hitmap
 from ._aare import ROI
+from ._aare import corner 
 
 # from ._aare import ClusterFinderMT, ClusterCollector, ClusterFileSink, ClusterVector_i
 
 from .ClusterFinder import ClusterFinder, ClusterCollector, ClusterFinderMT, ClusterFileSink, ClusterFile
 from .ClusterVector import ClusterVector
+from .Cluster import Cluster
 
 
 from ._aare import fit_gaus, fit_pol1, fit_scurve, fit_scurve2
 from ._aare import Interpolator
-from ._aare import calculate_eta2
+from ._aare import calculate_eta2, calculate_eta3, calculate_cross_eta3, calculate_full_eta2
 from ._aare import reduce_to_2x2, reduce_to_3x3
 
 from ._aare import apply_custom_weights

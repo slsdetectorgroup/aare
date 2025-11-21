@@ -1,58 +1,63 @@
 # Release notes
 
-### 2025.10.27
+This document describes the difference between Release 2025.8.22 and RELEASE_DATE. 
 
-Features: 
+## Changes: 
 
-- max_sum_2x2 including index of subcluster with highest energy is now available from Python API 
-- eta stores corner as enum class cTopLeft, cTopRight, BottomLeft, cBottomRight indicating 2x2 subcluster with largest energy relative to cluster center 
-- max_sum_2x2 returns corner as index
+### New Features: 
 
-### 2025.10.1
+- Calculate Eta3 supports all cluster types 
+- interpolation class supports using cross eta3x3 and eta3x3 on full cluster as well as eta2x2 on full cluster
+- interpolation class has option to calculate the rosenblatt transform 
+- reduction operations to reduce Clusters of general size to 2x2 or 3x3 clusters 
+- `max_sum_2x2` including index of subcluster with highest energy is now available from Python API 
+- interpolation supports bilinear interpolation of eta values for more fine grained transformed uniform coordinates
+- Interpolation is documented 
 
-Bugfixes: 
-
-- File supports reading new master json file format (multiple ROI's not supported yet)
 - Added tell to ClusterFile. Returns position in bytes for debugging
 
-### 2025.8.22
+### Resolved Features: 
 
-Features:
+- calculate_eta coincides with theoretical definition
 
-- Apply calibration works in G0 if passes a 2D calibration and pedestal
-- count pixels that switch
-- calculate pedestal (also g0 version)
-- NDArray::view() needs an lvalue to reduce issues with the view outliving the array
+### Bugfixes: 
 
-
-Bugfixes:
-
-- Now using glibc 2.17 in conda builds (was using the host)
-- Fixed shifted pixels in clusters close to the edge of a frame
-
-### 2025.7.18
-
-Features:
-
-- Cluster finder now works with 5x5, 7x7 and 9x9 clusters
-- Added ClusterVector::empty() member
-- Added apply_calibration function for Jungfrau data
-
-Bugfixes:
-- Fixed reading RawFiles with ROI fully excluding some sub files. 
-- Decoding of MH02 files placed the pixels in wrong position
-- Removed unused file: ClusterFile.cpp 
+- eta calculation assumes correct photon center 
+- eta transformation to uniform coordinates starts at 0
+- Bug in interpolation 
+- File supports reading new master json file format (multiple ROI's not supported yet)
 
 
-### 2025.5.22
+### API Changes: 
 
-Features:
+- ClusterFinder for 2x2 Cluster disabled 
+- eta stores corner as enum class cTopLeft, cTopRight, BottomLeft, cBottomRight indicating 2x2 subcluster with largest energy relative to cluster center 
+- max_sum_2x2 returns corner as index 
 
-- Added scurve fitting
+## Download, Documentation & Support 
 
-Bugfixes:
+### Download
 
-- Fixed crash when opening raw files with large number of data files
+The Source Code: 
+https://github.com/slsdetectorgroup/aare
+
+
+### Documentation 
+
+
+Documentation including installation details: 
+https://github.com/slsdetectorgroup/aare 
+
+
+### Support
+
+
+erik.frojdh@psi.ch \
+alice.mazzoleni@psi.ch \
+dhanya.thattil@psi.ch
+
+
+
 
 
 

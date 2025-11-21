@@ -1,3 +1,5 @@
+.. _py_clustervector:
+    
 ClusterVector
 ================
 
@@ -27,6 +29,13 @@ C++ functions that support the ClusterVector or to view it as a numpy array.
 
 
 .. py:currentmodule:: aare
+
+.. autoclass:: ClusterVector
+    :members:
+    :undoc-members:
+    :inherited-members:
+
+Below is the API of the ClusterVector_Cluster3x3i but all variants share the same API.
 
 .. autoclass::  aare._aare.ClusterVector_Cluster3x3i
     :special-members: __init__

@@ -1,3 +1,4 @@
+#include "aare/CalculateEta.hpp"
 #include "aare/Interpolator.hpp"
 #include "aare/NDArray.hpp"
 #include "aare/NDView.hpp"
@@ -9,19 +10,41 @@
 
 namespace py = pybind11;
 
+#define REGISTER_INTERPOLATOR_ETA2(T, N, M, U)                                 \
+    register_interpolate<T, N, M, U, aare::calculate_full_eta2<T, N, M, U>>(   \
+        interpolator, "_full_eta2", "full eta2");                              \
+    register_interpolate<T, N, M, U, aare::calculate_eta2<T, N, M, U>>(        \
+        interpolator, "", "eta2");
+
+#define REGISTER_INTERPOLATOR_ETA3(T, N, M, U)                                 \
+    register_interpolate<T, N, M, U, aare::calculate_eta3<T, N, M, U>>(        \
+        interpolator, "_eta3", "full eta3");                                   \
+    register_interpolate<T, N, M, U, aare::calculate_cross_eta3<T, N, M, U>>(  \
+        interpolator, "_cross_eta3", "cross eta3");
+
 template <typename Type, uint8_t CoordSizeX, uint8_t CoordSizeY,
-          typename CoordType = uint16_t>
-void register_interpolate(py::class_<aare::Interpolator> &interpolator) {
+          typename CoordType = uint16_t, auto EtaFunction>
+void register_interpolate(py::class_<aare::Interpolator> &interpolator,
+                          const std::string &typestr = "",
+                          const std::string &doc_string_etatype = "eta2x2") {
 
     using ClusterType = Cluster<Type, CoordSizeX, CoordSizeY, CoordType>;
 
-    interpolator.def("interpolate",
-                     [](aare::Interpolator &self,
-                        const ClusterVector<ClusterType> &clusters) {
-                         auto photons = self.interpolate<ClusterType>(clusters);
-                         auto *ptr = new std::vector<Photon>{photons};
-                         return return_vector(ptr);
-                     });
+    const std::string docstring = "interpolation based on " +
+                                  doc_string_etatype +
+                                  "\n\nReturns:\n interpolated photons";
+
+    auto function_name = fmt::format("interpolate{}", typestr);
+
+    interpolator.def(
+        function_name.c_str(),
+        [](aare::Interpolator &self,
+           const ClusterVector<ClusterType> &clusters) {
+            auto photons = self.interpolate<EtaFunction, ClusterType>(clusters);
+            auto *ptr = new std::vector<Photon>{photons};
+            return return_vector(ptr);
+        },
+        docstring.c_str(), py::arg("cluster_vector"));
 }
 
 void define_interpolation_bindings(py::module &m) {
@@ -30,33 +53,91 @@ void define_interpolation_bindings(py::module &m) {
 
     auto interpolator =
         py::class_<aare::Interpolator>(m, "Interpolator")
-            .def(py::init([](py::array_t<double, py::array::c_style |
-                                                     py::array::forcecast>
-                                 etacube,
-                             py::array_t<double> xbins,
-                             py::array_t<double> ybins,
-                             py::array_t<double> ebins) {
-                return Interpolator(make_view_3d(etacube), make_view_1d(xbins),
-                                    make_view_1d(ybins), make_view_1d(ebins));
-            }))
+            .def(py::init(
+                [](py::array_t<double,
+                               py::array::c_style | py::array::forcecast>
+                       etacube,
+                   py::array_t<double> xbins, py::array_t<double> ybins,
+                   py::array_t<double> ebins) {
+                    return Interpolator(
+                        make_view_3d(etacube), make_view_1d(xbins),
+                        make_view_1d(ybins), make_view_1d(ebins));
+                }), 
+                R"doc(
+                Constructor 
+
+                Args:
+                
+                etacube: 
+                    joint distribution of eta_x, eta_y and photon energy (**Note:** for the joint distribution first dimension is eta_x, second: eta_y, third: energy bins.)
+                xbins: 
+                    bin edges of etax
+                ybins: 
+                    bin edges of etay
+                ebins: 
+                    bin edges of photon energy
+                )doc",
+                py::arg("etacube"),
+                py::arg("xbins"), py::arg("ybins"),
+                py::arg("ebins"))
+
+            .def(py::init(
+                [](py::array_t<double> xbins, py::array_t<double> ybins,
+                   py::array_t<double> ebins) {
+                    return Interpolator(make_view_1d(xbins),
+                                        make_view_1d(ybins),
+                                        make_view_1d(ebins));
+                }),
+                R"(
+                Constructor
+
+                Args: 
+                
+                xbins: 
+                    bin edges of etax
+                ybins: 
+                    bin edges of etay
+                ebins: 
+                    bin edges of photon energy
+                )", py::arg("xbins"),
+                py::arg("ybins"), py::arg("ebins"))
+            .def(
+                "rosenblatttransform",
+                [](Interpolator &self,
+                   py::array_t<double,
+                               py::array::c_style | py::array::forcecast>
+                       etacube) {
+                    return self.rosenblatttransform(make_view_3d(etacube));
+                },
+                R"(
+                calculated the rosenblatttransform for the given distribution
+                
+                etacube: 
+                    joint distribution of eta_x, eta_y and photon energy (**Note:** for the joint distribution first dimension is eta_x, second: eta_y, third: energy bins.)
+                )",
+                py::arg("etacube"))
             .def("get_ietax",
                  [](Interpolator &self) {
                      auto *ptr = new NDArray<double, 3>{};
                      *ptr = self.get_ietax();
                      return return_image_data(ptr);
-                 })
+                 }, R"(conditional CDF of etax conditioned on etay, marginal CDF of etax (if rosenblatt transform applied))")
             .def("get_ietay", [](Interpolator &self) {
                 auto *ptr = new NDArray<double, 3>{};
                 *ptr = self.get_ietay();
                 return return_image_data(ptr);
-            });
+            }, R"(conditional CDF of etay conditioned on etax)");
 
-    register_interpolate<int, 3, 3, uint16_t>(interpolator);
-    register_interpolate<float, 3, 3, uint16_t>(interpolator);
-    register_interpolate<double, 3, 3, uint16_t>(interpolator);
-    register_interpolate<int, 2, 2, uint16_t>(interpolator);
-    register_interpolate<float, 2, 2, uint16_t>(interpolator);
-    register_interpolate<double, 2, 2, uint16_t>(interpolator);
+    REGISTER_INTERPOLATOR_ETA3(int, 3, 3, uint16_t);
+    REGISTER_INTERPOLATOR_ETA3(float, 3, 3, uint16_t);
+    REGISTER_INTERPOLATOR_ETA3(double, 3, 3, uint16_t);
+
+    REGISTER_INTERPOLATOR_ETA2(int, 3, 3, uint16_t);
+    REGISTER_INTERPOLATOR_ETA2(float, 3, 3, uint16_t);
+    REGISTER_INTERPOLATOR_ETA2(double, 3, 3, uint16_t);
+    REGISTER_INTERPOLATOR_ETA2(int, 2, 2, uint16_t);
+    REGISTER_INTERPOLATOR_ETA2(float, 2, 2, uint16_t);
+    REGISTER_INTERPOLATOR_ETA2(double, 2, 2, uint16_t);
 
     // TODO! Evaluate without converting to double
     m.def(

@@ -10,6 +10,8 @@ def _type_to_char(dtype):
         return 'f'
     elif dtype == np.float64:
         return 'd'
+    elif dtype == np.int16:
+        return 'i16'
     else:
         raise ValueError(f"Unsupported dtype: {dtype}. Only np.int32, np.float32, and np.float64 are supported.")
 
@@ -26,7 +28,7 @@ def _get_class(name, cluster_size, dtype):
 
 
 
-def ClusterFinder(image_size, cluster_size, n_sigma=5, dtype = np.int32, capacity = 1024):
+def ClusterFinder(image_size, cluster_size=(3,3), n_sigma=5, dtype = np.int32, capacity = 1024):
     """
     Factory function to create a ClusterFinder object. Provides a cleaner syntax for 
     the templated ClusterFinder in C++.
@@ -65,7 +67,7 @@ def ClusterFileSink(clusterfindermt, cluster_file, dtype=np.int32):
     return cls(clusterfindermt, cluster_file)
 
 
-def ClusterFile(fname, cluster_size=(3,3), dtype=np.int32, chunk_size = 1000):
+def ClusterFile(fname, cluster_size=(3,3), dtype=np.int32, chunk_size = 1000, mode = "r"):
     """
     Factory function to create a ClusterFile object. Provides a cleaner syntax for
     the templated ClusterFile in C++.
@@ -83,4 +85,4 @@ def ClusterFile(fname, cluster_size=(3,3), dtype=np.int32, chunk_size = 1000):
     """
 
     cls = _get_class("ClusterFile", cluster_size, dtype)
-    return cls(fname, chunk_size=chunk_size)
+    return cls(fname, chunk_size=chunk_size, mode=mode)

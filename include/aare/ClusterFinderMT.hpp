@@ -32,7 +32,8 @@ struct FrameWrapper {
  * @tparam CT type of the cluster data
  */
 template <typename ClusterType = Cluster<int32_t, 3, 3>,
-          typename FRAME_TYPE = uint16_t, typename PEDESTAL_TYPE = double>
+          typename FRAME_TYPE = uint16_t, typename PEDESTAL_TYPE = double,
+          typename = std::enable_if_t<no_2x2_cluster<ClusterType>::value>>
 class ClusterFinderMT {
 
   protected:
