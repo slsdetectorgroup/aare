@@ -8,11 +8,12 @@ import sys
 import os
 import re
 from datetime import datetime
+from pathlib import Path
 
 from packaging.version import Version, InvalidVersion
 
 
-SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
+SCRIPT_DIR = Path(__file__).absolute().parent.parent
 
 def is_integer(value): 
     try:
@@ -46,7 +47,8 @@ def get_version():
     
 
 def write_version_to_file(version):
-    version_file_path = os.path.join(SCRIPT_DIR, "VERSION")
+    version_file_path =  SCRIPT_DIR/"VERSION"
+    print(version_file_path)
     with open(version_file_path, "w") as version_file:
         version_file.write(version)
     print(f"Version {version} written to VERSION file.")
