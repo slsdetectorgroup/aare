@@ -102,7 +102,7 @@ RawMasterFile::RawMasterFile(const std::filesystem::path &fpath)
     : m_fnc(fpath) {
     if (!std::filesystem::exists(fpath)) {
         throw std::runtime_error(
-            LOCATION + fmt::format("File does not exist: {}", fpath.string()));
+            LOCATION + fmt::format(" File does not exist: {}", fpath.string()));
     }
     if (m_fnc.ext() == ".json") {
         parse_json(fpath);
@@ -142,6 +142,10 @@ size_t RawMasterFile::total_frames_expected() const {
 
 std::optional<size_t> RawMasterFile::number_of_rows() const {
     return m_number_of_rows;
+}
+
+std::optional<uint8_t> RawMasterFile::counter_mask() const {
+    return m_counter_mask;
 }
 
 xy RawMasterFile::geometry() const { return m_geometry; }
@@ -314,15 +318,26 @@ void RawMasterFile::parse_json(const std::filesystem::path &fpath) {
         }
 
         // if any of the values are set update the roi
+        // TODO: doesnt it write garbage if one of them is not set
         if (tmp_roi.xmin != 4294967295 || tmp_roi.xmax != 4294967295 ||
             tmp_roi.ymin != 4294967295 || tmp_roi.ymax != 4294967295) {
             tmp_roi.xmax++;
+            // Handle Mythen
+            if (tmp_roi.ymin == -1 && tmp_roi.ymax == -1) {
+                tmp_roi.ymin = 0;
+                tmp_roi.ymax = 0;
+            }
             tmp_roi.ymax++;
             m_roi = tmp_roi;
         }
 
     } catch (const json::out_of_range &e) {
-        LOG(TLogLevel::logERROR) << e.what() << std::endl;
+        // leave the optional empty
+    }
+    try {
+        // TODO: what is the best format to handle
+        m_counter_mask = j.at("Counter Mask");
+    } catch (const json::out_of_range &e) {
         // leave the optional empty
     }
 
