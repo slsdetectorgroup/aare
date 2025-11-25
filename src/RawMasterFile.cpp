@@ -101,7 +101,8 @@ int64_t ScanParameters::settleTime() const { return m_settleTime; }
 RawMasterFile::RawMasterFile(const std::filesystem::path &fpath)
     : m_fnc(fpath) {
     if (!std::filesystem::exists(fpath)) {
-        throw std::runtime_error(LOCATION + " File does not exist");
+        throw std::runtime_error(fmt::format("{} File does not exist: {}",
+                                             LOCATION, fpath.string()));
     }
     if (m_fnc.ext() == ".json") {
         parse_json(fpath);
