@@ -84,4 +84,9 @@ PYBIND11_MODULE(_aare, m) {
     DEFINE_CLUSTER_BINDINGS(int, 9, 9, uint16_t, i);
     DEFINE_CLUSTER_BINDINGS(double, 9, 9, uint16_t, d);
     DEFINE_CLUSTER_BINDINGS(float, 9, 9, uint16_t, f);
+
+    DEFINE_CLUSTER_BINDINGS(int, 21, 21, uint16_t, i);
+    DEFINE_CLUSTER_BINDINGS(double, 21, 21, uint16_t, d);
+    DEFINE_CLUSTER_BINDINGS(float, 21, 21, uint16_t, f);
+    
 }
