@@ -22,7 +22,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        platform: [ubuntu-latest, ] 
+        platform: [ubuntu-latest, macos-latest] 
         python-version: ["3.12",]
 
     runs-on: ${{ matrix.platform }}
