@@ -7,6 +7,9 @@ on:
     types:
       - published
     
+env:
+  # Customize the CMake build type here (Release, Debug, RelWithDebInfo, etc.)
+  BUILD_TYPE: Debug
 
 permissions:
   contents: read
@@ -43,9 +46,13 @@ jobs:
         run: |
             mkdir build 
             cd build 
-            cmake .. -DAARE_SYSTEM_LIBRARIES=ON -DAARE_PYTHON_BINDINGS=ON -DAARE_DOCS=ON 
-            make -j 2 
+            cmake .. -DCMAKE_BUILD_TYPE=${{env.BUILD_TYPE}} -DAARE_SYSTEM_LIBRARIES=ON -DAARE_PYTHON_BINDINGS=ON -DAARE_DOCS=ON -DAARE_TESTS=ON
+            make -j 4 
             make docs
+
+      - name: C++ unit tests
+        working-directory: ${{github.workspace}}/build
+        run: ctest -C ${{env.BUILD_TYPE}} -j4
 
       - name: Upload static files as artifact
         id: deployment
