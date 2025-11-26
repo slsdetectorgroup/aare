@@ -44,8 +44,8 @@ def test_Interpolator():
     etacube = np.zeros(shape=[29, 29, 19], dtype=np.float64)
     interpolator = _aare.Interpolator(etacube, xbins, ybins, ebins)
 
-    assert interpolator.get_ietax().shape == (30,30,20)
-    assert interpolator.get_ietay().shape == (30,30,20)
+    assert interpolator.get_ietax().shape == (29,29,19)
+    assert interpolator.get_ietay().shape == (29,29,19)
     clustervector = _aare.ClusterVector_Cluster3x3i()
     
     cluster = _aare.Cluster3x3i(1,1, np.ones(9, dtype=np.int32))
