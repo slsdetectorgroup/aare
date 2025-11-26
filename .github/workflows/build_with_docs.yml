@@ -56,6 +56,7 @@ jobs:
         run: ctest -C ${{env.BUILD_TYPE}} -j4
 
       - name: Upload static files as artifact
+        if: matrix.platform == 'ubuntu-latest'
         id: deployment
         uses: actions/upload-pages-artifact@v3 
         with:
