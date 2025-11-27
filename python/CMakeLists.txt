@@ -39,6 +39,8 @@ set( PYTHON_FILES
     aare/transform.py
     aare/ScanParameters.py
     aare/utils.py
+    aare/experimental/__init__.py
+    aare/experimental/custom_io.py
 )
 
 
