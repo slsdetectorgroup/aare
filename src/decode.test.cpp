@@ -72,3 +72,11 @@ TEST_CASE("test_apply_custom_weights") {
     output = aare::apply_custom_weights(input, weights);
     CHECK_THAT(output, WithinAbs(6.34, 0.001));
 }
+
+TEST_CASE("mask24"){
+    CHECK(aare::mask24(0)==0);
+    CHECK(aare::mask24(0xFFFF)==0xFFFF);
+    CHECK(aare::mask24(0xFFFF, 4)==0xFFF);
+    CHECK(aare::mask24(0xFFFFFFFF)==0xFFFFFF);
+    CHECK(aare::mask24(0xFFFFFFFF, 8)==0xFFFFFF);
+}

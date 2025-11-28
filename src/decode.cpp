@@ -105,4 +105,23 @@ void apply_custom_weights(NDView<uint16_t, 1> input, NDView<double, 1> output,
     }
 }
 
+uint32_t mask24(uint32_t input, uint8_t offset){
+    return (input >> offset) & uint32_t{0xFFFFFF};
+}
+
+void convert_to_24bit(NDView<uint8_t,1> input, NDView<uint32_t,1> output, size_t offset){
+    if (input.size()<output.size()*3)
+        throw std::runtime_error("Blah");
+
+    //TODO! adjust starting point depending on offset
+    auto* in = input.data();
+    auto* out = output.data();
+
+    for (size_t i=0; i!=output.size(); ++i){
+        *out++ = mask24(*reinterpret_cast<uint32_t*>(in), offset);
+        in += 3; //Move 24 bytes
+    }
+
+}
+
 } // namespace aare

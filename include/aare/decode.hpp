@@ -14,6 +14,17 @@ void adc_sar_04_decode64to16(NDView<uint64_t, 2> input,
                              NDView<uint16_t, 2> output);
 
 /**
+ * @brief Called with a 32 bit unsigned integer, shift by offset
+ * and then return the lower 24 bits as an 32 bit integer
+ * @param input 
+ * @param offset 
+ * @return uint32_t 
+ */
+uint32_t mask24(uint32_t input, uint8_t offset=0);
+
+void convert_to_24bit(NDView<uint8_t,1> input, NDView<uint32_t,1> output, size_t offset=0);
+
+/**
  * @brief Apply custom weights to a 16-bit input value. Will sum up
  * weights[i]**i for each bit i that is set in the input value.
  * @throws std::out_of_range if weights.size() < 16
