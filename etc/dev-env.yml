@@ -3,6 +3,7 @@ channels:
   - conda-forge
 dependencies:
   - anaconda-client
+  - catch2
   - conda-build
   - doxygen 
   - sphinx
