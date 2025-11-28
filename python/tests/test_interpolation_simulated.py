@@ -5,8 +5,6 @@ import pytest
 import pytest_check as check
 import numpy as np 
 import boost_histogram as bh 
-import pickle
-from scipy.stats import multivariate_normal
 
 from aare import Interpolator, calculate_eta2, calculate_cross_eta3, calculate_full_eta2, calculate_eta3
 from aare import ClusterFile
