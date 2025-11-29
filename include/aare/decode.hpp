@@ -22,7 +22,7 @@ void adc_sar_04_decode64to16(NDView<uint64_t, 2> input,
  */
 uint32_t mask24(uint32_t input, uint8_t offset=0);
 
-void convert_to_24bit(NDView<uint8_t,1> input, NDView<uint32_t,1> output, size_t offset=0);
+void expand24to32bit(NDView<uint8_t,1> input, NDView<uint32_t,1> output, size_t offset=0);
 
 /**
  * @brief Apply custom weights to a 16-bit input value. Will sum up

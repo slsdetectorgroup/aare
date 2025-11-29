@@ -109,7 +109,7 @@ uint32_t mask24(uint32_t input, uint8_t offset){
     return (input >> offset) & uint32_t{0xFFFFFF};
 }
 
-void convert_to_24bit(NDView<uint8_t,1> input, NDView<uint32_t,1> output, size_t offset){
+void expand24to32bit(NDView<uint8_t,1> input, NDView<uint32_t,1> output, size_t offset){
     if (input.size()<output.size()*3)
         throw std::runtime_error("Blah");
 

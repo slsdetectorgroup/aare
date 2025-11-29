@@ -49,6 +49,14 @@ class Matterhorn02Transform:
         else:
             return np.take(data.view(np.uint16), self.pixel_map[0:counters])
 
+class Mythen302Transform:
+    def __init__(self, offset=4):
+        self.offset = offset
+    
+    def __call__(self, data):
+        res = _aare.decode_my302(data, self.offset)
+        res = res.reshape(64,3)
+        return res
 
 #on import generate the pixel maps to avoid doing it every time
 moench05 = Moench05Transform()
