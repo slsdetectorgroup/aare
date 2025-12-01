@@ -143,6 +143,8 @@ TEST_CASE("Expand container with 24 bit data to 32"){
         CHECK(out(0) == 0xFF0000);
         CHECK(out(1) == 0xFFFF);
         CHECK(out(2) == 0xFF00);
+
+        REQUIRE_THROWS(aare::expand24to32bit(input, out.view(), BitOffset(4)));
     }
     {
         //For use with offset we need an extra byte
