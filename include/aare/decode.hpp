@@ -1,10 +1,11 @@
 // SPDX-License-Identifier: MPL-2.0
 #pragma once
-
+#include "aare/defs.hpp"
 #include <aare/NDView.hpp>
 #include <cstdint>
 #include <vector>
 namespace aare {
+
 
 uint16_t adc_sar_05_decode64to16(uint64_t input);
 uint16_t adc_sar_04_decode64to16(uint64_t input);
@@ -16,13 +17,21 @@ void adc_sar_04_decode64to16(NDView<uint64_t, 2> input,
 /**
  * @brief Called with a 32 bit unsigned integer, shift by offset
  * and then return the lower 24 bits as an 32 bit integer
- * @param input 
- * @param offset 
+ * @param input 32-ibt input value
+ * @param offset (should be in range 0-7 to allow for full 24 bits)
  * @return uint32_t 
  */
-uint32_t mask24(uint32_t input, uint8_t offset=0);
+uint32_t mask32to24bits(uint32_t input, BitOffset offset={});
 
-void expand24to32bit(NDView<uint8_t,1> input, NDView<uint32_t,1> output, size_t offset=0);
+/**
+ * @brief Expand 24 bit values in a 8bit buffer to 32bit unsigned integers
+ * Used for detectors with 24bit counters in combination with CTB
+ * 
+ * @param input view of the 24 bit data
+ * @param output destination 
+ * @param offset offset to shift the data 0-7 bits
+ */
+void expand24to32bit(NDView<uint8_t,1> input, NDView<uint32_t,1> output, BitOffset offset={});
 
 /**
  * @brief Apply custom weights to a 16-bit input value. Will sum up

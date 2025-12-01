@@ -1,5 +1,6 @@
 // SPDX-License-Identifier: MPL-2.0
 #include "aare/decode.hpp"
+#include <fmt/format.h>
 #include <cmath>
 namespace aare {
 
@@ -105,20 +106,25 @@ void apply_custom_weights(NDView<uint16_t, 1> input, NDView<double, 1> output,
     }
 }
 
-uint32_t mask24(uint32_t input, uint8_t offset){
-    return (input >> offset) & uint32_t{0xFFFFFF};
+uint32_t mask32to24bits(uint32_t input, BitOffset offset){
+    constexpr uint32_t mask24bits{0xFFFFFF};
+    return (input >> offset.value()) & mask24bits;
 }
 
-void expand24to32bit(NDView<uint8_t,1> input, NDView<uint32_t,1> output, size_t offset){
-    if (input.size()<output.size()*3)
-        throw std::runtime_error("Blah");
+void expand24to32bit(NDView<uint8_t,1> input, NDView<uint32_t,1> output, BitOffset bit_offset){
 
-    //TODO! adjust starting point depending on offset
+    //How to correct check size
+    ssize_t min_input_size = output.size()/3;
+    if (bit_offset.value())
+        min_input_size += 1;
+
+    if (input.size()<min_input_size)
+        throw std::runtime_error(fmt::format("{} input buffer not large enough", LOCATION));
+
+
     auto* in = input.data();
-    auto* out = output.data();
-
-    for (ssize_t i=0; i!=output.size(); ++i){
-        *out++ = mask24(*reinterpret_cast<uint32_t*>(in), offset);
+    for (auto& v : output){
+        v = mask32to24bits(*reinterpret_cast<uint32_t*>(in), bit_offset);
         in += 3; //Move 24 bytes
     }
 

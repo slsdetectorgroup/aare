@@ -98,8 +98,9 @@ void define_ctb_raw_file_io_bindings(py::module &m) {
 
     m.def("expand24to32bit",
     [](py::array_t<uint8_t, py::array::c_style | py::array::forcecast>
-                 &input, size_t offset){
+                 &input, uint32_t offset){
 
+            aare::BitOffset bitoff(offset);
             py::buffer_info buf = input.request();
             py::array_t<uint32_t> output(buf.size/3);
 
@@ -108,21 +109,23 @@ void define_ctb_raw_file_io_bindings(py::module &m) {
             NDView<uint32_t, 1> output_view(output.mutable_data(),
                                         {output.size()});
 
-            aare::expand24to32bit(input_view, output_view, offset);
+            aare::expand24to32bit(input_view, output_view, bitoff);
             return output;
 
     });
 
     m.def("decode_my302",
     [](py::array_t<uint8_t, py::array::c_style | py::array::forcecast>
-                 &input, size_t offset){
+                 &input, uint32_t offset){
 
             size_t n_channels = 192; //96*3
             int n_outputs = 2;
             py::buffer_info buf = input.request();
 
+            aare::BitOffset bitoff(offset);
+
             //offset is in number of bits
-            if(input.size()-std::ceil(static_cast<double>(offset)/8)*n_outputs != 576){
+            if(input.size()-std::ceil(static_cast<double>(bitoff.value())/8)*n_outputs != 576){
                 throw std::runtime_error("Size does not match");
             }
 
@@ -137,7 +140,7 @@ void define_ctb_raw_file_io_bindings(py::module &m) {
                 NDView<uint32_t, 1> output_view(output.mutable_data()+out_step*i,
                                             {output.size()/n_outputs});
 
-                aare::expand24to32bit(input_view, output_view, offset);
+                aare::expand24to32bit(input_view, output_view, bitoff);
 
             }
             
