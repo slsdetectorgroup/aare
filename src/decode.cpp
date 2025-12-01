@@ -117,7 +117,7 @@ void expand24to32bit(NDView<uint8_t,1> input, NDView<uint32_t,1> output, size_t 
     auto* in = input.data();
     auto* out = output.data();
 
-    for (size_t i=0; i!=output.size(); ++i){
+    for (ssize_t i=0; i!=output.size(); ++i){
         *out++ = mask24(*reinterpret_cast<uint32_t*>(in), offset);
         in += 3; //Move 24 bytes
     }

@@ -129,7 +129,7 @@ void define_ctb_raw_file_io_bindings(py::module &m) {
 
             py::array_t<uint32_t> output(n_channels);
 
-            for (size_t i = 0; i!=n_outputs; ++i){
+            for (int i = 0; i!=n_outputs; ++i){
                 auto step = input.size()/n_outputs;
                 auto out_step = output.size()/n_outputs;
                 NDView<uint8_t, 1> input_view(input.mutable_data()+step*i,
