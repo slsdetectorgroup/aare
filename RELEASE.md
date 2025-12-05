@@ -1,5 +1,11 @@
 # Release notes
 
+## head
+
+### New Features:
+
+- Expanding 24 to 32 bit data
+- Decoding digital data from Mythen 302
 
 
 ### 2025.11.21

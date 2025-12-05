@@ -61,7 +61,6 @@ void CtbRawFile::find_subfiles() {
     while (std::filesystem::exists(m_master.data_fname(0, m_num_subfiles)))
         m_num_subfiles++;
 
-    fmt::print("Found {} subfiles\n", m_num_subfiles);
 }
 
 void CtbRawFile::open_data_file(size_t subfile_index) {

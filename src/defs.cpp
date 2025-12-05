@@ -298,4 +298,13 @@ template <> DACIndex StringTo(const std::string &arg) {
                                     "\"");
 }
 
+BitOffset::BitOffset(uint32_t offset){
+    if (offset>7)
+        throw std::runtime_error(fmt::format("{} expand24to32bit called with bit_offset: {}, bit offset must be <8", LOCATION, offset));
+
+    m_offset = static_cast<uint8_t>(offset);
+
+}
+
+
 } // namespace aare

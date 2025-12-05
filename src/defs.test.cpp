@@ -83,6 +83,16 @@ TEST_CASE("DynamicCluster creation") {
     REQUIRE(c2.data() != nullptr);
 }
 
+TEST_CASE("Construct BitOffset"){
+    REQUIRE_THROWS(aare::BitOffset(10));
+
+    aare::BitOffset offset(5);
+    REQUIRE(offset.value()==5);
+
+    aare::BitOffset offset2;
+    REQUIRE(offset2.value()==0);
+}
+
 // TEST_CASE("cluster set and get data") {
 
 //     aare::DynamicCluster c2(33, 44, aare::Dtype(typeid(double)));
