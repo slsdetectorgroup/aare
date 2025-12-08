@@ -306,5 +306,14 @@ BitOffset::BitOffset(uint32_t offset){
 
 }
 
+bool BitOffset::operator==(const BitOffset& other) const {
+        return m_offset == other.m_offset;
+    }
+
+bool BitOffset::operator<(const BitOffset& other) const {
+        return m_offset < other.m_offset;
+    }
+
+
 
 } // namespace aare
