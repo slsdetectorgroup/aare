@@ -50,12 +50,40 @@ class Matterhorn02Transform:
             return np.take(data.view(np.uint16), self.pixel_map[0:counters])
 
 class Mythen302Transform:
+    """
+    Transform Mythen 302 test chip data from a buffer of bytes (uint8_t)
+    to a uint32 numpy array of [64,3] representing channels and counters.
+    Assumes data taken with rx_dbitlist 17 6 and rx_dbitreorder 1.
+
+    .. note::
+
+        The offset is in number of bits 0-7
+
+    """
+    _n_channels = 64
+    _n_counters = 3
+
     def __init__(self, offset=4):
         self.offset = offset
-    
-    def __call__(self, data):
+
+    def __call__(self, data : np.ndarray):
+        """
+        Transform buffer of data to a [64,3] np.ndarray of uint32. 
+
+        Parameters
+        ----------
+        data : np.ndarray
+            Expected dtype: uint8
+
+        Returns
+        ----------
+        image : np.ndarray
+            uint32 array of size  64, 3
+        """
         res = _aare.decode_my302(data, self.offset)
-        res = res.reshape(64,3)
+        res = res.reshape(
+            Mythen302Transform._n_channels, Mythen302Transform._n_counters
+        )
         return res
 
 #on import generate the pixel maps to avoid doing it every time
