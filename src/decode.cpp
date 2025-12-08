@@ -118,9 +118,12 @@ void expand24to32bit(NDView<uint8_t,1> input, NDView<uint32_t,1> output, BitOffs
     if (bit_offset.value())
         min_input_size += 1;
 
-    if (input.size()<min_input_size)
-        throw std::runtime_error(fmt::format("{} input buffer not large enough", LOCATION));
-
+    if (input.size() < min_input_size)
+        throw std::runtime_error(fmt::format(
+            "{} Mismatch between input and output size. Output "
+            "size of {} with bit offset {} requires an input of at least {} "
+            "bytes. Called with input size: {} output size: {}",
+            LOCATION, output.size(), bit_offset.value(), min_input_size, input.size(), output.size()));
 
     auto* in = input.data();
 
