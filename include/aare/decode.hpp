@@ -27,9 +27,9 @@ uint32_t mask32to24bits(uint32_t input, BitOffset offset={});
  * @brief Expand 24 bit values in a 8bit buffer to 32bit unsigned integers
  * Used for detectors with 24bit counters in combination with CTB
  * 
- * @param input view of the 24 bit data
- * @param output destination 
- * @param offset offset to shift the data 0-7 bits
+ * @param input View of the 24 bit data as uint8_t (no 24bit native data type exists)
+ * @param output Destination of the expanded data (32bit, unsigned) 
+ * @param offset Offset within the first byte to where the data starts (0-7 bits)
  */
 void expand24to32bit(NDView<uint8_t,1> input, NDView<uint32_t,1> output, BitOffset offset={});
 
