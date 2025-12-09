@@ -113,10 +113,12 @@ uint32_t mask32to24bits(uint32_t input, BitOffset offset){
 
 void expand24to32bit(NDView<uint8_t,1> input, NDView<uint32_t,1> output, BitOffset bit_offset){
 
-    //How to correct check size
-    ssize_t min_input_size = output.size()*3;
+    ssize_t bytes_per_channel = 3; //24bit 
+    ssize_t min_input_size = output.size()*bytes_per_channel;
+
+    //if we have an offset we need one more byte in the input data
     if (bit_offset.value())
-        min_input_size += 1;
+        min_input_size += 1; 
 
     if (input.size() < min_input_size)
         throw std::runtime_error(fmt::format(
@@ -134,7 +136,7 @@ void expand24to32bit(NDView<uint8_t,1> input, NDView<uint32_t,1> output, BitOffs
             uint32_t val{};
             std::memcpy(&val, in, sizeof(val));
             v = mask32to24bits(val, bit_offset);
-            in += 3; //Move 24 bits
+            in += bytes_per_channel;
          }
     }else{
         //If there is no offset we can directly copy the bits
@@ -143,11 +145,9 @@ void expand24to32bit(NDView<uint8_t,1> input, NDView<uint32_t,1> output, BitOffs
             uint32_t val{};
             std::memcpy(&val, in, 3);
             v = val;
-            in += 3; //Move 24 bits
+            in += bytes_per_channel;
          }
     }
-
-    
 
 }
 

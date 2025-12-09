@@ -102,7 +102,9 @@ void define_ctb_raw_file_io_bindings(py::module &m) {
 
             aare::BitOffset bitoff(offset);
             py::buffer_info buf = input.request();
-            py::array_t<uint32_t> output(buf.size/3);
+
+            constexpr uint32_t bytes_per_channel = 3; //24 bit
+            py::array_t<uint32_t> output(buf.size/bytes_per_channel);
 
             NDView<uint8_t, 1> input_view(input.mutable_data(),
                                              {input.size()});
@@ -118,19 +120,28 @@ void define_ctb_raw_file_io_bindings(py::module &m) {
     [](py::array_t<uint8_t, py::array::c_style | py::array::forcecast>
                  &input, uint32_t offset){
 
-            size_t n_channels = 192; //96*3
-            int n_outputs = 2;
-            py::buffer_info buf = input.request();
+            // Physical layout of the chip
+            constexpr size_t channels = 64;
+            constexpr size_t counters = 3;
+            constexpr size_t bytes_per_channel = 3; //24 bit
+            constexpr int n_outputs = 2;
 
+            ssize_t expected_size = channels*counters*bytes_per_channel;
+
+            //If whe have an offset we need one extra byte per output
             aare::BitOffset bitoff(offset);
+            if(bitoff.value())
+                expected_size += n_outputs;
 
-            //offset is in number of bits
-            if(input.size()-std::ceil(static_cast<double>(bitoff.value())/8)*n_outputs != 576){
-                throw std::runtime_error("Size does not match");
+            if (input.size() != expected_size) {
+                throw std::runtime_error(
+                    fmt::format("{} Expected an input size of {} bytes. Called "
+                                "with input size of {}",
+                                LOCATION, expected_size, input.size()));
             }
 
-
-            py::array_t<uint32_t> output(n_channels);
+            py::buffer_info buf = input.request();
+            py::array_t<uint32_t> output(channels * counters);
 
             for (int i = 0; i!=n_outputs; ++i){
                 auto step = input.size()/n_outputs;
