@@ -53,7 +53,8 @@ class Mythen302Transform:
     """
     Transform Mythen 302 test chip data from a buffer of bytes (uint8_t)
     to a uint32 numpy array of [64,3] representing channels and counters.
-    Assumes data taken with rx_dbitlist 17 6 and rx_dbitreorder 1.
+    Assumes data taken with rx_dbitlist 17 6, rx_dbitreorder 1 and Digital
+    Samples = 2310 [(64x3x24)/2 + some extra]
 
     .. note::
 
