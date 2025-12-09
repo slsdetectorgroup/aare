@@ -22,21 +22,14 @@ AARE
 
 .. toctree::
     :caption: Python API
-    :maxdepth: 1
-    
-    pyFile
-    pycalibration
-    pyCtbRawFile
-    pyClusterFile
-    pyClusterVector
-    pyCluster
-    pyInterpolation
-    pyJungfrauDataFile
-    pyRawFile
-    pyRawMasterFile
-    pyVarClusterFinder
+    :maxdepth: 3
+    :hidden:
 
+    pycalibration
+    python/cluster/index
+    python/file/index
     pyFit
+    
 
 
 .. toctree::

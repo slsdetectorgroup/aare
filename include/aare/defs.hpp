@@ -372,4 +372,15 @@ constexpr uint16_t ADC_MASK =
  */
 template <> DACIndex StringTo(const std::string &arg);
 
+class BitOffset{
+    uint8_t m_offset{};
+    public:
+    BitOffset() = default;
+    explicit BitOffset(uint32_t offset);
+    uint8_t value() const {return m_offset;}
+    bool operator==(const BitOffset& other) const;
+    bool operator<(const BitOffset& other) const;
+
+};
+
 } // namespace aare

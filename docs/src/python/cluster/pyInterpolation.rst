@@ -21,8 +21,8 @@ Supported are the following :math:`\eta`-functions:
 
 .. py:currentmodule:: aare
 
-.. image:: ../figures/Eta2x2.png
-    :target: ../figures/Eta2x2.png
+.. image:: ../../../figures/Eta2x2.png
+    :target: ../../../figures/Eta2x2.png
     :width: 650px
     :align: center
     :alt: Eta2x2
@@ -35,8 +35,8 @@ Supported are the following :math:`\eta`-functions:
 
 .. autofunction:: calculate_eta2
 
-.. image:: ../figures/Eta2x2Full.png
-    :target: ../figures/Eta2x2Full.png
+.. image:: ../../../figures/Eta2x2Full.png
+    :target: ../../../figures/Eta2x2Full.png
     :width: 650px
     :align: center
     :alt: Eta2x2 Full 
@@ -49,8 +49,8 @@ Supported are the following :math:`\eta`-functions:
 
 .. autofunction:: calculate_full_eta2
 
-.. image:: ../figures/Eta3x3.png
-    :target: ../figures/Eta3x3.png
+.. image:: ../../../figures/Eta3x3.png
+    :target: ../../../figures/Eta3x3.png
     :width: 650px
     :align: center
     :alt: Eta3x3
@@ -63,8 +63,8 @@ Supported are the following :math:`\eta`-functions:
 
 .. autofunction:: calculate_eta3
 
-.. image:: ../figures/Eta3x3Cross.png
-    :target: ../figures/Eta3x3Cross.png
+.. image:: ../../../figures/Eta3x3Cross.png
+    :target: ../../../figures/Eta3x3Cross.png
     :width: 650px
     :align: center
     :alt: Cross Eta3x3
