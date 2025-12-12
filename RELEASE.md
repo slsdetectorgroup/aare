@@ -6,6 +6,7 @@
 
 - Expanding 24 to 32 bit data
 - Decoding digital data from Mythen 302
+- added ``transform_eta_values``. Function transforms :math:`\eta` to uniform spatial coordinates. Should only be used for easier debugging. 
 
 
 ### 2025.11.21
