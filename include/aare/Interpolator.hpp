@@ -47,11 +47,11 @@ class Interpolator {
   public:
     /**
      * @brief Constructor for the Interpolator class
-     * @param etacube joint distribution of etaX, etaY and photon energy
+     * @param etacube joint distribution of etaX, etaY and photon energy (note
+     * first dimension is etaX, second etaY, third photon energy)
      * @param xbins bin edges for etaX
      * @param ybins bin edges for etaY
      * @param ebins bin edges for photon energy
-     * @note note first dimension is etaX, second etaY, third photon energy
      */
     Interpolator(NDView<double, 3> etacube, NDView<double, 1> xbins,
                  NDView<double, 1> ybins, NDView<double, 1> ebins);
@@ -69,8 +69,8 @@ class Interpolator {
      * @brief transforms the joint eta distribution of etaX and etaY to the two
      * independant uniform distributions based on the Roseblatt transform for
      * each energy level
-     * @param etacube joint distribution of etaX, etaY and photon energy
-     * @note note first dimension is etaX, second etaY, third photon energy
+     * @param etacube joint distribution of etaX, etaY and photon energy (first
+     * dimension is etaX, second etaY, third photon energy)
      */
     void rosenblatttransform(NDView<double, 3> etacube);
 
@@ -85,8 +85,8 @@ class Interpolator {
      * calculate_eta2
      * @return interpolated photons (photon positions are given as double but
      * following row column format e.g. x=0, y=0 means top row and first column
-     * of frame) (An interpolated photon position of (1.5, 2.5) means that the
-     * photon hit is estimated to be the pixel center of pixel (1,2))
+     * of frame) (An interpolated photon position of (1.5, 2.5) corresponds to
+     * an estimated photon hit at the pixel center of pixel (1,2))
      */
     template <auto EtaFunction = calculate_eta2, typename ClusterType,
               typename Eanble = std::enable_if_t<is_cluster_v<ClusterType>>>
