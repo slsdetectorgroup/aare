@@ -1,3 +1,5 @@
+.. _Interpolation_C++API:
+
 Interpolation
 ==============
 
@@ -85,8 +87,8 @@ Full :math:`\eta`-Function on 2x2 Clusters:
 
 .. math:: 
     \begin{equation*}
-        {\color{blue}{\eta_x}}  = \frac{Q_{0,1} + Q_{1,1}}{\sum_i^{2}\sum_j^{2}Q_{i,j}} \quad \quad
-        {\textcolor{green}{\eta_y}} = \frac{Q_{1,0} + Q_{1,1}}{\sum_i^{2}\sum_j^{2}Q_{i,j}}
+        {\color{blue}{\eta_x}}  = \frac{Q_{0,1} + Q_{1,1}}{\sum_i^{1}\sum_j^{1}Q_{i,j}} \quad \quad
+        {\textcolor{green}{\eta_y}} = \frac{Q_{1,0} + Q_{1,1}}{\sum_i^{1}\sum_j^{1}Q_{i,j}}
     \end{equation*} 
 
 The :math:`\eta` values can range between 0,1. Note they only range between 0,1 because the position of the center pixel (red) can change. 
@@ -113,9 +115,9 @@ Full :math:`\eta`-Function on 3x3 Clusters:
 
 The :math:`\eta` values can range between -0.5,0.5.
 
-.. doxygenfunction:: aare::calculate_eta3(const ClusterVector<Cluster<T, 3,3, CoordType>>&)
+.. doxygenfunction:: aare::calculate_eta3(const ClusterVector<ClusterType>&)
 
-.. doxygenfunction:: aare::calculate_eta3(const Cluster<T, 3, 3, CoordType>&)
+.. doxygenfunction:: aare::calculate_eta3(const Cluster<T, ClusterSizeX, ClusterSizeY, CoordType>&)
 
 Cross :math:`\eta`-Function on 3x3 Clusters: 
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
@@ -134,9 +136,9 @@ Cross :math:`\eta`-Function on 3x3 Clusters:
 
 The :math:`\eta` values can range between -0.5,0.5. 
 
-.. doxygenfunction:: aare::calculate_cross_eta3(const ClusterVector<Cluster<T, 3,3, CoordType>>&)
+.. doxygenfunction:: aare::calculate_cross_eta3(const ClusterVector<ClusterType>&)
 
-.. doxygenfunction:: aare::calculate_cross_eta3(const Cluster<T, 3, 3, CoordType>&)
+.. doxygenfunction:: aare::calculate_cross_eta3(const Cluster<T, ClusterSizeX, ClusterSizeY, CoordType>&)
 
 Interpolation class: 
 ---------------------
