@@ -48,6 +48,19 @@ void register_interpolate(py::class_<aare::Interpolator> &interpolator,
         docstring.c_str(), py::arg("cluster_vector"));
 }
 
+template <typename Type>
+void register_transform_eta_values(
+    py::class_<aare::Interpolator> &interpolator) {
+    interpolator.def(
+        "transform_eta_values",
+        [](Interpolator &self, const Eta2<Type> &eta) {
+            auto uniform_coord = self.transform_eta_values(eta);
+            return py::make_tuple(uniform_coord.x, uniform_coord.y);
+        },
+        R"(eta.x eta.y transformed to uniform coordinates based on CDF ietax, ietay)",
+        py::arg("Eta"));
+}
+
 void define_interpolation_bindings(py::module &m) {
 
     PYBIND11_NUMPY_DTYPE(aare::Photon, x, y, energy);
@@ -139,6 +152,10 @@ void define_interpolation_bindings(py::module &m) {
     REGISTER_INTERPOLATOR_ETA2(int, 2, 2, uint16_t);
     REGISTER_INTERPOLATOR_ETA2(float, 2, 2, uint16_t);
     REGISTER_INTERPOLATOR_ETA2(double, 2, 2, uint16_t);
+
+    register_transform_eta_values<int>(interpolator);
+    register_transform_eta_values<float>(interpolator);
+    register_transform_eta_values<double>(interpolator);
 
     // TODO! Evaluate without converting to double
     m.def(

@@ -10,13 +10,13 @@
 #include "bind_ClusterFinderMT.hpp"
 #include "bind_ClusterVector.hpp"
 #include "bind_Eta.hpp"
+#include "bind_Interpolator.hpp"
 #include "bind_calibration.hpp"
 
 // TODO! migrate the other names
 #include "ctb_raw_file.hpp"
 #include "file.hpp"
 #include "fit.hpp"
-#include "interpolation.hpp"
 #include "jungfrau_data_file.hpp"
 #include "pedestal.hpp"
 #include "pixel_map.hpp"

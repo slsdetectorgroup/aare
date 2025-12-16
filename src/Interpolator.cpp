@@ -20,8 +20,8 @@ Interpolator::Interpolator(NDView<double, 3> etacube, NDView<double, 1> xbins,
     m_ietax = NDArray<double, 3>(etacube);
 
     m_ietay = NDArray<double, 3>(etacube);
-
-    // prefix sum - conditional CDF
+    // TODO: etacube should have different strides energy should come first
+    //  prefix sum - conditional CDF
     for (ssize_t i = 0; i < m_ietax.shape(0); i++) {
         for (ssize_t j = 0; j < m_ietax.shape(1); j++) {
             for (ssize_t k = 0; k < m_ietax.shape(2); k++) {

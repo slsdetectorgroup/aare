@@ -51,6 +51,11 @@ def test_Interpolator():
     cluster = _aare.Cluster3x3i(1,1, np.ones(9, dtype=np.int32))
     clustervector.push_back(cluster) 
 
+    [u,v] = interpolator.transform_eta_values(_aare.Etai())
+
+    assert u == 0
+    assert v == 0
+
     interpolated_photons = interpolator.interpolate(clustervector)
 
     assert interpolated_photons.size == 1
