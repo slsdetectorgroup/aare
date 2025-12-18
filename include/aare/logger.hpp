@@ -106,7 +106,7 @@ class Logger {
     }
 
     std::ostringstream &Get() {
-        os << Color(m_level) << "- " << Timestamp() << " " << ToString(m_level)
+        os << Color(m_level) << "- " << Timestamp() << " " << Logger::ToString(m_level)
            << ": ";
         return os;
     }

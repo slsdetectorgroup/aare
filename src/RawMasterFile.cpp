@@ -4,6 +4,8 @@
 #include "aare/logger.hpp"
 #include <sstream>
 
+#include "to_string.hpp"
+
 namespace aare {
 
 RawFileNameComponents::RawFileNameComponents(
@@ -69,7 +71,7 @@ ScanParameters::ScanParameters(const bool enabled, const DACIndex dac,
                                const int start, const int stop, const int step,
                                const int64_t settleTime)
     : m_enabled(enabled), m_dac(dac), m_start(start), m_stop(stop),
-      m_step(step), m_settleTime(settleTime){};
+      m_step(step), m_settleTime(settleTime) {};
 
 // "[enabled\ndac dac 4\nstart 500\nstop 2200\nstep 5\nsettleTime 100us\n]"
 ScanParameters::ScanParameters(const std::string &par) {
@@ -79,7 +81,7 @@ ScanParameters::ScanParameters(const std::string &par) {
         if (line == "enabled") {
             m_enabled = true;
         } else if (line.find("dac") != std::string::npos) {
-            m_dac = StringTo<DACIndex>(line.substr(4));
+            m_dac = string_to<DACIndex>(line.substr(4));
         } else if (line.find("start") != std::string::npos) {
             m_start = std::stoi(line.substr(6));
         } else if (line.find("stop") != std::string::npos) {
@@ -104,10 +106,24 @@ RawMasterFile::RawMasterFile(const std::filesystem::path &fpath)
         throw std::runtime_error(fmt::format("{} File does not exist: {}",
                                              LOCATION, fpath.string()));
     }
+
+    std::ifstream ifs(fpath);
     if (m_fnc.ext() == ".json") {
-        parse_json(fpath);
+        parse_json(ifs);
     } else if (m_fnc.ext() == ".raw") {
-        parse_raw(fpath);
+        parse_raw(ifs);
+    } else {
+        throw std::runtime_error(LOCATION + "Unsupported file type");
+    }
+}
+
+RawMasterFile::RawMasterFile(std::istream &is, const std::string &fname)
+    : m_fnc(fname) {
+
+    if (m_fnc.ext() == ".json") {
+        parse_json(is);
+    } else if (m_fnc.ext() == ".raw") {
+        parse_raw(is);
     } else {
         throw std::runtime_error(LOCATION + "Unsupported file type");
     }
@@ -179,16 +195,15 @@ ScanParameters RawMasterFile::scan_parameters() const {
 
 std::optional<ROI> RawMasterFile::roi() const { return m_roi; }
 
-void RawMasterFile::parse_json(const std::filesystem::path &fpath) {
-    std::ifstream ifs(fpath);
+void RawMasterFile::parse_json(std::istream &is) {
     json j;
-    ifs >> j;
+    is >> j;
 
     double v = j["Version"];
     m_version = fmt::format("{:.1f}", v);
 
-    m_type = StringTo<DetectorType>(j["Detector Type"].get<std::string>());
-    m_timing_mode = StringTo<TimingMode>(j["Timing Mode"].get<std::string>());
+    m_type = string_to<DetectorType>(j["Detector Type"].get<std::string>());
+    m_timing_mode = string_to<TimingMode>(j["Timing Mode"].get<std::string>());
 
     m_geometry = {
         j["Geometry"]["y"],
@@ -204,24 +219,46 @@ void RawMasterFile::parse_json(const std::filesystem::path &fpath) {
 
     m_max_frames_per_file = j["Max Frames Per File"];
 
+    // Before v8.0 we had Exptime instead of Exposure Time
+    // Mythen3 uses 3 exposure times and is not handled at the moment
+    if (j.contains("Exptime") && j["Exptime"].is_string()) {
+        m_exptime = string_to<std::chrono::nanoseconds>(
+            j["Exptime"].get<std::string>());
+    }
+    if (j.contains("Exposure Time") && j["Exposure Time"].is_string()) {
+        m_exptime = string_to<std::chrono::nanoseconds>(
+            j["Exposure Time"].get<std::string>());
+    }
+
+    // Before v8.0 we had Period instead of Acquisition Period
+    if (j.contains("Period") && j["Period"].is_string()) {
+        m_period =
+            string_to<std::chrono::nanoseconds>(j["Period"].get<std::string>());
+    }
+    if (j.contains("Acquisition Period") &&
+        j["Acquisition Period"].is_string()) {
+        m_period = string_to<std::chrono::nanoseconds>(
+            j["Acquisition Period"].get<std::string>());
+    }
+
+    // TODO! Not valid for CTB but not changing api right now!
     // Not all detectors write the bitdepth but in case
     // its not there it is 16
-    try {
-        m_bitdepth = j.at("Dynamic Range");
-    } catch (const json::out_of_range &e) {
+    if(j.contains("Bit Depth") && j["Bit Depth"].is_number()){
+        m_bitdepth = j["Bit Depth"];
+    } else {
         m_bitdepth = 16;
     }
     m_total_frames_expected = j["Total Frames"];
 
     m_frame_padding = j["Frame Padding"];
-    m_frame_discard_policy = StringTo<FrameDiscardPolicy>(
+    m_frame_discard_policy = string_to<FrameDiscardPolicy>(
         j["Frame Discard Policy"].get<std::string>());
 
-    try {
-        m_number_of_rows = j.at("Number of rows");
-    } catch (const json::out_of_range &e) {
-        // keep the optional empty
-    }
+    if(j.contains("Number of rows") && j["Number of rows"].is_number()){ 
+        m_number_of_rows = j["Number of rows"];
+    } 
+
     // ----------------------------------------------------------------
     // Special treatment of analog flag because of Moench03
     try {
@@ -334,19 +371,18 @@ void RawMasterFile::parse_json(const std::filesystem::path &fpath) {
     } catch (const json::out_of_range &e) {
         // leave the optional empty
     }
-    try {
-        // TODO: what is the best format to handle
-        m_counter_mask = j.at("Counter Mask");
-    } catch (const json::out_of_range &e) {
-        // leave the optional empty
-    }
 
-// Update detector type for Moench
-// TODO! How does this work with old .raw master files?
-#ifdef AARE_VERBOSE
-    fmt::print("Detecting Moench03: m_pixels_y: {}, m_analog_samples: {}\n",
-               m_pixels_y, m_analog_samples.value_or(0));
-#endif
+    if (j.contains("Counter Mask")) {
+        if (j["Counter Mask"].is_number())
+            m_counter_mask = j["Counter Mask"];
+        else if (j["Counter Mask"].is_string())
+            m_counter_mask =
+                std::stoi(j["Counter Mask"].get<std::string>(), nullptr, 16);
+    }
+    
+
+    // Update detector type for Moench
+    // TODO! How does this work with old .raw master files?
     if (m_type == DetectorType::Moench && !m_analog_samples &&
         m_pixels_y == 400) {
         m_type = DetectorType::Moench03;
@@ -355,10 +391,8 @@ void RawMasterFile::parse_json(const std::filesystem::path &fpath) {
         m_type = DetectorType::Moench03_old;
     }
 }
-void RawMasterFile::parse_raw(const std::filesystem::path &fpath) {
-
-    std::ifstream ifs(fpath);
-    for (std::string line; std::getline(ifs, line);) {
+void RawMasterFile::parse_raw(std::istream &is) {
+    for (std::string line; std::getline(is, line);) {
         if (line == "#Frame Header")
             break;
         auto pos = line.find(':');
@@ -383,12 +417,12 @@ void RawMasterFile::parse_raw(const std::filesystem::path &fpath) {
             } else if (key == "TimeStamp") {
 
             } else if (key == "Detector Type") {
-                m_type = StringTo<DetectorType>(value);
+                m_type = string_to<DetectorType>(value);
                 if (m_type == DetectorType::Moench) {
                     m_type = DetectorType::Moench03_old;
                 }
             } else if (key == "Timing Mode") {
-                m_timing_mode = StringTo<TimingMode>(value);
+                m_timing_mode = string_to<TimingMode>(value);
             } else if (key == "Image Size") {
                 m_image_size_in_bytes = std::stoi(value);
             } else if (key == "Frame Padding") {
@@ -429,6 +463,10 @@ void RawMasterFile::parse_raw(const std::filesystem::path &fpath) {
                 m_pixels_x = std::stoi(value.substr(0, pos));
             } else if (key == "Total Frames") {
                 m_total_frames_expected = std::stoi(value);
+            } else if (key == "Exptime") {
+                m_exptime = string_to<std::chrono::nanoseconds>(value);
+            } else if (key == "Period") {
+                m_period = string_to<std::chrono::nanoseconds>(value);
             } else if (key == "Dynamic Range") {
                 m_bitdepth = std::stoi(value);
             } else if (key == "Quad") {
