@@ -85,7 +85,7 @@ class RawMasterFile {
     size_t m_bitdepth{};
     uint8_t m_quad = 0;
 
-    std::chrono::nanoseconds m_exptime{0};
+    std::optional<std::chrono::nanoseconds> m_exptime;
     std::chrono::nanoseconds m_period{0};
 
     xy m_geometry{};
@@ -145,7 +145,7 @@ class RawMasterFile {
 
     ScanParameters scan_parameters() const;
 
-    std::chrono::nanoseconds exptime() const { return m_exptime; }
+    std::optional<std::chrono::nanoseconds> exptime() const { return m_exptime; }
     std::chrono::nanoseconds period() const { return m_period; }
 
   private:

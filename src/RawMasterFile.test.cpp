@@ -466,6 +466,7 @@ TEST_CASE("Parse JUNGFRAU 7.2 master from string stream") {
     REQUIRE(f.timing_mode() == TimingMode::Auto);
     REQUIRE(f.geometry().col == 1);
     REQUIRE(f.geometry().row == 2);
+    REQUIRE(f.n_modules() == 2);
     REQUIRE(f.image_size_in_bytes() == 524288);
     REQUIRE(f.pixels_x() == 1024);
     REQUIRE(f.pixels_y() == 256);
@@ -476,4 +477,162 @@ TEST_CASE("Parse JUNGFRAU 7.2 master from string stream") {
 
     REQUIRE(f.frames_in_file() == 10);
     REQUIRE(f.udp_interfaces_per_module() == xy{2, 1});
+}
+
+TEST_CASE("Parse a CTB file from stream"){
+    std::string master_content = R"({
+    "Version": 8.0,
+    "Timestamp": "Mon Dec 15 10:57:27 2025",
+    "Detector Type": "ChipTestBoard",
+    "Timing Mode": "auto",
+    "Geometry": {
+        "x": 1,
+        "y": 1
+    },
+    "Image Size": 18432,
+    "Pixels": {
+        "x": 2,
+        "y": 1
+    },
+    "Max Frames Per File": 20000,
+    "Frame Discard Policy": "nodiscard",
+    "Frame Padding": 1,
+    "Scan Parameters": {
+        "enable": 0,
+        "dacInd": 0,
+        "start offset": 0,
+        "stop offset": 0,
+        "step size": 0,
+        "dac settle time ns": 0
+    },
+    "Total Frames": 1,
+    "Exposure Time": "0.25s",
+    "Acquisition Period": "10ms",
+    "Ten Giga": 1,
+    "ADC Mask": 4294967295,
+    "Analog Flag": 0,
+    "Analog Samples": 1,
+    "Digital Flag": 0,
+    "Digital Samples": 1,
+    "Dbit Offset": 0,
+    "Dbit Reorder": 1,
+    "Dbit Bitset": 0,
+    "Transceiver Mask": 3,
+    "Transceiver Flag": 1,
+    "Transceiver Samples": 1152,
+    "Frames in File": 40,
+    "Additional JSON Header": {}
+})";
+
+    std::istringstream iss(master_content);
+    RawMasterFile f(iss, "test_master_0.json");
+
+    REQUIRE(f.version() == "8.0");
+    REQUIRE(f.detector_type() == DetectorType::ChipTestBoard);
+    REQUIRE(f.timing_mode() == TimingMode::Auto);
+    REQUIRE(f.geometry().col == 1);
+    REQUIRE(f.geometry().row == 1);
+    REQUIRE(f.image_size_in_bytes() == 18432);
+    REQUIRE(f.pixels_x() == 2);
+    REQUIRE(f.pixels_y() == 1);
+    REQUIRE(f.max_frames_per_file() == 20000);
+    // CTB does not have bitdepth in master file, but for the moment we write 16
+    // TODO! refactor using std::optional
+    // REQUIRE(f.bitdepth() == std::nullopt); 
+    REQUIRE(f.n_modules() == 1);
+    REQUIRE(f.quad() == 0);
+    REQUIRE(f.frame_discard_policy() == FrameDiscardPolicy::NoDiscard);
+    REQUIRE(f.frame_padding() == 1);
+    REQUIRE(f.total_frames_expected() == 1); //This is Total Frames in the master file
+    REQUIRE(f.exptime() == std::chrono::milliseconds(250));
+    REQUIRE(f.period() == std::chrono::milliseconds(10));
+    REQUIRE(f.analog_samples() == std::nullopt); //Analog Flag is 0
+    REQUIRE(f.digital_samples() == std::nullopt); //Digital Flag is 0
+    REQUIRE(f.transceiver_samples() == 1152);
+    REQUIRE(f.frames_in_file() == 40);
+}
+
+TEST_CASE("Parse v8.0 MYTHEN3 from stream"){
+    std::string master_content = R"({
+    "Version": 8.0,
+    "Timestamp": "Wed Oct  1 14:37:26 2025",
+    "Detector Type": "Mythen3",
+    "Timing Mode": "auto",
+    "Geometry": {
+        "x": 2,
+        "y": 1
+    },
+    "Image Size": 5120,
+    "Pixels": {
+        "x": 1280,
+        "y": 1
+    },
+    "Max Frames Per File": 10000,
+    "Frame Discard Policy": "nodiscard",
+    "Frame Padding": 1,
+    "Scan Parameters": {
+        "enable": 0,
+        "dacInd": 0,
+        "start offset": 0,
+        "stop offset": 0,
+        "step size": 0,
+        "dac settle time ns": 0
+    },
+    "Total Frames": 1,
+    "Receiver Rois": [
+        {
+            "xmin": 0,
+            "xmax": 2559,
+            "ymin": -1,
+            "ymax": -1
+        }
+    ],
+    "Dynamic Range": 32,
+    "Ten Giga": 1,
+    "Acquisition Period": "0ns",
+    "Counter Mask": 4,
+    "Exposure Times": [
+        "5s",
+        "5s",
+        "5s"
+    ],
+    "Gate Delays": [
+        "0ns",
+        "0ns",
+        "0ns"
+    ],
+    "Gates": 1,
+    "Threshold Energies": [
+        -1,
+        -1,
+        -1
+    ],
+    "Readout Speed": "half_speed",
+    "Frames in File": 1,
+    "Additional JSON Header": {}
+})";
+
+    std::istringstream iss(master_content);
+    RawMasterFile f(iss, "test_master_0.json");
+
+    REQUIRE(f.version() == "8.0");
+    REQUIRE(f.detector_type() == DetectorType::Mythen3);
+    REQUIRE(f.timing_mode() == TimingMode::Auto);
+    REQUIRE(f.geometry().col == 2);
+    REQUIRE(f.geometry().row == 1);
+    REQUIRE(f.image_size_in_bytes() == 5120);
+    REQUIRE(f.pixels_x() == 1280);
+    REQUIRE(f.pixels_y() == 1);
+    REQUIRE(f.max_frames_per_file() == 10000);
+    REQUIRE(f.n_modules() == 2);
+    REQUIRE(f.quad() == 0);
+    REQUIRE(f.frame_discard_policy() == FrameDiscardPolicy::NoDiscard);
+    REQUIRE(f.frame_padding() == 1);
+    REQUIRE(f.total_frames_expected() == 1); //This is Total Frames in the master file
+
+    // Mythen3 has three exposure times, but for the moment we don't handle them
+    REQUIRE(f.exptime() == std::nullopt);
+
+    // Period is ok though
+    REQUIRE(f.period() == std::chrono::nanoseconds(0));
 }
