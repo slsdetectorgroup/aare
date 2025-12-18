@@ -218,9 +218,13 @@ void RawMasterFile::parse_json(const std::filesystem::path &fpath) {
         // keep default 0, Mythen3 not supported yet
     }
 
-    m_period =
-        string_to<std::chrono::nanoseconds>(j["Period"].get<std::string>());
-
+    if (v < 8.0) {
+        m_period =
+            string_to<std::chrono::nanoseconds>(j["Period"].get<std::string>());
+    } else {
+        m_period = string_to<std::chrono::nanoseconds>(
+            j["Acquisition Period"].get<std::string>());
+    }
     // Not all detectors write the bitdepth but in case
     // its not there it is 16
     try {

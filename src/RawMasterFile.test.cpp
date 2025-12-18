@@ -164,7 +164,7 @@ TEST_CASE("Parse a master file in .raw format", "[.integration]") {
 
     auto fpath =
         test_data_path() /
-        "raw/moench/"
+        "raw/moench04/"
         "moench04_noise_200V_sto_both_100us_no_light_thresh_900_master_0.raw";
     REQUIRE(std::filesystem::exists(fpath));
     RawMasterFile f(fpath);
