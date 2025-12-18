@@ -219,30 +219,34 @@ void RawMasterFile::parse_json(std::istream &is) {
 
     m_max_frames_per_file = j["Max Frames Per File"];
 
-    try {
-        if (v < 8.0) {
-            m_exptime = string_to<std::chrono::nanoseconds>(
-                j["Exptime"].get<std::string>());
-        } else {
-            m_exptime = string_to<std::chrono::nanoseconds>(
-                j["Exposure Time"].get<std::string>());
-        }
-    } catch (const json::exception &e) {
-        // keep default 0, Mythen3 not supported yet
+    // Before v8.0 we had Exptime instead of Exposure Time
+    // Mythen3 uses 3 exposure times and is not handled at the moment
+    if (j.contains("Exptime") && j["Exptime"].is_string()) {
+        m_exptime = string_to<std::chrono::nanoseconds>(
+            j["Exptime"].get<std::string>());
+    }
+    if (j.contains("Exposure Time") && j["Exposure Time"].is_string()) {
+        m_exptime = string_to<std::chrono::nanoseconds>(
+            j["Exposure Time"].get<std::string>());
     }
 
-    if (v < 8.0) {
+    // Before v8.0 we had Period instead of Acquisition Period
+    if (j.contains("Period") && j["Period"].is_string()) {
         m_period =
             string_to<std::chrono::nanoseconds>(j["Period"].get<std::string>());
-    } else {
+    }
+    if (j.contains("Acquisition Period") &&
+        j["Acquisition Period"].is_string()) {
         m_period = string_to<std::chrono::nanoseconds>(
             j["Acquisition Period"].get<std::string>());
     }
+
+    // TODO! Not valid for CTB but not changing api right now!
     // Not all detectors write the bitdepth but in case
     // its not there it is 16
-    try {
-        m_bitdepth = j.at("Dynamic Range");
-    } catch (const json::out_of_range &e) {
+    if(j.contains("Bit Depth") && j["Bit Depth"].is_number()){
+        m_bitdepth = j["Bit Depth"];
+    } else {
         m_bitdepth = 16;
     }
     m_total_frames_expected = j["Total Frames"];
@@ -251,11 +255,10 @@ void RawMasterFile::parse_json(std::istream &is) {
     m_frame_discard_policy = string_to<FrameDiscardPolicy>(
         j["Frame Discard Policy"].get<std::string>());
 
-    try {
-        m_number_of_rows = j.at("Number of rows");
-    } catch (const json::out_of_range &e) {
-        // keep the optional empty
-    }
+    if(j.contains("Number of rows") && j["Number of rows"].is_number()){ 
+        m_number_of_rows = j["Number of rows"];
+    } 
+
     // ----------------------------------------------------------------
     // Special treatment of analog flag because of Moench03
     try {
@@ -368,19 +371,18 @@ void RawMasterFile::parse_json(std::istream &is) {
     } catch (const json::out_of_range &e) {
         // leave the optional empty
     }
-    try {
-        // TODO: what is the best format to handle
-        m_counter_mask = j.at("Counter Mask");
-    } catch (const json::out_of_range &e) {
-        // leave the optional empty
-    }
 
-// Update detector type for Moench
-// TODO! How does this work with old .raw master files?
-#ifdef AARE_VERBOSE
-    fmt::print("Detecting Moench03: m_pixels_y: {}, m_analog_samples: {}\n",
-               m_pixels_y, m_analog_samples.value_or(0));
-#endif
+    if (j.contains("Counter Mask")) {
+        if (j["Counter Mask"].is_number())
+            m_counter_mask = j["Counter Mask"];
+        else if (j["Counter Mask"].is_string())
+            m_counter_mask =
+                std::stoi(j["Counter Mask"].get<std::string>(), nullptr, 16);
+    }
+    
+
+    // Update detector type for Moench
+    // TODO! How does this work with old .raw master files?
     if (m_type == DetectorType::Moench && !m_analog_samples &&
         m_pixels_y == 400) {
         m_type = DetectorType::Moench03;
@@ -389,7 +391,7 @@ void RawMasterFile::parse_json(std::istream &is) {
         m_type = DetectorType::Moench03_old;
     }
 }
-    void RawMasterFile::parse_raw(std::istream &is) {
+void RawMasterFile::parse_raw(std::istream &is) {
     for (std::string line; std::getline(is, line);) {
         if (line == "#Frame Header")
             break;
