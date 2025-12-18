@@ -474,7 +474,10 @@ TEST_CASE("Parse JUNGFRAU 7.2 master from string stream") {
     REQUIRE(f.frame_discard_policy() == FrameDiscardPolicy::NoDiscard);
     REQUIRE(f.frame_padding() == 1);
     REQUIRE(f.total_frames_expected() == 10);
-
+    REQUIRE(f.exptime() == std::chrono::microseconds(10));
+    REQUIRE(f.period() == std::chrono::milliseconds(1));
+    REQUIRE(f.number_of_rows() == 512);
+    
     REQUIRE(f.frames_in_file() == 10);
     REQUIRE(f.udp_interfaces_per_module() == xy{2, 1});
 }
