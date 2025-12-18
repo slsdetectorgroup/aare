@@ -348,24 +348,11 @@ enum class corner : int {
 enum class TimingMode { Auto, Trigger };
 enum class FrameDiscardPolicy { NoDiscard, Discard, DiscardPartial };
 
-// template <class T> T StringTo(const std::string &arg) { return T(arg); }
-
-// template <class T> std::string ToString(T arg) { return T(arg); }
-
-// template <> std::string ToString(DetectorType arg);
-
 using DataTypeVariants = std::variant<uint16_t, uint32_t>;
 
 constexpr uint16_t ADC_MASK =
     0x3FFF; // used to mask out the gain bits in Jungfrau
 
-/**
- * @brief Convert a string to a DACIndex
- * @param arg string representation of the dacIndex
- * @return DACIndex
- * @throw invalid argument error if the string does not match any DACIndex
- */
-// template <> DACIndex StringTo(const std::string &arg);
 
 class BitOffset{
     uint8_t m_offset{};
