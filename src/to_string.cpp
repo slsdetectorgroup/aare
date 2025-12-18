@@ -237,4 +237,40 @@ template <> DACIndex string_to(const std::string &arg) {
 }
 
 
+std::string remove_unit(std::string &str) {
+    auto it = str.begin();
+    while (it != str.end()) {
+        if (std::isalpha(*it)) {
+            // Check if this is scientific notation (e or E followed by optional sign and digits)
+            if (((*it == 'e' || *it == 'E') && (it + 1) != str.end())) {
+                auto next = it + 1;
+                // Skip optional sign
+                if (*next == '+' || *next == '-') {
+                    ++next;
+                }
+                // Check if followed by at least one digit
+                if (next != str.end() && std::isdigit(*next)) {
+                    // This is scientific notation, continue scanning
+                    it = next;
+                    while (it != str.end() && std::isdigit(*it)) {
+                        ++it;
+                    }
+                    continue;
+                }
+            }
+            // Not scientific notation, this is the start of the unit
+            break;
+        }
+        ++it;
+    }
+    auto pos = it - str.begin();
+    auto unit = str.substr(pos);
+    str.erase(it, end(str));
+    // Strip trailing whitespace
+    while (!str.empty() && std::isspace(str.back())) {
+        str.pop_back();
+    }
+    return unit;
+}
+
 } // namespace aare

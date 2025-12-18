@@ -206,6 +206,12 @@ void RawMasterFile::parse_json(const std::filesystem::path &fpath) {
 
     m_max_frames_per_file = j["Max Frames Per File"];
 
+    m_exptime = string_to<std::chrono::nanoseconds>(
+        j["Exptime"].get<std::string>());
+
+    m_period = string_to<std::chrono::nanoseconds>(
+        j["Period"].get<std::string>());
+
     // Not all detectors write the bitdepth but in case
     // its not there it is 16
     try {
@@ -431,6 +437,10 @@ void RawMasterFile::parse_raw(const std::filesystem::path &fpath) {
                 m_pixels_x = std::stoi(value.substr(0, pos));
             } else if (key == "Total Frames") {
                 m_total_frames_expected = std::stoi(value);
+            } else if(key == "Exptime"){
+                m_exptime = string_to<std::chrono::nanoseconds>(value);
+            } else if(key == "Period"){
+                m_period = string_to<std::chrono::nanoseconds>(value);
             } else if (key == "Dynamic Range") {
                 m_bitdepth = std::stoi(value);
             } else if (key == "Quad") {

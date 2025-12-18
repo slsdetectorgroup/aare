@@ -6,6 +6,7 @@
 #include <fmt/format.h>
 #include <fstream>
 #include <optional>
+#include <chrono>
 
 #include <nlohmann/json.hpp>
 using json = nlohmann::json;
@@ -84,6 +85,9 @@ class RawMasterFile {
     size_t m_bitdepth{};
     uint8_t m_quad = 0;
 
+    std::chrono::nanoseconds m_exptime{0};
+    std::chrono::nanoseconds m_period{0};
+
     xy m_geometry{};
     xy m_udp_interfaces_per_module{1, 1};
 
@@ -139,6 +143,9 @@ class RawMasterFile {
     std::optional<ROI> roi() const;
 
     ScanParameters scan_parameters() const;
+
+    std::chrono::nanoseconds exptime() const { return m_exptime; }
+    std::chrono::nanoseconds period() const { return m_period; }
 
   private:
     void parse_json(const std::filesystem::path &fpath);

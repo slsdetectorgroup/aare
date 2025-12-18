@@ -194,7 +194,9 @@ TEST_CASE("Parse a master file in .raw format", "[.integration]") {
     // Total Frames               : 100
     REQUIRE(f.total_frames_expected() == 100);
     // Exptime                    : 100us
+    REQUIRE(f.exptime() == std::chrono::microseconds(100));
     // Period                     : 4ms
+    REQUIRE(f.period() == std::chrono::milliseconds(4));
     // Ten Giga                   : 1
     // ADC Mask                   : 0xffffffff
     // Analog Flag                : 1
@@ -302,8 +304,10 @@ TEST_CASE("Read eiger master file", "[.integration]") {
     //     },
     //     "Dynamic Range": 32,
     //     "Ten Giga": 0,
-    //     "Exptime": "5s",
+        // "Exptime": "5s",
+    REQUIRE(f.exptime() == std::chrono::seconds(5));
     //     "Period": "1s",
+    REQUIRE(f.period() == std::chrono::seconds(1));
     //     "Threshold Energy": -1,
     //     "Sub Exptime": "2.62144ms",
     //     "Sub Period": "2.62144ms",

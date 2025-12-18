@@ -8,10 +8,46 @@
 
 #include "aare/defs.hpp" //enums
 
+#include <chrono> //time conversions
+
 namespace aare {
 
+
+std::string remove_unit(std::string &str);
+
+template <typename T>
+T string_to(const std::string &t, const std::string &unit) {
+    double tval{0};
+    try {
+        tval = std::stod(t);
+    } catch (const std::invalid_argument &e) {
+        throw std::runtime_error("Could not convert string to time");
+    }
+
+    using std::chrono::duration;
+    using std::chrono::duration_cast;
+    if (unit == "ns") {
+        return duration_cast<T>(duration<double, std::nano>(tval));
+    } else if (unit == "us") {
+        return duration_cast<T>(duration<double, std::micro>(tval));
+    } else if (unit == "ms") {
+        return duration_cast<T>(duration<double, std::milli>(tval));
+    } else if (unit == "s" || unit.empty()) {
+        return duration_cast<T>(std::chrono::duration<double>(tval));
+    } else {
+        throw std::runtime_error(
+            "Invalid unit in conversion from string to std::chrono::duration");
+    }
+}
+
+
 // if T has a constructor that takes a string, lets use it.
-template <class T> T string_to(const std::string &arg) { return T{arg}; }
+// template <class T> T string_to(const std::string &arg) { return T{arg}; }
+template <typename T> T string_to(const std::string &arg) {
+    std::string tmp{arg};
+    auto unit = remove_unit(tmp);
+    return string_to<T>(tmp, unit);
+}
 
 /**
  * @brief Convert a string to DetectorType
@@ -44,5 +80,11 @@ template <> FrameDiscardPolicy string_to(const std::string &arg);
  * @throw invalid argument error if the string does not match any DACIndex
  */
 template <> DACIndex string_to(const std::string &arg);
+
+
+
+
+
+
 
 } // namespace aare

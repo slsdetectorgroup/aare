@@ -145,3 +145,122 @@ TEST_CASE("DACIndex string to enum") {
     
     REQUIRE_THROWS(string_to<aare::DACIndex>("invalid_dac"));
 }
+
+TEST_CASE("Remove unit from string") {
+    using aare::remove_unit;
+    
+    // Test basic numeric value with unit
+    {
+        std::string input = "123.45 V";
+        std::string unit = remove_unit(input);
+        REQUIRE(unit == "V");
+        REQUIRE(input == "123.45");
+    }
+    
+    // Test integer value with unit
+    {
+        std::string input = "42 Hz";
+        std::string unit = remove_unit(input);
+        REQUIRE(unit == "Hz");
+        REQUIRE(input == "42");
+    }
+    
+    // Test negative value with unit
+    {
+        std::string input = "-50.5 mV";
+        std::string unit = remove_unit(input);
+        REQUIRE(unit == "mV");
+        REQUIRE(input == "-50.5");
+    }
+    
+    // Test value with no unit (only numbers)
+    {
+        std::string input = "123.45";
+        std::string unit = remove_unit(input);
+        REQUIRE(unit == "");
+        REQUIRE(input == "123.45");
+    }
+    
+    // Test value with only unit (letters at start)
+    {
+        std::string input = "kHz";
+        std::string unit = remove_unit(input);
+        REQUIRE(unit == "kHz");
+        REQUIRE(input == "");
+    }
+    
+    // Test with multiple word units
+    {
+        std::string input = "100 degrees Celsius";
+        std::string unit = remove_unit(input);
+        REQUIRE(unit == "degrees Celsius");
+        REQUIRE(input == "100");
+    }
+    
+    // Test with scientific notation
+    {
+        std::string input = "1.23e-5 A";
+        std::string unit = remove_unit(input);
+        REQUIRE(unit == "A");
+        REQUIRE(input == "1.23e-5");
+    }
+
+    // Another test with scientific notation
+    {
+        std::string input = "-4.56E6 m/s";
+        std::string unit = remove_unit(input);
+        REQUIRE(unit == "m/s");
+        REQUIRE(input == "-4.56E6");
+    }
+    
+    // Test with scientific notation uppercase
+    {
+        std::string input = "5.67E+3 Hz";
+        std::string unit = remove_unit(input);
+        REQUIRE(unit == "Hz");
+        REQUIRE(input == "5.67E+3");
+    }
+    
+    // Test with leading zeros
+    {
+        std::string input = "00123 ohm";
+        std::string unit = remove_unit(input);
+        REQUIRE(unit == "ohm");
+        REQUIRE(input == "00123");
+    }
+
+    // Test with leading zeros no space
+    {
+        std::string input = "00123ohm";
+        std::string unit = remove_unit(input);
+        REQUIRE(unit == "ohm");
+        REQUIRE(input == "00123");
+    }
+    
+    // Test empty string
+    {
+        std::string input = "";
+        std::string unit = remove_unit(input);
+        REQUIRE(unit == "");
+        REQUIRE(input == "");
+    }
+}
+
+TEST_CASE("Conversions from time string to chrono durations") {
+    using namespace std::chrono;
+    using aare::string_to;
+
+    REQUIRE(string_to<nanoseconds>("100 ns") == nanoseconds(100));
+    REQUIRE(string_to<nanoseconds>("1s") == nanoseconds(1000000000));
+    REQUIRE(string_to<microseconds>("200 us") == microseconds(200));
+    REQUIRE(string_to<milliseconds>("300 ms") == milliseconds(300));
+    REQUIRE(string_to<seconds>("5 s") == seconds(5));
+
+    REQUIRE(string_to<nanoseconds>("1.5 us") == nanoseconds(1500));
+    REQUIRE(string_to<microseconds>("2.5 ms") == microseconds(2500));
+    REQUIRE(string_to<milliseconds>("3.5 s") == milliseconds(3500));
+
+    REQUIRE(string_to<seconds>("2") == seconds(2)); // No unit defaults to seconds
+
+    REQUIRE_THROWS(string_to<seconds>("10 min")); // Unsupported unit
+}

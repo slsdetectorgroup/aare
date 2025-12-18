@@ -85,5 +85,13 @@ void define_raw_master_file_bindings(py::module &m) {
         .def_property_readonly("quad", &RawMasterFile::quad)
         .def_property_readonly("scan_parameters",
                                &RawMasterFile::scan_parameters)
-        .def_property_readonly("roi", &RawMasterFile::roi);
+        .def_property_readonly("roi", &RawMasterFile::roi)
+        .def_property_readonly("exptime", [](RawMasterFile &self) {
+            double seconds = std::chrono::duration<double>(self.exptime()).count();
+            return seconds;
+        })
+        .def_property_readonly("period", [](RawMasterFile &self) {
+            double seconds = std::chrono::duration<double>(self.period()).count();
+            return seconds;
+        });
 }
