@@ -4,6 +4,8 @@
 #include "aare/logger.hpp"
 #include <sstream>
 
+#include "to_string.hpp"
+
 namespace aare {
 
 RawFileNameComponents::RawFileNameComponents(
@@ -79,7 +81,7 @@ ScanParameters::ScanParameters(const std::string &par) {
         if (line == "enabled") {
             m_enabled = true;
         } else if (line.find("dac") != std::string::npos) {
-            m_dac = StringTo<DACIndex>(line.substr(4));
+            m_dac = string_to<DACIndex>(line.substr(4));
         } else if (line.find("start") != std::string::npos) {
             m_start = std::stoi(line.substr(6));
         } else if (line.find("stop") != std::string::npos) {
@@ -187,8 +189,8 @@ void RawMasterFile::parse_json(const std::filesystem::path &fpath) {
     double v = j["Version"];
     m_version = fmt::format("{:.1f}", v);
 
-    m_type = StringTo<DetectorType>(j["Detector Type"].get<std::string>());
-    m_timing_mode = StringTo<TimingMode>(j["Timing Mode"].get<std::string>());
+    m_type = string_to<DetectorType>(j["Detector Type"].get<std::string>());
+    m_timing_mode = string_to<TimingMode>(j["Timing Mode"].get<std::string>());
 
     m_geometry = {
         j["Geometry"]["y"],
@@ -214,7 +216,7 @@ void RawMasterFile::parse_json(const std::filesystem::path &fpath) {
     m_total_frames_expected = j["Total Frames"];
 
     m_frame_padding = j["Frame Padding"];
-    m_frame_discard_policy = StringTo<FrameDiscardPolicy>(
+    m_frame_discard_policy = string_to<FrameDiscardPolicy>(
         j["Frame Discard Policy"].get<std::string>());
 
     try {
@@ -383,12 +385,12 @@ void RawMasterFile::parse_raw(const std::filesystem::path &fpath) {
             } else if (key == "TimeStamp") {
 
             } else if (key == "Detector Type") {
-                m_type = StringTo<DetectorType>(value);
+                m_type = string_to<DetectorType>(value);
                 if (m_type == DetectorType::Moench) {
                     m_type = DetectorType::Moench03_old;
                 }
             } else if (key == "Timing Mode") {
-                m_timing_mode = StringTo<TimingMode>(value);
+                m_timing_mode = string_to<TimingMode>(value);
             } else if (key == "Image Size") {
                 m_image_size_in_bytes = std::stoi(value);
             } else if (key == "Frame Padding") {

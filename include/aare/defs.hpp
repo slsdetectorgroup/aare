@@ -348,16 +348,11 @@ enum class corner : int {
 enum class TimingMode { Auto, Trigger };
 enum class FrameDiscardPolicy { NoDiscard, Discard, DiscardPartial };
 
-template <class T> T StringTo(const std::string &arg) { return T(arg); }
+// template <class T> T StringTo(const std::string &arg) { return T(arg); }
 
-template <class T> std::string ToString(T arg) { return T(arg); }
+// template <class T> std::string ToString(T arg) { return T(arg); }
 
-template <> DetectorType StringTo(const std::string & /*name*/);
-template <> std::string ToString(DetectorType arg);
-
-template <> TimingMode StringTo(const std::string & /*mode*/);
-
-template <> FrameDiscardPolicy StringTo(const std::string & /*mode*/);
+// template <> std::string ToString(DetectorType arg);
 
 using DataTypeVariants = std::variant<uint16_t, uint32_t>;
 
@@ -370,7 +365,7 @@ constexpr uint16_t ADC_MASK =
  * @return DACIndex
  * @throw invalid argument error if the string does not match any DACIndex
  */
-template <> DACIndex StringTo(const std::string &arg);
+// template <> DACIndex StringTo(const std::string &arg);
 
 class BitOffset{
     uint8_t m_offset{};
