@@ -113,6 +113,7 @@ class RawMasterFile {
 
   public:
     RawMasterFile(const std::filesystem::path &fpath);
+    RawMasterFile(std::istream &is, const std::string &fname); // for testing
 
     std::filesystem::path data_fname(size_t mod_id, size_t file_id) const;
 
@@ -148,8 +149,8 @@ class RawMasterFile {
     std::chrono::nanoseconds period() const { return m_period; }
 
   private:
-    void parse_json(const std::filesystem::path &fpath);
-    void parse_raw(const std::filesystem::path &fpath);
+    void parse_json(std::istream &is);
+    void parse_raw(std::istream &is);
     void retrieve_geometry();
 };
 

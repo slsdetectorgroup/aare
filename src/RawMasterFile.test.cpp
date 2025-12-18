@@ -4,6 +4,7 @@
 #include "test_config.hpp"
 #include <catch2/catch_test_macros.hpp>
 #include <iostream>
+#include <sstream>
 
 using namespace aare;
 
@@ -332,4 +333,147 @@ TEST_CASE("Read eiger master file", "[.integration]") {
     //         "Packets Caught Mask": "64 bytes"
     //     }
     // }
+}
+
+TEST_CASE("Parse EIGER 7.2 master from string stream") {
+    std::string master_content = R"({
+    "Version": 7.2,
+    "Timestamp": "Tue Mar 26 17:24:34 2024",
+    "Detector Type": "Eiger",
+    "Timing Mode": "auto",
+    "Geometry": {
+        "x": 2,
+        "y": 2
+    },
+    "Image Size in bytes": 524288,
+    "Pixels": {
+        "x": 512,
+        "y": 256
+    },
+    "Max Frames Per File": 10000,
+    "Frame Discard Policy": "nodiscard",
+    "Frame Padding": 1,
+    "Scan Parameters": "[disabled]",
+    "Total Frames": 3,
+    "Receiver Roi": {
+        "xmin": 4294967295,
+        "xmax": 4294967295,
+        "ymin": 4294967295,
+        "ymax": 4294967295
+    },
+    "Dynamic Range": 32,
+    "Ten Giga": 0,
+    "Exptime": "5s",
+    "Period": "1s",
+    "Threshold Energy": -1,
+    "Sub Exptime": "2.62144ms",
+    "Sub Period": "2.62144ms",
+    "Quad": 0,
+    "Number of rows": 256,
+    "Rate Corrections": "[0, 0]",
+    "Frames in File": 3,
+    "Frame Header Format": {
+        "Frame Number": "8 bytes",
+        "SubFrame Number/ExpLength": "4 bytes",
+        "Packet Number": "4 bytes",
+        "Bunch ID": "8 bytes",
+        "Timestamp": "8 bytes",
+        "Module Id": "2 bytes",
+        "Row": "2 bytes",
+        "Column": "2 bytes",
+        "Reserved": "2 bytes",
+        "Debug": "4 bytes",
+        "Round Robin Number": "2 bytes",
+        "Detector Type": "1 byte",
+        "Header Version": "1 byte",
+        "Packets Caught Mask": "64 bytes"
+    }
+})";
+
+    std::istringstream iss(master_content);
+    RawMasterFile f(iss, "test_master_0.json");
+
+    REQUIRE(f.version() == "7.2");
+    REQUIRE(f.detector_type() == DetectorType::Eiger);
+    REQUIRE(f.timing_mode() == TimingMode::Auto);
+    REQUIRE(f.geometry().col == 2);
+    REQUIRE(f.geometry().row == 2);
+    REQUIRE(f.image_size_in_bytes() == 524288);
+    REQUIRE(f.pixels_x() == 512);
+    REQUIRE(f.pixels_y() == 256);
+    REQUIRE(f.max_frames_per_file() == 10000);
+    REQUIRE(f.frame_discard_policy() == FrameDiscardPolicy::NoDiscard);
+    REQUIRE(f.frame_padding() == 1);
+    REQUIRE(f.total_frames_expected() == 3);
+    REQUIRE(f.exptime() == std::chrono::seconds(5));
+    REQUIRE(f.period() == std::chrono::seconds(1));
+}
+
+TEST_CASE("Parse JUNGFRAU 7.2 master from string stream") {
+    std::string master_content = R"({
+    "Version": 7.2,
+    "Timestamp": "Tue Feb 20 08:29:19 2024",
+    "Detector Type": "Jungfrau",
+    "Timing Mode": "auto",
+    "Geometry": {
+        "x": 1,
+        "y": 2
+    },
+    "Image Size in bytes": 524288,
+    "Pixels": {
+        "x": 1024,
+        "y": 256
+    },
+    "Max Frames Per File": 3,
+    "Frame Discard Policy": "nodiscard",
+    "Frame Padding": 1,
+    "Scan Parameters": "[disabled]",
+    "Total Frames": 10,
+    "Receiver Roi": {
+        "xmin": 4294967295,
+        "xmax": 4294967295,
+        "ymin": 4294967295,
+        "ymax": 4294967295
+    },
+    "Exptime": "10us",
+    "Period": "1ms",
+    "Number of UDP Interfaces": 2,
+    "Number of rows": 512,
+    "Frames in File": 10,
+    "Frame Header Format": {
+        "Frame Number": "8 bytes",
+        "SubFrame Number/ExpLength": "4 bytes",
+        "Packet Number": "4 bytes",
+        "Bunch ID": "8 bytes",
+        "Timestamp": "8 bytes",
+        "Module Id": "2 bytes",
+        "Row": "2 bytes",
+        "Column": "2 bytes",
+        "Reserved": "2 bytes",
+        "Debug": "4 bytes",
+        "Round Robin Number": "2 bytes",
+        "Detector Type": "1 byte",
+        "Header Version": "1 byte",
+        "Packets Caught Mask": "64 bytes"
+    }
+})";
+
+    std::istringstream iss(master_content);
+    RawMasterFile f(iss, "test_master_0.json");
+
+    REQUIRE(f.version() == "7.2");
+    REQUIRE(f.detector_type() == DetectorType::Jungfrau);
+    REQUIRE(f.timing_mode() == TimingMode::Auto);
+    REQUIRE(f.geometry().col == 1);
+    REQUIRE(f.geometry().row == 2);
+    REQUIRE(f.image_size_in_bytes() == 524288);
+    REQUIRE(f.pixels_x() == 1024);
+    REQUIRE(f.pixels_y() == 256);
+    REQUIRE(f.max_frames_per_file() == 3);
+    REQUIRE(f.frame_discard_policy() == FrameDiscardPolicy::NoDiscard);
+    REQUIRE(f.frame_padding() == 1);
+    REQUIRE(f.total_frames_expected() == 10);
+
+    REQUIRE(f.frames_in_file() == 10);
+    REQUIRE(f.udp_interfaces_per_module() == xy{2, 1});
 }

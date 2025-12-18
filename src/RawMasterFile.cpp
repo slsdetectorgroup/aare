@@ -106,10 +106,24 @@ RawMasterFile::RawMasterFile(const std::filesystem::path &fpath)
         throw std::runtime_error(fmt::format("{} File does not exist: {}",
                                              LOCATION, fpath.string()));
     }
+
+    std::ifstream ifs(fpath);
     if (m_fnc.ext() == ".json") {
-        parse_json(fpath);
+        parse_json(ifs);
     } else if (m_fnc.ext() == ".raw") {
-        parse_raw(fpath);
+        parse_raw(ifs);
+    } else {
+        throw std::runtime_error(LOCATION + "Unsupported file type");
+    }
+}
+
+RawMasterFile::RawMasterFile(std::istream &is, const std::string &fname)
+    : m_fnc(fname) {
+
+    if (m_fnc.ext() == ".json") {
+        parse_json(is);
+    } else if (m_fnc.ext() == ".raw") {
+        parse_raw(is);
     } else {
         throw std::runtime_error(LOCATION + "Unsupported file type");
     }
@@ -181,10 +195,9 @@ ScanParameters RawMasterFile::scan_parameters() const {
 
 std::optional<ROI> RawMasterFile::roi() const { return m_roi; }
 
-void RawMasterFile::parse_json(const std::filesystem::path &fpath) {
-    std::ifstream ifs(fpath);
+void RawMasterFile::parse_json(std::istream &is) {
     json j;
-    ifs >> j;
+    is >> j;
 
     double v = j["Version"];
     m_version = fmt::format("{:.1f}", v);
@@ -376,10 +389,8 @@ void RawMasterFile::parse_json(const std::filesystem::path &fpath) {
         m_type = DetectorType::Moench03_old;
     }
 }
-void RawMasterFile::parse_raw(const std::filesystem::path &fpath) {
-
-    std::ifstream ifs(fpath);
-    for (std::string line; std::getline(ifs, line);) {
+    void RawMasterFile::parse_raw(std::istream &is) {
+    for (std::string line; std::getline(is, line);) {
         if (line == "#Frame Header")
             break;
         auto pos = line.find(':');
