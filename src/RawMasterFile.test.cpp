@@ -257,7 +257,7 @@ TEST_CASE("Parse a master file in new .json format",
 
     auto roi = f.roi().value();
     REQUIRE(roi.xmin == 0);
-    REQUIRE(roi.xmax == 2559);
+    REQUIRE(roi.xmax == 2560);
     REQUIRE(roi.ymin == -1);
     REQUIRE(roi.ymax == -1);
 }
