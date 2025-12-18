@@ -164,7 +164,7 @@ TEST_CASE("Parse a master file in .raw format", "[.integration]") {
 
     auto fpath =
         test_data_path() /
-        "moench/"
+        "raw/moench/"
         "moench04_noise_200V_sto_both_100us_no_light_thresh_900_master_0.raw";
     REQUIRE(std::filesystem::exists(fpath));
     RawMasterFile f(fpath);
@@ -263,7 +263,7 @@ TEST_CASE("Parse a master file in new .json format",
 }
 
 TEST_CASE("Read eiger master file", "[.integration]") {
-    auto fpath = test_data_path() / "eiger" / "eiger_500k_32bit_master_0.json";
+    auto fpath = test_data_path() / "raw/eiger/eiger_500k_32bit_master_0.json";
     REQUIRE(std::filesystem::exists(fpath));
     RawMasterFile f(fpath);
 

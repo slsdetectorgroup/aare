@@ -71,7 +71,7 @@ ScanParameters::ScanParameters(const bool enabled, const DACIndex dac,
                                const int start, const int stop, const int step,
                                const int64_t settleTime)
     : m_enabled(enabled), m_dac(dac), m_start(start), m_stop(stop),
-      m_step(step), m_settleTime(settleTime){};
+      m_step(step), m_settleTime(settleTime) {};
 
 // "[enabled\ndac dac 4\nstart 500\nstop 2200\nstep 5\nsettleTime 100us\n]"
 ScanParameters::ScanParameters(const std::string &par) {
@@ -206,11 +206,20 @@ void RawMasterFile::parse_json(const std::filesystem::path &fpath) {
 
     m_max_frames_per_file = j["Max Frames Per File"];
 
-    m_exptime = string_to<std::chrono::nanoseconds>(
-        j["Exptime"].get<std::string>());
+    try {
+        if (v < 8.0) {
+            m_exptime = string_to<std::chrono::nanoseconds>(
+                j["Exptime"].get<std::string>());
+        } else {
+            m_exptime = string_to<std::chrono::nanoseconds>(
+                j["Exposure Time"].get<std::string>());
+        }
+    } catch (const json::out_of_range &e) {
+        // keep default 0, Mythen3 not supported yet
+    }
 
-    m_period = string_to<std::chrono::nanoseconds>(
-        j["Period"].get<std::string>());
+    m_period =
+        string_to<std::chrono::nanoseconds>(j["Period"].get<std::string>());
 
     // Not all detectors write the bitdepth but in case
     // its not there it is 16
@@ -437,9 +446,9 @@ void RawMasterFile::parse_raw(const std::filesystem::path &fpath) {
                 m_pixels_x = std::stoi(value.substr(0, pos));
             } else if (key == "Total Frames") {
                 m_total_frames_expected = std::stoi(value);
-            } else if(key == "Exptime"){
+            } else if (key == "Exptime") {
                 m_exptime = string_to<std::chrono::nanoseconds>(value);
-            } else if(key == "Period"){
+            } else if (key == "Period") {
                 m_period = string_to<std::chrono::nanoseconds>(value);
             } else if (key == "Dynamic Range") {
                 m_bitdepth = std::stoi(value);
