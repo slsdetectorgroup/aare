@@ -214,7 +214,7 @@ void RawMasterFile::parse_json(const std::filesystem::path &fpath) {
             m_exptime = string_to<std::chrono::nanoseconds>(
                 j["Exposure Time"].get<std::string>());
         }
-    } catch (const json::out_of_range &e) {
+    } catch (const json::exception &e) {
         // keep default 0, Mythen3 not supported yet
     }
 
