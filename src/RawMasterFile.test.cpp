@@ -258,8 +258,8 @@ TEST_CASE("Parse a master file in new .json format",
     auto roi = f.roi().value();
     REQUIRE(roi.xmin == 0);
     REQUIRE(roi.xmax == 2560);
-    REQUIRE(roi.ymin == -1);
-    REQUIRE(roi.ymax == -1);
+    REQUIRE(roi.ymin == 0);
+    REQUIRE(roi.ymax == 1);
 }
 
 TEST_CASE("Read eiger master file", "[.integration]") {
