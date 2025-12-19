@@ -11,9 +11,9 @@ using namespace aare;
 
 TEST_CASE("Test new Interpolation API", "[Interpolation]") {
 
-    NDArray<double, 1> energy_bins(std::array<ssize_t, 1>{2});
-    NDArray<double, 1> etax_bins(std::array<ssize_t, 1>{4}, 0.0);
-    NDArray<double, 1> etay_bins(std::array<ssize_t, 1>{4}, 0.0);
+    NDArray<double, 1> energy_bins(std::array<double, 2>{0.0, 100.0});
+    NDArray<double, 1> etax_bins(std::array<double, 4>{0.0, 0.3, 0.6, 1.0});
+    NDArray<double, 1> etay_bins(std::array<double, 4>{0.0, 0.3, 0.6, 1.0});
     NDArray<double, 3> eta_distribution(std::array<ssize_t, 3>{3, 3, 1}, 0.0);
 
     Interpolator interpolator(eta_distribution.view(), etax_bins.view(),
