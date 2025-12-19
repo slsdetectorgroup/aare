@@ -219,7 +219,6 @@ class NDArray : public ArrayExpr<NDArray<T, Ndim>, Ndim> {
     /**
      * @brief Return the total number of elements in the array as a signed
      * integer
-     * @note Is there a need for unsigned size?
      */
     ssize_t size() const { return static_cast<ssize_t>(size_); }
 
