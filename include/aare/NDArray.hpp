@@ -1,13 +1,10 @@
 // SPDX-License-Identifier: MPL-2.0
+//
+// Container holding image data, or a time series of image data in contigious
+// memory. Used for all data processing in Aare.
+//
+
 #pragma once
-/*
-Container holding image data, or a time series of image data in contigious
-memory.
-
-
-TODO! Add expression templates for operators
-
-*/
 #include "aare/ArrayExpr.hpp"
 #include "aare/NDView.hpp"
 
@@ -26,12 +23,17 @@ template <typename T, ssize_t Ndim = 2>
 class NDArray : public ArrayExpr<NDArray<T, Ndim>, Ndim> {
     std::array<ssize_t, Ndim> shape_;
     std::array<ssize_t, Ndim> strides_;
-    size_t size_{}; //TODO! do we need to store size when we have shape?
+    size_t size_{}; // TODO! do we need to store size when we have shape?
     T *data_;
 
   public:
+    ///////////////////////////////////////////////////////////////////////////////
+    // Constructors
+    //
+    ///////////////////////////////////////////////////////////////////////////////
+
     /**
-     * @brief Default constructor. Will construct an empty NDArray.
+     * @brief Default constructor. Constructs an empty NDArray.
      *
      */
     NDArray() : shape_(), strides_(c_strides<Ndim>(shape_)), data_(nullptr) {};
@@ -44,8 +46,7 @@ class NDArray : public ArrayExpr<NDArray<T, Ndim>, Ndim> {
      */
     explicit NDArray(std::array<ssize_t, Ndim> shape)
         : shape_(shape), strides_(c_strides<Ndim>(shape_)),
-          size_(num_elements(shape_)),
-          data_(new T[size_]) {}
+          size_(num_elements(shape_)), data_(new T[size_]) {}
 
     /**
      * @brief Construct a new NDArray object with a shape and value.
@@ -57,6 +58,10 @@ class NDArray : public ArrayExpr<NDArray<T, Ndim>, Ndim> {
         this->operator=(value);
     }
 
+    // Allow NDArray of different type and dimension to be friend classes
+    // This is needed for the move constructor from NDArray<T,Ndim+1>
+    template <typename U, ssize_t Dim> friend class NDArray;
+
     /**
      * @brief Construct a new NDArray object from a NDView.
      * @note The data is copied from the view to the NDArray.
@@ -67,44 +72,67 @@ class NDArray : public ArrayExpr<NDArray<T, Ndim>, Ndim> {
         std::copy(v.begin(), v.end(), begin());
     }
 
+    /**
+     * @brief Construct a new NDArray object from an std::array.
+     */
     template <size_t Size>
     NDArray(const std::array<T, Size> &arr) : NDArray<T, 1>({Size}) {
         std::copy(arr.begin(), arr.end(), begin());
     }
 
-    // Move constructor
+    /**
+     * @brief Move construct a new NDArray object. Cheap since it just
+     * reassigns the pointer and copy size/strides.
+     *
+     * @param other
+     */
     NDArray(NDArray &&other) noexcept
         : shape_(other.shape_), strides_(c_strides<Ndim>(shape_)),
           size_(other.size_), data_(other.data_) {
-        other.reset(); // TODO! is this necessary?
+        other.reset(); // Needed to avoid double free
     }
 
-
-    //Move constructor from an an array with Ndim + 1
+    /**
+     * @brief Move construct a new NDArray object from an array with Ndim + 1.
+     * Can be used to drop a dimension cheaply.
+     * @param other
+     */
     template <ssize_t M, typename = std::enable_if_t<(M == Ndim + 1)>>
-    NDArray(NDArray<T, M> &&other) 
+    NDArray(NDArray<T, M> &&other)
         : shape_(drop_first_dim(other.shape())),
           strides_(c_strides<Ndim>(shape_)), size_(num_elements(shape_)),
           data_(other.data()) {
 
-            // For now only allow move if the size matches, to avoid unreachable data
-            // if the use case arises we can remove this check
-            if(size() != other.size()) {
-                data_ = nullptr; // avoid double free, other will clean up the memory in it's destructor
-                throw std::runtime_error(LOCATION +
-                                         "Size mismatch in move constructor of NDArray<T, Ndim-1>");
-            }
+        // For now only allow move if the size matches, to avoid unreachable
+        // data if the use case arises we can remove this check
+        if (size() != other.size()) {
+            data_ = nullptr; // avoid double free, other will clean up the
+                             // memory in it's destructor
+            throw std::runtime_error(
+                LOCATION +
+                "Size mismatch in move constructor of NDArray<T, Ndim-1>");
+        }
         other.reset();
     }
 
-    // Copy constructor
+    /**
+     * @brief Copy construct a new NDArray object from another NDArray.
+     *
+     * @param other
+     */
     NDArray(const NDArray &other)
         : shape_(other.shape_), strides_(c_strides<Ndim>(shape_)),
           size_(other.size_), data_(new T[size_]) {
         std::copy(other.data_, other.data_ + size_, data_);
     }
 
-    // Conversion operator from array expression to array
+    /**
+     * @brief Conversion from a ArrayExpr to an actual NDArray. Used when
+     * the expression is evaluated and data needed.
+     *
+     * @tparam E
+     * @param expr
+     */
     template <typename E>
     NDArray(ArrayExpr<E, Ndim> &&expr) : NDArray(expr.shape()) {
         for (size_t i = 0; i < size_; ++i) {
@@ -112,23 +140,129 @@ class NDArray : public ArrayExpr<NDArray<T, Ndim>, Ndim> {
         }
     }
 
+    /**
+     * @brief Destroy the NDArray object. Frees the allocated memory.
+     *
+     */
     ~NDArray() { delete[] data_; }
 
-    auto begin() { return data_; }
-    auto end() { return data_ + size_; }
+    ///////////////////////////////////////////////////////////////////////////////
+    // Iterators and indexing
+    //
+    ///////////////////////////////////////////////////////////////////////////////
 
-    auto begin() const { return data_; }
-    auto end() const { return data_ + size_; }
+    auto *begin() { return data_; }
+    const auto *begin() const { return data_; }
+
+    auto *end() { return data_ + size_; }
+    const auto *end() const { return data_ + size_; }
+
+    /*
+     * @brief Access element at given multi-dimensional index.
+     * i.e. arr(i,j,k,...)
+     *
+     * @note The fast index is the last index. Please take care when iterating
+     * through the array.
+     */
+    template <typename... Ix>
+    std::enable_if_t<sizeof...(Ix) == Ndim, T &> operator()(Ix... index) {
+        return data_[element_offset(strides_, index...)];
+    }
+
+    /*
+     * @brief Access element at given multi-dimensional index (const version).
+     * i.e. arr(i,j,k,...)
+     *
+     * @note The fast index is the last index. Please take care when iterating
+     * through the array.
+     */
+    template <typename... Ix>
+    std::enable_if_t<sizeof...(Ix) == Ndim, const T &>
+    operator()(Ix... index) const {
+        return data_[element_offset(strides_, index...)];
+    }
+
+    /*
+     @brief Index the array as it would be a 1D array. To get a certain
+     pixel in a multidimensional array use the (i,j,k,...) operator instead.
+     */
+    T &operator()(ssize_t i) { return data_[i]; }
+
+    /*
+     @brief Index the array as it would be a 1D array. To get a certain
+     pixel in a multidimensional array use the (i,j,k,...) operator instead.
+     */
+    const T &operator()(ssize_t i) const { return data_[i]; }
+
+    /*
+     @brief Index the array as it would be a 1D array. To get a certain
+     pixel in a multidimensional array use the (i,j,k,...) operator instead.
+     */
+    T &operator[](ssize_t i) { return data_[i]; }
+
+    /*
+     @brief Index the array as it would be a 1D array. To get a certain
+     pixel in a multidimensional array use the (i,j,k,...) operator instead.
+     */
+    const T &operator[](ssize_t i) const { return data_[i]; }
+
+    /* @brief Return a raw pointer to the data */
+    T *data() { return data_; }
+
+    /* @brief Return a const raw pointer to the data */
+    const T *data() const { return data_; }
+
+    /* @brief Return a byte pointer to the data. Useful for memcpy like
+     * operations */
+    std::byte *buffer() { return reinterpret_cast<std::byte *>(data_); }
+
+    /**
+     * @brief Return the total number of elements in the array as a signed
+     * integer
+     */
+    ssize_t size() const { return static_cast<ssize_t>(size_); }
+
+    /** @brief Return the total number of bytes in the array */
+    size_t total_bytes() const { return size_ * sizeof(T); }
+
+    /** @brief Return the shape of the array */
+    Shape<Ndim> shape() const noexcept { return shape_; }
+
+    /** @brief Return the size of dimension i */
+    ssize_t shape(ssize_t i) const noexcept { return shape_[i]; }
+
+    /** @brief Return the strides of the array */
+    std::array<ssize_t, Ndim> strides() const noexcept { return strides_; }
+
+    /**
+     * @brief Return the bitdepth of the array. Useful for checking that
+     * detector data can fit in the array type.
+     */
+    size_t bitdepth() const noexcept { return sizeof(T) * 8; }
+
+    /**
+     * @brief Return the number of bytes to step in each dimension when
+     * traversing the array.
+     */
+    std::array<ssize_t, Ndim> byte_strides() const noexcept {
+        auto byte_strides = strides_;
+        for (auto &val : byte_strides)
+            val *= sizeof(T);
+        return byte_strides;
+    }
 
     using value_type = T;
 
-    NDArray &operator=(NDArray &&other) noexcept; // Move assign
-    NDArray &operator=(const NDArray &other);     // Copy assign
-    NDArray &operator+=(const NDArray &other);
-    NDArray &operator-=(const NDArray &other);
-    NDArray &operator*=(const NDArray &other);
+    ///////////////////////////////////////////////////////////////////////////////
+    // Assignments
+    //
+    ///////////////////////////////////////////////////////////////////////////////
 
-    // Write directly to the data array, or create a new one
+    /**
+     * @brief Copy to the NDArray from an std::array. If the size of the array
+     * is different we reallocate the data.
+     *
+     */
     template <size_t Size>
     NDArray<T, 1> &operator=(const std::array<T, Size> &other) {
         if (Size != size_) {
@@ -142,12 +276,94 @@ class NDArray : public ArrayExpr<NDArray<T, Ndim>, Ndim> {
         return *this;
     }
 
-    // NDArray& operator/=(const NDArray& other);
+    /**
+     * @brief Move assignment operator.
+     */
+    NDArray &operator=(NDArray &&other) noexcept {
+        // TODO! Should we use swap?
+        if (this != &other) {
+            delete[] data_;
+            data_ = other.data_;
+            shape_ = other.shape_;
+            size_ = other.size_;
+            strides_ = other.strides_;
+            other.reset();
+        }
+        return *this;
+    }
 
+    /**
+     * @brief Copy assignment operator.
+     */
+    NDArray &operator=(const NDArray &other) {
+        if (this != &other) {
+            delete[] data_;
+            shape_ = other.shape_;
+            strides_ = other.strides_;
+            size_ = other.size_;
+            data_ = new T[size_];
+            std::copy(other.data_, other.data_ + size_, data_);
+        }
+        return *this;
+    }
+
+    ///////////////////////////////////////////////////////////////////////////////
+    // Math operators
+    //
+    ///////////////////////////////////////////////////////////////////////////////
+
+    /**
+     * @brief Add elementwise from another NDArray.
+     */
+    NDArray &operator+=(const NDArray &other) {
+        if (shape_ != other.shape_)
+            throw(std::runtime_error(
+                "Shape of NDArray must match for operator +="));
+
+        for (size_t i = 0; i < size_; ++i) {
+            data_[i] += other.data_[i];
+        }
+        return *this;
+    }
+
+    /**
+     * @brief Subtract elementwise with another NDArray.
+     */
+    NDArray &operator-=(const NDArray &other) {
+        if (shape_ != other.shape_)
+            throw(std::runtime_error(
+                "Shape of NDArray must match for operator -="));
+
+        for (size_t i = 0; i < size_; ++i) {
+            data_[i] -= other.data_[i];
+        }
+        return *this;
+    }
+
+    /**
+     * @brief Multiply elementwise with another NDArray.
+     */
+    NDArray &operator*=(const NDArray &other) {
+        if (shape_ != other.shape_)
+            throw(std::runtime_error(
+                "Shape of NDArray must match for operator *="));
+
+        for (size_t i = 0; i < size_; ++i) {
+            data_[i] *= other.data_[i];
+        }
+        return *this;
+    }
+
+    /**
+     * @brief Divide elementwise by another NDArray. Templated to allow division
+     * with different types.
+     *
+     * TODO! Why is this templated when the others are not?
+     */
     template <typename V> NDArray &operator/=(const NDArray<V, Ndim> &other) {
         // check shape
         if (shape_ == other.shape()) {
-            for (uint32_t i = 0; i < size_; ++i) {
+            for (size_t i = 0; i < size_; ++i) {
                 data_[i] /= other(i);
             }
             return *this;
@@ -155,67 +371,139 @@ class NDArray : public ArrayExpr<NDArray<T, Ndim>, Ndim> {
         throw(std::runtime_error("Shape of NDArray must match"));
     }
 
-    NDArray<bool, Ndim> operator>(const NDArray &other);
+    /**
+     * @brief Assign a scalar value to all elements in the NDArray.
+     */
+    NDArray &operator=(const T &value) {
+        std::fill_n(data_, size_, value);
+        return *this;
+    }
 
-    bool operator==(const NDArray &other) const;
-    bool operator!=(const NDArray &other) const;
+    /**
+     * @brief Add a scalar value to all elements in the NDArray.
+     */
+    NDArray &operator+=(const T &value) {
+        for (size_t i = 0; i < size_; ++i)
+            data_[i] += value;
+        return *this;
+    }
 
-    NDArray &operator=(const T & /*value*/);
-    NDArray &operator+=(const T & /*value*/);
-    NDArray operator+(const T & /*value*/);
-    NDArray &operator-=(const T & /*value*/);
-    NDArray operator-(const T & /*value*/);
-    NDArray &operator*=(const T & /*value*/);
-    NDArray operator*(const T & /*value*/);
-    NDArray &operator/=(const T & /*value*/);
-    NDArray operator/(const T & /*value*/);
+    /**
+     * @brief Subtract a scalar value to all elements in the NDArray.
+     */
+    NDArray &operator-=(const T &value) {
+        for (size_t i = 0; i < size_; ++i)
+            data_[i] -= value;
+        return *this;
+    }
 
-    NDArray &operator&=(const T & /*mask*/);
+    /**
+     * @brief Multiply all elements in the NDArray with a scalar value
+     */
+    NDArray &operator*=(const T &value) {
+        for (size_t i = 0; i < size_; ++i)
+            data_[i] *= value;
+        return *this;
+    }
 
+    /**
+     * @brief Divide all elements in the NDArray with a scalar value
+     */
+    NDArray &operator/=(const T &value) {
+        for (size_t i = 0; i < size_; ++i)
+            data_[i] /= value;
+        return *this;
+    }
+
+    /**
+     * @brief Bitwise AND all elements in the NDArray with a scalar mask.
+     * Used for example to mask out gain bits for Jungfrau detectors.
+     */
+    NDArray &operator&=(const T &mask) {
+        for (auto it = begin(); it != end(); ++it)
+            *it &= mask;
+        return *this;
+    }
+
+    /**
+     * @brief Operator +  with a scalar value. Returns a new NDArray.
+     *
+     * TODO! Expression template version of this?
+     */
+    NDArray operator+(const T &value) {
+        NDArray result = *this;
+        result += value;
+        return result;
+    }
+
+    /**
+     * @brief Operator -  with a scalar value. Returns a new NDArray.
+     *
+     * TODO! Expression template version of this?
+     */
+    NDArray operator-(const T &value) {
+        NDArray result = *this;
+        result -= value;
+        return result;
+    }
+
+    /**
+     * @brief Operator *  with a scalar value. Returns a new NDArray.
+     *
+     * TODO! Expression template version of this?
+     */
+    NDArray operator*(const T &value) {
+        NDArray result = *this;
+        result *= value;
+        return result;
+    }
+
+    /**
+     * @brief Operator /  with a scalar value. Returns a new NDArray.
+     *
+     * TODO! Expression template version of this?
+     */
+    NDArray operator/(const T &value) {
+        NDArray result = *this;
+        result /= value;
+        return result;
+    }
+
+    /**
+     * @brief Compare two NDArrays elementwise for equality.
+     */
+    bool operator==(const NDArray &other) const {
+        if (shape_ != other.shape_)
+            return false;
+
+        for (size_t i = 0; i != size_; ++i)
+            if (data_[i] != other.data_[i])
+                return false;
+
+        return true;
+    }
+
+    /**
+     * @brief Compare two NDArrays elementwise for non-equality.
+     */
+    bool operator!=(const NDArray &other) const { return !((*this) == other); }
+
+    /**
+     * @brief Compute the square root of all elements in the NDArray.
+     */
     void sqrt() {
-        for (int i = 0; i < size_; ++i) {
+        for (size_t i = 0; i < size_; ++i) {
             data_[i] = std::sqrt(data_[i]);
         }
     }
 
-    NDArray &operator++(); // pre inc
-
-    template <typename... Ix>
-    std::enable_if_t<sizeof...(Ix) == Ndim, T &> operator()(Ix... index) {
-        return data_[element_offset(strides_, index...)];
-    }
-
-    template <typename... Ix>
-    std::enable_if_t<sizeof...(Ix) == Ndim, T &> operator()(Ix... index) const {
-        return data_[element_offset(strides_, index...)];
-    }
-
-    template <typename... Ix>
-    std::enable_if_t<sizeof...(Ix) == Ndim, T> value(Ix... index) {
-        return data_[element_offset(strides_, index...)];
-    }
-
-    // TODO! is int the right type for index?
-    T &operator()(ssize_t i) { return data_[i]; }
-    const T &operator()(ssize_t i) const { return data_[i]; }
-
-    T &operator[](ssize_t i) { return data_[i]; }
-    const T &operator[](ssize_t i) const { return data_[i]; }
-
-    T *data() { return data_; }
-    std::byte *buffer() { return reinterpret_cast<std::byte *>(data_); }
-    ssize_t size() const { return static_cast<ssize_t>(size_); }
-    size_t total_bytes() const { return size_ * sizeof(T); }
-    std::array<ssize_t, Ndim> shape() const noexcept { return shape_; }
-    ssize_t shape(ssize_t i) const noexcept { return shape_[i]; }
-    std::array<ssize_t, Ndim> strides() const noexcept { return strides_; }
-    size_t bitdepth() const noexcept { return sizeof(T) * 8; }
-
-    std::array<ssize_t, Ndim> byte_strides() const noexcept {
-        auto byte_strides = strides_;
-        for (auto &val : byte_strides)
-            val *= sizeof(T);
-        return byte_strides;
+    /*
+     * @brief Prefix increment operator. Increments all elements by 1.
+     */
+    NDArray &operator++() {
+        for (size_t i = 0; i < size_; ++i)
+            data_[i] += T{1};
+        return *this;
     }
 
     /**
@@ -225,10 +513,12 @@ class NDArray : public ArrayExpr<NDArray<T, Ndim>, Ndim> {
      */
     NDView<T, Ndim> view() const { return NDView<T, Ndim>{data_, shape_}; }
 
-    void Print();
-    void Print_all();
-    void Print_some();
-
+  private:
+    /**
+     * @brief Reset the NDArray to an empty state. Dropping the ownership of
+     * the data. Used internally for move operations to avoid double free or
+     * dangling pointers.
+     */
     void reset() {
         data_ = nullptr;
         size_ = 0;
@@ -237,167 +527,10 @@ class NDArray : public ArrayExpr<NDArray<T, Ndim>, Ndim> {
     }
 };
 
-// Move assign
-template <typename T, ssize_t Ndim>
-NDArray<T, Ndim> &
-NDArray<T, Ndim>::operator=(NDArray<T, Ndim> &&other) noexcept {
-    if (this != &other) {
-        delete[] data_;
-        data_ = other.data_;
-        shape_ = other.shape_;
-        size_ = other.size_;
-        strides_ = other.strides_;
-        other.reset();
-    }
-    return *this;
-}
-
-template <typename T, ssize_t Ndim>
-NDArray<T, Ndim> &NDArray<T, Ndim>::operator+=(const NDArray<T, Ndim> &other) {
-    // check shape
-    if (shape_ == other.shape_) {
-        for (size_t i = 0; i < size_; ++i) {
-            data_[i] += other.data_[i];
-        }
-        return *this;
-    }
-    throw(std::runtime_error("Shape of ImageDatas must match"));
-}
-
-template <typename T, ssize_t Ndim>
-NDArray<T, Ndim> &NDArray<T, Ndim>::operator-=(const NDArray<T, Ndim> &other) {
-    // check shape
-    if (shape_ == other.shape_) {
-        for (uint32_t i = 0; i < size_; ++i) {
-            data_[i] -= other.data_[i];
-        }
-        return *this;
-    }
-    throw(std::runtime_error("Shape of ImageDatas must match"));
-}
-
-template <typename T, ssize_t Ndim>
-NDArray<T, Ndim> &NDArray<T, Ndim>::operator*=(const NDArray<T, Ndim> &other) {
-    // check shape
-    if (shape_ == other.shape_) {
-        for (uint32_t i = 0; i < size_; ++i) {
-            data_[i] *= other.data_[i];
-        }
-        return *this;
-    }
-    throw(std::runtime_error("Shape of ImageDatas must match"));
-}
-
-template <typename T, ssize_t Ndim>
-NDArray<T, Ndim> &NDArray<T, Ndim>::operator&=(const T &mask) {
-    for (auto it = begin(); it != end(); ++it)
-        *it &= mask;
-    return *this;
-}
-
-template <typename T, ssize_t Ndim>
-NDArray<bool, Ndim> NDArray<T, Ndim>::operator>(const NDArray &other) {
-    if (shape_ == other.shape_) {
-        NDArray<bool, Ndim> result{shape_};
-        for (int i = 0; i < size_; ++i) {
-            result(i) = (data_[i] > other.data_[i]);
-        }
-        return result;
-    }
-    throw(std::runtime_error("Shape of ImageDatas must match"));
-}
-
-template <typename T, ssize_t Ndim>
-NDArray<T, Ndim> &NDArray<T, Ndim>::operator=(const NDArray<T, Ndim> &other) {
-    if (this != &other) {
-        delete[] data_;
-        shape_ = other.shape_;
-        strides_ = other.strides_;
-        size_ = other.size_;
-        data_ = new T[size_];
-        std::copy(other.data_, other.data_ + size_, data_);
-    }
-    return *this;
-}
-
-template <typename T, ssize_t Ndim>
-bool NDArray<T, Ndim>::operator==(const NDArray<T, Ndim> &other) const {
-    if (shape_ != other.shape_)
-        return false;
-
-    for (uint32_t i = 0; i != size_; ++i)
-        if (data_[i] != other.data_[i])
-            return false;
-
-    return true;
-}
-
-template <typename T, ssize_t Ndim>
-bool NDArray<T, Ndim>::operator!=(const NDArray<T, Ndim> &other) const {
-    return !((*this) == other);
-}
-template <typename T, ssize_t Ndim>
-NDArray<T, Ndim> &NDArray<T, Ndim>::operator++() {
-    for (uint32_t i = 0; i < size_; ++i)
-        data_[i] += 1;
-    return *this;
-}
-template <typename T, ssize_t Ndim>
-NDArray<T, Ndim> &NDArray<T, Ndim>::operator=(const T &value) {
-    std::fill_n(data_, size_, value);
-    return *this;
-}
-
-template <typename T, ssize_t Ndim>
-NDArray<T, Ndim> &NDArray<T, Ndim>::operator+=(const T &value) {
-    for (uint32_t i = 0; i < size_; ++i)
-        data_[i] += value;
-    return *this;
-}
-
-template <typename T, ssize_t Ndim>
-NDArray<T, Ndim> NDArray<T, Ndim>::operator+(const T &value) {
-    NDArray result = *this;
-    result += value;
-    return result;
-}
-template <typename T, ssize_t Ndim>
-NDArray<T, Ndim> &NDArray<T, Ndim>::operator-=(const T &value) {
-    for (uint32_t i = 0; i < size_; ++i)
-        data_[i] -= value;
-    return *this;
-}
-template <typename T, ssize_t Ndim>
-NDArray<T, Ndim> NDArray<T, Ndim>::operator-(const T &value) {
-    NDArray result = *this;
-    result -= value;
-    return result;
-}
-
-template <typename T, ssize_t Ndim>
-NDArray<T, Ndim> &NDArray<T, Ndim>::operator/=(const T &value) {
-    for (uint32_t i = 0; i < size_; ++i)
-        data_[i] /= value;
-    return *this;
-}
-template <typename T, ssize_t Ndim>
-NDArray<T, Ndim> NDArray<T, Ndim>::operator/(const T &value) {
-    NDArray result = *this;
-    result /= value;
-    return result;
-}
-template <typename T, ssize_t Ndim>
-NDArray<T, Ndim> &NDArray<T, Ndim>::operator*=(const T &value) {
-    for (uint32_t i = 0; i < size_; ++i)
-        data_[i] *= value;
-    return *this;
-}
-template <typename T, ssize_t Ndim>
-NDArray<T, Ndim> NDArray<T, Ndim>::operator*(const T &value) {
-    NDArray result = *this;
-    result *= value;
-    return result;
-}
+///////////////////////////////////////////////////////////////////////////////
+// Free functions closely related to NDArray
+//
+///////////////////////////////////////////////////////////////////////////////
 
 template <typename T, ssize_t Ndim>
 std::ostream &operator<<(std::ostream &os, const NDArray<T, Ndim> &arr) {
@@ -411,27 +544,9 @@ std::ostream &operator<<(std::ostream &os, const NDArray<T, Ndim> &arr) {
     return os;
 }
 
-template <typename T, ssize_t Ndim> void NDArray<T, Ndim>::Print_all() {
-    for (auto row = 0; row < shape_[0]; ++row) {
-        for (auto col = 0; col < shape_[1]; ++col) {
-            std::cout << std::setw(3);
-            std::cout << (*this)(row, col) << " ";
-        }
-        std::cout << "\n";
-    }
-}
-template <typename T, ssize_t Ndim> void NDArray<T, Ndim>::Print_some() {
-    for (auto row = 0; row < 5; ++row) {
-        for (auto col = 0; col < 5; ++col) {
-            std::cout << std::setw(7);
-            std::cout << (*this)(row, col) << " ";
-        }
-        std::cout << "\n";
-    }
-}
-
 template <typename T, ssize_t Ndim>
-void save(NDArray<T, Ndim> &img, std::string &pathname) {
+[[deprecated("Saving of raw arrays without metadata is deprecated")]] void
+save(NDArray<T, Ndim> &img, std::string &pathname) {
     std::ofstream f;
     f.open(pathname, std::ios::binary);
     f.write(img.buffer(), img.size() * sizeof(T));
@@ -439,8 +554,9 @@ void save(NDArray<T, Ndim> &img, std::string &pathname) {
 }
 
 template <typename T, ssize_t Ndim>
-NDArray<T, Ndim> load(const std::string &pathname,
-                      std::array<ssize_t, Ndim> shape) {
+[[deprecated(
+    "Loading of raw arrays without metadata is deprecated")]] NDArray<T, Ndim>
+load(const std::string &pathname, std::array<ssize_t, Ndim> shape) {
     NDArray<T, Ndim> img{shape};
     std::ifstream f;
     f.open(pathname, std::ios::binary);
@@ -449,6 +565,20 @@ NDArray<T, Ndim> load(const std::string &pathname,
     return img;
 }
 
+/**
+ * @brief Free function to safely divide two NDArrays elementwise, handling
+ * division by zero. Uses static_cast to convert types as needed.
+ *
+ * @tparam RT Result type
+ * @tparam NT Numerator type
+ * @tparam DT Denominator type
+ * @tparam Ndim Number of dimensions
+ * @param numerator The numerator NDArray
+ * @param denominator The denominator NDArray
+ * @return NDArray<RT, Ndim> Resulting NDArray after safe division
+ * @throws std::runtime_error if the shapes of the numerator and denominator do
+ * not match
+ */
 template <typename RT, typename NT, typename DT, ssize_t Ndim>
 NDArray<RT, Ndim> safe_divide(const NDArray<NT, Ndim> &numerator,
                               const NDArray<DT, Ndim> &denominator) {
