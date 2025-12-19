@@ -9,6 +9,9 @@
 - added ``transform_eta_values``. Function transforms :math:`\eta` to uniform spatial coordinates. Should only be used for easier debugging. 
 - New to_string, string_to for aare
 - Added exptime and period members to RawMasterFile including decoding
+- Removed redundant arr.value(ix,iy...) on NDArray use arr(ix,iy...)
+- Removed Print/Print_some/Print_all form NDArray (operator << still works)
+- Added const* version of .data()
 
 
 ### 2025.11.21
