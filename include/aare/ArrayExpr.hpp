@@ -5,8 +5,48 @@
 #include <cassert>
 #include <cstddef>
 #include <cstdint>
+#include <type_traits>
 
 namespace aare {
+
+template <ssize_t Dim = 0, typename Strides>
+ssize_t element_offset(const Strides & /*unused*/) {
+    return 0;
+}
+
+template <ssize_t Dim = 0, typename Strides, typename... Ix>
+ssize_t element_offset(const Strides &strides, ssize_t i, Ix... index) {
+    return i * strides[Dim] + element_offset<Dim + 1>(strides, index...);
+}
+
+template <typename Derived, typename T, ssize_t Ndim>
+class NDIndexOps {
+  public:
+    template <typename... Ix>
+    std::enable_if_t<sizeof...(Ix) == Ndim, T &> operator()(Ix... index) {
+        return derived().data()[element_offset(derived().strides(), index...)];
+    }
+
+    template <typename... Ix>
+    std::enable_if_t<sizeof...(Ix) == Ndim, const T &> operator()(Ix... index) const {
+        return derived().data()[element_offset(derived().strides(), index...)];
+    }
+
+    T &operator()(ssize_t i) {
+        return derived().data()[i];
+    }
+    
+    const T &operator()(ssize_t i) const {
+        return derived().data()[i];
+    }
+
+    T &operator[](ssize_t i) { return derived().data()[i]; }
+    const T &operator[](ssize_t i) const { return derived().data()[i]; }
+
+  private:
+    Derived &derived() { return static_cast<Derived &>(*this); }
+    const Derived &derived() const { return static_cast<const Derived &>(*this); }
+};
 
 template <typename E, ssize_t Ndim> class ArrayExpr {
   public:

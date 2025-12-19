@@ -552,3 +552,8 @@ TEST_CASE("Move construct from an array with Ndim + 1 throws on size mismatch") 
     REQUIRE_THROWS(NDArray<int, 2>(std::move(a)));
 }
 
+TEST_CASE("Assign an element in a 2D array"){
+    NDArray<int,2> a({{3,4}},0);
+    a(1,2) = 57;
+    REQUIRE(a(1,2) == 57);
+}

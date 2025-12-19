@@ -20,7 +20,8 @@
 namespace aare {
 
 template <typename T, ssize_t Ndim = 2>
-class NDArray : public ArrayExpr<NDArray<T, Ndim>, Ndim> {
+class NDArray : public ArrayExpr<NDArray<T, Ndim>, Ndim>,
+                public NDIndexOps<NDArray<T, Ndim>, T, Ndim> {
     std::array<ssize_t, Ndim> shape_;
     std::array<ssize_t, Ndim> strides_;
     size_t size_{}; // TODO! do we need to store size when we have shape?
@@ -151,60 +152,14 @@ class NDArray : public ArrayExpr<NDArray<T, Ndim>, Ndim> {
     //
     ///////////////////////////////////////////////////////////////////////////////
 
+    using NDIndexOps<NDArray<T, Ndim>, T, Ndim>::operator();
+    using NDIndexOps<NDArray<T, Ndim>, T, Ndim>::operator[];
+
     auto *begin() { return data_; }
     const auto *begin() const { return data_; }
 
     auto *end() { return data_ + size_; }
     const auto *end() const { return data_ + size_; }
-
-    /*
-     * @brief Access element at given multi-dimensional index.
-     * i.e. arr(i,j,k,...)
-     *
-     * @note The fast index is the last index. Please take care when iterating
-     * through the array.
-     */
-    template <typename... Ix>
-    std::enable_if_t<sizeof...(Ix) == Ndim, T &> operator()(Ix... index) {
-        return data_[element_offset(strides_, index...)];
-    }
-
-    /*
-     * @brief Access element at given multi-dimensional index (const version).
-     * i.e. arr(i,j,k,...)
-     *
-     * @note The fast index is the last index. Please take care when iterating
-     * through the array.
-     */
-    template <typename... Ix>
-    std::enable_if_t<sizeof...(Ix) == Ndim, const T &>
-    operator()(Ix... index) const {
-        return data_[element_offset(strides_, index...)];
-    }
-
-    /*
-     @brief Index the array as it would be a 1D array. To get a certain
-     pixel in a multidimensional array use the (i,j,k,...) operator instead.
-     */
-    T &operator()(ssize_t i) { return data_[i]; }
-
-    /*
-     @brief Index the array as it would be a 1D array. To get a certain
-     pixel in a multidimensional array use the (i,j,k,...) operator instead.
-     */
-    const T &operator()(ssize_t i) const { return data_[i]; }
-
-    /*
-     @brief Index the array as it would be a 1D array. To get a certain
-     pixel in a multidimensional array use the (i,j,k,...) operator instead.
-     */
-    T &operator[](ssize_t i) { return data_[i]; }
-
-    /*
-     @brief Index the array as it would be a 1D array. To get a certain
-     pixel in a multidimensional array use the (i,j,k,...) operator instead.
-     */
-    const T &operator[](ssize_t i) const { return data_[i]; }
 
     /* @brief Return a raw pointer to the data */
     T *data() { return data_; }
