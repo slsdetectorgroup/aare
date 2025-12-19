@@ -31,7 +31,7 @@ class NDArray : public ArrayExpr<NDArray<T, Ndim>, Ndim> {
 
   public:
     /**
-     * @brief Default constructor. Will construct an empty NDArray.
+     * @brief Default constructor. Constructs an empty NDArray.
      *
      */
     NDArray() : shape_(), strides_(c_strides<Ndim>(shape_)), data_(nullptr) {};
@@ -202,7 +202,12 @@ class NDArray : public ArrayExpr<NDArray<T, Ndim>, Ndim> {
     T &operator[](ssize_t i) { return data_[i]; }
     const T &operator[](ssize_t i) const { return data_[i]; }
 
+    /* @brief Return a raw pointer to the data */
     T *data() { return data_; }
+
+    /* @brief Return a const raw pointer to the data */
+    const T *data() const { return data_; }
+
     std::byte *buffer() { return reinterpret_cast<std::byte *>(data_); }
     ssize_t size() const { return static_cast<ssize_t>(size_); }
     size_t total_bytes() const { return size_ * sizeof(T); }
