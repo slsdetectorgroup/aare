@@ -169,6 +169,14 @@ Coordinate2D Interpolator::transform_eta_values(const Eta2<T> &eta) const {
     auto ix = last_smaller(m_etabinsx, eta.x);
     auto iy = last_smaller(m_etabinsy, eta.y);
 
+    if (static_cast<ssize_t>(ix) >= m_etabinsx.size() - 1 ||
+        static_cast<ssize_t>(iy) >= m_etabinsy.size() - 1 ||
+        static_cast<ssize_t>(ie) >= m_energy_bins.size() - 1)
+        throw std::runtime_error(
+            fmt::format("Eta values out of bounds of eta distribution: eta.x = "
+                        "{:.4f}, eta.y = {:.4f}, energy = {:.4f}",
+                        eta.x, eta.y, eta.sum));
+
     // TODO: bilinear interpolation only works if all bins have a size > 1 -
     // otherwise bilinear interpolation with zero values which skew the
     // results
