@@ -351,6 +351,7 @@ set(PUBLICHEADERS
     include/aare/FilePtr.hpp
     include/aare/Frame.hpp
     include/aare/GainMap.hpp
+    include/aare/ROIGeometry.hpp
     include/aare/DetectorGeometry.hpp
     include/aare/JungfrauDataFile.hpp
     include/aare/logger.hpp
@@ -373,6 +374,7 @@ set(SourceFiles
     ${CMAKE_CURRENT_SOURCE_DIR}/src/CtbRawFile.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/src/decode.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/src/defs.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/ROIGeometry.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/src/DetectorGeometry.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/src/Dtype.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/src/File.cpp

@@ -303,7 +303,8 @@ TEST_CASE("Open multi module file with ROI", "[.with-data]") {
 
         CHECK(f.n_modules() == 2);
 
-        CHECK(f.n_modules_in_roi() == 1);
+        CHECK(f.n_modules_in_roi().size() == 1);
+        CHECK(f.n_modules_in_roi()[0] == 1);
 
         auto frames = f.read_n(2);
 
