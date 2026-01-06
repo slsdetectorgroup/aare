@@ -87,6 +87,11 @@ class ClusterFinder {
                // even amount of pixels around the center
         int has_center_pixel_y = ClusterSizeY % 2;
 
+        // if (frame_number >= 8000 && frame_number <= 9000)
+        //     // std::cout << "find_clusters: frame_number = " << frame_number << std::endl;
+        //     std::cout << frame_number << std::endl;
+
+
         m_clusters.set_frame_number(frame_number);
         for (int iy = 0; iy < frame.shape(0); iy++) {
             for (int ix = 0; ix < frame.shape(1); ix++) {
