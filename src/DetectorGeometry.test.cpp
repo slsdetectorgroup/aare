@@ -258,3 +258,68 @@ TEST_CASE("Four modules as a square", "[DetectorGeometry]") {
     REQUIRE(geo.get_module_geometries(3).origin_x == 524);
     REQUIRE(geo.get_module_geometries(3).origin_y == 12);
 }
+
+TEST_CASE("check if module in ROI", "[DetectorGeometry]") {
+    aare::DetectorGeometry geo(aare::xy{2, 2}, 1024, 512, aare::xy{1, 2});
+
+    SECTION("all modules in ROI") {
+        aare::ROI roi;
+        roi.xmin = 500;
+        roi.xmax = 2000;
+        roi.ymin = 500;
+        roi.ymax = 600;
+
+        REQUIRE(geo.get_module_geometries(0).module_in_roi(roi) == true);
+        REQUIRE(geo.get_module_geometries(1).module_in_roi(roi) == true);
+        REQUIRE(geo.get_module_geometries(2).module_in_roi(roi) == true);
+        REQUIRE(geo.get_module_geometries(3).module_in_roi(roi) == true);
+    }
+    SECTION("some modules on border of ROI") {
+        aare::ROI roi;
+        roi.xmin = 1024;
+        roi.xmax = 2000;
+        roi.ymin = 500;
+        roi.ymax = 600;
+
+        REQUIRE(geo.get_module_geometries(0).module_in_roi(roi) == false);
+        REQUIRE(geo.get_module_geometries(1).module_in_roi(roi) == true);
+        REQUIRE(geo.get_module_geometries(2).module_in_roi(roi) == false);
+        REQUIRE(geo.get_module_geometries(3).module_in_roi(roi) == true);
+    }
+    SECTION("one module on border of ROI") {
+        aare::ROI roi;
+        roi.xmin = 1025;
+        roi.xmax = 2000;
+        roi.ymin = 513;
+        roi.ymax = 600;
+
+        REQUIRE(geo.get_module_geometries(0).module_in_roi(roi) == false);
+        REQUIRE(geo.get_module_geometries(1).module_in_roi(roi) == false);
+        REQUIRE(geo.get_module_geometries(2).module_in_roi(roi) == false);
+        REQUIRE(geo.get_module_geometries(3).module_in_roi(roi) == true);
+    }
+    SECTION("some modules to the left of ROI") {
+        aare::ROI roi;
+        roi.xmin = 500;
+        roi.xmax = 1024;
+        roi.ymin = 500;
+        roi.ymax = 600;
+
+        REQUIRE(geo.get_module_geometries(0).module_in_roi(roi) == true);
+        REQUIRE(geo.get_module_geometries(1).module_in_roi(roi) == false);
+        REQUIRE(geo.get_module_geometries(2).module_in_roi(roi) == true);
+        REQUIRE(geo.get_module_geometries(3).module_in_roi(roi) == false);
+    }
+    SECTION("all modules in ROI") {
+        aare::ROI roi;
+        roi.xmin = 500;
+        roi.xmax = 2000;
+        roi.ymin = 10;
+        roi.ymax = 513;
+
+        REQUIRE(geo.get_module_geometries(0).module_in_roi(roi) == true);
+        REQUIRE(geo.get_module_geometries(1).module_in_roi(roi) == true);
+        REQUIRE(geo.get_module_geometries(2).module_in_roi(roi) == true);
+        REQUIRE(geo.get_module_geometries(3).module_in_roi(roi) == true);
+    }
+}

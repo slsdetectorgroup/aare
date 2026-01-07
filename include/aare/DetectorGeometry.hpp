@@ -44,10 +44,10 @@ struct ModuleGeometry {
      */
     bool module_in_roi(const ROI &roi) {
         // module is to the left of the roi
-        bool to_the_left = origin_x + width < roi.xmin;
-        bool to_the_right = origin_x > roi.xmax;
-        bool below = origin_y + height < roi.ymin;
-        bool above = origin_y > roi.ymax;
+        bool to_the_left = origin_x + width - 1 < roi.xmin;
+        bool to_the_right = origin_x >= roi.xmax;
+        bool above = origin_y + height - 1 < roi.ymin;
+        bool below = origin_y >= roi.ymax;
 
         return !(to_the_left || to_the_right || below || above);
     }

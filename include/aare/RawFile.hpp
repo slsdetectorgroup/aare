@@ -54,6 +54,8 @@ class RawFile : public FileInterface {
      * @param roi_index optional index of the ROI to read (if not provided all
      * ROIs are read)
      * @return vector of Frames (one Frame per ROI)
+     * @note the frame index is incremented after calling this function so
+     * reading rois one after the other wont work.
      */
     std::vector<Frame>
     read_ROIs(const std::optional<size_t> roi_index = std::nullopt);
@@ -82,16 +84,32 @@ class RawFile : public FileInterface {
     size_t bytes_per_frame() override;
     // TODO: mmh maybe also pass roi_index in Base class File. Leave it unused
     // for NumpyFile and JungfrauDataFile
+    /**
+     * @brief bytes per frame for the given ROI
+     * @param roi_index index of the ROI
+     */
     size_t bytes_per_frame(const size_t roi_index);
     size_t pixels_per_frame() override;
+    /**
+     * @brief pixels per frame for the given ROI
+     * @param roi_index index of the ROI
+     */
     size_t pixels_per_frame(const size_t roi_index);
     size_t bytes_per_pixel() const;
     void seek(size_t frame_index) override;
     size_t tell() override;
     size_t total_frames() const override;
     size_t rows() const override;
+    /**
+     * @brief rows for the given ROI
+     * @param roi_index index of the ROI
+     */
     size_t rows(const size_t roi_index) const;
     size_t cols() const override;
+    /**
+     * @brief cols for the given ROI
+     * @param roi_index index of the ROI
+     */
     size_t cols(const size_t roi_index) const;
     size_t bitdepth() const override;
     size_t n_modules() const;

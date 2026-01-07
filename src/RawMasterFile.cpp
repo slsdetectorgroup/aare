@@ -364,7 +364,6 @@ void RawMasterFile::parse_json(std::istream &is) {
                     obj.at("ymin"), static_cast<ssize_t>(obj.at("ymax")) + 1});
             }
         } else {
-            // TODO: for now only handle single ROI
             auto obj = j.at("Receiver Rois");
             m_rois.emplace();
             for (auto &elem : obj) {

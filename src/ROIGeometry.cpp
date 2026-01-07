@@ -28,7 +28,7 @@ size_t ROIGeometry::num_modules_in_roi() const {
     return m_module_indices_in_roi.size();
 }
 
-std::vector<size_t> ROIGeometry::module_indices_in_roi() const {
+const std::vector<size_t> &ROIGeometry::module_indices_in_roi() const {
     return m_module_indices_in_roi;
 }
 

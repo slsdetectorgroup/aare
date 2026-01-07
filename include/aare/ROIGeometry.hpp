@@ -26,7 +26,7 @@ class ROIGeometry {
     size_t num_modules_in_roi() const;
 
     /// @brief Get the indices of modules in the ROI
-    std::vector<size_t> module_indices_in_roi() const;
+    const std::vector<size_t> &module_indices_in_roi() const;
 
     size_t module_indices_in_roi(const size_t module_index) const;
 

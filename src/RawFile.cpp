@@ -19,8 +19,6 @@ RawFile::RawFile(const std::filesystem::path &fname, const std::string &mode)
       m_geometry(m_master.geometry(), m_master.pixels_x(), m_master.pixels_y(),
                  m_master.udp_interfaces_per_module(), m_master.quad()) {
 
-    // TODO: maybe m_geometry is not needed anymore most info is in
-    // RawMasterFile store ModuleGeometry for each ROI instead of in m_geometry
     m_mode = mode;
 
     m_subfiles.resize(m_master.rois().has_value() ? m_master.rois()->size()
@@ -29,9 +27,11 @@ RawFile::RawFile(const std::filesystem::path &fname, const std::string &mode)
     if (mode == "r") {
         if (m_master.rois().has_value()) {
             m_ROI_geometries.reserve(m_master.rois()->size());
+
             // iterate over all ROIS
             size_t roi_index = 0;
-            for (const auto &roi : m_master.rois().value()) {
+            const auto rois = m_master.rois().value();
+            for (const auto &roi : rois) {
                 m_ROI_geometries.push_back(ROIGeometry(roi, m_geometry));
                 // open subfiles
                 open_subfiles(roi_index);
@@ -278,6 +278,7 @@ void RawFile::open_subfiles(const size_t roi_index) {
     if (m_mode == "r") {
         m_subfiles[roi_index].reserve(
             m_ROI_geometries[roi_index].num_modules_in_roi());
+
         for (const size_t i :
              m_ROI_geometries[roi_index].module_indices_in_roi()) {
             const auto pos = m_geometry.get_module_geometries(i);
