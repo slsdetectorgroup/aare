@@ -3,6 +3,8 @@
 #include "aare/ROIGeometry.hpp"
 #include "aare/RawMasterFile.hpp" //ROI refactor away
 #include "aare/defs.hpp"
+#include <iostream>
+
 namespace aare {
 
 struct ModuleConfig {
@@ -37,6 +39,9 @@ struct ModuleGeometry {
     /// @brief module index of the module in the detector
     int col_index{};
 
+    /**
+     * @brief checks if module is in the region of interest
+     */
     bool module_in_roi(const ROI &roi) {
         // module is to the left of the roi
         bool to_the_left = origin_x + width < roi.xmin;
@@ -47,28 +52,36 @@ struct ModuleGeometry {
         return !(to_the_left || to_the_right || below || above);
     }
 
+    /**
+     * @brief Update the module geometry given a region of interest
+     */
     void update_geometry_with_roi(const ROI &roi) {
 
         if (!(module_in_roi(roi))) {
             return; // do nothing
         }
 
+        int new_width = std::min(origin_x + width, static_cast<int>(roi.xmax)) -
+                        std::max(origin_x, static_cast<int>(roi.xmin));
+
         if (roi.xmin >= origin_x && roi.xmin < origin_x + width) {
-            width -= roi.xmin - origin_x;
             origin_x = 0;
         } else {
-            width = roi.xmax - origin_x < width ? roi.xmax - origin_x : width;
             origin_x -= roi.xmin;
         }
 
+        int new_height =
+            std::min(origin_y + height, static_cast<int>(roi.ymax)) -
+            std::max(origin_y, static_cast<int>(roi.ymin));
+
         if (roi.ymin >= origin_y && roi.ymin < origin_y + height) {
-            height -= roi.ymin - origin_y;
             origin_y = 0;
         } else {
-            height =
-                roi.ymax - origin_y < height ? roi.ymax - origin_y : height;
             origin_y -= roi.ymin;
         }
+
+        height = new_height;
+        width = new_width;
     }
 };
 

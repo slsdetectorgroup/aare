@@ -8,7 +8,7 @@ ROIGeometry::ROIGeometry(const ROI &roi, DetectorGeometry &geometry)
     m_module_indices_in_roi.reserve(m_geometry.n_modules());
     // determine which modules are in the roi
     for (size_t i = 0; i < m_geometry.n_modules(); ++i) {
-        auto module_geometry = m_geometry.get_module_geometries(i);
+        auto &module_geometry = m_geometry.get_module_geometries(i);
         if (module_geometry.module_in_roi(roi)) {
             module_geometry.update_geometry_with_roi(roi);
             m_module_indices_in_roi.push_back(i);
