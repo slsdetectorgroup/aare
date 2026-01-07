@@ -26,6 +26,10 @@ void define_raw_file_io_bindings(py::module &m) {
         .def(py::init<const std::filesystem::path &>())
         .def("read_frame",
              [](RawFile &self) {
+                 if (self.n_modules_in_roi().size() > 1) {
+                     throw std::runtime_error(
+                         "File contains multiple ROIs - use read_ROIs()");
+                 }
                  py::array image;
                  std::vector<ssize_t> shape;
                  shape.reserve(2);
@@ -52,6 +56,11 @@ void define_raw_file_io_bindings(py::module &m) {
         .def(
             "read_n",
             [](RawFile &self, size_t n_frames) {
+                if (self.n_modules_in_roi().size() > 1) {
+                    throw std::runtime_error(
+                        "File contains multiple ROIs - use read_ROIs() and "
+                        "read one frame at a time.");
+                }
                 // adjust for actual frames left in the file
                 n_frames =
                     std::min(n_frames, self.total_frames() - self.tell());
@@ -66,7 +75,7 @@ void define_raw_file_io_bindings(py::module &m) {
                     header = py::array_t<DetectorHeader>(n_frames);
                 } else {
                     header = py::array_t<DetectorHeader>(
-                        {self.n_modules_in_roi(), n_frames});
+                        {self.n_modules_in_roi()[0], n_frames});
                 }
                 // py::array_t<DetectorHeader> header({self.n_mod(), n_frames});
 
@@ -89,8 +98,12 @@ void define_raw_file_io_bindings(py::module &m) {
              Read n frames from the file.
              )")
         .def("frame_number", &RawFile::frame_number)
-        .def_property_readonly("bytes_per_frame", &RawFile::bytes_per_frame)
-        .def_property_readonly("pixels_per_frame", &RawFile::pixels_per_frame)
+        .def_property_readonly(
+            "bytes_per_frame",
+            static_cast<size_t (RawFile::*)()>(&RawFile::bytes_per_frame))
+        .def_property_readonly(
+            "pixels_per_frame",
+            static_cast<size_t (RawFile::*)()>(&RawFile::pixels_per_frame))
         .def_property_readonly("bytes_per_pixel", &RawFile::bytes_per_pixel)
         .def("seek", &RawFile::seek, R"(
             Seek to a frame index in file.
@@ -98,8 +111,10 @@ void define_raw_file_io_bindings(py::module &m) {
         .def("tell", &RawFile::tell, R"(
             Return the current frame number.)")
         .def_property_readonly("total_frames", &RawFile::total_frames)
-        .def_property_readonly("rows", &RawFile::rows)
-        .def_property_readonly("cols", &RawFile::cols)
+        .def_property_readonly(
+            "rows", static_cast<size_t (RawFile::*)() const>(&RawFile::rows))
+        .def_property_readonly(
+            "cols", static_cast<size_t (RawFile::*)() const>(&RawFile::cols))
         .def_property_readonly("bitdepth", &RawFile::bitdepth)
         .def_property_readonly("geometry", &RawFile::geometry)
         .def_property_readonly("detector_type", &RawFile::detector_type)

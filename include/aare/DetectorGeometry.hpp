@@ -64,6 +64,7 @@ struct ModuleGeometry {
         int new_width = std::min(origin_x + width, static_cast<int>(roi.xmax)) -
                         std::max(origin_x, static_cast<int>(roi.xmin));
 
+        // ROI starts inside module
         if (roi.xmin >= origin_x && roi.xmin < origin_x + width) {
             origin_x = 0;
         } else {
