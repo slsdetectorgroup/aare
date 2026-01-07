@@ -290,9 +290,10 @@ TEST_CASE("check find_geometry", "[.with-data]") {
     }
 }
 
-TEST_CASE("Open multi module file with ROI", "[.with-data]") {
+TEST_CASE("Open multi module file with ROI", "[.with-data][read_rois]") {
 
-    auto fpath = test_data_path() / "raw/SingleChipROI/Data_master_0.json";
+    auto fpath =
+        test_data_path() / "raw/ROITestData/SingleChipROI/Data_master_0.json";
     REQUIRE(std::filesystem::exists(fpath));
 
     RawFile f(fpath, "r");
@@ -303,7 +304,7 @@ TEST_CASE("Open multi module file with ROI", "[.with-data]") {
 
         CHECK(f.n_modules() == 2);
 
-        CHECK(f.n_modules_in_roi().size() == 1);
+        REQUIRE(f.n_modules_in_roi().size() == 1);
         CHECK(f.n_modules_in_roi()[0] == 1);
 
         auto frames = f.read_n(2);
@@ -313,6 +314,56 @@ TEST_CASE("Open multi module file with ROI", "[.with-data]") {
         CHECK(frames[0].rows() == 256);
         CHECK(frames[1].cols() == 256);
     }
+}
+
+TEST_CASE("Open multi module file with ROI spanning over multiple modules",
+          "[.width-data][read_rois]") {
+
+    auto fpath =
+        test_data_path() / "raw/ROITestData/MultipleChipROI/run_master_2.json";
+    REQUIRE(std::filesystem::exists(fpath));
+
+    RawFile f(fpath, "r");
+
+    CHECK(f.n_modules() == 2);
+    CHECK(f.n_modules_in_roi().size() == 1);
+    CHECK(f.n_modules_in_roi()[0] == 2);
+
+    auto frame = f.read_frame();
+
+    CHECK(frame.rows() == 301);
+    CHECK(frame.cols() == 101);
+
+    CHECK(f.rows() == 301);
+    CHECK(f.cols() == 101);
+}
+
+TEST_CASE("Open multi module file with two ROIs", "[.width-data][read_rois]") {
+
+    auto fpath =
+        test_data_path() / "raw/ROITestData/MultipleROIs/run_master_3.json";
+    REQUIRE(std::filesystem::exists(fpath));
+
+    RawFile f(fpath, "r");
+
+    CHECK(f.n_modules() == 2);
+    REQUIRE(f.n_modules_in_roi().size() == 2);
+    CHECK(f.n_modules_in_roi()[0] == 1);
+    CHECK(f.n_modules_in_roi()[1] == 1);
+
+    CHECK_THROWS(f.read_frame());
+
+    auto frame = f.read_ROIs();
+
+    REQUIRE(frame.size() == 2);
+
+    CHECK(frame[0].rows() == 301);
+    CHECK(frame[0].cols() == 101);
+    CHECK(frame[1].rows() == 101);
+    CHECK(frame[1].cols() == 101);
+
+    CHECK_THROWS(f.rows());
+    CHECK(f.rows(0) == 301);
 }
 
 TEST_CASE("Read file with unordered frames", "[.with-data]") {
