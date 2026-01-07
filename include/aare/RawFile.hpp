@@ -80,13 +80,19 @@ class RawFile : public FileInterface {
 
     size_t frame_number(size_t frame_index) override;
     size_t bytes_per_frame() override;
+    // TODO: mmh maybe also pass roi_index in Base class File. Leave it unused
+    // for NumpyFile and JungfrauDataFile
+    size_t bytes_per_frame(const size_t roi_index);
     size_t pixels_per_frame() override;
+    size_t pixels_per_frame(const size_t roi_index);
     size_t bytes_per_pixel() const;
     void seek(size_t frame_index) override;
     size_t tell() override;
     size_t total_frames() const override;
     size_t rows() const override;
+    size_t rows(const size_t roi_index) const;
     size_t cols() const override;
+    size_t cols(const size_t roi_index) const;
     size_t bitdepth() const override;
     size_t n_modules() const;
     /**

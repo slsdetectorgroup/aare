@@ -107,15 +107,35 @@ std::vector<Frame> RawFile::read_ROIs(const size_t frame_number,
     return frames;
 }
 
-Frame RawFile::read_frame() { return get_frame(m_current_frame++); }
+Frame RawFile::read_frame() {
+    if (m_master.rois().has_value() && m_master.rois()->size() > 1) {
+        throw std::runtime_error(LOCATION +
+                                 "Multiple ROIs defined in the master file. "
+                                 "Use read_ROIs() instead.");
+    }
+    return get_frame(m_current_frame++);
+}
 
 Frame RawFile::read_frame(size_t frame_number) {
+    if (m_master.rois().has_value() && m_master.rois()->size() > 1) {
+        throw std::runtime_error(
+            LOCATION + "Multiple ROIs defined in the master file. "
+                       "Use read_ROIs(const size_t frame_number) instead.");
+    }
     seek(frame_number);
     return read_frame();
 }
 
 void RawFile::read_into(std::byte *image_buf, size_t n_frames) {
     // TODO: implement this in a more efficient way
+    if (m_master.rois().has_value() && m_master.rois()->size() > 1) {
+        throw std::runtime_error(
+            LOCATION +
+            "Cannot use read_into for multiple ROIs."); // TODO: maybe pass
+                                                        // roi_index so one can
+                                                        // use read_into for a
+                                                        // specific ROI
+    }
 
     for (size_t i = 0; i < n_frames; i++) {
         this->get_frame_into(m_current_frame++, image_buf);
@@ -124,10 +144,26 @@ void RawFile::read_into(std::byte *image_buf, size_t n_frames) {
 }
 
 void RawFile::read_into(std::byte *image_buf) {
+    if (m_master.rois().has_value() && m_master.rois()->size() > 1) {
+        throw std::runtime_error(
+            LOCATION +
+            "Cannot use read_into for multiple ROIs."); // TODO: maybe pass
+                                                        // roi_index so one can
+                                                        // use read_into for a
+                                                        // specific ROI
+    }
     return get_frame_into(m_current_frame++, image_buf);
 }
 
 void RawFile::read_into(std::byte *image_buf, DetectorHeader *header) {
+    if (m_master.rois().has_value() && m_master.rois()->size() > 1) {
+        throw std::runtime_error(
+            LOCATION +
+            "Cannot use read_into for multiple ROIs."); // TODO: maybe pass
+                                                        // roi_index so one can
+                                                        // use read_into for a
+                                                        // specific ROI
+    }
 
     return get_frame_into(m_current_frame++, image_buf, 0, header);
 }
@@ -135,6 +171,15 @@ void RawFile::read_into(std::byte *image_buf, DetectorHeader *header) {
 void RawFile::read_into(std::byte *image_buf, size_t n_frames,
                         DetectorHeader *header) {
     // return get_frame_into(m_current_frame++, image_buf, header);
+
+    if (m_master.rois().has_value() && m_master.rois()->size() > 1) {
+        throw std::runtime_error(
+            LOCATION +
+            "Cannot use read_into for multiple ROIs."); // TODO: maybe pass
+                                                        // roi_index so one can
+                                                        // use read_into for a
+                                                        // specific ROI
+    }
 
     for (size_t i = 0; i < n_frames; i++) {
         this->get_frame_into(m_current_frame++, image_buf, 0, header);
@@ -145,12 +190,32 @@ void RawFile::read_into(std::byte *image_buf, size_t n_frames,
 }
 
 size_t RawFile::bytes_per_frame() {
-    return m_geometry.pixels_x() * m_geometry.pixels_y() * m_master.bitdepth() /
+    if (m_master.rois().has_value() && m_master.rois()->size() > 1) {
+        throw std::runtime_error(
+            LOCATION + "Pass the desired roi_index to bytes_per_frame to get "
+                       "bytes_per_frame for the specific ROI. ");
+    }
+    return bytes_per_frame(0);
+}
+
+size_t RawFile::bytes_per_frame(const size_t roi_index) {
+    return m_ROI_geometries[roi_index].pixels_x() *
+           m_ROI_geometries[roi_index].pixels_y() * m_master.bitdepth() /
            bits_per_byte;
 }
+
 size_t RawFile::pixels_per_frame() {
-    // return m_rows * m_cols;
-    return m_geometry.pixels_x() * m_geometry.pixels_y();
+    if (m_master.rois().has_value() && m_master.rois()->size() > 1) {
+        throw std::runtime_error(
+            LOCATION + "Pass the desired roi_index to pixels_per_frame to get "
+                       "pixels_per_frame for the specific ROI. ");
+    }
+    return pixels_per_frame(0);
+}
+
+size_t RawFile::pixels_per_frame(const size_t roi_index) {
+    return m_ROI_geometries[roi_index].pixels_x() *
+           m_ROI_geometries[roi_index].pixels_y();
 }
 
 DetectorType RawFile::detector_type() const { return m_master.detector_type(); }
@@ -170,8 +235,29 @@ void RawFile::seek(size_t frame_index) {
 size_t RawFile::tell() { return m_current_frame; }
 
 size_t RawFile::total_frames() const { return m_master.frames_in_file(); }
-size_t RawFile::rows() const { return m_geometry.pixels_y(); }
-size_t RawFile::cols() const { return m_geometry.pixels_x(); }
+
+size_t RawFile::rows() const {
+    if (m_master.rois().has_value() && m_master.rois()->size() > 1) {
+        throw std::runtime_error(LOCATION +
+                                 "Pass the desired roi_index to rows to get "
+                                 "rows for the specific ROI. ");
+    }
+    return rows(0);
+}
+size_t RawFile::rows(const size_t roi_index) const {
+    return m_ROI_geometries[roi_index].pixels_y();
+}
+size_t RawFile::cols() const {
+    if (m_master.rois().has_value() && m_master.rois()->size() > 1) {
+        throw std::runtime_error(LOCATION +
+                                 "Pass the desired roi_index to cols to get "
+                                 "cols for the specific ROI. ");
+    }
+    return cols(0);
+}
+size_t RawFile::cols(const size_t roi_index) const {
+    return m_ROI_geometries[roi_index].pixels_x();
+}
 size_t RawFile::bitdepth() const { return m_master.bitdepth(); }
 xy RawFile::geometry() const {
     return xy{static_cast<uint32_t>(m_geometry.modules_y()),
@@ -265,7 +351,8 @@ void RawFile::get_frame_into(size_t frame_index, std::byte *frame_buffer,
                 frame_numbers.begin(),
                 std::min_element(frame_numbers.begin(), frame_numbers.end()));
 
-            // 3. increase its index and update its respective frame number
+            // 3. increase its index and update its respective frame
+            // number
             frame_indices[min_frame_idx]++;
 
             // 4. if we can't increase its index => throw error
@@ -309,9 +396,11 @@ void RawFile::get_frame_into(size_t frame_index, std::byte *frame_buffer,
                     .origin_x != 0)
                 throw std::runtime_error(
                     LOCATION +
-                    " Implementation error. x pos not 0."); // TODO: origin
+                    " Implementation error. x pos not 0."); // TODO:
+                                                            // origin
                                                             // can still
-                                                            // change if roi
+                                                            // change if
+                                                            // roi
                                                             // changes
             // TODO! What if the files don't match?
             m_subfiles[roi_index][part_idx]->seek(corrected_idx);
@@ -327,13 +416,13 @@ void RawFile::get_frame_into(size_t frame_index, std::byte *frame_buffer,
         // create a buffer large enough to hold a full module
         auto bytes_per_part =
             m_master.pixels_y() * m_master.pixels_x() * m_master.bitdepth() /
-            8; // TODO! replace with image_size_in_bytes // TODO shouldnt it
-               // only be the module size? - check
+            8; // TODO! replace with image_size_in_bytes // TODO
+               // shouldnt it only be the module size? - check
 
         auto *part_buffer = new std::byte[bytes_per_part];
 
-        // TODO! if we have many submodules we should reorder them on the
-        // module level
+        // TODO! if we have many submodules we should reorder them on
+        // the module level
 
         for (size_t part_idx = 0;
              part_idx != m_ROI_geometries[roi_index].num_modules_in_roi();
@@ -367,6 +456,18 @@ void RawFile::get_frame_into(size_t frame_index, std::byte *frame_buffer,
 
 std::vector<Frame> RawFile::read_n(size_t n_frames) {
     // TODO: implement this in a more efficient way
+    if (m_master.rois().has_value() && m_master.rois()->size() > 1) {
+        throw std::runtime_error(LOCATION +
+                                 "Multiple ROIs defined in the master "
+                                 "file. Use "
+                                 "read_ROIs and read one frame after "
+                                 "the other."); // TODO should
+                                                // there be an
+                                                // option read_n
+                                                // for multiple
+                                                // ROIS?
+    }
+
     std::vector<Frame> frames;
     for (size_t i = 0; i < n_frames; i++) {
         frames.push_back(this->get_frame(m_current_frame));
