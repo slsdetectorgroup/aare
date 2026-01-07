@@ -129,12 +129,8 @@ Frame RawFile::read_frame(size_t frame_number) {
 void RawFile::read_into(std::byte *image_buf, size_t n_frames) {
     // TODO: implement this in a more efficient way
     if (m_master.rois().has_value() && m_master.rois()->size() > 1) {
-        throw std::runtime_error(
-            LOCATION +
-            "Cannot use read_into for multiple ROIs."); // TODO: maybe pass
-                                                        // roi_index so one can
-                                                        // use read_into for a
-                                                        // specific ROI
+        throw std::runtime_error(LOCATION +
+                                 "Cannot use read_into for multiple ROIs.");
     }
 
     for (size_t i = 0; i < n_frames; i++) {
@@ -145,26 +141,27 @@ void RawFile::read_into(std::byte *image_buf, size_t n_frames) {
 
 void RawFile::read_into(std::byte *image_buf) {
     if (m_master.rois().has_value() && m_master.rois()->size() > 1) {
-        throw std::runtime_error(
-            LOCATION +
-            "Cannot use read_into for multiple ROIs."); // TODO: maybe pass
-                                                        // roi_index so one can
-                                                        // use read_into for a
-                                                        // specific ROI
+        throw std::runtime_error(LOCATION +
+                                 "Cannot use read_into for multiple ROIs. Use "
+                                 "read_roi_into() for a single ROI instead.");
     }
     return get_frame_into(m_current_frame++, image_buf);
 }
 
+void RawFile::read_roi_into(std::byte *image_buf, const size_t roi_index,
+                            const size_t frame_number) {
+    if (roi_index >= n_rois()) {
+        throw std::runtime_error(LOCATION + "ROI index out of range.");
+    }
+    return get_frame_into(frame_number, image_buf, roi_index);
+}
+
 void RawFile::read_into(std::byte *image_buf, DetectorHeader *header) {
     if (m_master.rois().has_value() && m_master.rois()->size() > 1) {
-        throw std::runtime_error(
-            LOCATION +
-            "Cannot use read_into for multiple ROIs."); // TODO: maybe pass
-                                                        // roi_index so one can
-                                                        // use read_into for a
-                                                        // specific ROI
+        throw std::runtime_error(LOCATION +
+                                 "Cannot use read_into for multiple ROIs. Use "
+                                 "read_roi_into() for a single ROI instead.");
     }
-
     return get_frame_into(m_current_frame++, image_buf, 0, header);
 }
 
@@ -265,6 +262,19 @@ xy RawFile::geometry() const {
 }
 
 size_t RawFile::n_modules() const { return m_geometry.n_modules(); };
+
+size_t RawFile::n_rois() const {
+    if (m_master.rois().has_value()) {
+        return m_master.rois()->size();
+    } else {
+        return 0;
+    }
+};
+
+const ROIGeometry &RawFile::roi_geometries(size_t roi_index) const {
+    return m_ROI_geometries[roi_index];
+}
+
 std::vector<size_t> RawFile::n_modules_in_roi() const {
 
     std::vector<size_t> results(m_ROI_geometries.size());

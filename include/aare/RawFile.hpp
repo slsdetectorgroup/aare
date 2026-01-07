@@ -76,9 +76,13 @@ class RawFile : public FileInterface {
     void read_into(std::byte *image_buf, size_t n_frames) override;
 
     // TODO! do we need to adapt the API?
-    void read_into(std::byte *image_buf, DetectorHeader *header);
+    void read_into(std::byte *image_buf, DetectorHeader *header = nullptr);
     void read_into(std::byte *image_buf, size_t n_frames,
                    DetectorHeader *header);
+
+    void read_roi_into(
+        std::byte *image_buf, const size_t roi_index,
+        const size_t frame_number); // maybe just make get_frame_into public
 
     size_t frame_number(size_t frame_index) override;
     size_t bytes_per_frame() override;
@@ -113,6 +117,18 @@ class RawFile : public FileInterface {
     size_t cols(const size_t roi_index) const;
     size_t bitdepth() const override;
     size_t n_modules() const;
+
+    /**
+     * @brief number of ROIs defined
+     */
+    size_t n_rois() const;
+
+    /**
+     * @brief get the ROI geometry for the given ROI index
+     * @param roi_index index of the ROI
+     */
+    const ROIGeometry &roi_geometries(size_t roi_index) const;
+
     /**
      * @brief number of modules in each ROI
      */
@@ -137,9 +153,9 @@ class RawFile : public FileInterface {
      * @param frame_buffer buffer to store the frame
      * @param roi_index index of the ROI to read (default is 0 e.g. full frame)
      */
-    void get_frame_into(size_t frame_index, std::byte *frame_buffer,
-                        const size_t roi_index = 0,
-                        DetectorHeader *header = nullptr);
+    void get_frame_into(
+        size_t frame_index, std::byte *frame_buffer, const size_t roi_index = 0,
+        DetectorHeader *header = nullptr); // TODO read_into updates it!!!!
 
     /**
      * @brief get the frame at the given frame index

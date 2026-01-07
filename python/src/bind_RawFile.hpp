@@ -97,13 +97,77 @@ void define_raw_file_io_bindings(py::module &m) {
             R"(
              Read n frames from the file.
              )")
+
+        .def(
+            "read_ROIs",
+            [](RawFile &self,
+               const std::optional<size_t> roi_index = std::nullopt) {
+                if (roi_index.has_value() &&
+                    roi_index.value() >= self.n_rois()) {
+                    throw std::runtime_error(LOCATION +
+                                             "ROI index out of range.");
+                }
+
+                size_t number_of_ROIs =
+                    roi_index.has_value() ? 1 : self.n_rois();
+
+                const uint8_t item_size = self.bytes_per_pixel();
+
+                std::vector<py::array> images(number_of_ROIs);
+
+                for (size_t r = 0; r < number_of_ROIs; r++) {
+                    std::vector<ssize_t> shape;
+                    shape.reserve(2);
+                    shape.push_back(self.roi_geometries(r).pixels_y());
+                    shape.push_back(self.roi_geometries(r).pixels_x());
+
+                    if (item_size == 1) {
+                        images[r] = py::array_t<uint8_t>(shape);
+                    } else if (item_size == 2) {
+                        images[r] = py::array_t<uint16_t>(shape);
+                    } else if (item_size == 4) {
+                        images[r] = py::array_t<uint32_t>(shape);
+                    }
+
+                    const size_t roi_idx =
+                        roi_index.has_value() ? roi_index.value() : r;
+                    self.read_roi_into(
+                        reinterpret_cast<std::byte *>(images[r].mutable_data()),
+                        roi_idx, self.tell());
+                }
+                self.seek(self.tell() + 1); // advance frame number so the
+                return images;
+            },
+            R"(
+            Read all ROIs for the current frame. 
+            param: 
+                roi_index: optional index of the ROI to read. If not provided, all ROIs are read.
+            Returns a list of numpy arrays, one for each ROI.
+            )")
+
         .def("frame_number", &RawFile::frame_number)
         .def_property_readonly(
             "bytes_per_frame",
             static_cast<size_t (RawFile::*)()>(&RawFile::bytes_per_frame))
+        .def(
+            "bytes_per_frame",
+            [](RawFile &self, const size_t roi_index) {
+                return self.bytes_per_frame(roi_index);
+            },
+            R"(
+            Bytes per frame for the given ROI.
+            )")
         .def_property_readonly(
             "pixels_per_frame",
             static_cast<size_t (RawFile::*)()>(&RawFile::pixels_per_frame))
+        .def(
+            "pixels_per_frame",
+            [](RawFile &self, const size_t roi_index) {
+                return self.pixels_per_frame(roi_index);
+            },
+            R"(
+            Pixels per frame for the given ROI.
+            )")
         .def_property_readonly("bytes_per_pixel", &RawFile::bytes_per_pixel)
         .def("seek", &RawFile::seek, R"(
             Seek to a frame index in file.
@@ -113,8 +177,24 @@ void define_raw_file_io_bindings(py::module &m) {
         .def_property_readonly("total_frames", &RawFile::total_frames)
         .def_property_readonly(
             "rows", static_cast<size_t (RawFile::*)() const>(&RawFile::rows))
+        .def(
+            "rows",
+            [](RawFile &self, const size_t roi_index) {
+                return self.rows(roi_index);
+            },
+            R"(
+            Rows for the given ROI.
+            )")
         .def_property_readonly(
             "cols", static_cast<size_t (RawFile::*)() const>(&RawFile::cols))
+        .def(
+            "cols",
+            [](RawFile &self, const size_t roi_index) {
+                return self.cols(roi_index);
+            },
+            R"(
+            Cols for the given ROI.
+            )")
         .def_property_readonly("bitdepth", &RawFile::bitdepth)
         .def_property_readonly("geometry", &RawFile::geometry)
         .def_property_readonly("detector_type", &RawFile::detector_type)
