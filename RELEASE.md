@@ -12,6 +12,10 @@
 - Removed redundant arr.value(ix,iy...) on NDArray use arr(ix,iy...)
 - Removed Print/Print_some/Print_all form NDArray (operator << still works)
 - Added const* version of .data()
+- reading multiple ROI's supported for aare. 
+    - Use ``read_ROIs`` to read multiple ROIs for one frame, optionally pass the index of a specific ROI to only read that ROI
+    - Use ``read_n_ROIs`` to read multiple frames for a specific ROI. 
+    - Note ``read_frame`` and ``read_n`` is not supported for multiple ROI's. 
 
 
 ### 2025.11.21

@@ -158,6 +158,11 @@ TEST_CASE("Compare reading from a numpy file with a raw file",
         auto raw_frame = raw.read_frame();
 
         auto npy_frame = npy.read_frame();
+        CHECK(raw_frame.rows() == 512);
+        CHECK(raw_frame.cols() == 512);
+        CHECK(npy_frame.rows() == 512);
+        CHECK(npy_frame.cols() == 512);
+
         CHECK((raw_frame.view<uint32_t>() == npy_frame.view<uint32_t>()));
     }
     SECTION("eiger data") {
