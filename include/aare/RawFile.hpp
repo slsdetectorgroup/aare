@@ -72,6 +72,15 @@ class RawFile : public FileInterface {
     read_ROIs(const size_t frame_number,
               const std::optional<size_t> roi_index = std::nullopt);
 
+    /**
+     * @brief Read n frames for the given ROI index
+     * @param n_frames number of frames to read
+     * @param roi_index index of the ROI to read
+     * @return vector of Frames
+     */
+    std::vector<Frame> read_num_rois(const size_t n_frames,
+                                     const size_t roi_index);
+
     void read_into(std::byte *image_buf) override;
     void read_into(std::byte *image_buf, size_t n_frames) override;
 
@@ -80,9 +89,10 @@ class RawFile : public FileInterface {
     void read_into(std::byte *image_buf, size_t n_frames,
                    DetectorHeader *header);
 
-    void read_roi_into(
-        std::byte *image_buf, const size_t roi_index,
-        const size_t frame_number); // maybe just make get_frame_into public
+    void read_roi_into(std::byte *image_buf, const size_t roi_index,
+                       const size_t frame_number,
+                       DetectorHeader *header =
+                           nullptr); // maybe just make get_frame_into public
 
     size_t frame_number(size_t frame_index) override;
     size_t bytes_per_frame() override;
@@ -121,7 +131,7 @@ class RawFile : public FileInterface {
     /**
      * @brief number of ROIs defined
      */
-    size_t n_rois() const;
+    size_t num_rois() const;
 
     /**
      * @brief get the ROI geometry for the given ROI index
