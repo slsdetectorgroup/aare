@@ -100,7 +100,6 @@ std::vector<Frame> RawFile::read_ROIs(const size_t frame_number,
             throw std::runtime_error(LOCATION + "ROI index out of range.");
         }
         frames.push_back(get_frame(frame_number, roi_index.value()));
-        return frames;
     } else {
 
         for (size_t roi_idx = 0; roi_idx < m_master.rois()->size(); ++roi_idx) {
@@ -108,6 +107,7 @@ std::vector<Frame> RawFile::read_ROIs(const size_t frame_number,
         }
     }
 
+    ++m_current_frame;
     return frames;
 }
 
@@ -493,8 +493,8 @@ std::vector<Frame> RawFile::read_n(size_t n_frames) {
     return frames;
 }
 
-std::vector<Frame> RawFile::read_num_rois(const size_t n_frames,
-                                          const size_t roi_index) {
+std::vector<Frame> RawFile::read_n_ROIs(const size_t n_frames,
+                                        const size_t roi_index) {
     if (roi_index >= num_rois()) {
         throw std::runtime_error(LOCATION + "ROI index out of range.");
     }

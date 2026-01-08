@@ -149,7 +149,8 @@ void define_raw_file_io_bindings(py::module &m) {
                 roi_index: optional index of the ROI to read. If not provided, all ROIs are read.
             Note: The method advances the frame number so reading ROIs one after the other won't work.
             Returns a list of numpy arrays, one for each ROI.
-            )")
+            )",
+            py::arg("roi_index") = py::none())
 
         .def(
             "read_ROIs",
@@ -204,7 +205,8 @@ void define_raw_file_io_bindings(py::module &m) {
                 roi_index: optional index of the ROI to read. If not provided, all ROIs are read.
             Note: The method advances the frame number so reading ROIs one after the other won't work.
             Returns a list of numpy arrays, one for each ROI.
-            )")
+            )",
+            py::arg("frame_number"), py::arg("roi_index") = py::none())
 
         .def(
             "read_n_ROIs",
@@ -258,9 +260,8 @@ void define_raw_file_io_bindings(py::module &m) {
              )")
 
         .def("frame_number", &RawFile::frame_number)
-        .def_property_readonly(
-            "bytes_per_frame",
-            static_cast<size_t (RawFile::*)()>(&RawFile::bytes_per_frame))
+        .def("bytes_per_frame",
+             static_cast<size_t (RawFile::*)()>(&RawFile::bytes_per_frame))
         .def(
             "bytes_per_frame",
             [](RawFile &self, const size_t roi_index) {
@@ -269,9 +270,8 @@ void define_raw_file_io_bindings(py::module &m) {
             R"(
             Bytes per frame for the given ROI.
             )")
-        .def_property_readonly(
-            "pixels_per_frame",
-            static_cast<size_t (RawFile::*)()>(&RawFile::pixels_per_frame))
+        .def("pixels_per_frame",
+             static_cast<size_t (RawFile::*)()>(&RawFile::pixels_per_frame))
         .def(
             "pixels_per_frame",
             [](RawFile &self, const size_t roi_index) {
@@ -287,8 +287,7 @@ void define_raw_file_io_bindings(py::module &m) {
         .def("tell", &RawFile::tell, R"(
             Return the current frame number.)")
         .def_property_readonly("total_frames", &RawFile::total_frames)
-        .def_property_readonly(
-            "rows", static_cast<size_t (RawFile::*)() const>(&RawFile::rows))
+        .def("rows", static_cast<size_t (RawFile::*)() const>(&RawFile::rows))
         .def(
             "rows",
             [](RawFile &self, const size_t roi_index) {
@@ -297,8 +296,7 @@ void define_raw_file_io_bindings(py::module &m) {
             R"(
             Rows for the given ROI.
             )")
-        .def_property_readonly(
-            "cols", static_cast<size_t (RawFile::*)() const>(&RawFile::cols))
+        .def("cols", static_cast<size_t (RawFile::*)() const>(&RawFile::cols))
         .def(
             "cols",
             [](RawFile &self, const size_t roi_index) {

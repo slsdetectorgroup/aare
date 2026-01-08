@@ -341,7 +341,7 @@ TEST_CASE("Open multi module file with ROI spanning over multiple modules",
 TEST_CASE("Open multi module file with two ROIs", "[.width-data][read_rois]") {
 
     auto fpath =
-        test_data_path() / "raw/ROITestData/MultipleROIs/run_master_3.json";
+        test_data_path() / "raw/ROITestData/MultipleROIs/run_master_0.json";
     REQUIRE(std::filesystem::exists(fpath));
 
     RawFile f(fpath, "r");
@@ -353,7 +353,11 @@ TEST_CASE("Open multi module file with two ROIs", "[.width-data][read_rois]") {
 
     CHECK_THROWS(f.read_frame());
 
+    CHECK(f.tell() == 0);
+
     auto frame = f.read_ROIs();
+
+    CHECK(f.tell() == 1);
 
     REQUIRE(frame.size() == 2);
 
@@ -364,6 +368,14 @@ TEST_CASE("Open multi module file with two ROIs", "[.width-data][read_rois]") {
 
     CHECK_THROWS(f.rows());
     CHECK(f.rows(0) == 301);
+
+    auto frames = f.read_n_ROIs(2, 1);
+    REQUIRE(frames.size() == 2);
+    CHECK(f.tell() == 3);
+    for (const auto &frm : frames) {
+        CHECK(frm.rows() == 101);
+        CHECK(frm.cols() == 101);
+    }
 }
 
 TEST_CASE("Read file with unordered frames", "[.with-data]") {

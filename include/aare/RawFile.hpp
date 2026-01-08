@@ -78,8 +78,8 @@ class RawFile : public FileInterface {
      * @param roi_index index of the ROI to read
      * @return vector of Frames
      */
-    std::vector<Frame> read_num_rois(const size_t n_frames,
-                                     const size_t roi_index);
+    std::vector<Frame> read_n_ROIs(const size_t n_frames,
+                                   const size_t roi_index);
 
     void read_into(std::byte *image_buf) override;
     void read_into(std::byte *image_buf, size_t n_frames) override;
