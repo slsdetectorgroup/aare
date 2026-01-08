@@ -144,12 +144,24 @@ void define_raw_file_io_bindings(py::module &m) {
                 return images;
             },
             R"(
-            Read all ROIs for the current frame. 
-            param: 
-                roi_index: optional index of the ROI to read. If not provided, all ROIs are read.
-            Note: The method advances the frame number so reading ROIs one after the other won't work.
-            Returns a list of numpy arrays, one for each ROI.
-            )",
+            Read all ROIs for the current frame.
+
+            Parameters
+            ----------
+
+            roi_index : Optional[int]
+                Index of the ROI to read. If not provided, all ROIs are read.
+
+            Notes
+            -----
+
+            The method advances the frame number, so reading ROIs one after the other won't work.
+
+            Returns
+            -------
+
+            list of numpy.ndarray
+                One array per ROI.)",
             py::arg("roi_index") = py::none())
 
         .def(
@@ -199,13 +211,22 @@ void define_raw_file_io_bindings(py::module &m) {
                 return images;
             },
             R"(
-            Read all ROIs for the current frame. 
-            param: 
-                frame_number: frame number to read.
-                roi_index: optional index of the ROI to read. If not provided, all ROIs are read.
-            Note: The method advances the frame number so reading ROIs one after the other won't work.
-            Returns a list of numpy arrays, one for each ROI.
-            )",
+            Read all ROIs for specific frame.
+
+            Parameters
+            ----------
+
+            frame_number : int
+                Frame number to read.
+
+            roi_index : Optional[int]
+                Index of the ROI to read. If not provided, all ROIs are read.
+
+            Returns
+            -------
+
+            list of numpy.ndarray
+                One array per ROI.)",
             py::arg("frame_number"), py::arg("roi_index") = py::none())
 
         .def(
@@ -252,12 +273,21 @@ void define_raw_file_io_bindings(py::module &m) {
                 return image;
             },
             R"(
-             Read n frames for the given ROI index.
-             param: 
-                    n_frames: number of frames to read.
-                    roi_index: index of the ROI to read.
-             Returns a numpy array containing the frames for the specified ROI.
-             )")
+            Read n frames for a specific ROI
+
+            Parameters
+            ----------
+
+            num_frames : int
+                Number of frames to read.
+            roi_index : int
+                Index of the ROI to read. 
+
+            Returns
+            -------
+
+            three dimensional numpy.ndarray.)",
+            py::arg("num_frames"), py::arg("roi_index"))
 
         .def("frame_number", &RawFile::frame_number)
         .def("bytes_per_frame",
