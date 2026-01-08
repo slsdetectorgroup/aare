@@ -293,9 +293,14 @@ std::vector<size_t> RawFile::n_modules_in_roi() const {
 };
 
 void RawFile::open_subfiles(const size_t roi_index) {
+
     if (m_mode == "r") {
+
         m_subfiles[roi_index].reserve(
             m_ROI_geometries[roi_index].num_modules_in_roi());
+
+        auto module_indices =
+            m_ROI_geometries[roi_index].module_indices_in_roi();
 
         for (const size_t i :
              m_ROI_geometries[roi_index].module_indices_in_roi()) {

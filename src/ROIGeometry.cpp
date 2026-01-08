@@ -19,7 +19,7 @@ ROIGeometry::ROIGeometry(const ROI &roi, DetectorGeometry &geometry)
 ROIGeometry::ROIGeometry(DetectorGeometry &geometry)
     : m_pixels_x(geometry.pixels_x()), m_pixels_y(geometry.pixels_y()),
       m_geometry(geometry) {
-    m_module_indices_in_roi.reserve(m_geometry.n_modules());
+    m_module_indices_in_roi.resize(m_geometry.n_modules());
     std::iota(m_module_indices_in_roi.begin(), m_module_indices_in_roi.end(),
               0);
 };

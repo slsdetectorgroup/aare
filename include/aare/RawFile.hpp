@@ -25,7 +25,7 @@ namespace aare {
 class RawFile : public FileInterface {
 
     std::vector<std::vector<std::unique_ptr<RawSubFile>>>
-        m_subfiles; // [ROI][files_per_module]
+        m_subfiles; // [ROI][modules_per_ROI]
 
     RawMasterFile m_master;
     size_t m_current_frame{};

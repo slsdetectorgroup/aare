@@ -14,7 +14,8 @@ using aare::File;
 using aare::RawFile;
 using namespace aare;
 
-TEST_CASE("Read number of frames from a jungfrau raw file", "[.with-data]") {
+TEST_CASE("Read number of frames from a jungfrau raw file",
+          "[.with-data][RawFile]") {
 
     auto fpath =
         test_data_path() / "raw/jungfrau/jungfrau_single_master_0.json";
@@ -24,7 +25,8 @@ TEST_CASE("Read number of frames from a jungfrau raw file", "[.with-data]") {
     REQUIRE(f.total_frames() == 10);
 }
 
-TEST_CASE("Read frame numbers from a jungfrau raw file", "[.with-data]") {
+TEST_CASE("Read frame numbers from a jungfrau raw file",
+          "[.with-data][RawFile]") {
     auto fpath =
         test_data_path() / "raw/jungfrau/jungfrau_single_master_0.json";
     REQUIRE(std::filesystem::exists(fpath));
@@ -41,7 +43,7 @@ TEST_CASE("Read frame numbers from a jungfrau raw file", "[.with-data]") {
     }
 }
 
-TEST_CASE("Read a frame number too high throws", "[.with-data]") {
+TEST_CASE("Read a frame number too high throws", "[.with-data][RawFile]") {
     auto fpath =
         test_data_path() / "raw/jungfrau/jungfrau_single_master_0.json";
     REQUIRE(std::filesystem::exists(fpath));
@@ -57,7 +59,7 @@ TEST_CASE("Read a frame number too high throws", "[.with-data]") {
 }
 
 TEST_CASE("Read a frame numbers where the subfile is missing throws",
-          "[.with-data]") {
+          "[.with-data][RawFile]") {
     auto fpath = test_data_path() / "raw/jungfrau" /
                  "jungfrau_missing_subfile_master_0.json";
 
@@ -80,7 +82,7 @@ TEST_CASE("Read a frame numbers where the subfile is missing throws",
 }
 
 TEST_CASE("Read data from a jungfrau 500k single port raw file",
-          "[.with-data]") {
+          "[.with-data][RawFile]") {
     auto fpath =
         test_data_path() / "raw/jungfrau/jungfrau_single_master_0.json";
     REQUIRE(std::filesystem::exists(fpath));
@@ -99,7 +101,7 @@ TEST_CASE("Read data from a jungfrau 500k single port raw file",
     }
 }
 
-TEST_CASE("Read frame numbers from a raw file", "[.with-data]") {
+TEST_CASE("Read frame numbers from a raw file", "[.with-data][RawFile]") {
     auto fpath =
         test_data_path() / "raw/eiger" / "eiger_500k_16bit_master_0.json";
     REQUIRE(std::filesystem::exists(fpath));
@@ -113,7 +115,8 @@ TEST_CASE("Read frame numbers from a raw file", "[.with-data]") {
     }
 }
 
-TEST_CASE("Compare reading from a numpy file with a raw file", "[.with-data]") {
+TEST_CASE("Compare reading from a numpy file with a raw file",
+          "[.with-data][RawFile]") {
 
     SECTION("jungfrau data") {
         auto fpath_raw =
@@ -176,7 +179,7 @@ TEST_CASE("Compare reading from a numpy file with a raw file", "[.with-data]") {
     }
 }
 
-TEST_CASE("Read multipart files", "[.with-data]") {
+TEST_CASE("Read multipart files", "[.with-data][RawFile]") {
     auto fpath =
         test_data_path() / "raw/jungfrau" / "jungfrau_double_master_0.json";
     REQUIRE(std::filesystem::exists(fpath));
@@ -217,7 +220,7 @@ struct TestParameters {
     std::vector<ModuleGeometry> module_geometries{};
 };
 
-TEST_CASE("check find_geometry", "[.with-data]") {
+TEST_CASE("check find_geometry", "[.with-data][RawFile]") {
 
     auto test_parameters = GENERATE(
         TestParameters{"raw/jungfrau_2modules_version6.1.2/run_master_0.raw", 2,
@@ -290,7 +293,8 @@ TEST_CASE("check find_geometry", "[.with-data]") {
     }
 }
 
-TEST_CASE("Open multi module file with ROI", "[.with-data][read_rois]") {
+TEST_CASE("Open multi module file with ROI",
+          "[.with-data][read_rois][RawFile]") {
 
     auto fpath =
         test_data_path() / "raw/ROITestData/SingleChipROI/Data_master_0.json";
@@ -317,7 +321,7 @@ TEST_CASE("Open multi module file with ROI", "[.with-data][read_rois]") {
 }
 
 TEST_CASE("Open multi module file with ROI spanning over multiple modules",
-          "[.width-data][read_rois]") {
+          "[.width-data][read_rois][RawFile]") {
 
     auto fpath =
         test_data_path() / "raw/ROITestData/MultipleChipROI/run_master_2.json";
@@ -338,7 +342,8 @@ TEST_CASE("Open multi module file with ROI spanning over multiple modules",
     CHECK(f.cols() == 101);
 }
 
-TEST_CASE("Open multi module file with two ROIs", "[.width-data][read_rois]") {
+TEST_CASE("Open multi module file with two ROIs",
+          "[.width-data][read_rois][RawFile]") {
 
     auto fpath =
         test_data_path() / "raw/ROITestData/MultipleROIs/run_master_0.json";
@@ -378,7 +383,7 @@ TEST_CASE("Open multi module file with two ROIs", "[.width-data][read_rois]") {
     }
 }
 
-TEST_CASE("Read file with unordered frames", "[.with-data]") {
+TEST_CASE("Read file with unordered frames", "[.with-data][RawFile]") {
     // TODO! Better explanation and error message
     auto fpath = test_data_path() / "raw/mythen/scan242_master_3.raw";
     REQUIRE(std::filesystem::exists(fpath));
@@ -386,7 +391,7 @@ TEST_CASE("Read file with unordered frames", "[.with-data]") {
     REQUIRE_THROWS((f.read_frame()));
 }
 
-TEST_CASE("Read Mythenframe", "[.with-data]") {
+TEST_CASE("Read Mythenframe", "[.with-data][RawFile]") {
     auto fpath = test_data_path() / "raw/newmythen03/run_2_master_1.json";
     REQUIRE(std::filesystem::exists(fpath));
     RawFile f(fpath);
