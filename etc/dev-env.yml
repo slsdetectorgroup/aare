@@ -15,4 +15,5 @@ dependencies:
   - numpy
   - matplotlib
   - nlohmann_json
+  - pytest
 
