@@ -19,6 +19,10 @@ jobs:
       - name: Install dependencies
         run: |
           dnf install -y cmake python3.12 python3.12-devel python3.12-pip
+          python3.12 -m pip install --upgrade pip
+          python3.12 -m pip install pytest
+          python3.12 -m pip install numpy 
+
 
       - name: Build library 
         run: |
@@ -29,3 +33,7 @@ jobs:
       - name: C++ unit tests
         working-directory: ${{gitea.workspace}}/build
         run: ctest
+
+      - name: Python unit tests
+        working-directory: ${{gitea.workspace}}
+        run: python3.12 -m pytest ${{gitea.workspace}}/python/tests/
