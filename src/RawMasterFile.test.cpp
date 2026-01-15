@@ -229,7 +229,7 @@ TEST_CASE("Parse a master file in .raw format", "[.integration]") {
 }
 
 TEST_CASE("Parse a master file in new .json format",
-          "[.integration][.width-data]") {
+          "[.integration][.with-data]") {
 
     auto file_path =
         test_data_path() / "raw" / "newmythen03" / "run_87_master_0.json";
@@ -305,7 +305,7 @@ TEST_CASE("Read eiger master file", "[.integration]") {
     //     },
     //     "Dynamic Range": 32,
     //     "Ten Giga": 0,
-        // "Exptime": "5s",
+    // "Exptime": "5s",
     REQUIRE(f.exptime() == std::chrono::seconds(5));
     //     "Period": "1s",
     REQUIRE(f.period() == std::chrono::seconds(1));
@@ -477,12 +477,12 @@ TEST_CASE("Parse JUNGFRAU 7.2 master from string stream") {
     REQUIRE(f.exptime() == std::chrono::microseconds(10));
     REQUIRE(f.period() == std::chrono::milliseconds(1));
     REQUIRE(f.number_of_rows() == 512);
-    
+
     REQUIRE(f.frames_in_file() == 10);
     REQUIRE(f.udp_interfaces_per_module() == xy{2, 1});
 }
 
-TEST_CASE("Parse a CTB file from stream"){
+TEST_CASE("Parse a CTB file from stream") {
     std::string master_content = R"({
     "Version": 8.0,
     "Timestamp": "Mon Dec 15 10:57:27 2025",
@@ -541,21 +541,22 @@ TEST_CASE("Parse a CTB file from stream"){
     REQUIRE(f.max_frames_per_file() == 20000);
     // CTB does not have bitdepth in master file, but for the moment we write 16
     // TODO! refactor using std::optional
-    // REQUIRE(f.bitdepth() == std::nullopt); 
+    // REQUIRE(f.bitdepth() == std::nullopt);
     REQUIRE(f.n_modules() == 1);
     REQUIRE(f.quad() == 0);
     REQUIRE(f.frame_discard_policy() == FrameDiscardPolicy::NoDiscard);
     REQUIRE(f.frame_padding() == 1);
-    REQUIRE(f.total_frames_expected() == 1); //This is Total Frames in the master file
+    REQUIRE(f.total_frames_expected() ==
+            1); // This is Total Frames in the master file
     REQUIRE(f.exptime() == std::chrono::milliseconds(250));
     REQUIRE(f.period() == std::chrono::milliseconds(10));
-    REQUIRE(f.analog_samples() == std::nullopt); //Analog Flag is 0
-    REQUIRE(f.digital_samples() == std::nullopt); //Digital Flag is 0
+    REQUIRE(f.analog_samples() == std::nullopt);  // Analog Flag is 0
+    REQUIRE(f.digital_samples() == std::nullopt); // Digital Flag is 0
     REQUIRE(f.transceiver_samples() == 1152);
     REQUIRE(f.frames_in_file() == 40);
 }
 
-TEST_CASE("Parse v8.0 MYTHEN3 from stream"){
+TEST_CASE("Parse v8.0 MYTHEN3 from stream") {
     std::string master_content = R"({
     "Version": 8.0,
     "Timestamp": "Wed Oct  1 14:37:26 2025",
@@ -631,7 +632,8 @@ TEST_CASE("Parse v8.0 MYTHEN3 from stream"){
     REQUIRE(f.quad() == 0);
     REQUIRE(f.frame_discard_policy() == FrameDiscardPolicy::NoDiscard);
     REQUIRE(f.frame_padding() == 1);
-    REQUIRE(f.total_frames_expected() == 1); //This is Total Frames in the master file
+    REQUIRE(f.total_frames_expected() ==
+            1); // This is Total Frames in the master file
     REQUIRE(f.counter_mask() == 4);
 
     // Mythen3 has three exposure times, but for the moment we don't handle them
@@ -641,7 +643,7 @@ TEST_CASE("Parse v8.0 MYTHEN3 from stream"){
     REQUIRE(f.period() == std::chrono::nanoseconds(0));
 }
 
-TEST_CASE("Parse a v7.1 Mythen3 from stream"){
+TEST_CASE("Parse a v7.1 Mythen3 from stream") {
     std::string master_content = R"({
     "Version": 7.1,
     "Timestamp": "Wed Sep 21 13:48:10 2022",
@@ -714,7 +716,8 @@ TEST_CASE("Parse a v7.1 Mythen3 from stream"){
     REQUIRE(f.quad() == 0);
     REQUIRE(f.frame_discard_policy() == FrameDiscardPolicy::NoDiscard);
     REQUIRE(f.frame_padding() == 1);
-    REQUIRE(f.total_frames_expected() == 1); //This is Total Frames in the master file
+    REQUIRE(f.total_frames_expected() ==
+            1); // This is Total Frames in the master file
     REQUIRE(f.counter_mask() == 0x7);
 
     // Mythen3 has three exposure times, but for the moment we don't handle them
