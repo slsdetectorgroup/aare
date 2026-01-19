@@ -33,15 +33,13 @@ jobs:
             sudo apt-get update
             sudo apt-get -y install cmake gcc g++
             sudo apt-get -y install python3.12 python3.12-dev python3.12-venv python3-pip
+            sudo apt-get -y install doxygen 
             python3.12 -m venv venv
             source venv/bin/activate
             pip install --upgrade pip
             pip install breathe
             pip install sphinx_rtd_theme sphinx 
             pip install numpy
-            pip install doxygen
-
-
 
       - name: Build library 
         run: |
