@@ -21,7 +21,7 @@ jobs:
             source /home/gitea_runner/.bashrc 
             conda activate aare_test 
             mkdir build && cd build
-            cmake .. -DAARE_PYTHON_BINDINGS=ON -DAARE_TESTS=ON -DC
+            cmake .. -DAARE_PYTHON_BINDINGS=ON -DAARE_TESTS=ON 
             make -j 4
 
       - name: Export test data path 
