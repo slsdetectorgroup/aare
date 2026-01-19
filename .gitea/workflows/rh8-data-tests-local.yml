@@ -25,7 +25,7 @@ jobs:
             make -j 4
 
       - name: Export test data path 
-        run: export AARE_TEST_DATA_PATH=${{github.workspace}}/../aare-test-data
+        run: export AARE_TEST_DATA=${{github.workspace}}/../aare-test-data
 
       - name: C++ unit tests  
         working-directory: ${{github.workspace}}/build
