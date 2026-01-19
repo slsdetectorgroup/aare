@@ -11,23 +11,16 @@ jobs:
   build:
     runs-on: "ubuntu-latest"
     container:
-      image: gitea.psi.ch/images/rhel9-developer-gitea-actions
+      image: gitea.psi.ch/detectors/rhel9-detectors-dev
     steps:
       - uses: actions/checkout@v4
 
 
-      - name: Install dependencies
+      - name: Install Python dependencies
         run: |
-          dnf install -y cmake python3.12 python3.12-devel python3.12-pip
-
-      - name: Get conda
-        uses: conda-incubator/setup-miniconda@v3
-        with:
-          python-version: ${{ matrix.python-version }}
-          environment-file: etc/dev-env.yml
-          miniforge-version: latest
-          channels: conda-forge
-          conda-remove-defaults: "true"
+          python3.12-pip install --upgrade pip
+          python3.12 -m pip install pytest
+          python3.12 -m pip install numpy
 
       - name: Build library 
         run: |
