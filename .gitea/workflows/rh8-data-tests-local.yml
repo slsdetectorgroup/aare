@@ -38,7 +38,10 @@ jobs:
         working-directory: ${{github.workspace}}/build
         env:
           AARE_TEST_DATA: ${{github.workspace}}/../aare-test-data
-        run: python -m pytest ${{github.workspace}}/python/tests/ --with-data # runs all tests 
+        run: | 
+          source /home/gitea_runner/.bashrc
+          conda activate aare_test
+          python -m pytest ${{github.workspace}}/python/tests/ --with-data # runs all tests 
 
 
         
