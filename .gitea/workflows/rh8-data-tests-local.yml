@@ -1,7 +1,7 @@
 name: Run tests using data on local RHEL8
 
 on:
-  pull-request: 
+  push: # pull_request only works if pull_request in gitea 
   workflow_dispatch:
 
 permissions:
