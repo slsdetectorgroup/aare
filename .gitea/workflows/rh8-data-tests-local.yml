@@ -29,7 +29,7 @@ jobs:
 
       - name: C++ unit tests  
         working-directory: ${{github.workspace}}/build
-        run: run_tests [.with-data] # TODO: should we run all tests? 
+        run: ./run_tests [.with-data] # TODO: should we run all tests? 
 
       - name: Python unit tests 
         working-directory: ${{github.workspace}}/build
