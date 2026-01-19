@@ -398,6 +398,7 @@ TEST_CASE("Parse EIGER 7.2 master from string stream") {
     REQUIRE(f.timing_mode() == TimingMode::Auto);
     REQUIRE(f.geometry().col == 2);
     REQUIRE(f.geometry().row == 2);
+    
     REQUIRE(f.image_size_in_bytes() == 524288);
     REQUIRE(f.pixels_x() == 512);
     REQUIRE(f.pixels_y() == 256);
@@ -405,6 +406,10 @@ TEST_CASE("Parse EIGER 7.2 master from string stream") {
     REQUIRE(f.frame_discard_policy() == FrameDiscardPolicy::NoDiscard);
     REQUIRE(f.frame_padding() == 1);
     REQUIRE(f.total_frames_expected() == 3);
+
+    REQUIRE(f.bitdepth() == 32);
+    REQUIRE(f.frames_in_file() == 3);
+
     REQUIRE(f.exptime() == std::chrono::seconds(5));
     REQUIRE(f.period() == std::chrono::seconds(1));
 }
@@ -471,6 +476,7 @@ TEST_CASE("Parse JUNGFRAU 7.2 master from string stream") {
     REQUIRE(f.pixels_x() == 1024);
     REQUIRE(f.pixels_y() == 256);
     REQUIRE(f.max_frames_per_file() == 3);
+    REQUIRE(f.bitdepth() == 16);
     REQUIRE(f.frame_discard_policy() == FrameDiscardPolicy::NoDiscard);
     REQUIRE(f.frame_padding() == 1);
     REQUIRE(f.total_frames_expected() == 10);
@@ -635,6 +641,7 @@ TEST_CASE("Parse v8.0 MYTHEN3 from stream") {
     REQUIRE(f.total_frames_expected() ==
             1); // This is Total Frames in the master file
     REQUIRE(f.counter_mask() == 4);
+    REQUIRE(f.bitdepth() == 32);
 
     // Mythen3 has three exposure times, but for the moment we don't handle them
     REQUIRE(f.exptime() == std::nullopt);
@@ -719,6 +726,7 @@ TEST_CASE("Parse a v7.1 Mythen3 from stream") {
     REQUIRE(f.total_frames_expected() ==
             1); // This is Total Frames in the master file
     REQUIRE(f.counter_mask() == 0x7);
+    REQUIRE(f.bitdepth() == 32);
 
     // Mythen3 has three exposure times, but for the moment we don't handle them
     REQUIRE(f.exptime() == std::nullopt);
