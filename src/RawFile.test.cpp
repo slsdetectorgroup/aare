@@ -292,7 +292,8 @@ TEST_CASE("check find_geometry", "[.with-data]") {
 
 TEST_CASE("Open multi module file with ROI", "[.with-data]") {
 
-    auto fpath = test_data_path() / "raw/SingleChipROI/Data_master_0.json";
+    auto fpath =
+        test_data_path() / "raw/ROITestData/SingleChipROI/Data_master_0.json";
     REQUIRE(std::filesystem::exists(fpath));
 
     RawFile f(fpath, "r");
