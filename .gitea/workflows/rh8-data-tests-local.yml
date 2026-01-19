@@ -14,7 +14,11 @@ jobs:
       - uses: actions/checkout@v4
 
       - name: Clone aare-test-data repository
-        run: git clone https://gitea.psi.ch/detectors/aare-test-data.git ../aare-test-data
+        run: |
+          git lfs install
+          git clone https://gitea.psi.ch/detectors/aare-test-data.git ../aare-test-data
+          cd ../aare-test-data
+          git lfs pull
 
       - name: Build library 
         run: |
