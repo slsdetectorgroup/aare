@@ -26,6 +26,10 @@ jobs:
           python3.12 -m pip install --upgrade pip
           python3.12 -m pip install pytest
           python3.12 -m pip install numpy
+          python3.12 -m pip install pytest-check 
+          python3.12 -m pip install matplotlib 
+          python3.12 -m pip install boost-histogram
+
 
       - name: Build library 
         run: |
