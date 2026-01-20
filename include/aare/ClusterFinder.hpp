@@ -163,7 +163,7 @@ class ClusterFinder {
 
                                     // If the cluster type is an integral type, then we need to round the value before storing it 
                                     if constexpr(std::is_integral<CT>::value) {
-                                        auto tmp = std::round(frame(iy + ir, ix + ic) - m_pedestal.mean(iy + ir, ix + ic));
+                                        auto tmp = std::lround(frame(iy + ir, ix + ic) - m_pedestal.mean(iy + ir, ix + ic));
                                         cluster.data[i] = static_cast<CT>(tmp); 
                                     }
                                     // On the other hand if it's a floating point type we can just static cast directly
