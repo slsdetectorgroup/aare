@@ -2,7 +2,7 @@
 from . import _aare
 
 
-from ._aare import File, RawMasterFile, RawSubFile, JungfrauDataFile
+from ._aare import File, RawMasterFile, RawSubFile, Hdf5MasterFile, JungfrauDataFile
 from ._aare import Pedestal_d, Pedestal_f, ClusterFinder_Cluster3x3i, VarClusterFinder
 from ._aare import DetectorType
 from ._aare import hitmap
@@ -23,6 +23,7 @@ from ._aare import apply_custom_weights
 
 from .CtbRawFile import CtbRawFile
 from .RawFile import RawFile
+from .Hdf5File import Hdf5File
 from .ScanParameters import ScanParameters
 
 from .utils import random_pixels, random_pixel, flat_list, add_colorbar

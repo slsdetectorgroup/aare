@@ -14,22 +14,24 @@ CtbRawFile::CtbRawFile(const std::filesystem::path &fname) : m_master(fname) {
     m_file.open(m_master.data_fname(0, 0), std::ios::binary);
 }
 
-void CtbRawFile::read_into(std::byte *image_buf, DetectorHeader* header) {
-    if(m_current_frame >= m_master.frames_in_file()){
+void CtbRawFile::read_into(std::byte *image_buf, DetectorHeader *header) {
+    if (m_current_frame >= m_master.frames_in_file()) {
         throw std::runtime_error(LOCATION + " End of file reached");
     }
 
-    if(m_current_frame != 0 && m_current_frame % m_master.max_frames_per_file() == 0){
-        open_data_file(m_current_subfile+1);
+    if (m_current_frame != 0 &&
+        m_current_frame % m_master.max_frames_per_file() == 0) {
+        open_data_file(m_current_subfile + 1);
     }
-    
-    if(header){
+
+    if (header) {
         m_file.read(reinterpret_cast<char *>(header), sizeof(DetectorHeader));
-    }else{
+    } else {
         m_file.seekg(sizeof(DetectorHeader), std::ios::cur);
     }
 
-    m_file.read(reinterpret_cast<char *>(image_buf), m_master.image_size_in_bytes());
+    m_file.read(reinterpret_cast<char *>(image_buf),
+                m_master.image_size_in_bytes());
     m_current_frame++;
 }
 
@@ -38,13 +40,16 @@ void CtbRawFile::seek(size_t frame_number) {
         open_data_file(index);
     }
     size_t frame_number_in_file = frame_number % m_master.max_frames_per_file();
-    m_file.seekg((sizeof(DetectorHeader)+m_master.image_size_in_bytes()) * frame_number_in_file);
+    m_file.seekg((sizeof(DetectorHeader) + m_master.image_size_in_bytes()) *
+                 frame_number_in_file);
     m_current_frame = frame_number;
 }
 
 size_t CtbRawFile::tell() const { return m_current_frame; }
 
-size_t CtbRawFile::image_size_in_bytes() const { return m_master.image_size_in_bytes(); }
+size_t CtbRawFile::image_size_in_bytes() const {
+    return m_master.image_size_in_bytes();
+}
 
 size_t CtbRawFile::frames_in_file() const { return m_master.frames_in_file(); }
 
@@ -63,12 +68,11 @@ void CtbRawFile::open_data_file(size_t subfile_index) {
         throw std::runtime_error(LOCATION + "Subfile index out of range");
     }
     m_current_subfile = subfile_index;
-    m_file = std::ifstream(m_master.data_fname(0, subfile_index), std::ios::binary); // only one module for CTB
+    m_file = std::ifstream(m_master.data_fname(0, subfile_index),
+                           std::ios::binary); // only one module for CTB
     if (!m_file.is_open()) {
         throw std::runtime_error(LOCATION + "Could not open data file");
     }
 }
-
-
 
 } // namespace aare

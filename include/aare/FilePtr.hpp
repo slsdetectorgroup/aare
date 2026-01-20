@@ -12,7 +12,7 @@ class FilePtr {
 
   public:
     FilePtr() = default;
-    FilePtr(const std::filesystem::path& fname, const std::string& mode);
+    FilePtr(const std::filesystem::path &fname, const std::string &mode);
     FilePtr(const FilePtr &) = delete;            // we don't want a copy
     FilePtr &operator=(const FilePtr &) = delete; // since we handle a resource
     FilePtr(FilePtr &&other);

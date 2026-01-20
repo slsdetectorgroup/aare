@@ -31,6 +31,8 @@ AARE
     pyJungfrauDataFile
     pyRawFile
     pyRawMasterFile
+    pyHdf5File
+    pyHdf5MasterFile
     pyVarClusterFinder
 
     pyFit
@@ -55,6 +57,8 @@ AARE
     RawFile
     RawSubFile
     RawMasterFile
+    Hdf5File
+    Hdf5MasterFile
     VarClusterFinder
 
 
@@ -63,4 +67,6 @@ AARE
     :caption: Developer
     :maxdepth: 3
     
+    Philosophy
+    Workflow
     Tests

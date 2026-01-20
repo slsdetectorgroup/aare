@@ -23,8 +23,7 @@ using namespace aare;
 
 template <typename T, uint8_t ClusterSizeX, uint8_t ClusterSizeY,
           typename CoordType = uint16_t>
-void define_ClusterFinderMT(py::module &m,
-                                       const std::string &typestr) {
+void define_ClusterFinderMT(py::module &m, const std::string &typestr) {
     auto class_name = fmt::format("ClusterFinderMT_{}", typestr);
 
     using ClusterType = Cluster<T, ClusterSizeX, ClusterSizeY, CoordType>;
@@ -49,9 +48,11 @@ void define_ClusterFinderMT(py::module &m,
                 return;
             },
             py::arg(), py::arg("frame_number") = 0)
-        .def_property_readonly("cluster_size", [](ClusterFinderMT<ClusterType, uint16_t, pd_type> &self){
-            return py::make_tuple(ClusterSizeX, ClusterSizeY);
-        })
+        .def_property_readonly(
+            "cluster_size",
+            [](ClusterFinderMT<ClusterType, uint16_t, pd_type> &self) {
+                return py::make_tuple(ClusterSizeX, ClusterSizeY);
+            })
         .def("clear_pedestal",
              &ClusterFinderMT<ClusterType, uint16_t, pd_type>::clear_pedestal)
         .def("sync", &ClusterFinderMT<ClusterType, uint16_t, pd_type>::sync)
@@ -76,6 +77,5 @@ void define_ClusterFinderMT(py::module &m,
             },
             py::arg("thread_index") = 0);
 }
-
 
 #pragma GCC diagnostic pop

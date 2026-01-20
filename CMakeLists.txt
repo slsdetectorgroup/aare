@@ -53,6 +53,7 @@ option(AARE_DOCS "Build documentation" OFF)
 option(AARE_VERBOSE "Verbose output" OFF)
 option(AARE_CUSTOM_ASSERT "Use custom assert" OFF)
 option(AARE_INSTALL_PYTHONEXT "Install the python extension in the install tree under CMAKE_INSTALL_PREFIX/aare/" OFF)
+option(AARE_HDF5 "Hdf5 File Format" OFF)
 option(AARE_ASAN "Enable AddressSanitizer" OFF)
 
 # Configure which of the dependencies to use FetchContent for
@@ -81,7 +82,7 @@ if(AARE_VERBOSE)
     add_compile_definitions(AARE_VERBOSE)
     add_compile_definitions(AARE_LOG_LEVEL=aare::logDEBUG5)
 else()
-    add_compile_definitions(AARE_LOG_LEVEL=aare::logERROR)
+    add_compile_definitions(AARE_LOG_LEVEL=aare::logINFOBLUE)
 endif()
 
 if(AARE_CUSTOM_ASSERT)
@@ -356,6 +357,10 @@ set(PUBLICHEADERS
     include/aare/CtbRawFile.hpp
     include/aare/ClusterVector.hpp
     include/aare/decode.hpp
+    include/aare/type_traits.hpp
+    include/aare/scan_parameters.hpp
+    include/aare/to_string.hpp
+    include/aare/string_utils.hpp
     include/aare/defs.hpp
     include/aare/Dtype.hpp
     include/aare/File.hpp
@@ -366,6 +371,7 @@ set(PUBLICHEADERS
     include/aare/GainMap.hpp
     include/aare/geo_helpers.hpp
     include/aare/JungfrauDataFile.hpp
+    include/aare/logger.hpp
     include/aare/NDArray.hpp
     include/aare/NDView.hpp
     include/aare/NumpyFile.hpp
@@ -383,6 +389,8 @@ set(PUBLICHEADERS
 set(SourceFiles
     ${CMAKE_CURRENT_SOURCE_DIR}/src/CtbRawFile.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/src/defs.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/to_string.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/string_utils.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/src/Dtype.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/src/decode.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/src/Frame.cpp
@@ -401,6 +409,22 @@ set(SourceFiles
     ${CMAKE_CURRENT_SOURCE_DIR}/src/utils/task.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/src/utils/ifstream_helpers.cpp
 )
+
+# HDF5
+if (AARE_HDF5)
+    find_package(HDF5 1.10 COMPONENTS CXX REQUIRED)
+	    add_definitions( 
+	        ${HDF5_DEFINITIONS}
+	    )
+	    list (APPEND PUBLICHEADERS 
+            include/aare/Hdf5File.hpp
+            include/aare/Hdf5MasterFile.hpp
+	    )
+	    list (APPEND SourceFiles 
+            ${CMAKE_CURRENT_SOURCE_DIR}/src/Hdf5File.cpp
+            ${CMAKE_CURRENT_SOURCE_DIR}/src/Hdf5MasterFile.cpp
+	    )
+endif (AARE_HDF5)
 
 add_library(aare_core STATIC ${SourceFiles})
 target_include_directories(aare_core PUBLIC 
@@ -424,6 +448,16 @@ target_link_libraries(
 
 )
 
+if (AARE_HDF5 AND HDF5_FOUND)
+    add_definitions(-DHDF5_FOUND)
+    target_link_libraries(aare_core PUBLIC 
+        ${HDF5_LIBRARIES}
+    )
+    target_include_directories(aare_core PUBLIC
+        ${HDF5_INCLUDE_DIRS}
+    )
+endif()
+
 set_target_properties(aare_core PROPERTIES
     ARCHIVE_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}
     PUBLIC_HEADER "${PUBLICHEADERS}"
@@ -437,6 +471,8 @@ if(AARE_TESTS)
     set(TestSources
             ${CMAKE_CURRENT_SOURCE_DIR}/src/algorithm.test.cpp
             ${CMAKE_CURRENT_SOURCE_DIR}/src/defs.test.cpp
+            ${CMAKE_CURRENT_SOURCE_DIR}/src/to_string.test.cpp
+            ${CMAKE_CURRENT_SOURCE_DIR}/src/scan_parameters.test.cpp
             ${CMAKE_CURRENT_SOURCE_DIR}/src/decode.test.cpp
             ${CMAKE_CURRENT_SOURCE_DIR}/src/Dtype.test.cpp
             ${CMAKE_CURRENT_SOURCE_DIR}/src/Frame.test.cpp
@@ -459,8 +495,15 @@ if(AARE_TESTS)
             ${CMAKE_CURRENT_SOURCE_DIR}/src/utils/task.test.cpp
 
         )
+    if(HDF5_FOUND)
+        list (APPEND TestSources 
+            ${CMAKE_CURRENT_SOURCE_DIR}/src/Hdf5MasterFile.test.cpp
+            ${CMAKE_CURRENT_SOURCE_DIR}/src/Hdf5File.test.cpp
+        )
+    endif() 
     target_sources(tests PRIVATE ${TestSources} )
 endif()
+
 
 
 

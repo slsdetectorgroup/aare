@@ -18,9 +18,9 @@
 // @author Jordan DeLong (delong.j@fb.com)
 
 // Changes made by PSD Detector Group:
-// Copied: Line 34 constexpr std::size_t hardware_destructive_interference_size = 128; from folly/lang/Align.h
-// Changed extension to .hpp
-// Changed namespace to aare
+// Copied: Line 34 constexpr std::size_t hardware_destructive_interference_size
+// = 128; from folly/lang/Align.h Changed extension to .hpp Changed namespace to
+// aare
 
 #pragma once
 
@@ -45,15 +45,14 @@ template <class T> struct ProducerConsumerQueue {
     ProducerConsumerQueue(const ProducerConsumerQueue &) = delete;
     ProducerConsumerQueue &operator=(const ProducerConsumerQueue &) = delete;
 
-    
-    ProducerConsumerQueue(ProducerConsumerQueue &&other){
+    ProducerConsumerQueue(ProducerConsumerQueue &&other) {
         size_ = other.size_;
         records_ = other.records_;
         other.records_ = nullptr;
         readIndex_ = other.readIndex_.load(std::memory_order_acquire);
         writeIndex_ = other.writeIndex_.load(std::memory_order_acquire);
     }
-    ProducerConsumerQueue &operator=(ProducerConsumerQueue &&other){
+    ProducerConsumerQueue &operator=(ProducerConsumerQueue &&other) {
         size_ = other.size_;
         records_ = other.records_;
         other.records_ = nullptr;
@@ -61,16 +60,17 @@ template <class T> struct ProducerConsumerQueue {
         writeIndex_ = other.writeIndex_.load(std::memory_order_acquire);
         return *this;
     }
-    
-    
-    ProducerConsumerQueue():ProducerConsumerQueue(2){};
+
+    ProducerConsumerQueue() : ProducerConsumerQueue(2){};
     // size must be >= 2.
     //
     // Also, note that the number of usable slots in the queue at any
     // given time is actually (size-1), so if you start with an empty queue,
     // isFull() will return true after size-1 insertions.
     explicit ProducerConsumerQueue(uint32_t size)
-        : size_(size), records_(static_cast<T *>(std::malloc(sizeof(T) * size))), readIndex_(0), writeIndex_(0) {
+        : size_(size),
+          records_(static_cast<T *>(std::malloc(sizeof(T) * size))),
+          readIndex_(0), writeIndex_(0) {
         assert(size >= 2);
         if (!records_) {
             throw std::bad_alloc();
@@ -154,7 +154,8 @@ template <class T> struct ProducerConsumerQueue {
     }
 
     bool isEmpty() const {
-        return readIndex_.load(std::memory_order_acquire) == writeIndex_.load(std::memory_order_acquire);
+        return readIndex_.load(std::memory_order_acquire) ==
+               writeIndex_.load(std::memory_order_acquire);
     }
 
     bool isFull() const {
@@ -175,7 +176,8 @@ template <class T> struct ProducerConsumerQueue {
     //   be removing items concurrently).
     // * It is undefined to call this from any other thread.
     size_t sizeGuess() const {
-        int ret = writeIndex_.load(std::memory_order_acquire) - readIndex_.load(std::memory_order_acquire);
+        int ret = writeIndex_.load(std::memory_order_acquire) -
+                  readIndex_.load(std::memory_order_acquire);
         if (ret < 0) {
             ret += size_;
         }
@@ -192,7 +194,7 @@ template <class T> struct ProducerConsumerQueue {
     // const uint32_t size_;
     uint32_t size_;
     // T *const records_;
-    T* records_;
+    T *records_;
 
     alignas(hardware_destructive_interference_size) AtomicIndex readIndex_;
     alignas(hardware_destructive_interference_size) AtomicIndex writeIndex_;

@@ -4,16 +4,16 @@
 
 namespace aare {
 
-
-
-NumpyFile::NumpyFile(const std::filesystem::path &fname, const std::string &mode, FileConfig cfg) {
+NumpyFile::NumpyFile(const std::filesystem::path &fname,
+                     const std::string &mode, FileConfig cfg) {
     // TODO! add opts to constructor
 
     m_mode = mode;
     if (mode == "r") {
         fp = fopen(fname.string().c_str(), "rb");
         if (!fp) {
-            throw std::runtime_error(fmt::format("Could not open: {} for reading", fname.string()));
+            throw std::runtime_error(
+                fmt::format("Could not open: {} for reading", fname.string()));
         }
         load_metadata();
     } else if (mode == "w") {
@@ -24,11 +24,15 @@ NumpyFile::NumpyFile(const std::filesystem::path &fname, const std::string &mode
         m_header.shape = {0, cfg.rows, cfg.cols};
         fp = fopen(fname.string().c_str(), "wb");
         if (!fp) {
-            throw std::runtime_error(fmt::format("Could not open: {} for reading", fname.string()));
+            throw std::runtime_error(
+                fmt::format("Could not open: {} for reading", fname.string()));
         }
-        initial_header_len = aare::NumpyHelpers::write_header(std::filesystem::path(fname.c_str()), m_header);
+        initial_header_len = aare::NumpyHelpers::write_header(
+            std::filesystem::path(fname.c_str()), m_header);
     }
-    m_pixels_per_frame = std::accumulate(m_header.shape.begin() + 1, m_header.shape.end(), 1, std::multiplies<>());
+    m_pixels_per_frame =
+        std::accumulate(m_header.shape.begin() + 1, m_header.shape.end(), 1,
+                        std::multiplies<>());
 
     m_bytes_per_frame = m_header.dtype.bitdepth() / 8 * m_pixels_per_frame;
 }
@@ -63,7 +67,8 @@ void NumpyFile::get_frame_into(size_t frame_number, std::byte *image_buf) {
     if (frame_number > m_header.shape[0]) {
         throw std::invalid_argument("Frame number out of range");
     }
-    if (fseek(fp, header_size + frame_number * m_bytes_per_frame, SEEK_SET)) // NOLINT
+    if (fseek(fp, header_size + frame_number * m_bytes_per_frame,
+              SEEK_SET)) // NOLINT
         throw std::runtime_error("Could not seek to frame");
 
     size_t const rc = fread(image_buf, m_bytes_per_frame, 1, fp);
@@ -113,7 +118,8 @@ NumpyFile::~NumpyFile() noexcept {
         // write header
         size_t const rc = fwrite(header_str.c_str(), header_str.size(), 1, fp);
         if (rc != 1) {
-            std::cout << "Error writing header to numpy file in destructor" << std::endl;
+            std::cout << "Error writing header to numpy file in destructor"
+                      << std::endl;
         }
     }
 
@@ -140,8 +146,10 @@ void NumpyFile::load_metadata() {
     }
 
     // read version
-    rc = fread(reinterpret_cast<char *>(&major_ver_), sizeof(major_ver_), 1, fp);
-    rc += fread(reinterpret_cast<char *>(&minor_ver_), sizeof(minor_ver_), 1, fp);
+    rc =
+        fread(reinterpret_cast<char *>(&major_ver_), sizeof(major_ver_), 1, fp);
+    rc +=
+        fread(reinterpret_cast<char *>(&minor_ver_), sizeof(minor_ver_), 1, fp);
     if (rc != 2) {
         throw std::runtime_error("Error reading numpy version");
     }
@@ -159,7 +167,8 @@ void NumpyFile::load_metadata() {
     if (rc != 1) {
         throw std::runtime_error("Error reading header length");
     }
-    header_size = aare::NumpyHelpers::magic_string_length + 2 + header_len_size + header_len;
+    header_size = aare::NumpyHelpers::magic_string_length + 2 +
+                  header_len_size + header_len;
     if (header_size % 16 != 0) {
         fmt::print("Warning: header length is not a multiple of 16\n");
     }
