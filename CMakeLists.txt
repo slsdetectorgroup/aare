@@ -1,3 +1,4 @@
+# SPDX-License-Identifier: MPL-2.0
 cmake_minimum_required(VERSION 3.15)
 
 project(aare 
@@ -386,9 +387,10 @@ set(SourceFiles
     ${CMAKE_CURRENT_SOURCE_DIR}/src/RawFile.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/src/RawMasterFile.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/src/RawSubFile.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/to_string.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/src/utils/task.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/src/utils/ifstream_helpers.cpp
-)
+) 
 
 add_library(aare_core STATIC ${SourceFiles})
 target_include_directories(aare_core PUBLIC 
@@ -412,6 +414,8 @@ target_link_libraries(
 
 )
 
+set_property(TARGET aare_core PROPERTY POSITION_INDEPENDENT_CODE ON)
+
 if(AARE_TESTS)
     target_compile_definitions(aare_core PRIVATE AARE_TESTS)
 endif()
@@ -431,10 +435,6 @@ set_target_properties(aare_core PROPERTIES
     PUBLIC_HEADER "${PUBLICHEADERS}"
 )
 
-if (AARE_PYTHON_BINDINGS)
-    set_property(TARGET aare_core PROPERTY POSITION_INDEPENDENT_CODE ON)
-endif()
-
 if(AARE_TESTS)
     set(TestSources
             ${CMAKE_CURRENT_SOURCE_DIR}/src/algorithm.test.cpp
@@ -444,6 +444,7 @@ if(AARE_TESTS)
             ${CMAKE_CURRENT_SOURCE_DIR}/src/Dtype.test.cpp
             ${CMAKE_CURRENT_SOURCE_DIR}/src/Frame.test.cpp
             ${CMAKE_CURRENT_SOURCE_DIR}/src/DetectorGeometry.test.cpp
+            ${CMAKE_CURRENT_SOURCE_DIR}/src/Interpolation.test.cpp
             ${CMAKE_CURRENT_SOURCE_DIR}/src/RawMasterFile.test.cpp
             ${CMAKE_CURRENT_SOURCE_DIR}/src/NDArray.test.cpp
             ${CMAKE_CURRENT_SOURCE_DIR}/src/NDView.test.cpp
@@ -460,10 +461,12 @@ if(AARE_TESTS)
             ${CMAKE_CURRENT_SOURCE_DIR}/src/RawFile.test.cpp
             ${CMAKE_CURRENT_SOURCE_DIR}/src/RawSubFile.test.cpp
             ${CMAKE_CURRENT_SOURCE_DIR}/src/utils/task.test.cpp
+            ${CMAKE_CURRENT_SOURCE_DIR}/src/to_string.test.cpp
 
         )
     target_sources(tests PRIVATE ${TestSources} )
 endif()
+
 
 if(AARE_MASTER_PROJECT)
     install(TARGETS aare_core aare_compiler_flags 
@@ -474,7 +477,6 @@ if(AARE_MASTER_PROJECT)
     )
 endif()
 
-set(CMAKE_POSITION_INDEPENDENT_CODE ON)
 set(CMAKE_INSTALL_RPATH $ORIGIN)
 set(CMAKE_BUILD_WITH_INSTALL_RPATH FALSE)
 

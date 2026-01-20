@@ -16,6 +16,8 @@ build:
 
 requirements:
   build:
+    - {{ compiler('c') }}
+    - {{ stdlib("c") }}
     - {{ compiler('cxx') }}
     - cmake
     - ninja
@@ -47,4 +49,5 @@ test:
     - python -m pytest python/tests
 
 about:
+  license: SPDX-License-Identifier MPL-2.0
   summary: Data analysis library for hybrid pixel detectors from PSI 

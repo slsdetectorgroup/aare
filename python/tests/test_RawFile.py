@@ -1,3 +1,4 @@
+# SPDX-License-Identifier: MPL-2.0
 import pytest
 from aare import RawFile
 import numpy as np

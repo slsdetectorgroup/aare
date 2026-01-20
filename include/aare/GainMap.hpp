@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: MPL-2.0
 /************************************************
  * @file GainMap.hpp
  * @short function to apply gain map of image size to a vector of clusters -

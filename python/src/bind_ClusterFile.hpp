@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: MPL-2.0
 #include "aare/CalculateEta.hpp"
 #include "aare/ClusterFile.hpp"
 #include "aare/defs.hpp"
@@ -44,14 +45,15 @@ void define_ClusterFile(py::module &m, const std::string &typestr) {
                  auto v = new ClusterVector<ClusterType>(self.read_frame());
                  return v;
              })
-        .def("set_roi", &ClusterFile<ClusterType>::set_roi,
-             py::arg("roi"))
+        .def("set_roi", &ClusterFile<ClusterType>::set_roi, py::arg("roi"))
+        .def("tell", &ClusterFile<ClusterType>::tell)
         .def(
             "set_noise_map",
             [](ClusterFile<ClusterType> &self, py::array_t<int32_t> noise_map) {
                 auto view = make_view_2d(noise_map);
                 self.set_noise_map(view);
-            }, py::arg("noise_map"))
+            },
+            py::arg("noise_map"))
 
         .def("set_gain_map",
              [](ClusterFile<ClusterType> &self, py::array_t<double> gain_map) {
@@ -78,17 +80,6 @@ void define_ClusterFile(py::module &m, const std::string &typestr) {
             }
             return v;
         });
-}
-
-template <typename Type, uint8_t CoordSizeX, uint8_t CoordSizeY,
-          typename CoordType = uint16_t>
-void register_calculate_eta(py::module &m) {
-    using ClusterType = Cluster<Type, CoordSizeX, CoordSizeY, CoordType>;
-    m.def("calculate_eta2",
-          [](const aare::ClusterVector<ClusterType> &clusters) {
-              auto eta2 = new NDArray<double, 2>(calculate_eta2(clusters));
-              return return_image_data(eta2);
-          });
 }
 
 #pragma GCC diagnostic pop

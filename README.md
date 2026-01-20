@@ -1,6 +1,14 @@
 # aare
 Data analysis library for PSI hybrid detectors
 
+## Documentation 
+
+Detailed documentation including installation can be found in [Documentation](https://slsdetectorgroup.github.io/aare/)
+
+## License
+
+This project is licensed under the MPL-2.0 license.
+See the LICENSE file or https://www.mozilla.org/en-US/MPL/ for details.
 
 ## Build and install
 

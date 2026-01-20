@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: MPL-2.0
 #pragma once
 #include <atomic>
 #include <filesystem>
@@ -11,7 +12,8 @@
 namespace aare {
 
 template <typename ClusterType,
-          typename = std::enable_if_t<is_cluster_v<ClusterType>>>
+          typename = std::enable_if_t<is_cluster_v<ClusterType>>,
+          typename = std::enable_if_t<no_2x2_cluster<ClusterType>::value>>
 class ClusterFileSink {
     // ProducerConsumerQueue<ClusterVector<ClusterType>> *m_source;
     BlockingQueue<ClusterVector<ClusterType>> *m_source;

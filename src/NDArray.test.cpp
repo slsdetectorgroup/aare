@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: MPL-2.0
 #include "aare/NDArray.hpp"
 #include <array>
 #include <catch2/benchmark/catch_benchmark.hpp>
@@ -102,6 +103,67 @@ TEST_CASE("Indexing of a 3D image") {
     REQUIRE(img(0, 1, 1) == 3);
     REQUIRE(img(1, 2, 0) == 12);
     REQUIRE(img(2, 3, 1) == 23);
+}
+
+TEST_CASE("Access to data using a pointer"){
+    // This pattern is discouraged but sometimes useful
+    NDArray<int,2> img{{4,5},0};
+    int* data_ptr = img.data();
+    for(int i=0; i < img.size(); ++i){
+        data_ptr[i] = i*2;
+    }
+
+    // Cross check using operator[]
+    for(int i=0; i < img.size(); ++i){
+        REQUIRE(img[i] == i*2);
+    }
+}
+
+TEST_CASE("Access to data using a pointer for a const NDArray"){
+    // This pattern is discouraged but sometimes useful
+
+    // Using a lambda to create a const NDArray with known data
+    const NDArray<int,2> arr = [](){
+        NDArray<int,2> img{{4,5},0};
+        int* data_ptr = img.data();
+        for(int i=0; i < img.size(); ++i){
+            data_ptr[i] = i*3;
+        }
+        return img;
+    }();
+
+    // Cross check using data() pointer, if compiles we can get a const pointer
+    const int* const_data_ptr = arr.data();
+    for(int i=0; i < arr.size(); ++i){
+        REQUIRE(const_data_ptr[i] == i*3);
+    }
+}
+
+TEST_CASE("Use *buffer"){
+    // Another useful but discouraged pattern. But can be useful when getting data
+    // from external sources
+    Shape<2> shape{{4, 5}};
+    NDArray<int, 2> src(shape);
+    NDArray<int, 2> dst(shape);
+
+    for (uint32_t i = 0; i < src.size(); ++i) {
+        src(i) = static_cast<int>(i * 7);
+    }
+
+    std::memcpy(dst.buffer(), src.buffer(), src.total_bytes());
+
+    REQUIRE(src.data() != dst.data());
+    for (uint32_t i = 0; i < dst.size(); ++i) {
+        REQUIRE(dst(i) == src(i));
+    }
+}
+
+TEST_CASE("Increment elements using prefix ++ operator") {
+    NDArray<int, 1> a{{5}, 0};
+    ++a;
+    for (const auto it : a) {
+        REQUIRE(it == 1);
+    }
 }
 
 TEST_CASE("Divide double by int") {
@@ -429,6 +491,42 @@ TEST_CASE("Construct an NDArray from an std::array") {
     }
 }
 
+TEST_CASE("Copy construct an NDArray"){
+    NDArray<int,2> a({{3,4}},0);
+    a(1,1) = 42;
+    a(2,3) = 84;
+
+    NDArray<int,2> b(a);
+    REQUIRE(b.shape() == Shape<2>{3,4});
+    REQUIRE(b.size() == 12);
+    REQUIRE(b(1,1) == 42);
+    REQUIRE(b(2,3) == 84);
+
+    // Modifying b should not affect a
+    b(1,1) = 7;
+    REQUIRE(a(1,1) == 42);
+
+    REQUIRE(a.data() != b.data());
+}
+
+
+TEST_CASE("Move construct an NDArray"){
+    NDArray<int,2> a({{3,4}},0);
+    a(1,1) = 42;
+    a(2,3) = 84;
+
+    NDArray<int,2> b(std::move(a));
+    REQUIRE(b.shape() == Shape<2>{3,4});
+    REQUIRE(b.size() == 12);
+    REQUIRE(b(1,1) == 42);
+    REQUIRE(b(2,3) == 84);
+
+    // The moved from object should be in a unspecified but valid state.
+    // This means original array pointer should be null, and size zero
+    REQUIRE(a.size() == 0);
+    REQUIRE(a.shape() == Shape<2>{0,0});
+    REQUIRE(a.data() == nullptr);
+}
 
 
 TEST_CASE("Move construct from an array with Ndim + 1") {

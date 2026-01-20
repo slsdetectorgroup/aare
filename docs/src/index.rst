@@ -22,19 +22,14 @@ AARE
 
 .. toctree::
     :caption: Python API
-    :maxdepth: 1
-    
-    pyFile
-    pycalibration
-    pyCtbRawFile
-    pyClusterFile
-    pyClusterVector
-    pyJungfrauDataFile
-    pyRawFile
-    pyRawMasterFile
-    pyVarClusterFinder
+    :maxdepth: 3
+    :hidden:
 
+    pycalibration
+    python/cluster/index
+    python/file/index
     pyFit
+    
 
 
 .. toctree::
@@ -47,10 +42,12 @@ AARE
     Frame
     File
     Dtype
+    Cluster
     ClusterFinder
     ClusterFinderMT
     ClusterFile
     ClusterVector
+    Interpolation
     JungfrauDataFile
     Pedestal
     RawFile

@@ -1,3 +1,4 @@
+# SPDX-License-Identifier: MPL-2.0
 find_package(Doxygen REQUIRED)
 find_package(Sphinx REQUIRED)
 
@@ -11,15 +12,19 @@ set(SPHINX_SOURCE ${CMAKE_CURRENT_SOURCE_DIR}/src)
 set(SPHINX_BUILD ${CMAKE_CURRENT_BINARY_DIR})
 
 
-file(GLOB SPHINX_SOURCE_FILES CONFIGURE_DEPENDS "src/*.rst")
+file(GLOB_RECURSE SPHINX_SOURCE_FILES
+     CONFIGURE_DEPENDS
+     RELATIVE "${CMAKE_CURRENT_SOURCE_DIR}/src"
+     "${CMAKE_CURRENT_SOURCE_DIR}/src/*.rst"
+)
 
+foreach(relpath IN LISTS SPHINX_SOURCE_FILES)
+    set(src  "${CMAKE_CURRENT_SOURCE_DIR}/src/${relpath}")
+    set(dst  "${SPHINX_BUILD}/src/${relpath}")
 
-
-foreach(filename ${SPHINX_SOURCE_FILES})
-    get_filename_component(fname ${filename} NAME)
-    message(STATUS "Copying ${filename} to ${SPHINX_BUILD}/src/${fname}")
-    configure_file(${filename} "${SPHINX_BUILD}/src/${fname}")  
-endforeach(filename ${SPHINX_SOURCE_FILES})
+    message(STATUS "Copying ${src} to ${dst}")
+    configure_file("${src}" "${dst}" COPYONLY)
+endforeach()
 
 configure_file(
     "${CMAKE_CURRENT_SOURCE_DIR}/conf.py.in"
@@ -27,6 +32,8 @@ configure_file(
     @ONLY
 )
 
+file(COPY "${CMAKE_CURRENT_SOURCE_DIR}/figures"
+     DESTINATION "${SPHINX_BUILD}") 
 
 configure_file(
     "${CMAKE_CURRENT_SOURCE_DIR}/static/extra.css"

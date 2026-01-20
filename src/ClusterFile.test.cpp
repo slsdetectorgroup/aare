@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: MPL-2.0
 #include "aare/ClusterFile.hpp"
 #include "test_config.hpp"
 
@@ -279,7 +280,8 @@ TEST_CASE("Read cluster from multiple frame file", "[.with-data]") {
     }
 }
 
-TEST_CASE("Write cluster with potential padding", "[.with-data][.ClusterFile]") {
+TEST_CASE("Write cluster with potential padding",
+          "[.with-data][.ClusterFile]") {
 
     using ClusterType = Cluster<double, 3, 3>;
 
@@ -290,7 +292,7 @@ TEST_CASE("Write cluster with potential padding", "[.with-data][.ClusterFile]") 
     ClusterFile<ClusterType> file(fpath, 1000, "w");
 
     ClusterVector<ClusterType> clustervec(2);
-    int16_t coordinate = 5;
+    uint16_t coordinate = 5;
     clustervec.push_back(ClusterType{
         coordinate, coordinate, {0., 0., 0., 0., 0., 0., 0., 0., 0.}});
     clustervec.push_back(ClusterType{

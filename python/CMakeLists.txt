@@ -1,3 +1,4 @@
+# SPDX-License-Identifier: MPL-2.0
 
 find_package (Python 3.10 COMPONENTS Interpreter Development.Module REQUIRED)
 set(PYBIND11_FINDPYTHON ON) # Needed for RH8
@@ -31,7 +32,7 @@ set( PYTHON_FILES
     aare/CtbRawFile.py
     aare/ClusterFinder.py
     aare/ClusterVector.py
-
+    aare/Cluster.py
     aare/calibration.py
     aare/func.py
     aare/RawFile.py

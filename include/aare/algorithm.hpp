@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: MPL-2.0
 
 #pragma once
 #include <aare/NDArray.hpp>
@@ -107,6 +108,21 @@ template <typename Container> bool all_equal(const Container &c) {
                     }))
         return true;
     return false;
+}
+
+/**
+ * linear interpolation
+ * @param bin_edge left and right bin edges
+ * @param bin_values function values at bin edges
+ * @param coord coordinate to interpolate at
+ * @return interpolated value at coord
+ */
+inline double linear_interpolation(const std::pair<double, double> &bin_edge,
+                                   const std::pair<double, double> &bin_values,
+                                   const double coord) {
+    const double bin_width = bin_edge.second - bin_edge.first;
+    return bin_values.first * (1 - (coord - bin_edge.first) / bin_width) +
+           bin_values.second * (coord - bin_edge.first) / bin_width;
 }
 
 } // namespace aare

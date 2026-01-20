@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: MPL-2.0
 #pragma once
 #include "aare/ClusterFile.hpp"
 #include "aare/ClusterVector.hpp"
@@ -10,17 +11,25 @@
 
 namespace aare {
 
+template <typename ClusterType,
+          typename = std::enable_if_t<is_cluster_v<ClusterType>>>
+struct no_2x2_cluster {
+    constexpr static bool value =
+        ClusterType::cluster_size_x > 2 && ClusterType::cluster_size_y > 2;
+};
+
 template <typename ClusterType = Cluster<int32_t, 3, 3>,
-          typename FRAME_TYPE = uint16_t, typename PEDESTAL_TYPE = double>
+          typename FRAME_TYPE = uint16_t, typename PEDESTAL_TYPE = double,
+          typename = std::enable_if_t<no_2x2_cluster<ClusterType>::value>>
 class ClusterFinder {
     Shape<2> m_image_size;
     const PEDESTAL_TYPE m_nSigma;
     const PEDESTAL_TYPE c2;
     const PEDESTAL_TYPE c3;
-    Pedestal<PEDESTAL_TYPE> m_pedestal;
-    ClusterVector<ClusterType> m_clusters;
     const uint32_t ClusterSizeX;
     const uint32_t ClusterSizeY;
+    Pedestal<PEDESTAL_TYPE> m_pedestal;
+    ClusterVector<ClusterType> m_clusters;
 
     static const uint8_t SavedClusterSizeX = ClusterType::cluster_size_x;
     static const uint8_t SavedClusterSizeY = ClusterType::cluster_size_y;
@@ -151,11 +160,21 @@ class ClusterFinder {
                         for (int ic = -dx2; ic < dx2 + has_center_pixel_y; ic++) {
                             if (ix + ic >= 0 && ix + ic < frame.shape(1) &&
                                 iy + ir >= 0 && iy + ir < frame.shape(0)) {
-                                    
-                                CT tmp = static_cast<CT>(frame(iy + ir, ix + ic)) - static_cast<CT>(m_pedestal.mean(iy + ir, ix + ic));
-                                cluster.data[i] = tmp; // Watch for out of bounds access
-                                
-                            }
+
+                                    // If the cluster type is an integral type, then we need to round the value before storing it 
+                                    if constexpr(std::is_integral<CT>::value) {
+                                        auto tmp = std::round(frame(iy + ir, ix + ic) - m_pedestal.mean(iy + ir, ix + ic));
+                                        cluster.data[i] = static_cast<CT>(tmp); 
+                                    }
+                                    // On the other hand if it's a floating point type we can just static cast directly
+                                    else{
+                                        auto tmp = frame(iy + ir, ix + ic) - m_pedestal.mean(iy + ir, ix + ic);
+                                        cluster.data[i] = static_cast<CT>(tmp); 
+                                    }
+
+
+
+                                }
                             i++;
                         }
                     }

@@ -1,17 +1,12 @@
+// SPDX-License-Identifier: MPL-2.0
 #pragma once
 
 #include "aare/Cluster.hpp"
 #include "aare/ClusterVector.hpp"
 #include "aare/NDArray.hpp"
+#include "aare/defs.hpp"
 
 namespace aare {
-
-enum class corner : int {
-    cBottomLeft = 0,
-    cBottomRight = 1,
-    cTopLeft = 2,
-    cTopRight = 3
-};
 
 enum class pixel : int {
     pBottomLeft = 0,
@@ -25,146 +20,428 @@ enum class pixel : int {
     pTopRight = 8
 };
 
+// TODO: better to have sum after x,y
+/**
+ * eta struct
+ */
 template <typename T> struct Eta2 {
-    double x;
-    double y;
-    int c;
-    T sum;
+    /// @brief eta in x direction
+    double x{};
+    /// @brief eta in y direction
+    double y{};
+    /// @brief index of subcluster with highest energy value (given as corner
+    /// relative to cluster center)
+    corner c{0};
+    /// @brief photon energy (cluster sum)
+    T sum{};
 };
 
 /**
- * @brief Calculate the eta2 values for all clusters in a Clustervector
+ * @brief Calculate the eta2 values for all clusters in a ClusterVector
  */
 template <typename ClusterType,
           typename = std::enable_if_t<is_cluster_v<ClusterType>>>
-NDArray<double, 2> calculate_eta2(const ClusterVector<ClusterType> &clusters) {
-    NDArray<double, 2> eta2({static_cast<int64_t>(clusters.size()), 2});
+std::vector<Eta2<typename ClusterType::value_type>>
+calculate_eta2(const ClusterVector<ClusterType> &clusters) {
+
+    std::vector<Eta2<typename ClusterType::value_type>> eta2{};
+    eta2.reserve(clusters.size());
 
     for (size_t i = 0; i < clusters.size(); i++) {
         auto e = calculate_eta2(clusters[i]);
-        eta2(i, 0) = e.x;
-        eta2(i, 1) = e.y;
+        eta2.push_back(e);
     }
 
     return eta2;
 }
 
 /**
+ * @brief Calculate the full eta2 values for all clusters in a ClusterVector
+ */
+template <typename ClusterType,
+          typename = std::enable_if_t<is_cluster_v<ClusterType>>>
+std::vector<Eta2<typename ClusterType::value_type>>
+calculate_full_eta2(const ClusterVector<ClusterType> &clusters) {
+    std::vector<Eta2<typename ClusterType::value_type>> eta2{};
+    eta2.reserve(clusters.size());
+
+    for (size_t i = 0; i < clusters.size(); i++) {
+        auto e = calculate_full_eta2(clusters[i]);
+        eta2.push_back(e);
+    }
+
+    return eta2;
+}
+
+/**
+ * @brief Calculate eta3 for all 3x3 clusters in a ClusterVector
+ */
+template <typename ClusterType,
+          typename = std::enable_if_t<is_cluster_v<ClusterType>>>
+std::vector<Eta2<typename ClusterType::value_type>>
+calculate_eta3(const ClusterVector<ClusterType> &clusters) {
+    std::vector<Eta2<typename ClusterType::value_type>> eta2{};
+    eta2.reserve(clusters.size());
+
+    for (size_t i = 0; i < clusters.size(); i++) {
+        auto e = calculate_eta3(clusters[i]);
+        eta2.push_back(e);
+    }
+
+    return eta2;
+}
+
+/**
+ * @brief Calculate cross eta3 for all 3x3 clusters in a ClusterVector
+ */
+template <typename ClusterType,
+          typename = std::enable_if_t<is_cluster_v<ClusterType>>>
+std::vector<Eta2<typename ClusterType::value_type>>
+calculate_cross_eta3(const ClusterVector<ClusterType> &clusters) {
+    std::vector<Eta2<typename ClusterType::value_type>> eta2{};
+    eta2.reserve(clusters.size());
+
+    for (size_t i = 0; i < clusters.size(); i++) {
+        auto e = calculate_cross_eta3(clusters[i]);
+        eta2.push_back(e);
+    }
+
+    return eta2;
+}
+
+/**
+ * @brief helper function to calculate eta2 x and y values
+ * @param eta reference to the Eta2 object to update
+ * @param left_x value of the left pixel
+ * @param right_x value of the right pixel
+ * @param bottom_y value of the bottom pixel
+ * @param top_y value of the top pixel
+ */
+template <typename T>
+inline void calculate_eta2(Eta2<T> &eta, const T left_x, const T right_x,
+                           const T bottom_y, const T top_y) {
+    if ((right_x + left_x) != 0)
+        eta.x = static_cast<double>(right_x) /
+                static_cast<double>(right_x + left_x); // between (0,1) the
+                                                       // closer to zero left
+                                                       // value probably larger
+    if ((top_y + bottom_y) != 0)
+        eta.y = static_cast<double>(top_y) /
+                static_cast<double>(top_y + bottom_y); // between (0,1) the
+                                                       // closer to zero bottom
+                                                       // value probably larger
+}
+
+/**
  * @brief Calculate the eta2 values for a generic sized cluster and return them
- * in a Eta2 struct containing etay, etax and the index of the respective 2x2
- * subcluster.
+ * in a Eta2 struct containing etay, etax and the index (as corner) of the
+ * respective 2x2 subcluster relative to the cluster center.
  */
 template <typename T, uint8_t ClusterSizeX, uint8_t ClusterSizeY,
-          typename CoordType>
+          typename CoordType = uint16_t>
 Eta2<T>
 calculate_eta2(const Cluster<T, ClusterSizeX, ClusterSizeY, CoordType> &cl) {
-    Eta2<T> eta{};
 
-    auto max_sum = cl.max_sum_2x2();
-    eta.sum = max_sum.first;
-    auto c = max_sum.second;
+    static_assert(ClusterSizeX > 1 && ClusterSizeY > 1);
+    Eta2<T> eta{};
 
     size_t cluster_center_index =
         (ClusterSizeX / 2) + (ClusterSizeY / 2) * ClusterSizeX;
 
-    size_t index_bottom_left_max_2x2_subcluster =
-        (int(c / (ClusterSizeX - 1))) * ClusterSizeX + c % (ClusterSizeX - 1);
+    auto max_sum = cl.max_sum_2x2();
+    eta.sum = max_sum.sum;
+    corner c = max_sum.index;
 
-    // check that cluster center is in max subcluster
-    if (cluster_center_index != index_bottom_left_max_2x2_subcluster &&
-        cluster_center_index != index_bottom_left_max_2x2_subcluster + 1 &&
-        cluster_center_index !=
-            index_bottom_left_max_2x2_subcluster + ClusterSizeX &&
-        cluster_center_index !=
-            index_bottom_left_max_2x2_subcluster + ClusterSizeX + 1)
-        throw std::runtime_error("Photon center is not in max 2x2_subcluster");
-
-    if ((cluster_center_index - index_bottom_left_max_2x2_subcluster) %
-            ClusterSizeX ==
-        0) {
-        if ((cl.data[cluster_center_index + 1] +
-             cl.data[cluster_center_index]) != 0)
-
-            eta.x = static_cast<double>(cl.data[cluster_center_index + 1]) /
-                    static_cast<double>((cl.data[cluster_center_index + 1] +
-                                         cl.data[cluster_center_index]));
-    } else {
-        if ((cl.data[cluster_center_index] +
-             cl.data[cluster_center_index - 1]) != 0)
-
-            eta.x = static_cast<double>(cl.data[cluster_center_index]) /
-                    static_cast<double>((cl.data[cluster_center_index - 1] +
-                                         cl.data[cluster_center_index]));
+    // subcluster top right from center
+    switch (c) {
+    case (corner::cTopLeft):
+        calculate_eta2(eta, cl.data[cluster_center_index - 1],
+                       cl.data[cluster_center_index],
+                       cl.data[cluster_center_index - ClusterSizeX],
+                       cl.data[cluster_center_index]);
+        // dx = -1
+        // dy = -1
+        break;
+    case (corner::cTopRight):
+        calculate_eta2(eta, cl.data[cluster_center_index],
+                       cl.data[cluster_center_index + 1],
+                       cl.data[cluster_center_index - ClusterSizeX],
+                       cl.data[cluster_center_index]);
+        // dx = 0
+        // dy = -1
+        break;
+    case (corner::cBottomLeft):
+        calculate_eta2(eta, cl.data[cluster_center_index - 1],
+                       cl.data[cluster_center_index],
+                       cl.data[cluster_center_index],
+                       cl.data[cluster_center_index + ClusterSizeX]);
+        // dx = -1
+        // dy = 0
+        break;
+    case (corner::cBottomRight):
+        calculate_eta2(eta, cl.data[cluster_center_index],
+                       cl.data[cluster_center_index + 1],
+                       cl.data[cluster_center_index],
+                       cl.data[cluster_center_index + ClusterSizeX]);
+        // dx = 0
+        // dy = 0
+        break;
     }
-    if ((cluster_center_index - index_bottom_left_max_2x2_subcluster) /
-            ClusterSizeX <
-        1) {
-        assert(cluster_center_index + ClusterSizeX <
-               ClusterSizeX * ClusterSizeY); // suppress warning
-        if ((cl.data[cluster_center_index] +
-             cl.data[cluster_center_index + ClusterSizeX]) != 0)
-            eta.y = static_cast<double>(
+
+    eta.c = c;
+
+    return eta;
+}
+
+/**
+ * @brief Calculate the eta2 values for a generic sized cluster and return them
+ * in a Eta2 struct containing etay, etax and the index (as corner) of the
+ * respective 2x2 subcluster relative to the cluster center.
+ */
+template <typename T, uint8_t ClusterSizeX, uint8_t ClusterSizeY,
+          typename CoordType>
+Eta2<T> calculate_full_eta2(
+    const Cluster<T, ClusterSizeX, ClusterSizeY, CoordType> &cl) {
+
+    static_assert(ClusterSizeX > 1 && ClusterSizeY > 1);
+    Eta2<T> eta{};
+
+    constexpr size_t cluster_center_index =
+        (ClusterSizeX / 2) + (ClusterSizeY / 2) * ClusterSizeX;
+
+    auto max_sum = cl.max_sum_2x2();
+    eta.sum = max_sum.sum;
+    corner c = max_sum.index;
+
+    // subcluster top right from center
+    switch (c) {
+    case (corner::cTopLeft):
+        if (eta.sum != 0) {
+            eta.x = static_cast<double>(
+                        cl.data[cluster_center_index] +
+                        cl.data[cluster_center_index - ClusterSizeX]) /
+                    static_cast<double>(eta.sum);
+
+            eta.y = static_cast<double>(cl.data[cluster_center_index - 1] +
+                                        cl.data[cluster_center_index]) /
+                    static_cast<double>(eta.sum);
+        }
+        // dx = -1
+        // dy = -1
+        break;
+    case (corner::cTopRight):
+        if (eta.sum != 0) {
+            eta.x = static_cast<double>(
+                        cl.data[cluster_center_index + 1] +
+                        cl.data[cluster_center_index - ClusterSizeX + 1]) /
+                    static_cast<double>(eta.sum);
+            eta.y = static_cast<double>(cl.data[cluster_center_index] +
+                                        cl.data[cluster_center_index + 1]) /
+                    static_cast<double>(eta.sum);
+        }
+        // dx = 0
+        // dy = -1
+        break;
+    case (corner::cBottomLeft):
+        if (eta.sum != 0) {
+            eta.x = static_cast<double>(
+                        cl.data[cluster_center_index] +
                         cl.data[cluster_center_index + ClusterSizeX]) /
-                    static_cast<double>(
-                        (cl.data[cluster_center_index] +
-                         cl.data[cluster_center_index + ClusterSizeX]));
-    } else {
-        if ((cl.data[cluster_center_index] +
-             cl.data[cluster_center_index - ClusterSizeX]) != 0)
-            eta.y = static_cast<double>(cl.data[cluster_center_index]) /
-                    static_cast<double>(
-                        (cl.data[cluster_center_index] +
-                         cl.data[cluster_center_index - ClusterSizeX]));
+                    static_cast<double>(eta.sum);
+            eta.y = static_cast<double>(
+                        cl.data[cluster_center_index + ClusterSizeX] +
+                        cl.data[cluster_center_index + ClusterSizeX - 1]) /
+                    static_cast<double>(eta.sum);
+        }
+        // dx = -1
+        // dy = 0
+        break;
+    case (corner::cBottomRight):
+        if (eta.sum != 0) {
+            eta.x = static_cast<double>(
+                        cl.data[cluster_center_index + 1] +
+                        cl.data[cluster_center_index + ClusterSizeX + 1]) /
+                    static_cast<double>(eta.sum);
+            eta.y = static_cast<double>(
+                        cl.data[cluster_center_index + ClusterSizeX] +
+                        cl.data[cluster_center_index + ClusterSizeX + 1]) /
+                    static_cast<double>(eta.sum);
+        }
+        // dx = 0
+        // dy = 0
+        break;
     }
 
-    eta.c = c; // TODO only supported for 2x2 and 3x3 clusters -> at least no
-               // underyling enum class
+    eta.c = c;
+
     return eta;
 }
 
-// TODO! Look up eta2 calculation - photon center should be top right corner
 template <typename T>
-Eta2<T> calculate_eta2(const Cluster<T, 2, 2, int16_t> &cl) {
+Eta2<T> calculate_eta2(const Cluster<T, 2, 2, uint16_t> &cl) {
     Eta2<T> eta{};
 
-    if ((cl.data[0] + cl.data[1]) != 0)
-        eta.x = static_cast<double>(cl.data[1]) / (cl.data[0] + cl.data[1]);
-    if ((cl.data[0] + cl.data[2]) != 0)
-        eta.y = static_cast<double>(cl.data[2]) / (cl.data[0] + cl.data[2]);
+    // TODO: maybe have as member function of cluster
+    const uint8_t photon_hit_index =
+        std::max_element(cl.data.begin(), cl.data.end()) - cl.data.begin();
+
+    eta.c = static_cast<corner>(3 - photon_hit_index);
+
+    switch (eta.c) {
+    case corner::cTopLeft:
+        calculate_eta2(eta, cl.data[2], cl.data[3], cl.data[1], cl.data[3]);
+        break;
+    case corner::cTopRight:
+        calculate_eta2(eta, cl.data[2], cl.data[3], cl.data[0], cl.data[2]);
+        break;
+    case corner::cBottomLeft:
+        calculate_eta2(eta, cl.data[0], cl.data[1], cl.data[1], cl.data[3]);
+        break;
+    case corner::cBottomRight:
+        calculate_eta2(eta, cl.data[0], cl.data[1], cl.data[0], cl.data[2]);
+        break;
+    }
+
     eta.sum = cl.sum();
-    eta.c = static_cast<int>(corner::cBottomLeft); // TODO! This is not correct,
-                                                   // but need to put something
+
     return eta;
 }
 
-// calculates Eta3 for 3x3 cluster based on code from analyze_cluster
-// TODO only supported for 3x3 Clusters
-template <typename T> Eta2<T> calculate_eta3(const Cluster<T, 3, 3> &cl) {
+template <typename T>
+Eta2<T> calculate_full_eta2(const Cluster<T, 2, 2, uint16_t> &cl) {
 
     Eta2<T> eta{};
 
-    T sum = 0;
+    eta.sum = cl.sum();
 
-    std::for_each(std::begin(cl.data), std::end(cl.data),
-                  [&sum](T x) { sum += x; });
+    const uint8_t photon_hit_index =
+        std::max_element(cl.data.begin(), cl.data.end()) - cl.data.begin();
 
-    eta.sum = sum;
+    eta.c = static_cast<corner>(3 - photon_hit_index);
 
-    eta.c = corner::cBottomLeft;
+    if (eta.sum != 0) {
+        eta.x = static_cast<double>(cl.data[1] + cl.data[3]) /
+                static_cast<double>(eta.sum);
+        eta.y = static_cast<double>(cl.data[2] + cl.data[3]) /
+                static_cast<double>(eta.sum);
+    }
+
+    return eta;
+}
+
+// TODO generalize
+template <typename T>
+Eta2<T> calculate_eta2(const Cluster<T, 1, 2, uint16_t> &cl) {
+    Eta2<T> eta{};
+
+    eta.x = 0;
+    eta.y = static_cast<double>(cl.data[1]) / cl.data[0];
+    eta.sum = cl.sum();
+}
+
+template <typename T>
+Eta2<T> calculate_eta2(const Cluster<T, 2, 1, uint16_t> &cl) {
+    Eta2<T> eta{};
+
+    eta.x = static_cast<double>(cl.data[1]) / cl.data[0];
+    eta.y = 0;
+    eta.sum = cl.sum();
+}
+
+/**
+ * @brief calculates cross Eta3 for 3x3 cluster
+ * cross Eta3 calculates the eta by taking into account only the cross pixels
+ * {top, bottom, left, right, center}
+ */
+template <typename T, typename CoordType = uint16_t>
+Eta2<T> calculate_cross_eta3(const Cluster<T, 3, 3, CoordType> &cl) {
+
+    Eta2<T> eta{};
+
+    T photon_energy = cl.sum();
+
+    eta.sum = photon_energy;
 
     if ((cl.data[3] + cl.data[4] + cl.data[5]) != 0)
 
-        eta.x = static_cast<double>(-cl.data[3] + cl.data[3 + 2]) /
+        eta.x =
+            static_cast<double>(-cl.data[3] + cl.data[3 + 2]) /
 
-                (cl.data[3] + cl.data[4] + cl.data[5]);
+            static_cast<double>(cl.data[3] + cl.data[4] + cl.data[5]); // (-1,1)
 
     if ((cl.data[1] + cl.data[4] + cl.data[7]) != 0)
 
         eta.y = static_cast<double>(-cl.data[1] + cl.data[2 * 3 + 1]) /
 
-                (cl.data[1] + cl.data[4] + cl.data[7]);
+                static_cast<double>(cl.data[1] + cl.data[4] + cl.data[7]);
 
     return eta;
+}
+
+template <typename T, uint8_t ClusterSizeX, uint8_t ClusterSizeY,
+          typename CoordType = uint16_t>
+Eta2<T> calculate_cross_eta3(
+    const Cluster<T, ClusterSizeX, ClusterSizeY, CoordType> &cl) {
+
+    static_assert(ClusterSizeX > 2 && ClusterSizeY > 2,
+                  "calculate_eta3 only defined for clusters larger than 2x2");
+
+    if constexpr (ClusterSizeX != 3 || ClusterSizeY != 3) {
+        auto reduced_cluster = reduce_cluster_to_3x3(cl);
+        return calculate_cross_eta3(reduced_cluster);
+    } else {
+        return calculate_cross_eta3(cl);
+    }
+}
+
+/**
+ * @brief calculates Eta3 for 3x3 cluster
+ * It calculates the eta by taking into account all pixels in the 3x3 cluster
+ */
+template <typename T, typename CoordType = uint16_t>
+Eta2<T> calculate_eta3(const Cluster<T, 3, 3, CoordType> &cl) {
+
+    Eta2<T> eta{};
+
+    T photon_energy = cl.sum();
+
+    eta.sum = photon_energy;
+
+    // TODO: how do we handle potential arithmetic overflows? - T could be
+    // uint16
+    if (photon_energy != 0) {
+        std::array<T, 2> column_sums{
+            static_cast<T>(cl.data[0] + cl.data[3] + cl.data[6]),
+            static_cast<T>(cl.data[2] + cl.data[5] + cl.data[8])};
+
+        eta.x = static_cast<double>(-column_sums[0] + column_sums[1]) /
+                static_cast<double>(photon_energy);
+
+        std::array<T, 2> row_sums{
+            static_cast<T>(cl.data[0] + cl.data[1] + cl.data[2]),
+            static_cast<T>(cl.data[6] + cl.data[7] + cl.data[8])};
+
+        eta.y = static_cast<double>(-row_sums[0] + row_sums[1]) /
+                static_cast<double>(photon_energy);
+    }
+
+    return eta;
+}
+
+template <typename T, uint8_t ClusterSizeX, uint8_t ClusterSizeY,
+          typename CoordType = uint16_t>
+Eta2<T>
+calculate_eta3(const Cluster<T, ClusterSizeX, ClusterSizeY, CoordType> &cl) {
+
+    static_assert(ClusterSizeX > 2 && ClusterSizeY > 2,
+                  "calculate_eta3 only defined for clusters larger than 2x2");
+
+    if constexpr (ClusterSizeX != 3 || ClusterSizeY != 3) {
+        auto reduced_cluster = reduce_cluster_to_3x3(cl);
+        return calculate_eta3(reduced_cluster);
+    } else {
+        return calculate_eta3(cl);
+    }
 }
 
 } // namespace aare

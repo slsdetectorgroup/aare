@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: MPL-2.0
 #pragma once
 #include "aare/RawMasterFile.hpp" //ROI refactor away
 #include "aare/defs.hpp"

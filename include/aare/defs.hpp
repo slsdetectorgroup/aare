@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: MPL-2.0
 #pragma once
 
 #include "aare/Dtype.hpp"
@@ -215,22 +216,153 @@ enum class DetectorType {
     Unknown
 };
 
+/**
+ * @brief Enum class to define the Digital to Analog converter
+ * The values are the same as in slsDetectorPackage
+ */
+enum DACIndex {
+    DAC_0,
+    DAC_1,
+    DAC_2,
+    DAC_3,
+    DAC_4,
+    DAC_5,
+    DAC_6,
+    DAC_7,
+    DAC_8,
+    DAC_9,
+    DAC_10,
+    DAC_11,
+    DAC_12,
+    DAC_13,
+    DAC_14,
+    DAC_15,
+    DAC_16,
+    DAC_17,
+    VSVP,
+    VTRIM,
+    VRPREAMP,
+    VRSHAPER,
+    VSVN,
+    VTGSTV,
+    VCMP_LL,
+    VCMP_LR,
+    VCAL,
+    VCMP_RL,
+    RXB_RB,
+    RXB_LB,
+    VCMP_RR,
+    VCP,
+    VCN,
+    VISHAPER,
+    VTHRESHOLD,
+    IO_DELAY,
+    VREF_DS,
+    VOUT_CM,
+    VIN_CM,
+    VREF_COMP,
+    VB_COMP,
+    VDD_PROT,
+    VIN_COM,
+    VREF_PRECH,
+    VB_PIXBUF,
+    VB_DS,
+    VREF_H_ADC,
+    VB_COMP_FE,
+    VB_COMP_ADC,
+    VCOM_CDS,
+    VREF_RSTORE,
+    VB_OPA_1ST,
+    VREF_COMP_FE,
+    VCOM_ADC1,
+    VREF_L_ADC,
+    VREF_CDS,
+    VB_CS,
+    VB_OPA_FD,
+    VCOM_ADC2,
+    VCASSH,
+    VTH2,
+    VRSHAPER_N,
+    VIPRE_OUT,
+    VTH3,
+    VTH1,
+    VICIN,
+    VCAS,
+    VCAL_N,
+    VIPRE,
+    VCAL_P,
+    VDCSH,
+    VBP_COLBUF,
+    VB_SDA,
+    VCASC_SFP,
+    VIPRE_CDS,
+    IBIAS_SFP,
+    ADC_VPP,
+    HIGH_VOLTAGE,
+    TEMPERATURE_ADC,
+    TEMPERATURE_FPGA,
+    TEMPERATURE_FPGAEXT,
+    TEMPERATURE_10GE,
+    TEMPERATURE_DCDC,
+    TEMPERATURE_SODL,
+    TEMPERATURE_SODR,
+    TEMPERATURE_FPGA2,
+    TEMPERATURE_FPGA3,
+    TRIMBIT_SCAN,
+    V_POWER_A = 100,
+    V_POWER_B = 101,
+    V_POWER_C = 102,
+    V_POWER_D = 103,
+    V_POWER_IO = 104,
+    V_POWER_CHIP = 105,
+    I_POWER_A = 106,
+    I_POWER_B = 107,
+    I_POWER_C = 108,
+    I_POWER_D = 109,
+    I_POWER_IO = 110,
+    V_LIMIT = 111,
+    SLOW_ADC0 = 1000,
+    SLOW_ADC1,
+    SLOW_ADC2,
+    SLOW_ADC3,
+    SLOW_ADC4,
+    SLOW_ADC5,
+    SLOW_ADC6,
+    SLOW_ADC7,
+    SLOW_ADC_TEMP
+};
+
+// helper pair class to easily expose in python
+template <typename T1, typename T2> struct Sum_index_pair {
+    T1 sum;
+    T2 index;
+};
+
+enum class corner : int {
+    cTopLeft = 0,
+    cTopRight = 1,
+    cBottomLeft = 2,
+    cBottomRight = 3
+};
+
 enum class TimingMode { Auto, Trigger };
 enum class FrameDiscardPolicy { NoDiscard, Discard, DiscardPartial };
 
-template <class T> T StringTo(const std::string &arg) { return T(arg); }
-
-template <class T> std::string ToString(T arg) { return T(arg); }
-
-template <> DetectorType StringTo(const std::string & /*name*/);
-template <> std::string ToString(DetectorType arg);
-
-template <> TimingMode StringTo(const std::string & /*mode*/);
-
-template <> FrameDiscardPolicy StringTo(const std::string & /*mode*/);
-
 using DataTypeVariants = std::variant<uint16_t, uint32_t>;
 
-constexpr uint16_t ADC_MASK = 0x3FFF; // used to mask out the gain bits in Jungfrau
+constexpr uint16_t ADC_MASK =
+    0x3FFF; // used to mask out the gain bits in Jungfrau
+
+
+class BitOffset{
+    uint8_t m_offset{};
+    public:
+    BitOffset() = default;
+    explicit BitOffset(uint32_t offset);
+    uint8_t value() const {return m_offset;}
+    bool operator==(const BitOffset& other) const;
+    bool operator<(const BitOffset& other) const;
+
+};
 
 } // namespace aare

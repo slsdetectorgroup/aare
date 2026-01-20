@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: MPL-2.0
 #pragma once
 #include "aare/Cluster.hpp" //TODO maybe store in seperate file !!!
 #include <algorithm>
@@ -28,12 +29,11 @@ class ClusterVector; // Forward declaration
  * needed.
  * @tparam T data type of the pixels in the cluster
  * @tparam CoordType data type of the x and y coordinates of the cluster
- * (normally int16_t)
+ * (normally uint16_t)
  */
 template <typename T, uint8_t ClusterSizeX, uint8_t ClusterSizeY,
           typename CoordType>
-class ClusterVector<Cluster<T, ClusterSizeX, ClusterSizeY, CoordType>> 
-{
+class ClusterVector<Cluster<T, ClusterSizeX, ClusterSizeY, CoordType>> {
 
     std::vector<Cluster<T, ClusterSizeX, ClusterSizeY, CoordType>> m_data{};
     int32_t m_frame_number{0}; // TODO! Check frame number size and type
@@ -87,15 +87,14 @@ class ClusterVector<Cluster<T, ClusterSizeX, ClusterSizeY, CoordType>>
     /**
      * @brief Sum the pixels in the 2x2 subcluster with the biggest pixel sum in
      * each cluster
-     * @return std::vector<T> vector of sums for each cluster
+     * @return vector of sums index pairs for each cluster
      */
-    std::vector<T> sum_2x2() {
-        std::vector<T> sums_2x2(m_data.size());
+    std::vector<Sum_index_pair<T, corner>> sum_2x2() {
+        std::vector<Sum_index_pair<T, corner>> sums_2x2(m_data.size());
 
-        std::transform(m_data.begin(), m_data.end(), sums_2x2.begin(),
-                       [](const ClusterType &cluster) {
-                           return cluster.max_sum_2x2().first;
-                       });
+        std::transform(
+            m_data.begin(), m_data.end(), sums_2x2.begin(),
+            [](const ClusterType &cluster) { return cluster.max_sum_2x2(); });
 
         return sums_2x2;
     }
@@ -172,5 +171,43 @@ class ClusterVector<Cluster<T, ClusterSizeX, ClusterSizeY, CoordType>>
         m_frame_number = frame_number;
     }
 };
+
+/**
+ * @brief Reduce a cluster to a 2x2 cluster by selecting the 2x2 block with the
+ * highest sum.
+ * @param cv Clustervector containing clusters to reduce
+ * @return Clustervector with reduced clusters
+ * @note The cluster is filled using row major ordering starting at the top-left
+ * (thus for a max subcluster in the top left cornern the photon hit is at
+ * the fourth position)
+ */
+template <typename T, uint8_t ClusterSizeX, uint8_t ClusterSizeY,
+          typename CoordType>
+ClusterVector<Cluster<T, 2, 2, CoordType>> reduce_to_2x2(
+    const ClusterVector<Cluster<T, ClusterSizeX, ClusterSizeY, CoordType>>
+        &cv) {
+    ClusterVector<Cluster<T, 2, 2, CoordType>> result;
+    for (const auto &c : cv) {
+        result.push_back(reduce_to_2x2(c));
+    }
+    return result;
+}
+
+/**
+ * @brief Reduce a cluster to a 3x3 cluster
+ * @param cv Clustervector containing clusters to reduce
+ * @return Clustervector with reduced clusters
+ */
+template <typename T, uint8_t ClusterSizeX, uint8_t ClusterSizeY,
+          typename CoordType>
+ClusterVector<Cluster<T, 3, 3, CoordType>> reduce_to_3x3(
+    const ClusterVector<Cluster<T, ClusterSizeX, ClusterSizeY, CoordType>>
+        &cv) {
+    ClusterVector<Cluster<T, 3, 3, CoordType>> result;
+    for (const auto &c : cv) {
+        result.push_back(reduce_to_3x3(c));
+    }
+    return result;
+}
 
 } // namespace aare

@@ -1,3 +1,4 @@
+# SPDX-License-Identifier: MPL-2.0
 import matplotlib.pyplot as plt
 import numpy as np
 from aare import fit_gaus, fit_pol1

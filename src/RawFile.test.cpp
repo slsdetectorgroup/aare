@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: MPL-2.0
 #include "aare/RawFile.hpp"
 #include "aare/File.hpp"
 #include "aare/RawMasterFile.hpp" //needed for ROI
@@ -99,7 +100,8 @@ TEST_CASE("Read data from a jungfrau 500k single port raw file",
 }
 
 TEST_CASE("Read frame numbers from a raw file", "[.with-data]") {
-    auto fpath = test_data_path() / "raw/eiger" / "eiger_500k_16bit_master_0.json";
+    auto fpath =
+        test_data_path() / "raw/eiger" / "eiger_500k_16bit_master_0.json";
     REQUIRE(std::filesystem::exists(fpath));
 
     // we know this file has 3 frames with frame numbers 14, 15, 16
@@ -288,10 +290,9 @@ TEST_CASE("check find_geometry", "[.with-data]") {
     }
 }
 
-TEST_CASE("Open multi module file with ROI",
-          "[.with-data]") {
+TEST_CASE("Open multi module file with ROI", "[.with-data]") {
 
-    auto fpath = test_data_path() / "raw/SingleChipROI/Data_master_0.json";
+    auto fpath = test_data_path() / "raw/ROITestData/SingleChipROI/Data_master_0.json";
     REQUIRE(std::filesystem::exists(fpath));
 
     RawFile f(fpath, "r");
@@ -319,4 +320,14 @@ TEST_CASE("Read file with unordered frames", "[.with-data]") {
     REQUIRE(std::filesystem::exists(fpath));
     File f(fpath);
     REQUIRE_THROWS((f.read_frame()));
+}
+
+TEST_CASE("Read Mythenframe", "[.with-data]") {
+    auto fpath = test_data_path() / "raw/newmythen03/run_2_master_1.json";
+    REQUIRE(std::filesystem::exists(fpath));
+    RawFile f(fpath);
+    REQUIRE(f.master().roi().value().width() == 2560);
+    REQUIRE(f.master().roi().value().height() == 1);
+    auto frame = f.read_frame();
+    REQUIRE(frame.cols() == 2560);
 }

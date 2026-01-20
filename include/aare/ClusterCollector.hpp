@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: MPL-2.0
 #pragma once
 #include <atomic>
 #include <thread>
@@ -6,6 +7,7 @@
 #include "aare/ClusterVector.hpp"
 #include "aare/ProducerConsumerQueue.hpp"
 #include "aare/BlockingQueue.hpp"
+#include "aare/defs.hpp"
 
 namespace aare {
 

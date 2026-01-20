@@ -1,3 +1,4 @@
+# SPDX-License-Identifier: MPL-2.0
 from . import _aare
 import numpy as np
 
@@ -10,6 +11,8 @@ def _type_to_char(dtype):
         return 'f'
     elif dtype == np.float64:
         return 'd'
+    elif dtype == np.int16:
+        return 'i16'
     else:
         raise ValueError(f"Unsupported dtype: {dtype}. Only np.int32, np.float32, and np.float64 are supported.")
 
@@ -46,14 +49,13 @@ def ClusterFinderMT(image_size, saved_cluster_size = (3,3), checked_cluster_size
     return cls(image_size, n_sigma=n_sigma, capacity=capacity, n_threads=n_threads, cluster_size_x=checked_cluster_size[0], cluster_size_y=checked_cluster_size[1])
 
 
-
-def ClusterCollector(clusterfindermt, cluster_size = (3,3), dtype=np.int32): 
+def ClusterCollector(clusterfindermt, dtype=np.int32): 
     """ 
     Factory function to create a ClusterCollector object. Provides a cleaner syntax for 
     the templated ClusterCollector in C++.
     """
-
-    cls = _get_class("ClusterCollector", cluster_size, dtype)
+    
+    cls = _get_class("ClusterCollector", clusterfindermt.cluster_size, dtype)
     return cls(clusterfindermt)
 
 def ClusterFileSink(clusterfindermt, cluster_file, dtype=np.int32): 
@@ -66,7 +68,7 @@ def ClusterFileSink(clusterfindermt, cluster_file, dtype=np.int32):
     return cls(clusterfindermt, cluster_file)
 
 
-def ClusterFile(fname, cluster_size=(3,3), dtype=np.int32, chunk_size = 1000):
+def ClusterFile(fname, cluster_size=(3,3), dtype=np.int32, chunk_size = 1000, mode = "r"):
     """
     Factory function to create a ClusterFile object. Provides a cleaner syntax for
     the templated ClusterFile in C++.
@@ -84,4 +86,4 @@ def ClusterFile(fname, cluster_size=(3,3), dtype=np.int32, chunk_size = 1000):
     """
 
     cls = _get_class("ClusterFile", cluster_size, dtype)
-    return cls(fname, chunk_size=chunk_size)
+    return cls(fname, chunk_size=chunk_size, mode=mode)

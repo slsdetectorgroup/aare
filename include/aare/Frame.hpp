@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: MPL-2.0
 #pragma once
 #include "aare/Dtype.hpp"
 #include "aare/NDArray.hpp"
@@ -105,7 +106,7 @@ class Frame {
      * @tparam T type of the pixels
      * @return NDView<T, 2>
      */
-    template <typename T> NDView<T, 2> view() {
+    template <typename T> NDView<T, 2> view() & {
         std::array<ssize_t, 2> shape = {static_cast<ssize_t>(m_rows),
                                         static_cast<ssize_t>(m_cols)};
         T *data = reinterpret_cast<T *>(m_data);

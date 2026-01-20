@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: MPL-2.0
 #pragma once
 #include "aare/Frame.hpp"
 #include "aare/NDArray.hpp"

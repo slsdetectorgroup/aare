@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: MPL-2.0
 #pragma once
 #include "aare/defs.hpp"
 #include <algorithm>
@@ -5,6 +6,7 @@
 #include <fmt/format.h>
 #include <fstream>
 #include <optional>
+#include <chrono>
 
 #include <nlohmann/json.hpp>
 using json = nlohmann::json;
@@ -42,14 +44,16 @@ class RawFileNameComponents {
 
 class ScanParameters {
     bool m_enabled = false;
-    std::string m_dac;
+    DACIndex m_dac{};
     int m_start = 0;
     int m_stop = 0;
     int m_step = 0;
-    // TODO! add settleTime, requires string to time conversion
+    int64_t m_settleTime = 0; // [ns]
 
   public:
     ScanParameters(const std::string &par);
+    ScanParameters(const bool enabled, const DACIndex dac, const int start,
+                   const int stop, const int step, const int64_t settleTime);
     ScanParameters() = default;
     ScanParameters(const ScanParameters &) = default;
     ScanParameters &operator=(const ScanParameters &) = default;
@@ -57,8 +61,9 @@ class ScanParameters {
     int start() const;
     int stop() const;
     int step() const;
-    const std::string &dac() const;
+    DACIndex dac() const;
     bool enabled() const;
+    int64_t settleTime() const;
     void increment_stop();
 };
 
@@ -80,6 +85,9 @@ class RawMasterFile {
     size_t m_bitdepth{};
     uint8_t m_quad = 0;
 
+    std::optional<std::chrono::nanoseconds> m_exptime;
+    std::chrono::nanoseconds m_period{0};
+
     xy m_geometry{};
     xy m_udp_interfaces_per_module{1, 1};
 
@@ -99,11 +107,13 @@ class RawMasterFile {
     std::optional<size_t> m_digital_samples;
     std::optional<size_t> m_transceiver_samples;
     std::optional<size_t> m_number_of_rows;
+    std::optional<uint8_t> m_counter_mask;
 
     std::optional<ROI> m_roi;
 
   public:
     RawMasterFile(const std::filesystem::path &fpath);
+    RawMasterFile(std::istream &is, const std::string &fname); // for testing
 
     std::filesystem::path data_fname(size_t mod_id, size_t file_id) const;
 
@@ -129,14 +139,18 @@ class RawMasterFile {
     std::optional<size_t> digital_samples() const;
     std::optional<size_t> transceiver_samples() const;
     std::optional<size_t> number_of_rows() const;
+    std::optional<uint8_t> counter_mask() const;
 
     std::optional<ROI> roi() const;
 
     ScanParameters scan_parameters() const;
 
+    std::optional<std::chrono::nanoseconds> exptime() const { return m_exptime; }
+    std::chrono::nanoseconds period() const { return m_period; }
+
   private:
-    void parse_json(const std::filesystem::path &fpath);
-    void parse_raw(const std::filesystem::path &fpath);
+    void parse_json(std::istream &is);
+    void parse_raw(std::istream &is);
     void retrieve_geometry();
 };
 

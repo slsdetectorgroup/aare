@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: MPL-2.0
 #include "aare/ClusterCollector.hpp"
 #include "aare/ClusterFileSink.hpp"
 #include "aare/ClusterFinder.hpp"
@@ -44,11 +45,16 @@ void define_ClusterVector(py::module &m, const std::string &typestr) {
                  auto *vec = new std::vector<Type>(self.sum());
                  return return_vector(vec);
              })
-        .def("sum_2x2",
-             [](ClusterVector<ClusterType> &self) {
-                 auto *vec = new std::vector<Type>(self.sum_2x2());
-                 return return_vector(vec);
-             })
+        .def(
+            "sum_2x2",
+            [](ClusterVector<ClusterType> &self) {
+                auto *vec = new std::vector<Sum_index_pair<Type, corner>>(
+                    self.sum_2x2());
+
+                return return_vector(vec);
+            },
+            R"(calculates sum of 2x2 subcluster with highest energy and index relative to cluster center 0: top_left, 1: top_right, 2: bottom_left, 3: bottom_right
+            )")
         .def_property_readonly("size", &ClusterVector<ClusterType>::size)
         .def("item_size", &ClusterVector<ClusterType>::item_size)
         .def_property_readonly("fmt",
@@ -102,6 +108,49 @@ void define_ClusterVector(py::module &m, const std::string &typestr) {
 
               return hitmap;
           });
+}
+
+template <typename Type, uint8_t ClusterSizeX, uint8_t ClusterSizeY,
+          typename CoordType = uint16_t>
+void define_2x2_reduction(py::module &m) {
+    m.def(
+        "reduce_to_2x2",
+        [](const ClusterVector<
+            Cluster<Type, ClusterSizeX, ClusterSizeY, CoordType>> &cv) {
+            return new ClusterVector<Cluster<Type, 2, 2, CoordType>>(
+                reduce_to_2x2(cv));
+        },
+        R"(
+        Reduce cluster to 2x2 subcluster by taking the 2x2 subcluster with 
+        the highest photon energy.
+
+        Parameters
+
+        cv : ClusterVector (clusters are filled in row-major ordering starting at the top left. Thus for a max subcluster in the top left corner the photon hit is at the fourth position.)
+
+        )",
+        py::arg("clustervector"));
+}
+
+template <typename Type, uint8_t ClusterSizeX, uint8_t ClusterSizeY,
+          typename CoordType = uint16_t>
+void define_3x3_reduction(py::module &m) {
+
+    m.def(
+        "reduce_to_3x3",
+        [](const ClusterVector<
+            Cluster<Type, ClusterSizeX, ClusterSizeY, CoordType>> &cv) {
+            return new ClusterVector<Cluster<Type, 3, 3, CoordType>>(
+                reduce_to_3x3(cv));
+        },
+        R"(
+        Reduce cluster to 3x3 subcluster 
+
+        Parameters
+        
+        cv : ClusterVector   
+        )",
+        py::arg("clustervector"));
 }
 
 #pragma GCC diagnostic pop

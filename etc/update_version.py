@@ -1,4 +1,4 @@
-# SPDX-License-Identifier: LGPL-3.0-or-other
+# SPDX-License-Identifier: MPL-2.0
 # Copyright (C) 2021 Contributors to the Aare Package
 """
 Script to update VERSION file with semantic versioning if provided as an argument, or with 0.0.0 if no argument is provided.
@@ -7,11 +7,13 @@ Script to update VERSION file with semantic versioning if provided as an argumen
 import sys
 import os
 import re
+from datetime import datetime
+from pathlib import Path
 
 from packaging.version import Version, InvalidVersion
 
 
-SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
+SCRIPT_DIR = Path(__file__).absolute().parent.parent
 
 def is_integer(value): 
     try:
@@ -26,9 +28,9 @@ def get_version():
 
     # Check at least one argument is passed
     if len(sys.argv) < 2:
-        return "0.0.0"
-
-    version = sys.argv[1]
+        version =   datetime.today().strftime('%Y.%-m.%-d')
+    else: 
+        version = sys.argv[1]
 
     try:
         v = Version(version)  # normalize check if version follows PEP 440 specification
@@ -45,7 +47,8 @@ def get_version():
     
 
 def write_version_to_file(version):
-    version_file_path = os.path.join(SCRIPT_DIR, "VERSION")
+    version_file_path =  SCRIPT_DIR/"VERSION"
+    print(version_file_path)
     with open(version_file_path, "w") as version_file:
         version_file.write(version)
     print(f"Version {version} written to VERSION file.")

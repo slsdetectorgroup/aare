@@ -2,11 +2,15 @@ name: Build the package using cmake then documentation
 
 on:
   workflow_dispatch:
+  push:
   pull_request:
   release:
     types:
       - published
     
+env:
+  # Customize the CMake build type here (Release, Debug, RelWithDebInfo, etc.)
+  BUILD_TYPE: Debug
 
 permissions:
   contents: read
@@ -18,7 +22,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        platform: [ubuntu-latest, ] 
+        platform: [ubuntu-latest, macos-latest] 
         python-version: ["3.12",]
 
     runs-on: ${{ matrix.platform }}
@@ -39,15 +43,20 @@ jobs:
           channels: conda-forge
           conda-remove-defaults: "true"
 
-      - name: Build library 
+      - name: Build library and docs
         run: |
             mkdir build 
             cd build 
-            cmake .. -DAARE_SYSTEM_LIBRARIES=ON -DAARE_PYTHON_BINDINGS=ON -DAARE_DOCS=ON 
-            make -j 2 
+            cmake .. -DCMAKE_BUILD_TYPE=${{env.BUILD_TYPE}} -DAARE_SYSTEM_LIBRARIES=ON -DAARE_PYTHON_BINDINGS=ON -DAARE_DOCS=ON -DAARE_TESTS=ON
+            make -j 4 
             make docs
 
+      - name: C++ unit tests
+        working-directory: ${{github.workspace}}/build
+        run: ctest -C ${{env.BUILD_TYPE}} -j4
+
       - name: Upload static files as artifact
+        if: matrix.platform == 'ubuntu-latest'
         id: deployment
         uses: actions/upload-pages-artifact@v3 
         with:

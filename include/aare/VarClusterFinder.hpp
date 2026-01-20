@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: MPL-2.0
 #pragma once
 
 #include <algorithm>
@@ -124,7 +125,7 @@ template <typename T> int VarClusterFinder<T>::check_neighbours(int i, int j) {
         const auto row = i + di[k];
         const auto col = j + dj[k];
         if (row >= 0 && col >= 0 && row < shape_[0] && col < shape_[1]) {
-            auto tmp = labeled_.value(i + di[k], j + dj[k]);
+            auto tmp = labeled_(i + di[k], j + dj[k]);
             if (tmp != 0)
                 neighbour_labels.push_back(tmp);
         }

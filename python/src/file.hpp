@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: MPL-2.0
 #include "aare/CtbRawFile.hpp"
 #include "aare/File.hpp"
 #include "aare/Frame.hpp"
@@ -65,7 +66,7 @@ void define_file_io_bindings(py::module &m) {
         .def_property_readonly("bytes_per_pixel", &File::bytes_per_pixel)
         .def_property_readonly(
             "detector_type",
-            [](File &self) { return ToString(self.detector_type()); })
+            [](File &self) { return self.detector_type(); })
         .def("read_frame",
              [](File &self) {
                  const uint8_t item_size = self.bytes_per_pixel();
@@ -160,21 +161,6 @@ void define_file_io_bindings(py::module &m) {
             }
         });
 
-    py::class_<FileConfig>(m, "FileConfig")
-        .def(py::init<>())
-        .def_readwrite("rows", &FileConfig::rows)
-        .def_readwrite("cols", &FileConfig::cols)
-        .def_readwrite("version", &FileConfig::version)
-        .def_readwrite("geometry", &FileConfig::geometry)
-        .def_readwrite("detector_type", &FileConfig::detector_type)
-        .def_readwrite("max_frames_per_file", &FileConfig::max_frames_per_file)
-        .def_readwrite("total_frames", &FileConfig::total_frames)
-        .def_readwrite("dtype", &FileConfig::dtype)
-        .def("__eq__", &FileConfig::operator==)
-        .def("__ne__", &FileConfig::operator!=)
-        .def("__repr__", [](const FileConfig &a) {
-            return "<FileConfig: " + a.to_string() + ">";
-        });
 
     py::class_<ScanParameters>(m, "ScanParameters")
         .def(py::init<const std::string &>())

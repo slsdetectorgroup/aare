@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: MPL-2.0
 
 #include "aare/ClusterFinderMT.hpp"
 #include "aare/Cluster.hpp"
@@ -57,6 +58,7 @@ class ClusterFinderMTWrapper
     size_t m_sink_size() const { return this->m_sink.sizeGuess(); }
 };
 
+
 TEST_CASE("multithreaded cluster finder", "[.with-data]") {
     auto fpath =
         test_data_path() / "raw/moench03/cu_half_speed_master_4.json";
@@ -81,7 +83,8 @@ TEST_CASE("multithreaded cluster finder", "[.with-data]") {
     CHECK(cf.m_input_queues_are_empty() == true);
 
     for (size_t i = 0; i < n_frames_pd; ++i) {
-        cf.find_clusters(file.read_frame().view<uint16_t>());
+        auto frame = file.read_frame();
+        cf.find_clusters(frame.view<uint16_t>());
     }
 
     cf.stop();

@@ -1,7 +1,10 @@
+// SPDX-License-Identifier: MPL-2.0
 #include "aare/RawMasterFile.hpp"
 #include "aare/RawFile.hpp"
 #include "aare/logger.hpp"
 #include <sstream>
+
+#include "to_string.hpp"
 
 namespace aare {
 
@@ -64,6 +67,12 @@ const std::string &RawFileNameComponents::base_name() const {
 const std::string &RawFileNameComponents::ext() const { return m_ext; }
 int RawFileNameComponents::file_index() const { return m_file_index; }
 
+ScanParameters::ScanParameters(const bool enabled, const DACIndex dac,
+                               const int start, const int stop, const int step,
+                               const int64_t settleTime)
+    : m_enabled(enabled), m_dac(dac), m_start(start), m_stop(stop),
+      m_step(step), m_settleTime(settleTime) {};
+
 // "[enabled\ndac dac 4\nstart 500\nstop 2200\nstep 5\nsettleTime 100us\n]"
 ScanParameters::ScanParameters(const std::string &par) {
     std::istringstream iss(par.substr(1, par.size() - 2));
@@ -72,7 +81,7 @@ ScanParameters::ScanParameters(const std::string &par) {
         if (line == "enabled") {
             m_enabled = true;
         } else if (line.find("dac") != std::string::npos) {
-            m_dac = line.substr(4);
+            m_dac = string_to<DACIndex>(line.substr(4));
         } else if (line.find("start") != std::string::npos) {
             m_start = std::stoi(line.substr(6));
         } else if (line.find("stop") != std::string::npos) {
@@ -87,18 +96,34 @@ int ScanParameters::start() const { return m_start; }
 int ScanParameters::stop() const { return m_stop; }
 void ScanParameters::increment_stop() { m_stop += 1; }
 int ScanParameters::step() const { return m_step; }
-const std::string &ScanParameters::dac() const { return m_dac; }
+DACIndex ScanParameters::dac() const { return m_dac; }
 bool ScanParameters::enabled() const { return m_enabled; }
+int64_t ScanParameters::settleTime() const { return m_settleTime; }
 
 RawMasterFile::RawMasterFile(const std::filesystem::path &fpath)
     : m_fnc(fpath) {
     if (!std::filesystem::exists(fpath)) {
-        throw std::runtime_error(LOCATION + " File does not exist");
+        throw std::runtime_error(fmt::format("{} File does not exist: {}",
+                                             LOCATION, fpath.string()));
     }
+
+    std::ifstream ifs(fpath);
     if (m_fnc.ext() == ".json") {
-        parse_json(fpath);
+        parse_json(ifs);
     } else if (m_fnc.ext() == ".raw") {
-        parse_raw(fpath);
+        parse_raw(ifs);
+    } else {
+        throw std::runtime_error(LOCATION + "Unsupported file type");
+    }
+}
+
+RawMasterFile::RawMasterFile(std::istream &is, const std::string &fname)
+    : m_fnc(fname) {
+
+    if (m_fnc.ext() == ".json") {
+        parse_json(is);
+    } else if (m_fnc.ext() == ".raw") {
+        parse_raw(is);
     } else {
         throw std::runtime_error(LOCATION + "Unsupported file type");
     }
@@ -135,6 +160,10 @@ std::optional<size_t> RawMasterFile::number_of_rows() const {
     return m_number_of_rows;
 }
 
+std::optional<uint8_t> RawMasterFile::counter_mask() const {
+    return m_counter_mask;
+}
+
 xy RawMasterFile::geometry() const { return m_geometry; }
 
 size_t RawMasterFile::n_modules() const {
@@ -166,46 +195,69 @@ ScanParameters RawMasterFile::scan_parameters() const {
 
 std::optional<ROI> RawMasterFile::roi() const { return m_roi; }
 
-void RawMasterFile::parse_json(const std::filesystem::path &fpath) {
-    std::ifstream ifs(fpath);
+void RawMasterFile::parse_json(std::istream &is) {
     json j;
-    ifs >> j;
+    is >> j;
+
     double v = j["Version"];
     m_version = fmt::format("{:.1f}", v);
 
-    m_type = StringTo<DetectorType>(j["Detector Type"].get<std::string>());
-    m_timing_mode = StringTo<TimingMode>(j["Timing Mode"].get<std::string>());
+    m_type = string_to<DetectorType>(j["Detector Type"].get<std::string>());
+    m_timing_mode = string_to<TimingMode>(j["Timing Mode"].get<std::string>());
 
     m_geometry = {
         j["Geometry"]["y"],
         j["Geometry"]["x"]}; // TODO: isnt it only available for version > 7.1?
                              // - try block default should be 1x1
 
-    m_image_size_in_bytes = j["Image Size in bytes"];
+    m_image_size_in_bytes =
+        v < 8.0 ? j["Image Size in bytes"] : j["Image Size"];
+
     m_frames_in_file = j["Frames in File"];
     m_pixels_y = j["Pixels"]["y"];
     m_pixels_x = j["Pixels"]["x"];
 
     m_max_frames_per_file = j["Max Frames Per File"];
 
+    // Before v8.0 we had Exptime instead of Exposure Time
+    // Mythen3 uses 3 exposure times and is not handled at the moment
+    if (j.contains("Exptime") && j["Exptime"].is_string()) {
+        m_exptime = string_to<std::chrono::nanoseconds>(
+            j["Exptime"].get<std::string>());
+    }
+    if (j.contains("Exposure Time") && j["Exposure Time"].is_string()) {
+        m_exptime = string_to<std::chrono::nanoseconds>(
+            j["Exposure Time"].get<std::string>());
+    }
+
+    // Before v8.0 we had Period instead of Acquisition Period
+    if (j.contains("Period") && j["Period"].is_string()) {
+        m_period =
+            string_to<std::chrono::nanoseconds>(j["Period"].get<std::string>());
+    }
+    if (j.contains("Acquisition Period") &&
+        j["Acquisition Period"].is_string()) {
+        m_period = string_to<std::chrono::nanoseconds>(
+            j["Acquisition Period"].get<std::string>());
+    }
+
+    // TODO! Not valid for CTB but not changing api right now!
     // Not all detectors write the bitdepth but in case
     // its not there it is 16
-    try {
-        m_bitdepth = j.at("Dynamic Range");
-    } catch (const json::out_of_range &e) {
+    if(j.contains("Dynamic Range") && j["Dynamic Range"].is_number()){
+        m_bitdepth = j["Dynamic Range"];
+    } else {
         m_bitdepth = 16;
     }
     m_total_frames_expected = j["Total Frames"];
 
     m_frame_padding = j["Frame Padding"];
-    m_frame_discard_policy = StringTo<FrameDiscardPolicy>(
+    m_frame_discard_policy = string_to<FrameDiscardPolicy>(
         j["Frame Discard Policy"].get<std::string>());
 
-    try {
-        m_number_of_rows = j.at("Number of rows");
-    } catch (const json::out_of_range &e) {
-        // keep the optional empty
-    }
+    if(j.contains("Number of rows") && j["Number of rows"].is_number()){ 
+        m_number_of_rows = j["Number of rows"];
+    } 
 
     // ----------------------------------------------------------------
     // Special treatment of analog flag because of Moench03
@@ -227,7 +279,6 @@ void RawMasterFile::parse_json(const std::filesystem::path &fpath) {
         m_analog_flag = 0;
     }
     //-----------------------------------------------------------------
-
     try {
         m_quad = j.at("Quad");
     } catch (const json::out_of_range &e) {
@@ -239,7 +290,6 @@ void RawMasterFile::parse_json(const std::filesystem::path &fpath) {
     // }catch (const json::out_of_range &e) {
     //     m_adc_mask = 0;
     // }
-
     try {
         int digital_flag = j.at("Digital Flag");
         if (digital_flag) {
@@ -248,7 +298,6 @@ void RawMasterFile::parse_json(const std::filesystem::path &fpath) {
     } catch (const json::out_of_range &e) {
         // keep the optional empty
     }
-
     try {
         m_transceiver_flag = j.at("Transceiver Flag");
         if (m_transceiver_flag) {
@@ -257,10 +306,20 @@ void RawMasterFile::parse_json(const std::filesystem::path &fpath) {
     } catch (const json::out_of_range &e) {
         // keep the optional empty
     }
-
     try {
-        std::string scan_parameters = j.at("Scan Parameters");
-        m_scan_parameters = ScanParameters(scan_parameters);
+        if (v < 8.0) {
+            std::string scan_parameters = j.at("Scan Parameters");
+            m_scan_parameters = ScanParameters(scan_parameters);
+        } else {
+            auto json_obj = j.at("Scan Parameters");
+            m_scan_parameters = ScanParameters(
+                json_obj.at("enable").get<int>(),
+                static_cast<DACIndex>(json_obj.at("dacInd").get<int>()),
+                json_obj.at("start offset").get<int>(),
+                json_obj.at("stop offset").get<int>(),
+                json_obj.at("step size").get<int>(),
+                json_obj.at("dac settle time ns").get<int>());
+        }
         if (v < 7.21) {
             m_scan_parameters
                 .increment_stop(); // adjust for endpoint being included
@@ -268,6 +327,7 @@ void RawMasterFile::parse_json(const std::filesystem::path &fpath) {
     } catch (const json::out_of_range &e) {
         // not a scan
     }
+
     try {
         m_udp_interfaces_per_module = {j.at("Number of UDP Interfaces"), 1};
     } catch (const json::out_of_range &e) {
@@ -277,41 +337,52 @@ void RawMasterFile::parse_json(const std::filesystem::path &fpath) {
             m_udp_interfaces_per_module = {1, 2};
         }
     }
-
     try {
         ROI tmp_roi;
-        auto obj = j.at("Receiver Roi");
-        tmp_roi.xmin = obj.at("xmin");
-        tmp_roi.xmax = obj.at("xmax");
-        tmp_roi.ymin = obj.at("ymin");
-        tmp_roi.ymax = obj.at("ymax");
+        if (v < 8.0) {
+            auto obj = j.at("Receiver Roi");
+            tmp_roi.xmin = obj.at("xmin");
+            tmp_roi.xmax = obj.at("xmax");
+            tmp_roi.ymin = obj.at("ymin");
+            tmp_roi.ymax = obj.at("ymax");
+        } else {
+            // TODO: for now only handle single ROI
+            auto obj = j.at("Receiver Rois");
+            tmp_roi.xmin = obj[0].at("xmin");
+            tmp_roi.xmax = obj[0].at("xmax");
+            tmp_roi.ymin = obj[0].at("ymin");
+            tmp_roi.ymax = obj[0].at("ymax");
+        }
 
         // if any of the values are set update the roi
+        // TODO: doesnt it write garbage if one of them is not set
         if (tmp_roi.xmin != 4294967295 || tmp_roi.xmax != 4294967295 ||
             tmp_roi.ymin != 4294967295 || tmp_roi.ymax != 4294967295) {
-
-            if (v < 7.21) {
-                tmp_roi.xmax++; // why is it updated
-                tmp_roi.ymax++;
+            tmp_roi.xmax++;
+            // Handle Mythen
+            if (tmp_roi.ymin == -1 && tmp_roi.ymax == -1) {
+                tmp_roi.ymin = 0;
+                tmp_roi.ymax = 0;
             }
+            tmp_roi.ymax++;
             m_roi = tmp_roi;
         }
 
     } catch (const json::out_of_range &e) {
-        std::cout << e.what() << std::endl;
         // leave the optional empty
     }
 
-    // if we have an roi we need to update the geometry for the subfiles
-    if (m_roi) {
+    if (j.contains("Counter Mask")) {
+        if (j["Counter Mask"].is_number())
+            m_counter_mask = j["Counter Mask"];
+        else if (j["Counter Mask"].is_string())
+            m_counter_mask =
+                std::stoi(j["Counter Mask"].get<std::string>(), nullptr, 16);
     }
+    
 
-// Update detector type for Moench
-// TODO! How does this work with old .raw master files?
-#ifdef AARE_VERBOSE
-    fmt::print("Detecting Moench03: m_pixels_y: {}, m_analog_samples: {}\n",
-               m_pixels_y, m_analog_samples.value_or(0));
-#endif
+    // Update detector type for Moench
+    // TODO! How does this work with old .raw master files?
     if (m_type == DetectorType::Moench && !m_analog_samples &&
         m_pixels_y == 400) {
         m_type = DetectorType::Moench03;
@@ -320,10 +391,8 @@ void RawMasterFile::parse_json(const std::filesystem::path &fpath) {
         m_type = DetectorType::Moench03_old;
     }
 }
-void RawMasterFile::parse_raw(const std::filesystem::path &fpath) {
-
-    std::ifstream ifs(fpath);
-    for (std::string line; std::getline(ifs, line);) {
+void RawMasterFile::parse_raw(std::istream &is) {
+    for (std::string line; std::getline(is, line);) {
         if (line == "#Frame Header")
             break;
         auto pos = line.find(':');
@@ -348,12 +417,12 @@ void RawMasterFile::parse_raw(const std::filesystem::path &fpath) {
             } else if (key == "TimeStamp") {
 
             } else if (key == "Detector Type") {
-                m_type = StringTo<DetectorType>(value);
+                m_type = string_to<DetectorType>(value);
                 if (m_type == DetectorType::Moench) {
                     m_type = DetectorType::Moench03_old;
                 }
             } else if (key == "Timing Mode") {
-                m_timing_mode = StringTo<TimingMode>(value);
+                m_timing_mode = string_to<TimingMode>(value);
             } else if (key == "Image Size") {
                 m_image_size_in_bytes = std::stoi(value);
             } else if (key == "Frame Padding") {
@@ -394,6 +463,10 @@ void RawMasterFile::parse_raw(const std::filesystem::path &fpath) {
                 m_pixels_x = std::stoi(value.substr(0, pos));
             } else if (key == "Total Frames") {
                 m_total_frames_expected = std::stoi(value);
+            } else if (key == "Exptime") {
+                m_exptime = string_to<std::chrono::nanoseconds>(value);
+            } else if (key == "Period") {
+                m_period = string_to<std::chrono::nanoseconds>(value);
             } else if (key == "Dynamic Range") {
                 m_bitdepth = std::stoi(value);
             } else if (key == "Quad") {

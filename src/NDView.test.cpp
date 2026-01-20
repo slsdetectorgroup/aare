@@ -1,9 +1,11 @@
+// SPDX-License-Identifier: MPL-2.0
 #include "aare/NDView.hpp"
 #include <catch2/catch_test_macros.hpp>
 
 #include <iostream>
 #include <numeric>
 #include <vector>
+#include <cstddef>
 
 using aare::NDView;
 using aare::Shape;
@@ -258,4 +260,12 @@ TEST_CASE("Create a view over a vector") {
     REQUIRE(v.shape()[0] == 12);
     REQUIRE(v[0] == 0);
     REQUIRE(v[11] == 11);
+}
+
+TEST_CASE("NDView over byte"){
+    std::vector<std::byte> buf(5);
+    auto v = aare::make_view(buf);
+    REQUIRE(v.shape()[0] == 5);
+    REQUIRE(v[0] == std::byte{0});
+
 }
