@@ -73,8 +73,11 @@ class ClusterFinderMT {
                 switch (frame->type) {
                 case FrameType::DATA:
                     cf->find_clusters(frame->data.view(), frame->frame_number);
-                    m_output_queues[thread_id]->write(
-                        cf->steal_clusters(realloc_same_capacity));
+                    while (!m_output_queues[thread_id]->write(
+                        cf->steal_clusters(realloc_same_capacity))) {
+                        std::this_thread::sleep_for(m_default_wait);
+                    }
+
                     break;
 
                 case FrameType::PEDESTAL:

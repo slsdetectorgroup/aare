@@ -13,6 +13,10 @@
 - Removed Print/Print_some/Print_all form NDArray (operator << still works)
 - Added const* version of .data()
 
+### Bugfixes: 
+
+ - multi threaded cluster finder doesnt drop frames if queues are full 
+
 
 ### 2025.11.21
 
