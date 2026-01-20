@@ -32,21 +32,22 @@ jobs:
         run: |
             sudo apt-get update
             sudo apt-get -y install cmake gcc g++
-
-      - name: Get conda
-        uses: conda-incubator/setup-miniconda@v3
-        with:
-          python-version: ${{ matrix.python-version }}
-          environment-file: etc/dev-env.yml
-          miniforge-version: latest
-          channels: conda-forge
-          conda-remove-defaults: "true"
+            sudo apt-get -y install python3.12 python3.12-dev python3.12-venv python3-pip
+            sudo apt-get -y install doxygen 
+            python3.12 -m venv venv
+            source venv/bin/activate
+            pip install --upgrade pip
+            pip install breathe
+            pip install sphinx_rtd_theme sphinx 
+            pip install numpy
+            pip install furo 
 
       - name: Build library 
         run: |
+            source venv/bin/activate
             mkdir build 
             cd build 
-            cmake .. -DAARE_SYSTEM_LIBRARIES=ON -DAARE_DOCS=ON 
+            cmake .. -DAARE_PYTHON_BINDINGS=ON -DAARE_DOCS=ON 
             make -j 2 
             make docs
 

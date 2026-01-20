@@ -193,6 +193,7 @@ Interpolator::interpolate(const ClusterVector<ClusterType> &clusters) const {
     std::vector<Photon> photons;
     photons.reserve(clusters.size());
 
+    size_t cluster_index{};
     for (const ClusterType &cluster : clusters) {
 
         auto eta = EtaFunction(cluster);
@@ -201,6 +202,14 @@ Interpolator::interpolate(const ClusterVector<ClusterType> &clusters) const {
         photon.x = cluster.x;
         photon.y = cluster.y;
         photon.energy = static_cast<decltype(photon.energy)>(eta.sum);
+
+        try {
+            // check if eta values are within bounds
+            transform_eta_values(eta);
+        } catch (const std::runtime_error &e) {
+            throw std::runtime_error(
+                fmt::format("{} for cluster: {}", e.what(), cluster_index));
+        }
 
         auto uniform_coordinates = transform_eta_values(eta);
 
@@ -244,6 +253,8 @@ Interpolator::interpolate(const ClusterVector<ClusterType> &clusters) const {
             photon.x += uniform_coordinates.x;
             photon.y += uniform_coordinates.y;
         }
+
+        ++cluster_index;
 
         photons.push_back(photon);
     }

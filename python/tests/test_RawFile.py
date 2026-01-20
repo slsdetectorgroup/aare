@@ -6,7 +6,7 @@ import numpy as np
 @pytest.mark.withdata
 def test_read_rawfile_with_roi(test_data_path):
 
-   with RawFile(test_data_path / "raw/SingleChipROI/Data_master_0.json") as f:
+   with RawFile(test_data_path / "raw/ROITestData/SingleChipROI/Data_master_0.json") as f:
     headers, frames = f.read()
 
     assert headers.size == 10100
