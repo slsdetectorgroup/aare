@@ -10,6 +10,10 @@ class AdcSar04Transform64to16:
 class AdcSar05Transform64to16:
     def __call__(self, data):
         return _aare.adc_sar_05_decode64to16(data)
+    
+class AdcSar05060708Transform64to16:
+    def __call__(self, data):
+        return _aare.adc_sar_05_06_07_08decode64to16(data)
 
 class Moench05Transform:
     #Could be moved to C++ without changing the interface
@@ -94,3 +98,4 @@ moench05_old = Moench05TransformOld()
 matterhorn02 = Matterhorn02Transform()
 adc_sar_04_64to16 = AdcSar04Transform64to16()
 adc_sar_05_64to16 = AdcSar05Transform64to16()
+adc_sar_05_06_07_08_64to16 = AdcSar05060708Transform64to16()
