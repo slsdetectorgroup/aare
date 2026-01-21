@@ -28,6 +28,7 @@
 #include <atomic>
 #include <cassert>
 #include <cstdlib>
+#include <cstddef>
 #include <memory>
 #include <stdexcept>
 #include <type_traits>

@@ -16,6 +16,7 @@
 ### Bugfixes: 
 
  - multi threaded cluster finder doesnt drop frames if queues are full 
+ - Round before casting in the cluster finder to avoid biasing clusters by truncating
 
 
 ### 2025.11.21
