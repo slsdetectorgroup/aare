@@ -152,9 +152,9 @@ class ClusterFinder {
                                 // If the cluster type is an integral type, and
                                 // the pedestal is a floating point type then we
                                 // need to round the value before storing it
-                                if constexpr (std::is_integral_v<CT> /*&&
+                                if constexpr (std::is_integral_v<CT> &&
                                               std::is_floating_point_v<
-                                                  PEDESTAL_TYPE>*/) {
+                                                  PEDESTAL_TYPE>) {
                                     auto tmp = std::lround(
                                         frame(iy + ir, ix + ic) -
                                         m_pedestal.mean(iy + ir, ix + ic));
