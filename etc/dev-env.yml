@@ -15,4 +15,7 @@ dependencies:
   - numpy
   - matplotlib
   - nlohmann_json
+  - pytest
+  - pytest-check
+  - boost-histogram
 

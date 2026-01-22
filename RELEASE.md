@@ -17,6 +17,10 @@
     - Use ``read_n_ROIs`` to read multiple frames for a specific ROI. 
     - Note ``read_frame`` and ``read_n`` is not supported for multiple ROI's. 
 
+### Bugfixes: 
+
+ - multi threaded cluster finder doesnt drop frames if queues are full 
+
 
 ### 2025.11.21
 

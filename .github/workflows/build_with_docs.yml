@@ -55,6 +55,11 @@ jobs:
         working-directory: ${{github.workspace}}/build
         run: ctest -C ${{env.BUILD_TYPE}} -j4
 
+
+      - name: Python unit tests 
+        working-directory: ${{github.workspace}}/build
+        run: python -m pytest ${{github.workspace}}/python/tests/ 
+
       - name: Upload static files as artifact
         if: matrix.platform == 'ubuntu-latest'
         id: deployment

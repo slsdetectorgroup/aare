@@ -1,0 +1,47 @@
+name: Run tests using data on local RHEL8
+
+on:
+  push: # pull_request only works if pull_request in gitea 
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    runs-on: "detectors-software-RH8"
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Clone aare-test-data repository
+        run: |
+          git lfs install
+          git clone https://gitea.psi.ch/detectors/aare-test-data.git ../aare-test-data
+          cd ../aare-test-data
+          git lfs pull
+
+      - name: Build library 
+        run: |
+            source /home/gitea_runner/.bashrc 
+            conda activate aare_test 
+            mkdir build && cd build
+            cmake .. -DAARE_PYTHON_BINDINGS=ON -DAARE_TESTS=ON 
+            make -j 4
+
+      - name: C++ unit tests  
+        working-directory: ${{github.workspace}}/build
+        env:
+          AARE_TEST_DATA: ${{github.workspace}}/../aare-test-data
+        run: ./run_tests [.with-data] # TODO: should we run all tests? 
+
+      - name: Python unit tests 
+        working-directory: ${{github.workspace}}/build
+        env:
+          AARE_TEST_DATA: ${{github.workspace}}/../aare-test-data
+        run: | 
+          source /home/gitea_runner/.bashrc
+          conda activate aare_test
+          python -m pytest ${{github.workspace}}/python/tests/ --with-data # runs all tests 
+
+
+        
