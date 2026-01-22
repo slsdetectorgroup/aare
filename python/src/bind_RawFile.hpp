@@ -100,57 +100,53 @@ void define_raw_file_io_bindings(py::module &m) {
              )")
 
         .def(
-            "read_ROIs",
+            "read_roi",
             [](RawFile &self,
-               const std::optional<size_t> roi_index = std::nullopt) {
+               const size_t roi_index) {
                 if (self.num_rois() == 0) {
                     throw std::runtime_error(LOCATION + "No ROIs defined.");
                 }
 
-                if (roi_index.has_value() &&
-                    roi_index.value() >= self.num_rois()) {
+                if ( roi_index >= self.num_rois()) {
                     throw std::runtime_error(LOCATION +
                                              "ROI index out of range.");
                 }
 
-                size_t number_of_ROIs =
-                    roi_index.has_value() ? 1 : self.num_rois();
+                // return headers from all subfiles
+                py::array_t<DetectorHeader> header(self.n_modules_in_roi()[roi_index]);
 
+                
+                std::vector<ssize_t> shape;
+                shape.reserve(2);
+                shape.push_back(self.roi_geometries(roi_index).pixels_y());
+                shape.push_back(self.roi_geometries(roi_index).pixels_x());
+
+                py::array image;
                 const uint8_t item_size = self.bytes_per_pixel();
-
-                std::vector<py::array> images(number_of_ROIs);
-
-                for (size_t r = 0; r < number_of_ROIs; r++) {
-                    std::vector<ssize_t> shape;
-                    shape.reserve(2);
-                    shape.push_back(self.roi_geometries(r).pixels_y());
-                    shape.push_back(self.roi_geometries(r).pixels_x());
-
-                    if (item_size == 1) {
-                        images[r] = py::array_t<uint8_t>(shape);
-                    } else if (item_size == 2) {
-                        images[r] = py::array_t<uint16_t>(shape);
-                    } else if (item_size == 4) {
-                        images[r] = py::array_t<uint32_t>(shape);
-                    }
-
-                    const size_t roi_idx =
-                        roi_index.has_value() ? roi_index.value() : r;
-                    self.read_roi_into(
-                        reinterpret_cast<std::byte *>(images[r].mutable_data()),
-                        roi_idx, self.tell());
+                if (item_size == 1) {
+                    image = py::array_t<uint8_t>(shape);
+                } else if (item_size == 2) {
+                    image = py::array_t<uint16_t>(shape);
+                } else if (item_size == 4) {
+                    image = py::array_t<uint32_t>(shape);
                 }
+
+
+                self.read_roi_into(
+                    reinterpret_cast<std::byte *>(image.mutable_data()),
+                    roi_index, self.tell(), header.mutable_data());
+                
                 self.seek(self.tell() + 1); // advance frame number so the
-                return images;
+                return py::make_tuple(header, image);
             },
             R"(
-            Read all ROIs for the current frame.
+            Read one ROI from the current frame.
 
             Parameters
             ----------
 
-            roi_index : Optional[int]
-                Index of the ROI to read. If not provided, all ROIs are read.
+            roi_index : int
+                Index of the ROI to read.
 
             Notes
             -----
@@ -160,32 +156,33 @@ void define_raw_file_io_bindings(py::module &m) {
             Returns
             -------
 
-            list of numpy.ndarray
-                One array per ROI.)",
-            py::arg("roi_index") = py::none())
+            tuple (header, image)
+            )",
+            py::arg("roi_index"))
 
         .def(
-            "read_ROIs",
-            [](RawFile &self, const size_t frame_number,
-               const std::optional<size_t> roi_index = std::nullopt) {
+            "read_rois",
+            [](RawFile &self) {
                 if (self.num_rois() == 0) {
                     throw std::runtime_error(LOCATION + "No ROIs defined.");
                 }
 
-                if (roi_index.has_value() &&
-                    roi_index.value() >= self.num_rois()) {
-                    throw std::runtime_error(LOCATION +
-                                             "ROI index out of range.");
-                }
 
-                size_t number_of_ROIs =
-                    roi_index.has_value() ? 1 : self.num_rois();
+
+                size_t number_of_ROIs = self.num_rois();
 
                 const uint8_t item_size = self.bytes_per_pixel();
 
                 std::vector<py::array> images(number_of_ROIs);
 
-                self.seek(frame_number);
+                // return headers from all subfiles
+                std::vector<py::array_t<DetectorHeader>> headers(number_of_ROIs);
+                for (size_t r = 0; r < number_of_ROIs; r++) {
+                    headers[r] =
+                        py::array_t<DetectorHeader>(self.n_modules_in_roi()[r]);
+                }
+
+
 
                 for (size_t r = 0; r < number_of_ROIs; r++) {
                     std::vector<ssize_t> shape;
@@ -201,14 +198,12 @@ void define_raw_file_io_bindings(py::module &m) {
                         images[r] = py::array_t<uint32_t>(shape);
                     }
 
-                    const size_t roi_idx =
-                        roi_index.has_value() ? roi_index.value() : r;
                     self.read_roi_into(
                         reinterpret_cast<std::byte *>(images[r].mutable_data()),
-                        roi_idx, self.tell());
+                        r, self.tell(),headers[r].mutable_data());
                 }
                 self.seek(self.tell() + 1); // advance frame number so the
-                return images;
+                return py::make_tuple(headers, images);
             },
             R"(
             Read all ROIs for specific frame.
@@ -226,8 +221,7 @@ void define_raw_file_io_bindings(py::module &m) {
             -------
 
             list of numpy.ndarray
-                One array per ROI.)",
-            py::arg("frame_number"), py::arg("roi_index") = py::none())
+                One array per ROI.)")
 
         .def(
             "read_n_ROIs",
