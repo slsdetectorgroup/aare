@@ -240,9 +240,7 @@ endif()
 add_library(aare_compiler_flags INTERFACE)
 target_compile_features(aare_compiler_flags INTERFACE cxx_std_17)
 
-if(AARE_PYTHON_BINDINGS)
-    add_subdirectory(python)
-endif()
+
 
 #################
 # MSVC specific #
@@ -308,6 +306,9 @@ target_compile_options(
 
 endif() #GCC/Clang specific
 
+if(AARE_PYTHON_BINDINGS)
+    add_subdirectory(python)
+endif()
 
 if(AARE_ASAN)
     message(STATUS "AddressSanitizer enabled")
