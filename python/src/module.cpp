@@ -91,6 +91,10 @@ PYBIND11_MODULE(_aare, m) {
     DEFINE_CLUSTER_BINDINGS(double, 9, 9, uint16_t, d);
     DEFINE_CLUSTER_BINDINGS(float, 9, 9, uint16_t, f);
 
+    DEFINE_CLUSTER_BINDINGS(int, 21, 21, uint16_t, i);
+    DEFINE_CLUSTER_BINDINGS(double, 21, 21, uint16_t, d);
+    DEFINE_CLUSTER_BINDINGS(float, 21, 21, uint16_t, f);
+
     DEFINE_CLUSTER_BINDINGS(int16_t, 3, 3, uint16_t, i16);
 
     DEFINE_BINDINGS_CLUSTERFINDER(int, 3, 3, uint16_t, i);
@@ -108,6 +112,10 @@ PYBIND11_MODULE(_aare, m) {
     DEFINE_BINDINGS_CLUSTERFINDER(int, 9, 9, uint16_t, i);
     DEFINE_BINDINGS_CLUSTERFINDER(double, 9, 9, uint16_t, d);
     DEFINE_BINDINGS_CLUSTERFINDER(float, 9, 9, uint16_t, f);
+
+    DEFINE_BINDINGS_CLUSTERFINDER(int, 21, 21, uint16_t, i);
+    DEFINE_BINDINGS_CLUSTERFINDER(double, 21, 21, uint16_t, d);
+    DEFINE_BINDINGS_CLUSTERFINDER(float, 21, 21, uint16_t, f);
 
     define_3x3_reduction<int, 3, 3, uint16_t>(m);
     define_3x3_reduction<double, 3, 3, uint16_t>(m);
