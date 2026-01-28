@@ -148,12 +148,27 @@ class ClusterFinder {
                         for (int ic = -dx; ic < dx + has_center_pixel_x; ic++) {
                             if (ix + ic >= 0 && ix + ic < frame.shape(1) &&
                                 iy + ir >= 0 && iy + ir < frame.shape(0)) {
-                                CT tmp =
-                                    static_cast<CT>(frame(iy + ir, ix + ic)) -
-                                    static_cast<CT>(
+
+                                // If the cluster type is an integral type, and
+                                // the pedestal is a floating point type then we
+                                // need to round the value before storing it
+                                if constexpr (std::is_integral_v<CT> &&
+                                              std::is_floating_point_v<
+                                                  PEDESTAL_TYPE>) {
+                                    auto tmp = std::lround(
+                                        frame(iy + ir, ix + ic) -
                                         m_pedestal.mean(iy + ir, ix + ic));
-                                cluster.data[i] =
-                                    tmp; // Watch for out of bounds access
+                                    cluster.data[i] = static_cast<CT>(tmp);
+                                }
+                                // On the other hand if both are floating point
+                                // or both are integral then we can just static
+                                // cast directly
+                                else {
+                                    auto tmp =
+                                        frame(iy + ir, ix + ic) -
+                                        m_pedestal.mean(iy + ir, ix + ic);
+                                    cluster.data[i] = static_cast<CT>(tmp);
+                                }
                             }
                             i++;
                         }

@@ -5,7 +5,9 @@
 namespace aare {
 
 CtbRawFile::CtbRawFile(const std::filesystem::path &fname) : m_master(fname) {
-    if (m_master.detector_type() != DetectorType::ChipTestBoard) {
+    if( (m_master.detector_type() != DetectorType::ChipTestBoard) &&
+    (m_master.detector_type() != DetectorType::Xilinx_ChipTestBoard) )
+    {
         throw std::runtime_error(LOCATION + "Not a Ctb file");
     }
 
@@ -13,6 +15,8 @@ CtbRawFile::CtbRawFile(const std::filesystem::path &fname) : m_master(fname) {
 
     // open the first subfile
     m_file.open(m_master.data_fname(0, 0), std::ios::binary);
+    if(!m_file)
+        throw std::runtime_error(LOCATION + "Could not open: " + m_master.data_fname(0, 0).string());
 }
 
 void CtbRawFile::read_into(std::byte *image_buf, DetectorHeader *header) {
@@ -30,7 +34,6 @@ void CtbRawFile::read_into(std::byte *image_buf, DetectorHeader *header) {
     } else {
         m_file.seekg(sizeof(DetectorHeader), std::ios::cur);
     }
-
     m_file.read(reinterpret_cast<char *>(image_buf),
                 m_master.image_size_in_bytes());
     m_current_frame++;
