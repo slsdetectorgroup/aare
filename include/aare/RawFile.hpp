@@ -4,6 +4,7 @@
 #include "aare/FileInterface.hpp"
 #include "aare/Frame.hpp"
 #include "aare/NDArray.hpp" //for pixel map
+#include "aare/ROIGeometry.hpp"
 #include "aare/RawMasterFile.hpp"
 #include "aare/RawSubFile.hpp"
 
@@ -23,12 +24,16 @@ namespace aare {
  */
 class RawFile : public FileInterface {
 
-    std::vector<std::unique_ptr<RawSubFile>> m_subfiles;
+    std::vector<std::vector<std::unique_ptr<RawSubFile>>>
+        m_subfiles; // [ROI][modules_per_ROI]
 
     RawMasterFile m_master;
     size_t m_current_frame{};
 
     DetectorGeometry m_geometry;
+
+    /// @brief Geometries e.g. number of modules, size etc. for each ROI
+    std::vector<ROIGeometry> m_ROI_geometries;
 
   public:
     /**
@@ -43,26 +48,94 @@ class RawFile : public FileInterface {
     Frame read_frame() override;
     Frame read_frame(size_t frame_number) override;
     std::vector<Frame> read_n(size_t n_frames) override;
+
+
+    /**
+     * @brief Read one ROI defined in the master file
+     * @param roi_index index of the ROI to read
+     * @return Frame
+     * @note the frame index is incremented after calling this function so
+     * reading rois one after the other wont work.
+     */
+    Frame read_roi(const size_t roi_index);
+
+    /**
+     * @brief Read all ROIs defined in the master file
+     * @return vector of Frames (one Frame per ROI)
+     */
+    std::vector<Frame>read_rois();
+
+    /**
+     * @brief Read n frames for the given ROI index
+     * @param n_frames number of frames to read
+     * @param roi_index index of the ROI to read
+     * @return vector of Frames
+     */
+    std::vector<Frame> read_n_with_roi(const size_t n_frames,
+                                   const size_t roi_index);
+
     void read_into(std::byte *image_buf) override;
     void read_into(std::byte *image_buf, size_t n_frames) override;
 
     // TODO! do we need to adapt the API?
-    void read_into(std::byte *image_buf, DetectorHeader *header);
+    void read_into(std::byte *image_buf, DetectorHeader *header = nullptr);
     void read_into(std::byte *image_buf, size_t n_frames,
                    DetectorHeader *header);
 
+    void read_roi_into(std::byte *image_buf, const size_t roi_index,
+                       const size_t frame_number,
+                       DetectorHeader *header =
+                           nullptr); // maybe just make get_frame_into public
+
     size_t frame_number(size_t frame_index) override;
     size_t bytes_per_frame() override;
+    // TODO: mmh maybe also pass roi_index in Base class File. Leave it unused
+    // for NumpyFile and JungfrauDataFile
+    /**
+     * @brief bytes per frame for the given ROI
+     * @param roi_index index of the ROI
+     */
+    size_t bytes_per_frame(const size_t roi_index);
     size_t pixels_per_frame() override;
+    /**
+     * @brief pixels per frame for the given ROI
+     * @param roi_index index of the ROI
+     */
+    size_t pixels_per_frame(const size_t roi_index);
     size_t bytes_per_pixel() const;
     void seek(size_t frame_index) override;
     size_t tell() override;
     size_t total_frames() const override;
     size_t rows() const override;
+    /**
+     * @brief rows for the given ROI
+     * @param roi_index index of the ROI
+     */
+    size_t rows(const size_t roi_index) const;
     size_t cols() const override;
+    /**
+     * @brief cols for the given ROI
+     * @param roi_index index of the ROI
+     */
+    size_t cols(const size_t roi_index) const;
     size_t bitdepth() const override;
     size_t n_modules() const;
-    size_t n_modules_in_roi() const;
+
+    /**
+     * @brief number of ROIs defined
+     */
+    size_t num_rois() const;
+
+    /**
+     * @brief get the ROI geometry for the given ROI index
+     * @param roi_index index of the ROI
+     */
+    const ROIGeometry &roi_geometries(size_t roi_index) const;
+
+    /**
+     * @brief number of modules in each ROI
+     */
+    std::vector<size_t> n_modules_in_roi() const;
     xy geometry() const;
 
     RawMasterFile master() const;
@@ -79,21 +152,23 @@ class RawFile : public FileInterface {
   private:
     /**
      * @brief read the frame at the given frame index into the image buffer
-     * @param frame_number frame number to read
-     * @param image_buf buffer to store the frame
+     * @param frame_index frame number to read
+     * @param frame_buffer buffer to store the frame
+     * @param roi_index index of the ROI to read (default is 0 e.g. full frame)
      */
-
-    void get_frame_into(size_t frame_index, std::byte *frame_buffer,
-                        DetectorHeader *header = nullptr);
+    void get_frame_into(
+        size_t frame_index, std::byte *frame_buffer, const size_t roi_index = 0,
+        DetectorHeader *header = nullptr); // TODO read_into updates it!!!!
 
     /**
      * @brief get the frame at the given frame index
      * @param frame_number frame number to read
+     * @param roi_index index of the ROI to read (default is 0 e.g. full frame)
      * @return Frame
      */
-    Frame get_frame(size_t frame_index);
+    Frame get_frame(size_t frame_index, const size_t roi_index = 0);
 
-    void open_subfiles();
+    void open_subfiles(const size_t roi_index);
 };
 
 } // namespace aare

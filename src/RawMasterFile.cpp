@@ -71,7 +71,7 @@ ScanParameters::ScanParameters(const bool enabled, const DACIndex dac,
                                const int start, const int stop, const int step,
                                const int64_t settleTime)
     : m_enabled(enabled), m_dac(dac), m_start(start), m_stop(stop),
-      m_step(step), m_settleTime(settleTime) {};
+      m_step(step), m_settleTime(settleTime){};
 
 // "[enabled\ndac dac 4\nstart 500\nstop 2200\nstep 5\nsettleTime 100us\n]"
 ScanParameters::ScanParameters(const std::string &par) {
@@ -193,7 +193,18 @@ ScanParameters RawMasterFile::scan_parameters() const {
     return m_scan_parameters;
 }
 
-std::optional<ROI> RawMasterFile::roi() const { return m_roi; }
+std::optional<ROI> RawMasterFile::roi() const {
+    if (m_rois.value().size() > 1) {
+        throw std::runtime_error(LOCATION +
+                                 "Multiple ROIs present, use rois() method.");
+    } else {
+        return m_rois.has_value()
+                   ? std::optional<ROI>(m_rois.value().at(0))
+                   : std::nullopt; // TODO: maybe throw if no roi exists
+    }
+}
+
+std::optional<std::vector<ROI>> RawMasterFile::rois() const { return m_rois; }
 
 void RawMasterFile::parse_json(std::istream &is) {
     json j;
@@ -255,9 +266,9 @@ void RawMasterFile::parse_json(std::istream &is) {
     m_frame_discard_policy = string_to<FrameDiscardPolicy>(
         j["Frame Discard Policy"].get<std::string>());
 
-    if(j.contains("Number of rows") && j["Number of rows"].is_number()){ 
+    if (j.contains("Number of rows") && j["Number of rows"].is_number()) {
         m_number_of_rows = j["Number of rows"];
-    } 
+    }
 
     // ----------------------------------------------------------------
     // Special treatment of analog flag because of Moench03
@@ -338,34 +349,35 @@ void RawMasterFile::parse_json(std::istream &is) {
         }
     }
     try {
-        ROI tmp_roi;
         if (v < 8.0) {
             auto obj = j.at("Receiver Roi");
-            tmp_roi.xmin = obj.at("xmin");
-            tmp_roi.xmax = obj.at("xmax");
-            tmp_roi.ymin = obj.at("ymin");
-            tmp_roi.ymax = obj.at("ymax");
-        } else {
-            // TODO: for now only handle single ROI
-            auto obj = j.at("Receiver Rois");
-            tmp_roi.xmin = obj[0].at("xmin");
-            tmp_roi.xmax = obj[0].at("xmax");
-            tmp_roi.ymin = obj[0].at("ymin");
-            tmp_roi.ymax = obj[0].at("ymax");
-        }
-
-        // if any of the values are set update the roi
-        // TODO: doesnt it write garbage if one of them is not set
-        if (tmp_roi.xmin != 4294967295 || tmp_roi.xmax != 4294967295 ||
-            tmp_roi.ymin != 4294967295 || tmp_roi.ymax != 4294967295) {
-            tmp_roi.xmax++;
-            // Handle Mythen
-            if (tmp_roi.ymin == -1 && tmp_roi.ymax == -1) {
-                tmp_roi.ymin = 0;
-                tmp_roi.ymax = 0;
+            if (obj.at("xmin") != 4294967295 || obj.at("xmax") != 4294967295 ||
+                obj.at("ymin") != 4294967295 || obj.at("ymax") != 4294967295) {
+                // Handle Mythen
+                if (obj.at("ymin") == -1 && obj.at("ymax") == -1) {
+                    obj.at("ymin") = 0;
+                    obj.at("ymax") = 0;
+                }
+                m_rois.emplace();
+                m_rois.value().push_back(ROI{
+                    obj.at("xmin"), static_cast<ssize_t>(obj.at("xmax")) + 1,
+                    obj.at("ymin"), static_cast<ssize_t>(obj.at("ymax")) + 1});
             }
-            tmp_roi.ymax++;
-            m_roi = tmp_roi;
+        } else {
+            auto obj = j.at("Receiver Rois");
+            m_rois.emplace();
+            for (auto &elem : obj) {
+                // handle Mythen
+                if (elem.at("ymin") == -1 && elem.at("ymax") == -1) {
+                    elem.at("ymin") = 0;
+                    elem.at("ymax") = 0;
+                }
+
+                m_rois.value().push_back(ROI{
+                    elem.at("xmin"), static_cast<ssize_t>(elem.at("xmax")) + 1,
+                    elem.at("ymin"),
+                    static_cast<ssize_t>(elem.at("ymax")) + 1});
+            }
         }
 
     } catch (const json::out_of_range &e) {
@@ -379,7 +391,6 @@ void RawMasterFile::parse_json(std::istream &is) {
             m_counter_mask =
                 std::stoi(j["Counter Mask"].get<std::string>(), nullptr, 16);
     }
-    
 
     // Update detector type for Moench
     // TODO! How does this work with old .raw master files?
