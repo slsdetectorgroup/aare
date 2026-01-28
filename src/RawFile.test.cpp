@@ -365,7 +365,7 @@ TEST_CASE("Open multi module file with two ROIs",
 
     CHECK(f.tell() == 0);
 
-    auto frame = f.read_ROIs();
+    auto frame = f.read_rois();
 
     CHECK(f.tell() == 1);
 
@@ -379,7 +379,7 @@ TEST_CASE("Open multi module file with two ROIs",
     CHECK_THROWS(f.rows());
     CHECK(f.rows(0) == 301);
 
-    auto frames = f.read_n_ROIs(2, 1);
+    auto frames = f.read_n_with_roi(2, 1);
     REQUIRE(frames.size() == 2);
     CHECK(f.tell() == 3);
     for (const auto &frm : frames) {

@@ -7,7 +7,7 @@
 #include "aare/RawSubFile.hpp"
 
 #include "aare/defs.hpp"
-// #include "aare/fClusterFileV2.hpp"
+#include "np_helper.hpp"
 
 #include <cstdint>
 #include <filesystem>
@@ -30,8 +30,8 @@ void define_raw_file_io_bindings(py::module &m) {
                      throw std::runtime_error(
                          "File contains multiple ROIs - use read_ROIs()");
                  }
-                 py::array image;
-                 std::vector<ssize_t> shape;
+
+                 std::vector<size_t> shape;
                  shape.reserve(2);
                  shape.push_back(self.rows());
                  shape.push_back(self.cols());
@@ -39,14 +39,7 @@ void define_raw_file_io_bindings(py::module &m) {
                  // return headers from all subfiles
                  py::array_t<DetectorHeader> header(self.n_modules());
 
-                 const uint8_t item_size = self.bytes_per_pixel();
-                 if (item_size == 1) {
-                     image = py::array_t<uint8_t>(shape);
-                 } else if (item_size == 2) {
-                     image = py::array_t<uint16_t>(shape);
-                 } else if (item_size == 4) {
-                     image = py::array_t<uint32_t>(shape);
-                 }
+                py::array image = allocate_image_data(self.bytes_per_pixel(), shape);
                  self.read_into(
                      reinterpret_cast<std::byte *>(image.mutable_data()),
                      header.mutable_data());
@@ -78,79 +71,58 @@ void define_raw_file_io_bindings(py::module &m) {
                     header = py::array_t<DetectorHeader>(
                         {self.n_modules_in_roi()[0], n_frames});
                 }
-                // py::array_t<DetectorHeader> header({self.n_mod(), n_frames});
 
-                py::array image;
-                const uint8_t item_size = self.bytes_per_pixel();
-                if (item_size == 1) {
-                    image = py::array_t<uint8_t>(shape);
-                } else if (item_size == 2) {
-                    image = py::array_t<uint16_t>(shape);
-                } else if (item_size == 4) {
-                    image = py::array_t<uint32_t>(shape);
-                }
+                py::array images = allocate_image_data(self.bytes_per_pixel(), shape);
                 self.read_into(
-                    reinterpret_cast<std::byte *>(image.mutable_data()),
+                    reinterpret_cast<std::byte *>(images.mutable_data()),
                     n_frames, header.mutable_data());
 
-                return py::make_tuple(header, image);
+                return py::make_tuple(header, images);
             },
             R"(
              Read n frames from the file.
              )")
 
         .def(
-            "read_ROIs",
+            "read_roi",
             [](RawFile &self,
-               const std::optional<size_t> roi_index = std::nullopt) {
+               const size_t roi_index) {
                 if (self.num_rois() == 0) {
                     throw std::runtime_error(LOCATION + "No ROIs defined.");
                 }
 
-                if (roi_index.has_value() &&
-                    roi_index.value() >= self.num_rois()) {
+                if ( roi_index >= self.num_rois()) {
                     throw std::runtime_error(LOCATION +
                                              "ROI index out of range.");
                 }
 
-                size_t number_of_ROIs =
-                    roi_index.has_value() ? 1 : self.num_rois();
+                // return headers from all subfiles
+                py::array_t<DetectorHeader> header(self.n_modules_in_roi()[roi_index]);
 
-                const uint8_t item_size = self.bytes_per_pixel();
+                
+                std::vector<size_t> shape;
+                shape.reserve(2);
+                shape.push_back(self.roi_geometries(roi_index).pixels_y());
+                shape.push_back(self.roi_geometries(roi_index).pixels_x());
 
-                std::vector<py::array> images(number_of_ROIs);
+                py::array image = allocate_image_data(self.bytes_per_pixel(), shape);
 
-                for (size_t r = 0; r < number_of_ROIs; r++) {
-                    std::vector<ssize_t> shape;
-                    shape.reserve(2);
-                    shape.push_back(self.roi_geometries(r).pixels_y());
-                    shape.push_back(self.roi_geometries(r).pixels_x());
 
-                    if (item_size == 1) {
-                        images[r] = py::array_t<uint8_t>(shape);
-                    } else if (item_size == 2) {
-                        images[r] = py::array_t<uint16_t>(shape);
-                    } else if (item_size == 4) {
-                        images[r] = py::array_t<uint32_t>(shape);
-                    }
-
-                    const size_t roi_idx =
-                        roi_index.has_value() ? roi_index.value() : r;
-                    self.read_roi_into(
-                        reinterpret_cast<std::byte *>(images[r].mutable_data()),
-                        roi_idx, self.tell());
-                }
+                self.read_roi_into(
+                    reinterpret_cast<std::byte *>(image.mutable_data()),
+                    roi_index, self.tell(), header.mutable_data());
+                
                 self.seek(self.tell() + 1); // advance frame number so the
-                return images;
+                return py::make_tuple(header, image);
             },
             R"(
-            Read all ROIs for the current frame.
+            Read one ROI from the current frame.
 
             Parameters
             ----------
 
-            roi_index : Optional[int]
-                Index of the ROI to read. If not provided, all ROIs are read.
+            roi_index : int
+                Index of the ROI to read.
 
             Notes
             -----
@@ -160,55 +132,48 @@ void define_raw_file_io_bindings(py::module &m) {
             Returns
             -------
 
-            list of numpy.ndarray
-                One array per ROI.)",
-            py::arg("roi_index") = py::none())
+            tuple (header, image)
+            )",
+            py::arg("roi_index"))
 
         .def(
-            "read_ROIs",
-            [](RawFile &self, const size_t frame_number,
-               const std::optional<size_t> roi_index = std::nullopt) {
+            "read_rois",
+            [](RawFile &self) {
                 if (self.num_rois() == 0) {
                     throw std::runtime_error(LOCATION + "No ROIs defined.");
                 }
 
-                if (roi_index.has_value() &&
-                    roi_index.value() >= self.num_rois()) {
-                    throw std::runtime_error(LOCATION +
-                                             "ROI index out of range.");
-                }
 
-                size_t number_of_ROIs =
-                    roi_index.has_value() ? 1 : self.num_rois();
 
-                const uint8_t item_size = self.bytes_per_pixel();
+                size_t number_of_ROIs = self.num_rois();
+
+                // const uint8_t item_size = self.bytes_per_pixel();
 
                 std::vector<py::array> images(number_of_ROIs);
 
-                self.seek(frame_number);
+                // return headers from all subfiles
+                std::vector<py::array_t<DetectorHeader>> headers(number_of_ROIs);
+                for (size_t r = 0; r < number_of_ROIs; r++) {
+                    headers[r] =
+                        py::array_t<DetectorHeader>(self.n_modules_in_roi()[r]);
+                }
+
+
 
                 for (size_t r = 0; r < number_of_ROIs; r++) {
-                    std::vector<ssize_t> shape;
+                    std::vector<size_t> shape;
                     shape.reserve(2);
                     shape.push_back(self.roi_geometries(r).pixels_y());
                     shape.push_back(self.roi_geometries(r).pixels_x());
 
-                    if (item_size == 1) {
-                        images[r] = py::array_t<uint8_t>(shape);
-                    } else if (item_size == 2) {
-                        images[r] = py::array_t<uint16_t>(shape);
-                    } else if (item_size == 4) {
-                        images[r] = py::array_t<uint32_t>(shape);
-                    }
+                    images[r] = allocate_image_data(self.bytes_per_pixel(), shape);
 
-                    const size_t roi_idx =
-                        roi_index.has_value() ? roi_index.value() : r;
                     self.read_roi_into(
                         reinterpret_cast<std::byte *>(images[r].mutable_data()),
-                        roi_idx, self.tell());
+                        r, self.tell(),headers[r].mutable_data());
                 }
                 self.seek(self.tell() + 1); // advance frame number so the
-                return images;
+                return py::make_tuple(headers, images);
             },
             R"(
             Read all ROIs for specific frame.
@@ -226,11 +191,10 @@ void define_raw_file_io_bindings(py::module &m) {
             -------
 
             list of numpy.ndarray
-                One array per ROI.)",
-            py::arg("frame_number"), py::arg("roi_index") = py::none())
+                One array per ROI.)")
 
         .def(
-            "read_n_ROIs",
+            "read_n_with_roi",
             [](RawFile &self, const size_t num_frames, const size_t roi_index) {
                 if (self.num_rois() == 0) {
                     throw std::runtime_error(LOCATION + "No ROIs defined.");
@@ -251,26 +215,28 @@ void define_raw_file_io_bindings(py::module &m) {
                     n_frames, self.roi_geometries(roi_index).pixels_y(),
                     self.roi_geometries(roi_index).pixels_x()};
 
-                py::array image;
-                const uint8_t item_size = self.bytes_per_pixel();
-                if (item_size == 1) {
-                    image = py::array_t<uint8_t>(shape);
-                } else if (item_size == 2) {
-                    image = py::array_t<uint16_t>(shape);
-                } else if (item_size == 4) {
-                    image = py::array_t<uint32_t>(shape);
-                }
+                // return headers from all subfiles
+                auto n_mod = self.n_modules_in_roi()[roi_index];
+                py::array_t<DetectorHeader> header({
+                    n_frames, n_mod}
+                );
+
+
+                py::array images = allocate_image_data(self.bytes_per_pixel(), shape);
 
                 auto image_buffer =
-                    reinterpret_cast<std::byte *>(image.mutable_data());
+                    reinterpret_cast<std::byte *>(images.mutable_data());
+                auto h = header.mutable_data();
+
                 for (size_t i = 0; i < n_frames; i++) {
-                    self.read_roi_into(image_buffer, roi_index, self.tell());
+                    self.read_roi_into(image_buffer, roi_index, self.tell(), h);
 
                     self.seek(self.tell() + 1); // advance frame number
                     image_buffer += self.bytes_per_frame(roi_index);
+                    h += n_mod;
                 }
 
-                return image;
+                return py::make_tuple(header, images);
             },
             R"(
             Read n frames for a specific ROI
@@ -287,7 +253,7 @@ void define_raw_file_io_bindings(py::module &m) {
             -------
 
             three dimensional numpy.ndarray.)",
-            py::arg("num_frames"), py::arg("roi_index"))
+            py::arg("num_frames"), py::kw_only(), py::arg("roi_index"))
 
         .def("frame_number", &RawFile::frame_number)
         .def("bytes_per_frame",
