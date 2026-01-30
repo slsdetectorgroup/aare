@@ -31,6 +31,32 @@ NDArray<ssize_t, 2> GenerateMoench03PixelMap() {
     return order_map;
 }
 
+NDArray<ssize_t, 2> GenerateMoench04AnalogPixelMap() {
+    std::array<int, 32> const adc_nr = {
+        9,  8,  11, 10, 13, 12, 15, 14, 1,  0,  3,  2,  5,  4,  7,  6,
+        23, 22, 21, 20, 19, 18, 17, 16, 31, 30, 29, 28, 27, 26, 25, 24};
+    int const sc_width = 25;
+    int const nadc = 32;
+    int const pixels_per_sc = 5000;
+    NDArray<ssize_t, 2> order_map({400, 400});
+
+    int pixel = 0;
+    for (int i = 0; i != pixels_per_sc; ++i) {
+        for (int i_adc = 0; i_adc != nadc; ++i_adc) {
+            int const col = (adc_nr[i_adc] % 16) * 25 + (i % sc_width);
+            int row = 0;
+            if (i_adc < 16)
+                row = 199 - (i / sc_width);
+            else
+                row = 200 + (i / sc_width);
+
+            order_map(row, col) = pixel;
+            pixel++;
+        }
+    }
+    return order_map;
+}
+
 NDArray<ssize_t, 2> GenerateMoench05PixelMap() {
     std::array<int, 3> adc_numbers = {5, 9, 1};
     NDArray<ssize_t, 2> order_map({160, 150});
@@ -104,9 +130,10 @@ NDArray<ssize_t, 2> GenerateEigerFlipRowsPixelMap() {
     return order_map;
 }
 
+// transceiver pixel map for Matterhorn02
 NDArray<ssize_t, 2> GenerateMH02SingleCounterPixelMap() {
-    // This is the pixel map for a single counter Matterhorn02, i.e. 48x48 pixels.
-    // Data is read from two transceivers in blocks of 4 pixels.
+    // This is the pixel map for a single counter Matterhorn02, i.e. 48x48
+    // pixels. Data is read from two transceivers in blocks of 4 pixels.
     NDArray<ssize_t, 2> order_map({48, 48});
     size_t offset = 0;
     size_t nSamples = 4;
@@ -131,12 +158,53 @@ NDArray<ssize_t, 3> GenerateMH02FourCounterPixelMap() {
         for (int row = 0; row < 48; row++) {
             for (int col = 0; col < 48; col++) {
                 order_map(counter, row, col) =
-                    single_counter_map(row, col) +
-                    counter * 48 * 48;
+                    single_counter_map(row, col) + counter * 48 * 48;
             }
         }
     }
     return order_map;
+}
+
+NDArray<ssize_t, 2> GenerateMatterhorn2PixelMap(const size_t dynamic_range,
+                                                const size_t n_counters) {
+    constexpr size_t n_cols = 256;
+    constexpr size_t n_rows = 256;
+    NDArray<ssize_t, 2> pixel_map(
+        {static_cast<ssize_t>(n_rows * n_counters), n_cols});
+
+    size_t num_consecutive_pixels{};
+    switch (dynamic_range) {
+    case 16:
+        num_consecutive_pixels = 4;
+        break;
+    case 8:
+        num_consecutive_pixels = 8;
+        break;
+    case 4:
+        num_consecutive_pixels = 16;
+        break;
+    default:
+        throw std::runtime_error("Unsupported dynamic range for Matterhorn02");
+    }
+
+    for (size_t row = 0; row < n_rows; ++row) {
+        for (size_t counter = 0; counter < n_counters; ++counter) {
+            size_t col = 0;
+            for (size_t offset = 0; offset < 64;
+                 offset += num_consecutive_pixels) {
+                for (size_t pkg = offset; pkg < 256; pkg += 64) {
+                    for (size_t pixel = 0; pixel < num_consecutive_pixels;
+                         ++pixel) {
+                        pixel_map(row + counter * n_rows, col) =
+                            pkg + pixel +
+                            counter * n_rows * n_cols * n_counters;
+                        ++col;
+                    }
+                }
+            }
+        }
+    }
+    return pixel_map;
 }
 
 } // namespace aare
