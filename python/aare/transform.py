@@ -24,6 +24,14 @@ class Moench05Transform:
         return np.take(data.view(np.uint16), self.pixel_map)
     
 
+class Moench03Transform: 
+    def __init__(self): 
+        self.pixel_map = _aare.GenerateMoench03PixelMap()
+
+    def __call__(self, data):
+        return np.take(data.view(np.uint16), self.pixel_map)
+    
+
 class Moench05Transform1g:
     #Could be moved to C++ without changing the interface
     def __init__(self):
@@ -41,6 +49,14 @@ class Moench05TransformOld:
     def __call__(self, data):
         return np.take(data.view(np.uint16), self.pixel_map)
     
+class Moench04AnalogTransform:
+    #Could be moved to C++ without changing the interface
+    def __init__(self):
+        self.pixel_map = _aare.GenerateMoench04AnalogPixelMap()
+
+    def __call__(self, data):
+        return np.take(data.view(np.uint16), self.pixel_map)
+    
 class Matterhorn02TransceiverTransform: 
     #Could be moved to C++ without changing the interface
     def __init__(self):
@@ -49,10 +65,9 @@ class Matterhorn02TransceiverTransform:
     def __call__(self, data):
         return np.take(data.view(np.uint16), self.pixel_map)
 
-# TODO: give a reasonable name 
-class Matterhorn02Transform:
+class Matterhorn10Transform:
     def __init__(self, dynamic_range : int, num_counters : int):
-        self.pixel_map = _aare.GenerateMatterhorn2PixelMap(dynamic_range, num_counters)
+        self.pixel_map = _aare.GenerateMatterhorn10PixelMap(dynamic_range, num_counters)
         self.dynamic_range = dynamic_range
         self.num_counters = num_counters 
 
@@ -61,9 +76,8 @@ class Matterhorn02Transform:
             return np.take(data.view(np.uint16), self.pixel_map)
         elif self.dynamic_range == 8: 
             return np.take(data.view(np.uint8), self.pixel_map)
-        else: 
-            return 0 
-            #return np.take(data.view()) # TODO need to expand to 8 bits 
+        else: #dynamic range 4
+            return np.take(_aare.expand4to8bit(data.view(np.uint8)), self.pixel_map)
             
 class Mythen302Transform:
     """
@@ -107,7 +121,7 @@ class Mythen302Transform:
 moench05 = Moench05Transform()
 moench05_1g = Moench05Transform1g()
 moench05_old = Moench05TransformOld()
-matterhorn02 = Matterhorn02Transform()
+matterhorn02 = Matterhorn02TransceiverTransform()
 adc_sar_04_64to16 = AdcSar04Transform64to16()
 adc_sar_05_64to16 = AdcSar05Transform64to16()
 adc_sar_05_06_07_08_64to16 = AdcSar05060708Transform64to16()

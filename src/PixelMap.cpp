@@ -196,8 +196,8 @@ NDArray<ssize_t, 2> GenerateMatterhorn10PixelMap(const size_t dynamic_range,
                     for (size_t pixel = 0; pixel < num_consecutive_pixels;
                          ++pixel) {
                         pixel_map(row + counter * n_rows, col) =
-                            pkg + pixel +
-                            counter * n_rows * n_cols * n_counters;
+                            pkg + pixel + row * n_cols * n_counters +
+                            n_cols * counter;
                         ++col;
                     }
                 }
