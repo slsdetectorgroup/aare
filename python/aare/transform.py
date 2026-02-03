@@ -71,7 +71,44 @@ class Matterhorn10Transform:
         self.dynamic_range = dynamic_range
         self.num_counters = num_counters 
 
+    def compatibility(self, num_digital_samples : int, num_analog_samples : int):
+        """
+        checks if Matterhorn10Transform is compatible with given parameters
+
+        :param num_digital_samples: Number of digital samples set
+        :type num_digital_samples: int
+        :param num_analog_samples: Number of analog samples set
+        :type num_analog_samples: int
+        :raises ValueError: if not compatible
+        """
+        if(num_digital_samples != 0 and num_digital_samples is not None):
+            raise ValueError(f"Incompatible Transformation. Matterhorn10Transform does not support digital samples, but num_digital_samples is {num_digital_samples}.")
+        if(num_analog_samples != 0 and num_analog_samples is not None):
+            raise ValueError(f"Incompatible Transformation. Matterhorn10Transform does not support analog samples, but num_analog_samples is {num_analog_samples}.")
+        
+        pass
+
+    def data_compatibility(self, data):
+        """
+        checks if data is compatible for transformation 
+        
+        :param data: data to be transformed, expected to be a 1D numpy array of uint8
+        :type data: np.ndarray
+        :raises ValueError: if not compatible
+        """
+
+        # TODO maybe better to have definition in matterhorn10 struct 
+        rows = 256
+        cols = 256 
+        expected_size = (rows*cols*self.num_counters*self.dynamic_range)//8 # read_frame returns data in uint8_t 
+        
+        if(data.size != expected_size): 
+            raise ValueError(f"Data size {data.size} does not match expected size {expected_size} for Matterhorn10 with dynamic range {self.dynamic_range} and num_counters {self.num_counters}.")
+        
+        pass
+        
     def __call__(self, data):
+        self.data_compatibility(data)
         if self.dynamic_range == 16:
             return np.take(data.view(np.uint16), self.pixel_map)
         elif self.dynamic_range == 8: 
