@@ -2,6 +2,7 @@
 import numpy as np
 from . import _aare
 from aare import ReadoutMode 
+from aare._aare import Matterhorn10 
 
 class AdcSar04Transform64to16:
     def __call__(self, data):
@@ -92,12 +93,8 @@ class Matterhorn10Transform:
         :type data: np.ndarray
         :raises ValueError: if not compatible
         """
+        expected_size = (Matterhorn10.nRows*Matterhorn10.nCols*self.num_counters*self.dynamic_range)//8 # read_frame returns data in uint8_t 
 
-        # TODO maybe better to have definition in matterhorn10 struct 
-        rows = 256
-        cols = 256 
-        expected_size = (rows*cols*self.num_counters*self.dynamic_range)//8 # read_frame returns data in uint8_t 
-        
         if(data.size != expected_size): 
             raise ValueError(f"Data size {data.size} does not match expected size {expected_size} for Matterhorn10 with dynamic range {self.dynamic_range} and num_counters {self.num_counters}.")
         

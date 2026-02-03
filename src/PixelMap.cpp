@@ -1,5 +1,6 @@
 // SPDX-License-Identifier: MPL-2.0
 #include "aare/PixelMap.hpp"
+#include "aare/defs.hpp"
 
 #include <array>
 
@@ -32,23 +33,20 @@ NDArray<ssize_t, 2> GenerateMoench03PixelMap() {
 }
 
 NDArray<ssize_t, 2> GenerateMoench04AnalogPixelMap() {
-    std::array<int, 32> const adc_nr = {
-        9,  8,  11, 10, 13, 12, 15, 14, 1,  0,  3,  2,  5,  4,  7,  6,
-        23, 22, 21, 20, 19, 18, 17, 16, 31, 30, 29, 28, 27, 26, 25, 24};
-    int const sc_width = 25;
-    int const nadc = 32;
-    int const pixels_per_sc = 5000;
-    NDArray<ssize_t, 2> order_map({400, 400});
+    std::array<int, 32> const adc_nr = Moench04::adcNumbers;
+    int const nadc = adc_nr.size();
+    NDArray<ssize_t, 2> order_map({Moench04::nRows, Moench04::nCols});
 
     int pixel = 0;
-    for (int i = 0; i != pixels_per_sc; ++i) {
-        for (int i_adc = 0; i_adc != nadc; ++i_adc) {
-            int const col = (adc_nr[i_adc] % 16) * 25 + (i % sc_width);
+    for (size_t i = 0; i != Moench04::nPixelsPerSuperColumn; ++i) {
+        for (size_t i_adc = 0; i_adc != nadc; ++i_adc) {
+            int const col =
+                (adc_nr[i_adc] % 16) * 25 + (i % Moench04::superColumnWidth);
             int row = 0;
             if (i_adc < 16)
-                row = 199 - (i / sc_width);
+                row = 199 - (i / Moench04::superColumnWidth);
             else
-                row = 200 + (i / sc_width);
+                row = 200 + (i / Moench04::superColumnWidth);
 
             order_map(row, col) = pixel;
             pixel++;
@@ -134,13 +132,14 @@ NDArray<ssize_t, 2> GenerateEigerFlipRowsPixelMap() {
 NDArray<ssize_t, 2> GenerateMH02SingleCounterPixelMap() {
     // This is the pixel map for a single counter Matterhorn02, i.e. 48x48
     // pixels. Data is read from two transceivers in blocks of 4 pixels.
-    NDArray<ssize_t, 2> order_map({48, 48});
+    NDArray<ssize_t, 2> order_map({Matterhorn02::nRows, Matterhorn02::nCols});
     size_t offset = 0;
     size_t nSamples = 4;
-    for (int row = 0; row < 48; row++) {
-        for (int col = 0; col < 24; col++) {
-            for (int iTrans = 0; iTrans < 2; iTrans++) {
-                order_map(row, iTrans * 24 + col) = offset + nSamples * iTrans;
+    for (size_t row = 0; row < Matterhorn02::nRows; row++) {
+        for (size_t col = 0; col < Matterhorn02::nHalfCols; col++) {
+            for (size_t iTrans = 0; iTrans < 2; iTrans++) {
+                order_map(row, iTrans * Matterhorn02::nHalfCols + col) =
+                    offset + nSamples * iTrans;
             }
             offset += 1;
             if ((col + 1) % nSamples == 0) {
@@ -153,12 +152,14 @@ NDArray<ssize_t, 2> GenerateMH02SingleCounterPixelMap() {
 
 NDArray<ssize_t, 3> GenerateMH02FourCounterPixelMap() {
     auto single_counter_map = GenerateMH02SingleCounterPixelMap();
-    NDArray<ssize_t, 3> order_map({4, 48, 48});
-    for (int counter = 0; counter < 4; counter++) {
-        for (int row = 0; row < 48; row++) {
-            for (int col = 0; col < 48; col++) {
+    NDArray<ssize_t, 3> order_map(
+        {4, Matterhorn02::nRows, Matterhorn02::nCols});
+    for (size_t counter = 0; counter < 4; counter++) {
+        for (size_t row = 0; row < Matterhorn02::nRows; row++) {
+            for (size_t col = 0; col < Matterhorn02::nCols; col++) {
                 order_map(counter, row, col) =
-                    single_counter_map(row, col) + counter * 48 * 48;
+                    single_counter_map(row, col) +
+                    counter * Matterhorn02::nRows * Matterhorn02::nCols;
             }
         }
     }
@@ -167,8 +168,8 @@ NDArray<ssize_t, 3> GenerateMH02FourCounterPixelMap() {
 
 NDArray<ssize_t, 2> GenerateMatterhorn10PixelMap(const size_t dynamic_range,
                                                  const size_t n_counters) {
-    constexpr size_t n_cols = 256;
-    constexpr size_t n_rows = 256;
+    constexpr size_t n_cols = Matterhorn10::nCols;
+    constexpr size_t n_rows = Matterhorn10::nRows;
     NDArray<ssize_t, 2> pixel_map(
         {static_cast<ssize_t>(n_rows * n_counters), n_cols});
 
