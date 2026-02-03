@@ -23,6 +23,16 @@ namespace py = pybind11;
 using namespace ::aare;
 
 void define_raw_master_file_bindings(py::module &m) {
+
+    py::enum_<ReadingMode>(m, "ReadingMode")
+        .value("Analog", ReadingMode::Analog)
+        .value("Digital", ReadingMode::Digital)
+        .value("AnalogAndDigital", ReadingMode::AnalogAndDigital)
+        .value("Transceiver", ReadingMode::Transceiver)
+        .value("DigitalAndTransceiver", ReadingMode::DigitalAndTransceiver)
+        .value("Unknown", ReadingMode::Unknown)
+        .export_values();
+
     py::class_<RawMasterFile>(m, "RawMasterFile")
         .def(py::init<const std::filesystem::path &>())
         .def("data_fname", &RawMasterFile::data_fname, R"(
@@ -81,6 +91,7 @@ void define_raw_master_file_bindings(py::module &m) {
 
         .def_property_readonly("transceiver_samples",
                                &RawMasterFile::transceiver_samples)
+        .def_property_readonly("reading_mode", &RawMasterFile::get_reading_mode)
         .def_property_readonly("number_of_rows", &RawMasterFile::number_of_rows)
         .def_property_readonly("quad", &RawMasterFile::quad)
         .def_property_readonly("scan_parameters",

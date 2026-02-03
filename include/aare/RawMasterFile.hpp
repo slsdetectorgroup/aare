@@ -97,9 +97,9 @@ class RawMasterFile {
     size_t m_frame_padding{};
 
     // TODO! should these be bool?
-    uint8_t m_analog_flag{};
-    uint8_t m_digital_flag{};
-    uint8_t m_transceiver_flag{};
+    bool m_analog_flag{};
+    bool m_digital_flag{};
+    bool m_transceiver_flag{};
 
     ScanParameters m_scan_parameters;
 
@@ -134,6 +134,8 @@ class RawMasterFile {
     xy geometry() const;
     size_t n_modules() const;
     uint8_t quad() const;
+
+    ReadingMode get_reading_mode() const;
 
     std::optional<size_t> analog_samples() const;
     std::optional<size_t> digital_samples() const;

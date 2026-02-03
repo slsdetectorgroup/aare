@@ -206,6 +206,30 @@ std::optional<ROI> RawMasterFile::roi() const {
 
 std::optional<std::vector<ROI>> RawMasterFile::rois() const { return m_rois; }
 
+ReadingMode RawMasterFile::get_reading_mode() const {
+
+    if (m_type != DetectorType::ChipTestBoard &&
+        m_type != DetectorType::Xilinx_ChipTestBoard) {
+        LOG(TLogLevel::logINFO)
+            << "reading mode is only available for CTB detectors.";
+        return ReadingMode::Unknown;
+    }
+
+    if (m_analog_flag && m_digital_flag) {
+        return ReadingMode::AnalogAndDigital;
+    } else if (m_analog_flag) {
+        return ReadingMode::Analog;
+    } else if (m_digital_flag && m_transceiver_flag) {
+        return ReadingMode::DigitalAndTransceiver;
+    } else if (m_digital_flag) {
+        return ReadingMode::Digital;
+    } else if (m_transceiver_flag) {
+        return ReadingMode::Transceiver;
+    } else {
+        return ReadingMode::Unknown;
+    }
+}
+
 void RawMasterFile::parse_json(std::istream &is) {
     json j;
     is >> j;
@@ -216,10 +240,10 @@ void RawMasterFile::parse_json(std::istream &is) {
     m_type = string_to<DetectorType>(j["Detector Type"].get<std::string>());
     m_timing_mode = string_to<TimingMode>(j["Timing Mode"].get<std::string>());
 
-    m_geometry = {
-        j["Geometry"]["y"],
-        j["Geometry"]["x"]}; // TODO: isnt it only available for version > 7.1?
-                             // - try block default should be 1x1
+    m_geometry = {j["Geometry"]["y"],
+                  j["Geometry"]["x"]}; // TODO: isnt it only available for
+                                       // version > 7.1?
+                                       // - try block default should be 1x1
 
     m_image_size_in_bytes =
         v < 8.0 ? j["Image Size in bytes"] : j["Image Size"];
@@ -255,7 +279,7 @@ void RawMasterFile::parse_json(std::istream &is) {
     // TODO! Not valid for CTB but not changing api right now!
     // Not all detectors write the bitdepth but in case
     // its not there it is 16
-    if(j.contains("Dynamic Range") && j["Dynamic Range"].is_number()){
+    if (j.contains("Dynamic Range") && j["Dynamic Range"].is_number()) {
         m_bitdepth = j["Dynamic Range"];
     } else {
         m_bitdepth = 16;
@@ -273,11 +297,11 @@ void RawMasterFile::parse_json(std::istream &is) {
     // ----------------------------------------------------------------
     // Special treatment of analog flag because of Moench03
     try {
-        m_analog_flag = j.at("Analog Flag");
+        m_analog_flag = static_cast<bool>(j.at("Analog Flag").get<int>());
     } catch (const json::out_of_range &e) {
         // if it doesn't work still set it to one
         // to try to decode analog samples (Old Moench03)
-        m_analog_flag = 1;
+        m_analog_flag = true;
     }
     try {
         if (m_analog_flag) {
@@ -287,7 +311,7 @@ void RawMasterFile::parse_json(std::istream &is) {
     } catch (const json::out_of_range &e) {
         // keep the optional empty
         // and set analog flag to 0
-        m_analog_flag = 0;
+        m_analog_flag = false;
     }
     //-----------------------------------------------------------------
     try {
@@ -302,7 +326,7 @@ void RawMasterFile::parse_json(std::istream &is) {
     //     m_adc_mask = 0;
     // }
     try {
-        int digital_flag = j.at("Digital Flag");
+        bool digital_flag = static_cast<bool>(j.at("Digital Flag").get<int>());
         if (digital_flag) {
             m_digital_samples = j.at("Digital Samples");
         }
@@ -310,7 +334,8 @@ void RawMasterFile::parse_json(std::istream &is) {
         // keep the optional empty
     }
     try {
-        m_transceiver_flag = j.at("Transceiver Flag");
+        m_transceiver_flag =
+            static_cast<bool>(j.at("Transceiver Flag").get<int>());
         if (m_transceiver_flag) {
             m_transceiver_samples = j.at("Transceiver Samples");
         }
@@ -444,9 +469,9 @@ void RawMasterFile::parse_raw(std::istream &is) {
                 // } else if (key == "Number of rows"){
                 //     m_number_of_rows = std::stoi(value);
             } else if (key == "Analog Flag") {
-                m_analog_flag = std::stoi(value);
+                m_analog_flag = static_cast<bool>(std::stoi(value));
             } else if (key == "Digital Flag") {
-                m_digital_flag = std::stoi(value);
+                m_digital_flag = static_cast<bool>(std::stoi(value));
 
             } else if (key == "Analog Samples") {
                 if (m_analog_flag == 1) {

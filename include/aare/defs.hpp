@@ -188,6 +188,15 @@ struct ROI {
     }
 };
 
+enum ReadingMode : uint8_t {
+    Analog = 0,
+    Digital = 1,
+    AnalogAndDigital = 2,
+    Transceiver = 3,
+    DigitalAndTransceiver = 4,
+    Unknown = 5
+};
+
 using dynamic_shape = std::vector<ssize_t>;
 
 // TODO! Can we uniform enums between the libraries?
@@ -353,16 +362,15 @@ using DataTypeVariants = std::variant<uint16_t, uint32_t>;
 constexpr uint16_t ADC_MASK =
     0x3FFF; // used to mask out the gain bits in Jungfrau
 
-
-class BitOffset{
+class BitOffset {
     uint8_t m_offset{};
-    public:
+
+  public:
     BitOffset() = default;
     explicit BitOffset(uint32_t offset);
-    uint8_t value() const {return m_offset;}
-    bool operator==(const BitOffset& other) const;
-    bool operator<(const BitOffset& other) const;
-
+    uint8_t value() const { return m_offset; }
+    bool operator==(const BitOffset &other) const;
+    bool operator<(const BitOffset &other) const;
 };
 
 } // namespace aare
