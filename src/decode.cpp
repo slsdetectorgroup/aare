@@ -154,10 +154,11 @@ void expand4to8bit(NDView<uint8_t, 1> input, NDView<uint8_t, 1> output) {
                         LOCATION, input.size(), 2 * input.size(), input.size(),
                         output.size()));
 
+    // assumes little-endian
     for (ssize_t i = 0; i < input.size(); ++i) {
         uint8_t val = input(i);
         output[2 * i] = (val & 0x0F);
-        output[2 * i + 1] = val & 0xF0 >> 4;
+        output[2 * i + 1] = (val & 0xF0) >> 4;
     }
 }
 
