@@ -206,27 +206,27 @@ std::optional<ROI> RawMasterFile::roi() const {
 
 std::optional<std::vector<ROI>> RawMasterFile::rois() const { return m_rois; }
 
-ReadingMode RawMasterFile::get_reading_mode() const {
+ReadoutMode RawMasterFile::get_reading_mode() const {
 
     if (m_type != DetectorType::ChipTestBoard &&
         m_type != DetectorType::Xilinx_ChipTestBoard) {
         LOG(TLogLevel::logINFO)
             << "reading mode is only available for CTB detectors.";
-        return ReadingMode::Unknown;
+        return ReadoutMode::UNKNOWN;
     }
 
     if (m_analog_flag && m_digital_flag) {
-        return ReadingMode::AnalogAndDigital;
+        return ReadoutMode::ANALOG_AND_DIGITAL;
     } else if (m_analog_flag) {
-        return ReadingMode::Analog;
+        return ReadoutMode::ANALOG_ONLY;
     } else if (m_digital_flag && m_transceiver_flag) {
-        return ReadingMode::DigitalAndTransceiver;
+        return ReadoutMode::DIGITAL_AND_TRANSCEIVER;
     } else if (m_digital_flag) {
-        return ReadingMode::Digital;
+        return ReadoutMode::DIGITAL_ONLY;
     } else if (m_transceiver_flag) {
-        return ReadingMode::Transceiver;
+        return ReadoutMode::TRANSCEIVER_ONLY;
     } else {
-        return ReadingMode::Unknown;
+        return ReadoutMode::UNKNOWN;
     }
 }
 

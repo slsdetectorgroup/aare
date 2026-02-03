@@ -135,7 +135,7 @@ class RawMasterFile {
     size_t n_modules() const;
     uint8_t quad() const;
 
-    ReadingMode get_reading_mode() const;
+    ReadoutMode get_reading_mode() const;
 
     std::optional<size_t> analog_samples() const;
     std::optional<size_t> digital_samples() const;

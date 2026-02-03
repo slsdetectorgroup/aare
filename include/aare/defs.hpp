@@ -188,13 +188,13 @@ struct ROI {
     }
 };
 
-enum ReadingMode : uint8_t {
-    Analog = 0,
-    Digital = 1,
-    AnalogAndDigital = 2,
-    Transceiver = 3,
-    DigitalAndTransceiver = 4,
-    Unknown = 5
+enum ReadoutMode : uint8_t {
+    ANALOG_ONLY = 0,
+    DIGITAL_ONLY = 1,
+    ANALOG_AND_DIGITAL = 2,
+    TRANSCEIVER_ONLY = 3,
+    DIGITAL_AND_TRANSCEIVER = 4,
+    UNKNOWN = 5
 };
 
 using dynamic_shape = std::vector<ssize_t>;

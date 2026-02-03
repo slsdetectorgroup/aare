@@ -24,13 +24,13 @@ using namespace ::aare;
 
 void define_raw_master_file_bindings(py::module &m) {
 
-    py::enum_<ReadingMode>(m, "ReadingMode")
-        .value("Analog", ReadingMode::Analog)
-        .value("Digital", ReadingMode::Digital)
-        .value("AnalogAndDigital", ReadingMode::AnalogAndDigital)
-        .value("Transceiver", ReadingMode::Transceiver)
-        .value("DigitalAndTransceiver", ReadingMode::DigitalAndTransceiver)
-        .value("Unknown", ReadingMode::Unknown)
+    py::enum_<ReadoutMode>(m, "ReadoutMode")
+        .value("ANALOG_ONLY", ReadoutMode::ANALOG_ONLY)
+        .value("DIGITAL_ONLY", ReadoutMode::DIGITAL_ONLY)
+        .value("ANALOG_AND_DIGITAL", ReadoutMode::ANALOG_AND_DIGITAL)
+        .value("TRANSCEIVER_ONLY", ReadoutMode::TRANSCEIVER_ONLY)
+        .value("DIGITAL_AND_TRANSCEIVER", ReadoutMode::DIGITAL_AND_TRANSCEIVER)
+        .value("UNKNOWN", ReadoutMode::UNKNOWN)
         .export_values();
 
     py::class_<RawMasterFile>(m, "RawMasterFile")

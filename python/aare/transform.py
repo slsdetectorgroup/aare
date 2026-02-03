@@ -1,7 +1,7 @@
 # SPDX-License-Identifier: MPL-2.0
 import numpy as np
 from . import _aare
-from aare import ReadingMode 
+from aare import ReadoutMode 
 
 class AdcSar04Transform64to16:
     def __call__(self, data):
@@ -71,15 +71,15 @@ class Matterhorn10Transform:
         self.dynamic_range = dynamic_range
         self.num_counters = num_counters 
 
-    def compatibility(self, readingmode : ReadingMode):
+    def compatibility(self, readingmode : ReadoutMode):
         """
         checks if Matterhorn10Transform is compatible with given parameters
 
         :param readingmode: Reading mode set
-        :type readingmode: ReadingMode
+        :type readingmode: ReadoutMode
         :raises ValueError: if not compatible
         """
-        if(readingmode != ReadingMode.Transceiver): 
+        if(readingmode != ReadoutMode.TRANSCEIVER_ONLY): 
             raise ValueError(f"Incompatible Transformation. Matterhorn10Transform only requires transceiver samples. However reading mode is  {readingmode}.")
         
         pass
