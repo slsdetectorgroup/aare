@@ -67,6 +67,21 @@ class Matterhorn02TransceiverTransform:
         return np.take(data.view(np.uint16), self.pixel_map)
 
 class Matterhorn10Transform:
+    """
+    Transforms Matterhorn10 chip data from a buffer of bytes (uint8_t)
+    to a numpy array of uint8, uint16 depending on dynamic range.
+    Assumes data taken with transceiver samples only.
+
+    :param dynamic_range: How many bits a pixel is encoded dynamic range (4, 8, or 16)
+    :type dynamic_range: int
+    :param num_counters: num counters used (1 to 4)
+    :type num_counters: int
+
+    .. note::
+        A matterhorn chip has 256 columns and 256 rows.
+        A matterhornchip with dynamic range 16 and 2 counters thus requires 
+        256*256*16*2/(2*64) = 1024 transceiver samples. (Per default 2 channels are enabled per transceiver sample, each channel storing 64 bits)
+    """
     def __init__(self, dynamic_range : int, num_counters : int):
         self.pixel_map = _aare.GenerateMatterhorn10PixelMap(dynamic_range, num_counters)
         self.dynamic_range = dynamic_range
