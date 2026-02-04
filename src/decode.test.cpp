@@ -166,7 +166,7 @@ TEST_CASE("Expand 4 bit values packed into 8 bit to 8 bit values") {
 
         uint8_t expected_output[] = {
             0x0, 0x0, 0x0, 0xF, 0xF, 0xF,
-            0x0, 0x0, 0x0, 0xF, 0xF, 0xF}; // is it first little or big endian?
+            0x0, 0x0, 0x0, 0xF, 0xF, 0xF}; // assuming little endian 
 
         for (size_t i = 0; i < 12; ++i) {
             CHECK(out(i) == expected_output[i]);

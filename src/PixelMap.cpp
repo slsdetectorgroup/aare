@@ -168,6 +168,8 @@ NDArray<ssize_t, 3> GenerateMH02FourCounterPixelMap() {
 
 NDArray<ssize_t, 2> GenerateMatterhorn10PixelMap(const size_t dynamic_range,
                                                  const size_t n_counters) {
+
+    // Matterhorn10 uses transceiver samples (each transceiver sample has 1-4 channels storing 8 bytes each)
     constexpr size_t n_cols = Matterhorn10::nCols;
     constexpr size_t n_rows = Matterhorn10::nRows;
     NDArray<ssize_t, 2> pixel_map(

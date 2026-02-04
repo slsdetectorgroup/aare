@@ -17,7 +17,7 @@ NDArray<ssize_t, 2> GenerateMH02SingleCounterPixelMap();
 NDArray<ssize_t, 3> GenerateMH02FourCounterPixelMap();
 
 /**
- * @brief Generate pixel map for Matterhorn02 detector
+ * @brief Generate pixel map for Matterhorn10 detector
  * @param dynamic_range Dynamic range of the detector (16, 8, or 4)
  * @param n_counters Number of counters (1 to 4)
  */

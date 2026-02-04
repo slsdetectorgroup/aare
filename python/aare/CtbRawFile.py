@@ -18,7 +18,6 @@ class CtbRawFile(_aare.CtbRawFile):
         super().__init__(fname)
         self._chunk_size = chunk_size
         self._transform = transform
-        print("so far so good")
         if self._transform:
             if hasattr(self._transform, "compatibility") and callable(getattr(self._transform, "compatibility")):
                 self._transform.compatibility(self.master.reading_mode)
