@@ -18,9 +18,10 @@ class CtbRawFile(_aare.CtbRawFile):
         super().__init__(fname)
         self._chunk_size = chunk_size
         self._transform = transform
+        print("so far so good")
         if self._transform:
             if hasattr(self._transform, "compatibility") and callable(getattr(self._transform, "compatibility")):
-                self._transform.compatibility(self.master.digital_samples, self.master.analog_samples)
+                self._transform.compatibility(self.master.reading_mode)
 
 
     def read_frame(self, frame_index: int | None = None ) -> tuple:
@@ -48,10 +49,7 @@ class CtbRawFile(_aare.CtbRawFile):
         if header.shape == (1,):
             header = header[0]
 
-
-        if self._transform is not None:
-            if hasattr(self._transform, "data_compatibility") and callable(getattr(self._transform, "data_compatibility")):
-                self._transform.data_compatibility(data)
+        if self._transform:
             res = self._transform(data)
             if isinstance(res, tuple):
                 return header, *res
