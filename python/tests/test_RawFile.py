@@ -4,14 +4,46 @@ from aare import RawFile
 import numpy as np
 
 @pytest.mark.withdata
-def test_read_rawfile_with_roi(test_data_path):
+def test_read_rawfile_with_roi_spanning_over_one_module(test_data_path):
 
-   with RawFile(test_data_path / "raw/ROITestData/SingleChipROI/Data_master_0.json") as f:
-    headers, frames = f.read()
+    with RawFile(test_data_path / "raw/ROITestData/SingleChipROI/Data_master_0.json") as f:
+        headers, frames = f.read()
 
-    assert headers.size == 10100
-    assert frames.shape == (10100, 256, 256)
-    
+        num_rois = f.num_rois
+        assert num_rois == 1
+        assert headers.size == 10100
+        assert frames.shape == (10100, 256, 256)
+
+@pytest.mark.withdata
+def test_read_rawfile_with_multiple_rois(test_data_path): 
+    with RawFile(test_data_path / "raw/ROITestData/MultipleROIs/run_master_0.json") as f:
+        num_rois = f.num_rois
+
+        #cannot read_frame for multiple ROIs
+        with pytest.raises(RuntimeError):
+            f.read_frame()
+
+        assert f.tell() == 0
+        frames = f.read_ROIs() 
+        assert num_rois == 2
+        assert len(frames) == 2
+        assert frames[0].shape == (301, 101)
+        assert frames[1].shape == (101, 101)
+
+        assert f.tell() == 1
+
+        # read multiple ROIs at once
+        frames = f.read_n_ROIs(2, 1) 
+        assert frames.shape == (2, 101, 101)
+
+        assert f.tell() == 3
+
+        # read specific ROI
+        frame = f.read_ROIs(1, 0)
+        assert len(frame) == 1
+        assert frame[0].shape == (301, 101)
+        assert f.tell() == 2
+   
 @pytest.mark.withdata
 def test_read_rawfile_quad_eiger_and_compare_to_numpy(test_data_path): 
     

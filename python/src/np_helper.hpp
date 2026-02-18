@@ -85,3 +85,20 @@ struct fmt_format_trait<Cluster<T, ClusterSizeX, ClusterSizeY, CoordType>> {
 
 template <typename ClusterType>
 auto fmt_format = fmt_format_trait<ClusterType>::value();
+
+/**  
+* Helper function to allocate image data given item size and shape 
+* used when we want to fill a numpy array and return to python
+*/
+py::array allocate_image_data(size_t item_size,
+                              const std::vector<size_t> &shape) {
+    py::array image_data;
+    if (item_size == 1) {
+        image_data = py::array_t<uint8_t>(shape);
+    } else if (item_size == 2) {
+        image_data  = py::array_t<uint16_t>(shape);
+    } else if (item_size == 4) {
+        image_data = py::array_t<uint32_t>(shape);
+    }
+    return image_data;
+}

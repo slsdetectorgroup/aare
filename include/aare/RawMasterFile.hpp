@@ -2,11 +2,11 @@
 #pragma once
 #include "aare/defs.hpp"
 #include <algorithm>
+#include <chrono>
 #include <filesystem>
 #include <fmt/format.h>
 #include <fstream>
 #include <optional>
-#include <chrono>
 
 #include <nlohmann/json.hpp>
 using json = nlohmann::json;
@@ -109,7 +109,7 @@ class RawMasterFile {
     std::optional<size_t> m_number_of_rows;
     std::optional<uint8_t> m_counter_mask;
 
-    std::optional<ROI> m_roi;
+    std::optional<std::vector<ROI>> m_rois;
 
   public:
     RawMasterFile(const std::filesystem::path &fpath);
@@ -141,11 +141,15 @@ class RawMasterFile {
     std::optional<size_t> number_of_rows() const;
     std::optional<uint8_t> counter_mask() const;
 
+    std::optional<std::vector<ROI>> rois() const;
+
     std::optional<ROI> roi() const;
 
     ScanParameters scan_parameters() const;
 
-    std::optional<std::chrono::nanoseconds> exptime() const { return m_exptime; }
+    std::optional<std::chrono::nanoseconds> exptime() const {
+        return m_exptime;
+    }
     std::chrono::nanoseconds period() const { return m_period; }
 
   private:
