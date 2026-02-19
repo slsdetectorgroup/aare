@@ -39,6 +39,13 @@ void expand24to32bit(NDView<uint8_t, 1> input, NDView<uint32_t, 1> output,
                      BitOffset offset = {});
 
 /**
+ * @brief expands the two 4 bit values of an 8 bit buffer into two 8 bit values
+ * @param input input buffer with 4 bit values packed into 8 bit
+ * @param output output buffer with 8 bit values
+ */
+void expand4to8bit(NDView<uint8_t, 1> input, NDView<uint8_t, 1> output);
+
+/**
  * @brief Apply custom weights to a 16-bit input value. Will sum up
  * weights[i]**i for each bit i that is set in the input value.
  * @throws std::out_of_range if weights.size() < 16

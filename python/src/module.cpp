@@ -9,8 +9,10 @@
 #include "bind_ClusterFinder.hpp"
 #include "bind_ClusterFinderMT.hpp"
 #include "bind_ClusterVector.hpp"
+#include "bind_Defs.hpp"
 #include "bind_Eta.hpp"
 #include "bind_Interpolator.hpp"
+#include "bind_PixelMap.hpp"
 #include "bind_RawFile.hpp"
 #include "bind_calibration.hpp"
 
@@ -20,7 +22,6 @@
 #include "fit.hpp"
 #include "jungfrau_data_file.hpp"
 #include "pedestal.hpp"
-#include "pixel_map.hpp"
 #include "raw_master_file.hpp"
 #include "raw_sub_file.hpp"
 #include "var_cluster.hpp"
@@ -139,6 +140,8 @@ PYBIND11_MODULE(_aare, m) {
     register_calculate_3x3eta<double, 3, 3, uint16_t>(m);
     register_calculate_3x3eta<float, 3, 3, uint16_t>(m);
     register_calculate_3x3eta<int16_t, 3, 3, uint16_t>(m);
+
+    define_defs_bindings(m);
 
     using Sum_index_pair_d = Sum_index_pair<double, corner>;
     PYBIND11_NUMPY_DTYPE(Sum_index_pair_d, sum, index);

@@ -1,5 +1,6 @@
 // SPDX-License-Identifier: MPL-2.0
 #include "aare/PixelMap.hpp"
+#include "aare/defs.hpp"
 
 #include <array>
 
@@ -23,6 +24,29 @@ NDArray<ssize_t, 2> GenerateMoench03PixelMap() {
                 row = 199 - (i / sc_width);
             else
                 row = 200 + (i / sc_width);
+
+            order_map(row, col) = pixel;
+            pixel++;
+        }
+    }
+    return order_map;
+}
+
+NDArray<ssize_t, 2> GenerateMoench04AnalogPixelMap() {
+    std::array<int, 32> const adc_nr = Moench04::adcNumbers;
+    int const nadc = adc_nr.size();
+    NDArray<ssize_t, 2> order_map({Moench04::nRows, Moench04::nCols});
+
+    int pixel = 0;
+    for (size_t i = 0; i != Moench04::nPixelsPerSuperColumn; ++i) {
+        for (size_t i_adc = 0; i_adc != nadc; ++i_adc) {
+            int const col =
+                (adc_nr[i_adc] % 16) * 25 + (i % Moench04::superColumnWidth);
+            int row = 0;
+            if (i_adc < 16)
+                row = 199 - (i / Moench04::superColumnWidth);
+            else
+                row = 200 + (i / Moench04::superColumnWidth);
 
             order_map(row, col) = pixel;
             pixel++;
@@ -104,16 +128,18 @@ NDArray<ssize_t, 2> GenerateEigerFlipRowsPixelMap() {
     return order_map;
 }
 
+// transceiver pixel map for Matterhorn02
 NDArray<ssize_t, 2> GenerateMH02SingleCounterPixelMap() {
     // This is the pixel map for a single counter Matterhorn02, i.e. 48x48
     // pixels. Data is read from two transceivers in blocks of 4 pixels.
-    NDArray<ssize_t, 2> order_map({48, 48});
+    NDArray<ssize_t, 2> order_map({Matterhorn02::nRows, Matterhorn02::nCols});
     size_t offset = 0;
     size_t nSamples = 4;
-    for (int row = 0; row < 48; row++) {
-        for (int col = 0; col < 24; col++) {
-            for (int iTrans = 0; iTrans < 2; iTrans++) {
-                order_map(row, iTrans * 24 + col) = offset + nSamples * iTrans;
+    for (size_t row = 0; row < Matterhorn02::nRows; row++) {
+        for (size_t col = 0; col < Matterhorn02::nHalfCols; col++) {
+            for (size_t iTrans = 0; iTrans < 2; iTrans++) {
+                order_map(row, iTrans * Matterhorn02::nHalfCols + col) =
+                    offset + nSamples * iTrans;
             }
             offset += 1;
             if ((col + 1) % nSamples == 0) {
@@ -126,16 +152,64 @@ NDArray<ssize_t, 2> GenerateMH02SingleCounterPixelMap() {
 
 NDArray<ssize_t, 3> GenerateMH02FourCounterPixelMap() {
     auto single_counter_map = GenerateMH02SingleCounterPixelMap();
-    NDArray<ssize_t, 3> order_map({4, 48, 48});
-    for (int counter = 0; counter < 4; counter++) {
-        for (int row = 0; row < 48; row++) {
-            for (int col = 0; col < 48; col++) {
+    NDArray<ssize_t, 3> order_map(
+        {4, Matterhorn02::nRows, Matterhorn02::nCols});
+    for (size_t counter = 0; counter < 4; counter++) {
+        for (size_t row = 0; row < Matterhorn02::nRows; row++) {
+            for (size_t col = 0; col < Matterhorn02::nCols; col++) {
                 order_map(counter, row, col) =
-                    single_counter_map(row, col) + counter * 48 * 48;
+                    single_counter_map(row, col) +
+                    counter * Matterhorn02::nRows * Matterhorn02::nCols;
             }
         }
     }
     return order_map;
+}
+
+NDArray<ssize_t, 2> GenerateMatterhorn10PixelMap(const size_t dynamic_range,
+                                                 const size_t n_counters) {
+
+    // Matterhorn10 uses transceiver samples (each transceiver sample has 1-4
+    // channels storing 8 bytes each)
+    constexpr size_t n_cols = Matterhorn10::nCols;
+    constexpr size_t n_rows = Matterhorn10::nRows;
+    NDArray<ssize_t, 2> pixel_map(
+        {static_cast<ssize_t>(n_rows * n_counters), n_cols});
+
+    size_t num_consecutive_pixels{};
+    switch (dynamic_range) {
+    case 16:
+        num_consecutive_pixels = 4;
+        break;
+    case 8:
+        num_consecutive_pixels = 8;
+        break;
+    case 4:
+        num_consecutive_pixels = 16;
+        break;
+    default:
+        throw std::runtime_error("Unsupported dynamic range for Matterhorn02");
+    }
+
+    for (size_t row = 0; row < n_rows; ++row) {
+        for (size_t counter = 0; counter < n_counters; ++counter) {
+            size_t col = 0;
+            for (size_t offset = 0; offset < 64;
+                 offset += num_consecutive_pixels) {
+                for (size_t pkg = offset; pkg < Matterhorn10::nCols;
+                     pkg += 64) {
+                    for (size_t pixel = 0; pixel < num_consecutive_pixels;
+                         ++pixel) {
+                        pixel_map(row + counter * n_rows, col) =
+                            pkg + pixel + row * n_cols * n_counters +
+                            n_cols * counter;
+                        ++col;
+                    }
+                }
+            }
+        }
+    }
+    return pixel_map;
 }
 
 } // namespace aare

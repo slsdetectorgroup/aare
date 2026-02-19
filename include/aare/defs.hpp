@@ -188,6 +188,46 @@ struct ROI {
     }
 };
 
+/// @brief  Chip specifications for Matterhorn1
+struct Matterhorn10 {
+    constexpr static size_t nRows = 256;
+    constexpr static size_t nCols = 256;
+};
+
+/// @brief  Chip specifications for Matterhorn2
+struct Matterhorn02 {
+    constexpr static size_t nRows = 48;
+    constexpr static size_t nCols = 48;
+    constexpr static size_t nHalfCols = 24;
+};
+
+/// @brief  Chip specifications for Moench04
+struct Moench04 {
+    constexpr static size_t nRows = 400;
+    constexpr static size_t nCols = 400;
+    constexpr static std::array<int, 32>
+        adcNumbers =
+            {
+                9,  8,  11, 10, 13, 12, 15, 14, 1,  0,  3,
+                2,  5,  4,  7,  6,  23, 22, 21, 20, 19, 18,
+                17, 16, 31, 30, 29, 28, 27, 26, 25, 24}; // TODO : should we
+                                                         // only have chip
+                                                         // specifications or
+                                                         // also wiring in
+                                                         // chiptestboard?
+    constexpr static size_t nPixelsPerSuperColumn = 5000;
+    constexpr static size_t superColumnWidth = 25;
+};
+
+enum ReadoutMode : uint8_t {
+    ANALOG_ONLY = 0,
+    DIGITAL_ONLY = 1,
+    ANALOG_AND_DIGITAL = 2,
+    TRANSCEIVER_ONLY = 3,
+    DIGITAL_AND_TRANSCEIVER = 4,
+    UNKNOWN = 5
+};
+
 using dynamic_shape = std::vector<ssize_t>;
 
 // TODO! Can we uniform enums between the libraries?

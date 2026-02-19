@@ -153,3 +153,23 @@ TEST_CASE("Expand container with 24 bit data to 32") {
         CHECK(out(2) == 0xFF0);
     }
 }
+
+TEST_CASE("Expand 4 bit values packed into 8 bit to 8 bit values") {
+    {
+        uint8_t buffer[] = {
+            0x00, 0xF0, 0xFF, 0x00, 0xF0, 0xFF,
+        };
+
+        aare::NDView<uint8_t, 1> input(&buffer[0], {6});
+        aare::NDArray<uint8_t, 1> out({12});
+        aare::expand4to8bit(input, out.view());
+
+        uint8_t expected_output[] = {
+            0x0, 0x0, 0x0, 0xF, 0xF, 0xF,
+            0x0, 0x0, 0x0, 0xF, 0xF, 0xF}; // assuming little endian
+
+        for (size_t i = 0; i < 12; ++i) {
+            CHECK(out(i) == expected_output[i]);
+        }
+    }
+}

@@ -146,6 +146,8 @@ TEST_CASE("Parse a master file in .json format", "[.integration]") {
 
     REQUIRE_FALSE(f.analog_samples());
     REQUIRE_FALSE(f.digital_samples());
+
+    REQUIRE(f.get_reading_mode() == ReadoutMode::UNKNOWN);
 }
 
 TEST_CASE("Parse a master file in old .raw format",
@@ -210,6 +212,8 @@ TEST_CASE("Parse a master file in .raw format", "[.integration]") {
     // Dbit Bitset                : 0
     // Frames in File             : 100
     REQUIRE(f.frames_in_file() == 100);
+
+    REQUIRE(f.get_reading_mode() == ReadoutMode::ANALOG_AND_DIGITAL);
 
     // #Frame Header
     // Frame Number               : 8 bytes
@@ -560,6 +564,7 @@ TEST_CASE("Parse a CTB file from stream") {
     REQUIRE(f.digital_samples() == std::nullopt); // Digital Flag is 0
     REQUIRE(f.transceiver_samples() == 1152);
     REQUIRE(f.frames_in_file() == 40);
+    REQUIRE(f.get_reading_mode() == ReadoutMode::TRANSCEIVER_ONLY);
 }
 
 TEST_CASE("Parse v8.0 MYTHEN3 from stream") {

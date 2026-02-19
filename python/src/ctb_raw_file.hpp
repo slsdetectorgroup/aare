@@ -139,6 +139,22 @@ void define_ctb_raw_file_io_bindings(py::module &m) {
               return output;
           });
 
+    m.def("expand4to8bit",
+          [](py::array_t<uint8_t, py::array::c_style | py::array::forcecast>
+                 &input) {
+              py::buffer_info buf = input.request();
+
+              py::array_t<uint8_t> output(buf.size * 2);
+
+              NDView<uint8_t, 1> input_view(input.mutable_data(),
+                                            {input.size()});
+              NDView<uint8_t, 1> output_view(output.mutable_data(),
+                                             {output.size()});
+
+              aare::expand4to8bit(input_view, output_view);
+              return output;
+          });
+
     m.def("decode_my302",
           [](py::array_t<uint8_t, py::array::c_style | py::array::forcecast>
                  &input,

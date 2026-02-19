@@ -144,6 +144,24 @@ uint32_t mask32to24bits(uint32_t input, BitOffset offset) {
     return (input >> offset.value()) & mask24bits;
 }
 
+void expand4to8bit(NDView<uint8_t, 1> input, NDView<uint8_t, 1> output) {
+
+    if (2 * input.size() != output.size())
+        throw std::runtime_error(
+            fmt::format("Mismatch between input and output size. Input "
+                        "size of {} requires an output of at least {} "
+                        "bytes. Called with input size: {} output size: {}",
+                        LOCATION, input.size(), 2 * input.size(), input.size(),
+                        output.size()));
+
+    // assumes little-endian
+    for (ssize_t i = 0; i < input.size(); ++i) {
+        uint8_t val = input(i);
+        output[2 * i] = (val & 0x0F);
+        output[2 * i + 1] = (val & 0xF0) >> 4;
+    }
+}
+
 void expand24to32bit(NDView<uint8_t, 1> input, NDView<uint32_t, 1> output,
                      BitOffset bit_offset) {
 

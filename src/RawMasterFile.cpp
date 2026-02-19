@@ -206,6 +206,30 @@ std::optional<ROI> RawMasterFile::roi() const {
 
 std::optional<std::vector<ROI>> RawMasterFile::rois() const { return m_rois; }
 
+ReadoutMode RawMasterFile::get_reading_mode() const {
+
+    if (m_type != DetectorType::ChipTestBoard &&
+        m_type != DetectorType::Xilinx_ChipTestBoard) {
+        LOG(TLogLevel::logINFO)
+            << "reading mode is only available for CTB detectors.";
+        return ReadoutMode::UNKNOWN;
+    }
+
+    if (m_analog_flag && m_digital_flag) {
+        return ReadoutMode::ANALOG_AND_DIGITAL;
+    } else if (m_analog_flag) {
+        return ReadoutMode::ANALOG_ONLY;
+    } else if (m_digital_flag && m_transceiver_flag) {
+        return ReadoutMode::DIGITAL_AND_TRANSCEIVER;
+    } else if (m_digital_flag) {
+        return ReadoutMode::DIGITAL_ONLY;
+    } else if (m_transceiver_flag) {
+        return ReadoutMode::TRANSCEIVER_ONLY;
+    } else {
+        return ReadoutMode::UNKNOWN;
+    }
+}
+
 void RawMasterFile::parse_json(std::istream &is) {
     json j;
     is >> j;
@@ -216,10 +240,10 @@ void RawMasterFile::parse_json(std::istream &is) {
     m_type = string_to<DetectorType>(j["Detector Type"].get<std::string>());
     m_timing_mode = string_to<TimingMode>(j["Timing Mode"].get<std::string>());
 
-    m_geometry = {
-        j["Geometry"]["y"],
-        j["Geometry"]["x"]}; // TODO: isnt it only available for version > 7.1?
-                             // - try block default should be 1x1
+    m_geometry = {j["Geometry"]["y"],
+                  j["Geometry"]["x"]}; // TODO: isnt it only available for
+                                       // version > 7.1?
+                                       // - try block default should be 1x1
 
     m_image_size_in_bytes =
         v < 8.0 ? j["Image Size in bytes"] : j["Image Size"];
@@ -272,22 +296,15 @@ void RawMasterFile::parse_json(std::istream &is) {
 
     // ----------------------------------------------------------------
     // Special treatment of analog flag because of Moench03
+    m_analog_flag = v < 8.0 && (m_type == DetectorType::Moench);
+
     try {
-        m_analog_flag = j.at("Analog Flag");
-    } catch (const json::out_of_range &e) {
-        // if it doesn't work still set it to one
-        // to try to decode analog samples (Old Moench03)
-        m_analog_flag = 1;
-    }
-    try {
+        m_analog_flag = static_cast<bool>(j.at("Analog Flag").get<int>());
         if (m_analog_flag) {
             m_analog_samples = j.at("Analog Samples");
         }
-
     } catch (const json::out_of_range &e) {
         // keep the optional empty
-        // and set analog flag to 0
-        m_analog_flag = 0;
     }
     //-----------------------------------------------------------------
     try {
@@ -302,7 +319,7 @@ void RawMasterFile::parse_json(std::istream &is) {
     //     m_adc_mask = 0;
     // }
     try {
-        int digital_flag = j.at("Digital Flag");
+        bool digital_flag = static_cast<bool>(j.at("Digital Flag").get<int>());
         if (digital_flag) {
             m_digital_samples = j.at("Digital Samples");
         }
@@ -310,7 +327,8 @@ void RawMasterFile::parse_json(std::istream &is) {
         // keep the optional empty
     }
     try {
-        m_transceiver_flag = j.at("Transceiver Flag");
+        m_transceiver_flag =
+            static_cast<bool>(j.at("Transceiver Flag").get<int>());
         if (m_transceiver_flag) {
             m_transceiver_samples = j.at("Transceiver Samples");
         }
@@ -444,9 +462,9 @@ void RawMasterFile::parse_raw(std::istream &is) {
                 // } else if (key == "Number of rows"){
                 //     m_number_of_rows = std::stoi(value);
             } else if (key == "Analog Flag") {
-                m_analog_flag = std::stoi(value);
+                m_analog_flag = static_cast<bool>(std::stoi(value));
             } else if (key == "Digital Flag") {
-                m_digital_flag = std::stoi(value);
+                m_digital_flag = static_cast<bool>(std::stoi(value));
 
             } else if (key == "Analog Samples") {
                 if (m_analog_flag == 1) {

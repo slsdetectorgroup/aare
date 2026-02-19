@@ -14,6 +14,9 @@ def test_read_rawfile_with_roi_spanning_over_one_module(test_data_path):
         assert headers.size == 10100
         assert frames.shape == (10100, 256, 256)
 
+        assert headers.size == 10100
+        assert frames.shape == (10100, 256, 256) 
+
 @pytest.mark.withdata
 def test_read_rawfile_with_multiple_rois(test_data_path): 
     with RawFile(test_data_path / "raw/ROITestData/MultipleROIs/run_master_0.json") as f:
@@ -44,6 +47,8 @@ def test_read_rawfile_with_multiple_rois(test_data_path):
         assert frame[0].shape == (301, 101)
         assert f.tell() == 2
    
+    
+
 @pytest.mark.withdata
 def test_read_rawfile_quad_eiger_and_compare_to_numpy(test_data_path): 
     
@@ -67,7 +72,6 @@ def test_read_rawfile_quad_eiger_and_compare_to_numpy(test_data_path):
         header, image1 = f.read_frame()
     
     assert (image == image1).all()
-
 
 @pytest.mark.withdata
 def test_read_rawfile_eiger_and_compare_to_numpy(test_data_path): 
