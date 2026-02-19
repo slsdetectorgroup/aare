@@ -51,23 +51,20 @@ void assert_failed(const std::string &msg) {
 //     throw std::runtime_error("Could not decode detector to string");
 // }
 
-
-BitOffset::BitOffset(uint32_t offset){
-    if (offset>7)
-        throw std::runtime_error(fmt::format("{} BitOffset needs to be <8: Called with {}", LOCATION, offset));
+BitOffset::BitOffset(uint32_t offset) {
+    if (offset > 7)
+        throw std::runtime_error(fmt::format(
+            "{} BitOffset needs to be <8: Called with {}", LOCATION, offset));
 
     m_offset = static_cast<uint8_t>(offset);
-
 }
 
-bool BitOffset::operator==(const BitOffset& other) const {
-        return m_offset == other.m_offset;
-    }
+bool BitOffset::operator==(const BitOffset &other) const {
+    return m_offset == other.m_offset;
+}
 
-bool BitOffset::operator<(const BitOffset& other) const {
-        return m_offset < other.m_offset;
-    }
-
-
+bool BitOffset::operator<(const BitOffset &other) const {
+    return m_offset < other.m_offset;
+}
 
 } // namespace aare

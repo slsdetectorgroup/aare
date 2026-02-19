@@ -71,7 +71,8 @@ TEST_CASE("Seek in a JungfrauDataFile", "[.with-data]") {
     REQUIRE_THROWS(f.seek(86356)); // out of range
 }
 
-TEST_CASE("Open a Jungfrau data file with non zero file index", "[.with-data]") {
+TEST_CASE("Open a Jungfrau data file with non zero file index",
+          "[.with-data]") {
 
     auto fpath = test_data_path() / "dat" / "AldoJF65k_000003.dat";
     REQUIRE(std::filesystem::exists(fpath));

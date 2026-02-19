@@ -378,7 +378,9 @@ ClusterFile<ClusterType, Enable>::read_frame_without_cut() {
         else if (ferror(fp))
             throw std::runtime_error(LOCATION + "Error reading from file");
 
-        throw std::runtime_error(LOCATION + "Unexpected error (not feof or ferror) when reading frame number");
+        throw std::runtime_error(
+            LOCATION +
+            "Unexpected error (not feof or ferror) when reading frame number");
     }
 
     int32_t n_clusters; // Saved as 32bit integer in the cluster file

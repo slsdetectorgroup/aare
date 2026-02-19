@@ -20,9 +20,8 @@ void RunInParallel(F func, const std::vector<std::pair<int, int>> &tasks) {
     }
 }
 
-
 template <typename T>
-std::vector<NDView<T,3>> make_subviews(NDView<T, 3> &data, ssize_t n_threads) {
+std::vector<NDView<T, 3>> make_subviews(NDView<T, 3> &data, ssize_t n_threads) {
     std::vector<NDView<T, 3>> subviews;
     subviews.reserve(n_threads);
     auto limits = split_task(0, data.shape(0), n_threads);

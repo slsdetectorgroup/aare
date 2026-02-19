@@ -49,7 +49,6 @@ class RawFile : public FileInterface {
     Frame read_frame(size_t frame_number) override;
     std::vector<Frame> read_n(size_t n_frames) override;
 
-
     /**
      * @brief Read one ROI defined in the master file
      * @param roi_index index of the ROI to read
@@ -63,7 +62,7 @@ class RawFile : public FileInterface {
      * @brief Read all ROIs defined in the master file
      * @return vector of Frames (one Frame per ROI)
      */
-    std::vector<Frame>read_rois();
+    std::vector<Frame> read_rois();
 
     /**
      * @brief Read n frames for the given ROI index
@@ -72,7 +71,7 @@ class RawFile : public FileInterface {
      * @return vector of Frames
      */
     std::vector<Frame> read_n_with_roi(const size_t n_frames,
-                                   const size_t roi_index);
+                                       const size_t roi_index);
 
     void read_into(std::byte *image_buf) override;
     void read_into(std::byte *image_buf, size_t n_frames) override;

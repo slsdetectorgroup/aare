@@ -36,7 +36,7 @@ class NDArray : public ArrayExpr<NDArray<T, Ndim>, Ndim> {
      * @brief Default constructor. Constructs an empty NDArray.
      *
      */
-    NDArray() : shape_(), strides_(c_strides<Ndim>(shape_)), data_(nullptr) {};
+    NDArray() : shape_(), strides_(c_strides<Ndim>(shape_)), data_(nullptr){};
 
     /**
      * @brief Construct a new NDArray object with a given shape.

@@ -53,7 +53,6 @@ template <> FrameDiscardPolicy string_to(const std::string &arg) {
                              arg + "\"");
 }
 
-
 template <> DACIndex string_to(const std::string &arg) {
     if (arg == "dac 0")
         return DACIndex::DAC_0;
@@ -236,12 +235,12 @@ template <> DACIndex string_to(const std::string &arg) {
                                     "\"");
 }
 
-
 std::string remove_unit(std::string &str) {
     auto it = str.begin();
     while (it != str.end()) {
         if (std::isalpha(*it)) {
-            // Check if this is scientific notation (e or E followed by optional sign and digits)
+            // Check if this is scientific notation (e or E followed by optional
+            // sign and digits)
             if (((*it == 'e' || *it == 'E') && (it + 1) != str.end())) {
                 auto next = it + 1;
                 // Skip optional sign
