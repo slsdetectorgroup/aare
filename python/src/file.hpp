@@ -64,9 +64,8 @@ void define_file_io_bindings(py::module &m) {
         .def_property_readonly("cols", &File::cols)
         .def_property_readonly("bitdepth", &File::bitdepth)
         .def_property_readonly("bytes_per_pixel", &File::bytes_per_pixel)
-        .def_property_readonly(
-            "detector_type",
-            [](File &self) { return self.detector_type(); })
+        .def_property_readonly("detector_type",
+                               [](File &self) { return self.detector_type(); })
         .def("read_frame",
              [](File &self) {
                  const uint8_t item_size = self.bytes_per_pixel();
@@ -160,7 +159,6 @@ void define_file_io_bindings(py::module &m) {
                 throw py::stop_iteration();
             }
         });
-
 
     py::class_<ScanParameters>(m, "ScanParameters")
         .def(py::init<const std::string &>())

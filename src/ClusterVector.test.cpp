@@ -10,7 +10,6 @@ using aare::Cluster;
 using aare::ClusterVector;
 using C1 = Cluster<int32_t, 2, 2>;
 
-
 TEST_CASE("A newly created ClusterVector is empty") {
     ClusterVector<C1> cv(4);
     REQUIRE(cv.empty());
@@ -174,7 +173,8 @@ TEST_CASE("Push back more than initial capacity") {
     REQUIRE(initial_data != cv.data());
 }
 
-TEST_CASE("Concatenate two cluster vectors where the first has enough capacity") {
+TEST_CASE(
+    "Concatenate two cluster vectors where the first has enough capacity") {
     ClusterVector<Cluster<int32_t, 2, 2>> cv1(12);
     Cluster<int32_t, 2, 2> c1 = {1, 2, {3, 4, 5, 6}};
     cv1.push_back(c1);

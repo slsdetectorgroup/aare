@@ -50,7 +50,7 @@ void define_ctb_raw_file_io_bindings(py::module &m) {
 
         return output;
     });
-    
+
     m.def("adc_sar_05_decode64to16", [](py::array_t<uint8_t> input) {
         if (input.ndim() != 2) {
             throw std::runtime_error(
@@ -121,67 +121,65 @@ void define_ctb_raw_file_io_bindings(py::module &m) {
           });
 
     m.def("expand24to32bit",
-    [](py::array_t<uint8_t, py::array::c_style | py::array::forcecast>
-                 &input, uint32_t offset){
+          [](py::array_t<uint8_t, py::array::c_style | py::array::forcecast>
+                 &input,
+             uint32_t offset) {
+              aare::BitOffset bitoff(offset);
+              py::buffer_info buf = input.request();
 
-            aare::BitOffset bitoff(offset);
-            py::buffer_info buf = input.request();
+              constexpr uint32_t bytes_per_channel = 3; // 24 bit
+              py::array_t<uint32_t> output(buf.size / bytes_per_channel);
 
-            constexpr uint32_t bytes_per_channel = 3; //24 bit
-            py::array_t<uint32_t> output(buf.size/bytes_per_channel);
+              NDView<uint8_t, 1> input_view(input.mutable_data(),
+                                            {input.size()});
+              NDView<uint32_t, 1> output_view(output.mutable_data(),
+                                              {output.size()});
 
-            NDView<uint8_t, 1> input_view(input.mutable_data(),
-                                             {input.size()});
-            NDView<uint32_t, 1> output_view(output.mutable_data(),
-                                        {output.size()});
-
-            aare::expand24to32bit(input_view, output_view, bitoff);
-            return output;
-
-    });
+              aare::expand24to32bit(input_view, output_view, bitoff);
+              return output;
+          });
 
     m.def("decode_my302",
-    [](py::array_t<uint8_t, py::array::c_style | py::array::forcecast>
-                 &input, uint32_t offset){
+          [](py::array_t<uint8_t, py::array::c_style | py::array::forcecast>
+                 &input,
+             uint32_t offset) {
+              // Physical layout of the chip
+              constexpr size_t channels = 64;
+              constexpr size_t counters = 3;
+              constexpr size_t bytes_per_channel = 3; // 24 bit
+              constexpr int n_outputs = 2;
 
-            // Physical layout of the chip
-            constexpr size_t channels = 64;
-            constexpr size_t counters = 3;
-            constexpr size_t bytes_per_channel = 3; //24 bit
-            constexpr int n_outputs = 2;
+              ssize_t expected_size = channels * counters * bytes_per_channel;
 
-            ssize_t expected_size = channels*counters*bytes_per_channel;
+              // If whe have an offset we need one extra byte per output
+              aare::BitOffset bitoff(offset);
+              if (bitoff.value())
+                  expected_size += n_outputs;
 
-            //If whe have an offset we need one extra byte per output
-            aare::BitOffset bitoff(offset);
-            if(bitoff.value())
-                expected_size += n_outputs;
+              if (input.size() != expected_size) {
+                  throw std::runtime_error(fmt::format(
+                      "{} Expected an input size of {} bytes. Called "
+                      "with input size of {}",
+                      LOCATION, expected_size, input.size()));
+              }
 
-            if (input.size() != expected_size) {
-                throw std::runtime_error(
-                    fmt::format("{} Expected an input size of {} bytes. Called "
-                                "with input size of {}",
-                                LOCATION, expected_size, input.size()));
-            }
+              py::buffer_info buf = input.request();
+              py::array_t<uint32_t> output(channels * counters);
 
-            py::buffer_info buf = input.request();
-            py::array_t<uint32_t> output(channels * counters);
+              for (int i = 0; i != n_outputs; ++i) {
+                  auto step = input.size() / n_outputs;
+                  auto out_step = output.size() / n_outputs;
+                  NDView<uint8_t, 1> input_view(input.mutable_data() + step * i,
+                                                {input.size() / n_outputs});
+                  NDView<uint32_t, 1> output_view(output.mutable_data() +
+                                                      out_step * i,
+                                                  {output.size() / n_outputs});
 
-            for (int i = 0; i!=n_outputs; ++i){
-                auto step = input.size()/n_outputs;
-                auto out_step = output.size()/n_outputs;
-                NDView<uint8_t, 1> input_view(input.mutable_data()+step*i,
-                                             {input.size()/n_outputs});
-                NDView<uint32_t, 1> output_view(output.mutable_data()+out_step*i,
-                                            {output.size()/n_outputs});
+                  aare::expand24to32bit(input_view, output_view, bitoff);
+              }
 
-                aare::expand24to32bit(input_view, output_view, bitoff);
-
-            }
-            
-            return output;
-
-    });
+              return output;
+          });
 
     py::class_<CtbRawFile>(m, "CtbRawFile")
         .def(py::init<const std::filesystem::path &>())

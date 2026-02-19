@@ -255,7 +255,7 @@ void RawMasterFile::parse_json(std::istream &is) {
     // TODO! Not valid for CTB but not changing api right now!
     // Not all detectors write the bitdepth but in case
     // its not there it is 16
-    if(j.contains("Dynamic Range") && j["Dynamic Range"].is_number()){
+    if (j.contains("Dynamic Range") && j["Dynamic Range"].is_number()) {
         m_bitdepth = j["Dynamic Range"];
     } else {
         m_bitdepth = 16;

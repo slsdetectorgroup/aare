@@ -353,16 +353,15 @@ using DataTypeVariants = std::variant<uint16_t, uint32_t>;
 constexpr uint16_t ADC_MASK =
     0x3FFF; // used to mask out the gain bits in Jungfrau
 
-
-class BitOffset{
+class BitOffset {
     uint8_t m_offset{};
-    public:
+
+  public:
     BitOffset() = default;
     explicit BitOffset(uint32_t offset);
-    uint8_t value() const {return m_offset;}
-    bool operator==(const BitOffset& other) const;
-    bool operator<(const BitOffset& other) const;
-
+    uint8_t value() const { return m_offset; }
+    bool operator==(const BitOffset &other) const;
+    bool operator<(const BitOffset &other) const;
 };
 
 } // namespace aare

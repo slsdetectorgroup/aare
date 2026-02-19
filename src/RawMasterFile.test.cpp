@@ -398,7 +398,7 @@ TEST_CASE("Parse EIGER 7.2 master from string stream") {
     REQUIRE(f.timing_mode() == TimingMode::Auto);
     REQUIRE(f.geometry().col == 2);
     REQUIRE(f.geometry().row == 2);
-    
+
     REQUIRE(f.image_size_in_bytes() == 524288);
     REQUIRE(f.pixels_x() == 512);
     REQUIRE(f.pixels_y() == 256);

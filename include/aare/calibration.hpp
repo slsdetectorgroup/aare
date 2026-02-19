@@ -175,11 +175,9 @@ calculate_pedestal(NDView<uint16_t, 3> raw_data, ssize_t n_threads) {
         count += cnt;
     }
 
-
     // Will move to a NDArray<T, 3 - static_cast<ssize_t>(only_gain0)>
     // if only_gain0 is true
     return safe_divide<T>(accumulator, count);
-
 }
 
 /**

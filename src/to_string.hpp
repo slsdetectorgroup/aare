@@ -12,7 +12,6 @@
 
 namespace aare {
 
-
 std::string remove_unit(std::string &str);
 
 template <typename T>
@@ -39,7 +38,6 @@ T string_to(const std::string &t, const std::string &unit) {
             "Invalid unit in conversion from string to std::chrono::duration");
     }
 }
-
 
 // if T has a constructor that takes a string, lets use it.
 // template <class T> T string_to(const std::string &arg) { return T{arg}; }
@@ -80,11 +78,5 @@ template <> FrameDiscardPolicy string_to(const std::string &arg);
  * @throw invalid argument error if the string does not match any DACIndex
  */
 template <> DACIndex string_to(const std::string &arg);
-
-
-
-
-
-
 
 } // namespace aare

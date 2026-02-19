@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: MPL-2.0
 #include "aare/decode.hpp"
-#include <fmt/format.h>
 #include <cmath>
+#include <fmt/format.h>
 namespace aare {
 
 uint16_t adc_sar_05_06_07_08decode64to16(uint64_t input) {
@@ -24,7 +24,7 @@ uint16_t adc_sar_05_06_07_08decode64to16(uint64_t input) {
 }
 
 void adc_sar_05_06_07_08decode64to16(NDView<uint64_t, 2> input,
-                             NDView<uint16_t, 2> output) {
+                                     NDView<uint16_t, 2> output) {
     if (input.shape() != output.shape()) {
         throw std::invalid_argument(LOCATION +
                                     " input and output shapes must match");
@@ -139,49 +139,50 @@ void apply_custom_weights(NDView<uint16_t, 1> input, NDView<double, 1> output,
     }
 }
 
-uint32_t mask32to24bits(uint32_t input, BitOffset offset){
+uint32_t mask32to24bits(uint32_t input, BitOffset offset) {
     constexpr uint32_t mask24bits{0xFFFFFF};
     return (input >> offset.value()) & mask24bits;
 }
 
-void expand24to32bit(NDView<uint8_t,1> input, NDView<uint32_t,1> output, BitOffset bit_offset){
+void expand24to32bit(NDView<uint8_t, 1> input, NDView<uint32_t, 1> output,
+                     BitOffset bit_offset) {
 
-    ssize_t bytes_per_channel = 3; //24bit 
-    ssize_t min_input_size = output.size()*bytes_per_channel;
+    ssize_t bytes_per_channel = 3; // 24bit
+    ssize_t min_input_size = output.size() * bytes_per_channel;
 
-    //if we have an offset we need one more byte in the input data
+    // if we have an offset we need one more byte in the input data
     if (bit_offset.value())
-        min_input_size += 1; 
+        min_input_size += 1;
 
     if (input.size() < min_input_size)
         throw std::runtime_error(fmt::format(
             "{} Mismatch between input and output size. Output "
             "size of {} with bit offset {} requires an input of at least {} "
             "bytes. Called with input size: {} output size: {}",
-            LOCATION, output.size(), bit_offset.value(), min_input_size, input.size(), output.size()));
+            LOCATION, output.size(), bit_offset.value(), min_input_size,
+            input.size(), output.size()));
 
-    auto* in = input.data();
+    auto *in = input.data();
 
-    if(bit_offset.value()){
-        //If there is a bit_offset we copy 4 bytes and then
-        //mask out the correct ones. 
-        for (auto& v : output){
+    if (bit_offset.value()) {
+        // If there is a bit_offset we copy 4 bytes and then
+        // mask out the correct ones.
+        for (auto &v : output) {
             uint32_t val{};
             std::memcpy(&val, in, sizeof(val));
             v = mask32to24bits(val, bit_offset);
             in += bytes_per_channel;
-         }
-    }else{
-        //If there is no offset we can directly copy the bits
-        //without masking
-        for (auto& v : output){
+        }
+    } else {
+        // If there is no offset we can directly copy the bits
+        // without masking
+        for (auto &v : output) {
             uint32_t val{};
             std::memcpy(&val, in, 3);
             v = val;
             in += bytes_per_channel;
-         }
+        }
     }
-
 }
 
 } // namespace aare

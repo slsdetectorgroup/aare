@@ -40,7 +40,8 @@ struct FileConfig {
     //            ", cols: " + std::to_string(cols) +
     //            ", geometry: " + geometry.to_string() +
     //            ", detector_type: " + ToString(detector_type) +
-    //            ", max_frames_per_file: " + std::to_string(max_frames_per_file) +
+    //            ", max_frames_per_file: " +
+    //            std::to_string(max_frames_per_file) +
     //            ", total_frames: " + std::to_string(total_frames) + " }";
     // }
 };

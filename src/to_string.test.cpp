@@ -10,7 +10,8 @@ using aare::string_to;
 TEST_CASE("DetectorType string to enum") {
     REQUIRE(string_to<aare::DetectorType>("Generic") ==
             aare::DetectorType::Generic);
-    REQUIRE(string_to<aare::DetectorType>("Eiger") == aare::DetectorType::Eiger);
+    REQUIRE(string_to<aare::DetectorType>("Eiger") ==
+            aare::DetectorType::Eiger);
     REQUIRE(string_to<aare::DetectorType>("Gotthard") ==
             aare::DetectorType::Gotthard);
     REQUIRE(string_to<aare::DetectorType>("Jungfrau") ==
@@ -36,7 +37,8 @@ TEST_CASE("DetectorType string to enum") {
 
 TEST_CASE("TimingMode string to enum") {
     REQUIRE(string_to<aare::TimingMode>("auto") == aare::TimingMode::Auto);
-    REQUIRE(string_to<aare::TimingMode>("trigger") == aare::TimingMode::Trigger);
+    REQUIRE(string_to<aare::TimingMode>("trigger") ==
+            aare::TimingMode::Trigger);
     REQUIRE_THROWS(string_to<aare::TimingMode>("invalid_mode"));
 }
 
@@ -88,34 +90,50 @@ TEST_CASE("DACIndex string to enum") {
     REQUIRE(string_to<aare::DACIndex>("vcp") == aare::DACIndex::VCP);
     REQUIRE(string_to<aare::DACIndex>("vcn") == aare::DACIndex::VCN);
     REQUIRE(string_to<aare::DACIndex>("vishaper") == aare::DACIndex::VISHAPER);
-    REQUIRE(string_to<aare::DACIndex>("vthreshold") == aare::DACIndex::VTHRESHOLD);
+    REQUIRE(string_to<aare::DACIndex>("vthreshold") ==
+            aare::DACIndex::VTHRESHOLD);
     REQUIRE(string_to<aare::DACIndex>("vref_ds") == aare::DACIndex::VREF_DS);
     REQUIRE(string_to<aare::DACIndex>("vout_cm") == aare::DACIndex::VOUT_CM);
     REQUIRE(string_to<aare::DACIndex>("vin_cm") == aare::DACIndex::VIN_CM);
-    REQUIRE(string_to<aare::DACIndex>("vref_comp") == aare::DACIndex::VREF_COMP);
+    REQUIRE(string_to<aare::DACIndex>("vref_comp") ==
+            aare::DACIndex::VREF_COMP);
     REQUIRE(string_to<aare::DACIndex>("vb_comp") == aare::DACIndex::VB_COMP);
     REQUIRE(string_to<aare::DACIndex>("vdd_prot") == aare::DACIndex::VDD_PROT);
     REQUIRE(string_to<aare::DACIndex>("vin_com") == aare::DACIndex::VIN_COM);
-    REQUIRE(string_to<aare::DACIndex>("vref_prech") == aare::DACIndex::VREF_PRECH);
-    REQUIRE(string_to<aare::DACIndex>("vb_pixbuf") == aare::DACIndex::VB_PIXBUF);
+    REQUIRE(string_to<aare::DACIndex>("vref_prech") ==
+            aare::DACIndex::VREF_PRECH);
+    REQUIRE(string_to<aare::DACIndex>("vb_pixbuf") ==
+            aare::DACIndex::VB_PIXBUF);
     REQUIRE(string_to<aare::DACIndex>("vb_ds") == aare::DACIndex::VB_DS);
-    REQUIRE(string_to<aare::DACIndex>("vref_h_adc") == aare::DACIndex::VREF_H_ADC);
-    REQUIRE(string_to<aare::DACIndex>("vb_comp_fe") == aare::DACIndex::VB_COMP_FE);
-    REQUIRE(string_to<aare::DACIndex>("vb_comp_adc") == aare::DACIndex::VB_COMP_ADC);
+    REQUIRE(string_to<aare::DACIndex>("vref_h_adc") ==
+            aare::DACIndex::VREF_H_ADC);
+    REQUIRE(string_to<aare::DACIndex>("vb_comp_fe") ==
+            aare::DACIndex::VB_COMP_FE);
+    REQUIRE(string_to<aare::DACIndex>("vb_comp_adc") ==
+            aare::DACIndex::VB_COMP_ADC);
     REQUIRE(string_to<aare::DACIndex>("vcom_cds") == aare::DACIndex::VCOM_CDS);
-    REQUIRE(string_to<aare::DACIndex>("vref_rstore") == aare::DACIndex::VREF_RSTORE);
-    REQUIRE(string_to<aare::DACIndex>("vb_opa_1st") == aare::DACIndex::VB_OPA_1ST);
-    REQUIRE(string_to<aare::DACIndex>("vref_comp_fe") == aare::DACIndex::VREF_COMP_FE);
-    REQUIRE(string_to<aare::DACIndex>("vcom_adc1") == aare::DACIndex::VCOM_ADC1);
-    REQUIRE(string_to<aare::DACIndex>("vref_l_adc") == aare::DACIndex::VREF_L_ADC);
+    REQUIRE(string_to<aare::DACIndex>("vref_rstore") ==
+            aare::DACIndex::VREF_RSTORE);
+    REQUIRE(string_to<aare::DACIndex>("vb_opa_1st") ==
+            aare::DACIndex::VB_OPA_1ST);
+    REQUIRE(string_to<aare::DACIndex>("vref_comp_fe") ==
+            aare::DACIndex::VREF_COMP_FE);
+    REQUIRE(string_to<aare::DACIndex>("vcom_adc1") ==
+            aare::DACIndex::VCOM_ADC1);
+    REQUIRE(string_to<aare::DACIndex>("vref_l_adc") ==
+            aare::DACIndex::VREF_L_ADC);
     REQUIRE(string_to<aare::DACIndex>("vref_cds") == aare::DACIndex::VREF_CDS);
     REQUIRE(string_to<aare::DACIndex>("vb_cs") == aare::DACIndex::VB_CS);
-    REQUIRE(string_to<aare::DACIndex>("vb_opa_fd") == aare::DACIndex::VB_OPA_FD);
-    REQUIRE(string_to<aare::DACIndex>("vcom_adc2") == aare::DACIndex::VCOM_ADC2);
+    REQUIRE(string_to<aare::DACIndex>("vb_opa_fd") ==
+            aare::DACIndex::VB_OPA_FD);
+    REQUIRE(string_to<aare::DACIndex>("vcom_adc2") ==
+            aare::DACIndex::VCOM_ADC2);
     REQUIRE(string_to<aare::DACIndex>("vcassh") == aare::DACIndex::VCASSH);
     REQUIRE(string_to<aare::DACIndex>("vth2") == aare::DACIndex::VTH2);
-    REQUIRE(string_to<aare::DACIndex>("vrshaper_n") == aare::DACIndex::VRSHAPER_N);
-    REQUIRE(string_to<aare::DACIndex>("vipre_out") == aare::DACIndex::VIPRE_OUT);
+    REQUIRE(string_to<aare::DACIndex>("vrshaper_n") ==
+            aare::DACIndex::VRSHAPER_N);
+    REQUIRE(string_to<aare::DACIndex>("vipre_out") ==
+            aare::DACIndex::VIPRE_OUT);
     REQUIRE(string_to<aare::DACIndex>("vth3") == aare::DACIndex::VTH3);
     REQUIRE(string_to<aare::DACIndex>("vth1") == aare::DACIndex::VTH1);
     REQUIRE(string_to<aare::DACIndex>("vicin") == aare::DACIndex::VICIN);
@@ -124,31 +142,47 @@ TEST_CASE("DACIndex string to enum") {
     REQUIRE(string_to<aare::DACIndex>("vipre") == aare::DACIndex::VIPRE);
     REQUIRE(string_to<aare::DACIndex>("vcal_p") == aare::DACIndex::VCAL_P);
     REQUIRE(string_to<aare::DACIndex>("vdcsh") == aare::DACIndex::VDCSH);
-    REQUIRE(string_to<aare::DACIndex>("vbp_colbuf") == aare::DACIndex::VBP_COLBUF);
+    REQUIRE(string_to<aare::DACIndex>("vbp_colbuf") ==
+            aare::DACIndex::VBP_COLBUF);
     REQUIRE(string_to<aare::DACIndex>("vb_sda") == aare::DACIndex::VB_SDA);
-    REQUIRE(string_to<aare::DACIndex>("vcasc_sfp") == aare::DACIndex::VCASC_SFP);
-    REQUIRE(string_to<aare::DACIndex>("vipre_cds") == aare::DACIndex::VIPRE_CDS);
-    REQUIRE(string_to<aare::DACIndex>("ibias_sfp") == aare::DACIndex::IBIAS_SFP);
-    REQUIRE(string_to<aare::DACIndex>("trimbits") == aare::DACIndex::TRIMBIT_SCAN);
-    REQUIRE(string_to<aare::DACIndex>("highvoltage") == aare::DACIndex::HIGH_VOLTAGE);
+    REQUIRE(string_to<aare::DACIndex>("vcasc_sfp") ==
+            aare::DACIndex::VCASC_SFP);
+    REQUIRE(string_to<aare::DACIndex>("vipre_cds") ==
+            aare::DACIndex::VIPRE_CDS);
+    REQUIRE(string_to<aare::DACIndex>("ibias_sfp") ==
+            aare::DACIndex::IBIAS_SFP);
+    REQUIRE(string_to<aare::DACIndex>("trimbits") ==
+            aare::DACIndex::TRIMBIT_SCAN);
+    REQUIRE(string_to<aare::DACIndex>("highvoltage") ==
+            aare::DACIndex::HIGH_VOLTAGE);
     REQUIRE(string_to<aare::DACIndex>("iodelay") == aare::DACIndex::IO_DELAY);
-    REQUIRE(string_to<aare::DACIndex>("temp_adc") == aare::DACIndex::TEMPERATURE_ADC);
-    REQUIRE(string_to<aare::DACIndex>("temp_fpga") == aare::DACIndex::TEMPERATURE_FPGA);
-    REQUIRE(string_to<aare::DACIndex>("temp_fpgaext") == aare::DACIndex::TEMPERATURE_FPGAEXT);
-    REQUIRE(string_to<aare::DACIndex>("temp_10ge") == aare::DACIndex::TEMPERATURE_10GE);
-    REQUIRE(string_to<aare::DACIndex>("temp_dcdc") == aare::DACIndex::TEMPERATURE_DCDC);
-    REQUIRE(string_to<aare::DACIndex>("temp_sodl") == aare::DACIndex::TEMPERATURE_SODL);
-    REQUIRE(string_to<aare::DACIndex>("temp_sodr") == aare::DACIndex::TEMPERATURE_SODR);
-    REQUIRE(string_to<aare::DACIndex>("temp_fpgafl") == aare::DACIndex::TEMPERATURE_FPGA2);
-    REQUIRE(string_to<aare::DACIndex>("temp_fpgafr") == aare::DACIndex::TEMPERATURE_FPGA3);
-    REQUIRE(string_to<aare::DACIndex>("temp_slowadc") == aare::DACIndex::SLOW_ADC_TEMP);
-    
+    REQUIRE(string_to<aare::DACIndex>("temp_adc") ==
+            aare::DACIndex::TEMPERATURE_ADC);
+    REQUIRE(string_to<aare::DACIndex>("temp_fpga") ==
+            aare::DACIndex::TEMPERATURE_FPGA);
+    REQUIRE(string_to<aare::DACIndex>("temp_fpgaext") ==
+            aare::DACIndex::TEMPERATURE_FPGAEXT);
+    REQUIRE(string_to<aare::DACIndex>("temp_10ge") ==
+            aare::DACIndex::TEMPERATURE_10GE);
+    REQUIRE(string_to<aare::DACIndex>("temp_dcdc") ==
+            aare::DACIndex::TEMPERATURE_DCDC);
+    REQUIRE(string_to<aare::DACIndex>("temp_sodl") ==
+            aare::DACIndex::TEMPERATURE_SODL);
+    REQUIRE(string_to<aare::DACIndex>("temp_sodr") ==
+            aare::DACIndex::TEMPERATURE_SODR);
+    REQUIRE(string_to<aare::DACIndex>("temp_fpgafl") ==
+            aare::DACIndex::TEMPERATURE_FPGA2);
+    REQUIRE(string_to<aare::DACIndex>("temp_fpgafr") ==
+            aare::DACIndex::TEMPERATURE_FPGA3);
+    REQUIRE(string_to<aare::DACIndex>("temp_slowadc") ==
+            aare::DACIndex::SLOW_ADC_TEMP);
+
     REQUIRE_THROWS(string_to<aare::DACIndex>("invalid_dac"));
 }
 
 TEST_CASE("Remove unit from string") {
     using aare::remove_unit;
-    
+
     // Test basic numeric value with unit
     {
         std::string input = "123.45 V";
@@ -156,7 +190,7 @@ TEST_CASE("Remove unit from string") {
         REQUIRE(unit == "V");
         REQUIRE(input == "123.45");
     }
-    
+
     // Test integer value with unit
     {
         std::string input = "42 Hz";
@@ -164,7 +198,7 @@ TEST_CASE("Remove unit from string") {
         REQUIRE(unit == "Hz");
         REQUIRE(input == "42");
     }
-    
+
     // Test negative value with unit
     {
         std::string input = "-50.5 mV";
@@ -172,7 +206,7 @@ TEST_CASE("Remove unit from string") {
         REQUIRE(unit == "mV");
         REQUIRE(input == "-50.5");
     }
-    
+
     // Test value with no unit (only numbers)
     {
         std::string input = "123.45";
@@ -180,7 +214,7 @@ TEST_CASE("Remove unit from string") {
         REQUIRE(unit == "");
         REQUIRE(input == "123.45");
     }
-    
+
     // Test value with only unit (letters at start)
     {
         std::string input = "kHz";
@@ -188,7 +222,7 @@ TEST_CASE("Remove unit from string") {
         REQUIRE(unit == "kHz");
         REQUIRE(input == "");
     }
-    
+
     // Test with multiple word units
     {
         std::string input = "100 degrees Celsius";
@@ -196,7 +230,7 @@ TEST_CASE("Remove unit from string") {
         REQUIRE(unit == "degrees Celsius");
         REQUIRE(input == "100");
     }
-    
+
     // Test with scientific notation
     {
         std::string input = "1.23e-5 A";
@@ -212,7 +246,7 @@ TEST_CASE("Remove unit from string") {
         REQUIRE(unit == "m/s");
         REQUIRE(input == "-4.56E6");
     }
-    
+
     // Test with scientific notation uppercase
     {
         std::string input = "5.67E+3 Hz";
@@ -220,7 +254,7 @@ TEST_CASE("Remove unit from string") {
         REQUIRE(unit == "Hz");
         REQUIRE(input == "5.67E+3");
     }
-    
+
     // Test with leading zeros
     {
         std::string input = "00123 ohm";
@@ -236,7 +270,7 @@ TEST_CASE("Remove unit from string") {
         REQUIRE(unit == "ohm");
         REQUIRE(input == "00123");
     }
-    
+
     // Test empty string
     {
         std::string input = "";
@@ -260,7 +294,8 @@ TEST_CASE("Conversions from time string to chrono durations") {
     REQUIRE(string_to<microseconds>("2.5 ms") == microseconds(2500));
     REQUIRE(string_to<milliseconds>("3.5 s") == milliseconds(3500));
 
-    REQUIRE(string_to<seconds>("2") == seconds(2)); // No unit defaults to seconds
+    REQUIRE(string_to<seconds>("2") ==
+            seconds(2)); // No unit defaults to seconds
 
     REQUIRE_THROWS(string_to<seconds>("10 min")); // Unsupported unit
 }

@@ -105,43 +105,43 @@ TEST_CASE("Indexing of a 3D image") {
     REQUIRE(img(2, 3, 1) == 23);
 }
 
-TEST_CASE("Access to data using a pointer"){
+TEST_CASE("Access to data using a pointer") {
     // This pattern is discouraged but sometimes useful
-    NDArray<int,2> img{{4,5},0};
-    int* data_ptr = img.data();
-    for(int i=0; i < img.size(); ++i){
-        data_ptr[i] = i*2;
+    NDArray<int, 2> img{{4, 5}, 0};
+    int *data_ptr = img.data();
+    for (int i = 0; i < img.size(); ++i) {
+        data_ptr[i] = i * 2;
     }
 
     // Cross check using operator[]
-    for(int i=0; i < img.size(); ++i){
-        REQUIRE(img[i] == i*2);
+    for (int i = 0; i < img.size(); ++i) {
+        REQUIRE(img[i] == i * 2);
     }
 }
 
-TEST_CASE("Access to data using a pointer for a const NDArray"){
+TEST_CASE("Access to data using a pointer for a const NDArray") {
     // This pattern is discouraged but sometimes useful
 
     // Using a lambda to create a const NDArray with known data
-    const NDArray<int,2> arr = [](){
-        NDArray<int,2> img{{4,5},0};
-        int* data_ptr = img.data();
-        for(int i=0; i < img.size(); ++i){
-            data_ptr[i] = i*3;
+    const NDArray<int, 2> arr = []() {
+        NDArray<int, 2> img{{4, 5}, 0};
+        int *data_ptr = img.data();
+        for (int i = 0; i < img.size(); ++i) {
+            data_ptr[i] = i * 3;
         }
         return img;
     }();
 
     // Cross check using data() pointer, if compiles we can get a const pointer
-    const int* const_data_ptr = arr.data();
-    for(int i=0; i < arr.size(); ++i){
-        REQUIRE(const_data_ptr[i] == i*3);
+    const int *const_data_ptr = arr.data();
+    for (int i = 0; i < arr.size(); ++i) {
+        REQUIRE(const_data_ptr[i] == i * 3);
     }
 }
 
-TEST_CASE("Use *buffer"){
-    // Another useful but discouraged pattern. But can be useful when getting data
-    // from external sources
+TEST_CASE("Use *buffer") {
+    // Another useful but discouraged pattern. But can be useful when getting
+    // data from external sources
     Shape<2> shape{{4, 5}};
     NDArray<int, 2> src(shape);
     NDArray<int, 2> dst(shape);
@@ -491,64 +491,60 @@ TEST_CASE("Construct an NDArray from an std::array") {
     }
 }
 
-TEST_CASE("Copy construct an NDArray"){
-    NDArray<int,2> a({{3,4}},0);
-    a(1,1) = 42;
-    a(2,3) = 84;
+TEST_CASE("Copy construct an NDArray") {
+    NDArray<int, 2> a({{3, 4}}, 0);
+    a(1, 1) = 42;
+    a(2, 3) = 84;
 
-    NDArray<int,2> b(a);
-    REQUIRE(b.shape() == Shape<2>{3,4});
+    NDArray<int, 2> b(a);
+    REQUIRE(b.shape() == Shape<2>{3, 4});
     REQUIRE(b.size() == 12);
-    REQUIRE(b(1,1) == 42);
-    REQUIRE(b(2,3) == 84);
+    REQUIRE(b(1, 1) == 42);
+    REQUIRE(b(2, 3) == 84);
 
     // Modifying b should not affect a
-    b(1,1) = 7;
-    REQUIRE(a(1,1) == 42);
+    b(1, 1) = 7;
+    REQUIRE(a(1, 1) == 42);
 
     REQUIRE(a.data() != b.data());
 }
 
+TEST_CASE("Move construct an NDArray") {
+    NDArray<int, 2> a({{3, 4}}, 0);
+    a(1, 1) = 42;
+    a(2, 3) = 84;
 
-TEST_CASE("Move construct an NDArray"){
-    NDArray<int,2> a({{3,4}},0);
-    a(1,1) = 42;
-    a(2,3) = 84;
-
-    NDArray<int,2> b(std::move(a));
-    REQUIRE(b.shape() == Shape<2>{3,4});
+    NDArray<int, 2> b(std::move(a));
+    REQUIRE(b.shape() == Shape<2>{3, 4});
     REQUIRE(b.size() == 12);
-    REQUIRE(b(1,1) == 42);
-    REQUIRE(b(2,3) == 84);
+    REQUIRE(b(1, 1) == 42);
+    REQUIRE(b(2, 3) == 84);
 
     // The moved from object should be in a unspecified but valid state.
     // This means original array pointer should be null, and size zero
     REQUIRE(a.size() == 0);
-    REQUIRE(a.shape() == Shape<2>{0,0});
+    REQUIRE(a.shape() == Shape<2>{0, 0});
     REQUIRE(a.data() == nullptr);
 }
 
-
 TEST_CASE("Move construct from an array with Ndim + 1") {
-    NDArray<int, 3> a({{1,2,2}}, 0);
+    NDArray<int, 3> a({{1, 2, 2}}, 0);
     a(0, 0, 0) = 1;
     a(0, 0, 1) = 2;
     a(0, 1, 0) = 3;
     a(0, 1, 1) = 4;
 
-
     NDArray<int, 2> b(std::move(a));
-    REQUIRE(b.shape() == Shape<2>{2,2});
+    REQUIRE(b.shape() == Shape<2>{2, 2});
     REQUIRE(b.size() == 4);
     REQUIRE(b(0, 0) == 1);
     REQUIRE(b(0, 1) == 2);
     REQUIRE(b(1, 0) == 3);
     REQUIRE(b(1, 1) == 4);
-
 }
 
-TEST_CASE("Move construct from an array with Ndim + 1 throws on size mismatch") {
-    NDArray<int, 3> a({{2,2,2}}, 0);
+TEST_CASE(
+    "Move construct from an array with Ndim + 1 throws on size mismatch") {
+    NDArray<int, 3> a({{2, 2, 2}}, 0);
     REQUIRE_THROWS(NDArray<int, 2>(std::move(a)));
 }
-
