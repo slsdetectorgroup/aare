@@ -25,27 +25,30 @@ mkdir build
 cd build
 
 #configure using cmake
-cmake ../aare
+cmake ../aare -DAARE_PYTHON_BINDINGS=ON 
 
 #build (replace 4 with the number of threads you want to use)
 make -j4 
 ```
 
-Now you can use the Python module from your build directory
+Now you can use the Python module from your build directory 
 
 ```python
 import aare
 f = aare.File('Some/File/I/Want_to_open_master_0.json')
 ```
 
-To run form other folders either add the path to your conda environment using conda-build or add it to your PYTHONPATH
+To run from other folders either add the path to your conda environment using conda-build or add the module to your PYTHONPATH
 
+```bash 
+export PYTHONPATH=path_to_aare/aare/build:$PYTHONPATH
+```
 
 ### Install using conda/mamba
 
 ```bash
 #enable your env first!
-conda install aare=2024.10.29.dev0 -c slsdetectorgroup
+conda install aare -c slsdetectorgroup # installs latest version
 ```
 
 ### Install to a custom location and use in your project
