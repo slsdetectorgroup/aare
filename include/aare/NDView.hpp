@@ -54,16 +54,6 @@ size_t num_elements(const Shape<Ndim> &shape) {
                            std::multiplies<size_t>());
 }
 
-template <ssize_t Dim = 0, typename Strides>
-ssize_t element_offset(const Strides & /*unused*/) {
-    return 0;
-}
-
-template <ssize_t Dim = 0, typename Strides, typename... Ix>
-ssize_t element_offset(const Strides &strides, ssize_t i, Ix... index) {
-    return i * strides[Dim] + element_offset<Dim + 1>(strides, index...);
-}
-
 template <ssize_t Ndim>
 std::array<ssize_t, Ndim> c_strides(const std::array<ssize_t, Ndim> &shape) {
     std::array<ssize_t, Ndim> strides{};
@@ -83,7 +73,8 @@ std::array<ssize_t, Ndim> make_array(const std::vector<ssize_t> &vec) {
 }
 
 template <typename T, ssize_t Ndim = 2>
-class NDView : public ArrayExpr<NDView<T, Ndim>, Ndim> {
+class NDView : public ArrayExpr<NDView<T, Ndim>, Ndim>,
+               public NDIndexOps<NDView<T, Ndim>, T, Ndim> {
   public:
     NDView() = default;
     ~NDView() = default;
@@ -94,26 +85,9 @@ class NDView : public ArrayExpr<NDView<T, Ndim>, Ndim> {
         : buffer_(buffer), strides_(c_strides<Ndim>(shape)), shape_(shape),
           size_(std::accumulate(std::begin(shape), std::end(shape), 1,
                                 std::multiplies<>())) {}
-                   
-    template <typename... Ix>
-    std::enable_if_t<sizeof...(Ix) == Ndim, T &> operator()(Ix... index) {
-        return buffer_[element_offset(strides_, index...)];
-    }
 
-    template <typename... Ix>
-    std::enable_if_t<sizeof...(Ix) == 1 && (Ndim > 1), NDView<T, Ndim - 1>> operator()(Ix... index) {
-        // return a view of the next dimension
-        std::array<ssize_t, Ndim - 1> new_shape{};
-        std::copy_n(shape_.begin() + 1, Ndim - 1, new_shape.begin());
-        return NDView<T, Ndim - 1>(&buffer_[element_offset(strides_, index...)],
-                                   new_shape);
-        
-    }
-
-    template <typename... Ix>
-    std::enable_if_t<sizeof...(Ix) == Ndim, const T &> operator()(Ix... index) const {
-        return buffer_[element_offset(strides_, index...)];
-    }
+    using NDIndexOps<NDView<T, Ndim>, T, Ndim>::operator();
+    using NDIndexOps<NDView<T, Ndim>, T, Ndim>::operator[];
 
 
     ssize_t size() const { return static_cast<ssize_t>(size_); }
@@ -128,16 +102,6 @@ class NDView : public ArrayExpr<NDView<T, Ndim>, Ndim> {
     
 
 
-
-    /**
-     * @brief Access element at index i.
-     */
-    T &operator[](ssize_t i)  { return buffer_[i]; }
-
-    /**
-     * @brief Access element at index i.
-     */
-    const T &operator[](ssize_t i) const { return buffer_[i]; }
 
     bool operator==(const NDView &other) const {
         if (size_ != other.size_)
