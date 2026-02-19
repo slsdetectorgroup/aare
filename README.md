@@ -38,7 +38,7 @@ import aare
 f = aare.File('Some/File/I/Want_to_open_master_0.json')
 ```
 
-To run form other folders either add the path to your conda environment using conda-build or add the module to your PYTHONPATH
+To run from other folders either add the path to your conda environment using conda-build or add the module to your PYTHONPATH
 
 ```bash 
 export PYTHONPATH=path_to_aare/aare/build:$PYTHONPATH
