@@ -21,8 +21,9 @@ NDArray<ssize_t, 3> GenerateMH02FourCounterPixelMap();
  * @param dynamic_range Dynamic range of the detector (16, 8, or 4)
  * @param n_counters Number of counters (1 to 4)
  */
-NDArray<ssize_t, 2> GenerateMatterhorn2PixelMap(const size_t dynamic_range = 16,
-                                                const size_t n_counters = 1);
+NDArray<ssize_t, 2>
+GenerateMatterhorn10PixelMap(const size_t dynamic_range = 16,
+                             const size_t n_counters = 1);
 
 // Eiger
 NDArray<ssize_t, 2> GenerateEigerFlipRowsPixelMap();

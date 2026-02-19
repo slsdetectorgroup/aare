@@ -33,15 +33,35 @@ void define_pixel_map_bindings(py::module &m) {
                      new NDArray<ssize_t, 2>(GenerateMoench05PixelMapOld());
                  return return_image_data(ptr);
              })
+
+        .def("GenerateMoench04AnalogPixelMap",
+             []() {
+                 auto ptr =
+                     new NDArray<ssize_t, 2>(GenerateMoench04AnalogPixelMap());
+                 return return_image_data(ptr);
+             })
+
         .def("GenerateMH02SingleCounterPixelMap",
              []() {
                  auto ptr = new NDArray<ssize_t, 2>(
                      GenerateMH02SingleCounterPixelMap());
                  return return_image_data(ptr);
              })
-        .def("GenerateMH02FourCounterPixelMap", []() {
-            auto ptr =
-                new NDArray<ssize_t, 3>(GenerateMH02FourCounterPixelMap());
-            return return_image_data(ptr);
-        });
+        .def("GenerateMH02FourCounterPixelMap",
+             []() {
+                 auto ptr =
+                     new NDArray<ssize_t, 3>(GenerateMH02FourCounterPixelMap());
+                 return return_image_data(ptr);
+             })
+
+        .def(
+            "GenerateMatterhorn10PixelMap",
+            [](const size_t dynamic_range, const size_t n_counters) {
+                auto ptr = new NDArray<ssize_t, 2>(
+                    GenerateMatterhorn10PixelMap(dynamic_range, n_counters));
+                return return_image_data(ptr);
+            },
+            py::arg("dynamic_range") = 16, py::arg("n_counters") = 1,
+            R"(
+        Generate pixel map for Matterhorn02 detector)");
 }

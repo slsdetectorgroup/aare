@@ -165,8 +165,8 @@ NDArray<ssize_t, 3> GenerateMH02FourCounterPixelMap() {
     return order_map;
 }
 
-NDArray<ssize_t, 2> GenerateMatterhorn2PixelMap(const size_t dynamic_range,
-                                                const size_t n_counters) {
+NDArray<ssize_t, 2> GenerateMatterhorn10PixelMap(const size_t dynamic_range,
+                                                 const size_t n_counters) {
     constexpr size_t n_cols = 256;
     constexpr size_t n_rows = 256;
     NDArray<ssize_t, 2> pixel_map(

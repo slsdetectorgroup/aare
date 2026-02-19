@@ -40,19 +40,31 @@ class Moench05TransformOld:
 
     def __call__(self, data):
         return np.take(data.view(np.uint16), self.pixel_map)
-
-
-class Matterhorn02Transform:
+    
+class Matterhorn02TransceiverTransform: 
+    #Could be moved to C++ without changing the interface
     def __init__(self):
-        self.pixel_map = _aare.GenerateMH02FourCounterPixelMap()
+        self.pixel_map = _aare.GenerateMH02SingleCounterPixelMap()
 
     def __call__(self, data):
-        counters = int(data.size / 48**2 / 2)
-        if counters == 1:
-            return np.take(data.view(np.uint16), self.pixel_map[0])
-        else:
-            return np.take(data.view(np.uint16), self.pixel_map[0:counters])
+        return np.take(data.view(np.uint16), self.pixel_map)
 
+# TODO: give a reasonable name 
+class Matterhorn02Transform:
+    def __init__(self, dynamic_range : int, num_counters : int):
+        self.pixel_map = _aare.GenerateMatterhorn2PixelMap(dynamic_range, num_counters)
+        self.dynamic_range = dynamic_range
+        self.num_counters = num_counters 
+
+    def __call__(self, data):
+        if self.dynamic_range == 16:
+            return np.take(data.view(np.uint16), self.pixel_map)
+        elif self.dynamic_range == 8: 
+            return np.take(data.view(np.uint8), self.pixel_map)
+        else: 
+            return 0 
+            #return np.take(data.view()) # TODO need to expand to 8 bits 
+            
 class Mythen302Transform:
     """
     Transform Mythen 302 test chip data from a buffer of bytes (uint8_t)
