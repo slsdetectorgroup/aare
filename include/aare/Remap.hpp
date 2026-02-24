@@ -209,7 +209,9 @@ void ApplyRemap(aare::NDView<T, 2> const &input,
             auto flat_index = order_map(row, col);
             if (flat_index >= 0 &&
                 static_cast<size_t>(flat_index) < input.size()) {
-                output(row, col) = static_cast<T>(input[flat_index]);
+                T const &value = input[flat_index];
+                output(row, col) = value;
+                // output(row, col) = static_cast<T>(input[flat_index]);
             } else {
                 output(row, col) = static_cast<T>(0); // or nan?
             }
