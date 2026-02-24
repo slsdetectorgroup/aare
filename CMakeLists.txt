@@ -75,9 +75,8 @@ if(AARE_SYSTEM_LIBRARIES)
     set(AARE_FETCH_CATCH OFF CACHE BOOL "Disabled FetchContent for catch2" FORCE)
     set(AARE_FETCH_JSON OFF CACHE BOOL "Disabled FetchContent for nlohmann::json" FORCE)
     set(AARE_FETCH_ZMQ OFF CACHE BOOL "Disabled FetchContent for libzmq" FORCE)
-    # Still fetch lmfit when setting AARE_SYSTEM_LIBRARIES since this is not available
-    # on conda-forge
-    set(AARE_FETCH_MINUIT2 OFF CACHE BOOL "Disabled FetchContent for Minuit2" FORCE)
+    # Still fetch lmfit and Minuit2 when setting AARE_SYSTEM_LIBRARIES
+    # since these are not available on conda-forge
 endif()
 
 if(AARE_BENCHMARKS)
