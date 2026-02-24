@@ -209,9 +209,6 @@ void ApplyRemap(aare::NDView<T, 2> const &input,
             auto flat_index = order_map(row, col);
             if (flat_index >= 0 &&
                 static_cast<size_t>(flat_index) < input.size()) {
-                // FIXME: input[flat_index] bypasses const-correctness due to
-                // broken NDView::operator[] Safe here because we only read from
-                // input. Should be fixed when/if NDView is corrected.
                 output(row, col) = static_cast<T>(input[flat_index]);
             } else {
                 output(row, col) = static_cast<T>(0); // or nan?
