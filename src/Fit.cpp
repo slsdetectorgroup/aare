@@ -1,5 +1,7 @@
 // SPDX-License-Identifier: MPL-2.0
 #include "aare/Fit.hpp"
+#include "aare/Chi2Gaussian.hpp"
+#include "aare/Chi2GaussianGradient.hpp"
 #include "aare/utils/par.hpp"
 #include "aare/utils/task.hpp"
 #include <lmcurve2.h>
@@ -7,6 +9,12 @@
 #include <thread>
 
 #include <array>
+
+#include "Minuit2/FunctionMinimum.h"
+#include "Minuit2/MnMigrad.h"
+#include "Minuit2/MnHesse.h"
+#include "Minuit2/MnUserParameters.h"
+#include "Minuit2/MnPrint.h"
 
 namespace aare {
 
@@ -131,6 +139,90 @@ std::array<double, 2> pol1_init_par(const NDView<double, 1> x,
         *y1 - ((*y2 - *y1) / (x2 - x1)) *
                   x1; // For the mean we use the x value of the maximum value
     return start_par;
+}
+
+
+// -------------------------------------------
+// Method 1: Minuit2 without analytic gradient
+// -------------------------------------------
+NDArray<double, 1> fit_gaus_minuit(NDView<double, 1> x,
+                            NDView<double, 1> y,
+                            NDView<double, 1> y_err) {
+
+    auto start = gaus_init_par(x, y);
+
+    // Guard against degenerate data (dead/noisy pixel)
+    if (start[0] <= 0.0 || start[2] <= 0.0) {
+        return NDArray<double, 1>({3}, 0.0);
+    }
+
+    aare::func::Chi2Gaussian chi2(x, y, y_err);
+
+    ROOT::Minuit2::MnUserParameters upar;
+    upar.Add("A",   start[0], start[0] * 0.1, 0.0, start[0] * 2.0);
+    upar.Add("mu",  start[1], start[2] * 0.1,
+             start[1] - 3.0 * start[2], start[1] + 3.0 * start[2]);
+    upar.Add("sig", start[2], start[2] * 0.1, 0.0, start[2] * 5.0);
+
+    ROOT::Minuit2::MnMigrad migrad(chi2, upar);
+    ROOT::Minuit2::FunctionMinimum min = migrad();
+
+    // Extract fitted parameters from the result
+    NDArray<double, 1> result({3});
+    result[0] = min.UserState().Value("A");
+    result[1] = min.UserState().Value("mu");
+    result[2] = min.UserState().Value("sig");
+
+    return result;
+}
+
+
+// ------------------------------------------------------------------
+// Method 2: Minuit2 with analytic gradient + Hesse errors (optional)
+// ------------------------------------------------------------------
+NDArray<double, 1> fit_gaus_minuit_grad(NDView<double, 1> x,
+                                        NDView<double, 1> y,
+                                        NDView<double, 1> y_err,
+                                        bool compute_errors) {
+    auto start = gaus_init_par(x, y);
+
+    if (start[0] <= 0.0 || start[2] <= 0.0)
+        return NDArray<double, 1>({compute_errors ? 6 : 3}, 0.0);
+
+    aare::func::Chi2GaussianGradient chi2(x, y, y_err);
+
+    ROOT::Minuit2::MnUserParameters upar;
+    // TODO: Optimize bounds
+    upar.Add("A",   start[0], start[0] * 0.1, 0.0, start[0] * 2.0);
+    upar.Add("mu",  start[1], start[2] * 0.1,
+             start[1] - 3.0 * start[2], start[1] + 3.0 * start[2]);
+    upar.Add("sig", start[2], start[2] * 0.1, 0.0, start[2] * 5.0);
+
+    ROOT::Minuit2::MnMigrad migrad(chi2, upar);
+    ROOT::Minuit2::FunctionMinimum min = migrad();
+
+    if (!min.IsValid())
+        return NDArray<double, 1>({compute_errors ? 6 : 3}, 0.0);
+
+    if (compute_errors) {
+        ROOT::Minuit2::MnHesse hesse;
+        hesse(chi2, min);
+
+        NDArray<double, 1> result({6});
+        result[0] = min.UserState().Value("A");
+        result[1] = min.UserState().Value("mu");
+        result[2] = min.UserState().Value("sig");
+        result[3] = min.UserState().Error("A");
+        result[4] = min.UserState().Error("mu");
+        result[5] = min.UserState().Error("sig");
+        return result;
+    }
+
+    NDArray<double, 1> result({3});
+    result[0] = min.UserState().Value("A");
+    result[1] = min.UserState().Value("mu");
+    result[2] = min.UserState().Value("sig");
+    return result;
 }
 
 void fit_gaus(NDView<double, 1> x, NDView<double, 1> y, NDView<double, 1> y_err,

@@ -63,6 +63,7 @@ option(AARE_FETCH_CATCH "Use FetchContent to download catch2" ON)
 option(AARE_FETCH_JSON "Use FetchContent to download nlohmann::json" ON)
 option(AARE_FETCH_ZMQ "Use FetchContent to download libzmq" ON)
 option(AARE_FETCH_LMFIT "Use FetchContent to download lmfit" ON)
+option(AARE_FETCH_MINUIT2 "Use FetchContent to download Minuit2" ON)
 
 
 #Convenience option to use system libraries only (no FetchContent)
@@ -76,6 +77,7 @@ if(AARE_SYSTEM_LIBRARIES)
     set(AARE_FETCH_ZMQ OFF CACHE BOOL "Disabled FetchContent for libzmq" FORCE)
     # Still fetch lmfit when setting AARE_SYSTEM_LIBRARIES since this is not available
     # on conda-forge
+    set(AARE_FETCH_MINUIT2 OFF CACHE BOOL "Disabled FetchContent for Minuit2" FORCE)
 endif()
 
 if(AARE_BENCHMARKS)
@@ -131,6 +133,24 @@ if(AARE_FETCH_LMFIT)
     set_property(TARGET lmfit PROPERTY POSITION_INDEPENDENT_CODE ON)
 else()
     find_package(lmfit REQUIRED)
+endif()
+
+
+if(AARE_FETCH_MINUIT2)
+    FetchContent_Declare(
+        Minuit2
+        GIT_REPOSITORY https://github.com/GooFit/Minuit2.git
+        GIT_TAG        master
+    )
+    # Disable Minuit2 extras we don't need
+    set(minuit2_mpi OFF CACHE BOOL "")
+    set(minuit2_omp OFF CACHE BOOL "")
+    set(BUILD_TESTING OFF CACHE BOOL "")
+    FetchContent_MakeAvailable(Minuit2)
+    set_property(TARGET Minuit2Math PROPERTY POSITION_INDEPENDENT_CODE ON)
+    set_property(TARGET Minuit2 PROPERTY POSITION_INDEPENDENT_CODE ON)
+else()
+    find_package(Minuit2 REQUIRED)
 endif()
 
 
@@ -414,7 +434,7 @@ target_link_libraries(
     aare_compiler_flags 
     Threads::Threads
     $<BUILD_INTERFACE:lmfit>
-
+    Minuit2::Minuit2
 )
 
 set_property(TARGET aare_core PROPERTY POSITION_INDEPENDENT_CODE ON)

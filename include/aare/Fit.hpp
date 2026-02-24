@@ -58,6 +58,38 @@ NDArray<double, 3> fit_gaus(NDView<double, 1> x, NDView<double, 3> y,
                             int n_threads = DEFAULT_NUM_THREADS);
 
 /**
+ * @brief Fit a 1D Gaussian using Minuit2 (finite-difference gradients).
+ *
+ * Model: f(x) = A * exp(-(x - mu)^2 / (2 * sigma^2))
+ *
+ * @param x Scan point values.
+ * @param y Measured values at each scan point.
+ * @param y_err Per-point standard deviations. Points with y_err == 0 are skipped.
+ * @return Shape {3}: [A, mu, sigma]. All zeros if fit fails.
+ */
+NDArray<double, 1> fit_gaus_minuit(NDView<double, 1> x,
+                                   NDView<double, 1> y,
+                                   NDView<double, 1> y_err);
+
+/**
+ * @brief Fit a 1D Gaussian using Minuit2 (analytic gradients).
+ *
+ * Same model as fit_gaus_minuit() but with analytic chi-squared gradients
+ * and optional MnHesse error estimation.
+ *
+ * @param x Scan point values.
+ * @param y Measured values at each scan point.
+ * @param y_err Per-point standard deviations. Points with y_err == 0 are skipped.
+ * @param compute_errors If true, run MnHesse and append 1-sigma errors.
+ * @return Shape {3}: [A, mu, sigma], or {6}: [A, mu, sigma, err_A, err_mu,
+ *         err_sigma] if compute_errors is true. All zeros if fit fails.
+ */
+NDArray<double, 1> fit_gaus_minuit_grad(NDView<double, 1> x,
+                                        NDView<double, 1> y,
+                                        NDView<double, 1> y_err,
+                                        bool compute_errors = true);
+                                        
+/**
  * @brief Fit a 1D Gaussian with error estimates
  * @param x x values
  * @param y y values, layout [row, col, values]
