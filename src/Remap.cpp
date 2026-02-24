@@ -1,6 +1,7 @@
 #include "aare/Remap.hpp"
 
 #include <algorithm>
+#include <sstream>
 
 /******************************
  * ****************************
