@@ -1,0 +1,30 @@
+name: Build on local RHEL8
+
+on:
+  push:
+    branches:
+      - main
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    runs-on: "detectors-software-RH8"
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Build library 
+        run: |
+            source /home/gitea_runner/.bashrc
+            conda activate det
+            mkdir build && cd build
+            conda activate det
+            cmake .. -DAARE_PYTHON_BINDINGS=ON
+            make -j 2 
+
+      - name: Deploy to NFS update server
+        if: gitea.ref == 'refs/heads/developer'
+        run: |
+            sftp -r gitea_runner@mpc2935:/aare/RH8 <<< $'put build/aare'
