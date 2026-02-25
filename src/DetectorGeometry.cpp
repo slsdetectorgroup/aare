@@ -48,8 +48,8 @@ size_t DetectorGeometry::n_modules() const { return m_modules_x * m_modules_y; }
 size_t DetectorGeometry::pixels_x() const { return m_pixels_x; }
 size_t DetectorGeometry::pixels_y() const { return m_pixels_y; }
 
-size_t DetectorGeometry::modules_x() const { return m_modules_x; };
-size_t DetectorGeometry::modules_y() const { return m_modules_y; };
+size_t DetectorGeometry::modules_x() const { return m_modules_x; }
+size_t DetectorGeometry::modules_y() const { return m_modules_y; }
 
 const std::vector<ModuleGeometry> &
 DetectorGeometry::get_module_geometries() const {

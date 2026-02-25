@@ -14,7 +14,7 @@ ROIGeometry::ROIGeometry(const ROI &roi, DetectorGeometry &geometry)
             m_module_indices_in_roi.push_back(i);
         }
     }
-};
+}
 
 ROIGeometry::ROIGeometry(DetectorGeometry &geometry)
     : m_pixels_x(geometry.pixels_x()), m_pixels_y(geometry.pixels_y()),
@@ -22,7 +22,7 @@ ROIGeometry::ROIGeometry(DetectorGeometry &geometry)
     m_module_indices_in_roi.resize(m_geometry.n_modules());
     std::iota(m_module_indices_in_roi.begin(), m_module_indices_in_roi.end(),
               0);
-};
+}
 
 size_t ROIGeometry::num_modules_in_roi() const {
     return m_module_indices_in_roi.size();
