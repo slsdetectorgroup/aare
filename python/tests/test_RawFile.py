@@ -16,6 +16,7 @@ def test_read_rawfile_with_roi_spanning_over_one_module(test_data_path):
 
         assert headers.size == 10100
         assert frames.shape == (10100, 256, 256) 
+        
 
 @pytest.mark.withdata
 def test_read_rawfile_with_multiple_rois(test_data_path): 
