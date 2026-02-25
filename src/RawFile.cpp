@@ -248,7 +248,7 @@ size_t RawFile::num_rois() const {
     } else {
         return 0;
     }
-};
+}
 
 const ROIGeometry &RawFile::roi_geometries(size_t roi_index) const {
     return m_ROI_geometries[roi_index];
@@ -261,7 +261,7 @@ std::vector<size_t> RawFile::n_modules_in_roi() const {
         m_ROI_geometries.begin(), m_ROI_geometries.end(), results.begin(),
         [](const ROIGeometry &roi) { return roi.num_modules_in_roi(); });
     return results;
-};
+}
 
 void RawFile::open_subfiles(const size_t roi_index) {
 
