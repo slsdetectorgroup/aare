@@ -27,4 +27,4 @@ jobs:
       - name: Deploy to NFS update server
         if: gitea.ref == 'refs/heads/developer'
         run: |
-            sftp -r gitea_runner@mpc2935:/slsDetectorSoftware/RH8 <<< $'put build'
+            sftp -r gitea_runner@mpc2935:/aare/RH8 <<< $'put build/aare'
