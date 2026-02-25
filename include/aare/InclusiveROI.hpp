@@ -1,5 +1,7 @@
 #pragma once
 
+#include <aare/defs.hpp>
+
 #include <cstddef>
 #include <iostream>
 #include <stdexcept>
@@ -35,6 +37,14 @@ struct InclusiveROI {
     // TODO (nice to have)
     // static InclusiveROI from_shape(ssize_t width, ssize_t height);
 };
+
+inline InclusiveROI toInclusiveROI(aare::ROI const &r) {
+    return {r.xmin, r.xmax - 1, r.ymin, r.ymax - 1};
+};
+
+inline aare::ROI toAareROI(InclusiveROI const& r) {
+  return {r.xmin, r.xmax + 1, r.ymin, r.ymax + 1};
+}
 
 /***********************
  * Printint utility
