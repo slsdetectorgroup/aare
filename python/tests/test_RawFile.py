@@ -27,7 +27,7 @@ def test_read_rawfile_with_multiple_rois(test_data_path):
             f.read_frame()
 
         assert f.tell() == 0
-        frames = f.read_ROIs() 
+        _, frames = f.read_rois() 
         assert num_rois == 2
         assert len(frames) == 2
         assert frames[0].shape == (301, 101)
@@ -36,15 +36,16 @@ def test_read_rawfile_with_multiple_rois(test_data_path):
         assert f.tell() == 1
 
         # read multiple ROIs at once
-        frames = f.read_n_ROIs(2, 1) 
+        _, frames = f.read_n_with_roi(2, roi_index = 1) 
         assert frames.shape == (2, 101, 101)
 
         assert f.tell() == 3
 
+        f.seek(1)
+
         # read specific ROI
-        frame = f.read_ROIs(1, 0)
-        assert len(frame) == 1
-        assert frame[0].shape == (301, 101)
+        _, frame = f.read_roi(0)
+        assert frame.shape == (301, 101)
         assert f.tell() == 2
    
     
