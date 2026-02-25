@@ -38,11 +38,11 @@ struct InclusiveROI {
     // static InclusiveROI from_shape(ssize_t width, ssize_t height);
 };
 
-inline InclusiveROI toInclusiveROI(aare::ROI const &r) {
+inline InclusiveROI toInclusiveROI(ROI const &r) {
     return {r.xmin, r.xmax - 1, r.ymin, r.ymax - 1};
 };
 
-inline aare::ROI toAareROI(InclusiveROI const& r) {
+inline ROI toHalfopenROI(InclusiveROI const& r) {
   return {r.xmin, r.xmax + 1, r.ymin, r.ymax + 1};
 }
 
