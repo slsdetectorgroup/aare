@@ -22,6 +22,6 @@ jobs:
             make -j 2 
 
       - name: Deploy to NFS update server
-        if: gitea.ref == 'refs/heads/developer'
+        if: gitea.ref == 'refs/heads/main'
         run: |
             sftp -r gitea_runner@mpc2935:/aare/RH9 <<< $'put build/aare'
