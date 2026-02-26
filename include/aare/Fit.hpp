@@ -69,7 +69,7 @@ NDArray<double, 3> fit_gaus(NDView<double, 1> x, NDView<double, 3> y,
  */
 NDArray<double, 1> fit_gaus_minuit(NDView<double, 1> x,
                                    NDView<double, 1> y,
-                                   NDView<double, 1> y_err);
+                                   NDView<double, 1> y_err = {});
 
 /**
  * @brief Fit a 1D Gaussian using Minuit2 (analytic gradients).
@@ -86,9 +86,9 @@ NDArray<double, 1> fit_gaus_minuit(NDView<double, 1> x,
  */
 NDArray<double, 1> fit_gaus_minuit_grad(NDView<double, 1> x,
                                         NDView<double, 1> y,
-                                        NDView<double, 1> y_err,
-                                        bool compute_errors = true);
-                                        
+                                        NDView<double, 1> y_err = {},
+                                        bool compute_errors = false);
+
 /**
  * @brief Fit a 1D Gaussian with error estimates
  * @param x x values

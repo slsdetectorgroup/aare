@@ -50,9 +50,13 @@ public:
      * All three views must have the same size and must outlive this object.
      */
     Chi2GaussianGradient(NDView<double, 1> x,
+                        NDView<double, 1> y)
+        : x_(x), y_(y), s_(), weighted_(false) {}
+    
+    Chi2GaussianGradient(NDView<double, 1> x,
                          NDView<double, 1> y,
                          NDView<double, 1> y_err)
-        : x_(x), y_(y), s_(y_err) {}
+        : x_(x), y_(y), s_(y_err), weighted_(true) {}
 
     ~Chi2GaussianGradient() override = default;
 
@@ -92,6 +96,7 @@ private:
     NDView<double, 1> x_;
     NDView<double, 1> y_;
     NDView<double, 1> s_;
+    bool weighted_;
 
     // mutable cache for fused chi2 + gradient computation
     mutable std::vector<double> cached_par_;
@@ -139,23 +144,39 @@ private:
         double dMu  = 0.0;
         double dSig = 0.0;
 
-        for (ssize_t i = 0; i < x_.size(); ++i) {
-            if (s_[i] == 0.0)
-                continue;
-
-            const double dx  = x_[i] - mu;
-            const double dx2 = dx * dx;
-            const double g_i = exp(-dx2 * inv_2sig2);
-            const double Ag  = A * g_i;
-            const double r_i = y_[i] - Ag;
-            const double w   = 1.0 / (s_[i] * s_[i]);
-
-            chi2 += r_i * r_i * w;
-
-            const double common = -2.0 * w * r_i * g_i;
-            dA   += common;
-            dMu  += common * A * dx  * inv_sig2;
-            dSig += common * A * dx2 * inv_sig3;
+        if (weighted_) {
+            for (ssize_t i = 0; i < x_.size(); ++i) {
+                if (s_[i] == 0.0) continue;
+    
+                const double dx  = x_[i] - mu;
+                const double dx2 = dx * dx;
+                const double g_i = exp(-dx2 * inv_2sig2);
+                const double Ag  = A * g_i;
+                const double r_i = y_[i] - Ag;
+                const double w   = 1.0 / (s_[i] * s_[i]);
+    
+                chi2 += r_i * r_i * w;
+    
+                const double common = -2.0 * w * r_i * g_i;
+                dA   += common;
+                dMu  += common * A * dx  * inv_sig2;
+                dSig += common * A * dx2 * inv_sig3;
+            }
+        } else {
+            for (ssize_t i = 0; i < x_.size(); ++i) {
+                const double dx  = x_[i] - mu;
+                const double dx2 = dx * dx;
+                const double g_i = exp(-dx2 * inv_2sig2);
+                const double Ag  = A * g_i;
+                const double r_i = y_[i] - Ag;
+    
+                chi2 += r_i * r_i;
+    
+                const double common = -2.0 * r_i * g_i;
+                dA   += common;
+                dMu  += common * A * dx  * inv_sig2;
+                dSig += common * A * dx2 * inv_sig3;
+            }
         }
 
         cached_chi2_ = chi2;

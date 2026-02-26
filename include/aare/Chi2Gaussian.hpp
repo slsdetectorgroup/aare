@@ -36,9 +36,13 @@ public:
      * All three views must have the same size and must outlive this object.
      */
     Chi2Gaussian(NDView<double, 1> x,
+            NDView<double, 1> y)
+        : x_(x), y_(y), s_(), weighted_(false) {}
+
+    Chi2Gaussian(NDView<double, 1> x,
                  NDView<double, 1> y,
                  NDView<double, 1> y_err)
-        : x_(x), y_(y), s_(y_err) {}
+        : x_(x), y_(y), s_(y_err), weighted_(true) {}
 
     ~Chi2Gaussian() override = default;
 
@@ -59,15 +63,23 @@ public:
         const double inv_2sig2 = 1.0 / (2.0 * sig * sig);
 
         double chi2 = 0.0;
-        for (ssize_t i = 0; i < x_.size(); ++i) {
-            if (s_[i] == 0.0)
-                continue;
 
-            double dx  = x_[i] - mu;
-            double g_i = A * exp(-dx * dx * inv_2sig2);
-            double r_i = y_[i] - g_i;
-            double w   = 1.0 / (s_[i] * s_[i]);
-            chi2 += r_i * r_i * w;
+        // ugly but allows vectorization
+        if (weighted_) {
+            for (ssize_t i = 0; i < x_.size(); ++i) {
+                if (s_[i] == 0.0) continue;
+                double dx  = x_[i] - mu;
+                double g_i = A * std::exp(-dx * dx * inv_2sig2);
+                double r_i = y_[i] - g_i;
+                chi2 += r_i * r_i / (s_[i] * s_[i]);
+            }
+        } else {
+            for (ssize_t i = 0; i < x_.size(); ++i) {
+                double dx  = x_[i] - mu;
+                double g_i = A * std::exp(-dx * dx * inv_2sig2);
+                double r_i = y_[i] - g_i;
+                chi2 += r_i * r_i;
+            }
         }
         return chi2;
     }
@@ -86,6 +98,7 @@ private:
     NDView<double, 1> x_;
     NDView<double, 1> y_;
     NDView<double, 1> s_;
+    bool weighted_;
 };
 
 } // namespace aare::func

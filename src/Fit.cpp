@@ -156,7 +156,10 @@ NDArray<double, 1> fit_gaus_minuit(NDView<double, 1> x,
         return NDArray<double, 1>({3}, 0.0);
     }
 
-    aare::func::Chi2Gaussian chi2(x, y, y_err);
+    auto chi2 = (y_err.size() > 0)
+        ? aare::func::Chi2Gaussian(x, y, y_err)
+        : aare::func::Chi2Gaussian(x, y);
+
 
     ROOT::Minuit2::MnUserParameters upar;
     upar.Add("A",   start[0], start[0] * 0.1, 0.0, start[0] * 2.0);
@@ -189,7 +192,9 @@ NDArray<double, 1> fit_gaus_minuit_grad(NDView<double, 1> x,
     if (start[0] <= 0.0 || start[2] <= 0.0)
         return NDArray<double, 1>({compute_errors ? 6 : 3}, 0.0);
 
-    aare::func::Chi2GaussianGradient chi2(x, y, y_err);
+    auto chi2 = (y_err.size() > 0)
+        ? aare::func::Chi2GaussianGradient(x, y, y_err)
+        : aare::func::Chi2GaussianGradient(x, y);
 
     ROOT::Minuit2::MnUserParameters upar;
     // TODO: Optimize bounds
