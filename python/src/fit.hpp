@@ -204,6 +204,113 @@ n_threads : int, optional
         py::arg("x"), py::arg("y"), py::arg("y_err"), py::arg("n_threads") = 4);
 
     m.def(
+        "fit_gaus_minuit",
+        [](py::array_t<double, py::array::c_style | py::array::forcecast> x,
+           py::array_t<double, py::array::c_style | py::array::forcecast> y,
+           py::object y_err_obj)
+        {
+            if (y.ndim() == 1) {
+                auto par = new NDArray<double, 1>{};
+
+                auto x_view = make_view_1d(x);
+                auto y_view = make_view_1d(y);
+
+                if (!y_err_obj.is_none()) {
+                    auto y_err = py::cast<py::array_t<double,
+                        py::array::c_style | py::array::forcecast>>(y_err_obj);
+                    auto y_view_err = make_view_1d(y_err);
+                    *par = aare::fit_gaus_minuit(x_view, y_view, y_view_err);
+                } else {
+                    *par = aare::fit_gaus_minuit(x_view, y_view, NDView<double, 1>{});
+                }
+                return return_image_data(par);
+
+            } else {
+                throw std::runtime_error("Data must be 1D");
+            }
+        },
+        R"(
+
+Fit a 1D Gaussian using Minuit2 (finite-difference gradients).
+
+Parameters
+----------
+x : array_like
+    The x scan point values.
+y : array_like
+    The Measured y values at each scan point.
+y_err : array_like
+    The per-point standard deviations in the y values.
+)
+
+Returns
+-------
+numpy.ndarray
+    Shape (3,) [A, mu, sigma]. All zeros if the fit fails.
+)",        
+        py::arg("x"), py::arg("y"), py::arg("y_err") = py::none()
+    );
+
+    m.def(
+        "fit_gaus_minuit_grad",
+        [](py::array_t<double, py::array::c_style | py::array::forcecast> x,
+           py::array_t<double, py::array::c_style | py::array::forcecast> y,
+           py::object y_err_obj,
+           bool compute_errors)
+        {
+            if (y.ndim() == 1) {
+                auto par = new NDArray<double, 1>{};
+
+                auto x_view = make_view_1d(x);
+                auto y_view = make_view_1d(y);
+
+                if (!y_err_obj.is_none()) {
+                    auto y_err = py::cast<py::array_t<double,
+                        py::array::c_style | py::array::forcecast>>(y_err_obj);
+                    auto y_view_err = make_view_1d(y_err);
+                    *par = 
+                        aare::fit_gaus_minuit_grad(x_view, y_view, y_view_err, compute_errors);
+                } else {
+                    *par = 
+                        aare::fit_gaus_minuit_grad(x_view, y_view, NDView<double, 1>{}, compute_errors);
+                }
+
+                return return_image_data(par);
+            } else {
+                throw std::runtime_error("Data must be 1D");
+            }
+        },
+        R"(
+
+Fit a 1D Gaussian using Minuit2 (analytic gradients).
+
+Same model as fit_gaus_minuit() but with analytic chi-squared gradients
+and optional MnHesse error estimation.
+
+Parameters
+----------
+x : array_like
+    The x scan point values.
+y : array_like
+    The measured y values at each scan point.
+y_err : array_like, optional
+    The per-point standard deviations in the y values.
+    Points with y_err == 0 are skipped.
+compute_errors : bool, optional
+    If True, run MnHesse and append 1-sigma parameter errors.
+    Default is True.
+
+Returns
+-------
+numpy.ndarray
+    Shape (3,) [A, mu, sigma] if compute_errors is False,
+    or shape (6,) [A, mu, sigma, err_A, err_mu, err_sigma] if True.
+    All zeros if the fit fails.
+)",
+        py::arg("x"), py::arg("y"), py::arg("y_err") = py::none(), py::arg("compute_errors") = false
+    );
+
+    m.def(
         "fit_pol1",
         [](py::array_t<double, py::array::c_style | py::array::forcecast> x,
            py::array_t<double, py::array::c_style | py::array::forcecast> y,

@@ -17,7 +17,7 @@ from .ClusterVector import ClusterVector
 from .Cluster import Cluster
 
 
-from ._aare import fit_gaus, fit_pol1, fit_scurve, fit_scurve2
+from ._aare import fit_gaus, fit_pol1, fit_scurve, fit_scurve2, fit_gaus_minuit, fit_gaus_minuit_grad
 from ._aare import Interpolator
 from ._aare import calculate_eta2, calculate_eta3, calculate_cross_eta3, calculate_full_eta2
 from ._aare import reduce_to_2x2, reduce_to_3x3
