@@ -194,8 +194,13 @@ ScanParameters RawMasterFile::scan_parameters() const {
 }
 
 std::optional<ROI> RawMasterFile::roi() const {
-    if (!m_rois || m_rois->empty()) {
+    if (!m_rois) {
         return std::nullopt;
+    }
+
+    if (m_rois->empty()) {
+        throw std::runtime_error(LOCATION +
+                                 "Zero ROIs in metadata.");
     }
 
     if (m_rois.value().size() > 1) {
@@ -206,7 +211,6 @@ std::optional<ROI> RawMasterFile::roi() const {
                    ? std::optional<ROI>(m_rois.value().at(0))
                    : std::nullopt; // TODO: maybe throw if no roi exists
     }
-    
 }
 
 std::optional<std::vector<ROI>> RawMasterFile::rois() const { return m_rois; }
