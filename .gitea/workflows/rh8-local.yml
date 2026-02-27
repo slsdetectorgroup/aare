@@ -27,4 +27,4 @@ jobs:
       - name: Deploy to NFS update server
         if: gitea.ref == 'refs/heads/main'
         run: |
-            sftp -r gitea_runner@mpc2935:/aare/RH8 <<< $'put build/aare'
+            sftp -r gitea_runner@mpc2935:/ <<< $'put build/aare'
