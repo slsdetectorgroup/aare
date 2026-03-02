@@ -205,10 +205,37 @@ void define_fit_bindings(py::module &m) {
         "fit_gaus_minuit",
         [](py::array_t<double, py::array::c_style | py::array::forcecast> x,
            py::array_t<double, py::array::c_style | py::array::forcecast> y,
-           py::object y_err_obj)
+           py::object y_err_obj,
+           int n_threads) -> py::object
         {
-            if (y.ndim() == 1) {
-                auto par = new NDArray<double, 1>{};
+            if (y.ndim() == 3) {
+                auto par_out = new NDArray<double, 3>({y.shape(0), y.shape(1), 3}, 0.0);
+                auto chi2_out= new NDArray<double, 2>({y.shape(0), y.shape(1)}, 0.0);
+
+                auto x_view = make_view_1d(x);
+                auto y_view = make_view_3d(y);
+
+                if (!y_err_obj.is_none()) {
+                    auto y_err = py::cast<py::array_t<double,
+                        py::array::c_style | py::array::forcecast>>(y_err_obj);
+
+                    if (y_err.ndim() != 3) {
+                        throw std::runtime_error("For 3D input y, y_err must also be 3D.");
+                    }
+
+                    auto y_view_err = make_view_3d(y_err);
+                    aare::fit_gaus_minuit_3d(x_view, y_view, y_view_err, 
+                                    par_out->view(), chi2_out->view(), n_threads);
+                } else {
+                    aare::fit_gaus_minuit_3d(x_view, y_view, 
+                                    par_out->view(), chi2_out->view(), n_threads);
+                }
+                
+                return py::dict("par"_a = return_image_data(par_out),
+                                "chi2"_a = return_image_data(chi2_out));
+
+            } else if (y.ndim() == 1) {
+                auto result = new NDArray<double, 1>{};
 
                 auto x_view = make_view_1d(x);
                 auto y_view = make_view_1d(y);
@@ -216,36 +243,49 @@ void define_fit_bindings(py::module &m) {
                 if (!y_err_obj.is_none()) {
                     auto y_err = py::cast<py::array_t<double,
                         py::array::c_style | py::array::forcecast>>(y_err_obj);
+
+                    if (y_err.ndim() != 1) {
+                        throw std::runtime_error("For 1D y, y_err must be 1D.");
+                    }
+
                     auto y_view_err = make_view_1d(y_err);
-                    *par = aare::fit_gaus_minuit(x_view, y_view, y_view_err);
+                    *result = aare::fit_gaus_minuit(x_view, y_view, y_view_err);
                 } else {
-                    *par = aare::fit_gaus_minuit(x_view, y_view, NDView<double, 1>{});
+                    *result = aare::fit_gaus_minuit(x_view, y_view, NDView<double, 1>{});
                 }
-                return return_image_data(par);
+                return return_image_data(result); // [A, mu, sig, chi2]
 
             } else {
-                throw std::runtime_error("Data must be 1D");
+                throw std::runtime_error("Data must be 1D or 3D.");
             }
         },
         R"(
-        Fit a 1D Gaussian using Minuit2 (finite-difference gradients).
+        Fit a Gaussian using Minuit2 (finite-difference gradients).
 
         Parameters
         ----------
         x : array_like
             The x scan point values.
         y : array_like
-            The Measured y values at each scan point.
+            The Measured values. Must be either 1D or 3D.
         y_err : array_like
-            The per-point standard deviations in the y values.
+            The per-point standard deviations in the y values. Must match the dimensionality of `y`.
         )
+        n_threads : int, optional
+            Number of CPU threads used for 3D per-pixel fitting.
 
         Returns
         -------
-        numpy.ndarray
-            Shape (3,) [A, mu, sigma]. All zeros if the fit fails.
-        )",        
-        py::arg("x"), py::arg("y"), py::arg("y_err") = py::none()
+        numpy.ndarray or dict
+            If `y` is 1D:
+                array of shape (4,) containing [A, mu, sigma, chi2].
+
+            If `y` is 3D:
+                dict with:
+                - "par":  array of shape (n_rows, n_cols, 3)
+                - "chi2": array of shape (n_rows, n_cols)
+        )",      
+        py::arg("x"), py::arg("y"), py::arg("y_err") = py::none(), py::arg("n_threads") = 4
     );
 
     m.def(
@@ -253,10 +293,38 @@ void define_fit_bindings(py::module &m) {
         [](py::array_t<double, py::array::c_style | py::array::forcecast> x,
            py::array_t<double, py::array::c_style | py::array::forcecast> y,
            py::object y_err_obj,
-           bool compute_errors)
+           int n_threads) -> py::object
         {
-            if (y.ndim() == 1) {
-                auto par = new NDArray<double, 1>{};
+            if (y.ndim() == 3) {
+                auto par_out = new NDArray<double, 3>({y.shape(0), y.shape(1), 3}, 0.0);
+                auto err_out = new NDArray<double, 3>({y.shape(0), y.shape(1), 3}, 0.0);
+                auto chi2_out= new NDArray<double, 2>({y.shape(0), y.shape(1)}, 0.0);
+
+                auto x_view = make_view_1d(x);
+                auto y_view = make_view_3d(y);
+
+                if (!y_err_obj.is_none()) {
+                    auto y_err = py::cast<py::array_t<double,
+                        py::array::c_style | py::array::forcecast>>(y_err_obj);
+
+                    if (y_err.ndim() != 3) {
+                        throw std::runtime_error("For 3D input y, y_err must also be 3D.");
+                    }
+
+                    auto y_view_err = make_view_3d(y_err);
+                    aare::fit_gaus_minuit_grad_3d(x_view, y_view, y_view_err, 
+                                    par_out->view(), err_out->view(), chi2_out->view(), n_threads);
+                } else {
+                    aare::fit_gaus_minuit_grad_3d(x_view, y_view, 
+                                    par_out->view(), err_out->view(), chi2_out->view(), n_threads);
+                }
+                
+                return py::dict("par"_a = return_image_data(par_out),
+                                "par_err"_a = return_image_data(err_out),
+                                "chi2"_a = return_image_data(chi2_out));
+
+            } else if (y.ndim() == 1) {
+                auto result = new NDArray<double, 1>{};
 
                 auto x_view = make_view_1d(x);
                 auto y_view = make_view_1d(y);
@@ -264,21 +332,26 @@ void define_fit_bindings(py::module &m) {
                 if (!y_err_obj.is_none()) {
                     auto y_err = py::cast<py::array_t<double,
                         py::array::c_style | py::array::forcecast>>(y_err_obj);
+
+                    if (y_err.ndim() != 1) {
+                        throw std::runtime_error("For 1D input y, y_err must also be 1D.");
+                    }
+
                     auto y_view_err = make_view_1d(y_err);
-                    *par = 
-                        aare::fit_gaus_minuit_grad(x_view, y_view, y_view_err, compute_errors);
+                    *result = 
+                        aare::fit_gaus_minuit_grad(x_view, y_view, y_view_err, /*compute_errors=*/ true);
                 } else {
-                    *par = 
-                        aare::fit_gaus_minuit_grad(x_view, y_view, NDView<double, 1>{}, compute_errors);
+                    *result = 
+                        aare::fit_gaus_minuit_grad(x_view, y_view, NDView<double, 1>{}, /*compute_errors*/ true);
                 }
 
-                return return_image_data(par);
+                return return_image_data(result);
             } else {
-                throw std::runtime_error("Data must be 1D");
+                throw std::runtime_error("Data must be 1D or 3D.");
             }
         },
         R"(
-        Fit a 1D Gaussian using Minuit2 (analytic gradients).
+        Fit a Gaussian using Minuit2 (analytic gradients).
 
         Same model as fit_gaus_minuit() but with analytic chi-squared gradients
         and optional MnHesse error estimation.
@@ -291,19 +364,22 @@ void define_fit_bindings(py::module &m) {
             The measured y values at each scan point.
         y_err : array_like, optional
             The per-point standard deviations in the y values.
-            Points with y_err == 0 are skipped.
-        compute_errors : bool, optional
-            If True, run MnHesse and append 1-sigma parameter errors.
-            Default is True.
+        n_threads : int, optional
+            Number of CPU threads used for 3D per-pixel fitting.
 
         Returns
         -------
-        numpy.ndarray
-            Shape (3,) [A, mu, sigma] if compute_errors is False,
-            or shape (6,) [A, mu, sigma, err_A, err_mu, err_sigma] if True.
-            All zeros if the fit fails.
-        )",
-        py::arg("x"), py::arg("y"), py::arg("y_err") = py::none(), py::arg("compute_errors") = false
+        numpy.ndarray or dict
+            If `y` is 1D:
+                array of shape (7,) containing [A, mu, sigma, err_A, err_mu, err_sigma, chi2].
+
+            If `y` is 3D:
+                dict with:
+                - "par":      array of shape (n_rows, n_cols, 3)
+                - "par_err":  array of shape (n_rows, n_cols, 3)
+                - "chi2":     array of shape (n_rows, n_cols)
+        )", 
+        py::arg("x"), py::arg("y"), py::arg("y_err") = py::none(), py::arg("n_threads") = 4
     );
 
     m.def(

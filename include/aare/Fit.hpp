@@ -58,38 +58,6 @@ NDArray<double, 3> fit_gaus(NDView<double, 1> x, NDView<double, 3> y,
                             int n_threads = DEFAULT_NUM_THREADS);
 
 /**
- * @brief Fit a 1D Gaussian using Minuit2 (finite-difference gradients).
- *
- * Model: f(x) = A * exp(-(x - mu)^2 / (2 * sigma^2))
- *
- * @param x Scan point values.
- * @param y Measured values at each scan point.
- * @param y_err Per-point standard deviations. Points with y_err == 0 are skipped.
- * @return Shape {3}: [A, mu, sigma]. All zeros if fit fails.
- */
-NDArray<double, 1> fit_gaus_minuit(NDView<double, 1> x,
-                                   NDView<double, 1> y,
-                                   NDView<double, 1> y_err = {});
-
-/**
- * @brief Fit a 1D Gaussian using Minuit2 (analytic gradients).
- *
- * Same model as fit_gaus_minuit() but with analytic chi-squared gradients
- * and optional MnHesse error estimation.
- *
- * @param x Scan point values.
- * @param y Measured values at each scan point.
- * @param y_err Per-point standard deviations. Points with y_err == 0 are skipped.
- * @param compute_errors If true, run MnHesse and append 1-sigma errors.
- * @return Shape {3}: [A, mu, sigma], or {6}: [A, mu, sigma, err_A, err_mu,
- *         err_sigma] if compute_errors is true. All zeros if fit fails.
- */
-NDArray<double, 1> fit_gaus_minuit_grad(NDView<double, 1> x,
-                                        NDView<double, 1> y,
-                                        NDView<double, 1> y_err = {},
-                                        bool compute_errors = false);
-
-/**
  * @brief Fit a 1D Gaussian with error estimates
  * @param x x values
  * @param y y values, layout [row, col, values]
@@ -114,6 +82,97 @@ void fit_gaus(NDView<double, 1> x, NDView<double, 1> y, NDView<double, 1> y_err,
 void fit_gaus(NDView<double, 1> x, NDView<double, 3> y, NDView<double, 3> y_err,
               NDView<double, 3> par_out, NDView<double, 3> par_err_out,
               NDView<double, 2> chi2_out, int n_threads = DEFAULT_NUM_THREADS);
+
+
+/**
+ * @brief Fit a 1D Gaussian using Minuit2 (finite-difference gradients).
+ *
+ * Model: f(x) = A * exp(-(x - mu)^2 / (2 * sigma^2))
+ *
+ * @param x Scan point values.
+ * @param y Measured values at each scan point.
+ * @param y_err Per-point standard deviations. Points with y_err == 0 are skipped.
+ * @return Shape {4}: [A, mu, sigma, chi2]. All zeros if fit fails.
+ */
+NDArray<double, 1> fit_gaus_minuit(NDView<double, 1> x,
+                                   NDView<double, 1> y,
+                                   NDView<double, 1> y_err = {});
+
+                                   /**
+ * @brief Fit a Gaussian independently at each pixel of a 3D scan stack using Minuit2.
+ *
+ * Same model as fit_gaus_minuit(), applied independently to each pixel trace
+ * `y(row, col, :)`.
+ *
+ * @param x Scan point values.
+ * @param y Measured data of shape [n_rows, n_cols, n_scan].
+ * @param y_err Per-point standard deviations with the same shape as `y`.
+ * @param par_out Output array of [n_rows, n_cols, 3], storing [A, mu, sigma] for each pixel.
+ * @param chi2_out Output array of [n_rows, n_cols], storing [chi2] for each pixel.
+ * @param n_threads Number of CPU threads used to split work across rows.
+ */
+void fit_gaus_minuit_3d(NDView<double, 1> x,
+                        NDView<double, 3> y,
+                        NDView<double, 3> y_err,
+                        NDView<double, 3> par_out,
+                        NDView<double, 2> chi2_out,
+                        int n_threads = DEFAULT_NUM_THREADS);
+
+// Overload: When uncertainties `y_err` are not provided
+void fit_gaus_minuit_3d(NDView<double, 1> x, 
+                        NDView<double, 3> y,
+                        NDView<double, 3> par_out,
+                        NDView<double, 2> chi2_out,
+                        int n_threads = DEFAULT_NUM_THREADS);
+
+/**
+ * @brief Fit a 1D Gaussian using Minuit2 (analytic gradients).
+ *
+ * Same model as fit_gaus_minuit() but with analytic chi-squared gradients
+ * and optional MnHesse error estimation.
+ *
+ * @param x Scan point values.
+ * @param y Measured values at each scan point.
+ * @param y_err Per-point standard deviations. Points with y_err == 0 are skipped.
+ * @param compute_errors If true, run MnHesse and append 1-sigma errors.
+ * @return Shape {4}: [A, mu, sigma, chi2], or {7}: [A, mu, sigma, err_A, err_mu,
+ *         err_sigma, chi2] if compute_errors is true. All zeros if fit fails.
+ */
+NDArray<double, 1> fit_gaus_minuit_grad(NDView<double, 1> x,
+                                        NDView<double, 1> y,
+                                        NDView<double, 1> y_err = {},
+                                        bool compute_errors = false);
+
+
+/**
+ * @brief Fit a Gaussian independently at each pixel of a 3D scan stack using Minuit2 (analytic gradients).
+ *
+ * Same model as fit_gaus_minuit_grad(), applied independently to each pixel
+ * trace `y(row, col, :)` with per-point uncertainties `y_err(row, col, :)`.
+ *
+ * @param x Scan point values.
+ * @param y Measured data of shape [n_rows, n_cols, n_scan].
+ * @param y_err Per-point standard deviations with the same shape as `y`.
+ * @param par_out Output array of [n_rows, n_cols, 3], storing [A, mu, sigma] for each pixel.
+ * @param err_out Output array of [n_rows, n_cols, 3], storing [errA, errMu, errSigma] for each pixel.
+ * @param chi2_out Output array of [n_rows, n_cols], storing [chi2] for each pixel.
+ * @param n_threads Number of CPU threads used to split work across rows.
+ */
+void fit_gaus_minuit_grad_3d(NDView<double, 1> x,
+                             NDView<double, 3> y,
+                             NDView<double, 3> y_err,
+                             NDView<double, 3> par_out,
+                             NDView<double, 3> err_out,
+                             NDView<double, 2> chi2_out,
+                             int n_threads = DEFAULT_NUM_THREADS);
+
+// Overload: When uncertainties `y_err` are not provided
+void fit_gaus_minuit_grad_3d(NDView<double, 1> x, 
+                             NDView<double, 3> y,
+                             NDView<double, 3> par_out,
+                             NDView<double, 3> err_out,
+                             NDView<double, 2> chi2_out,
+                             int n_threads = DEFAULT_NUM_THREADS);
 
 NDArray<double, 1> fit_pol1(NDView<double, 1> x, NDView<double, 1> y);
 

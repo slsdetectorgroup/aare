@@ -39,14 +39,16 @@ ax0.grid()
 # Fit with lmfit
 result_lm = fit_gaus(x, y, yerr)
 par_lm = result_lm["par"]
-err_lm = result_lm["par_err"] 
-print("fit_gaus:            ", par_lm, err_lm)
+err_lm = result_lm["par_err"]
+chi2_lm = result_lm["chi2"] 
+print("fit_gaus:            ", par_lm, err_lm, chi2_lm)
 
 # Fit with Minuit2 + analytic gradient + Hesse errors
-result_m2 = fit_gaus_minuit_grad(x, y, y_err=yerr, compute_errors=True)
+result_m2 = fit_gaus_minuit_grad(x, y, y_err=yerr)
 par_m2 = result_m2[:3]
-err_m2 = result_m2[3:]
-print("fit_gaus_minuit_grad:", par_m2, err_m2)
+err_m2 = result_m2[3:6]
+chi2_m2 = result_m2[6]
+print("fit_gaus_minuit_grad:", par_m2, err_m2, chi2_m2)
 
 x = np.linspace(x[0], x[-1], 1000)
 ax0.plot(x, gaus(x, par_lm), marker="", label="fit_gaus")
