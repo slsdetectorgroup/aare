@@ -121,18 +121,17 @@ void define_fit_bindings(py::module &m) {
             }
         },
         R"(
+        Fit a 1D Gaussian to data.
 
-Fit a 1D Gaussian to data.
-
-Parameters
-----------
-x : array_like
-    The x values.
-y : array_like
-    The y values.
-n_threads : int, optional
-    The number of threads to use. Default is 4.
-)",
+        Parameters
+        ----------
+        x : array_like
+            The x values.
+        y : array_like
+            The y values.
+        n_threads : int, optional
+            The number of threads to use. Default is 4.
+        )",
         py::arg("x"), py::arg("y"), py::arg("n_threads") = 4);
 
     m.def(
@@ -187,20 +186,19 @@ n_threads : int, optional
             }
         },
         R"(
+        Fit a 1D Gaussian to data with error estimates.
 
-Fit a 1D Gaussian to data with error estimates.
-
-Parameters
-----------
-x : array_like
-    The x values.
-y : array_like
-    The y values.
-y_err : array_like
-    The error in the y values.
-n_threads : int, optional
-    The number of threads to use. Default is 4.
-)",
+        Parameters
+        ----------
+        x : array_like
+            The x values.
+        y : array_like
+            The y values.
+        y_err : array_like
+            The error in the y values.
+        n_threads : int, optional
+            The number of threads to use. Default is 4.
+        )",
         py::arg("x"), py::arg("y"), py::arg("y_err"), py::arg("n_threads") = 4);
 
     m.def(
@@ -230,24 +228,23 @@ n_threads : int, optional
             }
         },
         R"(
+        Fit a 1D Gaussian using Minuit2 (finite-difference gradients).
 
-Fit a 1D Gaussian using Minuit2 (finite-difference gradients).
+        Parameters
+        ----------
+        x : array_like
+            The x scan point values.
+        y : array_like
+            The Measured y values at each scan point.
+        y_err : array_like
+            The per-point standard deviations in the y values.
+        )
 
-Parameters
-----------
-x : array_like
-    The x scan point values.
-y : array_like
-    The Measured y values at each scan point.
-y_err : array_like
-    The per-point standard deviations in the y values.
-)
-
-Returns
--------
-numpy.ndarray
-    Shape (3,) [A, mu, sigma]. All zeros if the fit fails.
-)",        
+        Returns
+        -------
+        numpy.ndarray
+            Shape (3,) [A, mu, sigma]. All zeros if the fit fails.
+        )",        
         py::arg("x"), py::arg("y"), py::arg("y_err") = py::none()
     );
 
@@ -281,32 +278,31 @@ numpy.ndarray
             }
         },
         R"(
+        Fit a 1D Gaussian using Minuit2 (analytic gradients).
 
-Fit a 1D Gaussian using Minuit2 (analytic gradients).
+        Same model as fit_gaus_minuit() but with analytic chi-squared gradients
+        and optional MnHesse error estimation.
 
-Same model as fit_gaus_minuit() but with analytic chi-squared gradients
-and optional MnHesse error estimation.
+        Parameters
+        ----------
+        x : array_like
+            The x scan point values.
+        y : array_like
+            The measured y values at each scan point.
+        y_err : array_like, optional
+            The per-point standard deviations in the y values.
+            Points with y_err == 0 are skipped.
+        compute_errors : bool, optional
+            If True, run MnHesse and append 1-sigma parameter errors.
+            Default is True.
 
-Parameters
-----------
-x : array_like
-    The x scan point values.
-y : array_like
-    The measured y values at each scan point.
-y_err : array_like, optional
-    The per-point standard deviations in the y values.
-    Points with y_err == 0 are skipped.
-compute_errors : bool, optional
-    If True, run MnHesse and append 1-sigma parameter errors.
-    Default is True.
-
-Returns
--------
-numpy.ndarray
-    Shape (3,) [A, mu, sigma] if compute_errors is False,
-    or shape (6,) [A, mu, sigma, err_A, err_mu, err_sigma] if True.
-    All zeros if the fit fails.
-)",
+        Returns
+        -------
+        numpy.ndarray
+            Shape (3,) [A, mu, sigma] if compute_errors is False,
+            or shape (6,) [A, mu, sigma, err_A, err_mu, err_sigma] if True.
+            All zeros if the fit fails.
+        )",
         py::arg("x"), py::arg("y"), py::arg("y_err") = py::none(), py::arg("compute_errors") = false
     );
 
@@ -380,19 +376,19 @@ numpy.ndarray
             }
         },
         R"(
-Fit a 1D polynomial to data with error estimates.
+        Fit a 1D polynomial to data with error estimates.
 
-Parameters
-----------
-x : array_like
-    The x values.
-y : array_like
-    The y values.
-y_err : array_like
-    The error in the y values.
-n_threads : int, optional
-    The number of threads to use. Default is 4.
-)",
+        Parameters
+        ----------
+        x : array_like
+            The x values.
+        y : array_like
+            The y values.
+        y_err : array_like
+            The error in the y values.
+        n_threads : int, optional
+            The number of threads to use. Default is 4.
+        )",
         py::arg("x"), py::arg("y"), py::arg("y_err"), py::arg("n_threads") = 4);
 
     //=========
@@ -466,19 +462,19 @@ n_threads : int, optional
             }
         },
         R"(
-Fit a 1D polynomial to data with error estimates.
+        Fit a 1D polynomial to data with error estimates.
 
-Parameters
-----------
-x : array_like
-    The x values.
-y : array_like
-    The y values.
-y_err : array_like
-    The error in the y values.
-n_threads : int, optional
-    The number of threads to use. Default is 4.
-)",
+        Parameters
+        ----------
+        x : array_like
+            The x values.
+        y : array_like
+            The y values.
+        y_err : array_like
+            The error in the y values.
+        n_threads : int, optional
+            The number of threads to use. Default is 4.
+        )",
         py::arg("x"), py::arg("y"), py::arg("y_err"), py::arg("n_threads") = 4);
 
     m.def(
@@ -551,18 +547,18 @@ n_threads : int, optional
             }
         },
         R"(
-Fit a 1D polynomial to data with error estimates.
+        Fit a 1D polynomial to data with error estimates.
 
-Parameters
-----------
-x : array_like
-    The x values.
-y : array_like
-    The y values.
-y_err : array_like
-    The error in the y values.
-n_threads : int, optional
-    The number of threads to use. Default is 4.
-)",
+        Parameters
+        ----------
+        x : array_like
+            The x values.
+        y : array_like
+            The y values.
+        y_err : array_like
+            The error in the y values.
+        n_threads : int, optional
+            The number of threads to use. Default is 4.
+        )",
         py::arg("x"), py::arg("y"), py::arg("y_err"), py::arg("n_threads") = 4);
 }

@@ -8,19 +8,19 @@ std::vector<std::pair<int, int>> split_task(int first, int last,
     std::vector<std::pair<int, int>> vec;
     vec.reserve(n_threads);
 
-    int n_frames = last - first;
+    int n_items = last - first;
 
-    if (n_threads >= n_frames) {
-        for (int i = 0; i != n_frames; ++i) {
-            vec.push_back({i, i + 1});
+    if (n_threads >= n_items) {
+        for (int i = 0; i != n_items; ++i) {
+            vec.push_back({first + i, first + i + 1});
         }
         return vec;
     }
 
-    int step = (n_frames) / n_threads;
+    int step = n_items / n_threads;
     for (int i = 0; i != n_threads; ++i) {
-        int start = step * i;
-        int stop = step * (i + 1);
+        int start = first + step * i;
+        int stop = first + step * (i + 1);
         if (i == n_threads - 1)
             stop = last;
         vec.push_back({start, stop});
