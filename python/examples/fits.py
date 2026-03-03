@@ -15,19 +15,18 @@ textsigma = f"σ"  #
 mu = np.random.uniform(1, 100)  # Mean of Gaussian
 sigma = np.random.uniform(4, 20)  # Standard deviation
 num_points = 10000  # Number of points for smooth distribution
-noise_sigma = 10
+# noise_sigma = 10
 
 # Generate Gaussian distribution
 data = np.random.normal(mu, sigma, num_points)
+counts, edges = np.histogram(data, bins=100)
 
-x = np.histogram(data, bins=30)[1][:-1] + 0.05
-y_true = np.histogram(data, bins=30)[0]
+x = 0.5 * (edges[:-1] + edges[1:])       # proper bin centers
+y = counts.astype(np.float64)
 
-# Generate errors for each point
-yerr = np.abs(np.random.normal(0, noise_sigma, len(x)))
-
-# Perturb the count wiht noise
-y = y_true + yerr
+# Poisson noise
+yerr = np.sqrt(np.maximum(y, 1))
+# yerr = np.abs(np.random.normal(0, noise_sigma, len(x)))
 
 # Create subplot
 fig0, ax0 = plt.subplots(1, 1, num=0, figsize=(12, 8))
