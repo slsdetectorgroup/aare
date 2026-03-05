@@ -1,6 +1,38 @@
 #include "aare/InclusiveROI.hpp" // IMPORTANT: Uses InclusiveROI!!!
 
-namespace aare::remap::config {
+namespace aare::remap::defs {
+
+enum class SensorTech : int { iLGAD, TEW };
+
+// This is dummy for now because it is not yet decided how best to depict the
+// differences in batches R&D, production and year in a scalable way with
+// unified naming conventions
+enum class SensorRevision : int { RevA, RevB, RevC };
+
+enum class SensorLayout : int {
+    Halfmodule, // not implemented yet!
+    Quad,
+    DoubleChip, // not implemented yet (new batch)!
+    SingleMP37, // not implemented yet (TEW 2024)
+    SingleMP25,
+    SingleMP18,
+    SingleMP15
+};
+
+// Orientation of the sensor with respect to the ASICs / the HDI
+// Normal means lower part of sensor (as in GDS) aligns with lower part of HDI
+enum class Rotation : int { Normal = 0, Inverse = 1 };
+
+struct SensorKey {
+    SensorTech tech;
+    SensorRevision rev = SensorRevision::RevA;
+    SensorLayout layout;
+};
+
+struct BondShift {
+    int x = 0;
+    int y = 0;
+};
 
 /**
  * Helper structs for strong-typing
@@ -38,8 +70,7 @@ struct SingleChipMP_iLGAD {
         .multiplicator = 3,
         .x_shift = 1,
         .strixel_roi =
-            InclusiveROI{chip.guardring + 1,
-                         chip.cols - chip.guardring - 1,
+            InclusiveROI{chip.guardring + 1, chip.cols - chip.guardring - 1,
                          chip.guardring, (chip.rows / 4) - 1},
         .nrows_remap = ((chip.rows / 4) - chip.guardring) * 3,
         .ncols_remap = (chip.cols - (2 * chip.guardring) - 1) / 3,
@@ -50,8 +81,7 @@ struct SingleChipMP_iLGAD {
         .multiplicator = 5,
         .x_shift = 3,
         .strixel_roi =
-            InclusiveROI{chip.guardring + 3,
-                         chip.cols - chip.guardring - 1,
+            InclusiveROI{chip.guardring + 3, chip.cols - chip.guardring - 1,
                          chip.rows / 4, (chip.rows / 4) * 2 - 1},
         .nrows_remap = (chip.rows / 4) * 5,
         .ncols_remap = (chip.cols - (2 * chip.guardring) - 3) / 5,
@@ -62,10 +92,9 @@ struct SingleChipMP_iLGAD {
     static inline const StrixelGeometry P18 = {
         .multiplicator = 4,
         .x_shift = 2,
-        .strixel_roi = InclusiveROI{chip.guardring + 2,
-                                    chip.cols - chip.guardring - 1,
-                                    (chip.rows / 4) * 2,
-                                    chip.rows - chip.guardring - 1},
+        .strixel_roi =
+            InclusiveROI{chip.guardring + 2, chip.cols - chip.guardring - 1,
+                         (chip.rows / 4) * 2, chip.rows - chip.guardring - 1},
         .nrows_remap = ((chip.rows / 4) * 2 - chip.guardring) * 4,
         .ncols_remap = (chip.cols - (2 * chip.guardring) - 2) / 4,
         .pitch_um = 18.75};
@@ -86,8 +115,7 @@ struct SingleChipMP_TEW {
     static inline const StrixelGeometry P25 = {
         .multiplicator = 3,
         .x_shift = 1,
-        .strixel_roi =
-            InclusiveROI{1, chip.cols - 1, 0, (chip.rows / 4) - 1},
+        .strixel_roi = InclusiveROI{1, chip.cols - 1, 0, (chip.rows / 4) - 1},
         .nrows_remap = (chip.rows / 4) * 3,
         .ncols_remap = chip.cols / 3, // 85
         .pitch_um = 25.0};
@@ -107,8 +135,8 @@ struct SingleChipMP_TEW {
     static inline const StrixelGeometry P18 = {
         .multiplicator = 4,
         .x_shift = 0,
-        .strixel_roi = InclusiveROI{0, chip.cols - 1,
-                                    (chip.rows / 4) * 2, chip.rows - 1},
+        .strixel_roi =
+            InclusiveROI{0, chip.cols - 1, (chip.rows / 4) * 2, chip.rows - 1},
         .nrows_remap = ((chip.rows / 4) * 2) * 4,
         .ncols_remap = chip.cols / 4,
         .pitch_um = 18.75};
@@ -130,12 +158,12 @@ struct Quad_iLGAD {
     static inline const StrixelGeometry Half = {
         .multiplicator = 3,
         .x_shift = 2,
-        .strixel_roi = InclusiveROI{chip.guardring + 1,
-                                    chip.cols - chip.guardring - 1,
-                                    chip.guardring, chip.rows - 2},
+        .strixel_roi =
+            InclusiveROI{chip.guardring + 1, chip.cols - chip.guardring - 1,
+                         chip.guardring, chip.rows - 2},
         .nrows_remap = (chip.rows - 1 - chip.guardring) * 3,
         .ncols_remap = (chip.cols - 2 - 2 * chip.guardring) / 3,
         .pitch_um = 25.0};
 };
 
-} // namespace aare::remap::config
+} // namespace aare::remap::defs

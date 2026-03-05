@@ -13,16 +13,16 @@
 namespace aare::remap::model {
 
 // Factory function (public API)
-StrixelSensorConfig makeSensorConfig(SensorKey key,
-                                     std::optional<Rotation> user_rot,
+StrixelSensorConfig makeSensorConfig(defs::SensorKey key,
+                                     std::optional<defs::Rotation> user_rot,
                                      std::optional<int> chip_id,
-                                     BondShift bond_shift) {
+                                     defs::BondShift bond_shift) {
 
     auto const &sensor = resolve::strixelGeometry(key);
     auto const chip = resolve::chipGeometry(key);
     aare::InclusiveROI roi_module = resolve::moduleROI(key, chip_id);
 
-    Rotation rot = Rotation::Normal;
+    defs::Rotation rot = defs::Rotation::Normal;
     if (user_rot.has_value()) {
         rot = user_rot.value();
     } else if (chip_id.has_value()) {
@@ -38,7 +38,7 @@ StrixelSensorConfig makeSensorConfig(SensorKey key,
             cfg.strixel_geometry.strixel_roi, cfg.bond_shift.x,
             cfg.bond_shift.y);
 
-    if (cfg.rotation == Rotation::Inverse)
+    if (cfg.rotation == defs::Rotation::Inverse)
         cfg.strixel_geometry.strixel_roi = aare::inclusiveroi::geom::mirrorXY(
             cfg.strixel_geometry.strixel_roi, cfg.chip_geometry.cols,
             cfg.chip_geometry.rows);
@@ -57,61 +57,61 @@ StrixelSensorConfig makeSensorConfig(SensorKey key,
  ******************************/
 namespace aare::remap::format {
 
-static inline std::string toString(SensorTech tech) {
+static inline std::string toString(defs::SensorTech tech) {
     switch (tech) {
-    case SensorTech::iLGAD:
+    case defs::SensorTech::iLGAD:
         return "Technology: iLGAD";
-    case SensorTech::TEW:
+    case defs::SensorTech::TEW:
         return "Technology: TEW";
     default:
         return "SensorTech::Unknown";
     }
 }
 
-static inline std::string toString(SensorRevision rev) {
+static inline std::string toString(defs::SensorRevision rev) {
     switch (rev) {
-    case SensorRevision::RevA:
+    case defs::SensorRevision::RevA:
         return "Revision: RevA";
-    case SensorRevision::RevB:
+    case defs::SensorRevision::RevB:
         return "Revision: RevB";
-    case SensorRevision::RevC:
+    case defs::SensorRevision::RevC:
         return "Revision: RevC";
     default:
         return "SensorRevision::Unknown";
     }
 }
 
-static inline std::string toString(SensorLayout l) {
+static inline std::string toString(defs::SensorLayout l) {
     switch (l) {
-    case SensorLayout::SingleMP25:
+    case defs::SensorLayout::SingleMP25:
         return "Layout: SingleMP25 (G1, 25 um pitch)";
-    case SensorLayout::SingleMP15:
+    case defs::SensorLayout::SingleMP15:
         return "Layout: SingleMP15 (G2, 15 um pitch)";
-    case SensorLayout::SingleMP18:
+    case defs::SensorLayout::SingleMP18:
         return "Layout: SingleMP18 (G3, 18.75 um pitch)";
-    case SensorLayout::SingleMP37:
+    case defs::SensorLayout::SingleMP37:
         return "Layout: SingleMP37 (G4, 37.5 um pitch)";
-    case SensorLayout::Quad:
+    case defs::SensorLayout::Quad:
         return "Layout: Quad (25 um pitch)";
-    case SensorLayout::Halfmodule:
+    case defs::SensorLayout::Halfmodule:
         return "Layout: Halfmodule";
-    case SensorLayout::DoubleChip:
+    case defs::SensorLayout::DoubleChip:
         return "Layout: DoubleChip";
     default:
         return "SensorLayout::Unknown";
     }
 }
 
-static inline std::string toString(SensorKey key) {
+static inline std::string toString(defs::SensorKey key) {
     return toString(key.tech) + " | " + toString(key.layout) + " | " +
            toString(key.rev);
 }
 
-static inline std::string toString(Rotation r) {
-    return (r == Rotation::Normal ? "Normal" : "Inverse");
+static inline std::string toString(defs::Rotation r) {
+    return (r == defs::Rotation::Normal ? "Normal" : "Inverse");
 }
 
-static inline std::string toString(StrixelSensorConfig const &c) {
+static inline std::string toString(model::StrixelSensorConfig const &c) {
     std::ostringstream os;
 
     os << "StrixelSensorConfig\n"
@@ -142,7 +142,7 @@ static inline std::string toString(StrixelSensorConfig const &c) {
 }
 
 inline std::ostream &operator<<(std::ostream &os,
-                                StrixelSensorConfig const &c) {
+                                model::StrixelSensorConfig const &c) {
     return os << toString(c);
 }
 
@@ -157,8 +157,6 @@ inline std::ostream &operator<<(std::ostream &os,
  ******************************/
 namespace aare::remap::geom {
 
-using namespace aare::remap::model;
-
 aare::InclusiveROI alignROIs(aare::InclusiveROI const &roi_user,
                              aare::InclusiveROI const &roi_base) {
     const int dx = roi_base.xmin;
@@ -169,9 +167,9 @@ aare::InclusiveROI alignROIs(aare::InclusiveROI const &roi_user,
     // return roi::geom::translate(roi_user, roi_base.xmin, roi_base.ymin);
 }
 
-Rotation autoRotate(int chip_id) {
-    return (chip_id == 1   ? Rotation::Normal
-            : chip_id == 6 ? Rotation::Inverse
+defs::Rotation autoRotate(int chip_id) {
+    return (chip_id == 1   ? defs::Rotation::Normal
+            : chip_id == 6 ? defs::Rotation::Inverse
                            : throw std::runtime_error("Unknown chip_id"));
 }
 
@@ -186,12 +184,10 @@ Rotation autoRotate(int chip_id) {
  ******************************/
 namespace aare::remap::algo {
 
-using namespace aare::remap::model;
-using namespace aare::remap::format;
-
-MappingResult generateUnitMap(aare::InclusiveROI const &roi_user,
-                              aare::InclusiveROI const &roi_group,
-                              int multiplicator, Rotation rot, int shifty) {
+model::MappingResult generateUnitMap(aare::InclusiveROI const &roi_user,
+                                     aare::InclusiveROI const &roi_group,
+                                     int multiplicator, defs::Rotation rot,
+                                     int shifty) {
     // Helper to make sure that we work with a correct number of strixel columns
     // (i.e. that we do not map pixel columns if the ncols in ASIC pixel
     // coordinates is not a multiple of strixel ncols)
@@ -205,7 +201,7 @@ MappingResult generateUnitMap(aare::InclusiveROI const &roi_user,
     std::vector<int> mods(multiplicator);
     for (int i = 0; i < multiplicator; i++)
         mods[i] = i;
-    if (rot == Rotation::Inverse)
+    if (rot == defs::Rotation::Inverse)
         std::reverse(mods.begin(), mods.end());
 
     // -- 1) Compute effective ROI = intersection( roi_user, roi_group )
@@ -292,8 +288,9 @@ MappingResult generateUnitMap(aare::InclusiveROI const &roi_user,
     return {ord, nrows_strx, ncols_strx, multiplicator, eff};
 }
 
-MappingResult joinQuadMaps(MappingResult const &bottom,
-                           MappingResult const &top, int gap_rows) {
+model::MappingResult joinQuadMaps(model::MappingResult const &bottom,
+                                  model::MappingResult const &top,
+                                  int gap_rows) {
     if (bottom.cols == 0 && top.cols == 0)
         return {{}, 0, 0, -1, aare::InclusiveROI::emptyROI()};
 
@@ -328,17 +325,17 @@ MappingResult joinQuadMaps(MappingResult const &bottom,
     return {ord, global_cols, global_rows, bottom.multiplicator, scd};
 }
 
-MappingResult generateMPStrixelMapping(
-    aare::InclusiveROI const &roi_user_module, SensorKey key, int chip_id,
-    std::optional<Rotation> user_rot, BondShift bond_shift) {
+model::MappingResult generateMPStrixelMapping(
+    aare::InclusiveROI const &roi_user_module, defs::SensorKey key, int chip_id,
+    std::optional<defs::Rotation> user_rot, defs::BondShift bond_shift) {
     // -- 1) initialize config
-    auto config = makeSensorConfig(key, user_rot, chip_id, bond_shift);
+    auto config = model::makeSensorConfig(key, user_rot, chip_id, bond_shift);
     // static_assert(std::is_same_v<decltype(config.pitch_um), double>);
-    std::cout << "Initialized config: " << config << std::endl;
+    std::cout << "Initialized config: " << format::toString(config) << std::endl;
 
-    if (!(key.layout == SensorLayout::SingleMP25 ||
-          key.layout == SensorLayout::SingleMP15 ||
-          key.layout == SensorLayout::SingleMP18)) {
+    if (!(key.layout == defs::SensorLayout::SingleMP25 ||
+          key.layout == defs::SensorLayout::SingleMP15 ||
+          key.layout == defs::SensorLayout::SingleMP18)) {
         throw std::runtime_error("Invalid sensor type!");
     } /* else {
       std::cout << "Sensor type " << config.label << std::endl;
@@ -346,7 +343,7 @@ MappingResult generateMPStrixelMapping(
 
     // -- 2) transform user ROI to sensor-local coordinates
     const aare::InclusiveROI roi_user_local =
-        aare::remap::geom::alignROIs(roi_user_module, config.roi_module);
+        geom::alignROIs(roi_user_module, config.roi_module);
     std::cout << "Transformed user ROI: " << roi_user_local << std::endl;
 
     // -- 3) remap
@@ -364,20 +361,19 @@ MappingResult generateMPStrixelMapping(
             aare::InclusiveROI::emptyROI()};
 }
 
-MappingResult
-generateQuadStrixelMapping(aare::InclusiveROI const &roi_user_module,
-                           SensorKey key, std::optional<Rotation> user_rot,
-                           BondShift bond_shift) {
+model::MappingResult generateQuadStrixelMapping(
+    aare::InclusiveROI const &roi_user_module, defs::SensorKey key,
+    std::optional<defs::Rotation> user_rot, defs::BondShift bond_shift) {
     // -- 1) initialize configs
-    auto config = makeSensorConfig(key, user_rot, std::nullopt, bond_shift);
+    auto config = model::makeSensorConfig(key, user_rot, std::nullopt, bond_shift);
 
-    if (!(key.layout == SensorLayout::Quad)) {
+    if (!(key.layout == defs::SensorLayout::Quad)) {
         throw std::runtime_error("Invalid sensor type!");
     }
 
     // -- 2) transform user module coordinates to local coordinates
     aare::InclusiveROI roi_user_local =
-        aare::remap::geom::alignROIs(roi_user_module, config.roi_module);
+        geom::alignROIs(roi_user_module, config.roi_module);
     std::cout << "Transformed user ROI: " << roi_user_local << std::endl;
 
     // -- 3) get definition of half quad ROI
@@ -386,14 +382,14 @@ generateQuadStrixelMapping(aare::InclusiveROI const &roi_user_module,
     // -- 4) remap bottom half (normal mod order)
     auto bottom = generateUnitMap(roi_user_local, halfquad,
                                   config.strixel_geometry.multiplicator,
-                                  Rotation::Normal, /*shifty=*/0);
+                                  defs::Rotation::Normal, /*shifty=*/0);
 
     // -- 5) top half (mirrored ROI, inverse mod order)
     aare::InclusiveROI top_halfquad = aare::inclusiveroi::geom::mirrorXY(
         halfquad, config.chip_geometry.cols, config.chip_geometry.rows);
     auto top = generateUnitMap(roi_user_local, top_halfquad,
                                config.strixel_geometry.multiplicator,
-                               Rotation::Inverse, /*shifty=*/0);
+                               defs::Rotation::Inverse, /*shifty=*/0);
 
     // -- 6) compose into quad
     constexpr int gap_rows = 12; // I don't like that this is hardcoded here
@@ -412,36 +408,38 @@ generateQuadStrixelMapping(aare::InclusiveROI const &roi_user_module,
  * ****************************
  ******************************/
 namespace aare::remap::resolve {
-using namespace aare::remap::config;
 
-StrixelGeometry const &strixelGeometry(SensorKey key) {
+defs::StrixelGeometry const &strixelGeometry(defs::SensorKey key) {
+
+    using SL = aare::remap::defs::SensorLayout;
+    using ST = aare::remap::defs::SensorTech;
 
     switch (key.tech) {
 
     // ================= iLGAD =================
-    case SensorTech::iLGAD:
+    case ST::iLGAD:
         switch (key.layout) {
-        case SensorLayout::SingleMP25:
-            return SingleChipMP_iLGAD::P25;
-        case SensorLayout::SingleMP15:
-            return SingleChipMP_iLGAD::P15;
-        case SensorLayout::SingleMP18:
-            return SingleChipMP_iLGAD::P18;
-        case SensorLayout::Quad:
-            return Quad_iLGAD::Half;
+        case SL::SingleMP25:
+            return defs::SingleChipMP_iLGAD::P25;
+        case SL::SingleMP15:
+            return defs::SingleChipMP_iLGAD::P15;
+        case SL::SingleMP18:
+            return defs::SingleChipMP_iLGAD::P18;
+        case SL::Quad:
+            return defs::Quad_iLGAD::Half;
         default:
             throw std::runtime_error("Unsupported SensorLayout for iLGAD");
         }
 
     // ================= TEW ===================
-    case SensorTech::TEW:
+    case ST::TEW:
         switch (key.layout) {
-        case SensorLayout::SingleMP25:
-            return SingleChipMP_TEW::P25;
-        case SensorLayout::SingleMP15:
-            return SingleChipMP_TEW::P15;
-        case SensorLayout::SingleMP18:
-            return SingleChipMP_TEW::P18;
+        case SL::SingleMP25:
+            return defs::SingleChipMP_TEW::P25;
+        case SL::SingleMP15:
+            return defs::SingleChipMP_TEW::P15;
+        case SL::SingleMP18:
+            return defs::SingleChipMP_TEW::P18;
         default:
             throw std::runtime_error("Unsupported SensorLayout for TEW");
         }
@@ -451,10 +449,10 @@ StrixelGeometry const &strixelGeometry(SensorKey key) {
     }
 }
 
-ChipGeometry chipGeometry(SensorKey key) {
+defs::ChipGeometry chipGeometry(defs::SensorKey key) {
 
-    using SL = SensorLayout;
-    using ST = SensorTech;
+    using SL = aare::remap::defs::SensorLayout;
+    using ST = aare::remap::defs::SensorTech;
 
     switch (key.layout) {
     case SL::SingleMP25:
@@ -462,16 +460,16 @@ ChipGeometry chipGeometry(SensorKey key) {
     case SL::SingleMP18:
         switch (key.tech) {
         case ST::iLGAD:
-            return SingleChipMP_iLGAD::chip;
+            return defs::SingleChipMP_iLGAD::chip;
         case ST::TEW:
-            return SingleChipMP_TEW::chip;
+            return defs::SingleChipMP_TEW::chip;
         default:
             throw std::logic_error("Unsupported SensorTech");
         }
     case SL::Quad:
         switch (key.tech) {
         case ST::iLGAD:
-            return Quad_iLGAD::chip;
+            return defs::Quad_iLGAD::chip;
         default:
             throw std::logic_error(
                 "Unsupported SensorTech for SensorLayout Quad");
@@ -482,10 +480,10 @@ ChipGeometry chipGeometry(SensorKey key) {
     }
 }
 
-aare::InclusiveROI moduleROI(SensorKey key, std::optional<int> chip_id) {
+aare::InclusiveROI moduleROI(defs::SensorKey key, std::optional<int> chip_id) {
 
-    using SL = SensorLayout;
-    using ST = SensorTech;
+    using SL = aare::remap::defs::SensorLayout;
+    using ST = aare::remap::defs::SensorTech;
 
     auto requireChip = [&](bool needed) {
         if (needed && !chip_id)
@@ -508,11 +506,11 @@ aare::InclusiveROI moduleROI(SensorKey key, std::optional<int> chip_id) {
 
         switch (key.tech) {
         case ST::iLGAD:
-            return (cid == 1) ? SingleChipMP_iLGAD::chip1
-                              : SingleChipMP_iLGAD::chip6;
+            return (cid == 1) ? defs::SingleChipMP_iLGAD::chip1
+                              : defs::SingleChipMP_iLGAD::chip6;
         case ST::TEW:
-            return (cid == 1) ? SingleChipMP_TEW::chip1
-                              : SingleChipMP_TEW::chip6;
+            return (cid == 1) ? defs::SingleChipMP_TEW::chip1
+                              : defs::SingleChipMP_TEW::chip6;
         default:
             throw std::logic_error("Unsupported SensorTech");
         }
@@ -524,7 +522,7 @@ aare::InclusiveROI moduleROI(SensorKey key, std::optional<int> chip_id) {
 
         switch (key.tech) {
         case ST::iLGAD:
-            return Quad_iLGAD::coords;
+            return defs::Quad_iLGAD::coords;
         default:
             throw std::logic_error("Quad layout not supported for this tech");
         }

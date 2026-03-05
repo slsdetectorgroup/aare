@@ -9,49 +9,17 @@
 
 namespace aare::remap::model {
 
-enum class SensorTech : int { iLGAD, TEW };
-
-// This is dummy for now because it is not yet decided how best to depict the
-// differences in batches R&D, production and year in a scalable way with
-// unified naming conventions
-enum class SensorRevision : int { RevA, RevB, RevC };
-
-enum class SensorLayout : int {
-    Halfmodule, // not implemented yet!
-    Quad,
-    DoubleChip, // not implemented yet (new batch)!
-    SingleMP37, // not implemented yet (TEW 2024)
-    SingleMP25,
-    SingleMP18,
-    SingleMP15
-};
-
-// Orientation of the sensor with respect to the ASICs / the HDI
-// Normal means lower part of sensor (as in GDS) aligns with lower part of HDI
-enum class Rotation : int { Normal = 0, Inverse = 1 };
-
-struct SensorKey {
-    SensorTech tech;
-    SensorRevision rev = SensorRevision::RevA;
-    SensorLayout layout;
-};
-
-struct BondShift {
-    int x = 0;
-    int y = 0;
-};
-
 struct StrixelSensorConfig {
     // --- Sensor identity (determines multiplicator, layout, groups)
-    SensorKey key;
+    defs::SensorKey key;
     // std::string label;
 
     // --- Pixel geometry
-    config::ChipGeometry chip_geometry;
-    BondShift bond_shift;
+    defs::ChipGeometry chip_geometry;
+    defs::BondShift bond_shift;
 
     // --- Strixel geometry
-    config::StrixelGeometry strixel_geometry;
+    defs::StrixelGeometry strixel_geometry;
 
     // --- Geometry of this strixel group *in local pixel coordinates*
     //     e.g. G1 = [10..246, 9..63]
@@ -59,27 +27,27 @@ struct StrixelSensorConfig {
 
     // --- Sensor placement in *module-global* coordinates
     //     Example: chip 1 = [256..511, 0..255], chip 6 = [512..757, 256..511]
-    //     This should be externally supplied and Rotation and chip_id should be computed
-    //     automatically from this!
-    //     i.e., possibly this should not be part of StrixelSensorConfig!
+    //     This should be externally supplied and Rotation and chip_id should be
+    //     computed automatically from this! i.e., possibly this should not be
+    //     part of StrixelSensorConfig!
     InclusiveROI roi_module;
 
     // --- Orientation
     // --- Rotation of the chip (Normal / Inverse)
     //     Used to mirror group ROIs and determine mod ordering.
-    Rotation rotation;
+    defs::Rotation rotation;
     std::optional<int> chip_id; // only relevant for multiple sensors on module
 
   private:
     friend StrixelSensorConfig
-    makeSensorConfig(SensorKey, std::optional<Rotation> user_rot,
-                     std::optional<int> chip_id, BondShift);
+    makeSensorConfig(defs::SensorKey, std::optional<defs::Rotation> user_rot,
+                     std::optional<int> chip_id, defs::BondShift);
 
     // dumb, private constructor! (To decouple responsibilities)
-    StrixelSensorConfig(SensorKey key_, config::ChipGeometry chip_geometry_,
-                        BondShift bond_shift_,
-                        config::StrixelGeometry strixel_geometry_,
-                        InclusiveROI roi_module_, Rotation rotation_,
+    StrixelSensorConfig(defs::SensorKey key_, defs::ChipGeometry chip_geometry_,
+                        defs::BondShift bond_shift_,
+                        defs::StrixelGeometry strixel_geometry_,
+                        InclusiveROI roi_module_, defs::Rotation rotation_,
                         std::optional<int> chip_id_)
         : key(key_), chip_geometry(chip_geometry_), bond_shift(bond_shift_),
           strixel_geometry(strixel_geometry_), roi_module(roi_module_),
@@ -110,21 +78,19 @@ aare::InclusiveROI alignROIs(InclusiveROI const &roi_user,
 /**
  * Auto-rotate based on chip_id
  */
-aare::remap::model::Rotation autoRotate(int chip_id);
+defs::Rotation autoRotate(int chip_id);
 
 } // namespace aare::remap::geom
 
 namespace aare::remap::resolve {
-using namespace aare::remap::model;
 
-aare::remap::config::StrixelGeometry const &strixelGeometry(SensorKey);
-aare::remap::config::ChipGeometry chipGeometry(SensorKey);
-aare::InclusiveROI moduleROI(SensorKey, std::optional<int> chip_id);
+defs::StrixelGeometry const &strixelGeometry(defs::SensorKey);
+defs::ChipGeometry chipGeometry(defs::SensorKey);
+aare::InclusiveROI moduleROI(defs::SensorKey, std::optional<int> chip_id);
 
 } // namespace aare::remap::resolve
 
 namespace aare::remap::algo {
-using namespace aare::remap::model;
 
 /**
  *  Core remapping function for a single contiguous unit
@@ -139,16 +105,18 @@ using namespace aare::remap::model;
  * Inverse.
  * \param shifty optional shift in y (in strixel map space!)
  */
-MappingResult generateUnitMap(aare::InclusiveROI const &roi_user,
-                              aare::InclusiveROI const &roi_group,
-                              int multiplicator, Rotation rot, int shifty = 0);
+model::MappingResult generateUnitMap(aare::InclusiveROI const &roi_user,
+                                     aare::InclusiveROI const &roi_group,
+                                     int multiplicator, defs::Rotation rot,
+                                     int shifty = 0);
 
 /**
  * Utility to join to separately mapped core units of a Strixel Quad (bottom and
  * top half with gap-pixels in-between)
  */
-MappingResult joinQuadMaps(MappingResult const &bottom,
-                           MappingResult const &top, int gap_rows);
+model::MappingResult joinQuadMaps(model::MappingResult const &bottom,
+                                  model::MappingResult const &top,
+                                  int gap_rows);
 
 /**
  *  Public API:
@@ -166,10 +134,9 @@ MappingResult joinQuadMaps(MappingResult const &bottom,
  * shifted in y, auto-rotates depending on chip_id or user supplied rotation,
  * x-shift is possible for completeness
  */
-MappingResult
-generateMPStrixelMapping(aare::InclusiveROI const &roi_user_module,
-                         SensorKey key, int chip_id,
-                         std::optional<Rotation> user_rot, BondShift);
+model::MappingResult generateMPStrixelMapping(
+    aare::InclusiveROI const &roi_user_module, defs::SensorKey key, int chip_id,
+    std::optional<defs::Rotation> user_rot, defs::BondShift);
 
 /**
  *  Public API:
@@ -182,10 +149,9 @@ generateMPStrixelMapping(aare::InclusiveROI const &roi_user_module,
  * \param bond_shift Included for completeness, should always be 0 for Quad
  * (give default constructed)
  */
-MappingResult
-generateQuadStrixelMapping(aare::InclusiveROI const &roi_user_module,
-                           SensorKey key, std::optional<Rotation> user_rot,
-                           BondShift);
+model::MappingResult generateQuadStrixelMapping(
+    aare::InclusiveROI const &roi_user_module, defs::SensorKey key,
+    std::optional<defs::Rotation> user_rot, defs::BondShift);
 
 /**
  *  Public API:
@@ -217,17 +183,17 @@ void ApplyRemap(aare::NDView<T, 2> const &input,
 } // namespace aare::remap::algo
 
 namespace aare::remap::format {
-using namespace aare::remap::model;
 
 /**
  * Helpers for printing
  */
-static inline std::string toString(SensorKey);
-static inline std::string toString(SensorLayout);
-static inline std::string toString(SensorTech);
-static inline std::string toString(SensorRevision);
-static inline std::string toString(Rotation);
-static inline std::string toString(StrixelSensorConfig const &c);
-inline std::ostream &operator<<(std::ostream &os, StrixelSensorConfig const &c);
+static inline std::string toString(defs::SensorKey);
+static inline std::string toString(defs::SensorLayout);
+static inline std::string toString(defs::SensorTech);
+static inline std::string toString(defs::SensorRevision);
+static inline std::string toString(defs::Rotation);
+static inline std::string toString(model::StrixelSensorConfig const &c);
+inline std::ostream &operator<<(std::ostream &os,
+                                model::StrixelSensorConfig const &c);
 
 } // namespace aare::remap::format
