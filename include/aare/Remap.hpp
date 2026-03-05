@@ -47,24 +47,21 @@ struct StrixelSensorConfig {
     // std::string label;
 
     // --- Pixel geometry
-    int cols;
-    int rows;
-    int guardring; // 9, 0
+    config::ChipGeometry chip_geometry;
     BondShift bond_shift;
 
     // --- Strixel geometry
-    int multiplicator; // 2, 3, 5, or 4
-    int shift_x;       // number of “extra” square pixels (0, 1, 3, 2)
-    double pitch_um;   // physical pitch (37.5 / 25 / 15 / 18.75)
-    int cols_remap;
-    int rows_remap;
+    config::StrixelGeometry strixel_geometry;
 
     // --- Geometry of this strixel group *in local pixel coordinates*
     //     e.g. G1 = [10..246, 9..63]
-    InclusiveROI roi_group;
+    // InclusiveROI roi_group; // now contained in StrixelGeometry
 
     // --- Sensor placement in *module-global* coordinates
     //     Example: chip 1 = [256..511, 0..255], chip 6 = [512..757, 256..511]
+    //     This should be externally supplied and Rotation and chip_id should be computed
+    //     automatically from this!
+    //     i.e., possibly this should not be part of StrixelSensorConfig!
     InclusiveROI roi_module;
 
     // --- Orientation
@@ -79,16 +76,14 @@ struct StrixelSensorConfig {
                      std::optional<int> chip_id, BondShift);
 
     // dumb, private constructor! (To decouple responsibilities)
-    StrixelSensorConfig(SensorKey key_, int cols_, int rows_, int guardring_,
-                        BondShift bond_shift_, int multiplicator_, int shift_x_,
-                        double pitch_um_, int cols_remap_, int rows_remap_,
-                        InclusiveROI roi_group_, InclusiveROI roi_module_,
-                        Rotation rotation_, std::optional<int> chip_id_)
-        : key(key_), cols(cols_), rows(rows_), guardring(guardring_),
-          bond_shift(bond_shift_), multiplicator(multiplicator_),
-          shift_x(shift_x_), pitch_um(pitch_um_), cols_remap(cols_remap_),
-          rows_remap(rows_remap_), roi_group(roi_group_),
-          roi_module(roi_module_), rotation(rotation_), chip_id(chip_id_) {}
+    StrixelSensorConfig(SensorKey key_, config::ChipGeometry chip_geometry_,
+                        BondShift bond_shift_,
+                        config::StrixelGeometry strixel_geometry_,
+                        InclusiveROI roi_module_, Rotation rotation_,
+                        std::optional<int> chip_id_)
+        : key(key_), chip_geometry(chip_geometry_), bond_shift(bond_shift_),
+          strixel_geometry(strixel_geometry_), roi_module(roi_module_),
+          rotation(rotation_), chip_id(chip_id_) {}
 };
 
 struct MappingResult {
