@@ -117,7 +117,7 @@ aare::remap::model::Rotation autoRotate(int chip_id);
 namespace aare::remap::resolve {
 using namespace aare::remap::model;
 
-aare::remap::config::GroupDescriptor const &groupDescriptor(SensorKey);
+aare::remap::config::StrixelGeometry const &strixelGeometry(SensorKey);
 aare::remap::config::ChipGeometry chipGeometry(SensorKey);
 aare::InclusiveROI moduleROI(SensorKey, std::optional<int> chip_id);
 

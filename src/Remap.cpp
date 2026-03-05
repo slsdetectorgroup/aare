@@ -18,8 +18,8 @@ StrixelSensorConfig makeSensorConfig(SensorKey key,
                                      std::optional<int> chip_id,
                                      BondShift bond_shift) {
 
-    auto const &G = resolve::groupDescriptor(key);
-    auto const geometry = resolve::chipGeometry(key);
+    auto const &sensor = resolve::strixelGeometry(key);
+    auto const chip = resolve::chipGeometry(key);
     aare::InclusiveROI roi_module = resolve::moduleROI(key, chip_id);
 
     Rotation rot = Rotation::Normal;
@@ -29,19 +29,19 @@ StrixelSensorConfig makeSensorConfig(SensorKey key,
         rot = geom::autoRotate(chip_id.value());
     }
 
-    StrixelSensorConfig cfg(key, geometry.cols, geometry.rows,
-                            geometry.guardring, bond_shift, G.multiplicator,
-                            G.x_shift, G.pitch_um, G.ncols_remap, G.nrows_remap,
-                            G.strixel_roi, roi_module, rot, chip_id);
+    StrixelSensorConfig cfg(key, chip, bond_shift, sensor, roi_module, rot,
+                            chip_id);
 
     // Apply physical transforms
     if (cfg.bond_shift.x != 0 || cfg.bond_shift.y != 0)
-        cfg.roi_group = aare::inclusiveroi::geom::translate(
-            cfg.roi_group, cfg.bond_shift.x, cfg.bond_shift.y);
+        cfg.strixel_geometry.strixel_roi = aare::inclusiveroi::geom::translate(
+            cfg.strixel_geometry.strixel_roi, cfg.bond_shift.x,
+            cfg.bond_shift.y);
 
     if (cfg.rotation == Rotation::Inverse)
-        cfg.roi_group = aare::inclusiveroi::geom::mirrorXY(cfg.roi_group,
-                                                           cfg.cols, cfg.rows);
+        cfg.strixel_geometry.strixel_roi = aare::inclusiveroi::geom::mirrorXY(
+            cfg.strixel_geometry.strixel_roi, cfg.chip_geometry.cols,
+            cfg.chip_geometry.rows);
 
     return cfg;
 }
@@ -122,19 +122,20 @@ static inline std::string toString(StrixelSensorConfig const &c) {
         os << "  chip_id        : " << *c.chip_id << "\n";
 
     os << "  pixel geometry :\n"
-       << "    cols x rows  : " << c.cols << " x " << c.rows << "\n"
-       << "    guardring    : " << c.guardring << "\n"
+       << "    cols x rows  : " << c.chip_geometry.cols << " x "
+       << c.chip_geometry.rows << "\n"
+       << "    guardring    : " << c.chip_geometry.guardring << "\n"
        << "    bond_shift_x : " << c.bond_shift.x << "\n"
        << "    bond_shift_y : " << c.bond_shift.y << "\n";
 
     os << "  strixel geometry :\n"
-       << "    multiplicator : " << c.multiplicator << "\n"
-       << "    shift_x       : " << c.shift_x << "\n"
-       << "    pitch_um      : " << c.pitch_um << "\n"
-       << "    remap cols    : " << c.cols_remap << "\n"
-       << "    remap rows    : " << c.rows_remap << "\n";
+       << "    multiplicator : " << c.strixel_geometry.multiplicator << "\n"
+       << "    shift_x       : " << c.strixel_geometry.x_shift << "\n"
+       << "    pitch_um      : " << c.strixel_geometry.pitch_um << "\n"
+       << "    remap cols    : " << c.strixel_geometry.ncols_remap << "\n"
+       << "    remap rows    : " << c.strixel_geometry.nrows_remap << "\n";
 
-    os << "  roi_group  : " << c.roi_group << "\n"
+    os << "  roi_group  : " << c.strixel_geometry.strixel_roi << "\n"
        << "  roi_module : " << c.roi_module << "\n";
 
     return os.str();
@@ -349,13 +350,18 @@ MappingResult generateMPStrixelMapping(
     std::cout << "Transformed user ROI: " << roi_user_local << std::endl;
 
     // -- 3) remap
-    auto m = generateUnitMap(roi_user_local, config.roi_group,
-                             config.multiplicator, config.rotation);
+    auto m =
+        generateUnitMap(roi_user_local, config.strixel_geometry.strixel_roi,
+                        config.strixel_geometry.multiplicator, config.rotation);
     if (m.cols > 0)
         return m;
 
     // No valid region → return empty
-    return {{}, 0, 0, config.multiplicator, aare::InclusiveROI::emptyROI()};
+    return {{},
+            0,
+            0,
+            config.strixel_geometry.multiplicator,
+            aare::InclusiveROI::emptyROI()};
 }
 
 MappingResult
@@ -375,19 +381,19 @@ generateQuadStrixelMapping(aare::InclusiveROI const &roi_user_module,
     std::cout << "Transformed user ROI: " << roi_user_local << std::endl;
 
     // -- 3) get definition of half quad ROI
-    const aare::InclusiveROI halfquad = config.roi_group;
+    const aare::InclusiveROI halfquad = config.strixel_geometry.strixel_roi;
 
     // -- 4) remap bottom half (normal mod order)
-    auto bottom =
-        generateUnitMap(roi_user_local, halfquad, config.multiplicator,
-                        Rotation::Normal, /*shifty=*/0);
+    auto bottom = generateUnitMap(roi_user_local, halfquad,
+                                  config.strixel_geometry.multiplicator,
+                                  Rotation::Normal, /*shifty=*/0);
 
     // -- 5) top half (mirrored ROI, inverse mod order)
-    aare::InclusiveROI top_halfquad =
-        aare::inclusiveroi::geom::mirrorXY(halfquad, config.cols, config.rows);
-    auto top =
-        generateUnitMap(roi_user_local, top_halfquad, config.multiplicator,
-                        Rotation::Inverse, /*shifty=*/0);
+    aare::InclusiveROI top_halfquad = aare::inclusiveroi::geom::mirrorXY(
+        halfquad, config.chip_geometry.cols, config.chip_geometry.rows);
+    auto top = generateUnitMap(roi_user_local, top_halfquad,
+                               config.strixel_geometry.multiplicator,
+                               Rotation::Inverse, /*shifty=*/0);
 
     // -- 6) compose into quad
     constexpr int gap_rows = 12; // I don't like that this is hardcoded here
@@ -408,7 +414,7 @@ generateQuadStrixelMapping(aare::InclusiveROI const &roi_user_module,
 namespace aare::remap::resolve {
 using namespace aare::remap::config;
 
-GroupDescriptor const &groupDescriptor(SensorKey key) {
+StrixelGeometry const &strixelGeometry(SensorKey key) {
 
     switch (key.tech) {
 
@@ -456,16 +462,16 @@ ChipGeometry chipGeometry(SensorKey key) {
     case SL::SingleMP18:
         switch (key.tech) {
         case ST::iLGAD:
-            return SingleChipMP_iLGAD::geometry;
+            return SingleChipMP_iLGAD::chip;
         case ST::TEW:
-            return SingleChipMP_TEW::geometry;
+            return SingleChipMP_TEW::chip;
         default:
             throw std::logic_error("Unsupported SensorTech");
         }
     case SL::Quad:
         switch (key.tech) {
         case ST::iLGAD:
-            return Quad_iLGAD::geometry;
+            return Quad_iLGAD::chip;
         default:
             throw std::logic_error(
                 "Unsupported SensorTech for SensorLayout Quad");
