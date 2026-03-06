@@ -1,6 +1,7 @@
 #pragma once
 
 #include "aare/InclusiveROI.hpp"
+#include "aare/NDArray.hpp"
 
 #include <vector>
 
@@ -37,8 +38,8 @@ struct SensorStrixelGeometry {
 struct SensorGroupConfig {
     SensorPixelGeometry pixel;
     SensorStrixelGeometry strixel;
-    InclusiveROI placement; // location of the group in the sensor coordinate
-                            // system (or reduced roi)
+    InclusiveROI placement_on_sensor; // location of the group in the sensor
+                                      // coordinate system (or reduced roi)
 };
 
 // Combine multiple strixel areas that make up a single sensor
@@ -51,6 +52,15 @@ struct SensorPlacement {
     InclusiveROI placement_on_module; // locatuon of the sensor in full-module
                                       // coordinate system (or reduced rx_roi)
     Rotation rotation;
+};
+
+// Possibly, this may need to be moved to a dedicated "remapping" class
+struct StrixelGroupToPixelMap {
+    int multiplicity;
+    double pitch_um;
+    InclusiveROI placement_on_sensor; // location of the group in the sensor
+                                      // coordinate system (or reduced roi)
+    NDArray<ssize_t, 2> map;
 };
 
 } // namespace aare::remap::defs
