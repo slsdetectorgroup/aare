@@ -42,8 +42,8 @@ inline InclusiveROI toInclusiveROI(ROI const &r) {
     return {r.xmin, r.xmax - 1, r.ymin, r.ymax - 1};
 };
 
-inline ROI toHalfopenROI(InclusiveROI const& r) {
-  return {r.xmin, r.xmax + 1, r.ymin, r.ymax + 1};
+inline ROI toHalfopenROI(InclusiveROI const &r) {
+    return {r.xmin, r.xmax + 1, r.ymin, r.ymax + 1};
 }
 
 /***********************
@@ -120,6 +120,16 @@ static inline InclusiveROI unite(InclusiveROI const &a, InclusiveROI const &b) {
     }
 
     throw std::runtime_error("ROIs cannot be united contiguously");
+}
+
+static inline InclusiveROI alignROIs(InclusiveROI const &roi_user,
+                                     InclusiveROI const &roi_base) {
+    const int dx = roi_base.xmin;
+    const int dy = roi_base.ymin; // + bond_shift_y;
+
+    return {roi_user.xmin - dx, roi_user.xmax - dx, roi_user.ymin - dy,
+            roi_user.ymax - dy};
+    // return translate(roi_user, roi_base.xmin, roi_base.ymin);
 }
 
 } // namespace aare::inclusiveroi::geom
