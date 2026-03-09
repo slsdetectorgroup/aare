@@ -105,8 +105,7 @@ strixel_to_pixel_map(defs::SensorGroupConfig group_config,
     }
 
     if (min_row_strx > max_row_strx) {
-        // nothing mapped
-        return {multiplicity, pitch, eff, {}};
+        return {multiplicity, pitch, eff, {}}; // nothing mapped
     }
 
     const int nrows_strx = max_row_strx - min_row_strx + 1;

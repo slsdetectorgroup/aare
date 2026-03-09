@@ -16,7 +16,7 @@ auto jungfrau_ilgad_singlechip_25um_strixel_map =
                 config::jungfrau::Chip6, rx_roi, bs);
         else {
             // or allow user-defined sensor placement
-            // (that would mean std::optional<int> chip_id and
+            // (that would mean something like std::optional<int> chip_id and
             // std::optional<InclusiveROI> sensor_placement)
             throw std::runtime_error("Invalid sensor placement.");
         }
@@ -34,7 +34,7 @@ auto jungfrau_ilgad_singlechip_15um_strixel_map =
                 config::jungfrau::Chip6, rx_roi, bs);
         else {
             // or allow user-defined sensor placement
-            // (that would mean std::optional<int> chip_id and
+            // (that would mean something like std::optional<int> chip_id and
             // std::optional<InclusiveROI> sensor_placement)
             throw std::runtime_error("Invalid sensor placement.");
         }
@@ -52,7 +52,7 @@ auto jungfrau_ilgad_singlechip_18um_strixel_map =
                 config::jungfrau::Chip6, rx_roi, bs);
         else {
             // or allow user-defined sensor placement
-            // (that would mean std::optional<int> chip_id and
+            // (that would mean something like std::optional<int> chip_id and
             // std::optional<InclusiveROI> sensor_placement)
             throw std::runtime_error("Invalid sensor placement.");
         }
@@ -67,7 +67,7 @@ auto jungfrau_ilgad_singlechip_multipitch_strixel_maps =
             placement = config::jungfrau::Chip6;
         else {
             // or allow user-defined sensor placement
-            // (that would mean std::optional<int> chip_id and
+            // (that would mean something like std::optional<int> chip_id and
             // std::optional<InclusiveROI> sensor_placement)
             throw std::runtime_error("Invalid sensor placement.");
         }
