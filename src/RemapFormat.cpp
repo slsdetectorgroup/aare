@@ -11,7 +11,7 @@ static inline std::string toString(defs::SensorPixelGeometry const &g) {
     std::ostringstream os;
 
     os << "SensorPixelGeometry\n"
-       << " cols x rows: " << g.cols << " x " << g.rows << "\n"
+       << " cols x rows: " << g.num_pix_x << " x " << g.num_pix_y << "\n"
        << " guardring  :\n"
        << "   x = " << g.guardring.x << "\n"
        << "   y = " << g.guardring.y << "\n";

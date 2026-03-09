@@ -23,8 +23,8 @@ struct BondShift {
 
 // Define the native pixel grid of the sensor (as connected to ASIC)
 struct SensorPixelGeometry {
-    int cols;
-    int rows;
+    int num_pix_x;
+    int num_pix_y;
     Guardring guardring;
 };
 
