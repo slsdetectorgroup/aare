@@ -40,10 +40,10 @@ def test_matterhorn10_4bit(test_data_path):
         assert frames.dtype == np.uint8
 
         expected_data = np.tile(np.tile(np.arange(15, -1, -1, dtype=np.uint8), 16), (256, 1)) # TODO: endianess issue ? 
-        
+
         assert np.all(frames == expected_data)
 
-
+@pytest.mark.withdata
 def test_matterhorn10_16bit_4counters(test_data_path): 
     """Matterhorn10Transform 4 counters 16 bit dynamic range"""
 
