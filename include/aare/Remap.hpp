@@ -11,15 +11,15 @@ namespace aare::remap::model {
 
 struct StrixelSensorConfig {
     // --- Sensor identity (determines multiplicator, layout, groups)
-    defs::SensorKey key;
+    legacy::SensorKey key;
     // std::string label;
 
     // --- Pixel geometry
-    defs::ChipGeometry chip_geometry;
+    legacy::ChipGeometry chip_geometry;
     defs::BondShift bond_shift;
 
     // --- Strixel geometry
-    defs::StrixelGeometry strixel_geometry;
+    legacy::StrixelGeometry strixel_geometry;
 
     // --- Geometry of this strixel group *in local pixel coordinates*
     //     e.g. G1 = [10..246, 9..63]
@@ -40,13 +40,13 @@ struct StrixelSensorConfig {
 
   private:
     friend StrixelSensorConfig
-    makeSensorConfig(defs::SensorKey, std::optional<defs::Rotation> user_rot,
+    makeSensorConfig(legacy::SensorKey, std::optional<defs::Rotation> user_rot,
                      std::optional<int> chip_id, defs::BondShift);
 
     // dumb, private constructor! (To decouple responsibilities)
-    StrixelSensorConfig(defs::SensorKey key_, defs::ChipGeometry chip_geometry_,
+    StrixelSensorConfig(legacy::SensorKey key_, legacy::ChipGeometry chip_geometry_,
                         defs::BondShift bond_shift_,
-                        defs::StrixelGeometry strixel_geometry_,
+                        legacy::StrixelGeometry strixel_geometry_,
                         InclusiveROI roi_module_, defs::Rotation rotation_,
                         std::optional<int> chip_id_)
         : key(key_), chip_geometry(chip_geometry_), bond_shift(bond_shift_),
@@ -84,9 +84,9 @@ defs::Rotation autoRotate(int chip_id);
 
 namespace aare::remap::resolve {
 
-defs::StrixelGeometry const &strixelGeometry(defs::SensorKey);
-defs::ChipGeometry chipGeometry(defs::SensorKey);
-aare::InclusiveROI moduleROI(defs::SensorKey, std::optional<int> chip_id);
+legacy::StrixelGeometry const &strixelGeometry(legacy::SensorKey);
+legacy::ChipGeometry chipGeometry(legacy::SensorKey);
+aare::InclusiveROI moduleROI(legacy::SensorKey, std::optional<int> chip_id);
 
 } // namespace aare::remap::resolve
 
@@ -135,7 +135,7 @@ model::MappingResult joinQuadMaps(model::MappingResult const &bottom,
  * x-shift is possible for completeness
  */
 model::MappingResult generateMPStrixelMapping(
-    aare::InclusiveROI const &roi_user_module, defs::SensorKey key, int chip_id,
+    aare::InclusiveROI const &roi_user_module, legacy::SensorKey key, int chip_id,
     std::optional<defs::Rotation> user_rot, defs::BondShift);
 
 /**
@@ -150,7 +150,7 @@ model::MappingResult generateMPStrixelMapping(
  * (give default constructed)
  */
 model::MappingResult generateQuadStrixelMapping(
-    aare::InclusiveROI const &roi_user_module, defs::SensorKey key,
+    aare::InclusiveROI const &roi_user_module, legacy::SensorKey key,
     std::optional<defs::Rotation> user_rot, defs::BondShift);
 
 /**
@@ -187,10 +187,10 @@ namespace aare::remap::format {
 /**
  * Helpers for printing
  */
-static inline std::string toString(defs::SensorKey);
-static inline std::string toString(defs::SensorLayout);
-static inline std::string toString(defs::SensorTech);
-static inline std::string toString(defs::SensorRevision);
+static inline std::string toString(legacy::SensorKey);
+static inline std::string toString(legacy::SensorLayout);
+static inline std::string toString(legacy::SensorTech);
+static inline std::string toString(legacy::SensorRevision);
 static inline std::string toString(defs::Rotation);
 static inline std::string toString(model::StrixelSensorConfig const &c);
 inline std::ostream &operator<<(std::ostream &os,

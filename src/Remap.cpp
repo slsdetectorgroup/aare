@@ -13,7 +13,7 @@
 namespace aare::remap::model {
 
 // Factory function (public API)
-StrixelSensorConfig makeSensorConfig(defs::SensorKey key,
+StrixelSensorConfig makeSensorConfig(legacy::SensorKey key,
                                      std::optional<defs::Rotation> user_rot,
                                      std::optional<int> chip_id,
                                      defs::BondShift bond_shift) {
@@ -57,52 +57,52 @@ StrixelSensorConfig makeSensorConfig(defs::SensorKey key,
  ******************************/
 namespace aare::remap::format {
 
-static inline std::string toString(defs::SensorTech tech) {
+static inline std::string toString(legacy::SensorTech tech) {
     switch (tech) {
-    case defs::SensorTech::iLGAD:
+    case legacy::SensorTech::iLGAD:
         return "Technology: iLGAD";
-    case defs::SensorTech::TEW:
+    case legacy::SensorTech::TEW:
         return "Technology: TEW";
     default:
         return "SensorTech::Unknown";
     }
 }
 
-static inline std::string toString(defs::SensorRevision rev) {
+static inline std::string toString(legacy::SensorRevision rev) {
     switch (rev) {
-    case defs::SensorRevision::RevA:
+    case legacy::SensorRevision::RevA:
         return "Revision: RevA";
-    case defs::SensorRevision::RevB:
+    case legacy::SensorRevision::RevB:
         return "Revision: RevB";
-    case defs::SensorRevision::RevC:
+    case legacy::SensorRevision::RevC:
         return "Revision: RevC";
     default:
         return "SensorRevision::Unknown";
     }
 }
 
-static inline std::string toString(defs::SensorLayout l) {
+static inline std::string toString(legacy::SensorLayout l) {
     switch (l) {
-    case defs::SensorLayout::SingleMP25:
+    case legacy::SensorLayout::SingleMP25:
         return "Layout: SingleMP25 (G1, 25 um pitch)";
-    case defs::SensorLayout::SingleMP15:
+    case legacy::SensorLayout::SingleMP15:
         return "Layout: SingleMP15 (G2, 15 um pitch)";
-    case defs::SensorLayout::SingleMP18:
+    case legacy::SensorLayout::SingleMP18:
         return "Layout: SingleMP18 (G3, 18.75 um pitch)";
-    case defs::SensorLayout::SingleMP37:
+    case legacy::SensorLayout::SingleMP37:
         return "Layout: SingleMP37 (G4, 37.5 um pitch)";
-    case defs::SensorLayout::Quad:
+    case legacy::SensorLayout::Quad:
         return "Layout: Quad (25 um pitch)";
-    case defs::SensorLayout::Halfmodule:
+    case legacy::SensorLayout::Halfmodule:
         return "Layout: Halfmodule";
-    case defs::SensorLayout::DoubleChip:
+    case legacy::SensorLayout::DoubleChip:
         return "Layout: DoubleChip";
     default:
         return "SensorLayout::Unknown";
     }
 }
 
-static inline std::string toString(defs::SensorKey key) {
+static inline std::string toString(legacy::SensorKey key) {
     return toString(key.tech) + " | " + toString(key.layout) + " | " +
            toString(key.rev);
 }
@@ -326,16 +326,16 @@ model::MappingResult joinQuadMaps(model::MappingResult const &bottom,
 }
 
 model::MappingResult generateMPStrixelMapping(
-    aare::InclusiveROI const &roi_user_module, defs::SensorKey key, int chip_id,
+    aare::InclusiveROI const &roi_user_module, legacy::SensorKey key, int chip_id,
     std::optional<defs::Rotation> user_rot, defs::BondShift bond_shift) {
     // -- 1) initialize config
     auto config = model::makeSensorConfig(key, user_rot, chip_id, bond_shift);
     // static_assert(std::is_same_v<decltype(config.pitch_um), double>);
     std::cout << "Initialized config: " << format::toString(config) << std::endl;
 
-    if (!(key.layout == defs::SensorLayout::SingleMP25 ||
-          key.layout == defs::SensorLayout::SingleMP15 ||
-          key.layout == defs::SensorLayout::SingleMP18)) {
+    if (!(key.layout == legacy::SensorLayout::SingleMP25 ||
+          key.layout == legacy::SensorLayout::SingleMP15 ||
+          key.layout == legacy::SensorLayout::SingleMP18)) {
         throw std::runtime_error("Invalid sensor type!");
     } /* else {
       std::cout << "Sensor type " << config.label << std::endl;
@@ -362,12 +362,12 @@ model::MappingResult generateMPStrixelMapping(
 }
 
 model::MappingResult generateQuadStrixelMapping(
-    aare::InclusiveROI const &roi_user_module, defs::SensorKey key,
+    aare::InclusiveROI const &roi_user_module, legacy::SensorKey key,
     std::optional<defs::Rotation> user_rot, defs::BondShift bond_shift) {
     // -- 1) initialize configs
     auto config = model::makeSensorConfig(key, user_rot, std::nullopt, bond_shift);
 
-    if (!(key.layout == defs::SensorLayout::Quad)) {
+    if (!(key.layout == legacy::SensorLayout::Quad)) {
         throw std::runtime_error("Invalid sensor type!");
     }
 
@@ -409,10 +409,10 @@ model::MappingResult generateQuadStrixelMapping(
  ******************************/
 namespace aare::remap::resolve {
 
-defs::StrixelGeometry const &strixelGeometry(defs::SensorKey key) {
+legacy::StrixelGeometry const &strixelGeometry(legacy::SensorKey key) {
 
-    using SL = aare::remap::defs::SensorLayout;
-    using ST = aare::remap::defs::SensorTech;
+    using SL = aare::remap::legacy::SensorLayout;
+    using ST = aare::remap::legacy::SensorTech;
 
     switch (key.tech) {
 
@@ -420,13 +420,13 @@ defs::StrixelGeometry const &strixelGeometry(defs::SensorKey key) {
     case ST::iLGAD:
         switch (key.layout) {
         case SL::SingleMP25:
-            return defs::SingleChipMP_iLGAD::P25;
+            return legacy::SingleChipMP_iLGAD::P25;
         case SL::SingleMP15:
-            return defs::SingleChipMP_iLGAD::P15;
+            return legacy::SingleChipMP_iLGAD::P15;
         case SL::SingleMP18:
-            return defs::SingleChipMP_iLGAD::P18;
+            return legacy::SingleChipMP_iLGAD::P18;
         case SL::Quad:
-            return defs::Quad_iLGAD::Half;
+            return legacy::Quad_iLGAD::Half;
         default:
             throw std::runtime_error("Unsupported SensorLayout for iLGAD");
         }
@@ -435,11 +435,11 @@ defs::StrixelGeometry const &strixelGeometry(defs::SensorKey key) {
     case ST::TEW:
         switch (key.layout) {
         case SL::SingleMP25:
-            return defs::SingleChipMP_TEW::P25;
+            return legacy::SingleChipMP_TEW::P25;
         case SL::SingleMP15:
-            return defs::SingleChipMP_TEW::P15;
+            return legacy::SingleChipMP_TEW::P15;
         case SL::SingleMP18:
-            return defs::SingleChipMP_TEW::P18;
+            return legacy::SingleChipMP_TEW::P18;
         default:
             throw std::runtime_error("Unsupported SensorLayout for TEW");
         }
@@ -449,10 +449,10 @@ defs::StrixelGeometry const &strixelGeometry(defs::SensorKey key) {
     }
 }
 
-defs::ChipGeometry chipGeometry(defs::SensorKey key) {
+legacy::ChipGeometry chipGeometry(legacy::SensorKey key) {
 
-    using SL = aare::remap::defs::SensorLayout;
-    using ST = aare::remap::defs::SensorTech;
+    using SL = aare::remap::legacy::SensorLayout;
+    using ST = aare::remap::legacy::SensorTech;
 
     switch (key.layout) {
     case SL::SingleMP25:
@@ -460,16 +460,16 @@ defs::ChipGeometry chipGeometry(defs::SensorKey key) {
     case SL::SingleMP18:
         switch (key.tech) {
         case ST::iLGAD:
-            return defs::SingleChipMP_iLGAD::chip;
+            return legacy::SingleChipMP_iLGAD::chip;
         case ST::TEW:
-            return defs::SingleChipMP_TEW::chip;
+            return legacy::SingleChipMP_TEW::chip;
         default:
             throw std::logic_error("Unsupported SensorTech");
         }
     case SL::Quad:
         switch (key.tech) {
         case ST::iLGAD:
-            return defs::Quad_iLGAD::chip;
+            return legacy::Quad_iLGAD::chip;
         default:
             throw std::logic_error(
                 "Unsupported SensorTech for SensorLayout Quad");
@@ -480,10 +480,10 @@ defs::ChipGeometry chipGeometry(defs::SensorKey key) {
     }
 }
 
-aare::InclusiveROI moduleROI(defs::SensorKey key, std::optional<int> chip_id) {
+aare::InclusiveROI moduleROI(legacy::SensorKey key, std::optional<int> chip_id) {
 
-    using SL = aare::remap::defs::SensorLayout;
-    using ST = aare::remap::defs::SensorTech;
+    using SL = aare::remap::legacy::SensorLayout;
+    using ST = aare::remap::legacy::SensorTech;
 
     auto requireChip = [&](bool needed) {
         if (needed && !chip_id)
@@ -506,11 +506,11 @@ aare::InclusiveROI moduleROI(defs::SensorKey key, std::optional<int> chip_id) {
 
         switch (key.tech) {
         case ST::iLGAD:
-            return (cid == 1) ? defs::SingleChipMP_iLGAD::chip1
-                              : defs::SingleChipMP_iLGAD::chip6;
+            return (cid == 1) ? legacy::SingleChipMP_iLGAD::chip1
+                              : legacy::SingleChipMP_iLGAD::chip6;
         case ST::TEW:
-            return (cid == 1) ? defs::SingleChipMP_TEW::chip1
-                              : defs::SingleChipMP_TEW::chip6;
+            return (cid == 1) ? legacy::SingleChipMP_TEW::chip1
+                              : legacy::SingleChipMP_TEW::chip6;
         default:
             throw std::logic_error("Unsupported SensorTech");
         }
@@ -522,7 +522,7 @@ aare::InclusiveROI moduleROI(defs::SensorKey key, std::optional<int> chip_id) {
 
         switch (key.tech) {
         case ST::iLGAD:
-            return defs::Quad_iLGAD::coords;
+            return legacy::Quad_iLGAD::coords;
         default:
             throw std::logic_error("Quad layout not supported for this tech");
         }
