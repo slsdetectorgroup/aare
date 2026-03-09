@@ -60,6 +60,8 @@ struct StrixelGroupToPixelMap {
     double pitch_um;
     InclusiveROI placement_on_sensor; // location of the group in the sensor
                                       // coordinate system (or reduced roi)
+    // Technically, only the map is needed and the above metadata is only copied
+    // Should we still keep it so that a user can directly access it?
     NDArray<ssize_t, 2> map;
 };
 
