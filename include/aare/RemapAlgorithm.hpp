@@ -6,13 +6,12 @@ namespace aare::remap::algo {
 // Is it better to pass defs::SensorGroupConfig const& and return a copy?
 void apply_rotation_shift(defs::SensorGroupConfig &cfg,
                           defs::BondShift bond_shift, defs::Rotation rot);
-defs::StrixelGroupToPixelMap
-strixel_to_pixel_map(defs::SensorGroupConfig, defs::SensorPlacement,
-                     InclusiveROI user_roi,
-                     defs::BondShift bond_shift = {0, 0});
+defs::StrixelGroupToPixelMap strixel_to_pixel_map(
+    defs::SensorGroupConfig const &, defs::SensorPlacement const &,
+    InclusiveROI const &user_roi, defs::BondShift bond_shift = {0, 0});
 std::vector<defs::StrixelGroupToPixelMap>
-strixel_to_pixel_maps(defs::SensorConfig, defs::SensorPlacement,
-                      InclusiveROI user_roi,
+strixel_to_pixel_maps(defs::SensorConfig const &, defs::SensorPlacement const &,
+                      InclusiveROI const &user_roi,
                       defs::BondShift bond_shift = {0, 0});
 
 /**

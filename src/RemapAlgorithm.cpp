@@ -18,9 +18,9 @@ void apply_rotation_shift(defs::SensorGroupConfig &cfg,
 }
 
 defs::StrixelGroupToPixelMap
-strixel_to_pixel_map(defs::SensorGroupConfig group_config,
-                     defs::SensorPlacement placement, InclusiveROI roi_user,
-                     defs::BondShift bond_shift) {
+strixel_to_pixel_map(defs::SensorGroupConfig const &group_config,
+                     defs::SensorPlacement const &placement,
+                     InclusiveROI const &roi_user, defs::BondShift bond_shift) {
 
     int multiplicity = group_config.strixel.multiplicity;
     double pitch = group_config.strixel.pitch_um;
@@ -48,22 +48,23 @@ strixel_to_pixel_map(defs::SensorGroupConfig group_config,
     std::cout << "Transformed user ROI: " << roi_user_local << std::endl;
 
     // DEBUG
-    std::cout << "DEBUG: Group ROI before transformation "
+    std::cout << "DEBUG: Group ROI before transformation (as in global config)"
               << group_config.placement_on_sensor << '\n';
 
     // -- 2) Apply transforms (if necessary)
     // -- 2a) bond_shift
     // -- 2b) rotation
     // -- IMPORTANT: bond_shift BEFORE rotation!
-    apply_rotation_shift(group_config, bond_shift, placement.rotation);
+    auto group_local = group_config; 
+    apply_rotation_shift(group_local, bond_shift, placement.rotation);
 
     // -- 2c) AFTER applying the transformations, we can grab the correct
     // strixel roi
-    auto roi_group = group_config.placement_on_sensor;
+    auto roi_group = group_local.placement_on_sensor;
 
     // DEBUG
-    std::cout << "DEBUG: Group ROI after transformation "
-              << group_config.placement_on_sensor << '\n';
+    std::cout << "DEBUG: Group ROI after transformation (as in local transformation) "
+              << group_local.placement_on_sensor << '\n';
 
     // -- 3) Compute effective ROI = intersection( roi_user, roi_group )
     InclusiveROI eff = inclusiveroi::geom::intersect(roi_user_local, roi_group);
@@ -149,10 +150,9 @@ strixel_to_pixel_map(defs::SensorGroupConfig group_config,
     return {multiplicity, pitch, eff, map};
 };
 
-std::vector<defs::StrixelGroupToPixelMap>
-strixel_to_pixel_maps(defs::SensorConfig sensor_config,
-                      defs::SensorPlacement placement, InclusiveROI roi_user,
-                      defs::BondShift bond_shift) {
+std::vector<defs::StrixelGroupToPixelMap> strixel_to_pixel_maps(
+    defs::SensorConfig &sensor_config, defs::SensorPlacement const &placement,
+    InclusiveROI const &roi_user, defs::BondShift bond_shift) {
     std::vector<defs::StrixelGroupToPixelMap> maps;
     for (auto &group_config : sensor_config.group_configs) {
         maps.emplace_back(strixel_to_pixel_map(group_config, placement,
