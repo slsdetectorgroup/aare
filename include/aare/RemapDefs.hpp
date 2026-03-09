@@ -50,7 +50,7 @@ struct SensorConfig {
 // Define location and orientation of a sensor on the module
 struct SensorPlacement {
     InclusiveROI placement_on_module; // location of the sensor in full-module
-                                      // coordinate system (or reduced rx_roi)
+                                      // coordinate system
     Rotation rotation;
 };
 
