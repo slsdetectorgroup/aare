@@ -29,69 +29,69 @@ inline constexpr defs::SensorPlacement Quad{
 /************************************
  * Single chip, multi-pitch, iLGAD
  ************************************/
-inline constexpr defs::SensorPixelGeometry SingelChipMP_iLGAD_pix{
+inline constexpr defs::SensorPixelGeometry SingleChipMP_iLGAD_pix{
     .num_pix_x = 256, .num_pix_y = 256, .guardring = {.x = 9, .y = 9}};
 
 inline constexpr defs::SensorGroupConfig SingleChipMP_iLGAD_P25{
-    .pixel = SingelChipMP_iLGAD_pix,
+    .pixel = SingleChipMP_iLGAD_pix,
     .strixel = StrxP25,
-    .placement_on_sensor = {SingelChipMP_iLGAD_pix.guardring.x + 1,
-                            SingelChipMP_iLGAD_pix.num_pix_x -
-                                SingelChipMP_iLGAD_pix.guardring.x - 1,
-                            SingelChipMP_iLGAD_pix.guardring.y,
-                            (SingelChipMP_iLGAD_pix.num_pix_y / 4) - 1}};
+    .placement_on_sensor = {SingleChipMP_iLGAD_pix.guardring.x + 1,
+                            SingleChipMP_iLGAD_pix.num_pix_x -
+                                SingleChipMP_iLGAD_pix.guardring.x - 1,
+                            SingleChipMP_iLGAD_pix.guardring.y,
+                            (SingleChipMP_iLGAD_pix.num_pix_y / 4) - 1}};
 
 inline constexpr defs::SensorGroupConfig SingleChipMP_iLGAD_P15{
-    .pixel = SingelChipMP_iLGAD_pix,
+    .pixel = SingleChipMP_iLGAD_pix,
     .strixel = StrxP15,
-    .placement_on_sensor = {SingelChipMP_iLGAD_pix.guardring.x + 3,
-                            SingelChipMP_iLGAD_pix.num_pix_x -
-                                SingelChipMP_iLGAD_pix.guardring.x - 1,
-                            SingelChipMP_iLGAD_pix.num_pix_y / 4,
-                            (SingelChipMP_iLGAD_pix.num_pix_y / 4) * 2 - 1}};
+    .placement_on_sensor = {SingleChipMP_iLGAD_pix.guardring.x + 3,
+                            SingleChipMP_iLGAD_pix.num_pix_x -
+                                SingleChipMP_iLGAD_pix.guardring.x - 1,
+                            SingleChipMP_iLGAD_pix.num_pix_y / 4,
+                            (SingleChipMP_iLGAD_pix.num_pix_y / 4) * 2 - 1}};
 
 inline constexpr defs::SensorGroupConfig SingleChipMP_iLGAD_P18{
-    .pixel = SingelChipMP_iLGAD_pix,
+    .pixel = SingleChipMP_iLGAD_pix,
     .strixel = StrxP18,
-    .placement_on_sensor = {SingelChipMP_iLGAD_pix.guardring.x + 2,
-                            SingelChipMP_iLGAD_pix.num_pix_x -
-                                SingelChipMP_iLGAD_pix.guardring.x - 1,
-                            (SingelChipMP_iLGAD_pix.num_pix_y / 4) * 2,
-                            SingelChipMP_iLGAD_pix.num_pix_y -
-                                SingelChipMP_iLGAD_pix.guardring.y - 1}};
+    .placement_on_sensor = {SingleChipMP_iLGAD_pix.guardring.x + 2,
+                            SingleChipMP_iLGAD_pix.num_pix_x -
+                                SingleChipMP_iLGAD_pix.guardring.x - 1,
+                            (SingleChipMP_iLGAD_pix.num_pix_y / 4) * 2,
+                            SingleChipMP_iLGAD_pix.num_pix_y -
+                                SingleChipMP_iLGAD_pix.guardring.y - 1}};
 
 /************************************
  * Single chip, multi-pitch, TEW
  ************************************/
-inline constexpr defs::SensorPixelGeometry SingelChipMP_TEW_pix{
+inline constexpr defs::SensorPixelGeometry SingleChipMP_TEW_pix{
     .num_pix_x = 256, .num_pix_y = 256, .guardring = {.x = 0, .y = 0}};
 
 inline constexpr defs::SensorGroupConfig SingleChipMP_TEW_P25{
-    .pixel = SingelChipMP_TEW_pix,
+    .pixel = SingleChipMP_TEW_pix,
     .strixel = StrxP25,
-    .placement_on_sensor = {SingelChipMP_TEW_pix.guardring.x + 1,
-                            SingelChipMP_TEW_pix.num_pix_x -
-                                SingelChipMP_TEW_pix.guardring.x - 1,
-                            SingelChipMP_TEW_pix.guardring.y,
-                            (SingelChipMP_TEW_pix.num_pix_y / 4) - 1}};
+    .placement_on_sensor = {SingleChipMP_TEW_pix.guardring.x + 1,
+                            SingleChipMP_TEW_pix.num_pix_x -
+                                SingleChipMP_TEW_pix.guardring.x - 1,
+                            SingleChipMP_TEW_pix.guardring.y,
+                            (SingleChipMP_TEW_pix.num_pix_y / 4) - 1}};
 
 inline constexpr defs::SensorGroupConfig SingleChipMP_TEW_P15{
-    .pixel = SingelChipMP_TEW_pix,
+    .pixel = SingleChipMP_TEW_pix,
     .strixel = StrxP15,
-    .placement_on_sensor = {SingelChipMP_TEW_pix.guardring.x + 1,
-                            SingelChipMP_TEW_pix.num_pix_x -
-                                SingelChipMP_TEW_pix.guardring.x - 1,
-                            SingelChipMP_TEW_pix.num_pix_y / 4,
-                            (SingelChipMP_TEW_pix.num_pix_y / 4) * 2 - 1}};
+    .placement_on_sensor = {SingleChipMP_TEW_pix.guardring.x + 1,
+                            SingleChipMP_TEW_pix.num_pix_x -
+                                SingleChipMP_TEW_pix.guardring.x - 1,
+                            SingleChipMP_TEW_pix.num_pix_y / 4,
+                            (SingleChipMP_TEW_pix.num_pix_y / 4) * 2 - 1}};
 
 inline constexpr defs::SensorGroupConfig SingleChipMP_TEW_P18{
-    .pixel = SingelChipMP_TEW_pix,
+    .pixel = SingleChipMP_TEW_pix,
     .strixel = StrxP18,
     .placement_on_sensor = {
-        SingelChipMP_TEW_pix.guardring.x,
-        SingelChipMP_TEW_pix.num_pix_x - SingelChipMP_TEW_pix.guardring.x - 1,
-        (SingelChipMP_TEW_pix.num_pix_y / 4) * 2,
-        SingelChipMP_TEW_pix.num_pix_y - SingelChipMP_TEW_pix.guardring.y - 1}};
+        SingleChipMP_TEW_pix.guardring.x,
+        SingleChipMP_TEW_pix.num_pix_x - SingleChipMP_TEW_pix.guardring.x - 1,
+        (SingleChipMP_TEW_pix.num_pix_y / 4) * 2,
+        SingleChipMP_TEW_pix.num_pix_y - SingleChipMP_TEW_pix.guardring.y - 1}};
 
 /************************************
  * Quad, 25 um, iLGAD
