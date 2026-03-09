@@ -4,15 +4,27 @@
 
 namespace aare::remap::algo {
 
+// Is it better to pass defs::SensorGroupConfig const& and return a copy?
+void apply_rotation_shift(defs::SensorGroupConfig &cfg,
+                          defs::BondShift bond_shift, defs::Rotation rot) {
+    // Apply physical transforms
+    if (bond_shift.x != 0 || bond_shift.y != 0)
+        cfg.placement_on_sensor = aare::inclusiveroi::geom::translate(
+            cfg.placement_on_sensor, bond_shift.x, bond_shift.y);
+
+    if (rot == defs::Rotation::Inverse)
+        cfg.placement_on_sensor = aare::inclusiveroi::geom::mirrorXY(
+            cfg.placement_on_sensor, cfg.pixel.num_pix_x, cfg.pixel.num_pix_y);
+}
+
 defs::StrixelGroupToPixelMap
-generate_strixel_to_pixel_map(defs::SensorGroupConfig group_config,
-                              defs::SensorPlacement placement,
-                              InclusiveROI roi_user) {
+strixel_to_pixel_map(defs::SensorGroupConfig group_config,
+                     defs::SensorPlacement placement, InclusiveROI roi_user,
+                     defs::BondShift bond_shift) {
 
     int multiplicity = group_config.strixel.multiplicity;
     double pitch = group_config.strixel.pitch_um;
     defs::Rotation rot = placement.rotation;
-    InclusiveROI roi_group = group_config.placement_on_sensor;
 
     // Helper to make sure that we work with a correct number of strixel columns
     // (i.e. that we do not map pixel columns if the ncols in ASIC pixel
@@ -35,16 +47,34 @@ generate_strixel_to_pixel_map(defs::SensorGroupConfig group_config,
         inclusiveroi::geom::alignROIs(roi_user, placement.placement_on_module);
     std::cout << "Transformed user ROI: " << roi_user_local << std::endl;
 
-    // -- 2) Compute effective ROI = intersection( roi_user, roi_group )
+    // DEBUG
+    std::cout << "DEBUG: Group ROI before transformation "
+              << group_config.placement_on_sensor << '\n';
+
+    // -- 2) Apply transforms (if necessary)
+    // -- 2a) bond_shift
+    // -- 2b) rotation
+    // -- IMPORTANT: bond_shift BEFORE rotation!
+    apply_rotation_shift(group_config, bond_shift, placement.rotation);
+
+    // -- 2c) AFTER applying the transformations, we can grab the correct
+    // strixel roi
+    auto roi_group = group_config.placement_on_sensor;
+
+    // DEBUG
+    std::cout << "DEBUG: Group ROI after transformation "
+              << group_config.placement_on_sensor << '\n';
+
+    // -- 3) Compute effective ROI = intersection( roi_user, roi_group )
     InclusiveROI eff = inclusiveroi::geom::intersect(roi_user_local, roi_group);
     if (eff.xmax < eff.xmin || eff.ymax < eff.ymin) {
         return {-1, 0.0, InclusiveROI::emptyROI(), {}}; // empty
     }
 
     // DEBUG
-    std::cout << "Result of intersecting ROIs " << eff << '\n';
+    std::cout << "DEBUG: Result of intersecting ROIs " << eff << '\n';
 
-    //-- 3) Determine min/max row/col of strixel grid before allocating
+    //-- 4) Determine min/max row/col of strixel grid before allocating
     //      (This may vary from the native grid of the group because of ROI
     //      intersection.)
     int min_row_strx = std::numeric_limits<int>::max();
@@ -85,7 +115,7 @@ generate_strixel_to_pixel_map(defs::SensorGroupConfig group_config,
     // Allocate strixel grid order map
     aare::NDArray<ssize_t, 2> map({nrows_strx, ncols_strx}, -1);
 
-    // -- 4) For each ASIC pixel in eff ROI, compute remapped (row,col) in group
+    // -- 5) For each ASIC pixel in eff ROI, compute remapped (row,col) in group
     //       local coordinates
     for (int y = eff.ymin; y <= eff.ymax; ++y) {
         for (int x = eff.xmin; x <= eff.xmax; ++x) {
@@ -121,13 +151,13 @@ generate_strixel_to_pixel_map(defs::SensorGroupConfig group_config,
 };
 
 std::vector<defs::StrixelGroupToPixelMap>
-generate_strixel_to_pixel_maps(defs::SensorConfig sensor_config,
-                               defs::SensorPlacement placement,
-                               InclusiveROI roi_user) {
+strixel_to_pixel_maps(defs::SensorConfig sensor_config,
+                      defs::SensorPlacement placement, InclusiveROI roi_user,
+                      defs::BondShift bond_shift) {
     std::vector<defs::StrixelGroupToPixelMap> maps;
     for (auto &group_config : sensor_config.group_configs) {
-        maps.emplace_back(
-            generate_strixel_to_pixel_map(group_config, placement, roi_user));
+        maps.emplace_back(strixel_to_pixel_map(group_config, placement,
+                                               roi_user, bond_shift));
     }
     return maps;
 }
