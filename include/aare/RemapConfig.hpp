@@ -6,32 +6,33 @@ namespace aare::remap::config::jungfrau {
 /************************************
  * Default strixel geometries
  ************************************/
-constexpr defs::SensorStrixelGeometry StrxP25{.multiplicity = 3,
-                                              .pitch_um = 25.0};
-constexpr defs::SensorStrixelGeometry StrxP15{.multiplicity = 5,
-                                              .pitch_um = 15.0};
-constexpr defs::SensorStrixelGeometry StrxP18{.multiplicity = 4,
-                                              .pitch_um = 18.75};
-constexpr defs::SensorStrixelGeometry StrxP37{.multiplicity = 2,
-                                              .pitch_um = 37.5};
+inline constexpr defs::SensorStrixelGeometry StrxP25{.multiplicity = 3,
+                                                     .pitch_um = 25.0};
+inline constexpr defs::SensorStrixelGeometry StrxP15{.multiplicity = 5,
+                                                     .pitch_um = 15.0};
+inline constexpr defs::SensorStrixelGeometry StrxP18{.multiplicity = 4,
+                                                     .pitch_um = 18.75};
+inline constexpr defs::SensorStrixelGeometry StrxP37{.multiplicity = 2,
+                                                     .pitch_um = 37.5};
 
 /************************************
  * Default sensor placements
  ************************************/
-constexpr defs::SensorPlacement Chip1{.placement_on_module{256, 511, 0, 255},
-                                      .rotation = defs::Rotation::Normal};
-constexpr defs::SensorPlacement Chip6{.placement_on_module{512, 767, 256, 511},
-                                      .rotation = defs::Rotation::Inverse};
-constexpr defs::SensorPlacement Quad{.placement_on_module{256, 767, 0, 511},
-                                     .rotation = defs::Rotation::Normal};
+inline constexpr defs::SensorPlacement Chip1{
+    .placement_on_module{256, 511, 0, 255}, .rotation = defs::Rotation::Normal};
+inline constexpr defs::SensorPlacement Chip6{
+    .placement_on_module{512, 767, 256, 511},
+    .rotation = defs::Rotation::Inverse};
+inline constexpr defs::SensorPlacement Quad{
+    .placement_on_module{256, 767, 0, 511}, .rotation = defs::Rotation::Normal};
 
 /************************************
  * Single chip, multi-pitch, iLGAD
  ************************************/
-constexpr defs::SensorPixelGeometry SingelChipMP_iLGAD_pix{
+inline constexpr defs::SensorPixelGeometry SingelChipMP_iLGAD_pix{
     .num_pix_x = 256, .num_pix_y = 256, .guardring = {.x = 9, .y = 9}};
 
-constexpr defs::SensorGroupConfig SingleChipMP_iLGAD_P25{
+inline constexpr defs::SensorGroupConfig SingleChipMP_iLGAD_P25{
     .pixel = SingelChipMP_iLGAD_pix,
     .strixel = StrxP25,
     .placement_on_sensor = {SingelChipMP_iLGAD_pix.guardring.x + 1,
@@ -40,7 +41,7 @@ constexpr defs::SensorGroupConfig SingleChipMP_iLGAD_P25{
                             SingelChipMP_iLGAD_pix.guardring.y,
                             (SingelChipMP_iLGAD_pix.num_pix_y / 4) - 1}};
 
-constexpr defs::SensorGroupConfig SingleChipMP_iLGAD_P15{
+inline constexpr defs::SensorGroupConfig SingleChipMP_iLGAD_P15{
     .pixel = SingelChipMP_iLGAD_pix,
     .strixel = StrxP15,
     .placement_on_sensor = {SingelChipMP_iLGAD_pix.guardring.x + 3,
@@ -49,7 +50,7 @@ constexpr defs::SensorGroupConfig SingleChipMP_iLGAD_P15{
                             SingelChipMP_iLGAD_pix.num_pix_y / 4,
                             (SingelChipMP_iLGAD_pix.num_pix_y / 4) * 2 - 1}};
 
-constexpr defs::SensorGroupConfig SingleChipMP_iLGAD_P18{
+inline constexpr defs::SensorGroupConfig SingleChipMP_iLGAD_P18{
     .pixel = SingelChipMP_iLGAD_pix,
     .strixel = StrxP18,
     .placement_on_sensor = {SingelChipMP_iLGAD_pix.guardring.x + 2,
@@ -62,10 +63,10 @@ constexpr defs::SensorGroupConfig SingleChipMP_iLGAD_P18{
 /************************************
  * Single chip, multi-pitch, TEW
  ************************************/
-constexpr defs::SensorPixelGeometry SingelChipMP_TEW_pix{
+inline constexpr defs::SensorPixelGeometry SingelChipMP_TEW_pix{
     .num_pix_x = 256, .num_pix_y = 256, .guardring = {.x = 0, .y = 0}};
 
-constexpr defs::SensorGroupConfig SingleChipMP_TEW_P25{
+inline constexpr defs::SensorGroupConfig SingleChipMP_TEW_P25{
     .pixel = SingelChipMP_TEW_pix,
     .strixel = StrxP25,
     .placement_on_sensor = {SingelChipMP_TEW_pix.guardring.x + 1,
@@ -74,7 +75,7 @@ constexpr defs::SensorGroupConfig SingleChipMP_TEW_P25{
                             SingelChipMP_TEW_pix.guardring.y,
                             (SingelChipMP_TEW_pix.num_pix_y / 4) - 1}};
 
-constexpr defs::SensorGroupConfig SingleChipMP_TEW_P15{
+inline constexpr defs::SensorGroupConfig SingleChipMP_TEW_P15{
     .pixel = SingelChipMP_TEW_pix,
     .strixel = StrxP15,
     .placement_on_sensor = {SingelChipMP_TEW_pix.guardring.x + 1,
@@ -83,7 +84,7 @@ constexpr defs::SensorGroupConfig SingleChipMP_TEW_P15{
                             SingelChipMP_TEW_pix.num_pix_y / 4,
                             (SingelChipMP_TEW_pix.num_pix_y / 4) * 2 - 1}};
 
-constexpr defs::SensorGroupConfig SingleChipMP_TEW_P18{
+inline constexpr defs::SensorGroupConfig SingleChipMP_TEW_P18{
     .pixel = SingelChipMP_TEW_pix,
     .strixel = StrxP18,
     .placement_on_sensor = {
@@ -95,10 +96,10 @@ constexpr defs::SensorGroupConfig SingleChipMP_TEW_P18{
 /************************************
  * Quad, 25 um, iLGAD
  ************************************/
-constexpr defs::SensorPixelGeometry Quad_iLGAD_pix{
+inline constexpr defs::SensorPixelGeometry Quad_iLGAD_pix{
     .num_pix_x = 512, .num_pix_y = 512, .guardring = {.x = 9, .y = 9}};
 
-constexpr defs::SensorGroupConfig Quad_iLGAD_half{
+inline constexpr defs::SensorGroupConfig Quad_iLGAD_half{
     .pixel = Quad_iLGAD_pix,
     .strixel = StrxP25,
     .placement_on_sensor = {
