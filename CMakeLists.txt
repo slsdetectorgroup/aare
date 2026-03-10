@@ -353,7 +353,6 @@ set(PUBLICHEADERS
     include/aare/Frame.hpp
     include/aare/GainMap.hpp
     include/aare/InclusiveROI.hpp
-    include/aare/Remap.hpp
     include/aare/RemapAlgorithm.hpp
     include/aare/RemapConfig.hpp
     include/aare/RemapDefs.hpp
@@ -399,7 +398,6 @@ set(SourceFiles
     ${CMAKE_CURRENT_SOURCE_DIR}/src/RawSubFile.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/src/RemapAlgorithm.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/src/RemapFormat.cpp
-    ${CMAKE_CURRENT_SOURCE_DIR}/src/Remap.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/src/to_string.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/src/utils/task.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/src/utils/ifstream_helpers.cpp
