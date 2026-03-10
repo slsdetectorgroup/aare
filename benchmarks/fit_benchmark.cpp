@@ -99,11 +99,10 @@ static void BM_FitGausMinuit(benchmark::State &state) {
     auto data = generate_gaussian_data(tc);
     auto xv = data.x.view();
     auto yv = data.y.view();
-    auto ev = data.y_err.view();
 
     aare::NDArray<double, 1> result;
     for (auto _ : state) {
-        result = aare::fit_gaus_minuit(xv, yv, ev);
+        result = aare::fit_gaus_minuit(xv, yv);
         benchmark::DoNotOptimize(result.data());
     }
 
@@ -112,16 +111,15 @@ static void BM_FitGausMinuit(benchmark::State &state) {
 }
 
 // 3. Minuit2, analytic gradient (no Hesse)
-static void BM_FitGausMinuitGradNoHesse(benchmark::State &state) {
+static void BM_FitGausMinuitGrad(benchmark::State &state) {
     const auto &tc = get_test_cases()[state.range(0)];
     auto data = generate_gaussian_data(tc);
     auto xv = data.x.view();
     auto yv = data.y.view();
-    auto ev = data.y_err.view();
 
     aare::NDArray<double, 1> result;
     for (auto _ : state) {
-        result = aare::fit_gaus_minuit_grad(xv, yv, ev, false);
+        result = aare::fit_gaus_minuit_grad(xv, yv);
         benchmark::DoNotOptimize(result.data());
     }
 
@@ -130,7 +128,7 @@ static void BM_FitGausMinuitGradNoHesse(benchmark::State &state) {
 }
 
 // 4. Minuit2, analytic gradient + Hesse
-static void BM_FitGausMinuitGrad(benchmark::State &state) {
+static void BM_FitGausMinuitGradHesse(benchmark::State &state) {
     const auto &tc = get_test_cases()[state.range(0)];
     auto data = generate_gaussian_data(tc);
     auto xv = data.x.view();
@@ -163,11 +161,11 @@ BENCHMARK(BM_FitGausMinuit)
     ->DenseRange(0, 5)
     ->Unit(benchmark::kMicrosecond);
 
-BENCHMARK(BM_FitGausMinuitGradNoHesse)
+BENCHMARK(BM_FitGausMinuitGrad)
     ->DenseRange(0, 5)
     ->Unit(benchmark::kMicrosecond);
 
-BENCHMARK(BM_FitGausMinuitGrad)
+BENCHMARK(BM_FitGausMinuitGradHesse)
     ->DenseRange(0, 5)
     ->Unit(benchmark::kMicrosecond);
 

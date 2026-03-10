@@ -150,13 +150,14 @@ std::array<double, 2> pol1_init_par(const NDView<double, 1> x,
 // -------------------------------------------
 NDArray<double, 1> fit_gaus_minuit(NDView<double, 1> x,
                                 NDView<double, 1> y,
-                                NDView<double, 1> y_err) {
+                                NDView<double, 1> y_err,
+                                bool compute_errors) {
 
     auto start = gaus_init_par(x, y);
 
     // Guard against degenerate data (dead/noisy pixel)
     if (start[0] <= 0.0 || start[2] <= 0.0) {
-        return NDArray<double, 1>({4}, 0.0); // [A, mu, sig, chi2]
+        return NDArray<double, 1>({compute_errors ? 7 : 4}, 0.0);
     }
 
     // TODO: What if (y_err.size() > 0) but all values are zeros -> Should choose unweighted Chi2
@@ -175,9 +176,23 @@ NDArray<double, 1> fit_gaus_minuit(NDView<double, 1> x,
     ROOT::Minuit2::FunctionMinimum min = migrad();
 
     if (!min.IsValid())
-        return NDArray<double, 1>({4}, 0.0);
+        return NDArray<double, 1>({compute_errors ? 7 : 4}, 0.0);
 
-    // Extract fitted parameters from the result
+    if (compute_errors) {
+        ROOT::Minuit2::MnHesse hesse;
+        hesse(chi2, min);
+
+        NDArray<double, 1> result({7});
+        result[0] = min.UserState().Value("A");
+        result[1] = min.UserState().Value("mu");
+        result[2] = min.UserState().Value("sig");
+        result[3] = min.UserState().Error("A");
+        result[4] = min.UserState().Error("mu");
+        result[5] = min.UserState().Error("sig");
+        result[6] = min.Fval(); // chi2
+        return result;
+    }
+
     NDArray<double, 1> result({4});
     result[0] = min.UserState().Value("A");
     result[1] = min.UserState().Value("mu");
@@ -190,6 +205,7 @@ void fit_gaus_minuit_3d(NDView<double, 1> x,
                         NDView<double, 3> y,
                         NDView<double, 3> y_err,
                         NDView<double, 3> par_out,
+                        NDView<double, 3> err_out,
                         NDView<double, 2> chi2_out,
                         int n_threads )
 {
@@ -214,18 +230,24 @@ void fit_gaus_minuit_3d(NDView<double, 1> x,
                 "fit_gaus_minuit_3d: y_err must have the same shape as y.");
         }
 
-        auto process = [&x, &y, &y_err, &par_out, &chi2_out](ssize_t first_row, ssize_t last_row) {
+        if (err_out.shape(0) != y.shape(0) || err_out.shape(1) != y.shape(1) || err_out.shape(2) != 3)
+            throw std::runtime_error("err_out must have shape [rows, cols, 3].");
+
+        auto process = [&x, &y, &y_err, &par_out, &err_out, &chi2_out](ssize_t first_row, ssize_t last_row) {
             for (ssize_t row = first_row; row < last_row; ++row) {
                 for (ssize_t col = 0; col < y.shape(1); ++col) {
                     NDView<double, 1> values(&y(row, col, 0), {y.shape(2)});
                     NDView<double, 1> errors(&y_err(row, col, 0), {y_err.shape(2)});
 
-                    auto res = fit_gaus_minuit(x, values, errors);
-                    // res = [A, mu, sig, chi2]
+                    auto res = fit_gaus_minuit(x, values,  /*y_err = */ errors, /*compute_errors =*/ true );
+                    // res = [A, mu, sig, errA, errMu, errSig, chi2]
 
                     par_out(row, col, 0) = res(0);
                     par_out(row, col, 1) = res(1);
                     par_out(row, col, 2) = res(2);
+                    err_out(row, col, 0) = res(3);
+                    err_out(row, col, 1) = res(4);
+                    err_out(row, col, 2) = res(5);
                     chi2_out(row, col) = res(3);
                 }
             }
@@ -240,7 +262,7 @@ void fit_gaus_minuit_3d(NDView<double, 1> x,
                 for (ssize_t col = 0; col < y.shape(1); ++col) {
                     NDView<double, 1> values(&y(row, col, 0), {y.shape(2)});
 
-                    auto res = fit_gaus_minuit(x, values);
+                    auto res = fit_gaus_minuit(x, values, /*y_err = */ {}, /*compute_errors =*/ false);
 
                     par_out(row, col, 0) = res(0);
                     par_out(row, col, 1) = res(1);
@@ -262,7 +284,8 @@ void fit_gaus_minuit_3d(NDView<double, 1> x,
                         NDView<double, 2> chi2_out,
                         int n_threads) 
 {
-    fit_gaus_minuit_3d(x, y, NDView<double, 3>{}, par_out, chi2_out, n_threads);
+    NDView<double, 3> dummy_err{};
+    fit_gaus_minuit_3d(x, y, /*y_err=*/dummy_err, par_out, /*err_out=*/dummy_err, chi2_out, n_threads);
 }
 
 
@@ -324,7 +347,7 @@ void fit_gaus_minuit_grad_3d(NDView<double, 1> x,
                             NDView<double, 3> par_out,
                             NDView<double, 3> err_out,
                             NDView<double, 2> chi2_out,
-                            int n_threads) { // Always compute errors (see below (*) )
+                            int n_threads) { // Only computes errors `err_out` when `y_err` is passed as argument
 
     if (x.size() != y.shape(2)) {
         throw std::runtime_error(
@@ -333,9 +356,6 @@ void fit_gaus_minuit_grad_3d(NDView<double, 1> x,
 
     if (par_out.shape(0) != y.shape(0) || par_out.shape(1) != y.shape(1) || par_out.shape(2) != 3)
         throw std::runtime_error("par_out must have shape [rows, cols, 3].");
-
-    if (err_out.shape(0) != y.shape(0) || err_out.shape(1) != y.shape(1) || err_out.shape(2) != 3)
-        throw std::runtime_error("err_out must have shape [rows, cols, 3].");
 
     if (chi2_out.shape(0) != y.shape(0) || chi2_out.shape(1) != y.shape(1))
         throw std::runtime_error("chi2_out must have shape [rows, cols].");
@@ -350,6 +370,9 @@ void fit_gaus_minuit_grad_3d(NDView<double, 1> x,
             "fit_gaus_minuit_grad_3d: y and y_err must have identical shape.");
         }
 
+        if (err_out.shape(0) != y.shape(0) || err_out.shape(1) != y.shape(1) || err_out.shape(2) != 3)
+            throw std::runtime_error("err_out must have shape [rows, cols, 3].");
+
         auto process = [&x, &y, &y_err, &par_out, &err_out, &chi2_out](ssize_t first_row, ssize_t last_row) {
             for (ssize_t row = first_row; row < last_row; row++) {
                 for (ssize_t col = 0; col < y.shape(1); col++) {
@@ -357,7 +380,7 @@ void fit_gaus_minuit_grad_3d(NDView<double, 1> x,
                     NDView<double, 1> values(&y(row, col, 0), {y.shape(2)});
                     NDView<double, 1> errors(&y_err(row, col, 0), {y_err.shape(2)});
 
-                    auto res = fit_gaus_minuit_grad(x, values, /*y_err = */ errors, /*compute_errors =*/ true ); // *Always compute errors
+                    auto res = fit_gaus_minuit_grad(x, values, /*y_err = */ errors, /*compute_errors =*/ true);
                     // res = [A, mu, sig, errA, errMu, errSig, chi2]
 
                     par_out(row, col, 0) = res(0);
@@ -374,20 +397,18 @@ void fit_gaus_minuit_grad_3d(NDView<double, 1> x,
         auto tasks = split_task(0, static_cast<int>(y.shape(0)), n_threads);
         RunInParallel(process, tasks);
     } else {
-                auto process = [&x, &y, &par_out, &err_out, &chi2_out](ssize_t first_row, ssize_t last_row) {
+                auto process = [&x, &y, &par_out, &chi2_out](ssize_t first_row, ssize_t last_row) {
             for (ssize_t row = first_row; row < last_row; row++) {
                 for (ssize_t col = 0; col < y.shape(1); col++) {
 
                     NDView<double, 1> values(&y(row, col, 0), {y.shape(2)});
 
-                    auto res = fit_gaus_minuit_grad(x, values, /*y_err = */ {}, /*compute_errors =*/ true ); // *Always compute errors
+                    auto res = fit_gaus_minuit_grad(x, values, /*y_err = */ {}, /*compute_errors =*/ false);
+                    // res = [A, mu, sig, chi2]
 
                     par_out(row, col, 0) = res(0);
                     par_out(row, col, 1) = res(1);
                     par_out(row, col, 2) = res(2);
-                    err_out(row, col, 0) = res(3);
-                    err_out(row, col, 1) = res(4);
-                    err_out(row, col, 2) = res(5);
                     chi2_out(row, col) = res(6);
                 }
             }
@@ -403,11 +424,11 @@ void fit_gaus_minuit_grad_3d(NDView<double, 1> x,
 void fit_gaus_minuit_grad_3d(NDView<double, 1> x, 
                             NDView<double, 3> y,
                             NDView<double, 3> par_out,
-                            NDView<double, 3> err_out,
                             NDView<double, 2> chi2_out,
                             int n_threads) 
 {
-    fit_gaus_minuit_grad_3d(x, y, NDView<double, 3>{}, par_out, err_out, chi2_out, n_threads);
+    NDView<double, 3> dummy_err{};
+    fit_gaus_minuit_grad_3d(x, y, /*y_err=*/dummy_err, par_out, /*err_out=*/dummy_err, chi2_out, n_threads);
 } 
 
 //////////////////////////////////////////////////////////////////////////////////////////////////////////

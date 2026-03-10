@@ -96,7 +96,8 @@ void fit_gaus(NDView<double, 1> x, NDView<double, 3> y, NDView<double, 3> y_err,
  */
 NDArray<double, 1> fit_gaus_minuit(NDView<double, 1> x,
                                    NDView<double, 1> y,
-                                   NDView<double, 1> y_err = {});
+                                   NDView<double, 1> y_err = {},
+                                   bool compute_errors = false);
 
                                    /**
  * @brief Fit a Gaussian independently at each pixel of a 3D scan stack using Minuit2.
@@ -108,6 +109,7 @@ NDArray<double, 1> fit_gaus_minuit(NDView<double, 1> x,
  * @param y Measured data of shape [n_rows, n_cols, n_scan].
  * @param y_err Per-point standard deviations with the same shape as `y`.
  * @param par_out Output array of [n_rows, n_cols, 3], storing [A, mu, sigma] for each pixel.
+ * @param err_out Output array of [n_rows, n_cols, 3], storing [errA, errMu, errSigma] for each pixel.
  * @param chi2_out Output array of [n_rows, n_cols], storing [chi2] for each pixel.
  * @param n_threads Number of CPU threads used to split work across rows.
  */
@@ -115,10 +117,11 @@ void fit_gaus_minuit_3d(NDView<double, 1> x,
                         NDView<double, 3> y,
                         NDView<double, 3> y_err,
                         NDView<double, 3> par_out,
+                        NDView<double, 3> err_out,
                         NDView<double, 2> chi2_out,
                         int n_threads = DEFAULT_NUM_THREADS);
 
-// Overload: When uncertainties `y_err` are not provided
+// Overload: When uncertainties `y_err` are not provided / `err_out` are not computed
 void fit_gaus_minuit_3d(NDView<double, 1> x, 
                         NDView<double, 3> y,
                         NDView<double, 3> par_out,
@@ -166,11 +169,10 @@ void fit_gaus_minuit_grad_3d(NDView<double, 1> x,
                              NDView<double, 2> chi2_out,
                              int n_threads = DEFAULT_NUM_THREADS);
 
-// Overload: When uncertainties `y_err` are not provided
+// Overload: When uncertainties `y_err` are not provided / `err_out` are not computed
 void fit_gaus_minuit_grad_3d(NDView<double, 1> x, 
                              NDView<double, 3> y,
                              NDView<double, 3> par_out,
-                             NDView<double, 3> err_out,
                              NDView<double, 2> chi2_out,
                              int n_threads = DEFAULT_NUM_THREADS);
 

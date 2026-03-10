@@ -223,16 +223,21 @@ void define_fit_bindings(py::module &m) {
                         throw std::runtime_error("For 3D input y, y_err must also be 3D.");
                     }
 
+                    auto err_out = new NDArray<double, 3>({y.shape(0), y.shape(1), 3}, 0.0);
                     auto y_view_err = make_view_3d(y_err);
                     aare::fit_gaus_minuit_3d(x_view, y_view, y_view_err, 
-                                    par_out->view(), chi2_out->view(), n_threads);
+                                    par_out->view(), err_out->view(), chi2_out->view(), n_threads);
+                
+                    return py::dict("par"_a = return_image_data(par_out),
+                                    "par_err"_a = return_image_data(err_out),
+                                    "chi2"_a = return_image_data(chi2_out));
                 } else {
                     aare::fit_gaus_minuit_3d(x_view, y_view, 
                                     par_out->view(), chi2_out->view(), n_threads);
+                    
+                    return py::dict("par"_a = return_image_data(par_out),
+                                    "chi2"_a = return_image_data(chi2_out));
                 }
-                
-                return py::dict("par"_a = return_image_data(par_out),
-                                "chi2"_a = return_image_data(chi2_out));
 
             } else if (y.ndim() == 1) {
                 auto result = new NDArray<double, 1>{};
@@ -249,11 +254,15 @@ void define_fit_bindings(py::module &m) {
                     }
 
                     auto y_view_err = make_view_1d(y_err);
-                    *result = aare::fit_gaus_minuit(x_view, y_view, y_view_err);
+                    *result = 
+                        aare::fit_gaus_minuit(x_view, y_view, y_view_err, /*compute_errors=*/ true);
+                        // shape (7,): [A, mu, sig, errA, errMu, errSig, chi2]
                 } else {
-                    *result = aare::fit_gaus_minuit(x_view, y_view, NDView<double, 1>{});
+                    *result =
+                        aare::fit_gaus_minuit(x_view, y_view, NDView<double, 1>{}, false);
+                        // shape (4,): [A, mu, sig, chi2]
                 }
-                return return_image_data(result); // [A, mu, sig, chi2]
+                return return_image_data(result);
 
             } else {
                 throw std::runtime_error("Data must be 1D or 3D.");
@@ -297,7 +306,6 @@ void define_fit_bindings(py::module &m) {
         {
             if (y.ndim() == 3) {
                 auto par_out = new NDArray<double, 3>({y.shape(0), y.shape(1), 3}, 0.0);
-                auto err_out = new NDArray<double, 3>({y.shape(0), y.shape(1), 3}, 0.0);
                 auto chi2_out= new NDArray<double, 2>({y.shape(0), y.shape(1)}, 0.0);
 
                 auto x_view = make_view_1d(x);
@@ -310,18 +318,22 @@ void define_fit_bindings(py::module &m) {
                     if (y_err.ndim() != 3) {
                         throw std::runtime_error("For 3D input y, y_err must also be 3D.");
                     }
-
+                    
+                    auto err_out = new NDArray<double, 3>({y.shape(0), y.shape(1), 3}, 0.0);
                     auto y_view_err = make_view_3d(y_err);
                     aare::fit_gaus_minuit_grad_3d(x_view, y_view, y_view_err, 
                                     par_out->view(), err_out->view(), chi2_out->view(), n_threads);
+
+                    return py::dict("par"_a = return_image_data(par_out),
+                                    "par_err"_a = return_image_data(err_out),
+                                    "chi2"_a = return_image_data(chi2_out));
                 } else {
                     aare::fit_gaus_minuit_grad_3d(x_view, y_view, 
-                                    par_out->view(), err_out->view(), chi2_out->view(), n_threads);
+                                    par_out->view(), chi2_out->view(), n_threads);
+                        
+                    return py::dict("par"_a = return_image_data(par_out),
+                                    "chi2"_a = return_image_data(chi2_out));
                 }
-                
-                return py::dict("par"_a = return_image_data(par_out),
-                                "par_err"_a = return_image_data(err_out),
-                                "chi2"_a = return_image_data(chi2_out));
 
             } else if (y.ndim() == 1) {
                 auto result = new NDArray<double, 1>{};
@@ -340,9 +352,11 @@ void define_fit_bindings(py::module &m) {
                     auto y_view_err = make_view_1d(y_err);
                     *result = 
                         aare::fit_gaus_minuit_grad(x_view, y_view, y_view_err, /*compute_errors=*/ true);
+                        // shape (7,): [A, mu, sig, errA, errMu, errSig, chi2]
                 } else {
                     *result = 
-                        aare::fit_gaus_minuit_grad(x_view, y_view, NDView<double, 1>{}, /*compute_errors*/ true);
+                        aare::fit_gaus_minuit_grad(x_view, y_view, NDView<double, 1>{}, /*compute_errors*/ false);
+                        // shape (4,): [A, mu, sig, chi2]
                 }
 
                 return return_image_data(result);
@@ -370,14 +384,15 @@ void define_fit_bindings(py::module &m) {
         Returns
         -------
         numpy.ndarray or dict
-            If `y` is 1D:
-                array of shape (7,) containing [A, mu, sigma, err_A, err_mu, err_sigma, chi2].
+            If `y` is 1D and `y_err` is given:
+                array of shape (7,): [A, mu, sigma, err_A, err_mu, err_sigma, chi2]
+            If `y` is 1D and `y_err` is None:
+                array of shape (4,): [A, mu, sigma, chi2]
 
-            If `y` is 3D:
-                dict with:
-                - "par":      array of shape (n_rows, n_cols, 3)
-                - "par_err":  array of shape (n_rows, n_cols, 3)
-                - "chi2":     array of shape (n_rows, n_cols)
+            If `y` is 3D and `y_err` is given:
+                dict with "par" (n_rows, n_cols, 3), "par_err" (n_rows, n_cols, 3), "chi2" (n_rows, n_cols)
+            If `y` is 3D and `y_err` is None:
+                dict with "par" (n_rows, n_cols, 3), "chi2" (n_rows, n_cols)
         )", 
         py::arg("x"), py::arg("y"), py::arg("y_err") = py::none(), py::arg("n_threads") = 4
     );
