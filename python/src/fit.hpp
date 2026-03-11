@@ -569,6 +569,90 @@ void define_fit_bindings(py::module &m) {
         py::arg("x"), py::arg("y"), py::arg("y_err"), py::arg("n_threads") = 4);
 
     m.def(
+        "fit_scurve_minuit",
+        [](py::array_t<double, py::array::c_style | py::array::forcecast> x,
+           py::array_t<double, py::array::c_style | py::array::forcecast> y,
+           py::object y_err_obj) -> py::object
+        //    int n_threads) -> py::object
+        {
+            if (y.ndim() == 3) {
+                /* TO IMPLEMENT STILL*/
+                auto result = new NDArray<double, 3>{};
+                return return_image_data(result);
+            } else if (y.ndim() == 1) {
+                auto result = new NDArray<double, 1>{};
+
+                auto x_view = make_view_1d(x);
+                auto y_view = make_view_1d(y);
+
+                if (!y_err_obj.is_none()) {
+                    auto y_err = py::cast<py::array_t<double,
+                        py::array::c_style | py::array::forcecast>>(y_err_obj);
+
+                    if (y_err.ndim() != 1) {
+                        throw std::runtime_error("For 1D input y, y_err must also be 1D.");
+                    }
+
+                    auto y_err_view = make_view_1d(y_err);
+                    *result = aare::fit_scurve_minuit(x_view, y_view, y_err_view, /* compute_erros */ true);
+                    // shape (13,): [p0, p1, p2, p3, p4, p5, errP0, errP1, errP2, errP3, errP4, errP5, chi2]
+                } else {
+                    *result = aare::fit_scurve_minuit(x_view, y_view, NDView<double, 1>{}, /* compute_erros */ false);
+                    // shape (7,): [p0, p1, p2, p3, p4, p5, chi2]
+                }
+                
+                return return_image_data(result);
+            } else {
+                throw std::runtime_error("Data must be 1D or 3D");
+            }
+        }, /* TODO: RAW STRING FOR DESCRIPTION*/
+        py::arg("x"),  py::arg("y"), py::arg("y_err") = py::none()//, py::arg("n_threads") = 4
+    );
+
+
+    m.def(
+        "fit_scurve_minuit_grad",
+        [](py::array_t<double, py::array::c_style | py::array::forcecast> x,
+           py::array_t<double, py::array::c_style | py::array::forcecast> y,
+           py::object y_err_obj) -> py::object
+        //    int n_threads) -> py::object
+        {
+            if (y.ndim() == 3) {
+                /* TO IMPLEMENT STILL*/
+                auto result = new NDArray<double, 3>{};
+                return return_image_data(result);
+            } else if (y.ndim() == 1) {
+                auto result = new NDArray<double, 1>{};
+
+                auto x_view = make_view_1d(x);
+                auto y_view = make_view_1d(y);
+
+                if (!y_err_obj.is_none()) {
+                    auto y_err = py::cast<py::array_t<double,
+                        py::array::c_style | py::array::forcecast>>(y_err_obj);
+
+                    if (y_err.ndim() != 1) {
+                        throw std::runtime_error("For 1D input y, y_err must also be 1D.");
+                    }
+
+                    auto y_err_view = make_view_1d(y_err);
+                    *result = aare::fit_scurve_minuit_grad(x_view, y_view, y_err_view, /* compute_erros */ true);
+                    // shape (13,): [p0, p1, p2, p3, p4, p5, errP0, errP1, errP2, errP3, errP4, errP5, chi2]
+                } else {
+                    *result = aare::fit_scurve_minuit_grad(x_view, y_view, NDView<double, 1>{}, /* compute_erros */ false);
+                    // shape (7,): [p0, p1, p2, p3, p4, p5, chi2]
+                }
+                
+                return return_image_data(result);
+            } else {
+                throw std::runtime_error("Data must be 1D or 3D");
+            }
+        }, /* TODO: RAW STRING FOR DESCRIPTION*/
+        py::arg("x"),  py::arg("y"), py::arg("y_err") = py::none()//, py::arg("n_threads") = 4
+    );
+
+
+    m.def(
         "fit_scurve2",
         [](py::array_t<double, py::array::c_style | py::array::forcecast> x,
            py::array_t<double, py::array::c_style | py::array::forcecast> y,
@@ -652,4 +736,86 @@ void define_fit_bindings(py::module &m) {
             The number of threads to use. Default is 4.
         )",
         py::arg("x"), py::arg("y"), py::arg("y_err"), py::arg("n_threads") = 4);
+
+    m.def(
+        "fit_scurve2_minuit",
+        [](py::array_t<double, py::array::c_style | py::array::forcecast> x,
+           py::array_t<double, py::array::c_style | py::array::forcecast> y,
+           py::object y_err_obj) -> py::object
+        //    int n_threads) -> py::object
+        {
+            if (y.ndim() == 3) {
+                /* TO IMPLEMENT STILL*/
+                auto result = new NDArray<double, 3>{};
+                return return_image_data(result);
+            } else if (y.ndim() == 1) {
+                auto result = new NDArray<double, 1>{};
+
+                auto x_view = make_view_1d(x);
+                auto y_view = make_view_1d(y);
+
+                if (!y_err_obj.is_none()) {
+                    auto y_err = py::cast<py::array_t<double,
+                        py::array::c_style | py::array::forcecast>>(y_err_obj);
+
+                    if (y_err.ndim() != 1) {
+                        throw std::runtime_error("For 1D input y, y_err must also be 1D.");
+                    }
+
+                    auto y_err_view = make_view_1d(y_err);
+                    *result = aare::fit_scurve2_minuit(x_view, y_view, y_err_view, /* compute_erros */ true);
+                    // shape (13,): [p0, p1, p2, p3, p4, p5, errP0, errP1, errP2, errP3, errP4, errP5, chi2]
+                } else {
+                    *result = aare::fit_scurve2_minuit(x_view, y_view, NDView<double, 1>{}, /* compute_erros */ false);
+                    // shape (7,): [p0, p1, p2, p3, p4, p5, chi2]
+                }
+                
+                return return_image_data(result);
+            } else {
+                throw std::runtime_error("Data must be 1D or 3D");
+            }
+        }, /* TODO: RAW STRING FOR DESCRIPTION*/
+        py::arg("x"),  py::arg("y"), py::arg("y_err") = py::none()//, py::arg("n_threads") = 4
+    );
+
+    m.def(
+        "fit_scurve2_minuit_grad",
+        [](py::array_t<double, py::array::c_style | py::array::forcecast> x,
+           py::array_t<double, py::array::c_style | py::array::forcecast> y,
+           py::object y_err_obj) -> py::object
+        //    int n_threads) -> py::object
+        {
+            if (y.ndim() == 3) {
+                /* TO IMPLEMENT STILL*/
+                auto result = new NDArray<double, 3>{};
+                return return_image_data(result);
+            } else if (y.ndim() == 1) {
+                auto result = new NDArray<double, 1>{};
+
+                auto x_view = make_view_1d(x);
+                auto y_view = make_view_1d(y);
+
+                if (!y_err_obj.is_none()) {
+                    auto y_err = py::cast<py::array_t<double,
+                        py::array::c_style | py::array::forcecast>>(y_err_obj);
+
+                    if (y_err.ndim() != 1) {
+                        throw std::runtime_error("For 1D input y, y_err must also be 1D.");
+                    }
+
+                    auto y_err_view = make_view_1d(y_err);
+                    *result = aare::fit_scurve2_minuit_grad(x_view, y_view, y_err_view, /* compute_erros */ true);
+                    // shape (13,): [p0, p1, p2, p3, p4, p5, errP0, errP1, errP2, errP3, errP4, errP5, chi2]
+                } else {
+                    *result = aare::fit_scurve2_minuit_grad(x_view, y_view, NDView<double, 1>{}, /* compute_erros */ false);
+                    // shape (7,): [p0, p1, p2, p3, p4, p5, chi2]
+                }
+                
+                return return_image_data(result);
+            } else {
+                throw std::runtime_error("Data must be 1D or 3D");
+            }
+        }, /* TODO: RAW STRING FOR DESCRIPTION*/
+        py::arg("x"),  py::arg("y"), py::arg("y_err") = py::none()//, py::arg("n_threads") = 4
+    );
 }

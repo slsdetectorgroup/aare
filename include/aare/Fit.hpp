@@ -211,4 +211,35 @@ void fit_scurve2(NDView<double, 1> x, NDView<double, 3> y,
                  NDView<double, 3> y_err, NDView<double, 3> par_out,
                  NDView<double, 3> par_err_out, NDView<double, 2> chi2_out,
                  int n_threads);
+
+////// Minuit 2 version of the Scurves fitting fcts ////////
+template<class FCN>
+NDArray<double,1> fit_scurve_minuit_impl(NDView<double, 1> x,
+                                    NDView<double, 1> y,
+                                    NDView<double, 1> y_err,
+                                    bool compute_errors);
+
+// Rising S-curves
+
+NDArray<double, 1> fit_scurve_minuit(NDView<double, 1> x,
+                                     NDView<double, 1> y, 
+                                     NDView<double, 1> y_err = {}, 
+                                     bool compute_errors = false);
+
+NDArray<double, 1> fit_scurve_minuit_grad(NDView<double, 1> x,
+                                          NDView<double, 1> y, 
+                                          NDView<double, 1> y_err = {}, 
+                                          bool compute_errors = false);
+
+// Falling S-curves
+
+NDArray<double, 1> fit_scurve2_minuit(NDView<double, 1> x,
+                                      NDView<double, 1> y, 
+                                      NDView<double, 1> y_err = {}, 
+                                      bool compute_errors = false);
+
+NDArray<double, 1> fit_scurve2_minuit_grad(NDView<double, 1> x,
+                                           NDView<double, 1> y, 
+                                           NDView<double, 1> y_err = {}, 
+                                           bool compute_errors = false);
 } // namespace aare

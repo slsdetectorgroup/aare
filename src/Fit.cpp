@@ -2,12 +2,14 @@
 #include "aare/Fit.hpp"
 #include "aare/Chi2Gaussian.hpp"
 #include "aare/Chi2GaussianGradient.hpp"
+#include "aare/Chi2Scurves.hpp"
+#include "aare/Chi2ScurvesGradient.hpp"
 #include "aare/utils/par.hpp"
 #include "aare/utils/task.hpp"
 #include <lmcurve2.h>
 #include <lmfit.hpp>
 #include <thread>
-
+#include <type_traits>
 #include <array>
 
 #include "Minuit2/FunctionMinimum.h"
@@ -248,7 +250,7 @@ void fit_gaus_minuit_3d(NDView<double, 1> x,
                     err_out(row, col, 0) = res(3);
                     err_out(row, col, 1) = res(4);
                     err_out(row, col, 2) = res(5);
-                    chi2_out(row, col) = res(3);
+                    chi2_out(row, col) = res(6);
                 }
             }
         };
@@ -409,7 +411,7 @@ void fit_gaus_minuit_grad_3d(NDView<double, 1> x,
                     par_out(row, col, 0) = res(0);
                     par_out(row, col, 1) = res(1);
                     par_out(row, col, 2) = res(2);
-                    chi2_out(row, col) = res(6);
+                    chi2_out(row, col) = res(3);
                 }
             }
         };
@@ -844,5 +846,172 @@ void fit_scurve2(NDView<double, 1> x, NDView<double, 3> y,
     auto tasks = split_task(0, y.shape(0), n_threads);
     RunInParallel(process, tasks);
 }
+
+//////////////////////////////////////////////////////////////////////////////////////////////////////////
+// MINUIT2
+//////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+template<class FCN>
+NDArray<double,1> fit_scurve_minuit_impl(NDView<double, 1> x,
+                                    NDView<double, 1> y,
+                                    NDView<double, 1> y_err,
+                                    bool compute_errors)
+{
+    constexpr bool scurve_rising = std::is_same_v<FCN, aare::func::Chi2SCurve> || std::is_same_v<FCN, aare::func::Chi2SCurveGrad> ;
+    constexpr bool scurve_falling = std::is_same_v<FCN, aare::func::Chi2SCurve2> || std::is_same_v<FCN, aare::func::Chi2SCurve2Grad>;
+
+    static_assert(scurve_rising || scurve_falling,
+        "fit_scurve_minuit_impl only supports Chi2SCurve, Chi2SCurveGrad, Chi2SCurve2 and Chi2SCurve2Grad.");
+
+    if(x.size() != y.size()){
+        throw std::runtime_error("fit_scurve_minuit_impl: x.size() must equal y.size()");
+    }
+
+    if(y_err.size() > 0 && y_err.size() != y.size()){
+        throw std::runtime_error("fit_scurve_minuit_impl: y_err.size() must equal y.size()");
+    }
+
+    std::array<double, 6> start{};
+
+    if constexpr(scurve_rising){
+        start = scurve_init_par(x,y);
+    } else {
+        start = scurve2_init_par(x,y);
+    }
+
+    // dead/degenrate pixel guard
+    if (start[3] <= 0.0 || !std::isfinite(start[3])) {
+        return NDArray<double, 1>({compute_errors ? 13 : 7}, 0.0);
+    }
+
+    const bool use_weights = (y_err.size() > 0); // TODO: check if all_zero(y_err) is also False 
+
+    auto chi2 = use_weights ? FCN(x, y, y_err) : FCN(x,y);
+
+    const double x_min   = std::min(x[0], x[x.size() - 1]);
+    const double x_max   = std::max(x[0], x[x.size() - 1]);
+    const double x_range = std::max(x_max - x_min, 1e-12);
+
+    double y_min = y[0], y_max = y[0];
+    for (ssize_t i = 1; i < y.size(); ++i) {
+        y_min = std::min(y_min, y[i]);
+        y_max = std::max(y_max, y[i]);
+    }
+    const double y_range     = std::max(y_max - y_min, 1e-9);
+    const double slope_scale = std::max(y_range / x_range, 1e-9);
+
+    ROOT::Minuit2::MnUserParameters upar;
+
+    // p0: baseline offset
+    upar.Add("p0", start[0],
+             std::max(0.1 * std::abs(start[0]), 0.1 * y_range),
+             start[0] - 5.0 * y_range,
+             start[0] + 5.0 * y_range);
+
+    // p1: baseline slope
+    upar.Add("p1", start[1],
+             0.1 * slope_scale,
+             start[1] - 10.0 * slope_scale,
+             start[1] + 10.0 * slope_scale);
+
+    // p2: center
+    upar.Add("p2", start[2],
+             0.05 * x_range,
+             x_min, x_max);
+
+    // p3: width
+    upar.Add("p3", start[3],
+             0.05 * x_range,
+             1e-12, 2.0 * x_range);
+
+    // p4: amplitude at transition
+    upar.Add("p4", start[4],
+             std::max(0.1 * std::abs(start[4]), 0.1 * y_range),
+             -5.0 * y_range, 5.0 * y_range);
+
+    // p5: slope increment after step
+    upar.Add("p5", start[5],
+             0.1 * slope_scale,
+             start[5] - 10.0 * slope_scale,
+             start[5] + 10.0 * slope_scale);
+
+    ROOT::Minuit2::MnMigrad migrad(chi2, upar);
+    ROOT::Minuit2::FunctionMinimum min = migrad();
+
+    if (!min.IsValid()) {
+        return NDArray<double, 1>({compute_errors ? 13 : 7}, 0.0);
+    }
+
+    if(compute_errors){
+        ROOT::Minuit2::MnHesse hesse;
+        hesse(chi2, min);
+
+        NDArray<double, 1> result({13});
+        result[0]  = min.UserState().Value("p0");
+        result[1]  = min.UserState().Value("p1");
+        result[2]  = min.UserState().Value("p2");
+        result[3]  = min.UserState().Value("p3");
+        result[4]  = min.UserState().Value("p4");
+        result[5]  = min.UserState().Value("p5");
+        result[6]  = min.UserState().Error("p0");
+        result[7]  = min.UserState().Error("p1");
+        result[8]  = min.UserState().Error("p2");
+        result[9]  = min.UserState().Error("p3");
+        result[10] = min.UserState().Error("p4");
+        result[11] = min.UserState().Error("p5");
+        result[12] = min.Fval();
+        return result;
+    }
+
+    NDArray<double, 1> result({7});
+    result[0] = min.UserState().Value("p0");
+    result[1] = min.UserState().Value("p1");
+    result[2] = min.UserState().Value("p2");
+    result[3] = min.UserState().Value("p3");
+    result[4] = min.UserState().Value("p4");
+    result[5] = min.UserState().Value("p5");
+    result[6] = min.Fval();
+    return result;
+
+}
+
+// Rising S-curves
+
+NDArray<double, 1> fit_scurve_minuit(NDView<double, 1> x,
+                                     NDView<double, 1> y, 
+                                     NDView<double, 1> y_err, 
+                                     bool compute_errors)
+{
+    return fit_scurve_minuit_impl<aare::func::Chi2SCurve>(x, y, y_err, compute_errors);
+}
+
+NDArray<double, 1> fit_scurve_minuit_grad(NDView<double, 1> x,
+                                     NDView<double, 1> y, 
+                                     NDView<double, 1> y_err, 
+                                     bool compute_errors)
+{
+    return fit_scurve_minuit_impl<aare::func::Chi2SCurveGrad>(x, y, y_err, compute_errors);
+}
+
+// Falling S-curves
+
+NDArray<double, 1> fit_scurve2_minuit(NDView<double, 1> x,
+                                     NDView<double, 1> y, 
+                                     NDView<double, 1> y_err, 
+                                     bool compute_errors)
+{
+    return fit_scurve_minuit_impl<aare::func::Chi2SCurve2>(x, y, y_err, compute_errors);
+}
+
+NDArray<double, 1> fit_scurve2_minuit_grad(NDView<double, 1> x,
+                                     NDView<double, 1> y, 
+                                     NDView<double, 1> y_err, 
+                                     bool compute_errors)
+{
+    return fit_scurve_minuit_impl<aare::func::Chi2SCurve2Grad>(x, y, y_err, compute_errors);
+}
+
+//////////////////////////////////////////////////////////////////////////////////////////////////////////
+
 
 } // namespace aare
