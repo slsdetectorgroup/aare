@@ -250,4 +250,45 @@ NDArray<double, 1> fit_scurve2_minuit_grad(NDView<double, 1> x,
                                            NDView<double, 1> y, 
                                            NDView<double, 1> y_err = {}, 
                                            bool compute_errors = false);
+
+// ---- 3D ----
+template<class FCN>
+void fit_scurve_minuit_3d_impl(NDView<double, 1> x,
+                               NDView<double, 3> y,
+                               NDView<double, 3> y_err,
+                               NDView<double, 3> par_out,
+                               NDView<double, 3> err_out,
+                               NDView<double, 2> chi2_out,
+                               int n_threads);
+
+// Rising S-curves
+void fit_scurve_minuit_grad_3d(NDView<double, 1> x,
+                        NDView<double, 3> y,
+                        NDView<double, 3> y_err,
+                        NDView<double, 3> par_out,
+                        NDView<double, 3> err_out,
+                        NDView<double, 2> chi2_out,
+                        int n_threads);
+
+void fit_scurve_minuit_grad_3d(NDView<double, 1> x,
+                               NDView<double, 3> y,
+                               NDView<double, 3> par_out,
+                               NDView<double, 2> chi2_out,
+                               int n_threads);
+
+// Falling S-curves
+void fit_scurve2_minuit_grad_3d(NDView<double, 1> x,
+                        NDView<double, 3> y,
+                        NDView<double, 3> y_err,
+                        NDView<double, 3> par_out,
+                        NDView<double, 3> err_out,
+                        NDView<double, 2> chi2_out,
+                        int n_threads);
+
+void fit_scurve2_minuit_grad_3d(NDView<double, 1> x,
+                               NDView<double, 3> y,
+                               NDView<double, 3> par_out,
+                               NDView<double, 2> chi2_out,
+                               int n_threads);
+
 } // namespace aare

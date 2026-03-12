@@ -976,6 +976,10 @@ void fit_scurve2(NDView<double, 1> x, NDView<double, 3> y,
 // MINUIT2
 //////////////////////////////////////////////////////////////////////////////////////////////////////////
 
+// ==============
+// ===== 1D =====
+// ==============
+
 template<class FCN>
 NDArray<double,1> fit_scurve_minuit_impl(NDView<double, 1> x,
                                     NDView<double, 1> y,
@@ -1135,6 +1139,128 @@ NDArray<double, 1> fit_scurve2_minuit_grad(NDView<double, 1> x,
     return fit_scurve_minuit_impl<aare::func::Chi2SCurve2Grad>(x, y, y_err, compute_errors);
 }
 
+// ==============
+// ===== 3D =====
+// ==============
+
+template<class FCN>
+void fit_scurve_minuit_3d_impl(NDView<double, 1> x,
+                               NDView<double, 3> y,
+                               NDView<double, 3> y_err,
+                               NDView<double, 3> par_out,
+                               NDView<double, 3> err_out,
+                               NDView<double, 2> chi2_out,
+                               int n_threads)
+{
+    if (x.size() != y.shape(2)) {
+        throw std::runtime_error("fit_scurve_minuit_3d_impl: x.size() must match y.shape(2).");
+    }
+
+    if (par_out.shape(0) != y.shape(0) || par_out.shape(1) != y.shape(1) || par_out.shape(2) != 6)
+        throw std::runtime_error("par_out must have shape [rows, cols, 6].");
+
+    if (chi2_out.shape(0) != y.shape(0) || chi2_out.shape(1) != y.shape(1))
+        throw std::runtime_error("chi2_out must have shape [rows, cols].");
+
+    const bool has_errors = (y_err.size() > 0);
+
+    if (has_errors) {
+        if (y.shape(0) != y_err.shape(0) || y.shape(1) != y_err.shape(1) || y.shape(2) != y_err.shape(2))
+            throw std::runtime_error("fit_scurve_minuit_3d_impl: y_err must have same shape as y.");
+
+        if (err_out.shape(0) != y.shape(0) || err_out.shape(1) != y.shape(1) || err_out.shape(2) != 6)
+            throw std::runtime_error("err_out must have shape [rows, cols, 6].");
+
+        auto process = [&x, &y, &y_err, &par_out, &err_out, &chi2_out]
+                       (ssize_t first_row, ssize_t last_row)
+        {
+            for (ssize_t row = first_row; row < last_row; ++row) {
+                for (ssize_t col = 0; col < y.shape(1); ++col) {
+                    NDView<double, 1> values(&y(row, col, 0), {y.shape(2)});
+                    NDView<double, 1> errors(&y_err(row, col, 0), {y_err.shape(2)});
+
+                    auto res = fit_scurve_minuit_impl<FCN>(x, values, errors, /*compute_errors=*/true);
+                    // res = [p0..p5, err0..err5, chi2]
+
+                    for (ssize_t k = 0; k < 6; ++k) {
+                        par_out(row, col, k) = res(k);
+                        err_out(row, col, k) = res(6 + k);
+                    }
+                    chi2_out(row, col) = res(12);
+                }
+            }
+        };
+
+        auto tasks = split_task(0, static_cast<int>(y.shape(0)), n_threads);
+        RunInParallel(process, tasks);
+    }
+    else {
+        auto process = [&x, &y, &par_out, &chi2_out]
+                       (ssize_t first_row, ssize_t last_row)
+        {
+            for (ssize_t row = first_row; row < last_row; ++row) {
+                for (ssize_t col = 0; col < y.shape(1); ++col) {
+                    NDView<double, 1> values(&y(row, col, 0), {y.shape(2)});
+
+                    auto res = fit_scurve_minuit_impl<FCN>(x, values, /*y_err=*/{}, /*compute_errors=*/false);
+                    // res = [p0..p5, chi2]
+
+                    for (ssize_t k = 0; k < 6; ++k) {
+                        par_out(row, col, k) = res(k);
+                    }
+                    chi2_out(row, col) = res(6);
+                }
+            }
+        };
+
+        auto tasks = split_task(0, static_cast<int>(y.shape(0)), n_threads);
+        RunInParallel(process, tasks);
+    }
+}
+
+// Explicit instantiations -> only Grad optimizers for now!!
+void fit_scurve_minuit_grad_3d(NDView<double, 1> x,
+                        NDView<double, 3> y,
+                        NDView<double, 3> y_err,
+                        NDView<double, 3> par_out,
+                        NDView<double, 3> err_out,
+                        NDView<double, 2> chi2_out,
+                        int n_threads)
+{
+    fit_scurve_minuit_3d_impl<aare::func::Chi2SCurveGrad>(x, y, y_err, par_out, err_out, chi2_out, n_threads);
+}
+
+void fit_scurve2_minuit_grad_3d(NDView<double, 1> x,
+                        NDView<double, 3> y,
+                        NDView<double, 3> y_err,
+                        NDView<double, 3> par_out,
+                        NDView<double, 3> err_out,
+                        NDView<double, 2> chi2_out,
+                        int n_threads)
+{
+    fit_scurve_minuit_3d_impl<aare::func::Chi2SCurve2Grad>(x, y, y_err, par_out, err_out, chi2_out, n_threads);
+}
+
+// Overloads without y_err
+void fit_scurve_minuit_grad_3d(NDView<double, 1> x,
+                               NDView<double, 3> y,
+                               NDView<double, 3> par_out,
+                               NDView<double, 2> chi2_out,
+                               int n_threads)
+{
+    NDView<double, 3> dummy_err{};
+    fit_scurve_minuit_grad_3d(x, y, dummy_err, par_out, dummy_err, chi2_out, n_threads);
+}
+
+void fit_scurve2_minuit_grad_3d(NDView<double, 1> x,
+                                NDView<double, 3> y,
+                                NDView<double, 3> par_out,
+                                NDView<double, 2> chi2_out,
+                                int n_threads)
+{
+    NDView<double, 3> dummy_err{};
+    fit_scurve2_minuit_grad_3d(x, y, dummy_err, par_out, dummy_err, chi2_out, n_threads);
+}
 //////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 

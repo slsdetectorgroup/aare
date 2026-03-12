@@ -614,13 +614,41 @@ void define_fit_bindings(py::module &m) {
         "fit_scurve_minuit_grad",
         [](py::array_t<double, py::array::c_style | py::array::forcecast> x,
            py::array_t<double, py::array::c_style | py::array::forcecast> y,
-           py::object y_err_obj) -> py::object
-        //    int n_threads) -> py::object
+           py::object y_err_obj,
+           int n_threads) -> py::object
         {
             if (y.ndim() == 3) {
-                /* TO IMPLEMENT STILL*/
-                auto result = new NDArray<double, 3>{};
-                return return_image_data(result);
+                auto par_out = new NDArray<double, 3>({y.shape(0), y.shape(1), 6}, 0.0);
+                auto chi2_out = new NDArray<double, 2>({y.shape(0), y.shape(1)}, 0.0);
+
+                auto x_view = make_view_1d(x);
+                auto y_view = make_view_3d(y);
+
+                if (!y_err_obj.is_none()) {
+                    auto y_err = py::cast<py::array_t<double,
+                        py::array::c_style | py::array::forcecast>>(y_err_obj);
+
+                    if (y_err.ndim() != 3) {
+                        throw std::runtime_error("For 3D input y, y_err must also be 3D.");
+                    }
+
+                    auto err_out = new NDArray<double, 3>({y.shape(0), y.shape(1), 6}, 0.0);
+                    auto y_err_view = make_view_3d(y_err);
+
+                    aare::fit_scurve_minuit_grad_3d(x_view, y_view, y_err_view,
+                                    par_out->view(), err_out->view(), chi2_out->view(), n_threads);
+
+                    return py::dict("par"_a = return_image_data(par_out),     // [p0, p1, p2, p3, p4, p5] per-pixel
+                                    "par_err"_a = return_image_data(err_out), // [errP0, errP1, errP2, errP3, errP4, errP5] per-pixel
+                                    "chi2"_a = return_image_data(chi2_out));  // chi2 (per-pixel)
+                } else {
+                    aare::fit_scurve_minuit_grad_3d(x_view, y_view,
+                                    par_out->view(), chi2_out->view(), n_threads);
+
+                    return py::dict("par"_a = return_image_data(par_out),     // [p0, p1, p2, p3, p4, p5] per-pixel
+                                    "chi2"_a = return_image_data(chi2_out));  // chi2 (per-pixel)
+                }
+
             } else if (y.ndim() == 1) {
                 auto result = new NDArray<double, 1>{};
 
@@ -648,7 +676,7 @@ void define_fit_bindings(py::module &m) {
                 throw std::runtime_error("Data must be 1D or 3D");
             }
         }, /* TODO: RAW STRING FOR DESCRIPTION*/
-        py::arg("x"),  py::arg("y"), py::arg("y_err") = py::none()//, py::arg("n_threads") = 4
+        py::arg("x"),  py::arg("y"), py::arg("y_err") = py::none(), py::arg("n_threads") = 4
     );
 
 
@@ -741,13 +769,41 @@ void define_fit_bindings(py::module &m) {
         "fit_scurve2_minuit",
         [](py::array_t<double, py::array::c_style | py::array::forcecast> x,
            py::array_t<double, py::array::c_style | py::array::forcecast> y,
-           py::object y_err_obj) -> py::object
-        //    int n_threads) -> py::object
+           py::object y_err_obj,
+           int n_threads) -> py::object
         {
             if (y.ndim() == 3) {
-                /* TO IMPLEMENT STILL*/
-                auto result = new NDArray<double, 3>{};
-                return return_image_data(result);
+                auto par_out = new NDArray<double, 3>({y.shape(0), y.shape(1), 6}, 0.0);
+                auto chi2_out = new NDArray<double, 2>({y.shape(0), y.shape(1)}, 0.0);
+
+                auto x_view = make_view_1d(x);
+                auto y_view = make_view_3d(y);
+
+                if (!y_err_obj.is_none()) {
+                    auto y_err = py::cast<py::array_t<double,
+                        py::array::c_style | py::array::forcecast>>(y_err_obj);
+
+                    if (y_err.ndim() != 3) {
+                        throw std::runtime_error("For 3D input y, y_err must also be 3D.");
+                    }
+
+                    auto err_out = new NDArray<double, 3>({y.shape(0), y.shape(1), 6}, 0.0);
+                    auto y_err_view = make_view_3d(y_err);
+
+                    aare::fit_scurve2_minuit_grad_3d(x_view, y_view, y_err_view,
+                                    par_out->view(), err_out->view(), chi2_out->view(), n_threads);
+
+                    return py::dict("par"_a = return_image_data(par_out),     // [p0, p1, p2, p3, p4, p5] per-pixel
+                                    "par_err"_a = return_image_data(err_out), // [errP0, errP1, errP2, errP3, errP4, errP5] per-pixel
+                                    "chi2"_a = return_image_data(chi2_out));  // chi2 (per-pixel)
+                } else {
+                    aare::fit_scurve2_minuit_grad_3d(x_view, y_view,
+                                    par_out->view(), chi2_out->view(), n_threads);
+
+                    return py::dict("par"_a = return_image_data(par_out),     // [p0, p1, p2, p3, p4, p5] per-pixel
+                                    "chi2"_a = return_image_data(chi2_out));  // chi2 (per-pixel)
+                }
+                
             } else if (y.ndim() == 1) {
                 auto result = new NDArray<double, 1>{};
 
@@ -775,7 +831,7 @@ void define_fit_bindings(py::module &m) {
                 throw std::runtime_error("Data must be 1D or 3D");
             }
         }, /* TODO: RAW STRING FOR DESCRIPTION*/
-        py::arg("x"),  py::arg("y"), py::arg("y_err") = py::none()//, py::arg("n_threads") = 4
+        py::arg("x"),  py::arg("y"), py::arg("y_err") = py::none(), py::arg("n_threads") = 4
     );
 
     m.def(
