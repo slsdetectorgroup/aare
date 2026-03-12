@@ -1,12 +1,22 @@
 // SPDX-License-Identifier: MPL-2.0
 #include "aare/Fit.hpp"
+#include "aare/Chi2Gaussian.hpp"
+#include "aare/Chi2GaussianGradient.hpp"
+#include "aare/Chi2Scurves.hpp"
+#include "aare/Chi2ScurvesGradient.hpp"
 #include "aare/utils/par.hpp"
 #include "aare/utils/task.hpp"
 #include <lmcurve2.h>
 #include <lmfit.hpp>
 #include <thread>
-
+#include <type_traits>
 #include <array>
+
+#include "Minuit2/FunctionMinimum.h"
+#include "Minuit2/MnMigrad.h"
+#include "Minuit2/MnHesse.h"
+#include "Minuit2/MnUserParameters.h"
+#include "Minuit2/MnPrint.h"
 
 namespace aare {
 
@@ -132,6 +142,298 @@ std::array<double, 2> pol1_init_par(const NDView<double, 1> x,
                   x1; // For the mean we use the x value of the maximum value
     return start_par;
 }
+
+//////////////////////////////////////////////////////////////////////////////////////////////////////////
+// MINUIT2
+//////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+// -------------------------------------------
+// Method 1: Minuit2 without analytic gradient
+// -------------------------------------------
+NDArray<double, 1> fit_gaus_minuit(NDView<double, 1> x,
+                                NDView<double, 1> y,
+                                NDView<double, 1> y_err,
+                                bool compute_errors) {
+
+    auto start = gaus_init_par(x, y);
+
+    // Guard against degenerate data (dead/noisy pixel)
+    if (start[0] <= 0.0 || start[2] <= 0.0) {
+        return NDArray<double, 1>({compute_errors ? 7 : 4}, 0.0);
+    }
+
+    // TODO: What if (y_err.size() > 0) but all values are zeros -> Should choose unweighted Chi2
+    auto chi2 = (y_err.size() > 0)
+        ? aare::func::Chi2Gaussian(x, y, y_err)
+        : aare::func::Chi2Gaussian(x, y);
+
+
+    ROOT::Minuit2::MnUserParameters upar;
+    upar.Add("A",   start[0], start[0] * 0.1, 0.0, start[0] * 2.0);
+    upar.Add("mu",  start[1], start[2] * 0.1,
+             start[1] - 3.0 * start[2], start[1] + 3.0 * start[2]);
+    upar.Add("sig", start[2], start[2] * 0.1, 0.0, start[2] * 5.0);
+
+    ROOT::Minuit2::MnMigrad migrad(chi2, upar);
+    ROOT::Minuit2::FunctionMinimum min = migrad();
+
+    if (!min.IsValid())
+        return NDArray<double, 1>({compute_errors ? 7 : 4}, 0.0);
+
+    if (compute_errors) {
+        ROOT::Minuit2::MnHesse hesse;
+        hesse(chi2, min);
+
+        NDArray<double, 1> result({7});
+        result[0] = min.UserState().Value("A");
+        result[1] = min.UserState().Value("mu");
+        result[2] = min.UserState().Value("sig");
+        result[3] = min.UserState().Error("A");
+        result[4] = min.UserState().Error("mu");
+        result[5] = min.UserState().Error("sig");
+        result[6] = min.Fval(); // chi2
+        return result;
+    }
+
+    NDArray<double, 1> result({4});
+    result[0] = min.UserState().Value("A");
+    result[1] = min.UserState().Value("mu");
+    result[2] = min.UserState().Value("sig");
+    result[3] = min.Fval();
+    return result;
+}
+
+void fit_gaus_minuit_3d(NDView<double, 1> x, 
+                        NDView<double, 3> y,
+                        NDView<double, 3> y_err,
+                        NDView<double, 3> par_out,
+                        NDView<double, 3> err_out,
+                        NDView<double, 2> chi2_out,
+                        int n_threads )
+{
+    if (x.size() != y.shape(2)) {
+        throw std::runtime_error(
+            "fit_gaus_minuit_3d: x.size() must match y.shape(2).");
+    }
+
+    if (par_out.shape(0) != y.shape(0) || par_out.shape(1) != y.shape(1) || par_out.shape(2) != 3)
+        throw std::runtime_error("par_out must have shape [rows, cols, 3].");
+
+    if (chi2_out.shape(0) != y.shape(0) || chi2_out.shape(1) != y.shape(1))
+        throw std::runtime_error("chi2_out must have shape [rows, cols].");
+
+    const bool has_errors = (y_err.size() > 0);
+
+    if (has_errors) {
+        if (y.shape(0) != y_err.shape(0) ||
+            y.shape(1) != y_err.shape(1) ||
+            y.shape(2) != y_err.shape(2)) {
+            throw std::runtime_error(
+                "fit_gaus_minuit_3d: y_err must have the same shape as y.");
+        }
+
+        if (err_out.shape(0) != y.shape(0) || err_out.shape(1) != y.shape(1) || err_out.shape(2) != 3)
+            throw std::runtime_error("err_out must have shape [rows, cols, 3].");
+
+        auto process = [&x, &y, &y_err, &par_out, &err_out, &chi2_out](ssize_t first_row, ssize_t last_row) {
+            for (ssize_t row = first_row; row < last_row; ++row) {
+                for (ssize_t col = 0; col < y.shape(1); ++col) {
+                    NDView<double, 1> values(&y(row, col, 0), {y.shape(2)});
+                    NDView<double, 1> errors(&y_err(row, col, 0), {y_err.shape(2)});
+
+                    auto res = fit_gaus_minuit(x, values,  /*y_err = */ errors, /*compute_errors =*/ true );
+                    // res = [A, mu, sig, errA, errMu, errSig, chi2]
+
+                    par_out(row, col, 0) = res(0);
+                    par_out(row, col, 1) = res(1);
+                    par_out(row, col, 2) = res(2);
+                    err_out(row, col, 0) = res(3);
+                    err_out(row, col, 1) = res(4);
+                    err_out(row, col, 2) = res(5);
+                    chi2_out(row, col) = res(6);
+                }
+            }
+        };
+
+        auto tasks = split_task(0, static_cast<int>(y.shape(0)), n_threads);
+        RunInParallel(process, tasks);
+    }
+    else {
+        auto process = [&x, &y, &par_out, &chi2_out](ssize_t first_row, ssize_t last_row) {
+            for (ssize_t row = first_row; row < last_row; ++row) {
+                for (ssize_t col = 0; col < y.shape(1); ++col) {
+                    NDView<double, 1> values(&y(row, col, 0), {y.shape(2)});
+
+                    auto res = fit_gaus_minuit(x, values, /*y_err = */ {}, /*compute_errors =*/ false);
+
+                    par_out(row, col, 0) = res(0);
+                    par_out(row, col, 1) = res(1);
+                    par_out(row, col, 2) = res(2);
+                    chi2_out(row, col) = res(3);
+                }
+            }
+        };
+    
+        auto tasks = split_task(0, static_cast<int>(y.shape(0)), n_threads);
+        RunInParallel(process, tasks);
+    }
+}
+
+// Overload without an input `y_err`  
+void fit_gaus_minuit_3d(NDView<double, 1> x, 
+                        NDView<double, 3> y,
+                        NDView<double, 3> par_out,
+                        NDView<double, 2> chi2_out,
+                        int n_threads) 
+{
+    NDView<double, 3> dummy_err{};
+    fit_gaus_minuit_3d(x, y, /*y_err=*/dummy_err, par_out, /*err_out=*/dummy_err, chi2_out, n_threads);
+}
+
+
+// ------------------------------------------------------------------
+// Method 2: Minuit2 with analytic gradient + Hesse errors (optional)
+// ------------------------------------------------------------------
+NDArray<double, 1> fit_gaus_minuit_grad(NDView<double, 1> x,
+                                        NDView<double, 1> y,
+                                        NDView<double, 1> y_err,
+                                        bool compute_errors) {
+    auto start = gaus_init_par(x, y);
+
+    if (start[0] <= 0.0 || start[2] <= 0.0)
+        return NDArray<double, 1>({compute_errors ? 7 : 4}, 0.0);
+
+    auto chi2 = (y_err.size() > 0)
+        ? aare::func::Chi2GaussianGradient(x, y, y_err)
+        : aare::func::Chi2GaussianGradient(x, y);
+
+    ROOT::Minuit2::MnUserParameters upar;
+    // TODO: Optimize bounds
+    upar.Add("A",   start[0], start[0] * 0.1, 0.0, start[0] * 2.0);
+    upar.Add("mu",  start[1], start[2] * 0.1,
+             start[1] - 3.0 * start[2], start[1] + 3.0 * start[2]);
+    upar.Add("sig", start[2], start[2] * 0.1, 0.0, start[2] * 5.0);
+
+    ROOT::Minuit2::MnMigrad migrad(chi2, upar);
+    ROOT::Minuit2::FunctionMinimum min = migrad();
+
+    if (!min.IsValid())
+        return NDArray<double, 1>({compute_errors ? 7 : 4}, 0.0);
+
+    if (compute_errors) {
+        ROOT::Minuit2::MnHesse hesse;
+        hesse(chi2, min);
+
+        NDArray<double, 1> result({7});
+        result[0] = min.UserState().Value("A");
+        result[1] = min.UserState().Value("mu");
+        result[2] = min.UserState().Value("sig");
+        result[3] = min.UserState().Error("A");
+        result[4] = min.UserState().Error("mu");
+        result[5] = min.UserState().Error("sig");
+        result[6] = min.Fval(); // chi2
+        return result;
+    }
+
+    NDArray<double, 1> result({4});
+    result[0] = min.UserState().Value("A");
+    result[1] = min.UserState().Value("mu");
+    result[2] = min.UserState().Value("sig");
+    result[3] = min.Fval();
+    return result;
+}
+
+void fit_gaus_minuit_grad_3d(NDView<double, 1> x, 
+                            NDView<double, 3> y,
+                            NDView<double, 3> y_err,
+                            NDView<double, 3> par_out,
+                            NDView<double, 3> err_out,
+                            NDView<double, 2> chi2_out,
+                            int n_threads) { // Only computes errors `err_out` when `y_err` is passed as argument
+
+    if (x.size() != y.shape(2)) {
+        throw std::runtime_error(
+            "fit_gaus_minuit_grad_3d: x.size() must match y.shape(2).");
+    }
+
+    if (par_out.shape(0) != y.shape(0) || par_out.shape(1) != y.shape(1) || par_out.shape(2) != 3)
+        throw std::runtime_error("par_out must have shape [rows, cols, 3].");
+
+    if (chi2_out.shape(0) != y.shape(0) || chi2_out.shape(1) != y.shape(1))
+        throw std::runtime_error("chi2_out must have shape [rows, cols].");
+    
+    const bool has_errors = (y_err.size() > 0);
+
+    if (has_errors) {
+        if (y.shape(0) != y_err.shape(0) ||
+        y.shape(1) != y_err.shape(1) ||
+        y.shape(2) != y_err.shape(2)) {
+        throw std::runtime_error(
+            "fit_gaus_minuit_grad_3d: y and y_err must have identical shape.");
+        }
+
+        if (err_out.shape(0) != y.shape(0) || err_out.shape(1) != y.shape(1) || err_out.shape(2) != 3)
+            throw std::runtime_error("err_out must have shape [rows, cols, 3].");
+
+        auto process = [&x, &y, &y_err, &par_out, &err_out, &chi2_out](ssize_t first_row, ssize_t last_row) {
+            for (ssize_t row = first_row; row < last_row; row++) {
+                for (ssize_t col = 0; col < y.shape(1); col++) {
+
+                    NDView<double, 1> values(&y(row, col, 0), {y.shape(2)});
+                    NDView<double, 1> errors(&y_err(row, col, 0), {y_err.shape(2)});
+
+                    auto res = fit_gaus_minuit_grad(x, values, /*y_err = */ errors, /*compute_errors =*/ true);
+                    // res = [A, mu, sig, errA, errMu, errSig, chi2]
+
+                    par_out(row, col, 0) = res(0);
+                    par_out(row, col, 1) = res(1);
+                    par_out(row, col, 2) = res(2);
+                    err_out(row, col, 0) = res(3);
+                    err_out(row, col, 1) = res(4);
+                    err_out(row, col, 2) = res(5);
+                    chi2_out(row, col) = res(6);
+                }
+            }
+        };
+
+        auto tasks = split_task(0, static_cast<int>(y.shape(0)), n_threads);
+        RunInParallel(process, tasks);
+    } else {
+                auto process = [&x, &y, &par_out, &chi2_out](ssize_t first_row, ssize_t last_row) {
+            for (ssize_t row = first_row; row < last_row; row++) {
+                for (ssize_t col = 0; col < y.shape(1); col++) {
+
+                    NDView<double, 1> values(&y(row, col, 0), {y.shape(2)});
+
+                    auto res = fit_gaus_minuit_grad(x, values, /*y_err = */ {}, /*compute_errors =*/ false);
+                    // res = [A, mu, sig, chi2]
+
+                    par_out(row, col, 0) = res(0);
+                    par_out(row, col, 1) = res(1);
+                    par_out(row, col, 2) = res(2);
+                    chi2_out(row, col) = res(3);
+                }
+            }
+        };
+
+        auto tasks = split_task(0, static_cast<int>(y.shape(0)), n_threads);
+        RunInParallel(process, tasks);
+    }
+
+}
+
+// Overload without input `y_err` 
+void fit_gaus_minuit_grad_3d(NDView<double, 1> x, 
+                            NDView<double, 3> y,
+                            NDView<double, 3> par_out,
+                            NDView<double, 2> chi2_out,
+                            int n_threads) 
+{
+    NDView<double, 3> dummy_err{};
+    fit_gaus_minuit_grad_3d(x, y, /*y_err=*/dummy_err, par_out, /*err_out=*/dummy_err, chi2_out, n_threads);
+} 
+
+//////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 void fit_gaus(NDView<double, 1> x, NDView<double, 1> y, NDView<double, 1> y_err,
               NDView<double, 1> par_out, NDView<double, 1> par_err_out,
@@ -338,6 +640,68 @@ std::array<double, 6> scurve_init_par(const NDView<double, 1> x,
     return start_par;
 }
 
+/////////////////////// Data-driven guess fct  /////////////////////////
+std::array<double, 6> scurve_estimate_par(const NDView<double, 1> x,
+                                        const NDView<double, 1> y) {
+    std::array<double, 6> start{};
+    const ssize_t n = y.size();
+
+    // baseline: average of first ~10% of points (before turn-on)
+    ssize_t n_base = std::max<ssize_t>(n / 10, 2);
+    double sum_y = 0, sum_xy = 0, sum_x = 0, sum_x2 = 0;
+    for (ssize_t i = 0; i < n_base; ++i) {
+        sum_y  += y[i];
+        sum_x  += x[i];
+        sum_xy += x[i] * y[i];
+        sum_x2 += x[i] * x[i];
+    }
+    double denom = n_base * sum_x2 - sum_x * sum_x;
+    start[1] = (std::abs(denom) > 1e-30)
+             ? (n_base * sum_xy - sum_x * sum_y) / denom
+             : 0.0;
+    start[0] = (sum_y - start[1] * sum_x) / n_base;
+
+    // plateau: average of last ~10%
+    double plateau = 0;
+    ssize_t n_plat = std::max<ssize_t>(n / 10, 2);
+    for (ssize_t i = n - n_plat; i < n; ++i)
+        plateau += y[i];
+    plateau /= n_plat;
+
+    // amplitude: plateau minus baseline at midpoint
+    double x_mid = 0.5 * (x[0] + x[n - 1]);
+    double baseline_at_mid = start[0] + start[1] * x_mid;
+    start[4] = plateau - baseline_at_mid;
+
+    // threshold: x where y first crosses 50% between baseline and plateau
+    double y_half = baseline_at_mid + 0.5 * start[4];
+    start[2] = x_mid; // fallback
+    for (ssize_t i = 0; i < n; ++i) {
+        if (y[i] >= y_half) {
+            start[2] = x[i];
+            break;
+        }
+    }
+
+    // sigma: estimate from transition width (10%-90% rise)
+    double y_10 = baseline_at_mid + 0.1 * start[4];
+    double y_90 = baseline_at_mid + 0.9 * start[4];
+    double x_10 = x[0], x_90 = x[n - 1];
+    for (ssize_t i = 0; i < n; ++i) {
+        if (y[i] >= y_10) { x_10 = x[i]; break; }
+    }
+    for (ssize_t i = 0; i < n; ++i) {
+        if (y[i] >= y_90) { x_90 = x[i]; break; }
+    }
+    // for a Gaussian CDF: 10%-90% width = 2 * 1.2816 * sigma
+    start[3] = std::max((x_90 - x_10) / 2.5631, 1.0);
+
+    start[5] = 0.0; // assume flat gain, let optimizer find the slope
+
+    return start;
+}
+//////////////////////////////////////////////////////////////////////
+
 // - No error
 NDArray<double, 1> fit_scurve(NDView<double, 1> x, NDView<double, 1> y) {
     NDArray<double, 1> result = scurve_init_par(x, y);
@@ -455,6 +819,69 @@ std::array<double, 6> scurve2_init_par(const NDView<double, 1> x,
     return start_par;
 }
 
+
+/////////////////////// Data-driven guess fct  /////////////////////////
+std::array<double, 6> scurve2_estimate_par(const NDView<double, 1> x,
+                                        const NDView<double, 1> y) {
+    std::array<double, 6> start{};
+    const ssize_t n = y.size();
+
+    // baseline: last ~10% of points (after turn-off)
+    ssize_t n_base = std::max<ssize_t>(n / 10, 2);
+    double sum_y = 0, sum_xy = 0, sum_x = 0, sum_x2 = 0;
+    for (ssize_t i = n - n_base; i < n; ++i) {
+        sum_y  += y[i];
+        sum_x  += x[i];
+        sum_xy += x[i] * y[i];
+        sum_x2 += x[i] * x[i];
+    }
+    double denom = n_base * sum_x2 - sum_x * sum_x;
+    start[1] = (std::abs(denom) > 1e-30)
+             ? (n_base * sum_xy - sum_x * sum_y) / denom
+             : 0.0;
+    start[0] = (sum_y - start[1] * sum_x) / n_base;
+
+    // plateau: average of first ~10%
+    double plateau = 0;
+    ssize_t n_plat = std::max<ssize_t>(n / 10, 2);
+    for (ssize_t i = 0; i < n_plat; ++i)
+        plateau += y[i];
+    plateau /= n_plat;
+
+    // amplitude: plateau minus baseline at midpoint
+    double x_mid = 0.5 * (x[0] + x[n - 1]);
+    double baseline_at_mid = start[0] + start[1] * x_mid;
+    start[4] = plateau - baseline_at_mid;
+
+    // threshold: x where y first drops below 50%
+    double y_half = baseline_at_mid + 0.5 * start[4];
+    start[2] = x_mid; // fallback
+    for (ssize_t i = 0; i < n; ++i) {
+        if (y[i] <= y_half) {
+            start[2] = x[i];
+            break;
+        }
+    }
+
+    // sigma: estimate from transition width (90%-10% fall)
+    double y_90 = baseline_at_mid + 0.9 * start[4];
+    double y_10 = baseline_at_mid + 0.1 * start[4];
+    double x_90 = x[0], x_10 = x[n - 1];
+    for (ssize_t i = 0; i < n; ++i) {
+        if (y[i] <= y_90) { x_90 = x[i]; break; }
+    }
+    for (ssize_t i = 0; i < n; ++i) {
+        if (y[i] <= y_10) { x_10 = x[i]; break; }
+    }
+    // same CDF relationship: 10%-90% width = 2 * 1.2816 * sigma
+    start[3] = std::max((x_10 - x_90) / 2.5631, 1.0);
+
+    start[5] = 0.0;
+
+    return start;
+}
+//////////////////////////////////////////////////////////////////////
+
 // - No error
 NDArray<double, 1> fit_scurve2(NDView<double, 1> x, NDView<double, 1> y) {
     NDArray<double, 1> result = scurve2_init_par(x, y);
@@ -544,5 +971,297 @@ void fit_scurve2(NDView<double, 1> x, NDView<double, 3> y,
     auto tasks = split_task(0, y.shape(0), n_threads);
     RunInParallel(process, tasks);
 }
+
+//////////////////////////////////////////////////////////////////////////////////////////////////////////
+// MINUIT2
+//////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+// ==============
+// ===== 1D =====
+// ==============
+
+template<class FCN>
+NDArray<double,1> fit_scurve_minuit_impl(NDView<double, 1> x,
+                                    NDView<double, 1> y,
+                                    NDView<double, 1> y_err,
+                                    bool compute_errors)
+{
+    constexpr bool scurve_rising = std::is_same_v<FCN, aare::func::Chi2SCurve> || std::is_same_v<FCN, aare::func::Chi2SCurveGrad> ;
+    constexpr bool scurve_falling = std::is_same_v<FCN, aare::func::Chi2SCurve2> || std::is_same_v<FCN, aare::func::Chi2SCurve2Grad>;
+
+    static_assert(scurve_rising || scurve_falling,
+        "fit_scurve_minuit_impl only supports Chi2SCurve, Chi2SCurveGrad, Chi2SCurve2 and Chi2SCurve2Grad.");
+
+    if(x.size() != y.size()){
+        throw std::runtime_error("fit_scurve_minuit_impl: x.size() must equal y.size()");
+    }
+
+    if(y_err.size() > 0 && y_err.size() != y.size()){
+        throw std::runtime_error("fit_scurve_minuit_impl: y_err.size() must equal y.size()");
+    }
+
+    std::array<double, 6> start{};
+
+    if constexpr(scurve_rising){
+        start = scurve_estimate_par(x,y); // scurve_init_par(x,y);
+    } else {
+        start = scurve2_estimate_par(x,y);  // scurve2_init_par(x,y);
+    }
+
+    // dead/degenrate pixel guard
+    if (start[3] <= 0.0 || !std::isfinite(start[3])) {
+        return NDArray<double, 1>({compute_errors ? 13 : 7}, 0.0);
+    }
+
+    const bool use_weights = (y_err.size() > 0); // TODO: check if all_zero(y_err) is also False 
+
+    auto chi2 = use_weights ? FCN(x, y, y_err) : FCN(x,y);
+
+    const double x_min   = std::min(x[0], x[x.size() - 1]);
+    const double x_max   = std::max(x[0], x[x.size() - 1]);
+    const double x_range = std::max(x_max - x_min, 1e-12);
+
+    double y_min = y[0], y_max = y[0];
+    for (ssize_t i = 1; i < y.size(); ++i) {
+        y_min = std::min(y_min, y[i]);
+        y_max = std::max(y_max, y[i]);
+    }
+    const double y_range     = std::max(y_max - y_min, 1e-9);
+    const double slope_scale = std::max(y_range / x_range, 1e-9);
+
+    ROOT::Minuit2::MnUserParameters upar;
+
+    // p0: baseline offset
+    upar.Add("p0", start[0], std::max(0.1 * std::abs(start[0]), 0.1 * y_range)); //  start[0] - 5.0 * y_range, start[0] + 5.0 * y_range);
+
+    // p1: baseline slope
+    upar.Add("p1", start[1], 0.1 * slope_scale); //  start[1] - 10.0 * slope_scale, start[1] + 10.0 * slope_scale);
+
+    // p2: center
+    upar.Add("p2", start[2], 0.05 * x_range); //  x_min, x_max);
+
+    // p3: width
+    upar.Add("p3", start[3],
+             0.05 * x_range,
+             1e-12, 2.0 * x_range); // keep bounds here
+
+    // p4: amplitude at transition
+    upar.Add("p4", start[4], std::max(0.1 * std::abs(start[4]), 0.1 * y_range)); //  -5.0 * y_range, 5.0 * y_range);
+
+    // p5: slope increment after step
+    upar.Add("p5", start[5], 0.1 * slope_scale); //  start[5] - 10.0 * slope_scale, start[5] + 10.0 * slope_scale);
+
+    constexpr bool has_gradient =
+        std::is_same_v<FCN, aare::func::Chi2SCurveGrad> ||
+        std::is_same_v<FCN, aare::func::Chi2SCurve2Grad>;
+
+    ROOT::Minuit2::MnStrategy strategy(has_gradient ? 0 : 1); // minimal overhead with MnStrategy(0) vs default MnStrategy(1)
+    ROOT::Minuit2::MnMigrad migrad(chi2, upar, strategy);
+
+    constexpr unsigned int max_calls = has_gradient ? 100 : 500;
+    ROOT::Minuit2::FunctionMinimum min = migrad(max_calls, /*tolerance=*/0.5);
+
+    if (!min.IsValid()) {
+        return NDArray<double, 1>({compute_errors ? 13 : 7}, 0.0);
+    }
+
+    if(compute_errors){
+        ROOT::Minuit2::MnHesse hesse;
+        hesse(chi2, min);
+
+        const auto& values = min.UserState().Params();
+        const auto& errors = min.UserState().Errors();
+
+        NDArray<double, 1> result({13});
+        result[0]  = values[0];
+        result[1]  = values[1];
+        result[2]  = values[2];
+        result[3]  = values[3];
+        result[4]  = values[4];
+        result[5]  = values[5];
+        result[6]  = errors[0];
+        result[7]  = errors[1];
+        result[8]  = errors[2];
+        result[9]  = errors[3];
+        result[10] = errors[4];
+        result[11] = errors[5];
+        result[12] = min.Fval();
+        return result;
+    }
+
+    const auto& values = min.UserState().Params();
+
+    NDArray<double, 1> result({7});
+    result[0]  = values[0]; 
+    result[1]  = values[1]; 
+    result[2]  = values[2];
+    result[3]  = values[3];
+    result[4]  = values[4];
+    result[5]  = values[5];
+    result[6] = min.Fval();
+    return result;
+
+}
+
+// Rising S-curves
+
+NDArray<double, 1> fit_scurve_minuit(NDView<double, 1> x,
+                                     NDView<double, 1> y, 
+                                     NDView<double, 1> y_err, 
+                                     bool compute_errors)
+{
+    return fit_scurve_minuit_impl<aare::func::Chi2SCurve>(x, y, y_err, compute_errors);
+}
+
+NDArray<double, 1> fit_scurve_minuit_grad(NDView<double, 1> x,
+                                     NDView<double, 1> y, 
+                                     NDView<double, 1> y_err, 
+                                     bool compute_errors)
+{
+    return fit_scurve_minuit_impl<aare::func::Chi2SCurveGrad>(x, y, y_err, compute_errors);
+}
+
+// Falling S-curves
+
+NDArray<double, 1> fit_scurve2_minuit(NDView<double, 1> x,
+                                     NDView<double, 1> y, 
+                                     NDView<double, 1> y_err, 
+                                     bool compute_errors)
+{
+    return fit_scurve_minuit_impl<aare::func::Chi2SCurve2>(x, y, y_err, compute_errors);
+}
+
+NDArray<double, 1> fit_scurve2_minuit_grad(NDView<double, 1> x,
+                                     NDView<double, 1> y, 
+                                     NDView<double, 1> y_err, 
+                                     bool compute_errors)
+{
+    return fit_scurve_minuit_impl<aare::func::Chi2SCurve2Grad>(x, y, y_err, compute_errors);
+}
+
+// ==============
+// ===== 3D =====
+// ==============
+
+template<class FCN>
+void fit_scurve_minuit_3d_impl(NDView<double, 1> x,
+                               NDView<double, 3> y,
+                               NDView<double, 3> y_err,
+                               NDView<double, 3> par_out,
+                               NDView<double, 3> err_out,
+                               NDView<double, 2> chi2_out,
+                               int n_threads)
+{
+    if (x.size() != y.shape(2)) {
+        throw std::runtime_error("fit_scurve_minuit_3d_impl: x.size() must match y.shape(2).");
+    }
+
+    if (par_out.shape(0) != y.shape(0) || par_out.shape(1) != y.shape(1) || par_out.shape(2) != 6)
+        throw std::runtime_error("par_out must have shape [rows, cols, 6].");
+
+    if (chi2_out.shape(0) != y.shape(0) || chi2_out.shape(1) != y.shape(1))
+        throw std::runtime_error("chi2_out must have shape [rows, cols].");
+
+    const bool has_errors = (y_err.size() > 0);
+
+    if (has_errors) {
+        if (y.shape(0) != y_err.shape(0) || y.shape(1) != y_err.shape(1) || y.shape(2) != y_err.shape(2))
+            throw std::runtime_error("fit_scurve_minuit_3d_impl: y_err must have same shape as y.");
+
+        if (err_out.shape(0) != y.shape(0) || err_out.shape(1) != y.shape(1) || err_out.shape(2) != 6)
+            throw std::runtime_error("err_out must have shape [rows, cols, 6].");
+
+        auto process = [&x, &y, &y_err, &par_out, &err_out, &chi2_out]
+                       (ssize_t first_row, ssize_t last_row)
+        {
+            for (ssize_t row = first_row; row < last_row; ++row) {
+                for (ssize_t col = 0; col < y.shape(1); ++col) {
+                    NDView<double, 1> values(&y(row, col, 0), {y.shape(2)});
+                    NDView<double, 1> errors(&y_err(row, col, 0), {y_err.shape(2)});
+
+                    auto res = fit_scurve_minuit_impl<FCN>(x, values, errors, /*compute_errors=*/true);
+                    // res = [p0..p5, err0..err5, chi2]
+
+                    for (ssize_t k = 0; k < 6; ++k) {
+                        par_out(row, col, k) = res(k);
+                        err_out(row, col, k) = res(6 + k);
+                    }
+                    chi2_out(row, col) = res(12);
+                }
+            }
+        };
+
+        auto tasks = split_task(0, static_cast<int>(y.shape(0)), n_threads);
+        RunInParallel(process, tasks);
+    }
+    else {
+        auto process = [&x, &y, &par_out, &chi2_out]
+                       (ssize_t first_row, ssize_t last_row)
+        {
+            for (ssize_t row = first_row; row < last_row; ++row) {
+                for (ssize_t col = 0; col < y.shape(1); ++col) {
+                    NDView<double, 1> values(&y(row, col, 0), {y.shape(2)});
+
+                    auto res = fit_scurve_minuit_impl<FCN>(x, values, /*y_err=*/{}, /*compute_errors=*/false);
+                    // res = [p0..p5, chi2]
+
+                    for (ssize_t k = 0; k < 6; ++k) {
+                        par_out(row, col, k) = res(k);
+                    }
+                    chi2_out(row, col) = res(6);
+                }
+            }
+        };
+
+        auto tasks = split_task(0, static_cast<int>(y.shape(0)), n_threads);
+        RunInParallel(process, tasks);
+    }
+}
+
+// Explicit instantiations -> only Grad optimizers for now!!
+void fit_scurve_minuit_grad_3d(NDView<double, 1> x,
+                        NDView<double, 3> y,
+                        NDView<double, 3> y_err,
+                        NDView<double, 3> par_out,
+                        NDView<double, 3> err_out,
+                        NDView<double, 2> chi2_out,
+                        int n_threads)
+{
+    fit_scurve_minuit_3d_impl<aare::func::Chi2SCurveGrad>(x, y, y_err, par_out, err_out, chi2_out, n_threads);
+}
+
+void fit_scurve2_minuit_grad_3d(NDView<double, 1> x,
+                        NDView<double, 3> y,
+                        NDView<double, 3> y_err,
+                        NDView<double, 3> par_out,
+                        NDView<double, 3> err_out,
+                        NDView<double, 2> chi2_out,
+                        int n_threads)
+{
+    fit_scurve_minuit_3d_impl<aare::func::Chi2SCurve2Grad>(x, y, y_err, par_out, err_out, chi2_out, n_threads);
+}
+
+// Overloads without y_err
+void fit_scurve_minuit_grad_3d(NDView<double, 1> x,
+                               NDView<double, 3> y,
+                               NDView<double, 3> par_out,
+                               NDView<double, 2> chi2_out,
+                               int n_threads)
+{
+    NDView<double, 3> dummy_err{};
+    fit_scurve_minuit_grad_3d(x, y, dummy_err, par_out, dummy_err, chi2_out, n_threads);
+}
+
+void fit_scurve2_minuit_grad_3d(NDView<double, 1> x,
+                                NDView<double, 3> y,
+                                NDView<double, 3> par_out,
+                                NDView<double, 2> chi2_out,
+                                int n_threads)
+{
+    NDView<double, 3> dummy_err{};
+    fit_scurve2_minuit_grad_3d(x, y, dummy_err, par_out, dummy_err, chi2_out, n_threads);
+}
+//////////////////////////////////////////////////////////////////////////////////////////////////////////
+
 
 } // namespace aare
