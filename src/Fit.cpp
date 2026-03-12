@@ -640,6 +640,68 @@ std::array<double, 6> scurve_init_par(const NDView<double, 1> x,
     return start_par;
 }
 
+/////////////////////// Data-driven guess fct  /////////////////////////
+std::array<double, 6> scurve_estimate_par(const NDView<double, 1> x,
+                                        const NDView<double, 1> y) {
+    std::array<double, 6> start{};
+    const ssize_t n = y.size();
+
+    // baseline: average of first ~10% of points (before turn-on)
+    ssize_t n_base = std::max<ssize_t>(n / 10, 2);
+    double sum_y = 0, sum_xy = 0, sum_x = 0, sum_x2 = 0;
+    for (ssize_t i = 0; i < n_base; ++i) {
+        sum_y  += y[i];
+        sum_x  += x[i];
+        sum_xy += x[i] * y[i];
+        sum_x2 += x[i] * x[i];
+    }
+    double denom = n_base * sum_x2 - sum_x * sum_x;
+    start[1] = (std::abs(denom) > 1e-30)
+             ? (n_base * sum_xy - sum_x * sum_y) / denom
+             : 0.0;
+    start[0] = (sum_y - start[1] * sum_x) / n_base;
+
+    // plateau: average of last ~10%
+    double plateau = 0;
+    ssize_t n_plat = std::max<ssize_t>(n / 10, 2);
+    for (ssize_t i = n - n_plat; i < n; ++i)
+        plateau += y[i];
+    plateau /= n_plat;
+
+    // amplitude: plateau minus baseline at midpoint
+    double x_mid = 0.5 * (x[0] + x[n - 1]);
+    double baseline_at_mid = start[0] + start[1] * x_mid;
+    start[4] = plateau - baseline_at_mid;
+
+    // threshold: x where y first crosses 50% between baseline and plateau
+    double y_half = baseline_at_mid + 0.5 * start[4];
+    start[2] = x_mid; // fallback
+    for (ssize_t i = 0; i < n; ++i) {
+        if (y[i] >= y_half) {
+            start[2] = x[i];
+            break;
+        }
+    }
+
+    // sigma: estimate from transition width (10%-90% rise)
+    double y_10 = baseline_at_mid + 0.1 * start[4];
+    double y_90 = baseline_at_mid + 0.9 * start[4];
+    double x_10 = x[0], x_90 = x[n - 1];
+    for (ssize_t i = 0; i < n; ++i) {
+        if (y[i] >= y_10) { x_10 = x[i]; break; }
+    }
+    for (ssize_t i = 0; i < n; ++i) {
+        if (y[i] >= y_90) { x_90 = x[i]; break; }
+    }
+    // for a Gaussian CDF: 10%-90% width = 2 * 1.2816 * sigma
+    start[3] = std::max((x_90 - x_10) / 2.5631, 1.0);
+
+    start[5] = 0.0; // assume flat gain, let optimizer find the slope
+
+    return start;
+}
+//////////////////////////////////////////////////////////////////////
+
 // - No error
 NDArray<double, 1> fit_scurve(NDView<double, 1> x, NDView<double, 1> y) {
     NDArray<double, 1> result = scurve_init_par(x, y);
@@ -756,6 +818,69 @@ std::array<double, 6> scurve2_init_par(const NDView<double, 1> x,
     start_par[5] = -1;
     return start_par;
 }
+
+
+/////////////////////// Data-driven guess fct  /////////////////////////
+std::array<double, 6> scurve2_estimate_par(const NDView<double, 1> x,
+                                        const NDView<double, 1> y) {
+    std::array<double, 6> start{};
+    const ssize_t n = y.size();
+
+    // baseline: last ~10% of points (after turn-off)
+    ssize_t n_base = std::max<ssize_t>(n / 10, 2);
+    double sum_y = 0, sum_xy = 0, sum_x = 0, sum_x2 = 0;
+    for (ssize_t i = n - n_base; i < n; ++i) {
+        sum_y  += y[i];
+        sum_x  += x[i];
+        sum_xy += x[i] * y[i];
+        sum_x2 += x[i] * x[i];
+    }
+    double denom = n_base * sum_x2 - sum_x * sum_x;
+    start[1] = (std::abs(denom) > 1e-30)
+             ? (n_base * sum_xy - sum_x * sum_y) / denom
+             : 0.0;
+    start[0] = (sum_y - start[1] * sum_x) / n_base;
+
+    // plateau: average of first ~10%
+    double plateau = 0;
+    ssize_t n_plat = std::max<ssize_t>(n / 10, 2);
+    for (ssize_t i = 0; i < n_plat; ++i)
+        plateau += y[i];
+    plateau /= n_plat;
+
+    // amplitude: plateau minus baseline at midpoint
+    double x_mid = 0.5 * (x[0] + x[n - 1]);
+    double baseline_at_mid = start[0] + start[1] * x_mid;
+    start[4] = plateau - baseline_at_mid;
+
+    // threshold: x where y first drops below 50%
+    double y_half = baseline_at_mid + 0.5 * start[4];
+    start[2] = x_mid; // fallback
+    for (ssize_t i = 0; i < n; ++i) {
+        if (y[i] <= y_half) {
+            start[2] = x[i];
+            break;
+        }
+    }
+
+    // sigma: estimate from transition width (90%-10% fall)
+    double y_90 = baseline_at_mid + 0.9 * start[4];
+    double y_10 = baseline_at_mid + 0.1 * start[4];
+    double x_90 = x[0], x_10 = x[n - 1];
+    for (ssize_t i = 0; i < n; ++i) {
+        if (y[i] <= y_90) { x_90 = x[i]; break; }
+    }
+    for (ssize_t i = 0; i < n; ++i) {
+        if (y[i] <= y_10) { x_10 = x[i]; break; }
+    }
+    // same CDF relationship: 10%-90% width = 2 * 1.2816 * sigma
+    start[3] = std::max((x_10 - x_90) / 2.5631, 1.0);
+
+    start[5] = 0.0;
+
+    return start;
+}
+//////////////////////////////////////////////////////////////////////
 
 // - No error
 NDArray<double, 1> fit_scurve2(NDView<double, 1> x, NDView<double, 1> y) {
@@ -874,9 +999,9 @@ NDArray<double,1> fit_scurve_minuit_impl(NDView<double, 1> x,
     std::array<double, 6> start{};
 
     if constexpr(scurve_rising){
-        start = scurve_init_par(x,y);
+        start = scurve_estimate_par(x,y); // scurve_init_par(x,y);
     } else {
-        start = scurve2_init_par(x,y);
+        start = scurve2_estimate_par(x,y);  // scurve2_init_par(x,y);
     }
 
     // dead/degenrate pixel guard
@@ -903,40 +1028,34 @@ NDArray<double,1> fit_scurve_minuit_impl(NDView<double, 1> x,
     ROOT::Minuit2::MnUserParameters upar;
 
     // p0: baseline offset
-    upar.Add("p0", start[0],
-             std::max(0.1 * std::abs(start[0]), 0.1 * y_range),
-             start[0] - 5.0 * y_range,
-             start[0] + 5.0 * y_range);
+    upar.Add("p0", start[0], std::max(0.1 * std::abs(start[0]), 0.1 * y_range)); //  start[0] - 5.0 * y_range, start[0] + 5.0 * y_range);
 
     // p1: baseline slope
-    upar.Add("p1", start[1],
-             0.1 * slope_scale,
-             start[1] - 10.0 * slope_scale,
-             start[1] + 10.0 * slope_scale);
+    upar.Add("p1", start[1], 0.1 * slope_scale); //  start[1] - 10.0 * slope_scale, start[1] + 10.0 * slope_scale);
 
     // p2: center
-    upar.Add("p2", start[2],
-             0.05 * x_range,
-             x_min, x_max);
+    upar.Add("p2", start[2], 0.05 * x_range); //  x_min, x_max);
 
     // p3: width
     upar.Add("p3", start[3],
              0.05 * x_range,
-             1e-12, 2.0 * x_range);
+             1e-12, 2.0 * x_range); // keep bounds here
 
     // p4: amplitude at transition
-    upar.Add("p4", start[4],
-             std::max(0.1 * std::abs(start[4]), 0.1 * y_range),
-             -5.0 * y_range, 5.0 * y_range);
+    upar.Add("p4", start[4], std::max(0.1 * std::abs(start[4]), 0.1 * y_range)); //  -5.0 * y_range, 5.0 * y_range);
 
     // p5: slope increment after step
-    upar.Add("p5", start[5],
-             0.1 * slope_scale,
-             start[5] - 10.0 * slope_scale,
-             start[5] + 10.0 * slope_scale);
+    upar.Add("p5", start[5], 0.1 * slope_scale); //  start[5] - 10.0 * slope_scale, start[5] + 10.0 * slope_scale);
 
-    ROOT::Minuit2::MnMigrad migrad(chi2, upar);
-    ROOT::Minuit2::FunctionMinimum min = migrad();
+    constexpr bool has_gradient =
+        std::is_same_v<FCN, aare::func::Chi2SCurveGrad> ||
+        std::is_same_v<FCN, aare::func::Chi2SCurve2Grad>;
+
+    ROOT::Minuit2::MnStrategy strategy(has_gradient ? 0 : 1); // minimal overhead with MnStrategy(0) vs default MnStrategy(1)
+    ROOT::Minuit2::MnMigrad migrad(chi2, upar, strategy);
+
+    constexpr unsigned int max_calls = has_gradient ? 100 : 500;
+    ROOT::Minuit2::FunctionMinimum min = migrad(max_calls, /*tolerance=*/0.5);
 
     if (!min.IsValid()) {
         return NDArray<double, 1>({compute_errors ? 13 : 7}, 0.0);
@@ -946,30 +1065,35 @@ NDArray<double,1> fit_scurve_minuit_impl(NDView<double, 1> x,
         ROOT::Minuit2::MnHesse hesse;
         hesse(chi2, min);
 
+        const auto& values = min.UserState().Params();
+        const auto& errors = min.UserState().Errors();
+
         NDArray<double, 1> result({13});
-        result[0]  = min.UserState().Value("p0");
-        result[1]  = min.UserState().Value("p1");
-        result[2]  = min.UserState().Value("p2");
-        result[3]  = min.UserState().Value("p3");
-        result[4]  = min.UserState().Value("p4");
-        result[5]  = min.UserState().Value("p5");
-        result[6]  = min.UserState().Error("p0");
-        result[7]  = min.UserState().Error("p1");
-        result[8]  = min.UserState().Error("p2");
-        result[9]  = min.UserState().Error("p3");
-        result[10] = min.UserState().Error("p4");
-        result[11] = min.UserState().Error("p5");
+        result[0]  = values[0];
+        result[1]  = values[1];
+        result[2]  = values[2];
+        result[3]  = values[3];
+        result[4]  = values[4];
+        result[5]  = values[5];
+        result[6]  = errors[0];
+        result[7]  = errors[1];
+        result[8]  = errors[2];
+        result[9]  = errors[3];
+        result[10] = errors[4];
+        result[11] = errors[5];
         result[12] = min.Fval();
         return result;
     }
 
+    const auto& values = min.UserState().Params();
+
     NDArray<double, 1> result({7});
-    result[0] = min.UserState().Value("p0");
-    result[1] = min.UserState().Value("p1");
-    result[2] = min.UserState().Value("p2");
-    result[3] = min.UserState().Value("p3");
-    result[4] = min.UserState().Value("p4");
-    result[5] = min.UserState().Value("p5");
+    result[0]  = values[0]; 
+    result[1]  = values[1]; 
+    result[2]  = values[2];
+    result[3]  = values[3];
+    result[4]  = values[4];
+    result[5]  = values[5];
     result[6] = min.Fval();
     return result;
 

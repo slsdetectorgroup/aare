@@ -38,6 +38,12 @@ std::array<double, 6> scurve_init_par(const NDView<double, 1> x,
 std::array<double, 6> scurve2_init_par(const NDView<double, 1> x,
                                        const NDView<double, 1> y);
 
+// Data-driven guess functions 
+std::array<double, 6> scurve_estimate_par(const NDView<double, 1> x,
+                                        const NDView<double, 1> y);
+std::array<double, 6> scurve2_estimate_par(const NDView<double, 1> x,
+                                        const NDView<double, 1> y);
+
 static constexpr int DEFAULT_NUM_THREADS = 4;
 
 /**
@@ -213,6 +219,8 @@ void fit_scurve2(NDView<double, 1> x, NDView<double, 3> y,
                  int n_threads);
 
 ////// Minuit 2 version of the Scurves fitting fcts ////////
+
+// ---- 1D ----
 template<class FCN>
 NDArray<double,1> fit_scurve_minuit_impl(NDView<double, 1> x,
                                     NDView<double, 1> y,
