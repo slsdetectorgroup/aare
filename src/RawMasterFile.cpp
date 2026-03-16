@@ -71,7 +71,7 @@ ScanParameters::ScanParameters(const bool enabled, const DACIndex dac,
                                const int start, const int stop, const int step,
                                const int64_t settleTime)
     : m_enabled(enabled), m_dac(dac), m_start(start), m_stop(stop),
-      m_step(step), m_settleTime(settleTime){};
+      m_step(step), m_settleTime(settleTime) {}
 
 // "[enabled\ndac dac 4\nstart 500\nstop 2200\nstep 5\nsettleTime 100us\n]"
 ScanParameters::ScanParameters(const std::string &par) {
@@ -194,6 +194,15 @@ ScanParameters RawMasterFile::scan_parameters() const {
 }
 
 std::optional<ROI> RawMasterFile::roi() const {
+    if (!m_rois) {
+        return std::nullopt;
+    }
+
+    if (m_rois->empty()) {
+        throw std::runtime_error(LOCATION +
+                                 "Zero ROIs in metadata.");
+    }
+
     if (m_rois.value().size() > 1) {
         throw std::runtime_error(LOCATION +
                                  "Multiple ROIs present, use rois() method.");

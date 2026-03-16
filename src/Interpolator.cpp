@@ -5,7 +5,7 @@ namespace aare {
 
 Interpolator::Interpolator(NDView<double, 1> xbins, NDView<double, 1> ybins,
                            NDView<double, 1> ebins)
-    : m_etabinsx(xbins), m_etabinsy(ybins), m_energy_bins(ebins){};
+    : m_etabinsx(xbins), m_etabinsy(ybins), m_energy_bins(ebins) {}
 
 Interpolator::Interpolator(NDView<double, 3> etacube, NDView<double, 1> xbins,
                            NDView<double, 1> ybins, NDView<double, 1> ebins)

@@ -191,17 +191,28 @@ NDArray<ssize_t, 2> GenerateMatterhorn10PixelMap(const size_t dynamic_range,
         throw std::runtime_error("Unsupported dynamic range for Matterhorn02");
     }
 
+    constexpr size_t packet_size = 64; // bits
+
+    constexpr size_t num_64_bit_packages = 4; // n_cols/64
+
+    const size_t num_consecutive_pixels_in_package =
+        packet_size / num_consecutive_pixels;
+
     for (size_t row = 0; row < n_rows; ++row) {
         for (size_t counter = 0; counter < n_counters; ++counter) {
             size_t col = 0;
-            for (size_t offset = 0; offset < 64;
-                 offset += num_consecutive_pixels) {
-                for (size_t pkg = offset; pkg < Matterhorn10::nCols;
-                     pkg += 64) {
+            for (size_t package = 0; package < num_64_bit_packages; ++package) {
+                for (size_t consecutive_pixel_group = 0;
+                     consecutive_pixel_group <
+                     num_consecutive_pixels_in_package;
+                     ++consecutive_pixel_group) {
                     for (size_t pixel = 0; pixel < num_consecutive_pixels;
                          ++pixel) {
                         pixel_map(row + counter * n_rows, col) =
-                            pkg + pixel + row * n_cols * n_counters +
+                            package * num_consecutive_pixels +
+                            consecutive_pixel_group * num_64_bit_packages *
+                                num_consecutive_pixels +
+                            pixel + row * n_cols * n_counters +
                             n_cols * counter;
                         ++col;
                     }
@@ -209,6 +220,7 @@ NDArray<ssize_t, 2> GenerateMatterhorn10PixelMap(const size_t dynamic_range,
             }
         }
     }
+
     return pixel_map;
 }
 
