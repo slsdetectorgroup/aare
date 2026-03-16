@@ -13,70 +13,6 @@ namespace aare {
 namespace func {
 
 /**
- * @brief Generic chi-squared FCN for a 1D model with optional per-point
- *        uncertainties.  Uses finite-difference gradients (Minuit internal).
- *
- * @tparam Model  A model struct that satisfies:
- *   - static constexpr std::size_t npar;
- *   - static double eval(double x, const std::vector<double>& par);
- *   - static bool is_valid(const std::vector<double>& par);
- *
- * Chi-squared definition:
- *   weighted   : sum_i ((y_i - f(x_i; par))^2 / sigma_i^2)
- *   unweighted : sum_i  (y_i - f(x_i; par))^2
- *
- * Data points with sigma_i == 0 are skipped to avoid division by zero.
- */
-template <class Model>
-class Chi2Model1D : public ROOT::Minuit2::FCNBase {
-public:
-    Chi2Model1D(NDView<double, 1> x,
-                NDView<double, 1> y)
-        : x_(x), y_(y), s_(), weighted_(false) {}
-
-    Chi2Model1D(NDView<double, 1> x,
-                NDView<double, 1> y,
-                NDView<double, 1> y_err)
-        : x_(x), y_(y), s_(y_err), weighted_(true) {}
-
-    ~Chi2Model1D() override = default;
-
-    double operator()(const std::vector<double>& par) const override {
-        // Minimal sanity checks on width-like parameter for the Gaussian and the S-curve.
-        if (par.size() != Model::npar) return 1e20;
-        if (!Model::is_valid(par)) return 1e20;
-
-        double chi2 = 0.0;
-
-        if (weighted_) {
-            for (ssize_t i = 0; i < x_.size(); ++i) {
-                if (s_[i] == 0.0) continue;
-                const double f_i = Model::eval(x_[i], par);
-                const double r_i = y_[i] - f_i;
-                chi2 += r_i * r_i / (s_[i] * s_[i]);
-            }
-        } else {
-            for (ssize_t i = 0; i < x_.size(); ++i) {
-                const double f_i = Model::eval(x_[i], par);
-                const double r_i = y_[i] - f_i;
-                chi2 += r_i * r_i;
-            }
-        }
-
-        return chi2;
-    }
-    
-    /** @brief Error definition: 1.0 for chi-squared (delta_chi2 = 1 -> 1-sigma). */
-    double Up() const override { return 1.0; }
-
-private:
-    NDView<double, 1> x_;
-    NDView<double, 1> y_;
-    NDView<double, 1> s_;
-    bool weighted_;
-};
-
-/**
  * @brief Generic chi-squared FCN with analytic gradient for a 1D model.
  *
  * @tparam Model  A model struct that satisfies:
@@ -185,13 +121,9 @@ private:
 
 // ── Convenient aliases ──────────────────────────────────────────────
 
-using Chi2Gaussian = Chi2Model1D<aare::model::Gaussian>;
-using Chi2SCurve   = Chi2Model1D<aare::model::SCurveRising>;
-using Chi2SCurve2  = Chi2Model1D<aare::model::SCurveFalling>;
-
-using Chi2GaussianGradient = Chi2Model1DGrad<aare::model::Gaussian>;
-using Chi2SCurveGradient   = Chi2Model1DGrad<aare::model::SCurveRising>;
-using Chi2SCurve2Gradient  = Chi2Model1DGrad<aare::model::SCurveFalling>;
+using Chi2Gaussian       = Chi2Model1DGrad<aare::model::Gaussian>;
+using Chi2SCurveRising   = Chi2Model1DGrad<aare::model::SCurveRising>;
+using Chi2SCurveFalling  = Chi2Model1DGrad<aare::model::SCurveFalling>;
 
 } // namespace aare::func
 
