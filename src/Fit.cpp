@@ -1,9 +1,6 @@
 // SPDX-License-Identifier: MPL-2.0
 #include "aare/Fit.hpp"
-#include "aare/Chi2Gaussian.hpp"
-#include "aare/Chi2GaussianGradient.hpp"
-#include "aare/Chi2Scurves.hpp"
-#include "aare/Chi2ScurvesGradient.hpp"
+#include "aare/Chi2.hpp"
 #include "aare/utils/par.hpp"
 #include "aare/utils/task.hpp"
 #include <lmcurve2.h>
@@ -986,11 +983,11 @@ NDArray<double,1> fit_scurve_minuit_impl(NDView<double, 1> x,
                                     NDView<double, 1> y_err,
                                     bool compute_errors)
 {
-    constexpr bool scurve_rising = std::is_same_v<FCN, aare::func::Chi2SCurve> || std::is_same_v<FCN, aare::func::Chi2SCurveGrad> ;
-    constexpr bool scurve_falling = std::is_same_v<FCN, aare::func::Chi2SCurve2> || std::is_same_v<FCN, aare::func::Chi2SCurve2Grad>;
+    constexpr bool scurve_rising = std::is_same_v<FCN, aare::func::Chi2SCurve> || std::is_same_v<FCN, aare::func::Chi2SCurveGradient> ;
+    constexpr bool scurve_falling = std::is_same_v<FCN, aare::func::Chi2SCurve2> || std::is_same_v<FCN, aare::func::Chi2SCurve2Gradient>;
 
     static_assert(scurve_rising || scurve_falling,
-        "fit_scurve_minuit_impl only supports Chi2SCurve, Chi2SCurveGrad, Chi2SCurve2 and Chi2SCurve2Grad.");
+        "fit_scurve_minuit_impl only supports Chi2SCurve, Chi2SCurveGradient, Chi2SCurve2 and Chi2SCurve2Gradient.");
 
     if(x.size() != y.size()){
         throw std::runtime_error("fit_scurve_minuit_impl: x.size() must equal y.size()");
@@ -1052,8 +1049,8 @@ NDArray<double,1> fit_scurve_minuit_impl(NDView<double, 1> x,
     upar.Add("p5", start[5], 0.1 * slope_scale); //  start[5] - 10.0 * slope_scale, start[5] + 10.0 * slope_scale);
 
     constexpr bool has_gradient =
-        std::is_same_v<FCN, aare::func::Chi2SCurveGrad> ||
-        std::is_same_v<FCN, aare::func::Chi2SCurve2Grad>;
+        std::is_same_v<FCN, aare::func::Chi2SCurveGradient> ||
+        std::is_same_v<FCN, aare::func::Chi2SCurve2Gradient>;
 
     ROOT::Minuit2::MnStrategy strategy(has_gradient ? 0 : 1); // minimal overhead with MnStrategy(0) vs default MnStrategy(1)
     ROOT::Minuit2::MnMigrad migrad(chi2, upar, strategy);
@@ -1118,7 +1115,7 @@ NDArray<double, 1> fit_scurve_minuit_grad(NDView<double, 1> x,
                                      NDView<double, 1> y_err, 
                                      bool compute_errors)
 {
-    return fit_scurve_minuit_impl<aare::func::Chi2SCurveGrad>(x, y, y_err, compute_errors);
+    return fit_scurve_minuit_impl<aare::func::Chi2SCurveGradient>(x, y, y_err, compute_errors);
 }
 
 // Falling S-curves
@@ -1136,7 +1133,7 @@ NDArray<double, 1> fit_scurve2_minuit_grad(NDView<double, 1> x,
                                      NDView<double, 1> y_err, 
                                      bool compute_errors)
 {
-    return fit_scurve_minuit_impl<aare::func::Chi2SCurve2Grad>(x, y, y_err, compute_errors);
+    return fit_scurve_minuit_impl<aare::func::Chi2SCurve2Gradient>(x, y, y_err, compute_errors);
 }
 
 // ==============
@@ -1227,7 +1224,7 @@ void fit_scurve_minuit_grad_3d(NDView<double, 1> x,
                         NDView<double, 2> chi2_out,
                         int n_threads)
 {
-    fit_scurve_minuit_3d_impl<aare::func::Chi2SCurveGrad>(x, y, y_err, par_out, err_out, chi2_out, n_threads);
+    fit_scurve_minuit_3d_impl<aare::func::Chi2SCurveGradient>(x, y, y_err, par_out, err_out, chi2_out, n_threads);
 }
 
 void fit_scurve2_minuit_grad_3d(NDView<double, 1> x,
@@ -1238,7 +1235,7 @@ void fit_scurve2_minuit_grad_3d(NDView<double, 1> x,
                         NDView<double, 2> chi2_out,
                         int n_threads)
 {
-    fit_scurve_minuit_3d_impl<aare::func::Chi2SCurve2Grad>(x, y, y_err, par_out, err_out, chi2_out, n_threads);
+    fit_scurve_minuit_3d_impl<aare::func::Chi2SCurve2Gradient>(x, y, y_err, par_out, err_out, chi2_out, n_threads);
 }
 
 // Overloads without y_err
