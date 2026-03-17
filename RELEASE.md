@@ -16,6 +16,7 @@
     - Use ``read_roi/rois`` to read multiple ROIs for one frame, the index of a specific ROI to only read that ROI
     - Use ``read_n_with_roi`` to read multiple frames for a specific ROI. 
     - Note ``read_frame`` and ``read_n`` is not supported for multiple ROI's. 
+- Building conda/pypi pkgs for python 3.14. Removing 3.11 builds.
 
 ### Bugfixes: 
 
