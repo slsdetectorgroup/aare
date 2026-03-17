@@ -1,7 +1,7 @@
 # SPDX-License-Identifier: MPL-2.0
 import numpy as np
 from . import _aare
-from aare import ReadoutMode 
+from aare._aare import ReadoutMode 
 from aare._aare import Matterhorn10 
 
 class AdcSar04Transform64to16:

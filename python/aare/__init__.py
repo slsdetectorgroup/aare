@@ -2,6 +2,7 @@
 # Make the compiled classes that live in _aare available from aare.
 from . import _aare
 
+from . import transform
 
 from ._aare import File, RawMasterFile, RawSubFile, JungfrauDataFile
 from ._aare import Pedestal_d, Pedestal_f, ClusterFinder_Cluster3x3i, VarClusterFinder
