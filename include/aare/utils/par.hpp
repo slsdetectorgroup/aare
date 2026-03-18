@@ -3,7 +3,7 @@
 #include <thread>
 #include <utility>
 #include <vector>
-
+#include "aare/NDView.hpp"
 #include "aare/utils/task.hpp"
 
 namespace aare {

@@ -16,7 +16,8 @@ from .ClusterFinder import ClusterFinder, ClusterCollector, ClusterFinderMT, Clu
 from .ClusterVector import ClusterVector
 from .Cluster import Cluster
 
-
+from ._aare import Gaussian, RisingScurve, FallingScurve
+from ._aare import fit
 from ._aare import (fit_gaus, fit_pol1, fit_scurve, fit_scurve2, 
                     fit_gaus_minuit_grad, fit_scurve_minuit_grad, fit_scurve2_minuit_grad)
 from ._aare import Interpolator

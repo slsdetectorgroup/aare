@@ -369,6 +369,9 @@ set(PUBLICHEADERS
     include/aare/Dtype.hpp
     include/aare/File.hpp
     include/aare/Fit.hpp
+    include/aare/Chi2.hpp
+    include/aare/FitModel.hpp
+    include/aare/Models.hpp
     include/aare/FileInterface.hpp
     include/aare/FilePtr.hpp
     include/aare/Frame.hpp
@@ -431,11 +434,11 @@ target_link_libraries(
     fmt::fmt 
     nlohmann_json::nlohmann_json 
     ${STD_FS_LIB} # from helpers.cmake
+    Minuit2::Minuit2
     PRIVATE 
     aare_compiler_flags 
     Threads::Threads
     $<BUILD_INTERFACE:lmfit>
-    Minuit2::Minuit2
 )
 
 set_property(TARGET aare_core PROPERTY POSITION_INDEPENDENT_CODE ON)

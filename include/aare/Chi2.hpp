@@ -3,7 +3,6 @@
 #include <algorithm>
 #include <cmath>
 #include <vector>
-#include <Minuit2/FCNBase.h>
 #include <Minuit2/FCNGradientBase.h>
 #include "aare/NDView.hpp"
 #include "aare/Models.hpp"
