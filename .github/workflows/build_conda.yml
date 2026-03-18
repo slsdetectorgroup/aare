@@ -1,16 +1,20 @@
-name: Build pkgs and deploy if on main
+name: Build conda pkgs
 
 on:
   push:
     branches:
-     - developer
+      - main
+  pull_request:
+    branches:
+      - main
+
 
 jobs:
   build:
     strategy:
       fail-fast: false
       matrix:
-        platform: [ubuntu-latest, ] # macos-12, windows-2019]
+        platform: [ubuntu-latest, macos-latest] 
         python-version: ["3.12",]
 
     runs-on: ${{ matrix.platform }}
