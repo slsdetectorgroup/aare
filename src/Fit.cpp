@@ -9,12 +9,6 @@
 #include <type_traits>
 #include <array>
 
-#include "Minuit2/FunctionMinimum.h"
-#include "Minuit2/MnMigrad.h"
-#include "Minuit2/MnHesse.h"
-#include "Minuit2/MnUserParameters.h"
-#include "Minuit2/MnPrint.h"
-
 namespace aare {
 
 namespace func {

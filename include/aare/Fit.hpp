@@ -363,6 +363,16 @@ NDArray<double, 1> fit_pixel(const FitModel<Model>& model,
     return fit_pixel<Model, FCN>(model, upar_local, x, y, y_err);
 }
 
+// Overload: uncertainties not provided
+template <typename Model, typename FCN>
+NDArray<double, 1> fit_pixel(const FitModel<Model>& model,
+                             NDView<double, 1> x,
+                             NDView<double, 1> y)
+{
+    auto upar_local = model.upar();
+    return fit_pixel<Model, FCN>(model, upar_local, x, y, NDView<double, 1>{});
+}
+
 // _____________________________________________________________________
 //
 // fit_3d — row-parallel fitting over (rows, cols) pixel grid

@@ -1,5 +1,9 @@
 // SPDX-License-Identifier: MPL-2.0
 #include "aare/Fit.hpp"
+#include "aare/Chi2.hpp"
+#include "aare/Models.hpp"
+#include "aare/FitModel.hpp"
+
 #include <benchmark/benchmark.h>
 #include <cmath>
 #include <random>
@@ -93,33 +97,21 @@ static void BM_FitGausLm(benchmark::State &state) {
     state.SetLabel(tc.name);
 }
 
-// 2. Minuit2, finite differences
-static void BM_FitGausMinuit(benchmark::State &state) {
-    const auto &tc = get_test_cases()[state.range(0)];
-    auto data = generate_gaussian_data(tc);
-    auto xv = data.x.view();
-    auto yv = data.y.view();
-
-    aare::NDArray<double, 1> result;
-    for (auto _ : state) {
-        result = aare::fit_gaus_minuit(xv, yv);
-        benchmark::DoNotOptimize(result.data());
-    }
-
-    report_accuracy(state, tc, result);
-    state.SetLabel(tc.name);
-}
-
-// 3. Minuit2, analytic gradient (no Hesse)
+// 2. Minuit2, analytic gradient (no Hesse)
 static void BM_FitGausMinuitGrad(benchmark::State &state) {
     const auto &tc = get_test_cases()[state.range(0)];
     auto data = generate_gaussian_data(tc);
     auto xv = data.x.view();
     auto yv = data.y.view();
 
+    const auto model = aare::FitModel<aare::model::Gaussian>(/*strategy = */0,
+                                                            /*max_calls = */500,             // increase for noisy signals
+                                                            /*tolerance = */0.5, 
+                                                            /*compute_errors = */false);
+
     aare::NDArray<double, 1> result;
     for (auto _ : state) {
-        result = aare::fit_gaus_minuit_grad(xv, yv);
+        result = aare::fit_pixel<aare::model::Gaussian, aare::func::Chi2Gaussian>(model, xv, yv);
         benchmark::DoNotOptimize(result.data());
     }
 
@@ -127,7 +119,7 @@ static void BM_FitGausMinuitGrad(benchmark::State &state) {
     state.SetLabel(tc.name);
 }
 
-// 4. Minuit2, analytic gradient + Hesse
+// 3. Minuit2, analytic gradient + Hesse
 static void BM_FitGausMinuitGradHesse(benchmark::State &state) {
     const auto &tc = get_test_cases()[state.range(0)];
     auto data = generate_gaussian_data(tc);
@@ -135,9 +127,11 @@ static void BM_FitGausMinuitGradHesse(benchmark::State &state) {
     auto yv = data.y.view();
     auto ev = data.y_err.view();
 
+    const auto model = aare::FitModel<aare::model::Gaussian>(0, 500, 0.5, true); // compute_errors = true -> Runs Hesse and provides errors on fitted params
+
     aare::NDArray<double, 1> result;
     for (auto _ : state) {
-        result = aare::fit_gaus_minuit_grad(xv, yv, ev, true);
+        result = aare::fit_pixel<aare::model::Gaussian, aare::func::Chi2Gaussian>(model, xv, yv, ev);
         benchmark::DoNotOptimize(result.data());
     }
 
@@ -154,10 +148,6 @@ static void BM_FitGausMinuitGradHesse(benchmark::State &state) {
 }
 
 BENCHMARK(BM_FitGausLm)
-    ->DenseRange(0, 5)
-    ->Unit(benchmark::kMicrosecond);
-
-BENCHMARK(BM_FitGausMinuit)
     ->DenseRange(0, 5)
     ->Unit(benchmark::kMicrosecond);
 
