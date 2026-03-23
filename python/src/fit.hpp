@@ -103,7 +103,7 @@ py::object fit_dispatch(
                 aare::fit_pixel<Model, FCN>(model, x_view, y_view, y_view_err);
         } else {
             *result = 
-                aare::fit_pixel<Model, FCN>(model, x_view, y_view, NDView<double, 1>{});
+                aare::fit_pixel<Model, FCN>(model, x_view, y_view);
         }
 
         return return_image_data(result);
