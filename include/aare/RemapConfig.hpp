@@ -105,7 +105,7 @@ inline constexpr defs::SensorGroupConfig Quad_iLGAD_half{
     .placement_on_sensor = {
         Quad_iLGAD_pix.guardring.x + 2,
         Quad_iLGAD_pix.num_pix_x - Quad_iLGAD_pix.guardring.x - 1,
-        Quad_iLGAD_pix.guardring.y, (Quad_iLGAD_pix.num_pix_y / 2) - 1}};
+        Quad_iLGAD_pix.guardring.y, (Quad_iLGAD_pix.num_pix_y / 2) - 2}};
 } // namespace aare::remap::config::jungfrau
 
 /**************************************
