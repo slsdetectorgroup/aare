@@ -31,6 +31,47 @@ void bind_fit_model(py::module& m, const char* name) {
         .def_property("compute_errors", &FM::compute_errors, &FM::SetComputeErrors);
 }
 
+template <typename Model>
+py::dict pack_1d_result_dict(const aare::NDArray<double, 1>& result,
+                             bool compute_errors)
+{
+    constexpr std::size_t npar = Model::npar;
+
+    auto res = result.view();
+
+    auto par_out  = new NDArray<double, 1>({npar}, 0.0);
+    auto chi2_out = new NDArray<double, 1>({1},    0.0);
+
+    auto par_view  = par_out->view();
+    auto chi2_view = chi2_out->view();
+
+    for (std::size_t i = 0; i < npar; ++i) {
+        par_view(i) = res(i);
+    }
+
+    if (compute_errors) {
+        auto err_out  = new NDArray<double, 1>({npar}, 0.0);
+        auto err_view = err_out->view();
+
+        for (std::size_t i = 0; i < npar; ++i) {
+            err_view(i) = res(npar + i);
+        }
+
+        chi2_view(0) = res(2 * npar);
+
+        return py::dict(
+            "par"_a     = return_image_data(par_out),
+            "par_err"_a = return_image_data(err_out),
+            "chi2"_a    = return_image_data(chi2_out));
+    } else {
+        chi2_view(0) = res(npar);
+
+        return py::dict(
+            "par"_a  = return_image_data(par_out),
+            "chi2"_a = return_image_data(chi2_out));
+    }
+}
+
 // Helper: typed dispatch for one Model, handles 1D/3D + y_err logic
 template <typename Model, typename FCN>
 py::object fit_dispatch(
@@ -84,7 +125,7 @@ py::object fit_dispatch(
                             "chi2"_a = return_image_data(chi2_out));
         }
     } else if (y.ndim() == 1) {
-        auto result = new NDArray<double, 1>{};
+        NDArray<double, 1> result{};
 
         auto x_view = make_view_1d(x);
         auto y_view = make_view_1d(y);
@@ -98,15 +139,13 @@ py::object fit_dispatch(
             }
 
             auto y_view_err = make_view_1d(y_err);
-
-            *result = 
-                aare::fit_pixel<Model, FCN>(model, x_view, y_view, y_view_err);
+            result = aare::fit_pixel<Model, FCN>(model, x_view, y_view, y_view_err);
         } else {
-            *result = 
-                aare::fit_pixel<Model, FCN>(model, x_view, y_view);
+            result = aare::fit_pixel<Model, FCN>(model, x_view, y_view);
         }
 
-        return return_image_data(result);
+        return pack_1d_result_dict<Model>(result, model.compute_errors());
+
     } else {
         throw std::runtime_error("Data must be 1D or 3D.");
     }
