@@ -55,7 +55,7 @@ strixel_to_pixel_map(defs::SensorGroupConfig const &group_config,
     // -- 2a) bond_shift
     // -- 2b) rotation
     // -- IMPORTANT: bond_shift BEFORE rotation!
-    auto group_local = group_config; 
+    auto group_local = group_config;
     apply_rotation_shift(group_local, bond_shift, placement.rotation);
 
     // -- 2c) AFTER applying the transformations, we can grab the correct
@@ -63,8 +63,9 @@ strixel_to_pixel_map(defs::SensorGroupConfig const &group_config,
     auto roi_group = group_local.placement_on_sensor;
 
     // DEBUG
-    std::cout << "DEBUG: Group ROI after transformation (as in local transformation) "
-              << group_local.placement_on_sensor << '\n';
+    std::cout
+        << "DEBUG: Group ROI after transformation (as in local transformation) "
+        << group_local.placement_on_sensor << '\n';
 
     // -- 3) Compute effective ROI = intersection( roi_user, roi_group )
     InclusiveROI eff = inclusiveroi::geom::intersect(roi_user_local, roi_group);
@@ -114,6 +115,9 @@ strixel_to_pixel_map(defs::SensorGroupConfig const &group_config,
 
     // Allocate strixel grid order map
     aare::NDArray<ssize_t, 2> map({nrows_strx, ncols_strx}, -1);
+    // DEBUG
+    std::cout << "DEBUG: Resulting strixel grid: (" << map.shape(0) << ", "
+              << map.shape(1) << ")" << '\n';
 
     // -- 5) For each ASIC pixel in eff ROI, compute remapped (row,col) in group
     //       local coordinates
@@ -150,15 +154,78 @@ strixel_to_pixel_map(defs::SensorGroupConfig const &group_config,
     return {multiplicity, pitch, eff, map};
 };
 
-std::vector<defs::StrixelGroupToPixelMap> strixel_to_pixel_maps(
-    defs::SensorConfig &sensor_config, defs::SensorPlacement const &placement,
-    InclusiveROI const &roi_user, defs::BondShift bond_shift) {
+std::vector<defs::StrixelGroupToPixelMap>
+strixel_to_pixel_maps(defs::SensorConfig const &sensor_config,
+                      std::vector<defs::SensorPlacement> const &placements,
+                      InclusiveROI const &roi_user,
+                      defs::BondShift bond_shift) {
+
+    assert(sensor_config.group_configs.size() == placements.size());
+
     std::vector<defs::StrixelGroupToPixelMap> maps;
-    for (auto &group_config : sensor_config.group_configs) {
-        maps.emplace_back(strixel_to_pixel_map(group_config, placement,
-                                               roi_user, bond_shift));
+    maps.reserve(sensor_config.group_configs.size());
+
+    for (size_t i = 0; i < sensor_config.group_configs.size(); ++i) {
+        maps.emplace_back(strixel_to_pixel_map(sensor_config.group_configs[i],
+                                               placements[i], roi_user,
+                                               bond_shift));
     }
+
     return maps;
+}
+
+defs::StrixelGroupToPixelMap
+combine_maps(std::vector<defs::StrixelGroupToPixelMap> const &maps,
+             std::vector<int> const &gaps) {
+
+    if (maps.size() != gaps.size()) {
+        throw std::logic_error("Gaps provided are inclompatible with "
+                               "number of maps to combine. Number of gaps must "
+                               "be equal the number of maps.");
+    }
+
+    auto [_, global_cols] = maps[0].map.shape();
+    int global_rows = 0;
+    int m = maps[0].multiplicity;
+    int p = maps[0].pitch_um;
+    auto placement_on_sensor = maps[0].placement_on_sensor;
+    std::vector<int> offsets(maps.size());
+    for (size_t i = 0; i < maps.size(); ++i) {
+
+        offsets[i] = global_rows;
+
+        if (maps[i].multiplicity != m) {
+            throw std::logic_error("Maps contain incompatible multiplicities.");
+        }
+
+        if (maps[i].pitch_um != p) {
+            throw std::logic_error("Maps contain incompatible pitches.");
+        }
+
+        auto [temp_rows, temp_cols] = maps[i].map.shape();
+        global_cols = std::max(global_cols, temp_cols);
+        global_rows = global_rows + temp_rows + gaps[i];
+    }
+
+    NDArray<ssize_t, 2> map({global_rows, global_cols}, -1);
+
+    for (size_t i = 0; i < maps.size(); ++i) {
+        auto [rows, cols] = maps[i].map.shape();
+
+        // DEBUG
+        std::cout << "DEBUG: Row offset: i = " << i
+                  << ", offset: " << offsets[i] << '\n';
+
+        for (size_t r = 0; r < rows; ++r) {
+            for (size_t c = 0; c < cols; ++c) {
+                map(offsets[i] + r, c) = maps[i].map(r, c);
+            }
+        }
+    }
+
+    // For combined maps, placement_on_sensor in principle is no longer correct
+    // TODO: Decide how to handle this!
+    return {m, p, placement_on_sensor, map};
 }
 
 } // namespace aare::remap::algo
