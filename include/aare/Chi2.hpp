@@ -120,9 +120,9 @@ private:
 
 // ── Convenient aliases ──────────────────────────────────────────────
 
-using Chi2Gaussian       = Chi2Model1DGrad<aare::model::Gaussian>;
-using Chi2SCurveRising   = Chi2Model1DGrad<aare::model::SCurveRising>;
-using Chi2SCurveFalling  = Chi2Model1DGrad<aare::model::SCurveFalling>;
+using Chi2Gaussian      = Chi2Model1DGrad<aare::model::Gaussian>;
+using Chi2RisingScurve  = Chi2Model1DGrad<aare::model::RisingScurve>;
+using Chi2FallingScurve = Chi2Model1DGrad<aare::model::FallingScurve>;
 
 } // namespace aare::func
 

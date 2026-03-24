@@ -81,7 +81,7 @@ public:
     }
 
     /** @brief Set an explicit starting value for parameter idx.*/
-    void SetStartValue(unsigned int idx, double val) {
+    void SetParameter(unsigned int idx, double val) {
         upar_.SetValue(idx, val);
         user_start_[idx] = true;
     }

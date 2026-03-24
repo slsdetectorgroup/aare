@@ -100,54 +100,6 @@ void fit_gaus(NDView<double, 1> x, NDView<double, 3> y, NDView<double, 3> y_err,
               NDView<double, 2> chi2_out, int n_threads = DEFAULT_NUM_THREADS);
 
 
-/**
- * @brief Fit a 1D Gaussian using Minuit2 (analytic gradients).
- *
- * Same model as fit_gaus_minuit() but with analytic chi-squared gradients
- * and optional MnHesse error estimation.
- *
- * @param x Scan point values.
- * @param y Measured values at each scan point.
- * @param y_err Per-point standard deviations. Points with y_err == 0 are skipped.
- * @param compute_errors If true, run MnHesse and append 1-sigma errors.
- * @return Shape {4}: [A, mu, sigma, chi2], or {7}: [A, mu, sigma, err_A, err_mu,
- *         err_sigma, chi2] if compute_errors is true. All zeros if fit fails.
- */
-NDArray<double, 1> fit_gaus_minuit_grad(NDView<double, 1> x,
-                                        NDView<double, 1> y,
-                                        NDView<double, 1> y_err = {},
-                                        bool compute_errors = false);
-
-
-/**
- * @brief Fit a Gaussian independently at each pixel of a 3D scan stack using Minuit2 (analytic gradients).
- *
- * Same model as fit_gaus_minuit_grad(), applied independently to each pixel
- * trace `y(row, col, :)` with per-point uncertainties `y_err(row, col, :)`.
- *
- * @param x Scan point values.
- * @param y Measured data of shape [n_rows, n_cols, n_scan].
- * @param y_err Per-point standard deviations with the same shape as `y`.
- * @param par_out Output array of [n_rows, n_cols, 3], storing [A, mu, sigma] for each pixel.
- * @param err_out Output array of [n_rows, n_cols, 3], storing [errA, errMu, errSigma] for each pixel.
- * @param chi2_out Output array of [n_rows, n_cols], storing [chi2] for each pixel.
- * @param n_threads Number of CPU threads used to split work across rows.
- */
-void fit_gaus_minuit_grad_3d(NDView<double, 1> x,
-                             NDView<double, 3> y,
-                             NDView<double, 3> y_err,
-                             NDView<double, 3> par_out,
-                             NDView<double, 3> err_out,
-                             NDView<double, 2> chi2_out,
-                             int n_threads = DEFAULT_NUM_THREADS);
-
-// Overload: When uncertainties `y_err` are not provided / `err_out` are not computed
-void fit_gaus_minuit_grad_3d(NDView<double, 1> x, 
-                             NDView<double, 3> y,
-                             NDView<double, 3> par_out,
-                             NDView<double, 2> chi2_out,
-                             int n_threads = DEFAULT_NUM_THREADS);
-
 NDArray<double, 1> fit_pol1(NDView<double, 1> x, NDView<double, 1> y);
 
 NDArray<double, 3> fit_pol1(NDView<double, 1> x, NDView<double, 3> y,
@@ -184,68 +136,6 @@ void fit_scurve2(NDView<double, 1> x, NDView<double, 3> y,
                  NDView<double, 3> par_err_out, NDView<double, 2> chi2_out,
                  int n_threads);
 
-////// Minuit 2 version of the Scurves fitting fcts ////////
-
-// ---- 1D ----
-template<class FCN>
-NDArray<double,1> fit_scurve_minuit_impl(NDView<double, 1> x,
-                                    NDView<double, 1> y,
-                                    NDView<double, 1> y_err,
-                                    bool compute_errors);
-
-// Rising S-curves
-NDArray<double, 1> fit_scurve_minuit_grad(NDView<double, 1> x,
-                                          NDView<double, 1> y, 
-                                          NDView<double, 1> y_err = {}, 
-                                          bool compute_errors = false);
-
-// Falling S-curves
-NDArray<double, 1> fit_scurve2_minuit_grad(NDView<double, 1> x,
-                                           NDView<double, 1> y, 
-                                           NDView<double, 1> y_err = {}, 
-                                           bool compute_errors = false);
-
-// ---- 3D ----
-template<class FCN>
-void fit_scurve_minuit_3d_impl(NDView<double, 1> x,
-                               NDView<double, 3> y,
-                               NDView<double, 3> y_err,
-                               NDView<double, 3> par_out,
-                               NDView<double, 3> err_out,
-                               NDView<double, 2> chi2_out,
-                               int n_threads);
-
-// Rising S-curves
-void fit_scurve_minuit_grad_3d(NDView<double, 1> x,
-                        NDView<double, 3> y,
-                        NDView<double, 3> y_err,
-                        NDView<double, 3> par_out,
-                        NDView<double, 3> err_out,
-                        NDView<double, 2> chi2_out,
-                        int n_threads);
-
-void fit_scurve_minuit_grad_3d(NDView<double, 1> x,
-                               NDView<double, 3> y,
-                               NDView<double, 3> par_out,
-                               NDView<double, 2> chi2_out,
-                               int n_threads);
-
-// Falling S-curves
-void fit_scurve2_minuit_grad_3d(NDView<double, 1> x,
-                        NDView<double, 3> y,
-                        NDView<double, 3> y_err,
-                        NDView<double, 3> par_out,
-                        NDView<double, 3> err_out,
-                        NDView<double, 2> chi2_out,
-                        int n_threads);
-
-void fit_scurve2_minuit_grad_3d(NDView<double, 1> x,
-                               NDView<double, 3> y,
-                               NDView<double, 3> par_out,
-                               NDView<double, 2> chi2_out,
-                               int n_threads);
-
-
 // Minuit2 fit_pixel / fit_3d object based API
 
 // _____________________________________________________________________
@@ -264,7 +154,7 @@ void fit_scurve2_minuit_grad_3d(NDView<double, 1> x,
  *   - User-set start:   value preserved, step size auto-filled.
  *   - Neither:          both value and step size auto-filled from data.
  *
- * @tparam Model  Model struct (Gaussian, SCurveRising, …).
+ * @tparam Model  Model struct (Gaussian, RisingScurve, …).
  * @tparam FCN    Chi2 functor type (Chi2Model1D or Chi2Model1DGrad instantiation).
  *
  * @param model       The FitModel configuration (read-only).

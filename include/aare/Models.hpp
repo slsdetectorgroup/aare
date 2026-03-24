@@ -160,7 +160,7 @@ struct Gaussian {
 
 // _____________________________________________________________________
 //
-// SCurveRising
+// RisingScurve
 // _____________________________________________________________________
 
 /**
@@ -177,7 +177,7 @@ struct Gaussian {
  *   par[4] = p4  (step amplitude)
  *   par[5] = p5  (post-step slope)
  */
-struct SCurveRising {
+struct RisingScurve {
     static constexpr std::size_t npar = 6;
 
     static constexpr std::array<ParamInfo, npar> param_info = {{
@@ -324,7 +324,7 @@ struct SCurveRising {
 
 // _____________________________________________________________________
 //
-// SCurveFalling
+// FallingScurve
 // _____________________________________________________________________
 
 /**
@@ -333,11 +333,11 @@ struct SCurveRising {
  *
  * f(x) = (p0 + p1*x) + 0.5*(1 - erf((x - p2) / (sqrt(2)*p3))) * (p4 + p5*(x - p2))
  *
- * Parameters are identical to SCurveRising.  The only difference is the
+ * Parameters are identical to RisingScurve.  The only difference is the
  * sign of the erf term, which flips the step direction (and the signs of
  * dS/dp2 and dS/dp3 in the gradient).
  */
-struct SCurveFalling {
+struct FallingScurve {
     static constexpr std::size_t npar = 6;
 
     static constexpr std::array<ParamInfo, npar> param_info = {{
@@ -463,7 +463,7 @@ struct SCurveFalling {
                               double x_range, double y_range, double slope_scale,
                               std::array<double, npar>& steps)
     {
-        SCurveRising::compute_steps(start, x_range, y_range, slope_scale, steps);
+        RisingScurve::compute_steps(start, x_range, y_range, slope_scale, steps);
     }
 };
 
