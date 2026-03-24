@@ -186,8 +186,8 @@ combine_maps(std::vector<defs::StrixelGroupToPixelMap> const &maps,
 
     auto [_, global_cols] = maps[0].map.shape();
     int global_rows = 0;
-    int m = maps[0].multiplicity;
-    int p = maps[0].pitch_um;
+    int const m = maps[0].multiplicity;
+    double const p = maps[0].pitch_um;
     auto placement_on_sensor = maps[0].placement_on_sensor;
     std::vector<int> offsets(maps.size());
     for (size_t i = 0; i < maps.size(); ++i) {
