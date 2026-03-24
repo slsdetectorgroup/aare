@@ -21,7 +21,7 @@ license = { file = "LICENSE" }
 
 [tool.cibuildwheel]
 
-build = "cp{311,312,313}-manylinux_x86_64"
+build = "cp{312,313,314}-manylinux_x86_64"
 
 
 

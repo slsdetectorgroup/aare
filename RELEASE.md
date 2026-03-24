@@ -1,21 +1,24 @@
 # Release notes
 
-## head
+## 2026.3.17
 
 ### New Features:
 
-- Expanding 24 to 32 bit data
-- Decoding digital data from Mythen 302
-- added ``transform_eta_values``. Function transforms :math:`\eta` to uniform spatial coordinates. Should only be used for easier debugging. 
-- New to_string, string_to for aare
+- Decoding transceiver data from Matterhorn10 ``transformed_data = aare.transform.Matterhorn10Transform(num_counters=2, dynamic_range=16)(data)``
+- Expanding 24 to 32 bit data ``aare._aare.expand24to32bit(data, offset=4)``
+- Decoding digital data from Mythen 302 ``transformed_data = aare.transform.Mythen302Transform(offset=4)(data)``
+- added ``aare.Interpolator.transform_eta_values``. Function transforms $`\eta`$-values to uniform spatial coordinates. Should only be used for easier debugging. 
+- New ``to_string``, ``string_to`` 
 - Added exptime and period members to RawMasterFile including decoding
-- Removed redundant arr.value(ix,iy...) on NDArray use arr(ix,iy...)
-- Removed Print/Print_some/Print_all form NDArray (operator << still works)
+- Removed redundant ``arr.value(ix,iy...)`` on NDArray use ``arr(ix,iy...)``
+- Removed Print/Print_some/Print_all form NDArray (operator ``<<`` still works)
 - Added const* version of .data()
 - reading multiple ROI's supported for aare. 
-    - Use ``read_roi/rois`` to read multiple ROIs for one frame, the index of a specific ROI to only read that ROI
-    - Use ``read_n_with_roi`` to read multiple frames for a specific ROI. 
+    - Use ``aare.RawFile.read_roi(roi_index=0)`` to read a specific ROI for the current frame
+    - Use ``aare.RawFile.read_rois()`` to read multiple ROIs for the current frame
+    - Use ``aare.RawFile.read_n_with_roi(num_frames = 2, roi_index = 0)`` to read multiple frames for a specific ROI. 
     - Note ``read_frame`` and ``read_n`` is not supported for multiple ROI's. 
+- Building conda/pypi pkgs for python 3.14. Removing 3.11 builds.
 
 ### Bugfixes: 
 
