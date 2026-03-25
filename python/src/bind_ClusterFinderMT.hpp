@@ -78,12 +78,10 @@ void define_ClusterFinderMT(py::module &m, const std::string &typestr) {
             },
             py::arg("thread_index") = 0)
 
-        .def(
-            "set_nSigma",
-            [](ClusterFinderMT<ClusterType, uint16_t, pd_type> &self,
-               pd_type nSigma) { self.set_nSigma(nSigma); },
-            py::arg("nSigma"),
-            R"(sets the number of sigma for all cluster finders.)");
+        .def("set_nSigma",
+             &ClusterFinderMT<ClusterType, uint16_t, pd_type>::set_nSigma,
+             py::arg("nSigma"),
+             R"(sets the number of sigma for all cluster finders.)");
 }
 
 #pragma GCC diagnostic pop

@@ -37,8 +37,7 @@ void define_ClusterFinder(py::module &m, const std::string &typestr) {
         .def_property(
             "nSigma",
             &ClusterFinder<ClusterType, uint16_t, pd_type>::get_nSigma,
-            [](ClusterFinder<ClusterType, uint16_t, pd_type> &self,
-               pd_type nSigma) { self.set_nSigma(nSigma); },
+            &ClusterFinder<ClusterType, uint16_t, pd_type>::set_nSigma,
             R"(number of sigma above the pedestal to consider a photon during cluster finding.)")
 
         .def("push_pedestal_frame",
