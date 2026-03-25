@@ -13,9 +13,18 @@
 namespace py = pybind11;
 using namespace pybind11::literals;
 
+template <typename Model, typename FCN>
+py::object fit_dispatch(
+    const aare::FitModel<Model>& model,
+    py::array_t<double, py::array::c_style | py::array::forcecast> x,
+    py::array_t<double, py::array::c_style | py::array::forcecast> y,
+    py::object y_err_obj,
+    int n_threads);
+
 template <typename Model>
 void bind_fit_model(py::module& m, const char* name) {
     using FM = aare::FitModel<Model>;
+    using FCN = aare::func::Chi2Model1DGrad<Model>;
     py::class_<FM>(m, name)
         .def(py::init<unsigned int, unsigned int, double, bool>(),
              py::arg("strategy")       = 0,
@@ -28,7 +37,34 @@ void bind_fit_model(py::module& m, const char* name) {
         .def("SetParameter", &FM::SetParameter, py::arg("idx"), py::arg("val"))
         .def_property("max_calls", &FM::max_calls, &FM::SetMaxCalls)
         .def_property("tolerance", &FM::tolerance, &FM::SetTolerance)
-        .def_property("compute_errors", &FM::compute_errors, &FM::SetComputeErrors);
+        .def_property("compute_errors", &FM::compute_errors, &FM::SetComputeErrors)
+        .def("fit",
+            [](const FM& self,
+            py::array_t<double, py::array::c_style | py::array::forcecast> x,
+            py::array_t<double, py::array::c_style | py::array::forcecast> y,
+            py::object y_err_obj,
+            int n_threads) -> py::object
+            {
+                return fit_dispatch<Model, FCN>(self, x, y, y_err_obj, n_threads);
+            },
+            R"doc(
+            Fit this model to 1D or 3D data using Minuit2.
+
+            Parameters
+            ----------
+            x : array_like, shape (n_scan,)
+                Scan points.
+            y : array_like, shape (n_scan,) or (rows, cols, n_scan)
+                Measured data.
+            y_err : array_like or None
+                Per-point uncertainties. None for unweighted fit.
+            n_threads : int
+                Number of threads for 3D parallel loop.
+            )doc",
+            py::arg("x"),
+            py::arg("y"),
+            py::arg("y_err")    = py::none(),
+            py::arg("n_threads") = 4);
 }
 
 template <typename Model>
