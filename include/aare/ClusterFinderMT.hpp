@@ -284,6 +284,23 @@ class ClusterFinderMT {
     //     auto rc = m_input_queue.write(std::move(frame));
     //     fmt::print("pushed frame {}\n", rc);
     // }
+
+    /**
+     * @brief Set the nSigma value for all the cluster finders.
+     * @param nSigma number of sigma above the pedestal to consider a photon
+     * during cluster finding.
+     */
+    void set_nSigma(const PEDESTAL_TYPE nSigma) {
+        // Wait for all queues to be empty before changing the sigma
+        for (auto &q : m_input_queues) {
+            while (!q->isEmpty()) {
+                std::this_thread::sleep_for(m_default_wait);
+            }
+        }
+        for (auto &cf : m_cluster_finders) {
+            cf->set_nSigma(nSigma);
+        }
+    }
 };
 
 } // namespace aare

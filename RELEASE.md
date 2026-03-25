@@ -1,5 +1,11 @@
 # Release notes
 
+## HEAD 
+
+### New Features: 
+
+- setter and getter for nSigma for ClusterFinder ``aare.ClusterFinder().nSigma = 2``, ``aare.ClusterFinderMT().set_nSigma(2)`` 
+
 ## 2026.3.17
 
 ### New Features:
