@@ -19,9 +19,9 @@ inline constexpr double inv_sqrt_2pi = 0.39894228040143267794;
  * Unbounded directions use ±no_bound as sentinels.
  */
 struct ParamInfo {
-    const char* name;
-    double default_lo;
-    double default_hi;
+    const char* name;   // name of parameter
+    double default_lo;  // lower bound value
+    double default_hi;  // upper bound value
 };
  
 inline constexpr double no_bound = std::numeric_limits<double>::infinity();
@@ -49,6 +49,180 @@ inline void compute_ranges(NDView<double, 1> x,
     y_range     = std::max(y_max - y_min, 1e-9);
     slope_scale = std::max(y_range / x_range, 1e-9);
 }
+
+// _____________________________________________________________________
+//
+// Pol1
+// _____________________________________________________________________
+
+/**
+ * @brief Affine function (polynomial of degree 1).
+ *
+ * f(x) = p0 + p1 *x
+ *
+ * Parameters:
+ *   par[0] = p0    (intercept)
+ *   par[1] = p1    (slope)
+ *
+ * Analytic partial derivatives:
+ *   df/dp0    = 1
+ *   df/dp1    = x
+ */
+struct Pol1 {
+    static constexpr std::size_t npar = 2;
+
+    static constexpr std::array<ParamInfo, npar> param_info = {{
+        {"p0",  -no_bound, no_bound},
+        {"p1",  -no_bound, no_bound},
+    }};
+
+    static double eval(double x, const std::vector<double>& par) {
+        return par[0] + par[1] * x;
+    }
+
+    static void eval_and_grad(double x,
+                              const std::vector<double>& par,
+                              double& f,
+                              std::array<double, npar>& g)
+    {
+        f = par[0] + par[1] * x;
+
+        g[0] = 1.0 ; // df/dp0
+        g[1] = x;    // df/dp1
+    }
+
+    static bool is_valid(const std::vector<double>& par) {
+        return true; // always valid 
+    }
+
+    /** @brief Estimate from endpoints: slope = dy/dx, intercept from first point. */
+    static std::array<double, npar> estimate_par(NDView<double, 1> x,
+                                                NDView<double, 1> y)
+    {
+        const double dx = x[x.size()-1] - x[0];
+        const double dy = y[y.size()-1] - y[0];
+        const double slope = (std::abs(dx) > 1e-12) ? dy/dx : 0.0;
+        const double intercept = y[0] - slope * x[0];
+
+        return {intercept, slope};
+    }
+
+
+    static void compute_steps(const std::array<double, npar>& start,
+                              double x_range, double y_range, double slope_scale,
+                              std::array<double, npar>& steps)
+    {
+        steps[0] = std::max(0.1 * std::abs(start[0]), 0.1 * y_range);
+        steps[1] = 0.1 * slope_scale;
+    }
+    
+};
+
+// _____________________________________________________________________
+//
+// Pol2
+// _____________________________________________________________________
+
+/**
+ * @brief Polynomial fuction of degree 2
+ *
+ * f(x) = p0 + p1 * x + p2 * x * x  
+ *
+ * Parameters:
+ *   par[0] = p0    (constant term)
+ *   par[1] = p1    (linear coef)
+ *   par[2] = p2    (quadratic coef)
+ *
+ * Analytic partial derivatives:
+ *   df/dp0 = 1
+ *   df/dp1 = x
+ *   df/dp2 = x * x
+ */
+struct Pol2 {
+    static constexpr std::size_t npar = 3;
+
+    static constexpr std::array<ParamInfo, npar> param_info = {{
+        {"p0",  -no_bound, no_bound}, 
+        {"p1",  -no_bound, no_bound},
+        {"p2",  -no_bound, no_bound},
+    }};
+
+    static double eval(double x, const std::vector<double>& par) {
+        return par[0] + par[1] * x + par[2] * x * x;
+    }
+
+    static void eval_and_grad(double x,
+                              const std::vector<double>& par,
+                              double& f,
+                              std::array<double, npar>& g)
+    {
+        f = par[0] + par[1] * x + par[2] * x * x;
+
+        g[0] = 1.0 ; // df/dp0
+        g[1] = x;    // df/dp1
+        g[2] = x * x;    // df/dp2
+    }
+
+    static bool is_valid(const std::vector<double>& par) {
+        return true; // always valid 
+    }
+
+    /**
+     * @brief Data-driven initial estimates for a degree-2 polynomial.
+     *
+     * For f(x) = p0 + p1*x + p2*x², the derivative is f'(x) = p1 + 2*p2*x.
+     * Measuring the slope at two positions and subtracting eliminates p1:
+     *
+     *   f'(x_e) = p1 + 2*p2*x_e
+     *   f'(x_s) = p1 + 2*p2*x_s
+     *   ─────────────────────────
+     *   f'(x_e) - f'(x_s) = 2*p2*(x_e - x_s)
+     *
+     *   => p2 = (slope_e - slope_s) / (2 * (x_e - x_s))
+     *
+     * Slopes are estimated over the first and last 10% of points to
+     * average out noise.  p1 is back-solved from the start slope, and
+     * p0 from the first data point.  Degrades to a linear estimate
+     * when curvature is negligible i.e. slope_e ≈ slope_s -> p2 ≈ 0.
+     */
+    static std::array<double, npar> estimate_par(NDView<double, 1> x,
+                                                NDView<double, 1> y)
+    {
+        const ssize_t n = y.size();
+        const ssize_t tail = std::max<ssize_t>(n / 10, 2);
+
+        // start: slope from first 10%
+        const double x_s = (x[0] + x[tail-1]) * 0.5;
+        const double slope_s = (y[tail-1] - y[0]) / (x[tail-1] - x[0]);
+
+        // end: slope from last 10%
+        const double x_e = (x[n-tail] + x[n-1]) * 0.5;
+        const double slope_e = (y[n-1] - y[n-tail]) / (x[n-1] - x[n-tail]);
+
+        const double dx = x_e - x_s;
+        const double p2 = (std::abs(dx) > 1e-12)
+                        ? (slope_e - slope_s) / (2.0 * dx)
+                        : 0.0;
+
+        // p1 from slope_s = p1 + 2*p2*x_s
+        const double p1 = slope_s - 2.0 * p2 * x_s;
+
+        // p0 from first point: y[0] = p0 + p1*x[0] + p2*x[0]^2
+        const double p0 = y[0] - p1 * x[0] - p2 * x[0] * x[0];
+
+        return {p0, p1, p2};
+    }
+
+
+    static void compute_steps(const std::array<double, npar>& start,
+                              double x_range, double y_range, double slope_scale,
+                              std::array<double, npar>& steps)
+    {
+        steps[0] = std::max(0.1 * std::abs(start[0]), 0.1 * y_range);
+        steps[1] = 0.1 * slope_scale;
+        steps[2] = 0.1 * slope_scale / std::max(x_range, 1e-12);
+    }
+};
 
 // _____________________________________________________________________
 //

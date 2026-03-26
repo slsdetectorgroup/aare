@@ -658,6 +658,8 @@ void define_fit_bindings(py::module &m) {
     bind_fit_model<aare::model::Gaussian>(m, "Gaussian");
     bind_fit_model<aare::model::RisingScurve>(m, "RisingScurve");
     bind_fit_model<aare::model::FallingScurve>(m, "FallingScurve");
+    bind_fit_model<aare::model::Pol1>(m, "Pol1");
+    bind_fit_model<aare::model::Pol2>(m, "Pol2");
 
     m.def("fit",
         [](py::object model_obj,
@@ -668,7 +670,18 @@ void define_fit_bindings(py::module &m) {
         {
             using namespace aare::model;
             using namespace aare::func;
+            
+            // ── Polynomial of degree 1 ───────
+            if(py::isinstance< aare::FitModel<Pol1> >(model_obj)) {
+                const auto& mdl = model_obj.cast< const aare::FitModel<Pol1>& >();
+                return fit_dispatch<Pol1, Chi2Pol1>(mdl, x, y, y_err_obj, n_threads); 
+            }
 
+            // ── Polynomial of degree 2 ───────
+            if(py::isinstance< aare::FitModel<Pol2> >(model_obj)) {
+                const auto& mdl = model_obj.cast< const aare::FitModel<Pol2>& >();
+                return fit_dispatch<Pol2, Chi2Pol2>(mdl, x, y, y_err_obj, n_threads); 
+            }
             // ── Gaussian ───────
             if(py::isinstance< aare::FitModel<Gaussian> >(model_obj)) {
                 const auto& mdl = model_obj.cast< const aare::FitModel<Gaussian>& >();
@@ -688,7 +701,7 @@ void define_fit_bindings(py::module &m) {
             }
 
             throw std::runtime_error(
-                "Unknown model type. Expected Gaussian, RisingScurve or FallingScurve."
+                "Unknown model type. Expected Pol1, Pol2, Gaussian, RisingScurve or FallingScurve."
             );
         },
         R"(
@@ -696,7 +709,7 @@ void define_fit_bindings(py::module &m) {
  
         Parameters
         ----------
-        model : Gaussian, RisingScurve, or FallingScurve
+        model : Pol1, Pol2, Gaussian, RisingScurve, or FallingScurve
             Configured model object.  User-set limits, fixed parameters,
             and start values take precedence over automatic estimates.
         x : array_like, shape (n_scan,)
