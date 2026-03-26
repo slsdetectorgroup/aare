@@ -38,6 +38,23 @@ void bind_fit_model(py::module& m, const char* name) {
         .def_property("max_calls", &FM::max_calls, &FM::SetMaxCalls)
         .def_property("tolerance", &FM::tolerance, &FM::SetTolerance)
         .def_property("compute_errors", &FM::compute_errors, &FM::SetComputeErrors)
+        .def("__call__",
+            [](const FM& /*self*/,
+                py::array_t<double, py::array::c_style | py::array::forcecast> x,
+                py::array_t<double, py::array::c_style | py::array::forcecast> par)
+            {
+                auto x_view = make_view_1d(x);
+                auto p_view = make_view_1d(par);
+
+                std::vector<double> pvec(p_view.begin(), p_view.end());
+
+                auto* result = new aare::NDArray<double, 1>({x_view.size()});
+                for (ssize_t i = 0; i < x_view.size(); ++i)
+                    (*result)(i) = Model::eval(x_view[i], pvec);
+
+                return return_image_data(result);
+            },
+            py::arg("x"), py::arg("par"))
         .def("fit",
             [](const FM& self,
             py::array_t<double, py::array::c_style | py::array::forcecast> x,
