@@ -5,6 +5,8 @@
 #include <cmath>
 #include <vector>
 #include <limits>
+#include <algorithm>
+#include "aare/NDView.hpp"
 
 namespace aare::model {
 
@@ -37,16 +39,12 @@ inline void compute_ranges(NDView<double, 1> x,
                            double& y_range,
                            double& slope_scale)
 {
-    const double x_min = std::min(x[0], x[x.size() - 1]);
-    const double x_max = std::max(x[0], x[x.size() - 1]);
-    x_range = std::max(x_max - x_min, 1e-12);
- 
-    double y_min = y[0], y_max = y[0];
-    for (ssize_t i = 1; i < y.size(); ++i) {
-        y_min = std::min(y_min, y[i]);
-        y_max = std::max(y_max, y[i]);
-    }
-    y_range     = std::max(y_max - y_min, 1e-9);
+    const auto [x_min, x_max] = std::minmax_element(x.begin(), x.end());
+    const auto [y_min, y_max] = std::minmax_element(y.begin(), y.end());
+
+    x_range = std::max(*x_max - *x_min, 1e-9);
+    y_range = std::max(*y_max - *y_min, 1e-9);
+    
     slope_scale = std::max(y_range / x_range, 1e-9);
 }
 
@@ -299,11 +297,10 @@ struct Gaussian {
                                                   NDView<double, 1> y)
     {
         // find peak
-        ssize_t i_max = 0;
-        for (ssize_t i = 1; i < y.size(); ++i)
-            if (y[i] > y[i_max]) i_max = i;
- 
-        const double A  = y[i_max];
+        const auto max_it = std::max_element(y.begin(), y.end());
+        const ssize_t i_max = std::distance(y.begin(), max_it);
+
+        const double A  = *max_it;
         const double mu = x[i_max];
  
         // FWHM estimate

@@ -1,5 +1,6 @@
 // SPDX-License-Identifier: MPL-2.0
 #pragma once
+#include <stdexcept>
 #include <algorithm>
 #include <cmath>
 #include <vector>
@@ -28,6 +29,11 @@ namespace func {
  *
  * By providing analytic gradients we avoid 2*npar extra function evaluations
  * per Minuit step that would otherwise be spent on finite differences.
+ * 
+ * @throws std::invalid_argument if par.size() != Model::npar.
+ *
+ * Invalid model parameters do not throw; they return a large penalty
+ * (and a zero gradient fallback) so the minimizer can remain in control.
  */
 template <class Model>
 class Chi2Model1DGrad : public ROOT::Minuit2::FCNGradientBase {
@@ -44,7 +50,10 @@ public:
     ~Chi2Model1DGrad() override = default;
 
     double operator()(const std::vector<double>& par) const override {
-        if (par.size() != Model::npar) return 1e20;
+        if (par.size() != Model::npar) {
+            throw std::invalid_argument("Chi2Model1DGrad: wrong parameter vector size.");
+        }
+        
         if (!Model::is_valid(par)) return 1e20;
 
         double chi2 = 0.0;
@@ -70,9 +79,11 @@ public:
     }
 
     std::vector<double> Gradient(const std::vector<double>& par) const override {
+        if (par.size() != Model::npar) {
+            throw std::invalid_argument("Chi2Model1DGrad: wrong parameter vector size.");
+        }
+        
         std::vector<double> grad(Model::npar, 0.0);
-
-        if (par.size() != Model::npar) return grad;
         if (!Model::is_valid(par)) return grad;
 
         std::array<double, Model::npar> df{};

@@ -272,12 +272,22 @@ NDArray<double, 1> fit_pixel(const FitModel<Model>& model,
  *
  * @tparam Model  Model struct.
  * @tparam FCN    Chi2 functor type.
+ *
+ * @param model      Fit configuration shared by all pixels.
+ * @param x          Scan points, shape `(n_scan)`.
+ * @param y          Measured values, shape `(rows, cols, n_scan)`.
+ * @param y_err      Uncertainties, same shape as y, or empty for unweighted fits.
+ * @param par_out    Output parameters, shape `(rows, cols, npar)`.
+ * @param err_out    Output parameter errors, shape `(rows, cols, npar)`, if used.
+ * @param chi2_out   Output chi-squared / objective values, shape `(rows, cols)`.
+ * @param n_threads  Number of threads used to split rows.
+ *
  */
 template <typename Model, typename FCN>
 void fit_3d(const FitModel<Model>& model,
-            NDView<double, 1> x,
-            NDView<double, 3> y,
-            NDView<double, 3> y_err,
+            NDView<double, 1> x,     // (n_scan)
+            NDView<double, 3> y,     // (rows, cols, n_scan)
+            NDView<double, 3> y_err, // (rows, cols, n_scan) or empty for unweighted fit
             NDView<double, 3> par_out,
             NDView<double, 3> err_out,
             NDView<double, 2> chi2_out,
