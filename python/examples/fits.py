@@ -1,8 +1,11 @@
 # SPDX-License-Identifier: MPL-2.0
 import matplotlib.pyplot as plt
 import numpy as np
-from aare import fit_gaus, fit_pol1, fit_gaus_minuit_grad
-from aare import gaus, pol1
+import sys
+sys.path.insert(0, '/home/kferjaoui/sw/aare/build')
+from aare import fit_gaus, fit_pol1
+from aare import Gaussian, fit
+from aare import pol1
 
 textpm = f"±"  #
 textmu = f"μ"  #
@@ -40,18 +43,20 @@ result_lm = fit_gaus(x, y, yerr)
 par_lm = result_lm["par"]
 err_lm = result_lm["par_err"]
 chi2_lm = result_lm["chi2"] 
-print("fit_gaus:            ", par_lm, err_lm, chi2_lm)
+print("[lmfit] fit_gaus:            ", par_lm, err_lm, chi2_lm)
 
 # Fit with Minuit2 + analytic gradient + Hesse errors
-result_m2 = fit_gaus_minuit_grad(x, y, y_err=yerr)
-par_m2 = result_m2[:3]
-err_m2 = result_m2[3:6]
-chi2_m2 = result_m2[6]
-print("fit_gaus_minuit_grad:", par_m2, err_m2, chi2_m2)
+gaussian = Gaussian()
+gaussian.compute_errors = True
+result_m2 = gaussian.fit(x, y, yerr)
+par_m2 = result_m2['par']
+err_m2 = result_m2['par_err']
+chi2_m2 = result_m2['chi2']
+print(f"[minuit2] gaussian.fit: par={par_m2}, err={err_m2}, chi2={chi2_m2}")
 
 x = np.linspace(x[0], x[-1], 1000)
-ax0.plot(x, gaus(x, par_lm), marker="", label="fit_gaus")
-ax0.plot(x, gaus(x, par_m2), marker="", linestyle=":", label="fit_gaus_minuit_grad")
+ax0.plot(x, gaussian(x, par_lm), marker="", label="fit_gaus")
+ax0.plot(x, gaussian(x, par_m2), marker="", linestyle=":", label="fit_gaus_minuit_grad")
 ax0.legend()
 ax0.set(xlabel="x", ylabel="Counts", 
     title=(
