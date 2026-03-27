@@ -2,6 +2,36 @@
 
 ## HEAD 
 
+## 2026.3.27
+
+### New Features:
+
+- Added a new Minuit2-based fitting framework for ``Gaussian``, ``RisingScurve``, ``FallingScurve``, ``Pol1`` and ``Pol2`` models.
+- Consolidated fitting models into a single ``Models.hpp`` header. All models now share a unified API with ``eval``, ``eval_and_grad``, ``is_valid``, ``estimate_par``, ``compute_steps`` and ``param_info`` metadata.
+- Added generic ``Chi2Model1DGrad`` in ``Chi2.hpp`` for analytic-gradient chi2 fitting. 
+- Added ``FitModel`` configuration object to manage ``MnUserParameters``, strategy, tolerance and user overrides.
+- Added generic C++ fitting API:
+    - ``fit_pixel<Model, FCN>(model, x, y, y_err)``
+    - ``fit_pixel<Model, FCN>(model, upar_local, x, y, y_err)``
+    - ``fit_3d<Model, FCN>(model, x, y, y_err, ..., n_threads)``
+- Added row-parallel 3D Minuit2 fitting over pixel grids through ``fit_3d(..., n_threads)``.
+- Added Python ``Gaussian``, ``RisingScurve``, ``FallingScurve``, ``Pol1`` and ``Pol2`` fitting classes with configurable Minuit2 settings and parameter constraints.
+- Added Python methods ``SetParLimits``, ``FixParameter``, ``ReleaseParameter`` and ``SetParameter``.
+- Added Python properties ``max_calls``, ``tolerance`` and ``compute_errors``.
+- Added callable model evaluation ``model(x, par)`` and instance-based fitting via ``model.fit(x, y, y_err, n_threads=4)``.
+- Updated fitting benchmarks to use the new ``FitModel`` API.
+- Added 1D and 3D fitting notebooks comparing ``lmfit`` and Minuit2 analytic-gradient fits.
+
+### Changes:
+
+- Model-specific initial-parameter helpers such as ``gaus_init_par``, ``pol1_init_par``, ``scurve_init_par`` and ``scurve2_init_par`` are now backed by ``model::estimate_par(...)`` and marked as deprecated.
+- User-defined fit constraints now take precedence over automatic parameter estimates in the new Minuit2 fitting API.
+
+### Bugfixes:
+
+- Fixed ``split_task(first, last, n_threads)`` so task ranges now correctly respect the ``first`` offset. Previously, non-zero starting indices could generate incorrect subranges.
+
+
 ### New Features: 
 
 - setter and getter for nSigma for ClusterFinder ``aare.ClusterFinder().nSigma = 2``, ``aare.ClusterFinderMT().set_nSigma(2)`` 
