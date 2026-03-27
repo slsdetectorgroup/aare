@@ -89,7 +89,7 @@ struct Pol1 {
         g[1] = x;    // df/dp1
     }
 
-    static bool is_valid(const std::vector<double>& /*par*/) {
+    static bool is_valid([[maybe_unused]] const std::vector<double>& par) {
         return true; // always valid 
     }
 
@@ -107,7 +107,7 @@ struct Pol1 {
 
 
     static void compute_steps(const std::array<double, npar>& start,
-                              double x_range, double y_range, double slope_scale,
+                              [[maybe_unused]] double x_range, double y_range, double slope_scale,
                               std::array<double, npar>& steps)
     {
         steps[0] = std::max(0.1 * std::abs(start[0]), 0.1 * y_range);
@@ -161,7 +161,7 @@ struct Pol2 {
         g[2] = x * x;    // df/dp2
     }
 
-    static bool is_valid(const std::vector<double>& /*par*/) {
+    static bool is_valid([[maybe_unused]]const std::vector<double>& par) {
         return true; // always valid 
     }
 

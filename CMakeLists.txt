@@ -441,6 +441,10 @@ target_link_libraries(
     $<BUILD_INTERFACE:lmfit>
 )
 
+target_include_directories(aare_core SYSTEM PRIVATE
+    $<TARGET_PROPERTY:Minuit2::Minuit2,INTERFACE_INCLUDE_DIRECTORIES>
+)
+
 set_property(TARGET aare_core PROPERTY POSITION_INDEPENDENT_CODE ON)
 
 if(AARE_TESTS)
