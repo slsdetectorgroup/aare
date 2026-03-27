@@ -89,7 +89,7 @@ struct Pol1 {
         g[1] = x;    // df/dp1
     }
 
-    static bool is_valid(const std::vector<double>& par) {
+    static bool is_valid(const std::vector<double>& /*par*/) {
         return true; // always valid 
     }
 
@@ -161,7 +161,7 @@ struct Pol2 {
         g[2] = x * x;    // df/dp2
     }
 
-    static bool is_valid(const std::vector<double>& par) {
+    static bool is_valid(const std::vector<double>& /*par*/) {
         return true; // always valid 
     }
 

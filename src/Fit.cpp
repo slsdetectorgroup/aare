@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: MPL-2.0
 #include "aare/Fit.hpp"
 #include "aare/Chi2.hpp"
+#include "aare/Models.hpp"
 #include "aare/utils/par.hpp"
 #include "aare/utils/task.hpp"
 #include <lmcurve2.h>
@@ -96,42 +97,54 @@ NDArray<double, 3> fit_gaus(NDView<double, 1> x, NDView<double, 3> y,
     return result;
 }
 
-std::array<double, 3> gaus_init_par(const NDView<double, 1> x,
-                                    const NDView<double, 1> y) {
-    std::array<double, 3> start_par{0, 0, 0};
-    auto e = std::max_element(y.begin(), y.end());
-    auto idx = std::distance(y.begin(), e);
+// std::array<double, 3> gaus_init_par(const NDView<double, 1> x,
+//                                     const NDView<double, 1> y) {
+//     std::array<double, 3> start_par{0, 0, 0};
+//     auto e = std::max_element(y.begin(), y.end());
+//     auto idx = std::distance(y.begin(), e);
 
-    start_par[0] = *e; // For amplitude we use the maximum value
-    start_par[1] =
-        x[idx]; // For the mean we use the x value of the maximum value
+//     start_par[0] = *e; // For amplitude we use the maximum value
+//     start_par[1] =
+//         x[idx]; // For the mean we use the x value of the maximum value
 
-    // For sigma we estimate the fwhm and divide by 2.35
-    // assuming equally spaced x values
-    auto delta = x[1] - x[0];
-    start_par[2] = std::count_if(y.begin(), y.end(),
-                                 [e](double val) { return val > *e / 2; }) *
-                   delta / 2.35;
+//     // For sigma we estimate the fwhm and divide by 2.35
+//     // assuming equally spaced x values
+//     auto delta = x[1] - x[0];
+//     start_par[2] = std::count_if(y.begin(), y.end(),
+//                                  [e](double val) { return val > *e / 2; }) *
+//                    delta / 2.35;
 
-    return start_par;
+//     return start_par;
+// }
+
+[[deprecated("Use Gaussian::estimate_par(x, y) instead")]]
+std::array<double, 3> gaus_init_par(NDView<double, 1> x,
+                                      NDView<double, 1> y) {
+    return model::Gaussian::estimate_par(x, y);
 }
 
-std::array<double, 2> pol1_init_par(const NDView<double, 1> x,
-                                    const NDView<double, 1> y) {
-    // Estimate the initial parameters for the fit
-    std::array<double, 2> start_par{0, 0};
+// std::array<double, 2> pol1_init_par(const NDView<double, 1> x,
+//                                     const NDView<double, 1> y) {
+//     // Estimate the initial parameters for the fit
+//     std::array<double, 2> start_par{0, 0};
 
-    auto y2 = std::max_element(y.begin(), y.end());
-    auto x2 = x[std::distance(y.begin(), y2)];
-    auto y1 = std::min_element(y.begin(), y.end());
-    auto x1 = x[std::distance(y.begin(), y1)];
+//     auto y2 = std::max_element(y.begin(), y.end());
+//     auto x2 = x[std::distance(y.begin(), y2)];
+//     auto y1 = std::min_element(y.begin(), y.end());
+//     auto x1 = x[std::distance(y.begin(), y1)];
 
-    start_par[0] =
-        (*y2 - *y1) / (x2 - x1); // For amplitude we use the maximum value
-    start_par[1] =
-        *y1 - ((*y2 - *y1) / (x2 - x1)) *
-                  x1; // For the mean we use the x value of the maximum value
-    return start_par;
+//     start_par[0] =
+//         (*y2 - *y1) / (x2 - x1); // For amplitude we use the maximum value
+//     start_par[1] =
+//         *y1 - ((*y2 - *y1) / (x2 - x1)) *
+//                   x1; // For the mean we use the x value of the maximum value
+//     return start_par;
+// }
+
+[[deprecated("Use Pol1::estimate_par(x, y) instead")]]
+std::array<double, 2> pol1_init_par(NDView<double, 1> x,
+                                      NDView<double, 1> y) {
+    return model::Pol1::estimate_par(x, y);
 }
 
 
@@ -315,92 +328,36 @@ NDArray<double, 3> fit_pol1(NDView<double, 1> x, NDView<double, 3> y,
 // ~~ S-CURVES ~~
 
 // SCURVE --
-std::array<double, 6> scurve_init_par(const NDView<double, 1> x,
-                                      const NDView<double, 1> y) {
-    // Estimate the initial parameters for the fit
-    std::array<double, 6> start_par{0, 0, 0, 0, 0, 0};
+// std::array<double, 6> scurve_init_par(const NDView<double, 1> x,
+//                                       const NDView<double, 1> y) {
+//     // Estimate the initial parameters for the fit
+//     std::array<double, 6> start_par{0, 0, 0, 0, 0, 0};
 
-    auto ymax = std::max_element(y.begin(), y.end());
-    auto ymin = std::min_element(y.begin(), y.end());
-    start_par[4] = *ymin + (*ymax - *ymin) / 2;
+//     auto ymax = std::max_element(y.begin(), y.end());
+//     auto ymin = std::min_element(y.begin(), y.end());
+//     start_par[4] = *ymin + (*ymax - *ymin) / 2;
 
-    // Find the first x where the corresponding y value is above the threshold
-    // (start_par[4])
-    for (ssize_t i = 0; i < y.size(); ++i) {
-        if (y[i] >= start_par[4]) {
-            start_par[2] = x[i];
-            break; // Exit the loop after finding the first valid x
-        }
-    }
+//     // Find the first x where the corresponding y value is above the threshold
+//     // (start_par[4])
+//     for (ssize_t i = 0; i < y.size(); ++i) {
+//         if (y[i] >= start_par[4]) {
+//             start_par[2] = x[i];
+//             break; // Exit the loop after finding the first valid x
+//         }
+//     }
 
-    start_par[3] = 2 * sqrt(start_par[2]);
-    start_par[0] = 100;
-    start_par[1] = 0.25;
-    start_par[5] = 1;
-    return start_par;
+//     start_par[3] = 2 * sqrt(start_par[2]);
+//     start_par[0] = 100;
+//     start_par[1] = 0.25;
+//     start_par[5] = 1;
+//     return start_par;
+// }
+
+[[deprecated("Use RisingScurve::estimate_par(x, y) instead")]]
+std::array<double, 6> scurve_init_par(NDView<double, 1> x,
+                                      NDView<double, 1> y) {
+    return model::RisingScurve::estimate_par(x, y);
 }
-
-/////////////////////// Data-driven guess fct  /////////////////////////
-std::array<double, 6> scurve_estimate_par(const NDView<double, 1> x,
-                                        const NDView<double, 1> y) {
-    std::array<double, 6> start{};
-    const ssize_t n = y.size();
-
-    // baseline: average of first ~10% of points (before turn-on)
-    ssize_t n_base = std::max<ssize_t>(n / 10, 2);
-    double sum_y = 0, sum_xy = 0, sum_x = 0, sum_x2 = 0;
-    for (ssize_t i = 0; i < n_base; ++i) {
-        sum_y  += y[i];
-        sum_x  += x[i];
-        sum_xy += x[i] * y[i];
-        sum_x2 += x[i] * x[i];
-    }
-    double denom = n_base * sum_x2 - sum_x * sum_x;
-    start[1] = (std::abs(denom) > 1e-30)
-             ? (n_base * sum_xy - sum_x * sum_y) / denom
-             : 0.0;
-    start[0] = (sum_y - start[1] * sum_x) / n_base;
-
-    // plateau: average of last ~10%
-    double plateau = 0;
-    ssize_t n_plat = std::max<ssize_t>(n / 10, 2);
-    for (ssize_t i = n - n_plat; i < n; ++i)
-        plateau += y[i];
-    plateau /= n_plat;
-
-    // amplitude: plateau minus baseline at midpoint
-    double x_mid = 0.5 * (x[0] + x[n - 1]);
-    double baseline_at_mid = start[0] + start[1] * x_mid;
-    start[4] = plateau - baseline_at_mid;
-
-    // threshold: x where y first crosses 50% between baseline and plateau
-    double y_half = baseline_at_mid + 0.5 * start[4];
-    start[2] = x_mid; // fallback
-    for (ssize_t i = 0; i < n; ++i) {
-        if (y[i] >= y_half) {
-            start[2] = x[i];
-            break;
-        }
-    }
-
-    // sigma: estimate from transition width (10%-90% rise)
-    double y_10 = baseline_at_mid + 0.1 * start[4];
-    double y_90 = baseline_at_mid + 0.9 * start[4];
-    double x_10 = x[0], x_90 = x[n - 1];
-    for (ssize_t i = 0; i < n; ++i) {
-        if (y[i] >= y_10) { x_10 = x[i]; break; }
-    }
-    for (ssize_t i = 0; i < n; ++i) {
-        if (y[i] >= y_90) { x_90 = x[i]; break; }
-    }
-    // for a Gaussian CDF: 10%-90% width = 2 * 1.2816 * sigma
-    start[3] = std::max((x_90 - x_10) / 2.5631, 1.0);
-
-    start[5] = 0.0; // assume flat gain, let optimizer find the slope
-
-    return start;
-}
-//////////////////////////////////////////////////////////////////////
 
 // - No error
 NDArray<double, 1> fit_scurve(NDView<double, 1> x, NDView<double, 1> y) {
@@ -494,93 +451,36 @@ void fit_scurve(NDView<double, 1> x, NDView<double, 3> y,
 
 // SCURVE2 ---
 
-std::array<double, 6> scurve2_init_par(const NDView<double, 1> x,
-                                       const NDView<double, 1> y) {
-    // Estimate the initial parameters for the fit
-    std::array<double, 6> start_par{0, 0, 0, 0, 0, 0};
+// std::array<double, 6> scurve2_init_par(const NDView<double, 1> x,
+//                                        const NDView<double, 1> y) {
+//     // Estimate the initial parameters for the fit
+//     std::array<double, 6> start_par{0, 0, 0, 0, 0, 0};
 
-    auto ymax = std::max_element(y.begin(), y.end());
-    auto ymin = std::min_element(y.begin(), y.end());
-    start_par[4] = *ymin + (*ymax - *ymin) / 2;
+//     auto ymax = std::max_element(y.begin(), y.end());
+//     auto ymin = std::min_element(y.begin(), y.end());
+//     start_par[4] = *ymin + (*ymax - *ymin) / 2;
 
-    // Find the first x where the corresponding y value is above the threshold
-    // (start_par[4])
-    for (ssize_t i = 0; i < y.size(); ++i) {
-        if (y[i] <= start_par[4]) {
-            start_par[2] = x[i];
-            break; // Exit the loop after finding the first valid x
-        }
-    }
+//     // Find the first x where the corresponding y value is above the threshold
+//     // (start_par[4])
+//     for (ssize_t i = 0; i < y.size(); ++i) {
+//         if (y[i] <= start_par[4]) {
+//             start_par[2] = x[i];
+//             break; // Exit the loop after finding the first valid x
+//         }
+//     }
 
-    start_par[3] = 2 * sqrt(start_par[2]);
-    start_par[0] = 100;
-    start_par[1] = 0.25;
-    start_par[5] = -1;
-    return start_par;
+//     start_par[3] = 2 * sqrt(start_par[2]);
+//     start_par[0] = 100;
+//     start_par[1] = 0.25;
+//     start_par[5] = -1;
+//     return start_par;
+// }
+
+[[deprecated("Use FallingScurve::estimate_par(x, y) instead")]]
+std::array<double, 6> scurve2_init_par(NDView<double, 1> x,
+                                      NDView<double, 1> y) {
+    return model::FallingScurve::estimate_par(x, y);
 }
-
-
-/////////////////////// Data-driven guess fct  /////////////////////////
-std::array<double, 6> scurve2_estimate_par(const NDView<double, 1> x,
-                                        const NDView<double, 1> y) {
-    std::array<double, 6> start{};
-    const ssize_t n = y.size();
-
-    // baseline: last ~10% of points (after turn-off)
-    ssize_t n_base = std::max<ssize_t>(n / 10, 2);
-    double sum_y = 0, sum_xy = 0, sum_x = 0, sum_x2 = 0;
-    for (ssize_t i = n - n_base; i < n; ++i) {
-        sum_y  += y[i];
-        sum_x  += x[i];
-        sum_xy += x[i] * y[i];
-        sum_x2 += x[i] * x[i];
-    }
-    double denom = n_base * sum_x2 - sum_x * sum_x;
-    start[1] = (std::abs(denom) > 1e-30)
-             ? (n_base * sum_xy - sum_x * sum_y) / denom
-             : 0.0;
-    start[0] = (sum_y - start[1] * sum_x) / n_base;
-
-    // plateau: average of first ~10%
-    double plateau = 0;
-    ssize_t n_plat = std::max<ssize_t>(n / 10, 2);
-    for (ssize_t i = 0; i < n_plat; ++i)
-        plateau += y[i];
-    plateau /= n_plat;
-
-    // amplitude: plateau minus baseline at midpoint
-    double x_mid = 0.5 * (x[0] + x[n - 1]);
-    double baseline_at_mid = start[0] + start[1] * x_mid;
-    start[4] = plateau - baseline_at_mid;
-
-    // threshold: x where y first drops below 50%
-    double y_half = baseline_at_mid + 0.5 * start[4];
-    start[2] = x_mid; // fallback
-    for (ssize_t i = 0; i < n; ++i) {
-        if (y[i] <= y_half) {
-            start[2] = x[i];
-            break;
-        }
-    }
-
-    // sigma: estimate from transition width (90%-10% fall)
-    double y_90 = baseline_at_mid + 0.9 * start[4];
-    double y_10 = baseline_at_mid + 0.1 * start[4];
-    double x_90 = x[0], x_10 = x[n - 1];
-    for (ssize_t i = 0; i < n; ++i) {
-        if (y[i] <= y_90) { x_90 = x[i]; break; }
-    }
-    for (ssize_t i = 0; i < n; ++i) {
-        if (y[i] <= y_10) { x_10 = x[i]; break; }
-    }
-    // same CDF relationship: 10%-90% width = 2 * 1.2816 * sigma
-    start[3] = std::max((x_10 - x_90) / 2.5631, 1.0);
-
-    start[5] = 0.0;
-
-    return start;
-}
-//////////////////////////////////////////////////////////////////////
 
 // - No error
 NDArray<double, 1> fit_scurve2(NDView<double, 1> x, NDView<double, 1> y) {
