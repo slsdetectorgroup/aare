@@ -33,6 +33,13 @@ void define_ClusterFinder(py::module &m, const std::string &typestr) {
         m, class_name.c_str())
         .def(py::init<Shape<2>, pd_type, size_t>(), py::arg("image_size"),
              py::arg("n_sigma") = 5.0, py::arg("capacity") = 1'000'000)
+
+        .def_property(
+            "nSigma",
+            &ClusterFinder<ClusterType, uint16_t, pd_type>::get_nSigma,
+            &ClusterFinder<ClusterType, uint16_t, pd_type>::set_nSigma,
+            R"(number of sigma above the pedestal to consider a photon during cluster finding.)")
+
         .def("push_pedestal_frame",
              [](ClusterFinder<ClusterType, uint16_t, pd_type> &self,
                 py::array_t<uint16_t> frame) {
