@@ -13,11 +13,6 @@
     - ``fit_3d<Model, FCN>(model, x, y, y_err, ..., n_threads)``
 - Added Python ``Gaussian``, ``RisingScurve``, ``FallingScurve``, ``Pol1`` and ``Pol2`` fitting classes with configurable Minuit2 settings and parameter constraints.
 
-### Changes:
-
-- Model-specific initial-parameter helpers such as ``gaus_init_par``, ``pol1_init_par``, ``scurve_init_par`` and ``scurve2_init_par`` are now backed by ``model::estimate_par(...)`` and marked as deprecated.
-- User-defined fit constraints now take precedence over automatic parameter estimates in the new Minuit2 fitting API.
-
 ### Bugfixes:
 
 - Fixed ``split_task(first, last, n_threads)`` so task ranges now correctly respect the ``first`` offset. Previously, non-zero starting indices could generate incorrect subranges.
