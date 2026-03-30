@@ -2,25 +2,17 @@
 
 ## HEAD 
 
-## 2026.3.27
 
 ### New Features:
 
 - Added a new Minuit2-based fitting framework for ``Gaussian``, ``RisingScurve``, ``FallingScurve``, ``Pol1`` and ``Pol2`` models.
-- Added generic C++ fitting API:
-    - ``fit_pixel<Model, FCN>(model, x, y, y_err)``
-    - ``fit_pixel<Model, FCN>(model, upar_local, x, y, y_err)``
-    - ``fit_3d<Model, FCN>(model, x, y, y_err, ..., n_threads)``
-- Added Python ``Gaussian``, ``RisingScurve``, ``FallingScurve``, ``Pol1`` and ``Pol2`` fitting classes with configurable Minuit2 settings and parameter constraints.
+- setter and getter for nSigma for ClusterFinder ``aare.ClusterFinder().nSigma = 2``, ``aare.ClusterFinderMT().set_nSigma(2)`` 
 
 ### Bugfixes:
 
 - Fixed ``split_task(first, last, n_threads)`` so task ranges now correctly respect the ``first`` offset. Previously, non-zero starting indices could generate incorrect subranges.
 
 
-### New Features: 
-
-- setter and getter for nSigma for ClusterFinder ``aare.ClusterFinder().nSigma = 2``, ``aare.ClusterFinderMT().set_nSigma(2)`` 
 
 ## 2026.3.17
 
