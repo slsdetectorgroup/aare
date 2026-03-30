@@ -34,19 +34,6 @@ NDArray<double, 1> scurve2(NDView<double, 1> x, NDView<double, 1> par);
 
 } // namespace func
 
-/**
- * @brief Estimate the initial parameters for a Gaussian fit
- */
-std::array<double, 3> gaus_init_par(const NDView<double, 1> x,
-                                    const NDView<double, 1> y);
-
-std::array<double, 2> pol1_init_par(const NDView<double, 1> x,
-                                    const NDView<double, 1> y);
-
-std::array<double, 6> scurve_init_par(const NDView<double, 1> x,
-                                      const NDView<double, 1> y);
-std::array<double, 6> scurve2_init_par(const NDView<double, 1> x,
-                                       const NDView<double, 1> y);
 
 static constexpr int DEFAULT_NUM_THREADS = 4;
 

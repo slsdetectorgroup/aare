@@ -7,20 +7,11 @@
 ### New Features:
 
 - Added a new Minuit2-based fitting framework for ``Gaussian``, ``RisingScurve``, ``FallingScurve``, ``Pol1`` and ``Pol2`` models.
-- Consolidated fitting models into a single ``Models.hpp`` header. All models now share a unified API with ``eval``, ``eval_and_grad``, ``is_valid``, ``estimate_par``, ``compute_steps`` and ``param_info`` metadata.
-- Added generic ``Chi2Model1DGrad`` in ``Chi2.hpp`` for analytic-gradient chi2 fitting. 
-- Added ``FitModel`` configuration object to manage ``MnUserParameters``, strategy, tolerance and user overrides.
 - Added generic C++ fitting API:
     - ``fit_pixel<Model, FCN>(model, x, y, y_err)``
     - ``fit_pixel<Model, FCN>(model, upar_local, x, y, y_err)``
     - ``fit_3d<Model, FCN>(model, x, y, y_err, ..., n_threads)``
-- Added row-parallel 3D Minuit2 fitting over pixel grids through ``fit_3d(..., n_threads)``.
 - Added Python ``Gaussian``, ``RisingScurve``, ``FallingScurve``, ``Pol1`` and ``Pol2`` fitting classes with configurable Minuit2 settings and parameter constraints.
-- Added Python methods ``SetParLimits``, ``FixParameter``, ``ReleaseParameter`` and ``SetParameter``.
-- Added Python properties ``max_calls``, ``tolerance`` and ``compute_errors``.
-- Added callable model evaluation ``model(x, par)`` and instance-based fitting via ``model.fit(x, y, y_err, n_threads=4)``.
-- Updated fitting benchmarks to use the new ``FitModel`` API.
-- Added 1D and 3D fitting notebooks comparing ``lmfit`` and Minuit2 analytic-gradient fits.
 
 ### Changes:
 
