@@ -110,7 +110,7 @@ public:
 
     std::string GetParName(unsigned int idx) const { return upar_.GetName(idx); }
 
-    std::vector<std::string> GerParNames() const {
+    std::vector<std::string> GetParNames() const {
         std::vector<std::string> names;
         for (std::size_t i = 0; i < npar; ++i)
             names.push_back(GetParName(i));
