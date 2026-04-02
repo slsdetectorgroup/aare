@@ -21,6 +21,16 @@ class FitModel {
     std::array<bool, Model::npar> user_fixed_{};
     std::array<bool, Model::npar> user_start_{};
 
+    /** @brief Safely resolve a parameter name to its index. */
+    unsigned int checked_index(const std::string& name) const {
+        for (std::size_t i = 0; i < npar; ++i) {
+            if (upar_.Name(i) == name)
+                return static_cast<unsigned int>(i);
+        }
+        throw std::runtime_error(
+            "FitModel: unknown parameter name '" + name + "'");
+    }
+
 public:
     static constexpr std::size_t npar = Model::npar;
 
@@ -68,9 +78,8 @@ public:
      * Excluded from minimisation.  Automatic estimates will not touch it.
      */
     void FixParameter(unsigned int idx, double val) { 
-        upar_.SetValue(idx, val); 
+        SetParameter(idx, val);
         upar_.Fix(idx);
-        user_start_[idx] = true;
         user_fixed_[idx] = true;
     }
     
@@ -80,11 +89,40 @@ public:
         user_fixed_[idx] = false;
     }
 
+    void ReleaseParameter(const std::string& name) {
+        ReleaseParameter(checked_index(name));
+    }
+
     /** @brief Set an explicit starting value for parameter idx.*/
     void SetParameter(unsigned int idx, double val) {
         upar_.SetValue(idx, val);
         user_start_[idx] = true;
     }
+
+
+    void SetParameter(const std::string& name, double val) {
+        // go through index to maintain user_start_ bookkeeping
+        SetParameter(checked_index(name), val);
+    }
+
+    void FixParameter(const std::string& name, double val) {
+        // go through index to maintain user_fixed_ bookkeeping
+        FixParameter(checked_index(name), val);
+    }
+
+    void SetParLimits(const std::string& name, double lo, double hi) {
+        SetParLimits(checked_index(name), lo, hi);
+    }
+
+    std::string GetParName(unsigned int idx) const { return upar_.GetName(idx); }
+
+    std::vector<std::string> GetParNames() const {
+        std::vector<std::string> names;
+        for (std::size_t i = 0; i < npar; ++i)
+            names.push_back(GetParName(i));
+        return names;
+    }
+    static constexpr std::size_t GetNpar() noexcept { return npar; }
     
     void SetMaxCalls(unsigned int n)  { max_calls_ = n; }
     void SetTolerance(double t)       { tolerance_ = t; }  
