@@ -21,6 +21,16 @@ class FitModel {
     std::array<bool, Model::npar> user_fixed_{};
     std::array<bool, Model::npar> user_start_{};
 
+    /** @brief Safely resolve a parameter name to its index. */
+    unsigned int checked_index(const std::string& name) const {
+        for (std::size_t i = 0; i < npar; ++i) {
+            if (upar_.Name(i) == name)
+                return static_cast<unsigned int>(i);
+        }
+        throw std::runtime_error(
+            "FitModel: unknown parameter name '" + name + "'");
+    }
+
 public:
     static constexpr std::size_t npar = Model::npar;
 
@@ -80,8 +90,7 @@ public:
     }
 
     void ReleaseParameter(const std::string& name) {
-        unsigned int idx = upar_.Index(name);
-        ReleaseParameter(idx);
+        ReleaseParameter(checked_index(name));
     }
 
     /** @brief Set an explicit starting value for parameter idx.*/
@@ -93,19 +102,16 @@ public:
 
     void SetParameter(const std::string& name, double val) {
         // go through index to maintain user_start_ bookkeeping
-        unsigned int idx = upar_.Index(name); 
-        SetParameter(idx, val);
+        SetParameter(checked_index(name), val);
     }
 
     void FixParameter(const std::string& name, double val) {
         // go through index to maintain user_fixed_ bookkeeping
-        unsigned int idx = upar_.Index(name);
-        FixParameter(idx, val);
+        FixParameter(checked_index(name), val);
     }
 
     void SetParLimits(const std::string& name, double lo, double hi) {
-        unsigned int idx = upar_.Index(name);
-        SetParLimits(idx, lo, hi);
+        SetParLimits(checked_index(name), lo, hi);
     }
 
     std::string GetParName(unsigned int idx) const { return upar_.GetName(idx); }
