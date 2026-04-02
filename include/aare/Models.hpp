@@ -13,6 +13,26 @@ namespace aare::model {
 inline constexpr double inv_sqrt2    = 0.70710678118654752440;
 inline constexpr double inv_sqrt_2pi = 0.39894228040143267794;
 
+inline double fast_erf(double x) {
+    //Abramowitz–Stegun Handbook of Mathematical Functions 
+    //erf approximation with max error ~1.5e-7, faster than std::erf.
+
+    const double a1 = 0.254829592;
+    const double a2 = -0.284496736;
+    const double a3 = 1.421413741;
+    const double a4 = -1.453152027;
+    const double a5 = 1.061405429;
+    const double p  = 0.3275911;
+
+    const int sign = x < 0 ? -1 : 1;
+    x = std::abs(x);
+
+    // 7.1.26
+    const double t = 1.0 / (1.0 + p * x);
+    const double y = 1.0 - (((((a5 * t + a4) * t + a3) * t + a2) * t + a1) * t) * std::exp(-x * x);
+
+    return sign * y;
+}
 
 /**
  * @brief Per-parameter metadata: name and optional default bounds.
@@ -248,7 +268,7 @@ struct Gaussian {
     static constexpr std::array<ParamInfo, npar> param_info = {{
         {"A",   -no_bound, no_bound},
         {"mu",  -no_bound, no_bound},
-        {"sig",  1e-12,    no_bound},
+        {"sigma",  1e-12,    no_bound},
     }};
 
     static double eval(double x, const std::vector<double>& par) {
@@ -338,15 +358,15 @@ struct Gaussian {
  * @brief Rising S-curve (error-function step) with linear baseline and
  *        post-step slope.
  *
- * f(x) = (p0 + p1*x) + 0.5*(1 + erf((x - p2) / (sqrt(2)*p3))) * (p4 + p5*(x - p2))
+ * f(x) = (p0 + p1*x) + 0.5*(1 + erf((x - mu) / (sqrt(2)*sigma))) * (A + C*(x - mu)))
  *
  * Parameters:
  *   par[0] = p0  (baseline offset)
  *   par[1] = p1  (baseline slope)
- *   par[2] = p2  (threshold / inflection point)
- *   par[3] = p3  (transition width, must be > 0)
- *   par[4] = p4  (step amplitude)
- *   par[5] = p5  (post-step slope)
+ *   par[2] = mu  (inflection point)
+ *   par[3] = sigma  (transition width, must be > 0)
+ *   par[4] = A  (step amplitude)
+ *   par[5] = C  (post-step slope)
  */
 struct RisingScurve {
     static constexpr std::size_t npar = 6;
@@ -354,10 +374,10 @@ struct RisingScurve {
     static constexpr std::array<ParamInfo, npar> param_info = {{
         {"p0", -no_bound, no_bound},
         {"p1", -no_bound, no_bound},
-        {"p2", -no_bound, no_bound},
-        {"p3",  1e-12,    no_bound},
-        {"p4", -no_bound, no_bound},
-        {"p5", -no_bound, no_bound},
+        {"mu", -no_bound, no_bound},
+        {"sigma",  1e-12,    no_bound},
+        {"A", -no_bound, no_bound},
+        {"C", -no_bound, no_bound},
     }};
 
     static double eval(double x, const std::vector<double>& par) {
@@ -369,7 +389,7 @@ struct RisingScurve {
         const double p5 = par[5];
 
         const double dx   = x - p2;
-        const double step = 0.5 * (1.0 + std::erf(dx * inv_sqrt2 / p3));
+        const double step = 0.5 * (1.0 + fast_erf(dx * inv_sqrt2 / p3));
         return (p0 + p1 * x) + step * (p4 + p5 * dx);
     }
 
@@ -395,7 +415,7 @@ struct RisingScurve {
 
         const double dx   = x - p2;
         const double z    = dx * inv_sqrt2 / p3;
-        const double step = 0.5 * (1.0 + std::erf(z));
+        const double step = 0.5 * (1.0 + fast_erf(z));
         const double amp  = p4 + p5 * dx;
 
         f = (p0 + p1 * x) + step * amp;
@@ -502,7 +522,7 @@ struct RisingScurve {
  * @brief Falling S-curve (complementary error-function step) with linear
  *        baseline and post-step slope.
  *
- * f(x) = (p0 + p1*x) + 0.5*(1 - erf((x - p2) / (sqrt(2)*p3))) * (p4 + p5*(x - p2))
+ * f(x) = (p0 + p1*x) + 0.5*(1 - erf((x - mu) / (sqrt(2)*sigma))) * (A + C*(x - mu))
  *
  * Parameters are identical to RisingScurve.  The only difference is the
  * sign of the erf term, which flips the step direction (and the signs of
@@ -514,10 +534,10 @@ struct FallingScurve {
     static constexpr std::array<ParamInfo, npar> param_info = {{
         {"p0", -no_bound, no_bound},
         {"p1", -no_bound, no_bound},
-        {"p2", -no_bound, no_bound},
-        {"p3",  1e-12,    no_bound},
-        {"p4", -no_bound, no_bound},
-        {"p5", -no_bound, no_bound},
+        {"mu", -no_bound, no_bound},
+        {"sigma",  1e-12,    no_bound},
+        {"A", -no_bound, no_bound},
+        {"C", -no_bound, no_bound},
     }};
 
     static double eval(double x, const std::vector<double>& par) {
@@ -529,7 +549,7 @@ struct FallingScurve {
         const double p5 = par[5];
 
         const double dx   = x - p2;
-        const double step = 0.5 * (1.0 - std::erf(dx * inv_sqrt2 / p3));
+        const double step = 0.5 * (1.0 - fast_erf(dx * inv_sqrt2 / p3));
         return (p0 + p1 * x) + step * (p4 + p5 * dx);
     }
 
@@ -547,7 +567,7 @@ struct FallingScurve {
 
         const double dx   = x - p2;
         const double z    = dx * inv_sqrt2 / p3;
-        const double step = 0.5 * (1.0 - std::erf(z));
+        const double step = 0.5 * (1.0 - fast_erf(z));
         const double amp  = p4 + p5 * dx;
 
         f = (p0 + p1 * x) + step * amp;

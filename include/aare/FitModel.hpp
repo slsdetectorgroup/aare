@@ -68,9 +68,8 @@ public:
      * Excluded from minimisation.  Automatic estimates will not touch it.
      */
     void FixParameter(unsigned int idx, double val) { 
-        upar_.SetValue(idx, val); 
+        SetParameter(idx, val);
         upar_.Fix(idx);
-        user_start_[idx] = true;
         user_fixed_[idx] = true;
     }
     
@@ -80,11 +79,44 @@ public:
         user_fixed_[idx] = false;
     }
 
+    void ReleaseParameter(const std::string& name) {
+        unsigned int idx = upar_.Index(name);
+        ReleaseParameter(idx);
+    }
+
     /** @brief Set an explicit starting value for parameter idx.*/
     void SetParameter(unsigned int idx, double val) {
         upar_.SetValue(idx, val);
         user_start_[idx] = true;
     }
+
+
+    void SetParameter(const std::string& name, double val) {
+        // go through index to maintain user_start_ bookkeeping
+        unsigned int idx = upar_.Index(name); 
+        SetParameter(idx, val);
+    }
+
+    void FixParameter(const std::string& name, double val) {
+        // go through index to maintain user_fixed_ bookkeeping
+        unsigned int idx = upar_.Index(name);
+        FixParameter(idx, val);
+    }
+
+    void SetParLimits(const std::string& name, double lo, double hi) {
+        unsigned int idx = upar_.Index(name);
+        SetParLimits(idx, lo, hi);
+    }
+
+    std::string GetParName(unsigned int idx) const { return upar_.GetName(idx); }
+
+    std::vector<std::string> GerParNames() const {
+        std::vector<std::string> names;
+        for (std::size_t i = 0; i < npar; ++i)
+            names.push_back(GetParName(i));
+        return names;
+    }
+    static constexpr std::size_t GetNpar() noexcept { return npar; }
     
     void SetMaxCalls(unsigned int n)  { max_calls_ = n; }
     void SetTolerance(double t)       { tolerance_ = t; }  
