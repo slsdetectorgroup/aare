@@ -525,8 +525,8 @@ endif()
 add_custom_target(
   check-format
   COMMAND
-    find \ (-name "*.cpp" -o -name "*.hpp" \) -not -path "./build/*" | xargs -I
-    {} -n 1 -P 10 bash -c
+    find \\ (-name "*.cpp" -o -name "*.hpp" \\) -not -path "./build/*" | xargs
+    -I {} -n 1 -P 10 bash -c
     "clang-format -Werror -style=\"file:.clang-format\" {} | diff {} -"
   WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
   COMMENT "Checking code formatting with clang-format"
@@ -535,8 +535,8 @@ add_custom_target(
 add_custom_target(
   format-files
   COMMAND
-    find \ (-name "*.cpp" -o -name "*.hpp" \) -not -path "./build/*" | xargs -I
-    {} -n 1 -P 10 bash -c "clang-format -i -style=\"file:.clang-format\" {}"
+    find \\ (-name "*.cpp" -o -name "*.hpp" \\) -not -path "./build/*" | xargs
+    -I {} -n 1 -P 10 bash -c "clang-format -i -style=\"file:.clang-format\" {}"
   WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
   COMMENT "Formatting with clang-format"
   VERBATIM)
@@ -551,16 +551,16 @@ endif()
 add_custom_target(
   clang-tidy
   COMMAND
-    find \ (-path
-            "./src/*"
-            -a
-            -not
-            -path
-            "./src/python/*"
-            -a
-            \
-            (-name "*.cpp" -not -name "*.test.cpp" \)
-            \) -not -name "CircularFifo.hpp" -not -name
+    find \\ (-path
+             "./src/*"
+             -a
+             -not
+             -path
+             "./src/python/*"
+             -a
+             \\
+             (-name "*.cpp" -not -name "*.test.cpp" \\)
+             \\) -not -name "CircularFifo.hpp" -not -name
     "ProducerConsumerQueue.hpp" -not -name "VariableSizeClusterFinder.hpp" |
     xargs -I {} -n 1 -P 10 bash -c
     "${CLANG_TIDY_COMMAND} --config-file=.clang-tidy -p build {}"
