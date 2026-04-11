@@ -9,7 +9,7 @@ bin/
 *.toc
 *.o
 *.so
-.*
+
 build/
 RELEASE.txt
 Testing/

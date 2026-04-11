@@ -80,3 +80,15 @@ make install
 ```bash
 conda build . --variants="{python: [3.11, 3.12, 3.13]}"
 ```
+
+## Developer's guide
+We are looking forward to your contributions via "fork and pull request".
+
+If you want to fix an existing bug or propose a new feature:
+
+1. Create a fork of aare repository
+2. Clone your forked copy of aare repository
+3. Install `pre-commit` python package and setup it `pre-commit install`
+4. Create a new branch with `git branch branch_name`
+5. Implement your changes and make a commit (`pre-commit` will check your code automatically)
+6. Push your commit to your fork and open a pull request 

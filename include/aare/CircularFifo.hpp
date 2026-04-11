@@ -17,7 +17,7 @@ template <class ItemType> class CircularFifo {
     aare::ProducerConsumerQueue<ItemType> filled_slots;
 
   public:
-    CircularFifo() : CircularFifo(100){};
+    CircularFifo() : CircularFifo(100) {};
     CircularFifo(uint32_t size)
         : fifo_size(size), free_slots(size + 1), filled_slots(size + 1) {
 

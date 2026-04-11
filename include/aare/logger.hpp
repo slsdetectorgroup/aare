@@ -67,7 +67,7 @@ class Logger {
 
   public:
     Logger() = default;
-    explicit Logger(TLogLevel level) : m_level(level){};
+    explicit Logger(TLogLevel level) : m_level(level) {};
     ~Logger() {
         // output in the destructor to allow for << syntax
         os << RESET << '\n';
