@@ -7,18 +7,19 @@
 #include <stdexcept>
 #include <cstdio>
 #include "aare/Cluster.hpp"
+#include "aare/ClusterFinder.hpp"
 #include "aare/utils/cuda_check.cuh"
 
 namespace aare::device {
 
-// Copied this struct from ClusterFinder.hpp
-// but may be just include header?
-template <typename ClusterType,
-          typename = std::enable_if_t<is_cluster_v<ClusterType>>>
-struct no_2x2_cluster {
-    constexpr static bool value =
-        ClusterType::cluster_size_x > 2 && ClusterType::cluster_size_y > 2;
-};
+// // Copied this struct from ClusterFinder.hpp
+// // but may be just include header?
+// template <typename ClusterType,
+//           typename = std::enable_if_t<is_cluster_v<ClusterType>>>
+// struct no_2x2_cluster {
+//     constexpr static bool value =
+//         ClusterType::cluster_size_x > 2 && ClusterType::cluster_size_y > 2;
+// };
 
 // __________________
 //
@@ -30,8 +31,9 @@ template <typename ClusterType = Cluster<int32_t, 3, 3>,
           typename PEDESTAL_TYPE = double,
           typename = std::enable_if_t<no_2x2_cluster<ClusterType>::value>>
 __global__ void find_clusters_in_single_frame(const FRAME_TYPE*   __restrict__ d_frame,
-                                              const PEDESTAL_TYPE* __restrict__ d_pd_mean,
-                                              const PEDESTAL_TYPE* __restrict__ d_pd_sum2,
+                                              PEDESTAL_TYPE* __restrict__ d_pd_mean,
+                                              PEDESTAL_TYPE* __restrict__ d_pd_sum,
+                                              PEDESTAL_TYPE* __restrict__ d_pd_sum2,
                                               const uint32_t       n_pd_samples,
                                               const PEDESTAL_TYPE  m_nSigma,
                                               const size_t         nrows,
@@ -194,10 +196,11 @@ __global__ void find_clusters_in_single_frame(const FRAME_TYPE*   __restrict__ d
     // Stencil reduction: total, max, quadrant sums
     PEDESTAL_TYPE total = PEDESTAL_TYPE{0};
     PEDESTAL_TYPE max_val = -HUGE_VAL; // CUDA-compatible equivalent of `numeric_limits<double>::lowest()`
-    PEDESTAL_TYPE tl = PEDESTAL_TYPE{0};   // top-left quadrant  (ir<=0, ic<=0)
+
+    /* PEDESTAL_TYPE tl = PEDESTAL_TYPE{0};   // top-left quadrant  (ir<=0, ic<=0)
     PEDESTAL_TYPE tr = PEDESTAL_TYPE{0};   // top-right quadrant (ir<=0, ic>=0)
     PEDESTAL_TYPE bl = PEDESTAL_TYPE{0};   // bottom-left        (ir>=0, ic<=0)
-    PEDESTAL_TYPE br = PEDESTAL_TYPE{0};   // bottom-right       (ir>=0, ic>=0)
+    PEDESTAL_TYPE br = PEDESTAL_TYPE{0};   // bottom-right       (ir>=0, ic>=0) */
 
     CT clusterData[CSX * CSY];
     int idx = 0; // tracks the pixels in the cluster
@@ -211,11 +214,11 @@ __global__ void find_clusters_in_single_frame(const FRAME_TYPE*   __restrict__ d
             total += val;
             max_val = max(max_val, val);
 
-            // Quadrant accumulation (pixels on the axes contribute to two quadrants)
+            /* // Quadrant accumulation (pixels on the axes contribute to two quadrants)
             if (ir <= 0 && ic <= 0) tl += val;
             if (ir <= 0 && ic >= 0) tr += val;
             if (ir >= 0 && ic <= 0) bl += val;
-            if (ir >= 0 && ic >= 0) br += val;
+            if (ir >= 0 && ic >= 0) br += val; */
 
             // Store pedestal-subtracted value in register array for later cluster output
             if constexpr (std::is_integral_v<CT> && std::is_floating_point_v<PEDESTAL_TYPE>)
@@ -233,14 +236,11 @@ __global__ void find_clusters_in_single_frame(const FRAME_TYPE*   __restrict__ d
     //     -> only the pixel that IS the max gets recorded (local-max suppression)
     //
     //  2. Quadrant significance:      max(tl,tr,bl,br) > c2 * nSigma * rms
-    //     -> charge-sharing events where a 2x2 sub-region is significant (incomplete in ClusterFinder)
+    //     -> charge-sharing events where a 2x2 sub-region is significant 
+    //  NOTE: This test is absent in the serial ClusterFinder!
     //
     //  3. Total significance:         total > c3 * nSigma * rms
     //     -> distributed events where the full cluster sum is significant
-    //
-    //  NOTE: Tried to use squared comparisons, whenever possible,
-    //  to avoid the slower `sqrt()` on c2 and c3:
-    //     (x > c * nSigma * rms)  <-->  (x > 0 && x² > c² * nSigma² * rms²)
 
     PEDESTAL_TYPE nSig_sq_rms_sq = m_nSigma * m_nSigma * rms_sq;
 
@@ -254,13 +254,13 @@ __global__ void find_clusters_in_single_frame(const FRAME_TYPE*   __restrict__ d
         is_photon = true;
     }
 
-    // Test 2: quadrant significance (only if test 1 didn't fire)
+    /* // Test 2: quadrant significance (only if test 1 didn't fire)
     if (!is_photon) {
         PEDESTAL_TYPE max_quad = max(max(tl, tr), max(bl, br));
         if (max_quad > 0 && max_quad * max_quad > pow2_c2 * nSig_sq_rms_sq) {
             is_photon = true;
         }
-    }
+    } */
 
     // Test 3: total significance (only if tests 1 & 2 didn't fire)
     if (!is_photon) {
@@ -270,12 +270,22 @@ __global__ void find_clusters_in_single_frame(const FRAME_TYPE*   __restrict__ d
     }
 
     // Pedestal update (if not a photon) 
-    // TODO: Pedestal update is omitted here. In the sequential code,
-    // non-photon pixels feed back into the running pedestal via push_fast().
-    // On GPU this requires atomic updates to d_pd_sum / d_pd_sum2 which
-    // possibly degrade performance...
-    if (!is_photon)
+    // In the sequential code, non-photon pixels feed back into the running pedestal via push_fast().
+    // In this kernel, the GPU updates all pixels in a frame simultaneously. So the updated pedestal 
+    // will only be used starting from the next frame. -> This avoids a/serialization and b/global mem I/O.
+    if (!is_photon && valid_pixel) {
+        PEDESTAL_TYPE raw_val = static_cast<PEDESTAL_TYPE>(d_frame[global_tid]);
+        PEDESTAL_TYPE sum  = d_pd_sum[global_tid];
+        PEDESTAL_TYPE sum2 = d_pd_sum2[global_tid];
+
+        sum  += raw_val           - sum  / n_pd_samples;
+        sum2 += raw_val * raw_val - sum2 / n_pd_samples;
+
+        d_pd_sum[global_tid]  = sum;
+        d_pd_sum2[global_tid] = sum2;
+        d_pd_mean[global_tid] = sum / n_pd_samples;
         return;
+    }
 
     // Write cluster to global output buffer using atomic index 
     // for coordination across all blocks
@@ -288,13 +298,7 @@ __global__ void find_clusters_in_single_frame(const FRAME_TYPE*   __restrict__ d
     ClusterType cluster{};
     cluster.x = static_cast<decltype(cluster.x)>(col_global);
     cluster.y = static_cast<decltype(cluster.y)>(row_global);
-    
-    // CT* cdata = cluster.data(); 
-    
-    // #pragma unroll
-    // for (int i = 0; i < CSX * CSY; ++i) {
-    //     cdata[i] = clusterData[i];
-    // }
+
     memcpy(reinterpret_cast<CT*>(&cluster.data), clusterData, sizeof(CT) * CSX * CSY);    
 
     d_clusters[write_idx] = cluster;
@@ -322,6 +326,7 @@ struct ClusterFinderCUDA {
     // Device pointers
     FRAME_TYPE*    d_frame          = nullptr;
     PEDESTAL_TYPE* d_pd_mean        = nullptr;
+    PEDESTAL_TYPE* d_pd_sum         = nullptr;
     PEDESTAL_TYPE* d_pd_sum2        = nullptr;
     ClusterType*   d_clusters       = nullptr;
     uint32_t*      d_cluster_count  = nullptr;
@@ -337,6 +342,7 @@ struct ClusterFinderCUDA {
 
         CUDA_CHECK(cudaMalloc(&d_frame,         image_size * sizeof(FRAME_TYPE)));
         CUDA_CHECK(cudaMalloc(&d_pd_mean,       image_size * sizeof(PEDESTAL_TYPE)));
+        CUDA_CHECK(cudaMalloc(&d_pd_sum,        image_size * sizeof(PEDESTAL_TYPE)));
         CUDA_CHECK(cudaMalloc(&d_pd_sum2,       image_size * sizeof(PEDESTAL_TYPE)));
         CUDA_CHECK(cudaMalloc(&d_clusters,      max_clusters * sizeof(ClusterType)));
         CUDA_CHECK(cudaMalloc(&d_cluster_count, sizeof(uint32_t)));
@@ -345,6 +351,7 @@ struct ClusterFinderCUDA {
     ~ClusterFinderCUDA() {
         if (d_frame)         cudaFree(d_frame);
         if (d_pd_mean)       cudaFree(d_pd_mean);
+        if (d_pd_sum)        cudaFree(d_pd_sum);
         if (d_pd_sum2)       cudaFree(d_pd_sum2);
         if (d_clusters)      cudaFree(d_clusters);
         if (d_cluster_count) cudaFree(d_cluster_count);
@@ -361,9 +368,10 @@ struct ClusterFinderCUDA {
      * Upload pedestal statistics (mean and sum-of-squares) to device.
      * These are typically computed on the host by the Pedestal class.
      */
-    void upload_pedestal(const PEDESTAL_TYPE* h_mean, const PEDESTAL_TYPE* h_sum2) {
+    void upload_pedestal(const PEDESTAL_TYPE* h_mean, const PEDESTAL_TYPE* h_sum, const PEDESTAL_TYPE* h_sum2) {
         size_t bytes = nrows * ncols * sizeof(PEDESTAL_TYPE);
         CUDA_CHECK(cudaMemcpyAsync(d_pd_mean, h_mean, bytes, cudaMemcpyHostToDevice, stream));
+        CUDA_CHECK(cudaMemcpyAsync(d_pd_sum,  h_sum,  bytes, cudaMemcpyHostToDevice, stream));
         CUDA_CHECK(cudaMemcpyAsync(d_pd_sum2, h_sum2, bytes, cudaMemcpyHostToDevice, stream));
     }
 
@@ -405,6 +413,7 @@ struct ClusterFinderCUDA {
         find_clusters_in_single_frame<ClusterType, FRAME_TYPE, PEDESTAL_TYPE>
             <<<grid, block, shmem_bytes, stream>>>(d_frame,
                                                    d_pd_mean,
+                                                   d_pd_sum,
                                                    d_pd_sum2,
                                                    n_pd_samples,
                                                    nSigma,
