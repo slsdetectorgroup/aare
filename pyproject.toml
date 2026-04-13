@@ -42,9 +42,3 @@ AARE_INSTALL_PYTHONEXT = "ON"
 markers = [
     "files: marks tests that need additional data (deselect with '-m \"not files\"')",
 ]
-
-# [tool.typos]
-[tool.typos.default.extend-words]
-aare = "aare"
-gaus = "gaus"
-ND = "ND"
