@@ -150,22 +150,28 @@ else()
 endif()
 
 if(AARE_FETCH_MINUIT2)
-    #Patch minuit2 to avoid messing with cmake policies
-    set(MINUIT2_PATCH_COMMAND git apply ${CMAKE_CURRENT_SOURCE_DIR}/patches/minuit2.patch)
-    FetchContent_Declare(
-        Minuit2
-        GIT_REPOSITORY https://github.com/GooFit/Minuit2.git
-        GIT_TAG        master
-        PATCH_COMMAND ${MINUIT2_PATCH_COMMAND}
-        UPDATE_DISCONNECTED 1
-    )
-    # Disable Minuit2 extras we don't need
-    set(minuit2_mpi OFF CACHE BOOL "")
-    set(minuit2_omp OFF CACHE BOOL "")
-    set(BUILD_TESTING OFF CACHE BOOL "")
-    FetchContent_MakeAvailable(Minuit2)
-    set_property(TARGET Minuit2Math PROPERTY POSITION_INDEPENDENT_CODE ON)
-    set_property(TARGET Minuit2 PROPERTY POSITION_INDEPENDENT_CODE ON)
+  # Patch minuit2 to avoid messing with cmake policies
+  set(MINUIT2_PATCH_COMMAND git apply
+                            ${CMAKE_CURRENT_SOURCE_DIR}/patches/minuit2.patch)
+  FetchContent_Declare(
+    Minuit2
+    GIT_REPOSITORY https://github.com/GooFit/Minuit2.git
+    GIT_TAG master
+    PATCH_COMMAND ${MINUIT2_PATCH_COMMAND}
+    UPDATE_DISCONNECTED 1)
+  # Disable Minuit2 extras we don't need
+  set(minuit2_mpi
+      OFF
+      CACHE BOOL "")
+  set(minuit2_omp
+      OFF
+      CACHE BOOL "")
+  set(BUILD_TESTING
+      OFF
+      CACHE BOOL "")
+  FetchContent_MakeAvailable(Minuit2)
+  set_property(TARGET Minuit2Math PROPERTY POSITION_INDEPENDENT_CODE ON)
+  set_property(TARGET Minuit2 PROPERTY POSITION_INDEPENDENT_CODE ON)
 else()
   find_package(Minuit2 REQUIRED)
 endif()
