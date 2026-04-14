@@ -192,5 +192,4 @@ cython_debug/
 .ruff_cache/
 
 # user defined
-RELEASE.txt
 wheelhouse/
