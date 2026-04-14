@@ -1,35 +1,37 @@
 // SPDX-License-Identifier: MPL-2.0
 #pragma once
 
+#include "aare/NDView.hpp"
+#include <algorithm>
 #include <array>
 #include <cmath>
-#include <vector>
 #include <limits>
-#include <algorithm>
-#include "aare/NDView.hpp"
+#include <vector>
 
 namespace aare::model {
 
-inline constexpr double inv_sqrt2    = 0.70710678118654752440;
+inline constexpr double inv_sqrt2 = 0.70710678118654752440;
 inline constexpr double inv_sqrt_2pi = 0.39894228040143267794;
 
 inline double fast_erf(double x) {
-    //Abramowitz–Stegun Handbook of Mathematical Functions 
-    //erf approximation with max error ~1.5e-7, faster than std::erf.
+    // Abramowitz–Stegun Handbook of Mathematical Functions
+    // erf approximation with max error ~1.5e-7, faster than std::erf.
 
     const double a1 = 0.254829592;
     const double a2 = -0.284496736;
     const double a3 = 1.421413741;
     const double a4 = -1.453152027;
     const double a5 = 1.061405429;
-    const double p  = 0.3275911;
+    const double p = 0.3275911;
 
     const int sign = x < 0 ? -1 : 1;
     x = std::abs(x);
 
     // 7.1.26
     const double t = 1.0 / (1.0 + p * x);
-    const double y = 1.0 - (((((a5 * t + a4) * t + a3) * t + a2) * t + a1) * t) * std::exp(-x * x);
+    const double y =
+        1.0 -
+        (((((a5 * t + a4) * t + a3) * t + a2) * t + a1) * t) * std::exp(-x * x);
 
     return sign * y;
 }
@@ -41,11 +43,11 @@ inline double fast_erf(double x) {
  * Unbounded directions use ±no_bound as sentinels.
  */
 struct ParamInfo {
-    const char* name;   // name of parameter
-    double default_lo;  // lower bound value
-    double default_hi;  // upper bound value
+    const char *name;  // name of parameter
+    double default_lo; // lower bound value
+    double default_hi; // upper bound value
 };
- 
+
 inline constexpr double no_bound = std::numeric_limits<double>::infinity();
 
 /**
@@ -53,18 +55,15 @@ inline constexpr double no_bound = std::numeric_limits<double>::infinity();
  *
  * Model-independent, called once per pixel.
  */
-inline void compute_ranges(NDView<double, 1> x,
-                           NDView<double, 1> y,
-                           double& x_range,
-                           double& y_range,
-                           double& slope_scale)
-{
+inline void compute_ranges(NDView<double, 1> x, NDView<double, 1> y,
+                           double &x_range, double &y_range,
+                           double &slope_scale) {
     const auto [x_min, x_max] = std::minmax_element(x.begin(), x.end());
     const auto [y_min, y_max] = std::minmax_element(y.begin(), y.end());
 
     x_range = std::max(*x_max - *x_min, 1e-9);
     y_range = std::max(*y_max - *y_min, 1e-9);
-    
+
     slope_scale = std::max(y_range / x_range, 1e-9);
 }
 
@@ -90,50 +89,45 @@ struct Pol1 {
     static constexpr std::size_t npar = 2;
 
     static constexpr std::array<ParamInfo, npar> param_info = {{
-        {"p0",  -no_bound, no_bound},
-        {"p1",  -no_bound, no_bound},
+        {"p0", -no_bound, no_bound},
+        {"p1", -no_bound, no_bound},
     }};
 
-    static double eval(double x, const std::vector<double>& par) {
+    static double eval(double x, const std::vector<double> &par) {
         return par[0] + par[1] * x;
     }
 
-    static void eval_and_grad(double x,
-                              const std::vector<double>& par,
-                              double& f,
-                              std::array<double, npar>& g)
-    {
+    static void eval_and_grad(double x, const std::vector<double> &par,
+                              double &f, std::array<double, npar> &g) {
         f = par[0] + par[1] * x;
 
-        g[0] = 1.0 ; // df/dp0
-        g[1] = x;    // df/dp1
+        g[0] = 1.0; // df/dp0
+        g[1] = x;   // df/dp1
     }
 
-    static bool is_valid([[maybe_unused]] const std::vector<double>& par) {
-        return true; // always valid 
+    static bool is_valid([[maybe_unused]] const std::vector<double> &par) {
+        return true; // always valid
     }
 
-    /** @brief Estimate from endpoints: slope = dy/dx, intercept from first point. */
+    /** @brief Estimate from endpoints: slope = dy/dx, intercept from first
+     * point. */
     static std::array<double, npar> estimate_par(NDView<double, 1> x,
-                                                NDView<double, 1> y)
-    {
-        const double dx = x[x.size()-1] - x[0];
-        const double dy = y[y.size()-1] - y[0];
-        const double slope = (std::abs(dx) > 1e-12) ? dy/dx : 0.0;
+                                                 NDView<double, 1> y) {
+        const double dx = x[x.size() - 1] - x[0];
+        const double dy = y[y.size() - 1] - y[0];
+        const double slope = (std::abs(dx) > 1e-12) ? dy / dx : 0.0;
         const double intercept = y[0] - slope * x[0];
 
         return {intercept, slope};
     }
 
-
-    static void compute_steps(const std::array<double, npar>& start,
-                              [[maybe_unused]] double x_range, double y_range, double slope_scale,
-                              std::array<double, npar>& steps)
-    {
+    static void compute_steps(const std::array<double, npar> &start,
+                              [[maybe_unused]] double x_range, double y_range,
+                              double slope_scale,
+                              std::array<double, npar> &steps) {
         steps[0] = std::max(0.1 * std::abs(start[0]), 0.1 * y_range);
         steps[1] = 0.1 * slope_scale;
     }
-    
 };
 
 // _____________________________________________________________________
@@ -144,7 +138,7 @@ struct Pol1 {
 /**
  * @brief Polynomial fuction of degree 2
  *
- * f(x) = p0 + p1 * x + p2 * x * x  
+ * f(x) = p0 + p1 * x + p2 * x * x
  *
  * Parameters:
  *   par[0] = p0    (constant term)
@@ -160,29 +154,26 @@ struct Pol2 {
     static constexpr std::size_t npar = 3;
 
     static constexpr std::array<ParamInfo, npar> param_info = {{
-        {"p0",  -no_bound, no_bound}, 
-        {"p1",  -no_bound, no_bound},
-        {"p2",  -no_bound, no_bound},
+        {"p0", -no_bound, no_bound},
+        {"p1", -no_bound, no_bound},
+        {"p2", -no_bound, no_bound},
     }};
 
-    static double eval(double x, const std::vector<double>& par) {
+    static double eval(double x, const std::vector<double> &par) {
         return par[0] + par[1] * x + par[2] * x * x;
     }
 
-    static void eval_and_grad(double x,
-                              const std::vector<double>& par,
-                              double& f,
-                              std::array<double, npar>& g)
-    {
+    static void eval_and_grad(double x, const std::vector<double> &par,
+                              double &f, std::array<double, npar> &g) {
         f = par[0] + par[1] * x + par[2] * x * x;
 
-        g[0] = 1.0 ; // df/dp0
-        g[1] = x;    // df/dp1
-        g[2] = x * x;    // df/dp2
+        g[0] = 1.0;   // df/dp0
+        g[1] = x;     // df/dp1
+        g[2] = x * x; // df/dp2
     }
 
-    static bool is_valid([[maybe_unused]]const std::vector<double>& par) {
-        return true; // always valid 
+    static bool is_valid([[maybe_unused]] const std::vector<double> &par) {
+        return true; // always valid
     }
 
     /**
@@ -204,23 +195,22 @@ struct Pol2 {
      * when curvature is negligible i.e. slope_e ≈ slope_s -> p2 ≈ 0.
      */
     static std::array<double, npar> estimate_par(NDView<double, 1> x,
-                                                NDView<double, 1> y)
-    {
+                                                 NDView<double, 1> y) {
         const ssize_t n = y.size();
         const ssize_t tail = std::max<ssize_t>(n / 10, 2);
 
         // start: slope from first 10%
-        const double x_s = (x[0] + x[tail-1]) * 0.5;
-        const double slope_s = (y[tail-1] - y[0]) / (x[tail-1] - x[0]);
+        const double x_s = (x[0] + x[tail - 1]) * 0.5;
+        const double slope_s = (y[tail - 1] - y[0]) / (x[tail - 1] - x[0]);
 
         // end: slope from last 10%
-        const double x_e = (x[n-tail] + x[n-1]) * 0.5;
-        const double slope_e = (y[n-1] - y[n-tail]) / (x[n-1] - x[n-tail]);
+        const double x_e = (x[n - tail] + x[n - 1]) * 0.5;
+        const double slope_e =
+            (y[n - 1] - y[n - tail]) / (x[n - 1] - x[n - tail]);
 
         const double dx = x_e - x_s;
-        const double p2 = (std::abs(dx) > 1e-12)
-                        ? (slope_e - slope_s) / (2.0 * dx)
-                        : 0.0;
+        const double p2 =
+            (std::abs(dx) > 1e-12) ? (slope_e - slope_s) / (2.0 * dx) : 0.0;
 
         // p1 from slope_s = p1 + 2*p2*x_s
         const double p1 = slope_s - 2.0 * p2 * x_s;
@@ -231,11 +221,10 @@ struct Pol2 {
         return {p0, p1, p2};
     }
 
-
-    static void compute_steps(const std::array<double, npar>& start,
-                              double x_range, double y_range, double slope_scale,
-                              std::array<double, npar>& steps)
-    {
+    static void compute_steps(const std::array<double, npar> &start,
+                              double x_range, double y_range,
+                              double slope_scale,
+                              std::array<double, npar> &steps) {
         steps[0] = std::max(0.1 * std::abs(start[0]), 0.1 * y_range);
         steps[1] = 0.1 * slope_scale;
         steps[2] = 0.1 * slope_scale / std::max(x_range, 1e-12);
@@ -266,43 +255,41 @@ struct Gaussian {
     static constexpr std::size_t npar = 3;
 
     static constexpr std::array<ParamInfo, npar> param_info = {{
-        {"A",   -no_bound, no_bound},
-        {"mu",  -no_bound, no_bound},
-        {"sigma",  1e-12,    no_bound},
+        {"A", -no_bound, no_bound},
+        {"mu", -no_bound, no_bound},
+        {"sigma", 1e-12, no_bound},
     }};
 
-    static double eval(double x, const std::vector<double>& par) {
-        const double A   = par[0];
-        const double mu  = par[1];
+    static double eval(double x, const std::vector<double> &par) {
+        const double A = par[0];
+        const double mu = par[1];
         const double sig = par[2];
 
-        const double dx        = x - mu;
+        const double dx = x - mu;
         const double inv_2sig2 = 1.0 / (2.0 * sig * sig);
         return A * std::exp(-dx * dx * inv_2sig2);
     }
 
-    static void eval_and_grad(double x,
-                              const std::vector<double>& par,
-                              double& f,
-                              std::array<double, npar>& g)
-    {
-        const double A   = par[0];
-        const double mu  = par[1];
+    static void eval_and_grad(double x, const std::vector<double> &par,
+                              double &f, std::array<double, npar> &g) {
+        const double A = par[0];
+        const double mu = par[1];
         const double sig = par[2];
 
-        const double dx        = x - mu;
+        const double dx = x - mu;
         const double inv_2sig2 = 1.0 / (2.0 * sig * sig);
-        const double e         = std::exp(-dx * dx * inv_2sig2);
+        const double e = std::exp(-dx * dx * inv_2sig2);
 
         f = A * e;
 
-        g[0] = e;                                          // df/dA
-        g[1] = 2.0 * A * e * dx * inv_2sig2;              // df/dmu    = A*e*(x-mu)/sig^2
-        g[2] = 2.0 * A * e * dx * dx * inv_2sig2 / sig;   // df/dsigma = A*e*(x-mu)^2/sig^3
+        g[0] = e;                            // df/dA
+        g[1] = 2.0 * A * e * dx * inv_2sig2; // df/dmu    = A*e*(x-mu)/sig^2
+        g[2] = 2.0 * A * e * dx * dx * inv_2sig2 /
+               sig; // df/dsigma = A*e*(x-mu)^2/sig^3
     }
 
     /** @brief Reject degenerate sigma (zero width). */
-    static bool is_valid(const std::vector<double>& par) {
+    static bool is_valid(const std::vector<double> &par) {
         return par[2] != 0.0;
     }
 
@@ -314,40 +301,44 @@ struct Gaussian {
      * sigma = FWHM / 2.35
      */
     static std::array<double, npar> estimate_par(NDView<double, 1> x,
-                                                  NDView<double, 1> y)
-    {
+                                                 NDView<double, 1> y) {
         // find peak
         const auto max_it = std::max_element(y.begin(), y.end());
         const ssize_t i_max = std::distance(y.begin(), max_it);
 
-        const double A  = *max_it;
+        const double A = *max_it;
         const double mu = x[i_max];
- 
+
         // FWHM estimate
         const double half = A * 0.5;
         double x_lo = mu, x_hi = mu;
         for (ssize_t i = i_max; i >= 0; --i)
-            if (y[i] < half) { x_lo = x[i]; break; }
+            if (y[i] < half) {
+                x_lo = x[i];
+                break;
+            }
         for (ssize_t i = i_max; i < y.size(); ++i)
-            if (y[i] < half) { x_hi = x[i]; break; }
+            if (y[i] < half) {
+                x_hi = x[i];
+                break;
+            }
         const double sig = std::max((x_hi - x_lo) / 2.35, 1e-6);
- 
+
         return {A, mu, sig};
     }
 
     /**
      * @brief Data-driven Minuit step sizes.
      */
-    static void compute_steps(const std::array<double, npar>& start,
-                              double x_range, double y_range, double /*slope_scale*/,
-                              std::array<double, npar>& steps)
-    {
+    static void compute_steps(const std::array<double, npar> &start,
+                              double x_range, double y_range,
+                              double /*slope_scale*/,
+                              std::array<double, npar> &steps) {
         steps[0] = std::max(0.1 * std::abs(start[0]), 0.1 * y_range);
         steps[1] = 0.05 * x_range;
         steps[2] = 0.05 * x_range;
     }
 };
-
 
 // _____________________________________________________________________
 //
@@ -358,7 +349,8 @@ struct Gaussian {
  * @brief Rising S-curve (error-function step) with linear baseline and
  *        post-step slope.
  *
- * f(x) = (p0 + p1*x) + 0.5*(1 + erf((x - mu) / (sqrt(2)*sigma))) * (A + C*(x - mu)))
+ * f(x) = (p0 + p1*x) + 0.5*(1 + erf((x - mu) / (sqrt(2)*sigma))) * (A + C*(x -
+ * mu)))
  *
  * Parameters:
  *   par[0] = p0  (baseline offset)
@@ -375,12 +367,12 @@ struct RisingScurve {
         {"p0", -no_bound, no_bound},
         {"p1", -no_bound, no_bound},
         {"mu", -no_bound, no_bound},
-        {"sigma",  1e-12,    no_bound},
+        {"sigma", 1e-12, no_bound},
         {"A", -no_bound, no_bound},
         {"C", -no_bound, no_bound},
     }};
 
-    static double eval(double x, const std::vector<double>& par) {
+    static double eval(double x, const std::vector<double> &par) {
         const double p0 = par[0];
         const double p1 = par[1];
         const double p2 = par[2];
@@ -388,7 +380,7 @@ struct RisingScurve {
         const double p4 = par[4];
         const double p5 = par[5];
 
-        const double dx   = x - p2;
+        const double dx = x - p2;
         const double step = 0.5 * (1.0 + fast_erf(dx * inv_sqrt2 / p3));
         return (p0 + p1 * x) + step * (p4 + p5 * dx);
     }
@@ -401,11 +393,8 @@ struct RisingScurve {
      *   dS/dp2 = -(1/sqrt(2*pi)) * exp(-z^2) / p3
      *   dS/dp3 = -(1/sqrt(2*pi)) * exp(-z^2) * (x-p2) / p3^2
      */
-    static void eval_and_grad(double x,
-                              const std::vector<double>& par,
-                              double& f,
-                              std::array<double, npar>& g)
-    {
+    static void eval_and_grad(double x, const std::vector<double> &par,
+                              double &f, std::array<double, npar> &g) {
         const double p0 = par[0];
         const double p1 = par[1];
         const double p2 = par[2];
@@ -413,50 +402,48 @@ struct RisingScurve {
         const double p4 = par[4];
         const double p5 = par[5];
 
-        const double dx   = x - p2;
-        const double z    = dx * inv_sqrt2 / p3;
+        const double dx = x - p2;
+        const double z = dx * inv_sqrt2 / p3;
         const double step = 0.5 * (1.0 + fast_erf(z));
-        const double amp  = p4 + p5 * dx;
+        const double amp = p4 + p5 * dx;
 
         f = (p0 + p1 * x) + step * amp;
 
-        const double e     = std::exp(-z * z);
+        const double e = std::exp(-z * z);
         const double dSdp2 = -inv_sqrt_2pi * e / p3;
         const double dSdp3 = -inv_sqrt_2pi * e * dx / (p3 * p3);
 
-        g[0] = 1.0;                         // df/dp0
-        g[1] = x;                            // df/dp1
-        g[2] = dSdp2 * amp - step * p5;     // df/dp2
-        g[3] = dSdp3 * amp;                 // df/dp3
-        g[4] = step;                         // df/dp4
-        g[5] = step * dx;                   // df/dp5
+        g[0] = 1.0;                     // df/dp0
+        g[1] = x;                       // df/dp1
+        g[2] = dSdp2 * amp - step * p5; // df/dp2
+        g[3] = dSdp3 * amp;             // df/dp3
+        g[4] = step;                    // df/dp4
+        g[5] = step * dx;               // df/dp5
     }
 
     /** @brief Reject degenerate width (zero transition width). */
-    static bool is_valid(const std::vector<double>& par) {
+    static bool is_valid(const std::vector<double> &par) {
         return par[3] != 0.0;
     }
 
-        
     /** @brief Data-driven initial parameter estimates for a rising S-curve. */
     static std::array<double, npar> estimate_par(NDView<double, 1> x,
-                                                  NDView<double, 1> y)
-    {
+                                                 NDView<double, 1> y) {
         const ssize_t n = y.size();
 
         // baseline: average of first ~10% of points (before turn-on)
         ssize_t n_base = std::max<ssize_t>(n / 10, 2);
         double sum_y = 0, sum_xy = 0, sum_x = 0, sum_x2 = 0;
         for (ssize_t i = 0; i < n_base; ++i) {
-            sum_y  += y[i];
-            sum_x  += x[i];
+            sum_y += y[i];
+            sum_x += x[i];
             sum_xy += x[i] * y[i];
             sum_x2 += x[i] * x[i];
         }
         double denom = n_base * sum_x2 - sum_x * sum_x;
         double p1 = (std::abs(denom) > 1e-30)
-                ? (n_base * sum_xy - sum_x * sum_y) / denom
-                : 0.0;
+                        ? (n_base * sum_xy - sum_x * sum_y) / denom
+                        : 0.0;
         double p0 = (sum_y - p1 * sum_x) / n_base;
 
         // plateau: average of last ~10%
@@ -486,10 +473,16 @@ struct RisingScurve {
         double y_90 = baseline_at_mid + 0.9 * p4;
         double x_10 = x[0], x_90 = x[n - 1];
         for (ssize_t i = 0; i < n; ++i) {
-            if (y[i] >= y_10) { x_10 = x[i]; break; }
+            if (y[i] >= y_10) {
+                x_10 = x[i];
+                break;
+            }
         }
         for (ssize_t i = 0; i < n; ++i) {
-            if (y[i] >= y_90) { x_90 = x[i]; break; }
+            if (y[i] >= y_90) {
+                x_90 = x[i];
+                break;
+            }
         }
         // for a Gaussian CDF: 10%-90% width = 2 * 1.2816 * sigma
         double p3 = std::max((x_90 - x_10) / 2.5631, 1.0);
@@ -498,11 +491,11 @@ struct RisingScurve {
 
         return {p0, p1, p2, p3, p4, p5};
     }
- 
-    static void compute_steps(const std::array<double, npar>& start,
-                              double x_range, double y_range, double slope_scale,
-                              std::array<double, npar>& steps)
-    {
+
+    static void compute_steps(const std::array<double, npar> &start,
+                              double x_range, double y_range,
+                              double slope_scale,
+                              std::array<double, npar> &steps) {
         steps[0] = std::max(0.1 * std::abs(start[0]), 0.1 * y_range);
         steps[1] = 0.1 * slope_scale;
         steps[2] = 0.05 * x_range;
@@ -511,7 +504,6 @@ struct RisingScurve {
         steps[5] = 0.1 * slope_scale;
     }
 };
-
 
 // _____________________________________________________________________
 //
@@ -522,7 +514,8 @@ struct RisingScurve {
  * @brief Falling S-curve (complementary error-function step) with linear
  *        baseline and post-step slope.
  *
- * f(x) = (p0 + p1*x) + 0.5*(1 - erf((x - mu) / (sqrt(2)*sigma))) * (A + C*(x - mu))
+ * f(x) = (p0 + p1*x) + 0.5*(1 - erf((x - mu) / (sqrt(2)*sigma))) * (A + C*(x -
+ * mu))
  *
  * Parameters are identical to RisingScurve.  The only difference is the
  * sign of the erf term, which flips the step direction (and the signs of
@@ -535,12 +528,12 @@ struct FallingScurve {
         {"p0", -no_bound, no_bound},
         {"p1", -no_bound, no_bound},
         {"mu", -no_bound, no_bound},
-        {"sigma",  1e-12,    no_bound},
+        {"sigma", 1e-12, no_bound},
         {"A", -no_bound, no_bound},
         {"C", -no_bound, no_bound},
     }};
 
-    static double eval(double x, const std::vector<double>& par) {
+    static double eval(double x, const std::vector<double> &par) {
         const double p0 = par[0];
         const double p1 = par[1];
         const double p2 = par[2];
@@ -548,16 +541,13 @@ struct FallingScurve {
         const double p4 = par[4];
         const double p5 = par[5];
 
-        const double dx   = x - p2;
+        const double dx = x - p2;
         const double step = 0.5 * (1.0 - fast_erf(dx * inv_sqrt2 / p3));
         return (p0 + p1 * x) + step * (p4 + p5 * dx);
     }
 
-    static void eval_and_grad(double x,
-                              const std::vector<double>& par,
-                              double& f,
-                              std::array<double, npar>& g)
-    {
+    static void eval_and_grad(double x, const std::vector<double> &par,
+                              double &f, std::array<double, npar> &g) {
         const double p0 = par[0];
         const double p1 = par[1];
         const double p2 = par[2];
@@ -565,15 +555,15 @@ struct FallingScurve {
         const double p4 = par[4];
         const double p5 = par[5];
 
-        const double dx   = x - p2;
-        const double z    = dx * inv_sqrt2 / p3;
+        const double dx = x - p2;
+        const double z = dx * inv_sqrt2 / p3;
         const double step = 0.5 * (1.0 - fast_erf(z));
-        const double amp  = p4 + p5 * dx;
+        const double amp = p4 + p5 * dx;
 
         f = (p0 + p1 * x) + step * amp;
 
-        const double e     = std::exp(-z * z);
-        const double dSdp2 = +inv_sqrt_2pi * e / p3;          // sign flipped vs rising
+        const double e = std::exp(-z * z);
+        const double dSdp2 = +inv_sqrt_2pi * e / p3; // sign flipped vs rising
         const double dSdp3 = +inv_sqrt_2pi * e * dx / (p3 * p3);
 
         g[0] = 1.0;
@@ -585,29 +575,28 @@ struct FallingScurve {
     }
 
     /** @brief Reject degenerate width (zero transition width). */
-    static bool is_valid(const std::vector<double>& par) {
+    static bool is_valid(const std::vector<double> &par) {
         return par[3] != 0.0;
     }
 
     /** @brief Data-driven initial parameter estimates for a falling S-curve. */
     static std::array<double, npar> estimate_par(NDView<double, 1> x,
-                                                NDView<double, 1> y)
-    {
+                                                 NDView<double, 1> y) {
         const ssize_t n = y.size();
 
         // baseline: last ~10% of points (after turn-off)
         ssize_t n_base = std::max<ssize_t>(n / 10, 2);
         double sum_y = 0, sum_xy = 0, sum_x = 0, sum_x2 = 0;
         for (ssize_t i = n - n_base; i < n; ++i) {
-            sum_y  += y[i];
-            sum_x  += x[i];
+            sum_y += y[i];
+            sum_x += x[i];
             sum_xy += x[i] * y[i];
             sum_x2 += x[i] * x[i];
         }
         double denom = n_base * sum_x2 - sum_x * sum_x;
         double p1 = (std::abs(denom) > 1e-30)
-                ? (n_base * sum_xy - sum_x * sum_y) / denom
-                : 0.0;
+                        ? (n_base * sum_xy - sum_x * sum_y) / denom
+                        : 0.0;
         double p0 = (sum_y - p1 * sum_x) / n_base;
 
         // plateau: average of first ~10%
@@ -637,10 +626,16 @@ struct FallingScurve {
         double y_10 = baseline_at_mid + 0.1 * p4;
         double x_90 = x[0], x_10 = x[n - 1];
         for (ssize_t i = 0; i < n; ++i) {
-            if (y[i] <= y_90) { x_90 = x[i]; break; }
+            if (y[i] <= y_90) {
+                x_90 = x[i];
+                break;
+            }
         }
         for (ssize_t i = 0; i < n; ++i) {
-            if (y[i] <= y_10) { x_10 = x[i]; break; }
+            if (y[i] <= y_10) {
+                x_10 = x[i];
+                break;
+            }
         }
         // same CDF relationship: 10%-90% width = 2 * 1.2816 * sigma
         double p3 = std::max((x_10 - x_90) / 2.5631, 1.0);
@@ -649,12 +644,13 @@ struct FallingScurve {
 
         return {p0, p1, p2, p3, p4, p5};
     }
- 
-    static void compute_steps(const std::array<double, npar>& start,
-                              double x_range, double y_range, double slope_scale,
-                              std::array<double, npar>& steps)
-    {
-        RisingScurve::compute_steps(start, x_range, y_range, slope_scale, steps);
+
+    static void compute_steps(const std::array<double, npar> &start,
+                              double x_range, double y_range,
+                              double slope_scale,
+                              std::array<double, npar> &steps) {
+        RisingScurve::compute_steps(start, x_range, y_range, slope_scale,
+                                    steps);
     }
 };
 

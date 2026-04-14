@@ -4,11 +4,11 @@
 #include "aare/Models.hpp"
 #include "aare/utils/par.hpp"
 #include "aare/utils/task.hpp"
+#include <array>
 #include <lmcurve2.h>
 #include <lmfit.hpp>
 #include <thread>
 #include <type_traits>
-#include <array>
 
 namespace aare {
 
@@ -96,8 +96,6 @@ NDArray<double, 3> fit_gaus(NDView<double, 1> x, NDView<double, 3> y,
     RunInParallel(process, tasks);
     return result;
 }
-
-
 
 void fit_gaus(NDView<double, 1> x, NDView<double, 1> y, NDView<double, 1> y_err,
               NDView<double, 1> par_out, NDView<double, 1> par_err_out,
@@ -278,7 +276,6 @@ NDArray<double, 3> fit_pol1(NDView<double, 1> x, NDView<double, 3> y,
 
 // ~~ S-CURVES ~~
 
-
 // - No error
 NDArray<double, 1> fit_scurve(NDView<double, 1> x, NDView<double, 1> y) {
     NDArray<double, 1> result = model::RisingScurve::estimate_par(x, y);
@@ -371,8 +368,6 @@ void fit_scurve(NDView<double, 1> x, NDView<double, 3> y,
 
 // SCURVE2 ---
 
-
-
 // - No error
 NDArray<double, 1> fit_scurve2(NDView<double, 1> x, NDView<double, 1> y) {
     NDArray<double, 1> result = model::FallingScurve::estimate_par(x, y);
@@ -462,6 +457,5 @@ void fit_scurve2(NDView<double, 1> x, NDView<double, 3> y,
     auto tasks = split_task(0, y.shape(0), n_threads);
     RunInParallel(process, tasks);
 }
-
 
 } // namespace aare
