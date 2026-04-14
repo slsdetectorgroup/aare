@@ -70,7 +70,7 @@ Supported are the following :math:`\eta`-functions:
 The :math:`\eta` values can range between 0,1. Note they only range between 0,1 because the position of the center pixel (red) can change. 
 If the center pixel is in the bottom left pixel :math:`\eta_x` will be close to zero. If the center pixel is in the bottom right pixel :math:`\eta_y` will be close to 1.
 
-One can apply this :math:`\eta` not only on 2x2 clusters but on clusters with any size. Then the 2x2 subcluster with maximum energy is choosen and the :math:`\eta` function applied on the subcluster.
+One can apply this :math:`\eta` not only on 2x2 clusters but on clusters with any size. Then the 2x2 subcluster with maximum energy is chosen and the :math:`\eta` function applied on the subcluster.
 
 .. doxygenfunction:: aare::calculate_eta2(const ClusterVector<ClusterType>&)
 
@@ -150,7 +150,7 @@ Interpolation class:
     Make sure to use the same :math:`\eta`-function during interpolation as given by the joint :math:`\eta`-distribution passed to the constructor. 
 
 .. Note:: 
-    Make sure to use resonable energy bins, when constructing the joint distribution. If data is too sparse for a given energy the interpolation will lead to erreneous results.
+    Make sure to use reasonable energy bins, when constructing the joint distribution. If data is too sparse for a given energy the interpolation will lead to erroneous results.
 
 .. doxygenclass:: aare::Interpolator
    :members:

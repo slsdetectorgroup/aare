@@ -199,8 +199,7 @@ std::optional<ROI> RawMasterFile::roi() const {
     }
 
     if (m_rois->empty()) {
-        throw std::runtime_error(LOCATION +
-                                 "Zero ROIs in metadata.");
+        throw std::runtime_error(LOCATION + "Zero ROIs in metadata.");
     }
 
     if (m_rois.value().size() > 1) {

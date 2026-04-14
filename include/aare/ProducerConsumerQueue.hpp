@@ -63,7 +63,7 @@ template <class T> struct ProducerConsumerQueue {
         return *this;
     }
 
-    ProducerConsumerQueue() : ProducerConsumerQueue(2){};
+    ProducerConsumerQueue() : ProducerConsumerQueue(2) {};
     // size must be >= 2.
     //
     // Also, note that the number of usable slots in the queue at any
