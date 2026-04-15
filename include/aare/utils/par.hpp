@@ -1,10 +1,10 @@
 // SPDX-License-Identifier: MPL-2.0
 #pragma once
+#include "aare/NDView.hpp"
+#include "aare/utils/task.hpp"
 #include <thread>
 #include <utility>
 #include <vector>
-#include "aare/NDView.hpp"
-#include "aare/utils/task.hpp"
 
 namespace aare {
 

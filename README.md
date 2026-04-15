@@ -80,3 +80,14 @@ make install
 ```bash
 conda build . --variants="{python: [3.11, 3.12, 3.13]}"
 ```
+
+## Developer's guide
+
+We are looking forward to your contributions via pull requests!
+
+If you want to fix an existing bug or propose a new feature:
+
+1. Install `pre-commit` python package and setup it `pre-commit install`
+2. Create a new branch with `git branch branch_name`
+3. Implement your changes and make a commit (`pre-commit` will check your code automatically)
+4. Push your commit and open a pull request if needed

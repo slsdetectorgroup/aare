@@ -12,7 +12,7 @@ The structure of the file is:
 * ...
 
 There is no metadata indicating number of frames or the size of the image, but this
-will be infered by this reader. 
+will be inferred by this reader. 
 
 .. doxygenstruct:: aare::JungfrauDataHeader
    :members:
