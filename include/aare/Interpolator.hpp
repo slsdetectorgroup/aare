@@ -94,6 +94,26 @@ class Interpolator {
     interpolate(const ClusterVector<ClusterType> &clusters) const;
 
     /**
+     * @brief interpolates the cluster centers for all clusters to a better
+     * precision
+     * @param clusters clusters of photon hits to interpolate
+     * @param etas precomputed eta values for each cluster (must be in the same
+     * order as the clusters)
+     * @return interpolated photons (photon positions are given as double but
+     * following row column format e.g. x=0, y=0 means top row and first column
+     * of frame) (An interpolated photon position of (1.5, 2.5) corresponds to
+     * an estimated photon hit at the pixel center of pixel (1,2))
+     */
+    template <typename T, uint8_t ClusterSizeX, uint8_t ClusterSizeY,
+              typename CoordType = uint16_t,
+              typename Enable = std::enable_if_t<is_cluster_v<
+                  Cluster<T, ClusterSizeX, ClusterSizeY, CoordType>>>>
+    std::vector<Photon> interpolate(
+        const ClusterVector<Cluster<T, ClusterSizeX, ClusterSizeY, CoordType>>
+            &clusters,
+        const std::vector<Eta2<T>> &etas) const;
+
+    /**
      * @brief transforms the eta values to uniform coordinates based on the CDF
      * ieta_x and ieta_y
      * @tparam eta Eta to transform
@@ -101,6 +121,17 @@ class Interpolator {
      */
     template <typename T>
     Coordinate2D transform_eta_values(const Eta2<T> &eta) const;
+
+    /**
+     * @brief transforms the eta values to uniform coordinates based on the CDF
+     * ieta_x and ieta_y for a vector of eta values
+     * @tparam T type of eta values
+     * @param etas vector of eta values to transform
+     * @return vector of uniform coordinates {x,y}
+     */
+    template <typename T>
+    std::vector<Coordinate2D>
+    transform_eta_values(const std::vector<Eta2<T>> &etas) const;
 
   private:
     /**
@@ -190,6 +221,19 @@ Coordinate2D Interpolator::transform_eta_values(const Eta2<T> &eta) const {
     return Coordinate2D{m_ietax(ix, iy, ie), m_ietay(ix, iy, ie)};
 }
 
+template <typename T>
+std::vector<Coordinate2D>
+Interpolator::transform_eta_values(const std::vector<Eta2<T>> &etas) const {
+    std::vector<Coordinate2D> uniform_coordinates;
+    uniform_coordinates.reserve(etas.size());
+
+    for (const auto &eta : etas) {
+        uniform_coordinates.push_back(transform_eta_values(eta));
+    }
+
+    return uniform_coordinates;
+}
+
 template <auto EtaFunction, typename ClusterType, typename Enable>
 std::vector<Photon>
 Interpolator::interpolate(const ClusterVector<ClusterType> &clusters) const {
@@ -258,6 +302,51 @@ Interpolator::interpolate(const ClusterVector<ClusterType> &clusters) const {
         }
 
         ++cluster_index;
+
+        photons.push_back(photon);
+    }
+
+    return photons;
+}
+
+template <typename T, uint8_t ClusterSizeX, uint8_t ClusterSizeY,
+          typename CoordType, typename Enable>
+std::vector<Photon> Interpolator::interpolate(
+    const ClusterVector<Cluster<T, ClusterSizeX, ClusterSizeY, CoordType>>
+        &clusters,
+    const std::vector<Eta2<T>> &etas) const {
+
+    if (clusters.size() != etas.size()) {
+        throw std::runtime_error(
+            fmt::format("Size of clusters and precomputed etas must be the "
+                        "same, but got {} clusters and {} etas",
+                        clusters.size(), etas.size()));
+    }
+
+    std::vector<Photon> photons;
+    photons.reserve(clusters.size());
+
+    for (size_t i = 0; i < clusters.size(); ++i) {
+        const auto &cluster = clusters[i];
+        const auto &eta = etas[i];
+
+        Photon photon;
+        photon.x = cluster.x;
+        photon.y = cluster.y;
+        photon.energy = static_cast<decltype(photon.energy)>(eta.sum);
+
+        try {
+            // check if eta values are within bounds
+            transform_eta_values(eta);
+        } catch (const std::runtime_error &e) {
+            throw std::runtime_error(
+                fmt::format("{} for cluster: {}", e.what(), i));
+        }
+
+        auto uniform_coordinates = transform_eta_values(eta);
+
+        photon.x += uniform_coordinates.x;
+        photon.y += uniform_coordinates.y;
 
         photons.push_back(photon);
     }
