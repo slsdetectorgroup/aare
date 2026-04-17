@@ -1,0 +1,39 @@
+diff --git a/CMakeLists.txt b/CMakeLists.txt
+index 4e72289..33dd58a 100644
+--- a/CMakeLists.txt
++++ b/CMakeLists.txt
+@@ -4,7 +4,7 @@
+ # For the licensing terms see $ROOTSYS/LICENSE.
+ # For the list of contributors see $ROOTSYS/README/CREDITS.
+ 
+-cmake_minimum_required(VERSION 3.1)
++cmake_minimum_required(VERSION 3.15)
+ 
+ if(NOT CMAKE_PROJECT_NAME STREQUAL ROOT)
+   project(Minuit2 LANGUAGES CXX)
+diff --git a/StandAlone.cmake b/StandAlone.cmake
+index 0a662ba..b7a05ca 100644
+--- a/StandAlone.cmake
++++ b/StandAlone.cmake
+@@ -1,12 +1,12 @@
+-cmake_minimum_required(VERSION 3.1)
+-
+-# Tested with and supporting policies up to the following CMake version. 
+-# Not using ... syntax due to parser bug in MSVC's built-in CMake server mode.
+-if(${CMAKE_VERSION} VERSION_LESS 3.12)
+-    cmake_policy(VERSION ${CMAKE_MAJOR_VERSION}.${CMAKE_MINOR_VERSION})
+-else()
+-    cmake_policy(VERSION 3.12)
+-endif()
++cmake_minimum_required(VERSION 3.15)
++
++# # Tested with and supporting policies up to the following CMake version. 
++# # Not using ... syntax due to parser bug in MSVC's built-in CMake server mode.
++# if(${CMAKE_VERSION} VERSION_LESS 3.12)
++#     cmake_policy(VERSION ${CMAKE_MAJOR_VERSION}.${CMAKE_MINOR_VERSION})
++# else()
++#     cmake_policy(VERSION 3.12)
++# endif()
+ 
+ include(FeatureSummary)
+ include(CMakeDependentOption)

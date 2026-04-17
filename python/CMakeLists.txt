@@ -11,10 +11,10 @@ if(AARE_FETCH_PYBIND11)
   FetchContent_Declare(
     pybind11
     GIT_REPOSITORY https://github.com/pybind/pybind11
-    GIT_TAG v2.13.6)
+    GIT_TAG v3.0.3)
   FetchContent_MakeAvailable(pybind11)
 else()
-  find_package(pybind11 2.13 REQUIRED)
+  find_package(pybind11 3.0.3 REQUIRED)
 endif()
 
 # Add the compiled python extension
