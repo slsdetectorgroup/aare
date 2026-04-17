@@ -150,10 +150,15 @@ else()
 endif()
 
 if(AARE_FETCH_MINUIT2)
+  # Patch minuit2 to avoid messing with cmake policies
+  set(MINUIT2_PATCH_COMMAND git apply
+                            ${CMAKE_CURRENT_SOURCE_DIR}/patches/minuit2.patch)
   FetchContent_Declare(
     Minuit2
     GIT_REPOSITORY https://github.com/GooFit/Minuit2.git
-    GIT_TAG master)
+    GIT_TAG master
+    PATCH_COMMAND ${MINUIT2_PATCH_COMMAND}
+    UPDATE_DISCONNECTED 1)
   # Disable Minuit2 extras we don't need
   set(minuit2_mpi
       OFF
@@ -164,11 +169,7 @@ if(AARE_FETCH_MINUIT2)
   set(BUILD_TESTING
       OFF
       CACHE BOOL "")
-  set(CMAKE_POLICY_VERSION_MINIMUM
-      3.5
-      CACHE STRING "Allow older CMake compat for Minuit2")
   FetchContent_MakeAvailable(Minuit2)
-  unset(CMAKE_POLICY_VERSION_MINIMUM CACHE)
   set_property(TARGET Minuit2Math PROPERTY POSITION_INDEPENDENT_CODE ON)
   set_property(TARGET Minuit2 PROPERTY POSITION_INDEPENDENT_CODE ON)
 else()
@@ -231,7 +232,7 @@ if(AARE_FETCH_FMT)
   FetchContent_Declare(
     fmt
     GIT_REPOSITORY https://github.com/fmtlib/fmt.git
-    GIT_TAG 10.2.1
+    GIT_TAG 12.1.0
     GIT_PROGRESS TRUE
     USES_TERMINAL_DOWNLOAD TRUE)
   set(FMT_INSTALL
