@@ -122,17 +122,6 @@ class Interpolator {
     template <typename T>
     Coordinate2D transform_eta_values(const Eta2<T> &eta) const;
 
-    /**
-     * @brief transforms the eta values to uniform coordinates based on the CDF
-     * ieta_x and ieta_y for a vector of eta values
-     * @tparam T type of eta values
-     * @param etas vector of eta values to transform
-     * @return vector of uniform coordinates {x,y}
-     */
-    template <typename T>
-    std::vector<Coordinate2D>
-    transform_eta_values(const std::vector<Eta2<T>> &etas) const;
-
   private:
     /**
      * @brief bilinear interpolation of the transformed eta values
@@ -219,19 +208,6 @@ Coordinate2D Interpolator::transform_eta_values(const Eta2<T> &eta) const {
     // bilinear_interpolation(ix, iy, ie, eta);
 
     return Coordinate2D{m_ietax(ix, iy, ie), m_ietay(ix, iy, ie)};
-}
-
-template <typename T>
-std::vector<Coordinate2D>
-Interpolator::transform_eta_values(const std::vector<Eta2<T>> &etas) const {
-    std::vector<Coordinate2D> uniform_coordinates;
-    uniform_coordinates.reserve(etas.size());
-
-    for (const auto &eta : etas) {
-        uniform_coordinates.push_back(transform_eta_values(eta));
-    }
-
-    return uniform_coordinates;
 }
 
 template <auto EtaFunction, typename ClusterType, typename Enable>

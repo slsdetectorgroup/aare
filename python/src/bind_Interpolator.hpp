@@ -92,21 +92,6 @@ void register_transform_eta_values(
         py::arg("Eta"));
 }
 
-template <typename Type>
-void register_transform_eta_values_vector(
-    py::class_<aare::Interpolator> &interpolator) {
-    interpolator.def(
-        "transform_eta_values",
-        [](Interpolator &self, const std::vector<Eta2<Type>> &etas) {
-            auto uniform_coords = self.transform_eta_values(etas);
-
-           auto* ptr = new std::vector<Coordinate2D>{uniform_coords};
-           return return_vector(ptr);
-        },
-        R"(vector of eta values transformed to uniform coordinates based on CDF ietax, ietay)",
-        py::arg("Etas"));
-}
-
 void define_interpolation_bindings(py::module &m) {
 
     PYBIND11_NUMPY_DTYPE(aare::Photon, x, y, energy);
@@ -204,10 +189,6 @@ void define_interpolation_bindings(py::module &m) {
     register_transform_eta_values<int>(interpolator);
     register_transform_eta_values<float>(interpolator);
     register_transform_eta_values<double>(interpolator);
-
-    register_transform_eta_values_vector<int>(interpolator);
-    register_transform_eta_values_vector<float>(interpolator);
-    register_transform_eta_values_vector<double>(interpolator);
 
     // TODO! Evaluate without converting to double
     m.def(

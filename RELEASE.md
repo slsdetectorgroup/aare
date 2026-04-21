@@ -7,7 +7,6 @@
 
 - Added a new Minuit2-based fitting framework for ``Gaussian``, ``RisingScurve``, ``FallingScurve``, ``Pol1`` and ``Pol2`` models.
 - setter and getter for nSigma for ClusterFinder ``aare.ClusterFinder().nSigma = 2``, ``aare.ClusterFinderMT().set_nSigma(2)`` 
-- ``aare.Interpolator.transform_eta_values(np.ndarray)`` can take an array of ``Eta`` structs
 - passing pre computed eta values to ``aare.Interpolator.interpolate`` alongside clusters
 
 ### Bugfixes:
