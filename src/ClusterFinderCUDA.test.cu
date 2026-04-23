@@ -445,12 +445,8 @@ int main(int argc, char* argv[]) {
         for (size_t bi = 0; bi < n_batches; ++bi) {
             const size_t offset       = bi * BATCH_SIZE;
             const size_t actual_batch = std::min(BATCH_SIZE, use_data - offset);
- 
-            for (size_t k = 0; k < actual_batch; ++k) {
-                std::memcpy(batch_buffer.data() + k * ROWS * COLS,
-                            frames[offset + k].data(),
-                            ROWS * COLS * sizeof(FRAME_TYPE));
-            }
+
+            pack_frame_batch(frames, offset, actual_batch, batch_buffer);
  
             aare::NDView<FRAME_TYPE, 3> batch_view(
                 batch_buffer.data(),
