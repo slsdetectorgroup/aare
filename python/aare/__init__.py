@@ -2,6 +2,23 @@
 # Make the compiled classes that live in _aare available from aare.
 from . import _aare
 
+# ---- CUDA module (optional) ------------------------------------------------
+# When the package was built with AARE_CUDA=ON, a sibling extension
+# _aare_cuda contains the ClusterFinderCUDA_* classes. We re-export them
+# onto _aare so user code can do `from aare import ClusterFinderCUDA_*`
+# regardless of which .so physically hosts the class. On a CPU-only build
+# the import fails silently and ClusterFinderCUDA_* classes simply aren't
+# present; the factory in ClusterFinder.py handles that case with a clear
+# RuntimeError.
+try:
+    from . import _aare_cuda as _aare_cuda_mod
+    for _name in dir(_aare_cuda_mod):
+        if _name.startswith("ClusterFinderCUDA"):
+            setattr(_aare, _name, getattr(_aare_cuda_mod, _name))
+    del _name
+except ImportError:
+    pass
+
 from . import transform
 
 from ._aare import File, RawMasterFile, RawSubFile, JungfrauDataFile
@@ -14,6 +31,7 @@ from ._aare import corner
 # from ._aare import ClusterFinderMT, ClusterCollector, ClusterFileSink, ClusterVector_i
 
 from .ClusterFinder import ClusterFinder, ClusterCollector, ClusterFinderMT, ClusterFileSink, ClusterFile
+from .ClusterFinder import ClusterFinderCUDA, _cuda_available
 from .ClusterVector import ClusterVector
 from .Cluster import Cluster
 

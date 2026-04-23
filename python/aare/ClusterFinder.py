@@ -49,6 +49,44 @@ def ClusterFinderMT(image_size, cluster_size = (3,3), dtype=np.int32, n_sigma=5,
     return cls(image_size, n_sigma=n_sigma, capacity=capacity, n_threads=n_threads)
 
 
+def _cuda_available():
+    """True if this build of aare was compiled with -DAARE_CUDA=ON."""
+    return hasattr(_aare, "ClusterFinderCUDA_Cluster3x3i")
+
+
+def ClusterFinderCUDA(image_size, cluster_size=(3,3), n_sigma=5, dtype=np.int32,
+                      capacity=1024, n_streams=1):
+    """
+    Factory function to create a ClusterFinderCUDA object. Provides a cleaner
+    syntax for the templated ClusterFinderCUDA in C++. API mirrors
+    ClusterFinder() plus CUDA-specific knobs (n_streams).
+
+    .. code-block:: python
+
+        from aare import ClusterFinderCUDA
+
+        cf = ClusterFinderCUDA(image_size=(512, 1024),
+                               cluster_size=(3, 3),
+                               n_sigma=5,
+                               n_streams=4)
+        for frame in pedestal_frames:
+            cf.push_pedestal_frame(frame)
+        for i, frame in enumerate(data_frames):
+            cf.find_clusters(frame, frame_number=i)
+        clusters = cf.steal_clusters()
+    """
+    if not _cuda_available():
+        raise RuntimeError(
+            "ClusterFinderCUDA is not available in this build of aare. "
+            "Rebuild with -DAARE_CUDA=ON (and -DAARE_PYTHON_BINDINGS=ON)."
+        )
+
+    cls = _get_class("ClusterFinderCUDA", cluster_size, dtype)
+    return cls(image_size,
+               n_sigma=n_sigma,
+               capacity=capacity,
+               n_streams=n_streams)
+
 def ClusterCollector(clusterfindermt, dtype=np.int32): 
     """ 
     Factory function to create a ClusterCollector object. Provides a cleaner syntax for 
