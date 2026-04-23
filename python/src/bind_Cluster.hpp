@@ -23,7 +23,7 @@ void define_Cluster(py::module &m, const std::string &typestr) {
     auto class_name = fmt::format("Cluster{}", typestr);
 
     py::class_<Cluster<Type, ClusterSizeX, ClusterSizeY, CoordType>>(
-        m, class_name.c_str(), py::buffer_protocol())
+        m, class_name.c_str(), py::buffer_protocol(), py::module_local())
 
         .def(py::init([](CoordType x, CoordType y,
                          py::array_t<Type, py::array::forcecast> data) {
