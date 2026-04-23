@@ -1,30 +1,10 @@
-// SPDX-License-Identifier: MPL-2.0
 #pragma once
 #include <cuda_runtime.h>
-#include <cstdint>
-#include <cmath>
 #include <type_traits>
-#include <stdexcept>
-#include <cstdio>
 #include "aare/Cluster.hpp"
 #include "aare/ClusterFinder.hpp"
-#include "aare/utils/cuda_check.cuh"
 
 namespace aare::device {
-
-// // Copied this struct from ClusterFinder.hpp
-// // but may be just include header?
-// template <typename ClusterType,
-//           typename = std::enable_if_t<is_cluster_v<ClusterType>>>
-// struct no_2x2_cluster {
-//     constexpr static bool value =
-//         ClusterType::cluster_size_x > 2 && ClusterType::cluster_size_y > 2;
-// };
-
-// __________________
-//
-// CUDA kernel
-// __________________
 
 template <typename ClusterType = Cluster<int32_t, 3, 3>,
           typename FRAME_TYPE = uint16_t,
@@ -38,7 +18,7 @@ __global__ void find_clusters_in_single_frame(const FRAME_TYPE*   __restrict__ d
                                               const PEDESTAL_TYPE  m_nSigma,
                                               const size_t         nrows,
                                               const size_t         ncols,
-                                              const uint64_t       frame_number,
+                                            //   const uint64_t       frame_number,
                                               ClusterType*         d_clusters,
                                               uint32_t*            d_cluster_count,
                                              const uint32_t       max_clusters)
@@ -287,6 +267,10 @@ __global__ void find_clusters_in_single_frame(const FRAME_TYPE*   __restrict__ d
         return;
     }
 
+    /* 
+    if (!is_photon) return; // Debugging
+    */
+
     // Write cluster to global output buffer using atomic index 
     // for coordination across all blocks
     uint32_t write_idx = atomicAdd(d_cluster_count, 1u);
@@ -303,145 +287,5 @@ __global__ void find_clusters_in_single_frame(const FRAME_TYPE*   __restrict__ d
 
     d_clusters[write_idx] = cluster;
 }
-
-
-// __________________
-//
-// Host-side launcher
-// __________________
-template <typename ClusterType = Cluster<int32_t, 3, 3>,
-          typename FRAME_TYPE = uint16_t,
-          typename PEDESTAL_TYPE = double>
-struct ClusterFinderCUDA {
-
-    static constexpr int BLOCK_X = 16;
-    static constexpr int BLOCK_Y = 16;
-    static constexpr int col_radius = ClusterType::cluster_size_x / 2;
-    static constexpr int row_radius = ClusterType::cluster_size_y / 2;
-
-    size_t nrows;
-    size_t ncols;
-    uint32_t max_clusters;
-
-    // Device pointers
-    FRAME_TYPE*    d_frame          = nullptr;
-    PEDESTAL_TYPE* d_pd_mean        = nullptr;
-    PEDESTAL_TYPE* d_pd_sum         = nullptr;
-    PEDESTAL_TYPE* d_pd_sum2        = nullptr;
-    ClusterType*   d_clusters       = nullptr;
-    uint32_t*      d_cluster_count  = nullptr;
-
-    cudaStream_t   stream = 0;
-
-    ClusterFinderCUDA(size_t nrows_, size_t ncols_, uint32_t max_clusters_ = 1000000)
-        : nrows(nrows_), ncols(ncols_), max_clusters(max_clusters_)
-    {
-        size_t image_size = nrows * ncols;
-
-        CUDA_CHECK(cudaStreamCreate(&stream));
-
-        CUDA_CHECK(cudaMalloc(&d_frame,         image_size * sizeof(FRAME_TYPE)));
-        CUDA_CHECK(cudaMalloc(&d_pd_mean,       image_size * sizeof(PEDESTAL_TYPE)));
-        CUDA_CHECK(cudaMalloc(&d_pd_sum,        image_size * sizeof(PEDESTAL_TYPE)));
-        CUDA_CHECK(cudaMalloc(&d_pd_sum2,       image_size * sizeof(PEDESTAL_TYPE)));
-        CUDA_CHECK(cudaMalloc(&d_clusters,      max_clusters * sizeof(ClusterType)));
-        CUDA_CHECK(cudaMalloc(&d_cluster_count, sizeof(uint32_t)));
-    }
-
-    ~ClusterFinderCUDA() {
-        if (d_frame)         cudaFree(d_frame);
-        if (d_pd_mean)       cudaFree(d_pd_mean);
-        if (d_pd_sum)        cudaFree(d_pd_sum);
-        if (d_pd_sum2)       cudaFree(d_pd_sum2);
-        if (d_clusters)      cudaFree(d_clusters);
-        if (d_cluster_count) cudaFree(d_cluster_count);
-        if (stream)          cudaStreamDestroy(stream);
-    }
-
-    // Non-copyable, only movable
-    ClusterFinderCUDA(const ClusterFinderCUDA&) = delete;
-    ClusterFinderCUDA& operator=(const ClusterFinderCUDA&) = delete;
-    ClusterFinderCUDA(ClusterFinderCUDA&&) = default;
-    ClusterFinderCUDA& operator=(ClusterFinderCUDA&&) = default;
-
-    /**
-     * Upload pedestal statistics (mean and sum-of-squares) to device.
-     * These are typically computed on the host by the Pedestal class.
-     */
-    void upload_pedestal(const PEDESTAL_TYPE* h_mean, const PEDESTAL_TYPE* h_sum, const PEDESTAL_TYPE* h_sum2) {
-        size_t bytes = nrows * ncols * sizeof(PEDESTAL_TYPE);
-        CUDA_CHECK(cudaMemcpyAsync(d_pd_mean, h_mean, bytes, cudaMemcpyHostToDevice, stream));
-        CUDA_CHECK(cudaMemcpyAsync(d_pd_sum,  h_sum,  bytes, cudaMemcpyHostToDevice, stream));
-        CUDA_CHECK(cudaMemcpyAsync(d_pd_sum2, h_sum2, bytes, cudaMemcpyHostToDevice, stream));
-    }
-
-    /**
-     * Find clusters in a single frame.
-     *
-     * @param h_frame       Host pointer to the raw frame data (nrows x ncols)
-     * @param frame_number  Frame sequence number
-     * @param nSigma        Threshold in units of standard deviations
-     * @param n_pd_samples  Number of samples used to compute the pedestal
-     * @param h_clusters    Output: host buffer to receive found clusters
-     * @param h_n_clusters  Output: number of clusters found
-     */
-    void find_clusters(const FRAME_TYPE* h_frame,
-                       uint64_t frame_number,
-                       PEDESTAL_TYPE nSigma,
-                       uint32_t n_pd_samples,
-                       ClusterType* h_clusters,
-                       uint32_t& h_n_clusters)
-    {
-        size_t image_bytes = nrows * ncols * sizeof(FRAME_TYPE);
-
-        // Reset cluster counter
-        CUDA_CHECK(cudaMemsetAsync(d_cluster_count, 0, sizeof(uint32_t), stream));
-
-        // Upload frame
-        CUDA_CHECK(cudaMemcpyAsync(d_frame, h_frame, image_bytes, cudaMemcpyHostToDevice, stream));
-
-        // Grid/Block dimensions
-        dim3 block(BLOCK_X, BLOCK_Y);
-        dim3 grid((static_cast<unsigned int>(ncols) + BLOCK_X - 1) / BLOCK_X, // threadIdx.x/.y/.z take unsigned integrales
-                  (static_cast<unsigned int>(nrows) + BLOCK_Y - 1) / BLOCK_Y
-        );
-
-        // Shared memory: one tile of (BLOCK_X + 2*col_radius) x (BLOCK_Y + 2*row_radius) doubles
-        size_t shmem_bytes = (BLOCK_X + 2 * col_radius) * (BLOCK_Y + 2 * row_radius) * sizeof(PEDESTAL_TYPE);
-
-        // Kernel launch
-        find_clusters_in_single_frame<ClusterType, FRAME_TYPE, PEDESTAL_TYPE>
-            <<<grid, block, shmem_bytes, stream>>>(d_frame,
-                                                   d_pd_mean,
-                                                   d_pd_sum,
-                                                   d_pd_sum2,
-                                                   n_pd_samples,
-                                                   nSigma,
-                                                   nrows,
-                                                   ncols,
-                                                   frame_number,
-                                                   d_clusters,
-                                                   d_cluster_count,
-                                                   max_clusters
-            );
-
-        CUDA_CHECK(cudaGetLastError());
-
-        // Read back cluster count
-        CUDA_CHECK(cudaMemcpyAsync(&h_n_clusters, d_cluster_count, sizeof(uint32_t), cudaMemcpyDeviceToHost, stream));
-
-        // Synchronize to ensure count is available before the CPU reads clusters
-        CUDA_CHECK(cudaStreamSynchronize(stream));
-
-        // Clamp to max in case of overflow
-        if (h_n_clusters > max_clusters) h_n_clusters = max_clusters;
-
-        // Read back clusters
-        if (h_n_clusters > 0) {
-            CUDA_CHECK(cudaMemcpyAsync(h_clusters, d_clusters, h_n_clusters * sizeof(ClusterType), cudaMemcpyDeviceToHost, stream));
-            CUDA_CHECK(cudaStreamSynchronize(stream));
-        }
-    }
-};
 
 } // namespace aare::device
