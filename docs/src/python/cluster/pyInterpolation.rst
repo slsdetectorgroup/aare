@@ -111,7 +111,7 @@ Interpolation class for :math:`\eta`-Interpolation
    The interpolation might lead to erroneous photon positions for clusters at the boarders of a frame. Make sure to filter out such cases.
 
 .. Note:: 
-    Make sure to use resonable energy bins, when constructing the joint distribution. If data is too sparse for a given energy the interpolation will lead to erreneous results.
+    Make sure to use reasonable energy bins, when constructing the joint distribution. If data is too sparse for a given energy the interpolation will lead to erreneous results.
 
 
 .. py:currentmodule:: aare

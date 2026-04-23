@@ -110,3 +110,21 @@ def test_3x3_reduction():
     assert reduced_cv[0]["x"] == 5
     assert reduced_cv[0]["y"] == 5
     assert (reduced_cv[0]["data"] == np.array([[2.0, 1.0, 1.0], [2.0, 3.0, 1.0], [2.0, 1.0, 1.0]], dtype=np.double)).all()
+
+
+def test_masking(): 
+
+    cv = _aare.ClusterVector_Cluster3x3i()
+    cv.push_back(_aare.Cluster3x3i(19, 22, np.array([0,1,0,2,3,0,2,1,0], dtype=np.int32)))
+    cv.push_back(_aare.Cluster3x3i(1, 2, np.ones(9, dtype=np.int32)))
+    assert cv.size == 2
+
+    mask = np.array([False, True], dtype=bool)
+    cv_masked = cv(mask)
+    assert cv_masked.size == 1
+
+    cv_masked_array = np.array(cv_masked, copy=False)
+    
+    assert cv_masked_array[0]["x"] == 1
+    assert cv_masked_array[0]["y"] == 2
+    assert (cv_masked_array[0]["data"] == np.ones((3,3),dtype=np.int32)).all()

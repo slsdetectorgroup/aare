@@ -27,7 +27,7 @@ requirements:
     - pip
     - numpy >=2.1
     - scikit-build-core
-    - pybind11 >=2.13.0
+    - pybind11 >=3.0.3
     - matplotlib # needed in host to solve the environment for run
 
   run:

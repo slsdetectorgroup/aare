@@ -59,6 +59,27 @@ class ClusterVector<Cluster<T, ClusterSizeX, ClusterSizeY, CoordType>> {
         other.m_data.clear();
     }
 
+    /**
+     * @brief Create a copy of the clustervector by filtering clusters in the
+     * ClusterVector using a boolean mask.
+     * @param mask boolean 1d mask
+     * @return ClusterVector containing only the clusters where the mask is
+     * true
+     */
+    ClusterVector operator()(NDView<bool, 1> mask) {
+        if (static_cast<size_t>(mask.size()) != m_data.size()) {
+            throw std::runtime_error(
+                LOCATION + "Mask size does not match number of clusters");
+        }
+        ClusterVector result(capacity(), frame_number());
+        for (size_t i = 0; i < m_data.size(); ++i) {
+            if (mask(i)) {
+                result.push_back(m_data[i]);
+            }
+        }
+        return result;
+    }
+
     // Move assignment operator
     ClusterVector &operator=(ClusterVector &&other) noexcept {
         if (this != &other) {
