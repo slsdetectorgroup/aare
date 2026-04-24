@@ -226,15 +226,15 @@ Interpolator::interpolate(const ClusterVector<ClusterType> &clusters) const {
         photon.y = cluster.y;
         photon.energy = static_cast<decltype(photon.energy)>(eta.sum);
 
+        Coordinate2D uniform_coordinates{};
+
         try {
             // check if eta values are within bounds
-            transform_eta_values(eta);
+            uniform_coordinates = transform_eta_values(eta);
         } catch (const std::runtime_error &e) {
             throw std::runtime_error(
                 fmt::format("{} for cluster: {}", e.what(), cluster_index));
         }
-
-        auto uniform_coordinates = transform_eta_values(eta);
 
         if (EtaFunction == &calculate_eta2<typename ClusterType::value_type,
                                            ClusterType::cluster_size_x,
@@ -311,15 +311,14 @@ std::vector<Photon> Interpolator::interpolate(
         photon.y = cluster.y;
         photon.energy = static_cast<decltype(photon.energy)>(eta.sum);
 
+        Coordinate2D uniform_coordinates{};
         try {
             // check if eta values are within bounds
-            transform_eta_values(eta);
+            uniform_coordinates = transform_eta_values(eta);
         } catch (const std::runtime_error &e) {
             throw std::runtime_error(
                 fmt::format("{} for cluster: {}", e.what(), i));
         }
-
-        auto uniform_coordinates = transform_eta_values(eta);
 
         photon.x += uniform_coordinates.x;
         photon.y += uniform_coordinates.y;

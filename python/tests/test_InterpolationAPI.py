@@ -28,4 +28,4 @@ def test_interpolation_api():
 
     photons = interpolator.interpolate(cluster_vector, etas)
 
-    assert photons.size == 2
+    assert photons.size == cluster_vector.size # should return one photon per cluster

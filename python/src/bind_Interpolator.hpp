@@ -17,7 +17,7 @@ namespace py = pybind11;
         interpolator, "_full_eta2", "full eta2");                              \
     register_interpolate<T, N, M, U, aare::calculate_eta2<T, N, M, U>>(        \
         interpolator, "", "eta2");                                             \
-    register_interpolate_costum_eta<T, N, M, U>(interpolator);
+    register_interpolate_custom_eta<T, N, M, U>(interpolator);
 
 #define REGISTER_INTERPOLATOR_ETA3(T, N, M, U)                                 \
     register_interpolate<T, N, M, U, aare::calculate_eta3<T, N, M, U>>(        \
@@ -53,7 +53,7 @@ void register_interpolate(py::class_<aare::Interpolator> &interpolator,
 
 template <typename Type, uint8_t ClusterSizeX, uint8_t ClusterSizeY,
           typename CoordType = uint16_t>
-void register_interpolate_costum_eta(
+void register_interpolate_custom_eta(
     py::class_<aare::Interpolator> &interpolator) {
 
     using ClusterType = Cluster<Type, ClusterSizeX, ClusterSizeY, CoordType>;
@@ -63,7 +63,7 @@ void register_interpolate_costum_eta(
         [](aare::Interpolator &self, const ClusterVector<ClusterType> &clusters,
            const std::vector<Eta2<Type>> &etas) {
             auto photons = self.interpolate<Type, ClusterSizeX, ClusterSizeY, CoordType>(clusters, etas);
-            auto *ptr = new std::vector<Photon>{photons};
+            auto *ptr = new std::vector<Photon>{std::move(photons)};
             return return_vector(ptr);
         },
         R"(
