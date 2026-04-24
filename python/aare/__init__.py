@@ -26,6 +26,8 @@ from ._aare import reduce_to_2x2, reduce_to_3x3
 
 from ._aare import apply_custom_weights
 
+from ._aare import Etai, Etad, Etaf
+
 from .CtbRawFile import CtbRawFile
 from .RawFile import RawFile
 from .ScanParameters import ScanParameters
