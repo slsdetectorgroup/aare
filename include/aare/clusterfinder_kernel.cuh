@@ -6,6 +6,9 @@
 
 namespace aare::device {
 
+// Implementing mixed precision for shared memory and stencil arithmetic
+using COMPUTE_TYPE = float;
+
 template <typename ClusterType = Cluster<int32_t, 3, 3>,
           typename FRAME_TYPE = uint16_t, typename PEDESTAL_TYPE = double,
           typename = std::enable_if_t<no_2x2_cluster<ClusterType>::value>>
@@ -13,7 +16,7 @@ __global__ void find_clusters_in_single_frame(
     const FRAME_TYPE *__restrict__ d_frame,
     PEDESTAL_TYPE *__restrict__ d_pd_mean, PEDESTAL_TYPE *__restrict__ d_pd_sum,
     PEDESTAL_TYPE *__restrict__ d_pd_sum2, const uint32_t n_pd_samples,
-    const PEDESTAL_TYPE m_nSigma, const size_t nrows, const size_t ncols,
+    const COMPUTE_TYPE m_nSigma, const size_t nrows, const size_t ncols,
     //   const uint64_t       frame_number,
     ClusterType *d_clusters, uint32_t *d_cluster_count,
     const uint32_t max_clusters) {
@@ -50,8 +53,8 @@ __global__ void find_clusters_in_single_frame(
 
     // CUDA prefers raw bytes + aligned cast
     // Compile error happens when using: `extern __shared__ T sh[];`
-    extern __shared__ __align__(sizeof(PEDESTAL_TYPE)) unsigned char smem[];
-    PEDESTAL_TYPE *shmem = reinterpret_cast<PEDESTAL_TYPE *>(smem);
+    extern __shared__ __align__(sizeof(COMPUTE_TYPE)) unsigned char smem[];
+    COMPUTE_TYPE *shmem = reinterpret_cast<COMPUTE_TYPE *>(smem);
 
     // Stride includes halo on both sides
     auto shmem_stride = static_cast<int>(blockDim.x) + 2 * col_radius;
@@ -67,7 +70,7 @@ __global__ void find_clusters_in_single_frame(
     // Cooperative zero-fill
     for (int idx = static_cast<int>(local_tid); idx < tile_size;
          idx += static_cast<int>(blockDim.x * blockDim.y)) {
-        shmem[idx] = PEDESTAL_TYPE{0};
+        shmem[idx] = COMPUTE_TYPE{0};
     }
     __syncthreads();
 
@@ -76,15 +79,16 @@ __global__ void find_clusters_in_single_frame(
                        row_global < static_cast<ssize_t>(nrows);
 
     // ======================================================
-    // Load pedestal-subtracted frame data into shared memory
+    // Load pedestal-subtracted frame data into shared memory (MIXED PRECISION)
     // ======================================================
 
     // Helper: read (frame - pedestal_mean) from global memory, or 0 if OOB.
     // gr, gc are the global row/col of the pixel to load.
     // Returns the pedestal-subtracted value.
-    auto load_pixel = [&] __device__(ssize_t gr, ssize_t gc) -> PEDESTAL_TYPE {
-        auto gid = gc + static_cast<ssize_t>(ncols) * gr;
-        return static_cast<PEDESTAL_TYPE>(d_frame[gid]) - d_pd_mean[gid];
+    auto load_pixel = [&] __device__(ssize_t gr, ssize_t gc) -> COMPUTE_TYPE {
+        auto gid = gc + ncols * gr;
+        return static_cast<COMPUTE_TYPE>(d_frame[gid]) -
+               static_cast<COMPUTE_TYPE>(d_pd_mean[gid]);
     };
 
     // A. Interior: every valid thread loads its own pixel
@@ -174,10 +178,10 @@ __global__ void find_clusters_in_single_frame(
     PEDESTAL_TYPE var_px =
         d_pd_sum2[global_tid] / n_pd_samples - mean_px * mean_px;
     PEDESTAL_TYPE rms_sq = max(var_px, PEDESTAL_TYPE{0}); // variance = rms^2
-    PEDESTAL_TYPE rms_px = sqrt(rms_sq);
+    COMPUTE_TYPE rms_px = sqrtf(static_cast<COMPUTE_TYPE>(rms_sq));
 
     // Pedestal-subtracted value of the center pixel (already in shmem)
-    PEDESTAL_TYPE val_pixel = shmem[shmem_tid];
+    COMPUTE_TYPE val_pixel = shmem[shmem_tid];
 
     // Negative pedestal early exit
     if (val_pixel < -m_nSigma * rms_px)
@@ -185,15 +189,15 @@ __global__ void find_clusters_in_single_frame(
                 // sequential)
 
     // Stencil reduction: total, max, quadrant sums
-    PEDESTAL_TYPE total = PEDESTAL_TYPE{0};
-    PEDESTAL_TYPE max_val = -HUGE_VAL; // CUDA-compatible equivalent of
-                                       // `numeric_limits<double>::lowest()`
+    COMPUTE_TYPE total = 0.0f;
+    COMPUTE_TYPE max_val = -HUGE_VALF;
 
-    /* PEDESTAL_TYPE tl = PEDESTAL_TYPE{0};   // top-left quadrant  (ir<=0,
-    ic<=0) PEDESTAL_TYPE tr = PEDESTAL_TYPE{0};   // top-right quadrant (ir<=0,
-    ic>=0) PEDESTAL_TYPE bl = PEDESTAL_TYPE{0};   // bottom-left        (ir>=0,
-    ic<=0) PEDESTAL_TYPE br = PEDESTAL_TYPE{0};   // bottom-right       (ir>=0,
-    ic>=0) */
+    // // Quandrants
+    // PEDESTAL_TYPE tl = PEDESTAL_TYPE{0};   // top-left quadrant  (ir<=0,
+    // ic<=0) PEDESTAL_TYPE tr = PEDESTAL_TYPE{0};   // top-right quadrant
+    // (ir<=0, ic>=0) PEDESTAL_TYPE bl = PEDESTAL_TYPE{0};   // bottom-left
+    // (ir>=0, ic<=0) PEDESTAL_TYPE br = PEDESTAL_TYPE{0};   // bottom-right
+    // (ir>=0, ic>=0)
 
     CT clusterData[CSX * CSY];
     int idx = 0; // tracks the pixels in the cluster
@@ -202,21 +206,20 @@ __global__ void find_clusters_in_single_frame(
     for (int ir = -row_radius; ir <= row_radius; ++ir) {
 #pragma unroll
         for (int ic = -col_radius; ic <= col_radius; ++ic) {
-            PEDESTAL_TYPE val = shmem[shmem_tid + ir * shmem_stride + ic];
+            COMPUTE_TYPE val = shmem[shmem_tid + ir * shmem_stride + ic];
 
             total += val;
-            max_val = max(max_val, val);
+            max_val = fmaxf(max_val, val);
 
-            /* // Quadrant accumulation (pixels on the axes contribute to two
-            quadrants) if (ir <= 0 && ic <= 0) tl += val; if (ir <= 0 && ic >=
-            0) tr += val; if (ir >= 0 && ic <= 0) bl += val; if (ir >= 0 && ic
-            >= 0) br += val; */
+            // // Quadrant accumulation (pixels on the axes contribute to two
+            // quadrants) if (ir <= 0 && ic <= 0) tl += val; if (ir <= 0 && ic
+            // >= 0) tr += val; if (ir >= 0 && ic <= 0) bl += val; if (ir >= 0
+            // && ic >= 0) br += val;
 
             // Store pedestal-subtracted value in register array for later
             // cluster output
-            if constexpr (std::is_integral_v<CT> &&
-                          std::is_floating_point_v<PEDESTAL_TYPE>)
-                clusterData[idx] = static_cast<CT>(lround(val));
+            if constexpr (std::is_integral_v<CT>)
+                clusterData[idx] = static_cast<CT>(lroundf(val));
             else
                 clusterData[idx] = static_cast<CT>(val);
 
@@ -260,7 +263,9 @@ __global__ void find_clusters_in_single_frame(
 
     // Test 3: total significance (only if tests 1 & 2 didn't fire)
     if (!is_photon) {
-        if (total > 0 && total * total > pow2_c3 * nSig_sq_rms_sq) {
+        if (total > 0 && static_cast<PEDESTAL_TYPE>(total) *
+                                 static_cast<PEDESTAL_TYPE>(total) >
+                             pow2_c3 * nSig_sq_rms_sq) {
             is_photon = true;
         }
     }

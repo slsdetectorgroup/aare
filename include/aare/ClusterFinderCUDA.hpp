@@ -26,20 +26,22 @@ template <typename ClusterType = Cluster<int32_t, 3, 3>,
           typename FRAME_TYPE = uint16_t, typename PEDESTAL_TYPE = double,
           typename = std::enable_if_t<no_2x2_cluster<ClusterType>::value>>
 class ClusterFinderCUDA {
+    using COMPUTE_TYPE =
+        device::COMPUTE_TYPE; // match the kernel's internal precision
 
     static constexpr int BLOCK_X = 16;
     static constexpr int BLOCK_Y = 16;
     static constexpr int col_radius = ClusterType::cluster_size_x / 2;
     static constexpr int row_radius = ClusterType::cluster_size_y / 2;
 
-    Shape<2> m_image_size;
+    Shape<2> m_shape;
     size_t nrows;
     size_t ncols;
-    size_t image_size; // nrows * ncols
+    size_t m_image_size; // nrows * ncols
     int n_streams;
     size_t m_capacity;
 
-    PEDESTAL_TYPE m_nSigma;
+    COMPUTE_TYPE m_nSigma;
     Pedestal<PEDESTAL_TYPE> m_pedestal;
     ClusterVector<ClusterType> m_clusters;
     bool m_pedestal_dirty = true;
@@ -56,41 +58,43 @@ class ClusterFinderCUDA {
     /**
      * @brief Construct a ClusterFinderCUDA
      *
-     * @param image_size              shape of the detector frame (rows, cols)
+     * @param m_image_size              shape of the detector frame (rows, cols)
      * @param nSigma                  threshold in units of per-pixel pedestal
      * std
      * @param capacity                device-side cluster buffer size per stream
      * @param n_streams               number of CUDA streams for multi-frame
      * overlap
      */
-    ClusterFinderCUDA(Shape<2> image_size_, PEDESTAL_TYPE nSigma = 5.0,
+    ClusterFinderCUDA(Shape<2> shape_, COMPUTE_TYPE nSigma = 5.0,
                       size_t capacity = 1000000, int n_streams_ = 1)
-        : m_image_size(image_size_), nrows(image_size_[0]),
-          ncols(image_size_[1]), image_size(nrows * ncols),
-          n_streams(n_streams_), m_capacity(capacity), m_nSigma(nSigma),
-          m_pedestal(image_size_[0], image_size_[1]), m_clusters(capacity) {
+        : m_shape(shape_), nrows(shape_[0]), ncols(shape_[1]),
+          m_image_size(nrows * ncols), n_streams(n_streams_),
+          m_capacity(capacity), m_nSigma(nSigma),
+          m_pedestal(shape_[0], shape_[1]), m_clusters(capacity) {
         // Grid/Block dimensions
         block = dim3(BLOCK_X, BLOCK_Y);
         grid = dim3((static_cast<unsigned int>(ncols) + BLOCK_X - 1) / BLOCK_X,
                     (static_cast<unsigned int>(nrows) + BLOCK_Y - 1) / BLOCK_Y);
 
         // Shared memory: one tile of (BLOCK_X + 2*col_radius) x (BLOCK_Y +
-        // 2*row_radius) doubles
+        // 2*row_radius) elements
+        // Mixed precision used -> shmem takes COMPUTE_TYPE = floats (not
+        // PEDESTAL_TYPE)
         shmem_bytes = (BLOCK_X + 2 * col_radius) * (BLOCK_Y + 2 * row_radius) *
-                      sizeof(PEDESTAL_TYPE);
+                      sizeof(COMPUTE_TYPE);
 
         v_sc.resize(n_streams);
         for (int k = 0; k < n_streams; ++k) {
             auto &sc = v_sc[k];
             CUDA_CHECK(cudaStreamCreate(&sc.stream));
             CUDA_CHECK(
-                cudaMalloc(&sc.d_frame, image_size * sizeof(FRAME_TYPE)));
+                cudaMalloc(&sc.d_frame, m_image_size * sizeof(FRAME_TYPE)));
+            CUDA_CHECK(cudaMalloc(&sc.d_pd_mean,
+                                  m_image_size * sizeof(PEDESTAL_TYPE)));
             CUDA_CHECK(
-                cudaMalloc(&sc.d_pd_mean, image_size * sizeof(PEDESTAL_TYPE)));
-            CUDA_CHECK(
-                cudaMalloc(&sc.d_pd_sum, image_size * sizeof(PEDESTAL_TYPE)));
-            CUDA_CHECK(
-                cudaMalloc(&sc.d_pd_sum2, image_size * sizeof(PEDESTAL_TYPE)));
+                cudaMalloc(&sc.d_pd_sum, m_image_size * sizeof(PEDESTAL_TYPE)));
+            CUDA_CHECK(cudaMalloc(&sc.d_pd_sum2,
+                                  m_image_size * sizeof(PEDESTAL_TYPE)));
             CUDA_CHECK(
                 cudaMalloc(&sc.d_clusters, capacity * sizeof(ClusterType)));
             CUDA_CHECK(cudaMalloc(&sc.d_cluster_count, sizeof(uint32_t)));
@@ -122,8 +126,8 @@ class ClusterFinderCUDA {
     ClusterFinderCUDA(ClusterFinderCUDA &&) = delete;
     ClusterFinderCUDA &operator=(ClusterFinderCUDA &&) = delete;
 
-    void set_nSigma(PEDESTAL_TYPE nSigma) { m_nSigma = nSigma; }
-    PEDESTAL_TYPE get_nSigma() const { return m_nSigma; }
+    void set_nSigma(COMPUTE_TYPE nSigma) { m_nSigma = nSigma; }
+    COMPUTE_TYPE get_nSigma() const { return m_nSigma; }
 
     void push_pedestal_frame(NDView<FRAME_TYPE, 2> frame) {
         m_pedestal.push(frame);
@@ -163,7 +167,7 @@ class ClusterFinderCUDA {
         }
 
         auto &sc = v_sc[0];
-        const size_t image_bytes = image_size * sizeof(FRAME_TYPE);
+        const size_t image_bytes = m_image_size * sizeof(FRAME_TYPE);
         const uint32_t n_pd_samples =
             static_cast<uint32_t>(m_pedestal.n_samples());
 
@@ -221,7 +225,7 @@ class ClusterFinderCUDA {
         }
 
         const size_t n_frames = frames.shape(0);
-        const size_t image_bytes = image_size * sizeof(FRAME_TYPE);
+        const size_t image_bytes = m_image_size * sizeof(FRAME_TYPE);
         const uint32_t n_pd_samples =
             static_cast<uint32_t>(m_pedestal.n_samples());
 
@@ -246,7 +250,7 @@ class ClusterFinderCUDA {
 
                 auto &sc_k = v_sc[k];
                 const FRAME_TYPE *h_src =
-                    frames.data() + frame_idx * image_size;
+                    frames.data() + frame_idx * m_image_size;
 
                 CUDA_CHECK(cudaMemsetAsync(sc_k.d_cluster_count, 0,
                                            sizeof(uint32_t), sc_k.stream));
@@ -304,7 +308,7 @@ class ClusterFinderCUDA {
         NDArray<PEDESTAL_TYPE, 2> h_sum = m_pedestal.get_sum();
         NDArray<PEDESTAL_TYPE, 2> h_sum2 = m_pedestal.get_sum2();
 
-        const size_t bytes = image_size * sizeof(PEDESTAL_TYPE);
+        const size_t bytes = m_image_size * sizeof(PEDESTAL_TYPE);
         for (auto &sc : v_sc) {
             CUDA_CHECK(cudaMemcpyAsync(sc.d_pd_mean, h_mean.data(), bytes,
                                        cudaMemcpyHostToDevice, sc.stream));
