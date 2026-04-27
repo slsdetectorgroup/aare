@@ -30,8 +30,7 @@ void define_ClusterVector(py::module &m, const std::string &typestr) {
 
     py::class_<ClusterVector<
         Cluster<Type, ClusterSizeX, ClusterSizeY, CoordType>, void>>(
-        m, class_name.c_str(),
-        py::buffer_protocol(),
+        m, class_name.c_str(), py::buffer_protocol(),
         py::module_local())
 
         .def(py::init()) // TODO change!!!

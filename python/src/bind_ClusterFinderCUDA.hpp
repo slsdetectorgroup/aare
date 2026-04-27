@@ -27,19 +27,15 @@ void define_ClusterFinderCUDA(py::module &m, const std::string &typestr) {
     auto class_name = fmt::format("ClusterFinderCUDA_{}", typestr);
 
     using ClusterType = Cluster<T, ClusterSizeX, ClusterSizeY, CoordType>;
-    using CF          = ClusterFinderCUDA<ClusterType, uint16_t, pd_type>;
+    using CF = ClusterFinderCUDA<ClusterType, uint16_t, pd_type>;
 
     py::class_<CF>(m, class_name.c_str())
-        .def(py::init<Shape<2>, pd_type, size_t, int>(),
-             py::arg("image_size"),
-             py::arg("n_sigma")    = 5.0,
-             py::arg("capacity")   = 1'000'000,
-             py::arg("n_streams")  = 1)
+        .def(py::init<Shape<2>, pd_type, size_t, int>(), py::arg("image_size"),
+             py::arg("n_sigma") = 5.0, py::arg("capacity") = 1'000'000,
+             py::arg("n_streams") = 1)
 
         .def_property(
-            "nSigma",
-            &CF::get_nSigma,
-            &CF::set_nSigma,
+            "nSigma", &CF::get_nSigma, &CF::set_nSigma,
             R"(Number of sigma above the pedestal to consider a photon during cluster finding.)")
 
         .def("push_pedestal_frame",
@@ -50,21 +46,19 @@ void define_ClusterFinderCUDA(py::module &m, const std::string &typestr) {
 
         .def("clear_pedestal", &CF::clear_pedestal)
 
-        .def_property_readonly(
-            "pedestal",
-            [](CF &self) {
-                auto pd = new NDArray<pd_type, 2>{};
-                *pd = self.pedestal();
-                return return_image_data(pd);
-            })
+        .def_property_readonly("pedestal",
+                               [](CF &self) {
+                                   auto pd = new NDArray<pd_type, 2>{};
+                                   *pd = self.pedestal();
+                                   return return_image_data(pd);
+                               })
 
-        .def_property_readonly(
-            "noise",
-            [](CF &self) {
-                auto arr = new NDArray<pd_type, 2>{};
-                *arr = self.noise();
-                return return_image_data(arr);
-            })
+        .def_property_readonly("noise",
+                               [](CF &self) {
+                                   auto arr = new NDArray<pd_type, 2>{};
+                                   *arr = self.noise();
+                                   return return_image_data(arr);
+                               })
 
         .def(
             "steal_clusters",
@@ -86,7 +80,8 @@ void define_ClusterFinderCUDA(py::module &m, const std::string &typestr) {
         .def(
             "find_clusters_batched",
             [](CF &self, py::array_t<uint16_t> frames, uint64_t first_frame) {
-                // frames is expected as a 3D numpy array (n_frames, nrows, ncols)
+                // frames is expected as a 3D numpy array (n_frames, nrows,
+                // ncols)
                 auto view = make_view_3d(frames);
                 return self.find_clusters_batched(view, first_frame);
             },
