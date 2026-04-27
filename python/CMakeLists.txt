@@ -18,47 +18,46 @@ else()
 endif()
 
 # ---- Main CPU module --------------------------------------------------------
-# module.cpp is the only source for the main module. When AARE_CUDA=ON, the
-# CUDA bindings live in a *separate* Python extension (_aare_cuda.so) loaded
+# module.cpp is the only source for the main module. When AARE_CUDA=ON, the CUDA
+# bindings live in a *separate* Python extension (_aare_cuda.so) loaded
 # independently at runtime. This isolates the nvcc-compiled translation unit
 # into its own ELF image so pybind11's type registry cannot be corrupted by
 # weak-symbol collisions between gcc-emitted and nvcc-emitted template
 # instantiations.
 pybind11_add_module(_aare NO_EXTRAS src/module.cpp)
- 
+
 target_link_libraries(_aare PRIVATE aare_core aare_compiler_flags)
 target_include_directories(
   _aare SYSTEM
   PRIVATE $<TARGET_PROPERTY:Minuit2::Minuit2,INTERFACE_INCLUDE_DIRECTORIES>)
- 
-set_target_properties(_aare PROPERTIES
-    LIBRARY_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/aare
-    INTERPROCEDURAL_OPTIMIZATION FALSE
-)
+
+set_target_properties(
+  _aare PROPERTIES LIBRARY_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/aare
+                   INTERPROCEDURAL_OPTIMIZATION FALSE)
 
 # ---- CUDA module (separate .so) --------------------------------------------
 if(AARE_CUDA)
-    pybind11_add_module(_aare_cuda NO_EXTRAS src/cuda_bindings.cu)
- 
-    target_link_libraries(_aare_cuda PRIVATE aare_cuda aare_compiler_flags)
- 
-    target_include_directories(_aare_cuda SYSTEM PRIVATE
-        $<TARGET_PROPERTY:Minuit2::Minuit2,INTERFACE_INCLUDE_DIRECTORIES>
-    )
- 
-    set_target_properties(_aare_cuda PROPERTIES
-        LIBRARY_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/aare
-        INTERPROCEDURAL_OPTIMIZATION FALSE
-        CUDA_RESOLVE_DEVICE_SYMBOLS ON
-        CUDA_SEPARABLE_COMPILATION ON
-    )
- 
-    target_compile_options(_aare_cuda PRIVATE
-        $<$<COMPILE_LANGUAGE:CUDA>:--expt-relaxed-constexpr>
-        $<$<COMPILE_LANGUAGE:CUDA>:--extended-lambda>
-        $<$<COMPILE_LANGUAGE:CUDA>:-Xcompiler=-fvisibility=hidden>
-        $<$<COMPILE_LANGUAGE:CUDA>:-Xcompiler=-fPIC>
-    )
+  pybind11_add_module(_aare_cuda NO_EXTRAS src/cuda_bindings.cu)
+
+  target_link_libraries(_aare_cuda PRIVATE aare_cuda aare_compiler_flags)
+
+  target_include_directories(
+    _aare_cuda SYSTEM
+    PRIVATE $<TARGET_PROPERTY:Minuit2::Minuit2,INTERFACE_INCLUDE_DIRECTORIES>)
+
+  set_target_properties(
+    _aare_cuda
+    PROPERTIES LIBRARY_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/aare
+               INTERPROCEDURAL_OPTIMIZATION FALSE
+               CUDA_RESOLVE_DEVICE_SYMBOLS ON
+               CUDA_SEPARABLE_COMPILATION ON)
+
+  target_compile_options(
+    _aare_cuda
+    PRIVATE $<$<COMPILE_LANGUAGE:CUDA>:--expt-relaxed-constexpr>
+            $<$<COMPILE_LANGUAGE:CUDA>:--extended-lambda>
+            $<$<COMPILE_LANGUAGE:CUDA>:-Xcompiler=-fvisibility=hidden>
+            $<$<COMPILE_LANGUAGE:CUDA>:-Xcompiler=-fPIC>)
 endif()
 
 # List of python files to be copied to the build directory
@@ -77,12 +76,11 @@ set(PYTHON_FILES
 
 # Copy the python files to the build directory
 foreach(FILE ${PYTHON_FILES})
-    configure_file(${FILE} ${CMAKE_BINARY_DIR}/${FILE})
+  configure_file(${FILE} ${CMAKE_BINARY_DIR}/${FILE})
 endforeach(FILE ${PYTHON_FILES})
 
-# set_target_properties(_aare PROPERTIES
-#     LIBRARY_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/aare
-# )
+# set_target_properties(_aare PROPERTIES LIBRARY_OUTPUT_DIRECTORY
+# ${CMAKE_BINARY_DIR}/aare )
 
 set(PYTHON_EXAMPLES examples/play.py examples/fits.py)
 
@@ -93,21 +91,18 @@ foreach(FILE ${PYTHON_EXAMPLES})
 endforeach(FILE ${PYTHON_EXAMPLES})
 
 if(AARE_INSTALL_PYTHONEXT)
-    set(AARE_PY_INSTALL_TARGETS _aare)
-    if(AARE_CUDA)
-        list(APPEND AARE_PY_INSTALL_TARGETS _aare_cuda)
-    endif()
- 
-    install(
-        TARGETS ${AARE_PY_INSTALL_TARGETS}
-        EXPORT "${TARGETS_EXPORT_NAME}"
-        LIBRARY DESTINATION aare
-        COMPONENT python
-    )
+  set(AARE_PY_INSTALL_TARGETS _aare)
+  if(AARE_CUDA)
+    list(APPEND AARE_PY_INSTALL_TARGETS _aare_cuda)
+  endif()
 
-    install(
-        FILES ${PYTHON_FILES} 
-        DESTINATION aare
-        COMPONENT python
-    )
+  install(
+    TARGETS ${AARE_PY_INSTALL_TARGETS}
+    EXPORT "${TARGETS_EXPORT_NAME}"
+    LIBRARY DESTINATION aare COMPONENT python)
+
+  install(
+    FILES ${PYTHON_FILES}
+    DESTINATION aare
+    COMPONENT python)
 endif()
