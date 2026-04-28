@@ -20,6 +20,9 @@ struct StreamContext {
     PEDESTAL_TYPE *d_pd_sum2 = nullptr;
     ClusterType *d_clusters = nullptr;
     uint32_t *d_cluster_count = nullptr;
+
+    cudaEvent_t kernel_start = nullptr;
+    cudaEvent_t kernel_stop = nullptr;
 };
 
 template <typename ClusterType = Cluster<int32_t, 3, 3>,
@@ -48,6 +51,9 @@ class ClusterFinderCUDA {
 
     using SC = StreamContext<ClusterType, FRAME_TYPE, PEDESTAL_TYPE>;
     std::vector<SC> v_sc;
+
+    float m_total_kernel_ms = 0.0f;
+    size_t m_frames_processed = 0;
 
     // Kernel parameters
     dim3 grid;
@@ -87,6 +93,8 @@ class ClusterFinderCUDA {
         for (int k = 0; k < n_streams; ++k) {
             auto &sc = v_sc[k];
             CUDA_CHECK(cudaStreamCreate(&sc.stream));
+            CUDA_CHECK(cudaEventCreate(&sc.kernel_start));
+            CUDA_CHECK(cudaEventCreate(&sc.kernel_stop));
             CUDA_CHECK(
                 cudaMalloc(&sc.d_frame, m_image_size * sizeof(FRAME_TYPE)));
             CUDA_CHECK(cudaMalloc(&sc.d_pd_mean,
@@ -117,6 +125,10 @@ class ClusterFinderCUDA {
                 cudaFree(sc.d_cluster_count);
             if (sc.stream)
                 cudaStreamDestroy(sc.stream);
+            if (sc.kernel_start)
+                cudaEventDestroy(sc.kernel_start);
+            if (sc.kernel_stop)
+                cudaEventDestroy(sc.kernel_stop);
         }
     }
 
@@ -179,13 +191,15 @@ class ClusterFinderCUDA {
         CUDA_CHECK(cudaMemcpyAsync(sc.d_frame, frame.data(), image_bytes,
                                    cudaMemcpyHostToDevice, sc.stream));
 
-        // Kernel launch
+        // Timed Kernel launch
+        CUDA_CHECK(cudaEventRecord(sc.kernel_start, sc.stream));
         device::find_clusters_in_single_frame<ClusterType, FRAME_TYPE,
                                               PEDESTAL_TYPE>
             <<<grid, block, shmem_bytes, sc.stream>>>(
                 sc.d_frame, sc.d_pd_mean, sc.d_pd_sum, sc.d_pd_sum2,
                 n_pd_samples, m_nSigma, nrows, ncols, sc.d_clusters,
                 sc.d_cluster_count, static_cast<uint32_t>(m_capacity));
+        CUDA_CHECK(cudaEventRecord(sc.kernel_stop, sc.stream));
         CUDA_CHECK(cudaGetLastError());
 
         // Read back cluster count
@@ -258,12 +272,15 @@ class ClusterFinderCUDA {
                                            cudaMemcpyHostToDevice,
                                            sc_k.stream));
 
+                CUDA_CHECK(cudaEventRecord(sc_k.kernel_start, sc_k.stream));
                 device::find_clusters_in_single_frame<ClusterType, FRAME_TYPE,
                                                       PEDESTAL_TYPE>
                     <<<grid, block, shmem_bytes, sc_k.stream>>>(
                         sc_k.d_frame, sc_k.d_pd_mean, sc_k.d_pd_sum,
                         sc_k.d_pd_sum2, n_pd_samples, m_nSigma, nrows, ncols,
                         sc_k.d_clusters, sc_k.d_cluster_count, m_capacity);
+                CUDA_CHECK(cudaEventRecord(sc_k.kernel_stop, sc_k.stream));
+
                 CUDA_CHECK(cudaGetLastError());
             }
 
@@ -292,6 +309,16 @@ class ClusterFinderCUDA {
         }
 
         return results;
+    }
+
+    float avg_kernel_time_ms() const {
+        return m_frames_processed > 0 ? m_total_kernel_ms / m_frames_processed
+                                      : 0.0f;
+    }
+
+    void reset_timers() {
+        m_total_kernel_ms = 0.0f;
+        m_frames_processed = 0;
     }
 
   private:
@@ -332,6 +359,13 @@ class ClusterFinderCUDA {
                                    n_found * sizeof(ClusterType),
                                    cudaMemcpyDeviceToHost, sc.stream));
         CUDA_CHECK(cudaStreamSynchronize(sc.stream));
+
+        // Record the total time of all the kernel launches compute time
+        float ms = 0.0f;
+        CUDA_CHECK(cudaEventElapsedTime(&ms, sc.kernel_start, sc.kernel_stop));
+        m_total_kernel_ms += ms;
+        m_frames_processed++;
+
         for (const auto &c : staging)
             cv.push_back(c);
     }

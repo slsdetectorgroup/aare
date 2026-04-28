@@ -87,8 +87,15 @@ void define_ClusterFinderCUDA(py::module &m, const std::string &typestr) {
             },
             py::arg("frames"), py::arg("first_frame") = 0,
             R"(Process a 3D array of frames (n_frames, nrows, ncols) in parallel
-across the configured CUDA streams. Returns a list of ClusterVector, one per
-input frame.)");
+            across the configured CUDA streams. Returns a list of ClusterVector, one per
+            input frame.)")
+
+        .def("avg_kernel_time_ms", &CF::avg_kernel_time_ms,
+             R"(Average kernel execution time per frame in milliseconds,
+            excluding PCIe transfers. Use wall_time - avg_kernel_time to estimate transfer overhead.)")
+
+        .def("reset_timers", &CF::reset_timers,
+             R"(Reset the internal kernel timing counters.)");
 }
 
 } // namespace aare
