@@ -172,19 +172,28 @@ __global__ void find_clusters_in_single_frame(
     if (!valid_pixel)
         return;
 
-    // Per-pixel RMS from global pedestal arrays
-    // rms = sqrt( E[X^2] - E[X]^2 )
+    // Per-pixel variance from global pedestal arrays
+    // Variance = rms^2 = E[X^2] - E[X]^2
+    // NOTE: Keep thresholds squared to avoid one sqrtf() per pixel.
     PEDESTAL_TYPE mean_px = d_pd_mean[global_tid];
     PEDESTAL_TYPE var_px =
         d_pd_sum2[global_tid] / n_pd_samples - mean_px * mean_px;
     PEDESTAL_TYPE rms_sq = max(var_px, PEDESTAL_TYPE{0}); // variance = rms^2
-    COMPUTE_TYPE rms_px = sqrtf(static_cast<COMPUTE_TYPE>(rms_sq));
+    PEDESTAL_TYPE nSig_sq_rms_sq = static_cast<PEDESTAL_TYPE>(m_nSigma) *
+                                   static_cast<PEDESTAL_TYPE>(m_nSigma) *
+                                   rms_sq;
 
     // Pedestal-subtracted value of the center pixel (already in shmem)
     COMPUTE_TYPE val_pixel = shmem[shmem_tid];
 
-    // Negative pedestal early exit
-    if (val_pixel < -m_nSigma * rms_px)
+    // Negative pedestal early exit:
+    //     val_pixel < -nSigma * rms
+    // is equivalent to:
+    //     val_pixel < 0 && val_pixel^2 > nSigma^2 * rms^2
+    if (val_pixel < COMPUTE_TYPE{0} &&
+        static_cast<PEDESTAL_TYPE>(val_pixel) *
+                static_cast<PEDESTAL_TYPE>(val_pixel) >
+            nSig_sq_rms_sq)
         return; // NOTE: pedestal update for this pixel is skipped (same as
                 // sequential)
 
@@ -199,9 +208,6 @@ __global__ void find_clusters_in_single_frame(
     // (ir>=0, ic<=0) PEDESTAL_TYPE br = PEDESTAL_TYPE{0};   // bottom-right
     // (ir>=0, ic>=0)
 
-    CT clusterData[CSX * CSY];
-    int idx = 0; // tracks the pixels in the cluster
-
 #pragma unroll
     for (int ir = -row_radius; ir <= row_radius; ++ir) {
 #pragma unroll
@@ -215,15 +221,6 @@ __global__ void find_clusters_in_single_frame(
             // quadrants) if (ir <= 0 && ic <= 0) tl += val; if (ir <= 0 && ic
             // >= 0) tr += val; if (ir >= 0 && ic <= 0) bl += val; if (ir >= 0
             // && ic >= 0) br += val;
-
-            // Store pedestal-subtracted value in register array for later
-            // cluster output
-            if constexpr (std::is_integral_v<CT>)
-                clusterData[idx] = static_cast<CT>(lroundf(val));
-            else
-                clusterData[idx] = static_cast<CT>(val);
-
-            idx++;
         }
     }
 
@@ -240,12 +237,16 @@ __global__ void find_clusters_in_single_frame(
     //  3. Total significance:         total > c3 * nSigma * rms
     //     -> distributed events where the full cluster sum is significant
 
-    PEDESTAL_TYPE nSig_sq_rms_sq = m_nSigma * m_nSigma * rms_sq;
-
     bool is_photon = false;
 
     // Test 1: single-pixel significance
-    if (max_val > m_nSigma * rms_px) {
+    //     max_val > nSigma * rms
+    // is equivalent to:
+    //     max_val > 0 && max_val^2 > nSigma^2 * rms^2
+    if (max_val > COMPUTE_TYPE{0} &&
+        static_cast<PEDESTAL_TYPE>(max_val) *
+                static_cast<PEDESTAL_TYPE>(max_val) >
+            nSig_sq_rms_sq) {
         // Local-max suppression: only the center-pixel thread records the
         // cluster
         if (val_pixel < max_val)
@@ -292,6 +293,25 @@ __global__ void find_clusters_in_single_frame(
     /*
     if (!is_photon) return; // Debugging
     */
+
+    // Delay building clusterData until we know this thread will write a photon.
+    // This avoids CSX*CSY conversions/rounds for the overwhelmingly common
+    // background pixels.
+    CT clusterData[CSX * CSY];
+    int idx = 0;
+
+#pragma unroll
+    for (int ir = -row_radius; ir <= row_radius; ++ir) {
+#pragma unroll
+        for (int ic = -col_radius; ic <= col_radius; ++ic) {
+            COMPUTE_TYPE val = shmem[shmem_tid + ir * shmem_stride + ic];
+            if constexpr (std::is_integral_v<CT>)
+                clusterData[idx] = static_cast<CT>(lroundf(val));
+            else
+                clusterData[idx] = static_cast<CT>(val);
+            idx++;
+        }
+    }
 
     // Write cluster to global output buffer using atomic index
     // for coordination across all blocks
