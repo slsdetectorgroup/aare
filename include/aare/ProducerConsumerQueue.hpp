@@ -47,19 +47,63 @@ template <class T> struct ProducerConsumerQueue {
     ProducerConsumerQueue(const ProducerConsumerQueue &) = delete;
     ProducerConsumerQueue &operator=(const ProducerConsumerQueue &) = delete;
 
-    ProducerConsumerQueue(ProducerConsumerQueue &&other) {
+    // ProducerConsumerQueue(ProducerConsumerQueue &&other) {
+    //     size_ = other.size_;
+    //     records_ = other.records_;
+    //     other.records_ = nullptr;
+    //     readIndex_ = other.readIndex_.load(std::memory_order_acquire);
+    //     writeIndex_ = other.writeIndex_.load(std::memory_order_acquire);
+    // }
+
+    ProducerConsumerQueue(ProducerConsumerQueue&& other) noexcept {
         size_ = other.size_;
         records_ = other.records_;
+        readIndex_.store(other.readIndex_.load(std::memory_order_acquire),
+                        std::memory_order_relaxed);
+        writeIndex_.store(other.writeIndex_.load(std::memory_order_acquire),
+                        std::memory_order_relaxed);
+
         other.records_ = nullptr;
-        readIndex_ = other.readIndex_.load(std::memory_order_acquire);
-        writeIndex_ = other.writeIndex_.load(std::memory_order_acquire);
+        other.size_ = 0;
+        other.readIndex_.store(0, std::memory_order_relaxed);
+        other.writeIndex_.store(0, std::memory_order_relaxed);
     }
-    ProducerConsumerQueue &operator=(ProducerConsumerQueue &&other) {
+
+    // ProducerConsumerQueue &operator=(ProducerConsumerQueue &&other) {
+    //     size_ = other.size_;
+    //     records_ = other.records_;
+    //     other.records_ = nullptr;
+    //     readIndex_ = other.readIndex_.load(std::memory_order_acquire);
+    //     writeIndex_ = other.writeIndex_.load(std::memory_order_acquire);
+    //     return *this;
+    // }
+
+    ProducerConsumerQueue& operator=(ProducerConsumerQueue&& other) {
+        if (this == &other) return *this;
+
+        //Destroy existing elements and free old storage
+        if (records_ && !std::is_trivially_destructible<T>::value) {
+            size_t r = readIndex_.load(std::memory_order_relaxed);
+            size_t w = writeIndex_.load(std::memory_order_relaxed);
+            while (r != w) {
+                records_[r].~T();
+                if (++r == size_) r = 0;
+            }
+        }
+        std::free(records_);
+        
+        //Steal other's state
         size_ = other.size_;
         records_ = other.records_;
+        readIndex_.store( other.readIndex_.load(std::memory_order_acquire), std::memory_order_relaxed );
+        writeIndex_.store( other.writeIndex_.load(std::memory_order_acquire), std::memory_order_relaxed );
+
+        //leave 'other' empty and harmless
         other.records_ = nullptr;
-        readIndex_ = other.readIndex_.load(std::memory_order_acquire);
-        writeIndex_ = other.writeIndex_.load(std::memory_order_acquire);
+        other.size_ = 0;
+        other.readIndex_.store(0, std::memory_order_relaxed);
+        other.writeIndex_.store(0, std::memory_order_relaxed);
+
         return *this;
     }
 
