@@ -39,14 +39,14 @@ def ClusterFinder(image_size, cluster_size=(3,3), n_sigma=5, dtype = np.int32, c
 
 
 
-def ClusterFinderMT(image_size, cluster_size = (3,3), dtype=np.int32, n_sigma=5, capacity = 1024, n_threads = 3): 
+def ClusterFinderMT(image_size, cluster_size = (3,3), dtype=np.int32, n_sigma=5, capacity = 1024, n_threads = 3, update_pedestal = True): 
     """ 
     Factory function to create a ClusterFinderMT object. Provides a cleaner syntax for 
     the templated ClusterFinderMT in C++.
     """
 
     cls = _get_class("ClusterFinderMT", cluster_size, dtype)
-    return cls(image_size, n_sigma=n_sigma, capacity=capacity, n_threads=n_threads)
+    return cls(image_size, n_sigma=n_sigma, capacity=capacity, n_threads=n_threads, update_pedestal=update_pedestal)
 
 
 def ClusterCollector(clusterfindermt, dtype=np.int32): 
