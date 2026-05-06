@@ -55,8 +55,10 @@ class ClusterVector<Cluster<T, ClusterSizeX, ClusterSizeY, CoordType>> {
 
     // Move constructor
     ClusterVector(ClusterVector &&other) noexcept
-        : m_data(other.m_data), m_frame_number(other.m_frame_number) {
-        other.m_data.clear();
+        : m_data(std::move(other.m_data)),
+          m_frame_number(other.m_frame_number) {
+        // other.m_data.clear();
+        other.m_frame_number = 0;
     }
 
     /**
@@ -83,7 +85,7 @@ class ClusterVector<Cluster<T, ClusterSizeX, ClusterSizeY, CoordType>> {
     // Move assignment operator
     ClusterVector &operator=(ClusterVector &&other) noexcept {
         if (this != &other) {
-            m_data = other.m_data;
+            m_data = std::move(other.m_data);
             m_frame_number = other.m_frame_number;
             other.m_data.clear();
             other.m_frame_number = 0;
