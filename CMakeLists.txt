@@ -113,26 +113,6 @@ else()
   message(STATUS "AARE: CUDA support DISABLED (CPU-only build)")
 endif()
 
-if(AARE_CUDA)
-  enable_language(CUDA)
-  find_package(CUDAToolkit REQUIRED)
-
-  set(CMAKE_CUDA_STANDARD 17)
-  set(CMAKE_CUDA_STANDARD_REQUIRED ON)
-  set(CMAKE_CUDA_EXTENSIONS OFF)
-  set(CMAKE_CUDA_SEPARABLE_COMPILATION ON)
-
-  if(NOT CMAKE_CUDA_ARCHITECTURES)
-    set(CMAKE_CUDA_ARCHITECTURES ${AARE_CUDA_ARCHITECTURES})
-  endif()
-
-  message(
-    STATUS "AARE: CUDA support ENABLED (archs=${CMAKE_CUDA_ARCHITECTURES}, "
-           "toolkit=${CUDAToolkit_VERSION})")
-else()
-  message(STATUS "AARE: CUDA support DISABLED (CPU-only build)")
-endif()
-
 if(AARE_BENCHMARKS)
   add_subdirectory(benchmarks)
 endif()
