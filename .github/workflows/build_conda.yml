@@ -25,10 +25,10 @@ jobs:
         shell: "bash -l {0}"
 
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
 
       - name: Get conda
-        uses: conda-incubator/setup-miniconda@v3
+        uses: conda-incubator/setup-miniconda@v4
         with:
           python-version: ${{ matrix.python-version }}
           environment-file: etc/dev-env.yml
@@ -36,7 +36,6 @@ jobs:
           channels: conda-forge
           conda-remove-defaults: "true"
 
-  
       - name: Disable upload
         run: conda config --set anaconda_upload no
 
@@ -44,5 +43,5 @@ jobs:
         run: conda install -n base conda-build -y
 
       - name: Build
-        run: conda build conda-recipe 
+        run: conda-build conda-recipe 
 
