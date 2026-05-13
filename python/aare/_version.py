@@ -5,4 +5,4 @@ from pathlib import Path
 try:
     __version__ = version('aare')
 except PackageNotFoundError:
-    __version__ = Path(__file__).parent.joinpath('VERSION').read_text().strip()
+    __version__ = Path(__file__).parents[2].joinpath('VERSION').read_text().strip()

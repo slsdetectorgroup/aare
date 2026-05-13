@@ -34,6 +34,7 @@ target_include_directories(
 # List of python files to be copied to the build directory
 set(PYTHON_FILES
     aare/__init__.py
+    aare/_version.py
     aare/CtbRawFile.py
     aare/ClusterFinder.py
     aare/ClusterVector.py
