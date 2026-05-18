@@ -10,7 +10,7 @@
 #include <vector>
 
 #include "aare/ClusterFinder.hpp"
-#include "aare/ClusterFinderCUDA.hpp"
+#include "aare/ClusterFinderCUDA_old.hpp"
 #include "aare/File.hpp"
 #include "aare/Frame.hpp"
 #include "aare/NDArray.hpp"
@@ -312,7 +312,7 @@ int main(int argc, char *argv[]) {
         COLS = first_frame.cols();
     }
 
-    printf("=== Cluster Finder: CPU vs CUDA ===\n");
+    printf("=== Cluster Finder: CPU vs CUDA (OLD) ===\n");
     printf("Detector:  %zu x %zu\n", ROWS, COLS);
     printf("Cluster:   %d x %d\n", ClusterType::cluster_size_x,
            ClusterType::cluster_size_y);
@@ -478,17 +478,12 @@ int main(int argc, char *argv[]) {
         constexpr int N_STREAMS = 5;
 
         aare::ClusterFinderCUDA<ClusterType, FRAME_TYPE, PEDESTAL_TYPE> cuda_cf(
-            {ROWS, COLS}, nSigma, 4096, N_STREAMS);
+            {ROWS, COLS}, nSigma, 50'000, N_STREAMS);
 
         feed_pedestal(cuda_cf, pedestal_frames);
 
-        // Contiguous staging buffer reused across batches — registered as
-        // pinned so that H2D transfers run at DMA bandwidth (~22 GB/s) instead
-        // of going through the CUDA driver's internal staging (~15 GB/s for
-        // pageable memory).
+        // Contiguous staging buffer reused across batches
         std::vector<FRAME_TYPE> batch_buffer(BATCH_SIZE * ROWS * COLS);
-        cuda_cf.register_input_buffer(batch_buffer.data(),
-                                      batch_buffer.size() * sizeof(FRAME_TYPE));
 
         const size_t n_batches = (use_data + BATCH_SIZE - 1) / BATCH_SIZE;
 
@@ -522,8 +517,6 @@ int main(int argc, char *argv[]) {
                 gpu_total_clusters += out.size();
             }
         }
-
-        cuda_cf.unregister_input_buffer();
 
         printf("GPU(batched): %zu clusters — pack=%.1f ms  GPU=%.1f ms  "
                "total=%.1f ms"
@@ -630,7 +623,7 @@ int main(int argc, char *argv[]) {
 
             // Warmup
             cuda_cf.find_clusters(bench_frame.view(), 0);
-            // cuda_cf.steal_clusters(true);
+            cuda_cf.steal_clusters(true);
 
             Timer t;
             t.start();
@@ -649,17 +642,14 @@ int main(int argc, char *argv[]) {
             constexpr int N_STREAMS = 5;
 
             aare::ClusterFinderCUDA<ClusterType, FRAME_TYPE, PEDESTAL_TYPE>
-                cuda_cf({ROWS, COLS}, nSigma, 4096, N_STREAMS);
+                cuda_cf({ROWS, COLS}, nSigma, 50'000, N_STREAMS);
             feed_pedestal(cuda_cf, pedestal_frames);
 
-            // Build one contiguous batch of BATCH_SIZE copies of bench_frame.
-            // Register as pinned for DMA-speed H2D transfers.
+            // Build one contiguous batch of BATCH_SIZE copies of bench_frame
             std::vector<FRAME_TYPE> batch(BATCH_SIZE * ROWS * COLS);
             for (size_t k = 0; k < BATCH_SIZE; ++k)
                 std::memcpy(batch.data() + k * ROWS * COLS, bench_frame.data(),
                             ROWS * COLS * sizeof(FRAME_TYPE));
-            cuda_cf.register_input_buffer(batch.data(),
-                                          batch.size() * sizeof(FRAME_TYPE));
 
             aare::NDView<FRAME_TYPE, 3> batch_view(
                 batch.data(), {static_cast<ssize_t>(BATCH_SIZE), ROWS, COLS});
@@ -676,16 +666,11 @@ int main(int argc, char *argv[]) {
             const size_t n_iter_batches =
                 (N_ITER + BATCH_SIZE - 1) / BATCH_SIZE;
 
-            std::vector<aare::ClusterVector<ClusterType>> batch_results;
-
             Timer t;
             t.start();
             for (size_t b = 0; b < n_iter_batches; ++b) {
-                batch_results =
-                    cuda_cf.find_clusters_batched(batch_view, b * BATCH_SIZE);
+                (void)cuda_cf.find_clusters_batched(batch_view, b * BATCH_SIZE);
             }
-            cuda_cf.unregister_input_buffer();
-
             printf("GPU(batched): %.3f ms/frame (H2D + kernel + D2H, "
                    "batch=%zu, streams=%d)\n",
                    t.elapsed_ms() / (n_iter_batches * BATCH_SIZE), BATCH_SIZE,
