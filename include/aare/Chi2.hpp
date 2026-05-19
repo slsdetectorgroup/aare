@@ -140,6 +140,10 @@ class Chi2Model1DGrad : public ROOT::Minuit2::FCNGradientBase {
 using Chi2Gaussian = Chi2Model1DGrad<aare::model::Gaussian>;
 using Chi2GaussianErfcPlateau =
     Chi2Model1DGrad<aare::model::GaussianErfcPlateau>;
+using Chi2GaussianChargeSharing =
+    Chi2Model1DGrad<aare::model::GaussianChargeSharing>;
+using Chi2GaussianChargeSharingKb =
+    Chi2Model1DGrad<aare::model::GaussianChargeSharingKb>;
 using Chi2RisingScurve = Chi2Model1DGrad<aare::model::RisingScurve>;
 using Chi2FallingScurve = Chi2Model1DGrad<aare::model::FallingScurve>;
 using Chi2Pol1 = Chi2Model1DGrad<aare::model::Pol1>;

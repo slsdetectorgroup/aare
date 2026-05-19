@@ -680,6 +680,10 @@ void define_fit_bindings(py::module &m) {
     // ── Bind model classes ──────────────────────────────────────────
     bind_fit_model<aare::model::Gaussian>(m, "Gaussian");
     bind_fit_model<aare::model::GaussianErfcPlateau>(m, "GaussianErfcPlateau");
+    bind_fit_model<aare::model::GaussianChargeSharing>(m,
+                                                       "GaussianChargeSharing");
+    bind_fit_model<aare::model::GaussianChargeSharingKb>(
+        m, "GaussianChargeSharingKb");
     bind_fit_model<aare::model::RisingScurve>(m, "RisingScurve");
     bind_fit_model<aare::model::FallingScurve>(m, "FallingScurve");
     bind_fit_model<aare::model::Pol1>(m, "Pol1");
@@ -725,6 +729,27 @@ void define_fit_bindings(py::module &m) {
                         .cast<const aare::FitModel<GaussianErfcPlateau> &>();
                 return fit_dispatch<GaussianErfcPlateau,
                                     Chi2GaussianErfcPlateau>(
+                    mdl, x, y, y_err_obj, n_threads);
+            }
+
+            // ── GaussianChargeSharing ───────
+            if (py::isinstance<aare::FitModel<GaussianChargeSharing>>(
+                    model_obj)) {
+                const auto &mdl =
+                    model_obj
+                        .cast<const aare::FitModel<GaussianChargeSharing> &>();
+                return fit_dispatch<GaussianChargeSharing,
+                                    Chi2GaussianChargeSharing>(
+                    mdl, x, y, y_err_obj, n_threads);
+            }
+
+            // ── GaussianChargeSharingKb ───────
+            if (py::isinstance<aare::FitModel<GaussianChargeSharingKb>>(
+                    model_obj)) {
+                const auto &mdl = model_obj.cast<
+                    const aare::FitModel<GaussianChargeSharingKb> &>();
+                return fit_dispatch<GaussianChargeSharingKb,
+                                    Chi2GaussianChargeSharingKb>(
                     mdl, x, y, y_err_obj, n_threads);
             }
 
