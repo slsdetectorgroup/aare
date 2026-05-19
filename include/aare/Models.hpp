@@ -342,6 +342,168 @@ struct Gaussian {
 
 // _____________________________________________________________________
 //
+// GaussianErfcPlateau
+// _____________________________________________________________________
+
+/**
+ * @brief Gaussian peak plus a falling error-function plateau.
+ *
+ * Equivalent to the ROOT-style expression:
+ *
+ *   [0] * exp(-0.5 * ((x - [2])/[3])^2)
+ * + [1] * (1 - erf((x - [2]) / ([3] * sqrt(2)))) / 2
+ *
+ * f(x) = A * exp(-(x - mu)^2 / (2*sigma^2))
+ *      + S * 0.5 * (1 - erf((x - mu) / (sqrt(2)*sigma)))
+ *
+ * Parameters:
+ *   par[0] = A      (Gaussian amplitude)
+ *   par[1] = S      (left plateau height)
+ *   par[2] = mu     (shared Gaussian center / step inflection point)
+ *   par[3] = sigma  (shared Gaussian width / step width, must be > 0)
+ *
+ * Analytic partial derivatives:
+ *   Let dx = x - mu
+ *       z  = dx / (sqrt(2)*sigma)
+ *       E  = exp(-z^2)
+ *       H  = 0.5 * (1 - erf(z))
+ *
+ *   df/dA     = E
+ *   df/dS     = H
+ *   df/dmu    = A*E*dx/sigma^2 + S*E/(sqrt(2*pi)*sigma)
+ *   df/dsigma = A*E*dx^2/sigma^3 + S*E*dx/(sqrt(2*pi)*sigma^2)
+ */
+struct GaussianErfcPlateau {
+    static constexpr std::size_t npar = 4;
+
+    static constexpr std::array<ParamInfo, npar> param_info = {{
+        {"A", -no_bound, no_bound},
+        {"S", -no_bound, no_bound},
+        {"mu", -no_bound, no_bound},
+        {"sigma", 1e-12, no_bound},
+    }};
+
+    static double eval(double x, const std::vector<double> &par) {
+        const double A = par[0];
+        const double S = par[1];
+        const double mu = par[2];
+        const double sig = par[3];
+
+        const double dx = x - mu;
+        const double z = dx * inv_sqrt2 / sig;
+
+        const double e = std::exp(-z * z);
+        const double step = 0.5 * (1.0 - fast_erf(z));
+
+        return A * e + S * step;
+    }
+
+    static void eval_and_grad(double x, const std::vector<double> &par,
+                              double &f, std::array<double, npar> &g) {
+        const double A = par[0];
+        const double S = par[1];
+        const double mu = par[2];
+        const double sig = par[3];
+
+        const double dx = x - mu;
+        const double z = dx * inv_sqrt2 / sig;
+
+        const double e = std::exp(-z * z);
+        const double step = 0.5 * (1.0 - fast_erf(z));
+
+        f = A * e + S * step;
+
+        const double inv_sig = 1.0 / sig;
+        const double inv_sig2 = inv_sig * inv_sig;
+        const double inv_sig3 = inv_sig2 * inv_sig;
+
+        g[0] = e;    // df/dA
+        g[1] = step; // df/dS
+
+        g[2] = A * e * dx * inv_sig2 + S * inv_sqrt_2pi * e * inv_sig; // df/dmu
+
+        g[3] = A * e * dx * dx * inv_sig3 +
+               S * inv_sqrt_2pi * e * dx * inv_sig2; // df/dsigma
+    }
+
+    /** @brief Reject degenerate or negative width. */
+    static bool is_valid(const std::vector<double> &par) {
+        return par[3] > 0.0;
+    }
+
+    /**
+     * @brief Data-driven initial parameter estimates.
+     *
+     * Assumes x is sorted ascending and the plateau is on the left.
+     *
+     * S      ~ average of first 10% of y values
+     * mu     ~ x at maximum y
+     * A      ~ y_max - 0.5*S
+     * sigma  ~ right-side half-width of the peak, fallback to 10% x-range
+     */
+    static std::array<double, npar> estimate_par(NDView<double, 1> x,
+                                                 NDView<double, 1> y) {
+        const ssize_t n = y.size();
+
+        const auto max_it = std::max_element(y.begin(), y.end());
+        const ssize_t i_max = std::distance(y.begin(), max_it);
+
+        const double y_max = *max_it;
+
+        const double x_range = std::max(x[n - 1] - x[0], 1e-9);
+
+        const ssize_t tail = std::min<ssize_t>(std::max<ssize_t>(n / 10, 2), n);
+
+        double left_mean = 0.0;
+        double right_mean = 0.0;
+
+        for (ssize_t i = 0; i < tail; ++i)
+            left_mean += y[i];
+        left_mean /= tail;
+
+        for (ssize_t i = n - tail; i < n; ++i)
+            right_mean += y[i];
+        right_mean /= tail;
+
+        const double S = left_mean;
+        const double mu = x[i_max];
+
+        // At x = mu, the erfc step contributes roughly S/2.
+        const double A = y_max - 0.5 * S;
+
+        // Estimate sigma from the right half-width of the peak.
+        // This avoids the left plateau biasing the FWHM estimate.
+        const double half = right_mean + 0.5 * (y_max - right_mean);
+
+        double sig = 0.1 * x_range;
+        for (ssize_t i = i_max; i < n; ++i) {
+            if (y[i] <= half) {
+                const double half_width = std::abs(x[i] - mu);
+                if (half_width > 1e-12) {
+                    sig = half_width / 1.1774100225154747; // sqrt(2*ln(2))
+                }
+                break;
+            }
+        }
+
+        sig = std::max(sig, 1e-6);
+
+        return {A, S, mu, sig};
+    }
+
+    static void compute_steps(const std::array<double, npar> &start,
+                              double x_range, double y_range,
+                              double /*slope_scale*/,
+                              std::array<double, npar> &steps) {
+        steps[0] = std::max(0.1 * std::abs(start[0]), 0.1 * y_range);
+        steps[1] = std::max(0.1 * std::abs(start[1]), 0.1 * y_range);
+        steps[2] = 0.05 * x_range;
+        steps[3] = 0.05 * x_range;
+    }
+};
+
+// _____________________________________________________________________
+//
 // RisingScurve
 // _____________________________________________________________________
 

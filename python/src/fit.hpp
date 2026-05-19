@@ -679,6 +679,7 @@ void define_fit_bindings(py::module &m) {
 
     // ── Bind model classes ──────────────────────────────────────────
     bind_fit_model<aare::model::Gaussian>(m, "Gaussian");
+    bind_fit_model<aare::model::GaussianErfcPlateau>(m, "GaussianErfcPlateau");
     bind_fit_model<aare::model::RisingScurve>(m, "RisingScurve");
     bind_fit_model<aare::model::FallingScurve>(m, "FallingScurve");
     bind_fit_model<aare::model::Pol1>(m, "Pol1");
@@ -713,6 +714,17 @@ void define_fit_bindings(py::module &m) {
                 const auto &mdl =
                     model_obj.cast<const aare::FitModel<Gaussian> &>();
                 return fit_dispatch<Gaussian, Chi2Gaussian>(
+                    mdl, x, y, y_err_obj, n_threads);
+            }
+
+            // ── GaussianErfcPlateau ───────
+            if (py::isinstance<aare::FitModel<GaussianErfcPlateau>>(
+                    model_obj)) {
+                const auto &mdl =
+                    model_obj
+                        .cast<const aare::FitModel<GaussianErfcPlateau> &>();
+                return fit_dispatch<GaussianErfcPlateau,
+                                    Chi2GaussianErfcPlateau>(
                     mdl, x, y, y_err_obj, n_threads);
             }
 
