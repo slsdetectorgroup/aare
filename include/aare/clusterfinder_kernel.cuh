@@ -10,13 +10,13 @@ namespace aare::device {
 using COMPUTE_TYPE = float;
 
 template <typename ClusterType = Cluster<int32_t, 3, 3>,
-          typename FRAME_TYPE = uint16_t, typename PEDESTAL_TYPE = double,
+          typename FRAME_TYPE = uint16_t,
           typename = std::enable_if_t<no_2x2_cluster<ClusterType>::value>>
 __global__ void find_clusters_in_single_frame(
-    const FRAME_TYPE *__restrict__ d_frame,
-    PEDESTAL_TYPE *__restrict__ d_pd_mean, PEDESTAL_TYPE *__restrict__ d_pd_sum,
-    PEDESTAL_TYPE *__restrict__ d_pd_sum2, const uint32_t n_pd_samples,
-    const COMPUTE_TYPE m_nSigma, const size_t nrows, const size_t ncols,
+    const FRAME_TYPE *__restrict__ d_frame, float *__restrict__ d_pd_mean,
+    float *__restrict__ d_pd_sum, float *__restrict__ d_pd_sum2,
+    const uint32_t n_pd_samples, const COMPUTE_TYPE m_nSigma,
+    const size_t nrows, const size_t ncols,
     //   const uint64_t       frame_number,
     ClusterType *d_clusters, uint32_t *d_cluster_count,
     const uint32_t max_clusters) {
@@ -87,8 +87,7 @@ __global__ void find_clusters_in_single_frame(
     // Returns the pedestal-subtracted value.
     auto load_pixel = [&] __device__(ssize_t gr, ssize_t gc) -> COMPUTE_TYPE {
         auto gid = gc + ncols * gr;
-        return static_cast<COMPUTE_TYPE>(d_frame[gid]) -
-               static_cast<COMPUTE_TYPE>(d_pd_mean[gid]);
+        return static_cast<COMPUTE_TYPE>(d_frame[gid]) - d_pd_mean[gid];
     };
 
     // A. Interior: every valid thread loads its own pixel
@@ -175,13 +174,11 @@ __global__ void find_clusters_in_single_frame(
     // Per-pixel variance from global pedestal arrays
     // Variance = rms^2 = E[X^2] - E[X]^2
     // NOTE: Keep thresholds squared to avoid one sqrtf() per pixel.
-    PEDESTAL_TYPE mean_px = d_pd_mean[global_tid];
-    PEDESTAL_TYPE var_px =
-        d_pd_sum2[global_tid] / n_pd_samples - mean_px * mean_px;
-    PEDESTAL_TYPE rms_sq = max(var_px, PEDESTAL_TYPE{0}); // variance = rms^2
-    PEDESTAL_TYPE nSig_sq_rms_sq = static_cast<PEDESTAL_TYPE>(m_nSigma) *
-                                   static_cast<PEDESTAL_TYPE>(m_nSigma) *
-                                   rms_sq;
+    float mean_px = d_pd_mean[global_tid];
+    float var_px = d_pd_sum2[global_tid] / static_cast<float>(n_pd_samples) -
+                   mean_px * mean_px;
+    float rms_sq = fmaxf(var_px, 0.0f);
+    float nSig_sq_rms_sq = m_nSigma * m_nSigma * rms_sq;
 
     // Pedestal-subtracted value of the center pixel (already in shmem)
     COMPUTE_TYPE val_pixel = shmem[shmem_tid];
@@ -190,10 +187,7 @@ __global__ void find_clusters_in_single_frame(
     //     val_pixel < -nSigma * rms
     // is equivalent to:
     //     val_pixel < 0 && val_pixel^2 > nSigma^2 * rms^2
-    if (val_pixel < COMPUTE_TYPE{0} &&
-        static_cast<PEDESTAL_TYPE>(val_pixel) *
-                static_cast<PEDESTAL_TYPE>(val_pixel) >
-            nSig_sq_rms_sq)
+    if (val_pixel < 0.0f && val_pixel * val_pixel > nSig_sq_rms_sq)
         return; // NOTE: pedestal update for this pixel is skipped (same as
                 // sequential)
 
@@ -243,10 +237,7 @@ __global__ void find_clusters_in_single_frame(
     //     max_val > nSigma * rms
     // is equivalent to:
     //     max_val > 0 && max_val^2 > nSigma^2 * rms^2
-    if (max_val > COMPUTE_TYPE{0} &&
-        static_cast<PEDESTAL_TYPE>(max_val) *
-                static_cast<PEDESTAL_TYPE>(max_val) >
-            nSig_sq_rms_sq) {
+    if (max_val > 0.0f && max_val * max_val > nSig_sq_rms_sq) {
         // Local-max suppression: only the center-pixel thread records the
         // cluster
         if (val_pixel < max_val)
@@ -264,9 +255,8 @@ __global__ void find_clusters_in_single_frame(
 
     // Test 3: total significance (only if tests 1 & 2 didn't fire)
     if (!is_photon) {
-        if (total > 0 && static_cast<PEDESTAL_TYPE>(total) *
-                                 static_cast<PEDESTAL_TYPE>(total) >
-                             pow2_c3 * nSig_sq_rms_sq) {
+        if (total > 0.0f &&
+            total * total > static_cast<float>(pow2_c3) * nSig_sq_rms_sq) {
             is_photon = true;
         }
     }
@@ -277,16 +267,17 @@ __global__ void find_clusters_in_single_frame(
     // frame simultaneously. So the updated pedestal will only be used starting
     // from the next frame. -> This avoids a/serialization and b/global mem I/O.
     if (!is_photon && valid_pixel) {
-        PEDESTAL_TYPE raw_val = static_cast<PEDESTAL_TYPE>(d_frame[global_tid]);
-        PEDESTAL_TYPE sum = d_pd_sum[global_tid];
-        PEDESTAL_TYPE sum2 = d_pd_sum2[global_tid];
+        float raw_val = static_cast<float>(d_frame[global_tid]);
+        float sum = d_pd_sum[global_tid];
+        float sum2 = d_pd_sum2[global_tid];
+        float n = static_cast<float>(n_pd_samples);
 
-        sum += raw_val - sum / n_pd_samples;
-        sum2 += raw_val * raw_val - sum2 / n_pd_samples;
+        sum += raw_val - sum / n;
+        sum2 += raw_val * raw_val - sum2 / n;
 
         d_pd_sum[global_tid] = sum;
         d_pd_sum2[global_tid] = sum2;
-        d_pd_mean[global_tid] = sum / n_pd_samples;
+        d_pd_mean[global_tid] = sum / n;
         return;
     }
 

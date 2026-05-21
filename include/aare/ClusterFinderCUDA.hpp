@@ -7,8 +7,10 @@
 #include <cmath>
 #include <cstdint>
 #include <cstdio>
+#include <cstring>
 #include <limits>
 #include <stdexcept>
+#include <vector>
 
 namespace aare {
 
@@ -18,9 +20,9 @@ template <typename ClusterType, typename FRAME_TYPE, typename PEDESTAL_TYPE>
 struct StreamContext {
     cudaStream_t stream = nullptr;
     FRAME_TYPE *d_frame = nullptr;
-    PEDESTAL_TYPE *d_pd_mean = nullptr;
-    PEDESTAL_TYPE *d_pd_sum = nullptr;
-    PEDESTAL_TYPE *d_pd_sum2 = nullptr;
+    float *d_pd_mean = nullptr; // always float on device; host stays double
+    float *d_pd_sum = nullptr;
+    float *d_pd_sum2 = nullptr;
     uint8_t *d_output = nullptr; // [uint32_t count | ClusterType clusters[max]]
 };
 
@@ -145,12 +147,9 @@ class ClusterFinderCUDA {
             CUDA_CHECK(
                 cudaStreamCreateWithFlags(&sc.stream, cudaStreamNonBlocking));
             CUDA_CHECK(cudaMalloc(&sc.d_frame, m_image_bytes));
-            CUDA_CHECK(cudaMalloc(&sc.d_pd_mean,
-                                  m_image_size * sizeof(PEDESTAL_TYPE)));
-            CUDA_CHECK(
-                cudaMalloc(&sc.d_pd_sum, m_image_size * sizeof(PEDESTAL_TYPE)));
-            CUDA_CHECK(cudaMalloc(&sc.d_pd_sum2,
-                                  m_image_size * sizeof(PEDESTAL_TYPE)));
+            CUDA_CHECK(cudaMalloc(&sc.d_pd_mean, m_image_size * sizeof(float)));
+            CUDA_CHECK(cudaMalloc(&sc.d_pd_sum, m_image_size * sizeof(float)));
+            CUDA_CHECK(cudaMalloc(&sc.d_pd_sum2, m_image_size * sizeof(float)));
             CUDA_CHECK(cudaMalloc(&sc.d_output, m_output_bytes_per_frame));
         }
     }
@@ -322,8 +321,7 @@ class ClusterFinderCUDA {
                 sc.d_output + m_clusters_offset);
             CUDA_CHECK(
                 cudaEventRecord(m_kernel_start_pool[frame_idx], sc.stream));
-            device::find_clusters_in_single_frame<ClusterType, FRAME_TYPE,
-                                                  PEDESTAL_TYPE>
+            device::find_clusters_in_single_frame<ClusterType, FRAME_TYPE>
                 <<<grid, block, shmem_bytes, sc.stream>>>(
                     sc.d_frame, sc.d_pd_mean, sc.d_pd_sum, sc.d_pd_sum2,
                     n_pd_samples, m_nSigma, nrows, ncols, d_clusters,
@@ -357,8 +355,9 @@ class ClusterFinderCUDA {
             if (n_found > 0) {
                 const auto *src = reinterpret_cast<const ClusterType *>(
                     static_cast<const char *>(h_slot) + m_clusters_offset);
-                for (uint32_t i = 0; i < n_found; ++i)
-                    results[frame_idx].push_back(src[i]);
+                results[frame_idx].resize(n_found);
+                std::memcpy(results[frame_idx].data(), src,
+                            n_found * sizeof(ClusterType));
             }
 
             float kernel_ms = 0.0f;
@@ -389,20 +388,28 @@ class ClusterFinderCUDA {
      * host pedestal has been updated.
      */
     void sync_pedestal_to_device() {
-        // These return-by-value NDArrays must stay alive until the async
-        // copies complete, so we synchronise at the end before they go out
-        // of scope.
         NDArray<PEDESTAL_TYPE, 2> h_mean = m_pedestal.mean();
         NDArray<PEDESTAL_TYPE, 2> h_sum = m_pedestal.get_sum();
         NDArray<PEDESTAL_TYPE, 2> h_sum2 = m_pedestal.get_sum2();
 
-        const size_t bytes = m_image_size * sizeof(PEDESTAL_TYPE);
+        // Host accumulates in double for precision; cast to float for device
+        // to halve global-memory bandwidth and eliminate FP64 arithmetic.
+        std::vector<float> f_mean(m_image_size);
+        std::vector<float> f_sum(m_image_size);
+        std::vector<float> f_sum2(m_image_size);
+        for (size_t i = 0; i < m_image_size; ++i) {
+            f_mean[i] = static_cast<float>(h_mean.data()[i]);
+            f_sum[i] = static_cast<float>(h_sum.data()[i]);
+            f_sum2[i] = static_cast<float>(h_sum2.data()[i]);
+        }
+
+        const size_t bytes = m_image_size * sizeof(float);
         for (auto &sc : v_sc) {
-            CUDA_CHECK(cudaMemcpyAsync(sc.d_pd_mean, h_mean.data(), bytes,
+            CUDA_CHECK(cudaMemcpyAsync(sc.d_pd_mean, f_mean.data(), bytes,
                                        cudaMemcpyHostToDevice, sc.stream));
-            CUDA_CHECK(cudaMemcpyAsync(sc.d_pd_sum, h_sum.data(), bytes,
+            CUDA_CHECK(cudaMemcpyAsync(sc.d_pd_sum, f_sum.data(), bytes,
                                        cudaMemcpyHostToDevice, sc.stream));
-            CUDA_CHECK(cudaMemcpyAsync(sc.d_pd_sum2, h_sum2.data(), bytes,
+            CUDA_CHECK(cudaMemcpyAsync(sc.d_pd_sum2, f_sum2.data(), bytes,
                                        cudaMemcpyHostToDevice, sc.stream));
         }
         for (auto &sc : v_sc)

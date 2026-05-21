@@ -312,6 +312,12 @@ int main(int argc, char *argv[]) {
         COLS = first_frame.cols();
     }
 
+    constexpr size_t MAX_CLUSTERS_PER_FRAME = 2048;
+
+    // Parameters for batched / mutli-stream runs
+    constexpr size_t BATCH_SIZE = 2000;
+    constexpr int N_STREAMS = 5;
+
     printf("=== Cluster Finder: CPU vs CUDA ===\n");
     printf("Detector:  %zu x %zu\n", ROWS, COLS);
     printf("Cluster:   %d x %d\n", ClusterType::cluster_size_x,
@@ -474,11 +480,8 @@ int main(int argc, char *argv[]) {
     // --- Batched H2D + multi-stream (enable this block and disable the one
     //     above to benchmark the batched path against the CPU results) ---
     {
-        constexpr size_t BATCH_SIZE = 2000;
-        constexpr int N_STREAMS = 5;
-
         aare::ClusterFinderCUDA<ClusterType, FRAME_TYPE, PEDESTAL_TYPE> cuda_cf(
-            {ROWS, COLS}, nSigma, 4096, N_STREAMS);
+            {ROWS, COLS}, nSigma, MAX_CLUSTERS_PER_FRAME, N_STREAMS);
 
         feed_pedestal(cuda_cf, pedestal_frames);
 
@@ -645,11 +648,9 @@ int main(int argc, char *argv[]) {
 
         // --- GPU benchmark (batched + multi-streamed) ---
         {
-            constexpr size_t BATCH_SIZE = 2000;
-            constexpr int N_STREAMS = 5;
-
             aare::ClusterFinderCUDA<ClusterType, FRAME_TYPE, PEDESTAL_TYPE>
-                cuda_cf({ROWS, COLS}, nSigma, 4096, N_STREAMS);
+                cuda_cf({ROWS, COLS}, nSigma, MAX_CLUSTERS_PER_FRAME,
+                        N_STREAMS);
             feed_pedestal(cuda_cf, pedestal_frames);
 
             // Build one contiguous batch of BATCH_SIZE copies of bench_frame.
