@@ -169,7 +169,11 @@ if(AARE_FETCH_MINUIT2)
   set(BUILD_TESTING
       OFF
       CACHE BOOL "")
+  set(MINUIT2_INSTALL
+      ON
+      CACHE BOOL "")
   FetchContent_MakeAvailable(Minuit2)
+  
   set_property(TARGET Minuit2Math PROPERTY POSITION_INDEPENDENT_CODE ON)
   set_property(TARGET Minuit2 PROPERTY POSITION_INDEPENDENT_CODE ON)
 else()
@@ -238,17 +242,8 @@ if(AARE_FETCH_FMT)
   set(FMT_INSTALL
       ON
       CACHE BOOL "")
-  # set(FMT_CMAKE_DIR "")
   FetchContent_MakeAvailable(fmt)
   set_property(TARGET fmt PROPERTY POSITION_INDEPENDENT_CODE ON)
-  install(
-    TARGETS fmt
-    EXPORT ${project}-targets
-    LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR}
-    ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR}
-    RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR}
-    INCLUDES
-    DESTINATION ${CMAKE_INSTALL_INCLUDEDIR})
 else()
   find_package(fmt 6 REQUIRED)
 endif()
@@ -261,10 +256,6 @@ if(AARE_FETCH_JSON)
       ON
       CACHE BOOL "")
   FetchContent_MakeAvailable(json)
-  set(NLOHMANN_JSON_TARGET_NAME nlohmann_json)
-
-  install(TARGETS nlohmann_json EXPORT "${TARGETS_EXPORT_NAME}")
-  message(STATUS "target: ${NLOHMANN_JSON_TARGET_NAME}")
 else()
   find_package(nlohmann_json 3.11.3 REQUIRED)
 endif()
