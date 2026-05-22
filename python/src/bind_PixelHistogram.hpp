@@ -43,7 +43,7 @@ void define_pixel_histogram_bindings(py::module &m) {
 
         .def("hdata",
              [](const PixelHistogram &self) {
-                 auto ptr = new NDArray<int32_t, 3>(self.hdata());
+                 auto ptr = new NDArray<PixelHistogram::StorageType, 3>(self.hdata());
                  return return_image_data(ptr);
              },
              R"(
@@ -55,7 +55,7 @@ void define_pixel_histogram_bindings(py::module &m) {
 
         .def("bin_centers",
              [](const PixelHistogram &self) {
-                 auto ptr = new NDArray<double, 1>(self.bin_centers());
+                 auto ptr = new NDArray<PixelHistogram::AxisType, 1>(self.bin_centers());
                  return return_image_data(ptr);
              },
              R"(
@@ -66,7 +66,7 @@ void define_pixel_histogram_bindings(py::module &m) {
              )")
         .def("bin_edges",
              [](const PixelHistogram &self) {
-                 auto ptr = new NDArray<double, 1>(self.bin_edges());
+                 auto ptr = new NDArray<PixelHistogram::AxisType, 1>(self.bin_edges());
                  return return_image_data(ptr);
              },
              R"(

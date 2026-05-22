@@ -8,21 +8,26 @@
 namespace bh = boost::histogram;
 
 namespace aare {
-class PixelHistogram{
+class PixelHistogram {
+  public:
+    using StorageType = uint16_t;
+    using AxisType = float;
+
+  private:
     using Axes = std::tuple<
-    bh::axis::regular<double, bh::use_default, bh::use_default, bh::axis::option::none_t>,
-    bh::axis::integer<int, bh::use_default, bh::axis::option::none_t>,
-    bh::axis::integer<int, bh::use_default, bh::axis::option::none_t>
-    >;
-    using Hist = bh::histogram<Axes, bh::dense_storage<int32_t>>;
+        bh::axis::regular<AxisType, bh::use_default, bh::use_default,
+                          bh::axis::option::none_t>,
+        bh::axis::integer<int, bh::use_default, bh::axis::option::none_t>,
+        bh::axis::integer<int, bh::use_default, bh::axis::option::none_t>>;
+    using Hist = bh::histogram<Axes, bh::dense_storage<StorageType>>;
     Hist hist_;
-    
-    public:
+
+  public:
     PixelHistogram(int rows, int cols, int n_bins, double xmin, double xmax);
-    void fill(const NDView<double,2>& image);
-    NDArray<int32_t,3> hdata() const;
-    NDArray<double,1> bin_centers() const;
-    NDArray<double,1> bin_edges() const;
+    void fill(const NDView<double, 2> &image);
+    NDArray<StorageType, 3> hdata() const;
+    NDArray<AxisType, 1> bin_centers() const;
+    NDArray<AxisType, 1> bin_edges() const;
 };
 
 } // namespace aare
