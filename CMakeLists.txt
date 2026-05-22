@@ -173,7 +173,7 @@ if(AARE_FETCH_MINUIT2)
       ON
       CACHE BOOL "")
   FetchContent_MakeAvailable(Minuit2)
-  
+
   set_property(TARGET Minuit2Math PROPERTY POSITION_INDEPENDENT_CODE ON)
   set_property(TARGET Minuit2 PROPERTY POSITION_INDEPENDENT_CODE ON)
 else()
