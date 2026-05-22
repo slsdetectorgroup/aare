@@ -35,6 +35,22 @@ void define_ClusterVector(py::module &m, const std::string &typestr) {
 
         .def(py::init()) // TODO change!!!
 
+        .def(
+            "__call__",
+            [](ClusterVector<ClusterType> &self, py::array_t<bool> mask) {
+                return self(make_view_1d(mask));
+            },
+            py::arg("mask"), R"(
+            Create a copy of the clustervector and apply a boolean mask to the ClusterVector.
+
+            Parameters
+            ----------
+
+            mask : 1d boolean numpy array
+                Mask to apply to the ClusterVector. Must be the same length as the number of clusters in the ClusterVector. 
+
+            )")
+
         .def("push_back",
              [](ClusterVector<ClusterType> &self, const ClusterType &cluster) {
                  self.push_back(cluster);

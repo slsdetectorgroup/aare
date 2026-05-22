@@ -5,12 +5,16 @@ python:
 
 c_compiler:
   - gcc                        # [linux]
+  - clang                      # [osx]
 
 c_stdlib:
   - sysroot                    # [linux]
+  - macosx_deployment_target   # [osx]
 
 cxx_compiler:
   - gxx                        # [linux]
+  - clangxx                    # [osx]
 
-c_stdlib_version:              # [linux]
+c_stdlib_version:              
   - 2.17                       # [linux]
+  - "11.0"                     # [osx]

@@ -11,17 +11,20 @@
 
 namespace py = pybind11;
 
+// clang-format off
 #define REGISTER_INTERPOLATOR_ETA2(T, N, M, U)                                 \
     register_interpolate<T, N, M, U, aare::calculate_full_eta2<T, N, M, U>>(   \
         interpolator, "_full_eta2", "full eta2");                              \
     register_interpolate<T, N, M, U, aare::calculate_eta2<T, N, M, U>>(        \
-        interpolator, "", "eta2");
+        interpolator, "", "eta2");                                             \
+    register_interpolate_custom_eta<T, N, M, U>(interpolator);
 
 #define REGISTER_INTERPOLATOR_ETA3(T, N, M, U)                                 \
     register_interpolate<T, N, M, U, aare::calculate_eta3<T, N, M, U>>(        \
         interpolator, "_eta3", "full eta3");                                   \
     register_interpolate<T, N, M, U, aare::calculate_cross_eta3<T, N, M, U>>(  \
         interpolator, "_cross_eta3", "cross eta3");
+// clang-format on 
 
 template <typename Type, uint8_t CoordSizeX, uint8_t CoordSizeY,
           typename CoordType = uint16_t, auto EtaFunction>
@@ -48,6 +51,34 @@ void register_interpolate(py::class_<aare::Interpolator> &interpolator,
         docstring.c_str(), py::arg("cluster_vector"));
 }
 
+template <typename Type, uint8_t ClusterSizeX, uint8_t ClusterSizeY,
+          typename CoordType = uint16_t>
+void register_interpolate_custom_eta(
+    py::class_<aare::Interpolator> &interpolator) {
+
+    using ClusterType = Cluster<Type, ClusterSizeX, ClusterSizeY, CoordType>;
+
+    interpolator.def(
+        "interpolate",
+        [](aare::Interpolator &self, const ClusterVector<ClusterType> &clusters,
+           const std::vector<Eta2<Type>> &etas) {
+            auto photons = self.interpolate<Type, ClusterSizeX, ClusterSizeY, CoordType>(clusters, etas);
+            auto *ptr = new std::vector<Photon>{std::move(photons)};
+            return return_vector(ptr);
+        },
+        R"(
+        Interpolation based on custom eta values provided by the user. 
+
+        Args:
+        cluster_vector: vector of clusters to interpolate
+        etas: vector of eta values for each cluster (must be in the same order as the clusters)
+
+        Returns:
+        interpolated photons
+        )",
+        py::arg("cluster_vector"), py::arg("etas"));
+}
+
 template <typename Type>
 void register_transform_eta_values(
     py::class_<aare::Interpolator> &interpolator) {
@@ -64,6 +95,8 @@ void register_transform_eta_values(
 void define_interpolation_bindings(py::module &m) {
 
     PYBIND11_NUMPY_DTYPE(aare::Photon, x, y, energy);
+
+    PYBIND11_NUMPY_DTYPE(aare::Coordinate2D, x, y);
 
     auto interpolator =
         py::class_<aare::Interpolator>(m, "Interpolator")

@@ -76,7 +76,12 @@ void define_ClusterFinderMT(py::module &m, const std::string &typestr) {
                 *arr = self.noise(thread_index);
                 return return_image_data(arr);
             },
-            py::arg("thread_index") = 0);
+            py::arg("thread_index") = 0)
+
+        .def("set_nSigma",
+             &ClusterFinderMT<ClusterType, uint16_t, pd_type>::set_nSigma,
+             py::arg("nSigma"),
+             R"(sets the number of sigma for all cluster finders.)");
 }
 
 #pragma GCC diagnostic pop

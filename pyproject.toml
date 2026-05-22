@@ -19,11 +19,13 @@ dependencies = [
 license = { file = "LICENSE" }
 
 
-[tool.cibuildwheel]
 
+[tool.cibuildwheel.linux]
 build = "cp{312,313,314}-manylinux_x86_64"
 
-
+[tool.cibuildwheel.macos]
+build = "cp{312,313,314}-macosx_*"
+archs = ["arm64"]
 
 
 [tool.scikit-build]

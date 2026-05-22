@@ -10,7 +10,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        platform: [ubuntu-latest] # macos-12, windows-2019]
+        platform: [ubuntu-latest, macos-latest] # macos-12, windows-2019]
         python-version: ["3.12",]
 
     runs-on: ${{ matrix.platform }}
@@ -21,10 +21,10 @@ jobs:
         shell: "bash -l {0}"
 
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
 
       - name: Get conda
-        uses: conda-incubator/setup-miniconda@v3
+        uses: conda-incubator/setup-miniconda@v4
         with:
           python-version: ${{ matrix.python-version }}
           environment-file: etc/dev-env.yml
@@ -38,5 +38,5 @@ jobs:
       - name: Build
         env:
           CONDA_TOKEN: ${{ secrets.CONDA_TOKEN }}
-        run: conda build conda-recipe --user slsdetectorgroup --token ${CONDA_TOKEN}
+        run: conda-build conda-recipe --user slsdetectorgroup --token ${CONDA_TOKEN}
 

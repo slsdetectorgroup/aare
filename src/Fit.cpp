@@ -1,12 +1,14 @@
 // SPDX-License-Identifier: MPL-2.0
 #include "aare/Fit.hpp"
+#include "aare/Chi2.hpp"
+#include "aare/Models.hpp"
 #include "aare/utils/par.hpp"
 #include "aare/utils/task.hpp"
+#include <array>
 #include <lmcurve2.h>
 #include <lmfit.hpp>
 #include <thread>
-
-#include <array>
+#include <type_traits>
 
 namespace aare {
 
@@ -65,7 +67,7 @@ NDArray<double, 1> scurve2(NDView<double, 1> x, NDView<double, 1> par) {
 } // namespace func
 
 NDArray<double, 1> fit_gaus(NDView<double, 1> x, NDView<double, 1> y) {
-    NDArray<double, 1> result = gaus_init_par(x, y);
+    NDArray<double, 1> result = model::Gaussian::estimate_par(x, y);
     lm_status_struct status;
 
     lmcurve(result.size(), result.data(), x.size(), x.data(), y.data(),
@@ -95,44 +97,6 @@ NDArray<double, 3> fit_gaus(NDView<double, 1> x, NDView<double, 3> y,
     return result;
 }
 
-std::array<double, 3> gaus_init_par(const NDView<double, 1> x,
-                                    const NDView<double, 1> y) {
-    std::array<double, 3> start_par{0, 0, 0};
-    auto e = std::max_element(y.begin(), y.end());
-    auto idx = std::distance(y.begin(), e);
-
-    start_par[0] = *e; // For amplitude we use the maximum value
-    start_par[1] =
-        x[idx]; // For the mean we use the x value of the maximum value
-
-    // For sigma we estimate the fwhm and divide by 2.35
-    // assuming equally spaced x values
-    auto delta = x[1] - x[0];
-    start_par[2] = std::count_if(y.begin(), y.end(),
-                                 [e](double val) { return val > *e / 2; }) *
-                   delta / 2.35;
-
-    return start_par;
-}
-
-std::array<double, 2> pol1_init_par(const NDView<double, 1> x,
-                                    const NDView<double, 1> y) {
-    // Estimate the initial parameters for the fit
-    std::array<double, 2> start_par{0, 0};
-
-    auto y2 = std::max_element(y.begin(), y.end());
-    auto x2 = x[std::distance(y.begin(), y2)];
-    auto y1 = std::min_element(y.begin(), y.end());
-    auto x1 = x[std::distance(y.begin(), y1)];
-
-    start_par[0] =
-        (*y2 - *y1) / (x2 - x1); // For amplitude we use the maximum value
-    start_par[1] =
-        *y1 - ((*y2 - *y1) / (x2 - x1)) *
-                  x1; // For the mean we use the x value of the maximum value
-    return start_par;
-}
-
 void fit_gaus(NDView<double, 1> x, NDView<double, 1> y, NDView<double, 1> y_err,
               NDView<double, 1> par_out, NDView<double, 1> par_err_out,
               double &chi2) {
@@ -156,7 +120,7 @@ void fit_gaus(NDView<double, 1> x, NDView<double, 1> y, NDView<double, 1> y_err,
     // } lm_status_struct;
 
     lm_status_struct status;
-    par_out = gaus_init_par(x, y);
+    par_out = model::Gaussian::estimate_par(x, y);
     std::array<double, 9> cov{0, 0, 0, 0, 0, 0, 0, 0, 0};
 
     // void lmcurve2( const int n_par, double *par, double *parerr, double
@@ -233,7 +197,7 @@ void fit_pol1(NDView<double, 1> x, NDView<double, 1> y, NDView<double, 1> y_err,
     }
 
     lm_status_struct status;
-    par_out = pol1_init_par(x, y);
+    par_out = model::Pol1::estimate_par(x, y);
     std::array<double, 4> cov{0, 0, 0, 0};
 
     lmcurve2(par_out.size(), par_out.data(), par_err_out.data(), cov.data(),
@@ -280,7 +244,7 @@ NDArray<double, 1> fit_pol1(NDView<double, 1> x, NDView<double, 1> y) {
     // throw std::runtime_error("Data, x, data_err must have the same size "
     //                      "and par_out, par_err_out must have size 2");
     // }
-    NDArray<double, 1> par = pol1_init_par(x, y);
+    NDArray<double, 1> par = model::Pol1::estimate_par(x, y);
 
     lm_status_struct status;
     lmcurve(par.size(), par.data(), x.size(), x.data(), y.data(),
@@ -312,35 +276,9 @@ NDArray<double, 3> fit_pol1(NDView<double, 1> x, NDView<double, 3> y,
 
 // ~~ S-CURVES ~~
 
-// SCURVE --
-std::array<double, 6> scurve_init_par(const NDView<double, 1> x,
-                                      const NDView<double, 1> y) {
-    // Estimate the initial parameters for the fit
-    std::array<double, 6> start_par{0, 0, 0, 0, 0, 0};
-
-    auto ymax = std::max_element(y.begin(), y.end());
-    auto ymin = std::min_element(y.begin(), y.end());
-    start_par[4] = *ymin + (*ymax - *ymin) / 2;
-
-    // Find the first x where the corresponding y value is above the threshold
-    // (start_par[4])
-    for (ssize_t i = 0; i < y.size(); ++i) {
-        if (y[i] >= start_par[4]) {
-            start_par[2] = x[i];
-            break; // Exit the loop after finding the first valid x
-        }
-    }
-
-    start_par[3] = 2 * sqrt(start_par[2]);
-    start_par[0] = 100;
-    start_par[1] = 0.25;
-    start_par[5] = 1;
-    return start_par;
-}
-
 // - No error
 NDArray<double, 1> fit_scurve(NDView<double, 1> x, NDView<double, 1> y) {
-    NDArray<double, 1> result = scurve_init_par(x, y);
+    NDArray<double, 1> result = model::RisingScurve::estimate_par(x, y);
     lm_status_struct status;
 
     lmcurve(result.size(), result.data(), x.size(), x.data(), y.data(),
@@ -386,7 +324,7 @@ void fit_scurve(NDView<double, 1> x, NDView<double, 1> y,
     }
 
     lm_status_struct status;
-    par_out = scurve_init_par(x, y);
+    par_out = model::RisingScurve::estimate_par(x, y);
     std::array<double, 36> cov = {0}; // size 6x6
     // std::array<double, 4> cov{0, 0, 0, 0};
 
@@ -430,34 +368,9 @@ void fit_scurve(NDView<double, 1> x, NDView<double, 3> y,
 
 // SCURVE2 ---
 
-std::array<double, 6> scurve2_init_par(const NDView<double, 1> x,
-                                       const NDView<double, 1> y) {
-    // Estimate the initial parameters for the fit
-    std::array<double, 6> start_par{0, 0, 0, 0, 0, 0};
-
-    auto ymax = std::max_element(y.begin(), y.end());
-    auto ymin = std::min_element(y.begin(), y.end());
-    start_par[4] = *ymin + (*ymax - *ymin) / 2;
-
-    // Find the first x where the corresponding y value is above the threshold
-    // (start_par[4])
-    for (ssize_t i = 0; i < y.size(); ++i) {
-        if (y[i] <= start_par[4]) {
-            start_par[2] = x[i];
-            break; // Exit the loop after finding the first valid x
-        }
-    }
-
-    start_par[3] = 2 * sqrt(start_par[2]);
-    start_par[0] = 100;
-    start_par[1] = 0.25;
-    start_par[5] = -1;
-    return start_par;
-}
-
 // - No error
 NDArray<double, 1> fit_scurve2(NDView<double, 1> x, NDView<double, 1> y) {
-    NDArray<double, 1> result = scurve2_init_par(x, y);
+    NDArray<double, 1> result = model::FallingScurve::estimate_par(x, y);
     lm_status_struct status;
 
     lmcurve(result.size(), result.data(), x.size(), x.data(), y.data(),
@@ -503,7 +416,7 @@ void fit_scurve2(NDView<double, 1> x, NDView<double, 1> y,
     }
 
     lm_status_struct status;
-    par_out = scurve2_init_par(x, y);
+    par_out = model::FallingScurve::estimate_par(x, y);
     std::array<double, 36> cov = {0}; // size 6x6
     // std::array<double, 4> cov{0, 0, 0, 0};
 

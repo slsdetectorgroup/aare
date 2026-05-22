@@ -94,6 +94,26 @@ class Interpolator {
     interpolate(const ClusterVector<ClusterType> &clusters) const;
 
     /**
+     * @brief interpolates the cluster centers for all clusters to a better
+     * precision
+     * @param clusters clusters of photon hits to interpolate
+     * @param etas precomputed eta values for each cluster (must be in the same
+     * order as the clusters)
+     * @return interpolated photons (photon positions are given as double but
+     * following row column format e.g. x=0, y=0 means top row and first column
+     * of frame) (An interpolated photon position of (1.5, 2.5) corresponds to
+     * an estimated photon hit at the pixel center of pixel (1,2))
+     */
+    template <typename T, uint8_t ClusterSizeX, uint8_t ClusterSizeY,
+              typename CoordType = uint16_t,
+              typename Enable = std::enable_if_t<is_cluster_v<
+                  Cluster<T, ClusterSizeX, ClusterSizeY, CoordType>>>>
+    std::vector<Photon> interpolate(
+        const ClusterVector<Cluster<T, ClusterSizeX, ClusterSizeY, CoordType>>
+            &clusters,
+        const std::vector<Eta2<T>> &etas) const;
+
+    /**
      * @brief transforms the eta values to uniform coordinates based on the CDF
      * ieta_x and ieta_y
      * @tparam eta Eta to transform
@@ -171,11 +191,14 @@ Coordinate2D Interpolator::transform_eta_values(const Eta2<T> &eta) const {
 
     if (static_cast<ssize_t>(ix) >= m_etabinsx.size() - 1 ||
         static_cast<ssize_t>(iy) >= m_etabinsy.size() - 1 ||
-        static_cast<ssize_t>(ie) >= m_energy_bins.size() - 1)
-        throw std::runtime_error(
-            fmt::format("Eta values out of bounds of eta distribution: eta.x = "
-                        "{:.4f}, eta.y = {:.4f}, energy = {:.4f}",
-                        eta.x, eta.y, eta.sum));
+        static_cast<ssize_t>(ie) >= m_energy_bins.size() - 1) {
+        throw std::runtime_error(fmt::format(
+            "Eta values (eta.x = {:4f}, eta.y = {:4f}, energy = {}) out of "
+            "bounds of eta distribution with largest values: (eta.x = {:4f}, "
+            "eta.y = {:4f}, energy = {:4f})",
+            eta.x, eta.y, eta.sum, *(m_etabinsx.end() - 1),
+            *(m_etabinsy.end() - 1), *(m_energy_bins.end() - 1)));
+    }
 
     // TODO: bilinear interpolation only works if all bins have a size > 1 -
     // otherwise bilinear interpolation with zero values which skew the
@@ -203,15 +226,15 @@ Interpolator::interpolate(const ClusterVector<ClusterType> &clusters) const {
         photon.y = cluster.y;
         photon.energy = static_cast<decltype(photon.energy)>(eta.sum);
 
+        Coordinate2D uniform_coordinates{};
+
         try {
             // check if eta values are within bounds
-            transform_eta_values(eta);
+            uniform_coordinates = transform_eta_values(eta);
         } catch (const std::runtime_error &e) {
             throw std::runtime_error(
                 fmt::format("{} for cluster: {}", e.what(), cluster_index));
         }
-
-        auto uniform_coordinates = transform_eta_values(eta);
 
         if (EtaFunction == &calculate_eta2<typename ClusterType::value_type,
                                            ClusterType::cluster_size_x,
@@ -255,6 +278,50 @@ Interpolator::interpolate(const ClusterVector<ClusterType> &clusters) const {
         }
 
         ++cluster_index;
+
+        photons.push_back(photon);
+    }
+
+    return photons;
+}
+
+template <typename T, uint8_t ClusterSizeX, uint8_t ClusterSizeY,
+          typename CoordType, typename Enable>
+std::vector<Photon> Interpolator::interpolate(
+    const ClusterVector<Cluster<T, ClusterSizeX, ClusterSizeY, CoordType>>
+        &clusters,
+    const std::vector<Eta2<T>> &etas) const {
+
+    if (clusters.size() != etas.size()) {
+        throw std::runtime_error(
+            fmt::format("Size of clusters and precomputed etas must be the "
+                        "same, but got {} clusters and {} etas",
+                        clusters.size(), etas.size()));
+    }
+
+    std::vector<Photon> photons;
+    photons.reserve(clusters.size());
+
+    for (size_t i = 0; i < clusters.size(); ++i) {
+        const auto &cluster = clusters[i];
+        const auto &eta = etas[i];
+
+        Photon photon;
+        photon.x = cluster.x;
+        photon.y = cluster.y;
+        photon.energy = static_cast<decltype(photon.energy)>(eta.sum);
+
+        Coordinate2D uniform_coordinates{};
+        try {
+            // check if eta values are within bounds
+            uniform_coordinates = transform_eta_values(eta);
+        } catch (const std::runtime_error &e) {
+            throw std::runtime_error(
+                fmt::format("{} for cluster: {}", e.what(), i));
+        }
+
+        photon.x += uniform_coordinates.x;
+        photon.y += uniform_coordinates.y;
 
         photons.push_back(photon);
     }

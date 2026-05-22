@@ -23,7 +23,7 @@ template <typename ClusterType = Cluster<int32_t, 3, 3>,
           typename = std::enable_if_t<no_2x2_cluster<ClusterType>::value>>
 class ClusterFinder {
     Shape<2> m_image_size;
-    const PEDESTAL_TYPE m_nSigma;
+    PEDESTAL_TYPE m_nSigma;
     const PEDESTAL_TYPE c2;
     const PEDESTAL_TYPE c3;
     Pedestal<PEDESTAL_TYPE> m_pedestal;
@@ -52,6 +52,10 @@ class ClusterFinder {
                       << "image_size: " << image_size[0] << "x" << image_size[1]
                       << ", nSigma: " << nSigma << ", capacity: " << capacity;
     }
+
+    void set_nSigma(PEDESTAL_TYPE nSigma) { m_nSigma = nSigma; }
+
+    PEDESTAL_TYPE get_nSigma() const { return m_nSigma; }
 
     void push_pedestal_frame(NDView<FRAME_TYPE, 2> frame) {
         m_pedestal.push(frame);

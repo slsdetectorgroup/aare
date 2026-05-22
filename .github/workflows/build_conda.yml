@@ -1,16 +1,20 @@
-name: Build pkgs and deploy if on main
+name: Build conda pkgs
 
 on:
   push:
     branches:
-     - developer
+      - main
+  pull_request:
+    branches:
+      - main
+
 
 jobs:
   build:
     strategy:
       fail-fast: false
       matrix:
-        platform: [ubuntu-latest, ] # macos-12, windows-2019]
+        platform: [ubuntu-latest, macos-latest] 
         python-version: ["3.12",]
 
     runs-on: ${{ matrix.platform }}
@@ -21,10 +25,10 @@ jobs:
         shell: "bash -l {0}"
 
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
 
       - name: Get conda
-        uses: conda-incubator/setup-miniconda@v3
+        uses: conda-incubator/setup-miniconda@v4
         with:
           python-version: ${{ matrix.python-version }}
           environment-file: etc/dev-env.yml
@@ -32,10 +36,9 @@ jobs:
           channels: conda-forge
           conda-remove-defaults: "true"
 
-  
       - name: Disable upload
         run: conda config --set anaconda_upload no
 
       - name: Build
-        run: conda build conda-recipe 
+        run: conda-build conda-recipe 
 
