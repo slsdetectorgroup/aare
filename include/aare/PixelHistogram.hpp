@@ -28,6 +28,8 @@ class PixelHistogram {
     int rows_;
     int cols_;
     int n_threads_;
+    const AxisType xmin_;
+    const AxisType xmax_;
     std::vector<Hist> partial_hists_;
     
     // Thread pool members
@@ -35,7 +37,7 @@ class PixelHistogram {
     std::mutex work_mutex_;
     std::condition_variable work_cv_;
     std::condition_variable done_cv_;
-    const NDView<double, 2>* current_image_;
+    const NDView<AxisType, 2>* current_image_;
     std::atomic<int> completed_threads_;
     std::atomic<bool> stop_workers_;
     int work_generation_;
@@ -48,7 +50,7 @@ class PixelHistogram {
   public:
     PixelHistogram(int rows, int cols, int n_bins, double xmin, double xmax, int n_threads = 1);
     ~PixelHistogram();
-    void fill(const NDView<double, 2> &image);
+    void fill(const NDView<AxisType, 2> &image);
     NDArray<StorageType, 3> hdata() const;
     NDArray<AxisType, 1> bin_centers() const;
     NDArray<AxisType, 1> bin_edges() const;

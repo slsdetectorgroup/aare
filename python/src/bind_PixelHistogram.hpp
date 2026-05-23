@@ -30,7 +30,7 @@ void define_pixel_histogram_bindings(py::module &m) {
 
         .def("fill",
              [](PixelHistogram &self,
-                py::array_t<double, py::array::forcecast> image) {
+                py::array_t<PixelHistogram::AxisType, 0> image) {
                  auto view = make_view_2d(image);
                  self.fill(view);
              },
@@ -38,9 +38,9 @@ void define_pixel_histogram_bindings(py::module &m) {
              Fill the histogram with image data.
              
              Args:
-                 image: A 2D numpy array of pixel values (dtype: float64)
+                 image: A 2D numpy array of pixel values (dtype: float32)
              )",
-             py::arg("image"))
+             py::arg("image").noconvert())
 
         .def("hdata",
              [](const PixelHistogram &self) {

@@ -12,7 +12,7 @@ namespace aare {
 
 
 PixelHistogram::PixelHistogram(int rows, int cols, int n_bins, double xmin, double xmax, int n_threads):
-             rows_(rows), cols_(cols), n_threads_(n_threads), current_image_(nullptr),
+             rows_(rows), cols_(cols), n_threads_(n_threads), xmin_(xmin), xmax_(xmax), current_image_(nullptr),
              completed_threads_(0), stop_workers_(false), work_generation_(0) {
     if (rows_ < 1 || cols_ < 1 || n_bins < 1) {
         throw std::invalid_argument("PixelHistogram requires positive rows, cols and bins");
@@ -81,7 +81,7 @@ void PixelHistogram::worker_loop(int thread_id) {
         }
         
         // Get work assignment
-        const NDView<double, 2>& image = *current_image_;
+        const NDView<AxisType, 2>& image = *current_image_;
         const int generation = work_generation_;
         const int first_row = row_start(thread_id);
         const int local_rows = row_count(thread_id);
@@ -92,7 +92,11 @@ void PixelHistogram::worker_loop(int thread_id) {
         for (int local_row = 0; local_row < local_rows; ++local_row) {
             const auto row = static_cast<ssize_t>(first_row + local_row);
             for (ssize_t col = 0; col < image.shape(1); ++col) {
-                partial_hists_[thread_id](image(row, col), col, local_row);
+                const auto val = image(row, col);
+                if (val < xmin_ || val >= xmax_) {
+                    continue; // Skip out-of-range values
+                }
+                partial_hists_[thread_id](val, col, local_row);
             }
         }
         
@@ -139,7 +143,7 @@ NDArray<PixelHistogram::StorageType, 3> PixelHistogram::hdata() const {
     return data;
 }
 
-void PixelHistogram::fill(const NDView<double, 2> &image) {
+void PixelHistogram::fill(const NDView<AxisType, 2> &image) {
     if (image.shape(0) != rows_ || image.shape(1) != cols_) {
         throw std::invalid_argument("PixelHistogram image shape does not match constructor shape");
     }
