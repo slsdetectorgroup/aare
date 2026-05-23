@@ -13,7 +13,7 @@ using namespace ::aare;
 void define_pixel_histogram_bindings(py::module &m) {
     py::class_<PixelHistogram>(m, "PixelHistogram",
                                 "A histogram for pixel-wise statistics")
-        .def(py::init<int, int, int, double, double>(),
+        .def(py::init<int, int, int, double, double, int>(),
              R"(
              Initialize a PixelHistogram.
              
@@ -23,9 +23,10 @@ void define_pixel_histogram_bindings(py::module &m) {
                  n_bins: Number of histogram bins
                  xmin: Minimum value for histogram range
                  xmax: Maximum value for histogram range
+                 n_threads: Number of threads for parallel filling (default: 1)
              )",
              py::arg("rows"), py::arg("cols"), py::arg("n_bins"),
-             py::arg("xmin"), py::arg("xmax"))
+             py::arg("xmin"), py::arg("xmax"), py::arg("n_threads") = 1)
 
         .def("fill",
              [](PixelHistogram &self,
