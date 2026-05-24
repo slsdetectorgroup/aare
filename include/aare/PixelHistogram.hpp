@@ -31,7 +31,12 @@ class PixelHistogram {
     const AxisType xmin_;
     const AxisType xmax_;
     std::vector<Hist> partial_hists_;
-    
+    // Cumulative row offsets so that thread t owns rows
+    //     [row_offsets_[t], row_offsets_[t + 1])
+    // Length is n_threads_ + 1; partition is balanced (the first
+    // rows_ % n_threads_ threads get one extra row each).
+    std::vector<int> row_offsets_;
+
     // Thread pool members
     std::vector<std::thread> workers_;
     std::mutex work_mutex_;
@@ -41,7 +46,7 @@ class PixelHistogram {
     std::atomic<int> completed_threads_;
     std::atomic<bool> stop_workers_;
     int work_generation_;
-    
+
     // Private worker thread method
     void worker_loop(int thread_id);
     int row_start(int thread_id) const;

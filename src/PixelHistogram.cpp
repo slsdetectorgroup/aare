@@ -23,7 +23,23 @@ PixelHistogram::PixelHistogram(int rows, int cols, int n_bins, double xmin, doub
 
     n_threads_ = std::min(n_threads_, rows_);
 
+    // Build a balanced row partition. With base = rows_ / n_threads_ and
+    // extra = rows_ % n_threads_, the first `extra` threads get base + 1
+    // rows each and the rest get `base` rows. This avoids the
+    // ceil(rows/n_threads) scheme leaving trailing threads with zero or
+    // negative row counts (e.g. rows=17, n_threads=8).
+    row_offsets_.resize(n_threads_ + 1);
+    const int base  = rows_ / n_threads_;
+    const int extra = rows_ % n_threads_;
+    int offset = 0;
+    for (int i = 0; i < n_threads_; ++i) {
+        row_offsets_[i] = offset;
+        offset += base + (i < extra ? 1 : 0);
+    }
+    row_offsets_[n_threads_] = offset; // == rows_ by construction
+
     // Initialize partial histograms for each thread
+    partial_hists_.reserve(n_threads_);
     for (int i = 0; i < n_threads_; ++i) {
         const auto local_rows = row_count(i);
         partial_hists_.emplace_back(
@@ -33,7 +49,7 @@ PixelHistogram::PixelHistogram(int rows, int cols, int n_bins, double xmin, doub
             bh::axis::integer<int, bh::use_default, bh::axis::option::none_t>(0, local_rows, "x")
         );
     }
-    
+
     // Spawn worker threads
     for (int i = 0; i < n_threads_; ++i) {
         workers_.emplace_back([this, i]() { this->worker_loop(i); });
@@ -57,14 +73,11 @@ PixelHistogram::~PixelHistogram() {
 }
 
 int PixelHistogram::row_start(int thread_id) const {
-    const int rows_per_thread = (rows_ + n_threads_ - 1) / n_threads_;
-    return thread_id * rows_per_thread;
+    return row_offsets_[thread_id];
 }
 
 int PixelHistogram::row_count(int thread_id) const {
-    const int start = row_start(thread_id);
-    const int end = std::min(start + (rows_ + n_threads_ - 1) / n_threads_, rows_);
-    return end - start;
+    return row_offsets_[thread_id + 1] - row_offsets_[thread_id];
 }
 
 void PixelHistogram::worker_loop(int thread_id) {
@@ -120,24 +133,22 @@ NDArray<PixelHistogram::StorageType, 3> PixelHistogram::hdata() const {
 
     NDArray<StorageType, 3> data({rows, cols, bins});
 
-    // Merge all partial histograms into data array
-    std::memset(data.data(), 0, data.total_bytes());
-    
+    // Each thread owns a disjoint, contiguous range of rows and its dense
+    // storage layout [local_row][col][bin] is identical to the slice
+    // [first_row .. first_row + local_rows)[col][bin] of `data`. So the
+    // merge is just one bulk copy per thread; no per-element accumulation
+    // and no upfront zeroing of `data` is needed.
+    const size_t pixel_stride = static_cast<size_t>(cols) * bins;
     for (int t = 0; t < n_threads_; ++t) {
         const auto &storage = bh::unsafe_access::storage(partial_hists_[t]);
         const StorageType *partial_data = storage.data();
-        const auto first_row = static_cast<ssize_t>(row_start(t));
-        const auto local_rows = static_cast<ssize_t>(row_count(t));
+        const auto first_row  = static_cast<size_t>(row_start(t));
+        const auto local_rows = static_cast<size_t>(row_count(t));
+        if (local_rows == 0) continue;
 
-        for (ssize_t local_row = 0; local_row < local_rows; ++local_row) {
-            for (ssize_t col = 0; col < cols; ++col) {
-                const auto src_offset = (local_row * cols + col) * bins;
-                const auto dst_offset = ((first_row + local_row) * cols + col) * bins;
-                for (ssize_t bin = 0; bin < bins; ++bin) {
-                    data.data()[dst_offset + bin] += partial_data[src_offset + bin];
-                }
-            }
-        }
+        std::memcpy(data.data() + first_row * pixel_stride,
+                    partial_data,
+                    local_rows * pixel_stride * sizeof(StorageType));
     }
 
     return data;
