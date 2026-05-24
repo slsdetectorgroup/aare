@@ -1,8 +1,10 @@
 #include <catch2/catch_test_macros.hpp>
 #include <catch2/generators/catch_generators.hpp>
 
+#include <chrono>
 #include <cstdint>
 #include <random>
+#include <thread>
 #include <vector>
 
 #include "test_config.hpp"
@@ -200,6 +202,126 @@ TEST_CASE("Random fills match a reference implementation") {
                          << " got=" << h(r, c, b)
                          << " expected=" << expected(r, c, b));
                     CHECK(h(r, c, b) == expected(r, c, b));
+                }
+            }
+        }
+    }
+    CHECK(all_match);
+}
+
+TEST_CASE("Async fill matches sync fill") {
+    // Submit a stream of random frames through fill_async and compare
+    // against the same frames processed by fill() on a separate histogram.
+    constexpr int rows = 19;
+    constexpr int cols = 23;
+    constexpr int n_bins = 16;
+    constexpr float xmin = -1.0f;
+    constexpr float xmax = 3.0f;
+    const int n_threads = GENERATE(1, 2, 4);
+    constexpr int n_frames = 32;
+    // Pick a small queue capacity so the producer trips the backpressure
+    // path at least a few times during the run.
+    constexpr std::size_t max_pending = 4;
+
+    PixelHistogram async_hist(rows, cols, n_bins, xmin, xmax, n_threads, max_pending);
+    PixelHistogram sync_hist(rows, cols, n_bins, xmin, xmax, n_threads);
+
+    std::mt19937 rng(0xA5A5A5A5);
+    std::uniform_real_distribution<float> dist(xmin - 0.25f, xmax + 0.25f);
+
+    for (int f = 0; f < n_frames; ++f) {
+        NDArray<float, 2> img({rows, cols}, 0.0f);
+        for (ssize_t r = 0; r < rows; ++r)
+            for (ssize_t c = 0; c < cols; ++c)
+                img(r, c) = dist(rng);
+        sync_hist.fill(img.view());
+        async_hist.fill_async(std::move(img));
+    }
+    // hdata() calls flush() internally, but exercise the explicit path too.
+    async_hist.flush();
+    CHECK(async_hist.pending() == 0);
+
+    auto a = async_hist.hdata();
+    auto s = sync_hist.hdata();
+    REQUIRE(a.shape(0) == s.shape(0));
+    REQUIRE(a.shape(1) == s.shape(1));
+    REQUIRE(a.shape(2) == s.shape(2));
+
+    bool all_match = true;
+    for (ssize_t r = 0; r < rows && all_match; ++r) {
+        for (ssize_t c = 0; c < cols && all_match; ++c) {
+            for (ssize_t b = 0; b < n_bins && all_match; ++b) {
+                if (a(r, c, b) != s(r, c, b)) {
+                    all_match = false;
+                    INFO("r=" << r << " c=" << c << " b=" << b
+                         << " async=" << a(r, c, b) << " sync=" << s(r, c, b));
+                    CHECK(a(r, c, b) == s(r, c, b));
+                }
+            }
+        }
+    }
+    CHECK(all_match);
+}
+
+TEST_CASE("fill_async with mismatched shape throws") {
+    PixelHistogram hist(8, 8, 16, 0.0, 1.0, 2);
+    NDArray<float, 2> bad({4, 4}, 0.0f);
+    CHECK_THROWS_AS(hist.fill_async(std::move(bad)), std::invalid_argument);
+}
+
+TEST_CASE("Destructor drains pending async fills") {
+    // Submit more frames than the queue can hold so backpressure kicks in,
+    // then immediately let the histogram go out of scope and verify that
+    // the merged hdata() matches the reference computed sequentially.
+    constexpr int rows = 11;
+    constexpr int cols = 7;
+    constexpr int n_bins = 8;
+    constexpr float xmin = 0.0f;
+    constexpr float xmax = 1.0f;
+    constexpr int n_frames = 12;
+    constexpr std::size_t max_pending = 2;
+
+    std::vector<NDArray<float, 2>> frames;
+    frames.reserve(n_frames);
+    std::mt19937 rng(0xDEADBEEF);
+    std::uniform_real_distribution<float> dist(xmin, xmax);
+    for (int f = 0; f < n_frames; ++f) {
+        NDArray<float, 2> img({rows, cols}, 0.0f);
+        for (ssize_t r = 0; r < rows; ++r)
+            for (ssize_t c = 0; c < cols; ++c)
+                img(r, c) = dist(rng);
+        frames.push_back(std::move(img));
+    }
+
+    NDArray<aare::PixelHistogram::StorageType, 3> snapshot({rows, cols, n_bins}, uint16_t{0});
+    {
+        PixelHistogram hist(rows, cols, n_bins, xmin, xmax, 2, max_pending);
+        for (auto& img : frames) {
+            // Move a copy so we can also build the reference below.
+            NDArray<float, 2> copy({rows, cols}, 0.0f);
+            std::memcpy(copy.data(), img.data(), copy.total_bytes());
+            hist.fill_async(std::move(copy));
+        }
+        // No explicit flush(); destructor must drain.
+        // Capture hdata() *after* the loop but inside the scope so it
+        // observes everything that was submitted (hdata flushes too).
+        snapshot = hist.hdata();
+    }
+
+    PixelHistogram reference(rows, cols, n_bins, xmin, xmax, 2);
+    for (const auto& img : frames) reference.fill(img.view());
+    auto expected = reference.hdata();
+
+    bool all_match = true;
+    for (ssize_t r = 0; r < rows && all_match; ++r) {
+        for (ssize_t c = 0; c < cols && all_match; ++c) {
+            for (ssize_t b = 0; b < n_bins && all_match; ++b) {
+                if (snapshot(r, c, b) != expected(r, c, b)) {
+                    all_match = false;
+                    INFO("r=" << r << " c=" << c << " b=" << b
+                         << " got=" << snapshot(r, c, b)
+                         << " expected=" << expected(r, c, b));
+                    CHECK(snapshot(r, c, b) == expected(r, c, b));
                 }
             }
         }

@@ -5,13 +5,17 @@
 #include <boost/histogram/storage_adaptor.hpp>
 #include <boost/histogram/unsafe_access.hpp>
 #include <cstring>
+#include <exception>
+#include <iostream>
 #include <stdexcept>
+#include <utility>
 #include <vector>
 
 namespace aare {
 
 
-PixelHistogram::PixelHistogram(int rows, int cols, int n_bins, double xmin, double xmax, int n_threads):
+PixelHistogram::PixelHistogram(int rows, int cols, int n_bins, double xmin, double xmax,
+                               int n_threads, std::size_t max_pending):
              rows_(rows), cols_(cols), n_threads_(n_threads), xmin_(xmin), xmax_(xmax), current_image_(nullptr),
              completed_threads_(0), stop_workers_(false), work_generation_(0) {
     if (rows_ < 1 || cols_ < 1 || n_bins < 1) {
@@ -19,6 +23,9 @@ PixelHistogram::PixelHistogram(int rows, int cols, int n_bins, double xmin, doub
     }
     if (n_threads < 1) {
         throw std::invalid_argument("PixelHistogram requires at least one thread");
+    }
+    if (max_pending < 1) {
+        throw std::invalid_argument("PixelHistogram requires max_pending >= 1");
     }
 
     n_threads_ = std::min(n_threads_, rows_);
@@ -54,16 +61,29 @@ PixelHistogram::PixelHistogram(int rows, int cols, int n_bins, double xmin, doub
     for (int i = 0; i < n_threads_; ++i) {
         workers_.emplace_back([this, i]() { this->worker_loop(i); });
     }
+
+    // Async pipeline. The PCQ holds (size - 1) usable slots, so size up by
+    // one to honour the requested max_pending.
+    async_queue_ = std::make_unique<AsyncQueue>(static_cast<std::uint32_t>(max_pending + 1));
+    coordinator_ = std::thread([this]() { this->coordinator_loop(); });
 }
 
 PixelHistogram::~PixelHistogram() {
+    // Drain any pending async fills before tearing down the worker pool.
+    // The coordinator's loop keeps processing while stop_coordinator_ is
+    // true as long as the queue is non-empty (mirrors ClusterFinderMT).
+    if (coordinator_.joinable()) {
+        stop_coordinator_ = true;
+        coordinator_.join();
+    }
+
     // Signal all workers to stop
     {
         std::unique_lock<std::mutex> lock(work_mutex_);
         stop_workers_ = true;
     }
     work_cv_.notify_all();
-    
+
     // Join all worker threads
     for (auto& thread : workers_) {
         if (thread.joinable()) {
@@ -126,6 +146,10 @@ void PixelHistogram::worker_loop(int thread_id) {
 }
 
 NDArray<PixelHistogram::StorageType, 3> PixelHistogram::hdata() const {
+    // Make sure any pending async fills are merged in before we snapshot
+    // the partial histograms. Cheap when the queue is already drained.
+    flush();
+
     const auto &hist = partial_hists_.front();
     const auto bins = static_cast<ssize_t>(hist.axis(0).size());
     const auto cols = static_cast<ssize_t>(hist.axis(1).size());
@@ -159,6 +183,10 @@ void PixelHistogram::fill(const NDView<AxisType, 2> &image) {
         throw std::invalid_argument("PixelHistogram image shape does not match constructor shape");
     }
 
+    // Serialise all calls into the fan-out. fill_mutex_ is always the
+    // outermost lock; work_mutex_ is taken briefly inside it.
+    std::lock_guard<std::mutex> fill_lock(fill_mutex_);
+
     // Reset counters and set work
     {
         std::unique_lock<std::mutex> lock(work_mutex_);
@@ -166,15 +194,65 @@ void PixelHistogram::fill(const NDView<AxisType, 2> &image) {
         current_image_ = &image;
         ++work_generation_;
     }
-    
+
     // Signal all worker threads to start
     work_cv_.notify_all();
-    
+
     // Wait for all workers to complete
     {
         std::unique_lock<std::mutex> lock(work_mutex_);
         done_cv_.wait(lock, [this]() { return completed_threads_ == n_threads_; });
         current_image_ = nullptr;  // Clear work assignment
+    }
+}
+
+void PixelHistogram::fill_async(NDArray<AxisType, 2> image) {
+    if (image.shape(0) != rows_ || image.shape(1) != cols_) {
+        throw std::invalid_argument("PixelHistogram image shape does not match constructor shape");
+    }
+
+    // SPSC backpressure: spin with a short sleep until a slot frees up.
+    // The std::move only consumes `image` on the iteration that succeeds
+    // (placement-new inside write() runs only when the slot is free).
+    while (!async_queue_->write(std::move(image))) {
+        std::this_thread::sleep_for(async_wait_);
+    }
+}
+
+void PixelHistogram::flush() const {
+    while (!async_queue_->isEmpty() || coordinator_busy_.load(std::memory_order_acquire)) {
+        std::this_thread::sleep_for(async_wait_);
+    }
+}
+
+std::size_t PixelHistogram::pending() const {
+    // sizeGuess() counts the items still in the queue; the coordinator
+    // does `read()` (which pops) before setting `coordinator_busy_`, so an
+    // in-flight item lives only in the busy flag.
+    return async_queue_->sizeGuess() +
+           (coordinator_busy_.load(std::memory_order_acquire) ? 1u : 0u);
+}
+
+void PixelHistogram::coordinator_loop() {
+    NDArray<AxisType, 2> item;
+    while (!stop_coordinator_.load(std::memory_order_acquire) || !async_queue_->isEmpty()) {
+        if (async_queue_->read(item)) {
+            coordinator_busy_.store(true, std::memory_order_release);
+            try {
+                fill(item.view());
+            } catch (const std::exception& e) {
+                // fill_async pre-validates shape, so this is purely
+                // defensive. Log to stderr and keep the coordinator alive.
+                std::cerr << "PixelHistogram::fill_async error: "
+                          << e.what() << std::endl;
+            } catch (...) {
+                std::cerr << "PixelHistogram::fill_async error: unknown"
+                          << std::endl;
+            }
+            coordinator_busy_.store(false, std::memory_order_release);
+        } else {
+            std::this_thread::sleep_for(async_wait_);
+        }
     }
 }
 
