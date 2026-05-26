@@ -91,7 +91,7 @@ endif()
 # Reproduce Minuit2 bug
 option(BUILD_MINUIT2_INTERFACE_REPRODUCER
        "Build reproducer for ROOT/Minuit2 interface propagation issue"
-       ON)
+       OFF)
 if(BUILD_MINUIT2_INTERFACE_REPRODUCER)
     add_subdirectory(minuit2_bug_reproducer)
 endif()
