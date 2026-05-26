@@ -1,3 +1,5 @@
+find_package(ROOT REQUIRED COMPONENTS Core Hist MathCore Graf Gpad)
+
 add_executable(minuit2_root_interface_reproducer
     reproducer.cpp
 )
@@ -5,5 +7,9 @@ add_executable(minuit2_root_interface_reproducer
 target_link_libraries(minuit2_root_interface_reproducer
     PRIVATE
         aare_core
-        ${ROOT_LIBRARIES}
+        ROOT::Core
+        ROOT::Hist
+        ROOT::MathCore
+        ROOT::Graf
+        ROOT::Gpad
 )
