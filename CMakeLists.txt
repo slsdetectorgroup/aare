@@ -64,10 +64,6 @@ option(AARE_FETCH_JSON "Use FetchContent to download nlohmann::json" ON)
 option(AARE_FETCH_ZMQ "Use FetchContent to download libzmq" ON)
 option(AARE_FETCH_LMFIT "Use FetchContent to download lmfit" ON)
 option(AARE_FETCH_MINUIT2 "Use FetchContent to download Minuit2" ON)
-option(
-  AARE_FETCH_BOOST_HISTOGRAM
-  "Use FetchContent to download Boost.Histogram and its required Boost sub-modules"
-  ON)
 
 # Convenience option to use system libraries only (no FetchContent)
 option(AARE_SYSTEM_LIBRARIES "Use system libraries" OFF)
@@ -88,9 +84,6 @@ if(AARE_SYSTEM_LIBRARIES)
   set(AARE_FETCH_ZMQ
       OFF
       CACHE BOOL "Disabled FetchContent for libzmq" FORCE)
-  set(AARE_FETCH_BOOST_HISTOGRAM
-      OFF
-      CACHE BOOL "Disabled FetchContent for Boost.Histogram" FORCE)
   # Still fetch lmfit and Minuit2 when setting AARE_SYSTEM_LIBRARIES since these
   # are not available on conda-forge
 endif()
@@ -265,53 +258,6 @@ if(AARE_FETCH_JSON)
   FetchContent_MakeAvailable(json)
 else()
   find_package(nlohmann_json 3.11.3 REQUIRED)
-endif()
-
-if(AARE_FETCH_BOOST_HISTOGRAM)
-  # Fetch Boost.Histogram and the minimal set of Boost sub-modules it links
-  # against (per upstream histogram/CMakeLists.txt: config, core, mp11,
-  # throw_exception, variant2, with assert pulled in transitively by core).
-  # We populate the repos without add_subdirectory and aggregate their include
-  # directories into a single INTERFACE target, so we don't drag in the
-  # upstream Boost test wiring or BOOST_SUPERPROJECT_VERSION machinery.
-  set(AARE_BOOST_TAG boost-1.91.0)
-  set(_aare_boost_modules histogram config core assert mp11 throw_exception
-                          variant2)
-
-  if(${CMAKE_VERSION} VERSION_GREATER_EQUAL "3.30")
-    cmake_policy(SET CMP0169 OLD) # FetchContent_Populate still needed
-  endif()
-
-  foreach(_mod IN LISTS _aare_boost_modules)
-    FetchContent_Declare(
-      boost_${_mod}
-      GIT_REPOSITORY https://github.com/boostorg/${_mod}.git
-      GIT_TAG ${AARE_BOOST_TAG}
-      GIT_SHALLOW TRUE
-      UPDATE_DISCONNECTED 1)
-    FetchContent_GetProperties(boost_${_mod})
-    if(NOT boost_${_mod}_POPULATED)
-      FetchContent_Populate(boost_${_mod})
-    endif()
-  endforeach()
-
-  add_library(boost_histogram_headers INTERFACE)
-  foreach(_mod IN LISTS _aare_boost_modules)
-    target_include_directories(
-      boost_histogram_headers SYSTEM
-      INTERFACE $<BUILD_INTERFACE:${boost_${_mod}_SOURCE_DIR}/include>)
-  endforeach()
-  target_compile_features(boost_histogram_headers INTERFACE cxx_std_14)
-  add_library(Boost::histogram ALIAS boost_histogram_headers)
-
-  unset(_aare_boost_modules)
-else()
-  find_package(Boost 1.70 REQUIRED)
-  if(NOT TARGET Boost::histogram)
-    # Boost's CMake config exports Boost::headers; alias it so downstream
-    # consumption is uniform regardless of whether we fetched or not.
-    add_library(Boost::histogram ALIAS Boost::headers)
-  endif()
 endif()
 
 include(GNUInstallDirs)
@@ -492,7 +438,6 @@ target_link_libraries(
          nlohmann_json::nlohmann_json
          ${STD_FS_LIB} # from helpers.cmake
          Minuit2::Minuit2
-         $<BUILD_INTERFACE:Boost::histogram>
   PRIVATE aare_compiler_flags Threads::Threads $<BUILD_INTERFACE:lmfit>)
 
 target_include_directories(

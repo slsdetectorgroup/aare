@@ -2,10 +2,9 @@
 #include "aare/NDArray.hpp"
 #include "aare/NDView.hpp"
 #include "aare/Pedestal.hpp"
+#include "aare/PixelHistogramImpl.hpp"
 #include "aare/ProducerConsumerQueue.hpp"
 
-// Lets see if we need to hide it behind a pimpl
-#include <boost/histogram.hpp>
 #include <atomic>
 #include <chrono>
 #include <condition_variable>
@@ -15,7 +14,6 @@
 #include <mutex>
 #include <thread>
 #include <vector>
-namespace bh = boost::histogram;
 
 namespace aare {
 
@@ -27,12 +25,7 @@ class PedestalTrackingPixelHistogram {
     using FrameType = uint16_t;
 
   private:
-    using Axes = std::tuple<
-        bh::axis::regular<AxisType, bh::use_default, bh::use_default,
-                          bh::axis::option::none_t>,
-        bh::axis::integer<int, bh::use_default, bh::axis::option::none_t>,
-        bh::axis::integer<int, bh::use_default, bh::axis::option::none_t>>;
-    using Hist = bh::histogram<Axes, bh::dense_storage<StorageType>>;
+    using Hist = PixelHistogramImpl<AxisType, StorageType>;
     using AsyncQueue = ProducerConsumerQueue<NDArray<FrameType, 2>>;
 
     // What kind of fan-out work the worker pool should currently do.

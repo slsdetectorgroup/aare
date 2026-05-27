@@ -17,6 +17,5 @@ dependencies:
   - nlohmann_json
   - pytest
   - pytest-check
-  - boost
   - boost-histogram
 

@@ -1,9 +1,6 @@
 #include "aare/PixelHistogram.hpp"
 
 #include <algorithm>
-#include <boost/histogram.hpp>
-#include <boost/histogram/storage_adaptor.hpp>
-#include <boost/histogram/unsafe_access.hpp>
 #include <cstring>
 #include <exception>
 #include <iostream>
@@ -49,12 +46,9 @@ PixelHistogram::PixelHistogram(int rows, int cols, int n_bins, double xmin, doub
     partial_hists_.reserve(n_threads_);
     for (int i = 0; i < n_threads_; ++i) {
         const auto local_rows = row_count(i);
-        partial_hists_.emplace_back(
-            bh::axis::regular<AxisType, bh::use_default, bh::use_default,
-                              bh::axis::option::none_t>(n_bins, xmin, xmax, "value"),
-            bh::axis::integer<int, bh::use_default, bh::axis::option::none_t>(0, cols, "y"),
-            bh::axis::integer<int, bh::use_default, bh::axis::option::none_t>(0, local_rows, "x")
-        );
+        partial_hists_.emplace_back(local_rows, cols, n_bins,
+                                    static_cast<AxisType>(xmin),
+                                    static_cast<AxisType>(xmax));
     }
 
     // Spawn worker threads
@@ -121,15 +115,14 @@ void PixelHistogram::worker_loop(int thread_id) {
         
         lock.unlock();
         
-        // Do the work: fill this thread's partial histogram
+        // Do the work: fill this thread's partial histogram. The
+        // [xmin, xmax) range gate lives inside PixelHistogramImpl::fill.
+        auto &my_hist = partial_hists_[thread_id];
         for (int local_row = 0; local_row < local_rows; ++local_row) {
             const auto row = static_cast<ssize_t>(first_row + local_row);
             for (ssize_t col = 0; col < image.shape(1); ++col) {
                 const auto val = image(row, col);
-                if (val < xmin_ || val >= xmax_) {
-                    continue; // Skip out-of-range values
-                }
-                partial_hists_[thread_id](val, col, local_row);
+                my_hist.fill(local_row, static_cast<int>(col), val);
             }
         }
         
@@ -150,28 +143,27 @@ NDArray<PixelHistogram::StorageType, 3> PixelHistogram::hdata() const {
     // the partial histograms. Cheap when the queue is already drained.
     flush();
 
-    const auto &hist = partial_hists_.front();
-    const auto bins = static_cast<ssize_t>(hist.axis(0).size());
-    const auto cols = static_cast<ssize_t>(hist.axis(1).size());
+    const auto first_shard_view = partial_hists_.front().view();
+    const auto cols = static_cast<ssize_t>(first_shard_view.shape(1));
+    const auto bins = static_cast<ssize_t>(first_shard_view.shape(2));
     const auto rows = static_cast<ssize_t>(rows_);
 
     NDArray<StorageType, 3> data({rows, cols, bins});
 
-    // Each thread owns a disjoint, contiguous range of rows and its dense
-    // storage layout [local_row][col][bin] is identical to the slice
-    // [first_row .. first_row + local_rows)[col][bin] of `data`. So the
+    // Each thread owns a disjoint, contiguous range of rows. The shard's
+    // dense storage layout [local_row][col][bin] is identical to the slice
+    // [first_row .. first_row + local_rows)[col][bin] of `data`, so the
     // merge is just one bulk copy per thread; no per-element accumulation
     // and no upfront zeroing of `data` is needed.
     const size_t pixel_stride = static_cast<size_t>(cols) * bins;
     for (int t = 0; t < n_threads_; ++t) {
-        const auto &storage = bh::unsafe_access::storage(partial_hists_[t]);
-        const StorageType *partial_data = storage.data();
-        const auto first_row  = static_cast<size_t>(row_start(t));
+        const auto first_row = static_cast<size_t>(row_start(t));
         const auto local_rows = static_cast<size_t>(row_count(t));
-        if (local_rows == 0) continue;
+        if (local_rows == 0)
+            continue;
 
-        std::memcpy(data.data() + first_row * pixel_stride,
-                    partial_data,
+        const auto shard_view = partial_hists_[t].view();
+        std::memcpy(data.data() + first_row * pixel_stride, shard_view.data(),
                     local_rows * pixel_stride * sizeof(StorageType));
     }
 
@@ -257,32 +249,13 @@ void PixelHistogram::coordinator_loop() {
 }
 
 NDArray<PixelHistogram::AxisType, 1> PixelHistogram::bin_centers() const {
-    const auto& value_axis = partial_hists_.front().axis(0);
-    const auto n_bins = static_cast<ssize_t>(value_axis.size());
-    
-    NDArray<AxisType, 1> centers({n_bins});
-    
-    for (ssize_t i = 0; i < n_bins; ++i) {
-        // Get the left and right edges of the bin and compute the center
-        AxisType left = value_axis.value(i);
-        AxisType right = value_axis.value(i + 1);
-        centers(i) = (left + right) / AxisType(2.0);
-    }
-    
-    return centers;
+    // All shards share the same value-axis configuration, so any one will
+    // do; pick the first.
+    return partial_hists_.front().bin_centers();
 }
 
 NDArray<PixelHistogram::AxisType, 1> PixelHistogram::bin_edges() const {
-    const auto& value_axis = partial_hists_.front().axis(0);
-    const auto n_bins = static_cast<ssize_t>(value_axis.size());
-
-    NDArray<AxisType, 1> edges({n_bins + 1});
-
-    for (ssize_t i = 0; i <= n_bins; ++i) {
-        edges(i) = value_axis.value(i);
-    }
-
-    return edges;
+    return partial_hists_.front().bin_edges();
 }
 
 } // namespace aare
