@@ -29,8 +29,16 @@ class ClusterFinder {
     Pedestal<PEDESTAL_TYPE> m_pedestal;
     ClusterVector<ClusterType> m_clusters;
 
-    static const uint8_t ClusterSizeX = ClusterType::cluster_size_x;
-    static const uint8_t ClusterSizeY = ClusterType::cluster_size_y;
+    static constexpr uint8_t ClusterSizeX = ClusterType::cluster_size_x;
+    static constexpr uint8_t ClusterSizeY = ClusterType::cluster_size_y;
+
+    static constexpr int dx_c = ClusterSizeX / 2;
+    static constexpr int dy_c = ClusterSizeY / 2;
+
+    static constexpr int is_odd_x = ClusterSizeX % 2;
+    static constexpr int is_odd_y = ClusterSizeY % 2;
+    // for even sized clusters there is no proper cluster center and
+    // even amount of pixels around the center
     using CT = typename ClusterType::value_type;
 
   public:
@@ -81,25 +89,15 @@ class ClusterFinder {
             m_clusters = ClusterVector<ClusterType>{};
         return tmp;
     }
-    void find_clusters(NDView<FRAME_TYPE, 2> frame, uint64_t frame_number = 0) {
+    void find_clusters(NDView<FRAME_TYPE, 2> frame, uint64_t frame_number = 0,
+                       bool update_pedestal = true) {
         // // TODO! deal with even size clusters
         // // currently 3,3 -> +/- 1
         // //  4,4 -> +/- 2
-        int dy = ClusterSizeY / 2;
-        int dx = ClusterSizeX / 2;
-        int has_center_pixel_x =
-            ClusterSizeX %
-            2; // for even sized clusters there is no proper cluster center and
-               // even amount of pixels around the center
-        int has_center_pixel_y = ClusterSizeY % 2;
 
         m_clusters.set_frame_number(frame_number);
         for (int iy = 0; iy < frame.shape(0); iy++) {
             for (int ix = 0; ix < frame.shape(1); ix++) {
-
-                PEDESTAL_TYPE max = std::numeric_limits<FRAME_TYPE>::min();
-                PEDESTAL_TYPE total = 0;
-
                 // What can we short circuit here?
                 PEDESTAL_TYPE rms = m_pedestal.std(iy, ix);
                 PEDESTAL_TYPE value = (frame(iy, ix) - m_pedestal.mean(iy, ix));
@@ -107,83 +105,79 @@ class ClusterFinder {
                 if (value < -m_nSigma * rms)
                     continue; // NEGATIVE_PEDESTAL go to next pixel
                               // TODO! No pedestal update???
+                PEDESTAL_TYPE max = std::numeric_limits<FRAME_TYPE>::min();
+                PEDESTAL_TYPE total = 0;
 
-                for (int ir = -dy; ir < dy + has_center_pixel_y; ir++) {
-                    for (int ic = -dx; ic < dx + has_center_pixel_x; ic++) {
+                for (int ir = -dy_c; ir < dy_c + is_odd_y; ir++) {
+                    for (int ic = -dx_c; ic < dx_c + is_odd_x; ic++) {
                         if (ix + ic >= 0 && ix + ic < frame.shape(1) &&
                             iy + ir >= 0 && iy + ir < frame.shape(0)) {
                             PEDESTAL_TYPE val =
                                 frame(iy + ir, ix + ic) -
                                 m_pedestal.mean(iy + ir, ix + ic);
-
                             total += val;
                             max = std::max(max, val);
                         }
                     }
                 }
+                if (max > m_nSigma * rms || total > c3 * m_nSigma * rms) {
+                    if (value == max) {
+                        ClusterType cluster{};
+                        cluster.x = ix;
+                        cluster.y = iy;
+                        // Fill the cluster data since we have a photon to store
+                        // It's worth redoing the look since most of the time we
+                        // don't have a photon
+                        int cluster_index = 0;
+                        for (int ir = -dy_c; ir < dy_c + is_odd_y; ir++) {
+                            for (int ic = -dx_c; ic < dx_c + is_odd_x; ic++) {
+                                if (ix + ic >= 0 && ix + ic < frame.shape(1) &&
+                                    iy + ir >= 0 && iy + ir < frame.shape(0)) {
 
-                if ((max > m_nSigma * rms)) {
-                    if (value < max)
-                        continue; // Not max go to the next pixel
-                                  // but also no pedestal update
-                } else if (total > c3 * m_nSigma * rms) {
-                    // pass
-                } else {
-                    // m_pedestal.push(iy, ix, frame(iy, ix));   // Safe option
-                    m_pedestal.push_fast(
-                        iy, ix,
-                        frame(iy,
-                              ix)); // Assume we have reached n_samples in the
-                                    // pedestal, slight performance improvement
-                    continue;       // It was a pedestal value nothing to store
-                }
-
-                // Store cluster
-                if (value == max) {
-                    ClusterType cluster{};
-                    cluster.x = ix;
-                    cluster.y = iy;
-
-                    // Fill the cluster data since we have a photon to store
-                    // It's worth redoing the look since most of the time we
-                    // don't have a photon
-                    int i = 0;
-                    for (int ir = -dy; ir < dy + has_center_pixel_y; ir++) {
-                        for (int ic = -dx; ic < dx + has_center_pixel_x; ic++) {
-                            if (ix + ic >= 0 && ix + ic < frame.shape(1) &&
-                                iy + ir >= 0 && iy + ir < frame.shape(0)) {
-
-                                // If the cluster type is an integral type, and
-                                // the pedestal is a floating point type then we
-                                // need to round the value before storing it
-                                if constexpr (std::is_integral_v<CT> &&
-                                              std::is_floating_point_v<
-                                                  PEDESTAL_TYPE>) {
-                                    auto tmp = std::lround(
-                                        frame(iy + ir, ix + ic) -
-                                        m_pedestal.mean(iy + ir, ix + ic));
-                                    cluster.data[i] = static_cast<CT>(tmp);
-                                }
-                                // On the other hand if both are floating point
-                                // or both are integral then we can just static
-                                // cast directly
-                                else {
-                                    auto tmp =
-                                        frame(iy + ir, ix + ic) -
-                                        m_pedestal.mean(iy + ir, ix + ic);
-                                    cluster.data[i] = static_cast<CT>(tmp);
+                                    // If the cluster type is an integral type,
+                                    // and the pedestal is a floating point type
+                                    // then we need to round the value before
+                                    // storing it
+                                    if constexpr (std::is_integral_v<CT> &&
+                                                  std::is_floating_point_v<
+                                                      PEDESTAL_TYPE>) {
+                                        auto tmp = std::lround(
+                                            frame(iy + ir, ix + ic) -
+                                            m_pedestal.mean(iy + ir, ix + ic));
+                                        cluster.data[cluster_index] =
+                                            static_cast<CT>(tmp);
+                                    }
+                                    // On the other hand if both are floating
+                                    // point or both are integral then we can
+                                    // just static cast directly
+                                    else {
+                                        auto tmp =
+                                            frame(iy + ir, ix + ic) -
+                                            m_pedestal.mean(iy + ir, ix + ic);
+                                        cluster.data[cluster_index] =
+                                            static_cast<CT>(tmp);
+                                    }
+                                    cluster_index++;
                                 }
                             }
-                            i++;
                         }
+                        // Add the cluster to the output ClusterVector
+                        m_clusters.push_back(cluster);
+                    } else {
+                        continue;
                     }
-
-                    // Add the cluster to the output ClusterVector
-                    m_clusters.push_back(cluster);
+                } else {
+                    if (update_pedestal) {
+                        m_pedestal.push_fast(
+                            iy, ix,
+                            frame(
+                                iy,
+                                ix)); // Assume we have reached n_samples in the
+                        // pedestal already and can use the faster push method
+                    }
                 }
             }
         }
-    }
+    };
 };
-
 } // namespace aare

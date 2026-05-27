@@ -74,12 +74,14 @@ void define_ClusterFinder(py::module &m, const std::string &typestr) {
         .def(
             "find_clusters",
             [](ClusterFinder<ClusterType, uint16_t, pd_type> &self,
-               py::array_t<uint16_t> frame, uint64_t frame_number) {
+               py::array_t<uint16_t> frame, uint64_t frame_number,
+               bool update_pedestal) {
                 auto view = make_view_2d(frame);
-                self.find_clusters(view, frame_number);
+                self.find_clusters(view, frame_number, update_pedestal);
                 return;
             },
-            py::arg(), py::arg("frame_number") = 0);
+            py::arg(), py::arg("frame_number") = 0,
+            py::arg("update_pedestal") = true);
 }
 
 #pragma GCC diagnostic pop

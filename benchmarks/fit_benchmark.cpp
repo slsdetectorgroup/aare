@@ -159,5 +159,3 @@ BENCHMARK(BM_FitGausMinuitGrad)
 BENCHMARK(BM_FitGausMinuitGradHesse)
     ->DenseRange(0, 5)
     ->Unit(benchmark::kMicrosecond);
-
-BENCHMARK_MAIN();
