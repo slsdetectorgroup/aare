@@ -21,6 +21,23 @@ void define_pedestal_bindings(py::module &m, const std::string &name) {
                  *mea = self.mean();
                  return return_image_data(mea);
              })
+        .def("view",
+             [](py::object self_py) {
+                 auto &self = self_py.cast<Pedestal<SUM_TYPE> &>();
+                 auto v = self.view();
+                 std::array<py::ssize_t, 2> shape{
+                     static_cast<py::ssize_t>(v.shape(0)),
+                     static_cast<py::ssize_t>(v.shape(1))};
+                 std::array<py::ssize_t, 2> byte_strides{
+                     static_cast<py::ssize_t>(v.strides()[0]) *
+                         static_cast<py::ssize_t>(sizeof(SUM_TYPE)),
+                     static_cast<py::ssize_t>(v.strides()[1]) *
+                         static_cast<py::ssize_t>(sizeof(SUM_TYPE))};
+                 auto arr = py::array_t<SUM_TYPE>(shape, byte_strides,
+                                                  v.data(), self_py);
+                 arr.attr("setflags")(py::arg("write") = false);
+                 return arr;
+             })
         .def("variance",
              [](Pedestal<SUM_TYPE> &self) {
                  auto var = new NDArray<SUM_TYPE, 2>{};
@@ -49,6 +66,16 @@ void define_pedestal_bindings(py::module &m, const std::string &name) {
                  auto v = make_view_2d(f);
                  pedestal.push(v);
              })
+        .def(
+            "push_with_threshold",
+            [](Pedestal<SUM_TYPE> &pedestal,
+               py::array_t<uint16_t, py::array::c_style> &f,
+               py::array_t<SUM_TYPE, py::array::c_style> &threshold) {
+                auto frame_view = make_view_2d(f);
+                auto threshold_view = make_view_2d(threshold);
+                pedestal.push_with_threshold(frame_view, threshold_view);
+            },
+            py::arg("frame").noconvert(), py::arg("threshold").noconvert())
         .def(
             "push_no_update",
             [](Pedestal<SUM_TYPE> &pedestal,

@@ -379,6 +379,8 @@ set(PUBLICHEADERS
     include/aare/FileInterface.hpp
     include/aare/FilePtr.hpp
     include/aare/Frame.hpp
+    include/aare/PixelHistogram.hpp
+    include/aare/PedestalTrackingPixelHistogram.hpp
     include/aare/GainMap.hpp
     include/aare/ROIGeometry.hpp
     include/aare/DetectorGeometry.hpp
@@ -403,6 +405,8 @@ set(SourceFiles
     ${CMAKE_CURRENT_SOURCE_DIR}/src/defs.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/src/ROIGeometry.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/src/DetectorGeometry.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/PixelHistogram.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/PedestalTrackingPixelHistogram.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/src/Dtype.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/src/File.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/src/FilePtr.cpp
@@ -430,8 +434,9 @@ find_package(Threads REQUIRED)
 
 target_link_libraries(
   aare_core
-  PUBLIC fmt::fmt nlohmann_json::nlohmann_json ${STD_FS_LIB} # from
-                                                             # helpers.cmake
+  PUBLIC fmt::fmt
+         nlohmann_json::nlohmann_json
+         ${STD_FS_LIB} # from helpers.cmake
          Minuit2::Minuit2
   PRIVATE aare_compiler_flags Threads::Threads $<BUILD_INTERFACE:lmfit>)
 
@@ -479,6 +484,7 @@ if(AARE_TESTS)
       ${CMAKE_CURRENT_SOURCE_DIR}/src/ClusterFile.test.cpp
       ${CMAKE_CURRENT_SOURCE_DIR}/src/ClusterFinderMT.test.cpp
       ${CMAKE_CURRENT_SOURCE_DIR}/src/Pedestal.test.cpp
+      ${CMAKE_CURRENT_SOURCE_DIR}/src/PixelHistogram.test.cpp
       ${CMAKE_CURRENT_SOURCE_DIR}/src/JungfrauDataFile.test.cpp
       ${CMAKE_CURRENT_SOURCE_DIR}/src/NumpyFile.test.cpp
       ${CMAKE_CURRENT_SOURCE_DIR}/src/NumpyHelpers.test.cpp
