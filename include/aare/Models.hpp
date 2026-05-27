@@ -342,6 +342,510 @@ struct Gaussian {
 
 // _____________________________________________________________________
 //
+// GaussianErfcPlateau
+// _____________________________________________________________________
+
+/**
+ * @brief Gaussian peak plus a falling error-function plateau.
+ *
+ * Equivalent to the ROOT-style expression:
+ *
+ *   [0] * exp(-0.5 * ((x - [2])/[3])^2)
+ * + [1] * (1 - erf((x - [2]) / ([3] * sqrt(2)))) / 2
+ *
+ * f(x) = A * exp(-(x - mu)^2 / (2*sigma^2))
+ *      + S * 0.5 * (1 - erf((x - mu) / (sqrt(2)*sigma)))
+ *
+ * Parameters:
+ *   par[0] = A      (Gaussian amplitude)
+ *   par[1] = S      (left plateau height)
+ *   par[2] = mu     (shared Gaussian center / step inflection point)
+ *   par[3] = sigma  (shared Gaussian width / step width, must be > 0)
+ *
+ * Analytic partial derivatives:
+ *   Let dx = x - mu
+ *       z  = dx / (sqrt(2)*sigma)
+ *       E  = exp(-z^2)
+ *       H  = 0.5 * (1 - erf(z))
+ *
+ *   df/dA     = E
+ *   df/dS     = H
+ *   df/dmu    = A*E*dx/sigma^2 + S*E/(sqrt(2*pi)*sigma)
+ *   df/dsigma = A*E*dx^2/sigma^3 + S*E*dx/(sqrt(2*pi)*sigma^2)
+ */
+struct GaussianErfcPlateau {
+    static constexpr std::size_t npar = 4;
+
+    static constexpr std::array<ParamInfo, npar> param_info = {{
+        {"A", -no_bound, no_bound},
+        {"S", -no_bound, no_bound},
+        {"mu", -no_bound, no_bound},
+        {"sigma", 1e-12, no_bound},
+    }};
+
+    static double eval(double x, const std::vector<double> &par) {
+        const double A = par[0];
+        const double S = par[1];
+        const double mu = par[2];
+        const double sig = par[3];
+
+        const double dx = x - mu;
+        const double z = dx * inv_sqrt2 / sig;
+
+        const double e = std::exp(-z * z);
+        const double step = 0.5 * (1.0 - fast_erf(z));
+
+        return A * e + S * step;
+    }
+
+    static void eval_and_grad(double x, const std::vector<double> &par,
+                              double &f, std::array<double, npar> &g) {
+        const double A = par[0];
+        const double S = par[1];
+        const double mu = par[2];
+        const double sig = par[3];
+
+        const double dx = x - mu;
+        const double z = dx * inv_sqrt2 / sig;
+
+        const double e = std::exp(-z * z);
+        const double step = 0.5 * (1.0 - fast_erf(z));
+
+        f = A * e + S * step;
+
+        const double inv_sig = 1.0 / sig;
+        const double inv_sig2 = inv_sig * inv_sig;
+        const double inv_sig3 = inv_sig2 * inv_sig;
+
+        g[0] = e;    // df/dA
+        g[1] = step; // df/dS
+
+        g[2] = A * e * dx * inv_sig2 + S * inv_sqrt_2pi * e * inv_sig; // df/dmu
+
+        g[3] = A * e * dx * dx * inv_sig3 +
+               S * inv_sqrt_2pi * e * dx * inv_sig2; // df/dsigma
+    }
+
+    /** @brief Reject degenerate or negative width. */
+    static bool is_valid(const std::vector<double> &par) {
+        return par[3] > 0.0;
+    }
+
+    /**
+     * @brief Data-driven initial parameter estimates.
+     *
+     * Assumes x is sorted ascending and the plateau is on the left.
+     *
+     * S      ~ average of first 10% of y values
+     * mu     ~ x at maximum y
+     * A      ~ y_max - 0.5*S
+     * sigma  ~ right-side half-width of the peak, fallback to 10% x-range
+     */
+    static std::array<double, npar> estimate_par(NDView<double, 1> x,
+                                                 NDView<double, 1> y) {
+        const ssize_t n = y.size();
+
+        const auto max_it = std::max_element(y.begin(), y.end());
+        const ssize_t i_max = std::distance(y.begin(), max_it);
+
+        const double y_max = *max_it;
+
+        const double x_range = std::max(x[n - 1] - x[0], 1e-9);
+
+        const ssize_t tail = std::min<ssize_t>(std::max<ssize_t>(n / 10, 2), n);
+
+        double left_mean = 0.0;
+        double right_mean = 0.0;
+
+        for (ssize_t i = 0; i < tail; ++i)
+            left_mean += y[i];
+        left_mean /= tail;
+
+        for (ssize_t i = n - tail; i < n; ++i)
+            right_mean += y[i];
+        right_mean /= tail;
+
+        const double S = left_mean;
+        const double mu = x[i_max];
+
+        // At x = mu, the erfc step contributes roughly S/2.
+        const double A = y_max - 0.5 * S;
+
+        // Estimate sigma from the right half-width of the peak.
+        // This avoids the left plateau biasing the FWHM estimate.
+        const double half = right_mean + 0.5 * (y_max - right_mean);
+
+        double sig = 0.1 * x_range;
+        for (ssize_t i = i_max; i < n; ++i) {
+            if (y[i] <= half) {
+                const double half_width = std::abs(x[i] - mu);
+                if (half_width > 1e-12) {
+                    sig = half_width / 1.1774100225154747; // sqrt(2*ln(2))
+                }
+                break;
+            }
+        }
+
+        sig = std::max(sig, 1e-6);
+
+        return {A, S, mu, sig};
+    }
+
+    static void compute_steps(const std::array<double, npar> &start,
+                              double x_range, double y_range,
+                              double /*slope_scale*/,
+                              std::array<double, npar> &steps) {
+        steps[0] = std::max(0.1 * std::abs(start[0]), 0.1 * y_range);
+        steps[1] = std::max(0.1 * std::abs(start[1]), 0.1 * y_range);
+        steps[2] = 0.05 * x_range;
+        steps[3] = 0.05 * x_range;
+    }
+};
+
+// _____________________________________________________________________
+//
+// GaussianChargeSharing
+// _____________________________________________________________________
+
+/**
+ * @brief Gaussian peak with erfc charge-sharing tail and linear pedestal.
+ *
+ * Equivalent to the old ROOT energyCalibration function:
+ *
+ *   gaussChargeSharing(x, par)
+ *
+ * for sign = +1:
+ *
+ *   f(x) = p0 - p1*x
+ *        + N * [ G(x; mu, sigma) + C * H(x; mu, sigma) ]
+ *
+ * where:
+ *
+ *   G = exp(-0.5 * ((x - mu)/sigma)^2)
+ *   H = 0.5 * erfc((x - mu)/(sqrt(2)*sigma))
+ *
+ * Parameters:
+ *   par[0] = p0     background pedestal
+ *   par[1] = p1     background slope, ROOT convention uses p0 - p1*x
+ *   par[2] = mu     peak position
+ *   par[3] = sigma  noise RMS / Gaussian width
+ *   par[4] = N      number of photons / global amplitude
+ *   par[5] = C      charge-sharing pedestal
+ */
+struct GaussianChargeSharing {
+    static constexpr std::size_t npar = 6;
+
+    static constexpr std::array<ParamInfo, npar> param_info = {{
+        {"p0", -no_bound, no_bound},
+        {"p1", -no_bound, no_bound},
+        {"mu", -no_bound, no_bound},
+        {"sigma", 1e-12, no_bound},
+        {"N", -no_bound, no_bound},
+        {"C", -no_bound, no_bound},
+    }};
+
+    static double eval(double x, const std::vector<double> &par) {
+        const double p0 = par[0];
+        const double p1 = par[1];
+        const double mu = par[2];
+        const double sig = par[3];
+        const double N = par[4];
+        const double C = par[5];
+
+        const double dx = x - mu;
+        const double u = dx / sig;
+
+        const double G = std::exp(-0.5 * u * u);
+        const double H = 0.5 * (1.0 - fast_erf(u * inv_sqrt2));
+
+        return p0 - p1 * x + N * (G + C * H);
+    }
+
+    static void eval_and_grad(double x, const std::vector<double> &par,
+                              double &f, std::array<double, npar> &g) {
+        const double p0 = par[0];
+        const double p1 = par[1];
+        const double mu = par[2];
+        const double sig = par[3];
+        const double N = par[4];
+        const double C = par[5];
+
+        const double dx = x - mu;
+        const double u = dx / sig;
+
+        const double G = std::exp(-0.5 * u * u);
+        const double H = 0.5 * (1.0 - fast_erf(u * inv_sqrt2));
+
+        f = p0 - p1 * x + N * (G + C * H);
+
+        const double inv_sig = 1.0 / sig;
+        const double inv_sig2 = inv_sig * inv_sig;
+        const double inv_sig3 = inv_sig2 * inv_sig;
+
+        const double dG_dmu = G * dx * inv_sig2;
+        const double dG_dsig = G * dx * dx * inv_sig3;
+
+        const double dH_dmu = inv_sqrt_2pi * G * inv_sig;
+        const double dH_dsig = inv_sqrt_2pi * G * dx * inv_sig2;
+
+        g[0] = 1.0;
+        g[1] = -x;
+        g[2] = N * (dG_dmu + C * dH_dmu);
+        g[3] = N * (dG_dsig + C * dH_dsig);
+        g[4] = G + C * H;
+        g[5] = N * H;
+    }
+
+    static bool is_valid(const std::vector<double> &par) {
+        return par[3] > 0.0;
+    }
+
+    static std::array<double, npar> estimate_par(NDView<double, 1> x,
+                                                 NDView<double, 1> y) {
+        const ssize_t n = y.size();
+
+        const auto max_it = std::max_element(y.begin(), y.end());
+        const ssize_t i_max = std::distance(y.begin(), max_it);
+
+        const double x_range = std::max(x[n - 1] - x[0], 1e-9);
+
+        const ssize_t tail = std::min<ssize_t>(std::max<ssize_t>(n / 10, 2), n);
+
+        double left_mean = 0.0;
+        double right_mean = 0.0;
+
+        for (ssize_t i = 0; i < tail; ++i)
+            left_mean += y[i];
+        left_mean /= tail;
+
+        for (ssize_t i = n - tail; i < n; ++i)
+            right_mean += y[i];
+        right_mean /= tail;
+
+        const double p0 = right_mean;
+        const double p1 = 0.0;
+        const double mu = x[i_max];
+
+        const double N = std::max(*max_it - right_mean, 1e-9);
+
+        // Left plateau excess is roughly N*C.
+        const double C = (left_mean - right_mean) / N;
+
+        double sigma = 0.1 * x_range;
+        const double half = right_mean + 0.5 * ((*max_it) - right_mean);
+
+        for (ssize_t i = i_max; i < n; ++i) {
+            if (y[i] <= half) {
+                const double half_width = std::abs(x[i] - mu);
+                if (half_width > 1e-12)
+                    sigma = half_width / 1.1774100225154747; // sqrt(2*ln(2))
+                break;
+            }
+        }
+
+        sigma = std::max(sigma, 1e-6);
+
+        return {p0, p1, mu, sigma, N, C};
+    }
+
+    static void compute_steps(const std::array<double, npar> &start,
+                              double x_range, double y_range,
+                              double slope_scale,
+                              std::array<double, npar> &steps) {
+        steps[0] = std::max(0.1 * std::abs(start[0]), 0.1 * y_range);
+        steps[1] = 0.1 * slope_scale;
+        steps[2] = 0.05 * x_range;
+        steps[3] = 0.05 * x_range;
+        steps[4] = std::max(0.1 * std::abs(start[4]), 0.1 * y_range);
+        steps[5] = std::max(0.1 * std::abs(start[5]), 0.01);
+    }
+};
+
+// _____________________________________________________________________
+//
+// GaussianChargeSharingKb
+// _____________________________________________________________________
+
+/**
+ * @brief Double-Gaussian Kα/Kβ spectrum with erfc charge-sharing tails.
+ *
+ * Equivalent to the old ROOT energyCalibration function:
+ *
+ *   gaussChargeSharingKb(x, par)
+ *
+ * for sign = +1:
+ *
+ *   mu_b = r * mu
+ *
+ *   f(x) = p0 - p1*x
+ *        + N * [
+ *              G(x; mu, sigma)
+ *            + C * H(x; mu, sigma)
+ *            + q * G(x; mu_b, sigma)
+ *            + q * C * H(x; mu_b, sigma)
+ *          ]
+ *
+ * Parameters:
+ *   par[0] = p0      background pedestal
+ *   par[1] = p1      background slope, ROOT convention uses p0 - p1*x
+ *   par[2] = mu      Kα peak position
+ *   par[3] = sigma   shared width / noise RMS
+ *   par[4] = N       global amplitude / number of photons
+ *   par[5] = C       charge-sharing pedestal
+ *   par[6] = r       Kβ mean ratio, mu_Kb = r * mu
+ *   par[7] = q       Kβ fraction
+ */
+struct GaussianChargeSharingKb {
+    static constexpr std::size_t npar = 8;
+
+    static constexpr std::array<ParamInfo, npar> param_info = {{
+        {"p0", -no_bound, no_bound},
+        {"p1", -no_bound, no_bound},
+        {"mu", -no_bound, no_bound},
+        {"sigma", 1e-12, no_bound},
+        {"N", -no_bound, no_bound},
+        {"C", -no_bound, no_bound},
+        {"kb_mean", -no_bound, no_bound},
+        {"kb_frac", -no_bound, no_bound},
+    }};
+
+    static double eval(double x, const std::vector<double> &par) {
+        const double p0 = par[0];
+        const double p1 = par[1];
+        const double mu = par[2];
+        const double sig = par[3];
+        const double N = par[4];
+        const double C = par[5];
+        const double r = par[6];
+        const double q = par[7];
+
+        const double mu_b = r * mu;
+
+        const double dx = x - mu;
+        const double dxb = x - mu_b;
+
+        const double u = dx / sig;
+        const double ub = dxb / sig;
+
+        const double G = std::exp(-0.5 * u * u);
+        const double Gb = std::exp(-0.5 * ub * ub);
+
+        const double H = 0.5 * (1.0 - fast_erf(u * inv_sqrt2));
+        const double Hb = 0.5 * (1.0 - fast_erf(ub * inv_sqrt2));
+
+        const double ka = G + C * H;
+        const double kb = Gb + C * Hb;
+
+        return p0 - p1 * x + N * (ka + q * kb);
+    }
+
+    static void eval_and_grad(double x, const std::vector<double> &par,
+                              double &f, std::array<double, npar> &g) {
+        const double p0 = par[0];
+        const double p1 = par[1];
+        const double mu = par[2];
+        const double sig = par[3];
+        const double N = par[4];
+        const double C = par[5];
+        const double r = par[6];
+        const double q = par[7];
+
+        const double mu_b = r * mu;
+
+        const double dx = x - mu;
+        const double dxb = x - mu_b;
+
+        const double u = dx / sig;
+        const double ub = dxb / sig;
+
+        const double G = std::exp(-0.5 * u * u);
+        const double Gb = std::exp(-0.5 * ub * ub);
+
+        const double H = 0.5 * (1.0 - fast_erf(u * inv_sqrt2));
+        const double Hb = 0.5 * (1.0 - fast_erf(ub * inv_sqrt2));
+
+        const double ka = G + C * H;
+        const double kb = Gb + C * Hb;
+
+        f = p0 - p1 * x + N * (ka + q * kb);
+
+        const double inv_sig = 1.0 / sig;
+        const double inv_sig2 = inv_sig * inv_sig;
+        const double inv_sig3 = inv_sig2 * inv_sig;
+
+        const double dG_dmu = G * dx * inv_sig2;
+        const double dG_dsig = G * dx * dx * inv_sig3;
+        const double dH_dmu = inv_sqrt_2pi * G * inv_sig;
+        const double dH_dsig = inv_sqrt_2pi * G * dx * inv_sig2;
+
+        const double dGb_dmu_b = Gb * dxb * inv_sig2;
+        const double dGb_dsig = Gb * dxb * dxb * inv_sig3;
+        const double dHb_dmu_b = inv_sqrt_2pi * Gb * inv_sig;
+        const double dHb_dsig = inv_sqrt_2pi * Gb * dxb * inv_sig2;
+
+        const double dka_dmu = dG_dmu + C * dH_dmu;
+        const double dka_dsig = dG_dsig + C * dH_dsig;
+
+        const double dkb_dmu_b = dGb_dmu_b + C * dHb_dmu_b;
+        const double dkb_dsig = dGb_dsig + C * dHb_dsig;
+
+        g[0] = 1.0;
+        g[1] = -x;
+
+        // mu_b = r * mu, so dmu_b/dmu = r
+        g[2] = N * (dka_dmu + q * r * dkb_dmu_b);
+
+        g[3] = N * (dka_dsig + q * dkb_dsig);
+
+        g[4] = ka + q * kb;
+
+        g[5] = N * (H + q * Hb);
+
+        // mu_b = r * mu, so dmu_b/dr = mu
+        g[6] = N * q * mu * dkb_dmu_b;
+
+        g[7] = N * kb;
+    }
+
+    static bool is_valid(const std::vector<double> &par) {
+        return par[3] > 0.0;
+    }
+
+    static std::array<double, npar> estimate_par(NDView<double, 1> x,
+                                                 NDView<double, 1> y) {
+        const auto base = GaussianChargeSharing::estimate_par(x, y);
+
+        const double p0 = base[0];
+        const double p1 = base[1];
+        const double mu = base[2];
+        const double sigma = base[3];
+        const double N = base[4];
+        const double C = base[5];
+
+        // Good generic starting values for Cu Kβ relative to Kα.
+        const double kb_mean = 1.10;
+        const double kb_frac = 0.10;
+
+        return {p0, p1, mu, sigma, N, C, kb_mean, kb_frac};
+    }
+
+    static void compute_steps(const std::array<double, npar> &start,
+                              double x_range, double y_range,
+                              double slope_scale,
+                              std::array<double, npar> &steps) {
+        steps[0] = std::max(0.1 * std::abs(start[0]), 0.1 * y_range);
+        steps[1] = 0.1 * slope_scale;
+        steps[2] = 0.05 * x_range;
+        steps[3] = 0.05 * x_range;
+        steps[4] = std::max(0.1 * std::abs(start[4]), 0.1 * y_range);
+        steps[5] = std::max(0.1 * std::abs(start[5]), 0.01);
+        steps[6] = std::max(0.01 * std::abs(start[6]), 1e-3);
+        steps[7] = std::max(0.1 * std::abs(start[7]), 0.01);
+    }
+};
+
+// _____________________________________________________________________
+//
 // RisingScurve
 // _____________________________________________________________________
 

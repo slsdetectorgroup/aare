@@ -17,7 +17,7 @@ from .ClusterFinder import ClusterFinder, ClusterCollector, ClusterFinderMT, Clu
 from .ClusterVector import ClusterVector
 from .Cluster import Cluster
 
-from ._aare import Gaussian, RisingScurve, FallingScurve, Pol1, Pol2
+from ._aare import Gaussian, RisingScurve, FallingScurve, Pol1, Pol2, GaussianErfcPlateau, GaussianChargeSharing, GaussianChargeSharingKb
 from ._aare import fit
 from ._aare import fit_gaus, fit_pol1, fit_scurve, fit_scurve2
 from ._aare import Interpolator
