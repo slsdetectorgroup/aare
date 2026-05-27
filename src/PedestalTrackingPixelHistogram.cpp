@@ -366,7 +366,7 @@ void PedestalTrackingPixelHistogram::fill_with_threshold_(
     dispatch_(WorkKind::FillWithThreshold, &image);
 }
 
-void PedestalTrackingPixelHistogram::fill_async_with_threshold(
+void PedestalTrackingPixelHistogram::fill_async(
     NDArray<FrameType, 2> image) {
     if (image.shape(0) != rows_ || image.shape(1) != cols_) {
         throw std::invalid_argument(
@@ -414,15 +414,15 @@ void PedestalTrackingPixelHistogram::coordinator_loop() {
             try {
                 fill_with_threshold_(item.view());
             } catch (const std::exception &e) {
-                // fill_async_with_threshold pre-validates shape, so this
+                // fill_async pre-validates shape, so this
                 // is purely defensive. Log to stderr and keep the
                 // coordinator alive.
                 std::cerr << "PedestalTrackingPixelHistogram::"
-                             "fill_async_with_threshold error: "
+                             "fill_async error: "
                           << e.what() << std::endl;
             } catch (...) {
                 std::cerr << "PedestalTrackingPixelHistogram::"
-                             "fill_async_with_threshold error: unknown"
+                             "fill_async error: unknown"
                           << std::endl;
             }
             coordinator_busy_.store(false, std::memory_order_release);

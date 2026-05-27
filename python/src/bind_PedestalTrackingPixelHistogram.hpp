@@ -32,11 +32,11 @@ void define_pedestal_tracking_pixel_histogram_bindings(py::module &m) {
                      determines per-thread memory usage.
                  max_pending: Maximum number of frames that can be
                      queued for asynchronous filling before
-                     fill_async_with_threshold() applies backpressure
+                     fill_async() applies backpressure
                      on the caller (default: 16).
                  n_sigma: Sigma multiplier used as the gate for the
                      pedestal-update side effect of
-                     fill_async_with_threshold(): a pixel sample is
+                     fill_async(): a pixel sample is
                      pushed back into the pedestal estimate iff
                      ``abs(residual) < n_sigma * cached_std``. Set to
                      ``0.0`` to disable the pedestal update and get
@@ -119,7 +119,7 @@ void define_pedestal_tracking_pixel_histogram_bindings(py::module &m) {
              )",
              py::arg("image").noconvert())
 
-        .def("fill_async_with_threshold",
+        .def("fill_async",
              [](PedestalTrackingPixelHistogram &self,
                 py::array_t<PedestalTrackingPixelHistogram::FrameType, 0>
                     image) {
@@ -130,10 +130,10 @@ void define_pedestal_tracking_pixel_histogram_bindings(py::module &m) {
                  NDArray<PedestalTrackingPixelHistogram::FrameType, 2> owned(
                      view);
                  // Release the GIL while enqueueing -
-                 // fill_async_with_threshold can block on backpressure
+                 // fill_async can block on backpressure
                  // when the queue is full.
                  py::gil_scoped_release release;
-                 self.fill_async_with_threshold(std::move(owned));
+                 self.fill_async(std::move(owned));
              },
              R"(
              Submit an image for asynchronous filling with sigma-clipped
@@ -167,7 +167,7 @@ void define_pedestal_tracking_pixel_histogram_bindings(py::module &m) {
                       &PedestalTrackingPixelHistogram::set_n_sigma,
                       R"(
              Sigma multiplier used as the pedestal-update gate in
-             fill_async_with_threshold(). Atomic; safe to read or write
+             fill_async(). Atomic; safe to read or write
              from any thread. Setting it to 0.0 disables the pedestal
              update entirely. The new value takes effect on subsequent
              per-pixel evaluations inside the worker pool.
@@ -176,7 +176,7 @@ void define_pedestal_tracking_pixel_histogram_bindings(py::module &m) {
         .def("flush", &PedestalTrackingPixelHistogram::flush,
              R"(
              Block until all images submitted via
-             fill_async_with_threshold() have been merged into the
+             fill_async() have been merged into the
              accumulators. Cheap when nothing is pending.
              )",
              py::call_guard<py::gil_scoped_release>())
@@ -185,7 +185,7 @@ void define_pedestal_tracking_pixel_histogram_bindings(py::module &m) {
              R"(
              Return the number of images either waiting in the queue or
              currently being processed by the background thread (i.e.
-             still in flight after fill_async_with_threshold()). Useful
+             still in flight after fill_async()). Useful
              for monitoring/diagnostics.
              )")
 

@@ -18,39 +18,12 @@
 namespace bh = boost::histogram;
 
 namespace aare {
-// PedestalTrackingPixelHistogram histograms `frame - pedestal_mean` per
-// pixel. Both the pedestal and the histogram are sharded by row range:
-// thread t exclusively owns the slice of rows
-// [row_offsets_[t], row_offsets_[t + 1]) of BOTH `partial_pedestals_[t]`
-// and `partial_hists_[t]`, so no two threads ever touch the same memory
-// while a fan-out is in flight.
-//
-// All four pedestal/histogram-mutating operations (`fill`,
-// `push_pedestal_no_update`, `update_mean`, FillWithThreshold) are
-// dispatched through the same worker pool via a `WorkKind` switch in
-// `worker_loop`. They are serialised against each other by
-// `fill_mutex_`, which also serialises the async coordinator's calls
-// into `fill_with_threshold_`.
-//
-// The single async entry point is `fill_async_with_threshold`, which
-// histograms the residual AND additionally pushes raw pixel samples
-// whose residual is within `n_sigma_ * cached_std` of zero back into
-// the per-thread pedestal shard (sigma-clipped pedestal tracking).
-// Setting `n_sigma_ = 0.0` disables that pedestal-update side effect,
-// recovering plain histogram-only async filling.
-//
-// Typical usage:
-//
-//     for (auto& f : pedestal_frames) pth.push_pedestal_no_update(f);
-//     pth.update_mean();
-//     for (auto& f : measurement_frames)
-//         pth.fill_async_with_threshold(std::move(f));
-//     pth.flush();
-//     auto data = pth.hdata();
+
+
 class PedestalTrackingPixelHistogram {
   public:
     using StorageType = uint16_t;
-    using AxisType = float;
+    using AxisType = float; //TODO: template on pedesta type if needed
     using FrameType = uint16_t;
 
   private:
@@ -71,24 +44,15 @@ class PedestalTrackingPixelHistogram {
     int n_threads_;
     const AxisType xmin_;
     const AxisType xmax_;
-    // Cumulative row offsets so that thread t owns rows
-    //     [row_offsets_[t], row_offsets_[t + 1])
-    // Length is n_threads_ + 1; partition is balanced (the first
-    // rows_ % n_threads_ threads get one extra row each).
+
     std::vector<int> row_offsets_;
-    // Per-thread histograms over (residual, col, local_row).
     std::vector<Hist> partial_hists_;
     // Per-thread pedestal sized [local_rows x cols]. Indexed by the
     // worker using the LOCAL row index (i.e. 0..row_count(t)-1), NOT the
     // global row index. Owned exclusively by worker `t` during a
     // dispatched fan-out.
     std::vector<Pedestal<AxisType>> partial_pedestals_;
-    // Per-thread cached std, sized [local_rows x cols]. Written by worker
-    // thread t inside the UpdateMean case of worker_loop (after the
-    // shard's m_mean has been refreshed); read by worker t in the
-    // FillWithThreshold case. Same shard-locality contract as
-    // partial_pedestals_.
-    std::vector<NDArray<double, 2>> partial_std_;
+    std::vector<NDArray<double, 2>> partial_std_; //cached for pedestal tracking
 
     // Thread pool members
     std::vector<std::thread> workers_;
@@ -114,11 +78,6 @@ class PedestalTrackingPixelHistogram {
     std::atomic<bool> stop_coordinator_{false};
     std::atomic<bool> coordinator_busy_{false};
     std::chrono::microseconds async_wait_{100};
-
-    // Sigma multiplier used as the pedestal-update gate in
-    // FillWithThreshold. Atomic so the setter can update it without
-    // taking fill_mutex_; workers do relaxed loads on each pixel.
-    // Setting it to 0.0 disables the pedestal update entirely.
     std::atomic<double> n_sigma_;
 
     // Private worker thread method
@@ -144,46 +103,22 @@ class PedestalTrackingPixelHistogram {
                                    double n_sigma = 1.0);
     ~PedestalTrackingPixelHistogram();
 
-    // Accumulate `frame` into the running pedestal estimate without
-    // refreshing the cached mean (the cheap path used while
-    // bootstrapping the pedestal). Workers update their own shard.
-    // Call `update_mean()` once you're done before starting to
-    // `fill`/`fill_async_with_threshold`.
+
     void push_pedestal_no_update(const NDView<FrameType, 2> &frame);
-
-    // Refresh each partial pedestal's cached per-pixel mean from its
-    // running sums. Serialises with all other fan-outs through
-    // `fill_mutex_` so worker reads of the pedestal mean cannot race.
     void update_mean();
-
-    // Snapshot of the per-pixel pedestal mean, stitched together from
-    // all shards into a single `[rows x cols]` array. Implicitly
-    // drains pending async fills and takes `fill_mutex_` so it cannot
-    // tear against an in-flight `update_mean()` (which is the only
-    // operation that overwrites `m_mean`).
     NDArray<AxisType, 2> pedestal_mean() const;
 
     // Synchronous fill: blocks until the pedestal-subtracted residual
     // for `image` has been merged into the accumulators. Safe to call
-    // concurrently with `fill_async_with_threshold` and the
+    // concurrently with `fill_async` and the
     // pedestal-update API (calls are serialised through `fill_mutex_`).
     // Histogram-only - independent of `n_sigma()`.
     void fill(const NDView<FrameType, 2> &image);
 
-    // Asynchronous fill with sigma-clipped pedestal tracking. Takes
-    // ownership of `image`, enqueues it for the coordinator thread, and
-    // returns. The worker pool histograms each in-range residual AND
-    // additionally pushes the raw pixel value into the pedestal shard
-    // when `abs(residual) < n_sigma() * cached_std` (per-pixel gate).
-    // `n_sigma() = 0.0` disables the pedestal update, recovering plain
-    // histogram-only async filling. Blocks the caller only if the
-    // queue is full (single-producer, single-consumer queue with a
-    // sleep-poll backpressure loop, matching the convention in
-    // ClusterFinderMT).
-    void fill_async_with_threshold(NDArray<FrameType, 2> image);
+    void fill_async(NDArray<FrameType, 2> image);
 
     // Sigma multiplier for the pedestal-update gate in
-    // fill_async_with_threshold. Atomic; safe to read/write at any
+    // fill_async. Atomic; safe to read/write at any
     // time (the new value takes effect on subsequent pixel evaluations).
     double n_sigma() const;
     void set_n_sigma(double n_sigma);
