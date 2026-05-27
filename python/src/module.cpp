@@ -12,6 +12,7 @@
 #include "bind_Defs.hpp"
 #include "bind_Eta.hpp"
 #include "bind_Interpolator.hpp"
+#include "bind_PedestalTrackingPixelHistogram.hpp"
 #include "bind_PixelHistogram.hpp"
 #include "bind_PixelMap.hpp"
 #include "bind_RawFile.hpp"
@@ -66,6 +67,7 @@ PYBIND11_MODULE(_aare, m) {
     define_var_cluster_finder_bindings(m);
     define_pixel_map_bindings(m);
     define_pixel_histogram_bindings(m);
+    define_pedestal_tracking_pixel_histogram_bindings(m);
     define_pedestal_bindings<double>(m, "Pedestal_d");
     define_pedestal_bindings<float>(m, "Pedestal_f");
     define_fit_bindings(m);

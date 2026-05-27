@@ -443,6 +443,7 @@ set(PUBLICHEADERS
     include/aare/FilePtr.hpp
     include/aare/Frame.hpp
     include/aare/PixelHistogram.hpp
+    include/aare/PedestalTrackingPixelHistogram.hpp
     include/aare/GainMap.hpp
     include/aare/ROIGeometry.hpp
     include/aare/DetectorGeometry.hpp
@@ -468,6 +469,7 @@ set(SourceFiles
     ${CMAKE_CURRENT_SOURCE_DIR}/src/ROIGeometry.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/src/DetectorGeometry.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/src/PixelHistogram.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/PedestalTrackingPixelHistogram.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/src/Dtype.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/src/File.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/src/FilePtr.cpp

@@ -43,4 +43,4 @@ from ._aare import apply_calibration, count_switching_pixels
 from ._aare import calculate_pedestal, calculate_pedestal_float, calculate_pedestal_g0, calculate_pedestal_g0_float
 
 from ._aare import VarClusterFinder
-from ._aare import PixelHistogram
+from ._aare import PixelHistogram, PedestalTrackingPixelHistogram
