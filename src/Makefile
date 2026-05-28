@@ -8,7 +8,7 @@ LIBS     := -laare_core -lfmt -lstdc++fs
 DEFINES  := -DAARE_LOG_LEVEL=logERROR
 
 TARGET_OLD  := test_cf_cuda_old
-TARGET   	:= test_cf_cuda
+TARGET   	:= test_cf_cuda_asyncpipeline
 
 SRC_OLD  := ClusterFinderCUDA_old.test.cu 
 SRC      := ClusterFinderCUDA.test.cu 

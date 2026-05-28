@@ -477,18 +477,14 @@ int main(int argc, char *argv[]) {
     }
     */
 
-    // --- Batched H2D + multi-stream (enable this block and disable the one
-    //     above to benchmark the batched path against the CPU results) ---
+    // --- Batched H2D + multi-stream (synchronous find_clusters_batched) ---
+    /*
     {
         aare::ClusterFinderCUDA<ClusterType, FRAME_TYPE, PEDESTAL_TYPE> cuda_cf(
             {ROWS, COLS}, nSigma, MAX_CLUSTERS_PER_FRAME, N_STREAMS);
 
         feed_pedestal(cuda_cf, pedestal_frames);
 
-        // Contiguous staging buffer reused across batches — registered as
-        // pinned so that H2D transfers run at DMA bandwidth (~22 GB/s) instead
-        // of going through the CUDA driver's internal staging (~15 GB/s for
-        // pageable memory).
         std::vector<FRAME_TYPE> batch_buffer(BATCH_SIZE * ROWS * COLS);
         cuda_cf.register_input_buffer(batch_buffer.data(),
                                       batch_buffer.size() * sizeof(FRAME_TYPE));
@@ -529,6 +525,99 @@ int main(int argc, char *argv[]) {
         cuda_cf.unregister_input_buffer();
 
         printf("GPU(batched): %zu clusters — pack=%.1f ms  GPU=%.1f ms  "
+               "total=%.1f ms"
+               "  (%.2f µs/frame, batch=%zu, streams=%d)\n",
+               gpu_total_clusters, pack_ms, gpu_ms, pack_ms + gpu_ms,
+               1000.0 * (pack_ms + gpu_ms) / use_data, BATCH_SIZE, N_STREAMS);
+    }
+    */
+
+    // --- Async pipeline: submit_batch / collect ---
+    {
+        aare::ClusterFinderCUDA<ClusterType, FRAME_TYPE, PEDESTAL_TYPE> cuda_cf(
+            {ROWS, COLS}, nSigma, MAX_CLUSTERS_PER_FRAME, N_STREAMS);
+
+        feed_pedestal(cuda_cf, pedestal_frames);
+
+        // Two staging buffers so the CPU can be packing batch B into buf_next
+        // while the GPU processes the current batch from buf_cur.
+        std::vector<FRAME_TYPE> buf_cur(BATCH_SIZE * ROWS * COLS);
+        std::vector<FRAME_TYPE> buf_next(BATCH_SIZE * ROWS * COLS);
+        cuda_cf.register_input_buffer(buf_cur.data(),
+                                      buf_cur.size() * sizeof(FRAME_TYPE));
+
+        const size_t n_batches = (use_data + BATCH_SIZE - 1) / BATCH_SIZE;
+        double pack_ms = 0.0, gpu_ms = 0.0;
+        Timer t;
+
+        // Helper to drain batch results into gpu_results
+        auto drain_batch =
+            [&](std::vector<aare::ClusterVector<ClusterType>> &res,
+                size_t offset, size_t actual_batch) {
+                for (size_t f = 0; f < actual_batch; ++f) {
+                    auto &cv = res[f];
+                    auto &out = gpu_results[offset + f];
+                    out.clear();
+                    out.reserve(cv.size());
+                    for (size_t j = 0; j < cv.size(); ++j)
+                        out.push_back(cv[j]);
+                    gpu_total_clusters += out.size();
+                }
+            };
+
+        // Pack and submit the first batch
+        const size_t first_actual = std::min(BATCH_SIZE, use_data);
+        t.start();
+        pack_frame_batch(frames, 0, first_actual, buf_cur);
+        pack_ms += t.elapsed_ms();
+
+        aare::NDView<FRAME_TYPE, 3> view_cur(
+            buf_cur.data(), {static_cast<ssize_t>(first_actual), ROWS, COLS});
+
+        t.start();
+        auto tok = cuda_cf.submit_batch(view_cur, 0);
+        gpu_ms += t.elapsed_ms();
+
+        for (size_t bi = 1; bi < n_batches; ++bi) {
+            const size_t offset = bi * BATCH_SIZE;
+            const size_t actual_batch = std::min(BATCH_SIZE, use_data - offset);
+
+            // Pack next batch into the inactive buffer while GPU runs current
+            t.start();
+            pack_frame_batch(frames, offset, actual_batch, buf_next);
+            pack_ms += t.elapsed_ms();
+
+            aare::NDView<FRAME_TYPE, 3> view_next(
+                buf_next.data(),
+                {static_cast<ssize_t>(actual_batch), ROWS, COLS});
+
+            // Enqueue next batch — GPU now has both batches queued back-to-back
+            t.start();
+            auto next_tok = cuda_cf.submit_batch(view_next, offset);
+            gpu_ms += t.elapsed_ms();
+
+            // Collect previous batch (GPU runs next_tok concurrently)
+            auto prev_results = cuda_cf.collect(tok);
+            gpu_ms += 0; // collect time already elapsed inside GPU execution
+
+            const size_t prev_offset = (bi - 1) * BATCH_SIZE;
+            const size_t prev_actual =
+                std::min(BATCH_SIZE, use_data - prev_offset);
+            drain_batch(prev_results, prev_offset, prev_actual);
+
+            tok = next_tok;
+            std::swap(buf_cur, buf_next);
+        }
+
+        // Collect the final batch
+        auto last_results = cuda_cf.collect(tok);
+        const size_t last_offset = (n_batches - 1) * BATCH_SIZE;
+        const size_t last_actual = std::min(BATCH_SIZE, use_data - last_offset);
+        drain_batch(last_results, last_offset, last_actual);
+
+        cuda_cf.unregister_input_buffer();
+
+        printf("GPU(async pipeline): %zu clusters — pack=%.1f ms  GPU=%.1f ms  "
                "total=%.1f ms"
                "  (%.2f µs/frame, batch=%zu, streams=%d)\n",
                gpu_total_clusters, pack_ms, gpu_ms, pack_ms + gpu_ms,
@@ -688,6 +777,61 @@ int main(int argc, char *argv[]) {
             cuda_cf.unregister_input_buffer();
 
             printf("GPU(batched): %.3f ms/frame (H2D + kernel + D2H, "
+                   "batch=%zu, streams=%d)\n",
+                   t.elapsed_ms() / (n_iter_batches * BATCH_SIZE), BATCH_SIZE,
+                   N_STREAMS);
+        }
+
+        // --- GPU benchmark (async submit/collect pipeline) ---
+        // submit_batch(B) is called before collect(A) returns, so both batches
+        // are enqueued in the CUDA streams simultaneously. The GPU executes
+        // them back-to-back with no idle gap between batches. collect(A) then
+        // drains A's results while the GPU is already running B.
+        {
+            aare::ClusterFinderCUDA<ClusterType, FRAME_TYPE, PEDESTAL_TYPE>
+                cuda_cf({ROWS, COLS}, nSigma, MAX_CLUSTERS_PER_FRAME,
+                        N_STREAMS);
+            feed_pedestal(cuda_cf, pedestal_frames);
+
+            std::vector<FRAME_TYPE> batch(BATCH_SIZE * ROWS * COLS);
+            for (size_t k = 0; k < BATCH_SIZE; ++k)
+                std::memcpy(batch.data() + k * ROWS * COLS, bench_frame.data(),
+                            ROWS * COLS * sizeof(FRAME_TYPE));
+            cuda_cf.register_input_buffer(batch.data(),
+                                          batch.size() * sizeof(FRAME_TYPE));
+
+            aare::NDView<FRAME_TYPE, 3> batch_view(
+                batch.data(), {static_cast<ssize_t>(BATCH_SIZE), ROWS, COLS});
+
+            // Warmup + reset pedestal
+            (void)cuda_cf.find_clusters_batched(batch_view, 0);
+            cuda_cf.clear_pedestal();
+            feed_pedestal(cuda_cf, pedestal_frames);
+
+            const size_t n_iter_batches =
+                (N_ITER + BATCH_SIZE - 1) / BATCH_SIZE;
+
+            Timer t;
+            t.start();
+
+            // Prime: submit first batch without waiting
+            auto tok = cuda_cf.submit_batch(batch_view, 0);
+
+            for (size_t b = 1; b < n_iter_batches; ++b) {
+                // Enqueue next batch while GPU is still executing the previous
+                // one — both batches sit in the stream queue simultaneously
+                auto next_tok =
+                    cuda_cf.submit_batch(batch_view, b * BATCH_SIZE);
+                // Now drain the previous batch; GPU runs next_tok concurrently
+                (void)cuda_cf.collect(tok);
+                tok = next_tok;
+            }
+            // Drain final batch
+            (void)cuda_cf.collect(tok);
+
+            cuda_cf.unregister_input_buffer();
+
+            printf("GPU(async pipeline):  %.3f ms/frame (submit/collect, "
                    "batch=%zu, streams=%d)\n",
                    t.elapsed_ms() / (n_iter_batches * BATCH_SIZE), BATCH_SIZE,
                    N_STREAMS);
