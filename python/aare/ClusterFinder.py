@@ -49,6 +49,68 @@ def ClusterFinderMT(image_size, cluster_size = (3,3), dtype=np.int32, n_sigma=5,
     return cls(image_size, n_sigma=n_sigma, capacity=capacity, n_threads=n_threads)
 
 
+def _cuda_available():
+    """True if this build of aare was compiled with -DAARE_CUDA=ON."""
+    return hasattr(_aare, "ClusterFinderCUDA_Cluster3x3i")
+
+
+def ClusterFinderCUDA(image_size, cluster_size=(3,3), n_sigma=5, dtype=np.int32,
+                      max_clusters_per_frame=2048, n_streams=4):
+    """
+    Factory function to create a ClusterFinderCUDA object. Provides a cleaner
+    syntax for the templated ClusterFinderCUDA in C++. API mirrors
+    ClusterFinder() plus CUDA-specific knobs.
+
+    Parameters
+    ----------
+    image_size : tuple of (int, int)
+        Detector shape as (nrows, ncols).
+    cluster_size : tuple of (int, int), optional
+        Cluster window size; default (3, 3).
+    n_sigma : float, optional
+        Threshold in units of per-pixel pedestal standard deviation.
+    dtype : numpy dtype, optional
+        Cluster value type (np.int32 or np.float32).
+    max_clusters_per_frame : int, optional
+        Tight upper bound on clusters per frame. Determines the fixed-size D2H
+        transfer per frame. Set this high enough to never truncate real frames
+        but as tight as possible to minimize PCIe traffic. Default 2048.
+    n_streams : int, optional
+        Number of CUDA streams for H2D/kernel/D2H pipelining. Default 4.
+
+    Example
+    -------
+    .. code-block:: python
+
+        from aare import ClusterFinderCUDA
+
+        cf = ClusterFinderCUDA(image_size=(400, 400),
+                               cluster_size=(3, 3),
+                               n_sigma=5,
+                               n_streams=5)
+        for frame in pedestal_frames:
+            cf.push_pedestal_frame(frame)
+
+        # Batched (recommended for throughput)
+        results = cf.find_clusters_batched(frames_3d, first_frame=0)
+
+        # Or single-frame (one launch per frame)
+        for i, frame in enumerate(data_frames):
+            cf.find_clusters(frame, frame_number=i)
+            clusters = cf.steal_clusters()
+    """
+    if not _cuda_available():
+        raise RuntimeError(
+            "ClusterFinderCUDA is not available in this build of aare. "
+            "Rebuild with -DAARE_CUDA=ON (and -DAARE_PYTHON_BINDINGS=ON)."
+        )
+
+    cls = _get_class("ClusterFinderCUDA", cluster_size, dtype)
+    return cls(image_size,
+               n_sigma=n_sigma,
+               max_clusters_per_frame=max_clusters_per_frame,
+               n_streams=n_streams)
+
 def ClusterCollector(clusterfindermt, dtype=np.int32): 
     """ 
     Factory function to create a ClusterCollector object. Provides a cleaner syntax for 
