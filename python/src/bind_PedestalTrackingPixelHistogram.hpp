@@ -73,7 +73,7 @@ void define_pedestal_tracking_pixel_histogram_bindings(py::module &m) {
              its running sums. Drains pending async fills first, then
              dispatches the update to the worker pool so the writes to
              each shard happen on the same thread that reads them in
-             fill().
+             fill_async().
              )",
              py::call_guard<py::gil_scoped_release>())
 
@@ -97,27 +97,6 @@ void define_pedestal_tracking_pixel_histogram_bindings(py::module &m) {
                  A 2D numpy array (rows x cols, dtype: float64)
                  containing the current cached pedestal mean.
              )")
-
-        .def("fill",
-             [](PedestalTrackingPixelHistogram &self,
-                py::array_t<PedestalTrackingPixelHistogram::FrameType, 0>
-                    image) {
-                 auto view = make_view_2d(image);
-                 self.fill(view);
-             },
-             R"(
-             Fill the histogram with image data (blocking).
-
-             The pedestal-subtracted residual `image - pedestal_mean`
-             is computed per pixel inside the worker loop, so the
-             pedestal must already have been bootstrapped via
-             push_pedestal_no_update() + update_mean() for this to be
-             meaningful.
-
-             Args:
-                 image: A 2D numpy array of raw pixel values (dtype: uint16)
-             )",
-             py::arg("image").noconvert())
 
         .def("fill_async",
              [](PedestalTrackingPixelHistogram &self,
@@ -189,9 +168,9 @@ void define_pedestal_tracking_pixel_histogram_bindings(py::module &m) {
              for monitoring/diagnostics.
              )")
 
-        .def("hdata",
+        .def("values",
              [](const PedestalTrackingPixelHistogram &self) {
-                 // hdata() implicitly flushes - release the GIL while it
+                 // values() implicitly flushes - release the GIL while it
                  // does so. Allocation/copy into the NDArray runs without
                  // the GIL too; only the numpy wrapping needs it.
                  NDArray<PedestalTrackingPixelHistogram::StorageType, 3>
@@ -200,7 +179,7 @@ void define_pedestal_tracking_pixel_histogram_bindings(py::module &m) {
                      py::gil_scoped_release release;
                      ptr = new NDArray<
                          PedestalTrackingPixelHistogram::StorageType, 3>(
-                         self.hdata());
+                         self.values());
                  }
                  return return_image_data(ptr);
              },

@@ -3,8 +3,6 @@
 #include <algorithm>
 #include <cmath>
 #include <cstring>
-#include <exception>
-#include <iostream>
 #include <stdexcept>
 #include <utility>
 #include <vector>
@@ -15,7 +13,7 @@ PedestalTrackingPixelHistogram::PedestalTrackingPixelHistogram(
     int rows, int cols, int n_bins, AxisType xmin, AxisType xmax, int n_threads,
     std::size_t max_pending, double n_sigma)
     : rows_(rows), cols_(cols), n_threads_(n_threads), xmin_(xmin), xmax_(xmax),
-      current_work_kind_(WorkKind::Fill), current_image_(nullptr),
+      current_work_kind_(WorkKind::FillWithThreshold), current_image_(nullptr),
       completed_threads_(0), stop_workers_(false), work_generation_(0),
       n_sigma_(n_sigma) {
     if (rows_ < 1 || cols_ < 1 || n_bins < 1) {
@@ -175,24 +173,6 @@ void PedestalTrackingPixelHistogram::worker_loop(int thread_id) {
         auto &my_hist = partial_hists_[thread_id];
 
         switch (kind) {
-        case WorkKind::Fill: {
-            // Histogram the pedestal-subtracted residual for each pixel
-            // in this thread's row slice. `my_pedestal` is sized to the
-            // local row range and indexed by (local_row, col). The
-            // [xmin, xmax) range gate lives inside PixelHistogramImpl::fill.
-            for (int local_row = 0; local_row < local_rows; ++local_row) {
-                const auto row = static_cast<ssize_t>(first_row + local_row);
-                for (ssize_t col = 0; col < image->shape(1); ++col) {
-                    const AxisType val =
-                        static_cast<AxisType>((*image)(row, col)) -
-                        static_cast<AxisType>(my_pedestal.mean(
-                            static_cast<uint32_t>(local_row),
-                            static_cast<uint32_t>(col)));
-                    my_hist.fill(local_row, static_cast<int>(col), val);
-                }
-            }
-            break;
-        }
         case WorkKind::PushPedestal: {
             // Accumulate raw frame values into this thread's pedestal
             // shard. Uses the pixel-level push_no_update which only
@@ -228,10 +208,9 @@ void PedestalTrackingPixelHistogram::worker_loop(int thread_id) {
             // whose residual is consistent with noise
             // (|residual| < n_sigma * cached_std), feed the raw value
             // back into the pedestal shard. With n_sigma == 0 the gate
-            // never fires, which makes this case behave identically to
-            // WorkKind::Fill (modulo the per-pixel gate evaluation).
-            // The [xmin, xmax) histogram gate lives inside
-            // PixelHistogramImpl::fill.
+            // never fires, recovering plain histogram-only behaviour
+            // (modulo the per-pixel gate evaluation). The [xmin, xmax)
+            // histogram gate lives inside PixelHistogramImpl::fill.
             auto &my_std = partial_std_[thread_id];
             const double n_sigma = n_sigma_.load(std::memory_order_relaxed);
             for (int local_row = 0; local_row < local_rows; ++local_row) {
@@ -270,7 +249,7 @@ void PedestalTrackingPixelHistogram::worker_loop(int thread_id) {
 }
 
 NDArray<PedestalTrackingPixelHistogram::StorageType, 3>
-PedestalTrackingPixelHistogram::hdata() const {
+PedestalTrackingPixelHistogram::values() const {
     // Make sure any pending async fills are merged in before we snapshot
     // the partial histograms. Cheap when the queue is already drained.
     flush();
@@ -332,23 +311,12 @@ NDArray<PedestalTrackingPixelHistogram::AxisType, 2> PedestalTrackingPixelHistog
     return data;
 }
 
-void PedestalTrackingPixelHistogram::fill(const NDView<FrameType, 2> &image) {
-    if (image.shape(0) != rows_ || image.shape(1) != cols_) {
-        throw std::invalid_argument(
-            "PedestalTrackingPixelHistogram image shape does not match "
-            "constructor shape");
-    }
-    std::lock_guard<std::mutex> fill_lock(fill_mutex_);
-    dispatch_(WorkKind::Fill, &image);
-}
-
 void PedestalTrackingPixelHistogram::fill_with_threshold_(
     const NDView<FrameType, 2> &image) {
-    if (image.shape(0) != rows_ || image.shape(1) != cols_) {
-        throw std::invalid_argument(
-            "PedestalTrackingPixelHistogram image shape does not match "
-            "constructor shape");
-    }
+    // Called only by the coordinator thread on images already shape-checked
+    // by fill_async, so there is no need to re-validate. fill_mutex_ is
+    // still required: push_pedestal_no_update / update_mean / pedestal_mean
+    // can run concurrently and must not race this fan-out.
     std::lock_guard<std::mutex> fill_lock(fill_mutex_);
     dispatch_(WorkKind::FillWithThreshold, &image);
 }
@@ -398,20 +366,7 @@ void PedestalTrackingPixelHistogram::coordinator_loop() {
            !async_queue_->isEmpty()) {
         if (async_queue_->read(item)) {
             coordinator_busy_.store(true, std::memory_order_release);
-            try {
-                fill_with_threshold_(item.view());
-            } catch (const std::exception &e) {
-                // fill_async pre-validates shape, so this
-                // is purely defensive. Log to stderr and keep the
-                // coordinator alive.
-                std::cerr << "PedestalTrackingPixelHistogram::"
-                             "fill_async error: "
-                          << e.what() << std::endl;
-            } catch (...) {
-                std::cerr << "PedestalTrackingPixelHistogram::"
-                             "fill_async error: unknown"
-                          << std::endl;
-            }
+            fill_with_threshold_(item.view());
             coordinator_busy_.store(false, std::memory_order_release);
         } else {
             std::this_thread::sleep_for(async_wait_);

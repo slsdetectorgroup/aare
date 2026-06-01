@@ -2,8 +2,6 @@
 
 #include <algorithm>
 #include <cstring>
-#include <exception>
-#include <iostream>
 #include <stdexcept>
 #include <utility>
 #include <vector>
@@ -138,7 +136,7 @@ void PixelHistogram::worker_loop(int thread_id) {
     }
 }
 
-NDArray<PixelHistogram::StorageType, 3> PixelHistogram::hdata() const {
+NDArray<PixelHistogram::StorageType, 3> PixelHistogram::values() const {
     // Make sure any pending async fills are merged in before we snapshot
     // the partial histograms. Cheap when the queue is already drained.
     flush();
@@ -170,14 +168,10 @@ NDArray<PixelHistogram::StorageType, 3> PixelHistogram::hdata() const {
     return data;
 }
 
-void PixelHistogram::fill(const NDView<AxisType, 2> &image) {
-    if (image.shape(0) != rows_ || image.shape(1) != cols_) {
-        throw std::invalid_argument("PixelHistogram image shape does not match constructor shape");
-    }
-
-    // Serialise all calls into the fan-out. fill_mutex_ is always the
-    // outermost lock; work_mutex_ is taken briefly inside it.
-    std::lock_guard<std::mutex> fill_lock(fill_mutex_);
+void PixelHistogram::dispatch(const NDView<AxisType, 2> &image) {
+    // Called only by the coordinator thread on images already shape-checked
+    // by fill_async, so there is no need to re-validate or to serialise
+    // against other callers.
 
     // Reset counters and set work
     {
@@ -230,17 +224,7 @@ void PixelHistogram::coordinator_loop() {
     while (!stop_coordinator_.load(std::memory_order_acquire) || !async_queue_->isEmpty()) {
         if (async_queue_->read(item)) {
             coordinator_busy_.store(true, std::memory_order_release);
-            try {
-                fill(item.view());
-            } catch (const std::exception& e) {
-                // fill_async pre-validates shape, so this is purely
-                // defensive. Log to stderr and keep the coordinator alive.
-                std::cerr << "PixelHistogram::fill_async error: "
-                          << e.what() << std::endl;
-            } catch (...) {
-                std::cerr << "PixelHistogram::fill_async error: unknown"
-                          << std::endl;
-            }
+            dispatch(item.view());
             coordinator_busy_.store(false, std::memory_order_release);
         } else {
             std::this_thread::sleep_for(async_wait_);

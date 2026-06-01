@@ -16,28 +16,39 @@ using aare::PixelHistogram;
 using aare::NDArray;
 using aare::NDView;
 
+namespace {
+// The synchronous fill() has been removed; fill_async() is the only entry
+// point. This helper submits one frame and blocks until it has been merged
+// so the tests can keep their straightforward, ordered expectations.
+void fill_blocking(PixelHistogram &hist, const NDView<float, 2> &image) {
+    NDArray<float, 2> owned(image);
+    hist.fill_async(std::move(owned));
+    hist.flush();
+}
+} // namespace
+
 TEST_CASE("Fill one pixel of a 5x10 histogram"){
     PixelHistogram hist(5, 10, 20, 0.0, 10.0);
     NDArray<float, 2> image({5, 10}, -1.0); //Need to fill with -1 to not generate counts
     
     image(2, 3) = 5.7; // This should go into bin 11 (since bins are [0-0.5), [0.5-1.0), ..., [9.5-10.0))
     
-    hist.fill(image.view());
+    fill_blocking(hist, image.view());
     
-    auto hdata = hist.hdata();
-    REQUIRE(hdata.shape(0) == 5);
-    REQUIRE(hdata.shape(1) == 10);
-    REQUIRE(hdata.shape(2) == 20);
+    auto values = hist.values();
+    REQUIRE(values.shape(0) == 5);
+    REQUIRE(values.shape(1) == 10);
+    REQUIRE(values.shape(2) == 20);
     
     // Check that the correct bin for pixel (2,3) has count 1
-    CHECK(hdata(2, 3, 11) == 1);
+    CHECK(values(2, 3, 11) == 1);
     
     // Check that all other bins are zero
-    for (ssize_t row = 0; row < hdata.shape(0); ++row) {
-        for (ssize_t col = 0; col < hdata.shape(1); ++col) {
-            for (ssize_t bin = 0; bin < hdata.shape(2); ++bin) {
+    for (ssize_t row = 0; row < values.shape(0); ++row) {
+        for (ssize_t col = 0; col < values.shape(1); ++col) {
+            for (ssize_t bin = 0; bin < values.shape(2); ++bin) {
                 if (!(row == 2 && col == 3 && bin == 11)) {
-                    CHECK(hdata(row, col, bin) == 0);
+                    CHECK(values(row, col, bin) == 0);
                 }
             }
         }
@@ -54,29 +65,29 @@ TEST_CASE("Fill pixels with uneven partial histogram row slices"){
     image(3, 3) = 3.2;
     image(4, 0) = 4.2;
 
-    hist.fill(image.view());
+    fill_blocking(hist, image.view());
 
-    auto hdata = hist.hdata();
-    REQUIRE(hdata.shape(0) == 5);
-    REQUIRE(hdata.shape(1) == 4);
-    REQUIRE(hdata.shape(2) == 10);
+    auto values = hist.values();
+    REQUIRE(values.shape(0) == 5);
+    REQUIRE(values.shape(1) == 4);
+    REQUIRE(values.shape(2) == 10);
 
-    CHECK(hdata(0, 0, 0) == 1);
-    CHECK(hdata(1, 1, 1) == 1);
-    CHECK(hdata(2, 2, 2) == 1);
-    CHECK(hdata(3, 3, 3) == 1);
-    CHECK(hdata(4, 0, 4) == 1);
+    CHECK(values(0, 0, 0) == 1);
+    CHECK(values(1, 1, 1) == 1);
+    CHECK(values(2, 2, 2) == 1);
+    CHECK(values(3, 3, 3) == 1);
+    CHECK(values(4, 0, 4) == 1);
 
-    for (ssize_t row = 0; row < hdata.shape(0); ++row) {
-        for (ssize_t col = 0; col < hdata.shape(1); ++col) {
-            for (ssize_t bin = 0; bin < hdata.shape(2); ++bin) {
+    for (ssize_t row = 0; row < values.shape(0); ++row) {
+        for (ssize_t col = 0; col < values.shape(1); ++col) {
+            for (ssize_t bin = 0; bin < values.shape(2); ++bin) {
                 const bool expected = (row == 0 && col == 0 && bin == 0) ||
                                       (row == 1 && col == 1 && bin == 1) ||
                                       (row == 2 && col == 2 && bin == 2) ||
                                       (row == 3 && col == 3 && bin == 3) ||
                                       (row == 4 && col == 0 && bin == 4);
                 if (!expected) {
-                    CHECK(hdata(row, col, bin) == 0);
+                    CHECK(values(row, col, bin) == 0);
                 }
             }
         }
@@ -113,9 +124,9 @@ TEST_CASE("Row partitioning handles rows < n_threads * ceil(rows/n_threads)") {
     for (ssize_t r = 0; r < rows; ++r) {
         img(r, 0) = static_cast<float>(r % n_bins) + 0.5f;
     }
-    hist.fill(img.view());
+    fill_blocking(hist, img.view());
 
-    auto h = hist.hdata();
+    auto h = hist.values();
     REQUIRE(h.shape(0) == rows);
     REQUIRE(h.shape(1) == cols);
     REQUIRE(h.shape(2) == n_bins);
@@ -183,9 +194,9 @@ TEST_CASE("Random fills match a reference implementation") {
     }
 
     for (const auto& img : frames) {
-        hist.fill(img.view());
+        fill_blocking(hist, img.view());
     }
-    auto h = hist.hdata();
+    auto h = hist.values();
 
     REQUIRE(h.shape(0) == rows);
     REQUIRE(h.shape(1) == cols);
@@ -209,9 +220,10 @@ TEST_CASE("Random fills match a reference implementation") {
     CHECK(all_match);
 }
 
-TEST_CASE("Async fill matches sync fill") {
+TEST_CASE("Streamed async fill matches per-frame flushed fill") {
     // Submit a stream of random frames through fill_async and compare
-    // against the same frames processed by fill() on a separate histogram.
+    // against the same frames submitted one-at-a-time with a flush between
+    // each (via fill_blocking) on a separate histogram.
     constexpr int rows = 19;
     constexpr int cols = 23;
     constexpr int n_bins = 16;
@@ -234,15 +246,15 @@ TEST_CASE("Async fill matches sync fill") {
         for (ssize_t r = 0; r < rows; ++r)
             for (ssize_t c = 0; c < cols; ++c)
                 img(r, c) = dist(rng);
-        sync_hist.fill(img.view());
+        fill_blocking(sync_hist, img.view());
         async_hist.fill_async(std::move(img));
     }
-    // hdata() calls flush() internally, but exercise the explicit path too.
+    // values() calls flush() internally, but exercise the explicit path too.
     async_hist.flush();
     CHECK(async_hist.pending() == 0);
 
-    auto a = async_hist.hdata();
-    auto s = sync_hist.hdata();
+    auto a = async_hist.values();
+    auto s = sync_hist.values();
     REQUIRE(a.shape(0) == s.shape(0));
     REQUIRE(a.shape(1) == s.shape(1));
     REQUIRE(a.shape(2) == s.shape(2));
@@ -272,7 +284,7 @@ TEST_CASE("fill_async with mismatched shape throws") {
 TEST_CASE("Destructor drains pending async fills") {
     // Submit more frames than the queue can hold so backpressure kicks in,
     // then immediately let the histogram go out of scope and verify that
-    // the merged hdata() matches the reference computed sequentially.
+    // the merged values() matches the reference computed sequentially.
     constexpr int rows = 11;
     constexpr int cols = 7;
     constexpr int n_bins = 8;
@@ -303,14 +315,14 @@ TEST_CASE("Destructor drains pending async fills") {
             hist.fill_async(std::move(copy));
         }
         // No explicit flush(); destructor must drain.
-        // Capture hdata() *after* the loop but inside the scope so it
-        // observes everything that was submitted (hdata flushes too).
-        snapshot = hist.hdata();
+        // Capture values() *after* the loop but inside the scope so it
+        // observes everything that was submitted (values flushes too).
+        snapshot = hist.values();
     }
 
     PixelHistogram reference(rows, cols, n_bins, xmin, xmax, 2);
-    for (const auto& img : frames) reference.fill(img.view());
-    auto expected = reference.hdata();
+    for (const auto& img : frames) fill_blocking(reference, img.view());
+    auto expected = reference.values();
 
     bool all_match = true;
     for (ssize_t r = 0; r < rows && all_match; ++r) {

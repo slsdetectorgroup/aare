@@ -46,15 +46,8 @@ class PixelHistogram {
     std::atomic<bool> stop_workers_;
     int work_generation_;
 
-    // Serialises calls into the synchronous fan-out (`fill`). The
-    // coordinator thread acquires it for the duration of each item it
-    // processes, and direct callers of `fill` also acquire it. Without
-    // this, concurrent sync + async fills would race on `current_image_`
-    // and `work_generation_`.
-    std::mutex fill_mutex_;
-
     // Async producer/consumer pipeline. SPSC queue feeds the coordinator
-    // thread, which calls the synchronous `fill` one image at a time.
+    // thread, which fans each image out to the worker pool one at a time.
     std::unique_ptr<AsyncQueue> async_queue_;
     std::thread coordinator_;
     std::atomic<bool> stop_coordinator_{false};
@@ -64,6 +57,10 @@ class PixelHistogram {
     // Private worker thread method
     void worker_loop(int thread_id);
     void coordinator_loop();
+    // Fan a single image out to the worker pool and block until every
+    // worker has merged its row band. Only ever called by the coordinator
+    // thread, so no caller-serialisation lock is needed.
+    void dispatch(const NDView<AxisType, 2> &image);
     int row_start(int thread_id) const;
     int row_count(int thread_id) const;
 
@@ -71,11 +68,6 @@ class PixelHistogram {
     PixelHistogram(int rows, int cols, int n_bins, double xmin, double xmax,
                    int n_threads = 1, std::size_t max_pending = 16);
     ~PixelHistogram();
-
-    // Synchronous fill: blocks until the image has been merged into the
-    // accumulators. Safe to call concurrently with `fill_async` (calls are
-    // serialised through `fill_mutex_`).
-    void fill(const NDView<AxisType, 2> &image);
 
     // Asynchronous fill: takes ownership of `image`, enqueues it for the
     // coordinator thread, and returns. Blocks the caller only if the queue
@@ -92,7 +84,7 @@ class PixelHistogram {
 
     // Implicitly flushes pending async fills first so the snapshot is
     // consistent with everything that was submitted up to the call.
-    NDArray<StorageType, 3> hdata() const;
+    NDArray<StorageType, 3> values() const;
     NDArray<AxisType, 1> bin_centers() const;
     NDArray<AxisType, 1> bin_edges() const;
 };

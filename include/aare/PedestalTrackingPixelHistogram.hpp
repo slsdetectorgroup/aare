@@ -21,7 +21,7 @@ namespace aare {
 class PedestalTrackingPixelHistogram {
   public:
     using StorageType = uint16_t;
-    using AxisType = float; //TODO: template on pedesta type if needed
+    using AxisType = float; //TODO: template on pedestal type if needed
     using FrameType = uint16_t;
 
   private:
@@ -30,7 +30,7 @@ class PedestalTrackingPixelHistogram {
 
     // What kind of fan-out work the worker pool should currently do.
     // Set under work_mutex_; read by worker_loop after wakeup.
-    enum class WorkKind { Fill, PushPedestal, UpdateMean, FillWithThreshold };
+    enum class WorkKind { PushPedestal, UpdateMean, FillWithThreshold };
 
     int rows_;
     int cols_;
@@ -58,10 +58,9 @@ class PedestalTrackingPixelHistogram {
     std::atomic<bool> stop_workers_;
     int work_generation_;
 
-    // Serialises all fan-outs: `fill`, `push_pedestal_no_update`,
-    // `update_mean`, and the async coordinator's calls into
-    // `fill_with_threshold_`. Always the outermost lock; work_mutex_
-    // is taken briefly inside it.
+    // Serialises all fan-outs: `push_pedestal_no_update`, `update_mean`,
+    // and the async coordinator's calls into `fill_with_threshold_`.
+    // Always the outermost lock; work_mutex_ is taken briefly inside it.
     mutable std::mutex fill_mutex_;
 
     // Async producer/consumer pipeline. SPSC queue feeds the coordinator
@@ -85,7 +84,8 @@ class PedestalTrackingPixelHistogram {
     void dispatch_(WorkKind kind, const NDView<FrameType, 2> *image);
 
     // Coordinator-facing entry point: takes fill_mutex_ and dispatches
-    // FillWithThreshold to the worker pool. Same shape as fill().
+    // FillWithThreshold to the worker pool. Only ever called by the
+    // coordinator thread, on images already shape-checked by fill_async.
     void fill_with_threshold_(const NDView<FrameType, 2> &image);
 
   public:
@@ -100,13 +100,6 @@ class PedestalTrackingPixelHistogram {
     void push_pedestal_no_update(const NDView<FrameType, 2> &frame);
     void update_mean();
     NDArray<AxisType, 2> pedestal_mean() const;
-
-    // Synchronous fill: blocks until the pedestal-subtracted residual
-    // for `image` has been merged into the accumulators. Safe to call
-    // concurrently with `fill_async` and the
-    // pedestal-update API (calls are serialised through `fill_mutex_`).
-    // Histogram-only - independent of `n_sigma()`.
-    void fill(const NDView<FrameType, 2> &image);
 
     void fill_async(NDArray<FrameType, 2> image);
 
@@ -125,7 +118,7 @@ class PedestalTrackingPixelHistogram {
 
     // Implicitly flushes pending async fills first so the snapshot is
     // consistent with everything that was submitted up to the call.
-    NDArray<StorageType, 3> hdata() const;
+    NDArray<StorageType, 3> values() const;
     NDArray<AxisType, 1> bin_centers() const;
     NDArray<AxisType, 1> bin_edges() const;
 };

@@ -32,20 +32,6 @@ void define_pixel_histogram_bindings(py::module &m) {
              py::arg("xmin"), py::arg("xmax"), py::arg("n_threads") = 1,
              py::arg("max_pending") = std::size_t{16})
 
-        .def("fill",
-             [](PixelHistogram &self,
-                py::array_t<PixelHistogram::AxisType, 0> image) {
-                 auto view = make_view_2d(image);
-                 self.fill(view);
-             },
-             R"(
-             Fill the histogram with image data (blocking).
-
-             Args:
-                 image: A 2D numpy array of pixel values (dtype: float32)
-             )",
-             py::arg("image").noconvert())
-
         .def("fill_async",
              [](PixelHistogram &self,
                 py::array_t<PixelHistogram::AxisType, 0> image) {
@@ -89,15 +75,15 @@ void define_pixel_histogram_bindings(py::module &m) {
              for monitoring/diagnostics.
              )")
 
-        .def("hdata",
+        .def("values",
              [](const PixelHistogram &self) {
-                 // hdata() implicitly flushes - release the GIL while it
+                 // values() implicitly flushes - release the GIL while it
                  // does so. Allocation/copy into the NDArray runs without
                  // the GIL too; only the numpy wrapping needs it.
                  NDArray<PixelHistogram::StorageType, 3>* ptr = nullptr;
                  {
                      py::gil_scoped_release release;
-                     ptr = new NDArray<PixelHistogram::StorageType, 3>(self.hdata());
+                     ptr = new NDArray<PixelHistogram::StorageType, 3>(self.values());
                  }
                  return return_image_data(ptr);
              },
