@@ -142,6 +142,25 @@ void define_pedestal_tracking_pixel_histogram_bindings(py::module &m) {
              )",
              py::arg("image").noconvert())
 
+
+        .def("fill_from_file", &PedestalTrackingPixelHistogram::fill_from_file,
+             R"(
+             Fill the histogram from a file.
+
+             Args:
+                 file_path: Path to the file to fill from
+                 max_frames: Maximum number of frames to fill from the file (default: -1)
+             )",py::call_guard<py::gil_scoped_release>(),
+             py::arg("fname"), py::arg("max_frames") = -1, py::arg("verbose") = false)
+        .def("process_pedestal_file", &PedestalTrackingPixelHistogram::process_pedestal_file,
+             R"(
+             Process a pedestal file.
+
+             Args:
+                 file_path: Path to the file to process
+                 max_frames: Maximum number of frames to process from the file (default: -1)
+             )",py::call_guard<py::gil_scoped_release>(),
+             py::arg("fname"), py::arg("max_frames") = -1, py::arg("verbose") = false)
         .def_property("n_sigma", &PedestalTrackingPixelHistogram::n_sigma,
                       &PedestalTrackingPixelHistogram::set_n_sigma,
                       R"(

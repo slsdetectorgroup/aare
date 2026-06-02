@@ -84,6 +84,7 @@ void PixelHistogramImpl<T, StorageType>::fill(const NDView<T, 2> &frame) {
 template <typename T, typename StorageType>
 void PixelHistogramImpl<T, StorageType>::fill(int row, int col, T value) {
     //TODO! add out of bounds check on row and col???
+    
     if (value < m_xmin || value >= m_xmax) {
         return;
     }

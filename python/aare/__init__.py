@@ -33,7 +33,7 @@ from .CtbRawFile import CtbRawFile
 from .RawFile import RawFile
 from .ScanParameters import ScanParameters
 
-from .utils import random_pixels, random_pixel, flat_list, add_colorbar
+from .utils import random_pixels, random_pixel, flat_list, add_colorbar, Timer
 
 
 #make functions available in the top level API

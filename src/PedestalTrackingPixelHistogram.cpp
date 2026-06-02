@@ -1,12 +1,15 @@
 #include "aare/PedestalTrackingPixelHistogram.hpp"
+#include "aare/File.hpp"
 
 #include <algorithm>
+#include <chrono>
 #include <cmath>
 #include <cstring>
 #include <stdexcept>
 #include <utility>
 #include <vector>
 
+#include <fmt/format.h>
 namespace aare {
 
 PedestalTrackingPixelHistogram::PedestalTrackingPixelHistogram(
@@ -384,6 +387,105 @@ PedestalTrackingPixelHistogram::bin_centers() const {
 NDArray<PedestalTrackingPixelHistogram::AxisType, 1>
 PedestalTrackingPixelHistogram::bin_edges() const {
     return partial_hists_.front().bin_edges();
+}
+
+void PedestalTrackingPixelHistogram::fill_from_file(const std::filesystem::path &fname, ssize_t max_frames, bool verbose) {
+    constexpr std::size_t progress_interval = 66;
+    auto last = std::chrono::steady_clock::now();
+    
+    File f(fname);
+    //check that row col matches constructor
+    if (f.rows() != rows_ || f.cols() != cols_) {
+        throw std::invalid_argument(
+            "PedestalTrackingPixelHistogram: Frame in file {} has shape ({}, {}) does not match "
+            "constructor shape");
+    }
+
+    
+    const ssize_t total_frames = f.total_frames();
+    const ssize_t n_frames = max_frames == -1 ? total_frames : std::min(max_frames, total_frames);
+    for (ssize_t i = 0; i < n_frames; ++i) {
+        aare::NDArray<uint16_t> frame({rows_, cols_});
+        f.read_into(reinterpret_cast<std::byte *>(frame.data()));
+        fill_async(frame);
+
+        // print progress
+        if (verbose && ((i + 1) % progress_interval == 0 || (i + 1 == n_frames))) {
+            const auto now = std::chrono::steady_clock::now();
+            const double dt =
+                std::chrono::duration<double>(now - last).count();
+            const std::size_t done_in_interval =
+                (i + 1) % progress_interval == 0
+                    ? progress_interval
+                    : (i + 1) % progress_interval;
+            const double fps =
+                dt > 0.0 ? static_cast<double>(done_in_interval) / dt
+                         : 0.0;
+            // Carriage return (no newline) so the line is rewritten
+            // in place; flush since stdout is line-buffered.
+            
+            fmt::print("\rProgress: {}/{} ({:.1f}%)  {:.1f} FPS    ",
+                       i + 1, n_frames,
+                       100.0 * static_cast<double>(i + 1) /
+                           static_cast<double>(n_frames),
+                       fps);
+            std::fflush(stdout);
+            last = now;
+        }
+        
+    }
+    flush();
+    if (verbose) {
+        fmt::print("\n\n");
+        std::fflush(stdout);
+    }
+}
+
+void PedestalTrackingPixelHistogram::process_pedestal_file(const std::filesystem::path &fname, ssize_t max_frames, bool verbose) {
+    constexpr std::size_t progress_interval = 66;
+    auto last = std::chrono::steady_clock::now();
+    
+    File f(fname);
+    //check that row col matches constructor
+    if (f.rows() != rows_ || f.cols() != cols_) {
+        throw std::invalid_argument(
+            "PedestalTrackingPixelHistogram: Frame in file {} has shape ({}, {}) does not match "
+            "constructor shape");
+    }
+
+    const ssize_t total_frames = f.total_frames();
+    const ssize_t n_frames = max_frames == -1 ? total_frames : std::min(max_frames, total_frames);
+
+    aare::NDArray<uint16_t> frame({rows_, cols_});
+    for (ssize_t i = 0; i < n_frames; ++i) {
+        f.read_into(reinterpret_cast<std::byte *>(frame.data()));
+        push_pedestal_no_update(frame.view());
+        if (verbose && ((i + 1) % progress_interval == 0 || (i + 1 == n_frames))) {
+            const auto now = std::chrono::steady_clock::now();
+            const double dt =
+                std::chrono::duration<double>(now - last).count();
+            const std::size_t done_in_interval =
+                (i + 1) % progress_interval == 0
+                    ? progress_interval
+                    : (i + 1) % progress_interval;
+            const double fps =
+                dt > 0.0 ? static_cast<double>(done_in_interval) / dt
+                         : 0.0;
+            fmt::print("\rProgress: {}/{} ({:.1f}%)  {:.1f} FPS    ",
+                       i + 1, n_frames,
+                       100.0 * static_cast<double>(i + 1) /
+                           static_cast<double>(n_frames),
+                       fps);
+            std::fflush(stdout);
+            last = now;
+        }
+    }
+    update_mean();
+    flush();
+    if (verbose) {
+        fmt::print("\n\n");
+        std::fflush(stdout);
+    }
 }
 
 } // namespace aare
