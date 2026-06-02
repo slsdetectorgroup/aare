@@ -395,7 +395,7 @@ void PedestalTrackingPixelHistogram::fill_from_file(const std::filesystem::path 
     
     File f(fname);
     //check that row col matches constructor
-    if (f.rows() != rows_ || f.cols() != cols_) {
+    if (f.rows() != static_cast<size_t>(rows_) || f.cols() != static_cast<size_t>(cols_)) {
         throw std::invalid_argument(
             "PedestalTrackingPixelHistogram: Frame in file {} has shape ({}, {}) does not match "
             "constructor shape");
@@ -447,7 +447,7 @@ void PedestalTrackingPixelHistogram::process_pedestal_file(const std::filesystem
     
     File f(fname);
     //check that row col matches constructor
-    if (f.rows() != rows_ || f.cols() != cols_) {
+    if (f.rows() != static_cast<size_t>(rows_) || f.cols() != static_cast<size_t>(cols_)) {
         throw std::invalid_argument(
             "PedestalTrackingPixelHistogram: Frame in file {} has shape ({}, {}) does not match "
             "constructor shape");
