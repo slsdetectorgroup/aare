@@ -8,16 +8,19 @@
 
 namespace aare {
 
-
-PixelHistogram::PixelHistogram(int rows, int cols, int n_bins, double xmin, double xmax,
-                               int n_threads, std::size_t max_pending):
-             rows_(rows), cols_(cols), n_threads_(n_threads), xmin_(xmin), xmax_(xmax), current_image_(nullptr),
-             completed_threads_(0), stop_workers_(false), work_generation_(0) {
+PixelHistogram::PixelHistogram(int rows, int cols, int n_bins, double xmin,
+                               double xmax, int n_threads,
+                               std::size_t max_pending)
+    : rows_(rows), cols_(cols), n_threads_(n_threads), xmin_(xmin), xmax_(xmax),
+      current_image_(nullptr), completed_threads_(0), stop_workers_(false),
+      work_generation_(0) {
     if (rows_ < 1 || cols_ < 1 || n_bins < 1) {
-        throw std::invalid_argument("PixelHistogram requires positive rows, cols and bins");
+        throw std::invalid_argument(
+            "PixelHistogram requires positive rows, cols and bins");
     }
     if (n_threads < 1) {
-        throw std::invalid_argument("PixelHistogram requires at least one thread");
+        throw std::invalid_argument(
+            "PixelHistogram requires at least one thread");
     }
     if (max_pending < 1) {
         throw std::invalid_argument("PixelHistogram requires max_pending >= 1");
@@ -31,7 +34,7 @@ PixelHistogram::PixelHistogram(int rows, int cols, int n_bins, double xmin, doub
     // ceil(rows/n_threads) scheme leaving trailing threads with zero or
     // negative row counts (e.g. rows=17, n_threads=8).
     row_offsets_.resize(n_threads_ + 1);
-    const int base  = rows_ / n_threads_;
+    const int base = rows_ / n_threads_;
     const int extra = rows_ % n_threads_;
     int offset = 0;
     for (int i = 0; i < n_threads_; ++i) {
@@ -56,7 +59,8 @@ PixelHistogram::PixelHistogram(int rows, int cols, int n_bins, double xmin, doub
 
     // Async pipeline. The PCQ holds (size - 1) usable slots, so size up by
     // one to honour the requested max_pending.
-    async_queue_ = std::make_unique<AsyncQueue>(static_cast<std::uint32_t>(max_pending + 1));
+    async_queue_ = std::make_unique<AsyncQueue>(
+        static_cast<std::uint32_t>(max_pending + 1));
     coordinator_ = std::thread([this]() { this->coordinator_loop(); });
 }
 
@@ -77,7 +81,7 @@ PixelHistogram::~PixelHistogram() {
     work_cv_.notify_all();
 
     // Join all worker threads
-    for (auto& thread : workers_) {
+    for (auto &thread : workers_) {
         if (thread.joinable()) {
             thread.join();
         }
@@ -100,19 +104,19 @@ void PixelHistogram::worker_loop(int thread_id) {
         work_cv_.wait(lock, [this, last_generation]() {
             return work_generation_ != last_generation || stop_workers_;
         });
-        
+
         if (stop_workers_) {
             break;
         }
-        
+
         // Get work assignment
-        const NDView<AxisType, 2>& image = *current_image_;
+        const NDView<AxisType, 2> &image = *current_image_;
         const int generation = work_generation_;
         const int first_row = row_start(thread_id);
         const int local_rows = row_count(thread_id);
-        
+
         lock.unlock();
-        
+
         // Do the work: fill this thread's partial histogram. The
         // [xmin, xmax) range gate lives inside PixelHistogramImpl::fill.
         auto &my_hist = partial_hists_[thread_id];
@@ -123,7 +127,7 @@ void PixelHistogram::worker_loop(int thread_id) {
                 my_hist.fill(local_row, static_cast<int>(col), val);
             }
         }
-        
+
         // Signal completion
         {
             std::unique_lock<std::mutex> done_lock(work_mutex_);
@@ -187,14 +191,16 @@ void PixelHistogram::dispatch(const NDView<AxisType, 2> &image) {
     // Wait for all workers to complete
     {
         std::unique_lock<std::mutex> lock(work_mutex_);
-        done_cv_.wait(lock, [this]() { return completed_threads_ == n_threads_; });
-        current_image_ = nullptr;  // Clear work assignment
+        done_cv_.wait(lock,
+                      [this]() { return completed_threads_ == n_threads_; });
+        current_image_ = nullptr; // Clear work assignment
     }
 }
 
 void PixelHistogram::fill_async(NDArray<AxisType, 2> image) {
     if (image.shape(0) != rows_ || image.shape(1) != cols_) {
-        throw std::invalid_argument("PixelHistogram image shape does not match constructor shape");
+        throw std::invalid_argument(
+            "PixelHistogram image shape does not match constructor shape");
     }
 
     // SPSC backpressure: spin with a short sleep until a slot frees up.
@@ -206,7 +212,8 @@ void PixelHistogram::fill_async(NDArray<AxisType, 2> image) {
 }
 
 void PixelHistogram::flush() const {
-    while (!async_queue_->isEmpty() || coordinator_busy_.load(std::memory_order_acquire)) {
+    while (!async_queue_->isEmpty() ||
+           coordinator_busy_.load(std::memory_order_acquire)) {
         std::this_thread::sleep_for(async_wait_);
     }
 }
@@ -221,7 +228,8 @@ std::size_t PixelHistogram::pending() const {
 
 void PixelHistogram::coordinator_loop() {
     NDArray<AxisType, 2> item;
-    while (!stop_coordinator_.load(std::memory_order_acquire) || !async_queue_->isEmpty()) {
+    while (!stop_coordinator_.load(std::memory_order_acquire) ||
+           !async_queue_->isEmpty()) {
         if (async_queue_->read(item)) {
             coordinator_busy_.store(true, std::memory_order_release);
             dispatch(item.view());

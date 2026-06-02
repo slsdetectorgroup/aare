@@ -15,9 +15,9 @@ void define_pedestal_tracking_pixel_histogram_bindings(py::module &m) {
         m, "PedestalTrackingPixelHistogram",
         "A pixel-wise histogram of frame - pedestal residuals, with a "
         "per-pixel running pedestal estimate sharded across worker threads")
-        .def(py::init<int, int, int, double, double, int, std::size_t,
-                      double>(),
-             R"(
+        .def(
+            py::init<int, int, int, double, double, int, std::size_t, double>(),
+            R"(
              Initialize a PedestalTrackingPixelHistogram.
 
              Args:
@@ -43,19 +43,19 @@ void define_pedestal_tracking_pixel_histogram_bindings(py::module &m) {
                      histogram-only async behaviour (default: 1.0).
                      Also exposed live via the ``n_sigma`` property.
              )",
-             py::arg("rows"), py::arg("cols"), py::arg("n_bins"),
-             py::arg("xmin"), py::arg("xmax"), py::arg("n_threads") = 1,
-             py::arg("max_pending") = std::size_t{16},
-             py::arg("n_sigma") = 1.0)
+            py::arg("rows"), py::arg("cols"), py::arg("n_bins"),
+            py::arg("xmin"), py::arg("xmax"), py::arg("n_threads") = 1,
+            py::arg("max_pending") = std::size_t{16}, py::arg("n_sigma") = 1.0)
 
-        .def("push_pedestal_no_update",
-             [](PedestalTrackingPixelHistogram &self,
-                py::array_t<PedestalTrackingPixelHistogram::FrameType, 0>
-                    frame) {
-                 auto view = make_view_2d(frame);
-                 self.push_pedestal_no_update(view);
-             },
-             R"(
+        .def(
+            "push_pedestal_no_update",
+            [](PedestalTrackingPixelHistogram &self,
+               py::array_t<PedestalTrackingPixelHistogram::FrameType, 0>
+                   frame) {
+                auto view = make_view_2d(frame);
+                self.push_pedestal_no_update(view);
+            },
+            R"(
              Accumulate `frame` into the per-pixel running pedestal
              estimate without refreshing the cached mean.
 
@@ -65,7 +65,7 @@ void define_pedestal_tracking_pixel_histogram_bindings(py::module &m) {
              Args:
                  frame: A 2D numpy array of raw pixel values (dtype: uint16)
              )",
-             py::arg("frame").noconvert())
+            py::arg("frame").noconvert())
 
         .def("update_mean", &PedestalTrackingPixelHistogram::update_mean,
              R"(
@@ -77,19 +77,22 @@ void define_pedestal_tracking_pixel_histogram_bindings(py::module &m) {
              )",
              py::call_guard<py::gil_scoped_release>())
 
-        .def("pedestal_mean",
-             [](const PedestalTrackingPixelHistogram &self) {
-                 // pedestal_mean() flushes + locks + memcpys; do all of
-                 // that without the GIL, only reacquire to wrap into a
-                 // numpy array.
-                 NDArray<PedestalTrackingPixelHistogram::AxisType, 2> *ptr = nullptr;
-                 {
-                     py::gil_scoped_release release;
-                     ptr = new NDArray<PedestalTrackingPixelHistogram::AxisType, 2>(self.pedestal_mean());
-                 }
-                 return return_image_data(ptr);
-             },
-             R"(
+        .def(
+            "pedestal_mean",
+            [](const PedestalTrackingPixelHistogram &self) {
+                // pedestal_mean() flushes + locks + memcpys; do all of
+                // that without the GIL, only reacquire to wrap into a
+                // numpy array.
+                NDArray<PedestalTrackingPixelHistogram::AxisType, 2> *ptr =
+                    nullptr;
+                {
+                    py::gil_scoped_release release;
+                    ptr = new NDArray<PedestalTrackingPixelHistogram::AxisType,
+                                      2>(self.pedestal_mean());
+                }
+                return return_image_data(ptr);
+            },
+            R"(
              Snapshot the per-pixel pedestal mean stitched together
              from all shards.
 
@@ -98,23 +101,24 @@ void define_pedestal_tracking_pixel_histogram_bindings(py::module &m) {
                  containing the current cached pedestal mean.
              )")
 
-        .def("fill_async",
-             [](PedestalTrackingPixelHistogram &self,
-                py::array_t<PedestalTrackingPixelHistogram::FrameType, 0>
-                    image) {
-                 // Copy the numpy buffer into an owned NDArray while we
-                 // still hold the GIL so we don't depend on the array's
-                 // backing storage outliving this call.
-                 auto view = make_view_2d(image);
-                 NDArray<PedestalTrackingPixelHistogram::FrameType, 2> owned(
-                     view);
-                 // Release the GIL while enqueueing -
-                 // fill_async can block on backpressure
-                 // when the queue is full.
-                 py::gil_scoped_release release;
-                 self.fill_async(std::move(owned));
-             },
-             R"(
+        .def(
+            "fill_async",
+            [](PedestalTrackingPixelHistogram &self,
+               py::array_t<PedestalTrackingPixelHistogram::FrameType, 0>
+                   image) {
+                // Copy the numpy buffer into an owned NDArray while we
+                // still hold the GIL so we don't depend on the array's
+                // backing storage outliving this call.
+                auto view = make_view_2d(image);
+                NDArray<PedestalTrackingPixelHistogram::FrameType, 2> owned(
+                    view);
+                // Release the GIL while enqueueing -
+                // fill_async can block on backpressure
+                // when the queue is full.
+                py::gil_scoped_release release;
+                self.fill_async(std::move(owned));
+            },
+            R"(
              Submit an image for asynchronous filling with sigma-clipped
              pedestal tracking.
 
@@ -140,8 +144,7 @@ void define_pedestal_tracking_pixel_histogram_bindings(py::module &m) {
              Args:
                  image: A 2D numpy array of raw pixel values (dtype: uint16)
              )",
-             py::arg("image").noconvert())
-
+            py::arg("image").noconvert())
 
         .def("fill_from_file", &PedestalTrackingPixelHistogram::fill_from_file,
              R"(
@@ -150,17 +153,20 @@ void define_pedestal_tracking_pixel_histogram_bindings(py::module &m) {
              Args:
                  file_path: Path to the file to fill from
                  max_frames: Maximum number of frames to fill from the file (default: -1)
-             )",py::call_guard<py::gil_scoped_release>(),
-             py::arg("fname"), py::arg("max_frames") = -1, py::arg("verbose") = false)
-        .def("process_pedestal_file", &PedestalTrackingPixelHistogram::process_pedestal_file,
+             )",
+             py::call_guard<py::gil_scoped_release>(), py::arg("fname"),
+             py::arg("max_frames") = -1, py::arg("verbose") = false)
+        .def("process_pedestal_file",
+             &PedestalTrackingPixelHistogram::process_pedestal_file,
              R"(
              Process a pedestal file.
 
              Args:
                  file_path: Path to the file to process
                  max_frames: Maximum number of frames to process from the file (default: -1)
-             )",py::call_guard<py::gil_scoped_release>(),
-             py::arg("fname"), py::arg("max_frames") = -1, py::arg("verbose") = false)
+             )",
+             py::call_guard<py::gil_scoped_release>(), py::arg("fname"),
+             py::arg("max_frames") = -1, py::arg("verbose") = false)
         .def_property("n_sigma", &PedestalTrackingPixelHistogram::n_sigma,
                       &PedestalTrackingPixelHistogram::set_n_sigma,
                       R"(
@@ -187,22 +193,23 @@ void define_pedestal_tracking_pixel_histogram_bindings(py::module &m) {
              for monitoring/diagnostics.
              )")
 
-        .def("values",
-             [](const PedestalTrackingPixelHistogram &self) {
-                 // values() implicitly flushes - release the GIL while it
-                 // does so. Allocation/copy into the NDArray runs without
-                 // the GIL too; only the numpy wrapping needs it.
-                 NDArray<PedestalTrackingPixelHistogram::StorageType, 3>
-                     *ptr = nullptr;
-                 {
-                     py::gil_scoped_release release;
-                     ptr = new NDArray<
-                         PedestalTrackingPixelHistogram::StorageType, 3>(
-                         self.values());
-                 }
-                 return return_image_data(ptr);
-             },
-             R"(
+        .def(
+            "values",
+            [](const PedestalTrackingPixelHistogram &self) {
+                // values() implicitly flushes - release the GIL while it
+                // does so. Allocation/copy into the NDArray runs without
+                // the GIL too; only the numpy wrapping needs it.
+                NDArray<PedestalTrackingPixelHistogram::StorageType, 3> *ptr =
+                    nullptr;
+                {
+                    py::gil_scoped_release release;
+                    ptr =
+                        new NDArray<PedestalTrackingPixelHistogram::StorageType,
+                                    3>(self.values());
+                }
+                return return_image_data(ptr);
+            },
+            R"(
              Get the histogram data as a numpy array.
 
              Implicitly flushes any pending asynchronous fills before
@@ -214,28 +221,30 @@ void define_pedestal_tracking_pixel_histogram_bindings(py::module &m) {
                  containing the histogram bins for each pixel.
              )")
 
-        .def("bin_centers",
-             [](const PedestalTrackingPixelHistogram &self) {
-                 auto ptr = new NDArray<
-                     PedestalTrackingPixelHistogram::AxisType, 1>(
-                     self.bin_centers());
-                 return return_image_data(ptr);
-             },
-             R"(
+        .def(
+            "bin_centers",
+            [](const PedestalTrackingPixelHistogram &self) {
+                auto ptr =
+                    new NDArray<PedestalTrackingPixelHistogram::AxisType, 1>(
+                        self.bin_centers());
+                return return_image_data(ptr);
+            },
+            R"(
              Get the bin centers along the residual axis.
 
              Returns:
                  A 1D numpy array (dtype: float32) of bin center values.
              )")
 
-        .def("bin_edges",
-             [](const PedestalTrackingPixelHistogram &self) {
-                 auto ptr = new NDArray<
-                     PedestalTrackingPixelHistogram::AxisType, 1>(
-                     self.bin_edges());
-                 return return_image_data(ptr);
-             },
-             R"(
+        .def(
+            "bin_edges",
+            [](const PedestalTrackingPixelHistogram &self) {
+                auto ptr =
+                    new NDArray<PedestalTrackingPixelHistogram::AxisType, 1>(
+                        self.bin_edges());
+                return return_image_data(ptr);
+            },
+            R"(
              Get the bin edges along the residual axis.
 
              Returns:

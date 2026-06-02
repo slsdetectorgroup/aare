@@ -20,8 +20,8 @@ PedestalTrackingPixelHistogram::PedestalTrackingPixelHistogram(
       completed_threads_(0), stop_workers_(false), work_generation_(0),
       n_sigma_(n_sigma) {
     if (rows_ < 1 || cols_ < 1 || n_bins < 1) {
-        throw std::invalid_argument(
-            "PedestalTrackingPixelHistogram requires positive rows, cols and bins");
+        throw std::invalid_argument("PedestalTrackingPixelHistogram requires "
+                                    "positive rows, cols and bins");
     }
     if (n_threads < 1) {
         throw std::invalid_argument(
@@ -73,8 +73,8 @@ PedestalTrackingPixelHistogram::PedestalTrackingPixelHistogram(
 
     // Async pipeline. The PCQ holds (size - 1) usable slots, so size up by
     // one to honour the requested max_pending.
-    async_queue_ =
-        std::make_unique<AsyncQueue>(static_cast<std::uint32_t>(max_pending + 1));
+    async_queue_ = std::make_unique<AsyncQueue>(
+        static_cast<std::uint32_t>(max_pending + 1));
     coordinator_ = std::thread([this]() { this->coordinator_loop(); });
 }
 
@@ -220,11 +220,10 @@ void PedestalTrackingPixelHistogram::worker_loop(int thread_id) {
                 const auto row = static_cast<ssize_t>(first_row + local_row);
                 for (ssize_t col = 0; col < image->shape(1); ++col) {
                     const FrameType raw = (*image)(row, col);
-                    const AxisType val =
-                        static_cast<AxisType>(raw) -
-                        static_cast<AxisType>(my_pedestal.mean(
-                            static_cast<uint32_t>(local_row),
-                            static_cast<uint32_t>(col)));
+                    const AxisType val = static_cast<AxisType>(raw) -
+                                         static_cast<AxisType>(my_pedestal.mean(
+                                             static_cast<uint32_t>(local_row),
+                                             static_cast<uint32_t>(col)));
                     my_hist.fill(local_row, static_cast<int>(col), val);
                     const double sigma = my_std(local_row, col);
                     if (sigma > 0.0 &&
@@ -284,7 +283,8 @@ PedestalTrackingPixelHistogram::values() const {
     return data;
 }
 
-NDArray<PedestalTrackingPixelHistogram::AxisType, 2> PedestalTrackingPixelHistogram::pedestal_mean() const {
+NDArray<PedestalTrackingPixelHistogram::AxisType, 2>
+PedestalTrackingPixelHistogram::pedestal_mean() const {
     // Drain in-flight async fills and serialise with all other fan-outs
     // (Fill / PushPedestal / UpdateMean). m_mean is overwritten wholesale
     // by Pedestal::update_mean, so without the lock we could read torn
@@ -324,8 +324,7 @@ void PedestalTrackingPixelHistogram::fill_with_threshold_(
     dispatch_(WorkKind::FillWithThreshold, &image);
 }
 
-void PedestalTrackingPixelHistogram::fill_async(
-    NDArray<FrameType, 2> image) {
+void PedestalTrackingPixelHistogram::fill_async(NDArray<FrameType, 2> image) {
     if (image.shape(0) != rows_ || image.shape(1) != cols_) {
         throw std::invalid_argument(
             "PedestalTrackingPixelHistogram image shape does not match "
@@ -389,50 +388,49 @@ PedestalTrackingPixelHistogram::bin_edges() const {
     return partial_hists_.front().bin_edges();
 }
 
-void PedestalTrackingPixelHistogram::fill_from_file(const std::filesystem::path &fname, ssize_t max_frames, bool verbose) {
+void PedestalTrackingPixelHistogram::fill_from_file(
+    const std::filesystem::path &fname, ssize_t max_frames, bool verbose) {
     constexpr std::size_t progress_interval = 66;
     auto last = std::chrono::steady_clock::now();
-    
+
     File f(fname);
-    //check that row col matches constructor
-    if (f.rows() != static_cast<size_t>(rows_) || f.cols() != static_cast<size_t>(cols_)) {
-        throw std::invalid_argument(
-            "PedestalTrackingPixelHistogram: Frame in file {} has shape ({}, {}) does not match "
-            "constructor shape");
+    // check that row col matches constructor
+    if (f.rows() != static_cast<size_t>(rows_) ||
+        f.cols() != static_cast<size_t>(cols_)) {
+        throw std::invalid_argument("PedestalTrackingPixelHistogram: Frame in "
+                                    "file {} has shape ({}, {}) does not match "
+                                    "constructor shape");
     }
 
-    
     const ssize_t total_frames = f.total_frames();
-    const ssize_t n_frames = max_frames == -1 ? total_frames : std::min(max_frames, total_frames);
+    const ssize_t n_frames =
+        max_frames == -1 ? total_frames : std::min(max_frames, total_frames);
     for (ssize_t i = 0; i < n_frames; ++i) {
         aare::NDArray<uint16_t> frame({rows_, cols_});
         f.read_into(reinterpret_cast<std::byte *>(frame.data()));
         fill_async(frame);
 
         // print progress
-        if (verbose && ((i + 1) % progress_interval == 0 || (i + 1 == n_frames))) {
+        if (verbose &&
+            ((i + 1) % progress_interval == 0 || (i + 1 == n_frames))) {
             const auto now = std::chrono::steady_clock::now();
-            const double dt =
-                std::chrono::duration<double>(now - last).count();
+            const double dt = std::chrono::duration<double>(now - last).count();
             const std::size_t done_in_interval =
-                (i + 1) % progress_interval == 0
-                    ? progress_interval
-                    : (i + 1) % progress_interval;
+                (i + 1) % progress_interval == 0 ? progress_interval
+                                                 : (i + 1) % progress_interval;
             const double fps =
-                dt > 0.0 ? static_cast<double>(done_in_interval) / dt
-                         : 0.0;
+                dt > 0.0 ? static_cast<double>(done_in_interval) / dt : 0.0;
             // Carriage return (no newline) so the line is rewritten
             // in place; flush since stdout is line-buffered.
-            
-            fmt::print("\rProgress: {}/{} ({:.1f}%)  {:.1f} FPS    ",
-                       i + 1, n_frames,
+
+            fmt::print("\rProgress: {}/{} ({:.1f}%)  {:.1f} FPS    ", i + 1,
+                       n_frames,
                        100.0 * static_cast<double>(i + 1) /
                            static_cast<double>(n_frames),
                        fps);
             std::fflush(stdout);
             last = now;
         }
-        
     }
     flush();
     if (verbose) {
@@ -441,38 +439,39 @@ void PedestalTrackingPixelHistogram::fill_from_file(const std::filesystem::path 
     }
 }
 
-void PedestalTrackingPixelHistogram::process_pedestal_file(const std::filesystem::path &fname, ssize_t max_frames, bool verbose) {
+void PedestalTrackingPixelHistogram::process_pedestal_file(
+    const std::filesystem::path &fname, ssize_t max_frames, bool verbose) {
     constexpr std::size_t progress_interval = 66;
     auto last = std::chrono::steady_clock::now();
-    
+
     File f(fname);
-    //check that row col matches constructor
-    if (f.rows() != static_cast<size_t>(rows_) || f.cols() != static_cast<size_t>(cols_)) {
-        throw std::invalid_argument(
-            "PedestalTrackingPixelHistogram: Frame in file {} has shape ({}, {}) does not match "
-            "constructor shape");
+    // check that row col matches constructor
+    if (f.rows() != static_cast<size_t>(rows_) ||
+        f.cols() != static_cast<size_t>(cols_)) {
+        throw std::invalid_argument("PedestalTrackingPixelHistogram: Frame in "
+                                    "file {} has shape ({}, {}) does not match "
+                                    "constructor shape");
     }
 
     const ssize_t total_frames = f.total_frames();
-    const ssize_t n_frames = max_frames == -1 ? total_frames : std::min(max_frames, total_frames);
+    const ssize_t n_frames =
+        max_frames == -1 ? total_frames : std::min(max_frames, total_frames);
 
     aare::NDArray<uint16_t> frame({rows_, cols_});
     for (ssize_t i = 0; i < n_frames; ++i) {
         f.read_into(reinterpret_cast<std::byte *>(frame.data()));
         push_pedestal_no_update(frame.view());
-        if (verbose && ((i + 1) % progress_interval == 0 || (i + 1 == n_frames))) {
+        if (verbose &&
+            ((i + 1) % progress_interval == 0 || (i + 1 == n_frames))) {
             const auto now = std::chrono::steady_clock::now();
-            const double dt =
-                std::chrono::duration<double>(now - last).count();
+            const double dt = std::chrono::duration<double>(now - last).count();
             const std::size_t done_in_interval =
-                (i + 1) % progress_interval == 0
-                    ? progress_interval
-                    : (i + 1) % progress_interval;
+                (i + 1) % progress_interval == 0 ? progress_interval
+                                                 : (i + 1) % progress_interval;
             const double fps =
-                dt > 0.0 ? static_cast<double>(done_in_interval) / dt
-                         : 0.0;
-            fmt::print("\rProgress: {}/{} ({:.1f}%)  {:.1f} FPS    ",
-                       i + 1, n_frames,
+                dt > 0.0 ? static_cast<double>(done_in_interval) / dt : 0.0;
+            fmt::print("\rProgress: {}/{} ({:.1f}%)  {:.1f} FPS    ", i + 1,
+                       n_frames,
                        100.0 * static_cast<double>(i + 1) /
                            static_cast<double>(n_frames),
                        fps);

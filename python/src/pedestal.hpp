@@ -33,8 +33,8 @@ void define_pedestal_bindings(py::module &m, const std::string &name) {
                          static_cast<py::ssize_t>(sizeof(SUM_TYPE)),
                      static_cast<py::ssize_t>(v.strides()[1]) *
                          static_cast<py::ssize_t>(sizeof(SUM_TYPE))};
-                 auto arr = py::array_t<SUM_TYPE>(shape, byte_strides,
-                                                  v.data(), self_py);
+                 auto arr = py::array_t<SUM_TYPE>(shape, byte_strides, v.data(),
+                                                  self_py);
                  arr.attr("setflags")(py::arg("write") = false);
                  return arr;
              })

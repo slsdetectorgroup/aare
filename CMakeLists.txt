@@ -434,9 +434,8 @@ find_package(Threads REQUIRED)
 
 target_link_libraries(
   aare_core
-  PUBLIC fmt::fmt
-         nlohmann_json::nlohmann_json
-         ${STD_FS_LIB} # from helpers.cmake
+  PUBLIC fmt::fmt nlohmann_json::nlohmann_json ${STD_FS_LIB} # from
+                                                             # helpers.cmake
          Minuit2::Minuit2
   PRIVATE aare_compiler_flags Threads::Threads $<BUILD_INTERFACE:lmfit>)
 

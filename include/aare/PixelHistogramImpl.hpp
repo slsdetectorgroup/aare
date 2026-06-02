@@ -47,9 +47,9 @@ PixelHistogramImpl<T, StorageType>::PixelHistogramImpl(int rows, int cols,
                                                        int n_bins, T xmin,
                                                        T xmax)
     : m_values(NDArray<StorageType, 3>({static_cast<ssize_t>(rows),
-                                       static_cast<ssize_t>(cols),
-                                       static_cast<ssize_t>(n_bins)},
-                                      StorageType{0})),
+                                        static_cast<ssize_t>(cols),
+                                        static_cast<ssize_t>(n_bins)},
+                                       StorageType{0})),
       m_edges(NDArray<T, 1>({static_cast<ssize_t>(n_bins + 1)})), m_rows(rows),
       m_cols(cols), m_n_bins(n_bins), m_xmin(xmin), m_xmax(xmax),
       m_scale(static_cast<T>(n_bins) / (xmax - xmin)) {
@@ -83,14 +83,14 @@ void PixelHistogramImpl<T, StorageType>::fill(const NDView<T, 2> &frame) {
 
 template <typename T, typename StorageType>
 void PixelHistogramImpl<T, StorageType>::fill(int row, int col, T value) {
-    //TODO! add out of bounds check on row and col???
-    
+    // TODO! add out of bounds check on row and col???
+
     if (value < m_xmin || value >= m_xmax) {
         return;
     }
     int bin = static_cast<int>((value - m_xmin) * m_scale);
     // Guard against floating-point rounding pushing val just below
-     // xmax to bin == n_bins.
+    // xmax to bin == n_bins.
     if (bin >= m_n_bins) {
         bin = m_n_bins - 1;
     }

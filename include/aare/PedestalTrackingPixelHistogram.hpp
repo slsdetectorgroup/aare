@@ -10,19 +10,18 @@
 #include <condition_variable>
 #include <cstddef>
 #include <cstdint>
+#include <filesystem>
 #include <memory>
 #include <mutex>
 #include <thread>
 #include <vector>
-#include <filesystem>
 
 namespace aare {
-
 
 class PedestalTrackingPixelHistogram {
   public:
     using StorageType = uint16_t;
-    using AxisType = float; //TODO: template on pedestal type if needed
+    using AxisType = float; // TODO: template on pedestal type if needed
     using FrameType = uint16_t;
 
   private:
@@ -46,7 +45,8 @@ class PedestalTrackingPixelHistogram {
     // global row index. Owned exclusively by worker `t` during a
     // dispatched fan-out.
     std::vector<Pedestal<AxisType>> partial_pedestals_;
-    std::vector<NDArray<double, 2>> partial_std_; //cached for pedestal tracking
+    std::vector<NDArray<double, 2>> partial_std_; // cached for pedestal
+                                                  // tracking
 
     // Thread pool members
     std::vector<std::thread> workers_;
@@ -97,16 +97,17 @@ class PedestalTrackingPixelHistogram {
                                    double n_sigma = 1.0);
     ~PedestalTrackingPixelHistogram();
 
-
     void push_pedestal_no_update(const NDView<FrameType, 2> &frame);
     void update_mean();
     NDArray<AxisType, 2> pedestal_mean() const;
 
     void fill_async(NDArray<FrameType, 2> image);
 
-    void fill_from_file(const std::filesystem::path &fname, ssize_t max_frames = -1, bool verbose = false);
+    void fill_from_file(const std::filesystem::path &fname,
+                        ssize_t max_frames = -1, bool verbose = false);
 
-    void process_pedestal_file(const std::filesystem::path &fname, ssize_t max_frames = -1, bool verbose = false);
+    void process_pedestal_file(const std::filesystem::path &fname,
+                               ssize_t max_frames = -1, bool verbose = false);
 
     // Sigma multiplier for the pedestal-update gate in
     // fill_async. Atomic; safe to read/write at any

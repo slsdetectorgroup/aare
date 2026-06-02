@@ -112,7 +112,9 @@ template <typename SUM_TYPE = double> class Pedestal {
         }
     }
 
-    template <typename T> void push_with_threshold(const NDView<T, 2> frame, const NDView<SUM_TYPE, 2> threshold) {
+    template <typename T>
+    void push_with_threshold(const NDView<T, 2> frame,
+                             const NDView<SUM_TYPE, 2> threshold) {
         assert(frame.size() == m_rows * m_cols);
 
         // TODO! move away from m_rows, m_cols
@@ -123,7 +125,8 @@ template <typename SUM_TYPE = double> class Pedestal {
 
         for (size_t row = 0; row < m_rows; row++) {
             for (size_t col = 0; col < m_cols; col++) {
-                if (fabs(frame(row, col)-mean(row, col)) < threshold(row, col)) {
+                if (fabs(frame(row, col) - mean(row, col)) <
+                    threshold(row, col)) {
                     push<T>(row, col, frame(row, col));
                 }
             }

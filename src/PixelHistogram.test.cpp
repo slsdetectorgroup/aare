@@ -12,9 +12,9 @@
 
 #include "aare/PixelHistogram.hpp"
 
-using aare::PixelHistogram;
 using aare::NDArray;
 using aare::NDView;
+using aare::PixelHistogram;
 
 namespace {
 // The synchronous fill() has been removed; fill_async() is the only entry
@@ -27,22 +27,24 @@ void fill_blocking(PixelHistogram &hist, const NDView<float, 2> &image) {
 }
 } // namespace
 
-TEST_CASE("Fill one pixel of a 5x10 histogram"){
+TEST_CASE("Fill one pixel of a 5x10 histogram") {
     PixelHistogram hist(5, 10, 20, 0.0, 10.0);
-    NDArray<float, 2> image({5, 10}, -1.0); //Need to fill with -1 to not generate counts
-    
-    image(2, 3) = 5.7; // This should go into bin 11 (since bins are [0-0.5), [0.5-1.0), ..., [9.5-10.0))
-    
+    NDArray<float, 2> image(
+        {5, 10}, -1.0); // Need to fill with -1 to not generate counts
+
+    image(2, 3) = 5.7; // This should go into bin 11 (since bins are [0-0.5),
+                       // [0.5-1.0), ..., [9.5-10.0))
+
     fill_blocking(hist, image.view());
-    
+
     auto values = hist.values();
     REQUIRE(values.shape(0) == 5);
     REQUIRE(values.shape(1) == 10);
     REQUIRE(values.shape(2) == 20);
-    
+
     // Check that the correct bin for pixel (2,3) has count 1
     CHECK(values(2, 3, 11) == 1);
-    
+
     // Check that all other bins are zero
     for (ssize_t row = 0; row < values.shape(0); ++row) {
         for (ssize_t col = 0; col < values.shape(1); ++col) {
@@ -55,7 +57,7 @@ TEST_CASE("Fill one pixel of a 5x10 histogram"){
     }
 }
 
-TEST_CASE("Fill pixels with uneven partial histogram row slices"){
+TEST_CASE("Fill pixels with uneven partial histogram row slices") {
     PixelHistogram hist(5, 4, 10, 0.0, 10.0, 3);
     NDArray<float, 2> image({5, 4}, -1.0);
 
@@ -103,12 +105,12 @@ TEST_CASE("Row partitioning handles rows < n_threads * ceil(rows/n_threads)") {
     // at least floor(rows / n_threads) rows. We also exercise the case
     // where n_threads > rows, which is clamped down to rows.
     const auto p = GENERATE(table<int, int>({
-        {17, 8},   // previously broken: 8 threads * ceil(17/8) = 24 > 17
-        {17, 5},   // previously broken: 5 threads * ceil(17/5) = 20 > 17
-        {13, 4},   // previously broken: 4 * ceil(13/4) = 16 > 13
-        {17, 32},  // n_threads > rows -> clamped to rows
-        {1, 8},    // n_threads > rows -> single thread, single row
-        {6, 6},    // balanced
+        {17, 8},  // previously broken: 8 threads * ceil(17/8) = 24 > 17
+        {17, 5},  // previously broken: 5 threads * ceil(17/5) = 20 > 17
+        {13, 4},  // previously broken: 4 * ceil(13/4) = 16 > 13
+        {17, 32}, // n_threads > rows -> clamped to rows
+        {1, 8},   // n_threads > rows -> single thread, single row
+        {6, 6},   // balanced
     }));
     const int rows = std::get<0>(p);
     const int n_threads = std::get<1>(p);
@@ -139,8 +141,8 @@ TEST_CASE("Row partitioning handles rows < n_threads * ceil(rows/n_threads)") {
                     (c == 0 && b == expected_bin) ? uint16_t{1} : uint16_t{0};
                 if (h(r, c, b) != want) {
                     INFO("rows=" << rows << " n_threads=" << n_threads
-                         << " r=" << r << " c=" << c << " b=" << b
-                         << " got=" << h(r, c, b) << " want=" << want);
+                                 << " r=" << r << " c=" << c << " b=" << b
+                                 << " got=" << h(r, c, b) << " want=" << want);
                     CHECK(h(r, c, b) == want);
                 }
             }
@@ -180,20 +182,23 @@ TEST_CASE("Random fills match a reference implementation") {
 
     NDArray<uint32_t, 3> expected({rows, cols, n_bins}, 0u);
     const float inv_range = static_cast<float>(n_bins) / (xmax - xmin);
-    for (const auto& img : frames) {
+    for (const auto &img : frames) {
         for (ssize_t r = 0; r < rows; ++r) {
             for (ssize_t c = 0; c < cols; ++c) {
                 const float v = img(r, c);
-                if (!(v >= xmin) || !(v < xmax)) continue;
+                if (!(v >= xmin) || !(v < xmax))
+                    continue;
                 int bin = static_cast<int>((v - xmin) * inv_range);
-                if (bin >= n_bins) bin = n_bins - 1;
-                if (bin < 0) bin = 0;
+                if (bin >= n_bins)
+                    bin = n_bins - 1;
+                if (bin < 0)
+                    bin = 0;
                 expected(r, c, bin) += 1;
             }
         }
     }
 
-    for (const auto& img : frames) {
+    for (const auto &img : frames) {
         fill_blocking(hist, img.view());
     }
     auto h = hist.values();
@@ -208,10 +213,9 @@ TEST_CASE("Random fills match a reference implementation") {
             for (ssize_t b = 0; b < n_bins && all_match; ++b) {
                 if (h(r, c, b) != expected(r, c, b)) {
                     all_match = false;
-                    INFO("n_threads=" << n_threads << " r=" << r
-                         << " c=" << c << " b=" << b
-                         << " got=" << h(r, c, b)
-                         << " expected=" << expected(r, c, b));
+                    INFO("n_threads=" << n_threads << " r=" << r << " c=" << c
+                                      << " b=" << b << " got=" << h(r, c, b)
+                                      << " expected=" << expected(r, c, b));
                     CHECK(h(r, c, b) == expected(r, c, b));
                 }
             }
@@ -235,7 +239,8 @@ TEST_CASE("Streamed async fill matches per-frame flushed fill") {
     // path at least a few times during the run.
     constexpr std::size_t max_pending = 4;
 
-    PixelHistogram async_hist(rows, cols, n_bins, xmin, xmax, n_threads, max_pending);
+    PixelHistogram async_hist(rows, cols, n_bins, xmin, xmax, n_threads,
+                              max_pending);
     PixelHistogram sync_hist(rows, cols, n_bins, xmin, xmax, n_threads);
 
     std::mt19937 rng(0xA5A5A5A5);
@@ -265,8 +270,8 @@ TEST_CASE("Streamed async fill matches per-frame flushed fill") {
             for (ssize_t b = 0; b < n_bins && all_match; ++b) {
                 if (a(r, c, b) != s(r, c, b)) {
                     all_match = false;
-                    INFO("r=" << r << " c=" << c << " b=" << b
-                         << " async=" << a(r, c, b) << " sync=" << s(r, c, b));
+                    INFO("r=" << r << " c=" << c << " b=" << b << " async="
+                              << a(r, c, b) << " sync=" << s(r, c, b));
                     CHECK(a(r, c, b) == s(r, c, b));
                 }
             }
@@ -305,10 +310,11 @@ TEST_CASE("Destructor drains pending async fills") {
         frames.push_back(std::move(img));
     }
 
-    NDArray<aare::PixelHistogram::StorageType, 3> snapshot({rows, cols, n_bins}, uint16_t{0});
+    NDArray<aare::PixelHistogram::StorageType, 3> snapshot({rows, cols, n_bins},
+                                                           uint16_t{0});
     {
         PixelHistogram hist(rows, cols, n_bins, xmin, xmax, 2, max_pending);
-        for (auto& img : frames) {
+        for (auto &img : frames) {
             // Move a copy so we can also build the reference below.
             NDArray<float, 2> copy({rows, cols}, 0.0f);
             std::memcpy(copy.data(), img.data(), copy.total_bytes());
@@ -321,7 +327,8 @@ TEST_CASE("Destructor drains pending async fills") {
     }
 
     PixelHistogram reference(rows, cols, n_bins, xmin, xmax, 2);
-    for (const auto& img : frames) fill_blocking(reference, img.view());
+    for (const auto &img : frames)
+        fill_blocking(reference, img.view());
     auto expected = reference.values();
 
     bool all_match = true;
@@ -331,8 +338,8 @@ TEST_CASE("Destructor drains pending async fills") {
                 if (snapshot(r, c, b) != expected(r, c, b)) {
                     all_match = false;
                     INFO("r=" << r << " c=" << c << " b=" << b
-                         << " got=" << snapshot(r, c, b)
-                         << " expected=" << expected(r, c, b));
+                              << " got=" << snapshot(r, c, b)
+                              << " expected=" << expected(r, c, b));
                     CHECK(snapshot(r, c, b) == expected(r, c, b));
                 }
             }

@@ -41,7 +41,7 @@ class PixelHistogram {
     std::mutex work_mutex_;
     std::condition_variable work_cv_;
     std::condition_variable done_cv_;
-    const NDView<AxisType, 2>* current_image_;
+    const NDView<AxisType, 2> *current_image_;
     std::atomic<int> completed_threads_;
     std::atomic<bool> stop_workers_;
     int work_generation_;
