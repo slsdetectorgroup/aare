@@ -62,9 +62,8 @@ foreach(FILE ${PYTHON_EXAMPLES})
   message(STATUS "Copying ${FILE} to ${CMAKE_BINARY_DIR}/${FILE}")
 endforeach(FILE ${PYTHON_EXAMPLES})
 
-configure_file( ${CMAKE_CURRENT_SOURCE_DIR}/../VERSION  
-    ${CMAKE_BINARY_DIR}/aare/VERSION
-)
+configure_file(${CMAKE_CURRENT_SOURCE_DIR}/../VERSION
+               ${CMAKE_BINARY_DIR}/aare/VERSION)
 if(AARE_INSTALL_PYTHONEXT)
   install(
     TARGETS _aare
@@ -76,7 +75,7 @@ if(AARE_INSTALL_PYTHONEXT)
     DESTINATION aare
     COMPONENT python)
   install(
-    FILES ../VERSION 
+    FILES ../VERSION
     DESTINATION aare
     COMPONENT python)
 endif()
