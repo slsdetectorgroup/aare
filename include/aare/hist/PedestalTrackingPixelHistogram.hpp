@@ -45,8 +45,8 @@ class PedestalTrackingPixelHistogram {
     // global row index. Owned exclusively by worker `t` during a
     // dispatched fan-out.
     std::vector<Pedestal<AxisType>> partial_pedestals_;
-    std::vector<NDArray<double, 2>> partial_std_; // cached for pedestal
-                                                  // tracking
+    std::vector<NDArray<AxisType, 2>> partial_std_; // cached for pedestal
+                                                    // tracking
 
     // Thread pool members
     std::vector<std::thread> workers_;
@@ -71,7 +71,7 @@ class PedestalTrackingPixelHistogram {
     std::atomic<bool> stop_coordinator_{false};
     std::atomic<bool> coordinator_busy_{false};
     std::chrono::microseconds async_wait_{100};
-    std::atomic<double> n_sigma_;
+    std::atomic<AxisType> n_sigma_;
 
     // Private worker thread method
     void worker_loop(int thread_id);
@@ -94,7 +94,7 @@ class PedestalTrackingPixelHistogram {
                                    AxisType xmin, AxisType xmax,
                                    int n_threads = 1,
                                    std::size_t max_pending = 16,
-                                   double n_sigma = 1.0);
+                                   AxisType n_sigma = 1.0);
     ~PedestalTrackingPixelHistogram();
 
     void push_pedestal_no_update(const NDView<FrameType, 2> &frame);
@@ -112,8 +112,8 @@ class PedestalTrackingPixelHistogram {
     // Sigma multiplier for the pedestal-update gate in
     // fill_async. Atomic; safe to read/write at any
     // time (the new value takes effect on subsequent pixel evaluations).
-    double n_sigma() const;
-    void set_n_sigma(double n_sigma);
+    PedestalTrackingPixelHistogram::AxisType n_sigma() const;
+    void set_n_sigma(PedestalTrackingPixelHistogram::AxisType n_sigma);
 
     // Wait for all queued async fills to complete. Cheap when the queue
     // is already drained.

@@ -14,7 +14,7 @@ namespace aare {
 
 PedestalTrackingPixelHistogram::PedestalTrackingPixelHistogram(
     int rows, int cols, int n_bins, AxisType xmin, AxisType xmax, int n_threads,
-    std::size_t max_pending, double n_sigma)
+    std::size_t max_pending, AxisType n_sigma)
     : rows_(rows), cols_(cols), n_threads_(n_threads), xmin_(xmin), xmax_(xmax),
       current_work_kind_(WorkKind::FillWithThreshold), current_image_(nullptr),
       completed_threads_(0), stop_workers_(false), work_generation_(0),
@@ -61,7 +61,7 @@ PedestalTrackingPixelHistogram::PedestalTrackingPixelHistogram(
         partial_hists_.emplace_back(local_rows, cols, n_bins, xmin, xmax);
         partial_pedestals_.emplace_back(static_cast<uint32_t>(local_rows),
                                         static_cast<uint32_t>(cols));
-        partial_std_.emplace_back(NDArray<double, 2>(
+        partial_std_.emplace_back(NDArray<AxisType, 2>(
             {static_cast<ssize_t>(local_rows), static_cast<ssize_t>(cols)},
             0.0));
     }
@@ -199,7 +199,7 @@ void PedestalTrackingPixelHistogram::worker_loop(int thread_id) {
             auto &my_std = partial_std_[thread_id];
             for (int local_row = 0; local_row < local_rows; ++local_row) {
                 for (int col = 0; col < cols_; ++col) {
-                    my_std(local_row, col) = static_cast<double>(
+                    my_std(local_row, col) = static_cast<AxisType>(
                         my_pedestal.std(static_cast<uint32_t>(local_row),
                                         static_cast<uint32_t>(col)));
                 }
@@ -215,7 +215,7 @@ void PedestalTrackingPixelHistogram::worker_loop(int thread_id) {
             // (modulo the per-pixel gate evaluation). The [xmin, xmax)
             // histogram gate lives inside PixelHistogramImpl::fill.
             auto &my_std = partial_std_[thread_id];
-            const double n_sigma = n_sigma_.load(std::memory_order_relaxed);
+            const auto n_sigma = n_sigma_.load(std::memory_order_relaxed);
             const auto cols = image->shape(1);
             for (int local_row = 0; local_row < local_rows; ++local_row) {
                 const auto row = static_cast<ssize_t>(first_row + local_row);
@@ -227,9 +227,9 @@ void PedestalTrackingPixelHistogram::worker_loop(int thread_id) {
                                              static_cast<uint32_t>(col)));
                     my_hist.fill_unchecked(local_row, static_cast<int>(col),
                                            val);
-                    const double sigma = my_std(local_row, col);
-                    if (sigma > 0.0 &&
-                        std::abs(static_cast<double>(val)) < n_sigma * sigma) {
+                    const AxisType sigma = my_std(local_row, col);
+                    if (sigma > 0.0 && std::abs(static_cast<AxisType>(val)) <
+                                           n_sigma * sigma) {
                         my_pedestal.template push<FrameType>(
                             static_cast<uint32_t>(local_row),
                             static_cast<uint32_t>(col), raw);
@@ -341,11 +341,13 @@ void PedestalTrackingPixelHistogram::fill_async(NDArray<FrameType, 2> &&image) {
     }
 }
 
-double PedestalTrackingPixelHistogram::n_sigma() const {
+PedestalTrackingPixelHistogram::AxisType
+PedestalTrackingPixelHistogram::n_sigma() const {
     return n_sigma_.load(std::memory_order_relaxed);
 }
 
-void PedestalTrackingPixelHistogram::set_n_sigma(double n_sigma) {
+void PedestalTrackingPixelHistogram::set_n_sigma(
+    PedestalTrackingPixelHistogram::AxisType n_sigma) {
     n_sigma_.store(n_sigma, std::memory_order_relaxed);
 }
 
@@ -357,12 +359,14 @@ void PedestalTrackingPixelHistogram::flush() const {
 }
 
 void PedestalTrackingPixelHistogram::coordinator_loop() {
-    NDArray<FrameType, 2> item;
     while (!stop_coordinator_.load(std::memory_order_acquire) ||
            !async_queue_->isEmpty()) {
-        if (async_queue_->read(item)) {
+
+        auto *item = async_queue_->frontPtr();
+        if (item != nullptr) {
             coordinator_busy_.store(true, std::memory_order_release);
-            fill_with_threshold_(item.view());
+            fill_with_threshold_(item->view());
+            async_queue_->popFront();
             coordinator_busy_.store(false, std::memory_order_release);
         } else {
             std::this_thread::sleep_for(async_wait_);
