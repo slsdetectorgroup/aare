@@ -10,7 +10,7 @@
 #include "test_config.hpp"
 #include "test_macros.hpp"
 
-#include "aare/PixelHistogram.hpp"
+#include "aare/hist/PixelHistogram.hpp"
 
 using aare::NDArray;
 using aare::NDView;

@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: MPL-2.0
-#include "aare/PedestalTrackingPixelHistogram.hpp"
+#include "aare/hist/PedestalTrackingPixelHistogram.hpp"
 #include "np_helper.hpp"
 
 #include <cstdint>

@@ -1,8 +1,8 @@
 #pragma once
 #include "aare/NDArray.hpp"
 #include "aare/NDView.hpp"
-#include "aare/PixelHistogramImpl.hpp"
 #include "aare/ProducerConsumerQueue.hpp"
+#include "aare/hist/PixelHistogramImpl.hpp"
 
 #include <atomic>
 #include <chrono>

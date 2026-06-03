@@ -1,4 +1,4 @@
-#include "aare/PedestalTrackingPixelHistogram.hpp"
+#include "aare/hist/PedestalTrackingPixelHistogram.hpp"
 #include "aare/File.hpp"
 
 #include <algorithm>

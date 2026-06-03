@@ -1,4 +1,4 @@
-#include "aare/PixelHistogram.hpp"
+#include "aare/hist/PixelHistogram.hpp"
 
 #include <algorithm>
 #include <cstring>
