@@ -12,10 +12,13 @@ silently dropped.
 
 #include <cstddef>
 #include <stdexcept>
+#include <type_traits>
 
 namespace aare {
 
 template <typename T, typename StorageType> class PixelHistogramImpl {
+    static_assert(std::is_floating_point_v<T>,
+                  "PixelHistogramImpl requires a floating-point axis type");
     NDArray<StorageType, 3> m_values;
     NDArray<T, 1> m_edges;
     int m_rows;
@@ -32,6 +35,7 @@ template <typename T, typename StorageType> class PixelHistogramImpl {
 
     void fill(const NDView<T, 2> &frame);
     void fill(int row, int col, T value);
+    void fill_unchecked(int row, int col, T value);
 
     NDArray<StorageType, 3> values() const;
     // Zero-copy view of the underlying [rows x cols x n_bins] storage.
@@ -76,15 +80,23 @@ void PixelHistogramImpl<T, StorageType>::fill(const NDView<T, 2> &frame) {
     }
     for (int row = 0; row < m_rows; ++row) {
         for (int col = 0; col < m_cols; ++col) {
-            fill(row, col, frame(row, col));
+            fill_unchecked(row, col, frame(row, col));
         }
     }
 }
 
 template <typename T, typename StorageType>
 void PixelHistogramImpl<T, StorageType>::fill(int row, int col, T value) {
-    // TODO! add out of bounds check on row and col???
+    if (row < 0 || row >= m_rows || col < 0 || col >= m_cols) {
+        throw std::out_of_range(
+            "PixelHistogramImpl::fill: row or col out of range");
+    }
+    fill_unchecked(row, col, value);
+}
 
+template <typename T, typename StorageType>
+void PixelHistogramImpl<T, StorageType>::fill_unchecked(int row, int col,
+                                                        T value) {
     if (value < m_xmin || value >= m_xmax) {
         return;
     }
