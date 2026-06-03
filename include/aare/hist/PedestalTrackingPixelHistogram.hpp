@@ -55,22 +55,25 @@ class PedestalTrackingPixelHistogram {
     std::condition_variable done_cv_;
     WorkKind current_work_kind_;
     const NDView<FrameType, 2> *current_image_;
+    const std::vector<NDView<FrameType, 2>> *current_images_;
     std::atomic<int> completed_threads_;
     std::atomic<bool> stop_workers_;
     int work_generation_;
 
     // Serialises all fan-outs: `push_pedestal_no_update`, `update_mean`,
-    // and the async coordinator's calls into `fill_with_threshold_`.
+    // and the async coordinator's batch fill dispatches.
     // Always the outermost lock; work_mutex_ is taken briefly inside it.
     mutable std::mutex fill_mutex_;
 
     // Async producer/consumer pipeline. SPSC queue feeds the coordinator
-    // thread, which calls `fill_with_threshold_` one image at a time.
+    // thread, which batches queued images before dispatching them.
     std::unique_ptr<AsyncQueue> async_queue_;
     std::thread coordinator_;
     std::atomic<bool> stop_coordinator_{false};
     std::atomic<bool> coordinator_busy_{false};
+    std::atomic<std::size_t> completed_async_fills_{0};
     std::chrono::microseconds async_wait_{100};
+    std::size_t max_batch_size_;
     std::atomic<AxisType> n_sigma_;
 
     // Private worker thread method
@@ -83,11 +86,12 @@ class PedestalTrackingPixelHistogram {
     // Caller MUST already hold `fill_mutex_`. `image` may be nullptr
     // for work kinds that don't need it (e.g. UpdateMean).
     void dispatch_(WorkKind kind, const NDView<FrameType, 2> *image);
+    void dispatch_fill_batch_(const std::vector<NDView<FrameType, 2>> &images);
 
     // Coordinator-facing entry point: takes fill_mutex_ and dispatches
-    // FillWithThreshold to the worker pool. Only ever called by the
+    // FillWithThreshold batches to the worker pool. Only ever called by the
     // coordinator thread, on images already shape-checked by fill_async.
-    void fill_with_threshold_(const NDView<FrameType, 2> &image);
+    void fill_with_threshold_batch_(std::vector<NDArray<FrameType, 2>> &batch);
 
   public:
     PedestalTrackingPixelHistogram(int rows, int cols, int n_bins,

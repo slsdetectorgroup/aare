@@ -17,8 +17,8 @@ PedestalTrackingPixelHistogram::PedestalTrackingPixelHistogram(
     std::size_t max_pending, AxisType n_sigma)
     : rows_(rows), cols_(cols), n_threads_(n_threads), xmin_(xmin), xmax_(xmax),
       current_work_kind_(WorkKind::FillWithThreshold), current_image_(nullptr),
-      completed_threads_(0), stop_workers_(false), work_generation_(0),
-      n_sigma_(n_sigma) {
+      current_images_(nullptr), completed_threads_(0), stop_workers_(false),
+      work_generation_(0), max_batch_size_(max_pending / 2), n_sigma_(n_sigma) {
     if (rows_ < 1 || cols_ < 1 || n_bins < 1) {
         throw std::invalid_argument("PedestalTrackingPixelHistogram requires "
                                     "positive rows, cols and bins");
@@ -119,6 +119,7 @@ void PedestalTrackingPixelHistogram::dispatch_(
         completed_threads_ = 0;
         current_work_kind_ = kind;
         current_image_ = image;
+        current_images_ = nullptr;
         ++work_generation_;
     }
     work_cv_.notify_all();
@@ -127,6 +128,29 @@ void PedestalTrackingPixelHistogram::dispatch_(
         done_cv_.wait(lock,
                       [this]() { return completed_threads_ == n_threads_; });
         current_image_ = nullptr;
+        current_images_ = nullptr;
+    }
+}
+
+void PedestalTrackingPixelHistogram::dispatch_fill_batch_(
+    const std::vector<NDView<FrameType, 2>> &images) {
+    // Caller must already hold fill_mutex_. `images` is owned by
+    // fill_with_threshold_batch_ and stays alive until this blocking dispatch
+    // returns.
+    {
+        std::unique_lock<std::mutex> lock(work_mutex_);
+        completed_threads_ = 0;
+        current_work_kind_ = WorkKind::FillWithThreshold;
+        current_image_ = nullptr;
+        current_images_ = &images;
+        ++work_generation_;
+    }
+    work_cv_.notify_all();
+    {
+        std::unique_lock<std::mutex> lock(work_mutex_);
+        done_cv_.wait(lock,
+                      [this]() { return completed_threads_ == n_threads_; });
+        current_images_ = nullptr;
     }
 }
 
@@ -166,6 +190,7 @@ void PedestalTrackingPixelHistogram::worker_loop(int thread_id) {
         // against the next dispatch publishing new state.
         const WorkKind kind = current_work_kind_;
         const NDView<FrameType, 2> *image = current_image_;
+        const std::vector<NDView<FrameType, 2>> *images = current_images_;
         const int generation = work_generation_;
         const int first_row = row_start(thread_id);
         const int local_rows = row_count(thread_id);
@@ -214,28 +239,35 @@ void PedestalTrackingPixelHistogram::worker_loop(int thread_id) {
             // never fires, recovering plain histogram-only behaviour
             // (modulo the per-pixel gate evaluation). The [xmin, xmax)
             // histogram gate lives inside PixelHistogramImpl::fill.
-            auto &my_std = partial_std_[thread_id];
-            const auto n_sigma = n_sigma_.load(std::memory_order_relaxed);
-            const auto cols = image->shape(1);
-            for (int local_row = 0; local_row < local_rows; ++local_row) {
-                const auto row = static_cast<ssize_t>(first_row + local_row);
-                for (ssize_t col = 0; col < cols; ++col) {
-                    const FrameType raw = (*image)(row, col);
-                    const AxisType val = static_cast<AxisType>(raw) -
-                                         static_cast<AxisType>(my_pedestal.mean(
-                                             static_cast<uint32_t>(local_row),
-                                             static_cast<uint32_t>(col)));
-                    my_hist.fill_unchecked(local_row, static_cast<int>(col),
-                                           val);
-                    const AxisType sigma = my_std(local_row, col);
-                    if (sigma > 0.0 && std::abs(static_cast<AxisType>(val)) <
-                                           n_sigma * sigma) {
-                        my_pedestal.template push<FrameType>(
-                            static_cast<uint32_t>(local_row),
-                            static_cast<uint32_t>(col), raw);
-                    }
-                }
-            }
+            // auto &my_std = partial_std_[thread_id];
+            // const auto n_sigma = n_sigma_.load(std::memory_order_relaxed);
+            // for (const auto &frame : *images) {
+            //     const auto cols = frame.shape(1);
+            //     for (int local_row = 0; local_row < local_rows; ++local_row)
+            //     {
+            //         const auto row =
+            //             static_cast<ssize_t>(first_row + local_row);
+            //         for (ssize_t col = 0; col < cols; ++col) {
+            //             const FrameType raw = frame(row, col);
+            //             const AxisType val =
+            //                 static_cast<AxisType>(raw) -
+            //                 static_cast<AxisType>(my_pedestal.mean(
+            //                     static_cast<uint32_t>(local_row),
+            //                     static_cast<uint32_t>(col)));
+            //             my_hist.fill_unchecked(local_row,
+            //             static_cast<int>(col),
+            //                                    val);
+            //             const AxisType sigma = my_std(local_row, col);
+            //             if (sigma > AxisType{0.0} &&
+            //                 std::abs(static_cast<AxisType>(val)) <
+            //                     n_sigma * sigma) {
+            //                 my_pedestal.template push<FrameType>(
+            //                     static_cast<uint32_t>(local_row),
+            //                     static_cast<uint32_t>(col), raw);
+            //             }
+            //         }
+            //     }
+            // }
             break;
         }
         }
@@ -316,14 +348,20 @@ PedestalTrackingPixelHistogram::pedestal_mean() const {
     return data;
 }
 
-void PedestalTrackingPixelHistogram::fill_with_threshold_(
-    const NDView<FrameType, 2> &image) {
+void PedestalTrackingPixelHistogram::fill_with_threshold_batch_(
+    std::vector<NDArray<FrameType, 2>> &batch) {
     // Called only by the coordinator thread on images already shape-checked
     // by fill_async, so there is no need to re-validate. fill_mutex_ is
     // still required: push_pedestal_no_update / update_mean / pedestal_mean
     // can run concurrently and must not race this fan-out.
+    std::vector<NDView<FrameType, 2>> views;
+    views.reserve(batch.size());
+    for (auto &frame : batch) {
+        views.push_back(frame.view());
+    }
+
     std::lock_guard<std::mutex> fill_lock(fill_mutex_);
-    dispatch_(WorkKind::FillWithThreshold, &image);
+    dispatch_fill_batch_(views);
 }
 
 void PedestalTrackingPixelHistogram::fill_async(NDArray<FrameType, 2> &&image) {
@@ -359,18 +397,36 @@ void PedestalTrackingPixelHistogram::flush() const {
 }
 
 void PedestalTrackingPixelHistogram::coordinator_loop() {
+    std::vector<NDArray<FrameType, 2>> batch;
+    batch.reserve(max_batch_size_);
+
     while (!stop_coordinator_.load(std::memory_order_acquire) ||
            !async_queue_->isEmpty()) {
+        batch.clear();
 
-        auto *item = async_queue_->frontPtr();
-        if (item != nullptr) {
-            coordinator_busy_.store(true, std::memory_order_release);
-            fill_with_threshold_(item->view());
-            async_queue_->popFront();
-            coordinator_busy_.store(false, std::memory_order_release);
-        } else {
+        auto *first_item = async_queue_->frontPtr();
+        if (first_item == nullptr) {
             std::this_thread::sleep_for(async_wait_);
+            continue;
         }
+
+        coordinator_busy_.store(true, std::memory_order_release);
+        batch.push_back(std::move(*first_item));
+        async_queue_->popFront();
+
+        while (batch.size() < max_batch_size_) {
+            auto *item = async_queue_->frontPtr();
+            if (item == nullptr) {
+                break;
+            }
+            batch.push_back(std::move(*item));
+            async_queue_->popFront();
+        }
+
+        fill_with_threshold_batch_(batch);
+        completed_async_fills_.fetch_add(batch.size(),
+                                         std::memory_order_release);
+        coordinator_busy_.store(false, std::memory_order_release);
     }
 }
 
@@ -390,6 +446,19 @@ void PedestalTrackingPixelHistogram::fill_from_file(
     const std::filesystem::path &fname, ssize_t max_frames, bool verbose) {
     constexpr std::size_t progress_interval = 66;
     auto last = std::chrono::steady_clock::now();
+    const auto completed_start =
+        completed_async_fills_.load(std::memory_order_acquire);
+    std::size_t last_reported = 0;
+    const auto completed_for_this_file = [&]() {
+        return completed_async_fills_.load(std::memory_order_acquire) -
+               completed_start;
+    };
+
+    const auto wait_for_completed = [&](std::size_t target) {
+        while (completed_for_this_file() < target) {
+            std::this_thread::sleep_for(async_wait_);
+        }
+    };
 
     File f(fname);
     // check that row col matches constructor
@@ -403,35 +472,38 @@ void PedestalTrackingPixelHistogram::fill_from_file(
     const ssize_t total_frames = f.total_frames();
     const ssize_t n_frames =
         max_frames == -1 ? total_frames : std::min(max_frames, total_frames);
+    const auto print_progress = [&](std::size_t done) {
+        const auto now = std::chrono::steady_clock::now();
+        const double dt = std::chrono::duration<double>(now - last).count();
+        const auto done_in_interval = done - last_reported;
+        const double fps =
+            dt > 0.0 ? static_cast<double>(done_in_interval) / dt : 0.0;
+
+        fmt::print(
+            "\rProgress: {}/{} ({:.1f}%)  {:.1f} FPS    ", done, n_frames,
+            100.0 * static_cast<double>(done) / static_cast<double>(n_frames),
+            fps);
+        std::fflush(stdout);
+        last = now;
+        last_reported = done;
+    };
+
     for (ssize_t i = 0; i < n_frames; ++i) {
         aare::NDArray<uint16_t> frame({rows_, cols_});
         f.read_into(reinterpret_cast<std::byte *>(frame.data()));
         fill_async(std::move(frame));
 
-        // print progress
-        if (verbose &&
-            ((i + 1) % progress_interval == 0 || (i + 1 == n_frames))) {
-            const auto now = std::chrono::steady_clock::now();
-            const double dt = std::chrono::duration<double>(now - last).count();
-            const std::size_t done_in_interval =
-                (i + 1) % progress_interval == 0 ? progress_interval
-                                                 : (i + 1) % progress_interval;
-            const double fps =
-                dt > 0.0 ? static_cast<double>(done_in_interval) / dt : 0.0;
-            // Carriage return (no newline) so the line is rewritten
-            // in place; flush since stdout is line-buffered.
-
-            fmt::print("\rProgress: {}/{} ({:.1f}%)  {:.1f} FPS    ", i + 1,
-                       n_frames,
-                       100.0 * static_cast<double>(i + 1) /
-                           static_cast<double>(n_frames),
-                       fps);
-            std::fflush(stdout);
-            last = now;
+        if (verbose && (i + 1) % progress_interval == 0) {
+            wait_for_completed(static_cast<std::size_t>(i + 1));
+            print_progress(static_cast<std::size_t>(i + 1));
         }
     }
     flush();
     if (verbose) {
+        const auto done = completed_for_this_file();
+        if (done > last_reported) {
+            print_progress(done);
+        }
         fmt::print("\n\n");
         std::fflush(stdout);
     }
