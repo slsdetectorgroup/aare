@@ -224,7 +224,8 @@ void PedestalTrackingPixelHistogram::worker_loop(int thread_id) {
                                          static_cast<AxisType>(my_pedestal.mean(
                                              static_cast<uint32_t>(local_row),
                                              static_cast<uint32_t>(col)));
-                    my_hist.fill(local_row, static_cast<int>(col), val);
+                    my_hist.fill_unchecked(local_row, static_cast<int>(col),
+                                           val);
                     const double sigma = my_std(local_row, col);
                     if (sigma > 0.0 &&
                         std::abs(static_cast<double>(val)) < n_sigma * sigma) {

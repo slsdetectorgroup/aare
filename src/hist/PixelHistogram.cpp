@@ -124,7 +124,7 @@ void PixelHistogram::worker_loop(int thread_id) {
             const auto row = static_cast<ssize_t>(first_row + local_row);
             for (ssize_t col = 0; col < image.shape(1); ++col) {
                 const auto val = image(row, col);
-                my_hist.fill(local_row, static_cast<int>(col), val);
+                my_hist.fill_unchecked(local_row, static_cast<int>(col), val);
             }
         }
 
