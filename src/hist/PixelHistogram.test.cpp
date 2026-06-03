@@ -256,7 +256,6 @@ TEST_CASE("Streamed async fill matches per-frame flushed fill") {
     }
     // values() calls flush() internally, but exercise the explicit path too.
     async_hist.flush();
-    CHECK(async_hist.pending() == 0);
 
     auto a = async_hist.values();
     auto s = sync_hist.values();

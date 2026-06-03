@@ -67,13 +67,6 @@ void define_pixel_histogram_bindings(py::module &m) {
              )",
              py::call_guard<py::gil_scoped_release>())
 
-        .def("pending", &PixelHistogram::pending,
-             R"(
-             Return the number of images either waiting in the queue or
-             currently being processed by the background thread. Useful
-             for monitoring/diagnostics.
-             )")
-
         .def(
             "values",
             [](const PixelHistogram &self) {

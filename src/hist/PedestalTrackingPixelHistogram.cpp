@@ -216,9 +216,10 @@ void PedestalTrackingPixelHistogram::worker_loop(int thread_id) {
             // histogram gate lives inside PixelHistogramImpl::fill.
             auto &my_std = partial_std_[thread_id];
             const double n_sigma = n_sigma_.load(std::memory_order_relaxed);
+            const auto cols = image->shape(1);
             for (int local_row = 0; local_row < local_rows; ++local_row) {
                 const auto row = static_cast<ssize_t>(first_row + local_row);
-                for (ssize_t col = 0; col < image->shape(1); ++col) {
+                for (ssize_t col = 0; col < cols; ++col) {
                     const FrameType raw = (*image)(row, col);
                     const AxisType val = static_cast<AxisType>(raw) -
                                          static_cast<AxisType>(my_pedestal.mean(
@@ -325,7 +326,7 @@ void PedestalTrackingPixelHistogram::fill_with_threshold_(
     dispatch_(WorkKind::FillWithThreshold, &image);
 }
 
-void PedestalTrackingPixelHistogram::fill_async(NDArray<FrameType, 2> image) {
+void PedestalTrackingPixelHistogram::fill_async(NDArray<FrameType, 2> &&image) {
     if (image.shape(0) != rows_ || image.shape(1) != cols_) {
         throw std::invalid_argument(
             "PedestalTrackingPixelHistogram image shape does not match "
@@ -353,14 +354,6 @@ void PedestalTrackingPixelHistogram::flush() const {
            coordinator_busy_.load(std::memory_order_acquire)) {
         std::this_thread::sleep_for(async_wait_);
     }
-}
-
-std::size_t PedestalTrackingPixelHistogram::pending() const {
-    // sizeGuess() counts the items still in the queue; the coordinator
-    // does `read()` (which pops) before setting `coordinator_busy_`, so an
-    // in-flight item lives only in the busy flag.
-    return async_queue_->sizeGuess() +
-           (coordinator_busy_.load(std::memory_order_acquire) ? 1u : 0u);
 }
 
 void PedestalTrackingPixelHistogram::coordinator_loop() {
@@ -409,7 +402,7 @@ void PedestalTrackingPixelHistogram::fill_from_file(
     for (ssize_t i = 0; i < n_frames; ++i) {
         aare::NDArray<uint16_t> frame({rows_, cols_});
         f.read_into(reinterpret_cast<std::byte *>(frame.data()));
-        fill_async(frame);
+        fill_async(std::move(frame));
 
         // print progress
         if (verbose &&

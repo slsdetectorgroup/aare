@@ -185,14 +185,6 @@ void define_pedestal_tracking_pixel_histogram_bindings(py::module &m) {
              )",
              py::call_guard<py::gil_scoped_release>())
 
-        .def("pending", &PedestalTrackingPixelHistogram::pending,
-             R"(
-             Return the number of images either waiting in the queue or
-             currently being processed by the background thread (i.e.
-             still in flight after fill_async()). Useful
-             for monitoring/diagnostics.
-             )")
-
         .def(
             "values",
             [](const PedestalTrackingPixelHistogram &self) {

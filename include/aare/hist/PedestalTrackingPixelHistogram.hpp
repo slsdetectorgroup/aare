@@ -101,7 +101,7 @@ class PedestalTrackingPixelHistogram {
     void update_mean();
     NDArray<AxisType, 2> pedestal_mean() const;
 
-    void fill_async(NDArray<FrameType, 2> image);
+    void fill_async(NDArray<FrameType, 2> &&image);
 
     void fill_from_file(const std::filesystem::path &fname,
                         ssize_t max_frames = -1, bool verbose = false);
@@ -118,9 +118,6 @@ class PedestalTrackingPixelHistogram {
     // Wait for all queued async fills to complete. Cheap when the queue
     // is already drained.
     void flush() const;
-
-    // Number of items either queued or currently being processed.
-    std::size_t pending() const;
 
     // Implicitly flushes pending async fills first so the snapshot is
     // consistent with everything that was submitted up to the call.

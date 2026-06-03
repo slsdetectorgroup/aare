@@ -79,9 +79,6 @@ class PixelHistogram {
     // is already drained.
     void flush() const;
 
-    // Number of items either queued or currently being processed.
-    std::size_t pending() const;
-
     // Implicitly flushes pending async fills first so the snapshot is
     // consistent with everything that was submitted up to the call.
     NDArray<StorageType, 3> values() const;

@@ -120,9 +120,10 @@ void PixelHistogram::worker_loop(int thread_id) {
         // Do the work: fill this thread's partial histogram. The
         // [xmin, xmax) range gate lives inside PixelHistogramImpl::fill.
         auto &my_hist = partial_hists_[thread_id];
+        const auto cols = image.shape(1);
         for (int local_row = 0; local_row < local_rows; ++local_row) {
             const auto row = static_cast<ssize_t>(first_row + local_row);
-            for (ssize_t col = 0; col < image.shape(1); ++col) {
+            for (ssize_t col = 0; col < cols; ++col) {
                 const auto val = image(row, col);
                 my_hist.fill_unchecked(local_row, static_cast<int>(col), val);
             }
@@ -216,14 +217,6 @@ void PixelHistogram::flush() const {
            coordinator_busy_.load(std::memory_order_acquire)) {
         std::this_thread::sleep_for(async_wait_);
     }
-}
-
-std::size_t PixelHistogram::pending() const {
-    // sizeGuess() counts the items still in the queue; the coordinator
-    // does `read()` (which pops) before setting `coordinator_busy_`, so an
-    // in-flight item lives only in the busy flag.
-    return async_queue_->sizeGuess() +
-           (coordinator_busy_.load(std::memory_order_acquire) ? 1u : 0u);
 }
 
 void PixelHistogram::coordinator_loop() {
