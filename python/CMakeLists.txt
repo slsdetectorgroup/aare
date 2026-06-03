@@ -24,7 +24,7 @@ pybind11_add_module(
 )
 
 set_target_properties(_aare PROPERTIES LIBRARY_OUTPUT_DIRECTORY
-                                       ${CMAKE_BINARY_DIR})
+                                       ${CMAKE_BINARY_DIR}/bin/aare)
 target_link_libraries(_aare PRIVATE aare_core aare_compiler_flags)
 
 target_include_directories(
@@ -48,7 +48,7 @@ set(PYTHON_FILES
 
 # Copy the python files to the build directory
 foreach(FILE ${PYTHON_FILES})
-  configure_file(${FILE} ${CMAKE_BINARY_DIR}/${FILE})
+  configure_file(${FILE} ${CMAKE_BINARY_DIR}/bin/${FILE})
 endforeach(FILE ${PYTHON_FILES})
 
 set_target_properties(_aare PROPERTIES LIBRARY_OUTPUT_DIRECTORY
@@ -58,12 +58,12 @@ set(PYTHON_EXAMPLES examples/play.py examples/fits.py)
 
 # Copy the python examples to the build directory
 foreach(FILE ${PYTHON_EXAMPLES})
-  configure_file(${FILE} ${CMAKE_BINARY_DIR}/${FILE})
+  configure_file(${FILE} ${CMAKE_BINARY_DIR}/bin/${FILE})
   message(STATUS "Copying ${FILE} to ${CMAKE_BINARY_DIR}/${FILE}")
 endforeach(FILE ${PYTHON_EXAMPLES})
 
 configure_file( ${CMAKE_CURRENT_SOURCE_DIR}/../VERSION  
-    ${CMAKE_BINARY_DIR}/aare/VERSION
+    ${CMAKE_BINARY_DIR}/bin/aare/VERSION
 )
 if(AARE_INSTALL_PYTHONEXT)
   install(
