@@ -12,6 +12,7 @@ inline defs::StrixelGroupToPixelMap
 jungfrau_ilgad_singlechip_25um_strixel_map(InclusiveROI rx_roi,
                                            defs::SensorPlacement placement,
                                            defs::BondShift bs = {0, 0}) {
+    std::cout << " === JUNGFRAU iLGAD SINGLE-CHIP 25um PITCH === \n";
     return algo::strixel_to_pixel_map(config::jungfrau::SingleChipMP_iLGAD_P25,
                                       placement, rx_roi, bs);
 }
@@ -20,6 +21,7 @@ inline defs::StrixelGroupToPixelMap
 jungfrau_ilgad_singlechip_15um_strixel_map(InclusiveROI rx_roi,
                                            defs::SensorPlacement placement,
                                            defs::BondShift bs = {0, 0}) {
+    std::cout << " === JUNGFRAU iLGAD SINGLE-CHIP 15um PITCH === \n";
     return algo::strixel_to_pixel_map(config::jungfrau::SingleChipMP_iLGAD_P15,
                                       placement, rx_roi, bs);
 };
@@ -28,6 +30,7 @@ inline defs::StrixelGroupToPixelMap
 jungfrau_ilgad_singlechip_18um_strixel_map(InclusiveROI rx_roi,
                                            defs::SensorPlacement placement,
                                            defs::BondShift bs = {0, 0}) {
+    std::cout << " === JUNGFRAU iLGAD SINGLE-CHIP 18.75um PITCH === \n";
     return algo::strixel_to_pixel_map(config::jungfrau::SingleChipMP_iLGAD_P18,
                                       placement, rx_roi, bs);
 };
@@ -64,6 +67,7 @@ inline defs::StrixelGroupToPixelMap
 jungfrau_tew_singlechip_25um_strixel_map(InclusiveROI rx_roi,
                                          defs::SensorPlacement placement,
                                          defs::BondShift bs = {0, 0}) {
+    std::cout << " === JUNGFRAU TEW SINGLE-CHIP 25um PITCH === \n";
     return algo::strixel_to_pixel_map(config::jungfrau::SingleChipMP_TEW_P25,
                                       placement, rx_roi, bs);
 }
@@ -72,6 +76,7 @@ inline defs::StrixelGroupToPixelMap
 jungfrau_tew_singlechip_15um_strixel_map(InclusiveROI rx_roi,
                                          defs::SensorPlacement placement,
                                          defs::BondShift bs = {0, 0}) {
+    std::cout << " === JUNGFRAU TEW SINGLE-CHIP 15um PITCH === \n";
     return algo::strixel_to_pixel_map(config::jungfrau::SingleChipMP_TEW_P15,
                                       placement, rx_roi, bs);
 };
@@ -80,6 +85,7 @@ inline defs::StrixelGroupToPixelMap
 jungfrau_tew_singlechip_18um_strixel_map(InclusiveROI rx_roi,
                                          defs::SensorPlacement placement,
                                          defs::BondShift bs = {0, 0}) {
+    std::cout << " === JUNGFRAU TEW SINGLE-CHIP 18.75um PITCH === \n";
     return algo::strixel_to_pixel_map(config::jungfrau::SingleChipMP_TEW_P18,
                                       placement, rx_roi, bs);
 };
