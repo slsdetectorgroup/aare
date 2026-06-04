@@ -13,6 +13,7 @@ from ._aare import corner
 
 # from ._aare import ClusterFinderMT, ClusterCollector, ClusterFileSink, ClusterVector_i
 
+from ._version import __version__
 from .ClusterFinder import ClusterFinder, ClusterCollector, ClusterFinderMT, ClusterFileSink, ClusterFile
 from .ClusterVector import ClusterVector
 from .Cluster import Cluster
