@@ -37,7 +37,7 @@ inline constexpr defs::SensorGroupConfig SingleChipMP_iLGAD_P25{
     .strixel = StrxP25,
     .placement_on_sensor = {SingleChipMP_iLGAD_pix.guardring.x + 1, // 10
                             SingleChipMP_iLGAD_pix.num_pix_x -
-                                SingleChipMP_iLGAD_pix.guardring.x - 1,   // 245
+                                SingleChipMP_iLGAD_pix.guardring.x - 1,   // 246
                             SingleChipMP_iLGAD_pix.guardring.y,           // 9
                             (SingleChipMP_iLGAD_pix.num_pix_y / 4) - 1}}; // 63
 /* Number of strixel columns: 79
@@ -49,7 +49,7 @@ inline constexpr defs::SensorGroupConfig SingleChipMP_iLGAD_P15{
     .strixel = StrxP15,
     .placement_on_sensor = {SingleChipMP_iLGAD_pix.guardring.x + 3, // 12
                             SingleChipMP_iLGAD_pix.num_pix_x -
-                                SingleChipMP_iLGAD_pix.guardring.x - 1, // 245
+                                SingleChipMP_iLGAD_pix.guardring.x - 1, // 246
                             SingleChipMP_iLGAD_pix.num_pix_y / 4,       // 64
                             (SingleChipMP_iLGAD_pix.num_pix_y / 4) * 2 -
                                 1}}; // 127
@@ -62,10 +62,10 @@ inline constexpr defs::SensorGroupConfig SingleChipMP_iLGAD_P18{
     .strixel = StrxP18,
     .placement_on_sensor = {SingleChipMP_iLGAD_pix.guardring.x + 2, // 11
                             SingleChipMP_iLGAD_pix.num_pix_x -
-                                SingleChipMP_iLGAD_pix.guardring.x - 1, // 245
+                                SingleChipMP_iLGAD_pix.guardring.x - 1, // 246
                             (SingleChipMP_iLGAD_pix.num_pix_y / 4) * 2, // 128
                             SingleChipMP_iLGAD_pix.num_pix_y -
-                                SingleChipMP_iLGAD_pix.guardring.y - 1}}; // 245
+                                SingleChipMP_iLGAD_pix.guardring.y - 1}}; // 246
 /* Number of strixel columns: 59
  * Number of strixel rows: 476
  ********************************/
