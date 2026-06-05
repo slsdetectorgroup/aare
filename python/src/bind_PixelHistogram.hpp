@@ -40,7 +40,7 @@ void define_pixel_histogram_binding(py::module &m, const char *class_name,
                      asynchronous filling before fill_async() applies
                      backpressure on the caller (default: 16)
              )",
-             py::arg("rows"), py::arg("cols"), py::arg("n_bins"),
+             py::kw_only(), py::arg("rows"), py::arg("cols"), py::arg("n_bins"),
              py::arg("xmin"), py::arg("xmax"), py::arg("n_threads") = 1,
              py::arg("max_pending") = std::size_t{16})
 

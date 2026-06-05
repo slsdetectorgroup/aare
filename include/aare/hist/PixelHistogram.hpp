@@ -49,6 +49,8 @@ class PixelHistogram {
 
     // Async producer/consumer pipeline. SPSC queue feeds the coordinator
     // thread, which fans each image out to the worker pool one at a time.
+    // TODO: batch processing?
+    // TODO: FIFO to avoid allocations?
     std::unique_ptr<AsyncQueue> async_queue_;
     std::thread coordinator_;
     std::atomic<bool> stop_coordinator_{false};
@@ -74,7 +76,7 @@ class PixelHistogram {
     // coordinator thread, and returns. Blocks the caller only if the queue
     // is full (single-producer, single-consumer queue with a sleep-poll
     // backpressure loop, matching the convention in ClusterFinderMT).
-    void fill_async(NDArray<AxisType, 2> image);
+    void fill_async(NDArray<AxisType, 2> &&image);
 
     // Wait for all queued async fills to complete. Cheap when the queue
     // is already drained.
@@ -289,7 +291,7 @@ void PixelHistogram<StorageType, AxisType>::dispatch(
 
 template <typename StorageType, typename AxisType>
 void PixelHistogram<StorageType, AxisType>::fill_async(
-    NDArray<AxisType, 2> image) {
+    NDArray<AxisType, 2> &&image) {
     if (image.shape(0) != rows_ || image.shape(1) != cols_) {
         throw std::invalid_argument(
             "PixelHistogram image shape does not match constructor shape");
