@@ -11,6 +11,7 @@ silently dropped.
 #include "aare/NDView.hpp"
 
 #include <cstddef>
+#include <limits>
 #include <stdexcept>
 #include <type_traits>
 
@@ -105,6 +106,11 @@ void PixelHistogramImpl<T, StorageType>::fill_unchecked(int row, int col,
     // xmax to bin == n_bins.
     if (bin >= m_n_bins) {
         bin = m_n_bins - 1;
+    }
+    if constexpr (std::is_integral_v<StorageType>) {
+        if (m_values(row, col, bin) >= std::numeric_limits<StorageType>::max()) {
+            return;
+        }
     }
     ++m_values(row, col, bin);
 }
