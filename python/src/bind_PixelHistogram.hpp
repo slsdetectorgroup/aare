@@ -11,8 +11,10 @@ namespace py = pybind11;
 using namespace ::aare;
 
 void define_pixel_histogram_bindings(py::module &m) {
-    py::class_<PixelHistogram>(m, "PixelHistogram",
-                               "A histogram for pixel-wise statistics")
+    using PixelHistogramF32U16 = PixelHistogram<uint16_t, float>;
+
+    py::class_<PixelHistogramF32U16>(m, "PixelHistogram",
+                                     "A histogram for pixel-wise statistics")
         .def(py::init<int, int, int, double, double, int, std::size_t>(),
              R"(
              Initialize a PixelHistogram.
@@ -34,13 +36,12 @@ void define_pixel_histogram_bindings(py::module &m) {
 
         .def(
             "fill_async",
-            [](PixelHistogram &self,
-               py::array_t<PixelHistogram::AxisType, 0> image) {
+            [](PixelHistogramF32U16 &self, py::array_t<float, 0> image) {
                 // Copy the numpy buffer into an owned NDArray while we
                 // still hold the GIL so we don't depend on the array's
                 // backing storage outliving this call.
                 auto view = make_view_2d(image);
-                NDArray<PixelHistogram::AxisType, 2> owned(view);
+                NDArray<float, 2> owned(view);
                 // Release the GIL while enqueueing - fill_async can block
                 // on backpressure when the queue is full.
                 py::gil_scoped_release release;
@@ -60,7 +61,7 @@ void define_pixel_histogram_bindings(py::module &m) {
              )",
             py::arg("image").noconvert())
 
-        .def("flush", &PixelHistogram::flush,
+        .def("flush", &PixelHistogramF32U16::flush,
              R"(
              Block until all images submitted via fill_async() have been
              merged into the accumulators. Cheap when nothing is pending.
@@ -69,15 +70,14 @@ void define_pixel_histogram_bindings(py::module &m) {
 
         .def(
             "values",
-            [](const PixelHistogram &self) {
+            [](const PixelHistogramF32U16 &self) {
                 // values() implicitly flushes - release the GIL while it
                 // does so. Allocation/copy into the NDArray runs without
                 // the GIL too; only the numpy wrapping needs it.
-                NDArray<PixelHistogram::StorageType, 3> *ptr = nullptr;
+                NDArray<uint16_t, 3> *ptr = nullptr;
                 {
                     py::gil_scoped_release release;
-                    ptr = new NDArray<PixelHistogram::StorageType, 3>(
-                        self.values());
+                    ptr = new NDArray<uint16_t, 3>(self.values());
                 }
                 return return_image_data(ptr);
             },
@@ -94,9 +94,8 @@ void define_pixel_histogram_bindings(py::module &m) {
 
         .def(
             "bin_centers",
-            [](const PixelHistogram &self) {
-                auto ptr = new NDArray<PixelHistogram::AxisType, 1>(
-                    self.bin_centers());
+            [](const PixelHistogramF32U16 &self) {
+                auto ptr = new NDArray<float, 1>(self.bin_centers());
                 return return_image_data(ptr);
             },
             R"(
@@ -107,9 +106,8 @@ void define_pixel_histogram_bindings(py::module &m) {
              )")
         .def(
             "bin_edges",
-            [](const PixelHistogram &self) {
-                auto ptr =
-                    new NDArray<PixelHistogram::AxisType, 1>(self.bin_edges());
+            [](const PixelHistogramF32U16 &self) {
+                auto ptr = new NDArray<float, 1>(self.bin_edges());
                 return return_image_data(ptr);
             },
             R"(

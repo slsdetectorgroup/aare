@@ -5,6 +5,7 @@
 #include <cstdint>
 #include <random>
 #include <thread>
+#include <type_traits>
 #include <vector>
 
 #include "test_config.hpp"
@@ -20,7 +21,7 @@ namespace {
 // The synchronous fill() has been removed; fill_async() is the only entry
 // point. This helper submits one frame and blocks until it has been merged
 // so the tests can keep their straightforward, ordered expectations.
-void fill_blocking(PixelHistogram &hist, const NDView<float, 2> &image) {
+void fill_blocking(PixelHistogram<> &hist, const NDView<float, 2> &image) {
     NDArray<float, 2> owned(image);
     hist.fill_async(std::move(owned));
     hist.flush();
@@ -309,8 +310,7 @@ TEST_CASE("Destructor drains pending async fills") {
         frames.push_back(std::move(img));
     }
 
-    NDArray<aare::PixelHistogram::StorageType, 3> snapshot({rows, cols, n_bins},
-                                                           uint16_t{0});
+    NDArray<uint16_t, 3> snapshot({rows, cols, n_bins}, uint16_t{0});
     {
         PixelHistogram hist(rows, cols, n_bins, xmin, xmax, 2, max_pending);
         for (auto &img : frames) {
@@ -345,4 +345,28 @@ TEST_CASE("Destructor drains pending async fills") {
         }
     }
     CHECK(all_match);
+}
+
+TEST_CASE("PixelHistogram supports custom storage and axis types") {
+    PixelHistogram<uint32_t, double> hist(2, 2, 4, 0.0, 4.0, 1);
+    NDArray<double, 2> image({2, 2}, -1.0);
+
+    image(0, 0) = 0.25;
+    image(0, 1) = 1.25;
+    image(1, 0) = 2.25;
+    image(1, 1) = 3.25;
+
+    hist.fill_async(std::move(image));
+    hist.flush();
+
+    auto values = hist.values();
+    STATIC_REQUIRE(std::is_same_v<decltype(values(0, 0, 0)), uint32_t &>);
+    CHECK(values(0, 0, 0) == uint32_t{1});
+    CHECK(values(0, 1, 1) == uint32_t{1});
+    CHECK(values(1, 0, 2) == uint32_t{1});
+    CHECK(values(1, 1, 3) == uint32_t{1});
+
+    auto centers = hist.bin_centers();
+    STATIC_REQUIRE(std::is_same_v<decltype(centers(0)), double &>);
+    CHECK(centers.shape(0) == 4);
 }
