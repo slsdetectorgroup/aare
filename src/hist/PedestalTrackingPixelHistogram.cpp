@@ -235,38 +235,64 @@ void PedestalTrackingPixelHistogram::worker_loop(int thread_id) {
             // Histogram the pedestal-subtracted residual AND, for pixels
             // whose residual is consistent with noise
             // (|residual| < n_sigma * cached_std), feed the raw value
-            // back into the pedestal shard. With n_sigma == 0 the gate
-            // never fires, recovering plain histogram-only behaviour
-            // (modulo the per-pixel gate evaluation). The [xmin, xmax)
-            // histogram gate lives inside PixelHistogramImpl::fill.
-            auto &my_std = partial_std_[thread_id];
+            // back into the pedestal shard. With n_sigma <= 0, use a
+            // histogram-only hot path that skips the per-pixel pedestal
+            // tracking gate entirely. The [xmin, xmax) histogram gate
+            // lives inside PixelHistogramImpl::fill.
             const auto n_sigma = n_sigma_.load(std::memory_order_relaxed);
-            for (const auto &frame : *images) {
-                const auto cols = frame.shape(1);
-                for (int local_row = 0; local_row < local_rows; ++local_row) {
-                    const auto row =
-                        static_cast<ssize_t>(first_row + local_row);
-                    for (ssize_t col = 0; col < cols; ++col) {
-                        const FrameType raw = frame(row, col);
-                        const AxisType val =
-                            static_cast<AxisType>(raw) -
-                            static_cast<AxisType>(my_pedestal.mean(
-                                static_cast<uint32_t>(local_row),
-                                static_cast<uint32_t>(col)));
-                        my_hist.fill_unchecked(local_row, static_cast<int>(col),
-                                               val);
-                        const AxisType sigma = my_std(local_row, col);
-                        if (sigma > AxisType{0.0} &&
-                            std::abs(static_cast<AxisType>(val)) <
-                                n_sigma * sigma) {
-                            my_pedestal.template push<FrameType>(
-                                static_cast<uint32_t>(local_row),
-                                static_cast<uint32_t>(col), raw);
+            if (n_sigma <= AxisType{0.0}) {
+                // Fill without pedestal tracking.
+                for (const auto &frame : *images) {
+                    const auto cols = frame.shape(1);
+                    for (int local_row = 0; local_row < local_rows;
+                         ++local_row) {
+                        const auto row =
+                            static_cast<ssize_t>(first_row + local_row);
+                        for (ssize_t col = 0; col < cols; ++col) {
+                            const FrameType raw = frame(row, col);
+                            const AxisType val =
+                                static_cast<AxisType>(raw) -
+                                static_cast<AxisType>(my_pedestal.mean(
+                                    static_cast<uint32_t>(local_row),
+                                    static_cast<uint32_t>(col)));
+                            my_hist.fill_unchecked(local_row,
+                                                   static_cast<int>(col), val);
                         }
                     }
                 }
+                break;
+            } else {
+                // Do pedestal tracking. Duplicated code for clean hot path.
+
+                auto &my_std = partial_std_[thread_id];
+                for (const auto &frame : *images) {
+                    const auto cols = frame.shape(1);
+                    for (int local_row = 0; local_row < local_rows;
+                         ++local_row) {
+                        const auto row =
+                            static_cast<ssize_t>(first_row + local_row);
+                        for (ssize_t col = 0; col < cols; ++col) {
+                            const FrameType raw = frame(row, col);
+                            const AxisType val =
+                                static_cast<AxisType>(raw) -
+                                static_cast<AxisType>(my_pedestal.mean(
+                                    static_cast<uint32_t>(local_row),
+                                    static_cast<uint32_t>(col)));
+                            my_hist.fill_unchecked(local_row,
+                                                   static_cast<int>(col), val);
+                            const AxisType sigma = my_std(local_row, col);
+                            if (sigma > AxisType{0.0} &&
+                                std::abs(static_cast<AxisType>(val)) <
+                                    n_sigma * sigma) {
+                                my_pedestal.template push<FrameType>(
+                                    static_cast<uint32_t>(local_row),
+                                    static_cast<uint32_t>(col), raw);
+                            }
+                        }
+                    }
+                }
+                break;
             }
-            break;
         }
         }
 
