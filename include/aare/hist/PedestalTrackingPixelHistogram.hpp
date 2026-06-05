@@ -56,7 +56,7 @@ class PedestalTrackingPixelHistogram {
     WorkKind current_work_kind_;
     const NDView<FrameType, 2> *current_image_;
     const std::vector<NDView<FrameType, 2>> *current_images_;
-    std::atomic<int> completed_threads_;
+    int completed_threads_;
     std::atomic<bool> stop_workers_;
     int work_generation_;
 
