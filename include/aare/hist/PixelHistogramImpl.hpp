@@ -108,7 +108,8 @@ void PixelHistogramImpl<T, StorageType>::fill_unchecked(int row, int col,
         bin = m_n_bins - 1;
     }
     if constexpr (std::is_integral_v<StorageType>) {
-        if (m_values(row, col, bin) >= std::numeric_limits<StorageType>::max()) {
+        if (m_values(row, col, bin) >=
+            std::numeric_limits<StorageType>::max()) {
             return;
         }
     }

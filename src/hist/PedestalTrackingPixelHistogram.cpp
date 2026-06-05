@@ -18,7 +18,7 @@ PedestalTrackingPixelHistogram::PedestalTrackingPixelHistogram(
     : rows_(rows), cols_(cols), n_threads_(n_threads), xmin_(xmin), xmax_(xmax),
       current_work_kind_(WorkKind::FillWithThreshold), current_image_(nullptr),
       current_images_(nullptr), completed_threads_(0), stop_workers_(false),
-      work_generation_(0), max_batch_size_(max_pending/3), n_sigma_(n_sigma) {
+      work_generation_(0), max_batch_size_(max_pending / 3), n_sigma_(n_sigma) {
     if (rows_ < 1 || cols_ < 1 || n_bins < 1) {
         throw std::invalid_argument("PedestalTrackingPixelHistogram requires "
                                     "positive rows, cols and bins");
