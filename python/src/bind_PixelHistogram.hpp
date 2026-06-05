@@ -2,19 +2,29 @@
 #include "aare/hist/PixelHistogram.hpp"
 #include "np_helper.hpp"
 
+#include <cstddef>
 #include <cstdint>
 #include <pybind11/numpy.h>
 #include <pybind11/pybind11.h>
 #include <pybind11/stl.h>
+#include <string>
 
 namespace py = pybind11;
 using namespace ::aare;
 
-void define_pixel_histogram_bindings(py::module &m) {
-    using PixelHistogramF32U16 = PixelHistogram<uint16_t, float>;
+namespace {
 
-    py::class_<PixelHistogramF32U16>(m, "PixelHistogram",
-                                     "A histogram for pixel-wise statistics")
+template <typename StorageType>
+void define_pixel_histogram_binding(py::module &m, const char *class_name,
+                                    const char *storage_dtype) {
+    using Hist = PixelHistogram<StorageType, double>;
+
+    const std::string doc =
+        std::string("A histogram for pixel-wise statistics with float64 input "
+                    "axis and ") +
+        storage_dtype + " bin storage";
+
+    py::class_<Hist>(m, class_name, doc.c_str())
         .def(py::init<int, int, int, double, double, int, std::size_t>(),
              R"(
              Initialize a PixelHistogram.
@@ -36,12 +46,12 @@ void define_pixel_histogram_bindings(py::module &m) {
 
         .def(
             "fill_async",
-            [](PixelHistogramF32U16 &self, py::array_t<float, 0> image) {
+            [](Hist &self, py::array_t<double, 0> image) {
                 // Copy the numpy buffer into an owned NDArray while we
                 // still hold the GIL so we don't depend on the array's
                 // backing storage outliving this call.
                 auto view = make_view_2d(image);
-                NDArray<float, 2> owned(view);
+                NDArray<double, 2> owned(view);
                 // Release the GIL while enqueueing - fill_async can block
                 // on backpressure when the queue is full.
                 py::gil_scoped_release release;
@@ -57,11 +67,11 @@ void define_pixel_histogram_bindings(py::module &m) {
              blocks (with the GIL released) until a slot becomes available.
 
              Args:
-                 image: A 2D numpy array of pixel values (dtype: float32)
+                 image: A 2D numpy array of pixel values (dtype: float64)
              )",
             py::arg("image").noconvert())
 
-        .def("flush", &PixelHistogramF32U16::flush,
+        .def("flush", &Hist::flush,
              R"(
              Block until all images submitted via fill_async() have been
              merged into the accumulators. Cheap when nothing is pending.
@@ -70,14 +80,14 @@ void define_pixel_histogram_bindings(py::module &m) {
 
         .def(
             "values",
-            [](const PixelHistogramF32U16 &self) {
+            [](const Hist &self) {
                 // values() implicitly flushes - release the GIL while it
                 // does so. Allocation/copy into the NDArray runs without
                 // the GIL too; only the numpy wrapping needs it.
-                NDArray<uint16_t, 3> *ptr = nullptr;
+                NDArray<StorageType, 3> *ptr = nullptr;
                 {
                     py::gil_scoped_release release;
-                    ptr = new NDArray<uint16_t, 3>(self.values());
+                    ptr = new NDArray<StorageType, 3>(self.values());
                 }
                 return return_image_data(ptr);
             },
@@ -94,8 +104,8 @@ void define_pixel_histogram_bindings(py::module &m) {
 
         .def(
             "bin_centers",
-            [](const PixelHistogramF32U16 &self) {
-                auto ptr = new NDArray<float, 1>(self.bin_centers());
+            [](const Hist &self) {
+                auto ptr = new NDArray<double, 1>(self.bin_centers());
                 return return_image_data(ptr);
             },
             R"(
@@ -106,8 +116,8 @@ void define_pixel_histogram_bindings(py::module &m) {
              )")
         .def(
             "bin_edges",
-            [](const PixelHistogramF32U16 &self) {
-                auto ptr = new NDArray<float, 1>(self.bin_edges());
+            [](const Hist &self) {
+                auto ptr = new NDArray<double, 1>(self.bin_edges());
                 return return_image_data(ptr);
             },
             R"(
@@ -116,4 +126,22 @@ void define_pixel_histogram_bindings(py::module &m) {
              Returns:
                  A 1D numpy array containing the edge values for the histogram bins
              )");
+}
+
+} // namespace
+
+void define_pixel_histogram_bindings(py::module &m) {
+    define_pixel_histogram_binding<double>(m, "PixelHistogram_d", "float64");
+    define_pixel_histogram_binding<float>(m, "PixelHistogram_f", "float32");
+    define_pixel_histogram_binding<std::uint64_t>(m, "PixelHistogram_u64",
+                                                  "uint64");
+    define_pixel_histogram_binding<std::uint32_t>(m, "PixelHistogram_u32",
+                                                  "uint32");
+    define_pixel_histogram_binding<std::uint16_t>(m, "PixelHistogram_u16",
+                                                  "uint16");
+    define_pixel_histogram_binding<std::uint8_t>(m, "PixelHistogram_u8",
+                                                 "uint8");
+
+    // Backwards-compatible alias for the generic Python class name.
+    m.attr("PixelHistogram") = m.attr("PixelHistogram_d");
 }
