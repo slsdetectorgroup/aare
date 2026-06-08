@@ -21,11 +21,7 @@ namespace {
 // The synchronous fill() has been removed; fill_async() is the only entry
 // point. This helper submits one frame and blocks until it has been merged
 // so the tests can keep their straightforward, ordered expectations.
-void fill_blocking(PixelHistogram<> &hist, const NDView<float, 2> &image) {
-    NDArray<float, 2> owned(image);
-    hist.fill_async(std::move(owned));
-    hist.flush();
-}
+
 } // namespace
 
 TEST_CASE("Fill one pixel of a 5x10 histogram") {
@@ -36,7 +32,10 @@ TEST_CASE("Fill one pixel of a 5x10 histogram") {
     image(2, 3) = 5.7; // This should go into bin 11 (since bins are [0-0.5),
                        // [0.5-1.0), ..., [9.5-10.0))
 
-    fill_blocking(hist, image.view());
+    // fill_blocking(hist, image.view());
+    hist.fill_async(NDArray<float, 2>(image));
+    hist.flush(); // Wait for the async fill to complete before we check the
+                  // results
 
     auto values = hist.values();
     REQUIRE(values.shape(0) == 5);
@@ -68,7 +67,8 @@ TEST_CASE("Fill pixels with uneven partial histogram row slices") {
     image(3, 3) = 3.2;
     image(4, 0) = 4.2;
 
-    fill_blocking(hist, image.view());
+    hist.fill_async(NDArray<float, 2>(image));
+    hist.flush();
 
     auto values = hist.values();
     REQUIRE(values.shape(0) == 5);
@@ -127,7 +127,8 @@ TEST_CASE("Row partitioning handles rows < n_threads * ceil(rows/n_threads)") {
     for (ssize_t r = 0; r < rows; ++r) {
         img(r, 0) = static_cast<float>(r % n_bins) + 0.5f;
     }
-    fill_blocking(hist, img.view());
+    hist.fill_async(NDArray<float, 2>(img));
+    hist.flush();
 
     auto h = hist.values();
     REQUIRE(h.shape(0) == rows);
@@ -200,8 +201,9 @@ TEST_CASE("Random fills match a reference implementation") {
     }
 
     for (const auto &img : frames) {
-        fill_blocking(hist, img.view());
+        hist.fill_async(NDArray<float, 2>(img));
     }
+    hist.flush();
     auto h = hist.values();
 
     REQUIRE(h.shape(0) == rows);
@@ -218,61 +220,6 @@ TEST_CASE("Random fills match a reference implementation") {
                                       << " b=" << b << " got=" << h(r, c, b)
                                       << " expected=" << expected(r, c, b));
                     CHECK(h(r, c, b) == expected(r, c, b));
-                }
-            }
-        }
-    }
-    CHECK(all_match);
-}
-
-TEST_CASE("Streamed async fill matches per-frame flushed fill") {
-    // Submit a stream of random frames through fill_async and compare
-    // against the same frames submitted one-at-a-time with a flush between
-    // each (via fill_blocking) on a separate histogram.
-    constexpr int rows = 19;
-    constexpr int cols = 23;
-    constexpr int n_bins = 16;
-    constexpr float xmin = -1.0f;
-    constexpr float xmax = 3.0f;
-    const int n_threads = GENERATE(1, 2, 4);
-    constexpr int n_frames = 32;
-    // Pick a small queue capacity so the producer trips the backpressure
-    // path at least a few times during the run.
-    constexpr std::size_t max_pending = 4;
-
-    PixelHistogram async_hist(rows, cols, n_bins, xmin, xmax, n_threads,
-                              max_pending);
-    PixelHistogram sync_hist(rows, cols, n_bins, xmin, xmax, n_threads);
-
-    std::mt19937 rng(0xA5A5A5A5);
-    std::uniform_real_distribution<float> dist(xmin - 0.25f, xmax + 0.25f);
-
-    for (int f = 0; f < n_frames; ++f) {
-        NDArray<float, 2> img({rows, cols}, 0.0f);
-        for (ssize_t r = 0; r < rows; ++r)
-            for (ssize_t c = 0; c < cols; ++c)
-                img(r, c) = dist(rng);
-        fill_blocking(sync_hist, img.view());
-        async_hist.fill_async(std::move(img));
-    }
-    // values() calls flush() internally, but exercise the explicit path too.
-    async_hist.flush();
-
-    auto a = async_hist.values();
-    auto s = sync_hist.values();
-    REQUIRE(a.shape(0) == s.shape(0));
-    REQUIRE(a.shape(1) == s.shape(1));
-    REQUIRE(a.shape(2) == s.shape(2));
-
-    bool all_match = true;
-    for (ssize_t r = 0; r < rows && all_match; ++r) {
-        for (ssize_t c = 0; c < cols && all_match; ++c) {
-            for (ssize_t b = 0; b < n_bins && all_match; ++b) {
-                if (a(r, c, b) != s(r, c, b)) {
-                    all_match = false;
-                    INFO("r=" << r << " c=" << c << " b=" << b << " async="
-                              << a(r, c, b) << " sync=" << s(r, c, b));
-                    CHECK(a(r, c, b) == s(r, c, b));
                 }
             }
         }
@@ -327,7 +274,7 @@ TEST_CASE("Destructor drains pending async fills") {
 
     PixelHistogram reference(rows, cols, n_bins, xmin, xmax, 2);
     for (const auto &img : frames)
-        fill_blocking(reference, img.view());
+        reference.fill_async(NDArray<float, 2>(img.view()));
     auto expected = reference.values();
 
     bool all_match = true;
@@ -356,7 +303,7 @@ TEST_CASE("PixelHistogram supports custom storage and axis types") {
     image(1, 0) = 2.25;
     image(1, 1) = 3.25;
 
-    hist.fill_async(std::move(image));
+    hist.fill_async(NDArray<double, 2>(image));
     hist.flush();
 
     auto values = hist.values();

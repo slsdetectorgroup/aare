@@ -43,7 +43,7 @@ void define_pedestal_tracking_pixel_histogram_bindings(py::module &m) {
                      histogram-only async behaviour (default: 1.0).
                      Also exposed live via the ``n_sigma`` property.
              )",
-            py::arg("rows"), py::arg("cols"), py::arg("n_bins"),
+            py::kw_only(), py::arg("rows"), py::arg("cols"), py::arg("n_bins"),
             py::arg("xmin"), py::arg("xmax"), py::arg("n_threads") = 1,
             py::arg("max_pending") = std::size_t{16}, py::arg("n_sigma") = 1.0)
 

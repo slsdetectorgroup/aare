@@ -123,6 +123,11 @@ template <typename SUM_TYPE = double> class Pedestal {
                 "Frame shape does not match pedestal shape");
         }
 
+        if (threshold.shape() != std::array<ssize_t, 2>{m_rows, m_cols}) {
+            throw std::runtime_error(
+                "Threshold shape does not match pedestal shape");
+        }
+
         for (size_t row = 0; row < m_rows; row++) {
             for (size_t col = 0; col < m_cols; col++) {
                 if (fabs(frame(row, col) - mean(row, col)) <

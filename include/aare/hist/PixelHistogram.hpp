@@ -68,7 +68,7 @@ class PixelHistogram {
     int row_count(int thread_id) const;
 
   public:
-    PixelHistogram(int rows, int cols, int n_bins, double xmin, double xmax,
+    PixelHistogram(int rows, int cols, int n_bins, AxisType xmin, AxisType xmax,
                    int n_threads = 1, std::size_t max_pending = 16);
     ~PixelHistogram();
 
@@ -91,8 +91,8 @@ class PixelHistogram {
 
 template <typename StorageType, typename AxisType>
 PixelHistogram<StorageType, AxisType>::PixelHistogram(int rows, int cols,
-                                                      int n_bins, double xmin,
-                                                      double xmax,
+                                                      int n_bins, AxisType xmin,
+                                                      AxisType xmax,
                                                       int n_threads,
                                                       std::size_t max_pending)
     : rows_(rows), cols_(cols), n_threads_(n_threads), xmin_(xmin), xmax_(xmax),
@@ -131,9 +131,7 @@ PixelHistogram<StorageType, AxisType>::PixelHistogram(int rows, int cols,
     partial_hists_.reserve(n_threads_);
     for (int i = 0; i < n_threads_; ++i) {
         const auto local_rows = row_count(i);
-        partial_hists_.emplace_back(local_rows, cols, n_bins,
-                                    static_cast<AxisType>(xmin),
-                                    static_cast<AxisType>(xmax));
+        partial_hists_.emplace_back(local_rows, cols, n_bins, xmin, xmax);
     }
 
     // Spawn worker threads
