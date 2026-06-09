@@ -150,6 +150,8 @@ else()
 endif()
 
 if(AARE_FETCH_MINUIT2)
+  # We are building Minuit2 from sources.
+
   # Patch minuit2 to avoid messing with cmake policies
   set(MINUIT2_PATCH_COMMAND git apply
                             ${CMAKE_CURRENT_SOURCE_DIR}/patches/minuit2.patch)
@@ -176,8 +178,21 @@ if(AARE_FETCH_MINUIT2)
 
   set_property(TARGET Minuit2Math PROPERTY POSITION_INDEPENDENT_CODE ON)
   set_property(TARGET Minuit2 PROPERTY POSITION_INDEPENDENT_CODE ON)
+
+  add_library(aare::Minuit2 ALIAS Minuit2)
 else()
-  find_package(Minuit2 REQUIRED)
+  find_package(Minuit2 CONFIG QUIET)
+  if(NOT Minuit2_FOUND)
+    message(
+      STATUS
+        "Stand alone Minuit2 not found. Trying to find it as a part of ROOT")
+    find_package(
+      ROOT
+      COMPONENTS Minuit2
+      REQUIRED)
+    add_library(aare::Minuit2 ALIAS ROOT::Minuit2)
+    message(STATUS "Found Minuit2 as a part of ROOT: ${ROOT_DIR}")
+  endif()
 endif()
 
 if(AARE_FETCH_ZMQ)
@@ -436,12 +451,12 @@ target_link_libraries(
   aare_core
   PUBLIC fmt::fmt nlohmann_json::nlohmann_json ${STD_FS_LIB} # from
                                                              # helpers.cmake
-         Minuit2::Minuit2
+         aare::Minuit2
   PRIVATE aare_compiler_flags Threads::Threads $<BUILD_INTERFACE:lmfit>)
 
 target_include_directories(
   aare_core SYSTEM
-  PRIVATE $<TARGET_PROPERTY:Minuit2::Minuit2,INTERFACE_INCLUDE_DIRECTORIES>)
+  PRIVATE $<TARGET_PROPERTY:aare::Minuit2,INTERFACE_INCLUDE_DIRECTORIES>)
 
 set_property(TARGET aare_core PROPERTY POSITION_INDEPENDENT_CODE ON)
 

@@ -29,7 +29,7 @@ target_link_libraries(_aare PRIVATE aare_core aare_compiler_flags)
 
 target_include_directories(
   _aare SYSTEM
-  PRIVATE $<TARGET_PROPERTY:Minuit2::Minuit2,INTERFACE_INCLUDE_DIRECTORIES>)
+  PRIVATE $<TARGET_PROPERTY:aare::Minuit2,INTERFACE_INCLUDE_DIRECTORIES>)
 
 # List of python files to be copied to the build directory
 set(PYTHON_FILES
