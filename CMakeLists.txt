@@ -379,6 +379,9 @@ set(PUBLICHEADERS
     include/aare/FileInterface.hpp
     include/aare/FilePtr.hpp
     include/aare/Frame.hpp
+    include/aare/hist/PixelHistogram.hpp
+    include/aare/hist/PixelHistogramImpl.hpp
+    include/aare/hist/PedestalTrackingPixelHistogram.hpp
     include/aare/GainMap.hpp
     include/aare/ROIGeometry.hpp
     include/aare/DetectorGeometry.hpp
@@ -403,6 +406,7 @@ set(SourceFiles
     ${CMAKE_CURRENT_SOURCE_DIR}/src/defs.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/src/ROIGeometry.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/src/DetectorGeometry.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/hist/PedestalTrackingPixelHistogram.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/src/Dtype.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/src/File.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/src/FilePtr.cpp
@@ -420,7 +424,7 @@ set(SourceFiles
     ${CMAKE_CURRENT_SOURCE_DIR}/src/utils/task.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/src/utils/ifstream_helpers.cpp)
 
-add_library(aare_core STATIC ${SourceFiles})
+add_library(aare_core STATIC ${SourceFiles} ${PUBLICHEADERS})
 target_include_directories(
   aare_core PUBLIC "$<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>"
                    "$<INSTALL_INTERFACE:${CMAKE_INSTALL_INCLUDEDIR}>")
@@ -455,9 +459,8 @@ if(AARE_CUSTOM_ASSERT)
   target_compile_definitions(aare_core PUBLIC AARE_CUSTOM_ASSERT)
 endif()
 
-set_target_properties(
-  aare_core PROPERTIES ARCHIVE_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}
-                       PUBLIC_HEADER "${PUBLICHEADERS}")
+set_target_properties(aare_core PROPERTIES ARCHIVE_OUTPUT_DIRECTORY
+                                           ${CMAKE_BINARY_DIR})
 
 if(AARE_TESTS)
   set(TestSources
@@ -479,6 +482,8 @@ if(AARE_TESTS)
       ${CMAKE_CURRENT_SOURCE_DIR}/src/ClusterFile.test.cpp
       ${CMAKE_CURRENT_SOURCE_DIR}/src/ClusterFinderMT.test.cpp
       ${CMAKE_CURRENT_SOURCE_DIR}/src/Pedestal.test.cpp
+      ${CMAKE_CURRENT_SOURCE_DIR}/src/hist/PixelHistogramImpl.test.cpp
+      ${CMAKE_CURRENT_SOURCE_DIR}/src/hist/PixelHistogram.test.cpp
       ${CMAKE_CURRENT_SOURCE_DIR}/src/JungfrauDataFile.test.cpp
       ${CMAKE_CURRENT_SOURCE_DIR}/src/NumpyFile.test.cpp
       ${CMAKE_CURRENT_SOURCE_DIR}/src/NumpyHelpers.test.cpp
@@ -494,8 +499,12 @@ if(AARE_MASTER_PROJECT)
     TARGETS aare_core aare_compiler_flags
     EXPORT "${TARGETS_EXPORT_NAME}"
     LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR}
-    ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR}
-    PUBLIC_HEADER DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}/aare)
+    ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR})
+  install(
+    DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/include/aare/
+    DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}/aare
+    FILES_MATCHING
+    PATTERN "*.hpp")
 endif()
 
 set(CMAKE_INSTALL_RPATH $ORIGIN)

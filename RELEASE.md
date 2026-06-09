@@ -9,6 +9,7 @@
 - setter and getter for nSigma for ClusterFinder ``aare.ClusterFinder().nSigma = 2``, ``aare.ClusterFinderMT().set_nSigma(2)`` 
 - mask opeartor for ClusterVector ``masked_clustervector = aare.ClusterVector()(mask)``
 - passing pre computed eta values to ``aare.Interpolator.interpolate`` alongside clusters
+- Added ``PixelHistogram`` and ``PedestalTrackingPixelHistogram`` 
 
 ### Bugfixes:
 

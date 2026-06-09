@@ -2,6 +2,7 @@
 import numpy as np
 import matplotlib.pyplot as plt
 from mpl_toolkits.axes_grid1 import make_axes_locatable
+import time
 
 def random_pixels(n_pixels, xmin=0, xmax=512, ymin=0, ymax=1024):
     """Return a list of random pixels.
@@ -35,3 +36,17 @@ def add_colorbar(ax, im, size="5%", pad=0.05):
     cax = divider.append_axes("right", size=size, pad=pad)
     plt.colorbar(im, cax=cax)
     return ax, im, cax
+
+
+class Timer:
+    def __init__(self, label="Elapsed time:", verbose=True):
+        self.label = label
+        self.verbose = verbose
+    def __enter__(self):
+        self.start = time.perf_counter()
+        return self
+
+    def __exit__(self, exc_type, exc, tb):
+        self.elapsed = time.perf_counter() - self.start
+        if self.verbose:
+            print(f"{self.label} {self.elapsed:.3f}s")
