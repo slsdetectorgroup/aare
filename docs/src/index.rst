@@ -28,6 +28,7 @@ AARE
     pycalibration
     python/cluster/index
     python/file/index
+    python/histogram/index
     pyFit
     
 

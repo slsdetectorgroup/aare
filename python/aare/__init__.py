@@ -33,7 +33,7 @@ from .CtbRawFile import CtbRawFile
 from .RawFile import RawFile
 from .ScanParameters import ScanParameters
 
-from .utils import random_pixels, random_pixel, flat_list, add_colorbar
+from .utils import random_pixels, random_pixel, flat_list, add_colorbar, Timer
 
 
 #make functions available in the top level API
@@ -44,3 +44,13 @@ from ._aare import apply_calibration, count_switching_pixels
 from ._aare import calculate_pedestal, calculate_pedestal_float, calculate_pedestal_g0, calculate_pedestal_g0_float
 
 from ._aare import VarClusterFinder
+from ._aare import (
+    PedestalTrackingPixelHistogram,
+    PixelHistogram,
+    PixelHistogram_d,
+    PixelHistogram_f,
+    PixelHistogram_u8,
+    PixelHistogram_u16,
+    PixelHistogram_u32,
+    PixelHistogram_u64,
+)

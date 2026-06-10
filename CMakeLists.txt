@@ -150,6 +150,8 @@ else()
 endif()
 
 if(AARE_FETCH_MINUIT2)
+  # We are building Minuit2 from sources.
+
   # Patch minuit2 to avoid messing with cmake policies
   set(MINUIT2_PATCH_COMMAND git apply
                             ${CMAKE_CURRENT_SOURCE_DIR}/patches/minuit2.patch)
@@ -176,8 +178,21 @@ if(AARE_FETCH_MINUIT2)
 
   set_property(TARGET Minuit2Math PROPERTY POSITION_INDEPENDENT_CODE ON)
   set_property(TARGET Minuit2 PROPERTY POSITION_INDEPENDENT_CODE ON)
+
+  add_library(aare::Minuit2 ALIAS Minuit2)
 else()
-  find_package(Minuit2 REQUIRED)
+  find_package(Minuit2 CONFIG QUIET)
+  if(NOT Minuit2_FOUND)
+    message(
+      STATUS
+        "Stand alone Minuit2 not found. Trying to find it as a part of ROOT")
+    find_package(
+      ROOT
+      COMPONENTS Minuit2
+      REQUIRED)
+    add_library(aare::Minuit2 ALIAS ROOT::Minuit2)
+    message(STATUS "Found Minuit2 as a part of ROOT: ${ROOT_DIR}")
+  endif()
 endif()
 
 if(AARE_FETCH_ZMQ)
@@ -379,6 +394,9 @@ set(PUBLICHEADERS
     include/aare/FileInterface.hpp
     include/aare/FilePtr.hpp
     include/aare/Frame.hpp
+    include/aare/hist/PixelHistogram.hpp
+    include/aare/hist/PixelHistogramImpl.hpp
+    include/aare/hist/PedestalTrackingPixelHistogram.hpp
     include/aare/GainMap.hpp
     include/aare/InclusiveROI.hpp
     include/aare/RemapAlgorithm.hpp
@@ -409,6 +427,7 @@ set(SourceFiles
     ${CMAKE_CURRENT_SOURCE_DIR}/src/defs.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/src/ROIGeometry.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/src/DetectorGeometry.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/hist/PedestalTrackingPixelHistogram.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/src/Dtype.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/src/File.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/src/FilePtr.cpp
@@ -428,7 +447,7 @@ set(SourceFiles
     ${CMAKE_CURRENT_SOURCE_DIR}/src/utils/task.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/src/utils/ifstream_helpers.cpp)
 
-add_library(aare_core STATIC ${SourceFiles})
+add_library(aare_core STATIC ${SourceFiles} ${PUBLICHEADERS})
 target_include_directories(
   aare_core PUBLIC "$<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>"
                    "$<INSTALL_INTERFACE:${CMAKE_INSTALL_INCLUDEDIR}>")
@@ -440,12 +459,12 @@ target_link_libraries(
   aare_core
   PUBLIC fmt::fmt nlohmann_json::nlohmann_json ${STD_FS_LIB} # from
                                                              # helpers.cmake
-         Minuit2::Minuit2
+         aare::Minuit2
   PRIVATE aare_compiler_flags Threads::Threads $<BUILD_INTERFACE:lmfit>)
 
 target_include_directories(
   aare_core SYSTEM
-  PRIVATE $<TARGET_PROPERTY:Minuit2::Minuit2,INTERFACE_INCLUDE_DIRECTORIES>)
+  PRIVATE $<TARGET_PROPERTY:aare::Minuit2,INTERFACE_INCLUDE_DIRECTORIES>)
 
 set_property(TARGET aare_core PROPERTY POSITION_INDEPENDENT_CODE ON)
 
@@ -463,9 +482,8 @@ if(AARE_CUSTOM_ASSERT)
   target_compile_definitions(aare_core PUBLIC AARE_CUSTOM_ASSERT)
 endif()
 
-set_target_properties(
-  aare_core PROPERTIES ARCHIVE_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}
-                       PUBLIC_HEADER "${PUBLICHEADERS}")
+set_target_properties(aare_core PROPERTIES ARCHIVE_OUTPUT_DIRECTORY
+                                           ${CMAKE_BINARY_DIR})
 
 if(AARE_TESTS)
   set(TestSources
@@ -487,6 +505,8 @@ if(AARE_TESTS)
       ${CMAKE_CURRENT_SOURCE_DIR}/src/ClusterFile.test.cpp
       ${CMAKE_CURRENT_SOURCE_DIR}/src/ClusterFinderMT.test.cpp
       ${CMAKE_CURRENT_SOURCE_DIR}/src/Pedestal.test.cpp
+      ${CMAKE_CURRENT_SOURCE_DIR}/src/hist/PixelHistogramImpl.test.cpp
+      ${CMAKE_CURRENT_SOURCE_DIR}/src/hist/PixelHistogram.test.cpp
       ${CMAKE_CURRENT_SOURCE_DIR}/src/JungfrauDataFile.test.cpp
       ${CMAKE_CURRENT_SOURCE_DIR}/src/NumpyFile.test.cpp
       ${CMAKE_CURRENT_SOURCE_DIR}/src/NumpyHelpers.test.cpp
@@ -502,8 +522,12 @@ if(AARE_MASTER_PROJECT)
     TARGETS aare_core aare_compiler_flags
     EXPORT "${TARGETS_EXPORT_NAME}"
     LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR}
-    ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR}
-    PUBLIC_HEADER DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}/aare)
+    ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR})
+  install(
+    DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/include/aare/
+    DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}/aare
+    FILES_MATCHING
+    PATTERN "*.hpp")
 endif()
 
 set(CMAKE_INSTALL_RPATH $ORIGIN)

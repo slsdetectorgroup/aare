@@ -9,11 +9,12 @@
 - setter and getter for nSigma for ClusterFinder ``aare.ClusterFinder().nSigma = 2``, ``aare.ClusterFinderMT().set_nSigma(2)`` 
 - mask opeartor for ClusterVector ``masked_clustervector = aare.ClusterVector()(mask)``
 - passing pre computed eta values to ``aare.Interpolator.interpolate`` alongside clusters
+- Added ``PixelHistogram`` and ``PedestalTrackingPixelHistogram`` 
 
 ### Bugfixes:
 
 - Fixed ``split_task(first, last, n_threads)`` so task ranges now correctly respect the ``first`` offset. Previously, non-zero starting indices could generate incorrect subranges.
-
+- Fixed overflow issue causing failed allocations for NDArrays abouve ~2GB
 
 
 ## 2026.3.17
