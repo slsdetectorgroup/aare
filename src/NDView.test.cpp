@@ -8,8 +8,8 @@
 #include <vector>
 
 using aare::NDView;
-using aare::Shape;
 using aare::num_elements;
+using aare::Shape;
 
 TEST_CASE("Calculate size from a shape") {
     Shape<3> shape{2, 3, 4};
@@ -24,7 +24,7 @@ TEST_CASE("Calculate size from a shape") {
     Shape<3> shape4{1000, 512, 1024};
     REQUIRE(num_elements(shape4) == 524288000);
 
-    //10GB which is more than INT_MAX bytes
+    // 10GB which is more than INT_MAX bytes
     Shape<3> shape5{10000, 1024, 1024};
     REQUIRE(num_elements(shape5) == 10485760000);
 }
