@@ -22,8 +22,9 @@ target_sources(
                      reduce_benchmark.cpp)
 
 # Link Google Benchmark and other necessary libraries
-target_link_libraries(benchmarks PRIVATE benchmark::benchmark aare_core
-                                         aare_compiler_flags)
+target_link_libraries(
+  benchmarks PRIVATE benchmark::benchmark benchmark::benchmark_main aare_core
+                     aare_compiler_flags)
 
 # Set output properties
 set_target_properties(
@@ -31,10 +32,22 @@ set_target_properties(
                         OUTPUT_NAME run_benchmarks)
 
 add_executable(fit_benchmark fit_benchmark.cpp)
-target_link_libraries(fit_benchmark PRIVATE benchmark::benchmark aare_core
-                                            aare_compiler_flags)
+target_link_libraries(
+  fit_benchmark PRIVATE benchmark::benchmark benchmark::benchmark_main
+                        aare_core aare_compiler_flags)
 target_include_directories(
   fit_benchmark SYSTEM
   PRIVATE $<TARGET_PROPERTY:Minuit2::Minuit2,INTERFACE_INCLUDE_DIRECTORIES>)
 set_target_properties(fit_benchmark PROPERTIES RUNTIME_OUTPUT_DIRECTORY
                                                ${CMAKE_BINARY_DIR})
+
+add_executable(clusterfinder_benchmark clusterfinder_benchmark.cpp)
+target_link_libraries(
+  clusterfinder_benchmark
+  PRIVATE benchmark::benchmark benchmark::benchmark_main aare_core
+          aare_compiler_flags)
+target_include_directories(
+  clusterfinder_benchmark SYSTEM
+  PRIVATE $<TARGET_PROPERTY:Minuit2::Minuit2,INTERFACE_INCLUDE_DIRECTORIES>)
+set_target_properties(clusterfinder_benchmark
+                      PROPERTIES RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR})
