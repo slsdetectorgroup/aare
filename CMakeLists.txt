@@ -260,7 +260,7 @@ if(AARE_FETCH_FMT)
   FetchContent_MakeAvailable(fmt)
   set_property(TARGET fmt PROPERTY POSITION_INDEPENDENT_CODE ON)
 else()
-  find_package(fmt 6 REQUIRED)
+  find_package(fmt 8 REQUIRED)
 endif()
 
 if(AARE_FETCH_JSON)
