@@ -7,7 +7,7 @@
 namespace aare {
 
 void assert_failed(const std::string &msg) {
-    fmt::print(msg);
+    fmt::print("{}", msg);
     exit(1);
 }
 

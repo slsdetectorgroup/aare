@@ -167,7 +167,7 @@ void RawSubFile::parse_fname(const std::filesystem::path &fname) {
 }
 
 std::filesystem::path RawSubFile::fpath(size_t file_index) const {
-    auto fname = fmt::format(m_base_name, file_index);
+    auto fname = fmt::format(fmt::runtime(m_base_name), file_index);
     return m_path / fname;
 }
 
