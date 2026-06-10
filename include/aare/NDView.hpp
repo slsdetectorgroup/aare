@@ -48,7 +48,7 @@ Shape<Ndim - 1> drop_first_dim(const Shape<Ndim> &shape) {
  * @return The number of elements in and NDArray/NDView of that shape.
  */
 template <size_t Ndim> size_t num_elements(const Shape<Ndim> &shape) {
-    return std::accumulate(shape.begin(), shape.end(), 1,
+    return std::accumulate(shape.begin(), shape.end(), size_t{1},
                            std::multiplies<size_t>());
 }
 
