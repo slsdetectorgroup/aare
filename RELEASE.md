@@ -17,6 +17,7 @@
 
 - Fixed ``split_task(first, last, n_threads)`` so task ranges now correctly respect the ``first`` offset. Previously, non-zero starting indices could generate incorrect subranges.
 - Fixed overflow issue causing failed allocations for NDArrays abouve ~2GB
+- Fixed libfmt failures due to consteval when building with C++20
 
 
 
