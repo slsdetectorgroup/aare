@@ -56,6 +56,11 @@ option(
   OFF)
 option(AARE_ASAN "Enable AddressSanitizer" OFF)
 
+option(AARE_CUDA "Build CUDA cluster finder backend" OFF)
+set(AARE_CUDA_ARCHITECTURES
+    "native"
+    CACHE STRING "CUDA architectures to compile for (used when AARE_CUDA=ON)")
+
 # Configure which of the dependencies to use FetchContent for
 option(AARE_FETCH_FMT "Use FetchContent to download fmt" ON)
 option(AARE_FETCH_PYBIND11 "Use FetchContent to download pybind11" ON)
@@ -86,6 +91,26 @@ if(AARE_SYSTEM_LIBRARIES)
       CACHE BOOL "Disabled FetchContent for libzmq" FORCE)
   # Still fetch lmfit and Minuit2 when setting AARE_SYSTEM_LIBRARIES since these
   # are not available on conda-forge
+endif()
+
+if(AARE_CUDA)
+  enable_language(CUDA)
+  find_package(CUDAToolkit REQUIRED)
+
+  set(CMAKE_CUDA_STANDARD 17)
+  set(CMAKE_CUDA_STANDARD_REQUIRED ON)
+  set(CMAKE_CUDA_EXTENSIONS OFF)
+  set(CMAKE_CUDA_SEPARABLE_COMPILATION ON)
+
+  if(NOT CMAKE_CUDA_ARCHITECTURES)
+    set(CMAKE_CUDA_ARCHITECTURES ${AARE_CUDA_ARCHITECTURES})
+  endif()
+
+  message(
+    STATUS "AARE: CUDA support ENABLED (archs=${CMAKE_CUDA_ARCHITECTURES}, "
+           "toolkit=${CUDAToolkit_VERSION})")
+else()
+  message(STATUS "AARE: CUDA support DISABLED (CPU-only build)")
 endif()
 
 if(AARE_BENCHMARKS)
@@ -330,23 +355,26 @@ else()
     message(STATUS "Debug build")
   endif()
 
-  # Common flags for GCC and Clang
+  # Common flags for GCC and Clang The strict host warnings (especially
+  # -Wold-style-cast and -Wdouble-promotion) trip on NVIDIA's CUDA runtime
+  # headers when they get preprocessed by nvcc's host pass, so we gate them
+  # behind $<COMPILE_LANGUAGE:CXX>.
   target_compile_options(
     aare_compiler_flags
-    INTERFACE -Wall
-              -Wextra
-              -pedantic
-              -Wshadow
-              -Wold-style-cast
-              -Wnon-virtual-dtor
-              -Woverloaded-virtual
-              -Wdouble-promotion
-              -Wformat=2
-              -Wredundant-decls
-              -Wvla
-              -Wdouble-promotion
-              -Werror=return-type # important can cause segfault in optimzed
-                                  # builds
+    INTERFACE $<$<COMPILE_LANGUAGE:CXX>:-Wall>
+              $<$<COMPILE_LANGUAGE:CXX>:-Wextra>
+              $<$<COMPILE_LANGUAGE:CXX>:-pedantic>
+              $<$<COMPILE_LANGUAGE:CXX>:-Wshadow>
+              $<$<COMPILE_LANGUAGE:CXX>:-Wold-style-cast>
+              $<$<COMPILE_LANGUAGE:CXX>:-Wnon-virtual-dtor>
+              $<$<COMPILE_LANGUAGE:CXX>:-Woverloaded-virtual>
+              $<$<COMPILE_LANGUAGE:CXX>:-Wdouble-promotion>
+              $<$<COMPILE_LANGUAGE:CXX>:-Wformat=2>
+              $<$<COMPILE_LANGUAGE:CXX>:-Wredundant-decls>
+              $<$<COMPILE_LANGUAGE:CXX>:-Wvla>
+              $<$<COMPILE_LANGUAGE:CXX>:-Werror=return-type> # important can
+                                                             # cause segfault in
+                                                             # optimzed builds
   )
 
 endif() # GCC/Clang specific
@@ -414,6 +442,11 @@ set(PUBLICHEADERS
     include/aare/VarClusterFinder.hpp
     include/aare/utils/task.hpp)
 
+if(AARE_CUDA)
+  list(APPEND PUBLICHEADERS include/aare/ClusterFinderCUDA.hpp
+       include/aare/clusterfinder_kernel.cuh include/aare/utils/cuda_check.cuh)
+endif()
+
 set(SourceFiles
     ${CMAKE_CURRENT_SOURCE_DIR}/src/calibration.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/src/CtbRawFile.cpp
@@ -477,6 +510,17 @@ endif()
 set_target_properties(aare_core PROPERTIES ARCHIVE_OUTPUT_DIRECTORY
                                            ${CMAKE_BINARY_DIR})
 
+if(AARE_CUDA)
+  add_library(aare_cuda INTERFACE)
+  target_link_libraries(aare_cuda INTERFACE aare_core CUDA::cudart)
+  target_compile_features(aare_cuda INTERFACE cuda_std_17)
+  target_compile_definitions(aare_cuda INTERFACE AARE_HAS_CUDA
+                                                 _GLIBCXX_USE_CXX11_ABI=1)
+  # Usage example downstream:
+  # set_source_files_properties(bind_ClusterFinderCUDA.cpp PROPERTIES LANGUAGE
+  # CUDA) target_link_libraries(my_pymodule PRIVATE aare_cuda)
+endif()
+
 if(AARE_TESTS)
   set(TestSources
       ${CMAKE_CURRENT_SOURCE_DIR}/src/algorithm.test.cpp
@@ -510,8 +554,12 @@ if(AARE_TESTS)
 endif()
 
 if(AARE_MASTER_PROJECT)
+  set(AARE_INSTALL_TARGETS aare_core aare_compiler_flags)
+  if(AARE_CUDA)
+    list(APPEND AARE_INSTALL_TARGETS aare_cuda)
+  endif()
   install(
-    TARGETS aare_core aare_compiler_flags
+    TARGETS ${AARE_INSTALL_TARGETS}
     EXPORT "${TARGETS_EXPORT_NAME}"
     LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR}
     ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR})
@@ -587,5 +635,8 @@ add_custom_target(
 if(AARE_MASTER_PROJECT)
   set(CMAKE_INSTALL_DIR "share/cmake/${PROJECT_NAME}")
   set(PROJECT_LIBRARIES aare-core aare-compiler-flags)
+  if(AARE_CUDA)
+    list(APPEND PROJECT_LIBRARIES aare-cuda)
+  endif()
   include(cmake/package_config.cmake)
 endif()
