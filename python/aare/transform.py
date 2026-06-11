@@ -109,7 +109,7 @@ class Matterhorn10Transform:
         checks if data is compatible for transformation 
         
         :param data: data to be transformed, expected to be a 1D numpy array of uint8
-        :type data: np.ndarray
+        :type data: np.ndarray(n_counters, n_rows, n_cols) 
         :raises ValueError: if not compatible
         """
         expected_size = (Matterhorn10.nRows*Matterhorn10.nCols*self.num_counters*self.dynamic_range)//8 # read_frame returns data in uint8_t 
@@ -122,11 +122,11 @@ class Matterhorn10Transform:
     def __call__(self, data):
         self.data_compatibility(data)
         if self.dynamic_range == 16:
-            return np.take(data.view(np.uint16), self.pixel_map)
+            return np.take(data.view(np.uint16), self.pixel_map).reshape(self.num_counters, Matterhorn10.nRows, Matterhorn10.nCols)
         elif self.dynamic_range == 8: 
-            return np.take(data.view(np.uint8), self.pixel_map)
+            return np.take(data.view(np.uint8), self.pixel_map).reshape(self.num_counters, Matterhorn10.nRows, Matterhorn10.nCols)
         else: #dynamic range 4
-            return np.take(_aare.expand4to8bit(data.view(np.uint8)), self.pixel_map)
+            return np.take(_aare.expand4to8bit(data.view(np.uint8)), self.pixel_map).reshape(self.num_counters, Matterhorn10.nRows, Matterhorn10.nCols)
             
 class Mythen302Transform:
     """

@@ -10,7 +10,8 @@
 - mask opeartor for ClusterVector ``masked_clustervector = aare.ClusterVector()(mask)``
 - passing pre computed eta values to ``aare.Interpolator.interpolate`` alongside clusters
 - Added ``PixelHistogram`` and ``PedestalTrackingPixelHistogram`` 
-- ``aare.transfrom.Matterhorn10Transform`` handles counter artefact in chip. Mind that enabling only one counter or three counters or enabling the wromg two counters e.g. 0,1 will still lead to erreneous data.
+- ``aare.transfrom.Matterhorn10Transform`` handles counter artefact in chip. Mind that enabling only one counter or three counters or enabling the wromg two counters e.g. 0,1 will still lead to erreneous data. 
+- ``aare.transfrom.Matterhorn10Transform`` reshapes data such that first dimension is number of counters
 
 ### Bugfixes:
 
