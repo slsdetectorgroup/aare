@@ -200,17 +200,11 @@ NDArray<ssize_t, 2> GenerateMatterhorn10PixelMap(const size_t dynamic_range,
     const size_t num_consecutive_pixels_in_package =
         packet_size / num_consecutive_pixels;
 
-    // TODO: couls mask pixel map to -1 if actual_counter does not exist (not
-    // knwon which counters have been set. 0,1, 2,3), later mask after getting
-    // the pixel map
     for (size_t row = 0; row < n_rows; ++row) {
         for (size_t counter = 0; counter < n_counters; ++counter) {
             size_t col = 0;
             size_t actual_counter =
-                row < half_rows
-                    ? counter
-                    : (3 - counter); // TODO: right now will throw an error when
-                                     // using np.take (out of bounds)
+                row < half_rows ? counter : (n_counters - counter - 1);
             for (size_t package = 0; package < num_64_bit_packages; ++package) {
                 for (size_t consecutive_pixel_group = 0;
                      consecutive_pixel_group <

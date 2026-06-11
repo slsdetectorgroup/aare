@@ -29,8 +29,6 @@ def test_matterhorn10_8bit(test_data_path):
 
         assert np.all(frames == expected_data)
 
-
-# TODO: update tests does no longer work with new pixel map 
 @pytest.mark.withdata
 def test_matterhorn10_4bit(test_data_path): 
     """ Matterhorn10Transform 1 counter 4 bit dynamic range """

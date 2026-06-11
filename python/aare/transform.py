@@ -81,6 +81,10 @@ class Matterhorn10Transform:
         A matterhorn chip has 256 columns and 256 rows.
         A matterhornchip with dynamic range 16 and 2 counters thus requires 
         256*256*16*2/(2*64) = 1024 transceiver samples. (Per default 2 channels are enabled per transceiver sample, each channel storing 64 bits)
+
+    .. note:: 
+        Due to an artefact in the chip, the transformation only fully supports 2 or 4 counters. Also if you enable 2 counters you can only select counter 1 and 2 or 0, 3 to get reasonable results. 
+        Otherwise only the first half of the image is correct. 
     """
     def __init__(self, dynamic_range : int, num_counters : int):
         self.pixel_map = _aare.GenerateMatterhorn10PixelMap(dynamic_range, num_counters)
