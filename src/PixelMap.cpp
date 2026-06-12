@@ -195,7 +195,7 @@ NDArray<ssize_t, 2> GenerateMatterhorn10PixelMap(const size_t dynamic_range,
 
     constexpr size_t num_64_bit_packages = 4; // n_cols/64
 
-    constexpr size_t half_rows = n_rows / 2; // 128
+    // constexpr size_t half_rows = n_rows / 2; // 128
 
     const size_t num_consecutive_pixels_in_package =
         packet_size / num_consecutive_pixels;
@@ -203,8 +203,8 @@ NDArray<ssize_t, 2> GenerateMatterhorn10PixelMap(const size_t dynamic_range,
     for (size_t row = 0; row < n_rows; ++row) {
         for (size_t counter = 0; counter < n_counters; ++counter) {
             size_t col = 0;
-            size_t actual_counter =
-                row < half_rows ? counter : (n_counters - counter - 1);
+            size_t actual_counter = counter;
+            // row < half_rows ? counter : (n_counters - counter - 1);
             for (size_t package = 0; package < num_64_bit_packages; ++package) {
                 for (size_t consecutive_pixel_group = 0;
                      consecutive_pixel_group <
