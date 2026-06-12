@@ -13,10 +13,9 @@ namespace py = pybind11;
 
 template <typename SUM_TYPE>
 void define_pedestal_bindings(py::module &m, const std::string &name) {
-    auto pedestal =
-        py::class_<Pedestal<SUM_TYPE>>(m, name.c_str(), py::buffer_protocol());
-
-    pedestal.def(py::init<int, int, int>())
+    
+    py::class_<Pedestal<SUM_TYPE>>(m, name.c_str(), py::buffer_protocol())
+	.def(py::init<int, int, int>())
         .def(py::init<int, int>())
         .def("mean",
              [](Pedestal<SUM_TYPE> &self) {
