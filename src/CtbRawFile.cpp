@@ -57,6 +57,8 @@ size_t CtbRawFile::image_size_in_bytes() const {
 
 size_t CtbRawFile::frames_in_file() const { return m_master.frames_in_file(); }
 
+size_t CtbRawFile::total_frames() const { return m_master.frames_in_file(); }
+
 RawMasterFile CtbRawFile::master() const { return m_master; }
 
 void CtbRawFile::find_subfiles() {
