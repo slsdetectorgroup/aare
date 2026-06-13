@@ -280,6 +280,7 @@ void define_raw_file_io_bindings(py::module &m) {
         .def("tell", &RawFile::tell, R"(
             Return the current frame number.)")
         .def_property_readonly("total_frames", &RawFile::total_frames)
+        .def("__len__", &RawFile::total_frames)
         .def("rows", static_cast<size_t (RawFile::*)() const>(&RawFile::rows))
         .def(
             "rows",

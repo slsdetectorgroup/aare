@@ -12,6 +12,8 @@
 - Added ``PixelHistogram`` and ``PedestalTrackingPixelHistogram`` 
 - ``aare.transfrom.Matterhorn10Transform`` handles counter artefact in chip. Mind that enabling only one counter or three counters or enabling the wromg two counters e.g. 0,1 will still lead to erreneous data. 
 - ``aare.transfrom.Matterhorn10Transform`` reshapes data such that first dimension is number of counters
+- Added support for len() for files. Returns the number of frames
+- Added support for direct subtraction of Pedestal from numpy array
 
 ### Bugfixes:
 

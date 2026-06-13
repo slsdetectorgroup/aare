@@ -226,5 +226,7 @@ void define_ctb_raw_file_io_bindings(py::module &m) {
         .def_property_readonly("image_size_in_bytes",
                                &CtbRawFile::image_size_in_bytes)
 
-        .def_property_readonly("frames_in_file", &CtbRawFile::frames_in_file);
+        .def_property_readonly("frames_in_file", &CtbRawFile::frames_in_file)
+        .def_property_readonly("total_frames", &CtbRawFile::total_frames)
+        .def("__len__", &CtbRawFile::total_frames);
 }
