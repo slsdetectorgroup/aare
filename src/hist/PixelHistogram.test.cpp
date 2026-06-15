@@ -1,6 +1,7 @@
 #include <catch2/catch_test_macros.hpp>
 #include <catch2/generators/catch_generators.hpp>
 
+#include "aare/logger.hpp"
 #include <chrono>
 #include <cstdint>
 #include <random>
@@ -25,14 +26,15 @@ namespace {
 } // namespace
 
 TEST_CASE("Fill one pixel of a 5x10 histogram") {
-    PixelHistogram hist(5, 10, 20, 0.0, 10.0);
+    PixelHistogram hist(5, 10, 20, 0.0f, 10.0f);
     NDArray<float, 2> image(
-        {5, 10}, -1.0); // Need to fill with -1 to not generate counts
+        {5, 10}, -1.0f); // Need to fill with -1 to not generate counts
 
-    image(2, 3) = 5.7; // This should go into bin 11 (since bins are [0-0.5),
-                       // [0.5-1.0), ..., [9.5-10.0))
+    image(2, 3) = 5.7f; // This should go into bin 11 (since bins are [0-0.5),
+                        // [0.5-1.0), ..., [9.5-10.0))
 
     // fill_blocking(hist, image.view());
+
     hist.fill_async(NDArray<float, 2>(image));
     hist.flush(); // Wait for the async fill to complete before we check the
                   // results
