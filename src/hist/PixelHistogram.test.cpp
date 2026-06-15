@@ -60,14 +60,14 @@ TEST_CASE("Fill one pixel of a 5x10 histogram") {
 }
 
 TEST_CASE("Fill pixels with uneven partial histogram row slices") {
-    PixelHistogram hist(5, 4, 10, 0.0, 10.0, 3);
-    NDArray<float, 2> image({5, 4}, -1.0);
+    PixelHistogram hist(5, 4, 10, 0.0f, 10.0f, 3);
+    NDArray<float, 2> image({5, 4}, -1.0f);
 
-    image(0, 0) = 0.2;
-    image(1, 1) = 1.2;
-    image(2, 2) = 2.2;
-    image(3, 3) = 3.2;
-    image(4, 0) = 4.2;
+    image(0, 0) = 0.2f;
+    image(1, 1) = 1.2f;
+    image(2, 2) = 2.2f;
+    image(3, 3) = 3.2f;
+    image(4, 0) = 4.2f;
 
     hist.fill_async(NDArray<float, 2>(image));
     hist.flush();
