@@ -230,7 +230,7 @@ TEST_CASE("Random fills match a reference implementation") {
 }
 
 TEST_CASE("fill_async with mismatched shape throws") {
-    PixelHistogram hist(8, 8, 16, 0.0, 1.0, 2);
+    PixelHistogram hist(8, 8, 16, 0.0f, 1.0f, 2);
     NDArray<float, 2> bad({4, 4}, 0.0f);
     CHECK_THROWS_AS(hist.fill_async(std::move(bad)), std::invalid_argument);
 }
