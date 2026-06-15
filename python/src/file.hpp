@@ -60,6 +60,7 @@ void define_file_io_bindings(py::module &m) {
         .def("seek", &File::seek)
         .def("tell", &File::tell)
         .def_property_readonly("total_frames", &File::total_frames)
+        .def("__len__", &File::total_frames)
         .def_property_readonly("rows", &File::rows)
         .def_property_readonly("cols", &File::cols)
         .def_property_readonly("bitdepth", &File::bitdepth)
