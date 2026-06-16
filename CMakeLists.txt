@@ -65,6 +65,9 @@ option(AARE_FETCH_ZMQ "Use FetchContent to download libzmq" ON)
 option(AARE_FETCH_LMFIT "Use FetchContent to download lmfit" ON)
 option(AARE_FETCH_MINUIT2 "Use FetchContent to download Minuit2" ON)
 
+option(AARE_WARNINGS_AS_ERRORS "Treat warnings as errors during compilation"
+       OFF)
+
 # Convenience option to use system libraries only (no FetchContent)
 option(AARE_SYSTEM_LIBRARIES "Use system libraries" OFF)
 if(AARE_SYSTEM_LIBRARIES)
@@ -348,6 +351,10 @@ else()
               -Werror=return-type # important can cause segfault in optimzed
                                   # builds
   )
+
+  if(AARE_WARNINGS_AS_ERRORS)
+    target_compile_options(aare_compiler_flags INTERFACE -Werror)
+  endif()
 
 endif() # GCC/Clang specific
 
