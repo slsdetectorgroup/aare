@@ -20,6 +20,7 @@
 
 // TODO! migrate the other names
 #include "ctb_raw_file.hpp"
+#include "fast_pedestal.hpp"
 #include "file.hpp"
 #include "fit.hpp"
 #include "jungfrau_data_file.hpp"
@@ -70,6 +71,8 @@ PYBIND11_MODULE(_aare, m) {
     define_pedestal_tracking_pixel_histogram_bindings(m);
     define_pedestal_bindings<double>(m, "Pedestal_d");
     define_pedestal_bindings<float>(m, "Pedestal_f");
+    define_fast_pedestal_bindings<double>(m, "FastPedestal_d");
+    define_fast_pedestal_bindings<float>(m, "FastPedestal_f");
     define_fit_bindings(m);
     define_interpolation_bindings(m);
     define_jungfrau_data_file_io_bindings(m);

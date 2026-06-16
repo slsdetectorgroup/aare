@@ -1,4 +1,5 @@
 #pragma once
+#include "aare/FastPedestal.hpp"
 #include "aare/NDArray.hpp"
 #include "aare/NDView.hpp"
 #include "aare/Pedestal.hpp"
@@ -44,7 +45,7 @@ class PedestalTrackingPixelHistogram {
     // worker using the LOCAL row index (i.e. 0..row_count(t)-1), NOT the
     // global row index. Owned exclusively by worker `t` during a
     // dispatched fan-out.
-    std::vector<Pedestal<AxisType>> partial_pedestals_;
+    std::vector<FastPedestal<AxisType>> partial_pedestals_;
     std::vector<NDArray<AxisType, 2>> partial_std_; // cached for pedestal
                                                     // tracking
 

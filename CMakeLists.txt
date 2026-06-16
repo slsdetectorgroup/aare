@@ -393,6 +393,7 @@ set(PUBLICHEADERS
     include/aare/Models.hpp
     include/aare/FileInterface.hpp
     include/aare/FilePtr.hpp
+    include/aare/FastPedestal.hpp
     include/aare/Frame.hpp
     include/aare/hist/PixelHistogram.hpp
     include/aare/hist/PixelHistogramImpl.hpp

@@ -202,17 +202,8 @@ void PedestalTrackingPixelHistogram::worker_loop(int thread_id) {
 
         switch (kind) {
         case WorkKind::PushPedestal: {
-            // Accumulate raw frame values into this thread's pedestal
-            // shard. Uses the pixel-level push_no_update which only
-            // touches m_sum/m_sum2/m_cur_samples (no m_mean writes).
-            for (int local_row = 0; local_row < local_rows; ++local_row) {
-                const auto row = static_cast<ssize_t>(first_row + local_row);
-                for (ssize_t col = 0; col < image->shape(1); ++col) {
-                    my_pedestal.template push_no_update<FrameType>(
-                        static_cast<uint32_t>(local_row),
-                        static_cast<uint32_t>(col), (*image)(row, col));
-                }
-            }
+            auto frame = image->sub_view(first_row, first_row + local_rows);
+            my_pedestal.push_init(frame);
             break;
         }
         case WorkKind::UpdateMean: {
@@ -266,30 +257,31 @@ void PedestalTrackingPixelHistogram::worker_loop(int thread_id) {
 
                 auto &my_std = partial_std_[thread_id];
                 for (const auto &frame : *images) {
-                    const auto cols = frame.shape(1);
-                    for (int local_row = 0; local_row < local_rows;
-                         ++local_row) {
-                        const auto row =
-                            static_cast<ssize_t>(first_row + local_row);
+                    const auto view =
+                        frame.sub_view(first_row, first_row + local_rows);
+                    const auto cols = view.shape(1);
+                    const auto rows = view.shape(0);
+
+                    // in this function I need raw, mean and std
+                    for (int row = 0; row < rows; ++row) {
                         for (ssize_t col = 0; col < cols; ++col) {
-                            const FrameType raw = frame(row, col);
+                            const FrameType raw = view(row, col);
                             const AxisType val =
                                 static_cast<AxisType>(raw) -
-                                static_cast<AxisType>(my_pedestal.mean(
-                                    static_cast<uint32_t>(local_row),
-                                    static_cast<uint32_t>(col)));
-                            my_hist.fill_unchecked(local_row,
-                                                   static_cast<int>(col), val);
-                            const AxisType sigma = my_std(local_row, col);
+                                my_pedestal.mean(static_cast<uint32_t>(row),
+                                                 static_cast<uint32_t>(col));
+                            my_hist.fill_unchecked(row, static_cast<int>(col),
+                                                   val);
+                            const AxisType sigma = my_std(row, col);
                             if (sigma > AxisType{0.0} &&
-                                std::abs(static_cast<AxisType>(val)) <
-                                    n_sigma * sigma) {
-                                my_pedestal.template push<FrameType>(
-                                    static_cast<uint32_t>(local_row),
+                                std::abs(val) < n_sigma * sigma) {
+                                my_pedestal.push_no_update<FrameType>(
+                                    static_cast<uint32_t>(row),
                                     static_cast<uint32_t>(col), raw);
                             }
                         }
                     }
+                    my_pedestal.update_mean();
                 }
                 break;
             }
