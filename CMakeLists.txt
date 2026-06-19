@@ -458,7 +458,7 @@ target_link_libraries(
   PUBLIC fmt::fmt nlohmann_json::nlohmann_json ${STD_FS_LIB} # from
                                                              # helpers.cmake
   PRIVATE aare_compiler_flags Threads::Threads $<BUILD_INTERFACE:lmfit>
-          aare::Minuit2)
+          $<BUILD_INTERFACE:aare::Minuit2>)
 
 target_include_directories(
   aare_core SYSTEM
