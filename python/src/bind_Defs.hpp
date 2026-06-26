@@ -22,4 +22,9 @@ void define_defs_bindings(py::module &m) {
     moench04.attr("nPixelsPerSuperColumn") = Moench04::nPixelsPerSuperColumn;
     moench04.attr("superColumnWidth") = Moench04::superColumnWidth;
     moench04.attr("adcNumbers") = Moench04::adcNumbers;
+
+    auto moench05 = py::class_<Moench05>(m, "Moench05");
+    moench05.attr("nRows") = Moench05::nRows;
+    moench05.attr("nCols") = Moench05::nCols;
+    moench05.attr("adcNumbers") = Moench05::adcNumbers;
 }
