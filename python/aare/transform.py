@@ -17,6 +17,15 @@ class AdcSar05060708Transform64to16:
         return _aare.adc_sar_05_06_07_08decode64to16(data)
 
 class Moench05Transform:
+    """
+    Transforms Moench05 chip data from a buffer of bytes (uint8_t)
+    to a numpy array of uint16. Assumes data taken with analog samples and assumes adc 1, 9, 13 are enabled. 
+    (e.g. for 10g mode adc 0,1,2,3 and 8,9,10,11 and 12,13,14,15 are enabled but only adc 1,9,13 contain relevant data)  
+
+    .. note:: 
+        A moench05 chip has 160 rows and 50 cols per adc and has dynamic range 16 bit. Each adc sample is encoded in 16 bits. 
+        The transformation thus requires 160*50*16/16 = 8000 analog samples per adc. 
+    """
     #Could be moved to C++ without changing the interface
     def __init__(self):
         self.pixel_map = _aare.GenerateMoench05PixelMap()
