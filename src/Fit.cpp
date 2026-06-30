@@ -1,11 +1,11 @@
 // SPDX-License-Identifier: MPL-2.0
 #include "aare/Fit.hpp"
 #include "Chi2.hpp"
-#include "FitModelImpl.hpp"
 #include "Minuit2/FunctionMinimum.h"
 #include "Minuit2/MnHesse.h"
 #include "Minuit2/MnMigrad.h"
 #include "Minuit2/MnPrint.h"
+#include "Minuit2/MnStrategy.h"
 #include "Minuit2/MnUserParameters.h"
 #include "aare/Models.hpp"
 #include "aare/utils/par.hpp"
@@ -472,6 +472,17 @@ void fit_scurve2(NDView<double, 1> x, NDView<double, 3> y,
 // (constructor, destructor, copy, and all methods that touch Minuit2 state)
 // ============================================================================
 
+template <typename Model> struct FitModel<Model>::FitModelImpl {
+    ROOT::Minuit2::MnUserParameters upar;
+    ROOT::Minuit2::MnStrategy strategy;
+
+    explicit FitModelImpl(unsigned int strategy_level)
+        : strategy(strategy_level) {}
+
+    FitModelImpl(const FitModelImpl &) = default;
+    FitModelImpl &operator=(const FitModelImpl &) = default;
+};
+
 template <typename Model>
 FitModel<Model>::FitModel(unsigned int strategy, unsigned int max_calls,
                           double tolerance, bool compute_errors)
@@ -722,25 +733,25 @@ void fit_3d(const FitModel<Model> &model, NDView<double, 1> x,
 
 // NOLINTBEGIN
 #define AARE_INSTANTIATE_FIT(Model)                                            \
-    template class FitModel<model::Model>;                                     \
-    template NDArray<double, 1> fit_pixel<model::Model>(                       \
-        const FitModel<model::Model> &, NDView<double, 1>, NDView<double, 1>,  \
+    template class FitModel<Model>;                                            \
+    template NDArray<double, 1> fit_pixel<Model>(                              \
+        const FitModel<Model> &, NDView<double, 1>, NDView<double, 1>,         \
         NDView<double, 1>);                                                    \
-    template NDArray<double, 1> fit_pixel<model::Model>(                       \
-        const FitModel<model::Model> &, NDView<double, 1>, NDView<double, 1>); \
-    template void fit_3d<model::Model>(                                        \
-        const FitModel<model::Model> &, NDView<double, 1>, NDView<double, 3>,  \
-        NDView<double, 3>, NDView<double, 3>, NDView<double, 3>,               \
-        NDView<double, 2>, int);
+    template NDArray<double, 1> fit_pixel<Model>(                              \
+        const FitModel<Model> &, NDView<double, 1>, NDView<double, 1>);        \
+    template void fit_3d<Model>(const FitModel<Model> &, NDView<double, 1>,    \
+                                NDView<double, 3>, NDView<double, 3>,          \
+                                NDView<double, 3>, NDView<double, 3>,          \
+                                NDView<double, 2>, int);
 
-AARE_INSTANTIATE_FIT(Gaussian)
-AARE_INSTANTIATE_FIT(GaussianErfcPlateau)
-AARE_INSTANTIATE_FIT(GaussianChargeSharing)
-AARE_INSTANTIATE_FIT(GaussianChargeSharingKb)
-AARE_INSTANTIATE_FIT(Pol1)
-AARE_INSTANTIATE_FIT(Pol2)
-AARE_INSTANTIATE_FIT(RisingScurve)
-AARE_INSTANTIATE_FIT(FallingScurve)
+AARE_INSTANTIATE_FIT(model::Gaussian)
+AARE_INSTANTIATE_FIT(model::GaussianErfcPlateau)
+AARE_INSTANTIATE_FIT(model::GaussianChargeSharing)
+AARE_INSTANTIATE_FIT(model::GaussianChargeSharingKb)
+AARE_INSTANTIATE_FIT(model::Pol1)
+AARE_INSTANTIATE_FIT(model::Pol2)
+AARE_INSTANTIATE_FIT(model::RisingScurve)
+AARE_INSTANTIATE_FIT(model::FallingScurve)
 
 #undef AARE_INSTANTIATE_FIT
 // NOLINTEND

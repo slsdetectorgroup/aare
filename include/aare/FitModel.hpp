@@ -10,11 +10,12 @@
 
 namespace aare {
 
-// Forward declaration only — full definition lives in src/FitModelImpl.hpp
-// and is never installed. Downstream code cannot dereference this pointer.
-struct FitModelImpl;
-
 template <typename Model> class FitModel {
+
+    // Forward declaration only — full definition lives in src/FitModelImpl.hpp
+    // and is never installed. Downstream code cannot dereference this pointer.
+    struct FitModelImpl; // stores Minuit2 user-set parameters
+
     std::unique_ptr<FitModelImpl> impl_;
     unsigned int max_calls_;
     double tolerance_;
