@@ -27,12 +27,12 @@ void SparseMask::insert(const size_t row, const size_t col) {
     if (storage_format_ == STORAGEFORMAT::ROWMAJOR) {
         std::for_each(outerindices_.begin() + row + 1, outerindices_.end(),
                       [](uint32_t &x) { ++x; });
-        innerindices_.insert(innerindices_.begin() + outerindices_[row],
+        innerindices_.insert(innerindices_.begin() + outerindices_[row + 1] - 1,
                              static_cast<uint32_t>(col));
     } else {
         std::for_each(outerindices_.begin() + col + 1, outerindices_.end(),
                       [](uint32_t &x) { ++x; });
-        innerindices_.insert(innerindices_.begin() + outerindices_[col],
+        innerindices_.insert(innerindices_.begin() + outerindices_[col + 1] - 1,
                              static_cast<uint32_t>(row));
     }
 }
@@ -52,6 +52,8 @@ bool SparseMask::is_masked(const size_t row, const size_t col) const {
     } else {
         auto start = outerindices_[index_outer_indices];
         auto end = outerindices_[index_outer_indices + 1];
+        // TODO: binary search does not work if not filled along cols e.g. rows
+        // e.g. random row col insert
         return std::binary_search(innerindices_.begin() + start,
                                   innerindices_.begin() + end, nonzero_index);
     }
