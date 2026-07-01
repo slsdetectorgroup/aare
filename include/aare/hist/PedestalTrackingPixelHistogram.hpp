@@ -13,6 +13,7 @@
 #include <filesystem>
 #include <memory>
 #include <mutex>
+#include <optional>
 #include <thread>
 #include <vector>
 
@@ -76,6 +77,9 @@ class PedestalTrackingPixelHistogram {
     std::size_t max_batch_size_;
     std::atomic<AxisType> n_sigma_;
 
+    /// @brief optional mask. True indicates a bad pixel
+    const std::optional<NDView<bool, 2>> mask_{std::nullopt};
+
     // Private worker thread method
     void worker_loop(int thread_id);
     void coordinator_loop();
@@ -94,11 +98,10 @@ class PedestalTrackingPixelHistogram {
     void fill_with_threshold_batch_(std::vector<NDArray<FrameType, 2>> &batch);
 
   public:
-    PedestalTrackingPixelHistogram(int rows, int cols, int n_bins,
-                                   AxisType xmin, AxisType xmax,
-                                   int n_threads = 1,
-                                   std::size_t max_pending = 16,
-                                   AxisType n_sigma = 1.0);
+    PedestalTrackingPixelHistogram(
+        int rows, int cols, int n_bins, AxisType xmin, AxisType xmax,
+        int n_threads = 1, std::size_t max_pending = 16, AxisType n_sigma = 1.0,
+        std::optional<const NDView<bool, 2>> mask = std::nullopt);
     ~PedestalTrackingPixelHistogram();
 
     void push_pedestal_no_update(const NDView<FrameType, 2> &frame);

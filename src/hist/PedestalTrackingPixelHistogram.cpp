@@ -14,11 +14,13 @@ namespace aare {
 
 PedestalTrackingPixelHistogram::PedestalTrackingPixelHistogram(
     int rows, int cols, int n_bins, AxisType xmin, AxisType xmax, int n_threads,
-    std::size_t max_pending, AxisType n_sigma)
+    std::size_t max_pending, AxisType n_sigma,
+    std::optional<const NDView<bool, 2>> mask)
     : rows_(rows), cols_(cols), n_threads_(n_threads), xmin_(xmin), xmax_(xmax),
       current_work_kind_(WorkKind::FillWithThreshold), current_image_(nullptr),
       current_images_(nullptr), completed_threads_(0), stop_workers_(false),
-      work_generation_(0), max_batch_size_(max_pending / 3), n_sigma_(n_sigma) {
+      work_generation_(0), max_batch_size_(max_pending / 3), n_sigma_(n_sigma),
+      mask_(mask) {
     if (rows_ < 1 || cols_ < 1 || n_bins < 1) {
         throw std::invalid_argument("PedestalTrackingPixelHistogram requires "
                                     "positive rows, cols and bins");
@@ -56,6 +58,7 @@ PedestalTrackingPixelHistogram::PedestalTrackingPixelHistogram(
     partial_hists_.reserve(n_threads_);
     partial_pedestals_.reserve(n_threads_);
     partial_std_.reserve(n_threads_);
+
     for (int i = 0; i < n_threads_; ++i) {
         const auto local_rows = row_count(i);
         partial_hists_.emplace_back(local_rows, cols, n_bins, xmin_, xmax_);
@@ -200,6 +203,8 @@ void PedestalTrackingPixelHistogram::worker_loop(int thread_id) {
         auto &my_pedestal = partial_pedestals_[thread_id];
         auto &my_hist = partial_hists_[thread_id];
 
+        const bool has_mask = mask_.has_value();
+
         switch (kind) {
         case WorkKind::PushPedestal: {
             // Accumulate raw frame values into this thread's pedestal
@@ -208,6 +213,9 @@ void PedestalTrackingPixelHistogram::worker_loop(int thread_id) {
             for (int local_row = 0; local_row < local_rows; ++local_row) {
                 const auto row = static_cast<ssize_t>(first_row + local_row);
                 for (ssize_t col = 0; col < image->shape(1); ++col) {
+                    if (has_mask && mask_.value()(row, col)) {
+                        continue; // Skip masked pixels
+                    }
                     my_pedestal.template push_no_update<FrameType>(
                         static_cast<uint32_t>(local_row),
                         static_cast<uint32_t>(col), (*image)(row, col));
@@ -249,6 +257,9 @@ void PedestalTrackingPixelHistogram::worker_loop(int thread_id) {
                         const auto row =
                             static_cast<ssize_t>(first_row + local_row);
                         for (ssize_t col = 0; col < cols; ++col) {
+                            if (has_mask && mask_.value()(row, col)) {
+                                continue; // Skip masked pixels
+                            }
                             const FrameType raw = frame(row, col);
                             const AxisType val =
                                 static_cast<AxisType>(raw) -
@@ -272,6 +283,9 @@ void PedestalTrackingPixelHistogram::worker_loop(int thread_id) {
                         const auto row =
                             static_cast<ssize_t>(first_row + local_row);
                         for (ssize_t col = 0; col < cols; ++col) {
+                            if (has_mask && mask_.value()(row, col)) {
+                                continue; // Skip masked pixels
+                            }
                             const FrameType raw = frame(row, col);
                             const AxisType val =
                                 static_cast<AxisType>(raw) -
