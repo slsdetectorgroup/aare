@@ -38,6 +38,9 @@ class SparseMask {
 
     void write_to_file(const std::filesystem::path &filename) const;
 
+    /// @brief Get number of bad channels
+    size_t num_bad_channels() const;
+
   private:
     /// @brief stoarge format of the sparse mask, either row major or column
     /// major
