@@ -4,17 +4,17 @@ namespace aare {
 
 SparseMask::SparseMask(const STORAGEFORMAT storage_format, const size_t rows,
                        const size_t cols)
-    : storage_format_(storage_format) {
+    : storage_format_(storage_format), rows_(rows), cols_(cols) {
     if (storage_format_ == STORAGEFORMAT::ROWMAJOR) {
-        outerindices_.resize(rows + 1, 0);
+        outerindices_.resize(rows_ + 1, 0);
     } else if (storage_format_ == STORAGEFORMAT::COLUMNMAJOR) {
-        outerindices_.resize(cols + 1, 0);
+        outerindices_.resize(cols_ + 1, 0);
     } else {
         throw std::invalid_argument(
             "Invalid storage format: must be either ROWMAJOR or COLUMNMAJOR");
     }
 
-    innerindices_.reserve(rows * cols); // Reserve maximum possible size
+    innerindices_.reserve(rows_ * cols_); // Reserve maximum possible size
 }
 
 void SparseMask::insert(const size_t row, const size_t col) {
@@ -52,15 +52,31 @@ bool SparseMask::is_masked(const size_t row, const size_t col) const {
     } else {
         auto start = outerindices_[index_outer_indices];
         auto end = outerindices_[index_outer_indices + 1];
-        for (size_t i = start; i < end; ++i) {
-            if (innerindices_[i] == nonzero_index) {
-                return true; // Found a non-zero element at (row, col)
-            }
-        }
-        return false; // No non-zero element found at (row, col)
+        return std::binary_search(innerindices_.begin() + start,
+                                  innerindices_.begin() + end, nonzero_index);
     }
 }
 
 size_t SparseMask::num_bad_channels() const { return innerindices_.size(); }
+
+NDArray<bool, 2> SparseMask::convert_to_dense() const {
+    NDArray<bool, 2> dense_mask{
+        std::array<ssize_t, 2>{static_cast<ssize_t>(rows_),
+                               static_cast<ssize_t>(cols_)},
+        false};
+
+    for (size_t i = 0; i < outerindices_.size() - 1; ++i) {
+        size_t start = outerindices_[i];
+        size_t end = outerindices_[i + 1];
+        for (size_t j = start; j < end; ++j) {
+            if (storage_format_ == STORAGEFORMAT::ROWMAJOR) {
+                dense_mask(i, innerindices_[j]) = true;
+            } else {
+                dense_mask(innerindices_[j], i) = true;
+            }
+        }
+    }
+    return dense_mask;
+}
 
 } // namespace aare
