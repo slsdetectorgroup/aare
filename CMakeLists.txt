@@ -175,7 +175,7 @@ if(AARE_FETCH_MINUIT2)
       OFF
       CACHE BOOL "")
   set(MINUIT2_INSTALL
-      ON
+      OFF
       CACHE BOOL "")
   FetchContent_MakeAvailable(Minuit2)
 
@@ -395,7 +395,6 @@ set(PUBLICHEADERS
     include/aare/Dtype.hpp
     include/aare/File.hpp
     include/aare/Fit.hpp
-    include/aare/Chi2.hpp
     include/aare/FitModel.hpp
     include/aare/Models.hpp
     include/aare/FileInterface.hpp
@@ -458,8 +457,8 @@ target_link_libraries(
   aare_core
   PUBLIC fmt::fmt nlohmann_json::nlohmann_json ${STD_FS_LIB} # from
                                                              # helpers.cmake
-         aare::Minuit2
-  PRIVATE aare_compiler_flags Threads::Threads $<BUILD_INTERFACE:lmfit>)
+  PRIVATE aare_compiler_flags Threads::Threads $<BUILD_INTERFACE:lmfit>
+          $<BUILD_INTERFACE:aare::Minuit2>)
 
 target_include_directories(
   aare_core SYSTEM
