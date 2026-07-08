@@ -192,7 +192,7 @@ class ClusterFinder {
     void find_clusters_sparse(NDView<FRAME_TYPE, 2> frame,
                               uint64_t frame_number = 0) {
 
-        const int expected_max_active_fraction = 100;
+        const int expected_max_active_fraction = 1;
         int dy = ClusterSizeY / 2;
         int dx = ClusterSizeX / 2;
         int has_center_pixel_x = ClusterSizeX % 2;
@@ -216,10 +216,10 @@ class ClusterFinder {
         std::vector<int> active_x;
         std::vector<int> active_y;
 
-        active_x.reserve(static_cast<size_t>(ny) * nx /
-                         expected_max_active_fraction);
-        active_y.reserve(static_cast<size_t>(ny) * nx /
-                         expected_max_active_fraction);
+        active_x.reserve(static_cast<size_t>(ny) * nx *
+                         expected_max_active_fraction / 100);
+        active_y.reserve(static_cast<size_t>(ny) * nx *
+                         expected_max_active_fraction / 100);
         // First pass - cheap single pixel test to build the candidate list
         // and dilate the flag matrix over the cluster window of every
         // active pixel found
@@ -227,7 +227,7 @@ class ClusterFinder {
             for (int ix = 0; ix < nx; ix++) {
                 PEDESTAL_TYPE rms = m_pedestal.std(iy, ix);
                 PEDESTAL_TYPE value = frame(iy, ix) - m_pedestal.mean(iy, ix);
-                if (value > m_nSigma * rms) {
+                if (value > m_nSigma * rms / c3) {
                     active_x.push_back(ix);
                     active_y.push_back(iy);
 
@@ -268,7 +268,8 @@ class ClusterFinder {
                 }
             }
 
-            if (value != max || total <= c3 * m_nSigma * rms)
+            if (value != max ||
+                (total <= c3 * m_nSigma * rms && value < m_nSigma * rms))
                 continue; // not the local maximum, or not enough signal
 
             ClusterType cluster{};
