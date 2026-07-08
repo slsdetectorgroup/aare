@@ -191,8 +191,13 @@ class ClusterFinder {
     ///        O(cluster_tiles_size*active_pix_count + frame_size)
     void find_clusters_sparse(NDView<FRAME_TYPE, 2> frame,
                               uint64_t frame_number = 0) {
-        int has_center_pixel_y = ClusterSizeY % 2;
+
         const int expected_max_active_fraction = 100;
+        int dy = ClusterSizeY / 2;
+        int dx = ClusterSizeX / 2;
+        int has_center_pixel_x = ClusterSizeX % 2;
+        int has_center_pixel_y = ClusterSizeY % 2;
+
         const int ny = frame.shape(0);
         const int nx = frame.shape(1);
 
@@ -210,11 +215,11 @@ class ClusterFinder {
         // Potentially this could be a class member field only reserved once
         std::vector<int> active_x;
         std::vector<int> active_y;
+
         active_x.reserve(static_cast<size_t>(ny) * nx /
                          expected_max_active_fraction);
         active_y.reserve(static_cast<size_t>(ny) * nx /
                          expected_max_active_fraction);
-
         // First pass - cheap single pixel test to build the candidate list
         // and dilate the flag matrix over the cluster window of every
         // active pixel found
