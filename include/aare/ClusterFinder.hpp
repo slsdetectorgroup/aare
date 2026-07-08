@@ -230,16 +230,6 @@ class ClusterFinder {
                 if (value > m_nSigma * rms / c3) {
                     active_x.push_back(ix);
                     active_y.push_back(iy);
-
-                    int y0 = std::max(0, iy - dy);
-                    int y1 = std::min(ny - 1, iy + dy - 1 + has_center_pixel_y);
-                    int x0 = std::max(0, ix - dx);
-                    int x1 = std::min(nx - 1, ix + dx - 1 + has_center_pixel_x);
-
-                    for (int ir = y0; ir <= y1; ir++) {
-                        std::fill(&near_active[ir * nx + x0],
-                                  &near_active[ir * nx + x1] + 1, 1);
-                    }
                 }
             }
         }
@@ -271,6 +261,15 @@ class ClusterFinder {
             if (value != max ||
                 (total <= c3 * m_nSigma * rms && value < m_nSigma * rms))
                 continue; // not the local maximum, or not enough signal
+
+            int y0 = std::max(0, iy - dy);
+            int y1 = std::min(ny - 1, iy + dy - 1 + has_center_pixel_y);
+            int x0 = std::max(0, ix - dx);
+            int x1 = std::min(nx - 1, ix + dx - 1 + has_center_pixel_x);
+            for (int ir = y0; ir <= y1; ir++) {
+                std::fill(&near_active[ir * nx + x0],
+                          &near_active[ir * nx + x1] + 1, 1);
+            }
 
             ClusterType cluster{};
             cluster.x = ix;
