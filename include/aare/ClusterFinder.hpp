@@ -34,12 +34,10 @@ class ClusterFinder {
     using CT = typename ClusterType::value_type;
     using IDX_1D_TYPE = uint32_t;
     using IDX_2D_TYPE = uint16_t;
-    // Flag matrix marking pixels that are either active themselves or
-    // neighbor an active pixel within a cluster window. It is built by
-    // dilating around each active pixel as it is found in pass one, so
-    // the cost is paid once per active pixel instead of once per pixel
-    // in the frame, and pass three becomes a plain lookup.
-    std::vector<uint8_t> m_near_candidate;
+    // Flag matrix marking pixels that are either photon themselves or
+    // neighbor an photon pixel within a cluster window. It is built by
+    // dilating around each photon pixel as it is found in pass two
+    std::vector<uint8_t> m_near_photon;
 
     // a list of coordinates of cluster candidates
     std::vector<IDX_1D_TYPE> m_photon_candidate_xy;
@@ -199,7 +197,7 @@ class ClusterFinder {
     ///        and utilizes this assumption to reduce the computation
     ///        cost of cluster finding from
     ///        O(cluster_tile_size*frame_size) to
-    ///        O(cluster_tiles_size*active_pix_count + frame_size)
+    ///        O(cluster_tiles_size*candidate_pix_count + frame_size)
     void find_clusters_sparse(NDView<FRAME_TYPE, 2> frame,
                               uint64_t frame_number = 0) {
 
@@ -220,22 +218,21 @@ class ClusterFinder {
 
         // 1. Ensure capacity exists (only allocates ONCE at start)
         auto total_pixels = static_cast<size_t>(nx) * ny;
-        if (m_near_candidate.size() != total_pixels) {
+        if (m_near_photon.size() != total_pixels) {
             // near candidate array needs to be allocated
-            m_near_candidate.assign(total_pixels, 0);
+            m_near_photon.assign(total_pixels, 0);
             // on this occasion also reserve space for candidates
             m_photon_candidate_xy.reserve(
                 static_cast<size_t>(ny * nx * expected_max_candidate_fraction));
         } else {
-            // near_candidate array was already allocated
+            // near_photon array was already allocated
             // we can just reset the auxiliary data structures
-            std::fill(m_near_candidate.begin(), m_near_candidate.end(), 0);
+            std::fill(m_near_photon.begin(), m_near_photon.end(), 0);
             m_photon_candidate_xy.clear();
         }
 
         // First pass - cheap single pixel test to build the candidate list
-        // and dilate the flag matrix over the cluster window of every
-        // active pixel found
+
         for (IDX_2D_TYPE iy = 0; iy < ny; iy++) {
             for (IDX_2D_TYPE ix = 0; ix < nx; ix++) {
                 PEDESTAL_TYPE rms = m_pedestal.std(iy, ix);
@@ -248,6 +245,7 @@ class ClusterFinder {
 
         // Second pass - only for the (sparse) candidates, do the full 8
         // neighbor search and store clusters, same logic as find_clusters
+        // additionally store the neighbor flag for pedestal update
         for (uint32_t k = 0; k < m_photon_candidate_xy.size(); k++) {
             auto [ix, iy] = to_2d_coord(m_photon_candidate_xy[k]);
             PEDESTAL_TYPE max = std::numeric_limits<FRAME_TYPE>::min();
@@ -278,8 +276,8 @@ class ClusterFinder {
             IDX_2D_TYPE x1 = std::min(nx - 1, ix + dx - 1 + has_center_pixel_x);
 
             for (int ir = y0; ir <= y1; ir++) {
-                std::fill(&m_near_candidate[ir * nx + x0],
-                          &m_near_candidate[ir * nx + x1] + 1, 1);
+                std::fill(&m_near_photon[ir * nx + x0],
+                          &m_near_photon[ir * nx + x1] + 1, 1);
             }
 
             ClusterType cluster{};
@@ -312,11 +310,11 @@ class ClusterFinder {
         }
 
         // Third pass - plain flag lookup, no neighbor search. Update the
-        // pedestal for every pixel that is not active and does not
-        // neighbor an active pixel.
+        // pedestal for every pixel that is not seed and does not
+        // overlap with cluster window
         for (int iy = 0; iy < ny; iy++) {
             for (int ix = 0; ix < nx; ix++) {
-                if (m_near_candidate[iy * nx + ix])
+                if (m_near_photon[iy * nx + ix])
                     continue;
                 PEDESTAL_TYPE rms = m_pedestal.std(iy, ix);
                 PEDESTAL_TYPE value = frame(iy, ix) - m_pedestal.mean(iy, ix);
