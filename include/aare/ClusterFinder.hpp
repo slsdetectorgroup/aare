@@ -34,6 +34,15 @@ class ClusterFinder {
     using CT = typename ClusterType::value_type;
     using IDX_1D_TYPE = uint32_t;
     using IDX_2D_TYPE = uint16_t;
+    // Flag matrix marking pixels that are either active themselves or
+    // neighbor an active pixel within a cluster window. It is built by
+    // dilating around each active pixel as it is found in pass one, so
+    // the cost is paid once per active pixel instead of once per pixel
+    // in the frame, and pass three becomes a plain lookup.
+    std::vector<uint8_t> m_near_candidate;
+
+    // a list of coordinates of cluster candidates
+    std::vector<IDX_1D_TYPE> m_photon_candidate_xy;
 
   public:
     /**
@@ -198,7 +207,7 @@ class ClusterFinder {
         // triggers for triggering at 5/5 sigma (5x5), we should expect ~15%
         // false triggers
         // TODO: the following constant should be controllable by the user
-        const float expected_max_candidate_fraction = 0.17;
+        const float expected_max_candidate_fraction = 0.2;
         const uint8_t dy = ClusterSizeY / 2;
         const uint8_t dx = ClusterSizeX / 2;
         const uint8_t has_center_pixel_x = ClusterSizeX % 2;
@@ -209,19 +218,20 @@ class ClusterFinder {
 
         m_clusters.set_frame_number(frame_number);
 
-        // Flag matrix marking pixels that are either active themselves or
-        // neighbor an active pixel within a cluster window. It is built by
-        // dilating around each active pixel as it is found in pass one, so
-        // the cost is paid once per active pixel instead of once per pixel
-        // in the frame, and pass three becomes a plain lookup.
-        std::vector<uint8_t> near_candidate(static_cast<size_t>(ny) * nx, 0);
-
-        // Pre allocated candidate list. Worst case every pixel is active so
-        // reserve for that up front and avoid any reallocation below
-        // Potentially this could be a class member field only reserved once
-        std::vector<IDX_1D_TYPE> photon_candidate_xy;
-        photon_candidate_xy.reserve(
-            static_cast<size_t>(ny * nx * expected_max_candidate_fraction));
+        // 1. Ensure capacity exists (only allocates ONCE at start)
+        auto total_pixels = static_cast<size_t>(nx) * ny;
+        if (m_near_candidate.size() != total_pixels) {
+            // near candidate array needs to be allocated
+            m_near_candidate.assign(total_pixels, 0);
+            // on this occasion also reserve space for candidates
+            m_photon_candidate_xy.reserve(
+                static_cast<size_t>(ny * nx * expected_max_candidate_fraction));
+        } else {
+            // near_candidate array was already allocated
+            // we can just reset the auxiliary data structures
+            std::fill(m_near_candidate.begin(), m_near_candidate.end(), 0);
+            m_photon_candidate_xy.clear();
+        }
 
         // First pass - cheap single pixel test to build the candidate list
         // and dilate the flag matrix over the cluster window of every
@@ -231,15 +241,15 @@ class ClusterFinder {
                 PEDESTAL_TYPE rms = m_pedestal.std(iy, ix);
                 PEDESTAL_TYPE value = frame(iy, ix) - m_pedestal.mean(iy, ix);
                 if (value > m_nSigma * rms / c3) {
-                    photon_candidate_xy.push_back(to_1D_coord(ix, iy));
+                    m_photon_candidate_xy.push_back(to_1D_coord(ix, iy));
                 }
             }
         }
 
         // Second pass - only for the (sparse) candidates, do the full 8
         // neighbor search and store clusters, same logic as find_clusters
-        for (uint32_t k = 0; k < photon_candidate_xy.size(); k++) {
-            auto [ix, iy] = to_2d_coord(photon_candidate_xy[k]);
+        for (uint32_t k = 0; k < m_photon_candidate_xy.size(); k++) {
+            auto [ix, iy] = to_2d_coord(m_photon_candidate_xy[k]);
             PEDESTAL_TYPE max = std::numeric_limits<FRAME_TYPE>::min();
             PEDESTAL_TYPE total = 0;
             PEDESTAL_TYPE rms = m_pedestal.std(iy, ix);
@@ -268,8 +278,8 @@ class ClusterFinder {
             IDX_2D_TYPE x1 = std::min(nx - 1, ix + dx - 1 + has_center_pixel_x);
 
             for (int ir = y0; ir <= y1; ir++) {
-                std::fill(&near_candidate[ir * nx + x0],
-                          &near_candidate[ir * nx + x1] + 1, 1);
+                std::fill(&m_near_candidate[ir * nx + x0],
+                          &m_near_candidate[ir * nx + x1] + 1, 1);
             }
 
             ClusterType cluster{};
@@ -306,7 +316,7 @@ class ClusterFinder {
         // neighbor an active pixel.
         for (int iy = 0; iy < ny; iy++) {
             for (int ix = 0; ix < nx; ix++) {
-                if (near_candidate[iy * nx + ix])
+                if (m_near_candidate[iy * nx + ix])
                     continue;
                 PEDESTAL_TYPE rms = m_pedestal.std(iy, ix);
                 PEDESTAL_TYPE value = frame(iy, ix) - m_pedestal.mean(iy, ix);
