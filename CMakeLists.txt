@@ -155,14 +155,10 @@ endif()
 if(AARE_FETCH_MINUIT2)
   # We are building Minuit2 from sources.
 
-  # Patch minuit2 to avoid messing with cmake policies
-  set(MINUIT2_PATCH_COMMAND git apply
-                            ${CMAKE_CURRENT_SOURCE_DIR}/patches/minuit2.patch)
   FetchContent_Declare(
     Minuit2
     GIT_REPOSITORY https://github.com/GooFit/Minuit2.git
     GIT_TAG master
-    PATCH_COMMAND ${MINUIT2_PATCH_COMMAND}
     UPDATE_DISCONNECTED 1)
   # Disable Minuit2 extras we don't need
   set(minuit2_mpi
