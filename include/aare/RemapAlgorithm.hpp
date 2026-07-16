@@ -12,7 +12,8 @@ constexpr defs::Rotation flip(defs::Rotation r) noexcept {
         return defs::Rotation::Identity;
     }
 
-    return defs::Rotation::Identity; // or assert(false);
+    assert(false && "Invalid Rotation passed to flip");
+    return defs::Rotation::Identity; // Unreachable; satisfies compiler
 }
 
 // Is it better to pass defs::SensorGroupConfig const& and return a copy?
@@ -23,9 +24,10 @@ defs::StrixelGroupToPixelMap strixel_to_pixel_map(
     defs::SensorGroupConfig const &, defs::SensorPlacement const &,
     InclusiveROI const &user_roi, defs::BondShift bond_shift = {0, 0});
 
-std::vector<defs::StrixelGroupToPixelMap> strixel_to_pixel_maps(
-    defs::SensorConfig const &, std::vector<defs::SensorPlacement> const &,
-    InclusiveROI const &user_roi, defs::BondShift bond_shift = {0, 0});
+std::vector<defs::StrixelGroupToPixelMap>
+strixel_to_pixel_maps(defs::SensorConfig const &, defs::SensorPlacement const &,
+                      InclusiveROI const &user_roi,
+                      defs::BondShift bond_shift = {0, 0});
 
 defs::StrixelGroupToPixelMap
 combine_maps(std::vector<defs::StrixelGroupToPixelMap> const &,
@@ -40,20 +42,32 @@ combine_maps(std::vector<defs::StrixelGroupToPixelMap> const &,
  * \param output Remapped array
  */
 template <typename T>
-void ApplyRemap(NDView<T, 2> const &input, NDArray<ssize_t, 2> const &order_map,
+void ApplyRemap(NDView<T, 2> input, NDView<ssize_t, 2> order_map,
                 NDArray<T, 2> &output) {
-    for (size_t row = 0; row < order_map.shape(0); ++row) {
-        for (size_t col = 0; col < order_map.shape(1); ++col) {
+
+    if (output.shape() != order_map.shape()) {
+        throw std::invalid_argument(
+            "ApplyRemap: output shape does not match order map shape");
+    }
+
+    const auto nrows = order_map.shape(0);
+    const auto ncols = order_map.shape(1);
+
+    for (size_t row = 0; row < nrows; ++row) {
+        for (size_t col = 0; col < ncols; ++col) {
+
             auto flat_index = order_map(row, col);
+
             if (flat_index >= 0 &&
                 static_cast<size_t>(flat_index) < input.size()) {
-                T const &value = input[flat_index];
-                output(row, col) = value;
-                // output(row, col) = static_cast<T>(input[flat_index]);
+                // T const &value = input[flat_index];
+                // output(row, col) = value;
+                output(row, col) = input[flat_index];
             } else {
-                output(row, col) = static_cast<T>(0); // or nan?
+                // output(row, col) = static_cast<T>(0); // or nan?
+                output(row, col) = T{};
             }
-        }
+                }
     }
 }
 } // namespace aare::remap::algo

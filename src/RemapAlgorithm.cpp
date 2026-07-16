@@ -64,11 +64,7 @@ strixel_to_pixel_map(defs::SensorGroupConfig const &group_config,
     // Define mod ordering (Normal or Inverse)
     std::vector<int> mods(multiplicity);
     std::iota(mods.begin(), mods.end(), 0);
-    // This is a problem! Rotation does not invert the mods!
-    // (only one-axis mirroring does)
-    // -> Top-half of quad is only mirrored in y!
-    // if (rot == defs::Rotation::Inverse)
-    //     std::reverse(mods.begin(), mods.end());
+
     if (group_config.routing.mod_order == defs::ColumnModOrdering::Reverse)
         std::reverse(mods.begin(), mods.end());
 
@@ -84,13 +80,6 @@ strixel_to_pixel_map(defs::SensorGroupConfig const &group_config,
     // -- 2) Apply transforms (if necessary)
     // -- 2a) bond_shift
     // -- 2b) rotation
-    // -- IMPORTANT: bond_shift BEFORE rotation!
-    // auto group_local = group_config;
-    // apply_rotation_shift(group_local, bond_shift, placement.rotation);
-
-    // -- 2c) AFTER applying the transformations, we can grab the correct
-    // strixel roi
-    // auto roi_group = group_local.placement_on_sensor;
     InclusiveROI roi_group =
         shift_rotate_roi(group_config.placement_on_sensor, group_config.pixel,
                          bond_shift, placement.rotation);
@@ -143,11 +132,14 @@ strixel_to_pixel_map(defs::SensorGroupConfig const &group_config,
         return {multiplicity, pitch, eff, {}}; // nothing mapped
     }
 
+    // Now from the found bounds of the strixel grid, we define the space to
+    // allocate for the order map
     const int nrows_strx = max_row_strx - min_row_strx + 1;
     const int ncols_strx = max_col_strx - min_col_strx + 1;
 
-    // Allocate strixel grid order map
+    // And allocate
     aare::NDArray<ssize_t, 2> map({nrows_strx, ncols_strx}, -1);
+
     // DEBUG
     std::cout << "DEBUG: Resulting strixel grid: (" << map.shape(0) << ", "
               << map.shape(1) << ")" << '\n';
@@ -189,19 +181,16 @@ strixel_to_pixel_map(defs::SensorGroupConfig const &group_config,
 
 std::vector<defs::StrixelGroupToPixelMap>
 strixel_to_pixel_maps(defs::SensorConfig const &sensor_config,
-                      std::vector<defs::SensorPlacement> const &placements,
+                      defs::SensorPlacement const &placement,
                       InclusiveROI const &roi_user,
                       defs::BondShift bond_shift) {
-
-    assert(sensor_config.group_configs.size() == placements.size());
 
     std::vector<defs::StrixelGroupToPixelMap> maps;
     maps.reserve(sensor_config.group_configs.size());
 
     for (size_t i = 0; i < sensor_config.group_configs.size(); ++i) {
-        maps.emplace_back(strixel_to_pixel_map(sensor_config.group_configs[i],
-                                               placements[i], roi_user,
-                                               bond_shift));
+        maps.emplace_back(strixel_to_pixel_map(
+            sensor_config.group_configs[i], placement, roi_user, bond_shift));
     }
 
     return maps;
