@@ -53,8 +53,8 @@ void ApplyRemap(NDView<T, 2> input, NDView<ssize_t, 2> order_map,
     const auto nrows = order_map.shape(0);
     const auto ncols = order_map.shape(1);
 
-    for (size_t row = 0; row < nrows; ++row) {
-        for (size_t col = 0; col < ncols; ++col) {
+    for (ssize_t row = 0; row < nrows; ++row) {
+        for (ssize_t col = 0; col < ncols; ++col) {
 
             auto flat_index = order_map(row, col);
 
