@@ -9,7 +9,11 @@ namespace aare::remap::defs {
 
 // Orientation of the sensor with respect to the ASICs / the HDI
 // Normal means lower part of sensor (as in GDS) aligns with lower part of HDI
-enum class Rotation : int { Normal = 0, Inverse = 1 };
+enum class Rotation : int { Identity = 0, Rotate180 = 1 };
+
+// enum class Transform : int { Identity, MirrorX, MirrorY, Rotate180 };
+
+enum class ColumnModOrdering { Forward, Reverse };
 
 struct Guardring {
     int x;
@@ -34,10 +38,15 @@ struct SensorStrixelGeometry {
     double pitch_um;
 };
 
+struct SensorRouting {
+    ColumnModOrdering mod_order = ColumnModOrdering::Forward;
+};
+
 // Fully characterize a strixel group (contiguous area that will be remapped)
 struct SensorGroupConfig {
     SensorPixelGeometry pixel;
     SensorStrixelGeometry strixel;
+    SensorRouting routing;
     InclusiveROI placement_on_sensor; // location of the group in the sensor
                                       // coordinate system (or reduced roi)
 };
@@ -52,6 +61,7 @@ struct SensorPlacement {
     InclusiveROI placement_on_module; // location of the sensor in full-module
                                       // coordinate system
     Rotation rotation;
+    // Transform transform;
 };
 
 // Possibly, this may need to be moved to a dedicated "remapping" class

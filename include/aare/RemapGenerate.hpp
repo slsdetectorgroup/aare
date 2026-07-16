@@ -119,9 +119,16 @@ jungfrau_tew_singlechip_multipitch_strixel_maps(InclusiveROI rx_roi,
  * Quad, 25 um, iLGAD
  ************************************/
 inline defs::StrixelGroupToPixelMap
-jungfrau_ilgad_quadhalf_25um_strixel_map(InclusiveROI rx_roi,
-                                         defs::SensorPlacement placement) {
-    return algo::strixel_to_pixel_map(config::jungfrau::Quad_iLGAD_half,
+jungfrau_ilgad_quadbottom_25um_strixel_map(InclusiveROI rx_roi,
+                                           defs::SensorPlacement placement) {
+    return algo::strixel_to_pixel_map(config::jungfrau::Quad_iLGAD_bottomhalf,
+                                      placement, rx_roi);
+}
+
+inline defs::StrixelGroupToPixelMap
+jungfrau_ilgad_quadtop_25um_strixel_map(InclusiveROI rx_roi,
+                                        defs::SensorPlacement placement) {
+    return algo::strixel_to_pixel_map(config::jungfrau::Quad_iLGAD_tophalf,
                                       placement, rx_roi);
 }
 
@@ -129,8 +136,8 @@ inline std::vector<defs::StrixelGroupToPixelMap>
 jungfrau_ilgad_quad_25um_strixel_maps(InclusiveROI rx_roi,
                                       defs::SensorPlacement placement) {
 
-    defs::SensorConfig configs{
-        {config::jungfrau::Quad_iLGAD_half, config::jungfrau::Quad_iLGAD_half}};
+    defs::SensorConfig configs{{config::jungfrau::Quad_iLGAD_bottomhalf,
+                                config::jungfrau::Quad_iLGAD_tophalf}};
 
     std::vector<defs::SensorPlacement> placements(configs.group_configs.size(),
                                                   placement);

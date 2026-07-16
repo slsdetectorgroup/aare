@@ -19,12 +19,14 @@ inline constexpr defs::SensorStrixelGeometry StrxP37{.multiplicity = 2,
  * Default sensor placements
  ************************************/
 inline constexpr defs::SensorPlacement Chip1{
-    .placement_on_module{256, 511, 0, 255}, .rotation = defs::Rotation::Normal};
+    .placement_on_module{256, 511, 0, 255},
+    .rotation = defs::Rotation::Identity};
 inline constexpr defs::SensorPlacement Chip6{
     .placement_on_module{512, 767, 256, 511},
-    .rotation = defs::Rotation::Inverse};
+    .rotation = defs::Rotation::Rotate180};
 inline constexpr defs::SensorPlacement Quad{
-    .placement_on_module{256, 767, 0, 511}, .rotation = defs::Rotation::Normal};
+    .placement_on_module{256, 767, 0, 511},
+    .rotation = defs::Rotation::Identity};
 
 /************************************
  * Single chip, multi-pitch, iLGAD
@@ -120,7 +122,7 @@ inline constexpr defs::SensorGroupConfig SingleChipMP_TEW_P18{
 inline constexpr defs::SensorPixelGeometry Quad_iLGAD_pix{
     .num_pix_x = 512, .num_pix_y = 512, .guardring = {.x = 9, .y = 9}};
 
-inline constexpr defs::SensorGroupConfig Quad_iLGAD_half{
+inline constexpr defs::SensorGroupConfig Quad_iLGAD_bottomhalf{
     .pixel = Quad_iLGAD_pix,
     .strixel = StrxP25,
     .placement_on_sensor = {Quad_iLGAD_pix.guardring.x + 2, // 11
@@ -128,6 +130,17 @@ inline constexpr defs::SensorGroupConfig Quad_iLGAD_half{
                                 Quad_iLGAD_pix.guardring.x - 1,   // 502
                             Quad_iLGAD_pix.guardring.y,           // 9
                             (Quad_iLGAD_pix.num_pix_y / 2) - 2}}; // 254
+
+inline constexpr defs::SensorGroupConfig Quad_iLGAD_tophalf{
+    .pixel = Quad_iLGAD_pix,
+    .strixel = StrxP25,
+    .routing = {defs::ColumnModOrdering::Reverse},
+    // Adapt placement to be correct!
+    .placement_on_sensor = {
+        Quad_iLGAD_pix.guardring.x + 2,                              // 11
+        Quad_iLGAD_pix.num_pix_x - Quad_iLGAD_pix.guardring.x - 1,   // 502
+        Quad_iLGAD_pix.num_pix_y / 2 + 1,                            // 257
+        Quad_iLGAD_pix.num_pix_y - Quad_iLGAD_pix.guardring.y - 1}}; // 502
 } // namespace aare::remap::config::jungfrau
 
 /**************************************

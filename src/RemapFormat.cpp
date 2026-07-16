@@ -4,7 +4,7 @@
 
 namespace aare::remap::format {
 static inline std::string toString(defs::Rotation r) {
-    return (r == defs::Rotation::Normal ? "Normal" : "Inverse");
+    return (r == defs::Rotation::Identity ? "Identity" : "Rotate180");
 }
 
 static inline std::string toString(defs::SensorPixelGeometry const &g) {

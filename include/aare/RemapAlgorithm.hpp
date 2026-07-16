@@ -6,13 +6,13 @@ namespace aare::remap::algo {
 
 constexpr defs::Rotation flip(defs::Rotation r) noexcept {
     switch (r) {
-    case defs::Rotation::Normal:
-        return defs::Rotation::Inverse;
-    case defs::Rotation::Inverse:
-        return defs::Rotation::Normal;
+    case defs::Rotation::Identity:
+        return defs::Rotation::Rotate180;
+    case defs::Rotation::Rotate180:
+        return defs::Rotation::Identity;
     }
 
-    return defs::Rotation::Normal; // or assert(false);
+    return defs::Rotation::Identity; // or assert(false);
 }
 
 // Is it better to pass defs::SensorGroupConfig const& and return a copy?

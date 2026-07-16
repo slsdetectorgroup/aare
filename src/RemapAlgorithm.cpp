@@ -5,6 +5,7 @@
 namespace aare::remap::algo {
 
 // Is it better to pass defs::SensorGroupConfig const& and return a copy?
+// Better not to, use shift_rotate_roi instead
 void apply_rotation_shift(defs::SensorGroupConfig &cfg,
                           defs::BondShift bond_shift, defs::Rotation rot) {
     // Apply physical transforms
@@ -12,9 +13,33 @@ void apply_rotation_shift(defs::SensorGroupConfig &cfg,
         cfg.placement_on_sensor = aare::inclusiveroi::geom::translate(
             cfg.placement_on_sensor, bond_shift.x, bond_shift.y);
 
-    if (rot == defs::Rotation::Inverse)
+    if (rot == defs::Rotation::Rotate180)
         cfg.placement_on_sensor = aare::inclusiveroi::geom::mirrorXY(
             cfg.placement_on_sensor, cfg.pixel.num_pix_x, cfg.pixel.num_pix_y);
+}
+
+/**
+ * Apply physical transformations to a sensor-local ROI.
+ *
+ * IMPORTANT:
+ * Bond shifts are applied before rotation.
+ * The order is intentional because bond shifts are defined in the
+ * sensor's native coordinate system.
+ */
+inline InclusiveROI shift_rotate_roi(InclusiveROI roi,
+                                     defs::SensorPixelGeometry const &pixel,
+                                     defs::BondShift bond_shift,
+                                     defs::Rotation rot) {
+    // Apply physical transforms
+    if (bond_shift.x != 0 || bond_shift.y != 0)
+        roi = aare::inclusiveroi::geom::translate(roi, bond_shift.x,
+                                                  bond_shift.y);
+
+    if (rot == defs::Rotation::Rotate180)
+        roi = aare::inclusiveroi::geom::mirrorXY(roi, pixel.num_pix_x,
+                                                 pixel.num_pix_y);
+
+    return roi;
 }
 
 defs::StrixelGroupToPixelMap
@@ -24,7 +49,7 @@ strixel_to_pixel_map(defs::SensorGroupConfig const &group_config,
 
     int multiplicity = group_config.strixel.multiplicity;
     double pitch = group_config.strixel.pitch_um;
-    defs::Rotation rot = placement.rotation;
+    // defs::Rotation rot = placement.rotation;
 
     // Helper to make sure that we work with a correct number of strixel columns
     // (i.e. that we do not map pixel columns if the ncols in ASIC pixel
@@ -37,9 +62,13 @@ strixel_to_pixel_map(defs::SensorGroupConfig const &group_config,
 
     // Define mod ordering (Normal or Inverse)
     std::vector<int> mods(multiplicity);
-    for (int i = 0; i < multiplicity; i++)
-        mods[i] = i;
-    if (rot == defs::Rotation::Inverse)
+    std::iota(mods.begin(), mods.end(), 0);
+    // This is a problem! Rotation does not invert the mods!
+    // (only one-axis mirroring does)
+    // -> Top-half of quad is only mirrored in y!
+    // if (rot == defs::Rotation::Inverse)
+    //     std::reverse(mods.begin(), mods.end());
+    if (group_config.routing.mod_order == defs::ColumnModOrdering::Reverse)
         std::reverse(mods.begin(), mods.end());
 
     // -- 1) Transform user roi (rx_roi) into sensor-local coordinates
@@ -55,17 +84,20 @@ strixel_to_pixel_map(defs::SensorGroupConfig const &group_config,
     // -- 2a) bond_shift
     // -- 2b) rotation
     // -- IMPORTANT: bond_shift BEFORE rotation!
-    auto group_local = group_config;
-    apply_rotation_shift(group_local, bond_shift, placement.rotation);
+    // auto group_local = group_config;
+    // apply_rotation_shift(group_local, bond_shift, placement.rotation);
 
     // -- 2c) AFTER applying the transformations, we can grab the correct
     // strixel roi
-    auto roi_group = group_local.placement_on_sensor;
+    // auto roi_group = group_local.placement_on_sensor;
+    InclusiveROI roi_group =
+        shift_rotate_roi(group_config.placement_on_sensor, group_config.pixel,
+                         bond_shift, placement.rotation);
 
     // DEBUG
     std::cout
         << "DEBUG: Group ROI after transformation (as in local transformation) "
-        << group_local.placement_on_sensor << '\n';
+        << roi_group << '\n';
 
     // -- 3) Compute effective ROI = intersection( roi_user, roi_group )
     InclusiveROI eff = inclusiveroi::geom::intersect(roi_user_local, roi_group);
