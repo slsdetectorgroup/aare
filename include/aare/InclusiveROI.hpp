@@ -1,6 +1,7 @@
 #pragma once
 
 #include <aare/defs.hpp>
+#include <aare/logger.hpp>
 
 #include <cstddef>
 #include <iostream>
@@ -68,17 +69,46 @@ static inline InclusiveROI to_local(InclusiveROI const &roi) {
     return {0, roi.xmax - roi.xmin, 0, roi.ymax - roi.ymin};
 }
 
-// mirroring (with respect to external grid given by width and height)
+// Mirror an ROI by reflecting its x-coordinates within a grid of width
+// 'width'.
+//
+// The grid is assumed to span x = [0, width-1].
+// The ROI is translated to the horizontally mirrored position while
+// preserving its size.
+//
+// Example:
+//
+//  x=0           x=width-1              x=0           x=width-1
+//  ----------------------- y=height-1 -----------------------
+//  |                     |            |                     |
+//  |    ***************  |            |  ***************    |
+//  |    *         roi *  |     ->     |  *mirrored roi *    |
+//  |    *             *  |            |  *             *    |
+//  |    ***************  |            |  ***************    |
+//  |                     |            |                     |
+//  -----------------------    y=0     -----------------------
+//
 static inline InclusiveROI mirrorX(InclusiveROI r, ssize_t width) {
     int x0p = (width - 1) - r.xmax;
     int x1p = (width - 1) - r.xmin;
     return {x0p, x1p, r.ymin, r.ymax};
 }
+
+// Mirror an ROI by reflecting its y-coordinates within a grid of height
+// 'height'.
+//
+// The grid is assumed to span y = [0, height-1].
+// The ROI is translated to the vertically mirrored position while
+// preserving its size.
 static inline InclusiveROI mirrorY(InclusiveROI r, ssize_t height) {
     int y0p = (height - 1) - r.ymax;
     int y1p = (height - 1) - r.ymin;
     return {r.xmin, r.xmax, y0p, y1p};
 }
+
+// Mirror both x- and y-coordinates.
+//
+// This is equivalent to a 180° rotation about the center of the grid.
 static inline InclusiveROI mirrorXY(InclusiveROI r, ssize_t width,
                                     ssize_t height) {
     return {mirrorX(mirrorY(r, height), width)};
@@ -94,7 +124,8 @@ static inline InclusiveROI intersect(InclusiveROI const &a,
     r.ymax = std::min(a.ymax, b.ymax);
 
     if (r.xmin > r.xmax || r.ymin > r.ymax) {
-        std::cout << "WARNING: ROIs do not intersect!" << std::endl;
+        // std::cout << "WARNING: ROIs do not intersect!" << std::endl;
+        LOG(TLogLevel::logWARNING) << "ROIs do not intersect!" << std::endl;
         return InclusiveROI::emptyROI(); // empty
     }
     return r;
@@ -122,14 +153,29 @@ static inline InclusiveROI unite(InclusiveROI const &a, InclusiveROI const &b) {
     throw std::runtime_error("ROIs cannot be united contiguously");
 }
 
-static inline InclusiveROI alignROIs(InclusiveROI const &roi_user,
+// Rebase an ROI into the coordinate system of another ROI.
+//
+// The returned ROI has the same physical extent, but is expressed relative
+// to roi_base instead of the original coordinate system.
+//
+// In other words, roi_base.xmin/ymin become the new origin (0,0).
+//
+// Example:
+//
+//   Global coordinates:
+//
+//      roi_base  = [100..199] x [50..149]
+//      roi_input = [120..139] x [70..89]
+//
+//   After rebasing:
+//
+//      roi_input = [20..39] x [20..39]
+//
+// This is equivalent to translating roi_input by
+// (-roi_base.xmin, -roi_base.ymin).
+static inline InclusiveROI rebaseROI(InclusiveROI const &roi_input,
                                      InclusiveROI const &roi_base) {
-    const int dx = roi_base.xmin;
-    const int dy = roi_base.ymin; // + bond_shift_y;
-
-    return {roi_user.xmin - dx, roi_user.xmax - dx, roi_user.ymin - dy,
-            roi_user.ymax - dy};
-    // return translate(roi_user, roi_base.xmin, roi_base.ymin);
+    return translate(roi_input, -roi_base.xmin, -roi_base.ymin);
 }
 
 } // namespace aare::inclusiveroi::geom
