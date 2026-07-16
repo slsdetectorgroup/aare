@@ -30,11 +30,12 @@ inline InclusiveROI shift_rotate_roi(InclusiveROI roi,
                                      defs::SensorPixelGeometry const &pixel,
                                      defs::BondShift bond_shift,
                                      defs::Rotation rot) {
-    // Apply physical transforms
+    // If there is a bond shift, translate the roi
     if (bond_shift.x != 0 || bond_shift.y != 0)
         roi = aare::inclusiveroi::geom::translate(roi, bond_shift.x,
                                                   bond_shift.y);
 
+    // If there is a rotation given, mirror in X and Y (emulates a rotation)
     if (rot == defs::Rotation::Rotate180)
         roi = aare::inclusiveroi::geom::mirrorXY(roi, pixel.num_pix_x,
                                                  pixel.num_pix_y);
@@ -73,7 +74,7 @@ strixel_to_pixel_map(defs::SensorGroupConfig const &group_config,
 
     // -- 1) Transform user roi (rx_roi) into sensor-local coordinates
     InclusiveROI roi_user_local =
-        inclusiveroi::geom::alignROIs(roi_user, placement.placement_on_module);
+        inclusiveroi::geom::rebaseROI(roi_user, placement.placement_on_module);
     std::cout << "Transformed user ROI: " << roi_user_local << std::endl;
 
     // DEBUG
