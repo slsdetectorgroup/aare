@@ -58,16 +58,25 @@ void ApplyRemap(NDView<T, 2> input, NDView<ssize_t, 2> order_map,
 
             auto flat_index = order_map(row, col);
 
-            if (flat_index >= 0 &&
-                static_cast<size_t>(flat_index) < input.size()) {
-                // T const &value = input[flat_index];
-                // output(row, col) = value;
-                output(row, col) = input[flat_index];
-            } else {
-                // output(row, col) = static_cast<T>(0); // or nan?
+            // Intentionally not-mapped pixel in order_map (e.g. guard ring
+            // pixels)
+            if (flat_index < 0) {
                 output(row, col) = T{};
+                continue;
             }
-                }
+
+            // Corrupt map, must throw
+            if (static_cast<size_t>(flat_index) >= input.size()) {
+                throw std::runtime_error(
+                    "ApplyRemap: order map contains an invalid pixel index.");
+            }
+
+            // Correctly mapped pixel
+            output(row, col) = input[flat_index];
+            // Long version
+            // T const &value = input[flat_index];
+            // output(row, col) = value;
+        }
     }
 }
 } // namespace aare::remap::algo
