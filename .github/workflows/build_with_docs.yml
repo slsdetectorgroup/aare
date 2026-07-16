@@ -47,7 +47,7 @@ jobs:
         run: |
             mkdir build 
             cd build 
-            cmake .. -DCMAKE_BUILD_TYPE=${{env.BUILD_TYPE}} -DAARE_SYSTEM_LIBRARIES=ON -DAARE_PYTHON_BINDINGS=ON -DAARE_DOCS=ON -DAARE_TESTS=ON
+            cmake .. -DCMAKE_BUILD_TYPE=${{env.BUILD_TYPE}} -DAARE_SYSTEM_LIBRARIES=ON -DAARE_PYTHON_BINDINGS=ON -DAARE_DOCS=ON -DAARE_TESTS=ON -DAARE_WARNINGS_AS_ERRORS=ON
             make -j 4 
             make docs
 

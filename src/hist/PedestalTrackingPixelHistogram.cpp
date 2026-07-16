@@ -58,7 +58,7 @@ PedestalTrackingPixelHistogram::PedestalTrackingPixelHistogram(
     partial_std_.reserve(n_threads_);
     for (int i = 0; i < n_threads_; ++i) {
         const auto local_rows = row_count(i);
-        partial_hists_.emplace_back(local_rows, cols, n_bins, xmin, xmax);
+        partial_hists_.emplace_back(local_rows, cols, n_bins, xmin_, xmax_);
         partial_pedestals_.emplace_back(static_cast<uint32_t>(local_rows),
                                         static_cast<uint32_t>(cols));
         partial_std_.emplace_back(NDArray<AxisType, 2>(

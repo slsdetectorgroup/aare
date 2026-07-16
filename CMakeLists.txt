@@ -65,6 +65,9 @@ option(AARE_FETCH_ZMQ "Use FetchContent to download libzmq" ON)
 option(AARE_FETCH_LMFIT "Use FetchContent to download lmfit" ON)
 option(AARE_FETCH_MINUIT2 "Use FetchContent to download Minuit2" ON)
 
+option(AARE_WARNINGS_AS_ERRORS "Treat warnings as errors during compilation"
+       OFF)
+
 # Convenience option to use system libraries only (no FetchContent)
 option(AARE_SYSTEM_LIBRARIES "Use system libraries" OFF)
 if(AARE_SYSTEM_LIBRARIES)
@@ -152,14 +155,10 @@ endif()
 if(AARE_FETCH_MINUIT2)
   # We are building Minuit2 from sources.
 
-  # Patch minuit2 to avoid messing with cmake policies
-  set(MINUIT2_PATCH_COMMAND git apply
-                            ${CMAKE_CURRENT_SOURCE_DIR}/patches/minuit2.patch)
   FetchContent_Declare(
     Minuit2
     GIT_REPOSITORY https://github.com/GooFit/Minuit2.git
     GIT_TAG master
-    PATCH_COMMAND ${MINUIT2_PATCH_COMMAND}
     UPDATE_DISCONNECTED 1)
   # Disable Minuit2 extras we don't need
   set(minuit2_mpi
@@ -172,7 +171,7 @@ if(AARE_FETCH_MINUIT2)
       OFF
       CACHE BOOL "")
   set(MINUIT2_INSTALL
-      ON
+      OFF
       CACHE BOOL "")
   FetchContent_MakeAvailable(Minuit2)
 
@@ -260,7 +259,7 @@ if(AARE_FETCH_FMT)
   FetchContent_MakeAvailable(fmt)
   set_property(TARGET fmt PROPERTY POSITION_INDEPENDENT_CODE ON)
 else()
-  find_package(fmt 6 REQUIRED)
+  find_package(fmt 8 REQUIRED)
 endif()
 
 if(AARE_FETCH_JSON)
@@ -349,6 +348,10 @@ else()
                                   # builds
   )
 
+  if(AARE_WARNINGS_AS_ERRORS)
+    target_compile_options(aare_compiler_flags INTERFACE -Werror)
+  endif()
+
 endif() # GCC/Clang specific
 
 if(AARE_PYTHON_BINDINGS)
@@ -388,7 +391,6 @@ set(PUBLICHEADERS
     include/aare/Dtype.hpp
     include/aare/File.hpp
     include/aare/Fit.hpp
-    include/aare/Chi2.hpp
     include/aare/FitModel.hpp
     include/aare/Models.hpp
     include/aare/FileInterface.hpp
@@ -459,8 +461,8 @@ target_link_libraries(
   aare_core
   PUBLIC fmt::fmt nlohmann_json::nlohmann_json ${STD_FS_LIB} # from
                                                              # helpers.cmake
-         aare::Minuit2
-  PRIVATE aare_compiler_flags Threads::Threads $<BUILD_INTERFACE:lmfit>)
+  PRIVATE aare_compiler_flags Threads::Threads $<BUILD_INTERFACE:lmfit>
+          $<BUILD_INTERFACE:aare::Minuit2>)
 
 target_include_directories(
   aare_core SYSTEM
