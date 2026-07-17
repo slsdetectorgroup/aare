@@ -10,7 +10,7 @@ namespace aare::remap::generate {
  ************************************/
 inline defs::StrixelGroupToPixelMap
 jungfrau_ilgad_singlechip_25um_strixel_map(InclusiveROI rx_roi,
-                                           defs::SensorPlacement placement,
+                                           defs::SensorModulePlacement placement,
                                            defs::BondShift bs = {0, 0}) {
     std::cout << " === JUNGFRAU iLGAD SINGLE-CHIP 25um PITCH === \n";
     return algo::strixel_to_pixel_map(config::jungfrau::SingleChipMP_iLGAD_P25,
@@ -20,7 +20,7 @@ jungfrau_ilgad_singlechip_25um_strixel_map(InclusiveROI rx_roi,
 
 inline defs::StrixelGroupToPixelMap
 jungfrau_ilgad_singlechip_15um_strixel_map(InclusiveROI rx_roi,
-                                           defs::SensorPlacement placement,
+                                           defs::SensorModulePlacement placement,
                                            defs::BondShift bs = {0, 0}) {
     std::cout << " === JUNGFRAU iLGAD SINGLE-CHIP 15um PITCH === \n";
     return algo::strixel_to_pixel_map(config::jungfrau::SingleChipMP_iLGAD_P15,
@@ -30,7 +30,7 @@ jungfrau_ilgad_singlechip_15um_strixel_map(InclusiveROI rx_roi,
 
 inline defs::StrixelGroupToPixelMap
 jungfrau_ilgad_singlechip_18um_strixel_map(InclusiveROI rx_roi,
-                                           defs::SensorPlacement placement,
+                                           defs::SensorModulePlacement placement,
                                            defs::BondShift bs = {0, 0}) {
     std::cout << " === JUNGFRAU iLGAD SINGLE-CHIP 18.75um PITCH === \n";
     return algo::strixel_to_pixel_map(config::jungfrau::SingleChipMP_iLGAD_P18,
@@ -43,7 +43,7 @@ inline std::vector<defs::StrixelGroupToPixelMap>
 jungfrau_ilgad_singlechip_multipitch_strixel_maps(InclusiveROI rx_roi,
                                                   int chip_id = 1,
                                                   defs::BondShift bs = {0, 0}) {
-    defs::SensorPlacement placement;
+    defs::SensorModulePlacement placement;
     if (chip_id == 1)
         placement = config::jungfrau::Chip1;
     else if (chip_id == 6)
@@ -65,7 +65,7 @@ jungfrau_ilgad_singlechip_multipitch_strixel_maps(InclusiveROI rx_roi,
 // More generic overload
 inline std::vector<defs::StrixelGroupToPixelMap>
 jungfrau_ilgad_singlechip_multipitch_strixel_maps(
-    InclusiveROI rx_roi, defs::SensorPlacement placement,
+    InclusiveROI rx_roi, defs::SensorModulePlacement placement,
     defs::BondShift bs = {0, 0}) {
     defs::SensorConfig configs{config::jungfrau::SingleChipMP_iLGAD_pix,
                                {config::jungfrau::SingleChipMP_iLGAD_P25,
@@ -80,7 +80,7 @@ jungfrau_ilgad_singlechip_multipitch_strixel_maps(
  ************************************/
 inline defs::StrixelGroupToPixelMap
 jungfrau_tew_singlechip_25um_strixel_map(InclusiveROI rx_roi,
-                                         defs::SensorPlacement placement,
+                                         defs::SensorModulePlacement placement,
                                          defs::BondShift bs = {0, 0}) {
     std::cout << " === JUNGFRAU TEW SINGLE-CHIP 25um PITCH === \n";
     return algo::strixel_to_pixel_map(config::jungfrau::SingleChipMP_TEW_P25,
@@ -90,7 +90,7 @@ jungfrau_tew_singlechip_25um_strixel_map(InclusiveROI rx_roi,
 
 inline defs::StrixelGroupToPixelMap
 jungfrau_tew_singlechip_15um_strixel_map(InclusiveROI rx_roi,
-                                         defs::SensorPlacement placement,
+                                         defs::SensorModulePlacement placement,
                                          defs::BondShift bs = {0, 0}) {
     std::cout << " === JUNGFRAU TEW SINGLE-CHIP 15um PITCH === \n";
     return algo::strixel_to_pixel_map(config::jungfrau::SingleChipMP_TEW_P15,
@@ -100,7 +100,7 @@ jungfrau_tew_singlechip_15um_strixel_map(InclusiveROI rx_roi,
 
 inline defs::StrixelGroupToPixelMap
 jungfrau_tew_singlechip_18um_strixel_map(InclusiveROI rx_roi,
-                                         defs::SensorPlacement placement,
+                                         defs::SensorModulePlacement placement,
                                          defs::BondShift bs = {0, 0}) {
     std::cout << " === JUNGFRAU TEW SINGLE-CHIP 18.75um PITCH === \n";
     return algo::strixel_to_pixel_map(config::jungfrau::SingleChipMP_TEW_P18,
@@ -113,7 +113,7 @@ inline std::vector<defs::StrixelGroupToPixelMap>
 jungfrau_tew_singlechip_multipitch_strixel_maps(InclusiveROI rx_roi,
                                                 int chip_id = 1,
                                                 defs::BondShift bs = {0, 0}) {
-    defs::SensorPlacement placement;
+    defs::SensorModulePlacement placement;
     if (chip_id == 1)
         placement = config::jungfrau::Chip1;
     else if (chip_id == 6)
@@ -135,7 +135,7 @@ jungfrau_tew_singlechip_multipitch_strixel_maps(InclusiveROI rx_roi,
 // More generic overload
 inline std::vector<defs::StrixelGroupToPixelMap>
 jungfrau_tew_singlechip_multipitch_strixel_maps(InclusiveROI rx_roi,
-                                                defs::SensorPlacement placement,
+                                                defs::SensorModulePlacement placement,
                                                 defs::BondShift bs = {0, 0}) {
     defs::SensorConfig configs{config::jungfrau::SingleChipMP_TEW_pix,
                                {config::jungfrau::SingleChipMP_TEW_P25,
@@ -150,7 +150,7 @@ jungfrau_tew_singlechip_multipitch_strixel_maps(InclusiveROI rx_roi,
  ************************************/
 inline defs::StrixelGroupToPixelMap
 jungfrau_ilgad_quadbottom_25um_strixel_map(InclusiveROI rx_roi,
-                                           defs::SensorPlacement placement) {
+                                           defs::SensorModulePlacement placement) {
     return algo::strixel_to_pixel_map(config::jungfrau::Quad_iLGAD_bottomhalf,
                                       config::jungfrau::Quad_iLGAD_pix,
                                       placement, rx_roi);
@@ -158,7 +158,7 @@ jungfrau_ilgad_quadbottom_25um_strixel_map(InclusiveROI rx_roi,
 
 inline defs::StrixelGroupToPixelMap
 jungfrau_ilgad_quadtop_25um_strixel_map(InclusiveROI rx_roi,
-                                        defs::SensorPlacement placement) {
+                                        defs::SensorModulePlacement placement) {
     return algo::strixel_to_pixel_map(config::jungfrau::Quad_iLGAD_tophalf,
                                       config::jungfrau::Quad_iLGAD_pix,
                                       placement, rx_roi);
@@ -166,7 +166,7 @@ jungfrau_ilgad_quadtop_25um_strixel_map(InclusiveROI rx_roi,
 
 inline std::vector<defs::StrixelGroupToPixelMap>
 jungfrau_ilgad_quad_25um_strixel_maps(InclusiveROI rx_roi,
-                                      defs::SensorPlacement placement) {
+                                      defs::SensorModulePlacement placement) {
 
     defs::SensorConfig configs{config::jungfrau::Quad_iLGAD_pix,
                                {config::jungfrau::Quad_iLGAD_bottomhalf,
@@ -177,7 +177,7 @@ jungfrau_ilgad_quad_25um_strixel_maps(InclusiveROI rx_roi,
 
 inline defs::StrixelGroupToPixelMap
 jungfrau_ilgad_quad_25um_strixel_map(InclusiveROI rx_roi,
-                                     defs::SensorPlacement placement,
+                                     defs::SensorModulePlacement placement,
                                      defs::BondShift bs = {0, 0}) {
     std::vector<int> gap_rows{12, 0};
     auto maps = jungfrau_ilgad_quad_25um_strixel_maps(rx_roi, placement);

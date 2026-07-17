@@ -18,13 +18,13 @@ inline constexpr defs::GroupStrixelGeometry StrxP37{.multiplicity = 2,
 /************************************
  * Default sensor placements
  ************************************/
-inline constexpr defs::SensorPlacement Chip1{
+inline constexpr defs::SensorModulePlacement Chip1{
     .placement_on_module{256, 511, 0, 255},
     .rotation = defs::Rotation::Identity};
-inline constexpr defs::SensorPlacement Chip6{
+inline constexpr defs::SensorModulePlacement Chip6{
     .placement_on_module{512, 767, 256, 511},
     .rotation = defs::Rotation::Rotate180};
-inline constexpr defs::SensorPlacement Quad{
+inline constexpr defs::SensorModulePlacement Quad{
     .placement_on_module{256, 767, 0, 511},
     .rotation = defs::Rotation::Identity};
 
@@ -126,7 +126,7 @@ inline constexpr defs::GroupConfig Quad_iLGAD_bottomhalf{
 
 inline constexpr defs::GroupConfig Quad_iLGAD_tophalf{
     .strixel = StrxP25,
-    .routing = {defs::ColumnModOrdering::Reverse},
+    .routing = {defs::ModuloOrdering::Reverse},
     // Adapt placement to be correct!
     .placement_on_sensor = {
         Quad_iLGAD_pix.guardring.x + 2,                              // 11

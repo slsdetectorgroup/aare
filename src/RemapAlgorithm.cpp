@@ -47,7 +47,7 @@ inline InclusiveROI shift_rotate_roi(InclusiveROI roi,
 defs::StrixelGroupToPixelMap
 strixel_to_pixel_map(defs::GroupConfig const &group_config,
                      defs::SensorPixelGeometry const &pixel,
-                     defs::SensorPlacement const &placement,
+                     defs::SensorModulePlacement const &placement,
                      InclusiveROI const &roi_user, defs::BondShift bond_shift) {
 
     int multiplicity = group_config.strixel.multiplicity;
@@ -67,7 +67,7 @@ strixel_to_pixel_map(defs::GroupConfig const &group_config,
     std::vector<int> mods(multiplicity);
     std::iota(mods.begin(), mods.end(), 0);
 
-    if (group_config.routing.mod_order == defs::ColumnModOrdering::Reverse)
+    if (group_config.routing.mod_order == defs::ModuloOrdering::Reverse)
         std::reverse(mods.begin(), mods.end());
 
     // -- 1) Transform user roi (rx_roi) into sensor-local coordinates
@@ -183,7 +183,7 @@ strixel_to_pixel_map(defs::GroupConfig const &group_config,
 
 std::vector<defs::StrixelGroupToPixelMap>
 strixel_to_pixel_maps(defs::SensorConfig const &sensor_config,
-                      defs::SensorPlacement const &placement,
+                      defs::SensorModulePlacement const &placement,
                       InclusiveROI const &roi_user,
                       defs::BondShift bond_shift) {
 

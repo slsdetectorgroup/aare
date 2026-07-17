@@ -23,11 +23,11 @@ void apply_rotation_shift(defs::GroupConfig &,
 
 defs::StrixelGroupToPixelMap strixel_to_pixel_map(
     defs::GroupConfig const &, defs::SensorPixelGeometry const &,
-    defs::SensorPlacement const &, InclusiveROI const &user_roi,
+    defs::SensorModulePlacement const &, InclusiveROI const &user_roi,
     defs::BondShift bond_shift = {0, 0});
 
 std::vector<defs::StrixelGroupToPixelMap>
-strixel_to_pixel_maps(defs::SensorConfig const &, defs::SensorPlacement const &,
+strixel_to_pixel_maps(defs::SensorConfig const &, defs::SensorModulePlacement const &,
                       InclusiveROI const &user_roi,
                       defs::BondShift bond_shift = {0, 0});
 
