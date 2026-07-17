@@ -16,13 +16,15 @@ constexpr defs::Rotation flip(defs::Rotation r) noexcept {
     return defs::Rotation::Identity; // Unreachable; satisfies compiler
 }
 
-// Is it better to pass defs::SensorGroupConfig const& and return a copy?
-void apply_rotation_shift(defs::SensorGroupConfig &cfg,
-                          defs::BondShift bond_shift, defs::Rotation rot);
+// Is it better to pass defs::GroupConfig const& and return a copy?
+void apply_rotation_shift(defs::GroupConfig &,
+                          defs::SensorPixelGeometry const &, defs::BondShift,
+                          defs::Rotation);
 
 defs::StrixelGroupToPixelMap strixel_to_pixel_map(
-    defs::SensorGroupConfig const &, defs::SensorPlacement const &,
-    InclusiveROI const &user_roi, defs::BondShift bond_shift = {0, 0});
+    defs::GroupConfig const &, defs::SensorPixelGeometry const &,
+    defs::SensorPlacement const &, InclusiveROI const &user_roi,
+    defs::BondShift bond_shift = {0, 0});
 
 std::vector<defs::StrixelGroupToPixelMap>
 strixel_to_pixel_maps(defs::SensorConfig const &, defs::SensorPlacement const &,

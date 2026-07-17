@@ -33,27 +33,27 @@ struct SensorPixelGeometry {
 };
 
 // Define the strixel grid of the sensor
-struct SensorStrixelGeometry {
+struct GroupStrixelGeometry {
     int multiplicity;
     double pitch_um;
 };
 
-struct SensorRouting {
+struct GroupRouting {
     ColumnModOrdering mod_order = ColumnModOrdering::Forward;
 };
 
 // Fully characterize a strixel group (contiguous area that will be remapped)
-struct SensorGroupConfig {
-    SensorPixelGeometry pixel;
-    SensorStrixelGeometry strixel;
-    SensorRouting routing;
+struct GroupConfig {
+    GroupStrixelGeometry strixel;
+    GroupRouting routing;
     InclusiveROI placement_on_sensor; // location of the group in the sensor
                                       // coordinate system (or reduced roi)
 };
 
 // Combine multiple strixel areas that make up a single sensor
 struct SensorConfig {
-    std::vector<SensorGroupConfig> group_configs;
+    SensorPixelGeometry pixel;
+    std::vector<GroupConfig> group_configs;
 };
 
 // Define location and orientation of a sensor on the module

@@ -6,14 +6,14 @@ namespace aare::remap::config::jungfrau {
 /************************************
  * Default strixel geometries
  ************************************/
-inline constexpr defs::SensorStrixelGeometry StrxP25{.multiplicity = 3,
-                                                     .pitch_um = 25.0};
-inline constexpr defs::SensorStrixelGeometry StrxP15{.multiplicity = 5,
-                                                     .pitch_um = 15.0};
-inline constexpr defs::SensorStrixelGeometry StrxP18{.multiplicity = 4,
-                                                     .pitch_um = 18.75};
-inline constexpr defs::SensorStrixelGeometry StrxP37{.multiplicity = 2,
-                                                     .pitch_um = 37.5};
+inline constexpr defs::GroupStrixelGeometry StrxP25{.multiplicity = 3,
+                                                    .pitch_um = 25.0};
+inline constexpr defs::GroupStrixelGeometry StrxP15{.multiplicity = 5,
+                                                    .pitch_um = 15.0};
+inline constexpr defs::GroupStrixelGeometry StrxP18{.multiplicity = 4,
+                                                    .pitch_um = 18.75};
+inline constexpr defs::GroupStrixelGeometry StrxP37{.multiplicity = 2,
+                                                    .pitch_um = 37.5};
 
 /************************************
  * Default sensor placements
@@ -34,8 +34,7 @@ inline constexpr defs::SensorPlacement Quad{
 inline constexpr defs::SensorPixelGeometry SingleChipMP_iLGAD_pix{
     .num_pix_x = 256, .num_pix_y = 256, .guardring = {.x = 9, .y = 9}};
 
-inline constexpr defs::SensorGroupConfig SingleChipMP_iLGAD_P25{
-    .pixel = SingleChipMP_iLGAD_pix,
+inline constexpr defs::GroupConfig SingleChipMP_iLGAD_P25{
     .strixel = StrxP25,
     .placement_on_sensor = {SingleChipMP_iLGAD_pix.guardring.x + 1, // 10
                             SingleChipMP_iLGAD_pix.num_pix_x -
@@ -46,8 +45,7 @@ inline constexpr defs::SensorGroupConfig SingleChipMP_iLGAD_P25{
  * Number of strixel rows: 165
  ********************************/
 
-inline constexpr defs::SensorGroupConfig SingleChipMP_iLGAD_P15{
-    .pixel = SingleChipMP_iLGAD_pix,
+inline constexpr defs::GroupConfig SingleChipMP_iLGAD_P15{
     .strixel = StrxP15,
     .placement_on_sensor = {SingleChipMP_iLGAD_pix.guardring.x + 3, // 12
                             SingleChipMP_iLGAD_pix.num_pix_x -
@@ -59,8 +57,7 @@ inline constexpr defs::SensorGroupConfig SingleChipMP_iLGAD_P15{
  * Number of strixel rows: 320
  ********************************/
 
-inline constexpr defs::SensorGroupConfig SingleChipMP_iLGAD_P18{
-    .pixel = SingleChipMP_iLGAD_pix,
+inline constexpr defs::GroupConfig SingleChipMP_iLGAD_P18{
     .strixel = StrxP18,
     .placement_on_sensor = {SingleChipMP_iLGAD_pix.guardring.x + 2, // 11
                             SingleChipMP_iLGAD_pix.num_pix_x -
@@ -78,8 +75,7 @@ inline constexpr defs::SensorGroupConfig SingleChipMP_iLGAD_P18{
 inline constexpr defs::SensorPixelGeometry SingleChipMP_TEW_pix{
     .num_pix_x = 256, .num_pix_y = 256, .guardring = {.x = 0, .y = 0}};
 
-inline constexpr defs::SensorGroupConfig SingleChipMP_TEW_P25{
-    .pixel = SingleChipMP_TEW_pix,
+inline constexpr defs::GroupConfig SingleChipMP_TEW_P25{
     .strixel = StrxP25,
     .placement_on_sensor = {SingleChipMP_TEW_pix.guardring.x + 1, // 1
                             SingleChipMP_TEW_pix.num_pix_x -
@@ -90,8 +86,7 @@ inline constexpr defs::SensorGroupConfig SingleChipMP_TEW_P25{
  * Number of strixel rows: 192
  ********************************/
 
-inline constexpr defs::SensorGroupConfig SingleChipMP_TEW_P15{
-    .pixel = SingleChipMP_TEW_pix,
+inline constexpr defs::GroupConfig SingleChipMP_TEW_P15{
     .strixel = StrxP15,
     .placement_on_sensor = {SingleChipMP_TEW_pix.guardring.x + 1, // 1
                             SingleChipMP_TEW_pix.num_pix_x -
@@ -103,8 +98,7 @@ inline constexpr defs::SensorGroupConfig SingleChipMP_TEW_P15{
  * Number of strixel rows: 320
  ********************************/
 
-inline constexpr defs::SensorGroupConfig SingleChipMP_TEW_P18{
-    .pixel = SingleChipMP_TEW_pix,
+inline constexpr defs::GroupConfig SingleChipMP_TEW_P18{
     .strixel = StrxP18,
     .placement_on_sensor = {SingleChipMP_TEW_pix.guardring.x, // 0
                             SingleChipMP_TEW_pix.num_pix_x -
@@ -122,8 +116,7 @@ inline constexpr defs::SensorGroupConfig SingleChipMP_TEW_P18{
 inline constexpr defs::SensorPixelGeometry Quad_iLGAD_pix{
     .num_pix_x = 512, .num_pix_y = 512, .guardring = {.x = 9, .y = 9}};
 
-inline constexpr defs::SensorGroupConfig Quad_iLGAD_bottomhalf{
-    .pixel = Quad_iLGAD_pix,
+inline constexpr defs::GroupConfig Quad_iLGAD_bottomhalf{
     .strixel = StrxP25,
     .placement_on_sensor = {Quad_iLGAD_pix.guardring.x + 2, // 11
                             Quad_iLGAD_pix.num_pix_x -
@@ -131,8 +124,7 @@ inline constexpr defs::SensorGroupConfig Quad_iLGAD_bottomhalf{
                             Quad_iLGAD_pix.guardring.y,           // 9
                             (Quad_iLGAD_pix.num_pix_y / 2) - 2}}; // 254
 
-inline constexpr defs::SensorGroupConfig Quad_iLGAD_tophalf{
-    .pixel = Quad_iLGAD_pix,
+inline constexpr defs::GroupConfig Quad_iLGAD_tophalf{
     .strixel = StrxP25,
     .routing = {defs::ColumnModOrdering::Reverse},
     // Adapt placement to be correct!

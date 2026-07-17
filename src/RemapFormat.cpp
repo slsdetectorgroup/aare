@@ -19,21 +19,20 @@ static inline std::string toString(defs::SensorPixelGeometry const &g) {
     return os.str();
 }
 
-static inline std::string toString(defs::SensorStrixelGeometry const &g) {
+static inline std::string toString(defs::GroupStrixelGeometry const &g) {
     std::ostringstream os;
 
-    os << "SensorStrixelGeometry\n"
+    os << "GroupStrixelGeometry\n"
        << " multiplicity: " << g.multiplicity << "\n"
        << " pitch       : " << g.pitch_um << " um\n";
 
     return os.str();
 }
 
-static inline std::string toString(defs::SensorGroupConfig const &c) {
+static inline std::string toString(defs::GroupConfig const &c) {
     std::ostringstream os;
 
-    os << "SensorGroupConfig\n"
-       << toString(c.pixel) << "\n"
+    os << "GroupConfig\n"
        << toString(c.strixel) << "\n"
        << " placement on sensor:\n"
        << c.placement_on_sensor << "\n";
@@ -41,8 +40,7 @@ static inline std::string toString(defs::SensorGroupConfig const &c) {
     return os.str();
 }
 
-inline std::ostream &operator<<(std::ostream &os,
-                                defs::SensorGroupConfig const &c) {
+inline std::ostream &operator<<(std::ostream &os, defs::GroupConfig const &c) {
     return os << toString(c);
 }
 } // namespace aare::remap::format
