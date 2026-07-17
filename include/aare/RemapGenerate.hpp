@@ -54,10 +54,7 @@ jungfrau_ilgad_singlechip_multipitch_strixel_maps(InclusiveROI rx_roi,
                                 config::jungfrau::SingleChipMP_iLGAD_P15,
                                 config::jungfrau::SingleChipMP_iLGAD_P18}};
 
-    std::vector<defs::SensorPlacement> placements(configs.group_configs.size(),
-                                                  placement);
-
-    return algo::strixel_to_pixel_maps(configs, placements, rx_roi, bs);
+    return algo::strixel_to_pixel_maps(configs, placement, rx_roi, bs);
 };
 
 /************************************
@@ -109,10 +106,7 @@ jungfrau_tew_singlechip_multipitch_strixel_maps(InclusiveROI rx_roi,
                                 config::jungfrau::SingleChipMP_TEW_P15,
                                 config::jungfrau::SingleChipMP_TEW_P18}};
 
-    std::vector<defs::SensorPlacement> placements(configs.group_configs.size(),
-                                                  placement);
-
-    return algo::strixel_to_pixel_maps(configs, placements, rx_roi, bs);
+    return algo::strixel_to_pixel_maps(configs, placement, rx_roi, bs);
 };
 
 /************************************
@@ -139,12 +133,7 @@ jungfrau_ilgad_quad_25um_strixel_maps(InclusiveROI rx_roi,
     defs::SensorConfig configs{{config::jungfrau::Quad_iLGAD_bottomhalf,
                                 config::jungfrau::Quad_iLGAD_tophalf}};
 
-    std::vector<defs::SensorPlacement> placements(configs.group_configs.size(),
-                                                  placement);
-
-    placements[1].rotation = algo::flip(placement.rotation);
-
-    return algo::strixel_to_pixel_maps(configs, placements, rx_roi);
+    return algo::strixel_to_pixel_maps(configs, placement, rx_roi);
 }
 
 inline defs::StrixelGroupToPixelMap
