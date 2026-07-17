@@ -6,7 +6,8 @@ namespace aare::remap::algo {
 
 // Is it better to pass defs::SensorGroupConfig const& and return a copy?
 // Better not to, use shift_rotate_roi instead
-void apply_rotation_shift(defs::SensorGroupConfig &cfg,
+void apply_rotation_shift(defs::GroupConfig &cfg,
+                          defs::SensorPixelGeometry const &pixel,
                           defs::BondShift bond_shift, defs::Rotation rot) {
     // Apply physical transforms
     if (bond_shift.x != 0 || bond_shift.y != 0)
@@ -15,7 +16,7 @@ void apply_rotation_shift(defs::SensorGroupConfig &cfg,
 
     if (rot == defs::Rotation::Rotate180)
         cfg.placement_on_sensor = aare::inclusiveroi::geom::mirrorXY(
-            cfg.placement_on_sensor, cfg.pixel.num_pix_x, cfg.pixel.num_pix_y);
+            cfg.placement_on_sensor, pixel.num_pix_x, pixel.num_pix_y);
 }
 
 /**
@@ -44,7 +45,8 @@ inline InclusiveROI shift_rotate_roi(InclusiveROI roi,
 }
 
 defs::StrixelGroupToPixelMap
-strixel_to_pixel_map(defs::SensorGroupConfig const &group_config,
+strixel_to_pixel_map(defs::GroupConfig const &group_config,
+                     defs::SensorPixelGeometry const &pixel,
                      defs::SensorPlacement const &placement,
                      InclusiveROI const &roi_user, defs::BondShift bond_shift) {
 
@@ -61,7 +63,7 @@ strixel_to_pixel_map(defs::SensorGroupConfig const &group_config,
     const int tot_ncols_strx =
         group_config.placement_on_sensor.width() / multiplicity;
 
-    // Define mod ordering (Normal or Inverse)
+    // Define mod ordering
     std::vector<int> mods(multiplicity);
     std::iota(mods.begin(), mods.end(), 0);
 
@@ -81,8 +83,8 @@ strixel_to_pixel_map(defs::SensorGroupConfig const &group_config,
     // -- 2a) bond_shift
     // -- 2b) rotation
     InclusiveROI roi_group =
-        shift_rotate_roi(group_config.placement_on_sensor, group_config.pixel,
-                         bond_shift, placement.rotation);
+        shift_rotate_roi(group_config.placement_on_sensor, pixel, bond_shift,
+                         placement.rotation);
 
     // DEBUG
     std::cout
@@ -189,8 +191,9 @@ strixel_to_pixel_maps(defs::SensorConfig const &sensor_config,
     maps.reserve(sensor_config.group_configs.size());
 
     for (size_t i = 0; i < sensor_config.group_configs.size(); ++i) {
-        maps.emplace_back(strixel_to_pixel_map(
-            sensor_config.group_configs[i], placement, roi_user, bond_shift));
+        maps.emplace_back(strixel_to_pixel_map(sensor_config.group_configs[i],
+                                               sensor_config.pixel, placement,
+                                               roi_user, bond_shift));
     }
 
     return maps;
@@ -238,8 +241,8 @@ combine_maps(std::vector<defs::StrixelGroupToPixelMap> const &maps,
         std::cout << "DEBUG: Row offset: i = " << i
                   << ", offset: " << offsets[i] << '\n';
 
-        for (size_t r = 0; r < rows; ++r) {
-            for (size_t c = 0; c < cols; ++c) {
+        for (ssize_t r = 0; r < rows; ++r) {
+            for (ssize_t c = 0; c < cols; ++c) {
                 map(offsets[i] + r, c) = maps[i].map(r, c);
             }
         }
