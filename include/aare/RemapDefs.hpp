@@ -130,15 +130,27 @@ struct SensorModulePlacement {
     Rotation rotation;
 };
 
-// Possibly, this may need to be moved to a dedicated "remapping" class
+/**
+ * Describes the remapping result plus the metadata that was used to create the
+ * result.
+ *
+ * Specifies where the sensor is located in module coordinates and how it is
+ * physically oriented with respect to the module reference frame.
+ */
 struct StrixelGroupToPixelMap {
-    int multiplicity;
-    double pitch_um;
-    InclusiveROI placement_on_sensor; // location of the group in the sensor
-                                      // coordinate system (or reduced roi)
-    // Technically, only the map is needed and the above metadata is only copied
-    // Should we still keep it so that a user can directly access it?
     NDArray<ssize_t, 2> map;
+
+    // Configuration used to generate this map
+    GroupConfig group_config;
+
+    // Sensor geometry used by the algorithm
+    SensorPixelGeometry pixel;
+
+    // Effective group ROI after bond shift and rotation
+    InclusiveROI effective_group_roi;
+
+    // Region actually covered by this map (intersection with user ROI)
+    InclusiveROI effective_roi;
 };
 
 } // namespace aare::remap::defs
