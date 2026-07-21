@@ -8,7 +8,7 @@
 namespace aare::remap::defs {
 
 /**
- * Physical orientation of the sensor on the module.
+ * @brief Physical orientation of the sensor on the module.
  *
  * This transformation describes how the entire sensor-ASIC assembly (pixel grid
  * and strixel routing together) is mounted with respect to the module
@@ -25,7 +25,7 @@ namespace aare::remap::defs {
 enum class Rotation : int { Identity = 0, Rotate180 = 1 };
 
 /**
- * Ordering of pixel-to-strixel routing within each multiplicity group.
+ * @brief Ordering of pixel-to-strixel routing within each multiplicity group.
  *
  * Forward:
  *   Pixels are assigned to strixel rows in increasing column order.
@@ -54,7 +54,7 @@ struct BondShift {
 };
 
 /**
- * Describes the native ASIC pixel grid of a sensor.
+ * @brief Describes the native ASIC pixel grid of a sensor.
  *
  * This geometry is shared by all strixel groups on the sensor and defines
  * the coordinate system in which remapping is performed.
@@ -66,7 +66,7 @@ struct SensorPixelGeometry {
 };
 
 /**
- * Describes the strixel geometry of a single remapping group.
+ * @brief Describes the strixel geometry of a single remapping group.
  *
  * Pixel rows are multiplied by `multiplicity`, resulting
  * in an effective strixel pitch of `pitch_um`, and pixel columns are divided by
@@ -78,7 +78,7 @@ struct GroupStrixelGeometry {
 };
 
 /**
- * Describes the routing between ASIC pixel columns and strixel rows
+ * @brief Describes the routing between ASIC pixel columns and strixel rows
  * within a remapping group.
  *
  * The modulo ordering specifies whether the pixels belonging to each
@@ -89,7 +89,7 @@ struct GroupRouting {
 };
 
 /**
- * Configuration of a single contiguous strixel group on a sensor.
+ * @brief Configuration of a single contiguous strixel group on a sensor.
  *
  * A group is characterized by
  *   - its strixel geometry,
@@ -105,7 +105,7 @@ struct GroupConfig {
 };
 
 /**
- * Complete description of a sensor.
+ * @brief Complete description of a sensor.
  *
  * A sensor consists of a single native pixel geometry together with one or
  * more remapping groups that partition the sensor into regions with different
@@ -117,7 +117,7 @@ struct SensorConfig {
 };
 
 /**
- * Describes the placement of a sensor within the module.
+ * @brief Describes the placement of a sensor within the module.
  *
  * Specifies where the sensor is located in module coordinates and how it is
  * physically oriented with respect to the module reference frame.
@@ -155,11 +155,13 @@ struct SensorModulePlacement {
  * valid source pixel.
  */
 struct StrixelGroupToPixelMap {
-    /// Strixel-to-pixel order map.
-    ///
-    /// The indices (row, col) define the local coordinate system of the
-    /// strixel group. Each value is a flattened index into the original
-    /// user-provided ROI.
+    /**
+     * @brief Strixel-to-pixel order map.
+     *
+     * The indices (row, col) define the local coordinate system of the
+     * strixel group. Each value is a flattened index into the original
+     * user-provided ROI.
+     */
     NDArray<ssize_t, 2> map;
 
     /**
