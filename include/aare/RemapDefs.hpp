@@ -131,22 +131,22 @@ struct SensorModulePlacement {
 };
 
 /**
- * Describes the remapping result plus the metadata that was used to create the
- * result.
+ * @brief Result of remapping one strixel group onto the pixel grid.
+ *
+ * The order map associates each output strixel position with a flattened
+ * pixel index in the user-provided ROI. An entry of -1 indicates that the
+ * corresponding strixel position has no valid source pixel.
  */
 struct StrixelGroupToPixelMap {
+    /// Strixel-to-pixel order map.
     NDArray<ssize_t, 2> map;
 
-    // Configuration used to generate this map
-    GroupConfig group_config;
-
-    // Sensor geometry used by the algorithm
-    SensorPixelGeometry pixel;
-
-    // Effective group ROI after bond shift and rotation
-    InclusiveROI effective_group_roi;
-
-    // Region actually covered by this map (intersection with user ROI)
+    /**
+     * @brief Effective pixel ROI covered by this map.
+     *
+     * This is the intersection of the transformed group ROI with the
+     * user-provided ROI, after applying the bond shift and sensor rotation.
+     */
     InclusiveROI effective_roi;
 };
 
