@@ -133,9 +133,6 @@ struct SensorModulePlacement {
 /**
  * Describes the remapping result plus the metadata that was used to create the
  * result.
- *
- * Specifies where the sensor is located in module coordinates and how it is
- * physically oriented with respect to the module reference frame.
  */
 struct StrixelGroupToPixelMap {
     NDArray<ssize_t, 2> map;
