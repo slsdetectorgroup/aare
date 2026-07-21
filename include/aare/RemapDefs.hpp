@@ -133,19 +133,42 @@ struct SensorModulePlacement {
 /**
  * @brief Result of remapping one strixel group onto the pixel grid.
  *
- * The order map associates each output strixel position with a flattened
- * pixel index in the user-provided ROI. An entry of -1 indicates that the
- * corresponding strixel position has no valid source pixel.
+ * The order map defines a local strixel-grid coordinate system. For each
+ * map position (row, col), map(row, col) contains the flattened pixel index
+ * of the corresponding source pixel in the user-provided input ROI.
+ *
+ * For a valid entry:
+ *
+ *   map(row, col) = dy * roi_user.width() + dx
+ *
+ * where (dx, dy) is the pixel position in the coordinate system of the
+ * original user-provided ROI.
+ *
+ * NOTE: The map coordinates (row, col) are local to this strixel group and are
+ * geometrically associated with effective_roi. The stored pixel index,
+ * however, is flattened with respect to the original user-provided ROI,
+ * not effective_roi. (I.e.: The map provides a local strixel grid mapped to the
+ * correct corresponding pixel indices in the original user grid, and
+ * effective_roi is the ROI the algorithm used for remapping.)
+ *
+ * An entry of -1 indicates that the corresponding strixel position has no
+ * valid source pixel.
  */
 struct StrixelGroupToPixelMap {
     /// Strixel-to-pixel order map.
+    ///
+    /// The indices (row, col) define the local coordinate system of the
+    /// strixel group. Each value is a flattened index into the original
+    /// user-provided ROI.
     NDArray<ssize_t, 2> map;
 
     /**
      * @brief Effective pixel ROI covered by this map.
      *
-     * This is the intersection of the transformed group ROI with the
-     * user-provided ROI, after applying the bond shift and sensor rotation.
+     * This is the transformed group ROI after applying the bond shift and
+     * sensor rotation and intersecting it with the user-provided ROI.
+     *
+     * The local coordinate system of `map` is aligned with this ROI.
      */
     InclusiveROI effective_roi;
 };
