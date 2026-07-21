@@ -34,6 +34,10 @@ void define_var_cluster_finder_bindings(py::module &m) {
                  auto noise_map_span = make_view_2d(noise_map);
                  self.set_noiseMap(noise_map_span);
              })
+        .def("set_numberOfNeighbours",
+             &VarClusterFinder<double>::set_numberOfNeighbours)
+        .def("set_empty_surroundingPixels",
+             &VarClusterFinder<double>::set_empty_surroundingPixels)
         .def("set_peripheralThresholdFactor",
              &VarClusterFinder<double>::set_peripheralThresholdFactor)
         .def("find_clusters",

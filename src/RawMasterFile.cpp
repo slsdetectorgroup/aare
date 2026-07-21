@@ -50,8 +50,8 @@ std::filesystem::path RawFileNameComponents::data_fname(size_t mod_id,
     if (m_old_scheme) {
         fmt = "{}_d{}_f{:012}_{}.raw";
     }
-    return m_base_path /
-           fmt::format(fmt, m_base_name, mod_id, file_id, m_file_index);
+    return m_base_path / fmt::format(fmt::runtime(fmt), m_base_name, mod_id,
+                                     file_id, m_file_index);
 }
 
 void RawFileNameComponents::set_old_scheme(bool old_scheme) {

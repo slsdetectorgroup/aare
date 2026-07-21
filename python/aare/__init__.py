@@ -30,12 +30,13 @@ from ._aare import corner
 
 # from ._aare import ClusterFinderMT, ClusterCollector, ClusterFileSink, ClusterVector_i
 
+from ._version import __version__
 from .ClusterFinder import ClusterFinder, ClusterCollector, ClusterFinderMT, ClusterFileSink, ClusterFile
 from .ClusterFinder import ClusterFinderCUDA, _cuda_available
 from .ClusterVector import ClusterVector
 from .Cluster import Cluster
 
-from ._aare import Gaussian, RisingScurve, FallingScurve, Pol1, Pol2
+from ._aare import Gaussian, RisingScurve, FallingScurve, Pol1, Pol2, GaussianErfcPlateau, GaussianChargeSharing, GaussianChargeSharingKb
 from ._aare import fit
 from ._aare import fit_gaus, fit_pol1, fit_scurve, fit_scurve2
 from ._aare import Interpolator
@@ -44,11 +45,13 @@ from ._aare import reduce_to_2x2, reduce_to_3x3
 
 from ._aare import apply_custom_weights
 
+from ._aare import Etai, Etad, Etaf
+
 from .CtbRawFile import CtbRawFile
 from .RawFile import RawFile
 from .ScanParameters import ScanParameters
 
-from .utils import random_pixels, random_pixel, flat_list, add_colorbar
+from .utils import random_pixels, random_pixel, flat_list, add_colorbar, Timer
 
 
 #make functions available in the top level API
@@ -59,3 +62,13 @@ from ._aare import apply_calibration, count_switching_pixels
 from ._aare import calculate_pedestal, calculate_pedestal_float, calculate_pedestal_g0, calculate_pedestal_g0_float
 
 from ._aare import VarClusterFinder
+from ._aare import (
+    PedestalTrackingPixelHistogram,
+    PixelHistogram,
+    PixelHistogram_d,
+    PixelHistogram_f,
+    PixelHistogram_u8,
+    PixelHistogram_u16,
+    PixelHistogram_u32,
+    PixelHistogram_u64,
+)

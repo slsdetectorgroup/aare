@@ -2,16 +2,21 @@
 #pragma once
 
 #include "aare/Models.hpp"
-#include <type_traits>
-
-#include "Minuit2/MnStrategy.h"
-#include "Minuit2/MnUserParameters.h"
+#include <array>
+#include <memory>
+#include <stdexcept>
+#include <string>
+#include <vector>
 
 namespace aare {
 
 template <typename Model> class FitModel {
-    ROOT::Minuit2::MnUserParameters upar_;
-    ROOT::Minuit2::MnStrategy strategy_;
+
+    // Forward declaration only — full definition lives in src/FitModelImpl.hpp
+    // and is never installed. Downstream code cannot dereference this pointer.
+    struct FitModelImpl; // stores Minuit2 user-set parameters
+
+    std::unique_ptr<FitModelImpl> impl_;
     unsigned int max_calls_;
     double tolerance_;
     bool compute_errors_;
@@ -20,14 +25,7 @@ template <typename Model> class FitModel {
     std::array<bool, Model::npar> user_start_{};
 
     /** @brief Safely resolve a parameter name to its index. */
-    unsigned int checked_index(const std::string &name) const {
-        for (std::size_t i = 0; i < npar; ++i) {
-            if (upar_.Name(i) == name)
-                return static_cast<unsigned int>(i);
-        }
-        throw std::runtime_error("FitModel: unknown parameter name '" + name +
-                                 "'");
-    }
+    unsigned int checked_index(const std::string &name) const;
 
   public:
     static constexpr std::size_t npar = Model::npar;
@@ -41,97 +39,64 @@ template <typename Model> class FitModel {
      * @param tolerance       Minuit2 EDM tolerance.
      * @param compute_errors  If true, run MnHesse after minimisation.
      */
-    FitModel(unsigned int strategy = 0, unsigned int max_calls = 100,
-             double tolerance = 0.5, bool compute_errors = false)
-        : strategy_(strategy), max_calls_(max_calls), tolerance_(tolerance),
-          compute_errors_(compute_errors) {
-        for (std::size_t i = 0; i < npar; ++i) {
-            const auto pi = Model::param_info[i];
-            const bool has_lo = std::isfinite(pi.default_lo);
-            const bool has_hi = std::isfinite(pi.default_hi);
+    explicit FitModel(unsigned int strategy = 0, unsigned int max_calls = 100,
+                      double tolerance = 0.5, bool compute_errors = false);
 
-            // Add parameters and valid bounds
-            if (has_lo && has_hi) {
-                upar_.Add(pi.name, 0.0, 1.0, pi.default_lo, pi.default_hi);
-            } else if (has_lo) {
-                upar_.Add(pi.name, 0.0, 1.0, pi.default_lo, 1e6);
-            } else {
-                upar_.Add(pi.name, 0.0, 1.0);
-            }
-        }
-    }
+    // Destructor must be defined in Fit.cpp where FitModelImpl is complete.
+    ~FitModel();
+    FitModel(const FitModel &);
+    FitModel &operator=(const FitModel &);
+    FitModel(FitModel &&) noexcept = default;
+    FitModel &operator=(FitModel &&) noexcept = default;
 
     /** @brief Set lower and upper bounds for parameter idx.*/
-    void SetParLimits(unsigned int idx, double lo, double hi) {
-        upar_.SetLimits(idx, lo, hi);
-    }
+    void SetParLimits(unsigned int idx, double lo, double hi);
 
     /**
      * @brief Fix parameter idx at value val.
      *
      * Excluded from minimisation.  Automatic estimates will not touch it.
      */
-    void FixParameter(unsigned int idx, double val) {
-        SetParameter(idx, val);
-        upar_.Fix(idx);
-        user_fixed_[idx] = true;
-    }
+    void FixParameter(unsigned int idx, double val);
 
     /** @brief Release a previously fixed parameter, re-enabling auto estimates.
      */
-    void ReleaseParameter(unsigned int idx) {
-        upar_.Release(idx);
-        user_fixed_[idx] = false;
-    }
-
-    void ReleaseParameter(const std::string &name) {
-        ReleaseParameter(checked_index(name));
-    }
+    void ReleaseParameter(unsigned int idx);
+    void ReleaseParameter(const std::string &name);
 
     /** @brief Set an explicit starting value for parameter idx.*/
-    void SetParameter(unsigned int idx, double val) {
-        upar_.SetValue(idx, val);
-        user_start_[idx] = true;
-    }
+    void SetParameter(unsigned int idx, double val);
+    void SetParameter(const std::string &name, double val);
+    void FixParameter(const std::string &name, double val);
+    void SetParLimits(const std::string &name, double lo, double hi);
+    std::string GetParName(unsigned int idx) const;
+    std::vector<std::string> GetParNames() const;
 
-    void SetParameter(const std::string &name, double val) {
-        // go through index to maintain user_start_ bookkeeping
-        SetParameter(checked_index(name), val);
-    }
-
-    void FixParameter(const std::string &name, double val) {
-        // go through index to maintain user_fixed_ bookkeeping
-        FixParameter(checked_index(name), val);
-    }
-
-    void SetParLimits(const std::string &name, double lo, double hi) {
-        SetParLimits(checked_index(name), lo, hi);
-    }
-
-    std::string GetParName(unsigned int idx) const {
-        return upar_.GetName(idx);
-    }
-
-    std::vector<std::string> GetParNames() const {
-        std::vector<std::string> names;
-        for (std::size_t i = 0; i < npar; ++i)
-            names.push_back(GetParName(i));
-        return names;
-    }
     static constexpr std::size_t GetNpar() noexcept { return npar; }
-
     void SetMaxCalls(unsigned int n) { max_calls_ = n; }
     void SetTolerance(double t) { tolerance_ = t; }
     void SetComputeErrors(bool b) { compute_errors_ = b; }
 
-    // accessors
-    const ROOT::Minuit2::MnUserParameters &upar() const { return upar_; }
-    const ROOT::Minuit2::MnStrategy &strategy() const { return strategy_; }
     unsigned int max_calls() const { return max_calls_; }
     double tolerance() const { return tolerance_; }
     bool compute_errors() const { return compute_errors_; }
     bool is_user_fixed(unsigned int idx) const { return user_fixed_[idx]; }
     bool is_user_start(unsigned int idx) const { return user_start_[idx]; }
+
+    // Returns the internal Minuit2 state. FitModelImpl is an incomplete type
+    // here; only callers that include src/FitModelImpl.hpp can dereference it.
+    FitModelImpl *impl() const { return impl_.get(); }
 };
+
+// Suppress implicit instantiation for all supported model types.
+// Definitions live in src/Fit.cpp.
+extern template class FitModel<model::Gaussian>;
+extern template class FitModel<model::GaussianErfcPlateau>;
+extern template class FitModel<model::GaussianChargeSharing>;
+extern template class FitModel<model::GaussianChargeSharingKb>;
+extern template class FitModel<model::Pol1>;
+extern template class FitModel<model::Pol2>;
+extern template class FitModel<model::RisingScurve>;
+extern template class FitModel<model::FallingScurve>;
 
 } // namespace aare

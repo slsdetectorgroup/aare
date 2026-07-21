@@ -56,16 +56,22 @@ NDArray<ssize_t, 2> GenerateMoench04AnalogPixelMap() {
 }
 
 NDArray<ssize_t, 2> GenerateMoench05PixelMap() {
-    std::array<int, 3> adc_numbers = {5, 9, 1};
-    NDArray<ssize_t, 2> order_map({160, 150});
+    constexpr size_t num_adcs = 3; // num adcs with relevant data
+    constexpr std::array<int, num_adcs> adc_numbers = Moench05::adcNumbers;
+    NDArray<ssize_t, 2> order_map({Moench05::nRows, Moench05::nCols});
+    constexpr size_t n_cols = Moench05::nCols / adc_numbers.size();
     int n_pixel = 0;
-    for (int row = 0; row < 160; row++) {
-        for (int i_col = 0; i_col < 50; i_col++) {
-            n_pixel = row * 50 + i_col;
-            for (int i_sc = 0; i_sc < 3; i_sc++) {
-                int col = 50 * i_sc + i_col;
+
+    constexpr size_t num_adcs_enabled =
+        12; // number of adcs enabled -> for 10g adcs are enabled in blocks of 4
+
+    for (size_t row = 0; row < Moench05::nRows; row++) {
+        for (size_t i_col = 0; i_col < n_cols; i_col++) {
+            n_pixel = row * n_cols + i_col;
+            for (size_t i_sc = 0; i_sc < num_adcs; i_sc++) {
+                size_t col = n_cols * i_sc + i_col;
                 int adc_nr = adc_numbers[i_sc];
-                int i_analog = n_pixel * 12 + adc_nr;
+                int i_analog = n_pixel * num_adcs_enabled + adc_nr;
 
                 // analog_frame[row * 150 + col] = analog_data[i_analog] &
                 // 0x3FFF;
@@ -195,12 +201,16 @@ NDArray<ssize_t, 2> GenerateMatterhorn10PixelMap(const size_t dynamic_range,
 
     constexpr size_t num_64_bit_packages = 4; // n_cols/64
 
+    constexpr size_t half_rows = n_rows / 2; // 128
+
     const size_t num_consecutive_pixels_in_package =
         packet_size / num_consecutive_pixels;
 
     for (size_t row = 0; row < n_rows; ++row) {
         for (size_t counter = 0; counter < n_counters; ++counter) {
             size_t col = 0;
+            size_t actual_counter =
+                row < half_rows ? counter : (n_counters - counter - 1);
             for (size_t package = 0; package < num_64_bit_packages; ++package) {
                 for (size_t consecutive_pixel_group = 0;
                      consecutive_pixel_group <
@@ -213,7 +223,7 @@ NDArray<ssize_t, 2> GenerateMatterhorn10PixelMap(const size_t dynamic_range,
                             consecutive_pixel_group * num_64_bit_packages *
                                 num_consecutive_pixels +
                             pixel + row * n_cols * n_counters +
-                            n_cols * counter;
+                            n_cols * actual_counter;
                         ++col;
                     }
                 }

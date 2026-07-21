@@ -29,7 +29,7 @@ pybind11_add_module(_aare NO_EXTRAS src/module.cpp)
 target_link_libraries(_aare PRIVATE aare_core aare_compiler_flags)
 target_include_directories(
   _aare SYSTEM
-  PRIVATE $<TARGET_PROPERTY:Minuit2::Minuit2,INTERFACE_INCLUDE_DIRECTORIES>)
+  PRIVATE $<TARGET_PROPERTY:aare::Minuit2,INTERFACE_INCLUDE_DIRECTORIES>)
 
 set_target_properties(
   _aare PROPERTIES LIBRARY_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/aare
@@ -63,6 +63,7 @@ endif()
 # List of python files to be copied to the build directory
 set(PYTHON_FILES
     aare/__init__.py
+    aare/_version.py
     aare/CtbRawFile.py
     aare/ClusterFinder.py
     aare/ClusterVector.py
@@ -90,6 +91,8 @@ foreach(FILE ${PYTHON_EXAMPLES})
   message(STATUS "Copying ${FILE} to ${CMAKE_BINARY_DIR}/${FILE}")
 endforeach(FILE ${PYTHON_EXAMPLES})
 
+configure_file(${CMAKE_CURRENT_SOURCE_DIR}/../VERSION
+               ${CMAKE_BINARY_DIR}/aare/VERSION)
 if(AARE_INSTALL_PYTHONEXT)
   set(AARE_PY_INSTALL_TARGETS _aare)
   if(AARE_CUDA)
@@ -103,6 +106,10 @@ if(AARE_INSTALL_PYTHONEXT)
 
   install(
     FILES ${PYTHON_FILES}
+    DESTINATION aare
+    COMPONENT python)
+  install(
+    FILES ../VERSION
     DESTINATION aare
     COMPONENT python)
 endif()

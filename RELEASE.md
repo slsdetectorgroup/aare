@@ -1,17 +1,25 @@
 # Release notes
 
-## HEAD 
+## 2026.7.2
 
 
 ### New Features:
 
 - Added a new Minuit2-based fitting framework for ``Gaussian``, ``RisingScurve``, ``FallingScurve``, ``Pol1`` and ``Pol2`` models.
 - setter and getter for nSigma for ClusterFinder ``aare.ClusterFinder().nSigma = 2``, ``aare.ClusterFinderMT().set_nSigma(2)`` 
-- mask opeartor for ClusterVector ``masked_clustervector = aare.ClusterVector()(mask)`` 
+- mask opeartor for ClusterVector ``masked_clustervector = aare.ClusterVector()(mask)``
+- passing pre computed eta values to ``aare.Interpolator.interpolate`` alongside clusters
+- Added ``PixelHistogram`` and ``PedestalTrackingPixelHistogram`` 
+- ``aare.transfrom.Matterhorn10Transform`` handles counter artefact in chip. Mind that enabling only one counter or three counters or enabling the wromg two counters e.g. 0,1 will still lead to erreneous data. 
+- ``aare.transfrom.Matterhorn10Transform`` reshapes data such that first dimension is number of counters
+- Added support for len() for files. Returns the number of frames
+- Added support for direct subtraction of Pedestal from numpy array
 
 ### Bugfixes:
 
 - Fixed ``split_task(first, last, n_threads)`` so task ranges now correctly respect the ``first`` offset. Previously, non-zero starting indices could generate incorrect subranges.
+- Fixed overflow issue causing failed allocations for NDArrays abouve ~2GB
+- Fixed libfmt failures due to consteval when building with C++20
 
 
 

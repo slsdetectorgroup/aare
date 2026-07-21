@@ -135,14 +135,6 @@ class Chi2Model1DGrad : public ROOT::Minuit2::FCNGradientBase {
     bool weighted_;
 };
 
-// ── Convenient aliases ──────────────────────────────────────────────
-
-using Chi2Gaussian = Chi2Model1DGrad<aare::model::Gaussian>;
-using Chi2RisingScurve = Chi2Model1DGrad<aare::model::RisingScurve>;
-using Chi2FallingScurve = Chi2Model1DGrad<aare::model::FallingScurve>;
-using Chi2Pol1 = Chi2Model1DGrad<aare::model::Pol1>;
-using Chi2Pol2 = Chi2Model1DGrad<aare::model::Pol2>;
-
 } // namespace func
 
 } // namespace aare

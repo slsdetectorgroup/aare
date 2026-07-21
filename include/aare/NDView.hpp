@@ -48,7 +48,7 @@ Shape<Ndim - 1> drop_first_dim(const Shape<Ndim> &shape) {
  * @return The number of elements in and NDArray/NDView of that shape.
  */
 template <size_t Ndim> size_t num_elements(const Shape<Ndim> &shape) {
-    return std::accumulate(shape.begin(), shape.end(), 1,
+    return std::accumulate(shape.begin(), shape.end(), size_t{1},
                            std::multiplies<size_t>());
 }
 
@@ -90,8 +90,7 @@ class NDView : public ArrayExpr<NDView<T, Ndim>, Ndim> {
 
     NDView(T *buffer, std::array<ssize_t, Ndim> shape)
         : buffer_(buffer), strides_(c_strides<Ndim>(shape)), shape_(shape),
-          size_(std::accumulate(std::begin(shape), std::end(shape), 1,
-                                std::multiplies<>())) {}
+          size_(num_elements(shape)) {}
 
     template <typename... Ix>
     std::enable_if_t<sizeof...(Ix) == Ndim, T &> operator()(Ix... index) {

@@ -45,6 +45,8 @@ template <typename SUM_TYPE = double> class Pedestal {
 
     NDArray<SUM_TYPE, 2> mean() { return m_mean; }
 
+    const NDView<SUM_TYPE, 2> view() const { return m_mean.view(); }
+
     SUM_TYPE mean(const uint32_t row, const uint32_t col) const {
         return m_mean(row, col);
     }
@@ -106,6 +108,32 @@ template <typename SUM_TYPE = double> class Pedestal {
         for (size_t row = 0; row < m_rows; row++) {
             for (size_t col = 0; col < m_cols; col++) {
                 push<T>(row, col, frame(row, col));
+            }
+        }
+    }
+
+    template <typename T>
+    void push_with_threshold(const NDView<T, 2> frame,
+                             const NDView<SUM_TYPE, 2> threshold) {
+        assert(frame.size() == m_rows * m_cols);
+
+        // TODO! move away from m_rows, m_cols
+        if (frame.shape() != std::array<ssize_t, 2>{m_rows, m_cols}) {
+            throw std::runtime_error(
+                "Frame shape does not match pedestal shape");
+        }
+
+        if (threshold.shape() != std::array<ssize_t, 2>{m_rows, m_cols}) {
+            throw std::runtime_error(
+                "Threshold shape does not match pedestal shape");
+        }
+
+        for (size_t row = 0; row < m_rows; row++) {
+            for (size_t col = 0; col < m_cols; col++) {
+                if (fabs(frame(row, col) - mean(row, col)) <
+                    threshold(row, col)) {
+                    push<T>(row, col, frame(row, col));
+                }
             }
         }
     }
