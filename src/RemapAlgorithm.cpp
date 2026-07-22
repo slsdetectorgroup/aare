@@ -1,4 +1,5 @@
 #include "aare/RemapAlgorithm.hpp"
+#include <aare/logger.hpp>
 
 #include <algorithm>
 
@@ -29,141 +30,189 @@ inline InclusiveROI shift_rotate_roi(InclusiveROI roi,
     return roi;
 }
 
+/**
+ * @brief Build the strixel-to-pixel order map for one strixel group.
+ *
+ * The returned map describes how pixels from the user-provided ROI (normally
+ * rx_roi from input file) are rearranged into the local strixel coordinate
+ * system of the group.
+ *
+ * Coordinate systems:
+ *
+ * - @p roi_user is expressed in full-module coordinates.
+ * - @p group_config.placement_on_sensor is expressed in the sensor-local
+ *   coordinate system before applying the bond shift and sensor rotation.
+ * - The group ROI is transformed by applying the bond shift first and the
+ *   sensor rotation second.
+ * - The returned @c effective_roi is the intersection of the user ROI
+ *   (rebased into sensor-local coordinates) and the transformed group ROI.
+ * - The returned @c map uses its own local strixel coordinate system.
+ * - Each valid map entry contains a flattened index into the ORIGINAL
+ *   user ROI, not into @c effective_roi.
+ *
+ * Thus:
+ *
+ *   map(strixel_row, strixel_col) = pixel_index_in_user_roi
+ *
+ * Invalid or unmapped strixel positions are initialized to -1.
+ *
+ * The strixel mapping is determined by the group's multiplicity and
+ * modulo ordering. A reversed modulo ordering reverses the ordering
+ * within each multiplicity group; it does not reverse the complete
+ * strixel column ordering.
+ *
+ * @param group_config Configuration of the strixel group to be mapped.
+ * @param pixel Native pixel geometry of the sensor to which the group
+ *              is connected. Used when transforming the group ROI.
+ * @param placement Location and orientation of the sensor on the module.
+ * @param roi_user User-requested ROI in full-module coordinates.
+ * @param bond_shift Physical bonding shift, applied before the rotation.
+ *
+ * @return A @c StrixelGroupToPixelMap containing:
+ *         - the generated strixel-to-user-pixel order map;
+ *         - the effective pixel ROI covered by the map.
+ *
+ * @throws std::logic_error If the group ROI width is not divisible by
+ *                          the strixel multiplicity.
+ */
 defs::StrixelGroupToPixelMap
 strixel_to_pixel_map(defs::GroupConfig const &group_config,
                      defs::SensorPixelGeometry const &pixel,
                      defs::SensorModulePlacement const &placement,
                      InclusiveROI const &roi_user, defs::BondShift bond_shift) {
 
-    int multiplicity = group_config.strixel.multiplicity;
-    double pitch = group_config.strixel.pitch_um;
-    // defs::Rotation rot = placement.rotation;
+    const int multiplicity = group_config.strixel.multiplicity;
 
-    // Helper to make sure that we work with a correct number of strixel columns
-    // (i.e. that we do not map pixel columns if the ncols in ASIC pixel
-    // coordinates is not a multiple of strixel ncols)
-    if (group_config.placement_on_sensor.width() % multiplicity != 0)
-        throw std::logic_error("Group ROI width not divisible by multiplicity");
+    // The group must contain an integer number of strixel columns.
+    const auto group_width = group_config.placement_on_sensor.width();
 
-    const int tot_ncols_strx =
-        group_config.placement_on_sensor.width() / multiplicity;
+    if (group_width % multiplicity != 0)
+        throw std::logic_error(
+            "Group ROI width must be divisible by strixel multiplicity");
 
-    // Define mod ordering
+    const int total_strixel_columns = group_width / multiplicity;
+
+    // Determine the ordering of strixels within each multiplicity group.
     std::vector<int> mods(multiplicity);
     std::iota(mods.begin(), mods.end(), 0);
 
     if (group_config.routing.mod_order == defs::ModuloOrdering::Reverse)
         std::reverse(mods.begin(), mods.end());
 
-    // -- 1) Transform user roi (rx_roi) into sensor-local coordinates
-    InclusiveROI roi_user_local =
+    // -- 1) Rebase the user ROI (rx_roi) into sensor-local coordinates
+    const InclusiveROI roi_user_local =
         inclusiveroi::geom::rebaseROI(roi_user, placement.placement_on_module);
-    std::cout << "Transformed user ROI: " << roi_user_local << std::endl;
+    LOG(logDEBUG)
+        << "aare::remap::algo::strixel_to_pixel_map: Transformed user ROI: "
+        << roi_user_local << std::endl;
 
-    // DEBUG
-    std::cout << "DEBUG: Group ROI before transformation (as in global config)"
-              << group_config.placement_on_sensor << '\n';
+    LOG(logDEBUG) << "aare::remap::algo::strixel_to_pixel_map: Group ROI "
+                     "before transformation (as in global config)"
+                  << group_config.placement_on_sensor << '\n';
 
-    // -- 2) Apply transforms (if necessary)
-    // -- 2a) bond_shift
-    // -- 2b) rotation
-    InclusiveROI roi_group =
+    // -- 2) Apply the physical bond shift first, sensor rotation second.
+    const InclusiveROI roi_group =
         shift_rotate_roi(group_config.placement_on_sensor, pixel, bond_shift,
                          placement.rotation);
 
-    // DEBUG
-    std::cout
-        << "DEBUG: Group ROI after transformation (as in local transformation) "
-        << roi_group << '\n';
+    LOG(logDEBUG) << "aare::remap::algo::strixel_to_pixel_map: Group ROI after "
+                     "transformation (as in local transformation) "
+                  << roi_group << '\n';
 
     // -- 3) Compute effective ROI = intersection( roi_user, roi_group )
-    InclusiveROI eff = inclusiveroi::geom::intersect(roi_user_local, roi_group);
-    if (eff.xmax < eff.xmin || eff.ymax < eff.ymin) {
+    // Only pixels covered by both the user ROI and the transformed group
+    // contribute to this map.
+    const InclusiveROI effective_roi =
+        inclusiveroi::geom::intersect(roi_user_local, roi_group);
+
+    // If ROIs don't intersect, return empty
+    if (effective_roi.xmax < effective_roi.xmin ||
+        effective_roi.ymax < effective_roi.ymin) {
         return {{}, InclusiveROI::emptyROI()}; // empty
     }
 
-    // DEBUG
-    std::cout << "DEBUG: Result of intersecting ROIs " << eff << '\n';
+    LOG(logDEBUG) << "aare::remap::algo::strixel_to_pixel_map: Result of "
+                     "intersecting ROIs "
+                  << effective_roi << '\n';
 
-    //-- 4) Determine min/max row/col of strixel grid before allocating
-    //      (This may vary from the native grid of the group because of ROI
-    //      intersection.)
-    int min_row_strx = std::numeric_limits<int>::max();
-    int max_row_strx = std::numeric_limits<int>::min();
-    int min_col_strx = std::numeric_limits<int>::max();
-    int max_col_strx = std::numeric_limits<int>::min();
+    /******************************
+     * Core of the algorithm
+     *
+     * Local lambda:
+     * Convert a sensor-local pixel coordinate into the corresponding
+     * local strixel coordinate.
+     ******************************/
+    auto pixel_to_strixel = [&](int x, int y) {
+        const int dx = x - roi_group.xmin;
+        const int dy = y - roi_group.ymin;
 
-    for (int y = eff.ymin; y <= eff.ymax; ++y) {
-        for (int x = eff.xmin; x <= eff.xmax; ++x) {
+        const int mod = dx % multiplicity;
+        const int col = dx / multiplicity;
+        const int row = dy * multiplicity + mods[mod];
 
-            const int dx = x - roi_group.xmin;
-            const int dy = (y - roi_group.ymin);
+        return std::pair<int, int>{row, col};
+    };
 
-            const int m = dx % multiplicity;
-            const int col_strx = dx / multiplicity;
-            const int row_strx = dy * multiplicity + mods[m];
+    //-- 4) Determine the range of strixel coordinates touched by the effective
+    // ROI.
+    int min_row = std::numeric_limits<int>::max();
+    int max_row = std::numeric_limits<int>::min();
+    int min_col = std::numeric_limits<int>::max();
+    int max_col = std::numeric_limits<int>::min();
 
-            if (col_strx < 0 || row_strx < 0)
+    for (int y = effective_roi.ymin; y <= effective_roi.ymax; ++y) {
+        for (int x = effective_roi.xmin; x <= effective_roi.xmax; ++x) {
+
+            auto [row, col] = pixel_to_strixel(x, y);
+
+            if (col >= total_strixel_columns)
                 continue;
-            if (col_strx >= tot_ncols_strx)
-                continue;
 
-            min_row_strx = std::min(min_row_strx, row_strx);
-            max_row_strx = std::max(max_row_strx, row_strx);
-            min_col_strx = std::min(min_col_strx, col_strx);
-            max_col_strx = std::max(max_col_strx, col_strx);
+            min_row = std::min(min_row, row);
+            max_row = std::max(max_row, row);
+            min_col = std::min(min_col, col);
+            max_col = std::max(max_col, col);
         }
     }
 
-    if (min_row_strx > max_row_strx) {
-        return {{}, eff}; // nothing mapped
+    if (min_row > max_row) {
+        return {{}, effective_roi}; // nothin            if (col < min_col || row < min_row)
+                continue;g mapped
     }
 
     // Now from the found bounds of the strixel grid, we define the space to
     // allocate for the order map
-    const int nrows_strx = max_row_strx - min_row_strx + 1;
-    const int ncols_strx = max_col_strx - min_col_strx + 1;
+    const int nrows = max_row - min_row + 1;
+    const int ncols = max_col - min_col + 1;
 
     // And allocate
-    aare::NDArray<ssize_t, 2> map({nrows_strx, ncols_strx}, -1);
+    aare::NDArray<ssize_t, 2> map({nrows, ncols}, -1);
 
-    // DEBUG
-    std::cout << "DEBUG: Resulting strixel grid: (" << map.shape(0) << ", "
-              << map.shape(1) << ")" << '\n';
+    LOG(logDEBUG)
+        << "aare::remap::algo::strixel_to_pixel_map: Resulting strixel grid: ("
+        << map.shape(0) << ", " << map.shape(1) << ")" << '\n';
 
-    // -- 5) For each ASIC pixel in eff ROI, compute remapped (row,col) in group
-    //       local coordinates
-    for (int y = eff.ymin; y <= eff.ymax; ++y) {
-        for (int x = eff.xmin; x <= eff.xmax; ++x) {
+    // -- 5) Populate the strixel-to-user-pixel map.
+    for (int y = effective_roi.ymin; y <= effective_roi.ymax; ++y) {
+        for (int x = effective_roi.xmin; x <= effective_roi.xmax; ++x) {
 
-            const int dx = x - roi_group.xmin;
-            const int dy = (y - roi_group.ymin);
+            auto [row, col] = pixel_to_strixel(x, y);
 
-            const int m = dx % multiplicity; // since eff is intersected with
-                                             // roi_group, dx >= 0, so no issue
-            const int col_strx = dx / multiplicity;
-            const int row_strx = dy * multiplicity + mods[m];
+            const int map_col = col - min_col;
+            const int map_row = row - min_row;
 
-            if (col_strx < min_col_strx || row_strx < min_row_strx)
-                continue;
+            // index into !!!ORIGINAL USER ROI GRID!!! (use local
+            // coordinates)
+            const ssize_t user_pixel =
+                static_cast<ssize_t>(y - roi_user_local.ymin) *
+                    roi_user_local.width() +
+                (x - roi_user_local.xmin);
 
-            const int cstrx = col_strx - min_col_strx;
-            const int rstrx = row_strx - min_row_strx;
-
-            if (rstrx >= 0 && rstrx < nrows_strx && cstrx >= 0 &&
-                cstrx < ncols_strx) {
-                // index into !!!ORIGINAL USER ROI GRID!!! (use local
-                // coordinates)
-                const int user_pixel =
-                    (y - roi_user_local.ymin) * roi_user_local.width() +
-                    (x - roi_user_local.xmin);
-
-                map(rstrx, cstrx) = user_pixel;
-            }
+            map(map_row, map_col) = user_pixel;
         }
     }
 
-    return {map, eff};
+    return {std::move(map), effective_roi};
 };
 
 std::vector<defs::StrixelGroupToPixelMap>
