@@ -68,8 +68,15 @@ inline constexpr defs::GroupConfig SingleChipMP_iLGAD_P18{
  * Number of strixel rows: 476
  ********************************/
 
+// Complete SensorConfig with all groups
+inline const defs::SensorConfig SingleChipMP_iLGAD{
+    // NOTE: Vector cannot be constexpr
+    .pixel = SingleChipMP_iLGAD_pix,
+    .group_configs = {SingleChipMP_iLGAD_P25, SingleChipMP_iLGAD_P15,
+                      SingleChipMP_iLGAD_P18}};
+
 /************************************
- * Single chip, multi-pitch, TEW
+ * Single chip, multi-pitch, Thin Entrance Window (TEW)
  ************************************/
 inline constexpr defs::SensorPixelGeometry SingleChipMP_TEW_pix{
     .num_pix_x = 256, .num_pix_y = 256, .guardring = {.x = 0, .y = 0}};
@@ -109,11 +116,20 @@ inline constexpr defs::GroupConfig SingleChipMP_TEW_P18{
  * Number of strixel rows: 512
  ********************************/
 
+// Complete SensorConfig with all groups
+inline const defs::SensorConfig SingleChipMP_TEW{
+    // NOTE: Vector cannot be constexpr
+    .pixel = SingleChipMP_TEW_pix,
+    .group_configs = {SingleChipMP_TEW_P25, SingleChipMP_TEW_P15,
+                      SingleChipMP_TEW_P18}};
+
 /************************************
  * Quad, 25 um, iLGAD
  ************************************/
 inline constexpr defs::SensorPixelGeometry Quad_iLGAD_pix{
     .num_pix_x = 512, .num_pix_y = 512, .guardring = {.x = 9, .y = 9}};
+
+inline constexpr int Quad_iLGAD_strixel_gap_rows = 12;
 
 inline constexpr defs::GroupConfig Quad_iLGAD_bottomhalf{
     .strixel = StrxP25,
@@ -126,10 +142,15 @@ inline constexpr defs::GroupConfig Quad_iLGAD_bottomhalf{
 inline constexpr defs::GroupConfig Quad_iLGAD_tophalf{
     .strixel = StrxP25,
     .routing = {defs::ModuloOrdering::Reverse},
-    // Adapt placement to be correct!
     .placement_on_sensor = {
         Quad_iLGAD_pix.guardring.x + 2,                              // 11
         Quad_iLGAD_pix.num_pix_x - Quad_iLGAD_pix.guardring.x - 1,   // 502
         Quad_iLGAD_pix.num_pix_y / 2 + 1,                            // 257
         Quad_iLGAD_pix.num_pix_y - Quad_iLGAD_pix.guardring.y - 1}}; // 502
+
+// Complete SensorConfig with all groups
+inline const defs::SensorConfig Quad_iLGAD{
+    // NOTE: Vector cannot be constexpr
+    .pixel = Quad_iLGAD_pix,
+    .group_configs = {Quad_iLGAD_bottomhalf, Quad_iLGAD_tophalf}};
 } // namespace aare::remap::config::jungfrau

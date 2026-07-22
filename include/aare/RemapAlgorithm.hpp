@@ -4,23 +4,6 @@
 
 namespace aare::remap::algo {
 
-constexpr defs::Rotation flip(defs::Rotation r) noexcept {
-    switch (r) {
-    case defs::Rotation::Identity:
-        return defs::Rotation::Rotate180;
-    case defs::Rotation::Rotate180:
-        return defs::Rotation::Identity;
-    }
-
-    assert(false && "Invalid Rotation passed to flip");
-    return defs::Rotation::Identity; // Unreachable; satisfies compiler
-}
-
-// Is it better to pass defs::GroupConfig const& and return a copy?
-void apply_rotation_shift(defs::GroupConfig &,
-                          defs::SensorPixelGeometry const &, defs::BondShift,
-                          defs::Rotation);
-
 defs::StrixelGroupToPixelMap strixel_to_pixel_map(
     defs::GroupConfig const &, defs::SensorPixelGeometry const &,
     defs::SensorModulePlacement const &, InclusiveROI const &user_roi,
@@ -30,10 +13,6 @@ std::vector<defs::StrixelGroupToPixelMap>
 strixel_to_pixel_maps(defs::SensorConfig const &, defs::SensorModulePlacement const &,
                       InclusiveROI const &user_roi,
                       defs::BondShift bond_shift = {0, 0});
-
-defs::StrixelGroupToPixelMap
-combine_maps(std::vector<defs::StrixelGroupToPixelMap> const &,
-             std::vector<int> const &);
 
 /**
  *  Public API:
