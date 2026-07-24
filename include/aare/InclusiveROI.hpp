@@ -114,7 +114,7 @@ static inline InclusiveROI mirrorXY(InclusiveROI r, ssize_t width,
     return {mirrorX(mirrorY(r, height), width)};
 }
 
-// intersection / union
+// intersection
 static inline InclusiveROI intersect(InclusiveROI const &a,
                                      InclusiveROI const &b) {
     InclusiveROI r;
@@ -131,6 +131,7 @@ static inline InclusiveROI intersect(InclusiveROI const &a,
     return r;
 }
 
+// union
 static inline InclusiveROI unite(InclusiveROI const &a, InclusiveROI const &b) {
     // Horizontal union: same y-range
     if (a.ymin == b.ymin && a.ymax == b.ymax) {
