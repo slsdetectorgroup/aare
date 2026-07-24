@@ -128,7 +128,7 @@ strixel_to_pixel_map(defs::GroupConfig const &group_config,
     // If ROIs don't intersect, return empty
     if (effective_roi.xmax < effective_roi.xmin ||
         effective_roi.ymax < effective_roi.ymin) {
-        return {{}, InclusiveROI::emptyROI()}; // empty
+        return {{}, InclusiveROI::emptyROI()};
     }
 
     LOG(logDEBUG) << "aare::remap::algo::strixel_to_pixel_map: Result of "
@@ -141,6 +141,7 @@ strixel_to_pixel_map(defs::GroupConfig const &group_config,
      * Local lambda:
      * Convert a sensor-local pixel coordinate into the corresponding
      * local strixel coordinate.
+     * (Could be a separate function if preferred.)
      ******************************/
     auto pixel_to_strixel = [&](int x, int y) {
         const int dx = x - roi_group.xmin;
@@ -176,8 +177,7 @@ strixel_to_pixel_map(defs::GroupConfig const &group_config,
     }
 
     if (min_row > max_row) {
-        return {{}, effective_roi}; // nothin            if (col < min_col || row < min_row)
-                continue;g mapped
+        return {{}, effective_roi}; // nothing mapped            
     }
 
     // Now from the found bounds of the strixel grid, we define the space to
@@ -212,7 +212,7 @@ strixel_to_pixel_map(defs::GroupConfig const &group_config,
         }
     }
 
-    return {std::move(map), effective_roi};
+    return {map, effective_roi};
 };
 
 std::vector<defs::StrixelGroupToPixelMap>
