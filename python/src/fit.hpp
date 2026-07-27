@@ -21,10 +21,10 @@ fit_dispatch(const aare::FitModel<Model> &model,
 
 template <typename Model> void bind_fit_model(py::module &m, const char *name) {
     using FM = aare::FitModel<Model>;
-    py::class_<FM>(m, name)
-        .def(py::init<unsigned int, unsigned int, double, bool>(),
-             py::arg("strategy") = 0, py::arg("max_calls") = 100,
-             py::arg("tolerance") = 0.5, py::arg("compute_errors") = false)
+    auto cls = py::class_<FM>(m, name);
+    cls.def(py::init<unsigned int, unsigned int, double, bool>(),
+            py::arg("strategy") = 0, py::arg("max_calls") = 100,
+            py::arg("tolerance") = 0.5, py::arg("compute_errors") = false)
         .def("SetParLimits",
              py::overload_cast<unsigned int, double, double>(&FM::SetParLimits),
              py::arg("idx"), py::arg("lo"), py::arg("hi"))
@@ -101,6 +101,45 @@ template <typename Model> void bind_fit_model(py::module &m, const char *name) {
             )doc",
             py::arg("x"), py::arg("y"), py::arg("y_err") = py::none(),
             py::arg("n_threads") = 4);
+
+    if constexpr (std::is_same_v<Model, model::GaussianChargeSharing> or
+                  std::is_same_v<Model, model::GaussianChargeSharingKb>) {
+        cls.def(
+            "estimate_par",
+            [](const FM & /*self*/,
+               py::array_t<double, py::array::c_style | py::array::forcecast> x,
+               py::array_t<double, py::array::c_style | py::array::forcecast> y,
+               const bool elastic_scattering) {
+                auto x_view = make_view_1d(x);
+                auto y_view = make_view_1d(y);
+
+                return Model::estimate_par(x_view, y_view, elastic_scattering);
+            },
+            py::arg("x"), py::arg("y"), py::arg("elastic_scattering") = true,
+            R"doc(
+                 Estimate starting parameters from 1D data.
+                    Parameters
+                    ----------
+                    elastic_scattering : bool
+                        If true, take into account elastic scattering
+                        effects.
+                 )doc");
+    } else {
+        cls.def(
+            "estimate_par",
+            [](const FM & /*self*/,
+               py::array_t<double, py::array::c_style | py::array::forcecast> x,
+               py::array_t<double, py::array::c_style | py::array::forcecast>
+                   y) {
+                auto x_view = make_view_1d(x);
+                auto y_view = make_view_1d(y);
+
+                return Model::estimate_par(x_view, y_view);
+            },
+            py::arg("x"), py::arg("y"), R"doc(
+             Estimate starting parameters from 1D data.
+             )doc");
+    }
 }
 
 template <typename Model>

@@ -600,8 +600,17 @@ struct GaussianChargeSharing {
         return par[3] > 0.0;
     }
 
-    static std::array<double, npar> estimate_par(NDView<double, 1> x,
-                                                 NDView<double, 1> y) {
+    /**
+     * @brief Data-driven initial parameter estimates.
+     * @param x Independent variable values
+     * @param y Dependent variable values
+     * @param elastic_scattering If true, take into account elastic scattering
+     * effects
+     * @return Initial parameter estimates
+     */
+    static std::array<double, npar>
+    estimate_par(NDView<double, 1> x, NDView<double, 1> y,
+                 const bool elastic_scattering = true) {
         const ssize_t n = y.size();
 
         const auto max_it = std::max_element(y.begin(), y.end());
@@ -609,7 +618,9 @@ struct GaussianChargeSharing {
 
         const double x_range = std::max(x[n - 1] - x[0], 1e-9);
 
-        const ssize_t tail = std::min<ssize_t>(std::max<ssize_t>(n / 10, 2), n);
+        const ssize_t tail = std::min<ssize_t>(
+            std::max<ssize_t>(n / 10, 2),
+            n); // TODO: why hardcoded to 10 % - doesnt it depend on x range??
 
         double left_mean = 0.0;
         double right_mean = 0.0;
@@ -618,18 +629,22 @@ struct GaussianChargeSharing {
             left_mean += y[i];
         left_mean /= tail;
 
-        for (ssize_t i = n - tail; i < n; ++i)
-            right_mean += y[i];
-        right_mean /= tail;
+        if (elastic_scattering) {
+            for (ssize_t i = n - tail; i < n; ++i)
+                right_mean += y[i];
+            right_mean /= tail;
+        }
 
         const double p0 = right_mean;
         const double p1 = 0.0;
-        const double mu = x[i_max];
 
-        const double N = std::max(*max_it - right_mean, 1e-9);
+        const double mu = x[i_max];
+        const double N =
+            std::max(*max_it - right_mean, 1e-9); // amplitude K_\alpha
 
         // Left plateau excess is roughly N*C.
-        const double C = (left_mean - right_mean) / N;
+        const double C =
+            (left_mean - right_mean) / N; // charge-sharing amplitude ratio
 
         double sigma = 0.1 * x_range;
         const double half = right_mean + 0.5 * ((*max_it) - right_mean);
@@ -811,9 +826,16 @@ struct GaussianChargeSharingKb {
         return par[3] > 0.0;
     }
 
-    static std::array<double, npar> estimate_par(NDView<double, 1> x,
-                                                 NDView<double, 1> y) {
-        const auto base = GaussianChargeSharing::estimate_par(x, y);
+    /**
+     * @brief Data-driven initial parameter estimates.
+     * @param elastic_scattering If true, take into account elastic scattering
+     * effects
+     */
+    static std::array<double, npar>
+    estimate_par(NDView<double, 1> x, NDView<double, 1> y,
+                 const bool elastic_scattering = true) {
+        const auto base =
+            GaussianChargeSharing::estimate_par(x, y, elastic_scattering);
 
         const double p0 = base[0];
         const double p1 = base[1];
