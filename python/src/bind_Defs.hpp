@@ -27,4 +27,8 @@ void define_defs_bindings(py::module &m) {
     moench05.attr("nRows") = Moench05::nRows;
     moench05.attr("nCols") = Moench05::nCols;
     moench05.attr("adcNumbers") = Moench05::adcNumbers;
+
+    auto jungfrau = py::class_<Jungfrau>(m, "Jungfrau");
+    jungfrau.attr("nRows") = Jungfrau::nRows;
+    jungfrau.attr("nCols") = Jungfrau::nCols;
 }

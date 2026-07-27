@@ -149,6 +149,11 @@ struct Moench05 {
     constexpr static std::array<int, 3> adcNumbers = {5, 9, 1};
 };
 
+struct Jungfrau {
+    constexpr static size_t nRows = 512;
+    constexpr static size_t nCols = 1024;
+};
+
 enum ReadoutMode : uint8_t {
     ANALOG_ONLY = 0,
     DIGITAL_ONLY = 1,
