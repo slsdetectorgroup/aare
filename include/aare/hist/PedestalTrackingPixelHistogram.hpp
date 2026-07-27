@@ -107,6 +107,7 @@ class PedestalTrackingPixelHistogram {
     void push_pedestal_no_update(const NDView<FrameType, 2> &frame);
     void update_mean();
     NDArray<AxisType, 2> pedestal_mean() const;
+    NDArray<AxisType, 2> pedestal_std() const;
 
     void fill_async(NDArray<FrameType, 2> &&image);
 

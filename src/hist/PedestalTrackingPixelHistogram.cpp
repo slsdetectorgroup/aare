@@ -386,6 +386,37 @@ PedestalTrackingPixelHistogram::pedestal_mean() const {
     return data;
 }
 
+NDArray<PedestalTrackingPixelHistogram::AxisType, 2>
+PedestalTrackingPixelHistogram::pedestal_std() const {
+    // Drain in-flight async fills and serialise with all other fan-outs
+    // (Fill / PushPedestal / UpdateMean). m_std is overwritten wholesale
+    // by Pedestal::update_mean, so without the lock we could read torn
+    // rows mid-update.
+    flush();
+    std::lock_guard<std::mutex> lock(fill_mutex_);
+
+    NDArray<AxisType, 2> data(
+        {static_cast<ssize_t>(rows_), static_cast<ssize_t>(cols_)});
+
+    // Each partial pedestal stores its slice of m_std in C-order
+    // [local_rows x cols], identical in layout to the corresponding
+    // [first_row .. first_row + local_rows)[col] slice of `data`, so
+    // we can copy each shard with a single memcpy.
+    const size_t row_stride = static_cast<size_t>(cols_);
+    for (int t = 0; t < n_threads_; ++t) {
+        const auto first_row = static_cast<size_t>(row_start(t));
+        const auto local_rows = static_cast<size_t>(row_count(t));
+        if (local_rows == 0)
+            continue;
+
+        const auto view = partial_std_[t].view();
+        std::memcpy(data.data() + first_row * row_stride, view.data(),
+                    local_rows * row_stride * sizeof(AxisType));
+    }
+
+    return data;
+}
+
 void PedestalTrackingPixelHistogram::fill_with_threshold_batch_(
     std::vector<NDArray<FrameType, 2>> &batch) {
     // Called only by the coordinator thread on images already shape-checked

@@ -120,6 +120,30 @@ void define_pedestal_tracking_pixel_histogram_bindings(py::module &m) {
              )")
 
         .def(
+            "pedestal_std",
+            [](const PedestalTrackingPixelHistogram &self) {
+                // pedestal_std() flushes + locks + memcpys; do all of
+                // that without the GIL, only reacquire to wrap into a
+                // numpy array.
+                NDArray<PedestalTrackingPixelHistogram::AxisType, 2> *ptr =
+                    nullptr;
+                {
+                    py::gil_scoped_release release;
+                    ptr = new NDArray<PedestalTrackingPixelHistogram::AxisType,
+                                      2>(self.pedestal_std());
+                }
+                return return_image_data(ptr);
+            },
+            R"(
+             Snapshot the per-pixel pedestal std stitched together
+             from all shards.   
+
+             Returns:
+                 A 2D numpy array (rows x cols, dtype: float64)
+                 containing the current cached pedestal std.
+             )")
+
+        .def(
             "fill_async",
             [](PedestalTrackingPixelHistogram &self,
                py::array_t<PedestalTrackingPixelHistogram::FrameType, 0>
