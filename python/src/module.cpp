@@ -18,7 +18,6 @@
 #include "bind_PixelMap.hpp"
 #include "bind_RawFile.hpp"
 #include "bind_calibration.hpp"
-#include "utils/bind_SparseMask.hpp"
 
 // TODO! migrate the other names
 #include "ctb_raw_file.hpp"
@@ -79,7 +78,6 @@ PYBIND11_MODULE(_aare, m) {
     define_fit_bindings(m);
     define_interpolation_bindings(m);
     define_jungfrau_data_file_io_bindings(m);
-    define_sparse_mask_bindings(m);
 
     bind_calibration(m);
 

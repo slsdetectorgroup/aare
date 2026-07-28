@@ -68,6 +68,4 @@ bool SparseMask::is_masked(const size_t row, const size_t col) const {
     }
 }
 
-size_t SparseMask::num_bad_channels() const { return innerindices_.size(); }
-
 } // namespace aare
