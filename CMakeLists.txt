@@ -361,8 +361,7 @@ set(PUBLICHEADERS
     include/aare/VarClusterFinder.hpp
     include/aare/utils/task.hpp
     include/aare/utils/ifstream_helpers.hpp
-    include/aare/utils/math_helpers.hpp
-    include/aare/utils/SparseMask.hpp)
+    include/aare/utils/math_helpers.hpp)
 
 set(SourceFiles
     ${CMAKE_CURRENT_SOURCE_DIR}/src/calibration.cpp
@@ -388,8 +387,7 @@ set(SourceFiles
     ${CMAKE_CURRENT_SOURCE_DIR}/src/RawSubFile.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/src/to_string.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/src/utils/task.cpp
-    ${CMAKE_CURRENT_SOURCE_DIR}/src/utils/ifstream_helpers.cpp
-    ${CMAKE_CURRENT_SOURCE_DIR}/src/utils/SparseMask.cpp)
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/utils/ifstream_helpers.cpp)
 
 add_library(aare_core STATIC ${SourceFiles} ${PUBLICHEADERS})
 target_include_directories(
@@ -458,8 +456,7 @@ if(AARE_TESTS)
       ${CMAKE_CURRENT_SOURCE_DIR}/src/RawFile.test.cpp
       ${CMAKE_CURRENT_SOURCE_DIR}/src/RawSubFile.test.cpp
       ${CMAKE_CURRENT_SOURCE_DIR}/src/utils/task.test.cpp
-      ${CMAKE_CURRENT_SOURCE_DIR}/src/to_string.test.cpp
-      ${CMAKE_CURRENT_SOURCE_DIR}/src/utils/SparseMask.test.cpp)
+      ${CMAKE_CURRENT_SOURCE_DIR}/src/to_string.test.cpp)
   target_sources(tests PRIVATE ${TestSources})
 endif()
 
