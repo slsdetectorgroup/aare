@@ -1,4 +1,3 @@
-#include "aare/NDArray.hpp"
 #include "aare/NDView.hpp"
 #include <cstdint>
 #include <filesystem>
@@ -42,23 +41,10 @@ class SparseMask {
     /// @brief Get number of bad channels
     size_t num_bad_channels() const;
 
-    /**
-     * Convert the sparse mask to a dense 2D array representation.
-     * @return An NDArray<bool, 2> representing the dense mask, where true
-     * indicates a bad channel
-     */
-    NDArray<bool, 2> convert_to_dense() const;
-
   private:
-    /// @brief storage format of the sparse mask, either row major or column
+    /// @brief stoarge format of the sparse mask, either row major or column
     /// major
     STORAGEFORMAT storage_format_;
-
-    /// @brief number of rows in the dense mask
-    size_t rows_;
-
-    /// @brief number of columns in the dense mask
-    size_t cols_;
 
     /// @brief for column major stores row indices of non-zero elements, for row
     /// major stores column indices of non-zero elements
