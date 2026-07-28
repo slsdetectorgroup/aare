@@ -193,6 +193,14 @@ ScanParameters RawMasterFile::scan_parameters() const {
     return m_scan_parameters;
 }
 
+std::optional<std::vector<std::string>> RawMasterFile::udp_port_types() const {
+    return m_udp_port_types;
+}
+
+std::optional<std::vector<size_t>> RawMasterFile::disabled_udp_ports() const {
+    return m_disabled_udp_ports;
+}
+
 std::optional<ROI> RawMasterFile::roi() const {
     if (!m_rois) {
         return std::nullopt;
@@ -377,7 +385,24 @@ void RawMasterFile::parse_json(std::istream &is) {
     } catch (const json::out_of_range &e) {
         // not a scan
     }
-
+    try {
+        auto json_list_obj = j.at("UDP Ports Type");
+        m_udp_port_types.emplace();
+        for (auto &elem : json_list_obj) {
+            m_udp_port_types.value().push_back(elem);
+        }
+    } catch (const json::out_of_range &e) {
+        // leave the optional empty
+    }
+    try {
+        auto json_list_obj = j.at("UDP Ports Disabled");
+        m_disabled_udp_ports.emplace();
+        for (auto &elem : json_list_obj) {
+            m_disabled_udp_ports.value().push_back(static_cast<size_t>(elem));
+        }
+    } catch (const json::out_of_range &e) {
+        // leave the optional empty
+    }
     try {
         m_udp_interfaces_per_module = {j.at("Number of UDP Interfaces"), 1};
     } catch (const json::out_of_range &e) {

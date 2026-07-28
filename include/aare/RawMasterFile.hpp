@@ -109,6 +109,13 @@ class RawMasterFile {
     std::optional<size_t> m_number_of_rows;
     std::optional<uint8_t> m_counter_mask;
 
+    /// @brief index of disabled UDP ports - index relative to UDP_port_types
+    std::optional<std::vector<size_t>> m_disabled_udp_ports{};
+
+    /// @brief udp port types
+    std::optional<std::vector<std::string>>
+        m_udp_port_types{}; // TODO: UDPPortType? - string_to conversion?
+
     std::optional<std::vector<ROI>> m_rois;
 
   public:
@@ -142,6 +149,16 @@ class RawMasterFile {
     std::optional<size_t> transceiver_samples() const;
     std::optional<size_t> number_of_rows() const;
     std::optional<uint8_t> counter_mask() const;
+
+    /// @brief Get the types of UDP ports
+    /// @return Optional vector of UDP port types as strings (only present for
+    /// masterfile version >= 8.1)
+    std::optional<std::vector<std::string>> udp_port_types() const;
+
+    /// @brief Get the indices of disabled UDP ports
+    /// @return Optional vector of indices of disabled UDP ports (only present
+    /// for masterfile version >= 8.1)
+    std::optional<std::vector<size_t>> disabled_udp_ports() const;
 
     std::optional<std::vector<ROI>> rois() const;
 

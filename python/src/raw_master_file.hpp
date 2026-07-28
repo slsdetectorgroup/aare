@@ -107,6 +107,34 @@ void define_raw_master_file_bindings(py::module &m) {
                     return std::nullopt;
                 }
             })
+        .def_property_readonly("rois", &RawMasterFile::rois, R"(
+            Get the ROIs defined in the master file
+
+            Returns
+            ----------
+                Optional[List[ROI]]
+                    Optional vector of ROIs (only present for masterfile version >= 8.1)
+            )")
+        .def_property_readonly("udp_port_types", &RawMasterFile::udp_port_types,
+                               R"(
+            Get the types of UDP ports
+
+            Returns
+            ----------
+                Optional[List[str]]
+                    Optional vector of UDP port types as strings (only present for
+                    masterfile version >= 8.1)
+            )")
+        .def_property_readonly("disabled_udp_ports",
+                               &RawMasterFile::disabled_udp_ports, R"(
+            Get the indices of disabled UDP ports   
+
+            Returns
+            ----------
+                Optional[List[int]]
+                    Optional vector of disabled UDP port indices relative to UDP port types (only present for
+                    masterfile version >= 8.1)
+            )")
         .def_property_readonly("period", [](RawMasterFile &self) {
             double seconds =
                 std::chrono::duration<double>(self.period()).count();

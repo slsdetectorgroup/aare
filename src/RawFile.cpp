@@ -25,7 +25,52 @@ RawFile::RawFile(const std::filesystem::path &fname, const std::string &mode)
                                                   : 1);
 
     if (mode == "r") {
-        if (m_master.rois().has_value()) {
+        // TODO: should we support both ROI and disabled udp port - which one
+        // should have precedence?
+        if (m_master.disabled_udp_ports().has_value() &&
+            m_master.disabled_udp_ports().value().size() > 0) {
+
+            // no ROI use full detector
+            m_ROI_geometries.reserve(1);
+            ROI roi{};
+
+            auto disabled_ports = m_master.disabled_udp_ports().value();
+
+            for (auto disabled_port : disabled_ports) {
+                std::string disabled_port_type =
+                    m_master.udp_port_types()
+                        .value()[disabled_port]; // TODO: string_to? - anyway
+                                                 // defined in slsDetectorDefs
+                if (disabled_port_type == "bottom") {
+                    roi = ROI{0, static_cast<ssize_t>(m_master.pixels_x()),
+                              static_cast<ssize_t>(m_master.pixels_y()),
+                              2 * static_cast<ssize_t>(m_master.pixels_y())};
+                } else if (disabled_port_type == "top") {
+                    roi = ROI{0, static_cast<ssize_t>(m_master.pixels_x()), 0,
+                              static_cast<ssize_t>(m_master.pixels_y())};
+                } else if (disabled_port_type == "left") {
+                    roi = ROI{0, static_cast<ssize_t>(m_master.pixels_x()), 0,
+                              static_cast<ssize_t>(
+                                  m_master.pixels_y())}; // TODO: need to check
+                                                         // eiger data !!!!
+                } else if (disabled_port_type == "right") {
+                    roi = ROI{
+                        static_cast<ssize_t>(m_master.pixels_x()),
+                        2 * static_cast<ssize_t>(m_master.pixels_x()), 0,
+                        static_cast<ssize_t>(
+                            m_master.pixels_y())}; // TODO: need to check eiger
+                                                   // data, bottom port flipped?
+                } else {
+                    throw std::runtime_error(
+                        LOCATION +
+                        "Unknown UDP port type: " + disabled_port_type);
+                }
+            }
+
+            m_ROI_geometries.push_back(ROIGeometry(roi, m_geometry)); // roi,
+
+            open_subfiles(0);
+        } else if (m_master.rois().has_value()) {
             m_ROI_geometries.reserve(m_master.rois()->size());
 
             // iterate over all ROIS
@@ -37,7 +82,6 @@ RawFile::RawFile(const std::filesystem::path &fname, const std::string &mode)
                 open_subfiles(roi_index);
                 ++roi_index;
             }
-
         } else {
             // no ROI use full detector
             m_ROI_geometries.reserve(1);

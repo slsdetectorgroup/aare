@@ -405,3 +405,68 @@ TEST_CASE("Read Mythenframe", "[.with-data][RawFile]") {
     auto frame = f.read_frame();
     REQUIRE(frame.cols() == 2560);
 }
+
+TEST_CASE("Read Jungfrau frame with disabled UDP ports",
+          "[.with-data][RawFile]") {
+    // auto fpath = test_data_path() / "raw/jungfrau" /
+    //"2_interfaces_top_disabled_master_6.json";
+
+    SECTION("disabled top port") {
+        auto fpath = test_data_path() / "raw/jungfrau" /
+                     "2_interfaces_top_disabled_master_6.json";
+        REQUIRE(std::filesystem::exists(fpath));
+        RawFile f(fpath);
+        REQUIRE(f.master().disabled_udp_ports().value() ==
+                std::vector<size_t>{1});
+        REQUIRE(f.master().udp_port_types().value() ==
+                std::vector<std::string>{"bottom", "top"});
+        auto frame = f.read_frame();
+        REQUIRE(frame.cols() == 1024);
+        REQUIRE(frame.rows() == 256);
+    }
+
+    SECTION("disabled bottom port") {
+        auto fpath = test_data_path() / "raw/jungfrau" /
+                     "2_interfaces_bottom_port_disabled_master_0.json";
+        REQUIRE(std::filesystem::exists(fpath));
+        RawFile f(fpath);
+        REQUIRE(f.master().disabled_udp_ports().value() ==
+                std::vector<size_t>{0});
+        REQUIRE(f.master().udp_port_types().value() ==
+                std::vector<std::string>{"bottom", "top"});
+        auto frame = f.read_frame();
+        REQUIRE(frame.cols() == 1024);
+        REQUIRE(frame.rows() == 256);
+    }
+}
+
+TEST_CASE("Read Moench frame with disabled UDP ports",
+          "[.with-data][RawFile]") {
+    SECTION("disabled top port") {
+        auto fpath = test_data_path() / "raw/moench" /
+                     "2_interfaces_top_port_disabled_master_0.json";
+        REQUIRE(std::filesystem::exists(fpath));
+        RawFile f(fpath);
+        REQUIRE(f.master().disabled_udp_ports().value() ==
+                std::vector<size_t>{1});
+        REQUIRE(f.master().udp_port_types().value() ==
+                std::vector<std::string>{"bottom", "top"});
+        auto frame = f.read_frame();
+        REQUIRE(frame.cols() == 400);
+        REQUIRE(frame.rows() == 200);
+    }
+
+    SECTION("disabled bottom port") {
+        auto fpath = test_data_path() / "raw/moench" /
+                     "2_interfaces_bottom_port_disabled_master_6.json";
+        REQUIRE(std::filesystem::exists(fpath));
+        RawFile f(fpath);
+        REQUIRE(f.master().disabled_udp_ports().value() ==
+                std::vector<size_t>{0});
+        REQUIRE(f.master().udp_port_types().value() ==
+                std::vector<std::string>{"bottom", "top"});
+        auto frame = f.read_frame();
+        REQUIRE(frame.cols() == 400);
+        REQUIRE(frame.rows() == 200);
+    }
+}
