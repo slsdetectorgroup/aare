@@ -6,6 +6,7 @@
 #include "aare/NDArray.hpp"
 #include "aare/NDView.hpp"
 #include "aare/Pedestal.hpp"
+#include "aare/FastPedestal.hpp"
 #include "aare/defs.hpp"
 #include <cstddef>
 
@@ -26,12 +27,15 @@ class ClusterFinder {
     PEDESTAL_TYPE m_nSigma;
     const PEDESTAL_TYPE c2;
     const PEDESTAL_TYPE c3;
-    Pedestal<PEDESTAL_TYPE> m_pedestal;
+    FastPedestal<PEDESTAL_TYPE> m_pedestal;
     ClusterVector<ClusterType> m_clusters;
 
     static const uint8_t ClusterSizeX = ClusterType::cluster_size_x;
     static const uint8_t ClusterSizeY = ClusterType::cluster_size_y;
     using CT = typename ClusterType::value_type;
+
+    NDArray<PEDESTAL_TYPE, 2> m_threshold;
+    NDArray<PEDESTAL_TYPE, 2> m_pd_corrected_frame;
 
   public:
     /**
@@ -47,7 +51,8 @@ class ClusterFinder {
         : m_image_size(image_size), m_nSigma(nSigma),
           c2(sqrt((ClusterSizeY + 1) / 2 * (ClusterSizeX + 1) / 2)),
           c3(sqrt(ClusterSizeX * ClusterSizeY)),
-          m_pedestal(image_size[0], image_size[1]), m_clusters(capacity) {
+          m_pedestal(image_size[0], image_size[1]), m_clusters(capacity),
+          m_pd_corrected_frame({image_size[0], image_size[1]}, 0) {
         LOG(logDEBUG) << "ClusterFinder: "
                       << "image_size: " << image_size[0] << "x" << image_size[1]
                       << ", nSigma: " << nSigma << ", capacity: " << capacity;
@@ -58,12 +63,24 @@ class ClusterFinder {
     PEDESTAL_TYPE get_nSigma() const { return m_nSigma; }
 
     void push_pedestal_frame(NDView<FRAME_TYPE, 2> frame) {
-        m_pedestal.push(frame);
+        if (!m_pedestal.ready()) {
+            m_pedestal.push_init(frame);
+        } else {
+            m_pedestal.push(frame);
+        }
     }
 
     NDArray<PEDESTAL_TYPE, 2> pedestal() { return m_pedestal.mean(); }
     NDArray<PEDESTAL_TYPE, 2> noise() { return m_pedestal.std(); }
     void clear_pedestal() { m_pedestal.clear(); }
+
+    /**
+     * @brief Refresh the cached std of the underlying pedestal. Call before
+     * reading the pedestal's cached std.
+     */
+    void update_std() { m_pedestal.update_std(); }
+
+    void update_threshold() { m_threshold = m_pedestal.std() * m_nSigma; }
 
     /**
      * @brief Move the clusters from the ClusterVector in the ClusterFinder to a
@@ -85,15 +102,17 @@ class ClusterFinder {
         // // TODO! deal with even size clusters
         // // currently 3,3 -> +/- 1
         // //  4,4 -> +/- 2
-        int dy = ClusterSizeY / 2;
-        int dx = ClusterSizeX / 2;
-        int has_center_pixel_x =
+        constexpr int dy = ClusterSizeY / 2;
+        constexpr int dx = ClusterSizeX / 2;
+        constexpr int has_center_pixel_x =
             ClusterSizeX %
             2; // for even sized clusters there is no proper cluster center and
                // even amount of pixels around the center
-        int has_center_pixel_y = ClusterSizeY % 2;
+        constexpr int has_center_pixel_y = ClusterSizeY % 2;
 
         m_clusters.set_frame_number(frame_number);
+
+        m_pd_corrected_frame = frame - m_pedestal.view();
         for (int iy = 0; iy < frame.shape(0); iy++) {
             for (int ix = 0; ix < frame.shape(1); ix++) {
 
@@ -101,10 +120,11 @@ class ClusterFinder {
                 PEDESTAL_TYPE total = 0;
 
                 // What can we short circuit here?
-                PEDESTAL_TYPE rms = m_pedestal.std(iy, ix);
-                PEDESTAL_TYPE value = (frame(iy, ix) - m_pedestal.mean(iy, ix));
+                // PEDESTAL_TYPE rms = m_pedestal.cached_std(iy, ix);
+                PEDESTAL_TYPE threshold = m_threshold(iy, ix);
+                PEDESTAL_TYPE value = m_pd_corrected_frame(iy, ix);
 
-                if (value < -m_nSigma * rms)
+                if (value < -threshold)
                     continue; // NEGATIVE_PEDESTAL go to next pixel
                               // TODO! No pedestal update???
 
@@ -113,8 +133,7 @@ class ClusterFinder {
                         if (ix + ic >= 0 && ix + ic < frame.shape(1) &&
                             iy + ir >= 0 && iy + ir < frame.shape(0)) {
                             PEDESTAL_TYPE val =
-                                frame(iy + ir, ix + ic) -
-                                m_pedestal.mean(iy + ir, ix + ic);
+                                m_pd_corrected_frame(iy + ir, ix + ic);
 
                             total += val;
                             max = std::max(max, val);
@@ -122,15 +141,15 @@ class ClusterFinder {
                     }
                 }
 
-                if ((max > m_nSigma * rms)) {
+                if ((max > threshold)) {
                     if (value < max)
                         continue; // Not max go to the next pixel
                                   // but also no pedestal update
-                } else if (total > c3 * m_nSigma * rms) {
+                } else if (total > c3 * threshold) {
                     // pass
                 } else {
                     // m_pedestal.push(iy, ix, frame(iy, ix));   // Safe option
-                    m_pedestal.push_fast(
+                    m_pedestal.push(
                         iy, ix,
                         frame(iy,
                               ix)); // Assume we have reached n_samples in the
@@ -160,8 +179,7 @@ class ClusterFinder {
                                               std::is_floating_point_v<
                                                   PEDESTAL_TYPE>) {
                                     auto tmp = std::lround(
-                                        frame(iy + ir, ix + ic) -
-                                        m_pedestal.mean(iy + ir, ix + ic));
+                                        m_pd_corrected_frame(iy + ir, ix + ic));
                                     cluster.data[i] = static_cast<CT>(tmp);
                                 }
                                 // On the other hand if both are floating point
@@ -169,8 +187,7 @@ class ClusterFinder {
                                 // cast directly
                                 else {
                                     auto tmp =
-                                        frame(iy + ir, ix + ic) -
-                                        m_pedestal.mean(iy + ir, ix + ic);
+                                        m_pd_corrected_frame(iy + ir, ix + ic);
                                     cluster.data[i] = static_cast<CT>(tmp);
                                 }
                             }

@@ -10,6 +10,7 @@ silently dropped.
 #include "aare/NDArray.hpp"
 #include "aare/NDView.hpp"
 
+#include <algorithm>
 #include <cstddef>
 #include <limits>
 #include <stdexcept>
@@ -103,17 +104,16 @@ void PixelHistogramImpl<T, StorageType>::fill_unchecked(int row, int col,
     }
     int bin = static_cast<int>((value - m_xmin) * m_scale);
     // Guard against floating-point rounding pushing val just below
-    // xmax to bin == n_bins.
-    if (bin >= m_n_bins) {
-        bin = m_n_bins - 1;
-    }
+    bin = std::clamp(bin, 0, m_n_bins - 1);
+    auto& cell = m_values(row, col, bin);
     if constexpr (std::is_integral_v<StorageType>) {
-        if (m_values(row, col, bin) >=
+        if (cell >=
             std::numeric_limits<StorageType>::max()) {
             return;
         }
     }
-    ++m_values(row, col, bin);
+    ++cell;
+
 }
 
 template <typename T, typename StorageType>

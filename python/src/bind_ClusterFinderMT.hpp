@@ -56,6 +56,8 @@ void define_ClusterFinderMT(py::module &m, const std::string &typestr) {
             })
         .def("clear_pedestal",
              &ClusterFinderMT<ClusterType, uint16_t, pd_type>::clear_pedestal)
+        .def("update_threshold",
+             &ClusterFinderMT<ClusterType, uint16_t, pd_type>::update_threshold)
         .def("sync", &ClusterFinderMT<ClusterType, uint16_t, pd_type>::sync)
         .def("stop", &ClusterFinderMT<ClusterType, uint16_t, pd_type>::stop)
         .def("start", &ClusterFinderMT<ClusterType, uint16_t, pd_type>::start)

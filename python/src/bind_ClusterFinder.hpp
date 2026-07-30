@@ -48,6 +48,10 @@ void define_ClusterFinder(py::module &m, const std::string &typestr) {
              })
         .def("clear_pedestal",
              &ClusterFinder<ClusterType, uint16_t, pd_type>::clear_pedestal)
+        .def("update_std",
+             &ClusterFinder<ClusterType, uint16_t, pd_type>::update_std)
+        .def("update_threshold",
+             &ClusterFinder<ClusterType, uint16_t, pd_type>::update_threshold)
         .def_property_readonly(
             "pedestal",
             [](ClusterFinder<ClusterType, uint16_t, pd_type> &self) {

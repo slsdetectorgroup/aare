@@ -52,6 +52,12 @@ void define_pedestal_bindings(py::module &m, const std::string &name) {
                  *std = self.std();
                  return return_image_data(std);
              })
+        .def("cached_std",
+             [](Pedestal<SUM_TYPE> &self) {
+                 auto standard_deviation = new NDArray<SUM_TYPE, 2>{};
+                 *standard_deviation = self.cached_std();
+                 return return_image_data(standard_deviation);
+             })
         .def(
             "__array_ufunc__",
             [](py::object self, py::object ufunc, const std::string &method,
@@ -104,6 +110,7 @@ void define_pedestal_bindings(py::module &m, const std::string &name) {
             },
             py::arg().noconvert())
         .def("update_mean", &Pedestal<SUM_TYPE>::update_mean)
+        .def("update_std", &Pedestal<SUM_TYPE>::update_std)
         .def_buffer([](Pedestal<SUM_TYPE> &self) {
             auto mean = self.view();
             return py::buffer_info(

@@ -246,6 +246,19 @@ class ClusterFinderMT {
     }
 
     /**
+     * @brief Recompute the threshold (nSigma * pedestal std) on all cluster
+     * finders. Requires the processing threads to be stopped.
+     */
+    void update_threshold() {
+        if (!m_processing_threads_stopped) {
+            throw std::runtime_error("ClusterFinderMT is still running");
+        }
+        for (auto &cf : m_cluster_finders) {
+            cf->update_threshold();
+        }
+    }
+
+    /**
      * @brief Return the pedestal currently used by the cluster finder
      * @param thread_index index of the thread
      */

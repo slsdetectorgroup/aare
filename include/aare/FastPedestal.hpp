@@ -17,6 +17,8 @@ template <typename SUM_TYPE = double> class FastPedestal {
     // TODO! Force floating point sum type?
     // how does the internal calculation work with integers?
 
+    bool m_ready = false; 
+
     uint32_t m_rows;
     uint32_t m_cols;
 
@@ -37,15 +39,20 @@ template <typename SUM_TYPE = double> class FastPedestal {
     // Relies on having more reads than pushes to the pedestal
     NDArray<SUM_TYPE, 2> m_mean;
 
+    // Cache std. Only refreshed via update_std() to keep push() cheap.
+    NDArray<SUM_TYPE, 2> m_std;
+
   public:
     FastPedestal(uint32_t rows, uint32_t cols, uint32_t n_samples = 1000)
         : m_rows(rows), m_cols(cols), m_samples(n_samples),
           m_inv_samples(1.0 / n_samples),
           m_sum(NDArray<Entry, 2>({rows, cols})),
-          m_mean(NDArray<SUM_TYPE, 2>({rows, cols})) {
+          m_mean(NDArray<SUM_TYPE, 2>({rows, cols})),
+          m_std(NDArray<SUM_TYPE, 2>({rows, cols})) {
         assert(rows > 0 && cols > 0 && n_samples > 0);
         m_sum = Entry{SUM_TYPE(0), SUM_TYPE(0)};
         m_mean = SUM_TYPE(0);
+        m_std = SUM_TYPE(0);
     }
     ~FastPedestal() = default;
 
@@ -57,9 +64,15 @@ template <typename SUM_TYPE = double> class FastPedestal {
         return m_mean(row, col);
     }
 
+    NDArray<SUM_TYPE, 2> cached_std() { return m_std; }
+
+    SUM_TYPE cached_std(const uint32_t row, const uint32_t col) const {
+        return m_std(row, col);
+    }
+
     SUM_TYPE variance(const uint32_t row, const uint32_t col) const {
         auto &entry = m_sum(row, col);
-        auto m2 = (entry.sum * m_inv_samples) * ((entry.sum * m_inv_samples));
+        auto m2 = entry.sum * m_inv_samples * entry.sum * m_inv_samples;
         return entry.sum2 * m_inv_samples - m2;
     }
 
@@ -87,19 +100,17 @@ template <typename SUM_TYPE = double> class FastPedestal {
         return res;
     }
 
-    bool ready() { return m_cur_samples == m_samples; }
+    bool ready() { return m_ready; }
 
     uint32_t cur_samples() { return m_cur_samples; }
 
     void clear() {
         m_sum = Entry{SUM_TYPE(0), SUM_TYPE(0)};
         m_mean = SUM_TYPE(0);
+        m_std = SUM_TYPE(0);
+        m_ready = false;
     }
 
-    void clear(const uint32_t row, const uint32_t col) {
-        m_sum(row, col) = Entry{SUM_TYPE(0), SUM_TYPE(0)};
-        m_mean(row, col) = 0;
-    }
 
     template <typename T> void push(NDView<T, 2> frame) {
         assert(frame.size() == m_rows * m_cols);
@@ -125,6 +136,11 @@ template <typename SUM_TYPE = double> class FastPedestal {
                 "Frame shape does not match pedestal shape");
         }
 
+        // if already full, throw an error
+        if (m_cur_samples == m_samples) {
+            throw std::runtime_error("Pedestal is full");
+        }
+
         for (size_t row = 0; row < m_rows; row++) {
             for (size_t col = 0; col < m_cols; col++) {
                 const auto val = static_cast<SUM_TYPE>(frame(row, col));
@@ -134,6 +150,12 @@ template <typename SUM_TYPE = double> class FastPedestal {
             }
         }
         m_cur_samples += 1;
+
+        if (m_cur_samples == m_samples) {
+            update_std();
+            update_mean();
+            m_ready = true;
+        }
     }
 
     template <typename T> void push(Frame &frame) {
@@ -151,6 +173,9 @@ template <typename SUM_TYPE = double> class FastPedestal {
     // their own pixel level operations)
     template <typename T>
     void push(const uint32_t row, const uint32_t col, const T val_) {
+        if (!ready()) {
+            throw std::runtime_error("Pedestal is not ready, cannot push");
+        }
         SUM_TYPE val = static_cast<SUM_TYPE>(val_);
         auto &entry = m_sum(row, col);
         entry.sum += val - entry.sum * m_inv_samples;
@@ -160,6 +185,9 @@ template <typename SUM_TYPE = double> class FastPedestal {
 
     template <typename T>
     void push_no_update(const uint32_t row, const uint32_t col, const T val_) {
+        if (!ready()) {
+            throw std::runtime_error("Pedestal is not ready, cannot push");
+        }
         SUM_TYPE val = static_cast<SUM_TYPE>(val_);
         auto &entry = m_sum(row, col);
         entry.sum += val - entry.sum * m_inv_samples;
@@ -175,6 +203,19 @@ template <typename SUM_TYPE = double> class FastPedestal {
             for (size_t col = 0; col < m_cols; col++) {
                 const auto &entry = m_sum(row, col);
                 m_mean(row, col) = entry.sum * m_inv_samples;
+            }
+        }
+    }
+
+    /**
+     * @brief Refresh the cached std for all pixels from the current sums.
+     * Kept separate from push() so that pushes stay cheap; call this before
+     * reading cached_std().
+     */
+    void update_std() {
+        for (size_t row = 0; row < m_rows; row++) {
+            for (size_t col = 0; col < m_cols; col++) {
+                m_std(row, col) = std(row, col);
             }
         }
     }
