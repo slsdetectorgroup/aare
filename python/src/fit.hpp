@@ -5,7 +5,6 @@
 #include <pybind11/stl.h>
 #include <pybind11/stl_bind.h>
 
-#include "aare/Chi2.hpp"
 #include "aare/Fit.hpp"
 #include "aare/FitModel.hpp"
 #include "aare/Models.hpp"
@@ -13,7 +12,7 @@
 namespace py = pybind11;
 using namespace pybind11::literals;
 
-template <typename Model, typename FCN>
+template <typename Model>
 py::object
 fit_dispatch(const aare::FitModel<Model> &model,
              py::array_t<double, py::array::c_style | py::array::forcecast> x,
@@ -22,7 +21,6 @@ fit_dispatch(const aare::FitModel<Model> &model,
 
 template <typename Model> void bind_fit_model(py::module &m, const char *name) {
     using FM = aare::FitModel<Model>;
-    using FCN = aare::func::Chi2Model1DGrad<Model>;
     py::class_<FM>(m, name)
         .def(py::init<unsigned int, unsigned int, double, bool>(),
              py::arg("strategy") = 0, py::arg("max_calls") = 100,
@@ -85,8 +83,7 @@ template <typename Model> void bind_fit_model(py::module &m, const char *name) {
                py::array_t<double, py::array::c_style | py::array::forcecast> x,
                py::array_t<double, py::array::c_style | py::array::forcecast> y,
                py::object y_err_obj, int n_threads) -> py::object {
-                return fit_dispatch<Model, FCN>(self, x, y, y_err_obj,
-                                                n_threads);
+                return fit_dispatch<Model>(self, x, y, y_err_obj, n_threads);
             },
             R"doc(
             Fit this model to 1D or 3D data using Minuit2.
@@ -145,7 +142,7 @@ py::dict pack_1d_result_dict(const aare::NDArray<double, 1> &result,
 }
 
 // Helper: typed dispatch for one Model, handles 1D/3D + y_err logic
-template <typename Model, typename FCN>
+template <typename Model>
 py::object
 fit_dispatch(const aare::FitModel<Model> &model,
              py::array_t<double, py::array::c_style | py::array::forcecast> x,
@@ -175,9 +172,9 @@ fit_dispatch(const aare::FitModel<Model> &model,
                 new NDArray<double, 3>({y.shape(0), y.shape(1), npar}, 0.0);
             auto y_view_err = make_view_3d(y_err);
 
-            aare::fit_3d<Model, FCN>(model, x_view, y_view, y_view_err,
-                                     par_out->view(), err_out->view(),
-                                     chi2_out->view(), n_threads);
+            aare::fit_3d<Model>(model, x_view, y_view, y_view_err,
+                                par_out->view(), err_out->view(),
+                                chi2_out->view(), n_threads);
 
             if (model.compute_errors()) {
                 return py::dict("par"_a = return_image_data(par_out),
@@ -193,9 +190,9 @@ fit_dispatch(const aare::FitModel<Model> &model,
             NDView<double, 3> dummy_err{};
             NDView<double, 3> dummy_err_out{};
 
-            aare::fit_3d<Model, FCN>(model, x_view, y_view, dummy_err,
-                                     par_out->view(), dummy_err_out,
-                                     chi2_out->view(), n_threads);
+            aare::fit_3d<Model>(model, x_view, y_view, dummy_err,
+                                par_out->view(), dummy_err_out,
+                                chi2_out->view(), n_threads);
 
             return py::dict("par"_a = return_image_data(par_out),
                             "chi2"_a = return_image_data(chi2_out));
@@ -217,10 +214,9 @@ fit_dispatch(const aare::FitModel<Model> &model,
             }
 
             auto y_view_err = make_view_1d(y_err);
-            result =
-                aare::fit_pixel<Model, FCN>(model, x_view, y_view, y_view_err);
+            result = aare::fit_pixel<Model>(model, x_view, y_view, y_view_err);
         } else {
-            result = aare::fit_pixel<Model, FCN>(model, x_view, y_view);
+            result = aare::fit_pixel<Model>(model, x_view, y_view);
         }
 
         return pack_1d_result_dict<Model>(result, model.compute_errors());
@@ -696,29 +692,26 @@ void define_fit_bindings(py::module &m) {
            py::array_t<double, py::array::c_style | py::array::forcecast> y,
            py::object y_err_obj, int n_threads) -> py::object {
             using namespace aare::model;
-            using namespace aare::func;
 
             // ── Polynomial of degree 1 ───────
             if (py::isinstance<aare::FitModel<Pol1>>(model_obj)) {
                 const auto &mdl =
                     model_obj.cast<const aare::FitModel<Pol1> &>();
-                return fit_dispatch<Pol1, Chi2Pol1>(mdl, x, y, y_err_obj,
-                                                    n_threads);
+                return fit_dispatch<Pol1>(mdl, x, y, y_err_obj, n_threads);
             }
 
             // ── Polynomial of degree 2 ───────
             if (py::isinstance<aare::FitModel<Pol2>>(model_obj)) {
                 const auto &mdl =
                     model_obj.cast<const aare::FitModel<Pol2> &>();
-                return fit_dispatch<Pol2, Chi2Pol2>(mdl, x, y, y_err_obj,
-                                                    n_threads);
+                return fit_dispatch<Pol2>(mdl, x, y, y_err_obj, n_threads);
             }
+
             // ── Gaussian ───────
             if (py::isinstance<aare::FitModel<Gaussian>>(model_obj)) {
                 const auto &mdl =
                     model_obj.cast<const aare::FitModel<Gaussian> &>();
-                return fit_dispatch<Gaussian, Chi2Gaussian>(
-                    mdl, x, y, y_err_obj, n_threads);
+                return fit_dispatch<Gaussian>(mdl, x, y, y_err_obj, n_threads);
             }
 
             // ── GaussianErfcPlateau ───────
@@ -727,9 +720,8 @@ void define_fit_bindings(py::module &m) {
                 const auto &mdl =
                     model_obj
                         .cast<const aare::FitModel<GaussianErfcPlateau> &>();
-                return fit_dispatch<GaussianErfcPlateau,
-                                    Chi2GaussianErfcPlateau>(
-                    mdl, x, y, y_err_obj, n_threads);
+                return fit_dispatch<GaussianErfcPlateau>(mdl, x, y, y_err_obj,
+                                                         n_threads);
             }
 
             // ── GaussianChargeSharing ───────
@@ -738,9 +730,8 @@ void define_fit_bindings(py::module &m) {
                 const auto &mdl =
                     model_obj
                         .cast<const aare::FitModel<GaussianChargeSharing> &>();
-                return fit_dispatch<GaussianChargeSharing,
-                                    Chi2GaussianChargeSharing>(
-                    mdl, x, y, y_err_obj, n_threads);
+                return fit_dispatch<GaussianChargeSharing>(mdl, x, y, y_err_obj,
+                                                           n_threads);
             }
 
             // ── GaussianChargeSharingKb ───────
@@ -748,8 +739,7 @@ void define_fit_bindings(py::module &m) {
                     model_obj)) {
                 const auto &mdl = model_obj.cast<
                     const aare::FitModel<GaussianChargeSharingKb> &>();
-                return fit_dispatch<GaussianChargeSharingKb,
-                                    Chi2GaussianChargeSharingKb>(
+                return fit_dispatch<GaussianChargeSharingKb>(
                     mdl, x, y, y_err_obj, n_threads);
             }
 
@@ -757,16 +747,16 @@ void define_fit_bindings(py::module &m) {
             if (py::isinstance<aare::FitModel<RisingScurve>>(model_obj)) {
                 const auto &mdl =
                     model_obj.cast<const aare::FitModel<RisingScurve> &>();
-                return fit_dispatch<RisingScurve, Chi2RisingScurve>(
-                    mdl, x, y, y_err_obj, n_threads);
+                return fit_dispatch<RisingScurve>(mdl, x, y, y_err_obj,
+                                                  n_threads);
             }
 
             // ── Falling Scurve ───────
             if (py::isinstance<aare::FitModel<FallingScurve>>(model_obj)) {
                 const auto &mdl =
                     model_obj.cast<const aare::FitModel<FallingScurve> &>();
-                return fit_dispatch<FallingScurve, Chi2FallingScurve>(
-                    mdl, x, y, y_err_obj, n_threads);
+                return fit_dispatch<FallingScurve>(mdl, x, y, y_err_obj,
+                                                   n_threads);
             }
 
             throw std::runtime_error(

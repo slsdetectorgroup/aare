@@ -1,5 +1,4 @@
 // SPDX-License-Identifier: MPL-2.0
-#include "aare/Chi2.hpp"
 #include "aare/Fit.hpp"
 #include "aare/FitModel.hpp"
 #include "aare/Models.hpp"
@@ -108,9 +107,7 @@ static void BM_FitGausMinuitGrad(benchmark::State &state) {
 
     aare::NDArray<double, 1> result;
     for (auto _ : state) {
-        result =
-            aare::fit_pixel<aare::model::Gaussian, aare::func::Chi2Gaussian>(
-                model, xv, yv);
+        result = aare::fit_pixel<aare::model::Gaussian>(model, xv, yv);
         benchmark::DoNotOptimize(result.data());
     }
 
@@ -132,9 +129,7 @@ static void BM_FitGausMinuitGradHesse(benchmark::State &state) {
 
     aare::NDArray<double, 1> result;
     for (auto _ : state) {
-        result =
-            aare::fit_pixel<aare::model::Gaussian, aare::func::Chi2Gaussian>(
-                model, xv, yv, ev);
+        result = aare::fit_pixel<aare::model::Gaussian>(model, xv, yv, ev);
         benchmark::DoNotOptimize(result.data());
     }
 

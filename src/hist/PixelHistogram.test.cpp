@@ -1,6 +1,7 @@
 #include <catch2/catch_test_macros.hpp>
 #include <catch2/generators/catch_generators.hpp>
 
+#include "aare/logger.hpp"
 #include <chrono>
 #include <cstdint>
 #include <random>
@@ -25,14 +26,15 @@ namespace {
 } // namespace
 
 TEST_CASE("Fill one pixel of a 5x10 histogram") {
-    PixelHistogram hist(5, 10, 20, 0.0, 10.0);
+    PixelHistogram hist(5, 10, 20, 0.0f, 10.0f);
     NDArray<float, 2> image(
-        {5, 10}, -1.0); // Need to fill with -1 to not generate counts
+        {5, 10}, -1.0f); // Need to fill with -1 to not generate counts
 
-    image(2, 3) = 5.7; // This should go into bin 11 (since bins are [0-0.5),
-                       // [0.5-1.0), ..., [9.5-10.0))
+    image(2, 3) = 5.7f; // This should go into bin 11 (since bins are [0-0.5),
+                        // [0.5-1.0), ..., [9.5-10.0))
 
     // fill_blocking(hist, image.view());
+
     hist.fill_async(NDArray<float, 2>(image));
     hist.flush(); // Wait for the async fill to complete before we check the
                   // results
@@ -58,14 +60,14 @@ TEST_CASE("Fill one pixel of a 5x10 histogram") {
 }
 
 TEST_CASE("Fill pixels with uneven partial histogram row slices") {
-    PixelHistogram hist(5, 4, 10, 0.0, 10.0, 3);
-    NDArray<float, 2> image({5, 4}, -1.0);
+    PixelHistogram hist(5, 4, 10, 0.0f, 10.0f, 3);
+    NDArray<float, 2> image({5, 4}, -1.0f);
 
-    image(0, 0) = 0.2;
-    image(1, 1) = 1.2;
-    image(2, 2) = 2.2;
-    image(3, 3) = 3.2;
-    image(4, 0) = 4.2;
+    image(0, 0) = 0.2f;
+    image(1, 1) = 1.2f;
+    image(2, 2) = 2.2f;
+    image(3, 3) = 3.2f;
+    image(4, 0) = 4.2f;
 
     hist.fill_async(NDArray<float, 2>(image));
     hist.flush();
@@ -228,7 +230,7 @@ TEST_CASE("Random fills match a reference implementation") {
 }
 
 TEST_CASE("fill_async with mismatched shape throws") {
-    PixelHistogram hist(8, 8, 16, 0.0, 1.0, 2);
+    PixelHistogram hist(8, 8, 16, 0.0f, 1.0f, 2);
     NDArray<float, 2> bad({4, 4}, 0.0f);
     CHECK_THROWS_AS(hist.fill_async(std::move(bad)), std::invalid_argument);
 }

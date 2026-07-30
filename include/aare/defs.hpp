@@ -219,6 +219,17 @@ struct Moench04 {
     constexpr static size_t superColumnWidth = 25;
 };
 
+/// @brief Chip specifications for Moench05
+struct Moench05 {
+    constexpr static size_t nRows = 160;
+    constexpr static size_t nCols =
+        150; // TODO: should probably be seperated for each adc
+
+    /// @brief used ADCs for moench given in relative numbers to the default
+    /// enabled blocks of 4 adcs in absolute adcs 9, 13, 1 are used
+    constexpr static std::array<int, 3> adcNumbers = {5, 9, 1};
+};
+
 enum ReadoutMode : uint8_t {
     ANALOG_ONLY = 0,
     DIGITAL_ONLY = 1,
