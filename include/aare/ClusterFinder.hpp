@@ -107,33 +107,51 @@ class ClusterFinder {
      */
     template <bool CheckBounds>
     void process_pixel(const NDView<FRAME_TYPE, 2> &frame,
-                                const int iy, const int ix) {
+                       const int iy, const int ix) {
         constexpr int dy = ClusterSizeY / 2;
         constexpr int dx = ClusterSizeX / 2;
         constexpr int has_center_pixel_x = ClusterSizeX % 2;
         constexpr int has_center_pixel_y = ClusterSizeY % 2;
 
-        PEDESTAL_TYPE max = std::numeric_limits<FRAME_TYPE>::min();
+        PEDESTAL_TYPE max = std::numeric_limits<PEDESTAL_TYPE>::lowest();
         PEDESTAL_TYPE total = 0;
 
-        const PEDESTAL_TYPE threshold = m_threshold(iy, ix);
-        const PEDESTAL_TYPE value = m_pd_corrected_frame(iy, ix);
+        const int cols = static_cast<int>(frame.shape(1));
+        const int rows = static_cast<int>(frame.shape(0));
+        const auto center = (static_cast<std::size_t>(iy) *
+                             static_cast<std::size_t>(cols)) +
+                            static_cast<std::size_t>(ix);
+        const auto *corrected = m_pd_corrected_frame.data();
+        const PEDESTAL_TYPE threshold = m_threshold.data()[center];
+        const PEDESTAL_TYPE value = corrected[center];
 
         if (value < -threshold)
             return; // NEGATIVE_PEDESTAL, nothing to do for this pixel
                     // TODO! No pedestal update???
 
-        for (int ir = -dy; ir < dy + has_center_pixel_y; ir++) {
-            for (int ic = -dx; ic < dx + has_center_pixel_x; ic++) {
-                if constexpr (CheckBounds) {
-                    if (ix + ic < 0 || ix + ic >= frame.shape(1) ||
-                        iy + ir < 0 || iy + ir >= frame.shape(0))
+        if constexpr (CheckBounds) {
+            for (int ir = -dy; ir < dy + has_center_pixel_y; ir++) {
+                for (int ic = -dx; ic < dx + has_center_pixel_x; ic++) {
+                    const int x = ix + ic;
+                    const int y = iy + ir;
+                    if (x < 0 || x >= cols || y < 0 || y >= rows)
                         continue;
+                    const PEDESTAL_TYPE val =
+                        corrected[(static_cast<std::size_t>(y) * cols) + x];
+                    total += val;
+                    max = std::max(max, val);
                 }
-                const PEDESTAL_TYPE val =
-                    m_pd_corrected_frame(iy + ir, ix + ic);
-                total += val;
-                max = std::max(max, val);
+            }
+        } else {
+            for (int ir = -dy; ir < dy + has_center_pixel_y; ir++) {
+                const auto *pixel =
+                    corrected + static_cast<std::size_t>(iy + ir) * cols +
+                    (ix - dx);
+                for (int k = 0; k < ClusterSizeX; k++) {
+                    const PEDESTAL_TYPE val = pixel[k];
+                    total += val;
+                    max = std::max(max, val);
+                }
             }
         }
 
@@ -144,7 +162,7 @@ class ClusterFinder {
             // pass, store the cluster below
         } else {
             // m_pedestal.push(iy, ix, frame(iy, ix));   // Safe option
-            m_pedestal.push(iy, ix, frame(iy, ix));
+            m_pedestal.push(iy, ix, frame.data()[center]);
             return; // It was a pedestal value nothing to store
         }
 
@@ -154,31 +172,50 @@ class ClusterFinder {
             cluster.x = ix;
             cluster.y = iy;
 
-            int i = 0;
-            for (int ir = -dy; ir < dy + has_center_pixel_y; ir++) {
-                for (int ic = -dx; ic < dx + has_center_pixel_x; ic++) {
-                    bool in_bounds = true;
-                    if constexpr (CheckBounds) {
-                        in_bounds = ix + ic >= 0 && ix + ic < frame.shape(1) &&
-                                    iy + ir >= 0 && iy + ir < frame.shape(0);
+            if constexpr (CheckBounds) {
+                int i = 0;
+                for (int ir = -dy; ir < dy + has_center_pixel_y; ir++) {
+                    for (int ic = -dx; ic < dx + has_center_pixel_x; ic++) {
+                        const int x = ix + ic;
+                        const int y = iy + ir;
+                        if (x >= 0 && x < cols && y >= 0 && y < rows) {
+                            const PEDESTAL_TYPE corrected_value =
+                                corrected[(static_cast<std::size_t>(y) * cols) +
+                                          x];
+                            if constexpr (
+                                std::is_integral_v<CT> &&
+                                std::is_floating_point_v<PEDESTAL_TYPE>) {
+                                cluster.data[i] = static_cast<CT>(
+                                    std::lround(corrected_value));
+                            } else {
+                                cluster.data[i] =
+                                    static_cast<CT>(corrected_value);
+                            }
+                        }
+                        i++;
                     }
-                    if (in_bounds) {
+                }
+            } else {
+                int i = 0;
+                for (int ir = -dy; ir < dy + has_center_pixel_y; ir++) {
+                    const auto *pixel =
+                        corrected + static_cast<std::size_t>(iy + ir) * cols +
+                        (ix - dx);
+                    for (int k = 0; k < ClusterSizeX; k++, i++) {
                         // If the cluster type is an integral type, and the
                         // pedestal is a floating point type then we need to
                         // round the value before storing it
                         if constexpr (std::is_integral_v<CT> &&
                                       std::is_floating_point_v<PEDESTAL_TYPE>) {
-                            cluster.data[i] = static_cast<CT>(std::lround(
-                                m_pd_corrected_frame(iy + ir, ix + ic)));
+                            cluster.data[i] =
+                                static_cast<CT>(std::lround(pixel[k]));
                         }
                         // On the other hand if both are floating point or both
                         // are integral then we can just static cast directly
                         else {
-                            cluster.data[i] = static_cast<CT>(
-                                m_pd_corrected_frame(iy + ir, ix + ic));
+                            cluster.data[i] = static_cast<CT>(pixel[k]);
                         }
                     }
-                    i++;
                 }
             }
 
@@ -204,10 +241,22 @@ class ClusterFinder {
 
         m_clusters.set_frame_number(frame_number);
 
-        m_pd_corrected_frame = frame - m_pedestal.view();
+        
 
         const int rows = static_cast<int>(frame.shape(0));
         const int cols = static_cast<int>(frame.shape(1));
+
+        // TODO! See if we can get the same performace using the operator-
+        // m_pd_corrected_frame = frame - m_pedestal.view();
+        
+        //here we should be able to safely assume that the frame and corrected frame have the same size
+        auto n_pixels = frame.size();
+        auto pd = m_pedestal.view().data();
+        auto corrected = m_pd_corrected_frame.data();
+        auto frame_data = frame.data();
+        for (size_t i = 0; i < n_pixels; i++) {
+            corrected[i] = static_cast<PEDESTAL_TYPE>(frame_data[i]) - pd[i];
+        }
 
         // Interior pixels can skip the per-neighbour bounds checks; pixels
         // within dx/dy of an edge take the bounds-checked path. Iteration order

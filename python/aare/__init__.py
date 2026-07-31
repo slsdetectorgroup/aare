@@ -8,8 +8,10 @@ from ._aare import File, RawMasterFile, RawSubFile, JungfrauDataFile
 from ._aare import (
     FastPedestal_d,
     FastPedestal_f,
+    FastPedestal_i16,
     Pedestal_d,
     Pedestal_f,
+    Pedestal_i16,
     ClusterFinder_Cluster3x3i,
     VarClusterFinder,
 )
