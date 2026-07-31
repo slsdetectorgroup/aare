@@ -1,6 +1,8 @@
 // SPDX-License-Identifier: MPL-2.0
 // Files with bindings to the different classes
 
+#include "module_config.hpp"
+
 // New style file naming
 #include "bind_Cluster.hpp"
 #include "bind_ClusterCollector.hpp"

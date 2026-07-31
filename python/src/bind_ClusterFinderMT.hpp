@@ -6,6 +6,8 @@
 #include "aare/ClusterVector.hpp"
 #include "aare/NDView.hpp"
 #include "aare/Pedestal.hpp"
+
+#include "module_config.hpp"
 #include "np_helper.hpp"
 
 #include <cstdint>
@@ -15,7 +17,7 @@
 #include <pybind11/stl_bind.h>
 
 namespace py = pybind11;
-using pd_type = double;
+
 
 using namespace aare;
 

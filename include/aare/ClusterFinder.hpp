@@ -113,6 +113,8 @@ class ClusterFinder {
         m_clusters.set_frame_number(frame_number);
 
         m_pd_corrected_frame = frame - m_pedestal.view();
+
+
         for (int iy = 0; iy < frame.shape(0); iy++) {
             for (int ix = 0; ix < frame.shape(1); ix++) {
 
@@ -152,8 +154,8 @@ class ClusterFinder {
                     m_pedestal.push(
                         iy, ix,
                         frame(iy,
-                              ix)); // Assume we have reached n_samples in the
-                                    // pedestal, slight performance improvement
+                              ix)); 
+                                    
                     continue;       // It was a pedestal value nothing to store
                 }
 

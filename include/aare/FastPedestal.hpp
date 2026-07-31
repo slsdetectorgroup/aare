@@ -9,11 +9,12 @@ namespace aare {
 
 /**
  * @brief Calculate the pedestal of a series of frames. Can be used as
- * standalone but mostly used in the ClusterFinder.
+ * standalone but mostly used in the ClusterFinder. Internal calculations are
+ * performed using double precision.
  *
- * @tparam SUM_TYPE type of the sum
+ * @tparam PEDESTAL_TYPE type of the exposed mean and std
  */
-template <typename SUM_TYPE = double> class FastPedestal {
+template <typename PEDESTAL_TYPE = double> class FastPedestal {
     // TODO! Force floating point sum type?
     // how does the internal calculation work with integers?
 
@@ -23,13 +24,13 @@ template <typename SUM_TYPE = double> class FastPedestal {
     uint32_t m_cols;
 
     uint32_t m_samples;
-    SUM_TYPE m_inv_samples;     // precompute 1/m_samples for faster division
+    double m_inv_samples;     // precompute 1/m_samples for faster division
     uint32_t m_cur_samples = 0; // TODO! do we need this when we have m_samples?
 
     // for cache we want to keep sum and sum2 close
     struct Entry {
-        SUM_TYPE sum;
-        SUM_TYPE sum2;
+        double sum;
+        double sum2;
     };
     // TODO! in case of int needs to be changed to uint64_t
     NDArray<Entry, 2> m_sum;
@@ -37,47 +38,45 @@ template <typename SUM_TYPE = double> class FastPedestal {
     // Cache mean since it is used over and over in the ClusterFinder
     // This optimization is related to the access pattern of the ClusterFinder
     // Relies on having more reads than pushes to the pedestal
-    NDArray<SUM_TYPE, 2> m_mean;
+    NDArray<PEDESTAL_TYPE, 2> m_mean;
 
     // Cache std. Only refreshed via update_std() to keep push() cheap.
-    NDArray<SUM_TYPE, 2> m_std;
+    // This gives a measureable speedup in the ClusterFinder.
+    NDArray<PEDESTAL_TYPE, 2> m_std;
 
   public:
     FastPedestal(uint32_t rows, uint32_t cols, uint32_t n_samples = 1000)
         : m_rows(rows), m_cols(cols), m_samples(n_samples),
           m_inv_samples(1.0 / n_samples),
-          m_sum(NDArray<Entry, 2>({rows, cols})),
-          m_mean(NDArray<SUM_TYPE, 2>({rows, cols})),
-          m_std(NDArray<SUM_TYPE, 2>({rows, cols})) {
+          m_sum({rows, cols}, Entry{0, 0}),
+          m_mean({rows, cols}),
+          m_std({rows, cols}, 0) {
         assert(rows > 0 && cols > 0 && n_samples > 0);
-        m_sum = Entry{SUM_TYPE(0), SUM_TYPE(0)};
-        m_mean = SUM_TYPE(0);
-        m_std = SUM_TYPE(0);
     }
     ~FastPedestal() = default;
 
-    NDArray<SUM_TYPE, 2> mean() { return m_mean; }
+    NDArray<PEDESTAL_TYPE, 2> mean() { return m_mean; }
 
-    const NDView<SUM_TYPE, 2> view() const { return m_mean.view(); }
+    const NDView<PEDESTAL_TYPE, 2> view() const { return m_mean.view(); }
 
-    SUM_TYPE mean(const uint32_t row, const uint32_t col) const {
+    PEDESTAL_TYPE mean(const uint32_t row, const uint32_t col) const {
         return m_mean(row, col);
     }
 
-    NDArray<SUM_TYPE, 2> cached_std() { return m_std; }
+    NDArray<PEDESTAL_TYPE, 2> cached_std() { return m_std; }
 
-    SUM_TYPE cached_std(const uint32_t row, const uint32_t col) const {
+    PEDESTAL_TYPE cached_std(const uint32_t row, const uint32_t col) const {
         return m_std(row, col);
     }
 
-    SUM_TYPE variance(const uint32_t row, const uint32_t col) const {
+    PEDESTAL_TYPE variance(const uint32_t row, const uint32_t col) const {
         auto &entry = m_sum(row, col);
         auto m2 = entry.sum * m_inv_samples * entry.sum * m_inv_samples;
         return entry.sum2 * m_inv_samples - m2;
     }
 
-    NDArray<SUM_TYPE, 2> variance() {
-        NDArray<SUM_TYPE, 2> res({m_rows, m_cols});
+    NDArray<PEDESTAL_TYPE, 2> variance() {
+        NDArray<PEDESTAL_TYPE, 2> res({m_rows, m_cols});
         for (ssize_t row = 0; row < m_rows; ++row) {
             for (ssize_t col = 0; col < m_cols; ++col) {
                 res(row, col) = variance(row, col);
@@ -86,12 +85,12 @@ template <typename SUM_TYPE = double> class FastPedestal {
         return res;
     }
 
-    SUM_TYPE std(const uint32_t row, const uint32_t col) const {
+    PEDESTAL_TYPE std(const uint32_t row, const uint32_t col) const {
         return std::sqrt(variance(row, col));
     }
 
-    NDArray<SUM_TYPE, 2> std() {
-        NDArray<SUM_TYPE, 2> res({m_rows, m_cols});
+    NDArray<PEDESTAL_TYPE, 2> std() {
+        NDArray<PEDESTAL_TYPE, 2> res({m_rows, m_cols});
         for (ssize_t row = 0; row < m_rows; ++row) {
             for (ssize_t col = 0; col < m_cols; ++col) {
                 res(row, col) = std(row, col);
@@ -105,9 +104,9 @@ template <typename SUM_TYPE = double> class FastPedestal {
     uint32_t cur_samples() { return m_cur_samples; }
 
     void clear() {
-        m_sum = Entry{SUM_TYPE(0), SUM_TYPE(0)};
-        m_mean = SUM_TYPE(0);
-        m_std = SUM_TYPE(0);
+        m_sum = Entry{double(0), double(0)};
+        m_mean = PEDESTAL_TYPE(0);
+        m_std = PEDESTAL_TYPE(0);
         m_ready = false;
     }
 
@@ -143,7 +142,7 @@ template <typename SUM_TYPE = double> class FastPedestal {
 
         for (size_t row = 0; row < m_rows; row++) {
             for (size_t col = 0; col < m_cols; col++) {
-                const auto val = static_cast<SUM_TYPE>(frame(row, col));
+                const auto val = static_cast<double>(frame(row, col));
                 auto &entry = m_sum(row, col);
                 entry.sum += val;
                 entry.sum2 += val * val;
@@ -176,7 +175,7 @@ template <typename SUM_TYPE = double> class FastPedestal {
         if (!ready()) {
             throw std::runtime_error("Pedestal is not ready, cannot push");
         }
-        SUM_TYPE val = static_cast<SUM_TYPE>(val_);
+        auto val = static_cast<double>(val_);
         auto &entry = m_sum(row, col);
         entry.sum += val - entry.sum * m_inv_samples;
         entry.sum2 += val * val - entry.sum2 * m_inv_samples;
@@ -188,7 +187,7 @@ template <typename SUM_TYPE = double> class FastPedestal {
         if (!ready()) {
             throw std::runtime_error("Pedestal is not ready, cannot push");
         }
-        SUM_TYPE val = static_cast<SUM_TYPE>(val_);
+        auto val = static_cast<double>(val_);
         auto &entry = m_sum(row, col);
         entry.sum += val - entry.sum * m_inv_samples;
         entry.sum2 += val * val - entry.sum2 * m_inv_samples;

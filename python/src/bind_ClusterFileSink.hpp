@@ -15,8 +15,6 @@
 #include <pybind11/stl_bind.h>
 
 namespace py = pybind11;
-using pd_type = double;
-
 using namespace aare;
 
 #pragma GCC diagnostic push
@@ -29,6 +27,8 @@ void define_ClusterFileSink(py::module &m, const std::string &typestr) {
 
     using ClusterType = Cluster<T, ClusterSizeX, ClusterSizeY, CoordType>;
 
+    //TODO! adapt to set pedestal type (needs templating of ClusterFileSink)
+    //or maybe access through base class?
     py::class_<ClusterFileSink<ClusterType>>(m, class_name.c_str())
         .def(py::init<ClusterFinderMT<ClusterType, uint16_t, double> *,
                       const std::filesystem::path &>())
