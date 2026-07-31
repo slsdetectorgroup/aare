@@ -98,109 +98,138 @@ class ClusterFinder {
             m_clusters = ClusterVector<ClusterType>{};
         return tmp;
     }
+  private:
+    /**
+     * @brief Process a single pixel: scan its cluster window, decide whether it
+     * is a photon or a pedestal value, and store the cluster if needed.
+     * @tparam CheckBounds if true the neighbourhood accesses are bounds-checked
+     * (border pixels), if false they are assumed in bounds (interior pixels).
+     */
+    template <bool CheckBounds>
+    void process_pixel(const NDView<FRAME_TYPE, 2> &frame,
+                                const int iy, const int ix) {
+        constexpr int dy = ClusterSizeY / 2;
+        constexpr int dx = ClusterSizeX / 2;
+        constexpr int has_center_pixel_x = ClusterSizeX % 2;
+        constexpr int has_center_pixel_y = ClusterSizeY % 2;
+
+        PEDESTAL_TYPE max = std::numeric_limits<FRAME_TYPE>::min();
+        PEDESTAL_TYPE total = 0;
+
+        const PEDESTAL_TYPE threshold = m_threshold(iy, ix);
+        const PEDESTAL_TYPE value = m_pd_corrected_frame(iy, ix);
+
+        if (value < -threshold)
+            return; // NEGATIVE_PEDESTAL, nothing to do for this pixel
+                    // TODO! No pedestal update???
+
+        for (int ir = -dy; ir < dy + has_center_pixel_y; ir++) {
+            for (int ic = -dx; ic < dx + has_center_pixel_x; ic++) {
+                if constexpr (CheckBounds) {
+                    if (ix + ic < 0 || ix + ic >= frame.shape(1) ||
+                        iy + ir < 0 || iy + ir >= frame.shape(0))
+                        continue;
+                }
+                const PEDESTAL_TYPE val =
+                    m_pd_corrected_frame(iy + ir, ix + ic);
+                total += val;
+                max = std::max(max, val);
+            }
+        }
+
+        if ((max > threshold)) {
+            if (value < max)
+                return; // Not max go to the next pixel, no pedestal update
+        } else if (total > c3 * threshold) {
+            // pass, store the cluster below
+        } else {
+            // m_pedestal.push(iy, ix, frame(iy, ix));   // Safe option
+            m_pedestal.push(iy, ix, frame(iy, ix));
+            return; // It was a pedestal value nothing to store
+        }
+
+        // Store cluster
+        if (value == max) {
+            ClusterType cluster{};
+            cluster.x = ix;
+            cluster.y = iy;
+
+            int i = 0;
+            for (int ir = -dy; ir < dy + has_center_pixel_y; ir++) {
+                for (int ic = -dx; ic < dx + has_center_pixel_x; ic++) {
+                    bool in_bounds = true;
+                    if constexpr (CheckBounds) {
+                        in_bounds = ix + ic >= 0 && ix + ic < frame.shape(1) &&
+                                    iy + ir >= 0 && iy + ir < frame.shape(0);
+                    }
+                    if (in_bounds) {
+                        // If the cluster type is an integral type, and the
+                        // pedestal is a floating point type then we need to
+                        // round the value before storing it
+                        if constexpr (std::is_integral_v<CT> &&
+                                      std::is_floating_point_v<PEDESTAL_TYPE>) {
+                            cluster.data[i] = static_cast<CT>(std::lround(
+                                m_pd_corrected_frame(iy + ir, ix + ic)));
+                        }
+                        // On the other hand if both are floating point or both
+                        // are integral then we can just static cast directly
+                        else {
+                            cluster.data[i] = static_cast<CT>(
+                                m_pd_corrected_frame(iy + ir, ix + ic));
+                        }
+                    }
+                    i++;
+                }
+            }
+
+            // Add the cluster to the output ClusterVector
+            m_clusters.push_back(cluster);
+        }
+    }
+
+  public:
     void find_clusters(NDView<FRAME_TYPE, 2> frame, uint64_t frame_number = 0) {
         // // TODO! deal with even size clusters
         // // currently 3,3 -> +/- 1
         // //  4,4 -> +/- 2
         constexpr int dy = ClusterSizeY / 2;
         constexpr int dx = ClusterSizeX / 2;
-        constexpr int has_center_pixel_x =
-            ClusterSizeX %
-            2; // for even sized clusters there is no proper cluster center and
-               // even amount of pixels around the center
+        constexpr int has_center_pixel_x = ClusterSizeX % 2;
         constexpr int has_center_pixel_y = ClusterSizeY % 2;
+
+        // Largest neighbour offset below/right of the current pixel. Pixels
+        // further than this from an edge have their whole window in bounds.
+        constexpr int down = dy + has_center_pixel_y - 1;
+        constexpr int right = dx + has_center_pixel_x - 1;
 
         m_clusters.set_frame_number(frame_number);
 
         m_pd_corrected_frame = frame - m_pedestal.view();
 
+        const int rows = static_cast<int>(frame.shape(0));
+        const int cols = static_cast<int>(frame.shape(1));
 
-        for (int iy = 0; iy < frame.shape(0); iy++) {
-            for (int ix = 0; ix < frame.shape(1); ix++) {
+        // Interior pixels can skip the per-neighbour bounds checks; pixels
+        // within dx/dy of an edge take the bounds-checked path. Iteration order
+        // (row-major, increasing ix) is preserved so results are identical.
+        const int ix_begin = dx;
+        const int ix_end = cols - right; // exclusive
 
-                PEDESTAL_TYPE max = std::numeric_limits<FRAME_TYPE>::min();
-                PEDESTAL_TYPE total = 0;
+        for (int iy = 0; iy < rows; iy++) {
+            const bool interior_row = iy >= dy && iy < rows - down;
 
-                // What can we short circuit here?
-                // PEDESTAL_TYPE rms = m_pedestal.cached_std(iy, ix);
-                PEDESTAL_TYPE threshold = m_threshold(iy, ix);
-                PEDESTAL_TYPE value = m_pd_corrected_frame(iy, ix);
-
-                if (value < -threshold)
-                    continue; // NEGATIVE_PEDESTAL go to next pixel
-                              // TODO! No pedestal update???
-
-                for (int ir = -dy; ir < dy + has_center_pixel_y; ir++) {
-                    for (int ic = -dx; ic < dx + has_center_pixel_x; ic++) {
-                        if (ix + ic >= 0 && ix + ic < frame.shape(1) &&
-                            iy + ir >= 0 && iy + ir < frame.shape(0)) {
-                            PEDESTAL_TYPE val =
-                                m_pd_corrected_frame(iy + ir, ix + ic);
-
-                            total += val;
-                            max = std::max(max, val);
-                        }
-                    }
-                }
-
-                if ((max > threshold)) {
-                    if (value < max)
-                        continue; // Not max go to the next pixel
-                                  // but also no pedestal update
-                } else if (total > c3 * threshold) {
-                    // pass
-                } else {
-                    // m_pedestal.push(iy, ix, frame(iy, ix));   // Safe option
-                    m_pedestal.push(
-                        iy, ix,
-                        frame(iy,
-                              ix)); 
-                                    
-                    continue;       // It was a pedestal value nothing to store
-                }
-
-                // Store cluster
-                if (value == max) {
-                    ClusterType cluster{};
-                    cluster.x = ix;
-                    cluster.y = iy;
-
-                    // Fill the cluster data since we have a photon to store
-                    // It's worth redoing the look since most of the time we
-                    // don't have a photon
-                    int i = 0;
-                    for (int ir = -dy; ir < dy + has_center_pixel_y; ir++) {
-                        for (int ic = -dx; ic < dx + has_center_pixel_x; ic++) {
-                            if (ix + ic >= 0 && ix + ic < frame.shape(1) &&
-                                iy + ir >= 0 && iy + ir < frame.shape(0)) {
-
-                                // If the cluster type is an integral type, and
-                                // the pedestal is a floating point type then we
-                                // need to round the value before storing it
-                                if constexpr (std::is_integral_v<CT> &&
-                                              std::is_floating_point_v<
-                                                  PEDESTAL_TYPE>) {
-                                    auto tmp = std::lround(
-                                        m_pd_corrected_frame(iy + ir, ix + ic));
-                                    cluster.data[i] = static_cast<CT>(tmp);
-                                }
-                                // On the other hand if both are floating point
-                                // or both are integral then we can just static
-                                // cast directly
-                                else {
-                                    auto tmp =
-                                        m_pd_corrected_frame(iy + ir, ix + ic);
-                                    cluster.data[i] = static_cast<CT>(tmp);
-                                }
-                            }
-                            i++;
-                        }
-                    }
-
-                    // Add the cluster to the output ClusterVector
-                    m_clusters.push_back(cluster);
-                }
+            if (!interior_row || ix_begin >= ix_end) {
+                for (int ix = 0; ix < cols; ix++)
+                    process_pixel<true>(frame, iy, ix);
+                continue;
             }
+
+            for (int ix = 0; ix < ix_begin; ix++)
+                process_pixel<true>(frame, iy, ix);
+            for (int ix = ix_begin; ix < ix_end; ix++)
+                process_pixel<false>(frame, iy, ix);
+            for (int ix = ix_end; ix < cols; ix++)
+                process_pixel<true>(frame, iy, ix);
         }
     }
 };
