@@ -67,6 +67,29 @@ void define_ClusterFinderCUDA(py::module &m, const std::string &typestr) {
                                })
 
         .def(
+            "device_pedestal",
+            [](CF &self, int stream) {
+                auto pd = new NDArray<pd_type, 2>{};
+                *pd = self.device_pedestal(stream);
+                return return_image_data(pd);
+            },
+            py::arg("stream") = 0,
+            R"(Device pedestal MEAN for a stream — the pedestal the kernel
+actually decides with and updates each frame, unlike `pedestal` (the frozen
+host pedestal). Read it before find_clusters() for the decision-time state.)")
+
+        .def(
+            "device_noise",
+            [](CF &self, int stream) {
+                auto arr = new NDArray<pd_type, 2>{};
+                *arr = self.device_noise(stream);
+                return return_image_data(arr);
+            },
+            py::arg("stream") = 0,
+            R"(Device pedestal RMS for a stream, computed as the kernel does:
+sqrt(max(sum2/n - mean^2, 0)). Counterpart to `noise` for the device pedestal.)")
+
+        .def(
             "steal_clusters",
             [](CF &self, bool realloc_same_capacity) {
                 return std::move(self.steal_clusters(realloc_same_capacity));

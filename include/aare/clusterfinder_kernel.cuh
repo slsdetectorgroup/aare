@@ -6,17 +6,25 @@
 
 namespace aare::device {
 
-// Implementing mixed precision for shared memory and stencil arithmetic
-using COMPUTE_TYPE = float;
+// Device arithmetic precision.
+//   COMPUTE_TYPE    : per-frame stencil arithmetic (shared-memory tile, sums).
+//   DEVICE_PED_TYPE : device pedestal storage + running variance update.
+// Shipped as double/double so the GPU result matches the double-precision CPU
+// ClusterFinder to the floating-point floor. float/float is ~2x faster but
+// reintroduces a small near-threshold mismatch; a build-time toggle for that
+// trade-off is planned.
+using COMPUTE_TYPE = double;
+using DEVICE_PED_TYPE = double;
 
 template <typename ClusterType = Cluster<int32_t, 3, 3>,
           typename FRAME_TYPE = uint16_t,
           typename = std::enable_if_t<no_2x2_cluster<ClusterType>::value>>
 __global__ void find_clusters_in_single_frame(
-    const FRAME_TYPE *__restrict__ d_frame, float *__restrict__ d_pd_mean,
-    float *__restrict__ d_pd_sum, float *__restrict__ d_pd_sum2,
-    const uint32_t n_pd_samples, const COMPUTE_TYPE m_nSigma,
-    const size_t nrows, const size_t ncols,
+    const FRAME_TYPE *__restrict__ d_frame,
+    DEVICE_PED_TYPE *__restrict__ d_pd_mean,
+    DEVICE_PED_TYPE *__restrict__ d_pd_sum,
+    DEVICE_PED_TYPE *__restrict__ d_pd_sum2, const uint32_t n_pd_samples,
+    const COMPUTE_TYPE m_nSigma, const size_t nrows, const size_t ncols,
     //   const uint64_t       frame_number,
     ClusterType *d_clusters, uint32_t *d_cluster_count,
     const uint32_t max_clusters) {
@@ -174,11 +182,13 @@ __global__ void find_clusters_in_single_frame(
     // Per-pixel variance from global pedestal arrays
     // Variance = rms^2 = E[X^2] - E[X]^2
     // NOTE: Keep thresholds squared to avoid one sqrtf() per pixel.
-    float mean_px = d_pd_mean[global_tid];
-    float var_px = d_pd_sum2[global_tid] / static_cast<float>(n_pd_samples) -
-                   mean_px * mean_px;
-    float rms_sq = fmaxf(var_px, 0.0f);
-    float nSig_sq_rms_sq = m_nSigma * m_nSigma * rms_sq;
+    DEVICE_PED_TYPE mean_px = d_pd_mean[global_tid];
+    DEVICE_PED_TYPE var_px =
+        d_pd_sum2[global_tid] / static_cast<DEVICE_PED_TYPE>(n_pd_samples) -
+        mean_px * mean_px;
+    COMPUTE_TYPE rms_sq = static_cast<COMPUTE_TYPE>(
+        var_px > DEVICE_PED_TYPE{0} ? var_px : DEVICE_PED_TYPE{0});
+    COMPUTE_TYPE nSig_sq_rms_sq = m_nSigma * m_nSigma * rms_sq;
 
     // Pedestal-subtracted value of the center pixel (already in shmem)
     COMPUTE_TYPE val_pixel = shmem[shmem_tid];
@@ -193,7 +203,7 @@ __global__ void find_clusters_in_single_frame(
 
     // Stencil reduction: total, max, quadrant sums
     COMPUTE_TYPE total = 0.0f;
-    COMPUTE_TYPE max_val = -HUGE_VALF;
+    COMPUTE_TYPE max_val = -HUGE_VAL; // double inf; narrows to float if needed
 
     // // Quandrants
     // PEDESTAL_TYPE tl = PEDESTAL_TYPE{0};   // top-left quadrant  (ir<=0,
@@ -209,7 +219,7 @@ __global__ void find_clusters_in_single_frame(
             COMPUTE_TYPE val = shmem[shmem_tid + ir * shmem_stride + ic];
 
             total += val;
-            max_val = fmaxf(max_val, val);
+            max_val = val > max_val ? val : max_val;
 
             // // Quadrant accumulation (pixels on the axes contribute to two
             // quadrants) if (ir <= 0 && ic <= 0) tl += val; if (ir <= 0 && ic
@@ -255,8 +265,15 @@ __global__ void find_clusters_in_single_frame(
 
     // Test 3: total significance (only if tests 1 & 2 didn't fire)
     if (!is_photon) {
-        if (total > 0.0f &&
-            total * total > static_cast<float>(pow2_c3) * nSig_sq_rms_sq) {
+        if (total > 0.0f && total * total > static_cast<COMPUTE_TYPE>(pow2_c3) *
+                                                nSig_sq_rms_sq) {
+            // Local-max suppression, mirroring ClusterFinder's `value == max`
+            // store gate: only the peak pixel of the window records the
+            // cluster, so an extended charge-shared event yields one cluster,
+            // not one per pixel. Return (not fall-through) because the serial
+            // total branch pushes no pedestal for these non-max pixels.
+            if (val_pixel < max_val)
+                return;
             is_photon = true;
         }
     }
@@ -267,10 +284,11 @@ __global__ void find_clusters_in_single_frame(
     // frame simultaneously. So the updated pedestal will only be used starting
     // from the next frame. -> This avoids a/serialization and b/global mem I/O.
     if (!is_photon && valid_pixel) {
-        float raw_val = static_cast<float>(d_frame[global_tid]);
-        float sum = d_pd_sum[global_tid];
-        float sum2 = d_pd_sum2[global_tid];
-        float n = static_cast<float>(n_pd_samples);
+        DEVICE_PED_TYPE raw_val =
+            static_cast<DEVICE_PED_TYPE>(d_frame[global_tid]);
+        DEVICE_PED_TYPE sum = d_pd_sum[global_tid];
+        DEVICE_PED_TYPE sum2 = d_pd_sum2[global_tid];
+        DEVICE_PED_TYPE n = static_cast<DEVICE_PED_TYPE>(n_pd_samples);
 
         sum += raw_val - sum / n;
         sum2 += raw_val * raw_val - sum2 / n;
@@ -297,7 +315,7 @@ __global__ void find_clusters_in_single_frame(
         for (int ic = -col_radius; ic <= col_radius; ++ic) {
             COMPUTE_TYPE val = shmem[shmem_tid + ir * shmem_stride + ic];
             if constexpr (std::is_integral_v<CT>)
-                clusterData[idx] = static_cast<CT>(lroundf(val));
+                clusterData[idx] = static_cast<CT>(lround(val));
             else
                 clusterData[idx] = static_cast<CT>(val);
             idx++;

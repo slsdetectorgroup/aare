@@ -20,9 +20,10 @@ template <typename ClusterType, typename FRAME_TYPE, typename PEDESTAL_TYPE>
 struct StreamContext {
     cudaStream_t stream = nullptr;
     FRAME_TYPE *d_frame = nullptr;
-    float *d_pd_mean = nullptr; // always float on device; host stays double
-    float *d_pd_sum = nullptr;
-    float *d_pd_sum2 = nullptr;
+    // Device pedestal precision is set by DEVICE_PED_TYPE in the kernel header.
+    device::DEVICE_PED_TYPE *d_pd_mean = nullptr;
+    device::DEVICE_PED_TYPE *d_pd_sum = nullptr;
+    device::DEVICE_PED_TYPE *d_pd_sum2 = nullptr;
     uint8_t *d_output = nullptr; // [uint32_t count | ClusterType clusters[max]]
 };
 
@@ -170,9 +171,12 @@ class ClusterFinderCUDA {
             CUDA_CHECK(
                 cudaStreamCreateWithFlags(&sc.stream, cudaStreamNonBlocking));
             CUDA_CHECK(cudaMalloc(&sc.d_frame, m_image_bytes));
-            CUDA_CHECK(cudaMalloc(&sc.d_pd_mean, m_image_size * sizeof(float)));
-            CUDA_CHECK(cudaMalloc(&sc.d_pd_sum, m_image_size * sizeof(float)));
-            CUDA_CHECK(cudaMalloc(&sc.d_pd_sum2, m_image_size * sizeof(float)));
+            CUDA_CHECK(cudaMalloc(
+                &sc.d_pd_mean, m_image_size * sizeof(device::DEVICE_PED_TYPE)));
+            CUDA_CHECK(cudaMalloc(
+                &sc.d_pd_sum, m_image_size * sizeof(device::DEVICE_PED_TYPE)));
+            CUDA_CHECK(cudaMalloc(
+                &sc.d_pd_sum2, m_image_size * sizeof(device::DEVICE_PED_TYPE)));
             CUDA_CHECK(cudaMalloc(&sc.d_output, m_output_bytes_per_frame));
         }
 
@@ -265,6 +269,67 @@ class ClusterFinderCUDA {
 
     NDArray<PEDESTAL_TYPE, 2> pedestal() { return m_pedestal.mean(); }
     NDArray<PEDESTAL_TYPE, 2> noise() { return m_pedestal.std(); }
+
+    /**
+     * @brief Device pedestal MEAN for one stream — the pedestal the kernel
+     *        actually reads and updates in place every frame. This differs from
+     *        pedestal() (the host pedestal, advanced only by
+     *        push_pedestal_frame): it carries the in-kernel running update, so
+     *        it is the baseline an accept/reject decision was really made
+     *        against. Reading it right BEFORE a find_clusters() call gives the
+     *        state that call will decide with (the kernel updates at frame
+     * end). With the single-frame path every frame lands on stream 0.
+     */
+    NDArray<PEDESTAL_TYPE, 2> device_pedestal(int stream = 0) {
+        if (m_pedestal_dirty) {
+            sync_pedestal_to_device();
+            m_pedestal_dirty = false;
+        }
+        auto &sc = v_sc.at(static_cast<size_t>(stream));
+        CUDA_CHECK(cudaStreamSynchronize(sc.stream));
+        using DPT = device::DEVICE_PED_TYPE;
+        std::vector<DPT> h_mean(m_image_size);
+        CUDA_CHECK(cudaMemcpy(h_mean.data(), sc.d_pd_mean,
+                              m_image_size * sizeof(DPT),
+                              cudaMemcpyDeviceToHost));
+        NDArray<PEDESTAL_TYPE, 2> out(
+            {static_cast<ssize_t>(nrows), static_cast<ssize_t>(ncols)});
+        for (size_t i = 0; i < m_image_size; ++i)
+            out.data()[i] = static_cast<PEDESTAL_TYPE>(h_mean[i]);
+        return out;
+    }
+
+    /**
+     * @brief Device pedestal RMS for one stream, computed exactly as the kernel
+     *        does: sqrt(max(sum2/n - mean^2, 0)). See device_pedestal().
+     */
+    NDArray<PEDESTAL_TYPE, 2> device_noise(int stream = 0) {
+        if (m_pedestal_dirty) {
+            sync_pedestal_to_device();
+            m_pedestal_dirty = false;
+        }
+        auto &sc = v_sc.at(static_cast<size_t>(stream));
+        CUDA_CHECK(cudaStreamSynchronize(sc.stream));
+        using DPT = device::DEVICE_PED_TYPE;
+        std::vector<DPT> h_mean(m_image_size), h_sum2(m_image_size);
+        CUDA_CHECK(cudaMemcpy(h_mean.data(), sc.d_pd_mean,
+                              m_image_size * sizeof(DPT),
+                              cudaMemcpyDeviceToHost));
+        CUDA_CHECK(cudaMemcpy(h_sum2.data(), sc.d_pd_sum2,
+                              m_image_size * sizeof(DPT),
+                              cudaMemcpyDeviceToHost));
+        const double n = static_cast<double>(m_pedestal.n_samples());
+        NDArray<PEDESTAL_TYPE, 2> out(
+            {static_cast<ssize_t>(nrows), static_cast<ssize_t>(ncols)});
+        for (size_t i = 0; i < m_image_size; ++i) {
+            double var =
+                static_cast<double>(h_sum2[i]) / n -
+                static_cast<double>(h_mean[i]) * static_cast<double>(h_mean[i]);
+            out.data()[i] =
+                static_cast<PEDESTAL_TYPE>(std::sqrt(std::max(var, 0.0)));
+        }
+        return out;
+    }
 
     /**
      * @brief Move clusters out of the internal ClusterVector, optionally
@@ -580,18 +645,19 @@ class ClusterFinderCUDA {
         NDArray<PEDESTAL_TYPE, 2> h_sum = m_pedestal.get_sum();
         NDArray<PEDESTAL_TYPE, 2> h_sum2 = m_pedestal.get_sum2();
 
-        // Host accumulates in double for precision; cast to float for device
-        // to halve global-memory bandwidth and eliminate FP64 arithmetic.
-        std::vector<float> f_mean(m_image_size);
-        std::vector<float> f_sum(m_image_size);
-        std::vector<float> f_sum2(m_image_size);
+        // Host accumulates in double; cast to the device pedestal precision
+        // (DEVICE_PED_TYPE — float or double per the kernel-header toggle).
+        using DPT = device::DEVICE_PED_TYPE;
+        std::vector<DPT> f_mean(m_image_size);
+        std::vector<DPT> f_sum(m_image_size);
+        std::vector<DPT> f_sum2(m_image_size);
         for (size_t i = 0; i < m_image_size; ++i) {
-            f_mean[i] = static_cast<float>(h_mean.data()[i]);
-            f_sum[i] = static_cast<float>(h_sum.data()[i]);
-            f_sum2[i] = static_cast<float>(h_sum2.data()[i]);
+            f_mean[i] = static_cast<DPT>(h_mean.data()[i]);
+            f_sum[i] = static_cast<DPT>(h_sum.data()[i]);
+            f_sum2[i] = static_cast<DPT>(h_sum2.data()[i]);
         }
 
-        const size_t bytes = m_image_size * sizeof(float);
+        const size_t bytes = m_image_size * sizeof(DPT);
         for (auto &sc : v_sc) {
             CUDA_CHECK(cudaMemcpyAsync(sc.d_pd_mean, f_mean.data(), bytes,
                                        cudaMemcpyHostToDevice, sc.stream));
