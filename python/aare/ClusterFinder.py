@@ -111,6 +111,47 @@ def ClusterFinderCUDA(image_size, cluster_size=(3,3), n_sigma=5, dtype=np.int32,
                max_clusters_per_frame=max_clusters_per_frame,
                n_streams=n_streams)
 
+def ClusterFinderCUDAGraph(image_size, cluster_size=(3,3), n_sigma=5, dtype=np.int32,
+                           max_clusters_per_frame=2048, n_streams=4):
+    """
+    Factory function to create a ClusterFinderCUDAGraph object. Uses pre-recorded
+    CUDA Graphs to reduce per-frame CPU API overhead (~23 µs vs ~31 µs for the
+    stream-based version), potentially improving throughput when processing is
+    CPU-overhead-bound.
+
+    Parameters
+    ----------
+    image_size : tuple of (int, int)
+        Detector shape as (nrows, ncols).
+    cluster_size : tuple of (int, int), optional
+        Cluster window size; default (3, 3).
+    n_sigma : float, optional
+        Threshold in units of per-pixel pedestal standard deviation.
+    dtype : numpy dtype, optional
+        Cluster value type (np.int32 or np.float32).
+    max_clusters_per_frame : int, optional
+        Hard upper bound on clusters per frame. Default 2048.
+    n_streams : int, optional
+        Number of CUDA streams (one graph per stream). Default 4.
+
+    Note
+    ----
+    avg_kernel_time_ms() always returns 0.0 for this variant — use
+    wall-clock timing around find_clusters_batched() instead.
+    """
+    if not _cuda_available():
+        raise RuntimeError(
+            "ClusterFinderCUDAGraph is not available in this build of aare. "
+            "Rebuild with -DAARE_CUDA=ON (and -DAARE_PYTHON_BINDINGS=ON)."
+        )
+
+    cls = _get_class("ClusterFinderCUDAGraph", cluster_size, dtype)
+    return cls(image_size,
+               n_sigma=n_sigma,
+               max_clusters_per_frame=max_clusters_per_frame,
+               n_streams=n_streams)
+
+
 def ClusterCollector(clusterfindermt, dtype=np.int32): 
     """ 
     Factory function to create a ClusterCollector object. Provides a cleaner syntax for 

@@ -7,6 +7,7 @@
 
 #include "bind_Cluster.hpp"
 #include "bind_ClusterFinderCUDA.hpp"
+#include "bind_ClusterFinderCUDAGraph.hpp"
 #include "bind_ClusterVector.hpp"
 
 #include <pybind11/pybind11.h>
@@ -24,6 +25,10 @@ namespace py = pybind11;
 #define DEFINE_BINDINGS_CLUSTERFINDER_CUDA(T, N, M, U, TYPE_CODE)              \
     aare::define_ClusterFinderCUDA<T, N, M, U>(m, "Cluster" #N                 \
                                                   "x" #M #TYPE_CODE);
+
+#define DEFINE_BINDINGS_CLUSTERFINDER_CUDA_GRAPH(T, N, M, U, TYPE_CODE)        \
+    aare::define_ClusterFinderCUDAGraph<T, N, M, U>(m, "Cluster" #N            \
+                                                       "x" #M #TYPE_CODE);
 
 PYBIND11_MODULE(_aare_cuda, m) {
 
@@ -61,7 +66,25 @@ PYBIND11_MODULE(_aare_cuda, m) {
     DEFINE_BINDINGS_CLUSTERFINDER_CUDA(int, 9, 9, uint16_t, i);
     DEFINE_BINDINGS_CLUSTERFINDER_CUDA(double, 9, 9, uint16_t, d);
     DEFINE_BINDINGS_CLUSTERFINDER_CUDA(float, 9, 9, uint16_t, f);
+
+    // Graph-based finders
+    DEFINE_BINDINGS_CLUSTERFINDER_CUDA_GRAPH(int, 3, 3, uint16_t, i);
+    DEFINE_BINDINGS_CLUSTERFINDER_CUDA_GRAPH(double, 3, 3, uint16_t, d);
+    DEFINE_BINDINGS_CLUSTERFINDER_CUDA_GRAPH(float, 3, 3, uint16_t, f);
+
+    DEFINE_BINDINGS_CLUSTERFINDER_CUDA_GRAPH(int, 5, 5, uint16_t, i);
+    DEFINE_BINDINGS_CLUSTERFINDER_CUDA_GRAPH(double, 5, 5, uint16_t, d);
+    DEFINE_BINDINGS_CLUSTERFINDER_CUDA_GRAPH(float, 5, 5, uint16_t, f);
+
+    DEFINE_BINDINGS_CLUSTERFINDER_CUDA_GRAPH(int, 7, 7, uint16_t, i);
+    DEFINE_BINDINGS_CLUSTERFINDER_CUDA_GRAPH(double, 7, 7, uint16_t, d);
+    DEFINE_BINDINGS_CLUSTERFINDER_CUDA_GRAPH(float, 7, 7, uint16_t, f);
+
+    DEFINE_BINDINGS_CLUSTERFINDER_CUDA_GRAPH(int, 9, 9, uint16_t, i);
+    DEFINE_BINDINGS_CLUSTERFINDER_CUDA_GRAPH(double, 9, 9, uint16_t, d);
+    DEFINE_BINDINGS_CLUSTERFINDER_CUDA_GRAPH(float, 9, 9, uint16_t, f);
 }
 
 #undef DEFINE_CUDA_CLUSTER_TYPES
 #undef DEFINE_BINDINGS_CLUSTERFINDER_CUDA
+#undef DEFINE_BINDINGS_CLUSTERFINDER_CUDA_GRAPH

@@ -32,7 +32,7 @@ from ._aare import corner
 
 from ._version import __version__
 from .ClusterFinder import ClusterFinder, ClusterCollector, ClusterFinderMT, ClusterFileSink, ClusterFile
-from .ClusterFinder import ClusterFinderCUDA, _cuda_available
+from .ClusterFinder import ClusterFinderCUDA, ClusterFinderCUDAGraph, _cuda_available
 from .ClusterVector import ClusterVector
 from .Cluster import Cluster
 
