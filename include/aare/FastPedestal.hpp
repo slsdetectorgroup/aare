@@ -4,6 +4,7 @@
 #include "aare/NDArray.hpp"
 #include "aare/NDView.hpp"
 #include <cstddef>
+#include <sys/types.h>
 
 namespace aare {
 
@@ -14,10 +15,9 @@ namespace aare {
  *
  * @tparam PEDESTAL_TYPE type of the exposed mean and std
  */
-template <typename PEDESTAL_TYPE = double> class FastPedestal {
-    // TODO! Force floating point sum type?
-    // how does the internal calculation work with integers?
+template <typename PEDESTAL_TYPE> class FastPedestal {
 
+    // Did we accumulate enough samples and updated the mean?
     bool m_ready = false; 
 
     uint32_t m_rows;
@@ -25,62 +25,71 @@ template <typename PEDESTAL_TYPE = double> class FastPedestal {
 
     uint32_t m_samples;
     double m_inv_samples;     // precompute 1/m_samples for faster division
-    uint32_t m_cur_samples = 0; // TODO! do we need this when we have m_samples?
+    uint32_t m_cur_samples = 0; // number of samples accumulated so far
 
-    // for cache we want to keep sum and sum2 close
+    // For cache locality we want to keep sum and sum2 close. Improves performance
+    // for random access. 
     struct Entry {
         double sum;
         double sum2;
     };
-    // TODO! in case of int needs to be changed to uint64_t
     NDArray<Entry, 2> m_sum;
 
     // Cache mean since it is used over and over in the ClusterFinder
     // This optimization is related to the access pattern of the ClusterFinder
     // Relies on having more reads than pushes to the pedestal
+    // But also makes sense when subtracting the pedestal from the frame
     NDArray<PEDESTAL_TYPE, 2> m_mean;
 
-    // Cache std. Only refreshed via update_std() to keep push() cheap.
-    // This gives a measureable speedup in the ClusterFinder.
-    NDArray<PEDESTAL_TYPE, 2> m_std;
-
+    // Helper function to convert row and column indices to a flat index
+    // used to provide both row column and flat index access to the pedestal
+    size_t rc_to_index(uint32_t row, uint32_t col) const {
+        return (static_cast<std::size_t>(row) * m_cols) + col;
+    }
   public:
     FastPedestal(uint32_t rows, uint32_t cols, uint32_t n_samples = 1000)
         : m_rows(rows), m_cols(cols), m_samples(n_samples),
           m_inv_samples(1.0 / n_samples),
           m_sum({rows, cols}, Entry{0, 0}),
-          m_mean({rows, cols}),
-          m_std({rows, cols}, 0) {
+          m_mean({rows, cols}, PEDESTAL_TYPE(0)) {
         assert(rows > 0 && cols > 0 && n_samples > 0);
     }
     ~FastPedestal() = default;
 
-    NDArray<PEDESTAL_TYPE, 2> mean() { return m_mean; }
-
     const NDView<PEDESTAL_TYPE, 2> view() const { return m_mean.view(); }
 
-    PEDESTAL_TYPE mean(const uint32_t row, const uint32_t col) const {
+    NDArray<PEDESTAL_TYPE, 2> mean() { return m_mean; }
+
+    PEDESTAL_TYPE mean(uint32_t row, uint32_t col) const {
         return m_mean(row, col);
     }
 
-    NDArray<PEDESTAL_TYPE, 2> cached_std() { return m_std; }
-
-    PEDESTAL_TYPE cached_std(const uint32_t row, const uint32_t col) const {
-        return m_std(row, col);
-    }
-
-    PEDESTAL_TYPE variance(const uint32_t row, const uint32_t col) const {
-        auto &entry = m_sum(row, col);
-        auto m2 = entry.sum * m_inv_samples * entry.sum * m_inv_samples;
-        return entry.sum2 * m_inv_samples - m2;
+    PEDESTAL_TYPE mean(ssize_t index) const {
+        return m_mean[index];
     }
 
     NDArray<PEDESTAL_TYPE, 2> variance() {
         NDArray<PEDESTAL_TYPE, 2> res({m_rows, m_cols});
-        for (ssize_t row = 0; row < m_rows; ++row) {
-            for (ssize_t col = 0; col < m_cols; ++col) {
-                res(row, col) = variance(row, col);
-            }
+        for (ssize_t i = 0; i < m_sum.size(); ++i) {
+            res[i] = variance(i);
+        }
+        return res;
+    }
+
+    PEDESTAL_TYPE variance(const uint32_t row, const uint32_t col) const {
+        return variance(rc_to_index(row, col));
+    }
+
+    PEDESTAL_TYPE variance(ssize_t index) const {
+        auto &entry = m_sum[index];
+        auto m2 = entry.sum * m_inv_samples * entry.sum * m_inv_samples;
+        return entry.sum2 * m_inv_samples - m2;
+    }
+
+    NDArray<PEDESTAL_TYPE, 2> std() {
+        NDArray<PEDESTAL_TYPE, 2> res({m_rows, m_cols});
+        for (ssize_t i = 0; i < m_sum.size(); ++i) {
+            res[i] = std(i);
         }
         return res;
     }
@@ -89,32 +98,23 @@ template <typename PEDESTAL_TYPE = double> class FastPedestal {
         return std::sqrt(variance(row, col));
     }
 
-    NDArray<PEDESTAL_TYPE, 2> std() {
-        NDArray<PEDESTAL_TYPE, 2> res({m_rows, m_cols});
-        for (ssize_t row = 0; row < m_rows; ++row) {
-            for (ssize_t col = 0; col < m_cols; ++col) {
-                res(row, col) = std(row, col);
-            }
-        }
-        return res;
+    PEDESTAL_TYPE std(ssize_t index) const {
+        return std::sqrt(variance(index));
     }
 
-    bool ready() { return m_ready; }
 
-    uint32_t cur_samples() { return m_cur_samples; }
+    bool ready() const { return m_ready; }
+
+    uint32_t cur_samples() const { return m_cur_samples; }
 
     void clear() {
-        m_sum = Entry{double(0), double(0)};
-        m_mean = PEDESTAL_TYPE(0);
-        m_std = PEDESTAL_TYPE(0);
+        m_sum = Entry{0., 0.};
+        m_mean = PEDESTAL_TYPE(0.);
         m_ready = false;
     }
 
 
     template <typename T> void push(NDView<T, 2> frame) {
-        assert(frame.size() == m_rows * m_cols);
-
-        // TODO! move away from m_rows, m_cols
         if (frame.shape() != std::array<ssize_t, 2>{m_rows, m_cols}) {
             throw std::runtime_error(
                 "Frame shape does not match pedestal shape");
@@ -127,9 +127,6 @@ template <typename PEDESTAL_TYPE = double> class FastPedestal {
         }
     }
     template <typename T> void push_init(NDView<T, 2> frame) {
-        assert(frame.size() == m_rows * m_cols);
-
-        // TODO! move away from m_rows, m_cols
         if (frame.shape() != std::array<ssize_t, 2>{m_rows, m_cols}) {
             throw std::runtime_error(
                 "Frame shape does not match pedestal shape");
@@ -151,7 +148,6 @@ template <typename PEDESTAL_TYPE = double> class FastPedestal {
         m_cur_samples += 1;
 
         if (m_cur_samples == m_samples) {
-            update_std();
             update_mean();
             m_ready = true;
         }
@@ -168,18 +164,35 @@ template <typename PEDESTAL_TYPE = double> class FastPedestal {
     uint32_t cols() const { return m_cols; }
     uint32_t n_samples() const { return m_samples; }
 
-    // pixel level operations (should be refactored to allow users to implement
-    // their own pixel level operations)
+    
+    /**
+     * @brief Update one pixel using its flat index.
+     *
+     * This steady-state fast path assumes the pedestal is ready and the index
+     * is valid. Assertions check those preconditions in debug builds.
+     */
+    template <typename T>
+    void push_fast(const std::size_t index, const T value) noexcept {
+        assert(m_ready);
+        assert(index < static_cast<std::size_t>(m_sum.size()));
+
+        const auto val = static_cast<double>(value);
+        auto &entry = m_sum[index];
+        entry.sum += val - entry.sum * m_inv_samples;
+        entry.sum2 += val * val - entry.sum2 * m_inv_samples;
+        m_mean[index] =
+            static_cast<PEDESTAL_TYPE>(entry.sum * m_inv_samples);
+    }
+
+
     template <typename T>
     void push(const uint32_t row, const uint32_t col, const T val_) {
         if (!ready()) {
             throw std::runtime_error("Pedestal is not ready, cannot push");
         }
-        auto val = static_cast<double>(val_);
-        auto &entry = m_sum(row, col);
-        entry.sum += val - entry.sum * m_inv_samples;
-        entry.sum2 += val * val - entry.sum2 * m_inv_samples;
-        m_mean(row, col) = entry.sum * m_inv_samples;
+        const auto index =
+            (static_cast<std::size_t>(row) * m_cols) + col;
+        push_fast(index, val_);
     }
 
     template <typename T>
@@ -198,25 +211,11 @@ template <typename PEDESTAL_TYPE = double> class FastPedestal {
      * push_no_update. It is not necessary to call this function after push.
      */
     void update_mean() {
-        for (size_t row = 0; row < m_rows; row++) {
-            for (size_t col = 0; col < m_cols; col++) {
-                const auto &entry = m_sum(row, col);
-                m_mean(row, col) = entry.sum * m_inv_samples;
-            }
+        for (ssize_t i = 0; i < m_sum.size(); i++) {
+            auto &entry = m_sum[i];
+            m_mean[i] = static_cast<PEDESTAL_TYPE>(entry.sum * m_inv_samples);
         }
     }
 
-    /**
-     * @brief Refresh the cached std for all pixels from the current sums.
-     * Kept separate from push() so that pushes stay cheap; call this before
-     * reading cached_std().
-     */
-    void update_std() {
-        for (size_t row = 0; row < m_rows; row++) {
-            for (size_t col = 0; col < m_cols; col++) {
-                m_std(row, col) = std(row, col);
-            }
-        }
-    }
 };
 } // namespace aare

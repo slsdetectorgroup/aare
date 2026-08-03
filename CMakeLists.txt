@@ -55,6 +55,10 @@ option(
   "Install the python extension in the install tree under CMAKE_INSTALL_PREFIX/aare/"
   OFF)
 option(AARE_ASAN "Enable AddressSanitizer" OFF)
+option(
+  AARE_TUNE_LOCAL
+  "Optimize for the building machine's CPU (-march=native -mtune=native). Not portable, the resulting binaries might not run on other machines."
+  OFF)
 
 # Configure which of the dependencies to use FetchContent for
 option(AARE_FETCH_FMT "Use FetchContent to download fmt" ON)
@@ -350,6 +354,22 @@ else()
 
   if(AARE_WARNINGS_AS_ERRORS)
     target_compile_options(aare_compiler_flags INTERFACE -Werror)
+  endif()
+
+  if(AARE_TUNE_LOCAL)
+    include(CheckCXXCompilerFlag)
+    check_cxx_compiler_flag("-march=native" AARE_HAS_MARCH_NATIVE)
+    check_cxx_compiler_flag("-mtune=native" AARE_HAS_MTUNE_NATIVE)
+    if(AARE_HAS_MARCH_NATIVE AND AARE_HAS_MTUNE_NATIVE)
+      message(STATUS "Tuning for the local CPU: -march=native -mtune=native")
+      target_compile_options(aare_compiler_flags INTERFACE -march=native
+                                                           -mtune=native)
+    else()
+      message(
+        WARNING
+          "AARE_TUNE_LOCAL requested but the compiler does not support -march=native/-mtune=native. Ignoring."
+      )
+    endif()
   endif()
 
 endif() # GCC/Clang specific

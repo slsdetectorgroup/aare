@@ -74,11 +74,7 @@ class ClusterFinder {
     NDArray<PEDESTAL_TYPE, 2> noise() { return m_pedestal.std(); }
     void clear_pedestal() { m_pedestal.clear(); }
 
-    /**
-     * @brief Refresh the cached std of the underlying pedestal. Call before
-     * reading the pedestal's cached std.
-     */
-    void update_std() { m_pedestal.update_std(); }
+
 
     void update_threshold() { m_threshold = m_pedestal.std() * m_nSigma; }
 
@@ -161,8 +157,7 @@ class ClusterFinder {
         } else if (total > c3 * threshold) {
             // pass, store the cluster below
         } else {
-            // m_pedestal.push(iy, ix, frame(iy, ix));   // Safe option
-            m_pedestal.push(iy, ix, frame.data()[center]);
+            m_pedestal.push_fast(center, frame.data()[center]);
             return; // It was a pedestal value nothing to store
         }
 
@@ -254,7 +249,7 @@ class ClusterFinder {
         auto pd = m_pedestal.view().data();
         auto corrected = m_pd_corrected_frame.data();
         auto frame_data = frame.data();
-        for (size_t i = 0; i < n_pixels; i++) {
+        for (ssize_t i = 0; i < n_pixels; i++) {
             corrected[i] = static_cast<PEDESTAL_TYPE>(frame_data[i]) - pd[i];
         }
 

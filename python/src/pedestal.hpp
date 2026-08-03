@@ -110,7 +110,6 @@ void define_pedestal_bindings(py::module &m, const std::string &name) {
             },
             py::arg().noconvert())
         .def("update_mean", &Pedestal<SUM_TYPE>::update_mean)
-        .def("update_std", &Pedestal<SUM_TYPE>::update_std)
         .def_buffer([](Pedestal<SUM_TYPE> &self) {
             auto mean = self.view();
             return py::buffer_info(

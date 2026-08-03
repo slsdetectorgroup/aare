@@ -51,12 +51,6 @@ void define_fast_pedestal_bindings(py::module &m, const std::string &name) {
                  *standard_deviation = self.std();
                  return return_image_data(standard_deviation);
              })
-        .def("cached_std",
-             [](FastPedestal<SUM_TYPE> &self) {
-                 auto standard_deviation = new NDArray<SUM_TYPE, 2>{};
-                 *standard_deviation = self.cached_std();
-                 return return_image_data(standard_deviation);
-             })
         .def(
             "__array_ufunc__",
             [](py::object self, py::object ufunc, const std::string &method,
@@ -100,15 +94,8 @@ void define_fast_pedestal_bindings(py::module &m, const std::string &name) {
                 pedestal.push_init(make_view_2d(frame));
             },
             py::arg("frame").noconvert())
-        // .def(
-        //     "push_no_update",
-        //     [](FastPedestal<SUM_TYPE> &pedestal,
-        //        py::array_t<uint16_t, py::array::c_style> &frame) {
-        //         pedestal.push_no_update(make_view_2d(frame));
-        //     },
-        //     py::arg("frame").noconvert())
+
         .def("update_mean", &FastPedestal<SUM_TYPE>::update_mean)
-        .def("update_std", &FastPedestal<SUM_TYPE>::update_std)
         .def_buffer([](FastPedestal<SUM_TYPE> &self) {
             auto mean = self.view();
             return py::buffer_info(
