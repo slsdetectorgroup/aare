@@ -39,7 +39,21 @@ def ClusterFinder(image_size, cluster_size=(3,3), n_sigma=5, dtype = np.int32, c
 
 
 
-def ClusterFinderMT(image_size, cluster_size = (3,3), dtype=np.int32, n_sigma=5, capacity = 1024, n_threads = 3): 
+def ClusterFinderFrozen(image_size, cluster_size=(3,3), n_sigma=5, dtype=np.int32, capacity=1024):
+    """
+    Factory function to create a ClusterFinderFrozen object.
+
+    Diagnostic twin of ClusterFinder: identical decision logic, but the pedestal
+    is frozen per frame (every decision reads a start-of-frame snapshot, and all
+    pedestal updates are deferred to the end of the frame). This mirrors the CUDA
+    kernel's per-frame update model, so running it against ClusterFinderCUDA
+    isolates pedestal-update timing as the sole variable.
+    """
+    cls = _get_class("ClusterFinderFrozen", cluster_size, dtype)
+    return cls(image_size, n_sigma=n_sigma, capacity=capacity)
+
+
+def ClusterFinderMT(image_size, cluster_size = (3,3), dtype=np.int32, n_sigma=5, capacity = 1024, n_threads = 3):
     """ 
     Factory function to create a ClusterFinderMT object. Provides a cleaner syntax for 
     the templated ClusterFinderMT in C++.

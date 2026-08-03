@@ -7,6 +7,7 @@
 #include "bind_ClusterFile.hpp"
 #include "bind_ClusterFileSink.hpp"
 #include "bind_ClusterFinder.hpp"
+#include "bind_ClusterFinderFrozen.hpp"
 #include "bind_ClusterFinderMT.hpp"
 #include "bind_ClusterVector.hpp"
 #include "bind_Defs.hpp"
@@ -54,6 +55,7 @@ double, 'f' for float)
 
 #define DEFINE_BINDINGS_CLUSTERFINDER(T, N, M, U, TYPE_CODE)                   \
     define_ClusterFinder<T, N, M, U>(m, "Cluster" #N "x" #M #TYPE_CODE);       \
+    define_ClusterFinderFrozen<T, N, M, U>(m, "Cluster" #N "x" #M #TYPE_CODE); \
     define_ClusterFinderMT<T, N, M, U>(m, "Cluster" #N "x" #M #TYPE_CODE);     \
     define_ClusterFileSink<T, N, M, U>(m, "Cluster" #N "x" #M #TYPE_CODE);     \
     define_ClusterCollector<T, N, M, U>(m, "Cluster" #N "x" #M #TYPE_CODE);
