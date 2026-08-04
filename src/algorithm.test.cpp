@@ -232,3 +232,80 @@ TEST_CASE("Bilinear interpolation", "[algorithm]") {
         REQUIRE(interpolated_value == 5.25);
     }
 }
+
+TEST_CASE("partition range for vector", "[algorithm]") {
+
+    std::function<bool(const bool &)> partition_criteria =
+        [](const bool &value) { return value; };
+
+    SECTION("partition criteria is always false") {
+        std::vector<bool> vec = {false, false, false, false, false};
+        auto partitions =
+            aare::partition(vec.begin(), vec.end(), partition_criteria);
+        REQUIRE(partitions.size() == 1);
+        REQUIRE(partitions[0].start == vec.begin());
+        REQUIRE(partitions[0].end == vec.end());
+    }
+
+    SECTION("partition criteria is always true") {
+        std::vector<bool> vec = {true, true, true, true, true};
+        auto partitions =
+            aare::partition(vec.begin(), vec.end(), partition_criteria);
+        REQUIRE(partitions.size() == 1);
+        REQUIRE(partitions[0].start == vec.begin());
+        REQUIRE(partitions[0].end == vec.end());
+    }
+
+    SECTION("range starts with partition criteria true") {
+        std::vector<bool> vec = {true, true, false, false, true, true};
+        auto partitions =
+            aare::partition(vec.begin(), vec.end(), partition_criteria);
+        REQUIRE(partitions.size() == 3);
+        REQUIRE(partitions[0].start == vec.begin());
+        REQUIRE(partitions[0].end == vec.begin() + 2);
+        REQUIRE(partitions[1].start == vec.begin() + 2);
+        REQUIRE(partitions[1].end == vec.begin() + 4);
+        REQUIRE(partitions[2].start == vec.begin() + 4);
+        REQUIRE(partitions[2].end == vec.end());
+    }
+
+    SECTION("range starts with partition criteria false") {
+        std::vector<bool> vec = {false, false, true, true, false};
+        auto partitions =
+            aare::partition(vec.begin(), vec.end(), partition_criteria);
+        REQUIRE(partitions.size() == 3);
+        REQUIRE(partitions[0].start == vec.begin());
+        REQUIRE(partitions[0].end == vec.begin() + 2);
+        REQUIRE(partitions[1].start == vec.begin() + 2);
+        REQUIRE(partitions[1].end == vec.begin() + 4);
+        REQUIRE(partitions[2].start == vec.begin() + 4);
+        REQUIRE(partitions[2].end == vec.end());
+    }
+    SECTION("empty vector") {
+        std::vector<bool> vec = {};
+        auto partitions =
+            aare::partition(vec.begin(), vec.end(), partition_criteria);
+        REQUIRE(partitions.size() == 0);
+    }
+}
+
+TEST_CASE("partition range for NDArray", "[algorithm]") {
+
+    std::function<bool(const bool &)> partition_criteria =
+        [](const bool &value) { return value; };
+
+    aare::NDArray<bool, 1> array(
+        std::array<bool, 7>{true, true, false, true, true, false, false});
+
+    auto partitions =
+        aare::partition(array.begin(), array.end(), partition_criteria);
+    REQUIRE(partitions.size() == 4);
+    REQUIRE(partitions[0].start == array.begin());
+    REQUIRE(partitions[0].end == array.begin() + 2);
+    REQUIRE(partitions[1].start == array.begin() + 2);
+    REQUIRE(partitions[1].end == array.begin() + 3);
+    REQUIRE(partitions[2].start == array.begin() + 3);
+    REQUIRE(partitions[2].end == array.begin() + 5);
+    REQUIRE(partitions[3].start == array.begin() + 5);
+    REQUIRE(partitions[3].end == array.end());
+}
