@@ -33,9 +33,10 @@ void define_ClusterFinderMT(py::module &m, const std::string &typestr) {
 
     py::class_<ClusterFinderMT<ClusterType, uint16_t, pd_type>>(
         m, class_name.c_str())
-        .def(py::init<Shape<2>, pd_type, size_t, size_t>(),
+        .def(py::init<Shape<2>, pd_type, size_t, size_t, size_t>(),
              py::arg("image_size"), py::arg("n_sigma") = 5.0,
-             py::arg("capacity") = 2048, py::arg("n_threads") = 3)
+             py::arg("capacity") = 2048, py::arg("n_threads") = 3,
+             py::arg("queue_depth") = 16)
         .def("push_pedestal_frame",
              [](ClusterFinderMT<ClusterType, uint16_t, pd_type> &self,
                 py::array_t<uint16_t> frame) {
@@ -47,8 +48,10 @@ void define_ClusterFinderMT(py::module &m, const std::string &typestr) {
             [](ClusterFinderMT<ClusterType, uint16_t, pd_type> &self,
                py::array_t<uint16_t> frame, uint64_t frame_number) {
                 auto view = make_view_2d(frame);
+                // Release the GIL for the copy and any free-list wait so a
+                // Python sink/consumer can keep draining concurrently.
+                py::gil_scoped_release release;
                 self.find_clusters(view, frame_number);
-                return;
             },
             py::arg(), py::arg("frame_number") = 0)
         .def_property_readonly(

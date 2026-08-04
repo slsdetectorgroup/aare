@@ -37,6 +37,8 @@ class ClusterFinder {
     NDArray<PEDESTAL_TYPE, 2> m_threshold;
     NDArray<PEDESTAL_TYPE, 2> m_pd_corrected_frame;
 
+    double all=0;
+
   public:
     /**
      * @brief Construct a new ClusterFinder object
@@ -104,6 +106,7 @@ class ClusterFinder {
     template <bool CheckBounds>
     void process_pixel(const NDView<FRAME_TYPE, 2> &frame,
                        const int iy, const int ix) {
+
         constexpr int dy = ClusterSizeY / 2;
         constexpr int dx = ClusterSizeX / 2;
         constexpr int has_center_pixel_x = ClusterSizeX % 2;
@@ -221,9 +224,11 @@ class ClusterFinder {
 
   public:
     void find_clusters(NDView<FRAME_TYPE, 2> frame, uint64_t frame_number = 0) {
+
         // // TODO! deal with even size clusters
         // // currently 3,3 -> +/- 1
         // //  4,4 -> +/- 2
+
         constexpr int dy = ClusterSizeY / 2;
         constexpr int dx = ClusterSizeX / 2;
         constexpr int has_center_pixel_x = ClusterSizeX % 2;
@@ -252,6 +257,8 @@ class ClusterFinder {
         for (ssize_t i = 0; i < n_pixels; i++) {
             corrected[i] = static_cast<PEDESTAL_TYPE>(frame_data[i]) - pd[i];
         }
+        // all += corrected[0];
+        // return;
 
         // Interior pixels can skip the per-neighbour bounds checks; pixels
         // within dx/dy of an edge take the bounds-checked path. Iteration order

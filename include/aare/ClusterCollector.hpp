@@ -2,7 +2,9 @@
 #pragma once
 #include <atomic>
 #include <thread>
+#include <vector>
 
+#include "aare/Backoff.hpp"
 #include "aare/ClusterFinderMT.hpp"
 #include "aare/ClusterVector.hpp"
 #include "aare/ProducerConsumerQueue.hpp"
@@ -16,20 +18,21 @@ class ClusterCollector {
     ProducerConsumerQueue<ClusterVector<ClusterType>> *m_source;
     std::atomic<bool> m_stop_requested{false};
     std::atomic<bool> m_stopped{true};
-    std::chrono::milliseconds m_default_wait{1};
     std::thread m_thread;
     std::vector<ClusterVector<ClusterType>> m_clusters;
 
     void process() {
         m_stopped = false;
         fmt::print("ClusterCollector started\n");
-        while (!m_stop_requested || !m_source->isEmpty()) {
+        Backoff backoff;
+        while (!m_stop_requested) {
             if (ClusterVector<ClusterType> *clusters = m_source->frontPtr();
                 clusters != nullptr) {
+                backoff.reset();
                 m_clusters.push_back(std::move(*clusters));
                 m_source->popFront();
             } else {
-                std::this_thread::sleep_for(m_default_wait);
+                backoff.pause();
             }
         }
         fmt::print("ClusterCollector stopped\n");
