@@ -103,15 +103,18 @@ def test_max_sum():
 
 def test_cluster_finder(): 
     """Test ClusterFinder""" 
+    shape = [100,100]
+    cf = _aare.ClusterFinder_Cluster3x3i(shape)
 
-    clusterfinder = _aare.ClusterFinder_Cluster3x3i([100,100])
+    #Push 1000 frames to the pedestal
+    for i in range(1000):
+        frame = np.random.normal(loc = 100, scale = 5, size = shape).astype(np.uint16)
+        cf.push_pedestal_frame(frame)
+    cf.update_threshold()
+    frame = np.zeros(shape=shape, dtype=np.uint16)
+    cf.find_clusters(frame)
 
-    #frame = np.random.rand(100,100)
-    frame = np.zeros(shape=[100,100])
-
-    clusterfinder.find_clusters(frame)
-
-    clusters = clusterfinder.steal_clusters(False) #conversion does not work
+    clusters = cf.steal_clusters(False) #conversion does not work
 
     assert clusters.size == 0
 

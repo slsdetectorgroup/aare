@@ -15,7 +15,7 @@ def test_fast_pedestal_initialization(pedestal_type, expected_dtype):
 
     pedestal.push_init(first)
     pedestal.push_init(second)
-    pedestal.update_mean()
+
 
     expected_mean = np.array(
         [[3, 5, 7], [9, 11, 13]], dtype=expected_dtype
@@ -28,7 +28,7 @@ def test_fast_pedestal_steady_state_push():
     pedestal = FastPedestal_d(1, 2, 2)
     pedestal.push_init(np.array([[2, 4]], dtype=np.uint16))
     pedestal.push_init(np.array([[4, 6]], dtype=np.uint16))
-    pedestal.update_mean()
+
 
     pedestal.push(np.array([[6, 8]], dtype=np.uint16))
 
@@ -38,7 +38,7 @@ def test_fast_pedestal_steady_state_push():
 def test_fast_pedestal_exposes_read_only_buffer_and_subtraction():
     pedestal = FastPedestal_d(1, 2, 1)
     pedestal.push_init(np.array([[2, 4]], dtype=np.uint16))
-    pedestal.update_mean()
+
 
     view = np.asarray(pedestal)
     result = np.array([[12, 14]], dtype=np.uint16) - pedestal

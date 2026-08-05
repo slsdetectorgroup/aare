@@ -54,13 +54,21 @@ class ClusterFinder {
           c2(sqrt((ClusterSizeY + 1) / 2 * (ClusterSizeX + 1) / 2)),
           c3(sqrt(ClusterSizeX * ClusterSizeY)),
           m_pedestal(image_size[0], image_size[1]), m_clusters(capacity),
+          m_threshold({image_size[0], image_size[1]}, 0),
           m_pd_corrected_frame({image_size[0], image_size[1]}, 0) {
         LOG(logDEBUG) << "ClusterFinder: "
                       << "image_size: " << image_size[0] << "x" << image_size[1]
                       << ", nSigma: " << nSigma << ", capacity: " << capacity;
     }
 
-    void set_nSigma(PEDESTAL_TYPE nSigma) { m_nSigma = nSigma; }
+    /**
+     * @brief Set the nSigma parameter and update the threshold.
+     * @param nSigma the new nSigma parameter.
+     */
+    void set_nSigma(PEDESTAL_TYPE nSigma) {
+        m_nSigma = nSigma;
+        update_threshold();
+    }
 
     PEDESTAL_TYPE get_nSigma() const { return m_nSigma; }
 
@@ -227,6 +235,10 @@ class ClusterFinder {
         // // TODO! deal with even size clusters
         // // currently 3,3 -> +/- 1
         // //  4,4 -> +/- 2
+        if (!m_pedestal.ready()) {
+            throw std::runtime_error(
+                "Pedestal is not ready, cannot find clusters");
+        }
 
         constexpr int dy = ClusterSizeY / 2;
         constexpr int dx = ClusterSizeX / 2;
