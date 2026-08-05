@@ -5,6 +5,7 @@
 
 #include <catch2/catch_test_macros.hpp>
 #include <catch2/generators/catch_generators.hpp>
+#include <catch2/matchers/catch_matchers_string.hpp>
 #include <filesystem>
 
 #include "test_config.hpp"
@@ -407,10 +408,7 @@ TEST_CASE("Read Mythenframe", "[.with-data][RawFile]") {
 }
 
 TEST_CASE("Read Jungfrau frame with disabled UDP ports",
-          "[.with-data][RawFile]") {
-    // auto fpath = test_data_path() / "raw/jungfrau" /
-    //"2_interfaces_top_disabled_master_6.json";
-
+          "[.with-data][RawFile][disabled_udp_ports]") {
     SECTION("disabled top port") {
         auto fpath = test_data_path() / "raw/jungfrau" /
                      "2_interfaces_top_disabled_master_6.json";
@@ -438,10 +436,47 @@ TEST_CASE("Read Jungfrau frame with disabled UDP ports",
         REQUIRE(frame.cols() == 1024);
         REQUIRE(frame.rows() == 256);
     }
+    SECTION("2 modules - top ports disabled") {
+        auto fpath = test_data_path() / "raw/jungfrau" /
+                     "2_modules_2_interfaces_top_ports_disabled_master_2.json";
+        REQUIRE(std::filesystem::exists(fpath));
+        RawFile f(fpath);
+        REQUIRE(f.master().disabled_udp_ports().value() ==
+                std::vector<size_t>{1, 3});
+        REQUIRE(f.master().udp_port_types().value() ==
+                std::vector<std::string>{"bottom", "top"});
+        REQUIRE_THROWS_WITH(
+            f.read_frame(),
+            Catch::Matchers::ContainsSubstring(
+                "Multiple ROIs present in file. Use read_ROIs() "
+                "instead")); // cannot read frame
+                             // because multiple rois
+
+        auto frame = f.read_rois();
+
+        REQUIRE(frame.size() == 2);
+        REQUIRE(frame[0].cols() == 1024);
+        REQUIRE(frame[0].rows() == 256);
+        REQUIRE(frame[1].cols() == 1024);
+        REQUIRE(frame[1].rows() == 256);
+    }
+    SECTION("2 modules - top ports disabled - bottom port disabled") {
+        auto fpath = test_data_path() / "raw/jungfrau" /
+                     "2_modules_2_interfaces_disabled_ports_master_1.json";
+        REQUIRE(std::filesystem::exists(fpath));
+        RawFile f(fpath);
+        REQUIRE(f.master().disabled_udp_ports().value() ==
+                std::vector<size_t>{0, 3});
+        REQUIRE(f.master().udp_port_types().value() ==
+                std::vector<std::string>{"bottom", "top"});
+        auto frame = f.read_frame();
+        REQUIRE(frame.cols() == 1024);
+        REQUIRE(frame.rows() == 512);
+    }
 }
 
 TEST_CASE("Read Moench frame with disabled UDP ports",
-          "[.with-data][RawFile]") {
+          "[.with-data][RawFile][disabled_udp_ports]") {
     SECTION("disabled top port") {
         auto fpath = test_data_path() / "raw/moench" /
                      "2_interfaces_top_port_disabled_master_0.json";
@@ -468,5 +503,38 @@ TEST_CASE("Read Moench frame with disabled UDP ports",
         auto frame = f.read_frame();
         REQUIRE(frame.cols() == 400);
         REQUIRE(frame.rows() == 200);
+    }
+}
+
+TEST_CASE("Read Eiger frame with disabled UDP ports",
+          "[.with-data][RawFile][disabled_udp_ports]") {
+    SECTION("disabled left port") {
+        auto fpath = test_data_path() / "raw/eiger" /
+                     "left_udp_port_disabled_master_2.json";
+        REQUIRE(std::filesystem::exists(fpath));
+        RawFile f(fpath);
+        REQUIRE(f.master().disabled_udp_ports().value() ==
+                std::vector<size_t>{0, 2});
+        REQUIRE(f.master().udp_port_types().value() ==
+                std::vector<std::string>{"left", "right"});
+        auto frame = f.read_frame();
+
+        std::cout << fmt::format("num rows {}, num cols {}", frame.rows(),
+                                 frame.cols());
+        REQUIRE(frame.cols() == 512);
+        REQUIRE(frame.rows() == 512);
+    }
+    SECTION("disabled right port") {
+        auto fpath = test_data_path() / "raw/eiger" /
+                     "right_udp_port_disabled_master_3.json";
+        REQUIRE(std::filesystem::exists(fpath));
+        RawFile f(fpath);
+        REQUIRE(f.master().disabled_udp_ports().value() ==
+                std::vector<size_t>{1, 3});
+        REQUIRE(f.master().udp_port_types().value() ==
+                std::vector<std::string>{"left", "right"});
+        auto frame = f.read_frame();
+        REQUIRE(frame.cols() == 512);
+        REQUIRE(frame.rows() == 512);
     }
 }

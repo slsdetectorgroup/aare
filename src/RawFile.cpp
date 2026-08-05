@@ -6,6 +6,7 @@
 #include "aare/algorithm.hpp"
 #include "aare/defs.hpp"
 #include "aare/logger.hpp"
+#include "aare/utils/utility_functions.hpp"
 
 #include <fmt/format.h>
 #include <nlohmann/json.hpp>
@@ -14,6 +15,139 @@ using json = nlohmann::json;
 
 namespace aare {
 
+/**
+ * @brief Get ROIs from disabled UDP ports
+ * @param disabled_ports vector of disabled UDP ports
+ * @param udp_port_types vector of UDP port types (e.g. "left", "right", "top",
+ * "bottom")
+ * @param pixels_per_module_x number of pixels per module in x direction
+ * @param pixels_per_module_y number of pixels per module in y direction
+ * @param modules_x number of modules in x direction
+ * @param modules_y number of modules in y direction
+ * @return vector of ROIs corresponding to the disabled UDP ports
+ */
+std::vector<ROI> get_rois_from_disabled_udp_ports(
+    std::vector<size_t> &disabled_ports,
+    std::vector<std::string> &udp_port_types, const ssize_t pixels_per_module_x,
+    const ssize_t pixels_per_module_y, const ssize_t modules_x,
+    const ssize_t modules_y) {
+
+    const size_t num_udp_port_types = udp_port_types.size();
+
+    size_t first_port = disabled_ports[0] % num_udp_port_types;
+
+    bool all_ports_equal =
+        std::all_of(disabled_ports.begin(), disabled_ports.end(),
+                    [&num_udp_port_types, first_port](size_t &port) {
+                        return port % num_udp_port_types == first_port;
+                    });
+
+    std::vector<ROI> rois;
+
+    // TODO: code assumes modules stacked on top - adapt if stacked horizontally
+    if (all_ports_equal) {
+        if (udp_port_types[first_port] == "left") {
+            rois.push_back({pixels_per_module_x, 2 * pixels_per_module_x, 0,
+                            modules_y * pixels_per_module_y});
+        }
+        if (udp_port_types[first_port] == "right") {
+            rois.push_back(
+                {0, pixels_per_module_x, 0, modules_y * pixels_per_module_y});
+        }
+        if (udp_port_types[first_port] == "top") {
+            rois.resize(disabled_ports.size());
+            // assumes euclidean coordinate system with origin at bottom left
+            // corner of the detector
+            std::transform(
+                disabled_ports.begin(), disabled_ports.end(), rois.begin(),
+                [&num_udp_port_types, pixels_per_module_x, pixels_per_module_y,
+                 modules_x, modules_y](size_t &port) {
+                    ssize_t module_idx =
+                        static_cast<ssize_t>(port / num_udp_port_types);
+                    return ROI{0, modules_x * pixels_per_module_x,
+                               module_idx * 2 * pixels_per_module_y,
+                               (module_idx * 2 * pixels_per_module_y +
+                                pixels_per_module_y)};
+                });
+        }
+        if (udp_port_types[first_port] == "bottom") {
+            rois.resize(disabled_ports.size());
+            std::transform(
+                disabled_ports.begin(), disabled_ports.end(), rois.begin(),
+                [&num_udp_port_types, pixels_per_module_x, pixels_per_module_y,
+                 modules_x, modules_y](size_t &port) {
+                    ssize_t module_idx =
+                        static_cast<ssize_t>(port / num_udp_port_types);
+                    return ROI{0, modules_x * pixels_per_module_x,
+                               module_idx * 2 * pixels_per_module_y +
+                                   pixels_per_module_y,
+                               module_idx * 2 * pixels_per_module_y +
+                                   2 * pixels_per_module_y};
+                });
+        }
+    } else {
+        // iterate over all ports and create ROIs for each disabled port
+        rois.reserve(disabled_ports.size());
+        for (auto disabled_port : disabled_ports) {
+            std::string disabled_port_type =
+                udp_port_types[disabled_port %
+                               num_udp_port_types]; // modulo needed as
+                                                    // indexing is
+                                                    // relative to half
+                                                    // module //
+                                                    // TODO: string_to?
+                                                    // - anyway defined
+                                                    // in
+                                                    // slsDetectorDefs
+
+            ROI roi{};
+
+            ssize_t module_idx =
+                static_cast<ssize_t>(disabled_port / num_udp_port_types);
+            if (disabled_port_type == "bottom") {
+                // assumes euclidean coordinate system with origin at bottom
+                // left corner
+                roi = ROI{0, pixels_per_module_x,
+                          module_idx * 2 * pixels_per_module_y +
+                              pixels_per_module_y,
+                          module_idx * 2 * pixels_per_module_y +
+                              2 * pixels_per_module_y};
+            } else if (disabled_port_type == "top") {
+                roi = ROI{0, pixels_per_module_x,
+                          module_idx * 2 * pixels_per_module_y,
+                          (module_idx * 2 * pixels_per_module_y +
+                           pixels_per_module_y)};
+            } else if (disabled_port_type == "left") {
+                roi = ROI{pixels_per_module_x, 2 * pixels_per_module_x,
+                          module_idx * 2 * pixels_per_module_y,
+                          module_idx * 2 * pixels_per_module_y +
+                              pixels_per_module_y};
+            } else if (disabled_port_type == "right") {
+                roi = ROI{0, pixels_per_module_x,
+                          module_idx * 2 * pixels_per_module_y,
+                          module_idx * 2 * pixels_per_module_y +
+                              pixels_per_module_y};
+            } else {
+                throw std::runtime_error(
+                    LOCATION + "Unknown UDP port type: " + disabled_port_type);
+            }
+
+            rois.push_back(roi);
+        }
+        if (udp_port_types == std::vector<std::string>{"left", "right"}) {
+            rois = merge_consecutive_rois<false, true>(rois);
+        } else if (udp_port_types ==
+                   std::vector<std::string>{"bottom", "top"}) {
+
+            rois = merge_consecutive_rois<true, false>(rois);
+        } else {
+            throw std::runtime_error(LOCATION + "Unsupported UDP port types");
+        }
+    }
+
+    return rois;
+}
+
 RawFile::RawFile(const std::filesystem::path &fname, const std::string &mode)
     : m_master(fname),
       m_geometry(m_master.geometry(), m_master.pixels_x(), m_master.pixels_y(),
@@ -21,58 +155,34 @@ RawFile::RawFile(const std::filesystem::path &fname, const std::string &mode)
 
     m_mode = mode;
 
-    m_subfiles.resize(m_master.rois().has_value() ? m_master.rois()->size()
-                                                  : 1);
-
     if (mode == "r") {
         // TODO: should we support both ROI and disabled udp port - which one
         // should have precedence?
         if (m_master.disabled_udp_ports().has_value() &&
             m_master.disabled_udp_ports().value().size() > 0) {
 
-            // no ROI use full detector
-            m_ROI_geometries.reserve(1);
-            ROI roi{};
-
             auto disabled_ports = m_master.disabled_udp_ports().value();
 
-            for (auto disabled_port : disabled_ports) {
-                std::string disabled_port_type =
-                    m_master.udp_port_types()
-                        .value()[disabled_port]; // TODO: string_to? - anyway
-                                                 // defined in slsDetectorDefs
-                if (disabled_port_type == "bottom") {
-                    roi = ROI{0, static_cast<ssize_t>(m_master.pixels_x()),
-                              static_cast<ssize_t>(m_master.pixels_y()),
-                              2 * static_cast<ssize_t>(m_master.pixels_y())};
-                } else if (disabled_port_type == "top") {
-                    roi = ROI{0, static_cast<ssize_t>(m_master.pixels_x()), 0,
-                              static_cast<ssize_t>(m_master.pixels_y())};
-                } else if (disabled_port_type == "left") {
-                    roi = ROI{0, static_cast<ssize_t>(m_master.pixels_x()), 0,
-                              static_cast<ssize_t>(
-                                  m_master.pixels_y())}; // TODO: need to check
-                                                         // eiger data !!!!
-                } else if (disabled_port_type == "right") {
-                    roi = ROI{
-                        static_cast<ssize_t>(m_master.pixels_x()),
-                        2 * static_cast<ssize_t>(m_master.pixels_x()), 0,
-                        static_cast<ssize_t>(
-                            m_master.pixels_y())}; // TODO: need to check eiger
-                                                   // data, bottom port flipped?
-                } else {
-                    throw std::runtime_error(
-                        LOCATION +
-                        "Unknown UDP port type: " + disabled_port_type);
-                }
+            auto udp_port_types = m_master.udp_port_types().value();
+
+            std::vector<ROI> rois = get_rois_from_disabled_udp_ports(
+                disabled_ports, udp_port_types, m_master.pixels_x(),
+                m_master.pixels_y(), m_geometry.modules_x(),
+                m_geometry.modules_y());
+
+            m_subfiles.resize(rois.size());
+
+            m_ROI_geometries.reserve(rois.size());
+
+            for (size_t roi_index = 0; roi_index < rois.size(); ++roi_index) {
+                m_ROI_geometries.push_back(
+                    ROIGeometry(rois[roi_index], m_geometry));
+                open_subfiles(roi_index);
             }
-
-            m_ROI_geometries.push_back(ROIGeometry(roi, m_geometry)); // roi,
-
-            open_subfiles(0);
         } else if (m_master.rois().has_value()) {
             m_ROI_geometries.reserve(m_master.rois()->size());
 
+            m_subfiles.resize(m_master.rois()->size());
             // iterate over all ROIS
             size_t roi_index = 0;
             const auto rois = m_master.rois().value();
@@ -84,6 +194,7 @@ RawFile::RawFile(const std::filesystem::path &fname, const std::string &mode)
             }
         } else {
             // no ROI use full detector
+            m_subfiles.resize(1);
             m_ROI_geometries.reserve(1);
             m_ROI_geometries.push_back(ROIGeometry(m_geometry));
             open_subfiles(0);
@@ -127,18 +238,17 @@ std::vector<Frame> RawFile::read_rois() {
 }
 
 Frame RawFile::read_frame() {
-    if (m_master.rois().has_value() && m_master.rois()->size() > 1) {
-        throw std::runtime_error(LOCATION +
-                                 "Multiple ROIs defined in the master file. "
-                                 "Use read_ROIs() instead.");
+    if (m_ROI_geometries.size() > 1) {
+        throw std::runtime_error(LOCATION + "Multiple ROIs present in file. "
+                                            "Use read_ROIs() instead.");
     }
     return get_frame(m_current_frame++);
 }
 
 Frame RawFile::read_frame(size_t frame_number) {
-    if (m_master.rois().has_value() && m_master.rois()->size() > 1) {
+    if (m_ROI_geometries.size() > 1) {
         throw std::runtime_error(
-            LOCATION + "Multiple ROIs defined in the master file. "
+            LOCATION + "Multiple ROIs present in file. "
                        "Use read_ROIs(const size_t frame_number) instead.");
     }
     seek(frame_number);
@@ -147,7 +257,7 @@ Frame RawFile::read_frame(size_t frame_number) {
 
 void RawFile::read_into(std::byte *image_buf, size_t n_frames) {
     // TODO: implement this in a more efficient way
-    if (m_master.rois().has_value() && m_master.rois()->size() > 1) {
+    if (m_ROI_geometries.size() > 1) {
         throw std::runtime_error(LOCATION +
                                  "Cannot use read_into for multiple ROIs.");
     }
@@ -159,7 +269,7 @@ void RawFile::read_into(std::byte *image_buf, size_t n_frames) {
 }
 
 void RawFile::read_into(std::byte *image_buf) {
-    if (m_master.rois().has_value() && m_master.rois()->size() > 1) {
+    if (m_ROI_geometries.size() > 1) {
         throw std::runtime_error(LOCATION +
                                  "Cannot use read_into for multiple ROIs. Use "
                                  "read_roi_into() for a single ROI instead.");
@@ -169,7 +279,7 @@ void RawFile::read_into(std::byte *image_buf) {
 
 void RawFile::read_roi_into(std::byte *image_buf, const size_t roi_index,
                             const size_t frame_number, DetectorHeader *header) {
-    if (!m_master.rois().has_value()) {
+    if (m_ROI_geometries.size() <= 1) {
         throw std::runtime_error(LOCATION +
                                  "No ROIs defined in the master file.");
     }
@@ -180,7 +290,7 @@ void RawFile::read_roi_into(std::byte *image_buf, const size_t roi_index,
 }
 
 void RawFile::read_into(std::byte *image_buf, DetectorHeader *header) {
-    if (m_master.rois().has_value() && m_master.rois()->size() > 1) {
+    if (m_ROI_geometries.size() > 1) {
         throw std::runtime_error(LOCATION +
                                  "Cannot use read_into for multiple ROIs. Use "
                                  "read_roi_into() for a single ROI instead.");
@@ -192,13 +302,16 @@ void RawFile::read_into(std::byte *image_buf, size_t n_frames,
                         DetectorHeader *header) {
     // return get_frame_into(m_current_frame++, image_buf, header);
 
-    if (m_master.rois().has_value() && m_master.rois()->size() > 1) {
+    if (m_ROI_geometries.size() > 1) {
         throw std::runtime_error(
             LOCATION +
-            "Cannot use read_into for multiple ROIs."); // TODO: maybe pass
-                                                        // roi_index so one can
-                                                        // use read_into for a
-                                                        // specific ROI
+            "Cannot use read_into for multiple ROIs."); // TODO: maybe
+                                                        // pass
+                                                        // roi_index so
+                                                        // one can use
+                                                        // read_into for
+                                                        // a specific
+                                                        // ROI
     }
 
     for (size_t i = 0; i < n_frames; i++) {
@@ -210,7 +323,7 @@ void RawFile::read_into(std::byte *image_buf, size_t n_frames,
 }
 
 size_t RawFile::bytes_per_frame() {
-    if (m_master.rois().has_value() && m_master.rois()->size() > 1) {
+    if (m_ROI_geometries.size() > 1) {
         throw std::runtime_error(
             LOCATION + "Pass the desired roi_index to bytes_per_frame to get "
                        "bytes_per_frame for the specific ROI. ");
@@ -225,7 +338,7 @@ size_t RawFile::bytes_per_frame(const size_t roi_index) {
 }
 
 size_t RawFile::pixels_per_frame() {
-    if (m_master.rois().has_value() && m_master.rois()->size() > 1) {
+    if (m_ROI_geometries.size() > 1) {
         throw std::runtime_error(
             LOCATION + "Pass the desired roi_index to pixels_per_frame to get "
                        "pixels_per_frame for the specific ROI. ");
@@ -257,7 +370,7 @@ size_t RawFile::tell() { return m_current_frame; }
 size_t RawFile::total_frames() const { return m_master.frames_in_file(); }
 
 size_t RawFile::rows() const {
-    if (m_master.rois().has_value() && m_master.rois()->size() > 1) {
+    if (m_ROI_geometries.size() > 1) {
         throw std::runtime_error(LOCATION +
                                  "Pass the desired roi_index to rows to get "
                                  "rows for the specific ROI. ");
@@ -268,7 +381,7 @@ size_t RawFile::rows(const size_t roi_index) const {
     return m_ROI_geometries.at(roi_index).pixels_y();
 }
 size_t RawFile::cols() const {
-    if (m_master.rois().has_value() && m_master.rois()->size() > 1) {
+    if (m_ROI_geometries.size() > 1) {
         throw std::runtime_error(LOCATION +
                                  "Pass the desired roi_index to cols to get "
                                  "cols for the specific ROI. ");
@@ -308,7 +421,6 @@ std::vector<size_t> RawFile::n_modules_in_roi() const {
 }
 
 void RawFile::open_subfiles(const size_t roi_index) {
-
     if (m_mode == "r") {
 
         m_subfiles[roi_index].reserve(
@@ -317,8 +429,7 @@ void RawFile::open_subfiles(const size_t roi_index) {
         auto module_indices =
             m_ROI_geometries[roi_index].module_indices_in_roi();
 
-        for (const size_t i :
-             m_ROI_geometries[roi_index].module_indices_in_roi()) {
+        for (const size_t i : module_indices) {
             const auto pos = m_geometry.get_module_geometries(i);
             m_subfiles[roi_index].emplace_back(std::make_unique<RawSubFile>(
                 m_master.data_fname(i, 0), m_master.detector_type(), pos.height,
