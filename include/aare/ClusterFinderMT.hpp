@@ -328,7 +328,8 @@ class ClusterFinderMT {
         (*m_frame_pools[tid])[ref.slot].copy_from(frame);
         // auto [wall_ns, cpu_ns] = dt.elapsed();
         // std::cerr << "ClusterFinderMT: find_clusters: copied frame "
-        //           << frame_number << " took " << wall_ns/1000.0 << " wall_us and "
+        //           << frame_number << " took " << wall_ns/1000.0 << " wall_us
+        //           and "
         //           << cpu_ns/1000.0 << " cpu_us" << std::endl;
 
         // Cannot fail, the free list is what limits how many frames are in

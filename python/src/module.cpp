@@ -13,6 +13,7 @@
 #include "bind_ClusterVector.hpp"
 #include "bind_Defs.hpp"
 #include "bind_Eta.hpp"
+#include "bind_FastPedestal.hpp"
 #include "bind_Interpolator.hpp"
 #include "bind_PedestalTrackingPixelHistogram.hpp"
 #include "bind_PixelHistogram.hpp"
@@ -22,7 +23,6 @@
 
 // TODO! migrate the other names
 #include "ctb_raw_file.hpp"
-#include "fast_pedestal.hpp"
 #include "file.hpp"
 #include "fit.hpp"
 #include "jungfrau_data_file.hpp"

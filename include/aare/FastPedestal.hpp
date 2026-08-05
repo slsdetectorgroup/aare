@@ -1,5 +1,6 @@
 // SPDX-License-Identifier: MPL-2.0
 #pragma once
+#include "aare/File.hpp"
 #include "aare/Frame.hpp"
 #include "aare/NDArray.hpp"
 #include "aare/NDView.hpp"
@@ -52,7 +53,12 @@ template <typename PEDESTAL_TYPE> class FastPedestal {
         : m_rows(rows), m_cols(cols), m_samples(n_samples),
           m_inv_samples(1.0 / n_samples), m_sum({rows, cols}, Entry{0, 0}),
           m_mean({rows, cols}, PEDESTAL_TYPE(0)) {
-        assert(rows > 0 && cols > 0 && n_samples > 0);
+        if (!(rows > 0 && cols > 0 && n_samples > 0)) {
+            throw std::runtime_error(
+                fmt::format("Invalid parameters for FastPedestal: rows={}, "
+                            "cols={}, n_samples={} need to be positive",
+                            rows, cols, n_samples));
+        }
     }
     ~FastPedestal() = default;
 
@@ -79,9 +85,9 @@ template <typename PEDESTAL_TYPE> class FastPedestal {
     }
 
     PEDESTAL_TYPE variance(ssize_t index) const {
-        auto &entry = m_sum[index];
-        auto m2 = entry.sum * m_inv_samples * entry.sum * m_inv_samples;
-        return entry.sum2 * m_inv_samples - m2;
+        const auto &entry = m_sum[index];
+        const auto m = entry.sum * m_inv_samples;
+        return std::fma(-m, m, entry.sum2 * m_inv_samples);
     }
 
     NDArray<PEDESTAL_TYPE, 2> std() {
@@ -110,18 +116,88 @@ template <typename PEDESTAL_TYPE> class FastPedestal {
         m_ready = false;
     }
 
+    /**
+     * @brief Update the pedestal with the values of the frame. The weight of
+     the update depends on the number of samples. Bounds checks are performed on
+     the frame shape.
+     * @param frame The frame to update the pedestal with.
+     */
     template <typename T> void push(NDView<T, 2> frame) {
         if (frame.shape() != std::array<ssize_t, 2>{m_rows, m_cols}) {
             throw std::runtime_error(
                 "Frame shape does not match pedestal shape");
         }
 
+        if (!ready()) {
+            throw std::runtime_error("Pedestal is not ready, cannot push");
+        }
+
+        // TODO! update with push_fast
         for (size_t row = 0; row < m_rows; row++) {
             for (size_t col = 0; col < m_cols; col++) {
                 push<T>(row, col, frame(row, col));
             }
         }
     }
+
+    /**
+     * @brief Overload for Frame. Bounds checks are performed on the frame shape
+     * in the view.
+     * @param frame The Frame to update the pedestal with.
+     */
+    template <typename T> void push(Frame &frame) { push<T>(frame.view<T>()); }
+
+    /**
+     * @brief Update one pixel using its row and column indices. Checks if the
+     * pedestal is ready.
+     * @param row The row index of the pixel to update.
+     * @param col The column index of the pixel to update.
+     * @param val_ The value of the pixel to update the pedestal with.
+     */
+    template <typename T>
+    void push(const uint32_t row, const uint32_t col, const T val) {
+        if (!ready()) {
+            throw std::runtime_error("Pedestal is not ready, cannot push");
+        }
+
+        push_fast(rc_to_index(row, col), val);
+    }
+
+    /**
+     * @brief Update one pixel using its flat index.
+     *
+     * WARNING: This steady-state fast path assumes the pedestal is ready and
+     * the index is valid. Assertions check those preconditions in debug builds.
+     */
+    template <typename T>
+    void push_fast(const std::size_t index, const T value) noexcept {
+        assert(m_ready);
+        assert(index < static_cast<std::size_t>(m_sum.size()));
+
+        const auto val = static_cast<double>(value);
+        auto &entry = m_sum[index];
+        entry.sum += val - entry.sum * m_inv_samples;
+        entry.sum2 += val * val - entry.sum2 * m_inv_samples;
+        m_mean[index] = static_cast<PEDESTAL_TYPE>(entry.sum * m_inv_samples);
+    }
+
+    // TODO! Do we need fast variants of push_no_update?
+    template <typename T>
+    void push_no_update(const uint32_t row, const uint32_t col, const T val_) {
+        if (!ready()) {
+            throw std::runtime_error("Pedestal is not ready, cannot push");
+        }
+        auto val = static_cast<double>(val_);
+        auto &entry = m_sum(row, col);
+        entry.sum += val - entry.sum * m_inv_samples;
+        entry.sum2 += val * val - entry.sum2 * m_inv_samples;
+    }
+
+    /**
+     * @brief Push a frame to the pedestal to initialize it. We need to push
+     * n_samples frames to be ready.
+     * @param frame The frame to update the pedestal with.
+     */
     template <typename T> void push_init(NDView<T, 2> frame) {
         if (frame.shape() != std::array<ssize_t, 2>{m_rows, m_cols}) {
             throw std::runtime_error(
@@ -149,54 +225,50 @@ template <typename PEDESTAL_TYPE> class FastPedestal {
         }
     }
 
-    template <typename T> void push(Frame &frame) {
-        assert(frame.rows() == static_cast<size_t>(m_rows) &&
-               frame.cols() == static_cast<size_t>(m_cols));
-        push<T>(frame.view<T>());
+    /**
+     * @brief Create a FastPedestal initialized from the first n_samples frames
+     * of a file. Image size is taken from the file.
+     */
+    template <typename T>
+    static FastPedestal from_file(const std::filesystem::path &filename,
+                                  uint32_t n_samples = 1000,
+                                  uint32_t skip_first = 0) {
+        File f(filename);
+
+        if ((f.total_frames() - skip_first) < n_samples) {
+            throw std::runtime_error(
+                "File has less frames than the number of samples needed to "
+                "initialize the pedestal");
+        }
+
+        if (skip_first > 0) {
+            f.seek(static_cast<size_t>(skip_first));
+        }
+        const auto rows = static_cast<uint32_t>(f.rows());
+        const auto cols = static_cast<uint32_t>(f.cols());
+        FastPedestal pedestal(rows, cols, n_samples);
+        NDArray<T, 2> frame({rows, cols});
+
+        uint32_t frame_index = skip_first;
+        while (frame_index < skip_first + n_samples) {
+            f.read_into(frame.buffer());
+            pedestal.template push_init<T>(frame.view());
+            frame_index++;
+        }
+
+        // read the rest of the file
+        while (frame_index < f.total_frames()) {
+            f.read_into(frame.buffer());
+            pedestal.template push<T>(frame.view());
+            frame_index++;
+        }
+        return pedestal;
     }
 
     // getter functions
     uint32_t rows() const { return m_rows; }
     uint32_t cols() const { return m_cols; }
     uint32_t n_samples() const { return m_samples; }
-
-    /**
-     * @brief Update one pixel using its flat index.
-     *
-     * This steady-state fast path assumes the pedestal is ready and the index
-     * is valid. Assertions check those preconditions in debug builds.
-     */
-    template <typename T>
-    void push_fast(const std::size_t index, const T value) noexcept {
-        assert(m_ready);
-        assert(index < static_cast<std::size_t>(m_sum.size()));
-
-        const auto val = static_cast<double>(value);
-        auto &entry = m_sum[index];
-        entry.sum += val - entry.sum * m_inv_samples;
-        entry.sum2 += val * val - entry.sum2 * m_inv_samples;
-        m_mean[index] = static_cast<PEDESTAL_TYPE>(entry.sum * m_inv_samples);
-    }
-
-    template <typename T>
-    void push(const uint32_t row, const uint32_t col, const T val_) {
-        if (!ready()) {
-            throw std::runtime_error("Pedestal is not ready, cannot push");
-        }
-        const auto index = (static_cast<std::size_t>(row) * m_cols) + col;
-        push_fast(index, val_);
-    }
-
-    template <typename T>
-    void push_no_update(const uint32_t row, const uint32_t col, const T val_) {
-        if (!ready()) {
-            throw std::runtime_error("Pedestal is not ready, cannot push");
-        }
-        auto val = static_cast<double>(val_);
-        auto &entry = m_sum(row, col);
-        entry.sum += val - entry.sum * m_inv_samples;
-        entry.sum2 += val * val - entry.sum2 * m_inv_samples;
-    }
 
     /**
      * @brief Update the mean of the pedestal. This is used after having done

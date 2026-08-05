@@ -37,7 +37,7 @@ class ClusterFinder {
     NDArray<PEDESTAL_TYPE, 2> m_threshold;
     NDArray<PEDESTAL_TYPE, 2> m_pd_corrected_frame;
 
-    double all=0;
+    double all = 0;
 
   public:
     /**
