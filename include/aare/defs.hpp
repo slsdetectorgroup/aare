@@ -105,6 +105,11 @@ struct ROI {
     bool contains(ssize_t x, ssize_t y) const {
         return x >= xmin && x < xmax && y >= ymin && y < ymax;
     }
+
+    bool operator==(const ROI &other) const {
+        return xmin == other.xmin && xmax == other.xmax && ymin == other.ymin &&
+               ymax == other.ymax;
+    }
 };
 
 /// @brief  Chip specifications for Matterhorn1
