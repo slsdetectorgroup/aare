@@ -18,7 +18,6 @@
 
 namespace py = pybind11;
 
-
 using namespace aare;
 
 #pragma GCC diagnostic push
@@ -48,9 +47,6 @@ void define_ClusterFinderMT(py::module &m, const std::string &typestr) {
             [](ClusterFinderMT<ClusterType, uint16_t, pd_type> &self,
                py::array_t<uint16_t> frame, uint64_t frame_number) {
                 auto view = make_view_2d(frame);
-                // Release the GIL for the copy and any free-list wait so a
-                // Python sink/consumer can keep draining concurrently.
-                py::gil_scoped_release release;
                 self.find_clusters(view, frame_number);
             },
             py::arg(), py::arg("frame_number") = 0)

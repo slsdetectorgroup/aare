@@ -3,10 +3,10 @@
 #include "aare/ClusterFile.hpp"
 #include "aare/ClusterVector.hpp"
 #include "aare/Dtype.hpp"
+#include "aare/FastPedestal.hpp"
 #include "aare/NDArray.hpp"
 #include "aare/NDView.hpp"
 #include "aare/Pedestal.hpp"
-#include "aare/FastPedestal.hpp"
 #include "aare/defs.hpp"
 #include <cstddef>
 
@@ -76,8 +76,6 @@ class ClusterFinder {
     NDArray<PEDESTAL_TYPE, 2> noise() { return m_pedestal.std(); }
     void clear_pedestal() { m_pedestal.clear(); }
 
-
-
     void update_threshold() { m_threshold = m_pedestal.std() * m_nSigma; }
 
     /**
@@ -96,6 +94,7 @@ class ClusterFinder {
             m_clusters = ClusterVector<ClusterType>{};
         return tmp;
     }
+
   private:
     /**
      * @brief Process a single pixel: scan its cluster window, decide whether it
@@ -104,8 +103,8 @@ class ClusterFinder {
      * (border pixels), if false they are assumed in bounds (interior pixels).
      */
     template <bool CheckBounds>
-    void process_pixel(const NDView<FRAME_TYPE, 2> &frame,
-                       const int iy, const int ix) {
+    void process_pixel(const NDView<FRAME_TYPE, 2> &frame, const int iy,
+                       const int ix) {
 
         constexpr int dy = ClusterSizeY / 2;
         constexpr int dx = ClusterSizeX / 2;
@@ -117,9 +116,9 @@ class ClusterFinder {
 
         const int cols = static_cast<int>(frame.shape(1));
         const int rows = static_cast<int>(frame.shape(0));
-        const auto center = (static_cast<std::size_t>(iy) *
-                             static_cast<std::size_t>(cols)) +
-                            static_cast<std::size_t>(ix);
+        const auto center =
+            (static_cast<std::size_t>(iy) * static_cast<std::size_t>(cols)) +
+            static_cast<std::size_t>(ix);
         const auto *corrected = m_pd_corrected_frame.data();
         const PEDESTAL_TYPE threshold = m_threshold.data()[center];
         const PEDESTAL_TYPE value = corrected[center];
@@ -143,9 +142,9 @@ class ClusterFinder {
             }
         } else {
             for (int ir = -dy; ir < dy + has_center_pixel_y; ir++) {
-                const auto *pixel =
-                    corrected + static_cast<std::size_t>(iy + ir) * cols +
-                    (ix - dx);
+                const auto *pixel = corrected +
+                                    static_cast<std::size_t>(iy + ir) * cols +
+                                    (ix - dx);
                 for (int k = 0; k < ClusterSizeX; k++) {
                     const PEDESTAL_TYPE val = pixel[k];
                     total += val;
@@ -180,9 +179,9 @@ class ClusterFinder {
                             const PEDESTAL_TYPE corrected_value =
                                 corrected[(static_cast<std::size_t>(y) * cols) +
                                           x];
-                            if constexpr (
-                                std::is_integral_v<CT> &&
-                                std::is_floating_point_v<PEDESTAL_TYPE>) {
+                            if constexpr (std::is_integral_v<CT> &&
+                                          std::is_floating_point_v<
+                                              PEDESTAL_TYPE>) {
                                 cluster.data[i] = static_cast<CT>(
                                     std::lround(corrected_value));
                             } else {
@@ -241,15 +240,14 @@ class ClusterFinder {
 
         m_clusters.set_frame_number(frame_number);
 
-        
-
         const int rows = static_cast<int>(frame.shape(0));
         const int cols = static_cast<int>(frame.shape(1));
 
         // TODO! See if we can get the same performace using the operator-
         // m_pd_corrected_frame = frame - m_pedestal.view();
-        
-        //here we should be able to safely assume that the frame and corrected frame have the same size
+
+        // here we should be able to safely assume that the frame and corrected
+        // frame have the same size
         auto n_pixels = frame.size();
         auto pd = m_pedestal.view().data();
         auto corrected = m_pd_corrected_frame.data();

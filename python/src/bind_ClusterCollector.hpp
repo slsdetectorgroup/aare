@@ -18,7 +18,6 @@
 
 namespace py = pybind11;
 
-
 using namespace aare;
 
 #pragma GCC diagnostic push
