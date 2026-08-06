@@ -1,7 +1,88 @@
 import numpy as np
 import pytest
 
-from aare import FastPedestal_d, FastPedestal_f
+from aare import (
+    FastPedestal,
+    FastPedestal_d,
+    FastPedestal_f,
+    FastPedestal_i16,
+)
+
+
+@pytest.mark.parametrize(
+    ("dtype", "pedestal_type"),
+    [
+        (np.float64, FastPedestal_d),
+        (np.float32, FastPedestal_f),
+        (np.int16, FastPedestal_i16),
+    ],
+)
+def test_fast_pedestal_factory(dtype, pedestal_type):
+    pedestal = FastPedestal(2, 3, n_samples=4, dtype=dtype)
+
+    assert isinstance(pedestal, pedestal_type)
+    assert pedestal.rows == 2
+    assert pedestal.cols == 3
+    assert pedestal.n_samples == 4
+
+
+def test_fast_pedestal_factory_defaults_to_double():
+    assert isinstance(FastPedestal(2, 3), FastPedestal_d)
+
+
+def test_fast_pedestal_factory_rejects_unbound_dtype():
+    with pytest.raises(ValueError, match="Unsupported dtype for FastPedestal"):
+        FastPedestal(2, 3, dtype=np.int32)
+
+
+@pytest.mark.parametrize(
+    ("kwargs", "expected_n_samples"),
+    [
+        ({"rows": 2, "cols": 3}, 1000),
+        ({"rows": 2, "cols": 3, "n_samples": 4}, 4),
+    ],
+)
+def test_fast_pedestal_binding_accepts_constructor_keywords(
+    kwargs, expected_n_samples
+):
+    pedestal = FastPedestal_d(**kwargs)
+
+    assert pedestal.rows == 2
+    assert pedestal.cols == 3
+    assert pedestal.n_samples == expected_n_samples
+
+
+@pytest.mark.parametrize(
+    ("dtype", "pedestal_type", "expected_dtype"),
+    [
+        (np.float64, FastPedestal_d, np.float64),
+        (np.float32, FastPedestal_f, np.float32),
+        (np.int16, FastPedestal_i16, np.int16),
+    ],
+)
+def test_fast_pedestal_factory_from_file(
+    tmp_path, dtype, pedestal_type, expected_dtype
+):
+    frames = np.array(
+        [[[100, 100]], [[2, 4]], [[4, 6]], [[5, 7]]], dtype=np.uint16
+    )
+    filename = tmp_path / "frames.npy"
+    np.save(filename, frames)
+
+    pedestal = FastPedestal.from_file(
+        filename, n_samples=2, skip_first=1, dtype=dtype
+    )
+
+    assert isinstance(pedestal, pedestal_type)
+    assert pedestal.ready
+    assert pedestal.cur_samples == 2
+    assert pedestal.mean().dtype == expected_dtype
+    np.testing.assert_array_equal(pedestal.mean(), [[4, 6]])
+
+
+def test_fast_pedestal_factory_from_file_rejects_unbound_dtype():
+    with pytest.raises(ValueError, match="Unsupported dtype for FastPedestal"):
+        FastPedestal.from_file("unused.npy", dtype=np.int32)
 
 
 @pytest.mark.parametrize(

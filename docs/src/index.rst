@@ -29,6 +29,7 @@ AARE
     python/cluster/index
     python/file/index
     python/histogram/index
+    python/pedestal/index
     pyFit
     
 

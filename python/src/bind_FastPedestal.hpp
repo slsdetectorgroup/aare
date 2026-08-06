@@ -14,8 +14,9 @@ template <typename SUM_TYPE>
 void define_fast_pedestal_bindings(py::module &m, const std::string &name) {
 
     py::class_<FastPedestal<SUM_TYPE>>(m, name.c_str(), py::buffer_protocol())
-        .def(py::init<uint32_t, uint32_t, uint32_t>())
-        .def(py::init<uint32_t, uint32_t>())
+        .def(py::init<uint32_t, uint32_t, uint32_t>(), py::arg("rows"),
+             py::arg("cols"), py::arg("n_samples"))
+        .def(py::init<uint32_t, uint32_t>(), py::arg("rows"), py::arg("cols"))
 
         .def(
             "mean",
@@ -24,7 +25,7 @@ void define_fast_pedestal_bindings(py::module &m, const std::string &name) {
                 *mean = self.mean();
                 return return_image_data(mean);
             },
-            "Return a copy of the mean of the pedestal as a NumPy array")
+            "Return a copy of the cached mean as a NumPy array")
         .def(
             "var",
             [](FastPedestal<SUM_TYPE> &self) {
@@ -32,7 +33,7 @@ void define_fast_pedestal_bindings(py::module &m, const std::string &name) {
                 *variance = self.variance();
                 return return_image_data(variance);
             },
-            "Return a copy of the variance of the pedestal as a NumPy array")
+            "Calculate the variance and return it as a NumPy array")
         .def(
             "std",
             [](FastPedestal<SUM_TYPE> &self) {
@@ -40,14 +41,15 @@ void define_fast_pedestal_bindings(py::module &m, const std::string &name) {
                 *standard_deviation = self.std();
                 return return_image_data(standard_deviation);
             },
-            "Return a copy of the standard deviation of the pedestal as a "
+            "Calculate the standard deviation and return it as a "
             "NumPy array")
         .def(
             "view",
             [](py::object self_py) {
                 return py::module_::import("numpy").attr("asarray")(self_py);
             },
-            "Return non-owning, non-writable view of the pedestal as a NumPy "
+            "Return non-owning, non-writable view of the pedestal mean as a "
+            "NumPy "
             "array")
 
         // We need to buffer protocol to allow for numpy operations using the
@@ -95,7 +97,8 @@ void define_fast_pedestal_bindings(py::module &m, const std::string &name) {
             "pushed at least n_samples samples)")
         .def_property_readonly(
             "n_samples", &FastPedestal<SUM_TYPE>::n_samples,
-            "Return the number of samples to push to the pedestal to be ready")
+            "Return the number of samples to push to the pedestal to be ready. "
+            "This value also affect how fast it updates in the steady state.")
         .def("clone",
              [](FastPedestal<SUM_TYPE> &pedestal) {
                  return FastPedestal<SUM_TYPE>(pedestal);
