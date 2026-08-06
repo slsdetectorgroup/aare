@@ -21,9 +21,13 @@ struct StreamContext {
     cudaStream_t stream = nullptr;
     FRAME_TYPE *d_frame = nullptr;
     // Device pedestal precision is set by DEVICE_PED_TYPE in the kernel header.
+    // Accumulators hold CENTERED moments of Y = X - d_pd_off (see kernel):
+    //   d_pd_sum  ~ n*E[Y], d_pd_sum2 ~ n*E[Y^2], d_pd_mean = full mean
+    //   (X0+E[Y]).
     device::DEVICE_PED_TYPE *d_pd_mean = nullptr;
     device::DEVICE_PED_TYPE *d_pd_sum = nullptr;
     device::DEVICE_PED_TYPE *d_pd_sum2 = nullptr;
+    device::DEVICE_PED_TYPE *d_pd_off = nullptr; // frozen per-pixel baseline X0
     uint8_t *d_output = nullptr; // [uint32_t count | ClusterType clusters[max]]
 };
 
@@ -77,6 +81,10 @@ class ClusterFinderCUDA {
     Pedestal<PEDESTAL_TYPE> m_pedestal;
     ClusterVector<ClusterType> m_clusters;
     bool m_pedestal_dirty = true;
+    // Frozen per-pixel baseline X0 (~mean at t=0), captured once on the first
+    // sync and reused so the centered device accumulators never need rebasing.
+    // Cleared by clear_pedestal() to force re-capture on the next sync.
+    std::vector<device::DEVICE_PED_TYPE> m_offset;
 
     using SC = StreamContext<ClusterType, FRAME_TYPE, PEDESTAL_TYPE>;
     std::vector<SC> v_sc;
@@ -177,6 +185,8 @@ class ClusterFinderCUDA {
                 &sc.d_pd_sum, m_image_size * sizeof(device::DEVICE_PED_TYPE)));
             CUDA_CHECK(cudaMalloc(
                 &sc.d_pd_sum2, m_image_size * sizeof(device::DEVICE_PED_TYPE)));
+            CUDA_CHECK(cudaMalloc(
+                &sc.d_pd_off, m_image_size * sizeof(device::DEVICE_PED_TYPE)));
             CUDA_CHECK(cudaMalloc(&sc.d_output, m_output_bytes_per_frame));
         }
 
@@ -200,6 +210,8 @@ class ClusterFinderCUDA {
                 cudaFree(sc.d_pd_sum);
             if (sc.d_pd_sum2)
                 cudaFree(sc.d_pd_sum2);
+            if (sc.d_pd_off)
+                cudaFree(sc.d_pd_off);
             if (sc.d_output)
                 cudaFree(sc.d_output);
             if (sc.stream)
@@ -264,6 +276,7 @@ class ClusterFinderCUDA {
 
     void clear_pedestal() {
         m_pedestal.clear();
+        m_offset.clear(); // re-capture the baseline on the next sync
         m_pedestal_dirty = true;
     }
 
@@ -322,9 +335,11 @@ class ClusterFinderCUDA {
         NDArray<PEDESTAL_TYPE, 2> out(
             {static_cast<ssize_t>(nrows), static_cast<ssize_t>(ncols)});
         for (size_t i = 0; i < m_image_size; ++i) {
-            double var =
-                static_cast<double>(h_sum2[i]) / n -
-                static_cast<double>(h_mean[i]) * static_cast<double>(h_mean[i]);
+            // Accumulators are centered on X0 = m_offset[i], so the variance is
+            // E[Y^2] - E[Y]^2 with E[Y] = mean - X0 (mirrors the kernel).
+            double resid = static_cast<double>(h_mean[i]) -
+                           static_cast<double>(m_offset[i]);
+            double var = static_cast<double>(h_sum2[i]) / n - resid * resid;
             out.data()[i] =
                 static_cast<PEDESTAL_TYPE>(std::sqrt(std::max(var, 0.0)));
         }
@@ -429,8 +444,8 @@ class ClusterFinderCUDA {
             device::find_clusters_in_single_frame<ClusterType, FRAME_TYPE>
                 <<<grid, block, shmem_bytes, sc.stream>>>(
                     sc.d_frame, sc.d_pd_mean, sc.d_pd_sum, sc.d_pd_sum2,
-                    n_pd_samples, m_nSigma, nrows, ncols, d_clusters,
-                    d_cluster_count,
+                    sc.d_pd_off, n_pd_samples, m_nSigma, nrows, ncols,
+                    d_clusters, d_cluster_count,
                     static_cast<uint32_t>(m_max_clusters_per_frame));
             CUDA_CHECK(cudaEventRecord(m_kernel_stop_pools[slot][frame_idx],
                                        sc.stream));
@@ -579,8 +594,8 @@ class ClusterFinderCUDA {
             device::find_clusters_in_single_frame<ClusterType, FRAME_TYPE>
                 <<<grid, block, shmem_bytes, sc.stream>>>(
                     sc.d_frame, sc.d_pd_mean, sc.d_pd_sum, sc.d_pd_sum2,
-                    n_pd_samples, m_nSigma, nrows, ncols, d_clusters,
-                    d_cluster_count,
+                    sc.d_pd_off, n_pd_samples, m_nSigma, nrows, ncols,
+                    d_clusters, d_cluster_count,
                     static_cast<uint32_t>(m_max_clusters_per_frame));
             CUDA_CHECK(
                 cudaEventRecord(m_kernel_stop_pools[0][frame_idx], sc.stream));
@@ -645,16 +660,33 @@ class ClusterFinderCUDA {
         NDArray<PEDESTAL_TYPE, 2> h_sum = m_pedestal.get_sum();
         NDArray<PEDESTAL_TYPE, 2> h_sum2 = m_pedestal.get_sum2();
 
-        // Host accumulates in double; cast to the device pedestal precision
-        // (DEVICE_PED_TYPE — float or double per the kernel-header toggle).
         using DPT = device::DEVICE_PED_TYPE;
+        const double n = static_cast<double>(m_pedestal.n_samples());
+
+        // Capture the frozen per-pixel baseline X0 (≈ mean at t=0) ONCE. Fixed
+        // for the run so the centered device accumulators never need rebasing;
+        // clear_pedestal() empties m_offset to force a fresh capture.
+        if (m_offset.size() != m_image_size) {
+            m_offset.resize(m_image_size);
+            for (size_t i = 0; i < m_image_size; ++i)
+                m_offset[i] = static_cast<DPT>(std::llround(h_mean.data()[i]));
+        }
+
+        // Center in DOUBLE (where sum2 ~ n·E[X²] is still exact), then cast the
+        // SMALL centered results to DPT — this is what dodges the f32
+        // cancellation. Device holds: sum ~ n·E[Y], sum2 ~ n·E[Y²], Y = X − X0.
+        //   Σ(X−X0)   = ΣX  − n·X0
+        //   Σ(X−X0)²  = ΣX² − 2·X0·ΣX + n·X0²
         std::vector<DPT> f_mean(m_image_size);
         std::vector<DPT> f_sum(m_image_size);
         std::vector<DPT> f_sum2(m_image_size);
         for (size_t i = 0; i < m_image_size; ++i) {
+            const double X0 = static_cast<double>(m_offset[i]);
+            const double s = h_sum.data()[i];
+            const double s2 = h_sum2.data()[i];
             f_mean[i] = static_cast<DPT>(h_mean.data()[i]);
-            f_sum[i] = static_cast<DPT>(h_sum.data()[i]);
-            f_sum2[i] = static_cast<DPT>(h_sum2.data()[i]);
+            f_sum[i] = static_cast<DPT>(s - n * X0);
+            f_sum2[i] = static_cast<DPT>(s2 - 2.0 * X0 * s + n * X0 * X0);
         }
 
         const size_t bytes = m_image_size * sizeof(DPT);
@@ -664,6 +696,8 @@ class ClusterFinderCUDA {
             CUDA_CHECK(cudaMemcpyAsync(sc.d_pd_sum, f_sum.data(), bytes,
                                        cudaMemcpyHostToDevice, sc.stream));
             CUDA_CHECK(cudaMemcpyAsync(sc.d_pd_sum2, f_sum2.data(), bytes,
+                                       cudaMemcpyHostToDevice, sc.stream));
+            CUDA_CHECK(cudaMemcpyAsync(sc.d_pd_off, m_offset.data(), bytes,
                                        cudaMemcpyHostToDevice, sc.stream));
         }
         for (auto &sc : v_sc)

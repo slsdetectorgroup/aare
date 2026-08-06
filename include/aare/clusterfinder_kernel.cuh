@@ -13,8 +13,8 @@ namespace aare::device {
 // ClusterFinder to the floating-point floor. float/float is ~2x faster but
 // reintroduces a small near-threshold mismatch; a build-time toggle for that
 // trade-off is planned.
-using COMPUTE_TYPE = double;
-using DEVICE_PED_TYPE = double;
+using COMPUTE_TYPE = float;
+using DEVICE_PED_TYPE = float;
 
 template <typename ClusterType = Cluster<int32_t, 3, 3>,
           typename FRAME_TYPE = uint16_t,
@@ -23,7 +23,8 @@ __global__ void find_clusters_in_single_frame(
     const FRAME_TYPE *__restrict__ d_frame,
     DEVICE_PED_TYPE *__restrict__ d_pd_mean,
     DEVICE_PED_TYPE *__restrict__ d_pd_sum,
-    DEVICE_PED_TYPE *__restrict__ d_pd_sum2, const uint32_t n_pd_samples,
+    DEVICE_PED_TYPE *__restrict__ d_pd_sum2,
+    const DEVICE_PED_TYPE *__restrict__ d_pd_off, const uint32_t n_pd_samples,
     const COMPUTE_TYPE m_nSigma, const size_t nrows, const size_t ncols,
     //   const uint64_t       frame_number,
     ClusterType *d_clusters, uint32_t *d_cluster_count,
@@ -179,13 +180,18 @@ __global__ void find_clusters_in_single_frame(
     if (!valid_pixel)
         return;
 
-    // Per-pixel variance from global pedestal arrays
-    // Variance = rms^2 = E[X^2] - E[X]^2
-    // NOTE: Keep thresholds squared to avoid one sqrtf() per pixel.
+    // Per-pixel variance from global pedestal arrays.
+    // Variance = rms^2 = E[Y^2] - E[Y]^2, where Y = X - X0 is the pedestal
+    // value centered on the frozen t=0 baseline X0 (= d_pd_off). The
+    // accumulators hold the CENTERED moments (sum ~ n*E[Y], sum2 ~ n*E[Y^2]),
+    // both O(rms), so this difference has no catastrophic cancellation even in
+    // float — unlike the raw E[X^2] - E[X]^2 form, where X ~ 4600 makes both
+    // terms ~2e7. NOTE: Keep thresholds squared to avoid one sqrtf() per pixel.
     DEVICE_PED_TYPE mean_px = d_pd_mean[global_tid];
+    DEVICE_PED_TYPE resid = mean_px - d_pd_off[global_tid]; // E[Y] ~ O(1)
     DEVICE_PED_TYPE var_px =
         d_pd_sum2[global_tid] / static_cast<DEVICE_PED_TYPE>(n_pd_samples) -
-        mean_px * mean_px;
+        resid * resid;
     COMPUTE_TYPE rms_sq = static_cast<COMPUTE_TYPE>(
         var_px > DEVICE_PED_TYPE{0} ? var_px : DEVICE_PED_TYPE{0});
     COMPUTE_TYPE nSig_sq_rms_sq = m_nSigma * m_nSigma * rms_sq;
@@ -284,18 +290,24 @@ __global__ void find_clusters_in_single_frame(
     // frame simultaneously. So the updated pedestal will only be used starting
     // from the next frame. -> This avoids a/serialization and b/global mem I/O.
     if (!is_photon && valid_pixel) {
-        DEVICE_PED_TYPE raw_val =
-            static_cast<DEVICE_PED_TYPE>(d_frame[global_tid]);
+        // Update the CENTERED moments of Y = X - X0 (X0 = frozen baseline).
+        // Both sum (~n*E[Y]) and sum2 (~n*E[Y^2]) stay O(rms)-scale, so the
+        // running EMA and its float rounding never touch the ~1e10 magnitudes
+        // the raw accumulators would reach. Reconstruct the full mean as
+        // X0 + sum/n for the pedestal subtraction on the next frame.
+        DEVICE_PED_TYPE X0 = d_pd_off[global_tid];
+        DEVICE_PED_TYPE y =
+            static_cast<DEVICE_PED_TYPE>(d_frame[global_tid]) - X0;
         DEVICE_PED_TYPE sum = d_pd_sum[global_tid];
         DEVICE_PED_TYPE sum2 = d_pd_sum2[global_tid];
         DEVICE_PED_TYPE n = static_cast<DEVICE_PED_TYPE>(n_pd_samples);
 
-        sum += raw_val - sum / n;
-        sum2 += raw_val * raw_val - sum2 / n;
+        sum += y - sum / n;
+        sum2 += y * y - sum2 / n;
 
         d_pd_sum[global_tid] = sum;
         d_pd_sum2[global_tid] = sum2;
-        d_pd_mean[global_tid] = sum / n;
+        d_pd_mean[global_tid] = X0 + sum / n;
         return;
     }
 

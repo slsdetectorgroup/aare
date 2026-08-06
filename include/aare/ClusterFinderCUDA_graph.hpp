@@ -20,9 +20,11 @@ struct StreamContextGraph {
     cudaStream_t stream = nullptr;
     FRAME_TYPE *d_frame = nullptr;
     // Device pedestal precision is set by DEVICE_PED_TYPE in the kernel header.
+    // Accumulators hold CENTERED moments of Y = X - d_pd_off (see kernel).
     device::DEVICE_PED_TYPE *d_pd_mean = nullptr;
     device::DEVICE_PED_TYPE *d_pd_sum = nullptr;
     device::DEVICE_PED_TYPE *d_pd_sum2 = nullptr;
+    device::DEVICE_PED_TYPE *d_pd_off = nullptr; // frozen per-pixel baseline X0
     uint8_t *d_output = nullptr; // [uint32_t count | ClusterType clusters[max]]
 
     // CUDA Graph handles — rebuilt on pedestal change or h_output_pinned resize
@@ -37,6 +39,7 @@ struct StreamContextGraph {
     device::DEVICE_PED_TYPE *karg_d_pd_mean = nullptr;
     device::DEVICE_PED_TYPE *karg_d_pd_sum = nullptr;
     device::DEVICE_PED_TYPE *karg_d_pd_sum2 = nullptr;
+    device::DEVICE_PED_TYPE *karg_d_pd_off = nullptr;
     uint32_t karg_n_pd_samples = 0;
     device::COMPUTE_TYPE karg_nSigma = 0.0f;
     size_t karg_nrows = 0;
@@ -44,7 +47,7 @@ struct StreamContextGraph {
     ClusterType *karg_d_clusters = nullptr;
     uint32_t *karg_d_cluster_count = nullptr;
     uint32_t karg_max_clusters = 0;
-    void *kargs_ptrs[11] = {};
+    void *kargs_ptrs[12] = {};
 
     // Per-frame update templates for H2D and D2H memcpy nodes
     cudaMemcpy3DParms h2d_params = {};
@@ -95,6 +98,8 @@ class ClusterFinderCUDAGraph {
     ClusterVector<ClusterType> m_clusters;
     bool m_pedestal_dirty = true;
     bool m_graphs_dirty = true; // set when pedestal or h_output_pinned changes
+    // Frozen per-pixel baseline X0 (~mean at t=0), captured once on first sync.
+    std::vector<device::DEVICE_PED_TYPE> m_offset;
 
     using SC = StreamContextGraph<ClusterType, FRAME_TYPE, PEDESTAL_TYPE>;
     std::vector<SC> v_sc;
@@ -181,6 +186,8 @@ class ClusterFinderCUDAGraph {
                 &sc.d_pd_sum, m_image_size * sizeof(device::DEVICE_PED_TYPE)));
             CUDA_CHECK(cudaMalloc(
                 &sc.d_pd_sum2, m_image_size * sizeof(device::DEVICE_PED_TYPE)));
+            CUDA_CHECK(cudaMalloc(
+                &sc.d_pd_off, m_image_size * sizeof(device::DEVICE_PED_TYPE)));
             CUDA_CHECK(cudaMalloc(&sc.d_output, m_output_bytes_per_frame));
         }
     }
@@ -201,6 +208,8 @@ class ClusterFinderCUDAGraph {
                 cudaFree(sc.d_pd_sum);
             if (sc.d_pd_sum2)
                 cudaFree(sc.d_pd_sum2);
+            if (sc.d_pd_off)
+                cudaFree(sc.d_pd_off);
             if (sc.d_output)
                 cudaFree(sc.d_output);
             if (sc.stream)
@@ -258,6 +267,7 @@ class ClusterFinderCUDAGraph {
 
     void clear_pedestal() {
         m_pedestal.clear();
+        m_offset.clear(); // re-capture the baseline on the next sync
         m_pedestal_dirty = true;
     }
 
@@ -405,16 +415,30 @@ class ClusterFinderCUDAGraph {
         NDArray<PEDESTAL_TYPE, 2> h_sum = m_pedestal.get_sum();
         NDArray<PEDESTAL_TYPE, 2> h_sum2 = m_pedestal.get_sum2();
 
-        // Host accumulates in double; cast to the device pedestal precision
-        // (DEVICE_PED_TYPE — float or double per the kernel-header toggle).
         using DPT = device::DEVICE_PED_TYPE;
+        const double n = static_cast<double>(m_pedestal.n_samples());
+
+        // Capture the frozen per-pixel baseline X0 (≈ mean at t=0) ONCE, then
+        // upload CENTERED accumulators (Y = X − X0) so the device variance
+        // avoids f32 catastrophic cancellation. See ClusterFinderCUDA.hpp for
+        // the full rationale; the centering is done in double, then cast to
+        // DPT.
+        if (m_offset.size() != m_image_size) {
+            m_offset.resize(m_image_size);
+            for (size_t i = 0; i < m_image_size; ++i)
+                m_offset[i] = static_cast<DPT>(std::llround(h_mean.data()[i]));
+        }
+
         std::vector<DPT> f_mean(m_image_size);
         std::vector<DPT> f_sum(m_image_size);
         std::vector<DPT> f_sum2(m_image_size);
         for (size_t i = 0; i < m_image_size; ++i) {
+            const double X0 = static_cast<double>(m_offset[i]);
+            const double s = h_sum.data()[i];
+            const double s2 = h_sum2.data()[i];
             f_mean[i] = static_cast<DPT>(h_mean.data()[i]);
-            f_sum[i] = static_cast<DPT>(h_sum.data()[i]);
-            f_sum2[i] = static_cast<DPT>(h_sum2.data()[i]);
+            f_sum[i] = static_cast<DPT>(s - n * X0);
+            f_sum2[i] = static_cast<DPT>(s2 - 2.0 * X0 * s + n * X0 * X0);
         }
 
         const size_t bytes = m_image_size * sizeof(DPT);
@@ -424,6 +448,8 @@ class ClusterFinderCUDAGraph {
             CUDA_CHECK(cudaMemcpyAsync(sc.d_pd_sum, f_sum.data(), bytes,
                                        cudaMemcpyHostToDevice, sc.stream));
             CUDA_CHECK(cudaMemcpyAsync(sc.d_pd_sum2, f_sum2.data(), bytes,
+                                       cudaMemcpyHostToDevice, sc.stream));
+            CUDA_CHECK(cudaMemcpyAsync(sc.d_pd_off, m_offset.data(), bytes,
                                        cudaMemcpyHostToDevice, sc.stream));
         }
         for (auto &sc : v_sc)
@@ -487,6 +513,7 @@ class ClusterFinderCUDAGraph {
             sc.karg_d_pd_mean = sc.d_pd_mean;
             sc.karg_d_pd_sum = sc.d_pd_sum;
             sc.karg_d_pd_sum2 = sc.d_pd_sum2;
+            sc.karg_d_pd_off = sc.d_pd_off;
             sc.karg_n_pd_samples = n_pd_samples;
             sc.karg_nSigma = m_nSigma;
             sc.karg_nrows = nrows;
@@ -501,13 +528,14 @@ class ClusterFinderCUDAGraph {
             sc.kargs_ptrs[1] = &sc.karg_d_pd_mean;
             sc.kargs_ptrs[2] = &sc.karg_d_pd_sum;
             sc.kargs_ptrs[3] = &sc.karg_d_pd_sum2;
-            sc.kargs_ptrs[4] = &sc.karg_n_pd_samples;
-            sc.kargs_ptrs[5] = &sc.karg_nSigma;
-            sc.kargs_ptrs[6] = &sc.karg_nrows;
-            sc.kargs_ptrs[7] = &sc.karg_ncols;
-            sc.kargs_ptrs[8] = &sc.karg_d_clusters;
-            sc.kargs_ptrs[9] = &sc.karg_d_cluster_count;
-            sc.kargs_ptrs[10] = &sc.karg_max_clusters;
+            sc.kargs_ptrs[4] = &sc.karg_d_pd_off;
+            sc.kargs_ptrs[5] = &sc.karg_n_pd_samples;
+            sc.kargs_ptrs[6] = &sc.karg_nSigma;
+            sc.kargs_ptrs[7] = &sc.karg_nrows;
+            sc.kargs_ptrs[8] = &sc.karg_ncols;
+            sc.kargs_ptrs[9] = &sc.karg_d_clusters;
+            sc.kargs_ptrs[10] = &sc.karg_d_cluster_count;
+            sc.kargs_ptrs[11] = &sc.karg_max_clusters;
 
             cudaKernelNodeParams kp = {};
             // NOLINTNEXTLINE(cppcoreguidelines-pro-type-reinterpret-cast)
