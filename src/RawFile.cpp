@@ -27,11 +27,10 @@ namespace aare {
  * @param modules_y number of modules in y direction
  * @return vector of ROIs corresponding to the disabled UDP ports
  */
-std::vector<ROI> get_rois_from_disabled_udp_ports(
-    std::vector<size_t> &disabled_ports,
-    std::vector<std::string> &udp_port_types, const ssize_t pixels_per_module_x,
-    const ssize_t pixels_per_module_y, const ssize_t modules_x,
-    const ssize_t modules_y) {
+std::vector<ROI>
+get_rois_from_disabled_udp_ports(std::vector<size_t> &disabled_ports,
+                                 std::vector<std::string> &udp_port_types,
+                                 const DetectorGeometry &geometry) {
 
     const size_t num_udp_port_types = udp_port_types.size();
 
@@ -45,73 +44,98 @@ std::vector<ROI> get_rois_from_disabled_udp_ports(
 
     std::vector<ROI> rois;
 
-    constexpr size_t udp_ports_per_module = 2;
+    const ssize_t udp_ports_per_module =
+        geometry.udp_interfaces_per_module().col *
+        geometry.udp_interfaces_per_module().row;
 
     bool port_disabled_for_all_modules =
-        disabled_ports.size() == modules_x * modules_y / udp_ports_per_module;
+        disabled_ports.size() ==
+        geometry.modules_x() * geometry.modules_y() / udp_ports_per_module;
 
     if (all_ports_equal && port_disabled_for_all_modules) {
 
         if (udp_port_types[first_port] == "left") {
-            size_t num_rois = modules_x / udp_ports_per_module;
+            const size_t num_rois = geometry.modules_x() / udp_ports_per_module;
             rois.resize(num_rois);
-            std::generate(rois.begin(), rois.end(),
-                          [n = 0, pixels_per_module_x, pixels_per_module_y,
-                           modules_y]() mutable {
-                              ssize_t idx = n++;
-                              return ROI{idx * 2 * pixels_per_module_x +
-                                             pixels_per_module_x,
-                                         idx * 2 * pixels_per_module_x +
-                                             2 * pixels_per_module_x,
-                                         0, modules_y * pixels_per_module_y};
-                          });
+
+            const ssize_t pixels_per_module_x =
+                geometry.pixels_x() / geometry.modules_x();
+
+            std::generate(
+                rois.begin(), rois.end(),
+                [n = 0, &geometry, pixels_per_module_x,
+                 udp_ports_per_module]() mutable {
+                    ssize_t idx = n++;
+                    return ROI{
+                        idx * udp_ports_per_module * pixels_per_module_x +
+                            pixels_per_module_x,
+                        idx * udp_ports_per_module * pixels_per_module_x +
+                            2 * pixels_per_module_x,
+                        0, static_cast<ssize_t>(geometry.pixels_y())};
+                });
         }
         if (udp_port_types[first_port] == "right") {
-            size_t num_rois = modules_x / udp_ports_per_module;
+            const size_t num_rois = geometry.modules_x() / udp_ports_per_module;
             rois.resize(num_rois);
-            std::generate(rois.begin(), rois.end(),
-                          [n = 0, pixels_per_module_x, pixels_per_module_y,
-                           modules_y]() mutable {
-                              ssize_t idx = n++;
-                              return ROI{idx * 2 * pixels_per_module_x,
-                                         idx * 2 * pixels_per_module_x +
-                                             pixels_per_module_x,
-                                         0, modules_y * pixels_per_module_y};
-                          });
+
+            const ssize_t pixels_per_module_x =
+                geometry.pixels_x() / geometry.modules_x();
+
+            std::generate(
+                rois.begin(), rois.end(),
+                [n = 0, geometry, pixels_per_module_x,
+                 udp_ports_per_module]() mutable {
+                    ssize_t idx = n++;
+                    return ROI{idx * udp_ports_per_module * pixels_per_module_x,
+                               idx * udp_ports_per_module *
+                                       pixels_per_module_x +
+                                   pixels_per_module_x,
+                               0, static_cast<ssize_t>(geometry.pixels_y())};
+                });
         }
         if (udp_port_types[first_port] == "top") {
-            size_t num_rois = modules_y / udp_ports_per_module;
+            size_t num_rois = geometry.modules_y() / udp_ports_per_module;
             rois.resize(num_rois);
             // assumes euclidean coordinate system with origin at bottom
             // left corner of the detector
-            std::generate(rois.begin(), rois.end(),
-                          [n = 0, pixels_per_module_x, pixels_per_module_y,
-                           modules_x]() mutable {
-                              ssize_t idx = n++;
-                              return ROI{0, modules_x * pixels_per_module_x,
-                                         idx * 2 * pixels_per_module_y,
-                                         idx * 2 * pixels_per_module_y +
-                                             pixels_per_module_y};
-                          });
+            const ssize_t pixels_per_module_y =
+                geometry.pixels_y() / geometry.modules_y();
+            std::generate(
+                rois.begin(), rois.end(),
+                [n = 0, &geometry, pixels_per_module_y,
+                 udp_ports_per_module]() mutable {
+                    ssize_t idx = n++;
+                    return ROI{0, static_cast<ssize_t>(geometry.pixels_x()),
+                               idx * udp_ports_per_module * pixels_per_module_y,
+                               idx * udp_ports_per_module *
+                                       pixels_per_module_y +
+                                   pixels_per_module_y};
+                });
         }
         if (udp_port_types[first_port] == "bottom") {
-            size_t num_rois = modules_y / udp_ports_per_module;
+            size_t num_rois = geometry.modules_y() / udp_ports_per_module;
             rois.resize(num_rois);
-            std::generate(rois.begin(), rois.end(),
-                          [n = 0, pixels_per_module_x, pixels_per_module_y,
-                           modules_x]() mutable {
-                              ssize_t idx = n++;
-                              return ROI{0, modules_x * pixels_per_module_x,
-                                         idx * 2 * pixels_per_module_y +
-                                             pixels_per_module_y,
-                                         idx * 2 * pixels_per_module_y +
-                                             2 * pixels_per_module_y};
-                          });
+            const ssize_t pixels_per_module_y =
+                geometry.pixels_y() / geometry.modules_y();
+            std::generate(
+                rois.begin(), rois.end(),
+                [n = 0, &geometry, pixels_per_module_y,
+                 udp_ports_per_module]() mutable {
+                    ssize_t idx = n++;
+                    return ROI{
+                        0, static_cast<ssize_t>(geometry.pixels_x()),
+                        idx * udp_ports_per_module * pixels_per_module_y +
+                            pixels_per_module_y,
+                        idx * udp_ports_per_module * pixels_per_module_y +
+                            2 * pixels_per_module_y};
+                });
         }
     } else {
         // iterate over all ports and create ROIs for each disabled port
         rois.reserve(disabled_ports.size());
-        for (auto disabled_port : disabled_ports) {
+        for (size_t idx = 0; idx < disabled_ports.size(); ++idx) {
+
+            size_t disabled_port = disabled_ports[idx];
             std::string disabled_port_type =
                 udp_port_types[disabled_port %
                                num_udp_port_types]; // modulo needed as
@@ -123,58 +147,72 @@ std::vector<ROI> get_rois_from_disabled_udp_ports(
                                                     // in
                                                     // slsDetectorDefs
 
-            ROI roi{};
-
             if (disabled_port_type == "bottom") {
                 // assumes euclidean coordinate system with origin at bottom
                 // left corner
-                ssize_t module_idx = disabled_port / udp_ports_per_module;
-                ssize_t modules_in_y = modules_y / udp_ports_per_module;
-                ssize_t module_row_pos = module_idx % modules_in_y;
-                ssize_t module_col_pos = module_idx / modules_in_y;
-                roi = ROI{module_col_pos * pixels_per_module_x,
-                          (module_col_pos + 1) * pixels_per_module_x,
-                          module_row_pos * 2 * pixels_per_module_y +
-                              pixels_per_module_y,
-                          module_row_pos * 2 * pixels_per_module_y +
-                              2 * pixels_per_module_y};
+                ssize_t module_idx = disabled_port + 1; // top port
+                if (idx == disabled_ports.size() - 1 ||
+                    !(static_cast<ssize_t>(disabled_ports[idx + 1]) ==
+                      module_idx)) {
+                    // top port is not disabled
+                    auto module_geometry =
+                        geometry.get_module_geometries(module_idx);
+
+                    rois.push_back(
+                        ROI{module_geometry.origin_x,
+                            module_geometry.origin_x + module_geometry.width,
+                            module_geometry.origin_y,
+                            module_geometry.origin_y + module_geometry.height});
+                }
+
             } else if (disabled_port_type == "top") {
-                ssize_t module_idx = disabled_port / udp_ports_per_module;
-                ssize_t modules_in_y = modules_y / udp_ports_per_module;
-                ssize_t module_row_pos = module_idx % modules_in_y;
-                ssize_t module_col_pos = module_idx / modules_in_y;
-                roi = ROI{module_col_pos * pixels_per_module_x,
-                          (module_col_pos + 1) * pixels_per_module_x,
-                          module_row_pos * 2 * pixels_per_module_y,
-                          module_row_pos * 2 * pixels_per_module_y +
-                              pixels_per_module_y};
+                ssize_t module_idx = disabled_port - 1; // bottom port
+                if (idx == 0 || !(static_cast<ssize_t>(
+                                      disabled_ports[idx - 1]) == module_idx)) {
+                    // bottom port is not disabled
+                    auto module_geometry =
+                        geometry.get_module_geometries(module_idx);
+
+                    rois.push_back(
+                        ROI{module_geometry.origin_x,
+                            module_geometry.origin_x + module_geometry.width,
+                            module_geometry.origin_y,
+                            module_geometry.origin_y + module_geometry.height});
+                }
+
             } else if (disabled_port_type == "left") {
-                ssize_t half_module_idx = disabled_port / udp_ports_per_module;
-                ssize_t module_row_pos = half_module_idx % modules_y;
-                ssize_t module_col_pos = half_module_idx / modules_y;
-                roi = ROI{module_col_pos * 2 * pixels_per_module_x +
-                              pixels_per_module_x,
-                          module_col_pos * 2 * pixels_per_module_x +
-                              2 * pixels_per_module_x,
-                          module_row_pos * pixels_per_module_y,
-                          module_row_pos * pixels_per_module_y +
-                              pixels_per_module_y};
+                ssize_t module_idx = disabled_port + 1; // right port
+                if (idx == disabled_ports.size() - 1 ||
+                    !(static_cast<ssize_t>(disabled_ports[idx + 1]) ==
+                      module_idx)) {
+                    // right port is not disabled
+                    auto module_geometry =
+                        geometry.get_module_geometries(module_idx);
+
+                    rois.push_back(
+                        ROI{module_geometry.origin_x,
+                            module_geometry.origin_x + module_geometry.width,
+                            module_geometry.origin_y,
+                            module_geometry.origin_y + module_geometry.height});
+                }
             } else if (disabled_port_type == "right") {
-                ssize_t half_module_idx = disabled_port / udp_ports_per_module;
-                ssize_t module_row_pos = half_module_idx % modules_y;
-                ssize_t module_col_pos = half_module_idx / modules_y;
-                roi = ROI{module_col_pos * 2 * pixels_per_module_x,
-                          module_col_pos * 2 * pixels_per_module_x +
-                              pixels_per_module_x,
-                          module_row_pos * pixels_per_module_y,
-                          module_row_pos * pixels_per_module_y +
-                              pixels_per_module_y};
+                ssize_t module_idx = disabled_port - 1; // left port
+                if (idx == 0 || !(static_cast<ssize_t>(
+                                      disabled_ports[idx - 1]) == module_idx)) {
+                    // left port is not disabled
+                    auto module_geometry =
+                        geometry.get_module_geometries(module_idx);
+
+                    rois.push_back(
+                        ROI{module_geometry.origin_x,
+                            module_geometry.origin_x + module_geometry.width,
+                            module_geometry.origin_y,
+                            module_geometry.origin_y + module_geometry.height});
+                }
             } else {
                 throw std::runtime_error(
                     LOCATION + "Unknown UDP port type: " + disabled_port_type);
             }
-
-            rois.push_back(roi);
         }
         if (udp_port_types == std::vector<std::string>{"left", "right"}) {
             rois = merge_consecutive_rois<false, true>(rois);
@@ -210,9 +248,7 @@ RawFile::RawFile(const std::filesystem::path &fname, const std::string &mode)
             auto udp_port_types = m_master.udp_port_types().value();
 
             std::vector<ROI> rois = get_rois_from_disabled_udp_ports(
-                disabled_ports, udp_port_types, m_master.pixels_x(),
-                m_master.pixels_y(), m_geometry.modules_x(),
-                m_geometry.modules_y());
+                disabled_ports, udp_port_types, m_geometry);
 
             m_subfiles.resize(rois.size());
 
