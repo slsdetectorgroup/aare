@@ -1,5 +1,6 @@
 # Release notes
 
+<<<<<<< HEAD
 ## Next
 
 ### API Changes:
@@ -14,6 +15,8 @@
 
 ### Bugfixes:
 - Fixed broken reading of old (pre reordering) Moench03
+=======
+>>>>>>> c718a4a (updated release notes)
 
 ## 2026.7.2
 
@@ -29,6 +32,7 @@
 - ``aare.transfrom.Matterhorn10Transform`` reshapes data such that first dimension is number of counters
 - Added support for len() for files. Returns the number of frames
 - Added support for direct subtraction of Pedestal from numpy array
+- Added support to read files with disabled udp ports 
 
 ### Bugfixes:
 
