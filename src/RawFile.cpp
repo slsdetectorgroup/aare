@@ -8,6 +8,7 @@
 #include "aare/logger.hpp"
 #include "aare/utils/utility_functions.hpp"
 
+#include <algorithm>
 #include <fmt/format.h>
 #include <nlohmann/json.hpp>
 
@@ -181,23 +182,7 @@ std::vector<ROI> get_rois_from_disabled_udp_ports(
                        std::vector<std::string>{"bottom", "top"} ||
                    udp_port_types ==
                        std::vector<std::string>{"top", "bottom"}) {
-
-            LOG(logDEBUG) << fmt::format("ROIs before merging: {}",
-                                         rois.size());
-            std::for_each(rois.begin(), rois.end(), [](const ROI &roi) {
-                LOG(logDEBUG) << fmt::format(
-                    "ROI: xmin: {}, xmax: {}, ymin: {}, ymax: {}", roi.xmin,
-                    roi.xmax, roi.ymin, roi.ymax);
-            });
-
             rois = merge_consecutive_rois<true, false>(rois);
-            LOG(logDEBUG) << fmt::format("ROIs after merging: {}", rois.size());
-            std::for_each(rois.begin(), rois.end(), [](const ROI &roi) {
-                LOG(logDEBUG) << fmt::format(
-                    "ROI: xmin: {}, xmax: {}, ymin: {}, ymax: {}", roi.xmin,
-                    roi.xmax, roi.ymin, roi.ymax);
-            });
-
         } else {
             throw std::runtime_error(LOCATION + "Unsupported UDP port types");
         }
@@ -209,7 +194,8 @@ std::vector<ROI> get_rois_from_disabled_udp_ports(
 RawFile::RawFile(const std::filesystem::path &fname, const std::string &mode)
     : m_master(fname),
       m_geometry(m_master.geometry(), m_master.pixels_x(), m_master.pixels_y(),
-                 m_master.udp_interfaces_per_module(), m_master.quad()) {
+                 m_master.udp_interfaces_per_module(), m_master.quad()),
+      m_frames_in_file(m_master.frames_in_file()) {
 
     m_mode = mode;
 
@@ -237,6 +223,29 @@ RawFile::RawFile(const std::filesystem::path &fname, const std::string &mode)
                     ROIGeometry(rois[roi_index], m_geometry));
                 open_subfiles(roi_index);
             }
+
+            // TODO: remove frames_from_file from master file?
+            // retrieve the frame numbers from subfile as frames per file in
+            // master file 0 if dataprocessor 0 was disabled
+            std::vector<size_t> min_subfiles_per_roi(m_subfiles.size());
+            std::transform(
+                m_subfiles.begin(), m_subfiles.end(),
+                min_subfiles_per_roi.begin(), [](const auto &subfiles) {
+                    return std::min_element(
+                               subfiles.begin(), subfiles.end(),
+                               [](const auto &raw_subfile1,
+                                  const auto &raw_subfile2) {
+                                   return raw_subfile1->frames_in_file() <
+                                          raw_subfile2->frames_in_file();
+                               })
+                        ->get()
+                        ->frames_in_file();
+                });
+            m_frames_in_file = *std::min_element(min_subfiles_per_roi.begin(),
+                                                 min_subfiles_per_roi.end());
+
+            LOG(logDEBUG) << "Frames in file: " << m_frames_in_file;
+
         } else if (m_master.rois().has_value()) {
             m_ROI_geometries.reserve(m_master.rois()->size());
 
@@ -425,7 +434,7 @@ void RawFile::seek(size_t frame_index) {
 
 size_t RawFile::tell() { return m_current_frame; }
 
-size_t RawFile::total_frames() const { return m_master.frames_in_file(); }
+size_t RawFile::total_frames() const { return m_frames_in_file; }
 
 size_t RawFile::rows() const {
     if (m_ROI_geometries.size() > 1) {

@@ -35,6 +35,9 @@ class RawFile : public FileInterface {
     /// @brief Geometries e.g. number of modules, size etc. for each ROI
     std::vector<ROIGeometry> m_ROI_geometries;
 
+    /// @brief total number of frames in file
+    size_t m_frames_in_file{};
+
   public:
     /**
      * @brief RawFile constructor
