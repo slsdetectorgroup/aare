@@ -115,6 +115,10 @@ RawMasterFile::RawMasterFile(const std::filesystem::path &fpath)
     } else {
         throw std::runtime_error(LOCATION + "Unsupported file type");
     }
+
+    if (m_quad == 1 && m_udp_port_types.has_value()) {
+        m_udp_port_types.value() = {"top", "bottom"};
+    }
 }
 
 RawMasterFile::RawMasterFile(std::istream &is, const std::string &fname)

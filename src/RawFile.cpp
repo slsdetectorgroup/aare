@@ -178,7 +178,9 @@ std::vector<ROI> get_rois_from_disabled_udp_ports(
         if (udp_port_types == std::vector<std::string>{"left", "right"}) {
             rois = merge_consecutive_rois<false, true>(rois);
         } else if (udp_port_types ==
-                   std::vector<std::string>{"bottom", "top"}) {
+                       std::vector<std::string>{"bottom", "top"} ||
+                   udp_port_types ==
+                       std::vector<std::string>{"top", "bottom"}) {
 
             LOG(logDEBUG) << fmt::format("ROIs before merging: {}",
                                          rois.size());

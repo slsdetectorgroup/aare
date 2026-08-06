@@ -537,4 +537,40 @@ TEST_CASE("Read Eiger frame with disabled UDP ports",
         REQUIRE(frame.cols() == 512);
         REQUIRE(frame.rows() == 512);
     }
+    SECTION("2 full modules stacked vertically - right ports disabled") {
+        auto fpath = test_data_path() / "raw/eiger" /
+                     "2_modules_eiger_disabled_udp_port_master_0.json";
+
+        REQUIRE(std::filesystem::exists(fpath));
+        RawFile f(fpath);
+        REQUIRE(f.master().disabled_udp_ports().value() ==
+                std::vector<size_t>{1, 3, 5, 7});
+        REQUIRE(f.master().udp_port_types().value() ==
+                std::vector<std::string>{"left", "right"});
+        REQUIRE_THROWS_WITH(
+            f.read_frame(),
+            Catch::Matchers::ContainsSubstring(
+                "Multiple ROIs present in file. Use read_ROIs() "
+                "instead"));
+        auto frames = f.read_rois();
+        REQUIRE(frames.size() == 2);
+        REQUIRE(frames[0].cols() == 512);
+        REQUIRE(frames[0].rows() == 512);
+        REQUIRE(frames[1].cols() == 512);
+        REQUIRE(frames[1].rows() == 512);
+    }
+    SECTION("quad module - bottom port disabled") {
+        auto fpath = test_data_path() / "raw/eiger" /
+                     "quad_eiger_disabled_bottom_port_master_0.json";
+
+        REQUIRE(std::filesystem::exists(fpath));
+        RawFile f(fpath);
+        REQUIRE(f.master().disabled_udp_ports().value() ==
+                std::vector<size_t>{1});
+        REQUIRE(f.master().udp_port_types().value() ==
+                std::vector<std::string>{"top", "bottom"});
+        auto frame = f.read_frame();
+        REQUIRE(frame.cols() == 512);
+        REQUIRE(frame.rows() == 256);
+    }
 }
