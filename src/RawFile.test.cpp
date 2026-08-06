@@ -473,6 +473,31 @@ TEST_CASE("Read Jungfrau frame with disabled UDP ports",
         REQUIRE(frame.cols() == 1024);
         REQUIRE(frame.rows() == 512);
     }
+    SECTION("4 modules- mixed ports disabled") {
+        auto fpath = test_data_path() / "raw/jungfrau" /
+                     "4_modules_udp_disabled_master_0.json";
+        REQUIRE(std::filesystem::exists(fpath));
+        RawFile f(fpath);
+        REQUIRE(f.master().disabled_udp_ports().value() ==
+                std::vector<size_t>{1, 3, 4, 6});
+        REQUIRE(f.master().udp_port_types().value() ==
+                std::vector<std::string>{"bottom", "top"});
+        REQUIRE_THROWS_WITH(
+            f.read_frame(),
+            Catch::Matchers::ContainsSubstring(
+                "Multiple ROIs present in file. Use read_ROIs() "
+                "instead"));
+        auto frames = f.read_rois();
+        REQUIRE(frames.size() == 4);
+        REQUIRE(frames[0].cols() == 1024);
+        REQUIRE(frames[0].rows() == 256);
+        REQUIRE(frames[1].cols() == 1024);
+        REQUIRE(frames[1].rows() == 256);
+        REQUIRE(frames[2].cols() == 1024);
+        REQUIRE(frames[2].rows() == 256);
+        REQUIRE(frames[3].cols() == 1024);
+        REQUIRE(frames[3].rows() == 256);
+    }
 }
 
 TEST_CASE("Read Moench frame with disabled UDP ports",
