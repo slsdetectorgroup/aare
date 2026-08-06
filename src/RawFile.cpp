@@ -45,6 +45,7 @@ std::vector<ROI> get_rois_from_disabled_udp_ports(
     std::vector<ROI> rois;
 
     // TODO: code assumes modules stacked on top - adapt if stacked horizontally
+    // - is this supported in slsDetectorPackage?
     if (all_ports_equal) {
         if (udp_port_types[first_port] == "left") {
             rois.push_back({pixels_per_module_x, 2 * pixels_per_module_x, 0,
@@ -61,7 +62,7 @@ std::vector<ROI> get_rois_from_disabled_udp_ports(
             std::transform(
                 disabled_ports.begin(), disabled_ports.end(), rois.begin(),
                 [&num_udp_port_types, pixels_per_module_x, pixels_per_module_y,
-                 modules_x, modules_y](size_t &port) {
+                 modules_x](size_t &port) {
                     ssize_t module_idx =
                         static_cast<ssize_t>(port / num_udp_port_types);
                     return ROI{0, modules_x * pixels_per_module_x,
@@ -75,7 +76,7 @@ std::vector<ROI> get_rois_from_disabled_udp_ports(
             std::transform(
                 disabled_ports.begin(), disabled_ports.end(), rois.begin(),
                 [&num_udp_port_types, pixels_per_module_x, pixels_per_module_y,
-                 modules_x, modules_y](size_t &port) {
+                 modules_x](size_t &port) {
                     ssize_t module_idx =
                         static_cast<ssize_t>(port / num_udp_port_types);
                     return ROI{0, modules_x * pixels_per_module_x,
