@@ -9,7 +9,6 @@ File I/O
    pyCtbRawFile
    pyFile
    pyJungfrauDataFile
-   pyMultiThreadedFileReader
    pyRawFile
    pyRawMasterFile
    pyTransform

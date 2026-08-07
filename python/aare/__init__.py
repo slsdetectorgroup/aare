@@ -3,11 +3,11 @@
 from . import _aare
 
 from . import transform
+from . import experimental
 
 from ._aare import (
     File,
     JungfrauDataFile,
-    MultiThreadedFileReader,
     RawMasterFile,
     RawSubFile,
 )

@@ -21,8 +21,8 @@
 using aare::File;
 using aare::FileConfig;
 using aare::Frame;
-using aare::MultiThreadedFileReader;
 using aare::NumpyFile;
+using aare::experimental::MultiThreadedFileReader;
 
 namespace {
 

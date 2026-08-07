@@ -2,7 +2,8 @@
 import numpy as np
 import pytest
 
-from aare import MultiThreadedFileReader
+import aare
+from aare.experimental import MultiThreadedFileReader
 
 
 @pytest.fixture
@@ -11,6 +12,12 @@ def frame_file(tmp_path):
     path = tmp_path / "frames.npy"
     np.save(path, data)
     return path, data
+
+
+def test_experimental_import_path():
+    assert aare.experimental.MultiThreadedFileReader is MultiThreadedFileReader
+    assert MultiThreadedFileReader.__module__ == "aare.experimental"
+    assert not hasattr(aare, "MultiThreadedFileReader")
 
 
 def test_reads_all_frames_in_order(frame_file):

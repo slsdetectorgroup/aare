@@ -9,7 +9,7 @@
 #include <optional>
 #include <vector>
 
-namespace aare {
+namespace aare::experimental {
 
 /**
  * @brief Read independent chunks of a file in parallel.
@@ -101,4 +101,4 @@ class MultiThreadedFileReader {
     void ensure_open() const;
 };
 
-} // namespace aare
+} // namespace aare::experimental

@@ -491,7 +491,7 @@ void PedestalTrackingPixelHistogram::fill_from_file(
             "non-negative");
     }
 
-    MultiThreadedFileReader reader(fname, n_threads, chunk_size);
+    experimental::MultiThreadedFileReader reader(fname, n_threads, chunk_size);
     // check that row col matches constructor
     if (reader.rows() != static_cast<size_t>(rows_) ||
         reader.cols() != static_cast<size_t>(cols_)) {
@@ -509,8 +509,8 @@ void PedestalTrackingPixelHistogram::fill_from_file(
             ? reader.total_frames()
             : std::min(static_cast<size_t>(max_frames), reader.total_frames());
     if (n_frames != reader.total_frames()) {
-        reader =
-            MultiThreadedFileReader(fname, n_threads, chunk_size, n_frames);
+        reader = experimental::MultiThreadedFileReader(fname, n_threads,
+                                                       chunk_size, n_frames);
     }
     const auto print_progress = [&](std::size_t done) {
         const auto now = std::chrono::steady_clock::now();
@@ -572,7 +572,7 @@ void PedestalTrackingPixelHistogram::process_pedestal_file(
             "non-negative");
     }
 
-    MultiThreadedFileReader reader(fname, n_threads, chunk_size);
+    experimental::MultiThreadedFileReader reader(fname, n_threads, chunk_size);
     // check that row col matches constructor
     if (reader.rows() != static_cast<size_t>(rows_) ||
         reader.cols() != static_cast<size_t>(cols_)) {
@@ -590,8 +590,8 @@ void PedestalTrackingPixelHistogram::process_pedestal_file(
             ? reader.total_frames()
             : std::min(static_cast<size_t>(max_frames), reader.total_frames());
     if (n_frames != reader.total_frames()) {
-        reader =
-            MultiThreadedFileReader(fname, n_threads, chunk_size, n_frames);
+        reader = experimental::MultiThreadedFileReader(fname, n_threads,
+                                                       chunk_size, n_frames);
     }
 
     const std::array<ssize_t, 2> frame_shape{rows_, cols_};

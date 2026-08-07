@@ -12,7 +12,7 @@
 #include <thread>
 #include <utility>
 
-namespace aare {
+namespace aare::experimental {
 namespace {
 
 size_t checked_product(size_t lhs, size_t rhs) {
@@ -178,4 +178,4 @@ void MultiThreadedFileReader::seek(size_t frame_index) {
     m_current_frame = frame_index;
 }
 
-} // namespace aare
+} // namespace aare::experimental

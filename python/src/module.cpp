@@ -60,8 +60,11 @@ double, 'f' for float)
     define_ClusterCollector<T, N, M, U>(m, "Cluster" #N "x" #M #TYPE_CODE);
 
 PYBIND11_MODULE(_aare, m) {
+    auto experimental = m.def_submodule(
+        "experimental", "Experimental APIs that may change without notice");
+
     define_file_io_bindings(m);
-    define_multi_threaded_file_reader_bindings(m);
+    define_multi_threaded_file_reader_bindings(experimental);
     define_raw_file_io_bindings(m);
     define_raw_sub_file_io_bindings(m);
     define_ctb_raw_file_io_bindings(m);

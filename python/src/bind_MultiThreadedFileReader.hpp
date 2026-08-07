@@ -43,7 +43,7 @@ inline py::dtype multi_threaded_reader_numpy_dtype(const aare::Dtype &dtype) {
 }
 
 inline py::array
-multi_threaded_reader_read(aare::MultiThreadedFileReader &reader,
+multi_threaded_reader_read(aare::experimental::MultiThreadedFileReader &reader,
                            bool read_all) {
     const size_t n_frames =
         read_all ? reader.remaining_frames() : reader.next_read_frames();
@@ -71,9 +71,12 @@ multi_threaded_reader_read(aare::MultiThreadedFileReader &reader,
 }
 
 inline void define_multi_threaded_file_reader_bindings(py::module_ &m) {
-    using aare::MultiThreadedFileReader;
+    using aare::experimental::MultiThreadedFileReader;
 
-    py::class_<MultiThreadedFileReader>(m, "MultiThreadedFileReader")
+    auto reader =
+        py::class_<MultiThreadedFileReader>(m, "MultiThreadedFileReader");
+    reader.attr("__module__") = "aare.experimental";
+    reader
         .def(py::init<std::filesystem::path, size_t, size_t,
                       std::optional<size_t>>(),
              py::arg("fname"), py::arg("n_threads"), py::arg("chunk_size"),

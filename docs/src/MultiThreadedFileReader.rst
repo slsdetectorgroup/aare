@@ -11,7 +11,7 @@ by frame index and successive calls advance through the file.
    #include "aare/MultiThreadedFileReader.hpp"
 
    // Four workers, chunks of 128 frames, and at most 10,000 frames.
-   aare::MultiThreadedFileReader reader(path, 4, 128, 10'000);
+   aare::experimental::MultiThreadedFileReader reader(path, 4, 128, 10'000);
    while (reader.remaining_frames() != 0) {
        // Contains at most 4 * 128 frames.
        auto batch = reader.read();
@@ -31,7 +31,7 @@ Call ``close()`` to release all worker file handles early.
    storage device and file format, so the thread count and chunk size should be
    benchmark-driven.
 
-.. doxygenclass:: aare::MultiThreadedFileReader
+.. doxygenclass:: aare::experimental::MultiThreadedFileReader
    :members:
    :undoc-members:
    :private-members:
