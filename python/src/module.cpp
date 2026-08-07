@@ -12,6 +12,7 @@
 #include "bind_Defs.hpp"
 #include "bind_Eta.hpp"
 #include "bind_Interpolator.hpp"
+#include "bind_MultiThreadedFileReader.hpp"
 #include "bind_PedestalTrackingPixelHistogram.hpp"
 #include "bind_PixelHistogram.hpp"
 #include "bind_PixelMap.hpp"
@@ -60,6 +61,7 @@ double, 'f' for float)
 
 PYBIND11_MODULE(_aare, m) {
     define_file_io_bindings(m);
+    define_multi_threaded_file_reader_bindings(m);
     define_raw_file_io_bindings(m);
     define_raw_sub_file_io_bindings(m);
     define_ctb_raw_file_io_bindings(m);

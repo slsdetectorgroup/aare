@@ -1,5 +1,5 @@
 #include "aare/hist/PedestalTrackingPixelHistogram.hpp"
-#include "aare/File.hpp"
+#include "aare/MultiThreadedFileReader.hpp"
 
 #include <algorithm>
 #include <chrono>
@@ -467,7 +467,8 @@ PedestalTrackingPixelHistogram::bin_edges() const {
 }
 
 void PedestalTrackingPixelHistogram::fill_from_file(
-    const std::filesystem::path &fname, ssize_t max_frames, bool verbose) {
+    const std::filesystem::path &fname, ssize_t max_frames, bool verbose,
+    size_t n_threads, size_t chunk_size) {
     constexpr std::size_t progress_interval = 66;
     auto last = std::chrono::steady_clock::now();
     const auto completed_start =
@@ -484,18 +485,33 @@ void PedestalTrackingPixelHistogram::fill_from_file(
         }
     };
 
-    File f(fname);
+    if (max_frames < -1) {
+        throw std::invalid_argument(
+            "PedestalTrackingPixelHistogram: max_frames must be -1 or "
+            "non-negative");
+    }
+
+    MultiThreadedFileReader reader(fname, n_threads, chunk_size);
     // check that row col matches constructor
-    if (f.rows() != static_cast<size_t>(rows_) ||
-        f.cols() != static_cast<size_t>(cols_)) {
+    if (reader.rows() != static_cast<size_t>(rows_) ||
+        reader.cols() != static_cast<size_t>(cols_)) {
         throw std::invalid_argument("PedestalTrackingPixelHistogram: Frame in "
                                     "file {} has shape ({}, {}) does not match "
                                     "constructor shape");
     }
+    if (reader.dtype() != Dtype::UINT16) {
+        throw std::invalid_argument(
+            "PedestalTrackingPixelHistogram requires uint16 file data");
+    }
 
-    const ssize_t total_frames = f.total_frames();
-    const ssize_t n_frames =
-        max_frames == -1 ? total_frames : std::min(max_frames, total_frames);
+    const size_t n_frames =
+        max_frames == -1
+            ? reader.total_frames()
+            : std::min(static_cast<size_t>(max_frames), reader.total_frames());
+    if (n_frames != reader.total_frames()) {
+        reader =
+            MultiThreadedFileReader(fname, n_threads, chunk_size, n_frames);
+    }
     const auto print_progress = [&](std::size_t done) {
         const auto now = std::chrono::steady_clock::now();
         const double dt = std::chrono::duration<double>(now - last).count();
@@ -512,14 +528,25 @@ void PedestalTrackingPixelHistogram::fill_from_file(
         last_reported = done;
     };
 
-    for (ssize_t i = 0; i < n_frames; ++i) {
-        aare::NDArray<uint16_t> frame({rows_, cols_});
-        f.read_into(reinterpret_cast<std::byte *>(frame.data()));
-        fill_async(std::move(frame));
+    const std::array<ssize_t, 2> frame_shape{rows_, cols_};
+    size_t submitted_frames = 0;
+    while (reader.remaining_frames() != 0) {
+        auto batch = reader.read();
+        const size_t frames_in_batch = batch.size() / reader.bytes_per_frame();
+        for (size_t i = 0; i < frames_in_batch; ++i) {
+            auto *frame_data = reinterpret_cast<uint16_t *>(
+                batch.data() + i * reader.bytes_per_frame());
+            fill_async(NDArray<uint16_t, 2>(
+                NDView<uint16_t, 2>(frame_data, frame_shape)));
+            ++submitted_frames;
+        }
 
-        if (verbose && (i + 1) % progress_interval == 0) {
-            wait_for_completed(static_cast<std::size_t>(i + 1));
-            print_progress(static_cast<std::size_t>(i + 1));
+        // Report at reader-batch boundaries so the measured interval includes
+        // both the matching file I/O and asynchronous histogram processing.
+        if (verbose && (submitted_frames - last_reported >= progress_interval ||
+                        submitted_frames == n_frames)) {
+            wait_for_completed(submitted_frames);
+            print_progress(submitted_frames);
         }
     }
     flush();
@@ -534,43 +561,72 @@ void PedestalTrackingPixelHistogram::fill_from_file(
 }
 
 void PedestalTrackingPixelHistogram::process_pedestal_file(
-    const std::filesystem::path &fname, ssize_t max_frames, bool verbose) {
+    const std::filesystem::path &fname, ssize_t max_frames, bool verbose,
+    size_t n_threads, size_t chunk_size) {
     constexpr std::size_t progress_interval = 66;
     auto last = std::chrono::steady_clock::now();
 
-    File f(fname);
+    if (max_frames < -1) {
+        throw std::invalid_argument(
+            "PedestalTrackingPixelHistogram: max_frames must be -1 or "
+            "non-negative");
+    }
+
+    MultiThreadedFileReader reader(fname, n_threads, chunk_size);
     // check that row col matches constructor
-    if (f.rows() != static_cast<size_t>(rows_) ||
-        f.cols() != static_cast<size_t>(cols_)) {
+    if (reader.rows() != static_cast<size_t>(rows_) ||
+        reader.cols() != static_cast<size_t>(cols_)) {
         throw std::invalid_argument("PedestalTrackingPixelHistogram: Frame in "
                                     "file {} has shape ({}, {}) does not match "
                                     "constructor shape");
     }
+    if (reader.dtype() != Dtype::UINT16) {
+        throw std::invalid_argument(
+            "PedestalTrackingPixelHistogram requires uint16 file data");
+    }
 
-    const ssize_t total_frames = f.total_frames();
-    const ssize_t n_frames =
-        max_frames == -1 ? total_frames : std::min(max_frames, total_frames);
+    const size_t n_frames =
+        max_frames == -1
+            ? reader.total_frames()
+            : std::min(static_cast<size_t>(max_frames), reader.total_frames());
+    if (n_frames != reader.total_frames()) {
+        reader =
+            MultiThreadedFileReader(fname, n_threads, chunk_size, n_frames);
+    }
 
-    aare::NDArray<uint16_t> frame({rows_, cols_});
-    for (ssize_t i = 0; i < n_frames; ++i) {
-        f.read_into(reinterpret_cast<std::byte *>(frame.data()));
-        push_pedestal_no_update(frame.view());
-        if (verbose &&
-            ((i + 1) % progress_interval == 0 || (i + 1 == n_frames))) {
+    const std::array<ssize_t, 2> frame_shape{rows_, cols_};
+    size_t processed_frames = 0;
+    size_t last_reported = 0;
+    while (reader.remaining_frames() != 0) {
+        auto batch = reader.read();
+        const size_t frames_in_batch = batch.size() / reader.bytes_per_frame();
+        for (size_t i = 0; i < frames_in_batch; ++i) {
+            auto *frame_data = reinterpret_cast<uint16_t *>(
+                batch.data() + i * reader.bytes_per_frame());
+            push_pedestal_no_update(
+                NDView<uint16_t, 2>(frame_data, frame_shape));
+            ++processed_frames;
+        }
+
+        // Report only after the complete reader batch has also been
+        // processed. Reporting from inside the frame loop would charge the
+        // batch's full I/O time to its first interval and then produce
+        // artificially high FPS for the remaining in-memory frames.
+        if (verbose && (processed_frames - last_reported >= progress_interval ||
+                        processed_frames == n_frames)) {
             const auto now = std::chrono::steady_clock::now();
             const double dt = std::chrono::duration<double>(now - last).count();
-            const std::size_t done_in_interval =
-                (i + 1) % progress_interval == 0 ? progress_interval
-                                                 : (i + 1) % progress_interval;
+            const size_t done_in_interval = processed_frames - last_reported;
             const double fps =
                 dt > 0.0 ? static_cast<double>(done_in_interval) / dt : 0.0;
-            fmt::print("\rProgress: {}/{} ({:.1f}%)  {:.1f} FPS    ", i + 1,
-                       n_frames,
-                       100.0 * static_cast<double>(i + 1) /
+            fmt::print("\rProgress: {}/{} ({:.1f}%)  {:.1f} FPS    ",
+                       processed_frames, n_frames,
+                       100.0 * static_cast<double>(processed_frames) /
                            static_cast<double>(n_frames),
                        fps);
             std::fflush(stdout);
             last = now;
+            last_reported = processed_frames;
         }
     }
     update_mean();

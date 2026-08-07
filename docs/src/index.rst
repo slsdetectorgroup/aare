@@ -42,6 +42,7 @@ AARE
     NDView
     Frame
     File
+    MultiThreadedFileReader
     Dtype
     Cluster
     ClusterFinder

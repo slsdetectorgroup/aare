@@ -92,6 +92,12 @@ Dtype::Dtype(Dtype::TypeIndex ti) : m_type(ti) {}
  */
 Dtype::Dtype(std::string_view sv) {
 
+    // NumPy uses '|' for data types whose byte order is not applicable,
+    // notably one-byte integer types.
+    if (!sv.empty() && sv.front() == '|') {
+        sv.remove_prefix(1);
+    }
+
     // Check if the file is using our native endianess
     if (auto pos = sv.find_first_of("<>"); pos != std::string_view::npos) {
         const auto endianess = [](const char c) {

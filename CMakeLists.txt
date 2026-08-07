@@ -396,6 +396,7 @@ set(PUBLICHEADERS
     include/aare/FileInterface.hpp
     include/aare/FilePtr.hpp
     include/aare/Frame.hpp
+    include/aare/MultiThreadedFileReader.hpp
     include/aare/hist/PixelHistogram.hpp
     include/aare/hist/PixelHistogramImpl.hpp
     include/aare/hist/PedestalTrackingPixelHistogram.hpp
@@ -431,6 +432,7 @@ set(SourceFiles
     ${CMAKE_CURRENT_SOURCE_DIR}/src/Frame.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/src/Interpolator.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/src/JungfrauDataFile.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/MultiThreadedFileReader.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/src/NumpyFile.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/src/NumpyHelpers.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/src/PixelMap.cpp
@@ -502,6 +504,7 @@ if(AARE_TESTS)
       ${CMAKE_CURRENT_SOURCE_DIR}/src/hist/PixelHistogramImpl.test.cpp
       ${CMAKE_CURRENT_SOURCE_DIR}/src/hist/PixelHistogram.test.cpp
       ${CMAKE_CURRENT_SOURCE_DIR}/src/JungfrauDataFile.test.cpp
+      ${CMAKE_CURRENT_SOURCE_DIR}/src/MultiThreadedFileReader.test.cpp
       ${CMAKE_CURRENT_SOURCE_DIR}/src/NumpyFile.test.cpp
       ${CMAKE_CURRENT_SOURCE_DIR}/src/NumpyHelpers.test.cpp
       ${CMAKE_CURRENT_SOURCE_DIR}/src/RawFile.test.cpp

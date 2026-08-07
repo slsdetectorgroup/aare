@@ -108,10 +108,12 @@ class PedestalTrackingPixelHistogram {
     void fill_async(NDArray<FrameType, 2> &&image);
 
     void fill_from_file(const std::filesystem::path &fname,
-                        ssize_t max_frames = -1, bool verbose = false);
+                        ssize_t max_frames = -1, bool verbose = false,
+                        size_t n_threads = 1, size_t chunk_size = 1);
 
     void process_pedestal_file(const std::filesystem::path &fname,
-                               ssize_t max_frames = -1, bool verbose = false);
+                               ssize_t max_frames = -1, bool verbose = false,
+                               size_t n_threads = 1, size_t chunk_size = 1);
 
     // Sigma multiplier for the pedestal-update gate in
     // fill_async. Atomic; safe to read/write at any
