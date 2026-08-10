@@ -132,88 +132,34 @@ get_rois_from_disabled_udp_ports(std::vector<size_t> &disabled_ports,
         }
     } else {
         // iterate over all ports and create ROIs for each disabled port
-        rois.reserve(disabled_ports.size());
-        for (size_t idx = 0; idx < disabled_ports.size(); ++idx) {
+        LOG(logDEBUG) << "Creating ROIs from disabled UDP ports";
+        // get the enabled ones:
+        std::vector<size_t> enabled_ports(geometry.n_modules());
+        std::iota(enabled_ports.begin(), enabled_ports.end(), 0);
+        std::for_each(disabled_ports.begin(), disabled_ports.end(),
+                      [&enabled_ports](size_t &port) {
+                          enabled_ports.erase(std::remove(enabled_ports.begin(),
+                                                          enabled_ports.end(),
+                                                          port),
+                                              enabled_ports.end());
+                      });
 
-            size_t disabled_port = disabled_ports[idx];
-            std::string disabled_port_type =
-                udp_port_types[disabled_port %
-                               num_udp_port_types]; // modulo needed as
-                                                    // indexing is
-                                                    // relative to half
-                                                    // module //
-                                                    // TODO: string_to?
-                                                    // - anyway defined
-                                                    // in
-                                                    // slsDetectorDefs
+        std::for_each(enabled_ports.begin(), enabled_ports.end(),
+                      [](size_t &port) {
+                          LOG(logDEBUG) << "Enabled UDP port: " << port;
+                      });
 
-            if (disabled_port_type == "bottom") {
-                // assumes euclidean coordinate system with origin at bottom
-                // left corner
-                ssize_t module_idx = disabled_port + 1; // top port
-                if (idx == disabled_ports.size() - 1 ||
-                    !(static_cast<ssize_t>(disabled_ports[idx + 1]) ==
-                      module_idx)) {
-                    // top port is not disabled
-                    auto module_geometry =
-                        geometry.get_module_geometries(module_idx);
+        rois.reserve(enabled_ports.size());
+        for (const auto enabled_port : enabled_ports) {
 
-                    rois.push_back(
-                        ROI{module_geometry.origin_x,
-                            module_geometry.origin_x + module_geometry.width,
-                            module_geometry.origin_y,
-                            module_geometry.origin_y + module_geometry.height});
-                }
-
-            } else if (disabled_port_type == "top") {
-                ssize_t module_idx = disabled_port - 1; // bottom port
-                if (idx == 0 || !(static_cast<ssize_t>(
-                                      disabled_ports[idx - 1]) == module_idx)) {
-                    // bottom port is not disabled
-                    auto module_geometry =
-                        geometry.get_module_geometries(module_idx);
-
-                    rois.push_back(
-                        ROI{module_geometry.origin_x,
-                            module_geometry.origin_x + module_geometry.width,
-                            module_geometry.origin_y,
-                            module_geometry.origin_y + module_geometry.height});
-                }
-
-            } else if (disabled_port_type == "left") {
-                ssize_t module_idx = disabled_port + 1; // right port
-                if (idx == disabled_ports.size() - 1 ||
-                    !(static_cast<ssize_t>(disabled_ports[idx + 1]) ==
-                      module_idx)) {
-                    // right port is not disabled
-                    auto module_geometry =
-                        geometry.get_module_geometries(module_idx);
-
-                    rois.push_back(
-                        ROI{module_geometry.origin_x,
-                            module_geometry.origin_x + module_geometry.width,
-                            module_geometry.origin_y,
-                            module_geometry.origin_y + module_geometry.height});
-                }
-            } else if (disabled_port_type == "right") {
-                ssize_t module_idx = disabled_port - 1; // left port
-                if (idx == 0 || !(static_cast<ssize_t>(
-                                      disabled_ports[idx - 1]) == module_idx)) {
-                    // left port is not disabled
-                    auto module_geometry =
-                        geometry.get_module_geometries(module_idx);
-
-                    rois.push_back(
-                        ROI{module_geometry.origin_x,
-                            module_geometry.origin_x + module_geometry.width,
-                            module_geometry.origin_y,
-                            module_geometry.origin_y + module_geometry.height});
-                }
-            } else {
-                throw std::runtime_error(
-                    LOCATION + "Unknown UDP port type: " + disabled_port_type);
-            }
+            auto module_geometry = geometry.get_module_geometries(enabled_port);
+            rois.push_back(
+                ROI{module_geometry.origin_x,
+                    module_geometry.origin_x + module_geometry.width,
+                    module_geometry.origin_y,
+                    module_geometry.origin_y + module_geometry.height});
         }
+
         if (udp_port_types == std::vector<std::string>{"left", "right"}) {
             rois = merge_consecutive_rois<false, true>(rois);
         } else if (udp_port_types ==

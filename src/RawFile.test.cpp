@@ -598,4 +598,21 @@ TEST_CASE("Read Eiger frame with disabled UDP ports",
         REQUIRE(frame.cols() == 512);
         REQUIRE(frame.rows() == 256);
     }
+    SECTION("only one port disabled") {
+        auto fpath = test_data_path() / "raw/eiger" /
+                     "one_udp_port_disabled_master_0.json";
+
+        REQUIRE(std::filesystem::exists(fpath));
+        RawFile f(fpath);
+        REQUIRE(f.master().disabled_udp_ports().value() ==
+                std::vector<size_t>{0});
+        REQUIRE(f.master().udp_port_types().value() ==
+                std::vector<std::string>{"left", "right"});
+        auto frame = f.read_rois();
+        REQUIRE(frame.size() == 2);
+        REQUIRE(frame[0].cols() == 512);
+        REQUIRE(frame[0].rows() == 256);
+        REQUIRE(frame[1].cols() == 1024);
+        REQUIRE(frame[1].rows() == 256);
+    }
 }
