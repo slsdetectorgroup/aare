@@ -174,7 +174,6 @@ TEST_CASE("read_into reads at most one chunk per worker",
     CHECK(reader.next_read_bytes() == 4 * reader.bytes_per_frame());
 }
 
-
 TEST_CASE("Multi-threaded reader can close its worker files",
           "[MultiThreadedFileReader]") {
     TemporaryNumpyFile file;
