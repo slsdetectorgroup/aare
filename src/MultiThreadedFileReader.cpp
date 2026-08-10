@@ -4,12 +4,9 @@
 #include "aare/File.hpp"
 
 #include <algorithm>
-#include <atomic>
-#include <exception>
+#include <future>
 #include <limits>
-#include <mutex>
 #include <stdexcept>
-#include <thread>
 #include <utility>
 
 namespace aare::experimental {
@@ -102,50 +99,24 @@ size_t MultiThreadedFileReader::read_into(std::byte *destination) {
     const size_t first_frame = m_current_frame;
     const size_t active_threads = 1 + (frames_to_read - 1) / m_chunk_size;
 
-    std::atomic<bool> stop{false};
-    std::exception_ptr first_error;
-    std::mutex error_mutex;
-
     auto worker = [&](size_t worker_index) {
-        try {
-            if (!stop.load(std::memory_order_relaxed)) {
-                File &file = m_files[worker_index];
-                const size_t batch_offset = worker_index * m_chunk_size;
-                const size_t begin = first_frame + batch_offset;
-                const size_t count =
-                    std::min(m_chunk_size, frames_to_read - batch_offset);
-                file.seek(begin);
-                file.read_into(destination + batch_offset * m_bytes_per_frame,
-                               count);
-            }
-        } catch (...) {
-            stop.store(true, std::memory_order_relaxed);
-            std::lock_guard<std::mutex> lock(error_mutex);
-            if (!first_error) {
-                first_error = std::current_exception();
-            }
-        }
+        File &file = m_files[worker_index];
+        const size_t batch_offset = worker_index * m_chunk_size;
+        const size_t begin = first_frame + batch_offset;
+        const size_t count =
+            std::min(m_chunk_size, frames_to_read - batch_offset);
+        file.seek(begin);
+        file.read_into(destination + batch_offset * m_bytes_per_frame, count);
     };
 
-    std::vector<std::thread> workers;
+    std::vector<std::future<void>> workers;
     workers.reserve(active_threads);
-    try {
-        for (size_t i = 0; i < active_threads; ++i) {
-            workers.emplace_back(worker, i);
-        }
-    } catch (...) {
-        stop.store(true, std::memory_order_relaxed);
-        for (auto &thread : workers) {
-            thread.join();
-        }
-        throw;
+    for (size_t i = 0; i < active_threads; ++i) {
+        workers.emplace_back(std::async(std::launch::async, worker, i));
     }
 
-    for (auto &thread : workers) {
-        thread.join();
-    }
-    if (first_error) {
-        std::rethrow_exception(first_error);
+    for (auto &future : workers) {
+        future.get();
     }
     m_current_frame += frames_to_read;
     return frames_to_read;
