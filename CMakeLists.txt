@@ -443,8 +443,7 @@ set(SourceFiles
     ${CMAKE_CURRENT_SOURCE_DIR}/src/RawSubFile.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/src/to_string.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/src/utils/task.cpp
-    ${CMAKE_CURRENT_SOURCE_DIR}/src/utils/ifstream_helpers.cpp
-    )
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/utils/ifstream_helpers.cpp)
 
 add_library(aare_core STATIC ${SourceFiles} ${PUBLICHEADERS})
 target_include_directories(
