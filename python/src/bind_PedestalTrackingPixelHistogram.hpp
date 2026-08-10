@@ -153,12 +153,9 @@ void define_pedestal_tracking_pixel_histogram_bindings(py::module &m) {
              Args:
                  file_path: Path to the file to fill from
                  max_frames: Maximum number of frames to fill from the file (default: -1)
-                 n_threads: Number of parallel file-reader threads (default: 1)
-                 chunk_size: Frames read by each file-reader thread per batch (default: 1)
              )",
              py::call_guard<py::gil_scoped_release>(), py::arg("fname"),
-             py::arg("max_frames") = -1, py::arg("verbose") = false,
-             py::arg("n_threads") = 1, py::arg("chunk_size") = 1)
+             py::arg("max_frames") = -1, py::arg("verbose") = false)
         .def("process_pedestal_file",
              &PedestalTrackingPixelHistogram::process_pedestal_file,
              R"(
@@ -167,12 +164,9 @@ void define_pedestal_tracking_pixel_histogram_bindings(py::module &m) {
              Args:
                  file_path: Path to the file to process
                  max_frames: Maximum number of frames to process from the file (default: -1)
-                 n_threads: Number of parallel file-reader threads (default: 1)
-                 chunk_size: Frames read by each file-reader thread per batch (default: 1)
              )",
              py::call_guard<py::gil_scoped_release>(), py::arg("fname"),
-             py::arg("max_frames") = -1, py::arg("verbose") = false,
-             py::arg("n_threads") = 1, py::arg("chunk_size") = 1)
+             py::arg("max_frames") = -1, py::arg("verbose") = false)
         .def_property("n_sigma", &PedestalTrackingPixelHistogram::n_sigma,
                       &PedestalTrackingPixelHistogram::set_n_sigma,
                       R"(
