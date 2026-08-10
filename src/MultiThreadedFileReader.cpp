@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: MPL-2.0
 #include "aare/MultiThreadedFileReader.hpp"
-
 #include "aare/File.hpp"
+#include "aare/utils/math_helpers.hpp"
 
 #include <algorithm>
 #include <future>
@@ -70,7 +70,7 @@ size_t MultiThreadedFileReader::next_read_frames() const noexcept {
         return 0;
     }
 
-    const size_t chunks_remaining = 1 + (remaining - 1) / m_chunk_size;
+    const size_t chunks_remaining = ceil_div(remaining, m_chunk_size);
     if (m_n_threads >= chunks_remaining) {
         return remaining;
     }
@@ -97,8 +97,7 @@ size_t MultiThreadedFileReader::read_into(std::byte *destination) {
     }
 
     const size_t first_frame = m_current_frame;
-    const size_t active_threads = 1 + (frames_to_read - 1) / m_chunk_size;
-
+    const size_t active_threads = ceil_div(frames_to_read, m_chunk_size);
     auto worker = [&](size_t worker_index) {
         File &file = m_files[worker_index];
         const size_t batch_offset = worker_index * m_chunk_size;

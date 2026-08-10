@@ -415,7 +415,9 @@ set(PUBLICHEADERS
     include/aare/RawMasterFile.hpp
     include/aare/RawSubFile.hpp
     include/aare/VarClusterFinder.hpp
-    include/aare/utils/task.hpp)
+    include/aare/utils/task.hpp
+    include/aare/utils/ifstream_helpers.hpp
+    include/aare/utils/math_helpers.hpp)
 
 set(SourceFiles
     ${CMAKE_CURRENT_SOURCE_DIR}/src/calibration.cpp
@@ -441,7 +443,8 @@ set(SourceFiles
     ${CMAKE_CURRENT_SOURCE_DIR}/src/RawSubFile.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/src/to_string.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/src/utils/task.cpp
-    ${CMAKE_CURRENT_SOURCE_DIR}/src/utils/ifstream_helpers.cpp)
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/utils/ifstream_helpers.cpp
+    )
 
 add_library(aare_core STATIC ${SourceFiles} ${PUBLICHEADERS})
 target_include_directories(
