@@ -110,3 +110,27 @@ def test_read_rawfile_eiger_and_compare_to_numpy(test_data_path):
         header, image1 = f.read_frame()
 
     assert (image == image1).all()
+
+
+@pytest.mark.withdata 
+def test_read_eiger_udp_port_disabled(test_data_path):
+    with RawFile(test_data_path / "raw/eiger/one_udp_port_disabled_master_0.json") as f:
+        _, frame = f.read_rois() 
+
+        assert(len(frame) == 2)
+        assert frame[0].shape == (256, 512)
+        assert frame[1].shape == (256, 1024)
+
+    with RawFile(test_data_path / "raw/eiger/quad_eiger_disabled_bottom_port_master_0.json") as f:
+        _, frame = f.read_frame() 
+
+        assert frame.shape == (256, 512)
+        assert(f.master.disabled_udp_ports == [1])
+
+    with RawFile(test_data_path / "raw/eiger/2_modules_eiger_disabled_udp_port_master_0.json") as f:
+        _, frame = f.read_rois() 
+
+        assert(len(frame) == 2)
+        assert frame[0].shape == (512, 512)
+        assert frame[1].shape == (512, 512)
+        assert (f.master.disabled_udp_ports == [1, 3, 5, 7])
