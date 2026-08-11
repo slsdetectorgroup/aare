@@ -144,11 +144,6 @@ get_rois_from_disabled_udp_ports(std::vector<size_t> &disabled_ports,
                                               enabled_ports.end());
                       });
 
-        std::for_each(enabled_ports.begin(), enabled_ports.end(),
-                      [](size_t &port) {
-                          LOG(logDEBUG) << "Enabled UDP port: " << port;
-                      });
-
         rois.reserve(enabled_ports.size());
         for (const auto enabled_port : enabled_ports) {
 
@@ -184,10 +179,29 @@ RawFile::RawFile(const std::filesystem::path &fname, const std::string &mode)
     m_mode = mode;
 
     if (mode == "r") {
-        // TODO: should we support both ROI and disabled udp port - which
-        // one should have precedence?
-        if (m_master.disabled_udp_ports().has_value() &&
-            m_master.disabled_udp_ports().value().size() > 0) {
+
+        if (m_master.rois().has_value() &&
+            !complete_ROI(m_master.rois().value(), m_geometry)) {
+            LOG(logDEBUG)
+                << "ROIs defined in master file. Creating subfiles for "
+                   "each ROI.";
+            m_ROI_geometries.reserve(m_master.rois()->size());
+
+            m_subfiles.resize(m_master.rois()->size());
+            // iterate over all ROIS
+            size_t roi_index = 0;
+            const auto rois = m_master.rois().value();
+            for (const auto &roi : rois) {
+                m_ROI_geometries.push_back(ROIGeometry(roi, m_geometry));
+                // open subfiles
+                open_subfiles(roi_index);
+                ++roi_index;
+            }
+        } else if (m_master.disabled_udp_ports().has_value() &&
+                   m_master.disabled_udp_ports().value().size() > 0) {
+
+            LOG(logDEBUG) << "Disabled UDP ports defined in master file. "
+                             "Creating ROIs from disabled UDP ports.";
 
             auto disabled_ports = m_master.disabled_udp_ports().value();
 
@@ -227,20 +241,6 @@ RawFile::RawFile(const std::filesystem::path &fname, const std::string &mode)
                                                  min_subfiles_per_roi.end());
 
             LOG(logDEBUG) << "Frames in file: " << m_frames_in_file;
-
-        } else if (m_master.rois().has_value()) {
-            m_ROI_geometries.reserve(m_master.rois()->size());
-
-            m_subfiles.resize(m_master.rois()->size());
-            // iterate over all ROIS
-            size_t roi_index = 0;
-            const auto rois = m_master.rois().value();
-            for (const auto &roi : rois) {
-                m_ROI_geometries.push_back(ROIGeometry(roi, m_geometry));
-                // open subfiles
-                open_subfiles(roi_index);
-                ++roi_index;
-            }
         } else {
             // no ROI use full detector
             m_subfiles.resize(1);

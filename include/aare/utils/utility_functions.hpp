@@ -1,4 +1,5 @@
 #pragma once
+#include "aare/DetectorGeometry.hpp"
 #include "aare/defs.hpp"
 #include <algorithm>
 #include <numeric>
@@ -89,4 +90,27 @@ std::vector<ROI> merge_consecutive_rois(std::vector<ROI> &rois) {
         return merge_along_y(merge_along_x(rois)); // generic case: two passes
     }
 }
+
+/**
+ * @brief Check if the ROI covers the entire detector geometry
+ * @param roi Region of interest
+ * @param geometry Detector geometry
+ * @return true if the ROI covers the entire detector geometry, false otherwise
+ */
+inline bool complete_ROI(const ROI &roi, const DetectorGeometry &geometry) {
+    return roi.xmin == 0 &&
+           roi.xmax == static_cast<ssize_t>(geometry.pixels_x()) &&
+           roi.ymin == 0 &&
+           roi.ymax == static_cast<ssize_t>(geometry.pixels_y());
+}
+
+inline bool complete_ROI(const std::vector<ROI> &rois,
+                         const DetectorGeometry &geometry) {
+    if (rois.empty() or rois.size() > 1) {
+        return false;
+    } else {
+        return complete_ROI(rois[0], geometry);
+    }
+}
+
 } // namespace aare
