@@ -12,6 +12,9 @@ TEST_CASE("Construct from typeid") {
 }
 
 TEST_CASE("Construct from string") {
+    REQUIRE(Dtype("|i1") == typeid(int8_t));
+    REQUIRE(Dtype("|u1") == typeid(uint8_t));
+
     if (endian::native == endian::little) {
         REQUIRE(Dtype("<i1") == typeid(int8_t));
         REQUIRE(Dtype("<u1") == typeid(uint8_t));

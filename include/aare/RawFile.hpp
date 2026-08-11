@@ -118,6 +118,7 @@ class RawFile : public FileInterface {
      */
     size_t cols(const size_t roi_index) const;
     size_t bitdepth() const override;
+    Dtype dtype() const override { return Dtype::from_bitdepth(bitdepth()); }
     size_t n_modules() const;
 
     /**

@@ -61,7 +61,7 @@ class NumpyFile : public FileInterface {
      * @brief get the data type of the numpy file
      * @return DType
      */
-    Dtype dtype() const { return m_header.dtype; }
+    Dtype dtype() const override { return m_header.dtype; }
 
     /**
      * @brief get the shape of the numpy file
