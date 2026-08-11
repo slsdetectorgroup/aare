@@ -125,7 +125,7 @@ class RawFile : public FileInterface {
     size_t n_modules() const;
 
     /**
-     * @brief number of ROIs defined
+     * @brief number of ROIs defined (always 1 for complete ROI)
      */
     size_t num_rois() const;
 

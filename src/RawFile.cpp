@@ -448,13 +448,7 @@ xy RawFile::geometry() const {
 
 size_t RawFile::n_modules() const { return m_geometry.n_modules(); };
 
-size_t RawFile::num_rois() const {
-    if (m_master.rois().has_value()) {
-        return m_master.rois()->size();
-    } else {
-        return 0;
-    }
-}
+size_t RawFile::num_rois() const { return m_ROI_geometries.size(); }
 
 const ROIGeometry &RawFile::roi_geometries(size_t roi_index) const {
     return m_ROI_geometries[roi_index];

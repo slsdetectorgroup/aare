@@ -113,4 +113,19 @@ inline bool complete_ROI(const std::vector<ROI> &rois,
     }
 }
 
+inline bool complete_ROI(const ROIGeometry &roi,
+                         const DetectorGeometry &geometry) {
+    return roi.pixels_x() == geometry.pixels_x() &&
+           roi.pixels_y() == geometry.pixels_y();
+}
+
+inline bool complete_ROI(const std::vector<ROIGeometry> &rois,
+                         const DetectorGeometry &geometry) {
+    if (rois.empty() or rois.size() > 1) {
+        return false;
+    } else {
+        return complete_ROI(rois[0], geometry);
+    }
+}
+
 } // namespace aare
