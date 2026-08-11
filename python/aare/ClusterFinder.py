@@ -166,7 +166,34 @@ def ClusterFinderCUDAGraph(image_size, cluster_size=(3,3), n_sigma=5, dtype=np.i
                n_streams=n_streams)
 
 
-def ClusterCollector(clusterfindermt, dtype=np.int32): 
+def ClusterFinderCUDAOpt2(image_size, cluster_size=(3, 3), n_sigma=5, dtype=np.int32,
+                          max_clusters_per_frame=3000, n_streams=4):
+    """
+    Factory for the OPT2 snapshot finder — the pre-refactor pipeline (per-frame
+    pinned staging, round-robin streams with sync barriers, variable-length D2H),
+    kept only for benchmarking the optimization arc against the current finder.
+
+    It uses its own kernel snapshot (clusterfinder_kernel_opt2.cuh): f32 stencil
+    / f64 pedestal. The Test3 local-max gate has been backported so its cluster
+    counts match the CPU and current finders (correctness held constant across
+    the opt arc; only the pipeline differs).
+
+    Only the 3x3 cluster size is registered.
+    """
+    if not _cuda_available():
+        raise RuntimeError(
+            "ClusterFinderCUDAOpt2 is not available in this build of aare. "
+            "Rebuild with -DAARE_CUDA=ON (and -DAARE_PYTHON_BINDINGS=ON)."
+        )
+
+    cls = _get_class("ClusterFinderCUDAOpt2", cluster_size, dtype)
+    return cls(image_size,
+               n_sigma=n_sigma,
+               max_clusters_per_frame=max_clusters_per_frame,
+               n_streams=n_streams)
+
+
+def ClusterCollector(clusterfindermt, dtype=np.int32):
     """ 
     Factory function to create a ClusterCollector object. Provides a cleaner syntax for 
     the templated ClusterCollector in C++.

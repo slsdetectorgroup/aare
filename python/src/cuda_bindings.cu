@@ -8,6 +8,7 @@
 #include "bind_Cluster.hpp"
 #include "bind_ClusterFinderCUDA.hpp"
 #include "bind_ClusterFinderCUDAGraph.hpp"
+#include "bind_ClusterFinderCUDAOpt2.hpp"
 #include "bind_ClusterVector.hpp"
 
 #include <pybind11/pybind11.h>
@@ -29,6 +30,10 @@ namespace py = pybind11;
 #define DEFINE_BINDINGS_CLUSTERFINDER_CUDA_GRAPH(T, N, M, U, TYPE_CODE)        \
     aare::define_ClusterFinderCUDAGraph<T, N, M, U>(m, "Cluster" #N            \
                                                        "x" #M #TYPE_CODE);
+
+#define DEFINE_BINDINGS_CLUSTERFINDER_CUDA_OPT2(T, N, M, U, TYPE_CODE)         \
+    aare::define_ClusterFinderCUDAOpt2<T, N, M, U>(m, "Cluster" #N             \
+                                                      "x" #M #TYPE_CODE);
 
 PYBIND11_MODULE(_aare_cuda, m) {
 
@@ -83,8 +88,14 @@ PYBIND11_MODULE(_aare_cuda, m) {
     DEFINE_BINDINGS_CLUSTERFINDER_CUDA_GRAPH(int, 9, 9, uint16_t, i);
     DEFINE_BINDINGS_CLUSTERFINDER_CUDA_GRAPH(double, 9, 9, uint16_t, d);
     DEFINE_BINDINGS_CLUSTERFINDER_CUDA_GRAPH(float, 9, 9, uint16_t, f);
+
+    // OPT2 snapshot finder (benchmark only) — 3x3 is what the deck uses.
+    DEFINE_BINDINGS_CLUSTERFINDER_CUDA_OPT2(int, 3, 3, uint16_t, i);
+    DEFINE_BINDINGS_CLUSTERFINDER_CUDA_OPT2(double, 3, 3, uint16_t, d);
+    DEFINE_BINDINGS_CLUSTERFINDER_CUDA_OPT2(float, 3, 3, uint16_t, f);
 }
 
 #undef DEFINE_CUDA_CLUSTER_TYPES
 #undef DEFINE_BINDINGS_CLUSTERFINDER_CUDA
 #undef DEFINE_BINDINGS_CLUSTERFINDER_CUDA_GRAPH
+#undef DEFINE_BINDINGS_CLUSTERFINDER_CUDA_OPT2
