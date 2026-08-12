@@ -235,57 +235,69 @@ void PedestalTrackingPixelHistogram::worker_loop(int thread_id) {
             // tracking gate entirely. The [xmin, xmax) histogram gate
             // lives inside PixelHistogramImpl::fill.
             const auto n_sigma = n_sigma_.load(std::memory_order_relaxed);
+            constexpr std::size_t pixel_tile_size = 512;
+            const auto local_pixels = static_cast<std::size_t>(local_rows) *
+                                      static_cast<std::size_t>(cols_);
+            const auto global_pixel_begin =
+                static_cast<std::size_t>(first_row) *
+                static_cast<std::size_t>(cols_);
+            const auto frame_count = images->size();
+
             if (n_sigma <= AxisType{0.0}) {
-                // Fill without pedestal tracking.
-                for (const auto &frame : *images) {
-                    const auto cols = frame.shape(1);
-                    for (int local_row = 0; local_row < local_rows;
-                         ++local_row) {
-                        const auto row =
-                            static_cast<ssize_t>(first_row + local_row);
-                        for (ssize_t col = 0; col < cols; ++col) {
-                            const FrameType raw = frame(row, col);
+                // Fill without pedestal tracking. Each worker retains
+                // exclusive ownership of its row shard. Pixel tiling keeps a
+                // bounded part of that shard's [pixel x bin] storage hot while
+                // every input access remains contiguous within one frame.
+                for (std::size_t p0 = 0; p0 < local_pixels;
+                     p0 += pixel_tile_size) {
+                    const auto p1 =
+                        std::min(p0 + pixel_tile_size, local_pixels);
+                    for (std::size_t f = 0; f < frame_count; ++f) {
+                        const auto *input =
+                            (*images)[f].data() + global_pixel_begin + p0;
+                        for (std::size_t local_pixel = p0; local_pixel < p1;
+                             ++local_pixel) {
+                            const FrameType raw = input[local_pixel - p0];
                             const AxisType val =
                                 static_cast<AxisType>(raw) -
                                 static_cast<AxisType>(my_pedestal.mean(
-                                    static_cast<uint32_t>(local_row),
-                                    static_cast<uint32_t>(col)));
-                            my_hist.fill_unchecked(local_row,
-                                                   static_cast<int>(col), val);
+                                    static_cast<ssize_t>(local_pixel)));
+                            my_hist.fill_flat_unchecked(local_pixel, val);
                         }
                     }
                 }
                 break;
             } else {
-                // Do pedestal tracking. Duplicated code for clean hot path.
-
+                // Tracking uses the same tiles, but frames remain strictly
+                // chronological for every pixel. push_fast updates that
+                // pixel's sums and cached mean immediately. This is equivalent
+                // to the old push_no_update followed by a whole-shard
+                // update_mean after each frame, since pixels are independent.
                 auto &my_std = partial_std_[thread_id];
-                for (const auto &frame : *images) {
-                    const auto view =
-                        frame.sub_view(first_row, first_row + local_rows);
-                    const auto cols = view.shape(1);
-                    const auto rows = view.shape(0);
-
-                    // in this function I need raw, mean and std
-                    for (int row = 0; row < rows; ++row) {
-                        for (ssize_t col = 0; col < cols; ++col) {
-                            const FrameType raw = view(row, col);
+                for (std::size_t p0 = 0; p0 < local_pixels;
+                     p0 += pixel_tile_size) {
+                    const auto p1 =
+                        std::min(p0 + pixel_tile_size, local_pixels);
+                    for (std::size_t f = 0; f < frame_count; ++f) {
+                        const auto *input =
+                            (*images)[f].data() + global_pixel_begin + p0;
+                        for (std::size_t local_pixel = p0; local_pixel < p1;
+                             ++local_pixel) {
+                            const FrameType raw = input[local_pixel - p0];
                             const AxisType val =
                                 static_cast<AxisType>(raw) -
-                                my_pedestal.mean(static_cast<uint32_t>(row),
-                                                 static_cast<uint32_t>(col));
-                            my_hist.fill_unchecked(row, static_cast<int>(col),
-                                                   val);
-                            const AxisType sigma = my_std(row, col);
+                                my_pedestal.mean(
+                                    static_cast<ssize_t>(local_pixel));
+                            my_hist.fill_flat_unchecked(local_pixel, val);
+                            const AxisType sigma =
+                                my_std[static_cast<ssize_t>(local_pixel)];
                             if (sigma > AxisType{0.0} &&
                                 std::abs(val) < n_sigma * sigma) {
-                                my_pedestal.push_no_update<FrameType>(
-                                    static_cast<uint32_t>(row),
-                                    static_cast<uint32_t>(col), raw);
+                                my_pedestal.push_fast<FrameType>(local_pixel,
+                                                                 raw);
                             }
                         }
                     }
-                    my_pedestal.update_mean();
                 }
                 break;
             }
