@@ -21,9 +21,10 @@ class ClusterFinderMTWrapper
 
   public:
     ClusterFinderMTWrapper(Shape<2> image_size, PEDESTAL_TYPE nSigma = 5.0,
-                           size_t capacity = 2000, size_t n_threads = 3)
+                           size_t capacity = 2000, size_t n_threads = 3,
+                           bool update_pedestal = true)
         : ClusterFinderMT<ClusterType, FRAME_TYPE, PEDESTAL_TYPE>(
-              image_size, nSigma, capacity, n_threads) {}
+              image_size, nSigma, capacity, n_threads, update_pedestal) {}
 
     size_t get_m_input_queues_size() const {
         return this->m_input_queues.size();
@@ -72,7 +73,8 @@ TEST_CASE("multithreaded cluster finder", "[.with-data]") {
 
     ClusterFinderMTWrapper<ClusterType> cf(
         {static_cast<int64_t>(file.rows()), static_cast<int64_t>(file.cols())},
-        5, 2000, n_threads); // no idea what frame type is!!! default uint16_t
+        5, 2000, n_threads,
+        true); // no idea what frame type is!!! default uint16_t
 
     CHECK(cf.get_m_input_queues_size() == n_threads);
     CHECK(cf.get_m_output_queues_size() == n_threads);

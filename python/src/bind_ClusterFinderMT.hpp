@@ -31,9 +31,10 @@ void define_ClusterFinderMT(py::module &m, const std::string &typestr) {
 
     py::class_<ClusterFinderMT<ClusterType, uint16_t, pd_type>>(
         m, class_name.c_str())
-        .def(py::init<Shape<2>, pd_type, size_t, size_t>(),
+        .def(py::init<Shape<2>, pd_type, size_t, size_t, bool>(),
              py::arg("image_size"), py::arg("n_sigma") = 5.0,
-             py::arg("capacity") = 2048, py::arg("n_threads") = 3)
+             py::arg("capacity") = 2048, py::arg("n_threads") = 3,
+             py::arg("update_pedestal") = true)
         .def("push_pedestal_frame",
              [](ClusterFinderMT<ClusterType, uint16_t, pd_type> &self,
                 py::array_t<uint16_t> frame) {

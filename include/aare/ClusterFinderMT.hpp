@@ -41,6 +41,7 @@ class ClusterFinderMT {
     using CT = typename ClusterType::value_type;
     size_t m_current_thread{0};
     size_t m_n_threads{0};
+    bool m_update_pedestal;
     using Finder = ClusterFinder<ClusterType, FRAME_TYPE, PEDESTAL_TYPE>;
     using InputQueue = ProducerConsumerQueue<FrameWrapper>;
     using OutputQueue = ProducerConsumerQueue<ClusterVector<ClusterType>>;
@@ -72,7 +73,8 @@ class ClusterFinderMT {
 
                 switch (frame->type) {
                 case FrameType::DATA:
-                    cf->find_clusters(frame->data.view(), frame->frame_number);
+                    cf->find_clusters(frame->data.view(), frame->frame_number,
+                                      m_update_pedestal);
                     while (!m_output_queues[thread_id]->write(
                         cf->steal_clusters(realloc_same_capacity))) {
                         std::this_thread::sleep_for(m_default_wait);
@@ -124,10 +126,13 @@ class ClusterFinderMT {
      * @param capacity initial capacity of the cluster vector. Should match
      * expected number of clusters in a frame per frame.
      * @param n_threads number of threads to use
+     * @param update_pedestal if true the pedestal will be updated during
+     * find_clusters
      */
     ClusterFinderMT(Shape<2> image_size, PEDESTAL_TYPE nSigma = 5.0,
-                    size_t capacity = 2000, size_t n_threads = 3)
-        : m_n_threads(n_threads) {
+                    size_t capacity = 2000, size_t n_threads = 3,
+                    bool update_pedestal = true)
+        : m_n_threads(n_threads), m_update_pedestal(update_pedestal) {
 
         LOG(logDEBUG1) << "ClusterFinderMT: "
                        << "image_size: " << image_size[0] << "x"

@@ -100,5 +100,3 @@ BENCHMARK_F(ClusterFixture, Calculate2x2Etawithoutreduction)
         benchmark::DoNotOptimize(eta2);
     }
 }
-
-// BENCHMARK_MAIN();

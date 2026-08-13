@@ -129,5 +129,3 @@ BENCHMARK_F(TwoArrays, MultiplyAddDivideWithIndex)(benchmark::State &st) {
         benchmark::DoNotOptimize(res);
     }
 }
-
-BENCHMARK_MAIN();
