@@ -26,7 +26,6 @@ from .Cluster import Cluster
 
 from ._aare import Gaussian, RisingScurve, FallingScurve, Pol1, Pol2, GaussianErfcPlateau, GaussianChargeSharing, GaussianChargeSharingKb
 from ._aare import fit
-from ._aare import fit_gaus, fit_pol1, fit_scurve, fit_scurve2
 from ._aare import Interpolator
 from ._aare import calculate_eta2, calculate_eta3, calculate_cross_eta3, calculate_full_eta2
 from ._aare import reduce_to_2x2, reduce_to_3x3
@@ -41,9 +40,6 @@ from .ScanParameters import ScanParameters
 
 from .utils import random_pixels, random_pixel, flat_list, add_colorbar, Timer
 
-
-#make functions available in the top level API
-from .func import *
 
 from .calibration import *
 from ._aare import apply_calibration, count_switching_pixels
