@@ -41,7 +41,6 @@ set(PYTHON_FILES
     aare/Cluster.py
     aare/calibration.py
     aare/experimental.py
-    aare/func.py
     aare/RawFile.py
     aare/transform.py
     aare/ScanParameters.py

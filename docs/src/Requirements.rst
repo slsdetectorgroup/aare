@@ -14,7 +14,7 @@ Requirements
 To simplify deployment we build and statically link a few libraries.
 
 - fmt
-- lmfit - https://jugit.fz-juelich.de/mlz/lmfit
+- Minuit2
 - nlohmann_json
 - pybind11
 - ZeroMQ
