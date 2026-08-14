@@ -43,7 +43,6 @@ set(PYTHON_FILES
     aare/calibration.py
     aare/factory.py
     aare/experimental.py
-    aare/func.py
     aare/RawFile.py
     aare/transform.py
     aare/ScanParameters.py

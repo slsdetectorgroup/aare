@@ -1,5 +1,17 @@
 # Release notes
 
+## Next
+
+### API Changes:
+
+- Removed the lmfit dependency and the legacy ``fit_gaus``, ``fit_pol1``,
+  ``fit_scurve``, and ``fit_scurve2`` APIs. Use ``Gaussian``, ``Pol1``,
+  ``RisingScurve``, or ``FallingScurve`` and call ``model.fit(...)`` (or
+  ``fit(model, ...)``) instead.
+- Removed the legacy ``gaus``, ``pol1``, ``scurve``, and ``scurve2`` function
+  evaluators. Model objects are callable and provide the replacement, for
+  example ``Gaussian()(x, par)``.
+
 ## 2026.7.2
 
 
@@ -142,7 +154,6 @@ https://github.com/slsdetectorgroup/aare
 erik.frojdh@psi.ch \
 alice.mazzoleni@psi.ch \
 dhanya.thattil@psi.ch
-
 
 
 

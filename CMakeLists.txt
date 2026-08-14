@@ -66,7 +66,6 @@ option(AARE_FETCH_PYBIND11 "Use FetchContent to download pybind11" ON)
 option(AARE_FETCH_CATCH "Use FetchContent to download catch2" ON)
 option(AARE_FETCH_JSON "Use FetchContent to download nlohmann::json" ON)
 option(AARE_FETCH_ZMQ "Use FetchContent to download libzmq" ON)
-option(AARE_FETCH_LMFIT "Use FetchContent to download lmfit" ON)
 option(AARE_FETCH_MINUIT2 "Use FetchContent to download Minuit2" ON)
 
 option(AARE_WARNINGS_AS_ERRORS "Treat warnings as errors during compilation"
@@ -91,8 +90,8 @@ if(AARE_SYSTEM_LIBRARIES)
   set(AARE_FETCH_ZMQ
       OFF
       CACHE BOOL "Disabled FetchContent for libzmq" FORCE)
-  # Still fetch lmfit and Minuit2 when setting AARE_SYSTEM_LIBRARIES since these
-  # are not available on conda-forge
+  # Still fetch Minuit2 when setting AARE_SYSTEM_LIBRARIES since it is not
+  # available on conda-forge
 endif()
 
 if(AARE_BENCHMARKS)
@@ -100,61 +99,6 @@ if(AARE_BENCHMARKS)
 endif()
 
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
-
-if(AARE_FETCH_LMFIT)
-  # TODO! Should we fetch lmfit from the web or inlcude a tar.gz in the repo?
-  set(LMFIT_PATCH_COMMAND git apply
-                          ${CMAKE_CURRENT_SOURCE_DIR}/patches/lmfit.patch)
-
-  # For cmake < 3.28 we can't supply EXCLUDE_FROM_ALL to FetchContent_Declare so
-  # we need this workaround
-  if(${CMAKE_VERSION} VERSION_LESS "3.28")
-    FetchContent_Declare(
-      lmfit
-      GIT_REPOSITORY https://jugit.fz-juelich.de/mlz/lmfit.git
-      GIT_TAG main
-      PATCH_COMMAND ${LMFIT_PATCH_COMMAND}
-      UPDATE_DISCONNECTED 1)
-  else()
-    FetchContent_Declare(
-      lmfit
-      GIT_REPOSITORY https://jugit.fz-juelich.de/mlz/lmfit.git
-      GIT_TAG main
-      PATCH_COMMAND ${LMFIT_PATCH_COMMAND}
-      UPDATE_DISCONNECTED 1
-      EXCLUDE_FROM_ALL 1)
-  endif()
-
-  # Disable what we don't need from lmfit
-  set(BUILD_TESTING
-      OFF
-      CACHE BOOL "")
-  set(LMFIT_CPPTEST
-      OFF
-      CACHE BOOL "")
-  set(LIB_MAN
-      OFF
-      CACHE BOOL "")
-  set(LMFIT_CPPTEST
-      OFF
-      CACHE BOOL "")
-  set(BUILD_SHARED_LIBS
-      OFF
-      CACHE BOOL "")
-
-  if(${CMAKE_VERSION} VERSION_LESS "3.28")
-    if(NOT lmfit_POPULATED)
-      FetchContent_Populate(lmfit)
-      add_subdirectory(${lmfit_SOURCE_DIR} ${lmfit_BINARY_DIR} EXCLUDE_FROM_ALL)
-    endif()
-  else()
-    FetchContent_MakeAvailable(lmfit)
-  endif()
-
-  set_property(TARGET lmfit PROPERTY POSITION_INDEPENDENT_CODE ON)
-else()
-  find_package(lmfit REQUIRED)
-endif()
 
 if(AARE_FETCH_MINUIT2)
   # We are building Minuit2 from sources.
@@ -478,8 +422,7 @@ target_link_libraries(
   aare_core
   PUBLIC fmt::fmt nlohmann_json::nlohmann_json ${STD_FS_LIB} # from
                                                              # helpers.cmake
-  PRIVATE aare_compiler_flags Threads::Threads $<BUILD_INTERFACE:lmfit>
-          $<BUILD_INTERFACE:aare::Minuit2>)
+  PRIVATE aare_compiler_flags Threads::Threads $<BUILD_INTERFACE:aare::Minuit2>)
 
 target_include_directories(
   aare_core SYSTEM
@@ -511,6 +454,7 @@ if(AARE_TESTS)
       ${CMAKE_CURRENT_SOURCE_DIR}/src/defs.test.cpp
       ${CMAKE_CURRENT_SOURCE_DIR}/src/decode.test.cpp
       ${CMAKE_CURRENT_SOURCE_DIR}/src/Dtype.test.cpp
+      ${CMAKE_CURRENT_SOURCE_DIR}/src/Fit.test.cpp
       ${CMAKE_CURRENT_SOURCE_DIR}/src/Frame.test.cpp
       ${CMAKE_CURRENT_SOURCE_DIR}/src/DetectorGeometry.test.cpp
       ${CMAKE_CURRENT_SOURCE_DIR}/src/Interpolation.test.cpp
