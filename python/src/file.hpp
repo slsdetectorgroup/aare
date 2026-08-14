@@ -7,7 +7,6 @@
 #include "aare/RawSubFile.hpp"
 
 #include "aare/defs.hpp"
-// #include "aare/fClusterFileV2.hpp"
 
 #include <cstdint>
 #include <filesystem>
@@ -195,52 +194,4 @@ void define_file_io_bindings(py::module &m) {
         });
 
 #pragma GCC diagnostic pop
-    // py::class_<ClusterHeader>(m, "ClusterHeader")
-    //     .def(py::init<>())
-    //     .def_readwrite("frame_number", &ClusterHeader::frame_number)
-    //     .def_readwrite("n_clusters", &ClusterHeader::n_clusters)
-    //     .def("__repr__", [](const ClusterHeader &a) { return "<ClusterHeader:
-    //     " + a.to_string() + ">"; });
-
-    // py::class_<ClusterV2_>(m, "ClusterV2_")
-    //     .def(py::init<>())
-    //     .def_readwrite("x", &ClusterV2_::x)
-    //     .def_readwrite("y", &ClusterV2_::y)
-    //     .def_readwrite("data", &ClusterV2_::data)
-    //     .def("__repr__", [](const ClusterV2_ &a) { return "<ClusterV2_: " +
-    //     a.to_string(false) + ">"; });
-
-    // py::class_<ClusterV2>(m, "ClusterV2")
-    //     .def(py::init<>())
-    //     .def_readwrite("cluster", &ClusterV2::cluster)
-    //     .def_readwrite("frame_number", &ClusterV2::frame_number)
-    //     .def("__repr__", [](const ClusterV2 &a) { return "<ClusterV2: " +
-    //     a.to_string() + ">"; });
-
-    // py::class_<ClusterFileV2>(m, "ClusterFileV2")
-    //     .def(py::init<const std::filesystem::path &, const std::string &>())
-    //     .def("read", py::overload_cast<>(&ClusterFileV2::read))
-    //     .def("read", py::overload_cast<int>(&ClusterFileV2::read))
-    //     .def("frame_number", &ClusterFileV2::frame_number)
-    //     .def("write", py::overload_cast<std::vector<ClusterV2> const
-    //     &>(&ClusterFileV2::write))
-
-    //     .def("close", &ClusterFileV2::close);
-
-    // m.def("to_clustV2", [](std::vector<DynamicCluster> &clusters, const int
-    // frame_number) {
-    //     std::vector<ClusterV2> clusters_;
-    //     for (auto &c : clusters) {
-    //         ClusterV2 cluster;
-    //         cluster.cluster.x = c.x;
-    //         cluster.cluster.y = c.y;
-    //         int i=0;
-    //         for(auto &d : cluster.cluster.data) {
-    //             d=c.get<double>(i++);
-    //         }
-    //         cluster.frame_number = frame_number;
-    //         clusters_.push_back(cluster);
-    //     }
-    //     return clusters_;
-    // });
-}
+    }
