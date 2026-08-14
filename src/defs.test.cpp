@@ -22,7 +22,6 @@ TEST_CASE("Enum values") {
     REQUIRE(static_cast<int>(aare::DetectorType::Moench03) == 100);
 }
 
-
 TEST_CASE("Basic ops on BitOffset") {
     REQUIRE_THROWS(aare::BitOffset(10));
 

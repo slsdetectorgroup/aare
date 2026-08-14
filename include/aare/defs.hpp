@@ -38,7 +38,6 @@ inline constexpr size_t bits_per_byte = 8;
 
 void assert_failed(const std::string &msg);
 
-
 /**
  * @brief header contained in parts of frames
  */

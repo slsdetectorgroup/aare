@@ -194,4 +194,4 @@ void define_file_io_bindings(py::module &m) {
         });
 
 #pragma GCC diagnostic pop
-    }
+}
