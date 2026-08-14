@@ -1,17 +1,11 @@
 // SPDX-License-Identifier: MPL-2.0
 #include "aare/VarClusterFinder.hpp"
 #include "np_helper.hpp"
-// #include "aare/defs.hpp"
-// #include "aare/fClusterFileV2.hpp"
 
 #include <cstdint>
-// #include <filesystem>
 #include <pybind11/numpy.h>
-// #include <pybind11/iostream.h>
 #include <pybind11/pybind11.h>
 #include <pybind11/stl.h>
-// #include <pybind11/stl/filesystem.h>
-// #include <string>
 
 namespace py = pybind11;
 using namespace ::aare;
