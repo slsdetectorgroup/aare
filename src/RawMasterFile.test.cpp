@@ -739,3 +739,84 @@ TEST_CASE("Parse a v7.1 Mythen3 from stream") {
     // Period is ok though
     REQUIRE(f.period() == std::chrono::milliseconds(2));
 }
+
+TEST_CASE("Parse old Moench03 from stream") {
+    std::string master_content = R"(
+    {
+    "Version": 7.1,
+    "Timestamp": "Mon Mar 25 10:07:02 2024",
+    "Detector Type": "Moench",
+    "Timing Mode": "auto",
+    "Geometry": {
+        "x": 1,
+        "y": 1
+    },
+    "Image Size in bytes": 320000,
+    "Pixels": {
+        "x": 400,
+        "y": 400
+    },
+    "Max Frames Per File": 100000,
+    "Frame Discard Policy": "discardpartial",
+    "Frame Padding": 1,
+    "Scan Parameters": "[disabled]",
+    "Total Frames": 1000000,
+    "Receiver Roi": {
+        "xmin": 4294967295,
+        "xmax": 4294967295,
+        "ymin": 4294967295,
+        "ymax": 4294967295
+    },
+    "Exptime": "50us",
+    "Period": "600us",
+    "Ten Giga": 1,
+    "ADC Mask": "0xffffffff",
+    "Analog Samples": 5000,
+    "Additional Json Header": "{detectorMode: analog, frameMode: newPedestal}",
+    "Frames in File": 999995,
+    "Frame Header Format": {
+        "Frame Number": "8 bytes",
+        "SubFrame Number/ExpLength": "4 bytes",
+        "Packet Number": "4 bytes",
+        "Bunch ID": "8 bytes",
+        "Timestamp": "8 bytes",
+        "Module Id": "2 bytes",
+        "Row": "2 bytes",
+        "Column": "2 bytes",
+        "Reserved": "2 bytes",
+        "Debug": "4 bytes",
+        "Round Robin Number": "2 bytes",
+        "Detector Type": "1 byte",
+        "Header Version": "1 byte",
+        "Packets Caught Mask": "64 bytes"
+    }
+}
+
+)";
+
+    std::istringstream iss(master_content);
+    RawMasterFile f(iss, "test_master_0.json");
+
+    REQUIRE(f.version() == "7.1");
+    REQUIRE(f.detector_type() == DetectorType::Moench03_old);
+    REQUIRE(f.timing_mode() == TimingMode::Auto);
+    REQUIRE(f.geometry().col == 1);
+    REQUIRE(f.geometry().row == 1);
+    REQUIRE(f.image_size_in_bytes() == 320000);
+    REQUIRE(f.pixels_x() == 400);
+    REQUIRE(f.pixels_y() == 400);
+    REQUIRE(f.max_frames_per_file() == 100000);
+    REQUIRE(f.frame_discard_policy() == FrameDiscardPolicy::DiscardPartial);
+    REQUIRE(f.frame_padding() == 1);
+
+    REQUIRE(f.n_modules() == 1);
+    REQUIRE(f.quad() == 0);
+
+    // REQUIRE(f.total_frames_expected() ==
+    //         1); // This is Total Frames in the master file
+    // REQUIRE(f.counter_mask() == 0x7);
+    REQUIRE(f.bitdepth() == 16);
+    REQUIRE(f.exptime() == std::chrono::microseconds(50));
+    REQUIRE(f.period() == std::chrono::microseconds(600));
+    REQUIRE(f.analog_samples() == 5000);
+}

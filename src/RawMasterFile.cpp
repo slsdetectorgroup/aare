@@ -306,13 +306,21 @@ void RawMasterFile::parse_json(std::istream &is) {
     // Special treatment of analog flag because of Moench03
     m_analog_flag = v < 8.0 && (m_type == DetectorType::Moench);
 
-    try {
-        m_analog_flag = static_cast<bool>(j.at("Analog Flag").get<int>());
-        if (m_analog_flag) {
+    if (v < 8.0) {
+        try {
             m_analog_samples = j.at("Analog Samples");
+        } catch (const json::out_of_range &e) {
+            // keep the optional empty
         }
-    } catch (const json::out_of_range &e) {
-        // keep the optional empty
+    } else {
+        try {
+            m_analog_flag = static_cast<bool>(j.at("Analog Flag").get<int>());
+            if (m_analog_flag) {
+                m_analog_samples = j.at("Analog Samples");
+            }
+        } catch (const json::out_of_range &e) {
+            // keep the optional empty
+        }
     }
     //-----------------------------------------------------------------
     try {
