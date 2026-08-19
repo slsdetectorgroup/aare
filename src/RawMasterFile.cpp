@@ -303,26 +303,31 @@ void RawMasterFile::parse_json(std::istream &is) {
     }
 
     // ----------------------------------------------------------------
-    // Special treatment of analog flag because of Moench03
-    m_analog_flag = v < 8.0 && (m_type == DetectorType::Moench);
+    // Special treatment of analog flag because of Moench03.
+    // Before SW 8.0.0 (NOT json file version v8!) Moench03 had Analog Samples
+    // but no Analog Flag. Therefore we need to set analog flag to true and try
+    // to read analog samples The detector type is later set depending on analog
+    // samples and number of pixels.
 
-    if (v < 8.0) {
-        try {
-            m_analog_samples = j.at("Analog Samples");
-        } catch (const json::out_of_range &e) {
-            // keep the optional empty
+    if (m_type == DetectorType::Moench) {
+        if (auto it = j.find("Analog Samples"); it != j.end()) {
+            m_analog_flag = true;
+            m_analog_samples = it->get<size_t>();
+        } else {
+            m_analog_flag = false;
         }
     } else {
-        try {
-            m_analog_flag = static_cast<bool>(j.at("Analog Flag").get<int>());
+        if (auto it = j.find("Analog Flag"); it != j.end()) {
+            m_analog_flag = static_cast<bool>(it->get<int>());
             if (m_analog_flag) {
                 m_analog_samples = j.at("Analog Samples");
             }
-        } catch (const json::out_of_range &e) {
-            // keep the optional empty
+        } else {
+            m_analog_flag = false;
         }
     }
     //-----------------------------------------------------------------
+
     try {
         m_quad = j.at("Quad");
     } catch (const json::out_of_range &e) {
