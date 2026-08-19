@@ -411,6 +411,10 @@ TEST_CASE("Parse EIGER 7.2 master from string stream") {
     REQUIRE(f.frame_padding() == 1);
     REQUIRE(f.total_frames_expected() == 3);
 
+    REQUIRE(f.quad() == 0);
+    REQUIRE(f.number_of_rows() == 256);
+    REQUIRE(f.n_modules() == 4);
+
     REQUIRE(f.bitdepth() == 32);
     REQUIRE(f.frames_in_file() == 3);
 
@@ -489,6 +493,8 @@ TEST_CASE("Parse JUNGFRAU 7.2 master from string stream") {
     REQUIRE(f.number_of_rows() == 512);
 
     REQUIRE(f.frames_in_file() == 10);
+    REQUIRE(f.quad() == 0);
+    REQUIRE(f.n_modules() == 2);
     REQUIRE(f.udp_interfaces_per_module() == xy{2, 1});
 }
 
@@ -790,6 +796,7 @@ TEST_CASE("Parse Moench 7.2 master (SW 8.0.0) from string stream") {
     REQUIRE(f.analog_samples() == std::nullopt);
     REQUIRE(f.digital_samples() == std::nullopt);
     REQUIRE(f.transceiver_samples() == std::nullopt);
+    REQUIRE(f.udp_interfaces_per_module() == xy{1, 1});
 }
 
 TEST_CASE("Parse CTB 7.2 master (SW 8.0.0) from string stream") {
@@ -1267,15 +1274,13 @@ TEST_CASE("Parse old Moench03 from stream") {
     REQUIRE(f.pixels_x() == 400);
     REQUIRE(f.pixels_y() == 400);
     REQUIRE(f.max_frames_per_file() == 100000);
+    REQUIRE((f.total_frames_expected() ==
+             1000000)); // This is Total Frames in the master file
+    REQUIRE(f.frames_in_file() == 999995);
     REQUIRE(f.frame_discard_policy() == FrameDiscardPolicy::DiscardPartial);
     REQUIRE(f.frame_padding() == 1);
-
     REQUIRE(f.n_modules() == 1);
     REQUIRE(f.quad() == 0);
-
-    // REQUIRE(f.total_frames_expected() ==
-    //         1); // This is Total Frames in the master file
-    // REQUIRE(f.counter_mask() == 0x7);
     REQUIRE(f.bitdepth() == 16);
     REQUIRE(f.exptime() == std::chrono::microseconds(50));
     REQUIRE(f.period() == std::chrono::microseconds(600));
