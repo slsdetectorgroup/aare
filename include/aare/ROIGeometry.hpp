@@ -1,6 +1,8 @@
 #pragma once
 #include "aare/DetectorGeometry.hpp"
-#include "aare/defs.hpp"
+#include "aare/ROI.hpp"
+#include <cstdint>
+#include <vector>
 
 namespace aare {
 

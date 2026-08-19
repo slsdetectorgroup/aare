@@ -94,24 +94,6 @@ template <typename T> struct t_xy {
 };
 using xy = t_xy<uint32_t>;
 
-struct ROI {
-    ssize_t xmin{};
-    ssize_t xmax{};
-    ssize_t ymin{};
-    ssize_t ymax{};
-
-    ssize_t height() const { return ymax - ymin; }
-    ssize_t width() const { return xmax - xmin; }
-    bool contains(ssize_t x, ssize_t y) const {
-        return x >= xmin && x < xmax && y >= ymin && y < ymax;
-    }
-
-    bool operator==(const ROI &other) const {
-        return xmin == other.xmin && xmax == other.xmax && ymin == other.ymin &&
-               ymax == other.ymax;
-    }
-};
-
 /// @brief  Chip specifications for Matterhorn1
 struct Matterhorn10 {
     constexpr static size_t nRows = 256;

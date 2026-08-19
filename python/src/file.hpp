@@ -2,6 +2,7 @@
 #include "aare/CtbRawFile.hpp"
 #include "aare/File.hpp"
 #include "aare/Frame.hpp"
+#include "aare/ROI.hpp"
 #include "aare/RawFile.hpp"
 #include "aare/RawMasterFile.hpp"
 #include "aare/RawSubFile.hpp"

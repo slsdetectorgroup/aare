@@ -2,11 +2,11 @@
 #include "aare/RawFile.hpp"
 #include "aare/DetectorGeometry.hpp"
 #include "aare/PixelMap.hpp"
+#include "aare/ROI.hpp"
 #include "aare/ROIGeometry.hpp"
 #include "aare/algorithm.hpp"
 #include "aare/defs.hpp"
 #include "aare/logger.hpp"
-#include "aare/utils/utility_functions.hpp"
 
 #include <algorithm>
 #include <fmt/format.h>

@@ -1,8 +1,8 @@
 // SPDX-License-Identifier: MPL-2.0
 #pragma once
+#include "aare/ROI.hpp"
 #include "aare/ROIGeometry.hpp"
 #include "aare/RawMasterFile.hpp" //ROI refactor away
-#include "aare/defs.hpp"
 #include <iostream>
 
 namespace aare {

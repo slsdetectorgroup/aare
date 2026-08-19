@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: MPL-2.0
 #pragma once
-#include "aare/defs.hpp"
+#include "aare/ROI.hpp"
 #include <algorithm>
 #include <chrono>
 #include <filesystem>

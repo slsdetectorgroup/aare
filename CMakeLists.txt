@@ -345,6 +345,7 @@ set(PUBLICHEADERS
     include/aare/hist/PixelHistogramImpl.hpp
     include/aare/hist/PedestalTrackingPixelHistogram.hpp
     include/aare/GainMap.hpp
+    include/aare/ROI.hpp
     include/aare/ROIGeometry.hpp
     include/aare/DetectorGeometry.hpp
     include/aare/JungfrauDataFile.hpp
@@ -361,14 +362,14 @@ set(PUBLICHEADERS
     include/aare/VarClusterFinder.hpp
     include/aare/utils/task.hpp
     include/aare/utils/ifstream_helpers.hpp
-    include/aare/utils/math_helpers.hpp
-    include/aare/utils/utility_functions.hpp)
+    include/aare/utils/math_helpers.hpp)
 
 set(SourceFiles
     ${CMAKE_CURRENT_SOURCE_DIR}/src/calibration.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/src/CtbRawFile.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/src/decode.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/src/defs.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/ROI.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/src/ROIGeometry.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/src/DetectorGeometry.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/src/hist/PedestalTrackingPixelHistogram.cpp
@@ -456,8 +457,8 @@ if(AARE_TESTS)
       ${CMAKE_CURRENT_SOURCE_DIR}/src/NumpyHelpers.test.cpp
       ${CMAKE_CURRENT_SOURCE_DIR}/src/RawFile.test.cpp
       ${CMAKE_CURRENT_SOURCE_DIR}/src/RawSubFile.test.cpp
+      ${CMAKE_CURRENT_SOURCE_DIR}/src/ROI.test.cpp
       ${CMAKE_CURRENT_SOURCE_DIR}/src/utils/task.test.cpp
-      ${CMAKE_CURRENT_SOURCE_DIR}/src/utils/utility_functions.test.cpp
       ${CMAKE_CURRENT_SOURCE_DIR}/src/to_string.test.cpp)
   target_sources(tests PRIVATE ${TestSources})
 endif()

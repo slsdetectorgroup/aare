@@ -1,4 +1,4 @@
-#include "aare/utils/utility_functions.hpp"
+#include "aare/ROI.hpp"
 #include <catch2/catch_test_macros.hpp>
 
 namespace aare {

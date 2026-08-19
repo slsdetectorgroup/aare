@@ -1,12 +1,34 @@
 #pragma once
-#include "aare/DetectorGeometry.hpp"
 #include "aare/defs.hpp"
 #include <algorithm>
+#include <cstddef>
 #include <numeric>
 #include <optional>
+#include <stdexcept>
 #include <vector>
 
 namespace aare {
+
+class ROIGeometry;      // forward declaration to avoid circular dependency
+class DetectorGeometry; // forward declaration to avoid circular dependency
+
+struct ROI {
+    ssize_t xmin{};
+    ssize_t xmax{};
+    ssize_t ymin{};
+    ssize_t ymax{};
+
+    ssize_t height() const { return ymax - ymin; }
+    ssize_t width() const { return xmax - xmin; }
+    bool contains(ssize_t x, ssize_t y) const {
+        return x >= xmin && x < xmax && y >= ymin && y < ymax;
+    }
+
+    bool operator==(const ROI &other) const {
+        return xmin == other.xmin && xmax == other.xmax && ymin == other.ymin &&
+               ymax == other.ymax;
+    }
+};
 
 /**
  * @brief Merge all consecutive ROIs in a vector into a single ROI.
@@ -97,35 +119,14 @@ std::vector<ROI> merge_consecutive_rois(std::vector<ROI> &rois) {
  * @param geometry Detector geometry
  * @return true if the ROI covers the entire detector geometry, false otherwise
  */
-inline bool complete_ROI(const ROI &roi, const DetectorGeometry &geometry) {
-    return roi.xmin == 0 &&
-           roi.xmax == static_cast<ssize_t>(geometry.pixels_x()) &&
-           roi.ymin == 0 &&
-           roi.ymax == static_cast<ssize_t>(geometry.pixels_y());
-}
+bool complete_ROI(const ROI &roi, const DetectorGeometry &geometry);
 
-inline bool complete_ROI(const std::vector<ROI> &rois,
-                         const DetectorGeometry &geometry) {
-    if (rois.empty() or rois.size() > 1) {
-        return false;
-    } else {
-        return complete_ROI(rois[0], geometry);
-    }
-}
+bool complete_ROI(const std::vector<ROI> &rois,
+                  const DetectorGeometry &geometry);
 
-inline bool complete_ROI(const ROIGeometry &roi,
-                         const DetectorGeometry &geometry) {
-    return roi.pixels_x() == geometry.pixels_x() &&
-           roi.pixels_y() == geometry.pixels_y();
-}
+bool complete_ROI(const ROIGeometry &roi, const DetectorGeometry &geometry);
 
-inline bool complete_ROI(const std::vector<ROIGeometry> &rois,
-                         const DetectorGeometry &geometry) {
-    if (rois.empty() or rois.size() > 1) {
-        return false;
-    } else {
-        return complete_ROI(rois[0], geometry);
-    }
-}
+bool complete_ROI(const std::vector<ROIGeometry> &rois,
+                  const DetectorGeometry &geometry);
 
 } // namespace aare
