@@ -40,7 +40,7 @@ set(PYTHON_FILES
     aare/ClusterVector.py
     aare/Cluster.py
     aare/calibration.py
-    aare/func.py
+    aare/experimental.py
     aare/RawFile.py
     aare/transform.py
     aare/ScanParameters.py

@@ -64,6 +64,7 @@ class File {
     size_t total_frames() const;
     size_t rows() const;
     size_t cols() const;
+    Dtype dtype() const;
 
     DetectorType detector_type() const;
 };
