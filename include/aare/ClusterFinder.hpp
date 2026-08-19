@@ -135,29 +135,24 @@ class ClusterFinder {
             return; // NEGATIVE_PEDESTAL, nothing to do for this pixel
                     // TODO! No pedestal update???
 
-        if constexpr (CheckBounds) {
-            for (int ir = -dy; ir < dy + has_center_pixel_y; ir++) {
-                for (int ic = -dx; ic < dx + has_center_pixel_x; ic++) {
-                    const int x = ix + ic;
-                    const int y = iy + ir;
-                    if (x < 0 || x >= cols || y < 0 || y >= rows)
-                        continue;
-                    const PEDESTAL_TYPE val =
-                        corrected[(static_cast<std::size_t>(y) * cols) + x];
-                    total += val;
-                    max = std::max(max, val);
-                }
+        for (int ir = -dy; ir < dy + has_center_pixel_y; ir++) {
+            const int y = iy + ir;
+            if constexpr (CheckBounds) {
+                if (y < 0 || y >= rows)
+                    continue;
             }
-        } else {
-            for (int ir = -dy; ir < dy + has_center_pixel_y; ir++) {
-                const auto *pixel = corrected +
-                                    static_cast<std::size_t>(iy + ir) * cols +
-                                    (ix - dx);
-                for (int k = 0; k < ClusterSizeX; k++) {
-                    const PEDESTAL_TYPE val = pixel[k];
-                    total += val;
-                    max = std::max(max, val);
+
+            const auto *row = corrected + static_cast<std::size_t>(y) * cols;
+            for (int ic = -dx; ic < dx + has_center_pixel_x; ic++) {
+                const int x = ix + ic;
+                if constexpr (CheckBounds) {
+                    if (x < 0 || x >= cols)
+                        continue;
                 }
+
+                const PEDESTAL_TYPE val = row[x];
+                total += val;
+                max = std::max(max, val);
             }
         }
 
@@ -177,49 +172,30 @@ class ClusterFinder {
             cluster.x = ix;
             cluster.y = iy;
 
-            if constexpr (CheckBounds) {
-                int i = 0;
-                for (int ir = -dy; ir < dy + has_center_pixel_y; ir++) {
-                    for (int ic = -dx; ic < dx + has_center_pixel_x; ic++) {
-                        const int x = ix + ic;
-                        const int y = iy + ir;
-                        if (x >= 0 && x < cols && y >= 0 && y < rows) {
-                            const PEDESTAL_TYPE corrected_value =
-                                corrected[(static_cast<std::size_t>(y) * cols) +
-                                          x];
-                            if constexpr (std::is_integral_v<CT> &&
-                                          std::is_floating_point_v<
-                                              PEDESTAL_TYPE>) {
-                                cluster.data[i] = static_cast<CT>(
-                                    std::lround(corrected_value));
-                            } else {
-                                cluster.data[i] =
-                                    static_cast<CT>(corrected_value);
-                            }
-                        }
-                        i++;
+            int i = 0;
+            for (int ir = -dy; ir < dy + has_center_pixel_y; ir++) {
+                const int y = iy + ir;
+                for (int ic = -dx; ic < dx + has_center_pixel_x; ic++, i++) {
+                    const int x = ix + ic;
+                    if constexpr (CheckBounds) {
+                        if (x < 0 || x >= cols || y < 0 || y >= rows)
+                            continue;
                     }
-                }
-            } else {
-                int i = 0;
-                for (int ir = -dy; ir < dy + has_center_pixel_y; ir++) {
-                    const auto *pixel =
-                        corrected + static_cast<std::size_t>(iy + ir) * cols +
-                        (ix - dx);
-                    for (int k = 0; k < ClusterSizeX; k++, i++) {
-                        // If the cluster type is an integral type, and the
-                        // pedestal is a floating point type then we need to
-                        // round the value before storing it
-                        if constexpr (std::is_integral_v<CT> &&
-                                      std::is_floating_point_v<PEDESTAL_TYPE>) {
-                            cluster.data[i] =
-                                static_cast<CT>(std::lround(pixel[k]));
-                        }
-                        // On the other hand if both are floating point or both
-                        // are integral then we can just static cast directly
-                        else {
-                            cluster.data[i] = static_cast<CT>(pixel[k]);
-                        }
+
+                    const PEDESTAL_TYPE corrected_value =
+                        corrected[(static_cast<std::size_t>(y) * cols) + x];
+                    // If the cluster type is an integral type, and the
+                    // pedestal is a floating point type then we need to
+                    // round the value before storing it
+                    if constexpr (std::is_integral_v<CT> &&
+                                  std::is_floating_point_v<PEDESTAL_TYPE>) {
+                        cluster.data[i] =
+                            static_cast<CT>(std::lround(corrected_value));
+                    }
+                    // On the other hand if both are floating point or both
+                    // are integral then we can just static cast directly
+                    else {
+                        cluster.data[i] = static_cast<CT>(corrected_value);
                     }
                 }
             }
