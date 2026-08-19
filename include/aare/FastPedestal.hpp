@@ -28,8 +28,8 @@ template <typename PEDESTAL_TYPE> class FastPedestal {
     double m_inv_samples;       // precompute 1/m_samples for faster division
     uint32_t m_cur_samples = 0; // number of samples accumulated so far
 
-    // For cache locality we want to keep sum and sum2 close. Improves
-    // performance for random access.
+    // For cache locality we want to keep sum and sum2 close. Should
+    // improve performance for random access.
     struct Entry {
         double sum;
         double sum2;
