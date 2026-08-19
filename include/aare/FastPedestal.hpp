@@ -10,11 +10,14 @@
 namespace aare {
 
 /**
- * @brief Calculate the pedestal of a series of frames. Can be used as
- * standalone but mostly used in the ClusterFinder. Internal calculations are
- * performed using double precision.
+ * @brief Maintain per-pixel mean, population variance, and standard deviation.
  *
- * @tparam PEDESTAL_TYPE type of the exposed mean and std
+ * Initialization accumulates exactly n_samples frames. Subsequent pushes use
+ * an exponentially weighted update in which the new value has weight
+ * 1 / n_samples. Internal moments are stored in double precision.
+ *
+ * @tparam PEDESTAL_TYPE Type returned for the mean, variance, and standard
+ * deviation.
  */
 template <typename PEDESTAL_TYPE> class FastPedestal {
 
@@ -52,6 +55,10 @@ template <typename PEDESTAL_TYPE> class FastPedestal {
     /**
      * @brief Construct an empty pedestal that becomes ready after n_samples
      * initialization frames.
+     * @param rows Number of image rows.
+     * @param cols Number of image columns.
+     * @param n_samples Number of initialization frames and reciprocal of the
+     * weight assigned to each subsequent value.
      * @throws std::runtime_error if rows, cols, or n_samples is zero.
      */
     FastPedestal(uint32_t rows, uint32_t cols, uint32_t n_samples = 1000)
@@ -70,10 +77,11 @@ template <typename PEDESTAL_TYPE> class FastPedestal {
 
     /**
      * @brief Return a non-owning view of the cached mean.
+     * @note The values are meaningful only after ready() is true.
      * @note The caller must treat the data as read-only and must not retain the
      * view after this object is destroyed, moved, or assigned.
      */
-    const NDView<PEDESTAL_TYPE, 2> view() const { return m_mean.view(); }
+    NDView<const PEDESTAL_TYPE, 2> view() const { return m_mean.view(); }
 
     /**
      * @brief Return a copy of the cached mean.
@@ -98,9 +106,9 @@ template <typename PEDESTAL_TYPE> class FastPedestal {
     PEDESTAL_TYPE mean(ssize_t index) const { return m_mean[index]; }
 
     /**
-     * @brief Calculate and return the variance of every pixel.
-     * @note Results use n_samples as the normalization and are meaningful only
-     * after ready() is true.
+     * @brief Calculate and return the population variance of every pixel.
+     * @note The result is normalized by n_samples and is meaningful only after
+     * ready() is true.
      */
     NDArray<PEDESTAL_TYPE, 2> variance() {
         NDArray<PEDESTAL_TYPE, 2> res({m_rows, m_cols});
@@ -111,7 +119,7 @@ template <typename PEDESTAL_TYPE> class FastPedestal {
     }
 
     /**
-     * @brief Calculate the variance at (row, col).
+     * @brief Calculate the population variance at (row, col).
      * @pre ready() is true and both indices are valid; indices are not checked.
      */
     PEDESTAL_TYPE variance(const uint32_t row, const uint32_t col) const {
@@ -119,7 +127,7 @@ template <typename PEDESTAL_TYPE> class FastPedestal {
     }
 
     /**
-     * @brief Calculate the variance at a flat row-major index.
+     * @brief Calculate the population variance at a flat row-major index.
      * @pre ready() is true and index is valid; the index is not checked.
      */
     PEDESTAL_TYPE variance(ssize_t index) const {
@@ -129,9 +137,10 @@ template <typename PEDESTAL_TYPE> class FastPedestal {
     }
 
     /**
-     * @brief Calculate and return the standard deviation of every pixel.
-     * @note Results use n_samples as the normalization and are meaningful only
-     * after ready() is true.
+     * @brief Calculate and return the population standard deviation of every
+     * pixel.
+     * @note The variance is normalized by n_samples, and the result is
+     * meaningful only after ready() is true.
      */
     NDArray<PEDESTAL_TYPE, 2> std() {
         NDArray<PEDESTAL_TYPE, 2> res({m_rows, m_cols});
@@ -142,7 +151,7 @@ template <typename PEDESTAL_TYPE> class FastPedestal {
     }
 
     /**
-     * @brief Calculate the standard deviation at (row, col).
+     * @brief Calculate the population standard deviation at (row, col).
      * @pre ready() is true and both indices are valid; indices are not checked.
      */
     PEDESTAL_TYPE std(const uint32_t row, const uint32_t col) const {
@@ -150,20 +159,24 @@ template <typename PEDESTAL_TYPE> class FastPedestal {
     }
 
     /**
-     * @brief Calculate the standard deviation at a flat row-major index.
+     * @brief Calculate the population standard deviation at a flat row-major
+     * index.
      * @pre ready() is true and index is valid; the index is not checked.
      */
     PEDESTAL_TYPE std(ssize_t index) const {
         return std::sqrt(variance(index));
     }
 
-    /** @brief Return whether n_samples initialization frames were accumulated.
+    /**
+     * @brief Return whether initialization is complete (cur_samples() equals
+     * n_samples()).
      */
     bool ready() const { return m_ready; }
 
     /**
-     * @brief Return the number of initialization frames accumulated up to the
-     * steady state value.
+     * @brief Return the stored number of accumulated initialization frames.
+     * @note The value is in [0, n_samples] and does not change during
+     * steady-state pushes.
      */
     uint32_t cur_samples() const { return m_cur_samples; }
 
@@ -178,7 +191,8 @@ template <typename PEDESTAL_TYPE> class FastPedestal {
     }
 
     /**
-     * @brief Update every pixel using the steady-state exponential estimator.
+     * @brief Update every pixel using the steady-state exponential estimator,
+     * giving the new value weight 1 / n_samples.
      * @param frame Frame whose shape must exactly match the pedestal.
      * @throws std::runtime_error if the shape differs or ready() is false.
      */
@@ -203,13 +217,17 @@ template <typename PEDESTAL_TYPE> class FastPedestal {
     /**
      * @brief Update every pixel from a Frame using the steady-state estimator.
      * @tparam T Actual pixel type stored in frame; this is not runtime-checked.
+     * @param frame Frame whose shape must exactly match the pedestal.
      * @throws std::runtime_error if the shape differs or ready() is false.
      */
     template <typename T> void push(Frame &frame) { push<T>(frame.view<T>()); }
 
     /**
      * @brief Update one pixel and its cached mean using the steady-state
-     * estimator.
+     * estimator, giving val weight 1 / n_samples.
+     * @param row Pixel row.
+     * @param col Pixel column.
+     * @param val New pixel value.
      * @pre row and col are valid; indices are not checked.
      * @throws std::runtime_error if ready() is false.
      */
@@ -225,6 +243,8 @@ template <typename PEDESTAL_TYPE> class FastPedestal {
     /**
      * @brief Update one pixel and its cached mean without runtime checks in
      * release builds.
+     * @param index Flat row-major pixel index.
+     * @param value New pixel value, with weight 1 / n_samples.
      * @pre ready() is true and index is a valid flat row-major index. These
      * preconditions are asserted only in debug builds.
      */
@@ -279,9 +299,12 @@ template <typename PEDESTAL_TYPE> class FastPedestal {
      * @brief Initialize from n_samples frames after skip_first, then apply all
      * remaining file frames as steady-state updates.
      * @tparam T Pixel representation stored in the file; this is not checked.
-     * @pre skip_first + n_samples does not exceed the file's frame count.
-     * @throws std::runtime_error if too few initialization frames are
-     * available.
+     * @param filename Input image file. Its dimensions define the pedestal
+     * shape.
+     * @param n_samples Number of initialization frames.
+     * @param skip_first Number of leading frames to ignore.
+     * @throws std::runtime_error if fewer than n_samples frames remain after
+     * skip_first, or if any constructor argument is invalid.
      */
     template <typename T>
     static FastPedestal from_file(const std::filesystem::path &filename,
@@ -289,7 +312,11 @@ template <typename PEDESTAL_TYPE> class FastPedestal {
                                   uint32_t skip_first = 0) {
         File f(filename);
 
-        if ((f.total_frames() - skip_first) < n_samples) {
+        const auto total_frames = f.total_frames();
+        const auto first_frame = static_cast<size_t>(skip_first);
+        const auto initialization_frames = static_cast<size_t>(n_samples);
+        if (first_frame > total_frames ||
+            initialization_frames > total_frames - first_frame) {
             throw std::runtime_error(
                 "File has less frames than the number of samples needed to "
                 "initialize the pedestal");
@@ -303,15 +330,16 @@ template <typename PEDESTAL_TYPE> class FastPedestal {
         FastPedestal pedestal(rows, cols, n_samples);
         NDArray<T, 2> frame({rows, cols});
 
-        uint32_t frame_index = skip_first;
-        while (frame_index < skip_first + n_samples) {
+        auto frame_index = first_frame;
+        const auto initialization_end = first_frame + initialization_frames;
+        while (frame_index < initialization_end) {
             f.read_into(frame.buffer());
             pedestal.template push_init<T>(frame.view());
             frame_index++;
         }
 
         // read the rest of the file
-        while (frame_index < f.total_frames()) {
+        while (frame_index < total_frames) {
             f.read_into(frame.buffer());
             pedestal.template push<T>(frame.view());
             frame_index++;
@@ -326,7 +354,8 @@ template <typename PEDESTAL_TYPE> class FastPedestal {
     uint32_t cols() const { return m_cols; }
 
     /**
-     * @brief Return the initialization count and steady-state time constant.
+     * @brief Return the initialization frame count and steady-state
+     * update-weight denominator.
      */
     uint32_t n_samples() const { return m_samples; }
 

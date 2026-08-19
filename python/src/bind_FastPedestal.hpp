@@ -13,10 +13,17 @@ namespace py = pybind11;
 template <typename SUM_TYPE>
 void define_fast_pedestal_bindings(py::module &m, const std::string &name) {
 
-    py::class_<FastPedestal<SUM_TYPE>>(m, name.c_str(), py::buffer_protocol())
+    py::class_<FastPedestal<SUM_TYPE>>(
+        m, name.c_str(),
+        "Maintain a per-pixel running mean, population variance, and "
+        "standard deviation.",
+        py::buffer_protocol())
         .def(py::init<uint32_t, uint32_t, uint32_t>(), py::arg("rows"),
-             py::arg("cols"), py::arg("n_samples"))
-        .def(py::init<uint32_t, uint32_t>(), py::arg("rows"), py::arg("cols"))
+             py::arg("cols"), py::arg("n_samples"),
+             "Construct an empty pedestal. It becomes ready after n_samples "
+             "calls to push_init().")
+        .def(py::init<uint32_t, uint32_t>(), py::arg("rows"), py::arg("cols"),
+             "Construct an empty pedestal with n_samples=1000.")
 
         .def(
             "mean",
@@ -25,7 +32,8 @@ void define_fast_pedestal_bindings(py::module &m, const std::string &name) {
                 *mean = self.mean();
                 return return_image_data(mean);
             },
-            "Return a copy of the cached mean as a NumPy array")
+            "Return a copy of the cached mean. Values are meaningful once "
+            "ready is true.")
         .def(
             "var",
             [](FastPedestal<SUM_TYPE> &self) {
@@ -33,7 +41,8 @@ void define_fast_pedestal_bindings(py::module &m, const std::string &name) {
                 *variance = self.variance();
                 return return_image_data(variance);
             },
-            "Calculate the variance and return it as a NumPy array")
+            "Return the population variance, normalized by n_samples, as a "
+            "NumPy array.")
         .def(
             "std",
             [](FastPedestal<SUM_TYPE> &self) {
@@ -41,16 +50,13 @@ void define_fast_pedestal_bindings(py::module &m, const std::string &name) {
                 *standard_deviation = self.std();
                 return return_image_data(standard_deviation);
             },
-            "Calculate the standard deviation and return it as a "
-            "NumPy array")
+            "Return the population standard deviation as a NumPy array.")
         .def(
             "view",
             [](py::object self_py) {
                 return py::module_::import("numpy").attr("asarray")(self_py);
             },
-            "Return non-owning, non-writable view of the pedestal mean as a "
-            "NumPy "
-            "array")
+            "Return a non-owning, non-writable NumPy view of the cached mean.")
 
         // We need to buffer protocol to allow for numpy operations using the
         // pedestal mean
@@ -84,32 +90,38 @@ void define_fast_pedestal_bindings(py::module &m, const std::string &name) {
                 return ufunc(inputs[0], mean, **kwargs);
             },
             "Support subtracting a FastPedestal from a NumPy array.")
-        .def("clear", py::overload_cast<>(&FastPedestal<SUM_TYPE>::clear))
-        .def_property_readonly("rows", &FastPedestal<SUM_TYPE>::rows)
-        .def_property_readonly("cols", &FastPedestal<SUM_TYPE>::cols)
+        .def("clear", py::overload_cast<>(&FastPedestal<SUM_TYPE>::clear),
+             "Reset all statistics and initialization state to zero.")
+        .def_property_readonly("rows", &FastPedestal<SUM_TYPE>::rows,
+                               "Number of image rows.")
+        .def_property_readonly("cols", &FastPedestal<SUM_TYPE>::cols,
+                               "Number of image columns.")
         .def_property_readonly("cur_samples",
                                &FastPedestal<SUM_TYPE>::cur_samples,
-                               "Return the number of samples pushed if < "
-                               "n_samples in the pedestal")
+                               "Number of initialization frames accumulated. "
+                               "Steady-state pushes do not change it.")
         .def_property_readonly(
             "ready", &FastPedestal<SUM_TYPE>::ready,
-            "Return true if the pedestal is ready to be used (i.e. we have "
-            "pushed at least n_samples samples)")
+            "Whether n_samples initialization frames have been accumulated.")
         .def_property_readonly(
             "n_samples", &FastPedestal<SUM_TYPE>::n_samples,
-            "Return the number of samples to push to the pedestal to be ready. "
-            "This value also affect how fast it updates in the steady state.")
-        .def("clone",
-             [](FastPedestal<SUM_TYPE> &pedestal) {
-                 return FastPedestal<SUM_TYPE>(pedestal);
-             })
+            "Initialization frame count and steady-state update-weight "
+            "denominator.")
+        .def(
+            "clone",
+            [](FastPedestal<SUM_TYPE> &pedestal) {
+                return FastPedestal<SUM_TYPE>(pedestal);
+            },
+            "Return an independent copy of the pedestal and its state.")
         .def(
             "push",
             [](FastPedestal<SUM_TYPE> &pedestal,
                py::array_t<uint16_t, py::array::c_style> &frame) {
                 pedestal.push(make_view_2d(frame));
             },
-            py::arg("frame").noconvert())
+            py::arg("frame").noconvert(),
+            "Apply a uint16 frame as a steady-state update. The pedestal must "
+            "already be ready.")
         .def(
             "push_init",
             [](FastPedestal<SUM_TYPE> &pedestal,
@@ -117,8 +129,8 @@ void define_fast_pedestal_bindings(py::module &m, const std::string &name) {
                 pedestal.push_init(make_view_2d(frame));
             },
             py::arg("frame").noconvert(),
-            "Push a frame to the pedestal to initialize it. Needs to be called "
-            "n_samples times to be ready")
+            "Accumulate one uint16 initialization frame. Call exactly "
+            "n_samples times to make the pedestal ready.")
         .def_static(
             "from_file",
             [](const std::filesystem::path &filename, uint32_t n_samples,
@@ -128,7 +140,7 @@ void define_fast_pedestal_bindings(py::module &m, const std::string &name) {
             },
             py::arg("filename"), py::arg("n_samples") = 1000,
             py::arg("skip_first") = 0,
-            "Create a FastPedestal from a file. Uses n_samples frames for "
-            "initialization (after skip_first), then pushes any remaining "
-            "frames in steady state.");
+            "Create a pedestal from a uint16 file. Skip skip_first frames, use "
+            "the next n_samples for initialization, then apply every remaining "
+            "frame as a steady-state update.");
 }

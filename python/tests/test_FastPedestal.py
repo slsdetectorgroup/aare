@@ -85,6 +85,14 @@ def test_fast_pedestal_factory_from_file_rejects_unbound_dtype():
         FastPedestal.from_file("unused.npy", dtype=np.int32)
 
 
+def test_fast_pedestal_from_file_rejects_skip_beyond_end(tmp_path):
+    filename = tmp_path / "frames.npy"
+    np.save(filename, np.zeros((1, 1, 1), dtype=np.uint16))
+
+    with pytest.raises(RuntimeError, match="less frames"):
+        FastPedestal.from_file(filename, n_samples=1, skip_first=2)
+
+
 @pytest.mark.parametrize(
     ("pedestal_type", "expected_dtype"),
     [(FastPedestal_d, np.float64), (FastPedestal_f, np.float32)],
