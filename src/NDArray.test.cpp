@@ -4,6 +4,7 @@
 #include <catch2/benchmark/catch_benchmark.hpp>
 #include <catch2/catch_test_macros.hpp>
 #include <numeric>
+#include <type_traits>
 
 using aare::NDArray;
 using aare::NDView;
@@ -69,6 +70,20 @@ TEST_CASE("Accessing a const object") {
     REQUIRE(img.shape(0) == 3);
     REQUIRE(img.shape(1) == 4);
     REQUIRE(img.shape(2) == 5);
+}
+
+TEST_CASE("A const NDArray returns a read-only view") {
+    NDArray<int, 2> mutable_array({2, 3}, 1);
+    const auto &const_array = mutable_array;
+
+    static_assert(
+        std::is_same_v<decltype(mutable_array.view()), NDView<int, 2>>);
+    static_assert(
+        std::is_same_v<decltype(const_array.view()), NDView<const int, 2>>);
+
+    auto view = const_array.view();
+    static_assert(std::is_same_v<decltype(view.data()), const int *>);
+    REQUIRE(view(1, 2) == 1);
 }
 
 TEST_CASE("Indexing of a 2D image") {
