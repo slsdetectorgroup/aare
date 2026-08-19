@@ -523,12 +523,13 @@ class NDArray : public ArrayExpr<NDArray<T, Ndim>, Ndim> {
         return *this;
     }
 
-    /**
-     * @brief Create a view of the NDArray.
-     *
-     * @return NDView<T, Ndim>
-     */
-    NDView<T, Ndim> view() const { return NDView<T, Ndim>{data_, shape_}; }
+    /** @brief Create a mutable view of the NDArray. */
+    NDView<T, Ndim> view() { return NDView<T, Ndim>{data_, shape_}; }
+
+    /** @brief Create a read-only view of a const NDArray. */
+    NDView<const T, Ndim> view() const {
+        return NDView<const T, Ndim>{data_, shape_};
+    }
 
   private:
     /**

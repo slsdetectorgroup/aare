@@ -46,7 +46,7 @@ template <typename T, typename StorageType> class PixelHistogramImpl {
     // Zero-copy view of the underlying [rows x cols x n_bins] storage.
     // Lifetime is tied to *this. Use for low-level merge/stitching paths;
     // prefer values() for the public API where you want an owned copy.
-    NDView<StorageType, 3> view() const;
+    NDView<const StorageType, 3> view() const;
     NDArray<T, 1> bin_centers() const;
     NDArray<T, 1> bin_edges() const;
 };
@@ -133,7 +133,7 @@ NDArray<StorageType, 3> PixelHistogramImpl<T, StorageType>::values() const {
 }
 
 template <typename T, typename StorageType>
-NDView<StorageType, 3> PixelHistogramImpl<T, StorageType>::view() const {
+NDView<const StorageType, 3> PixelHistogramImpl<T, StorageType>::view() const {
     return m_values.view();
 }
 

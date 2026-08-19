@@ -50,7 +50,7 @@ template <typename SUM_TYPE = double> class Pedestal {
 
     NDArray<SUM_TYPE, 2> mean() { return m_mean; }
 
-    const NDView<SUM_TYPE, 2> view() const { return m_mean.view(); }
+    NDView<const SUM_TYPE, 2> view() const { return m_mean.view(); }
 
     SUM_TYPE mean(const uint32_t row, const uint32_t col) const {
         return m_mean(row, col);
