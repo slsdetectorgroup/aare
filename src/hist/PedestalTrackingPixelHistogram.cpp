@@ -215,7 +215,6 @@ void PedestalTrackingPixelHistogram::worker_loop(int thread_id) {
             // thread's shard. Also refresh the cached per-pixel std so
             // FillWithThreshold can read it without recomputing on the
             // hot path.
-            my_pedestal.update_mean();
             auto &my_std = partial_std_[thread_id];
             for (int local_row = 0; local_row < local_rows; ++local_row) {
                 for (int col = 0; col < cols_; ++col) {

@@ -49,6 +49,11 @@ template <typename PEDESTAL_TYPE> class FastPedestal {
     }
 
   public:
+    /**
+     * @brief Construct an empty pedestal that becomes ready after n_samples
+     * initialization frames.
+     * @throws std::runtime_error if rows, cols, or n_samples is zero.
+     */
     FastPedestal(uint32_t rows, uint32_t cols, uint32_t n_samples = 1000)
         : m_rows(rows), m_cols(cols), m_samples(n_samples),
           m_inv_samples(1.0 / n_samples), m_sum({rows, cols}, Entry{0, 0}),
@@ -60,18 +65,43 @@ template <typename PEDESTAL_TYPE> class FastPedestal {
                             rows, cols, n_samples));
         }
     }
+
     ~FastPedestal() = default;
 
+    /**
+     * @brief Return a non-owning view of the cached mean.
+     * @note The caller must treat the data as read-only and must not retain the
+     * view after this object is destroyed, moved, or assigned.
+     */
     const NDView<PEDESTAL_TYPE, 2> view() const { return m_mean.view(); }
 
+    /**
+     * @brief Return a copy of the cached mean.
+     * @note The result is meaningful after ready() is true.
+     */
     NDArray<PEDESTAL_TYPE, 2> mean() { return m_mean; }
 
+    /**
+     * @brief Return the cached mean at (row, col).
+     * @pre ready() is true, the cache is current, and both indices are valid;
+     * indices are not checked.
+     */
     PEDESTAL_TYPE mean(uint32_t row, uint32_t col) const {
         return m_mean(row, col);
     }
 
+    /**
+     * @brief Return the cached mean at a flat row-major index.
+     * @pre ready() is true, the cache is current, and index is valid; the index
+     * is not checked.
+     */
     PEDESTAL_TYPE mean(ssize_t index) const { return m_mean[index]; }
 
+    /**
+     * @brief Calculate and return the variance of every pixel.
+     * @note Results use n_samples as the normalization and are meaningful only
+     * after ready() is true.
+     */
     NDArray<PEDESTAL_TYPE, 2> variance() {
         NDArray<PEDESTAL_TYPE, 2> res({m_rows, m_cols});
         for (ssize_t i = 0; i < m_sum.size(); ++i) {
@@ -80,16 +110,29 @@ template <typename PEDESTAL_TYPE> class FastPedestal {
         return res;
     }
 
+    /**
+     * @brief Calculate the variance at (row, col).
+     * @pre ready() is true and both indices are valid; indices are not checked.
+     */
     PEDESTAL_TYPE variance(const uint32_t row, const uint32_t col) const {
         return variance(rc_to_index(row, col));
     }
 
+    /**
+     * @brief Calculate the variance at a flat row-major index.
+     * @pre ready() is true and index is valid; the index is not checked.
+     */
     PEDESTAL_TYPE variance(ssize_t index) const {
         const auto &entry = m_sum[index];
         const auto m = entry.sum * m_inv_samples;
         return std::fma(-m, m, entry.sum2 * m_inv_samples);
     }
 
+    /**
+     * @brief Calculate and return the standard deviation of every pixel.
+     * @note Results use n_samples as the normalization and are meaningful only
+     * after ready() is true.
+     */
     NDArray<PEDESTAL_TYPE, 2> std() {
         NDArray<PEDESTAL_TYPE, 2> res({m_rows, m_cols});
         for (ssize_t i = 0; i < m_sum.size(); ++i) {
@@ -98,29 +141,46 @@ template <typename PEDESTAL_TYPE> class FastPedestal {
         return res;
     }
 
+    /**
+     * @brief Calculate the standard deviation at (row, col).
+     * @pre ready() is true and both indices are valid; indices are not checked.
+     */
     PEDESTAL_TYPE std(const uint32_t row, const uint32_t col) const {
         return std::sqrt(variance(row, col));
     }
 
+    /**
+     * @brief Calculate the standard deviation at a flat row-major index.
+     * @pre ready() is true and index is valid; the index is not checked.
+     */
     PEDESTAL_TYPE std(ssize_t index) const {
         return std::sqrt(variance(index));
     }
 
+    /** @brief Return whether n_samples initialization frames were accumulated.
+     */
     bool ready() const { return m_ready; }
 
+    /**
+     * @brief Return the number of initialization frames accumulated up to the
+     * steady state value.
+     */
     uint32_t cur_samples() const { return m_cur_samples; }
 
+    /**
+     * @brief Zero the moments and cached mean, and mark the pedestal not ready.
+     */
     void clear() {
         m_sum = Entry{0., 0.};
         m_mean = PEDESTAL_TYPE(0.);
+        m_cur_samples = 0;
         m_ready = false;
     }
 
     /**
-     * @brief Update the pedestal with the values of the frame. The weight of
-     the update depends on the number of samples. Bounds checks are performed on
-     the frame shape.
-     * @param frame The frame to update the pedestal with.
+     * @brief Update every pixel using the steady-state exponential estimator.
+     * @param frame Frame whose shape must exactly match the pedestal.
+     * @throws std::runtime_error if the shape differs or ready() is false.
      */
     template <typename T> void push(NDView<T, 2> frame) {
         if (frame.shape() != std::array<ssize_t, 2>{m_rows, m_cols}) {
@@ -141,18 +201,17 @@ template <typename PEDESTAL_TYPE> class FastPedestal {
     }
 
     /**
-     * @brief Overload for Frame. Bounds checks are performed on the frame shape
-     * in the view.
-     * @param frame The Frame to update the pedestal with.
+     * @brief Update every pixel from a Frame using the steady-state estimator.
+     * @tparam T Actual pixel type stored in frame; this is not runtime-checked.
+     * @throws std::runtime_error if the shape differs or ready() is false.
      */
     template <typename T> void push(Frame &frame) { push<T>(frame.view<T>()); }
 
     /**
-     * @brief Update one pixel using its row and column indices. Checks if the
-     * pedestal is ready.
-     * @param row The row index of the pixel to update.
-     * @param col The column index of the pixel to update.
-     * @param val_ The value of the pixel to update the pedestal with.
+     * @brief Update one pixel and its cached mean using the steady-state
+     * estimator.
+     * @pre row and col are valid; indices are not checked.
+     * @throws std::runtime_error if ready() is false.
      */
     template <typename T>
     void push(const uint32_t row, const uint32_t col, const T val) {
@@ -164,10 +223,10 @@ template <typename PEDESTAL_TYPE> class FastPedestal {
     }
 
     /**
-     * @brief Update one pixel using its flat index.
-     *
-     * WARNING: This steady-state fast path assumes the pedestal is ready and
-     * the index is valid. Assertions check those preconditions in debug builds.
+     * @brief Update one pixel and its cached mean without runtime checks in
+     * release builds.
+     * @pre ready() is true and index is a valid flat row-major index. These
+     * preconditions are asserted only in debug builds.
      */
     template <typename T>
     void push_fast(const std::size_t index, const T value) noexcept {
@@ -181,22 +240,13 @@ template <typename PEDESTAL_TYPE> class FastPedestal {
         m_mean[index] = static_cast<PEDESTAL_TYPE>(entry.sum * m_inv_samples);
     }
 
-    // TODO! Do we need fast variants of push_no_update?
-    template <typename T>
-    void push_no_update(const uint32_t row, const uint32_t col, const T val_) {
-        if (!ready()) {
-            throw std::runtime_error("Pedestal is not ready, cannot push");
-        }
-        auto val = static_cast<double>(val_);
-        auto &entry = m_sum(row, col);
-        entry.sum += val - entry.sum * m_inv_samples;
-        entry.sum2 += val * val - entry.sum2 * m_inv_samples;
-    }
-
     /**
-     * @brief Push a frame to the pedestal to initialize it. We need to push
-     * n_samples frames to be ready.
-     * @param frame The frame to update the pedestal with.
+     * @brief Accumulate one initialization frame.
+     * @param frame Frame whose shape must exactly match the pedestal.
+     * @throws std::runtime_error if the shape differs or n_samples frames have
+     * already been accumulated.
+     * @note The cached mean is updated and ready() becomes true only when the
+     * n_samples-th frame is pushed.
      */
     template <typename T> void push_init(NDView<T, 2> frame) {
         if (frame.shape() != std::array<ssize_t, 2>{m_rows, m_cols}) {
@@ -226,8 +276,12 @@ template <typename PEDESTAL_TYPE> class FastPedestal {
     }
 
     /**
-     * @brief Create a FastPedestal initialized from the first n_samples frames
-     * of a file. Image size is taken from the file.
+     * @brief Initialize from n_samples frames after skip_first, then apply all
+     * remaining file frames as steady-state updates.
+     * @tparam T Pixel representation stored in the file; this is not checked.
+     * @pre skip_first + n_samples does not exceed the file's frame count.
+     * @throws std::runtime_error if too few initialization frames are
+     * available.
      */
     template <typename T>
     static FastPedestal from_file(const std::filesystem::path &filename,
@@ -265,14 +319,21 @@ template <typename PEDESTAL_TYPE> class FastPedestal {
         return pedestal;
     }
 
-    // getter functions
+    /** @brief Return the number of image rows. */
     uint32_t rows() const { return m_rows; }
+
+    /** @brief Return the number of image columns. */
     uint32_t cols() const { return m_cols; }
-    uint32_t n_samples() const { return m_samples; }
 
     /**
-     * @brief Update the mean of the pedestal. This is used after having done
-     * push_no_update. It is not necessary to call this function after push.
+     * @brief Return the initialization count and steady-state time constant.
+     */
+    uint32_t n_samples() const { return m_samples; }
+
+  private:
+    /**
+     * @brief Write the cached mean after the final push_init. All other
+     * (non initialization) pushes update the cached mean immediately.
      */
     void update_mean() {
         for (ssize_t i = 0; i < m_sum.size(); i++) {
