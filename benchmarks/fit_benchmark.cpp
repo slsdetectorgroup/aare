@@ -75,24 +75,7 @@ static void report_accuracy(benchmark::State &state, const TestCase &tc,
 // Benchmarks
 // ----------
 
-// 1. lmcurve
-static void BM_FitGausLm(benchmark::State &state) {
-    const auto &tc = get_test_cases()[state.range(0)];
-    auto data = generate_gaussian_data(tc);
-    auto xv = data.x.view();
-    auto yv = data.y.view();
-
-    aare::NDArray<double, 1> result;
-    for (auto _ : state) {
-        result = aare::fit_gaus(xv, yv);
-        benchmark::DoNotOptimize(result.data());
-    }
-
-    report_accuracy(state, tc, result);
-    state.SetLabel(tc.name);
-}
-
-// 2. Minuit2, analytic gradient (no Hesse)
+// Minuit2, analytic gradient (no Hesse)
 static void BM_FitGausMinuitGrad(benchmark::State &state) {
     const auto &tc = get_test_cases()[state.range(0)];
     auto data = generate_gaussian_data(tc);
@@ -115,7 +98,7 @@ static void BM_FitGausMinuitGrad(benchmark::State &state) {
     state.SetLabel(tc.name);
 }
 
-// 3. Minuit2, analytic gradient + Hesse
+// Minuit2, analytic gradient + Hesse
 static void BM_FitGausMinuitGradHesse(benchmark::State &state) {
     const auto &tc = get_test_cases()[state.range(0)];
     auto data = generate_gaussian_data(tc);
@@ -144,8 +127,6 @@ static void BM_FitGausMinuitGradHesse(benchmark::State &state) {
     }
     state.SetLabel(tc.name);
 }
-
-BENCHMARK(BM_FitGausLm)->DenseRange(0, 5)->Unit(benchmark::kMicrosecond);
 
 BENCHMARK(BM_FitGausMinuitGrad)
     ->DenseRange(0, 5)

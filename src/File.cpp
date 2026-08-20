@@ -73,6 +73,7 @@ size_t File::tell() const { return file_impl->tell(); }
 size_t File::rows() const { return file_impl->rows(); }
 size_t File::cols() const { return file_impl->cols(); }
 size_t File::bitdepth() const { return file_impl->bitdepth(); }
+Dtype File::dtype() const { return file_impl->dtype(); }
 size_t File::bytes_per_pixel() const {
     return file_impl->bitdepth() / bits_per_byte;
 }
