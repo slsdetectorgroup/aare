@@ -102,20 +102,23 @@ strixel_to_pixel_map(defs::GroupConfig const &group_config,
     // -- 1) Rebase the user ROI (rx_roi) into sensor-local coordinates
     const InclusiveROI roi_user_local =
         inclusiveroi::geom::rebaseROI(roi_user, placement.placement_on_module);
-    LOG(logDEBUG)
+    // LOG(logDEBUG)
+    std::cout
         << "aare::remap::algo::strixel_to_pixel_map: Transformed user ROI: "
         << roi_user_local << std::endl;
 
-    LOG(logDEBUG) << "aare::remap::algo::strixel_to_pixel_map: Group ROI "
-                     "before transformation (as in global config)"
-                  << group_config.placement_on_sensor << '\n';
+    // LOG(logDEBUG)
+    std::cout << "aare::remap::algo::strixel_to_pixel_map: Group ROI "
+                 "before transformation (as in global config)"
+              << group_config.placement_on_sensor << '\n';
 
     // -- 2) Apply the physical bond shift first, sensor rotation second.
     const InclusiveROI roi_group =
         shift_rotate_roi(group_config.placement_on_sensor, pixel, bond_shift,
                          placement.rotation);
 
-    LOG(logDEBUG) << "aare::remap::algo::strixel_to_pixel_map: Group ROI after "
+    // LOG(logDEBUG)
+    std::cout << "aare::remap::algo::strixel_to_pixel_map: Group ROI after "
                      "transformation (as in local transformation) "
                   << roi_group << '\n';
 
@@ -131,7 +134,8 @@ strixel_to_pixel_map(defs::GroupConfig const &group_config,
         return {{}, InclusiveROI::emptyROI()};
     }
 
-    LOG(logDEBUG) << "aare::remap::algo::strixel_to_pixel_map: Result of "
+    // LOG(logDEBUG)
+    std::cout << "aare::remap::algo::strixel_to_pixel_map: Result of "
                      "intersecting ROIs "
                   << effective_roi << '\n';
 
@@ -177,7 +181,7 @@ strixel_to_pixel_map(defs::GroupConfig const &group_config,
     }
 
     if (min_row > max_row) {
-        return {{}, effective_roi}; // nothing mapped            
+        return {{}, effective_roi}; // nothing mapped
     }
 
     // Now from the found bounds of the strixel grid, we define the space to
@@ -188,7 +192,8 @@ strixel_to_pixel_map(defs::GroupConfig const &group_config,
     // And allocate
     aare::NDArray<ssize_t, 2> map({nrows, ncols}, -1);
 
-    LOG(logDEBUG)
+    // LOG(logDEBUG)
+    std::cout
         << "aare::remap::algo::strixel_to_pixel_map: Resulting strixel grid: ("
         << map.shape(0) << ", " << map.shape(1) << ")" << '\n';
 

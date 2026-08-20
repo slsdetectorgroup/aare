@@ -3,23 +3,23 @@
 #include <sstream>
 
 namespace aare::remap::format {
-static inline std::string toString(defs::Rotation r) {
-    return (r == defs::Rotation::Identity ? "Identity" : "Rotate180");
-}
+// static inline std::string to_string(defs::Rotation r) {
+//     return (r == defs::Rotation::Identity ? "Identity" : "Rotate180");
+// }
 
-static inline std::string toString(defs::SensorPixelGeometry const &g) {
-    std::ostringstream os;
+// static inline std::string to_string(defs::SensorPixelGeometry const &g) {
+//     std::ostringstream os;
 
-    os << "SensorPixelGeometry\n"
-       << " cols x rows: " << g.num_pix_x << " x " << g.num_pix_y << "\n"
-       << " guardring  :\n"
-       << "   x = " << g.guardring.x << "\n"
-       << "   y = " << g.guardring.y << "\n";
+//     os << "SensorPixelGeometry\n"
+//        << " cols x rows: " << g.num_pix_x << " x " << g.num_pix_y << "\n"
+//        << " guardring  :\n"
+//        << "   x = " << g.guardring.x << "\n"
+//        << "   y = " << g.guardring.y << "\n";
 
-    return os.str();
-}
+//     return os.str();
+// }
 
-static inline std::string toString(defs::GroupStrixelGeometry const &g) {
+static inline std::string to_string(defs::GroupStrixelGeometry const &g) {
     std::ostringstream os;
 
     os << "GroupStrixelGeometry\n"
@@ -29,11 +29,11 @@ static inline std::string toString(defs::GroupStrixelGeometry const &g) {
     return os.str();
 }
 
-static inline std::string toString(defs::GroupConfig const &c) {
+static inline std::string to_string(defs::GroupConfig const &c) {
     std::ostringstream os;
 
     os << "GroupConfig\n"
-       << toString(c.strixel) << "\n"
+       << to_string(c.strixel) << "\n"
        << " placement on sensor:\n"
        << c.placement_on_sensor << "\n";
 
@@ -41,6 +41,6 @@ static inline std::string toString(defs::GroupConfig const &c) {
 }
 
 inline std::ostream &operator<<(std::ostream &os, defs::GroupConfig const &c) {
-    return os << toString(c);
+    return os << to_string(c);
 }
 } // namespace aare::remap::format

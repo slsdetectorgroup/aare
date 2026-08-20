@@ -48,7 +48,7 @@ inline ROI toHalfopenROI(InclusiveROI const &r) {
 }
 
 /***********************
- * Printint utility
+ * Printing utility
  ***********************/
 inline std::ostream &operator<<(std::ostream &os, InclusiveROI const &roi) {
     os << "ROI (inclusive): x=[" << roi.xmin << ", " << roi.xmax << "], y=["
