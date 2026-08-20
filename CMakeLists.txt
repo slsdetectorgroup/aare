@@ -63,6 +63,7 @@ option(AARE_FETCH_CATCH "Use FetchContent to download catch2" ON)
 option(AARE_FETCH_JSON "Use FetchContent to download nlohmann::json" ON)
 option(AARE_FETCH_ZMQ "Use FetchContent to download libzmq" ON)
 option(AARE_FETCH_MINUIT2 "Use FetchContent to download Minuit2" ON)
+option(AARE_OPENMP "Enable OpenMP support" ON)
 
 option(AARE_WARNINGS_AS_ERRORS "Treat warnings as errors during compilation"
        OFF)
@@ -218,6 +219,19 @@ else()
   find_package(nlohmann_json 3.11.3 REQUIRED)
 endif()
 
+if(AARE_OPENMP)
+  find_package(
+    OpenMP
+    COMPONENTS CXX
+    REQUIRED)
+  if(NOT OpenMP_CXX_FOUND)
+    message(STATUS "OpenMP not found. Please install OpenMP") # TODO: add fetch
+                                                              # content
+  else()
+    message(STATUS "Found openmp ${OpenMP_CXX_VERSION}")
+  endif()
+endif()
+
 include(GNUInstallDirs)
 
 # If conda build, always set lib dir to 'lib'
@@ -342,6 +356,7 @@ set(PUBLICHEADERS
     include/aare/Frame.hpp
     include/aare/MultiThreadedFileReader.hpp
     include/aare/hist/PixelHistogram.hpp
+    include/aare/hist/PixelHistogramOpenMP.hpp
     include/aare/hist/PixelHistogramImpl.hpp
     include/aare/hist/PedestalTrackingPixelHistogram.hpp
     include/aare/GainMap.hpp
@@ -402,6 +417,12 @@ target_link_libraries(
   PUBLIC fmt::fmt nlohmann_json::nlohmann_json ${STD_FS_LIB} # from
                                                              # helpers.cmake
   PRIVATE aare_compiler_flags Threads::Threads $<BUILD_INTERFACE:aare::Minuit2>)
+
+if(AARE_OPENMP)
+  target_link_libraries(
+    aare_core PUBLIC OpenMP::OpenMP_CXX) # TODO: maybe add as PUBLIC if used in
+                                         # templated headers
+endif()
 
 target_include_directories(
   aare_core SYSTEM
@@ -492,9 +513,8 @@ endif()
 add_custom_target(
   check-format
   COMMAND
-    find \\ (-name "*.cpp" -o -name "*.hpp" \\) -not -path "./build/*" | xargs
-    -I {} -n 1 -P 10 bash -c
-    "clang-format -Werror -style=\"file:.clang-format\" {} | diff {} -"
+    bash -c
+    [=[ find \( -name "*.cpp" -o -name "*.hpp" \) -not -path "./build/*" | xargs -I {} -n 1 -P 10 bash -c "clang-format -Werror -style=\"file:.clang-format\" {} | diff {} -" ]=]
   WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
   COMMENT "Checking code formatting with clang-format"
   VERBATIM)
@@ -502,8 +522,8 @@ add_custom_target(
 add_custom_target(
   format-files
   COMMAND
-    find \\ (-name "*.cpp" -o -name "*.hpp" \\) -not -path "./build/*" | xargs
-    -I {} -n 1 -P 10 bash -c "clang-format -i -style=\"file:.clang-format\" {}"
+    bash -c
+    [=[ find \( -name "*.cpp" -o -name "*.hpp" \) -not -path "./build/*" | xargs -I {} -n 1 -P 10 bash -c "clang-format -i -style=\"file:.clang-format\" {}" ]=]
   WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
   COMMENT "Formatting with clang-format"
   VERBATIM)
@@ -518,18 +538,9 @@ endif()
 add_custom_target(
   clang-tidy
   COMMAND
-    find \\ (-path
-             "./src/*"
-             -a
-             -not
-             -path
-             "./src/python/*"
-             -a
-             \\
-             (-name "*.cpp" -not -name "*.test.cpp" \\)
-             \\) -not -name "CircularFifo.hpp" -not -name
-    "ProducerConsumerQueue.hpp" -not -name "VariableSizeClusterFinder.hpp" |
-    xargs -I {} -n 1 -P 10 bash -c
+    find -path "./src/*" -not -path "./src/python/*" -not -name "*.test.cpp"
+    -not -name "CircularFifo.hpp" -not -name "ProducerConsumerQueue.hpp" -not
+    -name "VariableSizeClusterFinder.hpp" | xargs -I {} -n 1 -P 10 bash -c
     "${CLANG_TIDY_COMMAND} --config-file=.clang-tidy -p build {}"
   WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
   COMMENT "linting with clang-tidy"
