@@ -41,7 +41,7 @@ struct InclusiveROI {
 
 inline InclusiveROI toInclusiveROI(ROI const &r) {
     return {r.xmin, r.xmax - 1, r.ymin, r.ymax - 1};
-};
+}
 
 inline ROI toHalfopenROI(InclusiveROI const &r) {
     return {r.xmin, r.xmax + 1, r.ymin, r.ymax + 1};
@@ -55,7 +55,7 @@ inline std::ostream &operator<<(std::ostream &os, InclusiveROI const &roi) {
        << roi.ymin << ", " << roi.ymax << "], width=" << roi.width()
        << ", height=" << roi.height() << ", pixels=" << roi.size();
     return os;
-};
+}
 
 } // namespace aare
 

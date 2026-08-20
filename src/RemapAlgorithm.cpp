@@ -24,8 +24,8 @@ inline InclusiveROI shift_rotate_roi(InclusiveROI roi,
 
     // If there is a rotation given, mirror in X and Y (emulates a rotation)
     if (rot == defs::Rotation::Rotate180)
-        roi = aare::inclusiveroi::geom::mirrorXY(roi, pixel.num_pix_x,
-                                                 pixel.num_pix_y);
+        roi = aare::inclusiveroi::geom::mirrorXY(roi, pixel.num_pix_x / 2,
+                                                 pixel.num_pix_y / 2);
 
     return roi;
 }
@@ -213,7 +213,7 @@ strixel_to_pixel_map(defs::GroupConfig const &group_config,
     }
 
     return {map, effective_roi};
-};
+}
 
 std::vector<defs::StrixelGroupToPixelMap>
 strixel_to_pixel_maps(defs::SensorConfig const &sensor_config,
