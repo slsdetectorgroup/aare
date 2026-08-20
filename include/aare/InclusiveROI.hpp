@@ -69,49 +69,59 @@ static inline InclusiveROI to_local(InclusiveROI const &roi) {
     return {0, roi.xmax - roi.xmin, 0, roi.ymax - roi.ymin};
 }
 
-// Mirror an ROI by reflecting its x-coordinates within a grid of width
-// 'width'.
+// Mirror an ROI on a given y-axis (vertical axis), thereby reflecting its
+// x-coordinates horizontally
 //
-// The grid is assumed to span x = [0, width-1].
 // The ROI is translated to the horizontally mirrored position while
 // preserving its size.
 //
 // Example:
 //
-//  x=0           x=width-1              x=0           x=width-1
-//  ----------------------- y=height-1 -----------------------
-//  |                     |            |                     |
-//  |    ***************  |            |  ***************    |
-//  |    *         roi *  |     ->     |  *mirrored roi *    |
-//  |    *             *  |            |  *             *    |
-//  |    ***************  |            |  ***************    |
-//  |                     |            |                     |
-//  -----------------------    y=0     -----------------------
+//        yaxis_coord                        yaxis_coord
+//  -----------|-----------            -----------|-----------
+//  |          |  r.xmax  |            |  x0p     |   x1p    |
+//  |    ******|********  |            |  ********|******    |
+//  |    *     |   roi *  |     ->     |  *mirrored roi *    |
+//  |    *     |       *  |            |  *       |     *    |
+//  |    ******|********  |            |  ********|******    |
+//  |          |          |            |          |          |
+//  -----------|-----------            -----------|-----------
 //
-static inline InclusiveROI mirrorX(InclusiveROI r, ssize_t width) {
-    int x0p = (width - 1) - r.xmax;
-    int x1p = (width - 1) - r.xmin;
+// @param r The ROI to be mirrored
+// @param yaxis_coord The y-axis coordinate (in x) expressed in pixel
+// coordinates
+static inline InclusiveROI mirror_on_y(InclusiveROI r, ssize_t yaxis_coord) {
+    // int x0p = (width - 1) - r.xmax;
+    // int x1p = (width - 1) - r.xmin;
+    int x0p = yaxis_coord * 2 - r.xmax - 1;
+    int x1p = x0p + r.width() - 1;
     return {x0p, x1p, r.ymin, r.ymax};
 }
 
-// Mirror an ROI by reflecting its y-coordinates within a grid of height
-// 'height'.
+// Mirror an ROI on a given x-axis (horizontal axis), thereby reflecting its
+// y-coordinates vertically
 //
-// The grid is assumed to span y = [0, height-1].
 // The ROI is translated to the vertically mirrored position while
 // preserving its size.
-static inline InclusiveROI mirrorY(InclusiveROI r, ssize_t height) {
-    int y0p = (height - 1) - r.ymax;
-    int y1p = (height - 1) - r.ymin;
+
+// @param r The ROI to be mirrored
+// @param xaxis_coord The x-axis coordinate (in y) expressed in pixel
+// coordinates
+static inline InclusiveROI mirrorY_on_x(InclusiveROI r, ssize_t xaxis_coord) {
+    // int y0p = (height - 1) - r.ymax;
+    // int y1p = (height - 1) - r.ymin;
+    int y0p = xaxis_coord * 2 - r.ymax - 1;
+    int y1p = y0p + r.height() - 1;
     return {r.xmin, r.xmax, y0p, y1p};
 }
 
 // Mirror both x- and y-coordinates.
 //
-// This is equivalent to a 180° rotation about the center of the grid.
-static inline InclusiveROI mirrorXY(InclusiveROI r, ssize_t width,
-                                    ssize_t height) {
-    return {mirrorX(mirrorY(r, height), width)};
+// This is equivalent to a 180° rotation about the axes intersection.
+static inline InclusiveROI mirrorXY(InclusiveROI r, ssize_t xaxis_coord,
+                                    ssize_t yaxis_coord) {
+    // return {mirrorX(mirrorY(r, height), width)};
+    return {mirror_on_y(mirrorY_on_x(r, xaxis_coord), yaxis_coord)};
 }
 
 // intersection
