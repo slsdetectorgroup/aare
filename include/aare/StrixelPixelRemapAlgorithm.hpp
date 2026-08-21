@@ -1,6 +1,6 @@
 #pragma once
 
-#include "aare/RemapDefs.hpp"
+#include "aare/StrixelPixelRemapDefs.hpp"
 
 namespace aare::remap::algo {
 

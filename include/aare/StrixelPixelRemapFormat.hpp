@@ -1,6 +1,6 @@
 #pragma once
 
-#include "aare/RemapDefs.hpp"
+#include "aare/StrixelPixelRemapDefs.hpp"
 
 namespace aare::remap::format {
 // static inline std::string to_string(defs::Rotation);
