@@ -67,6 +67,14 @@ class ClusterFinderCUDAOpt2 {
     float m_total_kernel_ms = 0.0f;
     size_t m_frames_processed = 0;
 
+    /// Per-frame CUDA-event kernel timing. Off by default, matching
+    /// ClusterFinderCUDA. This is a *comparability* requirement, not a
+    /// preference: with events forced on here and off there, opt1/opt2 would
+    /// pay a per-frame tax that opt3+ do not, inflating the opt2 -> opt3 step
+    /// by exactly the tax. That is the same methodological error the CUDA-Graph
+    /// row was faulted for. Kernel times come from nsys either way.
+    bool m_time_kernels = false;
+
     // Kernel parameters
     dim3 grid;
     dim3 block;
@@ -82,13 +90,18 @@ class ClusterFinderCUDAOpt2 {
      * @param capacity                device-side cluster buffer size per stream
      * @param n_streams               number of CUDA streams for multi-frame
      * overlap
+     * @param time_kernels            record per-frame CUDA events. Off by
+     * default, matching ClusterFinderCUDA, so the opt1/opt2 rungs of the
+     * benchmark ladder carry the same instrumentation as the rungs above them.
      */
     ClusterFinderCUDAOpt2(Shape<2> shape_, COMPUTE_TYPE nSigma = 5.0,
-                          size_t capacity = 1000000, int n_streams_ = 1)
+                          size_t capacity = 1000000, int n_streams_ = 1,
+                          bool time_kernels = false)
         : m_shape(shape_), nrows(shape_[0]), ncols(shape_[1]),
           m_image_size(nrows * ncols), n_streams(n_streams_),
           m_capacity(capacity), m_nSigma(nSigma),
-          m_pedestal(shape_[0], shape_[1]), m_clusters(capacity) {
+          m_pedestal(shape_[0], shape_[1]), m_clusters(capacity),
+          m_time_kernels(time_kernels) {
         if (n_streams_ <= 0) {
             throw std::invalid_argument(
                 "ClusterFinderCUDAOpt2: n_streams must be > 0");
@@ -125,8 +138,10 @@ class ClusterFinderCUDAOpt2 {
             auto &sc = v_sc[k];
             CUDA_CHECK(
                 cudaStreamCreateWithFlags(&sc.stream, cudaStreamNonBlocking));
-            CUDA_CHECK(cudaEventCreate(&sc.kernel_start));
-            CUDA_CHECK(cudaEventCreate(&sc.kernel_stop));
+            if (m_time_kernels) {
+                CUDA_CHECK(cudaEventCreate(&sc.kernel_start));
+                CUDA_CHECK(cudaEventCreate(&sc.kernel_stop));
+            }
             CUDA_CHECK(cudaMalloc(&sc.d_frame, m_image_bytes));
             CUDA_CHECK(cudaMalloc(&sc.d_pd_mean,
                                   m_image_size * sizeof(PEDESTAL_TYPE)));
@@ -246,14 +261,16 @@ class ClusterFinderCUDAOpt2 {
                                    cudaMemcpyHostToDevice, sc.stream));
 
         // Timed Kernel launch
-        CUDA_CHECK(cudaEventRecord(sc.kernel_start, sc.stream));
+        if (m_time_kernels)
+            CUDA_CHECK(cudaEventRecord(sc.kernel_start, sc.stream));
         device_opt2::find_clusters_in_single_frame<ClusterType, FRAME_TYPE,
                                                    PEDESTAL_TYPE>
             <<<grid, block, shmem_bytes, sc.stream>>>(
                 sc.d_frame, sc.d_pd_mean, sc.d_pd_sum, sc.d_pd_sum2,
                 n_pd_samples, m_nSigma, nrows, ncols, sc.d_clusters,
                 sc.d_cluster_count, static_cast<uint32_t>(m_capacity));
-        CUDA_CHECK(cudaEventRecord(sc.kernel_stop, sc.stream));
+        if (m_time_kernels)
+            CUDA_CHECK(cudaEventRecord(sc.kernel_stop, sc.stream));
         CUDA_CHECK(cudaGetLastError());
 
         // Read back cluster count into pinned buffer
@@ -326,7 +343,8 @@ class ClusterFinderCUDAOpt2 {
                     cudaMemcpyAsync(sc_k.d_frame, sc_k.h_frame, m_image_bytes,
                                     cudaMemcpyHostToDevice, sc_k.stream));
 
-                CUDA_CHECK(cudaEventRecord(sc_k.kernel_start, sc_k.stream));
+                if (m_time_kernels)
+                    CUDA_CHECK(cudaEventRecord(sc_k.kernel_start, sc_k.stream));
                 device_opt2::find_clusters_in_single_frame<
                     ClusterType, FRAME_TYPE, PEDESTAL_TYPE>
                     <<<grid, block, shmem_bytes, sc_k.stream>>>(
@@ -334,7 +352,8 @@ class ClusterFinderCUDAOpt2 {
                         sc_k.d_pd_sum2, n_pd_samples, m_nSigma, nrows, ncols,
                         sc_k.d_clusters, sc_k.d_cluster_count,
                         static_cast<uint32_t>(m_capacity));
-                CUDA_CHECK(cudaEventRecord(sc_k.kernel_stop, sc_k.stream));
+                if (m_time_kernels)
+                    CUDA_CHECK(cudaEventRecord(sc_k.kernel_stop, sc_k.stream));
                 CUDA_CHECK(cudaGetLastError());
 
                 // Queue count D2H immediately after the kernel
@@ -370,10 +389,16 @@ class ClusterFinderCUDAOpt2 {
         return results;
     }
 
+    /// NaN when timing was not enabled — deliberately not 0.0f, which reads as
+    /// a measurement. Use nsys for kernel times; the event number is inflated
+    /// by queue-wait under multi-stream load anyway.
     float avg_kernel_time_ms() const {
-        return m_frames_processed > 0 ? m_total_kernel_ms / m_frames_processed
-                                      : 0.0f;
+        if (!m_time_kernels || m_frames_processed == 0)
+            return std::numeric_limits<float>::quiet_NaN();
+        return m_total_kernel_ms / m_frames_processed;
     }
+
+    bool kernel_timing_enabled() const { return m_time_kernels; }
 
     void reset_timers() {
         m_total_kernel_ms = 0.0f;
@@ -424,7 +449,13 @@ class ClusterFinderCUDAOpt2 {
             cv.push_back(sc.h_clusters[i]);
     }
 
+    /// Called after cudaStreamSynchronize, so cudaEventElapsedTime never blocks
+    /// on an incomplete event. m_frames_processed is only advanced when timing
+    /// is on, which is what makes avg_kernel_time_ms() return NaN rather than a
+    /// plausible-looking zero when it is off.
     void record_kernel_time(SC &sc) {
+        if (!m_time_kernels)
+            return;
         float ms = 0.0f;
         CUDA_CHECK(cudaEventElapsedTime(&ms, sc.kernel_start, sc.kernel_stop));
         m_total_kernel_ms += ms;

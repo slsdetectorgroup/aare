@@ -400,7 +400,15 @@ class ClusterFinderCUDAGraph {
         return results;
     }
 
-    float avg_kernel_time_ms() const { return 0.0f; }
+    /// Always NaN: the graph variant does not instrument individual kernels
+    /// (the whole H2D->kernel->D2H DAG is replayed as one unit). Use Nsight
+    /// Systems, or wall-clock timing around find_clusters_batched().
+    float avg_kernel_time_ms() const {
+        return std::numeric_limits<float>::quiet_NaN();
+    }
+
+    /// False: this variant never instruments kernels.
+    bool kernel_timing_enabled() const { return false; }
 
     void reset_timers() { m_frames_processed = 0; }
 

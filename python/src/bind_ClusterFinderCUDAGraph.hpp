@@ -91,8 +91,12 @@ void define_ClusterFinderCUDAGraph(py::module &m, const std::string &typestr) {
 
         .def(
             "avg_kernel_time_ms", &CF::avg_kernel_time_ms,
-            R"(Always returns 0.0 — graph version does not instrument individual kernel time.
-            Use wall-clock timing around find_clusters_batched instead.)")
+            R"(Always NaN — the graph version replays the whole H2D->kernel->D2H
+            DAG as one unit and does not instrument individual kernels. Use
+            Nsight Systems, or wall-clock timing around find_clusters_batched.)")
+
+        .def("kernel_timing_enabled", &CF::kernel_timing_enabled,
+             R"(Always False for this variant.)")
 
         .def("reset_timers", &CF::reset_timers)
 

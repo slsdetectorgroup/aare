@@ -69,7 +69,8 @@ def _cuda_available():
 
 
 def ClusterFinderCUDA(image_size, cluster_size=(3,3), n_sigma=5, dtype=np.int32,
-                      max_clusters_per_frame=2048, n_streams=4):
+                      max_clusters_per_frame=2048, n_streams=4,
+                      time_kernels=False):
     """
     Factory function to create a ClusterFinderCUDA object. Provides a cleaner
     syntax for the templated ClusterFinderCUDA in C++. API mirrors
@@ -91,6 +92,14 @@ def ClusterFinderCUDA(image_size, cluster_size=(3,3), n_sigma=5, dtype=np.int32,
         but as tight as possible to minimize PCIe traffic. Default 2048.
     n_streams : int, optional
         Number of CUDA streams for H2D/kernel/D2H pipelining. Default 4.
+    time_kernels : bool, optional
+        Enable per-frame CUDA-event kernel timing, exposed via
+        avg_kernel_time_ms(). Off by default because it adds two event records
+        per frame to the streams plus a host-side query per frame, and the
+        number it yields is only meaningful at n_streams=1 — under multi-stream
+        contention the events measure queue wait, not execution, and over-read
+        by up to ~3.5x. Use Nsight Systems for exclusive kernel times. When
+        disabled, avg_kernel_time_ms() returns NaN.
 
     Example
     -------
@@ -123,7 +132,71 @@ def ClusterFinderCUDA(image_size, cluster_size=(3,3), n_sigma=5, dtype=np.int32,
     return cls(image_size,
                n_sigma=n_sigma,
                max_clusters_per_frame=max_clusters_per_frame,
-               n_streams=n_streams)
+               n_streams=n_streams,
+               time_kernels=time_kernels)
+
+def find_cluster_views_batched_iter(cf, frames, first_frame=0, chunk=None):
+    """
+    Drive a ClusterFinderCUDA over `frames`, yielding zero-copy BatchViews.
+
+    Same pipelining as cf.find_clusters_batched() — chunk i+1 is submitted
+    before chunk i is collected — but nothing is copied out of the pinned D2H
+    buffer, so the host cost per frame collapses to reading one counter. At 9x9
+    that removes ~467 kB of copying per frame.
+
+    Each view is released as soon as the loop body finishes, which is what makes
+    the next submit legal (the finder has only two slots). Consequently:
+
+    **Anything you need after the loop body must be copied out.** Reductions
+    (`v.sums()`) return owned numpy arrays and are safe; `v.frame_data(i)` and
+    `v.frame_xy(i)` are views and are not.
+
+    Parameters
+    ----------
+    cf : ClusterFinderCUDA
+    frames : ndarray (n_frames, nrows, ncols), uint16
+        Pin it first with cf.register_input_buffer(frames) for DMA-speed H2D.
+    first_frame : int
+        Frame number of frames[0].
+    chunk : int, optional
+        Frames per chunk; defaults to cf.chunk_size_for(len(frames)).
+
+    Yields
+    ------
+    BatchView
+        Valid only until the next iteration.
+
+    Example
+    -------
+    .. code-block:: python
+
+        cf.register_input_buffer(data)
+        for v in find_cluster_views_batched_iter(cf, data):
+            hist.fill(v.sums())          # reduced in C++, nothing materialised
+        cf.unregister_input_buffer()
+    """
+    n = frames.shape[0]
+    if n == 0:
+        return
+    c = chunk or cf.chunk_size_for(n)
+    bounds = [(s, min(s + c, n)) for s in range(0, n, c)]
+
+    tok = cf.submit_batch(frames[bounds[0][0]:bounds[0][1]],
+                          first_frame=first_frame + bounds[0][0])
+    for a, b in bounds[1:]:
+        nxt = cf.submit_batch(frames[a:b], first_frame=first_frame + a)
+        view = cf.collect_view(tok)
+        try:
+            yield view
+        finally:
+            view.release()          # frees the slot for the submit after next
+        tok = nxt
+    view = cf.collect_view(tok)
+    try:
+        yield view
+    finally:
+        view.release()
+
 
 def ClusterFinderCUDAGraph(image_size, cluster_size=(3,3), n_sigma=5, dtype=np.int32,
                            max_clusters_per_frame=2048, n_streams=4):
@@ -167,7 +240,8 @@ def ClusterFinderCUDAGraph(image_size, cluster_size=(3,3), n_sigma=5, dtype=np.i
 
 
 def ClusterFinderCUDAOpt2(image_size, cluster_size=(3, 3), n_sigma=5, dtype=np.int32,
-                          max_clusters_per_frame=3000, n_streams=4):
+                          max_clusters_per_frame=3000, n_streams=4,
+                          time_kernels=False):
     """
     Factory for the OPT2 snapshot finder — the pre-refactor pipeline (per-frame
     pinned staging, round-robin streams with sync barriers, variable-length D2H),
@@ -179,6 +253,11 @@ def ClusterFinderCUDAOpt2(image_size, cluster_size=(3, 3), n_sigma=5, dtype=np.i
     the opt arc; only the pipeline differs).
 
     Only the 3x3 cluster size is registered.
+
+    time_kernels defaults to False, matching ClusterFinderCUDA. Leave it off for
+    any throughput comparison: with events on here and off there, opt1/opt2 pay
+    a per-frame tax that opt3+ do not, which inflates the opt2 -> opt3 step by
+    exactly that tax. Kernel times come from nsys.
     """
     if not _cuda_available():
         raise RuntimeError(
@@ -190,7 +269,8 @@ def ClusterFinderCUDAOpt2(image_size, cluster_size=(3, 3), n_sigma=5, dtype=np.i
     return cls(image_size,
                n_sigma=n_sigma,
                max_clusters_per_frame=max_clusters_per_frame,
-               n_streams=n_streams)
+               n_streams=n_streams,
+               time_kernels=time_kernels)
 
 
 def ClusterCollector(clusterfindermt, dtype=np.int32):

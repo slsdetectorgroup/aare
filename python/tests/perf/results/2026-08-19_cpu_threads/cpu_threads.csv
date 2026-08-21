@@ -1,0 +1,11 @@
+step,label,cluster_dim,cap,n_frames,n_streams,pinned,batch_chunk,collection,device_ped_type,rep,wall_s,us_per_frame,fps,minor_faults,major_faults,n_clusters,clusters_per_frame,notes
+cpu,"ClusterFinderMT, 8 threads",3,3000,100000,0,False,n/a,n/a,float,0,26.28347669984214,262.8347669984214,3804.6717008560972,2476464,0,233091568,2330.91568,retain threads=8 loop_s=25.833 loop_fps=3871.0
+cpu,"ClusterFinderMT, 16 threads",3,3000,100000,0,False,n/a,n/a,float,0,15.164910248946398,151.64910248946398,6594.170249503958,2597376,0,233089481,2330.89481,retain threads=16 loop_s=14.680 loop_fps=6811.8
+cpu,"ClusterFinderMT, 24 threads",3,3000,100000,0,False,n/a,n/a,float,0,14.78826567903161,147.8826567903161,6762.118166553549,2476158,0,233087992,2330.87992,retain threads=24 loop_s=14.494 loop_fps=6899.3
+cpu,"ClusterFinderMT, 32 threads",3,3000,100000,0,False,n/a,n/a,float,0,16.830063453875482,168.30063453875482,5941.748245576155,2393978,0,233086801,2330.86801,retain threads=32 loop_s=16.783 loop_fps=5958.3
+cpu,"ClusterFinderMT, 48 threads",3,3000,100000,0,False,n/a,n/a,float,0,19.52668195287697,195.2668195287697,5121.197766283404,2444826,0,233085343,2330.85343,retain threads=48 loop_s=19.479 loop_fps=5133.8
+cpu,"ClusterFinderMT, 8 threads",9,1500,20000,0,False,n/a,n/a,float,0,27.1391425980255,1356.957129901275,736.9429571240431,2373525,1,28440010,1422.0005,retain threads=8 loop_s=24.983 loop_fps=800.5
+cpu,"ClusterFinderMT, 16 threads",9,1500,20000,0,False,n/a,n/a,float,0,16.167955602984875,808.3977801492438,1237.0147773233411,2521827,0,28438925,1421.94625,retain threads=16 loop_s=14.145 loop_fps=1413.9
+cpu,"ClusterFinderMT, 24 threads",9,1500,20000,0,False,n/a,n/a,float,0,14.831497456878424,741.5748728439212,1348.4815041871968,2662966,0,28438530,1421.9265,retain threads=24 loop_s=12.445 loop_fps=1607.0
+cpu,"ClusterFinderMT, 32 threads",9,1500,20000,0,False,n/a,n/a,float,0,13.304477212950587,665.2238606475294,1503.253354482203,2784433,0,28438219,1421.91095,retain threads=32 loop_s=9.328 loop_fps=2144.0
+cpu,"ClusterFinderMT, 48 threads",9,1500,20000,0,False,n/a,n/a,float,0,14.94528856384568,747.264428192284,1338.21437535721,3021388,0,28438072,1421.9036,retain threads=48 loop_s=8.166 loop_fps=2449.2

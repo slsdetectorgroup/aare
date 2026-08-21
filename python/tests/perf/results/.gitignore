@@ -1,0 +1,5 @@
+# Binary profiler artifacts: large (0.5-2 MB each, ~40 MB per campaign) and
+# regenerable from the scripts. They stay on disk for nsys-ui; the CSV/JSON
+# summaries next to them are what the report cites and what gets tracked.
+*.nsys-rep
+*.sqlite

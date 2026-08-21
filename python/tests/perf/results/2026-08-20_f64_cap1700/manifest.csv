@@ -1,0 +1,2 @@
+artifact,kind,config,build,cites,produced_by,timestamp
+ladder_9x9.csv,end-to-end wall/FPS,9x9 cap=1700 N=20000 batch=2000 streams=4 consumer=streaming,double,"docs/ClusterFinderCUDA_benchmark_results.md §5, §6, §7, §8, §9, §11",perf/run_ladder.py,2026-08-20 11:35:26

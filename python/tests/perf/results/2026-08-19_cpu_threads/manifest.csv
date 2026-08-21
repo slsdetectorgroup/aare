@@ -1,0 +1,2 @@
+artifact,kind,config,build,cites,produced_by,timestamp
+cpu_threads.csv,ladder,"ClusterFinderMT thread sweep, 3x3 + 9x9",float,CPU baseline for every speedup in deck + report,cpu_threads.py,2026-08-19 17:43:09

@@ -1,0 +1,7 @@
+artifact,kind,config,build,cites,produced_by,timestamp
+probe_3x3_s4.nsys-rep / .sqlite,nsys per-engine GPU times + duty cycles,3x3 cap=3000 N=20000 streams=4 batch=2000,float,"docs §7 rooflines, §8 kernel/memcpy, §8.1 duty cycles, §9",perf/run_probes.py,2026-08-18 11:10:35
+probe_3x3_s1_uncontended.nsys-rep / .sqlite,nsys per-engine GPU times + duty cycles,3x3 cap=3000 N=20000 streams=1 batch=2000,float,"docs §7 rooflines, §8 kernel/memcpy, §8.1 duty cycles, §9",perf/run_probes.py,2026-08-18 11:10:35
+probe_9x9_s4.nsys-rep / .sqlite,nsys per-engine GPU times + duty cycles,9x9 cap=1500 N=20000 streams=4 batch=2000,float,"docs §7 rooflines, §8 kernel/memcpy, §8.1 duty cycles, §9",perf/run_probes.py,2026-08-18 11:10:35
+probe_9x9_s1_uncontended.nsys-rep / .sqlite,nsys per-engine GPU times + duty cycles,9x9 cap=1500 N=20000 streams=1 batch=2000,float,"docs §7 rooflines, §8 kernel/memcpy, §8.1 duty cycles, §9",perf/run_probes.py,2026-08-18 11:10:35
+ladder_3x3.csv,end-to-end wall/FPS,3x3 cap=3000 N=100000 batch=2000 streams=4 consumer=streaming,float,"docs/benchmark_opt1_opt6_results.md §4, §6, §10, §10.3",perf/run_ladder.py,2026-08-13 17:57:20
+ladder_9x9.csv,end-to-end wall/FPS,9x9 cap=1500 N=20000 batch=2000 streams=4 consumer=streaming,float,"docs/benchmark_opt1_opt6_results.md §4, §6, §10, §10.3",perf/run_ladder.py,2026-08-13 17:57:20

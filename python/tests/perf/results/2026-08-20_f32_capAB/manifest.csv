@@ -1,0 +1,5 @@
+artifact,kind,config,build,cites,produced_by,timestamp
+probe_9x9_s4_cap1500.nsys-rep / .sqlite,nsys per-engine GPU times + duty cycles,9x9 cap=1500 N=20000 streams=4 batch=2000,float,"docs §7 rooflines, §8 kernel/memcpy, §8.1 duty cycles, §9",perf/run_probes.py,2026-08-20 11:21:53
+probe_9x9_s1_uncontended_cap1500.nsys-rep / .sqlite,nsys per-engine GPU times + duty cycles,9x9 cap=1500 N=20000 streams=1 batch=2000,float,"docs §7 rooflines, §8 kernel/memcpy, §8.1 duty cycles, §9",perf/run_probes.py,2026-08-20 11:21:53
+probe_9x9_s4_cap1700.nsys-rep / .sqlite,nsys per-engine GPU times + duty cycles,9x9 cap=1700 N=20000 streams=4 batch=2000,float,"docs §7 rooflines, §8 kernel/memcpy, §8.1 duty cycles, §9",perf/run_probes.py,2026-08-20 11:22:24
+probe_9x9_s1_uncontended_cap1700.nsys-rep / .sqlite,nsys per-engine GPU times + duty cycles,9x9 cap=1700 N=20000 streams=1 batch=2000,float,"docs §7 rooflines, §8 kernel/memcpy, §8.1 duty cycles, §9",perf/run_probes.py,2026-08-20 11:22:24

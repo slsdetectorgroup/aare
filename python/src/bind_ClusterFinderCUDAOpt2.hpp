@@ -36,9 +36,10 @@ void define_ClusterFinderCUDAOpt2(py::module &m, const std::string &typestr) {
     py::class_<CF>(m, class_name.c_str())
         // ctor: (image_size, n_sigma, capacity, n_streams) — capacity is the
         // per-stream device cluster buffer (upper bound on clusters/frame).
-        .def(py::init<Shape<2>, float, size_t, int>(), py::arg("image_size"),
-             py::arg("n_sigma") = 5.0f,
-             py::arg("max_clusters_per_frame") = 3000, py::arg("n_streams") = 4)
+        .def(py::init<Shape<2>, float, size_t, int, bool>(),
+             py::arg("image_size"), py::arg("n_sigma") = 5.0f,
+             py::arg("max_clusters_per_frame") = 3000, py::arg("n_streams") = 4,
+             py::arg("time_kernels") = false)
 
         .def_property(
             "nSigma", &CF::get_nSigma, &CF::set_nSigma,
@@ -93,7 +94,12 @@ void define_ClusterFinderCUDAOpt2(py::module &m, const std::string &typestr) {
             R"(Process a 3D array (n_frames, nrows, ncols) round-robin across
 n_streams. Returns a list of ClusterVector, one per input frame.)")
 
-        .def("avg_kernel_time_ms", &CF::avg_kernel_time_ms)
+        .def("avg_kernel_time_ms", &CF::avg_kernel_time_ms,
+             R"(Mean per-frame kernel time in ms, or NaN if time_kernels was
+             not enabled at construction. Inflated by queue-wait under
+             multi-stream load — use nsys for the true value.)")
+        .def("kernel_timing_enabled", &CF::kernel_timing_enabled,
+             R"(True if per-frame kernel timing was enabled at construction.)")
         .def("reset_timers", &CF::reset_timers);
 }
 
