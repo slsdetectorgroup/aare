@@ -346,11 +346,11 @@ set(PUBLICHEADERS
     include/aare/hist/PedestalTrackingPixelHistogram.hpp
     include/aare/GainMap.hpp
     include/aare/InclusiveROI.hpp
-    include/aare/RemapAlgorithm.hpp
-    include/aare/RemapConfig.hpp
-    include/aare/RemapDefs.hpp
-    include/aare/RemapFormat.hpp
-    include/aare/RemapGenerate.hpp
+    include/aare/StrixelPixelRemapAlgorithm.hpp
+    include/aare/StrixelPixelRemapConfig.hpp
+    include/aare/StrixelPixelRemapDefs.hpp
+    include/aare/StrixelPixelRemapFormat.hpp
+    include/aare/StrixelPixelRemapGenerate.hpp
     include/aare/ROIGeometry.hpp
     include/aare/DetectorGeometry.hpp
     include/aare/JungfrauDataFile.hpp
@@ -391,8 +391,8 @@ set(SourceFiles
     ${CMAKE_CURRENT_SOURCE_DIR}/src/RawFile.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/src/RawMasterFile.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/src/RawSubFile.cpp
-    ${CMAKE_CURRENT_SOURCE_DIR}/src/RemapAlgorithm.cpp
-    ${CMAKE_CURRENT_SOURCE_DIR}/src/RemapFormat.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/StrixelPixelRemapAlgorithm.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/StrixelPixelRemapFormat.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/src/to_string.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/src/utils/task.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/src/utils/ifstream_helpers.cpp)
