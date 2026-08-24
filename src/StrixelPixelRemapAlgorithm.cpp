@@ -95,7 +95,7 @@ strixel_to_pixel_map(defs::GroupConfig const &group_config,
         throw std::logic_error(
             "Group ROI width must be divisible by strixel multiplicity");
 
-    const int total_strixel_columns = group_width / multiplicity;
+    // const int total_strixel_columns = group_width / multiplicity;
 
     // Determine the ordering of strixels within each multiplicity group.
     std::vector<int> mods(multiplicity);
