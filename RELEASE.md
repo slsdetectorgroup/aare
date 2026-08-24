@@ -12,6 +12,9 @@
   evaluators. Model objects are callable and provide the replacement, for
   example ``Gaussian()(x, par)``.
 
+### Bugfixes:
+- Fixed broken reading of old (pre reordering) Moench03
+
 ## 2026.7.2
 
 

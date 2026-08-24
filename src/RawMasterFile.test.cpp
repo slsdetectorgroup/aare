@@ -411,6 +411,10 @@ TEST_CASE("Parse EIGER 7.2 master from string stream") {
     REQUIRE(f.frame_padding() == 1);
     REQUIRE(f.total_frames_expected() == 3);
 
+    REQUIRE(f.quad() == 0);
+    REQUIRE(f.number_of_rows() == 256);
+    REQUIRE(f.n_modules() == 4);
+
     REQUIRE(f.bitdepth() == 32);
     REQUIRE(f.frames_in_file() == 3);
 
@@ -489,7 +493,471 @@ TEST_CASE("Parse JUNGFRAU 7.2 master from string stream") {
     REQUIRE(f.number_of_rows() == 512);
 
     REQUIRE(f.frames_in_file() == 10);
+    REQUIRE(f.quad() == 0);
+    REQUIRE(f.n_modules() == 2);
     REQUIRE(f.udp_interfaces_per_module() == xy{2, 1});
+}
+
+TEST_CASE(
+    "Parse CTB 7.2 master (SW 7.0.3) with analog samples from string stream") {
+    std::string master_content = R"({
+    "Version": 7.2,
+    "Timestamp": "Wed Aug 19 09:45:29 2026",
+    "Detector Type": "ChipTestBoard",
+    "Timing Mode": "auto",
+    "Geometry": {
+        "x": 1,
+        "y": 1
+    },
+    "Image Size in bytes": 192000,
+    "Pixels": {
+        "x": 32,
+        "y": 1
+    },
+    "Max Frames Per File": 20000,
+    "Frame Discard Policy": "nodiscard",
+    "Frame Padding": 1,
+    "Scan Parameters": "[disabled]",
+    "Total Frames": 1,
+    "Receiver Roi": {
+        "xmin": 4294967295,
+        "xmax": 4294967295,
+        "ymin": 4294967295,
+        "ymax": 4294967295
+    },
+    "Exptime": "0ns",
+    "Period": "1ms",
+    "Ten Giga": 0,
+    "ADC Mask": "0xffffffff",
+    "Analog Flag": 1,
+    "Analog Samples": 3000,
+    "Digital Flag": 0,
+    "Digital Samples": 2000,
+    "Dbit Offset": 0,
+    "Dbit Bitset": 0,
+    "Frames in File": 1,
+    "Frame Header Format": {
+        "Frame Number": "8 bytes",
+        "SubFrame Number/ExpLength": "4 bytes",
+        "Packet Number": "4 bytes",
+        "Bunch ID": "8 bytes",
+        "Timestamp": "8 bytes",
+        "Module Id": "2 bytes",
+        "Row": "2 bytes",
+        "Column": "2 bytes",
+        "Reserved": "2 bytes",
+        "Debug": "4 bytes",
+        "Round Robin Number": "2 bytes",
+        "Detector Type": "1 byte",
+        "Header Version": "1 byte",
+        "Packets Caught Mask": "64 bytes"
+    }
+})";
+
+    std::istringstream iss(master_content);
+    RawMasterFile f(iss, "test_master_0.json");
+
+    REQUIRE(f.version() == "7.2");
+    REQUIRE(f.detector_type() == DetectorType::ChipTestBoard);
+    REQUIRE(f.timing_mode() == TimingMode::Auto);
+    REQUIRE(f.geometry() == xy{1, 1});
+    REQUIRE(f.image_size_in_bytes() == 192000);
+    REQUIRE(f.pixels_x() == 32);
+    REQUIRE(f.pixels_y() == 1);
+    REQUIRE(f.max_frames_per_file() == 20000);
+    REQUIRE(f.frame_discard_policy() == FrameDiscardPolicy::NoDiscard);
+    REQUIRE(f.frame_padding() == 1);
+    REQUIRE(f.total_frames_expected() == 1);
+    REQUIRE(f.exptime() == std::chrono::nanoseconds(0));
+    REQUIRE(f.period() == std::chrono::milliseconds(1));
+    REQUIRE(f.analog_samples() == 3000);
+    REQUIRE(f.digital_samples() == std::nullopt);
+    REQUIRE(f.transceiver_samples() == std::nullopt);
+    REQUIRE(f.frames_in_file() == 1);
+}
+
+TEST_CASE(
+    "Parse CTB 7.2 master (SW 7.0.3) with digital samples from string stream") {
+    std::string master_content = R"({
+    "Version": 7.2,
+    "Timestamp": "Wed Aug 19 09:48:34 2026",
+    "Detector Type": "ChipTestBoard",
+    "Timing Mode": "auto",
+    "Geometry": {
+        "x": 1,
+        "y": 1
+    },
+    "Image Size in bytes": 16000,
+    "Pixels": {
+        "x": 64,
+        "y": 1
+    },
+    "Max Frames Per File": 20000,
+    "Frame Discard Policy": "nodiscard",
+    "Frame Padding": 1,
+    "Scan Parameters": "[disabled]",
+    "Total Frames": 1,
+    "Receiver Roi": {
+        "xmin": 4294967295,
+        "xmax": 4294967295,
+        "ymin": 4294967295,
+        "ymax": 4294967295
+    },
+    "Exptime": "0ns",
+    "Period": "1ms",
+    "Ten Giga": 0,
+    "ADC Mask": "0xffffffff",
+    "Analog Flag": 0,
+    "Analog Samples": 3000,
+    "Digital Flag": 1,
+    "Digital Samples": 2000,
+    "Dbit Offset": 0,
+    "Dbit Bitset": 0,
+    "Frames in File": 1,
+    "Frame Header Format": {
+        "Frame Number": "8 bytes",
+        "SubFrame Number/ExpLength": "4 bytes",
+        "Packet Number": "4 bytes",
+        "Bunch ID": "8 bytes",
+        "Timestamp": "8 bytes",
+        "Module Id": "2 bytes",
+        "Row": "2 bytes",
+        "Column": "2 bytes",
+        "Reserved": "2 bytes",
+        "Debug": "4 bytes",
+        "Round Robin Number": "2 bytes",
+        "Detector Type": "1 byte",
+        "Header Version": "1 byte",
+        "Packets Caught Mask": "64 bytes"
+    }
+})";
+
+    std::istringstream iss(master_content);
+    RawMasterFile f(iss, "test_master_0.json");
+
+    REQUIRE(f.version() == "7.2");
+    REQUIRE(f.detector_type() == DetectorType::ChipTestBoard);
+    REQUIRE(f.timing_mode() == TimingMode::Auto);
+    REQUIRE(f.geometry() == xy{1, 1});
+    REQUIRE(f.image_size_in_bytes() == 16000);
+    REQUIRE(f.pixels_x() == 64);
+    REQUIRE(f.pixels_y() == 1);
+    REQUIRE(f.max_frames_per_file() == 20000);
+    REQUIRE(f.frame_discard_policy() == FrameDiscardPolicy::NoDiscard);
+    REQUIRE(f.frame_padding() == 1);
+    REQUIRE(f.total_frames_expected() == 1);
+    REQUIRE(f.exptime() == std::chrono::nanoseconds(0));
+    REQUIRE(f.period() == std::chrono::milliseconds(1));
+    REQUIRE(f.analog_samples() == std::nullopt);
+    REQUIRE(f.digital_samples() == 2000);
+    REQUIRE(f.transceiver_samples() == std::nullopt);
+    REQUIRE(f.frames_in_file() == 1);
+}
+
+TEST_CASE("Parse Moench 7.2 master (SW 7.0.3) from string stream") {
+    std::string master_content = R"({
+    "Version": 7.2,
+    "Timestamp": "Wed Aug 19 10:32:06 2026",
+    "Detector Type": "Moench",
+    "Timing Mode": "auto",
+    "Geometry": {
+        "x": 1,
+        "y": 1
+    },
+    "Image Size in bytes": 320000,
+    "Pixels": {
+        "x": 400,
+        "y": 400
+    },
+    "Max Frames Per File": 100000,
+    "Frame Discard Policy": "nodiscard",
+    "Frame Padding": 1,
+    "Scan Parameters": "[disabled]",
+    "Total Frames": 1,
+    "Receiver Roi": {
+        "xmin": 4294967295,
+        "xmax": 4294967295,
+        "ymin": 4294967295,
+        "ymax": 4294967295
+    },
+    "Exptime": "20us",
+    "Period": "2ms",
+    "Ten Giga": 0,
+    "ADC Mask": "0xffffffff",
+    "Analog Samples": 5000,
+    "Frames in File": 1,
+    "Frame Header Format": {
+        "Frame Number": "8 bytes",
+        "SubFrame Number/ExpLength": "4 bytes",
+        "Packet Number": "4 bytes",
+        "Bunch ID": "8 bytes",
+        "Timestamp": "8 bytes",
+        "Module Id": "2 bytes",
+        "Row": "2 bytes",
+        "Column": "2 bytes",
+        "Reserved": "2 bytes",
+        "Debug": "4 bytes",
+        "Round Robin Number": "2 bytes",
+        "Detector Type": "1 byte",
+        "Header Version": "1 byte",
+        "Packets Caught Mask": "64 bytes"
+    }
+})";
+
+    std::istringstream iss(master_content);
+    RawMasterFile f(iss, "test_master_0.json");
+
+    REQUIRE(f.version() == "7.2");
+    REQUIRE(f.detector_type() == DetectorType::Moench03_old);
+    REQUIRE(f.timing_mode() == TimingMode::Auto);
+    REQUIRE(f.geometry() == xy{1, 1});
+    REQUIRE(f.image_size_in_bytes() == 320000);
+    REQUIRE(f.pixels_x() == 400);
+    REQUIRE(f.pixels_y() == 400);
+    REQUIRE(f.max_frames_per_file() == 100000);
+    REQUIRE(f.frame_discard_policy() == FrameDiscardPolicy::NoDiscard);
+    REQUIRE(f.frame_padding() == 1);
+    REQUIRE(f.total_frames_expected() == 1);
+    REQUIRE(f.exptime() == std::chrono::microseconds(20));
+    REQUIRE(f.period() == std::chrono::milliseconds(2));
+    REQUIRE(f.analog_samples() == 5000);
+    REQUIRE(f.digital_samples() == std::nullopt);
+    REQUIRE(f.transceiver_samples() == std::nullopt);
+    REQUIRE(f.frames_in_file() == 1);
+}
+
+TEST_CASE("Parse Moench 7.2 master (SW 8.0.0) from string stream") {
+    std::string master_content = R"({
+    "Version": 7.2,
+    "Timestamp": "Wed Aug 19 09:54:53 2026",
+    "Detector Type": "Moench",
+    "Timing Mode": "auto",
+    "Geometry": {
+        "x": 1,
+        "y": 1
+    },
+    "Image Size in bytes": 320000,
+    "Pixels": {
+        "x": 400,
+        "y": 400
+    },
+    "Max Frames Per File": 100000,
+    "Frame Discard Policy": "discardpartial",
+    "Frame Padding": 1,
+    "Scan Parameters": "[disabled]",
+    "Total Frames": 1,
+    "Receiver Roi": {
+        "xmin": 4294967295,
+        "xmax": 4294967295,
+        "ymin": 4294967295,
+        "ymax": 4294967295
+    },
+    "Exptime": "10us",
+    "Period": "2ms",
+    "Number of UDP Interfaces": 1,
+    "Number of rows": 400,
+    "Frames in File": 1,
+    "Frame Header Format": {
+        "Frame Number": "8 bytes",
+        "SubFrame Number/ExpLength": "4 bytes",
+        "Packet Number": "4 bytes",
+        "Bunch ID": "8 bytes",
+        "Timestamp": "8 bytes",
+        "Module Id": "2 bytes",
+        "Row": "2 bytes",
+        "Column": "2 bytes",
+        "Reserved": "2 bytes",
+        "Debug": "4 bytes",
+        "Round Robin Number": "2 bytes",
+        "Detector Type": "1 byte",
+        "Header Version": "1 byte",
+        "Packets Caught Mask": "64 bytes"
+    }
+})";
+
+    std::istringstream iss(master_content);
+    RawMasterFile f(iss, "test_master_0.json");
+
+    REQUIRE(f.version() == "7.2");
+    REQUIRE(f.detector_type() == DetectorType::Moench03);
+    REQUIRE(f.timing_mode() == TimingMode::Auto);
+    REQUIRE(f.geometry() == xy{1, 1});
+    REQUIRE(f.image_size_in_bytes() == 320000);
+    REQUIRE(f.pixels_x() == 400);
+    REQUIRE(f.pixels_y() == 400);
+    REQUIRE(f.max_frames_per_file() == 100000);
+    REQUIRE(f.frame_discard_policy() == FrameDiscardPolicy::DiscardPartial);
+    REQUIRE(f.frame_padding() == 1);
+    REQUIRE(f.total_frames_expected() == 1);
+    REQUIRE(f.exptime() == std::chrono::microseconds(10));
+    REQUIRE(f.period() == std::chrono::milliseconds(2));
+    REQUIRE(f.number_of_rows() == 400);
+    REQUIRE(f.frames_in_file() == 1);
+    REQUIRE(f.analog_samples() == std::nullopt);
+    REQUIRE(f.digital_samples() == std::nullopt);
+    REQUIRE(f.transceiver_samples() == std::nullopt);
+    REQUIRE(f.udp_interfaces_per_module() == xy{1, 1});
+}
+
+TEST_CASE("Parse CTB 7.2 master (SW 8.0.0) from string stream") {
+    std::string master_content = R"({
+    "Version": 7.2,
+    "Timestamp": "Wed Aug 19 09:56:30 2026",
+    "Detector Type": "ChipTestBoard",
+    "Timing Mode": "auto",
+    "Geometry": {
+        "x": 1,
+        "y": 1
+    },
+    "Image Size in bytes": 192000,
+    "Pixels": {
+        "x": 32,
+        "y": 1
+    },
+    "Max Frames Per File": 20000,
+    "Frame Discard Policy": "nodiscard",
+    "Frame Padding": 1,
+    "Scan Parameters": "[disabled]",
+    "Total Frames": 1,
+    "Receiver Roi": {
+        "xmin": 4294967295,
+        "xmax": 4294967295,
+        "ymin": 4294967295,
+        "ymax": 4294967295
+    },
+    "Exptime": "0ns",
+    "Period": "1ms",
+    "Ten Giga": 0,
+    "ADC Mask": "0xffffffff",
+    "Analog Flag": 1,
+    "Analog Samples": 3000,
+    "Digital Flag": 0,
+    "Digital Samples": 2000,
+    "Dbit Offset": 0,
+    "Dbit Bitset": 0,
+    "Transceiver Mask": "0x3",
+    "Transceiver Flag": 0,
+    "Transceiver Samples": 1,
+    "Frames in File": 1,
+    "Frame Header Format": {
+        "Frame Number": "8 bytes",
+        "SubFrame Number/ExpLength": "4 bytes",
+        "Packet Number": "4 bytes",
+        "Bunch ID": "8 bytes",
+        "Timestamp": "8 bytes",
+        "Module Id": "2 bytes",
+        "Row": "2 bytes",
+        "Column": "2 bytes",
+        "Reserved": "2 bytes",
+        "Debug": "4 bytes",
+        "Round Robin Number": "2 bytes",
+        "Detector Type": "1 byte",
+        "Header Version": "1 byte",
+        "Packets Caught Mask": "64 bytes"
+    }
+})";
+
+    std::istringstream iss(master_content);
+    RawMasterFile f(iss, "test_master_0.json");
+
+    REQUIRE(f.version() == "7.2");
+    REQUIRE(f.detector_type() == DetectorType::ChipTestBoard);
+    REQUIRE(f.timing_mode() == TimingMode::Auto);
+    REQUIRE(f.geometry() == xy{1, 1});
+    REQUIRE(f.image_size_in_bytes() == 192000);
+    REQUIRE(f.pixels_x() == 32);
+    REQUIRE(f.pixels_y() == 1);
+    REQUIRE(f.max_frames_per_file() == 20000);
+    REQUIRE(f.frame_discard_policy() == FrameDiscardPolicy::NoDiscard);
+    REQUIRE(f.frame_padding() == 1);
+    REQUIRE(f.total_frames_expected() == 1);
+    REQUIRE(f.exptime() == std::chrono::nanoseconds(0));
+    REQUIRE(f.period() == std::chrono::milliseconds(1));
+    REQUIRE(f.analog_samples() == 3000);
+    REQUIRE(f.digital_samples() == std::nullopt);
+    REQUIRE(f.transceiver_samples() == std::nullopt);
+    REQUIRE(f.frames_in_file() == 1);
+}
+
+TEST_CASE(
+    "Parse CTB 7.2 master (SW 8.0.0) with digital samples from string stream") {
+    std::string master_content = R"({
+    "Version": 7.2,
+    "Timestamp": "Wed Aug 19 09:58:22 2026",
+    "Detector Type": "ChipTestBoard",
+    "Timing Mode": "auto",
+    "Geometry": {
+        "x": 1,
+        "y": 1
+    },
+    "Image Size in bytes": 16000,
+    "Pixels": {
+        "x": 64,
+        "y": 1
+    },
+    "Max Frames Per File": 20000,
+    "Frame Discard Policy": "nodiscard",
+    "Frame Padding": 1,
+    "Scan Parameters": "[disabled]",
+    "Total Frames": 1,
+    "Receiver Roi": {
+        "xmin": 4294967295,
+        "xmax": 4294967295,
+        "ymin": 4294967295,
+        "ymax": 4294967295
+    },
+    "Exptime": "0ns",
+    "Period": "1ms",
+    "Ten Giga": 0,
+    "ADC Mask": "0xffffffff",
+    "Analog Flag": 0,
+    "Analog Samples": 3000,
+    "Digital Flag": 1,
+    "Digital Samples": 2000,
+    "Dbit Offset": 0,
+    "Dbit Bitset": 0,
+    "Transceiver Mask": "0x3",
+    "Transceiver Flag": 0,
+    "Transceiver Samples": 1,
+    "Frames in File": 1,
+    "Frame Header Format": {
+        "Frame Number": "8 bytes",
+        "SubFrame Number/ExpLength": "4 bytes",
+        "Packet Number": "4 bytes",
+        "Bunch ID": "8 bytes",
+        "Timestamp": "8 bytes",
+        "Module Id": "2 bytes",
+        "Row": "2 bytes",
+        "Column": "2 bytes",
+        "Reserved": "2 bytes",
+        "Debug": "4 bytes",
+        "Round Robin Number": "2 bytes",
+        "Detector Type": "1 byte",
+        "Header Version": "1 byte",
+        "Packets Caught Mask": "64 bytes"
+    }
+})";
+
+    std::istringstream iss(master_content);
+    RawMasterFile f(iss, "test_master_0.json");
+
+    REQUIRE(f.version() == "7.2");
+    REQUIRE(f.detector_type() == DetectorType::ChipTestBoard);
+    REQUIRE(f.timing_mode() == TimingMode::Auto);
+    REQUIRE(f.geometry() == xy{1, 1});
+    REQUIRE(f.image_size_in_bytes() == 16000);
+    REQUIRE(f.pixels_x() == 64);
+    REQUIRE(f.pixels_y() == 1);
+    REQUIRE(f.max_frames_per_file() == 20000);
+    REQUIRE(f.frame_discard_policy() == FrameDiscardPolicy::NoDiscard);
+    REQUIRE(f.frame_padding() == 1);
+    REQUIRE(f.total_frames_expected() == 1);
+    REQUIRE(f.exptime() == std::chrono::nanoseconds(0));
+    REQUIRE(f.period() == std::chrono::milliseconds(1));
+    REQUIRE(f.analog_samples() == std::nullopt);
+    REQUIRE(f.digital_samples() == 2000);
+    REQUIRE(f.transceiver_samples() == std::nullopt);
+    REQUIRE(f.frames_in_file() == 1);
 }
 
 TEST_CASE("Parse a CTB file from stream") {
@@ -738,4 +1206,83 @@ TEST_CASE("Parse a v7.1 Mythen3 from stream") {
 
     // Period is ok though
     REQUIRE(f.period() == std::chrono::milliseconds(2));
+}
+
+TEST_CASE("Parse old Moench03 from stream") {
+    std::string master_content = R"(
+    {
+    "Version": 7.1,
+    "Timestamp": "Mon Mar 25 10:07:02 2024",
+    "Detector Type": "Moench",
+    "Timing Mode": "auto",
+    "Geometry": {
+        "x": 1,
+        "y": 1
+    },
+    "Image Size in bytes": 320000,
+    "Pixels": {
+        "x": 400,
+        "y": 400
+    },
+    "Max Frames Per File": 100000,
+    "Frame Discard Policy": "discardpartial",
+    "Frame Padding": 1,
+    "Scan Parameters": "[disabled]",
+    "Total Frames": 1000000,
+    "Receiver Roi": {
+        "xmin": 4294967295,
+        "xmax": 4294967295,
+        "ymin": 4294967295,
+        "ymax": 4294967295
+    },
+    "Exptime": "50us",
+    "Period": "600us",
+    "Ten Giga": 1,
+    "ADC Mask": "0xffffffff",
+    "Analog Samples": 5000,
+    "Additional Json Header": "{detectorMode: analog, frameMode: newPedestal}",
+    "Frames in File": 999995,
+    "Frame Header Format": {
+        "Frame Number": "8 bytes",
+        "SubFrame Number/ExpLength": "4 bytes",
+        "Packet Number": "4 bytes",
+        "Bunch ID": "8 bytes",
+        "Timestamp": "8 bytes",
+        "Module Id": "2 bytes",
+        "Row": "2 bytes",
+        "Column": "2 bytes",
+        "Reserved": "2 bytes",
+        "Debug": "4 bytes",
+        "Round Robin Number": "2 bytes",
+        "Detector Type": "1 byte",
+        "Header Version": "1 byte",
+        "Packets Caught Mask": "64 bytes"
+    }
+}
+
+)";
+
+    std::istringstream iss(master_content);
+    RawMasterFile f(iss, "test_master_0.json");
+
+    REQUIRE(f.version() == "7.1");
+    REQUIRE(f.detector_type() == DetectorType::Moench03_old);
+    REQUIRE(f.timing_mode() == TimingMode::Auto);
+    REQUIRE(f.geometry().col == 1);
+    REQUIRE(f.geometry().row == 1);
+    REQUIRE(f.image_size_in_bytes() == 320000);
+    REQUIRE(f.pixels_x() == 400);
+    REQUIRE(f.pixels_y() == 400);
+    REQUIRE(f.max_frames_per_file() == 100000);
+    REQUIRE((f.total_frames_expected() ==
+             1000000)); // This is Total Frames in the master file
+    REQUIRE(f.frames_in_file() == 999995);
+    REQUIRE(f.frame_discard_policy() == FrameDiscardPolicy::DiscardPartial);
+    REQUIRE(f.frame_padding() == 1);
+    REQUIRE(f.n_modules() == 1);
+    REQUIRE(f.quad() == 0);
+    REQUIRE(f.bitdepth() == 16);
+    REQUIRE(f.exptime() == std::chrono::microseconds(50));
+    REQUIRE(f.period() == std::chrono::microseconds(600));
+    REQUIRE(f.analog_samples() == 5000);
 }
