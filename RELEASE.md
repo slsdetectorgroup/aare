@@ -1,6 +1,5 @@
 # Release notes
 
-<<<<<<< HEAD
 ## Next
 
 ### API Changes:
@@ -15,8 +14,6 @@
 
 ### Bugfixes:
 - Fixed broken reading of old (pre reordering) Moench03
-=======
->>>>>>> c718a4a (updated release notes)
 
 ## 2026.7.2
 
