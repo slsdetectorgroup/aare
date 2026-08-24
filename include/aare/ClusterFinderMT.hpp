@@ -15,26 +15,6 @@
 #include <ctime>
 namespace aare {
 
-inline uint64_t thread_cpu_ns() {
-    timespec ts;
-    clock_gettime(CLOCK_THREAD_CPUTIME_ID, &ts);
-    return static_cast<uint64_t>(ts.tv_sec) * 1'000'000'000ULL + ts.tv_nsec;
-}
-inline uint64_t wall_ns() {
-    timespec ts;
-    clock_gettime(CLOCK_MONOTONIC, &ts);
-    return static_cast<uint64_t>(ts.tv_sec) * 1'000'000'000ULL + ts.tv_nsec;
-}
-struct DualTimer {
-    uint64_t w0, c0;
-    DualTimer() : w0(wall_ns()), c0(thread_cpu_ns()) {}
-    // returns {wall_ns, cpu_ns}
-    std::pair<uint64_t, uint64_t> elapsed() const {
-        uint64_t c = thread_cpu_ns() - c0;
-        return {wall_ns() - w0, c};
-    }
-};
-
 enum class FrameType {
     DATA,
     PEDESTAL,
