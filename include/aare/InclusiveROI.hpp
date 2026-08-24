@@ -34,6 +34,11 @@ struct InclusiveROI {
         return xmin >= 0 && ymin >= 0 && xmax < ncols && ymax < nrows;
     }
 
+    constexpr bool operator==(InclusiveROI const &other) const noexcept {
+        return xmin == other.xmin && xmax == other.xmax && ymin == other.ymin &&
+               ymax == other.ymax;
+    }
+
     static InclusiveROI emptyROI() noexcept { return {0, -1, 0, -1}; }
     // TODO (nice to have)
     // static InclusiveROI from_shape(ssize_t width, ssize_t height);
