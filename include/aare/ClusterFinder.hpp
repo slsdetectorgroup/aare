@@ -19,6 +19,13 @@ struct no_2x2_cluster {
         ClusterType::cluster_size_x > 2 && ClusterType::cluster_size_y > 2;
 };
 
+/**
+ * @brief Find fixed-size photon clusters using a per-pixel pedestal and noise
+ * threshold.
+ * @tparam ClusterType Output cluster type; both dimensions must exceed 2.
+ * @tparam FRAME_TYPE Input pixel type.
+ * @tparam PEDESTAL_TYPE Type used for pedestal and threshold calculations.
+ */
 template <typename ClusterType = Cluster<int32_t, 3, 3>,
           typename FRAME_TYPE = uint16_t, typename PEDESTAL_TYPE = double,
           typename = std::enable_if_t<no_2x2_cluster<ClusterType>::value>>
@@ -37,16 +44,12 @@ class ClusterFinder {
     NDArray<PEDESTAL_TYPE, 2> m_threshold;
     NDArray<PEDESTAL_TYPE, 2> m_pd_corrected_frame;
 
-    double all = 0;
-
   public:
     /**
-     * @brief Construct a new ClusterFinder object
-     * @param image_size size of the image
-     * @param cluster_size size of the cluster (x, y)
-     * @param nSigma number of sigma above the pedestal to consider a photon
-     * @param capacity initial capacity of the cluster vector
-     *
+     * @brief Construct a cluster finder with an empty pedestal.
+     * @param image_size Image shape as (rows, columns).
+     * @param nSigma Per-pixel noise threshold multiplier.
+     * @param capacity Initial cluster-vector capacity.
      */
     ClusterFinder(Shape<2> image_size, PEDESTAL_TYPE nSigma = 5.0,
                   size_t capacity = 1000000)
@@ -62,36 +65,55 @@ class ClusterFinder {
     }
 
     /**
-     * @brief Set the nSigma parameter and update the threshold.
-     * @param nSigma the new nSigma parameter.
+     * @brief Set the noise multiplier used for threshold calculation and
+     * recompute the threshold.
+     * @param nSigma New per-pixel noise multiplier.
      */
     void set_nSigma(PEDESTAL_TYPE nSigma) {
         m_nSigma = nSigma;
         update_threshold();
     }
 
+    /** @brief Return the current noise multiplier used for threshold
+     * calculation. */
     PEDESTAL_TYPE get_nSigma() const { return m_nSigma; }
 
+    /**
+     * @brief Add a dark frame to the pedestal estimator.
+     *
+     * The threshold is initialized automatically when the pedestal first
+     * becomes ready. Later frames update the ready pedestal.
+     * @param frame Dark frame matching the configured image shape.
+     * @throws std::runtime_error if the frame shape does not match.
+     */
     void push_pedestal_frame(NDView<FRAME_TYPE, 2> frame) {
         if (!m_pedestal.ready()) {
             m_pedestal.push_init(frame);
+            // Initialize the threshold when the pedestal becomes ready.
+            if (m_pedestal.ready()) {
+                update_threshold();
+            }
         } else {
             m_pedestal.push(frame);
         }
     }
 
+    /** @brief Return a copy of the per-pixel pedestal mean. */
     NDArray<PEDESTAL_TYPE, 2> pedestal() { return m_pedestal.mean(); }
+
+    /** @brief Return the per-pixel pedestal standard deviation (noise). */
     NDArray<PEDESTAL_TYPE, 2> noise() { return m_pedestal.std(); }
+
+    /** @brief Clear the pedestal and mark it as not ready. */
     void clear_pedestal() { m_pedestal.clear(); }
 
+    /** @brief Recompute the threshold as noise multiplied by nSigma. */
     void update_threshold() { m_threshold = m_pedestal.std() * m_nSigma; }
 
     /**
-     * @brief Move the clusters from the ClusterVector in the ClusterFinder to a
-     * new ClusterVector and return it.
-     * @param realloc_same_capacity if true the new ClusterVector will have the
-     * same capacity as the old one
-     *
+     * @brief Move out all accumulated clusters and reset the internal vector.
+     * @param realloc_same_capacity Preserve the previous capacity when true.
+     * @return The accumulated clusters and their frame metadata.
      */
     ClusterVector<ClusterType>
     steal_clusters(bool realloc_same_capacity = false) {
@@ -107,8 +129,8 @@ class ClusterFinder {
     /**
      * @brief Process a single pixel: scan its cluster window, decide whether it
      * is a photon or a pedestal value, and store the cluster if needed.
-     * @tparam CheckBounds if true the neighbourhood accesses are bounds-checked
-     * (border pixels), if false they are assumed in bounds (interior pixels).
+     * @tparam CheckBounds Skip out-of-image neighbours when true; assume the
+     * complete window is in bounds when false. Skipped cluster values remain 0.
      */
     template <bool CheckBounds>
     void process_pixel(const NDView<FRAME_TYPE, 2> &frame, const int iy,
@@ -206,6 +228,14 @@ class ClusterFinder {
     }
 
   public:
+    /**
+     * @brief Find clusters in one frame and update eligible pedestal pixels.
+     * @param frame Input frame matching the configured image shape.
+     * @param frame_number Metadata assigned to the accumulated clusters.
+     * @pre frame has the same shape as image_size passed to the constructor.
+     * @throws std::runtime_error if the pedestal is not ready.
+     * @note Clusters accumulate until steal_clusters() is called.
+     */
     void find_clusters(NDView<FRAME_TYPE, 2> frame, uint64_t frame_number = 0) {
 
         // // TODO! deal with even size clusters
@@ -243,8 +273,6 @@ class ClusterFinder {
         for (ssize_t i = 0; i < n_pixels; i++) {
             corrected[i] = static_cast<PEDESTAL_TYPE>(frame_data[i]) - pd[i];
         }
-        // all += corrected[0];
-        // return;
 
         // Interior pixels can skip the per-neighbour bounds checks; pixels
         // within dx/dy of an edge take the bounds-checked path. Iteration order
