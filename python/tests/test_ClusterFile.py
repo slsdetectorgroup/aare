@@ -14,6 +14,8 @@ from conftest import test_data_path
 def test_cluster_file(test_data_path): 
     """Test ClusterFile""" 
     f =  ClusterFile(test_data_path / "clust/single_frame_97_clustrers.clust") 
+    assert f.estimate_n_clusters() == 97
+    assert f.tell() == 0
     cv = f.read_clusters(10) #conversion does not work
 
 

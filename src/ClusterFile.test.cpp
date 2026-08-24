@@ -17,6 +17,8 @@ TEST_CASE("Read one frame from a cluster file", "[.with-data]") {
     REQUIRE(std::filesystem::exists(fpath));
 
     ClusterFile<Cluster<int32_t, 3, 3>> f(fpath);
+    CHECK(f.estimate_n_clusters() == 97);
+    CHECK(f.tell() == 0);
     auto clusters = f.read_frame();
     CHECK(clusters.size() == 97);
     CHECK(clusters.frame_number() == 135);
@@ -250,6 +252,8 @@ TEST_CASE("Read cluster from multiple frame file", "[.with-data]") {
 
     SECTION("Read clusters from both frames") {
         ClusterFile<ClusterType> f(fpath);
+        CHECK(f.estimate_n_clusters() == 8);
+        CHECK(f.tell() == 0);
         auto clusters = f.read_clusters(2);
         REQUIRE(clusters.size() == 2);
         REQUIRE(clusters.frame_number() == 0);
@@ -290,6 +294,8 @@ TEST_CASE("Write cluster with potential padding",
     auto fpath = test_data_path() / "clust" / "single_frame_2_clusters.clust";
 
     ClusterFile<ClusterType> file(fpath, 1000, "w");
+
+    CHECK_THROWS_AS(file.estimate_n_clusters(), std::runtime_error);
 
     ClusterVector<ClusterType> clustervec(2);
     uint16_t coordinate = 5;
