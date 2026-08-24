@@ -37,16 +37,12 @@ namespace detail {
  *
  * @return Combined strixel-to-pixel map.
  *
- * @throws std::invalid_argument if gap_rows is negative.
  * @throws std::logic_error if group maps have different widths.
  */
 defs::StrixelGroupToPixelMap
 combine_group_maps(defs::StrixelGroupToPixelMap const &first,
-                   defs::StrixelGroupToPixelMap const &second, int gap_rows) {
-
-    if (gap_rows < 0) {
-        throw std::invalid_argument("gap_rows must be non-negative");
-    }
+                   defs::StrixelGroupToPixelMap const &second,
+                   size_t gap_rows) {
 
     const ssize_t ncols = first.map.shape(1);
 
@@ -91,7 +87,7 @@ combine_group_maps(defs::StrixelGroupToPixelMap const &first,
     copy_map(first, first_row);
     copy_map(second, second_row);
 
-    // Physical pixel ROI covered by both groups.
+    // Bounding pixel ROI covered by the combined groups.
     InclusiveROI effective_roi = first.effective_roi;
 
     effective_roi.xmin =

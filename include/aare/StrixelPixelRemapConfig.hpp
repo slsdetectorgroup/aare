@@ -144,7 +144,7 @@ inline const defs::SensorConfig SingleChipMP_TEW{
 inline constexpr defs::SensorPixelGeometry Quad_iLGAD_pix{512, 512, {9, 9}};
 // .num_pix_x = 512, .num_pix_y = 512, .guardring = {.x = 9, .y = 9}};
 
-inline constexpr int Quad_iLGAD_strixel_gap_rows = 12;
+inline constexpr size_t Quad_iLGAD_strixel_gap_rows = 12;
 
 inline constexpr defs::GroupConfig Quad_iLGAD_bottomhalf{
     StrxP25, //.strixel
