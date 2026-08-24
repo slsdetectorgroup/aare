@@ -26,21 +26,25 @@ class ClusterCollector {
     std::vector<ClusterVector<ClusterType>> m_clusters;
 
     void process() {
-        m_stopped = false;
+        m_stopped.store(false, std::memory_order_release);
         fmt::print("ClusterCollector started\n");
         Backoff backoff;
-        while (!m_stop_requested) {
+        while (true) {
             if (ClusterVector<ClusterType> *clusters = m_source->frontPtr();
                 clusters != nullptr) {
                 backoff.reset();
                 m_clusters.push_back(std::move(*clusters));
                 m_source->popFront();
-            } else {
-                backoff.pause();
+                continue;
             }
+
+            if (m_stop_requested.load(std::memory_order_acquire))
+                break;
+
+            backoff.pause();
         }
         fmt::print("ClusterCollector stopped\n");
-        m_stopped = true;
+        m_stopped.store(true, std::memory_order_release);
     }
 
   public:
@@ -61,11 +65,12 @@ class ClusterCollector {
         : ClusterCollector(source->sink()) {}
 
     void stop() {
-        m_stop_requested = true;
-        m_thread.join();
+        m_stop_requested.store(true, std::memory_order_release);
+        if (m_thread.joinable())
+            m_thread.join();
     }
     std::vector<ClusterVector<ClusterType>> steal_clusters() {
-        if (!m_stopped) {
+        if (!m_stopped.load(std::memory_order_acquire)) {
             throw std::runtime_error("ClusterCollector is still running");
         }
         return std::move(m_clusters);

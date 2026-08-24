@@ -158,3 +158,22 @@ TEST_CASE("cluster collector accepts finders with a matching cluster type") {
 
     CHECK(collector.steal_clusters().empty());
 }
+
+TEST_CASE("cluster collector drains queued clusters when stopped") {
+    using ClusterType = Cluster<int32_t, 3, 3>;
+    ProducerConsumerQueue<ClusterVector<ClusterType>> source(4);
+
+    for (uint64_t frame_number = 1; frame_number <= 3; ++frame_number) {
+        REQUIRE(source.write(ClusterVector<ClusterType>(4, frame_number)));
+    }
+
+    ClusterCollector<ClusterType> collector(&source);
+    collector.stop();
+
+    auto clusters = collector.steal_clusters();
+    REQUIRE(clusters.size() == 3);
+    CHECK(source.isEmpty());
+    for (size_t i = 0; i < clusters.size(); ++i) {
+        CHECK(clusters[i].frame_number() == static_cast<int32_t>(i + 1));
+    }
+}
