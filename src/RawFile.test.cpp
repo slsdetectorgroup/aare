@@ -421,6 +421,11 @@ TEST_CASE("Read Jungfrau frame with disabled UDP ports",
         auto frame = f.read_frame();
         REQUIRE(frame.cols() == 1024);
         REQUIRE(frame.rows() == 256);
+
+        auto rois = f.master().rois();
+
+        REQUIRE(rois.value().size() == 1);
+        REQUIRE(rois.value()[0] == ROI{0, 1024, 0, 256});
     }
 
     SECTION("disabled bottom port") {
@@ -435,6 +440,9 @@ TEST_CASE("Read Jungfrau frame with disabled UDP ports",
         auto frame = f.read_frame();
         REQUIRE(frame.cols() == 1024);
         REQUIRE(frame.rows() == 256);
+        auto rois = f.master().rois();
+        REQUIRE(rois.value().size() == 1);
+        REQUIRE(rois.value()[0] == ROI{0, 1024, 256, 512});
     }
     SECTION("2 modules - top ports disabled") {
         auto fpath = test_data_path() / "raw/jungfrau" /
@@ -459,6 +467,10 @@ TEST_CASE("Read Jungfrau frame with disabled UDP ports",
         REQUIRE(frame[0].rows() == 256);
         REQUIRE(frame[1].cols() == 1024);
         REQUIRE(frame[1].rows() == 256);
+        auto rois = f.master().rois();
+        REQUIRE(rois.value().size() == 2);
+        REQUIRE(rois.value()[0] == ROI{0, 1024, 0, 256});
+        REQUIRE(rois.value()[1] == ROI{0, 1024, 512, 768});
     }
     SECTION("2 modules - top ports disabled - bottom port disabled") {
         auto fpath = test_data_path() / "raw/jungfrau" /
@@ -472,6 +484,9 @@ TEST_CASE("Read Jungfrau frame with disabled UDP ports",
         auto frame = f.read_frame();
         REQUIRE(frame.cols() == 1024);
         REQUIRE(frame.rows() == 512);
+        auto rois = f.master().rois();
+        REQUIRE(rois.value().size() == 1);
+        REQUIRE(rois.value()[0] == ROI{0, 1024, 256, 768});
     }
     SECTION("4 modules- mixed ports disabled") {
         auto fpath = test_data_path() / "raw/jungfrau" /
@@ -497,6 +512,12 @@ TEST_CASE("Read Jungfrau frame with disabled UDP ports",
         REQUIRE(frames[2].rows() == 256);
         REQUIRE(frames[3].cols() == 1024);
         REQUIRE(frames[3].rows() == 256);
+        auto rois = f.master().rois();
+        REQUIRE(rois.value().size() == 4);
+        REQUIRE(rois.value()[0] == ROI{0, 1024, 0, 256});
+        REQUIRE(rois.value()[1] == ROI{0, 1024, 512, 768});
+        REQUIRE(rois.value()[2] == ROI{1024, 2048, 256, 512});
+        REQUIRE(rois.value()[3] == ROI{1024, 2048, 768, 1024});
     }
 }
 
@@ -514,6 +535,10 @@ TEST_CASE("Read Moench frame with disabled UDP ports",
         auto frame = f.read_frame();
         REQUIRE(frame.cols() == 400);
         REQUIRE(frame.rows() == 200);
+        auto rois = f.master().rois();
+
+        REQUIRE(rois.value().size() == 1);
+        REQUIRE(rois.value()[0] == ROI{0, 400, 0, 200});
     }
 
     SECTION("disabled bottom port") {
@@ -528,6 +553,10 @@ TEST_CASE("Read Moench frame with disabled UDP ports",
         auto frame = f.read_frame();
         REQUIRE(frame.cols() == 400);
         REQUIRE(frame.rows() == 200);
+        auto rois = f.master().rois();
+
+        REQUIRE(rois.value().size() == 1);
+        REQUIRE(rois.value()[0] == ROI{0, 400, 200, 400});
     }
 }
 
@@ -544,10 +573,12 @@ TEST_CASE("Read Eiger frame with disabled UDP ports",
                 std::vector<std::string>{"left", "right"});
         auto frame = f.read_frame();
 
-        std::cout << fmt::format("num rows {}, num cols {}", frame.rows(),
-                                 frame.cols());
         REQUIRE(frame.cols() == 512);
         REQUIRE(frame.rows() == 512);
+
+        auto rois = f.master().rois();
+        REQUIRE(rois.value().size() == 1);
+        REQUIRE(rois.value()[0] == ROI{512, 1024, 0, 512});
     }
     SECTION("disabled right port") {
         auto fpath = test_data_path() / "raw/eiger" /
@@ -561,6 +592,9 @@ TEST_CASE("Read Eiger frame with disabled UDP ports",
         auto frame = f.read_frame();
         REQUIRE(frame.cols() == 512);
         REQUIRE(frame.rows() == 512);
+        auto rois = f.master().rois();
+        REQUIRE(rois.value().size() == 1);
+        REQUIRE(rois.value()[0] == ROI{0, 512, 0, 512});
     }
     SECTION("2 full modules stacked vertically - right ports disabled") {
         auto fpath = test_data_path() / "raw/eiger" /
@@ -583,6 +617,10 @@ TEST_CASE("Read Eiger frame with disabled UDP ports",
         REQUIRE(frames[0].rows() == 512);
         REQUIRE(frames[1].cols() == 512);
         REQUIRE(frames[1].rows() == 512);
+        auto rois = f.master().rois();
+        REQUIRE(rois.value().size() == 2);
+        REQUIRE(rois.value()[0] == ROI{0, 512, 0, 512});
+        REQUIRE(rois.value()[1] == ROI{1024, 1536, 0, 512});
     }
     SECTION("quad module - bottom port disabled") {
         auto fpath = test_data_path() / "raw/eiger" /
@@ -597,6 +635,9 @@ TEST_CASE("Read Eiger frame with disabled UDP ports",
         auto frame = f.read_frame();
         REQUIRE(frame.cols() == 512);
         REQUIRE(frame.rows() == 256);
+        auto rois = f.master().rois();
+        REQUIRE(rois.value().size() == 1);
+        REQUIRE(rois.value()[0] == ROI{0, 512, 256, 512});
     }
     SECTION("only one port disabled") {
         auto fpath = test_data_path() / "raw/eiger" /
@@ -614,5 +655,10 @@ TEST_CASE("Read Eiger frame with disabled UDP ports",
         REQUIRE(frame[0].rows() == 256);
         REQUIRE(frame[1].cols() == 1024);
         REQUIRE(frame[1].rows() == 256);
+        auto rois = f.master().rois();
+        REQUIRE(rois.value().size() == 2);
+
+        REQUIRE(rois.value()[0] == ROI{512, 1024, 0, 256});
+        REQUIRE(rois.value()[1] == ROI{0, 1024, 256, 512});
     }
 }

@@ -190,8 +190,14 @@ void define_file_io_bindings(py::module &m) {
                      "<ROI: xmin: {} xmax: {} ymin: {} ymax: {}>", self.xmin,
                      self.xmax, self.ymin, self.ymax);
              })
-        .def("__iter__", [](const ROI &self) {
-            return py::make_iterator(&self.xmin, &self.ymax + 1); // NOLINT
+        .def("__iter__",
+             [](const ROI &self) {
+                 return py::make_iterator(&self.xmin, &self.ymax + 1); // NOLINT
+             })
+
+        .def("__eq__", [](const ROI &self, const ROI &other) {
+            return self.xmin == other.xmin && self.xmax == other.xmax &&
+                   self.ymin == other.ymin && self.ymax == other.ymax;
         });
 
 #pragma GCC diagnostic pop

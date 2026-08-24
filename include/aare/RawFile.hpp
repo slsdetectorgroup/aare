@@ -172,6 +172,12 @@ class RawFile : public FileInterface {
     Frame get_frame(size_t frame_index, const size_t roi_index = 0);
 
     void open_subfiles(const size_t roi_index);
+
+    /**
+     * @brief set the ROIs in master file.
+     * @param rois vector of ROIs to set in the RawMasterFile.
+     */
+    void set_ROIs(const std::vector<ROI> &rois);
 };
 
 } // namespace aare

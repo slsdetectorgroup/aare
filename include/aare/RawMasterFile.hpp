@@ -13,6 +13,8 @@ using json = nlohmann::json;
 
 namespace aare {
 
+class RawFile; // forward declaration
+
 /**
  * @brief Implementation used in RawMasterFile to parse the file name
  */
@@ -175,6 +177,8 @@ class RawMasterFile {
     void parse_json(std::istream &is);
     void parse_raw(std::istream &is);
     void retrieve_geometry();
+
+    friend class RawFile;
 };
 
 } // namespace aare

@@ -210,6 +210,8 @@ RawFile::RawFile(const std::filesystem::path &fname, const std::string &mode)
             std::vector<ROI> rois = get_rois_from_disabled_udp_ports(
                 disabled_ports, udp_port_types, m_geometry);
 
+            set_ROIs(rois);
+
             m_subfiles.resize(rois.size());
 
             m_ROI_geometries.reserve(rois.size());
@@ -688,5 +690,7 @@ size_t RawFile::frame_number(size_t frame_index) {
     }
     return m_subfiles[0][0]->frame_number(frame_index);
 }
+
+void RawFile::set_ROIs(const std::vector<ROI> &rois) { m_master.m_rois = rois; }
 
 } // namespace aare
