@@ -4,6 +4,7 @@
 
 ### API Changes:
 
+- Exposed ``ClusterVector.empty()`` in the Python API.
 - Removed the lmfit dependency and the legacy ``fit_gaus``, ``fit_pol1``,
   ``fit_scurve``, and ``fit_scurve2`` APIs. Use ``Gaussian``, ``Pol1``,
   ``RisingScurve``, or ``FallingScurve`` and call ``model.fit(...)`` (or
@@ -157,7 +158,6 @@ https://github.com/slsdetectorgroup/aare
 erik.frojdh@psi.ch \
 alice.mazzoleni@psi.ch \
 dhanya.thattil@psi.ch
-
 
 
 

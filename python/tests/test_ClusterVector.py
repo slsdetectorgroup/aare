@@ -16,6 +16,7 @@ def test_create_cluster_vector():
     assert cv.cluster_size_x == 3
     assert cv.cluster_size_y == 3
     assert cv.size == 0
+    assert cv.empty()
 
 
 def test_push_back_on_cluster_vector():
@@ -27,6 +28,7 @@ def test_push_back_on_cluster_vector():
     cluster = _aare.Cluster2x2i(19, 22, np.ones(4, dtype=np.int32))
     cv.push_back(cluster)
     assert cv.size == 1
+    assert not cv.empty()
 
     arr = np.array(cv, copy=False)
     assert arr[0]['x'] == 19
