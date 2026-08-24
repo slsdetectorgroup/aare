@@ -191,7 +191,7 @@ TEST_CASE("Expand 4 bit values packed into 8 bit to 8 bit values") {
 TEST_CASE("Expand 4 bit values packed into 8 bit to 8 bit values from a const "
           "buffer") {
     {
-        uint8_t buffer[] = {
+        const uint8_t buffer[] = {
             0x00, 0xF0, 0xFF, 0x00, 0xF0, 0xFF,
         };
 
