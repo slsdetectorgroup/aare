@@ -154,6 +154,20 @@ TEST_CASE("Expand container with 24 bit data to 32") {
     }
 }
 
+TEST_CASE("Expand 24 bit values to 32 bit values from a const buffer") {
+    const uint8_t buffer[] = {
+        0x0F, 0x00, 0x00, 0xFF, 0x00, 0x00, 0xFF, 0xFF, 0xFF,
+    };
+
+    aare::NDView<const uint8_t, 1> input(buffer, {9});
+    aare::NDArray<uint32_t, 1> out({3});
+    aare::expand24to32bit(input, out.view());
+
+    CHECK(out(0) == 0xF);
+    CHECK(out(1) == 0xFF);
+    CHECK(out(2) == 0xFFFFFF);
+}
+
 TEST_CASE("Expand 4 bit values packed into 8 bit to 8 bit values") {
     {
         uint8_t buffer[] = {
@@ -161,6 +175,27 @@ TEST_CASE("Expand 4 bit values packed into 8 bit to 8 bit values") {
         };
 
         aare::NDView<uint8_t, 1> input(&buffer[0], {6});
+        aare::NDArray<uint8_t, 1> out({12});
+        aare::expand4to8bit(input, out.view());
+
+        uint8_t expected_output[] = {
+            0x0, 0x0, 0x0, 0xF, 0xF, 0xF,
+            0x0, 0x0, 0x0, 0xF, 0xF, 0xF}; // assuming little endian
+
+        for (size_t i = 0; i < 12; ++i) {
+            CHECK(out(i) == expected_output[i]);
+        }
+    }
+}
+
+TEST_CASE("Expand 4 bit values packed into 8 bit to 8 bit values from a const "
+          "buffer") {
+    {
+        uint8_t buffer[] = {
+            0x00, 0xF0, 0xFF, 0x00, 0xF0, 0xFF,
+        };
+
+        aare::NDView<const uint8_t, 1> input(&buffer[0], {6});
         aare::NDArray<uint8_t, 1> out({12});
         aare::expand4to8bit(input, out.view());
 
