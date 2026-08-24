@@ -36,14 +36,15 @@ Ladder, warm, us/frame          3x3          9x9 (cap 1700)
     opt6  zero-copy              17.10       30.01
     opt7  = opt6 on f32          16.31       25.14
 
-Peak throughput = 1 / max(H2D, kernel, D2H), each term being that engine's BUSY
+The GPU FLOOR (the deck says "floor" everywhere; older drafts said "peak") is
+1 / max(H2D, kernel, D2H), each term being that engine's BUSY
 TIME PER FRAME (the union of its intervals) at the ladder's 4 streams -- and taken
 as the LOWER of two estimates: the profiled engine occupancy, and the best rate the
 unprofiled pipeline sustained. A sustained rate is an existence proof; the probe is
 an estimate made in a loop nsys slows to ~69 us/frame, where kernels overlap less
 and the union per frame reads high.
 
-                 probe (nsys)      best sustained      PEAK              binds
+                 probe (nsys)      best sustained      FLOOR             binds
     3x3 f64      16.17 us          17.10 us            16.17 us -> 61 859  H2D
     3x3 f32      16.63 us          16.31 us            16.31 us -> 61 312  H2D
     9x9 f64      32.66 us          30.01 us            30.01 us -> 33 323  KERNEL
@@ -412,49 +413,101 @@ def fig_overhead():
 
 
 # ------------------------------------------------------ 4. streams timeline
+# 3x3 [f64 · s1] proportions, 1 unit = 1 us: H2D 13.14, kernel 14.72, D2H 5.31.
+# These slides are 3x3-only, and at 3x3 H2D is the tallest bar -- which the
+# schedule below then reproduces on its own rather than being asserted.
+H_, K_, D_ = 13, 15, 5
+LANE_ = 0.68
+
+
+def _frame_bars(ax, y, t0):
+    ax.broken_barh([(t0, H_)], (y, LANE_), facecolors=AMBER, zorder=3)
+    ax.broken_barh([(t0 + H_, K_)], (y, LANE_), facecolors=ACCENT, zorder=3)
+    ax.broken_barh([(t0 + H_ + K_, D_)], (y, LANE_), facecolors=PALE, zorder=3)
+
+
+def _schedule(n_frames, n_streams, H=None, K=None, D=None, round_size=None):
+    """Greedy list schedule that honours the real engine constraints.
+
+    H2D and D2H are ONE FIFO resource each -- the GPU has a single copy engine
+    per direction, which is why H2D_overlap and D2H_overlap are 1.00 in every
+    row of probes.csv. Kernels may overlap (measured 1.02-1.32x). A frame's
+    three stages stay ordered, and a stream cannot start its next frame until
+    its previous D2H has freed the per-stream buffers.
+
+    round_size=n reproduces opt2's cudaDeviceSynchronize() after every round of
+    n frames: every resource resets to the round's end, so the drain is a
+    consequence of the barrier rather than a drawn-in gap.
+
+    Returns (frames, drains) with frames = [(stream, h0, k0, d0)] and drains =
+    [(t_h2d_goes_idle, t_round_end)] -- exactly the time the barrier costs.
+    """
+    H, K, D = H or H_, K or K_, D or D_
+    h_free = d_free = 0.0
+    ready = [0.0] * n_streams
+    frames, drains = [], []
+    last_h_end = 0.0
+    for i in range(n_frames):
+        if round_size and i and i % round_size == 0:
+            t = max(max(ready), h_free, d_free)
+            drains.append((last_h_end, t))
+            h_free = d_free = t
+            ready = [t] * n_streams
+        s = i % n_streams
+        h0 = max(ready[s], h_free); h_free = last_h_end = h0 + H
+        k0 = h_free; k1 = k0 + K
+        d0 = max(k1, d_free); d_free = ready[s] = d0 + D
+        frames.append((s, h0, k0, d0))
+    if round_size:
+        drains.append((last_h_end, max(max(ready), h_free, d_free)))
+    return frames, drains
+
+
+def _draw_schedule(ax, frames, top_lane=3.0, H=None, K=None, D=None):
+    H, K, D = H or H_, K or K_, D or D_
+    for s, h0, k0, d0 in frames:
+        y = top_lane - s * 1.0
+        ax.broken_barh([(h0, H)], (y, LANE_), facecolors=AMBER, zorder=3)
+        ax.broken_barh([(k0, K)], (y, LANE_), facecolors=ACCENT, zorder=3)
+        ax.broken_barh([(d0, D)], (y, LANE_), facecolors=PALE, zorder=3)
+
+
 def fig_streams():
     fig, axes = plt.subplots(3, 1, figsize=(7.7, 3.9))
-    H, K, D = 12, 22, 12
-    FR = H + K + D
-    LANE = 0.68
-
-    def frame(ax, lane_y, t0):
-        ax.broken_barh([(t0, H)], (lane_y, LANE), facecolors=AMBER, zorder=3)
-        ax.broken_barh([(t0 + H, K)], (lane_y, LANE), facecolors=ACCENT, zorder=3)
-        ax.broken_barh([(t0 + H + K, D)], (lane_y, LANE), facecolors=PALE, zorder=3)
+    FR = H_ + K_ + D_
 
     # --- opt1: one stream, strictly serial
     ax = axes[0]
     for i in range(3):
-        frame(ax, 1.0, i * FR)
+        _frame_bars(ax, 1.0, i * FR)
     ax.set_ylim(0.4, 2.3)
-    ax.text(3 * FR + 6, 1.34, "GPU idle between every stage", color=MUTED, fontsize=7.5,
+    ax.text(3 * FR + 6, 1.34, "one engine at a time", color=MUTED, fontsize=7.5,
             va="center")
 
-    # --- opt2: 4 streams, barrier after each round
+    # --- opt2: 4 streams, barrier after each round. The drain is not drawn in;
+    # it falls out of the schedule, because after the round's last H2D the copy
+    # engine has nothing left to feed until the barrier releases.
     ax = axes[1]
-    ROUND = FR + 3 * 8
-    for r in range(2):
-        for st in range(4):
-            frame(ax, 3 - st * 1.0, r * (ROUND + 26) + st * 8)
-    ax.axvspan(ROUND, ROUND + 26, color=AMBER, alpha=0.13, zorder=1)
-    ax.text(ROUND + 13, 4.15, "barrier — GPU drains", color=AMBER, fontsize=7.5,
-            ha="center", va="bottom")
+    frames, drains = _schedule(8, 4, round_size=4)
+    _draw_schedule(ax, frames)
+    for h_idle, t_end in drains:
+        ax.axvspan(h_idle, t_end, color=AMBER, alpha=0.13, zorder=1)
+    ax.text((drains[0][0] + drains[0][1]) / 2, 4.15, "barrier — H2D starves",
+            color=AMBER, fontsize=7.5, ha="center", va="bottom")
     ax.set_ylim(-0.4, 4.9)
 
     # --- opt3: no barriers, continuous
     ax = axes[2]
-    for i in range(11):
-        frame(ax, 3 - (i % 4) * 1.0, i * 11)
+    frames, _ = _schedule(11, 4)
+    _draw_schedule(ax, frames)
     ax.set_ylim(-1.5, 4.5)
-    ax.text(0, -0.25, "streams never wait on each other — the GPU is continuously busy",
+    ax.text(0, -0.25, "streams never wait on each other — the H2D engine never goes idle",
             color=ACCENT, fontsize=7.5, va="top")
-
     titles = ["opt1  ·  1 stream, synchronous",
               "opt2  ·  4 streams, sync barrier per round",
               "opt3  ·  4 streams, barriers removed"]
     for ax, t in zip(axes, titles):
-        ax.set_xlim(-2, 190)
+        ax.set_xlim(-2, 178)
         ax.set_yticks([]); ax.set_xticks([])
         bare(ax, keep=())
         ax.set_title(t, color=TEXT2, fontsize=9, loc="left", pad=4)
@@ -464,7 +517,11 @@ def fig_streams():
                    fontsize=8, labelcolor=TEXT2, ncol=3, loc="lower right",
                    bbox_to_anchor=(1.02, 0.98), handlelength=1.1)
     axes[2].set_xlabel("time  →", color=MUTED, fontsize=8.5, loc="left")
-    fig.subplots_adjust(hspace=0.75)
+    fig.subplots_adjust(hspace=0.75, bottom=0.10)
+    fig.text(0.5, 0.005,
+             "Scheduled, not sketched: H2D and D2H are one FIFO engine each, as in hardware — measured overlap 1.00 on both — while "
+             "kernels may\noverlap. 3×3 proportions [f64 · s1], 13 : 15 : 5. The H2D lane fills first because at 3×3 H2D is the tallest bar.",
+             color=MUTED, fontsize=6.4, ha="center", va="bottom", linespacing=1.6)
     save(fig, "fig_streams")
 
 
@@ -597,7 +654,7 @@ def fig_resultpath():
         (a2, "9×9  ·  467 kB / frame", 30.01, 40.0, "×2.21",
          "copy is larger than the GPU\n→ cannot hide at any overlap", AMBER),
     ]:
-        ax.bar([0], [floor], width=0.5, color=ACCENT, zorder=3, linewidth=0)
+        ax.bar([0], [floor], width=0.5, color=col, zorder=3, linewidth=0)
         ax.bar([1], [copy_us], width=0.5, color=col, zorder=3, linewidth=0)
         ax.axhline(floor, color=GREEN, lw=1.3, ls="--", zorder=4)
         ax.text(-0.55, floor + 1.2, "GPU floor", color=GREEN, fontsize=8.5, ha="left")
@@ -622,39 +679,59 @@ def fig_resultpath():
 
 # ------------------------------------------------ 8. f32 kernel (nsys truth)
 def fig_f32_kernel():
-    fig, (ax, ax2) = plt.subplots(1, 2, figsize=(7.7, 2.6),
-                                  gridspec_kw={"width_ratios": [1, 1.35]})
-    v = [39.93, 23.67]
-    ax.bar([0, 1], v, width=0.5, color=[AMBER, ACCENT], zorder=3)
-    for i, val in enumerate(v):
-        ax.text(i, val + 1.2, f"{val:.1f} µs", ha="center", color=PALE,
-                fontsize=11, fontweight="bold")
-    ax.annotate("", xy=(1, 25.5), xytext=(0, 41.5),
-                arrowprops=dict(arrowstyle="-|>", color=MUTED, lw=1.2,
-                                connectionstyle="arc3,rad=-0.25"))
-    ax.text(0.5, 34, "−40.7 %", ha="center", color=PALE, fontsize=10,
-            fontweight="bold")
-    ax.set_xticks([0, 1]); ax.set_xticklabels(["f64 pedestal", "f32 pedestal"],
-                                              color=TEXT2, fontsize=8.5)
-    ax.set_ylim(0, 50); ax.set_yticks([]); bare(ax, keep=("bottom",))
-    ax.set_title("kernel, exclusive (nsys, 9×9, 1 stream)", color=MUTED,
-                 fontsize=8, pad=8)
+    """The same three engines, read at s1 and at s4 — cap 1700, both arms.
 
+    s1 is the DURATION claim: overlap is exactly 1.00 on every engine, so the
+    union per frame IS the mean duration, and the kernel is tallest in BOTH
+    arms. s4 is the BINDING claim: the copy engines still serialize (overlap
+    1.00) but the kernel overlaps itself across streams, so its per-frame
+    number is occupancy. Only at s4 does the f32 kernel fall below D2H, which
+    is why the left panel cannot be used to argue the handover.
+    """
+    fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(8.0, 3.15))
     labels = ["kernel", "D2H", "H2D"]
-    f64 = [39.93, 19.44, 13.24]
-    f32 = [23.67, 19.44, 13.24]
-    y = np.arange(3); h = 0.35
-    ax2.barh(y + h / 2, f64, height=h, color=AMBER, zorder=3, label="f64 ped")
-    ax2.barh(y - h / 2, f32, height=h, color=ACCENT, zorder=3, label="f32 ped")
-    for yi, (a, b) in enumerate(zip(f64, f32)):
-        ax2.text(a + 1, yi + h / 2, f"{a:.1f}", va="center", color=TEXT2, fontsize=8)
-        ax2.text(b + 1, yi - h / 2, f"{b:.1f}", va="center", color=TEXT2, fontsize=8)
-    ax2.set_yticks(y); ax2.set_yticklabels(labels, color=TEXT2, fontsize=8.5)
-    ax2.invert_yaxis(); ax2.set_xlim(0, 52); ax2.set_xticks([])
-    bare(ax2, keep=("left",))
-    ax2.legend(frameon=False, fontsize=8, labelcolor=TEXT2, loc="lower right")
-    ax2.set_title("per-frame GPU operations (µs) — only the kernel moves",
-                  color=MUTED, fontsize=8, pad=8)
+    y = np.arange(3); h = 0.34
+    panels = [
+        (ax1, "s1 · UNCONTENDED  —  duration",
+         [39.86, 21.97, 13.20], [23.70, 21.95, 13.22], "−40.5 %",
+         "kernel binds in BOTH arms"),
+        (ax2, "s4 · SHIPPED  —  what binds",
+         [32.66, 25.25, 20.77], [23.94, 25.24, 20.54], "−26.7 %",
+         "f32 kernel drops BELOW D2H"),
+    ]
+    for ax, title, f64, f32, delta, verdict in panels:
+        ax.barh(y + h / 2, f64, height=h, color=AMBER, zorder=3, label="f64 ped")
+        ax.barh(y - h / 2, f32, height=h, color=ACCENT, zorder=3, label="f32 ped")
+        # the engine that sets the floor in each arm is named, not ringed
+        i64, i32 = int(np.argmax(f64)), int(np.argmax(f32))
+        for yi, (a, b) in enumerate(zip(f64, f32)):
+            for val, off, top in ((a, +h / 2, yi == i64), (b, -h / 2, yi == i32)):
+                # the kernel row carries the argument, so it stays legible even
+                # in the arm where it no longer binds
+                ax.text(val + 0.7, yi + off, f"{val:.2f}" + ("  ◀ binds" if top else ""),
+                        va="center", color=PALE if (top or yi == 0) else TEXT2,
+                        fontsize=7.5, fontweight="bold" if top else "normal")
+        ax.text(0.985, 0.055, verdict, transform=ax.transAxes, ha="right",
+                color=PALE, fontsize=8, fontweight="bold")
+        ax.text(f64[0] * 0.42, -0.02 - h, delta, ha="center", va="center",
+                color=PALE, fontsize=9.5, fontweight="bold")
+        ax.set_yticks(y); ax.set_yticklabels(labels, color=TEXT2, fontsize=8.5)
+        ax.invert_yaxis(); ax.set_xlim(0, 46); ax.set_xticks([])
+        ax.set_ylim(2.62, -0.72)
+        bare(ax, keep=("left",))
+        ax.set_title(title, color=PALE, fontsize=9, pad=10, loc="left")
+
+    # the wall the f32 kernel has to clear, drawn only where it matters
+    ax2.axvline(25.24, color=MUTED, lw=1.0, ls="--", zorder=4)
+    ax1.legend(frameon=False, fontsize=8, labelcolor=TEXT2, loc="lower right",
+               bbox_to_anchor=(1.0, 0.13))
+    fig.subplots_adjust(bottom=0.20, top=0.86, left=0.09, right=0.99, wspace=0.22)
+    fig.text(0.545, 0.015,
+             "s4 is busy time per frame — the UNION of an engine's intervals, not a duration. The copy engines "
+             "still serialize (overlap 1.00), so H2D and D2H\nstay durations and rise under contention; the kernel "
+             "overlaps itself 1.32× across streams, so its 43.2 µs mean duration reads as 32.66 µs of "
+             "occupancy.  → A1",
+             ha="center", va="bottom", color=MUTED, fontsize=6.8, linespacing=1.6)
     save(fig, "fig_f32_kernel")
 
 
@@ -662,33 +739,57 @@ def fig_f32_kernel():
 def fig_cancellation():
     fig, (ax, ax2) = plt.subplots(1, 2, figsize=(7.7, 2.7),
                                   gridspec_kw={"width_ratios": [1.25, 1]})
-    names = ["E[X²]\n2.17e7", "mean²\n2.17e7", "variance\n2025"]
-    vals = [2.17e7, 2.17e7, 2025]
-    ax.bar([0, 1], vals[:2], width=0.5, color=[PALE, PALE], zorder=3)
+    names = ["E[X²]\n2.17e7", "mean²\n2.17e7", "var, bulk\n2025", "var, quiet\n9"]
+    ax.bar([0, 1], [2.17e7, 2.17e7], width=0.5, color=[PALE, PALE], zorder=3)
     ax.bar([2], [2025], width=0.5, color=AMBER, zorder=3)
-    ax.set_yscale("log"); ax.set_ylim(1e2, 2e8)
-    ax.set_xticks([0, 1, 2]); ax.set_xticklabels(names, color=TEXT2, fontsize=8)
-    ax.set_yticks([1e3, 1e5, 1e7])
-    ax.axhline(2048, color=ACCENT, lw=1.3, ls="--", zorder=4)
-    ax.text(2.42, 3000, "f32 rounding step\nat 2.17e7  =  2048", color=ACCENT,
-            fontsize=7.5, ha="right", va="bottom")
+    ax.bar([3], [9], width=0.5, color=AMBER, zorder=3)
+    ax.set_yscale("log"); ax.set_ylim(1, 2e8)
+    ax.set_xticks([0, 1, 2, 3]); ax.set_xticklabels(names, color=TEXT2, fontsize=7.5)
+    ax.set_yticks([1e0, 1e2, 1e4, 1e6, 1e8])
+    ax.axhline(3, color=ACCENT, lw=1.3, ls="--", zorder=4)
+    ax.text(3.46, 2.2e5, "the error: ±3 ADU², the same\nfor every pixel — so it is the\n"
+            "quiet ones it swallows", color=ACCENT, fontsize=7.5, ha="right",
+            va="center", linespacing=1.5)
+    ax.plot([3.0, 3.0], [3.6, 4e4], color=ACCENT, lw=0.7, ls=":", zorder=4)
     bare(ax)
-    ax.set_title("var = E[X²] − mean²   (f32, mean ≈ 4655 ADU)",
+    ax.set_title("var = E[X²] − mean²  ·  each operand on a grid of 2 ADU²",
                  color=MUTED, fontsize=8, pad=8)
 
-    rms = np.linspace(0, 12, 200)
-    ax2.fill_between(rms, 0, np.where(rms < 6.5, 1, 0), color=AMBER, alpha=0.16,
-                     step="pre")
-    ax2.plot(rms, rms**2, color=PALE, lw=1.8, label="true variance")
-    ax2.axhline(42, color=ACCENT, lw=1.4, ls="--", label="f32 error floor")
+    # The axes are scaled to the region the error actually reaches: the floor is
+    # +-3-4 ADU^2 (docs/pedestal_precision_f32_cancellation.md SS5), so variance is
+    # lost below rms ~2 and merely corrupted up to rms ~5. An earlier version drew
+    # the floor at 42 with the damage running to rms 6.5 -- that is 6.5^2, i.e. the
+    # line and the shading were each other's source, and both were ~14x too large.
+    rms = np.linspace(0, 6, 300)
+    ax2.axvspan(0, 2.0, color=AMBER, alpha=0.20, zorder=1)
+    ax2.axvspan(2.0, 5.0, color=AMBER, alpha=0.07, zorder=1)
+    ax2.fill_between([0, 6], 3, 4, color=ACCENT, alpha=0.22, zorder=2, lw=0)
+    ax2.plot(rms, rms**2, color=PALE, lw=1.8, zorder=4)
+    ax2.axhline(3, color=ACCENT, lw=1.4, ls="--", zorder=5)
+    # the three rows of the doc's per-pixel table, labelled left of the curve
+    # (it is convex, so the whole upper-left of the panel is free)
+    pts = ((2.0, "rms 2 → var 4 ± 3 → 0", 0.30, 11.2),
+           (3.0, "rms 3 → 17 % rms err", 0.30, 17.4),
+           (5.0, "rms 5 → 6 % rms err",  2.30, 24.6))
+    for r, lab, tx, ty in pts:
+        ax2.plot([r], [r * r], marker="o", ms=4, color=PALE, zorder=6)
+        ax2.annotate(lab, xy=(r, r * r), xytext=(tx, ty), color=TEXT2,
+                     fontsize=6.8, va="center", zorder=6,
+                     arrowprops=dict(arrowstyle="-", color=MUTED, lw=0.6,
+                                     shrinkA=2, shrinkB=3))
     ax2.set_xlabel("pixel rms (ADU)", color=TEXT2, fontsize=8.5)
-    ax2.set_ylabel("variance", color=TEXT2, fontsize=8.5)
-    ax2.set_ylim(0, 150); ax2.set_xlim(0, 12)
-    ax2.set_yticks([]); ax2.tick_params(labelsize=8)
-    bare(ax2)
-    ax2.text(1.0, 108, "quiet pixels:\nerror > variance\n→ rms clamped to 0\n→ fires every frame",
-             color=AMBER, fontsize=7.5, va="top")
-    ax2.legend(frameon=False, fontsize=7.5, labelcolor=TEXT2, loc="lower right")
+    ax2.set_ylabel("variance (ADU²)", color=TEXT2, fontsize=8.5)
+    ax2.set_ylim(0, 40); ax2.set_xlim(0, 6)
+    ax2.set_yticks([0, 10, 20, 30, 40]); ax2.set_xticks([0, 2, 4, 6])
+    ax2.tick_params(labelsize=7.5, colors=MUTED)
+    bare(ax2, keep=("left", "bottom"))
+    ax2.text(0.12, 38.8, "rms < 2\n→ clamped to 0\n→ fires every frame",
+             color=AMBER, fontsize=7.0, va="top", linespacing=1.5, zorder=6)
+    ax2.text(2.20, 38.8, "rms 2–5: threshold\ncorrupted, not clamped",
+             color=MUTED, fontsize=6.8, va="top", linespacing=1.5, zorder=6)
+    ax2.text(3.05, 31.5, "true variance = rms²", color=PALE, fontsize=7.2, zorder=6)
+    ax2.text(5.90, 5.3, "f32 error floor  ±3–4 ADU²", color=ACCENT, fontsize=7.0,
+             ha="right", zorder=6)
     save(fig, "fig_cancellation")
 
 
@@ -1048,3 +1149,240 @@ def fig_regpressure():
 
 
 fig_regpressure()
+
+
+# ------------------------------------------ 4b. the timeline, revealed in steps
+# fig_streams shows all three stages at once and belongs on the opt3 slide, where
+# removing the barrier is the point. These two are the earlier beats of the same
+# picture, so opt1 and opt2 can each show the state of play at their own step.
+
+def _engine_legend(ax, y=0.92):
+    handles = [Rectangle((0, 0), 1, 1, color=c) for c in (AMBER, ACCENT, PALE)]
+    ax.legend(handles, ["H2D copy", "kernel", "D2H copy"], frameon=False,
+              fontsize=8, labelcolor=TEXT2, ncol=3, loc="lower right",
+              bbox_to_anchor=(1.02, y), handlelength=1.1)
+
+
+def fig_opt1_timeline():
+    """opt1 — one stream, synchronous: one engine at a time, host idle between.
+
+    Proportions are opt1's own: 13.1 + 14.7 + 5.3 = 33.2 us of serialized engine
+    time inside a 63.3 us frame, so the host gap is drawn ~48 % of the period. The
+    contiguous-bars version of this picture (fig_streams, panel 1) implies the GPU
+    is busy end to end, which is exactly what opt1 is not.
+    """
+    WORK = H_ + K_ + D_                 # 33 units = 33.2 us of engine work
+    HOST = 30                           # 63.3 - 33.2 = 30.1 us the host holds
+    PER = WORK + HOST
+    fig, ax = plt.subplots(figsize=(7.7, 1.05))
+    for i in range(3):
+        t0 = i * PER
+        _frame_bars(ax, 1.0, t0)
+        ax.axvspan(t0 + WORK, t0 + PER, color=MUTED, alpha=0.09, zorder=1)
+    ax.annotate("host blocks — every engine idle",
+                xy=(WORK + HOST / 2, 0.98), xytext=(WORK + HOST / 2, 0.56),
+                color=AMBER, fontsize=8, ha="center", va="top",
+                arrowprops=dict(arrowstyle="-", color=AMBER, lw=0.8))
+    ax.text(3 * PER + 4, 1.34, "one engine\nat a time", color=TEXT2, fontsize=8,
+            va="center", linespacing=1.5)
+    ax.set_xlim(-4, 3 * PER + 40)
+    ax.set_ylim(0.02, 2.45)
+    ax.set_yticks([]); ax.set_xticks([])
+    bare(ax, keep=())
+    _engine_legend(ax)
+    fig.subplots_adjust(left=0.01, right=0.99, top=0.86, bottom=0.04)
+    save(fig, "fig_opt1_timeline")
+
+
+def fig_opt2_timeline():
+    """opt2 — four streams, ONE round: what streaming buys, and nothing else.
+
+    Scheduled by _schedule(), so the four H2D bars queue on the single copy
+    engine instead of being drawn on top of each other. The stagger is therefore
+    not a drawing choice: it is exactly H2D's duration, which is why the lanes
+    step by 13 units. The barrier is opt3's subject and is left to that slide.
+    """
+    fig, ax = plt.subplots(figsize=(7.7, 1.50))
+    frames, _ = _schedule(4, 4)
+    _draw_schedule(ax, frames)
+    for st in range(4):
+        ax.text(-4, (3 - st) + LANE_ / 2, f"stream {st}", color=MUTED,
+                fontsize=7.5, ha="right", va="center")
+    # The window where the most frames are simultaneously in flight -- measured
+    # off the schedule, not asserted. At 3x3 proportions it is THREE, not four:
+    # the frame span (33) is only 2.5x the H2D stagger (13), so stream 0 has
+    # already retired by the time stream 3 gets the copy engine. The old drawing
+    # claimed all four, which the single copy engine makes impossible here.
+    spans = [(h0, d0 + D_) for _, h0, _, d0 in frames]
+    edges = sorted({t for sp in spans for t in sp})
+    counts = [(a, b, sum(1 for s0, s1 in spans if s0 <= a and s1 >= b))
+              for a, b in zip(edges, edges[1:])]
+    best = max(c for _, _, c in counts)
+    lo = min(a for a, _, c in counts if c == best)
+    hi = max(b for _, b, c in counts if c == best)
+    ax.axvspan(lo, hi, color=ACCENT, alpha=0.10, zorder=1)
+    ax.text((lo + hi) / 2, 4.05, f"{best} frames in flight", color=ACCENT,
+            fontsize=7.5, ha="center", va="bottom")
+    ax.set_xlim(-26, 100)
+    ax.set_ylim(-0.35, 4.6)
+    ax.set_yticks([]); ax.set_xticks([])
+    bare(ax, keep=())
+    ax.text(74, 0.34, "a copy in one stream runs\nwhile another computes",
+            color=TEXT2, fontsize=8, va="center", linespacing=1.5)
+    _engine_legend(ax, y=0.94)
+    ax.set_xlabel("time  →", color=MUTED, fontsize=8.5, loc="left")
+    fig.subplots_adjust(left=0.01, right=0.99, top=0.90, bottom=0.19)
+    fig.text(0.01, 0.015,
+             "Scheduled, not sketched: the H2D bars queue because there is one copy engine per direction (measured overlap 1.00). 3×3 proportions "
+             "[f64 · s1], 13 : 15 : 5 — so a frame's span is 2.5× the H2D stagger and three are in flight, not four.",
+             color=MUTED, fontsize=6.4, va="bottom")
+    save(fig, "fig_opt2_timeline")
+
+
+fig_opt1_timeline()
+fig_opt2_timeline()
+
+
+# ------------------------------- 10b. the same typedef, the same absolute gain
+def fig_f32_absolute():
+    """The same typedef, the same ~4.7 us -- and a percentage that triples.
+
+    9x9 end-to-end, f64 vs f32, warm, cap 1700, from ladder_9x9.csv in
+    results/2026-08-20_{f64,f32}_cap1700/.
+
+    opt3 is EXCLUDED, not dropped for space: its two arms differ by 393k page
+    faults, which the deck's own 0.68 us/fault model turns into +13.4 us against
+    an observed +13.2. That reading measured the allocator, not the kernel, and
+    quoting it as "+16 %" would repeat the error this slide exists to expose.
+
+    opt5 is shown but greyed: its arms differ by 141k faults (-4.81 us predicted
+    against -4.54 observed), so the fault term alone accounts for the whole
+    effect. opt4 (faults matched to 493) and opt6 (zero faults in both arms) are
+    the two clean readings -- and they agree, -4.63 and -4.87 us.
+
+    Two panels because one cannot carry it: a 4.6 us delta on an 80 us axis is
+    invisible, which is itself the point. Left = the frame shrinking; right =
+    the saving that does not.
+    """
+    steps = ["opt4", "opt5", "opt6"]
+    sub = ["+ pinned input", "host↔GPU overlap", "zero-copy"]
+    f64v = [79.83, 66.39, 30.01]
+    f32v = [75.20, 61.85, 25.14]
+    dv = [a - b for a, b in zip(f64v, f32v)]
+    pct = [-5.8, -6.8, -16.2]
+    dagger = [False, True, False]
+
+    fig, (axA, axB) = plt.subplots(
+        1, 2, figsize=(11.4, 3.15), gridspec_kw={"width_ratios": [1.5, 1]})
+    x = np.arange(3)
+
+    # ---- A: the frame, shrinking
+    w = 0.34
+    axA.bar(x - w / 2 - 0.015, f64v, width=w, color=ACCENT, zorder=3, linewidth=0)
+    axA.bar(x + w / 2 + 0.015, f32v, width=w, color=AMBER, zorder=3, linewidth=0)
+    for i, (a, b) in enumerate(zip(f64v, f32v)):
+        axA.text(i - w / 2 - 0.015, a + 1.6, f"{a:.1f}", ha="center",
+                 color=TEXT2, fontsize=8.5)
+        axA.text(i + w / 2 + 0.015, b + 1.6, f"{b:.1f}", ha="center",
+                 color=TEXT2, fontsize=8.5)
+    axA.annotate("opt6 + f32  =  opt7\nthe shipped build",
+                 xy=(2.19, 19.0), xytext=(2.36, 56),
+                 arrowprops=dict(arrowstyle="->", color=AMBER, lw=1.2),
+                 color=AMBER, fontsize=8.5, fontweight="bold", linespacing=1.5,
+                 ha="center")
+    axA.set_xlim(-0.62, 3.02)
+    axA.set_ylim(0, 94)
+    axA.set_yticks([0, 25, 50, 75])
+    axA.set_yticklabels(["0", "25", "50", "75"], fontsize=8)
+    axA.set_ylabel("end-to-end µs / frame", color=MUTED, fontsize=8.5)
+    axA.set_xticks(x)
+    axA.set_xticklabels([f"{s}\n{t}" for s, t in zip(steps, sub)],
+                        fontsize=8.5, linespacing=1.6, color=TEXT2)
+    axA.tick_params(axis="x", length=0, pad=7)
+    bare(axA, keep=("left", "bottom"))
+    axA.spines["bottom"].set_color(RULE)
+    handles = [Rectangle((0, 0), 1, 1, color=c) for c in (ACCENT, AMBER)]
+    axA.legend(handles, ["f64 pedestal", "f32 pedestal"], frameon=False,
+               fontsize=8.5, labelcolor=TEXT2, ncol=2, loc="upper right",
+               bbox_to_anchor=(1.02, 1.10), handlelength=1.1)
+    axA.set_title("the frame shrinks by 2.7×", color=MUTED, fontsize=9,
+                  pad=14, loc="left")
+
+    # ---- B: the saving, which does not
+    axB.bar(x, dv, width=0.52, color=AMBER, zorder=3, linewidth=0)
+    axB.axhline(np.mean(dv), color=PALE, lw=0.9, ls="--", zorder=4)
+    for i, (d, p_) in enumerate(zip(dv, pct)):
+        axB.text(i, d + 0.24, f"−{d:.2f} µs", ha="center", color=PALE,
+                 fontsize=10.5, fontweight="bold")
+    axB.set_ylim(0, 7.6)
+    axB.set_yticks([0, 2, 4])
+    axB.set_yticklabels(["0", "2", "4"], fontsize=8)
+    axB.set_ylabel("µs saved by the f32 pedestal", color=MUTED, fontsize=8.5)
+    axB.set_xticks(x)
+    axB.set_xticklabels([f"{s}{' †' if d else ''}\n{p:+.1f} %"
+                         for s, d, p in zip(steps, dagger, pct)],
+                        fontsize=9, linespacing=1.7, color=TEXT2)
+    axB.tick_params(axis="x", length=0, pad=7)
+    bare(axB, keep=("left", "bottom"))
+    axB.spines["bottom"].set_color(RULE)
+    axB.set_title(f"the saving does not  ·  dashed = {np.mean(dv):.2f} µs mean",
+                  color=MUTED, fontsize=9, pad=14, loc="left")
+
+    fig.subplots_adjust(bottom=0.30, top=0.84, left=0.055, right=0.985,
+                        wspace=0.26)
+    save(fig, "fig_f32_absolute")
+
+
+fig_f32_absolute()
+
+
+# ------------------------------------------- 10c. what the rewrite changes
+def fig_variance_rewrite():
+    """The rewrite in one axis: the SIZE of the numbers you subtract.
+
+    Numbers from docs/pedestal_precision_f32_cancellation.md §4-5 and §11.
+    Before, var = E[X²] − mean² subtracts two ~2.17e7 operands to recover ~2025:
+    each operand sits on an f32 grid of 2 ADU², so the answer inherits ±3 — an
+    ABSOLUTE error that does not shrink for quiet pixels, which is what kills
+    them. After, with Y = X − X0 accumulated instead, the operands are 2025 and
+    ~0.25; the grid under them is 1.2e-4 and the cancellation is simply gone.
+    """
+    ANS = 2025.0
+    rows = [(1.0, 2.17e7, "2.17 × 10⁷", "±3 ADU²  — fatal below rms ≈ 2", MUTED),
+            (0.0, ANS, "2.02 × 10³", "±0.0001 ADU²  — 30 000× smaller", AMBER)]
+
+    fig, ax = plt.subplots(figsize=(7.7, 1.36))
+    ax.set_xscale("log")
+    for y, operand, mag, note, col in rows:
+        if operand > ANS:
+            ax.plot([ANS, operand], [y, y], color=col, lw=11, alpha=0.5,
+                    solid_capstyle="butt", zorder=3)
+        ax.plot([operand], [y], "o", color=col, ms=9, zorder=5)
+        ax.text(operand * 2.2, y + 0.17, f"operands  {mag}", color=TEXT2,
+                fontsize=8, va="center")
+        ax.text(operand * 2.2, y - 0.19, note, color=col, fontsize=8,
+                va="center", fontweight="bold")
+    ax.axvline(ANS, color=PALE, lw=1.2, ls="--", zorder=4)
+    ax.text(ANS * 1.25, -0.44, "the answer:  variance ≈ 2025", color=PALE,
+            fontsize=7.5, ha="left", va="center")
+    ax.annotate("", xy=(2.17e7, 1.44), xytext=(ANS, 1.44),
+                arrowprops=dict(arrowstyle="<->", color=MUTED, lw=1.0))
+    ax.text(2.1e5, 1.52, "4 decades of common term to cancel", color=MUTED,
+            fontsize=7.5, ha="center")
+    ax.set_yticks([1, 0])
+    ax.set_yticklabels(["before\naccumulate X", "after\naccumulate Y = X − X₀"],
+                       fontsize=8.5, linespacing=1.5)
+    for lab, c in zip(ax.get_yticklabels(), (TEXT2, PALE)):
+        lab.set_color(c)
+    ax.tick_params(axis="y", length=0)
+    ax.set_xlim(3e2, 4e9)
+    ax.set_ylim(-0.62, 1.78)
+    ax.set_xticks([1e3, 1e5, 1e7, 1e9])
+    ax.tick_params(axis="x", labelsize=7.5)
+    bare(ax, keep=("bottom",))
+    ax.spines["bottom"].set_color(RULE)
+    fig.subplots_adjust(left=0.19, right=0.99, top=0.97, bottom=0.20)
+    save(fig, "fig_variance_rewrite")
+
+
+fig_variance_rewrite()

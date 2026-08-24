@@ -21,10 +21,14 @@ The measurement harness is [`python/tests/perf/`](../python/tests/perf/) (see it
 
 | tag | directory | contents |
 |---|---|---|
-| **`[f64]`** | [`perf/results/2026-08-18_f64/`](../python/tests/perf/results/2026-08-18_f64/) | `ladder_3x3.csv`, `ladder_9x9.csv`, `probes.csv`, 4 × `.nsys-rep`/`.sqlite` — `DEVICE_PED_TYPE=double`. **Acts I and II.** |
-| **`[f32]`** | [`perf/results/2026-08-18_f32/`](../python/tests/perf/results/2026-08-18_f32/) | same, `DEVICE_PED_TYPE=float`. **Act III.** |
+| **`[f64]`** | [`perf/results/2026-08-18_f64/`](../python/tests/perf/results/2026-08-18_f64/) | `ladder_3x3.csv`, `ladder_9x9.csv`, `probes.csv` — `DEVICE_PED_TYPE=double`, **cap 1500 at 9×9**. **3×3 for Acts I and II.** |
+| **`[f32]`** | [`perf/results/2026-08-18_f32/`](../python/tests/perf/results/2026-08-18_f32/) | same, `DEVICE_PED_TYPE=float`. **3×3 for Act III.** |
+| **`[f64]` 9×9** | [`perf/results/2026-08-20_f64_cap1700/`](../python/tests/perf/results/2026-08-20_f64_cap1700/) | `ladder_9x9.csv` at the **lossless cap 1700** — the re-take every 9×9 end-to-end number in this document comes from. |
+| **`[f32]` 9×9** | [`perf/results/2026-08-20_f32_cap1700/`](../python/tests/perf/results/2026-08-20_f32_cap1700/) | same, `float`. |
+| **cap A/B** | [`perf/results/2026-08-20_{f64,f32}_capAB/`](../python/tests/perf/results/) | `probes.csv` with **both caps probed in one session**, s1 and s4 — the source of every 9×9 engine number in §4, §11 and §14. |
 
-Both arms are git rev `7177f00` on `bench/opt2-pipeline`. Reproduce either with
+All five directories are git rev `7177f00` on `bench/opt2-pipeline`, same driver and GPU;
+`env.json` records each. Reproduce either arm with
 `./run_campaign.sh f64` (or `f32`); the arm is selected by one line in
 `include/aare/clusterfinder_kernel.cuh` and nothing else differs. The `step` column in
 the CSVs carries the harness's internal labels — §15 maps them to the step names used
@@ -36,12 +40,19 @@ the configuration:
 | | 3×3 | 9×9 |
 |---|--:|--:|
 | `N` | 100 000 | 20 000 |
-| `max_clusters_per_frame` | 3 000 | 1 500 |
+| `max_clusters_per_frame` | 3 000 | **1 700** |
 | `n_streams` | 4 | 4 |
 | `BATCH_SIZE` | 2 000 | 2 000 |
 | pedestal frames / `n_sigma` | 1 000 / 5 | 1 000 / 5 |
 | reps | 5 | 5 |
 | nsys probe frames | 20 000 | 20 000 |
+
+The 9×9 cap was **1 500 in the 2026-08-18 campaign and 1 700 from 2026-08-20 on**: 1 500
+sat below the observed per-frame maximum of 1 633 and silently truncated 0.0095 % of
+clusters (§3.5). Every 9×9 number in this document is at 1 700 unless the text says
+otherwise; §12.1–§12.2 keep their cap-1500 figures deliberately, because the page-fault
+diagnosis was made at that cap and the slot size is stated alongside. The cap is not a
+free parameter at 9×9 — it sets the D2H bar directly (§4.2).
 
 9×9 is held at N = 20 000 because its result heap is ~5× larger per frame
 (1422 × 328 B = 466 kB vs 2330 × 40 B = 93 kB); 100 k would need 46.6 GB to retain
@@ -422,6 +433,45 @@ Three things this pins down, each of which was got wrong at some point:
 | 9×9 `[f64]` | 32.66 µs | 30.01 µs | **30.01 µs → 33 323 FPS** (kernel) | sustained |
 | 9×9 `[f32]` | 25.24 µs | 25.14 µs | **25.14 µs → 39 775 FPS** (**D2H**) | sustained |
 
+#### The two columns are two different runs, made by two different tools
+
+This is the single easiest thing to get wrong, so it is worth stating flatly with 9×9
+`[f64]` as the worked case:
+
+| | **32.66 µs/frame** | **30.01 µs/frame** |
+|---|---|---|
+| file | `probes.csv`, `2026-08-20_f64_capAB` | `ladder_9x9.csv`, `2026-08-20_f64_cap1700` |
+| harness | `run_probes.py` → `nsys_kernel_probe.py` | `run_ladder.py` → `ladder.py`, step `opt8` |
+| **profiler** | **under nsys** | **none** |
+| column | `kernel_us_per_frame` = `kernel_busy_ms / n_frames` | `wall_s / n_frames` = `0.60019 / 20 000` |
+| what it measures | **one engine's** union occupancy | the **whole pipeline** end to end |
+| scope | 653.140 ms of merged kernel intervals | 600.19 ms of wall clock |
+
+**30.01 does not come from nsys.** It cannot: the *same profiled run* that yields 32.66
+reports its own wall clock as `window_us_per_frame = 69.54 µs/frame` — 2.3× slower than
+30.01 — because API tracing inflates it. That is exactly why the two harnesses are
+separate, per `run_probes.py`: *"a profiled run cannot produce a throughput number, and an
+unprofiled run cannot produce a per-engine breakdown. Two tools, two questions."*
+
+The divisor is **`n_frames` = 20 000 in both cases**. `batch = 2000` is the chunk size
+*inside* each run, matched between the two harnesses so the submission pattern — and
+therefore the overlap — is comparable; it is never a denominator.
+
+**Why they conflict, and which one loses.** 32.66 claims one engine needs 32.66 µs of
+occupancy per frame; 30.01 says the whole pipeline emits a frame every 30.01 µs. A
+pipeline cannot outrun its busiest engine, so one of them is wrong — and it is the
+profiled one. Under nsys, submission is sparser, kernels overlap each other *less*, and a
+less-overlapped interval set has a *larger* union. The measured 1.32× is therefore a lower
+bound on the real overlap, and the true per-frame occupancy in the unprofiled run is below
+32.66. Hence: the floor is the **lower** of the two, and a sustained rate outranks an
+estimate.
+
+**"Peak" here and "floor" in the deck are the same quantity**, read in opposite units: a
+floor in µs/frame, its reciprocal a peak in FPS. Both are the *lower* of probe estimate
+and best sustained rate, so a slide saying "at the floor" and a table saying "100 % of
+peak" are the same statement. What neither means is the raw engine max — 32.66 µs at 9×9
+`[f64]` is the profiled `max(H2D, kernel, D2H)`, and the floor is 30.01.
+
 The 3×3 `[f64]` row is what keeps this from being circular: there the pipeline stopped
 5.4 % **short** of the probe estimate, so the probe binds and opt6 reads 95 %, not 100 %.
 Where the sustained rate does win, the probe still corroborates it — to 1.9 %, 6.8 % and
@@ -452,9 +502,13 @@ packets travel upstream against D2H's posted writes:
 | | 1 stream | 4 streams | penalty |
 |---|--:|--:|--:|
 | 3×3 H2D | 13.15 µs | 16.63 µs | **+26 %** |
-| 9×9 H2D | 13.24 µs | 19.74 µs | **+49 %** |
+| 9×9 H2D | 13.22 µs | 20.54 µs | **+55 %** |
 
-The 1-stream figures are identical across cluster sizes (13.15 / 13.24 µs) and builds —
+Both rows are `[f32]`; the 9×9 row is at **cap 1700** — at the old 1 500 the same
+comparison read 13.24 → 19.74 µs (+49 %), because a smaller D2H slot leaves more of the
+link for H2D. The penalty is a function of the cap, not only of the stream count.
+
+The 1-stream figures are identical across cluster sizes (13.15 / 13.22 µs) and builds —
 the payload is the same 320 000 B frame — which proves the H2D path itself is unchanged
 and the difference is contention alone.
 
@@ -473,13 +527,22 @@ kernel). **Source**: `probes.csv`, columns `*_duty_pct`, `*_overlap`.
 | 9×9, 4 str | f64 | **47.0 %** | 29.9 % | 36.3 % | **1.32×** |
 | 9×9, 4 str | f32 | 34.2 % | 29.4 % | **36.1 %** | 1.02× |
 
-Two readings:
+Three readings:
 
 1. **At 3×3 the copy engine is the saturated one** (~70 % H2D in both builds) — the GPU
    spends three quarters of its time being fed. At 9×9 no single engine exceeds 47 %
    because all three are comparable and interleave; the kernel is tallest but not
    dominant.
-2. **`overlap` quantifies cross-stream kernel concurrency.** At f32/9×9 it is 1.02× —
+2. **Only the kernel row ever overlaps.** `H2D_overlap` and `D2H_overlap` are **1.000 in
+   every row of `probes.csv`**, s1 and s4 alike: there is one copy engine per direction,
+   so same-direction transfers queue no matter how many streams issue them. For those two
+   engines `busy == sum`, and the `s4` per-frame figure is still a true mean duration —
+   which is why H2D *rises* 13.20 → 20.77 µs under load (each copy genuinely slows) while
+   the kernel *falls*. The concurrency four streams actually buy is H2D ∥ kernel ∥ D2H,
+   plus kernel-with-kernel; never copy-with-copy in the same direction. The stream
+   timelines in the deck (`fig_streams`, `fig_opt2_timeline`) draw same-direction copies
+   overlapping and carry a note saying so.
+3. **`overlap` quantifies cross-stream kernel concurrency.** At f32/9×9 it is 1.02× —
    one 9×9 kernel nearly fills the GPU, so extra streams buy transfer overlap, not
    kernel co-execution. On f64 it rises to **1.32×**, because the longer f64 kernels
    leave more opportunity to interleave. This is why the f64 `s4` kernel column
@@ -522,7 +585,7 @@ not the pipeline).
 
 **opt4 is the largest single step in Act I (1.32×), and §4 says why**: at 3×3 the H2D bar
 is the tallest, so pinning the input attacks the bar that actually binds. The same step
-is worth only 1.02× at 9×9 (§6), where H2D is the *shortest* bar. This is the first
+is worth only 1.03× at 9×9 (§6), where H2D is the *shortest* bar. This is the first
 confirmation of the rule.
 
 **Where Act I ends: 62 % of peak.** The remaining 9.8 µs/frame is host-side, and
@@ -538,7 +601,12 @@ so every speedup divides by a cold CPU and reads ~9 % generous. State the conven
 **Source**: `ladder_9x9.csv` in `2026-08-20_f64_cap1700/`. N = 20 000, **cap 1700**,
 4 streams, 5 reps. The earlier cap of 1500 sat below the per-frame maximum of 1633 and
 silently truncated 0.0095 % of clusters (§3.5); every 9×9 number here is the lossless
-re-take. opt1/opt2 are absent: `ClusterFinderCUDAOpt2` is registered for 3×3 only, so
+re-take. **The CPU row is the exception**: it is the swept optimum from
+`2026-08-19_cpu_threads/` (32 threads, 665.22 µs), not the ladder's own CPU row in that
+directory (688.28 µs at whatever thread count `ladder.py` defaulted to). The CPU finder
+ignores `max_clusters_per_frame` entirely, so the cap difference does not affect it —
+but the thread count does, by 24 % (§3.5), which is why the swept value is the one
+quoted. opt1/opt2 are absent: `ClusterFinderCUDAOpt2` is registered for 3×3 only, so
 the 9×9 ladder starts at opt3. Peak: **30.01 µs / 33 323 FPS** — the best sustained
 rate; the probe's engine-occupancy estimate is 32.66 µs / 30 621 FPS, 8.1 % lower (§4).
 
@@ -550,15 +618,15 @@ rate; the probe's engine-occupancy estimate is 32.66 µs / 30 621 FPS, 8.1 % low
 
 Two things are different here and both matter:
 
-1. **opt4 is worth almost nothing (1.02×)** — exactly as §4 predicts. At 9×9, H2D is
+1. **opt4 is worth almost nothing (1.03×)** — exactly as §4 predicts. At 9×9, H2D is
    13.20 µs against a 39.86 µs kernel; making the shortest bar shorter changes nothing.
 2. **The spread is 14 %.** At 3×3 the same steps vary 2–3 %. This is not noise, it is the
    result heap: at 9×9 each pass allocates ~9.3 GB, above glibc's mmap threshold, so it is
-   `munmap`ed and re-faulted every pass and never plateaus (§12.2). **A 24 % spread means
+   `munmap`ed and re-faulted every pass and never plateaus (§12.2). **A 14 % spread means
    the number depends on which run you quote** — and it is the first symptom of the
    problem Act II solves.
 
-**Where Act I ends: 37 % of peak.** The GPU delivers a frame every 30 µs; the system
+**Where Act I ends: 38 % of peak.** The GPU delivers a frame every 30 µs; the system
 delivers one every 80. **Three quarters of the time is host-side**, and none of the
 remaining device-side work can be reached until that is fixed.
 
@@ -872,7 +940,7 @@ rewrite of §11.3 to be correct at all.
 | **9×9, 1 stream** | **39.86 µs** | **23.70 µs** | **−40.5 %** |
 | 3×3, 1 stream | 14.72 µs | 4.32 µs | −70.6 % |
 
-> ### **opt7 result: the 9×9 kernel drops 40.7 %**, nsys-verified on both builds at 20 000 frames.
+> ### **opt7 result: the 9×9 kernel drops 40.5 %**, nsys-verified on both builds at 20 000 frames.
 
 ### End-to-end, at the roofline
 
@@ -977,8 +1045,8 @@ t = 0 and accumulate centered `Y = X − X0`. After the rewrite, full-f32 matche
 | H2D | 20.77 | 20.54 | |
 
 At 3×3 the act achieves its goal decisively — the kernel ends 11.1 µs *below* H2D. At 9×9
-it very nearly does: kernel and D2H end **6 % apart**. Further kernel work at 9×9 is
-therefore capped at ~6 % before D2H binds instead, and the next lever there is a smaller
+it very nearly does: kernel and D2H end **5 % apart** (23.94 vs 25.24 µs). Further kernel
+work at 9×9 is therefore capped at ~5 % before D2H binds instead, and the next lever there is a smaller
 `cap` (§4.2) or coarser transfer granularity, not a faster kernel.
 
 > ### **The arc, in one line: the bottleneck has been walked from the host, to the GPU, to the wire.**
@@ -1128,7 +1196,7 @@ Three conclusions:
    it. That is **292 k × 0.7 µs ≈ 204 ms ≈ 10 µs/frame of the 68 µs, permanently**, and no
    number of re-runs removes it. It is a floor `collect()` cannot get under.
 
-Point 3 is an independent argument for opt6, and it explains the 24 % spread at the end of
+Point 3 is an independent argument for opt6, and it explains the 14 % spread at the end of
 Act I (§6): `collect_view()` allocates nothing per frame, so it removes this floor outright
 rather than amortizing it.
 
@@ -1225,11 +1293,12 @@ opt1/opt2 stop over-counting extended charge-shared events:
 | **ladder harness** | `perf/run_ladder.py` + `ladder.py` | Acts I–III end-to-end. One process per step; one CSV row per (step, rep) |
 | **probe sweep** | `perf/run_probes.py` + `nsys_kernel_probe.py` | §4. Four configs × 20 000 frames → `probes.csv` |
 | **duty cycles** | `perf/gpu_span.py` | interval-union analysis of an nsys SQLite export — the only way to separate "engine busy" from "engine idle" |
-| **per-operation times** | `nsys stats` on a committed `.sqlite` | §4, §11. Kernel/memcpy durations without re-running anything — see below |
+| **per-operation times** | `nsys stats` on a `.sqlite` export | §4, §11. Kernel/memcpy durations without re-running the ladder. **The `.nsys-rep`/`.sqlite` pair is deliberately untracked** (`results/.gitignore`) — 0.5–2 MB each, ~40 MB per campaign — so `probes.csv` is the durable record and re-deriving means re-running `run_probes.py` |
 | **shared plumbing** | `perf/common.py` | dataset, pedestal, fault bracketing, env capture, idle-GPU guard, CSV/manifest format |
 | **registers / occupancy** | `perf/kernel_resources.py` | §11.2. `cuobjdump -res-usage` on the built extension + the sm_89 occupancy arithmetic — no rebuild needed |
-| f64 results (Acts I–II) | `perf/results/2026-08-18_f64/` | `ladder_3x3.csv`, `ladder_9x9.csv`, `probes.csv`, 4 × `.nsys-rep`/`.sqlite` |
-| f32 results (Act III) | `perf/results/2026-08-18_f32/` | same, `DEVICE_PED_TYPE=float` |
+| 3×3 results | `perf/results/2026-08-18_{f64,f32}/` | `ladder_3x3.csv`, `ladder_9x9.csv`, `probes.csv` — 9×9 rows here are **cap 1500**, superseded |
+| 9×9 results | `perf/results/2026-08-20_{f64,f32}_cap1700/` | `ladder_9x9.csv` at the lossless cap — every 9×9 end-to-end number |
+| 9×9 engine times | `perf/results/2026-08-20_{f64,f32}_capAB/` | `probes.csv`, both caps × {s1, s4} in one session |
 | opt7 build axis | `include/aare/clusterfinder_kernel.cuh` lines 16–17 | `COMPUTE_TYPE` / `DEVICE_PED_TYPE` |
 | opt1/opt2 class | `include/aare/ClusterFinderCUDAOpt2.hpp` | frozen pre-refactor pipeline; gained `time_kernels` for comparability |
 | opt3 – opt7 | `include/aare/ClusterFinderCUDA.hpp`, `clusterfinder_kernel.cuh` | current pipeline |
@@ -1237,7 +1306,7 @@ opt1/opt2 stop over-counting extended charge-shared events:
 | exploratory notebook | `python/tests/ClusterFinderCUDA_perf.ipynb` | **stores only the last run** — not a record. Archive a copy per cluster size if used |
 | correctness notebook | `python/tests/ClusterFinderFrozen_vs_CUDA.ipynb` | CPU↔CUDA agreement analysis |
 | precision study | `docs/pedestal_precision_f32_cancellation.md` | B1 derivation |
-| deck | `docs/cf_cuda_fused.pptx` + `docs/deck/build_fused_deck.py` | 29 slides in the same three acts; figures from `docs/deck/make_figs.py` |
+| deck | `docs/cf_cuda_fused.pptx` + `docs/deck/build_fused_deck.py` | 34 slides in the same three acts plus a 15-slide annex (A1–A5); figures from `docs/deck/make_figs.py`. The `.pptx` is untracked — rebuild it from the script |
 
 ### CSV step labels
 
@@ -1281,10 +1350,13 @@ Three things to know:
    here). It is the divisor and is not stored in the profile.
 3. **`nsys stats` cannot produce a roofline.** It reports per-operation *sums and
    averages*, which cannot distinguish "the engine was busy" from "the engine was idle
-   waiting". It answers *how long is one kernel* — the `s1` column and the opt7 −40.7 %
+   waiting". It answers *how long is one kernel* — the `s1` column and the opt7 −40.5 %
    — while duty cycle, `overlap` and the roofline need the interval-union pass of
    `gpu_span.py` (§4.1). This is why the same f64 9×9 `s4` run reads 32.66 µs of kernel
-   occupancy while `nsys stats` reports ~39.9 µs per kernel instance.
+   occupancy while `nsys stats` reports **43.2 µs** per kernel instance (863.51 ms of
+   summed duration over 20 000 launches): under contention each kernel is *slower* than
+   its 39.86 µs `s1` duration, and only the 1.32× self-overlap pulls the per-frame
+   occupancy below either figure.
 
 Other useful reports: `cuda_gpu_trace` (every operation with timestamps),
 `cuda_gpu_mem_size_sum` (transfer bytes). `$NSYS stats --help-reports` lists them all;
@@ -1328,10 +1400,10 @@ Every number here is from `[f32]`/`[f64]` (§0) and reproducible with
 4. **3×3: 1.00× → 2.34× → 3.66× → 4.32× → 5.69×** over the best CPU configuration
    (24 threads), at identical correctness (4 × 10⁻⁶). The kernel never changed; what
    shrank was everything around it, 148 → 26 µs/frame.
-5. **opt4 (pinned input) is worth 1.32× at 3×3 and 1.02× at 9×9** — the rule's first
+5. **opt4 (pinned input) is worth 1.32× at 3×3 and 1.03× at 9×9** — the rule's first
    confirmation. Pinning attacks H2D, which is the tallest bar at 3×3 and the shortest at
    9×9.
-6. **Act I ends at 62 % of peak at 3×3 and 37 % at 9×9.** The GPU is idle much of the
+6. **Act I ends at 62 % of peak at 3×3 and 38 % at 9×9.** The GPU is idle much of the
    time and the whole remainder is host-side.
 
 ### Act II — getting the results back `[f64]`

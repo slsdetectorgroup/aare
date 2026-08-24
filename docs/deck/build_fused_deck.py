@@ -166,23 +166,31 @@ def chrome(s, idx, eyebrow, title, title_size=27):
     run(para(tf, True, align=PP_ALIGN.RIGHT), f"{idx} / {n}", 8.5, MUTED)
 
 
-N_ANNEX = 6
+N_ANNEX = 5          # annex GROUPS, not slides
 
 
-def annex_chrome(s, idx, eyebrow, title, title_size=27):
-    """Same chrome, amber, on its own progress track — the annex is not part of
-    the 29-slide arc and should not look like it is."""
-    rect(s, M, 0.60, 0.35, 0.035, AMBER)
-    tf = tb(s, 1.17, 0.50, 10.33, 0.32)
-    run(para(tf, True), f"ANNEX · {eyebrow}".upper(), 9, MUTED, bold=True, spc=1.6)
+def annex_chrome(s, grp, eyebrow, title, part=None, nparts=None, title_size=27):
+    """Same chrome, amber, on its own progress track.
+
+    The annex is GROUPED, not enumerated: slides that belong together carry the
+    same tag (A2 is both CUDA-Graphs slides, A5 all three artefacts), because
+    what a reader needs at a glance is which slides form one argument. The badge
+    is rendered in the header, not only in the corner.
+    """
+    tf = tb(s, M, 0.44, 1.0, 0.34)
+    run(para(tf, True), f"A{grp}", 15, AMBER, bold=True)
+    tf = tb(s, 1.42, 0.50, 10.1, 0.32)
+    tag = f"ANNEX · {eyebrow}" + (f" · {part} of {nparts}" if nparts else "")
+    run(para(tf, True), tag.upper(), 9, MUTED, bold=True, spc=1.6)
     tf = tb(s, M, 0.86, 11.9, 1.0)
     run(para(tf, True, line=1.05), title, title_size, PALE, bold=True)
     pitch = 11.0 / N_ANNEX
     for i in range(N_ANNEX):
         rect(s, M + i * pitch, 7.28, pitch * 0.90, 0.045,
-             AMBER if i <= idx - 1 else RULE)
-    tf = tb(s, 12.0, 7.14, 0.9, 0.3)
-    run(para(tf, True, align=PP_ALIGN.RIGHT), f"A{idx} / {N_ANNEX}", 8.5, MUTED)
+             AMBER if i <= grp - 1 else RULE)
+    tf = tb(s, 11.7, 7.14, 1.2, 0.3)
+    foot = f"A{grp}" + (f" · {part}/{nparts}" if nparts else "")
+    run(para(tf, True, align=PP_ALIGN.RIGHT), foot, 8.5, MUTED)
 
 
 def table(s, x, y, w, header, rows, colw, size=9.5, rowh=0.62):
@@ -480,26 +488,32 @@ run(para(tf, True), "AARE · HYBRID PIXEL DETECTORS · CUDA CLUSTERFINDER",
 tf = tb(s, M + 0.3, 1.28, 11.4, 1.45)
 run(para(tf, True, line=1.02),
     "The kernel was never the bottleneck — feeding it was", 42, PALE, bold=True)
-tf = tb(s, M + 0.3, 2.80, 11.4, 0.8)
+tf = tb(s, M + 0.3, 2.80, 11.4, 0.45)
 run(para(tf, True, line=1.05),
     "One kernel, one thread per pixel, and seven steps to keep it fed", 22, ACCENT)
 
-tf = tb(s, M + 0.3, 3.40, 10.2, 0.9)
+tf = tb(s, M + 0.3, 3.40, 11.4, 0.9)
 run(para(tf, True, line=1.3),
-    "The stencil was fast almost immediately. At 3×3 the kernel needs 5.5 µs per "
-    "frame; moving that frame across PCIe costs 13.2 µs at best, and 16.3 as the "
-    "pipeline runs it. Six of the seven optimization steps never touch the "
-    "arithmetic, they get data in, get results back, and measure honestly.",
+    "The stencil was fast almost immediately: at 3×3 the kernel needs 5.5 µs per "
+    "frame while getting that frame across PCIe costs 16.6 — 13.2 even "
+    "uncontended. The frame is gated by the wire, not the arithmetic. Six of the "
+    "seven steps get data in, get results back, and measure honestly.",
     12.5, TEXT2)
+
+tf = tb(s, M + 0.3, 4.40, 11.4, 0.26)
+run(para(tf, True),
+    "WHERE THIS ENDS UP — THE SHIPPED f32 BUILD AFTER ALL SEVEN STEPS · "
+    "ENGINE TIMES [f32 · s4] · RECONCILED IN A1",
+    8.5, AMBER, bold=True, spc=1.4)
 
 stats = [("×9.1", "VS 24-THREAD CPU", ACCENT), ("61,312", "FRAMES / SECOND", PALE),
          ("16.3 µs", "PER FRAME, END TO END", PALE), ("6 / 23 M", "CLUSTER MISMATCH VS CPU TWIN", AMBER)]
 for i, (v, l, c) in enumerate(stats):
     x = M + 0.3 + i * 2.85
-    rect(s, x, 4.35, 0.035, 0.95, c)
-    tf = tb(s, x + 0.22, 4.35, 2.5, 0.55)
+    rect(s, x, 4.78, 0.035, 0.95, c)
+    tf = tb(s, x + 0.22, 4.78, 2.5, 0.55)
     run(para(tf, True), v, 30, c, bold=True)
-    tf = tb(s, x + 0.22, 4.98, 2.5, 0.3)
+    tf = tb(s, x + 0.22, 5.41, 2.5, 0.3)
     run(para(tf, True), l, 8.5, MUTED, spc=1.2)
 
 rect(s, M + 0.3, 6.05, 11.0, 0.012, RULE)
@@ -513,7 +527,7 @@ section("Context · what the code does",
         "What the kernel does, and what limits it",
         "No optimizations yet, only what the hardware has to do.",
         [("3–4", "The algorithm"),
-         ("5–6", "**The two machines**"),
+         ("5–6", "The two machines"),
          ("7–8", "The CUDA kernel"),
          ("9–10", "The hardware limit")],
         rng=(3, 10))
@@ -553,16 +567,19 @@ bullets(s, M, 1.95, COL, [
     "**nσ · rms**, cut a 3×3 cluster around each local maximum.",
     "400×400 = 160 k pixels, **312.5 kB per frame**; Cu data yields ~2 330 clusters "
     "per frame at 3×3.",
-    "The pedestal is **updated by every non-photon pixel**, every frame, so the "
-    "arithmetic and the data movement are coupled.",
+    "The pedestal is **updated by every pixel that sees no photon** — about 80 % of "
+    "them — every frame, so the arithmetic and the data movement are coupled.",
 ])
 code(s, M, 3.55, COL, [
     "// the whole algorithm, per pixel",
-    "v      = frame[i] - pedestal_mean[i]",
-    "rms    = sqrt(pedestal_sum2[i]/n - pedestal_mean[i]^2)",
-    "if (v > «nSigma» * rms  &&  v == max(3x3 window))   ->  emit cluster",
-    "else                                                 ->  update pedestal",
-], title="THE KERNEL IN FIVE LINES")
+    "v   = frame[i] - pedestal_mean[i]",
+    "rms = pedestal rms at i",
+    "m   = max(v) over the 3x3 window at i",
+    "if (m > «nSigma» * rms)                  // a photon is within reach",
+    "    if (v == m) -> emit cluster        //   ... and I am its peak",
+    "    else        -> «nothing»             //   ... I am in its shadow",
+    "else            -> update pedestal     // I saw nothing",
+], title="THE WHOLE ALGORITHM · THREE OUTCOMES, NOT TWO")
 callout(s, M, 5.55, COL,
         "**Thesis of this talk:** the compute was fast almost immediately. "
         "Six of the seven steps are about feeding it.")
@@ -709,22 +726,26 @@ caption(s, M, 5.80, 7.5,
         "handed to 128 SMs. Nothing about the launch depends on how many clusters "
         "the frame happens to contain, which is what makes the work uniform.")
 code(s, 8.5, 2.85, 4.1, [
-    "if (!is_photon) {",
-    "  // this pixel feeds the running",
-    "  // pedestal for the NEXT frame",
-    "  return;",
+    "// ClusterFinder.hpp — the serial CPU",
+    "if (max > nSigma * rms) {",
+    "    if (value < max)",
+    "        continue;  // Not max go to the",
+    "                   // next pixel — but",
+    "                   // also no pedestal",
+    "                   // update",
+    "} else {",
+    "    pedestal.«push_fast»(iy, ix, ...);",
     "}",
-    "uint32_t i = «atomicAdd»(d_count, 1u);",
-    "if (i < max_clusters)",
-    "    d_clusters[i] = cluster;",
-], size=8, title="THE CRITICAL BRANCH")
-callout(s, 8.5, 4.62, 4.1,
-        "One counter per frame, bumped atomically. **The counter is the write "
-        "index**, a bump allocator, reset by a memset before each frame.",
+], size=8, title="THREE OUTCOMES, NOT TWO")
+callout(s, 8.5, 4.80, 4.1,
+        "That comment is **verbatim from the CPU source**. A pixel in a photon's "
+        "shadow is **neither recorded nor fed back** — and the CUDA kernel "
+        "reproduces it exactly.",
         h=1.15, size=10)
-callout(s, 8.5, 5.95, 4.1,
-        "~99.9 % of threads take the **other** branch, which is why the pedestal "
-        "update, not the cluster write, dominates the kernel.",
+callout(s, 8.5, 6.10, 4.1,
+        "**~80 % of threads update the pedestal**: every pixel with no photon in "
+        "its window. ~1.5 % are peaks, ~18 % are shadow. The update, not the "
+        "cluster write, dominates.",
         h=1.1, size=10, color=AMBER)
 
 # =========================================================== 6 · TILING
@@ -839,15 +860,15 @@ s = new_slide()
 chrome(s, 11, "Roadmap",
        "Three acts, ordered by which bar is tallest")
 rows = [
-    ("act", "ACT I  ·  feed the GPU", "the host cannot submit work fast enough", "[f64]", ACCENT),
+    ("act", "ACT I  ·  feed the GPU", "the host cannot submit work fast enough", "at 3×3  [f64]", ACCENT),
     ("opt1", "First CUDA port", "1 stream, one launch per frame", "×2.34", ACCENT),
     ("opt2", "Streams + batching", "4 streams, 2 000-frame batches", "×3.66", ACCENT),
     ("opt3", "Pipeline rework", "sync barriers removed", "×4.32", ACCENT),
     ("opt4", "Pinned memory", "DMA-speed host transfers", "×5.69", ACCENT),
-    ("act", "ACT II  ·  get the results back", "the host copy is now the tallest bar", "[f64]", PALE),
+    ("act", "ACT II  ·  get the results back", "the host copy is now the tallest bar", "at 3×3  [f64]", PALE),
     ("opt5", "Host↔GPU overlap", "chunked submit / collect", "×7.45", PALE),
     ("opt6", "Zero-copy collection", "read in place, never copy", "×8.65", PALE),
-    ("act", "ACT III  ·  the kernel", "only now is the kernel the tallest bar", "[f32]", AMBER),
+    ("act", "ACT III  ·  the kernel", "the kernel is the tallest bar — at 9×9", "at 9×9  [f32]", AMBER),
     ("opt7", "FP32 pedestal + variance rewrite", "the only kernel change in the deck",
      "kernel −41%", AMBER),
 ]
@@ -881,7 +902,8 @@ caption(s, M, 6.62, 11.9,
 # --------------------------------------------------------- divider · ACT I
 section("Act I of III · feed the GPU",
         "The host cannot submit work fast enough",
-        "The kernel was fast almost immediately. This act is about the host.",
+        "The kernel was fast almost immediately. This act is about the host, and it "
+        "is told at 3×3, where the wire is the floor.",
         [(12, "opt1 · first port"),
          (13, "opt2 · streams + batching"),
          (14, "opt3 · no barriers"),
@@ -902,22 +924,23 @@ bullets(s, M, 1.95, COL, [
     "One cudaMemcpy in, one kernel, one cudaMemcpy out; **the host blocks "
     "on every frame**.",
 ])
-code(s, M, 3.62, COL, [
+code(s, M, 3.18, COL, [
     "// one frame at a time, the host waits at every step",
     "cudaMemcpy(d_frame, h_frame, bytes, cudaMemcpyHostToDevice);",
     "find_clusters_in_single_frame<ClusterType, FRAME_TYPE>",
     "    <<<grid, block, shmem>>>(d_frame, d_pd_mean, ...);",
     "cudaMemcpy(h_out, d_out, out_bytes, cudaMemcpyDeviceToHost);",
 ], title="ClusterFinderCUDAOpt2.hpp · find_clusters()")
-callout(s, M, 4.98, COL,
+callout(s, M, 4.50, COL,
         "**PCIe is full-duplex**: H2D, kernel and D2H run on independent engines and "
         "overlap, so the floor is **max(H2D, kernel, D2H)**, never the sum. Each term "
         "is that engine's **busy time per frame at 4 streams**, the union of its "
-        "intervals, not how long one operation takes. At 3×3: max(**16.17**, 15.17, "
-        "7.69) = **16.2 µs → 61 859 FPS**.", h=1.30, size=10.5)
-callout(s, M, 6.40, COL,
-        "opt1 delivers **15 807 FPS**, or **26 % of that peak**. Three quarters of every "
-        "frame is the host standing still.", h=0.70, size=10.5, color=AMBER)
+        "intervals, not how long one operation takes. At 3×3 **[f64 · s4]**: "
+        "max(**16.17**, 15.17, 7.69) = **16.2 µs → 61 859 FPS**. That max is a "
+        "**profiled estimate**, so the deck's floor is the **lower of it and the best "
+        "sustained rate** — the same 16.17 here; **A1** shows where the two part at 9×9.",
+        h=1.30, size=10.5)
+figure(s, "fig_opt1_timeline", M, 5.85, COL)
 rail(s, [
     ("label", "opt1 · 3×3 · 100 k frames · f64"),
     ("gap", 0.10),
@@ -925,8 +948,8 @@ rail(s, [
     ("stat", "vs 24-thread CPU", "×2.34", ACCENT),
     ("gap", 0.05),
     ("row", "Per frame", "63.3 µs", TEXT2),
-    ("row", "Peak · the GPU floor", "61 859 FPS", ACCENT),
-    ("row", "% of peak", "26 %", AMBER),
+    ("row", "The GPU floor", "61 859 FPS", ACCENT),
+    ("row", "% of floor", "26 %", AMBER),
 ])
 
 # =========================================================== 12 · OPT2
@@ -940,7 +963,7 @@ bullets(s, M, 1.95, COL, [
     "and pedestal. Frames are handed out **round-robin**.",
     "The host now submits **2 000 frames per call** instead of one.",
 ])
-code(s, M, 3.62, COL, [
+code(s, M, 3.30, COL, [
     "struct StreamContext {",
     "    cudaStream_t   stream;",
     "    FRAME_TYPE    *d_frame;      ClusterType *d_clusters;",
@@ -948,18 +971,19 @@ code(s, M, 3.62, COL, [
     "};",
     "auto &sc = v_sc[frame_idx % «n_streams»];   // round-robin",
 ], title="ClusterFinderCUDA.hpp · per-stream state")
-callout(s, M, 5.72, COL,
+figure(s, "fig_opt2_timeline", M, 4.77, COL)
+callout(s, M, 6.48, COL,
         "**Scaffolding, not yet the payoff.** The streams exist, but the host still "
-        "synchronises after every round: see opt3.")
+        "synchronises after every round: see opt3.", h=0.60)
 rail(s, [
-    ("label", "opt2 · 4 streams · batch 2 000"),
+    ("label", "opt2 · 3×3 · 4 streams · batch 2 000"),
     ("gap", 0.10),
     ("stat", "Throughput", "24 726 FPS", PALE),
     ("stat", "vs 24-thread CPU", "×3.66", ACCENT),
     ("gap", 0.05),
     ("row", "Per frame", "40.4 µs", TEXT2),
     ("row", "Step gain over opt1", "×1.56", ACCENT),
-    ("row", "% of peak · 61 859 FPS", "40 %  (was 26)", AMBER),
+    ("row", "% of floor · 61 859 FPS", "40 %  (was 26)", AMBER),
 ])
 
 # =========================================================== 13 · OPT3
@@ -972,7 +996,7 @@ bullets(s, M, 1.95, 7.4, [
     "opt3 submits every frame's H2D → kernel → D2H **asynchronously**, then "
     "synchronises **once at the end of the batch**.",
 ], size=10.5)
-figure(s, "fig_streams", M, 3.05, 6.90)
+figure(s, "fig_streams", M, 3.05, 6.55)
 code(s, 8.35, 1.95, 4.25, [
     "// opt2:  barrier after every round",
     "for (round) {",
@@ -990,10 +1014,12 @@ code(s, 8.35, 1.95, 4.25, [
     "   «cudaStreamSynchronize»(sc.stream);",
 ], size=8, title="THE ONE-LINE IDEA")
 callout(s, 8.35, 5.05, 4.25,
-        "**29 188 FPS · ×4.32**\n34.3 µs/frame · 47 % of peak (was 40)", h=0.86, size=11)
+        "**29 188 FPS · ×4.32**\n34.3 µs/frame · 47 % of floor (was 40)", h=0.86, size=11)
 caption(s, 8.35, 6.15, 4.25,
         "Each lane is one stream. Removing the barrier lets a stream start its next "
-        "frame while its neighbours are still copying.")
+        "frame while its neighbours are still copying. The three panels are scheduled, "
+        "not sketched: H2D and D2H are one FIFO engine each, so a stream waits for the "
+        "copy engine, never for another stream's copy to finish overlapping it.")
 
 # =========================================================== 14 · OPT4
 s = new_slide()
@@ -1017,12 +1043,13 @@ code(s, 8.5, 3.15, 4.1, [
     "«cudaHostUnregister»(ptr);",
 ], size=8, title="ClusterFinderCUDA.hpp")
 callout(s, 8.5, 4.72, 4.1,
-        "**38 486 FPS · ×5.69**\n26.0 µs/frame · 62 % of peak, the largest step in Act I",
+        "**38 486 FPS · ×5.69**\n26.0 µs/frame · 62 % of floor, the largest step in Act I",
         h=0.86, size=11)
 caption(s, 8.5, 5.82, 4.1,
-        "Measured H2D: one 400×400 uint16 frame (312.5 KiB = 320 000 B) in 13.2 µs "
-        "= 24.2 GB/s, 77% of PCIe 4.0 ×16 theoretical, i.e. true DMA speed. "
-        "Pageable staging runs ~15 GB/s.")
+        "Measured H2D [s1, uncontended]: one 400×400 uint16 frame (312.5 KiB = "
+        "320 000 B) in 13.2 µs = 24.2 GB/s, 77 % of PCIe 4.0 ×16 theoretical, i.e. "
+        "true DMA speed. In the shipped pipeline it reads 16.6 [s4], +26 % of "
+        "H2D↔D2H contention (A1). Pageable staging runs ~15 GB/s.")
 callout(s, M, 6.45, 7.6,
         "**The rule, first sighting: ×1.32 at 3×3 but only ×1.02 at 9×9.** Pinning "
         "attacks H2D, the tallest bar at 3×3, the shortest at 9×9.",
@@ -1031,7 +1058,8 @@ callout(s, M, 6.45, 7.6,
 # -------------------------------------------------------- divider · ACT II
 section("Act II of III · get the results back",
         "The host copy is now the tallest bar",
-        "Frames go in at DMA speed. The results still come back slowly.",
+        "Frames go in at DMA speed. The results still come back slowly. Still 3×3 — "
+        "but 9×9 is where this act pays most.",
         [(16, "opt5 · host↔GPU overlap"),
          (17, "opt6 · zero-copy"),
          (18, "two rejected routes")],
@@ -1054,7 +1082,7 @@ figure(s, "fig_overlap", M - 0.15, 3.28, COL + 0.30)
 callout(s, M, 5.86, COL,
         "The time hidden is **min(GPU, host)**, so this pays most when the two are "
         "comparable, and cannot rescue a host term that is simply larger.")
-notes(s, """opt5 — host<->GPU overlap. Code and chunk sizing are on annex A6.
+notes(s, """opt5 — host<->GPU overlap. Code and chunk sizing are on annex A3.
 
     tok = cf.submit_batch(data[a0:b0], first_frame=a0)
     for a, b in bounds[1:]:
@@ -1077,13 +1105,13 @@ twice the GPU term, so overlap hides only the smaller one and opt5 is worth
 x1.20 - which is exactly the diagnosis that motivates opt6: you cannot overlap
 your way out of a host term that is simply larger. Report SS8.2.""")
 rail(s, [
-    ("label", "opt5 · no CUDA work at all"),
+    ("label", "opt5 · 3×3 and 9×9 · no CUDA work at all"),
     ("gap", 0.10),
     ("stat", "3×3 throughput", "50 410 FPS", PALE),
-    ("row", "per frame · step · peak", "19.8 µs · ×1.31 · 81 %", ACCENT),
+    ("row", "per frame · step · of floor", "19.8 µs · ×1.31 · 81 %", ACCENT),
     ("gap", 0.14),
     ("stat", "9×9 throughput", "15 063 FPS", PALE),
-    ("row", "per frame · step · peak", "66.4 µs · ×1.20 · 45 %", AMBER),
+    ("row", "per frame · step · of floor", "66.4 µs · ×1.20 · 45 %", AMBER),
     ("gap", 0.15),
     ("note", "For clusters that must outlive the finder, this is the endpoint at "
              "3×3: opt6 lends, it does not give."),
@@ -1110,17 +1138,18 @@ caption(s, M, 6.78, COL,
         "The two bars are the competing costs, not the two steps; the step times are "
         "on the right.", size=8.5)
 rail(s, [
-    ("label", "opt6 · collect_view() · zero-copy"),
+    ("label", "opt6 · 3×3 and 9×9 · collect_view()"),
     ("gap", 0.10),
     ("stat", "3×3 throughput", "58 495 FPS", PALE),
-    ("row", "per frame · step · peak", "17.1 µs · ×1.16 · 95 %", ACCENT),
+    ("row", "per frame · step · of floor", "17.1 µs · ×1.16 · 95 %", ACCENT),
     ("gap", 0.14),
     ("stat", "9×9 throughput", "33 323 FPS", PALE),
-    ("row", "per frame · step · peak", "30.0 µs · ×2.21 · 100 %", AMBER),
-    ("gap", 0.15),
-    ("note", "End to end, opt5 → opt6: 19.8 → 17.1 µs and 66.4 → 30.0 µs. "
-             "Bit-identical results. Spread over 5 reps drops to 0.2 % at both "
-             "sizes, with zero warm page faults."),
+    ("row", "per frame · step · of floor", "30.0 µs · ×2.21 · 100 %", AMBER),
+    ("gap", 0.12),
+    ("note", "opt5 → opt6: 19.8 → 17.1 and 66.4 → 30.0 µs, bit-identical, "
+             "0.2 % spread, zero warm faults. FLOOR = lower of the s4 engine max "
+             "and the best sustained rate: at 3×3 the 16.17 µs max sets it; at 9×9 "
+             "f64 the run BEATS the 32.66 µs max, so the 30.0 sustained sets it [A1]."),
 ])
 
 # =========================================================== 20 · ACT II rejected
@@ -1163,7 +1192,8 @@ callout(s, M, 6.38, 11.9,
 # ------------------------------------------------------- divider · ACT III
 section("Act III of III · the kernel",
         "Only now is the kernel the tallest bar",
-        "The first change to the arithmetic, and the last step in the ladder.",
+        "The story moves to 9×9. At 3×3 the wire was always the floor and the kernel "
+        "never mattered; at 9×9 it is the tallest bar, which is why this act exists.",
         [(19, "opt7 · FP32 pedestal"),
          (20, "the correctness trap"),
          (21, "the variance rewrite"),
@@ -1177,8 +1207,10 @@ s = new_slide()
 chrome(s, 19, "Act III · opt7 · FP32 device pedestal",
        "FP32 halves pedestal traffic: −41 % kernel time")
 bullets(s, M, 1.95, 7.5, [
-    "~99.9% of pixels take the **pedestal-update** branch, which reads and writes "
-    "mean, sum and sum². In FP64 that is **32 bytes per pixel**; in FP32, 16.",
+    "**~80 % of pixels** take the **pedestal-update** branch: it reads off, sum, sum² "
+    "and writes back sum, sum², mean. All four pedestal arrays are DEVICE_PED_TYPE, "
+    "so one typedef halves every one of those six accesses — **48 bytes per updating "
+    "pixel in FP64**, **24 bytes in FP32**.",
     "The kernel is **bandwidth-bound**, so halving that traffic nearly halves the time.",
     "Second effect: on a GeForce part, **FP64 arithmetic runs at 1/64 of FP32**. "
     "The pedestal update was paying that tax on every pixel.",
@@ -1193,14 +1225,20 @@ code(s, 8.5, 1.95, 4.1, [
     "//            was: double",
 ], size=8.5, title="ONE TYPEDEF")
 callout(s, 8.5, 3.05, 4.1,
-        "Kernel, 9×9, measured with Nsight Systems\n**39.9 µs → 23.7 µs  (−40.7%)**",
-        h=0.92, size=11)
-caption(s, 8.5, 4.20, 4.1,
-        "Exclusive per-kernel time, 20 000 frames, 1 stream, both builds at the same "
-        "git rev. Transfers are unchanged, as they must be.")
-callout(s, 8.5, 5.30, 4.1,
+        "Kernel, 9×9 **[s1 · cap 1700 · exclusive]**\n**39.86 µs → 23.70 µs  (−40.5%)**\n"
+        "Shipped **[s4]**: **30.0 → 25.1 µs** end to end.",
+        h=1.32, size=10.5)
+caption(s, 8.5, 4.48, 4.1,
+        "Both panels, both builds, same git rev, 20 000 frames. The deck's rule, and "
+        "the reason there are two: quote s1 for how long an engine takes, s4 for which "
+        "one sets the floor. A1 has the full grid.")
+callout(s, 8.5, 5.24, 4.1,
         "Naive FP32 is **wrong** (next two slides), and even when correct it only pays "
-        "**because Act II came first**.", h=1.05, size=10, color=AMBER)
+        "**because Act II came first**.", h=0.80, size=10, color=AMBER)
+callout(s, 8.5, 6.20, 4.1,
+        "At 3×3 the same typedef is worth **−70.6 %** (14.72 → 4.32 µs [s1]) yet buys "
+        "only **4.6 %** end to end: there the kernel was never the tallest bar.",
+        h=0.88, size=10)
 
 # =========================================================== 19 · OPT6 trap
 s = new_slide()
@@ -1208,9 +1246,11 @@ chrome(s, 20, "Act III · opt7 · the correctness trap",
        "The naive FP32 pedestal loses the variance to cancellation")
 bullets(s, M, 1.95, 7.9, [
     "The running variance was computed as **var = E[X²] − mean²**. With a pedestal "
-    "mean of ~4 655 ADU, both terms are ≈ 2.17 × 10⁷ while the answer is ≈ 2 000.",
-    "In FP32 the spacing between representable numbers at 2.17 × 10⁷ is **2 048**, "
-    "larger than the variance itself. This is **catastrophic cancellation**.",
+    "mean of ~4 655 ADU, both operands are ≈ 2.17 × 10⁷ while the answer is ≈ 2 000.",
+    "In FP32 each operand sits on a grid of **2 ADU²**, so the answer inherits "
+    "**±3 — an absolute error that does not shrink**. For a pixel whose true "
+    "variance is 9 that is a third of it; below rms ≈ 2 it goes negative and the "
+    "**rms clamps to 0**.",
 ], size=10.5)
 figure(s, "fig_cancellation", M, 3.25, 7.5)
 rail(s, [
@@ -1233,12 +1273,11 @@ chrome(s, 21, "Act III · opt7 · the variance rewrite",
 bullets(s, M, 1.95, COL, [
     "Freeze a per-pixel baseline **X₀ = round(mean)** once, at the end of pedestal "
     "training, and never move it again.",
-    "Accumulate the **centred** value Y = X − X₀ instead of X. Now both sums are "
-    "O(rms)-sized: the huge common term is gone before the subtraction.",
-    "The reported pedestal mean is still the full value, **X₀ + sum/n**, so nothing "
-    "downstream changes.",
+    "Accumulate the **centred** value Y = X − X₀ instead of X, and report the mean "
+    "as **X₀ + sum/n** — so nothing downstream changes.",
 ])
-code(s, M, 4.0, COL, [
+figure(s, "fig_variance_rewrite", M, 2.95, COL)
+code(s, M, 4.47, COL, [
     "// before: both terms ~2.17e7, answer ~2000",
     "var = sum2/n - mean*mean;",
     "",
@@ -1246,7 +1285,7 @@ code(s, M, 4.0, COL, [
     "DEVICE_PED_TYPE resid  = mean - «d_pd_off»[i];      // ~O(1)",
     "DEVICE_PED_TYPE var_px = sum2[i]/n - resid*resid;  // no cancellation",
 ], title="clusterfinder_kernel.cuh")
-callout(s, M, 6.05, COL,
+callout(s, M, 5.94, COL, 
         "Result: the 100% FP32 build now matches the FP64 build to "
         "**3 × 10⁻⁷**, 70 clusters out of 233 million.")
 rail(s, [
@@ -1265,20 +1304,29 @@ rail(s, [
 # =========================================================== 21 · OPT6 when
 s = new_slide()
 chrome(s, 22, "Act III · why this act comes last",
-       "Before Act II the kernel win is not even measurable")
-figure(s, "fig_bottleneck", M, 1.95, 11.9)
-callout(s, M, 5.58, 11.9,
-        "**Through collect_view() the identical −40% kernel is worth −16.2%, resolvable "
-        "to 0.0 points. Through every allocating path the interval spans 19–41 points "
-        "and straddles zero.** The result path does not just shrink the win; it "
-        "destroys the ability to see it.", h=0.86, size=11)
-caption(s, M, 6.56, 11.9,
-        "Placed anywhere before Act II this step measures as noise and would reasonably "
-        "have been abandoned; placed after, it is the second-largest step in the ladder "
-        "at 9×9. The ordering is not presentational; it decides whether the "
-        "optimization is visible at all. 9×9, 20 000 frames, 4 streams, cap 1 700, "
-        "5 reps per arm, both arms at the same git rev. The band is what those reps "
-        "allow: allocating paths oscillate between allocator states and swamp the effect.")
+       "The saving never grew — the frame around it shrank")
+figure(s, "fig_f32_absolute", M, 1.95, 11.9)
+callout(s, M, 4.86, 5.85,
+        "**The same typedef saves −4.63 µs at opt4 and −4.87 µs at opt6** — the two "
+        "readings whose fault counts match. What changes is the denominator: the frame "
+        "falls 79.8 → 30.0 µs, so an identical saving reads **−5.8 %, then −16.2 %**. "
+        "Act II did not make the kernel win bigger; it made it **separable**.",
+        h=1.28, size=10.5)
+callout(s, 6.75, 4.86, 5.85,
+        "**And the act ends by handing the floor away.** At **s4**, the config that "
+        "ships, the f64 arm is kernel-bound: **32.66** against a **25.25 µs** D2H. The "
+        "typedef puts the kernel at **23.94** — **below a D2H that never moved**. "
+        "The constraint is now the result path, not the arithmetic. [engines: 19/34]",
+        h=1.28, size=10.5, color=AMBER)
+caption(s, M, 6.30, 11.9,
+        "9×9 · 20 000 frames · 4 streams · cap 1 700 · warm · both arms at the same git "
+        "rev. opt3 is excluded: its two arms sat in different allocator states, so that "
+        "comparison does not report the typedef at all. † opt5's arms differ the same "
+        "way; its reading agrees with the other two but is not independently "
+        "attributable. Both are worked through in annex A4. The f32 bar at opt6 is "
+        "opt7, the shipped build; the f32 bars at opt4 and opt5 are the same typedef "
+        "applied at earlier steps — configurations that exist only to make this "
+        "comparison controlled.")
 
 # ------------------------------------------------------- divider · results
 section("Results · what came out of it",
@@ -1320,10 +1368,11 @@ callout(s, 6.75, 5.80, 5.85,
         "the rule, twice.", h=0.8, color=AMBER)
 caption(s, M, 6.62, 11.9,
         "9×9 · cap 1 700 (lossless; 1 500 truncated 0.0095 % of clusters) · 20 000 frames · "
-        "opt1/opt2 are 3×3-only · CPU baseline ClusterFinderMT at 32 threads. Peak is the "
+        "opt1/opt2 are 3×3-only · CPU baseline ClusterFinderMT at 32 threads. The floor is the "
         "lower of the nsys estimate and the best sustained rate; both arms are sustained-bound, "
         "corroborated to 8.8 % (f64) and 0.4 % (f32). Why the arms differ: 544.5 kB of D2H "
-        "costs 25.2 µs on both, hidden under the 32.7 µs f64 kernel, not under the 23.9 µs f32 one.")
+        "costs 25.2 µs on both [s4], hidden under the 32.7 µs f64 kernel, not under "
+     "the 23.9 µs f32 one.")
 
 # =========================================================== 24 · WHERE TIME GOES
 s = new_slide()
@@ -1332,17 +1381,19 @@ chrome(s, 25, "Where the time actually went",
 figure(s, "fig_overhead", 1.95, 1.95, 9.4)
 callout(s, M, 5.30, 5.85,
         "**Acts I and II never touch the arithmetic.** The GPU floor is a flat "
-        "16.2 µs / 30.0 µs; what collapses is everything stacked on top of it.",
+        "16.2 µs at 3×3 / 30.0 µs at 9×9; what collapses is everything stacked on it.",
         h=0.86, size=10.5)
 callout(s, 6.75, 5.30, 5.85,
         "**Act III is the only step that lowers the floor itself**, and it could not "
         "have been seen until the stack above it was gone.", h=0.86, size=10.5,
         color=AMBER)
 caption(s, M, 6.45, 11.9,
-        "Blue/white/amber = the GPU floor for that act's build (max of H2D, kernel, "
-        "D2H; PCIe is full duplex, so it is never the sum). Grey = everything the "
-        "host adds on top. At 9×9 the host contributes +50 µs at opt3 and nothing at "
-        "opt6.")
+        "Blue/white/amber = the GPU floor for that act's build — the LOWER of the s4 "
+        "engine max (max of H2D, kernel, D2H; PCIe is full duplex, so never the sum) "
+        "and the best sustained rate. At 3×3 the engine max sets it, 16.17 µs; at 9×9 "
+        "f64 the sustained rate does, 30.01 against a 32.66 µs max. Grey = everything "
+        "the host adds on top. At 9×9 the host contributes +50 µs at opt3 and nothing "
+        "at opt6.")
 
 # =========================================================== 24 · MEASUREMENT AUDIT
 s = new_slide()
@@ -1654,7 +1705,8 @@ for lab, dx in hdr:
     run(para(tf, True), lab.upper(), 9, MUTED, bold=True, spc=1.3)
 y += 0.44
 params = [
-    ("n_streams", "How many frames are in flight at once.",
+    ("n_streams", "How many frames may be in flight at once — an upper bound, not a "
+     "count: the copy engines cap the real number below it.",
      "4 at both sizes. 8 buys no kernel concurrency at 9×9 (+1% instance time) and "
      "inflates the CUDA-event timer 3.5×."),
     ("max_clusters_per_frame", "Fixed size of the per-frame D2H transfer.",
@@ -1694,13 +1746,15 @@ cards = [
      "twin that isolates the port the decisions are identical; the shipping f32 "
      "pedestal adds 6 duplicates in 23 million."),
     ("DONE", ACCENT, "FP32 pedestal, safely",
-     "−40.7% kernel, and correct, because the variance is now accumulated on a frozen "
+     "−40.5% kernel, and correct, because the variance is now accumulated on a frozen "
      "per-pixel offset instead of a raw second moment."),
     ("NEXT", AMBER, "3×3: transfer granularity",
-     "The 16.31 µs achieved sits 3.16 µs above the uncontended 13.15 µs H2D rate: "
+     "The 16.31 µs sustained sits 3.16 µs above the uncontended 13.15 µs H2D rate "
+     "[f32: s4 vs s1]: "
      "2 000 separate 320 kB descriptors, plus 26% of H2D↔D2H contention."),
     ("NEXT", AMBER, "9×9: the result path, not the kernel",
-     "At a lossless cap D2H already binds: 25.24 µs against a 23.94 µs kernel. More "
+     "At a lossless cap D2H already binds [f32 · s4]: 25.24 µs against a 23.94 µs "
+     "kernel. More "
      "kernel work buys nothing until the D2H slot stops being cap-sized."),
 ]
 for i, (tag, col, title, body) in enumerate(cards):
@@ -1723,9 +1777,11 @@ callout(s, M, 6.58, 11.2,
 section("Annex · the evidence behind the claims",
         "Kept back so the arc stays readable",
         "The measurement artefacts, the rejected route, and the opt5 code.",
-        [("A1–A3", "The three benchmark artefacts"),
-         ("A4–A5", "CUDA Graphs, and why they lost"),
-         ("A6", "opt5 · the overlap code")],
+        [("A1", "Every engine number, reconciled"),
+         ("A2", "CUDA Graphs, and why they lost"),
+         ("A3", "opt5 · the overlap code"),
+         ("A4", "The fault model, tested"),
+         ("A5", "The three benchmark artefacts")],
         rng=(1, N_ANNEX), col=AMBER, annex=True,
         carry=("Everything so far", "34 slides",
                "the arc is finished; what follows answers questions"))
@@ -1734,115 +1790,60 @@ section("Annex · the evidence behind the claims",
 # ANNEX — the measurement detail behind slides 26–27, and the rejected route A
 # ===========================================================================
 
-# ------------------------------------------------------------ A1 · FAULTS
+# ---- A1 · THE CONVENTION -------------------------------------------------
 s = new_slide()
-annex_chrome(s, 1, "expands slide 26 · artifact 1",
-             "First-touch page faults: two sources, one counter")
+annex_chrome(s, 1, "measurement convention · expands slide 12",
+             "Uncontended, or as the pipeline runs it")
 bullets(s, M, 1.90, 12.0, [
-    "A page exists in the process's address space but has no physical frame yet. "
-    "On first touch the kernel finds one, **zeroes it** (mandatory), and maps it. "
-    "No disk I/O: ru_majflt stays 0 all campaign. At 4 kB/page, **1 GB = 262 144 faults**.",
+    "Every engine time in this deck is tagged **[build · s1|s4]**. **s1** is one "
+    "stream with nothing else running: what an engine does **on its own**, which is "
+    "the right number for a capability claim and for the headroom that remains. "
+    "**s4** is the shipped four-stream pipeline: each engine's **busy time per "
+    "frame**, the union of its intervals — the only number that can set a floor.",
 ], size=10.5)
-table(s, M, 2.62, 12.0,
-      ["", "(a) result heap", "(b) pinned D2H slots"],
-      [["allocator", "malloc → mmap, one ClusterVector per frame",
-        "cudaMallocHost, in submit_batch"],
-       ["cost / page", "**0.7 µs**", "**1.0 µs**: same fault + pin + DMA map"],
-       ["recurs?", "**yes**, every alloc/free cycle above the mmap threshold",
-        "**no**: once per buffer, for its lifetime"],
-       ["removed by", "**collect_view()**: it allocates nothing",
-        "nothing; reserve_output_slots() only moves it out of the timer"]],
-      colw=[0.14, 0.43, 0.43], size=9)
-callout(s, M, 5.62, 5.85,
-        "**The two are exactly additive.** Reserving subtracts precisely the pre-pin "
-        "count from run 0 and changes nothing else.", h=0.72, size=10)
-code(s, 6.75, 5.55, 5.85, [
-    "3x3:   572 292 - 455 129 = 117 163   vs 117 192 pre-pin",
-    "9x9: 2 759 037 - 2 278 567 = 480 470   vs 480 474",
-    "closed form: 2 slots x 2000 x 120 004 B / 4 kB = 117 191",
-], size=7.5, title="NOT A CORRELATION, AN IDENTITY")
-callout(s, M, 6.42, 11.9,
-        "**At 9×9 the heap never plateaus.** ~9.3 GB per pass is above glibc's mmap "
-        "threshold, so it is munmap'd and re-faulted every pass: ~292 k faults ≈ "
-        "**10 µs/frame, permanently**. No number of re-runs removes it, which is an "
-        "independent argument for opt6.", h=0.72, size=10, color=AMBER)
+table(s, M, 2.78, 5.8,
+      ["3×3 · µs/frame", "s1 f64", "s1 f32", "s4 f64", "s4 f32"],
+      [["H2D", "13.14", "13.15", "16.17", "16.63"],
+       ["kernel", "14.72", "4.32", "15.17", "5.53"],
+       ["D2H", "5.31", "5.27", "7.69", "7.57"],
+       ["engine max [s4]", "—", "—", "16.17", "16.63"],
+       ["FLOOR = lower of max, sustained", "—", "—", "**16.17**", "**16.31**"]],
+      colw=[0.28, 0.18, 0.18, 0.18, 0.18], size=9, rowh=0.44)
+table(s, 7.0, 2.78, 5.8,
+      ["9×9 · cap 1700", "s1 f64", "s1 f32", "s4 f64", "s4 f32"],
+      [["H2D", "13.20", "13.22", "20.77", "20.54"],
+       ["kernel", "39.86", "23.70", "32.66", "23.94"],
+       ["D2H", "21.97", "21.95", "25.25", "25.24"],
+       ["engine max [s4]", "—", "—", "32.66", "25.24"],
+       ["FLOOR = lower of max, sustained", "—", "—", "**30.01**", "**25.14**"]],
+      colw=[0.28, 0.18, 0.18, 0.18, 0.18], size=9, rowh=0.44)
+callout(s, M, 5.66, 12.0,
+        "**Two traps this table closes.** (1) s4 is engine *occupancy*, not duration — "
+        "the 9×9 kernel row **falls** 39.86 → 32.66 while every transfer rises, and "
+        "nothing that measures a duration falls under load. (2) **the FLOOR is not the "
+        "engine max**: the max is profiled and runs 2–8 % high, so the floor is whichever is "
+        "lower, it or the best unprofiled sustained rate — which is why opt6 reports "
+        "**30.01 µs against a 32.66 max**.", h=0.92, size=10.5)
+caption(s, M, 6.66, 12.0,
+        "THE D2H SHIFT IS AN s4 PHENOMENON: at s1 the kernel binds in BOTH arms "
+        "(39.86 and 23.70 against a 21.97 / 21.95 D2H); only under four-stream "
+        "contention does D2H climb to 25.24 and overtake the 23.94 f32 kernel. Any "
+        "claim about which engine binds must be read from the s4 columns. "
+        "NEITHER DIRECTION IS FASTER THAN THE OTHER. At s1, H2D moves 320 000 B in "
+        "13.15 µs = 24.3 GB/s; D2H moves 120 004 B in 5.27 µs = 22.8 GB/s; at 9×9 D2H "
+        "moves 557 604 B in 21.95 µs = 25.4 GB/s. All sit at 72–81 % of PCIe 4.0 ×16's "
+        "31.5 GB/s, the smallest transfer paying the most fixed cost per byte — so a "
+        "taller bar always means MORE BYTES, never a slower wire. That is why cap 1 700 "
+        "hands the 9×9 floor to D2H. Source: probes.csv in perf/results/"
+        "2026-08-18_{f64,f32}/ (3×3) and 2026-08-20_{f64,f32}_capAB/ (9×9). The floor is the "
+        "LOWER of the s4 estimate and the best unprofiled sustained rate — 16.31 vs "
+        "16.63 at 3×3 f32, 25.14 vs 25.24 at 9×9 f32 — so a probe roofline is never a "
+        "hard denominator.")
 
-# ------------------------------------------------------------ A2 · EVENTS
+# ---- A2 · ROUTE A · IDEA -------------------------------------------------
 s = new_slide()
-annex_chrome(s, 2, "expands slide 26 · artifact 2",
-             "CUDA events measure the stream, not the kernel")
-bullets(s, M, 1.90, COL, [
-    "avg_kernel_time_ms() brackets the launch with **cudaEventRecord on the "
-    "kernel's own stream**. What it returns is elapsed time on **that stream's "
-    "timeline**, which includes time spent **queued behind other streams**.",
-    "So it is honest at 1 stream and inflates under saturation: up to **3.5×** at "
-    "8 streams. The tell is that the derived *PCIe + overhead* = wall/N − kernel_ms "
-    "**goes negative**: kernels overlap, so wall/frame < kernel/frame.",
-    "It is also not free: **~3.6 µs/frame**, i.e. 10–15 % of end-to-end throughput "
-    "at 3×3, to produce a number that is unusable exactly when it matters.",
-], size=10.5)
-code(s, M, 4.75, COL, [
-    "if (m_time_kernels)                       // OFF by default, all 3 finders",
-    "    cudaEventRecord(start[slot][i], sc.stream);",
-    "find_clusters_in_single_frame<<<grid, block, shmem, «sc.stream»>>>(...);",
-    "if (m_time_kernels)",
-    "    cudaEventRecord(stop[slot][i], sc.stream);   // <- queue-wait lands here",
-], size=8, title="ClusterFinderCUDA.hpp")
-callout(s, M, 6.10, COL,
-        "The flag exists for **comparability**, not preference: with events on for one "
-        "finder and off for another, the step between them absorbs the tax.",
-        h=0.72, size=10)
-rail(s, [
-    ("label", "9×9 kernel · f64 · nsys"),
-    ("gap", 0.10),
-    ("stat", "1 stream: duration", "39.86 µs", ACCENT),
-    ("stat", "4 streams: occupancy", "32.66 µs", AMBER),
-    ("gap", 0.05),
-    ("row", "overlap factor", "1.32×", TEXT2),
-    ("gap", 0.20),
-    ("note", "Same kernel. The s4 column is the union of kernel intervals per frame, "
-             "not how long one kernel takes. Quote s1 for duration; s4 feeds the peak, "
-             "subject to the sustained-rate rule on slide 12."),
-])
-
-# ------------------------------------------------------------ A3 · NSYS
-s = new_slide()
-annex_chrome(s, 3, "expands slide 26 · artifact 3",
-             "Where nsys is sound, and where it is not")
-bullets(s, M, 1.90, 12.0, [
-    "Tracing a **host** call means running a callback on entry and on exit, "
-    "**inside the interval being measured**. GPU work is different: the hardware "
-    "stamps its own start/end and the host reads those records **afterwards**, so "
-    "nothing is injected into the execution path.",
-], size=10.5)
-table(s, M, 2.60, 12.0,
-      ["measurement", "sqlite table", "9×9 f64, 1 stream", "verdict"],
-      [["cudaLaunchKernel: the host call", "CUPTI_..._RUNTIME", "1.85 µs",
-        "**inflated ~4×**"],
-       ["the kernel executing", "CUPTI_..._KERNEL", "39.93 µs", "sound to ~2 %"],
-       ["cudaMemcpyAsync: the host call", "CUPTI_..._RUNTIME", "1.65 µs",
-        "**inflated ~4×**"],
-       ["the H2D / D2H transfer", "CUPTI_..._MEMCPY", "13.25 / 19.44 µs",
-        "sound to ~2 %"]],
-      colw=[0.36, 0.24, 0.22, 0.18], size=9, rowh=0.52)
-callout(s, M, 5.30, 11.9,
-        "**Same cudaMemcpyAsync, two numbers: 1.65 µs to ask for the copy, 13.25 µs "
-        "for the copy to happen.** If the profiler must be present at the moment to "
-        "measure it, it distorts it; if the hardware records it anyway and the "
-        "profiler reads it later, it does not.", h=0.86, size=10.5)
-caption(s, M, 6.40, 11.9,
-        "Every headline number in this deck (kernel times, transfer times, duty "
-        "cycles, overlap and every engine floor) comes from the _KERNEL and _MEMCPY "
-        "tables (see gpu_span.py). The one figure read from _RUNTIME is the graph "
-        "launch budget in A5, and it is quoted to one significant figure "
-        "for exactly this reason. Proof the GPU side is sound: opt7 sustains 25.14 µs "
-        "unprofiled against a 25.24 µs estimate measured under the profiler, 0.4 % "
-        "apart, which a 4× distortion could not survive.")
-
-# ----------------------------------------------------------- A4 · ROUTE A
-s = new_slide()
-annex_chrome(s, 4, "route A · the idea and the verdict",
-             "CUDA Graphs, a sound idea that the next act overtook")
+annex_chrome(s, 2, "rejected route · CUDA graphs · expands slide 11",
+             "CUDA Graphs, a sound idea that the next act overtook", part=1, nparts=2)
 bullets(s, M, 1.95, 12.0, [
     "Every cudaMemcpyAsync / kernel launch costs the **CPU** a few microseconds of "
     "driver work, per frame and per operation. After opt4 that looked like the budget.",
@@ -1871,10 +1872,10 @@ caption(s, M, 6.62, 12.0,
         "Launch overhead stops binding one step later; the technique aimed at it can no "
         "longer pay.")
 
-# ------------------------------------------------------------ A5 · BUDGET
+# ---- A3 · ROUTE A · BUDGET -----------------------------------------------
 s = new_slide()
-annex_chrome(s, 5, "route A · the arithmetic",
-             "What a CUDA Graph actually saves, in microseconds")
+annex_chrome(s, 2, "rejected route · CUDA graphs",
+             "What a CUDA Graph actually saves, in microseconds", part=2, nparts=2)
 bullets(s, M, 1.90, COL, [
     "The stream path issues **four runtime calls per frame**, a memset to clear the "
     "cluster counter, H2D, the launch, D2H. A graph replaces all four with **one** "
@@ -1889,7 +1890,7 @@ table(s, M, 2.72, COL,
       colw=[0.40, 0.18, 0.22, 0.20], size=9, rowh=0.44)
 code(s, M, 5.42, COL, [
     "7.67 us/frame x 3/4  = 5.75 us/frame   eliminated, AS MEASURED (under nsys)",
-    "5.75 / 4 (see A3)    ~ 1.4 us/frame    eliminated, unprofiled estimate",
+    "5.75 / 4 (see A5)    ~ 1.4 us/frame    eliminated, unprofiled estimate",
 ], size=8, title="THE ARITHMETIC")
 callout(s, M, 6.28, COL,
         "**~1.4 µs against a 16.17 µs floor = 8.7 %**, real while the host is the "
@@ -1910,9 +1911,9 @@ rail(s, [
 ])
 
 
-# ---------------------------------------------------- A6 · THE OPT5 CODE
+# ---- A4 · THE OPT5 CODE --------------------------------------------------
 s = new_slide()
-annex_chrome(s, 6, "expands slide 16 · opt5",
+annex_chrome(s, 3, "opt5 · the overlap code · expands slide 16",
              "The overlap, in six lines, and why you never write them")
 code(s, M, 1.86, 7.15, [
     "tok = cf.«submit_batch»(data[a0:b0], first_frame=a0)",
@@ -1954,6 +1955,148 @@ caption(s, M, 6.80, 12.0,
         "are comparable, ×1.31 at 3×3, and least when one dominates, ×1.20 at 9×9, "
         "where the host term is roughly twice the GPU term. That gap is the diagnosis "
         "that motivates opt6 (report §8.2).")
+
+# ---- A5 · THE FAULT MODEL ------------------------------------------------
+s = new_slide()
+annex_chrome(s, 4, "the fault model · expands slide 22",
+             "The fault model, tested against every step")
+bullets(s, M, 1.90, 12.0, [
+    "Slide 26 fits **0.68 µs per first-touch fault**. If that rate is right it should "
+    "predict the f64→f32 gap at every step from the fault counts alone — and where it "
+    "does, the comparison is measuring **the allocator**, not the typedef.",
+], size=10.5)
+table(s, M, 2.78, 12.0,
+      ["step", "f64 warm (faults)", "f32 warm (faults)", "Δ wall",
+       "Δ faults", "predicted", "verdict"],
+      [["opt3", "82.44 µs  (128 k)", "95.66 µs  (521 k)", "**+13.22**", "+393 k",
+        "**+13.37**", "**the allocator**"],
+       ["opt4", "79.83 µs  (128 k)", "75.20 µs  (127 k)", "−4.63", "−0.5 k",
+        "−0.02", "clean"],
+       ["opt5", "66.39 µs  (152 k)", "61.85 µs  (10 k)", "−4.54", "−141 k",
+        "**−4.81**", "**not separable**"],
+       ["opt6", "30.01 µs  (0)", "25.14 µs  (0)", "−4.87", "0", "0.00", "clean"]],
+      colw=[0.08, 0.18, 0.18, 0.10, 0.10, 0.13, 0.23], size=8.5, rowh=0.50)
+callout(s, M, 5.42, 12.0,
+        "**opt3 is the whole argument in one row.** A 393 k fault gap predicts +13.37 µs; "
+        "+13.22 was observed — agreement to **1 %**. The −40 % kernel is in there "
+        "somewhere, invisible under 13 µs of the OS zeroing pages. Only opt4 and opt6, "
+        "where the fault term is ~0, report the typedef at all.", h=0.90, size=10.5)
+caption(s, M, 6.52, 12.0,
+        "ladder_9x9.csv in results/2026-08-20_{f64,f32}_cap1700/, warm = best of reps "
+        "1–4, faults are that rep's own getrusage minor-fault count. Predicted = Δfaults "
+        "× 0.68 µs ÷ 20 000 frames. This table replaces an earlier figure that quoted "
+        "opt3's +16 % as a measurement of the result path; it is a measurement of two "
+        "allocator states, and the model above is how that was established.")
+
+# ---- A6 · FAULTS ---------------------------------------------------------
+s = new_slide()
+annex_chrome(s, 5, "benchmark artefacts · expands slide 26",
+             "First-touch page faults: two sources, one counter", part=1, nparts=3)
+bullets(s, M, 1.90, 12.0, [
+    "A page exists in the process's address space but has no physical frame yet. "
+    "On first touch the kernel finds one, **zeroes it** (mandatory), and maps it. "
+    "No disk I/O: ru_majflt stays 0 all campaign. At 4 kB/page, **1 GB = 262 144 faults**.",
+], size=10.5)
+table(s, M, 2.62, 12.0,
+      ["", "(a) result heap", "(b) pinned D2H slots"],
+      [["allocator", "malloc → mmap, one ClusterVector per frame",
+        "cudaMallocHost, in submit_batch"],
+       ["cost / page", "**0.7 µs**", "**1.0 µs**: same fault + pin + DMA map"],
+       ["recurs?", "**yes**, every alloc/free cycle above the mmap threshold",
+        "**no**: once per buffer, for its lifetime"],
+       ["removed by", "**collect_view()**: it allocates nothing",
+        "nothing; reserve_output_slots() only moves it out of the timer"]],
+      colw=[0.14, 0.43, 0.43], size=9)
+callout(s, M, 5.62, 5.85,
+        "**The two are exactly additive.** Reserving subtracts precisely the pre-pin "
+        "count from run 0 and changes nothing else.", h=0.72, size=10)
+code(s, 6.75, 5.55, 5.85, [
+    "3x3:   572 292 - 455 129 = 117 163   vs 117 192 pre-pin",
+    "9x9: 2 759 037 - 2 278 567 = 480 470   vs 480 474",
+    "closed form: 2 slots x 2000 x 120 004 B / 4 kB = 117 191",
+], size=7.5, title="NOT A CORRELATION, AN IDENTITY")
+callout(s, M, 6.42, 11.9,
+        "**At 9×9 the heap never plateaus.** ~9.3 GB per pass is above glibc's mmap "
+        "threshold, so it is munmap'd and re-faulted every pass: ~292 k faults ≈ "
+        "**10 µs/frame, permanently**. No number of re-runs removes it, which is an "
+        "independent argument for opt6.", h=0.72, size=10, color=AMBER)
+
+# ---- A7 · EVENTS ---------------------------------------------------------
+s = new_slide()
+annex_chrome(s, 5, "benchmark artefacts",
+             "CUDA events measure the stream, not the kernel", part=2, nparts=3)
+bullets(s, M, 1.90, COL, [
+    "avg_kernel_time_ms() brackets the launch with **cudaEventRecord on the "
+    "kernel's own stream**. What it returns is elapsed time on **that stream's "
+    "timeline**, which includes time spent **queued behind other streams**.",
+    "So it is honest at 1 stream and inflates under saturation: up to **3.5×** at "
+    "8 streams. The tell is that the derived *PCIe + overhead* = wall/N − kernel_ms "
+    "**goes negative**: kernels overlap, so wall/frame < kernel/frame.",
+    "It is also not free: **~3.6 µs/frame**, i.e. 10–15 % of end-to-end throughput "
+    "at 3×3, to produce a number that is unusable exactly when it matters.",
+], size=10.5)
+code(s, M, 4.75, COL, [
+    "if (m_time_kernels)                       // OFF by default, all 3 finders",
+    "    cudaEventRecord(start[slot][i], sc.stream);",
+    "find_clusters_in_single_frame<<<grid, block, shmem, «sc.stream»>>>(...);",
+    "if (m_time_kernels)",
+    "    cudaEventRecord(stop[slot][i], sc.stream);   // <- queue-wait lands here",
+], size=8, title="ClusterFinderCUDA.hpp")
+callout(s, M, 6.10, COL,
+        "The flag exists for **comparability**, not preference: with events on for one "
+        "finder and off for another, the step between them absorbs the tax.",
+        h=0.72, size=10)
+rail(s, [
+    ("label", "9×9 kernel · f64 · nsys"),
+    ("gap", 0.10),
+    ("stat", "s1 · duration", "39.86 µs", ACCENT),
+    ("stat", "s4 · occupancy", "32.66 µs", AMBER),
+    ("gap", 0.05),
+    ("row", "overlap factor", "1.32×", TEXT2),
+    ("gap", 0.20),
+    ("note", "Same kernel. The s4 column is the union of kernel intervals per frame, "
+             "not how long one kernel takes. Quote s1 for duration; s4 feeds the floor, "
+             "subject to the sustained-rate rule on slide 12. Full grid: A1."),
+])
+
+# ---- A8 · NSYS -----------------------------------------------------------
+s = new_slide()
+annex_chrome(s, 5, "benchmark artefacts",
+             "Where nsys is sound, and where it is not", part=3, nparts=3)
+bullets(s, M, 1.90, 12.0, [
+    "Tracing a **host** call means running a callback on entry and on exit, "
+    "**inside the interval being measured**. GPU work is different: the hardware "
+    "stamps its own start/end and the host reads those records **afterwards**, so "
+    "nothing is injected into the execution path.",
+], size=10.5)
+table(s, M, 2.60, 12.0,
+      ["measurement", "sqlite table", "9×9 [f64 · s1 · cap 1500]", "verdict"],
+      [["cudaLaunchKernel: the host call", "CUPTI_..._RUNTIME", "1.85 µs",
+        "**inflated ~4×**"],
+       ["the kernel executing", "CUPTI_..._KERNEL", "39.93 µs", "sound to ~2 %"],
+       ["cudaMemcpyAsync: the host call", "CUPTI_..._RUNTIME", "1.65 µs",
+        "**inflated ~4×**"],
+       ["the H2D / D2H transfer", "CUPTI_..._MEMCPY", "13.25 / 19.44 µs",
+        "sound to ~2 %"]],
+      colw=[0.36, 0.24, 0.22, 0.18], size=9, rowh=0.52)
+callout(s, M, 5.30, 11.9,
+        "**Same cudaMemcpyAsync, two numbers: 1.65 µs to ask for the copy, 13.25 µs "
+        "for the copy to happen.** If the profiler must be present at the moment to "
+        "measure it, it distorts it; if the hardware records it anyway and the "
+        "profiler reads it later, it does not.", h=0.86, size=10.5)
+caption(s, M, 6.40, 11.9,
+        "Every headline number in this deck (kernel times, transfer times, duty "
+        "cycles, overlap and every engine floor) comes from the _KERNEL and _MEMCPY "
+        "tables (see gpu_span.py). ⚠ CAP 1500 — the ONLY cap-1500 numbers left in the "
+        "deck, kept because the RUNTIME column exists only in the trace and the host "
+        "call cost does not depend on the cap. So the "
+        "19.44 µs D2H here is NOT the shipped 9×9 bar — at cap 1700 that engine reads "
+        "21.95 [s1] and 25.24 [s4], which is what binds the f32 build. The one figure "
+        "read from _RUNTIME is the graph "
+        "launch budget in A2, and it is quoted to one significant figure "
+        "for exactly this reason. Proof the GPU side is sound: opt7 sustains 25.14 µs "
+        "unprofiled against a 25.24 µs estimate measured under the profiler, 0.4 % "
+        "apart, which a 4× distortion could not survive.")
 
 prs.save(OUT)
 print(f"saved {OUT}  ({len(prs.slides._sldIdLst)} slides)")
