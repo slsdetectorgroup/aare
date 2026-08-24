@@ -138,3 +138,23 @@ TEST_CASE("frame buffers are recycled when pushing more frames than the pool "
 
     CHECK(cf.m_input_queues_are_empty() == true);
 }
+
+TEST_CASE("cluster collector accepts finders with a matching cluster type") {
+    using ClusterType = Cluster<int32_t, 3, 3>;
+    using Finder = ClusterFinderMTWrapper<ClusterType, uint16_t, float>;
+    using OtherFinder =
+        ClusterFinderMTWrapper<Cluster<int32_t, 5, 5>, uint16_t, float>;
+
+    static_assert(
+        std::is_constructible_v<ClusterCollector<ClusterType>, Finder *>);
+    static_assert(
+        !std::is_constructible_v<ClusterCollector<ClusterType>, OtherFinder *>);
+
+    Finder cf({10, 10});
+    cf.stop();
+
+    ClusterCollector<ClusterType> collector(&cf);
+    collector.stop();
+
+    CHECK(collector.steal_clusters().empty());
+}

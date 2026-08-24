@@ -2,6 +2,8 @@
 #pragma once
 #include <atomic>
 #include <thread>
+#include <type_traits>
+#include <utility>
 #include <vector>
 
 #include "aare/Backoff.hpp"
@@ -15,7 +17,9 @@ namespace aare {
 template <typename ClusterType,
           typename = std::enable_if_t<is_cluster_v<ClusterType>>>
 class ClusterCollector {
-    ProducerConsumerQueue<ClusterVector<ClusterType>> *m_source;
+    using SourceQueue = ProducerConsumerQueue<ClusterVector<ClusterType>>;
+
+    SourceQueue *m_source;
     std::atomic<bool> m_stop_requested{false};
     std::atomic<bool> m_stopped{true};
     std::thread m_thread;
@@ -40,14 +44,22 @@ class ClusterCollector {
     }
 
   public:
-    ClusterCollector(ClusterFinderMT<ClusterType, uint16_t, double> *source) {
-        m_source = source->sink();
+    explicit ClusterCollector(SourceQueue *source) : m_source(source) {
         m_thread =
             std::thread(&ClusterCollector::process,
                         this); // only one process does that so why isnt it
                                // automatically written to m_cluster in collect
                                // - instead of writing first to m_sink?
     }
+
+    template <typename Finder,
+              std::enable_if_t<
+                  std::is_same_v<decltype(std::declval<Finder &>().sink()),
+                                 SourceQueue *>,
+                  int> = 0>
+    explicit ClusterCollector(Finder *source)
+        : ClusterCollector(source->sink()) {}
+
     void stop() {
         m_stop_requested = true;
         m_thread.join();
