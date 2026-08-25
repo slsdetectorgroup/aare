@@ -112,7 +112,7 @@ static inline InclusiveROI mirror_on_y(InclusiveROI r, ssize_t yaxis_coord) {
 // @param r The ROI to be mirrored
 // @param xaxis_coord The x-axis coordinate (in y) expressed in pixel
 // coordinates
-static inline InclusiveROI mirrorY_on_x(InclusiveROI r, ssize_t xaxis_coord) {
+static inline InclusiveROI mirror_on_x(InclusiveROI r, ssize_t xaxis_coord) {
     // int y0p = (height - 1) - r.ymax;
     // int y1p = (height - 1) - r.ymin;
     int y0p = xaxis_coord * 2 - r.ymax - 1;
@@ -126,7 +126,7 @@ static inline InclusiveROI mirrorY_on_x(InclusiveROI r, ssize_t xaxis_coord) {
 static inline InclusiveROI mirrorXY(InclusiveROI r, ssize_t xaxis_coord,
                                     ssize_t yaxis_coord) {
     // return {mirrorX(mirrorY(r, height), width)};
-    return {mirror_on_y(mirrorY_on_x(r, xaxis_coord), yaxis_coord)};
+    return {mirror_on_y(mirror_on_x(r, xaxis_coord), yaxis_coord)};
 }
 
 // intersection

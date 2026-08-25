@@ -8,19 +8,19 @@ TEST_CASE("translate ROI", "[InclusiveROIgeometry]") {
     const InclusiveROI roi{10, 19, 20, 29};
 
     SECTION("positive shift") {
-        auto result = aare::inclusiveroi::geom::translate(roi, 5, 7);
+        auto result = inclusiveroi::geom::translate(roi, 5, 7);
 
-        CHECK(result == aare::InclusiveROI{15, 24, 27, 36});
+        CHECK(result == InclusiveROI{15, 24, 27, 36});
     }
 
     SECTION("negative shift") {
-        auto result = aare::inclusiveroi::geom::translate(roi, -5, -7);
+        auto result = inclusiveroi::geom::translate(roi, -5, -7);
 
         CHECK(result == aare::InclusiveROI{5, 14, 13, 22});
     }
 
     SECTION("zero shift") {
-        CHECK(aare::inclusiveroi::geom::translate(roi, 0, 0) == roi);
+        CHECK(inclusiveroi::geom::translate(roi, 0, 0) == roi);
     }
 }
 
@@ -133,27 +133,27 @@ TEST_CASE("intersect ROIs", "[InclusiveROIgeometry]") {
         InclusiveROI a{0, 9, 0, 9};
         InclusiveROI b{5, 14, 3, 7};
 
-        CHECK(intersect(a, b) == InclusiveROI{5, 9, 3, 7});
+        CHECK(inclusiveroi::geom::intersect(a, b) == InclusiveROI{5, 9, 3, 7});
     }
 
     SECTION("one ROI inside the other") {
         InclusiveROI a{0, 20, 0, 20};
         InclusiveROI b{5, 10, 7, 12};
 
-        CHECK(intersect(a, b) == b);
+        CHECK(inclusiveroi::geom::intersect(a, b) == b);
     }
 
     SECTION("identical ROIs") {
         InclusiveROI a{5, 10, 7, 12};
 
-        CHECK(intersect(a, a) == a);
+        CHECK(inclusiveroi::geom::intersect(a, a) == a);
     }
 
     SECTION("no overlap") {
         InclusiveROI a{0, 9, 0, 9};
         InclusiveROI b{10, 19, 0, 9};
 
-        CHECK(intersect(a, b).is_empty());
+        CHECK(inclusiveroi::geom::intersect(a, b).is_empty());
     }
 }
 
@@ -163,13 +163,15 @@ TEST_CASE("rebase ROI", "[InclusiveROIgeoemtry]") {
         InclusiveROI input{110, 119, 220, 229};
         InclusiveROI base{100, 199, 200, 299};
 
-        CHECK(rebaseROI(input, base) == InclusiveROI{10, 19, 20, 29});
+        CHECK(inclusiveroi::geom::rebaseROI(input, base) ==
+              InclusiveROI{10, 19, 20, 29});
     }
 
     SECTION("rebasing base itself produces origin") {
         InclusiveROI base{100, 199, 200, 299};
 
-        CHECK(rebaseROI(base, base) == InclusiveROI{0, 99, 0, 99});
+        CHECK(inclusiveroi::geom::rebaseROI(base, base) ==
+              InclusiveROI{0, 99, 0, 99});
     }
 }
 
@@ -179,41 +181,41 @@ TEST_CASE("unite ROIs", "[InclusiveROIgeometry]") {
         InclusiveROI a{0, 9, 0, 9};
         InclusiveROI b{5, 14, 0, 9};
 
-        CHECK(unite(a, b) == InclusiveROI{0, 14, 0, 9});
+        CHECK(inclusiveroi::geom::unite(a, b) == InclusiveROI{0, 14, 0, 9});
     }
 
     SECTION("adjacent horizontally") {
         InclusiveROI a{0, 9, 0, 9};
         InclusiveROI b{10, 19, 0, 9};
 
-        CHECK(unite(a, b) == InclusiveROI{0, 19, 0, 9});
+        CHECK(inclusiveroi::geom::unite(a, b) == InclusiveROI{0, 19, 0, 9});
     }
 
     SECTION("overlapping vertically") {
         InclusiveROI a{0, 9, 0, 9};
         InclusiveROI b{0, 9, 5, 14};
 
-        CHECK(unite(a, b) == InclusiveROI{0, 9, 0, 14});
+        CHECK(inclusiveroi::geom::unite(a, b) == InclusiveROI{0, 9, 0, 14});
     }
 
     SECTION("adjacent vertically") {
         InclusiveROI a{0, 9, 0, 9};
         InclusiveROI b{0, 9, 10, 19};
 
-        CHECK(unite(a, b) == InclusiveROI{0, 9, 0, 19});
+        CHECK(inclusiveroi::geom::unite(a, b) == InclusiveROI{0, 9, 0, 19});
     }
 
     SECTION("non-contiguous ROIs throw") {
         InclusiveROI a{0, 9, 0, 9};
         InclusiveROI b{20, 29, 0, 9};
 
-        CHECK_THROWS_AS(unite(a, b), std::runtime_error);
+        CHECK_THROWS_AS(inclusiveroi::geom::unite(a, b), std::runtime_error);
     }
 
     SECTION("different y extents throw") {
         InclusiveROI a{0, 9, 0, 9};
         InclusiveROI b{5, 14, 1, 9};
 
-        CHECK_THROWS_AS(unite(a, b), std::runtime_error);
+        CHECK_THROWS_AS(inclusiveroi::geom::unite(a, b), std::runtime_error);
     }
 }
