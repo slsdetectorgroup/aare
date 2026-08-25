@@ -133,8 +133,8 @@ strixel_to_pixel_map(defs::GroupConfig const &group_config,
     // If ROIs don't intersect, return empty
     if (effective_roi.xmax < effective_roi.xmin ||
         effective_roi.ymax < effective_roi.ymin) {
-        LOG(logDEBUG)
-            << "Warning: User-supplied ROI does not intersect with configured "
+        LOG(logWARNING)
+            << "User-supplied ROI does not intersect with configured "
                "strixel ROI, returned map is empty!\n";
         return {{}, InclusiveROI::emptyROI()};
     }
