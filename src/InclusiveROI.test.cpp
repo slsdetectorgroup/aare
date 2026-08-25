@@ -16,7 +16,7 @@ TEST_CASE("translate ROI", "[InclusiveROIgeometry]") {
     SECTION("negative shift") {
         auto result = inclusiveroi::geom::translate(roi, -5, -7);
 
-        CHECK(result == aare::InclusiveROI{5, 14, 13, 22});
+        CHECK(result == InclusiveROI{5, 14, 13, 22});
     }
 
     SECTION("zero shift") {
