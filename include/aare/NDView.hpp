@@ -12,6 +12,7 @@
 #include <iostream>
 #include <numeric>
 #include <stdexcept>
+#include <type_traits>
 #include <vector>
 namespace aare {
 
@@ -91,6 +92,12 @@ class NDView : public ArrayExpr<NDView<T, Ndim>, Ndim> {
     NDView(T *buffer, std::array<ssize_t, Ndim> shape)
         : buffer_(buffer), strides_(c_strides<Ndim>(shape)), shape_(shape),
           size_(num_elements(shape)) {}
+
+    template <typename U, std::enable_if_t<
+                              std::is_convertible_v<U (*)[], T (*)[]>, int> = 0>
+    NDView(const NDView<U, Ndim> &other) noexcept
+        : buffer_(other.buffer_), strides_(other.strides_),
+          shape_(other.shape_), size_(other.size_) {}
 
     template <typename... Ix>
     std::enable_if_t<sizeof...(Ix) == Ndim, T &> operator()(Ix... index) {
@@ -216,6 +223,8 @@ class NDView : public ArrayExpr<NDView<T, Ndim>, Ndim> {
     }
 
   private:
+    template <typename, ssize_t> friend class NDView;
+
     T *buffer_{nullptr};
     std::array<ssize_t, Ndim> strides_{};
     std::array<ssize_t, Ndim> shape_{};
