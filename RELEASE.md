@@ -13,6 +13,8 @@
 - Removed the legacy ``gaus``, ``pol1``, ``scurve``, and ``scurve2`` function
   evaluators. Model objects are callable and provide the replacement, for
   example ``Gaussian()(x, par)``.
+- ``NDView<T, Ndim>`` now converts to ``NDView<const T, Ndim>``;
+  ``expand4to8bit`` and ``expand24to32bit`` accept const input views.
 
 ### Bugfixes:
 - Fixed broken reading of old (pre reordering) Moench03
