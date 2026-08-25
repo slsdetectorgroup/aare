@@ -295,8 +295,6 @@ TEST_CASE("Write cluster with potential padding",
 
     ClusterFile<ClusterType> file(fpath, 1000, "w");
 
-    CHECK_THROWS_AS(file.estimate_n_clusters(), std::runtime_error);
-
     ClusterVector<ClusterType> clustervec(2);
     uint16_t coordinate = 5;
     clustervec.push_back(ClusterType{

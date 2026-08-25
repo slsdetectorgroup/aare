@@ -154,9 +154,6 @@ class ClusterFile {
      * @throws std::runtime_error if the file is not opened for reading
      */
     size_t estimate_n_clusters() const {
-        if (m_mode != "r") {
-            throw std::runtime_error(LOCATION + "File not opened for reading");
-        }
         return std::filesystem::file_size(m_filename) / sizeof(ClusterType);
     }
 
