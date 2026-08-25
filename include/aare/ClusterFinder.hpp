@@ -184,7 +184,7 @@ class ClusterFinder {
         } else if (total > c3 * threshold) {
             // pass, store the cluster below
         } else {
-            m_pedestal.push_fast(center, frame.data()[center]);
+            m_pedestal.push_unchecked(center, frame.data()[center]);
             return; // It was a pedestal value nothing to store
         }
 

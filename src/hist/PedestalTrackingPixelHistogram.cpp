@@ -292,8 +292,8 @@ void PedestalTrackingPixelHistogram::worker_loop(int thread_id) {
                                 my_std[static_cast<ssize_t>(local_pixel)];
                             if (sigma > AxisType{0.0} &&
                                 std::abs(val) < n_sigma * sigma) {
-                                my_pedestal.push_fast<FrameType>(local_pixel,
-                                                                 raw);
+                                my_pedestal.push_unchecked<FrameType>(
+                                    local_pixel, raw);
                             }
                         }
                     }

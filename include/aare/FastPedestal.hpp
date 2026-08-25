@@ -206,11 +206,10 @@ template <typename PEDESTAL_TYPE> class FastPedestal {
             throw std::runtime_error("Pedestal is not ready, cannot push");
         }
 
-        // TODO! update with push_fast
-        for (size_t row = 0; row < m_rows; row++) {
-            for (size_t col = 0; col < m_cols; col++) {
-                push<T>(row, col, frame(row, col));
-            }
+        const auto size = static_cast<std::size_t>(m_rows) * m_cols;
+        const auto *data = frame.data();
+        for (std::size_t index = 0; index < size; ++index) {
+            push_unchecked(index, data[index]);
         }
     }
 
@@ -237,7 +236,7 @@ template <typename PEDESTAL_TYPE> class FastPedestal {
             throw std::runtime_error("Pedestal is not ready, cannot push");
         }
 
-        push_fast(rc_to_index(row, col), val);
+        push_unchecked(rc_to_index(row, col), val);
     }
 
     /**
@@ -249,7 +248,7 @@ template <typename PEDESTAL_TYPE> class FastPedestal {
      * preconditions are asserted only in debug builds.
      */
     template <typename T>
-    void push_fast(const std::size_t index, const T value) noexcept {
+    void push_unchecked(const std::size_t index, const T value) noexcept {
         assert(m_ready);
         assert(index < static_cast<std::size_t>(m_sum.size()));
 
@@ -276,7 +275,7 @@ template <typename PEDESTAL_TYPE> class FastPedestal {
 
         // if already full, throw an error
         if (m_cur_samples == m_samples) {
-            throw std::runtime_error("Pedestal is full");
+            throw std::runtime_error("Pedestal initialization is already done");
         }
 
         for (size_t row = 0; row < m_rows; row++) {
