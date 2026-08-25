@@ -167,6 +167,22 @@ TEST_CASE("rebase ROI", "[InclusiveROIgeometry]") {
               InclusiveROI{10, 19, 20, 29});
     }
 
+    SECTION("input larger than base") {
+        InclusiveROI input{90, 219, 80, 329};
+        InclusiveROI base{100, 199, 200, 299};
+
+        CHECK(inclusiveroi::geom::rebaseROI(input, base) ==
+              InclusiveROI{-10, 119, -120, 129});
+    }
+
+    SECTION("input outside of base") {
+        InclusiveROI input{10, 80, 80, 129};
+        InclusiveROI base{100, 199, 200, 299};
+
+        CHECK(inclusiveroi::geom::rebaseROI(input, base) ==
+              InclusiveROI{-90, -20, -120, -71});
+    }
+
     SECTION("rebasing base itself produces origin") {
         InclusiveROI base{100, 199, 200, 299};
 
