@@ -586,25 +586,7 @@ void PedestalTrackingPixelHistogram::fill_from_file(
                                   std::ref(buffers[next_index]));
             }
 
-            std::exception_ptr fill_error;
-            try {
-                fill_batch(buffers[current_index], current_frames);
-            } catch (...) {
-                fill_error = std::current_exception();
-            }
-
-            // Always observe completion of an in-flight read before unwinding;
-            // its workers reference both `reader` and the next batch buffer.
-            if (fill_error) {
-                if (next.valid()) {
-                    try {
-                        (void)next.get();
-                    } catch (...) {
-                        // Preserve the earlier histogram exception.
-                    }
-                }
-                std::rethrow_exception(fill_error);
-            }
+            fill_batch(buffers[current_index], current_frames);
             completed += current_frames;
 
             if (verbose && (completed - last_reported >= progress_interval ||
