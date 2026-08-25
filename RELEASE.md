@@ -4,6 +4,8 @@
 
 ### API Changes:
 
+- Exposed ``ClusterVector.empty()`` in the Python API.
+- Added ClusterVector.estimate_n_clusters
 - Removed the lmfit dependency and the legacy ``fit_gaus``, ``fit_pol1``,
   ``fit_scurve``, and ``fit_scurve2`` APIs. Use ``Gaussian``, ``Pol1``,
   ``RisingScurve``, or ``FallingScurve`` and call ``model.fit(...)`` (or
