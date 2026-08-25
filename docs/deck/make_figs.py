@@ -737,9 +737,9 @@ def fig_resultpath():
     fig, (a1, a2) = plt.subplots(1, 2, figsize=(11.4, 3.2))
 
     for ax, title, floor, copy_us, gain, verdict, col in [
-        (a1, "3×3  ·  93 kB / frame", 16.17, 8.0, "×1.16",
+        (a1, "3×3  ·  host copy 93 kB / frame", 16.17, 8.0, "×1.16",
          "copy hides under the GPU\n→ small win", ACCENT),
-        (a2, "9×9  ·  467 kB / frame", 30.01, 40.0, "×2.21",
+        (a2, "9×9  ·  host copy 467 kB / frame", 30.01, 40.0, "×2.21",
          "copy is larger than the GPU\n→ cannot hide at any overlap", AMBER),
     ]:
         ax.bar([0], [floor], width=0.5, color=col, zorder=3, linewidth=0)
