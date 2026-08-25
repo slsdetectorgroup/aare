@@ -26,7 +26,7 @@ TEST_CASE("translate ROI", "[InclusiveROIgeometry]") {
 
 // mirror
 TEST_CASE("mirror_on_y mirrors ROI about vertical axis",
-          "[InlusiveROIgeometry]") {
+          "[InclusiveROIgeometry]") {
 
     SECTION("ROI on left side of axis") {
         InclusiveROI roi{1, 3, 10, 20};
@@ -77,7 +77,7 @@ TEST_CASE("mirror_on_y mirrors ROI about vertical axis",
 }
 
 TEST_CASE("mirror_on_x mirrors ROI about horizontal axis",
-          "[InlusiveROIgeometry]") {
+          "[InclusiveROIgeometry]") {
 
     SECTION("ROI below axis") {
         InclusiveROI roi{10, 20, 1, 3};
@@ -158,7 +158,7 @@ TEST_CASE("intersect ROIs", "[InclusiveROIgeometry]") {
 }
 
 // rebase
-TEST_CASE("rebase ROI", "[InclusiveROIgeoemtry]") {
+TEST_CASE("rebase ROI", "[InclusiveROIgeometry]") {
     SECTION("base ROI origin becomes (0,0) in the rebased coordinate system") {
         InclusiveROI input{110, 119, 220, 229};
         InclusiveROI base{100, 199, 200, 299};
