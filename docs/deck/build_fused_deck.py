@@ -1238,6 +1238,28 @@ callout(s, M, 5.86, COL,
 caption(s, M, 6.78, COL,
         "The two bars are the competing costs, not the two steps; the step times are "
         "on the right.", size=8.5)
+notes(s, """Where 93 kB and 467 kB come from: clusters/frame x sizeof(Cluster).
+
+sizeof — Cluster.hpp:28 is two CoordType coords then std::array<T, X*Y> data.
+CoordType=uint16, T=int32, alignof 4, so the coords pack with no padding:
+    3x3:  2x2 B +  9x4 B =  40 B
+    9x9:  2x2 B + 81x4 B = 328 B
+
+clusters/frame — report section 13, the same counts used for correctness:
+    3x3:  233 094 390 / 100 000 fr = 2 330.9 /fr
+    9x9:   28 447 962 /  20 000 fr = 1 422.4 /fr
+
+    2 330.9 x  40 B =  93.2 kB/frame
+    1 422.4 x 328 B = 466.5 kB/frame  ->  x 20 000 fr = 9.33 GB/run
+
+NOT the D2H transfer. D2H is fixed at cap x sizeof regardless of how many clusters
+were found: at the 9x9 campaign cap of 1700 that is 1700 x 328 B = 558 kB every
+frame, i.e. the 467 kB of real clusters is an 84 % fill (section 4.2). The 467 kB
+is the HOST memcpy inside collect(), pinned buffer -> freshly allocated
+ClusterVector. That is what collect_view() removes; the wire traffic is unchanged.
+
+Report: section 12 (payload table), section 9.4 (materialize_slot), section 13.""")
+
 rail(s, [
     ("label", "opt6 · 3×3 and 9×9 · collect_view()"),
     ("gap", 0.10),
