@@ -44,7 +44,18 @@ OUT = DOCS / "cf_cuda_fused.pptx"
 # ---------------------------------------------------------------- design tokens
 BG     = RGBColor(0x0B, 0x10, 0x18)
 PANEL  = RGBColor(0x12, 0x1A, 0x28)
-CODEBG = RGBColor(0x0E, 0x14, 0x20)
+# Code panels are framed, not filled, to set them apart. The fill can only ever
+# be a hair lighter than the slide (1.16:1 at #17202E) before the accent-coloured
+# tokens inside start losing contrast against it -- and a projector's black level
+# crushes every dark tone together anyway. The 1 pt edge reaches 2.18:1 against
+# the background without touching the ink's ground, so the boundary is drawn by
+# the line and the fill only has to say "a different surface".
+CODEBG = RGBColor(0x17, 0x20, 0x2E)
+CODEEDGE = RGBColor(0x3A, 0x4C, 0x66)
+# MUTED was tuned against the slide background; on the lighter code fill it drops
+# to 3.75:1, and it carries the comments and the panel title. This puts them back
+# above MUTED's original 4.22 -- inside code panels only.
+CODEDIM = RGBColor(0x7C, 0x8A, 0x9E)
 RULE   = RGBColor(0x1E, 0x28, 0x36)
 ACCENT = RGBColor(0x1E, 0x90, 0xC2)
 AMBER  = RGBColor(0xE8, 0xB2, 0x5C)
@@ -252,17 +263,21 @@ def code(s, x, y, w, lines, size=9, title=None):
     size = max(size, MIN_PT)
     lh = 0.0174 * size
     h = 0.24 + len(lines) * lh + (0.24 if title else 0)
-    rect(s, x, y, w, h, CODEBG, MSO_SHAPE.ROUNDED_RECTANGLE)
+    box = rect(s, x, y, w, h, CODEBG, MSO_SHAPE.ROUNDED_RECTANGLE)
+    box.line.fill.solid()             # rect() cleared the line; put one back
+    box.line.fill.fore_color.rgb = CODEEDGE
+    box.line.width = Pt(1.0)
+    box.adjustments[0] = 0.055        # a small radius: a panel, not a pill
     ty = y + 0.12
     if title:
         tf = tb(s, x + 0.18, ty, w - 0.36, 0.2)
-        run(para(tf, True), title, 9, MUTED, bold=True, spc=1.2)
+        run(para(tf, True), title, 9, CODEDIM, bold=True, spc=1.2)
         ty += 0.24
     tf = tb(s, x + 0.18, ty, w - 0.36, h - 0.24)
     for i, ln in enumerate(lines):
         p = para(tf, i == 0, line=1.12)
         if ln.strip().startswith(("//", "#")):
-            run(p, ln, size, MUTED, MONO)
+            run(p, ln, size, CODEDIM, MONO)
             continue
         for j, part in enumerate(ln.split("«")):
             for k, seg in enumerate(part.split("»")):
@@ -656,21 +671,21 @@ rail(s, [
 s = new_slide()
 chrome(s, 5, "The machine we are starting from",
        "CPU: latency-oriented, built to finish one thread fast")
-figure(s, "img_cpu_core", M, 1.86, 7.3)
+figure(s, "img_cpu_core", M, 1.84, 6.5)
 # The die photo mirrors slide 6's: same grammar, compute units boxed, so the two
 # machines are compared as objects and not only as block diagrams. It is kept
 # WHOLE rather than cropped to the ten cores, because the L3 slab on the right
 # and the I/O block on the left are half the die area -- which is the callout's
 # point standing next to it in silicon.
-callout(s, M, 5.42, 4.55,
+figure(s, "img_cpu_die", M, 5.04, 4.55)
+callout(s, 5.42, 5.04, 3.18,
         "Count the boxes: **6 fetch/decode**, out-of-order instruction selection, two "
         "levels of private cache, all of it to keep **two** instruction streams fed. "
-        "The ALUs are the small part.", h=1.06, size=10)
-figure(s, "img_cpu_die", 5.60, 5.42, 3.00)
-caption(s, 5.60, 6.76, 3.00,
+        "The ALUs are the small part.", h=1.34, size=10)
+caption(s, 5.42, 6.50, 3.18,
         "Comet Lake · 10 cores boxed; nearly half the die is cache and I/O.", size=8)
-caption(s, M, 6.60, 4.55,
-        "Skylake core and Comet Lake die after Stanford CS149, Fall 2025.", size=8)
+caption(s, 5.42, 6.88, 3.18,
+        "Both diagrams after Stanford CS149, Fall 2025.", size=8)
 rail(s, [
     ("label", "pc-moench-04 · AMD Ryzen 9 7950X"),
     ("gap", 0.10),

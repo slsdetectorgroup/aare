@@ -283,13 +283,20 @@ both are landscape, and two of them plus the callout overruns the column by
 ~1.1 in. What did fit, without shrinking the Skylake diagram below the size at
 which its `Fetch/Decode` and `ALU` labels survive projection:
 
-| | |
-|---|---|
-| Skylake core diagram | unchanged at 7.3 in, `M, 1.86` |
-| callout | narrowed 7.9 → 4.55 in, `M, 5.42`, h 1.06 |
-| **Comet Lake die** | **`5.60, 5.42`, 3.00 in wide** |
+| element | before | after |
+|---|--:|--:|
+| Skylake core diagram | 7.3 in | **6.5 in** |
+| Comet Lake die | — | **4.55 in** |
+| callout | 7.9 in, under the diagram | 3.18 in, beside the die |
 
-The die's own text is illegible at 3.0 in, which is fine and matches slide 6:
+Two bands: the core diagram across the top, then the die bottom-left with the
+callout beside it. The diagram still dominates — 6.5 in against 4.55 — but the
+die is now large enough that the ten boxed cores are countable at a glance and
+the orange L3 slab is unmistakable, which is the whole reason it is there. At
+6.5 in the diagram's `Fetch/Decode`, `ALU` and `L2 Data Cache` labels all still
+project (checked by rendering it at 4.75, 5.6 and 6.5 in before choosing).
+
+The die's own core numbering stays illegible, which is fine and matches slide 6:
 neither die is read, both are counted. The caption carries the claim ("10 cores
 boxed; nearly half the die is cache and I/O") exactly as slide 6's does ("144
 blocks, 128 enabled on this card. One SM boxed.").
@@ -302,3 +309,52 @@ its second line rode on the progress track. Trimmed to one line at 6.82, with th
 FP64-scarcity remark moved into the notes — where it now says explicitly that the
 V100 diagram *understates* it, since a GeForce part runs FP64 at 1/64, and that
 this is half of why opt7 pays.
+
+---
+
+## §8 — Code panels read as objects
+
+Twenty-one code panels were drawn on `CODEBG = #0E1420`, which is **1.03:1**
+against the slide background: not a boundary, the same colour with extra steps.
+They were found only because the text inside them was monospaced. On a projector,
+whose black level is poor, they were nothing at all.
+
+Lightening the fill cannot fix that, and the contrast table says why:
+
+| code surface | vs. BG | vs. PANEL | ACCENT ink on it | MUTED ink on it |
+|---|--:|--:|--:|--:|
+| `#0E1420` (was) | 1.03 | 1.06 | 5.11 | 4.22 |
+| `#121A28` (= PANEL) | 1.09 | 1.00 | 4.84 | 4.00 |
+| `#17202E` (now) | 1.16 | 1.07 | 4.54 | 3.75 |
+| `#243043` | 1.43 | 1.31 | 3.69 | 3.05 |
+
+A fill lifted far enough to look wrong still reaches only 1.43:1, and it charges
+for it in the two inks that live on that fill: the box gets more visible as its
+highlighted tokens get less so. **A 1 pt line at `#3A4C66` gives 2.18:1 against
+the background and costs the ink nothing**, because it never touches the ink's
+ground.
+
+So: framed, with the fill lifted only as far as it is free.
+
+- `CODEBG` `#0E1420` → `#17202E`, a hair above `PANEL` rather than below it, so
+  the panel has some body without eating the accent tokens.
+- New `CODEEDGE` `#3A4C66`, 1 pt, on the rounded rect; corner radius pinned to
+  `adjustments[0] = 0.055` so wide panels read as panels, not pills.
+- New `CODEDIM` `#7C8A9E` for the `//` comments and the panel title, both of
+  which were `MUTED` — tuned against the slide background, and down to 3.75:1 on
+  the new fill. `CODEDIM` restores them to **4.67**, above where `MUTED` started.
+  Used inside code panels only; `MUTED` is unchanged everywhere else.
+
+All of it lands in the `code()` helper, so the twenty-one call sites are
+untouched and uniform by construction. Geometry is unchanged — the border is
+centred on the existing boundary, extending 0.007 in — and the overflow sweep is
+clean across all 51 pages.
+
+**What this buys, on 15/33.** The right column stacks three objects that were
+previously two-and-a-half. They now read as three kinds without being read:
+
+| object | container | means |
+|---|---|---|
+| code panel | framed, lighter fill, rounded | source |
+| callout | flat panel, coloured left spine | conclusion |
+| caption | none | provenance |
