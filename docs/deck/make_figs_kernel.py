@@ -6,7 +6,7 @@ Writes into docs/figures/ alongside the optimization figures.
 Occupancy numbers are not hand-computed: they come from
 cudaOccupancyMaxActiveBlocksPerMultiprocessor + cudaFuncGetAttributes on the
 real kernel (RTX 4090, sm_89), measured 2026-08-11 — see the table in
-build_fused_deck.py.
+build_performance_deck.py.
 """
 import sys
 import matplotlib

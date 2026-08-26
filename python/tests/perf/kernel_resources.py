@@ -6,7 +6,7 @@ Reads the *compiled* extension — no rebuild and no source parsing:
     cuobjdump -res-usage <lib.so>
 
 then applies the sm_89 occupancy arithmetic. Reproduces the figures on slides 7
-and 8 of docs/cf_cuda_fused.pptx, and cross-checks against
+and 8 of docs/cf_cuda_performance.pptx, and cross-checks against
 cudaOccupancyMaxActiveBlocksPerMultiprocessor (same blocks/SM).
 
     python kernel_resources.py                    # shipping build, 16x16 blocks

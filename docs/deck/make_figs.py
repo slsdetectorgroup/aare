@@ -1,4 +1,4 @@
-"""Figures for docs/cf_cuda_fused.pptx — deck palette, dark.
+"""Figures for docs/cf_cuda_performance.pptx — deck palette, dark.
 
 Every number here is a quotable row from docs/ClusterFinderCUDA_benchmark_results.md,
 i.e. from python/tests/perf/results/. Acts I and II are the f64 arm, Act III is
@@ -122,7 +122,7 @@ def _placements():
     actually use. Where a figure appears twice, the narrowest placement wins,
     since that is the one that sets the smallest text.
     """
-    deck = (Path(__file__).resolve().parent / "build_fused_deck.py")
+    deck = (Path(__file__).resolve().parent / "build_performance_deck.py")
     if not deck.exists():
         return {}
     env = {"M": 0.7, "COL": 7.9, "RAIL_W": 3.5, "RAIL_X": 9.2,
@@ -149,7 +149,7 @@ def save(fig, name, place_w=None):
 
     `place_w` is the width the deck places this figure at. Passing it turns the
     check on; the figure list at the bottom of this module keeps it in sync with
-    build_fused_deck.py, and tools/audit prints both sides.
+    build_performance_deck.py, and tools/audit prints both sides.
     """
     path = OUT / f"{name}.png"
     texts = [(t.get_text(), t.get_fontsize())
@@ -739,27 +739,27 @@ def fig_resultpath():
     for ax, title, floor, copy_us, gain, verdict, col in [
         (a1, "3×3  ·  host copy 93 kB / frame", 16.17, 8.0, "×1.16",
          "copy hides under the GPU\n→ small win", ACCENT),
-        (a2, "9×9  ·  host copy 467 kB / frame", 30.01, 40.0, "×2.21",
+        (a2, "9×9  ·  host copy 467 kB / frame", 30.01, 62.0, "×2.21",
          "copy is larger than the GPU\n→ cannot hide at any overlap", AMBER),
     ]:
         ax.bar([0], [floor], width=0.5, color=col, zorder=3, linewidth=0)
         ax.bar([1], [copy_us], width=0.5, color=col, zorder=3, linewidth=0)
         ax.axhline(floor, color=GREEN, lw=1.3, ls="--", zorder=4)
-        ax.text(-0.55, floor + 1.2, "GPU floor", color=GREEN, fontsize=10, ha="left")
-        ax.text(0, floor + 1.4, f"{floor:.1f} µs", ha="center", color=PALE,
+        ax.text(-0.55, floor + 1.8, "GPU floor", color=GREEN, fontsize=10, ha="left")
+        ax.text(0, floor + 2.1, f"{floor:.1f} µs", ha="center", color=PALE,
                 fontsize=10, fontweight="bold")
-        ax.text(1, copy_us + 1.4, f"≈{copy_us:.0f} µs", ha="center", color=PALE,
+        ax.text(1, copy_us + 2.1, f"≈{copy_us:.0f} µs", ha="center", color=PALE,
                 fontsize=10, fontweight="bold")
         ax.set_xticks([0, 1])
         ax.set_xticklabels(["GPU per frame\n(H2D ∥ kernel ∥ D2H)",
                             "host copy per frame\ncollect() memcpy + malloc"],
                            color=TEXT2, fontsize=10)
-        ax.set_xlim(-0.6, 1.7); ax.set_ylim(0, 52); ax.set_yticks([])
+        ax.set_xlim(-0.6, 1.7); ax.set_ylim(0, 78); ax.set_yticks([])
         bare(ax, keep=("bottom",))
         ax.set_title(title, color=PALE, fontsize=10, pad=10, loc="left")
-        ax.text(1.68, 46, gain, color=col, fontsize=16, fontweight="bold", ha="right")
-        ax.text(1.68, 40, "opt5 → opt6", color=MUTED, fontsize=10, ha="right")
-        ax.text(-0.55, -11, verdict, color=col, fontsize=10, fontweight="bold",
+        ax.text(1.68, 75, gain, color=col, fontsize=16, fontweight="bold", ha="right")
+        ax.text(1.68, 68.5, "opt5 → opt6", color=MUTED, fontsize=10, ha="right")
+        ax.text(-0.55, -16, verdict, color=col, fontsize=10, fontweight="bold",
                 va="top")
     fig.subplots_adjust(bottom=0.30)
     save(fig, "fig_resultpath")
@@ -1075,7 +1075,7 @@ def fig_overlap():
         ax.text(-0.25, y + lane_h / 2, lbl, ha="right", va="center",
                 color=TEXT2, fontsize=10.5)
 
-    ax.text(-0.25, yG + lane_h + 0.30, "submit → collect, serialized   (opt4)",
+    ax.text(-0.25, yG + lane_h + 0.30, "submit → collect, serialized   (opt4)   ·   3×3",
             ha="left", va="bottom", color=TEXT2, fontsize=10.5, fontweight="bold")
     ax.text(-0.25, yG2 + lane_h + 0.30,
             "submit(i+1) before collect(i)   (opt5)",
@@ -1102,6 +1102,85 @@ def fig_overlap():
     ax.axis("off")
     save(fig, "fig_overlap")
 
+
+# ----------------------------- 12b. the 9x9 case: overlap runs out (opt5->opt6)
+def fig_overlap_9x9():
+    """Why opt5 stops at 9x9, and why a deeper buffer cannot restart it.
+
+    Same pipelined loop as fig_overlap, but with the measured 9x9 proportions:
+    the GPU delivers a chunk every 30.01 us and the host needs ~62 (the
+    fault-corrected steady-state term; see the slide's caption). The host lane is
+    therefore the packed one, and it alone sets the finish line.
+
+    The second strip is the answer to "add more slots". With three, the GPU front-
+    loads instead of stalling between chunks 2 and 3 -- but the host lane is
+    IDENTICAL in both strips, because it is already saturated, so both finish at
+    exactly the same time. A deeper buffer relocates GPU idle; it does not remove
+    it, and it cannot speed up the stage that is binding.
+    """
+    fig, ax = plt.subplots(figsize=(11.2, 3.5))
+    G, H = 30.0, 62.0
+    lane_h = 9.0
+    n = 4
+
+    def block(x, y, w, col, txt):
+        ax.add_patch(Rectangle((x, y), w, lane_h, facecolor=col, edgecolor=BG,
+                               linewidth=1.4, zorder=3))
+        ax.text(x + w / 2, y + lane_h / 2, txt, ha="center", va="center",
+                color=BG, fontsize=10, fontweight="bold", zorder=4)
+
+    # The host is saturated in both cases, so its lane is the same schedule twice:
+    # chunk i is collected as soon as the host is free, never before G.
+    host_start = [G + i * H for i in range(n)]
+    finish = host_start[-1] + H
+
+    # 2 slots: the GPU may only run one chunk ahead, so it waits for a slot to free
+    gpu2, free_at = [], [0.0, 0.0]
+    t = 0.0
+    for i in range(n):
+        t = max(t, free_at[i % 2])
+        gpu2.append(t); t += G
+        free_at[i % 2] = host_start[i] + H      # slot returns when the host is done
+    # 3 slots: one more chunk of runway before the same wall
+    gpu3, free_at3 = [], [0.0, 0.0, 0.0]
+    t = 0.0
+    for i in range(n):
+        t = max(t, free_at3[i % 3])
+        gpu3.append(t); t += G
+        free_at3[i % 3] = host_start[i] + H
+
+    for row, (gpu, tag, col) in enumerate([
+            (gpu2, "2 slots  ·  what ships", AMBER),
+            (gpu3, "3 slots  ·  the natural next guess", MUTED)]):
+        yG = 49.0 - row * 33.0
+        yH = yG - 12.0
+        for i in range(n):
+            block(gpu[i], yG, G, ACCENT, f"GPU {i + 1}")
+            block(host_start[i], yH, H, PALE, f"host {i + 1}")
+        for lbl, y in (("GPU", yG), ("host", yH)):
+            ax.text(-6, y + lane_h / 2, lbl, ha="right", va="center",
+                    color=TEXT2, fontsize=10.5)
+        ax.text(-6, yG + lane_h + 7.0, tag, ha="left", va="bottom",
+                color=col, fontsize=10.5, fontweight="bold")
+        # every gap the GPU sits through, marked where it happens
+        for i in range(1, n):
+            gap = gpu[i] - (gpu[i - 1] + G)
+            if gap > 4.0:   # a 2 us seam is not an argument, only a real stall is
+                ax.annotate("", xy=(gpu[i], yG + lane_h / 2),
+                            xytext=(gpu[i - 1] + G, yG + lane_h / 2),
+                            arrowprops=dict(arrowstyle="<|-|>", color=AMBER, lw=1.3))
+                ax.text((gpu[i] + gpu[i - 1] + G) / 2, yG + lane_h + 1.0,
+                        f"idle {gap:.0f}", ha="center", va="bottom",
+                        color=AMBER, fontsize=9.5, fontweight="bold")
+
+    ax.plot([finish, finish], [2, 61], color=GREEN, lw=1.6, ls="--", zorder=6)
+    ax.text(finish + 5, 32, "same finish\nboth ways", ha="left", va="center",
+            color=GREEN, fontsize=11, fontweight="bold")
+
+    ax.set_xlim(-32, finish + 62)
+    ax.set_ylim(0, 70)
+    ax.axis("off")
+    save(fig, "fig_overlap_9x9")
 
 # ------------------------------------- 13. pedestal update timing, three ways
 def fig_pedtiming():
@@ -1176,6 +1255,7 @@ def fig_pedtiming():
 
 
 fig_overlap()
+fig_overlap_9x9()
 fig_pedtiming()
 
 

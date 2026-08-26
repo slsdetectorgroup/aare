@@ -358,3 +358,99 @@ previously two-and-a-half. They now read as three kinds without being read:
 | code panel | framed, lighter fill, rounded | source |
 | callout | flat panel, coloured left spine | conclusion |
 | caption | none | provenance |
+
+---
+
+## §9 — Permanent names
+
+`fused` described how the deck was assembled (two decks merged, once, in
+August 2026); `eng_slides` was a placeholder. Neither says what the file *is*,
+which is what a name has to do a year from now. Renamed on both sides:
+
+| was | now | what it is |
+|---|---|---|
+| `cf_cuda_fused.pptx` | **`cf_cuda_performance.pptx`** | the talk: kernel design, hardware limits, the seven steps |
+| `cf_cuda_eng_slides.pptx` | **`cf_cuda_internals.pptx`** | the engineering addendum: contracts, ownership, API structure |
+| `build_fused_deck.py` | **`build_performance_deck.py`** | |
+| `build_eng_slides.py` | **`build_internals_deck.py`** | |
+
+Both names are audience-neutral and describe content rather than construction or
+readership, so neither has to change if the audience split changes. The
+`cf_cuda_` family prefix is kept, and `cf_cuda_kernel.pptx` is untouched — it is
+the PSI base deck that donates the theme, not an output.
+
+References updated in `make_figs.py` (including the `_placements()` parse path,
+which reads the deck script to keep the legibility gate in sync with the layout —
+verified still resolving after the rename), `make_figs_kernel.py`,
+`build_internals_deck.py` (its `SRC` path and the exec marker), the report
+(§0 and the artefact table) and `python/tests/perf/kernel_resources.py`.
+
+The earlier dated changelogs keep the old names on purpose: they record what the
+files were called on those dates.
+
+---
+
+## §10 — opt3's other barrier, and the 9×9 bridge (33 → 35 slides)
+
+Two slides inserted, which shifted every later number: 31 `chrome()` indices, 7
+`section()` ranges with their item lists, and 23 prose cross-references were
+remapped (`n ≤ 14 → n`, `15–16 → n+1`, `≥ 17 → n+2`).
+
+**New 15 — "One D2H per frame, not two".** opt3's title has always read "remove
+the sync barriers", plural, but the deck told only one of them: the per-round
+`cudaDeviceSynchronize`. The count-then-fetch round trip went at the same step and
+appeared nowhere. Two step-flows carry it — `kernel › copy 4 B › BLOCK › read
+count › copy N B › BLOCK` against `kernel › copy the whole envelope › next frame`
+— because the argument is a shape, not a listing. No table, no code panel: the
+point is that a transfer whose length depends on the transfer before it cannot be
+streamed, and that opt3 pays ~20 % more bytes to delete that edge.
+
+**17 (opt5) is now 3×3 only.** It quoted ×1.31 in its title while its figure drew
+3×3 proportions and its rail carried both geometries. `fig_overlap` is labelled
+`3×3`, the rail keeps one column, and the freed space holds the six-line
+submit/collect loop with the point that matters to an engineer: a synchronous call
+became two calls and a token, and `find_clusters_batched()` wraps both so callers
+who want one call keep one call.
+
+**New 18 — "Overlap runs out: the host is the taller bar".** The bridge into opt6,
+and the answer to the question the room reliably asks. `fig_overlap_9x9` draws the
+pipeline twice at measured proportions (GPU 30.01, host ~62) — once with two slots
+and once with three — and lands both on the same finish line, because the host lane
+is already back-to-back in both. A deeper buffer relocates GPU idle; it cannot
+close it.
+
+## §11 — the 9×9 host term was understated by half
+
+`fig_resultpath` drew the 9×9 host bar at **40 µs**. That figure was 467 kB divided
+by a single-threaded copy rate — what the loop would cost if it were
+bandwidth-bound. `ClusterFinderCUDA.hpp:130-136` says it is not: *one 467 kB malloc
++ first-touch per frame, allocation-bound rather than bandwidth-bound*.
+
+Checking the raw measurement settled it. opt5 at 9×9 is the **one row in the ladder
+that never reaches a fault-free plateau** — faults across five reps run
+460 k → 152 k → 96 k → 506 k → 334 k with no convergence, against opt6's
+2 072, 0, 0, 0, 0 in the same file, and against a clean opt5 at 3×3. Even the
+quoted 66.39 µs carries 151 601 minor faults.
+
+Correcting each rep at the deck's own 0.68 µs/fault collapses a **22 % spread into
+4.6 %**, at 61–64 µs. Independently, f32 rep 3 happened to run with 10 128 faults
+and measured **61.85 µs** directly. So the host term is **~62 µs**, and the bar is
+now drawn there. The ×2.21 conclusion is measured and unchanged; what changes is
+that the picture explaining it no longer understates its own case.
+
+Report: §8.2 gained the two caveats (the host term is inference, not arithmetic;
+66.39 is not a plateau), §8.3 is new and documents the fault data, and §12's
+payload table now separates "memcpy at bandwidth" from "host term" instead of
+printing one under the other's name.
+
+## §12 — housekeeping
+
+- `docs/deck/README.md` is new: how to build, the two mechanical invariants
+  (9 pt legibility, nothing past the footer) and why each exists, the numbering
+  hazard, and where the numbers come from.
+- The overflow checker had a hardcoded input path and ignored `argv`, so it had
+  been validating a stale PDF. Fixed, and every check in this session's later
+  passes was re-run against it.
+- `build_internals_deck.py` and `cf_cuda_internals.pptx` deleted: the four
+  engineering slides they held are now folded into the single deck, in the arc,
+  which is what "one deck with a bit more detail" means.

@@ -76,7 +76,7 @@ actually sustained.
 
 Companion documents:
 - `docs/pedestal_precision_f32_cancellation.md` — why the naive f32 pedestal failed and how B1 fixes it
-- `docs/cf_cuda_fused.pptx` — the deck these numbers feed, built by `docs/deck/build_fused_deck.py`
+- `docs/cf_cuda_performance.pptx` — the deck these numbers feed, built by `docs/deck/build_performance_deck.py`
 
 ---
 
@@ -733,12 +733,25 @@ internal chunking, which is how the ladder reproduces opt3/opt4 on the current c
 
 ### 8.2 What opt5 does *not* fix — the diagnosis that motivates opt6 ★
 
-At 9×9, opt5 lands at **66.39 µs against a 30.01 µs peak**. The pipelined loop runs at
-`max(GPU, host)` by construction, so this is arithmetic, not inference:
+At 9×9, opt5 lands at **66.39 µs against a 30.01 µs peak**:
 
 > **The GPU delivers a frame every 30.01 µs and the system delivers one every 66.39. The
-> entire ~36 µs/frame gap is host-side, and overlap cannot hide it because the host term
-> is the larger one.**
+> ~36 µs/frame gap is host-side, and overlap cannot hide it because the host term is the
+> larger one.**
+
+Two caveats on that sentence, both of which matter and neither of which changes it.
+
+**It is inference, not arithmetic.** Reading the host term straight off the end-to-end
+time assumes the pipelined loop attains `max(GPU, host)` exactly. That is the design, but
+it is not measured here, and if overlap were imperfect the host term could be smaller
+with the balance being un-overlapped GPU. The independent support is opt6: same loop,
+same two slots, and it lands on **30.01 µs — 100 % of the floor** (§9), which is
+`max(GPU, host)` attained exactly. The machinery demonstrably works when the host term is
+small.
+
+**66.39 µs is not a plateau value.** It is the best of five reps, and it still carries
+**151 601 minor faults**. opt5 at 9×9 is the one row in the ladder that never reaches a
+fault-free steady state — see §8.3.
 
 The host path is `collect()`'s materialization loop
 ([`materialize_slot`, `ClusterFinderCUDA.hpp:137`](../include/aare/ClusterFinderCUDA.hpp#L137)):
@@ -750,6 +763,47 @@ This also explains why pipelining helped no more at 9×9 (×1.20) than at 3×3 (
 despite the far larger absolute gap: pipelining hides `min(GPU, host)`, so it pays most
 when the two terms are comparable. At 9×9 the host term is twice the GPU term, and hiding
 the GPU underneath it recovers only the GPU's share.
+
+
+### 8.3 opt5 at 9×9 never reaches a plateau — and what the host term actually is ★
+
+Every other row in this document is quoted at steady state. This one cannot be. From
+`ladder_9x9.csv` in `2026-08-20_f64_cap1700/`, with the §25 rate of **0.68 µs per
+first-touch fault** applied out of sample:
+
+| rep | µs/frame | minor faults | fault cost | fault-free |
+|--:|--:|--:|--:|--:|
+| 0 | 78.56 | 460 283 | 15.65 | 62.91 |
+| **1** | **66.39** | **151 601** | **5.15** | **61.23** |
+| 2 | 67.34 | 95 884 | 3.26 | 64.08 |
+| 3 | 81.26 | 506 241 | 17.21 | 64.04 |
+| 4 | 73.97 | 334 303 | 11.37 | 62.60 |
+
+The fault count does not converge — 460 k → 152 k → 96 k → 506 k → 334 k — because each
+rep meets a different allocator state for the 467 kB per-frame block. Contrast opt6 in the
+same file: **2 072, 0, 0, 0, 0**. And contrast opt5 at **3×3**, which is clean (30–96 k
+faults ≈ 0.2–0.65 µs/frame, 1.6 % spread). The contamination is specific to this one cell
+of the matrix, and its cause is exactly the allocation opt6 deletes.
+
+**The host term is ~62 µs, not ~40.** Two independent routes agree:
+
+1. **Fault correction.** Subtracting the fault term collapses a **22 % raw spread into
+   4.6 %**, at 61–64 µs. A rate fitted at 3×3 and applied unchanged here should not be
+   able to do that unless it is describing the real mechanism.
+2. **A rep that was already warm.** In the f32 arm, rep 3 happened to run with only
+   **10 128 faults** (0.34 µs/frame) and measured **61.85 µs** with no correction at all —
+   inside the corrected f64 band.
+
+Annex A4's `opt5` row already contained this pair (`66.39 (152 k)` vs `61.85 (10 k)`,
+verdict *not separable*); §8.3 is what it implies for the host term.
+
+**Consequence.** Any figure drawing the 9×9 host cost at 40 µs understates it by about
+half. The conclusion is unaffected — the host is the taller bar either way — but the
+margin is roughly 2× the GPU floor, not 1.3×.
+
+**Reproducing it.** Timing this row honestly needs a fresh process per rep and a
+pre-touched result heap; without both, the number that comes out is an allocator state,
+not a throughput.
 
 **Fault-fairness warning.** Freeing a ~10 GB result heap hands it back to the allocator
 and a subsequent loop reuses it, so on a cold heap the first loop pays the entire
@@ -804,14 +858,21 @@ since the sustained rate is the lower of the two.
 The win from `collect_view()` is `max(0, host_copy − gpu_floor)` plus the allocation it
 avoids:
 
-| | bytes copied per frame by `collect()` | ≈ copy time | GPU floor | copy fits underneath? |
-|---|--:|--:|--:|:--:|
-| 3×3 | 2 324 × 40 B ≈ 93 kB | ~8 µs | 16.17 µs | **yes** → small win (×1.16) |
-| 9×9 | 1 422 × 328 B ≈ 467 kB | ~40 µs | 30.01 µs | **no** → large win (**×2.21**) |
+| | bytes copied per frame by `collect()` | memcpy at bandwidth | **host term** | GPU floor | fits underneath? |
+|---|--:|--:|--:|--:|:--:|
+| 3×3 | 2 330.9 × 40 B ≈ 93 kB | ~8 µs | ~9.8 µs | 16.17 µs | **yes** → small win (×1.16) |
+| 9×9 | 1 422.4 × 328 B ≈ 467 kB | ~40 µs | **~62 µs** | 30.01 µs | **no** → large win (**×2.21**) |
+
+**The two middle columns are not the same quantity, and conflating them understates the
+9×9 case by about half.** "memcpy at bandwidth" is 467 kB divided by a single-threaded
+copy rate — it is what the loop would cost if it were bandwidth-bound. It is not:
+[`ClusterFinderCUDA.hpp:130-136`](../include/aare/ClusterFinderCUDA.hpp#L130-L136) records
+that the work is *one 467 kB malloc + first-touch per frame, allocation-bound rather than
+bandwidth-bound*. The host-term column is the steady-state figure derived in §8.3.
 
 At 3×3 the copy hides under the GPU and opt5 already absorbs it, so what opt6 removes is
-the per-frame allocation and the fault floor — second-order. At 9×9 the copy is 1.5× the
-GPU time and cannot hide at any amount of overlap. **This is the same "tallest bar" logic
+the per-frame allocation and the fault floor — second-order. At 9×9 the host term is
+**twice** the GPU time and cannot hide at any amount of overlap. **This is the same "tallest bar" logic
 as §4, applied to the host instead of the device.**
 
 ### Reproducibility is the other half of the claim
@@ -1306,7 +1367,7 @@ opt1/opt2 stop over-counting extended charge-shared events:
 | exploratory notebook | `python/tests/ClusterFinderCUDA_perf.ipynb` | **stores only the last run** — not a record. Archive a copy per cluster size if used |
 | correctness notebook | `python/tests/ClusterFinderFrozen_vs_CUDA.ipynb` | CPU↔CUDA agreement analysis |
 | precision study | `docs/pedestal_precision_f32_cancellation.md` | B1 derivation |
-| deck | `docs/cf_cuda_fused.pptx` + `docs/deck/build_fused_deck.py` | 34 slides in the same three acts plus a 15-slide annex (A1–A5); figures from `docs/deck/make_figs.py`. The `.pptx` is untracked — rebuild it from the script |
+| deck | `docs/cf_cuda_performance.pptx` + `docs/deck/build_performance_deck.py` | 35 slides in the same three acts plus a 6-group annex (A1–A6), 53 pages with dividers; figures from `docs/deck/make_figs.py` and `make_figs_kernel.py`. Rebuild with `python docs/deck/make_figs.py && python docs/deck/build_performance_deck.py` |
 
 ### CSV step labels
 
