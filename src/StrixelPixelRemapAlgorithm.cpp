@@ -13,10 +13,9 @@ namespace aare::remap::algo {
  * The order is intentional because bond shifts are defined in the
  * sensor's native coordinate system.
  */
-inline InclusiveROI
-update_pixel_group_placement(InclusiveROI roi,
-                             defs::SensorPixelGeometry const &pixel,
-                             defs::BondShift bond_shift, defs::Rotation rot) {
+InclusiveROI inline update_pixel_group_placement(
+    InclusiveROI roi, defs::SensorPixelGeometry const &pixel,
+    defs::BondShift bond_shift, defs::Rotation rot) {
     // If there is a bond shift, translate the roi
     if (bond_shift.x != 0 || bond_shift.y != 0)
         roi = aare::inclusiveroi::geom::translate(roi, bond_shift.x,
@@ -30,52 +29,6 @@ update_pixel_group_placement(InclusiveROI roi,
     return roi;
 }
 
-/**
- * @brief Build the strixel-to-pixel order map for one strixel group.
- *
- * The returned map describes how pixels from the user-provided ROI (normally
- * rx_roi from input file) are rearranged into the local strixel coordinate
- * system of the group.
- *
- * Coordinate systems:
- *
- * - @p roi_user is expressed in full-module coordinates.
- * - @p group_config.placement_on_sensor is expressed in the sensor-local
- *   coordinate system before applying the bond shift and sensor rotation.
- * - The group ROI is transformed by applying the bond shift first and the
- *   sensor rotation second.
- * - The returned @c effective_roi is the intersection of the user ROI
- *   (rebased into sensor-local coordinates) and the transformed group ROI.
- * - The returned @c map uses its own local strixel coordinate system.
- * - Each valid map entry contains a flattened index into the ORIGINAL
- *   user ROI, not into @c effective_roi.
- *
- * Thus:
- *
- *   map(strixel_row, strixel_col) = pixel_index_in_user_roi
- *
- * Invalid or unmapped strixel positions are initialized to -1.
- *
- * The strixel mapping is determined by the group's multiplicity and
- * modulo ordering. A reversed modulo ordering reverses the ordering
- * within each multiplicity group; it does not reverse the complete
- * strixel column ordering.
- *
- * @param group_config Configuration of the strixel group to be mapped.
- * @param pixel Native pixel geometry of the sensor to which the group
- *              is connected. Used when transforming the group ROI.
- * @param placement Location and orientation of the sensor on the module.
- * @param roi_user User-requested ROI in full-module coordinates.
- * @param bond_shift Physical bonding shift, applied before the rotation.
- *
- * @return A @c StrixelGroupToPixelMap containing:
- *         - the generated strixel-to-user-pixel order map;
- *         - the effective pixel ROI covered by the map.
- *
- * @throws std::logic_error For negative or zero strixel multiplicity.
- * @throws std::logic_error If the group ROI width is not divisible by
- *                          the strixel multiplicity.
- */
 defs::StrixelGroupToPixelMap
 strixel_to_pixel_map(defs::GroupConfig const &group_config,
                      defs::SensorPixelGeometry const &pixel,

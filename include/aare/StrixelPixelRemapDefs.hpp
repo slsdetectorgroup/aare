@@ -43,14 +43,20 @@ enum class Rotation : int { Identity = 0, Rotate180 = 1 };
  */
 enum class ModuloOrdering { Forward, Reverse };
 
+/// @brief Describes the physical guardring around a sensor to protect the ASIC
+/// from high fluxes.
 struct Guardring {
-    int x;
-    int y;
+    /// @brief ring width.
+    int x{};
+    /// @brief ring height.
+    int y{};
 };
 
 struct BondShift {
-    int x = 0;
-    int y = 0;
+    /// @brief Bonding shift in x direction
+    int x{};
+    /// @brief Bonding shift in y direction
+    int y{};
 };
 
 /**
@@ -60,20 +66,21 @@ struct BondShift {
  * the coordinate system in which remapping is performed.
  */
 struct SensorPixelGeometry {
+    /// @brief Number of pixels in x direction (columns)
     int num_pix_x;
+    /// @brief Number of pixels in y direction (rows)
     int num_pix_y;
+    /// @brief guardring around sensor
     Guardring guardring;
 };
 
 /**
  * @brief Describes the strixel geometry of a single remapping group.
- *
- * Pixel rows are multiplied by `multiplicity`, resulting
- * in an effective strixel pitch of `pitch_um`, and pixel columns are divided by
- * `multiplicity`.
  */
 struct GroupStrixelGeometry {
+    /// @brief Number of pixels a strixel covers.
     int multiplicity;
+    /// @brief Effective strixel pitch [µm]
     double pitch_um;
 };
 
@@ -90,43 +97,39 @@ struct GroupRouting {
 
 /**
  * @brief Configuration of a single contiguous strixel group on a sensor.
- *
- * A group is characterized by
- *   - its strixel geometry,
- *   - its routing pattern, and
- *   - its location within the native sensor pixel grid.
  */
 struct GroupConfig {
+    /// @brief strixel geometry
     GroupStrixelGeometry strixel;
+
+    /// @brief pixel-to-strixel routing pattern
     GroupRouting routing;
 
-    /// Group bounds in native sensor pixel coordinates.
+    /// @brief location on sensor (given in sensor's native coordinates)
     InclusiveROI placement_on_sensor;
 };
 
 /**
  * @brief Complete description of a sensor.
- *
- * A sensor consists of a single native pixel geometry together with one or
- * more remapping groups that partition the sensor into regions with different
- * strixel geometries and/or routing.
  */
 struct SensorConfig {
+    /// @brief pixel geometry of the sensor
     SensorPixelGeometry pixel;
+
+    /// @brief strixel group configurations partitions the sensor into regions
+    /// with different strixel geometries and/or routing
     std::vector<GroupConfig> group_configs;
 };
 
 /**
  * @brief Describes the placement of a sensor within the module.
- *
- * Specifies where the sensor is located in module coordinates and how it is
- * physically oriented with respect to the module reference frame.
  */
 struct SensorModulePlacement {
-    /// Sensor bounds in module coordinates.
+    /// @brief Sensor bounds in module coordinates.
     InclusiveROI placement_on_module;
 
-    /// Physical orientation of the mounted sensor.
+    /// @brief Physical orientation of the mounted sensor with respect to the
+    /// module reference frame.
     Rotation rotation;
 };
 
@@ -135,7 +138,8 @@ struct SensorModulePlacement {
  *
  * The order map defines a local strixel-grid coordinate system. For each
  * map position (row, col), map(row, col) contains the flattened pixel index
- * of the corresponding source pixel in the user-provided input ROI.
+ * of the corresponding source pixel in the user-provided input ROI for strixel
+ * defined at (row, col).
  *
  * For a valid entry:
  *
@@ -144,11 +148,11 @@ struct SensorModulePlacement {
  * where (dx, dy) is the pixel position in the coordinate system of the
  * original user-provided ROI.
  *
- * NOTE: The map coordinates (row, col) are local to this strixel group and are
- * geometrically associated with effective_roi. The stored pixel index,
+ * NOTE: The map coordinates (row, col) are local to this strixel group and
+ * are geometrically associated with effective_roi. The stored pixel index,
  * however, is flattened with respect to the original user-provided ROI,
- * not effective_roi. (I.e.: The map provides a local strixel grid mapped to the
- * correct corresponding pixel indices in the original user grid, and
+ * not effective_roi. (I.e.: The map provides a local strixel grid mapped to
+ * the correct corresponding pixel indices in the original user grid, and
  * effective_roi is the ROI the algorithm used for remapping.)
  *
  * An entry of -1 indicates that the corresponding strixel position has no

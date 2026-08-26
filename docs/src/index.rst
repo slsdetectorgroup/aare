@@ -36,7 +36,7 @@ AARE
 
 .. toctree::
     :caption: C++ API
-    :maxdepth: 1
+    :maxdepth: 2
     
     algorithm
     NDArray
@@ -57,6 +57,7 @@ AARE
     RawSubFile
     RawMasterFile
     VarClusterFinder
+    StrixelPixelRemapping/index
 
 
 

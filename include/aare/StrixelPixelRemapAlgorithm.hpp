@@ -4,11 +4,45 @@
 
 namespace aare::remap::algo {
 
-defs::StrixelGroupToPixelMap strixel_to_pixel_map(
-    defs::GroupConfig const &, defs::SensorPixelGeometry const &,
-    defs::SensorModulePlacement const &, InclusiveROI const &user_roi,
-    defs::BondShift bond_shift = {0, 0});
+/**
+ * @brief Build the strixel-to-pixel order map for one strixel group.
+ * The strixel mapping is determined by the group's multiplicity and
+ * modulo ordering. A reversed modulo ordering reverses the ordering
+ * within each multiplicity group; it does not reverse the complete
+ * strixel column ordering.
+ *
+ * @param group_config Configuration of the strixel group to be mapped.
+ * @param pixel Sensor pixel geometry to which the group
+ *              is connected.
+ * @param placement Sensor placement and orientation on the module.
+ * @param roi_user User-specified ROI in the module's native coordinate system.
+ * @param bond_shift Physical bonding shift in x and y directions.
+ * @return A StrixelGroupToPixelMap describing the mapping from strixel
+ * coordinates to pixel indices in the user-provided ROI.
+ *      - map(strixel_row,strixel_col) = pixel_index_in_user_roi
+ *      - Invalid or unmapped strixel positions are initialized to -1.
+ * @throws std::logic_error For negative or zero strixel multiplicity.
+ * @throws std::logic_error If the group ROI width is not divisible by
+ *                          the strixel multiplicity.
+ */
+defs::StrixelGroupToPixelMap
+strixel_to_pixel_map(defs::GroupConfig const &group_config,
+                     defs::SensorPixelGeometry const &pixel,
+                     defs::SensorModulePlacement const &placement,
+                     InclusiveROI const &user_roi,
+                     defs::BondShift bond_shift = {0, 0});
 
+/**
+ * @brief Build the strixel-to-pixel order maps for all strixel groups in a
+ * sensor.
+ * @param sensor_config Configuration of the sensor, including all
+ * configurations of the strixel groups.
+ * @param placement Sensor placement and orientation on the module.
+ * @param roi_user User-specified ROI in the module's native coordinate system.
+ * @param bond_shift Bonding shift in x and y directions.
+ * @return A vector of StrixelGroupToPixelMap containing the mappings for all
+ * strixel groups.
+ */
 std::vector<defs::StrixelGroupToPixelMap> strixel_to_pixel_maps(
     defs::SensorConfig const &, defs::SensorModulePlacement const &,
     InclusiveROI const &user_roi, defs::BondShift bond_shift = {0, 0});
