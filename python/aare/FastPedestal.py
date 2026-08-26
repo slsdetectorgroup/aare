@@ -13,8 +13,8 @@ def FastPedestal(rows, cols, n_samples=1000, dtype=np.float64):
     """Create an empty per-pixel running pedestal.
 
     This factory hides the dtype suffix used by the templated C++ bindings.
-    Call ``push_init()`` exactly ``n_samples`` times before using the
-    statistics or calling ``push()``. Subsequent frames have weight
+    Call ``add_init_frame()`` exactly ``n_samples`` times before using the
+    statistics or calling ``push_ema()``. Subsequent frames have weight
     ``1 / n_samples`` in the running mean and population variance.
 
     Args:

@@ -102,8 +102,8 @@ def test_fast_pedestal_initialization(pedestal_type, expected_dtype):
     first = np.array([[2, 4, 6], [8, 10, 12]], dtype=np.uint16)
     second = np.array([[4, 6, 8], [10, 12, 14]], dtype=np.uint16)
 
-    pedestal.push_init(first)
-    pedestal.push_init(second)
+    pedestal.add_init_frame(first)
+    pedestal.add_init_frame(second)
 
 
     expected_mean = np.array(
@@ -113,20 +113,20 @@ def test_fast_pedestal_initialization(pedestal_type, expected_dtype):
     np.testing.assert_array_equal(pedestal.std(), np.ones((2, 3)))
 
 
-def test_fast_pedestal_steady_state_push():
+def test_fast_pedestal_steady_state_push_ema():
     pedestal = FastPedestal_d(1, 2, 2)
-    pedestal.push_init(np.array([[2, 4]], dtype=np.uint16))
-    pedestal.push_init(np.array([[4, 6]], dtype=np.uint16))
+    pedestal.add_init_frame(np.array([[2, 4]], dtype=np.uint16))
+    pedestal.add_init_frame(np.array([[4, 6]], dtype=np.uint16))
 
 
-    pedestal.push(np.array([[6, 8]], dtype=np.uint16))
+    pedestal.push_ema(np.array([[6, 8]], dtype=np.uint16))
 
     np.testing.assert_array_equal(pedestal.mean(), [[4.5, 6.5]])
 
 
 def test_fast_pedestal_exposes_read_only_buffer_and_subtraction():
     pedestal = FastPedestal_d(1, 2, 1)
-    pedestal.push_init(np.array([[2, 4]], dtype=np.uint16))
+    pedestal.add_init_frame(np.array([[2, 4]], dtype=np.uint16))
 
 
     view = np.asarray(pedestal)
@@ -142,4 +142,4 @@ def test_fast_pedestal_rejects_wrong_shape():
     pedestal = FastPedestal_d(2, 3)
 
     with pytest.raises(RuntimeError, match="shape"):
-        pedestal.push_init(np.zeros((2, 2), dtype=np.uint16))
+        pedestal.add_init_frame(np.zeros((2, 2), dtype=np.uint16))

@@ -21,7 +21,7 @@ void define_fast_pedestal_bindings(py::module &m, const std::string &name) {
         .def(py::init<uint32_t, uint32_t, uint32_t>(), py::arg("rows"),
              py::arg("cols"), py::arg("n_samples"),
              "Construct an empty pedestal. It becomes ready after n_samples "
-             "calls to push_init().")
+             "calls to add_init_frame().")
         .def(py::init<uint32_t, uint32_t>(), py::arg("rows"), py::arg("cols"),
              "Construct an empty pedestal with n_samples=1000.")
 
@@ -32,8 +32,7 @@ void define_fast_pedestal_bindings(py::module &m, const std::string &name) {
                 *mean = self.mean();
                 return return_image_data(mean);
             },
-            "Return a copy of the cached mean. Values are meaningful once "
-            "ready is true.")
+            "Return a copy of the cached mean. The pedestal must be ready.")
         .def(
             "var",
             [](FastPedestal<SUM_TYPE> &self) {
@@ -42,7 +41,7 @@ void define_fast_pedestal_bindings(py::module &m, const std::string &name) {
                 return return_image_data(variance);
             },
             "Return the population variance, normalized by n_samples, as a "
-            "NumPy array.")
+            "NumPy array. The pedestal must be ready.")
         .def(
             "std",
             [](FastPedestal<SUM_TYPE> &self) {
@@ -50,13 +49,15 @@ void define_fast_pedestal_bindings(py::module &m, const std::string &name) {
                 *standard_deviation = self.std();
                 return return_image_data(standard_deviation);
             },
-            "Return the population standard deviation as a NumPy array.")
+            "Return the population standard deviation as a NumPy array. The "
+            "pedestal must be ready.")
         .def(
             "view",
             [](py::object self_py) {
                 return py::module_::import("numpy").attr("asarray")(self_py);
             },
-            "Return a non-owning, non-writable NumPy view of the cached mean.")
+            "Return a non-owning, non-writable NumPy view of the cached mean. "
+            "The pedestal must be ready.")
 
         // We need to buffer protocol to allow for numpy operations using the
         // pedestal mean
@@ -114,19 +115,19 @@ void define_fast_pedestal_bindings(py::module &m, const std::string &name) {
             },
             "Return an independent copy of the pedestal and its state.")
         .def(
-            "push",
+            "push_ema",
             [](FastPedestal<SUM_TYPE> &pedestal,
                py::array_t<uint16_t, py::array::c_style> &frame) {
-                pedestal.push(make_view_2d(frame));
+                pedestal.push_ema(make_view_2d(frame));
             },
             py::arg("frame").noconvert(),
             "Apply a uint16 frame as a steady-state update. The pedestal must "
             "already be ready.")
         .def(
-            "push_init",
+            "add_init_frame",
             [](FastPedestal<SUM_TYPE> &pedestal,
                py::array_t<uint16_t, py::array::c_style> &frame) {
-                pedestal.push_init(make_view_2d(frame));
+                pedestal.add_init_frame(make_view_2d(frame));
             },
             py::arg("frame").noconvert(),
             "Accumulate one uint16 initialization frame. Call exactly "

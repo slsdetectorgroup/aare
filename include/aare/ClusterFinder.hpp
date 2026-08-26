@@ -88,13 +88,13 @@ class ClusterFinder {
      */
     void push_pedestal_frame(NDView<FRAME_TYPE, 2> frame) {
         if (!m_pedestal.ready()) {
-            m_pedestal.push_init(frame);
+            m_pedestal.add_init_frame(frame);
             // Initialize the threshold when the pedestal becomes ready.
             if (m_pedestal.ready()) {
                 update_threshold();
             }
         } else {
-            m_pedestal.push(frame);
+            m_pedestal.push_ema(frame);
         }
     }
 
@@ -184,7 +184,7 @@ class ClusterFinder {
         } else if (total > c3 * threshold) {
             // pass, store the cluster below
         } else {
-            m_pedestal.push_unchecked(center, frame.data()[center]);
+            m_pedestal.push_ema_unchecked(center, frame.data()[center]);
             return; // It was a pedestal value nothing to store
         }
 

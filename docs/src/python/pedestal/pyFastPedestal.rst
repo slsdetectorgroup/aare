@@ -4,12 +4,12 @@ FastPedestal
 ``FastPedestal`` calculates a running mean, variance and standard deviation for each pixel in a
 series of frames. The python binding only exposes ``uint16`` input but the underlying
 C++ class is templated. Initialize it with ``n_samples`` frames using
-``push_init()``. Once ``ready`` is true, use ``push()`` for steady-state
+``add_init_frame()``. Once ``ready`` is true, use ``push_ema()`` for steady-state
 updates.
 
 .. warning::
   
-  FastPedestal is not usable until you have pushed ``n_samples`` initial frames with ``push_init(raw)``.
+  FastPedestal is not usable until you have added ``n_samples`` initial frames with ``add_init_frame(raw)``.
   You can check the state with ``ready``.
 
 The public factory selects the bound C++ specialization from ``dtype``:
@@ -55,11 +55,11 @@ Example
 
    # Initialize with n_samples frames
    for frame in initialization_frames:
-       pedestal.push_init(frame)
+       pedestal.add_init_frame(frame)
 
    # Now we can push a frame for pedestal update
    if pedestal.ready:
-       pedestal.push(next_frame)
+       pedestal.push_ema(next_frame)
        
    # Mean and std are  also ready
    mean = pedestal.mean()

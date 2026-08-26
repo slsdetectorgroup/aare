@@ -207,7 +207,7 @@ void PedestalTrackingPixelHistogram::worker_loop(int thread_id) {
         switch (kind) {
         case WorkKind::PushPedestal: {
             auto frame = image->sub_view(first_row, first_row + local_rows);
-            my_pedestal.push_init(frame);
+            my_pedestal.add_init_frame(frame);
             break;
         }
         case WorkKind::UpdateMean: {
@@ -259,8 +259,9 @@ void PedestalTrackingPixelHistogram::worker_loop(int thread_id) {
                             const FrameType raw = input[local_pixel - p0];
                             const AxisType val =
                                 static_cast<AxisType>(raw) -
-                                static_cast<AxisType>(my_pedestal.mean(
-                                    static_cast<ssize_t>(local_pixel)));
+                                static_cast<AxisType>(
+                                    my_pedestal.mean_unchecked(
+                                        static_cast<ssize_t>(local_pixel)));
                             my_hist.fill_flat_unchecked(local_pixel, val);
                         }
                     }
@@ -268,10 +269,11 @@ void PedestalTrackingPixelHistogram::worker_loop(int thread_id) {
                 break;
             } else {
                 // Tracking uses the same tiles, but frames remain strictly
-                // chronological for every pixel. push_fast updates that
-                // pixel's sums and cached mean immediately. This is equivalent
-                // to the old push_no_update followed by a whole-shard
-                // update_mean after each frame, since pixels are independent.
+                // chronological for every pixel. push_ema_unchecked updates
+                // that pixel's sums and cached mean immediately. This is
+                // equivalent to the old push_no_update followed by a
+                // whole-shard update_mean after each frame, since pixels are
+                // independent.
                 auto &my_std = partial_std_[thread_id];
                 for (std::size_t p0 = 0; p0 < local_pixels;
                      p0 += pixel_tile_size) {
@@ -285,14 +287,14 @@ void PedestalTrackingPixelHistogram::worker_loop(int thread_id) {
                             const FrameType raw = input[local_pixel - p0];
                             const AxisType val =
                                 static_cast<AxisType>(raw) -
-                                my_pedestal.mean(
+                                my_pedestal.mean_unchecked(
                                     static_cast<ssize_t>(local_pixel));
                             my_hist.fill_flat_unchecked(local_pixel, val);
                             const AxisType sigma =
                                 my_std[static_cast<ssize_t>(local_pixel)];
                             if (sigma > AxisType{0.0} &&
                                 std::abs(val) < n_sigma * sigma) {
-                                my_pedestal.push_unchecked<FrameType>(
+                                my_pedestal.push_ema_unchecked<FrameType>(
                                     local_pixel, raw);
                             }
                         }
