@@ -3,7 +3,7 @@
 `docs/cf_cuda_performance.pptx` — kernel design, hardware limits, and the opt1→opt7
 optimization ladder, told in three acts ordered by which bar is tallest.
 
-35 numbered slides plus a 6-group annex, 53 pages once dividers and the title page
+35 numbered slides plus a 7-group annex, 55 pages once dividers and the title page
 are counted.
 
 ## Build
@@ -92,5 +92,7 @@ report: opt5 at 9×9, whose per-frame allocation never lets the fault count conv
 | `build_performance_deck.py` | the deck: tokens, helpers, every slide |
 | `make_figs.py` | most figures, plus the legibility gate |
 | `make_figs_kernel.py` | `fig_frame`, `fig_occupancy`, `fig_tile` |
+| `QA.md` | questions the room asks, with the answers and where they are settled |
 | `frame147.json`, `validation_tiers.json` | measured data two figures read |
+| `branch_site.json` | the A7 site dump; written by `python/tests/branch_site_dump.py` |
 | `CHANGELOG_2026-08-*.md` | dated records of past revisions; they keep the file names in use on those dates |

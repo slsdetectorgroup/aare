@@ -62,6 +62,14 @@ void define_ClusterFinder(py::module &m, const std::string &typestr) {
                 *arr = self.noise();
                 return return_image_data(arr);
             })
+        // AARE_BRANCH_TRACE (diagnostic, removable)
+        .def_property_readonly(
+            "branch_map",
+            [](ClusterFinder<ClusterType, uint16_t, pd_type> &self) {
+                auto arr = new NDArray<uint8_t, 2>{};
+                *arr = self.branch_map();
+                return return_image_data(arr);
+            })
         .def(
             "steal_clusters",
             [](ClusterFinder<ClusterType, uint16_t, pd_type> &self,

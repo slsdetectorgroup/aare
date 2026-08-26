@@ -9,6 +9,25 @@
 #include "aare/defs.hpp"
 #include <cstddef>
 
+// --- ABLATION SWITCH (diagnostic, removable) -------------------------------
+// Set to 0 to compile out Test3 (the total-significance test) while leaving
+// every other decision untouched. Used to confirm, by an independent route from
+// the branch-map trace, that Test3 is the channel through which pedestal update
+// TIMING reaches the cluster set. Kept as an expression rather than #if so that
+// `total` stays used and the two arms compile identically otherwise.
+// --- AARE_BRANCH_TRACE (diagnostic, off by default) -------------------------
+// 1 makes find_clusters() record which branch every pixel took, for the
+// serial-vs-frozen study in annex A7 of the deck. Left at 0 the writes fold
+// away at compile time, so the shipped path -- including the CPU baseline whose
+// throughput the deck quotes -- is byte-for-byte what it was without this.
+#ifndef AARE_BRANCH_TRACE
+#define AARE_BRANCH_TRACE 0
+#endif
+
+#ifndef AARE_TEST3_ENABLED
+#define AARE_TEST3_ENABLED 1
+#endif
+
 namespace aare {
 
 template <typename ClusterType,
@@ -29,6 +48,18 @@ class ClusterFinder {
     Pedestal<PEDESTAL_TYPE> m_pedestal;
     ClusterVector<ClusterType> m_clusters;
 
+    // --- AARE_BRANCH_TRACE (diagnostic, removable) ---------------------------
+    // Per-pixel record of WHICH branch each pixel took this frame. Written to a
+    // side buffer only; no decision reads it, so behaviour is unchanged.
+    //   0 NEG          value < -nSigma*rms          (no update)
+    //   1 SHADOW       Test1 pass, value < max      (no update)
+    //   2 TEST1_STORE  Test1 pass, value == max     -> cluster
+    //   3 TEST3_STORE  Test1 fail, Test3 pass, stored
+    //   6 TEST3_SKIP   Test1 fail, Test3 pass, not stored (value < max)
+    //   4 QUIET        both fail                    -> pedestal update
+    //   5 UNTOUCHED    (frame not yet scanned here)
+    std::vector<uint8_t> m_branch;
+
     static const uint8_t ClusterSizeX = ClusterType::cluster_size_x;
     static const uint8_t ClusterSizeY = ClusterType::cluster_size_y;
     using CT = typename ClusterType::value_type;
@@ -48,6 +79,7 @@ class ClusterFinder {
           c2(sqrt((ClusterSizeY + 1) / 2 * (ClusterSizeX + 1) / 2)),
           c3(sqrt(ClusterSizeX * ClusterSizeY)),
           m_pedestal(image_size[0], image_size[1]), m_clusters(capacity) {
+        m_branch.assign(image_size[0] * image_size[1], 5);
         LOG(logDEBUG) << "ClusterFinder: "
                       << "image_size: " << image_size[0] << "x" << image_size[1]
                       << ", nSigma: " << nSigma << ", capacity: " << capacity;
@@ -64,6 +96,13 @@ class ClusterFinder {
     NDArray<PEDESTAL_TYPE, 2> pedestal() { return m_pedestal.mean(); }
     NDArray<PEDESTAL_TYPE, 2> noise() { return m_pedestal.std(); }
     void clear_pedestal() { m_pedestal.clear(); }
+
+    /// AARE_BRANCH_TRACE: last frame's per-pixel branch codes.
+    NDArray<uint8_t, 2> branch_map() const {
+        NDArray<uint8_t, 2> out({m_image_size[0], m_image_size[1]});
+        std::copy(m_branch.begin(), m_branch.end(), out.begin());
+        return out;
+    }
 
     /**
      * @brief Move the clusters from the ClusterVector in the ClusterFinder to a
@@ -94,6 +133,9 @@ class ClusterFinder {
         int has_center_pixel_y = ClusterSizeY % 2;
 
         m_clusters.set_frame_number(frame_number);
+        if (AARE_BRANCH_TRACE)
+            std::fill(m_branch.begin(), m_branch.end(), uint8_t{5});
+        const int _bw = frame.shape(1);
         for (int iy = 0; iy < frame.shape(0); iy++) {
             for (int ix = 0; ix < frame.shape(1); ix++) {
 
@@ -104,9 +146,11 @@ class ClusterFinder {
                 PEDESTAL_TYPE rms = m_pedestal.std(iy, ix);
                 PEDESTAL_TYPE value = (frame(iy, ix) - m_pedestal.mean(iy, ix));
 
-                if (value < -m_nSigma * rms)
+                if (value < -m_nSigma * rms) {
+                    if (AARE_BRANCH_TRACE) m_branch[iy * _bw + ix] = 0;
                     continue; // NEGATIVE_PEDESTAL go to next pixel
                               // TODO! No pedestal update???
+                }
 
                 for (int ir = -dy; ir < dy + has_center_pixel_y; ir++) {
                     for (int ic = -dx; ic < dx + has_center_pixel_x; ic++) {
@@ -123,12 +167,16 @@ class ClusterFinder {
                 }
 
                 if ((max > m_nSigma * rms)) {
-                    if (value < max)
+                    if (value < max) {
+                        if (AARE_BRANCH_TRACE) m_branch[iy * _bw + ix] = 1;
                         continue; // Not max go to the next pixel
                                   // but also no pedestal update
-                } else if (total > c3 * m_nSigma * rms) {
-                    // pass
+                    }
+                    if (AARE_BRANCH_TRACE) m_branch[iy * _bw + ix] = 2;
+                } else if (AARE_TEST3_ENABLED && total > c3 * m_nSigma * rms) {
+                    if (AARE_BRANCH_TRACE) m_branch[iy * _bw + ix] = (value == max) ? 3 : 6;
                 } else {
+                    if (AARE_BRANCH_TRACE) m_branch[iy * _bw + ix] = 4;
                     // m_pedestal.push(iy, ix, frame(iy, ix));   // Safe option
                     m_pedestal.push_fast(
                         iy, ix,

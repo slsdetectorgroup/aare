@@ -192,7 +192,7 @@ def chrome(s, idx, eyebrow, title, title_size=27):
     run(para(tf, True, align=PP_ALIGN.RIGHT), f"{idx} / {n}", 8.5, MUTED)
 
 
-N_ANNEX = 6          # annex GROUPS, not slides
+N_ANNEX = 7          # annex GROUPS, not slides
 
 
 def annex_chrome(s, grp, eyebrow, title, part=None, nparts=None, title_size=27):
@@ -1309,7 +1309,7 @@ bullets(s, M, 1.84, 11.9, [
     "against 30.01 µs of GPU — so overlap still works, it just has less to hide. "
     "That is why opt5 is worth **×1.20** here and ×1.31 at 3×3.",
 ], size=10.5)
-figure(s, "fig_overlap_9x9", M + 0.15, 2.52, 11.3)
+figure(s, "fig_overlap_9x9", M + 0.15, 2.44, 11.3)
 callout(s, M, 6.30, 11.9,
         "A deeper buffer **relocates the GPU's idle, it does not close it** — the "
         "host lane is already back-to-back in both strips, so it alone sets the "
@@ -1877,6 +1877,34 @@ caption(s, M, 6.58, 11.9,
         "re-running python/tests/ClusterFinderFrozen_vs_CUDA.ipynb, which counts and "
         "localises every disagreement rather than only totalling them.")
 
+notes(s, """Row 1 and row 2 are the same 8/11, which is the point: everything
+CUDA changes is worth zero, and the whole residual is a CPU-vs-CPU effect.
+
+WHICH TEST the timing moves is measured in annex A7, and the answer is specific:
+
+    frozen-only 11 clusters  ->  ALL from Test3 (total > c3*nSigma*rms)
+    cpu-only     8 clusters  ->  ALL from the local-max gate (value == max)
+    Test1 threshold          ->  contributes ZERO clusters
+
+Test1 and the local-max gate are protected by construction: any pixel above
+nSigma*rms is never updated inside the frame (it is a centre or in shadow, and
+neither branch pushes), so the stencil argmax is always pristine. Test3 sums all
+nine values, and the four already-scanned neighbours -- three above, one left --
+are exactly the pixels eligible for update.
+
+Confirmed two ways: instrumented (branch codes diffed per frame) and ablated
+(Test3 compiled out, at which point the 11 go to zero exactly). A7 has both.
+
+Test1 flips MORE often than Test3 -- 619 of 974 divergent pixels -- and costs
+nothing, because it only moves a pixel between QUIET_UPDATE and SHADOW and
+neither of those stores. It is not merely downstream of Test3 either: with Test3
+ablated the first divergence is still a Test1 flip, on a frame where the two
+pedestals were provably identical. Test1 initiates on its own, just ~7x slower
+(frame 30 vs frame 4), and can never create a cluster by itself.
+
+Row 4 is a different mechanism entirely -- f32 EMA drift, not timing, since both
+finders freeze the pedestal there. That is the next slide.""")
+
 # ================================================ 28 · THE MISMATCH, SEEN
 s = new_slide()
 chrome(s, 31, "Validation · the disagreement, seen",
@@ -2133,9 +2161,10 @@ section("",
          ("A3", "opt5 · the overlap code"),
          ("A4", "The fault model, tested"),
          ("A5", "The variance rewrite in full"),
-         ("A6", "The three benchmark artefacts")],
+         ("A6", "The three benchmark artefacts"),
+         ("A7", "Which test causes the CPU/CPU gap")],
         rng=(1, N_ANNEX), col=AMBER, annex=True,
-        carry=("Everything so far", "33 slides",
+        carry=("Everything so far", "35 slides",
                "the arc is finished; what follows answers questions"))
 
 # ===========================================================================
@@ -2589,6 +2618,203 @@ The one number in the whole deck taken from _RUNTIME is the CUDA Graph launch
 budget in A2, and it is quoted to a single significant figure for exactly this
 reason: a ~4x inflated host-call time can support "launch cost is about 2 us,
 against a 24 us floor", and nothing finer than that.""")
+
+# ============================================ ANNEX A7 · WHICH TEST, MEASURED
+# Two slides. Slide 4's code panel is titled "THE WHOLE ALGORITHM" but shows a
+# two-test simplification -- Test3 is not in it. So part 1 has to put the third
+# branch back before part 2 can blame it for anything.
+s = new_slide()
+annex_chrome(s, 7, "the three tests · completes slide 4", "There is a third test",
+             part=1, nparts=2)
+bullets(s, M, 1.80, 11.9, [
+    "Slide 4 showed the decision with **two** tests, which is the right "
+    "simplification for the arc. The finder has **three**, and the missing one "
+    "is what the next slide is about.",
+], size=10.5)
+code(s, M, 2.48, 7.3, [
+    "v = frame[i] - ped_mean[i];   rms = ped_rms[i]",
+    "if (v < -nSigma*rms)           -> skip, no update",
+    "m     = «max» over the 3x3 window",
+    "total = «sum» over the 3x3 window",
+    "if (m > «nSigma»*rms)              // TEST 1",
+    "    if (v == m) -> emit cluster  //   local-max gate",
+    "    else        -> shadow, no update",
+    "else if (total > «c3*nSigma»*rms)   // TEST 3",
+    "    if (v == m) -> emit cluster",
+    "else            -> update pedestal",
+    "",   # code() budgets 0.0174 in/pt but LibreOffice sets Consolas at ~0.0187,
+          # so a 10-line panel clips its last descender. One blank line buys the
+          # slack without touching the constant every other panel depends on.
+], size=9, title="ClusterFinder.hpp:104-142 · all three branches")
+rail(s, [
+    ("label", "what each test asks"),
+    ("gap", 0.12),
+    ("row", "Test 1  ·  nSigma · rms", "is any ONE pixel bright?", ACCENT),
+    ("gap", 0.12),
+    ("row", "Test 3  ·  c3 · nSigma · rms", "is the WINDOW bright?", AMBER),
+    ("gap", 0.12),
+    ("row", "local-max gate", "is this pixel the peak?", PALE),
+    ("gap", 0.18),
+    ("note", "Test 1 reads the MAX of the window; Test 3 reads its SUM. That "
+             "one difference is the whole of the next slide."),
+], y0=2.15)
+callout(s, M, 5.86, 11.9,
+        "**c3 = √(3×3) = 3 is not a fudge — it falls out of variance addition.** "
+        "For independent samples the variance of a sum is the sum of the "
+        "variances, so a 3×3 window of pixels each carrying noise σ gives "
+        "**Var(Σ v) = 9σ²**, i.e. a sum whose noise is **√9 · σ = 3σ**. Requiring "
+        "that sum to clear nSigma of ITS OWN noise is exactly **c3·nSigma·rms** — "
+        "the **same 5σ criterion as Test 1, asked of the window instead of the "
+        "pixel**. So Test 3 catches a photon whose charge is shared out so widely "
+        "that no single pixel reaches 5σ, but the nine together do.",
+        h=1.10, size=10.5)
+caption(s, M, 7.02, 11.9,
+        "Roughly 80 % of pixels reach the last branch and push the pedestal; "
+        "~1.5 % are peaks and ~18 % sit in a peak's shadow.", size=9)
+notes(s, """Why slide 4 leaves Test3 out: at 3x3 it is a small correction to the
+cluster count, and the arc's point there is the THREE OUTCOMES shape -- store,
+shadow, update -- not completeness. This slide is where completeness belongs.
+
+Read c3 out loud, it is the part people find satisfying. Test1 asks whether one
+pixel is 5 sigma above ITS OWN noise. Test3 asks the same question of the SUM of
+nine pixels -- so the only thing needed is the noise on that sum, and that is
+just variance addition:
+
+    Var(v1 + ... + v9) = Var(v1) + ... + Var(v9) = 9 * sigma^2     (independent)
+    sigma_sum = sqrt(9 * sigma^2) = 3 * sigma
+
+Standard deviations do NOT add; variances do. That is the whole content of the
+sqrt: nine pixels give nine times the variance but only three times the rms, so
+a threshold on the sum has to be 3x larger to carry the same 5-sigma meaning.
+It is also why summing helps at all -- the signal adds linearly (x9) while the
+noise adds in quadrature (x3), a net sqrt(9) = 3x gain in signal-to-noise for a
+photon that is genuinely spread over the window.
+
+c3 = sqrt(ClusterSizeX * ClusterSizeY) in the constructor, so it generalises: at
+9x9 it is sqrt(81) = 9.
+
+If someone challenges the independence assumption: it is the pedestal noise that
+is being added, which is per-pixel readout noise and is uncorrelated between
+pixels to a good approximation. Correlated noise would need covariance terms and
+would make c3 larger than sqrt(N).
+
+The negative-value skip at the top is a fourth branch but not a test in the same
+sense -- it drops pixels far BELOW pedestal, which are detector artefacts rather
+than photons, and it does not update either.
+
+What matters for the next slide: Test1 reads the MAX of the window, Test3 reads
+the SUM. That is the whole difference in sensitivity.""")
+
+
+# ---------------------------------------------------------------- A7 part 2
+s = new_slide()
+annex_chrome(s, 7, "which test causes the CPU/CPU gap · expands slide 30",
+             "Test3 makes the clusters; Test1 only moves the pedestal",
+             part=2, nparts=2, title_size=25)
+bullets(s, M, 1.76, 11.9, [
+    "**push_fast** touches only the pixel's **own** accumulators and never reads "
+    "the stencil, so the update is **order-independent**: same set of updated "
+    "pixels, bit-identical pedestal. Only a differing **decision** can diverge.",
+], size=10.5)
+figure(s, "fig_test3", M + 0.70, 2.34, 10.45)
+callout(s, M, 6.22, 11.9,
+        "Measured two ways. **Instrumented**: of the 19 disagreeing clusters, the "
+        "**11 that only frozen finds are all Test 3**; the 8 only serial finds are "
+        "all the local-max gate. **Ablated**: compile Test 3 out and the 11 go to "
+        "**zero**.", h=0.72, size=10.5)
+caption(s, M, 7.06, 11.9,
+        "3×3 · 10 000 frames · 23 244 605 clusters · per-pixel branch codes "
+        "diffed frame by frame, then re-run with Test 3 compiled out · "
+        "python/tests/branch_trace.py, branch_site_dump.py.", size=9)
+notes(s, """TWO EXPERIMENTS, INDEPENDENT ROUTES.
+
+Instrumented (both finders shipped logic, branch codes recorded): 974 pixels out
+of 1.6e9 take a different branch. Only some change the cluster set, and those
+decompose onto slide 30's 8/11 with no remainder:
+
+    frozen-only 11  =  QUIET_UPDATE -> TEST3_STORE      (all Test 3)
+    cpu-only     8  =  TEST3_STORE  -> TEST3_SKIP  (5)  (local-max gate)
+                    +  TEST1_STORE  -> SHADOW      (3)
+
+Ablated (Test 3 compiled out of BOTH finders):
+
+                        Test3 ON     Test3 OFF
+    clusters (cpu)    23 244 602    23 241 342
+    divergent pixels         974           584
+    first divergence   frame   4     frame  30
+    frozen-only               11             0
+    cpu-only                   8             4
+
+The 11 go to zero exactly. The cpu-only 4 are all TEST1_STORE -> SHADOW, the
+local-max gate, which does not need Test 3 -- the count is not preserved because
+ablating changes which pixels push, so the pedestal follows a different path and
+the downstream ties are a different realisation.
+
+WHY TEST1 FLIPS MOST AND COSTS NOTHING. A Test1 flip moves a pixel between
+QUIET_UPDATE and SHADOW. Neither stores, so no cluster appears or disappears; it
+only changes whether that pixel pushed, which feeds forward.
+
+TEST1 IS NOT MERELY DOWNSTREAM. With Test3 off, the first divergence is still at
+frame 30, and nothing diverged before it -- so the pedestals were identical and
+that Test1 flip came straight from the within-frame asymmetry. Test1 initiates
+independently; it is just ~7x slower to do so (frame 30 vs frame 4) and cannot
+create a cluster on its own.
+
+THE SITE. Frame 203, pixel (125,245). Threshold c3*5*rms = 256.511. Serial sums
+256.489 and calls it a pedestal sample; frozen sums 256.581 and stores. The gap
+is 0.09 ADU, from four neighbours whose pedestals differ by 0.12 ADU in total.
+max is 56.473 in BOTH -- printed because it is the argument: Test1 could not
+have caused this.
+
+READING THE LEFT PANEL. It is the FINISHED frame, not a scan in progress -- the
+branch map is read once find_clusters() returns, so every one of the 441 cells
+carries a final decision. The arrows are raster ORDER, drawn outside the grid so
+they cannot be mistaken for a cursor.
+
+If asked why a photon looks 3x4 and not 3x3: it does not. The green cells are
+the stored clusters and they are single pixels, nine of them in this patch. The
+dark region around them is SHADOW, and shadow is not the photon's 3x3 -- it is
+every pixel whose OWN 3x3 window contains something above 5 sigma. Note the
+shadow pixel need not be bright itself. Three tiers, all visible here:
+
+    810.3 ADU   IS the window max          -> stored
+    345.0 ADU   above the 85.5 bar, not the peak  -> shadow
+     17.7 ADU   nowhere near the bar, but its 3x3 reaches the 345 -> shadow
+
+Charge shared across two adjacent pixels therefore lights up the union of every
+window that can see either one, which here is 3x4. In the whole patch 27 pixels
+clear 5 sigma, 9 are local maxima, and 98 end up shadowed.
+
+The marked pixel is amber with a green ring on purpose: the panel is coloured by
+the SERIAL finder, and serial sampled the pedestal there. Only frozen stored. If
+it were painted plain green the picture would contradict the sigma lines beside
+it. Amber means one thing in BOTH panels -- a pixel that pushed the pedestal --
+which is why the frozen readings on the right are red rather than amber.
+
+WORTH POINTING AT IF THE ROOM IS ENGINEERS, four rows below the marked pixel.
+(129,245) is an isolated shadow cell with pedestal samples on both sides of it.
+The cause is the 85.150 ADU pixel at (130,244), one row down and one column
+left, which sits in the window of BOTH (129,245) and (129,244). Their window
+maxima are IDENTICAL. They take different branches anyway, because the bar is
+per-pixel -- the test is m > nSigma * rms[centre], the noise of the pixel being
+tested. The branch codes alone bound the two:
+
+    rms(129,245)  <  17.030  <=  rms(129,244)
+
+The left neighbour is noisier, so its bar is higher, so the same 85.150 fails to
+clear it. And (130,244) is itself only a pedestal sample: 85.2 does not clear its
+OWN bar and its window sums to 119.5 against a ~256 Test3 threshold. So a pixel
+can silence a neighbour's pedestal update without being bright enough to be
+anything itself -- "bright" is not a property of a pixel, it is a relation
+between a value and whose noise you measure it against.
+
+Deliberately NOT marked on the figure. It is a statement about the algorithm,
+not about serial-vs-frozen, and a second leader line would compete with the one
+that carries the slide's actual argument. Full numbers in docs/deck/QA.md.
+
+The branch_map property on both finders is diagnostic scaffolding. The ablation
+is AARE_TEST3_ENABLED in the two headers, 1 by default.""")
+
 
 prs.save(OUT)
 print(f"saved {OUT}  ({len(prs.slides._sldIdLst)} slides)")

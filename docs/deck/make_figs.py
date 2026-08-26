@@ -56,6 +56,7 @@ opt7 cuts the kernel 40 % to 23.94 us -- below the D2H bar -- so the f32 floor i
 D2H, not the kernel. Optimizing the kernel in bottleneck order ended by handing
 the constraint to the result path, which is what success looks like.
 """
+import json
 import re
 import matplotlib
 matplotlib.use("Agg")
@@ -77,6 +78,10 @@ PALE   = "#E7EDF4"   # Act II / data 3 / primary text
 TEXT2  = "#A5B2C4"
 MUTED  = "#6B7A90"   # non-data only: grid, axes, annotation
 GREEN  = "#5CC8A0"   # rooflines / floors
+RED    = "#E8695C"   # fig_test3 only: the frozen finder, so AMBER can keep its
+                     # one meaning across both panels (a pixel that pushed the
+                     # pedestal). Never colour-alone — the frozen row is always
+                     # labelled and always sits above the serial row.
 
 plt.rcParams.update({
     "font.family": "DejaVu Sans", "font.size": 9,
@@ -1024,9 +1029,13 @@ def fig_correctness():
     save(fig, "fig_correctness")
 
 
+# fig_bottleneck and fig_correctness are placed on no slide and have not been
+# since the 22/34 renumber; fig_variance_rewrite joined them when slide 21 moved
+# to A5, where the code block says the same thing in less space. The functions
+# are kept -- they are the only record of how those figures were built -- but
+# they are no longer called, so they stop leaving stale PNGs in docs/figures.
 for f in (fig_arc, fig_arc_9x9, fig_first_run, fig_overhead, fig_streams, fig_pinning,
-          fig_graphs, fig_resultpath, fig_f32_kernel, fig_cancellation,
-          fig_bottleneck, fig_correctness):
+          fig_graphs, fig_resultpath, fig_f32_kernel, fig_cancellation):
     f()
 print("done ->", OUT)
 
@@ -1120,7 +1129,7 @@ def fig_overlap_9x9():
     """
     fig, ax = plt.subplots(figsize=(11.2, 3.5))
     G, H = 30.0, 62.0
-    lane_h = 9.0
+    lane_h = 8.0
     n = 4
 
     def block(x, y, w, col, txt):
@@ -1152,7 +1161,10 @@ def fig_overlap_9x9():
     for row, (gpu, tag, col) in enumerate([
             (gpu2, "2 slots  ·  what ships", AMBER),
             (gpu3, "3 slots  ·  the natural next guess", MUTED)]):
-        yG = 49.0 - row * 33.0
+        # Row spacing has to clear the row's TALLEST element, which is the tag
+        # sitting above its GPU lane -- not the lane itself. 37 leaves ~0.45 in
+        # between one row's tag and the row above's host blocks.
+        yG = 52.0 - row * 37.0
         yH = yG - 12.0
         for i in range(n):
             block(gpu[i], yG, G, ACCENT, f"GPU {i + 1}")
@@ -1160,7 +1172,7 @@ def fig_overlap_9x9():
         for lbl, y in (("GPU", yG), ("host", yH)):
             ax.text(-6, y + lane_h / 2, lbl, ha="right", va="center",
                     color=TEXT2, fontsize=10.5)
-        ax.text(-6, yG + lane_h + 7.0, tag, ha="left", va="bottom",
+        ax.text(-6, yG + lane_h + 4.5, tag, ha="left", va="bottom",
                 color=col, fontsize=10.5, fontweight="bold")
         # every gap the GPU sits through, marked where it happens
         for i in range(1, n):
@@ -1173,14 +1185,174 @@ def fig_overlap_9x9():
                         f"idle {gap:.0f}", ha="center", va="bottom",
                         color=AMBER, fontsize=9.5, fontweight="bold")
 
-    ax.plot([finish, finish], [2, 61], color=GREEN, lw=1.6, ls="--", zorder=6)
-    ax.text(finish + 5, 32, "same finish\nboth ways", ha="left", va="center",
+    ax.plot([finish, finish], [1, 62], color=GREEN, lw=1.6, ls="--", zorder=6)
+    ax.text(finish + 5, 31, "same finish\nboth ways", ha="left", va="center",
             color=GREEN, fontsize=11, fontweight="bold")
 
     ax.set_xlim(-32, finish + 62)
     ax.set_ylim(0, 70)
     ax.axis("off")
     save(fig, "fig_overlap_9x9")
+
+# --------------------------- 12c. WHICH test carries the serial-vs-frozen gap
+def fig_test3():
+    """Measured proof that Test3 is the channel, and Test1 is not.
+
+    The two panels are deliberately on DIFFERENT clocks, and each says so:
+
+    Left is the 21x21 neighbourhood of the site AFTER the frame is finished --
+    the branch map is read once find_clusters() returns, so every cell carries a
+    final decision. An earlier version drew a "the scan is here" cursor over it,
+    which was a contradiction: the map has no undecided cells to point at. The
+    arrows now run uniformly across every row and mean raster ORDER, not
+    progress.
+
+    Right is the instant the centre pixel was tested, which is the only moment at
+    which the two models can be said to disagree. Four of its neighbours are in
+    the raster's past and may already carry this frame's push; four are in its
+    future and cannot. Exactly those four differ, and the centre does not.
+
+    Three fills, because the finder has three outcomes and merging any two of
+    them invites the question "why is that photon 3x4 pixels?":
+
+        stored   the window max, and it clears 5 sigma        (~1.5 %)
+        shadow   the window max clears 5 sigma, but this      (~18 %)
+                 pixel is not it -- and note the pixel
+                 itself need NOT be bright: a 17.7 ADU
+                 pixel is shadow if its 3x3 reaches the
+                 345 ADU one next door
+        sample   nothing in the window clears; push pedestal  (~80 %)
+
+    So a shadow region is not a photon's 3x3. It is the union of every window
+    that can SEE something above 5 sigma, which is why sharing charge across two
+    adjacent pixels (810.3 and 345.0 here, against a bar of 85.5) lights up 3x4.
+
+    The site itself is marked amber-filled with a green ring, because the panel
+    is coloured by the SERIAL finder and serial pushed the pedestal there. Only
+    frozen stored. That disagreement is the whole slide.
+
+    The punchline is in the numbers, not the picture: `max` is IDENTICAL in the
+    two models (56.473), so Test1 provably did not move. Only the SUM crossed.
+    """
+    site = json.loads((Path(__file__).resolve().parent / "branch_site.json").read_text())
+    vf = np.array(site["val_frz"]); vc = np.array(site["val_cpu"])
+    scanned = np.array(site["scanned"], dtype=bool)
+    thr = site["thr_test3_frz"]
+    pat = site["patch"]
+    bc = np.array(pat["branch_cpu"]); R = pat["r"]
+
+    fig, (ax, bx) = plt.subplots(1, 2, figsize=(12.4, 4.25),
+                                 gridspec_kw=dict(width_ratios=[1.28, 1.0]))
+    # An equal-aspect axes shrinks its BOX to the drawing and then centres it,
+    # which parked both grids in the middle of their slots with dead space on
+    # either side. Anchor west so each grid sits over the legend that decodes it.
+    ax.set_anchor("W"); bx.set_anchor("W")
+
+    # ---- left: the finished frame, 21x21 around the site -------------------
+    # Colour by what the SERIAL finder decided: the pedestal-sample cells are
+    # exactly the ones a later stencil can read differently from the frozen
+    # model, which is the mechanism this slide is about. Shadow gets its own
+    # fill -- welding it to `stored` is what made a photon look 3x4 wide.
+    SHADOW = "#33455E"
+    FILL = {4: AMBER, 1: SHADOW, 2: GREEN, 3: GREEN, 6: SHADOW,
+            0: SHADOW, 5: PANEL}
+    n = 2 * R + 1
+    for r in range(n):
+        for c in range(n):
+            ax.add_patch(Rectangle((c, n - 1 - r), 1, 1,
+                                   facecolor=FILL.get(int(bc[r, c]), PANEL),
+                                   edgecolor=BG, linewidth=0.5, zorder=2))
+    # Raster ORDER, not raster progress, and drawn OUTSIDE the data: arrows laid
+    # over the cells vanished against the amber and re-introduced the "we are
+    # here" reading. Two margin arrows say left-to-right, then top-to-bottom.
+    ax.annotate("", xy=(n, n + 0.55), xytext=(0.0, n + 0.55),
+                arrowprops=dict(arrowstyle="-|>", color=MUTED, lw=1.2))
+    ax.annotate("", xy=(-0.85, 0.0), xytext=(-0.85, n),
+                arrowprops=dict(arrowstyle="-|>", color=MUTED, lw=1.2))
+    ax.text(n / 2, n + 0.85, "raster order", ha="center", va="bottom",
+            color=MUTED, fontsize=10.5)
+    # the window Test3 summed, and inside it the one pixel the models disagree on
+    ax.add_patch(Rectangle((R - 1, n - R - 2), 3, 3, facecolor="none",
+                           edgecolor=PALE, linewidth=1.4, ls=(0, (3, 2)),
+                           zorder=6))
+    ax.add_patch(Rectangle((R, n - R - 1), 1, 1, facecolor="none",
+                           edgecolor=GREEN, linewidth=2.4, zorder=7))
+    ax.annotate("the pixel they\ndisagree on", xy=(R + 1.6, n - R - 0.5),
+                xytext=(n + 1.4, n - R - 0.5), ha="left", va="center",
+                color=PALE, fontsize=10.5,
+                arrowprops=dict(arrowstyle="-", color=PALE, lw=1.0,
+                                shrinkA=2, shrinkB=2))
+    # Headroom for the title ABOVE the raster-order label, not on top of it.
+    ax.set_xlim(-1.6, n + 8.8); ax.set_ylim(-0.4, n + 3.6)
+    ax.set_aspect("equal"); ax.axis("off")
+    ax.text(n / 2, n + 3.5, f"the finished frame · 21 × 21 around "
+                            f"({site['iy']}, {site['ix']})",
+            ha="center", va="top", color=TEXT2, fontsize=10.5)
+
+    # ---- right: the 3x3, with each finder's reading named -------------------
+    for r in range(3):
+        for c in range(3):
+            past = scanned[r, c]
+            bx.add_patch(Rectangle((c, 2 - r), 1, 1,
+                                   facecolor="#1B2534" if past else PANEL,
+                                   edgecolor=AMBER if past else BG,
+                                   linewidth=2.2 if past else 1.6, zorder=2))
+            if past:
+                bx.text(c + 0.5, 2 - r + 0.66, f"{vf[r, c]:.3f}", ha="center",
+                        va="center", color=RED, fontsize=11,
+                        fontweight="bold", zorder=3)
+                bx.text(c + 0.5, 2 - r + 0.32, f"{vc[r, c]:.3f}", ha="center",
+                        va="center", color=ACCENT, fontsize=11,
+                        fontweight="bold", zorder=3)
+            else:
+                bx.text(c + 0.5, 2 - r + 0.50, f"{vf[r, c]:.3f}", ha="center",
+                        va="center", color=PALE, fontsize=11,
+                        fontweight="bold", zorder=3)
+    bx.add_patch(Rectangle((1, 1), 1, 1, facecolor="none", edgecolor=GREEN,
+                           linewidth=2.6, zorder=4))
+    bx.set_xlim(-0.06, 3.06); bx.set_ylim(-0.06, 3.66)
+    bx.set_aspect("equal"); bx.axis("off")
+    bx.text(1.5, 3.60, f"the moment ({site['iy']}, {site['ix']}) was tested · "
+                       f"only the 4 already-scanned neighbours differ",
+            ha="center", va="top", color=TEXT2, fontsize=10.5)
+
+    # The verdict goes in figure coords: inside the axes it would be laid out
+    # against an equal-aspect box and squeeze the grid into a column. Three
+    # fills, three legend rows -- a swatch each, because the shadow fill is far
+    # too dark to identify from coloured text.
+    def key(y, col, txt, edge=None):
+        fig.add_artist(Rectangle((0.020, y - 0.004), 0.017, 0.042,
+                                 facecolor=col, edgecolor=edge or BG,
+                                 linewidth=2.0 if edge else 0.8,
+                                 transform=fig.transFigure))
+        fig.text(0.046, y + 0.017, txt, color=TEXT2, fontsize=10.5,
+                 va="center")
+
+    key(0.245, GREEN, "stored: this pixel IS the window max, and it clears 5σ")
+    key(0.170, SHADOW, "shadow: the window max clears 5σ, but this pixel is not it")
+    key(0.095, AMBER, "pedestal sample: nothing in the window clears 5σ")
+    key(0.020, AMBER, "the disputed pixel — serial sampled here, frozen stored",
+        edge=GREEN)
+
+    # No hand-placed colour key: the two sigma rows below are already
+    # colour-coded, so the cells decode from them.
+    # Keep this line no longer than the sigma rows below it: bbox_inches="tight"
+    # widens the canvas to the widest string, which shrinks every other one.
+    fig.text(0.545, 0.250, "frozen above serial · amber ring = pushed pedestal",
+             color=TEXT2, fontsize=10.5)
+    fig.text(0.545, 0.175, f"serial   Σ = {site['total_cpu']:.3f}   <   "
+                           f"{thr:.3f}   →  pedestal sample",
+             color=ACCENT, fontsize=10.5, fontweight="bold")
+    fig.text(0.545, 0.100, f"frozen  Σ = {site['total_frz']:.3f}   >   "
+                           f"{thr:.3f}   →  CLUSTER",
+             color=RED, fontsize=10.5, fontweight="bold")
+    fig.text(0.545, 0.025, f"max = {site['max_frz']:.3f} in both   →  "
+                           f"Test1 never moved",
+             color=GREEN, fontsize=10.5, fontweight="bold")
+
+    fig.subplots_adjust(left=0.015, right=0.985, top=0.97, bottom=0.31,
+                        wspace=0.06)
+    save(fig, "fig_test3")
 
 # ------------------------------------- 13. pedestal update timing, three ways
 def fig_pedtiming():
@@ -1256,6 +1428,7 @@ def fig_pedtiming():
 
 fig_overlap()
 fig_overlap_9x9()
+fig_test3()
 fig_pedtiming()
 
 
@@ -1616,7 +1789,7 @@ def fig_variance_rewrite():
     save(fig, "fig_variance_rewrite")
 
 
-fig_variance_rewrite()
+# fig_variance_rewrite()   # unplaced since slide 21 moved to A5; see above
 
 
 # ---------------------------- 16. the measurement convention: s1, s4 and the floor

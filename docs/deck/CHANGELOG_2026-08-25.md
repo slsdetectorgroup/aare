@@ -454,3 +454,120 @@ printing one under the other's name.
 - `build_internals_deck.py` and `cf_cuda_internals.pptx` deleted: the four
   engineering slides they held are now folded into the single deck, in the arc,
   which is what "one deck with a bit more detail" means.
+
+---
+
+## §13 — Which test causes the CPU-vs-CPU residual (annex A7, new)
+
+Slide 30 said the serial-vs-frozen gap was "update timing alone" and stopped
+there. Which of the three decisions the timing actually moves had never been
+measured. It has been now, two independent ways.
+
+**Instrumented** (both finders running shipped logic; each records a per-pixel
+branch code, and the two maps are diffed frame by frame). 974 pixels out of
+1.6 × 10⁹ take a different branch, and the ones that change the cluster set
+decompose onto the 8/11 headline with no remainder:
+
+| | | |
+|---|--:|---|
+| frozen-only 11 | `QUIET_UPDATE → TEST3_STORE` (11) | **all Test 3** |
+| cpu-only 8 | `TEST3_STORE → TEST3_SKIP` (5) + `TEST1_STORE → SHADOW` (3) | **all local-max gate** |
+| Test 1 threshold | 619 flips | **zero clusters** |
+
+**Ablated** (Test 3 compiled out of both finders):
+
+| | Test3 ON | Test3 OFF |
+|---|--:|--:|
+| clusters (cpu) | 23 244 602 | 23 241 342 |
+| divergent pixels | 974 | 584 |
+| first divergent frame | 4 | 30 |
+| frozen-only | **11** | **0** |
+| cpu-only | 8 | 4 |
+
+The 11 go to zero exactly. The surviving cpu-only 4 are all local-max-gate
+flips, which do not need Test 3; the count is not preserved because ablating
+changes which pixels push, so the pedestal takes a different path and the
+downstream ties are a different realisation.
+
+**Two claims made along the way turned out to be wrong and are corrected in the
+notes.** First, that the residual on slide 31 was the timing effect — it is not,
+it is the f32 EMA row (`0 / 6`), and both finders freeze the pedestal there.
+Second, that Test 1 flips are merely downstream of Test 3 — with Test 3 ablated
+the first divergence is still a Test 1 flip, on a frame where the pedestals were
+provably identical. Test 1 initiates independently, roughly 7× slower, and can
+never create a cluster by itself.
+
+**A7 is two slides, because part 2 blames a test slide 4 does not show.** Slide
+4's panel is titled "THE WHOLE ALGORITHM" and has two tests; the finder has
+three. Part 1 restores the third branch and explains `c3 = √(3×3) = 3` as the
+noise scaling of a 9-pixel sum — so Test 3 is the same 5σ criterion as Test 1
+applied to the window rather than the pixel. Part 2 carries the measurement.
+
+`fig_test3` is the site at frame 203, pixel (125,245): a 21×21 context view with
+the raster caught mid-frame on the left, and the 3×3 the decision was taken on
+at right, each differing cell showing both finders' readings. Threshold
+256.511; serial sums 256.489 and frozen 256.581. **`max` is 56.473 in both**,
+which is the argument in one number.
+
+**Instrumentation is gated.** `AARE_BRANCH_TRACE` defaults to 0 and the writes
+fold away at compile time, so the CPU baseline whose throughput the deck quotes
+is unaffected. `AARE_TEST3_ENABLED` defaults to 1. Both live in the two CPU
+headers; `python/tests/branch_trace.py` and `branch_site_dump.py` document the
+rebuild.
+
+---
+
+## §14 — Two layout fixes and one figure that contradicted itself
+
+**Slide 18's row tag was 0.1 in under the strip above it.** `fig_overlap_9x9`
+placed each row's tag at `yG + lane_h + 7` but spaced rows only 33 units apart,
+so "3 slots · the natural next guess" collided with the 2-slot host lane. Row
+spacing has to clear the row's *tallest* element, which is the tag rather than
+the lane: `lane_h 9→8`, spacing `33→37`, tag offset `+7→+4.5`, and the reason is
+now a comment so the next edit does not undo it.
+
+**`c3` now derives itself.** The A7 · 1/2 callout led with the conclusion; it now
+leads with variance addition and carries the formula — `Var(Σ v) = 9σ²`, hence
+`√9 · σ = 3σ`. The notes add what the slide has no room for: standard deviations
+do not add but variances do (the entire content of the √); summing buys a factor
+3 in SNR because signal adds linearly ×9 while noise adds in quadrature ×3; and
+the independence caveat, since correlated noise would need covariance terms and
+push `c3` above `√N`.
+
+**`fig_test3`'s left panel claimed two incompatible things.** It painted a
+completed branch map — read after `find_clusters()` returns, 441 cells, zero
+undecided — and then drew a "the scan is here" cursor over it, with amber
+decided pixels below and to the right of the arrow. Caught in review from the
+picture alone. The panel is now explicitly the finished frame, the arrows moved
+outside the grid and became raster **order** rather than progress, and the two
+panels each name their clock: left "the finished frame", right "the moment
+(125,245) was tested".
+
+**The same figure merged two fills into one legend line** — "photon: stored, or
+in its shadow" covered both green and slate, which invited the reasonable
+question *why is that photon 3×4 pixels?* It isn't: there are exactly 9 green
+cells in the patch and every one is a single pixel. Shadow now has its own row,
+stated as the rule rather than the appearance:
+
+> shadow is every pixel whose **own** 3×3 window contains something above 5σ
+
+with the three tiers in the notes — 810.3 ADU stored, 345.0 shadowed because it
+is not the peak, 17.7 shadowed although nowhere near the 85.5 bar, because its
+window reaches the 345. Charge shared across two adjacent pixels lights up the
+union of every window that can see either, which is how a region gets to 3×4.
+
+**The marked pixel stays amber with a green ring.** The panel is coloured by the
+serial finder and serial *sampled the pedestal* there; only frozen stored.
+Painting it plain green would have read better and contradicted the Σ lines
+beside it.
+
+**Stale artefacts removed.** `fig_bottleneck`, `fig_correctness` and
+`fig_variance_rewrite` were listed as *still open* above — generated on every run
+but placed on no slide. Their call sites are now commented out (the functions
+stay: they are the only record of how those figures were built) and the three
+PNGs are deleted, so the next run cannot resurrect them. `docs/figures` now holds
+exactly the 31 figures the deck places, plus the four `Eta*` images that belong
+to the Sphinx docs. Also dropped `docs/deck/branch_trace.json`, a byte-identical
+copy of the `python/tests/` original that nothing read — `branch_site.json` is
+duplicated on purpose, because `make_figs.py` needs the deck build to be
+self-contained.

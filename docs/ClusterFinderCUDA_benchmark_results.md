@@ -1367,7 +1367,7 @@ opt1/opt2 stop over-counting extended charge-shared events:
 | exploratory notebook | `python/tests/ClusterFinderCUDA_perf.ipynb` | **stores only the last run** — not a record. Archive a copy per cluster size if used |
 | correctness notebook | `python/tests/ClusterFinderFrozen_vs_CUDA.ipynb` | CPU↔CUDA agreement analysis |
 | precision study | `docs/pedestal_precision_f32_cancellation.md` | B1 derivation |
-| deck | `docs/cf_cuda_performance.pptx` + `docs/deck/build_performance_deck.py` | 35 slides in the same three acts plus a 6-group annex (A1–A6), 53 pages with dividers; figures from `docs/deck/make_figs.py` and `make_figs_kernel.py`. Rebuild with `python docs/deck/make_figs.py && python docs/deck/build_performance_deck.py` |
+| deck | `docs/cf_cuda_performance.pptx` + `docs/deck/build_performance_deck.py` | 35 slides in the same three acts plus a 7-group annex (A1–A7, A7 in two parts), 55 pages with dividers; figures from `docs/deck/make_figs.py` and `make_figs_kernel.py`. Rebuild with `python docs/deck/make_figs.py && python docs/deck/build_performance_deck.py` |
 
 ### CSV step labels
 
