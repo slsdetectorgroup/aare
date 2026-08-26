@@ -4,6 +4,8 @@
 
 ### API Changes:
 
+- Exposed ``ClusterVector.empty()`` in the Python API.
+- Added ClusterVector.estimate_n_clusters
 - Removed the lmfit dependency and the legacy ``fit_gaus``, ``fit_pol1``,
   ``fit_scurve``, and ``fit_scurve2`` APIs. Use ``Gaussian``, ``Pol1``,
   ``RisingScurve``, or ``FallingScurve`` and call ``model.fit(...)`` (or
@@ -11,6 +13,8 @@
 - Removed the legacy ``gaus``, ``pol1``, ``scurve``, and ``scurve2`` function
   evaluators. Model objects are callable and provide the replacement, for
   example ``Gaussian()(x, par)``.
+- ``NDView<T, Ndim>`` now converts to ``NDView<const T, Ndim>``;
+  ``expand4to8bit`` and ``expand24to32bit`` accept const input views.
 
 ### Bugfixes:
 - Fixed broken reading of old (pre reordering) Moench03
@@ -157,7 +161,6 @@ https://github.com/slsdetectorgroup/aare
 erik.frojdh@psi.ch \
 alice.mazzoleni@psi.ch \
 dhanya.thattil@psi.ch
-
 
 
 
