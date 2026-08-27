@@ -464,6 +464,7 @@ if(AARE_TESTS)
       ${CMAKE_CURRENT_SOURCE_DIR}/src/NumpyHelpers.test.cpp
       ${CMAKE_CURRENT_SOURCE_DIR}/src/RawFile.test.cpp
       ${CMAKE_CURRENT_SOURCE_DIR}/src/RawSubFile.test.cpp
+      ${CMAKE_CURRENT_SOURCE_DIR}/src/StrixelPixelRemapAlgorithm.test.cpp
       ${CMAKE_CURRENT_SOURCE_DIR}/src/utils/task.test.cpp
       ${CMAKE_CURRENT_SOURCE_DIR}/src/to_string.test.cpp)
   target_sources(tests PRIVATE ${TestSources})
