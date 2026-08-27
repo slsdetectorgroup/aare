@@ -571,3 +571,223 @@ to the Sphinx docs. Also dropped `docs/deck/branch_trace.json`, a byte-identical
 copy of the `python/tests/` original that nothing read — `branch_site.json` is
 duplicated on purpose, because `make_figs.py` needs the deck build to be
 self-contained.
+
+---
+
+## §15 — Review pass: one new slide, three slimmed, and a claim that was false
+
+**New slide 12, "The wire is 32× slower than either memory."** Act I and Act II are
+five slides attacking two arrows, and until now the audience met those arrows
+already named and already being optimised. `fig_gpu_model` draws HOST and DEVICE
+with the two copies between them and the bandwidth at each end — 1 008 GB/s
+inside the card against 31.5 on the wire. **All of 12→35 shifted to 13→36**: 47
+`chrome()` calls, 7 `rng=` ranges with their item lists, 28 prose references,
+`N_SLIDES`, and the counts in the README and report.
+
+**Slide 4 was making a false claim.** The rail said *"Order they may run in:
+any"* and the note said a pixel never depends on what its neighbours decided.
+That is true of the algorithm with the pedestal held at its frame-start value —
+which is what the GPU does — and **false of the serial CPU baseline**, which
+updates mid-scan and is exactly why annex A7 finds 19 differing clusters. Now
+qualified: *"any — once the pedestal is fixed"*, with the exception named and
+pointed at A7. Caught by the presenter, not by any gate.
+
+**Slides 21, 22 and 23 were carrying prose the plots already carried.** 21 keeps
+one bullet and gives the space to the s1/s4 panels, with the two secondary
+effects (FP64 at 1/64 rate, 9 registers freed) demoted to a caption below them
+and the right column cut from four stacked numbers to two. 22 keeps its
+three-beat trap/cost/fix shape but hands every number to the rail. 23 loses a
+six-line provenance caption to the notes.
+
+That last one exposed a latent overflow: slide 22's rail had **two** `stat`
+entries and eight rows, which ran past the footer and put its closing note off
+the slide entirely — invisible in the source, and only caught because adding to
+it made the overflow checker fire.
+
+**Housekeeping.** Date to September. `fig_overlap_9x9`'s idle markers were bare
+numbers with no unit ("idle 32"), now `idle 32 µs`. Slide 7 dropped the
+template/unroll sentence, which slide 13 already makes. The Act II divider said
+the results "come back slowly", which reads as D2H; the copy in question is
+**host to host**, out of the finder's pinned buffer into heap the caller owns,
+and the divider now says so.
+
+**QA.md** gained a hardware section: why the pedestal is not staged in shared
+memory (no reuse at this granularity) and when that would change (a batched
+kernel — with a semantic cost A7 can price); what "6 blocks resident" does and
+does not mean, counted in warps (48 resident, 4 issuing, 44 hiding latency); and
+why pinned H2D reaches 77 % of theoretical rather than 100 %.
+
+---
+
+## §16 — Review pass 2: em dashes, a wrong geometry, and the code-panel constant
+
+**Em dashes cut from 27 on-slide to 10.** Kept only where they do work no other
+mark does: the two title pivots (slide 2, slide 24) and three true appositive
+pairs (the floor definition on 21, the fixed envelope on 16, the twice-the-floor
+aside on 19). Everything else became a colon, comma or full stop. Table cells
+using "—" for *empty* are untouched.
+
+**Slide 28 was making a general claim about a specific measurement.** The title
+said *"A GPU benchmark mostly measures the operating system"*, which is not what
+was measured — what was measured is that **our** result heap faults in 2.6 M
+pages. Retitled *"Materialising clusters costs 2.6 M page faults"* with the
+eyebrow naming the culprit.
+
+**And the rail said 9×9, which is wrong.** §12's synthetic run is
+`90 000 × 93 kB` and the in-situ run goes 16 366 → 22 459 FPS: that is opt2 at
+**3×3**. 2.6 M pages × 4 kB = 10.7 GB = 100 000 × the 93 kB 3×3 payload; at 9×9
+the same frame count would be ~47 GB. Now labelled `3×3 · opt2`.
+
+New `fig_pagefault` carries what the prose was carrying: virtual pages above,
+physical frames below, two mapped, one faulting, two unclaimed — and the four
+things the kernel does, with **"zeroes all 4 kB of it"** the only one in amber,
+because that is where the microseconds are. The nsys and CUDA-event caveats moved
+to the notes.
+
+**The `code()` line-height constant was wrong and is now fixed.** It budgeted
+`0.0174 in/pt`; LibreOffice renders Consolas at `0.0189`. Measured off a render:
+0.170 in per line at 9 pt with `line=1.12`. The 8.6 % shortfall is invisible on a
+short panel and cost slide 34 its last two lines, which vanished under the panel
+below. All 13 slides carrying a code panel were re-rendered and checked; the
+local blank-line workaround on A7 is removed.
+
+**Also.** The title-slide footnote now has an asterisk, and the title carries its
+mate. `fig_opt1_timeline`'s idle spans were `MUTED` at 9 % alpha, near enough to
+the background to be missed; now amber at 17 % with edges. `fig_overlap_9x9`'s
+row tags moved up 2.5 units and rows apart by 3, because `idle 32 µs` grew into
+them once it gained a unit.
+
+**Slide 31** rings the two rows that measure the port alone, drops the
+ClusterFinderMT aside and the stale 1-ADU payload remark, and says the thing the
+ring is for in one sentence. **Slide 33**'s second callout is now one line: at
+f64 the residual is zero. **Slide 34** keys its right column to the numbered
+steps in the code panel (`3 · register_input_buffer()`, `4 ·
+find_clusters_batched()`), highlights those step comments in the code itself, and
+moves the zero-copy variant directly underneath the pattern it replaces rather
+than across the slide.
+
+**One contradiction found while editing.** Slide 31's notes claimed *"Test1 and
+the local-max gate are protected by construction"* and then, four paragraphs
+later, said Test1 initiates on its own. The first is what A7 refuted; it is gone.
+
+---
+
+## §17 — OPT badges, no paths on slides, and a title the new number falsified
+
+**Every rung of the ladder now carries an `OPT<n>` badge**, drawn by
+`chrome(… opt=n)` in the same corner and the same style `annex_chrome` uses for
+`A<n>`. Eleven slides: opt1, opt2, opt3 ×2, opt4, opt5 ×2, opt6, opt7 ×3. The
+badge names the **rung**, not the slide, so the two-slide rungs repeat theirs.
+Their eyebrows lost the now-duplicated "optN ·".
+
+**No filesystem paths on slides.** Twelve references to notebooks, `python/tests/…`,
+result directories and write-up filenames are gone from captions and panel titles.
+They are personal to one machine and mean nothing to a room. Slide 36's notes now
+carry the full index of where each artefact lives, so nothing is lost.
+
+**Slide 12 gained host DRAM bandwidth, and that broke its title.** Measured on
+`pc-moench-04`: **~71 GB/s** (threaded copy over a 1 GB array, counting 24 B per
+element — 8 read, 8 write, 8 read-for-ownership; dual-channel DDR5, so in the
+right family). The title said *"the wire is 32× slower than either memory"*,
+which the new number falsifies: PCIe is 32× below VRAM but only **~2.3×** below
+DRAM. Retitled *"31.5 GB/s on the wire, 1 008 GB/s off VRAM"*, and the figure now
+says the wire is **the narrowest link in the chain** rather than 32× below
+everything. The notes spell out which comparison is which. Recorded in the
+report's hardware table.
+
+**Also.** Slide 28's rail dropped `· opt2`: the artefact concerns every step that
+materialises (opt2 through opt5), and naming one implied otherwise — the opt2
+provenance for the specific counts stays in the notes. Slide 33's closing callout
+is now four words. Slide 34 highlights `register_input_buffer` and
+`find_clusters_batched` in the code panel itself, and the variant panel is titled
+**ZERO-COPY** rather than OPT6, which says what it does instead of where it sits.
+
+**One overclaim caught.** Slide 7's CPU panel is captioned "verbatim from the CPU
+source". Checking it against `ClusterFinder.hpp:172-173`, the *words* were
+verbatim but the em dash was an insertion — the source uses a line break. The
+panel now matches the file exactly, which also removed one more em dash.
+
+---
+
+## §18 — A title that means something, a second code highlight, and no outward pointers
+
+**Slide 12's title said the numbers, not what they mean.** *"31.5 GB/s on the
+wire, 1 008 GB/s off VRAM"* is accurate and inert. Now **"The GPU consumes 32×
+faster than the wire delivers"** — same fact, stated as the consequence that
+makes the next five slides necessary. The figure keeps both figures and the
+"narrowest link" framing.
+
+**`code()` gained a second highlight marker.** A code panel has two kinds of
+thing worth pointing at and they were sharing a colour: `«…»` stays ACCENT for
+whatever the slide is arguing about (a knob, a step number), and `‹…›` is new —
+PALE bold, reserved for the **API surface**, the call a user will actually type.
+On slide 34 that separates `register_input_buffer`, `find_clusters_batched`,
+`unregister_input_buffer` and `find_cluster_views_batched_iter` from the numbered
+step comments they sit beside. `unregister_input_buffer` had been missed
+entirely.
+
+**Nothing on a slide points outside the deck any more.** The earlier pass removed
+paths; this one removes the softer forms — "the benchmark write-up that
+accompanies this deck", "the validation notebook", "Source: the pedestal-precision
+write-up", "a span script", "the benchmark notebook". Slides get shared on their
+own, and a pointer to something the reader does not have is worse than no pointer.
+Slide 36's closing callout is now a claim rather than a signpost: *every number is
+measured on one machine, one dataset, one git revision, and the annexes carry the
+reconciliation.*
+
+Library header names (`ClusterFinderCUDA.hpp`, `clusterfinder_kernel.cuh`) are
+kept deliberately: they name the code being presented, which is the subject, not
+a reference to somewhere the reader cannot go.
+
+---
+
+## §19 — "PCIe", not "the wire", and a snippet that would not run
+
+**"The wire" is gone from every slide.** It is a nice shorthand once a room knows
+what it refers to, and an obstacle before that. Five slides now name **PCIe**:
+the title slide's opening paragraph, the Act I divider, slide 12's title and
+callout, and slide 36's closing line. The speaker notes keep "wire" — that is
+where shorthand belongs.
+
+**Slide 34's snippet used an undefined `N`.** The loop read
+`for s in range(0, N, 2000)` with `N` never assigned — the array is bound to
+`data`. Now `range(0, len(data), 2000)`, which is also honest about the ragged
+last chunk. The comment column stays aligned at column 41.
+
+For the record, since it was asked: the slice itself was never the problem.
+`data[s:s+2000]` cannot read out of bounds — Python and NumPy both **clamp** a
+slice to the end of the sequence, so a final short chunk yields a shorter view
+rather than an error, and `find_clusters_batched` handles any `n_frames`.
+
+**Slide 7's right column was arguing with the slide.** The two callouts ran 1.15
+and 1.10 inches explaining the CPU's three outcomes on a slide whose subject is
+"one thread per pixel". Cut to 0.74 and 0.86 with the substance intact — the
+shadow branch neither records nor feeds back, and ~80 % of threads take the
+update path.
+
+---
+
+## §20 — The joke, and a second artefact
+
+**The title's footnote marker is now a real superscript.** `run()` gained a `sup`
+argument that writes the OOXML `baseline` attribute directly, since python-pptx
+exposes no superscript API. At 17 pt MUTED with a 110 % shift the asterisk sits at
+the em dash's own height and reads as a footnote marker rather than a stray
+glyph. The note itself: *"This em dash was hand written (not AI generated ☺)"*.
+
+That smiley is **U+263A**, not an emoji. Tested three: `U+1F642` 🙂 renders as
+**nothing at all** in the LibreOffice PDF export — silently dropped, no warning,
+no tofu box — and `U+1F609` 😉 fell back to a generic face rather than a wink.
+U+263A lives in DejaVu and Segoe UI Symbol, renders monochrome, and takes the
+run's colour, which suits a 9 pt muted footnote better than a colour bitmap would
+anyway.
+
+**`docs/cf_cuda_performance.pdf` now ships alongside the `.pptx`.** The pptx is
+the presenter's copy and carries every `notes()` block; the PDF is the one that
+gets sent to an audience. LibreOffice's slide export drops speaker notes
+entirely — verified by probing the PDF's text layer for seven notes-only strings
+("WHERE THE MATERIAL IS", "TWO INSTRUMENT CAVEATS", the file paths, and others),
+none of which appear. 56 pages, 10.9 MB, unencrypted.
+
+The two artefacts drift the moment one is rebuilt without the other, so the
+regeneration command is in the README's build block rather than left to memory.

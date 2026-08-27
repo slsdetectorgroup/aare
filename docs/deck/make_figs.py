@@ -63,7 +63,7 @@ matplotlib.use("Agg")
 import matplotlib.pyplot as plt
 import matplotlib.text
 import numpy as np
-from matplotlib.patches import FancyArrowPatch, Rectangle
+from matplotlib.patches import FancyArrowPatch, FancyBboxPatch, Rectangle
 from pathlib import Path
 
 OUT = Path(__file__).resolve().parent.parent / "figures"
@@ -620,6 +620,75 @@ def fig_streams():
     save(fig, "fig_streams")
 
 
+# ------------------------- 6b. the big picture: two memories and a slow wire
+def fig_gpu_model():
+    """What "H2D" and "D2H" actually name, for a room that has never used a GPU.
+
+    Deliberately the least quantitative figure in the deck. Its only job is that
+    a kernel addresses VRAM and nothing else, so every frame is copied in and
+    every result copied out -- and that the wire carrying those copies is ~32x
+    slower than the memory at either end. Every step in Act I and Act II is an
+    attack on one of the two arrows, so the audience needs the picture before
+    the ladder starts, not after.
+    """
+    fig, ax = plt.subplots(figsize=(11.6, 3.9))
+
+    def panel(x0, x1, y0, y1, title, col):
+        ax.add_patch(FancyBboxPatch((x0, y0), x1 - x0, y1 - y0,
+                                    boxstyle="round,pad=0,rounding_size=1.2",
+                                    facecolor=PANEL, edgecolor=col,
+                                    linewidth=1.6, zorder=2))
+        ax.text((x0 + x1) / 2, y1 - 2.2, title, ha="center", va="center",
+                color=col, fontsize=11, fontweight="bold")
+
+    def chip(x0, x1, y0, y1, top, bottom, col):
+        ax.add_patch(Rectangle((x0, y0), x1 - x0, y1 - y0, facecolor=BG,
+                               edgecolor=col, linewidth=1.3, zorder=3))
+        ax.text((x0 + x1) / 2, (y0 + y1) / 2 + 1.6, top, ha="center",
+                va="center", color=PALE, fontsize=11, fontweight="bold",
+                zorder=4)
+        ax.text((x0 + x1) / 2, (y0 + y1) / 2 - 1.9, bottom, ha="center",
+                va="center", color=TEXT2, fontsize=10, zorder=4)
+
+    panel(1, 33, 3, 44, "HOST", MUTED)
+    chip(4, 30, 31, 40, "CPU", "24 threads", ACCENT)
+    chip(4, 30, 9, 18, "DRAM", "system memory", ACCENT)
+
+    panel(67, 99, 3, 44, "DEVICE  ·  RTX 4090", MUTED)
+    chip(70, 96, 31, 40, "128 SMs", "16 384 CUDA cores", AMBER)
+    chip(70, 96, 9, 18, "VRAM", "24 GB GDDR6X", AMBER)
+
+    # the fast links, inside each box
+    for x, lab, col in ((17, "~71 GB/s", ACCENT), (83, "1 008 GB/s", AMBER)):
+        ax.annotate("", xy=(x, 30.4), xytext=(x, 18.6),
+                    arrowprops=dict(arrowstyle="<|-|>", color=col, lw=1.4))
+        if lab:
+            ax.text(x + 1.4, 24.5, lab, ha="left", va="center", color=col,
+                    fontsize=10.5, fontweight="bold")
+    ax.text(17, 5.2, "off-limits to the kernel",
+            ha="center", va="center", color=MUTED, fontsize=10.5)
+
+    # the slow wire, between them
+    ax.annotate("", xy=(69, 16.5), xytext=(31, 16.5),
+                arrowprops=dict(arrowstyle="-|>", color=GREEN, lw=2.4))
+    ax.text(50, 18.4, "H2D   the frame, 312.5 kB", ha="center", va="bottom",
+            color=GREEN, fontsize=11, fontweight="bold")
+    ax.annotate("", xy=(31, 10.5), xytext=(69, 10.5),
+                arrowprops=dict(arrowstyle="-|>", color=PALE, lw=2.4))
+    ax.text(50, 8.6, "D2H   the clusters, 93 kB at 3×3", ha="center", va="top",
+            color=PALE, fontsize=11, fontweight="bold")
+    ax.text(50, 31, "PCIe 4.0 ×16", ha="center", va="center", color=TEXT2,
+            fontsize=11, fontweight="bold")
+    ax.text(50, 27.5, "31.5 GB/s", ha="center", va="center", color=TEXT2,
+            fontsize=11)
+    ax.text(50, 23.6, "the narrowest link\nin the chain", ha="center",
+            va="center", color=MUTED, fontsize=10.5)
+
+    ax.set_xlim(-1, 101); ax.set_ylim(1, 46)
+    ax.axis("off")
+    save(fig, "fig_gpu_model")
+
+
 # ------------------------------------------------------------- 5. pinning
 def fig_pinning():
     fig = plt.figure(figsize=(7.7, 3.0))
@@ -1035,6 +1104,7 @@ def fig_correctness():
 # are kept -- they are the only record of how those figures were built -- but
 # they are no longer called, so they stop leaving stale PNGs in docs/figures.
 for f in (fig_arc, fig_arc_9x9, fig_first_run, fig_overhead, fig_streams, fig_pinning,
+          fig_gpu_model,
           fig_graphs, fig_resultpath, fig_f32_kernel, fig_cancellation):
     f()
 print("done ->", OUT)
@@ -1164,7 +1234,7 @@ def fig_overlap_9x9():
         # Row spacing has to clear the row's TALLEST element, which is the tag
         # sitting above its GPU lane -- not the lane itself. 37 leaves ~0.45 in
         # between one row's tag and the row above's host blocks.
-        yG = 52.0 - row * 37.0
+        yG = 55.0 - row * 40.0
         yH = yG - 12.0
         for i in range(n):
             block(gpu[i], yG, G, ACCENT, f"GPU {i + 1}")
@@ -1172,7 +1242,7 @@ def fig_overlap_9x9():
         for lbl, y in (("GPU", yG), ("host", yH)):
             ax.text(-6, y + lane_h / 2, lbl, ha="right", va="center",
                     color=TEXT2, fontsize=10.5)
-        ax.text(-6, yG + lane_h + 4.5, tag, ha="left", va="bottom",
+        ax.text(-6, yG + lane_h + 7.0, tag, ha="left", va="bottom",
                 color=col, fontsize=10.5, fontweight="bold")
         # every gap the GPU sits through, marked where it happens
         for i in range(1, n):
@@ -1182,15 +1252,15 @@ def fig_overlap_9x9():
                             xytext=(gpu[i - 1] + G, yG + lane_h / 2),
                             arrowprops=dict(arrowstyle="<|-|>", color=AMBER, lw=1.3))
                 ax.text((gpu[i] + gpu[i - 1] + G) / 2, yG + lane_h + 1.0,
-                        f"idle {gap:.0f}", ha="center", va="bottom",
-                        color=AMBER, fontsize=9.5, fontweight="bold")
+                        f"idle {gap:.0f} µs", ha="center", va="bottom",
+                        color=AMBER, fontsize=10.5, fontweight="bold")
 
-    ax.plot([finish, finish], [1, 62], color=GREEN, lw=1.6, ls="--", zorder=6)
-    ax.text(finish + 5, 31, "same finish\nboth ways", ha="left", va="center",
+    ax.plot([finish, finish], [1, 65], color=GREEN, lw=1.6, ls="--", zorder=6)
+    ax.text(finish + 5, 33, "same finish\nboth ways", ha="left", va="center",
             color=GREEN, fontsize=11, fontweight="bold")
 
     ax.set_xlim(-32, finish + 62)
-    ax.set_ylim(0, 70)
+    ax.set_ylim(0, 76)
     ax.axis("off")
     save(fig, "fig_overlap_9x9")
 
@@ -1353,6 +1423,80 @@ def fig_test3():
     fig.subplots_adjust(left=0.015, right=0.985, top=0.97, bottom=0.31,
                         wspace=0.06)
     save(fig, "fig_test3")
+
+# ----------------------------- 13b. what a minor page fault actually costs
+def fig_pagefault():
+    """Why the first run is slow, drawn once so the slide can stop explaining it.
+
+    Two ideas the room may not share: malloc hands back VIRTUAL pages, and a
+    virtual page has no physical frame behind it until something touches it. The
+    cost is not the lookup, it is that the kernel must ZERO 4 kB before it can
+    hand the frame over -- mandatory, because the frame last belonged to someone
+    else. Nothing here is CUDA-specific, which is the point: the benchmark was
+    measuring Linux.
+
+    Every label lives outside the two rows. An earlier version put "already
+    mapped" and "you write here" between them, where they collided with the very
+    arrows they were naming.
+    """
+    fig, ax = plt.subplots(figsize=(11.4, 3.15))
+    PW, GAP, N = 9.0, 1.6, 4
+    xs = [2 + i * (PW + GAP) for i in range(N)]
+    cx = [x + PW / 2 for x in xs]
+
+    def box(x, y, col, dashed):
+        ax.add_patch(Rectangle((x, y), PW, 4.6,
+                               facecolor=BG if dashed else PANEL, edgecolor=col,
+                               linewidth=1.5,
+                               linestyle=(0, (2, 2)) if dashed else "-", zorder=3))
+
+    for i, x in enumerate(xs):
+        box(x, 32.0, RED if i == 2 else ACCENT, False)
+        box(x, 9.0, [AMBER, AMBER, RED, MUTED][i], i >= 2)
+    ax.text(2, 38.6, "VIRTUAL  ·  the ClusterVector malloc just handed you",
+            ha="left", va="bottom", color=TEXT2, fontsize=10.5)
+    ax.text(2, 7.8, "PHYSICAL  ·  4 kB frames the kernel actually owns",
+            ha="left", va="top", color=TEXT2, fontsize=10.5)
+
+    for i in (0, 1):
+        ax.annotate("", xy=(cx[i], 13.8), xytext=(cx[i], 31.9),
+                    arrowprops=dict(arrowstyle="-|>", color=GREEN, lw=1.5))
+    ax.annotate("", xy=(cx[2], 13.8), xytext=(cx[2], 31.9),
+                arrowprops=dict(arrowstyle="-|>", color=RED, lw=1.8,
+                                linestyle=(0, (3, 2))))
+
+    # key, to the right of the rows: nothing is written between them
+    for y, col, ls, lab in ((25.0, GREEN, "-", "already mapped"),
+                            (16.0, RED, (0, (3, 2)), "first touch → fault")):
+        ax.plot([44, 52], [y, y], color=col, lw=1.8, ls=ls)
+        ax.text(44, y + 1.8, lab, ha="left", va="bottom", color=col,
+                fontsize=10.5)
+
+    ax.add_patch(FancyBboxPatch((61, 6), 39, 32,
+                                boxstyle="round,pad=0,rounding_size=1.2",
+                                facecolor=PANEL, edgecolor=RED, linewidth=1.5,
+                                zorder=3))
+    ax.text(63.5, 34.2, "MINOR FAULT  ·  what the kernel does", ha="left",
+            va="center", color=RED, fontsize=10.5, fontweight="bold")
+    for i, (n, txt, hot) in enumerate([("1", "traps into the kernel", False),
+                                       ("2", "finds a free frame", False),
+                                       ("3", "zeroes all 4 kB of it", True),
+                                       ("4", "maps it; the write proceeds", False)]):
+        y = 28.6 - i * 5.0
+        ax.text(64.0, y, n, ha="left", va="center", color=MUTED, fontsize=10.5)
+        ax.text(67.0, y, txt, ha="left", va="center",
+                color=AMBER if hot else TEXT2, fontsize=10.5,
+                fontweight="bold" if hot else "normal")
+    ax.text(63.5, 8.8, "no disk: that would be a MAJOR fault", ha="left",
+            va="center", color=MUTED, fontsize=10.5)
+
+    ax.set_xlim(-1, 101); ax.set_ylim(3, 42)
+    ax.axis("off")
+    save(fig, "fig_pagefault")
+
+
+fig_pagefault()   # defined after the run list above, so called here
+
 
 # ------------------------------------- 13. pedestal update timing, three ways
 def fig_pedtiming():
@@ -1586,8 +1730,10 @@ def fig_opt1_timeline():
     for i in range(3):
         t0 = i * PER
         _frame_bars(ax, 1.0, t0)
-        ax.axvspan(t0 + WORK, t0 + PER, color=MUTED, alpha=0.09, zorder=1)
-    ax.annotate("host blocks — every engine idle",
+        ax.axvspan(t0 + WORK, t0 + PER, facecolor=AMBER, alpha=0.17, zorder=1)
+        ax.axvline(t0 + WORK, color=AMBER, lw=0.9, alpha=0.55, zorder=1)
+        ax.axvline(t0 + PER, color=AMBER, lw=0.9, alpha=0.55, zorder=1)
+    ax.annotate("host blocks: every engine idle",
                 xy=(WORK + HOST / 2, 0.98), xytext=(WORK + HOST / 2, 0.56),
                 color=AMBER, fontsize=9, ha="center", va="top",
                 arrowprops=dict(arrowstyle="-", color=AMBER, lw=0.8))

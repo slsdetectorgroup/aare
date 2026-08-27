@@ -88,7 +88,7 @@ Companion documents:
 | GPU clocks | idle 210 MHz → boost 3120 MHz; **persistence mode disabled** |
 | FP64 rate | 1/64 of FP32 on this part (relevant to Act III) |
 | CPU | AMD Ryzen 9 7950X, 16 cores / 32 threads |
-| RAM | 125 GiB, **no swap** |
+| RAM | 125 GiB, **no swap**; **~71 GB/s** measured (threaded 1 GB copy, 24 B/element incl. read-for-ownership) |
 | CUDA | 12.4 (nvcc V12.4.131) |
 | Profiler | Nsight Systems 2024.5.1 (`/opt/nvidia/nsight-systems/2024.5.1`) |
 | Host | `pc-moench-04` |
@@ -1367,7 +1367,7 @@ opt1/opt2 stop over-counting extended charge-shared events:
 | exploratory notebook | `python/tests/ClusterFinderCUDA_perf.ipynb` | **stores only the last run** — not a record. Archive a copy per cluster size if used |
 | correctness notebook | `python/tests/ClusterFinderFrozen_vs_CUDA.ipynb` | CPU↔CUDA agreement analysis |
 | precision study | `docs/pedestal_precision_f32_cancellation.md` | B1 derivation |
-| deck | `docs/cf_cuda_performance.pptx` + `docs/deck/build_performance_deck.py` | 35 slides in the same three acts plus a 7-group annex (A1–A7, A7 in two parts), 55 pages with dividers; figures from `docs/deck/make_figs.py` and `make_figs_kernel.py`. Rebuild with `python docs/deck/make_figs.py && python docs/deck/build_performance_deck.py` |
+| deck | `docs/cf_cuda_performance.pptx` + `docs/deck/build_performance_deck.py` | 36 slides in the same three acts plus a 7-group annex (A1–A7, A7 in two parts), 56 pages with dividers; figures from `docs/deck/make_figs.py` and `make_figs_kernel.py`. Rebuild with `python docs/deck/make_figs.py && python docs/deck/build_performance_deck.py` |
 
 ### CSV step labels
 

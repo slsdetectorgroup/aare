@@ -243,6 +243,116 @@ pinned to pageable — that exists only because the caller wants to own the memo
 
 ---
 
+## 1b · The kernel and the hardware
+
+*(slides 7–10, 16)*
+
+### Q. The tile holds pedestal-subtracted values. Why not stage the pedestal in shared memory too?
+
+Because shared memory pays for **reuse**, and the pedestal has none at this granularity.
+
+```cpp
+sh[tid] = d_frame[gid] - d_pd_mean[gid];      // subtraction fused into the load
+```
+
+Count the reads per pixel:
+
+| quantity | read by | reuse |
+|---|---|--:|
+| `frame - ped_mean` | every thread whose window covers it | **9×** (81× at 9×9) |
+| `ped_rms` | only the centre thread, for its own threshold | 1× |
+| `sum`, `sum2`, `mean` | only the owning thread, read-modify-write | 1× |
+
+Only the first is shared by neighbours, and it is already the thing in the tile. Staging
+`ped_rms` or the accumulators would add a global→shared→register hop for values touched
+exactly once — pure cost. And the stencil never needs the pedestal itself, only the
+difference, so there is nothing to reconstruct.
+
+### Q. Would that change for a kernel that processed a batch of frames?
+
+**Yes, and this is the interesting version of the question.** With `B` frames inside one
+kernel, the same tile's pedestal would be read `B` times and the accumulators updated `B`
+times, so reuse appears where there was none:
+
+- stage `ped_mean` for the tile once, use it for all `B` frames — saves `B−1` global
+  reads;
+- accumulate `sum`/`sum2` **in shared memory** across the batch and write back once —
+  saves `B−1` read-modify-write round trips on the arrays that opt7 showed are the
+  kernel's dominant traffic.
+
+That is a real optimisation targeting exactly the right thing. The catch is **semantic,
+not technical**: the pedestal would then be frozen across `B` frames rather than one, so
+every frame in the batch decides against a snapshot up to `B` frames stale. Annex A7
+measures what a **one**-frame freeze costs (19 clusters in 23.2 M); a `B`-frame freeze is
+a strictly larger perturbation and would need its own validation before it could ship.
+Whether that is acceptable is a physics question about how fast the pedestal drifts, not
+a performance one.
+
+Worth noting the fallback if it is not acceptable: keep the per-frame semantics and stage
+only `ped_mean` (read-only within a frame), which still saves the reads and changes
+nothing.
+
+### Q. Six blocks resident per SM at 3×3 — does the SM run all six at once?
+
+No. **Resident is not issuing**, and the gap between the two is the whole point of
+occupancy.
+
+On sm_89 each SM has **4 warp schedulers**, and each issues **one instruction from one
+warp per clock**. So at most 4 warps × 32 lanes = **128 lanes** are busy in any cycle,
+against 128 FP32 cores. Six blocks of 256 threads is **48 warps resident** — the SM's
+full complement (1 536 thread slots / 32 = 48 warp slots, hence 100 % occupancy at 3×3).
+
+So the arithmetic is: 48 warps eligible, 4 issue, **44 waiting**. Those 44 are not idle
+capacity going to waste — they *are* the latency-hiding mechanism. When a warp stalls on
+a global load, the scheduler picks another already-resident warp in the same cycle, with
+no context save or restore, because every resident warp owns its registers outright.
+
+Three refinements worth having ready, because the block-level framing hides them:
+
+- **Count warps, not blocks.** The four schedulers pick independently from their own
+  partitions, so the 4 issuing warps may come from 4 *different* blocks — all of them
+  resident on **this** SM, necessarily, since a scheduler can only choose among warps
+  whose registers live in its own partition and blocks never span SMs. "Half a block
+  runs per cycle" gets the arithmetic right (128 of 256 threads) and the mechanism
+  slightly wrong.
+- **A block never migrates.** Once resident, it stays on that SM until it retires, so
+  the same SM does handle the next 128 pixels of that block. Other blocks go to other
+  SMs — 625 blocks over 128 SMs.
+- **This is what 33 % at 9×9 means.** Two blocks = 16 warps of the 48 slots. Only 16
+  alternatives to switch to instead of 48. That is not a bug to fix: at 9×9 each thread
+  does far more work per byte loaded, so 16 is enough to keep the pipes fed, and the
+  register file is *exactly* full at two blocks (2 × 128 × 256 = 65 536).
+
+### Q. Why only 77 % of theoretical PCIe bandwidth, even with pinned memory?
+
+Pinning removes the *staging copy*; it cannot remove the protocol. The measured 13.2 µs
+for 312.5 KiB = **24.2 GB/s against 31.5 GB/s theoretical**, and the missing 23 % is
+mostly not recoverable:
+
+- **The 31.5 GB/s is already the encoded line rate.** PCIe 4.0 ×16 is 16 GT/s × 16
+  lanes, and 128b/130b encoding is already taken out. What remains on top is packet
+  overhead, not encoding.
+- **TLP framing.** Data moves as Transaction Layer Packets whose payload is capped by
+  the negotiated Max Payload Size — commonly 256 B on desktop platforms. Each carries a
+  header plus CRC, so ~6–10 % of the link is spent on framing before anything else. A
+  machine negotiating 128 B pays roughly double that.
+- **The reverse channel is not free.** ACK/NAK and flow-control credit DLLPs share the
+  link.
+- **312.5 KiB is a small transfer.** There is a fixed cost per copy — descriptor write,
+  engine start, ramp — that a third of a megabyte does not amortise. `bandwidthTest`
+  with multi-megabyte buffers reaches noticeably higher on the same link precisely
+  because it does.
+
+So 77 % on a 312 kB pinned transfer is close to what the link can actually deliver at
+that size, and the deck calls it "true DMA speed" for that reason: the comparison that
+matters is against **pageable staging at ~15 GB/s**, not against the datasheet.
+
+Separately, the shipped pipeline reads **16.6 µs [s4]**, not 13.2 [s1] — +26 % from
+H2D↔D2H contention. There is one copy engine per direction, but they share the link
+(annex A1).
+
+---
+
 ## 2 · Overlap, slots, and why more of them does not help
 
 *(slides 17–18)*

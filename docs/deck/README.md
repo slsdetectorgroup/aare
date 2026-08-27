@@ -3,7 +3,7 @@
 `docs/cf_cuda_performance.pptx` — kernel design, hardware limits, and the opt1→opt7
 optimization ladder, told in three acts ordered by which bar is tallest.
 
-35 numbered slides plus a 7-group annex, 55 pages once dividers and the title page
+36 numbered slides plus a 7-group annex, 56 pages once dividers and the title page
 are counted.
 
 ## Build
@@ -12,7 +12,22 @@ are counted.
 python docs/deck/make_figs.py            # figures  -> docs/figures/*.png
 python docs/deck/make_figs_kernel.py     # 3 more (fig_frame, fig_occupancy, fig_tile)
 python docs/deck/build_performance_deck.py
+
+# the shareable copy, regenerated from the .pptx after every rebuild
+libreoffice --headless --convert-to pdf --outdir /tmp/pdfout \
+    docs/cf_cuda_performance.pptx && mv /tmp/pdfout/cf_cuda_performance.pdf docs/
 ```
+
+**Do not put emoji on a slide.** The colour-emoji planes (U+1F600 and up) are dropped
+silently by the LibreOffice PDF export on this machine — the glyph renders as nothing at
+all, with no warning. `U+263A ☺` and the other legacy BMP symbols live in DejaVu and
+Segoe UI Symbol, render monochrome, and inherit the run colour. Use those.
+
+**Two artefacts, deliberately.** `docs/cf_cuda_performance.pptx` is the presenter's
+copy and carries every `notes()` block. `docs/cf_cuda_performance.pdf` is what gets
+sent to an audience: LibreOffice's slide export drops speaker notes entirely, which is
+checked — no notes-only string appears in the PDF text layer. Regenerate the PDF
+whenever the deck is rebuilt, or the two drift.
 
 Order matters: the deck embeds the PNGs, so regenerate figures first if you touched
 either `make_figs*.py`. Running only the builder is fine when you have changed slide
@@ -62,22 +77,45 @@ helper that does not parse it: `bullets`, `callout`, `table` and `code` understa
 
 ## Numbering
 
-Slide indices are explicit — `chrome(s, 17, …)` — and so are the section ranges and the
-prose cross-references ("expands slide 27"). **Inserting a slide shifts all three.** As
-of this writing that is 31 `chrome()` calls, 7 `section(… rng=…)` ranges with their item
-lists, and ~23 prose references. Renumber all of them in one pass and rebuild; the
+Slide indices are explicit — `chrome(s, 18, …)` — and so are the section ranges and the
+prose cross-references ("expands slide 28"). **Inserting a slide shifts all three.** As
+of this writing that is 47 `chrome()` calls, 7 `section(… rng=…)` ranges with their item
+lists (integer tuples in Act I–III, `"25–26"`-style strings after), and 28 prose
+references. Renumber all of them in one pass and rebuild; the
 progress track and the `N / 35` counter both read `N_SLIDES`.
+
+**Optimisation slides carry an `OPT<n>` badge**, drawn by `chrome(… opt=n)` in the same
+corner and the same way `annex_chrome` draws `A<n>`. The badge names the *rung*, not the
+slide, so opt3, opt5 and opt7 repeat theirs across two slides each. When a slide has a
+badge its eyebrow must not also say "optN" — that reads twice.
+
+**Nothing on a slide may point outside the deck.** No notebook names, no
+`python/tests/…`, no result directories, no "see the write-up" — the slides get shared
+on their own, and a pointer to something the reader does not have is worse than no
+pointer. Library header names (`ClusterFinderCUDA.hpp`, `clusterfinder_kernel.cuh`) stay:
+they are the subject being presented, not a reference to somewhere else. Everything
+removed lives in `notes()`; slide 36's notes carry the full index.
+
+**Code panels have two highlight markers**, and they mean different things:
+`«…»` renders ACCENT for whatever the slide is arguing about (a knob, a step number),
+`‹…›` renders PALE bold and is reserved for the API surface — the call a user will
+actually type. Keeping them distinct is why slide 34 can key its prose to numbered steps
+without the method names disappearing into the same blue.
 
 ## Where the numbers come from
 
 `docs/ClusterFinderCUDA_benchmark_results.md`, quotable rows only. Two conventions the
-deck depends on, both defined in slide 20:
+deck depends on, both defined in slide 21:
 
 - **s1** is one stream — true, exclusive engine durations.
 - **s4** is the shipped four-stream pipeline — engine *occupancy*, the union of
   intervals per frame. The kernel overlaps itself across streams (9×9 f64 reads 32.66 µs
   at s4 against ~43.2 µs per kernel); H2D and D2H do not, because there is one copy
   engine per direction.
+- **host DRAM** on `pc-moench-04` measures **~71 GB/s** (threaded copy over a 1 GB
+  array, 24 B/element: 8 read, 8 write, 8 read-for-ownership). Quoted on slide 12 so the
+  wire's 31.5 GB/s can be compared against something real at both ends — it is 32× below
+  VRAM but only ~2.3× below DRAM, and the slide says the narrower thing.
 - **floor** = `1 / max(H2D, kernel, D2H)` at s4, taking the lower of the nsys estimate
   and the best rate actually sustained. One quantity, two units: 30.01 µs/frame =
   33 323 FPS.
