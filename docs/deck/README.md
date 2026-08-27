@@ -12,6 +12,7 @@ are counted.
 python docs/deck/make_figs.py            # figures  -> docs/figures/*.png
 python docs/deck/make_figs_kernel.py     # 3 more (fig_frame, fig_occupancy, fig_tile)
 python docs/deck/build_performance_deck.py
+python docs/deck/audit_layout.py <the rendered pdf>    # must print "clean"
 
 # the shareable copy, regenerated from the .pptx after every rebuild
 libreoffice --headless --convert-to pdf --outdir /tmp/pdfout \
@@ -41,39 +42,87 @@ interpreter with all four is `/home/ferjao_k/.conda/envs/py/bin/python` — the 
 the title slide, and every other slide of it is deleted at build time. Do not edit the
 generated `.pptx` by hand — it is overwritten on every build. Edit the script.
 
+## The type scale
+
+One place, `build_performance_deck.py`, because 186 scattered `size=` arguments cannot
+be reasoned about:
+
+| token | pt | what it is for |
+|---|---|---|
+| `PT_BODY` | 15 | bullets: what the slide is claiming |
+| `PT_LEAD` | 13 | callouts: the sentence to remember, already boxed and bold |
+| `PT_RAIL` | 13 | rail row values |
+| `PT_TABLE` | 11.5 | table cells |
+| `PT_META` | 11 | captions and rail notes: provenance, deliberately quieter |
+| `PT_CODE` | 10.5 | code panels — read by token, not word by word |
+| `PT_LABEL` | 9.5 | small-caps labels on rails, tables, statstrips |
+
+**Raising `PT_BODY` costs text.** 15 pt holds roughly 45 % of the characters 10.5 pt did
+in the same box, because area scales with the square of point size. The scale is a
+budget, not a preference: a slide that will not fit loses words, never type size.
+
+Two line-height constants are calibrated against a LibreOffice render, not against the
+nominal spacing, and both were wrong in the direction that clips:
+
+- `code()` sets `lh = 0.0189 * size` in/line for Consolas. The old 0.0174 under-counted
+  by 8.6 %, which is invisible on a short panel and eats the last line or two of a long
+  one.
+- LibreOffice sets a 15 pt UI line at about **0.31 in**, not the 0.26 that `line=1.25`
+  implies. Budget 0.31 per body line when deciding what a slide can hold.
+
 ## Layout guarantees, and how they are enforced
 
-Two invariants are checked mechanically, because both fail silently otherwise.
+Three invariants are checked mechanically, because all three fail silently otherwise.
 
-**Nothing renders below 9 pt on the projected slide.** A figure's on-screen type size
+**Nothing renders below 10 pt on the projected slide.** A figure's on-screen type size
 is `raw_pt × (placement_width / figure_width)`, and neither factor is visible at the
-point where the font size is written. `make_figs.py` closes that loop: `_placements()`
+point where the font size is written. `deckgate.py` closes that loop: `placements()`
 parses the placement width of every figure **out of the deck script itself**, so the
-gate cannot drift from the layout it checks. Every run ends with either
+gate cannot drift from the layout it checks. Both generators import it — `make_figs.py`
+and `make_figs_kernel.py` — and each run ends with either
 
 ```
-legibility: every string in every figure renders at >= 9.0 pt on the slide.
+legibility: every string in every figure renders at >= 10.0 pt on the slide.
 ```
 
-or a list of offenders. Fix them; do not raise the floor. 9 pt on a 13.33 × 7.5 in
-slide is about 1/60 of slide height, which is the conventional bound for readable
-supporting detail at 6–7 m.
+or a list of offenders. Fix them; do not raise the floor. 10 pt is two thirds of the
+15 pt body, which is the usual lower bound for supporting type at 6–7 m.
+
+The kernel figures were outside this gate for a long time and were set at 7–8 pt as a
+result. If you add a third generator, import `deckgate` from it on day one.
+
+A string may opt out with `gid="texture"`, and only for marks nobody is asked to READ —
+a value printed into every cell of a pixel map, where the pattern is the message and
+the digits are shading. Two figures use it: `fig_mismatch147`'s per-pixel ADU values
+and `fig_frame`'s 3×3 zoom. Set it on the `Text` object, never on a figure.
 
 Note the feedback trap: `savefig(bbox_inches="tight")` grows the saved canvas to fit a
 long in-figure caption, which shrinks the placement scale, which shrinks the caption.
 Raising the font size can make text *smaller*. Shorten the string or re-lay the axes.
+The corollary is useful: a NARROWER `figsize` at the same placement width is a bigger
+projected figure and bigger projected type.
 
-**No text runs past the footer line.** Convert and check:
+**No text overlaps other text, and none runs past the footer.** Both are checked by
+`audit_layout.py`, which reads the rendered PDF's word boxes:
 
 ```bash
 libreoffice --headless --convert-to pdf --outdir /tmp/deck docs/cf_cuda_performance.pptx
-python scratch/overflow.py /tmp/deck/cf_cuda_performance.pdf
+python docs/deck/audit_layout.py /tmp/deck/cf_cuda_performance.pdf   # -> "clean"
 ```
 
-Only page 1 may be flagged — that is the PSI template's own title slide. The same
-script counts unrendered `**` markup, which is the usual symptom of putting markup in a
-helper that does not parse it: `bullets`, `callout`, `table` and `code` understand
-`**bold**`; `caption` does not, and nothing understands backticks or `*italics*`.
+Three things about it are load-bearing:
+
+- It groups words into lines by baseline and then **splits each line at a column
+  gutter**. Without that split a rail row and a body bullet at the same height merge
+  into one full-width "line", and every two-column slide in the deck reports a
+  collision.
+- It asserts on the parsed word count. A broken bbox parser yields empty boxes and
+  therefore a *clean* report, which is the worst failure mode a checker can have.
+- Two exemptions are deliberate and narrow: page 1 is the PSI template's own title
+  slide, and a one-character "line" beside a real one is a superscript marker.
+
+Overlap has to cover 10 % of the narrower line to register. At 25 % a bullet could run a
+whole word under a code-panel title without being reported, which it did.
 
 ## Numbering
 
@@ -88,6 +137,13 @@ progress track and the `N / 35` counter both read `N_SLIDES`.
 corner and the same way `annex_chrome` draws `A<n>`. The badge names the *rung*, not the
 slide, so opt3, opt5 and opt7 repeat theirs across two slides each. When a slide has a
 badge its eyebrow must not also say "optN" — that reads twice.
+
+**The content box is `[0.50, 12.90]` on a 13.333 in slide.** It used to be
+`[0.70, 12.70]`; narrowing the two outer margins bought 0.4 in of line length, which is
+about 3 % more characters per line at every size. The tokens that carry it are `M`,
+`COL`, `RAIL_X` and `RAIL_W`, and **`deckgate.placements()` holds copies of all four**
+so it can evaluate placement expressions. Change one and change the other, or the
+legibility gate starts checking widths no figure is placed at.
 
 **Nothing on a slide may point outside the deck.** No notebook names, no
 `python/tests/…`, no result directories, no "see the write-up" — the slides get shared
@@ -128,8 +184,10 @@ report: opt5 at 9×9, whose per-frame allocation never lets the fault count conv
 | file | role |
 |---|---|
 | `build_performance_deck.py` | the deck: tokens, helpers, every slide |
-| `make_figs.py` | most figures, plus the legibility gate |
+| `make_figs.py` | most figures |
 | `make_figs_kernel.py` | `fig_frame`, `fig_occupancy`, `fig_tile` |
+| `deckgate.py` | the projection floor and the placement table, shared by both generators |
+| `audit_layout.py` | reads the rendered PDF: overlapping text, and text past the footer |
 | `QA.md` | questions the room asks, with the answers and where they are settled |
 | `frame147.json`, `validation_tiers.json` | measured data two figures read |
 | `branch_site.json` | the A7 site dump; written by `python/tests/branch_site_dump.py` |

@@ -17,6 +17,9 @@ from matplotlib.colors import LinearSegmentedColormap
 from matplotlib.patches import Rectangle, FancyArrowPatch
 from pathlib import Path
 
+sys.path.insert(0, str(Path(__file__).resolve().parent))
+import deckgate  # noqa: E402  -- the projection floor, shared with make_figs.py
+
 OUT = Path(__file__).resolve().parent.parent / "figures"
 OUT.mkdir(exist_ok=True)
 
@@ -30,7 +33,7 @@ TEXT2  = "#A5B2C4"
 MUTED  = "#6B7A90"
 
 plt.rcParams.update({
-    "font.family": "DejaVu Sans", "font.size": 9,
+    "font.family": "DejaVu Sans", "font.size": 11.7,
     "text.color": PALE, "axes.labelcolor": TEXT2,
     "xtick.color": TEXT2, "ytick.color": TEXT2,
     "axes.edgecolor": RULE, "axes.facecolor": "none",
@@ -43,11 +46,18 @@ CMAP = LinearSegmentedColormap.from_list(
     "deck", ["#080C12", "#10202F", ACCENT, AMBER, "#FFF3DC"])
 
 
+DPI = 220
+
+
 def save(fig, name):
-    fig.savefig(OUT / f"{name}.png", dpi=220, transparent=False,
+    """Write the PNG, then hold it to the SAME projection floor make_figs.py
+    uses. These three figures were unchecked for a long time and were set at
+    7-8 pt as a result -- roughly 8 pt on the screen, half the body size."""
+    path = OUT / f"{name}.png"
+    fig.savefig(path, dpi=DPI, transparent=False,
                 bbox_inches="tight", pad_inches=0.08)
+    deckgate.check(fig, path, name, DPI)
     plt.close(fig)
-    print("wrote", name)
 
 
 def bare(ax, keep=("left", "bottom")):
@@ -77,11 +87,11 @@ def fig_frame():
     for s in ax.spines.values():
         s.set_color(RULE)
     ax.set_title("one frame, pedestal subtracted   ·   150×150 crop",
-                 color=MUTED, fontsize=8, pad=7)
+                 color=MUTED, fontsize=10.4, pad=7)
     cb = fig.colorbar(im, ax=ax, fraction=0.045, pad=0.02)
     cb.outline.set_edgecolor(RULE)
-    cb.ax.tick_params(labelsize=7, color=RULE)
-    cb.set_label("ADU above pedestal", color=MUTED, fontsize=7.5)
+    cb.ax.tick_params(labelsize=10.0, color=RULE)
+    cb.set_label("ADU above pedestal", color=MUTED, fontsize=9.8)
 
     # Pick a clean, well-isolated charge-sharing event: a local maximum of
     # moderate amplitude whose 3×3 core carries the charge and whose
@@ -118,14 +128,19 @@ def fig_frame():
     for dy in (-1, 0, 1):
         for dx in (-1, 0, 1):
             v = win[4 + dy, 4 + dx]
+            # A zoom cell is ~0.25 in wide and a value can be four digits, so
+            # these cannot clear the projection floor without colliding. They
+            # are texture: the argument is that the charge is SPREAD, and the
+            # 3x3 sum that proves it is set below the panel at full size.
             ax2.text(4 + dx, 4 + dy, f"{v:.0f}", ha="center", va="center",
-                     color=BG if v > 500 else PALE, fontsize=7,
+                     gid="texture",
+                     color=BG if v > 500 else PALE, fontsize=6.4,
                      fontweight="bold" if dx == 0 and dy == 0 else "normal",
                      zorder=6)
-    ax2.set_title("9×9 zoom on one hit", color=MUTED, fontsize=8, pad=7)
+    ax2.set_title("9×9 zoom on one hit", color=MUTED, fontsize=10.4, pad=7)
     ax2.text(4, 9.2, f"3×3 sum = {win[3:6, 3:6].sum():.0f} ADU — one photon.\n"
                      "The peak pixel holds only part of the charge.",
-             ha="center", va="top", color=TEXT2, fontsize=7.5)
+             ha="center", va="top", color=TEXT2, fontsize=9.8)
     save(fig, "fig_frame")
 
 
@@ -133,11 +148,19 @@ def fig_frame():
 def fig_tile():
     B, r = 16, 1                       # 16×16 block, 3×3 cluster → 1-px halo
     n = B + 2 * r
-    fig = plt.figure(figsize=(7.6, 3.1))
+    # 6.9 in wide, not 7.6: the deck places this at 8.36 in, so a narrower
+    # canvas is a LARGER projected figure and larger projected type. The two
+    # panels sit 0.06 apart rather than 0.135, which is the gap the slide was
+    # paying for twice -- once inside the picture, once beside it.
+    fig = plt.figure(figsize=(6.9, 2.62))
 
-    ax = fig.add_axes([0.0, 0.0, 0.44, 1.0])
+    # The tile axes holds ONLY the tile. With set_aspect("equal") matplotlib
+    # shrinks the axes box to honour the aspect, so any data-space room reserved
+    # underneath for a legend gets squeezed and the legend is clipped. The key
+    # is drawn in figure coordinates instead, where nothing can take it back.
+    ax = fig.add_axes([0.015, 0.30, 0.44, 0.70])
     ax.set_aspect("equal"); ax.axis("off")
-    ax.set_xlim(-0.6, n + 0.6); ax.set_ylim(-3.2, n + 1.3)
+    ax.set_xlim(-0.6, n + 0.6); ax.set_ylim(-0.6, n + 1.5)
     for i in range(n):
         for j in range(n):
             halo = i < r or j < r or i >= n - r or j >= n - r
@@ -153,78 +176,88 @@ def fig_tile():
     ax.add_patch(Rectangle((tj + r, n - 1 - (ti + r)), 0.92, 0.92,
                            facecolor=AMBER, edgecolor="none"))
     ax.text(n / 2, n + 0.45, "shared-memory tile   ·   18 × 18",
-            ha="center", color=MUTED, fontsize=8)
-    for y, c, t in [(-1.05, AMBER, "the thread's own pixel"),
-                    (-1.85, ACCENT, "its 3×3 neighbourhood"),
-                    (-2.65, RULE, "halo — loaded, never centred on")]:
-        ax.add_patch(Rectangle((0, y), 0.7, 0.36, facecolor=c, edgecolor="none"))
-        ax.text(1.0, y + 0.18, t, va="center", color=TEXT2, fontsize=7.5)
+            ha="center", color=MUTED, fontsize=10.4)
+    for k, (c, t) in enumerate([(AMBER, "the thread's own pixel"),
+                                (ACCENT, "its 3×3 neighbourhood"),
+                                (RULE, "halo — loaded, never centred on")]):
+        fy = 0.20 - k * 0.095
+        fig.patches.append(Rectangle((0.020, fy - 0.018), 0.022, 0.042,
+                                     transform=fig.transFigure, facecolor=c,
+                                     edgecolor="none", zorder=5))
+        fig.text(0.055, fy, t, va="center", color=TEXT2, fontsize=9.8)
 
     # right: tile cost vs cluster size
-    ax2 = fig.add_axes([0.575, 0.20, 0.40, 0.62])
+    ax2 = fig.add_axes([0.52, 0.20, 0.46, 0.62])
     labels = ["3×3\n18×18", "5×5\n20×20", "7×7\n22×22", "9×9\n24×24"]
     kb = [(16 + 2 * (k // 2)) ** 2 * 4 / 1024 for k in (3, 5, 7, 9)]
     ax2.bar(np.arange(4), kb, width=0.55, color=ACCENT, zorder=3)
     for i, v in enumerate(kb):
-        ax2.text(i, v + 0.12, f"{v:.1f}", ha="center", color=PALE, fontsize=9,
+        ax2.text(i, v + 0.12, f"{v:.1f}", ha="center", color=PALE, fontsize=11.7,
                  fontweight="bold")
     ax2.axhline(100, color=PALE, lw=1.2, ls="--")
     ax2.set_xticks(np.arange(4)); ax2.set_xticklabels(labels, color=TEXT2,
-                                                      fontsize=8)
-    ax2.set_ylim(0, 3.4); ax2.set_yticks([])
+                                                      fontsize=10.4)
+    ax2.set_ylim(0, 4.4); ax2.set_yticks([])
     bare(ax2, keep=("bottom",))
     ax2.set_title("KB of shared memory per 16×16 block  (float tile)",
-                  color=MUTED, fontsize=8, pad=8)
-    ax2.text(3.55, 3.15, "100 KB available per SM on Ada\n"
-                         "— shared memory is never the limit",
-             ha="right", va="top", color=PALE, fontsize=7.5)
+                  color=MUTED, fontsize=10.4, pad=8)
+    ax2.text(3.55, 4.3, "100 KB available per SM on Ada\n"
+                        "— shared memory is never the limit",
+             ha="right", va="top", color=PALE, fontsize=9.8)
     save(fig, "fig_tile")
 
 
 # ------------------------------------------------- 3. occupancy / registers
 def fig_occupancy():
-    fig, (ax, ax2) = plt.subplots(1, 2, figsize=(11.2, 2.95),
-                                  gridspec_kw={"width_ratios": [1, 1.5]})
+    # 1.7, not 1.5: the right panel carries three two-line tick labels and they
+    # were touching. Widening the panel is the fix; shrinking the labels below
+    # the projection floor is not.
+    fig, (ax, ax2) = plt.subplots(1, 2, figsize=(11.6, 2.95),
+                                  gridspec_kw={"width_ratios": [1, 1.7]})
 
     # left — registers set the occupancy, per cluster size
     occ = [100.0, 33.3]
     ax.bar([0, 1], occ, width=0.5, color=[ACCENT, AMBER], zorder=3)
     for i, o in enumerate(occ):
-        ax.text(i, o + 3, f"{o:.0f}%", ha="center", color=PALE, fontsize=12,
+        ax.text(i, o + 3, f"{o:.0f}%", ha="center", color=PALE, fontsize=15.6,
                 fontweight="bold")
     ax.set_xticks([0, 1])
-    ax.set_xticklabels(["3×3 cluster\n38 regs/thread · 6 blocks/SM",
-                        "9×9 cluster\n128 regs/thread · 2 blocks/SM"],
-                       color=TEXT2, fontsize=8.5)
+    # Three short lines, not two long ones: the left panel is a third of the
+    # figure and the two labels were running into each other.
+    ax.set_xticklabels(["3×3 cluster\n38 regs/thread\n6 blocks/SM",
+                        "9×9 cluster\n128 regs/thread\n2 blocks/SM"],
+                       color=TEXT2, fontsize=10.4)
     ax.set_ylim(0, 122); ax.set_yticks([])
     bare(ax, keep=("bottom",))
     ax.set_title("achieved occupancy, 16×16 block  ·  f32 build", color=MUTED,
-                 fontsize=8.5, pad=8)
+                 fontsize=11.1, pad=8)
 
     # right — block-size sweep, both cluster sizes
     o3 = [100.0, 100.0, 66.7]
     o9 = [33.3, 33.3, 0.0]
     halo3 = [56, 27, 13]
-    blocks = [f"{b}\nhalo +{h}% of the tile"
-              for b, h in zip(["8×8 · 64 threads", "16×16 · 256 threads",
-                               "32×32 · 1024 threads"], halo3)]
+    blocks = [f"{b}\n{t}\nhalo +{h}%"
+              for b, t, h in zip(["8×8", "16×16", "32×32"],
+                                 ["64 threads", "256 threads", "1024 threads"],
+                                 halo3)]
     x = np.arange(3); w = 0.34
     ax2.bar(x - w / 2, o3, width=w, color=ACCENT, zorder=3, label="3×3 cluster")
     ax2.bar(x + w / 2, o9, width=w, color=AMBER, zorder=3, label="9×9 cluster")
     for xi, (a, b) in enumerate(zip(o3, o9)):
         ax2.text(xi - w / 2, a + 3, f"{a:.0f}%", ha="center", color=TEXT2,
-                 fontsize=8.5)
+                 fontsize=11.1)
         ax2.text(xi + w / 2, b + 3,
                  ("will not launch\n(registers)" if b == 0 else f"{b:.0f}%"),
-                 ha="center", va="bottom", color=AMBER if b == 0 else TEXT2,
-                 fontsize=8 if b == 0 else 8.5,
+                 ha="left" if b == 0 else "center", va="bottom",
+                 color=AMBER if b == 0 else TEXT2,
+                 fontsize=10.4 if b == 0 else 11.1,
                  fontweight="bold" if b == 0 else "normal")
-    ax2.set_xticks(x); ax2.set_xticklabels(blocks, color=TEXT2, fontsize=8.5)
-    ax2.set_ylim(0, 122); ax2.set_yticks([])
+    ax2.set_xticks(x); ax2.set_xticklabels(blocks, color=TEXT2, fontsize=9.8)
+    ax2.set_ylim(0, 122); ax2.set_xlim(-0.6, 2.85); ax2.set_yticks([])
     bare(ax2, keep=("bottom",))
-    ax2.legend(frameon=False, fontsize=8.5, labelcolor=TEXT2, loc="upper right")
+    ax2.legend(frameon=False, fontsize=11.1, labelcolor=TEXT2, loc="upper right")
     ax2.set_title("occupancy vs block size  (halo overhead quoted for 3×3)",
-                  color=MUTED, fontsize=8.5, pad=8)
+                  color=MUTED, fontsize=11.1, pad=8)
     fig.subplots_adjust(bottom=0.26)
     save(fig, "fig_occupancy")
 
@@ -234,3 +267,4 @@ if __name__ == "__main__":
     fig_occupancy()
     fig_frame()
     print("done ->", OUT)
+    deckgate.report()
