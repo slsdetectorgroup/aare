@@ -211,9 +211,12 @@ fit_dispatch(const aare::FitModel<Model> &model,
                 new NDArray<double, 3>({y.shape(0), y.shape(1), npar}, 0.0);
             auto y_view_err = make_view_3d(y_err);
 
-            aare::fit_3d<Model>(model, x_view, y_view, y_view_err,
-                                par_out->view(), err_out->view(),
-                                chi2_out->view(), n_threads);
+            {
+                py::gil_scoped_release release; // release GIL for parallel loop
+                aare::fit_3d<Model>(model, x_view, y_view, y_view_err,
+                                    par_out->view(), err_out->view(),
+                                    chi2_out->view(), n_threads);
+            }
 
             if (model.compute_errors()) {
                 return py::dict("par"_a = return_image_data(par_out),
@@ -229,9 +232,12 @@ fit_dispatch(const aare::FitModel<Model> &model,
             NDView<double, 3> dummy_err{};
             NDView<double, 3> dummy_err_out{};
 
-            aare::fit_3d<Model>(model, x_view, y_view, dummy_err,
-                                par_out->view(), dummy_err_out,
-                                chi2_out->view(), n_threads);
+            {
+                py::gil_scoped_release release; // release GIL for parallel loop
+                aare::fit_3d<Model>(model, x_view, y_view, dummy_err,
+                                    par_out->view(), dummy_err_out,
+                                    chi2_out->view(), n_threads);
+            }
 
             return py::dict("par"_a = return_image_data(par_out),
                             "chi2"_a = return_image_data(chi2_out));
@@ -253,9 +259,17 @@ fit_dispatch(const aare::FitModel<Model> &model,
             }
 
             auto y_view_err = make_view_1d(y_err);
-            result = aare::fit_pixel<Model>(model, x_view, y_view, y_view_err);
+            {
+                py::gil_scoped_release release; // release GIL for parallel loop
+                result =
+                    aare::fit_pixel<Model>(model, x_view, y_view, y_view_err);
+            }
         } else {
-            result = aare::fit_pixel<Model>(model, x_view, y_view);
+            {
+                py::gil_scoped_release
+                    release; // release GIL for parallel loop}
+                result = aare::fit_pixel<Model>(model, x_view, y_view);
+            }
         }
 
         return pack_1d_result_dict<Model>(result, model.compute_errors());
