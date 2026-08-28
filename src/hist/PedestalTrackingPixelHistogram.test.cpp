@@ -123,6 +123,97 @@ TEST_CASE("Pedestal tracking file fill validates frame metadata",
         std::invalid_argument);
 }
 
+TEST_CASE("Histogram-only fill crosses a pixel tile without changing pedestal",
+          "[PedestalTrackingPixelHistogram]") {
+    constexpr int rows = 1;
+    constexpr int cols = 513;
+    constexpr std::size_t pedestal_samples = 1000;
+
+    const auto baseline = [](std::size_t col) {
+        return static_cast<std::uint16_t>(100 + col % 17);
+    };
+    TemporaryHistogramFile file(
+        rows, cols, 2,
+        [baseline](std::size_t frame, std::size_t, std::size_t col) {
+            return static_cast<std::uint16_t>(baseline(col) + frame + 1);
+        });
+
+    // Negative n_sigma exercises the complete histogram-only condition; zero
+    // is covered by the ordered batch tests above.
+    PedestalTrackingPixelHistogram histogram(rows, cols, 4, 0.0f, 4.0f, 1, 6,
+                                             -1.0f);
+
+    for (std::size_t seed = 0; seed < pedestal_samples; ++seed) {
+        aare::NDArray<std::uint16_t, 2> frame({rows, cols});
+        const int offset = seed % 2 == 0 ? -1 : 1;
+        for (ssize_t col = 0; col < cols; ++col) {
+            frame(0, col) = static_cast<std::uint16_t>(
+                static_cast<int>(baseline(static_cast<std::size_t>(col))) +
+                offset);
+        }
+        histogram.push_pedestal_no_update(frame.view());
+    }
+    histogram.update_mean();
+    const auto mean_before = histogram.pedestal_mean();
+
+    // One two-frame batch traverses the 512-pixel tile and its one-pixel tail.
+    histogram.fill_from_file(file.path(), -1, false, 1, 2);
+
+    const auto values = histogram.values();
+    for (ssize_t col = 0; col < cols; ++col) {
+        for (ssize_t bin = 0; bin < 4; ++bin) {
+            CHECK(values(0, col, bin) == ((bin == 1 || bin == 2) ? 1 : 0));
+        }
+    }
+
+    const auto mean_after = histogram.pedestal_mean();
+    CHECK(
+        std::equal(mean_before.begin(), mean_before.end(), mean_after.begin()));
+}
+
+TEST_CASE("Pedestal tracking threshold is strict and rejects zero sigma",
+          "[PedestalTrackingPixelHistogram]") {
+    constexpr std::size_t pedestal_samples = 1000;
+    PedestalTrackingPixelHistogram histogram(1, 3, 8, -4.0f, 4.0f, 1, 4, 2.0f);
+
+    // Pixels 0 and 1 have mean 100 and population sigma 1. Pixel 2 has the
+    // same mean and zero sigma.
+    for (std::size_t seed = 0; seed < pedestal_samples; ++seed) {
+        aare::NDArray<std::uint16_t, 2> frame({1, 3});
+        const auto noisy = static_cast<std::uint16_t>(seed % 2 == 0 ? 99 : 101);
+        frame(0, 0) = noisy;
+        frame(0, 1) = noisy;
+        frame(0, 2) = 100;
+        histogram.push_pedestal_no_update(frame.view());
+    }
+    histogram.update_mean();
+
+    const auto mean_before = histogram.pedestal_mean();
+    REQUIRE(mean_before(0, 0) == 100.0f);
+    REQUIRE(mean_before(0, 1) == 100.0f);
+    REQUIRE(mean_before(0, 2) == 100.0f);
+
+    aare::NDArray<std::uint16_t, 2> frame({1, 3});
+    frame(0, 0) = 102; // residual == 2 * sigma: excluded
+    frame(0, 1) = 101; // residual < 2 * sigma: included
+    frame(0, 2) = 101; // sigma == 0: excluded
+    histogram.fill_async(std::move(frame));
+    histogram.flush();
+
+    const auto mean_after = histogram.pedestal_mean();
+    CHECK(mean_after(0, 0) == 100.0f);
+    CHECK(mean_after(0, 1) == static_cast<float>(100001.0 * (1.0 / 1000.0)));
+    CHECK(mean_after(0, 2) == 100.0f);
+
+    // Histogramming uses each residual before a possible EMA update.
+    const auto values = histogram.values();
+    for (ssize_t bin = 0; bin < 8; ++bin) {
+        CHECK(values(0, 0, bin) == (bin == 6 ? 1 : 0));
+        CHECK(values(0, 1, bin) == (bin == 5 ? 1 : 0));
+        CHECK(values(0, 2, bin) == (bin == 5 ? 1 : 0));
+    }
+}
+
 TEST_CASE("Tiled pedestal tracking matches chronological single-frame fills",
           "[PedestalTrackingPixelHistogram]") {
     constexpr int rows = 5;

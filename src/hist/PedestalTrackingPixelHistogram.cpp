@@ -10,6 +10,7 @@
 #include <functional>
 #include <future>
 #include <stdexcept>
+#include <type_traits>
 #include <utility>
 #include <vector>
 
@@ -234,74 +235,63 @@ void PedestalTrackingPixelHistogram::worker_loop(int thread_id) {
             // tracking gate entirely. The [xmin, xmax) histogram gate
             // lives inside PixelHistogramImpl::fill.
             const auto n_sigma = n_sigma_.load(std::memory_order_relaxed);
-            constexpr std::size_t pixel_tile_size = 512;
+            constexpr std::size_t pixel_tile_size = 256;
             const auto local_pixels = static_cast<std::size_t>(local_rows) *
                                       static_cast<std::size_t>(cols_);
             const auto global_pixel_begin =
                 static_cast<std::size_t>(first_row) *
                 static_cast<std::size_t>(cols_);
-            const auto frame_count = images->size();
+            const auto &frames = *images;
 
-            if (n_sigma <= AxisType{0.0}) {
-                // Fill without pedestal tracking. Each worker retains
-                // exclusive ownership of its row shard. Pixel tiling keeps a
-                // bounded part of that shard's [pixel x bin] storage hot while
-                // every input access remains contiguous within one frame.
-                for (std::size_t p0 = 0; p0 < local_pixels;
-                     p0 += pixel_tile_size) {
-                    const auto p1 =
-                        std::min(p0 + pixel_tile_size, local_pixels);
-                    for (std::size_t f = 0; f < frame_count; ++f) {
+            // Compile the shared traversal once for each mode. if constexpr
+            // removes the tracking gate entirely from the histogram-only hot
+            // path, while keeping the runtime mode decision outside the
+            // per-pixel loops.
+            const auto fill_tiles = [&](auto tracking,
+                                        const AxisType *std_data) {
+                constexpr bool track_pedestal = decltype(tracking)::value;
+
+                // Each worker retains exclusive ownership of its row shard.
+                // Pixel tiling keeps a bounded part of that shard's
+                // [pixel x bin] storage hot while input remains contiguous.
+                for (std::size_t tile_begin = 0; tile_begin < local_pixels;
+                     tile_begin += pixel_tile_size) {
+                    const auto tile_end =
+                        std::min(tile_begin + pixel_tile_size, local_pixels);
+                    for (const auto &frame : frames) {
                         const auto *input =
-                            (*images)[f].data() + global_pixel_begin + p0;
-                        for (std::size_t local_pixel = p0; local_pixel < p1;
-                             ++local_pixel) {
-                            const FrameType raw = input[local_pixel - p0];
-                            const AxisType val =
-                                static_cast<AxisType>(raw) -
-                                static_cast<AxisType>(
-                                    my_pedestal.mean_unchecked(
-                                        static_cast<ssize_t>(local_pixel)));
-                            my_hist.fill_flat_unchecked(local_pixel, val);
-                        }
-                    }
-                }
-                break;
-            } else {
-                // Tracking uses the same tiles, but frames remain strictly
-                // chronological for every pixel. push_ema_unchecked updates
-                // that pixel's sums and cached mean immediately. This is
-                // equivalent to the old push_no_update followed by a
-                // whole-shard update_mean after each frame, since pixels are
-                // independent.
-                auto &my_std = partial_std_[thread_id];
-                for (std::size_t p0 = 0; p0 < local_pixels;
-                     p0 += pixel_tile_size) {
-                    const auto p1 =
-                        std::min(p0 + pixel_tile_size, local_pixels);
-                    for (std::size_t f = 0; f < frame_count; ++f) {
-                        const auto *input =
-                            (*images)[f].data() + global_pixel_begin + p0;
-                        for (std::size_t local_pixel = p0; local_pixel < p1;
-                             ++local_pixel) {
-                            const FrameType raw = input[local_pixel - p0];
+                            frame.data() + global_pixel_begin + tile_begin;
+                        for (std::size_t local_pixel = tile_begin;
+                             local_pixel < tile_end; ++local_pixel, ++input) {
+                            const FrameType raw = *input;
                             const AxisType val =
                                 static_cast<AxisType>(raw) -
                                 my_pedestal.mean_unchecked(
                                     static_cast<ssize_t>(local_pixel));
                             my_hist.fill_flat_unchecked(local_pixel, val);
-                            const AxisType sigma =
-                                my_std[static_cast<ssize_t>(local_pixel)];
-                            if (sigma > AxisType{0.0} &&
-                                std::abs(val) < n_sigma * sigma) {
-                                my_pedestal.push_ema_unchecked<FrameType>(
-                                    local_pixel, raw);
+
+                            if constexpr (track_pedestal) {
+                                const AxisType sigma = std_data[local_pixel];
+                                if (sigma > AxisType{0.0} &&
+                                    std::abs(val) < n_sigma * sigma) {
+                                    my_pedestal.push_ema_unchecked<FrameType>(
+                                        local_pixel, raw);
+                                }
                             }
                         }
                     }
                 }
-                break;
+            };
+
+            if (n_sigma <= AxisType{0.0}) {
+                fill_tiles(std::false_type{}, nullptr);
+            } else {
+                // Frames stay chronological for every pixel. Accepted raw
+                // values update that pixel's sums and cached mean immediately;
+                // pixels are otherwise independent.
+                fill_tiles(std::true_type{}, partial_std_[thread_id].data());
             }
+            break;
         }
         }
 
