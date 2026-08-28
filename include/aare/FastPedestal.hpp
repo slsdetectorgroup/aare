@@ -13,9 +13,9 @@ namespace aare {
  * @brief Maintain per-pixel mean, population variance, and standard deviation.
  *
  * Initialization accumulates exactly n_samples frames. Subsequent push_ema()
- * calls use an exponentially weighted update in which the new value has
- * weight 1 / n_samples. Internal moments are stored in double precision.
- *
+ * update the exponential moving average initialized with the mean using
+ * a smoothing factor of (1/ n_samples). Internal moments are stored
+ * in double precision.
  * @tparam PEDESTAL_TYPE Type returned for the mean, variance, and standard
  * deviation.
  */
@@ -177,7 +177,6 @@ template <typename PEDESTAL_TYPE> class FastPedestal {
      * @brief Calculate and return the population standard deviation of every
      * pixel.
      * @throws std::runtime_error if ready() is false.
-     * @note The variance is normalized by n_samples.
      */
     NDArray<PEDESTAL_TYPE, 2> std() {
         if (!ready()) {
@@ -276,8 +275,8 @@ template <typename PEDESTAL_TYPE> class FastPedestal {
     }
 
     /**
-     * @brief Update one pixel and its cached mean using the steady-state
-     * estimator, giving val weight 1 / n_samples.
+     * @brief Update the exponential moving average with smoothing factor
+     * 1/n_samples
      * @param row Pixel row.
      * @param col Pixel column.
      * @param val New pixel value.
@@ -318,8 +317,8 @@ template <typename PEDESTAL_TYPE> class FastPedestal {
      * @param frame Frame whose shape must exactly match the pedestal.
      * @throws std::runtime_error if the shape differs or n_samples frames have
      * already been accumulated.
-     * @note The cached mean is updated and ready() becomes true only when the
-     * n_samples-th frame is pushed.
+     * @note The statistics can be accessed and ready() becomes true only after
+     * the n_samples frames have been added.
      */
     template <typename T> void add_init_frame(NDView<T, 2> frame) {
         if (frame.shape() != std::array<ssize_t, 2>{m_rows, m_cols}) {

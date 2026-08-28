@@ -4,8 +4,8 @@ FastPedestal
 ``FastPedestal`` calculates a running mean, variance and standard deviation for each pixel in a
 series of frames. The python binding only exposes ``uint16`` input but the underlying
 C++ class is templated. Initialize it with ``n_samples`` frames using
-``add_init_frame()``. Once ``ready`` is true, use ``push_ema()`` for steady-state
-updates.
+``add_init_frame()``. Once ``ready`` is true, use ``push_ema()`` to update the exponential 
+moving average initialized by the mean and with smoothing factor 1/n_samples.
 
 .. warning::
   

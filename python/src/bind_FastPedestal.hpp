@@ -121,8 +121,8 @@ void define_fast_pedestal_bindings(py::module &m, const std::string &name) {
                 pedestal.push_ema(make_view_2d(frame));
             },
             py::arg("frame").noconvert(),
-            "Apply a uint16 frame as a steady-state update. The pedestal must "
-            "already be ready.")
+            "Update exponential moving average. The pedstal must  "
+            "already be ready for this update.")
         .def(
             "add_init_frame",
             [](FastPedestal<SUM_TYPE> &pedestal,
