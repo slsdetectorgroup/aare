@@ -20,6 +20,11 @@
   ``expand4to8bit`` and ``expand24to32bit`` accept const input views.
 
 ### Bugfixes:
+
+- ``ClusterFile::write_frame`` now reports incomplete writes instead of
+  silently continuing with a truncated file.
+- Gain-map application now checks the complete cluster footprint, preventing
+  out-of-bounds access for cluster sizes larger than 3x3.
 - Fixed broken reading of old (pre reordering) Moench03
 
 ## 2026.7.2
@@ -164,8 +169,6 @@ https://github.com/slsdetectorgroup/aare
 erik.frojdh@psi.ch \
 alice.mazzoleni@psi.ch \
 dhanya.thattil@psi.ch
-
-
 
 
 

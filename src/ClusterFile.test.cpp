@@ -5,11 +5,71 @@
 #include "aare/defs.hpp"
 #include <algorithm>
 #include <catch2/catch_test_macros.hpp>
+#include <chrono>
+#include <cstdint>
 #include <filesystem>
+#include <string>
+#include <system_error>
 
 using aare::Cluster;
 using aare::ClusterFile;
 using aare::ClusterVector;
+
+namespace {
+
+class TemporaryClusterFile {
+  public:
+    TemporaryClusterFile() {
+        const auto unique =
+            std::chrono::steady_clock::now().time_since_epoch().count();
+        m_path = std::filesystem::temp_directory_path() /
+                 ("aare-cluster-file-" + std::to_string(unique) + ".clust");
+    }
+
+    TemporaryClusterFile(const TemporaryClusterFile &) = delete;
+    TemporaryClusterFile &operator=(const TemporaryClusterFile &) = delete;
+
+    ~TemporaryClusterFile() {
+        std::error_code error;
+        std::filesystem::remove(m_path, error);
+    }
+
+    const std::filesystem::path &path() const { return m_path; }
+
+  private:
+    std::filesystem::path m_path;
+};
+
+using TestCluster = Cluster<double, 3, 3>;
+
+ClusterVector<TestCluster> make_test_frame(int32_t frame_number,
+                                           double offset) {
+    ClusterVector<TestCluster> clusters(2, frame_number);
+    clusters.push_back(
+        TestCluster{5,
+                    6,
+                    {offset, offset + 1, offset + 2, offset + 3, offset + 4,
+                     offset + 5, offset + 6, offset + 7, offset + 8}});
+    clusters.push_back(TestCluster{7,
+                                   8,
+                                   {offset + 9, offset + 10, offset + 11,
+                                    offset + 12, offset + 13, offset + 14,
+                                    offset + 15, offset + 16, offset + 17}});
+    return clusters;
+}
+
+void check_frame(const ClusterVector<TestCluster> &actual,
+                 const ClusterVector<TestCluster> &expected) {
+    REQUIRE(actual.frame_number() == expected.frame_number());
+    REQUIRE(actual.size() == expected.size());
+    for (size_t i = 0; i < expected.size(); ++i) {
+        CHECK(actual[i].x == expected[i].x);
+        CHECK(actual[i].y == expected[i].y);
+        CHECK(actual[i].data == expected[i].data);
+    }
+}
+
+} // namespace
 
 TEST_CASE("Read one frame from a cluster file", "[.with-data]") {
     // We know that the frame has 97 clusters
@@ -284,53 +344,64 @@ TEST_CASE("Read cluster from multiple frame file", "[.with-data]") {
     }
 }
 
-TEST_CASE("Write cluster with potential padding",
-          "[.with-data][.ClusterFile]") {
+TEST_CASE("ClusterFile flushes a frame when the writer is destroyed",
+          "[ClusterFile]") {
+    TemporaryClusterFile file;
+    auto expected = make_test_frame(42, 0.0);
 
-    using ClusterType = Cluster<double, 3, 3>;
+    {
+        ClusterFile<TestCluster> writer(file.path(), 1000, "w");
+        writer.write_frame(expected);
+    }
 
-    REQUIRE(std::filesystem::exists(test_data_path() / "clust"));
+    const auto expected_file_size = sizeof(int32_t) + sizeof(uint32_t) +
+                                    expected.size() * sizeof(TestCluster);
+    CHECK(std::filesystem::file_size(file.path()) == expected_file_size);
 
-    auto fpath = test_data_path() / "clust" / "single_frame_2_clusters.clust";
-
-    ClusterFile<ClusterType> file(fpath, 1000, "w");
-
-    ClusterVector<ClusterType> clustervec(2);
-    uint16_t coordinate = 5;
-    clustervec.push_back(ClusterType{
-        coordinate, coordinate, {0., 0., 0., 0., 0., 0., 0., 0., 0.}});
-    clustervec.push_back(ClusterType{
-        coordinate, coordinate, {0., 0., 0., 0., 0., 0., 0., 0., 0.}});
-
-    file.write_frame(clustervec);
-
-    file.close();
-
-    ClusterFile<ClusterType> read_file(fpath);
-
-    auto read_cluster_vector = read_file.read_frame();
-
-    CHECK(read_cluster_vector.size() == 2);
-    CHECK(read_cluster_vector.frame_number() == 0);
-
-    CHECK(read_cluster_vector[0].x == clustervec[0].x);
-    CHECK(read_cluster_vector[0].y == clustervec[0].y);
-    CHECK(std::equal(
-        clustervec[0].data.begin(), clustervec[0].data.end(),
-        read_cluster_vector[0].data.begin(), [](double a, double b) {
-            return std::abs(a - b) < std::numeric_limits<double>::epsilon();
-        }));
-
-    CHECK(read_cluster_vector[1].x == clustervec[1].x);
-    CHECK(read_cluster_vector[1].y == clustervec[1].y);
-    CHECK(std::equal(
-        clustervec[1].data.begin(), clustervec[1].data.end(),
-        read_cluster_vector[1].data.begin(), [](double a, double b) {
-            return std::abs(a - b) < std::numeric_limits<double>::epsilon();
-        }));
+    ClusterFile<TestCluster> reader(file.path());
+    auto actual = reader.read_frame();
+    check_frame(actual, expected);
 }
 
-TEST_CASE("Read frame and modify cluster data", "[.with-data][.ClusterFile]") {
+TEST_CASE("ClusterFile appends frames", "[ClusterFile]") {
+    TemporaryClusterFile file;
+    auto first_expected = make_test_frame(42, 0.0);
+    auto second_expected = make_test_frame(43, 100.0);
+
+    {
+        ClusterFile<TestCluster> writer(file.path(), 1000, "w");
+        writer.write_frame(first_expected);
+    }
+    {
+        ClusterFile<TestCluster> writer(file.path(), 1000, "a");
+        writer.write_frame(second_expected);
+    }
+
+    ClusterFile<TestCluster> reader(file.path());
+    auto first_actual = reader.read_frame();
+    auto second_actual = reader.read_frame();
+    check_frame(first_actual, first_expected);
+    check_frame(second_actual, second_expected);
+}
+
+TEST_CASE("ClusterFile close is idempotent", "[ClusterFile]") {
+    TemporaryClusterFile file;
+    auto expected = make_test_frame(42, 0.0);
+
+    ClusterFile<TestCluster> writer(file.path(), 1000, "w");
+    writer.write_frame(expected);
+    writer.close();
+
+    CHECK_NOTHROW(writer.close());
+    CHECK_THROWS_AS(writer.tell(), std::runtime_error);
+    CHECK_THROWS_AS(writer.write_frame(expected), std::runtime_error);
+
+    ClusterFile<TestCluster> reader(file.path());
+    auto actual = reader.read_frame();
+    check_frame(actual, expected);
+}
+
+TEST_CASE("Read frame and modify cluster data", "[.with-data]") {
     auto fpath = test_data_path() / "clust" / "single_frame_97_clustrers.clust";
     REQUIRE(std::filesystem::exists(fpath));
 

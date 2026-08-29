@@ -15,29 +15,19 @@
 
 namespace aare {
 
-/*
-Binary cluster file. Expects data to be laid out as:
-int32_t frame_number
-uint32_t number_of_clusters
-int16_t x, int16_t y, int32_t data[9] x number_of_clusters
-int32_t frame_number
-uint32_t number_of_clusters
-....
-*/
-
-// TODO: change to support any type of clusters, e.g. header line with
-// clsuter_size_x, cluster_size_y,
 /**
- * @brief Class to read and write cluster files
- * Expects data to be laid out as:
+ * @brief Read and write legacy binary cluster files.
  *
+ * Each frame is stored as:
  *
  *       int32_t frame_number
  *       uint32_t number_of_clusters
- *       int16_t x, int16_t y, int32_t data[9] * number_of_clusters
- *       int32_t frame_number
- *       uint32_t number_of_clusters
- *       etc.
+ *       ClusterType clusters[number_of_clusters]
+ *
+ * The format stores clusters as their native in-memory representation and has
+ * no metadata describing the cluster dimensions, value type, coordinate type,
+ * padding, or byte order. Readers must therefore use the same ClusterType and
+ * a compatible platform ABI as the writer.
  */
 template <typename ClusterType,
           typename Enable = std::enable_if_t<is_cluster_v<ClusterType>>>
@@ -55,13 +45,13 @@ class ClusterFile {
 
   public:
     /**
-     * @brief Construct a new Cluster File object
-     * @param fname path to the file
-     * @param chunk_size number of clusters to read at a time when iterating
-     * over the file
-     * @param mode mode to open the file in. "r" for reading, "w" for writing,
-     * "a" for appending
-     * @throws std::runtime_error if the file could not be opened
+     * @brief Open a cluster file.
+     * @param fname Path to the file.
+     * @param chunk_size Number of clusters returned by each iterator step.
+     * @param mode File mode: "r" to read, "w" to truncate and write, or "a"
+     * to append.
+     * @throws std::runtime_error If the mode is unsupported or the file cannot
+     * be opened.
      */
     ClusterFile(const std::filesystem::path &fname, size_t chunk_size = 1000,
                 const std::string &mode = "r")
@@ -71,9 +61,13 @@ class ClusterFile {
     }
 
     /**
-     * @brief Read n_clusters clusters from the file discarding
-     * frame numbers. If EOF is reached the returned vector will
-     * have less than n_clusters clusters
+     * @brief Read up to n_clusters without preserving frame boundaries.
+     * @param n_clusters Maximum number of selected clusters to return.
+     * @return A cluster vector that may contain fewer clusters at end of file.
+     * @note The returned vector may combine data from several frames, so its
+     * frame number must not be used as per-cluster metadata.
+     * @throws std::runtime_error If the file is not open for reading or a
+     * filtered read encounters an incomplete cluster record.
      */
     ClusterVector<ClusterType> read_clusters(size_t n_clusters) {
         if (m_mode != "r") {
@@ -87,12 +81,10 @@ class ClusterFile {
     }
 
     /**
-     * @brief Read a single frame from the file and return the
-     * clusters. The cluster vector will have the frame number
-     * set.
-     * @throws std::runtime_error if the file is not opened for
-     * reading or the file pointer not at the beginning of a
-     * frame
+     * @brief Read the next complete frame.
+     * @return The selected clusters with the stored frame number set.
+     * @throws std::runtime_error If the file is not open for reading, a prior
+     * partial-frame read left clusters unread, or the frame is incomplete.
      */
     ClusterVector<ClusterType> read_frame() {
         if (m_mode != "r") {
@@ -105,57 +97,73 @@ class ClusterFile {
         }
     }
 
+    /**
+     * @brief Write one frame to the file.
+     * @param clusters Clusters to write, including their frame number.
+     * @throws std::runtime_error If the file is not open for writing or any
+     * part of the frame cannot be written completely.
+     */
     void write_frame(const ClusterVector<ClusterType> &clusters) {
         if (m_mode != "w" && m_mode != "a") {
             throw std::runtime_error("File not opened for writing");
         }
 
         int32_t frame_number = clusters.frame_number();
-        fwrite(&frame_number, sizeof(frame_number), 1, m_fp.get());
+        if (fwrite(&frame_number, sizeof(frame_number), 1, m_fp.get()) != 1) {
+            throw std::runtime_error(LOCATION + "Could not write frame number");
+        }
+
         uint32_t n_clusters = clusters.size();
-        fwrite(&n_clusters, sizeof(n_clusters), 1, m_fp.get());
-        fwrite(clusters.data(), clusters.item_size(), clusters.size(),
-               m_fp.get());
+        if (fwrite(&n_clusters, sizeof(n_clusters), 1, m_fp.get()) != 1) {
+            throw std::runtime_error(LOCATION +
+                                     "Could not write number of clusters");
+        }
+
+        if (fwrite(clusters.data(), clusters.item_size(), clusters.size(),
+                   m_fp.get()) != clusters.size()) {
+            throw std::runtime_error(LOCATION + "Could not write clusters");
+        }
     }
 
     /**
-     * @brief Return the chunk size
+     * @brief Return the number of clusters requested by each iterator step.
      */
     size_t chunk_size() const { return m_chunk_size; }
 
     /**
-     * @brief Estimate the number of clusters in the file from its size
+     * @brief Estimate the number of clusters in the file from its size.
      *
-     * Frame headers are included in the estimate, so the result may be slightly
-     * larger than the actual number of clusters. The file position is not
-     * changed.
+     * Frame-header bytes are included in the estimate, so it may exceed the
+     * actual number of clusters. The file position is not changed.
      */
     size_t estimate_n_clusters() const {
         return std::filesystem::file_size(m_filename) / sizeof(ClusterType);
     }
 
     /**
-     * @brief Set the region of interest to use when reading
-     * clusters. If set only clusters within the ROI will be
-     * read.
+     * @brief Select clusters by their center coordinate when reading.
+     * @param roi Half-open region of interest: [xmin, xmax) x [ymin, ymax).
      */
     void set_roi(ROI roi) { m_roi = roi; }
 
     /**
-     * @brief Set the noise map to use when reading clusters. If
-     * set clusters below the noise level will be discarded.
-     * Selection criteria one of: Central pixel above noise,
-     * highest 2x2 sum above 2 * noise, total sum above 3 *
-     * noise.
+     * @brief Discard clusters that do not pass the noise thresholds.
+     * @param noise_map Per-pixel noise indexed as [y, x]. The map is copied.
+     * A cluster is retained only when its central pixel exceeds the local
+     * noise, its highest 2x2 sum exceeds twice the noise, and its total sum
+     * exceeds three times the noise.
+     * @warning The map must cover every cluster center coordinate in the file.
      */
     void set_noise_map(const NDView<int32_t, 2> noise_map) {
         m_noise_map = NDArray<int32_t, 2>(noise_map);
     }
 
     /**
-     * @brief Set the gain map to use when reading clusters. If set the gain map
-     * will be applied to the clusters that pass ROI and noise_map selection.
-     * The gain map is expected to be in ADU/energy.
+     * @brief Apply a gain map to clusters selected while reading.
+     * @param gain_map Per-pixel gain in ADU/energy, indexed as [y, x]. The map
+     * is copied and inverted internally.
+     * @note Clusters whose complete footprint extends beyond the gain map are
+     * retained with all cluster data values set to zero.
      */
     void set_gain_map(const NDView<double, 2> gain_map) {
         m_gain_map = InvertedGainMap(gain_map);
@@ -170,16 +178,20 @@ class ClusterFile {
     }
 
     /**
-     * @brief Close the file. If not closed the file will be
-     * closed in the destructor
+     * @brief Close the file.
+     *
+     * Calling close more than once is safe. The destructor closes an open file
+     * automatically.
      */
-    void close() { 
-        m_fp = FilePtr{}; 
+    void close() {
+        m_fp = FilePtr{};
         m_mode = "";
     }
 
     /**
-     * @brief Return the current position in the file (bytes)
+     * @brief Return the current byte position in the file.
+     * @throws std::runtime_error If the file is closed or its position cannot
+     * be determined.
      */
     int64_t tell() {
         if (!m_fp.get()) {

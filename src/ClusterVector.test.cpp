@@ -1,5 +1,8 @@
 // SPDX-License-Identifier: MPL-2.0
 #include "aare/ClusterVector.hpp"
+#include "aare/GainMap.hpp"
+#include "aare/NDArray.hpp"
+#include <algorithm>
 #include <cstdint>
 
 #include <catch2/catch_all.hpp>
@@ -275,4 +278,74 @@ TEST_CASE("Gain Map Calculation Index Map") {
 
     CHECK(index_map_x == clustertestdata.index_map_x);
     CHECK(index_map_y == clustertestdata.index_map_y);
+}
+
+namespace {
+
+template <uint8_t ClusterSizeX, uint8_t ClusterSizeY>
+void check_gain_map_cluster_bounds() {
+    using ClusterType = Cluster<double, ClusterSizeX, ClusterSizeY>;
+
+    constexpr ssize_t rows = 16;
+    constexpr ssize_t cols = 16;
+    constexpr uint16_t left = ClusterSizeX / 2;
+    constexpr uint16_t right = ClusterSizeX - left - 1;
+    constexpr uint16_t top = ClusterSizeY / 2;
+    constexpr uint16_t bottom = ClusterSizeY - top - 1;
+
+    aare::NDArray<double, 2> gain_map({rows, cols}, 2.0);
+    aare::InvertedGainMap inverted_gain_map(gain_map);
+    ClusterVector<ClusterType> clusters(6);
+
+    const auto add_cluster = [&clusters](uint16_t x, uint16_t y) {
+        ClusterType cluster{};
+        cluster.x = x;
+        cluster.y = y;
+        cluster.data.fill(2.0);
+        clusters.push_back(cluster);
+    };
+
+    add_cluster(left, top);
+    add_cluster(cols - right - 1, rows - bottom - 1);
+    add_cluster(left - 1, top);
+    add_cluster(left, top - 1);
+    add_cluster(cols - right, top);
+    add_cluster(left, rows - bottom);
+
+    inverted_gain_map.apply_gain_map(clusters);
+
+    for (size_t i = 0; i < 2; ++i) {
+        CHECK(std::all_of(clusters[i].data.begin(), clusters[i].data.end(),
+                          [](double value) { return value == 1.0; }));
+    }
+    for (size_t i = 2; i < clusters.size(); ++i) {
+        CHECK(std::all_of(clusters[i].data.begin(), clusters[i].data.end(),
+                          [](double value) { return value == 0.0; }));
+    }
+
+    aare::NDArray<double, 2> small_gain_map(
+        {ClusterSizeY - 1, ClusterSizeX - 1}, 2.0);
+    aare::InvertedGainMap small_inverted_gain_map(small_gain_map);
+    ClusterVector<ClusterType> oversized_cluster(1);
+    ClusterType cluster{};
+    cluster.x = left;
+    cluster.y = top;
+    cluster.data.fill(2.0);
+    oversized_cluster.push_back(cluster);
+
+    small_inverted_gain_map.apply_gain_map(oversized_cluster);
+
+    CHECK(std::all_of(oversized_cluster[0].data.begin(),
+                      oversized_cluster[0].data.end(),
+                      [](double value) { return value == 0.0; }));
+}
+
+} // namespace
+
+TEST_CASE("Gain map bounds cover the full cluster footprint", "[GainMap]") {
+    SECTION("3x3") { check_gain_map_cluster_bounds<3, 3>(); }
+    SECTION("5x5") { check_gain_map_cluster_bounds<5, 5>(); }
+    SECTION("7x7") { check_gain_map_cluster_bounds<7, 7>(); }
+    SECTION("9x9") { check_gain_map_cluster_bounds<9, 9>(); }
+    SECTION("5x7") { check_gain_map_cluster_bounds<5, 7>(); }
 }

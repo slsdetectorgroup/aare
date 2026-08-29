@@ -1,22 +1,32 @@
 
 ClusterFile
-============
+===========
 
+The :func:`ClusterFile` factory is the main interface for reading and writing
+legacy cluster files. Use ``mode="r"`` to read, ``mode="w"`` to truncate and
+write, or ``mode="a"`` to append.
 
-The :class:`ClusterFile` class is the main interface to read and write clusters in aare. Unfortunately the
-old file format does not include metadata like the cluster size and the data type. This means that the
-user has to know this information from other sources. Specifying the wrong cluster size or data type
-will lead to garbage data being read. 
+The format does not store the cluster dimensions, value type, coordinate type,
+padding, or byte order. The ``cluster_size`` and ``dtype`` arguments must match
+the writer; otherwise the bytes are interpreted incorrectly.
+
+Use ``read_frame()`` when frame boundaries and the frame number matter.
+Iteration and ``read_clusters()`` return chunks of up to ``chunk_size``
+selected clusters. A chunk may combine frames, so its frame number is not
+reliable per-cluster metadata.
+
+When a gain map is configured, it is applied to every cluster whose complete
+footprint lies inside the map. Clusters whose footprint extends beyond the
+gain-map boundaries remain in the returned cluster vector, but all their data
+values are set to zero.
 
 .. py:currentmodule:: aare
 
-.. autoclass:: ClusterFile
-    :members:
-    :undoc-members:
-    :inherited-members:
+.. autofunction:: ClusterFile
 
 
-Below is the API of the ClusterFile_Cluster3x3i but all variants share the same API.
+Below is the API of ``ClusterFile_Cluster3x3i``; all compiled variants share the
+same API.
 
 .. autoclass:: aare._aare.ClusterFile_Cluster3x3i
     :special-members: __init__
