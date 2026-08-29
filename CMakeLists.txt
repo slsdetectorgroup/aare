@@ -433,6 +433,7 @@ if(AARE_TESTS)
       ${CMAKE_CURRENT_SOURCE_DIR}/src/defs.test.cpp
       ${CMAKE_CURRENT_SOURCE_DIR}/src/decode.test.cpp
       ${CMAKE_CURRENT_SOURCE_DIR}/src/Dtype.test.cpp
+      ${CMAKE_CURRENT_SOURCE_DIR}/src/FilePtr.test.cpp
       ${CMAKE_CURRENT_SOURCE_DIR}/src/Fit.test.cpp
       ${CMAKE_CURRENT_SOURCE_DIR}/src/Frame.test.cpp
       ${CMAKE_CURRENT_SOURCE_DIR}/src/DetectorGeometry.test.cpp

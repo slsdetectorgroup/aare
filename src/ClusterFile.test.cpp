@@ -306,9 +306,9 @@ TEST_CASE("Write cluster with potential padding",
 
     file.close();
 
-    file.open("r");
+    ClusterFile<ClusterType> read_file(fpath);
 
-    auto read_cluster_vector = file.read_frame();
+    auto read_cluster_vector = read_file.read_frame();
 
     CHECK(read_cluster_vector.size() == 2);
     CHECK(read_cluster_vector.frame_number() == 0);

@@ -4,6 +4,9 @@
 
 ### API Changes:
 
+- Added an explicit boolean conversion to the C++ ``FilePtr`` type.
+- Removed the public C++ ``ClusterFile::open`` method. Construct a new
+  ``ClusterFile`` to reopen a file or change its mode.
 - Exposed ``ClusterVector.empty()`` in the Python API.
 - Added ClusterVector.estimate_n_clusters
 - Removed the lmfit dependency and the legacy ``fit_gaus``, ``fit_pol1``,
@@ -161,8 +164,6 @@ https://github.com/slsdetectorgroup/aare
 erik.frojdh@psi.ch \
 alice.mazzoleni@psi.ch \
 dhanya.thattil@psi.ch
-
-
 
 
 

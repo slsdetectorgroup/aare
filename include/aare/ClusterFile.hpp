@@ -3,6 +3,7 @@
 
 #include "aare/Cluster.hpp"
 #include "aare/ClusterVector.hpp"
+#include "aare/FilePtr.hpp"
 #include "aare/GainMap.hpp"
 #include "aare/NDArray.hpp"
 #include "aare/defs.hpp"
@@ -41,8 +42,8 @@ uint32_t number_of_clusters
 template <typename ClusterType,
           typename Enable = std::enable_if_t<is_cluster_v<ClusterType>>>
 class ClusterFile {
-    FILE *fp{};
-    const std::string m_filename{};
+    FilePtr m_fp;
+    std::string m_filename{};
     uint32_t m_num_left{};    /*Number of photons left in frame*/
     size_t m_chunk_size{};    /*Number of clusters to read at a time*/
     std::string m_mode;       /*Mode to open the file in*/
@@ -65,32 +66,9 @@ class ClusterFile {
     ClusterFile(const std::filesystem::path &fname, size_t chunk_size = 1000,
                 const std::string &mode = "r")
 
-        : m_filename(fname.string()), m_chunk_size(chunk_size), m_mode(mode) {
-
-        if (mode == "r") {
-            fp = fopen(m_filename.c_str(), "rb");
-            if (!fp) {
-                throw std::runtime_error("Could not open file for reading: " +
-                                         m_filename);
-            }
-        } else if (mode == "w") {
-            fp = fopen(m_filename.c_str(), "wb");
-            if (!fp) {
-                throw std::runtime_error("Could not open file for writing: " +
-                                         m_filename);
-            }
-        } else if (mode == "a") {
-            fp = fopen(m_filename.c_str(), "ab");
-            if (!fp) {
-                throw std::runtime_error("Could not open file for appending: " +
-                                         m_filename);
-            }
-        } else {
-            throw std::runtime_error("Unsupported mode: " + mode);
-        }
+        : m_filename(fname.string()), m_chunk_size(chunk_size) {
+        open(mode);
     }
-
-    ~ClusterFile() { close(); }
 
     /**
      * @brief Read n_clusters clusters from the file discarding
@@ -133,10 +111,11 @@ class ClusterFile {
         }
 
         int32_t frame_number = clusters.frame_number();
-        fwrite(&frame_number, sizeof(frame_number), 1, fp);
+        fwrite(&frame_number, sizeof(frame_number), 1, m_fp.get());
         uint32_t n_clusters = clusters.size();
-        fwrite(&n_clusters, sizeof(n_clusters), 1, fp);
-        fwrite(clusters.data(), clusters.item_size(), clusters.size(), fp);
+        fwrite(&n_clusters, sizeof(n_clusters), 1, m_fp.get());
+        fwrite(clusters.data(), clusters.item_size(), clusters.size(),
+               m_fp.get());
     }
 
     /**
@@ -150,8 +129,6 @@ class ClusterFile {
      * Frame headers are included in the estimate, so the result may be slightly
      * larger than the actual number of clusters. The file position is not
      * changed.
-     *
-     * @throws std::runtime_error if the file is not opened for reading
      */
     size_t estimate_n_clusters() const {
         return std::filesystem::file_size(m_filename) / sizeof(ClusterType);
@@ -196,58 +173,41 @@ class ClusterFile {
      * @brief Close the file. If not closed the file will be
      * closed in the destructor
      */
-    void close() {
-        if (fp) {
-            fclose(fp);
-            fp = nullptr;
-        }
+    void close() { 
+        m_fp = FilePtr{}; 
+        m_mode = "";
     }
 
     /**
      * @brief Return the current position in the file (bytes)
      */
     int64_t tell() {
-        if (!fp) {
+        if (!m_fp.get()) {
             throw std::runtime_error(LOCATION + "File not opened");
         }
-        return ftell(fp);
+        return m_fp.tell();
     }
 
+  private:
     /** @brief Open the file in specific mode
      *
      */
     void open(const std::string &mode) {
-        if (fp) {
-            close();
-        }
+        close();
 
         if (mode == "r") {
-            fp = fopen(m_filename.c_str(), "rb");
-            if (!fp) {
-                throw std::runtime_error("Could not open file for reading: " +
-                                         m_filename);
-            }
+            m_fp = FilePtr(m_filename, "rb");
             m_mode = "r";
         } else if (mode == "w") {
-            fp = fopen(m_filename.c_str(), "wb");
-            if (!fp) {
-                throw std::runtime_error("Could not open file for writing: " +
-                                         m_filename);
-            }
+            m_fp = FilePtr(m_filename, "wb");
             m_mode = "w";
         } else if (mode == "a") {
-            fp = fopen(m_filename.c_str(), "ab");
-            if (!fp) {
-                throw std::runtime_error("Could not open file for appending: " +
-                                         m_filename);
-            }
+            m_fp = FilePtr(m_filename, "ab");
             m_mode = "a";
         } else {
             throw std::runtime_error("Unsupported mode: " + mode);
         }
     }
-
-  private:
     ClusterVector<ClusterType> read_clusters_with_cut(size_t n_clusters);
     ClusterVector<ClusterType> read_clusters_without_cut(size_t n_clusters);
     ClusterVector<ClusterType> read_frame_with_cut();
@@ -281,23 +241,24 @@ ClusterFile<ClusterType, Enable>::read_clusters_without_cut(size_t n_clusters) {
         } else {
             nn = nph;
         }
-        nph_read += fread((buf + nph_read), clusters.item_size(), nn, fp);
+        nph_read +=
+            fread((buf + nph_read), clusters.item_size(), nn, m_fp.get());
         m_num_left = nph - nn; // write back the number of photons left
     }
 
     if (nph_read < n_clusters) {
         // keep on reading frames and photons until reaching n_clusters
-        while (fread(&iframe, sizeof(iframe), 1, fp)) {
+        while (fread(&iframe, sizeof(iframe), 1, m_fp.get())) {
             clusters.set_frame_number(iframe);
             // read number of clusters in frame
-            if (fread(&nph, sizeof(nph), 1, fp)) {
+            if (fread(&nph, sizeof(nph), 1, m_fp.get())) {
                 if (nph > (n_clusters - nph_read))
                     nn = n_clusters - nph_read;
                 else
                     nn = nph;
 
-                nph_read +=
-                    fread((buf + nph_read), clusters.item_size(), nn, fp);
+                nph_read += fread((buf + nph_read), clusters.item_size(), nn,
+                                  m_fp.get());
                 m_num_left = nph - nn;
             }
             if (nph_read >= n_clusters)
@@ -339,8 +300,8 @@ ClusterFile<ClusterType, Enable>::read_clusters_with_cut(size_t n_clusters) {
         }
 
         int32_t frame_number = 0; // frame number needs to be 4 bytes!
-        while (fread(&frame_number, sizeof(frame_number), 1, fp)) {
-            if (fread(&m_num_left, sizeof(m_num_left), 1, fp)) {
+        while (fread(&frame_number, sizeof(frame_number), 1, m_fp.get())) {
+            if (fread(&m_num_left, sizeof(m_num_left), 1, m_fp.get())) {
                 clusters.set_frame_number(
                     frame_number); // cluster vector will hold the last
                                    // frame number
@@ -366,7 +327,7 @@ ClusterFile<ClusterType, Enable>::read_clusters_with_cut(size_t n_clusters) {
 template <typename ClusterType, typename Enable>
 ClusterType ClusterFile<ClusterType, Enable>::read_one_cluster() {
     ClusterType c;
-    auto rc = fread(&c, sizeof(c), 1, fp);
+    auto rc = fread(&c, sizeof(c), 1, m_fp.get());
     if (rc != 1) {
         throw std::runtime_error(LOCATION + "Could not read cluster");
     }
@@ -385,10 +346,10 @@ ClusterFile<ClusterType, Enable>::read_frame_without_cut() {
             LOCATION + "There are still photons left in the last frame");
     }
     int32_t frame_number;
-    if (fread(&frame_number, sizeof(frame_number), 1, fp) != 1) {
-        if (feof(fp))
+    if (fread(&frame_number, sizeof(frame_number), 1, m_fp.get()) != 1) {
+        if (feof(m_fp.get()))
             throw std::runtime_error(LOCATION + "Unexpected end of file");
-        else if (ferror(fp))
+        else if (ferror(m_fp.get()))
             throw std::runtime_error(LOCATION + "Error reading from file");
 
         throw std::runtime_error(
@@ -397,7 +358,7 @@ ClusterFile<ClusterType, Enable>::read_frame_without_cut() {
     }
 
     uint32_t n_clusters;
-    if (fread(&n_clusters, sizeof(n_clusters), 1, fp) != 1) {
+    if (fread(&n_clusters, sizeof(n_clusters), 1, m_fp.get()) != 1) {
         throw std::runtime_error(LOCATION +
                                  "Could not read number of clusters");
     }
@@ -411,7 +372,7 @@ ClusterFile<ClusterType, Enable>::read_frame_without_cut() {
 
     LOG(logDEBUG1) << "clusters.item_size(): " << clusters.item_size();
 
-    if (fread(clusters.data(), clusters.item_size(), n_clusters, fp) !=
+    if (fread(clusters.data(), clusters.item_size(), n_clusters, m_fp.get()) !=
         static_cast<size_t>(n_clusters)) {
         throw std::runtime_error(LOCATION + "Could not read clusters");
     }
@@ -432,11 +393,11 @@ ClusterFile<ClusterType, Enable>::read_frame_with_cut() {
             "There are still photons left in the last frame");
     }
     int32_t frame_number;
-    if (fread(&frame_number, sizeof(frame_number), 1, fp) != 1) {
+    if (fread(&frame_number, sizeof(frame_number), 1, m_fp.get()) != 1) {
         throw std::runtime_error("Could not read frame number");
     }
 
-    if (fread(&m_num_left, sizeof(m_num_left), 1, fp) != 1) {
+    if (fread(&m_num_left, sizeof(m_num_left), 1, m_fp.get()) != 1) {
         throw std::runtime_error("Could not read number of clusters");
     }
 
