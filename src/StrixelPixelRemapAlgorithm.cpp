@@ -146,22 +146,4 @@ strixel_to_pixel_map(defs::GroupConfig const &group_config,
     return {map, effective_roi};
 }
 
-std::vector<defs::StrixelGroupToPixelMap>
-strixel_to_pixel_maps(defs::SensorConfig const &sensor_config,
-                      defs::SensorModulePlacement const &placement,
-                      InclusiveROI const &roi_user,
-                      defs::BondShift bond_shift) {
-
-    std::vector<defs::StrixelGroupToPixelMap> maps;
-    maps.reserve(sensor_config.group_configs.size());
-
-    for (size_t i = 0; i < sensor_config.group_configs.size(); ++i) {
-        maps.emplace_back(strixel_to_pixel_map(sensor_config.group_configs[i],
-                                               sensor_config.pixel, placement,
-                                               roi_user, bond_shift));
-    }
-
-    return maps;
-}
-
 } // namespace aare::remap::algo

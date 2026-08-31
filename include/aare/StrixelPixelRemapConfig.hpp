@@ -102,8 +102,7 @@ inline constexpr defs::GroupConfig SingleChipMP_iLGAD_P18{
  ********************************/
 
 /// @brief Sensor configuration of the 2x2 cm iLGAD sensor
-inline const defs::SensorConfig SingleChipMP_iLGAD{
-    // NOTE: Vector cannot be constexpr
+inline constexpr defs::SensorConfig<3> SingleChipMP_iLGAD{
     SingleChipMP_iLGAD_pix, //.pixel =
     // .group_configs =
     {SingleChipMP_iLGAD_P25, SingleChipMP_iLGAD_P15, SingleChipMP_iLGAD_P18}};
@@ -160,8 +159,7 @@ inline constexpr defs::GroupConfig SingleChipMP_TEW_P18{
  ********************************/
 
 /// @brief Sensor configuration of the 2x2 cm TEW sensor
-inline const defs::SensorConfig SingleChipMP_TEW{
-    // NOTE: Vector cannot be constexpr
+inline constexpr defs::SensorConfig<3> SingleChipMP_TEW{
     SingleChipMP_TEW_pix, //.pixel =
     // .group_configs
     {SingleChipMP_TEW_P25, SingleChipMP_TEW_P15, SingleChipMP_TEW_P18}};
@@ -199,8 +197,7 @@ inline constexpr defs::GroupConfig Quad_iLGAD_tophalf{
      Quad_iLGAD_pix.num_pix_y - Quad_iLGAD_pix.guardring.y - 1}}; // 502
 
 /// @brief Sensor configuration of the 4x4 cm iLGAD sensor
-inline const defs::SensorConfig Quad_iLGAD{
-    // NOTE: Vector cannot be constexpr
+inline constexpr defs::SensorConfig<2> Quad_iLGAD{
     Quad_iLGAD_pix, //.pixel =
     // .group_configs
     {Quad_iLGAD_bottomhalf, Quad_iLGAD_tophalf}};

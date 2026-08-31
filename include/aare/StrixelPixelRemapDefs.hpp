@@ -111,14 +111,16 @@ struct GroupConfig {
 
 /**
  * @brief Complete description of a sensor.
+ * Templated on the number of separate strixel groups that are part of the
+ * sensor.
  */
-struct SensorConfig {
+template <std::size_t N> struct SensorConfig {
     /// @brief pixel geometry of the sensor
     SensorPixelGeometry pixel;
 
     /// @brief strixel group configurations partitions the sensor into regions
     /// with different strixel geometries and/or routing
-    std::vector<GroupConfig> group_configs;
+    std::array<GroupConfig, N> group_configs;
 };
 
 /**

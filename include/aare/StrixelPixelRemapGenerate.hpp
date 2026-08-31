@@ -230,10 +230,8 @@ inline defs::StrixelGroupToPixelMap jungfrau_ilgad_singlechip_18um_strixel_map(
  *      If @p chip_id does not correspond to a supported predefined
  *      chip placement.
  */
-inline std::vector<defs::StrixelGroupToPixelMap>
-jungfrau_ilgad_singlechip_multipitch_strixel_maps(InclusiveROI rx_roi,
-                                                  int chip_id = 1,
-                                                  defs::BondShift bs = {0, 0}) {
+inline auto jungfrau_ilgad_singlechip_multipitch_strixel_maps(
+    InclusiveROI rx_roi, int chip_id = 1, defs::BondShift bs = {0, 0}) {
     defs::SensorModulePlacement placement;
     if (chip_id == 1)
         placement = config::jungfrau::Chip1;
@@ -267,8 +265,7 @@ jungfrau_ilgad_singlechip_multipitch_strixel_maps(InclusiveROI rx_roi,
  * @return
  *      One remapping map per configured strixel group.
  */
-inline std::vector<defs::StrixelGroupToPixelMap>
-jungfrau_ilgad_singlechip_multipitch_strixel_maps(
+inline auto jungfrau_ilgad_singlechip_multipitch_strixel_maps(
     InclusiveROI rx_roi, defs::SensorModulePlacement placement,
     defs::BondShift bs = {0, 0}) {
 
@@ -357,10 +354,8 @@ jungfrau_tew_singlechip_18um_strixel_map(InclusiveROI rx_roi,
  * @throws std::runtime_error
  *      If @p chip_id is not supported.
  */
-inline std::vector<defs::StrixelGroupToPixelMap>
-jungfrau_tew_singlechip_multipitch_strixel_maps(InclusiveROI rx_roi,
-                                                int chip_id = 1,
-                                                defs::BondShift bs = {0, 0}) {
+inline auto jungfrau_tew_singlechip_multipitch_strixel_maps(
+    InclusiveROI rx_roi, int chip_id = 1, defs::BondShift bs = {0, 0}) {
     defs::SensorModulePlacement placement;
     if (chip_id == 1)
         placement = config::jungfrau::Chip1;
@@ -391,8 +386,7 @@ jungfrau_tew_singlechip_multipitch_strixel_maps(InclusiveROI rx_roi,
  * @return
  *      One remapping map per configured strixel group.
  */
-inline std::vector<defs::StrixelGroupToPixelMap>
-jungfrau_tew_singlechip_multipitch_strixel_maps(
+inline auto jungfrau_tew_singlechip_multipitch_strixel_maps(
     InclusiveROI rx_roi, defs::SensorModulePlacement placement,
     defs::BondShift bs = {0, 0}) {
 
@@ -489,7 +483,7 @@ jungfrau_ilgad_quadtop_25um_strixel_map(InclusiveROI rx_roi,
  *      Two strixel-group remapping maps, ordered according to the quad
  *      sensor configuration.
  */
-inline std::vector<defs::StrixelGroupToPixelMap>
+inline auto
 jungfrau_ilgad_quad_25um_strixel_maps(InclusiveROI rx_roi,
                                       defs::SensorModulePlacement placement,
                                       defs::BondShift bs = {0, 0}) {

@@ -72,9 +72,23 @@ strixel_to_pixel_map(defs::GroupConfig const &group_config,
  * @return A vector of StrixelGroupToPixelMap containing the mappings for all
  * strixel groups.
  */
-std::vector<defs::StrixelGroupToPixelMap> strixel_to_pixel_maps(
-    defs::SensorConfig const &, defs::SensorModulePlacement const &,
-    InclusiveROI const &user_roi, defs::BondShift bond_shift = {0, 0});
+template <std::size_t N>
+std::array<defs::StrixelGroupToPixelMap, N>
+strixel_to_pixel_maps(defs::SensorConfig<N> const &sensor_config,
+                      defs::SensorModulePlacement const &placement,
+                      InclusiveROI const &roi_user,
+                      defs::BondShift bond_shift = {0, 0}) {
+
+    std::array<defs::StrixelGroupToPixelMap, N> maps;
+
+    for (size_t i = 0; i < N; ++i) {
+        maps[i] = strixel_to_pixel_map(sensor_config.group_configs[i],
+                                       sensor_config.pixel, placement, roi_user,
+                                       bond_shift);
+    }
+
+    return maps;
+}
 
 /**
  *  Public API:
