@@ -6,7 +6,7 @@
 // ├── user ROI larger than group (full map check)
 // ├── user ROI smaller than group (full map check)
 // ├── user ROI partially overlaps group (full map ceck)
-// ├── user ROI does not intersect group (full map check)
+// ├── user ROI does not intersect group (check empty)
 // ├── ModuloOrdering::Reverse (test Forward vs Reverse, only a few pixels) ?
 // ├── bond shift ?
 // ├── rotation ?
@@ -343,6 +343,71 @@ TEST_CASE("strixel_to_pixel_map: user ROI does not intersect group ROI",
     CHECK(result.effective_roi.is_empty());
     CHECK(result.map.data() ==
           nullptr); // is there a better check for empty NDArray?
+}
+
+// ModuloOrdering
+TEST_CASE("strixel_to_pixel_map: modulo ordering",
+          "[remap][strixel_to_pixel_map]") {
+
+    const auto group = test_group();
+    const auto sensor = test_sensor();
+    const auto placement = test_placement();
+
+    const InclusiveROI user_roi{60, 62, 60, 62};
+
+    SECTION("Forward ordering") {
+        auto forward_group = group;
+        forward_group.routing.mod_order = defs::ModuloOrdering::Forward;
+
+        const auto result = algo::strixel_to_pixel_map(
+            forward_group, sensor, placement, user_roi, {0, 0});
+
+        CHECK(result.map.shape(0) == 9);
+        CHECK(result.map.shape(1) == 1);
+
+        // Pixels x=60,61,62 correspond to modulo values 0,1,2.
+        //
+        // Forward ordering:
+        //   mod 0 -> strixel row 0
+        //   mod 1 -> strixel row 1
+        //   mod 2 -> strixel row 2
+
+        CHECK(result.map(0, 0) == 0);
+        CHECK(result.map(1, 0) == 1);
+        CHECK(result.map(2, 0) == 2);
+        CHECK(result.map(3, 0) == 3);
+        CHECK(result.map(4, 0) == 4);
+        CHECK(result.map(5, 0) == 5);
+        CHECK(result.map(6, 0) == 6);
+        CHECK(result.map(7, 0) == 7);
+        CHECK(result.map(8, 0) == 8);
+    }
+
+    SECTION("Reverse ordering") {
+        auto reverse_group = group;
+        reverse_group.routing.mod_order = defs::ModuloOrdering::Reverse;
+
+        const auto result = algo::strixel_to_pixel_map(
+            reverse_group, sensor, placement, user_roi, {0, 0});
+
+        CHECK(result.map.shape(0) == 9);
+        CHECK(result.map.shape(1) == 1);
+
+        // Reverse ordering:
+        //   mod 0 -> strixel row 2
+        //   mod 1 -> strixel row 1
+        //   mod 2 -> strixel row 0
+
+        CHECK(result.map(0, 0) == 2);
+        CHECK(result.map(0, 1) == 1);
+        CHECK(result.map(0, 2) == 0);
+        CHECK(result.map(3, 0) == 5);
+        CHECK(result.map(4, 0) == 4);
+        CHECK(result.map(5, 0) == 3);
+        CHECK(result.map(6, 0) == 8);
+        CHECK(result.map(7, 0) == 7);
+        CHECK(result.map(8, 0) == 6);
+    }
 }
 
 // invalid multiplicity
