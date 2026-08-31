@@ -1,26 +1,47 @@
 #include "aare/StrixelPixelRemapAlgorithm.hpp"
 #include <catch2/catch_test_macros.hpp>
 
-// strixel_to_pixel_map
-// ├── full group exactly aligned (full map check)
-// ├── user ROI larger than group (full map check)
-// ├── user ROI smaller than group (full map check)
-// ├── user ROI partially overlaps group (full map ceck)
-// ├── user ROI does not intersect group (check empty)
-// ├── ModuloOrdering::Reverse (test Forward vs Reverse, only a few pixels) ?
-// ├── bond shift ?
-// ├── rotation ?
-// ├── invalid multiplicity (check thows)
-// └── group width not divisible by multiplicity (check throws)
+// Test structure:
+
+// Geometry utilities
+// │
+// ├── translate() <-- InclusiveROI.test.cpp
+// ├── mirror_on_x() <-- InclusiveROI.test.cpp
+// ├── mirror_on_y() <-- InclusiveROI.test.cpp
+// ├── mirrorXY() <-- InclusiveROI.test.cpp
+// └── algo::detail::update_pixel_group_placement()
+//        ├── identity
+//        ├── bond shift
+//        ├── rotation
+//        └── shift + rotation
+
+// Remapping algorithm
+// │
+// └── strixel_to_pixel_map()
+//        ├── full group exactly aligned (full map check)
+//        ├── user ROI larger than group (full map check)
+//        ├── user ROI smaller than group (full map check)
+//        ├── user ROI partially overlaps group (full map ceck)
+//        ├── user ROI does not intersect group (check empty)
+//        ├── ModuloOrdering (check explicit, small map)
+//        |       ├── Forward
+//        |       └── Reverse
+//        ├── update_pixel_group_placement (check integration)
+//        |       ├── bond shift
+//        |       └── Rotate180
+//        ├── invalid multiplicity (check throws)
+//        └── group width not divisible by multiplicity (check throws)
 
 // For the full map checks, I have chosen to reimplement the maths behind the
 // mapping algorithm instead of hardcoding maps. This can be debated.
 // Crucially, I have isolated the maths of the mapping algorithm from the
 // geometry utilities that are used. These are checked separately in
-// InclusiveROI.test.cpp. All geometry operations are hardcoded in the tests
-// here.
+// InclusiveROI.test.cpp save for algo::detail::update_pixel_group_placement(),
+// which combines geometry utilities and is checked here separately for geometry
+// correctness and integration into the remapping algorithm. All geometry
+// operations are hardcoded in the tests here.
 
-// TODO: Implement tests for ModuloOrdering, bond shift, and rotation
+// TODO: Implement tests for bond shift and rotation
 
 using namespace aare;
 using namespace aare::remap;
@@ -33,10 +54,11 @@ defs::SensorPixelGeometry test_sensor() {
     return {50, 50, {0, 0}};
 }
 
-defs::SensorModulePlacement test_placement() {
+defs::SensorModulePlacement
+test_placement(defs::Rotation rotation = defs::Rotation::Identity) {
     // return {.placement_on_module = {50, 99, 50, 99},
     //         .rotation = defs::Rotation::Identity};
-    return {{50, 99, 50, 99}, defs::Rotation::Identity};
+    return {{50, 99, 50, 99}, rotation};
 }
 
 defs::GroupConfig
@@ -48,7 +70,84 @@ test_group(defs::ModuloOrdering ordering = defs::ModuloOrdering::Forward,
     return {{multiplicity, 25.0}, {ordering}, group_roi};
 }
 
+defs::GroupConfig asymmetric_test_group() {
+    // return {.strixel = {.multiplicity = 3, .pitch_um = 25.0},
+    //         .routing = {defs::ModuloOrdering::Forward},
+    //         .placement_on_sensor = {5, 13, 8, 16}};
+    return {{3, 25.0}, {defs::ModuloOrdering::Forward}, {5, 13, 8, 16}};
+}
+
 } // namespace
+
+/***************************************
+ *
+ * Geometry utilities
+ * algo::detail::update_pixel_group_placement
+ *
+ ***************************************/
+TEST_CASE("update_pixel_group_placement: shift and rotation geometry",
+          "[remap][geometry][update_pixel_group_placement]") {
+
+    const auto group = asymmetric_test_group();
+    auto group_roi = group.placement_on_sensor;
+    const auto sensor = test_sensor();
+
+    SECTION("Identity reproduces itself") {
+
+        auto updated = algo::detail::update_pixel_group_placement(
+            group_roi, sensor, {0, 0}, defs::Rotation::Identity);
+
+        CHECK(updated == group_roi);
+    }
+
+    SECTION("Bond shift") {
+        const defs::BondShift shift{2, 3};
+
+        auto updated = algo::detail::update_pixel_group_placement(
+            group_roi, sensor, shift, defs::Rotation::Identity);
+
+        // Original group: {5, 13, 8, 16}
+        // After bond shift (+2, +3):
+        //                 {7, 15, 11, 19}
+        const InclusiveROI expected_roi{7, 15, 11, 19};
+
+        CHECK(updated == expected_roi);
+    }
+
+    SECTION("180 degree rotation") {
+
+        auto updated = algo::detail::update_pixel_group_placement(
+            group_roi, sensor, {0, 0}, defs::Rotation::Rotate180);
+
+        // Original group: {5, 13, 8, 16}
+        // After rotation in 50x50 sensor:
+        //                 {36, 44, 33, 41}
+        const InclusiveROI expected_roi{36, 44, 33, 41};
+
+        CHECK(updated == expected_roi);
+    }
+
+    SECTION("bond shift and rotation") {
+        const auto result = algo::detail::update_pixel_group_placement(
+            group_roi, sensor, {2, 3}, defs::Rotation::Rotate180);
+
+        // Original group: {5, 13, 8, 16}
+        // After bond shift (+2, +3):
+        //                 {7, 15, 11, 19}
+        // After rotation in 50x50 sensor:
+        //                 {34, 43, 30, 38}
+        const InclusiveROI expected_roi{34, 42, 30, 38};
+
+        CHECK(result == expected_roi);
+    }
+}
+
+/***************************************
+ *
+ * Remapping algorithm
+ * strixel_to_pixel_map
+ *
+ ***************************************/
 
 // full group exactly aligned
 TEST_CASE("strixel_to_pixel_map: user ROI exactly aligned with group ROI",
@@ -349,15 +448,13 @@ TEST_CASE("strixel_to_pixel_map: user ROI does not intersect group ROI",
 TEST_CASE("strixel_to_pixel_map: modulo ordering",
           "[remap][strixel_to_pixel_map]") {
 
-    const auto group = test_group();
     const auto sensor = test_sensor();
     const auto placement = test_placement();
 
     const InclusiveROI user_roi{60, 62, 60, 62};
 
     SECTION("Forward ordering") {
-        auto forward_group = group;
-        forward_group.routing.mod_order = defs::ModuloOrdering::Forward;
+        const auto forward_group = test_group(defs::ModuloOrdering::Forward);
 
         const auto result = algo::strixel_to_pixel_map(
             forward_group, sensor, placement, user_roi, {0, 0});
@@ -384,8 +481,7 @@ TEST_CASE("strixel_to_pixel_map: modulo ordering",
     }
 
     SECTION("Reverse ordering") {
-        auto reverse_group = group;
-        reverse_group.routing.mod_order = defs::ModuloOrdering::Reverse;
+        const auto reverse_group = test_group(defs::ModuloOrdering::Reverse);
 
         const auto result = algo::strixel_to_pixel_map(
             reverse_group, sensor, placement, user_roi, {0, 0});
@@ -407,6 +503,86 @@ TEST_CASE("strixel_to_pixel_map: modulo ordering",
         CHECK(result.map(6, 0) == 8);
         CHECK(result.map(7, 0) == 7);
         CHECK(result.map(8, 0) == 6);
+    }
+}
+
+// update_pixel_group_placement integration
+TEST_CASE(
+    "strixel_to_pixel_map: update_pixel_group_placement integration",
+    "[remap][strixel_to_pixel_map][geometry][update_pixel_group_placement]") {
+
+    const auto group = asymmetric_test_group();
+    const auto sensor = test_sensor();
+    const auto placement = test_placement();
+
+    // user_roi = sensor_roi
+    const InclusiveROI user_roi = placement.placement_on_module;
+
+    // Rebase into sensor roi:
+    // {50, 99, 50, 99}
+    const InclusiveROI user_roi_local = {0, 49, 0, 49};
+
+    // Pixel index helper (for readability)
+    const auto expected_pixel = [&](ssize_t x, ssize_t y) {
+        return (y - user_roi_local.ymin) * user_roi_local.width() +
+               (x - user_roi_local.xmin);
+    };
+
+    SECTION("bond shift integrates correctly") {
+        const defs::BondShift shift{2, 3};
+
+        const auto result = algo::strixel_to_pixel_map(group, sensor, placement,
+                                                       user_roi, shift);
+
+        // Original group: {5, 13, 8, 16}
+        // After bond shift (+2, +3):
+        //                 {7, 15, 11, 19}
+        const InclusiveROI expected_roi{7, 15, 11, 19};
+
+        CHECK(result.effective_roi == expected_roi);
+        CHECK(result.map.shape(0) == 27);
+        CHECK(result.map.shape(1) == 3);
+
+        // Bottom-left pixel of the shifted group.
+        // x=7, y=11 -> dx=0, dy=0 -> strixel (0,0)
+        CHECK(result.map(0, 0) == expected_pixel(7, 11));
+
+        // Same pixel row, different modulo position.
+        // x=9, y=11 -> dx=2 -> strixel (2,0)
+        CHECK(result.map(2, 0) == expected_pixel(9, 11));
+
+        // A pixel from a later row and column.
+        // x=13, y=15 -> dx=6, dy=4 -> strixel (12,2)
+        CHECK(result.map(12, 2) == expected_pixel(13, 15));
+    }
+
+    SECTION("rotation integrates correctly") {
+        const auto rotated_placement =
+            test_placement(defs::Rotation::Rotate180);
+
+        const auto result = algo::strixel_to_pixel_map(
+            group, sensor, rotated_placement, user_roi, {0, 0});
+
+        // Original group: {5, 13, 8, 16}
+        // After rotation in 50x50 sensor:
+        //                 {36, 44, 33, 41}
+        const InclusiveROI expected_roi{36, 44, 33, 41};
+
+        CHECK(result.effective_roi == expected_roi);
+        CHECK(result.map.shape(0) == 27);
+        CHECK(result.map.shape(1) == 3);
+
+        // Bottom-left pixel of the shifted group.
+        // x=36, y=33 -> dx=0, dy=0 -> strixel (0,0)
+        CHECK(result.map(0, 0) == expected_pixel(36, 33));
+
+        // Same pixel row, different modulo position.
+        // x=38, y=33 -> dx=2 -> strixel (2,0)
+        CHECK(result.map(2, 0) == expected_pixel(38, 33));
+
+        // A pixel from a later row and column.
+        // x=42, y=37 -> dx=6, dy=4 -> strixel (12,2)
+        CHECK(result.map(12, 2) == expected_pixel(42, 37));
     }
 }
 

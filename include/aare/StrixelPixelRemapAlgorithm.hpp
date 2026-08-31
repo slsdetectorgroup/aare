@@ -4,6 +4,35 @@
 
 namespace aare::remap::algo {
 
+// Internal geometry helper
+namespace detail {
+/**
+ * @brief Apply physical transformations to a sensor-local ROI.
+ *
+ * IMPORTANT:
+ * Bond shifts are applied before rotation.
+ * The order is intentional because bond shifts are defined in the
+ * sensor's native coordinate system.
+ *
+ * This function is not intended to be exposed to the public
+ */
+InclusiveROI inline update_pixel_group_placement(
+    InclusiveROI roi, defs::SensorPixelGeometry const &pixel,
+    defs::BondShift bond_shift, defs::Rotation rot) {
+    // If there is a bond shift, translate the roi
+    if (bond_shift.x != 0 || bond_shift.y != 0)
+        roi = aare::inclusiveroi::geom::translate(roi, bond_shift.x,
+                                                  bond_shift.y);
+
+    // If there is a rotation given, mirror in X and Y (emulates a rotation)
+    if (rot == defs::Rotation::Rotate180)
+        roi = aare::inclusiveroi::geom::mirrorXY(roi, pixel.num_pix_x / 2,
+                                                 pixel.num_pix_y / 2);
+
+    return roi;
+}
+} // namespace detail
+
 /**
  * @brief Build the strixel-to-pixel order map for one strixel group.
  * The strixel mapping is determined by the group's multiplicity and

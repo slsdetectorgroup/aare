@@ -5,30 +5,6 @@
 
 namespace aare::remap::algo {
 
-/**
- * @brief Apply physical transformations to a sensor-local ROI.
- *
- * IMPORTANT:
- * Bond shifts are applied before rotation.
- * The order is intentional because bond shifts are defined in the
- * sensor's native coordinate system.
- */
-InclusiveROI inline update_pixel_group_placement(
-    InclusiveROI roi, defs::SensorPixelGeometry const &pixel,
-    defs::BondShift bond_shift, defs::Rotation rot) {
-    // If there is a bond shift, translate the roi
-    if (bond_shift.x != 0 || bond_shift.y != 0)
-        roi = aare::inclusiveroi::geom::translate(roi, bond_shift.x,
-                                                  bond_shift.y);
-
-    // If there is a rotation given, mirror in X and Y (emulates a rotation)
-    if (rot == defs::Rotation::Rotate180)
-        roi = aare::inclusiveroi::geom::mirrorXY(roi, pixel.num_pix_x / 2,
-                                                 pixel.num_pix_y / 2);
-
-    return roi;
-}
-
 defs::StrixelGroupToPixelMap
 strixel_to_pixel_map(defs::GroupConfig const &group_config,
                      defs::SensorPixelGeometry const &pixel,
@@ -69,9 +45,9 @@ strixel_to_pixel_map(defs::GroupConfig const &group_config,
                   << group_config.placement_on_sensor << '\n';
 
     // -- 2) Apply the physical bond shift first, sensor rotation second.
-    const InclusiveROI roi_group =
-        update_pixel_group_placement(group_config.placement_on_sensor, pixel,
-                                     bond_shift, placement.rotation);
+    const InclusiveROI roi_group = detail::update_pixel_group_placement(
+        group_config.placement_on_sensor, pixel, bond_shift,
+        placement.rotation);
 
     LOG(logDEBUG) << "aare::remap::algo::strixel_to_pixel_map: Group ROI after "
                      "transformation (as in local transformation) "
