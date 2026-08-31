@@ -350,14 +350,39 @@ def code(s, x, y, w, lines, size=PT_CODE, title=None):
     return h
 
 
+_CALLOUT_RED = re.compile(r"⟪([^⟫]*)⟫")
+
+
+def _split_red(text):
+    """Yield (segment, is_red) in order, splitting on the ⟪…⟫ marker."""
+    out, pos = [], 0
+    for m in _CALLOUT_RED.finditer(text):
+        if m.start() > pos:
+            out.append((text[pos:m.start()], False))
+        out.append((m.group(1), True))
+        pos = m.end()
+    if pos < len(text):
+        out.append((text[pos:], False))
+    return out
+
+
 def callout(s, x, y, w, text, h=0.78, color=ACCENT, size=PT_LEAD):
     rect(s, x + 0.045, y, w - 0.045, h, PANEL)
     rect(s, x, y, 0.045, h, color)
     tf = tb(s, x + 0.28, y + 0.10, w - 0.5, h - 0.2, MSO_ANCHOR.MIDDLE)
     p = para(tf, True, line=1.2)
-    for j, part in enumerate(text.split("**")):
-        if part:
-            run(p, part, size, PALE if j % 2 else TEXT2, bold=bool(j % 2))
+    # ⟪…⟫ paints RED, and it is resolved BEFORE ** so that a red span can contain
+    # bold phrases -- which is what marking a whole sentence red needs. Same
+    # marker and meaning as in code(), so the deck keeps one convention, not two.
+    # Do not straddle the two markers: **bold ⟪red** …⟫ splits on ** inside each
+    # colour segment separately, and the parity would be wrong.
+    for seg, red in _split_red(text):
+        for j, part in enumerate(seg.split("**")):
+            if not part:
+                continue
+            bold = bool(j % 2)
+            run(p, part, size, RED if red else (PALE if bold else TEXT2),
+                bold=bold)
 
 
 def _up(txt):
@@ -2377,9 +2402,14 @@ callout(s, M, 5.98, 6.04,
         "160 000 CUDA threads read it at once, so the update is **applied at the "
         "frame boundary**.", h=0.86, size=PT_LEAD)
 callout(s, 6.75, 5.98, 6.04,
+        # "all in f64" earns its place: from here to slide 29 the tables label
+        # the CUDA side [f64 ped] / [f32 ped] and say nothing about the CPU side,
+        # which invites the reading that the CPU moved too. It never does --
+        # pd_type is double in every binding, and neither CPU finder is
+        # instantiated at float anywhere in the library.
         "A straight CPU↔CUDA comparison therefore moves **two** things at once. "
-        "**ClusterFinderFrozen** moves only the update: same arithmetic, same "
-        "gates, same scan.", h=0.86, size=PT_LEAD, color=AMBER)
+        "⟪**ClusterFinderFrozen** moves only the update: same arithmetic, same "
+        "gates, same scan, **all in f64**.⟫", h=0.86, size=PT_LEAD, color=AMBER)
 caption(s, M, 7.02, 12.30,
         "Frozen is a diagnostic twin, not a product. Every finder trains on the "
         "same 1 000 pedestal frames and runs the same 10 000 data frames.")
@@ -2442,9 +2472,10 @@ bullets(s, M, 1.82, 12.40, [
 table(s, M, 3.42, 12.40,
       ["comparison", "the one thing that differs", "A-only / B-only",
        "% of clusters"],
-      [["frozen CPU  vs  CUDA  [f64 ped]", "**nothing**", "**0 / 0**", "**0 %**"],
-       ["frozen CPU  vs  CUDA  [f32 ped]", "the float32 pedestal EMA drifting: "
-        "see next slide", "0 / 6", "0.000026 %"]],
+      [["frozen CPU [f64]  vs  CUDA  [f64 ped]", "**nothing**", "**0 / 0**",
+        "**0 %**"],
+       ["frozen CPU [f64]  vs  CUDA  [f32 ped]", "the float32 pedestal EMA "
+        "drifting: see next slide", "0 / 6", "0.000026 %"]],
       colw=[0.28, 0.40, 0.17, 0.15], size=PT_TABLE, rowh=0.60)
 # The row that measures the PORT with the timing held fixed. Ringed rather than
 # recoloured, and drawn after the table so the outline sits over the zebra.
@@ -2456,7 +2487,8 @@ callout(s, M, 5.40, 12.30,
         h=0.76, size=PT_LEAD, color=RED)
 caption(s, M, 6.38, 12.30,
         "3×3 · 10 000 frames · 23.2 M clusters · exact centre-set difference at "
-        "tol = 0. [f64 ped] and [f32 ped] differ only in DEVICE_PED_TYPE. What is "
+        "tol = 0. [f64 ped] and [f32 ped] differ only in DEVICE_PED_TYPE, on the "
+        "CUDA side: both CPU finders hold the pedestal in f64 always. What is "
         "left once the timing is allowed to differ is slide 29.")
 
 notes(s, """SAY THIS -- 121 words, about 44 s.
@@ -2511,8 +2543,11 @@ chrome(s, 27, "Validation · the disagreement, seen",
        "The whole disagreement is one duplicate centre")
 figure(s, "fig_mismatch147", 1.19, 1.72, 10.95)
 callout(s, M, 6.34, 6.04,
-        "Only each finder's **own** 3×3 footprints are drawn, so the panels differ "
-        "**exactly** where the finders do.", h=0.78, size=PT_LEAD)
+        # This is the one f32 slide in the section, so the panel on the left has
+        # to be named f64 or the picture reads as f32 against f32.
+        "**frozen CPU [f64]** left, **CUDA [f32]** right. Only each finder's "
+        "**own** 3×3 footprints are drawn, so the panels differ **exactly** "
+        "where the finders do.", h=0.78, size=PT_LEAD)
 callout(s, 6.75, 6.34, 6.04,
         "cuda's patch is **one row taller**: a second centre directly below the one "
         "both found. **The charge is already counted**: a duplicate, not a new "
@@ -2669,24 +2704,28 @@ bullets(s, M, 1.82, 12.40, [
     "The serial finder **updates the pedestal as it scans**, so a pixel can be "
     "tested against a pedestal its own neighbours already moved. Frozen and "
     "CUDA both **hold the pedestal still for the whole frame**.",
-    "That is the only thing separating these two rows from the exact pair. And "
-    "the rows carry **the same 8 and 11 clusters**, so **nothing CUDA does "
-    "contributes anything at all**.",
+    "Slide 26 already showed **frozen and CUDA agree exactly** at f64, so this "
+    "row reads **the same 8 and 11** with frozen in CUDA's place: **nothing the "
+    "port does contributes anything at all**.",
 ], size=PT_BODY)
+# ONE ROW, NOT TWO. The serial-vs-frozen row (also 8 / 11) used to sit above this
+# one, and the argument was "the two rows are identical, so CUDA adds nothing".
+# It closes without the row: slide 26 measured frozen == CUDA exactly at f64, so
+# substituting one for the other in this row cannot change it. The dropped row is
+# measured and kept in the notes below, for the question.
 table(s, M, 3.42, 12.40,
       ["comparison", "the one thing that differs", "A-only / B-only",
        "% of clusters"],
-      [["serial CPU  vs  frozen CPU", "update timing alone: **a CPU-only effect**",
-        "**8 / 11**", "0.000082 %"],
-       ["serial CPU  vs  CUDA  [f64 ped]", "the same thing, **and nothing else**",
+      [["serial CPU [f64]  vs  CUDA  [f64 ped]",
+        "when the pedestal is updated, **and nothing else**",
         "**8 / 11**", "0.000082 %"]],
       colw=[0.28, 0.40, 0.17, 0.15], size=PT_TABLE, rowh=0.60)
-callout(s, M, 5.40, 12.30,
+callout(s, M, 4.90, 12.30,
         "**19 in 23 244 605, and the port is in none of them.** frozen and CUDA "
         "agree exactly at f64, so the one variable left between serial and CUDA "
         "is **when the pedestal moves**. Which test it moves is the next two "
         "slides.", h=0.76, size=PT_LEAD, color=RED)
-caption(s, M, 6.38, 12.30,
+caption(s, M, 5.88, 12.30,
         "3×3 · 10 000 frames · 23.2 M clusters · exact centre-set difference at "
         "tol = 0. A-only means found by the left finder and not by the right.")
 notes(s, """SAY THIS -- 112 words, about 41 s.
@@ -2698,15 +2737,24 @@ notes(s, """SAY THIS -- 112 words, about 41 s.
   of that pixel's neighbours have already pushed their values into the pedestal.
   Frozen, and CUDA, keep the pedestal still for the whole frame.
 
-- Now read the two rows. Serial against frozen: 8 and 11. Serial against CUDA:
-  the same 8 and 11. Identical.
+- Now read the row. The serial finder against CUDA: 8 clusters one way, 11 the
+  other, out of 23 million.
 
-- And remember the previous slide: frozen and CUDA agree EXACTLY at f64. So the
-  only variable left between the serial finder and CUDA is the one frozen was
-  built to isolate -- when the pedestal is updated. All nineteen clusters come
-  from that, and none of them from the port.
+- And remember slide 26: frozen and CUDA agree EXACTLY at f64. So put frozen in
+  CUDA's place and this row does not move. The only variable left between the
+  serial finder and CUDA is the one frozen was built to isolate -- when the
+  pedestal is updated. All nineteen clusters come from that, and none of them
+  from the port.
 
 - The next two slides say which test does it.
+
+DETAILS: the row that used to sit above this one, if someone asks for it.
+
+    serial CPU  vs  frozen CPU     8 / 11 = 19   update timing, CPU against CPU
+
+It is measured, not inferred, and it is identical to the row on the slide -- that
+is the point. It was dropped because slide 26 makes it derivable and two rows
+carrying the same four numbers invited the audience to hunt for a difference.
 
 DETAILS: the decomposition, in case it is asked before the next slide gets there.
 
