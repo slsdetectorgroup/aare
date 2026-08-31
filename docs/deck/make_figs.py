@@ -82,10 +82,14 @@ PALE   = "#E7EDF4"   # Act II / data 3 / primary text
 TEXT2  = "#A5B2C4"
 MUTED  = "#6B7A90"   # non-data only: grid, axes, annotation
 GREEN  = "#5CC8A0"   # rooflines / floors
-RED    = "#E8695C"   # fig_test3 only: the frozen finder, so AMBER can keep its
-                     # one meaning across both panels (a pixel that pushed the
-                     # pedestal). Never colour-alone — the frozen row is always
-                     # labelled and always sits above the serial row.
+RED    = "#E8695C"   # THE GPU IS STOPPED, or the odd one out. Two uses, both
+                     # chosen so AMBER can keep one meaning inside a picture:
+                     #   - timelines: the host-block span (fig_opt1_timeline,
+                     #     fig_streams). Amber is the H2D BAR in those figures,
+                     #     so an amber span meant both "copying" and "idle".
+                     #   - fig_test3 / fig_pagefault: the frozen finder, the
+                     #     faulting path.
+                     # Never colour-alone — every red region is also labelled.
 
 plt.rcParams.update({
     "font.family": "DejaVu Sans", "font.size": 9,
@@ -479,7 +483,8 @@ def _frame_bars(ax, y, t0):
     ax.broken_barh([(t0 + H_ + K_, D_)], (y, LANE_), facecolors=PALE, zorder=3)
 
 
-def _schedule(n_frames, n_streams, H=None, K=None, D=None, round_size=None):
+def _schedule(n_frames, n_streams, H=None, K=None, D=None, round_size=None,
+              host_gap=0.0):
     """Greedy list schedule that honours the real engine constraints.
 
     H2D and D2H are ONE FIFO resource each -- the GPU has a single copy engine
@@ -488,12 +493,20 @@ def _schedule(n_frames, n_streams, H=None, K=None, D=None, round_size=None):
     three stages stay ordered, and a stream cannot start its next frame until
     its previous D2H has freed the per-stream buffers.
 
-    round_size=n reproduces opt2's cudaDeviceSynchronize() after every round of
-    n frames: every resource resets to the round's end, so the drain is a
-    consequence of the barrier rather than a drawn-in gap.
+    round_size=n reproduces opt2's per-round drain: every resource resets to the
+    round's end, so the pipeline drain is a consequence of the barrier rather
+    than a drawn-in gap.
+
+    host_gap=g then adds the interval the HOST owns between rounds, which the
+    engines cannot use. In opt2 that is real and large: after the last D2H the
+    drain loop reads each stream's count, issues a second D2H for the payload,
+    syncs again and push_back()s the clusters, and only then does the next
+    round's launch phase std::memcpy four frames into the pinned staging buffers
+    before its first H2D. Every engine is idle for all of it.
 
     Returns (frames, drains) with frames = [(stream, h0, k0, d0)] and drains =
-    [(t_h2d_goes_idle, t_round_end)] -- exactly the time the barrier costs.
+    [(t_h2d_goes_idle, t_gpu_done, t_next_round_starts)]: the first interval is
+    the pipeline draining, the second is the host.
     """
     H, K, D = H or H_, K or K_, D or D_
     h_free = d_free = 0.0
@@ -502,8 +515,9 @@ def _schedule(n_frames, n_streams, H=None, K=None, D=None, round_size=None):
     last_h_end = 0.0
     for i in range(n_frames):
         if round_size and i and i % round_size == 0:
-            t = max(max(ready), h_free, d_free)
-            drains.append((last_h_end, t))
+            gpu_done = max(max(ready), h_free, d_free)
+            t = gpu_done + host_gap
+            drains.append((last_h_end, gpu_done, t))
             h_free = d_free = t
             ready = [t] * n_streams
         s = i % n_streams
@@ -512,7 +526,8 @@ def _schedule(n_frames, n_streams, H=None, K=None, D=None, round_size=None):
         d0 = max(k1, d_free); d_free = ready[s] = d0 + D
         frames.append((s, h0, k0, d0))
     if round_size:
-        drains.append((last_h_end, max(max(ready), h_free, d_free)))
+        gpu_done = max(max(ready), h_free, d_free)
+        drains.append((last_h_end, gpu_done, gpu_done + host_gap))
     return frames, drains
 
 
@@ -526,57 +541,96 @@ def _draw_schedule(ax, frames, top_lane=3.0, H=None, K=None, D=None):
 
 
 def fig_streams():
-    fig, axes = plt.subplots(3, 1, figsize=(7.7, 2.85))
+    # 3.15 tall, not 2.85, and hspace 1.05, not 0.75: the three panels are three
+    # separate claims and each carries a title above it, so what separates them
+    # has to read as a gap between arguments rather than as another lane. The
+    # panels keep their height and the gaps take the extra; placed at 8.05 in on
+    # the slide that puts the bottom at 5.68, still clear of the bullets at 5.86.
+    # 3.72 tall, not 3.15: the legend moved out of panel 1's title row (see
+    # below) and now sits under panel 3, and the extra height goes into the
+    # lanes. The saved WIDTH is unchanged, and the slide scales by width, so
+    # every string still projects at the same point size.
+    fig, axes = plt.subplots(3, 1, figsize=(9.4, 3.40))
     FR = H_ + K_ + D_
 
-    # --- opt1: one stream, strictly serial
+    # THE HOST GAPS ARE DRAWN, and each is sized to its MEASURED share of its
+    # own panel's period. Without them panel 1 said the GPU is busy end to end,
+    # which is the opposite of opt1's problem -- fig_opt1_timeline's docstring
+    # had flagged exactly this and it was never fixed here.
+    #   opt1   63.26 us/frame measured, 33.2 us of engine work (13.1+14.7+5.3)
+    #          -> 30.1 us of host, 48 % of the frame.  FR = 33 -> HOST1 = 30.
+    #   opt2   40.44 us/frame -> 161.8 us per round of 4, against 87.7 us of
+    #          engine makespan (s4 16.2/15.2/7.7, one FIFO per direction)
+    #          -> 74.1 us of gap, 46 % of the round. Round makespan here is 72
+    #          schematic units, so HOST2 = 61 puts the gap at the same 46 %.
+    # Cross-panel RATES are still schematic -- they always were -- so the claim
+    # each panel makes is about its own shape, not about the other two.
+    HOST1, HOST2 = 30, 61
+    P1 = FR + HOST1
+
+    # --- opt1: one stream, and the host between every frame
     ax = axes[0]
     for i in range(3):
-        _frame_bars(ax, 1.0, i * FR)
+        _frame_bars(ax, 1.0, i * P1)
+        ax.axvspan(i * P1 + FR, (i + 1) * P1, color=RED, alpha=0.20, zorder=1)
     ax.set_ylim(0.4, 2.3)
-    ax.text(3 * FR + 6, 1.34, "one engine at a time", color=MUTED, fontsize=10.6,
-            va="center")
+    ax.text(FR + HOST1 / 2, 0.72, "host copies out", color=RED, fontsize=10.6,
+            ha="center", va="center")
 
-    # --- opt2: 4 streams, barrier after each round. The drain is not drawn in;
-    # it falls out of the schedule, because after the round's last H2D the copy
-    # engine has nothing left to feed until the barrier releases.
+    # --- opt2: 4 streams, then the host, every 4 frames. Two intervals, drawn
+    # apart: the pale one is the pipeline draining (H2D has nothing left to feed
+    # until the round ends), the red one runs from the round's LAST D2H to the
+    # next round's FIRST H2D and is the host's alone.
     ax = axes[1]
-    frames, drains = _schedule(8, 4, round_size=4)
+    frames, drains = _schedule(6, 4, round_size=4, host_gap=HOST2)
     _draw_schedule(ax, frames)
-    for h_idle, t_end in drains:
-        ax.axvspan(h_idle, t_end, color=AMBER, alpha=0.13, zorder=1)
+    for h_idle, gpu_done, t_end in drains[:-1]:   # skip the incomplete round
+        ax.axvspan(h_idle, gpu_done, color=MUTED, alpha=0.13, zorder=1)
+        ax.axvspan(gpu_done, t_end, color=RED, alpha=0.20, zorder=1)
     # The label has to clear the top lane AND stay out of the axes title, which
     # is anchored to the axes box and so moves with the LIMITS, not with the
     # data. Extra headroom in y is what separates the two.
-    ax.text((drains[0][0] + drains[0][1]) / 2, 4.05, "barrier — H2D starves",
-            color=AMBER, fontsize=10.6, ha="center", va="bottom")
+    ax.text((drains[0][1] + drains[0][2]) / 2, 4.05,
+            "host copies 4 frames out",
+            color=RED, fontsize=10.6, ha="center", va="bottom")
     ax.set_ylim(-0.4, 5.6)
 
-    # --- opt3: no barriers, continuous
+    # --- opt3: the host work is not gone, it has moved OUT of the window -- one
+    # sync per batch, so the copies all happen after the last frame. Nothing to
+    # draw here is the point.
     ax = axes[2]
-    frames, _ = _schedule(11, 4)
+    frames, _ = _schedule(13, 4)
     _draw_schedule(ax, frames)
     ax.set_ylim(-1.5, 4.5)
-    ax.text(0, -0.25, "streams never wait on each other — the H2D engine never goes idle",
+    ax.text(0, -0.25, "the engines never stop; the host copies out at the END",
             color=ACCENT, fontsize=10.6, va="top")
-    titles = ["opt1  ·  1 stream, synchronous",
-              "opt2  ·  4 streams, sync barrier per round",
-              "opt3  ·  4 streams, barriers removed"]
+    # The legend no longer sits above panel 1, so all three titles are free to
+    # carry their own gloss. "one engine at a time" used to be a text block to
+    # the RIGHT of panel 1, which cost ~2 in of width that the lanes now use.
+    titles = ["opt1  ·  1 stream  ·  one engine at a time",
+              "opt2  ·  4 streams, drained every 4 frames",
+              "opt3  ·  4 streams, drained once per batch"]
     for ax, t in zip(axes, titles):
-        ax.set_xlim(-2, 178)
+        ax.set_xlim(-2, 200)
         ax.set_yticks([]); ax.set_xticks([])
         bare(ax, keep=())
         ax.set_title(t, color=TEXT2, fontsize=10.6, loc="left", pad=4)
 
+    # Under the whole figure, not above panel 1: it was eating the right 60 %
+    # of that title row, which is what forced panel 1's title to stay short.
     handles = [Rectangle((0, 0), 1, 1, color=c) for c in (AMBER, ACCENT, PALE)]
-    axes[0].legend(handles, ["H2D copy", "kernel", "D2H copy"], frameon=False,
-                   fontsize=10.6, labelcolor=TEXT2, ncol=3, loc="lower right",
-                   bbox_to_anchor=(1.02, 0.98), handlelength=1.1)
+    fig.legend(handles, ["H2D copy", "kernel", "D2H copy"], frameon=False,
+               fontsize=10.6, labelcolor=TEXT2, ncol=3, loc="lower center",
+               bbox_to_anchor=(0.5, 0.0), handlelength=1.1)
     # "time →" inside the axes, at the far end: as an xlabel it sat under the
     # left edge, on top of the sentence already written there.
-    axes[2].text(176, -0.25, "time  →", color=MUTED, fontsize=10.6,
+    axes[2].text(198, -0.25, "time  →", color=MUTED, fontsize=10.6,
                  ha="right", va="top")
-    fig.subplots_adjust(hspace=0.75, bottom=0.10)
+    # Only hspace and bottom: widening the AXES would widen the saved PNG, and
+    # the PNG is then scaled to a fixed 8.05 in on the slide, so every string in
+    # it would project smaller. The gap has to come from the canvas, not from the
+    # margins.
+    fig.subplots_adjust(hspace=1.05, bottom=0.14)
     save(fig, "fig_streams")
 
 
@@ -654,13 +708,18 @@ def fig_gpu_model():
 
 # ------------------------------------------------------------- 5. pinning
 def fig_pinning():
-    fig = plt.figure(figsize=(7.7, 2.6))
+    # 2.78 tall, and the slide places it at 8.10 in rather than 7.30: the two
+    # schematics are the argument and they were reading as one block, with
+    # "every transfer is copied twice" sitting a tenth of an inch above the
+    # PINNED heading. The extra height buys the y range below, where the gap
+    # between the two halves is 1.28 units instead of 0.78.
+    fig = plt.figure(figsize=(7.7, 2.78))
     ax = fig.add_axes([0, 0.04, 0.655, 0.96]); ax.axis("off")
     # 11.6 units across 5.04 in is 0.435 in per unit; every box below is sized
     # so its longest string fits INSIDE it at 11.2 pt, and every arrow label
     # sits above the boxes rather than in the gap between them, because the gap
     # is narrower than the words that were being put in it.
-    ax.set_xlim(0, 11.6); ax.set_ylim(0, 7.0)
+    ax.set_xlim(0, 11.6); ax.set_ylim(0, 7.6)
 
     def box(x, y, w, h, label, sub=""):
         ax.add_patch(Rectangle((x, y), w, h, facecolor=PANEL, edgecolor=RULE, lw=1))
@@ -675,24 +734,24 @@ def fig_pinning():
         ax.text((x0 + x1) / 2, ytext, label, ha="center", va="bottom",
                 color=color, fontsize=11.2)
 
-    ax.text(0, 6.52, "PAGEABLE  ·  before opt4", color=AMBER, fontsize=11.2,
+    ax.text(0, 7.05, "PAGEABLE  ·  before opt4", color=AMBER, fontsize=11.2,
             fontweight="bold")
-    box(0, 4.10, 3.0, 1.05, "numpy array", "pageable")
-    box(4.3, 4.10, 3.0, 1.05, "driver staging", "hidden buffer")
-    box(8.6, 4.10, 3.0, 1.05, "GPU", "device memory")
-    arrow(3.0, 4.3, 4.62, AMBER, "memcpy", 5.35)
-    arrow(7.3, 8.6, 4.62, AMBER, "DMA", 5.35)
-    ax.text(0, 3.64, "every transfer is copied twice", color=MUTED, fontsize=11.2)
+    box(0, 4.85, 3.0, 1.05, "numpy array", "pageable")
+    box(4.3, 4.85, 3.0, 1.05, "driver staging", "hidden buffer")
+    box(8.6, 4.85, 3.0, 1.05, "GPU", "device memory")
+    arrow(3.0, 4.3, 5.37, AMBER, "memcpy", 6.10)
+    arrow(7.3, 8.6, 5.37, AMBER, "DMA", 6.10)
+    ax.text(0, 4.38, "every transfer is copied twice", color=MUTED, fontsize=11.2)
 
-    ax.text(0, 2.86, "PINNED  ·  opt4", color=ACCENT, fontsize=11.2, fontweight="bold")
-    box(0, 0.90, 3.0, 1.05, "numpy array", "page-locked")
-    box(8.6, 0.90, 3.0, 1.05, "GPU", "device memory")
-    arrow(3.0, 8.6, 1.42, ACCENT, "DMA · reads host RAM directly", 2.15)
-    ax.text(0, 0.42, "no staging copy, no page faults, fully async",
+    ax.text(0, 3.10, "PINNED  ·  opt4", color=ACCENT, fontsize=11.2, fontweight="bold")
+    box(0, 1.10, 3.0, 1.05, "numpy array", "page-locked")
+    box(8.6, 1.10, 3.0, 1.05, "GPU", "device memory")
+    arrow(3.0, 8.6, 1.62, ACCENT, "DMA · reads host RAM directly", 2.35)
+    ax.text(0, 0.60, "no staging copy, no page faults, fully async",
             color=MUTED, fontsize=11.2)
 
     # the rule, in one inset: pinning pays only where H2D is the tallest bar
-    ax2 = fig.add_axes([0.745, 0.16, 0.255, 0.62])
+    ax2 = fig.add_axes([0.745, 0.15, 0.255, 0.68])
     x = np.arange(2)
     # 3x3 from 2026-08-18_f64, 9x9 from 2026-08-20_f64_cap1700 -- NOT the
     # cap-1500 ladder, which read 82.17 -> 80.44 and put a stale x1.02 on the
@@ -702,44 +761,66 @@ def fig_pinning():
     ax2.bar(x - 0.19, before, width=0.36, color=AMBER, zorder=3, label="opt3")
     ax2.bar(x + 0.19, after, width=0.36, color=ACCENT, zorder=3, label="opt4")
     for xi, (b, a) in enumerate(zip(before, after)):
-        ax2.text(xi - 0.19, b + 2, f"{b:.0f}", ha="center", color=TEXT2, fontsize=11.2)
-        ax2.text(xi + 0.19, a + 2, f"{a:.0f}", ha="center", color=TEXT2, fontsize=11.2)
-        ax2.text(xi, 92, f"×{b / a:.2f}", ha="center", color=PALE, fontsize=11.2,
-                 fontweight="bold")
+        ax2.text(xi - 0.19, b + 2.5, f"{b:.0f}", ha="center", color=TEXT2, fontsize=11.2)
+        ax2.text(xi + 0.19, a + 2.5, f"{a:.0f}", ha="center", color=TEXT2, fontsize=11.2)
+        # The ratio rides just above ITS OWN pair. On a shared row at y = 92 the
+        # 3x3 one floated 55 units above two 30-unit bars, which is where the
+        # legend has to go, and the two collided.
+        ax2.text(xi, max(b, a) + 12, f"×{b / a:.2f}", ha="center", color=PALE,
+                 fontsize=11.2, fontweight="bold")
     ax2.set_xticks(x)
     ax2.set_xticklabels(["3×3\nH2D-bound", "9×9\nkernel-bound"], color=TEXT2,
                         fontsize=11.2)
-    ax2.set_ylim(0, 104); ax2.set_yticks([]); bare(ax2, keep=("bottom",))
+    ax2.set_ylim(0, 122); ax2.set_yticks([]); bare(ax2, keep=("bottom",))
     ax2.set_title("µs / frame", color=MUTED, fontsize=11.2, pad=6)
-    ax2.legend(frameon=False, fontsize=11.2, labelcolor=TEXT2, loc="center left")
+    # Parked over the SHORT pair, above its ratio label: "center left" put the
+    # key straight through the 34 and 26 it was explaining.
+    ax2.legend(frameon=False, fontsize=11.2, labelcolor=TEXT2, loc="upper left",
+               bbox_to_anchor=(-0.04, 1.03), handlelength=1.0, handletextpad=0.5,
+               borderaxespad=0.0, labelspacing=0.35)
     save(fig, "fig_pinning")
 
 
 # ----------------------------------------------- 6. graphs (rejected route)
 def fig_graphs():
-    fig = plt.figure(figsize=(7.6, 2.55))
-    ax = fig.add_axes([0, 0.07, 0.66, 0.90])
-    ax.axis("off"); ax.set_xlim(0, 11.2); ax.set_ylim(0, 4.6)
+    # 2.85 tall, not 2.55: the annex slide had 1.5 in doing nothing under this,
+    # and both rows of nodes were being read across a gap narrower than the type.
+    fig = plt.figure(figsize=(7.6, 2.85))
+    ax = fig.add_axes([0, 0.05, 0.66, 0.92])
+    # 12.0 units, not 11.2: the two "CPU cost" labels are right-aligned against
+    # the axis edge and each needs ~1.8 units, which a row of six nodes ending at
+    # 9.3 did not leave. Widening the DATA range rather than the axes buys that
+    # room without taking any from the inset.
+    ax.axis("off"); ax.set_xlim(0, 12.0); ax.set_ylim(0, 4.6)
 
     def node(x, y, w, h, t, fc):
         ax.add_patch(Rectangle((x, y), w, h, facecolor=fc, edgecolor="none"))
+        # 10.5, not 11.2: "kernel" is the longest label and the units just shrank.
         ax.text(x + w / 2, y + h / 2, t, ha="center", va="center",
-                color=BG, fontsize=11.2, fontweight="bold")
+                color=BG, fontsize=10.5, fontweight="bold")
 
     ops = [("H2D", AMBER), ("kernel", ACCENT), ("D2H", PALE)] * 2
 
-    ax.text(0, 4.15, "WITHOUT GRAPHS  ·  one driver call per operation, every frame",
+    # "every frame" is dropped: the heading is set at 11.2 pt bold and ran 0.8 in
+    # past the axes it belongs to, into the inset's legend.
+    ax.text(0, 4.15, "WITHOUT GRAPHS  ·  one driver call per operation",
             color=AMBER, fontsize=11.2, fontweight="bold")
+    # Pitch 1.55, not 1.62, and the cost label reads "6 calls" rather than
+    # "≈ 6 launches": right-aligned at the axes edge, the longer string started
+    # at x = 8.96 and ran under a node row that ended at 9.60.
     for i, (t, c) in enumerate(ops):
-        x = 0.1 + i * 1.62
-        node(x, 2.85, 1.4, 0.6, t, c)
-        ax.add_patch(FancyArrowPatch((x + 0.7, 3.72), (x + 0.7, 3.52),
+        x = 0.1 + i * 1.55
+        node(x, 2.85, 1.36, 0.6, t, c)
+        ax.add_patch(FancyArrowPatch((x + 0.68, 3.72), (x + 0.68, 3.52),
                                      arrowstyle="-|>", mutation_scale=7,
                                      color=MUTED, lw=0.9))
-    ax.text(11.1, 3.15, "CPU cost\n≈ 6 launches", ha="right", va="center",
+    ax.text(11.9, 3.15, "CPU cost\n6 calls", ha="right", va="center",
             color=MUTED, fontsize=11.2)
 
-    ax.text(0, 2.18, "WITH GRAPHS  ·  record once, replay with one launch",
+    # "the ideal", not a flat claim: this row is the textbook contrast, and the
+    # code panel beside it on the slide says our own graph needs three calls per
+    # frame. Without the hedge the picture contradicts the panel next to it.
+    ax.text(0, 2.18, "WITH GRAPHS  ·  the ideal: replay with one launch",
             color=ACCENT, fontsize=11.2, fontweight="bold")
     ax.add_patch(Rectangle((0.1, 0.72), 9.20, 1.15, facecolor=PANEL,
                            edgecolor=ACCENT, lw=1.2))
@@ -747,7 +828,7 @@ def fig_graphs():
         node(0.32 + i * 1.48, 0.98, 1.26, 0.6, t, c)
     ax.add_patch(FancyArrowPatch((0.8, 2.02), (0.8, 1.90), arrowstyle="-|>",
                                  mutation_scale=8, color=ACCENT, lw=1.3))
-    ax.text(11.1, 1.30, "CPU cost\n≈ 1 launch", ha="right", va="center",
+    ax.text(11.9, 1.30, "CPU cost\n1 call", ha="right", va="center",
             color=ACCENT, fontsize=11.2, fontweight="bold")
 
     # the verdict
@@ -760,13 +841,19 @@ def fig_graphs():
     for xi, (a, g) in enumerate(zip(opt4, graph)):
         ax2.text(xi - 0.19, a + 2.5, f"{a:.0f}", ha="center", color=TEXT2, fontsize=11.2)
         ax2.text(xi + 0.19, g + 2.5, f"{g:.0f}", ha="center", color=TEXT2, fontsize=11.2)
-    ax2.text(1, 100, "−12 % THROUGHPUT", ha="center", color=AMBER, fontsize=11.2,
-             fontweight="bold")
+    # "12 % slower", not "−12 % THROUGHPUT": at 16 characters the label was wider
+    # than the group it sits over and reached back into the key in the opposite
+    # corner. It also now says the same thing as the callout beside the figure.
+    ax2.text(1, 103, "12 % slower", ha="center", color=AMBER,
+             fontsize=11.2, fontweight="bold")
     ax2.set_xticks(x)
     ax2.set_xticklabels(["3×3", "9×9"], color=TEXT2, fontsize=11.2)
-    ax2.set_ylim(0, 120); ax2.set_yticks([]); bare(ax2, keep=("bottom",))
+    ax2.set_xlim(-0.55, 1.55)
+    ax2.set_ylim(0, 122); ax2.set_yticks([]); bare(ax2, keep=("bottom",))
     ax2.set_title("µs / frame", color=MUTED, fontsize=11.2, pad=6)
-    ax2.legend(frameon=False, fontsize=11.2, labelcolor=TEXT2, loc="upper left")
+    ax2.legend(frameon=False, fontsize=11.2, labelcolor=TEXT2, loc="upper left",
+               bbox_to_anchor=(-0.04, 1.02), handlelength=1.0, handletextpad=0.5,
+               borderaxespad=0.0, labelspacing=0.35)
 
     save(fig, "fig_graphs")
 
@@ -824,14 +911,17 @@ def fig_f32_kernel():
     number is occupancy. Only at s4 does the f32 kernel fall below D2H, which
     is why the left panel cannot be used to argue the handover.
     """
-    fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(7.4, 2.8))
+    # 3.05 tall and h = 0.42: at 2.8 x 0.34 the bars were thinner than the type
+    # labelling them, which reads as a chart of numbers with some colour behind
+    # it. The slide has the room -- its caption moves down to follow.
+    fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(7.4, 3.05))
     labels = ["kernel", "D2H", "H2D"]
-    y = np.arange(3); h = 0.34
+    y = np.arange(3); h = 0.42
     panels = [
-        (ax1, "s1 · UNCONTENDED  —  duration",
+        (ax1, "s1 · UNCONTENDED  ·  duration",
          [39.86, 21.97, 13.20], [23.70, 21.95, 13.22], "−40.5 %",
          "kernel binds in BOTH arms"),
-        (ax2, "s4 · SHIPPED  —  what binds",
+        (ax2, "s4 · SHIPPED  ·  what binds",
          [32.66, 25.25, 20.77], [23.94, 25.24, 20.54], "−26.7 %",
          "f32 kernel drops BELOW D2H"),
     ]
@@ -859,7 +949,7 @@ def fig_f32_kernel():
         # "39.86  ◀ binds" is ~22 x-units of text starting at the bar's end, so
         # the axis has to be long enough to hold the label as well as the bar.
         ax.invert_yaxis(); ax.set_xlim(0, 80); ax.set_xticks([])
-        ax.set_ylim(3.05, -0.98)
+        ax.set_ylim(3.15, -1.08)
         bare(ax, keep=("left",))
         ax.set_title(title, color=PALE, fontsize=11.8, pad=10, loc="left")
 
@@ -868,8 +958,175 @@ def fig_f32_kernel():
     # parked between the D2H and H2D rows, the one region no label reaches
     ax1.legend(frameon=False, fontsize=11.8, labelcolor=TEXT2, loc="center right",
                bbox_to_anchor=(1.0, 0.40))
-    fig.subplots_adjust(bottom=0.20, top=0.86, left=0.10, right=0.99, wspace=0.34)
+    fig.subplots_adjust(bottom=0.10, top=0.89, left=0.10, right=0.99, wspace=0.34)
     save(fig, "fig_f32_kernel")
+
+
+# ------------------------------- 8b. why the kernel, and where its time goes
+def fig_kernel_binds():
+    """Act III's opening claim, in two measurements.
+
+    LEFT is the uncontended reading -- one stream, nothing else on the device --
+    so every bar is a true duration and nothing has to be explained about unions
+    or occupancy before it can be read. 9x9, cap 1700, f64: H2D 13.20,
+    kernel 39.86, D2H 21.97 us. The kernel is 1.8x the next tallest, which is the
+    whole reason Act III exists. The contended reading, where the kernel overlaps
+    itself and the copies contend, is annex A8; it moves the numbers, not this.
+
+    RIGHT is the same finished-frame branch map annex A1 uses to argue about
+    Test3, with the Test3 apparatus removed -- no summed window, no disputed
+    pixel, no raster arrows. Only the FILL survives, because here the picture
+    makes one point and it is a proportion: about four pixels in five clear
+    nothing and go on to update the pedestal. That is what the kernel spends
+    itself on, and it is what the next slide halves.
+
+    BOTH AXES ARE PLACED BY HAND. The map is equal-aspect, so under a gridspec
+    it shrinks its own box and then any legend drawn in DATA coordinates runs
+    off the axes -- bbox_inches="tight" then widens the canvas to the longest
+    string and every projected point size in the figure falls with it. The
+    legend is in figure coordinates for the same reason fig_test3's is.
+    """
+    site = json.loads((Path(__file__).resolve().parent / "branch_site.json").read_text())
+    pat = site["patch"]
+    bc = np.array(pat["branch_cpu"]); R = pat["r"]
+    n = 2 * R + 1
+    PT = 12.4
+
+    fig = plt.figure(figsize=(12.2, 3.35))
+    ax = fig.add_axes([0.075, 0.15, 0.395, 0.68])
+    bx = fig.add_axes([0.545, 0.045, 0.20, 0.87])
+
+    # ---- left: the three engines, uncontended -----------------------------
+    names = ["kernel", "D2H  copy out", "H2D  copy in"]
+    vals = [39.86, 21.97, 13.20]
+    cols = [AMBER, ACCENT, ACCENT]
+    y = np.arange(3)
+    ax.barh(y, vals, height=0.54, color=cols, zorder=3, linewidth=0)
+    for yi, v in enumerate(vals):
+        ax.text(v + 0.9, yi, f"{v:.2f}" + ("  \u25c0 binds" if yi == 0 else ""),
+                va="center", color=PALE if yi == 0 else TEXT2,
+                fontsize=PT, fontweight="bold" if yi == 0 else "normal")
+    ax.set_yticks(y); ax.set_yticklabels(names, color=TEXT2, fontsize=PT)
+    ax.invert_yaxis()
+    ax.set_xlim(0, 56); ax.set_xticks([])
+    # the verdict goes UNDER the bars: above them it sat between the title and
+    # the first bar and read as a subtitle of the axis, not a conclusion from it
+    ax.set_ylim(3.05, -0.62)
+    bare(ax, keep=("left",))
+    ax.set_title("\u00b5s / frame  \u00b7  9\u00d79 f64  \u00b7  one stream, "
+                 "nothing else running", color=PALE, fontsize=PT, pad=10,
+                 loc="left")
+    ax.text(0.0, 2.85, "the kernel is 1.8\u00d7 the next tallest bar",
+            color=AMBER, fontsize=PT, fontweight="bold", va="center")
+
+    # ---- right: one finished frame, coloured by what happened -------------
+    SHADOW = "#33455E"
+    FILL = {4: AMBER, 1: SHADOW, 2: GREEN, 3: GREEN, 6: SHADOW,
+            0: SHADOW, 5: PANEL}
+    for r in range(n):
+        for c in range(n):
+            bx.add_patch(Rectangle((c, n - 1 - r), 1, 1,
+                                   facecolor=FILL.get(int(bc[r, c]), PANEL),
+                                   edgecolor=BG, linewidth=0.5, zorder=2))
+    bx.set_xlim(-0.3, n + 0.3); bx.set_ylim(-0.3, n + 0.3)
+    bx.set_aspect("equal"); bx.axis("off")
+    fig.text(0.545, 0.955, "one finished frame  \u00b7  21 \u00d7 21 pixels  "
+                           "\u00b7  coloured by what happened",
+             color=PALE, fontsize=PT, va="top")
+
+    # legend in FIGURE coordinates -- see the docstring
+    def key(row, col, txt, pct):
+        yy = 0.735 - row * 0.235
+        fig.add_artist(Rectangle((0.760, yy), 0.0145, 0.105, facecolor=col,
+                                 edgecolor=BG, linewidth=0.8,
+                                 transform=fig.transFigure))
+        fig.text(0.785, yy + 0.083, txt, color=TEXT2, fontsize=PT, va="center")
+        fig.text(0.785, yy - 0.005, pct, color=col, fontsize=PT,
+                 fontweight="bold", va="center")
+
+    key(0, AMBER, "nothing here \u2192 pedestal update", "~80 % of pixels")
+    key(1, SHADOW, "inside some photon\u2019s window", "~18 %")
+    key(2, GREEN, "a photon, stored", "~1.5 %")
+    # The percentages are SENSOR-WIDE. This particular 21x21 is the one annex A1
+    # dissects, so it was chosen next to a photon and runs a little denser than
+    # average -- 75.5 / 22.4 / 2.0 here. Saying so costs one line and stops the
+    # figure from reading as a count of the cells drawn.
+    fig.text(0.760, 0.030, "sensor-wide fractions; this\ndetail sits beside a photon",
+             color=MUTED, fontsize=11.8, va="bottom", linespacing=1.45)
+
+    save(fig, "fig_kernel_binds")
+
+
+fig_kernel_binds()
+
+
+# ------------------------- 8c. the typedef: the claim, and the handover
+def fig_f32_kernel_s1s4():
+    """Two panels, each doing exactly one job.
+
+    LEFT is the CLAIM: the kernel alone, uncontended, f64 against f32. Overlap
+    is 1.00 at one stream, so these are durations and the -40.5 % is a
+    like-for-like reading of what the typedef did to the arithmetic. The copy
+    engines are not drawn: they do not move under the typedef (13.20 -> 13.22,
+    21.97 -> 21.95), so on this slide they were a third of the picture carrying
+    none of the argument. They are in annex A9.
+
+    RIGHT is the HANDOVER, and it needs all three engines, because the point is
+    which one is tallest. In the shipped four-stream pipeline the copies rise
+    under contention and the kernel falls by overlapping itself; only there does
+    the f32 kernel land under D2H. The left panel cannot be used to argue this.
+    """
+    fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(7.4, 3.05),
+                                   gridspec_kw=dict(width_ratios=[1.0, 1.24]))
+
+    # ---- left: the kernel, uncontended ------------------------------------
+    h = 0.42
+    ax1.barh(h / 2, 39.86, height=h, color=ACCENT, zorder=3, label="f64 ped")
+    ax1.barh(-h / 2, 23.70, height=h, color=AMBER, zorder=3, label="f32 ped")
+    for val, off in ((39.86, h / 2), (23.70, -h / 2)):
+        ax1.text(val + 1.2, off, f"{val:.2f}", va="center", color=PALE,
+                 fontsize=11.8, fontweight="bold")
+    ax1.text(0.0, -h - 0.52, "\u221240.5 %", ha="left", va="bottom",
+             color=PALE, fontsize=14.0, fontweight="bold")
+    ax1.set_yticks([0]); ax1.set_yticklabels(["kernel"], color=TEXT2, fontsize=11.8)
+    ax1.set_xlim(0, 62); ax1.set_xticks([])
+    ax1.set_ylim(1.30, -1.30)
+    bare(ax1, keep=("left",))
+    ax1.set_title("s1 \u00b7 UNCONTENDED  \u00b7  the claim",
+                  color=PALE, fontsize=11.8, pad=10, loc="left")
+    ax1.legend(frameon=False, fontsize=11.8, labelcolor=TEXT2,
+               loc="lower right", bbox_to_anchor=(1.02, -0.06))
+
+    # ---- right: all three engines, as the pipeline runs them ---------------
+    labels = ["kernel", "D2H", "H2D"]
+    y = np.arange(3)
+    f64 = [32.66, 25.25, 20.77]
+    f32 = [23.94, 25.24, 20.54]
+    ax2.barh(y + h / 2, f64, height=h, color=ACCENT, zorder=3)
+    ax2.barh(y - h / 2, f32, height=h, color=AMBER, zorder=3)
+    i64, i32 = int(np.argmax(f64)), int(np.argmax(f32))
+    for yi, (a, b) in enumerate(zip(f64, f32)):
+        for val, off, top in ((a, +h / 2, yi == i64), (b, -h / 2, yi == i32)):
+            ax2.text(val + 0.7, yi + off,
+                     f"{val:.2f}" + ("  \u25c0 binds" if top else ""),
+                     va="center", color=PALE if (top or yi == 0) else TEXT2,
+                     fontsize=11.8, fontweight="bold" if top else "normal")
+    ax2.text(0.0, -h - 0.52, "f32 kernel drops BELOW D2H", ha="left", va="bottom",
+             color=PALE, fontsize=11.8, fontweight="bold")
+    ax2.set_yticks(y); ax2.set_yticklabels(labels, color=TEXT2, fontsize=11.8)
+    ax2.invert_yaxis(); ax2.set_xlim(0, 72); ax2.set_xticks([])
+    ax2.set_ylim(2.72, -1.30)
+    bare(ax2, keep=("left",))
+    ax2.set_title("s4 \u00b7 SHIPPED  \u00b7  what binds",
+                  color=PALE, fontsize=11.8, pad=10, loc="left")
+    ax2.axvline(25.24, color=MUTED, lw=1.0, ls="--", zorder=1)
+
+    fig.subplots_adjust(bottom=0.10, top=0.89, left=0.095, right=0.99,
+                        wspace=0.30)
+    save(fig, "fig_f32_kernel_s1s4")
+
+
+fig_f32_kernel_s1s4()
 
 
 # --------------------------------------------------------- 9. cancellation
@@ -911,7 +1168,7 @@ def fig_cancellation():
     ax.set_xlim(-0.6, 3.7)
     ax.tick_params(labelsize=10.6)
     ax.axhline(3, color=ACCENT, lw=1.4, ls="--", zorder=4)
-    ax.text(1.5, 3.0e9, "±3 ADU² of f32 error —\nit swallows the quiet pixels",
+    ax.text(1.5, 3.0e9, "±3 ADU² of f32 error:\nit swallows the quiet pixels",
             color=ACCENT, fontsize=10.6, ha="center", va="center",
             linespacing=1.4)
     ax.annotate("", xy=(3.34, 3.4), xytext=(3.34, 6e7),
@@ -1052,8 +1309,8 @@ def fig_bottleneck():
     ax.set_title("end-to-end change from the SAME −40 % kernel, 9×9   ·   "
                  "bar = measurement, band = what the reps allow",
                  color=MUTED, fontsize=10.6, pad=10, loc="left")
-    ax.text(1.5, -29.5, "through an allocating result path the effect is not measurable "
-            "— the band straddles zero", color=MUTED, fontsize=10.0,
+    ax.text(1.5, -29.5, "through an allocating result path the effect is not measurable: "
+            "the band straddles zero", color=MUTED, fontsize=10.0,
             ha="center", va="center")
     fig.subplots_adjust(bottom=0.24)
     save(fig, "fig_bottleneck")
@@ -1071,7 +1328,7 @@ def fig_correctness():
         ax.text(xi, d + 0.00022, ("reference" if d == 0 else f"{d:.4f}%"),
                 ha="center", color=PALE if d else MUTED, fontsize=10.0)
     ax.axhline(0.01, color=PALE, lw=1.2, ls="--")
-    ax.text(4.4, 0.0104, "0.01% — well inside statistical noise", color=PALE,
+    ax.text(4.4, 0.0104, "0.01%, well inside statistical noise", color=PALE,
             fontsize=9.4, ha="right")
     ax.set_xticks(x); ax.set_xticklabels(names, color=TEXT2, fontsize=10.0)
     ax.set_ylim(0, 0.0125); ax.set_yticks([])
@@ -1211,12 +1468,15 @@ def fig_overlap_9x9():
         gpu3.append(t); t += G
         free_at3[i % 3] = host_start[i] + H
 
-    for row, (gpu, tag, col) in enumerate([
-            (gpu2, "2 slots  ·  what ships", AMBER),
-            (gpu3, "3 slots  ·  the natural next guess", MUTED)]):
-        # Row spacing has to clear the row's TALLEST element, which is the tag
-        # sitting above its GPU lane -- not the lane itself. 37 leaves ~0.45 in
-        # between one row's tag and the row above's host blocks.
+    # The tag offset is PER ROW, because only row 0 has anything to clear. Row 0
+    # stalls twice and carries two "idle 32 us" markers at yG + lane_h + 1, so
+    # its tag needs 13 to sit above them. Row 3-slots front-loads: its largest
+    # seam is 2 us, under the 4 us threshold, so it draws no markers at all. At
+    # 13 its tag floated up into row 0's host blocks -- 0.11 in from the strip
+    # above it and 0.53 in from its own. At 3.5 it sits on its own lane.
+    for row, (gpu, tag, col, tag_dy) in enumerate([
+            (gpu2, "2 slots  ·  what ships", AMBER, 13.0),
+            (gpu3, "3 slots  ·  the natural next guess", MUTED, 3.5)]):
         yG = 55.0 - row * 40.0
         yH = yG - 12.0
         for i in range(n):
@@ -1228,7 +1488,7 @@ def fig_overlap_9x9():
         # The tag is left-aligned and 70 x-units long; the idle marker sits at
         # the middle of the stall, which is inside that span. They can only be
         # separated vertically, so the tag clears the marker by a full line.
-        ax.text(-6, yG + lane_h + 13.0, tag, ha="left", va="bottom",
+        ax.text(-6, yG + lane_h + tag_dy, tag, ha="left", va="bottom",
                 color=col, fontsize=12.4, fontweight="bold")
         # every gap the GPU sits through, marked where it happens
         for i in range(1, n):
@@ -1387,7 +1647,7 @@ def fig_test3():
     key(0.245, GREEN, "stored: this pixel IS the window max, and it clears 5σ")
     key(0.170, SHADOW, "shadow: the window max clears 5σ, but this pixel is not it")
     key(0.095, AMBER, "pedestal sample: nothing in the window clears 5σ")
-    key(0.020, AMBER, "the disputed pixel — serial sampled here, frozen stored",
+    key(0.020, AMBER, "the disputed pixel: serial sampled here, frozen stored",
         edge=GREEN)
 
     # No hand-placed colour key: the two sigma rows below are already
@@ -1502,9 +1762,13 @@ def fig_pedtiming():
     """
     fig, ax = plt.subplots(figsize=(11.6, 3.6))
     XF, XE = 6.0, 7.4               # frame end, dotted continuation end
-    rows = [("ClusterFinder\nserial CPU", 3.00, ACCENT, True),
-            ("ClusterFinderFrozen\nCPU twin", 1.70, PALE, False),
-            ("ClusterFinderCUDA", 0.40, AMBER, False)]
+    # Rows 1.55 apart, not 1.30. Each lane carries a bold caption ABOVE its trace
+    # and the CPU lane a second one BELOW, so the thing that has to clear is
+    # caption-to-caption, not trace-to-trace: at 1.30 those two sat 0.16 units --
+    # a ninth of an inch on the slide -- apart and read as one paragraph.
+    rows = [("ClusterFinder\nserial CPU", 3.30, ACCENT, True),
+            ("ClusterFinderFrozen\nCPU twin", 1.75, PALE, False),
+            ("ClusterFinderCUDA", 0.20, AMBER, False)]
 
     for label, y, col, stair in rows:
         ax.text(-0.35, y + 0.26, label, ha="right", va="center", color=TEXT2,
@@ -1534,27 +1798,37 @@ def fig_pedtiming():
                     fontweight="bold")
 
     ax.axvline(XF, color=MUTED, lw=1.1, ls="--", zorder=2, ymin=0.02, ymax=0.93)
-    ax.text(XF / 2, 4.10, "one frame  ·  160 000 pixels in raster order",
+    ax.text(XF / 2, 4.28, "one frame  ·  160 000 pixels in raster order",
             ha="center", va="bottom", color=MUTED, fontsize=11.2)
-    ax.text(XF + 0.12, 4.10, "frame ends →\nupdates applied", ha="left",
+    ax.text(XF + 0.12, 4.28, "frame ends →\nupdates applied", ha="left",
             va="bottom", color=MUTED, fontsize=10.0, linespacing=1.35)
 
     # what the middle row buys: two comparisons, one variable each
     XA = 8.35
-    ax.annotate("", xy=(XA, 1.87), xytext=(XA, 3.17),
+    ax.annotate("", xy=(XA, 1.92), xytext=(XA, 3.47),
                 arrowprops=dict(arrowstyle="<|-|>", color=PALE, lw=1.5))
-    ax.text(XA + 0.18, 2.52, "update TIMING\narithmetic held fixed", ha="left",
+    ax.text(XA + 0.18, 2.70, "update TIMING\narithmetic held fixed", ha="left",
             va="center", color=PALE, fontsize=10.6, fontweight="bold",
             linespacing=1.4)
-    ax.annotate("", xy=(XA, 0.57), xytext=(XA, 1.87),
+    ax.annotate("", xy=(XA, 0.37), xytext=(XA, 1.92),
                 arrowprops=dict(arrowstyle="<|-|>", color=AMBER, lw=1.5))
-    ax.text(XA + 0.18, 1.22, "the PORT\ntiming held fixed", ha="left",
+    ax.text(XA + 0.18, 1.15, "the PORT\ntiming held fixed", ha="left",
             va="center", color=AMBER, fontsize=10.6, fontweight="bold",
             linespacing=1.4)
 
     ax.set_xlim(-2.9, 12.0)
-    ax.set_ylim(-0.30, 4.60)
+    ax.set_ylim(-0.20, 4.60)
     ax.axis("off")
+    # This figure's slide footprint is fixed -- 12.61 in wide, and the callouts
+    # under it start at 5.98 -- so the lane gaps in INCHES are set by the y
+    # coordinates above and cannot grow. What the margins buy is the gap measured
+    # against the TYPE: an axis-less figure has no use for the default 22 % of
+    # white space, and reclaiming most of it widens the saved PNG, which is then
+    # scaled down to the same 12.61 in. Taking all of it would drop the labels
+    # from 13.8 pt projected to 10.8; this keeps them at 11.6, in line with the
+    # rest of the deck's figures, and the aspect is held so the footprint is
+    # unchanged.
+    fig.subplots_adjust(left=0.05, right=0.97, top=0.945, bottom=0.05)
     save(fig, "fig_pedtiming")
 
 
@@ -1616,7 +1890,7 @@ def fig_mismatch147():
             else:
                 ax.add_patch(plt.Circle((cx - X0, cy - Y0), 2.6, fill=False,
                                         ec=AMBER, lw=1.4, ls=":", zorder=6))
-        ax.set_title(f"{name}  —  {d['n_' + name]:,} clusters in this frame",
+        ax.set_title(f"{name}  ·  {d['n_' + name]:,} clusters in this frame",
                      color=col, fontsize=11.8, fontweight="bold", pad=7)
         ax.set_xticks([]); ax.set_yticks([])
         for sp in ax.spines.values():
@@ -1724,13 +1998,19 @@ def fig_opt1_timeline():
     for i in range(3):
         t0 = i * PER
         _frame_bars(ax, 1.0, t0)
-        ax.axvspan(t0 + WORK, t0 + PER, facecolor=AMBER, alpha=0.17, zorder=1)
-        ax.axvline(t0 + WORK, color=AMBER, lw=0.9, alpha=0.55, zorder=1)
-        ax.axvline(t0 + PER, color=AMBER, lw=0.9, alpha=0.55, zorder=1)
+    # RED, not AMBER: amber is the H2D BAR in this very picture, so an amber
+    # span made one colour mean both "the copy engine is working" and "nothing
+    # is working". The two kinds of waste on this slide have to be told apart --
+    # the bars show the engines running one at a time (Act I), the red span
+    # shows the GPU stopped waiting on the host (Act II). alpha 0.20, not 0.17:
+    # red is darker than amber, so it needs a little more to read as a region.
+        ax.axvspan(t0 + WORK, t0 + PER, facecolor=RED, alpha=0.20, zorder=1)
+        ax.axvline(t0 + WORK, color=RED, lw=0.9, alpha=0.60, zorder=1)
+        ax.axvline(t0 + PER, color=RED, lw=0.9, alpha=0.60, zorder=1)
     ax.annotate("host blocks: every engine idle",
                 xy=(WORK + HOST / 2, 0.98), xytext=(WORK + HOST / 2, 0.56),
-                color=AMBER, fontsize=10.6, ha="center", va="top",
-                arrowprops=dict(arrowstyle="-", color=AMBER, lw=0.8))
+                color=RED, fontsize=10.6, ha="center", va="top",
+                arrowprops=dict(arrowstyle="-", color=RED, lw=0.8))
     ax.text(3 * PER + 4, 1.34, "one engine\nat a time", color=TEXT2, fontsize=10.6,
             va="center", linespacing=1.5)
     ax.set_xlim(-4, 3 * PER + 40)
@@ -1805,8 +2085,10 @@ def fig_f32_absolute():
     the two clean readings -- and they agree, -4.63 and -4.87 us.
 
     Two panels because one cannot carry it: a 4.6 us delta on an 80 us axis is
-    invisible, which is itself the point. Left = the frame shrinking; right =
-    the saving that does not.
+    invisible, which is itself the point. LEFT = the saving, which does not move;
+    RIGHT = the frame, which does. That order is deliberate: the slide's claim is
+    about the constant, and the shrinking frame is the context that makes the
+    constant matter -- so the constant is read first.
     """
     steps = ["opt4", "opt5", "opt6"]
     sub = ["+ pinned input", "host↔GPU overlap", "zero-copy"]
@@ -1816,8 +2098,11 @@ def fig_f32_absolute():
     pct = [-5.8, -6.8, -16.2]
     dagger = [False, True, False]
 
-    fig, (axA, axB) = plt.subplots(
-        1, 2, figsize=(11.4, 3.15), gridspec_kw={"width_ratios": [1.5, 1]})
+    # 3.65 tall, not 3.15: the slide placed this at 12.30 in wide and still ended
+    # at 5.2, with 2 in of nothing under the caption. The whole gain goes into the
+    # plot area (bottom 0.24 / top 0.87), so the bars grow and the type does not.
+    fig, (axB, axA) = plt.subplots(
+        1, 2, figsize=(11.4, 3.65), gridspec_kw={"width_ratios": [1, 1.5]})
     x = np.arange(3)
 
     # ---- A: the frame, shrinking
@@ -1869,10 +2154,10 @@ def fig_f32_absolute():
     axB.tick_params(axis="x", length=0, pad=7)
     bare(axB, keep=("left", "bottom"))
     axB.spines["bottom"].set_color(RULE)
-    axB.set_title(f"the saving does not  ·  dashed = {np.mean(dv):.2f} µs mean",
+    axB.set_title(f"the saving does not move  ·  dashed = {np.mean(dv):.2f} µs mean",
                   color=MUTED, fontsize=10.6, pad=14, loc="left")
 
-    fig.subplots_adjust(bottom=0.30, top=0.84, left=0.055, right=0.985,
+    fig.subplots_adjust(bottom=0.24, top=0.87, left=0.055, right=0.985,
                         wspace=0.26)
     save(fig, "fig_f32_absolute")
 
@@ -1892,8 +2177,8 @@ def fig_variance_rewrite():
     ~0.25; the grid under them is 1.2e-4 and the cancellation is simply gone.
     """
     ANS = 2025.0
-    rows = [(1.0, 2.17e7, "2.17 × 10⁷", "±3 ADU²  — fatal below rms ≈ 2", MUTED),
-            (0.0, ANS, "2.02 × 10³", "±0.0001 ADU²  — 30 000× smaller", AMBER)]
+    rows = [(1.0, 2.17e7, "2.17 × 10⁷", "±3 ADU²  ·  fatal below rms ≈ 2", MUTED),
+            (0.0, ANS, "2.02 × 10³", "±0.0001 ADU²  ·  30 000× smaller", AMBER)]
 
     fig, ax = plt.subplots(figsize=(7.7, 1.36))
     ax.set_xscale("log")
@@ -1994,7 +2279,7 @@ def fig_measure():
             "so the H2D bars\nqueue", color=MUTED, fontsize=11.2, va="center",
             linespacing=1.4)
     ax.text(frames[-1][2] + K + 8, 1.45,
-            "UNION — what s4 reports.\nThe kernels overlap, so it is\n"
+            "UNION: what s4 reports.\nThe kernels overlap, so it is\n"
             "shorter than their sum.", color=TEXT2, fontsize=11.2, va="center",
             linespacing=1.5)
     ax.plot([-2, frames[-1][3] + D + 2], [2.42, 2.42], color=RULE, lw=0.9, zorder=1)

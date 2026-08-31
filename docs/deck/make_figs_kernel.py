@@ -152,7 +152,14 @@ def fig_tile():
     # canvas is a LARGER projected figure and larger projected type. The two
     # panels sit 0.06 apart rather than 0.135, which is the gap the slide was
     # paying for twice -- once inside the picture, once beside it.
-    fig = plt.figure(figsize=(6.9, 2.62))
+    #
+    # 3.55 tall, not 2.62: the slide ended at 5.95 and left 1.3 in of dead space
+    # above the footer. Height is the only axis with room -- the code panel fixes
+    # the width at 8.36 -- and it is also what the TILE wants: set_aspect("equal")
+    # made the tile height-limited inside a 3.04 in wide axes, so 0.9 in of extra
+    # canvas height is 0.9 in of extra tile. Type does not change: the projection
+    # scale is 8.36/6.9 either way, so the bars grow against a fixed font.
+    fig = plt.figure(figsize=(6.9, 3.55))
 
     # The tile axes holds ONLY the tile. With set_aspect("equal") matplotlib
     # shrinks the axes box to honour the aspect, so any data-space room reserved
@@ -179,8 +186,11 @@ def fig_tile():
             ha="center", color=MUTED, fontsize=10.4)
     for k, (c, t) in enumerate([(AMBER, "the thread's own pixel"),
                                 (ACCENT, "its 3×3 neighbourhood"),
-                                (RULE, "halo — loaded, never centred on")]):
-        fy = 0.20 - k * 0.095
+                                (RULE, "halo · loaded, never centred on")]):
+        # Anchored in INCHES below the tile axes, not in figure fractions: the
+        # rows are 9.8 pt type and a fraction-based step grows with the canvas,
+        # so a taller figure would space three lines of a key 0.34 in apart.
+        fy = 0.30 - (0.30 + k * 0.21) / 3.55
         fig.patches.append(Rectangle((0.020, fy - 0.018), 0.022, 0.042,
                                      transform=fig.transFigure, facecolor=c,
                                      edgecolor="none", zorder=5))
@@ -201,8 +211,8 @@ def fig_tile():
     bare(ax2, keep=("bottom",))
     ax2.set_title("KB of shared memory per 16×16 block  (float tile)",
                   color=MUTED, fontsize=10.4, pad=8)
-    ax2.text(3.55, 4.3, "100 KB available per SM on Ada\n"
-                        "— shared memory is never the limit",
+    ax2.text(3.55, 4.3, "100 KB available per SM on Ada:\n"
+                        "shared memory is never the limit",
              ha="right", va="top", color=PALE, fontsize=9.8)
     save(fig, "fig_tile")
 
