@@ -302,6 +302,13 @@ enum class corner : int {
     cBottomRight = 3
 };
 
+enum class UDPPortPosition : uint8_t {
+    LEFT = 0,
+    RIGHT = 1,
+    TOP = 2,
+    BOTTOM = 3
+};
+
 enum class TimingMode { Auto, Trigger };
 enum class FrameDiscardPolicy { NoDiscard, Discard, DiscardPartial };
 

@@ -418,7 +418,8 @@ TEST_CASE("Read Jungfrau frame with disabled UDP ports",
         REQUIRE(f.master().disabled_udp_ports().value() ==
                 std::vector<size_t>{1});
         REQUIRE(f.master().udp_port_types().value() ==
-                std::vector<std::string>{"bottom", "top"});
+                std::vector<UDPPortPosition>{UDPPortPosition::BOTTOM,
+                                             UDPPortPosition::TOP});
         auto frame = f.read_frame();
         REQUIRE(frame.cols() == 1024);
         REQUIRE(frame.rows() == 256);
@@ -437,7 +438,8 @@ TEST_CASE("Read Jungfrau frame with disabled UDP ports",
         REQUIRE(f.master().disabled_udp_ports().value() ==
                 std::vector<size_t>{0});
         REQUIRE(f.master().udp_port_types().value() ==
-                std::vector<std::string>{"bottom", "top"});
+                std::vector<UDPPortPosition>{UDPPortPosition::BOTTOM,
+                                             UDPPortPosition::TOP});
         auto frame = f.read_frame();
         REQUIRE(frame.cols() == 1024);
         REQUIRE(frame.rows() == 256);
@@ -453,7 +455,8 @@ TEST_CASE("Read Jungfrau frame with disabled UDP ports",
         REQUIRE(f.master().disabled_udp_ports().value() ==
                 std::vector<size_t>{1, 3});
         REQUIRE(f.master().udp_port_types().value() ==
-                std::vector<std::string>{"bottom", "top"});
+                std::vector<UDPPortPosition>{UDPPortPosition::BOTTOM,
+                                             UDPPortPosition::TOP});
         REQUIRE_THROWS_WITH(
             f.read_frame(),
             Catch::Matchers::ContainsSubstring(
@@ -481,7 +484,8 @@ TEST_CASE("Read Jungfrau frame with disabled UDP ports",
         REQUIRE(f.master().disabled_udp_ports().value() ==
                 std::vector<size_t>{0, 3});
         REQUIRE(f.master().udp_port_types().value() ==
-                std::vector<std::string>{"bottom", "top"});
+                std::vector<UDPPortPosition>{UDPPortPosition::BOTTOM,
+                                             UDPPortPosition::TOP});
         auto frame = f.read_frame();
         REQUIRE(frame.cols() == 1024);
         REQUIRE(frame.rows() == 512);
@@ -497,7 +501,8 @@ TEST_CASE("Read Jungfrau frame with disabled UDP ports",
         REQUIRE(f.master().disabled_udp_ports().value() ==
                 std::vector<size_t>{1, 3, 4, 6});
         REQUIRE(f.master().udp_port_types().value() ==
-                std::vector<std::string>{"bottom", "top"});
+                std::vector<UDPPortPosition>{UDPPortPosition::BOTTOM,
+                                             UDPPortPosition::TOP});
         REQUIRE_THROWS_WITH(
             f.read_frame(),
             Catch::Matchers::ContainsSubstring(
@@ -532,7 +537,8 @@ TEST_CASE("Read Moench frame with disabled UDP ports",
         REQUIRE(f.master().disabled_udp_ports().value() ==
                 std::vector<size_t>{1});
         REQUIRE(f.master().udp_port_types().value() ==
-                std::vector<std::string>{"bottom", "top"});
+                std::vector<UDPPortPosition>{UDPPortPosition::BOTTOM,
+                                             UDPPortPosition::TOP});
         auto frame = f.read_frame();
         REQUIRE(frame.cols() == 400);
         REQUIRE(frame.rows() == 200);
@@ -550,7 +556,8 @@ TEST_CASE("Read Moench frame with disabled UDP ports",
         REQUIRE(f.master().disabled_udp_ports().value() ==
                 std::vector<size_t>{0});
         REQUIRE(f.master().udp_port_types().value() ==
-                std::vector<std::string>{"bottom", "top"});
+                std::vector<UDPPortPosition>{UDPPortPosition::BOTTOM,
+                                             UDPPortPosition::TOP});
         auto frame = f.read_frame();
         REQUIRE(frame.cols() == 400);
         REQUIRE(frame.rows() == 200);
@@ -571,7 +578,8 @@ TEST_CASE("Read Eiger frame with disabled UDP ports",
         REQUIRE(f.master().disabled_udp_ports().value() ==
                 std::vector<size_t>{0, 2});
         REQUIRE(f.master().udp_port_types().value() ==
-                std::vector<std::string>{"left", "right"});
+                std::vector<UDPPortPosition>{UDPPortPosition::LEFT,
+                                             UDPPortPosition::RIGHT});
         auto frame = f.read_frame();
 
         REQUIRE(frame.cols() == 512);
@@ -589,7 +597,8 @@ TEST_CASE("Read Eiger frame with disabled UDP ports",
         REQUIRE(f.master().disabled_udp_ports().value() ==
                 std::vector<size_t>{1, 3});
         REQUIRE(f.master().udp_port_types().value() ==
-                std::vector<std::string>{"left", "right"});
+                std::vector<UDPPortPosition>{UDPPortPosition::LEFT,
+                                             UDPPortPosition::RIGHT});
         auto frame = f.read_frame();
         REQUIRE(frame.cols() == 512);
         REQUIRE(frame.rows() == 512);
@@ -606,7 +615,8 @@ TEST_CASE("Read Eiger frame with disabled UDP ports",
         REQUIRE(f.master().disabled_udp_ports().value() ==
                 std::vector<size_t>{1, 3, 5, 7});
         REQUIRE(f.master().udp_port_types().value() ==
-                std::vector<std::string>{"left", "right"});
+                std::vector<UDPPortPosition>{UDPPortPosition::LEFT,
+                                             UDPPortPosition::RIGHT});
         REQUIRE_THROWS_WITH(
             f.read_frame(),
             Catch::Matchers::ContainsSubstring(
@@ -632,7 +642,8 @@ TEST_CASE("Read Eiger frame with disabled UDP ports",
         REQUIRE(f.master().disabled_udp_ports().value() ==
                 std::vector<size_t>{1});
         REQUIRE(f.master().udp_port_types().value() ==
-                std::vector<std::string>{"top", "bottom"});
+                std::vector<UDPPortPosition>{UDPPortPosition::TOP,
+                                             UDPPortPosition::BOTTOM});
         auto frame = f.read_frame();
         REQUIRE(frame.cols() == 512);
         REQUIRE(frame.rows() == 256);
@@ -649,7 +660,8 @@ TEST_CASE("Read Eiger frame with disabled UDP ports",
         REQUIRE(f.master().disabled_udp_ports().value() ==
                 std::vector<size_t>{0});
         REQUIRE(f.master().udp_port_types().value() ==
-                std::vector<std::string>{"left", "right"});
+                std::vector<UDPPortPosition>{UDPPortPosition::LEFT,
+                                             UDPPortPosition::RIGHT});
         auto frame = f.read_rois();
         REQUIRE(frame.size() == 2);
         REQUIRE(frame[0].cols() == 512);

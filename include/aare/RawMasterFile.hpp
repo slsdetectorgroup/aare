@@ -115,8 +115,7 @@ class RawMasterFile {
     std::optional<std::vector<size_t>> m_disabled_udp_ports{};
 
     /// @brief udp port types
-    std::optional<std::vector<std::string>>
-        m_udp_port_types{}; // TODO: UDPPortType? - string_to conversion?
+    std::optional<std::vector<UDPPortPosition>> m_udp_port_types{};
 
     /// @brief ROIs defined in master file or derived from disabled UDP ports
     std::vector<ROI> m_rois;
@@ -166,7 +165,7 @@ class RawMasterFile {
     /// @brief Get the types of UDP ports
     /// @return Optional vector of UDP port types as strings (only present for
     /// masterfile version >= 8.1)
-    std::optional<std::vector<std::string>> udp_port_types() const;
+    std::optional<std::vector<UDPPortPosition>> udp_port_types() const;
 
     /// @brief Get the indices of disabled UDP ports
     /// @return Optional vector of indices of disabled UDP ports (only present

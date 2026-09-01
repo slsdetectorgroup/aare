@@ -120,7 +120,8 @@ RawMasterFile::RawMasterFile(const std::filesystem::path &fpath)
                                   m_udp_interfaces_per_module, m_quad);
 
     if (m_quad == 1 && m_udp_port_types.has_value()) {
-        m_udp_port_types.value() = {"top", "bottom"};
+        m_udp_port_types.value() = {UDPPortPosition::TOP,
+                                    UDPPortPosition::BOTTOM};
     }
 
     if (m_disabled_udp_ports.has_value()) {
@@ -224,7 +225,8 @@ ScanParameters RawMasterFile::scan_parameters() const {
     return m_scan_parameters;
 }
 
-std::optional<std::vector<std::string>> RawMasterFile::udp_port_types() const {
+std::optional<std::vector<UDPPortPosition>>
+RawMasterFile::udp_port_types() const {
     return m_udp_port_types;
 }
 
@@ -416,7 +418,8 @@ void RawMasterFile::parse_json(std::istream &is) {
         auto json_list_obj = j.at("UDP Ports Type");
         m_udp_port_types.emplace();
         for (auto &elem : json_list_obj) {
-            m_udp_port_types.value().push_back(elem);
+            m_udp_port_types.value().push_back(
+                string_to<UDPPortPosition>(elem));
         }
     } catch (const json::out_of_range &e) {
         // leave the optional empty
@@ -456,8 +459,11 @@ void RawMasterFile::parse_json(std::istream &is) {
             } else {
                 // fill ROI with full detector size if not present in master
                 // file
-                m_rois.push_back({0, static_cast<ssize_t>(m_pixels_x), 0,
-                                  static_cast<ssize_t>(m_pixels_y)});
+                m_rois.push_back(
+                    {0,
+                     m_detector_layout.col * static_cast<ssize_t>(m_pixels_x),
+                     0,
+                     m_detector_layout.row * static_cast<ssize_t>(m_pixels_y)});
             }
         } else {
             auto obj = j.at("Receiver Rois");
@@ -477,8 +483,9 @@ void RawMasterFile::parse_json(std::istream &is) {
 
     } catch (const json::out_of_range &e) {
         // fill ROI with full detector size if not present in master file
-        m_rois.push_back({0, static_cast<ssize_t>(m_pixels_x), 0,
-                          static_cast<ssize_t>(m_pixels_y)});
+        m_rois.push_back(
+            {0, m_detector_layout.col * static_cast<ssize_t>(m_pixels_x), 0,
+             m_detector_layout.row * static_cast<ssize_t>(m_pixels_y)});
     }
 
     if (j.contains("Counter Mask")) {
@@ -668,7 +675,7 @@ void RawMasterFile::update_rois_from_disabled_udp_ports() {
 
     if (all_ports_equal && port_disabled_for_all_modules) {
 
-        if (m_udp_port_types.value()[first_port] == "left") {
+        if (m_udp_port_types.value()[first_port] == UDPPortPosition::LEFT) {
             const size_t num_rois =
                 m_geometry.modules_x() / udp_ports_per_module;
             m_rois.resize(num_rois);
@@ -688,7 +695,7 @@ void RawMasterFile::update_rois_from_disabled_udp_ports() {
                         0, static_cast<ssize_t>(m_geometry.pixels_y())};
                 });
         }
-        if (m_udp_port_types.value()[first_port] == "right") {
+        if (m_udp_port_types.value()[first_port] == UDPPortPosition::RIGHT) {
             const size_t num_rois =
                 m_geometry.modules_x() / udp_ports_per_module;
             m_rois.resize(num_rois);
@@ -707,7 +714,7 @@ void RawMasterFile::update_rois_from_disabled_udp_ports() {
                                0, static_cast<ssize_t>(m_geometry.pixels_y())};
                 });
         }
-        if (m_udp_port_types.value()[first_port] == "top") {
+        if (m_udp_port_types.value()[first_port] == UDPPortPosition::TOP) {
             size_t num_rois = m_geometry.modules_y() / udp_ports_per_module;
             m_rois.resize(num_rois);
             // assumes euclidean coordinate system with origin at bottom
@@ -726,7 +733,7 @@ void RawMasterFile::update_rois_from_disabled_udp_ports() {
                                    pixels_per_module_y};
                 });
         }
-        if (m_udp_port_types.value()[first_port] == "bottom") {
+        if (m_udp_port_types.value()[first_port] == UDPPortPosition::BOTTOM) {
             size_t num_rois = m_geometry.modules_y() / udp_ports_per_module;
             m_rois.resize(num_rois);
             const ssize_t pixels_per_module_y =
@@ -770,12 +777,16 @@ void RawMasterFile::update_rois_from_disabled_udp_ports() {
                     module_geometry.origin_y + module_geometry.height});
         }
 
-        if (m_udp_port_types == std::vector<std::string>{"left", "right"}) {
+        if (m_udp_port_types ==
+            std::vector<UDPPortPosition>{UDPPortPosition::LEFT,
+                                         UDPPortPosition::RIGHT}) {
             m_rois = merge_consecutive_rois<false, true>(m_rois);
         } else if (m_udp_port_types ==
-                       std::vector<std::string>{"bottom", "top"} ||
+                       std::vector<UDPPortPosition>{UDPPortPosition::BOTTOM,
+                                                    UDPPortPosition::TOP} ||
                    m_udp_port_types ==
-                       std::vector<std::string>{"top", "bottom"}) {
+                       std::vector<UDPPortPosition>{UDPPortPosition::TOP,
+                                                    UDPPortPosition::BOTTOM}) {
             m_rois = merge_consecutive_rois<true, false>(m_rois);
         } else {
             throw std::runtime_error(LOCATION + "Unsupported UDP port types");

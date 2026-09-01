@@ -1,6 +1,6 @@
 # SPDX-License-Identifier: MPL-2.0
 import pytest
-from aare import RawFile, ROI
+from aare import RawFile, ROI, UDPPortPosition
 import numpy as np
 
 @pytest.mark.withdata
@@ -120,6 +120,7 @@ def test_read_eiger_udp_port_disabled(test_data_path):
         assert(len(frame) == 2)
         assert frame[0].shape == (256, 512)
         assert frame[1].shape == (256, 1024)
+        assert f.master.udp_port_types == [UDPPortPosition.LEFT, UDPPortPosition.RIGHT]
         rois = f.master.rois
         assert len(rois) == 2
         assert rois[0] == ROI(512, 1024, 0, 256)
@@ -130,6 +131,7 @@ def test_read_eiger_udp_port_disabled(test_data_path):
 
         assert frame.shape == (256, 512)
         assert(f.master.disabled_udp_ports == [1])
+        assert f.master.udp_port_types == [UDPPortPosition.TOP, UDPPortPosition.BOTTOM]
         rois = f.master.rois
         assert len(rois) == 1
         assert rois[0] == ROI(0, 512, 256, 512)
@@ -141,7 +143,7 @@ def test_read_eiger_udp_port_disabled(test_data_path):
         assert frame[0].shape == (512, 512)
         assert frame[1].shape == (512, 512)
         assert (f.master.disabled_udp_ports == [1, 3, 5, 7])
-
+        assert f.master.udp_port_types == [UDPPortPosition.LEFT, UDPPortPosition.RIGHT]
         rois = f.master.rois
         assert len(rois) == 2
         assert rois[0] == ROI(0, 512, 0, 512)

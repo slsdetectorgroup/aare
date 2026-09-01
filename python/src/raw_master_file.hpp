@@ -122,7 +122,7 @@ void define_raw_master_file_bindings(py::module &m) {
 
             Returns
             ----------
-                Optional[List[str]]
+                Optional[List[UDPPortPosition]]
                     Optional vector of UDP port types as strings (only present for
                     masterfile version >= 8.1)
             )")
