@@ -3,16 +3,16 @@
 ClusterVector
 ================
 
-The ClusterVector, holds clusters from the ClusterFinder. Since it is templated
-in C++  we use a suffix indicating the type of cluster it holds. The suffix follows
-the same pattern as for ClusterFile i.e. ``ClusterVector_Cluster3x3i``
-for a vector holding 3x3 integer clusters.
+A ClusterVector stores fixed-size clusters contiguously. Since it is templated
+in C++, each bound class has a suffix indicating the cluster type. The suffix
+follows the same pattern as ClusterFile; for example,
+``ClusterVector_Cluster3x3i`` stores 3x3 clusters with 32-bit integer pixels.
 
 
 The intended use case is to pass a ClusterVector to C++ functions that support
 it or to view it as a NumPy array.
 
-**View ClusterVector as numpy array**
+**View ClusterVector as a NumPy array**
 
 .. code:: python
 
@@ -24,7 +24,7 @@ it or to view it as a NumPy array.
     clusters = np.array(cluster_vector)
 
     # Avoid copying the data by passing copy=False
-    clusters = np.array(cluster_vector, copy = False)
+    clusters = np.array(cluster_vector, copy=False)
 
 .. warning::
 
@@ -43,7 +43,8 @@ it or to view it as a NumPy array.
     :undoc-members:
     :inherited-members:
 
-Below is the API of the ClusterVector_Cluster3x3i but all variants share the same API.
+Below is the API of ``ClusterVector_Cluster3x3i``. All variants share the same
+API.
 
 .. autoclass::  aare._aare.ClusterVector_Cluster3x3i
     :special-members: __init__, __call__ 
@@ -53,14 +54,38 @@ Below is the API of the ClusterVector_Cluster3x3i but all variants share the sam
     :inherited-members:
 
 
-**Free Functions:** 
+**Free Functions:**
 
-.. autofunction:: reduce_to_3x3
+.. py:function:: hitmap(image_size, clusters)
    :noindex:
 
-   Reduce a single Cluster to 3x3 by taking the 3x3 subcluster with highest photon energy.
+   Count cluster centers into an ``int32`` image. ``image_size`` is given as
+   ``(rows, columns)``, and output element ``[y, x]`` contains the number of
+   centers at that coordinate. Out-of-bounds centers are ignored. All registered
+   ClusterVector variants are accepted.
 
-.. autofunction:: reduce_to_2x2
+   :param tuple[int, int] image_size: Shape of the output image.
+   :param ClusterVector clusters: Clusters whose centers are counted.
+   :return: Hit counts with shape ``image_size``.
+   :rtype: numpy.ndarray
+
+.. py:function:: reduce_to_3x3(clustervector)
    :noindex:
 
-   Reduce a single Cluster to 2x2 by taking the 2x2 subcluster with highest photon energy.
+   Return a new vector containing the central 3x3 block of every input cluster.
+   Cluster order, coordinates, frame number, and pixel dtype are preserved.
+
+   :param ClusterVector clustervector: Input clusters of size 3x3 or larger.
+   :return: Reduced 3x3 clusters.
+   :rtype: ClusterVector
+
+.. py:function:: reduce_to_2x2(clustervector)
+   :noindex:
+
+   Return a new vector containing the highest-sum center-adjacent 2x2 block of
+   every input cluster. Cluster order, coordinates, frame number, and pixel
+   dtype are preserved.
+
+   :param ClusterVector clustervector: Input clusters of size 2x2 or larger.
+   :return: Reduced 2x2 clusters.
+   :rtype: ClusterVector

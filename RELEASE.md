@@ -21,7 +21,8 @@
   copying every cluster.
 - Validate that ``ClusterVector`` masks are one-dimensional, C-contiguous
   Boolean arrays.
-- Preserve ``ClusterVector`` frame numbers when reducing cluster dimensions.
+- Preserve signed ``ClusterVector`` frame numbers when filtering or reducing
+  cluster dimensions.
 - Fixed broken reading of old (pre reordering) Moench03
 
 ## 2026.7.2
@@ -166,8 +167,5 @@ https://github.com/slsdetectorgroup/aare
 erik.frojdh@psi.ch \
 alice.mazzoleni@psi.ch \
 dhanya.thattil@psi.ch
-
-
-
 
 

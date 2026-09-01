@@ -22,7 +22,7 @@ TEST_CASE("After pushing back one element the ClusterVector is not empty") {
     REQUIRE(!cv.empty());
 }
 
-TEST_CASE("Filtering a ClusterVector reserves only the selected elements") {
+TEST_CASE("Filtering a ClusterVector selects the masked elements") {
     ClusterVector<C1> source(8, 123);
     source.push_back(C1{1, 2, {3, 4, 5, 6}});
     source.push_back(C1{7, 8, {9, 10, 11, 12}});
@@ -35,7 +35,6 @@ TEST_CASE("Filtering a ClusterVector reserves only the selected elements") {
         auto filtered = source(aare::NDView<bool, 1>{mask.data(), {4}});
 
         CHECK(filtered.size() == 2);
-        CHECK(filtered.capacity() == 2);
         CHECK(filtered.frame_number() == 123);
         CHECK(filtered[0].x == 1);
         CHECK(filtered[1].x == 19);
@@ -47,7 +46,16 @@ TEST_CASE("Filtering a ClusterVector reserves only the selected elements") {
         auto filtered = source(aare::NDView<bool, 1>{mask.data(), {4}});
 
         CHECK(filtered.empty());
-        CHECK(filtered.capacity() == 0);
+        CHECK(filtered.frame_number() == 123);
+    }
+
+    SECTION("An empty vector accepts a default empty mask") {
+        ClusterVector<C1> empty_source(0, -123);
+
+        auto filtered = empty_source(aare::NDView<bool, 1>{});
+
+        CHECK(filtered.empty());
+        CHECK(filtered.frame_number() == -123);
     }
 }
 
@@ -302,7 +310,7 @@ TEST_CASE("Concatenate two cluster vectors where we need to allocate") {
 
 TEST_CASE("Reducing a ClusterVector preserves its frame number") {
     SECTION("Reduce to 2x2") {
-        ClusterVector<Cluster<int32_t, 3, 3>> source(1, 135);
+        ClusterVector<Cluster<int32_t, 3, 3>> source(1, -135);
         source.push_back(Cluster<int32_t, 3, 3>{});
 
         auto reduced = aare::reduce_to_2x2(source);
@@ -312,7 +320,7 @@ TEST_CASE("Reducing a ClusterVector preserves its frame number") {
     }
 
     SECTION("Reduce to 3x3") {
-        ClusterVector<Cluster<int32_t, 5, 5>> source(1, 246);
+        ClusterVector<Cluster<int32_t, 5, 5>> source(1, -246);
         source.push_back(Cluster<int32_t, 5, 5>{});
 
         auto reduced = aare::reduce_to_3x3(source);

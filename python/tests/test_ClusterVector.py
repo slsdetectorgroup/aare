@@ -83,7 +83,7 @@ def test_make_a_hitmap_from_cluster_vector():
 
 def test_2x2_reduction(): 
     cv = ClusterVector((3,3))
-    cv.frame_number = 135
+    cv.frame_number = -135
 
     cv.push_back(_aare.Cluster3x3i(5, 5, np.array([1, 1, 1, 2, 3, 1, 2, 2, 1], dtype=np.int32)))
     cv.push_back(_aare.Cluster3x3i(5, 5, np.array([2, 2, 1, 2, 3, 1, 1, 1, 1], dtype=np.int32)))
