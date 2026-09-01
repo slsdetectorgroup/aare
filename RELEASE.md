@@ -17,6 +17,8 @@
   ``expand4to8bit`` and ``expand24to32bit`` accept const input views.
 
 ### Bugfixes:
+- Fixed ``ClusterVector`` move operations to transfer storage instead of
+  copying every cluster.
 - Fixed broken reading of old (pre reordering) Moench03
 
 ## 2026.7.2
@@ -161,7 +163,6 @@ https://github.com/slsdetectorgroup/aare
 erik.frojdh@psi.ch \
 alice.mazzoleni@psi.ch \
 dhanya.thattil@psi.ch
-
 
 
 

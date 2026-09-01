@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: MPL-2.0
 #include "aare/ClusterVector.hpp"
 #include <cstdint>
+#include <utility>
 
 #include <catch2/catch_all.hpp>
 #include <catch2/catch_test_macros.hpp>
@@ -19,6 +20,44 @@ TEST_CASE("After pushing back one element the ClusterVector is not empty") {
     ClusterVector<C1> cv(4);
     cv.push_back(C1{1, 2, {3, 4}});
     REQUIRE(!cv.empty());
+}
+
+TEST_CASE("Move constructing a ClusterVector transfers its storage") {
+    ClusterVector<C1> source(4, 123);
+    source.push_back(C1{1, 2, {3, 4, 5, 6}});
+    source.push_back(C1{7, 8, {9, 10, 11, 12}});
+
+    const auto *source_data = source.data();
+    const auto source_capacity = source.capacity();
+
+    ClusterVector<C1> destination(std::move(source));
+
+    CHECK(destination.data() == source_data);
+    CHECK(destination.capacity() == source_capacity);
+    CHECK(destination.size() == 2);
+    CHECK(destination.frame_number() == 123);
+    CHECK(destination[0].x == 1);
+    CHECK(destination[1].x == 7);
+}
+
+TEST_CASE("Move assigning a ClusterVector transfers its storage") {
+    ClusterVector<C1> source(4, 123);
+    source.push_back(C1{1, 2, {3, 4, 5, 6}});
+    source.push_back(C1{7, 8, {9, 10, 11, 12}});
+
+    const auto *source_data = source.data();
+    const auto source_capacity = source.capacity();
+
+    ClusterVector<C1> destination(2, 456);
+    destination.push_back(C1{13, 14, {15, 16, 17, 18}});
+    destination = std::move(source);
+
+    CHECK(destination.data() == source_data);
+    CHECK(destination.capacity() == source_capacity);
+    CHECK(destination.size() == 2);
+    CHECK(destination.frame_number() == 123);
+    CHECK(destination[0].x == 1);
+    CHECK(destination[1].x == 7);
 }
 
 TEST_CASE("item_size return the size of the cluster stored") {
