@@ -2,8 +2,29 @@
 
 ## Next
 
+### New Features:
+
+- Added ``FastPedestal`` in C++ and Python for per-pixel running mean,
+  population variance, and standard deviation. It supports exponentially
+  weighted updates, initialization from files, direct subtraction from NumPy
+  arrays, and ``float64``, ``float32``, and ``int16`` output types.
+- Added the ``Pedestal_i16`` Python binding alongside
+  ``FastPedestal_d``, ``FastPedestal_f``, and ``FastPedestal_i16``.
+- ``PedestalTrackingPixelHistogram.fill_from_file()`` now uses parallel,
+  double-buffered file reading and accepts ``reader_threads`` and
+  ``reader_chunk_size`` tuning parameters.
+- Added the ``AARE_TUNE_LOCAL`` CMake option to build with ``-march=native``
+  and ``-mtune=native`` when supported. Binaries built with this option are
+  specific to the local CPU and may not be portable.
+
 ### API Changes:
 
+- ``ClusterFinder`` now uses ``FastPedestal``. It must receive 1000 pedestal
+  frames before cluster finding; ``find_clusters()`` raises
+  an error until initialization is complete. Added ``update_threshold()`` to
+  recompute the per-pixel detection thresholds.
+- Added the ``queue_depth`` constructor argument to ``ClusterFinderMT`` to
+  configure the number of preallocated frame buffers per worker thread.
 - Exposed ``ClusterVector.empty()`` in the Python API.
 - Added ClusterVector.estimate_n_clusters
 - Removed the lmfit dependency and the legacy ``fit_gaus``, ``fit_pol1``,
@@ -167,5 +188,9 @@ https://github.com/slsdetectorgroup/aare
 erik.frojdh@psi.ch \
 alice.mazzoleni@psi.ch \
 dhanya.thattil@psi.ch
+
+
+
+
 
 

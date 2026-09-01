@@ -15,7 +15,6 @@
 #include <pybind11/stl_bind.h>
 
 namespace py = pybind11;
-using pd_type = double;
 
 using namespace aare;
 

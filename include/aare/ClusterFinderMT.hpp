@@ -6,11 +6,13 @@
 #include <thread>
 #include <vector>
 
+#include "aare/Backoff.hpp"
+#include "aare/CircularFifo.hpp"
 #include "aare/ClusterFinder.hpp"
 #include "aare/NDArray.hpp"
 #include "aare/ProducerConsumerQueue.hpp"
 #include "aare/logger.hpp"
-
+#include <ctime>
 namespace aare {
 
 enum class FrameType {
@@ -18,10 +20,40 @@ enum class FrameType {
     PEDESTAL,
 };
 
-struct FrameWrapper {
-    FrameType type;
-    uint64_t frame_number;
-    NDArray<uint16_t, 2> data;
+/**
+ * @brief Ticket identifying a frame buffer in a FramePool. Trivially
+ * copyable, the buffer itself never travels through the queues.
+ */
+struct FrameRef {
+    FrameType type{};
+    uint32_t slot{};
+    uint64_t frame_number{};
+};
+
+/**
+ * @brief Fixed set of frame buffers allocated once at construction.
+ *
+ * Buffers are addressed by slot index and are never moved or reallocated, so
+ * the queues only need to pass a FrameRef around. This keeps the per frame
+ * allocation out of the hot path entirely.
+ */
+class FramePool {
+    std::vector<NDArray<uint16_t, 2>> m_buffers;
+
+  public:
+    FramePool(size_t depth, Shape<2> shape) {
+        m_buffers.reserve(depth); // no reallocation, slots stay stable
+        for (size_t i = 0; i < depth; ++i) {
+            m_buffers.emplace_back(shape);
+        }
+    }
+
+    NDArray<uint16_t, 2> &operator[](uint32_t slot) { return m_buffers[slot]; }
+    const NDArray<uint16_t, 2> &operator[](uint32_t slot) const {
+        return m_buffers[slot];
+    }
+
+    size_t size() const { return m_buffers.size(); }
 };
 
 /**
@@ -42,17 +74,18 @@ class ClusterFinderMT {
     size_t m_current_thread{0};
     size_t m_n_threads{0};
     using Finder = ClusterFinder<ClusterType, FRAME_TYPE, PEDESTAL_TYPE>;
-    using InputQueue = ProducerConsumerQueue<FrameWrapper>;
+    using InputQueue = CircularFifo<FrameRef>;
     using OutputQueue = ProducerConsumerQueue<ClusterVector<ClusterType>>;
     std::vector<std::unique_ptr<InputQueue>> m_input_queues;
     std::vector<std::unique_ptr<OutputQueue>> m_output_queues;
+    std::vector<std::unique_ptr<FramePool>> m_frame_pools;
 
     OutputQueue m_sink{1000}; // All clusters go into this queue
 
     std::vector<std::unique_ptr<Finder>> m_cluster_finders;
     std::vector<std::thread> m_threads;
     std::thread m_collect_thread;
-    std::chrono::milliseconds m_default_wait{1};
+    std::chrono::microseconds m_default_wait{50};
 
   private:
     std::atomic<bool> m_stop_requested{false};
@@ -65,31 +98,35 @@ class ClusterFinderMT {
     void process(int thread_id) {
         auto cf = m_cluster_finders[thread_id].get();
         auto q = m_input_queues[thread_id].get();
-        bool realloc_same_capacity = true;
+        auto *pool = m_frame_pools[thread_id].get();
+        Backoff backoff;
 
         while (!m_stop_requested || !q->isEmpty()) {
-            if (FrameWrapper *frame = q->frontPtr(); frame != nullptr) {
+            if (FrameRef *ref = q->frontPtr(); ref != nullptr) {
+                backoff.reset();
+                auto view = (*pool)[ref->slot].view();
 
-                switch (frame->type) {
-                case FrameType::DATA:
-                    cf->find_clusters(frame->data.view(), frame->frame_number);
+                switch (ref->type) {
+                case FrameType::DATA: {
+                    cf->find_clusters(view, ref->frame_number);
+                    // Steal before the write so a failed write cannot drop the
+                    // clusters by re-stealing an empty vector on retry.
+                    auto clusters = cf->steal_clusters(true);
                     while (!m_output_queues[thread_id]->write(
-                        cf->steal_clusters(realloc_same_capacity))) {
-                        std::this_thread::sleep_for(m_default_wait);
+                        std::move(clusters))) {
+                        backoff.pause();
                     }
-
                     break;
-
+                }
                 case FrameType::PEDESTAL:
-                    m_cluster_finders[thread_id]->push_pedestal_frame(
-                        frame->data.view());
+                    m_cluster_finders[thread_id]->push_pedestal_frame(view);
                     break;
                 }
 
-                // frame is processed now discard it
-                m_input_queues[thread_id]->popFront();
+                // frame is processed, hand the buffer back to the free list
+                q->recycle_front();
             } else {
-                std::this_thread::sleep_for(m_default_wait);
+                backoff.pause();
             }
         }
     }
@@ -100,17 +137,23 @@ class ClusterFinderMT {
      */
     void collect() {
         bool empty = true;
+        Backoff backoff;
         while (!m_stop_requested || !empty || !m_processing_threads_stopped) {
-            empty = true;
+            bool moved_any = false;
             for (auto &queue : m_output_queues) {
-                if (!queue->isEmpty()) {
-
-                    while (!m_sink.write(std::move(*queue->frontPtr()))) {
-                        std::this_thread::sleep_for(m_default_wait);
+                while (auto *front = queue->frontPtr()) {
+                    while (!m_sink.write(std::move(*front))) {
+                        backoff.pause();
                     }
                     queue->popFront();
-                    empty = false;
+                    moved_any = true;
                 }
+            }
+            empty = !moved_any;
+            if (moved_any) {
+                backoff.reset();
+            } else {
+                backoff.pause();
             }
         }
     }
@@ -124,16 +167,22 @@ class ClusterFinderMT {
      * @param capacity initial capacity of the cluster vector. Should match
      * expected number of clusters in a frame per frame.
      * @param n_threads number of threads to use
+     * @param queue_depth number of frame buffers per thread. These are
+     * allocated once and recycled, so the total resident frame memory is
+     * n_threads * queue_depth * frame size. Keeping the in flight data below
+     * the L3 size keeps the per frame copy cheap.
      */
     ClusterFinderMT(Shape<2> image_size, PEDESTAL_TYPE nSigma = 5.0,
-                    size_t capacity = 2000, size_t n_threads = 3)
+                    size_t capacity = 2000, size_t n_threads = 3,
+                    size_t queue_depth = 16)
         : m_n_threads(n_threads) {
 
         LOG(logDEBUG1) << "ClusterFinderMT: "
                        << "image_size: " << image_size[0] << "x"
                        << image_size[1] << ", nSigma: " << nSigma
                        << ", capacity: " << capacity
-                       << ", n_threads: " << n_threads;
+                       << ", n_threads: " << n_threads
+                       << ", queue_depth: " << queue_depth;
 
         for (size_t i = 0; i < n_threads; i++) {
             m_cluster_finders.push_back(
@@ -142,7 +191,13 @@ class ClusterFinderMT {
                     image_size, nSigma, capacity));
         }
         for (size_t i = 0; i < n_threads; i++) {
-            m_input_queues.emplace_back(std::make_unique<InputQueue>(200));
+            m_frame_pools.emplace_back(
+                std::make_unique<FramePool>(queue_depth, image_size));
+            m_input_queues.emplace_back(std::make_unique<InputQueue>(
+                static_cast<uint32_t>(queue_depth), [](size_t slot) {
+                    return FrameRef{FrameType::DATA,
+                                    static_cast<uint32_t>(slot), 0};
+                }));
             m_output_queues.emplace_back(std::make_unique<OutputQueue>(200));
         }
         // TODO! Should we start automatically?
@@ -212,13 +267,22 @@ class ClusterFinderMT {
      * expected to be dark. No photon finding is done. Just pedestal update.
      */
     void push_pedestal_frame(NDView<FRAME_TYPE, 2> frame) {
-        FrameWrapper fw{FrameType::PEDESTAL, 0,
-                        NDArray(frame)}; // TODO! copies the data!
+        for (size_t i = 0; i < m_n_threads; ++i) {
+            auto *q = m_input_queues[i].get();
+            Backoff backoff;
 
-        for (auto &queue : m_input_queues) {
-            while (!queue->write(fw)) {
-                std::this_thread::sleep_for(m_default_wait);
+            FrameRef ref;
+            while (!q->try_pop_free(ref)) {
+                backoff.pause();
             }
+
+            ref.type = FrameType::PEDESTAL;
+            ref.frame_number = 0;
+            (*m_frame_pools[i])[ref.slot].copy_from(frame);
+
+            // Cannot fail, the free list is what limits how many frames are
+            // in flight so there is always room in the filled list.
+            q->try_push_value(ref);
         }
     }
 
@@ -228,11 +292,29 @@ class ClusterFinderMT {
      * @note Spin locks with a default wait if the queue is full.
      */
     void find_clusters(NDView<FRAME_TYPE, 2> frame, uint64_t frame_number = 0) {
-        FrameWrapper fw{FrameType::DATA, frame_number,
-                        NDArray(frame)}; // TODO! copies the data!
-        while (!m_input_queues[m_current_thread % m_n_threads]->write(fw)) {
-            std::this_thread::sleep_for(m_default_wait);
+        const size_t tid = m_current_thread % m_n_threads;
+        auto *q = m_input_queues[tid].get();
+        Backoff backoff;
+
+        FrameRef ref;
+        while (!q->try_pop_free(ref)) {
+            backoff.pause();
         }
+
+        ref.type = FrameType::DATA;
+        ref.frame_number = frame_number;
+
+        // DualTimer dt;
+        (*m_frame_pools[tid])[ref.slot].copy_from(frame);
+        // auto [wall_ns, cpu_ns] = dt.elapsed();
+        // std::cerr << "ClusterFinderMT: find_clusters: copied frame "
+        //           << frame_number << " took " << wall_ns/1000.0 << " wall_us
+        //           and "
+        //           << cpu_ns/1000.0 << " cpu_us" << std::endl;
+
+        // Cannot fail, the free list is what limits how many frames are in
+        // flight so there is always room in the filled list.
+        q->try_push_value(ref);
         m_current_thread++;
     }
 
@@ -242,6 +324,19 @@ class ClusterFinderMT {
         }
         for (auto &cf : m_cluster_finders) {
             cf->clear_pedestal();
+        }
+    }
+
+    /**
+     * @brief Recompute the threshold (nSigma * pedestal std) on all cluster
+     * finders. Requires the processing threads to be stopped.
+     */
+    void update_threshold() {
+        if (!m_processing_threads_stopped) {
+            throw std::runtime_error("ClusterFinderMT is still running");
+        }
+        for (auto &cf : m_cluster_finders) {
+            cf->update_threshold();
         }
     }
 

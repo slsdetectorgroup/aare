@@ -59,6 +59,7 @@ class ClusterVector<Cluster<T, ClusterSizeX, ClusterSizeY, CoordType>> {
     }
 
     ClusterVector(ClusterVector &&other) noexcept = default;
+    ClusterVector &operator=(ClusterVector &&other) noexcept = default;
 
     /**
      * @brief Return a filtered copy selected by a one-dimensional Boolean mask.
