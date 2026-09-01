@@ -203,49 +203,6 @@ inline defs::StrixelGroupToPixelMap jungfrau_ilgad_singlechip_18um_strixel_map(
                                       placement, rx_roi, bs);
 };
 
-// Probably, one could get rid of this?
-/**
- * @brief Generate all strixel-to-pixel maps for a JUNGFRAU single-chip
- *        multi-pitch iLGAD sensor.
- *
- * This overload selects the predefined placement of the requested ASIC
- * chip. Currently, chip IDs 1 and 6 are supported.
- *
- * The returned vector contains one map for each configured strixel group,
- * in the order pitch 25 um, 15 um, an 18.75 um.
- *
- * @param rx_roi
- *      ROI in the user/input ASIC coordinate system.
- *
- * @param chip_id
- *      Predefined chip placement to use. Supported values are 1 and 6.
- *
- * @param bs
- *      Bonding shift applied before the configured sensor rotation.
- *
- * @return
- *      One remapping map per configured strixel group.
- *
- * @throws std::runtime_error
- *      If @p chip_id does not correspond to a supported predefined
- *      chip placement.
- */
-inline auto jungfrau_ilgad_singlechip_multipitch_strixel_maps(
-    InclusiveROI rx_roi, int chip_id = 1, defs::BondShift bs = {0, 0}) {
-    defs::SensorModulePlacement placement;
-    if (chip_id == 1)
-        placement = config::jungfrau::Chip1;
-    else if (chip_id == 6)
-        placement = config::jungfrau::Chip6;
-    else {
-        throw std::runtime_error("Invalid sensor placement.");
-    }
-
-    return algo::strixel_to_pixel_maps(config::jungfrau::SingleChipMP_iLGAD,
-                                       placement, rx_roi, bs);
-};
-
-// More generic overload
 /**
  * @brief Generate all strixel-to-pixel maps for a JUNGFRAU single-chip
  *        multi-pitch iLGAD sensor using an explicit sensor placement.
@@ -334,42 +291,6 @@ jungfrau_tew_singlechip_18um_strixel_map(InclusiveROI rx_roi,
                                       placement, rx_roi, bs);
 };
 
-// Get rid?
-/**
- * @brief Generate all strixel-to-pixel maps for a JUNGFRAU single-chip
- *        multi-pitch TEW sensor using a predefined chip placement.
- *
- * @param rx_roi
- *      ROI in the user/input ASIC coordinate system.
- *
- * @param chip_id
- *      Predefined chip placement to use. Supported values are 1 and 6.
- *
- * @param bs
- *      Bonding shift applied before the configured sensor rotation.
- *
- * @return
- *      One remapping map per configured strixel group.
- *
- * @throws std::runtime_error
- *      If @p chip_id is not supported.
- */
-inline auto jungfrau_tew_singlechip_multipitch_strixel_maps(
-    InclusiveROI rx_roi, int chip_id = 1, defs::BondShift bs = {0, 0}) {
-    defs::SensorModulePlacement placement;
-    if (chip_id == 1)
-        placement = config::jungfrau::Chip1;
-    else if (chip_id == 6)
-        placement = config::jungfrau::Chip6;
-    else {
-        throw std::runtime_error("Invalid sensor placement.");
-    }
-
-    return algo::strixel_to_pixel_maps(config::jungfrau::SingleChipMP_TEW,
-                                       placement, rx_roi, bs);
-};
-
-// More generic overload
 /**
  * @brief Generate all strixel-to-pixel maps for a JUNGFRAU single-chip
  *        multi-pitch TEW sensor using an explicit sensor placement.
