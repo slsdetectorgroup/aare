@@ -44,14 +44,25 @@ enum class Rotation : int { Identity = 0, Rotate180 = 1 };
 enum class ModuloOrdering { Forward, Reverse };
 
 /// @brief Describes the physical guardring around a sensor to protect the ASIC
-/// from high fluxes.
+/// from high current
+///
+/// NOTE: While (multiple) guard rings are part of every sensor, iLGAD sensors
+/// (due to their high currents and electric fields) have an additional guard
+/// ring that extends into the area of the sensor that would normally be
+/// occupied by active pixels. This area and the corresponding pixels therefore
+/// become unusable for photon detection.
+/// For standard (non-iLGAD) sensors, the regular guard rings are outside the
+/// pixel area. This Guardsring struct only describes the guard ring that
+/// occupies the pixel area. Its extents are described in number of pixels.
 struct Guardring {
-    /// @brief ring width.
+    /// @brief ring width in pixels.
     int x{};
-    /// @brief ring height.
+    /// @brief ring height in pixels.
     int y{};
 };
 
+/// @brief Describes the relative shift of bump bonding connections between
+/// sensor and ASIC
 struct BondShift {
     /// @brief Bonding shift in x direction
     int x{};
@@ -78,9 +89,9 @@ struct SensorPixelGeometry {
  * @brief Describes the strixel geometry of a single remapping group.
  */
 struct GroupStrixelGeometry {
-    /// @brief Number of pixels a strixel covers.
+    /// @brief Maximum number of pixels a strixel covers.
     int multiplicity;
-    /// @brief Effective strixel pitch [µm]
+    /// @brief Effective minimal strixel pitch [µm]
     double pitch_um;
 };
 
@@ -130,8 +141,8 @@ struct SensorModulePlacement {
     /// @brief Sensor bounds in module coordinates.
     InclusiveROI placement_on_module;
 
-    /// @brief Physical orientation of the mounted sensor with respect to the
-    /// module reference frame.
+    /// @brief Physical orientation of the mounted sensor-ASIC assembly with
+    /// respect to the module reference frame.
     Rotation rotation;
 };
 

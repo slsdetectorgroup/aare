@@ -121,7 +121,7 @@ static inline InclusiveROI to_local(InclusiveROI const &roi) {
  *  |    ******|********  |            |  ********|******    |
  *  |          |          |            |          |          |
  *  -----------|-----------            -----------|-----------
- *\endverbatim
+ * \endverbatim
  * @param r The ROI to be mirrored
  * @param yaxis_coord The y-axis coordinate (in x) expressed in pixel
  * coordinates

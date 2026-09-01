@@ -45,7 +45,9 @@ InclusiveROI inline update_pixel_group_placement(
  *              is connected.
  * @param placement Sensor placement and orientation on the module.
  * @param roi_user User-specified ROI in the module's native coordinate system.
- * @param bond_shift Physical bonding shift in x and y directions.
+ * @param bond_shift Physical bonding shift in x and y directions defined in the
+ *                   sensor's native coordinate system (before it is oriented on
+ *                   the module).
  * @return A StrixelGroupToPixelMap describing the mapping from strixel
  * coordinates to pixel indices in the user-provided ROI.
  *      - map(strixel_row,strixel_col) = pixel_index_in_user_roi
@@ -65,7 +67,7 @@ strixel_to_pixel_map(defs::GroupConfig const &group_config,
  * @brief Build the strixel-to-pixel order maps for all strixel groups in a
  * sensor.
  * @param sensor_config Configuration of the sensor, including all
- * configurations of the strixel groups.
+ *                      configurations of the strixel groups.
  * @param placement Sensor placement and orientation on the module.
  * @param roi_user User-specified ROI in the module's native coordinate system.
  * @param bond_shift Bonding shift in x and y directions.

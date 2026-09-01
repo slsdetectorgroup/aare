@@ -53,7 +53,7 @@ inline constexpr defs::SensorModulePlacement Quad{
  * Single chip, multi-pitch, iLGAD
  ************************************/
 
-/// @brief Pixel geometry of the 2x2 cm iLGAd sensor
+/// @brief Pixel geometry of the 2x2 cm iLGAD sensor
 inline constexpr defs::SensorPixelGeometry SingleChipMP_iLGAD_pix{
     256, 256, {9, 9}};
 // .num_pix_x = 256, .num_pix_y = 256, .guardring = {.x = 9, .y = 9}};
@@ -101,7 +101,8 @@ inline constexpr defs::GroupConfig SingleChipMP_iLGAD_P18{
  * Number of strixel rows: 476
  ********************************/
 
-/// @brief Sensor configuration of the 2x2 cm iLGAD sensor
+/// @brief Sensor configuration of the 2x2 cm iLGAD sensor with all strixel
+/// groups
 inline constexpr defs::SensorConfig<3> SingleChipMP_iLGAD{
     SingleChipMP_iLGAD_pix, //.pixel =
     // .group_configs =
@@ -158,7 +159,7 @@ inline constexpr defs::GroupConfig SingleChipMP_TEW_P18{
  * Number of strixel rows: 512
  ********************************/
 
-/// @brief Sensor configuration of the 2x2 cm TEW sensor
+/// @brief Sensor configuration of the 2x2 cm TEW sensor with all strixel groups
 inline constexpr defs::SensorConfig<3> SingleChipMP_TEW{
     SingleChipMP_TEW_pix, //.pixel =
     // .group_configs
@@ -168,7 +169,7 @@ inline constexpr defs::SensorConfig<3> SingleChipMP_TEW{
  * Quad, 25 um, iLGAD
  ************************************/
 
-/// @brief Pixel geometry of the 4x4 cm iLGAd sensor
+/// @brief Pixel geometry of the 4x4 cm iLGAD sensor
 inline constexpr defs::SensorPixelGeometry Quad_iLGAD_pix{512, 512, {9, 9}};
 // .num_pix_x = 512, .num_pix_y = 512, .guardring = {.x = 9, .y = 9}};
 
@@ -196,7 +197,8 @@ inline constexpr defs::GroupConfig Quad_iLGAD_tophalf{
      Quad_iLGAD_pix.num_pix_y / 2 + 1,                            // 257
      Quad_iLGAD_pix.num_pix_y - Quad_iLGAD_pix.guardring.y - 1}}; // 502
 
-/// @brief Sensor configuration of the 4x4 cm iLGAD sensor
+/// @brief Sensor configuration of the 4x4 cm iLGAD sensor with all strixel
+/// groups
 inline constexpr defs::SensorConfig<2> Quad_iLGAD{
     Quad_iLGAD_pix, //.pixel =
     // .group_configs
