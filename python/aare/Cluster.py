@@ -1,6 +1,6 @@
 from . import _aare 
 import numpy as np
-from .ClusterFinder import _type_to_char
+from .factory import _type_to_char
 
 
 def Cluster(x : int, y : int, data, cluster_size=(3,3), dtype = np.int32):
@@ -21,4 +21,4 @@ def Cluster(x : int, y : int, data, cluster_size=(3,3), dtype = np.int32):
     except AttributeError:
         raise ValueError(f"Unsupported combination of type and cluster size: {dtype}/{cluster_size} when requesting {class_name}")
    
-    return cls(x, y, data) 
+    return cls(x, y, data)

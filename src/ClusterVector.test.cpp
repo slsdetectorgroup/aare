@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: MPL-2.0
 #include "aare/ClusterVector.hpp"
 #include <cstdint>
+#include <utility>
 
 #include <catch2/catch_all.hpp>
 #include <catch2/catch_test_macros.hpp>
@@ -19,6 +20,29 @@ TEST_CASE("After pushing back one element the ClusterVector is not empty") {
     ClusterVector<C1> cv(4);
     cv.push_back(C1{1, 2, {3, 4}});
     REQUIRE(!cv.empty());
+}
+
+TEST_CASE("ClusterVector move constructor preserves contents") {
+    ClusterVector<C1> source(4, 42);
+    source.push_back(C1{1, 2, {3, 4, 5, 6}});
+
+    ClusterVector<C1> moved(std::move(source));
+
+    REQUIRE(moved.size() == 1);
+    CHECK(moved.frame_number() == 42);
+    CHECK(moved[0].data[3] == 6);
+}
+
+TEST_CASE("ClusterVector move assignment preserves contents") {
+    ClusterVector<C1> source(4, 42);
+    source.push_back(C1{1, 2, {3, 4, 5, 6}});
+    ClusterVector<C1> moved(1);
+
+    moved = std::move(source);
+
+    REQUIRE(moved.size() == 1);
+    CHECK(moved.frame_number() == 42);
+    CHECK(moved[0].data[3] == 6);
 }
 
 TEST_CASE("item_size return the size of the cluster stored") {

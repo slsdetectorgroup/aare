@@ -53,11 +53,8 @@ class ClusterVector<Cluster<T, ClusterSizeX, ClusterSizeY, CoordType>> {
         m_data.reserve(capacity);
     }
 
-    // Move constructor
-    ClusterVector(ClusterVector &&other) noexcept
-        : m_data(other.m_data), m_frame_number(other.m_frame_number) {
-        other.m_data.clear();
-    }
+    ClusterVector(ClusterVector &&other) noexcept = default;
+    ClusterVector &operator=(ClusterVector &&other) noexcept = default;
 
     /**
      * @brief Create a copy of the clustervector by filtering clusters in the
@@ -80,16 +77,16 @@ class ClusterVector<Cluster<T, ClusterSizeX, ClusterSizeY, CoordType>> {
         return result;
     }
 
-    // Move assignment operator
-    ClusterVector &operator=(ClusterVector &&other) noexcept {
-        if (this != &other) {
-            m_data = other.m_data;
-            m_frame_number = other.m_frame_number;
-            other.m_data.clear();
-            other.m_frame_number = 0;
-        }
-        return *this;
-    }
+    // // Move assignment operator
+    // ClusterVector &operator=(ClusterVector &&other) noexcept {
+    //     if (this != &other) {
+    //         m_data = other.m_data;
+    //         m_frame_number = other.m_frame_number;
+    //         other.m_data.clear();
+    //         other.m_frame_number = 0;
+    //     }
+    //     return *this;
+    // }
 
     /**
      * @brief Sum the pixels in each cluster

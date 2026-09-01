@@ -1,11 +1,16 @@
 #include "aare/hist/PedestalTrackingPixelHistogram.hpp"
 #include "aare/File.hpp"
+#include "aare/MultiThreadedFileReader.hpp"
 
 #include <algorithm>
+#include <array>
 #include <chrono>
 #include <cmath>
 #include <cstring>
+#include <functional>
+#include <future>
 #include <stdexcept>
+#include <type_traits>
 #include <utility>
 #include <vector>
 
@@ -202,17 +207,8 @@ void PedestalTrackingPixelHistogram::worker_loop(int thread_id) {
 
         switch (kind) {
         case WorkKind::PushPedestal: {
-            // Accumulate raw frame values into this thread's pedestal
-            // shard. Uses the pixel-level push_no_update which only
-            // touches m_sum/m_sum2/m_cur_samples (no m_mean writes).
-            for (int local_row = 0; local_row < local_rows; ++local_row) {
-                const auto row = static_cast<ssize_t>(first_row + local_row);
-                for (ssize_t col = 0; col < image->shape(1); ++col) {
-                    my_pedestal.template push_no_update<FrameType>(
-                        static_cast<uint32_t>(local_row),
-                        static_cast<uint32_t>(col), (*image)(row, col));
-                }
-            }
+            auto frame = image->sub_view(first_row, first_row + local_rows);
+            my_pedestal.add_init_frame(frame);
             break;
         }
         case WorkKind::UpdateMean: {
@@ -220,7 +216,6 @@ void PedestalTrackingPixelHistogram::worker_loop(int thread_id) {
             // thread's shard. Also refresh the cached per-pixel std so
             // FillWithThreshold can read it without recomputing on the
             // hot path.
-            my_pedestal.update_mean();
             auto &my_std = partial_std_[thread_id];
             for (int local_row = 0; local_row < local_rows; ++local_row) {
                 for (int col = 0; col < cols_; ++col) {
@@ -240,59 +235,63 @@ void PedestalTrackingPixelHistogram::worker_loop(int thread_id) {
             // tracking gate entirely. The [xmin, xmax) histogram gate
             // lives inside PixelHistogramImpl::fill.
             const auto n_sigma = n_sigma_.load(std::memory_order_relaxed);
-            if (n_sigma <= AxisType{0.0}) {
-                // Fill without pedestal tracking.
-                for (const auto &frame : *images) {
-                    const auto cols = frame.shape(1);
-                    for (int local_row = 0; local_row < local_rows;
-                         ++local_row) {
-                        const auto row =
-                            static_cast<ssize_t>(first_row + local_row);
-                        for (ssize_t col = 0; col < cols; ++col) {
-                            const FrameType raw = frame(row, col);
-                            const AxisType val =
-                                static_cast<AxisType>(raw) -
-                                static_cast<AxisType>(my_pedestal.mean(
-                                    static_cast<uint32_t>(local_row),
-                                    static_cast<uint32_t>(col)));
-                            my_hist.fill_unchecked(local_row,
-                                                   static_cast<int>(col), val);
-                        }
-                    }
-                }
-                break;
-            } else {
-                // Do pedestal tracking. Duplicated code for clean hot path.
+            constexpr std::size_t pixel_tile_size = 256;
+            const auto local_pixels = static_cast<std::size_t>(local_rows) *
+                                      static_cast<std::size_t>(cols_);
+            const auto global_pixel_begin =
+                static_cast<std::size_t>(first_row) *
+                static_cast<std::size_t>(cols_);
+            const auto &frames = *images;
 
-                auto &my_std = partial_std_[thread_id];
-                for (const auto &frame : *images) {
-                    const auto cols = frame.shape(1);
-                    for (int local_row = 0; local_row < local_rows;
-                         ++local_row) {
-                        const auto row =
-                            static_cast<ssize_t>(first_row + local_row);
-                        for (ssize_t col = 0; col < cols; ++col) {
-                            const FrameType raw = frame(row, col);
+            // Compile the shared traversal once for each mode. if constexpr
+            // removes the tracking gate entirely from the histogram-only hot
+            // path, while keeping the runtime mode decision outside the
+            // per-pixel loops.
+            const auto fill_tiles = [&](auto tracking,
+                                        const AxisType *std_data) {
+                constexpr bool track_pedestal = decltype(tracking)::value;
+
+                // Each worker retains exclusive ownership of its row shard.
+                // Pixel tiling keeps a bounded part of that shard's
+                // [pixel x bin] storage hot while input remains contiguous.
+                for (std::size_t tile_begin = 0; tile_begin < local_pixels;
+                     tile_begin += pixel_tile_size) {
+                    const auto tile_end =
+                        std::min(tile_begin + pixel_tile_size, local_pixels);
+                    for (const auto &frame : frames) {
+                        const auto *input =
+                            frame.data() + global_pixel_begin + tile_begin;
+                        for (std::size_t local_pixel = tile_begin;
+                             local_pixel < tile_end; ++local_pixel, ++input) {
+                            const FrameType raw = *input;
                             const AxisType val =
                                 static_cast<AxisType>(raw) -
-                                static_cast<AxisType>(my_pedestal.mean(
-                                    static_cast<uint32_t>(local_row),
-                                    static_cast<uint32_t>(col)));
-                            my_hist.fill_unchecked(local_row,
-                                                   static_cast<int>(col), val);
-                            const AxisType sigma = my_std(local_row, col);
-                            if (sigma > AxisType{0.0} &&
-                                std::abs(static_cast<AxisType>(val)) <
-                                    n_sigma * sigma) {
-                                my_pedestal.template push<FrameType>(
-                                    static_cast<uint32_t>(local_row),
-                                    static_cast<uint32_t>(col), raw);
+                                my_pedestal.mean_unchecked(
+                                    static_cast<ssize_t>(local_pixel));
+                            my_hist.fill_flat_unchecked(local_pixel, val);
+
+                            if constexpr (track_pedestal) {
+                                const AxisType sigma = std_data[local_pixel];
+                                if (sigma > AxisType{0.0} &&
+                                    std::abs(val) < n_sigma * sigma) {
+                                    my_pedestal.push_ema_unchecked<FrameType>(
+                                        local_pixel, raw);
+                                }
                             }
                         }
                     }
                 }
-                break;
+            };
+
+            if (n_sigma <= AxisType{0.0}) {
+                fill_tiles(std::false_type{}, nullptr);
+            } else {
+                // Frames stay chronological for every pixel. Accepted raw
+                // values update that pixel's sums and cached mean immediately;
+                // pixels are otherwise independent.
+                fill_tiles(std::true_type{}, partial_std_[thread_id].data());
             }
+            break;
         }
         }
 
@@ -395,6 +394,11 @@ void PedestalTrackingPixelHistogram::fill_async(NDArray<FrameType, 2> &&image) {
             "constructor shape");
     }
 
+    // ProducerConsumerQueue is SPSC. Serialising this short producer-side
+    // operation also prevents fill_async from racing fill_from_file's direct
+    // batch dispatch.
+    std::lock_guard<std::mutex> ingestion_lock(ingestion_mutex_);
+
     // SPSC backpressure: spin with a short sleep until a slot frees up.
     // The std::move only consumes `image` on the iteration that succeeds
     // (placement-new inside write() runs only when the slot is free).
@@ -467,35 +471,42 @@ PedestalTrackingPixelHistogram::bin_edges() const {
 }
 
 void PedestalTrackingPixelHistogram::fill_from_file(
-    const std::filesystem::path &fname, ssize_t max_frames, bool verbose) {
+    const std::filesystem::path &fname, ssize_t max_frames, bool verbose,
+    std::size_t reader_threads, std::size_t reader_chunk_size) {
     constexpr std::size_t progress_interval = 66;
     auto last = std::chrono::steady_clock::now();
-    const auto completed_start =
-        completed_async_fills_.load(std::memory_order_acquire);
     std::size_t last_reported = 0;
-    const auto completed_for_this_file = [&]() {
-        return completed_async_fills_.load(std::memory_order_acquire) -
-               completed_start;
-    };
 
-    const auto wait_for_completed = [&](std::size_t target) {
-        while (completed_for_this_file() < target) {
-            std::this_thread::sleep_for(async_wait_);
-        }
-    };
+    if (max_frames < -1) {
+        throw std::invalid_argument(
+            "PedestalTrackingPixelHistogram max_frames must be -1 or "
+            "non-negative");
+    }
 
-    File f(fname);
-    // check that row col matches constructor
-    if (f.rows() != static_cast<size_t>(rows_) ||
-        f.cols() != static_cast<size_t>(cols_)) {
+    // Preserve the old max_frames behaviour: values beyond EOF are clamped
+    // rather than rejected by MultiThreadedFileReader.
+    const auto source_total_frames = File(fname).total_frames();
+    const auto n_frames = max_frames == -1
+                              ? source_total_frames
+                              : std::min(static_cast<std::size_t>(max_frames),
+                                         source_total_frames);
+
+    experimental::MultiThreadedFileReader reader(fname, reader_threads,
+                                                 reader_chunk_size, n_frames);
+    if (reader.rows() != static_cast<size_t>(rows_) ||
+        reader.cols() != static_cast<size_t>(cols_)) {
         throw std::invalid_argument("PedestalTrackingPixelHistogram: Frame in "
                                     "file {} has shape ({}, {}) does not match "
                                     "constructor shape");
     }
+    if (reader.dtype() != Dtype::UINT16 ||
+        reader.bytes_per_frame() != static_cast<std::size_t>(rows_) *
+                                        static_cast<std::size_t>(cols_) *
+                                        sizeof(FrameType)) {
+        throw std::invalid_argument(
+            "PedestalTrackingPixelHistogram requires uint16 file frames");
+    }
 
-    const ssize_t total_frames = f.total_frames();
-    const ssize_t n_frames =
-        max_frames == -1 ? total_frames : std::min(max_frames, total_frames);
     const auto print_progress = [&](std::size_t done) {
         const auto now = std::chrono::steady_clock::now();
         const double dt = std::chrono::duration<double>(now - last).count();
@@ -503,30 +514,89 @@ void PedestalTrackingPixelHistogram::fill_from_file(
         const double fps =
             dt > 0.0 ? static_cast<double>(done_in_interval) / dt : 0.0;
 
-        fmt::print(
-            "\rProgress: {}/{} ({:.1f}%)  {:.1f} FPS    ", done, n_frames,
-            100.0 * static_cast<double>(done) / static_cast<double>(n_frames),
-            fps);
+        fmt::print("\rProgress: {}/{} ({:.1f}%)  {:.1f} FPS    ", done,
+                   n_frames,
+                   n_frames == 0 ? 100.0
+                                 : 100.0 * static_cast<double>(done) /
+                                       static_cast<double>(n_frames),
+                   fps);
         std::fflush(stdout);
         last = now;
         last_reported = done;
     };
 
-    for (ssize_t i = 0; i < n_frames; ++i) {
-        aare::NDArray<uint16_t> frame({rows_, cols_});
-        f.read_into(reinterpret_cast<std::byte *>(frame.data()));
-        fill_async(std::move(frame));
+    using ReadBuffer = NDArray<FrameType, 3>;
+    const auto read_into_buffer = [&reader](ReadBuffer &buffer) {
+        const auto frame_count = reader.next_read_frames();
+        const auto frames_read = reader.read_into(buffer.buffer());
+        if (frames_read != frame_count) {
+            throw std::runtime_error(
+                "MultiThreadedFileReader returned an incomplete batch");
+        }
+        return frames_read;
+    };
 
-        if (verbose && (i + 1) % progress_interval == 0) {
-            wait_for_completed(static_cast<std::size_t>(i + 1));
-            print_progress(static_cast<std::size_t>(i + 1));
+    const auto fill_batch = [this](ReadBuffer &buffer,
+                                   std::size_t frame_count) {
+        std::vector<NDView<FrameType, 2>> views;
+        views.reserve(frame_count);
+        auto batch_view = buffer.view();
+        for (std::size_t i = 0; i < frame_count; ++i) {
+            views.push_back(batch_view(i));
+        }
+        std::lock_guard<std::mutex> fill_lock(fill_mutex_);
+        dispatch_fill_batch_(views);
+    };
+
+    // Exclude other queue producers for the duration. Drain anything already
+    // submitted before bypassing the coordinator with direct batch dispatch.
+    std::lock_guard<std::mutex> ingestion_lock(ingestion_mutex_);
+    flush();
+
+    std::size_t completed = 0;
+    if (n_frames != 0) {
+        // Allocate the maximum wave size once per buffer. The last read may
+        // contain fewer frames; its returned count limits the views passed to
+        // the histogram workers, leaving the unused tail untouched.
+        const auto buffer_capacity = reader.next_read_frames();
+        std::array<ReadBuffer, 2> buffers{
+            ReadBuffer({static_cast<ssize_t>(buffer_capacity), rows_, cols_}),
+            ReadBuffer({static_cast<ssize_t>(buffer_capacity), rows_, cols_})};
+
+        std::size_t current_index = 0;
+        auto current_frames = read_into_buffer(buffers[current_index]);
+        while (true) {
+            const bool has_next = completed + current_frames < n_frames;
+            const std::size_t next_index = current_index ^ std::size_t{1};
+
+            // MultiThreadedFileReader::read_into is blocking. Run the next
+            // read on a dedicated prefetch task while the current batch is
+            // processed by the histogram worker pool.
+            std::future<std::size_t> next;
+            if (has_next) {
+                next = std::async(std::launch::async, read_into_buffer,
+                                  std::ref(buffers[next_index]));
+            }
+
+            fill_batch(buffers[current_index], current_frames);
+            completed += current_frames;
+
+            if (verbose && (completed - last_reported >= progress_interval ||
+                            completed == n_frames)) {
+                print_progress(completed);
+            }
+
+            if (!has_next) {
+                break;
+            }
+            current_frames = next.get();
+            current_index = next_index;
         }
     }
-    flush();
+
     if (verbose) {
-        const auto done = completed_for_this_file();
-        if (done > last_reported) {
-            print_progress(done);
+        if (completed > last_reported || n_frames == 0) {
+            print_progress(completed);
         }
         fmt::print("\n\n");
         std::fflush(stdout);
