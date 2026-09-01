@@ -87,8 +87,6 @@ class ClusterVector<Cluster<T, ClusterSizeX, ClusterSizeY, CoordType>> {
         return result;
     }
 
-    ClusterVector &operator=(ClusterVector &&other) noexcept = default;
-
     /**
      * @brief Sum the pixels in each cluster.
      * @return One sum for every cluster, in container order
