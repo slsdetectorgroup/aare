@@ -4,7 +4,7 @@
 using namespace aare;
 
 // translate
-TEST_CASE("translate ROI", "[InclusiveROIgeometry]") {
+TEST_CASE("translate ROI", "[InclusiveROI][geometry]") {
     const InclusiveROI roi{10, 19, 20, 29};
 
     SECTION("positive shift") {
@@ -26,7 +26,7 @@ TEST_CASE("translate ROI", "[InclusiveROIgeometry]") {
 
 // mirror
 TEST_CASE("mirror_on_y mirrors ROI about vertical axis",
-          "[InclusiveROIgeometry]") {
+          "[InclusiveROI][geometry]") {
 
     SECTION("ROI on left side of axis") {
         InclusiveROI roi{1, 3, 10, 20};
@@ -77,7 +77,7 @@ TEST_CASE("mirror_on_y mirrors ROI about vertical axis",
 }
 
 TEST_CASE("mirror_on_x mirrors ROI about horizontal axis",
-          "[InclusiveROIgeometry]") {
+          "[InclusiveROI][geometry]") {
 
     SECTION("ROI below axis") {
         InclusiveROI roi{10, 20, 1, 3};
@@ -128,7 +128,7 @@ TEST_CASE("mirror_on_x mirrors ROI about horizontal axis",
 }
 
 // intersect
-TEST_CASE("intersect ROIs", "[InclusiveROIgeometry]") {
+TEST_CASE("intersect ROIs", "[InclusiveROI][geometry]") {
     SECTION("partially overlapping") {
         InclusiveROI a{0, 9, 0, 9};
         InclusiveROI b{5, 14, 3, 7};
@@ -158,7 +158,7 @@ TEST_CASE("intersect ROIs", "[InclusiveROIgeometry]") {
 }
 
 // rebase
-TEST_CASE("rebase ROI", "[InclusiveROIgeometry]") {
+TEST_CASE("rebase ROI", "[InclusiveROI][geometry]") {
     SECTION("base ROI origin becomes (0,0) in the rebased coordinate system") {
         InclusiveROI input{110, 119, 220, 229};
         InclusiveROI base{100, 199, 200, 299};
@@ -192,7 +192,7 @@ TEST_CASE("rebase ROI", "[InclusiveROIgeometry]") {
 }
 
 // unite
-TEST_CASE("unite ROIs", "[InclusiveROIgeometry]") {
+TEST_CASE("unite ROIs", "[InclusiveROI][geometry]") {
     SECTION("overlapping horizontally") {
         InclusiveROI a{0, 9, 0, 9};
         InclusiveROI b{5, 14, 0, 9};
