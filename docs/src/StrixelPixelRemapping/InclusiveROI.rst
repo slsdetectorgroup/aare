@@ -3,7 +3,7 @@ Inclusive ROI
 ================
 
 Class for Region of Interest (ROI) using inclusive bounds. 
-The class is primarily used in the context of pixel to strixel remapping. 
+The class is primarily used in the context of pixel-to-strixel remapping. 
 
 
 .. doxygenstruct:: aare::InclusiveROI
