@@ -9,9 +9,8 @@ the same pattern as for ClusterFile i.e. ``ClusterVector_Cluster3x3i``
 for a vector holding 3x3 integer clusters.
 
 
-At the moment the functionality from python is limited and it is not supported
-to push_back clusters to the vector. The intended use case is to pass it to 
-C++ functions that support the ClusterVector or to view it as a numpy array.
+The intended use case is to pass a ClusterVector to C++ functions that support
+it or to view it as a NumPy array.
 
 **View ClusterVector as numpy array**
 
@@ -26,6 +25,15 @@ C++ functions that support the ClusterVector or to view it as a numpy array.
 
     # Avoid copying the data by passing copy=False
     clusters = np.array(cluster_vector, copy = False)
+
+.. warning::
+
+   A NumPy array created with ``copy=False`` is a view of the ClusterVector's
+   current storage. Do not call ``push_back`` or otherwise change the
+   ClusterVector while using the view. A ``push_back`` that reallocates the
+   backing buffer leaves existing NumPy views pointing to invalid memory, and
+   appending without reallocation does not update their shape. Use
+   ``copy=True`` if the ClusterVector may change after creating the array.
 
 
 .. py:currentmodule:: aare

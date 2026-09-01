@@ -67,7 +67,9 @@ class ClusterVector<Cluster<T, ClusterSizeX, ClusterSizeY, CoordType>> {
             throw std::runtime_error(
                 LOCATION + "Mask size does not match number of clusters");
         }
-        ClusterVector result(capacity(), frame_number());
+        const auto selected =
+            static_cast<size_t>(std::count(mask.begin(), mask.end(), true));
+        ClusterVector result(selected, frame_number());
         for (size_t i = 0; i < m_data.size(); ++i) {
             if (mask(i)) {
                 result.push_back(m_data[i]);

@@ -22,6 +22,35 @@ TEST_CASE("After pushing back one element the ClusterVector is not empty") {
     REQUIRE(!cv.empty());
 }
 
+TEST_CASE("Filtering a ClusterVector reserves only the selected elements") {
+    ClusterVector<C1> source(8, 123);
+    source.push_back(C1{1, 2, {3, 4, 5, 6}});
+    source.push_back(C1{7, 8, {9, 10, 11, 12}});
+    source.push_back(C1{13, 14, {15, 16, 17, 18}});
+    source.push_back(C1{19, 20, {21, 22, 23, 24}});
+
+    SECTION("Some elements are selected") {
+        std::array<bool, 4> mask{true, false, false, true};
+
+        auto filtered = source(aare::NDView<bool, 1>{mask.data(), {4}});
+
+        CHECK(filtered.size() == 2);
+        CHECK(filtered.capacity() == 2);
+        CHECK(filtered.frame_number() == 123);
+        CHECK(filtered[0].x == 1);
+        CHECK(filtered[1].x == 19);
+    }
+
+    SECTION("No elements are selected") {
+        std::array<bool, 4> mask{false, false, false, false};
+
+        auto filtered = source(aare::NDView<bool, 1>{mask.data(), {4}});
+
+        CHECK(filtered.empty());
+        CHECK(filtered.capacity() == 0);
+    }
+}
+
 TEST_CASE("Move constructing a ClusterVector transfers its storage") {
     ClusterVector<C1> source(4, 123);
     source.push_back(C1{1, 2, {3, 4, 5, 6}});
