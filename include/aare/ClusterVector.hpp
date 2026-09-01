@@ -194,7 +194,8 @@ template <typename T, uint8_t ClusterSizeX, uint8_t ClusterSizeY,
 ClusterVector<Cluster<T, 2, 2, CoordType>> reduce_to_2x2(
     const ClusterVector<Cluster<T, ClusterSizeX, ClusterSizeY, CoordType>>
         &cv) {
-    ClusterVector<Cluster<T, 2, 2, CoordType>> result;
+    ClusterVector<Cluster<T, 2, 2, CoordType>> result(cv.size(),
+                                                      cv.frame_number());
     for (const auto &c : cv) {
         result.push_back(reduce_to_2x2(c));
     }
@@ -211,7 +212,8 @@ template <typename T, uint8_t ClusterSizeX, uint8_t ClusterSizeY,
 ClusterVector<Cluster<T, 3, 3, CoordType>> reduce_to_3x3(
     const ClusterVector<Cluster<T, ClusterSizeX, ClusterSizeY, CoordType>>
         &cv) {
-    ClusterVector<Cluster<T, 3, 3, CoordType>> result;
+    ClusterVector<Cluster<T, 3, 3, CoordType>> result(cv.size(),
+                                                      cv.frame_number());
     for (const auto &c : cv) {
         result.push_back(reduce_to_3x3(c));
     }

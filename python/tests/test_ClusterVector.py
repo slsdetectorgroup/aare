@@ -83,12 +83,15 @@ def test_make_a_hitmap_from_cluster_vector():
 
 def test_2x2_reduction(): 
     cv = ClusterVector((3,3))
+    cv.frame_number = 135
 
     cv.push_back(_aare.Cluster3x3i(5, 5, np.array([1, 1, 1, 2, 3, 1, 2, 2, 1], dtype=np.int32)))
     cv.push_back(_aare.Cluster3x3i(5, 5, np.array([2, 2, 1, 2, 3, 1, 1, 1, 1], dtype=np.int32)))
 
-    reduced_cv = np.array(_aare.reduce_to_2x2(cv), copy=False) 
+    reduced = _aare.reduce_to_2x2(cv)
+    reduced_cv = np.array(reduced, copy=False)
 
+    assert reduced.frame_number == cv.frame_number
     assert reduced_cv.size == 2
     assert reduced_cv[0]["x"] == 5
     assert reduced_cv[0]["y"] == 5
@@ -100,14 +103,17 @@ def test_2x2_reduction():
     
 def test_3x3_reduction(): 
     cv = _aare.ClusterVector_Cluster5x5d()
+    cv.frame_number = 246
     
     cv.push_back(_aare.Cluster5x5d(5,5,np.array([1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 2.0, 1.0, 1.0, 1.0, 2.0, 2.0, 3.0,
                                    1.0, 1.0, 1.0, 2.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0], dtype=np.double)))
     cv.push_back(_aare.Cluster5x5d(5,5,np.array([1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 2.0, 1.0, 1.0, 1.0, 2.0, 2.0, 3.0,
                                    1.0, 1.0, 1.0, 2.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0], dtype=np.double)))
     
-    reduced_cv = np.array(_aare.reduce_to_3x3(cv), copy=False)  
+    reduced = _aare.reduce_to_3x3(cv)
+    reduced_cv = np.array(reduced, copy=False)
 
+    assert reduced.frame_number == cv.frame_number
     assert reduced_cv.size == 2
     assert reduced_cv[0]["x"] == 5
     assert reduced_cv[0]["y"] == 5
@@ -130,3 +136,26 @@ def test_masking():
     assert cv_masked_array[0]["x"] == 1
     assert cv_masked_array[0]["y"] == 2
     assert (cv_masked_array[0]["data"] == np.ones((3,3),dtype=np.int32)).all()
+
+
+def test_masking_requires_c_contiguous_array():
+    cv = _aare.ClusterVector_Cluster3x3i()
+    cv.push_back(_aare.Cluster3x3i(1, 2, np.ones(9, dtype=np.int32)))
+    cv.push_back(_aare.Cluster3x3i(3, 4, np.ones(9, dtype=np.int32)))
+
+    mask = np.array([True, False, True, False], dtype=bool)[::2]
+    assert not mask.flags.c_contiguous
+
+    with pytest.raises(TypeError):
+        cv(mask)
+
+
+def test_masking_requires_one_dimension():
+    cv = _aare.ClusterVector_Cluster3x3i()
+    cv.push_back(_aare.Cluster3x3i(1, 2, np.ones(9, dtype=np.int32)))
+    cv.push_back(_aare.Cluster3x3i(3, 4, np.ones(9, dtype=np.int32)))
+
+    mask = np.array([[True, False]], dtype=bool)
+
+    with pytest.raises(ValueError, match="one-dimensional"):
+        cv(mask)

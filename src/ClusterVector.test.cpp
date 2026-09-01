@@ -271,6 +271,28 @@ TEST_CASE("Concatenate two cluster vectors where we need to allocate") {
     REQUIRE(ptr[3].y == 17);
 }
 
+TEST_CASE("Reducing a ClusterVector preserves its frame number") {
+    SECTION("Reduce to 2x2") {
+        ClusterVector<Cluster<int32_t, 3, 3>> source(1, 135);
+        source.push_back(Cluster<int32_t, 3, 3>{});
+
+        auto reduced = aare::reduce_to_2x2(source);
+
+        CHECK(reduced.size() == source.size());
+        CHECK(reduced.frame_number() == source.frame_number());
+    }
+
+    SECTION("Reduce to 3x3") {
+        ClusterVector<Cluster<int32_t, 5, 5>> source(1, 246);
+        source.push_back(Cluster<int32_t, 5, 5>{});
+
+        auto reduced = aare::reduce_to_3x3(source);
+
+        CHECK(reduced.size() == source.size());
+        CHECK(reduced.frame_number() == source.frame_number());
+    }
+}
+
 struct ClusterTestData {
     uint8_t ClusterSizeX;
     uint8_t ClusterSizeY;

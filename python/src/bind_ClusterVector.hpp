@@ -37,10 +37,14 @@ void define_ClusterVector(py::module &m, const std::string &typestr) {
 
         .def(
             "__call__",
-            [](ClusterVector<ClusterType> &self, py::array_t<bool> mask) {
+            [](ClusterVector<ClusterType> &self,
+               py::array_t<bool, py::array::c_style> mask) {
+                if (mask.ndim() != 1) {
+                    throw py::value_error("Mask must be one-dimensional");
+                }
                 return self(make_view_1d(mask));
             },
-            py::arg("mask"), R"(
+            py::arg("mask").noconvert(), R"(
             Create a copy of the clustervector and apply a boolean mask to the ClusterVector.
 
             Parameters
