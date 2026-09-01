@@ -13,10 +13,13 @@
 #include "test_macros.hpp"
 
 #include "aare/hist/PixelHistogram.hpp"
+#include "aare/hist/PixelHistogramOpenMP.hpp"
 
 using aare::NDArray;
 using aare::NDView;
 using aare::PixelHistogram;
+
+using aare::PixelHistogramOpenMP;
 
 namespace {
 // The synchronous fill() has been removed; fill_async() is the only entry
@@ -25,8 +28,8 @@ namespace {
 
 } // namespace
 
-TEST_CASE("Fill one pixel of a 5x10 histogram") {
-    PixelHistogram hist(5, 10, 20, 0.0f, 10.0f);
+TEST_CASE("Fill one pixel of a 5x10 histogram", "[histogram]") {
+
     NDArray<float, 2> image(
         {5, 10}, -1.0f); // Need to fill with -1 to not generate counts
 
@@ -35,32 +38,63 @@ TEST_CASE("Fill one pixel of a 5x10 histogram") {
 
     // fill_blocking(hist, image.view());
 
-    hist.fill_async(NDArray<float, 2>(image));
-    hist.flush(); // Wait for the async fill to complete before we check the
-                  // results
+    SECTION("std::thread") {
+        PixelHistogram hist(5, 10, 20, 0.0f, 10.0f);
 
-    auto values = hist.values();
-    REQUIRE(values.shape(0) == 5);
-    REQUIRE(values.shape(1) == 10);
-    REQUIRE(values.shape(2) == 20);
+        hist.fill_async(NDArray<float, 2>(image));
+        hist.flush(); // Wait for the async fill to complete before we check the
+                      // results
 
-    // Check that the correct bin for pixel (2,3) has count 1
-    CHECK(values(2, 3, 11) == 1);
+        auto values = hist.values();
+        REQUIRE(values.shape(0) == 5);
+        REQUIRE(values.shape(1) == 10);
+        REQUIRE(values.shape(2) == 20);
 
-    // Check that all other bins are zero
-    for (ssize_t row = 0; row < values.shape(0); ++row) {
-        for (ssize_t col = 0; col < values.shape(1); ++col) {
-            for (ssize_t bin = 0; bin < values.shape(2); ++bin) {
-                if (!(row == 2 && col == 3 && bin == 11)) {
-                    CHECK(values(row, col, bin) == 0);
+        // Check that the correct bin for pixel (2,3) has count 1
+        CHECK(values(2, 3, 11) == 1);
+
+        // Check that all other bins are zero
+        for (ssize_t row = 0; row < values.shape(0); ++row) {
+            for (ssize_t col = 0; col < values.shape(1); ++col) {
+                for (ssize_t bin = 0; bin < values.shape(2); ++bin) {
+                    if (!(row == 2 && col == 3 && bin == 11)) {
+                        CHECK(values(row, col, bin) == 0);
+                    }
+                }
+            }
+        }
+    }
+    SECTION("OpenMP") {
+        PixelHistogramOpenMP hist(5, 10, 20, 0.0f, 10.0f, 2);
+
+        hist.fill_async(NDArray<float, 2>(image));
+        hist.flush(); // Wait for the async fill to complete before we check the
+                      // results
+
+        auto values = hist.values();
+        REQUIRE(values.shape(0) == 5);
+        REQUIRE(values.shape(1) == 10);
+        REQUIRE(values.shape(2) == 20);
+
+        // Check that the correct bin for pixel (2,3) has count 1
+        CHECK(values(2, 3, 11) == 1);
+
+        // Check that all other bins are zero
+        for (ssize_t row = 0; row < values.shape(0); ++row) {
+            for (ssize_t col = 0; col < values.shape(1); ++col) {
+                for (ssize_t bin = 0; bin < values.shape(2); ++bin) {
+                    if (!(row == 2 && col == 3 && bin == 11)) {
+                        CHECK(values(row, col, bin) == 0);
+                    }
                 }
             }
         }
     }
 }
 
-TEST_CASE("Fill pixels with uneven partial histogram row slices") {
-    PixelHistogram hist(5, 4, 10, 0.0f, 10.0f, 3);
+TEST_CASE("Fill pixels with uneven partial histogram row slices",
+          "[histogram]") {
+
     NDArray<float, 2> image({5, 4}, -1.0f);
 
     image(0, 0) = 0.2f;
@@ -69,37 +103,75 @@ TEST_CASE("Fill pixels with uneven partial histogram row slices") {
     image(3, 3) = 3.2f;
     image(4, 0) = 4.2f;
 
-    hist.fill_async(NDArray<float, 2>(image));
-    hist.flush();
+    SECTION("std::thread") {
 
-    auto values = hist.values();
-    REQUIRE(values.shape(0) == 5);
-    REQUIRE(values.shape(1) == 4);
-    REQUIRE(values.shape(2) == 10);
+        PixelHistogram hist(5, 4, 10, 0.0f, 10.0f, 3);
 
-    CHECK(values(0, 0, 0) == 1);
-    CHECK(values(1, 1, 1) == 1);
-    CHECK(values(2, 2, 2) == 1);
-    CHECK(values(3, 3, 3) == 1);
-    CHECK(values(4, 0, 4) == 1);
+        hist.fill_async(NDArray<float, 2>(image));
+        hist.flush();
 
-    for (ssize_t row = 0; row < values.shape(0); ++row) {
-        for (ssize_t col = 0; col < values.shape(1); ++col) {
-            for (ssize_t bin = 0; bin < values.shape(2); ++bin) {
-                const bool expected = (row == 0 && col == 0 && bin == 0) ||
-                                      (row == 1 && col == 1 && bin == 1) ||
-                                      (row == 2 && col == 2 && bin == 2) ||
-                                      (row == 3 && col == 3 && bin == 3) ||
-                                      (row == 4 && col == 0 && bin == 4);
-                if (!expected) {
-                    CHECK(values(row, col, bin) == 0);
+        auto values = hist.values();
+        REQUIRE(values.shape(0) == 5);
+        REQUIRE(values.shape(1) == 4);
+        REQUIRE(values.shape(2) == 10);
+
+        CHECK(values(0, 0, 0) == 1);
+        CHECK(values(1, 1, 1) == 1);
+        CHECK(values(2, 2, 2) == 1);
+        CHECK(values(3, 3, 3) == 1);
+        CHECK(values(4, 0, 4) == 1);
+
+        for (ssize_t row = 0; row < values.shape(0); ++row) {
+            for (ssize_t col = 0; col < values.shape(1); ++col) {
+                for (ssize_t bin = 0; bin < values.shape(2); ++bin) {
+                    const bool expected = (row == 0 && col == 0 && bin == 0) ||
+                                          (row == 1 && col == 1 && bin == 1) ||
+                                          (row == 2 && col == 2 && bin == 2) ||
+                                          (row == 3 && col == 3 && bin == 3) ||
+                                          (row == 4 && col == 0 && bin == 4);
+                    if (!expected) {
+                        CHECK(values(row, col, bin) == 0);
+                    }
+                }
+            }
+        }
+    }
+    SECTION("OpenMP") {
+        PixelHistogramOpenMP hist(5, 4, 10, 0.0f, 10.0f, 3);
+
+        hist.fill_async(NDArray<float, 2>(image));
+        hist.flush();
+
+        auto values = hist.values();
+        REQUIRE(values.shape(0) == 5);
+        REQUIRE(values.shape(1) == 4);
+        REQUIRE(values.shape(2) == 10);
+
+        CHECK(values(0, 0, 0) == 1);
+        CHECK(values(1, 1, 1) == 1);
+        CHECK(values(2, 2, 2) == 1);
+        CHECK(values(3, 3, 3) == 1);
+        CHECK(values(4, 0, 4) == 1);
+
+        for (ssize_t row = 0; row < values.shape(0); ++row) {
+            for (ssize_t col = 0; col < values.shape(1); ++col) {
+                for (ssize_t bin = 0; bin < values.shape(2); ++bin) {
+                    const bool expected = (row == 0 && col == 0 && bin == 0) ||
+                                          (row == 1 && col == 1 && bin == 1) ||
+                                          (row == 2 && col == 2 && bin == 2) ||
+                                          (row == 3 && col == 3 && bin == 3) ||
+                                          (row == 4 && col == 0 && bin == 4);
+                    if (!expected) {
+                        CHECK(values(row, col, bin) == 0);
+                    }
                 }
             }
         }
     }
 }
 
-TEST_CASE("Row partitioning handles rows < n_threads * ceil(rows/n_threads)") {
+TEST_CASE("Row partitioning handles rows < n_threads * ceil(rows/n_threads)",
+          "[histogram]") {
     // Regression test for the pre-existing row partitioning bug: with the
     // old ceil(rows / n_threads) scheme, rows=17 and n_threads=8 left
     // trailing threads with negative row counts and threw
@@ -154,7 +226,7 @@ TEST_CASE("Row partitioning handles rows < n_threads * ceil(rows/n_threads)") {
     }
 }
 
-TEST_CASE("Random fills match a reference implementation") {
+TEST_CASE("Random fills match a reference implementation", "[histogram]") {
     // End-to-end correctness check: compare the implementation against a
     // simple per-pixel reference for several thread counts. Values are
     // sampled slightly wider than [xmin, xmax) so the out-of-range filter
@@ -165,8 +237,6 @@ TEST_CASE("Random fills match a reference implementation") {
     constexpr float xmin = -1.5f;
     constexpr float xmax = 4.5f;
     const int n_threads = GENERATE(1, 2, 4, 8);
-
-    PixelHistogram hist(rows, cols, n_bins, xmin, xmax, n_threads);
 
     std::mt19937 rng(0xC0FFEE);
     std::uniform_real_distribution<float> dist(xmin - 0.5f, xmax + 0.5f);
@@ -202,40 +272,75 @@ TEST_CASE("Random fills match a reference implementation") {
         }
     }
 
-    for (const auto &img : frames) {
-        hist.fill_async(NDArray<float, 2>(img));
-    }
-    hist.flush();
-    auto h = hist.values();
+    SECTION("std::thread") {
+        PixelHistogram hist(rows, cols, n_bins, xmin, xmax, n_threads);
 
-    REQUIRE(h.shape(0) == rows);
-    REQUIRE(h.shape(1) == cols);
-    REQUIRE(h.shape(2) == n_bins);
+        for (const auto &img : frames) {
+            hist.fill_async(NDArray<float, 2>(img));
+        }
+        hist.flush();
+        auto h = hist.values();
 
-    bool all_match = true;
-    for (ssize_t r = 0; r < rows && all_match; ++r) {
-        for (ssize_t c = 0; c < cols && all_match; ++c) {
-            for (ssize_t b = 0; b < n_bins && all_match; ++b) {
-                if (h(r, c, b) != expected(r, c, b)) {
-                    all_match = false;
-                    INFO("n_threads=" << n_threads << " r=" << r << " c=" << c
-                                      << " b=" << b << " got=" << h(r, c, b)
-                                      << " expected=" << expected(r, c, b));
-                    CHECK(h(r, c, b) == expected(r, c, b));
+        REQUIRE(h.shape(0) == rows);
+        REQUIRE(h.shape(1) == cols);
+        REQUIRE(h.shape(2) == n_bins);
+
+        bool all_match = true;
+        for (ssize_t r = 0; r < rows && all_match; ++r) {
+            for (ssize_t c = 0; c < cols && all_match; ++c) {
+                for (ssize_t b = 0; b < n_bins && all_match; ++b) {
+                    if (h(r, c, b) != expected(r, c, b)) {
+                        all_match = false;
+                        INFO("n_threads=" << n_threads << " r=" << r
+                                          << " c=" << c << " b=" << b
+                                          << " got=" << h(r, c, b)
+                                          << " expected=" << expected(r, c, b));
+                        CHECK(h(r, c, b) == expected(r, c, b));
+                    }
                 }
             }
         }
+        CHECK(all_match);
     }
-    CHECK(all_match);
+    SECTION("OpenMP") {
+        PixelHistogramOpenMP hist(rows, cols, n_bins, xmin, xmax, n_threads);
+
+        for (const auto &img : frames) {
+            hist.fill_async(NDArray<float, 2>(img));
+        }
+        hist.flush();
+        auto h = hist.values();
+
+        REQUIRE(h.shape(0) == rows);
+        REQUIRE(h.shape(1) == cols);
+        REQUIRE(h.shape(2) == n_bins);
+
+        bool all_match = true;
+        for (ssize_t r = 0; r < rows && all_match; ++r) {
+            for (ssize_t c = 0; c < cols && all_match; ++c) {
+                for (ssize_t b = 0; b < n_bins && all_match; ++b) {
+                    if (h(r, c, b) != expected(r, c, b)) {
+                        all_match = false;
+                        INFO("n_threads=" << n_threads << " r=" << r
+                                          << " c=" << c << " b=" << b
+                                          << " got=" << h(r, c, b)
+                                          << " expected=" << expected(r, c, b));
+                        CHECK(h(r, c, b) == expected(r, c, b));
+                    }
+                }
+            }
+        }
+        CHECK(all_match);
+    }
 }
 
-TEST_CASE("fill_async with mismatched shape throws") {
+TEST_CASE("fill_async with mismatched shape throws", "[histogram]") {
     PixelHistogram hist(8, 8, 16, 0.0f, 1.0f, 2);
     NDArray<float, 2> bad({4, 4}, 0.0f);
     CHECK_THROWS_AS(hist.fill_async(std::move(bad)), std::invalid_argument);
 }
 
-TEST_CASE("Destructor drains pending async fills") {
+TEST_CASE("Destructor drains pending async fills", "[histogram]") {
     // Submit more frames than the queue can hold so backpressure kicks in,
     // then immediately let the histogram go out of scope and verify that
     // the merged values() matches the reference computed sequentially.
@@ -259,44 +364,85 @@ TEST_CASE("Destructor drains pending async fills") {
         frames.push_back(std::move(img));
     }
 
-    NDArray<uint16_t, 3> snapshot({rows, cols, n_bins}, uint16_t{0});
-    {
-        PixelHistogram hist(rows, cols, n_bins, xmin, xmax, 2, max_pending);
-        for (auto &img : frames) {
-            // Move a copy so we can also build the reference below.
-            NDArray<float, 2> copy({rows, cols}, 0.0f);
-            std::memcpy(copy.data(), img.data(), copy.total_bytes());
-            hist.fill_async(std::move(copy));
+    SECTION("std::thread") {
+        NDArray<uint16_t, 3> snapshot({rows, cols, n_bins}, uint16_t{0});
+        {
+            PixelHistogram hist(rows, cols, n_bins, xmin, xmax, 2, max_pending);
+            for (auto &img : frames) {
+                // Move a copy so we can also build the reference below.
+                NDArray<float, 2> copy({rows, cols}, 0.0f);
+                std::memcpy(copy.data(), img.data(), copy.total_bytes());
+                hist.fill_async(std::move(copy));
+            }
+            // No explicit flush(); destructor must drain.
+            // Capture values() *after* the loop but inside the scope so it
+            // observes everything that was submitted (values flushes too).
+            snapshot = hist.values();
         }
-        // No explicit flush(); destructor must drain.
-        // Capture values() *after* the loop but inside the scope so it
-        // observes everything that was submitted (values flushes too).
-        snapshot = hist.values();
-    }
 
-    PixelHistogram reference(rows, cols, n_bins, xmin, xmax, 2);
-    for (const auto &img : frames)
-        reference.fill_async(NDArray<float, 2>(img.view()));
-    auto expected = reference.values();
+        PixelHistogram reference(rows, cols, n_bins, xmin, xmax, 2);
+        for (const auto &img : frames)
+            reference.fill_async(NDArray<float, 2>(img.view()));
+        auto expected = reference.values();
 
-    bool all_match = true;
-    for (ssize_t r = 0; r < rows && all_match; ++r) {
-        for (ssize_t c = 0; c < cols && all_match; ++c) {
-            for (ssize_t b = 0; b < n_bins && all_match; ++b) {
-                if (snapshot(r, c, b) != expected(r, c, b)) {
-                    all_match = false;
-                    INFO("r=" << r << " c=" << c << " b=" << b
-                              << " got=" << snapshot(r, c, b)
-                              << " expected=" << expected(r, c, b));
-                    CHECK(snapshot(r, c, b) == expected(r, c, b));
+        bool all_match = true;
+        for (ssize_t r = 0; r < rows && all_match; ++r) {
+            for (ssize_t c = 0; c < cols && all_match; ++c) {
+                for (ssize_t b = 0; b < n_bins && all_match; ++b) {
+                    if (snapshot(r, c, b) != expected(r, c, b)) {
+                        all_match = false;
+                        INFO("r=" << r << " c=" << c << " b=" << b
+                                  << " got=" << snapshot(r, c, b)
+                                  << " expected=" << expected(r, c, b));
+                        CHECK(snapshot(r, c, b) == expected(r, c, b));
+                    }
                 }
             }
         }
+        CHECK(all_match);
     }
-    CHECK(all_match);
+    SECTION("OpenMP") {
+        NDArray<uint16_t, 3> snapshot({rows, cols, n_bins}, uint16_t{0});
+        {
+            PixelHistogramOpenMP hist(rows, cols, n_bins, xmin, xmax, 2,
+                                      max_pending);
+            for (auto &img : frames) {
+                // Move a copy so we can also build the reference below.
+                NDArray<float, 2> copy({rows, cols}, 0.0f);
+                std::memcpy(copy.data(), img.data(), copy.total_bytes());
+                hist.fill_async(std::move(copy));
+            }
+            // No explicit flush(); destructor must drain.
+            // Capture values() *after* the loop but inside the scope so it
+            // observes everything that was submitted (values flushes too).
+            snapshot = hist.values();
+        }
+
+        PixelHistogramOpenMP reference(rows, cols, n_bins, xmin, xmax, 2);
+        for (const auto &img : frames)
+            reference.fill_async(NDArray<float, 2>(img.view()));
+        auto expected = reference.values();
+
+        bool all_match = true;
+        for (ssize_t r = 0; r < rows && all_match; ++r) {
+            for (ssize_t c = 0; c < cols && all_match; ++c) {
+                for (ssize_t b = 0; b < n_bins && all_match; ++b) {
+                    if (snapshot(r, c, b) != expected(r, c, b)) {
+                        all_match = false;
+                        INFO("r=" << r << " c=" << c << " b=" << b
+                                  << " got=" << snapshot(r, c, b)
+                                  << " expected=" << expected(r, c, b));
+                        CHECK(snapshot(r, c, b) == expected(r, c, b));
+                    }
+                }
+            }
+        }
+        CHECK(all_match);
+    }
 }
 
-TEST_CASE("PixelHistogram supports custom storage and axis types") {
+TEST_CASE("PixelHistogram supports custom storage and axis types",
+          "[histogram]") {
     PixelHistogram<uint32_t, double> hist(2, 2, 4, 0.0, 4.0, 1);
     NDArray<double, 2> image({2, 2}, -1.0);
 
