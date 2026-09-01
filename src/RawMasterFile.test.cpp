@@ -68,7 +68,7 @@ TEST_CASE("A disabled scan") {
     REQUIRE(s.step() == 0);
 }
 
-TEST_CASE("Parse a master file in .json format", "[.integration]") {
+TEST_CASE("Parse a master file in .json format", "[.with-data]") {
     auto fpath =
         test_data_path() / "raw" / "jungfrau" / "jungfrau_single_master_0.json";
     REQUIRE(std::filesystem::exists(fpath));
@@ -151,7 +151,7 @@ TEST_CASE("Parse a master file in .json format", "[.integration]") {
 }
 
 TEST_CASE("Parse a master file in old .raw format",
-          "[.integration][.with-data][.rawmasterfile]") {
+          "[.with-data][rawmasterfile]") {
     auto fpath = test_data_path() /
                  "raw/jungfrau_2modules_version6.1.2/run_master_0.raw";
     REQUIRE(std::filesystem::exists(fpath));
@@ -159,11 +159,11 @@ TEST_CASE("Parse a master file in old .raw format",
 
     CHECK(f.udp_interfaces_per_module() == xy{1, 1});
     CHECK(f.n_modules() == 2);
-    CHECK(f.geometry().row == 2);
-    CHECK(f.geometry().col == 1);
+    CHECK(f.detector_layout().row == 2);
+    CHECK(f.detector_layout().col == 1);
 }
 
-TEST_CASE("Parse a master file in .raw format", "[.integration]") {
+TEST_CASE("Parse a master file in .raw format", "[.with-data]") {
 
     auto fpath =
         test_data_path() /
@@ -232,8 +232,7 @@ TEST_CASE("Parse a master file in .raw format", "[.integration]") {
     // Packets Caught Mask        : 64 bytes
 }
 
-TEST_CASE("Parse a master file in new .json format",
-          "[.integration][.with-data]") {
+TEST_CASE("Parse a master file in new .json format", "[.with-data]") {
 
     auto file_path =
         test_data_path() / "raw" / "newmythen03" / "run_87_master_0.json";
@@ -260,14 +259,14 @@ TEST_CASE("Parse a master file in new .json format",
     REQUIRE(f.scan_parameters().step() == 0);
     REQUIRE(f.scan_parameters().settleTime() == 0);
 
-    auto roi = f.roi().value();
+    auto roi = f.roi();
     REQUIRE(roi.xmin == 0);
     REQUIRE(roi.xmax == 2560);
     REQUIRE(roi.ymin == 0);
     REQUIRE(roi.ymax == 1);
 }
 
-TEST_CASE("Read eiger master file", "[.integration]") {
+TEST_CASE("Read eiger master file", "[.with-data]") {
     auto fpath = test_data_path() / "raw/eiger/eiger_500k_32bit_master_0.json";
     REQUIRE(std::filesystem::exists(fpath));
     RawMasterFile f(fpath);
