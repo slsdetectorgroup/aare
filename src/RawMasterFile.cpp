@@ -116,8 +116,29 @@ RawMasterFile::RawMasterFile(const std::filesystem::path &fpath)
         throw std::runtime_error(LOCATION + "Unsupported file type");
     }
 
+    m_geometry = DetectorGeometry(m_detector_layout, m_pixels_x, m_pixels_y,
+                                  m_udp_interfaces_per_module, m_quad);
+
     if (m_quad == 1 && m_udp_port_types.has_value()) {
         m_udp_port_types.value() = {"top", "bottom"};
+    }
+
+    if (m_disabled_udp_ports.has_value()) {
+        // ROI takes precedence over disabled UDP ports, if both are defined in
+        // the master file
+        if (!complete_ROI(m_rois, m_geometry)) {
+            LOG(logWARNING)
+                << "ROI and disabled UDP ports defined in master file. ROI "
+                   "will be used and disabled UDP ports will be ignored.";
+        } else {
+            update_rois_from_disabled_udp_ports();
+        }
+    }
+
+    m_ROI_geometries.reserve(m_rois.size());
+
+    for (const auto &roi : m_rois) {
+        m_ROI_geometries.push_back(ROIGeometry(roi, m_geometry));
     }
 }
 
@@ -168,10 +189,16 @@ std::optional<uint8_t> RawMasterFile::counter_mask() const {
     return m_counter_mask;
 }
 
-xy RawMasterFile::geometry() const { return m_geometry; }
+xy RawMasterFile::detector_layout() const { return m_detector_layout; }
+
+const DetectorGeometry &RawMasterFile::geometry() const { return m_geometry; }
+
+const std::vector<ROIGeometry> &RawMasterFile::roi_geometries() const {
+    return m_ROI_geometries;
+}
 
 size_t RawMasterFile::n_modules() const {
-    return m_geometry.row * m_geometry.col;
+    return m_detector_layout.row * m_detector_layout.col;
 }
 
 xy RawMasterFile::udp_interfaces_per_module() const {
@@ -205,26 +232,21 @@ std::optional<std::vector<size_t>> RawMasterFile::disabled_udp_ports() const {
     return m_disabled_udp_ports;
 }
 
-std::optional<ROI> RawMasterFile::roi() const {
-    if (!m_rois) {
-        return std::nullopt;
-    }
+ROI RawMasterFile::roi() const {
 
-    if (m_rois->empty()) {
+    if (m_rois.empty()) {
         throw std::runtime_error(LOCATION + "Zero ROIs in metadata.");
     }
 
-    if (m_rois.value().size() > 1) {
+    if (m_rois.size() > 1) {
         throw std::runtime_error(LOCATION +
                                  "Multiple ROIs present, use rois() method.");
     } else {
-        return m_rois.has_value()
-                   ? std::optional<ROI>(m_rois.value().at(0))
-                   : std::nullopt; // TODO: maybe throw if no roi exists
+        return m_rois.at(0);
     }
 }
 
-std::optional<std::vector<ROI>> RawMasterFile::rois() const { return m_rois; }
+std::vector<ROI> RawMasterFile::rois() const { return m_rois; }
 
 ReadoutMode RawMasterFile::get_reading_mode() const {
 
@@ -260,10 +282,11 @@ void RawMasterFile::parse_json(std::istream &is) {
     m_type = string_to<DetectorType>(j["Detector Type"].get<std::string>());
     m_timing_mode = string_to<TimingMode>(j["Timing Mode"].get<std::string>());
 
-    m_geometry = {j["Geometry"]["y"],
-                  j["Geometry"]["x"]}; // TODO: isnt it only available for
-                                       // version > 7.1?
-                                       // - try block default should be 1x1
+    m_detector_layout = {
+        j["Geometry"]["y"],
+        j["Geometry"]["x"]}; // TODO: isnt it only available for
+                             // version > 7.1?
+                             // - try block default should be 1x1
 
     m_image_size_in_bytes =
         v < 8.0 ? j["Image Size in bytes"] : j["Image Size"];
@@ -426,14 +449,18 @@ void RawMasterFile::parse_json(std::istream &is) {
                     obj.at("ymin") = 0;
                     obj.at("ymax") = 0;
                 }
-                m_rois.emplace();
-                m_rois.value().push_back(ROI{
-                    obj.at("xmin"), static_cast<ssize_t>(obj.at("xmax")) + 1,
-                    obj.at("ymin"), static_cast<ssize_t>(obj.at("ymax")) + 1});
+                m_rois.push_back({static_cast<ssize_t>(obj.at("xmin")),
+                                  static_cast<ssize_t>(obj.at("xmax")) + 1,
+                                  static_cast<ssize_t>(obj.at("ymin")),
+                                  static_cast<ssize_t>(obj.at("ymax")) + 1});
+            } else {
+                // fill ROI with full detector size if not present in master
+                // file
+                m_rois.push_back({0, static_cast<ssize_t>(m_pixels_x), 0,
+                                  static_cast<ssize_t>(m_pixels_y)});
             }
         } else {
             auto obj = j.at("Receiver Rois");
-            m_rois.emplace();
             for (auto &elem : obj) {
                 // handle Mythen
                 if (elem.at("ymin") == -1 && elem.at("ymax") == -1) {
@@ -441,15 +468,17 @@ void RawMasterFile::parse_json(std::istream &is) {
                     elem.at("ymax") = 0;
                 }
 
-                m_rois.value().push_back(ROI{
-                    elem.at("xmin"), static_cast<ssize_t>(elem.at("xmax")) + 1,
-                    elem.at("ymin"),
-                    static_cast<ssize_t>(elem.at("ymax")) + 1});
+                m_rois.push_back({static_cast<ssize_t>(elem.at("xmin")),
+                                  static_cast<ssize_t>(elem.at("xmax")) + 1,
+                                  static_cast<ssize_t>(elem.at("ymin")),
+                                  static_cast<ssize_t>(elem.at("ymax")) + 1});
             }
         }
 
     } catch (const json::out_of_range &e) {
-        // leave the optional empty
+        // fill ROI with full detector size if not present in master file
+        m_rois.push_back({0, static_cast<ssize_t>(m_pixels_x), 0,
+                          static_cast<ssize_t>(m_pixels_y)});
     }
 
     if (j.contains("Counter Mask")) {
@@ -557,7 +586,7 @@ void RawMasterFile::parse_raw(std::istream &is) {
                 m_max_frames_per_file = std::stoi(value);
             } else if (key == "Geometry") {
                 pos = value.find(',');
-                m_geometry = {
+                m_detector_layout = {
                     static_cast<uint32_t>(std::stoi(value.substr(1, pos))),
                     static_cast<uint32_t>(std::stoi(value.substr(pos + 1)))};
             } else if (key == "Number of UDP Interfaces") {
@@ -577,11 +606,11 @@ void RawMasterFile::parse_raw(std::istream &is) {
         m_type = DetectorType::Moench03_old;
     }
 
-    if (m_geometry.col == 0 && m_geometry.row == 0) {
+    if (m_detector_layout.col == 0 && m_detector_layout.row == 0) {
         retrieve_geometry();
         LOG(TLogLevel::logWARNING)
             << "No geometry found in master file. Retrieved geometry of "
-            << m_geometry.row << " x " << m_geometry.col << "\n ";
+            << m_detector_layout.row << " x " << m_detector_layout.col << "\n ";
     }
 
     // TODO! Read files and find actual frames
@@ -607,7 +636,151 @@ void RawMasterFile::retrieve_geometry() {
     ++rows;
     ++cols;
 
-    m_geometry = {rows, cols};
+    m_detector_layout = {rows, cols};
+}
+
+/**
+ * @brief Update ROIs from disabled UDP ports
+ */
+void RawMasterFile::update_rois_from_disabled_udp_ports() {
+
+    const size_t num_udp_port_types = m_udp_port_types.value().size();
+
+    auto disabled_ports = m_disabled_udp_ports.value();
+
+    size_t first_port = disabled_ports[0] % num_udp_port_types;
+
+    bool all_ports_equal =
+        std::all_of(disabled_ports.begin(), disabled_ports.end(),
+                    [&num_udp_port_types, first_port](size_t &port) {
+                        return port % num_udp_port_types == first_port;
+                    });
+
+    m_rois.clear(); // remove global roi
+
+    const ssize_t udp_ports_per_module =
+        m_geometry.udp_interfaces_per_module().col *
+        m_geometry.udp_interfaces_per_module().row;
+
+    bool port_disabled_for_all_modules =
+        disabled_ports.size() ==
+        m_geometry.modules_x() * m_geometry.modules_y() / udp_ports_per_module;
+
+    if (all_ports_equal && port_disabled_for_all_modules) {
+
+        if (m_udp_port_types.value()[first_port] == "left") {
+            const size_t num_rois =
+                m_geometry.modules_x() / udp_ports_per_module;
+            m_rois.resize(num_rois);
+
+            const ssize_t pixels_per_module_x =
+                m_geometry.pixels_x() / m_geometry.modules_x();
+            std::generate(
+                m_rois.begin(), m_rois.end(),
+                [n = 0, this, pixels_per_module_x,
+                 udp_ports_per_module]() mutable {
+                    ssize_t idx = n++;
+                    return ROI{
+                        idx * udp_ports_per_module * pixels_per_module_x +
+                            pixels_per_module_x,
+                        idx * udp_ports_per_module * pixels_per_module_x +
+                            2 * pixels_per_module_x,
+                        0, static_cast<ssize_t>(m_geometry.pixels_y())};
+                });
+        }
+        if (m_udp_port_types.value()[first_port] == "right") {
+            const size_t num_rois =
+                m_geometry.modules_x() / udp_ports_per_module;
+            m_rois.resize(num_rois);
+
+            const ssize_t pixels_per_module_x =
+                m_geometry.pixels_x() / m_geometry.modules_x();
+            std::generate(
+                m_rois.begin(), m_rois.end(),
+                [n = 0, this, pixels_per_module_x,
+                 udp_ports_per_module]() mutable {
+                    ssize_t idx = n++;
+                    return ROI{idx * udp_ports_per_module * pixels_per_module_x,
+                               idx * udp_ports_per_module *
+                                       pixels_per_module_x +
+                                   pixels_per_module_x,
+                               0, static_cast<ssize_t>(m_geometry.pixels_y())};
+                });
+        }
+        if (m_udp_port_types.value()[first_port] == "top") {
+            size_t num_rois = m_geometry.modules_y() / udp_ports_per_module;
+            m_rois.resize(num_rois);
+            // assumes euclidean coordinate system with origin at bottom
+            // left corner of the detector
+            const ssize_t pixels_per_module_y =
+                m_geometry.pixels_y() / m_geometry.modules_y();
+            std::generate(
+                m_rois.begin(), m_rois.end(),
+                [n = 0, this, pixels_per_module_y,
+                 udp_ports_per_module]() mutable {
+                    ssize_t idx = n++;
+                    return ROI{0, static_cast<ssize_t>(m_geometry.pixels_x()),
+                               idx * udp_ports_per_module * pixels_per_module_y,
+                               idx * udp_ports_per_module *
+                                       pixels_per_module_y +
+                                   pixels_per_module_y};
+                });
+        }
+        if (m_udp_port_types.value()[first_port] == "bottom") {
+            size_t num_rois = m_geometry.modules_y() / udp_ports_per_module;
+            m_rois.resize(num_rois);
+            const ssize_t pixels_per_module_y =
+                m_geometry.pixels_y() / m_geometry.modules_y();
+            std::generate(
+                m_rois.begin(), m_rois.end(),
+                [n = 0, this, pixels_per_module_y,
+                 udp_ports_per_module]() mutable {
+                    ssize_t idx = n++;
+                    return ROI{
+                        0, static_cast<ssize_t>(m_geometry.pixels_x()),
+                        idx * udp_ports_per_module * pixels_per_module_y +
+                            pixels_per_module_y,
+                        idx * udp_ports_per_module * pixels_per_module_y +
+                            2 * pixels_per_module_y};
+                });
+        }
+    } else {
+        // iterate over all ports and create ROIs for each disabled port
+        LOG(logDEBUG) << "Creating ROIs from disabled UDP ports";
+        // get the enabled ones:
+        std::vector<size_t> enabled_ports(m_geometry.n_modules());
+        std::iota(enabled_ports.begin(), enabled_ports.end(), 0);
+        std::for_each(disabled_ports.begin(), disabled_ports.end(),
+                      [&enabled_ports](size_t &port) {
+                          enabled_ports.erase(std::remove(enabled_ports.begin(),
+                                                          enabled_ports.end(),
+                                                          port),
+                                              enabled_ports.end());
+                      });
+
+        m_rois.reserve(enabled_ports.size());
+        for (const auto enabled_port : enabled_ports) {
+
+            auto module_geometry =
+                m_geometry.get_module_geometries(enabled_port);
+            m_rois.push_back(
+                ROI{module_geometry.origin_x,
+                    module_geometry.origin_x + module_geometry.width,
+                    module_geometry.origin_y,
+                    module_geometry.origin_y + module_geometry.height});
+        }
+
+        if (m_udp_port_types == std::vector<std::string>{"left", "right"}) {
+            m_rois = merge_consecutive_rois<false, true>(m_rois);
+        } else if (m_udp_port_types ==
+                       std::vector<std::string>{"bottom", "top"} ||
+                   m_udp_port_types ==
+                       std::vector<std::string>{"top", "bottom"}) {
+            m_rois = merge_consecutive_rois<true, false>(m_rois);
+        } else {
+            throw std::runtime_error(LOCATION + "Unsupported UDP port types");
+        }
+    }
 }
 
 } // namespace aare

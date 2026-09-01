@@ -86,8 +86,8 @@ TEST_CASE("Parse a master file in .json format", "[.integration]") {
     //     "x": 1,
     //     "y": 1
     // },
-    REQUIRE(f.geometry().col == 1);
-    REQUIRE(f.geometry().row == 1);
+    REQUIRE(f.detector_layout().col == 1);
+    REQUIRE(f.detector_layout().row == 1);
 
     // "Image Size in bytes": 1048576,
     REQUIRE(f.image_size_in_bytes() == 1048576);
@@ -180,9 +180,9 @@ TEST_CASE("Parse a master file in .raw format", "[.integration]") {
     REQUIRE(f.detector_type() == DetectorType::ChipTestBoard);
     // Timing Mode                : auto
     REQUIRE(f.timing_mode() == TimingMode::Auto);
-    // Geometry                   : [1, 1]
-    REQUIRE(f.geometry().col == 1);
-    REQUIRE(f.geometry().row == 1);
+    // Detector Layout            : [1, 1]
+    REQUIRE(f.detector_layout().col == 1);
+    REQUIRE(f.detector_layout().row == 1);
     // Image Size                 : 360000 bytes
     REQUIRE(f.image_size_in_bytes() == 360000);
     // Pixels                     : [96, 1]
@@ -247,9 +247,9 @@ TEST_CASE("Parse a master file in new .json format",
     REQUIRE(f.detector_type() == DetectorType::Mythen3);
     // Timing Mode                : auto
     REQUIRE(f.timing_mode() == TimingMode::Auto);
-    // Geometry                   : [2, 1]
-    REQUIRE(f.geometry().col == 2);
-    REQUIRE(f.geometry().row == 1);
+    // Detector Layout            : [2, 1]
+    REQUIRE(f.detector_layout().col == 2);
+    REQUIRE(f.detector_layout().row == 1);
     // Image Size                 : 5120 bytes
     REQUIRE(f.image_size_in_bytes() == 5120);
 
@@ -400,8 +400,8 @@ TEST_CASE("Parse EIGER 7.2 master from string stream") {
     REQUIRE(f.version() == "7.2");
     REQUIRE(f.detector_type() == DetectorType::Eiger);
     REQUIRE(f.timing_mode() == TimingMode::Auto);
-    REQUIRE(f.geometry().col == 2);
-    REQUIRE(f.geometry().row == 2);
+    REQUIRE(f.detector_layout().col == 2);
+    REQUIRE(f.detector_layout().row == 2);
 
     REQUIRE(f.image_size_in_bytes() == 524288);
     REQUIRE(f.pixels_x() == 512);
@@ -477,8 +477,8 @@ TEST_CASE("Parse JUNGFRAU 7.2 master from string stream") {
     REQUIRE(f.version() == "7.2");
     REQUIRE(f.detector_type() == DetectorType::Jungfrau);
     REQUIRE(f.timing_mode() == TimingMode::Auto);
-    REQUIRE(f.geometry().col == 1);
-    REQUIRE(f.geometry().row == 2);
+    REQUIRE(f.detector_layout().col == 1);
+    REQUIRE(f.detector_layout().row == 2);
     REQUIRE(f.n_modules() == 2);
     REQUIRE(f.image_size_in_bytes() == 524288);
     REQUIRE(f.pixels_x() == 1024);
@@ -560,7 +560,7 @@ TEST_CASE(
     REQUIRE(f.version() == "7.2");
     REQUIRE(f.detector_type() == DetectorType::ChipTestBoard);
     REQUIRE(f.timing_mode() == TimingMode::Auto);
-    REQUIRE(f.geometry() == xy{1, 1});
+    REQUIRE(f.detector_layout() == xy{1, 1});
     REQUIRE(f.image_size_in_bytes() == 192000);
     REQUIRE(f.pixels_x() == 32);
     REQUIRE(f.pixels_y() == 1);
@@ -638,7 +638,7 @@ TEST_CASE(
     REQUIRE(f.version() == "7.2");
     REQUIRE(f.detector_type() == DetectorType::ChipTestBoard);
     REQUIRE(f.timing_mode() == TimingMode::Auto);
-    REQUIRE(f.geometry() == xy{1, 1});
+    REQUIRE(f.detector_layout() == xy{1, 1});
     REQUIRE(f.image_size_in_bytes() == 16000);
     REQUIRE(f.pixels_x() == 64);
     REQUIRE(f.pixels_y() == 1);
@@ -710,7 +710,7 @@ TEST_CASE("Parse Moench 7.2 master (SW 7.0.3) from string stream") {
     REQUIRE(f.version() == "7.2");
     REQUIRE(f.detector_type() == DetectorType::Moench03_old);
     REQUIRE(f.timing_mode() == TimingMode::Auto);
-    REQUIRE(f.geometry() == xy{1, 1});
+    REQUIRE(f.detector_layout() == xy{1, 1});
     REQUIRE(f.image_size_in_bytes() == 320000);
     REQUIRE(f.pixels_x() == 400);
     REQUIRE(f.pixels_y() == 400);
@@ -781,7 +781,7 @@ TEST_CASE("Parse Moench 7.2 master (SW 8.0.0) from string stream") {
     REQUIRE(f.version() == "7.2");
     REQUIRE(f.detector_type() == DetectorType::Moench03);
     REQUIRE(f.timing_mode() == TimingMode::Auto);
-    REQUIRE(f.geometry() == xy{1, 1});
+    REQUIRE(f.detector_layout() == xy{1, 1});
     REQUIRE(f.image_size_in_bytes() == 320000);
     REQUIRE(f.pixels_x() == 400);
     REQUIRE(f.pixels_y() == 400);
@@ -863,7 +863,7 @@ TEST_CASE("Parse CTB 7.2 master (SW 8.0.0) from string stream") {
     REQUIRE(f.version() == "7.2");
     REQUIRE(f.detector_type() == DetectorType::ChipTestBoard);
     REQUIRE(f.timing_mode() == TimingMode::Auto);
-    REQUIRE(f.geometry() == xy{1, 1});
+    REQUIRE(f.detector_layout() == xy{1, 1});
     REQUIRE(f.image_size_in_bytes() == 192000);
     REQUIRE(f.pixels_x() == 32);
     REQUIRE(f.pixels_y() == 1);
@@ -944,7 +944,7 @@ TEST_CASE(
     REQUIRE(f.version() == "7.2");
     REQUIRE(f.detector_type() == DetectorType::ChipTestBoard);
     REQUIRE(f.timing_mode() == TimingMode::Auto);
-    REQUIRE(f.geometry() == xy{1, 1});
+    REQUIRE(f.detector_layout() == xy{1, 1});
     REQUIRE(f.image_size_in_bytes() == 16000);
     REQUIRE(f.pixels_x() == 64);
     REQUIRE(f.pixels_y() == 1);
@@ -1011,8 +1011,8 @@ TEST_CASE("Parse a CTB file from stream") {
     REQUIRE(f.version() == "8.0");
     REQUIRE(f.detector_type() == DetectorType::ChipTestBoard);
     REQUIRE(f.timing_mode() == TimingMode::Auto);
-    REQUIRE(f.geometry().col == 1);
-    REQUIRE(f.geometry().row == 1);
+    REQUIRE(f.detector_layout().col == 1);
+    REQUIRE(f.detector_layout().row == 1);
     REQUIRE(f.image_size_in_bytes() == 18432);
     REQUIRE(f.pixels_x() == 2);
     REQUIRE(f.pixels_y() == 1);
@@ -1101,8 +1101,8 @@ TEST_CASE("Parse v8.0 MYTHEN3 from stream") {
     REQUIRE(f.version() == "8.0");
     REQUIRE(f.detector_type() == DetectorType::Mythen3);
     REQUIRE(f.timing_mode() == TimingMode::Auto);
-    REQUIRE(f.geometry().col == 2);
-    REQUIRE(f.geometry().row == 1);
+    REQUIRE(f.detector_layout().col == 2);
+    REQUIRE(f.detector_layout().row == 1);
     REQUIRE(f.image_size_in_bytes() == 5120);
     REQUIRE(f.pixels_x() == 1280);
     REQUIRE(f.pixels_y() == 1);
@@ -1186,8 +1186,8 @@ TEST_CASE("Parse a v7.1 Mythen3 from stream") {
     REQUIRE(f.version() == "7.1");
     REQUIRE(f.detector_type() == DetectorType::Mythen3);
     REQUIRE(f.timing_mode() == TimingMode::Auto);
-    REQUIRE(f.geometry().col == 1);
-    REQUIRE(f.geometry().row == 1);
+    REQUIRE(f.detector_layout().col == 1);
+    REQUIRE(f.detector_layout().row == 1);
     REQUIRE(f.image_size_in_bytes() == 15360);
     REQUIRE(f.pixels_x() == 3840);
     REQUIRE(f.pixels_y() == 1);
@@ -1268,8 +1268,8 @@ TEST_CASE("Parse old Moench03 from stream") {
     REQUIRE(f.version() == "7.1");
     REQUIRE(f.detector_type() == DetectorType::Moench03_old);
     REQUIRE(f.timing_mode() == TimingMode::Auto);
-    REQUIRE(f.geometry().col == 1);
-    REQUIRE(f.geometry().row == 1);
+    REQUIRE(f.detector_layout().col == 1);
+    REQUIRE(f.detector_layout().row == 1);
     REQUIRE(f.image_size_in_bytes() == 320000);
     REQUIRE(f.pixels_x() == 400);
     REQUIRE(f.pixels_y() == 400);

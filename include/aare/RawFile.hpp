@@ -1,6 +1,5 @@
 // SPDX-License-Identifier: MPL-2.0
 #pragma once
-#include "aare/DetectorGeometry.hpp"
 #include "aare/FileInterface.hpp"
 #include "aare/Frame.hpp"
 #include "aare/NDArray.hpp" //for pixel map
@@ -30,9 +29,6 @@ class RawFile : public FileInterface {
     RawMasterFile m_master;
     size_t m_current_frame{};
 
-    DetectorGeometry m_geometry;
-
-    /// @brief Geometries e.g. number of modules, size etc. for each ROI
     std::vector<ROIGeometry> m_ROI_geometries;
 
     /// @brief total number of frames in file
@@ -43,7 +39,6 @@ class RawFile : public FileInterface {
      * @brief RawFile constructor
      * @param fname path to the master file (.json)
      * @param mode file mode (only "r" is supported at the moment)
-
      */
     RawFile(const std::filesystem::path &fname, const std::string &mode = "r");
     virtual ~RawFile() override = default;
@@ -172,12 +167,6 @@ class RawFile : public FileInterface {
     Frame get_frame(size_t frame_index, const size_t roi_index = 0);
 
     void open_subfiles(const size_t roi_index);
-
-    /**
-     * @brief set the ROIs in master file.
-     * @param rois vector of ROIs to set in the RawMasterFile.
-     */
-    void set_ROIs(const std::vector<ROI> &rois);
 };
 
 } // namespace aare

@@ -2,7 +2,6 @@
 #pragma once
 #include "aare/ROI.hpp"
 #include "aare/ROIGeometry.hpp"
-#include "aare/RawMasterFile.hpp" //ROI refactor away
 #include <iostream>
 
 namespace aare {
@@ -96,6 +95,8 @@ class DetectorGeometry {
                      const ssize_t module_pixels_y,
                      const xy udp_interfaces_per_module = xy{1, 1},
                      const bool quad = false);
+
+    DetectorGeometry() = default;
 
     ~DetectorGeometry() = default;
 

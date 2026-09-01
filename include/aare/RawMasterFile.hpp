@@ -1,5 +1,6 @@
 // SPDX-License-Identifier: MPL-2.0
 #pragma once
+#include "aare/DetectorGeometry.hpp"
 #include "aare/ROI.hpp"
 #include <algorithm>
 #include <chrono>
@@ -12,8 +13,6 @@
 using json = nlohmann::json;
 
 namespace aare {
-
-class RawFile; // forward declaration
 
 /**
  * @brief Implementation used in RawMasterFile to parse the file name
@@ -90,7 +89,8 @@ class RawMasterFile {
     std::optional<std::chrono::nanoseconds> m_exptime;
     std::chrono::nanoseconds m_period{0};
 
-    xy m_geometry{};
+    /// @brief modules in x and y direction
+    xy m_detector_layout{};
     xy m_udp_interfaces_per_module{1, 1};
 
     size_t m_max_frames_per_file{};
@@ -118,7 +118,14 @@ class RawMasterFile {
     std::optional<std::vector<std::string>>
         m_udp_port_types{}; // TODO: UDPPortType? - string_to conversion?
 
-    std::optional<std::vector<ROI>> m_rois;
+    /// @brief ROIs defined in master file or derived from disabled UDP ports
+    std::vector<ROI> m_rois;
+
+    /// @brief Detector geometry - geometry for each module
+    DetectorGeometry m_geometry{};
+
+    /// @brief ROI geometries
+    std::vector<ROIGeometry> m_ROI_geometries;
 
   public:
     RawMasterFile(const std::filesystem::path &fpath);
@@ -140,9 +147,13 @@ class RawMasterFile {
     const FrameDiscardPolicy &frame_discard_policy() const;
 
     size_t total_frames_expected() const;
-    xy geometry() const;
+    xy detector_layout() const;
     size_t n_modules() const;
     uint8_t quad() const;
+
+    const DetectorGeometry &geometry() const;
+
+    const std::vector<ROIGeometry> &roi_geometries() const;
 
     ReadoutMode get_reading_mode() const;
 
@@ -162,9 +173,11 @@ class RawMasterFile {
     /// for masterfile version >= 8.1)
     std::optional<std::vector<size_t>> disabled_udp_ports() const;
 
-    std::optional<std::vector<ROI>> rois() const;
+    std::vector<ROI> rois() const;
 
-    std::optional<ROI> roi() const;
+    /// @brief get roi for the case of a single ROI
+    /// @return ROI object (complete ROI if no roi present in master file)
+    ROI roi() const;
 
     ScanParameters scan_parameters() const;
 
@@ -176,9 +189,8 @@ class RawMasterFile {
   private:
     void parse_json(std::istream &is);
     void parse_raw(std::istream &is);
+    void update_rois_from_disabled_udp_ports();
     void retrieve_geometry();
-
-    friend class RawFile;
 };
 
 } // namespace aare
