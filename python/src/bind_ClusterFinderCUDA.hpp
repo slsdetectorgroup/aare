@@ -35,10 +35,84 @@ void define_ClusterFinderCUDA(py::module &m, const std::string &typestr) {
     py::class_<typename CF::BatchToken>(m,
                                         (class_name + "_BatchToken").c_str());
 
+    using VT = typename ClusterType::value_type;
+    constexpr size_t NPIX =
+        static_cast<size_t>(ClusterSizeX) * static_cast<size_t>(ClusterSizeY);
+
+    // Zero-copy view into the finder's pinned D2H buffer.
+    py::class_<typename CF::BatchView>(m, (class_name + "_BatchView").c_str())
+        .def_property_readonly("n_frames", &CF::BatchView::n_frames)
+        .def_property_readonly("first_frame", &CF::BatchView::first_frame)
+        .def_property_readonly("valid", &CF::BatchView::valid)
+        .def_property_readonly("total_clusters", &CF::BatchView::total_clusters)
+        .def("count", &CF::BatchView::count, py::arg("frame_index"))
+        .def("release", &CF::BatchView::release,
+             R"(Give the slot back to the finder. The view is unusable
+             afterwards and submit_batch() may reuse the buffer. Called
+             automatically on destruction and on __exit__.)")
+        .def("__enter__", [](py::object self) { return self; })
+        .def("__exit__", [](typename CF::BatchView &v, py::object, py::object,
+                            py::object) { v.release(); })
+        .def_property_readonly(
+            "counts",
+            [](const typename CF::BatchView &v) {
+                py::array_t<uint32_t> out(v.n_frames());
+                auto *o = out.mutable_data();
+                for (size_t i = 0; i < v.n_frames(); ++i)
+                    o[i] = v.count(i);
+                return out;
+            },
+            R"(Clusters found per frame, as a numpy array.)")
+        .def(
+            "sums",
+            [](const typename CF::BatchView &v) {
+                std::vector<VT> s;
+                {
+                    // Reduce without the GIL, but take it back before building
+                    // the array — constructing a Python object without it is a
+                    // segfault, so this cannot be a call_guard.
+                    py::gil_scoped_release nogil;
+                    s = v.sums();
+                }
+                return py::array_t<VT>(s.size(), s.data());
+            },
+            R"(Per-cluster sums for the whole batch, reduced in C++ straight out
+            of the pinned buffer — the clusters are never materialised on the
+            host. This is the fast path for spectra/histograms.)")
+        .def(
+            "frame_data",
+            [](py::object self, size_t i) {
+                auto &v = self.cast<typename CF::BatchView &>();
+                const uint32_t n = v.count(i);
+                // Zero-copy (n, NPIX) view; stride skips each cluster's x/y.
+                return py::array_t<VT>(
+                    {static_cast<size_t>(n), NPIX},
+                    {sizeof(ClusterType), sizeof(VT)},
+                    n == 0 ? nullptr : v.clusters(i)->data.data(), self);
+            },
+            py::arg("frame_index"),
+            R"(Zero-copy (n_clusters, ClusterSizeX*ClusterSizeY) view of one
+            frame's pixel data, straight out of the pinned buffer. Valid until
+            this view is released — copy it if you need to keep it.)")
+        .def(
+            "frame_xy",
+            [](py::object self, size_t i) {
+                auto &v = self.cast<typename CF::BatchView &>();
+                const uint32_t n = v.count(i);
+                return py::array_t<CoordType>(
+                    {static_cast<size_t>(n), size_t{2}},
+                    {sizeof(ClusterType), sizeof(CoordType)},
+                    n == 0 ? nullptr : &v.clusters(i)->x, self);
+            },
+            py::arg("frame_index"),
+            R"(Zero-copy (n_clusters, 2) view of one frame's cluster centre
+            coordinates as (x, y).)");
+
     py::class_<CF>(m, class_name.c_str())
-        .def(py::init<Shape<2>, float, size_t, int>(), py::arg("image_size"),
-             py::arg("n_sigma") = 5.0f,
-             py::arg("max_clusters_per_frame") = 2048, py::arg("n_streams") = 4)
+        .def(py::init<Shape<2>, float, size_t, int, bool>(),
+             py::arg("image_size"), py::arg("n_sigma") = 5.0f,
+             py::arg("max_clusters_per_frame") = 2048, py::arg("n_streams") = 4,
+             py::arg("time_kernels") = false)
 
         .def_property(
             "nSigma", &CF::get_nSigma, &CF::set_nSigma,
@@ -154,11 +228,77 @@ sqrt(max(sum2/n - mean^2, 0)). Counterpart to `noise` for the device pedestal.)"
             py::arg("token"), py::call_guard<py::gil_scoped_release>(),
             R"(Wait for a previously submitted batch and return its results as
             a list of ClusterVector, one per input frame. Releases the batch
-            slot so it can be reused by the next submit_batch() call.)")
+            slot so it can be reused by the next submit_batch() call.
+
+            One allocation and one copy per frame; see collect_view() for
+            neither.)")
+
+        .def(
+            "collect_view",
+            [](CF &self, typename CF::BatchToken token) {
+                return self.collect_view(token);
+            },
+            py::arg("token"), py::call_guard<py::gil_scoped_release>(),
+            R"(Like collect(), but copies nothing: returns a BatchView onto the
+            finder's pinned D2H buffer.
+
+            The slot stays reserved until the view is released, so with 2 slots
+            you must finish with it before submitting two more batches. Use it
+            as a context manager, or call release():
+
+                tok = cf.submit_batch(frames[a:b], first_frame=a)
+                with cf.collect_view(tok) as v:
+                    hist.fill(v.sums())      # reduced in C++, nothing copied
+
+            Anything you want to keep past release() must be copied out.)")
 
         .def("avg_kernel_time_ms", &CF::avg_kernel_time_ms,
-             R"(Average kernel execution time per frame in milliseconds,
-            excluding PCIe transfers.)")
+             R"(Average per-frame kernel time in ms, or NaN if the finder was
+            constructed with time_kernels=False (the default).
+
+            WARNING: only meaningful with n_streams=1. The CUDA events bracket
+            the kernel on its own stream, so under multi-stream contention the
+            interval includes time spent queued behind other streams' kernels
+            and over-reads by up to ~3.5x. Use Nsight Systems for exclusive
+            kernel times.)")
+
+        .def("kernel_timing_enabled", &CF::kernel_timing_enabled,
+             R"(True if per-frame kernel timing was enabled at construction.)")
+
+        .def("chunk_size_for", &CF::chunk_size_for, py::arg("n_frames"),
+             R"(The chunk size find_clusters_batched() would use for n_frames.
+             Use it to match its pipelining when driving submit_batch/
+             collect_view by hand.)")
+
+        .def("reserve_output_slots", &CF::reserve_output_slots,
+             py::arg("n_frames"), py::call_guard<py::gil_scoped_release>(),
+             R"(Pre-allocate both pinned output slots for batches of n_frames.
+
+            Processes nothing: no transfer, no kernel, and the pedestal is NOT
+            advanced. Only the two cudaMallocHost calls that the first
+            submit_batch() would make happen here.
+
+            Page-locking runs about 1.0 us per 4 kB page (~66 ms for two
+            128 MiB slots), and that cost is charged to whoever triggers it.
+            Call this before starting a timer so it does not land inside the
+            measurement. Slots only grow, so pass the largest batch you intend
+            to use:
+
+                cf.reserve_output_slots(cf.chunk_size_for(len(data)))
+            )")
+
+        .def_property(
+            "batch_chunk", &CF::get_batch_chunk, &CF::set_batch_chunk,
+            R"(Frames per internally pipelined chunk in find_clusters_batched().
+
+            0 (default) = auto: the batch is split into ~8 chunks so the host
+            marshals one chunk while the GPU runs the next. Rounded up to a
+            multiple of n_streams, which keeps the frame->stream assignment —
+            and therefore the per-stream device pedestal each frame sees —
+            identical to processing the batch in one go.
+
+            Set equal to the batch size to disable chunking and recover the old
+            submit-everything-then-copy-everything behaviour.)")
 
         .def("reset_timers", &CF::reset_timers,
              R"(Reset the internal kernel timing counters.)")

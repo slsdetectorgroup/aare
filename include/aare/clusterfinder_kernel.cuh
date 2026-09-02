@@ -38,9 +38,11 @@ __global__ void find_clusters_in_single_frame(
     constexpr int row_radius = CSY / 2;
 
     // Squared threshold constants; avoids sqrt at runtime
-    // c2^2 is for the 2x2 quadrant test
+    // c2^2 is for the 2x2 quadrant test -- commented out along with Test 2
+    //     itself (see below), whose disabled block is its only reader. Left in
+    //     place rather than deleted so re-enabling Test 2 is one uncomment.
     // c3^2 is for the full-cluster total test
-    constexpr int pow2_c2 = ((CSY + 1) / 2) * ((CSX + 1) / 2);
+    // constexpr int pow2_c2 = ((CSY + 1) / 2) * ((CSX + 1) / 2);
     constexpr int pow2_c3 = CSX * CSY;
 
     // Thread/pixel mapping
