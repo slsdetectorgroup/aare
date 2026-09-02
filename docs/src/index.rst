@@ -28,7 +28,9 @@ AARE
     pycalibration
     python/cluster/index
     python/file/index
+    python/experimental/index
     python/histogram/index
+    python/pedestal/index
     pyFit
     
 
@@ -42,6 +44,7 @@ AARE
     NDView
     Frame
     File
+    MultiThreadedFileReader
     Dtype
     Cluster
     ClusterFinder

@@ -29,26 +29,37 @@ template <typename SUM_TYPE = double> class Pedestal {
     // Relies on having more reads than pushes to the pedestal
     NDArray<SUM_TYPE, 2> m_mean;
 
+    // Cache std. Only refreshed via update_std() to keep push() cheap.
+    NDArray<SUM_TYPE, 2> m_std;
+
   public:
     Pedestal(uint32_t rows, uint32_t cols, uint32_t n_samples = 1000)
         : m_rows(rows), m_cols(cols), m_samples(n_samples),
           m_cur_samples(NDArray<uint32_t, 2>({rows, cols}, 0)),
           m_sum(NDArray<SUM_TYPE, 2>({rows, cols})),
           m_sum2(NDArray<SUM_TYPE, 2>({rows, cols})),
-          m_mean(NDArray<SUM_TYPE, 2>({rows, cols})) {
+          m_mean(NDArray<SUM_TYPE, 2>({rows, cols})),
+          m_std(NDArray<SUM_TYPE, 2>({rows, cols})) {
         assert(rows > 0 && cols > 0 && n_samples > 0);
         m_sum = 0;
         m_sum2 = 0;
         m_mean = 0;
+        m_std = 0;
     }
     ~Pedestal() = default;
 
     NDArray<SUM_TYPE, 2> mean() { return m_mean; }
 
-    const NDView<SUM_TYPE, 2> view() const { return m_mean.view(); }
+    NDView<const SUM_TYPE, 2> view() const { return m_mean.view(); }
 
     SUM_TYPE mean(const uint32_t row, const uint32_t col) const {
         return m_mean(row, col);
+    }
+
+    NDArray<SUM_TYPE, 2> cached_std() { return m_std; }
+
+    SUM_TYPE cached_std(const uint32_t row, const uint32_t col) const {
+        return m_std(row, col);
     }
 
     SUM_TYPE std(const uint32_t row, const uint32_t col) const {
@@ -87,6 +98,7 @@ template <typename SUM_TYPE = double> class Pedestal {
         m_sum2 = 0;
         m_cur_samples = 0;
         m_mean = 0;
+        m_std = 0;
     }
 
     void clear(const uint32_t row, const uint32_t col) {
@@ -94,6 +106,7 @@ template <typename SUM_TYPE = double> class Pedestal {
         m_sum2(row, col) = 0;
         m_cur_samples(row, col) = 0;
         m_mean(row, col) = 0;
+        m_std(row, col) = 0;
     }
 
     template <typename T> void push(NDView<T, 2> frame) {
@@ -210,6 +223,17 @@ template <typename SUM_TYPE = double> class Pedestal {
      * push_no_update. It is not necessary to call this function after push.
      */
     void update_mean() { m_mean = m_sum / m_cur_samples; }
+
+    /**
+     * @brief Refresh the cached std for all pixels from the current sums.
+     * Kept separate from push() so pushes stay cheap; call before reading
+     * cached_std() (analogous to update_mean()).
+     */
+    void update_std() {
+        for (uint32_t i = 0; i < m_rows * m_cols; i++) {
+            m_std(i / m_cols, i % m_cols) = std(i / m_cols, i % m_cols);
+        }
+    }
 
     template <typename T>
     void push_fast(const uint32_t row, const uint32_t col, const T val_) {

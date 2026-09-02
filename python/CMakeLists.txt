@@ -68,8 +68,10 @@ set(PYTHON_FILES
     aare/ClusterFinder.py
     aare/ClusterVector.py
     aare/Cluster.py
+    aare/FastPedestal.py
     aare/calibration.py
-    aare/func.py
+    aare/factory.py
+    aare/experimental.py
     aare/RawFile.py
     aare/transform.py
     aare/ScanParameters.py

@@ -21,12 +21,19 @@ class ClusterFinderMTWrapper
 
   public:
     ClusterFinderMTWrapper(Shape<2> image_size, PEDESTAL_TYPE nSigma = 5.0,
-                           size_t capacity = 2000, size_t n_threads = 3)
+                           size_t capacity = 2000, size_t n_threads = 3,
+                           size_t queue_depth = 16)
         : ClusterFinderMT<ClusterType, FRAME_TYPE, PEDESTAL_TYPE>(
-              image_size, nSigma, capacity, n_threads) {}
+              image_size, nSigma, capacity, n_threads, queue_depth) {}
 
     size_t get_m_input_queues_size() const {
         return this->m_input_queues.size();
+    }
+
+    size_t get_m_frame_pools_size() const { return this->m_frame_pools.size(); }
+
+    size_t get_frame_pool_depth(size_t thread_index) const {
+        return this->m_frame_pools[thread_index]->size();
     }
 
     size_t get_m_output_queues_size() const {
@@ -99,4 +106,74 @@ TEST_CASE("multithreaded cluster finder", "[.with-data]") {
 
     auto clustervec = clustercollector.steal_clusters();
     // CHECK(clustervec.size() == ) //dont know how many clusters to expect
+}
+
+TEST_CASE("frame buffers are recycled when pushing more frames than the pool "
+          "holds",
+          "[.files]") {
+    using ClusterType = Cluster<int32_t, 3, 3>;
+
+    const size_t n_threads = 2;
+    const size_t queue_depth = 4;
+    const size_t n_frames = 5 * queue_depth;
+    const Shape<2> image_size{10, 10};
+
+    ClusterFinderMTWrapper<ClusterType> cf(image_size, 5, 200, n_threads,
+                                           queue_depth);
+
+    CHECK(cf.get_m_frame_pools_size() == n_threads);
+    for (size_t i = 0; i < n_threads; ++i) {
+        CHECK(cf.get_frame_pool_depth(i) == queue_depth);
+    }
+
+    NDArray<uint16_t, 2> frame(image_size, 0);
+
+    // More frames than the pool holds, so this only completes if the workers
+    // return the buffers to the free list.
+    for (size_t i = 0; i < n_frames; ++i) {
+        cf.find_clusters(frame.view(), i);
+    }
+
+    cf.stop();
+
+    CHECK(cf.m_input_queues_are_empty() == true);
+}
+
+TEST_CASE("cluster collector accepts finders with a matching cluster type") {
+    using ClusterType = Cluster<int32_t, 3, 3>;
+    using Finder = ClusterFinderMTWrapper<ClusterType, uint16_t, float>;
+    using OtherFinder =
+        ClusterFinderMTWrapper<Cluster<int32_t, 5, 5>, uint16_t, float>;
+
+    static_assert(
+        std::is_constructible_v<ClusterCollector<ClusterType>, Finder *>);
+    static_assert(
+        !std::is_constructible_v<ClusterCollector<ClusterType>, OtherFinder *>);
+
+    Finder cf({10, 10});
+    cf.stop();
+
+    ClusterCollector<ClusterType> collector(&cf);
+    collector.stop();
+
+    CHECK(collector.steal_clusters().empty());
+}
+
+TEST_CASE("cluster collector drains queued clusters when stopped") {
+    using ClusterType = Cluster<int32_t, 3, 3>;
+    ProducerConsumerQueue<ClusterVector<ClusterType>> source(4);
+
+    for (uint64_t frame_number = 1; frame_number <= 3; ++frame_number) {
+        REQUIRE(source.write(ClusterVector<ClusterType>(4, frame_number)));
+    }
+
+    ClusterCollector<ClusterType> collector(&source);
+    collector.stop();
+
+    auto clusters = collector.steal_clusters();
+    REQUIRE(clusters.size() == 3);
+    CHECK(source.isEmpty());
+    for (size_t i = 0; i < clusters.size(); ++i) {
+        CHECK(clusters[i].frame_number() == static_cast<int32_t>(i + 1));
+    }
 }

@@ -10,6 +10,7 @@ silently dropped.
 #include "aare/NDArray.hpp"
 #include "aare/NDView.hpp"
 
+#include <algorithm>
 #include <cstddef>
 #include <limits>
 #include <stdexcept>
@@ -37,12 +38,15 @@ template <typename T, typename StorageType> class PixelHistogramImpl {
     void fill(const NDView<T, 2> &frame);
     void fill(int row, int col, T value);
     void fill_unchecked(int row, int col, T value);
+    // Fill using a row-major pixel index, avoiding repeated 3D stride
+    // calculation in tiled worker loops. The index is intentionally unchecked.
+    void fill_flat_unchecked(std::size_t pixel, T value);
 
     NDArray<StorageType, 3> values() const;
     // Zero-copy view of the underlying [rows x cols x n_bins] storage.
     // Lifetime is tied to *this. Use for low-level merge/stitching paths;
     // prefer values() for the public API where you want an owned copy.
-    NDView<StorageType, 3> view() const;
+    NDView<const StorageType, 3> view() const;
     NDArray<T, 1> bin_centers() const;
     NDArray<T, 1> bin_edges() const;
 };
@@ -98,22 +102,29 @@ void PixelHistogramImpl<T, StorageType>::fill(int row, int col, T value) {
 template <typename T, typename StorageType>
 void PixelHistogramImpl<T, StorageType>::fill_unchecked(int row, int col,
                                                         T value) {
+    const auto pixel =
+        static_cast<std::size_t>(row) * static_cast<std::size_t>(m_cols) +
+        static_cast<std::size_t>(col);
+    fill_flat_unchecked(pixel, value);
+}
+
+template <typename T, typename StorageType>
+void PixelHistogramImpl<T, StorageType>::fill_flat_unchecked(std::size_t pixel,
+                                                             T value) {
     if (value < m_xmin || value >= m_xmax) {
         return;
     }
     int bin = static_cast<int>((value - m_xmin) * m_scale);
     // Guard against floating-point rounding pushing val just below
-    // xmax to bin == n_bins.
-    if (bin >= m_n_bins) {
-        bin = m_n_bins - 1;
-    }
+    bin = std::clamp(bin, 0, m_n_bins - 1);
+    auto &cell = m_values.data()[pixel * static_cast<std::size_t>(m_n_bins) +
+                                 static_cast<std::size_t>(bin)];
     if constexpr (std::is_integral_v<StorageType>) {
-        if (m_values(row, col, bin) >=
-            std::numeric_limits<StorageType>::max()) {
+        if (cell >= std::numeric_limits<StorageType>::max()) {
             return;
         }
     }
-    ++m_values(row, col, bin);
+    ++cell;
 }
 
 template <typename T, typename StorageType>
@@ -122,7 +133,7 @@ NDArray<StorageType, 3> PixelHistogramImpl<T, StorageType>::values() const {
 }
 
 template <typename T, typename StorageType>
-NDView<StorageType, 3> PixelHistogramImpl<T, StorageType>::view() const {
+NDView<const StorageType, 3> PixelHistogramImpl<T, StorageType>::view() const {
     return m_values.view();
 }
 

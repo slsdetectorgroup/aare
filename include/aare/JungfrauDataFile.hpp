@@ -49,6 +49,7 @@ class JungfrauDataFile : public FileInterface {
     size_t pixels_per_frame() override;
     size_t bytes_per_pixel() const;
     size_t bitdepth() const override;
+    Dtype dtype() const override { return Dtype::UINT16; }
     void seek(size_t frame_index)
         override; //!< seek to the given frame index (note not byte offset)
     size_t tell() override; //!< get the frame index of the file pointer

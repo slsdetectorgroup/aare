@@ -72,6 +72,17 @@ TEST_CASE("Fill a small histogram from an NDArray") {
     REQUIRE(v(1, 1, 4) == 1);
 }
 
+TEST_CASE("Flat pixel filling uses pixel-major histogram storage") {
+    aare::PixelHistogramImpl<float, uint16_t> hist(2, 3, 4, 0.0f, 4.0f);
+
+    hist.fill_flat_unchecked(0, 0.5f);
+    hist.fill_flat_unchecked(4, 2.5f);
+
+    const auto values = hist.view();
+    CHECK(values(0, 0, 0) == 1);
+    CHECK(values(1, 1, 2) == 1);
+}
+
 TEST_CASE("Check that pixel histogram does not overflow") {
     int rows = 1;
     int cols = 1;

@@ -145,10 +145,15 @@ class FileInterface {
      */
     virtual size_t bitdepth() const = 0;
 
-    virtual DetectorType detector_type() const = 0;
+    /**
+     * @brief get the data type of the pixels
+     * @return pixel data type
+     */
+    virtual Dtype dtype() const {
+        return Dtype::from_bitdepth(static_cast<uint8_t>(bitdepth()));
+    }
 
-    // function to query the data type of the file
-    /*virtual DataType dtype = 0; */
+    virtual DetectorType detector_type() const = 0;
 
     virtual ~FileInterface() = default;
 

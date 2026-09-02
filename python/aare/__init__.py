@@ -20,8 +20,24 @@ except ImportError:
     pass
 
 from . import transform
+from . import experimental
 
-from ._aare import File, RawMasterFile, RawSubFile, JungfrauDataFile
+from ._aare import (
+    FastPedestal_d,
+    FastPedestal_f,
+    FastPedestal_i16,
+    Pedestal_d,
+    Pedestal_f,
+    Pedestal_i16,
+    ClusterFinder_Cluster3x3i,
+    VarClusterFinder,
+)
+from ._aare import (
+    File,
+    JungfrauDataFile,
+    RawMasterFile,
+    RawSubFile,
+)
 from ._aare import Pedestal_d, Pedestal_f, ClusterFinder_Cluster3x3i, VarClusterFinder
 from ._aare import DetectorType, ReadoutMode 
 from ._aare import hitmap
@@ -31,14 +47,14 @@ from ._aare import corner
 # from ._aare import ClusterFinderMT, ClusterCollector, ClusterFileSink, ClusterVector_i
 
 from ._version import __version__
-from .ClusterFinder import ClusterFinder, ClusterFinderFrozen, ClusterCollector, ClusterFinderMT, ClusterFileSink, ClusterFile
-from .ClusterFinder import ClusterFinderCUDA, ClusterFinderCUDAGraph, _cuda_available, find_cluster_views_batched_iter
+from .FastPedestal import FastPedestal
+from .ClusterFinder import (ClusterFinder, ClusterFinderFrozen, ClusterCollector, ClusterFinderMT, ClusterFileSink, ClusterFile,
+                            ClusterFinderCUDA, ClusterFinderCUDAGraph, _cuda_available, find_cluster_views_batched_iter)
 from .ClusterVector import ClusterVector
 from .Cluster import Cluster
 
 from ._aare import Gaussian, RisingScurve, FallingScurve, Pol1, Pol2, GaussianErfcPlateau, GaussianChargeSharing, GaussianChargeSharingKb
 from ._aare import fit
-from ._aare import fit_gaus, fit_pol1, fit_scurve, fit_scurve2
 from ._aare import Interpolator
 from ._aare import calculate_eta2, calculate_eta3, calculate_cross_eta3, calculate_full_eta2
 from ._aare import reduce_to_2x2, reduce_to_3x3
@@ -53,9 +69,6 @@ from .ScanParameters import ScanParameters
 
 from .utils import random_pixels, random_pixel, flat_list, add_colorbar, Timer
 
-
-#make functions available in the top level API
-from .func import *
 
 from .calibration import *
 from ._aare import apply_calibration, count_switching_pixels

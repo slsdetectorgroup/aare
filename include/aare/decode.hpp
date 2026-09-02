@@ -35,7 +35,7 @@ uint32_t mask32to24bits(uint32_t input, BitOffset offset = {});
  * @param offset Offset within the first byte to where the data starts (0-7
  * bits)
  */
-void expand24to32bit(NDView<uint8_t, 1> input, NDView<uint32_t, 1> output,
+void expand24to32bit(NDView<const uint8_t, 1> input, NDView<uint32_t, 1> output,
                      BitOffset offset = {});
 
 /**
@@ -43,7 +43,7 @@ void expand24to32bit(NDView<uint8_t, 1> input, NDView<uint32_t, 1> output,
  * @param input input buffer with 4 bit values packed into 8 bit
  * @param output output buffer with 8 bit values
  */
-void expand4to8bit(NDView<uint8_t, 1> input, NDView<uint8_t, 1> output);
+void expand4to8bit(NDView<const uint8_t, 1> input, NDView<uint8_t, 1> output);
 
 /**
  * @brief Apply custom weights to a 16-bit input value. Will sum up
