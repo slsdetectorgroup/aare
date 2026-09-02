@@ -192,10 +192,3 @@ alice.mazzoleni@psi.ch \
 dhanya.thattil@psi.ch
 
 
-
-
-<<<<<<< HEAD
-=======
-
-
->>>>>>> main
