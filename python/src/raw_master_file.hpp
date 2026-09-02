@@ -132,9 +132,8 @@ void define_raw_master_file_bindings(py::module &m) {
 
             Returns
             ----------
-                Optional[List[int]]
-                    Optional vector of disabled UDP port indices relative to UDP port types (only present for
-                    masterfile version >= 8.1)
+                List[int]
+                    Vector of disabled UDP port indices relative to UDP port types (empty if none are disabled)
             )")
         .def_property_readonly("period", [](RawMasterFile &self) {
             double seconds =

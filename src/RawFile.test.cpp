@@ -415,8 +415,7 @@ TEST_CASE("Read Jungfrau frame with disabled UDP ports",
                      "2_interfaces_top_disabled_master_6.json";
         REQUIRE(std::filesystem::exists(fpath));
         RawFile f(fpath);
-        REQUIRE(f.master().disabled_udp_ports().value() ==
-                std::vector<size_t>{1});
+        REQUIRE(f.master().disabled_udp_ports() == std::vector<size_t>{1});
         REQUIRE(f.master().udp_port_types().value() ==
                 std::vector<UDPPortPosition>{UDPPortPosition::BOTTOM,
                                              UDPPortPosition::TOP});
@@ -435,8 +434,7 @@ TEST_CASE("Read Jungfrau frame with disabled UDP ports",
                      "2_interfaces_bottom_port_disabled_master_0.json";
         REQUIRE(std::filesystem::exists(fpath));
         RawFile f(fpath);
-        REQUIRE(f.master().disabled_udp_ports().value() ==
-                std::vector<size_t>{0});
+        REQUIRE(f.master().disabled_udp_ports() == std::vector<size_t>{0});
         REQUIRE(f.master().udp_port_types().value() ==
                 std::vector<UDPPortPosition>{UDPPortPosition::BOTTOM,
                                              UDPPortPosition::TOP});
@@ -452,8 +450,7 @@ TEST_CASE("Read Jungfrau frame with disabled UDP ports",
                      "2_modules_2_interfaces_top_ports_disabled_master_2.json";
         REQUIRE(std::filesystem::exists(fpath));
         RawFile f(fpath);
-        REQUIRE(f.master().disabled_udp_ports().value() ==
-                std::vector<size_t>{1, 3});
+        REQUIRE(f.master().disabled_udp_ports() == std::vector<size_t>{1, 3});
         REQUIRE(f.master().udp_port_types().value() ==
                 std::vector<UDPPortPosition>{UDPPortPosition::BOTTOM,
                                              UDPPortPosition::TOP});
@@ -481,8 +478,7 @@ TEST_CASE("Read Jungfrau frame with disabled UDP ports",
                      "2_modules_2_interfaces_disabled_ports_master_1.json";
         REQUIRE(std::filesystem::exists(fpath));
         RawFile f(fpath);
-        REQUIRE(f.master().disabled_udp_ports().value() ==
-                std::vector<size_t>{0, 3});
+        REQUIRE(f.master().disabled_udp_ports() == std::vector<size_t>{0, 3});
         REQUIRE(f.master().udp_port_types().value() ==
                 std::vector<UDPPortPosition>{UDPPortPosition::BOTTOM,
                                              UDPPortPosition::TOP});
@@ -498,7 +494,7 @@ TEST_CASE("Read Jungfrau frame with disabled UDP ports",
                      "4_modules_udp_disabled_master_0.json";
         REQUIRE(std::filesystem::exists(fpath));
         RawFile f(fpath);
-        REQUIRE(f.master().disabled_udp_ports().value() ==
+        REQUIRE(f.master().disabled_udp_ports() ==
                 std::vector<size_t>{1, 3, 4, 6});
         REQUIRE(f.master().udp_port_types().value() ==
                 std::vector<UDPPortPosition>{UDPPortPosition::BOTTOM,
@@ -534,8 +530,7 @@ TEST_CASE("Read Moench frame with disabled UDP ports",
                      "2_interfaces_top_port_disabled_master_0.json";
         REQUIRE(std::filesystem::exists(fpath));
         RawFile f(fpath);
-        REQUIRE(f.master().disabled_udp_ports().value() ==
-                std::vector<size_t>{1});
+        REQUIRE(f.master().disabled_udp_ports() == std::vector<size_t>{1});
         REQUIRE(f.master().udp_port_types().value() ==
                 std::vector<UDPPortPosition>{UDPPortPosition::BOTTOM,
                                              UDPPortPosition::TOP});
@@ -553,8 +548,7 @@ TEST_CASE("Read Moench frame with disabled UDP ports",
                      "2_interfaces_bottom_port_disabled_master_6.json";
         REQUIRE(std::filesystem::exists(fpath));
         RawFile f(fpath);
-        REQUIRE(f.master().disabled_udp_ports().value() ==
-                std::vector<size_t>{0});
+        REQUIRE(f.master().disabled_udp_ports() == std::vector<size_t>{0});
         REQUIRE(f.master().udp_port_types().value() ==
                 std::vector<UDPPortPosition>{UDPPortPosition::BOTTOM,
                                              UDPPortPosition::TOP});
@@ -570,16 +564,16 @@ TEST_CASE("Read Moench frame with disabled UDP ports",
 
 TEST_CASE("Read Eiger frame with disabled UDP ports",
           "[.with-data][RawFile][disabled_udp_ports]") {
-    SECTION("disabled left port") {
+    SECTION("disabled left port (bottom and top half module)") {
         auto fpath = test_data_path() / "raw/eiger" /
                      "left_udp_port_disabled_master_2.json";
         REQUIRE(std::filesystem::exists(fpath));
         RawFile f(fpath);
-        REQUIRE(f.master().disabled_udp_ports().value() ==
-                std::vector<size_t>{0, 2});
+        REQUIRE(f.master().disabled_udp_ports() == std::vector<size_t>{0, 2});
         REQUIRE(f.master().udp_port_types().value() ==
                 std::vector<UDPPortPosition>{UDPPortPosition::LEFT,
                                              UDPPortPosition::RIGHT});
+
         auto frame = f.read_frame();
 
         REQUIRE(frame.cols() == 512);
@@ -594,8 +588,7 @@ TEST_CASE("Read Eiger frame with disabled UDP ports",
                      "right_udp_port_disabled_master_3.json";
         REQUIRE(std::filesystem::exists(fpath));
         RawFile f(fpath);
-        REQUIRE(f.master().disabled_udp_ports().value() ==
-                std::vector<size_t>{1, 3});
+        REQUIRE(f.master().disabled_udp_ports() == std::vector<size_t>{1, 3});
         REQUIRE(f.master().udp_port_types().value() ==
                 std::vector<UDPPortPosition>{UDPPortPosition::LEFT,
                                              UDPPortPosition::RIGHT});
@@ -612,7 +605,7 @@ TEST_CASE("Read Eiger frame with disabled UDP ports",
 
         REQUIRE(std::filesystem::exists(fpath));
         RawFile f(fpath);
-        REQUIRE(f.master().disabled_udp_ports().value() ==
+        REQUIRE(f.master().disabled_udp_ports() ==
                 std::vector<size_t>{1, 3, 5, 7});
         REQUIRE(f.master().udp_port_types().value() ==
                 std::vector<UDPPortPosition>{UDPPortPosition::LEFT,
@@ -639,8 +632,7 @@ TEST_CASE("Read Eiger frame with disabled UDP ports",
 
         REQUIRE(std::filesystem::exists(fpath));
         RawFile f(fpath);
-        REQUIRE(f.master().disabled_udp_ports().value() ==
-                std::vector<size_t>{1});
+        REQUIRE(f.master().disabled_udp_ports() == std::vector<size_t>{1});
         REQUIRE(f.master().udp_port_types().value() ==
                 std::vector<UDPPortPosition>{UDPPortPosition::TOP,
                                              UDPPortPosition::BOTTOM});
@@ -651,17 +643,22 @@ TEST_CASE("Read Eiger frame with disabled UDP ports",
         REQUIRE(rois.size() == 1);
         REQUIRE(rois[0] == ROI{0, 512, 256, 512});
     }
-    SECTION("only one port disabled") {
+    SECTION("only bottom left port disabled") {
         auto fpath = test_data_path() / "raw/eiger" /
                      "one_udp_port_disabled_master_0.json";
 
         REQUIRE(std::filesystem::exists(fpath));
         RawFile f(fpath);
-        REQUIRE(f.master().disabled_udp_ports().value() ==
-                std::vector<size_t>{0});
+        REQUIRE(f.master().disabled_udp_ports() == std::vector<size_t>{0});
         REQUIRE(f.master().udp_port_types().value() ==
                 std::vector<UDPPortPosition>{UDPPortPosition::LEFT,
                                              UDPPortPosition::RIGHT});
+
+        REQUIRE_THROWS_WITH(
+            f.read_frame(),
+            Catch::Matchers::ContainsSubstring(
+                "Multiple ROIs present in file. Use read_ROIs() instead"));
+
         auto frame = f.read_rois();
         REQUIRE(frame.size() == 2);
         REQUIRE(frame[0].cols() == 512);
@@ -674,96 +671,30 @@ TEST_CASE("Read Eiger frame with disabled UDP ports",
         REQUIRE(rois[0] == ROI{512, 1024, 0, 256});
         REQUIRE(rois[1] == ROI{0, 1024, 256, 512});
     }
-}
+    SECTION("No udp ports disabled") {
+        auto fpath = test_data_path() /
+                     "raw/eiger_virtual_500k_disabled_ports" /
+                     "all_active_master_0.json";
 
-TEST_CASE("Read Eiger 500k json v8.1 with all ports active",
-          "[.with-data][RawFile][disabled_udp_ports]") {
-    auto fpath = test_data_path() / "raw/eiger_virtual_500k_disabled_ports" /
-                 "all_active_master_0.json";
+        REQUIRE(std::filesystem::exists(fpath));
+        RawFile f(fpath);
 
-    REQUIRE(std::filesystem::exists(fpath));
-    RawFile f(fpath);
+        auto disabled_udp_ports = f.master().disabled_udp_ports();
+        REQUIRE(disabled_udp_ports.empty());
 
-    auto disabled_udp_ports = f.master().disabled_udp_ports();
-    REQUIRE(disabled_udp_ports.has_value());
-    REQUIRE(disabled_udp_ports.value().empty());
+        auto udp_port_types = f.master().udp_port_types();
+        REQUIRE(udp_port_types.has_value());
+        REQUIRE(udp_port_types.value() ==
+                std::vector<UDPPortPosition>{UDPPortPosition::LEFT,
+                                             UDPPortPosition::RIGHT});
+        REQUIRE(f.total_frames() == 5);
 
-    auto udp_port_types = f.master().udp_port_types();
-    REQUIRE(udp_port_types.has_value());
-    REQUIRE(udp_port_types.value() ==
-            std::vector<UDPPortPosition>{UDPPortPosition::LEFT,
-                                         UDPPortPosition::RIGHT});
-    REQUIRE(f.total_frames() == 5);
+        auto frame = f.read_frame();
+        REQUIRE(frame.cols() == 1024);
+        REQUIRE(frame.rows() == 512);
 
-    auto frame = f.read_frame();
-    REQUIRE(frame.cols() == 1024);
-    REQUIRE(frame.rows() == 512);
-
-    auto rois = f.master().rois();
-    REQUIRE(rois.size() == 1);
-    REQUIRE(rois[0] == ROI{0, 1024, 0, 512});
-}
-
-TEST_CASE("Read Eiger 500k json v8.1 with one port disabled",
-          "[.with-data][RawFile][disabled_udp_ports]") {
-    auto fpath = test_data_path() / "raw/eiger_virtual_500k_disabled_ports" /
-                 "left_master_1.json";
-
-    REQUIRE(std::filesystem::exists(fpath));
-    RawFile f(fpath);
-
-    auto disabled_udp_ports = f.master().disabled_udp_ports();
-    REQUIRE(disabled_udp_ports.has_value());
-    REQUIRE(disabled_udp_ports.value() == std::vector<size_t>{0});
-
-    auto udp_port_types = f.master().udp_port_types();
-    REQUIRE(udp_port_types.has_value());
-    REQUIRE(udp_port_types.value() ==
-            std::vector<UDPPortPosition>{UDPPortPosition::LEFT,
-                                         UDPPortPosition::RIGHT});
-    REQUIRE(f.total_frames() == 5);
-    REQUIRE_THROWS_WITH(
-        f.read_frame(),
-        Catch::Matchers::ContainsSubstring(
-            "Multiple ROIs present in file. Use read_ROIs() instead"));
-
-    auto frames = f.read_rois();
-    REQUIRE(frames.size() == 2);
-    REQUIRE(frames[0].cols() == 512);
-    REQUIRE(frames[0].rows() == 256);
-    REQUIRE(frames[1].cols() == 1024);
-    REQUIRE(frames[1].rows() == 256);
-
-    auto rois = f.master().rois();
-    REQUIRE(rois.size() == 2);
-    REQUIRE(rois[0] == ROI{512, 1024, 0, 256});
-    REQUIRE(rois[1] == ROI{0, 1024, 256, 512});
-}
-
-TEST_CASE("Read Eiger 500k json v8.1 with two ports on left side disabled",
-          "[.with-data][RawFile][disabled_udp_ports]") {
-    auto fpath = test_data_path() / "raw/eiger_virtual_500k_disabled_ports" /
-                 "both_left_master_0.json";
-
-    REQUIRE(std::filesystem::exists(fpath));
-    RawFile f(fpath);
-
-    auto disabled_udp_ports = f.master().disabled_udp_ports();
-    REQUIRE(disabled_udp_ports.has_value());
-    REQUIRE(disabled_udp_ports.value() == std::vector<size_t>{0, 2});
-
-    auto udp_port_types = f.master().udp_port_types();
-    REQUIRE(udp_port_types.has_value());
-    REQUIRE(udp_port_types.value() ==
-            std::vector<UDPPortPosition>{UDPPortPosition::LEFT,
-                                         UDPPortPosition::RIGHT});
-    REQUIRE(f.total_frames() == 5);
-
-    auto frame = f.read_frame();
-    REQUIRE(frame.cols() == 512);
-    REQUIRE(frame.rows() == 512);
-
-    auto rois = f.master().rois();
-    REQUIRE(rois.size() == 1);
-    REQUIRE(rois[0] == ROI{512, 1024, 0, 512});
+        auto rois = f.master().rois();
+        REQUIRE(rois.size() == 1);
+        REQUIRE(rois[0] == ROI{0, 1024, 0, 512});
+    }
 }

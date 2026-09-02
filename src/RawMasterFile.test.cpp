@@ -1367,7 +1367,8 @@ TEST_CASE("Parse Eiger json v8.1 all ports active") {
     REQUIRE(f.exptime() == std::chrono::seconds(1));
     REQUIRE(f.period() == std::chrono::seconds(1));
     REQUIRE(f.quad() == 0);
-    //rows return a std::optional, so we need to check if it has a value before using it
+    // rows return a std::optional, so we need to check if it has a value before
+    // using it
     auto rows = f.number_of_rows();
     REQUIRE(rows.has_value());
     REQUIRE(rows.value() == 256);
@@ -1385,8 +1386,8 @@ TEST_CASE("Parse Eiger json v8.1 all ports active") {
     REQUIRE(f.udp_port_types().value() ==
             std::vector<UDPPortPosition>{UDPPortPosition::LEFT,
                                          UDPPortPosition::RIGHT});
-    REQUIRE(f.disabled_udp_ports().has_value());
-    REQUIRE(f.disabled_udp_ports().value().empty());
+
+    REQUIRE(f.disabled_udp_ports().empty());
 
     auto rois = f.rois();
     REQUIRE(rois.size() == 1);

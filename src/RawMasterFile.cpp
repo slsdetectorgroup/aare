@@ -124,7 +124,7 @@ RawMasterFile::RawMasterFile(const std::filesystem::path &fpath)
                                     UDPPortPosition::BOTTOM};
     }
 
-    if (m_disabled_udp_ports.has_value()) {
+    if (!m_disabled_udp_ports.empty()) {
         // ROI takes precedence over disabled UDP ports, if both are defined in
         // the master file
         if (!complete_ROI(m_rois, m_geometry)) {
@@ -230,7 +230,7 @@ RawMasterFile::udp_port_types() const {
     return m_udp_port_types;
 }
 
-std::optional<std::vector<size_t>> RawMasterFile::disabled_udp_ports() const {
+std::vector<size_t> RawMasterFile::disabled_udp_ports() const {
     return m_disabled_udp_ports;
 }
 
@@ -426,12 +426,13 @@ void RawMasterFile::parse_json(std::istream &is) {
     }
     try {
         auto json_list_obj = j.at("UDP Ports Disabled");
-        m_disabled_udp_ports.emplace();
+        m_disabled_udp_ports.clear();
         for (auto &elem : json_list_obj) {
-            m_disabled_udp_ports.value().push_back(static_cast<size_t>(elem));
+            m_disabled_udp_ports.push_back(static_cast<size_t>(elem));
         }
     } catch (const json::out_of_range &e) {
-        // leave the optional empty
+        m_disabled_udp_ports
+            .clear(); // empty list if not present in master file
     }
     try {
         m_udp_interfaces_per_module = {j.at("Number of UDP Interfaces"), 1};
@@ -653,12 +654,10 @@ void RawMasterFile::update_rois_from_disabled_udp_ports() {
 
     const size_t num_udp_port_types = m_udp_port_types.value().size();
 
-    auto disabled_ports = m_disabled_udp_ports.value();
-
-    size_t first_port = disabled_ports[0] % num_udp_port_types;
+    size_t first_port = m_disabled_udp_ports[0] % num_udp_port_types;
 
     bool all_ports_equal =
-        std::all_of(disabled_ports.begin(), disabled_ports.end(),
+        std::all_of(m_disabled_udp_ports.begin(), m_disabled_udp_ports.end(),
                     [&num_udp_port_types, first_port](size_t &port) {
                         return port % num_udp_port_types == first_port;
                     });
@@ -670,7 +669,7 @@ void RawMasterFile::update_rois_from_disabled_udp_ports() {
         m_geometry.udp_interfaces_per_module().row;
 
     bool port_disabled_for_all_modules =
-        disabled_ports.size() ==
+        m_disabled_udp_ports.size() ==
         m_geometry.modules_x() * m_geometry.modules_y() / udp_ports_per_module;
 
     if (all_ports_equal && port_disabled_for_all_modules) {
@@ -757,7 +756,7 @@ void RawMasterFile::update_rois_from_disabled_udp_ports() {
         // get the enabled ones:
         std::vector<size_t> enabled_ports(m_geometry.n_modules());
         std::iota(enabled_ports.begin(), enabled_ports.end(), 0);
-        std::for_each(disabled_ports.begin(), disabled_ports.end(),
+        std::for_each(m_disabled_udp_ports.begin(), m_disabled_udp_ports.end(),
                       [&enabled_ports](size_t &port) {
                           enabled_ports.erase(std::remove(enabled_ports.begin(),
                                                           enabled_ports.end(),

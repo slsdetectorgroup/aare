@@ -112,7 +112,7 @@ class RawMasterFile {
     std::optional<uint8_t> m_counter_mask;
 
     /// @brief index of disabled UDP ports - index relative to UDP_port_types
-    std::optional<std::vector<size_t>> m_disabled_udp_ports{};
+    std::vector<size_t> m_disabled_udp_ports{};
 
     /// @brief udp port types
     std::optional<std::vector<UDPPortPosition>> m_udp_port_types{};
@@ -168,9 +168,9 @@ class RawMasterFile {
     std::optional<std::vector<UDPPortPosition>> udp_port_types() const;
 
     /// @brief Get the indices of disabled UDP ports
-    /// @return Optional vector of indices of disabled UDP ports (only present
-    /// for masterfile version >= 8.1)
-    std::optional<std::vector<size_t>> disabled_udp_ports() const;
+    /// @return vector of indices of disabled UDP ports (empty if none are
+    /// disabled)
+    std::vector<size_t> disabled_udp_ports() const;
 
     std::vector<ROI> rois() const;
 

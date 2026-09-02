@@ -33,8 +33,7 @@ RawFile::RawFile(const std::filesystem::path &fname, const std::string &mode)
         }
 
         // TODO: work around for now - retrieve num_frames from subfiles
-        if (m_master.disabled_udp_ports().has_value() &&
-            m_master.disabled_udp_ports().value().size() > 0) {
+        if (!m_master.disabled_udp_ports().empty()) {
             // TODO: remove frames_from_file from master file?
             // retrieve the frame numbers from subfile as frames per file in
             // master file 0 if dataprocessor 0 was disabled
