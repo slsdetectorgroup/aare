@@ -225,6 +225,7 @@ void define_3x3_reduction(py::module &m) {
         },
         R"doc(
         Reduce every cluster to the 3x3 block around its center index.
+        The input cluster dimensions must both be odd.
         Returns a new ClusterVector; cluster order, coordinates, and frame
         number are preserved.
         )doc",

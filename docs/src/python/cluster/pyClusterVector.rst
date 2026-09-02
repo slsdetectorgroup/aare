@@ -72,10 +72,10 @@ API.
 .. py:function:: reduce_to_3x3(clustervector)
    :noindex:
 
-   Return a new vector containing the center adjacent highest sum 3x3 block of every input cluster.
+   Return a new vector containing the central 3x3 block of every input cluster.
    Cluster order, coordinates, frame number, and pixel dtype are preserved.
 
-   :param ClusterVector clustervector: Input clusters of size 3x3 or larger.
+   :param ClusterVector clustervector: Input clusters with odd dimensions of 3x3 or larger.
    :return: Reduced 3x3 clusters.
    :rtype: ClusterVector
 

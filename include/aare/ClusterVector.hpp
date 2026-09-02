@@ -241,6 +241,7 @@ ClusterVector<Cluster<T, 2, 2, CoordType>> reduce_to_2x2(
 /**
  * @brief Reduce every cluster to the 3x3 block around its center index.
  * @param cv ClusterVector containing clusters to reduce
+ * @pre ClusterSizeX and ClusterSizeY must both be odd.
  * @return ClusterVector of 3x3 clusters in the original order and with the
  * original frame number
  * @note Coordinates are preserved.
