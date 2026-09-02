@@ -61,7 +61,7 @@ API.
 
    Count cluster centers into an ``int32`` image. ``image_size`` is given as
    ``(rows, columns)``, and output element ``[y, x]`` contains the number of
-   centers at that coordinate. Out-of-bounds centers are ignored. All registered
+   photon hits at that coordinate. Out-of-bounds hits are ignored. All registered
    ClusterVector variants are accepted.
 
    :param tuple[int, int] image_size: Shape of the output image.
@@ -72,7 +72,7 @@ API.
 .. py:function:: reduce_to_3x3(clustervector)
    :noindex:
 
-   Return a new vector containing the central 3x3 block of every input cluster.
+   Return a new vector containing the center adjacent highest sum 3x3 block of every input cluster.
    Cluster order, coordinates, frame number, and pixel dtype are preserved.
 
    :param ClusterVector clustervector: Input clusters of size 3x3 or larger.

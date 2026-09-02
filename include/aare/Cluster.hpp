@@ -120,7 +120,7 @@ struct Cluster {
  * @brief Reduce a cluster to its highest-sum center-adjacent 2x2 block.
  * @param c Cluster to reduce
  * @return Reduced cluster with the input coordinates
- * @note Output data is stored in row-major order.
+ * @note The cluster is filled using row major ordering starting at the top-left
  */
 template <typename T, uint8_t ClusterSizeX, uint8_t ClusterSizeY,
           typename CoordType = uint16_t>

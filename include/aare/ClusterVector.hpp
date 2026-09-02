@@ -63,7 +63,8 @@ class ClusterVector<Cluster<T, ClusterSizeX, ClusterSizeY, CoordType>> {
 
     /**
      * @brief Return a filtered copy selected by a one-dimensional Boolean mask.
-     * @param mask mask with one element for every cluster
+     * @param mask boolean 1d mask true if element in ClusterVector will be
+     * included
      * @return ClusterVector containing the selected clusters in their original
      * order and with the original frame number
      * @throws std::runtime_error if the mask length differs from size()
@@ -220,8 +221,9 @@ class ClusterVector<Cluster<T, ClusterSizeX, ClusterSizeY, CoordType>> {
  * @param cv ClusterVector containing clusters to reduce
  * @return ClusterVector of 2x2 clusters in the original order and with the
  * original frame number
- * @note Output cluster data is stored in row-major order. Coordinates are
- * preserved.
+ * @note The cluster is filled using row major ordering starting at the top-left
+ * (thus for a max subcluster in the top left cornern the photon hit is at
+ * the fourth position)
  */
 template <typename T, uint8_t ClusterSizeX, uint8_t ClusterSizeY,
           typename CoordType>
