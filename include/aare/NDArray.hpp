@@ -146,6 +146,23 @@ class NDArray : public ArrayExpr<NDArray<T, Ndim>, Ndim> {
      */
     ~NDArray() { delete[] data_; }
 
+    /**
+     * @brief Copy data from a view of matching shape into this array without
+     * reallocating.
+     * @param v view to copy from, must have the same shape as this array
+     * @throws std::runtime_error if the shapes differ
+     *
+     * Use this instead of assigning a new NDArray when the buffer needs to be
+     * kept, for example when the array is part of a preallocated pool.
+     */
+    void copy_from(const NDView<T, Ndim> v) {
+        if (v.shape() != shape_) {
+            throw std::runtime_error(LOCATION +
+                                     "Shape mismatch in NDArray::copy_from");
+        }
+        std::copy(v.begin(), v.end(), begin());
+    }
+
     ///////////////////////////////////////////////////////////////////////////////
     // Iterators and indexing
     //
