@@ -338,6 +338,9 @@ void RawMasterFile::parse_json(std::istream &is) {
     if (j.contains("Number of rows") && j["Number of rows"].is_number()) {
         m_number_of_rows = j["Number of rows"];
     }
+    if (j.contains("Number of Rows") && j["Number of Rows"].is_number()) {
+        m_number_of_rows = j["Number of Rows"]; // changed at some point
+    }
 
     // ----------------------------------------------------------------
     // Special treatment of analog flag because of Moench03.
