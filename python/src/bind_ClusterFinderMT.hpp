@@ -6,6 +6,8 @@
 #include "aare/ClusterVector.hpp"
 #include "aare/NDView.hpp"
 #include "aare/Pedestal.hpp"
+
+#include "module_config.hpp"
 #include "np_helper.hpp"
 
 #include <cstdint>
@@ -15,7 +17,6 @@
 #include <pybind11/stl_bind.h>
 
 namespace py = pybind11;
-using pd_type = double;
 
 using namespace aare;
 
@@ -31,9 +32,10 @@ void define_ClusterFinderMT(py::module &m, const std::string &typestr) {
 
     py::class_<ClusterFinderMT<ClusterType, uint16_t, pd_type>>(
         m, class_name.c_str())
-        .def(py::init<Shape<2>, pd_type, size_t, size_t>(),
+        .def(py::init<Shape<2>, pd_type, size_t, size_t, size_t>(),
              py::arg("image_size"), py::arg("n_sigma") = 5.0,
-             py::arg("capacity") = 2048, py::arg("n_threads") = 3)
+             py::arg("capacity") = 2048, py::arg("n_threads") = 3,
+             py::arg("queue_depth") = 16)
         .def("push_pedestal_frame",
              [](ClusterFinderMT<ClusterType, uint16_t, pd_type> &self,
                 py::array_t<uint16_t> frame) {
@@ -46,7 +48,6 @@ void define_ClusterFinderMT(py::module &m, const std::string &typestr) {
                py::array_t<uint16_t> frame, uint64_t frame_number) {
                 auto view = make_view_2d(frame);
                 self.find_clusters(view, frame_number);
-                return;
             },
             py::arg(), py::arg("frame_number") = 0)
         .def_property_readonly(
@@ -56,6 +57,8 @@ void define_ClusterFinderMT(py::module &m, const std::string &typestr) {
             })
         .def("clear_pedestal",
              &ClusterFinderMT<ClusterType, uint16_t, pd_type>::clear_pedestal)
+        .def("update_threshold",
+             &ClusterFinderMT<ClusterType, uint16_t, pd_type>::update_threshold)
         .def("sync", &ClusterFinderMT<ClusterType, uint16_t, pd_type>::sync)
         .def("stop", &ClusterFinderMT<ClusterType, uint16_t, pd_type>::stop)
         .def("start", &ClusterFinderMT<ClusterType, uint16_t, pd_type>::start)

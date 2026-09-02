@@ -1,20 +1,9 @@
 # SPDX-License-Identifier: MPL-2.0
 from . import _aare
 import numpy as np
+from .factory import _type_to_char
 
 _supported_cluster_sizes = [(2,2), (3,3), (5,5), (7,7), (9,9),]
-
-def _type_to_char(dtype):
-    if dtype == np.int32:
-        return 'i'
-    elif dtype == np.float32:
-        return 'f'
-    elif dtype == np.float64:
-        return 'd'
-    elif dtype == np.int16:
-        return 'i16'
-    else:
-        raise ValueError(f"Unsupported dtype: {dtype}. Only np.int32, np.float32, and np.float64 are supported.")
 
 def _get_class(name, cluster_size, dtype):
     """
