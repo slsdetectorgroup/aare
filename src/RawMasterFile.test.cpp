@@ -1285,3 +1285,110 @@ TEST_CASE("Parse old Moench03 from stream") {
     REQUIRE(f.period() == std::chrono::microseconds(600));
     REQUIRE(f.analog_samples() == 5000);
 }
+
+TEST_CASE("Parse Eiger json v8.1 all ports active") {
+    std::string master_content = R"(
+    {
+    "Version": 8.1,
+    "Timestamp": "Mon Aug 10 17:44:46 2026",
+    "Detector Type": "Eiger",
+    "Timing Mode": "auto",
+    "Geometry": {
+        "x": 2,
+        "y": 2
+    },
+    "Image Size": 262144,
+    "Pixels": {
+        "x": 512,
+        "y": 256
+    },
+    "Max Frames Per File": 10000,
+    "Frame Discard Policy": "nodiscard",
+    "Frame Padding": 1,
+    "Scan Parameters": {
+        "enable": 0,
+        "dacInd": 0,
+        "start offset": 0,
+        "stop offset": 0,
+        "step size": 0,
+        "dac settle time ns": 0
+    },
+    "Total Frames": 5,
+    "Receiver Rois": [
+        {
+            "xmin": 0,
+            "xmax": 1023,
+            "ymin": 0,
+            "ymax": 511
+        }
+    ],
+    "Dynamic Range": 16,
+    "Ten Giga": 0,
+    "Exposure Time": "1s",
+    "Acquisition Period": "1s",
+    "Threshold Energy": -1,
+    "Sub Exposure Time": "2.62144ms",
+    "Sub Acquisition Period": "2.62144ms",
+    "Quad": 0,
+    "UDP Ports Type": [
+        "left",
+        "right"
+    ],
+    "UDP Ports Disabled": [],
+    "Number of Rows": 256,
+    "Rate Corrections": [
+        0,
+        0
+    ],
+    "Readout Speed": "full_speed",
+    "Frames in File": 5,
+    "Additional JSON Header": {}
+}
+
+)";
+
+    std::istringstream iss(master_content);
+    RawMasterFile f(iss, "test_master_0.json");
+
+    REQUIRE(f.version() == "8.1");
+    REQUIRE(f.detector_type() == DetectorType::Eiger);
+    REQUIRE(f.timing_mode() == TimingMode::Auto);
+    REQUIRE(f.detector_layout() == xy{2, 2});
+    REQUIRE(f.n_modules() == 4);
+    REQUIRE(f.image_size_in_bytes() == 262144);
+    REQUIRE(f.pixels_x() == 512);
+    REQUIRE(f.pixels_y() == 256);
+    REQUIRE(f.max_frames_per_file() == 10000);
+    REQUIRE(f.frame_discard_policy() == FrameDiscardPolicy::NoDiscard);
+    REQUIRE(f.frame_padding() == 1);
+    REQUIRE(f.total_frames_expected() == 5);
+    REQUIRE(f.frames_in_file() == 5);
+    REQUIRE(f.bitdepth() == 16);
+    REQUIRE(f.exptime() == std::chrono::seconds(1));
+    REQUIRE(f.period() == std::chrono::seconds(1));
+    REQUIRE(f.quad() == 0);
+    //rows return a std::optional, so we need to check if it has a value before using it
+    auto rows = f.number_of_rows();
+    REQUIRE(rows.has_value());
+    REQUIRE(rows.value() == 256);
+    REQUIRE(f.udp_interfaces_per_module() == xy{1, 2});
+
+    auto scan_parameters = f.scan_parameters();
+    REQUIRE_FALSE(scan_parameters.enabled());
+    REQUIRE(scan_parameters.dac() == DACIndex::DAC_0);
+    REQUIRE(scan_parameters.start() == 0);
+    REQUIRE(scan_parameters.stop() == 0);
+    REQUIRE(scan_parameters.step() == 0);
+    REQUIRE(scan_parameters.settleTime() == 0);
+
+    REQUIRE(f.udp_port_types().has_value());
+    REQUIRE(f.udp_port_types().value() ==
+            std::vector<UDPPortPosition>{UDPPortPosition::LEFT,
+                                         UDPPortPosition::RIGHT});
+    REQUIRE(f.disabled_udp_ports().has_value());
+    REQUIRE(f.disabled_udp_ports().value().empty());
+
+    auto rois = f.rois();
+    REQUIRE(rois.size() == 1);
+    REQUIRE(rois[0] == ROI{0, 1024, 0, 512});
+}

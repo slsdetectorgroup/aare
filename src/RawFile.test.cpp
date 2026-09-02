@@ -675,3 +675,95 @@ TEST_CASE("Read Eiger frame with disabled UDP ports",
         REQUIRE(rois[1] == ROI{0, 1024, 256, 512});
     }
 }
+
+TEST_CASE("Read Eiger 500k json v8.1 with all ports active",
+          "[.with-data][RawFile][disabled_udp_ports]") {
+    auto fpath = test_data_path() / "raw/eiger_virtual_500k_disabled_ports" /
+                 "all_active_master_0.json";
+
+    REQUIRE(std::filesystem::exists(fpath));
+    RawFile f(fpath);
+
+    auto disabled_udp_ports = f.master().disabled_udp_ports();
+    REQUIRE(disabled_udp_ports.has_value());
+    REQUIRE(disabled_udp_ports.value().empty());
+
+    auto udp_port_types = f.master().udp_port_types();
+    REQUIRE(udp_port_types.has_value());
+    REQUIRE(udp_port_types.value() ==
+            std::vector<UDPPortPosition>{UDPPortPosition::LEFT,
+                                         UDPPortPosition::RIGHT});
+    REQUIRE(f.total_frames() == 5);
+
+    auto frame = f.read_frame();
+    REQUIRE(frame.cols() == 1024);
+    REQUIRE(frame.rows() == 512);
+
+    auto rois = f.master().rois();
+    REQUIRE(rois.size() == 1);
+    REQUIRE(rois[0] == ROI{0, 1024, 0, 512});
+}
+
+TEST_CASE("Read Eiger 500k json v8.1 with one port disabled",
+          "[.with-data][RawFile][disabled_udp_ports]") {
+    auto fpath = test_data_path() / "raw/eiger_virtual_500k_disabled_ports" /
+                 "left_master_1.json";
+
+    REQUIRE(std::filesystem::exists(fpath));
+    RawFile f(fpath);
+
+    auto disabled_udp_ports = f.master().disabled_udp_ports();
+    REQUIRE(disabled_udp_ports.has_value());
+    REQUIRE(disabled_udp_ports.value() == std::vector<size_t>{0});
+
+    auto udp_port_types = f.master().udp_port_types();
+    REQUIRE(udp_port_types.has_value());
+    REQUIRE(udp_port_types.value() ==
+            std::vector<UDPPortPosition>{UDPPortPosition::LEFT,
+                                         UDPPortPosition::RIGHT});
+    REQUIRE(f.total_frames() == 5);
+    REQUIRE_THROWS_WITH(
+        f.read_frame(),
+        Catch::Matchers::ContainsSubstring(
+            "Multiple ROIs present in file. Use read_ROIs() instead"));
+
+    auto frames = f.read_rois();
+    REQUIRE(frames.size() == 2);
+    REQUIRE(frames[0].cols() == 512);
+    REQUIRE(frames[0].rows() == 256);
+    REQUIRE(frames[1].cols() == 1024);
+    REQUIRE(frames[1].rows() == 256);
+
+    auto rois = f.master().rois();
+    REQUIRE(rois.size() == 2);
+    REQUIRE(rois[0] == ROI{512, 1024, 0, 256});
+    REQUIRE(rois[1] == ROI{0, 1024, 256, 512});
+}
+
+TEST_CASE("Read Eiger 500k json v8.1 with two ports on left side disabled",
+          "[.with-data][RawFile][disabled_udp_ports]") {
+    auto fpath = test_data_path() / "raw/eiger_virtual_500k_disabled_ports" /
+                 "both_left_master_0.json";
+
+    REQUIRE(std::filesystem::exists(fpath));
+    RawFile f(fpath);
+
+    auto disabled_udp_ports = f.master().disabled_udp_ports();
+    REQUIRE(disabled_udp_ports.has_value());
+    REQUIRE(disabled_udp_ports.value() == std::vector<size_t>{0, 2});
+
+    auto udp_port_types = f.master().udp_port_types();
+    REQUIRE(udp_port_types.has_value());
+    REQUIRE(udp_port_types.value() ==
+            std::vector<UDPPortPosition>{UDPPortPosition::LEFT,
+                                         UDPPortPosition::RIGHT});
+    REQUIRE(f.total_frames() == 5);
+
+    auto frame = f.read_frame();
+    REQUIRE(frame.cols() == 512);
+    REQUIRE(frame.rows() == 512);
+
+    auto rois = f.master().rois();
+    REQUIRE(rois.size() == 1);
+    REQUIRE(rois[0] == ROI{512, 1024, 0, 512});
+}
