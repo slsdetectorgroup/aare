@@ -68,7 +68,7 @@ TEST_CASE("A disabled scan") {
     REQUIRE(s.step() == 0);
 }
 
-TEST_CASE("Parse a master file in .json format", "[.integration]") {
+TEST_CASE("Parse a master file in .json format", "[.with-data]") {
     auto fpath =
         test_data_path() / "raw" / "jungfrau" / "jungfrau_single_master_0.json";
     REQUIRE(std::filesystem::exists(fpath));
@@ -86,8 +86,8 @@ TEST_CASE("Parse a master file in .json format", "[.integration]") {
     //     "x": 1,
     //     "y": 1
     // },
-    REQUIRE(f.geometry().col == 1);
-    REQUIRE(f.geometry().row == 1);
+    REQUIRE(f.detector_layout().col == 1);
+    REQUIRE(f.detector_layout().row == 1);
 
     // "Image Size in bytes": 1048576,
     REQUIRE(f.image_size_in_bytes() == 1048576);
@@ -151,7 +151,7 @@ TEST_CASE("Parse a master file in .json format", "[.integration]") {
 }
 
 TEST_CASE("Parse a master file in old .raw format",
-          "[.integration][.with-data][.rawmasterfile]") {
+          "[.with-data][rawmasterfile]") {
     auto fpath = test_data_path() /
                  "raw/jungfrau_2modules_version6.1.2/run_master_0.raw";
     REQUIRE(std::filesystem::exists(fpath));
@@ -159,11 +159,11 @@ TEST_CASE("Parse a master file in old .raw format",
 
     CHECK(f.udp_interfaces_per_module() == xy{1, 1});
     CHECK(f.n_modules() == 2);
-    CHECK(f.geometry().row == 2);
-    CHECK(f.geometry().col == 1);
+    CHECK(f.detector_layout().row == 2);
+    CHECK(f.detector_layout().col == 1);
 }
 
-TEST_CASE("Parse a master file in .raw format", "[.integration]") {
+TEST_CASE("Parse a master file in .raw format", "[.with-data]") {
 
     auto fpath =
         test_data_path() /
@@ -180,9 +180,9 @@ TEST_CASE("Parse a master file in .raw format", "[.integration]") {
     REQUIRE(f.detector_type() == DetectorType::ChipTestBoard);
     // Timing Mode                : auto
     REQUIRE(f.timing_mode() == TimingMode::Auto);
-    // Geometry                   : [1, 1]
-    REQUIRE(f.geometry().col == 1);
-    REQUIRE(f.geometry().row == 1);
+    // Detector Layout            : [1, 1]
+    REQUIRE(f.detector_layout().col == 1);
+    REQUIRE(f.detector_layout().row == 1);
     // Image Size                 : 360000 bytes
     REQUIRE(f.image_size_in_bytes() == 360000);
     // Pixels                     : [96, 1]
@@ -232,8 +232,7 @@ TEST_CASE("Parse a master file in .raw format", "[.integration]") {
     // Packets Caught Mask        : 64 bytes
 }
 
-TEST_CASE("Parse a master file in new .json format",
-          "[.integration][.with-data]") {
+TEST_CASE("Parse a master file in new .json format", "[.with-data]") {
 
     auto file_path =
         test_data_path() / "raw" / "newmythen03" / "run_87_master_0.json";
@@ -247,9 +246,9 @@ TEST_CASE("Parse a master file in new .json format",
     REQUIRE(f.detector_type() == DetectorType::Mythen3);
     // Timing Mode                : auto
     REQUIRE(f.timing_mode() == TimingMode::Auto);
-    // Geometry                   : [2, 1]
-    REQUIRE(f.geometry().col == 2);
-    REQUIRE(f.geometry().row == 1);
+    // Detector Layout            : [2, 1]
+    REQUIRE(f.detector_layout().col == 2);
+    REQUIRE(f.detector_layout().row == 1);
     // Image Size                 : 5120 bytes
     REQUIRE(f.image_size_in_bytes() == 5120);
 
@@ -260,14 +259,14 @@ TEST_CASE("Parse a master file in new .json format",
     REQUIRE(f.scan_parameters().step() == 0);
     REQUIRE(f.scan_parameters().settleTime() == 0);
 
-    auto roi = f.roi().value();
+    auto roi = f.roi();
     REQUIRE(roi.xmin == 0);
     REQUIRE(roi.xmax == 2560);
     REQUIRE(roi.ymin == 0);
     REQUIRE(roi.ymax == 1);
 }
 
-TEST_CASE("Read eiger master file", "[.integration]") {
+TEST_CASE("Read eiger master file", "[.with-data]") {
     auto fpath = test_data_path() / "raw/eiger/eiger_500k_32bit_master_0.json";
     REQUIRE(std::filesystem::exists(fpath));
     RawMasterFile f(fpath);
@@ -400,8 +399,8 @@ TEST_CASE("Parse EIGER 7.2 master from string stream") {
     REQUIRE(f.version() == "7.2");
     REQUIRE(f.detector_type() == DetectorType::Eiger);
     REQUIRE(f.timing_mode() == TimingMode::Auto);
-    REQUIRE(f.geometry().col == 2);
-    REQUIRE(f.geometry().row == 2);
+    REQUIRE(f.detector_layout().col == 2);
+    REQUIRE(f.detector_layout().row == 2);
 
     REQUIRE(f.image_size_in_bytes() == 524288);
     REQUIRE(f.pixels_x() == 512);
@@ -477,8 +476,8 @@ TEST_CASE("Parse JUNGFRAU 7.2 master from string stream") {
     REQUIRE(f.version() == "7.2");
     REQUIRE(f.detector_type() == DetectorType::Jungfrau);
     REQUIRE(f.timing_mode() == TimingMode::Auto);
-    REQUIRE(f.geometry().col == 1);
-    REQUIRE(f.geometry().row == 2);
+    REQUIRE(f.detector_layout().col == 1);
+    REQUIRE(f.detector_layout().row == 2);
     REQUIRE(f.n_modules() == 2);
     REQUIRE(f.image_size_in_bytes() == 524288);
     REQUIRE(f.pixels_x() == 1024);
@@ -560,7 +559,7 @@ TEST_CASE(
     REQUIRE(f.version() == "7.2");
     REQUIRE(f.detector_type() == DetectorType::ChipTestBoard);
     REQUIRE(f.timing_mode() == TimingMode::Auto);
-    REQUIRE(f.geometry() == xy{1, 1});
+    REQUIRE(f.detector_layout() == xy{1, 1});
     REQUIRE(f.image_size_in_bytes() == 192000);
     REQUIRE(f.pixels_x() == 32);
     REQUIRE(f.pixels_y() == 1);
@@ -638,7 +637,7 @@ TEST_CASE(
     REQUIRE(f.version() == "7.2");
     REQUIRE(f.detector_type() == DetectorType::ChipTestBoard);
     REQUIRE(f.timing_mode() == TimingMode::Auto);
-    REQUIRE(f.geometry() == xy{1, 1});
+    REQUIRE(f.detector_layout() == xy{1, 1});
     REQUIRE(f.image_size_in_bytes() == 16000);
     REQUIRE(f.pixels_x() == 64);
     REQUIRE(f.pixels_y() == 1);
@@ -710,7 +709,7 @@ TEST_CASE("Parse Moench 7.2 master (SW 7.0.3) from string stream") {
     REQUIRE(f.version() == "7.2");
     REQUIRE(f.detector_type() == DetectorType::Moench03_old);
     REQUIRE(f.timing_mode() == TimingMode::Auto);
-    REQUIRE(f.geometry() == xy{1, 1});
+    REQUIRE(f.detector_layout() == xy{1, 1});
     REQUIRE(f.image_size_in_bytes() == 320000);
     REQUIRE(f.pixels_x() == 400);
     REQUIRE(f.pixels_y() == 400);
@@ -781,7 +780,7 @@ TEST_CASE("Parse Moench 7.2 master (SW 8.0.0) from string stream") {
     REQUIRE(f.version() == "7.2");
     REQUIRE(f.detector_type() == DetectorType::Moench03);
     REQUIRE(f.timing_mode() == TimingMode::Auto);
-    REQUIRE(f.geometry() == xy{1, 1});
+    REQUIRE(f.detector_layout() == xy{1, 1});
     REQUIRE(f.image_size_in_bytes() == 320000);
     REQUIRE(f.pixels_x() == 400);
     REQUIRE(f.pixels_y() == 400);
@@ -863,7 +862,7 @@ TEST_CASE("Parse CTB 7.2 master (SW 8.0.0) from string stream") {
     REQUIRE(f.version() == "7.2");
     REQUIRE(f.detector_type() == DetectorType::ChipTestBoard);
     REQUIRE(f.timing_mode() == TimingMode::Auto);
-    REQUIRE(f.geometry() == xy{1, 1});
+    REQUIRE(f.detector_layout() == xy{1, 1});
     REQUIRE(f.image_size_in_bytes() == 192000);
     REQUIRE(f.pixels_x() == 32);
     REQUIRE(f.pixels_y() == 1);
@@ -944,7 +943,7 @@ TEST_CASE(
     REQUIRE(f.version() == "7.2");
     REQUIRE(f.detector_type() == DetectorType::ChipTestBoard);
     REQUIRE(f.timing_mode() == TimingMode::Auto);
-    REQUIRE(f.geometry() == xy{1, 1});
+    REQUIRE(f.detector_layout() == xy{1, 1});
     REQUIRE(f.image_size_in_bytes() == 16000);
     REQUIRE(f.pixels_x() == 64);
     REQUIRE(f.pixels_y() == 1);
@@ -1011,8 +1010,8 @@ TEST_CASE("Parse a CTB file from stream") {
     REQUIRE(f.version() == "8.0");
     REQUIRE(f.detector_type() == DetectorType::ChipTestBoard);
     REQUIRE(f.timing_mode() == TimingMode::Auto);
-    REQUIRE(f.geometry().col == 1);
-    REQUIRE(f.geometry().row == 1);
+    REQUIRE(f.detector_layout().col == 1);
+    REQUIRE(f.detector_layout().row == 1);
     REQUIRE(f.image_size_in_bytes() == 18432);
     REQUIRE(f.pixels_x() == 2);
     REQUIRE(f.pixels_y() == 1);
@@ -1101,8 +1100,8 @@ TEST_CASE("Parse v8.0 MYTHEN3 from stream") {
     REQUIRE(f.version() == "8.0");
     REQUIRE(f.detector_type() == DetectorType::Mythen3);
     REQUIRE(f.timing_mode() == TimingMode::Auto);
-    REQUIRE(f.geometry().col == 2);
-    REQUIRE(f.geometry().row == 1);
+    REQUIRE(f.detector_layout().col == 2);
+    REQUIRE(f.detector_layout().row == 1);
     REQUIRE(f.image_size_in_bytes() == 5120);
     REQUIRE(f.pixels_x() == 1280);
     REQUIRE(f.pixels_y() == 1);
@@ -1186,8 +1185,8 @@ TEST_CASE("Parse a v7.1 Mythen3 from stream") {
     REQUIRE(f.version() == "7.1");
     REQUIRE(f.detector_type() == DetectorType::Mythen3);
     REQUIRE(f.timing_mode() == TimingMode::Auto);
-    REQUIRE(f.geometry().col == 1);
-    REQUIRE(f.geometry().row == 1);
+    REQUIRE(f.detector_layout().col == 1);
+    REQUIRE(f.detector_layout().row == 1);
     REQUIRE(f.image_size_in_bytes() == 15360);
     REQUIRE(f.pixels_x() == 3840);
     REQUIRE(f.pixels_y() == 1);
@@ -1268,8 +1267,8 @@ TEST_CASE("Parse old Moench03 from stream") {
     REQUIRE(f.version() == "7.1");
     REQUIRE(f.detector_type() == DetectorType::Moench03_old);
     REQUIRE(f.timing_mode() == TimingMode::Auto);
-    REQUIRE(f.geometry().col == 1);
-    REQUIRE(f.geometry().row == 1);
+    REQUIRE(f.detector_layout().col == 1);
+    REQUIRE(f.detector_layout().row == 1);
     REQUIRE(f.image_size_in_bytes() == 320000);
     REQUIRE(f.pixels_x() == 400);
     REQUIRE(f.pixels_y() == 400);
@@ -1285,4 +1284,112 @@ TEST_CASE("Parse old Moench03 from stream") {
     REQUIRE(f.exptime() == std::chrono::microseconds(50));
     REQUIRE(f.period() == std::chrono::microseconds(600));
     REQUIRE(f.analog_samples() == 5000);
+}
+
+TEST_CASE("Parse Eiger json v8.1 all ports active") {
+    std::string master_content = R"(
+    {
+    "Version": 8.1,
+    "Timestamp": "Mon Aug 10 17:44:46 2026",
+    "Detector Type": "Eiger",
+    "Timing Mode": "auto",
+    "Geometry": {
+        "x": 2,
+        "y": 2
+    },
+    "Image Size": 262144,
+    "Pixels": {
+        "x": 512,
+        "y": 256
+    },
+    "Max Frames Per File": 10000,
+    "Frame Discard Policy": "nodiscard",
+    "Frame Padding": 1,
+    "Scan Parameters": {
+        "enable": 0,
+        "dacInd": 0,
+        "start offset": 0,
+        "stop offset": 0,
+        "step size": 0,
+        "dac settle time ns": 0
+    },
+    "Total Frames": 5,
+    "Receiver Rois": [
+        {
+            "xmin": 0,
+            "xmax": 1023,
+            "ymin": 0,
+            "ymax": 511
+        }
+    ],
+    "Dynamic Range": 16,
+    "Ten Giga": 0,
+    "Exposure Time": "1s",
+    "Acquisition Period": "1s",
+    "Threshold Energy": -1,
+    "Sub Exposure Time": "2.62144ms",
+    "Sub Acquisition Period": "2.62144ms",
+    "Quad": 0,
+    "UDP Ports Type": [
+        "left",
+        "right"
+    ],
+    "UDP Ports Disabled": [],
+    "Number of Rows": 256,
+    "Rate Corrections": [
+        0,
+        0
+    ],
+    "Readout Speed": "full_speed",
+    "Frames in File": 5,
+    "Additional JSON Header": {}
+}
+
+)";
+
+    std::istringstream iss(master_content);
+    RawMasterFile f(iss, "test_master_0.json");
+
+    REQUIRE(f.version() == "8.1");
+    REQUIRE(f.detector_type() == DetectorType::Eiger);
+    REQUIRE(f.timing_mode() == TimingMode::Auto);
+    REQUIRE(f.detector_layout() == xy{2, 2});
+    REQUIRE(f.n_modules() == 4);
+    REQUIRE(f.image_size_in_bytes() == 262144);
+    REQUIRE(f.pixels_x() == 512);
+    REQUIRE(f.pixels_y() == 256);
+    REQUIRE(f.max_frames_per_file() == 10000);
+    REQUIRE(f.frame_discard_policy() == FrameDiscardPolicy::NoDiscard);
+    REQUIRE(f.frame_padding() == 1);
+    REQUIRE(f.total_frames_expected() == 5);
+    REQUIRE(f.frames_in_file() == 5);
+    REQUIRE(f.bitdepth() == 16);
+    REQUIRE(f.exptime() == std::chrono::seconds(1));
+    REQUIRE(f.period() == std::chrono::seconds(1));
+    REQUIRE(f.quad() == 0);
+    // rows return a std::optional, so we need to check if it has a value before
+    // using it
+    auto rows = f.number_of_rows();
+    REQUIRE(rows.has_value());
+    REQUIRE(rows.value() == 256);
+    REQUIRE(f.udp_interfaces_per_module() == xy{1, 2});
+
+    auto scan_parameters = f.scan_parameters();
+    REQUIRE_FALSE(scan_parameters.enabled());
+    REQUIRE(scan_parameters.dac() == DACIndex::DAC_0);
+    REQUIRE(scan_parameters.start() == 0);
+    REQUIRE(scan_parameters.stop() == 0);
+    REQUIRE(scan_parameters.step() == 0);
+    REQUIRE(scan_parameters.settleTime() == 0);
+
+    REQUIRE(f.udp_port_types().has_value());
+    REQUIRE(f.udp_port_types().value() ==
+            std::vector<UDPPortPosition>{UDPPortPosition::LEFT,
+                                         UDPPortPosition::RIGHT});
+
+    REQUIRE(f.disabled_udp_ports().empty());
+
+    auto rois = f.rois();
+    REQUIRE(rois.size() == 1);
+    REQUIRE(rois[0] == ROI{0, 1024, 0, 512});
 }

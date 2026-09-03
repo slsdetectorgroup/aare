@@ -235,6 +235,19 @@ template <> DACIndex string_to(const std::string &arg) {
                                     "\"");
 }
 
+template <> UDPPortPosition string_to(const std::string &arg) {
+    if (arg == "left")
+        return UDPPortPosition::LEFT;
+    if (arg == "right")
+        return UDPPortPosition::RIGHT;
+    if (arg == "top")
+        return UDPPortPosition::TOP;
+    if (arg == "bottom")
+        return UDPPortPosition::BOTTOM;
+    throw std::runtime_error("Could not decode UDPPortPosition from: \"" + arg +
+                             "\"");
+}
+
 std::string remove_unit(std::string &str) {
     auto it = str.begin();
     while (it != str.end()) {

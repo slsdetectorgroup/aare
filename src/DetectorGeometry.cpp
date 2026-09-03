@@ -11,7 +11,8 @@ DetectorGeometry::DetectorGeometry(const xy &geometry,
                                    const ssize_t module_pixels_x,
                                    const ssize_t module_pixels_y,
                                    const xy udp_interfaces_per_module,
-                                   const bool quad) {
+                                   const bool quad)
+    : m_udp_interfaces_per_module(udp_interfaces_per_module) {
 
     size_t num_modules = geometry.col * geometry.row;
     module_geometries.reserve(num_modules);
@@ -41,6 +42,10 @@ DetectorGeometry::DetectorGeometry(const xy &geometry,
     m_modules_x = geometry.col;
     m_modules_y = geometry.row;
     m_pixels_y += static_cast<size_t>((geometry.row - 1) * cfg.module_gap_row);
+}
+
+xy DetectorGeometry::udp_interfaces_per_module() const {
+    return m_udp_interfaces_per_module;
 }
 
 size_t DetectorGeometry::n_modules() const { return m_modules_x * m_modules_y; }
