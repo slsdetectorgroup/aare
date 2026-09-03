@@ -131,17 +131,26 @@ class ClusterFinderMT {
         }
     }
 
+    bool output_queues_are_empty() const {
+        for (auto &q : m_output_queues) {
+            if (!q->isEmpty()) {
+                return false;
+            }
+        }
+        return true;
+    }
+
     /**
      * @brief Collect all the clusters from the output queues and write them to
      * the sink
      */
     void collect() {
-        bool empty = true;
         Backoff backoff;
-        while (!m_stop_requested || !empty || !m_processing_threads_stopped) {
+        while (!m_stop_requested || !output_queues_are_empty() ||
+               !m_processing_threads_stopped) {
             bool moved_any = false;
             for (auto &queue : m_output_queues) {
-                while (auto *front = queue->frontPtr()) {
+                if (auto *front = queue->frontPtr(); front != nullptr) {
                     while (!m_sink.write(std::move(*front))) {
                         backoff.pause();
                     }
@@ -149,7 +158,6 @@ class ClusterFinderMT {
                     moved_any = true;
                 }
             }
-            empty = !moved_any;
             if (moved_any) {
                 backoff.reset();
             } else {
