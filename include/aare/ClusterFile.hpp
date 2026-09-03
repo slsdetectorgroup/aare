@@ -12,6 +12,7 @@
 #include <filesystem>
 #include <fstream>
 #include <optional>
+#include <utility>
 
 namespace aare {
 
@@ -82,19 +83,46 @@ class ClusterFile {
 
     /**
      * @brief Read the next complete frame.
-     * @return The selected clusters with the stored frame number set.
+     * @return The selected clusters with the stored frame number set, or
+     * std::nullopt at a clean end of file before the next frame.
      * @throws std::runtime_error If the file is not open for reading, a prior
      * partial-frame read left clusters unread, or the frame is incomplete.
+     * @note A complete frame produces an engaged optional even when it contains
+     * no clusters or all of its clusters are removed by the configured filters.
      */
-    ClusterVector<ClusterType> read_frame() {
+    std::optional<ClusterVector<ClusterType>> read_frame() {
+        ClusterVector<ClusterType> clusters(0);
+        if (!read_frame(clusters)) {
+            return std::nullopt;
+        }
+        return std::optional<ClusterVector<ClusterType>>{std::move(clusters)};
+    }
+
+    /**
+     * @brief Read the next complete frame into an existing cluster vector.
+     * @param clusters Destination whose storage is reused when large enough.
+     * Existing clusters are replaced after a frame header is read and remain
+     * unchanged at a clean end of file.
+     * @return true when a complete frame was read, or false at a clean end of
+     * file before the next frame.
+     * @throws std::runtime_error If the file is not open for reading, a prior
+     * partial-frame read left clusters unread, or a frame is incomplete.
+     * @note A complete frame is a successful read even when it contains no
+     * clusters or all of its clusters are removed by the configured filters.
+     */
+    bool read_frame(ClusterVector<ClusterType> &clusters) {
         if (m_mode != "r") {
             throw std::runtime_error(LOCATION + "File not opened for reading");
         }
-        if (m_noise_map || m_roi) {
-            return read_frame_with_cut();
-        } else {
-            return read_frame_without_cut();
+        if (m_num_left) {
+            throw std::runtime_error(
+                LOCATION + "There are still clusters left in the last frame");
         }
+
+        if (m_noise_map || m_roi) {
+            return read_frame_with_cut(clusters);
+        }
+        return read_frame_without_cut(clusters);
     }
 
     /**
@@ -222,8 +250,9 @@ class ClusterFile {
     }
     ClusterVector<ClusterType> read_clusters_with_cut(size_t n_clusters);
     ClusterVector<ClusterType> read_clusters_without_cut(size_t n_clusters);
-    ClusterVector<ClusterType> read_frame_with_cut();
-    ClusterVector<ClusterType> read_frame_without_cut();
+    bool read_frame_header(int32_t &frame_number, uint32_t &n_clusters);
+    bool read_frame_with_cut(ClusterVector<ClusterType> &clusters);
+    bool read_frame_without_cut(ClusterVector<ClusterType> &clusters);
     bool is_selected(ClusterType &cl);
     ClusterType read_one_cluster();
 };
@@ -348,37 +377,43 @@ ClusterType ClusterFile<ClusterType, Enable>::read_one_cluster() {
 }
 
 template <typename ClusterType, typename Enable>
-ClusterVector<ClusterType>
-ClusterFile<ClusterType, Enable>::read_frame_without_cut() {
-    if (m_mode != "r") {
-        throw std::runtime_error(LOCATION + "File not opened for reading");
+bool ClusterFile<ClusterType, Enable>::read_frame_header(int32_t &frame_number,
+                                                         uint32_t &n_clusters) {
+    const auto frame_number_bytes =
+        fread(&frame_number, 1, sizeof(frame_number), m_fp.get());
+    if (frame_number_bytes == 0 && feof(m_fp.get()) && !ferror(m_fp.get())) {
+        return false;
     }
-    if (m_num_left) {
-        throw std::runtime_error(
-            LOCATION + "There are still photons left in the last frame");
-    }
-    int32_t frame_number;
-    if (fread(&frame_number, sizeof(frame_number), 1, m_fp.get()) != 1) {
-        if (feof(m_fp.get()))
-            throw std::runtime_error(LOCATION + "Unexpected end of file");
-        else if (ferror(m_fp.get()))
+    if (frame_number_bytes != sizeof(frame_number)) {
+        if (ferror(m_fp.get())) {
             throw std::runtime_error(LOCATION + "Error reading from file");
-
-        throw std::runtime_error(
-            LOCATION +
-            "Unexpected error (not feof or ferror) when reading frame number");
+        }
+        throw std::runtime_error(LOCATION + "Incomplete frame number");
     }
 
+    const auto cluster_count_bytes =
+        fread(&n_clusters, 1, sizeof(n_clusters), m_fp.get());
+    if (cluster_count_bytes != sizeof(n_clusters)) {
+        if (ferror(m_fp.get())) {
+            throw std::runtime_error(LOCATION + "Error reading from file");
+        }
+        throw std::runtime_error(LOCATION + "Incomplete number of clusters");
+    }
+    return true;
+}
+
+template <typename ClusterType, typename Enable>
+bool ClusterFile<ClusterType, Enable>::read_frame_without_cut(
+    ClusterVector<ClusterType> &clusters) {
+    int32_t frame_number;
     uint32_t n_clusters;
-    if (fread(&n_clusters, sizeof(n_clusters), 1, m_fp.get()) != 1) {
-        throw std::runtime_error(LOCATION +
-                                 "Could not read number of clusters");
+    if (!read_frame_header(frame_number, n_clusters)) {
+        return false;
     }
 
     LOG(logDEBUG1) << "Reading " << n_clusters << " clusters from frame "
                    << frame_number;
 
-    ClusterVector<ClusterType> clusters(n_clusters);
     clusters.set_frame_number(frame_number);
     clusters.resize(n_clusters);
 
@@ -391,30 +426,21 @@ ClusterFile<ClusterType, Enable>::read_frame_without_cut() {
 
     if (m_gain_map)
         m_gain_map->apply_gain_map(clusters);
-    return clusters;
+    return true;
 }
 
 template <typename ClusterType, typename Enable>
-ClusterVector<ClusterType>
-ClusterFile<ClusterType, Enable>::read_frame_with_cut() {
-    if (m_mode != "r") {
-        throw std::runtime_error("File not opened for reading");
-    }
-    if (m_num_left) {
-        throw std::runtime_error(
-            "There are still photons left in the last frame");
-    }
+bool ClusterFile<ClusterType, Enable>::read_frame_with_cut(
+    ClusterVector<ClusterType> &clusters) {
     int32_t frame_number;
-    if (fread(&frame_number, sizeof(frame_number), 1, m_fp.get()) != 1) {
-        throw std::runtime_error("Could not read frame number");
+    uint32_t n_clusters;
+    if (!read_frame_header(frame_number, n_clusters)) {
+        return false;
     }
 
-    if (fread(&m_num_left, sizeof(m_num_left), 1, m_fp.get()) != 1) {
-        throw std::runtime_error("Could not read number of clusters");
-    }
-
-    ClusterVector<ClusterType> clusters;
-    clusters.reserve(m_num_left);
+    m_num_left = n_clusters;
+    clusters.resize(0);
+    clusters.reserve(n_clusters);
     clusters.set_frame_number(frame_number);
     while (m_num_left) {
         ClusterType c = read_one_cluster();
@@ -424,7 +450,7 @@ ClusterFile<ClusterType, Enable>::read_frame_with_cut() {
     }
     if (m_gain_map)
         m_gain_map->apply_gain_map(clusters);
-    return clusters;
+    return true;
 }
 
 template <typename ClusterType, typename Enable>

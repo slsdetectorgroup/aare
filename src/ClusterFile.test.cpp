@@ -80,12 +80,14 @@ TEST_CASE("Read one frame from a cluster file", "[.with-data]") {
     CHECK(f.estimate_n_clusters() == 97);
     CHECK(f.tell() == 0);
     auto clusters = f.read_frame();
-    CHECK(clusters.size() == 97);
-    CHECK(clusters.frame_number() == 135);
-    CHECK(clusters[0].x == 1);
-    CHECK(clusters[0].y == 200);
+    REQUIRE(clusters);
+    CHECK(clusters->size() == 97);
+    CHECK(clusters->frame_number() == 135);
+    CHECK((*clusters)[0].x == 1);
+    CHECK((*clusters)[0].y == 200);
     int32_t expected_cluster_data[] = {0, 1, 2, 3, 4, 5, 6, 7, 8};
-    CHECK(std::equal(std::begin(clusters[0].data), std::end(clusters[0].data),
+    CHECK(std::equal(std::begin((*clusters)[0].data),
+                     std::end((*clusters)[0].data),
                      std::begin(expected_cluster_data)));
 }
 
@@ -102,22 +104,24 @@ TEST_CASE("Read one frame using ROI", "[.with-data]") {
     roi.ymax = 249;
     f.set_roi(roi);
     auto clusters = f.read_frame();
-    REQUIRE(clusters.size() == 49);
-    REQUIRE(clusters.frame_number() == 135);
+    REQUIRE(clusters);
+    REQUIRE(clusters->size() == 49);
+    REQUIRE(clusters->frame_number() == 135);
 
     // Check that all clusters are within the ROI
-    for (size_t i = 0; i < clusters.size(); i++) {
-        auto c = clusters[i];
+    for (size_t i = 0; i < clusters->size(); i++) {
+        auto c = (*clusters)[i];
         REQUIRE(c.x >= roi.xmin);
         REQUIRE(c.x <= roi.xmax);
         REQUIRE(c.y >= roi.ymin);
         REQUIRE(c.y <= roi.ymax);
     }
 
-    CHECK(clusters[0].x == 1);
-    CHECK(clusters[0].y == 200);
+    CHECK((*clusters)[0].x == 1);
+    CHECK((*clusters)[0].y == 200);
     int32_t expected_cluster_data[] = {0, 1, 2, 3, 4, 5, 6, 7, 8};
-    CHECK(std::equal(std::begin(clusters[0].data), std::end(clusters[0].data),
+    CHECK(std::equal(std::begin((*clusters)[0].data),
+                     std::end((*clusters)[0].data),
                      std::begin(expected_cluster_data)));
 }
 
@@ -360,7 +364,8 @@ TEST_CASE("ClusterFile flushes a frame when the writer is destroyed",
 
     ClusterFile<TestCluster> reader(file.path());
     auto actual = reader.read_frame();
-    check_frame(actual, expected);
+    REQUIRE(actual);
+    check_frame(*actual, expected);
 }
 
 TEST_CASE("ClusterFile appends frames", "[ClusterFile]") {
@@ -380,8 +385,113 @@ TEST_CASE("ClusterFile appends frames", "[ClusterFile]") {
     ClusterFile<TestCluster> reader(file.path());
     auto first_actual = reader.read_frame();
     auto second_actual = reader.read_frame();
-    check_frame(first_actual, first_expected);
-    check_frame(second_actual, second_expected);
+    REQUIRE(first_actual);
+    REQUIRE(second_actual);
+    check_frame(*first_actual, first_expected);
+    check_frame(*second_actual, second_expected);
+}
+
+TEST_CASE("ClusterFile reads frames into an existing cluster vector",
+          "[ClusterFile]") {
+    TemporaryClusterFile file;
+    auto first_expected = make_test_frame(42, 0.0);
+    auto second_expected = make_test_frame(43, 100.0);
+
+    {
+        ClusterFile<TestCluster> writer(file.path(), 1000, "w");
+        writer.write_frame(first_expected);
+        writer.write_frame(second_expected);
+    }
+
+    ClusterFile<TestCluster> reader(file.path());
+    ClusterVector<TestCluster> actual(2);
+    const auto initial_data = actual.data();
+
+    REQUIRE(reader.read_frame(actual));
+    CHECK(actual.data() == initial_data);
+    check_frame(actual, first_expected);
+
+    REQUIRE(reader.read_frame(actual));
+    CHECK(actual.data() == initial_data);
+    check_frame(actual, second_expected);
+
+    CHECK_FALSE(reader.read_frame(actual));
+    check_frame(actual, second_expected);
+}
+
+TEST_CASE("ClusterFile reports a clean end of file", "[ClusterFile]") {
+    TemporaryClusterFile file;
+    {
+        ClusterFile<TestCluster> writer(file.path(), 1000, "w");
+    }
+
+    ClusterFile<TestCluster> reader(file.path());
+    ClusterVector<TestCluster> clusters;
+    CHECK_FALSE(reader.read_frame(clusters));
+    CHECK(clusters.empty());
+    CHECK_FALSE(reader.read_frame().has_value());
+}
+
+TEST_CASE("ClusterFile reports complete frames with no output clusters",
+          "[ClusterFile]") {
+    TemporaryClusterFile file;
+    ClusterVector<TestCluster> empty_frame(0, 41);
+    auto expected = make_test_frame(42, 0.0);
+    {
+        ClusterFile<TestCluster> writer(file.path(), 1000, "w");
+        writer.write_frame(empty_frame);
+        writer.write_frame(expected);
+    }
+
+    ClusterFile<TestCluster> reader(file.path());
+    ClusterVector<TestCluster> clusters;
+    auto empty_actual = reader.read_frame();
+    REQUIRE(empty_actual);
+    CHECK(empty_actual->empty());
+    CHECK(empty_actual->frame_number() == 41);
+
+    aare::ROI roi;
+    roi.xmin = 100;
+    roi.xmax = 200;
+    roi.ymin = 100;
+    roi.ymax = 200;
+    reader.set_roi(roi);
+
+    REQUIRE(reader.read_frame(clusters));
+    CHECK(clusters.empty());
+    CHECK(clusters.frame_number() == expected.frame_number());
+    CHECK_FALSE(reader.read_frame(clusters));
+}
+
+TEST_CASE("ClusterFile rejects incomplete frames", "[ClusterFile]") {
+    TemporaryClusterFile file;
+    auto expected = make_test_frame(42, 0.0);
+    {
+        ClusterFile<TestCluster> writer(file.path(), 1000, "w");
+        writer.write_frame(expected);
+    }
+
+    SECTION("incomplete frame number") {
+        std::filesystem::resize_file(file.path(), sizeof(int32_t) - 1);
+    }
+    SECTION("incomplete cluster count") {
+        std::filesystem::resize_file(file.path(),
+                                     sizeof(int32_t) + sizeof(uint32_t) - 1);
+    }
+    SECTION("incomplete cluster data") {
+        std::filesystem::resize_file(
+            file.path(), std::filesystem::file_size(file.path()) - 1);
+    }
+
+    {
+        ClusterFile<TestCluster> reader(file.path());
+        ClusterVector<TestCluster> clusters;
+        CHECK_THROWS_AS(reader.read_frame(clusters), std::runtime_error);
+    }
+    {
+        ClusterFile<TestCluster> reader(file.path());
+        CHECK_THROWS_AS(reader.read_frame(), std::runtime_error);
+    }
 }
 
 TEST_CASE("ClusterFile close is idempotent", "[ClusterFile]") {
@@ -398,7 +508,8 @@ TEST_CASE("ClusterFile close is idempotent", "[ClusterFile]") {
 
     ClusterFile<TestCluster> reader(file.path());
     auto actual = reader.read_frame();
-    check_frame(actual, expected);
+    REQUIRE(actual);
+    check_frame(*actual, expected);
 }
 
 TEST_CASE("Read frame and modify cluster data", "[.with-data]") {
@@ -408,17 +519,19 @@ TEST_CASE("Read frame and modify cluster data", "[.with-data]") {
     ClusterFile<Cluster<int32_t, 3, 3>> f(fpath);
 
     auto clusters = f.read_frame();
-    CHECK(clusters.size() == 97);
-    CHECK(clusters.frame_number() == 135);
+    REQUIRE(clusters);
+    CHECK(clusters->size() == 97);
+    CHECK(clusters->frame_number() == 135);
 
     int32_t expected_cluster_data[] = {0, 1, 2, 3, 4, 5, 6, 7, 8};
-    clusters.push_back(
+    clusters->push_back(
         Cluster<int32_t, 3, 3>{0, 0, {0, 1, 2, 3, 4, 5, 6, 7, 8}});
 
-    CHECK(clusters.size() == 98);
-    CHECK(clusters[0].x == 1);
-    CHECK(clusters[0].y == 200);
+    CHECK(clusters->size() == 98);
+    CHECK((*clusters)[0].x == 1);
+    CHECK((*clusters)[0].y == 200);
 
-    CHECK(std::equal(std::begin(clusters[0].data), std::end(clusters[0].data),
+    CHECK(std::equal(std::begin((*clusters)[0].data),
+                     std::end((*clusters)[0].data),
                      std::begin(expected_cluster_data)));
 }

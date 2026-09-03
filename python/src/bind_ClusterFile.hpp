@@ -11,6 +11,7 @@
 #include <pybind11/stl.h>
 #include <pybind11/stl/filesystem.h>
 #include <string>
+#include <utility>
 
 // Disable warnings for unused parameters, as we ignore some
 // in the __exit__ method
@@ -51,11 +52,17 @@ void define_ClusterFile(py::module &m, const std::string &typestr) {
             "per-cluster metadata.")
         .def(
             "read_frame",
-            [](ClusterFile<ClusterType> &self) {
-                auto v = new ClusterVector<ClusterType>(self.read_frame());
-                return v;
+            [](ClusterFile<ClusterType> &self) -> py::object {
+                auto clusters = self.read_frame();
+                if (!clusters) {
+                    return py::none();
+                }
+                return py::cast(
+                    new ClusterVector<ClusterType>(std::move(*clusters)),
+                    py::return_value_policy::take_ownership);
             },
-            "Read and return the next complete frame with its frame number.")
+            "Read and return the next complete frame with its frame number, "
+            "or None at end of file.")
         .def("set_roi", &ClusterFile<ClusterType>::set_roi, py::arg("roi"),
              "Select clusters whose centers lie within the half-open ROI.")
         .def("tell", &ClusterFile<ClusterType>::tell,

@@ -19,6 +19,11 @@
 
 ### API Changes:
 
+- Added ``ClusterFile::read_frame(ClusterVector&)`` for allocation-reusing C++
+  reads. It returns ``false`` at a clean end of file. The value-returning C++
+  overload now returns ``std::optional<ClusterVector<ClusterType>>`` and
+  Python ``read_frame()`` returns ``None`` at end of file. Incomplete frames
+  still raise an error.
 - Added an explicit boolean conversion to the C++ ``FilePtr`` type.
 - Removed the public C++ ``ClusterFile::open`` method. Construct a new
   ``ClusterFile`` to reopen a file or change its mode.
@@ -190,5 +195,3 @@ https://github.com/slsdetectorgroup/aare
 erik.frojdh@psi.ch \
 alice.mazzoleni@psi.ch \
 dhanya.thattil@psi.ch
-
-

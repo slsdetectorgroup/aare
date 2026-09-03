@@ -12,6 +12,8 @@ for a vector holding 3x3 integer clusters.
 At the moment the functionality from python is limited and it is not supported
 to push_back clusters to the vector. The intended use case is to pass it to 
 C++ functions that support the ClusterVector or to view it as a numpy array.
+``ClusterFile.read_frame()`` returns ``None`` instead of a ``ClusterVector`` at
+the end of the file.
 
 **View ClusterVector as numpy array**
 
