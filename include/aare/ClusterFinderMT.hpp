@@ -166,6 +166,8 @@ class ClusterFinderMT {
      * @param nSigma number of sigma above the pedestal to consider a photon
      * @param capacity initial capacity of the cluster vector. Should match
      * expected number of clusters in a frame per frame.
+     * @param min_pedestal_samples minimum number of pedestal frames to
+     * accumulate to get reasonable statistics
      * @param n_threads number of threads to use
      * @param queue_depth number of frame buffers per thread. These are
      * allocated once and recycled, so the total resident frame memory is
@@ -173,14 +175,15 @@ class ClusterFinderMT {
      * the L3 size keeps the per frame copy cheap.
      */
     ClusterFinderMT(Shape<2> image_size, PEDESTAL_TYPE nSigma = 5.0,
-                    size_t capacity = 2000, size_t n_threads = 3,
-                    size_t queue_depth = 16)
+                    size_t capacity = 2000, size_t min_pedestal_samples = 1000,
+                    size_t n_threads = 3, size_t queue_depth = 16)
         : m_n_threads(n_threads) {
 
         LOG(logDEBUG1) << "ClusterFinderMT: "
                        << "image_size: " << image_size[0] << "x"
                        << image_size[1] << ", nSigma: " << nSigma
                        << ", capacity: " << capacity
+                       << ", min_pedestal_samples: " << min_pedestal_samples
                        << ", n_threads: " << n_threads
                        << ", queue_depth: " << queue_depth;
 
@@ -188,7 +191,7 @@ class ClusterFinderMT {
             m_cluster_finders.push_back(
                 std::make_unique<
                     ClusterFinder<ClusterType, FRAME_TYPE, PEDESTAL_TYPE>>(
-                    image_size, nSigma, capacity));
+                    image_size, nSigma, capacity, min_pedestal_samples));
         }
         for (size_t i = 0; i < n_threads; i++) {
             m_frame_pools.emplace_back(
