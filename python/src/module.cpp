@@ -1,6 +1,8 @@
 // SPDX-License-Identifier: MPL-2.0
 // Files with bindings to the different classes
 
+#include "module_config.hpp"
+
 // New style file naming
 #include "bind_Cluster.hpp"
 #include "bind_ClusterCollector.hpp"
@@ -11,6 +13,7 @@
 #include "bind_ClusterVector.hpp"
 #include "bind_Defs.hpp"
 #include "bind_Eta.hpp"
+#include "bind_FastPedestal.hpp"
 #include "bind_Interpolator.hpp"
 #include "bind_MultiThreadedFileReader.hpp"
 #include "bind_PedestalTrackingPixelHistogram.hpp"
@@ -30,6 +33,7 @@
 #include "var_cluster.hpp"
 
 // Pybind stuff
+#include <cstdint>
 #include <pybind11/pybind11.h>
 #include <pybind11/stl.h>
 
@@ -75,6 +79,10 @@ PYBIND11_MODULE(_aare, m) {
     define_pedestal_tracking_pixel_histogram_bindings(m);
     define_pedestal_bindings<double>(m, "Pedestal_d");
     define_pedestal_bindings<float>(m, "Pedestal_f");
+    define_pedestal_bindings<int16_t>(m, "Pedestal_i16");
+    define_fast_pedestal_bindings<double>(m, "FastPedestal_d");
+    define_fast_pedestal_bindings<float>(m, "FastPedestal_f");
+    define_fast_pedestal_bindings<int16_t>(m, "FastPedestal_i16");
     define_fit_bindings(m);
     define_interpolation_bindings(m);
     define_jungfrau_data_file_io_bindings(m);
@@ -106,6 +114,7 @@ PYBIND11_MODULE(_aare, m) {
     DEFINE_BINDINGS_CLUSTERFINDER(int, 3, 3, uint16_t, i);
     DEFINE_BINDINGS_CLUSTERFINDER(double, 3, 3, uint16_t, d);
     DEFINE_BINDINGS_CLUSTERFINDER(float, 3, 3, uint16_t, f);
+    DEFINE_BINDINGS_CLUSTERFINDER(int16_t, 3, 3, uint16_t, i16);
 
     DEFINE_BINDINGS_CLUSTERFINDER(int, 5, 5, uint16_t, i);
     DEFINE_BINDINGS_CLUSTERFINDER(double, 5, 5, uint16_t, d);
