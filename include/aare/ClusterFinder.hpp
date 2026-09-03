@@ -63,7 +63,8 @@ class ClusterFinder {
           m_pd_corrected_frame({image_size[0], image_size[1]}, 0) {
         LOG(logDEBUG) << "ClusterFinder: "
                       << "image_size: " << image_size[0] << "x" << image_size[1]
-                      << ", nSigma: " << nSigma << ", capacity: " << capacity;
+                      << ", nSigma: " << nSigma << ", capacity: " << capacity
+                      << ", min_pedestal_samples: " << min_pedestal_samples;
     }
 
     /**
