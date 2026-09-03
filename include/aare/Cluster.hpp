@@ -194,7 +194,7 @@ Cluster<T, 2, 2, uint16_t> reduce_to_2x2(const Cluster<T, 3, 3, uint16_t> &c) {
  * @brief Reduce a cluster to the 3x3 block around its center index.
  * @param c Cluster to reduce
  * @pre ClusterSizeX and ClusterSizeY must both be odd.
- * @return Reduced cluster. Input coordinates are preserved.
+ * @return Reduced cluster with the input coordinates are preserved.
  */
 template <typename T, uint8_t ClusterSizeX, uint8_t ClusterSizeY,
           typename CoordType = int16_t>
