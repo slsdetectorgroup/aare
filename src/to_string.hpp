@@ -56,6 +56,14 @@ template <typename T> T string_to(const std::string &arg) {
 template <> DetectorType string_to(const std::string &arg);
 
 /**
+ * @brief Convert a string to UDPPortPosition
+ * @param name string representation of the UDPPortPosition
+ * @return UDPPortPosition
+ * @throw runtime_error if the string does not match any UDPPortPosition
+ */
+template <> UDPPortPosition string_to(const std::string &arg);
+
+/**
  * @brief Convert a string to TimingMode
  * @param mode string representation of the TimingMode
  * @return TimingMode

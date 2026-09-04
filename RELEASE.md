@@ -37,6 +37,10 @@
 - ``NDView<T, Ndim>`` now converts to ``NDView<const T, Ndim>``;
   ``expand4to8bit`` and ``expand24to32bit`` accept const input views.
 
+- ``RawMasterFile::geometry()`` is deprecetad and returns full detector geometry information including module geometry. Use 
+``RawMasterFile::module_layout()`` to get num_modules in x an y 
+- ``RawMasterFile::rois()`` always returns a list of rois (no optional). Per default it returns a list of one ROI element spawing the entire detector 
+
 ### Bugfixes:
 - Fixed ``ClusterVector`` move operations to transfer storage instead of
   copying every cluster.
@@ -60,6 +64,7 @@
 - ``aare.transfrom.Matterhorn10Transform`` reshapes data such that first dimension is number of counters
 - Added support for len() for files. Returns the number of frames
 - Added support for direct subtraction of Pedestal from numpy array
+- Added support to read files with disabled udp ports 
 
 ### Bugfixes:
 
