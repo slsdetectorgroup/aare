@@ -19,6 +19,14 @@
 
 ### API Changes:
 
+- Added ``ClusterFile::read_frame(ClusterVector&)`` for allocation-reusing C++
+  reads. It returns ``false`` at a clean end of file. The value-returning C++
+  overload now returns ``std::optional<ClusterVector<ClusterType>>`` and
+  Python ``read_frame()`` returns ``None`` at end of file. Incomplete frames
+  still raise an error.
+- Added an explicit boolean conversion to the C++ ``FilePtr`` type.
+- Removed the public C++ ``ClusterFile::open`` method. Construct a new
+  ``ClusterFile`` to reopen a file or change its mode.
 - ``ClusterFinder`` now uses ``FastPedestal``. It must receive 1000 pedestal
   frames before cluster finding; ``find_clusters()`` raises
   an error until initialization is complete. Added ``update_threshold()`` to
@@ -43,6 +51,11 @@
 - ``TimingMode::Auto`` changed to ``TimingMode::AUTO_TIMING``, ``TimingMode::Trigger`` changed to ``TimingMode::TRIGGER_EXPOSURE``
 
 ### Bugfixes:
+
+- ``ClusterFile::write_frame`` now reports incomplete writes instead of
+  silently continuing with a truncated file.
+- Gain-map application now checks the complete cluster footprint, preventing
+  out-of-bounds access for cluster sizes larger than 3x3.
 - Fixed broken reading of old (pre reordering) Moench03
 - Supports reading all timing modes supported in slsDetectorPackage (auto, trigger, gating, burst_trigger, trigger_gating)
 
@@ -189,9 +202,3 @@ https://github.com/slsdetectorgroup/aare
 erik.frojdh@psi.ch \
 alice.mazzoleni@psi.ch \
 dhanya.thattil@psi.ch
-
-
-
-
-
-

@@ -10,6 +10,23 @@ import pickle
 from aare import ClusterFile
 from conftest import test_data_path
 
+
+def test_read_frame_returns_none_at_eof(tmp_path):
+    fname = tmp_path / "empty.clust"
+    fname.touch()
+
+    with ClusterFile(fname) as f:
+        assert f.read_frame() is None
+
+
+def test_read_frame_raises_for_malformed_file(tmp_path):
+    fname = tmp_path / "malformed.clust"
+    fname.write_bytes(b"\x00")
+
+    with ClusterFile(fname) as f, pytest.raises(RuntimeError):
+        f.read_frame()
+
+
 @pytest.mark.withdata
 def test_cluster_file(test_data_path): 
     """Test ClusterFile""" 

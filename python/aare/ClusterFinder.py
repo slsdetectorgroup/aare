@@ -58,19 +58,47 @@ def ClusterFileSink(clusterfindermt, cluster_file, dtype=np.int32):
 
 
 def ClusterFile(fname, cluster_size=(3,3), dtype=np.int32, chunk_size = 1000, mode = "r"):
-    """
-    Factory function to create a ClusterFile object. Provides a cleaner syntax for
-    the templated ClusterFile in C++.
+    """Create a reader or writer for a legacy binary cluster file.
+
+    Parameters
+    ----------
+    fname : path-like
+        Cluster file to open.
+    cluster_size : tuple[int, int], default=(3, 3)
+        Cluster dimensions stored in the file.
+    dtype : numpy dtype, default=numpy.int32
+        Data type of the cluster values stored in the file.
+    chunk_size : int, default=1000
+        Maximum number of selected clusters returned by each iterator step.
+    mode : {"r", "w", "a"}, default="r"
+        Open for reading, truncate and write, or append, respectively.
+
+    Returns
+    -------
+    ClusterFile
+        The compiled ClusterFile specialization matching ``cluster_size`` and
+        ``dtype``.
+
+    Notes
+    -----
+    The file format contains no cluster shape or data-type metadata. Supplying
+    values that do not match the file causes its bytes to be interpreted
+    incorrectly. Iterator chunks may combine frames, so their frame number is
+    not reliable per-cluster metadata.
+
+    Examples
+    --------
 
     .. code-block:: python
 
         from aare import ClusterFile
-        
-        with ClusterFile("clusters.clust", cluster_size=(3,3), dtype=np.int32) as cf:
-            # cf is now a ClusterFile_Cluster3x3i object but you don't need to know that.
+
+        with ClusterFile(
+            "clusters.clust", cluster_size=(3, 3), dtype=np.int32
+        ) as cf:
             for clusters in cf:
-                # Loop over clusters in chunks of 1000 
-                # The type of clusters will be a ClusterVector_Cluster3x3i in this case
+                # Process clusters in chunks of at most 1000.
+                ...
 
     """
 
