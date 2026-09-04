@@ -39,6 +39,9 @@ jobs:
       - name: Disable upload
         run: conda config --set anaconda_upload no
 
+      - name: Install conda-build in base
+        run: conda install -n base conda-build -y
+
       - name: Build
         run: conda-build conda-recipe 
 
