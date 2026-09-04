@@ -67,8 +67,16 @@ void define_Cluster(py::module &m, const std::string &typestr) {
                 return py::make_tuple(max_sum.sum,
                                       static_cast<int>(max_sum.index));
             },
-            R"(calculates sum of 2x2 subcluster with highest energy and index relative to cluster center 0: top_left, 1: top_right, 2: bottom_left, 3: bottom_right
-            )");
+            R"doc(
+            Return the highest-sum center-adjacent 2x2 subcluster.
+
+            Returns
+            -------
+            tuple
+                ``(sum, index)``, where index is 0 for top-left, 1 for
+                top-right, 2 for bottom-left, or 3 for bottom-right relative to
+                the cluster center.
+            )doc");
 }
 
 template <typename T, uint8_t ClusterSizeX, uint8_t ClusterSizeY,
@@ -80,7 +88,14 @@ void reduce_to_3x3(py::module &m) {
         [](const Cluster<T, ClusterSizeX, ClusterSizeY, CoordType> &cl) {
             return reduce_to_3x3(cl);
         },
-        py::return_value_policy::move, R"(Reduce cluster to 3x3 subcluster)");
+        py::return_value_policy::move, py::arg("cluster"), R"doc(
+        Return the 3x3 block around the cluster's center index.
+
+        Both input dimensions must be at least 3, and at least one must be
+        greater than 3.
+        The input coordinates are preserved and output data is stored in
+        row-major order.
+        )doc");
 }
 
 template <typename T, uint8_t ClusterSizeX, uint8_t ClusterSizeY,
@@ -92,16 +107,12 @@ void reduce_to_2x2(py::module &m) {
         [](const Cluster<T, ClusterSizeX, ClusterSizeY, CoordType> &cl) {
             return reduce_to_2x2(cl);
         },
-        py::return_value_policy::move,
-        R"(
-        Reduce cluster to 2x2 subcluster by taking the 2x2 subcluster with 
-        the highest photon energy.
+        py::return_value_policy::move, py::arg("cluster"), R"doc(
+        Return the highest-sum center-adjacent 2x2 block.
 
-        RETURN: 
-        
-        reduced cluster (cluster is filled in row major ordering starting at the top left. Thus for a max subcluster in the top left corner the photon hit is at the fourth position.)
-        
-        )");
+        The input coordinates are preserved and output data is stored in
+        row-major order.
+        )doc");
 }
 
 #pragma GCC diagnostic pop

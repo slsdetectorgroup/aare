@@ -24,8 +24,8 @@ TEST_CASE("Test sum of Cluster", "[cluster]") {
 using ClusterTypes = std::variant<Cluster<int, 2, 2>, Cluster<int, 3, 3>,
                                   Cluster<int, 5, 5>, Cluster<int, 2, 3>>;
 
-using ClusterTypesLargerThan2x2 =
-    std::variant<Cluster<int, 3, 3>, Cluster<int, 4, 4>, Cluster<int, 5, 5>>;
+using ReducibleTo3x3ClusterTypes =
+    std::variant<Cluster<int, 3, 4>, Cluster<int, 4, 3>, Cluster<int, 5, 5>>;
 
 TEST_CASE("Test reduce to 2x2 Cluster", "[cluster]") {
     auto [cluster, expected_reduced_cluster] = GENERATE(
@@ -68,14 +68,15 @@ TEST_CASE("Test reduce to 2x2 Cluster", "[cluster]") {
 
 TEST_CASE("Test reduce to 3x3 Cluster", "[cluster]") {
     auto [cluster, expected_reduced_cluster] = GENERATE(
-        std::make_tuple(ClusterTypesLargerThan2x2{Cluster<int, 3, 3>{
-                            5, 5, {1, 1, 1, 1, 3, 1, 1, 1, 1}}},
-                        Cluster<int, 3, 3>{5, 5, {1, 1, 1, 1, 3, 1, 1, 1, 1}}),
         std::make_tuple(
-            ClusterTypesLargerThan2x2{Cluster<int, 4, 4>{
-                5, 5, {2, 2, 1, 1, 2, 2, 1, 1, 1, 1, 3, 1, 1, 1, 1, 1}}},
-            Cluster<int, 3, 3>{5, 5, {2, 1, 1, 1, 3, 1, 1, 1, 1}}),
-        std::make_tuple(ClusterTypesLargerThan2x2{Cluster<int, 5, 5>{
+            ReducibleTo3x3ClusterTypes{Cluster<int, 3, 4>{
+                5, 5, {0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11}}},
+            Cluster<int, 3, 3>{5, 5, {3, 4, 5, 6, 7, 8, 9, 10, 11}}),
+        std::make_tuple(
+            ReducibleTo3x3ClusterTypes{Cluster<int, 4, 3>{
+                5, 5, {0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11}}},
+            Cluster<int, 3, 3>{5, 5, {1, 2, 3, 5, 6, 7, 9, 10, 11}}),
+        std::make_tuple(ReducibleTo3x3ClusterTypes{Cluster<int, 5, 5>{
                             5, 5, {1, 1, 1, 1, 1, 1, 2, 1, 1, 1, 2, 2, 3,
                                    1, 1, 1, 2, 1, 1, 1, 1, 1, 1, 1, 1}}},
                         Cluster<int, 3, 3>{5, 5, {2, 1, 1, 2, 3, 1, 2, 1, 1}}));

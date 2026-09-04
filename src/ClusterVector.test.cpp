@@ -22,27 +22,79 @@ TEST_CASE("After pushing back one element the ClusterVector is not empty") {
     REQUIRE(!cv.empty());
 }
 
-TEST_CASE("ClusterVector move constructor preserves contents") {
-    ClusterVector<C1> source(4, 42);
+TEST_CASE("Filtering a ClusterVector selects the masked elements") {
+    ClusterVector<C1> source(8, 123);
     source.push_back(C1{1, 2, {3, 4, 5, 6}});
+    source.push_back(C1{7, 8, {9, 10, 11, 12}});
+    source.push_back(C1{13, 14, {15, 16, 17, 18}});
+    source.push_back(C1{19, 20, {21, 22, 23, 24}});
 
-    ClusterVector<C1> moved(std::move(source));
+    SECTION("Some elements are selected") {
+        std::array<bool, 4> mask{true, false, false, true};
 
-    REQUIRE(moved.size() == 1);
-    CHECK(moved.frame_number() == 42);
-    CHECK(moved[0].data[3] == 6);
+        auto filtered = source(aare::NDView<bool, 1>{mask.data(), {4}});
+
+        CHECK(filtered.size() == 2);
+        CHECK(filtered.frame_number() == 123);
+        CHECK(filtered[0].x == 1);
+        CHECK(filtered[1].x == 19);
+    }
+
+    SECTION("No elements are selected") {
+        std::array<bool, 4> mask{false, false, false, false};
+
+        auto filtered = source(aare::NDView<bool, 1>{mask.data(), {4}});
+
+        CHECK(filtered.empty());
+        CHECK(filtered.frame_number() == 123);
+    }
+
+    SECTION("An empty vector accepts a default empty mask") {
+        ClusterVector<C1> empty_source(0, -123);
+
+        auto filtered = empty_source(aare::NDView<bool, 1>{});
+
+        CHECK(filtered.empty());
+        CHECK(filtered.frame_number() == -123);
+    }
 }
 
-TEST_CASE("ClusterVector move assignment preserves contents") {
-    ClusterVector<C1> source(4, 42);
+TEST_CASE("Move constructing a ClusterVector transfers its storage") {
+    ClusterVector<C1> source(4, 123);
     source.push_back(C1{1, 2, {3, 4, 5, 6}});
-    ClusterVector<C1> moved(1);
+    source.push_back(C1{7, 8, {9, 10, 11, 12}});
 
-    moved = std::move(source);
+    const auto *source_data = source.data();
+    const auto source_capacity = source.capacity();
 
-    REQUIRE(moved.size() == 1);
-    CHECK(moved.frame_number() == 42);
-    CHECK(moved[0].data[3] == 6);
+    ClusterVector<C1> destination(std::move(source));
+
+    CHECK(destination.data() == source_data);
+    CHECK(destination.capacity() == source_capacity);
+    CHECK(destination.size() == 2);
+    CHECK(destination.frame_number() == 123);
+    CHECK(destination[0].x == 1);
+    CHECK(destination[1].x == 7);
+}
+
+TEST_CASE("Move assigning a ClusterVector transfers its storage") {
+    ClusterVector<C1> source(4, 123);
+    source.push_back(C1{1, 2, {3, 4, 5, 6}});
+    source.push_back(C1{7, 8, {9, 10, 11, 12}});
+
+    const auto *source_data = source.data();
+    const auto source_capacity = source.capacity();
+
+    ClusterVector<C1> destination(2, 456);
+    destination.push_back(C1{13, 14, {15, 16, 17, 18}});
+    destination = std::move(source);
+
+    CHECK(destination.data() == source_data);
+    CHECK(destination.capacity() == source_capacity);
+    CHECK(destination.size() == 2);
+    CHECK(destination.frame_number() == 123);
+    CHECK(destination[0].x == 1);
+    CHECK(destination[1].x == 7);
 }
 
 TEST_CASE("item_size return the size of the cluster stored") {
@@ -254,6 +306,28 @@ TEST_CASE("Concatenate two cluster vectors where we need to allocate") {
     REQUIRE(ptr[2].y == 12);
     REQUIRE(ptr[3].x == 16);
     REQUIRE(ptr[3].y == 17);
+}
+
+TEST_CASE("Reducing a ClusterVector preserves its frame number") {
+    SECTION("Reduce to 2x2") {
+        ClusterVector<Cluster<int32_t, 3, 3>> source(1, -135);
+        source.push_back(Cluster<int32_t, 3, 3>{});
+
+        auto reduced = aare::reduce_to_2x2(source);
+
+        CHECK(reduced.size() == source.size());
+        CHECK(reduced.frame_number() == source.frame_number());
+    }
+
+    SECTION("Reduce to 3x3") {
+        ClusterVector<Cluster<int32_t, 5, 5>> source(1, -246);
+        source.push_back(Cluster<int32_t, 5, 5>{});
+
+        auto reduced = aare::reduce_to_3x3(source);
+
+        CHECK(reduced.size() == source.size());
+        CHECK(reduced.frame_number() == source.frame_number());
+    }
 }
 
 struct ClusterTestData {

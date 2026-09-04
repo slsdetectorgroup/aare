@@ -52,9 +52,9 @@ struct Cluster {
 
     // TODO: handle 1 dimensional clusters
     /**
-     * @brief sum of 2x2 subcluster with highest energy
-     * @return photon energy of subcluster, 2x2 subcluster index relative to
-     * cluster center
+     * @brief Find the highest-sum center-adjacent 2x2 subcluster.
+     * @return Sum and corner index of the selected 2x2 subcluster relative to
+     * the cluster center
      */
     Sum_index_pair<T, corner> max_sum_2x2() const {
 
@@ -117,13 +117,10 @@ struct Cluster {
 };
 
 /**
- * @brief Reduce a cluster to a 2x2 cluster by selecting the 2x2 block with the
- * highest sum.
+ * @brief Reduce a cluster to its highest-sum center-adjacent 2x2 block.
  * @param c Cluster to reduce
- * @return reduced cluster
+ * @return Reduced cluster with the input coordinates
  * @note The cluster is filled using row major ordering starting at the top-left
- * (thus for a max subcluster in the top left cornern the photon hit is at
- * the fourth position)
  */
 template <typename T, uint8_t ClusterSizeX, uint8_t ClusterSizeY,
           typename CoordType = uint16_t>
@@ -194,17 +191,21 @@ Cluster<T, 2, 2, uint16_t> reduce_to_2x2(const Cluster<T, 3, 3, uint16_t> &c) {
 }
 
 /**
- * @brief Reduce a cluster to a 3x3 cluster
+ * @brief Reduce a cluster to the 3x3 block around its center index.
  * @param c Cluster to reduce
- * @return reduced cluster
+ * @pre ClusterSizeX and ClusterSizeY must both be at least 3, and at least one
+ * must be greater than 3.
+ * @return Reduced cluster with the input coordinates are preserved.
  */
 template <typename T, uint8_t ClusterSizeX, uint8_t ClusterSizeY,
           typename CoordType = int16_t>
 Cluster<T, 3, 3, CoordType>
 reduce_to_3x3(const Cluster<T, ClusterSizeX, ClusterSizeY, CoordType> &c) {
 
-    static_assert(ClusterSizeX >= 3 && ClusterSizeY >= 3,
-                  "Cluster sizes must be at least 3x3 for reduction to 3x3");
+    static_assert(ClusterSizeX >= 3 && ClusterSizeY >= 3 &&
+                      (ClusterSizeX > 3 || ClusterSizeY > 3),
+                  "Cluster sizes must both be at least 3, and at least one "
+                  "must be greater than 3 for reduction to 3x3");
 
     Cluster<T, 3, 3, CoordType> result{};
 
