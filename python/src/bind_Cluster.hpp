@@ -91,7 +91,8 @@ void reduce_to_3x3(py::module &m) {
         py::return_value_policy::move, py::arg("cluster"), R"doc(
         Return the 3x3 block around the cluster's center index.
 
-        The input cluster dimensions must both be odd.
+        Both input dimensions must be at least 3, and at least one must be
+        greater than 3.
         The input coordinates are preserved and output data is stored in
         row-major order.
         )doc");

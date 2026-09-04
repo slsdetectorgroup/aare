@@ -193,7 +193,8 @@ Cluster<T, 2, 2, uint16_t> reduce_to_2x2(const Cluster<T, 3, 3, uint16_t> &c) {
 /**
  * @brief Reduce a cluster to the 3x3 block around its center index.
  * @param c Cluster to reduce
- * @pre ClusterSizeX and ClusterSizeY must both be odd.
+ * @pre ClusterSizeX and ClusterSizeY must both be at least 3, and at least one
+ * must be greater than 3.
  * @return Reduced cluster with the input coordinates are preserved.
  */
 template <typename T, uint8_t ClusterSizeX, uint8_t ClusterSizeY,
@@ -201,10 +202,10 @@ template <typename T, uint8_t ClusterSizeX, uint8_t ClusterSizeY,
 Cluster<T, 3, 3, CoordType>
 reduce_to_3x3(const Cluster<T, ClusterSizeX, ClusterSizeY, CoordType> &c) {
 
-    static_assert(ClusterSizeX >= 3 && ClusterSizeY >= 3,
-                  "Cluster sizes must be at least 3x3 for reduction to 3x3");
-    static_assert(ClusterSizeX % 2 == 1 && ClusterSizeY % 2 == 1,
-                  "Cluster sizes must be odd for reduction to 3x3");
+    static_assert(ClusterSizeX >= 3 && ClusterSizeY >= 3 &&
+                      (ClusterSizeX > 3 || ClusterSizeY > 3),
+                  "Cluster sizes must both be at least 3, and at least one "
+                  "must be greater than 3 for reduction to 3x3");
 
     Cluster<T, 3, 3, CoordType> result{};
 

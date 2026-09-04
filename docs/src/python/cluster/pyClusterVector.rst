@@ -75,7 +75,8 @@ API.
    Return a new vector containing the central 3x3 block of every input cluster.
    Cluster order, coordinates, frame number, and pixel dtype are preserved.
 
-   :param ClusterVector clustervector: Input clusters with odd dimensions of 3x3 or larger.
+   :param ClusterVector clustervector: Input clusters with both dimensions at
+      least 3 and at least one dimension greater than 3.
    :return: Reduced 3x3 clusters.
    :rtype: ClusterVector
 
