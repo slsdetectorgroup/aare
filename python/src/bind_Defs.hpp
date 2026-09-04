@@ -72,4 +72,11 @@ void define_defs_bindings(py::module &m) {
         .value("RIGHT", UDPPortPosition::RIGHT)
         .value("TOP", UDPPortPosition::TOP)
         .value("BOTTOM", UDPPortPosition::BOTTOM);
+
+    py::enum_<TimingMode>(m, "TimingMode")
+        .value("AUTO_TIMING", TimingMode::AUTO_TIMING)
+        .value("TRIGGER_EXPOSURE", TimingMode::TRIGGER_EXPOSURE)
+        .value("GATED", TimingMode::GATED)
+        .value("BURST_TRIGGER", TimingMode::BURST_TRIGGER)
+        .value("TRIGGER_GATED", TimingMode::TRIGGER_GATED);
 }
