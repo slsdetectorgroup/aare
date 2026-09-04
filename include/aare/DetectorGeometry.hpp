@@ -1,8 +1,7 @@
 // SPDX-License-Identifier: MPL-2.0
 #pragma once
+#include "aare/ROI.hpp"
 #include "aare/ROIGeometry.hpp"
-#include "aare/RawMasterFile.hpp" //ROI refactor away
-#include "aare/defs.hpp"
 #include <iostream>
 
 namespace aare {
@@ -97,6 +96,8 @@ class DetectorGeometry {
                      const xy udp_interfaces_per_module = xy{1, 1},
                      const bool quad = false);
 
+    DetectorGeometry() = default;
+
     ~DetectorGeometry() = default;
 
     /**
@@ -114,6 +115,8 @@ class DetectorGeometry {
     size_t modules_x() const;
     size_t modules_y() const;
 
+    xy udp_interfaces_per_module() const;
+
     const std::vector<ModuleGeometry> &get_module_geometries() const;
 
     const ModuleGeometry &get_module_geometries(const size_t index) const;
@@ -125,6 +128,7 @@ class DetectorGeometry {
     size_t m_modules_y{};
     size_t m_pixels_x{};
     size_t m_pixels_y{};
+    xy m_udp_interfaces_per_module{};
     static constexpr ModuleConfig cfg{0, 0};
 
     // TODO: maybe remove - should be a member in ROIGeometry - in particular
