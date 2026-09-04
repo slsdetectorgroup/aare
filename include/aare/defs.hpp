@@ -309,7 +309,14 @@ enum class UDPPortPosition : uint8_t {
     BOTTOM = 3
 };
 
-enum class TimingMode { Auto, Trigger };
+enum class TimingMode : uint8_t {
+    AUTO_TIMING = 0,
+    TRIGGER_EXPOSURE = 1,
+    GATED = 2,
+    BURST_TRIGGER = 3,
+    TRIGGER_GATED = 4
+};
+
 enum class FrameDiscardPolicy { NoDiscard, Discard, DiscardPartial };
 
 using DataTypeVariants = std::variant<uint16_t, uint32_t>;
