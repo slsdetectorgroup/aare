@@ -40,6 +40,7 @@
 - ``RawMasterFile::geometry()`` is deprecetad and returns full detector geometry information including module geometry. Use 
 ``RawMasterFile::module_layout()`` to get num_modules in x an y 
 - ``RawMasterFile::rois()`` always returns a list of rois (no optional). Per default it returns a list of one ROI element spawing the entire detector 
+- ``TimingMode::Auto`` changed to ``TimingMode::AUTO_TIMING``, ``TimingMode::Trigger`` changed to ``TimingMode::TRIGGER_EXPOSURE``
 
 ### Bugfixes:
 - Fixed ``ClusterVector`` move operations to transfer storage instead of
@@ -49,6 +50,7 @@
 - Preserve signed ``ClusterVector`` frame numbers when filtering or reducing
   cluster dimensions.
 - Fixed broken reading of old (pre reordering) Moench03
+- Supports reading all timing modes supported in slsDetectorPackage (auto, trigger, gating, burst_trigger, trigger_gating)
 
 ## 2026.7.2
 

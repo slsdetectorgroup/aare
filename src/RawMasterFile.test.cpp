@@ -80,7 +80,7 @@ TEST_CASE("Parse a master file in .json format", "[.with-data]") {
     // "Detector Type": "Jungfrau",
     REQUIRE(f.detector_type() == DetectorType::Jungfrau);
     // "Timing Mode": "auto",
-    REQUIRE(f.timing_mode() == TimingMode::Auto);
+    REQUIRE(f.timing_mode() == TimingMode::AUTO_TIMING);
 
     // "Geometry": {
     //     "x": 1,
@@ -179,7 +179,7 @@ TEST_CASE("Parse a master file in .raw format", "[.with-data]") {
     // Detector Type              : ChipTestBoard
     REQUIRE(f.detector_type() == DetectorType::ChipTestBoard);
     // Timing Mode                : auto
-    REQUIRE(f.timing_mode() == TimingMode::Auto);
+    REQUIRE(f.timing_mode() == TimingMode::AUTO_TIMING);
     // Detector Layout            : [1, 1]
     REQUIRE(f.detector_layout().col == 1);
     REQUIRE(f.detector_layout().row == 1);
@@ -245,7 +245,7 @@ TEST_CASE("Parse a master file in new .json format", "[.with-data]") {
 
     REQUIRE(f.detector_type() == DetectorType::Mythen3);
     // Timing Mode                : auto
-    REQUIRE(f.timing_mode() == TimingMode::Auto);
+    REQUIRE(f.timing_mode() == TimingMode::AUTO_TIMING);
     // Detector Layout            : [2, 1]
     REQUIRE(f.detector_layout().col == 2);
     REQUIRE(f.detector_layout().row == 1);
@@ -278,7 +278,7 @@ TEST_CASE("Read eiger master file", "[.with-data]") {
     //     "Detector Type": "Eiger",
     REQUIRE(f.detector_type() == DetectorType::Eiger);
     //     "Timing Mode": "auto",
-    REQUIRE(f.timing_mode() == TimingMode::Auto);
+    REQUIRE(f.timing_mode() == TimingMode::AUTO_TIMING);
     //     "Geometry": {
     //         "x": 2,
     //         "y": 2
@@ -398,7 +398,7 @@ TEST_CASE("Parse EIGER 7.2 master from string stream") {
 
     REQUIRE(f.version() == "7.2");
     REQUIRE(f.detector_type() == DetectorType::Eiger);
-    REQUIRE(f.timing_mode() == TimingMode::Auto);
+    REQUIRE(f.timing_mode() == TimingMode::AUTO_TIMING);
     REQUIRE(f.detector_layout().col == 2);
     REQUIRE(f.detector_layout().row == 2);
 
@@ -475,7 +475,7 @@ TEST_CASE("Parse JUNGFRAU 7.2 master from string stream") {
 
     REQUIRE(f.version() == "7.2");
     REQUIRE(f.detector_type() == DetectorType::Jungfrau);
-    REQUIRE(f.timing_mode() == TimingMode::Auto);
+    REQUIRE(f.timing_mode() == TimingMode::AUTO_TIMING);
     REQUIRE(f.detector_layout().col == 1);
     REQUIRE(f.detector_layout().row == 2);
     REQUIRE(f.n_modules() == 2);
@@ -558,7 +558,7 @@ TEST_CASE(
 
     REQUIRE(f.version() == "7.2");
     REQUIRE(f.detector_type() == DetectorType::ChipTestBoard);
-    REQUIRE(f.timing_mode() == TimingMode::Auto);
+    REQUIRE(f.timing_mode() == TimingMode::AUTO_TIMING);
     REQUIRE(f.detector_layout() == xy{1, 1});
     REQUIRE(f.image_size_in_bytes() == 192000);
     REQUIRE(f.pixels_x() == 32);
@@ -636,7 +636,7 @@ TEST_CASE(
 
     REQUIRE(f.version() == "7.2");
     REQUIRE(f.detector_type() == DetectorType::ChipTestBoard);
-    REQUIRE(f.timing_mode() == TimingMode::Auto);
+    REQUIRE(f.timing_mode() == TimingMode::AUTO_TIMING);
     REQUIRE(f.detector_layout() == xy{1, 1});
     REQUIRE(f.image_size_in_bytes() == 16000);
     REQUIRE(f.pixels_x() == 64);
@@ -708,7 +708,7 @@ TEST_CASE("Parse Moench 7.2 master (SW 7.0.3) from string stream") {
 
     REQUIRE(f.version() == "7.2");
     REQUIRE(f.detector_type() == DetectorType::Moench03_old);
-    REQUIRE(f.timing_mode() == TimingMode::Auto);
+    REQUIRE(f.timing_mode() == TimingMode::AUTO_TIMING);
     REQUIRE(f.detector_layout() == xy{1, 1});
     REQUIRE(f.image_size_in_bytes() == 320000);
     REQUIRE(f.pixels_x() == 400);
@@ -779,7 +779,7 @@ TEST_CASE("Parse Moench 7.2 master (SW 8.0.0) from string stream") {
 
     REQUIRE(f.version() == "7.2");
     REQUIRE(f.detector_type() == DetectorType::Moench03);
-    REQUIRE(f.timing_mode() == TimingMode::Auto);
+    REQUIRE(f.timing_mode() == TimingMode::AUTO_TIMING);
     REQUIRE(f.detector_layout() == xy{1, 1});
     REQUIRE(f.image_size_in_bytes() == 320000);
     REQUIRE(f.pixels_x() == 400);
@@ -861,7 +861,7 @@ TEST_CASE("Parse CTB 7.2 master (SW 8.0.0) from string stream") {
 
     REQUIRE(f.version() == "7.2");
     REQUIRE(f.detector_type() == DetectorType::ChipTestBoard);
-    REQUIRE(f.timing_mode() == TimingMode::Auto);
+    REQUIRE(f.timing_mode() == TimingMode::AUTO_TIMING);
     REQUIRE(f.detector_layout() == xy{1, 1});
     REQUIRE(f.image_size_in_bytes() == 192000);
     REQUIRE(f.pixels_x() == 32);
@@ -942,7 +942,7 @@ TEST_CASE(
 
     REQUIRE(f.version() == "7.2");
     REQUIRE(f.detector_type() == DetectorType::ChipTestBoard);
-    REQUIRE(f.timing_mode() == TimingMode::Auto);
+    REQUIRE(f.timing_mode() == TimingMode::AUTO_TIMING);
     REQUIRE(f.detector_layout() == xy{1, 1});
     REQUIRE(f.image_size_in_bytes() == 16000);
     REQUIRE(f.pixels_x() == 64);
@@ -1009,7 +1009,7 @@ TEST_CASE("Parse a CTB file from stream") {
 
     REQUIRE(f.version() == "8.0");
     REQUIRE(f.detector_type() == DetectorType::ChipTestBoard);
-    REQUIRE(f.timing_mode() == TimingMode::Auto);
+    REQUIRE(f.timing_mode() == TimingMode::AUTO_TIMING);
     REQUIRE(f.detector_layout().col == 1);
     REQUIRE(f.detector_layout().row == 1);
     REQUIRE(f.image_size_in_bytes() == 18432);
@@ -1099,7 +1099,7 @@ TEST_CASE("Parse v8.0 MYTHEN3 from stream") {
 
     REQUIRE(f.version() == "8.0");
     REQUIRE(f.detector_type() == DetectorType::Mythen3);
-    REQUIRE(f.timing_mode() == TimingMode::Auto);
+    REQUIRE(f.timing_mode() == TimingMode::AUTO_TIMING);
     REQUIRE(f.detector_layout().col == 2);
     REQUIRE(f.detector_layout().row == 1);
     REQUIRE(f.image_size_in_bytes() == 5120);
@@ -1184,7 +1184,7 @@ TEST_CASE("Parse a v7.1 Mythen3 from stream") {
 
     REQUIRE(f.version() == "7.1");
     REQUIRE(f.detector_type() == DetectorType::Mythen3);
-    REQUIRE(f.timing_mode() == TimingMode::Auto);
+    REQUIRE(f.timing_mode() == TimingMode::AUTO_TIMING);
     REQUIRE(f.detector_layout().col == 1);
     REQUIRE(f.detector_layout().row == 1);
     REQUIRE(f.image_size_in_bytes() == 15360);
@@ -1266,7 +1266,7 @@ TEST_CASE("Parse old Moench03 from stream") {
 
     REQUIRE(f.version() == "7.1");
     REQUIRE(f.detector_type() == DetectorType::Moench03_old);
-    REQUIRE(f.timing_mode() == TimingMode::Auto);
+    REQUIRE(f.timing_mode() == TimingMode::AUTO_TIMING);
     REQUIRE(f.detector_layout().col == 1);
     REQUIRE(f.detector_layout().row == 1);
     REQUIRE(f.image_size_in_bytes() == 320000);
@@ -1352,7 +1352,7 @@ TEST_CASE("Parse Eiger json v8.1 all ports active") {
 
     REQUIRE(f.version() == "8.1");
     REQUIRE(f.detector_type() == DetectorType::Eiger);
-    REQUIRE(f.timing_mode() == TimingMode::Auto);
+    REQUIRE(f.timing_mode() == TimingMode::AUTO_TIMING);
     REQUIRE(f.detector_layout() == xy{2, 2});
     REQUIRE(f.n_modules() == 4);
     REQUIRE(f.image_size_in_bytes() == 262144);
