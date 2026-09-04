@@ -18,6 +18,7 @@
 // Remapping algorithm
 // │
 // └── strixel_to_pixel_map()
+//        ├── full map check for small group ROI (all hardcoded)
 //        ├── full group exactly aligned (full map check)
 //        ├── user ROI larger than group (full map check)
 //        ├── user ROI smaller than group (full map check)
@@ -75,6 +76,13 @@ defs::GroupConfig asymmetric_test_group() {
     //         .routing = {defs::ModuloOrdering::Forward},
     //         .placement_on_sensor = {5, 13, 8, 16}};
     return {{3, 25.0}, {defs::ModuloOrdering::Forward}, {5, 13, 8, 16}};
+}
+
+defs::GroupConfig small_test_group() {
+    // return {.strixel = {.multiplicity = 3, .pitch_um = 25.0},
+    //         .routing = {defs::ModuloOrdering::Forward},
+    //         .placement_on_sensor = {10, 16, 10, 12}};
+    return {{3, 25.0}, {defs::ModuloOrdering::Forward}, {10, 15, 10, 11}};
 }
 
 } // namespace
@@ -148,6 +156,43 @@ TEST_CASE("update_pixel_group_placement: shift and rotation geometry",
  * strixel_to_pixel_map
  *
  ***************************************/
+
+// small test group explicit mapping test
+TEST_CASE("strixel_to_pixel_map: explicit mapping test with small ROI",
+          "[remap][strixel_to_pixel_map]") {
+    const auto group = small_test_group();
+    const auto sensor = test_sensor();
+    const auto placement = test_placement();
+
+    // User ROI is in module coordinates, aligns with sensor
+    const InclusiveROI user_roi{50, 99, 50, 99};
+
+    const auto result =
+        algo::strixel_to_pixel_map(group, sensor, placement, user_roi, {0, 0});
+
+    const InclusiveROI expected_roi{10, 15, 10, 11};
+
+    CHECK(result.effective_roi == expected_roi);
+    CHECK(result.map.shape(0) == 6);
+    CHECK(result.map.shape(1) == 2);
+
+    // Check every pixel explicitely
+    // First pixel row
+    CHECK(result.map(0, 0) == 510); // pixel (10, 10)
+    CHECK(result.map(1, 0) == 511); // pixel (10, 11)
+    CHECK(result.map(2, 0) == 512); // pixel (10, 12)
+    CHECK(result.map(0, 1) == 513); // pixel (10, 13)
+    CHECK(result.map(1, 1) == 514); // pixel (10, 14)
+    CHECK(result.map(2, 1) == 515); // pixel (10, 15)
+
+    // Second pixel row + user_roi.width()
+    CHECK(result.map(3, 0) == 560); // pixel (11, 10)
+    CHECK(result.map(4, 0) == 561); // pixel (11, 11)
+    CHECK(result.map(5, 0) == 562); // pixel (11, 12)
+    CHECK(result.map(3, 1) == 563); // pixel (11, 13)
+    CHECK(result.map(4, 1) == 564); // pixel (11, 14)
+    CHECK(result.map(5, 1) == 565); // pixel (11, 15)
+}
 
 // full group exactly aligned
 TEST_CASE("strixel_to_pixel_map: user ROI exactly aligned with group ROI",
