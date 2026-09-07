@@ -5,7 +5,7 @@
 #include "aare/ClusterVector.hpp"
 #include "aare/GainMap.hpp"
 #include "aare/NDArray.hpp"
-#include "aare/defs.hpp"
+#include "aare/ROI.hpp"
 #include "aare/logger.hpp"
 
 #include <filesystem>

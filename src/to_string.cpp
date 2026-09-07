@@ -35,9 +35,15 @@ template <> DetectorType string_to(const std::string &arg) {
 
 template <> TimingMode string_to(const std::string &arg) {
     if (arg == "auto")
-        return TimingMode::Auto;
+        return TimingMode::AUTO_TIMING;
     if (arg == "trigger")
-        return TimingMode::Trigger;
+        return TimingMode::TRIGGER_EXPOSURE;
+    if (arg == "gating")
+        return TimingMode::GATED;
+    if (arg == "burst_trigger")
+        return TimingMode::BURST_TRIGGER;
+    if (arg == "trigger_gating")
+        return TimingMode::TRIGGER_GATED;
     throw std::runtime_error("Could not decode timing mode from: \"" + arg +
                              "\"");
 }
@@ -233,6 +239,19 @@ template <> DACIndex string_to(const std::string &arg) {
     else
         throw std::invalid_argument("Could not decode DACIndex from: \"" + arg +
                                     "\"");
+}
+
+template <> UDPPortPosition string_to(const std::string &arg) {
+    if (arg == "left")
+        return UDPPortPosition::LEFT;
+    if (arg == "right")
+        return UDPPortPosition::RIGHT;
+    if (arg == "top")
+        return UDPPortPosition::TOP;
+    if (arg == "bottom")
+        return UDPPortPosition::BOTTOM;
+    throw std::runtime_error("Could not decode UDPPortPosition from: \"" + arg +
+                             "\"");
 }
 
 std::string remove_unit(std::string &str) {

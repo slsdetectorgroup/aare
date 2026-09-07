@@ -94,19 +94,6 @@ template <typename T> struct t_xy {
 };
 using xy = t_xy<uint32_t>;
 
-struct ROI {
-    ssize_t xmin{};
-    ssize_t xmax{};
-    ssize_t ymin{};
-    ssize_t ymax{};
-
-    ssize_t height() const { return ymax - ymin; }
-    ssize_t width() const { return xmax - xmin; }
-    bool contains(ssize_t x, ssize_t y) const {
-        return x >= xmin && x < xmax && y >= ymin && y < ymax;
-    }
-};
-
 /// @brief  Chip specifications for Matterhorn1
 struct Matterhorn10 {
     constexpr static size_t nRows = 256;
@@ -315,7 +302,21 @@ enum class corner : int {
     cBottomRight = 3
 };
 
-enum class TimingMode { Auto, Trigger };
+enum class UDPPortPosition : uint8_t {
+    LEFT = 0,
+    RIGHT = 1,
+    TOP = 2,
+    BOTTOM = 3
+};
+
+enum class TimingMode : uint8_t {
+    AUTO_TIMING = 0,
+    TRIGGER_EXPOSURE = 1,
+    GATED = 2,
+    BURST_TRIGGER = 3,
+    TRIGGER_GATED = 4
+};
+
 enum class FrameDiscardPolicy { NoDiscard, Discard, DiscardPartial };
 
 using DataTypeVariants = std::variant<uint16_t, uint32_t>;
