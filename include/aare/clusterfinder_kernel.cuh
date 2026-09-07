@@ -107,17 +107,17 @@ __global__ void find_clusters_in_single_frame(
     // both O(rms), so this difference has no catastrophic cancellation even in
     // float — unlike the raw E[X^2] - E[X]^2 form, where X ~ 4600 makes both
     // terms ~2e7. NOTE: Keep thresholds squared to avoid one sqrtf() per pixel.
-    DEVICE_PED_TYPE mean_px = d_pd_mean[global_tid];
-    DEVICE_PED_TYPE resid = mean_px - d_pd_off[global_tid]; // E[Y] ~ O(1)
-    DEVICE_PED_TYPE var_px =
+    const DEVICE_PED_TYPE mean_px = d_pd_mean[global_tid];
+    const DEVICE_PED_TYPE resid = mean_px - d_pd_off[global_tid]; // E[Y] ~ O(1)
+    const DEVICE_PED_TYPE var_px =
         d_pd_sum2[global_tid] / static_cast<DEVICE_PED_TYPE>(n_pd_samples) -
         resid * resid;
-    COMPUTE_TYPE rms_sq = static_cast<COMPUTE_TYPE>(
+    const COMPUTE_TYPE rms_sq = static_cast<COMPUTE_TYPE>(
         var_px > DEVICE_PED_TYPE{0} ? var_px : DEVICE_PED_TYPE{0});
-    COMPUTE_TYPE nSig_sq_rms_sq = m_nSigma * m_nSigma * rms_sq;
+    const COMPUTE_TYPE nSig_sq_rms_sq = m_nSigma * m_nSigma * rms_sq;
 
     // Pedestal-subtracted value of the center pixel (already in shmem)
-    COMPUTE_TYPE val_pixel = shmem[shmem_tid];
+    const COMPUTE_TYPE val_pixel = shmem[shmem_tid];
 
     // Negative pedestal early exit:
     //     val_pixel < -nSigma * rms
@@ -138,7 +138,11 @@ __global__ void find_clusters_in_single_frame(
     // (ir>=0, ic<=0) PEDESTAL_TYPE br = PEDESTAL_TYPE{0};   // bottom-right
     // (ir>=0, ic>=0)
 
-#pragma unroll
+    // Outer loop rolled on purpose: fully unrolling both loops lets the
+    // scheduler hoist all CSX*CSY shared loads, which at 9x9 costs ~96
+    // registers and caps occupancy at 2 blocks/SM. One unrolled row (9 loads
+    // in flight) is enough to cover shared-memory latency.
+#pragma unroll 1
     for (int ir = -row_radius; ir <= row_radius; ++ir) {
 #pragma unroll
         for (int ic = -col_radius; ic <= col_radius; ++ic) {
@@ -215,12 +219,12 @@ __global__ void find_clusters_in_single_frame(
         // running EMA and its float rounding never touch the ~1e10 magnitudes
         // the raw accumulators would reach. Reconstruct the full mean as
         // X0 + sum/n for the pedestal subtraction on the next frame.
-        DEVICE_PED_TYPE X0 = d_pd_off[global_tid];
-        DEVICE_PED_TYPE y =
+        const DEVICE_PED_TYPE X0 = d_pd_off[global_tid];
+        const DEVICE_PED_TYPE y =
             static_cast<DEVICE_PED_TYPE>(d_frame[global_tid]) - X0;
         DEVICE_PED_TYPE sum = d_pd_sum[global_tid];
         DEVICE_PED_TYPE sum2 = d_pd_sum2[global_tid];
-        DEVICE_PED_TYPE n = static_cast<DEVICE_PED_TYPE>(n_pd_samples);
+        const DEVICE_PED_TYPE n = static_cast<DEVICE_PED_TYPE>(n_pd_samples);
 
         sum += y - sum / n;
         sum2 += y * y - sum2 / n;
@@ -235,41 +239,34 @@ __global__ void find_clusters_in_single_frame(
     if (!is_photon) return; // Debugging
     */
 
-    // Delay building clusterData until we know this thread will write a photon.
-    // This avoids CSX*CSY conversions/rounds for the overwhelmingly common
-    // background pixels.
-    CT clusterData[CSX * CSY];
-    int idx = 0;
-
-#pragma unroll
-    for (int ir = -row_radius; ir <= row_radius; ++ir) {
-#pragma unroll
-        for (int ic = -col_radius; ic <= col_radius; ++ic) {
-            COMPUTE_TYPE val = shmem[shmem_tid + ir * TILE_W + ic];
-            if constexpr (std::is_integral_v<CT>)
-                clusterData[idx] = static_cast<CT>(lround(val));
-            else
-                clusterData[idx] = static_cast<CT>(val);
-            idx++;
-        }
-    }
-
-    // Write cluster to global output buffer using atomic index
-    // for coordination across all blocks
+    // Claim an output slot (atomic index coordinates across all blocks)
     uint32_t write_idx = atomicAdd(d_cluster_count, 1u);
 
     // Guard against overflowing the pre-allocated cluster buffer
     if (write_idx >= max_clusters)
         return;
 
-    ClusterType cluster{};
-    cluster.x = static_cast<decltype(cluster.x)>(col_global);
-    cluster.y = static_cast<decltype(cluster.y)>(row_global);
+    // Convert straight from shmem into the global cluster. No local
+    // CSX*CSY staging array: with the outer loop rolled it would be indexed
+    // at runtime and land in local memory (328 B stack at 9x9).
+    ClusterType *out = d_clusters + write_idx;
+    out->x = static_cast<decltype(out->x)>(col_global);
+    out->y = static_cast<decltype(out->y)>(row_global);
+    CT *dst = reinterpret_cast<CT *>(&out->data);
+    int idx = 0;
 
-    memcpy(reinterpret_cast<CT *>(&cluster.data), clusterData,
-           sizeof(CT) * CSX * CSY);
-
-    d_clusters[write_idx] = cluster;
+#pragma unroll 1
+    for (int ir = -row_radius; ir <= row_radius; ++ir) {
+#pragma unroll
+        for (int ic = -col_radius; ic <= col_radius; ++ic) {
+            COMPUTE_TYPE val = shmem[shmem_tid + ir * TILE_W + ic];
+            if constexpr (std::is_integral_v<CT>)
+                dst[idx] = static_cast<CT>(lround(val));
+            else
+                dst[idx] = static_cast<CT>(val);
+            idx++;
+        }
+    }
 }
 
 } // namespace aare::device
