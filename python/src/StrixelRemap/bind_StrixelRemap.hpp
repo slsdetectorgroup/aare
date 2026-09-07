@@ -5,8 +5,6 @@
 
 namespace py = pybind11;
 
-// TODO: How to import like aare import StrixelPixelRemap
-
 void define_PixelStrixelMapDefs(py::module &m) {
 
     py::enum_<aare::remap::defs::Rotation>(m, "Rotation")

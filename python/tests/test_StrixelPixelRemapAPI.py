@@ -102,6 +102,3 @@ def test_apply_remap():
 
     with pytest.raises(RuntimeError):
         strixelremap.apply_remap(data, order_map, output)
-
-
-# Documenation, Example
