@@ -66,7 +66,8 @@ void define_raw_master_file_bindings(py::module &m) {
 
         .def_property_readonly("total_frames_expected",
                                &RawMasterFile::total_frames_expected)
-        .def_property_readonly("geometry", &RawMasterFile::geometry)
+        .def_property_readonly("detector_layout",
+                               &RawMasterFile::detector_layout)
         .def_property_readonly("udp_interfaces_per_module",
                                &RawMasterFile::udp_interfaces_per_module)
         .def_property_readonly("analog_samples", &RawMasterFile::analog_samples,
@@ -107,6 +108,33 @@ void define_raw_master_file_bindings(py::module &m) {
                     return std::nullopt;
                 }
             })
+        .def_property_readonly("rois", &RawMasterFile::rois, R"(
+            Get the ROIs defined in the master file
+
+            Returns
+            ----------
+                List[ROI]
+                    List of ROIs (default complete ROI)
+            )")
+        .def_property_readonly("udp_port_types", &RawMasterFile::udp_port_types,
+                               R"(
+            Get the types of UDP ports
+
+            Returns
+            ----------
+                Optional[List[UDPPortPosition]]
+                    Optional vector of UDP port types as strings (only present for
+                    masterfile version >= 8.1)
+            )")
+        .def_property_readonly("disabled_udp_ports",
+                               &RawMasterFile::disabled_udp_ports, R"(
+            Get the indices of disabled UDP ports   
+
+            Returns
+            ----------
+                List[int]
+                    Vector of disabled UDP port indices relative to UDP port types (empty if none are disabled)
+            )")
         .def_property_readonly("period", [](RawMasterFile &self) {
             double seconds =
                 std::chrono::duration<double>(self.period()).count();
