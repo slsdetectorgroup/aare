@@ -21,13 +21,55 @@
 namespace py = pybind11;
 using namespace ::aare;
 
+template <typename Range> class ClusterFileIterator {
+    Range m_range;
+    std::optional<typename Range::Iterator> m_iterator;
+    bool m_done{false};
+
+  public:
+    explicit ClusterFileIterator(Range range) : m_range(std::move(range)) {}
+
+    typename Range::Iterator::value_type next() {
+        if (m_done) {
+            throw py::stop_iteration();
+        }
+        // Advance before returning the next result, never after yielding it.
+        if (m_iterator) {
+            ++*m_iterator;
+        } else {
+            m_iterator.emplace(m_range.begin());
+        }
+        if (*m_iterator == m_range.end()) {
+            m_done = true;
+            throw py::stop_iteration();
+        }
+        return std::move(**m_iterator);
+    }
+};
+
+template <typename Iterator>
+void define_cluster_file_iterator(py::module &m, const std::string &name) {
+    py::class_<Iterator>(m, name.c_str())
+        .def(
+            "__iter__", [](Iterator &self) -> Iterator & { return self; },
+            py::return_value_policy::reference_internal)
+        .def("__next__", &Iterator::next);
+}
+
 template <typename Type, uint8_t CoordSizeX, uint8_t CoordSizeY,
           typename CoordType = uint16_t>
 void define_ClusterFile(py::module &m, const std::string &typestr) {
 
     using ClusterType = Cluster<Type, CoordSizeX, CoordSizeY, CoordType>;
+    using File = ClusterFile<ClusterType>;
+    using FrameIterator = ClusterFileIterator<typename File::FrameRange>;
+    using ChunkIterator = ClusterFileIterator<typename File::ChunkRange>;
 
     auto class_name = fmt::format("ClusterFile_{}", typestr);
+    define_cluster_file_iterator<FrameIterator>(m,
+                                                class_name + "_FrameIterator");
+    define_cluster_file_iterator<ChunkIterator>(m,
+                                                class_name + "_ChunkIterator");
 
     py::class_<ClusterFile<ClusterType>>(
         m, class_name.c_str(),
@@ -39,6 +81,30 @@ void define_ClusterFile(py::module &m, const std::string &typestr) {
              py::arg("mode") = "r",
              "Open a cluster file. Mode must be 'r' to read, 'w' to truncate "
              "and write, or 'a' to append.")
+        .def(
+            "frames", [](File &self) { return FrameIterator(self.frames()); },
+            py::keep_alive<0, 1>(),
+            "Iterate over complete frames from the current position, including "
+            "empty and fully filtered frames with their stored frame numbers. "
+            "Results own their storage. The iterator keeps the file alive but "
+            "shares its cursor; use only one traversal at a time.")
+        .def(
+            "chunks", [](File &self) { return ChunkIterator(self.chunks()); },
+            py::keep_alive<0, 1>(),
+            "Iterate from the current position using the constructor's chunk "
+            "size, which must be positive. Results own their storage. The "
+            "iterator keeps the file alive but shares its cursor; use only "
+            "one traversal at a time.")
+        .def(
+            "chunks",
+            [](File &self, size_t chunk_size) {
+                return ChunkIterator(self.chunks(chunk_size));
+            },
+            py::arg("chunk_size"), py::keep_alive<0, 1>(),
+            "Iterate over chunks of up to chunk_size selected clusters. The "
+            "size must be positive and does not change the constructor's "
+            "default. Chunks may span frames; their frame numbers are not "
+            "per-cluster metadata. Only the final chunk can be short.")
         .def(
             "read_clusters",
             [](ClusterFile<ClusterType> &self, size_t n_clusters) {
@@ -107,14 +173,8 @@ void define_ClusterFile(py::module &m, const std::string &typestr) {
                  self.close();
              })
         .def("__iter__", [](ClusterFile<ClusterType> &self) { return &self; })
-        .def("__next__", [](ClusterFile<ClusterType> &self) {
-            auto v = new ClusterVector<ClusterType>(
-                self.read_clusters(self.chunk_size()));
-            if (v->size() == 0) {
-                throw py::stop_iteration();
-            }
-            return v;
-        });
+        .def("__next__",
+             [](File &self) { return ChunkIterator(self.chunks()).next(); });
 }
 
 #pragma GCC diagnostic pop

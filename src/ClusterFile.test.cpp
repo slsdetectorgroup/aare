@@ -5,11 +5,13 @@
 #include "aare/defs.hpp"
 #include <algorithm>
 #include <catch2/catch_test_macros.hpp>
+#include <catch2/generators/catch_generators.hpp>
 #include <chrono>
 #include <cstdint>
 #include <filesystem>
 #include <string>
 #include <system_error>
+#include <vector>
 
 using aare::Cluster;
 using aare::ClusterFile;
@@ -510,6 +512,367 @@ TEST_CASE("ClusterFile close is idempotent", "[ClusterFile]") {
     auto actual = reader.read_frame();
     REQUIRE(actual);
     check_frame(*actual, expected);
+}
+
+TEST_CASE("ClusterFile chunk reads reject incomplete frames", "[ClusterFile]") {
+    const auto use_roi = GENERATE(false, true);
+    CAPTURE(use_roi);
+    TemporaryClusterFile file;
+    auto expected = make_test_frame(42, 0.0);
+    {
+        ClusterFile<TestCluster> writer(file.path(), 1000, "w");
+        writer.write_frame(expected);
+    }
+
+    SECTION("incomplete frame number") {
+        std::filesystem::resize_file(file.path(), sizeof(int32_t) - 1);
+    }
+    SECTION("missing cluster count") {
+        std::filesystem::resize_file(file.path(), sizeof(int32_t));
+    }
+    SECTION("incomplete cluster count") {
+        std::filesystem::resize_file(file.path(),
+                                     sizeof(int32_t) + sizeof(uint32_t) - 1);
+    }
+    SECTION("missing cluster record") {
+        std::filesystem::resize_file(file.path(), sizeof(int32_t) +
+                                                      sizeof(uint32_t) +
+                                                      sizeof(TestCluster));
+    }
+    SECTION("incomplete cluster record") {
+        std::filesystem::resize_file(
+            file.path(), std::filesystem::file_size(file.path()) - 1);
+    }
+
+    ClusterFile<TestCluster> reader(file.path());
+    if (use_roi) {
+        reader.set_roi(aare::ROI{0, 10, 0, 10});
+    }
+    CHECK_THROWS_AS(reader.read_clusters(10), std::runtime_error);
+}
+
+TEST_CASE("ClusterFile chunk reads reject truncated leftover clusters",
+          "[ClusterFile]") {
+    const auto use_roi = GENERATE(false, true);
+    const auto requested = GENERATE(1, 10);
+    CAPTURE(use_roi, requested);
+    TemporaryClusterFile file;
+    auto expected = make_test_frame(42, 0.0);
+    {
+        ClusterFile<TestCluster> writer(file.path(), 1000, "w");
+        writer.write_frame(expected);
+    }
+    std::filesystem::resize_file(file.path(),
+                                 std::filesystem::file_size(file.path()) - 1);
+
+    ClusterFile<TestCluster> reader(file.path());
+    if (use_roi) {
+        reader.set_roi(aare::ROI{0, 10, 0, 10});
+    }
+    auto first = reader.read_clusters(1);
+    REQUIRE(first.size() == 1);
+    CHECK(first[0].data == expected[0].data);
+    CHECK_THROWS_AS(reader.read_clusters(requested), std::runtime_error);
+}
+
+TEST_CASE("ClusterFile chunk reads preserve valid frame traversal",
+          "[ClusterFile]") {
+    const auto use_roi = GENERATE(false, true);
+    CAPTURE(use_roi);
+    TemporaryClusterFile file;
+    auto first = make_test_frame(42, 0.0);
+    auto second = make_test_frame(43, 100.0);
+    ClusterVector<TestCluster> empty(0);
+    {
+        ClusterFile<TestCluster> writer(file.path(), 1000, "w");
+        writer.write_frame(empty);
+        writer.write_frame(first);
+        writer.write_frame(empty);
+        writer.write_frame(second);
+        writer.write_frame(empty);
+    }
+
+    ClusterFile<TestCluster> reader(file.path());
+    if (use_roi) {
+        reader.set_roi(aare::ROI{0, 10, 0, 10});
+    }
+    CHECK(reader.read_clusters(0).empty());
+    CHECK(reader.tell() == 0);
+
+    auto initial = reader.read_clusters(1);
+    REQUIRE(initial.size() == 1);
+    CHECK(initial[0].data == first[0].data);
+    const auto position = reader.tell();
+    CHECK(reader.read_clusters(0).empty());
+    CHECK(reader.tell() == position);
+    CHECK_THROWS_AS(reader.read_frame(), std::runtime_error);
+
+    auto crossing = reader.read_clusters(2);
+    REQUIRE(crossing.size() == 2);
+    CHECK(crossing[0].data == first[1].data);
+    CHECK(crossing[1].data == second[0].data);
+
+    auto final = reader.read_clusters(10);
+    REQUIRE(final.size() == 1);
+    CHECK(final[0].data == second[1].data);
+    CHECK(static_cast<uintmax_t>(reader.tell()) ==
+          std::filesystem::file_size(file.path()));
+    CHECK(reader.read_clusters(10).empty());
+    CHECK_FALSE(reader.read_frame());
+}
+
+TEST_CASE("ClusterFile frames preserve empty frames and reuse storage",
+          "[ClusterFile]") {
+    TemporaryClusterFile file;
+    auto first = make_test_frame(-42, 0.0);
+    auto second = make_test_frame(105, 100.0);
+    {
+        ClusterFile<TestCluster> writer(file.path(), 1000, "w");
+        writer.write_frame(ClusterVector<TestCluster>(0, -43));
+        writer.write_frame(first);
+        writer.write_frame(ClusterVector<TestCluster>(0, 0));
+        writer.write_frame(second);
+    }
+
+    ClusterFile<TestCluster> reader(file.path());
+    auto frames = reader.frames();
+    CHECK(reader.tell() == 0);
+    const TestCluster *storage = nullptr;
+    std::vector<int32_t> frame_numbers;
+    for (auto &frame : frames) {
+        frame_numbers.push_back(frame.frame_number());
+        if (frame.frame_number() == -42) {
+            check_frame(frame, first);
+            storage = frame.data();
+        } else if (frame.frame_number() == 105) {
+            check_frame(frame, second);
+            CHECK(frame.data() == storage);
+        } else {
+            CHECK(frame.empty());
+        }
+    }
+    CHECK(frame_numbers == std::vector<int32_t>{-43, -42, 0, 105});
+    CHECK(frames.begin() == frames.end());
+}
+
+TEST_CASE("ClusterFile chunks preserve cluster order across frame boundaries",
+          "[ClusterFile]") {
+    const auto chunk_size = GENERATE(1, 2, 3, 10);
+    TemporaryClusterFile file;
+    auto first = make_test_frame(42, 0.0);
+    auto second = make_test_frame(43, 100.0);
+    {
+        ClusterFile<TestCluster> writer(file.path(), 1000, "w");
+        writer.write_frame(ClusterVector<TestCluster>(0));
+        writer.write_frame(first);
+        writer.write_frame(ClusterVector<TestCluster>(0));
+        writer.write_frame(second);
+        writer.write_frame(ClusterVector<TestCluster>(0));
+    }
+
+    ClusterFile<TestCluster> reader(file.path(), chunk_size);
+    auto chunks = reader.chunks();
+    auto requested = static_cast<size_t>(chunk_size);
+    SECTION("constructor size") {}
+    SECTION("explicit size overrides the constructor") {
+        chunks = reader.chunks(3);
+        requested = 3;
+        CHECK(reader.chunk_size() == static_cast<size_t>(chunk_size));
+    }
+    CHECK(reader.tell() == 0);
+    size_t count = 0;
+    for (auto &chunk : chunks) {
+        REQUIRE(chunk.size() == std::min(requested, 4 - count));
+        for (const auto &cluster : chunk) {
+            REQUIRE(count < 4);
+            const auto &expected = count < 2 ? first[count] : second[count - 2];
+            CHECK(cluster.x == expected.x);
+            CHECK(cluster.y == expected.y);
+            CHECK(cluster.data == expected.data);
+            ++count;
+        }
+    }
+    CHECK(count == 4);
+    CHECK(chunks.begin() == chunks.end());
+}
+
+TEST_CASE("ClusterFile iterator results can be moved out without copying",
+          "[ClusterFile]") {
+    TemporaryClusterFile file;
+    auto first = make_test_frame(42, 0.0);
+    auto second = make_test_frame(43, 100.0);
+    {
+        ClusterFile<TestCluster> writer(file.path(), 1000, "w");
+        writer.write_frame(first);
+        writer.write_frame(second);
+    }
+    ClusterFile<TestCluster> reader(file.path(), 2);
+    auto check_moves = [&](auto range) {
+        auto it = range.begin();
+        REQUIRE(it != range.end());
+        CHECK(range.end() != it);
+        const auto storage = it->data();
+        auto retained = std::move(*it);
+        CHECK(retained.data() == storage);
+        ++it;
+        REQUIRE(it != range.end());
+        check_frame(*it, second);
+        check_frame(retained, first);
+        it++;
+        CHECK(it == range.end());
+        CHECK(range.end() == it);
+        ++it;
+        CHECK(it == range.end());
+        reader.close();
+        check_frame(retained, first);
+    };
+    SECTION("frames") { check_moves(reader.frames()); }
+    SECTION("chunks") { check_moves(reader.chunks()); }
+}
+
+TEST_CASE("ClusterFile iteration preserves filtering and gain correction",
+          "[ClusterFile]") {
+    const auto use_roi = GENERATE(false, true);
+    const auto use_noise = GENERATE(false, true);
+    TemporaryClusterFile file;
+    {
+        ClusterFile<TestCluster> writer(file.path(), 1000, "w");
+        writer.write_frame(make_test_frame(42, 0.0));
+        writer.write_frame(make_test_frame(43, 100.0));
+    }
+    ClusterFile<TestCluster> reader(file.path(), 3);
+    ClusterFile<TestCluster> reference(file.path());
+    aare::NDArray<double, 2> gain({12, 12}, 2.0);
+    aare::NDArray<int32_t, 2> noise({12, 12}, 5);
+    for (auto *file_reader : {&reader, &reference}) {
+        file_reader->set_gain_map(gain.view());
+        if (use_roi) {
+            file_reader->set_roi(aare::ROI{0, 6, 0, 12});
+        }
+        if (use_noise) {
+            file_reader->set_noise_map(noise.view());
+        }
+    }
+    SECTION("frames include fully rejected frames") {
+        size_t count = 0;
+        for (auto &frame : reader.frames()) {
+            auto expected = reference.read_frame();
+            REQUIRE(expected);
+            check_frame(frame, *expected);
+            ++count;
+        }
+        CHECK(count == 2);
+        CHECK_FALSE(reference.read_frame());
+    }
+    SECTION("chunks count selected clusters") {
+        for (auto &chunk : reader.chunks()) {
+            auto expected = reference.read_clusters(3);
+            check_frame(chunk, expected);
+        }
+        CHECK(reference.read_clusters(3).empty());
+    }
+}
+
+TEST_CASE("ClusterFile iteration resumes after an early exit",
+          "[ClusterFile]") {
+    TemporaryClusterFile file;
+    auto first = make_test_frame(42, 0.0);
+    auto second = make_test_frame(43, 100.0);
+    {
+        ClusterFile<TestCluster> writer(file.path(), 1000, "w");
+        writer.write_frame(first);
+        writer.write_frame(second);
+    }
+    ClusterFile<TestCluster> reader(file.path());
+    SECTION("breaking a frame loop does not consume the following frame") {
+        for (auto &frame : reader.frames()) {
+            check_frame(frame, first);
+            break;
+        }
+        auto next = reader.read_frame();
+        REQUIRE(next);
+        check_frame(*next, second);
+    }
+    SECTION("partial chunks must be completed before frame iteration") {
+        for (auto &chunk : reader.chunks(1)) {
+            REQUIRE(chunk.size() == 1);
+            CHECK(chunk[0].data == first[0].data);
+            break;
+        }
+        CHECK_THROWS_AS(reader.frames().begin(), std::runtime_error);
+        auto remainder = reader.read_clusters(1);
+        REQUIRE(remainder.size() == 1);
+        CHECK(remainder[0].data == first[1].data);
+        auto it = reader.frames().begin();
+        REQUIRE(it != reader.frames().end());
+        check_frame(*it, second);
+    }
+}
+
+TEST_CASE("ClusterFile iterators distinguish EOF from read errors",
+          "[ClusterFile]") {
+    TemporaryClusterFile file;
+    {
+        ClusterFile<TestCluster> writer(file.path(), 1000, "w");
+        writer.write_frame(make_test_frame(42, 0.0));
+    }
+    auto check_error = [&] {
+        ClusterFile<TestCluster> frame_reader(file.path());
+        ClusterFile<TestCluster> chunk_reader(file.path());
+        CHECK_THROWS_AS(frame_reader.frames().begin(), std::runtime_error);
+        CHECK_THROWS_AS(chunk_reader.chunks().begin(), std::runtime_error);
+    };
+    SECTION("empty file") {
+        std::filesystem::resize_file(file.path(), 0);
+        ClusterFile<TestCluster> reader(file.path());
+        CHECK(reader.frames().begin() == reader.frames().end());
+        CHECK(reader.chunks().begin() == reader.chunks().end());
+    }
+    SECTION("partial header") {
+        std::filesystem::resize_file(file.path(), 7);
+        check_error();
+    }
+    SECTION("partial record") {
+        std::filesystem::resize_file(
+            file.path(), std::filesystem::file_size(file.path()) - 1);
+        check_error();
+    }
+    SECTION("partial record encountered on increment") {
+        std::filesystem::resize_file(
+            file.path(), std::filesystem::file_size(file.path()) - 1);
+        ClusterFile<TestCluster> reader(file.path());
+        auto it = reader.chunks(1).begin();
+        REQUIRE(it != reader.chunks(1).end());
+        CHECK_THROWS_AS(++it, std::runtime_error);
+    }
+    SECTION("closed before first read") {
+        ClusterFile<TestCluster> reader(file.path());
+        auto frames = reader.frames();
+        auto chunks = reader.chunks();
+        reader.close();
+        CHECK_THROWS_AS(frames.begin(), std::runtime_error);
+        CHECK_THROWS_AS(chunks.begin(), std::runtime_error);
+    }
+    SECTION("closed during traversal") {
+        ClusterFile<TestCluster> reader(file.path());
+        auto it = reader.frames().begin();
+        reader.close();
+        CHECK_THROWS_AS(++it, std::runtime_error);
+    }
+    SECTION("write and append modes") {
+        const auto mode = GENERATE("w", "a");
+        ClusterFile<TestCluster> writer(file.path(), 1000, mode);
+        CHECK_THROWS_AS(writer.frames().begin(), std::runtime_error);
+        CHECK_THROWS_AS(writer.chunks().begin(), std::runtime_error);
+    }
+    SECTION("zero chunk sizes are rejected without reading") {
+        ClusterFile<TestCluster> reader(file.path(), 0);
+        CHECK_THROWS_AS(reader.chunks(), std::invalid_argument);
+        CHECK_THROWS_AS(reader.chunks(0), std::invalid_argument);
+        CHECK(reader.tell() == 0);
+        CHECK(reader.read_clusters(0).empty());
+        CHECK(reader.frames().begin() != reader.frames().end());
+    }
 }
 
 TEST_CASE("Read frame and modify cluster data", "[.with-data]") {

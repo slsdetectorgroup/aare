@@ -69,7 +69,8 @@ def ClusterFile(fname, cluster_size=(3,3), dtype=np.int32, chunk_size = 1000, mo
     dtype : numpy dtype, default=numpy.int32
         Data type of the cluster values stored in the file.
     chunk_size : int, default=1000
-        Maximum number of selected clusters returned by each iterator step.
+        Maximum number of selected clusters returned by ``chunks()`` and
+        default iteration. Must be positive when iterating over chunks.
     mode : {"r", "w", "a"}, default="r"
         Open for reading, truncate and write, or append, respectively.
 
@@ -83,8 +84,15 @@ def ClusterFile(fname, cluster_size=(3,3), dtype=np.int32, chunk_size = 1000, mo
     -----
     The file format contains no cluster shape or data-type metadata. Supplying
     values that do not match the file causes its bytes to be interpreted
-    incorrectly. Iterator chunks may combine frames, so their frame number is
-    not reliable per-cluster metadata.
+    incorrectly. Use ``frames()`` to iterate over complete frames, including
+    empty or fully filtered frames with their stored frame numbers. Use
+    ``chunks()`` or ``chunks(chunk_size)`` to iterate over selected clusters
+    in batches. Chunks may combine frames, so their frame number is not
+    reliable per-cluster metadata.
+
+    Iterators consume the current file position without rewinding; use one
+    traversal at a time. Each result owns its storage and remains valid after
+    advancing the iterator or closing the file.
 
     Examples
     --------
@@ -96,7 +104,7 @@ def ClusterFile(fname, cluster_size=(3,3), dtype=np.int32, chunk_size = 1000, mo
         with ClusterFile(
             "clusters.clust", cluster_size=(3, 3), dtype=np.int32
         ) as cf:
-            for clusters in cf:
+            for clusters in cf.chunks():
                 # Process clusters in chunks of at most 1000.
                 ...
 

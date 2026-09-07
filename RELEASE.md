@@ -4,6 +4,10 @@
 
 ### New Features:
 
+- Added ``ClusterFile.frames()`` and ``ClusterFile.chunks()`` in C++ and
+  Python for iteration from the current file position. Frames preserve empty
+  frames and frame numbers; chunks support an optional positive size override.
+  Python's default file iteration continues to yield chunks.
 - Added ``FastPedestal`` in C++ and Python for per-pixel running mean,
   population variance, and standard deviation. It supports exponentially
   weighted updates, initialization from files, direct subtraction from NumPy
@@ -52,6 +56,11 @@
 
 ### Bugfixes:
 
+- Fixed a leaked empty ``ClusterVector`` at the end of Python ``ClusterFile``
+  iteration. Chunk iteration now rejects a zero chunk size.
+- ``ClusterFile::read_clusters`` and Python iteration now report incomplete
+  frame headers and cluster records instead of treating truncated files as a
+  clean end of file, with or without ROI or noise filtering.
 - ``ClusterFile::write_frame`` now reports incomplete writes instead of
   silently continuing with a truncated file.
 - Gain-map application now checks the complete cluster footprint, preventing

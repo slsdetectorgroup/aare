@@ -12,6 +12,7 @@
 #include <filesystem>
 #include <fstream>
 #include <optional>
+#include <stdexcept>
 #include <utility>
 
 namespace aare {
@@ -46,9 +47,99 @@ class ClusterFile {
 
   public:
     /**
+     * @brief Single-pass range over frames or chunks of selected clusters.
+     *
+     * The range borrows the file and shares its current position with all
+     * other reads. Use only one traversal at a time. The file must outlive the
+     * range and its iterators and must not be moved while they are in use.
+     * Constructing a range does not read; begin() reads the first result.
+     * Calling begin() again starts at the file's then-current position.
+     */
+    template <bool ByFrame> class ReadRange {
+        ClusterFile *m_file;
+        size_t m_chunk_size;
+
+        friend class ClusterFile;
+        ReadRange(ClusterFile &file, size_t chunk_size)
+            : m_file(&file), m_chunk_size(chunk_size) {}
+
+      public:
+        struct Sentinel {};
+
+        /**
+         * @brief Move-only iterator for C++17 range-based loops.
+         *
+         * References to the current vector are valid until the iterator is
+         * advanced or destroyed. Move the vector out to retain its storage.
+         * Frame iteration reuses storage when the vector is not moved out.
+         * This is not a copyable STL input iterator.
+         */
+        class Iterator {
+            ClusterFile *m_file;
+            size_t m_chunk_size;
+            ClusterVector<ClusterType> m_clusters{0};
+
+            friend class ReadRange;
+            Iterator(ClusterFile &file, size_t chunk_size)
+                : m_file(&file), m_chunk_size(chunk_size) {
+                ++*this;
+            }
+
+          public:
+            using value_type = ClusterVector<ClusterType>;
+
+            Iterator(const Iterator &) = delete;
+            Iterator &operator=(const Iterator &) = delete;
+            Iterator(Iterator &&) noexcept = default;
+            Iterator &operator=(Iterator &&) noexcept = default;
+            ~Iterator() = default;
+
+            value_type &operator*() { return m_clusters; }
+            value_type *operator->() { return &m_clusters; }
+
+            Iterator &operator++() {
+                if (m_file) {
+                    if constexpr (ByFrame) {
+                        if (!m_file->read_frame(m_clusters)) {
+                            m_file = nullptr;
+                        }
+                    } else {
+                        m_clusters = m_file->read_clusters(m_chunk_size);
+                        if (m_clusters.empty()) {
+                            m_file = nullptr;
+                        }
+                    }
+                }
+                return *this;
+            }
+
+            void operator++(int) { ++*this; }
+
+            friend bool operator==(const Iterator &it, Sentinel /*end*/) {
+                return it.m_file == nullptr;
+            }
+            friend bool operator!=(const Iterator &it, Sentinel end) {
+                return !(it == end);
+            }
+            friend bool operator==(Sentinel end, const Iterator &it) {
+                return it == end;
+            }
+            friend bool operator!=(Sentinel end, const Iterator &it) {
+                return !(it == end);
+            }
+        };
+
+        Iterator begin() const { return Iterator(*m_file, m_chunk_size); }
+        Sentinel end() const { return {}; }
+    };
+
+    using FrameRange = ReadRange<true>;
+    using ChunkRange = ReadRange<false>;
+
+    /**
      * @brief Open a cluster file.
      * @param fname Path to the file.
-     * @param chunk_size Number of clusters returned by each iterator step.
+     * @param chunk_size Maximum number of selected clusters per chunk step.
      * @param mode File mode: "r" to read, "w" to truncate and write, or "a"
      * to append.
      * @throws std::runtime_error If the mode is unsupported or the file cannot
@@ -62,13 +153,44 @@ class ClusterFile {
     }
 
     /**
+     * @brief Iterate over complete frames from the current file position.
+     *
+     * Empty and fully filtered frames are yielded with their stored frame
+     * numbers. Reading stops only at a clean end of file. Advancing uses
+     * read_frame(), including its error for a prior partial-frame read.
+     */
+    FrameRange frames() & { return FrameRange(*this, 0); }
+    FrameRange frames() && = delete;
+
+    /** @brief Iterate using the chunk size supplied to the constructor. */
+    ChunkRange chunks() & { return chunks(m_chunk_size); }
+    ChunkRange chunks() && = delete;
+
+    /**
+     * @brief Iterate over chunks from the current file position.
+     * @param chunk_size Maximum number of selected clusters per step.
+     * @throws std::invalid_argument If chunk_size is zero.
+     * @note Chunks can span frames; their frame numbers are not per-cluster
+     * metadata. Advancing uses read_clusters() and propagates its errors.
+     * Only the final chunk can be short. Empty chunks are not yielded.
+     */
+    ChunkRange chunks(size_t chunk_size) & {
+        if (chunk_size == 0) {
+            throw std::invalid_argument("Chunk size must be greater than zero");
+        }
+        return ChunkRange(*this, chunk_size);
+    }
+    ChunkRange chunks(size_t) && = delete;
+
+    /**
      * @brief Read up to n_clusters without preserving frame boundaries.
      * @param n_clusters Maximum number of selected clusters to return.
-     * @return A cluster vector that may contain fewer clusters at end of file.
+     * @return A cluster vector that may contain fewer clusters at a clean end
+     * of file.
      * @note The returned vector may combine data from several frames, so its
      * frame number must not be used as per-cluster metadata.
-     * @throws std::runtime_error If the file is not open for reading or a
-     * filtered read encounters an incomplete cluster record.
+     * @throws std::runtime_error If the file is not open for reading, an I/O
+     * error occurs, or an incomplete frame header or cluster record is read.
      */
     ClusterVector<ClusterType> read_clusters(size_t n_clusters) {
         if (m_mode != "r") {
@@ -154,7 +276,7 @@ class ClusterFile {
     }
 
     /**
-     * @brief Return the number of clusters requested by each iterator step.
+     * @brief Return the default number of selected clusters per chunk step.
      */
     size_t chunk_size() const { return m_chunk_size; }
 
@@ -282,26 +404,31 @@ ClusterFile<ClusterType, Enable>::read_clusters_without_cut(size_t n_clusters) {
         } else {
             nn = nph;
         }
-        nph_read +=
+        const auto count =
             fread((buf + nph_read), clusters.item_size(), nn, m_fp.get());
+        if (count != nn) {
+            throw std::runtime_error(LOCATION + "Could not read clusters");
+        }
+        nph_read += count;
         m_num_left = nph - nn; // write back the number of photons left
     }
 
     if (nph_read < n_clusters) {
         // keep on reading frames and photons until reaching n_clusters
-        while (fread(&iframe, sizeof(iframe), 1, m_fp.get())) {
+        while (read_frame_header(iframe, nph)) {
             clusters.set_frame_number(iframe);
-            // read number of clusters in frame
-            if (fread(&nph, sizeof(nph), 1, m_fp.get())) {
-                if (nph > (n_clusters - nph_read))
-                    nn = n_clusters - nph_read;
-                else
-                    nn = nph;
+            if (nph > (n_clusters - nph_read))
+                nn = n_clusters - nph_read;
+            else
+                nn = nph;
 
-                nph_read += fread((buf + nph_read), clusters.item_size(), nn,
-                                  m_fp.get());
-                m_num_left = nph - nn;
+            const auto count =
+                fread((buf + nph_read), clusters.item_size(), nn, m_fp.get());
+            if (count != nn) {
+                throw std::runtime_error(LOCATION + "Could not read clusters");
             }
+            nph_read += count;
+            m_num_left = nph - nn;
             if (nph_read >= n_clusters)
                 break;
         }
@@ -341,16 +468,15 @@ ClusterFile<ClusterType, Enable>::read_clusters_with_cut(size_t n_clusters) {
         }
 
         int32_t frame_number = 0; // frame number needs to be 4 bytes!
-        while (fread(&frame_number, sizeof(frame_number), 1, m_fp.get())) {
-            if (fread(&m_num_left, sizeof(m_num_left), 1, m_fp.get())) {
-                clusters.set_frame_number(
-                    frame_number); // cluster vector will hold the last
-                                   // frame number
-                while (m_num_left && clusters.size() < n_clusters) {
-                    ClusterType c = read_one_cluster();
-                    if (is_selected(c)) {
-                        clusters.push_back(c);
-                    }
+        uint32_t n_clusters_in_frame = 0;
+        while (read_frame_header(frame_number, n_clusters_in_frame)) {
+            m_num_left = n_clusters_in_frame;
+            clusters.set_frame_number(
+                frame_number); // cluster vector will hold the last frame number
+            while (m_num_left && clusters.size() < n_clusters) {
+                ClusterType c = read_one_cluster();
+                if (is_selected(c)) {
+                    clusters.push_back(c);
                 }
             }
 
