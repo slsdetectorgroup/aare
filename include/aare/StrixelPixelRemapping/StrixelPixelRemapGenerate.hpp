@@ -1,7 +1,7 @@
 #pragma once
 
-#include "aare/StrixelPixelRemapAlgorithm.hpp"
-#include "aare/StrixelPixelRemapConfig.hpp"
+#include "aare/StrixelPixelRemapping/StrixelPixelRemapAlgorithm.hpp"
+#include "aare/StrixelPixelRemapping/StrixelPixelRemapConfig.hpp"
 
 namespace aare::remap::generate {
 

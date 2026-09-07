@@ -1,7 +1,7 @@
 #pragma once
 
-#include "aare/InclusiveROI.hpp"
 #include "aare/NDArray.hpp"
+#include "aare/StrixelPixelRemapping/InclusiveROI.hpp"
 
 #include <vector>
 

@@ -1,4 +1,4 @@
-#include "aare/StrixelPixelRemapAlgorithm.hpp"
+#include "aare/StrixelPixelRemapping/StrixelPixelRemapAlgorithm.hpp"
 #include <aare/logger.hpp>
 
 #include <algorithm>
