@@ -555,7 +555,8 @@ class ClusterFinderCUDAGraph {
             cudaKernelNodeParams kp = {};
             // NOLINTNEXTLINE(cppcoreguidelines-pro-type-reinterpret-cast)
             kp.func = reinterpret_cast<void *>(
-                device::find_clusters_in_single_frame<ClusterType, FRAME_TYPE>);
+                device::find_clusters_in_single_frame<ClusterType, FRAME_TYPE,
+                                                      BLOCK_X, BLOCK_Y>);
             kp.gridDim = grid;
             kp.blockDim = block;
             kp.sharedMemBytes = static_cast<unsigned int>(shmem_bytes);

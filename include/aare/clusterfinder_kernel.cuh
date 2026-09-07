@@ -14,8 +14,10 @@ using COMPUTE_TYPE = float;
 /// Device pedestal storage and running variance update. See COMPUTE_TYPE.
 using DEVICE_PED_TYPE = float;
 
+/// BLOCK_X/BLOCK_Y must equal the launch block dims; they are template
+/// parameters so the shared-memory tile geometry is compile-time.
 template <typename ClusterType = Cluster<int32_t, 3, 3>,
-          typename FRAME_TYPE = uint16_t,
+          typename FRAME_TYPE = uint16_t, int BLOCK_X = 16, int BLOCK_Y = 16,
           typename = std::enable_if_t<no_2x2_cluster<ClusterType>::value>>
 __global__ void find_clusters_in_single_frame(
     const FRAME_TYPE *__restrict__ d_frame,
@@ -43,138 +45,59 @@ __global__ void find_clusters_in_single_frame(
     // constexpr int pow2_c2 = ((CSY + 1) / 2) * ((CSX + 1) / 2);
     constexpr int pow2_c3 = CSX * CSY;
 
-    // Thread/pixel mapping. 32-bit signed: 64-bit integer math is emulated on
-    // the GPU, and the halo guards below rely on `row_global - i >= 0`.
-    auto col_global =
-        static_cast<int32_t>(threadIdx.x + blockDim.x * blockIdx.x);
-    auto row_global =
-        static_cast<int32_t>(threadIdx.y + blockDim.y * blockIdx.y);
-    int32_t global_tid = col_global + ncols * row_global;
-    auto local_tid = threadIdx.x + blockDim.x * threadIdx.y;
+    // Shared-memory tile: the block's pixels plus a halo of
+    // col_radius/row_radius on each side, laid out row-major.
+    constexpr int TILE_W = BLOCK_X + 2 * col_radius;
+    constexpr int TILE_H = BLOCK_Y + 2 * row_radius;
+    constexpr int TILE_SIZE = TILE_W * TILE_H;
+    constexpr int N_THREADS = BLOCK_X * BLOCK_Y;
 
-    // ====================
-    // Shared memory layout
-    // ====================
-    // The tile is laid out contiguously in a 1D configuration:
-    //    [0 ... tile_size-1] = pedestal-subtracted frame values
-    //
-    // Each tile has (blockDim.x + 2*col_radius) x (blockDim.y + 2*row_radius)
-    // elements, with a halo of col_radius/row_radius pixels on each side.
+    // Thread/pixel mapping. 32-bit signed: 64-bit integer math is emulated on
+    // the GPU, and the bounds checks below rely on negative coordinates.
+    const int col_global = static_cast<int>(threadIdx.x + BLOCK_X * blockIdx.x);
+    const int row_global = static_cast<int>(threadIdx.y + BLOCK_Y * blockIdx.y);
+    const int global_tid = col_global + ncols * row_global;
+    const int local_tid = static_cast<int>(threadIdx.x + BLOCK_X * threadIdx.y);
 
     // CUDA prefers raw bytes + aligned cast
     // Compile error happens when using: `extern __shared__ T sh[];`
     extern __shared__ __align__(sizeof(COMPUTE_TYPE)) unsigned char smem[];
     COMPUTE_TYPE *shmem = reinterpret_cast<COMPUTE_TYPE *>(smem);
 
-    // Stride includes halo on both sides
-    auto shmem_stride = static_cast<int>(blockDim.x) + 2 * col_radius;
-    auto tile_size =
-        shmem_stride * (static_cast<int>(blockDim.y) + 2 * row_radius);
-
-    // Offset so that thread (0,0) maps to shared-memory position
-    // (row_radius, col_radius) i.e. past the top-left halo.
-    auto shmem_tid =
-        (static_cast<int>(threadIdx.y) + row_radius) * shmem_stride +
+    // This thread's own pixel in the tile (past the top-left halo)
+    const int shmem_tid =
+        (static_cast<int>(threadIdx.y) + row_radius) * TILE_W +
         (static_cast<int>(threadIdx.x) + col_radius);
 
-    // Cooperative zero-fill
-    for (int idx = static_cast<int>(local_tid); idx < tile_size;
-         idx += static_cast<int>(blockDim.x * blockDim.y)) {
-        shmem[idx] = COMPUTE_TYPE{0};
-    }
-    __syncthreads();
+    // ==========================================================
+    // Cooperative tile load: interior, halo and OOB zeros in one pass
+    // ==========================================================
+    // Every thread strides over the flat tile, so the halo costs the same
+    // per thread as the interior instead of being serialised on edge lanes.
+    // Cells outside the frame are written as 0, which is what the stencil
+    // expects and removes the need for a separate zero-fill + barrier.
+    const int tile_row0 = static_cast<int>(BLOCK_Y * blockIdx.y) - row_radius;
+    const int tile_col0 = static_cast<int>(BLOCK_X * blockIdx.x) - col_radius;
 
-    // OOB flag
-    bool valid_pixel = col_global < ncols && row_global < nrows;
-
-    // ======================================================
-    // Load pedestal-subtracted frame data into shared memory (MIXED PRECISION)
-    // ======================================================
-
-    // Helper: read (frame - pedestal_mean) from global memory, or 0 if OOB.
-    // gr, gc are the global row/col of the pixel to load.
-    // Returns the pedestal-subtracted value.
-    auto load_pixel = [&] __device__(int32_t gr, int32_t gc) -> COMPUTE_TYPE {
-        int32_t gid = gc + ncols * gr;
-        return static_cast<COMPUTE_TYPE>(d_frame[gid]) - d_pd_mean[gid];
-    };
-
-    // A. Interior: every valid thread loads its own pixel
-    if (valid_pixel) {
-        shmem[shmem_tid] = load_pixel(row_global, col_global);
-    }
-
-    // B. Halo regions (Boundaries)
-    // B.1  Top rows of the halo
-    if (threadIdx.y == 0 && valid_pixel) {
-        for (int i = 1; i <= row_radius; ++i) {
-            if (row_global - i >= 0)
-                shmem[shmem_tid - i * shmem_stride] =
-                    load_pixel(row_global - i, col_global);
+#pragma unroll
+    for (int idx = local_tid; idx < TILE_SIZE; idx += N_THREADS) {
+        const int tr = idx / TILE_W; // constexpr divisor: mul + shift
+        const int tc = idx - tr * TILE_W;
+        const int gr = tile_row0 + tr;
+        const int gc = tile_col0 + tc;
+        COMPUTE_TYPE v = COMPUTE_TYPE{0};
+        if (gr >= 0 && gr < nrows && gc >= 0 && gc < ncols) {
+            const int gid = gc + ncols * gr;
+            v = static_cast<COMPUTE_TYPE>(d_frame[gid]) - d_pd_mean[gid];
         }
-        // Top-left corner rectangle
-        if (threadIdx.x == 0) {
-            for (int i = 1; i <= row_radius; ++i)
-                for (int j = 1; j <= col_radius; ++j)
-                    if (row_global - i >= 0 && col_global - j >= 0)
-                        shmem[shmem_tid - i * shmem_stride - j] =
-                            load_pixel(row_global - i, col_global - j);
-        }
-        // Top-right corner rectangle
-        if (threadIdx.x == blockDim.x - 1) {
-            for (int i = 1; i <= row_radius; ++i)
-                for (int j = 1; j <= col_radius; ++j)
-                    if (row_global - i >= 0 && col_global + j < ncols)
-                        shmem[shmem_tid - i * shmem_stride + j] =
-                            load_pixel(row_global - i, col_global + j);
-        }
+        shmem[idx] = v;
     }
-
-    // B.2  Left column of the halo
-    if (threadIdx.x == 0 && valid_pixel) {
-        for (int j = 1; j <= col_radius; ++j)
-            if (col_global - j >= 0)
-                shmem[shmem_tid - j] = load_pixel(row_global, col_global - j);
-    }
-
-    // B.3  Right column of the halo
-    if (threadIdx.x == blockDim.x - 1 && valid_pixel) {
-        for (int j = 1; j <= col_radius; ++j)
-            if (col_global + j < ncols)
-                shmem[shmem_tid + j] = load_pixel(row_global, col_global + j);
-    }
-
-    // B.4  Bottom rows of the halo
-    if (threadIdx.y == blockDim.y - 1 && valid_pixel) {
-        for (int i = 1; i <= row_radius; ++i) {
-            if (row_global + i < nrows)
-                shmem[shmem_tid + i * shmem_stride] =
-                    load_pixel(row_global + i, col_global);
-        }
-        // Bottom-left corner rectangle
-        if (threadIdx.x == 0) {
-            for (int i = 1; i <= row_radius; ++i)
-                for (int j = 1; j <= col_radius; ++j)
-                    if (row_global + i < nrows && col_global - j >= 0)
-                        shmem[shmem_tid + i * shmem_stride - j] =
-                            load_pixel(row_global + i, col_global - j);
-        }
-        // Bottom-right corner rectangle
-        if (threadIdx.x == blockDim.x - 1) {
-            for (int i = 1; i <= row_radius; ++i)
-                for (int j = 1; j <= col_radius; ++j)
-                    if (row_global + i < nrows && col_global + j < ncols)
-                        shmem[shmem_tid + i * shmem_stride + j] =
-                            load_pixel(row_global + i, col_global + j);
-        }
-    }
-
     __syncthreads();
 
     // =====================
     // Cluster-finding logic
     // =====================
-    if (!valid_pixel)
+    if (col_global >= ncols || row_global >= nrows)
         return;
 
     // Per-pixel variance from global pedestal arrays.
@@ -219,7 +142,7 @@ __global__ void find_clusters_in_single_frame(
     for (int ir = -row_radius; ir <= row_radius; ++ir) {
 #pragma unroll
         for (int ic = -col_radius; ic <= col_radius; ++ic) {
-            COMPUTE_TYPE val = shmem[shmem_tid + ir * shmem_stride + ic];
+            COMPUTE_TYPE val = shmem[shmem_tid + ir * TILE_W + ic];
 
             total += val;
             max_val = val > max_val ? val : max_val;
@@ -286,7 +209,7 @@ __global__ void find_clusters_in_single_frame(
     // pedestal via push_fast(). In this kernel, the GPU updates all pixels in a
     // frame simultaneously. So the updated pedestal will only be used starting
     // from the next frame. -> This avoids a/serialization and b/global mem I/O.
-    if (!is_photon && valid_pixel) {
+    if (!is_photon) {
         // Update the CENTERED moments of Y = X - X0 (X0 = frozen baseline).
         // Both sum (~n*E[Y]) and sum2 (~n*E[Y^2]) stay O(rms)-scale, so the
         // running EMA and its float rounding never touch the ~1e10 magnitudes
@@ -322,7 +245,7 @@ __global__ void find_clusters_in_single_frame(
     for (int ir = -row_radius; ir <= row_radius; ++ir) {
 #pragma unroll
         for (int ic = -col_radius; ic <= col_radius; ++ic) {
-            COMPUTE_TYPE val = shmem[shmem_tid + ir * shmem_stride + ic];
+            COMPUTE_TYPE val = shmem[shmem_tid + ir * TILE_W + ic];
             if constexpr (std::is_integral_v<CT>)
                 clusterData[idx] = static_cast<CT>(lround(val));
             else

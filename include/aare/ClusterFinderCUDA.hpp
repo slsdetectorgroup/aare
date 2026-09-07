@@ -718,7 +718,8 @@ class ClusterFinderCUDA {
             if (m_time_kernels)
                 CUDA_CHECK(cudaEventRecord(
                     m_kernel_start_pools[slot][frame_idx], sc.stream));
-            device::find_clusters_in_single_frame<ClusterType, FRAME_TYPE>
+            device::find_clusters_in_single_frame<ClusterType, FRAME_TYPE,
+                                                  BLOCK_X, BLOCK_Y>
                 <<<grid, block, shmem_bytes, sc.stream>>>(
                     sc.d_frame, sc.d_pd_mean, sc.d_pd_sum, sc.d_pd_sum2,
                     sc.d_pd_off, n_pd_samples, m_nSigma,
