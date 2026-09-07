@@ -102,7 +102,7 @@ strixel_to_pixel_maps(defs::SensorConfig<N> const &sensor_config,
  */
 template <typename T>
 void ApplyRemap(NDView<T, 2> input, NDView<ssize_t, 2> order_map,
-                NDArray<T, 2> &output) {
+                NDView<T, 2> output) {
 
     if (output.shape() != order_map.shape()) {
         throw std::invalid_argument(
@@ -125,7 +125,7 @@ void ApplyRemap(NDView<T, 2> input, NDView<ssize_t, 2> order_map,
             }
 
             // Corrupt map, must throw
-            if (static_cast<size_t>(flat_index) >= input.size()) {
+            if (flat_index >= input.size()) {
                 throw std::runtime_error(
                     "ApplyRemap: order map contains an invalid pixel index.");
             }

@@ -1,3 +1,4 @@
+#pragma once
 #include "aare/StrixelPixelRemapDefs.hpp"
 
 namespace aare::remap::config::jungfrau {

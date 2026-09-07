@@ -67,3 +67,5 @@ from ._aare import (
     PixelHistogram_u32,
     PixelHistogram_u64,
 )
+
+from . import strixelremap 

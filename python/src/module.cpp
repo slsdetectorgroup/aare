@@ -22,6 +22,10 @@
 #include "bind_RawFile.hpp"
 #include "bind_calibration.hpp"
 
+#include "StrixelRemap/bind_InclusiveROI.hpp"
+#include "StrixelRemap/bind_PredefinedVariables.hpp"
+#include "StrixelRemap/bind_StrixelRemap.hpp"
+
 // TODO! migrate the other names
 #include "ctb_raw_file.hpp"
 #include "file.hpp"
@@ -62,6 +66,10 @@ double, 'f' for float)
     define_ClusterFinderMT<T, N, M, U>(m, "Cluster" #N "x" #M #TYPE_CODE);     \
     define_ClusterFileSink<T, N, M, U>(m, "Cluster" #N "x" #M #TYPE_CODE);     \
     define_ClusterCollector<T, N, M, U>(m, "Cluster" #N "x" #M #TYPE_CODE);
+
+#define DEFINE_BINDINGS_SENSORCONFIG(N)                                        \
+    define_SensorConfig<N>(strixelremap);                                      \
+    define_RemapAlgorithmforSensorConfig<N>(strixelremap);
 
 PYBIND11_MODULE(_aare, m) {
     auto experimental = m.def_submodule(
@@ -182,4 +190,17 @@ PYBIND11_MODULE(_aare, m) {
     define_eta<double>(m, "d");
     define_eta<int>(m, "i");
     define_eta<int16_t>(m, "i16");
+
+    auto strixelremap =
+        m.def_submodule("strixelremap", "Strixel remapping utilities.");
+
+    define_InclusiveROI(strixelremap);
+    define_PixelStrixelMapDefs(strixelremap);
+    define_RemapAlgorithm(strixelremap);
+    DEFINE_BINDINGS_SENSORCONFIG(1);
+    DEFINE_BINDINGS_SENSORCONFIG(2);
+    DEFINE_BINDINGS_SENSORCONFIG(4);
+    DEFINE_BINDINGS_SENSORCONFIG(3);
+    define_predefinedConfigs(strixelremap);
+    define_predefinedStrixelPixelMaps(strixelremap);
 }

@@ -99,7 +99,7 @@ combine_group_maps(defs::StrixelGroupToPixelMap const &first,
     effective_roi.ymax =
         std::max(effective_roi.ymax, second.effective_roi.ymax);
 
-    return {.map = std::move(combined), .effective_roi = effective_roi};
+    return {std::move(combined), effective_roi};
 }
 } // namespace detail
 
