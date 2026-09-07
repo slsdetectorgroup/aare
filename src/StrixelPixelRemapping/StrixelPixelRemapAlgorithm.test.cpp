@@ -1,4 +1,4 @@
-#include "aare/StrixelPixelRemapAlgorithm.hpp"
+#include "aare/StrixelPixelRemapping/StrixelPixelRemapAlgorithm.hpp"
 #include <catch2/catch_test_macros.hpp>
 
 // Test structure:
@@ -81,7 +81,7 @@ defs::GroupConfig asymmetric_test_group() {
 defs::GroupConfig small_test_group() {
     // return {.strixel = {.multiplicity = 3, .pitch_um = 25.0},
     //         .routing = {defs::ModuloOrdering::Forward},
-    //         .placement_on_sensor = {10, 16, 10, 12}};
+    //         .placement_on_sensor = {10, 15, 10, 11}};
     return {{3, 25.0}, {defs::ModuloOrdering::Forward}, {10, 15, 10, 11}};
 }
 

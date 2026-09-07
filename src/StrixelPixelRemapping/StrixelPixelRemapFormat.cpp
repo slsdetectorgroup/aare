@@ -1,4 +1,4 @@
-#include "aare/StrixelPixelRemapFormat.hpp"
+#include "aare/StrixelPixelRemapping/StrixelPixelRemapFormat.hpp"
 
 #include <sstream>
 

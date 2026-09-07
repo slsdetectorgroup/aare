@@ -1,4 +1,4 @@
-#include "aare/InclusiveROI.hpp"
+#include "aare/StrixelPixelRemapping/InclusiveROI.hpp"
 #include <catch2/catch_test_macros.hpp>
 
 using namespace aare;
