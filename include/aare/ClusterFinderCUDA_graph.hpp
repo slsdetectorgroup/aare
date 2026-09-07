@@ -42,8 +42,8 @@ struct StreamContextGraph {
     device::DEVICE_PED_TYPE *karg_d_pd_off = nullptr;
     uint32_t karg_n_pd_samples = 0;
     device::COMPUTE_TYPE karg_nSigma = 0.0f;
-    size_t karg_nrows = 0;
-    size_t karg_ncols = 0;
+    int32_t karg_nrows = 0; // must match the kernel signature exactly:
+    int32_t karg_ncols = 0; // kernelParams is untyped
     ClusterType *karg_d_clusters = nullptr;
     uint32_t *karg_d_cluster_count = nullptr;
     uint32_t karg_max_clusters = 0;
@@ -145,6 +145,13 @@ class ClusterFinderCUDAGraph {
         if (max_clusters_per_frame == 0) {
             throw std::invalid_argument(
                 "ClusterFinderCUDAGraph: max_clusters_per_frame must be > 0");
+        }
+
+        // The kernel indexes pixels with int32_t
+        if (m_image_size >
+            static_cast<size_t>(std::numeric_limits<int32_t>::max())) {
+            throw std::invalid_argument(
+                "ClusterFinderCUDAGraph: nrows * ncols must fit in int32_t");
         }
 
         // Grid/Block dimensions
@@ -524,8 +531,8 @@ class ClusterFinderCUDAGraph {
             sc.karg_d_pd_off = sc.d_pd_off;
             sc.karg_n_pd_samples = n_pd_samples;
             sc.karg_nSigma = m_nSigma;
-            sc.karg_nrows = nrows;
-            sc.karg_ncols = ncols;
+            sc.karg_nrows = static_cast<int32_t>(nrows);
+            sc.karg_ncols = static_cast<int32_t>(ncols);
             sc.karg_d_clusters = reinterpret_cast<ClusterType *>(
                 sc.d_output + m_clusters_offset);
             sc.karg_d_cluster_count = reinterpret_cast<uint32_t *>(sc.d_output);

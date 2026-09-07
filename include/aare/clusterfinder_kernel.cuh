@@ -23,7 +23,7 @@ __global__ void find_clusters_in_single_frame(
     DEVICE_PED_TYPE *__restrict__ d_pd_sum,
     DEVICE_PED_TYPE *__restrict__ d_pd_sum2,
     const DEVICE_PED_TYPE *__restrict__ d_pd_off, const uint32_t n_pd_samples,
-    const COMPUTE_TYPE m_nSigma, const size_t nrows, const size_t ncols,
+    const COMPUTE_TYPE m_nSigma, const int32_t nrows, const int32_t ncols,
     //   const uint64_t       frame_number,
     ClusterType *d_clusters, uint32_t *d_cluster_count,
     const uint32_t max_clusters) {
@@ -43,12 +43,13 @@ __global__ void find_clusters_in_single_frame(
     // constexpr int pow2_c2 = ((CSY + 1) / 2) * ((CSX + 1) / 2);
     constexpr int pow2_c3 = CSX * CSY;
 
-    // Thread/pixel mapping
+    // Thread/pixel mapping. 32-bit signed: 64-bit integer math is emulated on
+    // the GPU, and the halo guards below rely on `row_global - i >= 0`.
     auto col_global =
-        static_cast<ssize_t>(threadIdx.x + blockDim.x * blockIdx.x);
+        static_cast<int32_t>(threadIdx.x + blockDim.x * blockIdx.x);
     auto row_global =
-        static_cast<ssize_t>(threadIdx.y + blockDim.y * blockIdx.y);
-    auto global_tid = static_cast<ssize_t>(col_global + ncols * row_global);
+        static_cast<int32_t>(threadIdx.y + blockDim.y * blockIdx.y);
+    int32_t global_tid = col_global + ncols * row_global;
     auto local_tid = threadIdx.x + blockDim.x * threadIdx.y;
 
     // ====================
@@ -84,8 +85,7 @@ __global__ void find_clusters_in_single_frame(
     __syncthreads();
 
     // OOB flag
-    bool valid_pixel = col_global < static_cast<ssize_t>(ncols) &&
-                       row_global < static_cast<ssize_t>(nrows);
+    bool valid_pixel = col_global < ncols && row_global < nrows;
 
     // ======================================================
     // Load pedestal-subtracted frame data into shared memory (MIXED PRECISION)
@@ -94,8 +94,8 @@ __global__ void find_clusters_in_single_frame(
     // Helper: read (frame - pedestal_mean) from global memory, or 0 if OOB.
     // gr, gc are the global row/col of the pixel to load.
     // Returns the pedestal-subtracted value.
-    auto load_pixel = [&] __device__(ssize_t gr, ssize_t gc) -> COMPUTE_TYPE {
-        auto gid = gc + ncols * gr;
+    auto load_pixel = [&] __device__(int32_t gr, int32_t gc) -> COMPUTE_TYPE {
+        int32_t gid = gc + ncols * gr;
         return static_cast<COMPUTE_TYPE>(d_frame[gid]) - d_pd_mean[gid];
     };
 
@@ -124,8 +124,7 @@ __global__ void find_clusters_in_single_frame(
         if (threadIdx.x == blockDim.x - 1) {
             for (int i = 1; i <= row_radius; ++i)
                 for (int j = 1; j <= col_radius; ++j)
-                    if (row_global - i >= 0 &&
-                        col_global + j < static_cast<ssize_t>(ncols))
+                    if (row_global - i >= 0 && col_global + j < ncols)
                         shmem[shmem_tid - i * shmem_stride + j] =
                             load_pixel(row_global - i, col_global + j);
         }
@@ -141,14 +140,14 @@ __global__ void find_clusters_in_single_frame(
     // B.3  Right column of the halo
     if (threadIdx.x == blockDim.x - 1 && valid_pixel) {
         for (int j = 1; j <= col_radius; ++j)
-            if (col_global + j < static_cast<ssize_t>(ncols))
+            if (col_global + j < ncols)
                 shmem[shmem_tid + j] = load_pixel(row_global, col_global + j);
     }
 
     // B.4  Bottom rows of the halo
     if (threadIdx.y == blockDim.y - 1 && valid_pixel) {
         for (int i = 1; i <= row_radius; ++i) {
-            if (row_global + i < static_cast<ssize_t>(nrows))
+            if (row_global + i < nrows)
                 shmem[shmem_tid + i * shmem_stride] =
                     load_pixel(row_global + i, col_global);
         }
@@ -156,8 +155,7 @@ __global__ void find_clusters_in_single_frame(
         if (threadIdx.x == 0) {
             for (int i = 1; i <= row_radius; ++i)
                 for (int j = 1; j <= col_radius; ++j)
-                    if (row_global + i < static_cast<ssize_t>(nrows) &&
-                        col_global - j >= 0)
+                    if (row_global + i < nrows && col_global - j >= 0)
                         shmem[shmem_tid + i * shmem_stride - j] =
                             load_pixel(row_global + i, col_global - j);
         }
@@ -165,8 +163,7 @@ __global__ void find_clusters_in_single_frame(
         if (threadIdx.x == blockDim.x - 1) {
             for (int i = 1; i <= row_radius; ++i)
                 for (int j = 1; j <= col_radius; ++j)
-                    if (row_global + i < static_cast<ssize_t>(nrows) &&
-                        col_global + j < static_cast<ssize_t>(ncols))
+                    if (row_global + i < nrows && col_global + j < ncols)
                         shmem[shmem_tid + i * shmem_stride + j] =
                             load_pixel(row_global + i, col_global + j);
         }

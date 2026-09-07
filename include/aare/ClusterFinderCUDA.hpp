@@ -420,6 +420,13 @@ class ClusterFinderCUDA {
                 "ClusterFinderCUDA: max_clusters_per_frame must be > 0");
         }
 
+        // The kernel indexes pixels with int32_t
+        if (m_image_size >
+            static_cast<size_t>(std::numeric_limits<int32_t>::max())) {
+            throw std::invalid_argument(
+                "ClusterFinderCUDA: nrows * ncols must fit in int32_t");
+        }
+
         // Grid/Block dimensions
         block = dim3(BLOCK_X, BLOCK_Y);
         grid = dim3((static_cast<unsigned int>(ncols) + BLOCK_X - 1) / BLOCK_X,
@@ -714,7 +721,8 @@ class ClusterFinderCUDA {
             device::find_clusters_in_single_frame<ClusterType, FRAME_TYPE>
                 <<<grid, block, shmem_bytes, sc.stream>>>(
                     sc.d_frame, sc.d_pd_mean, sc.d_pd_sum, sc.d_pd_sum2,
-                    sc.d_pd_off, n_pd_samples, m_nSigma, nrows, ncols,
+                    sc.d_pd_off, n_pd_samples, m_nSigma,
+                    static_cast<int32_t>(nrows), static_cast<int32_t>(ncols),
                     d_clusters, d_cluster_count,
                     static_cast<uint32_t>(m_max_clusters_per_frame));
             if (m_time_kernels)
