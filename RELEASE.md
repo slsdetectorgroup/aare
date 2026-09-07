@@ -43,6 +43,12 @@
 - ``TimingMode::Auto`` changed to ``TimingMode::AUTO_TIMING``, ``TimingMode::Trigger`` changed to ``TimingMode::TRIGGER_EXPOSURE``
 
 ### Bugfixes:
+- Fixed ``ClusterVector`` move operations to transfer storage instead of
+  copying every cluster.
+- Validate that ``ClusterVector`` masks are one-dimensional, C-contiguous
+  Boolean arrays.
+- Preserve signed ``ClusterVector`` frame numbers when filtering or reducing
+  cluster dimensions.
 - Fixed broken reading of old (pre reordering) Moench03
 - Supports reading all timing modes supported in slsDetectorPackage (auto, trigger, gating, burst_trigger, trigger_gating)
 
