@@ -177,7 +177,7 @@ void define_RemapAlgorithm(py::module &m) {
 
     // cant use np.take or have to mask -1 indices
     m.def(
-        "ApplyRemap",
+        "apply_remap",
         [](py::array input,
            py::array_t<ssize_t, py::array::c_style | py::array::forcecast>
                order_map,
@@ -191,8 +191,11 @@ void define_RemapAlgorithm(py::module &m) {
                 throw std::runtime_error("Input and output arrays must be 2D");
             }
 
-            auto i_dtype = input.dtype();
-            auto o_dtype = output.dtype();
+            if (!input.dtype().is(py::dtype::of<uint16_t>())) {
+                throw std::runtime_error("Apply remap only supports input "
+                                         "arrays of type uint16_t"); // jungfrau
+                                                                     // frames
+            }
 
             if (!input.dtype().is(output.dtype())) {
                 throw std::runtime_error(
@@ -202,13 +205,18 @@ void define_RemapAlgorithm(py::module &m) {
             auto input_array =
                 py::array_t<uint16_t, py::array::c_style |
                                           py::array::forcecast>::ensure(input);
+
+            if (!input_array) {
+                throw std::runtime_error("conversion failed");
+            }
+
             auto output_array =
                 py::array_t<uint16_t, py::array::c_style |
                                           py::array::forcecast>::ensure(output);
 
-            aare::remap::algo::ApplyRemap(
-                make_view_2d(input_array), // TODO expecting uint16_t for now
-                make_view_2d(order_map), make_view_2d(output_array));
+            aare::remap::algo::ApplyRemap(make_view_2d(input_array),
+                                          make_view_2d(order_map),
+                                          make_view_2d(output_array));
         },
         py::arg("input").noconvert(), py::arg("order_map").noconvert(),
         py::arg("output").noconvert(),

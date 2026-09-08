@@ -132,9 +132,6 @@ void ApplyRemap(NDView<T, 2> input, NDView<ssize_t, 2> order_map,
 
             // Correctly mapped pixel
             output(row, col) = input[flat_index];
-            // Long version
-            // T const &value = input[flat_index];
-            // output(row, col) = value;
         }
     }
 }

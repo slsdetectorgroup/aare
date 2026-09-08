@@ -71,18 +71,37 @@ def test_predefinedRemap():
 
     user_roi = strixelremap.InclusiveROI(strixelremap.Chip1.placement_on_module.xmin + 5, strixelremap.Chip1.placement_on_module.xmin + 9, strixelremap.Chip1.placement_on_module.ymin + 5, strixelremap.Chip1.placement_on_module.ymin + 7)
     strixelpixelmap = strixelremap.jungfrau_tew_singlechip_25um_strixel_map(user_roi = user_roi, placement = strixelremap.Chip1)
-    
-    print(strixelpixelmap.map)
 
     assert strixelpixelmap.map.shape == (9, 2)
 
     assert np.array_equal(strixelpixelmap.map, np.array([[-1, 2], [0, 3], [1, 4], [-1, 7], [5,8], [6,9], [-1,12], [10,13], [11,14]])) 
 
+    input_data = np.array([[1,2,3,4,5],[1,2,3,4,5], [1,2,3,4,5]]).astype(np.uint16)
+
+    order_map = strixelpixelmap.map
+
+    output = np.empty(order_map.shape, dtype=input_data.dtype)
+
+    strixelremap.apply_remap(input_data, order_map, output)
+    assert np.array_equal(output, np.array([[0, 3], [1,4], [2,5], [0, 3], [1,4], [2,5], [0, 3], [1,4], [2,5]]))
 
 
+def test_apply_remap():
+    """ Apply remap throws upon invalid input data type """
 
+    strixelpixelmap = strixelremap.jungfrau_ilgad_singlechip_25um_strixel_map(user_roi = strixelremap.Chip1.placement_on_module, placement = strixelremap.Chip1) 
 
-# test apply remap 
+    order_map = strixelpixelmap.map
+
+    user_roi_height = strixelremap.Chip1.placement_on_module.height
+    user_roi_width = strixelremap.Chip1.placement_on_module.width
+
+    data = np.random.rand(user_roi_height, user_roi_width).astype(np.float64)
+
+    output = np.empty(order_map.shape, dtype=data.dtype)
+
+    with pytest.raises(RuntimeError):
+        strixelremap.apply_remap(data, order_map, output)
 
 
 # Documenation, Example
