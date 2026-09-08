@@ -1,5 +1,6 @@
 #pragma once
 
+#include <aare/ROI.hpp>
 #include <aare/defs.hpp>
 #include <aare/logger.hpp>
 
