@@ -1,5 +1,5 @@
-Strixel to Pixel Remapping
-==============================
+Strixel to Pixel Remapping Algorithm
+====================================
 
 
 .. doxygenfunction:: aare::remap::algo::strixel_to_pixel_map

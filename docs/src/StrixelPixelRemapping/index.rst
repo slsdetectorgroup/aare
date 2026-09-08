@@ -4,7 +4,7 @@ Strixel to Pixel Remapping
 ..
     maybe document what a strixel is in here how the remapping roughly works what types are predefined
 
-Here the concept behind the pixel reordering ("remapping") that needs to be applied for detectors using sensors
+Here the concepts behind the pixel reordering ("remapping") that needs to be applied for detectors using sensors
 with "strixel" geometry and the corresponding API interface are explained.
 
 The Strixel Concept
@@ -24,7 +24,7 @@ in turn, is a fraction of the ASIC pixel pitch by the same integer.
         \Delta x_{\text{strixel}} = \Delta x_{\text{pixel}}\cdot m \quad \quad \Delta y_{\text{strixel}} = \frac{\Delta y_{\text{pixel}}}{m}
     \end{equation*}
 
-.. figuer:: ../../figures/StrixelSketch_symbols.png
+.. figure:: ../../figures/StrixelSketch_symbols.png
     :target: ../../figures/StrixelSketch_symbols.png
     :width: 650px
     :align: center
@@ -34,7 +34,7 @@ in turn, is a fraction of the ASIC pixel pitch by the same integer.
 
 .. admonition:: Physics Background
 
-   Rectangular pixels provide a short pitch in one dimension that enables interpolation based on charge sharing,
+   Rectangular pixels provide a short pitch in one dimension that enables interpolation based on charge sharing
    while retaining compatibility with established readout ASICs such as JUNGFRAU and MÖNCH. Strixel sensors are
    especially important for detector applications such as **Resonant Inelastic X-ray Scattering (RIXS)** that require
    high spatial resolution in one dimension. 
@@ -57,6 +57,32 @@ links each physical sensor strixel to its corresponding ASIC pixel. We refer to 
     :alt: Strixel Remapping Concept
 
     Illustrating the remapping between an ASIC pixel grid and a sensor strixel grid with :math:`m = 3`.
+
+.. IMPORTANT::
+    The remapping algorithm essentially reorders chunks of ASIC pixel columns into chunks of strixel rows based
+    on the strixel multiplicity.
+
+The resulting map describes
+
+.. math::
+    \begin{equation*}
+        \text{strixel}(\text{row},\,\text{col}) \rightarrow \text{flattened ASIC pixel index} = y_{\text{pixel}}\cdot n_x + x_{\text{pixel}}
+    \end{equation*}
+
+where :math:`x_{\text{pixel}}` and :math:`y_{\text{pixel}}` are the x- and y-coordinates (column and row) of the reference ASIC pixel,
+respectively, and :math:`n_x` is the total number of ASIC pixel columns of the reference pixel grid.
+
+.. Note::
+    The reference pixel grid does not necessarily have to correspond to exactly one ASIC. It could, for example, be the
+    standard output of a single JUNGFRAU detector module with dimensions :math:`2\times 4` ASICs (:math:`512\times 1024` pixels). 
+
+The API predefines known sensor configurations and provides direct map generators for these.
+
+To apply the remapping to a detector image, the API provides the following utility function:
+
+.. doxygenfunction:: aare::remap::algo::ApplyRemap
+
+TODO: Discuss groups, predefined sensors, bond shift, rotation, modulo ordering, ROIs (?) ...
 
 API Details
 ----------------

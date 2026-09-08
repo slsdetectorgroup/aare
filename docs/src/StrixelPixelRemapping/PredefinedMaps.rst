@@ -1,4 +1,4 @@
-Predefined Pixel to Strixel Maps
+Predefined Strixel to Pixel Maps
 ================================
 
 Includes predefined pixel to strixel maps for the sensor configurations introduced in :ref:`predefined_sensor_configs`. 
