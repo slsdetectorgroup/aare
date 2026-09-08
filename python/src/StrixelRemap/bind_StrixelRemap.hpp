@@ -223,11 +223,11 @@ void define_RemapAlgorithm(py::module &m) {
 
             Parameters
             ----------
-            input : np.array 
+            input : np.array[uint16_t, 2]
                 Original array
             order_map : np.array[ssize_t, 2]
                 Rule for remapping
-            output : np.array
+            output : np.array[uint16_t, 2]
                 Remapped array
 
             )");
@@ -236,7 +236,8 @@ void define_RemapAlgorithm(py::module &m) {
 template <std::size_t N>
 void define_RemapAlgorithmforSensorConfig(py::module &m) {
 
-    m.def("strixel_to_pixel_maps", &aare::remap::algo::strixel_to_pixel_maps<N>,
+    m.def("strixel_to_pixel_maps_pybindfunc",
+          &aare::remap::algo::strixel_to_pixel_maps<N>,
           py::arg("sensor_config").noconvert(),
           py::arg("placement").noconvert(), py::arg("user_roi").noconvert(),
           py::arg("bond_shift").noconvert() =

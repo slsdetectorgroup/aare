@@ -97,42 +97,44 @@ void define_predefinedStrixelPixelMaps(py::module &m) {
         py::arg("user_roi").noconvert(), py::arg("placement").noconvert(),
         py::arg("bond_shift").noconvert() = aare::remap::defs::BondShift{0, 0},
         R"(
-                Generates a strixel-to-pixel remapping map for the Strx25 strixel group on a Jungfrau ILGAD sensor
-                Parameters
-                ----------
-                user_roi : InclusiveROI
-                    ROI in global module coordinate system.
-                placement : SensorModulePlacement
-                    Placement and orientation of the sensor on the module.
-                bond_shift : BondShift, optional
-                    Bonding shift applied before the configured sensor placement rotation. Default is (0, 0).
-                Returns
-                -------
-                StrixelGroupToPixelMap
-                    map(row, col) contains the flattened pixel index of the corresponding source pixel in the user-provided input ROI for strixel defined at (row, col).
-                    An entry of -1 indicates that the corresponding strixel position has no valid source pixel.
-                )");
+            Generates a strixel-to-pixel remapping map for the Strx25 strixel group on a Jungfrau ILGAD sensor
+
+            Parameters
+            ----------
+            user_roi : InclusiveROI
+                ROI in global module coordinate system.
+            placement : SensorModulePlacement
+                Placement and orientation of the sensor on the module.
+            bond_shift : BondShift, optional
+                Bonding shift applied before the configured sensor placement rotation. Default is (0, 0).
+            Returns
+            -------
+            StrixelGroupToPixelMap
+                map(row, col) contains the flattened pixel index of the corresponding source pixel in the user-provided input ROI for strixel defined at (row, col).
+                An entry of -1 indicates that the corresponding strixel position has no valid source pixel.
+        )");
 
     m.attr("jungfrau_ilgad_singlechip_15um_strixel_map") = py::cpp_function(
         &aare::remap::generate::jungfrau_ilgad_singlechip_15um_strixel_map,
         py::arg("user_roi").noconvert(), py::arg("placement").noconvert(),
         py::arg("bond_shift").noconvert() = aare::remap::defs::BondShift{0, 0},
         R"(
-                Generates a strixel-to-pixel remapping map for the Strx15 strixel group on a Jungfrau ILGAD sensor
-                Parameters
-                ----------
-                user_roi : InclusiveROI
-                    ROI in global module coordinate system.
-                placement : SensorModulePlacement
-                    Placement and orientation of the sensor on the module.
-                bond_shift : BondShift, optional
-                    Bonding shift applied before the configured sensor placement rotation. Default is (0, 0).
-                Returns
-                -------
-                StrixelGroupToPixelMap
-                    map(row, col) contains the flattened pixel index of the corresponding source pixel in the user-provided input ROI for strixel defined at (row, col).
-                    An entry of -1 indicates that the corresponding strixel position has no valid source pixel.
-                )");
+            Generates a strixel-to-pixel remapping map for the Strx15 strixel group on a Jungfrau ILGAD sensor
+
+            Parameters
+            ----------
+            user_roi : InclusiveROI
+                ROI in global module coordinate system.
+            placement : SensorModulePlacement
+                Placement and orientation of the sensor on the module.
+            bond_shift : BondShift, optional
+                Bonding shift applied before the configured sensor placement rotation. Default is (0, 0).
+            Returns
+            -------
+            StrixelGroupToPixelMap
+                map(row, col) contains the flattened pixel index of the corresponding source pixel in the user-provided input ROI for strixel defined at (row, col).
+                An entry of -1 indicates that the corresponding strixel position has no valid source pixel.
+        )");
 
     m.attr("jungfrau_ilgad_singlechip_18um_strixel_map") = py::cpp_function(
         &aare::remap::generate::jungfrau_ilgad_singlechip_18um_strixel_map,
@@ -140,6 +142,7 @@ void define_predefinedStrixelPixelMaps(py::module &m) {
         py::arg("bond_shift").noconvert() = aare::remap::defs::BondShift{0, 0},
         R"(
                 Generates a strixel-to-pixel remapping map for the Strx18 strixel group on a Jungfrau ILGAD sensor
+
                 Parameters
                 ----------
                 user_roi : InclusiveROI
@@ -161,6 +164,7 @@ void define_predefinedStrixelPixelMaps(py::module &m) {
         py::arg("bond_shift").noconvert() = aare::remap::defs::BondShift{0, 0},
         R"(
                 Generates a list of strixel-to-pixel remapping map for each strixel group on a Jungfrau ILGAD quad sensor
+
                 Parameters
                 ----------
                 user_roi : InclusiveROI
@@ -184,6 +188,7 @@ void define_predefinedStrixelPixelMaps(py::module &m) {
         py::arg("bond_shift").noconvert() = aare::remap::defs::BondShift{0, 0},
         R"(
                 Generates a strixel-to-pixel remapping map for the Strx25 strixel group on a Jungfrau TEW sensor
+
                 Parameters
                 ----------
                 user_roi : InclusiveROI
@@ -205,6 +210,7 @@ void define_predefinedStrixelPixelMaps(py::module &m) {
         py::arg("bond_shift").noconvert() = aare::remap::defs::BondShift{0, 0},
         R"(
                 Generates a strixel-to-pixel remapping map for the Strx15 strixel group on a Jungfrau TEW sensor
+
                 Parameters
                 ----------
                 user_roi : InclusiveROI
@@ -226,6 +232,7 @@ void define_predefinedStrixelPixelMaps(py::module &m) {
         py::arg("bond_shift").noconvert() = aare::remap::defs::BondShift{0, 0},
         R"(
                 Generates a strixel-to-pixel remapping map for the Strx18 strixel group on a Jungfrau TEW sensor
+
                 Parameters
                 ----------
                 user_roi : InclusiveROI
@@ -247,6 +254,7 @@ void define_predefinedStrixelPixelMaps(py::module &m) {
         py::arg("bond_shift").noconvert() = aare::remap::defs::BondShift{0, 0},
         R"(
                 Generates a list of strixel-to-pixel remapping map for each strixel group on a Jungfrau TEW sensor
+
                 Parameters
                 ----------
                 user_roi : InclusiveROI
@@ -270,6 +278,7 @@ void define_predefinedStrixelPixelMaps(py::module &m) {
         py::arg("bond_shift").noconvert() = aare::remap::defs::BondShift{0, 0},
         R"(
                 Generates a strixel-to-pixel remapping map for the bottom half of the Strx25 strixel group on a Jungfrau ILGAD quad sensor
+
                 Parameters
                 ----------
                 user_roi : InclusiveROI
@@ -291,6 +300,7 @@ void define_predefinedStrixelPixelMaps(py::module &m) {
         py::arg("bond_shift").noconvert() = aare::remap::defs::BondShift{0, 0},
         R"(
                 Generates a strixel-to-pixel remapping map for the top half of the Strx25 strixel group on a Jungfrau ILGAD quad sensor
+
                 Parameters
                 ----------
                 user_roi : InclusiveROI
@@ -312,6 +322,7 @@ void define_predefinedStrixelPixelMaps(py::module &m) {
         py::arg("bond_shift").noconvert() = aare::remap::defs::BondShift{0, 0},
         R"(
                 Generates a strixel-to-pixel remapping map for the entire Strx25 strixel group on a Jungfrau ILGAD quad sensor
+
                 Parameters
                 ----------
                 user_roi : InclusiveROI
