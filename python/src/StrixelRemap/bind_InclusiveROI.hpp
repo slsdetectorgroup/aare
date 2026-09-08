@@ -1,10 +1,8 @@
 #include <pybind11/pybind11.h>
 
-#include "aare/InclusiveROI.hpp"
+#include "aare/StrixelPixelRemapping/InclusiveROI.hpp"
 
 namespace py = pybind11;
-
-// TODO: How to import like aare import StrixelPixelRemap
 
 void define_InclusiveROI(py::module &m) {
     py::class_<aare::InclusiveROI>(m, "InclusiveROI")

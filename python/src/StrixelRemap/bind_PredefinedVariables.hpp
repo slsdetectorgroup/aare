@@ -1,7 +1,7 @@
 #include <pybind11/pybind11.h>
 
-#include "aare/StrixelPixelRemapConfig.hpp"
-#include "aare/StrixelPixelRemapGenerate.hpp"
+#include "aare/StrixelPixelRemapping/StrixelPixelRemapConfig.hpp"
+#include "aare/StrixelPixelRemapping/StrixelPixelRemapGenerate.hpp"
 
 namespace py = pybind11;
 
