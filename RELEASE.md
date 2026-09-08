@@ -16,6 +16,8 @@
 - Added the ``AARE_TUNE_LOCAL`` CMake option to build with ``-march=native``
   and ``-mtune=native`` when supported. Binaries built with this option are
   specific to the local CPU and may not be portable.
+- Support for PixeltoStrixelRemapping. Precomputedt maps are available of the most common sensor-module configurations of iLGAD abnd TEW sensors on the Jungfrau module. 
+
 
 ### API Changes:
 
