@@ -87,4 +87,12 @@ template <> FrameDiscardPolicy string_to(const std::string &arg);
  */
 template <> DACIndex string_to(const std::string &arg);
 
+/**
+ * @brief Convert a corner enum to string
+ * @param arg corner enum value
+ * @return string representation of the corner enum
+ * @throw runtime_error if the corner value is invalid
+ */
+std::string to_string(const corner &arg);
+
 } // namespace aare

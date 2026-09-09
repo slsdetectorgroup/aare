@@ -1,4 +1,4 @@
-#include "to_string.hpp"
+#include "aare/to_string.hpp"
 
 namespace aare {
 
@@ -252,6 +252,21 @@ template <> UDPPortPosition string_to(const std::string &arg) {
         return UDPPortPosition::BOTTOM;
     throw std::runtime_error("Could not decode UDPPortPosition from: \"" + arg +
                              "\"");
+}
+
+std::string to_string(const corner &arg) {
+    switch (arg) {
+    case corner::cTopLeft:
+        return "TopLeft";
+    case corner::cTopRight:
+        return "TopRight";
+    case corner::cBottomLeft:
+        return "BottomLeft";
+    case corner::cBottomRight:
+        return "BottomRight";
+    default:
+        throw std::runtime_error("Invalid corner value");
+    }
 }
 
 std::string remove_unit(std::string &str) {

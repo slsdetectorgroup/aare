@@ -9,6 +9,8 @@
 #include <pybind11/stl.h>
 #include <pybind11/stl_bind.h>
 
+#include <iostream>
+
 namespace py = pybind11;
 
 using namespace aare;
@@ -59,6 +61,26 @@ void define_Cluster(py::module &m, const std::string &typestr) {
 
         .def_readonly("y",
                       &Cluster<Type, ClusterSizeX, ClusterSizeY, CoordType>::y)
+
+        .def("__repr__",
+             [class_name](const Cluster<Type, ClusterSizeX, ClusterSizeY,
+                                        CoordType> &self) {
+                 fmt::memory_buffer data;
+                 fmt::format_to(std::back_inserter(data), "[[");
+                 for (size_t i = 0; i < self.data.size(); ++i) {
+                     if (i != 0) {
+                         fmt::format_to(std::back_inserter(data),
+                                        i % ClusterSizeX == 0 ? "], [" : ", ");
+                     }
+                     fmt::format_to(std::back_inserter(data), "{}",
+                                    self.data[i]);
+                 }
+                 fmt::format_to(std::back_inserter(data), "]]");
+
+                 return fmt::format("{}(x={}, y={}, data={})", class_name,
+                                    self.x, self.y,
+                                    fmt::string_view(data.data(), data.size()));
+             })
 
         .def(
             "max_sum_2x2",
