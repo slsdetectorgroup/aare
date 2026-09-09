@@ -7,7 +7,7 @@ RawFile
 across all selected subfiles and ROIs, including each subfile's complete
 ``.raw`` series. ``read()`` uses this count, and ``read_n()`` and
 ``read_n_with_roi()`` limit batches to the remaining frames. Counts are
-determined when the reader is constructed; disabled UDP ports are excluded.
+determined when the reader is constructed.
 An empty subfile makes the count zero, and construction fails if no subfiles
 are selected.
 
@@ -20,8 +20,7 @@ cause synchronization errors within these bounds.
 
 Reading errors raise ``RuntimeError`` with the attempted zero-based frame index
 and the failing file path. If a data subfile fails, its path and the underlying
-failure reason are reported without a master-file wrapper or C++ source
-location. Out-of-range subfile errors include the available frame count across
+failure reason are reported. Out-of-range subfile errors include the available frame count across
 that subfile's series. This applies to ``read_frame()``, ``read_n()``,
 and the ROI reading methods. The frame index is the position in the file, not
 the frame number recorded by the detector.

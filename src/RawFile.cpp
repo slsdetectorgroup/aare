@@ -56,12 +56,12 @@ RawFile::RawFile(const std::filesystem::path &fname, const std::string &mode)
 
         if (m_frames_in_file != max_frames ||
             m_frames_in_file != m_master.frames_in_file()) {
-            LOG(logWARNING)
-                << fmt::format("'{}': min/max frame count in a subfile: {}/{}, "
-                               "master records {}; "
-                               "using {} frames",
-                               fname.string(), m_frames_in_file, max_frames,
-                               m_master.frames_in_file(), m_frames_in_file);
+            LOG(logWARNING) << fmt::format(
+                "'{}': Different number of frames across subfiles. Expected {} "
+                "frames but found min/max {}/{}, "
+                "using {} frames.",
+                fname.string(), m_master.frames_in_file(), m_frames_in_file,
+                max_frames, m_frames_in_file);
         }
         LOG(logDEBUG) << "Frames in file: " << m_frames_in_file;
     } else {
