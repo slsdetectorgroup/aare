@@ -16,6 +16,7 @@
 - Added the ``AARE_TUNE_LOCAL`` CMake option to build with ``-march=native``
   and ``-mtune=native`` when supported. Binaries built with this option are
   specific to the local CPU and may not be portable.
+- Added string representator in python for Cluster and Eta 
 
 ### API Changes:
 
