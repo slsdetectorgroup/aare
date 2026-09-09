@@ -8,12 +8,174 @@
 #include <catch2/matchers/catch_matchers_string.hpp>
 #include <filesystem>
 
+#include "raw_file_helpers.hpp"
 #include "test_config.hpp"
 #include "test_macros.hpp"
 
 using aare::File;
 using aare::RawFile;
 using namespace aare;
+
+TEST_CASE("RawFile read errors identify the frame index and master path",
+          "[RawFile][read-errors]") {
+    TemporaryRawFiles files;
+    RawFile file(files.master_path());
+    REQUIRE(file.frame_number(1) == 101);
+    file.seek(2);
+    const auto index_matcher =
+        Catch::Matchers::ContainsSubstring("frame index 2");
+    const auto path_matcher =
+        Catch::Matchers::ContainsSubstring(files.master_path().string());
+    const auto context = index_matcher && path_matcher;
+    std::vector<std::byte> buffer(file.bytes_per_frame() * 2);
+    DetectorHeader headers[2]{};
+
+    SECTION("sequential frame") {
+        REQUIRE_THROWS_WITH(
+            file.read_frame(),
+            index_matcher && path_matcher &&
+                Catch::Matchers::ContainsSubstring(
+                    "file contains 2 frames (indices are zero-based)") &&
+                !Catch::Matchers::ContainsSubstring(".raw"));
+    }
+    SECTION("indexed frame at EOF") {
+        REQUIRE_THROWS_WITH(file.read_frame(2), context);
+    }
+    SECTION("indexed frame beyond EOF") {
+        REQUIRE_THROWS_WITH(
+            file.read_frame(17),
+            Catch::Matchers::ContainsSubstring("frame index 17") &&
+                Catch::Matchers::ContainsSubstring(
+                    files.master_path().string()));
+    }
+    SECTION("batch crosses EOF") {
+        file.seek(1);
+        REQUIRE_THROWS_WITH(file.read_n(2), context);
+    }
+    SECTION("read into buffer") {
+        FileInterface &reader = file;
+        REQUIRE_THROWS_WITH(reader.read_into(buffer.data()), context);
+    }
+    SECTION("batch into buffer") {
+        file.seek(1);
+        REQUIRE_THROWS_WITH(file.read_into(buffer.data(), size_t{2}), context);
+    }
+    SECTION("read with header") {
+        REQUIRE_THROWS_WITH(file.read_into(buffer.data(), headers), context);
+    }
+    SECTION("batch with headers") {
+        file.seek(1);
+        REQUIRE_THROWS_WITH(file.read_into(buffer.data(), 2, headers), context);
+    }
+    SECTION("single ROI") { REQUIRE_THROWS_WITH(file.read_roi(0), context); }
+    SECTION("all ROIs") { REQUIRE_THROWS_WITH(file.read_rois(), context); }
+    SECTION("ROI into buffer") {
+        REQUIRE_THROWS_WITH(file.read_roi_into(buffer.data(), 0, 2), context);
+    }
+    SECTION("ROI batch") {
+        file.seek(1);
+        REQUIRE_THROWS_WITH(file.read_n_with_roi(2, 0), context);
+    }
+    SECTION("frame number") {
+        REQUIRE_THROWS_WITH(file.frame_number(2), context);
+    }
+    SECTION("generic File") {
+        File reader(files.master_path());
+        REQUIRE_THROWS_WITH(reader.read_frame(2), context);
+    }
+}
+
+TEST_CASE("RawFile synchronization errors retain the requested index",
+          "[RawFile][read-errors]") {
+    TemporaryRawFiles files(2);
+    const size_t lagging_module = GENERATE(0, 1);
+    {
+        std::fstream output(files.data_path(1 - lagging_module, 1),
+                            std::ios::binary | std::ios::in | std::ios::out);
+        DetectorHeader header{};
+        header.frameNumber = 102;
+        output.write(reinterpret_cast<const char *>(&header), sizeof(header));
+    }
+    RawFile file(files.master_path());
+    REQUIRE_THROWS_WITH(
+        file.read_frame(1),
+        Catch::Matchers::ContainsSubstring("frame index 1") &&
+            Catch::Matchers::ContainsSubstring(files.master_path().string()) &&
+            Catch::Matchers::ContainsSubstring(
+                files.data_path(lagging_module, 1).string()) &&
+            Catch::Matchers::ContainsSubstring("synchroniz"));
+}
+
+TEST_CASE("RawFile reports the failing data file and requested frame",
+          "[RawFile][read-errors]") {
+    TemporaryRawFiles files;
+    RawFile file(files.master_path());
+    std::filesystem::resize_file(files.data_path(0, 1), sizeof(DetectorHeader));
+    REQUIRE_THROWS_WITH(
+        file.read_frame(1),
+        Catch::Matchers::ContainsSubstring("frame index 1") &&
+            !Catch::Matchers::ContainsSubstring(files.master_path().string()) &&
+            Catch::Matchers::ContainsSubstring(
+                files.data_path(0, 1).string()) &&
+            Catch::Matchers::ContainsSubstring("End of file"));
+}
+
+TEST_CASE("RawFile bounds use the shortest subfile",
+          "[RawFile][read-errors][frame-count]") {
+    TemporaryRawFiles files(2);
+    const size_t short_module = GENERATE(0, 1);
+    std::filesystem::remove(files.data_path(short_module, 1));
+    RawFile file(files.master_path());
+    REQUIRE(file.total_frames() == 1);
+    REQUIRE(file.master().frames_in_file() == 2);
+    REQUIRE_NOTHROW(file.read_frame(0));
+    const auto expected = Catch::Matchers::ContainsSubstring(
+        "Error reading frame index 1 from file '" +
+        files.master_path().string() + "':");
+
+    SECTION("indexed frame") {
+        REQUIRE_THROWS_WITH(file.read_frame(1), expected);
+    }
+    SECTION("batch") {
+        file.seek(0);
+        REQUIRE_THROWS_WITH(file.read_n(2), expected);
+    }
+    SECTION("ROI") {
+        file.seek(1);
+        REQUIRE_THROWS_WITH(file.read_roi(0), expected);
+    }
+    SECTION("generic File") {
+        File reader(files.master_path());
+        REQUIRE_THROWS_WITH(reader.read_frame(1), expected);
+    }
+    SECTION("frame number") {
+        REQUIRE_THROWS_WITH(file.frame_number(1), expected);
+    }
+}
+
+TEST_CASE("RawFile frame count comes from the complete subfile series",
+          "[RawFile][frame-count]") {
+    TemporaryRawFiles files;
+    const size_t master_frames = GENERATE(0, 1, 2, 5);
+    auto metadata = nlohmann::json::parse(std::ifstream(files.master_path()));
+    metadata["Frames in File"] = master_frames;
+    metadata["Total Frames"] = 1000;
+    std::ofstream(files.master_path()) << metadata;
+
+    RawFile file(files.master_path());
+    REQUIRE(file.total_frames() == 2);
+    REQUIRE(file.master().frames_in_file() == master_frames);
+    REQUIRE(file.master().total_frames_expected() == 1000);
+    REQUIRE(file.frame_number(1) == 101);
+    REQUIRE_NOTHROW(file.read_frame(1));
+    REQUIRE_THROWS(file.frame_number(2));
+    REQUIRE_THROWS(file.read_frame(2));
+
+    File reader(files.master_path());
+    REQUIRE(reader.total_frames() == 2);
+    REQUIRE(reader.frame_number(1) == 101);
+    REQUIRE_NOTHROW(reader.read_frame(1));
+}
 
 TEST_CASE("Read number of frames from a jungfrau raw file",
           "[.with-data][RawFile]") {

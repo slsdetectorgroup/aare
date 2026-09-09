@@ -22,9 +22,11 @@ class ClusterFinderMTWrapper
   public:
     ClusterFinderMTWrapper(Shape<2> image_size, PEDESTAL_TYPE nSigma = 5.0,
                            size_t capacity = 2000, size_t n_threads = 3,
-                           size_t queue_depth = 16)
+                           size_t queue_depth = 16,
+                           size_t minimum_pedestal_samples = 1000)
         : ClusterFinderMT<ClusterType, FRAME_TYPE, PEDESTAL_TYPE>(
-              image_size, nSigma, capacity, n_threads, queue_depth) {}
+              image_size, nSigma, capacity, n_threads, queue_depth,
+              minimum_pedestal_samples) {}
 
     size_t get_m_input_queues_size() const {
         return this->m_input_queues.size();
@@ -73,13 +75,14 @@ TEST_CASE("multithreaded cluster finder", "[.with-data]") {
     File file(fpath);
 
     size_t n_threads = 2;
-    size_t n_frames_pd = 10;
+    size_t minimum_pedestal_samples = 1;
+    size_t n_frames = 10;
 
     using ClusterType = Cluster<int32_t, 3, 3>;
 
     ClusterFinderMTWrapper<ClusterType> cf(
         {static_cast<int64_t>(file.rows()), static_cast<int64_t>(file.cols())},
-        5, 2000, n_threads); // no idea what frame type is!!! default uint16_t
+        5, 2000, n_threads, 16, minimum_pedestal_samples);
 
     CHECK(cf.get_m_input_queues_size() == n_threads);
     CHECK(cf.get_m_output_queues_size() == n_threads);
@@ -87,8 +90,11 @@ TEST_CASE("multithreaded cluster finder", "[.with-data]") {
     CHECK(cf.m_output_queues_are_empty() == true);
     CHECK(cf.m_input_queues_are_empty() == true);
 
-    for (size_t i = 0; i < n_frames_pd; ++i) {
-        auto frame = file.read_frame();
+    auto frame = file.read_frame();
+    cf.push_pedestal_frame(frame.view<uint16_t>());
+
+    for (size_t i = 0; i < n_frames; ++i) {
+        frame = file.read_frame();
         cf.find_clusters(frame.view<uint16_t>());
     }
 
@@ -97,7 +103,7 @@ TEST_CASE("multithreaded cluster finder", "[.with-data]") {
     CHECK(cf.m_output_queues_are_empty() == true);
     CHECK(cf.m_input_queues_are_empty() == true);
 
-    CHECK(cf.m_sink_size() == n_frames_pd);
+    CHECK(cf.m_sink_size() == n_frames);
     ClusterCollector<ClusterType> clustercollector(&cf);
 
     clustercollector.stop();
@@ -105,7 +111,6 @@ TEST_CASE("multithreaded cluster finder", "[.with-data]") {
     CHECK(cf.m_sink_size() == 0);
 
     auto clustervec = clustercollector.steal_clusters();
-    // CHECK(clustervec.size() == ) //dont know how many clusters to expect
 }
 
 TEST_CASE("frame buffers are recycled when pushing more frames than the pool "
