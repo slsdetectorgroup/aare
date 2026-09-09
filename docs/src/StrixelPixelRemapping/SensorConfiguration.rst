@@ -2,7 +2,9 @@ Sensor configurations
 =====================
 
 
-Helper structs to define the sensor configuration, such as sensor pixel geometry, placement and rotation of the sensor on the module, the different strixel types on the sensor and its placement. 
+Helper structs to define the sensor configuration, such as sensor pixel geometry, placement and rotation of the sensor on the module, the different strixel types on the sensor and its placement.
+
+An introduction to the concept of strixel-to-pixel remapping and and overview of the corresponding API can be found in :ref:`strixel_remapping_index`.
 
 
 .. doxygenenum:: aare::remap::defs::Rotation

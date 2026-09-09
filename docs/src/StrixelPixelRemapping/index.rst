@@ -1,3 +1,5 @@
+.. _strixel_remapping_index:
+
 Strixel to Pixel Remapping 
 ==============================
 
@@ -76,15 +78,22 @@ respectively, and :math:`n_x` is the total number of ASIC pixel columns of the r
     The reference pixel grid does not necessarily have to correspond to exactly one ASIC. It could, for example, be the
     standard output of a single JUNGFRAU detector module with dimensions :math:`2\times 4` ASICs (:math:`512\times 1024` pixels). 
 
+API overview
+----------------
+
+..
+    Include block diagram
+
 The API predefines known sensor configurations and provides direct map generators for these.
 
 To apply the remapping to a detector image, the API provides the following utility function:
 
 .. doxygenfunction:: aare::remap::algo::ApplyRemap
 
-TODO: Discuss groups, predefined sensors, bond shift, rotation, modulo ordering, ROIs (?) ...
+.. 
+    TODO: Discuss groups, predefined sensors, bond shift, rotation, modulo ordering, ROIs (?) ...
 
-API Details
+API Documentation
 ----------------
 
 .. toctree::
