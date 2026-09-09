@@ -18,24 +18,55 @@ def _get_class(name, cluster_size, dtype):
 
 
 
-def ClusterFinder(image_size, cluster_size=(3,3), n_sigma=5, dtype = np.int32, capacity = 1024):
+def ClusterFinder(image_size, *, cluster_size=(3,3), n_sigma=5, dtype = np.int32, capacity = 1024, min_pedestal_samples = 1000):
     """
     Factory function to create a ClusterFinder object. Provides a cleaner syntax for 
     the templated ClusterFinder in C++.
+
+    Parameters
+    ----------
+    image_size : tuple
+        The size of the image as a tuple (height, width).
+    cluster_size : tuple, optional
+        The size of the cluster to find as a tuple (height, width). Default is (3,3).
+    n_sigma : int, optional
+        Multiplier of the standard deviation used as a threshold to identify potential photon pixels. Default is 5.
+    dtype : data-type, optional
+        The data type of the image. Default is np.int32.
+    capacity : int, optional
+        The maximum number of clusters than can be stored before reallocating. Default is 1024.
+    min_pedestal_samples : int, optional
+        The minimum number of pedestal samples to accumulate before using the pedestal. Default is 1000.
     """
     cls = _get_class("ClusterFinder", cluster_size, dtype)
-    return cls(image_size, n_sigma=n_sigma, capacity=capacity)
+    return cls(image_size, n_sigma=n_sigma, capacity=capacity, min_pedestal_samples=min_pedestal_samples)
 
 
-
-def ClusterFinderMT(image_size, cluster_size = (3,3), dtype=np.int32, n_sigma=5, capacity = 1024, n_threads = 3): 
+def ClusterFinderMT(image_size, *, cluster_size = (3,3), dtype=np.int32, n_sigma=5, capacity = 1024, n_threads = 3, min_pedestal_samples = 1000): 
     """ 
     Factory function to create a ClusterFinderMT object. Provides a cleaner syntax for 
     the templated ClusterFinderMT in C++.
+
+    Parameters
+    ----------
+    image_size : tuple
+        The size of the image as a tuple (height, width).
+    cluster_size : tuple, optional
+        The size of the cluster to find as a tuple (height, width). Default is (3,3).
+    n_sigma : int, optional
+        Multiplier of the standard deviation used as a threshold to identify potential photon pixels. Default is 5.
+    dtype : data-type, optional
+        The data type of the image. Default is np.int32.
+    capacity : int, optional
+        The maximum number of clusters than can be stored before reallocating. Default is 1024.
+    n_threads : int, optional
+        The number of threads to use for processing. Default is 3.
+    min_pedestal_samples : int, optional
+        The minimum number of pedestal samples to accumulate before using the pedestal. Default is 1000.
     """
 
     cls = _get_class("ClusterFinderMT", cluster_size, dtype)
-    return cls(image_size, n_sigma=n_sigma, capacity=capacity, n_threads=n_threads)
+    return cls(image_size, n_sigma=n_sigma, capacity=capacity, min_pedestal_samples=min_pedestal_samples, n_threads=n_threads)
 
 
 def ClusterCollector(clusterfindermt, dtype=np.int32): 
