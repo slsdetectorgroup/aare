@@ -31,7 +31,7 @@ class RawFile : public FileInterface {
 
     std::vector<ROIGeometry> m_ROI_geometries;
 
-    /// @brief total number of frames in file
+    /// @brief Minimum frame count across the selected raw subfile series.
     size_t m_frames_in_file{};
 
   public:
@@ -102,6 +102,7 @@ class RawFile : public FileInterface {
     size_t bytes_per_pixel() const;
     void seek(size_t frame_index) override;
     size_t tell() override;
+    /// @brief Minimum actual frame count across all subfiles and ROIs.
     size_t total_frames() const override;
     size_t rows() const override;
     /**
@@ -148,6 +149,9 @@ class RawFile : public FileInterface {
     static DetectorHeader read_header(const std::filesystem::path &fname);
 
   private:
+    std::runtime_error frame_error(size_t frame_index,
+                                   const std::string &message) const;
+
     /**
      * @brief read the frame at the given frame index into the image buffer
      * @param frame_index frame number to read

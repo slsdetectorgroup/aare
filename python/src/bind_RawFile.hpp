@@ -11,6 +11,7 @@
 
 #include <cstdint>
 #include <filesystem>
+#include <fmt/format.h>
 #include <pybind11/iostream.h>
 #include <pybind11/numpy.h>
 #include <pybind11/pybind11.h>
@@ -21,14 +22,23 @@
 namespace py = pybind11;
 using namespace ::aare;
 
+namespace {
+std::runtime_error raw_file_read_error(RawFile &file,
+                                       const std::string &message) {
+    return std::runtime_error(fmt::format(
+        "Error reading frame index {} from file '{}': {}", file.tell(),
+        file.master().master_fname().string(), message));
+}
+} // namespace
+
 void define_raw_file_io_bindings(py::module &m) {
     py::class_<RawFile>(m, "RawFile")
         .def(py::init<const std::filesystem::path &>())
         .def("read_frame",
              [](RawFile &self) {
                  if (self.n_modules_in_roi().size() > 1) {
-                     throw std::runtime_error(
-                         "File contains multiple ROIs - use read_ROIs()");
+                     throw raw_file_read_error(
+                         self, "File contains multiple ROIs - use read_ROIs()");
                  }
 
                  std::vector<size_t> shape;
@@ -51,16 +61,19 @@ void define_raw_file_io_bindings(py::module &m) {
             "read_n",
             [](RawFile &self, size_t n_frames) {
                 if (self.n_modules_in_roi().size() > 1) {
-                    throw std::runtime_error(
+                    throw raw_file_read_error(
+                        self,
                         "File contains multiple ROIs - use read_n_ROIs() to "
                         "read a specific ROI or use read_ROIs and "
                         "read one frame at a time.");
                 }
                 // adjust for actual frames left in the file
                 n_frames =
-                    std::min(n_frames, self.total_frames() - self.tell());
+                    std::min(n_frames, self.tell() < self.total_frames()
+                                           ? self.total_frames() - self.tell()
+                                           : size_t{0});
                 if (n_frames == 0) {
-                    throw std::runtime_error("No frames left in file");
+                    throw raw_file_read_error(self, "No frames left in file");
                 }
                 std::vector<size_t> shape{n_frames, self.rows(), self.cols()};
 
@@ -89,12 +102,13 @@ void define_raw_file_io_bindings(py::module &m) {
             "read_roi",
             [](RawFile &self, const size_t roi_index) {
                 if (self.num_rois() == 0) {
-                    throw std::runtime_error(LOCATION + "No ROIs defined.");
+                    throw raw_file_read_error(self,
+                                              LOCATION + "No ROIs defined.");
                 }
 
                 if (roi_index >= self.num_rois()) {
-                    throw std::runtime_error(LOCATION +
-                                             "ROI index out of range.");
+                    throw raw_file_read_error(
+                        self, LOCATION + "ROI index out of range.");
                 }
 
                 // return headers from all subfiles
@@ -141,7 +155,8 @@ void define_raw_file_io_bindings(py::module &m) {
             "read_rois",
             [](RawFile &self) {
                 if (self.num_rois() == 0) {
-                    throw std::runtime_error(LOCATION + "No ROIs defined.");
+                    throw raw_file_read_error(self,
+                                              LOCATION + "No ROIs defined.");
                 }
 
                 size_t number_of_ROIs = self.num_rois();
@@ -196,19 +211,22 @@ void define_raw_file_io_bindings(py::module &m) {
             "read_n_with_roi",
             [](RawFile &self, const size_t num_frames, const size_t roi_index) {
                 if (self.num_rois() == 0) {
-                    throw std::runtime_error(LOCATION + "No ROIs defined.");
+                    throw raw_file_read_error(self,
+                                              LOCATION + "No ROIs defined.");
                 }
 
                 if (roi_index >= self.num_rois()) {
-                    throw std::runtime_error(LOCATION +
-                                             "ROI index out of range.");
+                    throw raw_file_read_error(
+                        self, LOCATION + "ROI index out of range.");
                 }
 
                 // adjust for actual frames left in the file
                 size_t n_frames =
-                    std::min(num_frames, self.total_frames() - self.tell());
+                    std::min(num_frames, self.tell() < self.total_frames()
+                                             ? self.total_frames() - self.tell()
+                                             : size_t{0});
                 if (n_frames == 0) {
-                    throw std::runtime_error("No frames left in file");
+                    throw raw_file_read_error(self, "No frames left in file");
                 }
                 std::vector<size_t> shape{
                     n_frames, self.roi_geometries(roi_index).pixels_y(),
