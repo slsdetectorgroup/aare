@@ -439,7 +439,7 @@ if(AARE_VERBOSE)
   target_compile_definitions(aare_core PUBLIC AARE_VERBOSE)
   target_compile_definitions(aare_core PUBLIC AARE_LOG_LEVEL=aare::logDEBUG5)
 else()
-  target_compile_definitions(aare_core PUBLIC AARE_LOG_LEVEL=aare::logERROR)
+  target_compile_definitions(aare_core PUBLIC AARE_LOG_LEVEL=aare::logWARNING)
 endif()
 
 if(AARE_CUSTOM_ASSERT)
@@ -451,6 +451,7 @@ set_target_properties(aare_core PROPERTIES ARCHIVE_OUTPUT_DIRECTORY
 
 if(AARE_TESTS)
   set(TestSources
+      ${CMAKE_CURRENT_SOURCE_DIR}/tests/raw_file_helpers.hpp
       ${CMAKE_CURRENT_SOURCE_DIR}/src/algorithm.test.cpp
       ${CMAKE_CURRENT_SOURCE_DIR}/src/calibration.test.cpp
       ${CMAKE_CURRENT_SOURCE_DIR}/src/defs.test.cpp

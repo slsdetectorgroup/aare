@@ -130,6 +130,9 @@ class RawMasterFile {
     RawMasterFile(const std::filesystem::path &fpath);
     RawMasterFile(std::istream &is, const std::string &fname); // for testing
 
+    /// @brief Get the filename including path of the master file.
+    std::filesystem::path master_fname() const { return m_fnc.master_fname(); }
+
     std::filesystem::path data_fname(size_t mod_id, size_t file_id) const;
 
     const std::string &version() const; //!< For example "7.2"

@@ -43,6 +43,19 @@
 - ``TimingMode::Auto`` changed to ``TimingMode::AUTO_TIMING``, ``TimingMode::Trigger`` changed to ``TimingMode::TRIGGER_EXPOSURE``
 
 ### Bugfixes:
+- ``RawFile`` now derives its frame count from the shortest selected raw
+  subfile series across all ROIs. Frame-number reads use the same bounds, and
+  Python ``len(reader)`` returns the adjusted count. A warning is printed when
+  subfile counts differ or their minimum differs from the recorded master
+  count. The expected frame count is not used and master metadata is preserved.
+  Warning-level logging is now enabled in non-verbose builds.
+- Raw frame, batch, ROI, and frame-number read errors now include the attempted
+  frame index and file path in C++ and Python, preserving subfile error details.
+  Subfile errors omit redundant master-file context and C++ source locations;
+  out-of-range errors include the available frame count.
+  Synchronization errors identify the last raw data file for the affected module.
+  Top-level frame bounds errors state the total frame count and that indices
+  are zero-based.
 - Fixed ``ClusterVector`` move operations to transfer storage instead of
   copying every cluster.
 - Validate that ``ClusterVector`` masks are one-dimensional, C-contiguous
@@ -195,8 +208,6 @@ https://github.com/slsdetectorgroup/aare
 erik.frojdh@psi.ch \
 alice.mazzoleni@psi.ch \
 dhanya.thattil@psi.ch
-
-
 
 
 

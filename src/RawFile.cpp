@@ -16,8 +16,15 @@ using json = nlohmann::json;
 
 namespace aare {
 
+std::runtime_error RawFile::frame_error(size_t frame_index,
+                                        const std::string &message) const {
+    return std::runtime_error(
+        fmt::format("Error reading frame index {} from file '{}': {}",
+                    frame_index, m_master.master_fname().string(), message));
+}
+
 RawFile::RawFile(const std::filesystem::path &fname, const std::string &mode)
-    : m_master(fname), m_frames_in_file(m_master.frames_in_file()) {
+    : m_master(fname) {
 
     m_mode = mode;
 
@@ -32,30 +39,31 @@ RawFile::RawFile(const std::filesystem::path &fname, const std::string &mode)
             open_subfiles(roi_index);
         }
 
-        // TODO: work around for now - retrieve num_frames from subfiles
-        if (!m_master.disabled_udp_ports().empty()) {
-            // TODO: remove frames_from_file from master file?
-            // retrieve the frame numbers from subfile as frames per file in
-            // master file 0 if dataprocessor 0 was disabled
-            std::vector<size_t> min_subfiles_per_roi(m_subfiles.size());
-            std::transform(
-                m_subfiles.begin(), m_subfiles.end(),
-                min_subfiles_per_roi.begin(), [](const auto &subfiles) {
-                    return std::min_element(
-                               subfiles.begin(), subfiles.end(),
-                               [](const auto &raw_subfile1,
-                                  const auto &raw_subfile2) {
-                                   return raw_subfile1->frames_in_file() <
-                                          raw_subfile2->frames_in_file();
-                               })
-                        ->get()
-                        ->frames_in_file();
-                });
-            m_frames_in_file = *std::min_element(min_subfiles_per_roi.begin(),
-                                                 min_subfiles_per_roi.end());
-
-            LOG(logDEBUG) << "Frames in file: " << m_frames_in_file;
+        std::optional<size_t> min_frames;
+        size_t max_frames = 0;
+        for (const auto &subfiles : m_subfiles) {
+            for (const auto &subfile : subfiles) {
+                const auto count = subfile->frames_in_file();
+                min_frames = min_frames ? std::min(*min_frames, count) : count;
+                max_frames = std::max(max_frames, count);
+            }
         }
+        if (!min_frames) {
+            throw std::runtime_error(fmt::format(
+                "No raw subfiles selected by '{}'", fname.string()));
+        }
+        m_frames_in_file = *min_frames;
+
+        if (m_frames_in_file != max_frames ||
+            m_frames_in_file != m_master.frames_in_file()) {
+            LOG(logWARNING)
+                << fmt::format("'{}': min/max frame count in a subfile: {}/{}, "
+                               "master records {}; "
+                               "using {} frames",
+                               fname.string(), m_frames_in_file, max_frames,
+                               m_master.frames_in_file(), m_frames_in_file);
+        }
+        LOG(logDEBUG) << "Frames in file: " << m_frames_in_file;
     } else {
         throw std::runtime_error(LOCATION +
                                  " Unsupported mode. Can only read RawFiles.");
@@ -65,7 +73,8 @@ RawFile::RawFile(const std::filesystem::path &fname, const std::string &mode)
 Frame RawFile::read_roi(const size_t roi_index) {
 
     if (roi_index >= m_master.roi_geometries().size()) {
-        throw std::runtime_error(LOCATION + "ROI index out of range.");
+        throw frame_error(m_current_frame,
+                          LOCATION + "ROI index out of range.");
     }
     return get_frame(m_current_frame++, roi_index);
 }
@@ -86,15 +95,17 @@ std::vector<Frame> RawFile::read_rois() {
 
 Frame RawFile::read_frame() {
     if (m_master.roi_geometries().size() > 1) {
-        throw std::runtime_error(LOCATION + "Multiple ROIs present in file. "
-                                            "Use read_ROIs() instead.");
+        throw frame_error(m_current_frame, LOCATION +
+                                               "Multiple ROIs present in file. "
+                                               "Use read_ROIs() instead.");
     }
     return get_frame(m_current_frame++);
 }
 
 Frame RawFile::read_frame(size_t frame_number) {
     if (m_master.roi_geometries().size() > 1) {
-        throw std::runtime_error(
+        throw frame_error(
+            frame_number,
             LOCATION + "Multiple ROIs present in file. "
                        "Use read_ROIs(const size_t frame_number) instead.");
     }
@@ -105,8 +116,8 @@ Frame RawFile::read_frame(size_t frame_number) {
 void RawFile::read_into(std::byte *image_buf, size_t n_frames) {
     // TODO: implement this in a more efficient way
     if (m_master.roi_geometries().size() > 1) {
-        throw std::runtime_error(LOCATION +
-                                 "Cannot use read_into for multiple ROIs.");
+        throw frame_error(m_current_frame,
+                          LOCATION + "Cannot use read_into for multiple ROIs.");
     }
 
     for (size_t i = 0; i < n_frames; i++) {
@@ -117,9 +128,10 @@ void RawFile::read_into(std::byte *image_buf, size_t n_frames) {
 
 void RawFile::read_into(std::byte *image_buf) {
     if (m_master.roi_geometries().size() > 1) {
-        throw std::runtime_error(LOCATION +
-                                 "Cannot use read_into for multiple ROIs. Use "
-                                 "read_roi_into() for a single ROI instead.");
+        throw frame_error(m_current_frame,
+                          LOCATION +
+                              "Cannot use read_into for multiple ROIs. Use "
+                              "read_roi_into() for a single ROI instead.");
     }
     return get_frame_into(m_current_frame++, image_buf);
 }
@@ -127,16 +139,17 @@ void RawFile::read_into(std::byte *image_buf) {
 void RawFile::read_roi_into(std::byte *image_buf, const size_t roi_index,
                             const size_t frame_number, DetectorHeader *header) {
     if (roi_index >= num_rois()) {
-        throw std::runtime_error(LOCATION + "ROI index out of range.");
+        throw frame_error(frame_number, LOCATION + "ROI index out of range.");
     }
     return get_frame_into(frame_number, image_buf, roi_index, header);
 }
 
 void RawFile::read_into(std::byte *image_buf, DetectorHeader *header) {
     if (m_master.roi_geometries().size() > 1) {
-        throw std::runtime_error(LOCATION +
-                                 "Cannot use read_into for multiple ROIs. Use "
-                                 "read_roi_into() for a single ROI instead.");
+        throw frame_error(m_current_frame,
+                          LOCATION +
+                              "Cannot use read_into for multiple ROIs. Use "
+                              "read_roi_into() for a single ROI instead.");
     }
     return get_frame_into(m_current_frame++, image_buf, 0, header);
 }
@@ -146,15 +159,16 @@ void RawFile::read_into(std::byte *image_buf, size_t n_frames,
     // return get_frame_into(m_current_frame++, image_buf, header);
 
     if (m_master.roi_geometries().size() > 1) {
-        throw std::runtime_error(
+        throw frame_error(
+            m_current_frame,
             LOCATION +
-            "Cannot use read_into for multiple ROIs."); // TODO: maybe
-                                                        // pass
-                                                        // roi_index so
-                                                        // one can use
-                                                        // read_into for
-                                                        // a specific
-                                                        // ROI
+                "Cannot use read_into for multiple ROIs."); // TODO: maybe
+                                                            // pass
+                                                            // roi_index so
+                                                            // one can use
+                                                            // read_into for
+                                                            // a specific
+                                                            // ROI
     }
 
     for (size_t i = 0; i < n_frames; i++) {
@@ -201,7 +215,8 @@ void RawFile::seek(size_t frame_index) {
     // if frame_number == total_frames, then the next read will throw an
     // error
     if (frame_index > total_frames()) {
-        throw std::runtime_error(
+        throw frame_error(
+            frame_index,
             fmt::format("frame number {} is greater than total frames {}",
                         frame_index, total_frames()));
     }
@@ -281,14 +296,22 @@ DetectorHeader RawFile::read_header(const std::filesystem::path &fname) {
     DetectorHeader h{};
     FILE *fp = fopen(fname.string().c_str(), "r");
     if (!fp)
-        throw std::runtime_error(
-            fmt::format("Could not open: {} for reading", fname.string()));
+        throw std::runtime_error(fmt::format(
+            "Could not open file '{}' for frame index 0", fname.string()));
 
     size_t const rc = fread(reinterpret_cast<char *>(&h), sizeof(h), 1, fp);
-    if (rc != 1)
-        throw std::runtime_error(LOCATION + "Could not read header from file");
+    if (rc != 1) {
+        fclose(fp);
+        throw std::runtime_error(
+            LOCATION + fmt::format("Could not read header for frame index 0 "
+                                   "from file '{}'",
+                                   fname.string()));
+    }
     if (fclose(fp)) {
-        throw std::runtime_error(LOCATION + "Could not close file");
+        throw std::runtime_error(
+            LOCATION + fmt::format("Could not close file '{}' after reading "
+                                   "frame index 0",
+                                   fname.string()));
     }
 
     return h;
@@ -311,7 +334,12 @@ void RawFile::get_frame_into(size_t frame_index, std::byte *frame_buffer,
                              const size_t roi_index, DetectorHeader *header) {
     LOG(logDEBUG) << "RawFile::get_frame_into(" << frame_index << ")";
     if (frame_index >= total_frames()) {
-        throw std::runtime_error(LOCATION + "Frame number out of range");
+        throw frame_error(
+            frame_index,
+            LOCATION +
+                fmt::format("Frame index {} is out of range: file contains {} "
+                            "frames (indices are zero-based)",
+                            frame_index, total_frames()));
     }
     std::vector<size_t> frame_numbers(
         m_master.roi_geometries().at(roi_index).num_modules_in_roi());
@@ -345,8 +373,17 @@ void RawFile::get_frame_into(size_t frame_index, std::byte *frame_buffer,
 
             // 4. if we can't increase its index => throw error
             if (frame_indices[min_frame_idx] >= total_frames()) {
-                throw std::runtime_error(LOCATION +
-                                         "Frame number out of range");
+                throw frame_error(
+                    frame_index,
+                    LOCATION +
+                        fmt::format(
+                            "Frame index {} out of range while synchronizing "
+                            "module {} for ROI {}; last data file '{}'",
+                            frame_indices[min_frame_idx], min_frame_idx,
+                            roi_index,
+                            m_subfiles[roi_index][min_frame_idx]
+                                ->current_path()
+                                .string()));
             }
 
             frame_numbers[min_frame_idx] =
@@ -385,14 +422,15 @@ void RawFile::get_frame_into(size_t frame_index, std::byte *frame_buffer,
                                                .at(roi_index)
                                                .module_indices_in_roi(part_idx))
                     .origin_x != 0)
-                throw std::runtime_error(
+                throw frame_error(
+                    frame_index,
                     LOCATION +
-                    " Implementation error. x pos not 0."); // TODO:
-                                                            // origin
-                                                            // can still
-                                                            // change if
-                                                            // roi
-                                                            // changes
+                        " Implementation error. x pos not 0."); // TODO:
+                                                                // origin
+                                                                // can still
+                                                                // change if
+                                                                // roi
+                                                                // changes
             // TODO! What if the files don't match?
             m_subfiles[roi_index][part_idx]->seek(corrected_idx);
             m_subfiles[roi_index][part_idx]->read_into(frame_buffer + offset,
@@ -451,12 +489,12 @@ void RawFile::get_frame_into(size_t frame_index, std::byte *frame_buffer,
 std::vector<Frame> RawFile::read_n(size_t n_frames) {
     // TODO: implement this in a more efficient way
     if (num_rois() > 1) {
-        throw std::runtime_error(LOCATION +
-                                 "Multiple ROIs defined in the master "
-                                 "file. Use "
-                                 "read_num_rois for a specific ROI or use "
-                                 "read_ROIs to read one frame after "
-                                 "the other.");
+        throw frame_error(m_current_frame,
+                          LOCATION + "Multiple ROIs defined in the master "
+                                     "file. Use "
+                                     "read_num_rois for a specific ROI or use "
+                                     "read_ROIs to read one frame after "
+                                     "the other.");
     }
 
     std::vector<Frame> frames;
@@ -471,7 +509,8 @@ std::vector<Frame> RawFile::read_n(size_t n_frames) {
 std::vector<Frame> RawFile::read_n_with_roi(const size_t n_frames,
                                             const size_t roi_index) {
     if (roi_index >= num_rois()) {
-        throw std::runtime_error(LOCATION + "ROI index out of range.");
+        throw frame_error(m_current_frame,
+                          LOCATION + "ROI index out of range.");
     }
 
     std::vector<Frame> frames;
@@ -484,8 +523,8 @@ std::vector<Frame> RawFile::read_n_with_roi(const size_t n_frames,
 }
 
 size_t RawFile::frame_number(size_t frame_index) {
-    if (frame_index >= m_master.frames_in_file()) {
-        throw std::runtime_error(LOCATION + " Frame number out of range");
+    if (frame_index >= total_frames()) {
+        throw frame_error(frame_index, "Frame number out of range");
     }
     return m_subfiles[0][0]->frame_number(frame_index);
 }
