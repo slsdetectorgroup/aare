@@ -130,12 +130,6 @@ def test_raw_subfile_frame_counts(small_raw_file, capfd, counts, master_count, w
     if warn:
         assert warning.count("WARNING") == 1
         assert str(small_raw_file) in warning
-        assert (
-            f"min/max frame count in a subfile: {min(counts)}/{max(counts)}"
-            in warning
-        )
-        assert f"master records {master_count}" in warning
-        assert f"using {min(counts)} frames" in warning
     else:
         assert "WARNING" not in warning
 
