@@ -624,6 +624,10 @@ void RawMasterFile::parse_raw(std::istream &is) {
             << m_detector_layout.row << " x " << m_detector_layout.col << "\n ";
     }
 
+    m_rois.push_back(
+        {0, m_detector_layout.col * static_cast<ssize_t>(m_pixels_x), 0,
+         m_detector_layout.row * static_cast<ssize_t>(m_pixels_y)});
+
     // TODO! Read files and find actual frames
     if (m_frames_in_file == 0)
         m_frames_in_file = m_total_frames_expected;
