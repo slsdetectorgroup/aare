@@ -2,6 +2,7 @@
 #include <pybind11/pybind11.h>
 
 #include "aare/StrixelPixelRemapping/StrixelPixelRemapDefs.hpp"
+#include "aare/StrixelPixelRemapping/StrixelPixelRemapFormat.hpp"
 
 namespace py = pybind11;
 
@@ -32,7 +33,7 @@ void define_PixelStrixelMapDefs(py::module &m) {
             py::is_operator())
 
         .def("__repr__", [](const aare::remap::defs::Guardring &self) {
-            return fmt::format("Guardring(x={}, y={})", self.x, self.y);
+            return fmt::format("Guardring{{x={}, y={}}}", self.x, self.y);
         });
 
     py::class_<aare::remap::defs::BondShift>(m, "BondShift")
@@ -40,7 +41,10 @@ void define_PixelStrixelMapDefs(py::module &m) {
         .def_readwrite("x", &aare::remap::defs::BondShift::x,
                        "bond shift in x direction (pixels)")
         .def_readwrite("y", &aare::remap::defs::BondShift::y,
-                       "bond shift in y direction (pixels)");
+                       "bond shift in y direction (pixels)")
+        .def("__repr__", [](const aare::remap::defs::BondShift &self) {
+            return fmt::format("BondShift{{x={}, y={}}}", self.x, self.y);
+        });
 
     py::class_<aare::remap::defs::SensorPixelGeometry>(m, "SensorPixelGeometry")
         .def(py::init<int, int, aare::remap::defs::Guardring>(),
@@ -54,7 +58,13 @@ void define_PixelStrixelMapDefs(py::module &m) {
                        "number of pixels in y direction")
         .def_readwrite(
             "guardring", &aare::remap::defs::SensorPixelGeometry::guardring,
-            "physical guardring around the sensor (default Guardring(0,0))");
+            "physical guardring around the sensor (default Guardring(0,0))")
+
+        .def("__repr__",
+             [](const aare::remap::defs::SensorPixelGeometry &self) {
+                 return fmt::format("SensorPixelGeometry{}",
+                                    aare::remap::format::to_string(self));
+             });
 
     py::class_<aare::remap::defs::GroupStrixelGeometry>(m,
                                                         "GroupStrixelGeometry")
@@ -65,7 +75,12 @@ void define_PixelStrixelMapDefs(py::module &m) {
                        "maximum number of pixels a strixel covers")
         .def_readwrite("pitch_um",
                        &aare::remap::defs::GroupStrixelGeometry::pitch_um,
-                       "effective minimal strixel pitch [µm]");
+                       "effective minimal strixel pitch [µm]")
+        .def("__repr__",
+             [](const aare::remap::defs::GroupStrixelGeometry &self) {
+                 return fmt::format("GroupStrixelGeometry{}",
+                                    aare::remap::format::to_string(self));
+             });
 
     py::class_<aare::remap::defs::GroupRouting>(m, "GroupRouting")
         .def(py::init<aare::remap::defs::ModuloOrdering>(),
@@ -73,7 +88,12 @@ void define_PixelStrixelMapDefs(py::module &m) {
         .def_readwrite(
             "mod_order", &aare::remap::defs::GroupRouting::mod_order,
             "modulo ordering of pixels within each strixel multiplicity group "
-            "default(ModuloOrdering::Forward)");
+            "default(ModuloOrdering::Forward)")
+
+        .def("__repr__", [](const aare::remap::defs::GroupRouting &self) {
+            return fmt::format("GroupRouting{}",
+                               aare::remap::format::to_string(self));
+        });
 
     py::class_<aare::remap::defs::GroupConfig>(m, "GroupConfig")
         .def(py::init<aare::remap::defs::GroupStrixelGeometry,
@@ -97,7 +117,12 @@ void define_PixelStrixelMapDefs(py::module &m) {
             "placement_on_sensor",
             &aare::remap::defs::GroupConfig::placement_on_sensor,
             "placement of the strixel group on the sensor (sensor-local "
-            "coordinates)");
+            "coordinates)")
+
+        .def("__repr__", [](const aare::remap::defs::GroupConfig &self) {
+            return fmt::format("GroupConfig{}",
+                               aare::remap::format::to_string(self));
+        });
 
     py::class_<aare::remap::defs::SensorModulePlacement>(
         m, "SensorModulePlacement")
@@ -110,7 +135,13 @@ void define_PixelStrixelMapDefs(py::module &m) {
         .def_readwrite(
             "rotation", &aare::remap::defs::SensorModulePlacement::rotation,
             "physical orientation of the mounted sensor-ASIC assembly with "
-            "respect to the module reference frame");
+            "respect to the module reference frame")
+
+        .def("__repr__",
+             [](const aare::remap::defs::SensorModulePlacement &self) {
+                 return fmt::format("SensorModulePlacement{}",
+                                    aare::remap::format::to_string(self));
+             });
 
     py::class_<aare::remap::defs::StrixelGroupToPixelMap>(
         m, "StrixelGroupToPixelMap")

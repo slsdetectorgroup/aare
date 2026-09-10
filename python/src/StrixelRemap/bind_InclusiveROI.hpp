@@ -72,6 +72,13 @@ void define_InclusiveROI(py::module &m) {
         .def("__eq__", &aare::InclusiveROI::operator==, py::is_operator(),
              "check if two InclusiveROI objects are equal")
 
+        .def("__repr__",
+             [](const aare::InclusiveROI &self) {
+                 return fmt::format(
+                     "InclusiveROI(xmin={}, xmax={}, ymin={}, ymax={})",
+                     self.xmin, self.xmax, self.ymin, self.ymax);
+             })
+
         .def_static("emptyROI", &aare::InclusiveROI::emptyROI,
                     "create an empty InclusiveROI");
 

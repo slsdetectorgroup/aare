@@ -34,6 +34,30 @@ def test_emptyROI():
     assert empty_roi.ymin == 0
     assert empty_roi.ymax == -1
 
+
+def test_format(): 
+    """ Test string representations """
+
+    inclusive_roi = strixelremap.InclusiveROI(0, 9, 0, 4)
+
+    assert str(inclusive_roi) == "InclusiveROI(xmin=0, xmax=9, ymin=0, ymax=4)"
+
+    jungfrau_pixel_geometry = strixelremap.SingleChipMP_TEW_pix
+
+    assert str(jungfrau_pixel_geometry) == "SensorPixelGeometry{cols x rows: 256 x 256, guardring: {x = 0, y = 0}}"
+
+    strixel_group = strixelremap.StrxP25
+
+    assert str(strixel_group) == "GroupStrixelGeometry{multiplicity: 3, pitch_um: 25}"
+
+    jungfrau_group_config = strixelremap.SingleChipMP_TEW_P25
+
+    assert str(jungfrau_group_config) == "GroupConfig{strixel_group: {multiplicity: 3, pitch_um: 25}, routing: {Forward}, placement_on_sensor: {xmin=1, xmax=255, ymin=0, ymax=63}}"
+
+    sensor_placement = strixelremap.Chip1
+
+    assert str(sensor_placement) == "SensorModulePlacement{placement_on_module: {xmin=256, xmax=511, ymin=0, ymax=255}, rotation: Identity}"
+
 def test_customSensorConfiguration(): 
     """ Test that a custom sensor configuration can be created and used to remap strixel pixels """
 
