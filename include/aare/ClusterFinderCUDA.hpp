@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: MPL-2.0
 #pragma once
 #include "aare/ClusterFinder.hpp"
-#include "aare/clusterfinder_kernel.cuh"
+#include "aare/clusterfinder_algo.cuh"
 #include "aare/utils/cuda_check.cuh"
 #include <algorithm>
 #include <cmath>
@@ -9,39 +9,98 @@
 #include <cstdio>
 #include <cstring>
 #include <limits>
+#include <memory>
 #include <stdexcept>
 #include <vector>
 
 namespace aare {
 
-// Per-stream device resources (device-side only; all pinned host staging is
-// class-level)
-template <typename ClusterType, typename FRAME_TYPE, typename PEDESTAL_TYPE>
-struct StreamContext {
-    cudaStream_t stream = nullptr;
-    FRAME_TYPE *d_frame = nullptr;
-    // Device pedestal precision is set by DEVICE_PED_TYPE in the kernel header.
-    // Accumulators hold CENTERED moments of Y = X - d_pd_off (see kernel):
-    //   d_pd_sum  ~ n*E[Y], d_pd_sum2 ~ n*E[Y^2], d_pd_mean = full mean
-    //   (X0+E[Y]).
-    device::DEVICE_PED_TYPE *d_pd_mean = nullptr;
-    device::DEVICE_PED_TYPE *d_pd_sum = nullptr;
-    device::DEVICE_PED_TYPE *d_pd_sum2 = nullptr;
-    device::DEVICE_PED_TYPE *d_pd_off = nullptr; // frozen per-pixel baseline X0
-    uint8_t *d_output = nullptr; // [uint32_t count | ClusterType clusters[max]]
+/**
+ * @brief One stream's device resources, owned.
+ *
+ * Constructed means allocated, destroyed means freed; this is the only place
+ * cudaMalloc appears on the driver side. The algorithm-specific part, how
+ * many pedestal arrays and of what type, is delegated to
+ * Algo::PedestalBuffers, so adding an algorithm never touches this class.
+ *
+ * Non-copyable and non-movable so a mis-written move can never double-free.
+ * The driver holds contexts through unique_ptr.
+ */
+template <typename Algo> class StreamContext {
+    using FrameType = typename Algo::frame_type;
+    using ClusterType = typename Algo::cluster_type;
+
+    cudaStream_t m_stream = nullptr;
+    FrameType *m_frame = nullptr;
+    typename Algo::PedestalBuffers m_ped;
+    uint8_t *m_output = nullptr; // [uint32_t count | pad | ClusterType[max]]
+    size_t m_clusters_offset = 0;
+
+  public:
+    StreamContext(size_t n_pixels, size_t output_bytes, size_t clusters_offset)
+        : m_ped(n_pixels), m_clusters_offset(clusters_offset) {
+        CUDA_CHECK(cudaStreamCreateWithFlags(&m_stream, cudaStreamNonBlocking));
+        CUDA_CHECK(cudaMalloc(&m_frame, n_pixels * sizeof(FrameType)));
+        CUDA_CHECK(cudaMalloc(&m_output, output_bytes));
+    }
+    ~StreamContext() {
+        // Bare cuda* calls: nothing at teardown is actionable. m_ped is a
+        // member, so its arrays are freed after this body, once the stream
+        // is idle.
+        if (m_stream)
+            cudaStreamSynchronize(m_stream);
+        cudaFree(m_frame);
+        cudaFree(m_output);
+        if (m_stream)
+            cudaStreamDestroy(m_stream);
+    }
+    StreamContext(const StreamContext &) = delete;
+    StreamContext &operator=(const StreamContext &) = delete;
+    StreamContext(StreamContext &&) = delete;
+    StreamContext &operator=(StreamContext &&) = delete;
+
+    cudaStream_t stream() const { return m_stream; }
+    FrameType *frame() const { return m_frame; }
+    uint8_t *output() const { return m_output; }
+    uint32_t *count() const { return reinterpret_cast<uint32_t *>(m_output); }
+    const typename Algo::PedestalBuffers &pedestal() const { return m_ped; }
+
+    /// The pointer bundle Algo::launch consumes. Built on the fly, never
+    /// stored, so it cannot outlive the buffers it points into.
+    typename Algo::DeviceState state() const {
+        return Algo::make_state(
+            m_frame, m_ped,
+            reinterpret_cast<ClusterType *>(m_output + m_clusters_offset),
+            count());
+    }
 };
 
-template <typename ClusterType = Cluster<int32_t, 3, 3>,
-          typename FRAME_TYPE = uint16_t, typename PEDESTAL_TYPE = double,
-          typename = std::enable_if_t<no_2x2_cluster<ClusterType>::value>>
+/**
+ * @brief GPU cluster-finding driver: streams, batching, host staging.
+ *
+ * Everything that depends on WHICH kernel runs lives in Algo (see
+ * clusterfinder_algo.cuh): the device buffers a stream needs, how the host
+ * pedestal is turned into them and read back, and the launch itself. This
+ * class owns the pipeline around that and never names a kernel: N streams
+ * each with a StreamContext, two pinned ping-pong output slots, batch-done
+ * events, and the chunked submit-before-collect loop that keeps the GPU busy
+ * while the host marshals results.
+ *
+ * @tparam Algo          e.g. cuda::FixedWindow<Cluster<int32_t, 3, 3>>
+ * @tparam PEDESTAL_TYPE host-side pedestal precision
+ */
+template <typename Algo, typename PEDESTAL_TYPE = double>
 class ClusterFinderCUDA {
+  public:
+    using algorithm = Algo;
+    using ClusterType = typename Algo::cluster_type;
+    using FRAME_TYPE = typename Algo::frame_type;
+
+  private:
+    static_assert(no_2x2_cluster<ClusterType>::value,
+                  "ClusterFinderCUDA: both cluster dimensions must exceed 2");
     using COMPUTE_TYPE =
         device::COMPUTE_TYPE; // match the kernel's internal precision
-
-    static constexpr int BLOCK_X = 16;
-    static constexpr int BLOCK_Y = 16;
-    static constexpr int col_radius = ClusterType::cluster_size_x / 2;
-    static constexpr int row_radius = ClusterType::cluster_size_y / 2;
 
     // Two ping-pong output slots. At most 2 batches can be in flight at once:
     // the caller submits batch B before collecting batch A, so A and B occupy
@@ -88,10 +147,10 @@ class ClusterFinderCUDA {
     // Frozen per-pixel baseline X0 (~mean at t=0), captured once on the first
     // sync and reused so the centered device accumulators never need rebasing.
     // Cleared by clear_pedestal() to force re-capture on the next sync.
-    std::vector<device::DEVICE_PED_TYPE> m_offset;
+    std::vector<typename Algo::ped_type> m_offset;
 
-    using SC = StreamContext<ClusterType, FRAME_TYPE, PEDESTAL_TYPE>;
-    std::vector<SC> v_sc;
+    // One per stream. unique_ptr so the context can stay non-movable.
+    std::vector<std::unique_ptr<StreamContext<Algo>>> v_sc;
 
     float m_total_kernel_ms = 0.0f;
     size_t m_frames_processed = 0;
@@ -116,11 +175,6 @@ class ClusterFinderCUDA {
     // these via cudaEventSynchronize so it unblocks as soon as the batch
     // finishes, even if the next batch is already queued in the same streams.
     std::vector<cudaEvent_t> m_batch_done[NUM_SLOTS];
-
-    // Kernel parameters
-    dim3 grid;
-    dim3 block;
-    size_t shmem_bytes;
 
     /// Copy every frame of a pinned output slot into results, turning the
     /// packed device layout into owned ClusterVectors. This is exactly the work
@@ -427,18 +481,6 @@ class ClusterFinderCUDA {
                 "ClusterFinderCUDA: nrows * ncols must fit in int32_t");
         }
 
-        // Grid/Block dimensions
-        block = dim3(BLOCK_X, BLOCK_Y);
-        grid = dim3((static_cast<unsigned int>(ncols) + BLOCK_X - 1) / BLOCK_X,
-                    (static_cast<unsigned int>(nrows) + BLOCK_Y - 1) / BLOCK_Y);
-
-        // Shared memory: one tile of (BLOCK_X + 2*col_radius) x (BLOCK_Y +
-        // 2*row_radius) elements
-        // Mixed precision used -> shmem takes COMPUTE_TYPE = floats (not
-        // PEDESTAL_TYPE)
-        shmem_bytes = (BLOCK_X + 2 * col_radius) * (BLOCK_Y + 2 * row_radius) *
-                      sizeof(COMPUTE_TYPE);
-
         m_image_bytes = m_image_size * sizeof(FRAME_TYPE);
 
         // Output block layout: [count][padding to ClusterType
@@ -451,22 +493,12 @@ class ClusterFinderCUDA {
         m_output_bytes_per_frame =
             m_clusters_offset + m_max_clusters_per_frame * sizeof(ClusterType);
 
-        v_sc.resize(n_streams);
-        for (int k = 0; k < n_streams; ++k) {
-            auto &sc = v_sc[k];
-            CUDA_CHECK(
-                cudaStreamCreateWithFlags(&sc.stream, cudaStreamNonBlocking));
-            CUDA_CHECK(cudaMalloc(&sc.d_frame, m_image_bytes));
-            CUDA_CHECK(cudaMalloc(
-                &sc.d_pd_mean, m_image_size * sizeof(device::DEVICE_PED_TYPE)));
-            CUDA_CHECK(cudaMalloc(
-                &sc.d_pd_sum, m_image_size * sizeof(device::DEVICE_PED_TYPE)));
-            CUDA_CHECK(cudaMalloc(
-                &sc.d_pd_sum2, m_image_size * sizeof(device::DEVICE_PED_TYPE)));
-            CUDA_CHECK(cudaMalloc(
-                &sc.d_pd_off, m_image_size * sizeof(device::DEVICE_PED_TYPE)));
-            CUDA_CHECK(cudaMalloc(&sc.d_output, m_output_bytes_per_frame));
-        }
+        // One RAII context per stream: stream handle, frame buffer, the
+        // algorithm's pedestal arrays and the packed output block.
+        v_sc.reserve(n_streams);
+        for (int k = 0; k < n_streams; ++k)
+            v_sc.push_back(std::make_unique<StreamContext<Algo>>(
+                m_image_size, m_output_bytes_per_frame, m_clusters_offset));
 
         for (int s = 0; s < NUM_SLOTS; ++s) {
             m_batch_done[s].resize(n_streams);
@@ -477,24 +509,12 @@ class ClusterFinderCUDA {
     }
 
     ~ClusterFinderCUDA() {
-        for (auto &sc : v_sc) {
-            if (sc.stream)
-                cudaStreamSynchronize(sc.stream);
-            if (sc.d_frame)
-                cudaFree(sc.d_frame);
-            if (sc.d_pd_mean)
-                cudaFree(sc.d_pd_mean);
-            if (sc.d_pd_sum)
-                cudaFree(sc.d_pd_sum);
-            if (sc.d_pd_sum2)
-                cudaFree(sc.d_pd_sum2);
-            if (sc.d_pd_off)
-                cudaFree(sc.d_pd_off);
-            if (sc.d_output)
-                cudaFree(sc.d_output);
-            if (sc.stream)
-                cudaStreamDestroy(sc.stream);
-        }
+        // Drain before freeing anything: an uncollected batch may still have
+        // a D2H in flight into the pinned slots below. Members, and so the
+        // stream contexts, are destroyed only after this body returns.
+        for (auto &sc : v_sc)
+            if (sc)
+                cudaStreamSynchronize(sc->stream());
 
         for (int s = 0; s < NUM_SLOTS; ++s) {
             for (auto e : m_kernel_start_pools[s])
@@ -576,13 +596,9 @@ class ClusterFinderCUDA {
             sync_pedestal_to_device();
             m_pedestal_dirty = false;
         }
-        auto &sc = v_sc.at(static_cast<size_t>(stream));
-        CUDA_CHECK(cudaStreamSynchronize(sc.stream));
-        using DPT = device::DEVICE_PED_TYPE;
-        std::vector<DPT> h_mean(m_image_size);
-        CUDA_CHECK(cudaMemcpy(h_mean.data(), sc.d_pd_mean,
-                              m_image_size * sizeof(DPT),
-                              cudaMemcpyDeviceToHost));
+        auto &sc = *v_sc.at(static_cast<size_t>(stream));
+        std::vector<typename Algo::ped_type> h_mean;
+        Algo::download_mean(sc.pedestal(), m_image_size, h_mean, sc.stream());
         NDArray<PEDESTAL_TYPE, 2> out(
             {static_cast<ssize_t>(nrows), static_cast<ssize_t>(ncols)});
         for (size_t i = 0; i < m_image_size; ++i)
@@ -599,28 +615,15 @@ class ClusterFinderCUDA {
             sync_pedestal_to_device();
             m_pedestal_dirty = false;
         }
-        auto &sc = v_sc.at(static_cast<size_t>(stream));
-        CUDA_CHECK(cudaStreamSynchronize(sc.stream));
-        using DPT = device::DEVICE_PED_TYPE;
-        std::vector<DPT> h_mean(m_image_size), h_sum2(m_image_size);
-        CUDA_CHECK(cudaMemcpy(h_mean.data(), sc.d_pd_mean,
-                              m_image_size * sizeof(DPT),
-                              cudaMemcpyDeviceToHost));
-        CUDA_CHECK(cudaMemcpy(h_sum2.data(), sc.d_pd_sum2,
-                              m_image_size * sizeof(DPT),
-                              cudaMemcpyDeviceToHost));
-        const double n = static_cast<double>(m_pedestal.n_samples());
+        auto &sc = *v_sc.at(static_cast<size_t>(stream));
+        std::vector<double> h_noise;
+        Algo::download_noise(sc.pedestal(), m_offset,
+                             static_cast<uint32_t>(m_pedestal.n_samples()),
+                             m_image_size, h_noise, sc.stream());
         NDArray<PEDESTAL_TYPE, 2> out(
             {static_cast<ssize_t>(nrows), static_cast<ssize_t>(ncols)});
-        for (size_t i = 0; i < m_image_size; ++i) {
-            // Accumulators are centered on X0 = m_offset[i], so the variance is
-            // E[Y^2] - E[Y]^2 with E[Y] = mean - X0 (mirrors the kernel).
-            double resid = static_cast<double>(h_mean[i]) -
-                           static_cast<double>(m_offset[i]);
-            double var = static_cast<double>(h_sum2[i]) / n - resid * resid;
-            out.data()[i] =
-                static_cast<PEDESTAL_TYPE>(std::sqrt(std::max(var, 0.0)));
-        }
+        for (size_t i = 0; i < m_image_size; ++i)
+            out.data()[i] = static_cast<PEDESTAL_TYPE>(h_noise[i]);
         return out;
     }
 
@@ -695,47 +698,37 @@ class ClusterFinderCUDA {
         m_next_slot = 1 - slot;
 
         const size_t n_frames_batch = static_cast<size_t>(frames.shape(0));
-        const uint32_t n_pd_samples =
-            static_cast<uint32_t>(m_pedestal.n_samples());
+        const cuda::LaunchParams params{
+            static_cast<int32_t>(nrows), static_cast<int32_t>(ncols), m_nSigma,
+            static_cast<uint32_t>(m_pedestal.n_samples()),
+            static_cast<uint32_t>(m_max_clusters_per_frame)};
 
         grow_output_slot(slot, n_frames_batch);
         ensure_event_pool(slot, n_frames_batch);
 
         // Launch all frames round-robin across streams
         for (size_t frame_idx = 0; frame_idx < n_frames_batch; ++frame_idx) {
-            auto &sc = v_sc[frame_idx % n_streams];
-
+            auto &sc = *v_sc[frame_idx % n_streams];
             const FRAME_TYPE *h_src = frames.data() + frame_idx * m_image_size;
-            auto *d_cluster_count = reinterpret_cast<uint32_t *>(sc.d_output);
 
-            CUDA_CHECK(cudaMemsetAsync(d_cluster_count, 0, sizeof(uint32_t),
-                                       sc.stream));
-            CUDA_CHECK(cudaMemcpyAsync(sc.d_frame, h_src, m_image_bytes,
-                                       cudaMemcpyHostToDevice, sc.stream));
+            CUDA_CHECK(
+                cudaMemsetAsync(sc.count(), 0, sizeof(uint32_t), sc.stream()));
+            CUDA_CHECK(cudaMemcpyAsync(sc.frame(), h_src, m_image_bytes,
+                                       cudaMemcpyHostToDevice, sc.stream()));
 
-            auto *d_clusters = reinterpret_cast<ClusterType *>(
-                sc.d_output + m_clusters_offset);
             if (m_time_kernels)
                 CUDA_CHECK(cudaEventRecord(
-                    m_kernel_start_pools[slot][frame_idx], sc.stream));
-            device::find_clusters_in_single_frame<ClusterType, FRAME_TYPE,
-                                                  BLOCK_X, BLOCK_Y>
-                <<<grid, block, shmem_bytes, sc.stream>>>(
-                    sc.d_frame, sc.d_pd_mean, sc.d_pd_sum, sc.d_pd_sum2,
-                    sc.d_pd_off, n_pd_samples, m_nSigma,
-                    static_cast<int32_t>(nrows), static_cast<int32_t>(ncols),
-                    d_clusters, d_cluster_count,
-                    static_cast<uint32_t>(m_max_clusters_per_frame));
+                    m_kernel_start_pools[slot][frame_idx], sc.stream()));
+            Algo::launch(params, sc.state(), sc.stream());
             if (m_time_kernels)
                 CUDA_CHECK(cudaEventRecord(m_kernel_stop_pools[slot][frame_idx],
-                                           sc.stream));
-            CUDA_CHECK(cudaGetLastError());
+                                           sc.stream()));
 
             void *h_out = static_cast<char *>(h_output_slots[slot]) +
                           frame_idx * m_output_bytes_per_frame;
-            CUDA_CHECK(cudaMemcpyAsync(h_out, sc.d_output,
+            CUDA_CHECK(cudaMemcpyAsync(h_out, sc.output(),
                                        m_output_bytes_per_frame,
-                                       cudaMemcpyDeviceToHost, sc.stream));
+                                       cudaMemcpyDeviceToHost, sc.stream()));
         }
 
         // Record per-stream "batch done" events after all D2H for this batch.
@@ -745,7 +738,8 @@ class ClusterFinderCUDA {
         const int streams_used =
             std::min<int>(n_streams, static_cast<int>(n_frames_batch));
         for (int k = 0; k < streams_used; ++k)
-            CUDA_CHECK(cudaEventRecord(m_batch_done[slot][k], v_sc[k].stream));
+            CUDA_CHECK(
+                cudaEventRecord(m_batch_done[slot][k], v_sc[k]->stream()));
 
         m_slot_n_frames[slot] = n_frames_batch;
         m_slot_first_frame[slot] = first_frame;
@@ -1077,57 +1071,20 @@ class ClusterFinderCUDA {
 
   private:
     /**
-     * Upload the current host pedestal (mean, sum, sum2) to every stream's
-     * device buffers. Called lazily before a find_clusters call when the
-     * host pedestal has been updated.
+     * Upload the current host pedestal to every stream's device buffers.
+     * Called lazily before a launch when the host pedestal has been updated.
+     * How the host pedestal becomes device arrays (for FixedWindow: the
+     * centering on a frozen baseline) is the algorithm's business; the
+     * baseline cache m_offset is captured on the first call and cleared by
+     * clear_pedestal().
      */
     void sync_pedestal_to_device() {
-        NDArray<PEDESTAL_TYPE, 2> h_mean = m_pedestal.mean();
-        NDArray<PEDESTAL_TYPE, 2> h_sum = m_pedestal.get_sum();
-        NDArray<PEDESTAL_TYPE, 2> h_sum2 = m_pedestal.get_sum2();
-
-        using DPT = device::DEVICE_PED_TYPE;
-        const double n = static_cast<double>(m_pedestal.n_samples());
-
-        // Capture the frozen per-pixel baseline X0 (≈ mean at t=0) ONCE. Fixed
-        // for the run so the centered device accumulators never need rebasing;
-        // clear_pedestal() empties m_offset to force a fresh capture.
-        if (m_offset.size() != m_image_size) {
-            m_offset.resize(m_image_size);
-            for (size_t i = 0; i < m_image_size; ++i)
-                m_offset[i] = static_cast<DPT>(std::llround(h_mean.data()[i]));
-        }
-
-        // Center in DOUBLE (where sum2 ~ n·E[X²] is still exact), then cast the
-        // SMALL centered results to DPT — this is what dodges the f32
-        // cancellation. Device holds: sum ~ n·E[Y], sum2 ~ n·E[Y²], Y = X − X0.
-        //   Σ(X−X0)   = ΣX  − n·X0
-        //   Σ(X−X0)²  = ΣX² − 2·X0·ΣX + n·X0²
-        std::vector<DPT> f_mean(m_image_size);
-        std::vector<DPT> f_sum(m_image_size);
-        std::vector<DPT> f_sum2(m_image_size);
-        for (size_t i = 0; i < m_image_size; ++i) {
-            const double X0 = static_cast<double>(m_offset[i]);
-            const double s = h_sum.data()[i];
-            const double s2 = h_sum2.data()[i];
-            f_mean[i] = static_cast<DPT>(h_mean.data()[i]);
-            f_sum[i] = static_cast<DPT>(s - n * X0);
-            f_sum2[i] = static_cast<DPT>(s2 - 2.0 * X0 * s + n * X0 * X0);
-        }
-
-        const size_t bytes = m_image_size * sizeof(DPT);
-        for (auto &sc : v_sc) {
-            CUDA_CHECK(cudaMemcpyAsync(sc.d_pd_mean, f_mean.data(), bytes,
-                                       cudaMemcpyHostToDevice, sc.stream));
-            CUDA_CHECK(cudaMemcpyAsync(sc.d_pd_sum, f_sum.data(), bytes,
-                                       cudaMemcpyHostToDevice, sc.stream));
-            CUDA_CHECK(cudaMemcpyAsync(sc.d_pd_sum2, f_sum2.data(), bytes,
-                                       cudaMemcpyHostToDevice, sc.stream));
-            CUDA_CHECK(cudaMemcpyAsync(sc.d_pd_off, m_offset.data(), bytes,
-                                       cudaMemcpyHostToDevice, sc.stream));
-        }
+        const auto image = Algo::prepare_pedestal(m_pedestal, m_offset);
         for (auto &sc : v_sc)
-            CUDA_CHECK(cudaStreamSynchronize(sc.stream));
+            Algo::upload_pedestal(image, m_offset, sc->pedestal(),
+                                  sc->stream());
+        for (auto &sc : v_sc)
+            CUDA_CHECK(cudaStreamSynchronize(sc->stream()));
     }
 
     /// Grow one slot's pinned D2H buffer to hold n_frames. Only ever grows, so

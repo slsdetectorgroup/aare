@@ -1,6 +1,7 @@
 #pragma once
-#include "aare/Cluster.hpp"
-#include "aare/ClusterFinder.hpp"
+#include "aare/Cluster.hpp" // Cluster, no_2x2_cluster; nothing else from aare
+#include <cmath>
+#include <cstdint>
 #include <cuda_runtime.h>
 #include <type_traits>
 

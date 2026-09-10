@@ -414,6 +414,7 @@ set(PUBLICHEADERS
 
 if(AARE_CUDA)
   list(APPEND PUBLICHEADERS include/aare/ClusterFinderCUDA.hpp
+       include/aare/clusterfinder_algo.cuh
        include/aare/clusterfinder_kernel.cuh include/aare/utils/cuda_check.cuh)
 endif()
 
@@ -524,6 +525,15 @@ if(AARE_TESTS)
       ${CMAKE_CURRENT_SOURCE_DIR}/src/utils/task.test.cpp
       ${CMAKE_CURRENT_SOURCE_DIR}/src/to_string.test.cpp)
   target_sources(tests PRIVATE ${TestSources})
+endif()
+
+# GPU tests: the Catch2 case is plain C++, the CUDA work sits in a .cu helper so
+# Catch2 is never compiled by nvcc.
+if(AARE_TESTS AND AARE_CUDA)
+  target_sources(
+    tests PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/src/ClusterFinderCUDA.test.cpp
+                  ${CMAKE_CURRENT_SOURCE_DIR}/src/ClusterFinderCUDA_testimpl.cu)
+  target_link_libraries(tests PRIVATE aare_cuda)
 endif()
 
 if(AARE_MASTER_PROJECT)
