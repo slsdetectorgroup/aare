@@ -9,8 +9,6 @@
 #include <pybind11/stl.h>
 #include <pybind11/stl_bind.h>
 
-#include <iostream>
-
 namespace py = pybind11;
 
 using namespace aare;
@@ -39,7 +37,6 @@ void define_Cluster(py::module &m, const std::string &typestr) {
             return cluster;
         }))
 
-        // TODO! Review if to keep or not
         .def_property_readonly(
             "data",
             [](Cluster<Type, ClusterSizeX, ClusterSizeY, CoordType> &c)
