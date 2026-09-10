@@ -57,9 +57,15 @@ def _cuda_available():
     return hasattr(_aare, "ClusterFinderCUDA_Cluster3x3i")
 
 
+# GPU algorithm name -> suffix of the bound C++ class. The C++ driver is
+# templated on the algorithm (see clusterfinder_algo.cuh); each one is bound as
+# its own class and selected here, so users never see the template.
+_CUDA_ALGORITHMS = {"fixed_window": ""}
+
+
 def ClusterFinderCUDA(image_size, cluster_size=(3,3), n_sigma=5, dtype=np.int32,
                       max_clusters_per_frame=2048, n_streams=4,
-                      time_kernels=False):
+                      time_kernels=False, algorithm="fixed_window"):
     """
     Factory function to create a ClusterFinderCUDA object. Provides a cleaner
     syntax for the templated ClusterFinderCUDA in C++. API mirrors
@@ -89,6 +95,10 @@ def ClusterFinderCUDA(image_size, cluster_size=(3,3), n_sigma=5, dtype=np.int32,
         contention the events measure queue wait, not execution, and over-read
         by up to ~3.5x. Use Nsight Systems for exclusive kernel times. When
         disabled, avg_kernel_time_ms() returns NaN.
+    algorithm : str, optional
+        GPU algorithm. "fixed_window" (default): a cluster_size window around
+        each pixel with local-maximum suppression. Memory and streams are
+        managed internally whichever algorithm is chosen.
 
     Example
     -------
@@ -117,7 +127,12 @@ def ClusterFinderCUDA(image_size, cluster_size=(3,3), n_sigma=5, dtype=np.int32,
             "Rebuild with -DAARE_CUDA=ON (and -DAARE_PYTHON_BINDINGS=ON)."
         )
 
-    cls = _get_class("ClusterFinderCUDA", cluster_size, dtype)
+    if algorithm not in _CUDA_ALGORITHMS:
+        raise ValueError(
+            f"Unknown CUDA algorithm {algorithm!r}; "
+            f"choose from {sorted(_CUDA_ALGORITHMS)}")
+    cls = _get_class("ClusterFinderCUDA" + _CUDA_ALGORITHMS[algorithm],
+                     cluster_size, dtype)
     return cls(image_size,
                n_sigma=n_sigma,
                max_clusters_per_frame=max_clusters_per_frame,

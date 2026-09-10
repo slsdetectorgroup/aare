@@ -236,4 +236,14 @@ struct is_cluster<Cluster<T, X, Y, CoordType>> : std::true_type {}; // Cluster
 
 template <typename T> constexpr bool is_cluster_v = is_cluster<T>::value;
 
+/// True when both cluster dimensions exceed 2. The fixed-window finders
+/// (CPU and CUDA) require it; lives here so the CUDA kernel header can use it
+/// without pulling in ClusterFinder.hpp.
+template <typename ClusterType,
+          typename = std::enable_if_t<is_cluster_v<ClusterType>>>
+struct no_2x2_cluster {
+    constexpr static bool value =
+        ClusterType::cluster_size_x > 2 && ClusterType::cluster_size_y > 2;
+};
+
 } // namespace aare
