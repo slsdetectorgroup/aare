@@ -4,7 +4,7 @@
 #include "aare/logger.hpp"
 #include <sstream>
 
-#include "to_string.hpp"
+#include "aare/to_string.hpp"
 
 namespace aare {
 

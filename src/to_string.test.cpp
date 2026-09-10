@@ -1,10 +1,10 @@
 // SPDX-License-Identifier: MPL-2.0
+#include "aare/to_string.hpp"
 #include "aare/defs.hpp"
 
 #include <catch2/catch_test_macros.hpp>
 #include <string>
 
-#include "to_string.hpp"
 using aare::string_to;
 
 TEST_CASE("DetectorType string to enum") {
