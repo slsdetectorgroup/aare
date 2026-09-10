@@ -20,6 +20,9 @@
 - Added the ``AARE_TUNE_LOCAL`` CMake option to build with ``-march=native``
   and ``-mtune=native`` when supported. Binaries built with this option are
   specific to the local CPU and may not be portable.
+- Added string representator in python for Cluster and Eta 
+- Added roi slice method in python for easy slicing of numpy arrays ``array[roi.slice()]``. 
+- added context manager for ``aare.RawMasterFile``
 
 ### API Changes:
 
@@ -65,6 +68,19 @@
   silently continuing with a truncated file.
 - Gain-map application now checks the complete cluster footprint, preventing
   out-of-bounds access for cluster sizes larger than 3x3.
+- ``RawFile`` now derives its frame count from the shortest selected raw
+  subfile series across all ROIs. Frame-number reads use the same bounds, and
+  Python ``len(reader)`` returns the adjusted count. A warning is printed when
+  subfile counts differ or their minimum differs from the recorded master
+  count. The expected frame count is not used and master metadata is preserved.
+  Warning-level logging is now enabled in non-verbose builds.
+- Raw frame, batch, ROI, and frame-number read errors now include the attempted
+  frame index and file path in C++ and Python, preserving subfile error details.
+  Subfile errors omit redundant master-file context and C++ source locations;
+  out-of-range errors include the available frame count.
+  Synchronization errors identify the last raw data file for the affected module.
+  Top-level frame bounds errors state the total frame count and that indices
+  are zero-based.
 - Fixed ``ClusterVector`` move operations to transfer storage instead of
   copying every cluster.
 - Validate that ``ClusterVector`` masks are one-dimensional, C-contiguous
@@ -217,3 +233,7 @@ https://github.com/slsdetectorgroup/aare
 erik.frojdh@psi.ch \
 alice.mazzoleni@psi.ch \
 dhanya.thattil@psi.ch
+
+
+
+
