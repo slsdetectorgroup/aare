@@ -4,6 +4,10 @@
 
 ### New Features:
 
+- Added ``ClusterFile.frames()`` and ``ClusterFile.chunks()`` in C++ and
+  Python for iteration from the current file position. Frames preserve empty
+  frames and frame numbers; chunks support an optional positive size override.
+  Python's default file iteration continues to yield chunks.
 - Added ``FastPedestal`` in C++ and Python for per-pixel running mean,
   population variance, and standard deviation. It supports exponentially
   weighted updates, initialization from files, direct subtraction from NumPy
@@ -22,6 +26,14 @@
 
 ### API Changes:
 
+- Added ``ClusterFile::read_frame(ClusterVector&)`` for allocation-reusing C++
+  reads. It returns ``false`` at a clean end of file. The value-returning C++
+  overload now returns ``std::optional<ClusterVector<ClusterType>>`` and
+  Python ``read_frame()`` returns ``None`` at end of file. Incomplete frames
+  still raise an error.
+- Added an explicit boolean conversion to the C++ ``FilePtr`` type.
+- Removed the public C++ ``ClusterFile::open`` method. Construct a new
+  ``ClusterFile`` to reopen a file or change its mode.
 - ``ClusterFinder`` now uses ``FastPedestal``. It must receive 1000 pedestal
   frames before cluster finding; ``find_clusters()`` raises
   an error until initialization is complete. Added ``update_threshold()`` to
@@ -46,6 +58,16 @@
 - ``TimingMode::Auto`` changed to ``TimingMode::AUTO_TIMING``, ``TimingMode::Trigger`` changed to ``TimingMode::TRIGGER_EXPOSURE``
 
 ### Bugfixes:
+
+- Fixed a leaked empty ``ClusterVector`` at the end of Python ``ClusterFile``
+  iteration. Chunk iteration now rejects a zero chunk size.
+- ``ClusterFile::read_clusters`` and Python iteration now report incomplete
+  frame headers and cluster records instead of treating truncated files as a
+  clean end of file, with or without ROI or noise filtering.
+- ``ClusterFile::write_frame`` now reports incomplete writes instead of
+  silently continuing with a truncated file.
+- Gain-map application now checks the complete cluster footprint, preventing
+  out-of-bounds access for cluster sizes larger than 3x3.
 - ``RawFile`` now derives its frame count from the shortest selected raw
   subfile series across all ROIs. Frame-number reads use the same bounds, and
   Python ``len(reader)`` returns the adjusted count. A warning is printed when
