@@ -1,4 +1,4 @@
-#include "aare/StrixelPixelRemapping/StrixelPixelRemapAlgorithm.hpp"
+#include "aare/StrixelPixelRemapping/StrixelPixelMap.hpp"
 #include <catch2/catch_test_macros.hpp>
 
 // Test structure:
@@ -103,7 +103,7 @@ TEST_CASE("update_pixel_group_placement: shift and rotation geometry",
 
     SECTION("Identity reproduces itself") {
 
-        auto updated = algo::detail::update_pixel_group_placement(
+        auto updated = ::detail::update_pixel_group_placement(
             group_roi, sensor, {0, 0}, defs::Rotation::Identity);
 
         CHECK(updated == group_roi);
@@ -112,7 +112,7 @@ TEST_CASE("update_pixel_group_placement: shift and rotation geometry",
     SECTION("Bond shift") {
         const defs::BondShift shift{2, 3};
 
-        auto updated = algo::detail::update_pixel_group_placement(
+        auto updated = detail::update_pixel_group_placement(
             group_roi, sensor, shift, defs::Rotation::Identity);
 
         // Original group: {5, 13, 8, 16}
@@ -125,7 +125,7 @@ TEST_CASE("update_pixel_group_placement: shift and rotation geometry",
 
     SECTION("180 degree rotation") {
 
-        auto updated = algo::detail::update_pixel_group_placement(
+        auto updated = detail::update_pixel_group_placement(
             group_roi, sensor, {0, 0}, defs::Rotation::Rotate180);
 
         // Original group: {5, 13, 8, 16}
@@ -137,7 +137,7 @@ TEST_CASE("update_pixel_group_placement: shift and rotation geometry",
     }
 
     SECTION("bond shift and rotation") {
-        const auto result = algo::detail::update_pixel_group_placement(
+        const auto result = detail::update_pixel_group_placement(
             group_roi, sensor, {2, 3}, defs::Rotation::Rotate180);
 
         // Original group: {5, 13, 8, 16}
@@ -168,8 +168,11 @@ TEST_CASE("strixel_to_pixel_map: explicit mapping test with small ROI",
     // User ROI is in module coordinates, aligns with sensor
     const InclusiveROI user_roi{50, 99, 50, 99};
 
-    const auto result =
-        algo::strixel_to_pixel_map(group, sensor, placement, user_roi, {0, 0});
+    StrixelPixelMap map(SensorConfig<1>{sensor, {group}}, placement, {0, 0});
+
+    map.calculate_map_from_roi(user_roi);
+
+    const auto result = map.get_group_maps()[0];
 
     const InclusiveROI expected_roi{10, 15, 10, 11};
 
@@ -206,8 +209,11 @@ TEST_CASE("strixel_to_pixel_map: user ROI exactly aligned with group ROI",
     // User ROI is in module coordinates.
     const InclusiveROI user_roi{60, 89, 60, 89};
 
-    const auto result =
-        algo::strixel_to_pixel_map(group, sensor, placement, user_roi, {0, 0});
+    StrixelPixelMap map(SensorConfig<1>{sensor, {group}}, placement, {0, 0});
+
+    map.calculate_map_from_roi(user_roi);
+
+    const auto result = map.get_group_maps()[0];
 
     // ROI aligns exactly with group
     const InclusiveROI expected_roi = group.placement_on_sensor;
@@ -243,8 +249,11 @@ TEST_CASE("strixel_to_pixel_map: user ROI larger than group ROI",
     // User ROI is in module coordinates.
     const InclusiveROI user_roi{45, 104, 45, 104};
 
-    const auto result =
-        algo::strixel_to_pixel_map(group, sensor, placement, user_roi, {0, 0});
+    StrixelPixelMap map(SensorConfig<1>{sensor, {group}}, placement, {0, 0});
+
+    map.calculate_map_from_roi(user_roi);
+
+    const auto result = map.get_group_maps()[0];
 
     const InclusiveROI expected_roi = group.placement_on_sensor;
 
@@ -281,8 +290,11 @@ TEST_CASE("strixel_to_pixel_map: user ROI smaller than group ROI",
     // User ROI is in module coordinates.
     const InclusiveROI user_roi{65, 70, 65, 66};
 
-    const auto result =
-        algo::strixel_to_pixel_map(group, sensor, placement, user_roi, {0, 0});
+    StrixelPixelMap map(SensorConfig<1>{sensor, {group}}, placement, {0, 0});
+
+    map.calculate_map_from_roi(user_roi);
+
+    const auto result = map.get_group_maps()[0];
 
     // Now expected_roi is given by the smaller user ROI (in sensor-local
     // coordinates)
@@ -351,8 +363,11 @@ TEST_CASE("strixel_to_pixel_map: user ROI partially overlaps",
     // In sensor-local coordinates this is {5, 13, 5, 11}.
     const InclusiveROI user_roi{55, 63, 55, 61};
 
-    const auto result =
-        algo::strixel_to_pixel_map(group, sensor, placement, user_roi, {0, 0});
+    StrixelPixelMap map(SensorConfig<1>{sensor, {group}}, placement, {0, 0});
+
+    map.calculate_map_from_roi(user_roi);
+
+    const auto result = map.get_group_maps()[0];
 
     // Expected intersection:
     //
@@ -394,8 +409,11 @@ TEST_CASE("strixel_to_pixel_map: user ROI does not intersect group ROI",
 
     const InclusiveROI user_roi{10, 59, 10, 84};
 
-    const auto result =
-        algo::strixel_to_pixel_map(group, sensor, placement, user_roi, {0, 0});
+    StrixelPixelMap map(SensorConfig<1>{sensor, {group}}, placement, {0, 0});
+
+    map.calculate_map_from_roi(user_roi);
+
+    const auto result = map.get_group_maps()[0];
 
     CHECK(result.effective_roi.is_empty());
     CHECK(result.map.data() ==
@@ -415,8 +433,12 @@ TEST_CASE("strixel_to_pixel_map: modulo ordering",
         const auto forward_group =
             large_test_group(defs::ModuloOrdering::Forward);
 
-        const auto result = algo::strixel_to_pixel_map(
-            forward_group, sensor, placement, user_roi, {0, 0});
+        StrixelPixelMap map(SensorConfig<1>{sensor, {forward_group}}, placement,
+                            {0, 0});
+
+        map.calculate_map_from_roi(user_roi);
+
+        const auto result = map.get_group_maps()[0];
 
         CHECK(result.map.shape(0) == 9);
         CHECK(result.map.shape(1) == 1);
@@ -443,8 +465,12 @@ TEST_CASE("strixel_to_pixel_map: modulo ordering",
         const auto reverse_group =
             large_test_group(defs::ModuloOrdering::Reverse);
 
-        const auto result = algo::strixel_to_pixel_map(
-            reverse_group, sensor, placement, user_roi, {0, 0});
+        StrixelPixelMap map(SensorConfig<1>{sensor, {reverse_group}}, placement,
+                            {0, 0});
+
+        map.calculate_map_from_roi(user_roi);
+
+        const auto result = map.get_group_maps()[0];
 
         CHECK(result.map.shape(0) == 9);
         CHECK(result.map.shape(1) == 1);
@@ -491,8 +517,11 @@ TEST_CASE(
     SECTION("bond shift integrates correctly") {
         const defs::BondShift shift{2, 3};
 
-        const auto result = algo::strixel_to_pixel_map(group, sensor, placement,
-                                                       user_roi, shift);
+        StrixelPixelMap map(SensorConfig<1>{sensor, {group}}, placement, shift);
+
+        map.calculate_map_from_roi(user_roi);
+
+        const auto result = map.get_group_maps()[0];
 
         // Original group: {5, 13, 8, 16}
         // After bond shift (+2, +3):
@@ -520,8 +549,12 @@ TEST_CASE(
         const auto rotated_placement =
             test_placement(defs::Rotation::Rotate180);
 
-        const auto result = algo::strixel_to_pixel_map(
-            group, sensor, rotated_placement, user_roi, {0, 0});
+        StrixelPixelMap map(SensorConfig<1>{sensor, {group}}, rotated_placement,
+                            {0, 0});
+
+        map.calculate_map_from_roi(user_roi);
+
+        const auto result = map.get_group_maps()[0];
 
         // Original group: {5, 13, 8, 16}
         // After rotation in 50x50 sensor:
@@ -559,9 +592,9 @@ TEST_CASE("strixel_to_pixel_map: invalid multiplicity",
 
     const InclusiveROI user_roi{10, 59, 10, 84};
 
-    CHECK_THROWS_AS(
-        algo::strixel_to_pixel_map(group, sensor, placement, user_roi, {0, 0}),
-        std::logic_error);
+    StrixelPixelMap map(SensorConfig<1>{sensor, {group}}, placement, {0, 0});
+
+    CHECK_THROWS_AS(map.calculate_map_from_roi(user_roi), std::logic_error);
 }
 
 // group width not divisible by multiplicity
@@ -578,7 +611,7 @@ TEST_CASE("strixel_to_pixel_map: group width not divisible by multiplicity",
 
     const InclusiveROI user_roi{10, 59, 10, 84};
 
-    CHECK_THROWS_AS(
-        algo::strixel_to_pixel_map(group, sensor, placement, user_roi, {0, 0}),
-        std::logic_error);
+    StrixelPixelMap map(SensorConfig<1>{sensor, {group}}, placement, {0, 0});
+
+    CHECK_THROWS_AS(map.calculate_map_from_roi(user_roi), std::logic_error);
 }
