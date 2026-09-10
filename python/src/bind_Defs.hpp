@@ -36,6 +36,22 @@ void define_defs_bindings(py::module &m) {
         .def_readwrite("xmax", &ROI::xmax)
         .def_readwrite("ymin", &ROI::ymin)
         .def_readwrite("ymax", &ROI::ymax)
+
+        .def(
+            "slice",
+            [](const ROI &self) {
+                return std::make_tuple(py::slice(self.ymin, self.ymax, 1),
+                                       py::slice(self.xmin, self.xmax, 1));
+            },
+            R"doc(
+            The slice can be used to index into a 2D array to extract the region of interest.
+
+            Returns
+            -------
+            tuple of slice
+                A tuple containing two slice objects for the x and y dimensions.
+        )doc")
+
         .def("__str__",
              [](const ROI &self) {
                  return fmt::format("ROI: xmin: {} xmax: {} ymin: {} ymax: {}",

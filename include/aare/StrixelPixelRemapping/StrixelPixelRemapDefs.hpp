@@ -25,35 +25,27 @@ namespace aare::remap::defs {
 enum class Rotation : int { Identity = 0, Rotate180 = 1 };
 
 /**
- * @brief Ordering of pixel-to-strixel routing within each multiplicity group.
+ * @brief Ordering of pixel-to-strixel routing within each multiplicity chunk.
  *
  * Forward:
  *   Pixels are assigned to strixel rows in increasing column order.
  *
  * Reverse:
- *   The ordering within each multiplicity group is reversed.
+ *   The ordering within each multiplicity chunk is reversed.
  *
  * Example (multiplicity = 3):
  *
  *   Forward : pixel columns [0,1,2] -> strixel rows [0,1,2]
+ *
  *   Reverse : pixel columns [0,1,2] -> strixel rows [2,1,0]
  *
- * This affects only the ordering inside each multiplicity group.
- * It does not mirror or reorder the groups themselves.
+ * This affects only the ordering inside each multiplicity chunk.
+ * It does not mirror or reorder the strixel groups themselves.
  */
 enum class ModuloOrdering { Forward, Reverse };
 
 /// @brief Describes the physical guardring around a sensor to protect the ASIC
 /// from high current
-///
-/// NOTE: While (multiple) guard rings are part of every sensor, iLGAD sensors
-/// (due to their high currents and electric fields) have an additional guard
-/// ring that extends into the area of the sensor that would normally be
-/// occupied by active pixels. This area and the corresponding pixels therefore
-/// become unusable for photon detection.
-/// For standard (non-iLGAD) sensors, the regular guard rings are outside the
-/// pixel area. This Guardsring struct only describes the guard ring that
-/// occupies the pixel area. Its extents are described in number of pixels.
 struct Guardring {
     /// @brief ring width in pixels.
     int x{};
@@ -100,9 +92,11 @@ struct GroupStrixelGeometry {
  * within a remapping group.
  *
  * The modulo ordering specifies whether the pixels belonging to each
- * multiplicity group are mapped in forward or reversed order.
+ * multiplicity chunk are mapped in forward or reversed order.
  */
 struct GroupRouting {
+    /// @brief Ordering of pixel-to-strixel routing within each multiplicity
+    /// chunk.
     ModuloOrdering mod_order = ModuloOrdering::Forward;
 };
 
@@ -129,7 +123,7 @@ template <std::size_t N> struct SensorConfig {
     /// @brief pixel geometry of the sensor
     SensorPixelGeometry pixel;
 
-    /// @brief strixel group configurations partitions the sensor into regions
+    /// @brief strixel group configurations, partitions the sensor into regions
     /// with different strixel geometries and/or routing
     std::array<GroupConfig, N> group_configs;
 };
@@ -147,7 +141,7 @@ struct SensorModulePlacement {
 };
 
 /**
- * @brief Result of remapping one strixel group onto the pixel grid.
+ * @brief Result of remapping one strixel group onto the ASIC pixel grid.
  *
  * The order map defines a local strixel-grid coordinate system. For each
  * map position (row, col), map(row, col) contains the flattened pixel index
@@ -160,13 +154,6 @@ struct SensorModulePlacement {
  *
  * where (dx, dy) is the pixel position in the coordinate system of the
  * original user-provided ROI.
- *
- * NOTE: The map coordinates (row, col) are local to this strixel group and
- * are geometrically associated with effective_roi. The stored pixel index,
- * however, is flattened with respect to the original user-provided ROI,
- * not effective_roi. (I.e.: The map provides a local strixel grid mapped to
- * the correct corresponding pixel indices in the original user grid, and
- * effective_roi is the ROI the algorithm used for remapping.)
  *
  * An entry of -1 indicates that the corresponding strixel position has no
  * valid source pixel.

@@ -37,7 +37,7 @@ InclusiveROI inline update_pixel_group_placement(
  * @brief Build the strixel-to-pixel order map for one strixel group.
  * The strixel mapping is determined by the group's multiplicity and
  * modulo ordering. A reversed modulo ordering reverses the ordering
- * within each multiplicity group; it does not reverse the complete
+ * within each multiplicity chunk; it does not reverse the complete
  * strixel column ordering.
  *
  * @param group_config Configuration of the strixel group to be mapped.
@@ -97,7 +97,7 @@ strixel_to_pixel_maps(defs::SensorConfig<N> const &sensor_config,
  *  Applies a given remapping rule to an input array.
  *
  * \param input Original array
- * \param order_map Rule for remapping
+ * \param order_map Rule for remapping (e.g. the output of a map generator)
  * \param output Remapped array
  */
 template <typename T>

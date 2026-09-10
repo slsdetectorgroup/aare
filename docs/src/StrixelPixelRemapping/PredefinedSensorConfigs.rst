@@ -9,6 +9,8 @@ The PSI Photon Science Detector Group produces Jungfrau modules with three diffe
 
 Below are the predefined sensor configurations for all three sensor types. Detailed information about the sensor geometry, placement and rotation on the module, strixel types and their placement can be found in the dedicated sensor sections further below.
 
+An introduction to the concept of strixel-to-pixel remapping and and overview of the corresponding API can be found in :ref:`strixel_remapping_index`.
+
 
 Predefined Sensor Configurations
 ---------------------------------

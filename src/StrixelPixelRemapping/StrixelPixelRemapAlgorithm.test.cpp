@@ -63,8 +63,9 @@ test_placement(defs::Rotation rotation = defs::Rotation::Identity) {
 }
 
 defs::GroupConfig
-test_group(defs::ModuloOrdering ordering = defs::ModuloOrdering::Forward,
-           int multiplicity = 3, InclusiveROI group_roi = {10, 39, 10, 39}) {
+large_test_group(defs::ModuloOrdering ordering = defs::ModuloOrdering::Forward,
+                 int multiplicity = 3,
+                 InclusiveROI group_roi = {10, 39, 10, 39}) {
     // return {.strixel = {.multiplicity = 3, .pitch_um = 25.0},
     //         .routing = {.mod_order = ordering},
     //         .placement_on_sensor = {10, 39, 10, 39}};
@@ -198,82 +199,44 @@ TEST_CASE("strixel_to_pixel_map: explicit mapping test with small ROI",
 TEST_CASE("strixel_to_pixel_map: user ROI exactly aligned with group ROI",
           "[remap][strixel_to_pixel_map]") {
 
-    const auto group = test_group();
+    const auto group = large_test_group();
     const auto sensor = test_sensor();
     const auto placement = test_placement();
 
     // User ROI is in module coordinates.
     const InclusiveROI user_roi{60, 89, 60, 89};
 
-    // User ROI fully covers group ROI
-    const InclusiveROI user_roi_local =
-        group.placement_on_sensor; // {10, 39, 10, 39}
-
     const auto result =
         algo::strixel_to_pixel_map(group, sensor, placement, user_roi, {0, 0});
 
-    // The group occupies [10,39] x [10,39] in sensor-local coordinates.
-    const InclusiveROI expected_roi{10, 39, 10, 39};
+    // ROI aligns exactly with group
+    const InclusiveROI expected_roi = group.placement_on_sensor;
 
     CHECK(result.effective_roi == expected_roi);
     CHECK(result.map.shape(0) == 90);
     CHECK(result.map.shape(1) == 10);
 
-    /*
-     * Mathematical definition of the expected mapping:
-     *
-     *   sensor-local pixel:
-     *       (x, y)
-     *
-     *   corresponding user-ROI pixel:
-     *       (x - user_roi_local.xmin) +
-     *       (y - user_roi_local.ymin) * user_roi_local.width()
-     *
-     *   where user_roi_local is the user ROI rebased from module
-     *   coordinates into sensor coordinates.
-     *
-     *   For Forward ordering:
-     *
-     *       dx  = x - group.xmin
-     *       dy  = y - group.ymin
-     *       mod = dx % multiplicity
-     *
-     *       strixel_col = dx / multiplicity
-     *       strixel_row = dy * multiplicity + mod
-     *
-     * This test deliberately calculates the expected values directly
-     * from those definitions rather than using the implementation's
-     * intermediate calculations.
-     */
-    for (ssize_t y = result.effective_roi.ymin; y <= result.effective_roi.ymax;
-         ++y) {
+    // Check some explicit values
+    CHECK(result.map(0, 0) == 0); // pixel(0, 0)
+    CHECK(result.map(1, 0) == 1); // pixel(0, 1)
+    CHECK(result.map(2, 0) == 2); // pixel(0, 2)
+    CHECK(result.map(0, 1) == 3); // pixel(0, 3)
+    CHECK(result.map(1, 1) == 4); // pixel(0, 4)
+    CHECK(result.map(2, 1) == 5); // pixel(0, 5)
 
-        for (ssize_t x = result.effective_roi.xmin;
-             x <= result.effective_roi.xmax; ++x) {
-
-            const ssize_t dx = x - expected_roi.xmin;
-            const ssize_t dy = y - expected_roi.ymin;
-
-            const ssize_t strixel_row = dy * group.strixel.multiplicity +
-                                        dx % group.strixel.multiplicity;
-
-            const ssize_t strixel_col = dx / group.strixel.multiplicity;
-
-            const ssize_t expected_pixel =
-                (y - user_roi_local.ymin) * user_roi_local.width() +
-                (x - user_roi_local.xmin);
-
-            CHECK(result.map(strixel_row, strixel_col) == expected_pixel);
-        }
-    }
+    CHECK(result.map(89, 9) == 899); // pixel(29, 29)
+    CHECK(result.map(88, 9) == 898); // pixel(29, 28)
+    CHECK(result.map(87, 9) == 897); // pixel(29, 27)
+    CHECK(result.map(89, 8) == 896); // pixel(29, 26)
+    CHECK(result.map(88, 8) == 895); // pixel(29, 25)
+    CHECK(result.map(87, 8) == 894); // pixel(29, 24)
 }
 
-// most important, most generic test (emulating most likely reality)
 // user ROI larger than group (and larger than sensor)
 TEST_CASE("strixel_to_pixel_map: user ROI larger than group ROI",
           "[remap][strixel_to_pixel_map]") {
 
-    const auto group = test_group();
+    const auto group = small_test_group();
     const auto sensor = test_sensor();
     const auto placement = test_placement();
 
@@ -283,50 +246,40 @@ TEST_CASE("strixel_to_pixel_map: user ROI larger than group ROI",
     const auto result =
         algo::strixel_to_pixel_map(group, sensor, placement, user_roi, {0, 0});
 
-    // The group occupies [10,39] x [10,39] in sensor-local coordinates.
-    const InclusiveROI expected_roi{10, 39, 10, 39};
+    const InclusiveROI expected_roi = group.placement_on_sensor;
 
     CHECK(result.effective_roi == expected_roi);
-    CHECK(result.map.shape(0) == 90);
-    CHECK(result.map.shape(1) == 10);
+    CHECK(result.map.shape(0) == 6);
+    CHECK(result.map.shape(1) == 2);
 
-    // Rebase into sensor roi:
-    // {50, 99, 50, 99}
-    const InclusiveROI user_roi_local = {-5, 54, -5, 54};
+    // Check every pixel explicitely
+    // First pixel row
+    CHECK(result.map(0, 0) == 915); // pixel (15, 15)
+    CHECK(result.map(1, 0) == 916); // pixel (15, 16)
+    CHECK(result.map(2, 0) == 917); // pixel (15, 17)
+    CHECK(result.map(0, 1) == 918); // pixel (15, 18)
+    CHECK(result.map(1, 1) == 919); // pixel (15, 19)
+    CHECK(result.map(2, 1) == 920); // pixel (15, 20)
 
-    for (ssize_t y = result.effective_roi.ymin; y <= result.effective_roi.ymax;
-         ++y) {
-
-        for (ssize_t x = result.effective_roi.xmin;
-             x <= result.effective_roi.xmax; ++x) {
-
-            const ssize_t dx = x - expected_roi.xmin;
-            const ssize_t dy = y - expected_roi.ymin;
-
-            const ssize_t strixel_row = dy * group.strixel.multiplicity +
-                                        dx % group.strixel.multiplicity;
-
-            const ssize_t strixel_col = dx / group.strixel.multiplicity;
-
-            const ssize_t expected_pixel =
-                (y - user_roi_local.ymin) * user_roi_local.width() +
-                (x - user_roi_local.xmin);
-
-            CHECK(result.map(strixel_row, strixel_col) == expected_pixel);
-        }
-    }
+    // Second pixel row + user_roi.width()
+    CHECK(result.map(3, 0) == 975); // pixel (16, 15)
+    CHECK(result.map(4, 0) == 976); // pixel (16, 16)
+    CHECK(result.map(5, 0) == 977); // pixel (16, 17)
+    CHECK(result.map(3, 1) == 978); // pixel (16, 18)
+    CHECK(result.map(4, 1) == 979); // pixel (16, 19)
+    CHECK(result.map(5, 1) == 980); // pixel (16, 20)
 }
 
 // user ROI smaller than group
 TEST_CASE("strixel_to_pixel_map: user ROI smaller than group ROI",
           "[remap][strixel_to_pixel_map]") {
 
-    const auto group = test_group();
+    const auto group = large_test_group();
     const auto sensor = test_sensor();
     const auto placement = test_placement();
 
     // User ROI is in module coordinates.
-    const InclusiveROI user_roi{65, 84, 65, 84};
+    const InclusiveROI user_roi{65, 70, 65, 66};
 
     const auto result =
         algo::strixel_to_pixel_map(group, sensor, placement, user_roi, {0, 0});
@@ -335,11 +288,11 @@ TEST_CASE("strixel_to_pixel_map: user ROI smaller than group ROI",
     // coordinates)
     // Expected intersection:
     //
-    // user ROI, sensor-local:  {15, 34, 15, 34}
+    // user ROI, sensor-local:  {15, 20, 15, 16}
     // group ROI, sensor-local: {10, 39, 10, 39}
     //                          ----------------
-    // effective ROI:           {15, 34, 15, 34}
-    const InclusiveROI expected_roi = {15, 34, 15, 34};
+    // effective ROI:           {15, 20, 15, 16}
+    const InclusiveROI expected_roi = {15, 20, 15, 16};
 
     CHECK(result.effective_roi == expected_roi);
 
@@ -351,131 +304,91 @@ TEST_CASE("strixel_to_pixel_map: user ROI smaller than group ROI",
     //  - The algorithm makes sure that the map shape is always large enough so
     //    that always full multiplicity groups are contained
     //    (In this concrete example:
-    //       > width of user_roi is 20
-    //       > 20/multiplicity = 6 (plus rest)
-    //       > map width of 7 should, in principle, cover it
+    //       > width of user_roi is 6
+    //       > 6/multiplicity = 2
+    //       > map width of 2 should cover it?
     //       > BUT: the placement with respect to the group_roi matters!
-    //       > Since both pixels at x = 15 and x = 34 are part of their own
-    //         separate multiplicity group, we must add 2 additional
-    //         multiplicity groups to the map
-    //       > Hence the width of the map becomes 8
-    //    )
+    //       > Since the group multiplicity chunks are not fully covered by the
+    //       ROI, the map will be larger > Hence the width of the map becomes 3
     //  - Entries that are contained in the map but not in the user ROI, will be
     //    mapped to -1
-    CHECK(result.map.shape(0) == 60);
-    CHECK(result.map.shape(1) == 8);
+    CHECK(result.map.shape(0) == 6);
+    CHECK(result.map.shape(1) == 3);
 
-    // Explicit check not mapped example
-    CHECK(result.map(0, 0) == -1); // not mapped because not in user_roi!
+    // Check every pixel explicitely
+    // First pixel row
+    CHECK(result.map(0, 0) == -1); // pixel (0, -2) - not in user_roi
+    CHECK(result.map(1, 0) == -1); // pixel (0, -1) - not in user_roi
+    CHECK(result.map(2, 0) == 0);  // pixel (0, 0)
+    CHECK(result.map(0, 1) == 1);  // pixel (0, 1)
+    CHECK(result.map(1, 1) == 2);  // pixel (0, 2)
+    CHECK(result.map(2, 1) == 3);  // pixel (0, 3)
+    CHECK(result.map(0, 2) == 4);  // pixel (0, 4)
+    CHECK(result.map(1, 2) == 5);  // pixel (0, 5)
+    CHECK(result.map(2, 2) == -1); // pixel (0, 6) - not in user_roi
 
-    // Now we need to establish the valid ROI within the map IN THE MAP SPACE
-    // (i.e. in strixel coordinates)
-    // Map starts at (0,0), but the first valid column is min_col = 1!
-    // (15-10 = 5, 5/3 = 1 (plus rest)
-    // First valid row becomes 15-10 = 5 -> 5*3 = 15
-    constexpr ssize_t expected_min_row = 15;
-    constexpr ssize_t expected_min_col = 1;
-
-    constexpr ssize_t expected_user_roi_local_xmin = 15;
-    constexpr ssize_t expected_user_roi_local_ymin = 15;
-
-    // Check the whole map!
-    // Also, shift strixel row and cols according to min_row/min_cols
-    for (ssize_t map_row = 0; map_row < result.map.shape(0); ++map_row) {
-        for (ssize_t map_col = 0; map_col < result.map.shape(1); ++map_col) {
-
-            const ssize_t strixel_row = expected_min_row + map_row;
-            const ssize_t strixel_col = expected_min_col + map_col;
-
-            const ssize_t dy = strixel_row / group.strixel.multiplicity;
-            const ssize_t mod = strixel_row % group.strixel.multiplicity;
-            const ssize_t dx = strixel_col * group.strixel.multiplicity + mod;
-
-            const ssize_t x = group.placement_on_sensor.xmin + dx;
-            const ssize_t y = group.placement_on_sensor.ymin + dy;
-
-            if (expected_roi.contains(x, y)) {
-                const ssize_t expected_pixel =
-                    (y - expected_user_roi_local_ymin) * user_roi.width() +
-                    (x - expected_user_roi_local_xmin);
-
-                CHECK(result.map(map_row, map_col) == expected_pixel);
-            } else {
-                // pixel not mapped
-                CHECK(result.map(map_row, map_col) == -1);
-            }
-        }
-    }
+    // Second pixel row
+    CHECK(result.map(3, 0) == -1); // pixel (1, -2) - not in user_roi
+    CHECK(result.map(4, 0) == -1); // pixel (1, -1) - not in user_roi
+    CHECK(result.map(5, 0) == 6);  // pixel (1, 0)
+    CHECK(result.map(3, 1) == 7);  // pixel (1, 1)
+    CHECK(result.map(4, 1) == 8);  // pixel (1, 2)
+    CHECK(result.map(5, 1) == 9);  // pixel (1, 3)
+    CHECK(result.map(3, 2) == 10); // pixel (1, 4)
+    CHECK(result.map(4, 2) == 11); // pixel (1, 5)
+    CHECK(result.map(5, 2) == -1); // pixel (1, 6) - not in user_roi
 }
 
 // user ROI partially overlaps group
 TEST_CASE("strixel_to_pixel_map: user ROI partially overlaps",
           "[remap][strixel_to_pixel_map]") {
 
-    const auto group = test_group();
+    const auto group = large_test_group();
     const auto sensor = test_sensor();
     const auto placement = test_placement();
 
     // User ROI is in module coordinates.
-    // In sensor-local coordinates this is {5, 34, 5, 34}.
-    const InclusiveROI user_roi{55, 84, 55, 84};
-
-    // For reference:
-    // user_roi for full covered group = {60, 89, 60, 89};
-    // group roi in sensor coordinates = {10, 39, 10, 39};
+    // In sensor-local coordinates this is {5, 13, 5, 11}.
+    const InclusiveROI user_roi{55, 63, 55, 61};
 
     const auto result =
         algo::strixel_to_pixel_map(group, sensor, placement, user_roi, {0, 0});
 
     // Expected intersection:
     //
-    // user ROI, sensor-local: { 5, 34,  5, 34}
+    // user ROI, sensor-local: { 5, 13,  5, 11}
     // group ROI:              {10, 39, 10, 39}
     //                         ----------------
-    // effective ROI:          {10, 34, 10, 34}
-    const InclusiveROI expected_roi{10, 34, 10, 34};
+    // effective ROI:          {10, 13, 10, 11}
+    const InclusiveROI expected_roi{10, 13, 10, 11};
 
     CHECK(result.effective_roi == expected_roi);
-    CHECK(result.map.shape(0) == 75); // 25 pixel rows * 3
-    CHECK(result.map.shape(1) ==
-          9); // Pixel 34 is contained in the 9th multiplicity group
+    CHECK(result.map.shape(0) == 6);
+    CHECK(result.map.shape(1) == 2);
 
-    constexpr ssize_t expected_user_roi_local_xmin = 5;
-    constexpr ssize_t expected_user_roi_local_ymin = 5;
+    // Check every pixel explicitely
+    // First pixel row
+    CHECK(result.map(0, 0) == 50); // pixel (5, 5)
+    CHECK(result.map(1, 0) == 51); // pixel (5, 6)
+    CHECK(result.map(2, 0) == 52); // pixel (5, 7)
+    CHECK(result.map(0, 1) == 53); // pixel (5, 8)
+    CHECK(result.map(1, 1) == -1); // pixel (5, 9) - not in user_roi
+    CHECK(result.map(2, 1) == -1); // pixel (5, 10) - not in user_roi
 
-    for (ssize_t map_row = 0; map_row < result.map.shape(0); ++map_row) {
-        for (ssize_t map_col = 0; map_col < result.map.shape(1); ++map_col) {
-
-            // Map coordinates coincide with the strixel coordinates here
-            // because min_row == min_col == 0.
-            const ssize_t strixel_row = map_row;
-            const ssize_t strixel_col = map_col;
-
-            const ssize_t dy = strixel_row / group.strixel.multiplicity;
-            const ssize_t mod = strixel_row % group.strixel.multiplicity;
-            const ssize_t dx = strixel_col * group.strixel.multiplicity + mod;
-
-            const ssize_t x = group.placement_on_sensor.xmin + dx;
-            const ssize_t y = group.placement_on_sensor.ymin + dy;
-
-            if (expected_roi.contains(x, y)) {
-                const ssize_t expected_pixel =
-                    (y - expected_user_roi_local_ymin) * user_roi.width() +
-                    (x - expected_user_roi_local_xmin);
-
-                CHECK(result.map(map_row, map_col) == expected_pixel);
-            } else {
-                CHECK(result.map(map_row, map_col) == -1);
-            }
-        }
-    }
+    // Second pixel row
+    CHECK(result.map(3, 0) == 59); // pixel (6, 5)
+    CHECK(result.map(4, 0) == 60); // pixel (6, 6)
+    CHECK(result.map(5, 0) == 61); // pixel (6, 7)
+    CHECK(result.map(3, 1) == 62); // pixel (6, 8)
+    CHECK(result.map(4, 1) == -1); // pixel (6, 9) - not in user_roi
+    CHECK(result.map(5, 1) == -1); // pixel (6, 10) - not in user_roi
 }
 
 // user ROI does not intersect group
 TEST_CASE("strixel_to_pixel_map: user ROI does not intersect group ROI",
           "[remap][strixel_to_pixel_map]") {
 
-    const auto group = test_group();
+    const auto group = large_test_group();
     const auto sensor = test_sensor();
     const auto placement = test_placement();
 
@@ -499,7 +412,8 @@ TEST_CASE("strixel_to_pixel_map: modulo ordering",
     const InclusiveROI user_roi{60, 62, 60, 62};
 
     SECTION("Forward ordering") {
-        const auto forward_group = test_group(defs::ModuloOrdering::Forward);
+        const auto forward_group =
+            large_test_group(defs::ModuloOrdering::Forward);
 
         const auto result = algo::strixel_to_pixel_map(
             forward_group, sensor, placement, user_roi, {0, 0});
@@ -526,7 +440,8 @@ TEST_CASE("strixel_to_pixel_map: modulo ordering",
     }
 
     SECTION("Reverse ordering") {
-        const auto reverse_group = test_group(defs::ModuloOrdering::Reverse);
+        const auto reverse_group =
+            large_test_group(defs::ModuloOrdering::Reverse);
 
         const auto result = algo::strixel_to_pixel_map(
             reverse_group, sensor, placement, user_roi, {0, 0});
@@ -638,7 +553,7 @@ TEST_CASE("strixel_to_pixel_map: invalid multiplicity",
     const defs::ModuloOrdering ordering = defs::ModuloOrdering::Forward;
     const int multiplicity = 0;
 
-    const auto group = test_group(ordering, multiplicity);
+    const auto group = large_test_group(ordering, multiplicity);
     const auto sensor = test_sensor();
     const auto placement = test_placement();
 
@@ -657,7 +572,7 @@ TEST_CASE("strixel_to_pixel_map: group width not divisible by multiplicity",
     const int multiplicity = 3;
     const InclusiveROI group_roi = {11, 39, 10, 39}; // width = 29
 
-    const auto group = test_group(ordering, multiplicity, group_roi);
+    const auto group = large_test_group(ordering, multiplicity, group_roi);
     const auto sensor = test_sensor();
     const auto placement = test_placement();
 
