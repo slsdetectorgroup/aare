@@ -46,6 +46,14 @@ __global__ void find_clusters_in_single_frame(
     // constexpr int pow2_c2 = ((CSY + 1) / 2) * ((CSX + 1) / 2);
     constexpr int pow2_c3 = CSX * CSY;
 
+    // Outer stencil loop policy. Small windows are fully unrolled: at 3x3 the
+    // kernel is a single latency-bound wave and needs every tap in flight, and
+    // a rolled loop reloads the taps it could have kept in registers (nsys on
+    // detector data: 4.32 -> 4.95 us). Large windows are rolled: unrolled 9x9
+    // costs 96+ registers and caps occupancy at 2 blocks/SM. 25 taps is where
+    // the register cost starts to bite (7x7 unrolled: 64-72 registers).
+    constexpr int OUTER_UNROLL = (CSX * CSY <= 25) ? CSY : 1;
+
     // Shared-memory tile: the block's pixels plus a halo of
     // col_radius/row_radius on each side, laid out row-major.
     constexpr int TILE_W = BLOCK_X + 2 * col_radius;
@@ -80,18 +88,31 @@ __global__ void find_clusters_in_single_frame(
     const int tile_row0 = static_cast<int>(BLOCK_Y * blockIdx.y) - row_radius;
     const int tile_col0 = static_cast<int>(BLOCK_X * blockIdx.x) - col_radius;
 
+    // Two phases, loads then stores, so every warp pays ONE global round trip
+    // for the whole tile instead of one per iteration. With a single loop the
+    // warps that own a second cell (3 of 8 at 3x3) issued their second load
+    // only after storing the first, and the rest of the block sat at the
+    // barrier for that extra latency. N_ITER is 2 at 3x3 and 3 at 9x9.
+    constexpr int N_ITER = (TILE_SIZE + N_THREADS - 1) / N_THREADS;
+    COMPUTE_TYPE v[N_ITER];
 #pragma unroll
-    for (int idx = local_tid; idx < TILE_SIZE; idx += N_THREADS) {
+    for (int k = 0; k < N_ITER; ++k) {
+        const int idx = local_tid + k * N_THREADS;
         const int tr = idx / TILE_W; // constexpr divisor: mul + shift
         const int tc = idx - tr * TILE_W;
         const int gr = tile_row0 + tr;
         const int gc = tile_col0 + tc;
-        COMPUTE_TYPE v = COMPUTE_TYPE{0};
-        if (gr >= 0 && gr < nrows && gc >= 0 && gc < ncols) {
+        v[k] = COMPUTE_TYPE{0};
+        if (idx < TILE_SIZE && gr >= 0 && gr < nrows && gc >= 0 && gc < ncols) {
             const int gid = gc + ncols * gr;
-            v = static_cast<COMPUTE_TYPE>(d_frame[gid]) - d_pd_mean[gid];
+            v[k] = static_cast<COMPUTE_TYPE>(d_frame[gid]) - d_pd_mean[gid];
         }
-        shmem[idx] = v;
+    }
+#pragma unroll
+    for (int k = 0; k < N_ITER; ++k) {
+        const int idx = local_tid + k * N_THREADS;
+        if (idx < TILE_SIZE)
+            shmem[idx] = v[k];
     }
     __syncthreads();
 
@@ -139,11 +160,8 @@ __global__ void find_clusters_in_single_frame(
     // (ir>=0, ic<=0) PEDESTAL_TYPE br = PEDESTAL_TYPE{0};   // bottom-right
     // (ir>=0, ic>=0)
 
-    // Outer loop rolled on purpose: fully unrolling both loops lets the
-    // scheduler hoist all CSX*CSY shared loads, which at 9x9 costs ~96
-    // registers and caps occupancy at 2 blocks/SM. One unrolled row (9 loads
-    // in flight) is enough to cover shared-memory latency.
-#pragma unroll 1
+    // See OUTER_UNROLL above for why this is size-dependent.
+#pragma unroll OUTER_UNROLL
     for (int ir = -row_radius; ir <= row_radius; ++ir) {
 #pragma unroll
         for (int ic = -col_radius; ic <= col_radius; ++ic) {
@@ -256,7 +274,7 @@ __global__ void find_clusters_in_single_frame(
     CT *dst = reinterpret_cast<CT *>(&out->data);
     int idx = 0;
 
-#pragma unroll 1
+#pragma unroll OUTER_UNROLL
     for (int ir = -row_radius; ir <= row_radius; ++ir) {
 #pragma unroll
         for (int ic = -col_radius; ic <= col_radius; ++ic) {
