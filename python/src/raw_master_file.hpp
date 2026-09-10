@@ -135,9 +135,19 @@ void define_raw_master_file_bindings(py::module &m) {
                 List[int]
                     Vector of disabled UDP port indices relative to UDP port types (empty if none are disabled)
             )")
-        .def_property_readonly("period", [](RawMasterFile &self) {
-            double seconds =
-                std::chrono::duration<double>(self.period()).count();
-            return seconds;
-        });
+        .def_property_readonly(
+            "period",
+            [](RawMasterFile &self) {
+                double seconds =
+                    std::chrono::duration<double>(self.period()).count();
+                return seconds;
+            })
+
+        .def("__enter__",
+             [](RawMasterFile &self) -> RawMasterFile & { return self; })
+
+        .def("__exit__",
+             []([[maybe_unused]] RawMasterFile &self,
+                [[maybe_unused]] py::object, [[maybe_unused]] py::object,
+                [[maybe_unused]] py::object) { return; });
 }
