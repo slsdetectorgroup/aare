@@ -366,6 +366,12 @@ set(PUBLICHEADERS
     include/aare/hist/PixelHistogramImpl.hpp
     include/aare/hist/PedestalTrackingPixelHistogram.hpp
     include/aare/GainMap.hpp
+    include/aare/StrixelPixelRemapping/InclusiveROI.hpp
+    include/aare/StrixelPixelRemapping/StrixelPixelRemapAlgorithm.hpp
+    include/aare/StrixelPixelRemapping/StrixelPixelRemapConfig.hpp
+    include/aare/StrixelPixelRemapping/StrixelPixelRemapDefs.hpp
+    include/aare/StrixelPixelRemapping/StrixelPixelRemapFormat.hpp
+    include/aare/StrixelPixelRemapping/StrixelPixelRemapGenerate.hpp
     include/aare/ROI.hpp
     include/aare/ROIGeometry.hpp
     include/aare/DetectorGeometry.hpp
@@ -409,6 +415,8 @@ set(SourceFiles
     ${CMAKE_CURRENT_SOURCE_DIR}/src/RawFile.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/src/RawMasterFile.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/src/RawSubFile.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/StrixelPixelRemapping/StrixelPixelRemapAlgorithm.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/StrixelPixelRemapping/StrixelPixelRemapFormat.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/src/to_string.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/src/utils/task.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/src/utils/ifstream_helpers.cpp)
@@ -482,6 +490,8 @@ if(AARE_TESTS)
       ${CMAKE_CURRENT_SOURCE_DIR}/src/RawFile.test.cpp
       ${CMAKE_CURRENT_SOURCE_DIR}/src/RawSubFile.test.cpp
       ${CMAKE_CURRENT_SOURCE_DIR}/src/ROI.test.cpp
+      ${CMAKE_CURRENT_SOURCE_DIR}/src/StrixelPixelRemapping/InclusiveROI.test.cpp
+      ${CMAKE_CURRENT_SOURCE_DIR}/src/StrixelPixelRemapping/StrixelPixelRemapAlgorithm.test.cpp
       ${CMAKE_CURRENT_SOURCE_DIR}/src/utils/task.test.cpp
       ${CMAKE_CURRENT_SOURCE_DIR}/src/to_string.test.cpp)
   target_sources(tests PRIVATE ${TestSources})
