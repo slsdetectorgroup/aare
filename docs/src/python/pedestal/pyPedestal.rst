@@ -2,29 +2,39 @@ Pedestal
 ========
 
 ``Pedestal`` calculates a running mean and variance for each pixel in a series
-of ``uint16`` frames. ``push()`` updates the cached mean immediately. For
-faster batch initialization, use ``push_no_update()`` for each frame and call
-``update_mean()`` after the batch.
+of ``uint16`` frames. ``push()`` updates the cached mean immediately.
 
-Three specializations are available from :mod:`aare`:
+Internal sums and sums of squares always use ``float64``. Three
+specializations are available from :mod:`aare` for the mean, variance, and
+standard deviation output types:
 
-* ``Pedestal_d`` uses ``float64`` storage
-* ``Pedestal_f`` uses ``float32`` storage
-* ``Pedestal_i16`` uses ``int16`` storage
+* ``Pedestal_d`` returns ``float64``
+* ``Pedestal_f`` returns ``float32``
+* ``Pedestal_i16`` returns ``int16``
+
+The public ``Pedestal`` factory selects the specialization from ``dtype``,
+defaulting to ``numpy.float64``.
+
+Factory
+-------
+
+.. py:currentmodule:: aare
+
+.. autofunction:: Pedestal
 
 Example
 -------
 
 .. code-block:: python
 
-   from aare import Pedestal_d
+   import numpy as np
+   from aare import Pedestal
 
-   pedestal = Pedestal_d(512, 1024, 100)
+   pedestal = Pedestal(512, 1024, n_samples=100, dtype=np.float32)
 
    for frame in initialization_frames:
-       pedestal.push_no_update(frame)
+       pedestal.push(frame)
 
-   pedestal.update_mean()
    mean = pedestal.mean()
    noise = pedestal.std()
 

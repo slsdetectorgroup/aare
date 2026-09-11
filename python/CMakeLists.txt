@@ -40,6 +40,7 @@ set(PYTHON_FILES
     aare/ClusterVector.py
     aare/Cluster.py
     aare/FastPedestal.py
+    aare/Pedestal.py
     aare/calibration.py
     aare/factory.py
     aare/experimental.py

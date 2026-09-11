@@ -1,12 +1,29 @@
 // SPDX-License-Identifier: MPL-2.0
 #include "aare/Pedestal.hpp"
 
+#include <catch2/catch_template_test_macros.hpp>
 #include <catch2/catch_test_macros.hpp>
 #include <catch2/matchers/catch_matchers_floating_point.hpp>
 #include <chrono>
 #include <random>
 
 using namespace aare;
+
+TEMPLATE_TEST_CASE("pedestal uses double precision moments", "[pedestal]",
+                   double, float, int16_t) {
+    Pedestal<TestType> pedestal(1, 1, 2);
+    pedestal.push(0, 0, uint16_t{30000});
+    pedestal.push(0, 0, uint16_t{30003});
+
+    REQUIRE(pedestal.mean(0, 0) == static_cast<TestType>(30001.5));
+    REQUIRE(pedestal.variance(0, 0) == static_cast<TestType>(2.25));
+
+    pedestal.push(0, 0, uint16_t{30002});
+
+    REQUIRE(pedestal.mean(0, 0) == static_cast<TestType>(30001.75));
+    REQUIRE(pedestal.variance(0, 0) == static_cast<TestType>(1.1875));
+}
+
 TEST_CASE("test pedestal constructor") {
     aare::Pedestal pedestal(10, 10, 5);
     REQUIRE(pedestal.rows() == 10);
@@ -14,8 +31,8 @@ TEST_CASE("test pedestal constructor") {
     REQUIRE(pedestal.n_samples() == 5);
     for (int i = 0; i < 10; i++) {
         for (int j = 0; j < 10; j++) {
-            REQUIRE(pedestal.get_sum()(i, j) == 0);
-            REQUIRE(pedestal.get_sum2()(i, j) == 0);
+            REQUIRE(pedestal.mean(i, j) == 0);
+            REQUIRE(pedestal.variance(i, j) == 0);
             REQUIRE(pedestal.cur_samples()(i, j) == 0);
         }
     }
@@ -34,8 +51,8 @@ TEST_CASE("test pedestal push") {
     pedestal.push<uint16_t>(frame);
     for (int i = 0; i < 10; i++) {
         for (int j = 0; j < 10; j++) {
-            REQUIRE(pedestal.get_sum()(i, j) == i + j);
-            REQUIRE(pedestal.get_sum2()(i, j) == (i + j) * (i + j));
+            REQUIRE(pedestal.mean(i, j) == i + j);
+            REQUIRE(pedestal.variance(i, j) == 0);
             REQUIRE(pedestal.cur_samples()(i, j) == 1);
         }
     }
@@ -44,8 +61,8 @@ TEST_CASE("test pedestal push") {
     pedestal.clear();
     for (int i = 0; i < 10; i++) {
         for (int j = 0; j < 10; j++) {
-            REQUIRE(pedestal.get_sum()(i, j) == 0);
-            REQUIRE(pedestal.get_sum2()(i, j) == 0);
+            REQUIRE(pedestal.mean(i, j) == 0);
+            REQUIRE(pedestal.variance(i, j) == 0);
             REQUIRE(pedestal.cur_samples()(i, j) == 0);
         }
     }
@@ -57,13 +74,8 @@ TEST_CASE("test pedestal push") {
             for (uint32_t j = 0; j < 10; j++) {
                 if (k < 5) {
                     REQUIRE(pedestal.cur_samples()(i, j) == k + 1);
-                    REQUIRE(pedestal.get_sum()(i, j) == (k + 1) * (i + j));
-                    REQUIRE(pedestal.get_sum2()(i, j) ==
-                            (k + 1) * (i + j) * (i + j));
                 } else {
                     REQUIRE(pedestal.cur_samples()(i, j) == 5);
-                    REQUIRE(pedestal.get_sum()(i, j) == 5 * (i + j));
-                    REQUIRE(pedestal.get_sum2()(i, j) == 5 * (i + j) * (i + j));
                 }
                 REQUIRE(pedestal.mean(i, j) == (i + j));
                 REQUIRE(pedestal.variance(i, j) == 0);

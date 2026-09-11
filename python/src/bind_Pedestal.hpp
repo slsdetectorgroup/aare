@@ -79,8 +79,6 @@ void define_pedestal_bindings(py::module &m, const std::string &name) {
         .def_property_readonly("rows", &Pedestal<SUM_TYPE>::rows)
         .def_property_readonly("cols", &Pedestal<SUM_TYPE>::cols)
         .def_property_readonly("n_samples", &Pedestal<SUM_TYPE>::n_samples)
-        .def_property_readonly("sum", &Pedestal<SUM_TYPE>::get_sum)
-        .def_property_readonly("sum2", &Pedestal<SUM_TYPE>::get_sum2)
         .def("clone",
              [&](Pedestal<SUM_TYPE> &pedestal) {
                  return Pedestal<SUM_TYPE>(pedestal);
@@ -101,15 +99,6 @@ void define_pedestal_bindings(py::module &m, const std::string &name) {
                 pedestal.push_with_threshold(frame_view, threshold_view);
             },
             py::arg("frame").noconvert(), py::arg("threshold").noconvert())
-        .def(
-            "push_no_update",
-            [](Pedestal<SUM_TYPE> &pedestal,
-               py::array_t<uint16_t, py::array::c_style> &f) {
-                auto v = make_view_2d(f);
-                pedestal.push_no_update(v);
-            },
-            py::arg().noconvert())
-        .def("update_mean", &Pedestal<SUM_TYPE>::update_mean)
         .def_buffer([](Pedestal<SUM_TYPE> &self) {
             auto mean = self.view();
             return py::buffer_info(

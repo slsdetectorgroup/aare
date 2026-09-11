@@ -4,6 +4,8 @@
 
 ### New Features:
 
+- Added the Python ``Pedestal`` factory with ``dtype`` selection, matching
+  ``FastPedestal`` and defaulting to ``float64`` output.
 - Added ``FastPedestal`` in C++ and Python for per-pixel running mean,
   population variance, and standard deviation. It supports exponentially
   weighted updates, initialization from files, direct subtraction from NumPy
@@ -22,6 +24,10 @@
 
 ### API Changes:
 
+- ``Pedestal`` now always accumulates sums and sums of squares in ``double``,
+  like ``FastPedestal``. Mean, variance, and standard deviation output types
+  are unchanged. Removed the C++ ``get_sum()``/``get_sum2()`` getters and
+  Python ``sum``/``sum2`` properties; internal sums are no longer exposed.
 - ``ClusterFinder`` now uses ``FastPedestal``. It must receive 1000 pedestal
   frames before cluster finding; ``find_clusters()`` raises
   an error until initialization is complete. Added ``update_threshold()`` to
