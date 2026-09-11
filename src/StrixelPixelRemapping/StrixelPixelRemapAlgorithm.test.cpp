@@ -1,4 +1,4 @@
-#include "aare/StrixelPixelRemapping/StrixelPixelMap.hpp"
+#include "aare/StrixelPixelRemapping/BaseStrixelPixelMap.hpp"
 #include <catch2/catch_test_macros.hpp>
 
 // Test structure:
@@ -166,11 +166,11 @@ TEST_CASE("strixel_to_pixel_map: explicit mapping test with small ROI",
     const auto placement = test_placement();
 
     // User ROI is in module coordinates, aligns with sensor
-    const InclusiveROI user_roi{50, 99, 50, 99};
+    const ROI user_roi{50, 100, 50, 100};
 
     StrixelPixelMap map(SensorConfig<1>{sensor, {group}}, placement, {0, 0});
 
-    map.calculate_map_from_roi(user_roi);
+    map.calculate_map(user_roi);
 
     const auto result = map.get_group_maps()[0];
 
@@ -207,11 +207,11 @@ TEST_CASE("strixel_to_pixel_map: user ROI exactly aligned with group ROI",
     const auto placement = test_placement();
 
     // User ROI is in module coordinates.
-    const InclusiveROI user_roi{60, 89, 60, 89};
+    const ROI user_roi{60, 90, 60, 90};
 
     StrixelPixelMap map(SensorConfig<1>{sensor, {group}}, placement, {0, 0});
 
-    map.calculate_map_from_roi(user_roi);
+    map.calculate_map(user_roi);
 
     const auto result = map.get_group_maps()[0];
 
@@ -247,11 +247,11 @@ TEST_CASE("strixel_to_pixel_map: user ROI larger than group ROI",
     const auto placement = test_placement();
 
     // User ROI is in module coordinates.
-    const InclusiveROI user_roi{45, 104, 45, 104};
+    const ROI user_roi{45, 105, 45, 105};
 
     StrixelPixelMap map(SensorConfig<1>{sensor, {group}}, placement, {0, 0});
 
-    map.calculate_map_from_roi(user_roi);
+    map.calculate_map(user_roi);
 
     const auto result = map.get_group_maps()[0];
 
@@ -288,11 +288,11 @@ TEST_CASE("strixel_to_pixel_map: user ROI smaller than group ROI",
     const auto placement = test_placement();
 
     // User ROI is in module coordinates.
-    const InclusiveROI user_roi{65, 70, 65, 66};
+    const ROI user_roi{65, 72, 65, 67};
 
     StrixelPixelMap map(SensorConfig<1>{sensor, {group}}, placement, {0, 0});
 
-    map.calculate_map_from_roi(user_roi);
+    map.calculate_map(user_roi);
 
     const auto result = map.get_group_maps()[0];
 
@@ -361,11 +361,11 @@ TEST_CASE("strixel_to_pixel_map: user ROI partially overlaps",
 
     // User ROI is in module coordinates.
     // In sensor-local coordinates this is {5, 13, 5, 11}.
-    const InclusiveROI user_roi{55, 63, 55, 61};
+    const ROI user_roi{55, 64, 55, 62};
 
     StrixelPixelMap map(SensorConfig<1>{sensor, {group}}, placement, {0, 0});
 
-    map.calculate_map_from_roi(user_roi);
+    map.calculate_map(user_roi);
 
     const auto result = map.get_group_maps()[0];
 
@@ -407,11 +407,11 @@ TEST_CASE("strixel_to_pixel_map: user ROI does not intersect group ROI",
     const auto sensor = test_sensor();
     const auto placement = test_placement();
 
-    const InclusiveROI user_roi{10, 59, 10, 84};
+    const ROI user_roi{10, 60, 10, 85};
 
     StrixelPixelMap map(SensorConfig<1>{sensor, {group}}, placement, {0, 0});
 
-    map.calculate_map_from_roi(user_roi);
+    map.calculate_map(user_roi);
 
     const auto result = map.get_group_maps()[0];
 
@@ -427,7 +427,7 @@ TEST_CASE("strixel_to_pixel_map: modulo ordering",
     const auto sensor = test_sensor();
     const auto placement = test_placement();
 
-    const InclusiveROI user_roi{60, 62, 60, 62};
+    const ROI user_roi{60, 63, 60, 63};
 
     SECTION("Forward ordering") {
         const auto forward_group =
@@ -436,7 +436,7 @@ TEST_CASE("strixel_to_pixel_map: modulo ordering",
         StrixelPixelMap map(SensorConfig<1>{sensor, {forward_group}}, placement,
                             {0, 0});
 
-        map.calculate_map_from_roi(user_roi);
+        map.calculate_map(user_roi);
 
         const auto result = map.get_group_maps()[0];
 
@@ -468,7 +468,7 @@ TEST_CASE("strixel_to_pixel_map: modulo ordering",
         StrixelPixelMap map(SensorConfig<1>{sensor, {reverse_group}}, placement,
                             {0, 0});
 
-        map.calculate_map_from_roi(user_roi);
+        map.calculate_map(user_roi);
 
         const auto result = map.get_group_maps()[0];
 
@@ -502,7 +502,7 @@ TEST_CASE(
     const auto placement = test_placement();
 
     // user_roi = sensor_roi
-    const InclusiveROI user_roi = placement.placement_on_module;
+    const ROI user_roi = toHalfopenROI(placement.placement_on_module);
 
     // Rebase into sensor roi:
     // {50, 99, 50, 99}
@@ -519,7 +519,7 @@ TEST_CASE(
 
         StrixelPixelMap map(SensorConfig<1>{sensor, {group}}, placement, shift);
 
-        map.calculate_map_from_roi(user_roi);
+        map.calculate_map(user_roi);
 
         const auto result = map.get_group_maps()[0];
 
@@ -552,7 +552,7 @@ TEST_CASE(
         StrixelPixelMap map(SensorConfig<1>{sensor, {group}}, rotated_placement,
                             {0, 0});
 
-        map.calculate_map_from_roi(user_roi);
+        map.calculate_map(user_roi);
 
         const auto result = map.get_group_maps()[0];
 
@@ -590,11 +590,11 @@ TEST_CASE("strixel_to_pixel_map: invalid multiplicity",
     const auto sensor = test_sensor();
     const auto placement = test_placement();
 
-    const InclusiveROI user_roi{10, 59, 10, 84};
+    const ROI user_roi{10, 60, 10, 85};
 
     StrixelPixelMap map(SensorConfig<1>{sensor, {group}}, placement, {0, 0});
 
-    CHECK_THROWS_AS(map.calculate_map_from_roi(user_roi), std::logic_error);
+    CHECK_THROWS_AS(map.calculate_map(user_roi), std::logic_error);
 }
 
 // group width not divisible by multiplicity
@@ -609,9 +609,9 @@ TEST_CASE("strixel_to_pixel_map: group width not divisible by multiplicity",
     const auto sensor = test_sensor();
     const auto placement = test_placement();
 
-    const InclusiveROI user_roi{10, 59, 10, 84};
+    const ROI user_roi{10, 60, 10, 85};
 
     StrixelPixelMap map(SensorConfig<1>{sensor, {group}}, placement, {0, 0});
 
-    CHECK_THROWS_AS(map.calculate_map_from_roi(user_roi), std::logic_error);
+    CHECK_THROWS_AS(map.calculate_map(user_roi), std::logic_error);
 }

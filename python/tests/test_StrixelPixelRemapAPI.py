@@ -79,50 +79,91 @@ def test_customSensorConfiguration():
     # rebase 
     user_roi = strixelremap.InclusiveROI(strixelremap.Chip1.placement_on_module.xmin + 0, strixelremap.Chip1.placement_on_module.xmin + 9, strixelremap.Chip1.placement_on_module.ymin + 0, strixelremap.Chip1.placement_on_module.ymin + 4)
 
-    strixelpixelmap = strixelremap.strixel_to_pixel_maps(sensor_config = my_sensor_config, placement = strixelremap.Chip1, user_roi = user_roi)
+    strixelpixelmap = strixelremap.StrixelPixelMap(sensor_config = my_sensor_config, placement = strixelremap.Chip1) 
 
-    assert len(strixelpixelmap) == 1
+    strixelpixelmap.calculate_map(strixelremap.toHalfopenROI(user_roi))
 
-    assert strixelpixelmap[0].effective_roi == my_group_config.placement_on_sensor
+    group_maps = strixelpixelmap.group_maps
 
-    map = strixelpixelmap[0].map
+    assert len(group_maps) == 1
+
+    assert group_maps[0].effective_roi == my_group_config.placement_on_sensor
+
+    map = group_maps[0].map
     assert map.shape == (10 ,5)
 
     assert np.array_equal(map, np.array([[0, 2, 4, 6, 8], [1, 3, 5, 7, 9], [10, 12, 14, 16, 18], [11, 13, 15, 17, 19], [20, 22, 24, 26, 28], [21, 23, 25, 27, 29], [30, 32, 34, 36, 38], [31, 33, 35, 37, 39], [40, 42, 44, 46, 48], [41, 43, 45, 47, 49]])) 
 
-def test_predefinedRemap(): 
-    """ Test predefined maps API """
+    input = np.arange(50).reshape((5,10)).astype(np.uint16)
 
-    user_roi = strixelremap.InclusiveROI(strixelremap.Chip1.placement_on_module.xmin + 5, strixelremap.Chip1.placement_on_module.xmin + 9, strixelremap.Chip1.placement_on_module.ymin + 5, strixelremap.Chip1.placement_on_module.ymin + 7)
-    strixelpixelmap = strixelremap.jungfrau_tew_singlechip_25um_strixel_map(user_roi = user_roi, placement = strixelremap.Chip1)
+    remapped_result = strixelpixelmap(input)[0]
 
-    assert strixelpixelmap.map.shape == (9, 2)
+    assert remapped_result.shape == (10,5)
 
-    assert np.array_equal(strixelpixelmap.map, np.array([[-1, 2], [0, 3], [1, 4], [-1, 7], [5,8], [6,9], [-1,12], [10,13], [11,14]])) 
+    assert np.array_equal(remapped_result, np.array([[0, 2, 4, 6, 8], [1, 3, 5, 7, 9], [10, 12, 14, 16, 18], [11, 13, 15, 17, 19], [20, 22, 24, 26, 28], [21, 23, 25, 27, 29], [30, 32, 34, 36, 38], [31, 33, 35, 37, 39], [40, 42, 44, 46, 48], [41, 43, 45, 47, 49]]))
+
+    # check output call operator with preallocated output array
+    output = np.empty(map.shape, dtype=input.dtype)
+
+    strixelpixelmap(input, [output])
+
+    assert np.array_equal(output, np.array([[0, 2, 4, 6, 8], [1, 3, 5, 7, 9], [10, 12, 14, 16, 18], [11, 13, 15, 17, 19], [20, 22, 24, 26, 28], [21, 23, 25, 27, 29], [30, 32, 34, 36, 38], [31, 33, 35, 37, 39], [40, 42, 44, 46, 48], [41, 43, 45, 47, 49]]))
+
+def test_predefined_iLGAD_singlechip(): 
+    """ Test predefined Junfrau iLGAD strixel pixel remap """
+
+    inclusive_user_roi = strixelremap.InclusiveROI(strixelremap.Chip1.placement_on_module.xmin + 11, strixelremap.Chip1.placement_on_module.xmin + 15, strixelremap.Chip1.placement_on_module.ymin + 10, strixelremap.Chip1.placement_on_module.ymin + 12)
+
+    exclusive_user_roi = strixelremap.toHalfopenROI(inclusive_user_roi)
+
+    strixelpixelmap = strixelremap.Jungfrau_iLGAD_StrixelPixelMap(module_placement = strixelremap.Chip1)
+
+    strixelpixelmap.calculate_map(exclusive_user_roi)
+
+    group_maps = strixelpixelmap.group_maps
+
+    assert len(group_maps) == 3
+
+    assert group_maps[0].map.shape == (9, 2)
+
+    assert group_maps[1].map.shape == (0, 0)
+
+    assert group_maps[2].map.shape == (0, 0)
+
+    group_map_0 = group_maps[0].map
+
+    assert np.array_equal(group_map_0, np.array([[-1, 2], [0, 3], [1, 4], [-1, 7], [5,8], [6,9], [-1,12], [10,13], [11,14]])) 
 
     input_data = np.array([[1,2,3,4,5],[1,2,3,4,5], [1,2,3,4,5]]).astype(np.uint16)
 
-    order_map = strixelpixelmap.map
+    output = strixelpixelmap(input_data)
 
-    output = np.empty(order_map.shape, dtype=input_data.dtype)
+    assert len(output) == 3 
+   
+    assert np.array_equal(output[0], np.array([[0, 3], [1,4], [2,5], [0, 3], [1,4], [2,5], [0, 3], [1,4], [2,5]]))
 
-    strixelremap.apply_remap(input_data, order_map, output)
-    assert np.array_equal(output, np.array([[0, 3], [1,4], [2,5], [0, 3], [1,4], [2,5], [0, 3], [1,4], [2,5]]))
+    assert output[1].size() == 0
+
+    assert output[2].size() == 0
 
 
-def test_apply_remap():
-    """ Apply remap throws upon invalid input data type """
+def test_predefined_iLGAD_quad_remap():
+    """ Test predefined Junfrau iLGAD quad strixel pixel remap """
 
-    strixelpixelmap = strixelremap.jungfrau_ilgad_singlechip_25um_strixel_map(user_roi = strixelremap.Chip1.placement_on_module, placement = strixelremap.Chip1) 
+    # TODO combine map with one empty 
+    inclusive_user_roi = strixelremap.InclusiveROI(strixelremap.Quad.placement_on_module.xmin + 11, strixelremap.Quad.placement_on_module.xmin + 15, strixelremap.Quad.placement_on_module.ymin + 9, strixelremap.Quad.placement_on_module.ymin + 11)
 
-    order_map = strixelpixelmap.map
+    exclusive_user_roi = strixelremap.toHalfopenROI(inclusive_user_roi)
 
-    user_roi_height = strixelremap.Chip1.placement_on_module.height
-    user_roi_width = strixelremap.Chip1.placement_on_module.width
+    strixelpixelmap = strixelremap.Jungfrau_iLGAD_Quad_StrixelPixelMap()
 
-    data = np.random.rand(user_roi_height, user_roi_width).astype(np.float64)
+    strixelpixelmap.calculate_map(exclusive_user_roi)
 
-    output = np.empty(order_map.shape, dtype=data.dtype)
+    group_maps = strixelpixelmap.group_maps
 
-    with pytest.raises(RuntimeError):
-        strixelremap.apply_remap(data, order_map, output)
+    assert len(group_maps) == 1 
+
+    assert group_maps[0].map.shape == (9, 2)
+
+
+

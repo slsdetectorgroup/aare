@@ -166,7 +166,7 @@ struct StrixelGroupToPixelMap {
      * strixel group. Each value is a flattened index into the original
      * user-provided ROI.
      */
-    NDArray<ssize_t, 2> map;
+    NDArray<ssize_t, 2> map{};
 
     /**
      * @brief Effective pixel ROI covered by this map.
@@ -176,7 +176,7 @@ struct StrixelGroupToPixelMap {
      *
      * The local coordinate system of `map` is aligned with this ROI.
      */
-    InclusiveROI effective_roi;
+    InclusiveROI effective_roi{};
 };
 
 } // namespace aare::remap::defs

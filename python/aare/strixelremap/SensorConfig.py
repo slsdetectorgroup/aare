@@ -22,29 +22,20 @@ def SensorConfig(sensor_geometry, group_configs):
     return sensor_config_cls(sensor_geometry, group_configs)
 
 
-# helper function for easier documentation of templated strixel_to_pixel_maps
-def strixel_to_pixel_maps(sensor_config : SensorConfig, placement : strixelremap.SensorModulePlacement, user_roi : strixelremap.InclusiveROI, bond_shift : strixelremap.BondShift = strixelremap.BondShift(0, 0)) -> list[strixelremap.StrixelGroupToPixelMap]: 
+def StrixelPixelMap(sensor_config , placement : strixelremap.SensorModulePlacement, bond_shift : strixelremap.BondShift = strixelremap.BondShift(0, 0)): 
     """ 
-    Creates a StrixeltoPixelMap for all GroupConfigs in a SensorConfig
+    Helper function to create a StrixelPixelMap from a SensorConfig
 
-    Parameters
-    ----------
-
-    sensor_config : SensorConfig
-        Configuration of the sensor, including all configurations of the strixel groups.
-    placement : SensorModulePlacement
-        Placement and orientation of the sensor on the module.
-    user_roi : InclusiveROI
-        User-defined region of interest. (in global module coordinates)
-    bond_shift : BondShift, optional
-        Shift applied to the bond positions. Default is (0, 0).
-
-    Returns
-    -------
-
-    list[StrixelGroupToPixelMap]
-        map(row, col) contains the flattened pixel index of the corresponding source pixel in the user-provided input ROI for strixel defined at (row, col).
-        An entry of -1 indicates that the corresponding strixel position has no valid source pixel.
+    Args:
+        sensor_config (SensorConfig): The sensor configuration
+        placement (SensorModulePlacement): The placement of the sensor on the module
+        bond_shift (BondShift, optional): The bond shift to apply to the sensor. Defaults to BondShift(0, 0).
+    Returns:
+        StrixelPixelMap: The strixel pixel map object for the given sensor configuration and placement
     """
 
-    return strixelremap.strixel_to_pixel_maps_pybindfunc(sensor_config, placement, user_roi, bond_shift)
+    N = len(sensor_config.group_configs)
+
+    sensor_config_cls = getattr(strixelremap, f"StrixelPixelMap_{N}Groups_{N}Maps")
+
+    return sensor_config_cls(sensor_config, placement, bond_shift)

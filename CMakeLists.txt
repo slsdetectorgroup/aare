@@ -370,8 +370,8 @@ set(PUBLICHEADERS
     include/aare/StrixelPixelRemapping/StrixelPixelRemapConfig.hpp
     include/aare/StrixelPixelRemapping/StrixelPixelRemapDefs.hpp
     include/aare/StrixelPixelRemapping/StrixelPixelRemapFormat.hpp
-    include/aare/StrixelPixelRemapping/StrixelPixelRemapGenerate.hpp
-    include/aare/StrixelPixelRemapping/StrixelPixelMap.hpp
+    include/aare/StrixelPixelRemapping/BaseStrixelPixelMap.hpp
+    include/aare/StrixelPixelRemapping/StrixelPixelMaps.hpp
     include/aare/ROI.hpp
     include/aare/ROIGeometry.hpp
     include/aare/DetectorGeometry.hpp

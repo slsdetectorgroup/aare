@@ -1,3 +1,4 @@
+#pragma once
 #include "aare/StrixelPixelRemapping/StrixelPixelRemapDefs.hpp"
 
 namespace aare::remap {
@@ -33,12 +34,18 @@ InclusiveROI inline update_pixel_group_placement(
 }
 } // namespace detail
 
-template <std::size_t N> class StrixelPixelMap {
+namespace detail {
+struct StrixelPixelMapBindingAccess;
+}
+
+template <std::size_t N, std::size_t M = N> class StrixelPixelMap {
+    friend struct detail::StrixelPixelMapBindingAccess;
 
   public:
     StrixelPixelMap(const SensorConfig<N> &sensor_config,
                     const SensorModulePlacement &module_placement,
                     const BondShift &bond_shift = BondShift{0, 0});
+    virtual ~StrixelPixelMap() = default;
 
     /**
      * @brief Calculate the strixel-to-pixel order maps for all strixel groups
@@ -46,7 +53,7 @@ template <std::size_t N> class StrixelPixelMap {
      * @param user_roi User-specified ROI in the module's native coordinate
      * system.
      */
-    void calculate_map_from_roi(const InclusiveROI &user_roi);
+    virtual void calculate_map(const ROI &user_roi);
 
     /**
      * @brief Apply the strixel-to-pixel remapping to an input array.
@@ -57,8 +64,8 @@ template <std::size_t N> class StrixelPixelMap {
      * group.
      */
     template <typename T>
-    std::array<NDArray<T, 2>, N> operator()(const ROI &user_roi,
-                                            NDView<T, 2> input);
+    std::array<NDArray<T, 2>, M> operator()(const ROI &user_roi,
+                                            const NDView<T, 2> input);
 
     /**
      * @brief Apply the strixel-to-pixel remapping to an input array.
@@ -68,10 +75,10 @@ template <std::size_t N> class StrixelPixelMap {
      * @throws std::runtime_error If the input shape does not match the user ROI
      * shape.
      * @note This overload assumes that the user ROI has already been set and
-     * the map calculated using `calculate_map_from_roi()`.
+     * the map calculated using `calculate_map()`.
      */
     template <typename T>
-    std::array<NDArray<T, 2>, N> operator()(NDView<T, 2> input);
+    std::array<NDArray<T, 2>, M> operator()(const NDView<T, 2> input) const;
 
     /**
      * @brief Apply the strixel-to-pixel remapping to an input array.
@@ -81,16 +88,22 @@ template <std::size_t N> class StrixelPixelMap {
      * @throws std::runtime_error If the output shape does not match the user
      * ROI shape.
      * @note This overload assumes that the user ROI has already been set and
-     * the map calculated using `calculate_map_from_roi()`.
+     * the map calculated using `calculate_map()`.
      */
     template <typename T>
-    void operator()(NDView<T, 2> input, std::array<NDArray<T, 2>, N> &output);
+    void operator()(const NDView<T, 2> input,
+                    std::array<NDArray<T, 2>, M> &output) const;
 
-    std::array<defs::StrixelGroupToPixelMap, N> const &get_group_maps() const {
+    std::array<defs::StrixelGroupToPixelMap, M> get_group_maps() const {
         return m_group_maps;
     }
 
-  private:
+    const std::array<defs::StrixelGroupToPixelMap, M> &
+    get_group_maps(std::size_t group_index) const {
+        return m_group_maps;
+    }
+
+  protected:
     /**
      * @brief Build the strixel-to-pixel order map for one strixel group.
      * The strixel mapping is determined by the group's multiplicity and
@@ -119,16 +132,6 @@ template <std::size_t N> class StrixelPixelMap {
     strixel_to_pixel_map(defs::GroupConfig const &group_config);
 
     /**
-     * @brief Applies a given remapping rule to an input array.
-     * @param input Original array
-     * @param order_map Rule for remapping (e.g. the output of a map generator)
-     * @param output Remapped array
-     */
-    template <typename T>
-    void apply_group_remap(NDView<T, 2> input, NDView<T, 2> output,
-                           NDView<ssize_t, 2> order_map);
-
-    /**
      * @brief Applies all the group maps to the input.
      * @param input Original array
      * @return std::array<NDArray<T, 2>, N> Remapped arrays for each group
@@ -136,96 +139,122 @@ template <std::size_t N> class StrixelPixelMap {
      * order map shape for any group.
      */
     template <typename T>
-    std::array<NDArray<T, 2>, N> apply_remap(NDView<T, 2> input);
+    std::array<NDArray<T, 2>, M> apply_remap(const NDView<T, 2> input) const;
+
+    /**
+     * @brief Applies a given remapping rule to an input array.
+     * @param input Original array
+     * @param order_map Rule for remapping (e.g. the output of a map generator)
+     * @param output Remapped array
+     */
+    template <typename T>
+    void apply_group_remap(const NDView<T, 2> input, NDView<T, 2> output,
+                           const NDView<const ssize_t, 2> order_map) const;
+
+  protected:
+    InclusiveROI m_user_roi{};
+    std::array<defs::StrixelGroupToPixelMap, M>
+        m_group_maps{}; // TODO: do we need to store effective ROI?
+    SensorConfig<N> m_sensorconfig{};
 
   private:
-    SensorConfig<N> m_sensorconfig{};
     SensorModulePlacement m_module_placement{};
     BondShift m_bond_shift{};
-    InclusiveROI m_user_roi{};
-    std::array<defs::StrixelGroupToPixelMap, N> m_group_maps{};
 };
 
-template <std::size_t N>
-StrixelPixelMap<N>::StrixelPixelMap(
+template <std::size_t N, std::size_t M>
+StrixelPixelMap<N, M>::StrixelPixelMap(
     const SensorConfig<N> &sensor_config,
     const SensorModulePlacement &module_placement, const BondShift &bond_shift)
     : m_sensorconfig(sensor_config), m_module_placement(module_placement),
       m_bond_shift(bond_shift) {}
 
-template <std::size_t N>
-void StrixelPixelMap<N>::calculate_map_from_roi(const InclusiveROI &user_roi) {
-    m_user_roi = user_roi;
+template <std::size_t N, std::size_t M>
+void StrixelPixelMap<N, M>::calculate_map(const ROI &user_roi) {
+    m_user_roi = toInclusiveROI(user_roi);
 
     for (size_t i = 0; i < N; ++i) {
         m_group_maps[i] = strixel_to_pixel_map(m_sensorconfig.group_configs[i]);
     }
 }
 
-template <std::size_t N>
+template <std::size_t N, std::size_t M>
 template <typename T>
-std::array<NDArray<T, 2>, N>
-StrixelPixelMap<N>::operator()(const ROI &user_roi, NDView<T, 2> input) {
-
+std::array<NDArray<T, 2>, M>
+StrixelPixelMap<N, M>::operator()(const ROI &user_roi,
+                                  const NDView<T, 2> input) {
     if (m_user_roi.is_empty()) {
-        calculate_map_from_roi(user_roi);
+        calculate_map(user_roi);
         return apply_remap(input);
     } else if (toInclusiveROI(user_roi) != m_user_roi) {
-        calculate_map_from_roi(toInclusiveROI(user_roi));
+        calculate_map(user_roi);
         return apply_remap(input);
     } else {
         return apply_remap(input);
     }
 }
 
-template <std::size_t N>
+template <std::size_t N, std::size_t M>
 template <typename T>
-std::array<NDArray<T, 2>, N>
-StrixelPixelMap<N>::operator()(NDView<T, 2> input) {
-    if (input.shape !=
-        std::array<std::size_t, 2>{m_user_roi.height, m_user_roi.width}) {
-        throw std::runtime_error("shape mismatch between input and map");
+std::array<NDArray<T, 2>, M>
+StrixelPixelMap<N, M>::operator()(const NDView<T, 2> input) const {
+    if (input.shape() !=
+        std::array<ssize_t, 2>{m_user_roi.height(), m_user_roi.width()}) {
+        throw std::runtime_error(
+            fmt::format("shape mismatch between input and map: input shape = "
+                        "({},{}), expected shape = ({},{})",
+                        input.shape()[0], input.shape()[1], m_user_roi.height(),
+                        m_user_roi.width()));
     }
 
     return apply_remap(input);
 }
 
-template <std::size_t N>
+template <std::size_t N, std::size_t M>
 template <typename T>
-void StrixelPixelMap<N>::operator()(NDView<T, 2> input,
-                                    std::array<NDArray<T, 2>, N> &output) {
+void StrixelPixelMap<N, M>::operator()(
+    const NDView<T, 2> input, std::array<NDArray<T, 2>, M> &output) const {
 
-    if (input.shape !=
-        std::array<std::size_t, 2>{m_user_roi.height, m_user_roi.width}) {
-        throw std::runtime_error("shape mismatch between input and map");
+    if (input.shape() !=
+        std::array<ssize_t, 2>{m_user_roi.height(), m_user_roi.width()}) {
+        throw std::runtime_error(
+            fmt::format("shape mismatch between input and map: input shape = "
+                        "({},{}), expected shape = ({},{})",
+                        input.shape()[0], input.shape()[1], m_user_roi.height(),
+                        m_user_roi.width()));
+    }
+
+    if (output.size() != m_group_maps.size()) {
+        throw std::runtime_error(
+            "output array size does not match number of group maps");
     }
 
     for (size_t i = 0; i < m_group_maps.size(); ++i) {
-        apply_group_remap(input, output[i].view(), m_group_maps[i].view());
+        apply_group_remap(input, output[i].view(), m_group_maps[i].map.view());
     }
 }
 
-template <std::size_t N>
+template <std::size_t N, std::size_t M>
 template <typename T>
-std::array<NDArray<T, 2>, N>
-StrixelPixelMap<N>::apply_remap(NDView<T, 2> input) {
+std::array<NDArray<T, 2>, M>
+StrixelPixelMap<N, M>::apply_remap(const NDView<T, 2> input) const {
 
-    // TODO: maybe vector is better - empty ROIs
-    std::array<NDArray<T, 2>, N> outputs;
+    // TODO: maybe vector is better - empty ROIs - write tests !!!
+    std::array<NDArray<T, 2>, M> outputs;
 
     for (size_t i = 0; i < m_group_maps.size(); ++i) {
-        outputs[i] = NDArray<T, 2>{m_group_maps[i].shape()};
-        apply_group_remap(input, outputs[i].view(), m_group_maps[i].view());
+        outputs[i] = NDArray<T, 2>{m_group_maps[i].map.shape()};
+        apply_group_remap(input, outputs[i].view(), m_group_maps[i].map.view());
     }
 
     return outputs;
 }
 
-template <std::size_t N>
+template <std::size_t N, std::size_t M>
 template <typename T>
-void StrixelPixelMap<N>::apply_group_remap(NDView<T, 2> input,
-                                           NDView<T, 2> output,
-                                           NDView<ssize_t, 2> order_map) {
+void StrixelPixelMap<N, M>::apply_group_remap(
+    const NDView<T, 2> input, NDView<T, 2> output,
+    const NDView<const ssize_t, 2> order_map) const {
 
     if (output.shape() != order_map.shape()) {
         throw std::invalid_argument(
@@ -259,8 +288,8 @@ void StrixelPixelMap<N>::apply_group_remap(NDView<T, 2> input,
     }
 }
 
-template <std::size_t N>
-defs::StrixelGroupToPixelMap StrixelPixelMap<N>::strixel_to_pixel_map(
+template <std::size_t N, std::size_t M>
+defs::StrixelGroupToPixelMap StrixelPixelMap<N, M>::strixel_to_pixel_map(
     defs::GroupConfig const &group_config) {
 
     const int multiplicity = group_config.strixel.multiplicity;
