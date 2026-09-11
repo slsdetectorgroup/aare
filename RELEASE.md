@@ -25,9 +25,12 @@
 ### API Changes:
 
 - ``Pedestal`` now always accumulates sums and sums of squares in ``double``,
-  like ``FastPedestal``. Mean, variance, and standard deviation output types
+  like ``FastPedestal``. Mean and standard deviation output types
   are unchanged. Removed the C++ ``get_sum()``/``get_sum2()`` getters and
   Python ``sum``/``sum2`` properties; internal sums are no longer exposed.
+- Removed the public ``Pedestal.variance()`` and ``cached_std()`` APIs and
+  C++ ``update_std()``. Use ``std()`` to calculate the current population
+  standard deviation; variance is now an internal implementation detail.
 - ``ClusterFinder`` now uses ``FastPedestal``. It must receive 1000 pedestal
   frames before cluster finding; ``find_clusters()`` raises
   an error until initialization is complete. Added ``update_threshold()`` to
@@ -52,6 +55,16 @@
 - ``TimingMode::Auto`` changed to ``TimingMode::AUTO_TIMING``, ``TimingMode::Trigger`` changed to ``TimingMode::TRIGGER_EXPOSURE``
 
 ### Bugfixes:
+- ``Pedestal`` reports mismatched frame shapes with exceptions in all push
+  overloads, including Debug builds, instead of aborting on assertions.
+- Python ``Pedestal`` constructors reject negative dimensions and sample
+  counts instead of converting them to large unsigned values.
+- ``Pedestal`` clamps negative variance from floating-point roundoff to zero,
+  preventing NaN standard deviations for nearly constant inputs.
+- Python ``Pedestal.push()`` now requires C-contiguous ``uint16`` frames
+  without implicit conversion. Both ``push()`` and ``push_with_threshold()``
+  validate that frames and thresholds are two-dimensional before constructing
+  views, preventing incorrect results from unsupported array layouts or ranks.
 - ``RawFile`` now derives its frame count from the shortest selected raw
   subfile series across all ROIs. Frame-number reads use the same bounds, and
   Python ``len(reader)`` returns the adjusted count. A warning is printed when

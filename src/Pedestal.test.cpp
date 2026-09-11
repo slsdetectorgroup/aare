@@ -16,12 +16,14 @@ TEMPLATE_TEST_CASE("pedestal uses double precision moments", "[pedestal]",
     pedestal.push(0, 0, uint16_t{30003});
 
     REQUIRE(pedestal.mean(0, 0) == static_cast<TestType>(30001.5));
-    REQUIRE(pedestal.variance(0, 0) == static_cast<TestType>(2.25));
+    REQUIRE(pedestal.std(0, 0) == static_cast<TestType>(1.5));
 
     pedestal.push(0, 0, uint16_t{30002});
 
     REQUIRE(pedestal.mean(0, 0) == static_cast<TestType>(30001.75));
-    REQUIRE(pedestal.variance(0, 0) == static_cast<TestType>(1.1875));
+    REQUIRE_THAT(static_cast<double>(pedestal.std(0, 0)),
+                 Catch::Matchers::WithinAbs(
+                     static_cast<TestType>(std::sqrt(1.1875)), 1e-6));
 }
 
 TEST_CASE("test pedestal constructor") {
@@ -32,10 +34,44 @@ TEST_CASE("test pedestal constructor") {
     for (int i = 0; i < 10; i++) {
         for (int j = 0; j < 10; j++) {
             REQUIRE(pedestal.mean(i, j) == 0);
-            REQUIRE(pedestal.variance(i, j) == 0);
             REQUIRE(pedestal.cur_samples()(i, j) == 0);
         }
     }
+}
+
+TEST_CASE("pedestal rejects mismatched frame shapes", "[pedestal]") {
+    Pedestal<> pedestal(2, 3);
+    pedestal.push(0, 0, uint16_t{7});
+    NDArray<double, 2> threshold({2, 3}, 10.0);
+
+    for (const auto shape :
+         {std::array<uint32_t, 2>{2, 2}, std::array<uint32_t, 2>{3, 2}}) {
+        Frame frame(shape[0], shape[1], Dtype::UINT16);
+        REQUIRE_THROWS_WITH(pedestal.push(frame.view<uint16_t>()),
+                            "Frame shape does not match pedestal shape");
+        REQUIRE_THROWS_WITH(pedestal.push_with_threshold(frame.view<uint16_t>(),
+                                                         threshold.view()),
+                            "Frame shape does not match pedestal shape");
+        REQUIRE_THROWS_WITH(pedestal.push<uint16_t>(frame),
+                            "Frame shape does not match pedestal shape");
+        REQUIRE(pedestal.mean(0, 0) == 7);
+        REQUIRE(pedestal.cur_samples()(0, 0) == 1);
+    }
+}
+
+TEMPLATE_TEST_CASE("pedestal std stays finite after settling", "[pedestal]",
+                   double, float, int16_t) {
+    Pedestal<TestType> pedestal(1, 1, 10);
+    pedestal.push(0, 0, uint16_t{16382});
+    for (int i = 0; i < 201; ++i) {
+        pedestal.push(0, 0, uint16_t{16383});
+    }
+
+    const auto noise = pedestal.std(0, 0);
+    REQUIRE(std::isfinite(noise));
+    REQUIRE(noise >= 0);
+    REQUIRE(static_cast<double>(noise) < 1e-3);
+    REQUIRE(pedestal.std()(0, 0) == noise);
 }
 
 TEST_CASE("test pedestal push") {
@@ -52,7 +88,6 @@ TEST_CASE("test pedestal push") {
     for (int i = 0; i < 10; i++) {
         for (int j = 0; j < 10; j++) {
             REQUIRE(pedestal.mean(i, j) == i + j);
-            REQUIRE(pedestal.variance(i, j) == 0);
             REQUIRE(pedestal.cur_samples()(i, j) == 1);
         }
     }
@@ -62,7 +97,6 @@ TEST_CASE("test pedestal push") {
     for (int i = 0; i < 10; i++) {
         for (int j = 0; j < 10; j++) {
             REQUIRE(pedestal.mean(i, j) == 0);
-            REQUIRE(pedestal.variance(i, j) == 0);
             REQUIRE(pedestal.cur_samples()(i, j) == 0);
         }
     }
@@ -78,7 +112,6 @@ TEST_CASE("test pedestal push") {
                     REQUIRE(pedestal.cur_samples()(i, j) == 5);
                 }
                 REQUIRE(pedestal.mean(i, j) == (i + j));
-                REQUIRE(pedestal.variance(i, j) == 0);
                 REQUIRE(pedestal.std(i, j) == 0);
             }
         }
@@ -86,7 +119,7 @@ TEST_CASE("test pedestal push") {
 }
 
 TEST_CASE("test pedestal with normal distribution") {
-    const double MEAN = 5.0, STD = 2.0, VAR = STD * STD, TOLERANCE = 0.1;
+    const double MEAN = 5.0, STD = 2.0, TOLERANCE = 0.1;
 
     unsigned seed = std::chrono::system_clock::now().time_since_epoch().count();
     std::default_random_engine generator(seed);
@@ -103,15 +136,12 @@ TEST_CASE("test pedestal with normal distribution") {
         pedestal.push<double>(frame);
     }
     auto mean = pedestal.mean();
-    auto variance = pedestal.variance();
     auto standard_deviation = pedestal.std();
 
     for (int i = 0; i < 3; i++) {
         for (int j = 0; j < 5; j++) {
             REQUIRE_THAT(mean(i, j),
                          Catch::Matchers::WithinAbs(MEAN, MEAN * TOLERANCE));
-            REQUIRE_THAT(variance(i, j),
-                         Catch::Matchers::WithinAbs(VAR, VAR * TOLERANCE));
             REQUIRE_THAT(standard_deviation(i, j),
                          Catch::Matchers::WithinAbs(STD, STD * TOLERANCE));
         }

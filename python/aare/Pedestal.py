@@ -17,7 +17,7 @@ def Pedestal(rows, cols, n_samples=1000, dtype=np.float64):
         cols: Number of image columns.
         n_samples: Number of samples accumulated before switching to
             steady-state updates with weight ``1 / n_samples``.
-        dtype: Output dtype for the mean, variance, and standard deviation.
+        dtype: Output dtype for the mean and standard deviation.
             Supported values are ``np.float64``, ``np.float32``, and
             ``np.int16``.
     """
