@@ -4,6 +4,8 @@
 
 ### New Features:
 
+- Added the Python ``FrameDiscardPolicy`` enum with ``NoDiscard``, ``Discard``,
+  and ``DiscardPartial``, enabling access to ``RawMasterFile.frame_discard_policy``.
 - Added the Python ``Pedestal`` factory with ``dtype`` selection, matching
   ``FastPedestal`` and defaulting to ``float64`` output.
 - Added ``FastPedestal`` in C++ and Python for per-pixel running mean
@@ -74,6 +76,11 @@
 - ``TimingMode::Auto`` changed to ``TimingMode::AUTO_TIMING``, ``TimingMode::Trigger`` changed to ``TimingMode::TRIGGER_EXPOSURE``
 
 ### Bugfixes:
+- ``RawFile`` and ``File`` reject raw files with frame padding disabled unless
+  the frame discard policy is ``discardpartial``. The constructor reports the
+  master path before opening data subfiles. Legacy ``.raw`` master files now
+  parse the frame discard policy so unpadded ``discardpartial`` files remain
+  readable.
 - ``Pedestal`` reports mismatched frame shapes with exceptions in all push
   overloads, including Debug builds, instead of aborting on assertions.
 - Python ``Pedestal`` constructors reject negative dimensions and sample
@@ -259,7 +266,6 @@ https://github.com/slsdetectorgroup/aare
 erik.frojdh@psi.ch \
 alice.mazzoleni@psi.ch \
 dhanya.thattil@psi.ch
-
 
 
 

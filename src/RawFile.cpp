@@ -29,6 +29,14 @@ RawFile::RawFile(const std::filesystem::path &fname, const std::string &mode)
     m_mode = mode;
 
     if (mode == "r") {
+        if (m_master.frame_padding() == 0 &&
+            m_master.frame_discard_policy() !=
+                FrameDiscardPolicy::DiscardPartial) {
+            throw std::runtime_error(fmt::format(
+                "Cannot open '{}': RawFile requires frame padding or "
+                "discardpartial.",
+                m_master.master_fname().string()));
+        }
 
         m_subfiles.resize(m_master.roi_geometries().size());
         // iterate over all ROIS
