@@ -38,26 +38,29 @@ class InvertedGainMap {
 
         constexpr size_t cluster_size_x = ClusterType::cluster_size_x;
         constexpr size_t cluster_size_y = ClusterType::cluster_size_y;
-        constexpr ssize_t left = cluster_size_x / 2;
-        constexpr ssize_t right = cluster_size_x - left - 1;
-        constexpr ssize_t top = cluster_size_y / 2;
-        constexpr ssize_t bottom = cluster_size_y - top - 1;
+        constexpr ssize_t pixel_left_from_center = cluster_size_x / 2;
+        constexpr ssize_t pixels_right_from_center =
+            cluster_size_x - pixel_left_from_center - 1;
+        constexpr ssize_t pixels_top_from_center = cluster_size_y / 2;
+        constexpr ssize_t pixels_bottom_from_center =
+            cluster_size_y - pixels_top_from_center - 1;
 
         for (size_t i = 0; i < clustervec.size(); i++) {
             auto &cl = clustervec[i];
             const auto center_x = static_cast<ssize_t>(cl.x);
             const auto center_y = static_cast<ssize_t>(cl.y);
 
-            if (center_x >= left && center_y >= top &&
-                center_x < m_gain_map.shape(1) - right &&
-                center_y < m_gain_map.shape(0) - bottom) {
+            if (center_x >= pixel_left_from_center &&
+                center_y >= pixels_top_from_center &&
+                center_x < m_gain_map.shape(1) - pixels_right_from_center &&
+                center_y < m_gain_map.shape(0) - pixels_bottom_from_center) {
                 for (size_t j = 0; j < cluster_size_x * cluster_size_y; j++) {
                     const auto x = center_x +
                                    static_cast<ssize_t>(j % cluster_size_x) -
-                                   left;
+                                   pixel_left_from_center;
                     const auto y = center_y +
                                    static_cast<ssize_t>(j / cluster_size_x) -
-                                   top;
+                                   pixels_top_from_center;
                     cl.data[j] = static_cast<T>(
                         static_cast<double>(cl.data[j]) *
                         m_gain_map(
