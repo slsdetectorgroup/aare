@@ -3,6 +3,14 @@ RawFile
 
 .. py:currentmodule:: aare
 
+Reading requires frame padding to be enabled (``Frame Padding`` is nonzero)
+or ``Frame Discard Policy`` to be ``discardpartial``. With padding disabled,
+``nodiscard`` and ``discard`` are unsupported. Construction raises
+``RuntimeError`` with the master path before opening data subfiles if this
+requirement is not met. This applies to JSON and legacy ``.raw`` masters,
+including when opened through ``File``. ``RawMasterFile`` can still be used
+to inspect their metadata.
+
 ``total_frames`` and ``len(reader)`` report the minimum actual frame count
 across all selected subfiles and ROIs, including each subfile's complete
 ``.raw`` series. ``read()`` uses this count, and ``read_n()`` and

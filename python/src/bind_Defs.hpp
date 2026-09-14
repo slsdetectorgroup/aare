@@ -95,4 +95,9 @@ void define_defs_bindings(py::module &m) {
         .value("GATED", TimingMode::GATED)
         .value("BURST_TRIGGER", TimingMode::BURST_TRIGGER)
         .value("TRIGGER_GATED", TimingMode::TRIGGER_GATED);
+
+    py::enum_<FrameDiscardPolicy>(m, "FrameDiscardPolicy")
+        .value("NoDiscard", FrameDiscardPolicy::NoDiscard)
+        .value("Discard", FrameDiscardPolicy::Discard)
+        .value("DiscardPartial", FrameDiscardPolicy::DiscardPartial);
 }
