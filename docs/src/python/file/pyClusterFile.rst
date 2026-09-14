@@ -33,7 +33,8 @@ an explicit chunk size to the function for that specific traversal:
             process(clusters)
 
 Chunk sizes must be positive and count selected clusters after filtering.
-``file.chunks(10000)`` does not change the default size. Iterating directly
+``file.chunks(10000)`` does not overwrite the constructor argument  ``chunk_size``
+. Iterating directly
 over ``file`` or calling ``next(file)`` still reads chunks using that default.
 Chunks and ``read_clusters(n_clusters)`` may split or combine frames, so their
 frame numbers are not reliable per-cluster metadata. Empty chunks are not
