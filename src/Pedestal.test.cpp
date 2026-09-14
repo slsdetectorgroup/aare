@@ -21,9 +21,13 @@ TEMPLATE_TEST_CASE("pedestal uses double precision moments", "[pedestal]",
     pedestal.push(0, 0, uint16_t{30002});
 
     REQUIRE(pedestal.mean(0, 0) == static_cast<TestType>(30001.75));
-    REQUIRE_THAT(static_cast<double>(pedestal.std(0, 0)),
-                 Catch::Matchers::WithinAbs(
-                     static_cast<TestType>(std::sqrt(1.1875)), 1e-6));
+    // Static cast to double is needed to avoid a Catch2 warning about
+    // float to double conversion on mac.
+    REQUIRE_THAT(
+        static_cast<double>(pedestal.std(0, 0)),
+        Catch::Matchers::WithinAbs(static_cast<double>(static_cast<TestType>(
+                                       std::sqrt(TestType(1.1875)))),
+                                   static_cast<double>(TestType(1e-6))));
 }
 
 TEST_CASE("test pedestal constructor") {
