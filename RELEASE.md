@@ -16,6 +16,7 @@
 - Added the ``AARE_TUNE_LOCAL`` CMake option to build with ``-march=native``
   and ``-mtune=native`` when supported. Binaries built with this option are
   specific to the local CPU and may not be portable.
+- Support for PixeltoStrixelRemapping. Precomputedt maps are available of the most common sensor-module configurations of iLGAD abnd TEW sensors on the Jungfrau module. 
 - Added string representator in python for Cluster and Eta 
 - Added roi slice method in python for easy slicing of numpy arrays ``array[roi.slice()]``. 
 - added context manager for ``aare.RawMasterFile``
