@@ -1,6 +1,6 @@
-from .SensorConfig import SensorConfig
+from .StrixelRemapFactories import SensorConfig
 
-from .SensorConfig import StrixelPixelMap
+from .StrixelRemapFactories import StrixelPixelMap
 
 from .._aare.strixelremap import *
 

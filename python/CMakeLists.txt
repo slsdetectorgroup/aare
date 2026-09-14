@@ -47,7 +47,7 @@ set(PYTHON_FILES
     aare/transform.py
     aare/ScanParameters.py
     aare/strixelremap/__init__.py
-    aare/strixelremap/SensorConfig.py
+    aare/strixelremap/StrixelRemapFactories.py
     aare/utils.py)
 
 # Copy the python files to the build directory
