@@ -6,8 +6,8 @@
 
 - Added the Python ``Pedestal`` factory with ``dtype`` selection, matching
   ``FastPedestal`` and defaulting to ``float64`` output.
-- Added ``FastPedestal`` in C++ and Python for per-pixel running mean,
-  population variance, and standard deviation. It supports exponentially
+- Added ``FastPedestal`` in C++ and Python for per-pixel running mean
+  and population standard deviation. It supports exponentially
   weighted updates, initialization from files, direct subtraction from NumPy
   arrays, and ``float64``, ``float32``, and ``int16`` output types.
 - Added the ``Pedestal_i16`` Python binding alongside
@@ -24,6 +24,11 @@
 
 ### API Changes:
 
+- ``FastPedestal`` variance is now a private ``double`` intermediate. Removed
+  the C++ ``variance()``/``variance_unchecked()`` APIs and Python ``var()``.
+  Standard deviation is calculated before conversion to the output type,
+  avoiding overflow of intermediate variance for ``int16`` output. Negative
+  variance from floating-point roundoff is clamped to zero.
 - ``Pedestal`` now always accumulates sums and sums of squares in ``double``,
   like ``FastPedestal``. Mean and standard deviation output types
   are unchanged. Removed the C++ ``get_sum()``/``get_sum2()`` getters and

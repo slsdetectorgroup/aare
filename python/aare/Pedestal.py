@@ -10,7 +10,8 @@ def Pedestal(rows, cols, n_samples=1000, dtype=np.float64):
 
     This factory hides the dtype suffix used by the templated C++ bindings.
     Call ``push()`` to update the statistics and cached mean for each frame.
-    Internal sums and sums of squares always use double precision.
+    Statistics are available during initialization and are zero for empty pixels.
+    Internal moments and variance always use double precision.
 
     Args:
         rows: Number of image rows.

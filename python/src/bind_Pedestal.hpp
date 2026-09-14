@@ -14,39 +14,41 @@ namespace py = pybind11;
 template <typename SUM_TYPE>
 void define_pedestal_bindings(py::module &m, const std::string &name) {
 
-    py::class_<Pedestal<SUM_TYPE>>(m, name.c_str(), py::buffer_protocol())
+    py::class_<Pedestal<SUM_TYPE>>(
+        m, name.c_str(),
+        "Maintain a per-pixel running mean and population standard deviation. "
+        "Statistics are available during initialization and are zero for empty "
+        "pixels.",
+        py::buffer_protocol())
         .def(py::init<uint32_t, uint32_t, uint32_t>(), py::arg("rows"),
-             py::arg("cols"), py::arg("n_samples"))
-        .def(py::init<uint32_t, uint32_t>(), py::arg("rows"), py::arg("cols"))
-        .def("mean",
-             [](Pedestal<SUM_TYPE> &self) {
-                 auto mea = new NDArray<SUM_TYPE, 2>{};
-                 *mea = self.mean();
-                 return return_image_data(mea);
-             })
-        .def("view",
-             [](py::object self_py) {
-                 auto &self = self_py.cast<Pedestal<SUM_TYPE> &>();
-                 auto v = self.view();
-                 std::array<py::ssize_t, 2> shape{
-                     static_cast<py::ssize_t>(v.shape(0)),
-                     static_cast<py::ssize_t>(v.shape(1))};
-                 std::array<py::ssize_t, 2> byte_strides{
-                     static_cast<py::ssize_t>(v.strides()[0]) *
-                         static_cast<py::ssize_t>(sizeof(SUM_TYPE)),
-                     static_cast<py::ssize_t>(v.strides()[1]) *
-                         static_cast<py::ssize_t>(sizeof(SUM_TYPE))};
-                 auto arr = py::array_t<SUM_TYPE>(shape, byte_strides, v.data(),
-                                                  self_py);
-                 arr.attr("setflags")(py::arg("write") = false);
-                 return arr;
-             })
-        .def("std",
-             [](Pedestal<SUM_TYPE> &self) {
-                 auto std = new NDArray<SUM_TYPE, 2>{};
-                 *std = self.std();
-                 return return_image_data(std);
-             })
+             py::arg("cols"), py::arg("n_samples"),
+             "Construct an empty pedestal. Each pixel accumulates n_samples "
+             "values before switching to exponential updates.")
+        .def(py::init<uint32_t, uint32_t>(), py::arg("rows"), py::arg("cols"),
+             "Construct an empty pedestal with n_samples=1000.")
+        .def(
+            "mean",
+            [](Pedestal<SUM_TYPE> &self) {
+                auto mea = new NDArray<SUM_TYPE, 2>{};
+                *mea = self.mean();
+                return return_image_data(mea);
+            },
+            "Return a copy of the cached mean. Empty pixels return zero.")
+        .def(
+            "view",
+            [](py::object self_py) {
+                return py::module_::import("numpy").attr("asarray")(self_py);
+            },
+            "Return a non-owning, non-writable NumPy view of the cached mean.")
+        .def(
+            "std",
+            [](Pedestal<SUM_TYPE> &self) {
+                auto std = new NDArray<SUM_TYPE, 2>{};
+                *std = self.std();
+                return return_image_data(std);
+            },
+            "Return the population standard deviation as a NumPy array. "
+            "Empty pixels return zero.")
         .def(
             "__array_ufunc__",
             [](py::object self, py::object ufunc, const std::string &method,
@@ -64,14 +66,22 @@ void define_pedestal_bindings(py::module &m, const std::string &name) {
                 return ufunc(inputs[0], mean, **kwargs);
             },
             "Support subtracting a Pedestal from a NumPy array.")
-        .def("clear", py::overload_cast<>(&Pedestal<SUM_TYPE>::clear))
-        .def_property_readonly("rows", &Pedestal<SUM_TYPE>::rows)
-        .def_property_readonly("cols", &Pedestal<SUM_TYPE>::cols)
-        .def_property_readonly("n_samples", &Pedestal<SUM_TYPE>::n_samples)
-        .def("clone",
-             [&](Pedestal<SUM_TYPE> &pedestal) {
-                 return Pedestal<SUM_TYPE>(pedestal);
-             })
+        .def("clear", py::overload_cast<>(&Pedestal<SUM_TYPE>::clear),
+             "Reset all statistics and per-pixel sample counts to zero.")
+        .def_property_readonly("rows", &Pedestal<SUM_TYPE>::rows,
+                               "Number of image rows.")
+        .def_property_readonly("cols", &Pedestal<SUM_TYPE>::cols,
+                               "Number of image columns.")
+        .def_property_readonly(
+            "n_samples", &Pedestal<SUM_TYPE>::n_samples,
+            "Initialization sample count per pixel and steady-state "
+            "update-weight denominator.")
+        .def(
+            "clone",
+            [&](Pedestal<SUM_TYPE> &pedestal) {
+                return Pedestal<SUM_TYPE>(pedestal);
+            },
+            "Return an independent copy of the pedestal and its state.")
         // TODO! add push for other data types
         .def(
             "push",
@@ -83,7 +93,10 @@ void define_pedestal_bindings(py::module &m, const std::string &name) {
                 auto v = make_view_2d(f);
                 pedestal.push(v);
             },
-            py::arg("frame").noconvert())
+            py::arg("frame").noconvert(),
+            "Accumulate or exponentially update every pixel from a "
+            "C-contiguous uint16 frame matching the pedestal shape. After "
+            "n_samples values per pixel, new values have weight 1 / n_samples.")
         .def(
             "push_with_threshold",
             [](Pedestal<SUM_TYPE> &pedestal,
@@ -99,7 +112,11 @@ void define_pedestal_bindings(py::module &m, const std::string &name) {
                 auto threshold_view = make_view_2d(threshold);
                 pedestal.push_with_threshold(frame_view, threshold_view);
             },
-            py::arg("frame").noconvert(), py::arg("threshold").noconvert())
+            py::arg("frame").noconvert(), py::arg("threshold").noconvert(),
+            "Push only pixels where abs(frame - mean) is strictly less than "
+            "threshold. Both arrays must be C-contiguous with the pedestal "
+            "shape; frame must be uint16 and threshold must use the output "
+            "dtype. Rejected pixels keep their statistics and sample counts.")
         .def_buffer([](Pedestal<SUM_TYPE> &self) {
             auto mean = self.view();
             return py::buffer_info(

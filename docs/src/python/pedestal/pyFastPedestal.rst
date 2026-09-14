@@ -1,7 +1,7 @@
 FastPedestal
 ============
 
-``FastPedestal`` calculates a running mean, variance and standard deviation for each pixel in a
+``FastPedestal`` calculates a running mean and standard deviation for each pixel in a
 series of frames. The python binding only exposes ``uint16`` input but the underlying
 C++ class is templated. Initialize it with ``n_samples`` frames using
 ``add_init_frame()``. Once ``ready`` is true, use ``push_ema()`` to update the exponential 
@@ -18,7 +18,10 @@ The public factory selects the bound C++ specialization from ``dtype``:
 * ``numpy.float32`` creates ``FastPedestal_f``
 * ``numpy.int16`` creates ``FastPedestal_i16``
 
-The internal calculations are done with double, but the cached mean and on demand var and std are returned in the specified type.
+Internal moments and variance are calculated in double precision. Variance is
+private and stays in double precision through the square root; the cached mean
+and on-demand standard deviation are returned in the specified type. Negative
+variance caused by floating-point roundoff is clamped to zero.
 
 Factory
 -------
