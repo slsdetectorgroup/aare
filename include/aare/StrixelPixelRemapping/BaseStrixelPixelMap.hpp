@@ -284,7 +284,7 @@ void StrixelPixelMap<N, M>::apply_group_remap(
 
     if (output.shape() != order_map.shape()) {
         throw std::invalid_argument(
-            "ApplyRemap: output shape does not match order map shape");
+            "output shape does not match order map shape");
     }
 
     const auto nrows = order_map.shape(0);
@@ -305,7 +305,7 @@ void StrixelPixelMap<N, M>::apply_group_remap(
             // Corrupt map, must throw
             if (flat_index >= input.size()) {
                 throw std::runtime_error(
-                    "ApplyRemap: order map contains an invalid pixel index.");
+                    "order map contains an invalid pixel index.");
             }
 
             // Correctly mapped pixel

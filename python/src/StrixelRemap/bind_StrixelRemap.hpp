@@ -72,7 +72,11 @@ void define_StrixelPixelRemaps(py::module &m) {
                     auto *mapped_input_ptr =
                         new aare::NDArray<T, 2>(mapped_input);
 
-                    result_list.append(return_image_data(mapped_input_ptr));
+                    if (mapped_input_ptr->size() == 0) {
+                        result_list.append(py::none());
+                    } else {
+                        result_list.append(return_image_data(mapped_input_ptr));
+                    }
                 }
 
                 return result_list;
@@ -92,7 +96,7 @@ void define_StrixelPixelRemaps(py::module &m) {
             -------
             list of NDArray[uint16_t, 2]
                 Remapped arrays for each strixel group.
-                If a group is not covered by the user ROI, the corresponding array will be empty.
+                If a group is not covered by the user ROI, the corresponding array will be None.
             )")
 
         .def(
@@ -111,7 +115,11 @@ void define_StrixelPixelRemaps(py::module &m) {
                     auto *mapped_input_ptr =
                         new aare::NDArray<T, 2>(mapped_input);
 
-                    result_list.append(return_image_data(mapped_input_ptr));
+                    if (mapped_input_ptr->size() == 0) {
+                        result_list.append(py::none());
+                    } else {
+                        result_list.append(return_image_data(mapped_input_ptr));
+                    }
                 }
 
                 return result_list;
@@ -131,18 +139,23 @@ void define_StrixelPixelRemaps(py::module &m) {
             -------
             list of NDArray[uint16_t, 2]
                 Remapped arrays for each strixel group.
-                If a group is not covered by the user ROI, the corresponding array will be empty.
+                If a group is not covered by the user ROI, the corresponding array will be None.
             )")
 
         .def(
             "__call__",
             [](const aare::remap::StrixelPixelMap<N, M> &self,
                py::array_t<T, py::array::c_style | py::array::forcecast> input,
-               std::array<
-                   py::array_t<T, py::array::c_style | py::array::forcecast>, M>
-                   &output) {
+               py::list &output) {
                 if (input.ndim() != 2) {
                     throw std::runtime_error("Input array must be 2D");
+                }
+
+                if (output.size() != M) {
+                    throw std::runtime_error(
+                        fmt::format("Output list size must be equal to the "
+                                    "number of strixel groups ({}), but got {}",
+                                    M, output.size()));
                 }
 
                 const auto group_maps = self.get_group_maps();
@@ -150,10 +163,38 @@ void define_StrixelPixelRemaps(py::module &m) {
                 const auto input_view = make_view_2d(input);
 
                 for (size_t i = 0; i < group_maps.size(); ++i) {
-                    aare::remap::detail::StrixelPixelMapBindingAccess::
-                        apply_group_remap(self, input_view,
-                                          make_view_2d(output[i]),
-                                          group_maps[i].map.view());
+                    if (group_maps[i].empty()) {
+                        output[i] = py::none();
+                    } else {
+
+                        if (!py::isinstance<py::array_t<T, py::array::c_style>>(
+                                output[i])) {
+                            throw std::runtime_error(
+                                fmt::format("Output list element at index {} "
+                                            "is not a numpy array",
+                                            i));
+                        }
+
+                        auto out = py::array_t<T, py::array::c_style>::ensure(
+                            output[i]);
+                        if (!out) {
+                            throw std::runtime_error(
+                                "Output entry must be a C-contiguous numpy "
+                                "array");
+                        }
+                        if (out.ndim() != 2) {
+                            throw std::runtime_error("Output entry must be 2D");
+                        }
+                        if (!out.writeable()) {
+                            throw std::runtime_error(
+                                "Output entry must be writable");
+                        }
+
+                        aare::remap::detail::StrixelPixelMapBindingAccess::
+                            apply_group_remap(self, input_view,
+                                              make_view_2d(out),
+                                              group_maps[i].map.view());
+                    }
                 }
             },
             py::arg("input").noconvert(), py::arg("output").noconvert(),
@@ -168,6 +209,6 @@ void define_StrixelPixelRemaps(py::module &m) {
                 Input array to be remapped.
             output : list of NDArray[uint16_t, 2]
                 Preallocated arrays to store the remapped results for each strixel group.
-                If a group is not covered by the user ROI, the corresponding output array will be empty.
+                If a group is not covered by the user ROI, the corresponding output array will be None.
             )");
 }

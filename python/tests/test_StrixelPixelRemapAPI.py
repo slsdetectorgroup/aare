@@ -126,9 +126,9 @@ def test_predefined_iLGAD_singlechip():
 
     assert group_maps[0].map.shape == (9, 2)
 
-    assert group_maps[1].map.shape == (0, 0)
+    assert group_maps[1].empty() == True
 
-    assert group_maps[2].map.shape == (0, 0)
+    assert group_maps[2].empty() == True
 
     group_map_0 = group_maps[0].map
 
@@ -142,9 +142,9 @@ def test_predefined_iLGAD_singlechip():
    
     assert np.array_equal(output[0], np.array([[0, 3], [1,4], [2,5], [0, 3], [1,4], [2,5], [0, 3], [1,4], [2,5]]))
 
-    assert output[1].size == 0
+    assert output[1] == None
 
-    assert output[2].size == 0
+    assert output[2] == None
 
 
 def test_predefined_iLGAD_quad_remap():
@@ -183,7 +183,40 @@ def test_predefined_iLGAD_quad_remap():
     assert group_maps[0].map.shape == (762, 2)
 
 
-# TODO test empty map 
-#def test_empty_map(): 
+def test_empty_map(): 
+    """ Test empty map when ROI does not cover any strixel pixels """
 
+    exclusive_user_roi = ROI(0, 10, 0, 5)
 
+    strixelpixelmap = strixelremap.Jungfrau_iLGAD_StrixelPixelMap(module_placement = strixelremap.Chip1)
+
+    strixelpixelmap.calculate_map(exclusive_user_roi)
+
+    group_maps = strixelpixelmap.group_maps
+
+    assert len(group_maps) == 3
+
+    assert group_maps[0].empty() == True
+
+    assert group_maps[1].empty() == True
+
+    assert group_maps[2].empty() == True
+
+    input_data = np.random.randint(0, 65535, size=exclusive_user_roi.shape(), dtype=np.uint16)
+    mapped_output = strixelpixelmap(input_data)
+
+    assert len(mapped_output) == 3
+
+    assert mapped_output[0] == None
+
+    assert mapped_output[1] == None
+
+    assert mapped_output[2] == None
+    # check that the output call operator with preallocated output arrays works as expected
+    output_arrays = [np.random.randint(0, 65535, size=exclusive_user_roi.shape(), dtype=np.uint16) for _ in range(3)]
+    strixelpixelmap(input_data, output_arrays)
+
+    assert output_arrays[0] == None
+    assert output_arrays[1] == None
+    assert output_arrays[2] == None
+   

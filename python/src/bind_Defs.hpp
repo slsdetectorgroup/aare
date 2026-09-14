@@ -37,6 +37,11 @@ void define_defs_bindings(py::module &m) {
         .def_readwrite("ymin", &ROI::ymin)
         .def_readwrite("ymax", &ROI::ymax)
 
+        .def("shape",
+             [](const ROI &self) {
+                 return std::make_tuple(self.height(), self.width());
+             })
+
         .def(
             "slice",
             [](const ROI &self) {
