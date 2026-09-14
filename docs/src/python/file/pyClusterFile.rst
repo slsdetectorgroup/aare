@@ -3,7 +3,7 @@ ClusterFile
 ===========
 
 The :func:`ClusterFile` factory is the main interface for reading and writing
-legacy cluster files. Use ``mode="r"`` to read, ``mode="w"`` to truncate and
+ cluster files. Use ``mode="r"`` to read, ``mode="w"`` to truncate and
 write, or ``mode="a"`` to append.
 
 The format does not store the cluster dimensions, value type, coordinate type,
@@ -22,8 +22,9 @@ Each stored frame is yielded, including empty frames and frames whose clusters
 are all rejected by filtering. Missing frame numbers are not synthesized.
 The explicit ``read_frame()`` method returns one frame or ``None`` at EOF.
 
-Use ``chunks()`` to iterate with the constructor's chunk size, or pass an
-explicit size for that traversal:
+Use ``chunks()``  to iterate over chunks of ``chunk_size`` clusters. Per default 
+the chunk size defined in the constructor is used. Alternatively one can pass 
+an explicit chunk size to the function for that specific traversal:
 
 .. code-block:: python
 

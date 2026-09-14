@@ -139,7 +139,8 @@ void define_ClusterFile(py::module &m, const std::string &typestr) {
              "headers can make this larger than the actual count.")
         .def(
             "set_noise_map",
-            [](ClusterFile<ClusterType> &self, py::array_t<int32_t> noise_map) {
+            [](ClusterFile<ClusterType> &self,
+               py::array_t<int32_t, py::array::c_style> noise_map) {
                 auto view = make_view_2d(noise_map);
                 self.set_noise_map(view);
             },
@@ -149,7 +150,8 @@ void define_ClusterFile(py::module &m, const std::string &typestr) {
 
         .def(
             "set_gain_map",
-            [](ClusterFile<ClusterType> &self, py::array_t<double> gain_map) {
+            [](ClusterFile<ClusterType> &self,
+               py::array_t<double, py::array::c_style> gain_map) {
                 auto view = make_view_2d(gain_map);
                 self.set_gain_map(view);
             },

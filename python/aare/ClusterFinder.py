@@ -89,7 +89,7 @@ def ClusterFileSink(clusterfindermt, cluster_file, dtype=np.int32):
 
 
 def ClusterFile(fname, cluster_size=(3,3), dtype=np.int32, chunk_size = 1000, mode = "r"):
-    """Create a reader or writer for a legacy binary cluster file.
+    """Create a reader or writer for a binary cluster file.
 
     Parameters
     ----------
