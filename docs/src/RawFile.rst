@@ -1,9 +1,9 @@
 RawFile
 ===============
 
-Reading requires frame padding to be enabled (``Frame Padding`` is nonzero)
-or ``Frame Discard Policy`` to be ``discardpartial``. With padding disabled,
-``nodiscard`` and ``discard`` are unsupported. The constructor checks the
+Reading requires frame padding to be enabled 
+or ``Frame Discard Policy`` to be ``discardpartial``.
+The constructor checks the
 parsed master metadata before opening data subfiles and throws
 ``std::runtime_error`` with the master path if this requirement is not met.
 This applies to JSON and legacy ``.raw`` masters, including when opened through
