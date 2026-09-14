@@ -142,15 +142,16 @@ def test_predefined_iLGAD_singlechip():
    
     assert np.array_equal(output[0], np.array([[0, 3], [1,4], [2,5], [0, 3], [1,4], [2,5], [0, 3], [1,4], [2,5]]))
 
-    assert output[1].size() == 0
+    assert output[1].size == 0
 
-    assert output[2].size() == 0
+    assert output[2].size == 0
 
 
 def test_predefined_iLGAD_quad_remap():
     """ Test predefined Junfrau iLGAD quad strixel pixel remap """
 
     # TODO combine map with one empty 
+    # only one map is not covered by ROI 
     inclusive_user_roi = strixelremap.InclusiveROI(strixelremap.Quad.placement_on_module.xmin + 11, strixelremap.Quad.placement_on_module.xmin + 15, strixelremap.Quad.placement_on_module.ymin + 9, strixelremap.Quad.placement_on_module.ymin + 11)
 
     exclusive_user_roi = strixelremap.toHalfopenROI(inclusive_user_roi)
@@ -165,5 +166,24 @@ def test_predefined_iLGAD_quad_remap():
 
     assert group_maps[0].map.shape == (9, 2)
 
+    # both maps are covered by ROI 
+    inclusive_user_roi = strixelremap.InclusiveROI(strixelremap.Quad.placement_on_module.xmin + 11, strixelremap.Quad.placement_on_module.xmin + 15, strixelremap.Quad.placement_on_module.ymin + 9, strixelremap.Quad.placement_on_module.ymin + 260)
+
+    exclusive_user_roi = strixelremap.toHalfopenROI(inclusive_user_roi)
+
+    strixelpixelmap = strixelremap.Jungfrau_iLGAD_Quad_StrixelPixelMap()
+
+    strixelpixelmap.calculate_map(exclusive_user_roi)
+
+    group_maps = strixelpixelmap.group_maps
+
+    assert len(group_maps) == 1
+
+    # 3*246 rows top module + 3*4 rows bottom module + 12 gap rows = 762 rows, 2 columns
+    assert group_maps[0].map.shape == (762, 2)
+
+
+# TODO test empty map 
+#def test_empty_map(): 
 
 

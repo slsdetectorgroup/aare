@@ -177,6 +177,14 @@ struct StrixelGroupToPixelMap {
      * The local coordinate system of `map` is aligned with this ROI.
      */
     InclusiveROI effective_roi{};
+
+    /**
+     * @brief Check if the map is empty
+     * @return true if the map is empty, false otherwise
+     */
+    bool empty() const {
+        return map.size() == 0 && effective_roi == InclusiveROI::emptyROI();
+    }
 };
 
 } // namespace aare::remap::defs

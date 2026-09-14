@@ -52,6 +52,7 @@ void define_StrixelPixelRemaps(py::module &m) {
             -------
             list of StrixelGroupToPixelMap
                 List of strixel-to-pixel order maps for each strixel group.
+                maps are empty if the groups are not covered by the user ROI.
             )")
 
         .def(
@@ -91,6 +92,7 @@ void define_StrixelPixelRemaps(py::module &m) {
             -------
             list of NDArray[uint16_t, 2]
                 Remapped arrays for each strixel group.
+                If a group is not covered by the user ROI, the corresponding array will be empty.
             )")
 
         .def(
@@ -129,6 +131,7 @@ void define_StrixelPixelRemaps(py::module &m) {
             -------
             list of NDArray[uint16_t, 2]
                 Remapped arrays for each strixel group.
+                If a group is not covered by the user ROI, the corresponding array will be empty.
             )")
 
         .def(
@@ -152,7 +155,7 @@ void define_StrixelPixelRemaps(py::module &m) {
                                           make_view_2d(output[i]),
                                           group_maps[i].map.view());
                 }
-            }, // TODO: document empty maps !!!!
+            },
             py::arg("input").noconvert(), py::arg("output").noconvert(),
             R"(
             Apply the strixel-to-pixel remapping to an input array.
@@ -165,5 +168,6 @@ void define_StrixelPixelRemaps(py::module &m) {
                 Input array to be remapped.
             output : list of NDArray[uint16_t, 2]
                 Preallocated arrays to store the remapped results for each strixel group.
+                If a group is not covered by the user ROI, the corresponding output array will be empty.
             )");
 }

@@ -94,13 +94,31 @@ template <std::size_t N, std::size_t M = N> class StrixelPixelMap {
     void operator()(const NDView<T, 2> input,
                     std::array<NDArray<T, 2>, M> &output) const;
 
+    /**
+     * @brief Get the strixel-to-pixel maps for all strixel groups.
+     * @return std::array<defs::StrixelGroupToPixelMap, M> Array of
+     * strixel-to-pixel maps. Maps are empty if the groups are not covered by
+     * the user ROI.
+     */
     std::array<defs::StrixelGroupToPixelMap, M> get_group_maps() const {
         return m_group_maps;
     }
 
-    const std::array<defs::StrixelGroupToPixelMap, M> &
-    get_group_maps(std::size_t group_index) const {
-        return m_group_maps;
+    /**
+     * @brief Get the strixel-to-pixel map for a specific strixel group.
+     * @param group_index Index of the strixel group (0-based).
+     * @return const defs::StrixelGroupToPixelMap& Strixel-to-pixel map for the
+     * specified group. Map is empty if the group is not covered by the user
+     * ROI.
+     * @throws std::out_of_range If the group_index is out of bounds (not in [0,
+     * M)).
+     */
+    const defs::StrixelGroupToPixelMap &
+    get_group_map(std::size_t group_index) const {
+        if (group_index >= M) {
+            throw std::out_of_range("group_index out of bounds");
+        }
+        return m_group_maps[group_index];
     }
 
   protected:
@@ -230,6 +248,10 @@ void StrixelPixelMap<N, M>::operator()(
     }
 
     for (size_t i = 0; i < m_group_maps.size(); ++i) {
+        if (m_group_maps[i].empty()) {
+            output[i] = NDArray<T, 2>{};
+            continue;
+        }
         apply_group_remap(input, output[i].view(), m_group_maps[i].map.view());
     }
 }
@@ -243,6 +265,10 @@ StrixelPixelMap<N, M>::apply_remap(const NDView<T, 2> input) const {
     std::array<NDArray<T, 2>, M> outputs;
 
     for (size_t i = 0; i < m_group_maps.size(); ++i) {
+        if (m_group_maps[i].empty()) {
+            outputs[i] = NDArray<T, 2>{};
+            continue;
+        }
         outputs[i] = NDArray<T, 2>{m_group_maps[i].map.shape()};
         apply_group_remap(input, outputs[i].view(), m_group_maps[i].map.view());
     }

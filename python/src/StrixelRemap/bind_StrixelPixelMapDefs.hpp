@@ -156,7 +156,16 @@ void define_PixelStrixelMapDefs(py::module &m) {
                 return py::array_t<ssize_t>(
                     self.map.shape(), self.map.data(),
                     py::cast(&self, py::return_value_policy::reference));
-            });
+            })
+
+        .def("empty", &aare::remap::defs::StrixelGroupToPixelMap::empty, R"(
+            Check if the map is empty.
+
+            Returns
+            -------
+            bool
+                True if the map is empty, False otherwise.
+        )");
 }
 
 template <std::size_t N> void define_SensorConfig(py::module &m) {

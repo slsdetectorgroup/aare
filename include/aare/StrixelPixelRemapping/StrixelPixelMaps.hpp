@@ -178,10 +178,18 @@ class Jungfrau_iLGAD_Quad_StrixelPixelMap
         auto quad_top_half =
             strixel_to_pixel_map(m_sensorconfig.group_configs[1]);
 
-        // TODO: good idea to combine?
-        m_group_maps[0] = detail::combine_group_maps(
-            quad_bottom_half, quad_top_half,
-            config::jungfrau::Quad_iLGAD_strixel_gap_rows);
+        if (quad_bottom_half.map.size() == 0) {
+            m_group_maps[0] = quad_top_half;
+            return;
+        } else if (quad_top_half.map.size() == 0) {
+            m_group_maps[0] = quad_bottom_half;
+            return;
+        } else {
+            // TODO: good idea to combine?
+            m_group_maps[0] = detail::combine_group_maps(
+                quad_bottom_half, quad_top_half,
+                config::jungfrau::Quad_iLGAD_strixel_gap_rows);
+        }
     }
 };
 
