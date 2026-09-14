@@ -76,22 +76,31 @@ respectively, and :math:`n_x` is the total number of ASIC pixel columns of the r
 
 .. Note::
     The reference pixel grid does not necessarily have to correspond to exactly one ASIC. It could, for example, be the
-    standard output of a single JUNGFRAU detector module with dimensions :math:`2\times 4` ASICs (:math:`512\times 1024` pixels). 
+    standard output of a single JUNGFRAU detector module with dimensions :math:`2\times 4` ASICs (:math:`512\times 1024` pixels)
+    or any other user-chosen ROI. 
 
-API overview
+.. IMPORTANT::
+    To generate a correct strixel-to-pixel map, the relative location of the contiguous strixel region on the sensor with respect
+    to the reference pixel grid has to be known.
+
+API Overview
 ----------------
 
-..
-    Include block diagram
+.. figure:: ../../figures/APIConcept.png
+    :target: ../../figures/APIConcept.png
+    :width: 650px
+    :align: center
+    :alt: API Concept
 
-The API predefines known sensor configurations and provides direct map generators for these.
+    Basic functionality of the Strixel-to-Pixel Remapping API.
 
-To apply the remapping to a detector image, the API provides the following utility function:
+.. admonition:: Core Concept of the API
 
-.. doxygenfunction:: aare::remap::algo::ApplyRemap
-
-.. 
-    TODO: Discuss groups, predefined sensors, bond shift, rotation, modulo ordering, ROIs (?) ...
+    Define a :code:`SensorConfig` that can contain multiple (N) contiguous strixel groups.
+    Provide user ROI (defining the pixel reference grid), sensor placement on module, and bond shift if applicable.
+    Hand these inputs to the core remapping algorithm. It produces the separate strixel-to-pixel maps for each strixel group on the sensor.
+    Using the method :code:`ApplyRemap()`, the map can be applied to an input frame.
+    For convenience, the API provides **predefined map generators** using **predefined sensor configurations**.
 
 API Documentation
 ----------------
@@ -102,9 +111,9 @@ API Documentation
 
    SensorConfiguration
    StrixelPixelRemapAlgorithm
-   InclusiveROI
    PredefinedSensorConfigs
    PredefinedMaps
+   InclusiveROI
 
 
 

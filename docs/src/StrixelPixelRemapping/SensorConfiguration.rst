@@ -1,19 +1,35 @@
-Sensor configurations
+.. _sensor_configuration:
+
+Sensor Configuration
 =====================
 
 
-Helper structs to define the sensor configuration, such as sensor pixel geometry, placement and rotation of the sensor on the module, the different strixel types on the sensor and its placement.
+Helper structs for strong-typing to define the sensor configuration, such as sensor pixel geometry, placement and rotation of the sensor
+on the module, the different strixel types on the sensor and its placement.
 
-An introduction to the concept of strixel-to-pixel remapping and and overview of the corresponding API can be found in :ref:`strixel_remapping_index`.
+An introduction to the concept of strixel-to-pixel remapping and and overview of the corresponding API can be found
+in :ref:`strixel_remapping_index`.
 
+SensorConfig
+---------------
 
-.. doxygenenum:: aare::remap::defs::Rotation
+This is needed as input for the :ref:`remap_algorithm`. The :ref:`map_generators` use :ref:`predefined_sensor_configs` to
+directly generate the corresponding strixel-to-pixel maps.
 
-.. doxygenenum:: aare::remap::defs::ModuloOrdering
-
-.. doxygenstruct:: aare::remap::defs::BondShift
+.. doxygenstruct:: aare::remap::defs::SensorConfig
     :members:
 
+Components of SensorConfig
+----------------------------
+
+.. doxygenstruct:: aare::remap::defs::SensorPixelGeometry
+    :members:
+
+.. doxygenstruct:: aare::remap::defs::GroupConfig
+    :members:
+
+Subcomponent
+^^^^^^^^^^^^^
 .. doxygenstruct:: aare::remap::defs::Guardring
     :members:
 
@@ -28,29 +44,38 @@ An introduction to the concept of strixel-to-pixel remapping and and overview of
 
 .. IMPORTANT::
     The :code:`Guardring` struct describes only the guardring that extends into the sensor pixel area.
-    
 
-.. doxygenstruct:: aare::remap::defs::GroupRouting
-    :members:
-
-.. doxygenstruct:: aare::remap::defs::SensorPixelGeometry
-    :members:
-
+Components of GroupConfig
+---------------------------
 
 .. doxygenstruct:: aare::remap::defs::GroupStrixelGeometry
     :members:
 
-
-.. doxygenstruct:: aare::remap::defs::GroupConfig
+.. doxygenstruct:: aare::remap::defs::GroupRouting
     :members:
 
-.. doxygenstruct:: aare::remap::defs::SensorConfig
-    :members:
+Subcomponent
+^^^^^^^^^^^^^
+.. doxygenenum:: aare::remap::defs::ModuloOrdering
 
+
+Inputs for Remapping Algorithm
+--------------------------------
 
 .. doxygenstruct:: aare::remap::defs::SensorModulePlacement
     :members:
 
+.. doxygenstruct:: aare::remap::defs::BondShift
+    :members:
+
+Subcomponent
+^^^^^^^^^^^^^^
+
+.. doxygenenum:: aare::remap::defs::Rotation
+    
+
+Output of Remapping Algorithm
+-------------------------------
 
 .. doxygenstruct:: aare::remap::defs::StrixelGroupToPixelMap
     :members:
