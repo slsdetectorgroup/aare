@@ -143,3 +143,17 @@ def test_fast_pedestal_rejects_wrong_shape():
 
     with pytest.raises(RuntimeError, match="shape"):
         pedestal.add_init_frame(np.zeros((2, 2), dtype=np.uint16))
+
+
+@pytest.mark.parametrize("dtype", [np.float64, np.float32, np.int16])
+def test_fast_pedestal_std_uses_double_variance(dtype):
+    pedestal = FastPedestal(1, 1, n_samples=2, dtype=dtype)
+    pedestal.add_init_frame(np.array([[0]], dtype=np.uint16))
+    pedestal.add_init_frame(np.array([[1000]], dtype=np.uint16))
+
+    assert pedestal.std().dtype == dtype
+    np.testing.assert_array_equal(pedestal.std(), [[500]])
+
+    pedestal.push_ema(np.array([[1000]], dtype=np.uint16))
+    expected = np.array([[np.sqrt(187500.0)]], dtype=dtype)
+    np.testing.assert_array_equal(pedestal.std(), expected)
