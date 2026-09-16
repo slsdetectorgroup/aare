@@ -156,7 +156,17 @@ void define_PixelStrixelMapDefs(py::module &m) {
                 return py::array_t<ssize_t>(
                     self.map.shape(), self.map.data(),
                     py::cast(&self, py::return_value_policy::reference));
-            })
+            },
+            R"(
+            Strixel-to-pixel order map.
+
+            Returns
+            -------
+            numpy.ndarray[int]
+                Two-dimensional array of flattened pixel indices.
+                A value of ``-1`` indicates that no valid source pixel is
+                mapped at that position.
+            )")
 
         .def("empty", &aare::remap::defs::StrixelGroupToPixelMap::empty, R"(
             Check if the map is empty.

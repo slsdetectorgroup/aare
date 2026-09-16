@@ -36,7 +36,7 @@ void define_StrixelPixelRemaps(py::module &m) {
 
             Parameters
             ----------
-            user_roi : InclusiveROI
+            user_roi : ROI
                 User-specified ROI in the module's native coordinate system.
             )")
 
@@ -89,12 +89,12 @@ void define_StrixelPixelRemaps(py::module &m) {
             ----------
             user_roi : ROI
                 User-specified ROI in the module's native coordinate system.
-            input : NDView[uint16_t, 2]
+            input : np.ndarray[uint16_t, 2]
                 Input array to be remapped.
 
             Returns
             -------
-            list of NDArray[uint16_t, 2]
+            list of np.ndarray[uint16_t, 2]
                 Remapped arrays for each strixel group.
                 If a group is not covered by the user ROI, the corresponding array will be None.
             )")
@@ -129,15 +129,15 @@ void define_StrixelPixelRemaps(py::module &m) {
             Apply the strixel-to-pixel remapping to an input array. 
             This overload assumes that the user ROI has already been set and
             the map calculated using `calculate_map()`.
-
+            
             Parameters
             ----------
-            input : NDView[uint16_t, 2]
+            input : np.ndarray[uint16_t, 2]
                 Input array to be remapped.
 
             Returns
             -------
-            list of NDArray[uint16_t, 2]
+            list of np.ndarray[uint16_t, 2]
                 Remapped arrays for each strixel group.
                 If a group is not covered by the user ROI, the corresponding array will be None.
             )")
@@ -202,12 +202,12 @@ void define_StrixelPixelRemaps(py::module &m) {
             Apply the strixel-to-pixel remapping to an input array.
             This overload assumes that the user ROI has already been set and
             the map calculated using `calculate_map()`.
-
+            
             Parameters
             ----------
-            input : NDView[uint16_t, 2]
+            input : np.ndarray[uint16_t, 2]
                 Input array to be remapped.
-            output : list of NDArray[uint16_t, 2]
+            output : list of np.ndarray[uint16_t, 2]
                 Preallocated arrays to store the remapped results for each strixel group.
                 If a group is not covered by the user ROI, the corresponding output array will be None.
             )");

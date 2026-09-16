@@ -57,6 +57,7 @@ void define_InclusiveROI(py::module &m) {
             },
             R"(
             check if the ROI fits within a given number of columns and rows
+            
             Parameters
             ----------
             ncols : int

@@ -96,14 +96,14 @@ API Overview
 
 .. admonition:: Core Concept of the API
 
-    Define a :code:`SensorConfig` that can contain multiple (N) contiguous strixel groups.
-    Provide user ROI (defining the pixel reference grid), sensor placement on module, and bond shift if applicable.
-    Hand these inputs to the core remapping algorithm. It produces the separate strixel-to-pixel maps for each strixel group on the sensor.
-    Using the method :code:`ApplyRemap()`, the map can be applied to an input frame.
-    For convenience, the API provides **predefined map generators** using **predefined sensor configurations**.
+    Define a :code:`SensorConfig` that can contain multiple (N) contiguous strixel groups and the sensor size.
+    Create a :code:`StrixelPixelMap` from the sensor configuration, its placement and rotation on the module :code:`SensorModulePlacement` and bond shift if applicable. 
+    You can calculate the strixel-to-pixel map by passing a user ROI to the member function :code:`calculate_map()`. 
+    Passing an input to the :code:`StrixelPixelMap` call operator returns the remapped output frame.
+    For convenience, the API provides **predefined StrixelPixelMap** using **predefined sensor configurations** for the most common senor configurations at the slsDetectorGroup. 
 
 API Documentation
-----------------
+------------------
 
 .. toctree::
    :maxdepth: 1
