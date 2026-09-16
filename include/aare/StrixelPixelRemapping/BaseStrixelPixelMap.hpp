@@ -104,6 +104,11 @@ template <std::size_t N, std::size_t M = N> class StrixelPixelMap {
         return m_group_maps;
     }
 
+    const std::array<defs::StrixelGroupToPixelMap, M> &
+    get_group_maps_ref() const {
+        return m_group_maps;
+    }
+
     /**
      * @brief Get the strixel-to-pixel map for a specific strixel group.
      * @param group_index Index of the strixel group (0-based).

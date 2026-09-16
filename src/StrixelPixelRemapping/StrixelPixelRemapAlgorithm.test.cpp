@@ -288,7 +288,7 @@ TEST_CASE("strixel_to_pixel_map: user ROI smaller than group ROI",
     const auto placement = test_placement();
 
     // User ROI is in module coordinates.
-    const ROI user_roi{65, 72, 65, 67};
+    const ROI user_roi{65, 71, 65, 67};
 
     StrixelPixelMap map(SensorConfig<1>{sensor, {group}}, placement, {0, 0});
 
@@ -413,11 +413,10 @@ TEST_CASE("strixel_to_pixel_map: user ROI does not intersect group ROI",
 
     map.calculate_map(user_roi);
 
-    const auto result = map.get_group_maps()[0];
+    const auto result = map.get_group_map(0);
 
     CHECK(result.effective_roi.is_empty());
-    CHECK(result.map.data() ==
-          nullptr); // is there a better check for empty NDArray?
+    CHECK(result.empty() == true);
 }
 
 // ModuloOrdering
