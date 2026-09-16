@@ -15,8 +15,7 @@ void define_fast_pedestal_bindings(py::module &m, const std::string &name) {
 
     py::class_<FastPedestal<SUM_TYPE>>(
         m, name.c_str(),
-        "Maintain a per-pixel running mean, population variance, and "
-        "standard deviation.",
+        "Maintain a per-pixel running mean and population standard deviation.",
         py::buffer_protocol())
         .def(py::init<uint32_t, uint32_t, uint32_t>(), py::arg("rows"),
              py::arg("cols"), py::arg("n_samples"),
@@ -33,15 +32,6 @@ void define_fast_pedestal_bindings(py::module &m, const std::string &name) {
                 return return_image_data(mean);
             },
             "Return a copy of the cached mean. The pedestal must be ready.")
-        .def(
-            "var",
-            [](FastPedestal<SUM_TYPE> &self) {
-                auto variance = new NDArray<SUM_TYPE, 2>{};
-                *variance = self.variance();
-                return return_image_data(variance);
-            },
-            "Return the population variance, normalized by n_samples, as a "
-            "NumPy array. The pedestal must be ready.")
         .def(
             "std",
             [](FastPedestal<SUM_TYPE> &self) {
