@@ -73,10 +73,27 @@ py::array_t<T> pybind_calculate_pedestal_g0(
 }
 
 void bind_calibration(py::module &m) {
+    py::options options;
+    options.disable_function_signatures();
+
     m.def("apply_calibration", &pybind_apply_calibration<double>,
           py::arg("raw_data").noconvert(), py::kw_only(),
           py::arg("pd").noconvert(), py::arg("cal").noconvert(),
-          py::arg("n_threads") = 4);
+          py::arg("n_threads") = 4,
+          R"(
+        Apply the calibration to the raw data and return the result as a 3D array of doubles.
+        
+        Parameters
+        ----------
+        raw_data : array_like
+            3D array of shape ``(frames, rows, cols)``.
+        pd : array_like
+            Pedestal array.
+        cal : array_like
+            Calibration array.
+        n_threads : int, optional
+            Number of threads to use. Defaults to 4.
+        )");
 
     m.def("apply_calibration", &pybind_apply_calibration<float>,
           py::arg("raw_data").noconvert(), py::kw_only(),
