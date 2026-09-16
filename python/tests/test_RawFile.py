@@ -388,9 +388,7 @@ def test_read_eiger_udp_port_disabled(test_data_path):
         assert rois[0] == ROI(0, 512, 0, 512)
         assert rois[1] == ROI(1024, 1536, 0, 512)
 
-
-
-def test_RawFile_with_strixeltransform(test_data_path):
+def test_RawFile_with_strixeltransform():
     """ list of transforms is passed to RawFile"""
     transform = strixelremap.Jungfrau_iLGAD_StrixelPixelMap(module_placement = strixelremap.Chip1)
 
