@@ -22,7 +22,7 @@ def FastPedestal(rows, cols, n_samples=1000, dtype=np.float64):
         cols: Number of image columns.
         n_samples: Initialization frame count and steady-state update-weight
             denominator.
-        dtype: Output dtype for the mean, variance, and standard deviation.
+        dtype: Output dtype for the mean and standard deviation.
             Supported values are ``np.float64``, ``np.float32``, and
             ``np.int16``.
     """
@@ -41,7 +41,7 @@ def from_file(filename, n_samples=1000, skip_first=0, dtype=np.float64):
         filename: Input image file.
         n_samples: Number of frames used for initialization.
         skip_first: Number of leading frames to ignore.
-        dtype: Output dtype for the mean, variance, and standard deviation.
+        dtype: Output dtype for the mean and standard deviation.
 
     Raises:
         RuntimeError: If fewer than ``n_samples`` frames remain after

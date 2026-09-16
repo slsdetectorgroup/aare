@@ -1,7 +1,9 @@
-Predefined Strixel to Pixel Maps
+.. _map_generators:
+
+Predefined Map Generators
 ================================
 
-Includes predefined pixel to strixel maps for the sensor configurations introduced in :ref:`predefined_sensor_configs`.
+Includes predefined pixel to strixel maps using the sensor configurations introduced in :ref:`predefined_sensor_configs`.
 
 An introduction to the concept of strixel-to-pixel remapping and and overview of the corresponding API can be found in :ref:`strixel_remapping_index`.
 
