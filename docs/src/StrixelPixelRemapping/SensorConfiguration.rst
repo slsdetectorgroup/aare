@@ -10,26 +10,40 @@ on the module, the different strixel types on the sensor and its placement.
 An introduction to the concept of strixel-to-pixel remapping and and overview of the corresponding API can be found
 in :ref:`strixel_remapping_index`.
 
-SensorConfig
----------------
+Inputs for the Remapping Algorithm
+------------------------------------
 
-This is needed as input for the :ref:`remap_algorithm`. The :ref:`map_generators` use :ref:`predefined_sensor_configs` to
-directly generate the corresponding strixel-to-pixel maps.
+The most central input for the :ref:`remap_algorithm` is the sensor configuration given by :code:`SensorConfig`. The :ref:`map_generators` use
+:ref:`predefined_sensor_configs` to directly generate the corresponding strixel-to-pixel maps.
 
 .. doxygenstruct:: aare::remap::defs::SensorConfig
     :members:
 
+The detailed documentation of all components of :code:`SensorConfig` can be found below in :ref:`sensor_config_components`.
+
+To correctly anchor the coordinate system of the remapping, one can further pass the placement of the sensor on the module,
+including its orientation, and specify any potential relative shift of the bump bonding alignment between sensor and ASIC.
+
+.. doxygenstruct:: aare::remap::defs::SensorModulePlacement
+    :members:
+
+.. doxygenenum:: aare::remap::defs::Rotation
+
+.. doxygenstruct:: aare::remap::defs::BondShift
+    :members:
+
+.. Note::
+    The :code:`BondShift` is defined within the local sensor coordinate system before any rotation has been applied, i.e.
+    sensor and ASIC assembly are rotated as a unity.
+
+.. _sensor_config_components:   
+
 Components of SensorConfig
-----------------------------
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 .. doxygenstruct:: aare::remap::defs::SensorPixelGeometry
     :members:
 
-.. doxygenstruct:: aare::remap::defs::GroupConfig
-    :members:
-
-Subcomponent
-^^^^^^^^^^^^^
 .. doxygenstruct:: aare::remap::defs::Guardring
     :members:
 
@@ -45,8 +59,11 @@ Subcomponent
 .. IMPORTANT::
     The :code:`Guardring` struct describes only the guardring that extends into the sensor pixel area.
 
+.. doxygenstruct:: aare::remap::defs::GroupConfig
+    :members:
+
 Components of GroupConfig
----------------------------
+"""""""""""""""""""""""""""
 
 .. doxygenstruct:: aare::remap::defs::GroupStrixelGeometry
     :members:
@@ -54,25 +71,8 @@ Components of GroupConfig
 .. doxygenstruct:: aare::remap::defs::GroupRouting
     :members:
 
-Subcomponent
-^^^^^^^^^^^^^
 .. doxygenenum:: aare::remap::defs::ModuloOrdering
 
-
-Inputs for Remapping Algorithm
---------------------------------
-
-.. doxygenstruct:: aare::remap::defs::SensorModulePlacement
-    :members:
-
-.. doxygenstruct:: aare::remap::defs::BondShift
-    :members:
-
-Subcomponent
-^^^^^^^^^^^^^^
-
-.. doxygenenum:: aare::remap::defs::Rotation
-    
 
 Output of Remapping Algorithm
 -------------------------------
