@@ -31,6 +31,7 @@ AARE
     python/experimental/index
     python/histogram/index
     python/pedestal/index
+    python/strixelremap/index
     pyFit
     
 

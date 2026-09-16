@@ -45,6 +45,10 @@ struct InclusiveROI {
                ymax == other.ymax;
     }
 
+    constexpr bool operator!=(InclusiveROI const &other) const noexcept {
+        return !(*this == other);
+    }
+
     static InclusiveROI emptyROI() noexcept { return {0, -1, 0, -1}; }
     // TODO (nice to have)
     // static InclusiveROI from_shape(ssize_t width, ssize_t height);

@@ -37,6 +37,22 @@ void define_defs_bindings(py::module &m) {
         .def_readwrite("ymin", &ROI::ymin)
         .def_readwrite("ymax", &ROI::ymax)
 
+        .def("shape",
+             [](const ROI &self) {
+                 return std::make_tuple(self.height(), self.width());
+             })
+
+        .def(
+            "size",
+            [](const ROI &self) { return self.width() * self.height(); }, R"doc(
+            Calculate the size of the ROI.
+
+            Returns
+            -------
+            int
+                The total number of pixels in the ROI.
+        )doc")
+
         .def(
             "slice",
             [](const ROI &self) {
