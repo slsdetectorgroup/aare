@@ -74,6 +74,9 @@
 - ``TimingMode::Auto`` changed to ``TimingMode::AUTO_TIMING``, ``TimingMode::Trigger`` changed to ``TimingMode::TRIGGER_EXPOSURE``
 
 ### Bugfixes:
+- Fixed ``CtbRawFile.read_frame(index)`` and reads after ``seek(index)`` at
+  subfile boundaries skipping a subfile, returning the wrong frame or raising
+  ``Subfile index out of range``.
 - ``Pedestal`` reports mismatched frame shapes with exceptions in all push
   overloads, including Debug builds, instead of aborting on assertions.
 - Python ``Pedestal`` constructors reject negative dimensions and sample

@@ -24,9 +24,9 @@ void CtbRawFile::read_into(std::byte *image_buf, DetectorHeader *header) {
         throw std::runtime_error(LOCATION + " End of file reached");
     }
 
-    if (m_current_frame != 0 &&
-        m_current_frame % m_master.max_frames_per_file() == 0) {
-        open_data_file(m_current_subfile + 1);
+    const auto index = sub_file_index(m_current_frame);
+    if (index != m_current_subfile) {
+        open_data_file(index);
     }
 
     if (header) {
