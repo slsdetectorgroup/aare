@@ -3,7 +3,7 @@ ClusterFile
 ===========
 
 The :func:`ClusterFile` factory is the main interface for reading and writing
- cluster files. Use ``mode="r"`` to read, ``mode="w"`` to truncate and
+cluster files. Use ``mode="r"`` to read, ``mode="w"`` to truncate and
 write, or ``mode="a"`` to append.
 
 The format does not store the cluster dimensions, value type, coordinate type,
