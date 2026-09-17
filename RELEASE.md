@@ -81,6 +81,9 @@
   master path before opening data subfiles. Legacy ``.raw`` master files now
   parse the frame discard policy so unpadded ``discardpartial`` files remain
   readable.
+- Fixed ``CtbRawFile.read_frame(index)`` and reads after ``seek(index)`` at
+  subfile boundaries skipping a subfile, returning the wrong frame or raising
+  ``Subfile index out of range``.
 - ``Pedestal`` reports mismatched frame shapes with exceptions in all push
   overloads, including Debug builds, instead of aborting on assertions.
 - Python ``Pedestal`` constructors reject negative dimensions and sample
