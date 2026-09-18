@@ -546,9 +546,8 @@ void RawMasterFile::parse_raw(std::istream &is) {
                 m_image_size_in_bytes = std::stoi(value);
             } else if (key == "Frame Padding") {
                 m_frame_padding = std::stoi(value);
-                // } else if (key == "Frame Discard Policy"){
-                //     m_frame_discard_policy =
-                //     StringTo<FrameDiscardPolicy>(value);
+            } else if (key == "Frame Discard Policy") {
+                m_frame_discard_policy = string_to<FrameDiscardPolicy>(value);
                 // } else if (key == "Number of rows"){
                 //     m_number_of_rows = std::stoi(value);
             } else if (key == "Analog Flag") {
