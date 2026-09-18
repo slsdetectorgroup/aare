@@ -22,7 +22,7 @@ from ._aare import (
     RawSubFile,
 )
 from ._aare import Pedestal_d, Pedestal_f, ClusterFinder_Cluster3x3i, VarClusterFinder
-from ._aare import DetectorType, ReadoutMode 
+from ._aare import DetectorType, FrameDiscardPolicy, ReadoutMode
 from ._aare import hitmap
 from ._aare import ROI
 from ._aare import corner 
