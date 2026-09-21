@@ -412,7 +412,7 @@ TEST_CASE("Elementwise operations on images") {
         NDArray<double> A(shape, a_val);
         NDArray<double> B(shape, b_val);
         double v = 1.0;
-        auto C = A - v;
+        NDArray<double> C = A - v;
         REQUIRE(C.data() != A.data());
 
         // Value of C matches
@@ -429,7 +429,7 @@ TEST_CASE("Elementwise operations on images") {
         NDArray<double> A(shape, a_val);
         NDArray<double> B(shape, b_val);
         double v = 1.0;
-        auto C = A + v;
+        NDArray<double> C = A + v;
         REQUIRE(C.data() != A.data());
 
         // Value of C matches
@@ -446,7 +446,7 @@ TEST_CASE("Elementwise operations on images") {
         NDArray<double> A(shape, a_val);
         NDArray<double> B(shape, b_val);
         double v = 3.7;
-        auto C = A / v;
+        NDArray<double> C = A / v;
         REQUIRE(C.data() != A.data());
 
         // Value of C matches
@@ -463,7 +463,7 @@ TEST_CASE("Elementwise operations on images") {
         NDArray<double> A(shape, a_val);
         NDArray<double> B(shape, b_val);
         double v = 3.7;
-        auto C = A / v;
+        NDArray<double> C = A / v;
         REQUIRE(C.data() != A.data());
 
         // Value of C matches
@@ -474,6 +474,51 @@ TEST_CASE("Elementwise operations on images") {
         // Value of A is not changed
         for (uint32_t i = 0; i < A.size(); ++i) {
             REQUIRE(A(i) == a_val);
+        }
+    }
+}
+
+TEST_CASE("Expressions with scalars") {
+    NDArray<int> A({5, 5}, 3);
+    NDArray<int> B({5, 5}, 8);
+
+    NDArray<int> C = 2 * A + B / 4 - 1;
+    for (ssize_t i = 0; i < C.size(); ++i) {
+        REQUIRE(C(i) == 7);
+    }
+
+    // The scalar is not converted to the element type of the array
+    NDArray<double> D = A * 0.5;
+    for (ssize_t i = 0; i < D.size(); ++i) {
+        REQUIRE(D(i) == 1.5);
+    }
+}
+
+TEST_CASE("Assign an expression to an existing NDArray") {
+    NDArray<int> A({5, 5}, 3);
+    NDArray<int> B({5, 5}, 8);
+
+    SECTION("same shape reuses the buffer") {
+        NDArray<int> C({5, 5}, 0);
+        auto *ptr = C.data();
+        C = A + B;
+        REQUIRE(C.data() == ptr);
+        for (ssize_t i = 0; i < C.size(); ++i) {
+            REQUIRE(C(i) == 11);
+        }
+    }
+    SECTION("the target can be part of the expression") {
+        A = A + B;
+        for (ssize_t i = 0; i < A.size(); ++i) {
+            REQUIRE(A(i) == 11);
+        }
+    }
+    SECTION("different shape reallocates") {
+        NDArray<int> C({2, 3}, 0);
+        C = A + B;
+        REQUIRE(C.shape() == A.shape());
+        for (ssize_t i = 0; i < C.size(); ++i) {
+            REQUIRE(C(i) == 11);
         }
     }
 }

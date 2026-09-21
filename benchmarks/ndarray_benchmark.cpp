@@ -130,4 +130,41 @@ BENCHMARK_F(TwoArrays, MultiplyAddDivideWithIndex)(benchmark::State &st) {
     }
 }
 
+BENCHMARK_F(TwoArrays, ScalarMultiplyAddWithOperator)(benchmark::State &st) {
+    for (auto _ : st) {
+        // This code gets timed
+        NDArray<int, 2> res = a * 2 + b;
+        benchmark::DoNotOptimize(res);
+    }
+}
+BENCHMARK_F(TwoArrays, ScalarMultiplyAddWithIndex)(benchmark::State &st) {
+    for (auto _ : st) {
+        // This code gets timed
+        NDArray<int, 2> res(a.shape());
+        for (uint32_t i = 0; i < a.size(); i++) {
+            res(i) = a(i) * 2 + b(i);
+        }
+        benchmark::DoNotOptimize(res);
+    }
+}
+
+BENCHMARK_F(TwoArrays, AddToExistingWithOperator)(benchmark::State &st) {
+    NDArray<int, 2> res(a.shape());
+    for (auto _ : st) {
+        // This code gets timed
+        res = a + b;
+        benchmark::DoNotOptimize(res);
+    }
+}
+BENCHMARK_F(TwoArrays, AddToExistingWithIndex)(benchmark::State &st) {
+    NDArray<int, 2> res(a.shape());
+    for (auto _ : st) {
+        // This code gets timed
+        for (uint32_t i = 0; i < a.size(); i++) {
+            res(i) = a(i) + b(i);
+        }
+        benchmark::DoNotOptimize(res);
+    }
+}
+
 BENCHMARK_MAIN();

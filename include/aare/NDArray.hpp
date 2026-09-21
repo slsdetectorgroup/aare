@@ -27,6 +27,8 @@ class NDArray : public ArrayExpr<NDArray<T, Ndim>, Ndim> {
     T *data_;
 
   public:
+    static constexpr bool is_leaf = true;
+
     ///////////////////////////////////////////////////////////////////////////////
     // Constructors
     //
@@ -324,6 +326,23 @@ class NDArray : public ArrayExpr<NDArray<T, Ndim>, Ndim> {
         return *this;
     }
 
+    /**
+     * @brief Evaluate an ArrayExpr into the NDArray. Reuses the existing
+     * buffer if the shape matches.
+     */
+    template <typename E> NDArray &operator=(const ArrayExpr<E, Ndim> &expr) {
+        if (expr.shape() != shape_) {
+            // Evaluate before releasing the buffer, expr might refer to it
+            NDArray tmp(expr.shape());
+            tmp = expr;
+            return *this = std::move(tmp);
+        }
+        for (size_t i = 0; i < size_; ++i) {
+            data_[i] = expr[i];
+        }
+        return *this;
+    }
+
     ///////////////////////////////////////////////////////////////////////////////
     // Math operators
     //
@@ -440,50 +459,6 @@ class NDArray : public ArrayExpr<NDArray<T, Ndim>, Ndim> {
         for (auto it = begin(); it != end(); ++it)
             *it &= mask;
         return *this;
-    }
-
-    /**
-     * @brief Operator +  with a scalar value. Returns a new NDArray.
-     *
-     * TODO! Expression template version of this?
-     */
-    NDArray operator+(const T &value) {
-        NDArray result = *this;
-        result += value;
-        return result;
-    }
-
-    /**
-     * @brief Operator -  with a scalar value. Returns a new NDArray.
-     *
-     * TODO! Expression template version of this?
-     */
-    NDArray operator-(const T &value) {
-        NDArray result = *this;
-        result -= value;
-        return result;
-    }
-
-    /**
-     * @brief Operator *  with a scalar value. Returns a new NDArray.
-     *
-     * TODO! Expression template version of this?
-     */
-    NDArray operator*(const T &value) {
-        NDArray result = *this;
-        result *= value;
-        return result;
-    }
-
-    /**
-     * @brief Operator /  with a scalar value. Returns a new NDArray.
-     *
-     * TODO! Expression template version of this?
-     */
-    NDArray operator/(const T &value) {
-        NDArray result = *this;
-        result /= value;
-        return result;
     }
 
     /**
