@@ -167,4 +167,43 @@ BENCHMARK_F(TwoArrays, AddToExistingWithIndex)(benchmark::State &st) {
     }
 }
 
+// A store to uint8_t or a 64 bit integer can alias the members of NDArray.
+// Compare with a loop over raw pointers to check that this does not block
+// vectorization.
+template <typename T> void InPlaceAddWithOperator(benchmark::State &st) {
+    NDArray<T, 2> a({size, size}, 1);
+    NDArray<T, 2> b({size, size}, 2);
+    for (auto _ : st) {
+        a += b;
+        benchmark::DoNotOptimize(a);
+    }
+}
+template <typename T> void InPlaceAddWithPointer(benchmark::State &st) {
+    NDArray<T, 2> a({size, size}, 1);
+    NDArray<T, 2> b({size, size}, 2);
+    for (auto _ : st) {
+        T *dst = a.data();
+        const T *src = b.data();
+        for (ssize_t i = 0, n = a.size(); i < n; ++i) {
+            dst[i] += src[i];
+        }
+        benchmark::DoNotOptimize(a);
+    }
+}
+template <typename T> void AddToExistingWithOperator(benchmark::State &st) {
+    NDArray<T, 2> a({size, size}, 1);
+    NDArray<T, 2> b({size, size}, 2);
+    NDArray<T, 2> res({size, size}, 0);
+    for (auto _ : st) {
+        res = a + b;
+        benchmark::DoNotOptimize(res);
+    }
+}
+BENCHMARK_TEMPLATE(InPlaceAddWithOperator, uint8_t);
+BENCHMARK_TEMPLATE(InPlaceAddWithPointer, uint8_t);
+BENCHMARK_TEMPLATE(AddToExistingWithOperator, uint8_t);
+BENCHMARK_TEMPLATE(InPlaceAddWithOperator, int64_t);
+BENCHMARK_TEMPLATE(InPlaceAddWithPointer, int64_t);
+BENCHMARK_TEMPLATE(AddToExistingWithOperator, int64_t);
+
 BENCHMARK_MAIN();

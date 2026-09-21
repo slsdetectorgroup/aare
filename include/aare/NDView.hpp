@@ -173,8 +173,7 @@ class NDView : public ArrayExpr<NDView<T, Ndim>, Ndim> {
     }
 
     NDView &operator=(const T val) {
-        for (auto it = begin(); it != end(); ++it)
-            *it = val;
+        std::fill(begin(), end(), val);
         return *this;
     }
 
@@ -232,15 +231,19 @@ class NDView : public ArrayExpr<NDView<T, Ndim>, Ndim> {
 
     template <class BinaryOperation>
     NDView &elemenwise(T val, BinaryOperation op) {
-        for (uint64_t i = 0; i != size_; ++i) {
-            buffer_[i] = op(buffer_[i], val);
+        // Local copies since a store to buffer_[i] may alias the members
+        T *buffer = buffer_;
+        for (uint64_t i = 0, n = size_; i != n; ++i) {
+            buffer[i] = op(buffer[i], val);
         }
         return *this;
     }
     template <class BinaryOperation>
     NDView &elemenwise(const NDView &other, BinaryOperation op) {
-        for (uint64_t i = 0; i != size_; ++i) {
-            buffer_[i] = op(buffer_[i], other.buffer_[i]);
+        T *buffer = buffer_;
+        const T *other_buffer = other.buffer_;
+        for (uint64_t i = 0, n = size_; i != n; ++i) {
+            buffer[i] = op(buffer[i], other_buffer[i]);
         }
         return *this;
     }

@@ -22,15 +22,24 @@ template <typename E, ssize_t Ndim> class ArrayExpr {
     }
 };
 
-// NDArray is held by reference. Sub expressions, scalars and views are
-// temporaries and have to be held by value.
-template <typename E>
-using ExprStorage = std::conditional_t<E::is_leaf, const E &, E>;
+/**
+ * @brief What an expression stores for one of its operands. An NDArray is
+ * replaced by a view, everything else is copied. The expression then holds its
+ * data pointers by value, so the compiler can keep them in registers even if
+ * the evaluation writes to a type that may alias them (e.g. uint8_t).
+ */
+template <typename E, ssize_t Ndim>
+auto operand(const ArrayExpr<E, Ndim> &expr) {
+    if constexpr (E::is_leaf)
+        return static_cast<const E &>(expr).view();
+    else
+        return static_cast<const E &>(expr);
+}
 
 template <typename Op, typename A, typename B, ssize_t Ndim>
 class ArrayBinaryOp : public ArrayExpr<ArrayBinaryOp<Op, A, B, Ndim>, Ndim> {
-    ExprStorage<A> arr1_;
-    ExprStorage<B> arr2_;
+    A arr1_;
+    B arr2_;
 
   public:
     ArrayBinaryOp(const A &arr1, const B &arr2) : arr1_(arr1), arr2_(arr2) {
@@ -61,8 +70,9 @@ class ArrayScalar : public ArrayExpr<ArrayScalar<T, Ndim>, Ndim> {
 // Builds the expression for expr op expr, expr op scalar and scalar op expr
 template <typename Op, typename A, typename B, ssize_t Ndim>
 auto binary_op(const ArrayExpr<A, Ndim> &lhs, const ArrayExpr<B, Ndim> &rhs) {
-    return ArrayBinaryOp<Op, A, B, Ndim>(static_cast<const A &>(lhs),
-                                         static_cast<const B &>(rhs));
+    auto a = operand(lhs);
+    auto b = operand(rhs);
+    return ArrayBinaryOp<Op, decltype(a), decltype(b), Ndim>(a, b);
 }
 
 template <typename Op, typename A, typename T, ssize_t Ndim,

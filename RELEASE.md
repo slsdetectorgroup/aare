@@ -82,6 +82,8 @@
 
 ### Bugfixes:
 - Mismatched operators inhibited vectorization in gcc of NDArray math operators
+- ``NDArray``/``NDView`` math operators and expressions were not vectorized
+  for ``uint8_t`` and 64 bit integers, up to 30x slower than a plain loop.
 - ``RawFile`` and ``File`` reject raw files with frame padding disabled unless
   the frame discard policy is ``discardpartial``. The constructor reports the
   master path before opening data subfiles. Legacy ``.raw`` master files now

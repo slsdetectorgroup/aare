@@ -137,9 +137,7 @@ class NDArray : public ArrayExpr<NDArray<T, Ndim>, Ndim> {
      */
     template <typename E>
     NDArray(ArrayExpr<E, Ndim> &&expr) : NDArray(expr.shape()) {
-        for (size_t i = 0; i < size_; ++i) {
-            data_[i] = expr[i];
-        }
+        *this = expr;
     }
 
     /**
@@ -337,8 +335,11 @@ class NDArray : public ArrayExpr<NDArray<T, Ndim>, Ndim> {
             tmp = expr;
             return *this = std::move(tmp);
         }
-        for (size_t i = 0; i < size_; ++i) {
-            data_[i] = expr[i];
+        // Local copies, see elementwise()
+        const auto e = operand(expr);
+        T *data = data_;
+        for (size_t i = 0, n = size_; i < n; ++i) {
+            data[i] = e[i];
         }
         return *this;
     }
@@ -356,10 +357,7 @@ class NDArray : public ArrayExpr<NDArray<T, Ndim>, Ndim> {
             throw(std::runtime_error(
                 "Shape of NDArray must match for operator +="));
 
-        for (size_t i = 0; i < size_; ++i) {
-            data_[i] += other.data_[i];
-        }
-        return *this;
+        return elementwise(other.data_, std::plus<T>());
     }
 
     /**
@@ -370,10 +368,7 @@ class NDArray : public ArrayExpr<NDArray<T, Ndim>, Ndim> {
             throw(std::runtime_error(
                 "Shape of NDArray must match for operator -="));
 
-        for (size_t i = 0; i < size_; ++i) {
-            data_[i] -= other.data_[i];
-        }
-        return *this;
+        return elementwise(other.data_, std::minus<T>());
     }
 
     /**
@@ -384,10 +379,7 @@ class NDArray : public ArrayExpr<NDArray<T, Ndim>, Ndim> {
             throw(std::runtime_error(
                 "Shape of NDArray must match for operator *="));
 
-        for (size_t i = 0; i < size_; ++i) {
-            data_[i] *= other.data_[i];
-        }
-        return *this;
+        return elementwise(other.data_, std::multiplies<T>());
     }
 
     /**
@@ -398,13 +390,9 @@ class NDArray : public ArrayExpr<NDArray<T, Ndim>, Ndim> {
      */
     template <typename V> NDArray &operator/=(const NDArray<V, Ndim> &other) {
         // check shape
-        if (shape_ == other.shape()) {
-            for (size_t i = 0; i < size_; ++i) {
-                data_[i] /= other(i);
-            }
-            return *this;
-        }
-        throw(std::runtime_error("Shape of NDArray must match"));
+        if (shape_ != other.shape())
+            throw(std::runtime_error("Shape of NDArray must match"));
+        return elementwise(other.data(), std::divides<>());
     }
 
     /**
@@ -419,36 +407,28 @@ class NDArray : public ArrayExpr<NDArray<T, Ndim>, Ndim> {
      * @brief Add a scalar value to all elements in the NDArray.
      */
     NDArray &operator+=(const T &value) {
-        for (size_t i = 0; i < size_; ++i)
-            data_[i] += value;
-        return *this;
+        return elementwise(value, std::plus<T>());
     }
 
     /**
      * @brief Subtract a scalar value to all elements in the NDArray.
      */
     NDArray &operator-=(const T &value) {
-        for (size_t i = 0; i < size_; ++i)
-            data_[i] -= value;
-        return *this;
+        return elementwise(value, std::minus<T>());
     }
 
     /**
      * @brief Multiply all elements in the NDArray with a scalar value
      */
     NDArray &operator*=(const T &value) {
-        for (size_t i = 0; i < size_; ++i)
-            data_[i] *= value;
-        return *this;
+        return elementwise(value, std::multiplies<T>());
     }
 
     /**
      * @brief Divide all elements in the NDArray with a scalar value
      */
     NDArray &operator/=(const T &value) {
-        for (size_t i = 0; i < size_; ++i)
-            data_[i] /= value;
-        return *this;
+        return elementwise(value, std::divides<T>());
     }
 
     /**
@@ -456,9 +436,7 @@ class NDArray : public ArrayExpr<NDArray<T, Ndim>, Ndim> {
      * Used for example to mask out gain bits for Jungfrau detectors.
      */
     NDArray &operator&=(const T &mask) {
-        for (auto it = begin(); it != end(); ++it)
-            *it &= mask;
-        return *this;
+        return elementwise(mask, std::bit_and<T>());
     }
 
     /**
@@ -484,19 +462,16 @@ class NDArray : public ArrayExpr<NDArray<T, Ndim>, Ndim> {
      * @brief Compute the square root of all elements in the NDArray.
      */
     void sqrt() {
-        for (size_t i = 0; i < size_; ++i) {
-            data_[i] = std::sqrt(data_[i]);
+        T *data = data_;
+        for (size_t i = 0, n = size_; i < n; ++i) {
+            data[i] = std::sqrt(data[i]);
         }
     }
 
     /*
      * @brief Prefix increment operator. Increments all elements by 1.
      */
-    NDArray &operator++() {
-        for (size_t i = 0; i < size_; ++i)
-            data_[i] += T{1};
-        return *this;
-    }
+    NDArray &operator++() { return elementwise(T{1}, std::plus<T>()); }
 
     /** @brief Create a mutable view of the NDArray. */
     NDView<T, Ndim> view() { return NDView<T, Ndim>{data_, shape_}; }
@@ -507,6 +482,31 @@ class NDArray : public ArrayExpr<NDArray<T, Ndim>, Ndim> {
     }
 
   private:
+    /**
+     * @brief Apply data_[i] = op(data_[i], value) to all elements.
+     *
+     * The members are copied to locals since a store to data_[i] may alias
+     * them for some T (uint8_t, int64_t, ...). The compiler then has to reload
+     * them every iteration, which blocks vectorization.
+     */
+    template <typename Op> NDArray &elementwise(T value, Op op) {
+        T *data = data_;
+        for (size_t i = 0, n = size_; i < n; ++i) {
+            data[i] = op(data[i], value);
+        }
+        return *this;
+    }
+
+    /** @brief Apply data_[i] = op(data_[i], other[i]) to all elements. */
+    template <typename V, typename Op>
+    NDArray &elementwise(const V *other, Op op) {
+        T *data = data_;
+        for (size_t i = 0, n = size_; i < n; ++i) {
+            data[i] = op(data[i], other[i]);
+        }
+        return *this;
+    }
+
     /**
      * @brief Reset the NDArray to an empty state. Dropping the ownership of
      * the data. Used internally for move operations to avoid double free or
