@@ -76,6 +76,7 @@
 - ``TimingMode::Auto`` changed to ``TimingMode::AUTO_TIMING``, ``TimingMode::Trigger`` changed to ``TimingMode::TRIGGER_EXPOSURE``
 
 ### Bugfixes:
+- Mismatched operators inhibited vectorization in gcc of NDArray math operators
 - ``RawFile`` and ``File`` reject raw files with frame padding disabled unless
   the frame discard policy is ``discardpartial``. The constructor reports the
   master path before opening data subfiles. Legacy ``.raw`` master files now
