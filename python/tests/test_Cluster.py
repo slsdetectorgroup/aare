@@ -3,7 +3,7 @@ import pytest
 import numpy as np
 
 from aare import _aare #import the C++ module
-from aare import corner 
+from aare import ROI, corner 
 from conftest import test_data_path
 
 
@@ -91,6 +91,22 @@ def test_calculate_eta():
     assert eta2.sum == 4
 
 
+def test_cluster_representations():
+    """Test Cluster representation"""
+
+    cluster = _aare.Cluster2x2i(5, 6, np.array([1, 2, 3, 4], dtype=np.int32))
+    assert repr(cluster) == "Cluster2x2i(x=5, y=6, data=[[1, 2], [3, 4]])"
+
+def test_eta_representations():
+    """Test Eta representation"""
+    eta = _aare.Etai()
+    eta.x = 0.25
+    eta.y = 0.75
+    eta.c = corner.cBottomRight
+    eta.sum = 42
+    assert repr(eta) == "Etai(x=0.25, y=0.75, c=BottomRight, sum=42)"
+
+
 def test_max_sum(): 
     """Max 2x2 Sum"""
     cluster = _aare.Cluster3x3i(5,5,np.array([1, 1, 1, 2, 3, 1, 2, 2, 1], dtype=np.int32))
@@ -103,15 +119,18 @@ def test_max_sum():
 
 def test_cluster_finder(): 
     """Test ClusterFinder""" 
+    shape = [100,100]
+    cf = _aare.ClusterFinder_Cluster3x3i(shape)
 
-    clusterfinder = _aare.ClusterFinder_Cluster3x3i([100,100])
+    #Push 1000 frames to the pedestal
+    for i in range(1000):
+        frame = np.random.normal(loc = 100, scale = 5, size = shape).astype(np.uint16)
+        cf.push_pedestal_frame(frame)
+    cf.update_threshold()
+    frame = np.zeros(shape=shape, dtype=np.uint16)
+    cf.find_clusters(frame)
 
-    #frame = np.random.rand(100,100)
-    frame = np.zeros(shape=[100,100])
-
-    clusterfinder.find_clusters(frame)
-
-    clusters = clusterfinder.steal_clusters(False) #conversion does not work
+    clusters = cf.steal_clusters(False) #conversion does not work
 
     assert clusters.size == 0
 
@@ -137,7 +156,6 @@ def test_3x3_reduction():
     assert reduced_cluster.x == 5
     assert reduced_cluster.y == 5
     assert (reduced_cluster.data == np.array([[2.0, 1.0, 1.0], [2.0, 3.0, 1.0], [2.0, 1.0, 1.0]], dtype=np.double)).all()
-
 
 
 

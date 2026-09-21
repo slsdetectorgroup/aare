@@ -5,11 +5,15 @@
 #include <cstddef>
 #include <iostream>
 #include <numeric>
+#include <type_traits>
 #include <vector>
 
 using aare::NDView;
 using aare::num_elements;
 using aare::Shape;
+
+static_assert(std::is_convertible_v<NDView<int, 2>, NDView<const int, 2>>);
+static_assert(!std::is_convertible_v<NDView<const int, 2>, NDView<int, 2>>);
 
 TEST_CASE("Calculate size from a shape") {
     Shape<3> shape{2, 3, 4};
@@ -86,6 +90,17 @@ TEST_CASE("Element reference 1D with a const NDView") {
         REQUIRE(data(i) == vec[i]);
         REQUIRE(data[i] == vec[i]);
     }
+}
+
+TEST_CASE("Convert a mutable NDView to a const NDView") {
+    std::vector<int> vec{1, 2, 3, 4};
+    NDView<int, 2> mutable_view(vec.data(), Shape<2>{2, 2});
+
+    NDView<const int, 2> const_view = mutable_view;
+
+    REQUIRE(const_view.data() == mutable_view.data());
+    REQUIRE(const_view.shape() == mutable_view.shape());
+    REQUIRE(const_view.strides() == mutable_view.strides());
 }
 
 TEST_CASE("Element reference 2D") {

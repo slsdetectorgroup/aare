@@ -1,4 +1,5 @@
 #pragma once
+#include "aare/FastPedestal.hpp"
 #include "aare/NDArray.hpp"
 #include "aare/NDView.hpp"
 #include "aare/Pedestal.hpp"
@@ -44,7 +45,7 @@ class PedestalTrackingPixelHistogram {
     // worker using the LOCAL row index (i.e. 0..row_count(t)-1), NOT the
     // global row index. Owned exclusively by worker `t` during a
     // dispatched fan-out.
-    std::vector<Pedestal<AxisType>> partial_pedestals_;
+    std::vector<FastPedestal<AxisType>> partial_pedestals_;
     std::vector<NDArray<AxisType, 2>> partial_std_; // cached for pedestal
                                                     // tracking
 
@@ -64,6 +65,11 @@ class PedestalTrackingPixelHistogram {
     // and the async coordinator's batch fill dispatches.
     // Always the outermost lock; work_mutex_ is taken briefly inside it.
     mutable std::mutex fill_mutex_;
+
+    // Serialises producers of async_queue_ (which is SPSC) and gives
+    // fill_from_file exclusive ownership of the ingestion path while its
+    // direct, double-buffered dispatch is active.
+    std::mutex ingestion_mutex_;
 
     // Async producer/consumer pipeline. SPSC queue feeds the coordinator
     // thread, which batches queued images before dispatching them.
@@ -107,8 +113,23 @@ class PedestalTrackingPixelHistogram {
 
     void fill_async(NDArray<FrameType, 2> &&image);
 
+    /**
+     * @brief Fill from ordered, parallel-read batches.
+     *
+     * After the first batch, reading batch N+1 overlaps histogram processing
+     * for batch N. Two fixed-capacity read buffers are allocated once and
+     * reused for the duration of the call.
+     *
+     * @param fname input file accepted by File
+     * @param max_frames maximum frames to process, or all frames for -1
+     * @param verbose print periodic progress information
+     * @param reader_threads number of MultiThreadedFileReader workers
+     * @param reader_chunk_size frames claimed per reader worker and batch
+     */
     void fill_from_file(const std::filesystem::path &fname,
-                        ssize_t max_frames = -1, bool verbose = false);
+                        ssize_t max_frames = -1, bool verbose = false,
+                        std::size_t reader_threads = 2,
+                        std::size_t reader_chunk_size = 4);
 
     void process_pedestal_file(const std::filesystem::path &fname,
                                ssize_t max_frames = -1, bool verbose = false);

@@ -153,9 +153,13 @@ void define_pedestal_tracking_pixel_histogram_bindings(py::module &m) {
              Args:
                  file_path: Path to the file to fill from
                  max_frames: Maximum number of frames to fill from the file (default: -1)
+                 reader_threads: Number of parallel file reader workers (default: 2)
+                 reader_chunk_size: Frames claimed by each reader worker per batch (default: 4)
              )",
              py::call_guard<py::gil_scoped_release>(), py::arg("fname"),
-             py::arg("max_frames") = -1, py::arg("verbose") = false)
+             py::arg("max_frames") = -1, py::arg("verbose") = false,
+             py::arg("reader_threads") = std::size_t{2},
+             py::arg("reader_chunk_size") = std::size_t{4})
         .def("process_pedestal_file",
              &PedestalTrackingPixelHistogram::process_pedestal_file,
              R"(

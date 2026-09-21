@@ -30,6 +30,7 @@ AARE
     python/file/index
     python/experimental/index
     python/histogram/index
+    python/pedestal/index
     pyFit
     
 

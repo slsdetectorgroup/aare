@@ -6,6 +6,8 @@
 #include "aare/ClusterVector.hpp"
 #include "aare/NDView.hpp"
 #include "aare/Pedestal.hpp"
+
+#include "module_config.hpp"
 #include "np_helper.hpp"
 
 #include <cstdint>
@@ -15,7 +17,6 @@
 #include <pybind11/stl_bind.h>
 
 namespace py = pybind11;
-using pd_type = double;
 
 using namespace aare;
 
@@ -31,8 +32,10 @@ void define_ClusterFinder(py::module &m, const std::string &typestr) {
 
     py::class_<ClusterFinder<ClusterType, uint16_t, pd_type>>(
         m, class_name.c_str())
-        .def(py::init<Shape<2>, pd_type, size_t>(), py::arg("image_size"),
-             py::arg("n_sigma") = 5.0, py::arg("capacity") = 1'000'000)
+        .def(py::init<Shape<2>, pd_type, size_t, size_t>(),
+             py::arg("image_size"), py::arg("n_sigma") = 5.0,
+             py::arg("capacity") = 1'000'000,
+             py::arg("min_pedestal_samples") = 1000)
 
         .def_property(
             "nSigma",
@@ -48,6 +51,8 @@ void define_ClusterFinder(py::module &m, const std::string &typestr) {
              })
         .def("clear_pedestal",
              &ClusterFinder<ClusterType, uint16_t, pd_type>::clear_pedestal)
+        .def("update_threshold",
+             &ClusterFinder<ClusterType, uint16_t, pd_type>::update_threshold)
         .def_property_readonly(
             "pedestal",
             [](ClusterFinder<ClusterType, uint16_t, pd_type> &self) {

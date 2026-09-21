@@ -1,6 +1,8 @@
 #pragma once
 #include "aare/DetectorGeometry.hpp"
-#include "aare/defs.hpp"
+#include "aare/ROI.hpp"
+#include <cstdint>
+#include <vector>
 
 namespace aare {
 
@@ -16,11 +18,6 @@ class ROIGeometry {
      * @param geometry general detector geometry
      */
     ROIGeometry(const ROI &roi, DetectorGeometry &geometry);
-
-    /** @brief Constructor for ROI geometry expanding over full detector
-     * @param geometry general detector geometry
-     */
-    ROIGeometry(DetectorGeometry &geometry);
 
     /// @brief Get number of modules in the ROI
     size_t num_modules_in_roi() const;

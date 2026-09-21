@@ -18,6 +18,7 @@ class FilePtr {
     FilePtr &operator=(const FilePtr &) = delete; // since we handle a resource
     FilePtr(FilePtr &&other);
     FilePtr &operator=(FilePtr &&other);
+    explicit operator bool() const noexcept;
     FILE *get();
     ssize_t tell();
     void seek(ssize_t offset, int whence = SEEK_SET) {
