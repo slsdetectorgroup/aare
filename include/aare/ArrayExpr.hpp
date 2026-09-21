@@ -58,30 +58,49 @@ class ArrayScalar : public ArrayExpr<ArrayScalar<T, Ndim>, Ndim> {
     std::array<ssize_t, Ndim> shape() const { return shape_; }
 };
 
-// Generates expr op expr, expr op scalar and scalar op expr
-#define AARE_ARRAY_OPERATOR(op, Op)                                            \
-    template <typename A, typename B, ssize_t Ndim>                            \
-    auto operator op(const ArrayExpr<A, Ndim> &arr1,                           \
-                     const ArrayExpr<B, Ndim> &arr2) {                         \
-        return ArrayBinaryOp<Op, A, B, Ndim>(static_cast<const A &>(arr1),     \
-                                             static_cast<const B &>(arr2));    \
-    }                                                                          \
-    template <typename A, typename T, ssize_t Ndim,                            \
-              typename = std::enable_if_t<std::is_arithmetic_v<T>>>            \
-    auto operator op(const ArrayExpr<A, Ndim> &arr, T value) {                 \
-        return arr op ArrayScalar<T, Ndim>(value, arr);                        \
-    }                                                                          \
-    template <typename A, typename T, ssize_t Ndim,                            \
-              typename = std::enable_if_t<std::is_arithmetic_v<T>>>            \
-    auto operator op(T value, const ArrayExpr<A, Ndim> &arr) {                 \
-        return ArrayScalar<T, Ndim>(value, arr) op arr;                        \
-    }
+// Builds the expression for expr op expr, expr op scalar and scalar op expr
+template <typename Op, typename A, typename B, ssize_t Ndim>
+auto binary_op(const ArrayExpr<A, Ndim> &lhs, const ArrayExpr<B, Ndim> &rhs) {
+    return ArrayBinaryOp<Op, A, B, Ndim>(static_cast<const A &>(lhs),
+                                         static_cast<const B &>(rhs));
+}
 
-AARE_ARRAY_OPERATOR(+, std::plus<>)
-AARE_ARRAY_OPERATOR(-, std::minus<>)
-AARE_ARRAY_OPERATOR(*, std::multiplies<>)
-AARE_ARRAY_OPERATOR(/, std::divides<>)
+template <typename Op, typename A, typename T, ssize_t Ndim,
+          typename = std::enable_if_t<std::is_arithmetic_v<T>>>
+auto binary_op(const ArrayExpr<A, Ndim> &lhs, T rhs) {
+    return binary_op<Op>(lhs, ArrayScalar<T, Ndim>(rhs, lhs));
+}
 
-#undef AARE_ARRAY_OPERATOR
+template <typename Op, typename T, typename B, ssize_t Ndim,
+          typename = std::enable_if_t<std::is_arithmetic_v<T>>>
+auto binary_op(T lhs, const ArrayExpr<B, Ndim> &rhs) {
+    return binary_op<Op>(ArrayScalar<T, Ndim>(lhs, rhs), rhs);
+}
+
+// The operators only take part in overload resolution if binary_op accepts
+// the operands, meaning at least one of them is an ArrayExpr
+template <typename L, typename R>
+auto operator+(const L &lhs, const R &rhs)
+    -> decltype(binary_op<std::plus<>>(lhs, rhs)) {
+    return binary_op<std::plus<>>(lhs, rhs);
+}
+
+template <typename L, typename R>
+auto operator-(const L &lhs, const R &rhs)
+    -> decltype(binary_op<std::minus<>>(lhs, rhs)) {
+    return binary_op<std::minus<>>(lhs, rhs);
+}
+
+template <typename L, typename R>
+auto operator*(const L &lhs, const R &rhs)
+    -> decltype(binary_op<std::multiplies<>>(lhs, rhs)) {
+    return binary_op<std::multiplies<>>(lhs, rhs);
+}
+
+template <typename L, typename R>
+auto operator/(const L &lhs, const R &rhs)
+    -> decltype(binary_op<std::divides<>>(lhs, rhs)) {
+    return binary_op<std::divides<>>(lhs, rhs);
+}
 
 } // namespace aare
