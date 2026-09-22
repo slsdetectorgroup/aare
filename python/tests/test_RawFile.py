@@ -4,6 +4,9 @@ import json
 from aare import File, RawFile, RawSubFile, DetectorType, ROI, UDPPortPosition
 import numpy as np
 
+from aare import strixelremap
+
+from test_helpers.RawFileHelpers import TemporaryJungfrauRawFiles
 
 @pytest.fixture
 def small_raw_file(tmp_path):
@@ -439,3 +442,17 @@ def test_read_eiger_udp_port_disabled(test_data_path):
         assert len(rois) == 2
         assert rois[0] == ROI(0, 512, 0, 512)
         assert rois[1] == ROI(1024, 1536, 0, 512)
+
+def test_RawFile_with_strixeltransform():
+    """ list of transforms is passed to RawFile"""
+    transform = strixelremap.Jungfrau_iLGAD_StrixelPixelMap(module_placement = strixelremap.Chip1)
+
+    my_raw_file = TemporaryJungfrauRawFiles()
+
+    with RawFile(my_raw_file.master_path(), strixeltransform = [transform]) as f:
+        header, frames = f.read_frame()
+        assert len(frames) == 1
+        assert len(frames[0]) == 3
+        assert frames[0][0].shape == (165, 79)
+        assert frames[0][1].shape == (320, 47)
+        assert frames[0][2].shape == (476, 59)
