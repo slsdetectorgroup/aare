@@ -413,9 +413,14 @@ set(PUBLICHEADERS
     include/aare/utils/math_helpers.hpp)
 
 if(AARE_CUDA)
-  list(APPEND PUBLICHEADERS include/aare/ClusterFinderCUDA.hpp
-       include/aare/clusterfinder_algo.cuh
-       include/aare/clusterfinder_kernel.cuh include/aare/utils/cuda_check.cuh)
+  list(
+    APPEND
+    PUBLICHEADERS
+    include/aare/ClusterFinderCUDA.hpp
+    include/aare/clusterfinder_algo.cuh
+    include/aare/clusterfinder_kernel.cuh
+    include/aare/RAII_device.hpp
+    include/aare/utils/cuda_check.cuh)
 endif()
 
 set(SourceFiles

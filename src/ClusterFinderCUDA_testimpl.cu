@@ -83,24 +83,23 @@ ManualVsDriver<Cluster<int32_t, N, N>> run(int nrows, int ncols, int n_ped,
             ped.push(NDView<uint16_t, 2>(
                 const_cast<uint16_t *>(s.ped.data() + f * npx), shape));
 
-        std::vector<float> offset;
-        const auto img = Algo::prepare_pedestal(ped, offset);
+        using Ped = typename Algo::pedestal;
+        const auto img = Ped::prepare_pedestal(ped);
 
-        // Raw cudaMalloc on purpose: this route must not touch
-        // PedestalBuffers or StreamContext, only the DeviceState contract.
+        // Raw cudaMalloc on purpose: this route must not touch Ped::Buffers or
+        // StreamContext, only the launch contract. The pedestal goes in as a
+        // Ped::View over caller-owned pointers; the output block is owning by
+        // design, so it comes from Algo::Output::allocate().
         float *d_mean = nullptr, *d_sum = nullptr, *d_sum2 = nullptr,
               *d_off = nullptr;
         uint16_t *d_frame = nullptr;
-        C *d_clusters = nullptr;
-        uint32_t *d_count = nullptr;
         const size_t pbytes = npx * sizeof(float);
         CUDA_CHECK(cudaMalloc(&d_mean, pbytes));
         CUDA_CHECK(cudaMalloc(&d_sum, pbytes));
         CUDA_CHECK(cudaMalloc(&d_sum2, pbytes));
         CUDA_CHECK(cudaMalloc(&d_off, pbytes));
         CUDA_CHECK(cudaMalloc(&d_frame, npx * sizeof(uint16_t)));
-        CUDA_CHECK(cudaMalloc(&d_clusters, max_clusters * sizeof(C)));
-        CUDA_CHECK(cudaMalloc(&d_count, sizeof(uint32_t)));
+        auto d_output = Algo::Output::allocate(max_clusters);
 
         cudaStream_t st = nullptr;
         CUDA_CHECK(cudaStreamCreate(&st));
@@ -110,28 +109,30 @@ ManualVsDriver<Cluster<int32_t, N, N>> run(int nrows, int ncols, int n_ped,
                                    cudaMemcpyHostToDevice, st));
         CUDA_CHECK(cudaMemcpyAsync(d_sum2, img.sum2.data(), pbytes,
                                    cudaMemcpyHostToDevice, st));
-        CUDA_CHECK(cudaMemcpyAsync(d_off, offset.data(), pbytes,
+        CUDA_CHECK(cudaMemcpyAsync(d_off, img.off.data(), pbytes,
                                    cudaMemcpyHostToDevice, st));
 
-        const typename Algo::DeviceState state{
-            d_frame, d_mean, d_sum, d_sum2, d_off, d_clusters, d_count};
-        const cuda::LaunchParams params{nrows, ncols, nSigma, ped.n_samples(),
-                                        max_clusters};
+        const typename Ped::View pv{d_mean, d_sum, d_sum2, d_off};
+        const typename Algo::LaunchParams lp{nrows, ncols, nSigma,
+                                             max_clusters};
+        const typename Ped::Params pp{static_cast<uint32_t>(ped.n_samples())};
 
         std::vector<C> h_clusters(max_clusters);
         uint32_t h_count = 0;
         for (int f = 0; f < n_frames; ++f) {
-            CUDA_CHECK(cudaMemsetAsync(d_count, 0, sizeof(uint32_t), st));
+            CUDA_CHECK(
+                cudaMemsetAsync(d_output.count(), 0, sizeof(uint32_t), st));
             CUDA_CHECK(cudaMemcpyAsync(d_frame, s.sig.data() + f * npx,
                                        npx * sizeof(uint16_t),
                                        cudaMemcpyHostToDevice, st));
-            Algo::launch(params, state, st);
-            CUDA_CHECK(cudaMemcpyAsync(&h_count, d_count, sizeof(uint32_t),
-                                       cudaMemcpyDeviceToHost, st));
+            Algo::launch(lp, pp, d_frame, pv, d_output, st);
+            CUDA_CHECK(cudaMemcpyAsync(&h_count, d_output.count(),
+                                       sizeof(uint32_t), cudaMemcpyDeviceToHost,
+                                       st));
             CUDA_CHECK(cudaStreamSynchronize(st));
             const uint32_t n = std::min(h_count, max_clusters);
-            CUDA_CHECK(cudaMemcpy(h_clusters.data(), d_clusters, n * sizeof(C),
-                                  cudaMemcpyDeviceToHost));
+            CUDA_CHECK(cudaMemcpy(h_clusters.data(), d_output.clusters(),
+                                  n * sizeof(C), cudaMemcpyDeviceToHost));
             out.manual[f].assign(h_clusters.begin(), h_clusters.begin() + n);
         }
 
@@ -141,8 +142,6 @@ ManualVsDriver<Cluster<int32_t, N, N>> run(int nrows, int ncols, int n_ped,
         CUDA_CHECK(cudaFree(d_sum2));
         CUDA_CHECK(cudaFree(d_off));
         CUDA_CHECK(cudaFree(d_frame));
-        CUDA_CHECK(cudaFree(d_clusters));
-        CUDA_CHECK(cudaFree(d_count));
     }
 
     // ---- Route 2: the driver. One stream so the per-frame pedestal update
