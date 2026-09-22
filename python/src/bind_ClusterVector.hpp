@@ -48,9 +48,6 @@ void define_ClusterVector(py::module &m, const std::string &typestr) {
             "__call__",
             [](ClusterVector<ClusterType> &self,
                py::array_t<bool, py::array::c_style> mask) {
-                if (mask.ndim() != 1) {
-                    throw py::value_error("Mask must be one-dimensional");
-                }
                 return self(make_view_1d(mask));
             },
             py::arg("mask").noconvert(), R"doc(
