@@ -101,9 +101,7 @@ void define_interpolation_bindings(py::module &m) {
     auto interpolator =
         py::class_<aare::Interpolator>(m, "Interpolator")
             .def(py::init(
-                [](py::array_t<double,
-                               py::array::c_style | py::array::forcecast>
-                       etacube,
+                [](py::array_t<double> etacube,
                    py::array_t<double> xbins, py::array_t<double> ybins,
                    py::array_t<double> ebins) {
                     return Interpolator(
@@ -151,8 +149,7 @@ void define_interpolation_bindings(py::module &m) {
             .def(
                 "rosenblatttransform",
                 [](Interpolator &self,
-                   py::array_t<double,
-                               py::array::c_style | py::array::forcecast>
+                   py::array_t<double>
                        etacube) {
                     return self.rosenblatttransform(make_view_3d(etacube));
                 },

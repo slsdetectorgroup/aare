@@ -21,7 +21,7 @@ void define_var_cluster_finder_bindings(py::module &m) {
                  auto *ptr = new NDArray<int, 2>(self.labeled());
                  return return_image_data(ptr);
              })
-        .def("set_noiseMap",
+        .def("set_noiseMap", // conversions ok
              [](VarClusterFinder<double> &self,
                 py::array_t<double, py::array::c_style | py::array::forcecast>
                     noise_map) {
@@ -34,20 +34,20 @@ void define_var_cluster_finder_bindings(py::module &m) {
              &VarClusterFinder<double>::set_empty_surroundingPixels)
         .def("set_peripheralThresholdFactor",
              &VarClusterFinder<double>::set_peripheralThresholdFactor)
-        .def("find_clusters",
+        .def("find_clusters", // conversions ok
              [](VarClusterFinder<double> &self,
                 py::array_t<double, py::array::c_style | py::array::forcecast>
                     img) {
                  auto view = make_view_2d(img);
                  self.find_clusters(view);
              })
-        .def("find_clusters_X",
-             [](VarClusterFinder<double> &self,
-                py::array_t<double, py::array::c_style | py::array::forcecast>
-                    img) {
-                 auto img_span = make_view_2d(img);
-                 self.find_clusters_X(img_span);
-             })
+        .def(
+            "find_clusters_X",
+            [](VarClusterFinder<double> &self, py::array_t<double> img) {
+                auto img_span = make_view_2d(img);
+                self.find_clusters_X(img_span);
+            },
+            py::arg("img").noconvert())
         .def("single_pass",
              [](VarClusterFinder<double> &self,
                 py::array_t<double, py::array::c_style | py::array::forcecast>

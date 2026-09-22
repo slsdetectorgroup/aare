@@ -61,10 +61,8 @@ template <typename Model> void bind_fit_model(py::module &m, const char *name) {
                       &FM::SetComputeErrors)
         .def(
             "__call__",
-            [](const FM & /*self*/,
-               py::array_t<double, py::array::c_style | py::array::forcecast> x,
-               py::array_t<double, py::array::c_style | py::array::forcecast>
-                   par) {
+            [](const FM & /*self*/, py::array_t<double> x,
+               py::array_t<double> par) {
                 auto x_view = make_view_1d(x);
                 auto p_view = make_view_1d(par);
 

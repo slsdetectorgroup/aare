@@ -85,8 +85,7 @@ void define_pedestal_bindings(py::module &m, const std::string &name) {
         // TODO! add push for other data types
         .def(
             "push",
-            [](Pedestal<SUM_TYPE> &pedestal,
-               py::array_t<uint16_t, py::array::c_style> &f) {
+            [](Pedestal<SUM_TYPE> &pedestal, py::array_t<uint16_t> f) {
                 if (f.ndim() != 2) {
                     throw py::value_error("Frame must be 2-dimensional");
                 }
@@ -99,9 +98,8 @@ void define_pedestal_bindings(py::module &m, const std::string &name) {
             "n_samples values per pixel, new values have weight 1 / n_samples.")
         .def(
             "push_with_threshold",
-            [](Pedestal<SUM_TYPE> &pedestal,
-               py::array_t<uint16_t, py::array::c_style> &f,
-               py::array_t<SUM_TYPE, py::array::c_style> &threshold) {
+            [](Pedestal<SUM_TYPE> &pedestal, py::array_t<uint16_t> f,
+               py::array_t<SUM_TYPE> threshold) {
                 if (f.ndim() != 2) {
                     throw py::value_error("Frame must be 2-dimensional");
                 }

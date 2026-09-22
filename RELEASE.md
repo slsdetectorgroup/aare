@@ -95,6 +95,10 @@
   without implicit conversion. Both ``push()`` and ``push_with_threshold()``
   validate that frames and thresholds are two-dimensional before constructing
   views, preventing incorrect results from unsupported array layouts or ranks.
+- Python ``ClusterFinder.push_pedestal_frame()`` and ``find_clusters()`` now
+  require C-contiguous ``uint16`` frames without implicit conversion, raising
+  ``TypeError`` instead of silently copying and casting the input. The frame
+  argument can also be passed by keyword as ``frame``.
 
 - Fixed a leaked empty ``ClusterVector`` at the end of Python ``ClusterFile``
   iteration. Chunk iteration now rejects a zero chunk size.

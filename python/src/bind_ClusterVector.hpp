@@ -46,8 +46,7 @@ void define_ClusterVector(py::module &m, const std::string &typestr) {
 
         .def(
             "__call__",
-            [](ClusterVector<ClusterType> &self,
-               py::array_t<bool, py::array::c_style> mask) {
+            [](ClusterVector<ClusterType> &self, py::array_t<bool> mask) {
                 return self(make_view_1d(mask));
             },
             py::arg("mask").noconvert(), R"doc(
