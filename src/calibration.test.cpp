@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: MPL-2.0
 /************************************************
  * @file test-Cluster.cpp
  * @short test case for generic Cluster, ClusterVector, and calculate_eta2

@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: MPL-2.0
 #include "aare/CtbRawFile.hpp"
 #include "aare/File.hpp"
 #include "aare/Frame.hpp"
@@ -6,7 +7,6 @@
 #include "aare/RawSubFile.hpp"
 
 #include "aare/defs.hpp"
-// #include "aare/fClusterFileV2.hpp"
 
 #include <cstdint>
 #include <filesystem>

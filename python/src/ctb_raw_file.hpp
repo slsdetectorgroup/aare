@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: MPL-2.0
 
 #include "aare/CtbRawFile.hpp"
 #include "aare/File.hpp"
@@ -8,7 +9,6 @@
 
 #include "aare/decode.hpp"
 #include "aare/defs.hpp"
-// #include "aare/fClusterFileV2.hpp"
 
 #include "np_helper.hpp"
 
@@ -25,6 +25,30 @@ namespace py = pybind11;
 using namespace ::aare;
 
 void define_ctb_raw_file_io_bindings(py::module &m) {
+
+    m.def("adc_sar_05_06_07_08decode64to16", [](py::array_t<uint8_t> input) {
+        if (input.ndim() != 2) {
+            throw std::runtime_error(
+                "Only 2D arrays are supported at this moment");
+        }
+
+        // Create a 2D output array with the same shape as the input
+        std::vector<ssize_t> shape{input.shape(0),
+                                   input.shape(1) /
+                                       static_cast<ssize_t>(bits_per_byte)};
+        py::array_t<uint16_t> output(shape);
+
+        // Create a view of the input and output arrays
+        NDView<uint64_t, 2> input_view(
+            reinterpret_cast<uint64_t *>(input.mutable_data()),
+            {output.shape(0), output.shape(1)});
+        NDView<uint16_t, 2> output_view(output.mutable_data(),
+                                        {output.shape(0), output.shape(1)});
+
+        adc_sar_05_06_07_08decode64to16(input_view, output_view);
+
+        return output;
+    });
 
     m.def("adc_sar_05_decode64to16", [](py::array_t<uint8_t> input) {
         if (input.ndim() != 2) {
@@ -95,6 +119,83 @@ void define_ctb_raw_file_io_bindings(py::module &m) {
               return output;
           });
 
+    m.def("expand24to32bit",
+          [](py::array_t<uint8_t, py::array::c_style | py::array::forcecast>
+                 &input,
+             uint32_t offset) {
+              aare::BitOffset bitoff(offset);
+              py::buffer_info buf = input.request();
+
+              constexpr uint32_t bytes_per_channel = 3; // 24 bit
+              py::array_t<uint32_t> output(buf.size / bytes_per_channel);
+
+              NDView<uint8_t, 1> input_view(input.mutable_data(),
+                                            {input.size()});
+              NDView<uint32_t, 1> output_view(output.mutable_data(),
+                                              {output.size()});
+
+              aare::expand24to32bit(input_view, output_view, bitoff);
+              return output;
+          });
+
+    m.def("expand4to8bit",
+          [](py::array_t<uint8_t, py::array::c_style | py::array::forcecast>
+                 &input) {
+              py::buffer_info buf = input.request();
+
+              py::array_t<uint8_t> output(buf.size * 2);
+
+              NDView<uint8_t, 1> input_view(input.mutable_data(),
+                                            {input.size()});
+              NDView<uint8_t, 1> output_view(output.mutable_data(),
+                                             {output.size()});
+
+              aare::expand4to8bit(input_view, output_view);
+              return output;
+          });
+
+    m.def("decode_my302",
+          [](py::array_t<uint8_t, py::array::c_style | py::array::forcecast>
+                 &input,
+             uint32_t offset) {
+              // Physical layout of the chip
+              constexpr size_t channels = 64;
+              constexpr size_t counters = 3;
+              constexpr size_t bytes_per_channel = 3; // 24 bit
+              constexpr int n_outputs = 2;
+
+              ssize_t expected_size = channels * counters * bytes_per_channel;
+
+              // If whe have an offset we need one extra byte per output
+              aare::BitOffset bitoff(offset);
+              if (bitoff.value())
+                  expected_size += n_outputs;
+
+              if (input.size() != expected_size) {
+                  throw std::runtime_error(fmt::format(
+                      "{} Expected an input size of {} bytes. Called "
+                      "with input size of {}",
+                      LOCATION, expected_size, input.size()));
+              }
+
+              py::buffer_info buf = input.request();
+              py::array_t<uint32_t> output(channels * counters);
+
+              for (int i = 0; i != n_outputs; ++i) {
+                  auto step = input.size() / n_outputs;
+                  auto out_step = output.size() / n_outputs;
+                  NDView<uint8_t, 1> input_view(input.mutable_data() + step * i,
+                                                {input.size() / n_outputs});
+                  NDView<uint32_t, 1> output_view(output.mutable_data() +
+                                                      out_step * i,
+                                                  {output.size() / n_outputs});
+
+                  aare::expand24to32bit(input_view, output_view, bitoff);
+              }
+
+              return output;
+          });
+
     py::class_<CtbRawFile>(m, "CtbRawFile")
         .def(py::init<const std::filesystem::path &>())
         .def("read_frame",
@@ -124,5 +225,7 @@ void define_ctb_raw_file_io_bindings(py::module &m) {
         .def_property_readonly("image_size_in_bytes",
                                &CtbRawFile::image_size_in_bytes)
 
-        .def_property_readonly("frames_in_file", &CtbRawFile::frames_in_file);
+        .def_property_readonly("frames_in_file", &CtbRawFile::frames_in_file)
+        .def_property_readonly("total_frames", &CtbRawFile::total_frames)
+        .def("__len__", &CtbRawFile::total_frames);
 }

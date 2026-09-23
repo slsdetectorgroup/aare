@@ -3,14 +3,19 @@ channels:
   - conda-forge
 dependencies:
   - anaconda-client
+  - catch2
   - conda-build
-  - doxygen 
+  - doxygen
   - sphinx
-  - breathe 
-  - sphinx_rtd_theme 
-  - furo 
-  - zeromq 
+  - breathe
+  - sphinx_rtd_theme
+  - furo
+  - zeromq
   - pybind11
   - numpy
   - matplotlib
+  - nlohmann_json
+  - pytest
+  - pytest-check
+  - boost-histogram
 

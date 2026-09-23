@@ -15,9 +15,16 @@ dependencies on older distributions.
 
 .. note ::
 
-    aare is developing rapidly. Check for the latest release by 
+    aare is developing rapidly. Check for available releases by 
     using: **conda search aare -c slsdetectorgroup**
 
+To install the latest version of aare using conda, run:
+
+.. code-block:: bash 
+    
+    conda install aare -c slsdetectorgroup
+
+To install a specific version of aare, run:
 
 .. code-block:: bash
 
@@ -28,7 +35,7 @@ dependencies on older distributions.
 cmake build (development install)
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-If you are working on aare or want to test our a version that doesn't yet have
+If you are working on aare or want to test out a version that doesn't yet have
 a conda package. Build using cmake and then run from the build folder.
 
 .. code-block:: bash
@@ -46,6 +53,20 @@ a conda package. Build using cmake and then run from the build folder.
 
     # add the build folder to your PYTHONPATH and then you should be able to
     # import aare in python
+
+To build the python bindings and use aare in python compile with option ``-DAARE_PYTHON_BINDINGS=ON``. 
+
+.. code-block:: bash
+
+    #in build folder
+    cmake ../aare -DAARE_PYTHON_BINDINGS=ON
+    make -j4
+
+Make sure to add the build folder to your PYTHONPATH and then you should be able to import aare in python.
+
+.. code-block:: bash
+
+    export PYTHONPATH=/path/to/aare/build:$PYTHONPATH
 
 cmake build + install and use in your C++ project
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -79,9 +100,9 @@ For detailed options see the CMakeLists.txt file in the root directory of the pr
 Use system libraries instead of using FetchContent to pull in dependencies. Default option is off.
 
 
-**AARE_PYTHON_BINDINGS "Build python bindings" ON**
+**AARE_PYTHON_BINDINGS "Build python bindings" OFF**
 
-Build the Python bindings. Default option is on. 
+Build the Python bindings. Default option is off. 
 
 .. warning ::
 

@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: MPL-2.0
 #pragma once
 
 #include "aare/FileInterface.hpp"
@@ -27,6 +28,7 @@ class CtbRawFile {
 
     size_t image_size_in_bytes() const;
     size_t frames_in_file() const;
+    size_t total_frames() const;
 
     RawMasterFile master() const;
 

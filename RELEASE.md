@@ -1,5 +1,214 @@
 # Release notes
 
+## Next
+
+### New Features:
+
+- Added the Python ``FrameDiscardPolicy`` enum with ``NoDiscard``, ``Discard``,
+  and ``DiscardPartial``, enabling access to ``RawMasterFile.frame_discard_policy``.
+- Added the Python ``Pedestal`` factory with ``dtype`` selection, matching
+  ``FastPedestal`` and defaulting to ``float64`` output.
+- Added ``FastPedestal`` in C++ and Python for per-pixel running mean
+  and population standard deviation. It supports exponentially
+- Added ``ClusterFile.frames()`` and ``ClusterFile.chunks()`` in C++ and
+  Python for iteration from the current file position. Frames preserve empty
+  frames and frame numbers; chunks support an optional positive size override.
+  Python's default file iteration continues to yield chunks.
+- Added ``FastPedestal`` in C++ and Python for per-pixel running mean,
+  population variance, and standard deviation. It supports exponentially
+  weighted updates, initialization from files, direct subtraction from NumPy
+  arrays, and ``float64``, ``float32``, and ``int16`` output types.
+- Added the ``Pedestal_i16`` Python binding alongside
+  ``FastPedestal_d``, ``FastPedestal_f``, and ``FastPedestal_i16``.
+- ``PedestalTrackingPixelHistogram.fill_from_file()`` now uses parallel,
+  double-buffered file reading and accepts ``reader_threads`` and
+  ``reader_chunk_size`` tuning parameters.
+- Added the ``AARE_TUNE_LOCAL`` CMake option to build with ``-march=native``
+  and ``-mtune=native`` when supported. Binaries built with this option are
+  specific to the local CPU and may not be portable.
+- Added string representator in python for Cluster and Eta 
+- Added roi slice method in python for easy slicing of numpy arrays ``array[roi.slice()]``. 
+- added context manager for ``aare.RawMasterFile``
+
+### API Changes:
+
+- ``FastPedestal`` variance is now a private ``double`` intermediate. Removed
+  the C++ ``variance()``/``variance_unchecked()`` APIs and Python ``var()``.
+  Standard deviation is calculated before conversion to the output type,
+  avoiding overflow of intermediate variance for ``int16`` output. Negative
+  variance from floating-point roundoff is clamped to zero.
+- ``Pedestal`` now always accumulates sums and sums of squares in ``double``,
+  like ``FastPedestal``. Mean and standard deviation output types
+  are unchanged. Removed the C++ ``get_sum()``/``get_sum2()`` getters and
+  Python ``sum``/``sum2`` properties; internal sums are no longer exposed.
+- Removed the public ``Pedestal.variance()`` and ``cached_std()`` APIs and
+  C++ ``update_std()``. Use ``std()`` to calculate the current population
+  standard deviation; variance is now an internal implementation detail.
+- Added ``ClusterFile::read_frame(ClusterVector&)`` for allocation-reusing C++
+  reads. It returns ``false`` at a clean end of file. The value-returning C++
+  overload now returns ``std::optional<ClusterVector<ClusterType>>`` and
+  Python ``read_frame()`` returns ``None`` at end of file. Incomplete frames
+  still raise an error.
+- Added an explicit boolean conversion to the C++ ``FilePtr`` type.
+- Removed the public C++ ``ClusterFile::open`` method. Construct a new
+  ``ClusterFile`` to reopen a file or change its mode.
+- ``ClusterFinder`` now uses ``FastPedestal``. It must receive 1000 pedestal
+  frames before cluster finding; ``find_clusters()`` raises
+  an error until initialization is complete. Added ``update_threshold()`` to
+  recompute the per-pixel detection thresholds.
+- Added the ``queue_depth`` constructor argument to ``ClusterFinderMT`` to
+  configure the number of preallocated frame buffers per worker thread.
+- Exposed ``ClusterVector.empty()`` in the Python API.
+- Added ClusterVector.estimate_n_clusters
+- Removed the lmfit dependency and the legacy ``fit_gaus``, ``fit_pol1``,
+  ``fit_scurve``, and ``fit_scurve2`` APIs. Use ``Gaussian``, ``Pol1``,
+  ``RisingScurve``, or ``FallingScurve`` and call ``model.fit(...)`` (or
+  ``fit(model, ...)``) instead.
+- Removed the legacy ``gaus``, ``pol1``, ``scurve``, and ``scurve2`` function
+  evaluators. Model objects are callable and provide the replacement, for
+  example ``Gaussian()(x, par)``.
+- ``NDView<T, Ndim>`` now converts to ``NDView<const T, Ndim>``;
+  ``expand4to8bit`` and ``expand24to32bit`` accept const input views.
+
+- ``RawMasterFile::geometry()`` is deprecetad and returns full detector geometry information including module geometry. Use 
+``RawMasterFile::module_layout()`` to get num_modules in x an y 
+- ``RawMasterFile::rois()`` always returns a list of rois (no optional). Per default it returns a list of one ROI element spawing the entire detector 
+- ``TimingMode::Auto`` changed to ``TimingMode::AUTO_TIMING``, ``TimingMode::Trigger`` changed to ``TimingMode::TRIGGER_EXPOSURE``
+
+### Bugfixes:
+- Mismatched operators inhibited vectorization in gcc of NDArray math operators
+- ``RawFile`` and ``File`` reject raw files with frame padding disabled unless
+  the frame discard policy is ``discardpartial``. The constructor reports the
+  master path before opening data subfiles. Legacy ``.raw`` master files now
+  parse the frame discard policy so unpadded ``discardpartial`` files remain
+  readable.
+- Fixed ``CtbRawFile.read_frame(index)`` and reads after ``seek(index)`` at
+  subfile boundaries skipping a subfile, returning the wrong frame or raising
+  ``Subfile index out of range``.
+- ``Pedestal`` reports mismatched frame shapes with exceptions in all push
+  overloads, including Debug builds, instead of aborting on assertions.
+- Python ``Pedestal`` constructors reject negative dimensions and sample
+  counts instead of converting them to large unsigned values.
+- ``Pedestal`` clamps negative variance from floating-point roundoff to zero,
+  preventing NaN standard deviations for nearly constant inputs.
+- Python ``Pedestal.push()`` now requires C-contiguous ``uint16`` frames
+  without implicit conversion. Both ``push()`` and ``push_with_threshold()``
+  validate that frames and thresholds are two-dimensional before constructing
+  views, preventing incorrect results from unsupported array layouts or ranks.
+
+- Fixed a leaked empty ``ClusterVector`` at the end of Python ``ClusterFile``
+  iteration. Chunk iteration now rejects a zero chunk size.
+- ``ClusterFile::read_clusters`` and Python iteration now report incomplete
+  frame headers and cluster records instead of treating truncated files as a
+  clean end of file, with or without ROI or noise filtering.
+- ``ClusterFile::write_frame`` now reports incomplete writes instead of
+  silently continuing with a truncated file.
+- Gain-map application now checks the complete cluster footprint, preventing
+  out-of-bounds access for cluster sizes larger than 3x3.
+- ``RawFile`` now derives its frame count from the shortest selected raw
+  subfile series across all ROIs. Frame-number reads use the same bounds, and
+  Python ``len(reader)`` returns the adjusted count. A warning is printed when
+  subfile counts differ or their minimum differs from the recorded master
+  count. The expected frame count is not used and master metadata is preserved.
+  Warning-level logging is now enabled in non-verbose builds.
+- Raw frame, batch, ROI, and frame-number read errors now include the attempted
+  frame index and file path in C++ and Python, preserving subfile error details.
+  Subfile errors omit redundant master-file context and C++ source locations;
+  out-of-range errors include the available frame count.
+  Synchronization errors identify the last raw data file for the affected module.
+  Top-level frame bounds errors state the total frame count and that indices
+  are zero-based.
+- Fixed ``ClusterVector`` move operations to transfer storage instead of
+  copying every cluster.
+- Validate that ``ClusterVector`` masks are one-dimensional, C-contiguous
+  Boolean arrays.
+- Preserve signed ``ClusterVector`` frame numbers when filtering or reducing
+  cluster dimensions.
+- Fixed broken reading of old (pre reordering) Moench03
+- Supports reading all timing modes supported in slsDetectorPackage (auto, trigger, gating, burst_trigger, trigger_gating)
+
+## 2026.7.2
+
+
+### New Features:
+
+- Added a new Minuit2-based fitting framework for ``Gaussian``, ``RisingScurve``, ``FallingScurve``, ``Pol1`` and ``Pol2`` models.
+- setter and getter for nSigma for ClusterFinder ``aare.ClusterFinder().nSigma = 2``, ``aare.ClusterFinderMT().set_nSigma(2)`` 
+- mask opeartor for ClusterVector ``masked_clustervector = aare.ClusterVector()(mask)``
+- passing pre computed eta values to ``aare.Interpolator.interpolate`` alongside clusters
+- Added ``PixelHistogram`` and ``PedestalTrackingPixelHistogram`` 
+- ``aare.transfrom.Matterhorn10Transform`` handles counter artefact in chip. Mind that enabling only one counter or three counters or enabling the wromg two counters e.g. 0,1 will still lead to erreneous data. 
+- ``aare.transfrom.Matterhorn10Transform`` reshapes data such that first dimension is number of counters
+- Added support for len() for files. Returns the number of frames
+- Added support for direct subtraction of Pedestal from numpy array
+- Added support to read files with disabled udp ports 
+
+### Bugfixes:
+
+- Fixed ``split_task(first, last, n_threads)`` so task ranges now correctly respect the ``first`` offset. Previously, non-zero starting indices could generate incorrect subranges.
+- Fixed overflow issue causing failed allocations for NDArrays abouve ~2GB
+- Fixed libfmt failures due to consteval when building with C++20
+
+
+
+## 2026.3.17
+
+### New Features:
+
+- Decoding transceiver data from Matterhorn10 ``transformed_data = aare.transform.Matterhorn10Transform(num_counters=2, dynamic_range=16)(data)``
+- Expanding 24 to 32 bit data ``aare._aare.expand24to32bit(data, offset=4)``
+- Decoding digital data from Mythen 302 ``transformed_data = aare.transform.Mythen302Transform(offset=4)(data)``
+- added ``aare.Interpolator.transform_eta_values``. Function transforms $`\eta`$-values to uniform spatial coordinates. Should only be used for easier debugging. 
+- New ``to_string``, ``string_to`` 
+- Added exptime and period members to RawMasterFile including decoding
+- Removed redundant ``arr.value(ix,iy...)`` on NDArray use ``arr(ix,iy...)``
+- Removed Print/Print_some/Print_all form NDArray (operator ``<<`` still works)
+- Added const* version of .data()
+- reading multiple ROI's supported for aare. 
+    - Use ``aare.RawFile.read_roi(roi_index=0)`` to read a specific ROI for the current frame
+    - Use ``aare.RawFile.read_rois()`` to read multiple ROIs for the current frame
+    - Use ``aare.RawFile.read_n_with_roi(num_frames = 2, roi_index = 0)`` to read multiple frames for a specific ROI. 
+    - Note ``read_frame`` and ``read_n`` is not supported for multiple ROI's. 
+- Building conda/pypi pkgs for python 3.14. Removing 3.11 builds.
+
+### Bugfixes: 
+
+ - multi threaded cluster finder doesnt drop frames if queues are full 
+ - Round before casting in the cluster finder to avoid biasing clusters by truncating
+
+
+### 2025.11.21
+
+### New Features: 
+
+- Added SPDX-License-Identifier: MPL-2.0 to source files
+- Calculate Eta3 supports all cluster types 
+- interpolation class supports using cross eta3x3 and eta3x3 on full cluster as well as eta2x2 on full cluster
+- interpolation class has option to calculate the rosenblatt transform 
+- reduction operations to reduce Clusters of general size to 2x2 or 3x3 clusters 
+- `max_sum_2x2` including index of subcluster with highest energy is now available from Python API 
+- interpolation supports bilinear interpolation of eta values for more fine grained transformed uniform coordinates
+- Interpolation is documented 
+
+- Added tell to ClusterFile. Returns position in bytes for debugging
+
+### Resolved Features: 
+
+- calculate_eta coincides with theoretical definition
+
+### Bugfixes: 
+
+- eta calculation assumes correct photon center 
+- eta transformation to uniform coordinates starts at 0
+- Bug in interpolation 
+- File supports reading new master json file format (multiple ROI's not supported yet)
+
+
+### API Changes: 
+
+- ClusterFinder for 2x2 Cluster disabled 
+- eta stores corner as enum class cTopLeft, cTopRight, BottomLeft, cBottomRight indicating 2x2 subcluster with largest energy relative to cluster center 
+- max_sum_2x2 returns corner as index 
 
 ### 2025.8.22
 
@@ -40,6 +249,27 @@ Bugfixes:
 
 - Fixed crash when opening raw files with large number of data files
 
+## Download, Documentation & Support 
+
+### Download
+
+The Source Code: 
+https://github.com/slsdetectorgroup/aare
+
+
+### Documentation 
+
+
+Documentation including installation details: 
+https://github.com/slsdetectorgroup/aare 
+
+
+### Support
+
+
+erik.frojdh@psi.ch \
+alice.mazzoleni@psi.ch \
+dhanya.thattil@psi.ch
 
 
 

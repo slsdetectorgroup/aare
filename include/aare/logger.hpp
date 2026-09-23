@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: MPL-2.0
 #pragma once
 /*Utility to log to console*/
 
@@ -66,7 +67,7 @@ class Logger {
 
   public:
     Logger() = default;
-    explicit Logger(TLogLevel level) : m_level(level){};
+    explicit Logger(TLogLevel level) : m_level(level) {};
     ~Logger() {
         // output in the destructor to allow for << syntax
         os << RESET << '\n';
@@ -105,8 +106,8 @@ class Logger {
     }
 
     std::ostringstream &Get() {
-        os << Color(m_level) << "- " << Timestamp() << " " << ToString(m_level)
-           << ": ";
+        os << Color(m_level) << "- " << Timestamp() << " "
+           << Logger::ToString(m_level) << ": ";
         return os;
     }
 

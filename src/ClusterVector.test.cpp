@@ -1,5 +1,10 @@
+// SPDX-License-Identifier: MPL-2.0
 #include "aare/ClusterVector.hpp"
+#include "aare/GainMap.hpp"
+#include "aare/NDArray.hpp"
+#include <algorithm>
 #include <cstdint>
+#include <utility>
 
 #include <catch2/catch_all.hpp>
 #include <catch2/catch_test_macros.hpp>
@@ -8,7 +13,6 @@
 using aare::Cluster;
 using aare::ClusterVector;
 using C1 = Cluster<int32_t, 2, 2>;
-
 
 TEST_CASE("A newly created ClusterVector is empty") {
     ClusterVector<C1> cv(4);
@@ -19,6 +23,81 @@ TEST_CASE("After pushing back one element the ClusterVector is not empty") {
     ClusterVector<C1> cv(4);
     cv.push_back(C1{1, 2, {3, 4}});
     REQUIRE(!cv.empty());
+}
+
+TEST_CASE("Filtering a ClusterVector selects the masked elements") {
+    ClusterVector<C1> source(8, 123);
+    source.push_back(C1{1, 2, {3, 4, 5, 6}});
+    source.push_back(C1{7, 8, {9, 10, 11, 12}});
+    source.push_back(C1{13, 14, {15, 16, 17, 18}});
+    source.push_back(C1{19, 20, {21, 22, 23, 24}});
+
+    SECTION("Some elements are selected") {
+        std::array<bool, 4> mask{true, false, false, true};
+
+        auto filtered = source(aare::NDView<bool, 1>{mask.data(), {4}});
+
+        CHECK(filtered.size() == 2);
+        CHECK(filtered.frame_number() == 123);
+        CHECK(filtered[0].x == 1);
+        CHECK(filtered[1].x == 19);
+    }
+
+    SECTION("No elements are selected") {
+        std::array<bool, 4> mask{false, false, false, false};
+
+        auto filtered = source(aare::NDView<bool, 1>{mask.data(), {4}});
+
+        CHECK(filtered.empty());
+        CHECK(filtered.frame_number() == 123);
+    }
+
+    SECTION("An empty vector accepts a default empty mask") {
+        ClusterVector<C1> empty_source(0, -123);
+
+        auto filtered = empty_source(aare::NDView<bool, 1>{});
+
+        CHECK(filtered.empty());
+        CHECK(filtered.frame_number() == -123);
+    }
+}
+
+TEST_CASE("Move constructing a ClusterVector transfers its storage") {
+    ClusterVector<C1> source(4, 123);
+    source.push_back(C1{1, 2, {3, 4, 5, 6}});
+    source.push_back(C1{7, 8, {9, 10, 11, 12}});
+
+    const auto *source_data = source.data();
+    const auto source_capacity = source.capacity();
+
+    ClusterVector<C1> destination(std::move(source));
+
+    CHECK(destination.data() == source_data);
+    CHECK(destination.capacity() == source_capacity);
+    CHECK(destination.size() == 2);
+    CHECK(destination.frame_number() == 123);
+    CHECK(destination[0].x == 1);
+    CHECK(destination[1].x == 7);
+}
+
+TEST_CASE("Move assigning a ClusterVector transfers its storage") {
+    ClusterVector<C1> source(4, 123);
+    source.push_back(C1{1, 2, {3, 4, 5, 6}});
+    source.push_back(C1{7, 8, {9, 10, 11, 12}});
+
+    const auto *source_data = source.data();
+    const auto source_capacity = source.capacity();
+
+    ClusterVector<C1> destination(2, 456);
+    destination.push_back(C1{13, 14, {15, 16, 17, 18}});
+    destination = std::move(source);
+
+    CHECK(destination.data() == source_data);
+    CHECK(destination.capacity() == source_capacity);
+    CHECK(destination.size() == 2);
+    CHECK(destination.frame_number() == 123);
+    CHECK(destination[0].x == 1);
+    CHECK(destination[1].x == 7);
 }
 
 TEST_CASE("item_size return the size of the cluster stored") {
@@ -173,7 +252,8 @@ TEST_CASE("Push back more than initial capacity") {
     REQUIRE(initial_data != cv.data());
 }
 
-TEST_CASE("Concatenate two cluster vectors where the first has enough capacity") {
+TEST_CASE(
+    "Concatenate two cluster vectors where the first has enough capacity") {
     ClusterVector<Cluster<int32_t, 2, 2>> cv1(12);
     Cluster<int32_t, 2, 2> c1 = {1, 2, {3, 4, 5, 6}};
     cv1.push_back(c1);
@@ -231,6 +311,28 @@ TEST_CASE("Concatenate two cluster vectors where we need to allocate") {
     REQUIRE(ptr[3].y == 17);
 }
 
+TEST_CASE("Reducing a ClusterVector preserves its frame number") {
+    SECTION("Reduce to 2x2") {
+        ClusterVector<Cluster<int32_t, 3, 3>> source(1, -135);
+        source.push_back(Cluster<int32_t, 3, 3>{});
+
+        auto reduced = aare::reduce_to_2x2(source);
+
+        CHECK(reduced.size() == source.size());
+        CHECK(reduced.frame_number() == source.frame_number());
+    }
+
+    SECTION("Reduce to 3x3") {
+        ClusterVector<Cluster<int32_t, 5, 5>> source(1, -246);
+        source.push_back(Cluster<int32_t, 5, 5>{});
+
+        auto reduced = aare::reduce_to_3x3(source);
+
+        CHECK(reduced.size() == source.size());
+        CHECK(reduced.frame_number() == source.frame_number());
+    }
+}
+
 struct ClusterTestData {
     uint8_t ClusterSizeX;
     uint8_t ClusterSizeY;
@@ -274,4 +376,74 @@ TEST_CASE("Gain Map Calculation Index Map") {
 
     CHECK(index_map_x == clustertestdata.index_map_x);
     CHECK(index_map_y == clustertestdata.index_map_y);
+}
+
+namespace {
+
+template <uint8_t ClusterSizeX, uint8_t ClusterSizeY>
+void check_gain_map_cluster_bounds() {
+    using ClusterType = Cluster<double, ClusterSizeX, ClusterSizeY>;
+
+    constexpr ssize_t rows = 16;
+    constexpr ssize_t cols = 16;
+    constexpr uint16_t left = ClusterSizeX / 2;
+    constexpr uint16_t right = ClusterSizeX - left - 1;
+    constexpr uint16_t top = ClusterSizeY / 2;
+    constexpr uint16_t bottom = ClusterSizeY - top - 1;
+
+    aare::NDArray<double, 2> gain_map({rows, cols}, 2.0);
+    aare::InvertedGainMap inverted_gain_map(gain_map);
+    ClusterVector<ClusterType> clusters(6);
+
+    const auto add_cluster = [&clusters](uint16_t x, uint16_t y) {
+        ClusterType cluster{};
+        cluster.x = x;
+        cluster.y = y;
+        cluster.data.fill(2.0);
+        clusters.push_back(cluster);
+    };
+
+    add_cluster(left, top);
+    add_cluster(cols - right - 1, rows - bottom - 1);
+    add_cluster(left - 1, top);
+    add_cluster(left, top - 1);
+    add_cluster(cols - right, top);
+    add_cluster(left, rows - bottom);
+
+    inverted_gain_map.apply_gain_map(clusters);
+
+    for (size_t i = 0; i < 2; ++i) {
+        CHECK(std::all_of(clusters[i].data.begin(), clusters[i].data.end(),
+                          [](double value) { return value == 1.0; }));
+    }
+    for (size_t i = 2; i < clusters.size(); ++i) {
+        CHECK(std::all_of(clusters[i].data.begin(), clusters[i].data.end(),
+                          [](double value) { return value == 0.0; }));
+    }
+
+    aare::NDArray<double, 2> small_gain_map(
+        {ClusterSizeY - 1, ClusterSizeX - 1}, 2.0);
+    aare::InvertedGainMap small_inverted_gain_map(small_gain_map);
+    ClusterVector<ClusterType> oversized_cluster(1);
+    ClusterType cluster{};
+    cluster.x = left;
+    cluster.y = top;
+    cluster.data.fill(2.0);
+    oversized_cluster.push_back(cluster);
+
+    small_inverted_gain_map.apply_gain_map(oversized_cluster);
+
+    CHECK(std::all_of(oversized_cluster[0].data.begin(),
+                      oversized_cluster[0].data.end(),
+                      [](double value) { return value == 0.0; }));
+}
+
+} // namespace
+
+TEST_CASE("Gain map bounds cover the full cluster footprint", "[GainMap]") {
+    SECTION("3x3") { check_gain_map_cluster_bounds<3, 3>(); }
+    SECTION("5x5") { check_gain_map_cluster_bounds<5, 5>(); }
+    SECTION("7x7") { check_gain_map_cluster_bounds<7, 7>(); }
+    SECTION("9x9") { check_gain_map_cluster_bounds<9, 9>(); }
+    SECTION("5x7") { check_gain_map_cluster_bounds<5, 7>(); }
 }

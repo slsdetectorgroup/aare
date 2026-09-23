@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: MPL-2.0
 #pragma once
 #include "aare/Dtype.hpp"
 #include "aare/Frame.hpp"
@@ -33,15 +34,16 @@ struct FileConfig {
     DetectorType detector_type{DetectorType::Unknown};
     int max_frames_per_file{};
     size_t total_frames{};
-    std::string to_string() const {
-        return "{ dtype: " + dtype.to_string() +
-               ", rows: " + std::to_string(rows) +
-               ", cols: " + std::to_string(cols) +
-               ", geometry: " + geometry.to_string() +
-               ", detector_type: " + ToString(detector_type) +
-               ", max_frames_per_file: " + std::to_string(max_frames_per_file) +
-               ", total_frames: " + std::to_string(total_frames) + " }";
-    }
+    // std::string to_string() const {
+    //     return "{ dtype: " + dtype.to_string() +
+    //            ", rows: " + std::to_string(rows) +
+    //            ", cols: " + std::to_string(cols) +
+    //            ", geometry: " + geometry.to_string() +
+    //            ", detector_type: " + ToString(detector_type) +
+    //            ", max_frames_per_file: " +
+    //            std::to_string(max_frames_per_file) +
+    //            ", total_frames: " + std::to_string(total_frames) + " }";
+    // }
 };
 
 /**
@@ -143,10 +145,15 @@ class FileInterface {
      */
     virtual size_t bitdepth() const = 0;
 
-    virtual DetectorType detector_type() const = 0;
+    /**
+     * @brief get the data type of the pixels
+     * @return pixel data type
+     */
+    virtual Dtype dtype() const {
+        return Dtype::from_bitdepth(static_cast<uint8_t>(bitdepth()));
+    }
 
-    // function to query the data type of the file
-    /*virtual DataType dtype = 0; */
+    virtual DetectorType detector_type() const = 0;
 
     virtual ~FileInterface() = default;
 

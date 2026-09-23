@@ -1,3 +1,4 @@
+# SPDX-License-Identifier: MPL-2.0
 from . import _aare
 
 class ScanParameters(_aare.ScanParameters):

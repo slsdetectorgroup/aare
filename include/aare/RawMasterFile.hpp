@@ -1,6 +1,9 @@
+// SPDX-License-Identifier: MPL-2.0
 #pragma once
-#include "aare/defs.hpp"
+#include "aare/DetectorGeometry.hpp"
+#include "aare/ROI.hpp"
 #include <algorithm>
+#include <chrono>
 #include <filesystem>
 #include <fmt/format.h>
 #include <fstream>
@@ -42,14 +45,16 @@ class RawFileNameComponents {
 
 class ScanParameters {
     bool m_enabled = false;
-    std::string m_dac;
+    DACIndex m_dac{};
     int m_start = 0;
     int m_stop = 0;
     int m_step = 0;
-    // TODO! add settleTime, requires string to time conversion
+    int64_t m_settleTime = 0; // [ns]
 
   public:
     ScanParameters(const std::string &par);
+    ScanParameters(const bool enabled, const DACIndex dac, const int start,
+                   const int stop, const int step, const int64_t settleTime);
     ScanParameters() = default;
     ScanParameters(const ScanParameters &) = default;
     ScanParameters &operator=(const ScanParameters &) = default;
@@ -57,8 +62,9 @@ class ScanParameters {
     int start() const;
     int stop() const;
     int step() const;
-    const std::string &dac() const;
+    DACIndex dac() const;
     bool enabled() const;
+    int64_t settleTime() const;
     void increment_stop();
 };
 
@@ -80,7 +86,11 @@ class RawMasterFile {
     size_t m_bitdepth{};
     uint8_t m_quad = 0;
 
-    xy m_geometry{};
+    std::optional<std::chrono::nanoseconds> m_exptime;
+    std::chrono::nanoseconds m_period{0};
+
+    /// @brief modules in x and y direction
+    xy m_detector_layout{};
     xy m_udp_interfaces_per_module{1, 1};
 
     size_t m_max_frames_per_file{};
@@ -89,9 +99,9 @@ class RawMasterFile {
     size_t m_frame_padding{};
 
     // TODO! should these be bool?
-    uint8_t m_analog_flag{};
-    uint8_t m_digital_flag{};
-    uint8_t m_transceiver_flag{};
+    bool m_analog_flag{};
+    bool m_digital_flag{};
+    bool m_transceiver_flag{};
 
     ScanParameters m_scan_parameters;
 
@@ -99,11 +109,29 @@ class RawMasterFile {
     std::optional<size_t> m_digital_samples;
     std::optional<size_t> m_transceiver_samples;
     std::optional<size_t> m_number_of_rows;
+    std::optional<uint8_t> m_counter_mask;
 
-    std::optional<ROI> m_roi;
+    /// @brief index of disabled UDP ports - index relative to UDP_port_types
+    std::vector<size_t> m_disabled_udp_ports{};
+
+    /// @brief udp port types
+    std::optional<std::vector<UDPPortPosition>> m_udp_port_types{};
+
+    /// @brief ROIs defined in master file or derived from disabled UDP ports
+    std::vector<ROI> m_rois;
+
+    /// @brief Detector geometry - geometry for each module
+    DetectorGeometry m_geometry{};
+
+    /// @brief ROI geometries
+    std::vector<ROIGeometry> m_ROI_geometries;
 
   public:
     RawMasterFile(const std::filesystem::path &fpath);
+    RawMasterFile(std::istream &is, const std::string &fname); // for testing
+
+    /// @brief Get the filename including path of the master file.
+    std::filesystem::path master_fname() const { return m_fnc.master_fname(); }
 
     std::filesystem::path data_fname(size_t mod_id, size_t file_id) const;
 
@@ -121,22 +149,49 @@ class RawMasterFile {
     const FrameDiscardPolicy &frame_discard_policy() const;
 
     size_t total_frames_expected() const;
-    xy geometry() const;
+    xy detector_layout() const;
     size_t n_modules() const;
     uint8_t quad() const;
+
+    const DetectorGeometry &geometry() const;
+
+    const std::vector<ROIGeometry> &roi_geometries() const;
+
+    ReadoutMode get_reading_mode() const;
 
     std::optional<size_t> analog_samples() const;
     std::optional<size_t> digital_samples() const;
     std::optional<size_t> transceiver_samples() const;
     std::optional<size_t> number_of_rows() const;
+    std::optional<uint8_t> counter_mask() const;
 
-    std::optional<ROI> roi() const;
+    /// @brief Get the types of UDP ports
+    /// @return Optional vector of UDP port types as strings (only present for
+    /// masterfile version >= 8.1)
+    std::optional<std::vector<UDPPortPosition>> udp_port_types() const;
+
+    /// @brief Get the indices of disabled UDP ports
+    /// @return vector of indices of disabled UDP ports (empty if none are
+    /// disabled)
+    std::vector<size_t> disabled_udp_ports() const;
+
+    std::vector<ROI> rois() const;
+
+    /// @brief get roi for the case of a single ROI
+    /// @return ROI object (complete ROI if no roi present in master file)
+    ROI roi() const;
 
     ScanParameters scan_parameters() const;
 
+    std::optional<std::chrono::nanoseconds> exptime() const {
+        return m_exptime;
+    }
+    std::chrono::nanoseconds period() const { return m_period; }
+
   private:
-    void parse_json(const std::filesystem::path &fpath);
-    void parse_raw(const std::filesystem::path &fpath);
+    void parse_json(std::istream &is);
+    void parse_raw(std::istream &is);
+    void update_rois_from_disabled_udp_ports();
     void retrieve_geometry();
 };
 

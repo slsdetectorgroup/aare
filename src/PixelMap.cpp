@@ -1,4 +1,6 @@
+// SPDX-License-Identifier: MPL-2.0
 #include "aare/PixelMap.hpp"
+#include "aare/defs.hpp"
 
 #include <array>
 
@@ -30,17 +32,46 @@ NDArray<ssize_t, 2> GenerateMoench03PixelMap() {
     return order_map;
 }
 
+NDArray<ssize_t, 2> GenerateMoench04AnalogPixelMap() {
+    std::array<int, 32> const adc_nr = Moench04::adcNumbers;
+    int const nadc = adc_nr.size();
+    NDArray<ssize_t, 2> order_map({Moench04::nRows, Moench04::nCols});
+
+    int pixel = 0;
+    for (size_t i = 0; i != Moench04::nPixelsPerSuperColumn; ++i) {
+        for (size_t i_adc = 0; i_adc != nadc; ++i_adc) {
+            int const col =
+                (adc_nr[i_adc] % 16) * 25 + (i % Moench04::superColumnWidth);
+            int row = 0;
+            if (i_adc < 16)
+                row = 199 - (i / Moench04::superColumnWidth);
+            else
+                row = 200 + (i / Moench04::superColumnWidth);
+
+            order_map(row, col) = pixel;
+            pixel++;
+        }
+    }
+    return order_map;
+}
+
 NDArray<ssize_t, 2> GenerateMoench05PixelMap() {
-    std::array<int, 3> adc_numbers = {5, 9, 1};
-    NDArray<ssize_t, 2> order_map({160, 150});
+    constexpr size_t num_adcs = 3; // num adcs with relevant data
+    constexpr std::array<int, num_adcs> adc_numbers = Moench05::adcNumbers;
+    NDArray<ssize_t, 2> order_map({Moench05::nRows, Moench05::nCols});
+    constexpr size_t n_cols = Moench05::nCols / adc_numbers.size();
     int n_pixel = 0;
-    for (int row = 0; row < 160; row++) {
-        for (int i_col = 0; i_col < 50; i_col++) {
-            n_pixel = row * 50 + i_col;
-            for (int i_sc = 0; i_sc < 3; i_sc++) {
-                int col = 50 * i_sc + i_col;
+
+    constexpr size_t num_adcs_enabled =
+        12; // number of adcs enabled -> for 10g adcs are enabled in blocks of 4
+
+    for (size_t row = 0; row < Moench05::nRows; row++) {
+        for (size_t i_col = 0; i_col < n_cols; i_col++) {
+            n_pixel = row * n_cols + i_col;
+            for (size_t i_sc = 0; i_sc < num_adcs; i_sc++) {
+                size_t col = n_cols * i_sc + i_col;
                 int adc_nr = adc_numbers[i_sc];
-                int i_analog = n_pixel * 12 + adc_nr;
+                int i_analog = n_pixel * num_adcs_enabled + adc_nr;
 
                 // analog_frame[row * 150 + col] = analog_data[i_analog] &
                 // 0x3FFF;
@@ -103,16 +134,18 @@ NDArray<ssize_t, 2> GenerateEigerFlipRowsPixelMap() {
     return order_map;
 }
 
+// transceiver pixel map for Matterhorn02
 NDArray<ssize_t, 2> GenerateMH02SingleCounterPixelMap() {
-    // This is the pixel map for a single counter Matterhorn02, i.e. 48x48 pixels.
-    // Data is read from two transceivers in blocks of 4 pixels.
-    NDArray<ssize_t, 2> order_map({48, 48});
+    // This is the pixel map for a single counter Matterhorn02, i.e. 48x48
+    // pixels. Data is read from two transceivers in blocks of 4 pixels.
+    NDArray<ssize_t, 2> order_map({Matterhorn02::nRows, Matterhorn02::nCols});
     size_t offset = 0;
     size_t nSamples = 4;
-    for (int row = 0; row < 48; row++) {
-        for (int col = 0; col < 24; col++) {
-            for (int iTrans = 0; iTrans < 2; iTrans++) {
-                order_map(row, iTrans * 24 + col) = offset + nSamples * iTrans;
+    for (size_t row = 0; row < Matterhorn02::nRows; row++) {
+        for (size_t col = 0; col < Matterhorn02::nHalfCols; col++) {
+            for (size_t iTrans = 0; iTrans < 2; iTrans++) {
+                order_map(row, iTrans * Matterhorn02::nHalfCols + col) =
+                    offset + nSamples * iTrans;
             }
             offset += 1;
             if ((col + 1) % nSamples == 0) {
@@ -125,17 +158,80 @@ NDArray<ssize_t, 2> GenerateMH02SingleCounterPixelMap() {
 
 NDArray<ssize_t, 3> GenerateMH02FourCounterPixelMap() {
     auto single_counter_map = GenerateMH02SingleCounterPixelMap();
-    NDArray<ssize_t, 3> order_map({4, 48, 48});
-    for (int counter = 0; counter < 4; counter++) {
-        for (int row = 0; row < 48; row++) {
-            for (int col = 0; col < 48; col++) {
+    NDArray<ssize_t, 3> order_map(
+        {4, Matterhorn02::nRows, Matterhorn02::nCols});
+    for (size_t counter = 0; counter < 4; counter++) {
+        for (size_t row = 0; row < Matterhorn02::nRows; row++) {
+            for (size_t col = 0; col < Matterhorn02::nCols; col++) {
                 order_map(counter, row, col) =
                     single_counter_map(row, col) +
-                    counter * 48 * 48;
+                    counter * Matterhorn02::nRows * Matterhorn02::nCols;
             }
         }
     }
     return order_map;
+}
+
+NDArray<ssize_t, 2> GenerateMatterhorn10PixelMap(const size_t dynamic_range,
+                                                 const size_t n_counters) {
+
+    // Matterhorn10 uses transceiver samples (each transceiver sample has 1-4
+    // channels storing 8 bytes each)
+    constexpr size_t n_cols = Matterhorn10::nCols;
+    constexpr size_t n_rows = Matterhorn10::nRows;
+    NDArray<ssize_t, 2> pixel_map(
+        {static_cast<ssize_t>(n_rows * n_counters), n_cols});
+
+    size_t num_consecutive_pixels{};
+    switch (dynamic_range) {
+    case 16:
+        num_consecutive_pixels = 4;
+        break;
+    case 8:
+        num_consecutive_pixels = 8;
+        break;
+    case 4:
+        num_consecutive_pixels = 16;
+        break;
+    default:
+        throw std::runtime_error("Unsupported dynamic range for Matterhorn02");
+    }
+
+    constexpr size_t packet_size = 64; // bits
+
+    constexpr size_t num_64_bit_packages = 4; // n_cols/64
+
+    constexpr size_t half_rows = n_rows / 2; // 128
+
+    const size_t num_consecutive_pixels_in_package =
+        packet_size / num_consecutive_pixels;
+
+    for (size_t row = 0; row < n_rows; ++row) {
+        for (size_t counter = 0; counter < n_counters; ++counter) {
+            size_t col = 0;
+            size_t actual_counter =
+                row < half_rows ? counter : (n_counters - counter - 1);
+            for (size_t package = 0; package < num_64_bit_packages; ++package) {
+                for (size_t consecutive_pixel_group = 0;
+                     consecutive_pixel_group <
+                     num_consecutive_pixels_in_package;
+                     ++consecutive_pixel_group) {
+                    for (size_t pixel = 0; pixel < num_consecutive_pixels;
+                         ++pixel) {
+                        pixel_map(row + counter * n_rows, col) =
+                            package * num_consecutive_pixels +
+                            consecutive_pixel_group * num_64_bit_packages *
+                                num_consecutive_pixels +
+                            pixel + row * n_cols * n_counters +
+                            n_cols * actual_counter;
+                        ++col;
+                    }
+                }
+            }
+        }
+    }
+
+    return pixel_map;
 }
 
 } // namespace aare

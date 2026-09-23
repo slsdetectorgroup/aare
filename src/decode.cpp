@@ -1,6 +1,41 @@
+// SPDX-License-Identifier: MPL-2.0
 #include "aare/decode.hpp"
 #include <cmath>
+#include <fmt/format.h>
 namespace aare {
+
+uint16_t adc_sar_05_06_07_08decode64to16(uint64_t input) {
+
+    // we want bits 29,17,28,18,31,21,27,20,24,23,25,22 and then pad to 16
+    uint16_t output = 0;
+    output |= ((input >> 22) & 1) << 11;
+    output |= ((input >> 25) & 1) << 10;
+    output |= ((input >> 23) & 1) << 9;
+    output |= ((input >> 24) & 1) << 8;
+    output |= ((input >> 20) & 1) << 7;
+    output |= ((input >> 27) & 1) << 6;
+    output |= ((input >> 21) & 1) << 5;
+    output |= ((input >> 31) & 1) << 4;
+    output |= ((input >> 18) & 1) << 3;
+    output |= ((input >> 28) & 1) << 2;
+    output |= ((input >> 17) & 1) << 1;
+    output |= ((input >> 29) & 1) << 0;
+    return output;
+}
+
+void adc_sar_05_06_07_08decode64to16(NDView<uint64_t, 2> input,
+                                     NDView<uint16_t, 2> output) {
+    if (input.shape() != output.shape()) {
+        throw std::invalid_argument(LOCATION +
+                                    " input and output shapes must match");
+    }
+
+    for (ssize_t i = 0; i < input.shape(0); i++) {
+        for (ssize_t j = 0; j < input.shape(1); j++) {
+            output(i, j) = adc_sar_05_06_07_08decode64to16(input(i, j));
+        }
+    }
+}
 
 uint16_t adc_sar_05_decode64to16(uint64_t input) {
 
@@ -101,6 +136,70 @@ void apply_custom_weights(NDView<uint16_t, 1> input, NDView<double, 1> output,
             result += ((input(i) >> bit_index) & 1) * weights_powers[bit_index];
         }
         output(i) = result;
+    }
+}
+
+uint32_t mask32to24bits(uint32_t input, BitOffset offset) {
+    constexpr uint32_t mask24bits{0xFFFFFF};
+    return (input >> offset.value()) & mask24bits;
+}
+
+void expand4to8bit(NDView<const uint8_t, 1> input, NDView<uint8_t, 1> output) {
+
+    if (2 * input.size() != output.size())
+        throw std::runtime_error(
+            fmt::format("Mismatch between input and output size. Input "
+                        "size of {} requires an output of at least {} "
+                        "bytes. Called with input size: {} output size: {}",
+                        LOCATION, input.size(), 2 * input.size(), input.size(),
+                        output.size()));
+
+    // assumes little-endian
+    for (ssize_t i = 0; i < input.size(); ++i) {
+        uint8_t val = input(i);
+        output[2 * i] = (val & 0x0F);
+        output[2 * i + 1] = (val & 0xF0) >> 4;
+    }
+}
+
+void expand24to32bit(NDView<const uint8_t, 1> input, NDView<uint32_t, 1> output,
+                     BitOffset bit_offset) {
+
+    ssize_t bytes_per_channel = 3; // 24bit
+    ssize_t min_input_size = output.size() * bytes_per_channel;
+
+    // if we have an offset we need one more byte in the input data
+    if (bit_offset.value())
+        min_input_size += 1;
+
+    if (input.size() < min_input_size)
+        throw std::runtime_error(fmt::format(
+            "{} Mismatch between input and output size. Output "
+            "size of {} with bit offset {} requires an input of at least {} "
+            "bytes. Called with input size: {} output size: {}",
+            LOCATION, output.size(), bit_offset.value(), min_input_size,
+            input.size(), output.size()));
+
+    auto *in = input.data();
+
+    if (bit_offset.value()) {
+        // If there is a bit_offset we copy 4 bytes and then
+        // mask out the correct ones.
+        for (auto &v : output) {
+            uint32_t val{};
+            std::memcpy(&val, in, sizeof(val));
+            v = mask32to24bits(val, bit_offset);
+            in += bytes_per_channel;
+        }
+    } else {
+        // If there is no offset we can directly copy the bits
+        // without masking
+        for (auto &v : output) {
+            uint32_t val{};
+            std::memcpy(&val, in, 3);
+            v = val;
+            in += bytes_per_channel;
+        }
     }
 }
 

@@ -1,10 +1,12 @@
+// SPDX-License-Identifier: MPL-2.0
 #include "aare/CtbRawFile.hpp"
 
 #include <fmt/format.h>
 namespace aare {
 
 CtbRawFile::CtbRawFile(const std::filesystem::path &fname) : m_master(fname) {
-    if (m_master.detector_type() != DetectorType::ChipTestBoard) {
+    if ((m_master.detector_type() != DetectorType::ChipTestBoard) &&
+        (m_master.detector_type() != DetectorType::Xilinx_ChipTestBoard)) {
         throw std::runtime_error(LOCATION + "Not a Ctb file");
     }
 
@@ -12,6 +14,9 @@ CtbRawFile::CtbRawFile(const std::filesystem::path &fname) : m_master(fname) {
 
     // open the first subfile
     m_file.open(m_master.data_fname(0, 0), std::ios::binary);
+    if (!m_file)
+        throw std::runtime_error(
+            LOCATION + "Could not open: " + m_master.data_fname(0, 0).string());
 }
 
 void CtbRawFile::read_into(std::byte *image_buf, DetectorHeader *header) {
@@ -19,9 +24,9 @@ void CtbRawFile::read_into(std::byte *image_buf, DetectorHeader *header) {
         throw std::runtime_error(LOCATION + " End of file reached");
     }
 
-    if (m_current_frame != 0 &&
-        m_current_frame % m_master.max_frames_per_file() == 0) {
-        open_data_file(m_current_subfile + 1);
+    const auto index = sub_file_index(m_current_frame);
+    if (index != m_current_subfile) {
+        open_data_file(index);
     }
 
     if (header) {
@@ -29,7 +34,6 @@ void CtbRawFile::read_into(std::byte *image_buf, DetectorHeader *header) {
     } else {
         m_file.seekg(sizeof(DetectorHeader), std::ios::cur);
     }
-
     m_file.read(reinterpret_cast<char *>(image_buf),
                 m_master.image_size_in_bytes());
     m_current_frame++;
@@ -53,14 +57,14 @@ size_t CtbRawFile::image_size_in_bytes() const {
 
 size_t CtbRawFile::frames_in_file() const { return m_master.frames_in_file(); }
 
+size_t CtbRawFile::total_frames() const { return m_master.frames_in_file(); }
+
 RawMasterFile CtbRawFile::master() const { return m_master; }
 
 void CtbRawFile::find_subfiles() {
     // we can semi safely assume that there is only one module for CTB
     while (std::filesystem::exists(m_master.data_fname(0, m_num_subfiles)))
         m_num_subfiles++;
-
-    fmt::print("Found {} subfiles\n", m_num_subfiles);
 }
 
 void CtbRawFile::open_data_file(size_t subfile_index) {

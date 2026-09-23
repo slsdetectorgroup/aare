@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: MPL-2.0
 #include "aare/NumpyHelpers.hpp" //Is this really a public header?
 #include <catch2/catch_test_macros.hpp>
 
@@ -33,6 +34,9 @@ TEST_CASE("trim whitespace") {
 }
 
 TEST_CASE("parse data type descriptions") {
+    REQUIRE(parse_descr("|i1") == aare::Dtype::INT8);
+    REQUIRE(parse_descr("|u1") == aare::Dtype::UINT8);
+
     REQUIRE(parse_descr("<i1") == aare::Dtype::INT8);
     REQUIRE(parse_descr("<i2") == aare::Dtype::INT16);
     REQUIRE(parse_descr("<i4") == aare::Dtype::INT32);

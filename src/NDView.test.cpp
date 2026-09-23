@@ -1,12 +1,37 @@
+// SPDX-License-Identifier: MPL-2.0
 #include "aare/NDView.hpp"
 #include <catch2/catch_test_macros.hpp>
 
+#include <cstddef>
 #include <iostream>
 #include <numeric>
+#include <type_traits>
 #include <vector>
 
 using aare::NDView;
+using aare::num_elements;
 using aare::Shape;
+
+static_assert(std::is_convertible_v<NDView<int, 2>, NDView<const int, 2>>);
+static_assert(!std::is_convertible_v<NDView<const int, 2>, NDView<int, 2>>);
+
+TEST_CASE("Calculate size from a shape") {
+    Shape<3> shape{2, 3, 4};
+    REQUIRE(num_elements(shape) == 24);
+
+    Shape<2> shape2{5, 5};
+    REQUIRE(num_elements(shape2) == 25);
+
+    Shape<1> shape3{10};
+    REQUIRE(num_elements(shape3) == 10);
+
+    Shape<3> shape4{1000, 512, 1024};
+    REQUIRE(num_elements(shape4) == 524288000);
+
+    // 10GB which is more than INT_MAX bytes
+    Shape<3> shape5{10000, 1024, 1024};
+    REQUIRE(num_elements(shape5) == 10485760000);
+}
 
 TEST_CASE("Element reference 1D") {
     std::vector<int> vec;
@@ -21,7 +46,6 @@ TEST_CASE("Element reference 1D") {
     }
 }
 
-
 TEST_CASE("Assign elements through () and []") {
     std::vector<int> vec;
     for (int i = 0; i != 10; ++i) {
@@ -29,10 +53,9 @@ TEST_CASE("Assign elements through () and []") {
     }
     NDView<int, 1> data(vec.data(), Shape<1>{10});
     REQUIRE(vec.size() == static_cast<size_t>(data.size()));
-    
+
     data[3] = 187;
     data(4) = 512;
-
 
     REQUIRE(data(0) == 0);
     REQUIRE(data[0] == 0);
@@ -54,8 +77,6 @@ TEST_CASE("Assign elements through () and []") {
     REQUIRE(data[8] == 8);
     REQUIRE(data(9) == 9);
     REQUIRE(data[9] == 9);
-
-
 }
 
 TEST_CASE("Element reference 1D with a const NDView") {
@@ -71,6 +92,16 @@ TEST_CASE("Element reference 1D with a const NDView") {
     }
 }
 
+TEST_CASE("Convert a mutable NDView to a const NDView") {
+    std::vector<int> vec{1, 2, 3, 4};
+    NDView<int, 2> mutable_view(vec.data(), Shape<2>{2, 2});
+
+    NDView<const int, 2> const_view = mutable_view;
+
+    REQUIRE(const_view.data() == mutable_view.data());
+    REQUIRE(const_view.shape() == mutable_view.shape());
+    REQUIRE(const_view.strides() == mutable_view.strides());
+}
 
 TEST_CASE("Element reference 2D") {
     std::vector<int> vec(12);
@@ -188,8 +219,6 @@ TEST_CASE("iterators") {
     }
 }
 
-
-
 TEST_CASE("divide with another NDView") {
     std::vector<int> vec0{9, 12, 3};
     std::vector<int> vec1{3, 2, 1};
@@ -227,7 +256,7 @@ TEST_CASE("compare two views") {
     REQUIRE((view1 == view2));
 }
 
-TEST_CASE("Compare two views with different size"){
+TEST_CASE("Compare two views with different size") {
     std::vector<int> vec1(12);
     std::iota(vec1.begin(), vec1.end(), 0);
     NDView<int, 2> view1(vec1.data(), Shape<2>{3, 4});
@@ -239,7 +268,7 @@ TEST_CASE("Compare two views with different size"){
     REQUIRE_FALSE(view1 == view2);
 }
 
-TEST_CASE("Compare two views with same size but different shape"){
+TEST_CASE("Compare two views with same size but different shape") {
     std::vector<int> vec1(12);
     std::iota(vec1.begin(), vec1.end(), 0);
     NDView<int, 2> view1(vec1.data(), Shape<2>{3, 4});
@@ -258,4 +287,11 @@ TEST_CASE("Create a view over a vector") {
     REQUIRE(v.shape()[0] == 12);
     REQUIRE(v[0] == 0);
     REQUIRE(v[11] == 11);
+}
+
+TEST_CASE("NDView over byte") {
+    std::vector<std::byte> buf(5);
+    auto v = aare::make_view(buf);
+    REQUIRE(v.shape()[0] == 5);
+    REQUIRE(v[0] == std::byte{0});
 }

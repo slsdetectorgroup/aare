@@ -1,3 +1,4 @@
+# SPDX-License-Identifier: MPL-2.0
 from . import _aare
 import numpy as np
 from .ScanParameters import ScanParameters
@@ -42,7 +43,7 @@ class RawFile(_aare.RawFile):
         Returns:
             int: Number of frames in file.
         """
-        return super().frames_in_file
+        return self.total_frames
 
     def __enter__(self):
         return self

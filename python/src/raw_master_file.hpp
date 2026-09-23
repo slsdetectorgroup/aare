@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: MPL-2.0
 
 #include "aare/CtbRawFile.hpp"
 #include "aare/File.hpp"
@@ -7,7 +8,6 @@
 #include "aare/RawSubFile.hpp"
 
 #include "aare/defs.hpp"
-// #include "aare/fClusterFileV2.hpp"
 
 #include <cstdint>
 #include <filesystem>
@@ -22,6 +22,16 @@ namespace py = pybind11;
 using namespace ::aare;
 
 void define_raw_master_file_bindings(py::module &m) {
+
+    py::enum_<ReadoutMode>(m, "ReadoutMode")
+        .value("ANALOG_ONLY", ReadoutMode::ANALOG_ONLY)
+        .value("DIGITAL_ONLY", ReadoutMode::DIGITAL_ONLY)
+        .value("ANALOG_AND_DIGITAL", ReadoutMode::ANALOG_AND_DIGITAL)
+        .value("TRANSCEIVER_ONLY", ReadoutMode::TRANSCEIVER_ONLY)
+        .value("DIGITAL_AND_TRANSCEIVER", ReadoutMode::DIGITAL_AND_TRANSCEIVER)
+        .value("UNKNOWN", ReadoutMode::UNKNOWN)
+        .export_values();
+
     py::class_<RawMasterFile>(m, "RawMasterFile")
         .def(py::init<const std::filesystem::path &>())
         .def("data_fname", &RawMasterFile::data_fname, R"(
@@ -56,7 +66,8 @@ void define_raw_master_file_bindings(py::module &m) {
 
         .def_property_readonly("total_frames_expected",
                                &RawMasterFile::total_frames_expected)
-        .def_property_readonly("geometry", &RawMasterFile::geometry)
+        .def_property_readonly("detector_layout",
+                               &RawMasterFile::detector_layout)
         .def_property_readonly("udp_interfaces_per_module",
                                &RawMasterFile::udp_interfaces_per_module)
         .def_property_readonly("analog_samples", &RawMasterFile::analog_samples,
@@ -80,9 +91,63 @@ void define_raw_master_file_bindings(py::module &m) {
 
         .def_property_readonly("transceiver_samples",
                                &RawMasterFile::transceiver_samples)
+        .def_property_readonly("reading_mode", &RawMasterFile::get_reading_mode)
         .def_property_readonly("number_of_rows", &RawMasterFile::number_of_rows)
         .def_property_readonly("quad", &RawMasterFile::quad)
         .def_property_readonly("scan_parameters",
                                &RawMasterFile::scan_parameters)
-        .def_property_readonly("roi", &RawMasterFile::roi);
+        .def_property_readonly("roi", &RawMasterFile::roi)
+        .def_property_readonly(
+            "exptime",
+            [](RawMasterFile &self) -> std::optional<double> {
+                if (self.exptime()) {
+                    double seconds =
+                        std::chrono::duration<double>(*self.exptime()).count();
+                    return seconds;
+                } else {
+                    return std::nullopt;
+                }
+            })
+        .def_property_readonly("rois", &RawMasterFile::rois, R"(
+            Get the ROIs defined in the master file
+
+            Returns
+            ----------
+                List[ROI]
+                    List of ROIs (default complete ROI)
+            )")
+        .def_property_readonly("udp_port_types", &RawMasterFile::udp_port_types,
+                               R"(
+            Get the types of UDP ports
+
+            Returns
+            ----------
+                Optional[List[UDPPortPosition]]
+                    Optional vector of UDP port types as strings (only present for
+                    masterfile version >= 8.1)
+            )")
+        .def_property_readonly("disabled_udp_ports",
+                               &RawMasterFile::disabled_udp_ports, R"(
+            Get the indices of disabled UDP ports   
+
+            Returns
+            ----------
+                List[int]
+                    Vector of disabled UDP port indices relative to UDP port types (empty if none are disabled)
+            )")
+        .def_property_readonly(
+            "period",
+            [](RawMasterFile &self) {
+                double seconds =
+                    std::chrono::duration<double>(self.period()).count();
+                return seconds;
+            })
+
+        .def("__enter__",
+             [](RawMasterFile &self) -> RawMasterFile & { return self; })
+
+        .def("__exit__",
+             []([[maybe_unused]] RawMasterFile &self,
+                [[maybe_unused]] py::object, [[maybe_unused]] py::object,
+                [[maybe_unused]] py::object) { return; });
 }

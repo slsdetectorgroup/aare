@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: MPL-2.0
 
 #include "aare/FilePtr.hpp"
 #include <fmt/format.h>
@@ -20,6 +21,8 @@ FilePtr &FilePtr::operator=(FilePtr &&other) {
     std::swap(fp_, other.fp_);
     return *this;
 }
+
+FilePtr::operator bool() const noexcept { return fp_ != nullptr; }
 
 FILE *FilePtr::get() { return fp_; }
 

@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: MPL-2.0
 #pragma once
 
 #include <algorithm>
@@ -44,7 +45,11 @@ template <typename T> class VarClusterFinder {
         {-1, -1, 0, 1}}; // col ### 8-neighbour by scaning from top to bottom
     const std::array<int, 8> di_{{0, 0, -1, 1, -1, 1, -1, 1}}; // row
     const std::array<int, 8> dj_{{-1, 1, 0, 0, 1, -1, -1, 1}}; // col
-    std::map<int, int> child; // heirachy: key: child; val: parent
+    std::map<int, int> child;   // heirachy: key: child; val: parent
+    int numberOfNeighbours = 8; // 4 or 8
+    bool empty_surroundingPixels =
+        true; // whether to set peripheral pixels to 0, to avoid potential
+              // influence for pedestal updating
     std::unordered_map<int, Hit> h_size;
     std::vector<Hit> hits;
     // std::vector<std::vector<int16_t>> row
@@ -65,6 +70,16 @@ template <typename T> class VarClusterFinder {
     }
     void set_peripheralThresholdFactor(int factor) {
         peripheralThresholdFactor_ = factor;
+    }
+    void set_numberOfNeighbours(int num) {
+        if (num == 4 || num == 8)
+            numberOfNeighbours = num;
+        else
+            throw std::runtime_error(
+                LOCATION + "number of neighbours should be either 4 or 8");
+    }
+    void set_empty_surroundingPixels(bool empty) {
+        empty_surroundingPixels = empty;
     }
     void find_clusters(NDView<T, 2> img);
     void find_clusters_X(NDView<T, 2> img);
@@ -124,7 +139,7 @@ template <typename T> int VarClusterFinder<T>::check_neighbours(int i, int j) {
         const auto row = i + di[k];
         const auto col = j + dj[k];
         if (row >= 0 && col >= 0 && row < shape_[0] && col < shape_[1]) {
-            auto tmp = labeled_.value(i + di[k], j + dj[k]);
+            auto tmp = labeled_(i + di[k], j + dj[k]);
             if (tmp != 0)
                 neighbour_labels.push_back(tmp);
         }
@@ -200,7 +215,7 @@ void VarClusterFinder<T>::rec_FillHit(int clusterIndex, int i, int j) {
     }
     original_(i, j) = 0;
 
-    for (int k = 0; k < 8; ++k) { // 8 for 8-neighbour
+    for (int k = 0; k < numberOfNeighbours; ++k) { //
         const auto row = i + di_[k];
         const auto col = j + dj_[k];
         if (row >= 0 && col >= 0 && row < shape_[0] && col < shape_[1]) {
@@ -217,9 +232,11 @@ void VarClusterFinder<T>::rec_FillHit(int clusterIndex, int i, int j) {
                 //     h_size[clusterIndex].enes[h_size[clusterIndex].size] =
                 //     original_(row, col);
                 // }// ? weather to include peripheral pixels
-                original_(row, col) =
-                    0; // remove peripheral pixels, to avoid potential influence
-                       // for pedestal updating
+                if (empty_surroundingPixels) {
+                    original_(row, col) =
+                        0; // remove peripheral pixels, to avoid potential
+                           // influence for pedestal updating
+                }
             }
         }
     }

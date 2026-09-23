@@ -1,38 +1,72 @@
+# SPDX-License-Identifier: MPL-2.0
 # Make the compiled classes that live in _aare available from aare.
 from . import _aare
 
+from . import transform
+from . import experimental
 
-from ._aare import File, RawMasterFile, RawSubFile, JungfrauDataFile
+from ._aare import (
+    FastPedestal_d,
+    FastPedestal_f,
+    FastPedestal_i16,
+    Pedestal_d,
+    Pedestal_f,
+    Pedestal_i16,
+    ClusterFinder_Cluster3x3i,
+    VarClusterFinder,
+)
+from ._aare import (
+    File,
+    JungfrauDataFile,
+    RawMasterFile,
+    RawSubFile,
+)
 from ._aare import Pedestal_d, Pedestal_f, ClusterFinder_Cluster3x3i, VarClusterFinder
-from ._aare import DetectorType
+from ._aare import DetectorType, FrameDiscardPolicy, ReadoutMode
 from ._aare import hitmap
 from ._aare import ROI
+from ._aare import corner 
+
+from ._aare import UDPPortPosition
 
 # from ._aare import ClusterFinderMT, ClusterCollector, ClusterFileSink, ClusterVector_i
 
+from ._version import __version__
+from .FastPedestal import FastPedestal
+from .Pedestal import Pedestal
 from .ClusterFinder import ClusterFinder, ClusterCollector, ClusterFinderMT, ClusterFileSink, ClusterFile
 from .ClusterVector import ClusterVector
+from .Cluster import Cluster
 
-
-from ._aare import fit_gaus, fit_pol1, fit_scurve, fit_scurve2
+from ._aare import Gaussian, RisingScurve, FallingScurve, Pol1, Pol2, GaussianErfcPlateau, GaussianChargeSharing, GaussianChargeSharingKb
+from ._aare import fit
 from ._aare import Interpolator
-from ._aare import calculate_eta2
+from ._aare import calculate_eta2, calculate_eta3, calculate_cross_eta3, calculate_full_eta2
 from ._aare import reduce_to_2x2, reduce_to_3x3
 
 from ._aare import apply_custom_weights
+
+from ._aare import Etai, Etad, Etaf
 
 from .CtbRawFile import CtbRawFile
 from .RawFile import RawFile
 from .ScanParameters import ScanParameters
 
-from .utils import random_pixels, random_pixel, flat_list, add_colorbar
+from .utils import random_pixels, random_pixel, flat_list, add_colorbar, Timer
 
-
-#make functions available in the top level API
-from .func import *
 
 from .calibration import *
 from ._aare import apply_calibration, count_switching_pixels
 from ._aare import calculate_pedestal, calculate_pedestal_float, calculate_pedestal_g0, calculate_pedestal_g0_float
 
 from ._aare import VarClusterFinder
+from ._aare import (
+    PedestalTrackingPixelHistogram,
+    PixelHistogram,
+    PixelHistogram_d,
+    PixelHistogram_f,
+    PixelHistogram_u8,
+    PixelHistogram_u16,
+    PixelHistogram_u32,
+    PixelHistogram_u64,
+)

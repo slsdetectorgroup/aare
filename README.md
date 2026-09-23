@@ -1,6 +1,14 @@
 # aare
 Data analysis library for PSI hybrid detectors
 
+## Documentation 
+
+Detailed documentation including installation can be found in [Documentation](https://slsdetectorgroup.github.io/aare/)
+
+## License
+
+This project is licensed under the MPL-2.0 license.
+See the LICENSE file or https://www.mozilla.org/en-US/MPL/ for details.
 
 ## Build and install
 
@@ -17,27 +25,30 @@ mkdir build
 cd build
 
 #configure using cmake
-cmake ../aare
+cmake ../aare -DAARE_PYTHON_BINDINGS=ON 
 
 #build (replace 4 with the number of threads you want to use)
 make -j4 
 ```
 
-Now you can use the Python module from your build directory
+Now you can use the Python module from your build directory 
 
 ```python
 import aare
 f = aare.File('Some/File/I/Want_to_open_master_0.json')
 ```
 
-To run form other folders either add the path to your conda environment using conda-build or add it to your PYTHONPATH
+To run from other folders either add the path to your conda environment using conda-build or add the module to your PYTHONPATH
 
+```bash 
+export PYTHONPATH=path_to_aare/aare/build:$PYTHONPATH
+```
 
 ### Install using conda/mamba
 
 ```bash
 #enable your env first!
-conda install aare=2024.10.29.dev0 -c slsdetectorgroup
+conda install aare -c slsdetectorgroup # installs latest version
 ```
 
 ### Install to a custom location and use in your project
@@ -69,3 +80,14 @@ make install
 ```bash
 conda build . --variants="{python: [3.11, 3.12, 3.13]}"
 ```
+
+## Developer's guide
+
+We are looking forward to your contributions via pull requests!
+
+If you want to fix an existing bug or propose a new feature:
+
+1. Install `pre-commit` python package and setup it `pre-commit install`
+2. Create a new branch with `git branch branch_name`
+3. Implement your changes and make a commit (`pre-commit` will check your code automatically)
+4. Push your commit and open a pull request if needed

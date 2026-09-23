@@ -1,16 +1,11 @@
+// SPDX-License-Identifier: MPL-2.0
 #include "aare/VarClusterFinder.hpp"
 #include "np_helper.hpp"
-// #include "aare/defs.hpp"
-// #include "aare/fClusterFileV2.hpp"
 
 #include <cstdint>
-// #include <filesystem>
 #include <pybind11/numpy.h>
-// #include <pybind11/iostream.h>
 #include <pybind11/pybind11.h>
 #include <pybind11/stl.h>
-// #include <pybind11/stl/filesystem.h>
-// #include <string>
 
 namespace py = pybind11;
 using namespace ::aare;
@@ -33,6 +28,10 @@ void define_var_cluster_finder_bindings(py::module &m) {
                  auto noise_map_span = make_view_2d(noise_map);
                  self.set_noiseMap(noise_map_span);
              })
+        .def("set_numberOfNeighbours",
+             &VarClusterFinder<double>::set_numberOfNeighbours)
+        .def("set_empty_surroundingPixels",
+             &VarClusterFinder<double>::set_empty_surroundingPixels)
         .def("set_peripheralThresholdFactor",
              &VarClusterFinder<double>::set_peripheralThresholdFactor)
         .def("find_clusters",

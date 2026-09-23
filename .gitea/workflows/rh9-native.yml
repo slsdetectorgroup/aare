@@ -11,14 +11,19 @@ jobs:
   build:
     runs-on: "ubuntu-latest"
     container:
-      image: gitea.psi.ch/images/rhel9-developer-gitea-actions
+      image: gitea.psi.ch/detectors/rhel9-detectors-dev
     steps:
       - uses: actions/checkout@v4
 
 
-      - name: Install dependencies
+      - name: Install Python dependencies
         run: |
-          dnf install -y cmake python3.12 python3.12-devel python3.12-pip
+          python3.12 -m pip install --upgrade pip
+          python3.12 -m pip install pytest
+          python3.12 -m pip install numpy
+          python3.12 -m pip install pytest-check 
+          python3.12 -m pip install matplotlib 
+          python3.12 -m pip install boost-histogram
 
       - name: Build library 
         run: |
@@ -29,3 +34,8 @@ jobs:
       - name: C++ unit tests
         working-directory: ${{gitea.workspace}}/build
         run: ctest
+
+      - name: Python unit tests
+        working-directory: ${{gitea.workspace}}/build
+        run: | 
+          python3.12 -m pytest ${{gitea.workspace}}/python/tests/

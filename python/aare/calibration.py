@@ -1,12 +1,16 @@
+# SPDX-License-Identifier: MPL-2.0
 #Calibration related functions
 import numpy as np
 def load_calibration(fname, hg0=False):
     """
     Load calibration data from a file.
     
-    Parameters:
-    fname (str): Path to the calibration file.
-    hg0 (bool): If True, load HG0 calibration data instead of G0.
+    Parameters
+    ----------
+    fname : str
+        Path to the calibration file.
+    hg0 : bool
+        If True, load HG0 calibration data instead of G0.
 
     """
     gains = 3

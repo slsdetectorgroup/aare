@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: MPL-2.0
 #pragma once
 #include "aare/Frame.hpp"
 #include "aare/defs.hpp"
@@ -83,7 +84,13 @@ class RawSubFile {
 
     size_t frames_in_file() const { return m_total_frames; }
 
+    /// @brief Path of the current data file in the raw subfile series.
+    std::filesystem::path current_path() const;
+
   private:
+    std::runtime_error frame_error(size_t frame_index,
+                                   const std::string &message) const;
+
     template <typename T> void read_with_map(std::byte *image_buf);
 
     void parse_fname(const std::filesystem::path &fname);

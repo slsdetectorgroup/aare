@@ -1,0 +1,29 @@
+fail_fast: true
+repos:
+  - repo: https://github.com/pre-commit/pre-commit-hooks
+    rev: v6.0.0
+    hooks:
+      - id: check-added-large-files
+      - id: check-yaml
+        exclude: conda-recipe/
+      - id: check-toml
+      - id: check-json
+      - id: mixed-line-ending
+
+  - repo: https://github.com/crate-ci/typos
+    rev: v1.45.0
+    hooks:
+      - id: typos
+        files: docs
+        args: [] # empty, to remove write-changes from the default arguments.
+
+  - repo: https://github.com/pre-commit/mirrors-clang-format
+    rev: v22.1.3
+    hooks:
+    - id: clang-format
+      name: clang-format .cpp and .hpp files
+
+  - repo: https://github.com/zultron/cmake-format-precommit
+    rev: v0.6.14
+    hooks:
+      - id: cmake-format

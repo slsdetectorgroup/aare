@@ -6,7 +6,10 @@
     cd build
 
     #configure using cmake
-    cmake ../aare -DCMAKE_INSTALL_PREFIX=/where/to/put/aare
+    cmake ../aare -DCMAKE_INSTALL_PREFIX=/where/to/put/aare 
+
+    #install python bindings
+    #cmake .. -DCMAKE_INSTALL_PREFIX=/where/to/put/aare  -DAARE_INSTALL_PYTHONEXT=ON -DAARE_PYTHON_BINDINGS=ON
 
     #build (replace 4 with the number of threads you want to use)
     make -j4 

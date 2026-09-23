@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: MPL-2.0
 
 #include "aare/JungfrauDataFile.hpp"
 #include "aare/defs.hpp"
@@ -71,6 +72,7 @@ void define_jungfrau_data_file_io_bindings(py::module &m) {
         .def_property_readonly("bitdepth", &JungfrauDataFile::bitdepth)
         .def_property_readonly("current_file", &JungfrauDataFile::current_file)
         .def_property_readonly("total_frames", &JungfrauDataFile::total_frames)
+        .def("__len__", &JungfrauDataFile::total_frames)
         .def_property_readonly("n_files", &JungfrauDataFile::n_files)
         .def("read_frame", &read_dat_frame,
              R"(

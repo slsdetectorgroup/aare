@@ -1,16 +1,21 @@
+// SPDX-License-Identifier: MPL-2.0
 #pragma once
 #include "aare/Frame.hpp"
 #include "aare/NDArray.hpp"
 #include "aare/NDView.hpp"
+#include <algorithm>
 #include <cstddef>
 
 namespace aare {
 
 /**
- * @brief Calculate the pedestal of a series of frames. Can be used as
- * standalone but mostly used in the ClusterFinder.
+ * @brief Maintain per-pixel mean and population standard deviation.
  *
- * @tparam SUM_TYPE type of the sum
+ * Each pixel accumulates its first n_samples values. Subsequent pushes update
+ * the exponential moving average with a smoothing factor of 1 / n_samples.
+ * Statistics are available during initialization and are zero for empty pixels.
+ * Internal moments and the private variance intermediate use double precision.
+ * @tparam SUM_TYPE Type returned for the mean and standard deviation.
  */
 template <typename SUM_TYPE = double> class Pedestal {
     uint32_t m_rows;
@@ -19,9 +24,8 @@ template <typename SUM_TYPE = double> class Pedestal {
     uint32_t m_samples;
     NDArray<uint32_t, 2> m_cur_samples;
 
-    // TODO! in case of int needs to be changed to uint64_t
-    NDArray<SUM_TYPE, 2> m_sum;
-    NDArray<SUM_TYPE, 2> m_sum2;
+    NDArray<double, 2> m_sum;
+    NDArray<double, 2> m_sum2;
 
     // Cache mean since it is used over and over in the ClusterFinder
     // This optimization is related to the access pattern of the ClusterFinder
@@ -29,56 +33,76 @@ template <typename SUM_TYPE = double> class Pedestal {
     NDArray<SUM_TYPE, 2> m_mean;
 
   public:
+    /**
+     * @brief Construct an empty pedestal with zero mean and standard deviation.
+     * @param rows Number of image rows.
+     * @param cols Number of image columns.
+     * @param n_samples Number of initialization samples per pixel and
+     * reciprocal of the weight assigned to each subsequent value.
+     * @throws std::runtime_error if rows, cols, or n_samples is zero.
+     */
     Pedestal(uint32_t rows, uint32_t cols, uint32_t n_samples = 1000)
         : m_rows(rows), m_cols(cols), m_samples(n_samples),
           m_cur_samples(NDArray<uint32_t, 2>({rows, cols}, 0)),
-          m_sum(NDArray<SUM_TYPE, 2>({rows, cols})),
-          m_sum2(NDArray<SUM_TYPE, 2>({rows, cols})),
-          m_mean(NDArray<SUM_TYPE, 2>({rows, cols})) {
-        assert(rows > 0 && cols > 0 && n_samples > 0);
-        m_sum = 0;
-        m_sum2 = 0;
-        m_mean = 0;
+          m_sum(NDArray<double, 2>({rows, cols}, 0.0)),
+          m_sum2(NDArray<double, 2>({rows, cols}, 0.0)),
+          m_mean(NDArray<SUM_TYPE, 2>({rows, cols}, SUM_TYPE(0))) {
+        if (!(rows > 0 && cols > 0 && n_samples > 0)) {
+            throw std::runtime_error(
+                fmt::format("Invalid parameters for Pedestal: rows={}, "
+                            "cols={}, n_samples={} need to be positive",
+                            rows, cols, n_samples));
+        }
     }
+
     ~Pedestal() = default;
 
-    NDArray<SUM_TYPE, 2> mean() { return m_mean; }
+    /**
+     * @brief Return a non-owning view of the cached mean.
+     * @note The caller must treat the data as read-only and must not retain the
+     * view after this object is destroyed, moved, or assigned.
+     */
+    NDView<const SUM_TYPE, 2> view() const { return m_mean.view(); }
 
+    /**
+     * @brief Return the cached mean at (row, col), or zero for an empty pixel.
+     * @pre row and col are valid pixel indices.
+     */
     SUM_TYPE mean(const uint32_t row, const uint32_t col) const {
         return m_mean(row, col);
     }
 
+    /** @brief Return a copy of the cached mean. */
+    NDArray<SUM_TYPE, 2> mean() const { return m_mean; }
+
+    /**
+     * @brief Calculate the population standard deviation at (row, col).
+     * @pre row and col are valid pixel indices.
+     * @note Variance is normalized by the pixel's current sample count. Empty
+     * pixels return zero, and negative variance from roundoff is clamped to
+     * zero.
+     */
     SUM_TYPE std(const uint32_t row, const uint32_t col) const {
         return std::sqrt(variance(row, col));
     }
 
-    SUM_TYPE variance(const uint32_t row, const uint32_t col) const {
-        if (m_cur_samples(row, col) == 0) {
-            return 0.0;
+    /**
+     * @brief Calculate and return the population standard deviation of every
+     * pixel. Empty pixels return zero.
+     */
+    NDArray<SUM_TYPE, 2> std() const {
+        NDArray<SUM_TYPE, 2> res({m_rows, m_cols});
+        for (uint32_t row = 0; row < m_rows; ++row) {
+            for (uint32_t col = 0; col < m_cols; ++col) {
+                res(row, col) = std(row, col);
+            }
         }
-        return m_sum2(row, col) / m_cur_samples(row, col) -
-               mean(row, col) * mean(row, col);
+        return res;
     }
 
-    NDArray<SUM_TYPE, 2> variance() {
-        NDArray<SUM_TYPE, 2> variance_array({m_rows, m_cols});
-        for (uint32_t i = 0; i < m_rows * m_cols; i++) {
-            variance_array(i / m_cols, i % m_cols) =
-                variance(i / m_cols, i % m_cols);
-        }
-        return variance_array;
-    }
-
-    NDArray<SUM_TYPE, 2> std() {
-        NDArray<SUM_TYPE, 2> standard_deviation_array({m_rows, m_cols});
-        for (uint32_t i = 0; i < m_rows * m_cols; i++) {
-            standard_deviation_array(i / m_cols, i % m_cols) =
-                std(i / m_cols, i % m_cols);
-        }
-
-        return standard_deviation_array;
-    }
-
+    /**
+     * @brief Zero the moments, cached mean, and sample counts of every pixel.
+     */
     void clear() {
         m_sum = 0;
         m_sum2 = 0;
@@ -86,6 +110,10 @@ template <typename SUM_TYPE = double> class Pedestal {
         m_mean = 0;
     }
 
+    /**
+     * @brief Zero the moments, cached mean, and sample count at (row, col).
+     * @pre row and col are valid pixel indices.
+     */
     void clear(const uint32_t row, const uint32_t col) {
         m_sum(row, col) = 0;
         m_sum2(row, col) = 0;
@@ -93,9 +121,13 @@ template <typename SUM_TYPE = double> class Pedestal {
         m_mean(row, col) = 0;
     }
 
+    /**
+     * @brief Accumulate or exponentially update every pixel and its cached
+     * mean.
+     * @param frame Frame whose shape must exactly match the pedestal.
+     * @throws std::runtime_error if the shape differs.
+     */
     template <typename T> void push(NDView<T, 2> frame) {
-        assert(frame.size() == m_rows * m_cols);
-
         // TODO! move away from m_rows, m_cols
         if (frame.shape() != std::array<ssize_t, 2>{m_rows, m_cols}) {
             throw std::runtime_error(
@@ -110,45 +142,76 @@ template <typename SUM_TYPE = double> class Pedestal {
     }
 
     /**
-     * Push but don't update the cached mean. Speeds up the process
-     * when initializing the pedestal.
-     *
+     * @brief Push only pixels whose absolute difference from the cached mean is
+     * strictly less than their threshold.
+     * @param frame Frame whose shape must exactly match the pedestal.
+     * @param threshold Per-pixel thresholds with the same shape as the
+     * pedestal.
+     * @throws std::runtime_error if either shape differs.
+     * @note Rejected pixels keep their statistics and sample counts unchanged.
      */
-    template <typename T> void push_no_update(NDView<T, 2> frame) {
-        assert(frame.size() == m_rows * m_cols);
-
+    template <typename T>
+    void push_with_threshold(const NDView<T, 2> frame,
+                             const NDView<SUM_TYPE, 2> threshold) {
         // TODO! move away from m_rows, m_cols
         if (frame.shape() != std::array<ssize_t, 2>{m_rows, m_cols}) {
             throw std::runtime_error(
                 "Frame shape does not match pedestal shape");
         }
 
+        if (threshold.shape() != std::array<ssize_t, 2>{m_rows, m_cols}) {
+            throw std::runtime_error(
+                "Threshold shape does not match pedestal shape");
+        }
+
         for (size_t row = 0; row < m_rows; row++) {
             for (size_t col = 0; col < m_cols; col++) {
-                push_no_update<T>(row, col, frame(row, col));
+                if (fabs(frame(row, col) - mean(row, col)) <
+                    threshold(row, col)) {
+                    push<T>(row, col, frame(row, col));
+                }
             }
         }
     }
 
-    template <typename T> void push(Frame &frame) {
-        assert(frame.rows() == static_cast<size_t>(m_rows) &&
-               frame.cols() == static_cast<size_t>(m_cols));
-        push<T>(frame.view<T>());
-    }
+    /**
+     * @brief Accumulate or exponentially update every pixel from a Frame.
+     * @tparam T Actual pixel type stored in frame; this is not runtime-checked.
+     * @param frame Frame whose shape must exactly match the pedestal.
+     * @throws std::runtime_error if the shape differs.
+     */
+    template <typename T> void push(Frame &frame) { push<T>(frame.view<T>()); }
 
-    // getter functions
+    /** @brief Return the number of image rows. */
     uint32_t rows() const { return m_rows; }
-    uint32_t cols() const { return m_cols; }
-    uint32_t n_samples() const { return m_samples; }
-    NDArray<uint32_t, 2> cur_samples() const { return m_cur_samples; }
-    NDArray<SUM_TYPE, 2> get_sum() const { return m_sum; }
-    NDArray<SUM_TYPE, 2> get_sum2() const { return m_sum2; }
 
-    // pixel level operations (should be refactored to allow users to implement
-    // their own pixel level operations)
+    /** @brief Return the number of image columns. */
+    uint32_t cols() const { return m_cols; }
+
+    /**
+     * @brief Return the initialization sample count per pixel and steady-state
+     * update-weight denominator.
+     */
+    uint32_t n_samples() const { return m_samples; }
+
+    /**
+     * @brief Return a copy of the per-pixel initialization sample counts.
+     * @note Each count is in [0, n_samples] and does not change during
+     * steady-state pushes. Thresholded pushes can leave counts unequal.
+     */
+    NDArray<uint32_t, 2> cur_samples() const { return m_cur_samples; }
+
+    /**
+     * @brief Accumulate or exponentially update one pixel and its cached mean.
+     * @param row Pixel row.
+     * @param col Pixel column.
+     * @param val_ New pixel value, with weight 1 / n_samples after
+     * initialization.
+     * @pre row and col are valid pixel indices.
+     */
     template <typename T>
     void push(const uint32_t row, const uint32_t col, const T val_) {
-        SUM_TYPE val = static_cast<SUM_TYPE>(val_);
+        const auto val = static_cast<double>(val_);
         if (m_cur_samples(row, col) < m_samples) {
             m_sum(row, col) += val;
             m_sum2(row, col) += val * val;
@@ -162,34 +225,16 @@ template <typename SUM_TYPE = double> class Pedestal {
         m_mean(row, col) = m_sum(row, col) / m_cur_samples(row, col);
     }
 
-    template <typename T>
-    void push_no_update(const uint32_t row, const uint32_t col, const T val_) {
-        SUM_TYPE val = static_cast<SUM_TYPE>(val_);
-        if (m_cur_samples(row, col) < m_samples) {
-            m_sum(row, col) += val;
-            m_sum2(row, col) += val * val;
-            m_cur_samples(row, col)++;
-        } else {
-            m_sum(row, col) += val - m_sum(row, col) / m_cur_samples(row, col);
-            m_sum2(row, col) +=
-                val * val - m_sum2(row, col) / m_cur_samples(row, col);
+  private:
+    double variance(const uint32_t row, const uint32_t col) const {
+        if (m_cur_samples(row, col) == 0) {
+            return 0.0;
         }
-    }
-
-    /**
-     * @brief Update the mean of the pedestal. This is used after having done
-     * push_no_update. It is not necessary to call this function after push.
-     */
-    void update_mean() { m_mean = m_sum / m_cur_samples; }
-
-    template <typename T>
-    void push_fast(const uint32_t row, const uint32_t col, const T val_) {
-        // Assume we reached the steady state where all pixels have
-        // m_samples samples
-        SUM_TYPE val = static_cast<SUM_TYPE>(val_);
-        m_sum(row, col) += val - m_sum(row, col) / m_samples;
-        m_sum2(row, col) += val * val - m_sum2(row, col) / m_samples;
-        m_mean(row, col) = m_sum(row, col) / m_samples;
+        const auto mean = m_sum(row, col) / m_cur_samples(row, col);
+        const auto var =
+            m_sum2(row, col) / m_cur_samples(row, col) - mean * mean;
+        // Roundoff in the moments can make a near-zero variance negative.
+        return std::max(var, 0.0);
     }
 };
 } // namespace aare
