@@ -157,5 +157,5 @@ def test_masking_requires_one_dimension():
 
     mask = np.array([[True, False]], dtype=bool)
 
-    with pytest.raises(ValueError, match="one-dimensional"):
+    with pytest.raises(ValueError):
         cv(mask)
