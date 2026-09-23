@@ -1,8 +1,8 @@
 // SPDX-License-Identifier: MPL-2.0
 #pragma once
 #include "aare/Cluster.hpp"
+#include "aare/FastPedestal.hpp"
 #include "aare/NDArray.hpp"
-#include "aare/Pedestal.hpp"
 #include "aare/clusterfinder_kernel.cuh"
 #include "aare/utils/cuda_check.cuh"
 #include <algorithm>
@@ -33,7 +33,7 @@ namespace aare::cuda {
  *   HostImage                     host image of Buffers, ready to upload
  *   Buffers   allocate(size_t n_pixels)
  *   View      make_view(const Buffers &)
- *   HostImage prepare_pedestal(Pedestal<HostPedT> &)   [template on HostPedT]
+ *   HostImage prepare_pedestal(FastPedestal<HostPedT> &) [template on HostPedT]
  *   void      upload_pedestal(const HostImage &, const Buffers &, cudaStream_t)
  *   void      download_mean(const Buffers &, size_t, std::vector<DevicePedT> &,
  *                           cudaStream_t)
@@ -169,10 +169,12 @@ struct CenteredRunningPedestal {
      * term that would not survive.
      */
     template <typename HostPedT>
-    static HostImage prepare_pedestal(Pedestal<HostPedT> &host) {
+    static HostImage prepare_pedestal(FastPedestal<HostPedT> &host) {
         NDArray<HostPedT, 2> h_mean = host.mean();
-        NDArray<HostPedT, 2> h_sum = host.get_sum();
-        NDArray<HostPedT, 2> h_sum2 = host.get_sum2();
+        // FastPedestal keeps both moments in double whatever HostPedT is, so
+        // let the accessors name their own type here.
+        auto h_sum = host.get_sum();
+        auto h_sum2 = host.get_sum2();
         const size_t n_pixels = static_cast<size_t>(h_mean.size());
         const double n = static_cast<double>(host.n_samples());
 

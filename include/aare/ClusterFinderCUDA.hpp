@@ -133,7 +133,7 @@ class ClusterFinderCUDA {
     size_t m_output_bytes_per_frame;
 
     COMPUTE_TYPE m_nSigma;
-    Pedestal<PEDESTAL_TYPE> m_pedestal;
+    FastPedestal<PEDESTAL_TYPE> m_pedestal;
     ClusterVector<ClusterType> m_clusters;
     bool m_pedestal_dirty = true;
 
@@ -420,6 +420,10 @@ class ClusterFinderCUDA {
      * fixed-size D2H
      * @param n_streams_                number of CUDA streams for multi-frame
      * overlap
+     * @param min_pedestal_samples      number of frames the host pedestal
+     * accumulates before it is ready, and the reciprocal of the steady-state
+     * update weight. Matches ClusterFinder so a CPU/GPU comparison warms up
+     * identically.
      * @param time_kernels              enable per-frame CUDA-event kernel
      * timing. Off by default: it adds two event records per frame to the
      * streams and one host-side query per frame, and the resulting number is
@@ -427,12 +431,13 @@ class ClusterFinderCUDA {
      */
     ClusterFinderCUDA(Shape<2> shape_, COMPUTE_TYPE nSigma = 5.0,
                       size_t max_clusters_per_frame = 2048, int n_streams_ = 4,
+                      size_t min_pedestal_samples = 1000,
                       bool time_kernels = false)
         : m_shape(shape_), nrows(shape_[0]), ncols(shape_[1]),
           m_image_size(nrows * ncols), n_streams(n_streams_),
           m_max_clusters_per_frame(max_clusters_per_frame), m_nSigma(nSigma),
-          m_pedestal(shape_[0], shape_[1]), m_clusters(max_clusters_per_frame),
-          m_time_kernels(time_kernels) {
+          m_pedestal(shape_[0], shape_[1], min_pedestal_samples),
+          m_clusters(max_clusters_per_frame), m_time_kernels(time_kernels) {
         if (n_streams_ <= 0) {
             throw std::invalid_argument(
                 "ClusterFinderCUDA: n_streams must be > 0");
@@ -539,7 +544,11 @@ class ClusterFinderCUDA {
     }
 
     void push_pedestal_frame(NDView<FRAME_TYPE, 2> frame) {
-        m_pedestal.push(frame);
+        if (!m_pedestal.ready()) {
+            m_pedestal.add_init_frame(frame);
+        } else {
+            m_pedestal.push_ema(frame);
+        }
         m_pedestal_dirty = true;
     }
 

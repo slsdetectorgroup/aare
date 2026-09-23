@@ -27,8 +27,10 @@ void define_ClusterFinderFrozen(py::module &m, const std::string &typestr) {
 
     py::class_<ClusterFinderFrozen<ClusterType, uint16_t, pd_type>>(
         m, class_name.c_str())
-        .def(py::init<Shape<2>, pd_type, size_t>(), py::arg("image_size"),
-             py::arg("n_sigma") = 5.0, py::arg("capacity") = 1'000'000)
+        .def(py::init<Shape<2>, pd_type, size_t, size_t>(),
+             py::arg("image_size"), py::arg("n_sigma") = 5.0,
+             py::arg("capacity") = 1'000'000,
+             py::arg("min_pedestal_samples") = 1000)
 
         .def_property(
             "nSigma",

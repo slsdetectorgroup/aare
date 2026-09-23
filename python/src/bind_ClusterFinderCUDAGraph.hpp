@@ -2,8 +2,8 @@
 #pragma once
 #include "aare/ClusterFinderCUDA_graph.hpp"
 #include "aare/ClusterVector.hpp"
+#include "aare/FastPedestal.hpp"
 #include "aare/NDView.hpp"
-#include "aare/Pedestal.hpp"
 #include "np_helper.hpp"
 
 #include <cstdint>
@@ -31,9 +31,10 @@ void define_ClusterFinderCUDAGraph(py::module &m, const std::string &typestr) {
         py::array_t<uint16_t, py::array::c_style | py::array::forcecast>;
 
     py::class_<CF>(m, class_name.c_str())
-        .def(py::init<Shape<2>, float, size_t, int>(), py::arg("image_size"),
-             py::arg("n_sigma") = 5.0f,
-             py::arg("max_clusters_per_frame") = 2048, py::arg("n_streams") = 4)
+        .def(py::init<Shape<2>, float, size_t, int, size_t>(),
+             py::arg("image_size"), py::arg("n_sigma") = 5.0f,
+             py::arg("max_clusters_per_frame") = 2048, py::arg("n_streams") = 4,
+             py::arg("min_pedestal_samples") = 1000)
 
         .def_property(
             "nSigma", &CF::get_nSigma, &CF::set_nSigma,
