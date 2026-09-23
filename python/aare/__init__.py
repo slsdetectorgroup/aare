@@ -39,15 +39,18 @@ from ._aare import (
     RawSubFile,
 )
 from ._aare import Pedestal_d, Pedestal_f, ClusterFinder_Cluster3x3i, VarClusterFinder
-from ._aare import DetectorType, ReadoutMode 
+from ._aare import DetectorType, FrameDiscardPolicy, ReadoutMode
 from ._aare import hitmap
 from ._aare import ROI
 from ._aare import corner 
+
+from ._aare import UDPPortPosition
 
 # from ._aare import ClusterFinderMT, ClusterCollector, ClusterFileSink, ClusterVector_i
 
 from ._version import __version__
 from .FastPedestal import FastPedestal
+from .Pedestal import Pedestal
 from .ClusterFinder import (ClusterFinder, ClusterFinderFrozen, ClusterCollector, ClusterFinderMT, ClusterFileSink, ClusterFile,
                             ClusterFinderCUDA, ClusterFinderCUDAGraph, _cuda_available, find_cluster_views_batched_iter)
 from .ClusterVector import ClusterVector

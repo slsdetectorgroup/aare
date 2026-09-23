@@ -4,20 +4,20 @@
 #include "aare/Frame.hpp"
 #include "aare/NDArray.hpp"
 #include "aare/NDView.hpp"
+#include <algorithm>
 #include <cstddef>
 #include <sys/types.h>
 
 namespace aare {
 
 /**
- * @brief Maintain per-pixel mean, population variance, and standard deviation.
+ * @brief Maintain per-pixel mean and population standard deviation.
  *
  * Initialization accumulates exactly n_samples frames. Subsequent push_ema()
  * update the exponential moving average initialized with the mean using
  * a smoothing factor of (1/ n_samples). Internal moments are stored
- * in double precision.
- * @tparam PEDESTAL_TYPE Type returned for the mean, variance, and standard
- * deviation.
+ * in double precision. Variance is a private double-precision intermediate.
+ * @tparam PEDESTAL_TYPE Type returned for the mean and standard deviation.
  */
 template <typename PEDESTAL_TYPE> class FastPedestal {
 
@@ -93,7 +93,7 @@ template <typename PEDESTAL_TYPE> class FastPedestal {
      * @brief Return a copy of the cached mean.
      * @throws std::runtime_error if ready() is false.
      */
-    NDArray<PEDESTAL_TYPE, 2> mean() {
+    NDArray<PEDESTAL_TYPE, 2> mean() const {
         if (!ready()) {
             throw std::runtime_error(
                 "Pedestal is not ready, cannot return mean");
@@ -128,57 +128,11 @@ template <typename PEDESTAL_TYPE> class FastPedestal {
     PEDESTAL_TYPE mean_unchecked(ssize_t index) const { return m_mean[index]; }
 
     /**
-     * @brief Calculate and return the population variance of every pixel.
-     * @throws std::runtime_error if ready() is false.
-     * @note The result is normalized by n_samples.
-     */
-    NDArray<PEDESTAL_TYPE, 2> variance() {
-        if (!ready()) {
-            throw std::runtime_error(
-                "Pedestal is not ready, cannot return variance");
-        }
-        NDArray<PEDESTAL_TYPE, 2> res({m_rows, m_cols});
-        for (ssize_t i = 0; i < m_sum.size(); ++i) {
-            res[i] = variance_unchecked(i);
-        }
-        return res;
-    }
-
-    /**
-     * @brief Calculate the population variance at (row, col).
-     * @throws std::runtime_error if ready() is false or either index is out of
-     * range.
-     */
-    PEDESTAL_TYPE variance(const uint32_t row, const uint32_t col) const {
-        if (!ready()) {
-            throw std::runtime_error(
-                "Pedestal is not ready, cannot return variance");
-        }
-        if (row >= m_rows || col >= m_cols) {
-            throw std::runtime_error(fmt::format(
-                "Invalid indices for FastPedestal variance: row={}, "
-                "col={} must be in [0, {}), [0, {})",
-                row, col, m_rows, m_cols));
-        }
-        return variance_unchecked(rc_to_index(row, col));
-    }
-
-    /**
-     * @brief Calculate the population variance at a flat row-major index.
-     * @pre ready() is true and index is valid; the index is not checked.
-     */
-    PEDESTAL_TYPE variance_unchecked(ssize_t index) const {
-        const auto &entry = m_sum[index];
-        const auto m = entry.sum * m_inv_samples;
-        return std::fma(-m, m, entry.sum2 * m_inv_samples);
-    }
-
-    /**
      * @brief Calculate and return the population standard deviation of every
      * pixel.
      * @throws std::runtime_error if ready() is false.
      */
-    NDArray<PEDESTAL_TYPE, 2> std() {
+    NDArray<PEDESTAL_TYPE, 2> std() const {
         if (!ready()) {
             throw std::runtime_error(
                 "Pedestal is not ready, cannot return std");
@@ -186,6 +140,43 @@ template <typename PEDESTAL_TYPE> class FastPedestal {
         NDArray<PEDESTAL_TYPE, 2> res({m_rows, m_cols});
         for (ssize_t i = 0; i < m_sum.size(); ++i) {
             res[i] = std_unchecked(i);
+        }
+        return res;
+    }
+
+    /**
+     * @brief Return a copy of the per-pixel first moment, ~ n * E[X].
+     * @throws std::runtime_error if ready() is false.
+     * @note The two moments are stored interleaved for cache locality, so this
+     * de-interleaves them into a plain array. Intended for callers that need a
+     * contiguous moment array rather than per-pixel access, such as the CUDA
+     * pedestal upload.
+     */
+    NDArray<double, 2> get_sum() const {
+        if (!ready()) {
+            throw std::runtime_error(
+                "Pedestal is not ready, cannot return sum");
+        }
+        NDArray<double, 2> res({m_rows, m_cols});
+        for (ssize_t i = 0; i < m_sum.size(); ++i) {
+            res[i] = m_sum[i].sum;
+        }
+        return res;
+    }
+
+    /**
+     * @brief Return a copy of the per-pixel second moment, ~ n * E[X^2].
+     * @throws std::runtime_error if ready() is false.
+     * @see get_sum() for why this is a de-interleaving copy.
+     */
+    NDArray<double, 2> get_sum2() const {
+        if (!ready()) {
+            throw std::runtime_error(
+                "Pedestal is not ready, cannot return sum2");
+        }
+        NDArray<double, 2> res({m_rows, m_cols});
+        for (ssize_t i = 0; i < m_sum.size(); ++i) {
+            res[i] = m_sum[i].sum2;
         }
         return res;
     }
@@ -206,7 +197,7 @@ template <typename PEDESTAL_TYPE> class FastPedestal {
                             "col={} must be in [0, {}), [0, {})",
                             row, col, m_rows, m_cols));
         }
-        return std::sqrt(variance(row, col));
+        return std_unchecked(rc_to_index(row, col));
     }
 
     /**
@@ -410,6 +401,14 @@ template <typename PEDESTAL_TYPE> class FastPedestal {
     uint32_t n_samples() const { return m_samples; }
 
   private:
+    double variance_unchecked(ssize_t index) const {
+        const auto &entry = m_sum[index];
+        const auto mean = entry.sum * m_inv_samples;
+        const auto variance = std::fma(-mean, mean, entry.sum2 * m_inv_samples);
+        // Roundoff in the moments can make a near-zero variance negative.
+        return std::max(variance, 0.0);
+    }
+
     /**
      * @brief Write the cached mean after the final add_init_frame. All other
      * (non initialization) pushes update the cached mean immediately.

@@ -1,6 +1,5 @@
 // SPDX-License-Identifier: MPL-2.0
 #pragma once
-#include "aare/DetectorGeometry.hpp"
 #include "aare/FileInterface.hpp"
 #include "aare/Frame.hpp"
 #include "aare/NDArray.hpp" //for pixel map
@@ -30,17 +29,18 @@ class RawFile : public FileInterface {
     RawMasterFile m_master;
     size_t m_current_frame{};
 
-    DetectorGeometry m_geometry;
-
-    /// @brief Geometries e.g. number of modules, size etc. for each ROI
     std::vector<ROIGeometry> m_ROI_geometries;
+
+    /// @brief Minimum frame count across the selected raw subfile series.
+    size_t m_frames_in_file{};
 
   public:
     /**
      * @brief RawFile constructor
      * @param fname path to the master file (.json)
      * @param mode file mode (only "r" is supported at the moment)
-
+     * @throws std::runtime_error if frame padding is disabled and the frame
+     * discard policy is not DiscardPartial.
      */
     RawFile(const std::filesystem::path &fname, const std::string &mode = "r");
     virtual ~RawFile() override = default;
@@ -104,6 +104,7 @@ class RawFile : public FileInterface {
     size_t bytes_per_pixel() const;
     void seek(size_t frame_index) override;
     size_t tell() override;
+    /// @brief Minimum actual frame count across all subfiles and ROIs.
     size_t total_frames() const override;
     size_t rows() const override;
     /**
@@ -122,7 +123,7 @@ class RawFile : public FileInterface {
     size_t n_modules() const;
 
     /**
-     * @brief number of ROIs defined
+     * @brief number of ROIs defined (always 1 for complete ROI)
      */
     size_t num_rois() const;
 
@@ -150,6 +151,9 @@ class RawFile : public FileInterface {
     static DetectorHeader read_header(const std::filesystem::path &fname);
 
   private:
+    std::runtime_error frame_error(size_t frame_index,
+                                   const std::string &message) const;
+
     /**
      * @brief read the frame at the given frame index into the image buffer
      * @param frame_index frame number to read

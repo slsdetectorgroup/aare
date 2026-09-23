@@ -4,9 +4,9 @@
 #include "aare/ClusterFinder.hpp" // no_2x2_cluster guard, reused here
 #include "aare/ClusterVector.hpp"
 #include "aare/Dtype.hpp"
+#include "aare/FastPedestal.hpp"
 #include "aare/NDArray.hpp"
 #include "aare/NDView.hpp"
-#include "aare/Pedestal.hpp"
 #include "aare/defs.hpp"
 #include <cstddef>
 #include <utility>
@@ -45,7 +45,7 @@ class ClusterFinderFrozen {
     PEDESTAL_TYPE m_nSigma;
     const PEDESTAL_TYPE c2;
     const PEDESTAL_TYPE c3;
-    Pedestal<PEDESTAL_TYPE> m_pedestal;
+    FastPedestal<PEDESTAL_TYPE> m_pedestal;
     ClusterVector<ClusterType> m_clusters;
 
     static const uint8_t ClusterSizeX = ClusterType::cluster_size_x;
@@ -54,21 +54,28 @@ class ClusterFinderFrozen {
 
   public:
     ClusterFinderFrozen(Shape<2> image_size, PEDESTAL_TYPE nSigma = 5.0,
-                        size_t capacity = 1000000)
+                        size_t capacity = 1000000,
+                        size_t min_pedestal_samples = 1000)
         : m_image_size(image_size), m_nSigma(nSigma),
           c2(sqrt((ClusterSizeY + 1) / 2 * (ClusterSizeX + 1) / 2)),
           c3(sqrt(ClusterSizeX * ClusterSizeY)),
-          m_pedestal(image_size[0], image_size[1]), m_clusters(capacity) {
+          m_pedestal(image_size[0], image_size[1], min_pedestal_samples),
+          m_clusters(capacity) {
         LOG(logDEBUG) << "ClusterFinderFrozen: "
                       << "image_size: " << image_size[0] << "x" << image_size[1]
-                      << ", nSigma: " << nSigma << ", capacity: " << capacity;
+                      << ", nSigma: " << nSigma << ", capacity: " << capacity
+                      << ", min_pedestal_samples: " << min_pedestal_samples;
     }
 
     void set_nSigma(PEDESTAL_TYPE nSigma) { m_nSigma = nSigma; }
     PEDESTAL_TYPE get_nSigma() const { return m_nSigma; }
 
     void push_pedestal_frame(NDView<FRAME_TYPE, 2> frame) {
-        m_pedestal.push(frame);
+        if (!m_pedestal.ready()) {
+            m_pedestal.add_init_frame(frame);
+        } else {
+            m_pedestal.push_ema(frame);
+        }
     }
 
     NDArray<PEDESTAL_TYPE, 2> pedestal() { return m_pedestal.mean(); }
@@ -86,6 +93,11 @@ class ClusterFinderFrozen {
     }
 
     void find_clusters(NDView<FRAME_TYPE, 2> frame, uint64_t frame_number = 0) {
+        if (!m_pedestal.ready()) {
+            throw std::runtime_error(
+                "Pedestal is not ready, cannot find clusters");
+        }
+
         int dy = ClusterSizeY / 2;
         int dx = ClusterSizeX / 2;
         int has_center_pixel_x = ClusterSizeX % 2;
@@ -177,7 +189,7 @@ class ClusterFinderFrozen {
         // only affects decisions from the NEXT frame on -> matches CUDA. Each
         // pixel is visited at most once per frame, so push order is irrelevant.
         for (const auto &p : deferred)
-            m_pedestal.push_fast(p.first, p.second, frame(p.first, p.second));
+            m_pedestal.push_ema(p.first, p.second, frame(p.first, p.second));
     }
 };
 

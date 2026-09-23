@@ -1,6 +1,8 @@
 #include "aare/CalculateEta.hpp"
+#include "aare/to_string.hpp"
 
 #include <cstdint>
+#include <fmt/format.h>
 // #include <pybind11/native_enum.h> only for version 3
 #include <pybind11/pybind11.h>
 
@@ -18,7 +20,11 @@ void define_eta(py::module &m, const std::string &typestr) {
         .def_readwrite("c", &Eta2<T>::c,
                        "eta corner value cTopLeft, cTopRight, "
                        "cBottomLeft, cBottomRight")
-        .def_readwrite("sum", &Eta2<T>::sum, "photon energy of cluster");
+        .def_readwrite("sum", &Eta2<T>::sum, "photon energy of cluster")
+        .def("__repr__", [class_name](const Eta2<T> &self) {
+            return fmt::format("{}(x={}, y={}, c={}, sum={})", class_name,
+                               self.x, self.y, to_string(self.c), self.sum);
+        });
 }
 
 void define_corner_enum(py::module &m) {

@@ -1,6 +1,7 @@
 #pragma once
-#include "aare/Cluster.hpp"
-#include "aare/ClusterFinder.hpp"
+#include "aare/Cluster.hpp" // Cluster, no_2x2_cluster; nothing else from aare
+#include <cmath>
+#include <cstdint>
 #include <cuda_runtime.h>
 #include <type_traits>
 
@@ -14,8 +15,10 @@ using COMPUTE_TYPE = float;
 /// Device pedestal storage and running variance update. See COMPUTE_TYPE.
 using DEVICE_PED_TYPE = float;
 
+/// BLOCK_X/BLOCK_Y must equal the launch block dims; they are template
+/// parameters so the shared-memory tile geometry is compile-time.
 template <typename ClusterType = Cluster<int32_t, 3, 3>,
-          typename FRAME_TYPE = uint16_t,
+          typename FRAME_TYPE = uint16_t, int BLOCK_X = 16, int BLOCK_Y = 16,
           typename = std::enable_if_t<no_2x2_cluster<ClusterType>::value>>
 __global__ void find_clusters_in_single_frame(
     const FRAME_TYPE *__restrict__ d_frame,
@@ -23,7 +26,7 @@ __global__ void find_clusters_in_single_frame(
     DEVICE_PED_TYPE *__restrict__ d_pd_sum,
     DEVICE_PED_TYPE *__restrict__ d_pd_sum2,
     const DEVICE_PED_TYPE *__restrict__ d_pd_off, const uint32_t n_pd_samples,
-    const COMPUTE_TYPE m_nSigma, const size_t nrows, const size_t ncols,
+    const COMPUTE_TYPE m_nSigma, const int32_t nrows, const int32_t ncols,
     //   const uint64_t       frame_number,
     ClusterType *d_clusters, uint32_t *d_cluster_count,
     const uint32_t max_clusters) {
@@ -43,141 +46,80 @@ __global__ void find_clusters_in_single_frame(
     // constexpr int pow2_c2 = ((CSY + 1) / 2) * ((CSX + 1) / 2);
     constexpr int pow2_c3 = CSX * CSY;
 
-    // Thread/pixel mapping
-    auto col_global =
-        static_cast<ssize_t>(threadIdx.x + blockDim.x * blockIdx.x);
-    auto row_global =
-        static_cast<ssize_t>(threadIdx.y + blockDim.y * blockIdx.y);
-    auto global_tid = static_cast<ssize_t>(col_global + ncols * row_global);
-    auto local_tid = threadIdx.x + blockDim.x * threadIdx.y;
+    // Outer stencil loop policy. Small windows are fully unrolled: at 3x3 the
+    // kernel is a single latency-bound wave and needs every tap in flight, and
+    // a rolled loop reloads the taps it could have kept in registers (nsys on
+    // detector data: 4.32 -> 4.95 us). Large windows are rolled: unrolled 9x9
+    // costs 96+ registers and caps occupancy at 2 blocks/SM. 25 taps is where
+    // the register cost starts to bite (7x7 unrolled: 64-72 registers).
+    constexpr int OUTER_UNROLL = (CSX * CSY <= 25) ? CSY : 1;
 
-    // ====================
-    // Shared memory layout
-    // ====================
-    // The tile is laid out contiguously in a 1D configuration:
-    //    [0 ... tile_size-1] = pedestal-subtracted frame values
-    //
-    // Each tile has (blockDim.x + 2*col_radius) x (blockDim.y + 2*row_radius)
-    // elements, with a halo of col_radius/row_radius pixels on each side.
+    // Shared-memory tile: the block's pixels plus a halo of
+    // col_radius/row_radius on each side, laid out row-major.
+    constexpr int TILE_W = BLOCK_X + 2 * col_radius;
+    constexpr int TILE_H = BLOCK_Y + 2 * row_radius;
+    constexpr int TILE_SIZE = TILE_W * TILE_H;
+    constexpr int N_THREADS = BLOCK_X * BLOCK_Y;
+
+    // Thread/pixel mapping. 32-bit signed: 64-bit integer math is emulated on
+    // the GPU, and the bounds checks below rely on negative coordinates.
+    const int col_global = static_cast<int>(threadIdx.x + BLOCK_X * blockIdx.x);
+    const int row_global = static_cast<int>(threadIdx.y + BLOCK_Y * blockIdx.y);
+    const int global_tid = col_global + ncols * row_global;
+    const int local_tid = static_cast<int>(threadIdx.x + BLOCK_X * threadIdx.y);
 
     // CUDA prefers raw bytes + aligned cast
     // Compile error happens when using: `extern __shared__ T sh[];`
     extern __shared__ __align__(sizeof(COMPUTE_TYPE)) unsigned char smem[];
     COMPUTE_TYPE *shmem = reinterpret_cast<COMPUTE_TYPE *>(smem);
 
-    // Stride includes halo on both sides
-    auto shmem_stride = static_cast<int>(blockDim.x) + 2 * col_radius;
-    auto tile_size =
-        shmem_stride * (static_cast<int>(blockDim.y) + 2 * row_radius);
-
-    // Offset so that thread (0,0) maps to shared-memory position
-    // (row_radius, col_radius) i.e. past the top-left halo.
-    auto shmem_tid =
-        (static_cast<int>(threadIdx.y) + row_radius) * shmem_stride +
+    // This thread's own pixel in the tile (past the top-left halo)
+    const int shmem_tid =
+        (static_cast<int>(threadIdx.y) + row_radius) * TILE_W +
         (static_cast<int>(threadIdx.x) + col_radius);
 
-    // Cooperative zero-fill
-    for (int idx = static_cast<int>(local_tid); idx < tile_size;
-         idx += static_cast<int>(blockDim.x * blockDim.y)) {
-        shmem[idx] = COMPUTE_TYPE{0};
-    }
-    __syncthreads();
+    // ==========================================================
+    // Cooperative tile load: interior, halo and OOB zeros in one pass
+    // ==========================================================
+    // Every thread strides over the flat tile, so the halo costs the same
+    // per thread as the interior instead of being serialised on edge lanes.
+    // Cells outside the frame are written as 0, which is what the stencil
+    // expects and removes the need for a separate zero-fill + barrier.
+    const int tile_row0 = static_cast<int>(BLOCK_Y * blockIdx.y) - row_radius;
+    const int tile_col0 = static_cast<int>(BLOCK_X * blockIdx.x) - col_radius;
 
-    // OOB flag
-    bool valid_pixel = col_global < static_cast<ssize_t>(ncols) &&
-                       row_global < static_cast<ssize_t>(nrows);
-
-    // ======================================================
-    // Load pedestal-subtracted frame data into shared memory (MIXED PRECISION)
-    // ======================================================
-
-    // Helper: read (frame - pedestal_mean) from global memory, or 0 if OOB.
-    // gr, gc are the global row/col of the pixel to load.
-    // Returns the pedestal-subtracted value.
-    auto load_pixel = [&] __device__(ssize_t gr, ssize_t gc) -> COMPUTE_TYPE {
-        auto gid = gc + ncols * gr;
-        return static_cast<COMPUTE_TYPE>(d_frame[gid]) - d_pd_mean[gid];
-    };
-
-    // A. Interior: every valid thread loads its own pixel
-    if (valid_pixel) {
-        shmem[shmem_tid] = load_pixel(row_global, col_global);
-    }
-
-    // B. Halo regions (Boundaries)
-    // B.1  Top rows of the halo
-    if (threadIdx.y == 0 && valid_pixel) {
-        for (int i = 1; i <= row_radius; ++i) {
-            if (row_global - i >= 0)
-                shmem[shmem_tid - i * shmem_stride] =
-                    load_pixel(row_global - i, col_global);
-        }
-        // Top-left corner rectangle
-        if (threadIdx.x == 0) {
-            for (int i = 1; i <= row_radius; ++i)
-                for (int j = 1; j <= col_radius; ++j)
-                    if (row_global - i >= 0 && col_global - j >= 0)
-                        shmem[shmem_tid - i * shmem_stride - j] =
-                            load_pixel(row_global - i, col_global - j);
-        }
-        // Top-right corner rectangle
-        if (threadIdx.x == blockDim.x - 1) {
-            for (int i = 1; i <= row_radius; ++i)
-                for (int j = 1; j <= col_radius; ++j)
-                    if (row_global - i >= 0 &&
-                        col_global + j < static_cast<ssize_t>(ncols))
-                        shmem[shmem_tid - i * shmem_stride + j] =
-                            load_pixel(row_global - i, col_global + j);
+    // Two phases, loads then stores, so every warp pays ONE global round trip
+    // for the whole tile instead of one per iteration. With a single loop the
+    // warps that own a second cell (3 of 8 at 3x3) issued their second load
+    // only after storing the first, and the rest of the block sat at the
+    // barrier for that extra latency. N_ITER is 2 at 3x3 and 3 at 9x9.
+    constexpr int N_ITER = (TILE_SIZE + N_THREADS - 1) / N_THREADS;
+    COMPUTE_TYPE v[N_ITER];
+#pragma unroll
+    for (int k = 0; k < N_ITER; ++k) {
+        const int idx = local_tid + k * N_THREADS;
+        const int tr = idx / TILE_W; // constexpr divisor: mul + shift
+        const int tc = idx - tr * TILE_W;
+        const int gr = tile_row0 + tr;
+        const int gc = tile_col0 + tc;
+        v[k] = COMPUTE_TYPE{0};
+        if (idx < TILE_SIZE && gr >= 0 && gr < nrows && gc >= 0 && gc < ncols) {
+            const int gid = gc + ncols * gr;
+            v[k] = static_cast<COMPUTE_TYPE>(d_frame[gid]) - d_pd_mean[gid];
         }
     }
-
-    // B.2  Left column of the halo
-    if (threadIdx.x == 0 && valid_pixel) {
-        for (int j = 1; j <= col_radius; ++j)
-            if (col_global - j >= 0)
-                shmem[shmem_tid - j] = load_pixel(row_global, col_global - j);
+#pragma unroll
+    for (int k = 0; k < N_ITER; ++k) {
+        const int idx = local_tid + k * N_THREADS;
+        if (idx < TILE_SIZE)
+            shmem[idx] = v[k];
     }
-
-    // B.3  Right column of the halo
-    if (threadIdx.x == blockDim.x - 1 && valid_pixel) {
-        for (int j = 1; j <= col_radius; ++j)
-            if (col_global + j < static_cast<ssize_t>(ncols))
-                shmem[shmem_tid + j] = load_pixel(row_global, col_global + j);
-    }
-
-    // B.4  Bottom rows of the halo
-    if (threadIdx.y == blockDim.y - 1 && valid_pixel) {
-        for (int i = 1; i <= row_radius; ++i) {
-            if (row_global + i < static_cast<ssize_t>(nrows))
-                shmem[shmem_tid + i * shmem_stride] =
-                    load_pixel(row_global + i, col_global);
-        }
-        // Bottom-left corner rectangle
-        if (threadIdx.x == 0) {
-            for (int i = 1; i <= row_radius; ++i)
-                for (int j = 1; j <= col_radius; ++j)
-                    if (row_global + i < static_cast<ssize_t>(nrows) &&
-                        col_global - j >= 0)
-                        shmem[shmem_tid + i * shmem_stride - j] =
-                            load_pixel(row_global + i, col_global - j);
-        }
-        // Bottom-right corner rectangle
-        if (threadIdx.x == blockDim.x - 1) {
-            for (int i = 1; i <= row_radius; ++i)
-                for (int j = 1; j <= col_radius; ++j)
-                    if (row_global + i < static_cast<ssize_t>(nrows) &&
-                        col_global + j < static_cast<ssize_t>(ncols))
-                        shmem[shmem_tid + i * shmem_stride + j] =
-                            load_pixel(row_global + i, col_global + j);
-        }
-    }
-
     __syncthreads();
 
     // =====================
     // Cluster-finding logic
     // =====================
-    if (!valid_pixel)
+    if (col_global >= ncols || row_global >= nrows)
         return;
 
     // Per-pixel variance from global pedestal arrays.
@@ -187,17 +129,17 @@ __global__ void find_clusters_in_single_frame(
     // both O(rms), so this difference has no catastrophic cancellation even in
     // float — unlike the raw E[X^2] - E[X]^2 form, where X ~ 4600 makes both
     // terms ~2e7. NOTE: Keep thresholds squared to avoid one sqrtf() per pixel.
-    DEVICE_PED_TYPE mean_px = d_pd_mean[global_tid];
-    DEVICE_PED_TYPE resid = mean_px - d_pd_off[global_tid]; // E[Y] ~ O(1)
-    DEVICE_PED_TYPE var_px =
+    const DEVICE_PED_TYPE mean_px = d_pd_mean[global_tid];
+    const DEVICE_PED_TYPE resid = mean_px - d_pd_off[global_tid]; // E[Y] ~ O(1)
+    const DEVICE_PED_TYPE var_px =
         d_pd_sum2[global_tid] / static_cast<DEVICE_PED_TYPE>(n_pd_samples) -
         resid * resid;
-    COMPUTE_TYPE rms_sq = static_cast<COMPUTE_TYPE>(
+    const COMPUTE_TYPE rms_sq = static_cast<COMPUTE_TYPE>(
         var_px > DEVICE_PED_TYPE{0} ? var_px : DEVICE_PED_TYPE{0});
-    COMPUTE_TYPE nSig_sq_rms_sq = m_nSigma * m_nSigma * rms_sq;
+    const COMPUTE_TYPE nSig_sq_rms_sq = m_nSigma * m_nSigma * rms_sq;
 
     // Pedestal-subtracted value of the center pixel (already in shmem)
-    COMPUTE_TYPE val_pixel = shmem[shmem_tid];
+    const COMPUTE_TYPE val_pixel = shmem[shmem_tid];
 
     // Negative pedestal early exit:
     //     val_pixel < -nSigma * rms
@@ -218,11 +160,12 @@ __global__ void find_clusters_in_single_frame(
     // (ir>=0, ic<=0) PEDESTAL_TYPE br = PEDESTAL_TYPE{0};   // bottom-right
     // (ir>=0, ic>=0)
 
-#pragma unroll
+    // See OUTER_UNROLL above for why this is size-dependent.
+#pragma unroll OUTER_UNROLL
     for (int ir = -row_radius; ir <= row_radius; ++ir) {
 #pragma unroll
         for (int ic = -col_radius; ic <= col_radius; ++ic) {
-            COMPUTE_TYPE val = shmem[shmem_tid + ir * shmem_stride + ic];
+            COMPUTE_TYPE val = shmem[shmem_tid + ir * TILE_W + ic];
 
             total += val;
             max_val = val > max_val ? val : max_val;
@@ -289,18 +232,18 @@ __global__ void find_clusters_in_single_frame(
     // pedestal via push_fast(). In this kernel, the GPU updates all pixels in a
     // frame simultaneously. So the updated pedestal will only be used starting
     // from the next frame. -> This avoids a/serialization and b/global mem I/O.
-    if (!is_photon && valid_pixel) {
+    if (!is_photon) {
         // Update the CENTERED moments of Y = X - X0 (X0 = frozen baseline).
         // Both sum (~n*E[Y]) and sum2 (~n*E[Y^2]) stay O(rms)-scale, so the
         // running EMA and its float rounding never touch the ~1e10 magnitudes
         // the raw accumulators would reach. Reconstruct the full mean as
         // X0 + sum/n for the pedestal subtraction on the next frame.
-        DEVICE_PED_TYPE X0 = d_pd_off[global_tid];
-        DEVICE_PED_TYPE y =
+        const DEVICE_PED_TYPE X0 = d_pd_off[global_tid];
+        const DEVICE_PED_TYPE y =
             static_cast<DEVICE_PED_TYPE>(d_frame[global_tid]) - X0;
         DEVICE_PED_TYPE sum = d_pd_sum[global_tid];
         DEVICE_PED_TYPE sum2 = d_pd_sum2[global_tid];
-        DEVICE_PED_TYPE n = static_cast<DEVICE_PED_TYPE>(n_pd_samples);
+        const DEVICE_PED_TYPE n = static_cast<DEVICE_PED_TYPE>(n_pd_samples);
 
         sum += y - sum / n;
         sum2 += y * y - sum2 / n;
@@ -315,41 +258,34 @@ __global__ void find_clusters_in_single_frame(
     if (!is_photon) return; // Debugging
     */
 
-    // Delay building clusterData until we know this thread will write a photon.
-    // This avoids CSX*CSY conversions/rounds for the overwhelmingly common
-    // background pixels.
-    CT clusterData[CSX * CSY];
-    int idx = 0;
-
-#pragma unroll
-    for (int ir = -row_radius; ir <= row_radius; ++ir) {
-#pragma unroll
-        for (int ic = -col_radius; ic <= col_radius; ++ic) {
-            COMPUTE_TYPE val = shmem[shmem_tid + ir * shmem_stride + ic];
-            if constexpr (std::is_integral_v<CT>)
-                clusterData[idx] = static_cast<CT>(lround(val));
-            else
-                clusterData[idx] = static_cast<CT>(val);
-            idx++;
-        }
-    }
-
-    // Write cluster to global output buffer using atomic index
-    // for coordination across all blocks
+    // Claim an output slot (atomic index coordinates across all blocks)
     uint32_t write_idx = atomicAdd(d_cluster_count, 1u);
 
     // Guard against overflowing the pre-allocated cluster buffer
     if (write_idx >= max_clusters)
         return;
 
-    ClusterType cluster{};
-    cluster.x = static_cast<decltype(cluster.x)>(col_global);
-    cluster.y = static_cast<decltype(cluster.y)>(row_global);
+    // Convert straight from shmem into the global cluster. No local
+    // CSX*CSY staging array: with the outer loop rolled it would be indexed
+    // at runtime and land in local memory (328 B stack at 9x9).
+    ClusterType *out = d_clusters + write_idx;
+    out->x = static_cast<decltype(out->x)>(col_global);
+    out->y = static_cast<decltype(out->y)>(row_global);
+    CT *dst = reinterpret_cast<CT *>(&out->data);
+    int idx = 0;
 
-    memcpy(reinterpret_cast<CT *>(&cluster.data), clusterData,
-           sizeof(CT) * CSX * CSY);
-
-    d_clusters[write_idx] = cluster;
+#pragma unroll OUTER_UNROLL
+    for (int ir = -row_radius; ir <= row_radius; ++ir) {
+#pragma unroll
+        for (int ic = -col_radius; ic <= col_radius; ++ic) {
+            COMPUTE_TYPE val = shmem[shmem_tid + ir * TILE_W + ic];
+            if constexpr (std::is_integral_v<CT>)
+                dst[idx] = static_cast<CT>(lround(val));
+            else
+                dst[idx] = static_cast<CT>(val);
+            idx++;
+        }
+    }
 }
 
 } // namespace aare::device

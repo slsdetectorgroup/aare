@@ -42,8 +42,8 @@ struct StreamContextGraph {
     device::DEVICE_PED_TYPE *karg_d_pd_off = nullptr;
     uint32_t karg_n_pd_samples = 0;
     device::COMPUTE_TYPE karg_nSigma = 0.0f;
-    size_t karg_nrows = 0;
-    size_t karg_ncols = 0;
+    int32_t karg_nrows = 0; // must match the kernel signature exactly:
+    int32_t karg_ncols = 0; // kernelParams is untyped
     ClusterType *karg_d_clusters = nullptr;
     uint32_t *karg_d_cluster_count = nullptr;
     uint32_t karg_max_clusters = 0;
@@ -94,7 +94,7 @@ class ClusterFinderCUDAGraph {
     size_t m_clusters_offset; // offset of cluster array within output block
 
     COMPUTE_TYPE m_nSigma;
-    Pedestal<PEDESTAL_TYPE> m_pedestal;
+    FastPedestal<PEDESTAL_TYPE> m_pedestal;
     ClusterVector<ClusterType> m_clusters;
     bool m_pedestal_dirty = true;
     bool m_graphs_dirty = true; // set when pedestal or h_output_pinned changes
@@ -125,11 +125,13 @@ class ClusterFinderCUDAGraph {
      */
     ClusterFinderCUDAGraph(Shape<2> shape_, COMPUTE_TYPE nSigma = 5.0,
                            size_t max_clusters_per_frame = 2048,
-                           int n_streams_ = 4)
+                           int n_streams_ = 4,
+                           size_t min_pedestal_samples = 1000)
         : m_shape(shape_), nrows(shape_[0]), ncols(shape_[1]),
           m_image_size(nrows * ncols), n_streams(n_streams_),
           m_max_clusters_per_frame(max_clusters_per_frame), m_nSigma(nSigma),
-          m_pedestal(shape_[0], shape_[1]), m_clusters(max_clusters_per_frame) {
+          m_pedestal(shape_[0], shape_[1], min_pedestal_samples),
+          m_clusters(max_clusters_per_frame) {
         if (n_streams_ <= 0) {
             throw std::invalid_argument(
                 "ClusterFinderCUDAGraph: n_streams must be > 0");
@@ -145,6 +147,13 @@ class ClusterFinderCUDAGraph {
         if (max_clusters_per_frame == 0) {
             throw std::invalid_argument(
                 "ClusterFinderCUDAGraph: max_clusters_per_frame must be > 0");
+        }
+
+        // The kernel indexes pixels with int32_t
+        if (m_image_size >
+            static_cast<size_t>(std::numeric_limits<int32_t>::max())) {
+            throw std::invalid_argument(
+                "ClusterFinderCUDAGraph: nrows * ncols must fit in int32_t");
         }
 
         // Grid/Block dimensions
@@ -261,7 +270,11 @@ class ClusterFinderCUDAGraph {
     }
 
     void push_pedestal_frame(NDView<FRAME_TYPE, 2> frame) {
-        m_pedestal.push(frame);
+        if (!m_pedestal.ready()) {
+            m_pedestal.add_init_frame(frame);
+        } else {
+            m_pedestal.push_ema(frame);
+        }
         m_pedestal_dirty = true;
     }
 
@@ -420,8 +433,10 @@ class ClusterFinderCUDAGraph {
      */
     void sync_pedestal_to_device() {
         NDArray<PEDESTAL_TYPE, 2> h_mean = m_pedestal.mean();
-        NDArray<PEDESTAL_TYPE, 2> h_sum = m_pedestal.get_sum();
-        NDArray<PEDESTAL_TYPE, 2> h_sum2 = m_pedestal.get_sum2();
+        // FastPedestal keeps both moments in double whatever PEDESTAL_TYPE is,
+        // so let the accessors name their own type here.
+        auto h_sum = m_pedestal.get_sum();
+        auto h_sum2 = m_pedestal.get_sum2();
 
         using DPT = device::DEVICE_PED_TYPE;
         const double n = static_cast<double>(m_pedestal.n_samples());
@@ -524,8 +539,8 @@ class ClusterFinderCUDAGraph {
             sc.karg_d_pd_off = sc.d_pd_off;
             sc.karg_n_pd_samples = n_pd_samples;
             sc.karg_nSigma = m_nSigma;
-            sc.karg_nrows = nrows;
-            sc.karg_ncols = ncols;
+            sc.karg_nrows = static_cast<int32_t>(nrows);
+            sc.karg_ncols = static_cast<int32_t>(ncols);
             sc.karg_d_clusters = reinterpret_cast<ClusterType *>(
                 sc.d_output + m_clusters_offset);
             sc.karg_d_cluster_count = reinterpret_cast<uint32_t *>(sc.d_output);
@@ -548,7 +563,8 @@ class ClusterFinderCUDAGraph {
             cudaKernelNodeParams kp = {};
             // NOLINTNEXTLINE(cppcoreguidelines-pro-type-reinterpret-cast)
             kp.func = reinterpret_cast<void *>(
-                device::find_clusters_in_single_frame<ClusterType, FRAME_TYPE>);
+                device::find_clusters_in_single_frame<ClusterType, FRAME_TYPE,
+                                                      BLOCK_X, BLOCK_Y>);
             kp.gridDim = grid;
             kp.blockDim = block;
             kp.sharedMemBytes = static_cast<unsigned int>(shmem_bytes);

@@ -1,5 +1,6 @@
 // SPDX-License-Identifier: MPL-2.0
 #pragma once
+#include "aare/Cluster.hpp" // no_2x2_cluster
 #include "aare/ClusterFile.hpp"
 #include "aare/ClusterVector.hpp"
 #include "aare/Dtype.hpp"
@@ -11,13 +12,6 @@
 #include <cstddef>
 
 namespace aare {
-
-template <typename ClusterType,
-          typename = std::enable_if_t<is_cluster_v<ClusterType>>>
-struct no_2x2_cluster {
-    constexpr static bool value =
-        ClusterType::cluster_size_x > 2 && ClusterType::cluster_size_y > 2;
-};
 
 /**
  * @brief Find fixed-size photon clusters using a per-pixel pedestal and noise
@@ -50,18 +44,21 @@ class ClusterFinder {
      * @param image_size Image shape as (rows, columns).
      * @param nSigma Per-pixel noise threshold multiplier.
      * @param capacity Initial cluster-vector capacity.
+     * @param min_pedestal_samples Minimum number of pedestal frames to
+     * accumulate to get reasonable statistics
      */
     ClusterFinder(Shape<2> image_size, PEDESTAL_TYPE nSigma = 5.0,
-                  size_t capacity = 1000000)
+                  size_t capacity = 1000000, size_t min_pedestal_samples = 1000)
         : m_image_size(image_size), m_nSigma(nSigma),
           c2(sqrt((ClusterSizeY + 1) / 2 * (ClusterSizeX + 1) / 2)),
           c3(sqrt(ClusterSizeX * ClusterSizeY)),
-          m_pedestal(image_size[0], image_size[1]), m_clusters(capacity),
-          m_threshold({image_size[0], image_size[1]}, 0),
+          m_pedestal(image_size[0], image_size[1], min_pedestal_samples),
+          m_clusters(capacity), m_threshold({image_size[0], image_size[1]}, 0),
           m_pd_corrected_frame({image_size[0], image_size[1]}, 0) {
         LOG(logDEBUG) << "ClusterFinder: "
                       << "image_size: " << image_size[0] << "x" << image_size[1]
-                      << ", nSigma: " << nSigma << ", capacity: " << capacity;
+                      << ", nSigma: " << nSigma << ", capacity: " << capacity
+                      << ", min_pedestal_samples: " << min_pedestal_samples;
     }
 
     /**

@@ -1,13 +1,14 @@
 #pragma once
-#include <cstdio>
-#include <cstdlib>
 #include <cuda_runtime.h>
+#include <sstream>
+#include <stdexcept>
 
 inline void __cuda_check(cudaError_t err, const char *file, int line) {
     if (err != cudaSuccess) {
-        std::fprintf(stderr, "[%s:%d] CUDA error: %s\n", file, line,
-                     cudaGetErrorString(err));
-        std::exit(1);
+        throw std::runtime_error((std::ostringstream{}
+                                  << "[CUDA ERROR] " << cudaGetErrorString(err)
+                                  << " at " << file << ":" << line)
+                                     .str());
     }
 }
 

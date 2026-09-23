@@ -27,4 +27,77 @@ void define_defs_bindings(py::module &m) {
     moench05.attr("nRows") = Moench05::nRows;
     moench05.attr("nCols") = Moench05::nCols;
     moench05.attr("adcNumbers") = Moench05::adcNumbers;
+
+    py::class_<ROI>(m, "ROI")
+        .def(py::init<>())
+        .def(py::init<ssize_t, ssize_t, ssize_t, ssize_t>(), py::arg("xmin"),
+             py::arg("xmax"), py::arg("ymin"), py::arg("ymax"))
+        .def_readwrite("xmin", &ROI::xmin)
+        .def_readwrite("xmax", &ROI::xmax)
+        .def_readwrite("ymin", &ROI::ymin)
+        .def_readwrite("ymax", &ROI::ymax)
+
+        .def(
+            "slice",
+            [](const ROI &self) {
+                return std::make_tuple(py::slice(self.ymin, self.ymax, 1),
+                                       py::slice(self.xmin, self.xmax, 1));
+            },
+            R"doc(
+            The slice can be used to index into a 2D array to extract the region of interest.
+
+            Returns
+            -------
+            tuple of slice
+                A tuple containing two slice objects for the x and y dimensions.
+        )doc")
+
+        .def("__str__",
+             [](const ROI &self) {
+                 return fmt::format("ROI: xmin: {} xmax: {} ymin: {} ymax: {}",
+                                    self.xmin, self.xmax, self.ymin, self.ymax);
+             })
+        .def("__repr__",
+             [](const ROI &self) {
+                 return fmt::format(
+                     "<ROI: xmin: {} xmax: {} ymin: {} ymax: {}>", self.xmin,
+                     self.xmax, self.ymin, self.ymax);
+             })
+        .def("__iter__",
+             [](const ROI &self) {
+                 return py::make_iterator(&self.xmin, &self.ymax + 1); // NOLINT
+             })
+
+        .def("__eq__", [](const ROI &self, const ROI &other) {
+            return self.xmin == other.xmin && self.xmax == other.xmax &&
+                   self.ymin == other.ymin && self.ymax == other.ymax;
+        });
+
+    py::enum_<DetectorType>(m, "DetectorType")
+        .value("Jungfrau", DetectorType::Jungfrau)
+        .value("Eiger", DetectorType::Eiger)
+        .value("Mythen3", DetectorType::Mythen3)
+        .value("Moench", DetectorType::Moench)
+        .value("Moench03", DetectorType::Moench03)
+        .value("Moench03_old", DetectorType::Moench03_old)
+        .value("ChipTestBoard", DetectorType::ChipTestBoard)
+        .value("Unknown", DetectorType::Unknown);
+
+    py::enum_<UDPPortPosition>(m, "UDPPortPosition")
+        .value("LEFT", UDPPortPosition::LEFT)
+        .value("RIGHT", UDPPortPosition::RIGHT)
+        .value("TOP", UDPPortPosition::TOP)
+        .value("BOTTOM", UDPPortPosition::BOTTOM);
+
+    py::enum_<TimingMode>(m, "TimingMode")
+        .value("AUTO_TIMING", TimingMode::AUTO_TIMING)
+        .value("TRIGGER_EXPOSURE", TimingMode::TRIGGER_EXPOSURE)
+        .value("GATED", TimingMode::GATED)
+        .value("BURST_TRIGGER", TimingMode::BURST_TRIGGER)
+        .value("TRIGGER_GATED", TimingMode::TRIGGER_GATED);
+
+    py::enum_<FrameDiscardPolicy>(m, "FrameDiscardPolicy")
+        .value("NoDiscard", FrameDiscardPolicy::NoDiscard)
+        .value("Discard", FrameDiscardPolicy::Discard)
+        .value("DiscardPartial", FrameDiscardPolicy::DiscardPartial);
 }

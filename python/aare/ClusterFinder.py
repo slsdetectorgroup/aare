@@ -18,17 +18,33 @@ def _get_class(name, cluster_size, dtype):
 
 
 
-def ClusterFinder(image_size, cluster_size=(3,3), n_sigma=5, dtype = np.int32, capacity = 1024):
+def ClusterFinder(image_size, *, cluster_size=(3,3), n_sigma=5, dtype = np.int32, capacity = 1024, min_pedestal_samples = 1000):
     """
     Factory function to create a ClusterFinder object. Provides a cleaner syntax for 
     the templated ClusterFinder in C++.
+
+    Parameters
+    ----------
+    image_size : tuple
+        The size of the image as a tuple (height, width).
+    cluster_size : tuple, optional
+        The size of the cluster to find as a tuple (height, width). Default is (3,3).
+    n_sigma : int, optional
+        Multiplier of the standard deviation used as a threshold to identify potential photon pixels. Default is 5.
+    dtype : data-type, optional
+        The data type of the image. Default is np.int32.
+    capacity : int, optional
+        The maximum number of clusters than can be stored before reallocating. Default is 1024.
+    min_pedestal_samples : int, optional
+        The minimum number of pedestal samples to accumulate before using the pedestal. Default is 1000.
     """
     cls = _get_class("ClusterFinder", cluster_size, dtype)
-    return cls(image_size, n_sigma=n_sigma, capacity=capacity)
+    return cls(image_size, n_sigma=n_sigma, capacity=capacity, min_pedestal_samples=min_pedestal_samples)
 
 
 
-def ClusterFinderFrozen(image_size, cluster_size=(3,3), n_sigma=5, dtype=np.int32, capacity=1024):
+def ClusterFinderFrozen(image_size, *, cluster_size=(3,3), n_sigma=5, dtype=np.int32,
+                        capacity=1024, min_pedestal_samples=1000):
     """
     Factory function to create a ClusterFinderFrozen object.
 
@@ -37,19 +53,40 @@ def ClusterFinderFrozen(image_size, cluster_size=(3,3), n_sigma=5, dtype=np.int3
     pedestal updates are deferred to the end of the frame). This mirrors the CUDA
     kernel's per-frame update model, so running it against ClusterFinderCUDA
     isolates pedestal-update timing as the sole variable.
+
+    min_pedestal_samples matches ClusterFinder so the twins warm up identically;
+    a comparison run must pass the same value to both.
     """
     cls = _get_class("ClusterFinderFrozen", cluster_size, dtype)
-    return cls(image_size, n_sigma=n_sigma, capacity=capacity)
+    return cls(image_size, n_sigma=n_sigma, capacity=capacity,
+               min_pedestal_samples=min_pedestal_samples)
 
 
-def ClusterFinderMT(image_size, cluster_size = (3,3), dtype=np.int32, n_sigma=5, capacity = 1024, n_threads = 3):
+def ClusterFinderMT(image_size, *, cluster_size = (3,3), dtype=np.int32, n_sigma=5, capacity = 1024, n_threads = 3, min_pedestal_samples = 1000): 
     """ 
     Factory function to create a ClusterFinderMT object. Provides a cleaner syntax for 
     the templated ClusterFinderMT in C++.
+
+    Parameters
+    ----------
+    image_size : tuple
+        The size of the image as a tuple (height, width).
+    cluster_size : tuple, optional
+        The size of the cluster to find as a tuple (height, width). Default is (3,3).
+    n_sigma : int, optional
+        Multiplier of the standard deviation used as a threshold to identify potential photon pixels. Default is 5.
+    dtype : data-type, optional
+        The data type of the image. Default is np.int32.
+    capacity : int, optional
+        The maximum number of clusters than can be stored before reallocating. Default is 1024.
+    n_threads : int, optional
+        The number of threads to use for processing. Default is 3.
+    min_pedestal_samples : int, optional
+        The minimum number of pedestal samples to accumulate before using the pedestal. Default is 1000.
     """
 
     cls = _get_class("ClusterFinderMT", cluster_size, dtype)
-    return cls(image_size, n_sigma=n_sigma, capacity=capacity, n_threads=n_threads)
+    return cls(image_size, n_sigma=n_sigma, capacity=capacity, min_pedestal_samples=min_pedestal_samples, n_threads=n_threads)
 
 
 def _cuda_available():
@@ -57,8 +94,15 @@ def _cuda_available():
     return hasattr(_aare, "ClusterFinderCUDA_Cluster3x3i")
 
 
-def ClusterFinderCUDA(image_size, cluster_size=(3,3), n_sigma=5, dtype=np.int32,
+# GPU algorithm name -> suffix of the bound C++ class. The C++ driver is
+# templated on the algorithm (see clusterfinder_algo.cuh); each one is bound as
+# its own class and selected here, so users never see the template.
+_CUDA_ALGORITHMS = {"fixed_window": ""}
+
+
+def ClusterFinderCUDA(image_size, *, cluster_size=(3,3), n_sigma=5, dtype=np.int32,
                       max_clusters_per_frame=2048, n_streams=4,
+                      min_pedestal_samples=1000, algorithm="fixed_window",
                       time_kernels=False):
     """
     Factory function to create a ClusterFinderCUDA object. Provides a cleaner
@@ -81,6 +125,14 @@ def ClusterFinderCUDA(image_size, cluster_size=(3,3), n_sigma=5, dtype=np.int32,
         but as tight as possible to minimize PCIe traffic. Default 2048.
     n_streams : int, optional
         Number of CUDA streams for H2D/kernel/D2H pipelining. Default 4.
+    min_pedestal_samples : int, optional
+        Frames the host pedestal accumulates before it is ready, and the
+        reciprocal of the steady-state update weight. Matches ClusterFinder so
+        a CPU/GPU comparison warms up identically. Default 1000.
+    algorithm : str, optional
+        GPU algorithm. "fixed_window" (default): a cluster_size window around
+        each pixel with local-maximum suppression. Memory and streams are
+        managed internally whichever algorithm is chosen.
     time_kernels : bool, optional
         Enable per-frame CUDA-event kernel timing, exposed via
         avg_kernel_time_ms(). Off by default because it adds two event records
@@ -117,11 +169,17 @@ def ClusterFinderCUDA(image_size, cluster_size=(3,3), n_sigma=5, dtype=np.int32,
             "Rebuild with -DAARE_CUDA=ON (and -DAARE_PYTHON_BINDINGS=ON)."
         )
 
-    cls = _get_class("ClusterFinderCUDA", cluster_size, dtype)
+    if algorithm not in _CUDA_ALGORITHMS:
+        raise ValueError(
+            f"Unknown CUDA algorithm {algorithm!r}; "
+            f"choose from {sorted(_CUDA_ALGORITHMS)}")
+    cls = _get_class("ClusterFinderCUDA" + _CUDA_ALGORITHMS[algorithm],
+                     cluster_size, dtype)
     return cls(image_size,
                n_sigma=n_sigma,
                max_clusters_per_frame=max_clusters_per_frame,
                n_streams=n_streams,
+               min_pedestal_samples=min_pedestal_samples,
                time_kernels=time_kernels)
 
 def find_cluster_views_batched_iter(cf, frames, first_frame=0, chunk=None):
@@ -187,8 +245,9 @@ def find_cluster_views_batched_iter(cf, frames, first_frame=0, chunk=None):
         view.release()
 
 
-def ClusterFinderCUDAGraph(image_size, cluster_size=(3,3), n_sigma=5, dtype=np.int32,
-                           max_clusters_per_frame=2048, n_streams=4):
+def ClusterFinderCUDAGraph(image_size, *, cluster_size=(3,3), n_sigma=5, dtype=np.int32,
+                           max_clusters_per_frame=2048, n_streams=4,
+                           min_pedestal_samples=1000):
     """
     Factory function to create a ClusterFinderCUDAGraph object. Uses pre-recorded
     CUDA Graphs to reduce per-frame CPU API overhead (~23 µs vs ~31 µs for the
@@ -209,6 +268,8 @@ def ClusterFinderCUDAGraph(image_size, cluster_size=(3,3), n_sigma=5, dtype=np.i
         Hard upper bound on clusters per frame. Default 2048.
     n_streams : int, optional
         Number of CUDA streams (one graph per stream). Default 4.
+    min_pedestal_samples : int, optional
+        Frames the host pedestal accumulates before it is ready. Default 1000.
 
     Note
     ----
@@ -225,7 +286,8 @@ def ClusterFinderCUDAGraph(image_size, cluster_size=(3,3), n_sigma=5, dtype=np.i
     return cls(image_size,
                n_sigma=n_sigma,
                max_clusters_per_frame=max_clusters_per_frame,
-               n_streams=n_streams)
+               n_streams=n_streams,
+               min_pedestal_samples=min_pedestal_samples)
 
 
 def ClusterCollector(clusterfindermt, dtype=np.int32):
@@ -248,19 +310,55 @@ def ClusterFileSink(clusterfindermt, cluster_file, dtype=np.int32):
 
 
 def ClusterFile(fname, cluster_size=(3,3), dtype=np.int32, chunk_size = 1000, mode = "r"):
-    """
-    Factory function to create a ClusterFile object. Provides a cleaner syntax for
-    the templated ClusterFile in C++.
+    """Create a reader or writer for a binary cluster file.
+
+    Parameters
+    ----------
+    fname : path-like
+        Cluster file to open.
+    cluster_size : tuple[int, int], default=(3, 3)
+        Cluster dimensions stored in the file.
+    dtype : numpy dtype, default=numpy.int32
+        Data type of the cluster values stored in the file.
+    chunk_size : int, default=1000
+        Maximum number of selected clusters returned by ``chunks()`` and
+        default iteration. Must be positive when iterating over chunks.
+    mode : {"r", "w", "a"}, default="r"
+        Open for reading, truncate and write, or append, respectively.
+
+    Returns
+    -------
+    ClusterFile
+        The compiled ClusterFile specialization matching ``cluster_size`` and
+        ``dtype``.
+
+    Notes
+    -----
+    The file format contains no cluster shape or data-type metadata. Supplying
+    values that do not match the file causes its bytes to be interpreted
+    incorrectly. Use ``frames()`` to iterate over complete frames, including
+    empty or fully filtered frames with their stored frame numbers. Use
+    ``chunks()`` or ``chunks(chunk_size)`` to iterate over selected clusters
+    in batches. Chunks may combine frames, so their frame number is not
+    reliable per-cluster metadata.
+
+    Iterators consume the current file position without rewinding; use one
+    traversal at a time. Each result owns its storage and remains valid after
+    advancing the iterator or closing the file.
+
+    Examples
+    --------
 
     .. code-block:: python
 
         from aare import ClusterFile
-        
-        with ClusterFile("clusters.clust", cluster_size=(3,3), dtype=np.int32) as cf:
-            # cf is now a ClusterFile_Cluster3x3i object but you don't need to know that.
-            for clusters in cf:
-                # Loop over clusters in chunks of 1000 
-                # The type of clusters will be a ClusterVector_Cluster3x3i in this case
+
+        with ClusterFile(
+            "clusters.clust", cluster_size=(3, 3), dtype=np.int32
+        ) as cf:
+            for clusters in cf.chunks():
+                # Process clusters in chunks of at most 1000.
+                ...
 
     """
 

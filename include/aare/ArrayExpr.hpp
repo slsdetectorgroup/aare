@@ -29,7 +29,7 @@ class ArrayAdd : public ArrayExpr<ArrayAdd<A, B, Ndim>, Ndim> {
     ArrayAdd(const A &arr1, const B &arr2) : arr1_(arr1), arr2_(arr2) {
         assert(arr1.size() == arr2.size());
     }
-    auto operator[](int i) const { return arr1_[i] + arr2_[i]; }
+    auto operator[](size_t i) const { return arr1_[i] + arr2_[i]; }
     size_t size() const { return arr1_.size(); }
     std::array<ssize_t, Ndim> shape() const { return arr1_.shape(); }
 };
@@ -43,7 +43,7 @@ class ArraySub : public ArrayExpr<ArraySub<A, B, Ndim>, Ndim> {
     ArraySub(const A &arr1, const B &arr2) : arr1_(arr1), arr2_(arr2) {
         assert(arr1.size() == arr2.size());
     }
-    auto operator[](int i) const { return arr1_[i] - arr2_[i]; }
+    auto operator[](size_t i) const { return arr1_[i] - arr2_[i]; }
     size_t size() const { return arr1_.size(); }
     std::array<ssize_t, Ndim> shape() const { return arr1_.shape(); }
 };
@@ -57,7 +57,7 @@ class ArrayMul : public ArrayExpr<ArrayMul<A, B, Ndim>, Ndim> {
     ArrayMul(const A &arr1, const B &arr2) : arr1_(arr1), arr2_(arr2) {
         assert(arr1.size() == arr2.size());
     }
-    auto operator[](int i) const { return arr1_[i] * arr2_[i]; }
+    auto operator[](size_t i) const { return arr1_[i] * arr2_[i]; }
     size_t size() const { return arr1_.size(); }
     std::array<ssize_t, Ndim> shape() const { return arr1_.shape(); }
 };
@@ -71,7 +71,7 @@ class ArrayDiv : public ArrayExpr<ArrayDiv<A, B, Ndim>, Ndim> {
     ArrayDiv(const A &arr1, const B &arr2) : arr1_(arr1), arr2_(arr2) {
         assert(arr1.size() == arr2.size());
     }
-    auto operator[](int i) const { return arr1_[i] / arr2_[i]; }
+    auto operator[](size_t i) const { return arr1_[i] / arr2_[i]; }
     size_t size() const { return arr1_.size(); }
     std::array<ssize_t, Ndim> shape() const { return arr1_.shape(); }
 };

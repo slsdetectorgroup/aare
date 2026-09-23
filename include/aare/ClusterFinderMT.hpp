@@ -131,30 +131,57 @@ class ClusterFinderMT {
         }
     }
 
+    bool output_queues_are_empty() const {
+        for (auto &q : m_output_queues) {
+            if (!q->isEmpty()) {
+                return false;
+            }
+        }
+        return true;
+    }
+
     /**
      * @brief Collect all the clusters from the output queues and write them to
      * the sink
      */
+    // void collect() {
+    //     Backoff backoff;
+    //     while (!m_stop_requested || !output_queues_are_empty() ||
+    //            !m_processing_threads_stopped) {
+    //         bool moved_any = false;
+    //         for (auto &queue : m_output_queues) {
+    //             if (auto *front = queue->frontPtr(); front != nullptr) {
+    //                 while (!m_sink.write(std::move(*front))) {
+    //                     backoff.pause();
+    //                 }
+    //                 queue->popFront();
+    //                 moved_any = true;
+    //             }
+    //         }
+    //         if (moved_any) {
+    //             backoff.reset();
+    //         } else {
+    //             backoff.pause();
+    //         }
+    //     }
+    // }
     void collect() {
-        bool empty = true;
         Backoff backoff;
-        while (!m_stop_requested || !empty || !m_processing_threads_stopped) {
+        for (;;) {
+            const bool done = m_stop_requested && m_processing_threads_stopped;
             bool moved_any = false;
             for (auto &queue : m_output_queues) {
                 while (auto *front = queue->frontPtr()) {
-                    while (!m_sink.write(std::move(*front))) {
+                    while (!m_sink.write(std::move(*front)))
                         backoff.pause();
-                    }
                     queue->popFront();
                     moved_any = true;
                 }
             }
-            empty = !moved_any;
-            if (moved_any) {
-                backoff.reset();
-            } else {
-                backoff.pause();
-            }
+            if (done &&
+                !moved_any) // swept after observing done, so this is real
+                break;
+            moved_any ? backoff.reset() : backoff.pause();
         }
     }
 
@@ -171,16 +198,19 @@ class ClusterFinderMT {
      * allocated once and recycled, so the total resident frame memory is
      * n_threads * queue_depth * frame size. Keeping the in flight data below
      * the L3 size keeps the per frame copy cheap.
+     * @param min_pedestal_samples minimum number of pedestal samples to
+     * accumulate before using the pedestal
      */
     ClusterFinderMT(Shape<2> image_size, PEDESTAL_TYPE nSigma = 5.0,
                     size_t capacity = 2000, size_t n_threads = 3,
-                    size_t queue_depth = 16)
+                    size_t queue_depth = 16, size_t min_pedestal_samples = 1000)
         : m_n_threads(n_threads) {
 
         LOG(logDEBUG1) << "ClusterFinderMT: "
                        << "image_size: " << image_size[0] << "x"
                        << image_size[1] << ", nSigma: " << nSigma
                        << ", capacity: " << capacity
+                       << ", min_pedestal_samples: " << min_pedestal_samples
                        << ", n_threads: " << n_threads
                        << ", queue_depth: " << queue_depth;
 
@@ -188,7 +218,7 @@ class ClusterFinderMT {
             m_cluster_finders.push_back(
                 std::make_unique<
                     ClusterFinder<ClusterType, FRAME_TYPE, PEDESTAL_TYPE>>(
-                    image_size, nSigma, capacity));
+                    image_size, nSigma, capacity, min_pedestal_samples));
         }
         for (size_t i = 0; i < n_threads; i++) {
             m_frame_pools.emplace_back(
