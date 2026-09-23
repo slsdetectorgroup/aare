@@ -32,6 +32,9 @@
 
 ### API Changes:
 
+- The C++ ``NDArray`` view constructor and ``NDArray::copy_from()`` take
+  ``NDView<const T, Ndim>``. Mutable views still convert implicitly, so
+  existing callers are unaffected, and read-only views can now be copied.
 - Added C++ overloads of ``adc_sar_05_06_07_08decode64to16``,
   ``adc_sar_05_decode64to16`` and ``adc_sar_04_decode64to16`` that take the
   packed samples as ``NDView<const uint8_t, 2>``. Words are assembled with
