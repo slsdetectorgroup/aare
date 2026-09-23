@@ -1,4 +1,4 @@
-// SPDX-License-Identifier: MPL-2.0
+// SPDX-License-Identifier: Apache-2.0
 /*
  * Copyright (c) Meta Platforms, Inc. and affiliates.
  *
@@ -18,10 +18,16 @@
 // @author Bo Hu (bhu@fb.com)
 // @author Jordan DeLong (delong.j@fb.com)
 
-// Changes made by PSD Detector Group:
-// Copied: Line 34 constexpr std::size_t hardware_destructive_interference_size
-// = 128; from folly/lang/Align.h Changed extension to .hpp Changed namespace to
-// aare
+// Changes made by the PSD Detector Group (PSI) relative to
+// folly/ProducerConsumerQueue.h:
+// - Copied constexpr hardware_destructive_interference_size = 128 from
+//   folly/lang/Align.h into this file.
+// - Changed the file extension to .hpp and the namespace to aare.
+// - Added a default constructor equivalent to ProducerConsumerQueue(2).
+// - Declared the move constructor and move assignment deleted. The queue is
+//   not safe to move and an earlier attempt at move support was removed.
+// - The constructor throws std::invalid_argument for size < 2 instead of
+//   asserting, so the check is also active in release builds.
 
 #pragma once
 
@@ -31,11 +37,13 @@
 #include <cstdlib>
 #include <memory>
 #include <stdexcept>
+#include <string>
 #include <type_traits>
 #include <utility>
 
-constexpr std::size_t hardware_destructive_interference_size = 128;
 namespace aare {
+
+constexpr std::size_t hardware_destructive_interference_size = 128;
 
 /*
  * ProducerConsumerQueue is a one producer and one consumer queue
@@ -46,38 +54,18 @@ template <class T> struct ProducerConsumerQueue {
 
     ProducerConsumerQueue(const ProducerConsumerQueue &) = delete;
     ProducerConsumerQueue &operator=(const ProducerConsumerQueue &) = delete;
-
-    ProducerConsumerQueue(ProducerConsumerQueue &&other) {
-        size_ = other.size_;
-        records_ = other.records_;
-        other.records_ = nullptr;
-        readIndex_ = other.readIndex_.load(std::memory_order_acquire);
-        writeIndex_ = other.writeIndex_.load(std::memory_order_acquire);
-    }
-    ProducerConsumerQueue &operator=(ProducerConsumerQueue &&other) {
-        size_ = other.size_;
-        records_ = other.records_;
-        other.records_ = nullptr;
-        readIndex_ = other.readIndex_.load(std::memory_order_acquire);
-        writeIndex_ = other.writeIndex_.load(std::memory_order_acquire);
-        return *this;
-    }
+    ProducerConsumerQueue(ProducerConsumerQueue &&) = delete;
+    ProducerConsumerQueue &operator=(ProducerConsumerQueue &&) = delete;
 
     ProducerConsumerQueue() : ProducerConsumerQueue(2) {};
-    // size must be >= 2.
+    // size must be >= 2, otherwise std::invalid_argument is thrown.
     //
     // Also, note that the number of usable slots in the queue at any
     // given time is actually (size-1), so if you start with an empty queue,
     // isFull() will return true after size-1 insertions.
     explicit ProducerConsumerQueue(uint32_t size)
-        : size_(size),
-          records_(static_cast<T *>(std::malloc(sizeof(T) * size))),
-          readIndex_(0), writeIndex_(0) {
-        assert(size >= 2);
-        if (!records_) {
-            throw std::bad_alloc();
-        }
-    }
+        : size_(size), records_(allocate_records(size)), readIndex_(0),
+          writeIndex_(0) {}
 
     ~ProducerConsumerQueue() {
         // We need to destruct anything that may still exist in our queue.
@@ -192,11 +180,23 @@ template <class T> struct ProducerConsumerQueue {
   private:
     using AtomicIndex = std::atomic<unsigned int>;
 
+    // Validates size before allocating, so a throw cannot leak the buffer.
+    static T *allocate_records(uint32_t size) {
+        if (size < 2) {
+            throw std::invalid_argument(
+                "ProducerConsumerQueue size must be at least 2, got " +
+                std::to_string(size));
+        }
+        auto *records = static_cast<T *>(std::malloc(sizeof(T) * size));
+        if (!records) {
+            throw std::bad_alloc();
+        }
+        return records;
+    }
+
     char pad0_[hardware_destructive_interference_size];
-    // const uint32_t size_;
-    uint32_t size_;
-    // T *const records_;
-    T *records_;
+    const uint32_t size_;
+    T *const records_;
 
     alignas(hardware_destructive_interference_size) AtomicIndex readIndex_;
     alignas(hardware_destructive_interference_size) AtomicIndex writeIndex_;
