@@ -43,7 +43,7 @@ class RawFile(_aare.RawFile):
         Returns:
             int: Number of frames in file.
         """
-        return super().frames_in_file
+        return self.total_frames
 
     def __enter__(self):
         return self

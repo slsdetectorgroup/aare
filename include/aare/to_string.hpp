@@ -56,6 +56,14 @@ template <typename T> T string_to(const std::string &arg) {
 template <> DetectorType string_to(const std::string &arg);
 
 /**
+ * @brief Convert a string to UDPPortPosition
+ * @param name string representation of the UDPPortPosition
+ * @return UDPPortPosition
+ * @throw runtime_error if the string does not match any UDPPortPosition
+ */
+template <> UDPPortPosition string_to(const std::string &arg);
+
+/**
  * @brief Convert a string to TimingMode
  * @param mode string representation of the TimingMode
  * @return TimingMode
@@ -78,5 +86,13 @@ template <> FrameDiscardPolicy string_to(const std::string &arg);
  * @throw invalid argument error if the string does not match any DACIndex
  */
 template <> DACIndex string_to(const std::string &arg);
+
+/**
+ * @brief Convert a corner enum to string
+ * @param arg corner enum value
+ * @return string representation of the corner enum
+ * @throw runtime_error if the corner value is invalid
+ */
+std::string to_string(const corner &arg);
 
 } // namespace aare

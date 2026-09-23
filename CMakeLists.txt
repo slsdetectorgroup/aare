@@ -394,6 +394,7 @@ set(PUBLICHEADERS
     include/aare/hist/PixelHistogramImpl.hpp
     include/aare/hist/PedestalTrackingPixelHistogram.hpp
     include/aare/GainMap.hpp
+    include/aare/ROI.hpp
     include/aare/ROIGeometry.hpp
     include/aare/DetectorGeometry.hpp
     include/aare/JungfrauDataFile.hpp
@@ -408,6 +409,7 @@ set(PUBLICHEADERS
     include/aare/RawMasterFile.hpp
     include/aare/RawSubFile.hpp
     include/aare/VarClusterFinder.hpp
+    include/aare/to_string.hpp
     include/aare/utils/task.hpp
     include/aare/utils/ifstream_helpers.hpp
     include/aare/utils/math_helpers.hpp)
@@ -428,6 +430,7 @@ set(SourceFiles
     ${CMAKE_CURRENT_SOURCE_DIR}/src/CtbRawFile.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/src/decode.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/src/defs.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/ROI.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/src/ROIGeometry.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/src/DetectorGeometry.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/src/hist/PedestalTrackingPixelHistogram.cpp
@@ -476,7 +479,7 @@ if(AARE_VERBOSE)
   target_compile_definitions(aare_core PUBLIC AARE_VERBOSE)
   target_compile_definitions(aare_core PUBLIC AARE_LOG_LEVEL=aare::logDEBUG5)
 else()
-  target_compile_definitions(aare_core PUBLIC AARE_LOG_LEVEL=aare::logERROR)
+  target_compile_definitions(aare_core PUBLIC AARE_LOG_LEVEL=aare::logWARNING)
 endif()
 
 if(AARE_CUSTOM_ASSERT)
@@ -499,11 +502,13 @@ endif()
 
 if(AARE_TESTS)
   set(TestSources
+      ${CMAKE_CURRENT_SOURCE_DIR}/tests/raw_file_helpers.hpp
       ${CMAKE_CURRENT_SOURCE_DIR}/src/algorithm.test.cpp
       ${CMAKE_CURRENT_SOURCE_DIR}/src/calibration.test.cpp
       ${CMAKE_CURRENT_SOURCE_DIR}/src/defs.test.cpp
       ${CMAKE_CURRENT_SOURCE_DIR}/src/decode.test.cpp
       ${CMAKE_CURRENT_SOURCE_DIR}/src/Dtype.test.cpp
+      ${CMAKE_CURRENT_SOURCE_DIR}/src/FilePtr.test.cpp
       ${CMAKE_CURRENT_SOURCE_DIR}/src/Fit.test.cpp
       ${CMAKE_CURRENT_SOURCE_DIR}/src/Frame.test.cpp
       ${CMAKE_CURRENT_SOURCE_DIR}/src/DetectorGeometry.test.cpp
@@ -518,6 +523,7 @@ if(AARE_TESTS)
       ${CMAKE_CURRENT_SOURCE_DIR}/src/ClusterFile.test.cpp
       ${CMAKE_CURRENT_SOURCE_DIR}/src/ClusterFinderMT.test.cpp
       ${CMAKE_CURRENT_SOURCE_DIR}/src/Pedestal.test.cpp
+      ${CMAKE_CURRENT_SOURCE_DIR}/src/FastPedestal.test.cpp
       ${CMAKE_CURRENT_SOURCE_DIR}/src/hist/PixelHistogramImpl.test.cpp
       ${CMAKE_CURRENT_SOURCE_DIR}/src/hist/PixelHistogram.test.cpp
       ${CMAKE_CURRENT_SOURCE_DIR}/src/hist/PedestalTrackingPixelHistogram.test.cpp
@@ -527,6 +533,7 @@ if(AARE_TESTS)
       ${CMAKE_CURRENT_SOURCE_DIR}/src/NumpyHelpers.test.cpp
       ${CMAKE_CURRENT_SOURCE_DIR}/src/RawFile.test.cpp
       ${CMAKE_CURRENT_SOURCE_DIR}/src/RawSubFile.test.cpp
+      ${CMAKE_CURRENT_SOURCE_DIR}/src/ROI.test.cpp
       ${CMAKE_CURRENT_SOURCE_DIR}/src/utils/task.test.cpp
       ${CMAKE_CURRENT_SOURCE_DIR}/src/to_string.test.cpp)
   target_sources(tests PRIVATE ${TestSources})

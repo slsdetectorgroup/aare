@@ -1,10 +1,10 @@
 // SPDX-License-Identifier: MPL-2.0
+#include "aare/to_string.hpp"
 #include "aare/defs.hpp"
 
 #include <catch2/catch_test_macros.hpp>
 #include <string>
 
-#include "to_string.hpp"
 using aare::string_to;
 
 TEST_CASE("DetectorType string to enum") {
@@ -36,9 +36,10 @@ TEST_CASE("DetectorType string to enum") {
 }
 
 TEST_CASE("TimingMode string to enum") {
-    REQUIRE(string_to<aare::TimingMode>("auto") == aare::TimingMode::Auto);
+    REQUIRE(string_to<aare::TimingMode>("auto") ==
+            aare::TimingMode::AUTO_TIMING);
     REQUIRE(string_to<aare::TimingMode>("trigger") ==
-            aare::TimingMode::Trigger);
+            aare::TimingMode::TRIGGER_EXPOSURE);
     REQUIRE_THROWS(string_to<aare::TimingMode>("invalid_mode"));
 }
 

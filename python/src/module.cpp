@@ -17,18 +17,19 @@
 #include "bind_FastPedestal.hpp"
 #include "bind_Interpolator.hpp"
 #include "bind_MultiThreadedFileReader.hpp"
+#include "bind_Pedestal.hpp"
 #include "bind_PedestalTrackingPixelHistogram.hpp"
 #include "bind_PixelHistogram.hpp"
 #include "bind_PixelMap.hpp"
 #include "bind_RawFile.hpp"
 #include "bind_calibration.hpp"
+#include "bind_testing.hpp"
 
 // TODO! migrate the other names
 #include "ctb_raw_file.hpp"
 #include "file.hpp"
 #include "fit.hpp"
 #include "jungfrau_data_file.hpp"
-#include "pedestal.hpp"
 #include "raw_master_file.hpp"
 #include "raw_sub_file.hpp"
 #include "var_cluster.hpp"
@@ -90,6 +91,7 @@ PYBIND11_MODULE(_aare, m) {
     define_jungfrau_data_file_io_bindings(m);
 
     bind_calibration(m);
+    define_testing_bindings(m);
 
     DEFINE_CLUSTER_BINDINGS(int, 3, 3, uint16_t, i);
     DEFINE_CLUSTER_BINDINGS(double, 3, 3, uint16_t, d);
@@ -130,9 +132,6 @@ PYBIND11_MODULE(_aare, m) {
     DEFINE_BINDINGS_CLUSTERFINDER(double, 9, 9, uint16_t, d);
     DEFINE_BINDINGS_CLUSTERFINDER(float, 9, 9, uint16_t, f);
 
-    define_3x3_reduction<int, 3, 3, uint16_t>(m);
-    define_3x3_reduction<double, 3, 3, uint16_t>(m);
-    define_3x3_reduction<float, 3, 3, uint16_t>(m);
     define_3x3_reduction<int, 5, 5, uint16_t>(m);
     define_3x3_reduction<double, 5, 5, uint16_t>(m);
     define_3x3_reduction<float, 5, 5, uint16_t>(m);
@@ -143,9 +142,6 @@ PYBIND11_MODULE(_aare, m) {
     define_3x3_reduction<double, 9, 9, uint16_t>(m);
     define_3x3_reduction<float, 9, 9, uint16_t>(m);
 
-    reduce_to_3x3<int, 3, 3, uint16_t>(m);
-    reduce_to_3x3<double, 3, 3, uint16_t>(m);
-    reduce_to_3x3<float, 3, 3, uint16_t>(m);
     reduce_to_3x3<int, 5, 5, uint16_t>(m);
     reduce_to_3x3<double, 5, 5, uint16_t>(m);
     reduce_to_3x3<float, 5, 5, uint16_t>(m);
