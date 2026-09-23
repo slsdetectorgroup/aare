@@ -122,9 +122,9 @@ void define_interpolation_bindings(py::module &m) {
                 ebins: 
                     bin edges of photon energy
                 )doc",
-                py::arg("etacube"),
-                py::arg("xbins"), py::arg("ybins"),
-                py::arg("ebins"))
+                py::arg("etacube").noconvert(),
+                py::arg("xbins").noconvert(), py::arg("ybins").noconvert(),
+                py::arg("ebins").noconvert())
 
             .def(py::init(
                 [](py::array_t<double> xbins, py::array_t<double> ybins,
@@ -144,8 +144,8 @@ void define_interpolation_bindings(py::module &m) {
                     bin edges of etay
                 ebins: 
                     bin edges of photon energy
-                )", py::arg("xbins"),
-                py::arg("ybins"), py::arg("ebins"))
+                )", py::arg("xbins").noconvert(),
+                py::arg("ybins").noconvert(), py::arg("ebins").noconvert())
             .def(
                 "rosenblatttransform",
                 [](Interpolator &self,
@@ -159,7 +159,7 @@ void define_interpolation_bindings(py::module &m) {
                 etacube: 
                     joint distribution of eta_x, eta_y and photon energy (**Note:** for the joint distribution first dimension is eta_x, second: eta_y, third: energy bins.)
                 )",
-                py::arg("etacube"))
+                py::arg("etacube").noconvert())
             .def("get_ietax",
                  [](Interpolator &self) {
                      auto *ptr = new NDArray<double, 3>{};

@@ -24,14 +24,21 @@ void define_Cluster(py::module &m, const std::string &typestr) {
     py::class_<Cluster<Type, ClusterSizeX, ClusterSizeY, CoordType>>(
         m, class_name.c_str(), py::buffer_protocol())
 
+        // conversion ok: small input, accept lists and any numeric dtype
         .def(py::init([](CoordType x, CoordType y,
                          py::array_t<Type, py::array::forcecast> data) {
-            py::buffer_info buf_info = data.request();
+            constexpr py::ssize_t n_pixels = ClusterSizeX * ClusterSizeY;
+            if (data.ndim() != 1 || data.size() != n_pixels) {
+                throw py::value_error(fmt::format(
+                    "Cluster data must be a 1D array of {} values, got {}D "
+                    "array with {} values",
+                    n_pixels, data.ndim(), data.size()));
+            }
             Cluster<Type, ClusterSizeX, ClusterSizeY, CoordType> cluster;
             cluster.x = x;
             cluster.y = y;
             auto r = data.template unchecked<1>(); // no bounds checks
-            for (py::ssize_t i = 0; i < data.size(); ++i) {
+            for (py::ssize_t i = 0; i < n_pixels; ++i) {
                 cluster.data[i] = r(i);
             }
             return cluster;

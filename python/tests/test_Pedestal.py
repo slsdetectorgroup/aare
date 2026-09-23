@@ -171,7 +171,7 @@ def test_pedestal_rejects_noncontiguous_inputs(dtype, input_name, layout):
         invalid = np.ones((4, 6), dtype=input_dtype)[:2, :3][:, ::-1]
     assert not invalid.flags.c_contiguous
 
-    with pytest.raises(TypeError):
+    with pytest.raises(ValueError, match="C-contiguous"):
         if input_name == "push_frame":
             pedestal.push(invalid)
         elif input_name == "threshold_frame":

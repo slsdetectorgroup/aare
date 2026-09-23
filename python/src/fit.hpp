@@ -60,9 +60,12 @@ template <typename Model> void bind_fit_model(py::module &m, const char *name) {
         .def_property("compute_errors", &FM::compute_errors,
                       &FM::SetComputeErrors)
         .def(
-            "__call__",
-            [](const FM & /*self*/, py::array_t<double> x,
-               py::array_t<double> par) {
+            "__call__", // conversion ok, we want to be able to call with any
+                        // dtype
+            [](const FM & /*self*/,
+               py::array_t<double, py::array::c_style | py::array::forcecast> x,
+               py::array_t<double, py::array::c_style | py::array::forcecast>
+                   par) {
                 auto x_view = make_view_1d(x);
                 auto p_view = make_view_1d(par);
 
@@ -76,7 +79,7 @@ template <typename Model> void bind_fit_model(py::module &m, const char *name) {
             },
             py::arg("x"), py::arg("par"))
         .def(
-            "fit",
+            "fit", // conversion ok
             [](const FM &self,
                py::array_t<double, py::array::c_style | py::array::forcecast> x,
                py::array_t<double, py::array::c_style | py::array::forcecast> y,
@@ -239,7 +242,8 @@ void define_fit_bindings(py::module &m) {
 
     m.def(
         "fit",
-        [](py::object model_obj,
+        [](py::object model_obj, // conversion ok, we want to be able to call
+                                 // with any dtype
            py::array_t<double, py::array::c_style | py::array::forcecast> x,
            py::array_t<double, py::array::c_style | py::array::forcecast> y,
            py::object y_err_obj, int n_threads) -> py::object {
