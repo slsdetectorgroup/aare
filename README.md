@@ -10,6 +10,20 @@ Detailed documentation including installation can be found in [Documentation](ht
 This project is licensed under the MPL-2.0 license.
 See the LICENSE file or https://www.mozilla.org/en-US/MPL/ for details.
 
+Two files contain code from other projects and keep their original licenses:
+
+- `include/aare/ProducerConsumerQueue.hpp` is Apache-2.0, from
+  [folly](https://github.com/facebook/folly) by Meta Platforms.
+- `src/NumpyHelpers.cpp` is MIT, from
+  [libnpy](https://github.com/llohse/libnpy) by Leon Merten Lohse.
+
+The full license texts are in the `LICENSES` directory.
+
+The Python wheels and conda packages also contain Minuit2
+(LGPL-2.1-or-later), {fmt} and nlohmann/json (MIT), and pybind11
+(BSD-3-Clause), which CMake downloads at build time. See
+`THIRD-PARTY-NOTICES.txt` for their notices.
+
 ## Build and install
 
 Prerequisites

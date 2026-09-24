@@ -1,5 +1,4 @@
 # SPDX-License-Identifier: MPL-2.0
-# Copyright (C) 2021 Contributors to the Aare Package
 """
 Script to update VERSION file with semantic versioning if provided as an argument, or with 0.0.0 if no argument is provided.
 """

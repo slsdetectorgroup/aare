@@ -106,7 +106,7 @@ if(AARE_FETCH_MINUIT2)
   FetchContent_Declare(
     Minuit2
     GIT_REPOSITORY https://github.com/GooFit/Minuit2.git
-    GIT_TAG master
+    GIT_TAG v6-40-02
     UPDATE_DISCONNECTED 1)
   # Disable Minuit2 extras we don't need
   set(minuit2_mpi
@@ -153,7 +153,7 @@ if(AARE_FETCH_ZMQ)
   FetchContent_Declare(
     libzmq
     GIT_REPOSITORY https://github.com/zeromq/libzmq.git
-    GIT_TAG v4.3.4
+    GIT_TAG v4.3.5
     PATCH_COMMAND ${ZMQ_PATCH_COMMAND}
     UPDATE_DISCONNECTED 1)
   # Disable unwanted options from libzmq

@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: MPL-2.0
 #include "aare/ClusterVector.hpp"
 #include "aare/Interpolator.hpp"
 #include "aare/NDArray.hpp"

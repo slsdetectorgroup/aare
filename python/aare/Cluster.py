@@ -1,3 +1,4 @@
+# SPDX-License-Identifier: MPL-2.0
 from . import _aare 
 import numpy as np
 from .factory import _type_to_char
