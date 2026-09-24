@@ -50,5 +50,8 @@ test:
     - python -m pytest python/tests
 
 about:
-  license: SPDX-License-Identifier MPL-2.0
+  license: MPL-2.0 AND Apache-2.0
+  license_file:
+    - LICENSES/MPL-2.0.txt
+    - LICENSES/Apache-2.0.txt
   summary: Data analysis library for hybrid pixel detectors from PSI 

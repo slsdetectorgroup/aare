@@ -77,6 +77,20 @@
 
 ### Bugfixes:
 - Mismatched operators inhibited vectorization in gcc of NDArray math operators
+- Removed the move constructor and move assignment of
+  ``ProducerConsumerQueue``. They left the moved-from queue with a null
+  buffer, crashing its destructor if it still held elements, and leaked
+  the target's buffer on assignment. The queue is now non-movable, as in
+  the upstream folly implementation; hold it in a ``unique_ptr`` to move
+  it around.
+- ``ProducerConsumerQueue`` rejects sizes below two with
+  ``std::invalid_argument`` in all build types. The previous assertion was
+  compiled out of Release builds, so a zero-size queue overflowed its buffer
+  on the first write.
+- Corrected the license metadata for the vendored ``ProducerConsumerQueue``.
+  The header is tagged ``Apache-2.0`` like upstream folly, the MPL 2.0 and
+  Apache 2.0 texts ship in ``LICENSES/``, and the conda package declares
+  ``MPL-2.0 AND Apache-2.0`` with both license files.
 - ``RawFile`` and ``File`` reject raw files with frame padding disabled unless
   the frame discard policy is ``discardpartial``. The constructor reports the
   master path before opening data subfiles. Legacy ``.raw`` master files now
