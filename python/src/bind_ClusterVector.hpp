@@ -37,7 +37,7 @@ void define_ClusterVector(py::module &m, const std::string &typestr) {
         valid only while the ClusterVector's underlying allocation and size
         remain unchanged.
         )doc",
-        py::buffer_protocol())
+        py::buffer_protocol(), py::module_local())
 
         .def(py::init(), R"doc(
         Create an empty ClusterVector with frame number 0 and space reserved

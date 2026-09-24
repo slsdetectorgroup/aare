@@ -145,6 +145,43 @@ template <typename PEDESTAL_TYPE> class FastPedestal {
     }
 
     /**
+     * @brief Return a copy of the per-pixel first moment, ~ n * E[X].
+     * @throws std::runtime_error if ready() is false.
+     * @note The two moments are stored interleaved for cache locality, so this
+     * de-interleaves them into a plain array. Intended for callers that need a
+     * contiguous moment array rather than per-pixel access, such as the CUDA
+     * pedestal upload.
+     */
+    NDArray<double, 2> get_sum() const {
+        if (!ready()) {
+            throw std::runtime_error(
+                "Pedestal is not ready, cannot return sum");
+        }
+        NDArray<double, 2> res({m_rows, m_cols});
+        for (ssize_t i = 0; i < m_sum.size(); ++i) {
+            res[i] = m_sum[i].sum;
+        }
+        return res;
+    }
+
+    /**
+     * @brief Return a copy of the per-pixel second moment, ~ n * E[X^2].
+     * @throws std::runtime_error if ready() is false.
+     * @see get_sum() for why this is a de-interleaving copy.
+     */
+    NDArray<double, 2> get_sum2() const {
+        if (!ready()) {
+            throw std::runtime_error(
+                "Pedestal is not ready, cannot return sum2");
+        }
+        NDArray<double, 2> res({m_rows, m_cols});
+        for (ssize_t i = 0; i < m_sum.size(); ++i) {
+            res[i] = m_sum[i].sum2;
+        }
+        return res;
+    }
+
+    /**
      * @brief Calculate the population standard deviation at (row, col).
      * @throws std::runtime_error if ready() is false or either index is out of
      * range.
