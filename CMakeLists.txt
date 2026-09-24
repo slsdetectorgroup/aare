@@ -129,6 +129,7 @@ if(AARE_FETCH_MINUIT2)
   add_library(aare::Minuit2 ALIAS Minuit2)
 else()
   find_package(Minuit2 CONFIG QUIET)
+  add_library(aare::Minuit2 ALIAS Minuit2::Minuit2)
   if(NOT Minuit2_FOUND)
     message(
       STATUS
