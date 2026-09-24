@@ -129,8 +129,9 @@ if(AARE_FETCH_MINUIT2)
   add_library(aare::Minuit2 ALIAS Minuit2)
 else()
   find_package(Minuit2 CONFIG QUIET)
-  add_library(aare::Minuit2 ALIAS Minuit2::Minuit2)
-  if(NOT Minuit2_FOUND)
+  if(Minuit2_FOUND)
+    add_library(aare::Minuit2 ALIAS Minuit2::Minuit2)
+  else()
     message(
       STATUS
         "Stand alone Minuit2 not found. Trying to find it as a part of ROOT")
