@@ -29,6 +29,13 @@
 - Added string representator in python for Cluster and Eta 
 - Added roi slice method in python for easy slicing of numpy arrays ``array[roi.slice()]``. 
 - added context manager for ``aare.RawMasterFile``
+- Added a configurable Minuit2 minimizer for the fit models. ``Minimizer.Migrad``
+  remains the default; ``Minimizer.Fumili`` uses the analytic model derivatives
+  for a Gauss-Newton style minimisation that needs far fewer function
+  evaluations. Select it with the ``minimizer`` constructor argument or property
+  in Python, or ``FitModel::SetMinimizer`` in C++. With ``compute_errors``,
+  Fumili reports parameter errors from its linearised covariance instead of
+  running Hesse.
 
 ### API Changes:
 

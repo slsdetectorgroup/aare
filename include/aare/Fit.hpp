@@ -14,6 +14,10 @@ namespace aare {
 /**
  * @brief Fit a single pixel's data using Minuit2.
  *
+ * The minimizer (Migrad or Fumili) is selected by the model, see
+ * aare::Minimizer. Parameter errors, when requested, come from MnHesse with
+ * Migrad and from the linearised covariance with Fumili.
+ *
  * User-precedence rules:
  *   - Fixed parameters: untouched (value and fixed flag preserved from model).
  *   - User-set start:   value preserved, step size auto-filled.

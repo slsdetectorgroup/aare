@@ -2,9 +2,11 @@
 #include "aare/Fit.hpp"
 #include "Chi2.hpp"
 #include "Minuit2/FunctionMinimum.h"
+#include "Minuit2/MnFumiliMinimize.h"
 #include "Minuit2/MnHesse.h"
 #include "Minuit2/MnMigrad.h"
 #include "Minuit2/MnStrategy.h"
+#include "Minuit2/MnUserParameterState.h"
 #include "Minuit2/MnUserParameters.h"
 #include "aare/Models.hpp"
 #include "aare/utils/par.hpp"
@@ -14,6 +16,7 @@
 #include <memory>
 #include <stdexcept>
 #include <type_traits>
+#include <vector>
 
 namespace aare {
 // ============================================================================
@@ -34,9 +37,11 @@ template <typename Model> struct FitModel<Model>::FitModelImpl {
 
 template <typename Model>
 FitModel<Model>::FitModel(unsigned int strategy, unsigned int max_calls,
-                          double tolerance, bool compute_errors)
+                          double tolerance, bool compute_errors,
+                          Minimizer minimizer)
     : impl_(std::make_unique<FitModelImpl>(strategy)), max_calls_(max_calls),
-      tolerance_(tolerance), compute_errors_(compute_errors) {
+      tolerance_(tolerance), compute_errors_(compute_errors),
+      minimizer_(minimizer) {
     for (std::size_t i = 0; i < npar; ++i) {
         const auto pi = Model::param_info[i];
         const bool has_lo = std::isfinite(pi.default_lo);
@@ -57,8 +62,8 @@ template <typename Model>
 FitModel<Model>::FitModel(const FitModel &other)
     : impl_(std::make_unique<FitModelImpl>(*other.impl_)),
       max_calls_(other.max_calls_), tolerance_(other.tolerance_),
-      compute_errors_(other.compute_errors_), user_fixed_(other.user_fixed_),
-      user_start_(other.user_start_) {}
+      compute_errors_(other.compute_errors_), minimizer_(other.minimizer_),
+      user_fixed_(other.user_fixed_), user_start_(other.user_start_) {}
 
 template <typename Model>
 FitModel<Model> &FitModel<Model>::operator=(const FitModel &other) {
@@ -67,6 +72,7 @@ FitModel<Model> &FitModel<Model>::operator=(const FitModel &other) {
         max_calls_ = other.max_calls_;
         tolerance_ = other.tolerance_;
         compute_errors_ = other.compute_errors_;
+        minimizer_ = other.minimizer_;
         user_fixed_ = other.user_fixed_;
         user_start_ = other.user_start_;
     }
@@ -144,10 +150,38 @@ std::vector<std::string> FitModel<Model>::GetParNames() const {
 // fit_pixel / fit_3d — Minuit2 template implementations
 // ============================================================================
 
+namespace {
+
+/**
+ * @brief Copy the fitted values, optionally the errors, and the objective
+ * value of a minimum into the flat result layout documented in Fit.hpp.
+ */
+template <std::size_t npar>
+NDArray<double, 1> pack_minimum(const ROOT::Minuit2::FunctionMinimum &min,
+                                bool want_errors) {
+    const ssize_t result_size = want_errors ? (2 * npar + 1) : (npar + 1);
+    NDArray<double, 1> result({result_size});
+
+    const auto &state = min.UserState();
+    const std::vector<double> values = state.Params();
+    for (std::size_t k = 0; k < npar; ++k)
+        result[k] = values[k];
+
+    if (want_errors) {
+        const std::vector<double> errors = state.Errors();
+        for (std::size_t k = 0; k < npar; ++k)
+            result[npar + k] = errors[k];
+    }
+
+    result[result_size - 1] = min.Fval();
+    return result;
+}
+
+} // namespace
+
 template <typename Model>
 NDArray<double, 1> fit_pixel(const FitModel<Model> &model, NDView<double, 1> x,
                              NDView<double, 1> y, NDView<double, 1> y_err) {
-    using FCN = func::Chi2Model1DGrad<Model>;
     constexpr std::size_t npar = Model::npar;
     const bool want_errors = model.compute_errors();
     const ssize_t result_size = want_errors ? (2 * npar + 1) : (npar + 1);
@@ -175,8 +209,23 @@ NDArray<double, 1> fit_pixel(const FitModel<Model> &model, NDView<double, 1> x,
         upar_local.SetError(i, steps[i]);
     }
 
-    auto chi2 = (y_err.size() > 0) ? FCN(x, y, y_err) : FCN(x, y);
+    if (model.minimizer() == Minimizer::Fumili) {
+        // Fumili takes the gradient and the Gauss-Newton Hessian from the FCN,
+        // so the covariance of the minimum is available without MnHesse.
+        func::Chi2Model1DFumili<Model> chi2(x, y, y_err);
+        ROOT::Minuit2::MnFumiliMinimize fumili(
+            chi2, ROOT::Minuit2::MnUserParameterState(upar_local),
+            model.impl()->strategy);
+        const ROOT::Minuit2::FunctionMinimum min =
+            fumili(model.max_calls(), model.tolerance());
 
+        if (!min.IsValid())
+            return NDArray<double, 1>({result_size}, 0.0);
+
+        return pack_minimum<npar>(min, want_errors);
+    }
+
+    func::Chi2Model1DGrad<Model> chi2(x, y, y_err);
     ROOT::Minuit2::MnMigrad migrad(chi2, upar_local, model.impl()->strategy);
     ROOT::Minuit2::FunctionMinimum min =
         migrad(model.max_calls(), model.tolerance());
@@ -184,28 +233,13 @@ NDArray<double, 1> fit_pixel(const FitModel<Model> &model, NDView<double, 1> x,
     if (!min.IsValid())
         return NDArray<double, 1>({result_size}, 0.0);
 
-    if (want_errors) {
+    // MnHesse cannot handle a fit in which every parameter is fixed.
+    if (want_errors && upar_local.VariableParameters() > 0) {
         ROOT::Minuit2::MnHesse hesse;
         hesse(chi2, min);
-
-        const auto &values = min.UserState().Params();
-        const auto &errors = min.UserState().Errors();
-
-        NDArray<double, 1> result({result_size});
-        for (std::size_t k = 0; k < npar; ++k) {
-            result[k] = values[k];
-            result[npar + k] = errors[k];
-        }
-        result[2 * npar] = min.Fval();
-        return result;
     }
 
-    const auto &values = min.UserState().Params();
-    NDArray<double, 1> result({result_size});
-    for (std::size_t k = 0; k < npar; ++k)
-        result[k] = values[k];
-    result[npar] = min.Fval();
-    return result;
+    return pack_minimum<npar>(min, want_errors);
 }
 
 template <typename Model>

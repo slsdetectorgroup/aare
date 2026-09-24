@@ -22,9 +22,11 @@ fit_dispatch(const aare::FitModel<Model> &model,
 template <typename Model> void bind_fit_model(py::module &m, const char *name) {
     using FM = aare::FitModel<Model>;
     py::class_<FM>(m, name)
-        .def(py::init<unsigned int, unsigned int, double, bool>(),
+        .def(py::init<unsigned int, unsigned int, double, bool,
+                      aare::Minimizer>(),
              py::arg("strategy") = 0, py::arg("max_calls") = 100,
-             py::arg("tolerance") = 0.5, py::arg("compute_errors") = false)
+             py::arg("tolerance") = 0.5, py::arg("compute_errors") = false,
+             py::arg("minimizer") = aare::Minimizer::Migrad)
         .def("SetParLimits",
              py::overload_cast<unsigned int, double, double>(&FM::SetParLimits),
              py::arg("idx"), py::arg("lo"), py::arg("hi"))
@@ -59,6 +61,7 @@ template <typename Model> void bind_fit_model(py::module &m, const char *name) {
         .def_property("tolerance", &FM::tolerance, &FM::SetTolerance)
         .def_property("compute_errors", &FM::compute_errors,
                       &FM::SetComputeErrors)
+        .def_property("minimizer", &FM::minimizer, &FM::SetMinimizer)
         .def(
             "__call__",
             [](const FM & /*self*/,
@@ -87,6 +90,9 @@ template <typename Model> void bind_fit_model(py::module &m, const char *name) {
             },
             R"doc(
             Fit this model to 1D or 3D data using Minuit2.
+
+            The minimizer is selected by the ``minimizer`` property
+            (``Minimizer.Migrad`` by default, or ``Minimizer.Fumili``).
 
             Parameters
             ----------
@@ -227,6 +233,22 @@ fit_dispatch(const aare::FitModel<Model> &model,
 }
 
 void define_fit_bindings(py::module &m) {
+    // The enum must exist before it is used as a constructor default below.
+    py::enum_<aare::Minimizer>(m, "Minimizer", R"doc(
+        Minuit2 minimizer used by the fit models.
+
+        ``Migrad`` is the default variable-metric minimizer. With
+        ``compute_errors`` its parameter errors come from Hesse.
+
+        ``Fumili`` is a Gauss-Newton style minimizer that takes the gradient
+        and a linearised Hessian from the analytic derivatives of the model.
+        It usually needs far fewer function evaluations than Migrad. With
+        ``compute_errors`` its parameter errors come from the covariance of
+        the linearised Hessian, without an extra Hesse step.
+        )doc")
+        .value("Migrad", aare::Minimizer::Migrad)
+        .value("Fumili", aare::Minimizer::Fumili);
+
     // ── Bind model classes ──────────────────────────────────────────
     bind_fit_model<aare::model::Gaussian>(m, "Gaussian");
     bind_fit_model<aare::model::GaussianErfcPlateau>(m, "GaussianErfcPlateau");
@@ -325,6 +347,8 @@ void define_fit_bindings(py::module &m) {
         model : Pol1, Pol2, Gaussian, RisingScurve, or FallingScurve
             Configured model object.  User-set limits, fixed parameters,
             and start values take precedence over automatic estimates.
+            The model's ``minimizer`` property selects Migrad (default)
+            or Fumili.
         x : array_like, shape (n_scan,)
             Scan points (e.g. energy or threshold values).
         y : array_like, shape (n_scan,) or (rows, cols, n_scan)

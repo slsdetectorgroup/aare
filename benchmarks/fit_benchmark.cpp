@@ -75,52 +75,31 @@ static void report_accuracy(benchmark::State &state, const TestCase &tc,
 // Benchmarks
 // ----------
 
-// Minuit2, analytic gradient (no Hesse)
-static void BM_FitGausMinuitGrad(benchmark::State &state) {
-    const auto &tc = get_test_cases()[state.range(0)];
-    auto data = generate_gaussian_data(tc);
-    auto xv = data.x.view();
-    auto yv = data.y.view();
-
-    const auto model = aare::FitModel<aare::model::Gaussian>(
-        /*strategy = */ 0,
-        /*max_calls = */ 500, // increase for noisy signals
-        /*tolerance = */ 0.5,
-        /*compute_errors = */ false);
-
-    aare::NDArray<double, 1> result;
-    for (auto _ : state) {
-        result = aare::fit_pixel<aare::model::Gaussian>(model, xv, yv);
-        benchmark::DoNotOptimize(result.data());
-    }
-
-    report_accuracy(state, tc, result);
-    state.SetLabel(tc.name);
-}
-
-// Minuit2, analytic gradient + Hesse
-static void BM_FitGausMinuitGradHesse(benchmark::State &state) {
+static void run_gaussian_fit(benchmark::State &state, aare::Minimizer minimizer,
+                             bool compute_errors) {
     const auto &tc = get_test_cases()[state.range(0)];
     auto data = generate_gaussian_data(tc);
     auto xv = data.x.view();
     auto yv = data.y.view();
     auto ev = data.y_err.view();
 
-    const auto model = aare::FitModel<aare::model::Gaussian>(
-        0, 500, 0.5, true); // compute_errors = true -> Runs Hesse and provides
-                            // errors on fitted params
+    const aare::FitModel<aare::model::Gaussian> model(
+        /*strategy = */ 0,
+        /*max_calls = */ 500, // increase for noisy signals
+        /*tolerance = */ 0.5, compute_errors, minimizer);
 
     aare::NDArray<double, 1> result;
     for (auto _ : state) {
-        result = aare::fit_pixel<aare::model::Gaussian>(model, xv, yv, ev);
+        result = compute_errors
+                     ? aare::fit_pixel<aare::model::Gaussian>(model, xv, yv, ev)
+                     : aare::fit_pixel<aare::model::Gaussian>(model, xv, yv);
         benchmark::DoNotOptimize(result.data());
     }
 
-    // result has 6 elements: [A, mu, sig, err_A, err_mu, err_sig]
     report_accuracy(state, tc, result);
 
-    // Also report Hesse uncertainties
-    if (result.size() >= 6) {
+    // With errors the result is [A, mu, sig, err_A, err_mu, err_sig, chi2]
+    if (compute_errors && result.size() >= 6) {
         state.counters["errA"] = result(3);
         state.counters["errMu"] = result(4);
         state.counters["errSig"] = result(5);
@@ -128,12 +107,80 @@ static void BM_FitGausMinuitGradHesse(benchmark::State &state) {
     state.SetLabel(tc.name);
 }
 
-BENCHMARK(BM_FitGausMinuitGrad)
+// Migrad, analytic gradient (no Hesse)
+static void BM_FitGausMigrad(benchmark::State &state) {
+    run_gaussian_fit(state, aare::Minimizer::Migrad, false);
+}
+
+// Migrad, analytic gradient + Hesse for the parameter errors
+static void BM_FitGausMigradHesse(benchmark::State &state) {
+    run_gaussian_fit(state, aare::Minimizer::Migrad, true);
+}
+
+// Fumili, analytic gradient and linearised Hessian
+static void BM_FitGausFumili(benchmark::State &state) {
+    run_gaussian_fit(state, aare::Minimizer::Fumili, false);
+}
+
+// Fumili, parameter errors from the linearised covariance
+static void BM_FitGausFumiliErrors(benchmark::State &state) {
+    run_gaussian_fit(state, aare::Minimizer::Fumili, true);
+}
+
+// ----------------------------------------------------------------
+// Rising S-curve (6 parameters), typical for threshold scans
+// ----------------------------------------------------------------
+static constexpr ssize_t N_SCURVE_POINTS = 100;
+
+static void run_scurve_fit(benchmark::State &state, aare::Minimizer minimizer) {
+    const std::vector<double> truth = {5.0, 0.1, 50.0, 4.0, 200.0, 0.5};
+    const double noise_sigma = 0.02 * truth[4];
+
+    aare::NDArray<double, 1> x({N_SCURVE_POINTS});
+    aare::NDArray<double, 1> y({N_SCURVE_POINTS});
+    std::mt19937 rng(SEED);
+    std::normal_distribution<double> noise(0.0, noise_sigma);
+    for (ssize_t i = 0; i < N_SCURVE_POINTS; ++i) {
+        x[i] = static_cast<double>(i);
+        y[i] = aare::model::RisingScurve::eval(x[i], truth) + noise(rng);
+    }
+    auto xv = x.view();
+    auto yv = y.view();
+
+    const aare::FitModel<aare::model::RisingScurve> model(0, 500, 0.5, false,
+                                                          minimizer);
+
+    aare::NDArray<double, 1> result;
+    for (auto _ : state) {
+        result = aare::fit_pixel<aare::model::RisingScurve>(model, xv, yv);
+        benchmark::DoNotOptimize(result.data());
+    }
+
+    state.counters["dMu"] = result(2) - truth[2];
+    state.counters["dSig"] = result(3) - truth[3];
+    state.counters["dA"] = result(4) - truth[4];
+    state.counters["chi2"] = result(6);
+}
+
+static void BM_FitScurveMigrad(benchmark::State &state) {
+    run_scurve_fit(state, aare::Minimizer::Migrad);
+}
+
+static void BM_FitScurveFumili(benchmark::State &state) {
+    run_scurve_fit(state, aare::Minimizer::Fumili);
+}
+
+BENCHMARK(BM_FitGausMigrad)->DenseRange(0, 5)->Unit(benchmark::kMicrosecond);
+BENCHMARK(BM_FitGausFumili)->DenseRange(0, 5)->Unit(benchmark::kMicrosecond);
+
+BENCHMARK(BM_FitGausMigradHesse)
+    ->DenseRange(0, 5)
+    ->Unit(benchmark::kMicrosecond);
+BENCHMARK(BM_FitGausFumiliErrors)
     ->DenseRange(0, 5)
     ->Unit(benchmark::kMicrosecond);
 
-BENCHMARK(BM_FitGausMinuitGradHesse)
-    ->DenseRange(0, 5)
-    ->Unit(benchmark::kMicrosecond);
+BENCHMARK(BM_FitScurveMigrad)->Unit(benchmark::kMicrosecond);
+BENCHMARK(BM_FitScurveFumili)->Unit(benchmark::kMicrosecond);
 
 BENCHMARK_MAIN();

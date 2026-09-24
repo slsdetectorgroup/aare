@@ -10,6 +10,19 @@
 
 namespace aare {
 
+/**
+ * @brief Minuit2 minimizer used by FitModel.
+ *
+ * - Migrad: variable-metric minimizer driven by the analytic gradient of the
+ *   chi-squared. Parameter errors, when requested, come from MnHesse.
+ * - Fumili: Gauss-Newton style minimizer for least-squares problems. It takes
+ *   the gradient and a linearised Hessian from the model's analytic
+ *   derivatives, so it typically needs far fewer function evaluations than
+ *   Migrad. Parameter errors, when requested, come from the covariance of that
+ *   linearised Hessian without an extra Hesse step.
+ */
+enum class Minimizer { Migrad, Fumili };
+
 template <typename Model> class FitModel {
 
     // Forward declaration only — full definition lives in src/FitModelImpl.hpp
@@ -20,6 +33,7 @@ template <typename Model> class FitModel {
     unsigned int max_calls_;
     double tolerance_;
     bool compute_errors_;
+    Minimizer minimizer_;
 
     std::array<bool, Model::npar> user_fixed_{};
     std::array<bool, Model::npar> user_start_{};
@@ -37,10 +51,13 @@ template <typename Model> class FitModel {
      * default).
      * @param max_calls       Maximum FCN calls per pixel minimisation.
      * @param tolerance       Minuit2 EDM tolerance.
-     * @param compute_errors  If true, run MnHesse after minimisation.
+     * @param compute_errors  If true, also report parameter errors: from
+     * MnHesse with Migrad, from the Fumili covariance with Fumili.
+     * @param minimizer       Minuit2 minimizer, see aare::Minimizer.
      */
     explicit FitModel(unsigned int strategy = 0, unsigned int max_calls = 100,
-                      double tolerance = 0.5, bool compute_errors = false);
+                      double tolerance = 0.5, bool compute_errors = false,
+                      Minimizer minimizer = Minimizer::Migrad);
 
     // Destructor must be defined in Fit.cpp where FitModelImpl is complete.
     ~FitModel();
@@ -76,10 +93,12 @@ template <typename Model> class FitModel {
     void SetMaxCalls(unsigned int n) { max_calls_ = n; }
     void SetTolerance(double t) { tolerance_ = t; }
     void SetComputeErrors(bool b) { compute_errors_ = b; }
+    void SetMinimizer(Minimizer m) { minimizer_ = m; }
 
     unsigned int max_calls() const { return max_calls_; }
     double tolerance() const { return tolerance_; }
     bool compute_errors() const { return compute_errors_; }
+    Minimizer minimizer() const { return minimizer_; }
     bool is_user_fixed(unsigned int idx) const { return user_fixed_[idx]; }
     bool is_user_start(unsigned int idx) const { return user_start_[idx]; }
 
