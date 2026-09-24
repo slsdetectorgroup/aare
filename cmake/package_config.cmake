@@ -1,3 +1,5 @@
+# SPDX-License-Identifier: MPL-2.0
+
 # This cmake code creates the configuration that is found and used by
 # find_package() of another cmake project
 

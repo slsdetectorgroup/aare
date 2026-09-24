@@ -87,10 +87,20 @@
   ``std::invalid_argument`` in all build types. The previous assertion was
   compiled out of Release builds, so a zero-size queue overflowed its buffer
   on the first write.
-- Corrected the license metadata for the vendored ``ProducerConsumerQueue``.
-  The header is tagged ``Apache-2.0`` like upstream folly, the MPL 2.0 and
-  Apache 2.0 texts ship in ``LICENSES/``, and the conda package declares
-  ``MPL-2.0 AND Apache-2.0`` with both license files.
+- Corrected the license metadata for vendored third-party code.
+  ``ProducerConsumerQueue.hpp`` is tagged ``Apache-2.0`` like upstream folly
+  and ``NumpyHelpers.cpp`` is tagged ``MIT`` like upstream libnpy. The MPL 2.0,
+  Apache 2.0, and MIT texts ship in ``LICENSES/``, and both the conda package
+  and the Python wheel declare ``MPL-2.0 AND Apache-2.0 AND MIT`` with all
+  three license files. Building the wheel now requires scikit-build-core 0.11
+  or newer.
+- The wheel and conda package now ship ``THIRD-PARTY-NOTICES.txt`` and the
+  LGPL 2.1 text for the libraries compiled into the extension: Minuit2
+  (LGPL-2.1-or-later), {fmt} and nlohmann/json (MIT), and pybind11
+  (BSD-3-Clause). Their license expressions include these licenses.
+  Minuit2 is now fetched at tag ``v6-40-02`` instead of ``master``, and
+  libzmq at ``v4.3.5`` (MPL-2.0) instead of ``v4.3.4`` (LGPL-3.0 with a
+  static-linking exception).
 - ``RawFile`` and ``File`` reject raw files with frame padding disabled unless
   the frame discard policy is ``discardpartial``. The constructor reports the
   master path before opening data subfiles. Legacy ``.raw`` master files now

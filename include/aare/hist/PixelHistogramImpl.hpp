@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: MPL-2.0
 #pragma once
 /*
 Basic pixel histogram class with templated axis and storage type.
