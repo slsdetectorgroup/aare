@@ -16,7 +16,7 @@ dependencies = [
     "numpy",
     "matplotlib",
 ]
-license = "MPL-2.0 AND Apache-2.0 AND MIT AND BSD-3-Clause AND LGPL-2.1-or-later"
+license = "MPL-2.0 AND Apache-2.0 AND MIT AND BSD-3-Clause"
 license-files = ["LICENSES/*", "THIRD-PARTY-NOTICES.txt"]
 
 

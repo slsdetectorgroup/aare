@@ -7,12 +7,13 @@
 namespace aare {
 
 // ---------------------------------------------------------------------------
-// Minuit2-based pixel fitting.
+// Levenberg-Marquardt pixel fitting.
 // Template bodies and explicit instantiations live in src/Fit.cpp.
 // ---------------------------------------------------------------------------
 
 /**
- * @brief Fit a single pixel's data using Minuit2.
+ * @brief Fit a single pixel's data with the built-in Levenberg-Marquardt
+ * solver.
  *
  * User-precedence rules:
  *   - Fixed parameters: untouched (value and fixed flag preserved from model).

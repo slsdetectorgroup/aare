@@ -14,10 +14,12 @@ Requirements
 To simplify deployment we build and statically link a few libraries.
 
 - fmt
-- Minuit2
 - nlohmann_json
 - pybind11
 - ZeroMQ
+
+Minuit2 is only needed for the optional fitting backend enabled with
+``-DAARE_MINUIT2=ON`` (LGPL-2.1-or-later); it is not part of the default build.
 
 **Extra dependencies for building documentation**
 

@@ -3,59 +3,54 @@
 
 #include "aare/Models.hpp"
 #include <array>
-#include <memory>
 #include <stdexcept>
 #include <string>
 #include <vector>
 
 namespace aare {
 
+/**
+ * @brief Fit configuration for one model: parameter limits, fixed
+ * parameters, user start values and minimiser settings.
+ *
+ * The object holds plain data and can be shared read-only between threads.
+ * Method bodies live in src/Fit.cpp, which explicitly instantiates the class
+ * for every supported model.
+ */
 template <typename Model> class FitModel {
-
-    // Forward declaration only — full definition lives in src/FitModelImpl.hpp
-    // and is never installed. Downstream code cannot dereference this pointer.
-    struct FitModelImpl; // stores Minuit2 user-set parameters
-
-    std::unique_ptr<FitModelImpl> impl_;
-    unsigned int max_calls_;
-    double tolerance_;
-    bool compute_errors_;
-
-    std::array<bool, Model::npar> user_fixed_{};
-    std::array<bool, Model::npar> user_start_{};
-
-    /** @brief Safely resolve a parameter name to its index. */
-    unsigned int checked_index(const std::string &name) const;
-
   public:
     static constexpr std::size_t npar = Model::npar;
 
     /**
      * @brief Construct a fit model with sensible defaults.
      *
-     * @param strategy        Minuit2 strategy level (0 = fast/gradient, 1 =
-     * default).
-     * @param max_calls       Maximum FCN calls per pixel minimisation.
-     * @param tolerance       Minuit2 EDM tolerance.
-     * @param compute_errors  If true, run MnHesse after minimisation.
+     * @param strategy        Accepted for compatibility with the earlier
+     *                        Minuit2 based implementation. Ignored by the
+     *                        built-in solver and forwarded to the optional
+     *                        Minuit2 validation backend.
+     * @param max_calls       Maximum number of model evaluations per pixel.
+     * @param tolerance       EDM tolerance in Minuit's convention: the fit
+     *                        stops when the estimated distance to the
+     *                        minimum drops below 0.002 * tolerance.
+     * @param compute_errors  If true, return Gauss-Newton parameter errors,
+     *                        sqrt(diag((J^T J)^-1)). Fixed parameters and
+     *                        parameters ending on a limit report 0.
      */
     explicit FitModel(unsigned int strategy = 0, unsigned int max_calls = 100,
                       double tolerance = 0.5, bool compute_errors = false);
 
-    // Destructor must be defined in Fit.cpp where FitModelImpl is complete.
-    ~FitModel();
-    FitModel(const FitModel &);
-    FitModel &operator=(const FitModel &);
-    FitModel(FitModel &&) noexcept = default;
-    FitModel &operator=(FitModel &&) noexcept = default;
-
-    /** @brief Set lower and upper bounds for parameter idx.*/
+    /**
+     * @brief Set lower and upper limits for parameter idx.
+     *
+     * Infinite values leave that side open. Throws std::runtime_error when
+     * lo >= hi and std::out_of_range for a bad index.
+     */
     void SetParLimits(unsigned int idx, double lo, double hi);
 
     /**
      * @brief Fix parameter idx at value val.
      *
-     * Excluded from minimisation.  Automatic estimates will not touch it.
+     * Excluded from minimisation. Automatic estimates will not touch it.
      */
     void FixParameter(unsigned int idx, double val);
 
@@ -77,15 +72,32 @@ template <typename Model> class FitModel {
     void SetTolerance(double t) { tolerance_ = t; }
     void SetComputeErrors(bool b) { compute_errors_ = b; }
 
+    unsigned int strategy() const { return strategy_; }
     unsigned int max_calls() const { return max_calls_; }
     double tolerance() const { return tolerance_; }
     bool compute_errors() const { return compute_errors_; }
     bool is_user_fixed(unsigned int idx) const { return user_fixed_[idx]; }
     bool is_user_start(unsigned int idx) const { return user_start_[idx]; }
+    /** @brief Lower limit of parameter idx, -infinity when open. */
+    double lower_limit(unsigned int idx) const { return lower_[idx]; }
+    /** @brief Upper limit of parameter idx, +infinity when open. */
+    double upper_limit(unsigned int idx) const { return upper_[idx]; }
+    /** @brief User start or fixed value of parameter idx, 0 when unset. */
+    double value(unsigned int idx) const { return value_[idx]; }
 
-    // Returns the internal Minuit2 state. FitModelImpl is an incomplete type
-    // here; only callers that include src/FitModelImpl.hpp can dereference it.
-    FitModelImpl *impl() const { return impl_.get(); }
+  private:
+    void check_index(unsigned int idx) const;
+    unsigned int checked_index(const std::string &name) const;
+
+    unsigned int strategy_;
+    unsigned int max_calls_;
+    double tolerance_;
+    bool compute_errors_;
+    std::array<double, npar> lower_{};
+    std::array<double, npar> upper_{};
+    std::array<double, npar> value_{};
+    std::array<bool, npar> user_fixed_{};
+    std::array<bool, npar> user_start_{};
 };
 
 // Suppress implicit instantiation for all supported model types.

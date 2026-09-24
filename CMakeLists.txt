@@ -66,10 +66,17 @@ option(AARE_FETCH_PYBIND11 "Use FetchContent to download pybind11" ON)
 option(AARE_FETCH_CATCH "Use FetchContent to download catch2" ON)
 option(AARE_FETCH_JSON "Use FetchContent to download nlohmann::json" ON)
 option(AARE_FETCH_ZMQ "Use FetchContent to download libzmq" ON)
-option(AARE_FETCH_MINUIT2 "Use FetchContent to download Minuit2" ON)
+option(AARE_FETCH_MINUIT2
+       "Use FetchContent to download Minuit2 (only with AARE_MINUIT2=ON)" ON)
 
 option(AARE_WARNINGS_AS_ERRORS "Treat warnings as errors during compilation"
        OFF)
+
+# Optional Minuit2 fitting backend, kept for side-by-side validation of the
+# built-in Levenberg-Marquardt solver. Adds an LGPL-2.1-or-later dependency and
+# is meant for in-tree builds only.
+option(AARE_MINUIT2
+       "Build the optional Minuit2 fitting backend (validation only)" OFF)
 
 # Convenience option to use system libraries only (no FetchContent)
 option(AARE_SYSTEM_LIBRARIES "Use system libraries" OFF)
@@ -90,8 +97,8 @@ if(AARE_SYSTEM_LIBRARIES)
   set(AARE_FETCH_ZMQ
       OFF
       CACHE BOOL "Disabled FetchContent for libzmq" FORCE)
-  # Still fetch Minuit2 when setting AARE_SYSTEM_LIBRARIES since it is not
-  # available on conda-forge
+  # AARE_FETCH_MINUIT2 is left untouched: Minuit2 is only used with
+  # AARE_MINUIT2=ON and is not available on conda-forge
 endif()
 
 if(AARE_BENCHMARKS)
@@ -100,47 +107,49 @@ endif()
 
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 
-if(AARE_FETCH_MINUIT2)
-  # We are building Minuit2 from sources.
+if(AARE_MINUIT2)
+  if(AARE_FETCH_MINUIT2)
+    # We are building Minuit2 from sources.
 
-  FetchContent_Declare(
-    Minuit2
-    GIT_REPOSITORY https://github.com/GooFit/Minuit2.git
-    GIT_TAG v6-40-02
-    UPDATE_DISCONNECTED 1)
-  # Disable Minuit2 extras we don't need
-  set(minuit2_mpi
-      OFF
-      CACHE BOOL "")
-  set(minuit2_omp
-      OFF
-      CACHE BOOL "")
-  set(BUILD_TESTING
-      OFF
-      CACHE BOOL "")
-  set(MINUIT2_INSTALL
-      OFF
-      CACHE BOOL "")
-  FetchContent_MakeAvailable(Minuit2)
+    FetchContent_Declare(
+      Minuit2
+      GIT_REPOSITORY https://github.com/GooFit/Minuit2.git
+      GIT_TAG v6-40-02
+      UPDATE_DISCONNECTED 1)
+    # Disable Minuit2 extras we don't need
+    set(minuit2_mpi
+        OFF
+        CACHE BOOL "")
+    set(minuit2_omp
+        OFF
+        CACHE BOOL "")
+    set(BUILD_TESTING
+        OFF
+        CACHE BOOL "")
+    set(MINUIT2_INSTALL
+        OFF
+        CACHE BOOL "")
+    FetchContent_MakeAvailable(Minuit2)
 
-  set_property(TARGET Minuit2Math PROPERTY POSITION_INDEPENDENT_CODE ON)
-  set_property(TARGET Minuit2 PROPERTY POSITION_INDEPENDENT_CODE ON)
+    set_property(TARGET Minuit2Math PROPERTY POSITION_INDEPENDENT_CODE ON)
+    set_property(TARGET Minuit2 PROPERTY POSITION_INDEPENDENT_CODE ON)
 
-  add_library(aare::Minuit2 ALIAS Minuit2)
-else()
-  find_package(Minuit2 CONFIG QUIET)
-  if(Minuit2_FOUND)
-    add_library(aare::Minuit2 ALIAS Minuit2::Minuit2)
+    add_library(aare::Minuit2 ALIAS Minuit2)
   else()
-    message(
-      STATUS
-        "Stand alone Minuit2 not found. Trying to find it as a part of ROOT")
-    find_package(
-      ROOT
-      COMPONENTS Minuit2
-      REQUIRED)
-    add_library(aare::Minuit2 ALIAS ROOT::Minuit2)
-    message(STATUS "Found Minuit2 as a part of ROOT: ${ROOT_DIR}")
+    find_package(Minuit2 CONFIG QUIET)
+    if(Minuit2_FOUND)
+      add_library(aare::Minuit2 ALIAS Minuit2::Minuit2)
+    else()
+      message(
+        STATUS
+          "Stand alone Minuit2 not found. Trying to find it as a part of ROOT")
+      find_package(
+        ROOT
+        COMPONENTS Minuit2
+        REQUIRED)
+      add_library(aare::Minuit2 ALIAS ROOT::Minuit2)
+      message(STATUS "Found Minuit2 as a part of ROOT: ${ROOT_DIR}")
+    endif()
   endif()
 endif()
 
@@ -358,6 +367,7 @@ set(PUBLICHEADERS
     include/aare/File.hpp
     include/aare/Fit.hpp
     include/aare/FitModel.hpp
+    include/aare/FitMinuit2.hpp
     include/aare/Models.hpp
     include/aare/FileInterface.hpp
     include/aare/FilePtr.hpp
@@ -427,13 +437,19 @@ target_link_libraries(
   aare_core
   PUBLIC fmt::fmt nlohmann_json::nlohmann_json ${STD_FS_LIB} # from
                                                              # helpers.cmake
-  PRIVATE aare_compiler_flags Threads::Threads $<BUILD_INTERFACE:aare::Minuit2>)
-
-target_include_directories(
-  aare_core SYSTEM
-  PRIVATE $<TARGET_PROPERTY:aare::Minuit2,INTERFACE_INCLUDE_DIRECTORIES>)
+  PRIVATE aare_compiler_flags Threads::Threads)
 
 set_property(TARGET aare_core PROPERTY POSITION_INDEPENDENT_CODE ON)
+
+if(AARE_MINUIT2)
+  target_sources(aare_core
+                 PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/src/FitMinuit2.cpp)
+  target_link_libraries(aare_core PRIVATE $<BUILD_INTERFACE:aare::Minuit2>)
+  target_include_directories(
+    aare_core SYSTEM
+    PRIVATE $<TARGET_PROPERTY:aare::Minuit2,INTERFACE_INCLUDE_DIRECTORIES>)
+  target_compile_definitions(aare_core PUBLIC AARE_MINUIT2)
+endif()
 
 if(AARE_TESTS)
   target_compile_definitions(aare_core PRIVATE AARE_TESTS)
@@ -489,6 +505,9 @@ if(AARE_TESTS)
       ${CMAKE_CURRENT_SOURCE_DIR}/src/ROI.test.cpp
       ${CMAKE_CURRENT_SOURCE_DIR}/src/utils/task.test.cpp
       ${CMAKE_CURRENT_SOURCE_DIR}/src/to_string.test.cpp)
+  if(AARE_MINUIT2)
+    list(APPEND TestSources ${CMAKE_CURRENT_SOURCE_DIR}/src/FitMinuit2.test.cpp)
+  endif()
   target_sources(tests PRIVATE ${TestSources})
 endif()
 
@@ -546,12 +565,38 @@ else()
   set(CLANG_TIDY_COMMAND "clang-tidy")
 endif()
 
+# Files that cannot be linted with the default configuration
+set(CLANG_TIDY_EXCLUDES
+    -not
+    -name
+    "CircularFifo.hpp"
+    -not
+    -name
+    "ProducerConsumerQueue.hpp"
+    -not
+    -name
+    "VariableSizeClusterFinder.hpp")
+if(NOT AARE_MINUIT2)
+  # The Minuit2 backend sources need the Minuit2 headers
+  list(
+    APPEND
+    CLANG_TIDY_EXCLUDES
+    -not
+    -name
+    "FitMinuit2.cpp"
+    -not
+    -name
+    "Chi2.hpp"
+    -not
+    -name
+    "MinuitSteps.hpp")
+endif()
+
 add_custom_target(
   clang-tidy
   COMMAND
     find -path "./src/*" -not -path "./src/python/*" -not -name "*.test.cpp"
-    -not -name "CircularFifo.hpp" -not -name "ProducerConsumerQueue.hpp" -not
-    -name "VariableSizeClusterFinder.hpp" | xargs -I {} -n 1 -P 10 bash -c
+    ${CLANG_TIDY_EXCLUDES} | xargs -I {} -n 1 -P 10 bash -c
     "${CLANG_TIDY_COMMAND} --config-file=.clang-tidy -p build {}"
   WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
   COMMENT "linting with clang-tidy"

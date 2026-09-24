@@ -2,6 +2,9 @@
 #include "aare/Fit.hpp"
 #include "aare/FitModel.hpp"
 #include "aare/Models.hpp"
+#ifdef AARE_MINUIT2
+#include "aare/FitMinuit2.hpp"
+#endif
 
 #include <benchmark/benchmark.h>
 #include <cmath>
@@ -71,12 +74,31 @@ static void report_accuracy(benchmark::State &state, const TestCase &tc,
     state.counters["dSig"] = result(2) - tc.true_sig;
 }
 
+// Backend tags: the built-in solver, and Minuit2 when compiled in.
+struct Builtin {
+    template <typename... Args>
+    static aare::NDArray<double, 1> fit(Args &&...args) {
+        return aare::fit_pixel<aare::model::Gaussian>(
+            std::forward<Args>(args)...);
+    }
+};
+#ifdef AARE_MINUIT2
+struct Minuit2 {
+    template <typename... Args>
+    static aare::NDArray<double, 1> fit(Args &&...args) {
+        return aare::minuit2::fit_pixel<aare::model::Gaussian>(
+            std::forward<Args>(args)...);
+    }
+};
+#endif
+
 // ----------
 // Benchmarks
 // ----------
 
-// Minuit2, analytic gradient (no Hesse)
-static void BM_FitGausMinuitGrad(benchmark::State &state) {
+// Gaussian, unweighted, no errors
+template <typename Backend>
+static void BM_FitGaussian(benchmark::State &state) {
     const auto &tc = get_test_cases()[state.range(0)];
     auto data = generate_gaussian_data(tc);
     auto xv = data.x.view();
@@ -90,7 +112,7 @@ static void BM_FitGausMinuitGrad(benchmark::State &state) {
 
     aare::NDArray<double, 1> result;
     for (auto _ : state) {
-        result = aare::fit_pixel<aare::model::Gaussian>(model, xv, yv);
+        result = Backend::fit(model, xv, yv);
         benchmark::DoNotOptimize(result.data());
     }
 
@@ -98,28 +120,25 @@ static void BM_FitGausMinuitGrad(benchmark::State &state) {
     state.SetLabel(tc.name);
 }
 
-// Minuit2, analytic gradient + Hesse
-static void BM_FitGausMinuitGradHesse(benchmark::State &state) {
+// Gaussian, weighted, with parameter errors
+template <typename Backend>
+static void BM_FitGaussianErrors(benchmark::State &state) {
     const auto &tc = get_test_cases()[state.range(0)];
     auto data = generate_gaussian_data(tc);
     auto xv = data.x.view();
     auto yv = data.y.view();
     auto ev = data.y_err.view();
 
-    const auto model = aare::FitModel<aare::model::Gaussian>(
-        0, 500, 0.5, true); // compute_errors = true -> Runs Hesse and provides
-                            // errors on fitted params
+    const auto model = aare::FitModel<aare::model::Gaussian>(0, 500, 0.5, true);
 
     aare::NDArray<double, 1> result;
     for (auto _ : state) {
-        result = aare::fit_pixel<aare::model::Gaussian>(model, xv, yv, ev);
+        result = Backend::fit(model, xv, yv, ev);
         benchmark::DoNotOptimize(result.data());
     }
 
-    // result has 6 elements: [A, mu, sig, err_A, err_mu, err_sig]
+    // result has 7 elements: [A, mu, sig, err_A, err_mu, err_sig, chi2]
     report_accuracy(state, tc, result);
-
-    // Also report Hesse uncertainties
     if (result.size() >= 6) {
         state.counters["errA"] = result(3);
         state.counters["errMu"] = result(4);
@@ -128,12 +147,22 @@ static void BM_FitGausMinuitGradHesse(benchmark::State &state) {
     state.SetLabel(tc.name);
 }
 
-BENCHMARK(BM_FitGausMinuitGrad)
+BENCHMARK_TEMPLATE(BM_FitGaussian, Builtin)
     ->DenseRange(0, 5)
     ->Unit(benchmark::kMicrosecond);
 
-BENCHMARK(BM_FitGausMinuitGradHesse)
+BENCHMARK_TEMPLATE(BM_FitGaussianErrors, Builtin)
     ->DenseRange(0, 5)
     ->Unit(benchmark::kMicrosecond);
+
+#ifdef AARE_MINUIT2
+BENCHMARK_TEMPLATE(BM_FitGaussian, Minuit2)
+    ->DenseRange(0, 5)
+    ->Unit(benchmark::kMicrosecond);
+
+BENCHMARK_TEMPLATE(BM_FitGaussianErrors, Minuit2)
+    ->DenseRange(0, 5)
+    ->Unit(benchmark::kMicrosecond);
+#endif
 
 BENCHMARK_MAIN();

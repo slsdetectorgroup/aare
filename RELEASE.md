@@ -4,6 +4,27 @@
 
 ### New Features:
 
+- Replaced the Minuit2 based fitting backend with a built-in, dependency-free
+  Levenberg-Marquardt solver that uses the analytic gradients of the models.
+  The C++ and Python fitting API is unchanged. On 512x1024x200 data cubes the
+  new solver is 2 to 2.5 times faster, and about 6 times faster with
+  ``compute_errors``. Parameter errors are Gauss-Newton estimates,
+  ``sqrt(diag((J^T J)^-1))``: they agree with the previous Hesse errors at a
+  good minimum and differ by 5 to 15 percent when a parameter is fixed or
+  limited to a wrong value. Fixed parameters and parameters ending on a limit
+  report an error of 0 (fixed parameters previously reported 1.0). One-sided
+  limits are open-ended instead of capped at 1e6, user start and fixed values
+  are applied before the validity check, ``strategy`` is accepted and
+  ignored, ``tolerance`` keeps its EDM meaning and ``max_calls`` counts model
+  evaluations. ``SetParLimits`` rejects ``lo >= hi`` and bad parameter
+  indices raise ``IndexError``. The public models lost their Minuit specific
+  ``compute_steps`` and ``compute_ranges`` helpers, and ``FitModel`` no longer
+  has a pimpl; C++ users need to rebuild.
+- The previous Minuit2 implementation remains available for validation when
+  building from source with ``-DAARE_MINUIT2=ON``: ``aare/FitMinuit2.hpp``
+  provides ``aare::minuit2::fit_pixel`` and ``fit_3d``, and Python gains
+  ``aare.experimental.fit_minuit2``. Released wheels and conda packages are
+  built without it and no longer contain LGPL-2.1 code.
 - Added the Python ``FrameDiscardPolicy`` enum with ``NoDiscard``, ``Discard``,
   and ``DiscardPartial``, enabling access to ``RawMasterFile.frame_discard_policy``.
 - Added the Python ``Pedestal`` factory with ``dtype`` selection, matching
@@ -94,13 +115,11 @@
   and the Python wheel declare ``MPL-2.0 AND Apache-2.0 AND MIT`` with all
   three license files. Building the wheel now requires scikit-build-core 0.11
   or newer.
-- The wheel and conda package now ship ``THIRD-PARTY-NOTICES.txt`` and the
-  LGPL 2.1 text for the libraries compiled into the extension: Minuit2
-  (LGPL-2.1-or-later), {fmt} and nlohmann/json (MIT), and pybind11
-  (BSD-3-Clause). Their license expressions include these licenses.
-  Minuit2 is now fetched at tag ``v6-40-02`` instead of ``master``, and
-  libzmq at ``v4.3.5`` (MPL-2.0) instead of ``v4.3.4`` (LGPL-3.0 with a
-  static-linking exception).
+- The wheel and conda package now ship ``THIRD-PARTY-NOTICES.txt`` for the
+  libraries compiled into the extension: {fmt} and nlohmann/json (MIT) and
+  pybind11 (BSD-3-Clause). Their license expressions include these licenses.
+  libzmq is fetched at ``v4.3.5`` (MPL-2.0) instead of ``v4.3.4`` (LGPL-3.0
+  with a static-linking exception).
 - ``RawFile`` and ``File`` reject raw files with frame padding disabled unless
   the frame discard policy is ``discardpartial``. The constructor reports the
   master path before opening data subfiles. Legacy ``.raw`` master files now

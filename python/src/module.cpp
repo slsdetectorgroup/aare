@@ -84,7 +84,7 @@ PYBIND11_MODULE(_aare, m) {
     define_fast_pedestal_bindings<double>(m, "FastPedestal_d");
     define_fast_pedestal_bindings<float>(m, "FastPedestal_f");
     define_fast_pedestal_bindings<int16_t>(m, "FastPedestal_i16");
-    define_fit_bindings(m);
+    define_fit_bindings(m, experimental);
     define_interpolation_bindings(m);
     define_jungfrau_data_file_io_bindings(m);
 

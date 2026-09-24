@@ -50,11 +50,10 @@ test:
     - python -m pytest python/tests
 
 about:
-  license: MPL-2.0 AND Apache-2.0 AND MIT AND BSD-3-Clause AND LGPL-2.1-or-later
+  license: MPL-2.0 AND Apache-2.0 AND MIT AND BSD-3-Clause
   license_file:
     - LICENSES/MPL-2.0.txt
     - LICENSES/Apache-2.0.txt
     - LICENSES/MIT.txt
-    - LICENSES/LGPL-2.1-or-later.txt
     - THIRD-PARTY-NOTICES.txt
   summary: Data analysis library for hybrid pixel detectors from PSI 

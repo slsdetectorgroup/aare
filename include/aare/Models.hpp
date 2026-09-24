@@ -39,7 +39,7 @@ inline double fast_erf(double x) {
 /**
  * @brief Per-parameter metadata: name and optional default bounds.
  *
- * Used by FitModel to generically initialise MnUserParameters.
+ * Used by FitModel for parameter names and default limits.
  * Unbounded directions use ±no_bound as sentinels.
  */
 struct ParamInfo {
@@ -49,23 +49,6 @@ struct ParamInfo {
 };
 
 inline constexpr double no_bound = std::numeric_limits<double>::infinity();
-
-/**
- * @brief Compute data-range statistics used by step-size estimators.
- *
- * Model-independent, called once per pixel.
- */
-inline void compute_ranges(NDView<double, 1> x, NDView<double, 1> y,
-                           double &x_range, double &y_range,
-                           double &slope_scale) {
-    const auto [x_min, x_max] = std::minmax_element(x.begin(), x.end());
-    const auto [y_min, y_max] = std::minmax_element(y.begin(), y.end());
-
-    x_range = std::max(*x_max - *x_min, 1e-9);
-    y_range = std::max(*y_max - *y_min, 1e-9);
-
-    slope_scale = std::max(y_range / x_range, 1e-9);
-}
 
 // _____________________________________________________________________
 //
@@ -119,14 +102,6 @@ struct Pol1 {
         const double intercept = y[0] - slope * x[0];
 
         return {intercept, slope};
-    }
-
-    static void compute_steps(const std::array<double, npar> &start,
-                              [[maybe_unused]] double x_range, double y_range,
-                              double slope_scale,
-                              std::array<double, npar> &steps) {
-        steps[0] = std::max(0.1 * std::abs(start[0]), 0.1 * y_range);
-        steps[1] = 0.1 * slope_scale;
     }
 };
 
@@ -219,15 +194,6 @@ struct Pol2 {
         const double p0 = y[0] - p1 * x[0] - p2 * x[0] * x[0];
 
         return {p0, p1, p2};
-    }
-
-    static void compute_steps(const std::array<double, npar> &start,
-                              double x_range, double y_range,
-                              double slope_scale,
-                              std::array<double, npar> &steps) {
-        steps[0] = std::max(0.1 * std::abs(start[0]), 0.1 * y_range);
-        steps[1] = 0.1 * slope_scale;
-        steps[2] = 0.1 * slope_scale / std::max(x_range, 1e-12);
     }
 };
 
@@ -325,18 +291,6 @@ struct Gaussian {
         const double sig = std::max((x_hi - x_lo) / 2.35, 1e-6);
 
         return {A, mu, sig};
-    }
-
-    /**
-     * @brief Data-driven Minuit step sizes.
-     */
-    static void compute_steps(const std::array<double, npar> &start,
-                              double x_range, double y_range,
-                              double /*slope_scale*/,
-                              std::array<double, npar> &steps) {
-        steps[0] = std::max(0.1 * std::abs(start[0]), 0.1 * y_range);
-        steps[1] = 0.05 * x_range;
-        steps[2] = 0.05 * x_range;
     }
 };
 
@@ -490,16 +444,6 @@ struct GaussianErfcPlateau {
 
         return {A, S, mu, sig};
     }
-
-    static void compute_steps(const std::array<double, npar> &start,
-                              double x_range, double y_range,
-                              double /*slope_scale*/,
-                              std::array<double, npar> &steps) {
-        steps[0] = std::max(0.1 * std::abs(start[0]), 0.1 * y_range);
-        steps[1] = std::max(0.1 * std::abs(start[1]), 0.1 * y_range);
-        steps[2] = 0.05 * x_range;
-        steps[3] = 0.05 * x_range;
-    }
 };
 
 // _____________________________________________________________________
@@ -646,18 +590,6 @@ struct GaussianChargeSharing {
         sigma = std::max(sigma, 1e-6);
 
         return {p0, p1, mu, sigma, N, C};
-    }
-
-    static void compute_steps(const std::array<double, npar> &start,
-                              double x_range, double y_range,
-                              double slope_scale,
-                              std::array<double, npar> &steps) {
-        steps[0] = std::max(0.1 * std::abs(start[0]), 0.1 * y_range);
-        steps[1] = 0.1 * slope_scale;
-        steps[2] = 0.05 * x_range;
-        steps[3] = 0.05 * x_range;
-        steps[4] = std::max(0.1 * std::abs(start[4]), 0.1 * y_range);
-        steps[5] = std::max(0.1 * std::abs(start[5]), 0.01);
     }
 };
 
@@ -828,20 +760,6 @@ struct GaussianChargeSharingKb {
 
         return {p0, p1, mu, sigma, N, C, kb_mean, kb_frac};
     }
-
-    static void compute_steps(const std::array<double, npar> &start,
-                              double x_range, double y_range,
-                              double slope_scale,
-                              std::array<double, npar> &steps) {
-        steps[0] = std::max(0.1 * std::abs(start[0]), 0.1 * y_range);
-        steps[1] = 0.1 * slope_scale;
-        steps[2] = 0.05 * x_range;
-        steps[3] = 0.05 * x_range;
-        steps[4] = std::max(0.1 * std::abs(start[4]), 0.1 * y_range);
-        steps[5] = std::max(0.1 * std::abs(start[5]), 0.01);
-        steps[6] = std::max(0.01 * std::abs(start[6]), 1e-3);
-        steps[7] = std::max(0.1 * std::abs(start[7]), 0.01);
-    }
 };
 
 // _____________________________________________________________________
@@ -995,18 +913,6 @@ struct RisingScurve {
 
         return {p0, p1, p2, p3, p4, p5};
     }
-
-    static void compute_steps(const std::array<double, npar> &start,
-                              double x_range, double y_range,
-                              double slope_scale,
-                              std::array<double, npar> &steps) {
-        steps[0] = std::max(0.1 * std::abs(start[0]), 0.1 * y_range);
-        steps[1] = 0.1 * slope_scale;
-        steps[2] = 0.05 * x_range;
-        steps[3] = 0.05 * x_range;
-        steps[4] = std::max(0.1 * std::abs(start[4]), 0.1 * y_range);
-        steps[5] = 0.1 * slope_scale;
-    }
 };
 
 // _____________________________________________________________________
@@ -1147,14 +1053,6 @@ struct FallingScurve {
         double p5 = 0.0;
 
         return {p0, p1, p2, p3, p4, p5};
-    }
-
-    static void compute_steps(const std::array<double, npar> &start,
-                              double x_range, double y_range,
-                              double slope_scale,
-                              std::array<double, npar> &steps) {
-        RisingScurve::compute_steps(start, x_range, y_range, slope_scale,
-                                    steps);
     }
 };
 

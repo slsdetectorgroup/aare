@@ -19,10 +19,11 @@ Two files contain code from other projects and keep their original licenses:
 
 The full license texts are in the `LICENSES` directory.
 
-The Python wheels and conda packages also contain Minuit2
-(LGPL-2.1-or-later), {fmt} and nlohmann/json (MIT), and pybind11
-(BSD-3-Clause), which CMake downloads at build time. See
-`THIRD-PARTY-NOTICES.txt` for their notices.
+The Python wheels and conda packages also contain {fmt} and nlohmann/json
+(MIT) and pybind11 (BSD-3-Clause), which CMake downloads at build time. See
+`THIRD-PARTY-NOTICES.txt` for their notices. Building from source with
+`-DAARE_MINUIT2=ON` adds the optional Minuit2 fitting backend
+(LGPL-2.1-or-later) for validation; released packages do not include it.
 
 ## Build and install
 

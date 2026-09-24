@@ -100,6 +100,15 @@ For detailed options see the CMakeLists.txt file in the root directory of the pr
 Use system libraries instead of using FetchContent to pull in dependencies. Default option is off.
 
 
+**AARE_MINUIT2 "Build the optional Minuit2 fitting backend (validation only)" OFF**
+
+Also build the previous Minuit2 based fitting backend next to the built-in
+Levenberg-Marquardt solver, for side-by-side validation
+(``aare::minuit2::fit_pixel``, ``aare.experimental.fit_minuit2``). Adds an
+LGPL-2.1-or-later dependency, fetched when ``AARE_FETCH_MINUIT2`` is on
+(the default) or found with ``find_package(Minuit2)`` or through ROOT.
+Released packages are built without it. Default option is off.
+
 **AARE_PYTHON_BINDINGS "Build python bindings" OFF**
 
 Build the Python bindings. Default option is off. 

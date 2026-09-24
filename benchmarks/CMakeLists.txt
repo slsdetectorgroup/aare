@@ -34,8 +34,5 @@ set_target_properties(
 add_executable(fit_benchmark fit_benchmark.cpp)
 target_link_libraries(fit_benchmark PRIVATE benchmark::benchmark aare_core
                                             aare_compiler_flags)
-target_include_directories(
-  fit_benchmark SYSTEM
-  PRIVATE $<TARGET_PROPERTY:Minuit2::Minuit2,INTERFACE_INCLUDE_DIRECTORIES>)
 set_target_properties(fit_benchmark PROPERTIES RUNTIME_OUTPUT_DIRECTORY
                                                ${CMAKE_BINARY_DIR})

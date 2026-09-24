@@ -48,7 +48,9 @@ cmake --build build -j4
 
 Useful optional settings include `AARE_DOCS`, `AARE_BENCHMARKS`, `AARE_ASAN`,
 `AARE_WARNINGS_AS_ERRORS`, `AARE_VERBOSE` (raises the compile-time log
-level), and `AARE_TUNE_LOCAL` (`-march=native`, not portable). Reconfigure an
+level), `AARE_TUNE_LOCAL` (`-march=native`, not portable), and `AARE_MINUIT2`
+(builds the optional Minuit2 fitting backend for validation; adds an LGPL
+dependency and is not used for released packages). Reconfigure an
 existing build directory instead of creating alternate in-tree build layouts
 unless isolation is needed; `build/CMakeCache.txt` records the options and
 interpreter it was configured with.
@@ -145,10 +147,19 @@ lives in `python/aare/transform.py` on top of C++ generators.
 
 `Fit.hpp`, `FitModel<Model>`, and `Models.hpp` (`Gaussian`, `Pol1`, `Pol2`,
 `RisingScurve`, `FallingScurve`, `GaussianErfcPlateau`,
-`GaussianChargeSharing`, ...) wrap Minuit2. Template bodies and explicit
-instantiations live in `src/Fit.cpp`; `FitModelImpl` is a pimpl so Minuit2
-headers never leak into the public API. Minuit2 is a private,
-`BUILD_INTERFACE`-only dependency of `aare_core`.
+`GaussianChargeSharing`, ...) form the public fitting API. Each model
+provides `eval`, `eval_and_grad`, `is_valid`, `estimate_par`, and
+`param_info`. The minimiser is the dependency-free Levenberg-Marquardt solver
+in `src/LevenbergMarquardt.hpp` (Gauss-Newton errors, reflected steps at
+limits, Minuit-style EDM tolerance); `src/FitHelpers.hpp` holds the start
+value precedence and shape checks; template bodies and explicit
+instantiations live in `src/Fit.cpp`. `FitModel` is plain data with the same
+public methods as before. The earlier Minuit2 backend survives as an opt-in
+validation path: `-DAARE_MINUIT2=ON` compiles `src/FitMinuit2.cpp` (with
+`src/Chi2.hpp` and `src/MinuitSteps.hpp`), exposes
+`aare::minuit2::fit_pixel/fit_3d` from `aare/FitMinuit2.hpp` and
+`aare.experimental.fit_minuit2`, and adds the `[minuit2]` cross-check test.
+Run the `[fit]` tests with that option on when changing the solver.
 
 ### Python layer
 
