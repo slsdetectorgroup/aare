@@ -266,8 +266,7 @@ fit_dispatch(const aare::FitModel<Model> &model,
             }
         } else {
             {
-                py::gil_scoped_release
-                    release; // release GIL for parallel loop}
+                py::gil_scoped_release release; // release GIL for parallel loop
                 result = aare::fit_pixel<Model>(model, x_view, y_view);
             }
         }
@@ -302,6 +301,7 @@ void define_fit_bindings(py::module &m) {
 
             // ── Polynomial of degree 1 ───────
             if (py::isinstance<aare::FitModel<Pol1>>(model_obj)) {
+
                 const auto &mdl =
                     model_obj.cast<const aare::FitModel<Pol1> &>();
                 return fit_dispatch<Pol1>(mdl, x, y, y_err_obj, n_threads);
