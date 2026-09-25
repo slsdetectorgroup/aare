@@ -26,7 +26,7 @@ requirements:
     - python
     - pip
     - numpy >=2.1
-    - scikit-build-core
+    - scikit-build-core >=0.11
     - pybind11 >=3.0.3
     - matplotlib # needed in host to solve the environment for run
 
@@ -50,5 +50,11 @@ test:
     - python -m pytest python/tests
 
 about:
-  license: SPDX-License-Identifier MPL-2.0
+  license: MPL-2.0 AND Apache-2.0 AND MIT AND BSD-3-Clause AND LGPL-2.1-or-later
+  license_file:
+    - LICENSES/MPL-2.0.txt
+    - LICENSES/Apache-2.0.txt
+    - LICENSES/MIT.txt
+    - LICENSES/LGPL-2.1-or-later.txt
+    - THIRD-PARTY-NOTICES.txt
   summary: Data analysis library for hybrid pixel detectors from PSI 
