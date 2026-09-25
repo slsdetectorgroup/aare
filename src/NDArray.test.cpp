@@ -463,12 +463,12 @@ TEST_CASE("Elementwise operations on images") {
         NDArray<double> A(shape, a_val);
         NDArray<double> B(shape, b_val);
         double v = 3.7;
-        NDArray<double> C = A / v;
+        NDArray<double> C = A * v;
         REQUIRE(C.data() != A.data());
 
         // Value of C matches
         for (uint32_t i = 0; i < C.size(); ++i) {
-            REQUIRE(C(i) == a_val / v);
+            REQUIRE(C(i) == a_val * v);
         }
 
         // Value of A is not changed
