@@ -29,9 +29,14 @@
 - Added string representator in python for Cluster and Eta 
 - Added roi slice method in python for easy slicing of numpy arrays ``array[roi.slice()]``. 
 - added context manager for ``aare.RawMasterFile``
+- ``NDArray``/``NDView`` expressions now support scalar operands
+  (``2 * a + b / 4``) and can be assigned to an existing ``NDArray``, reusing
+  its buffer.
 
 ### API Changes:
 
+- ``NDArray`` ``+ - * /`` with a scalar now returns a lazy expression instead
+  of an ``NDArray`` and no longer converts the scalar to the element type.
 - ``FastPedestal`` variance is now a private ``double`` intermediate. Removed
   the C++ ``variance()``/``variance_unchecked()`` APIs and Python ``var()``.
   Standard deviation is calculated before conversion to the output type,
@@ -77,6 +82,8 @@
 
 ### Bugfixes:
 - Mismatched operators inhibited vectorization in gcc of NDArray math operators
+- ``NDArray``/``NDView`` math operators and expressions were not vectorized
+  for ``uint8_t`` and 64 bit integers, up to 30x slower than a plain loop.
 - Removed the move constructor and move assignment of
   ``ProducerConsumerQueue``. They left the moved-from queue with a null
   buffer, crashing its destructor if it still held elements, and leaked
