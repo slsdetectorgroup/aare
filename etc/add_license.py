@@ -4,12 +4,16 @@ import fnmatch
 import os
 from pathlib import Path
 
-CPP_PATTERNS = ["*.h", "*.hpp", "*.cpp"]
-PY_PATTERNS = ["*.py"]
-CMAKE_PATTERNS = ["CMakeLists.txt"]
+CPP_PATTERNS = ["*.h", "*.hpp", "*.cpp", "*.hpp.in"]
+PY_PATTERNS = ["*.py", "*.py.in"]
+CMAKE_PATTERNS = ["CMakeLists.txt", "*.cmake", "*.cmake.in"]
 
 FILE_PATTERNS = CPP_PATTERNS + PY_PATTERNS + CMAKE_PATTERNS
 LICENSE_TEXT = "SPDX-License-Identifier: MPL-2.0"
+
+# Text found in license notices of code copied from other projects. Such files
+# keep their original license and must be tagged by hand.
+THIRD_PARTY_MARKERS = ["Copyright", "Permission is hereby granted", "Licensed under"]
 
 
 def get_comment_prefix(filename: str) -> str | None:
@@ -43,12 +47,21 @@ def process_file(filepath: Path) -> bool:
     if any("SPDX-License-Identifier" in line for line in lines):
         return False
 
+    if any(marker in line for line in lines for marker in THIRD_PARTY_MARKERS):
+        print(f"⚠️ Skipped {filepath}: contains a license notice, tag it by hand")
+        return False
+
     insert_index = 0
 
     # For Python, keep shebang on the very first line
     if filename.endswith(".py") and lines:
         if lines[0].startswith("#!"):
             insert_index = 1
+
+    # cmake-format merges consecutive comment lines into one paragraph
+    if any(fnmatch.fnmatch(filename, p) for p in CMAKE_PATTERNS):
+        if len(lines) > insert_index and lines[insert_index].startswith("#"):
+            lines.insert(insert_index, "\n")
 
     lines.insert(insert_index, license_line)
 
@@ -69,7 +82,7 @@ def main() -> None:
     parser.add_argument(
         "path",
         help="Root directory to recursively process "
-             "(*.h, *.cpp, *.py, and CMakeLists.txt).",
+             "(C++, Python, and CMake sources, and their .in templates).",
     )
 
     args = parser.parse_args()
