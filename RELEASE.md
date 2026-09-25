@@ -41,9 +41,14 @@
   from their linearised covariance instead of running Hesse. Pixels for which
   Fumili does not reach a valid minimum, which Minuit2's implementation cannot
   once a two-sided limit becomes active, are refitted with Migrad.
+- ``NDArray``/``NDView`` expressions now support scalar operands
+  (``2 * a + b / 4``) and can be assigned to an existing ``NDArray``, reusing
+  its buffer.
 
 ### API Changes:
 
+- ``NDArray`` ``+ - * /`` with a scalar now returns a lazy expression instead
+  of an ``NDArray`` and no longer converts the scalar to the element type.
 - ``FitModel`` is now plain data without a pimpl (C++ users need to rebuild);
   it gained ``strategy()``, ``lower_limit()``, ``upper_limit()`` and
   ``value()`` accessors and lost ``impl()``. Bad parameter indices raise
@@ -56,6 +61,7 @@
   while the Minuit2 minimizers use a wide two-sided range as before; with
   ``compute_errors``, fixed parameters and parameters ending on a limit report
   an error of 0 (fixed parameters previously reported 1.0 with Minuit2).
+
 - ``FastPedestal`` variance is now a private ``double`` intermediate. Removed
   the C++ ``variance()``/``variance_unchecked()`` APIs and Python ``var()``.
   Standard deviation is calculated before conversion to the output type,
@@ -101,6 +107,8 @@
 
 ### Bugfixes:
 - Mismatched operators inhibited vectorization in gcc of NDArray math operators
+- ``NDArray``/``NDView`` math operators and expressions were not vectorized
+  for ``uint8_t`` and 64 bit integers, up to 30x slower than a plain loop.
 - Removed the move constructor and move assignment of
   ``ProducerConsumerQueue``. They left the moved-from queue with a null
   buffer, crashing its destructor if it still held elements, and leaked
