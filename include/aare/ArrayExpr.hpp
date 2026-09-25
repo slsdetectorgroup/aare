@@ -5,6 +5,8 @@
 #include <cassert>
 #include <cstddef>
 #include <cstdint>
+#include <functional>
+#include <type_traits>
 
 namespace aare {
 
@@ -20,80 +22,95 @@ template <typename E, ssize_t Ndim> class ArrayExpr {
     }
 };
 
-template <typename A, typename B, ssize_t Ndim>
-class ArrayAdd : public ArrayExpr<ArrayAdd<A, B, Ndim>, Ndim> {
-    const A &arr1_;
-    const B &arr2_;
-
-  public:
-    ArrayAdd(const A &arr1, const B &arr2) : arr1_(arr1), arr2_(arr2) {
-        assert(arr1.size() == arr2.size());
-    }
-    auto operator[](size_t i) const { return arr1_[i] + arr2_[i]; }
-    size_t size() const { return arr1_.size(); }
-    std::array<ssize_t, Ndim> shape() const { return arr1_.shape(); }
-};
-
-template <typename A, typename B, ssize_t Ndim>
-class ArraySub : public ArrayExpr<ArraySub<A, B, Ndim>, Ndim> {
-    const A &arr1_;
-    const B &arr2_;
-
-  public:
-    ArraySub(const A &arr1, const B &arr2) : arr1_(arr1), arr2_(arr2) {
-        assert(arr1.size() == arr2.size());
-    }
-    auto operator[](size_t i) const { return arr1_[i] - arr2_[i]; }
-    size_t size() const { return arr1_.size(); }
-    std::array<ssize_t, Ndim> shape() const { return arr1_.shape(); }
-};
-
-template <typename A, typename B, ssize_t Ndim>
-class ArrayMul : public ArrayExpr<ArrayMul<A, B, Ndim>, Ndim> {
-    const A &arr1_;
-    const B &arr2_;
-
-  public:
-    ArrayMul(const A &arr1, const B &arr2) : arr1_(arr1), arr2_(arr2) {
-        assert(arr1.size() == arr2.size());
-    }
-    auto operator[](size_t i) const { return arr1_[i] * arr2_[i]; }
-    size_t size() const { return arr1_.size(); }
-    std::array<ssize_t, Ndim> shape() const { return arr1_.shape(); }
-};
-
-template <typename A, typename B, ssize_t Ndim>
-class ArrayDiv : public ArrayExpr<ArrayDiv<A, B, Ndim>, Ndim> {
-    const A &arr1_;
-    const B &arr2_;
-
-  public:
-    ArrayDiv(const A &arr1, const B &arr2) : arr1_(arr1), arr2_(arr2) {
-        assert(arr1.size() == arr2.size());
-    }
-    auto operator[](size_t i) const { return arr1_[i] / arr2_[i]; }
-    size_t size() const { return arr1_.size(); }
-    std::array<ssize_t, Ndim> shape() const { return arr1_.shape(); }
-};
-
-template <typename A, typename B, ssize_t Ndim>
-auto operator+(const ArrayExpr<A, Ndim> &arr1, const ArrayExpr<B, Ndim> &arr2) {
-    return ArrayAdd<ArrayExpr<A, Ndim>, ArrayExpr<B, Ndim>, Ndim>(arr1, arr2);
+/**
+ * @brief What an expression stores for one of its operands. An NDArray is
+ * replaced by a view, everything else is copied. The expression then holds its
+ * data pointers by value, so the compiler can keep them in registers even if
+ * the evaluation writes to a type that may alias them (e.g. uint8_t).
+ */
+template <typename E, ssize_t Ndim>
+auto operand(const ArrayExpr<E, Ndim> &expr) {
+    if constexpr (E::is_leaf)
+        return static_cast<const E &>(expr).view();
+    else
+        return static_cast<const E &>(expr);
 }
 
-template <typename A, typename B, ssize_t Ndim>
-auto operator-(const ArrayExpr<A, Ndim> &arr1, const ArrayExpr<B, Ndim> &arr2) {
-    return ArraySub<ArrayExpr<A, Ndim>, ArrayExpr<B, Ndim>, Ndim>(arr1, arr2);
+template <typename Op, typename A, typename B, ssize_t Ndim>
+class ArrayBinaryOp : public ArrayExpr<ArrayBinaryOp<Op, A, B, Ndim>, Ndim> {
+    A arr1_;
+    B arr2_;
+
+  public:
+    ArrayBinaryOp(const A &arr1, const B &arr2) : arr1_(arr1), arr2_(arr2) {
+        assert(arr1.shape() == arr2.shape());
+    }
+    auto operator[](size_t i) const { return Op{}(arr1_[i], arr2_[i]); }
+    size_t size() const { return arr1_.size(); }
+    std::array<ssize_t, Ndim> shape() const { return arr1_.shape(); }
+};
+
+/** @brief Scalar operand, takes size and shape from the expression it is
+ * combined with. */
+template <typename T, ssize_t Ndim>
+class ArrayScalar : public ArrayExpr<ArrayScalar<T, Ndim>, Ndim> {
+    T value_;
+    size_t size_;
+    std::array<ssize_t, Ndim> shape_;
+
+  public:
+    template <typename E>
+    ArrayScalar(T value, const ArrayExpr<E, Ndim> &like)
+        : value_(value), size_(like.size()), shape_(like.shape()) {}
+    T operator[](size_t) const { return value_; }
+    size_t size() const { return size_; }
+    std::array<ssize_t, Ndim> shape() const { return shape_; }
+};
+
+// Builds the expression for expr op expr, expr op scalar and scalar op expr
+template <typename Op, typename A, typename B, ssize_t Ndim>
+auto binary_op(const ArrayExpr<A, Ndim> &lhs, const ArrayExpr<B, Ndim> &rhs) {
+    auto a = operand(lhs);
+    auto b = operand(rhs);
+    return ArrayBinaryOp<Op, decltype(a), decltype(b), Ndim>(a, b);
 }
 
-template <typename A, typename B, ssize_t Ndim>
-auto operator*(const ArrayExpr<A, Ndim> &arr1, const ArrayExpr<B, Ndim> &arr2) {
-    return ArrayMul<ArrayExpr<A, Ndim>, ArrayExpr<B, Ndim>, Ndim>(arr1, arr2);
+template <typename Op, typename A, typename T, ssize_t Ndim,
+          typename = std::enable_if_t<std::is_arithmetic_v<T>>>
+auto binary_op(const ArrayExpr<A, Ndim> &lhs, T rhs) {
+    return binary_op<Op>(lhs, ArrayScalar<T, Ndim>(rhs, lhs));
 }
 
-template <typename A, typename B, ssize_t Ndim>
-auto operator/(const ArrayExpr<A, Ndim> &arr1, const ArrayExpr<B, Ndim> &arr2) {
-    return ArrayDiv<ArrayExpr<A, Ndim>, ArrayExpr<B, Ndim>, Ndim>(arr1, arr2);
+template <typename Op, typename T, typename B, ssize_t Ndim,
+          typename = std::enable_if_t<std::is_arithmetic_v<T>>>
+auto binary_op(T lhs, const ArrayExpr<B, Ndim> &rhs) {
+    return binary_op<Op>(ArrayScalar<T, Ndim>(lhs, rhs), rhs);
+}
+
+// The operators only take part in overload resolution if binary_op accepts
+// the operands, meaning at least one of them is an ArrayExpr
+template <typename L, typename R>
+auto operator+(const L &lhs, const R &rhs)
+    -> decltype(binary_op<std::plus<>>(lhs, rhs)) {
+    return binary_op<std::plus<>>(lhs, rhs);
+}
+
+template <typename L, typename R>
+auto operator-(const L &lhs, const R &rhs)
+    -> decltype(binary_op<std::minus<>>(lhs, rhs)) {
+    return binary_op<std::minus<>>(lhs, rhs);
+}
+
+template <typename L, typename R>
+auto operator*(const L &lhs, const R &rhs)
+    -> decltype(binary_op<std::multiplies<>>(lhs, rhs)) {
+    return binary_op<std::multiplies<>>(lhs, rhs);
+}
+
+template <typename L, typename R>
+auto operator/(const L &lhs, const R &rhs)
+    -> decltype(binary_op<std::divides<>>(lhs, rhs)) {
+    return binary_op<std::divides<>>(lhs, rhs);
 }
 
 } // namespace aare
