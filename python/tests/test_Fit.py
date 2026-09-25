@@ -8,6 +8,7 @@ MINIMIZERS = [
     aare.Minimizer.Migrad,
     aare.Minimizer.Fumili,
     aare.Minimizer.LevenbergMarquardt,
+    aare.Minimizer.VarPro,
 ]
 
 
@@ -16,7 +17,10 @@ def gaussian(x, A, mu, sigma):
 
 
 def uses_minuit2(minimizer):
-    return minimizer != aare.Minimizer.LevenbergMarquardt
+    return minimizer not in (
+        aare.Minimizer.LevenbergMarquardt,
+        aare.Minimizer.VarPro,
+    )
 
 
 @pytest.fixture(params=MINIMIZERS, ids=lambda m: m.name)
@@ -45,7 +49,12 @@ def test_gaussian_model_evaluates_and_fits_data(minimizer):
 
 def test_minimizer_can_be_selected():
     assert aare.Gaussian().minimizer == aare.Minimizer.Migrad
-    assert set(aare.Minimizer.__members__) == {"Migrad", "Fumili", "LevenbergMarquardt"}
+    assert set(aare.Minimizer.__members__) == {
+        "Migrad",
+        "Fumili",
+        "LevenbergMarquardt",
+        "VarPro",
+    }
 
     for minimizer in MINIMIZERS:
         assert aare.Gaussian(minimizer=minimizer).minimizer == minimizer

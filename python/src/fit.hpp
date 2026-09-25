@@ -34,23 +34,27 @@ template <typename Model> void bind_fit_model(py::module &m, const char *name) {
             ----------
             strategy : int
                 Minuit2 strategy (0 = fast, 1 = Minuit2's default). Ignored
-                by ``Minimizer.LevenbergMarquardt``.
+                by ``Minimizer.LevenbergMarquardt`` and
+                ``Minimizer.VarPro``.
             max_calls : int
                 Work budget per pixel: Minuit2 function calls, or model
-                evaluations for ``Minimizer.LevenbergMarquardt`` (one per
-                iteration, two when a step crosses a limit). 0 selects
-                Minuit's default budget.
+                evaluations for ``Minimizer.LevenbergMarquardt`` and
+                ``Minimizer.VarPro`` (one per iteration, two
+                when a step crosses a limit). 0 selects Minuit's default
+                budget.
             tolerance : float
-                EDM tolerance in Minuit's convention. Migrad and
-                LevenbergMarquardt stop below ``0.002 * tolerance``, Fumili
-                below ``1e-4 * tolerance``.
+                EDM tolerance in Minuit's convention. Migrad,
+                LevenbergMarquardt and VarPro stop below
+                ``0.002 * tolerance``, Fumili below ``1e-4 * tolerance``.
             compute_errors : bool
                 Also return parameter errors: from Hesse with Migrad, from
-                the linearised covariance with Fumili and LevenbergMarquardt.
-                Fixed parameters and parameters ending on a limit report 0.
+                the linearised covariance with Fumili, LevenbergMarquardt
+                and VarPro. Fixed parameters and parameters
+                ending on a limit report 0.
             minimizer : Minimizer
-                ``Minimizer.Migrad`` (default), ``Minimizer.Fumili`` or
-                ``Minimizer.LevenbergMarquardt``.
+                ``Minimizer.Migrad`` (default), ``Minimizer.Fumili``,
+                ``Minimizer.LevenbergMarquardt`` or
+                ``Minimizer.VarPro``.
             )doc")
         .def("SetParLimits",
              py::overload_cast<unsigned int, double, double>(&FM::SetParLimits),
@@ -118,8 +122,9 @@ template <typename Model> void bind_fit_model(py::module &m, const char *name) {
             Fit this model to 1D or 3D data using Minuit2.
 
             The minimizer is selected by the ``minimizer`` property
-            (``Minimizer.Migrad`` by default, ``Minimizer.Fumili`` or
-            ``Minimizer.LevenbergMarquardt``).
+            (``Minimizer.Migrad`` by default, ``Minimizer.Fumili``,
+            ``Minimizer.LevenbergMarquardt`` or
+            ``Minimizer.VarPro``).
 
             Parameters
             ----------
@@ -319,12 +324,26 @@ void define_fit_bindings(py::module &m) {
         ``sqrt(diag((J^T J)^-1))``; ``max_calls`` counts model evaluations
         and ``strategy`` is ignored.
 
+        ``VarPro`` is the built-in variable projection solver.
+        Every bundled model is linear in some of its parameters (the
+        amplitude of a Gaussian, the baseline and amplitude of an S-curve,
+        every parameter of a polynomial); each trial point solves those
+        exactly and the Levenberg-Marquardt iteration runs over the
+        remaining nonlinear parameters only. It needs fewer evaluations than
+        ``LevenbergMarquardt`` and cannot be misled by poor start values of
+        the linear parameters, which it ignores. A pixel whose linear
+        solution violates a limit on a linear parameter, or that does not
+        converge, is refitted with ``LevenbergMarquardt``. Its parameter
+        errors are the same Gauss-Newton estimates; ``max_calls`` counts
+        evaluations and ``strategy`` is ignored.
+
         With every minimizer, fixed parameters and parameters that end on a
         limit report an error of 0 and a failed fit returns zeros.
         )doc")
         .value("Migrad", aare::Minimizer::Migrad)
         .value("Fumili", aare::Minimizer::Fumili)
-        .value("LevenbergMarquardt", aare::Minimizer::LevenbergMarquardt);
+        .value("LevenbergMarquardt", aare::Minimizer::LevenbergMarquardt)
+        .value("VarPro", aare::Minimizer::VarPro);
 
     // ── Bind model classes ──────────────────────────────────────────
     bind_fit_model<aare::model::Gaussian>(m, "Gaussian");

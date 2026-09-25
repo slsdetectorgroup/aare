@@ -41,7 +41,7 @@ The result dictionary contains ``par`` and ``chi2``. It also contains
 Choosing the minimizer
 ~~~~~~~~~~~~~~~~~~~~~~
 
-Fits use Minuit2's Migrad by default. Two alternatives share the same
+Fits use Minuit2's Migrad by default. Three alternatives share the same
 interface and are selected with the ``minimizer`` argument or property::
 
     model = Gaussian(minimizer=Minimizer.LevenbergMarquardt)
@@ -60,8 +60,18 @@ interface and are selected with the ``minimizer`` argument or property::
   the analytic Jacobian of the model. It reflects steps at parameter limits
   and reuses its buffers between pixels, so data cubes are fitted without
   per-pixel allocations. Parameter errors are ``sqrt(diag((J^T J)^-1))``.
+- ``Minimizer.VarPro``: a built-in variable projection solver.
+  Every bundled model is linear in some of its parameters (the amplitude of a
+  Gaussian, the baseline and amplitude of an S-curve, every parameter of a
+  polynomial). Each trial point solves those exactly and the
+  Levenberg-Marquardt iteration runs over the remaining nonlinear parameters
+  only, so it needs fewer evaluations than LevenbergMarquardt and cannot be
+  misled by poor start values of the linear parameters, which it ignores.
+  A pixel whose linear solution violates a limit on a linear parameter, or
+  that does not converge, is refitted with LevenbergMarquardt. Parameter
+  errors are the same Gauss-Newton estimates.
 
-All three converge to the same minimum on well-behaved data; the ``[fit]``
+All four converge to the same minimum on well-behaved data; the ``[fit]``
 test suite checks that. The bundled ``fit_benchmark`` compares their speed on
 Gaussian peaks, S-curves and a data cube. For very noisy data the Gauss-Newton
 steps of Fumili and LevenbergMarquardt converge more slowly, so compare the
@@ -78,15 +88,16 @@ free start values are clamped into their limits. The constructor arguments
 control the minimizer:
 
 - ``max_calls`` caps the work per pixel: Minuit2 function calls for Migrad and
-  Fumili, model evaluations for LevenbergMarquardt, which spends one
-  evaluation per iteration (two when a step crosses a limit). ``0`` selects
-  Minuit's default budget. A pixel that does not converge within the budget
-  returns zeros.
-- ``tolerance`` is the EDM tolerance in Minuit's convention. Migrad and
-  LevenbergMarquardt stop when the estimated distance to the minimum is below
-  ``0.002 * tolerance``, Fumili below ``1e-4 * tolerance``.
+  Fumili, model evaluations for LevenbergMarquardt and VarPro,
+  which spend one evaluation per iteration (two when a step crosses a limit).
+  ``0`` selects Minuit's default budget. A pixel that does not converge within
+  the budget returns zeros.
+- ``tolerance`` is the EDM tolerance in Minuit's convention. Migrad,
+  LevenbergMarquardt and VarPro stop when the estimated distance
+  to the minimum is below ``0.002 * tolerance``, Fumili below
+  ``1e-4 * tolerance``.
 - ``strategy`` is the Minuit2 strategy (0 is fast, 1 is Minuit2's default).
-  LevenbergMarquardt ignores it.
+  LevenbergMarquardt and VarPro ignore it.
 - ``compute_errors`` adds ``par_err`` to the result. Fixed parameters and
   parameters that end on a limit report an error of 0 with every minimizer.
 
@@ -96,4 +107,4 @@ and ``SetParLimits`` rejects a lower limit at or above the upper one.
 .. autofunction:: fit
 
 .. autoclass:: Minimizer
-    :members: Migrad, Fumili, LevenbergMarquardt
+    :members: Migrad, Fumili, LevenbergMarquardt, VarPro

@@ -3,6 +3,7 @@
 #include "FitHelpers.hpp"
 #include "FitMinuit2.hpp"
 #include "LevenbergMarquardt.hpp"
+#include "VariableProjection.hpp"
 #include "aare/Models.hpp"
 #include "aare/utils/par.hpp"
 #include "aare/utils/task.hpp"
@@ -10,6 +11,7 @@
 #include <cstddef>
 #include <stdexcept>
 #include <string>
+#include <type_traits>
 #include <vector>
 
 namespace aare {
@@ -117,11 +119,13 @@ std::vector<std::string> FitModel<Model>::GetParNames() const {
 
 namespace detail {
 
+struct NotSeparable {};
+
 /**
  * @brief Fits pixels with the minimizer selected by the model.
  *
- * Keep one instance per thread: the Levenberg-Marquardt buffers are reused
- * between pixels so that a data cube is fitted without per-pixel
+ * Keep one instance per thread: the buffers of the built-in minimizers are
+ * reused between pixels so that a data cube is fitted without per-pixel
  * allocations. The Minuit2 minimizers create their state per pixel.
  */
 template <typename Model> class PixelFitter {
@@ -139,18 +143,40 @@ template <typename Model> class PixelFitter {
              double *err_out, double &chi2) {
         const auto start = start_values(model, x, y);
 
-        if (model.minimizer() == Minimizer::LevenbergMarquardt) {
-            const auto res =
-                lm_.fit(model, x, y, y_err, start, par_out, err_out);
-            chi2 = res.valid ? res.chi2 : 0.0;
-            return res.valid;
+        if (model.minimizer() == Minimizer::VarPro) {
+            // A model without the separable structure, a pixel that does
+            // not converge and a pixel whose linear solution violates a
+            // limit fall back to the full solver.
+            if constexpr (model::is_separable<Model>::value) {
+                const auto res =
+                    vp_.fit(model, x, y, y_err, start, par_out, err_out);
+                if (res.valid) {
+                    chi2 = res.chi2;
+                    return true;
+                }
+            }
+            return fit_lm(model, x, y, y_err, start, par_out, err_out, chi2);
         }
+        if (model.minimizer() == Minimizer::LevenbergMarquardt)
+            return fit_lm(model, x, y, y_err, start, par_out, err_out, chi2);
         return fit_pixel_minuit2(model, x, y, y_err, start, par_out, err_out,
                                  chi2);
     }
 
   private:
+    bool fit_lm(const FitModel<Model> &model, NDView<double, 1> x,
+                NDView<double, 1> y, NDView<double, 1> y_err,
+                const std::array<double, Model::npar> &start, double *par_out,
+                double *err_out, double &chi2) {
+        const auto res = lm_.fit(model, x, y, y_err, start, par_out, err_out);
+        chi2 = res.valid ? res.chi2 : 0.0;
+        return res.valid;
+    }
+
     LevenbergMarquardt<Model> lm_;
+    std::conditional_t<model::is_separable<Model>::value,
+                       VariableProjection<Model>, NotSeparable>
+        vp_;
 };
 
 } // namespace detail

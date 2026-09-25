@@ -76,11 +76,15 @@ const char *name(Minimizer m) {
         return "Fumili";
     case Minimizer::LevenbergMarquardt:
         return "LevenbergMarquardt";
+    case Minimizer::VarPro:
+        return "VarPro";
     }
     return "unknown";
 }
 
-bool uses_minuit2(Minimizer m) { return m != Minimizer::LevenbergMarquardt; }
+bool uses_minuit2(Minimizer m) {
+    return m != Minimizer::LevenbergMarquardt && m != Minimizer::VarPro;
+}
 
 template <typename Model>
 aare::FitModel<Model> make_model(Minimizer minimizer, bool errors = false,
@@ -137,7 +141,8 @@ void check_minimizers_agree(const std::string &label, Data d, bool weighted,
     const auto ref = run(Minimizer::Migrad);
 
     for (const auto candidate :
-         {Minimizer::Fumili, Minimizer::LevenbergMarquardt}) {
+         {Minimizer::Fumili, Minimizer::LevenbergMarquardt,
+          Minimizer::VarPro}) {
         INFO(label << ": " << name(candidate) << " vs Migrad");
         const auto res = run(candidate);
         REQUIRE(res.size() == ref.size());
@@ -185,8 +190,9 @@ void check_minimizers_agree(const std::string &label, Data d, bool weighted,
 } // namespace
 
 TEST_CASE("Fit unweighted and weighted noise-free Gaussian data", "[fit]") {
-    const auto minimizer = GENERATE(Minimizer::Migrad, Minimizer::Fumili,
-                                    Minimizer::LevenbergMarquardt);
+    const auto minimizer =
+        GENERATE(Minimizer::Migrad, Minimizer::Fumili,
+                 Minimizer::LevenbergMarquardt, Minimizer::VarPro);
     INFO("minimizer " << name(minimizer));
     auto d = gaussian_data();
 
@@ -217,8 +223,9 @@ TEST_CASE("Fit unweighted and weighted noise-free Gaussian data", "[fit]") {
 }
 
 TEST_CASE("Fit weighted Pol1 errors match the analytic formula", "[fit]") {
-    const auto minimizer = GENERATE(Minimizer::Migrad, Minimizer::Fumili,
-                                    Minimizer::LevenbergMarquardt);
+    const auto minimizer =
+        GENERATE(Minimizer::Migrad, Minimizer::Fumili,
+                 Minimizer::LevenbergMarquardt, Minimizer::VarPro);
     INFO("minimizer " << name(minimizer));
     constexpr ssize_t n = 20;
     NDArray<double, 1> x({n});
@@ -248,8 +255,9 @@ TEST_CASE("Fit weighted Pol1 errors match the analytic formula", "[fit]") {
 }
 
 TEST_CASE("Fit with a fixed parameter", "[fit]") {
-    const auto minimizer = GENERATE(Minimizer::Migrad, Minimizer::Fumili,
-                                    Minimizer::LevenbergMarquardt);
+    const auto minimizer =
+        GENERATE(Minimizer::Migrad, Minimizer::Fumili,
+                 Minimizer::LevenbergMarquardt, Minimizer::VarPro);
     INFO("minimizer " << name(minimizer));
     auto d = gaussian_data();
 
@@ -289,8 +297,9 @@ TEST_CASE("Fit with a fixed parameter", "[fit]") {
 }
 
 TEST_CASE("Fit with parameter limits", "[fit]") {
-    const auto minimizer = GENERATE(Minimizer::Migrad, Minimizer::Fumili,
-                                    Minimizer::LevenbergMarquardt);
+    const auto minimizer =
+        GENERATE(Minimizer::Migrad, Minimizer::Fumili,
+                 Minimizer::LevenbergMarquardt, Minimizer::VarPro);
     INFO("minimizer " << name(minimizer));
     auto d = gaussian_data();
     const double margin = limit_margin(minimizer);
@@ -349,8 +358,9 @@ TEST_CASE("Fit with parameter limits", "[fit]") {
 }
 
 TEST_CASE("Fit honours user start values", "[fit]") {
-    const auto minimizer = GENERATE(Minimizer::Migrad, Minimizer::Fumili,
-                                    Minimizer::LevenbergMarquardt);
+    const auto minimizer =
+        GENERATE(Minimizer::Migrad, Minimizer::Fumili,
+                 Minimizer::LevenbergMarquardt, Minimizer::VarPro);
     INFO("minimizer " << name(minimizer));
     auto d = gaussian_data();
 
@@ -381,8 +391,9 @@ TEST_CASE("Fit honours user start values", "[fit]") {
 }
 
 TEST_CASE("Fit reports failure as zeros when max_calls is exhausted", "[fit]") {
-    const auto minimizer = GENERATE(Minimizer::Migrad, Minimizer::Fumili,
-                                    Minimizer::LevenbergMarquardt);
+    const auto minimizer =
+        GENERATE(Minimizer::Migrad, Minimizer::Fumili,
+                 Minimizer::LevenbergMarquardt, Minimizer::VarPro);
     INFO("minimizer " << name(minimizer));
     auto d = gaussian_data();
 
@@ -440,8 +451,9 @@ TEST_CASE("Copying a FitModel keeps the minimizer", "[fit]") {
 }
 
 TEST_CASE("Fit rising and falling S-curves", "[fit]") {
-    const auto minimizer = GENERATE(Minimizer::Migrad, Minimizer::Fumili,
-                                    Minimizer::LevenbergMarquardt);
+    const auto minimizer =
+        GENERATE(Minimizer::Migrad, Minimizer::Fumili,
+                 Minimizer::LevenbergMarquardt, Minimizer::VarPro);
     INFO("minimizer " << name(minimizer));
     const std::vector<double> truth{10.0, 0.1, 50.0, 3.0, 1000.0, 2.0};
 
@@ -498,8 +510,9 @@ TEST_CASE("Fit rising and falling S-curves", "[fit]") {
 }
 
 TEST_CASE("Fit a Gaussian data cube in parallel", "[fit]") {
-    const auto minimizer = GENERATE(Minimizer::Migrad, Minimizer::Fumili,
-                                    Minimizer::LevenbergMarquardt);
+    const auto minimizer =
+        GENERATE(Minimizer::Migrad, Minimizer::Fumili,
+                 Minimizer::LevenbergMarquardt, Minimizer::VarPro);
     INFO("minimizer " << name(minimizer));
     NDArray<double, 1> x({n_points});
     NDArray<double, 1> values({n_points});
@@ -536,8 +549,9 @@ TEST_CASE("Fit a Gaussian data cube in parallel", "[fit]") {
 }
 
 TEST_CASE("Fit a data cube with errors matches per-pixel fits", "[fit]") {
-    const auto minimizer = GENERATE(Minimizer::Migrad, Minimizer::Fumili,
-                                    Minimizer::LevenbergMarquardt);
+    const auto minimizer =
+        GENERATE(Minimizer::Migrad, Minimizer::Fumili,
+                 Minimizer::LevenbergMarquardt, Minimizer::VarPro);
     INFO("minimizer " << name(minimizer));
     constexpr ssize_t rows = 4;
     constexpr ssize_t cols = 3;
@@ -594,8 +608,9 @@ TEST_CASE("Fit a data cube with errors matches per-pixel fits", "[fit]") {
 
 TEST_CASE("Fitting with every parameter fixed returns the fixed values",
           "[fit]") {
-    const auto minimizer = GENERATE(Minimizer::Migrad, Minimizer::Fumili,
-                                    Minimizer::LevenbergMarquardt);
+    const auto minimizer =
+        GENERATE(Minimizer::Migrad, Minimizer::Fumili,
+                 Minimizer::LevenbergMarquardt, Minimizer::VarPro);
     INFO("minimizer " << name(minimizer));
     auto d = gaussian_data();
 
@@ -725,7 +740,8 @@ TEST_CASE("All minimizers agree on a noisy data cube", "[fit]") {
     const auto ref = fit_cube(Minimizer::Migrad);
 
     for (const auto candidate :
-         {Minimizer::Fumili, Minimizer::LevenbergMarquardt}) {
+         {Minimizer::Fumili, Minimizer::LevenbergMarquardt,
+          Minimizer::VarPro}) {
         INFO(name(candidate) << " vs Migrad");
         const auto res = fit_cube(candidate);
         for (ssize_t row = 0; row < rows; ++row) {
@@ -741,4 +757,119 @@ TEST_CASE("All minimizers agree on a noisy data cube", "[fit]") {
             }
         }
     }
+}
+
+namespace {
+
+// The separable structure of a model must reproduce eval and eval_and_grad:
+// f = sum_j par[linear_par[j]] * phi[j], df/dpar[linear_par[j]] = phi[j] and
+// df/dpar[nonlinear[k]] = sum_j par[linear_par[j]] * dphi[k][j].
+template <typename Model>
+void check_separable(const std::vector<double> &par,
+                     const std::vector<double> &xs) {
+    using Traits = aare::model::separable_traits<Model>;
+    static_assert(aare::model::is_separable<Model>::value);
+    typename Traits::Basis phi{};
+    typename Traits::BasisGrad dphi{};
+    std::array<double, Model::npar> g{};
+    double f = 0.0;
+    for (const double x : xs) {
+        INFO("x = " << x);
+        Model::basis_and_grad(x, par, phi, dphi);
+        Model::eval_and_grad(x, par, f, g);
+        double sum = 0.0;
+        for (std::size_t j = 0; j < Traits::nlin; ++j) {
+            const auto idx = Model::linear_par[j];
+            sum += par[idx] * phi[j];
+            CHECK(g[idx] == Approx(phi[j]).epsilon(1e-12).margin(1e-14));
+        }
+        CHECK(Model::eval(x, par) == Approx(sum).epsilon(1e-12).margin(1e-14));
+        CHECK(f == Approx(sum).epsilon(1e-12).margin(1e-14));
+        for (std::size_t k = 0; k < Traits::nnl; ++k) {
+            double d = 0.0;
+            for (std::size_t j = 0; j < Traits::nlin; ++j)
+                d += par[Model::linear_par[j]] * dphi[k][j];
+            CHECK(g[Traits::nonlinear_par[k]] ==
+                  Approx(d).epsilon(1e-12).margin(1e-14));
+        }
+    }
+    // The bulk basis pass must agree with the per-point one.
+    if constexpr (aare::model::has_basis_columns<Model>::value) {
+        const auto n = static_cast<ssize_t>(xs.size());
+        std::vector<double> cols(Traits::nlin * xs.size());
+        std::vector<double> dcols(Traits::nnl * Traits::nlin * xs.size());
+        Model::basis_columns(xs.data(), n, par, cols.data(), dcols.data());
+        for (ssize_t i = 0; i < n; ++i) {
+            INFO("x = " << xs[static_cast<std::size_t>(i)]);
+            Model::basis_and_grad(xs[static_cast<std::size_t>(i)], par, phi,
+                                  dphi);
+            for (std::size_t j = 0; j < Traits::nlin; ++j)
+                CHECK(cols[j * xs.size() + static_cast<std::size_t>(i)] ==
+                      Approx(phi[j]).epsilon(1e-12).margin(1e-14));
+            for (std::size_t k = 0; k < Traits::nnl; ++k)
+                for (std::size_t j = 0; j < Traits::nlin; ++j)
+                    CHECK(dcols[(k * Traits::nlin + j) * xs.size() +
+                                static_cast<std::size_t>(i)] ==
+                          Approx(dphi[k][j]).epsilon(1e-12).margin(1e-14));
+        }
+    }
+}
+
+} // namespace
+
+TEST_CASE("Separable models are consistent with eval and eval_and_grad",
+          "[fit]") {
+    using namespace aare::model;
+    const std::vector<double> xs = {-4.0, -1.5, 0.3,  2.0,
+                                    7.5,  40.0, 55.0, 120.0};
+    check_separable<Pol1>({2.0, -0.5}, xs);
+    check_separable<Pol2>({2.0, -0.5, 0.05}, xs);
+    check_separable<Gaussian>({120.0, 0.8, 1.3}, xs);
+    check_separable<GaussianErfcPlateau>({80.0, 15.0, 2.0, 1.5}, xs);
+    check_separable<GaussianChargeSharing>({20.0, 0.05, 50.0, 4.0, 1500.0, 0.3},
+                                           xs);
+    check_separable<GaussianChargeSharingKb>(
+        {20.0, 0.05, 50.0, 4.0, 1500.0, 0.3, 1.1, 0.1}, xs);
+    check_separable<RisingScurve>({10.0, 0.1, 50.0, 3.0, 1000.0, 2.0}, xs);
+    check_separable<FallingScurve>({10.0, 0.1, 50.0, 3.0, 1000.0, 2.0}, xs);
+}
+
+TEST_CASE("VarPro falls back to LevenbergMarquardt for a limit "
+          "on a linear parameter",
+          "[fit]") {
+    using aare::model::FallingScurve;
+    const std::vector<double> truth{10.0, 0.1, 50.0, 3.0, 1000.0, 2.0};
+    auto d = scurve_data<FallingScurve>(truth);
+
+    auto vp = make_model<FallingScurve>(Minimizer::VarPro, true, 500);
+    auto lm =
+        make_model<FallingScurve>(Minimizer::LevenbergMarquardt, true, 500);
+    // The unconstrained amplitude is 1000, so the linear solve cannot
+    // honour this limit and the pixel is refitted with the full solver.
+    vp.SetParLimits("A", 0.0, 500.0);
+    lm.SetParLimits("A", 0.0, 500.0);
+
+    const auto res_vp =
+        aare::fit_pixel(vp, d.x.view(), d.y.view(), d.y_err.view());
+    const auto res_lm =
+        aare::fit_pixel(lm, d.x.view(), d.y.view(), d.y_err.view());
+    REQUIRE(res_vp.size() == res_lm.size());
+    for (ssize_t k = 0; k < res_vp.size(); ++k)
+        CHECK(res_vp(k) == res_lm(k));
+    CHECK(res_vp(4) == Approx(500.0).margin(1e-9));
+    CHECK(res_vp(12) > 0.0);
+}
+
+TEST_CASE("fast_exp matches std::exp", "[fit]") {
+    double max_rel = 0.0;
+    for (int i = 0; i <= 14000; ++i) {
+        const double x = -700.0 + 1400.0 * static_cast<double>(i) / 14000.0;
+        const double reference = std::exp(x);
+        max_rel =
+            std::max(max_rel, std::abs(aare::model::fast_exp(x) - reference) /
+                                  reference);
+    }
+    CHECK(max_rel < 1e-15);
+    CHECK(aare::model::fast_exp(0.0) == 1.0);
+    CHECK(aare::model::fast_exp(-1000.0) == aare::model::fast_exp(-700.0));
 }

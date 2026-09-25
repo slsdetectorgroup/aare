@@ -50,6 +50,21 @@
   erf from the Gaussian's exponential, a rounding-level change. One iteration
   costs one model evaluation of the ``max_calls`` budget, so pixels that used
   to exhaust the default budget of 100 may now converge.
+- Added ``Minimizer.VarPro``, a built-in variable projection
+  solver. Every bundled model now declares the parameters it is linear in
+  (``linear_par`` and ``basis_and_grad`` in C++, checked against the model
+  derivatives by the tests). Each trial point solves those exactly and the
+  Levenberg-Marquardt iteration runs over the nonlinear parameters only, so
+  the fit needs fewer evaluations and does not depend on start values of the
+  linear parameters. Limits on linear parameters, pixels that do not converge
+  and models without the separable structure fall back to
+  ``LevenbergMarquardt``. Parameter errors are the same Gauss-Newton
+  estimates. The Gaussian, plateau, charge-sharing and S-curve models also
+  provide their basis functions for all scan points at once
+  (``basis_columns``), a loop that compiles to vector instructions with the
+  new ``model::fast_exp``; ``eval`` and ``eval_and_grad``, and with them the
+  other minimizers, are unchanged. ``Minimizer.Migrad`` remains the
+  default.
 - ``NDArray``/``NDView`` expressions now support scalar operands
   (``2 * a + b / 4``) and can be assigned to an existing ``NDArray``, reusing
   its buffer.

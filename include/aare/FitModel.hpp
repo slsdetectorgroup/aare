@@ -26,17 +26,30 @@ namespace aare {
  *   steps at parameter limits and reuses its buffers between pixels, so a
  *   data cube is fitted without per-pixel allocations. Parameter errors are
  *   sqrt(diag((J^T J)^-1)) over the free parameters.
+ * - VarPro: the built-in variable projection solver
+ *   (src/VariableProjection.hpp) for models that declare their linear
+ *   parameters (model::is_separable). Every trial point solves the linear
+ *   parameters exactly and the Levenberg-Marquardt iteration runs over the
+ *   nonlinear ones only, which needs fewer evaluations and avoids poor
+ *   start values of the linear parameters. Start values of free linear
+ *   parameters are ignored. A limit on a linear parameter cannot be
+ *   enforced by the linear solve: a pixel whose solution violates one, a
+ *   pixel that does not converge, and every pixel of a model without the
+ *   separable structure are fitted with LevenbergMarquardt instead.
+ *   Parameter errors are the same Gauss-Newton estimates as with
+ *   LevenbergMarquardt.
  *
  * With every minimizer, fixed parameters and parameters that end on a limit
  * report an error of 0 and a failed fit returns zeros. `tolerance` is the
- * EDM tolerance in Minuit's convention (Migrad and LevenbergMarquardt stop
- * below 0.002 * tolerance, Fumili below 1e-4 * tolerance). `max_calls`
- * bounds the work per pixel in the minimizer's own units (Minuit2 function
- * calls, or model evaluations for LevenbergMarquardt, which spends one
- * evaluation per iteration and two when a step crosses a limit). `strategy`
- * only affects the Minuit2 minimizers.
+ * EDM tolerance in Minuit's convention (Migrad, LevenbergMarquardt and
+ * VarPro stop below 0.002 * tolerance, Fumili below
+ * 1e-4 * tolerance). `max_calls` bounds the work per pixel in the
+ * minimizer's own units (Minuit2 function calls, or model evaluations for
+ * LevenbergMarquardt and VarPro, which spend one evaluation per
+ * iteration and two when a step crosses a limit). `strategy` only affects
+ * the Minuit2 minimizers.
  */
-enum class Minimizer { Migrad, Fumili, LevenbergMarquardt };
+enum class Minimizer { Migrad, Fumili, LevenbergMarquardt, VarPro };
 
 /**
  * @brief Fit configuration for one model: parameter limits, fixed

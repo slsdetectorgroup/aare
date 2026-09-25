@@ -138,6 +138,15 @@ static void BM_FitGausLMErrors(benchmark::State &state) {
     run_gaussian_fit(state, aare::Minimizer::LevenbergMarquardt, true);
 }
 
+// Built-in variable projection: A solved exactly, iteration over mu and sigma
+static void BM_FitGausVarPro(benchmark::State &state) {
+    run_gaussian_fit(state, aare::Minimizer::VarPro, false);
+}
+
+static void BM_FitGausVarProErrors(benchmark::State &state) {
+    run_gaussian_fit(state, aare::Minimizer::VarPro, true);
+}
+
 // Gaussian with sigma fixed: exercises the fixed-parameter path of the
 // minimizers on the Moderate_noise case.
 static void run_gaussian_fixed_sigma_fit(benchmark::State &state,
@@ -166,6 +175,9 @@ static void BM_FitGausFixedSigmaFumili(benchmark::State &state) {
 }
 static void BM_FitGausFixedSigmaLM(benchmark::State &state) {
     run_gaussian_fixed_sigma_fit(state, aare::Minimizer::LevenbergMarquardt);
+}
+static void BM_FitGausFixedSigmaVarPro(benchmark::State &state) {
+    run_gaussian_fixed_sigma_fit(state, aare::Minimizer::VarPro);
 }
 
 // ----------------------------------------------------------------
@@ -221,6 +233,10 @@ static void BM_FitScurveLM(benchmark::State &state) {
     run_scurve_fit(state, aare::Minimizer::LevenbergMarquardt);
 }
 
+static void BM_FitScurveVarPro(benchmark::State &state) {
+    run_scurve_fit(state, aare::Minimizer::VarPro);
+}
+
 // Weighted fits take the per-point uncertainties into the residuals.
 static void BM_FitScurveWeightedMigrad(benchmark::State &state) {
     run_scurve_fit(state, aare::Minimizer::Migrad, true);
@@ -230,6 +246,9 @@ static void BM_FitScurveWeightedFumili(benchmark::State &state) {
 }
 static void BM_FitScurveWeightedLM(benchmark::State &state) {
     run_scurve_fit(state, aare::Minimizer::LevenbergMarquardt, true);
+}
+static void BM_FitScurveWeightedVarPro(benchmark::State &state) {
+    run_scurve_fit(state, aare::Minimizer::VarPro, true);
 }
 
 // ----------------------------------------------------------------
@@ -270,6 +289,9 @@ static void BM_FitPol2Fumili(benchmark::State &state) {
 }
 static void BM_FitPol2LM(benchmark::State &state) {
     run_pol2_fit(state, aare::Minimizer::LevenbergMarquardt);
+}
+static void BM_FitPol2VarPro(benchmark::State &state) {
+    run_pol2_fit(state, aare::Minimizer::VarPro);
 }
 
 // ----------------------------------------------------------------
@@ -317,6 +339,9 @@ static void BM_FitChargeSharingKbFumili(benchmark::State &state) {
 }
 static void BM_FitChargeSharingKbLM(benchmark::State &state) {
     run_charge_sharing_kb_fit(state, aare::Minimizer::LevenbergMarquardt);
+}
+static void BM_FitChargeSharingKbVarPro(benchmark::State &state) {
+    run_charge_sharing_kb_fit(state, aare::Minimizer::VarPro);
 }
 
 // ----------------------------------------------------------------
@@ -393,10 +418,17 @@ static void BM_FitCubeFumiliErrors(benchmark::State &state) {
 static void BM_FitCubeLMErrors(benchmark::State &state) {
     run_cube_fit(state, aare::Minimizer::LevenbergMarquardt, true);
 }
+static void BM_FitCubeVarPro(benchmark::State &state) {
+    run_cube_fit(state, aare::Minimizer::VarPro, false);
+}
+static void BM_FitCubeVarProErrors(benchmark::State &state) {
+    run_cube_fit(state, aare::Minimizer::VarPro, true);
+}
 
 BENCHMARK(BM_FitGausMigrad)->DenseRange(0, 5)->Unit(benchmark::kMicrosecond);
 BENCHMARK(BM_FitGausFumili)->DenseRange(0, 5)->Unit(benchmark::kMicrosecond);
 BENCHMARK(BM_FitGausLM)->DenseRange(0, 5)->Unit(benchmark::kMicrosecond);
+BENCHMARK(BM_FitGausVarPro)->DenseRange(0, 5)->Unit(benchmark::kMicrosecond);
 
 BENCHMARK(BM_FitGausMigradHesse)
     ->DenseRange(0, 5)
@@ -405,26 +437,34 @@ BENCHMARK(BM_FitGausFumiliErrors)
     ->DenseRange(0, 5)
     ->Unit(benchmark::kMicrosecond);
 BENCHMARK(BM_FitGausLMErrors)->DenseRange(0, 5)->Unit(benchmark::kMicrosecond);
+BENCHMARK(BM_FitGausVarProErrors)
+    ->DenseRange(0, 5)
+    ->Unit(benchmark::kMicrosecond);
 
 BENCHMARK(BM_FitGausFixedSigmaMigrad)->Unit(benchmark::kMicrosecond);
 BENCHMARK(BM_FitGausFixedSigmaFumili)->Unit(benchmark::kMicrosecond);
 BENCHMARK(BM_FitGausFixedSigmaLM)->Unit(benchmark::kMicrosecond);
+BENCHMARK(BM_FitGausFixedSigmaVarPro)->Unit(benchmark::kMicrosecond);
 
 BENCHMARK(BM_FitScurveMigrad)->Unit(benchmark::kMicrosecond);
 BENCHMARK(BM_FitScurveFumili)->Unit(benchmark::kMicrosecond);
 BENCHMARK(BM_FitScurveLM)->Unit(benchmark::kMicrosecond);
+BENCHMARK(BM_FitScurveVarPro)->Unit(benchmark::kMicrosecond);
 
 BENCHMARK(BM_FitScurveWeightedMigrad)->Unit(benchmark::kMicrosecond);
 BENCHMARK(BM_FitScurveWeightedFumili)->Unit(benchmark::kMicrosecond);
 BENCHMARK(BM_FitScurveWeightedLM)->Unit(benchmark::kMicrosecond);
+BENCHMARK(BM_FitScurveWeightedVarPro)->Unit(benchmark::kMicrosecond);
 
 BENCHMARK(BM_FitPol2Migrad)->Unit(benchmark::kMicrosecond);
 BENCHMARK(BM_FitPol2Fumili)->Unit(benchmark::kMicrosecond);
 BENCHMARK(BM_FitPol2LM)->Unit(benchmark::kMicrosecond);
+BENCHMARK(BM_FitPol2VarPro)->Unit(benchmark::kMicrosecond);
 
 BENCHMARK(BM_FitChargeSharingKbMigrad)->Unit(benchmark::kMicrosecond);
 BENCHMARK(BM_FitChargeSharingKbFumili)->Unit(benchmark::kMicrosecond);
 BENCHMARK(BM_FitChargeSharingKbLM)->Unit(benchmark::kMicrosecond);
+BENCHMARK(BM_FitChargeSharingKbVarPro)->Unit(benchmark::kMicrosecond);
 
 // fit_3d runs in worker threads, so measure wall time.
 BENCHMARK(BM_FitCubeMigrad)->Unit(benchmark::kMillisecond)->UseRealTime();
@@ -433,5 +473,7 @@ BENCHMARK(BM_FitCubeLM)->Unit(benchmark::kMillisecond)->UseRealTime();
 BENCHMARK(BM_FitCubeMigradErrors)->Unit(benchmark::kMillisecond)->UseRealTime();
 BENCHMARK(BM_FitCubeFumiliErrors)->Unit(benchmark::kMillisecond)->UseRealTime();
 BENCHMARK(BM_FitCubeLMErrors)->Unit(benchmark::kMillisecond)->UseRealTime();
+BENCHMARK(BM_FitCubeVarPro)->Unit(benchmark::kMillisecond)->UseRealTime();
+BENCHMARK(BM_FitCubeVarProErrors)->Unit(benchmark::kMillisecond)->UseRealTime();
 
 BENCHMARK_MAIN();
