@@ -46,7 +46,7 @@ void define_pixel_histogram_binding(py::module &m, const char *class_name,
 
         .def(
             "fill_async",
-            [](Hist &self, py::array_t<double, 0> image) {
+            [](Hist &self, py::array_t<double> image) {
                 // Copy the numpy buffer into an owned NDArray while we
                 // still hold the GIL so we don't depend on the array's
                 // backing storage outliving this call.

@@ -66,13 +66,19 @@ class NDArray : public ArrayExpr<NDArray<T, Ndim>, Ndim> {
 
     /**
      * @brief Construct a new NDArray object from a NDView.
-     * @note The data is copied from the view to the NDArray.
+     * @note The data is copied from the view to the NDArray. The view is
+     * only read, so both NDView<T, Ndim> and NDView<const T, Ndim> are
+     * accepted.
      *
      * @param v view of data to initialize the NDArray with
      */
-    explicit NDArray(const NDView<T, Ndim> v) : NDArray(v.shape()) {
+    explicit NDArray(NDView<const T, Ndim> v) : NDArray(v.shape()) {
         std::copy(v.begin(), v.end(), begin());
     }
+
+    // Keeps an exact match for mutable views so that they do not pick the
+    // element-wise ArrayExpr constructor.
+    explicit NDArray(NDView<T, Ndim> v) : NDArray(NDView<const T, Ndim>(v)) {}
 
     /**
      * @brief Construct a new NDArray object from an std::array.
@@ -149,13 +155,14 @@ class NDArray : public ArrayExpr<NDArray<T, Ndim>, Ndim> {
     /**
      * @brief Copy data from a view of matching shape into this array without
      * reallocating.
-     * @param v view to copy from, must have the same shape as this array
+     * @param v view to copy from, must have the same shape as this array.
+     * Accepts NDView<T, Ndim> and NDView<const T, Ndim>.
      * @throws std::runtime_error if the shapes differ
      *
      * Use this instead of assigning a new NDArray when the buffer needs to be
      * kept, for example when the array is part of a preallocated pool.
      */
-    void copy_from(const NDView<T, Ndim> v) {
+    void copy_from(NDView<const T, Ndim> v) {
         if (v.shape() != shape_) {
             throw std::runtime_error(LOCATION +
                                      "Shape mismatch in NDArray::copy_from");

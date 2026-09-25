@@ -50,8 +50,7 @@ void define_pedestal_tracking_pixel_histogram_bindings(py::module &m) {
         .def(
             "push_pedestal_no_update",
             [](PedestalTrackingPixelHistogram &self,
-               py::array_t<PedestalTrackingPixelHistogram::FrameType, 0>
-                   frame) {
+               py::array_t<PedestalTrackingPixelHistogram::FrameType> frame) {
                 auto view = make_view_2d(frame);
                 self.push_pedestal_no_update(view);
             },
@@ -104,8 +103,7 @@ void define_pedestal_tracking_pixel_histogram_bindings(py::module &m) {
         .def(
             "fill_async",
             [](PedestalTrackingPixelHistogram &self,
-               py::array_t<PedestalTrackingPixelHistogram::FrameType, 0>
-                   image) {
+               py::array_t<PedestalTrackingPixelHistogram::FrameType> image) {
                 // Copy the numpy buffer into an owned NDArray while we
                 // still hold the GIL so we don't depend on the array's
                 // backing storage outliving this call.
