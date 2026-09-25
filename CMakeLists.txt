@@ -401,6 +401,7 @@ set(SourceFiles
     ${CMAKE_CURRENT_SOURCE_DIR}/src/File.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/src/FilePtr.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/src/Fit.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/FitMinuit2.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/src/Frame.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/src/Interpolator.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/src/JungfrauDataFile.cpp

@@ -3,6 +3,7 @@
 #include "aare/FitModel.hpp"
 #include "aare/Models.hpp"
 
+#include <algorithm>
 #include <benchmark/benchmark.h>
 #include <cmath>
 #include <random>
@@ -127,6 +128,16 @@ static void BM_FitGausFumiliErrors(benchmark::State &state) {
     run_gaussian_fit(state, aare::Minimizer::Fumili, true);
 }
 
+// Built-in Levenberg-Marquardt, analytic Jacobian
+static void BM_FitGausLM(benchmark::State &state) {
+    run_gaussian_fit(state, aare::Minimizer::LevenbergMarquardt, false);
+}
+
+// Built-in Levenberg-Marquardt, Gauss-Newton parameter errors
+static void BM_FitGausLMErrors(benchmark::State &state) {
+    run_gaussian_fit(state, aare::Minimizer::LevenbergMarquardt, true);
+}
+
 // ----------------------------------------------------------------
 // Rising S-curve (6 parameters), typical for threshold scans
 // ----------------------------------------------------------------
@@ -170,8 +181,88 @@ static void BM_FitScurveFumili(benchmark::State &state) {
     run_scurve_fit(state, aare::Minimizer::Fumili);
 }
 
+static void BM_FitScurveLM(benchmark::State &state) {
+    run_scurve_fit(state, aare::Minimizer::LevenbergMarquardt);
+}
+
+// ----------------------------------------------------------------
+// Data cube through fit_3d on one thread: exposes the per-pixel overhead
+// of each minimizer on top of the minimisation itself.
+// ----------------------------------------------------------------
+static constexpr ssize_t CUBE_ROWS = 32;
+static constexpr ssize_t CUBE_COLS = 32;
+
+static void run_cube_fit(benchmark::State &state, aare::Minimizer minimizer,
+                         bool compute_errors) {
+    const auto &tc = get_test_cases()[1]; // Moderate_noise
+    const double x_min = tc.true_mu - 5.0 * tc.true_sig;
+    const double x_max = tc.true_mu + 5.0 * tc.true_sig;
+    const double dx = (x_max - x_min) / (N_POINTS - 1);
+    const double noise_sigma = tc.noise_frac * tc.true_A;
+
+    aare::NDArray<double, 1> x({N_POINTS});
+    aare::NDArray<double, 3> y({CUBE_ROWS, CUBE_COLS, N_POINTS});
+    aare::NDArray<double, 3> y_err({CUBE_ROWS, CUBE_COLS, N_POINTS},
+                                   noise_sigma);
+    std::mt19937 rng(SEED);
+    std::normal_distribution<double> noise(0.0, noise_sigma);
+    for (ssize_t i = 0; i < N_POINTS; ++i)
+        x[i] = x_min + i * dx;
+    for (ssize_t row = 0; row < CUBE_ROWS; ++row) {
+        for (ssize_t col = 0; col < CUBE_COLS; ++col) {
+            for (ssize_t i = 0; i < N_POINTS; ++i) {
+                const double clean =
+                    tc.true_A * std::exp(-std::pow(x[i] - tc.true_mu, 2) /
+                                         (2.0 * std::pow(tc.true_sig, 2)));
+                y(row, col, i) = clean + noise(rng);
+            }
+        }
+    }
+
+    aare::NDArray<double, 3> par({CUBE_ROWS, CUBE_COLS, 3});
+    aare::NDArray<double, 3> err({CUBE_ROWS, CUBE_COLS, 3});
+    aare::NDArray<double, 2> chi2({CUBE_ROWS, CUBE_COLS});
+    const aare::FitModel<aare::model::Gaussian> model(
+        0, 500, 0.5, compute_errors, minimizer);
+
+    for (auto _ : state) {
+        if (compute_errors) {
+            aare::fit_3d(model, x.view(), y.view(), y_err.view(), par.view(),
+                         err.view(), chi2.view(), 1);
+        } else {
+            aare::fit_3d(model, x.view(), y.view(), aare::NDView<double, 3>{},
+                         par.view(), aare::NDView<double, 3>{}, chi2.view(), 1);
+        }
+        benchmark::DoNotOptimize(par.data());
+    }
+
+    state.SetItemsProcessed(state.iterations() * CUBE_ROWS * CUBE_COLS);
+    state.counters["failed"] =
+        static_cast<double>(std::count(chi2.begin(), chi2.end(), 0.0));
+}
+
+static void BM_FitCubeMigrad(benchmark::State &state) {
+    run_cube_fit(state, aare::Minimizer::Migrad, false);
+}
+static void BM_FitCubeFumili(benchmark::State &state) {
+    run_cube_fit(state, aare::Minimizer::Fumili, false);
+}
+static void BM_FitCubeLM(benchmark::State &state) {
+    run_cube_fit(state, aare::Minimizer::LevenbergMarquardt, false);
+}
+static void BM_FitCubeMigradErrors(benchmark::State &state) {
+    run_cube_fit(state, aare::Minimizer::Migrad, true);
+}
+static void BM_FitCubeFumiliErrors(benchmark::State &state) {
+    run_cube_fit(state, aare::Minimizer::Fumili, true);
+}
+static void BM_FitCubeLMErrors(benchmark::State &state) {
+    run_cube_fit(state, aare::Minimizer::LevenbergMarquardt, true);
+}
+
 BENCHMARK(BM_FitGausMigrad)->DenseRange(0, 5)->Unit(benchmark::kMicrosecond);
 BENCHMARK(BM_FitGausFumili)->DenseRange(0, 5)->Unit(benchmark::kMicrosecond);
+BENCHMARK(BM_FitGausLM)->DenseRange(0, 5)->Unit(benchmark::kMicrosecond);
 
 BENCHMARK(BM_FitGausMigradHesse)
     ->DenseRange(0, 5)
@@ -179,8 +270,18 @@ BENCHMARK(BM_FitGausMigradHesse)
 BENCHMARK(BM_FitGausFumiliErrors)
     ->DenseRange(0, 5)
     ->Unit(benchmark::kMicrosecond);
+BENCHMARK(BM_FitGausLMErrors)->DenseRange(0, 5)->Unit(benchmark::kMicrosecond);
 
 BENCHMARK(BM_FitScurveMigrad)->Unit(benchmark::kMicrosecond);
 BENCHMARK(BM_FitScurveFumili)->Unit(benchmark::kMicrosecond);
+BENCHMARK(BM_FitScurveLM)->Unit(benchmark::kMicrosecond);
+
+// fit_3d runs in worker threads, so measure wall time.
+BENCHMARK(BM_FitCubeMigrad)->Unit(benchmark::kMillisecond)->UseRealTime();
+BENCHMARK(BM_FitCubeFumili)->Unit(benchmark::kMillisecond)->UseRealTime();
+BENCHMARK(BM_FitCubeLM)->Unit(benchmark::kMillisecond)->UseRealTime();
+BENCHMARK(BM_FitCubeMigradErrors)->Unit(benchmark::kMillisecond)->UseRealTime();
+BENCHMARK(BM_FitCubeFumiliErrors)->Unit(benchmark::kMillisecond)->UseRealTime();
+BENCHMARK(BM_FitCubeLMErrors)->Unit(benchmark::kMillisecond)->UseRealTime();
 
 BENCHMARK_MAIN();

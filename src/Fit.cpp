@@ -1,88 +1,45 @@
 // SPDX-License-Identifier: MPL-2.0
 #include "aare/Fit.hpp"
-#include "Chi2.hpp"
-#include "Minuit2/FunctionMinimum.h"
-#include "Minuit2/MnFumiliMinimize.h"
-#include "Minuit2/MnHesse.h"
-#include "Minuit2/MnMigrad.h"
-#include "Minuit2/MnStrategy.h"
-#include "Minuit2/MnUserParameterState.h"
-#include "Minuit2/MnUserParameters.h"
+#include "FitHelpers.hpp"
+#include "FitMinuit2.hpp"
+#include "LevenbergMarquardt.hpp"
 #include "aare/Models.hpp"
 #include "aare/utils/par.hpp"
 #include "aare/utils/task.hpp"
 #include <array>
-#include <cmath>
-#include <memory>
+#include <cstddef>
 #include <stdexcept>
-#include <type_traits>
+#include <string>
 #include <vector>
 
 namespace aare {
 // ============================================================================
 // FitModel<Model> — method definitions
-// (constructor, destructor, copy, and all methods that touch Minuit2 state)
 // ============================================================================
-
-template <typename Model> struct FitModel<Model>::FitModelImpl {
-    ROOT::Minuit2::MnUserParameters upar;
-    ROOT::Minuit2::MnStrategy strategy;
-
-    explicit FitModelImpl(unsigned int strategy_level)
-        : strategy(strategy_level) {}
-
-    FitModelImpl(const FitModelImpl &) = default;
-    FitModelImpl &operator=(const FitModelImpl &) = default;
-};
 
 template <typename Model>
 FitModel<Model>::FitModel(unsigned int strategy, unsigned int max_calls,
                           double tolerance, bool compute_errors,
                           Minimizer minimizer)
-    : impl_(std::make_unique<FitModelImpl>(strategy)), max_calls_(max_calls),
-      tolerance_(tolerance), compute_errors_(compute_errors),
-      minimizer_(minimizer) {
+    : strategy_(strategy), max_calls_(max_calls), tolerance_(tolerance),
+      compute_errors_(compute_errors), minimizer_(minimizer) {
     for (std::size_t i = 0; i < npar; ++i) {
-        const auto pi = Model::param_info[i];
-        const bool has_lo = std::isfinite(pi.default_lo);
-        const bool has_hi = std::isfinite(pi.default_hi);
-        if (has_lo && has_hi) {
-            impl_->upar.Add(pi.name, 0.0, 1.0, pi.default_lo, pi.default_hi);
-        } else if (has_lo) {
-            impl_->upar.Add(pi.name, 0.0, 1.0, pi.default_lo, 1e6);
-        } else {
-            impl_->upar.Add(pi.name, 0.0, 1.0);
-        }
+        lower_[i] = Model::param_info[i].default_lo;
+        upper_[i] = Model::param_info[i].default_hi;
     }
 }
 
-template <typename Model> FitModel<Model>::~FitModel() = default;
-
 template <typename Model>
-FitModel<Model>::FitModel(const FitModel &other)
-    : impl_(std::make_unique<FitModelImpl>(*other.impl_)),
-      max_calls_(other.max_calls_), tolerance_(other.tolerance_),
-      compute_errors_(other.compute_errors_), minimizer_(other.minimizer_),
-      user_fixed_(other.user_fixed_), user_start_(other.user_start_) {}
-
-template <typename Model>
-FitModel<Model> &FitModel<Model>::operator=(const FitModel &other) {
-    if (this != &other) {
-        impl_ = std::make_unique<FitModelImpl>(*other.impl_);
-        max_calls_ = other.max_calls_;
-        tolerance_ = other.tolerance_;
-        compute_errors_ = other.compute_errors_;
-        minimizer_ = other.minimizer_;
-        user_fixed_ = other.user_fixed_;
-        user_start_ = other.user_start_;
-    }
-    return *this;
+void FitModel<Model>::check_index(unsigned int idx) const {
+    if (idx >= npar)
+        throw std::out_of_range("FitModel: parameter index " +
+                                std::to_string(idx) + " out of range");
 }
 
 template <typename Model>
 unsigned int FitModel<Model>::checked_index(const std::string &name) const {
     for (std::size_t i = 0; i < npar; ++i) {
-        if (impl_->upar.Name(i) == name)
+        if (name == Model::param_info[i].name)
             return static_cast<unsigned int>(i);
     }
     throw std::runtime_error("FitModel: unknown parameter name '" + name + "'");
@@ -90,19 +47,24 @@ unsigned int FitModel<Model>::checked_index(const std::string &name) const {
 
 template <typename Model>
 void FitModel<Model>::SetParLimits(unsigned int idx, double lo, double hi) {
-    impl_->upar.SetLimits(idx, lo, hi);
+    check_index(idx);
+    if (!(lo < hi))
+        throw std::runtime_error(
+            "FitModel: lower limit must be below upper limit for parameter '" +
+            GetParName(idx) + "'");
+    lower_[idx] = lo;
+    upper_[idx] = hi;
 }
 
 template <typename Model>
 void FitModel<Model>::FixParameter(unsigned int idx, double val) {
     SetParameter(idx, val);
-    impl_->upar.Fix(idx);
     user_fixed_[idx] = true;
 }
 
 template <typename Model>
 void FitModel<Model>::ReleaseParameter(unsigned int idx) {
-    impl_->upar.Release(idx);
+    check_index(idx);
     user_fixed_[idx] = false;
 }
 
@@ -113,7 +75,8 @@ void FitModel<Model>::ReleaseParameter(const std::string &name) {
 
 template <typename Model>
 void FitModel<Model>::SetParameter(unsigned int idx, double val) {
-    impl_->upar.SetValue(idx, val);
+    check_index(idx);
+    value_[idx] = val;
     user_start_[idx] = true;
 }
 
@@ -135,111 +98,81 @@ void FitModel<Model>::SetParLimits(const std::string &name, double lo,
 
 template <typename Model>
 std::string FitModel<Model>::GetParName(unsigned int idx) const {
-    return impl_->upar.GetName(idx);
+    check_index(idx);
+    return Model::param_info[idx].name;
 }
 
 template <typename Model>
 std::vector<std::string> FitModel<Model>::GetParNames() const {
     std::vector<std::string> names;
+    names.reserve(npar);
     for (std::size_t i = 0; i < npar; ++i)
-        names.push_back(GetParName(i));
+        names.emplace_back(Model::param_info[i].name);
     return names;
 }
 
 // ============================================================================
-// fit_pixel / fit_3d — Minuit2 template implementations
+// fit_pixel / fit_3d
 // ============================================================================
 
-namespace {
+namespace detail {
 
 /**
- * @brief Copy the fitted values, optionally the errors, and the objective
- * value of a minimum into the flat result layout documented in Fit.hpp.
+ * @brief Fits pixels with the minimizer selected by the model.
+ *
+ * Keep one instance per thread: the Levenberg-Marquardt buffers are reused
+ * between pixels so that a data cube is fitted without per-pixel
+ * allocations. The Minuit2 minimizers create their state per pixel.
  */
-template <std::size_t npar>
-NDArray<double, 1> pack_minimum(const ROOT::Minuit2::FunctionMinimum &min,
-                                bool want_errors) {
-    const ssize_t result_size = want_errors ? (2 * npar + 1) : (npar + 1);
-    NDArray<double, 1> result({result_size});
+template <typename Model> class PixelFitter {
+  public:
+    /**
+     * @brief Fit one pixel.
+     *
+     * @param par_out Receives npar fitted values; zeros on failure.
+     * @param err_out Receives npar errors when non-null; zeros on failure.
+     * @param chi2    Receives the chi-squared at the minimum; 0 on failure.
+     * @return true for a valid minimum.
+     */
+    bool fit(const FitModel<Model> &model, NDView<double, 1> x,
+             NDView<double, 1> y, NDView<double, 1> y_err, double *par_out,
+             double *err_out, double &chi2) {
+        const auto start = start_values(model, x, y);
 
-    const auto &state = min.UserState();
-    const std::vector<double> values = state.Params();
-    for (std::size_t k = 0; k < npar; ++k)
-        result[k] = values[k];
-
-    if (want_errors) {
-        const std::vector<double> errors = state.Errors();
-        for (std::size_t k = 0; k < npar; ++k)
-            result[npar + k] = errors[k];
+        if (model.minimizer() == Minimizer::LevenbergMarquardt) {
+            const auto res =
+                lm_.fit(model, x, y, y_err, start, par_out, err_out);
+            chi2 = res.valid ? res.chi2 : 0.0;
+            return res.valid;
+        }
+        return fit_pixel_minuit2(model, x, y, y_err, start, par_out, err_out,
+                                 chi2);
     }
 
-    result[result_size - 1] = min.Fval();
-    return result;
-}
+  private:
+    LevenbergMarquardt<Model> lm_;
+};
 
-} // namespace
+} // namespace detail
 
 template <typename Model>
 NDArray<double, 1> fit_pixel(const FitModel<Model> &model, NDView<double, 1> x,
                              NDView<double, 1> y, NDView<double, 1> y_err) {
     constexpr std::size_t npar = Model::npar;
     const bool want_errors = model.compute_errors();
-    const ssize_t result_size = want_errors ? (2 * npar + 1) : (npar + 1);
+    const auto result_size =
+        static_cast<ssize_t>(want_errors ? (2 * npar + 1) : (npar + 1));
+    NDArray<double, 1> result({result_size}, 0.0);
 
-    auto start = Model::estimate_par(x, y);
+    detail::PixelFitter<Model> fitter;
+    double chi2 = 0.0;
+    double *par = result.data();
+    double *err = want_errors ? result.data() + npar : nullptr;
+    if (!fitter.fit(model, x, y, y_err, par, err, chi2))
+        return result; // all zeros
 
-    if (!Model::is_valid(std::vector<double>(start.begin(), start.end()))) {
-        return NDArray<double, 1>({result_size}, 0.0);
-    }
-
-    double x_range, y_range, slope_scale;
-    model::compute_ranges(x, y, x_range, y_range, slope_scale);
-
-    std::array<double, npar> steps{};
-    Model::compute_steps(start, x_range, y_range, slope_scale, steps);
-
-    // thread-local copy of starting parameters
-    auto upar_local = model.impl()->upar;
-
-    for (std::size_t i = 0; i < npar; ++i) {
-        if (model.is_user_fixed(i))
-            continue;
-        if (!model.is_user_start(i))
-            upar_local.SetValue(i, start[i]);
-        upar_local.SetError(i, steps[i]);
-    }
-
-    if (model.minimizer() == Minimizer::Fumili) {
-        // Fumili takes the gradient and the Gauss-Newton Hessian from the FCN,
-        // so the covariance of the minimum is available without MnHesse.
-        func::Chi2Model1DFumili<Model> chi2(x, y, y_err);
-        ROOT::Minuit2::MnFumiliMinimize fumili(
-            chi2, ROOT::Minuit2::MnUserParameterState(upar_local),
-            model.impl()->strategy);
-        const ROOT::Minuit2::FunctionMinimum min =
-            fumili(model.max_calls(), model.tolerance());
-
-        if (!min.IsValid())
-            return NDArray<double, 1>({result_size}, 0.0);
-
-        return pack_minimum<npar>(min, want_errors);
-    }
-
-    func::Chi2Model1DGrad<Model> chi2(x, y, y_err);
-    ROOT::Minuit2::MnMigrad migrad(chi2, upar_local, model.impl()->strategy);
-    ROOT::Minuit2::FunctionMinimum min =
-        migrad(model.max_calls(), model.tolerance());
-
-    if (!min.IsValid())
-        return NDArray<double, 1>({result_size}, 0.0);
-
-    // MnHesse cannot handle a fit in which every parameter is fixed.
-    if (want_errors && upar_local.VariableParameters() > 0) {
-        ROOT::Minuit2::MnHesse hesse;
-        hesse(chi2, min);
-    }
-
-    return pack_minimum<npar>(min, want_errors);
+    result(result_size - 1) = chi2;
+    return result;
 }
 
 template <typename Model>
@@ -253,55 +186,35 @@ void fit_3d(const FitModel<Model> &model, NDView<double, 1> x,
             NDView<double, 3> y, NDView<double, 3> y_err,
             NDView<double, 3> par_out, NDView<double, 3> err_out,
             NDView<double, 2> chi2_out, int n_threads) {
-    const std::size_t npar = Model::npar;
-
-    if (x.size() != y.shape(2))
-        throw std::runtime_error("fit_3d: x.size() must match y.shape(2).");
-
-    if (par_out.shape(0) != y.shape(0) || par_out.shape(1) != y.shape(1) ||
-        par_out.shape(2) != npar)
-        throw std::runtime_error("par_out must have shape [rows, cols, npar].");
-
-    if (chi2_out.shape(0) != y.shape(0) || chi2_out.shape(1) != y.shape(1))
-        throw std::runtime_error("chi2_out must have shape [rows, cols].");
+    constexpr std::size_t npar = Model::npar;
+    detail::check_fit_3d_shapes<Model>(x, y, y_err, par_out, err_out, chi2_out);
 
     const bool has_errors = (y_err.size() > 0);
     const bool want_par_errors = (err_out.size() > 0) && model.compute_errors();
 
-    if (has_errors) {
-        if (y.shape(0) != y_err.shape(0) || y.shape(1) != y_err.shape(1) ||
-            y.shape(2) != y_err.shape(2))
-            throw std::runtime_error(
-                "fit_3d: y and y_err must have identical shape.");
-
-        if (err_out.shape(0) != y.shape(0) || err_out.shape(1) != y.shape(1) ||
-            err_out.shape(2) != npar)
-            throw std::runtime_error(
-                "err_out must have shape [rows, cols, npar].");
-    }
-
     auto process = [&](ssize_t first_row, ssize_t last_row) {
+        detail::PixelFitter<Model> fitter; // buffers reused within the task
+        std::array<double, npar> par{};
+        std::array<double, npar> err{};
         for (ssize_t row = first_row; row < last_row; row++) {
             for (ssize_t col = 0; col < y.shape(1); col++) {
-
                 NDView<double, 1> values(&y(row, col, 0), {y.shape(2)});
                 NDView<double, 1> errors =
                     has_errors ? NDView<double, 1>(&y_err(row, col, 0),
                                                    {y_err.shape(2)})
                                : NDView<double, 1>{};
 
-                auto res = fit_pixel(model, x, values, errors);
+                double chi2 = 0.0;
+                fitter.fit(model, x, values, errors, par.data(),
+                           want_par_errors ? err.data() : nullptr, chi2);
 
                 for (std::size_t k = 0; k < npar; ++k)
-                    par_out(row, col, k) = res(k);
-
+                    par_out(row, col, static_cast<ssize_t>(k)) = par[k];
                 if (want_par_errors) {
                     for (std::size_t k = 0; k < npar; ++k)
-                        err_out(row, col, k) = res(npar + k);
-                    chi2_out(row, col) = res(2 * npar);
-                } else {
-                    chi2_out(row, col) = res(npar);
+                        err_out(row, col, static_cast<ssize_t>(k)) = err[k];
                 }
+                chi2_out(row, col) = chi2;
             }
         }
     };

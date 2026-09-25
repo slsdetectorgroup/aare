@@ -26,7 +26,31 @@ template <typename Model> void bind_fit_model(py::module &m, const char *name) {
                       aare::Minimizer>(),
              py::arg("strategy") = 0, py::arg("max_calls") = 100,
              py::arg("tolerance") = 0.5, py::arg("compute_errors") = false,
-             py::arg("minimizer") = aare::Minimizer::Migrad)
+             py::arg("minimizer") = aare::Minimizer::Migrad,
+             R"doc(
+            Fit configuration for this model.
+
+            Parameters
+            ----------
+            strategy : int
+                Minuit2 strategy (0 = fast, 1 = Minuit2's default). Ignored
+                by ``Minimizer.LevenbergMarquardt``.
+            max_calls : int
+                Work budget per pixel: Minuit2 function calls, or model
+                evaluations for ``Minimizer.LevenbergMarquardt``. 0 selects
+                Minuit's default budget.
+            tolerance : float
+                EDM tolerance in Minuit's convention. Migrad and
+                LevenbergMarquardt stop below ``0.002 * tolerance``, Fumili
+                below ``1e-4 * tolerance``.
+            compute_errors : bool
+                Also return parameter errors: from Hesse with Migrad, from
+                the linearised covariance with Fumili and LevenbergMarquardt.
+                Fixed parameters and parameters ending on a limit report 0.
+            minimizer : Minimizer
+                ``Minimizer.Migrad`` (default), ``Minimizer.Fumili`` or
+                ``Minimizer.LevenbergMarquardt``.
+            )doc")
         .def("SetParLimits",
              py::overload_cast<unsigned int, double, double>(&FM::SetParLimits),
              py::arg("idx"), py::arg("lo"), py::arg("hi"))
@@ -92,7 +116,8 @@ template <typename Model> void bind_fit_model(py::module &m, const char *name) {
             Fit this model to 1D or 3D data using Minuit2.
 
             The minimizer is selected by the ``minimizer`` property
-            (``Minimizer.Migrad`` by default, or ``Minimizer.Fumili``).
+            (``Minimizer.Migrad`` by default, ``Minimizer.Fumili`` or
+            ``Minimizer.LevenbergMarquardt``).
 
             Parameters
             ----------
@@ -232,22 +257,67 @@ fit_dispatch(const aare::FitModel<Model> &model,
     }
 }
 
+// Resolve the model type behind a Python object and run the fit.
+py::object dispatch_any_model(
+    py::object model_obj,
+    py::array_t<double, py::array::c_style | py::array::forcecast> x,
+    py::array_t<double, py::array::c_style | py::array::forcecast> y,
+    py::object y_err_obj, int n_threads) {
+    using namespace aare::model;
+
+#define AARE_DISPATCH_MODEL(Model)                                             \
+    if (py::isinstance<aare::FitModel<Model>>(model_obj)) {                    \
+        const auto &mdl = model_obj.cast<const aare::FitModel<Model> &>();     \
+        return fit_dispatch<Model>(mdl, x, y, y_err_obj, n_threads);           \
+    }
+
+    AARE_DISPATCH_MODEL(Pol1)
+    AARE_DISPATCH_MODEL(Pol2)
+    AARE_DISPATCH_MODEL(Gaussian)
+    AARE_DISPATCH_MODEL(GaussianErfcPlateau)
+    AARE_DISPATCH_MODEL(GaussianChargeSharing)
+    AARE_DISPATCH_MODEL(GaussianChargeSharingKb)
+    AARE_DISPATCH_MODEL(RisingScurve)
+    AARE_DISPATCH_MODEL(FallingScurve)
+
+#undef AARE_DISPATCH_MODEL
+
+    throw std::runtime_error(
+        "Unknown model type. Expected Pol1, Pol2, Gaussian, "
+        "GaussianErfcPlateau, GaussianChargeSharing, GaussianChargeSharingKb, "
+        "RisingScurve or FallingScurve.");
+}
+
 void define_fit_bindings(py::module &m) {
     // The enum must exist before it is used as a constructor default below.
     py::enum_<aare::Minimizer>(m, "Minimizer", R"doc(
-        Minuit2 minimizer used by the fit models.
+        Minimizer used by the fit models.
 
-        ``Migrad`` is the default variable-metric minimizer. With
+        ``Migrad`` (default) is Minuit2's variable-metric minimizer. With
         ``compute_errors`` its parameter errors come from Hesse.
 
-        ``Fumili`` is a Gauss-Newton style minimizer that takes the gradient
-        and a linearised Hessian from the analytic derivatives of the model.
-        It usually needs far fewer function evaluations than Migrad. With
-        ``compute_errors`` its parameter errors come from the covariance of
-        the linearised Hessian, without an extra Hesse step.
+        ``Fumili`` is Minuit2's Gauss-Newton minimizer with a trust region.
+        It takes the gradient and a linearised Hessian from the analytic
+        derivatives of the model and usually needs far fewer function
+        evaluations than Migrad. Its parameter errors come from the
+        covariance of the linearised Hessian, without an extra Hesse step.
+        Minuit2's Fumili cannot converge once a two-sided limit becomes
+        active; a pixel without a valid Fumili minimum is refitted with
+        Migrad.
+
+        ``LevenbergMarquardt`` is the built-in damped Gauss-Newton solver. It
+        uses the analytic Jacobian, reflects steps at parameter limits and
+        reuses its buffers between pixels, so data cubes are fitted without
+        per-pixel allocations. Its parameter errors are
+        ``sqrt(diag((J^T J)^-1))``; ``max_calls`` counts model evaluations
+        and ``strategy`` is ignored.
+
+        With every minimizer, fixed parameters and parameters that end on a
+        limit report an error of 0 and a failed fit returns zeros.
         )doc")
         .value("Migrad", aare::Minimizer::Migrad)
-        .value("Fumili", aare::Minimizer::Fumili);
+        .value("Fumili", aare::Minimizer::Fumili)
+        .value("LevenbergMarquardt", aare::Minimizer::LevenbergMarquardt);
 
     // ── Bind model classes ──────────────────────────────────────────
     bind_fit_model<aare::model::Gaussian>(m, "Gaussian");
@@ -267,88 +337,19 @@ void define_fit_bindings(py::module &m) {
            py::array_t<double, py::array::c_style | py::array::forcecast> x,
            py::array_t<double, py::array::c_style | py::array::forcecast> y,
            py::object y_err_obj, int n_threads) -> py::object {
-            using namespace aare::model;
-
-            // ── Polynomial of degree 1 ───────
-            if (py::isinstance<aare::FitModel<Pol1>>(model_obj)) {
-                const auto &mdl =
-                    model_obj.cast<const aare::FitModel<Pol1> &>();
-                return fit_dispatch<Pol1>(mdl, x, y, y_err_obj, n_threads);
-            }
-
-            // ── Polynomial of degree 2 ───────
-            if (py::isinstance<aare::FitModel<Pol2>>(model_obj)) {
-                const auto &mdl =
-                    model_obj.cast<const aare::FitModel<Pol2> &>();
-                return fit_dispatch<Pol2>(mdl, x, y, y_err_obj, n_threads);
-            }
-
-            // ── Gaussian ───────
-            if (py::isinstance<aare::FitModel<Gaussian>>(model_obj)) {
-                const auto &mdl =
-                    model_obj.cast<const aare::FitModel<Gaussian> &>();
-                return fit_dispatch<Gaussian>(mdl, x, y, y_err_obj, n_threads);
-            }
-
-            // ── GaussianErfcPlateau ───────
-            if (py::isinstance<aare::FitModel<GaussianErfcPlateau>>(
-                    model_obj)) {
-                const auto &mdl =
-                    model_obj
-                        .cast<const aare::FitModel<GaussianErfcPlateau> &>();
-                return fit_dispatch<GaussianErfcPlateau>(mdl, x, y, y_err_obj,
-                                                         n_threads);
-            }
-
-            // ── GaussianChargeSharing ───────
-            if (py::isinstance<aare::FitModel<GaussianChargeSharing>>(
-                    model_obj)) {
-                const auto &mdl =
-                    model_obj
-                        .cast<const aare::FitModel<GaussianChargeSharing> &>();
-                return fit_dispatch<GaussianChargeSharing>(mdl, x, y, y_err_obj,
-                                                           n_threads);
-            }
-
-            // ── GaussianChargeSharingKb ───────
-            if (py::isinstance<aare::FitModel<GaussianChargeSharingKb>>(
-                    model_obj)) {
-                const auto &mdl = model_obj.cast<
-                    const aare::FitModel<GaussianChargeSharingKb> &>();
-                return fit_dispatch<GaussianChargeSharingKb>(
-                    mdl, x, y, y_err_obj, n_threads);
-            }
-
-            // ── Rising Scurve ───────
-            if (py::isinstance<aare::FitModel<RisingScurve>>(model_obj)) {
-                const auto &mdl =
-                    model_obj.cast<const aare::FitModel<RisingScurve> &>();
-                return fit_dispatch<RisingScurve>(mdl, x, y, y_err_obj,
-                                                  n_threads);
-            }
-
-            // ── Falling Scurve ───────
-            if (py::isinstance<aare::FitModel<FallingScurve>>(model_obj)) {
-                const auto &mdl =
-                    model_obj.cast<const aare::FitModel<FallingScurve> &>();
-                return fit_dispatch<FallingScurve>(mdl, x, y, y_err_obj,
-                                                   n_threads);
-            }
-
-            throw std::runtime_error(
-                "Unknown model type. Expected Pol1, Pol2, Gaussian, "
-                "RisingScurve or FallingScurve.");
+            return dispatch_any_model(model_obj, x, y, y_err_obj, n_threads);
         },
         R"(
-        Fit a model to 1D or 3D data using Minuit2.
+        Fit a model to 1D or 3D data with the minimizer selected by the
+        model's ``minimizer`` property.
  
         Parameters
         ----------
-        model : Pol1, Pol2, Gaussian, RisingScurve, or FallingScurve
-            Configured model object.  User-set limits, fixed parameters,
-            and start values take precedence over automatic estimates.
-            The model's ``minimizer`` property selects Migrad (default)
-            or Fumili.
+        model : object
+            Configured model object: Pol1, Pol2, Gaussian, GaussianErfcPlateau,
+            GaussianChargeSharing, GaussianChargeSharingKb, RisingScurve or
+            FallingScurve.  User-set limits, fixed parameters, and start values
+            take precedence over automatic estimates.
         x : array_like, shape (n_scan,)
             Scan points (e.g. energy or threshold values).
         y : array_like, shape (n_scan,) or (rows, cols, n_scan)
@@ -360,15 +361,12 @@ void define_fit_bindings(py::module &m) {
  
         Returns
         -------
-        For 1D input:
-            numpy array of shape (2*npar+1,) if compute_errors else (npar+1,).
-            Layout: [params..., (errors...,) chi2].
- 
-        For 3D input:
-            dict with keys:
-              "par"     : (rows, cols, npar) fitted parameters.
-              "par_err" : (rows, cols, npar) parameter errors (if compute_errors).
-              "chi2"    : (rows, cols)       chi-squared per pixel.
+        dict
+            ``par`` holds the fitted parameters, shape (npar,) for 1D input or
+            (rows, cols, npar) for 3D input.  ``chi2`` holds the chi-squared,
+            shape (1,) or (rows, cols).  ``par_err`` holds the parameter
+            errors when ``compute_errors`` is enabled; fixed parameters and
+            parameters on a limit report 0.  A failed fit returns zeros.
         )",
         py::arg("model"), py::arg("x"), py::arg("y"),
         py::arg("y_err") = py::none(), py::arg("n_threads") = 4);

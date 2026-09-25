@@ -7,21 +7,24 @@
 namespace aare {
 
 // ---------------------------------------------------------------------------
-// Minuit2-based pixel fitting.
+// Pixel fitting with the minimizer selected by the FitModel.
 // Template bodies and explicit instantiations live in src/Fit.cpp.
 // ---------------------------------------------------------------------------
 
 /**
- * @brief Fit a single pixel's data using Minuit2.
+ * @brief Fit a single pixel's data.
  *
- * The minimizer (Migrad or Fumili) is selected by the model, see
- * aare::Minimizer. Parameter errors, when requested, come from MnHesse with
- * Migrad and from the linearised covariance with Fumili.
+ * The minimizer (Migrad, Fumili or LevenbergMarquardt) is selected by the
+ * model, see aare::Minimizer. Parameter errors, when requested, come from
+ * MnHesse with Migrad and from the linearised covariance otherwise; fixed
+ * parameters and parameters ending on a limit report 0. A failed fit
+ * returns zeros.
  *
  * User-precedence rules:
- *   - Fixed parameters: untouched (value and fixed flag preserved from model).
- *   - User-set start:   value preserved, step size auto-filled.
- *   - Neither:          both value and step size auto-filled from data.
+ *   - Fixed parameters: kept at their value, excluded from the fit.
+ *   - User-set start:   value used as the starting point.
+ *   - Neither:          starting value estimated from the data and clamped
+ *                       into the parameter limits.
  *
  * @tparam Model  Model struct (Gaussian, RisingScurve, …).
  *

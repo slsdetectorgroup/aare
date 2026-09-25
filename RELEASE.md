@@ -29,16 +29,33 @@
 - Added string representator in python for Cluster and Eta 
 - Added roi slice method in python for easy slicing of numpy arrays ``array[roi.slice()]``. 
 - added context manager for ``aare.RawMasterFile``
-- Added a configurable Minuit2 minimizer for the fit models. ``Minimizer.Migrad``
-  remains the default; ``Minimizer.Fumili`` uses the analytic model derivatives
-  for a Gauss-Newton style minimisation that needs far fewer function
-  evaluations. Select it with the ``minimizer`` constructor argument or property
-  in Python, or ``FitModel::SetMinimizer`` in C++. With ``compute_errors``,
-  Fumili reports parameter errors from its linearised covariance instead of
-  running Hesse.
+- Added a configurable minimizer for the fit models, selected with the
+  ``minimizer`` constructor argument or property in Python, or
+  ``FitModel::SetMinimizer`` in C++. ``Minimizer.Migrad`` remains the default.
+  ``Minimizer.Fumili`` is Minuit2's Gauss-Newton minimizer, which uses the
+  analytic model derivatives and needs far fewer function evaluations.
+  ``Minimizer.LevenbergMarquardt`` is a built-in, dependency-free
+  Levenberg-Marquardt solver with the analytic Jacobian; it reflects steps at
+  parameter limits and fits data cubes without per-pixel allocations. With
+  ``compute_errors``, Fumili and LevenbergMarquardt report parameter errors
+  from their linearised covariance instead of running Hesse. Pixels for which
+  Fumili does not reach a valid minimum, which Minuit2's implementation cannot
+  once a two-sided limit becomes active, are refitted with Migrad.
 
 ### API Changes:
 
+- ``FitModel`` is now plain data without a pimpl (C++ users need to rebuild);
+  it gained ``strategy()``, ``lower_limit()``, ``upper_limit()`` and
+  ``value()`` accessors and lost ``impl()``. Bad parameter indices raise
+  ``std::out_of_range`` (``IndexError`` in Python) and ``SetParLimits``
+  rejects ``lo >= hi``. The models in ``Models.hpp`` no longer provide the
+  Minuit specific ``compute_steps`` and ``compute_ranges`` helpers.
+- Fit behaviour common to all minimizers: user start and fixed values are
+  applied before the validity check and free start values are clamped into
+  their limits; one-sided limits are open-ended for ``LevenbergMarquardt``
+  while the Minuit2 minimizers use a wide two-sided range as before; with
+  ``compute_errors``, fixed parameters and parameters ending on a limit report
+  an error of 0 (fixed parameters previously reported 1.0 with Minuit2).
 - ``FastPedestal`` variance is now a private ``double`` intermediate. Removed
   the C++ ``variance()``/``variance_unchecked()`` APIs and Python ``var()``.
   Standard deviation is calculated before conversion to the output type,
