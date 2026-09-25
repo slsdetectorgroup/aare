@@ -1,3 +1,5 @@
+# SPDX-License-Identifier: MPL-2.0
+
 # Look for an executable called sphinx-build
 find_program(
   SPHINX_EXECUTABLE

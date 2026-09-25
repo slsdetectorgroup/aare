@@ -1,4 +1,4 @@
-// SPDX-License-Identifier: MPL-2.0
+// SPDX-License-Identifier: MIT
 /*
    28-03-2024 modified by: Bechir Braham <bechir.braham@psi.ch>
 
