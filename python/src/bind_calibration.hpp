@@ -20,20 +20,19 @@ pybind_apply_calibration(py::array_t<uint16_t> data,
     /* No pointer is passed, so NumPy will allocate the buffer */
     auto result = py::array_t<DataType>(data_span.shape());
     auto res = make_view_3d(result);
-    if (data.ndim() == 3 && pedestal.ndim() == 3 && calibration.ndim() == 3) {
+    if (pedestal.ndim() == 3 && calibration.ndim() == 3) {
         auto ped = make_view_3d(pedestal);
         auto cal = make_view_3d(calibration);
         aare::apply_calibration<DataType, 3>(res, data_span, ped, cal,
                                              n_threads);
-    } else if (data.ndim() == 3 && pedestal.ndim() == 2 &&
-               calibration.ndim() == 2) {
+    } else if (pedestal.ndim() == 2 && calibration.ndim() == 2) {
         auto ped = make_view_2d(pedestal);
         auto cal = make_view_2d(calibration);
         aare::apply_calibration<DataType, 2>(res, data_span, ped, cal,
                                              n_threads);
     } else {
         throw std::runtime_error(
-            "Invalid number of dimensions for data, pedestal or calibration");
+            "Invalid number of dimensions for pedestal or calibration");
     }
     return result;
 }

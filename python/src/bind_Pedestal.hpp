@@ -86,9 +86,6 @@ void define_pedestal_bindings(py::module &m, const std::string &name) {
         .def(
             "push",
             [](Pedestal<SUM_TYPE> &pedestal, py::array_t<uint16_t> f) {
-                if (f.ndim() != 2) {
-                    throw py::value_error("Frame must be 2-dimensional");
-                }
                 auto v = make_view_2d(f);
                 pedestal.push(v);
             },
@@ -100,12 +97,6 @@ void define_pedestal_bindings(py::module &m, const std::string &name) {
             "push_with_threshold",
             [](Pedestal<SUM_TYPE> &pedestal, py::array_t<uint16_t> f,
                py::array_t<SUM_TYPE> threshold) {
-                if (f.ndim() != 2) {
-                    throw py::value_error("Frame must be 2-dimensional");
-                }
-                if (threshold.ndim() != 2) {
-                    throw py::value_error("Threshold must be 2-dimensional");
-                }
                 auto frame_view = make_view_2d(f);
                 auto threshold_view = make_view_2d(threshold);
                 pedestal.push_with_threshold(frame_view, threshold_view);

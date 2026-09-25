@@ -58,9 +58,6 @@ declare the parameter as ``py::array_t<T> frame`` rather than
 - It matches the usual pybind11 style for ``py::object`` and its subclasses,
   so the binding reads the same as examples in the pybind11 documentation.
 
-Some older bindings take ``py::array_t<T> &``. They behave identically; the
-difference is only in how the handle is passed to the lambda.
-
 Why not let pybind11 convert
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 

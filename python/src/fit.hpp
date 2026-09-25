@@ -164,11 +164,6 @@ fit_dispatch(const aare::FitModel<Model> &model,
                 py::array_t<double, py::array::c_style | py::array::forcecast>>(
                 y_err_obj);
 
-            if (y_err.ndim() != 3) {
-                throw std::runtime_error(
-                    "For 3D input y, y_err must also be 3D.");
-            }
-
             auto err_out =
                 new NDArray<double, 3>({y.shape(0), y.shape(1), npar}, 0.0);
             auto y_view_err = make_view_3d(y_err);
@@ -208,11 +203,6 @@ fit_dispatch(const aare::FitModel<Model> &model,
             auto y_err = py::cast<
                 py::array_t<double, py::array::c_style | py::array::forcecast>>(
                 y_err_obj);
-
-            if (y_err.ndim() != 1) {
-                throw std::runtime_error(
-                    "For 1D input y, y_err must also be 1D.");
-            }
 
             auto y_view_err = make_view_1d(y_err);
             result = aare::fit_pixel<Model>(model, x_view, y_view, y_view_err);

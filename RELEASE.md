@@ -83,6 +83,7 @@
 - ``RawMasterFile::rois()`` always returns a list of rois (no optional). Per default it returns a list of one ROI element spawing the entire detector 
 - ``TimingMode::Auto`` changed to ``TimingMode::AUTO_TIMING``, ``TimingMode::Trigger`` changed to ``TimingMode::TRIGGER_EXPOSURE``
 
+
 ### Bugfixes:
 - The Python ``Cluster`` constructors validate that the data array holds
   exactly one value per pixel and raise ``ValueError`` otherwise. Previously a
