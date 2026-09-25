@@ -138,17 +138,49 @@ static void BM_FitGausLMErrors(benchmark::State &state) {
     run_gaussian_fit(state, aare::Minimizer::LevenbergMarquardt, true);
 }
 
+// Gaussian with sigma fixed: exercises the fixed-parameter path of the
+// minimizers on the Moderate_noise case.
+static void run_gaussian_fixed_sigma_fit(benchmark::State &state,
+                                         aare::Minimizer minimizer) {
+    const auto &tc = get_test_cases()[1];
+    auto data = generate_gaussian_data(tc);
+    auto xv = data.x.view();
+    auto yv = data.y.view();
+
+    aare::FitModel<aare::model::Gaussian> model(0, 500, 0.5, false, minimizer);
+    model.FixParameter(2, tc.true_sig);
+
+    aare::NDArray<double, 1> result;
+    for (auto _ : state) {
+        result = aare::fit_pixel<aare::model::Gaussian>(model, xv, yv);
+        benchmark::DoNotOptimize(result.data());
+    }
+    report_accuracy(state, tc, result);
+}
+
+static void BM_FitGausFixedSigmaMigrad(benchmark::State &state) {
+    run_gaussian_fixed_sigma_fit(state, aare::Minimizer::Migrad);
+}
+static void BM_FitGausFixedSigmaFumili(benchmark::State &state) {
+    run_gaussian_fixed_sigma_fit(state, aare::Minimizer::Fumili);
+}
+static void BM_FitGausFixedSigmaLM(benchmark::State &state) {
+    run_gaussian_fixed_sigma_fit(state, aare::Minimizer::LevenbergMarquardt);
+}
+
 // ----------------------------------------------------------------
 // Rising S-curve (6 parameters), typical for threshold scans
 // ----------------------------------------------------------------
 static constexpr ssize_t N_SCURVE_POINTS = 100;
 
-static void run_scurve_fit(benchmark::State &state, aare::Minimizer minimizer) {
+static void run_scurve_fit(benchmark::State &state, aare::Minimizer minimizer,
+                           bool weighted = false) {
     const std::vector<double> truth = {5.0, 0.1, 50.0, 4.0, 200.0, 0.5};
     const double noise_sigma = 0.02 * truth[4];
 
     aare::NDArray<double, 1> x({N_SCURVE_POINTS});
     aare::NDArray<double, 1> y({N_SCURVE_POINTS});
+    aare::NDArray<double, 1> y_err({N_SCURVE_POINTS}, noise_sigma);
     std::mt19937 rng(SEED);
     std::normal_distribution<double> noise(0.0, noise_sigma);
     for (ssize_t i = 0; i < N_SCURVE_POINTS; ++i) {
@@ -157,13 +189,17 @@ static void run_scurve_fit(benchmark::State &state, aare::Minimizer minimizer) {
     }
     auto xv = x.view();
     auto yv = y.view();
+    auto ev = y_err.view();
 
     const aare::FitModel<aare::model::RisingScurve> model(0, 500, 0.5, false,
                                                           minimizer);
 
     aare::NDArray<double, 1> result;
     for (auto _ : state) {
-        result = aare::fit_pixel<aare::model::RisingScurve>(model, xv, yv);
+        result =
+            weighted
+                ? aare::fit_pixel<aare::model::RisingScurve>(model, xv, yv, ev)
+                : aare::fit_pixel<aare::model::RisingScurve>(model, xv, yv);
         benchmark::DoNotOptimize(result.data());
     }
 
@@ -183,6 +219,104 @@ static void BM_FitScurveFumili(benchmark::State &state) {
 
 static void BM_FitScurveLM(benchmark::State &state) {
     run_scurve_fit(state, aare::Minimizer::LevenbergMarquardt);
+}
+
+// Weighted fits take the per-point uncertainties into the residuals.
+static void BM_FitScurveWeightedMigrad(benchmark::State &state) {
+    run_scurve_fit(state, aare::Minimizer::Migrad, true);
+}
+static void BM_FitScurveWeightedFumili(benchmark::State &state) {
+    run_scurve_fit(state, aare::Minimizer::Fumili, true);
+}
+static void BM_FitScurveWeightedLM(benchmark::State &state) {
+    run_scurve_fit(state, aare::Minimizer::LevenbergMarquardt, true);
+}
+
+// ----------------------------------------------------------------
+// Pol2 (3 parameters, cheap model): exposes the solver overhead per
+// iteration rather than the model evaluation.
+// ----------------------------------------------------------------
+static void run_pol2_fit(benchmark::State &state, aare::Minimizer minimizer) {
+    constexpr ssize_t n = 51;
+    const std::vector<double> truth = {12.0, -0.8, 0.05};
+
+    aare::NDArray<double, 1> x({n});
+    aare::NDArray<double, 1> y({n});
+    std::mt19937 rng(SEED);
+    std::normal_distribution<double> noise(0.0, 2.0);
+    for (ssize_t i = 0; i < n; ++i) {
+        x[i] = static_cast<double>(i);
+        y[i] = aare::model::Pol2::eval(x[i], truth) + noise(rng);
+    }
+    auto xv = x.view();
+    auto yv = y.view();
+
+    const aare::FitModel<aare::model::Pol2> model(0, 500, 0.5, false,
+                                                  minimizer);
+
+    aare::NDArray<double, 1> result;
+    for (auto _ : state) {
+        result = aare::fit_pixel<aare::model::Pol2>(model, xv, yv);
+        benchmark::DoNotOptimize(result.data());
+    }
+    state.counters["dp2"] = result(2) - truth[2];
+}
+
+static void BM_FitPol2Migrad(benchmark::State &state) {
+    run_pol2_fit(state, aare::Minimizer::Migrad);
+}
+static void BM_FitPol2Fumili(benchmark::State &state) {
+    run_pol2_fit(state, aare::Minimizer::Fumili);
+}
+static void BM_FitPol2LM(benchmark::State &state) {
+    run_pol2_fit(state, aare::Minimizer::LevenbergMarquardt);
+}
+
+// ----------------------------------------------------------------
+// GaussianChargeSharingKb (8 parameters, two exponentials and two erfs per
+// point): the most expensive model per evaluation.
+// ----------------------------------------------------------------
+static void run_charge_sharing_kb_fit(benchmark::State &state,
+                                      aare::Minimizer minimizer) {
+    constexpr ssize_t n = 200;
+    const std::vector<double> truth = {20.0,   0.05, 110.0, 6.0,
+                                       1500.0, 0.1,  1.1,   0.1};
+
+    aare::NDArray<double, 1> x({n});
+    aare::NDArray<double, 1> y({n});
+    std::mt19937 rng(SEED);
+    std::normal_distribution<double> noise(0.0, 1.0);
+    for (ssize_t i = 0; i < n; ++i) {
+        x[i] = static_cast<double>(i);
+        const double clean =
+            aare::model::GaussianChargeSharingKb::eval(x[i], truth);
+        y[i] = clean + std::sqrt(std::max(clean, 1.0)) * noise(rng);
+    }
+    auto xv = x.view();
+    auto yv = y.view();
+
+    const aare::FitModel<aare::model::GaussianChargeSharingKb> model(
+        0, 500, 0.5, false, minimizer);
+
+    aare::NDArray<double, 1> result;
+    for (auto _ : state) {
+        result = aare::fit_pixel<aare::model::GaussianChargeSharingKb>(model,
+                                                                       xv, yv);
+        benchmark::DoNotOptimize(result.data());
+    }
+    state.counters["dMu"] = result(2) - truth[2];
+    state.counters["dN"] = result(4) - truth[4];
+    state.counters["chi2"] = result(8);
+}
+
+static void BM_FitChargeSharingKbMigrad(benchmark::State &state) {
+    run_charge_sharing_kb_fit(state, aare::Minimizer::Migrad);
+}
+static void BM_FitChargeSharingKbFumili(benchmark::State &state) {
+    run_charge_sharing_kb_fit(state, aare::Minimizer::Fumili);
+}
+static void BM_FitChargeSharingKbLM(benchmark::State &state) {
+    run_charge_sharing_kb_fit(state, aare::Minimizer::LevenbergMarquardt);
 }
 
 // ----------------------------------------------------------------
@@ -272,9 +406,25 @@ BENCHMARK(BM_FitGausFumiliErrors)
     ->Unit(benchmark::kMicrosecond);
 BENCHMARK(BM_FitGausLMErrors)->DenseRange(0, 5)->Unit(benchmark::kMicrosecond);
 
+BENCHMARK(BM_FitGausFixedSigmaMigrad)->Unit(benchmark::kMicrosecond);
+BENCHMARK(BM_FitGausFixedSigmaFumili)->Unit(benchmark::kMicrosecond);
+BENCHMARK(BM_FitGausFixedSigmaLM)->Unit(benchmark::kMicrosecond);
+
 BENCHMARK(BM_FitScurveMigrad)->Unit(benchmark::kMicrosecond);
 BENCHMARK(BM_FitScurveFumili)->Unit(benchmark::kMicrosecond);
 BENCHMARK(BM_FitScurveLM)->Unit(benchmark::kMicrosecond);
+
+BENCHMARK(BM_FitScurveWeightedMigrad)->Unit(benchmark::kMicrosecond);
+BENCHMARK(BM_FitScurveWeightedFumili)->Unit(benchmark::kMicrosecond);
+BENCHMARK(BM_FitScurveWeightedLM)->Unit(benchmark::kMicrosecond);
+
+BENCHMARK(BM_FitPol2Migrad)->Unit(benchmark::kMicrosecond);
+BENCHMARK(BM_FitPol2Fumili)->Unit(benchmark::kMicrosecond);
+BENCHMARK(BM_FitPol2LM)->Unit(benchmark::kMicrosecond);
+
+BENCHMARK(BM_FitChargeSharingKbMigrad)->Unit(benchmark::kMicrosecond);
+BENCHMARK(BM_FitChargeSharingKbFumili)->Unit(benchmark::kMicrosecond);
+BENCHMARK(BM_FitChargeSharingKbLM)->Unit(benchmark::kMicrosecond);
 
 // fit_3d runs in worker threads, so measure wall time.
 BENCHMARK(BM_FitCubeMigrad)->Unit(benchmark::kMillisecond)->UseRealTime();

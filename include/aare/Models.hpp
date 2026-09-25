@@ -13,10 +13,14 @@ namespace aare::model {
 inline constexpr double inv_sqrt2 = 0.70710678118654752440;
 inline constexpr double inv_sqrt_2pi = 0.39894228040143267794;
 
-inline double fast_erf(double x) {
-    // Abramowitz–Stegun Handbook of Mathematical Functions
-    // erf approximation with max error ~1.5e-7, faster than std::erf.
-
+/**
+ * @brief erf(z) given exp(-z^2), from the Abramowitz-Stegun approximation
+ * 7.1.26 (Handbook of Mathematical Functions, max error about 1.5e-7).
+ *
+ * Models whose derivatives need exp(-z^2) anyway pass it in, so that a
+ * single exponential serves both the value and the gradient.
+ */
+inline double fast_erf_from_exp(double z, double exp_minus_z2) {
     const double a1 = 0.254829592;
     const double a2 = -0.284496736;
     const double a3 = 1.421413741;
@@ -24,16 +28,17 @@ inline double fast_erf(double x) {
     const double a5 = 1.061405429;
     const double p = 0.3275911;
 
-    const int sign = x < 0 ? -1 : 1;
-    x = std::abs(x);
-
-    // 7.1.26
-    const double t = 1.0 / (1.0 + p * x);
+    const double t = 1.0 / (1.0 + p * std::abs(z));
     const double y =
         1.0 -
-        (((((a5 * t + a4) * t + a3) * t + a2) * t + a1) * t) * std::exp(-x * x);
+        (((((a5 * t + a4) * t + a3) * t + a2) * t + a1) * t) * exp_minus_z2;
 
-    return sign * y;
+    return z < 0 ? -y : y;
+}
+
+/** @brief erf approximation, faster than std::erf; see fast_erf_from_exp. */
+inline double fast_erf(double x) {
+    return fast_erf_from_exp(x, std::exp(-x * x));
 }
 
 /**
@@ -347,7 +352,7 @@ struct GaussianErfcPlateau {
         const double z = dx * inv_sqrt2 / sig;
 
         const double e = std::exp(-z * z);
-        const double step = 0.5 * (1.0 - fast_erf(z));
+        const double step = 0.5 * (1.0 - fast_erf_from_exp(z, e));
 
         return A * e + S * step;
     }
@@ -363,7 +368,7 @@ struct GaussianErfcPlateau {
         const double z = dx * inv_sqrt2 / sig;
 
         const double e = std::exp(-z * z);
-        const double step = 0.5 * (1.0 - fast_erf(z));
+        const double step = 0.5 * (1.0 - fast_erf_from_exp(z, e));
 
         f = A * e + S * step;
 
@@ -500,7 +505,7 @@ struct GaussianChargeSharing {
         const double u = dx / sig;
 
         const double G = std::exp(-0.5 * u * u);
-        const double H = 0.5 * (1.0 - fast_erf(u * inv_sqrt2));
+        const double H = 0.5 * (1.0 - fast_erf_from_exp(u * inv_sqrt2, G));
 
         return p0 - p1 * x + N * (G + C * H);
     }
@@ -518,7 +523,7 @@ struct GaussianChargeSharing {
         const double u = dx / sig;
 
         const double G = std::exp(-0.5 * u * u);
-        const double H = 0.5 * (1.0 - fast_erf(u * inv_sqrt2));
+        const double H = 0.5 * (1.0 - fast_erf_from_exp(u * inv_sqrt2, G));
 
         f = p0 - p1 * x + N * (G + C * H);
 
@@ -662,8 +667,8 @@ struct GaussianChargeSharingKb {
         const double G = std::exp(-0.5 * u * u);
         const double Gb = std::exp(-0.5 * ub * ub);
 
-        const double H = 0.5 * (1.0 - fast_erf(u * inv_sqrt2));
-        const double Hb = 0.5 * (1.0 - fast_erf(ub * inv_sqrt2));
+        const double H = 0.5 * (1.0 - fast_erf_from_exp(u * inv_sqrt2, G));
+        const double Hb = 0.5 * (1.0 - fast_erf_from_exp(ub * inv_sqrt2, Gb));
 
         const double ka = G + C * H;
         const double kb = Gb + C * Hb;
@@ -693,8 +698,8 @@ struct GaussianChargeSharingKb {
         const double G = std::exp(-0.5 * u * u);
         const double Gb = std::exp(-0.5 * ub * ub);
 
-        const double H = 0.5 * (1.0 - fast_erf(u * inv_sqrt2));
-        const double Hb = 0.5 * (1.0 - fast_erf(ub * inv_sqrt2));
+        const double H = 0.5 * (1.0 - fast_erf_from_exp(u * inv_sqrt2, G));
+        const double Hb = 0.5 * (1.0 - fast_erf_from_exp(ub * inv_sqrt2, Gb));
 
         const double ka = G + C * H;
         const double kb = Gb + C * Hb;
@@ -826,12 +831,12 @@ struct RisingScurve {
 
         const double dx = x - p2;
         const double z = dx * inv_sqrt2 / p3;
-        const double step = 0.5 * (1.0 + fast_erf(z));
+        const double e = std::exp(-z * z);
+        const double step = 0.5 * (1.0 + fast_erf_from_exp(z, e));
         const double amp = p4 + p5 * dx;
 
         f = (p0 + p1 * x) + step * amp;
 
-        const double e = std::exp(-z * z);
         const double dSdp2 = -inv_sqrt_2pi * e / p3;
         const double dSdp3 = -inv_sqrt_2pi * e * dx / (p3 * p3);
 
@@ -967,12 +972,12 @@ struct FallingScurve {
 
         const double dx = x - p2;
         const double z = dx * inv_sqrt2 / p3;
-        const double step = 0.5 * (1.0 - fast_erf(z));
+        const double e = std::exp(-z * z);
+        const double step = 0.5 * (1.0 - fast_erf_from_exp(z, e));
         const double amp = p4 + p5 * dx;
 
         f = (p0 + p1 * x) + step * amp;
 
-        const double e = std::exp(-z * z);
         const double dSdp2 = +inv_sqrt_2pi * e / p3; // sign flipped vs rising
         const double dSdp3 = +inv_sqrt_2pi * e * dx / (p3 * p3);
 

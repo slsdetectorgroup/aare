@@ -32,8 +32,9 @@ namespace aare {
  * EDM tolerance in Minuit's convention (Migrad and LevenbergMarquardt stop
  * below 0.002 * tolerance, Fumili below 1e-4 * tolerance). `max_calls`
  * bounds the work per pixel in the minimizer's own units (Minuit2 function
- * calls, or model evaluations for LevenbergMarquardt). `strategy` only
- * affects the Minuit2 minimizers.
+ * calls, or model evaluations for LevenbergMarquardt, which spends one
+ * evaluation per iteration and two when a step crosses a limit). `strategy`
+ * only affects the Minuit2 minimizers.
  */
 enum class Minimizer { Migrad, Fumili, LevenbergMarquardt };
 

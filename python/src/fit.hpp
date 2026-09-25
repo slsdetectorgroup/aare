@@ -37,7 +37,8 @@ template <typename Model> void bind_fit_model(py::module &m, const char *name) {
                 by ``Minimizer.LevenbergMarquardt``.
             max_calls : int
                 Work budget per pixel: Minuit2 function calls, or model
-                evaluations for ``Minimizer.LevenbergMarquardt``. 0 selects
+                evaluations for ``Minimizer.LevenbergMarquardt`` (one per
+                iteration, two when a step crosses a limit). 0 selects
                 Minuit's default budget.
             tolerance : float
                 EDM tolerance in Minuit's convention. Migrad and
@@ -217,8 +218,23 @@ fit_dispatch(const aare::FitModel<Model> &model,
                                 "chi2"_a = return_image_data(chi2_out));
             }
         } else {
-
+            // Unweighted fit; parameter errors are still available when
+            // requested, as in the 1D path.
             NDView<double, 3> dummy_err{};
+
+            if (model.compute_errors()) {
+                auto err_out =
+                    new NDArray<double, 3>({y.shape(0), y.shape(1), npar}, 0.0);
+
+                aare::fit_3d<Model>(model, x_view, y_view, dummy_err,
+                                    par_out->view(), err_out->view(),
+                                    chi2_out->view(), n_threads);
+
+                return py::dict("par"_a = return_image_data(par_out),
+                                "par_err"_a = return_image_data(err_out),
+                                "chi2"_a = return_image_data(chi2_out));
+            }
+
             NDView<double, 3> dummy_err_out{};
 
             aare::fit_3d<Model>(model, x_view, y_view, dummy_err,

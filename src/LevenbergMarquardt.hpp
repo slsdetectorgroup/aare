@@ -22,6 +22,10 @@ namespace aare::detail {
  * pixels so that after the first fit no memory is allocated.
  *
  * - Fixed parameters are left out of the linear system.
+ * - Every evaluation computes the residuals and the Jacobian, so an accepted
+ *   trial point is ready for the next iteration without a second pass over
+ *   the data. Rejected trials are rare with the damping rule below, and a
+ *   rejected one only wastes the derivative part of a single pass.
  * - Limits: a trial step that leaves the allowed box is reflected at the
  *   limit. The step truncated at the limit is evaluated as well and the
  *   better of the two is kept. A parameter sitting on a limit whose gradient
@@ -33,9 +37,10 @@ namespace aare::detail {
  *   estimated distance to the minimum of chi2 (EDM, computed from the
  *   Gauss-Newton Hessian) drops below 0.002 * tolerance, or when the step
  *   becomes negligible.
- * - max_calls limits the number of model evaluations: the initial point,
- *   every trial point and every accepted point count. As in Minuit2, 0
- *   selects the default budget 200 + 100 * npar + 5 * npar^2.
+ * - max_calls limits the number of model evaluations: the initial point and
+ *   every trial point count, so an iteration costs one evaluation, or two
+ *   when a limit is crossed. As in Minuit2, 0 selects the default budget
+ *   200 + 100 * npar + 5 * npar^2.
  * - Errors are Gauss-Newton estimates, sqrt(diag((J^T J)^-1)), over the free
  *   parameters that do not sit on a limit. Fixed and limit-bound parameters
  *   report 0.
@@ -86,7 +91,18 @@ template <typename Model> class LevenbergMarquardt {
             q_[a] = p_[free_[a]];
         r_.resize(n);
         r_new_.resize(n);
+        r_alt_.resize(n);
         J_.resize(n * static_cast<std::size_t>(npar));
+        J_new_.resize(n * static_cast<std::size_t>(npar));
+        J_alt_.resize(n * static_cast<std::size_t>(npar));
+        if (weighted_) {
+            // 1 / s_i once per pixel rather than once per evaluation.
+            w_.resize(n);
+            for (std::size_t i = 0; i < n; ++i)
+                w_[i] = s_[static_cast<ssize_t>(i)] != 0.0
+                            ? 1.0 / s_[static_cast<ssize_t>(i)]
+                            : 0.0;
+        }
 
         Result res;
         auto fail = [&]() {
@@ -96,7 +112,7 @@ template <typename Model> class LevenbergMarquardt {
             return res;
         };
 
-        if (!evaluate(q_, r_, true, F_))
+        if (!evaluate(q_, r_, J_, F_))
             return fail();
         res.calls = 1;
         const double edm_target = 0.002 * model.tolerance();
@@ -109,13 +125,23 @@ template <typename Model> class LevenbergMarquardt {
         for (;; ++res.iterations) {
             build_normal_equations();
             mark_active();
-            if (edm() < edm_target || gmax_ < 1e-12) {
+            if (gmax_ < 1e-12) {
+                res.valid = true;
+                break;
+            }
+            // Solve for the damped step first. The solve yields
+            // g^T (J^T J + u D)^-1 g, a lower bound on the EDM, so the
+            // undamped factorisation behind edm() is only needed when that
+            // bound leaves room for convergence.
+            const bool have_step = solve_step(u);
+            if ((!have_step || bound_ < edm_margin * edm_target) &&
+                edm() < edm_target) {
                 res.valid = true;
                 break;
             }
             if (res.calls >= max_calls)
                 break;
-            if (!solve_step(u)) {
+            if (!have_step) {
                 u *= nu;
                 nu *= 2.0;
                 if (u > 1e32)
@@ -150,24 +176,30 @@ template <typename Model> class LevenbergMarquardt {
             }
             double F_new = 0.0;
             ++res.calls;
-            bool ok = evaluate(q_new_, r_new_, false, F_new);
+            bool ok = evaluate(q_new_, r_new_, J_new_, F_new);
             if (crossed) {
                 // Also try the step truncated at the limit, keep the better.
                 double F_alt = 0.0;
                 ++res.calls;
-                if (evaluate(q_alt_, r_new_, false, F_alt) &&
+                if (evaluate(q_alt_, r_alt_, J_alt_, F_alt) &&
                     (!ok || F_alt < F_new)) {
                     q_new_ = q_alt_;
                     F_new = F_alt;
+                    std::swap(r_new_, r_alt_);
+                    std::swap(J_new_, J_alt_);
                     ok = true;
                 }
             }
             const double rho = ok ? (F_ - F_new) / predicted_ : -1.0;
             if (rho > 0.0) {
+                // The trial becomes the current point together with its
+                // residuals and Jacobian.
                 q_ = q_new_;
-                ++res.calls;
-                if (!evaluate(q_, r_, true, F_))
-                    break; // same point as the accepted trial, cannot happen
+                F_ = F_new;
+                std::swap(r_, r_new_);
+                std::swap(J_, J_new_);
+                for (int a = 0; a < nfree_; ++a)
+                    p_[free_[a]] = q_[a];
                 const double t = 2.0 * rho - 1.0;
                 u *= std::max(1.0 / 3.0, 1.0 - t * t * t);
                 nu = 2.0;
@@ -209,14 +241,14 @@ template <typename Model> class LevenbergMarquardt {
 
   private:
     double weight(ssize_t i) const {
-        return weighted_ ? (s_[i] != 0.0 ? 1.0 / s_[i] : 0.0) : 1.0;
+        return weighted_ ? w_[static_cast<std::size_t>(i)] : 1.0;
     }
 
-    // Residuals r = (y - f) / s and, optionally, the Jacobian dr/dp for the
-    // free parameters at the point q. F = chi2 / 2. Returns false when the
-    // model rejects the parameters.
+    // Residuals r = (y - f) / s and the Jacobian J = dr/dp for the free
+    // parameters at the point q. F = chi2 / 2. Returns false when the model
+    // rejects the parameters.
     bool evaluate(const std::array<double, Model::npar> &q,
-                  std::vector<double> &r, bool with_jacobian, double &F) {
+                  std::vector<double> &r, std::vector<double> &J, double &F) {
         for (int a = 0; a < nfree_; ++a)
             p_[free_[a]] = q[a];
         pvec_.assign(p_.begin(), p_.end());
@@ -224,52 +256,57 @@ template <typename Model> class LevenbergMarquardt {
             return false;
         const ssize_t n = x_.size();
         F = 0.0;
-        if (with_jacobian) {
-            std::array<double, Model::npar> g{};
-            double f = 0.0;
-            for (ssize_t i = 0; i < n; ++i) {
-                const double w = weight(i);
-                Model::eval_and_grad(x_[i], pvec_, f, g);
-                r[i] = (y_[i] - f) * w;
-                F += 0.5 * r[i] * r[i];
-                double *Ji = &J_[static_cast<std::size_t>(i) * npar];
-                for (int a = 0; a < nfree_; ++a)
-                    Ji[a] = -g[free_[a]] * w;
-            }
-        } else {
-            for (ssize_t i = 0; i < n; ++i) {
-                r[i] = (y_[i] - Model::eval(x_[i], pvec_)) * weight(i);
-                F += 0.5 * r[i] * r[i];
-            }
+        std::array<double, Model::npar> g{};
+        double f = 0.0;
+        for (ssize_t i = 0; i < n; ++i) {
+            const double w = weight(i);
+            Model::eval_and_grad(x_[i], pvec_, f, g);
+            r[i] = (y_[i] - f) * w;
+            F += 0.5 * r[i] * r[i];
+            double *Ji = &J[static_cast<std::size_t>(i) * npar];
+            for (int k = 0; k < npar; ++k)
+                Ji[k] = -g[k] * w;
         }
         return true;
     }
 
+    // Gradient g = J^T r and Gauss-Newton Hessian J^T J of chi2 / 2 for the
+    // free parameters. The sums run over all parameters with fixed-size
+    // loops, so the compiler can unroll them and keep the accumulators in
+    // registers; the entries of fixed parameters are simply not copied out.
     void build_normal_equations() {
         const ssize_t n = x_.size();
-        for (int a = 0; a < nfree_; ++a) {
-            g_[a] = 0.0;
-            for (int b = 0; b < nfree_; ++b)
-                jtj_[a][b] = 0.0;
-        }
+        double G[npar] = {};
+        double H[npar][npar] = {};
         for (ssize_t i = 0; i < n; ++i) {
             const double *Ji = &J_[static_cast<std::size_t>(i) * npar];
-            for (int a = 0; a < nfree_; ++a) {
-                g_[a] += Ji[a] * r_[i];
-                for (int b = a; b < nfree_; ++b)
-                    jtj_[a][b] += Ji[a] * Ji[b];
+            const double ri = r_[i];
+            for (int a = 0; a < npar; ++a) {
+                G[a] += Ji[a] * ri;
+                for (int b = a; b < npar; ++b)
+                    H[a][b] += Ji[a] * Ji[b];
             }
         }
         gmax_ = 0.0;
         for (int a = 0; a < nfree_; ++a) {
-            for (int b = 0; b < a; ++b)
-                jtj_[a][b] = jtj_[b][a];
+            const int ka = free_[a];
+            g_[a] = G[ka];
+            for (int b = 0; b < nfree_; ++b) {
+                const int kb = free_[b];
+                jtj_[a][b] = ka <= kb ? H[ka][kb] : H[kb][ka];
+            }
             gmax_ = std::max(gmax_, std::abs(g_[a]));
         }
     }
 
     // A parameter sitting on a limit with the descent direction pointing
-    // outward is frozen for this iteration.
+    // outward is frozen for this iteration. The test deliberately looks at
+    // the last evaluated point p_, which after a rejected step is the trial
+    // rather than the current point q_: a rejected trial that came off the
+    // limit unfreezes the parameter, and the reflected step can then leave
+    // the limit. Testing q_ instead was measured to leave more fits stuck on
+    // a limit with a higher chi2 (FallingScurve and GaussianChargeSharing
+    // cubes), although it helped Pol2.
     void mark_active() {
         for (int a = 0; a < nfree_; ++a) {
             const int k = free_[a];
@@ -319,7 +356,9 @@ template <typename Model> class LevenbergMarquardt {
     }
 
     // Damped Gauss-Newton step (J^T J + u D) delta = -g for the non-frozen
-    // parameters; also the predicted decrease of F for that step.
+    // parameters, the predicted decrease of F for that step, and
+    // bound_ = g^T (J^T J + u D)^-1 g, which is at most the EDM because
+    // u D is positive semi-definite.
     bool solve_step(double u) {
         double A[npar][npar];
         double b[npar];
@@ -328,6 +367,7 @@ template <typename Model> class LevenbergMarquardt {
         for (int a = 0; a < nfree_; ++a)
             delta_[a] = 0.0;
         predicted_ = 0.0;
+        bound_ = 0.0;
         if (m == 0)
             return true;
         if (!cholesky_solve(m, A, b, z))
@@ -337,6 +377,7 @@ template <typename Model> class LevenbergMarquardt {
             if (active_[a])
                 continue;
             delta_[a] = -z[i];
+            bound_ += b[i] * z[i];
             predicted_ +=
                 0.5 * delta_[a] *
                 (u * std::max(jtj_[a][a], 1e-300) * delta_[a] - g_[a]);
@@ -407,12 +448,22 @@ template <typename Model> class LevenbergMarquardt {
     double g_[npar] = {};
     double delta_[npar] = {};
     double jtj_[npar][npar] = {};
+    // The two solves that bound the EDM differ by rounding only when the
+    // damping is negligible; the margin keeps the stop decision exact.
+    static constexpr double edm_margin = 1.0 + 1e-6;
     double F_ = 0.0;
     double gmax_ = 0.0;
     double predicted_ = 0.0;
+    double bound_ = 0.0;
+    // Residuals and Jacobian of the current point, of the trial point and of
+    // the candidate truncated at a limit; swapped, never copied.
     std::vector<double> r_;
     std::vector<double> r_new_;
+    std::vector<double> r_alt_;
     std::vector<double> J_;
+    std::vector<double> J_new_;
+    std::vector<double> J_alt_;
+    std::vector<double> w_; // 1 / s_i for weighted fits
     std::vector<double> pvec_;
 };
 

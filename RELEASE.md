@@ -41,6 +41,15 @@
   from their linearised covariance instead of running Hesse. Pixels for which
   Fumili does not reach a valid minimum, which Minuit2's implementation cannot
   once a two-sided limit becomes active, are refitted with Migrad.
+- ``Minimizer.LevenbergMarquardt`` is about twice as fast for every model: it
+  evaluates the Jacobian at the trial point instead of re-evaluating accepted
+  points, accumulates the normal equations with fixed-size loops, needs a
+  single factorisation per iteration, and the erf-based models compute one
+  exponential per point instead of two. Results are unchanged, except that
+  ``GaussianChargeSharing`` and ``GaussianChargeSharingKb`` now evaluate the
+  erf from the Gaussian's exponential, a rounding-level change. One iteration
+  costs one model evaluation of the ``max_calls`` budget, so pixels that used
+  to exhaust the default budget of 100 may now converge.
 - ``NDArray``/``NDView`` expressions now support scalar operands
   (``2 * a + b / 4``) and can be assigned to an existing ``NDArray``, reusing
   its buffer.
@@ -106,6 +115,8 @@
 - ``TimingMode::Auto`` changed to ``TimingMode::AUTO_TIMING``, ``TimingMode::Trigger`` changed to ``TimingMode::TRIGGER_EXPOSURE``
 
 ### Bugfixes:
+- Fitting a 3D data cube in Python without ``y_err`` now returns ``par_err``
+  when ``compute_errors`` is set, as fitting a single pixel already did.
 - Mismatched operators inhibited vectorization in gcc of NDArray math operators
 - ``NDArray``/``NDView`` math operators and expressions were not vectorized
   for ``uint8_t`` and 64 bit integers, up to 30x slower than a plain loop.

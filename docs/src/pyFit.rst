@@ -68,9 +68,10 @@ free start values are clamped into their limits. The constructor arguments
 control the minimizer:
 
 - ``max_calls`` caps the work per pixel: Minuit2 function calls for Migrad and
-  Fumili, model evaluations for LevenbergMarquardt. ``0`` selects Minuit's
-  default budget. A pixel that does not converge within the budget returns
-  zeros.
+  Fumili, model evaluations for LevenbergMarquardt, which spends one
+  evaluation per iteration (two when a step crosses a limit). ``0`` selects
+  Minuit's default budget. A pixel that does not converge within the budget
+  returns zeros.
 - ``tolerance`` is the EDM tolerance in Minuit's convention. Migrad and
   LevenbergMarquardt stop when the estimated distance to the minimum is below
   ``0.002 * tolerance``, Fumili below ``1e-4 * tolerance``.

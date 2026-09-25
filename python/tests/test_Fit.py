@@ -179,20 +179,25 @@ def test_scurve_fit(cls, minimizer):
 
 
 @pytest.mark.parametrize("with_errors", [False, True])
-def test_fit_3d_matches_fit_1d(with_errors, minimizer):
+@pytest.mark.parametrize("weighted", [False, True])
+def test_fit_3d_matches_fit_1d(with_errors, weighted, minimizer):
     x = np.linspace(-6.0, 6.0, 61)
     rows, cols = 4, 3
     y = np.empty((rows, cols, x.size))
     for r in range(rows):
         for c in range(cols):
             y[r, c] = gaussian(x, 80.0 + 10.0 * r, -0.6 + 0.3 * c, 0.9 + 0.1 * r)
-    y_err = np.ones_like(y) if with_errors else None
+    y_err = np.ones_like(y) if weighted else None
 
     model = aare.Gaussian(compute_errors=with_errors, minimizer=minimizer)
     cube = model.fit(x, y, y_err, n_threads=3)
 
+    expected_keys = {"par", "par_err", "chi2"} if with_errors else {"par", "chi2"}
+    assert set(cube) == expected_keys
     assert cube["par"].shape == (rows, cols, 3)
     assert cube["chi2"].shape == (rows, cols)
+    if with_errors:
+        assert cube["par_err"].shape == (rows, cols, 3)
     for r in range(rows):
         for c in range(cols):
             single = model.fit(x, y[r, c], None if y_err is None else y_err[r, c])
