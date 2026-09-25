@@ -13,10 +13,14 @@ namespace aare::model {
 inline constexpr double inv_sqrt2 = 0.70710678118654752440;
 inline constexpr double inv_sqrt_2pi = 0.39894228040143267794;
 
-inline double fast_erf(double x) {
-    // Abramowitz–Stegun Handbook of Mathematical Functions
-    // erf approximation with max error ~1.5e-7, faster than std::erf.
-
+/**
+ * @brief erf(z) given exp(-z^2), from the Abramowitz-Stegun approximation
+ * 7.1.26 (Handbook of Mathematical Functions, max error about 1.5e-7).
+ *
+ * Models whose derivatives need exp(-z^2) anyway pass it in, so that a
+ * single exponential serves both the value and the gradient.
+ */
+inline double fast_erf_from_exp(double z, double exp_minus_z2) {
     const double a1 = 0.254829592;
     const double a2 = -0.284496736;
     const double a3 = 1.421413741;
@@ -24,22 +28,23 @@ inline double fast_erf(double x) {
     const double a5 = 1.061405429;
     const double p = 0.3275911;
 
-    const int sign = x < 0 ? -1 : 1;
-    x = std::abs(x);
-
-    // 7.1.26
-    const double t = 1.0 / (1.0 + p * x);
+    const double t = 1.0 / (1.0 + p * std::abs(z));
     const double y =
         1.0 -
-        (((((a5 * t + a4) * t + a3) * t + a2) * t + a1) * t) * std::exp(-x * x);
+        (((((a5 * t + a4) * t + a3) * t + a2) * t + a1) * t) * exp_minus_z2;
 
-    return sign * y;
+    return z < 0 ? -y : y;
+}
+
+/** @brief erf approximation, faster than std::erf; see fast_erf_from_exp. */
+inline double fast_erf(double x) {
+    return fast_erf_from_exp(x, std::exp(-x * x));
 }
 
 /**
  * @brief Per-parameter metadata: name and optional default bounds.
  *
- * Used by FitModel to generically initialise MnUserParameters.
+ * Used by FitModel for parameter names and default limits.
  * Unbounded directions use ±no_bound as sentinels.
  */
 struct ParamInfo {
@@ -49,23 +54,6 @@ struct ParamInfo {
 };
 
 inline constexpr double no_bound = std::numeric_limits<double>::infinity();
-
-/**
- * @brief Compute data-range statistics used by step-size estimators.
- *
- * Model-independent, called once per pixel.
- */
-inline void compute_ranges(NDView<double, 1> x, NDView<double, 1> y,
-                           double &x_range, double &y_range,
-                           double &slope_scale) {
-    const auto [x_min, x_max] = std::minmax_element(x.begin(), x.end());
-    const auto [y_min, y_max] = std::minmax_element(y.begin(), y.end());
-
-    x_range = std::max(*x_max - *x_min, 1e-9);
-    y_range = std::max(*y_max - *y_min, 1e-9);
-
-    slope_scale = std::max(y_range / x_range, 1e-9);
-}
 
 // _____________________________________________________________________
 //
@@ -119,14 +107,6 @@ struct Pol1 {
         const double intercept = y[0] - slope * x[0];
 
         return {intercept, slope};
-    }
-
-    static void compute_steps(const std::array<double, npar> &start,
-                              [[maybe_unused]] double x_range, double y_range,
-                              double slope_scale,
-                              std::array<double, npar> &steps) {
-        steps[0] = std::max(0.1 * std::abs(start[0]), 0.1 * y_range);
-        steps[1] = 0.1 * slope_scale;
     }
 };
 
@@ -219,15 +199,6 @@ struct Pol2 {
         const double p0 = y[0] - p1 * x[0] - p2 * x[0] * x[0];
 
         return {p0, p1, p2};
-    }
-
-    static void compute_steps(const std::array<double, npar> &start,
-                              double x_range, double y_range,
-                              double slope_scale,
-                              std::array<double, npar> &steps) {
-        steps[0] = std::max(0.1 * std::abs(start[0]), 0.1 * y_range);
-        steps[1] = 0.1 * slope_scale;
-        steps[2] = 0.1 * slope_scale / std::max(x_range, 1e-12);
     }
 };
 
@@ -326,18 +297,6 @@ struct Gaussian {
 
         return {A, mu, sig};
     }
-
-    /**
-     * @brief Data-driven Minuit step sizes.
-     */
-    static void compute_steps(const std::array<double, npar> &start,
-                              double x_range, double y_range,
-                              double /*slope_scale*/,
-                              std::array<double, npar> &steps) {
-        steps[0] = std::max(0.1 * std::abs(start[0]), 0.1 * y_range);
-        steps[1] = 0.05 * x_range;
-        steps[2] = 0.05 * x_range;
-    }
 };
 
 // _____________________________________________________________________
@@ -393,7 +352,7 @@ struct GaussianErfcPlateau {
         const double z = dx * inv_sqrt2 / sig;
 
         const double e = std::exp(-z * z);
-        const double step = 0.5 * (1.0 - fast_erf(z));
+        const double step = 0.5 * (1.0 - fast_erf_from_exp(z, e));
 
         return A * e + S * step;
     }
@@ -409,7 +368,7 @@ struct GaussianErfcPlateau {
         const double z = dx * inv_sqrt2 / sig;
 
         const double e = std::exp(-z * z);
-        const double step = 0.5 * (1.0 - fast_erf(z));
+        const double step = 0.5 * (1.0 - fast_erf_from_exp(z, e));
 
         f = A * e + S * step;
 
@@ -490,16 +449,6 @@ struct GaussianErfcPlateau {
 
         return {A, S, mu, sig};
     }
-
-    static void compute_steps(const std::array<double, npar> &start,
-                              double x_range, double y_range,
-                              double /*slope_scale*/,
-                              std::array<double, npar> &steps) {
-        steps[0] = std::max(0.1 * std::abs(start[0]), 0.1 * y_range);
-        steps[1] = std::max(0.1 * std::abs(start[1]), 0.1 * y_range);
-        steps[2] = 0.05 * x_range;
-        steps[3] = 0.05 * x_range;
-    }
 };
 
 // _____________________________________________________________________
@@ -556,7 +505,7 @@ struct GaussianChargeSharing {
         const double u = dx / sig;
 
         const double G = std::exp(-0.5 * u * u);
-        const double H = 0.5 * (1.0 - fast_erf(u * inv_sqrt2));
+        const double H = 0.5 * (1.0 - fast_erf_from_exp(u * inv_sqrt2, G));
 
         return p0 - p1 * x + N * (G + C * H);
     }
@@ -574,7 +523,7 @@ struct GaussianChargeSharing {
         const double u = dx / sig;
 
         const double G = std::exp(-0.5 * u * u);
-        const double H = 0.5 * (1.0 - fast_erf(u * inv_sqrt2));
+        const double H = 0.5 * (1.0 - fast_erf_from_exp(u * inv_sqrt2, G));
 
         f = p0 - p1 * x + N * (G + C * H);
 
@@ -647,18 +596,6 @@ struct GaussianChargeSharing {
 
         return {p0, p1, mu, sigma, N, C};
     }
-
-    static void compute_steps(const std::array<double, npar> &start,
-                              double x_range, double y_range,
-                              double slope_scale,
-                              std::array<double, npar> &steps) {
-        steps[0] = std::max(0.1 * std::abs(start[0]), 0.1 * y_range);
-        steps[1] = 0.1 * slope_scale;
-        steps[2] = 0.05 * x_range;
-        steps[3] = 0.05 * x_range;
-        steps[4] = std::max(0.1 * std::abs(start[4]), 0.1 * y_range);
-        steps[5] = std::max(0.1 * std::abs(start[5]), 0.01);
-    }
 };
 
 // _____________________________________________________________________
@@ -730,8 +667,8 @@ struct GaussianChargeSharingKb {
         const double G = std::exp(-0.5 * u * u);
         const double Gb = std::exp(-0.5 * ub * ub);
 
-        const double H = 0.5 * (1.0 - fast_erf(u * inv_sqrt2));
-        const double Hb = 0.5 * (1.0 - fast_erf(ub * inv_sqrt2));
+        const double H = 0.5 * (1.0 - fast_erf_from_exp(u * inv_sqrt2, G));
+        const double Hb = 0.5 * (1.0 - fast_erf_from_exp(ub * inv_sqrt2, Gb));
 
         const double ka = G + C * H;
         const double kb = Gb + C * Hb;
@@ -761,8 +698,8 @@ struct GaussianChargeSharingKb {
         const double G = std::exp(-0.5 * u * u);
         const double Gb = std::exp(-0.5 * ub * ub);
 
-        const double H = 0.5 * (1.0 - fast_erf(u * inv_sqrt2));
-        const double Hb = 0.5 * (1.0 - fast_erf(ub * inv_sqrt2));
+        const double H = 0.5 * (1.0 - fast_erf_from_exp(u * inv_sqrt2, G));
+        const double Hb = 0.5 * (1.0 - fast_erf_from_exp(ub * inv_sqrt2, Gb));
 
         const double ka = G + C * H;
         const double kb = Gb + C * Hb;
@@ -827,20 +764,6 @@ struct GaussianChargeSharingKb {
         const double kb_frac = 0.10;
 
         return {p0, p1, mu, sigma, N, C, kb_mean, kb_frac};
-    }
-
-    static void compute_steps(const std::array<double, npar> &start,
-                              double x_range, double y_range,
-                              double slope_scale,
-                              std::array<double, npar> &steps) {
-        steps[0] = std::max(0.1 * std::abs(start[0]), 0.1 * y_range);
-        steps[1] = 0.1 * slope_scale;
-        steps[2] = 0.05 * x_range;
-        steps[3] = 0.05 * x_range;
-        steps[4] = std::max(0.1 * std::abs(start[4]), 0.1 * y_range);
-        steps[5] = std::max(0.1 * std::abs(start[5]), 0.01);
-        steps[6] = std::max(0.01 * std::abs(start[6]), 1e-3);
-        steps[7] = std::max(0.1 * std::abs(start[7]), 0.01);
     }
 };
 
@@ -908,12 +831,12 @@ struct RisingScurve {
 
         const double dx = x - p2;
         const double z = dx * inv_sqrt2 / p3;
-        const double step = 0.5 * (1.0 + fast_erf(z));
+        const double e = std::exp(-z * z);
+        const double step = 0.5 * (1.0 + fast_erf_from_exp(z, e));
         const double amp = p4 + p5 * dx;
 
         f = (p0 + p1 * x) + step * amp;
 
-        const double e = std::exp(-z * z);
         const double dSdp2 = -inv_sqrt_2pi * e / p3;
         const double dSdp3 = -inv_sqrt_2pi * e * dx / (p3 * p3);
 
@@ -995,18 +918,6 @@ struct RisingScurve {
 
         return {p0, p1, p2, p3, p4, p5};
     }
-
-    static void compute_steps(const std::array<double, npar> &start,
-                              double x_range, double y_range,
-                              double slope_scale,
-                              std::array<double, npar> &steps) {
-        steps[0] = std::max(0.1 * std::abs(start[0]), 0.1 * y_range);
-        steps[1] = 0.1 * slope_scale;
-        steps[2] = 0.05 * x_range;
-        steps[3] = 0.05 * x_range;
-        steps[4] = std::max(0.1 * std::abs(start[4]), 0.1 * y_range);
-        steps[5] = 0.1 * slope_scale;
-    }
 };
 
 // _____________________________________________________________________
@@ -1061,12 +972,12 @@ struct FallingScurve {
 
         const double dx = x - p2;
         const double z = dx * inv_sqrt2 / p3;
-        const double step = 0.5 * (1.0 - fast_erf(z));
+        const double e = std::exp(-z * z);
+        const double step = 0.5 * (1.0 - fast_erf_from_exp(z, e));
         const double amp = p4 + p5 * dx;
 
         f = (p0 + p1 * x) + step * amp;
 
-        const double e = std::exp(-z * z);
         const double dSdp2 = +inv_sqrt_2pi * e / p3; // sign flipped vs rising
         const double dSdp3 = +inv_sqrt_2pi * e * dx / (p3 * p3);
 
@@ -1147,14 +1058,6 @@ struct FallingScurve {
         double p5 = 0.0;
 
         return {p0, p1, p2, p3, p4, p5};
-    }
-
-    static void compute_steps(const std::array<double, npar> &start,
-                              double x_range, double y_range,
-                              double slope_scale,
-                              std::array<double, npar> &steps) {
-        RisingScurve::compute_steps(start, x_range, y_range, slope_scale,
-                                    steps);
     }
 };
 

@@ -145,10 +145,20 @@ lives in `python/aare/transform.py` on top of C++ generators.
 
 `Fit.hpp`, `FitModel<Model>`, and `Models.hpp` (`Gaussian`, `Pol1`, `Pol2`,
 `RisingScurve`, `FallingScurve`, `GaussianErfcPlateau`,
-`GaussianChargeSharing`, ...) wrap Minuit2. Template bodies and explicit
-instantiations live in `src/Fit.cpp`; `FitModelImpl` is a pimpl so Minuit2
-headers never leak into the public API. Minuit2 is a private,
-`BUILD_INTERFACE`-only dependency of `aare_core`.
+`GaussianChargeSharing`, ...) form the public fitting API. Each model
+provides `eval`, `eval_and_grad`, `is_valid`, `estimate_par`, and
+`param_info`. `FitModel` is plain data (limits, fixed flags, start values,
+minimizer settings) and selects one of three minimizers through
+`aare::Minimizer`: Minuit2's Migrad (default) and Fumili, or the built-in
+Levenberg-Marquardt solver in `src/LevenbergMarquardt.hpp`. `src/Fit.cpp`
+holds the `FitModel` method bodies, the per-thread `detail::PixelFitter`
+that dispatches on the minimizer, `fit_pixel`/`fit_3d`, and the explicit
+instantiations; `src/FitHelpers.hpp` holds the start-value precedence and
+shape checks. `src/FitMinuit2.cpp` (with `src/Chi2.hpp` and
+`src/MinuitSteps.hpp`) is the only translation unit that includes Minuit2
+headers; Minuit2 is a private, `BUILD_INTERFACE`-only dependency of
+`aare_core`. The `[fit]` tests run every configuration through all three
+minimizers and check that they agree; run them when changing any solver.
 
 ### Python layer
 
