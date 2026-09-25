@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: MPL-2.0
 #include "aare/decode.hpp"
 #include <cmath>
+#include <cstring>
 #include <fmt/format.h>
 namespace aare {
 
@@ -100,6 +101,57 @@ void adc_sar_04_decode64to16(NDView<uint64_t, 2> input,
             output(i, j) = adc_sar_04_decode64to16(input(i, j));
         }
     }
+}
+
+namespace {
+
+constexpr ssize_t bytes_per_word = sizeof(uint64_t);
+
+// Shared loop for the byte-buffer overloads. Words are copied out with
+// memcpy so the input does not need to be aligned to 8 bytes.
+template <uint16_t (*decode_word)(uint64_t)>
+void decode64to16_from_bytes(NDView<const uint8_t, 2> input,
+                             NDView<uint16_t, 2> output) {
+    if (input.shape(1) % bytes_per_word != 0) {
+        throw std::invalid_argument(
+            fmt::format("{} input row length of {} bytes is not a multiple "
+                        "of {}",
+                        LOCATION, input.shape(1), bytes_per_word));
+    }
+    if (input.shape(0) != output.shape(0) ||
+        input.shape(1) / bytes_per_word != output.shape(1)) {
+        throw std::invalid_argument(fmt::format(
+            "{} output shape must be ({}, {}) for an input of "
+            "shape ({}, {})",
+            LOCATION, input.shape(0), input.shape(1) / bytes_per_word,
+            output.shape(0), output.shape(1)));
+    }
+
+    for (ssize_t i = 0; i < output.shape(0); ++i) {
+        const uint8_t *row = input.data() + i * input.shape(1);
+        for (ssize_t j = 0; j < output.shape(1); ++j) {
+            uint64_t word{};
+            std::memcpy(&word, row + j * bytes_per_word, sizeof(word));
+            output(i, j) = decode_word(word);
+        }
+    }
+}
+
+} // namespace
+
+void adc_sar_05_06_07_08decode64to16(NDView<const uint8_t, 2> input,
+                                     NDView<uint16_t, 2> output) {
+    decode64to16_from_bytes<adc_sar_05_06_07_08decode64to16>(input, output);
+}
+
+void adc_sar_05_decode64to16(NDView<const uint8_t, 2> input,
+                             NDView<uint16_t, 2> output) {
+    decode64to16_from_bytes<adc_sar_05_decode64to16>(input, output);
+}
+
+void adc_sar_04_decode64to16(NDView<const uint8_t, 2> input,
+                             NDView<uint16_t, 2> output) {
+    decode64to16_from_bytes<adc_sar_04_decode64to16>(input, output);
 }
 
 double apply_custom_weights(uint16_t input, const NDView<double, 1> weights) {

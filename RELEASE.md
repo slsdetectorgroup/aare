@@ -56,6 +56,14 @@
 
 ### API Changes:
 
+- The C++ ``NDArray`` view constructor and ``NDArray::copy_from()`` take
+  ``NDView<const T, Ndim>``. Mutable views still convert implicitly, so
+  existing callers are unaffected, and read-only views can now be copied.
+- Added C++ overloads of ``adc_sar_05_06_07_08decode64to16``,
+  ``adc_sar_05_decode64to16`` and ``adc_sar_04_decode64to16`` that take the
+  packed samples as ``NDView<const uint8_t, 2>``. Words are assembled with
+  ``memcpy``, so the buffer does not need to be 8-byte aligned. The existing
+  ``NDView<uint64_t, 2>`` overloads are unchanged.
 - ``NDArray`` ``+ - * /`` with a scalar now returns a lazy expression instead
   of an ``NDArray`` and no longer converts the scalar to the element type.
 - ``FitModel`` is now plain data without a pimpl (C++ users need to rebuild);
@@ -114,9 +122,23 @@
 - ``RawMasterFile::rois()`` always returns a list of rois (no optional). Per default it returns a list of one ROI element spawing the entire detector 
 - ``TimingMode::Auto`` changed to ``TimingMode::AUTO_TIMING``, ``TimingMode::Trigger`` changed to ``TimingMode::TRIGGER_EXPOSURE``
 
+
 ### Bugfixes:
 - Fitting a 3D data cube in Python without ``y_err`` now returns ``par_err``
   when ``compute_errors`` is set, as fitting a single pixel already did.
+- The Python ``Cluster`` constructors validate that the data array holds
+  exactly one value per pixel and raise ``ValueError`` otherwise. Previously a
+  longer array wrote past the end of the cluster data.
+- The Python CTB decoding helpers ``adc_sar_*decode64to16``,
+  ``apply_custom_weights``, ``expand24to32bit``, ``expand4to8bit`` and
+  ``decode_my302`` validate their input through ``make_view``. They require
+  C-contiguous arrays of the documented rank and reject other dtypes with
+  ``TypeError`` instead of converting a copy. The ADC SAR decoders no longer
+  reinterpret the byte buffer as aligned 64-bit words; a row length that is
+  not a multiple of 8 bytes raises ``ValueError`` instead of dropping the
+  trailing bytes. Read-only arrays are accepted where the input is only read.
+  ``decode_my302`` raises ``ValueError`` instead of ``RuntimeError`` for a
+  wrong input size.
 - Mismatched operators inhibited vectorization in gcc of NDArray math operators
 - ``NDArray``/``NDView`` math operators and expressions were not vectorized
   for ``uint8_t`` and 64 bit integers, up to 30x slower than a plain loop.
@@ -162,6 +184,10 @@
   without implicit conversion. Both ``push()`` and ``push_with_threshold()``
   validate that frames and thresholds are two-dimensional before constructing
   views, preventing incorrect results from unsupported array layouts or ranks.
+- Python ``ClusterFinder.push_pedestal_frame()`` and ``find_clusters()`` now
+  require C-contiguous ``uint16`` frames without implicit conversion, raising
+  ``TypeError`` instead of silently copying and casting the input. The frame
+  argument can also be passed by keyword as ``frame``.
 
 - Fixed a leaked empty ``ClusterVector`` at the end of Python ``ClusterFile``
   iteration. Chunk iteration now rejects a zero chunk size.

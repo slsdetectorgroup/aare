@@ -28,6 +28,16 @@ For three-dimensional data, pass an array with shape
 The result dictionary contains ``par`` and ``chi2``. It also contains
 ``par_err`` when ``compute_errors`` is enabled.
 
+.. note::
+
+    The fit works on ``float64`` data. If ``x``, ``y`` or ``y_err`` is not
+    already a C-contiguous ``float64`` array, the Python bindings convert it
+    before fitting, which allocates a full copy. Integer or ``float32``
+    input therefore works, but for a large three-dimensional ``y`` the
+    copy can be several times the size of the original array. Pass
+    ``float64`` arrays to avoid it. A ``float64`` C-contiguous array is used
+    in place without copying.
+
 Choosing the minimizer
 ~~~~~~~~~~~~~~~~~~~~~~
 

@@ -17,6 +17,23 @@ void adc_sar_04_decode64to16(NDView<uint64_t, 2> input,
                              NDView<uint16_t, 2> output);
 
 /**
+ * @brief Decode packed 64-bit ADC SAR samples stored as raw bytes.
+ *
+ * Every 8 bytes of a row form one 64-bit word in native byte order. Words
+ * are assembled with memcpy, so the buffer does not need to be 8-byte
+ * aligned. The output must have the same number of rows as the input and
+ * input.shape(1) / 8 columns.
+ * @throws std::invalid_argument if the row length is not a multiple of 8
+ * bytes or the output shape does not match.
+ */
+void adc_sar_05_06_07_08decode64to16(NDView<const uint8_t, 2> input,
+                                     NDView<uint16_t, 2> output);
+void adc_sar_05_decode64to16(NDView<const uint8_t, 2> input,
+                             NDView<uint16_t, 2> output);
+void adc_sar_04_decode64to16(NDView<const uint8_t, 2> input,
+                             NDView<uint16_t, 2> output);
+
+/**
  * @brief Called with a 32 bit unsigned integer, shift by offset
  * and then return the lower 24 bits as an 32 bit integer
  * @param input 32-ibt input value

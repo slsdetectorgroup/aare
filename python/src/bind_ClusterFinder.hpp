@@ -43,12 +43,14 @@ void define_ClusterFinder(py::module &m, const std::string &typestr) {
             &ClusterFinder<ClusterType, uint16_t, pd_type>::set_nSigma,
             R"(number of sigma above the pedestal to consider a photon during cluster finding.)")
 
-        .def("push_pedestal_frame",
-             [](ClusterFinder<ClusterType, uint16_t, pd_type> &self,
-                py::array_t<uint16_t> frame) {
-                 auto view = make_view_2d(frame);
-                 self.push_pedestal_frame(view);
-             })
+        .def(
+            "push_pedestal_frame",
+            [](ClusterFinder<ClusterType, uint16_t, pd_type> &self,
+               py::array_t<uint16_t> frame) {
+                auto view = make_view_2d(frame);
+                self.push_pedestal_frame(view);
+            },
+            py::arg("frame").noconvert())
         .def("clear_pedestal",
              &ClusterFinder<ClusterType, uint16_t, pd_type>::clear_pedestal)
         .def("update_threshold",
@@ -84,7 +86,7 @@ void define_ClusterFinder(py::module &m, const std::string &typestr) {
                 self.find_clusters(view, frame_number);
                 return;
             },
-            py::arg(), py::arg("frame_number") = 0);
+            py::arg("frame").noconvert(), py::arg("frame_number") = 0);
 }
 
 #pragma GCC diagnostic pop

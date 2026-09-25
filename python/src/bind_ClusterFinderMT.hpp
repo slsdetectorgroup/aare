@@ -37,12 +37,14 @@ void define_ClusterFinderMT(py::module &m, const std::string &typestr) {
              py::arg("capacity") = 2048, py::arg("n_threads") = 3,
              py::arg("queue_depth") = 16,
              py::arg("min_pedestal_samples") = 1000)
-        .def("push_pedestal_frame",
-             [](ClusterFinderMT<ClusterType, uint16_t, pd_type> &self,
-                py::array_t<uint16_t> frame) {
-                 auto view = make_view_2d(frame);
-                 self.push_pedestal_frame(view);
-             })
+        .def(
+            "push_pedestal_frame",
+            [](ClusterFinderMT<ClusterType, uint16_t, pd_type> &self,
+               py::array_t<uint16_t> frame) {
+                auto view = make_view_2d(frame);
+                self.push_pedestal_frame(view);
+            },
+            py::arg("frame").noconvert())
         .def(
             "find_clusters",
             [](ClusterFinderMT<ClusterType, uint16_t, pd_type> &self,
@@ -50,7 +52,7 @@ void define_ClusterFinderMT(py::module &m, const std::string &typestr) {
                 auto view = make_view_2d(frame);
                 self.find_clusters(view, frame_number);
             },
-            py::arg(), py::arg("frame_number") = 0)
+            py::arg("frame").noconvert(), py::arg("frame_number") = 0)
         .def_property_readonly(
             "cluster_size",
             [](ClusterFinderMT<ClusterType, uint16_t, pd_type> &self) {

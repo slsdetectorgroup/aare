@@ -11,38 +11,34 @@
 namespace py = pybind11;
 
 template <typename DataType>
-py::array_t<DataType> pybind_apply_calibration(
-    py::array_t<uint16_t, py::array::c_style | py::array::forcecast> data,
-    py::array_t<DataType, py::array::c_style | py::array::forcecast> pedestal,
-    py::array_t<DataType, py::array::c_style | py::array::forcecast>
-        calibration,
-    int n_threads = 4) {
+py::array_t<DataType>
+pybind_apply_calibration(py::array_t<uint16_t> data,
+                         py::array_t<DataType> pedestal,
+                         py::array_t<DataType> calibration, int n_threads = 4) {
 
     auto data_span = make_view_3d(data); // data is always 3D
     /* No pointer is passed, so NumPy will allocate the buffer */
     auto result = py::array_t<DataType>(data_span.shape());
     auto res = make_view_3d(result);
-    if (data.ndim() == 3 && pedestal.ndim() == 3 && calibration.ndim() == 3) {
+    if (pedestal.ndim() == 3 && calibration.ndim() == 3) {
         auto ped = make_view_3d(pedestal);
         auto cal = make_view_3d(calibration);
         aare::apply_calibration<DataType, 3>(res, data_span, ped, cal,
                                              n_threads);
-    } else if (data.ndim() == 3 && pedestal.ndim() == 2 &&
-               calibration.ndim() == 2) {
+    } else if (pedestal.ndim() == 2 && calibration.ndim() == 2) {
         auto ped = make_view_2d(pedestal);
         auto cal = make_view_2d(calibration);
         aare::apply_calibration<DataType, 2>(res, data_span, ped, cal,
                                              n_threads);
     } else {
         throw std::runtime_error(
-            "Invalid number of dimensions for data, pedestal or calibration");
+            "Invalid number of dimensions for pedestal or calibration");
     }
     return result;
 }
 
-py::array_t<int> pybind_count_switching_pixels(
-    py::array_t<uint16_t, py::array::c_style | py::array::forcecast> data,
-    ssize_t n_threads = 4) {
+py::array_t<int> pybind_count_switching_pixels(py::array_t<uint16_t> data,
+                                               ssize_t n_threads = 4) {
 
     auto data_span = make_view_3d(data);
     auto arr = new NDArray<int, 2>{};
@@ -51,9 +47,8 @@ py::array_t<int> pybind_count_switching_pixels(
 }
 
 template <typename T>
-py::array_t<T> pybind_calculate_pedestal(
-    py::array_t<uint16_t, py::array::c_style | py::array::forcecast> data,
-    ssize_t n_threads) {
+py::array_t<T> pybind_calculate_pedestal(py::array_t<uint16_t> data,
+                                         ssize_t n_threads) {
 
     auto data_span = make_view_3d(data);
     auto arr = new NDArray<T, 3>{};
@@ -62,9 +57,8 @@ py::array_t<T> pybind_calculate_pedestal(
 }
 
 template <typename T>
-py::array_t<T> pybind_calculate_pedestal_g0(
-    py::array_t<uint16_t, py::array::c_style | py::array::forcecast> data,
-    ssize_t n_threads) {
+py::array_t<T> pybind_calculate_pedestal_g0(py::array_t<uint16_t> data,
+                                            ssize_t n_threads) {
 
     auto data_span = make_view_3d(data);
     auto arr = new NDArray<T, 2>{};

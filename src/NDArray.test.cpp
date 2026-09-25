@@ -86,6 +86,40 @@ TEST_CASE("A const NDArray returns a read-only view") {
     REQUIRE(view(1, 2) == 1);
 }
 
+TEST_CASE("NDArray can be constructed from a read-only view") {
+    NDArray<int, 2> source({2, 3}, 0);
+    for (ssize_t i = 0; i < source.size(); ++i)
+        source(i) = static_cast<int>(i);
+    const auto &const_source = source;
+
+    NDArray<int, 2> from_const(const_source.view());
+    NDArray<int, 2> from_mutable(source.view());
+
+    REQUIRE(from_const.shape() == source.shape());
+    REQUIRE(from_mutable.shape() == source.shape());
+    for (ssize_t i = 0; i < source.size(); ++i) {
+        REQUIRE(from_const(i) == source(i));
+        REQUIRE(from_mutable(i) == source(i));
+    }
+
+    // Independent copy, not a view of the source
+    source(0) = 42;
+    REQUIRE(from_const(0) == 0);
+}
+
+TEST_CASE("NDArray::copy_from accepts a read-only view") {
+    NDArray<double, 1> source({4}, 1.5);
+    const auto &const_source = source;
+
+    NDArray<double, 1> target({4}, 0.0);
+    target.copy_from(const_source.view());
+    for (ssize_t i = 0; i < target.size(); ++i)
+        REQUIRE(target(i) == 1.5);
+
+    NDArray<double, 1> wrong_shape({3}, 0.0);
+    REQUIRE_THROWS(wrong_shape.copy_from(const_source.view()));
+}
+
 TEST_CASE("Indexing of a 2D image") {
     std::array<ssize_t, 2> shape{{3, 7}};
     NDArray<long> img(shape, 5);
