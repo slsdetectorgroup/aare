@@ -3,7 +3,7 @@
 #include <cuda_runtime.h>
 #include <memory>
 
-namespace aare {
+namespace aare::cuda {
 
 template <typename T> struct CudaFreeDeleter {
     void operator()(T *p) const noexcept {
@@ -52,4 +52,4 @@ inline Stream make_stream() {
     return Stream{raw_ptr};
 }
 
-} // namespace aare
+} // namespace aare::cuda

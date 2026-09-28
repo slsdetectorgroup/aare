@@ -43,7 +43,10 @@ namespace aare::cuda {
  *
  * Algo (the search algorithm, e.g. FixedWindow):
  *   cluster_type, frame_type, pedestal          pedestal must satisfy the above
- *   LaunchParams                                per-launch algorithm scalars
+ *   compute_type        floating-point type of nSigma; the driver stores it
+ *   LaunchParams        aggregate, brace-initialised by the driver as
+ *                       {int32_t nrows, int32_t ncols, compute_type nSigma,
+ *                        uint32_t max_clusters}
  *   Output                                      owning, move-only device output
  * block Output    Output::allocate(uint32_t max_clusters_per_frame) static
  * constexpr size_t Output::clusters_offset static size_t
@@ -83,6 +86,9 @@ template <class Algo> struct require_algo {
         "clusters_offset' and 'static size_t bytes_per_frame(uint32_t)': the "
         "driver sizes its pinned host slots from them, before any Output "
         "exists.");
+    static_assert(std::is_floating_point<typename Algo::compute_type>::value,
+                  "Algo::compute_type is the nSigma threshold type: an "
+                  "integral type compiles and truncates nSigma (3.5 -> 3).");
 
     static constexpr bool value = true;
 };
@@ -105,7 +111,7 @@ template <class Algo> struct require_algo {
  * and the caller supplies it.
  */
 struct CenteredRunningPedestal {
-    using DevicePedT = device::DEVICE_PED_TYPE;
+    using DevicePedT = detail::DEVICE_PED_TYPE;
 
     struct Buffers {
         DeviceBuffer<DevicePedT> mean;
@@ -282,6 +288,8 @@ struct FixedWindow {
     using cluster_type = ClusterType;
     using frame_type = FrameType;
     using pedestal = Ped;
+    using compute_type = detail::COMPUTE_TYPE; // exposed here but fixed by the
+                                               // kernel (not a knob)
 
     /// The output block one frame writes: a count word followed by the
     /// clusters, in one allocation. Owns the device copy and knows how to read
@@ -336,7 +344,7 @@ struct FixedWindow {
 
     struct LaunchParams {
         int32_t nrows, ncols;
-        float nSigma;
+        compute_type nSigma;
         uint32_t max_clusters;
     };
 
@@ -349,13 +357,13 @@ struct FixedWindow {
         constexpr int row_radius = ClusterType::cluster_size_y / 2;
         constexpr size_t shmem_bytes = (BLOCK_X + 2 * col_radius) *
                                        (BLOCK_Y + 2 * row_radius) *
-                                       sizeof(device::COMPUTE_TYPE);
+                                       sizeof(compute_type);
         const dim3 block(BLOCK_X, BLOCK_Y);
         const dim3 grid(
             (static_cast<unsigned>(lp.ncols) + BLOCK_X - 1) / BLOCK_X,
             (static_cast<unsigned>(lp.nrows) + BLOCK_Y - 1) / BLOCK_Y);
 
-        device::find_clusters_in_single_frame<ClusterType, FrameType, BLOCK_X,
+        detail::find_clusters_in_single_frame<ClusterType, FrameType, BLOCK_X,
                                               BLOCK_Y>
             <<<grid, block, shmem_bytes, stream>>>(
                 d_frame, pv.d_pd_mean, pv.d_pd_sum, pv.d_pd_sum2, pv.d_pd_off,

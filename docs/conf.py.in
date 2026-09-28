@@ -38,8 +38,8 @@ napoleon_use_ivar = True
 
 # CUDA execution-space and pointer qualifiers are not C++, so Sphinx's C++
 # domain cannot parse declarations such as the __global__ kernels in
-# aare::device. Declaring them as attributes lets the parser skip them instead
-# of failing, which matters because the docs are built with -W.
+# aare::cuda::detail. Declaring them as attributes lets the parser skip them
+# instead of failing, which matters because the docs are built with -W.
 cpp_id_attributes = [
     '__global__',
     '__device__',

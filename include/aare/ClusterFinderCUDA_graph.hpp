@@ -12,7 +12,9 @@
 #include <stdexcept>
 #include <vector>
 
-namespace aare {
+namespace aare::cuda {
+
+namespace detail {
 
 // Per-stream device resources and CUDA Graph state.
 template <typename ClusterType, typename FRAME_TYPE, typename PEDESTAL_TYPE>
@@ -21,10 +23,10 @@ struct StreamContextGraph {
     FRAME_TYPE *d_frame = nullptr;
     // Device pedestal precision is set by DEVICE_PED_TYPE in the kernel header.
     // Accumulators hold CENTERED moments of Y = X - d_pd_off (see kernel).
-    device::DEVICE_PED_TYPE *d_pd_mean = nullptr;
-    device::DEVICE_PED_TYPE *d_pd_sum = nullptr;
-    device::DEVICE_PED_TYPE *d_pd_sum2 = nullptr;
-    device::DEVICE_PED_TYPE *d_pd_off = nullptr; // frozen per-pixel baseline X0
+    DEVICE_PED_TYPE *d_pd_mean = nullptr;
+    DEVICE_PED_TYPE *d_pd_sum = nullptr;
+    DEVICE_PED_TYPE *d_pd_sum2 = nullptr;
+    DEVICE_PED_TYPE *d_pd_off = nullptr; // frozen per-pixel baseline X0
     uint8_t *d_output = nullptr; // [uint32_t count | ClusterType clusters[max]]
 
     // CUDA Graph handles — rebuilt on pedestal change or h_output_pinned resize
@@ -36,12 +38,12 @@ struct StreamContextGraph {
     // Kernel argument storage for cudaKernelNodeParams.
     // kargs_ptrs holds addresses into these fields; members must not move.
     FRAME_TYPE *karg_d_frame = nullptr;
-    device::DEVICE_PED_TYPE *karg_d_pd_mean = nullptr;
-    device::DEVICE_PED_TYPE *karg_d_pd_sum = nullptr;
-    device::DEVICE_PED_TYPE *karg_d_pd_sum2 = nullptr;
-    device::DEVICE_PED_TYPE *karg_d_pd_off = nullptr;
+    DEVICE_PED_TYPE *karg_d_pd_mean = nullptr;
+    DEVICE_PED_TYPE *karg_d_pd_sum = nullptr;
+    DEVICE_PED_TYPE *karg_d_pd_sum2 = nullptr;
+    DEVICE_PED_TYPE *karg_d_pd_off = nullptr;
     uint32_t karg_n_pd_samples = 0;
-    device::COMPUTE_TYPE karg_nSigma = 0.0f;
+    COMPUTE_TYPE karg_nSigma = 0.0f;
     int32_t karg_nrows = 0; // must match the kernel signature exactly:
     int32_t karg_ncols = 0; // kernelParams is untyped
     ClusterType *karg_d_clusters = nullptr;
@@ -54,12 +56,14 @@ struct StreamContextGraph {
     cudaMemcpy3DParms d2h_params = {};
 };
 
+} // namespace detail
+
 template <typename ClusterType = Cluster<int32_t, 3, 3>,
           typename FRAME_TYPE = uint16_t, typename PEDESTAL_TYPE = double,
           typename = std::enable_if_t<no_2x2_cluster<ClusterType>::value>>
 class ClusterFinderCUDAGraph {
     using COMPUTE_TYPE =
-        device::COMPUTE_TYPE; // match the kernel's internal precision
+        detail::COMPUTE_TYPE; // match the kernel's internal precision
 
     static constexpr int BLOCK_X = 16;
     static constexpr int BLOCK_Y = 16;
@@ -99,9 +103,10 @@ class ClusterFinderCUDAGraph {
     bool m_pedestal_dirty = true;
     bool m_graphs_dirty = true; // set when pedestal or h_output_pinned changes
     // Frozen per-pixel baseline X0 (~mean at t=0), captured once on first sync.
-    std::vector<device::DEVICE_PED_TYPE> m_offset;
+    std::vector<detail::DEVICE_PED_TYPE> m_offset;
 
-    using SC = StreamContextGraph<ClusterType, FRAME_TYPE, PEDESTAL_TYPE>;
+    using SC =
+        detail::StreamContextGraph<ClusterType, FRAME_TYPE, PEDESTAL_TYPE>;
     std::vector<SC> v_sc;
 
     size_t m_frames_processed = 0;
@@ -190,13 +195,13 @@ class ClusterFinderCUDAGraph {
                 cudaStreamCreateWithFlags(&sc.stream, cudaStreamNonBlocking));
             CUDA_CHECK(cudaMalloc(&sc.d_frame, m_image_bytes));
             CUDA_CHECK(cudaMalloc(
-                &sc.d_pd_mean, m_image_size * sizeof(device::DEVICE_PED_TYPE)));
+                &sc.d_pd_mean, m_image_size * sizeof(detail::DEVICE_PED_TYPE)));
             CUDA_CHECK(cudaMalloc(
-                &sc.d_pd_sum, m_image_size * sizeof(device::DEVICE_PED_TYPE)));
+                &sc.d_pd_sum, m_image_size * sizeof(detail::DEVICE_PED_TYPE)));
             CUDA_CHECK(cudaMalloc(
-                &sc.d_pd_sum2, m_image_size * sizeof(device::DEVICE_PED_TYPE)));
+                &sc.d_pd_sum2, m_image_size * sizeof(detail::DEVICE_PED_TYPE)));
             CUDA_CHECK(cudaMalloc(
-                &sc.d_pd_off, m_image_size * sizeof(device::DEVICE_PED_TYPE)));
+                &sc.d_pd_off, m_image_size * sizeof(detail::DEVICE_PED_TYPE)));
             CUDA_CHECK(cudaMalloc(&sc.d_output, m_output_bytes_per_frame));
         }
     }
@@ -438,7 +443,7 @@ class ClusterFinderCUDAGraph {
         auto h_sum = m_pedestal.get_sum();
         auto h_sum2 = m_pedestal.get_sum2();
 
-        using DPT = device::DEVICE_PED_TYPE;
+        using DPT = detail::DEVICE_PED_TYPE;
         const double n = static_cast<double>(m_pedestal.n_samples());
 
         // Capture the frozen per-pixel baseline X0 (≈ mean at t=0) ONCE, then
@@ -563,7 +568,7 @@ class ClusterFinderCUDAGraph {
             cudaKernelNodeParams kp = {};
             // NOLINTNEXTLINE(cppcoreguidelines-pro-type-reinterpret-cast)
             kp.func = reinterpret_cast<void *>(
-                device::find_clusters_in_single_frame<ClusterType, FRAME_TYPE,
+                detail::find_clusters_in_single_frame<ClusterType, FRAME_TYPE,
                                                       BLOCK_X, BLOCK_Y>);
             kp.gridDim = grid;
             kp.blockDim = block;
@@ -595,4 +600,4 @@ class ClusterFinderCUDAGraph {
     }
 };
 
-} // namespace aare
+} // namespace aare::cuda

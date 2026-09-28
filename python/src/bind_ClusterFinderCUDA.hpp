@@ -29,8 +29,8 @@ void define_ClusterFinderCUDA(py::module &m, const std::string &typestr) {
     using ClusterType = Cluster<T, ClusterSizeX, ClusterSizeY, CoordType>;
     // The driver is templated on the algorithm; a second algorithm is a second
     // instantiation registered under its own suffix (see ClusterFinder.py).
-    using Algo = aare::cuda::FixedWindow<ClusterType, uint16_t>;
-    using CF = ClusterFinderCUDA<Algo, pd_type>;
+    using Algo = cuda::FixedWindow<ClusterType, uint16_t>;
+    using CF = cuda::ClusterFinderCUDA<Algo, pd_type>;
     using ContigArr =
         py::array_t<uint16_t, py::array::c_style | py::array::forcecast>;
 

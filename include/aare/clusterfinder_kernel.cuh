@@ -5,7 +5,7 @@
 #include <cuda_runtime.h>
 #include <type_traits>
 
-namespace aare::device {
+namespace aare::cuda::detail {
 
 /// Stencil arithmetic precision. Set both aliases to double for an f64 build.
 /// float is safe here because the device pedestal stores centered moments
@@ -288,4 +288,4 @@ __global__ void find_clusters_in_single_frame(
     }
 }
 
-} // namespace aare::device
+} // namespace aare::cuda::detail

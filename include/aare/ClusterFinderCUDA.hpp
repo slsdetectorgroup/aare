@@ -14,7 +14,9 @@
 #include <stdexcept>
 #include <vector>
 
-namespace aare {
+namespace aare::cuda {
+
+namespace detail {
 
 /**
  * @brief One stream's device resources, owned.
@@ -61,6 +63,8 @@ template <typename Algo> class StreamContext {
     typename Ped::View pedestal_view() const { return Ped::make_view(m_ped); }
 };
 
+} // namespace detail
+
 /**
  * @brief GPU cluster-finding driver: streams, batching, host staging.
  *
@@ -84,15 +88,16 @@ class ClusterFinderCUDA {
     using FRAME_TYPE = typename Algo::frame_type;
     using Ped = typename Algo::pedestal;
     using Output = typename Algo::Output;
+    using COMPUTE_TYPE =
+        typename Algo::compute_type; // match the kernel's internal precision
+                                     // i.e. detail::COMPUTE_TYPE
 
   private:
     static_assert(no_2x2_cluster<ClusterType>::value,
                   "ClusterFinderCUDA: both cluster dimensions must exceed 2");
-    static_assert(cuda::contract::require_algo<Algo>::value,
+    static_assert(contract::require_algo<Algo>::value,
                   "ClusterFinderCUDA: Algo does not satisfy the contract in "
                   "clusterfinder_algo.cuh");
-    using COMPUTE_TYPE =
-        device::COMPUTE_TYPE; // match the kernel's internal precision
 
     // Two ping-pong output slots. At most 2 batches can be in flight at once:
     // the caller submits batch B before collecting batch A, so A and B occupy
@@ -138,7 +143,7 @@ class ClusterFinderCUDA {
     bool m_pedestal_dirty = true;
 
     // One per stream. unique_ptr so the context can stay non-movable.
-    std::vector<std::unique_ptr<StreamContext<Algo>>> v_sc;
+    std::vector<std::unique_ptr<detail::StreamContext<Algo>>> v_sc;
 
     float m_total_kernel_ms = 0.0f;
     size_t m_frames_processed = 0;
@@ -473,7 +478,7 @@ class ClusterFinderCUDA {
         // algorithm's pedestal arrays and the packed output block.
         v_sc.reserve(n_streams);
         for (int k = 0; k < n_streams; ++k)
-            v_sc.push_back(std::make_unique<StreamContext<Algo>>(
+            v_sc.push_back(std::make_unique<detail::StreamContext<Algo>>(
                 m_image_size, static_cast<uint32_t>(m_max_clusters_per_frame)));
 
         for (int s = 0; s < NUM_SLOTS; ++s) {
@@ -962,4 +967,4 @@ class ClusterFinderCUDA {
     }
 };
 
-} // namespace aare
+} // namespace aare::cuda

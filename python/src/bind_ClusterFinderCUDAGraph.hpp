@@ -26,7 +26,7 @@ void define_ClusterFinderCUDAGraph(py::module &m, const std::string &typestr) {
     auto class_name = fmt::format("ClusterFinderCUDAGraph_{}", typestr);
 
     using ClusterType = Cluster<T, ClusterSizeX, ClusterSizeY, CoordType>;
-    using CF = ClusterFinderCUDAGraph<ClusterType, uint16_t, pd_type>;
+    using CF = cuda::ClusterFinderCUDAGraph<ClusterType, uint16_t, pd_type>;
     using ContigArr =
         py::array_t<uint16_t, py::array::c_style | py::array::forcecast>;
 

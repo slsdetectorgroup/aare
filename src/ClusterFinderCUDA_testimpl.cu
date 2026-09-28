@@ -78,10 +78,16 @@ ManualVsDriver<Cluster<int32_t, N, N>> run(int nrows, int ncols, int n_ped,
 
     // ---- Route 1: caller-owned buffers, nothing from the driver ----------
     {
-        Pedestal<double> ped(nrows, ncols);
-        for (int f = 0; f < n_ped; ++f)
-            ped.push(NDView<uint16_t, 2>(
-                const_cast<uint16_t *>(s.ped.data() + f * npx), shape));
+        FastPedestal<double> ped(nrows, ncols);
+        for (int f = 0; f < n_ped; ++f) {
+            NDView<uint16_t, 2> v(
+                const_cast<uint16_t *>(s.ped.data() + f * npx), shape);
+            // Same sequence as ClusterFinderCUDA::push_pedestal_frame.
+            if (!ped.ready())
+                ped.add_init_frame(v);
+            else
+                ped.push_ema(v);
+        }
 
         using Ped = typename Algo::pedestal;
         const auto img = Ped::prepare_pedestal(ped);
@@ -147,7 +153,7 @@ ManualVsDriver<Cluster<int32_t, N, N>> run(int nrows, int ncols, int n_ped,
     // ---- Route 2: the driver. One stream so the per-frame pedestal update
     // follows the same sequence as route 1. --------------------------------
     {
-        ClusterFinderCUDA<Algo> cf(shape, nSigma, max_clusters, 1);
+        cuda::ClusterFinderCUDA<Algo> cf(shape, nSigma, max_clusters, 1);
         for (int f = 0; f < n_ped; ++f)
             cf.push_pedestal_frame(NDView<uint16_t, 2>(
                 const_cast<uint16_t *>(s.ped.data() + f * npx), shape));
