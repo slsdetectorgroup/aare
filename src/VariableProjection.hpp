@@ -260,20 +260,31 @@ template <typename Model> class VariableProjection {
 
         // Free linear parameters: their block of M, with the fixed ones
         // moved to the right-hand side, v_a = t_a - sum_fixed c_j M_aj.
+        // The lower triangle of M is filled in so that the run-time indices
+        // below need no branch: gcc's range analysis derives an impossible
+        // subscript from the branch not taken and warns about it. The loops
+        // run over the compile-time bound and write zeros past nfree_lin_
+        // for the same reason, gcc otherwise reports v and qf as possibly
+        // uninitialised when they are passed to cholesky_substitute. Both
+        // are false positives; neither change affects the results.
+        for (int a = 1; a < nlin; ++a)
+            for (int b = 0; b < a; ++b)
+                M[a][b] = M[b][a];
         double A[nlin][nlin];
         double v[nlin];
-        for (int a = 0; a < nfree_lin_; ++a) {
+        for (int a = 0; a < nlin; ++a) {
+            if (a >= nfree_lin_) {
+                v[a] = 0.0;
+                continue;
+            }
             const int ja = free_lin_[a];
             double va = t[ja];
             for (int j = 0; j < nlin; ++j)
                 if (lin_fixed_[j])
-                    va -= pvec_[Traits::linear_index(j)] *
-                          (ja <= j ? M[ja][j] : M[j][ja]);
+                    va -= pvec_[Traits::linear_index(j)] * M[ja][j];
             v[a] = va;
-            for (int b = 0; b < nfree_lin_; ++b) {
-                const int jb = free_lin_[b];
-                A[a][b] = ja <= jb ? M[ja][jb] : M[jb][ja];
-            }
+            for (int b = 0; b < nfree_lin_; ++b)
+                A[a][b] = M[ja][free_lin_[b]];
         }
         double L[nlin][nlin];
         if (!cholesky_factor<nlin>(nfree_lin_, A, L))
@@ -338,8 +349,8 @@ template <typename Model> class VariableProjection {
         double qf[ndrv][nlin];
         double z[ndrv][nlin];
         for (int k = 0; k < nnl; ++k) {
-            for (int a = 0; a < nfree_lin_; ++a)
-                qf[k][a] = Q[k][free_lin_[a]];
+            for (int a = 0; a < nlin; ++a)
+                qf[k][a] = a < nfree_lin_ ? Q[k][free_lin_[a]] : 0.0;
             cholesky_substitute<nlin>(nfree_lin_, L, qf[k], z[k]);
         }
         out.F = F;
