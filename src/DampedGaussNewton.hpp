@@ -9,6 +9,10 @@
 
 namespace aare::detail {
 
+/** @brief Fixed-size vector and square matrix of the solvers, on the stack. */
+template <int N> using Vec = std::array<double, N>;
+template <int N> using Mat = std::array<std::array<double, N>, N>;
+
 /** @brief Outcome of one of the built-in minimizers. */
 struct MinimizerResult {
     bool valid = false;
@@ -21,9 +25,13 @@ struct MinimizerResult {
  * @brief Cholesky factorisation of the leading m x m block of the symmetric
  * positive-definite matrix A. Writes the lower triangle of L with
  * A = L L^T. Returns false when the block is not positive definite.
+ *
+ * The helpers below clamp m to N. The callers never exceed it, but with the
+ * bound visible gcc's range analysis no longer reports subscripts of the
+ * one-parameter instantiations as out of range.
  */
-template <int N>
-bool cholesky_factor(int m, const double A[N][N], double L[N][N]) {
+template <int N> bool cholesky_factor(int m, const Mat<N> &A, Mat<N> &L) {
+    m = std::min(m, N);
     for (int i = 0; i < m; ++i) {
         for (int j = 0; j <= i; ++j) {
             double sum = A[i][j];
@@ -43,9 +51,9 @@ bool cholesky_factor(int m, const double A[N][N], double L[N][N]) {
 
 /** @brief Solves L L^T z = b for the leading m x m block of the factor L. */
 template <int N>
-void cholesky_substitute(int m, const double L[N][N], const double *b,
-                         double *z) {
-    double t[N];
+void cholesky_substitute(int m, const Mat<N> &L, const Vec<N> &b, Vec<N> &z) {
+    m = std::min(m, N);
+    Vec<N> t{};
     for (int i = 0; i < m; ++i) {
         double sum = b[i];
         for (int k = 0; k < i; ++k)
@@ -62,8 +70,8 @@ void cholesky_substitute(int m, const double L[N][N], const double *b,
 
 /** @brief Solves A z = b for the leading m x m block of the SPD matrix A. */
 template <int N>
-bool cholesky_solve(int m, const double A[N][N], const double *b, double *z) {
-    double L[N][N];
+bool cholesky_solve(int m, const Mat<N> &A, const Vec<N> &b, Vec<N> &z) {
+    Mat<N> L{};
     if (!cholesky_factor<N>(m, A, L))
         return false;
     cholesky_substitute<N>(m, L, b, z);
@@ -71,10 +79,10 @@ bool cholesky_solve(int m, const double A[N][N], const double *b, double *z) {
 }
 
 /** @brief Inverse of the leading m x m block of the SPD matrix A. */
-template <int N>
-bool invert_spd(int m, const double A[N][N], double inv[N][N]) {
-    double e[N];
-    double col[N];
+template <int N> bool invert_spd(int m, const Mat<N> &A, Mat<N> &inv) {
+    m = std::min(m, N);
+    Vec<N> e{};
+    Vec<N> col{};
     for (int j = 0; j < m; ++j) {
         for (int i = 0; i < m; ++i)
             e[i] = (i == j) ? 1.0 : 0.0;
@@ -94,10 +102,11 @@ bool invert_spd(int m, const double A[N][N], double inv[N][N]) {
  * block cannot be inverted.
  */
 template <int N>
-bool gauss_newton_errors(const double H[N][N], const bool *skip, double *err) {
+bool gauss_newton_errors(const Mat<N> &H, const std::array<bool, N> &skip,
+                         double *err) {
     std::fill(err, err + N, 0.0);
-    double A[N][N];
-    double inv[N][N];
+    Mat<N> A{};
+    Mat<N> inv{};
     int m = 0;
     for (int a = 0; a < N; ++a) {
         if (skip[a])
@@ -126,7 +135,7 @@ bool gauss_newton_errors(const double H[N][N], const bool *skip, double *err) {
  * @brief Damped Gauss-Newton iteration shared by the built-in minimizers.
  *
  * The problem is described by an evaluator called as
- * `eval(const double *p, Normal &out)`: at the point p (all NP parameters,
+ * `eval(const Vec<NP> &p, Normal &out)`: at the point p (all NP parameters,
  * fixed ones at their values) it fills out.F = chi2 / 2, the gradient
  * out.g = dF/dp and the upper triangle of the Gauss-Newton Hessian out.H,
  * both over all NP parameters, and returns false when the point is not
@@ -167,8 +176,8 @@ template <int NP> class DampedGaussNewton {
 
     struct Normal {
         double F = 0.0;               // chi2 / 2
-        double g[NP] = {};            // dF/dp
-        double H[NP][NP] = {};        // Gauss-Newton Hessian, upper triangle
+        Vec<NP> g{};                  // dF/dp
+        Mat<NP> H{};                  // Gauss-Newton Hessian, upper triangle
         std::array<double, 16> aux{}; // evaluator payload, kept with the point
     };
 
@@ -181,8 +190,8 @@ template <int NP> class DampedGaussNewton {
     };
 
     template <typename Eval>
-    MinimizerResult fit(Eval &eval, const double *start, const double *lower,
-                        const double *upper, const bool *fixed,
+    MinimizerResult fit(Eval &eval, const Vec<NP> &start, const Vec<NP> &lower,
+                        const Vec<NP> &upper, const std::array<bool, NP> &fixed,
                         const Options &opt) {
         nfree_ = 0;
         for (int k = 0; k < NP; ++k) {
@@ -312,7 +321,7 @@ template <int NP> class DampedGaussNewton {
     }
 
     /** @brief The final point, all NP parameters. */
-    const double *point() const { return p_; }
+    const Vec<NP> &point() const { return p_; }
 
     /** @brief F, gradient and Hessian at the final point. */
     const Normal &normal() const { return cur_; }
@@ -325,7 +334,7 @@ template <int NP> class DampedGaussNewton {
     /** @brief Gauss-Newton errors at the final point, see
      * gauss_newton_errors(). */
     void errors(double *err_out) const {
-        bool skip[NP];
+        std::array<bool, NP> skip;
         for (int k = 0; k < NP; ++k)
             skip[k] = skipped(k);
         gauss_newton_errors<NP>(cur_.H, skip, err_out);
@@ -333,10 +342,10 @@ template <int NP> class DampedGaussNewton {
 
   private:
     template <typename Eval>
-    bool evaluate(Eval &eval, const std::array<double, NP> &q, Normal &out) {
+    bool evaluate(Eval &eval, const Vec<NP> &q, Normal &out) {
         for (int a = 0; a < nfree_; ++a)
             p_[free_[a]] = q[a];
-        return eval(static_cast<const double *>(p_), out);
+        return eval(p_, out);
     }
 
     // Gradient and Hessian of the free parameters at the current point.
@@ -388,9 +397,9 @@ template <int NP> class DampedGaussNewton {
     // Gauss-Newton Hessian: g^T H^-1 g with g the gradient of chi2/2.
     // Also keeps the undamped Gauss-Newton step for polish_step().
     double edm() {
-        double A[NP][NP];
-        double b[NP];
-        double z[NP];
+        Mat<NP> A{};
+        Vec<NP> b{};
+        Vec<NP> z{};
         const int m = pack(A, b, 0.0);
         for (int a = 0; a < nfree_; ++a)
             gn_step_[a] = 0.0;
@@ -438,7 +447,7 @@ template <int NP> class DampedGaussNewton {
     }
 
     // Copy the non-frozen block of H (+ u * diag) and g into A and b.
-    int pack(double A[NP][NP], double b[NP], double u) const {
+    int pack(Mat<NP> &A, Vec<NP> &b, double u) const {
         double mean_diag = 0.0;
         for (int a = 0; a < nfree_; ++a)
             mean_diag += jtj_[a][a];
@@ -465,9 +474,9 @@ template <int NP> class DampedGaussNewton {
     // bound_ = g^T (H + u D)^-1 g, which is at most the EDM because u D is
     // positive semi-definite.
     bool solve_step(double u) {
-        double A[NP][NP];
-        double b[NP];
-        double z[NP];
+        Mat<NP> A{};
+        Vec<NP> b{};
+        Vec<NP> z{};
         const int m = pack(A, b, u);
         for (int a = 0; a < nfree_; ++a)
             delta_[a] = 0.0;
@@ -492,20 +501,20 @@ template <int NP> class DampedGaussNewton {
     }
 
     int nfree_ = 0;
-    int free_[NP] = {};
-    int free_pos_[NP] = {};
-    bool fixed_[NP] = {};
-    bool active_[NP] = {};
-    double lower_[NP] = {};
-    double upper_[NP] = {};
-    double p_[NP] = {};
-    std::array<double, NP> q_{};
-    std::array<double, NP> q_new_{};
-    std::array<double, NP> q_alt_{};
-    double g_[NP] = {};
-    double delta_[NP] = {};
-    double gn_step_[NP] = {};
-    double jtj_[NP][NP] = {};
+    std::array<int, NP> free_{};
+    std::array<int, NP> free_pos_{};
+    std::array<bool, NP> fixed_{};
+    std::array<bool, NP> active_{};
+    Vec<NP> lower_{};
+    Vec<NP> upper_{};
+    Vec<NP> p_{};
+    Vec<NP> q_{};
+    Vec<NP> q_new_{};
+    Vec<NP> q_alt_{};
+    Vec<NP> g_{};
+    Vec<NP> delta_{};
+    Vec<NP> gn_step_{};
+    Mat<NP> jtj_{};
     // The two solves that bound the EDM differ by rounding only when the
     // damping is negligible; the margin keeps the stop decision exact.
     static constexpr double edm_margin = 1.0 + 1e-6;

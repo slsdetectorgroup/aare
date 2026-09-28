@@ -108,9 +108,9 @@ template <typename Model> class VariableProjection {
             if (!lin_fixed_[j])
                 free_lin_[nfree_lin_++] = j;
         }
-        std::array<double, ndrv> alpha{};
-        std::array<double, ndrv> lower{};
-        std::array<double, ndrv> upper{};
+        Vec<ndrv> alpha{};
+        Vec<ndrv> lower{};
+        Vec<ndrv> upper{};
         std::array<bool, ndrv> fixed{};
         for (int k = 0; k < nnl; ++k) {
             const auto idx =
@@ -136,7 +136,7 @@ template <typename Model> class VariableProjection {
 
         if constexpr (nnl == 0) {
             Normal nrm;
-            if (!evaluate(alpha.data(), nrm))
+            if (!evaluate(alpha, nrm))
                 return fail();
             res.calls = 1;
             res.valid = true;
@@ -145,7 +145,7 @@ template <typename Model> class VariableProjection {
                 pvec_[Traits::linear_index(j)] =
                     nrm.aux[static_cast<std::size_t>(j)];
         } else {
-            auto eval = [this](const double *a, Normal &out) {
+            auto eval = [this](const Vec<ndrv> &a, Normal &out) {
                 return evaluate(a, out);
             };
             typename Driver::Options opt;
@@ -159,8 +159,7 @@ template <typename Model> class VariableProjection {
             opt.damping0 = 0.1;
             opt.reject_degenerate = true;
             opt.polish = true;
-            res = driver_.fit(eval, alpha.data(), lower.data(), upper.data(),
-                              fixed.data(), opt);
+            res = driver_.fit(eval, alpha, lower, upper, fixed, opt);
             if (!res.valid)
                 return fail();
             for (int k = 0; k < nnl; ++k)
@@ -190,7 +189,7 @@ template <typename Model> class VariableProjection {
     // at the nonlinear point alpha, and the linear solution in out.aux.
     // Returns false when the model rejects the point or the basis functions
     // are linearly dependent there.
-    bool evaluate(const double *alpha, Normal &out) {
+    bool evaluate(const Vec<ndrv> &alpha, Normal &out) {
         for (int k = 0; k < nnl; ++k)
             pvec_[Traits::nonlinear_par[k]] = alpha[k];
         if (!Model::is_valid(pvec_))
@@ -228,13 +227,13 @@ template <typename Model> class VariableProjection {
     // linear parameters, then the projected residual. All loops over the
     // linear and nonlinear parameters have compile-time bounds; the free
     // linear block is packed out of the full sums afterwards.
-    template <bool Weighted> bool reduce(const double *alpha, Normal &out) {
+    template <bool Weighted> bool reduce(const Vec<ndrv> &alpha, Normal &out) {
         const ssize_t n = x_.size();
         const auto un = static_cast<std::size_t>(n);
-        const double *pc[nlin];
+        std::array<const double *, nlin> pc;
         for (int j = 0; j < nlin; ++j)
             pc[j] = phi_.data() + static_cast<std::size_t>(j) * un;
-        const double *dc[ncol];
+        std::array<const double *, ncol> dc;
         for (int c = 0; c < nnl * nlin; ++c)
             dc[c] = dphi_.data() + static_cast<std::size_t>(c) * un;
         const double *yd = y_.data();
@@ -242,12 +241,12 @@ template <typename Model> class VariableProjection {
 
         // Pass 1: normal equations M = Phi^T W Phi, t = Phi^T W y of all
         // linear parameters.
-        double M[nlin][nlin] = {};
-        double t[nlin] = {};
+        Mat<nlin> M{};
+        Vec<nlin> t{};
         for (ssize_t i = 0; i < n; ++i) {
             const double wi = Weighted ? w2[i] : 1.0;
             const double yi = yd[i];
-            double f[nlin];
+            Vec<nlin> f;
             for (int j = 0; j < nlin; ++j)
                 f[j] = pc[j][i];
             for (int a = 0; a < nlin; ++a) {
@@ -270,8 +269,8 @@ template <typename Model> class VariableProjection {
         for (int a = 1; a < nlin; ++a)
             for (int b = 0; b < a; ++b)
                 M[a][b] = M[b][a];
-        double A[nlin][nlin];
-        double v[nlin];
+        Mat<nlin> A{};
+        Vec<nlin> v{};
         for (int a = 0; a < nlin; ++a) {
             if (a >= nfree_lin_) {
                 v[a] = 0.0;
@@ -286,14 +285,14 @@ template <typename Model> class VariableProjection {
             for (int b = 0; b < nfree_lin_; ++b)
                 A[a][b] = M[ja][free_lin_[b]];
         }
-        double L[nlin][nlin];
+        Mat<nlin> L{};
         if (!cholesky_factor<nlin>(nfree_lin_, A, L))
             return false;
-        double beta_free[nlin];
+        Vec<nlin> beta_free{};
         cholesky_substitute<nlin>(nfree_lin_, L, v, beta_free);
         for (int a = 0; a < nfree_lin_; ++a)
             pvec_[Traits::linear_index(free_lin_[a])] = beta_free[a];
-        double beta[nlin];
+        Vec<nlin> beta;
         for (int j = 0; j < nlin; ++j) {
             beta[j] = pvec_[Traits::linear_index(j)];
             out.aux[static_cast<std::size_t>(j)] = beta[j];
@@ -302,18 +301,18 @@ template <typename Model> class VariableProjection {
         // Pass 2: residual r = y - Phi beta and u_k = df/dalpha_k at fixed
         // beta; F, b = U^T W r, N = U^T W U and Q = Phi^T W U.
         double F = 0.0;
-        double b[ndrv] = {};
-        double N[ndrv][ndrv] = {};
-        double Q[ndrv][nlin] = {};
+        Vec<ndrv> b{};
+        Mat<ndrv> N{};
+        std::array<Vec<nlin>, ndrv> Q{};
         for (ssize_t i = 0; i < n; ++i) {
             const double wi = Weighted ? w2[i] : 1.0;
-            double f[nlin];
+            Vec<nlin> f;
             for (int j = 0; j < nlin; ++j)
                 f[j] = pc[j][i];
             double r = yd[i];
             for (int j = 0; j < nlin; ++j)
                 r -= beta[j] * f[j];
-            double u[ndrv] = {};
+            Vec<ndrv> u{};
             for (int k = 0; k < nnl; ++k)
                 for (int j = 0; j < nlin; ++j)
                     u[k] += beta[j] * dc[k * nlin + j][i];
@@ -346,8 +345,8 @@ template <typename Model> class VariableProjection {
 
         // Kaufman's Jacobian: U projected out of the span of the free basis,
         // H = N - Q_free^T A^-1 Q_free.
-        double qf[ndrv][nlin];
-        double z[ndrv][nlin];
+        std::array<Vec<nlin>, ndrv> qf{};
+        std::array<Vec<nlin>, ndrv> z{};
         for (int k = 0; k < nnl; ++k) {
             for (int a = 0; a < nlin; ++a)
                 qf[k][a] = a < nfree_lin_ ? Q[k][free_lin_[a]] : 0.0;
@@ -372,7 +371,7 @@ template <typename Model> class VariableProjection {
     // evaluation when that was the final point, which it is unless the last
     // trial was rejected; otherwise one pass over the data computes it.
     void errors(const FitModel<Model> &model, double *err_out) {
-        double H[npar][npar] = {};
+        Mat<npar> H{};
         bool at_solution = have_last_;
         for (int k = 0; k < nnl; ++k)
             at_solution = at_solution &&
@@ -404,7 +403,7 @@ template <typename Model> class VariableProjection {
                         H[a][c] += g[a] * g[c] * wi;
             }
         }
-        bool skip[npar];
+        std::array<bool, npar> skip;
         for (int k = 0; k < npar; ++k)
             skip[k] = model.is_user_fixed(static_cast<unsigned int>(k));
         if constexpr (nnl > 0) {
@@ -420,13 +419,13 @@ template <typename Model> class VariableProjection {
     bool weighted_ = false;
     // Sums of the last evaluation, see errors().
     bool have_last_ = false;
-    double last_alpha_[ndrv] = {};
-    double last_M_[nlin][nlin] = {};
-    double last_Q_[ndrv][nlin] = {};
-    double last_N_[ndrv][ndrv] = {};
+    Vec<ndrv> last_alpha_{};
+    Mat<nlin> last_M_{};
+    std::array<Vec<nlin>, ndrv> last_Q_{};
+    Mat<ndrv> last_N_{};
     int nfree_lin_ = 0;
-    int free_lin_[nlin] = {};
-    bool lin_fixed_[nlin] = {};
+    std::array<int, nlin> free_lin_{};
+    std::array<bool, nlin> lin_fixed_{};
     std::vector<double> phi_;  // nlin columns of n basis values
     std::vector<double> dphi_; // nnl * nlin columns of their derivatives
     std::vector<double> w2_;   // 1 / s_i^2 for weighted fits

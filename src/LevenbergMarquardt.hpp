@@ -63,8 +63,8 @@ template <typename Model> class LevenbergMarquardt {
         s_ = s;
         weighted_ = s.size() > 0;
         const auto n = static_cast<std::size_t>(x.size());
-        std::array<double, Model::npar> lower{};
-        std::array<double, Model::npar> upper{};
+        Vec<npar> lower{};
+        Vec<npar> upper{};
         std::array<bool, Model::npar> fixed{};
         for (int k = 0; k < npar; ++k) {
             const auto idx = static_cast<unsigned int>(k);
@@ -86,7 +86,7 @@ template <typename Model> class LevenbergMarquardt {
                                   ? static_cast<int>(model.max_calls())
                                   : 200 + 100 * npar + 5 * npar * npar;
 
-        auto eval = [this](const double *p, Normal &out) {
+        auto eval = [this](const Vec<npar> &p, Normal &out) {
             return evaluate(p, out);
         };
         typename Driver::Options opt;
@@ -95,15 +95,14 @@ template <typename Model> class LevenbergMarquardt {
         // Start cautiously: the estimated start values of the linear
         // parameters can be far off, and the first steps are then wild.
         opt.damping0 = 0.1;
-        const Result res = driver_.fit(eval, start.data(), lower.data(),
-                                       upper.data(), fixed.data(), opt);
+        const Result res = driver_.fit(eval, start, lower, upper, fixed, opt);
         if (!res.valid) {
             std::fill(par_out, par_out + npar, 0.0);
             if (err_out)
                 std::fill(err_out, err_out + npar, 0.0);
             return res;
         }
-        std::copy(driver_.point(), driver_.point() + npar, par_out);
+        std::copy(driver_.point().begin(), driver_.point().end(), par_out);
         if (err_out)
             driver_.errors(err_out);
         return res;
@@ -119,8 +118,8 @@ template <typename Model> class LevenbergMarquardt {
     // The sums run over all parameters with fixed-size loops, so the
     // compiler can unroll them and keep the accumulators in registers.
     // Returns false when the model rejects the parameters.
-    bool evaluate(const double *p, Normal &out) {
-        pvec_.assign(p, p + npar);
+    bool evaluate(const Vec<npar> &p, Normal &out) {
+        pvec_.assign(p.begin(), p.end());
         if (!Model::is_valid(pvec_))
             return false;
         const ssize_t n = x_.size();
@@ -136,8 +135,8 @@ template <typename Model> class LevenbergMarquardt {
             for (int k = 0; k < npar; ++k)
                 Ji[k] = -g[k] * w;
         }
-        double G[npar] = {};
-        double H[npar][npar] = {};
+        Vec<npar> G{};
+        Mat<npar> H{};
         for (ssize_t i = 0; i < n; ++i) {
             const double *Ji = &J_[static_cast<std::size_t>(i) * npar];
             const double ri = r_[i];
