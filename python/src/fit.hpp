@@ -60,7 +60,8 @@ template <typename Model> void bind_fit_model(py::module &m, const char *name) {
         .def_property("compute_errors", &FM::compute_errors,
                       &FM::SetComputeErrors)
         .def(
-            "__call__",
+            "__call__", // conversion ok, we want to be able to call with any
+                        // dtype
             [](const FM & /*self*/,
                py::array_t<double, py::array::c_style | py::array::forcecast> x,
                py::array_t<double, py::array::c_style | py::array::forcecast>
@@ -78,7 +79,7 @@ template <typename Model> void bind_fit_model(py::module &m, const char *name) {
             },
             py::arg("x"), py::arg("par"))
         .def(
-            "fit",
+            "fit", // conversion ok
             [](const FM &self,
                py::array_t<double, py::array::c_style | py::array::forcecast> x,
                py::array_t<double, py::array::c_style | py::array::forcecast> y,
@@ -163,11 +164,6 @@ fit_dispatch(const aare::FitModel<Model> &model,
                 py::array_t<double, py::array::c_style | py::array::forcecast>>(
                 y_err_obj);
 
-            if (y_err.ndim() != 3) {
-                throw std::runtime_error(
-                    "For 3D input y, y_err must also be 3D.");
-            }
-
             auto err_out =
                 new NDArray<double, 3>({y.shape(0), y.shape(1), npar}, 0.0);
             auto y_view_err = make_view_3d(y_err);
@@ -208,11 +204,6 @@ fit_dispatch(const aare::FitModel<Model> &model,
                 py::array_t<double, py::array::c_style | py::array::forcecast>>(
                 y_err_obj);
 
-            if (y_err.ndim() != 1) {
-                throw std::runtime_error(
-                    "For 1D input y, y_err must also be 1D.");
-            }
-
             auto y_view_err = make_view_1d(y_err);
             result = aare::fit_pixel<Model>(model, x_view, y_view, y_view_err);
         } else {
@@ -241,7 +232,8 @@ void define_fit_bindings(py::module &m) {
 
     m.def(
         "fit",
-        [](py::object model_obj,
+        [](py::object model_obj, // conversion ok, we want to be able to call
+                                 // with any dtype
            py::array_t<double, py::array::c_style | py::array::forcecast> x,
            py::array_t<double, py::array::c_style | py::array::forcecast> y,
            py::object y_err_obj, int n_threads) -> py::object {

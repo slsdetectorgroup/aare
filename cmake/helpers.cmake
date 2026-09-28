@@ -1,3 +1,4 @@
+# SPDX-License-Identifier: MPL-2.0
 function(default_build_type val)
   if(NOT CMAKE_BUILD_TYPE AND NOT CMAKE_CONFIGURATION_TYPES)
     message(STATUS "No build type selected, default to Release")

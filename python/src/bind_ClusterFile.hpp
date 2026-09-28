@@ -138,9 +138,10 @@ void define_ClusterFile(py::module &m, const std::string &typestr) {
              "Estimate the number of clusters from the file size. Frame "
              "headers can make this larger than the actual count.")
         .def(
-            "set_noise_map",
+            "set_noise_map", // conversions ok
             [](ClusterFile<ClusterType> &self,
-               py::array_t<int32_t, py::array::c_style> noise_map) {
+               py::array_t<int32_t, py::array::c_style | py::array::forcecast>
+                   noise_map) {
                 auto view = make_view_2d(noise_map);
                 self.set_noise_map(view);
             },
@@ -149,9 +150,10 @@ void define_ClusterFile(py::module &m, const std::string &typestr) {
             "[y, x]. The map must cover every cluster center coordinate.")
 
         .def(
-            "set_gain_map",
+            "set_gain_map", // conversions ok
             [](ClusterFile<ClusterType> &self,
-               py::array_t<double, py::array::c_style> gain_map) {
+               py::array_t<double, py::array::c_style | py::array::forcecast>
+                   gain_map) {
                 auto view = make_view_2d(gain_map);
                 self.set_gain_map(view);
             },

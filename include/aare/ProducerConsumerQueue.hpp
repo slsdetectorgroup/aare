@@ -18,10 +18,12 @@
 // @author Bo Hu (bhu@fb.com)
 // @author Jordan DeLong (delong.j@fb.com)
 
-// Changes made by the PSD Detector Group (PSI) relative to
-// folly/ProducerConsumerQueue.h:
-// - Copied constexpr hardware_destructive_interference_size = 128 from
-//   folly/lang/Align.h into this file.
+// Changes made by the CPS Detector Group at PSI relative to
+// folly/ProducerConsumerQueue.h in folly v2024.03.18.00 (commit 8aceb9bf727c;
+// the file is identical in v2022.01.03.00 through v2024.03.18.00):
+// - Replaced the include of folly/concurrency/CacheLocality.h with a local
+//   constexpr hardware_destructive_interference_size = 128, the value that
+//   folly/lang/Align.h uses except on ARM and s390x.
 // - Changed the file extension to .hpp and the namespace to aare.
 // - Added a default constructor equivalent to ProducerConsumerQueue(2).
 // - Declared the move constructor and move assignment deleted. The queue is

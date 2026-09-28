@@ -29,9 +29,22 @@
 - Added string representator in python for Cluster and Eta 
 - Added roi slice method in python for easy slicing of numpy arrays ``array[roi.slice()]``. 
 - added context manager for ``aare.RawMasterFile``
+- ``NDArray``/``NDView`` expressions now support scalar operands
+  (``2 * a + b / 4``) and can be assigned to an existing ``NDArray``, reusing
+  its buffer.
 
 ### API Changes:
 
+- The C++ ``NDArray`` view constructor and ``NDArray::copy_from()`` take
+  ``NDView<const T, Ndim>``. Mutable views still convert implicitly, so
+  existing callers are unaffected, and read-only views can now be copied.
+- Added C++ overloads of ``adc_sar_05_06_07_08decode64to16``,
+  ``adc_sar_05_decode64to16`` and ``adc_sar_04_decode64to16`` that take the
+  packed samples as ``NDView<const uint8_t, 2>``. Words are assembled with
+  ``memcpy``, so the buffer does not need to be 8-byte aligned. The existing
+  ``NDView<uint64_t, 2>`` overloads are unchanged.
+- ``NDArray`` ``+ - * /`` with a scalar now returns a lazy expression instead
+  of an ``NDArray`` and no longer converts the scalar to the element type.
 - ``FastPedestal`` variance is now a private ``double`` intermediate. Removed
   the C++ ``variance()``/``variance_unchecked()`` APIs and Python ``var()``.
   Standard deviation is calculated before conversion to the output type,
@@ -75,8 +88,24 @@
 - ``RawMasterFile::rois()`` always returns a list of rois (no optional). Per default it returns a list of one ROI element spawing the entire detector 
 - ``TimingMode::Auto`` changed to ``TimingMode::AUTO_TIMING``, ``TimingMode::Trigger`` changed to ``TimingMode::TRIGGER_EXPOSURE``
 
+
 ### Bugfixes:
+- The Python ``Cluster`` constructors validate that the data array holds
+  exactly one value per pixel and raise ``ValueError`` otherwise. Previously a
+  longer array wrote past the end of the cluster data.
+- The Python CTB decoding helpers ``adc_sar_*decode64to16``,
+  ``apply_custom_weights``, ``expand24to32bit``, ``expand4to8bit`` and
+  ``decode_my302`` validate their input through ``make_view``. They require
+  C-contiguous arrays of the documented rank and reject other dtypes with
+  ``TypeError`` instead of converting a copy. The ADC SAR decoders no longer
+  reinterpret the byte buffer as aligned 64-bit words; a row length that is
+  not a multiple of 8 bytes raises ``ValueError`` instead of dropping the
+  trailing bytes. Read-only arrays are accepted where the input is only read.
+  ``decode_my302`` raises ``ValueError`` instead of ``RuntimeError`` for a
+  wrong input size.
 - Mismatched operators inhibited vectorization in gcc of NDArray math operators
+- ``NDArray``/``NDView`` math operators and expressions were not vectorized
+  for ``uint8_t`` and 64 bit integers, up to 30x slower than a plain loop.
 - Removed the move constructor and move assignment of
   ``ProducerConsumerQueue``. They left the moved-from queue with a null
   buffer, crashing its destructor if it still held elements, and leaked
@@ -87,10 +116,20 @@
   ``std::invalid_argument`` in all build types. The previous assertion was
   compiled out of Release builds, so a zero-size queue overflowed its buffer
   on the first write.
-- Corrected the license metadata for the vendored ``ProducerConsumerQueue``.
-  The header is tagged ``Apache-2.0`` like upstream folly, the MPL 2.0 and
-  Apache 2.0 texts ship in ``LICENSES/``, and the conda package declares
-  ``MPL-2.0 AND Apache-2.0`` with both license files.
+- Corrected the license metadata for vendored third-party code.
+  ``ProducerConsumerQueue.hpp`` is tagged ``Apache-2.0`` like upstream folly
+  and ``NumpyHelpers.cpp`` is tagged ``MIT`` like upstream libnpy. The MPL 2.0,
+  Apache 2.0, and MIT texts ship in ``LICENSES/``, and both the conda package
+  and the Python wheel declare ``MPL-2.0 AND Apache-2.0 AND MIT`` with all
+  three license files. Building the wheel now requires scikit-build-core 0.11
+  or newer.
+- The wheel and conda package now ship ``THIRD-PARTY-NOTICES.txt`` and the
+  LGPL 2.1 text for the libraries compiled into the extension: Minuit2
+  (LGPL-2.1-or-later), {fmt} and nlohmann/json (MIT), and pybind11
+  (BSD-3-Clause). Their license expressions include these licenses.
+  Minuit2 is now fetched at tag ``v6-40-02`` instead of ``master``, and
+  libzmq at ``v4.3.5`` (MPL-2.0) instead of ``v4.3.4`` (LGPL-3.0 with a
+  static-linking exception).
 - ``RawFile`` and ``File`` reject raw files with frame padding disabled unless
   the frame discard policy is ``discardpartial``. The constructor reports the
   master path before opening data subfiles. Legacy ``.raw`` master files now
@@ -109,6 +148,10 @@
   without implicit conversion. Both ``push()`` and ``push_with_threshold()``
   validate that frames and thresholds are two-dimensional before constructing
   views, preventing incorrect results from unsupported array layouts or ranks.
+- Python ``ClusterFinder.push_pedestal_frame()`` and ``find_clusters()`` now
+  require C-contiguous ``uint16`` frames without implicit conversion, raising
+  ``TypeError`` instead of silently copying and casting the input. The frame
+  argument can also be passed by keyword as ``frame``.
 
 - Fixed a leaked empty ``ClusterVector`` at the end of Python ``ClusterFile``
   iteration. Chunk iteration now rejects a zero chunk size.

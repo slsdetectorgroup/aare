@@ -106,8 +106,7 @@ void define_fast_pedestal_bindings(py::module &m, const std::string &name) {
             "Return an independent copy of the pedestal and its state.")
         .def(
             "push_ema",
-            [](FastPedestal<SUM_TYPE> &pedestal,
-               py::array_t<uint16_t, py::array::c_style> &frame) {
+            [](FastPedestal<SUM_TYPE> &pedestal, py::array_t<uint16_t> frame) {
                 pedestal.push_ema(make_view_2d(frame));
             },
             py::arg("frame").noconvert(),
@@ -115,8 +114,7 @@ void define_fast_pedestal_bindings(py::module &m, const std::string &name) {
             "already be ready for this update.")
         .def(
             "add_init_frame",
-            [](FastPedestal<SUM_TYPE> &pedestal,
-               py::array_t<uint16_t, py::array::c_style> &frame) {
+            [](FastPedestal<SUM_TYPE> &pedestal, py::array_t<uint16_t> frame) {
                 pedestal.add_init_frame(make_view_2d(frame));
             },
             py::arg("frame").noconvert(),

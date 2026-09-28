@@ -1,3 +1,4 @@
+# SPDX-License-Identifier: MPL-2.0
 
 #test script to test interpolation on simulated data 
 

@@ -188,6 +188,14 @@ headers never leak into the public API. Minuit2 is a private,
   namespace/module.
 - Start new source files with `SPDX-License-Identifier: MPL-2.0`, using the
   appropriate comment syntax.
+- Code copied from other projects keeps its original license. Retain its
+  copyright and license notice, set the SPDX identifier to that license, and
+  list the license in `LICENSES/`, `pyproject.toml`, `conda-recipe/meta.yaml`,
+  and `README.md`. `etc/add_license.py` skips files with a license notice.
+- When adding or bumping a fetched dependency that is compiled into the
+  Python extension, update its version and notice in
+  `THIRD-PARTY-NOTICES.txt` and the license expressions in `pyproject.toml`
+  and `conda-recipe/meta.yaml`.
 - Prefer descriptive names to comments that only restate the code.
 - Do not add a dependency unless the benefit justifies the packaging and
   deployment cost.

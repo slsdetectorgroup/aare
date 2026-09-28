@@ -146,7 +146,7 @@ def test_masking_requires_c_contiguous_array():
     mask = np.array([True, False, True, False], dtype=bool)[::2]
     assert not mask.flags.c_contiguous
 
-    with pytest.raises(TypeError):
+    with pytest.raises(ValueError, match="C-contiguous"):
         cv(mask)
 
 

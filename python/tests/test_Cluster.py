@@ -162,3 +162,21 @@ def test_3x3_reduction():
 
 
 
+
+
+@pytest.mark.parametrize(
+    "cluster_type, n_pixels",
+    [(_aare.Cluster3x3i, 9), (_aare.Cluster2x2i, 4)],
+)
+def test_cluster_constructor_requires_exact_data_length(cluster_type, n_pixels):
+    """Data must hold exactly one value per pixel"""
+    for bad in (
+        np.ones(n_pixels - 1, dtype=np.int32),
+        np.ones(n_pixels + 1, dtype=np.int32),
+        np.ones((n_pixels, 1), dtype=np.int32),
+    ):
+        with pytest.raises(ValueError, match=f"{n_pixels} values"):
+            cluster_type(0, 0, bad)
+
+    cluster = cluster_type(0, 0, np.arange(n_pixels, dtype=np.int32))
+    assert (cluster.data.ravel() == np.arange(n_pixels)).all()
