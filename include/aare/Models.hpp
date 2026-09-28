@@ -2,6 +2,7 @@
 #pragma once
 
 #include "aare/NDView.hpp"
+#include "aare/defs.hpp"
 #include <algorithm>
 #include <array>
 #include <cmath>
@@ -24,7 +25,7 @@ inline constexpr double inv_sqrt_2pi = 0.39894228040143267794;
  * Models whose derivatives need exp(-z^2) anyway pass it in, so that a
  * single exponential serves both the value and the gradient.
  */
-inline double fast_erf_from_exp(double z, double exp_minus_z2) {
+ALWAYS_INLINE double fast_erf_from_exp(double z, double exp_minus_z2) {
     const double a1 = 0.254829592;
     const double a2 = -0.284496736;
     const double a3 = 1.421413741;
@@ -41,7 +42,7 @@ inline double fast_erf_from_exp(double z, double exp_minus_z2) {
 }
 
 /** @brief erf approximation, faster than std::erf; see fast_erf_from_exp. */
-inline double fast_erf(double x) {
+ALWAYS_INLINE double fast_erf(double x) {
     return fast_erf_from_exp(x, std::exp(-x * x));
 }
 
@@ -54,9 +55,11 @@ inline double fast_erf(double x) {
  * calling it compiles to vector instructions on SSE2, AVX and NEON. The
  * relative error is below 4e-16 for finite x; |x| is clamped to 700. The
  * bulk basis functions of the models (basis_columns) use it; eval and
- * eval_and_grad keep std::exp.
+ * eval_and_grad keep std::exp. It is ALWAYS_INLINE because gcc otherwise
+ * leaves it out of line in the large fitting translation unit, and a call
+ * per point defeats the vectorisation of the caller.
  */
-inline double fast_exp(double x) {
+ALWAYS_INLINE double fast_exp(double x) {
     constexpr double log2e = 1.4426950408889634074;
     constexpr double magic = 6755399441055744.0; // 1.5 * 2^52
     constexpr double ln2_hi = 0.693145751953125;
@@ -126,16 +129,20 @@ inline constexpr double no_bound = std::numeric_limits<double>::infinity();
  * A model may additionally provide the same quantities for all scan points
  * at once, see has_basis_columns:
  *
- *   static void basis_columns(const double *x, ssize_t n,
+ *   static void basis_columns(const double *__restrict x, ssize_t n,
  *                             const std::vector<double> &par,
- *                             double *phi, double *dphi)
+ *                             double *__restrict phi,
+ *                             double *__restrict dphi)
  *
  * writes phi[j * n + i] = phi_j(x_i) and dphi[(k * nlin + j) * n + i] =
  * d phi_j / d par[nonlinear[k]] (x_i), one contiguous column per function.
  * Written as a loop free of reductions with the parameters hoisted and
  * fast_exp instead of std::exp, it compiles to vector instructions, which
- * is where VarPro spends most of its time. The tests check it
- * against basis_and_grad.
+ * is where VarPro spends most of its time. The __restrict qualifiers are
+ * needed: without them gcc has to prove that the output columns do not
+ * overlap, exceeds its budget of run-time alias checks once a loop writes
+ * more than three columns, and quietly emits scalar code. The tests check
+ * it against basis_and_grad.
  */
 template <typename Model, typename = void>
 struct is_separable : std::false_type {};
@@ -430,9 +437,9 @@ struct Gaussian {
     }
 
     /** @brief basis_and_grad for all points, one column per function. */
-    static void basis_columns(const double *x, ssize_t n,
-                              const std::vector<double> &par, double *phi,
-                              double *dphi) {
+    static void basis_columns(const double *__restrict x, ssize_t n,
+                              const std::vector<double> &par,
+                              double *__restrict phi, double *__restrict dphi) {
         const double mu = par[1];
         const double inv_sig = 1.0 / par[2];
         const double inv_sig2 = inv_sig * inv_sig;
@@ -601,9 +608,9 @@ struct GaussianErfcPlateau {
     }
 
     /** @brief basis_and_grad for all points, one column per function. */
-    static void basis_columns(const double *x, ssize_t n,
-                              const std::vector<double> &par, double *phi,
-                              double *dphi) {
+    static void basis_columns(const double *__restrict x, ssize_t n,
+                              const std::vector<double> &par,
+                              double *__restrict phi, double *__restrict dphi) {
         const double mu = par[2];
         const double inv_sig = 1.0 / par[3];
         const double inv_sig2 = inv_sig * inv_sig;
@@ -832,9 +839,9 @@ struct GaussianChargeSharing {
     }
 
     /** @brief basis_and_grad for all points, one column per function. */
-    static void basis_columns(const double *x, ssize_t n,
-                              const std::vector<double> &par, double *phi,
-                              double *dphi) {
+    static void basis_columns(const double *__restrict x, ssize_t n,
+                              const std::vector<double> &par,
+                              double *__restrict phi, double *__restrict dphi) {
         const double mu = par[2];
         const double inv_sig = 1.0 / par[3];
         const double C = par[5];
@@ -1135,9 +1142,9 @@ struct GaussianChargeSharingKb {
     }
 
     /** @brief basis_and_grad for all points, one column per function. */
-    static void basis_columns(const double *x, ssize_t n,
-                              const std::vector<double> &par, double *phi,
-                              double *dphi) {
+    static void basis_columns(const double *__restrict x, ssize_t n,
+                              const std::vector<double> &par,
+                              double *__restrict phi, double *__restrict dphi) {
         const double mu = par[2];
         const double inv_sig = 1.0 / par[3];
         const double C = par[5];
@@ -1335,9 +1342,9 @@ struct RisingScurve {
     }
 
     /** @brief basis_and_grad for all points, one column per function. */
-    static void basis_columns(const double *x, ssize_t n,
-                              const std::vector<double> &par, double *phi,
-                              double *dphi) {
+    static void basis_columns(const double *__restrict x, ssize_t n,
+                              const std::vector<double> &par,
+                              double *__restrict phi, double *__restrict dphi) {
         const double p2 = par[2];
         const double inv_p3 = 1.0 / par[3];
         const double cz = inv_sqrt2 * inv_p3;
@@ -1550,9 +1557,9 @@ struct FallingScurve {
     }
 
     /** @brief basis_and_grad for all points, one column per function. */
-    static void basis_columns(const double *x, ssize_t n,
-                              const std::vector<double> &par, double *phi,
-                              double *dphi) {
+    static void basis_columns(const double *__restrict x, ssize_t n,
+                              const std::vector<double> &par,
+                              double *__restrict phi, double *__restrict dphi) {
         const double p2 = par[2];
         const double inv_p3 = 1.0 / par[3];
         const double cz = inv_sqrt2 * inv_p3;
