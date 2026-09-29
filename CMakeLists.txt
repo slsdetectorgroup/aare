@@ -400,8 +400,8 @@ set(SourceFiles
     ${CMAKE_CURRENT_SOURCE_DIR}/src/Dtype.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/src/File.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/src/FilePtr.cpp
-    ${CMAKE_CURRENT_SOURCE_DIR}/src/Fit.cpp
-    ${CMAKE_CURRENT_SOURCE_DIR}/src/FitMinuit2.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/fit/Fit.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/fit/FitMinuit2.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/src/Frame.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/src/Interpolator.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/src/JungfrauDataFile.cpp
@@ -462,7 +462,7 @@ if(AARE_TESTS)
       ${CMAKE_CURRENT_SOURCE_DIR}/src/decode.test.cpp
       ${CMAKE_CURRENT_SOURCE_DIR}/src/Dtype.test.cpp
       ${CMAKE_CURRENT_SOURCE_DIR}/src/FilePtr.test.cpp
-      ${CMAKE_CURRENT_SOURCE_DIR}/src/Fit.test.cpp
+      ${CMAKE_CURRENT_SOURCE_DIR}/src/fit/Fit.test.cpp
       ${CMAKE_CURRENT_SOURCE_DIR}/src/Frame.test.cpp
       ${CMAKE_CURRENT_SOURCE_DIR}/src/DetectorGeometry.test.cpp
       ${CMAKE_CURRENT_SOURCE_DIR}/src/Interpolation.test.cpp
