@@ -6,6 +6,11 @@ was truncated onto the limit) against the gradient of the *accepted* point.
 The interior parameter mu is then frozen, the EDM over the remaining free
 parameters is 0, and the fit "converges" at the start value mu = 3.
 
+The lower limit is 0: with x covering only [-0.1, 0.1] the problem also has
+a mirror minimum near mu = -1.18 (chi2 6.07), which a fit that is not stuck
+can legitimately reach when the limit allows it (the review's original
+limit of -3 does).
+
 Code: src/DampedGaussNewton.hpp:364 (mark_active).
 """
 import sys; sys.path.append('../build')
@@ -26,7 +31,7 @@ for m in [M.Migrad, M.Fumili, M.LevenbergMarquardt, M.VarPro]:
     model.FixParameter("A", 10.0)
     model.FixParameter("sigma", 1.0)
     model.SetParameter("mu", 3.0)
-    model.SetParLimits("mu", -3.0, 5.0)
+    model.SetParLimits("mu", 0.0, 5.0)
     r = model.fit(x, y)
     print(f"{m.name:20s} mu = {r['par'][1]:.5f}  chi2 = {r['chi2'][0]:.6g}")
     if abs(r["par"][1] - mu_true) > 1e-3:

@@ -30,7 +30,8 @@ y[4], s[4] = np.nan, 0.0
 for m in ALL:
     r = aare.Pol1(minimizer=m).fit(x, y, s)
     print(f"  {m.name:20s} par = {r['par']}  chi2 = {r['chi2'][0]}")
-    if not np.all(np.isfinite(r["par"])) or not np.isfinite(r["chi2"][0]):
+    # the masked sample must be ignored, not turn the fit into NaN or a failure
+    if not np.allclose(r["par"], [2.0, 0.5], atol=1e-5) or not np.isfinite(r["chi2"][0]):
         problems.append(f"{m.name} (masked)")
 
 print("\ncase 2: Gaussian, y[10] = NaN, no errors (expected: failure = zeros)")

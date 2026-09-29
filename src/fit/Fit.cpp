@@ -7,7 +7,9 @@
 #include "aare/Models.hpp"
 #include "aare/utils/par.hpp"
 #include "aare/utils/task.hpp"
+#include <algorithm>
 #include <array>
+#include <cmath>
 #include <cstddef>
 #include <stdexcept>
 #include <string>
@@ -150,7 +152,7 @@ template <typename Model> class PixelFitter {
             if constexpr (model::is_separable<Model>::value) {
                 const auto res =
                     vp_.fit(model, x, y, y_err, start, par_out, err_out);
-                if (res.valid) {
+                if (res.valid && finite(par_out, err_out, res.chi2)) {
                     chi2 = res.chi2;
                     return true;
                 }
@@ -164,13 +166,29 @@ template <typename Model> class PixelFitter {
     }
 
   private:
+    // The built-in solvers do not guard every operation against NaN or
+    // infinity, so a result is checked before it is reported as a valid fit.
+    static bool finite(const double *par, const double *err, double chi2) {
+        bool ok = std::isfinite(chi2);
+        for (std::size_t k = 0; k < Model::npar; ++k)
+            ok = ok && std::isfinite(par[k]) && (!err || std::isfinite(err[k]));
+        return ok;
+    }
+
     bool fit_lm(const FitModel<Model> &model, NDView<double, 1> x,
                 NDView<double, 1> y, NDView<double, 1> y_err,
                 const std::array<double, Model::npar> &start, double *par_out,
                 double *err_out, double &chi2) {
         const auto res = lm_.fit(model, x, y, y_err, start, par_out, err_out);
-        chi2 = res.valid ? res.chi2 : 0.0;
-        return res.valid;
+        if (res.valid && finite(par_out, err_out, res.chi2)) {
+            chi2 = res.chi2;
+            return true;
+        }
+        std::fill(par_out, par_out + Model::npar, 0.0);
+        if (err_out)
+            std::fill(err_out, err_out + Model::npar, 0.0);
+        chi2 = 0.0;
+        return false;
     }
 
     LevenbergMarquardt<Model> lm_;

@@ -26,8 +26,9 @@ namespace aare::detail {
  * equations g = J^T r and J^T J, which DampedGaussNewton iterates on: it
  * handles fixed parameters, limits, damping and the convergence test, see
  * there. Rejected trials are rare with its damping rule, and a rejected one
- * only wastes a single pass. As in Minuit2, max_calls = 0 selects the
- * default budget 200 + 100 * npar + 5 * npar^2.
+ * only wastes a single pass. Trial points at which the model loses its
+ * sensitivity to a free parameter are rejected. As in Minuit2, max_calls = 0
+ * selects the default budget 200 + 100 * npar + 5 * npar^2.
  *
  * Errors are Gauss-Newton estimates, sqrt(diag((J^T J)^-1)), over the free
  * parameters that do not sit on a limit. Fixed and limit-bound parameters
@@ -95,6 +96,11 @@ template <typename Model> class LevenbergMarquardt {
         // Start cautiously: the estimated start values of the linear
         // parameters can be far off, and the first steps are then wild.
         opt.damping0 = 0.1;
+        // A width driven onto its lower limit turns a model into a step
+        // function whose chi2 no longer responds to the width and jumps
+        // with the position; the iteration then stalls there. Such trial
+        // points are rejected, as in VariableProjection.
+        opt.reject_degenerate = true;
         const Result res = driver_.fit(eval, start, lower, upper, fixed, opt);
         if (!res.valid) {
             std::fill(par_out, par_out + npar, 0.0);
