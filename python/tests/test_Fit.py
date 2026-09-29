@@ -239,3 +239,69 @@ def test_all_minimizers_agree_on_3d_data_with_errors():
         np.testing.assert_allclose(result["par"], np.broadcast_to(expected, (2, 3, 3)), atol=2e-3)
         np.testing.assert_allclose(result["chi2"], 0.0, atol=1e-3)
         np.testing.assert_allclose(result["par_err"], reference["par_err"], rtol=2e-2)
+
+
+# Regressions of the built-in solvers: fits that used to be reported as valid
+# although they had stopped away from the minimum or returned garbage.
+
+
+def test_gaussian_fit_to_noise_fails_or_stays_bounded(minimizer):
+    # A width collapsing between two scan points let the amplitude diverge
+    # (up to 1e159) in a fit that was still reported as valid.
+    x = np.linspace(-6.0, 6.0, 61)
+    y = np.random.default_rng(0).normal(0.0, 1.0, (20, 20, x.size))
+    result = aare.Gaussian(minimizer=minimizer).fit(x, y, n_threads=2)
+
+    par = result["par"]
+    failed = np.all(par == 0.0, axis=-1)
+    bounded = np.all(np.isfinite(par) & (np.abs(par) < 1e6), axis=-1)
+    assert np.all(failed | bounded)
+    assert np.all(np.isfinite(result["chi2"]))
+
+
+def test_step_reflected_onto_start_is_not_convergence(minimizer):
+    # The step of +2 reflects at the limit 1 back onto the start 0; the
+    # truncated step must still be tried.
+    model = aare.Pol1(minimizer=minimizer)
+    model.SetParameter("p0", 0.0)
+    model.FixParameter("p1", 0.0)
+    model.SetParLimits("p0", -1.0, 1.0)
+    result = model.fit(np.arange(4.0), np.full(4, 2.2))
+
+    assert result["par"][0] == pytest.approx(1.0, abs=1e-6)
+    assert result["chi2"][0] == pytest.approx(5.76, rel=1e-6)
+
+
+@pytest.mark.parametrize(
+    "amplitude, offset", [(1e8, 0.0), (1e10, 0.0), (120.0, 1e9)]
+)
+def test_large_parameter_does_not_stop_the_fit(minimizer, amplitude, offset):
+    # One relative step norm over all parameters let a large amplitude or
+    # position stop the fit at the start estimate of the width.
+    x = np.linspace(-6.0, 6.0, 61)
+    y = gaussian(x, amplitude, 0.8, 1.3)
+    y_err = np.sqrt(y) + 1.0
+    result = aare.Gaussian(minimizer=minimizer, max_calls=500).fit(
+        x + offset, y, y_err
+    )
+
+    par = result["par"]
+    assert par[0] == pytest.approx(amplitude, rel=1e-3)
+    assert par[1] - offset == pytest.approx(0.8, abs=1e-3)
+    assert par[2] == pytest.approx(1.3, rel=1e-3)
+
+
+def test_rejected_trial_on_limit_does_not_freeze_interior_parameter(minimizer):
+    # A rejected trial truncated onto the lower limit froze mu at its start.
+    x = np.linspace(-0.1, 0.1, 11)
+    mu = np.sqrt(2.0 * np.log(2.0))
+    y = gaussian(x, 10.0, mu, 1.0)
+    model = aare.Gaussian(minimizer=minimizer)
+    model.FixParameter("A", 10.0)
+    model.FixParameter("sigma", 1.0)
+    model.SetParameter("mu", 3.0)
+    model.SetParLimits("mu", 0.0, 5.0)
+    result = model.fit(x, y)
+
+    assert result["par"][1] == pytest.approx(mu, abs=1e-3)
+    assert result["chi2"][0] < 1e-4
