@@ -1085,3 +1085,130 @@ TEST_CASE("A rejected trial on a limit does not freeze an interior parameter",
     CHECK(res(1) == Approx(mu).margin(1e-3));
     CHECK(res(3) < 1e-4);
 }
+
+// ---------------------------------------------------------------------------
+// Samples with a zero error are ignored. They may hold NaN (a masked dead
+// frame), which a zero weight does not remove from a sum, so they must not
+// reach the start estimate or the minimizer at all.
+// ---------------------------------------------------------------------------
+
+TEST_CASE("Samples with a zero error are ignored even when NaN", "[fit]") {
+    const auto minimizer =
+        GENERATE(Minimizer::Migrad, Minimizer::Fumili,
+                 Minimizer::LevenbergMarquardt, Minimizer::VarPro);
+    INFO("minimizer " << name(minimizer));
+    const double nan = std::numeric_limits<double>::quiet_NaN();
+
+    constexpr ssize_t n = 10;
+    NDArray<double, 1> x({n});
+    NDArray<double, 1> y({n});
+    NDArray<double, 1> y_err({n}, 1.0);
+    for (ssize_t i = 0; i < n; ++i) {
+        x(i) = static_cast<double>(i);
+        y(i) = 2.0 + 0.5 * x(i);
+    }
+    const auto line = make_model<aare::model::Pol1>(minimizer, true);
+
+    // The start estimate of Pol1 uses the first and the last sample.
+    const auto masked = GENERATE(as<ssize_t>{}, 4, 0, n - 1);
+    SECTION("masked NaN on a line") {
+        INFO("masked sample " << masked);
+        y(masked) = nan;
+        y_err(masked) = 0.0;
+        const auto res =
+            aare::fit_pixel(line, x.view(), y.view(), y_err.view());
+        CHECK(res(0) == Approx(2.0).epsilon(1e-5).margin(1e-6));
+        CHECK(res(1) == Approx(0.5).epsilon(1e-5).margin(1e-6));
+        CHECK(res(2) > 0.0);
+        CHECK(res(4) == Approx(0.0).margin(1e-6));
+    }
+
+    SECTION("masked NaN at the peak of a Gaussian") {
+        auto d = gaussian_data();
+        constexpr ssize_t peak = 34; // x = 0.8
+        d.y(peak) = nan;
+        d.y_err(peak) = 0.0;
+        const auto model = make_model<aare::model::Gaussian>(minimizer);
+        const auto res =
+            aare::fit_pixel(model, d.x.view(), d.y.view(), d.y_err.view());
+        const double tol = truth_tolerance(minimizer);
+        CHECK(res(0) == Approx(120.0).epsilon(tol));
+        CHECK(res(1) == Approx(0.8).epsilon(tol));
+        CHECK(res(2) == Approx(1.3).epsilon(tol));
+    }
+
+    SECTION("too few samples left fail cleanly") {
+        // One sample left for two free parameters, then none at all.
+        for (ssize_t i = 1; i < n; ++i) {
+            y(i) = nan;
+            y_err(i) = 0.0;
+        }
+        auto res = aare::fit_pixel(line, x.view(), y.view(), y_err.view());
+        for (ssize_t k = 0; k < res.size(); ++k)
+            CHECK(res(k) == 0.0);
+        y_err(0) = 0.0;
+        res = aare::fit_pixel(line, x.view(), y.view(), y_err.view());
+        for (ssize_t k = 0; k < res.size(); ++k)
+            CHECK(res(k) == 0.0);
+    }
+}
+
+TEST_CASE("Masked samples in a data cube match per-pixel fits", "[fit]") {
+    // The kept samples of each pixel go through reused buffers, which must
+    // not carry anything over from one pixel to the next.
+    const auto minimizer =
+        GENERATE(Minimizer::Migrad, Minimizer::Fumili,
+                 Minimizer::LevenbergMarquardt, Minimizer::VarPro);
+    INFO("minimizer " << name(minimizer));
+    constexpr ssize_t rows = 2;
+    constexpr ssize_t cols = 3;
+    // masked sample per pixel, -1 for none
+    constexpr ssize_t masked[rows][cols] = {{-1, 10, 0},
+                                            {34, -1, n_points - 1}};
+    NDArray<double, 1> x({n_points});
+    NDArray<double, 1> tmp({n_points});
+    NDArray<double, 3> y({rows, cols, n_points});
+    NDArray<double, 3> y_err({rows, cols, n_points}, 1.0);
+    for (ssize_t row = 0; row < rows; ++row) {
+        for (ssize_t col = 0; col < cols; ++col) {
+            fill_gaussian(x, tmp, 80.0 + 10.0 * static_cast<double>(col), 0.8,
+                          1.0 + 0.2 * static_cast<double>(row));
+            for (ssize_t i = 0; i < n_points; ++i)
+                y(row, col, i) = tmp(i);
+            if (masked[row][col] >= 0) {
+                y(row, col, masked[row][col]) =
+                    std::numeric_limits<double>::quiet_NaN();
+                y_err(row, col, masked[row][col]) = 0.0;
+            }
+        }
+    }
+
+    NDArray<double, 3> par({rows, cols, 3});
+    NDArray<double, 3> err({rows, cols, 3});
+    NDArray<double, 2> chi2({rows, cols});
+    const auto model = make_model<aare::model::Gaussian>(minimizer, true);
+    aare::fit_3d(model, x.view(), y.view(), y_err.view(), par.view(),
+                 err.view(), chi2.view(), 1);
+
+    for (ssize_t row = 0; row < rows; ++row) {
+        for (ssize_t col = 0; col < cols; ++col) {
+            INFO("pixel " << row << ", " << col);
+            NDView<double, 1> yv(&y(row, col, 0), {n_points});
+            NDView<double, 1> ev(&y_err(row, col, 0), {n_points});
+            const auto single = aare::fit_pixel(model, x.view(), yv, ev);
+            for (ssize_t k = 0; k < 3; ++k) {
+                CHECK(par(row, col, k) == Approx(single(k)).margin(1e-12));
+                CHECK(err(row, col, k) == Approx(single(3 + k)).margin(1e-12));
+            }
+            CHECK(chi2(row, col) == Approx(single(6)).margin(1e-12));
+            // Close to the truth within the EDM tolerance; the exact check
+            // is the agreement with the per-pixel fit above.
+            const double tol = 1e-3;
+            CHECK(par(row, col, 0) ==
+                  Approx(80.0 + 10.0 * static_cast<double>(col)).epsilon(tol));
+            CHECK(par(row, col, 1) == Approx(0.8).epsilon(tol));
+            CHECK(par(row, col, 2) ==
+                  Approx(1.0 + 0.2 * static_cast<double>(row)).epsilon(tol));
+        }
+    }
+}

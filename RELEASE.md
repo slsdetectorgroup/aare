@@ -144,6 +144,14 @@
 ### Bugfixes:
 - Fitting a 3D data cube in Python without ``y_err`` now returns ``par_err``
   when ``compute_errors`` is set, as fitting a single pixel already did.
+- Samples with a zero error are ignored by every minimizer, as documented,
+  also when they hold NaN. They are now removed before the start values are
+  estimated; previously a masked NaN at a sample used by the estimate, such
+  as the first or last point of ``Pol1``, made even Migrad fail. A pixel with
+  fewer remaining samples than free parameters is reported as failed.
+- Fitting a single pixel checks that ``x``, ``y`` and ``y_err`` have the same
+  size and raises ``RuntimeError`` otherwise. Previously a shorter ``y`` or
+  ``y_err`` was read past its end.
 - The Python ``Cluster`` constructors validate that the data array holds
   exactly one value per pixel and raise ``ValueError`` otherwise. Previously a
   longer array wrote past the end of the cluster data.

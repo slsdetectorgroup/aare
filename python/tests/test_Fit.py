@@ -314,3 +314,52 @@ def test_rejected_trial_on_limit_does_not_freeze_interior_parameter(minimizer):
 
     assert result["par"][1] == pytest.approx(mu, abs=1e-3)
     assert result["chi2"][0] < 1e-4
+
+
+# Samples with a zero error are ignored, also when they hold NaN (a masked
+# dead frame): a zero weight does not remove a NaN from a sum.
+
+
+@pytest.mark.parametrize("masked", [4, 0, 9])
+def test_masked_nan_sample_is_ignored(minimizer, masked):
+    # The start estimate of Pol1 uses the first and the last sample.
+    x = np.arange(10.0)
+    y = 2.0 + 0.5 * x
+    y_err = np.ones_like(y)
+    y[masked] = np.nan
+    y_err[masked] = 0.0
+    result = aare.Pol1(minimizer=minimizer, compute_errors=True).fit(x, y, y_err)
+
+    np.testing.assert_allclose(result["par"], [2.0, 0.5], atol=1e-5)
+    assert np.all(result["par_err"] > 0.0)
+    assert result["chi2"][0] == pytest.approx(0.0, abs=1e-6)
+
+
+def test_too_few_unmasked_samples_fail(minimizer):
+    x = np.arange(10.0)
+    y = np.full_like(x, np.nan)
+    y_err = np.zeros_like(x)
+    y[0], y_err[0] = 2.0, 1.0  # one sample left for two free parameters
+    result = aare.Pol1(minimizer=minimizer).fit(x, y, y_err)
+    assert np.all(result["par"] == 0.0)
+    assert np.all(result["chi2"] == 0.0)
+
+
+def test_masked_samples_in_cube_match_1d_fits(minimizer):
+    x = np.linspace(-6.0, 6.0, 61)
+    y = np.stack([gaussian(x, 80.0 + 10.0 * c, 0.8, 1.2) for c in range(4)])
+    y = y.reshape(1, 4, x.size)
+    y_err = np.ones_like(y)
+    for col, masked in [(1, 10), (2, 0), (3, 34)]:
+        y[0, col, masked] = np.nan
+        y_err[0, col, masked] = 0.0
+    model = aare.Gaussian(minimizer=minimizer, compute_errors=True)
+    cube = model.fit(x, y, y_err, n_threads=1)
+
+    for col in range(4):
+        single = model.fit(x, y[0, col], y_err[0, col])
+        np.testing.assert_allclose(cube["par"][0, col], single["par"], atol=1e-12)
+        np.testing.assert_allclose(cube["par_err"][0, col], single["par_err"], atol=1e-12)
+        np.testing.assert_allclose(
+            cube["par"][0, col], [80.0 + 10.0 * col, 0.8, 1.2], rtol=1e-3
+        )
