@@ -363,3 +363,15 @@ def test_masked_samples_in_cube_match_1d_fits(minimizer):
         np.testing.assert_allclose(
             cube["par"][0, col], [80.0 + 10.0 * col, 0.8, 1.2], rtol=1e-3
         )
+
+
+def test_parameter_whose_minimum_lies_on_its_limit_reports_no_error(minimizer):
+    # At a minimum that lies exactly on the limit the gradient is zero.
+    x = np.array([-1.0, -1.0, 1.0, 1.0])
+    model = aare.Pol1(minimizer=minimizer, compute_errors=True)
+    model.SetParLimits("p0", 0.0, 1.0)
+    result = model.fit(x, 1.0 + 2.0 * x)
+
+    assert result["par"][0] == pytest.approx(1.0, abs=1e-6)
+    assert result["par_err"][0] == 0.0
+    assert result["par_err"][1] == pytest.approx(0.5, rel=1e-6)

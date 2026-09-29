@@ -1212,3 +1212,41 @@ TEST_CASE("Masked samples in a data cube match per-pixel fits", "[fit]") {
         }
     }
 }
+
+TEST_CASE("A parameter whose minimum lies on its limit reports no error",
+          "[fit]") {
+    // At a minimum that lies exactly on a limit the gradient is zero, so a
+    // test for an outward gradient does not see the parameter as bound.
+    const auto minimizer =
+        GENERATE(Minimizer::Migrad, Minimizer::Fumili,
+                 Minimizer::LevenbergMarquardt, Minimizer::VarPro);
+    INFO("minimizer " << name(minimizer));
+
+    SECTION("linear parameter") {
+        NDArray<double, 1> x({4});
+        NDArray<double, 1> y({4});
+        const double xs[4] = {-1.0, -1.0, 1.0, 1.0};
+        for (ssize_t i = 0; i < 4; ++i) {
+            x(i) = xs[i];
+            y(i) = 1.0 + 2.0 * xs[i];
+        }
+        auto model = make_model<aare::model::Pol1>(minimizer, true);
+        model.SetParLimits("p0", 0.0, 1.0);
+        const auto res = aare::fit_pixel(model, x.view(), y.view());
+        CHECK(res(0) == Approx(1.0).margin(limit_margin(minimizer)));
+        CHECK(res(2) == 0.0);
+        CHECK(res(3) == Approx(0.5).epsilon(1e-6)); // 1 / sqrt(sum x^2)
+    }
+
+    SECTION("nonlinear parameter") {
+        auto d = gaussian_data();
+        auto model = make_model<aare::model::Gaussian>(minimizer, true);
+        model.SetParLimits("mu", -5.0, 0.8);
+        const auto res =
+            aare::fit_pixel(model, d.x.view(), d.y.view(), d.y_err.view());
+        CHECK(res(1) == Approx(0.8).margin(1e-6));
+        CHECK(res(4) == 0.0);
+        CHECK(res(3) > 0.0);
+        CHECK(res(5) > 0.0);
+    }
+}
