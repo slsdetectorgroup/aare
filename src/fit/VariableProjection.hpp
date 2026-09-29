@@ -316,13 +316,43 @@ template <typename Model> class VariableProjection {
         // Nearly collinear basis functions: a pivot of the factorisation far
         // below its diagonal element means that the linear solution loses
         // about log10(diagonal / pivot) digits, beyond which it is noise.
-        for (int a = 0; a < nfree_lin_; ++a)
+        bool refine = false;
+        for (int a = 0; a < nfree_lin_; ++a) {
             if (!(L[a][a] * L[a][a] >= collinear_basis * A[a][a]))
                 return false;
+            refine = refine || L[a][a] * L[a][a] < refine_basis * A[a][a];
+        }
         Vec<nlin> beta_free{};
         cholesky_substitute<nlin>(nfree_lin_, L, v, beta_free);
         for (int a = 0; a < nfree_lin_; ++a)
             pvec_[Traits::linear_index(free_lin_[a])] = beta_free[a];
+        // Short of that, the digits lost to the normal equations are
+        // recovered by one step of iterative refinement on the data (the
+        // corrected semi-normal equations): the correction solves the same
+        // equations for Phi^T W r of the residual of the first solution. A
+        // polynomial fitted far from x = 0 needs it; x in [20000, 20500]
+        // otherwise costs a Pol2 six digits.
+        if (refine) {
+            Vec<nlin> beta;
+            for (int j = 0; j < nlin; ++j)
+                beta[j] = pvec_[Traits::linear_index(j)];
+            Vec<nlin> s{};
+            for (ssize_t i = 0; i < n; ++i) {
+                double r = yd[i];
+                for (int j = 0; j < nlin; ++j)
+                    r -= beta[j] * pc[j][i];
+                const double rw = Weighted ? r * w2[i] : r;
+                for (int j = 0; j < nlin; ++j)
+                    s[j] += pc[j][i] * rw;
+            }
+            Vec<nlin> sf{};
+            for (int a = 0; a < nlin; ++a)
+                sf[a] = a < nfree_lin_ ? s[free_lin_[a]] : 0.0;
+            Vec<nlin> delta{};
+            cholesky_substitute<nlin>(nfree_lin_, L, sf, delta);
+            for (int a = 0; a < nfree_lin_; ++a)
+                pvec_[Traits::linear_index(free_lin_[a])] += delta[a];
+        }
         Vec<nlin> beta;
         for (int j = 0; j < nlin; ++j) {
             beta[j] = pvec_[Traits::linear_index(j)];
@@ -466,6 +496,9 @@ template <typename Model> class VariableProjection {
     Vec<nlin> ref_norm2_{};
     static constexpr double vanished_basis = 1e-8;
     static constexpr double collinear_basis = 1e-10;
+    // Pivot ratio below which the linear solution is refined, about four
+    // lost digits.
+    static constexpr double refine_basis = 1e-4;
     int nfree_lin_ = 0;
     std::array<int, nlin> free_lin_{};
     std::array<bool, nlin> lin_fixed_{};

@@ -1278,3 +1278,31 @@ TEST_CASE("A fit does not stop at its start point without taking a step",
     for (ssize_t k = 0; k < none.size(); ++k)
         CHECK(none(k) == 0.0);
 }
+
+TEST_CASE("A polynomial far from x = 0 keeps its precision", "[fit]") {
+    // On a narrow range far from 0 the columns 1, x, x^2 are nearly
+    // collinear. VarPro solves them from the normal equations and lost six
+    // digits at x = 20000; from about x = 60000 it falls back to LM.
+    const auto minimizer =
+        GENERATE(Minimizer::Migrad, Minimizer::Fumili,
+                 Minimizer::LevenbergMarquardt, Minimizer::VarPro);
+    INFO("minimizer " << name(minimizer));
+    const auto [lo, span] =
+        GENERATE(std::pair{8000.0, 1000.0}, std::pair{20000.0, 500.0},
+                 std::pair{60000.0, 200.0});
+    INFO("x in [" << lo << ", " << lo + span << "]");
+    // 1.5 + 2e-3 (x - lo) + 3e-7 (x - lo)^2 expanded in powers of x.
+    const double c[3] = {1.5 - 2e-3 * lo + 3e-7 * lo * lo, 2e-3 - 6e-7 * lo,
+                         3e-7};
+    constexpr ssize_t n = 40;
+    NDArray<double, 1> x({n});
+    NDArray<double, 1> y({n});
+    for (ssize_t i = 0; i < n; ++i) {
+        x(i) = lo + span * static_cast<double>(i) / static_cast<double>(n - 1);
+        y(i) = c[0] + c[1] * x(i) + c[2] * x(i) * x(i);
+    }
+    const auto model = make_model<aare::model::Pol2>(minimizer);
+    const auto res = aare::fit_pixel(model, x.view(), y.view());
+    for (ssize_t k = 0; k < 3; ++k)
+        CHECK(res(k) == Approx(c[k]).epsilon(1e-9));
+}

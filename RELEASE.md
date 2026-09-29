@@ -59,7 +59,10 @@
   derivatives by the tests). Each trial point solves those exactly and the
   Levenberg-Marquardt iteration runs over the nonlinear parameters only, so
   the fit needs fewer evaluations and does not depend on start values of the
-  linear parameters. Limits on linear parameters, pixels that do not converge
+  linear parameters. When the basis functions are nearly collinear, as for a
+  polynomial on a narrow range far from x = 0, one more pass over the data
+  refines the linear solution to the precision of the other minimizers.
+  Limits on linear parameters, pixels that do not converge
   and models without the separable structure fall back to
   ``LevenbergMarquardt``. Parameter errors are the same Gauss-Newton
   estimates. The Gaussian, plateau, charge-sharing and S-curve models also

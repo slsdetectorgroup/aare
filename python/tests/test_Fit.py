@@ -388,3 +388,14 @@ def test_fit_does_not_stop_at_start_without_a_step(minimizer, amplitude):
 
     one_call = aare.Gaussian(minimizer=minimizer, max_calls=1).fit(x, y)
     assert np.all(one_call["par"] == 0.0)
+
+
+@pytest.mark.parametrize("lo, span", [(8000, 1000), (20000, 500), (60000, 200)])
+def test_polynomial_far_from_zero_keeps_its_precision(minimizer, lo, span):
+    # Nearly collinear columns 1, x, x^2: VarPro's normal equations lost six
+    # digits at x = 20000.
+    x = np.linspace(lo, lo + span, 40)
+    c = np.array([1.5 - 2e-3 * lo + 3e-7 * lo**2, 2e-3 - 6e-7 * lo, 3e-7])
+    y = c[0] + c[1] * x + c[2] * x**2
+    result = aare.Pol2(minimizer=minimizer).fit(x, y)
+    np.testing.assert_allclose(result["par"], c, rtol=1e-9)

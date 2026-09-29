@@ -4,9 +4,10 @@ Pol1/Pol2 are fully linear, so VarPro solves them in one step from the
 normal equations Phi^T W Phi with a Cholesky factorisation. That squares the
 condition number of the basis [1, x, x^2], which is large when the scan
 range is narrow compared to its offset. LM and Migrad reach ~1e-11; VarPro
-is off by up to 1e-3 relative and still reports a valid fit.
+was off by 5.5e-7 relative at x = 20000 and still reported a valid fit. From
+about x = 60000 its collinearity check falls back to LM.
 
-Code: src/VariableProjection.hpp reduce(), pass 1 and cholesky_factor.
+Code: src/fit/VariableProjection.hpp reduce(), pass 1 and cholesky_factor.
 """
 import sys; sys.path.append('../build')
 
@@ -28,7 +29,7 @@ for lo, span in [(8000, 1000), (20000, 500), (60000, 200)]:
         if m == M.VarPro:
             worst = max(worst, rel)
 
-if worst > 1e-6:
+if worst > 1e-9:
     print(f"\nBUG REPRODUCED: VarPro relative error {worst:.1e}")
     sys.exit(1)
 print("\nnot reproduced")
