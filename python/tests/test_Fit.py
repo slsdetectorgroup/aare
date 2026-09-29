@@ -175,6 +175,15 @@ def test_invalid_parameter_access_raises():
         model.SetParLimits("mu", 1.0, 1.0)
 
 
+def test_mismatched_array_sizes_raise(gaussian_data, minimizer):
+    x, y, y_err = gaussian_data
+    model = aare.Gaussian(minimizer=minimizer)
+    with pytest.raises(RuntimeError):
+        model.fit(x, y[:-1])
+    with pytest.raises(RuntimeError):
+        model.fit(x, y, y_err[:-1])
+
+
 @pytest.mark.parametrize("cls", [aare.RisingScurve, aare.FallingScurve])
 def test_scurve_fit(cls, minimizer):
     truth = np.array([10.0, 0.1, 50.0, 3.0, 1000.0, 2.0])

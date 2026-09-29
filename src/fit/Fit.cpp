@@ -203,6 +203,7 @@ template <typename Model>
 NDArray<double, 1> fit_pixel(const FitModel<Model> &model, NDView<double, 1> x,
                              NDView<double, 1> y, NDView<double, 1> y_err) {
     constexpr std::size_t npar = Model::npar;
+    detail::check_fit_pixel_shapes(x, y, y_err);
     const bool want_errors = model.compute_errors();
     const auto result_size =
         static_cast<ssize_t>(want_errors ? (2 * npar + 1) : (npar + 1));

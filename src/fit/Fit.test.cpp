@@ -440,6 +440,21 @@ TEST_CASE("FitModel validates parameter names, indices and limits", "[fit]") {
     CHECK(model.minimizer() == Minimizer::LevenbergMarquardt);
 }
 
+TEST_CASE("fit_pixel rejects arrays of different sizes", "[fit]") {
+    const auto minimizer =
+        GENERATE(Minimizer::Migrad, Minimizer::Fumili,
+                 Minimizer::LevenbergMarquardt, Minimizer::VarPro);
+    INFO("minimizer " << name(minimizer));
+    auto d = gaussian_data();
+    const auto model = make_model<aare::model::Gaussian>(minimizer);
+    NDView<double, 1> short_y(d.y.data(), {n_points - 1});
+    NDView<double, 1> short_err(d.y_err.data(), {n_points - 1});
+    CHECK_THROWS_AS(aare::fit_pixel(model, d.x.view(), short_y),
+                    std::runtime_error);
+    CHECK_THROWS_AS(aare::fit_pixel(model, d.x.view(), d.y.view(), short_err),
+                    std::runtime_error);
+}
+
 TEST_CASE("Copying a FitModel keeps the minimizer", "[fit]") {
     const aare::FitModel<aare::model::Pol1> original(
         0, 100, 0.5, false, Minimizer::LevenbergMarquardt);

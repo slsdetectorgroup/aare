@@ -35,6 +35,16 @@ std::array<double, Model::npar> start_values(const FitModel<Model> &model,
     return start;
 }
 
+/** @brief Validate the array sizes passed to fit_pixel. */
+inline void check_fit_pixel_shapes(NDView<double, 1> x, NDView<double, 1> y,
+                                   NDView<double, 1> y_err) {
+    if (x.size() != y.size())
+        throw std::runtime_error("fit_pixel: x.size() must match y.size().");
+    if (y_err.size() > 0 && y_err.size() != y.size())
+        throw std::runtime_error(
+            "fit_pixel: y and y_err must have identical size.");
+}
+
 /** @brief Validate the array shapes passed to fit_3d. */
 template <typename Model>
 void check_fit_3d_shapes(NDView<double, 1> x, NDView<double, 3> y,
