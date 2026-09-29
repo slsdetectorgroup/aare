@@ -154,9 +154,11 @@ bool gauss_newton_errors(const Mat<N> &H, const std::array<bool, N> &skip,
  *   points outward is frozen for that iteration.
  * - Convergence in Minuit's convention: the iteration stops when the
  *   estimated distance to the minimum of chi2 (EDM, from the Gauss-Newton
- *   Hessian) drops below 0.002 * tolerance. When the damped step becomes
- *   negligible for every parameter before that, the iteration has stalled
- *   and the fit is valid only if the EDM test passes at that point.
+ *   Hessian) drops below 0.002 * tolerance. A start point that passes
+ *   already still takes one undamped step, see converged(). When the damped
+ *   step becomes negligible for every parameter before that, the iteration
+ *   has stalled and the fit is valid only if the EDM test passes at that
+ *   point.
  * - max_calls bounds the number of evaluations: the initial point and every
  *   trial point count, so an iteration costs one evaluation, or two when a
  *   limit is crossed.
@@ -196,6 +198,7 @@ template <int NP> class DampedGaussNewton {
                         const Vec<NP> &upper, const std::array<bool, NP> &fixed,
                         const Options &opt) {
         nfree_ = 0;
+        accepted_ = 0;
         for (int k = 0; k < NP; ++k) {
             lower_[k] = lower[k];
             upper_[k] = upper[k];
@@ -228,7 +231,9 @@ template <int NP> class DampedGaussNewton {
             extract_free();
             mark_active();
             if (gmax_ < 1e-12) {
-                res.valid = true;
+                edm(); // the undamped step for converged()
+                res.valid =
+                    converged(eval, res, max_calls, reject_degenerate, false);
                 break;
             }
             // Solve for the damped step first. The solve yields
@@ -241,10 +246,9 @@ template <int NP> class DampedGaussNewton {
                 if (e < edm_target) {
                     // A point already deep inside the tolerance needs no
                     // polishing.
-                    if (opt.polish && e >= 0.01 * edm_target &&
-                        res.calls < max_calls)
-                        polish_step(eval, res, reject_degenerate);
-                    res.valid = true;
+                    res.valid =
+                        converged(eval, res, max_calls, reject_degenerate,
+                                  opt.polish && e >= 0.01 * edm_target);
                     break;
                 }
             }
@@ -311,6 +315,7 @@ template <int NP> class DampedGaussNewton {
                 std::swap(cur_, trial_);
                 for (int a = 0; a < nfree_; ++a)
                     p_[free_[a]] = q_[a];
+                ++accepted_;
                 const double t = 2.0 * rho - 1.0;
                 u *= std::max(1.0 / 3.0, 1.0 - t * t * t);
                 nu = 2.0;
@@ -461,6 +466,25 @@ template <int NP> class DampedGaussNewton {
         return e;
     }
 
+    // The convergence test passed. A point that passes it before any step
+    // was accepted may merely lie within the tolerance of chi2's scale, as
+    // the start estimate of an unweighted fit of data of small magnitude
+    // does, so it still takes the undamped step of polish_step(), as Migrad
+    // always iterates at least once. Without the budget for that step the
+    // fit has not converged. With polish, a converged fit takes the same
+    // step when the budget allows. Returns whether the fit is valid.
+    template <typename Eval>
+    bool converged(Eval &eval, MinimizerResult &res, int max_calls,
+                   bool reject_degenerate, bool polish) {
+        const bool first = accepted_ == 0 && nfree_ > 0;
+        if (!first && !polish)
+            return true;
+        if (res.calls >= max_calls)
+            return !first;
+        polish_step(eval, res, reject_degenerate);
+        return true;
+    }
+
     // One undamped Gauss-Newton step from a point that passed the EDM test,
     // kept when it lowers F. The test stops the iteration within the
     // tolerance, but a solver that converges in few iterations stops while
@@ -543,6 +567,7 @@ template <int NP> class DampedGaussNewton {
     }
 
     int nfree_ = 0;
+    int accepted_ = 0; // trial points accepted in this fit
     std::array<int, NP> free_{};
     std::array<int, NP> free_pos_{};
     std::array<bool, NP> fixed_{};

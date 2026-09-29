@@ -1250,3 +1250,31 @@ TEST_CASE("A parameter whose minimum lies on its limit reports no error",
         CHECK(res(5) > 0.0);
     }
 }
+
+TEST_CASE("A fit does not stop at its start point without taking a step",
+          "[fit]") {
+    // The EDM tolerance is absolute in chi2 units. An unweighted fit of data
+    // of small magnitude passes it at the start estimate already; the fit
+    // must still take a step, as Migrad always iterates at least once.
+    const auto minimizer =
+        GENERATE(Minimizer::Migrad, Minimizer::Fumili,
+                 Minimizer::LevenbergMarquardt, Minimizer::VarPro);
+    INFO("minimizer " << name(minimizer));
+    const double amplitude = GENERATE(0.1, 1e-4);
+    INFO("amplitude " << amplitude);
+    Data d{NDArray<double, 1>({n_points}), NDArray<double, 1>({n_points}),
+           NDArray<double, 1>({n_points}, 1.0)};
+    fill_gaussian(d.x, d.y, amplitude, 0.8, 1.3);
+
+    // The start estimate of sigma is 1.3617; Migrad ends at 1.3205.
+    const auto model = make_model<aare::model::Gaussian>(minimizer);
+    const auto res = aare::fit_pixel(model, d.x.view(), d.y.view());
+    CHECK(std::abs(res(2) - 1.3) < 0.03);
+
+    // Without the budget for a single step the fit has not converged.
+    const auto one_call =
+        make_model<aare::model::Gaussian>(minimizer, false, 1);
+    const auto none = aare::fit_pixel(one_call, d.x.view(), d.y.view());
+    for (ssize_t k = 0; k < none.size(); ++k)
+        CHECK(none(k) == 0.0);
+}

@@ -375,3 +375,16 @@ def test_parameter_whose_minimum_lies_on_its_limit_reports_no_error(minimizer):
     assert result["par"][0] == pytest.approx(1.0, abs=1e-6)
     assert result["par_err"][0] == 0.0
     assert result["par_err"][1] == pytest.approx(0.5, rel=1e-6)
+
+
+@pytest.mark.parametrize("amplitude", [0.1, 1e-4])
+def test_fit_does_not_stop_at_start_without_a_step(minimizer, amplitude):
+    # The EDM tolerance is absolute in chi2 units: an unweighted fit of small
+    # data passes it at the start estimate (sigma 1.3617) already.
+    x = np.linspace(-6.0, 6.0, 61)
+    y = gaussian(x, amplitude, 0.8, 1.3)
+    result = aare.Gaussian(minimizer=minimizer).fit(x, y)
+    assert abs(result["par"][2] - 1.3) < 0.03  # Migrad ends at 1.3205
+
+    one_call = aare.Gaussian(minimizer=minimizer, max_calls=1).fit(x, y)
+    assert np.all(one_call["par"] == 0.0)
