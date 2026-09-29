@@ -130,7 +130,11 @@ control the minimizer:
 - ``tolerance`` is the EDM tolerance in Minuit's convention. Migrad,
   LevenbergMarquardt and VarPro stop when the estimated distance
   to the minimum is below ``0.002 * tolerance``, Fumili below
-  ``1e-4 * tolerance``.
+  ``1e-4 * tolerance``. The EDM is measured in units of ``chi2``, not
+  relative to the data: without ``y_err`` every sample counts with an error
+  of 1, so a fit of small values (amplitudes well below 1) meets the
+  tolerance while still far from the minimum. Pass ``y_err`` or lower
+  ``tolerance`` for such data.
 - ``strategy`` is the Minuit2 strategy (0 is fast, 1 is Minuit2's default).
   LevenbergMarquardt and VarPro ignore it.
 - ``compute_errors`` adds ``par_err`` to the result. Fixed parameters and
