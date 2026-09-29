@@ -282,7 +282,7 @@ template <int NP> class DampedGaussNewton {
             ++res.calls;
             bool ok = evaluate(eval, q_new_, trial_) &&
                       !(reject_degenerate && degenerate(trial_));
-            if (crossed) {
+            if (crossed && res.calls < max_calls) {
                 // Also try the step truncated at the limit, keep the better.
                 ++res.calls;
                 const bool ok_alt = evaluate(eval, q_alt_, alt_) &&
@@ -326,9 +326,15 @@ template <int NP> class DampedGaussNewton {
     /** @brief F, gradient and Hessian at the final point. */
     const Normal &normal() const { return cur_; }
 
-    /** @brief True for a fixed parameter or one frozen on a limit. */
+    /**
+     * @brief True for a parameter without an error: fixed, frozen on a limit,
+     * or ending exactly on one. The frozen flag alone misses the last case,
+     * because it needs the gradient to point outward and that gradient is
+     * zero when the unconstrained minimum coincides with the limit.
+     */
     bool skipped(int k) const {
-        return fixed_[k] || (free_pos_[k] >= 0 && active_[free_pos_[k]]);
+        return fixed_[k] || (free_pos_[k] >= 0 && active_[free_pos_[k]]) ||
+               p_[k] <= lower_[k] || p_[k] >= upper_[k];
     }
 
     /** @brief Gauss-Newton errors at the final point, see

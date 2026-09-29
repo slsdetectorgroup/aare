@@ -169,14 +169,22 @@ template <typename Model> class VariableProjection {
                     driver_.normal().aux[static_cast<std::size_t>(j)];
         }
 
-        // The linear solve knows nothing about limits.
+        // The linear solve knows nothing about limits. A solution beyond a
+        // limit fails; one within rounding of a limit is moved onto it, so
+        // that it counts as on the limit whichever way the rounding went.
         for (int j = 0; j < nlin; ++j) {
             if (lin_fixed_[j])
                 continue;
             const auto k = static_cast<unsigned int>(Traits::linear_index(j));
-            if (pvec_[k] < model.lower_limit(k) ||
-                pvec_[k] > model.upper_limit(k))
+            const double lo = model.lower_limit(k);
+            const double hi = model.upper_limit(k);
+            const double tol = 1e-12 * std::max(1.0, std::abs(pvec_[k]));
+            if (pvec_[k] < lo - tol || pvec_[k] > hi + tol)
                 return fail();
+            if (std::abs(pvec_[k] - lo) <= tol)
+                pvec_[k] = lo;
+            else if (std::abs(pvec_[k] - hi) <= tol)
+                pvec_[k] = hi;
         }
         std::copy(pvec_.begin(), pvec_.end(), par_out);
         if (err_out)
@@ -403,9 +411,16 @@ template <typename Model> class VariableProjection {
                         H[a][c] += g[a] * g[c] * wi;
             }
         }
+        // Fixed parameters and parameters that end on a limit have no error.
+        // The driver knows the nonlinear ones; the linear solve can land a
+        // linear parameter exactly on a limit without violating it.
         std::array<bool, npar> skip;
-        for (int k = 0; k < npar; ++k)
-            skip[k] = model.is_user_fixed(static_cast<unsigned int>(k));
+        for (int k = 0; k < npar; ++k) {
+            const auto idx = static_cast<unsigned int>(k);
+            const double v = pvec_[static_cast<std::size_t>(k)];
+            skip[k] = model.is_user_fixed(idx) || v <= model.lower_limit(idx) ||
+                      v >= model.upper_limit(idx);
+        }
         if constexpr (nnl > 0) {
             for (int k = 0; k < nnl; ++k)
                 skip[Traits::nonlinear_par[k]] =

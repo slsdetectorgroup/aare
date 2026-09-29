@@ -48,11 +48,13 @@ user_parameters(const FitModel<Model> &model, NDView<double, 1> x,
         } else if (std::isfinite(lo) || std::isfinite(hi)) {
             // Minuit2's transformation for one-sided limits converges markedly
             // slower than the two-sided one, so an open side gets a wide bound.
+            // It is placed relative to the start value, which then always
+            // lies inside the range however far it is from the finite limit.
             const double span = std::max(1e6, 1e3 * std::abs(start[i]));
             if (std::isfinite(lo))
-                upar.SetLimits(idx, lo, lo + span);
+                upar.SetLimits(idx, lo, std::max(start[i], lo) + span);
             else
-                upar.SetLimits(idx, hi - span, hi);
+                upar.SetLimits(idx, std::min(start[i], hi) - span, hi);
         }
         if (model.is_user_fixed(idx))
             upar.Fix(idx);

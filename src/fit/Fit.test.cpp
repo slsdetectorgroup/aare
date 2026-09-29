@@ -873,3 +873,55 @@ TEST_CASE("fast_exp matches std::exp", "[fit]") {
     CHECK(aare::model::fast_exp(0.0) == 1.0);
     CHECK(aare::model::fast_exp(-1000.0) == aare::model::fast_exp(-700.0));
 }
+
+TEST_CASE("Fit with a one-sided limit far from the start value", "[fit]") {
+    const auto minimizer =
+        GENERATE(Minimizer::Migrad, Minimizer::Fumili,
+                 Minimizer::LevenbergMarquardt, Minimizer::VarPro);
+    INFO("minimizer " << name(minimizer));
+    constexpr ssize_t n = 20;
+    NDArray<double, 1> x({n});
+    NDArray<double, 1> y({n});
+    for (ssize_t i = 0; i < n; ++i) {
+        x(i) = static_cast<double>(i);
+        y(i) = 2.0 + 0.5 * x(i);
+    }
+    const double inf = std::numeric_limits<double>::infinity();
+    const bool upper = GENERATE(true, false);
+    auto model = make_model<aare::model::Pol1>(minimizer);
+    if (upper)
+        model.SetParLimits(0, -inf, 1e9);
+    else
+        model.SetParLimits(0, -1e9, inf);
+
+    const auto res = aare::fit_pixel(model, x.view(), y.view());
+    CHECK(res(0) == Approx(2.0).epsilon(1e-6));
+    CHECK(res(1) == Approx(0.5).epsilon(1e-6));
+}
+
+TEST_CASE("A parameter ending exactly on a limit reports an error of 0",
+          "[fit]") {
+    const auto minimizer =
+        GENERATE(Minimizer::Migrad, Minimizer::Fumili,
+                 Minimizer::LevenbergMarquardt, Minimizer::VarPro);
+    INFO("minimizer " << name(minimizer));
+    constexpr ssize_t n = 3;
+    NDArray<double, 1> x({n});
+    NDArray<double, 1> y({n}, 2.0);
+    for (ssize_t i = 0; i < n; ++i)
+        x(i) = static_cast<double>(i);
+    // The unconstrained minimum p0 = 2 coincides with the limit.
+    const bool lower = GENERATE(true, false);
+    auto model = make_model<aare::model::Pol1>(minimizer, true);
+    model.FixParameter(1, 0.0);
+    if (lower)
+        model.SetParLimits(0, 2.0, 3.0);
+    else
+        model.SetParLimits(0, 1.0, 2.0);
+
+    const auto res = aare::fit_pixel(model, x.view(), y.view());
+    REQUIRE(res.size() == 5);
+    CHECK(res(0) == Approx(2.0).epsilon(1e-6));
+    CHECK(res(2) == 0.0);
+    CHECK(res(3) == 0.0);
+}
