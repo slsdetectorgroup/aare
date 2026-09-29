@@ -123,7 +123,7 @@ control the minimizer:
 - ``max_calls`` (default 100) caps the work per pixel: Minuit2 function calls
   for Migrad and Fumili, model evaluations for LevenbergMarquardt and VarPro,
   which spend one evaluation per iteration (two when a step crosses a limit).
-  ``0`` selects Minuit's default budget of ``200 + 100 * npar + 5 * npar**2``.
+  ``0`` selects Minuit's default max calls of ``200 + 100 * npar + 5 * npar**2``.
   A pixel that does not converge within the budget returns zeros; the six-
   and eight-parameter models on noisy data need several hundred calls, so
   raise the default when such pixels fail.
