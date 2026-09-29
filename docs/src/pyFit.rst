@@ -49,14 +49,13 @@ A pixel that fails to converge returns zeros for all three.
 Choosing the minimizer
 ~~~~~~~~~~~~~~~~~~~~~~
 
-.. note ::
+.. note::
 
-    The built-in VarPro solver is up tp 10x faster than Minuit2
-    , but it (and the built-in Levenberg-Marquardt solver) do not support the full
-    range of Minuit2 features. Test VarPro and use Migrad if encountering issues. 
-    Minuit2::Fumili and the built in Levenberg-Marquardt are included for evaluation
-    but might be redundant. 
-
+    The built-in VarPro solver is up to ten times faster than Migrad. It and
+    the built-in Levenberg-Marquardt solver do not offer Minuit2's strategy
+    setting or Hesse errors. Try VarPro first and fall back to Migrad if you
+    run into problems. Minuit2's Fumili and the built-in Levenberg-Marquardt
+    solver are included for evaluation and may turn out to be redundant.
 
 Fits use Minuit2's Migrad by default. Three alternatives share the same
 interface and are selected with the ``minimizer`` argument or property::
@@ -66,13 +65,19 @@ interface and are selected with the ``minimizer`` argument or property::
 
 - ``Minimizer.Migrad``: Minuit2's variable-metric minimizer, driven by the
   analytic gradient of the chi-squared. Parameter errors come from Hesse.
-- ``Minimizer.Fumili``: Minuit2's Gauss-Newton minimizer with a trust region.
-  It takes the gradient and a linearised Hessian from the analytic derivatives
-  of the model and usually needs far fewer function evaluations than Migrad.
-  Parameter errors come from the covariance of the linearised Hessian, without
-  an extra Hesse step. Minuit2's Fumili cannot converge once a two-sided limit
-  becomes active; a pixel without a valid Fumili minimum is refitted with
-  Migrad.
+- ``Minimizer.Fumili``: Minuit2's Gauss-Newton minimizer, which controls its
+  steps with a trust region by default. It takes the gradient and the
+  linearised Hessian from the analytic derivatives of the model and typically
+  needs far fewer function evaluations than Migrad. The linearised Hessian at
+  the minimum also provides the parameter covariance, so no Hesse step runs.
+
+  Parameter limits make Minuit2 map the bounded external parameters onto
+  unbounded internal ones. On an active limit the derivative of that mapping
+  vanishes, and Fumili's linearised Hessian, which contains only this first
+  derivative, loses the curvature along the bounded direction. The Hessian
+  can then become singular and the iteration fails to converge. Pixels for
+  which Fumili does not return a valid minimum are refitted with Migrad.
+
 - ``Minimizer.LevenbergMarquardt``: a built-in damped Gauss-Newton solver with
   the analytic Jacobian of the model. It reflects steps at parameter limits
   and reuses its buffers between pixels, so data cubes are fitted without
