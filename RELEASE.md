@@ -1,6 +1,6 @@
 # Release notes
 
-## Next
+## 2026.9.30
 
 ### New Features:
 
