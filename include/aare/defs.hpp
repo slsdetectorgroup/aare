@@ -32,6 +32,26 @@
     } while (0)
 #endif
 
+/**
+ * ALWAYS_INLINE forces a function to be inlined at every call site. gcc
+ * refuses to inline a plain `inline` function once its translation-unit
+ * growth budget (--param inline-unit-growth) is used up, which happens in
+ * the fitting code where every model is instantiated for every minimizer;
+ * a per-point helper that is then called out of line also stops the
+ * surrounding loop from vectorising.
+ */
+#if (defined(_MSC_VER) || defined(__INTEL_COMPILER))
+#define STRONG_INLINE __forceinline
+#else
+#define STRONG_INLINE inline
+#endif
+
+#if defined(__GNUC__)
+#define ALWAYS_INLINE __attribute__((always_inline)) inline
+#else
+#define ALWAYS_INLINE STRONG_INLINE
+#endif
+
 namespace aare {
 
 inline constexpr size_t bits_per_byte = 8;

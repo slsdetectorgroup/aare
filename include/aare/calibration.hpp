@@ -11,20 +11,6 @@
 
 namespace aare {
 
-// Really try to convince the compile to inline this function
-// TODO! Clang?
-#if (defined(_MSC_VER) || defined(__INTEL_COMPILER))
-#define STRONG_INLINE __forceinline
-#else
-#define STRONG_INLINE inline
-#endif
-
-#if defined(__GNUC__)
-#define ALWAYS_INLINE __attribute__((always_inline)) inline
-#else
-#define ALWAYS_INLINE STRONG_INLINE
-#endif
-
 /**
  * @brief Get the gain from the raw ADC value. In Jungfrau the gain is
  * encoded in the left most 2 bits of the raw value.
