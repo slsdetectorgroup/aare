@@ -36,7 +36,10 @@
   analytic model derivatives and needs far fewer function evaluations.
   ``Minimizer.LevenbergMarquardt`` is a built-in, dependency-free
   Levenberg-Marquardt solver with the analytic Jacobian; it reflects steps at
-  parameter limits and fits data cubes without per-pixel allocations. With
+  parameter limits and fits data cubes without per-pixel allocations. A fit
+  that stalls away from a minimum, or whose width collapses below the spacing
+  of the scan points, is reported as failed (all zeros) rather than returned
+  as a result, so noisy or signal-free pixels may fail. With
   ``compute_errors``, Fumili and LevenbergMarquardt report parameter errors
   from their linearised covariance instead of running Hesse. Pixels for which
   Fumili does not reach a valid minimum, which Minuit2's implementation cannot
@@ -56,7 +59,10 @@
   derivatives by the tests). Each trial point solves those exactly and the
   Levenberg-Marquardt iteration runs over the nonlinear parameters only, so
   the fit needs fewer evaluations and does not depend on start values of the
-  linear parameters. Limits on linear parameters, pixels that do not converge
+  linear parameters. When the basis functions are nearly collinear, as for a
+  polynomial on a narrow range far from x = 0, one more pass over the data
+  refines the linear solution to the precision of the other minimizers.
+  Limits on linear parameters, pixels that do not converge
   and models without the separable structure fall back to
   ``LevenbergMarquardt``. Parameter errors are the same Gauss-Newton
   estimates. The Gaussian, plateau, charge-sharing and S-curve models also
@@ -141,6 +147,14 @@
 ### Bugfixes:
 - Fitting a 3D data cube in Python without ``y_err`` now returns ``par_err``
   when ``compute_errors`` is set, as fitting a single pixel already did.
+- Samples with a zero error are ignored by every minimizer, as documented,
+  also when they hold NaN. They are now removed before the start values are
+  estimated; previously a masked NaN at a sample used by the estimate, such
+  as the first or last point of ``Pol1``, made even Migrad fail. A pixel with
+  fewer remaining samples than free parameters is reported as failed.
+- Fitting a single pixel checks that ``x``, ``y`` and ``y_err`` have the same
+  size and raises ``RuntimeError`` otherwise. Previously a shorter ``y`` or
+  ``y_err`` was read past its end.
 - The Python ``Cluster`` constructors validate that the data array holds
   exactly one value per pixel and raise ``ValueError`` otherwise. Previously a
   longer array wrote past the end of the cluster data.

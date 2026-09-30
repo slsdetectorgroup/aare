@@ -43,7 +43,9 @@ namespace aare {
  * report an error of 0 and a failed fit returns zeros. `tolerance` is the
  * EDM tolerance in Minuit's convention (Migrad, LevenbergMarquardt and
  * VarPro stop below 0.002 * tolerance, Fumili below
- * 1e-4 * tolerance). `max_calls` bounds the work per pixel in the
+ * 1e-4 * tolerance). The EDM is in units of chi2, so an unweighted fit of
+ * small values meets it far from the minimum; pass errors or a lower
+ * tolerance for such data. `max_calls` bounds the work per pixel in the
  * minimizer's own units (Minuit2 function calls, or model evaluations for
  * LevenbergMarquardt and VarPro, which spend one evaluation per
  * iteration and two when a step crosses a limit). `strategy` only affects

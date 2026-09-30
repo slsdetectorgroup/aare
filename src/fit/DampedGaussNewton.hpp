@@ -154,15 +154,19 @@ bool gauss_newton_errors(const Mat<N> &H, const std::array<bool, N> &skip,
  *   points outward is frozen for that iteration.
  * - Convergence in Minuit's convention: the iteration stops when the
  *   estimated distance to the minimum of chi2 (EDM, from the Gauss-Newton
- *   Hessian) drops below 0.002 * tolerance, or when the step becomes
- *   negligible.
+ *   Hessian) drops below 0.002 * tolerance. A start point that passes
+ *   already still takes one undamped step, see converged(). When the damped
+ *   step becomes negligible for every parameter before that, the iteration
+ *   has stalled and the fit is valid only if the EDM test passes at that
+ *   point.
  * - max_calls bounds the number of evaluations: the initial point and every
  *   trial point count, so an iteration costs one evaluation, or two when a
  *   limit is crossed.
  * - With reject_degenerate, a trial point at which the model has lost its
  *   sensitivity to a free parameter (its Hessian diagonal collapsed by more
- *   than eight orders of magnitude) is rejected like an inadmissible point,
- *   so the damping grows and a shorter step is tried instead.
+ *   than eight orders of magnitude relative to the current point or to the
+ *   start point) is rejected like an inadmissible point, so the damping
+ *   grows and a shorter step is tried instead.
  * - With polish, a converged fit takes one more undamped Gauss-Newton step
  *   and keeps it when it lowers chi2, see polish_step().
  *
@@ -194,6 +198,7 @@ template <int NP> class DampedGaussNewton {
                         const Vec<NP> &upper, const std::array<bool, NP> &fixed,
                         const Options &opt) {
         nfree_ = 0;
+        accepted_ = 0;
         for (int k = 0; k < NP; ++k) {
             lower_[k] = lower[k];
             upper_[k] = upper[k];
@@ -214,6 +219,8 @@ template <int NP> class DampedGaussNewton {
         if (!evaluate(eval, q_, cur_))
             return res;
         res.calls = 1;
+        for (int a = 0; a < nfree_; ++a)
+            start_diag_[a] = cur_.H[free_[a]][free_[a]];
         const double edm_target = 0.002 * opt.tolerance;
         const int max_calls = opt.max_calls;
         const bool reject_degenerate = opt.reject_degenerate;
@@ -224,7 +231,9 @@ template <int NP> class DampedGaussNewton {
             extract_free();
             mark_active();
             if (gmax_ < 1e-12) {
-                res.valid = true;
+                edm(); // the undamped step for converged()
+                res.valid =
+                    converged(eval, res, max_calls, reject_degenerate, false);
                 break;
             }
             // Solve for the damped step first. The solve yields
@@ -237,10 +246,9 @@ template <int NP> class DampedGaussNewton {
                 if (e < edm_target) {
                     // A point already deep inside the tolerance needs no
                     // polishing.
-                    if (opt.polish && e >= 0.01 * edm_target &&
-                        res.calls < max_calls)
-                        polish_step(eval, res, reject_degenerate);
-                    res.valid = true;
+                    res.valid =
+                        converged(eval, res, max_calls, reject_degenerate,
+                                  opt.polish && e >= 0.01 * edm_target);
                     break;
                 }
             }
@@ -253,8 +261,16 @@ template <int NP> class DampedGaussNewton {
                     break;
                 continue;
             }
-            double step2 = 0.0;
-            double q2 = 0.0;
+            // A stalled iteration is not a minimum: repeated rejections
+            // shrink the damped step until it is negligible anywhere. The
+            // test looks at the step before it is reflected or truncated at
+            // a limit, so a step that a limit folds back onto the current
+            // point still gets its truncated alternative evaluated.
+            if (negligible_step()) {
+                res.valid = edm() < edm_target;
+                break;
+            }
+            bool moved = false;
             bool crossed = false;
             for (int a = 0; a < nfree_; ++a) {
                 const int k = free_[a];
@@ -271,17 +287,16 @@ template <int NP> class DampedGaussNewton {
                 }
                 q_new_[a] = reflected;
                 q_alt_[a] = truncated;
-                const double d = q_new_[a] - q_[a];
-                step2 += d * d;
-                q2 += q_[a] * q_[a];
+                moved = moved || reflected != q_[a];
             }
-            if (std::sqrt(step2) <= 1e-8 * (std::sqrt(q2) + 1e-8)) {
-                res.valid = true;
-                break;
+            // A reflection that lands on the current point needs no
+            // evaluation; the truncated step below is the only candidate.
+            bool ok = false;
+            if (moved) {
+                ++res.calls;
+                ok = evaluate(eval, q_new_, trial_) &&
+                     !(reject_degenerate && degenerate(trial_));
             }
-            ++res.calls;
-            bool ok = evaluate(eval, q_new_, trial_) &&
-                      !(reject_degenerate && degenerate(trial_));
             if (crossed && res.calls < max_calls) {
                 // Also try the step truncated at the limit, keep the better.
                 ++res.calls;
@@ -300,6 +315,7 @@ template <int NP> class DampedGaussNewton {
                 std::swap(cur_, trial_);
                 for (int a = 0; a < nfree_; ++a)
                     p_[free_[a]] = q_[a];
+                ++accepted_;
                 const double t = 2.0 * rho - 1.0;
                 u *= std::max(1.0 / 3.0, 1.0 - t * t * t);
                 nu = 2.0;
@@ -369,31 +385,56 @@ template <int NP> class DampedGaussNewton {
     }
 
     // A parameter sitting on a limit with the descent direction pointing
-    // outward is frozen for this iteration. The test deliberately looks at
-    // the last evaluated point p_, which after a rejected step is the trial
-    // rather than the current point q_: a rejected trial that came off the
-    // limit unfreezes the parameter, and the reflected step can then leave
-    // the limit. Testing q_ instead was measured to leave more fits stuck on
-    // a limit with a higher chi2 (FallingScurve and GaussianChargeSharing
-    // cubes), although it helped Pol2.
+    // outward is frozen for this iteration. Position and gradient are both
+    // taken at the current point q_, so a parameter stays frozen at the end
+    // only where the constrained minimum lies on its limit. An earlier
+    // version tested the last evaluated point p_, a rejected trial, so that a
+    // trial that came off a limit unfroze the parameter: testing q_ had left
+    // more FallingScurve and GaussianChargeSharing fits stuck with the width
+    // on its lower limit and a higher chi2. But pairing a trial position with
+    // the current gradient could freeze an interior parameter and stop the
+    // fit there. The width no longer reaches its limit that way, because
+    // LevenbergMarquardt now rejects degenerate trial points as
+    // VariableProjection does, see degenerate().
     void mark_active() {
         for (int a = 0; a < nfree_; ++a) {
             const int k = free_[a];
-            active_[a] = (p_[k] <= lower_[k] && g_[a] > 0.0) ||
-                         (p_[k] >= upper_[k] && g_[a] < 0.0);
+            active_[a] = (q_[a] <= lower_[k] && g_[a] > 0.0) ||
+                         (q_[a] >= upper_[k] && g_[a] < 0.0);
         }
     }
 
+    // True when the damped step is negligible for every parameter that is
+    // not frozen: below 1e-8 of its value plus its own scale 1/sqrt(H_aa),
+    // the parameter change that raises chi2 by about one. Judging each
+    // parameter on its own scale keeps a large parameter (an amplitude of
+    // 1e10, a peak position at 1e9) from hiding the steps of the others.
+    bool negligible_step() const {
+        for (int a = 0; a < nfree_; ++a) {
+            if (active_[a])
+                continue;
+            const double scale =
+                std::abs(q_[a]) + 1.0 / std::sqrt(std::max(jtj_[a][a], 1e-300));
+            if (!(std::abs(delta_[a]) <= 1e-8 * scale))
+                return false;
+        }
+        return true;
+    }
+
     // A trial point where the Hessian diagonal of a free parameter collapsed
-    // relative to the current point: the model no longer responds to that
-    // parameter there, so the iteration could stop at a spurious stationary
-    // point (a step function with the width driven to zero, for example).
+    // relative to the current point or to the start point: the model no
+    // longer responds to that parameter there, so the iteration could stop
+    // at a spurious stationary point (a step function with the width driven
+    // to zero, for example). The start point catches a collapse spread over
+    // many accepted steps, each of which passes the test against its
+    // predecessor.
     bool degenerate(const Normal &trial) const {
         for (int a = 0; a < nfree_; ++a) {
             if (active_[a])
                 continue;
             const int k = free_[a];
-            if (!(trial.H[k][k] >= 1e-8 * cur_.H[k][k]))
+            const double ref = std::max(cur_.H[k][k], start_diag_[a]);
+            if (!(trial.H[k][k] >= 1e-8 * ref))
                 return true;
         }
         return false;
@@ -423,6 +464,25 @@ template <int NP> class DampedGaussNewton {
             ++i;
         }
         return e;
+    }
+
+    // The convergence test passed. A point that passes it before any step
+    // was accepted may merely lie within the tolerance of chi2's scale, as
+    // the start estimate of an unweighted fit of data of small magnitude
+    // does, so it still takes the undamped step of polish_step(), as Migrad
+    // always iterates at least once. Without the budget for that step the
+    // fit has not converged. With polish, a converged fit takes the same
+    // step when the budget allows. Returns whether the fit is valid.
+    template <typename Eval>
+    bool converged(Eval &eval, MinimizerResult &res, int max_calls,
+                   bool reject_degenerate, bool polish) {
+        const bool first = accepted_ == 0 && nfree_ > 0;
+        if (!first && !polish)
+            return true;
+        if (res.calls >= max_calls)
+            return !first;
+        polish_step(eval, res, reject_degenerate);
+        return true;
     }
 
     // One undamped Gauss-Newton step from a point that passed the EDM test,
@@ -507,6 +567,7 @@ template <int NP> class DampedGaussNewton {
     }
 
     int nfree_ = 0;
+    int accepted_ = 0; // trial points accepted in this fit
     std::array<int, NP> free_{};
     std::array<int, NP> free_pos_{};
     std::array<bool, NP> fixed_{};
@@ -520,6 +581,7 @@ template <int NP> class DampedGaussNewton {
     Vec<NP> g_{};
     Vec<NP> delta_{};
     Vec<NP> gn_step_{};
+    Vec<NP> start_diag_{}; // Hessian diagonal at the start point
     Mat<NP> jtj_{};
     // The two solves that bound the EDM differ by rounding only when the
     // damping is negligible; the margin keeps the stop decision exact.

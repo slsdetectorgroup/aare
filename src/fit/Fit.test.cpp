@@ -9,6 +9,7 @@
 #include <catch2/generators/catch_generators.hpp>
 #include <cmath>
 #include <limits>
+#include <random>
 #include <stdexcept>
 #include <string>
 #include <vector>
@@ -437,6 +438,21 @@ TEST_CASE("FitModel validates parameter names, indices and limits", "[fit]") {
 
     model.SetMinimizer(Minimizer::LevenbergMarquardt);
     CHECK(model.minimizer() == Minimizer::LevenbergMarquardt);
+}
+
+TEST_CASE("fit_pixel rejects arrays of different sizes", "[fit]") {
+    const auto minimizer =
+        GENERATE(Minimizer::Migrad, Minimizer::Fumili,
+                 Minimizer::LevenbergMarquardt, Minimizer::VarPro);
+    INFO("minimizer " << name(minimizer));
+    auto d = gaussian_data();
+    const auto model = make_model<aare::model::Gaussian>(minimizer);
+    NDView<double, 1> short_y(d.y.data(), {n_points - 1});
+    NDView<double, 1> short_err(d.y_err.data(), {n_points - 1});
+    CHECK_THROWS_AS(aare::fit_pixel(model, d.x.view(), short_y),
+                    std::runtime_error);
+    CHECK_THROWS_AS(aare::fit_pixel(model, d.x.view(), d.y.view(), short_err),
+                    std::runtime_error);
 }
 
 TEST_CASE("Copying a FitModel keeps the minimizer", "[fit]") {
@@ -924,4 +940,369 @@ TEST_CASE("A parameter ending exactly on a limit reports an error of 0",
     CHECK(res(0) == Approx(2.0).epsilon(1e-6));
     CHECK(res(2) == 0.0);
     CHECK(res(3) == 0.0);
+}
+
+// ---------------------------------------------------------------------------
+// Regressions of the built-in solvers: fits that used to be reported as valid
+// although they had stopped away from the minimum or returned garbage.
+// ---------------------------------------------------------------------------
+
+namespace {
+
+// Standard normal noise from std::mt19937, whose output the standard fixes,
+// and a Box-Muller transform written out here: std::normal_distribution
+// differs between standard libraries.
+std::vector<double> normal_noise(std::size_t n, unsigned seed) {
+    std::mt19937 rng(seed);
+    const auto uniform = [&rng] {
+        return (static_cast<double>(rng()) + 0.5) / 4294967296.0;
+    };
+    std::vector<double> out(n);
+    for (std::size_t i = 0; i < n; i += 2) {
+        const double r = std::sqrt(-2.0 * std::log(uniform()));
+        const double phi = 2.0 * std::acos(-1.0) * uniform();
+        out[i] = r * std::cos(phi);
+        if (i + 1 < n)
+            out[i + 1] = r * std::sin(phi);
+    }
+    return out;
+}
+
+} // namespace
+
+TEST_CASE("A Gaussian fit to pure noise fails or stays finite and bounded",
+          "[fit]") {
+    // Fitting noise, a narrow width can collapse between two scan points;
+    // the amplitude that fits a single point then diverges. Such a fit must
+    // be reported as failed, not as a valid result with |A| up to 1e159.
+    const auto minimizer =
+        GENERATE(Minimizer::Migrad, Minimizer::Fumili,
+                 Minimizer::LevenbergMarquardt, Minimizer::VarPro);
+    INFO("minimizer " << name(minimizer));
+    constexpr ssize_t rows = 20;
+    constexpr ssize_t cols = 20;
+    NDArray<double, 1> x({n_points});
+    for (ssize_t i = 0; i < n_points; ++i)
+        x(i) = -6.0 + 0.2 * static_cast<double>(i);
+    NDArray<double, 3> y({rows, cols, n_points});
+    const auto noise = normal_noise(static_cast<std::size_t>(y.size()), 1);
+    std::copy(noise.begin(), noise.end(), y.begin());
+
+    NDArray<double, 3> par({rows, cols, 3});
+    NDArray<double, 2> chi2({rows, cols});
+    const auto model = make_model<aare::model::Gaussian>(minimizer);
+    aare::fit_3d(model, x.view(), y.view(), NDView<double, 3>{}, par.view(),
+                 NDView<double, 3>{}, chi2.view(), 1);
+
+    int absurd = 0;
+    for (ssize_t row = 0; row < rows; ++row) {
+        for (ssize_t col = 0; col < cols; ++col) {
+            bool ok = std::isfinite(chi2(row, col));
+            for (ssize_t k = 0; k < 3; ++k)
+                ok = ok && std::isfinite(par(row, col, k)) &&
+                     std::abs(par(row, col, k)) < 1e6;
+            absurd += ok ? 0 : 1;
+        }
+    }
+    CHECK(absurd == 0);
+}
+
+TEST_CASE("A step reflected back onto the start point is not convergence",
+          "[fit]") {
+    // p0 starts at 0 with limits [-1, 1]; the damped step of +2 reflects at
+    // the upper limit back onto 0. The step truncated at the limit must still
+    // be tried: the constrained minimum is p0 = 1.
+    const auto minimizer =
+        GENERATE(Minimizer::Migrad, Minimizer::Fumili,
+                 Minimizer::LevenbergMarquardt, Minimizer::VarPro);
+    INFO("minimizer " << name(minimizer));
+    NDArray<double, 1> x({4});
+    NDArray<double, 1> y({4}, 2.2);
+    for (ssize_t i = 0; i < 4; ++i)
+        x(i) = static_cast<double>(i);
+
+    auto model = make_model<aare::model::Pol1>(minimizer);
+    model.SetParameter("p0", 0.0);
+    model.FixParameter("p1", 0.0);
+    model.SetParLimits("p0", -1.0, 1.0);
+    const auto res = aare::fit_pixel(model, x.view(), y.view());
+    CHECK(res(0) == Approx(1.0).margin(limit_margin(minimizer)));
+    CHECK(res(2) == Approx(5.76).epsilon(1e-6));
+}
+
+TEST_CASE("A large parameter does not hide the steps of the others", "[fit]") {
+    // The negligible-step test used one relative norm over all parameters,
+    // so an amplitude of 1e10 or a position of 1e9 stopped the fit at the
+    // start estimate of the width.
+    const auto minimizer =
+        GENERATE(Minimizer::Migrad, Minimizer::Fumili,
+                 Minimizer::LevenbergMarquardt, Minimizer::VarPro);
+    INFO("minimizer " << name(minimizer));
+    const auto [amplitude, offset] = GENERATE(
+        std::pair{1e8, 0.0}, std::pair{1e10, 0.0}, std::pair{120.0, 1e9});
+    INFO("amplitude " << amplitude << ", offset " << offset);
+
+    Data d{NDArray<double, 1>({n_points}), NDArray<double, 1>({n_points}),
+           NDArray<double, 1>({n_points})};
+    fill_gaussian(d.x, d.y, amplitude, 0.8, 1.3);
+    for (ssize_t i = 0; i < n_points; ++i) {
+        d.x(i) += offset;
+        d.y_err(i) = std::sqrt(d.y(i)) + 1.0;
+    }
+    const auto model = make_model<aare::model::Gaussian>(minimizer, false, 500);
+    const auto res =
+        aare::fit_pixel(model, d.x.view(), d.y.view(), d.y_err.view());
+    // The EDM tolerance leaves a few 1e-4 relative, far below the errors;
+    // the stuck fits were 0.7 % (A = 1e8) and 5 % (start estimate) off.
+    CHECK(res(0) == Approx(amplitude).epsilon(1e-3));
+    CHECK(res(1) - offset == Approx(0.8).margin(1e-3));
+    CHECK(res(2) == Approx(1.3).epsilon(1e-3));
+}
+
+TEST_CASE("A rejected trial on a limit does not freeze an interior parameter",
+          "[fit]") {
+    // mu starts at 3 inside [0, 5]. A trial truncated onto the lower limit is
+    // rejected; testing that trial's position against the gradient of the
+    // accepted point froze mu, and the fit stopped at the start value.
+    const auto minimizer =
+        GENERATE(Minimizer::Migrad, Minimizer::Fumili,
+                 Minimizer::LevenbergMarquardt, Minimizer::VarPro);
+    INFO("minimizer " << name(minimizer));
+    constexpr ssize_t n = 11;
+    const double mu = std::sqrt(2.0 * std::log(2.0));
+    NDArray<double, 1> x({n});
+    NDArray<double, 1> y({n});
+    for (ssize_t i = 0; i < n; ++i) {
+        x(i) = -0.1 + 0.02 * static_cast<double>(i);
+        y(i) = 10.0 * std::exp(-0.5 * (x(i) - mu) * (x(i) - mu));
+    }
+    auto model = make_model<aare::model::Gaussian>(minimizer);
+    model.FixParameter("A", 10.0);
+    model.FixParameter("sigma", 1.0);
+    model.SetParameter("mu", 3.0);
+    model.SetParLimits("mu", 0.0, 5.0);
+    const auto res = aare::fit_pixel(model, x.view(), y.view());
+    CHECK(res(1) == Approx(mu).margin(1e-3));
+    CHECK(res(3) < 1e-4);
+}
+
+// ---------------------------------------------------------------------------
+// Samples with a zero error are ignored. They may hold NaN (a masked dead
+// frame), which a zero weight does not remove from a sum, so they must not
+// reach the start estimate or the minimizer at all.
+// ---------------------------------------------------------------------------
+
+TEST_CASE("Samples with a zero error are ignored even when NaN", "[fit]") {
+    const auto minimizer =
+        GENERATE(Minimizer::Migrad, Minimizer::Fumili,
+                 Minimizer::LevenbergMarquardt, Minimizer::VarPro);
+    INFO("minimizer " << name(minimizer));
+    const double nan = std::numeric_limits<double>::quiet_NaN();
+
+    constexpr ssize_t n = 10;
+    NDArray<double, 1> x({n});
+    NDArray<double, 1> y({n});
+    NDArray<double, 1> y_err({n}, 1.0);
+    for (ssize_t i = 0; i < n; ++i) {
+        x(i) = static_cast<double>(i);
+        y(i) = 2.0 + 0.5 * x(i);
+    }
+    const auto line = make_model<aare::model::Pol1>(minimizer, true);
+
+    // The start estimate of Pol1 uses the first and the last sample.
+    const auto masked = GENERATE(as<ssize_t>{}, 4, 0, n - 1);
+    SECTION("masked NaN on a line") {
+        INFO("masked sample " << masked);
+        y(masked) = nan;
+        y_err(masked) = 0.0;
+        const auto res =
+            aare::fit_pixel(line, x.view(), y.view(), y_err.view());
+        CHECK(res(0) == Approx(2.0).epsilon(1e-5).margin(1e-6));
+        CHECK(res(1) == Approx(0.5).epsilon(1e-5).margin(1e-6));
+        CHECK(res(2) > 0.0);
+        CHECK(res(4) == Approx(0.0).margin(1e-6));
+    }
+
+    SECTION("masked NaN at the peak of a Gaussian") {
+        auto d = gaussian_data();
+        constexpr ssize_t peak = 34; // x = 0.8
+        d.y(peak) = nan;
+        d.y_err(peak) = 0.0;
+        const auto model = make_model<aare::model::Gaussian>(minimizer);
+        const auto res =
+            aare::fit_pixel(model, d.x.view(), d.y.view(), d.y_err.view());
+        const double tol = truth_tolerance(minimizer);
+        CHECK(res(0) == Approx(120.0).epsilon(tol));
+        CHECK(res(1) == Approx(0.8).epsilon(tol));
+        CHECK(res(2) == Approx(1.3).epsilon(tol));
+    }
+
+    SECTION("too few samples left fail cleanly") {
+        // One sample left for two free parameters, then none at all.
+        for (ssize_t i = 1; i < n; ++i) {
+            y(i) = nan;
+            y_err(i) = 0.0;
+        }
+        auto res = aare::fit_pixel(line, x.view(), y.view(), y_err.view());
+        for (ssize_t k = 0; k < res.size(); ++k)
+            CHECK(res(k) == 0.0);
+        y_err(0) = 0.0;
+        res = aare::fit_pixel(line, x.view(), y.view(), y_err.view());
+        for (ssize_t k = 0; k < res.size(); ++k)
+            CHECK(res(k) == 0.0);
+    }
+}
+
+TEST_CASE("Masked samples in a data cube match per-pixel fits", "[fit]") {
+    // The kept samples of each pixel go through reused buffers, which must
+    // not carry anything over from one pixel to the next.
+    const auto minimizer =
+        GENERATE(Minimizer::Migrad, Minimizer::Fumili,
+                 Minimizer::LevenbergMarquardt, Minimizer::VarPro);
+    INFO("minimizer " << name(minimizer));
+    constexpr ssize_t rows = 2;
+    constexpr ssize_t cols = 3;
+    // masked sample per pixel, -1 for none
+    constexpr ssize_t masked[rows][cols] = {{-1, 10, 0},
+                                            {34, -1, n_points - 1}};
+    NDArray<double, 1> x({n_points});
+    NDArray<double, 1> tmp({n_points});
+    NDArray<double, 3> y({rows, cols, n_points});
+    NDArray<double, 3> y_err({rows, cols, n_points}, 1.0);
+    for (ssize_t row = 0; row < rows; ++row) {
+        for (ssize_t col = 0; col < cols; ++col) {
+            fill_gaussian(x, tmp, 80.0 + 10.0 * static_cast<double>(col), 0.8,
+                          1.0 + 0.2 * static_cast<double>(row));
+            for (ssize_t i = 0; i < n_points; ++i)
+                y(row, col, i) = tmp(i);
+            if (masked[row][col] >= 0) {
+                y(row, col, masked[row][col]) =
+                    std::numeric_limits<double>::quiet_NaN();
+                y_err(row, col, masked[row][col]) = 0.0;
+            }
+        }
+    }
+
+    NDArray<double, 3> par({rows, cols, 3});
+    NDArray<double, 3> err({rows, cols, 3});
+    NDArray<double, 2> chi2({rows, cols});
+    const auto model = make_model<aare::model::Gaussian>(minimizer, true);
+    aare::fit_3d(model, x.view(), y.view(), y_err.view(), par.view(),
+                 err.view(), chi2.view(), 1);
+
+    for (ssize_t row = 0; row < rows; ++row) {
+        for (ssize_t col = 0; col < cols; ++col) {
+            INFO("pixel " << row << ", " << col);
+            NDView<double, 1> yv(&y(row, col, 0), {n_points});
+            NDView<double, 1> ev(&y_err(row, col, 0), {n_points});
+            const auto single = aare::fit_pixel(model, x.view(), yv, ev);
+            for (ssize_t k = 0; k < 3; ++k) {
+                CHECK(par(row, col, k) == Approx(single(k)).margin(1e-12));
+                CHECK(err(row, col, k) == Approx(single(3 + k)).margin(1e-12));
+            }
+            CHECK(chi2(row, col) == Approx(single(6)).margin(1e-12));
+            // Close to the truth within the EDM tolerance; the exact check
+            // is the agreement with the per-pixel fit above.
+            const double tol = 1e-3;
+            CHECK(par(row, col, 0) ==
+                  Approx(80.0 + 10.0 * static_cast<double>(col)).epsilon(tol));
+            CHECK(par(row, col, 1) == Approx(0.8).epsilon(tol));
+            CHECK(par(row, col, 2) ==
+                  Approx(1.0 + 0.2 * static_cast<double>(row)).epsilon(tol));
+        }
+    }
+}
+
+TEST_CASE("A parameter whose minimum lies on its limit reports no error",
+          "[fit]") {
+    // At a minimum that lies exactly on a limit the gradient is zero, so a
+    // test for an outward gradient does not see the parameter as bound.
+    const auto minimizer =
+        GENERATE(Minimizer::Migrad, Minimizer::Fumili,
+                 Minimizer::LevenbergMarquardt, Minimizer::VarPro);
+    INFO("minimizer " << name(minimizer));
+
+    SECTION("linear parameter") {
+        NDArray<double, 1> x({4});
+        NDArray<double, 1> y({4});
+        const double xs[4] = {-1.0, -1.0, 1.0, 1.0};
+        for (ssize_t i = 0; i < 4; ++i) {
+            x(i) = xs[i];
+            y(i) = 1.0 + 2.0 * xs[i];
+        }
+        auto model = make_model<aare::model::Pol1>(minimizer, true);
+        model.SetParLimits("p0", 0.0, 1.0);
+        const auto res = aare::fit_pixel(model, x.view(), y.view());
+        CHECK(res(0) == Approx(1.0).margin(limit_margin(minimizer)));
+        CHECK(res(2) == 0.0);
+        CHECK(res(3) == Approx(0.5).epsilon(1e-6)); // 1 / sqrt(sum x^2)
+    }
+
+    SECTION("nonlinear parameter") {
+        auto d = gaussian_data();
+        auto model = make_model<aare::model::Gaussian>(minimizer, true);
+        model.SetParLimits("mu", -5.0, 0.8);
+        const auto res =
+            aare::fit_pixel(model, d.x.view(), d.y.view(), d.y_err.view());
+        CHECK(res(1) == Approx(0.8).margin(1e-6));
+        CHECK(res(4) == 0.0);
+        CHECK(res(3) > 0.0);
+        CHECK(res(5) > 0.0);
+    }
+}
+
+TEST_CASE("A fit does not stop at its start point without taking a step",
+          "[fit]") {
+    // The EDM tolerance is absolute in chi2 units. An unweighted fit of data
+    // of small magnitude passes it at the start estimate already; the fit
+    // must still take a step, as Migrad always iterates at least once.
+    const auto minimizer =
+        GENERATE(Minimizer::Migrad, Minimizer::Fumili,
+                 Minimizer::LevenbergMarquardt, Minimizer::VarPro);
+    INFO("minimizer " << name(minimizer));
+    const double amplitude = GENERATE(0.1, 1e-4);
+    INFO("amplitude " << amplitude);
+    Data d{NDArray<double, 1>({n_points}), NDArray<double, 1>({n_points}),
+           NDArray<double, 1>({n_points}, 1.0)};
+    fill_gaussian(d.x, d.y, amplitude, 0.8, 1.3);
+
+    // The start estimate of sigma is 1.3617; Migrad ends at 1.3205.
+    const auto model = make_model<aare::model::Gaussian>(minimizer);
+    const auto res = aare::fit_pixel(model, d.x.view(), d.y.view());
+    CHECK(std::abs(res(2) - 1.3) < 0.03);
+
+    // Without the budget for a single step the fit has not converged.
+    const auto one_call =
+        make_model<aare::model::Gaussian>(minimizer, false, 1);
+    const auto none = aare::fit_pixel(one_call, d.x.view(), d.y.view());
+    for (ssize_t k = 0; k < none.size(); ++k)
+        CHECK(none(k) == 0.0);
+}
+
+TEST_CASE("A polynomial far from x = 0 keeps its precision", "[fit]") {
+    // On a narrow range far from 0 the columns 1, x, x^2 are nearly
+    // collinear. VarPro solves them from the normal equations and lost six
+    // digits at x = 20000; from about x = 60000 it falls back to LM.
+    const auto minimizer =
+        GENERATE(Minimizer::Migrad, Minimizer::Fumili,
+                 Minimizer::LevenbergMarquardt, Minimizer::VarPro);
+    INFO("minimizer " << name(minimizer));
+    const auto [lo, span] =
+        GENERATE(std::pair{8000.0, 1000.0}, std::pair{20000.0, 500.0},
+                 std::pair{60000.0, 200.0});
+    INFO("x in [" << lo << ", " << lo + span << "]");
+    // 1.5 + 2e-3 (x - lo) + 3e-7 (x - lo)^2 expanded in powers of x.
+    const double c[3] = {1.5 - 2e-3 * lo + 3e-7 * lo * lo, 2e-3 - 6e-7 * lo,
+                         3e-7};
+    constexpr ssize_t n = 40;
+    NDArray<double, 1> x({n});
+    NDArray<double, 1> y({n});
+    for (ssize_t i = 0; i < n; ++i) {
+        x(i) = lo + span * static_cast<double>(i) / static_cast<double>(n - 1);
+        y(i) = c[0] + c[1] * x(i) + c[2] * x(i) * x(i);
+    }
+    const auto model = make_model<aare::model::Pol2>(minimizer);
+    const auto res = aare::fit_pixel(model, x.view(), y.view());
+    for (ssize_t k = 0; k < 3; ++k)
+        CHECK(res(k) == Approx(c[k]).epsilon(1e-9));
 }

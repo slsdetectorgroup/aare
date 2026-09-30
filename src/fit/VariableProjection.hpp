@@ -101,6 +101,7 @@ template <typename Model> class VariableProjection {
         }
         pvec_.assign(start.begin(), start.end());
         have_last_ = false;
+        have_ref_ = false;
         nfree_lin_ = 0;
         for (int j = 0; j < nlin; ++j) {
             const auto k = static_cast<unsigned int>(Traits::linear_index(j));
@@ -195,8 +196,9 @@ template <typename Model> class VariableProjection {
   private:
     // F = chi2 / 2, gradient and Kaufman Hessian of the projected residual
     // at the nonlinear point alpha, and the linear solution in out.aux.
-    // Returns false when the model rejects the point or the basis functions
-    // are linearly dependent there.
+    // Returns false when the model rejects the point, or when the basis
+    // functions are numerically linearly dependent there or one of them has
+    // vanished on the scan points, see reduce().
     bool evaluate(const Vec<ndrv> &alpha, Normal &out) {
         for (int k = 0; k < nnl; ++k)
             pvec_[Traits::nonlinear_par[k]] = alpha[k];
@@ -293,13 +295,64 @@ template <typename Model> class VariableProjection {
             for (int b = 0; b < nfree_lin_; ++b)
                 A[a][b] = M[ja][free_lin_[b]];
         }
+        // A free basis function that has all but vanished on the scan points
+        // (a Gaussian narrower than the point spacing, centred between two
+        // points) leaves its coefficient undetermined, and the solve returns
+        // an absurd one that fits a single point. Its squared norm is compared
+        // with that at the pixel's first evaluation, the start point.
+        if (!have_ref_) {
+            for (int j = 0; j < nlin; ++j)
+                ref_norm2_[j] = M[j][j];
+            have_ref_ = true;
+        }
+        for (int a = 0; a < nfree_lin_; ++a) {
+            const int j = free_lin_[a];
+            if (!(M[j][j] >= vanished_basis * ref_norm2_[j]))
+                return false;
+        }
         Mat<nlin> L{};
         if (!cholesky_factor<nlin>(nfree_lin_, A, L))
             return false;
+        // Nearly collinear basis functions: a pivot of the factorisation far
+        // below its diagonal element means that the linear solution loses
+        // about log10(diagonal / pivot) digits, beyond which it is noise.
+        bool refine = false;
+        for (int a = 0; a < nfree_lin_; ++a) {
+            if (!(L[a][a] * L[a][a] >= collinear_basis * A[a][a]))
+                return false;
+            refine = refine || L[a][a] * L[a][a] < refine_basis * A[a][a];
+        }
         Vec<nlin> beta_free{};
         cholesky_substitute<nlin>(nfree_lin_, L, v, beta_free);
         for (int a = 0; a < nfree_lin_; ++a)
             pvec_[Traits::linear_index(free_lin_[a])] = beta_free[a];
+        // Short of that, the digits lost to the normal equations are
+        // recovered by one step of iterative refinement on the data (the
+        // corrected semi-normal equations): the correction solves the same
+        // equations for Phi^T W r of the residual of the first solution. A
+        // polynomial fitted far from x = 0 needs it; x in [20000, 20500]
+        // otherwise costs a Pol2 six digits.
+        if (refine) {
+            Vec<nlin> beta;
+            for (int j = 0; j < nlin; ++j)
+                beta[j] = pvec_[Traits::linear_index(j)];
+            Vec<nlin> s{};
+            for (ssize_t i = 0; i < n; ++i) {
+                double r = yd[i];
+                for (int j = 0; j < nlin; ++j)
+                    r -= beta[j] * pc[j][i];
+                const double rw = Weighted ? r * w2[i] : r;
+                for (int j = 0; j < nlin; ++j)
+                    s[j] += pc[j][i] * rw;
+            }
+            Vec<nlin> sf{};
+            for (int a = 0; a < nlin; ++a)
+                sf[a] = a < nfree_lin_ ? s[free_lin_[a]] : 0.0;
+            Vec<nlin> delta{};
+            cholesky_substitute<nlin>(nfree_lin_, L, sf, delta);
+            for (int a = 0; a < nfree_lin_; ++a)
+                pvec_[Traits::linear_index(free_lin_[a])] += delta[a];
+        }
         Vec<nlin> beta;
         for (int j = 0; j < nlin; ++j) {
             beta[j] = pvec_[Traits::linear_index(j)];
@@ -438,6 +491,14 @@ template <typename Model> class VariableProjection {
     Mat<nlin> last_M_{};
     std::array<Vec<nlin>, ndrv> last_Q_{};
     Mat<ndrv> last_N_{};
+    // Squared norms of the basis functions at the start point, see reduce().
+    bool have_ref_ = false;
+    Vec<nlin> ref_norm2_{};
+    static constexpr double vanished_basis = 1e-8;
+    static constexpr double collinear_basis = 1e-10;
+    // Pivot ratio below which the linear solution is refined, about four
+    // lost digits.
+    static constexpr double refine_basis = 1e-4;
     int nfree_lin_ = 0;
     std::array<int, nlin> free_lin_{};
     std::array<bool, nlin> lin_fixed_{};

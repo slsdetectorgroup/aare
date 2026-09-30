@@ -7,7 +7,9 @@
 #include "aare/Models.hpp"
 #include "aare/utils/par.hpp"
 #include "aare/utils/task.hpp"
+#include <algorithm>
 #include <array>
+#include <cmath>
 #include <cstddef>
 #include <stdexcept>
 #include <string>
@@ -141,6 +143,34 @@ template <typename Model> class PixelFitter {
     bool fit(const FitModel<Model> &model, NDView<double, 1> x,
              NDView<double, 1> y, NDView<double, 1> y_err, double *par_out,
              double *err_out, double &chi2) {
+        // Samples with a zero error are ignored. They are dropped here,
+        // before the start estimate and the minimizer: a masked sample may
+        // hold NaN, and a zero weight does not remove a NaN from a sum.
+        if (y_err.size() > 0 &&
+            std::find(y_err.begin(), y_err.end(), 0.0) != y_err.end()) {
+            keep_x_.clear();
+            keep_y_.clear();
+            keep_err_.clear();
+            for (ssize_t i = 0; i < y.size(); ++i) {
+                if (y_err[i] == 0.0)
+                    continue;
+                keep_x_.push_back(x[i]);
+                keep_y_.push_back(y[i]);
+                keep_err_.push_back(y_err[i]);
+            }
+            const auto n = static_cast<ssize_t>(keep_x_.size());
+            x = NDView<double, 1>(keep_x_.data(), {n});
+            y = NDView<double, 1>(keep_y_.data(), {n});
+            y_err = NDView<double, 1>(keep_err_.data(), {n});
+        }
+        // Fewer samples than free parameters leave the fit undetermined,
+        // and the start estimates read at least two samples.
+        ssize_t n_free = 0;
+        for (std::size_t k = 0; k < Model::npar; ++k)
+            n_free += model.is_user_fixed(static_cast<unsigned int>(k)) ? 0 : 1;
+        if (y.size() < std::max<ssize_t>(n_free, 2))
+            return fail(par_out, err_out, chi2);
+
         const auto start = start_values(model, x, y);
 
         if (model.minimizer() == Minimizer::VarPro) {
@@ -150,7 +180,7 @@ template <typename Model> class PixelFitter {
             if constexpr (model::is_separable<Model>::value) {
                 const auto res =
                     vp_.fit(model, x, y, y_err, start, par_out, err_out);
-                if (res.valid) {
+                if (res.valid && finite(par_out, err_out, res.chi2)) {
                     chi2 = res.chi2;
                     return true;
                 }
@@ -164,15 +194,40 @@ template <typename Model> class PixelFitter {
     }
 
   private:
+    // The built-in solvers do not guard every operation against NaN or
+    // infinity, so a result is checked before it is reported as a valid fit.
+    static bool finite(const double *par, const double *err, double chi2) {
+        bool ok = std::isfinite(chi2);
+        for (std::size_t k = 0; k < Model::npar; ++k)
+            ok = ok && std::isfinite(par[k]) && (!err || std::isfinite(err[k]));
+        return ok;
+    }
+
     bool fit_lm(const FitModel<Model> &model, NDView<double, 1> x,
                 NDView<double, 1> y, NDView<double, 1> y_err,
                 const std::array<double, Model::npar> &start, double *par_out,
                 double *err_out, double &chi2) {
         const auto res = lm_.fit(model, x, y, y_err, start, par_out, err_out);
-        chi2 = res.valid ? res.chi2 : 0.0;
-        return res.valid;
+        if (res.valid && finite(par_out, err_out, res.chi2)) {
+            chi2 = res.chi2;
+            return true;
+        }
+        return fail(par_out, err_out, chi2);
     }
 
+    // A failed fit reports zeros.
+    static bool fail(double *par_out, double *err_out, double &chi2) {
+        std::fill(par_out, par_out + Model::npar, 0.0);
+        if (err_out)
+            std::fill(err_out, err_out + Model::npar, 0.0);
+        chi2 = 0.0;
+        return false;
+    }
+
+    // The samples of the current pixel that have a nonzero error, see fit().
+    std::vector<double> keep_x_;
+    std::vector<double> keep_y_;
+    std::vector<double> keep_err_;
     LevenbergMarquardt<Model> lm_;
     std::conditional_t<model::is_separable<Model>::value,
                        VariableProjection<Model>, NotSeparable>
@@ -185,6 +240,7 @@ template <typename Model>
 NDArray<double, 1> fit_pixel(const FitModel<Model> &model, NDView<double, 1> x,
                              NDView<double, 1> y, NDView<double, 1> y_err) {
     constexpr std::size_t npar = Model::npar;
+    detail::check_fit_pixel_shapes(x, y, y_err);
     const bool want_errors = model.compute_errors();
     const auto result_size =
         static_cast<ssize_t>(want_errors ? (2 * npar + 1) : (npar + 1));

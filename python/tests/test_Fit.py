@@ -175,6 +175,15 @@ def test_invalid_parameter_access_raises():
         model.SetParLimits("mu", 1.0, 1.0)
 
 
+def test_mismatched_array_sizes_raise(gaussian_data, minimizer):
+    x, y, y_err = gaussian_data
+    model = aare.Gaussian(minimizer=minimizer)
+    with pytest.raises(RuntimeError):
+        model.fit(x, y[:-1])
+    with pytest.raises(RuntimeError):
+        model.fit(x, y, y_err[:-1])
+
+
 @pytest.mark.parametrize("cls", [aare.RisingScurve, aare.FallingScurve])
 def test_scurve_fit(cls, minimizer):
     truth = np.array([10.0, 0.1, 50.0, 3.0, 1000.0, 2.0])
@@ -239,3 +248,154 @@ def test_all_minimizers_agree_on_3d_data_with_errors():
         np.testing.assert_allclose(result["par"], np.broadcast_to(expected, (2, 3, 3)), atol=2e-3)
         np.testing.assert_allclose(result["chi2"], 0.0, atol=1e-3)
         np.testing.assert_allclose(result["par_err"], reference["par_err"], rtol=2e-2)
+
+
+# Regressions of the built-in solvers: fits that used to be reported as valid
+# although they had stopped away from the minimum or returned garbage.
+
+
+def test_gaussian_fit_to_noise_fails_or_stays_bounded(minimizer):
+    # A width collapsing between two scan points let the amplitude diverge
+    # (up to 1e159) in a fit that was still reported as valid.
+    x = np.linspace(-6.0, 6.0, 61)
+    y = np.random.default_rng(0).normal(0.0, 1.0, (20, 20, x.size))
+    result = aare.Gaussian(minimizer=minimizer).fit(x, y, n_threads=2)
+
+    par = result["par"]
+    failed = np.all(par == 0.0, axis=-1)
+    bounded = np.all(np.isfinite(par) & (np.abs(par) < 1e6), axis=-1)
+    assert np.all(failed | bounded)
+    assert np.all(np.isfinite(result["chi2"]))
+
+
+def test_step_reflected_onto_start_is_not_convergence(minimizer):
+    # The step of +2 reflects at the limit 1 back onto the start 0; the
+    # truncated step must still be tried.
+    model = aare.Pol1(minimizer=minimizer)
+    model.SetParameter("p0", 0.0)
+    model.FixParameter("p1", 0.0)
+    model.SetParLimits("p0", -1.0, 1.0)
+    result = model.fit(np.arange(4.0), np.full(4, 2.2))
+
+    assert result["par"][0] == pytest.approx(1.0, abs=1e-6)
+    assert result["chi2"][0] == pytest.approx(5.76, rel=1e-6)
+
+
+@pytest.mark.parametrize(
+    "amplitude, offset", [(1e8, 0.0), (1e10, 0.0), (120.0, 1e9)]
+)
+def test_large_parameter_does_not_stop_the_fit(minimizer, amplitude, offset):
+    # One relative step norm over all parameters let a large amplitude or
+    # position stop the fit at the start estimate of the width.
+    x = np.linspace(-6.0, 6.0, 61)
+    y = gaussian(x, amplitude, 0.8, 1.3)
+    y_err = np.sqrt(y) + 1.0
+    result = aare.Gaussian(minimizer=minimizer, max_calls=500).fit(
+        x + offset, y, y_err
+    )
+
+    par = result["par"]
+    assert par[0] == pytest.approx(amplitude, rel=1e-3)
+    assert par[1] - offset == pytest.approx(0.8, abs=1e-3)
+    assert par[2] == pytest.approx(1.3, rel=1e-3)
+
+
+def test_rejected_trial_on_limit_does_not_freeze_interior_parameter(minimizer):
+    # A rejected trial truncated onto the lower limit froze mu at its start.
+    x = np.linspace(-0.1, 0.1, 11)
+    mu = np.sqrt(2.0 * np.log(2.0))
+    y = gaussian(x, 10.0, mu, 1.0)
+    model = aare.Gaussian(minimizer=minimizer)
+    model.FixParameter("A", 10.0)
+    model.FixParameter("sigma", 1.0)
+    model.SetParameter("mu", 3.0)
+    model.SetParLimits("mu", 0.0, 5.0)
+    result = model.fit(x, y)
+
+    assert result["par"][1] == pytest.approx(mu, abs=1e-3)
+    assert result["chi2"][0] < 1e-4
+
+
+# Samples with a zero error are ignored, also when they hold NaN (a masked
+# dead frame): a zero weight does not remove a NaN from a sum.
+
+
+@pytest.mark.parametrize("masked", [4, 0, 9])
+def test_masked_nan_sample_is_ignored(minimizer, masked):
+    # The start estimate of Pol1 uses the first and the last sample.
+    x = np.arange(10.0)
+    y = 2.0 + 0.5 * x
+    y_err = np.ones_like(y)
+    y[masked] = np.nan
+    y_err[masked] = 0.0
+    result = aare.Pol1(minimizer=minimizer, compute_errors=True).fit(x, y, y_err)
+
+    np.testing.assert_allclose(result["par"], [2.0, 0.5], atol=1e-5)
+    assert np.all(result["par_err"] > 0.0)
+    assert result["chi2"][0] == pytest.approx(0.0, abs=1e-6)
+
+
+def test_too_few_unmasked_samples_fail(minimizer):
+    x = np.arange(10.0)
+    y = np.full_like(x, np.nan)
+    y_err = np.zeros_like(x)
+    y[0], y_err[0] = 2.0, 1.0  # one sample left for two free parameters
+    result = aare.Pol1(minimizer=minimizer).fit(x, y, y_err)
+    assert np.all(result["par"] == 0.0)
+    assert np.all(result["chi2"] == 0.0)
+
+
+def test_masked_samples_in_cube_match_1d_fits(minimizer):
+    x = np.linspace(-6.0, 6.0, 61)
+    y = np.stack([gaussian(x, 80.0 + 10.0 * c, 0.8, 1.2) for c in range(4)])
+    y = y.reshape(1, 4, x.size)
+    y_err = np.ones_like(y)
+    for col, masked in [(1, 10), (2, 0), (3, 34)]:
+        y[0, col, masked] = np.nan
+        y_err[0, col, masked] = 0.0
+    model = aare.Gaussian(minimizer=minimizer, compute_errors=True)
+    cube = model.fit(x, y, y_err, n_threads=1)
+
+    for col in range(4):
+        single = model.fit(x, y[0, col], y_err[0, col])
+        np.testing.assert_allclose(cube["par"][0, col], single["par"], atol=1e-12)
+        np.testing.assert_allclose(cube["par_err"][0, col], single["par_err"], atol=1e-12)
+        np.testing.assert_allclose(
+            cube["par"][0, col], [80.0 + 10.0 * col, 0.8, 1.2], rtol=1e-3
+        )
+
+
+def test_parameter_whose_minimum_lies_on_its_limit_reports_no_error(minimizer):
+    # At a minimum that lies exactly on the limit the gradient is zero.
+    x = np.array([-1.0, -1.0, 1.0, 1.0])
+    model = aare.Pol1(minimizer=minimizer, compute_errors=True)
+    model.SetParLimits("p0", 0.0, 1.0)
+    result = model.fit(x, 1.0 + 2.0 * x)
+
+    assert result["par"][0] == pytest.approx(1.0, abs=1e-6)
+    assert result["par_err"][0] == 0.0
+    assert result["par_err"][1] == pytest.approx(0.5, rel=1e-6)
+
+
+@pytest.mark.parametrize("amplitude", [0.1, 1e-4])
+def test_fit_does_not_stop_at_start_without_a_step(minimizer, amplitude):
+    # The EDM tolerance is absolute in chi2 units: an unweighted fit of small
+    # data passes it at the start estimate (sigma 1.3617) already.
+    x = np.linspace(-6.0, 6.0, 61)
+    y = gaussian(x, amplitude, 0.8, 1.3)
+    result = aare.Gaussian(minimizer=minimizer).fit(x, y)
+    assert abs(result["par"][2] - 1.3) < 0.03  # Migrad ends at 1.3205
+
+    one_call = aare.Gaussian(minimizer=minimizer, max_calls=1).fit(x, y)
+    assert np.all(one_call["par"] == 0.0)
+
+
+@pytest.mark.parametrize("lo, span", [(8000, 1000), (20000, 500), (60000, 200)])
+def test_polynomial_far_from_zero_keeps_its_precision(minimizer, lo, span):
+    # Nearly collinear columns 1, x, x^2: VarPro's normal equations lost six
+    # digits at x = 20000.
+    x = np.linspace(lo, lo + span, 40)
+    c = np.array([1.5 - 2e-3 * lo + 3e-7 * lo**2, 2e-3 - 6e-7 * lo, 3e-7])
+    y = c[0] + c[1] * x + c[2] * x**2
+    result = aare.Pol2(minimizer=minimizer).fit(x, y)
+    np.testing.assert_allclose(result["par"], c, rtol=1e-9)
