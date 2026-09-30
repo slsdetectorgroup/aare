@@ -3,7 +3,7 @@ import pytest
 import numpy as np
 
 from aare import _aare #import the C++ module
-from aare import corner 
+from aare import ROI, corner 
 from conftest import test_data_path
 
 
@@ -91,6 +91,22 @@ def test_calculate_eta():
     assert eta2.sum == 4
 
 
+def test_cluster_representations():
+    """Test Cluster representation"""
+
+    cluster = _aare.Cluster2x2i(5, 6, np.array([1, 2, 3, 4], dtype=np.int32))
+    assert repr(cluster) == "Cluster2x2i(x=5, y=6, data=[[1, 2], [3, 4]])"
+
+def test_eta_representations():
+    """Test Eta representation"""
+    eta = _aare.Etai()
+    eta.x = 0.25
+    eta.y = 0.75
+    eta.c = corner.cBottomRight
+    eta.sum = 42
+    assert repr(eta) == "Etai(x=0.25, y=0.75, c=BottomRight, sum=42)"
+
+
 def test_max_sum(): 
     """Max 2x2 Sum"""
     cluster = _aare.Cluster3x3i(5,5,np.array([1, 1, 1, 2, 3, 1, 2, 2, 1], dtype=np.int32))
@@ -103,17 +119,57 @@ def test_max_sum():
 
 def test_cluster_finder(): 
     """Test ClusterFinder""" 
+    shape = [100,100]
+    cf = _aare.ClusterFinder_Cluster3x3i(shape)
 
-    clusterfinder = _aare.ClusterFinder_Cluster3x3i([100,100])
+    #Push 1000 frames to the pedestal
+    for i in range(1000):
+        frame = np.random.normal(loc = 100, scale = 5, size = shape).astype(np.uint16)
+        cf.push_pedestal_frame(frame)
+    cf.update_threshold()
+    frame = np.zeros(shape=shape, dtype=np.uint16)
+    cf.find_clusters(frame)
 
-    #frame = np.random.rand(100,100)
-    frame = np.zeros(shape=[100,100])
-
-    clusterfinder.find_clusters(frame)
-
-    clusters = clusterfinder.steal_clusters(False) #conversion does not work
+    clusters = cf.steal_clusters(False) #conversion does not work
 
     assert clusters.size == 0
+
+
+def test_cluster_finder_set_nSigma_before_pedestal_is_ready():
+    shape = [10, 10]
+    n_samples = 4
+    cf = _aare.ClusterFinder_Cluster3x3i(shape, min_pedestal_samples=n_samples)
+    assert not cf.pedestal_ready
+
+    cf.nSigma = 50
+    assert cf.nSigma == 50
+
+    # Pedestal of 100 with a noise of 2
+    for i in range(n_samples):
+        cf.push_pedestal_frame(np.full(shape, 98 + 4 * (i % 2), dtype=np.uint16))
+    assert cf.pedestal_ready
+
+    # 30 ADU is a cluster at the default nSigma of 5 but not at 50
+    frame = np.full(shape, 100, dtype=np.uint16)
+    frame[5, 5] = 130
+    cf.find_clusters(frame)
+    assert cf.steal_clusters().size == 0
+
+
+def test_cluster_finder_mt_set_nSigma_before_pedestal_is_ready():
+    shape = [10, 10]
+    n_samples = 4
+    cf = _aare.ClusterFinderMT_Cluster3x3i(
+        shape, n_threads=2, min_pedestal_samples=n_samples
+    )
+    assert not cf.pedestal_ready()
+
+    cf.set_nSigma(50)
+
+    for i in range(n_samples):
+        cf.push_pedestal_frame(np.full(shape, 98 + 4 * (i % 2), dtype=np.uint16))
+    assert cf.pedestal_ready()
+    cf.stop()
 
 
 def test_2x2_reduction(): 
@@ -144,3 +200,20 @@ def test_3x3_reduction():
 
 
 
+
+@pytest.mark.parametrize(
+    "cluster_type, n_pixels",
+    [(_aare.Cluster3x3i, 9), (_aare.Cluster2x2i, 4)],
+)
+def test_cluster_constructor_requires_exact_data_length(cluster_type, n_pixels):
+    """Data must hold exactly one value per pixel"""
+    for bad in (
+        np.ones(n_pixels - 1, dtype=np.int32),
+        np.ones(n_pixels + 1, dtype=np.int32),
+        np.ones((n_pixels, 1), dtype=np.int32),
+    ):
+        with pytest.raises(ValueError, match=f"{n_pixels} values"):
+            cluster_type(0, 0, bad)
+
+    cluster = cluster_type(0, 0, np.arange(n_pixels, dtype=np.int32))
+    assert (cluster.data.ravel() == np.arange(n_pixels)).all()

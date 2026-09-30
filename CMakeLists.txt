@@ -55,6 +55,10 @@ option(
   "Install the python extension in the install tree under CMAKE_INSTALL_PREFIX/aare/"
   OFF)
 option(AARE_ASAN "Enable AddressSanitizer" OFF)
+option(
+  AARE_TUNE_LOCAL
+  "Optimize for the building machine's CPU (-march=native -mtune=native). Not portable, the resulting binaries might not run on other machines."
+  OFF)
 
 # Configure which of the dependencies to use FetchContent for
 option(AARE_FETCH_FMT "Use FetchContent to download fmt" ON)
@@ -102,7 +106,7 @@ if(AARE_FETCH_MINUIT2)
   FetchContent_Declare(
     Minuit2
     GIT_REPOSITORY https://github.com/GooFit/Minuit2.git
-    GIT_TAG master
+    GIT_TAG v6-40-02
     UPDATE_DISCONNECTED 1)
   # Disable Minuit2 extras we don't need
   set(minuit2_mpi
@@ -125,7 +129,9 @@ if(AARE_FETCH_MINUIT2)
   add_library(aare::Minuit2 ALIAS Minuit2)
 else()
   find_package(Minuit2 CONFIG QUIET)
-  if(NOT Minuit2_FOUND)
+  if(Minuit2_FOUND)
+    add_library(aare::Minuit2 ALIAS Minuit2::Minuit2)
+  else()
     message(
       STATUS
         "Stand alone Minuit2 not found. Trying to find it as a part of ROOT")
@@ -149,7 +155,7 @@ if(AARE_FETCH_ZMQ)
   FetchContent_Declare(
     libzmq
     GIT_REPOSITORY https://github.com/zeromq/libzmq.git
-    GIT_TAG v4.3.4
+    GIT_TAG v4.3.5
     PATCH_COMMAND ${ZMQ_PATCH_COMMAND}
     UPDATE_DISCONNECTED 1)
   # Disable unwanted options from libzmq
@@ -296,6 +302,22 @@ else()
     target_compile_options(aare_compiler_flags INTERFACE -Werror)
   endif()
 
+  if(AARE_TUNE_LOCAL)
+    include(CheckCXXCompilerFlag)
+    check_cxx_compiler_flag("-march=native" AARE_HAS_MARCH_NATIVE)
+    check_cxx_compiler_flag("-mtune=native" AARE_HAS_MTUNE_NATIVE)
+    if(AARE_HAS_MARCH_NATIVE AND AARE_HAS_MTUNE_NATIVE)
+      message(STATUS "Tuning for the local CPU: -march=native -mtune=native")
+      target_compile_options(aare_compiler_flags INTERFACE -march=native
+                                                           -mtune=native)
+    else()
+      message(
+        WARNING
+          "AARE_TUNE_LOCAL requested but the compiler does not support -march=native/-mtune=native. Ignoring."
+      )
+    endif()
+  endif()
+
 endif() # GCC/Clang specific
 
 if(AARE_PYTHON_BINDINGS)
@@ -339,12 +361,14 @@ set(PUBLICHEADERS
     include/aare/Models.hpp
     include/aare/FileInterface.hpp
     include/aare/FilePtr.hpp
+    include/aare/FastPedestal.hpp
     include/aare/Frame.hpp
     include/aare/MultiThreadedFileReader.hpp
     include/aare/hist/PixelHistogram.hpp
     include/aare/hist/PixelHistogramImpl.hpp
     include/aare/hist/PedestalTrackingPixelHistogram.hpp
     include/aare/GainMap.hpp
+    include/aare/ROI.hpp
     include/aare/ROIGeometry.hpp
     include/aare/DetectorGeometry.hpp
     include/aare/DataSetAggregation.hpp
@@ -360,6 +384,7 @@ set(PUBLICHEADERS
     include/aare/RawMasterFile.hpp
     include/aare/RawSubFile.hpp
     include/aare/VarClusterFinder.hpp
+    include/aare/to_string.hpp
     include/aare/utils/task.hpp
     include/aare/utils/ifstream_helpers.hpp
     include/aare/utils/math_helpers.hpp)
@@ -369,13 +394,15 @@ set(SourceFiles
     ${CMAKE_CURRENT_SOURCE_DIR}/src/CtbRawFile.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/src/decode.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/src/defs.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/ROI.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/src/ROIGeometry.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/src/DetectorGeometry.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/src/hist/PedestalTrackingPixelHistogram.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/src/Dtype.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/src/File.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/src/FilePtr.cpp
-    ${CMAKE_CURRENT_SOURCE_DIR}/src/Fit.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/fit/Fit.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/fit/FitMinuit2.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/src/Frame.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/src/Interpolator.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/src/JungfrauDataFile.cpp
@@ -417,7 +444,7 @@ if(AARE_VERBOSE)
   target_compile_definitions(aare_core PUBLIC AARE_VERBOSE)
   target_compile_definitions(aare_core PUBLIC AARE_LOG_LEVEL=aare::logDEBUG5)
 else()
-  target_compile_definitions(aare_core PUBLIC AARE_LOG_LEVEL=aare::logERROR)
+  target_compile_definitions(aare_core PUBLIC AARE_LOG_LEVEL=aare::logWARNING)
 endif()
 
 if(AARE_CUSTOM_ASSERT)
@@ -429,12 +456,14 @@ set_target_properties(aare_core PROPERTIES ARCHIVE_OUTPUT_DIRECTORY
 
 if(AARE_TESTS)
   set(TestSources
+      ${CMAKE_CURRENT_SOURCE_DIR}/tests/raw_file_helpers.hpp
       ${CMAKE_CURRENT_SOURCE_DIR}/src/algorithm.test.cpp
       ${CMAKE_CURRENT_SOURCE_DIR}/src/calibration.test.cpp
       ${CMAKE_CURRENT_SOURCE_DIR}/src/defs.test.cpp
       ${CMAKE_CURRENT_SOURCE_DIR}/src/decode.test.cpp
       ${CMAKE_CURRENT_SOURCE_DIR}/src/Dtype.test.cpp
-      ${CMAKE_CURRENT_SOURCE_DIR}/src/Fit.test.cpp
+      ${CMAKE_CURRENT_SOURCE_DIR}/src/FilePtr.test.cpp
+      ${CMAKE_CURRENT_SOURCE_DIR}/src/fit/Fit.test.cpp
       ${CMAKE_CURRENT_SOURCE_DIR}/src/Frame.test.cpp
       ${CMAKE_CURRENT_SOURCE_DIR}/src/DetectorGeometry.test.cpp
       ${CMAKE_CURRENT_SOURCE_DIR}/src/Interpolation.test.cpp
@@ -447,15 +476,19 @@ if(AARE_TESTS)
       ${CMAKE_CURRENT_SOURCE_DIR}/src/CalculateEta.test.cpp
       ${CMAKE_CURRENT_SOURCE_DIR}/src/ClusterFile.test.cpp
       ${CMAKE_CURRENT_SOURCE_DIR}/src/ClusterFinderMT.test.cpp
+      ${CMAKE_CURRENT_SOURCE_DIR}/src/ProducerConsumerQueue.test.cpp
       ${CMAKE_CURRENT_SOURCE_DIR}/src/Pedestal.test.cpp
+      ${CMAKE_CURRENT_SOURCE_DIR}/src/FastPedestal.test.cpp
       ${CMAKE_CURRENT_SOURCE_DIR}/src/hist/PixelHistogramImpl.test.cpp
       ${CMAKE_CURRENT_SOURCE_DIR}/src/hist/PixelHistogram.test.cpp
+      ${CMAKE_CURRENT_SOURCE_DIR}/src/hist/PedestalTrackingPixelHistogram.test.cpp
       ${CMAKE_CURRENT_SOURCE_DIR}/src/JungfrauDataFile.test.cpp
       ${CMAKE_CURRENT_SOURCE_DIR}/src/MultiThreadedFileReader.test.cpp
       ${CMAKE_CURRENT_SOURCE_DIR}/src/NumpyFile.test.cpp
       ${CMAKE_CURRENT_SOURCE_DIR}/src/NumpyHelpers.test.cpp
       ${CMAKE_CURRENT_SOURCE_DIR}/src/RawFile.test.cpp
       ${CMAKE_CURRENT_SOURCE_DIR}/src/RawSubFile.test.cpp
+      ${CMAKE_CURRENT_SOURCE_DIR}/src/ROI.test.cpp
       ${CMAKE_CURRENT_SOURCE_DIR}/src/utils/task.test.cpp
       ${CMAKE_CURRENT_SOURCE_DIR}/src/to_string.test.cpp)
   target_sources(tests PRIVATE ${TestSources})

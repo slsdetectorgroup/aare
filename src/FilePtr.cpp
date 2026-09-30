@@ -22,6 +22,8 @@ FilePtr &FilePtr::operator=(FilePtr &&other) {
     return *this;
 }
 
+FilePtr::operator bool() const noexcept { return fp_ != nullptr; }
+
 FILE *FilePtr::get() { return fp_; }
 
 ssize_t FilePtr::tell() {

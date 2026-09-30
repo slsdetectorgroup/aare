@@ -4,10 +4,17 @@ Fitting
 .. py:currentmodule:: aare
 
 Aare fits one-dimensional scans and three-dimensional pixel data with
-Minuit2. Create a model object and call its :meth:`fit` method::
+Minuit2's Migrad and Fumili or with the built-in Levenberg-Marquardt and
+variable projection solvers. Create a model object and call its :meth:`fit`
+method::
 
     model = Gaussian(compute_errors=True)
     result = model.fit(x, y, y_err)
+
+``y_err`` holds the standard deviation of each point and weights the
+residuals; points with ``y_err == 0`` are left out of the fit, which skips
+empty histogram bins when ``y_err = sqrt(y)``. Without ``y_err`` every point
+has unit weight.
 
 The model object is also callable, which evaluates it at the supplied points::
 
@@ -20,11 +27,127 @@ accepts the same model objects when a functional interface is preferred.
 
 For three-dimensional data, pass an array with shape
 ``(rows, columns, scan_points)`` and select the worker count with
-``n_threads``::
+``n_threads`` (default 4)::
 
     result = model.fit(x, image_data, image_errors, n_threads=8)
 
-The result dictionary contains ``par`` and ``chi2``. It also contains
-``par_err`` when ``compute_errors`` is enabled.
+The result dictionary contains ``par`` and ``chi2``, with shapes ``(npar,)``
+and ``(1,)`` for a scan or ``(rows, columns, npar)`` and ``(rows, columns)``
+for a cube. It also contains ``par_err`` when ``compute_errors`` is enabled.
+A pixel that fails to converge returns zeros for all three.
+
+.. note::
+
+    The fit works on ``float64`` data. If ``x``, ``y`` or ``y_err`` is not
+    already a C-contiguous ``float64`` array, the Python bindings convert it
+    before fitting, which allocates a full copy. Integer or ``float32``
+    input therefore works, but for a large three-dimensional ``y`` the
+    copy can be several times the size of the original array. Pass
+    ``float64`` arrays to avoid it. A ``float64`` C-contiguous array is used
+    in place without copying.
+
+Choosing the minimizer
+~~~~~~~~~~~~~~~~~~~~~~
+
+.. note::
+
+    The built-in VarPro solver is up to ten times faster than Migrad. It and
+    the built-in Levenberg-Marquardt solver do not offer Minuit2's strategy
+    setting or Hesse errors. Try VarPro first and fall back to Migrad if you
+    run into problems. Minuit2's Fumili and the built-in Levenberg-Marquardt
+    solver are included for evaluation and may turn out to be redundant.
+
+Fits use Minuit2's Migrad by default. Three alternatives share the same
+interface and are selected with the ``minimizer`` argument or property::
+
+    model = Gaussian(minimizer=Minimizer.LevenbergMarquardt)
+    model.minimizer = Minimizer.Fumili
+
+- ``Minimizer.Migrad``: Minuit2's variable-metric minimizer, driven by the
+  analytic gradient of the chi-squared. Parameter errors come from Hesse.
+- ``Minimizer.Fumili``: Minuit2's Gauss-Newton minimizer, which controls its
+  steps with a trust region by default. It takes the gradient and the
+  linearised Hessian from the analytic derivatives of the model and typically
+  needs far fewer function evaluations than Migrad. The linearised Hessian at
+  the minimum also provides the parameter covariance, so no Hesse step runs.
+
+  Parameter limits make Minuit2 map the bounded external parameters onto
+  unbounded internal ones. On an active limit the derivative of that mapping
+  vanishes, and Fumili's linearised Hessian, which contains only this first
+  derivative, loses the curvature along the bounded direction. The Hessian
+  can then become singular and the iteration fails to converge. Pixels for
+  which Fumili does not return a valid minimum are refitted with Migrad.
+
+- ``Minimizer.LevenbergMarquardt``: a built-in damped Gauss-Newton solver with
+  the analytic Jacobian of the model. It reflects steps at parameter limits
+  and reuses its buffers between pixels, so data cubes are fitted without
+  per-pixel allocations. Parameter errors are ``sqrt(diag((J^T W J)^-1))``
+  with ``W`` the weights from ``y_err``.
+- ``Minimizer.VarPro``: a built-in variable projection solver.
+  Every bundled model is linear in some of its parameters: every parameter of
+  a polynomial, the amplitude of a Gaussian, the amplitude and plateau of
+  ``GaussianErfcPlateau``, the background and amplitude of the charge-sharing
+  models, and the background, amplitude and charge-sharing term of the
+  S-curves. Each trial point solves those exactly and the Levenberg-Marquardt
+  iteration runs over the remaining nonlinear parameters only, so it needs
+  fewer evaluations than LevenbergMarquardt and is several times faster than
+  Migrad. Start values of the linear parameters are not used, so
+  ``SetParameter`` has no effect on them; ``FixParameter`` does. A pixel
+  whose linear solution violates a limit on a linear parameter, or that does
+  not converge, is refitted with LevenbergMarquardt with a fresh
+  ``max_calls`` budget. Parameter errors are the same Gauss-Newton estimates.
+  On data that barely constrains a model, VarPro can settle at a point where
+  an amplitude is driven to zero and the parameters attached to it lose
+  their meaning; such a pixel reports a valid fit with a poor ``chi2``.
+
+All four converge to the same minimum on well-behaved data; the ``[fit]``
+test suite checks that. The bundled ``fit_benchmark`` compares their speed on
+Gaussian peaks, S-curves, polynomials, charge-sharing spectra and a data
+cube. On ill-conditioned data (few points, many parameters, or parameters
+that nearly trade off against each other) the minimizers stop at different
+points of a flat chi-squared valley, and Migrad in particular can settle on a
+parameter limit with a higher ``chi2`` than the others. Compare ``chi2``
+rather than the parameters when they disagree, fix or bound the poorly
+constrained parameters, and provide start values for the rest.
+
+Parameters and errors
+~~~~~~~~~~~~~~~~~~~~~
+
+Start values are estimated from the data. ``SetParameter`` overrides the
+estimate, ``FixParameter`` keeps a parameter at a given value, and
+``SetParLimits`` restricts it to a range where ``-inf`` and ``inf`` leave a
+side open (the Minuit2 minimizers turn an open side into a wide finite one);
+free start values are clamped into their limits. The constructor arguments
+control the minimizer:
+
+- ``max_calls`` (default 100) caps the work per pixel: Minuit2 function calls
+  for Migrad and Fumili, model evaluations for LevenbergMarquardt and VarPro,
+  which spend one evaluation per iteration (two when a step crosses a limit).
+  ``0`` selects Minuit's default max calls of ``200 + 100 * npar + 5 * npar**2``.
+  A pixel that does not converge within the budget returns zeros; the six-
+  and eight-parameter models on noisy data need several hundred calls, so
+  raise the default when such pixels fail.
+- ``tolerance`` is the EDM tolerance in Minuit's convention. Migrad,
+  LevenbergMarquardt and VarPro stop when the estimated distance
+  to the minimum is below ``0.002 * tolerance``, Fumili below
+  ``1e-4 * tolerance``. The EDM is measured in units of ``chi2``, not
+  relative to the data: without ``y_err`` every sample counts with an error
+  of 1, so a fit of small values (amplitudes well below 1) meets the
+  tolerance while still far from the minimum. Pass ``y_err`` or lower
+  ``tolerance`` for such data.
+- ``strategy`` is the Minuit2 strategy (0 is fast, 1 is Minuit2's default).
+  LevenbergMarquardt and VarPro ignore it.
+- ``compute_errors`` adds ``par_err`` to the result. Fixed parameters and
+  parameters that end on a limit report an error of 0 with every minimizer.
+  Migrad's Hesse errors include the residual-weighted second derivatives of
+  the model, which the Gauss-Newton estimates of the other three omit; the
+  two agree when the model describes the data (``chi2`` per degree of freedom
+  near 1) and the Gauss-Newton errors come out smaller for a poorer fit.
+
+Unknown parameter names raise ``RuntimeError``, bad indices ``IndexError``,
+and ``SetParLimits`` rejects a lower limit at or above the upper one.
 
 .. autofunction:: fit
+
+.. autoclass:: Minimizer
+    :members: Migrad, Fumili, LevenbergMarquardt, VarPro

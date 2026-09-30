@@ -5,7 +5,7 @@ regex = '^(?P<version>\d+(?:\.\d+)*(?:[\.\+\w]+)?)$'
 result = "{version}" 
 
 [build-system]
-requires = ["scikit-build-core>=0.10", "pybind11", "numpy"]
+requires = ["scikit-build-core>=0.11", "pybind11", "numpy"]
 build-backend = "scikit_build_core.build"
 
 [project]
@@ -16,7 +16,8 @@ dependencies = [
     "numpy",
     "matplotlib",
 ]
-license = { file = "LICENSE" }
+license = "MPL-2.0 AND Apache-2.0 AND MIT AND BSD-3-Clause AND LGPL-2.1-or-later"
+license-files = ["LICENSES/*", "THIRD-PARTY-NOTICES.txt"]
 
 
 

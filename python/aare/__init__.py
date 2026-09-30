@@ -6,26 +6,41 @@ from . import transform
 from . import experimental
 
 from ._aare import (
+    FastPedestal_d,
+    FastPedestal_f,
+    FastPedestal_i16,
+    Pedestal_d,
+    Pedestal_f,
+    Pedestal_i16,
+    ClusterFinder_Cluster3x3i,
+    VarClusterFinder,
+)
+from ._aare import (
     File,
     JungfrauDataFile,
     RawMasterFile,
     RawSubFile,
 )
 from ._aare import Pedestal_d, Pedestal_f, ClusterFinder_Cluster3x3i, VarClusterFinder
-from ._aare import DetectorType, ReadoutMode 
+from ._aare import DetectorType, FrameDiscardPolicy, ReadoutMode
 from ._aare import hitmap
 from ._aare import ROI
 from ._aare import corner 
 
+from ._aare import UDPPortPosition
+
 # from ._aare import ClusterFinderMT, ClusterCollector, ClusterFileSink, ClusterVector_i
 
 from ._version import __version__
+from .FastPedestal import FastPedestal
+from .Pedestal import Pedestal
 from .ClusterFinder import ClusterFinder, ClusterCollector, ClusterFinderMT, ClusterFileSink, ClusterFile
 from .ClusterVector import ClusterVector
 from .Cluster import Cluster
 
 from ._aare import Gaussian, RisingScurve, FallingScurve, Pol1, Pol2, GaussianErfcPlateau, GaussianChargeSharing, GaussianChargeSharingKb
 from ._aare import fit
+from ._aare import Minimizer
 from ._aare import Interpolator
 from ._aare import calculate_eta2, calculate_eta3, calculate_cross_eta3, calculate_full_eta2
 from ._aare import reduce_to_2x2, reduce_to_3x3

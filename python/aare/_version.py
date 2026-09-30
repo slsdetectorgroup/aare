@@ -1,3 +1,4 @@
+# SPDX-License-Identifier: MPL-2.0
 # This file is used to get the version of the package from the VERSION file
 from importlib.metadata import PackageNotFoundError, version
 from pathlib import Path

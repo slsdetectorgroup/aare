@@ -41,31 +41,60 @@ template <typename T> py::array return_vector(std::vector<T> *vec) {
                           free_when_done); // numpy array references this parent
 }
 
-// todo rewrite generic
-template <class T, int Flags>
-auto get_shape_3d(const py::array_t<T, Flags> &arr) {
-    return aare::Shape<3>{arr.shape(0), arr.shape(1), arr.shape(2)};
+// Create a NDView of a numpy array. NDView assumes C-order strides so we
+// reject anything that is not Ndim dimensional and C-contiguous instead of
+// silently reading the data in the wrong order.
+template <ssize_t Ndim, class T, int Flags>
+auto get_checked_shape(const py::array_t<T, Flags> &arr) {
+    if (arr.ndim() != Ndim) {
+        throw py::value_error(
+            fmt::format("Expected {}D array, got {}D", Ndim, arr.ndim()));
+    }
+    if (!(arr.flags() & py::array::c_style)) {
+        throw py::value_error(
+            "Array is not C-contiguous. Use np.ascontiguousarray(arr)");
+    }
+    aare::Shape<Ndim> shape{};
+    for (ssize_t i = 0; i < Ndim; ++i) {
+        shape[i] = arr.shape(i);
+    }
+    return shape;
+}
+
+template <ssize_t Ndim, class T, int Flags>
+auto make_view(py::array_t<T, Flags> &arr) {
+    auto shape = get_checked_shape<Ndim>(arr);
+    return aare::NDView<T, Ndim>(arr.mutable_data(), shape);
+}
+
+// Read only view, also works for numpy arrays that are not writeable
+template <ssize_t Ndim, class T, int Flags>
+auto make_const_view(const py::array_t<T, Flags> &arr) {
+    auto shape = get_checked_shape<Ndim>(arr);
+    return aare::NDView<const T, Ndim>(arr.data(), shape);
 }
 
 template <class T, int Flags> auto make_view_3d(py::array_t<T, Flags> &arr) {
-    return aare::NDView<T, 3>(arr.mutable_data(), get_shape_3d<T, Flags>(arr));
+    return make_view<3>(arr);
 }
-
-template <class T, int Flags>
-auto get_shape_2d(const py::array_t<T, Flags> &arr) {
-    return aare::Shape<2>{arr.shape(0), arr.shape(1)};
-}
-
-template <class T, int Flags>
-auto get_shape_1d(const py::array_t<T, Flags> &arr) {
-    return aare::Shape<1>{arr.shape(0)};
-}
-
 template <class T, int Flags> auto make_view_2d(py::array_t<T, Flags> &arr) {
-    return aare::NDView<T, 2>(arr.mutable_data(), get_shape_2d<T, Flags>(arr));
+    return make_view<2>(arr);
 }
 template <class T, int Flags> auto make_view_1d(py::array_t<T, Flags> &arr) {
-    return aare::NDView<T, 1>(arr.mutable_data(), get_shape_1d<T, Flags>(arr));
+    return make_view<1>(arr);
+}
+
+template <class T, int Flags>
+auto make_const_view_3d(const py::array_t<T, Flags> &arr) {
+    return make_const_view<3>(arr);
+}
+template <class T, int Flags>
+auto make_const_view_2d(const py::array_t<T, Flags> &arr) {
+    return make_const_view<2>(arr);
+}
+template <class T, int Flags>
+auto make_const_view_1d(const py::array_t<T, Flags> &arr) {
+    return make_const_view<1>(arr);
 }
 
 template <typename ClusterType> struct fmt_format_trait; // forward declaration

@@ -10,7 +10,6 @@
 #include <pybind11/stl_bind.h>
 
 namespace py = pybind11;
-using pd_type = double;
 
 using namespace aare;
 
@@ -25,20 +24,26 @@ void define_Cluster(py::module &m, const std::string &typestr) {
     py::class_<Cluster<Type, ClusterSizeX, ClusterSizeY, CoordType>>(
         m, class_name.c_str(), py::buffer_protocol())
 
+        // conversion ok: small input, accept lists and any numeric dtype
         .def(py::init([](CoordType x, CoordType y,
                          py::array_t<Type, py::array::forcecast> data) {
-            py::buffer_info buf_info = data.request();
+            constexpr py::ssize_t n_pixels = ClusterSizeX * ClusterSizeY;
+            if (data.ndim() != 1 || data.size() != n_pixels) {
+                throw py::value_error(fmt::format(
+                    "Cluster data must be a 1D array of {} values, got {}D "
+                    "array with {} values",
+                    n_pixels, data.ndim(), data.size()));
+            }
             Cluster<Type, ClusterSizeX, ClusterSizeY, CoordType> cluster;
             cluster.x = x;
             cluster.y = y;
             auto r = data.template unchecked<1>(); // no bounds checks
-            for (py::ssize_t i = 0; i < data.size(); ++i) {
+            for (py::ssize_t i = 0; i < n_pixels; ++i) {
                 cluster.data[i] = r(i);
             }
             return cluster;
         }))
 
-        // TODO! Review if to keep or not
         .def_property_readonly(
             "data",
             [](Cluster<Type, ClusterSizeX, ClusterSizeY, CoordType> &c)
@@ -61,6 +66,26 @@ void define_Cluster(py::module &m, const std::string &typestr) {
         .def_readonly("y",
                       &Cluster<Type, ClusterSizeX, ClusterSizeY, CoordType>::y)
 
+        .def("__repr__",
+             [class_name](const Cluster<Type, ClusterSizeX, ClusterSizeY,
+                                        CoordType> &self) {
+                 fmt::memory_buffer data;
+                 fmt::format_to(std::back_inserter(data), "[[");
+                 for (size_t i = 0; i < self.data.size(); ++i) {
+                     if (i != 0) {
+                         fmt::format_to(std::back_inserter(data),
+                                        i % ClusterSizeX == 0 ? "], [" : ", ");
+                     }
+                     fmt::format_to(std::back_inserter(data), "{}",
+                                    self.data[i]);
+                 }
+                 fmt::format_to(std::back_inserter(data), "]]");
+
+                 return fmt::format("{}(x={}, y={}, data={})", class_name,
+                                    self.x, self.y,
+                                    fmt::string_view(data.data(), data.size()));
+             })
+
         .def(
             "max_sum_2x2",
             [](Cluster<Type, ClusterSizeX, ClusterSizeY, CoordType> &self) {
@@ -68,8 +93,16 @@ void define_Cluster(py::module &m, const std::string &typestr) {
                 return py::make_tuple(max_sum.sum,
                                       static_cast<int>(max_sum.index));
             },
-            R"(calculates sum of 2x2 subcluster with highest energy and index relative to cluster center 0: top_left, 1: top_right, 2: bottom_left, 3: bottom_right
-            )");
+            R"doc(
+            Return the highest-sum center-adjacent 2x2 subcluster.
+
+            Returns
+            -------
+            tuple
+                ``(sum, index)``, where index is 0 for top-left, 1 for
+                top-right, 2 for bottom-left, or 3 for bottom-right relative to
+                the cluster center.
+            )doc");
 }
 
 template <typename T, uint8_t ClusterSizeX, uint8_t ClusterSizeY,
@@ -81,7 +114,14 @@ void reduce_to_3x3(py::module &m) {
         [](const Cluster<T, ClusterSizeX, ClusterSizeY, CoordType> &cl) {
             return reduce_to_3x3(cl);
         },
-        py::return_value_policy::move, R"(Reduce cluster to 3x3 subcluster)");
+        py::return_value_policy::move, py::arg("cluster"), R"doc(
+        Return the 3x3 block around the cluster's center index.
+
+        Both input dimensions must be at least 3, and at least one must be
+        greater than 3.
+        The input coordinates are preserved and output data is stored in
+        row-major order.
+        )doc");
 }
 
 template <typename T, uint8_t ClusterSizeX, uint8_t ClusterSizeY,
@@ -93,16 +133,12 @@ void reduce_to_2x2(py::module &m) {
         [](const Cluster<T, ClusterSizeX, ClusterSizeY, CoordType> &cl) {
             return reduce_to_2x2(cl);
         },
-        py::return_value_policy::move,
-        R"(
-        Reduce cluster to 2x2 subcluster by taking the 2x2 subcluster with 
-        the highest photon energy.
+        py::return_value_policy::move, py::arg("cluster"), R"doc(
+        Return the highest-sum center-adjacent 2x2 block.
 
-        RETURN: 
-        
-        reduced cluster (cluster is filled in row major ordering starting at the top left. Thus for a max subcluster in the top left corner the photon hit is at the fourth position.)
-        
-        )");
+        The input coordinates are preserved and output data is stored in
+        row-major order.
+        )doc");
 }
 
 #pragma GCC diagnostic pop

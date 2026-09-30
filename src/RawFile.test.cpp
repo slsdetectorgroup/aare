@@ -5,14 +5,222 @@
 
 #include <catch2/catch_test_macros.hpp>
 #include <catch2/generators/catch_generators.hpp>
+#include <catch2/matchers/catch_matchers_string.hpp>
 #include <filesystem>
 
+#include "raw_file_helpers.hpp"
 #include "test_config.hpp"
 #include "test_macros.hpp"
 
 using aare::File;
 using aare::RawFile;
 using namespace aare;
+
+TEST_CASE("RawFile requires padding or discarding partial frames",
+          "[RawFile][frame-policy]") {
+    const auto [padding, policy, supported] =
+        GENERATE(table<size_t, std::string, bool>({
+            {0, "nodiscard", false},
+            {0, "discard", false},
+            {0, "discardpartial", true},
+            {1, "nodiscard", true},
+            {1, "discard", true},
+            {1, "discardpartial", true},
+        }));
+    CAPTURE(padding, policy);
+    TemporaryRawFiles files;
+    nlohmann::json metadata;
+    std::ifstream(files.master_path()) >> metadata;
+    metadata["Frame Padding"] = padding;
+    metadata["Frame Discard Policy"] = policy;
+    std::ofstream(files.master_path()) << metadata;
+
+    REQUIRE(RawMasterFile(files.master_path()).frame_padding() == padding);
+    if (supported) {
+        RawFile reader(files.master_path());
+        REQUIRE(reader.total_frames() == 2);
+        auto frame = reader.read_frame();
+        REQUIRE(frame.view<uint16_t>()(0, 0) == 1);
+        File generic_reader(files.master_path());
+        auto generic_frame = generic_reader.read_frame();
+        REQUIRE(generic_frame.view<uint16_t>()(0, 0) == 1);
+    } else {
+        SECTION("with data subfiles") {}
+        SECTION("without data subfiles") {
+            std::filesystem::remove(files.data_path(0, 0));
+            std::filesystem::remove(files.data_path(0, 1));
+        }
+        const auto path_matcher =
+            Catch::Matchers::ContainsSubstring(files.master_path().string());
+        const auto policy_matcher = Catch::Matchers::ContainsSubstring(
+            "requires frame padding or discardpartial");
+        const auto message = path_matcher && policy_matcher;
+        REQUIRE_THROWS_AS(RawFile(files.master_path()), std::runtime_error);
+        REQUIRE_THROWS_WITH(RawFile(files.master_path()), message);
+        REQUIRE_THROWS_WITH(File(files.master_path()), message);
+    }
+}
+
+TEST_CASE("RawFile read errors identify the frame index and master path",
+          "[RawFile][read-errors]") {
+    TemporaryRawFiles files;
+    RawFile file(files.master_path());
+    REQUIRE(file.frame_number(1) == 101);
+    file.seek(2);
+    const auto index_matcher =
+        Catch::Matchers::ContainsSubstring("frame index 2");
+    const auto path_matcher =
+        Catch::Matchers::ContainsSubstring(files.master_path().string());
+    const auto context = index_matcher && path_matcher;
+    std::vector<std::byte> buffer(file.bytes_per_frame() * 2);
+    DetectorHeader headers[2]{};
+
+    SECTION("sequential frame") {
+        REQUIRE_THROWS_WITH(
+            file.read_frame(),
+            index_matcher && path_matcher &&
+                Catch::Matchers::ContainsSubstring(
+                    "file contains 2 frames (indices are zero-based)") &&
+                !Catch::Matchers::ContainsSubstring(".raw"));
+    }
+    SECTION("indexed frame at EOF") {
+        REQUIRE_THROWS_WITH(file.read_frame(2), context);
+    }
+    SECTION("indexed frame beyond EOF") {
+        REQUIRE_THROWS_WITH(
+            file.read_frame(17),
+            Catch::Matchers::ContainsSubstring("frame index 17") &&
+                Catch::Matchers::ContainsSubstring(
+                    files.master_path().string()));
+    }
+    SECTION("batch crosses EOF") {
+        file.seek(1);
+        REQUIRE_THROWS_WITH(file.read_n(2), context);
+    }
+    SECTION("read into buffer") {
+        FileInterface &reader = file;
+        REQUIRE_THROWS_WITH(reader.read_into(buffer.data()), context);
+    }
+    SECTION("batch into buffer") {
+        file.seek(1);
+        REQUIRE_THROWS_WITH(file.read_into(buffer.data(), size_t{2}), context);
+    }
+    SECTION("read with header") {
+        REQUIRE_THROWS_WITH(file.read_into(buffer.data(), headers), context);
+    }
+    SECTION("batch with headers") {
+        file.seek(1);
+        REQUIRE_THROWS_WITH(file.read_into(buffer.data(), 2, headers), context);
+    }
+    SECTION("single ROI") { REQUIRE_THROWS_WITH(file.read_roi(0), context); }
+    SECTION("all ROIs") { REQUIRE_THROWS_WITH(file.read_rois(), context); }
+    SECTION("ROI into buffer") {
+        REQUIRE_THROWS_WITH(file.read_roi_into(buffer.data(), 0, 2), context);
+    }
+    SECTION("ROI batch") {
+        file.seek(1);
+        REQUIRE_THROWS_WITH(file.read_n_with_roi(2, 0), context);
+    }
+    SECTION("frame number") {
+        REQUIRE_THROWS_WITH(file.frame_number(2), context);
+    }
+    SECTION("generic File") {
+        File reader(files.master_path());
+        REQUIRE_THROWS_WITH(reader.read_frame(2), context);
+    }
+}
+
+TEST_CASE("RawFile synchronization errors retain the requested index",
+          "[RawFile][read-errors]") {
+    TemporaryRawFiles files(2);
+    const size_t lagging_module = GENERATE(0, 1);
+    {
+        std::fstream output(files.data_path(1 - lagging_module, 1),
+                            std::ios::binary | std::ios::in | std::ios::out);
+        DetectorHeader header{};
+        header.frameNumber = 102;
+        output.write(reinterpret_cast<const char *>(&header), sizeof(header));
+    }
+    RawFile file(files.master_path());
+    REQUIRE_THROWS_WITH(
+        file.read_frame(1),
+        Catch::Matchers::ContainsSubstring("frame index 1") &&
+            Catch::Matchers::ContainsSubstring(files.master_path().string()) &&
+            Catch::Matchers::ContainsSubstring(
+                files.data_path(lagging_module, 1).string()) &&
+            Catch::Matchers::ContainsSubstring("synchroniz"));
+}
+
+TEST_CASE("RawFile reports the failing data file and requested frame",
+          "[RawFile][read-errors]") {
+    TemporaryRawFiles files;
+    RawFile file(files.master_path());
+    std::filesystem::resize_file(files.data_path(0, 1), sizeof(DetectorHeader));
+    REQUIRE_THROWS_WITH(
+        file.read_frame(1),
+        Catch::Matchers::ContainsSubstring("frame index 1") &&
+            !Catch::Matchers::ContainsSubstring(files.master_path().string()) &&
+            Catch::Matchers::ContainsSubstring(
+                files.data_path(0, 1).string()) &&
+            Catch::Matchers::ContainsSubstring("End of file"));
+}
+
+TEST_CASE("RawFile bounds use the shortest subfile",
+          "[RawFile][read-errors][frame-count]") {
+    TemporaryRawFiles files(2);
+    const size_t short_module = GENERATE(0, 1);
+    std::filesystem::remove(files.data_path(short_module, 1));
+    RawFile file(files.master_path());
+    REQUIRE(file.total_frames() == 1);
+    REQUIRE(file.master().frames_in_file() == 2);
+    REQUIRE_NOTHROW(file.read_frame(0));
+    const auto expected = Catch::Matchers::ContainsSubstring(
+        "Error reading frame index 1 from file '" +
+        files.master_path().string() + "':");
+
+    SECTION("indexed frame") {
+        REQUIRE_THROWS_WITH(file.read_frame(1), expected);
+    }
+    SECTION("batch") {
+        file.seek(0);
+        REQUIRE_THROWS_WITH(file.read_n(2), expected);
+    }
+    SECTION("ROI") {
+        file.seek(1);
+        REQUIRE_THROWS_WITH(file.read_roi(0), expected);
+    }
+    SECTION("generic File") {
+        File reader(files.master_path());
+        REQUIRE_THROWS_WITH(reader.read_frame(1), expected);
+    }
+    SECTION("frame number") {
+        REQUIRE_THROWS_WITH(file.frame_number(1), expected);
+    }
+}
+
+TEST_CASE("RawFile frame count comes from the complete subfile series",
+          "[RawFile][frame-count]") {
+    TemporaryRawFiles files;
+    const size_t master_frames = GENERATE(0, 1, 2, 5);
+    auto metadata = nlohmann::json::parse(std::ifstream(files.master_path()));
+    metadata["Frames in File"] = master_frames;
+    metadata["Total Frames"] = 1000;
+    std::ofstream(files.master_path()) << metadata;
+
+    RawFile file(files.master_path());
+    REQUIRE(file.total_frames() == 2);
+    REQUIRE(file.master().frames_in_file() == master_frames);
+    REQUIRE(file.master().total_frames_expected() == 1000);
+    REQUIRE(file.frame_number(1) == 101);
+    REQUIRE_NOTHROW(file.read_frame(1));
+    REQUIRE_THROWS(file.frame_number(2));
+    REQUIRE_THROWS(file.read_frame(2));
+
+    File reader(files.master_path());
+    REQUIRE(reader.total_frames() == 2);
+    REQUIRE(reader.frame_number(1) == 101);
+    REQUIRE_NOTHROW(reader.read_frame(1));
+}
 
 TEST_CASE("Read number of frames from a jungfrau raw file",
           "[.with-data][RawFile]") {
@@ -263,8 +471,9 @@ TEST_CASE("check find_geometry", "[.with-data][RawFile]") {
     RawMasterFile master_file(fpath);
 
     auto geometry = DetectorGeometry(
-        master_file.geometry(), master_file.pixels_x(), master_file.pixels_y(),
-        master_file.udp_interfaces_per_module(), master_file.quad());
+        master_file.detector_layout(), master_file.pixels_x(),
+        master_file.pixels_y(), master_file.udp_interfaces_per_module(),
+        master_file.quad());
 
     CHECK(geometry.modules_x() == test_parameters.modules_x);
     CHECK(geometry.modules_y() == test_parameters.modules_y);
@@ -308,8 +517,8 @@ TEST_CASE("Open multi module file with ROI",
     RawFile f(fpath, "r");
 
     SECTION("read 2 frames") {
-        REQUIRE(f.master().roi().value().width() == 256);
-        REQUIRE(f.master().roi().value().height() == 256);
+        REQUIRE(f.master().roi().width() == 256);
+        REQUIRE(f.master().roi().height() == 256);
 
         CHECK(f.n_modules() == 2);
 
@@ -400,8 +609,299 @@ TEST_CASE("Read Mythenframe", "[.with-data][RawFile]") {
     auto fpath = test_data_path() / "raw/newmythen03/run_2_master_1.json";
     REQUIRE(std::filesystem::exists(fpath));
     RawFile f(fpath);
-    REQUIRE(f.master().roi().value().width() == 2560);
-    REQUIRE(f.master().roi().value().height() == 1);
+    REQUIRE(f.master().roi().width() == 2560);
+    REQUIRE(f.master().roi().height() == 1);
     auto frame = f.read_frame();
     REQUIRE(frame.cols() == 2560);
+}
+
+TEST_CASE("Read Jungfrau frame with disabled UDP ports",
+          "[.with-data][RawFile][disabled_udp_ports]") {
+    SECTION("disabled top port") {
+        auto fpath = test_data_path() / "raw/jungfrau" /
+                     "2_interfaces_top_disabled_master_6.json";
+        REQUIRE(std::filesystem::exists(fpath));
+        RawFile f(fpath);
+        REQUIRE(f.master().disabled_udp_ports() == std::vector<size_t>{1});
+        REQUIRE(f.master().udp_port_types().value() ==
+                std::vector<UDPPortPosition>{UDPPortPosition::BOTTOM,
+                                             UDPPortPosition::TOP});
+        auto frame = f.read_frame();
+        REQUIRE(frame.cols() == 1024);
+        REQUIRE(frame.rows() == 256);
+
+        auto rois = f.master().rois();
+
+        REQUIRE(rois.size() == 1);
+        REQUIRE(rois[0] == ROI{0, 1024, 0, 256});
+    }
+
+    SECTION("disabled bottom port") {
+        auto fpath = test_data_path() / "raw/jungfrau" /
+                     "2_interfaces_bottom_port_disabled_master_0.json";
+        REQUIRE(std::filesystem::exists(fpath));
+        RawFile f(fpath);
+        REQUIRE(f.master().disabled_udp_ports() == std::vector<size_t>{0});
+        REQUIRE(f.master().udp_port_types().value() ==
+                std::vector<UDPPortPosition>{UDPPortPosition::BOTTOM,
+                                             UDPPortPosition::TOP});
+        auto frame = f.read_frame();
+        REQUIRE(frame.cols() == 1024);
+        REQUIRE(frame.rows() == 256);
+        auto rois = f.master().rois();
+        REQUIRE(rois.size() == 1);
+        REQUIRE(rois[0] == ROI{0, 1024, 256, 512});
+    }
+    SECTION("2 modules - top ports disabled") {
+        auto fpath = test_data_path() / "raw/jungfrau" /
+                     "2_modules_2_interfaces_top_ports_disabled_master_2.json";
+        REQUIRE(std::filesystem::exists(fpath));
+        RawFile f(fpath);
+        REQUIRE(f.master().disabled_udp_ports() == std::vector<size_t>{1, 3});
+        REQUIRE(f.master().udp_port_types().value() ==
+                std::vector<UDPPortPosition>{UDPPortPosition::BOTTOM,
+                                             UDPPortPosition::TOP});
+        REQUIRE_THROWS_WITH(
+            f.read_frame(),
+            Catch::Matchers::ContainsSubstring(
+                "Multiple ROIs present in file. Use read_ROIs() "
+                "instead")); // cannot read frame
+                             // because multiple rois
+
+        auto frame = f.read_rois();
+
+        REQUIRE(frame.size() == 2);
+        REQUIRE(frame[0].cols() == 1024);
+        REQUIRE(frame[0].rows() == 256);
+        REQUIRE(frame[1].cols() == 1024);
+        REQUIRE(frame[1].rows() == 256);
+        auto rois = f.master().rois();
+        REQUIRE(rois.size() == 2);
+        REQUIRE(rois[0] == ROI{0, 1024, 0, 256});
+        REQUIRE(rois[1] == ROI{0, 1024, 512, 768});
+    }
+    SECTION("2 modules - top ports disabled - bottom port disabled") {
+        auto fpath = test_data_path() / "raw/jungfrau" /
+                     "2_modules_2_interfaces_disabled_ports_master_1.json";
+        REQUIRE(std::filesystem::exists(fpath));
+        RawFile f(fpath);
+        REQUIRE(f.master().disabled_udp_ports() == std::vector<size_t>{0, 3});
+        REQUIRE(f.master().udp_port_types().value() ==
+                std::vector<UDPPortPosition>{UDPPortPosition::BOTTOM,
+                                             UDPPortPosition::TOP});
+        auto frame = f.read_frame();
+        REQUIRE(frame.cols() == 1024);
+        REQUIRE(frame.rows() == 512);
+        auto rois = f.master().rois();
+        REQUIRE(rois.size() == 1);
+        REQUIRE(rois[0] == ROI{0, 1024, 256, 768});
+    }
+    SECTION("4 modules- mixed ports disabled") {
+        auto fpath = test_data_path() / "raw/jungfrau" /
+                     "4_modules_udp_disabled_master_0.json";
+        REQUIRE(std::filesystem::exists(fpath));
+        RawFile f(fpath);
+        REQUIRE(f.master().disabled_udp_ports() ==
+                std::vector<size_t>{1, 3, 4, 6});
+        REQUIRE(f.master().udp_port_types().value() ==
+                std::vector<UDPPortPosition>{UDPPortPosition::BOTTOM,
+                                             UDPPortPosition::TOP});
+        REQUIRE_THROWS_WITH(
+            f.read_frame(),
+            Catch::Matchers::ContainsSubstring(
+                "Multiple ROIs present in file. Use read_ROIs() "
+                "instead"));
+        auto frames = f.read_rois();
+        REQUIRE(frames.size() == 4);
+        REQUIRE(frames[0].cols() == 1024);
+        REQUIRE(frames[0].rows() == 256);
+        REQUIRE(frames[1].cols() == 1024);
+        REQUIRE(frames[1].rows() == 256);
+        REQUIRE(frames[2].cols() == 1024);
+        REQUIRE(frames[2].rows() == 256);
+        REQUIRE(frames[3].cols() == 1024);
+        REQUIRE(frames[3].rows() == 256);
+        auto rois = f.master().rois();
+        REQUIRE(rois.size() == 4);
+        REQUIRE(rois[0] == ROI{0, 1024, 0, 256});
+        REQUIRE(rois[1] == ROI{0, 1024, 512, 768});
+        REQUIRE(rois[2] == ROI{1024, 2048, 256, 512});
+        REQUIRE(rois[3] == ROI{1024, 2048, 768, 1024});
+    }
+}
+
+TEST_CASE("Read Moench frame with disabled UDP ports",
+          "[.with-data][RawFile][disabled_udp_ports]") {
+    SECTION("disabled top port") {
+        auto fpath = test_data_path() / "raw/moench" /
+                     "2_interfaces_top_port_disabled_master_0.json";
+        REQUIRE(std::filesystem::exists(fpath));
+        RawFile f(fpath);
+        REQUIRE(f.master().disabled_udp_ports() == std::vector<size_t>{1});
+        REQUIRE(f.master().udp_port_types().value() ==
+                std::vector<UDPPortPosition>{UDPPortPosition::BOTTOM,
+                                             UDPPortPosition::TOP});
+        auto frame = f.read_frame();
+        REQUIRE(frame.cols() == 400);
+        REQUIRE(frame.rows() == 200);
+        auto rois = f.master().rois();
+
+        REQUIRE(rois.size() == 1);
+        REQUIRE(rois[0] == ROI{0, 400, 0, 200});
+    }
+
+    SECTION("disabled bottom port") {
+        auto fpath = test_data_path() / "raw/moench" /
+                     "2_interfaces_bottom_port_disabled_master_6.json";
+        REQUIRE(std::filesystem::exists(fpath));
+        RawFile f(fpath);
+        REQUIRE(f.master().disabled_udp_ports() == std::vector<size_t>{0});
+        REQUIRE(f.master().udp_port_types().value() ==
+                std::vector<UDPPortPosition>{UDPPortPosition::BOTTOM,
+                                             UDPPortPosition::TOP});
+        auto frame = f.read_frame();
+        REQUIRE(frame.cols() == 400);
+        REQUIRE(frame.rows() == 200);
+        auto rois = f.master().rois();
+
+        REQUIRE(rois.size() == 1);
+        REQUIRE(rois[0] == ROI{0, 400, 200, 400});
+    }
+}
+
+TEST_CASE("Read Eiger frame with disabled UDP ports",
+          "[.with-data][RawFile][disabled_udp_ports]") {
+    SECTION("disabled left port (bottom and top half module)") {
+        auto fpath = test_data_path() / "raw/eiger" /
+                     "left_udp_port_disabled_master_2.json";
+        REQUIRE(std::filesystem::exists(fpath));
+        RawFile f(fpath);
+        REQUIRE(f.master().disabled_udp_ports() == std::vector<size_t>{0, 2});
+        REQUIRE(f.master().udp_port_types().value() ==
+                std::vector<UDPPortPosition>{UDPPortPosition::LEFT,
+                                             UDPPortPosition::RIGHT});
+
+        auto frame = f.read_frame();
+
+        REQUIRE(frame.cols() == 512);
+        REQUIRE(frame.rows() == 512);
+
+        auto rois = f.master().rois();
+        REQUIRE(rois.size() == 1);
+        REQUIRE(rois[0] == ROI{512, 1024, 0, 512});
+    }
+    SECTION("disabled right port") {
+        auto fpath = test_data_path() / "raw/eiger" /
+                     "right_udp_port_disabled_master_3.json";
+        REQUIRE(std::filesystem::exists(fpath));
+        RawFile f(fpath);
+        REQUIRE(f.master().disabled_udp_ports() == std::vector<size_t>{1, 3});
+        REQUIRE(f.master().udp_port_types().value() ==
+                std::vector<UDPPortPosition>{UDPPortPosition::LEFT,
+                                             UDPPortPosition::RIGHT});
+        auto frame = f.read_frame();
+        REQUIRE(frame.cols() == 512);
+        REQUIRE(frame.rows() == 512);
+        auto rois = f.master().rois();
+        REQUIRE(rois.size() == 1);
+        REQUIRE(rois[0] == ROI{0, 512, 0, 512});
+    }
+    SECTION("2 full modules stacked vertically - right ports disabled") {
+        auto fpath = test_data_path() / "raw/eiger" /
+                     "2_modules_eiger_disabled_udp_port_master_0.json";
+
+        REQUIRE(std::filesystem::exists(fpath));
+        RawFile f(fpath);
+        REQUIRE(f.master().disabled_udp_ports() ==
+                std::vector<size_t>{1, 3, 5, 7});
+        REQUIRE(f.master().udp_port_types().value() ==
+                std::vector<UDPPortPosition>{UDPPortPosition::LEFT,
+                                             UDPPortPosition::RIGHT});
+        REQUIRE_THROWS_WITH(
+            f.read_frame(),
+            Catch::Matchers::ContainsSubstring(
+                "Multiple ROIs present in file. Use read_ROIs() "
+                "instead"));
+        auto frames = f.read_rois();
+        REQUIRE(frames.size() == 2);
+        REQUIRE(frames[0].cols() == 512);
+        REQUIRE(frames[0].rows() == 512);
+        REQUIRE(frames[1].cols() == 512);
+        REQUIRE(frames[1].rows() == 512);
+        auto rois = f.master().rois();
+        REQUIRE(rois.size() == 2);
+        REQUIRE(rois[0] == ROI{0, 512, 0, 512});
+        REQUIRE(rois[1] == ROI{1024, 1536, 0, 512});
+    }
+    SECTION("quad module - bottom port disabled") {
+        auto fpath = test_data_path() / "raw/eiger" /
+                     "quad_eiger_disabled_bottom_port_master_0.json";
+
+        REQUIRE(std::filesystem::exists(fpath));
+        RawFile f(fpath);
+        REQUIRE(f.master().disabled_udp_ports() == std::vector<size_t>{1});
+        REQUIRE(f.master().udp_port_types().value() ==
+                std::vector<UDPPortPosition>{UDPPortPosition::TOP,
+                                             UDPPortPosition::BOTTOM});
+        auto frame = f.read_frame();
+        REQUIRE(frame.cols() == 512);
+        REQUIRE(frame.rows() == 256);
+        auto rois = f.master().rois();
+        REQUIRE(rois.size() == 1);
+        REQUIRE(rois[0] == ROI{0, 512, 256, 512});
+    }
+    SECTION("only bottom left port disabled") {
+        auto fpath = test_data_path() / "raw/eiger" /
+                     "one_udp_port_disabled_master_0.json";
+
+        REQUIRE(std::filesystem::exists(fpath));
+        RawFile f(fpath);
+        REQUIRE(f.master().disabled_udp_ports() == std::vector<size_t>{0});
+        REQUIRE(f.master().udp_port_types().value() ==
+                std::vector<UDPPortPosition>{UDPPortPosition::LEFT,
+                                             UDPPortPosition::RIGHT});
+
+        REQUIRE_THROWS_WITH(
+            f.read_frame(),
+            Catch::Matchers::ContainsSubstring(
+                "Multiple ROIs present in file. Use read_ROIs() instead"));
+
+        auto frame = f.read_rois();
+        REQUIRE(frame.size() == 2);
+        REQUIRE(frame[0].cols() == 512);
+        REQUIRE(frame[0].rows() == 256);
+        REQUIRE(frame[1].cols() == 1024);
+        REQUIRE(frame[1].rows() == 256);
+        auto rois = f.master().rois();
+        REQUIRE(rois.size() == 2);
+
+        REQUIRE(rois[0] == ROI{512, 1024, 0, 256});
+        REQUIRE(rois[1] == ROI{0, 1024, 256, 512});
+    }
+    SECTION("No udp ports disabled") {
+        auto fpath = test_data_path() /
+                     "raw/eiger_virtual_500k_disabled_ports" /
+                     "all_active_master_0.json";
+
+        REQUIRE(std::filesystem::exists(fpath));
+        RawFile f(fpath);
+
+        auto disabled_udp_ports = f.master().disabled_udp_ports();
+        REQUIRE(disabled_udp_ports.empty());
+
+        auto udp_port_types = f.master().udp_port_types();
+        REQUIRE(udp_port_types.has_value());
+        REQUIRE(udp_port_types.value() ==
+                std::vector<UDPPortPosition>{UDPPortPosition::LEFT,
+                                             UDPPortPosition::RIGHT});
+        REQUIRE(f.total_frames() == 5);
+
+        auto frame = f.read_frame();
+        REQUIRE(frame.cols() == 1024);
+        REQUIRE(frame.rows() == 512);
+
+        auto rois = f.master().rois();
+        REQUIRE(rois.size() == 1);
+        REQUIRE(rois[0] == ROI{0, 1024, 0, 512});
+    }
 }

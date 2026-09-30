@@ -12,6 +12,17 @@
 
 namespace aare {
 
+std::runtime_error RawSubFile::frame_error(size_t frame_index,
+                                           const std::string &message) const {
+    return std::runtime_error(
+        fmt::format("Error reading frame index {} from file '{}': {}",
+                    frame_index, current_path().string(), message));
+}
+
+std::filesystem::path RawSubFile::current_path() const {
+    return fpath(m_current_file_index + m_offset);
+}
+
 RawSubFile::RawSubFile(const std::filesystem::path &fname,
                        DetectorType detector, size_t rows, size_t cols,
                        size_t bitdepth, uint32_t pos_row, uint32_t pos_col)
@@ -34,8 +45,9 @@ RawSubFile::RawSubFile(const std::filesystem::path &fname,
 void RawSubFile::seek(size_t frame_index) {
     LOG(logDEBUG) << "RawSubFile::seek(" << frame_index << ")";
     if (frame_index >= m_total_frames) {
-        throw std::runtime_error(LOCATION + " Frame index out of range: " +
-                                 std::to_string(frame_index));
+        throw frame_error(
+            frame_index,
+            fmt::format("out of range (available frames: {})", m_total_frames));
     }
     m_current_frame_index = frame_index;
     auto file_index = first_larger(m_last_frame_in_file, frame_index);
@@ -49,6 +61,9 @@ void RawSubFile::seek(size_t frame_index) {
     auto byte_offset =
         frame_offset * (m_bytes_per_frame + sizeof(DetectorHeader));
     m_file.seekg(byte_offset);
+    if (m_file.fail()) {
+        throw frame_error(frame_index, ifstream_error_msg(m_file));
+    }
 }
 
 size_t RawSubFile::tell() {
@@ -66,7 +81,7 @@ void RawSubFile::read_into(std::byte *image_buf, DetectorHeader *header) {
     }
 
     if (m_file.fail()) {
-        throw std::runtime_error(LOCATION + ifstream_error_msg(m_file));
+        throw frame_error(m_current_frame_index, ifstream_error_msg(m_file));
     }
 
     // TODO! expand support for different bitdepths
@@ -81,8 +96,8 @@ void RawSubFile::read_into(std::byte *image_buf, DetectorHeader *header) {
         } else if (m_bitdepth == 32) {
             read_with_map<uint32_t>(image_buf);
         } else {
-            throw std::runtime_error(
-                "Unsupported bitdepth for read with pixel map");
+            throw frame_error(m_current_frame_index,
+                              "Unsupported bitdepth for read with pixel map");
         }
 
     } else {
@@ -91,7 +106,7 @@ void RawSubFile::read_into(std::byte *image_buf, DetectorHeader *header) {
     }
 
     if (m_file.fail()) {
-        throw std::runtime_error(LOCATION + ifstream_error_msg(m_file));
+        throw frame_error(m_current_frame_index, ifstream_error_msg(m_file));
     }
 
     ++m_current_frame_index;
@@ -135,6 +150,9 @@ size_t RawSubFile::frame_number(size_t frame_index) {
     seek(frame_index);
     DetectorHeader h{};
     m_file.read(reinterpret_cast<char *>(&h), sizeof(DetectorHeader));
+    if (m_file.fail()) {
+        throw frame_error(frame_index, ifstream_error_msg(m_file));
+    }
     return h.frameNumber;
 }
 
@@ -178,8 +196,8 @@ void RawSubFile::open_file(size_t file_index) {
     m_file.open(fname, std::ios::binary);
     if (!m_file.is_open()) {
         throw std::runtime_error(
-            LOCATION +
-            fmt::format("Could not open file {}", fpath(file_index).string()));
+            fmt::format("Could not open file '{}' for frame index {}",
+                        fname.string(), m_current_frame_index));
     }
     m_current_file_index = file_index;
 }
