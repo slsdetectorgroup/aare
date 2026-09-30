@@ -144,6 +144,47 @@ TEST_CASE("frame buffers are recycled when pushing more frames than the pool "
     CHECK(cf.m_input_queues_are_empty() == true);
 }
 
+TEST_CASE("nSigma set before the pedestal is ready reaches all threads") {
+    using ClusterType = Cluster<int32_t, 3, 3>;
+
+    const size_t n_threads = 2;
+    const size_t min_pedestal_samples = 4;
+    const Shape<2> image_size{10, 10};
+
+    ClusterFinderMTWrapper<ClusterType> cf(image_size, 5, 200, n_threads, 16,
+                                           min_pedestal_samples);
+
+    // Pedestal of 100 with a noise of 2 and a 30 ADU hit: a cluster at the
+    // default nSigma of 5, below threshold at nSigma 50.
+    NDArray<uint16_t, 2> low(image_size, 98);
+    NDArray<uint16_t, 2> high(image_size, 102);
+    NDArray<uint16_t, 2> hit(image_size, 100);
+    hit(5, 5) = 130;
+
+    CHECK_FALSE(cf.pedestal_ready());
+    REQUIRE_NOTHROW(cf.set_nSigma(50));
+
+    for (size_t i = 0; i < min_pedestal_samples / 2; ++i) {
+        cf.push_pedestal_frame(low.view());
+        cf.push_pedestal_frame(high.view());
+    }
+    CHECK(cf.pedestal_ready());
+
+    for (size_t i = 0; i < n_threads; ++i) {
+        cf.find_clusters(hit.view(), i);
+    }
+    cf.stop();
+
+    ClusterCollector<ClusterType> collector(&cf);
+    collector.stop();
+
+    auto clusters = collector.steal_clusters();
+    REQUIRE(clusters.size() == n_threads);
+    for (const auto &frame_clusters : clusters) {
+        CHECK(frame_clusters.size() == 0);
+    }
+}
+
 TEST_CASE("cluster collector accepts finders with a matching cluster type") {
     using ClusterType = Cluster<int32_t, 3, 3>;
     using Finder = ClusterFinderMTWrapper<ClusterType, uint16_t, float>;

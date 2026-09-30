@@ -62,6 +62,10 @@ void define_ClusterFinderMT(py::module &m, const std::string &typestr) {
              &ClusterFinderMT<ClusterType, uint16_t, pd_type>::clear_pedestal)
         .def("update_threshold",
              &ClusterFinderMT<ClusterType, uint16_t, pd_type>::update_threshold)
+        .def(
+            "pedestal_ready",
+            &ClusterFinderMT<ClusterType, uint16_t, pd_type>::pedestal_ready,
+            R"(waits for the queued frames, then returns True if all cluster finders have enough pedestal frames to find clusters.)")
         .def("sync", &ClusterFinderMT<ClusterType, uint16_t, pd_type>::sync)
         .def("stop", &ClusterFinderMT<ClusterType, uint16_t, pd_type>::stop)
         .def("start", &ClusterFinderMT<ClusterType, uint16_t, pd_type>::start)

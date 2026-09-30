@@ -68,13 +68,17 @@ class ClusterFinder {
     }
 
     /**
-     * @brief Set the noise multiplier used for threshold calculation and
-     * recompute the threshold.
+     * @brief Set the noise multiplier used for threshold calculation.
+     *
+     * The threshold is recomputed immediately if the pedestal is ready,
+     * otherwise when the pedestal becomes ready.
      * @param nSigma New per-pixel noise multiplier.
      */
     void set_nSigma(PEDESTAL_TYPE nSigma) {
         m_nSigma = nSigma;
-        update_threshold();
+        if (m_pedestal.ready()) {
+            update_threshold();
+        }
     }
 
     /** @brief Return the current noise multiplier used for threshold
@@ -110,8 +114,23 @@ class ClusterFinder {
     /** @brief Clear the pedestal and mark it as not ready. */
     void clear_pedestal() { m_pedestal.clear(); }
 
-    /** @brief Recompute the threshold as noise multiplied by nSigma. */
-    void update_threshold() { m_threshold = m_pedestal.std() * m_nSigma; }
+    /**
+     * @brief Return whether enough pedestal frames have been pushed to find
+     * clusters.
+     */
+    bool pedestal_ready() const { return m_pedestal.ready(); }
+
+    /**
+     * @brief Recompute the threshold as noise multiplied by nSigma.
+     * @throws std::runtime_error if the pedestal is not ready.
+     */
+    void update_threshold() {
+        if (!m_pedestal.ready()) {
+            throw std::runtime_error(
+                "Pedestal is not ready, cannot update threshold");
+        }
+        m_threshold = m_pedestal.std() * m_nSigma;
+    }
 
     /**
      * @brief Move out all accumulated clusters and reset the internal vector.

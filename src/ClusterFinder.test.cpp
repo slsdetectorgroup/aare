@@ -2,6 +2,7 @@
 #include "aare/ClusterFinder.hpp"
 #include "aare/Pedestal.hpp"
 #include <catch2/catch_test_macros.hpp>
+#include <catch2/generators/catch_generators.hpp>
 #include <catch2/matchers/catch_matchers_floating_point.hpp>
 #include <chrono>
 #include <random>
@@ -43,6 +44,42 @@ TEST_CASE("Construct a cluster finder") {
     // REQUIRE(clusterFinder.get_cluster_sizeY() == 3);
     // REQUIRE(clusterFinder.get_threshold() == 1);
     // REQUIRE(clusterFinder.get_nSigma() == 1);
+}
+
+TEST_CASE("nSigma set before the pedestal is ready is used for the threshold") {
+    const Shape<2> image_size{10, 10};
+    const size_t min_pedestal_samples = 4;
+
+    // Pedestal of 100 with a noise of 2 and a 30 ADU hit: a cluster at the
+    // default nSigma of 5, below threshold at nSigma 50.
+    NDArray<uint16_t, 2> low(image_size, 98);
+    NDArray<uint16_t, 2> high(image_size, 102);
+    NDArray<uint16_t, 2> hit(image_size, 100);
+    hit(5, 5) = 130;
+
+    const double nSigma = GENERATE(5.0, 50.0);
+    const size_t expected_clusters = nSigma == 5.0 ? 1 : 0;
+
+    ClusterFinder<Cluster<int32_t, 3, 3>> cf(image_size, 5.0, 100,
+                                             min_pedestal_samples);
+    REQUIRE_FALSE(cf.pedestal_ready());
+    REQUIRE_NOTHROW(cf.set_nSigma(nSigma));
+    REQUIRE(cf.get_nSigma() == nSigma);
+
+    for (size_t i = 0; i < min_pedestal_samples / 2; ++i) {
+        cf.push_pedestal_frame(low.view());
+        REQUIRE_FALSE(cf.pedestal_ready());
+        cf.push_pedestal_frame(high.view());
+    }
+    REQUIRE(cf.pedestal_ready());
+
+    cf.find_clusters(hit.view());
+    REQUIRE(cf.steal_clusters().size() == expected_clusters);
+}
+
+TEST_CASE("update_threshold throws until the pedestal is ready") {
+    ClusterFinder<Cluster<int32_t, 3, 3>> cf({10, 10});
+    REQUIRE_THROWS_AS(cf.update_threshold(), std::runtime_error);
 }
 
 // TEST_CASE("test cluster finder") {
