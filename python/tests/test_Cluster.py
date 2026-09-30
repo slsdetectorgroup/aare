@@ -135,6 +135,43 @@ def test_cluster_finder():
     assert clusters.size == 0
 
 
+def test_cluster_finder_set_nSigma_before_pedestal_is_ready():
+    shape = [10, 10]
+    n_samples = 4
+    cf = _aare.ClusterFinder_Cluster3x3i(shape, min_pedestal_samples=n_samples)
+    assert not cf.pedestal_ready
+
+    cf.nSigma = 50
+    assert cf.nSigma == 50
+
+    # Pedestal of 100 with a noise of 2
+    for i in range(n_samples):
+        cf.push_pedestal_frame(np.full(shape, 98 + 4 * (i % 2), dtype=np.uint16))
+    assert cf.pedestal_ready
+
+    # 30 ADU is a cluster at the default nSigma of 5 but not at 50
+    frame = np.full(shape, 100, dtype=np.uint16)
+    frame[5, 5] = 130
+    cf.find_clusters(frame)
+    assert cf.steal_clusters().size == 0
+
+
+def test_cluster_finder_mt_set_nSigma_before_pedestal_is_ready():
+    shape = [10, 10]
+    n_samples = 4
+    cf = _aare.ClusterFinderMT_Cluster3x3i(
+        shape, n_threads=2, min_pedestal_samples=n_samples
+    )
+    assert not cf.pedestal_ready()
+
+    cf.set_nSigma(50)
+
+    for i in range(n_samples):
+        cf.push_pedestal_frame(np.full(shape, 98 + 4 * (i % 2), dtype=np.uint16))
+    assert cf.pedestal_ready()
+    cf.stop()
+
+
 def test_2x2_reduction(): 
     """Test 2x2 Reduction"""
     cluster = _aare.Cluster3x3i(5,5,np.array([1, 1, 1, 2, 3, 1, 2, 2, 1], dtype=np.int32))
