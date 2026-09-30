@@ -7,8 +7,8 @@
 #include <array>
 #include <stdexcept>
 
-// Helpers shared by the built-in solver and the optional Minuit2 backend so
-// that both apply the same start-value precedence and shape checks.
+// Helpers shared by the built-in solvers and the Minuit2 backend so that all
+// apply the same start-value precedence, budget and shape checks.
 
 namespace aare::detail {
 
@@ -33,6 +33,16 @@ std::array<double, Model::npar> start_values(const FitModel<Model> &model,
                                   model.upper_limit(idx));
     }
     return start;
+}
+
+/**
+ * @brief Evaluation budget of the built-in minimizers. As in Minuit2,
+ * max_calls = 0 selects the default 200 + 100 * npar + 5 * npar^2.
+ */
+template <typename Model> int evaluation_budget(const FitModel<Model> &model) {
+    constexpr int npar = static_cast<int>(Model::npar);
+    return model.max_calls() > 0 ? static_cast<int>(model.max_calls())
+                                 : 200 + 100 * npar + 5 * npar * npar;
 }
 
 /** @brief Validate the array sizes passed to fit_pixel. */
@@ -63,21 +73,16 @@ void check_fit_3d_shapes(NDView<double, 1> x, NDView<double, 3> y,
     if (chi2_out.shape(0) != y.shape(0) || chi2_out.shape(1) != y.shape(1))
         throw std::runtime_error("chi2_out must have shape [rows, cols].");
 
-    const bool err_out_matches = err_out.shape(0) == y.shape(0) &&
-                                 err_out.shape(1) == y.shape(1) &&
-                                 err_out.shape(2) == npar;
+    if (y_err.size() > 0 &&
+        (y.shape(0) != y_err.shape(0) || y.shape(1) != y_err.shape(1) ||
+         y.shape(2) != y_err.shape(2)))
+        throw std::runtime_error(
+            "fit_3d: y and y_err must have identical shape.");
 
-    if (y_err.size() > 0) {
-        if (y.shape(0) != y_err.shape(0) || y.shape(1) != y_err.shape(1) ||
-            y.shape(2) != y_err.shape(2))
-            throw std::runtime_error(
-                "fit_3d: y and y_err must have identical shape.");
-        if (!err_out_matches)
-            throw std::runtime_error(
-                "err_out must have shape [rows, cols, npar].");
-    } else if (err_out.size() > 0 && !err_out_matches) {
+    if (err_out.size() > 0 &&
+        (err_out.shape(0) != y.shape(0) || err_out.shape(1) != y.shape(1) ||
+         err_out.shape(2) != npar))
         throw std::runtime_error("err_out must have shape [rows, cols, npar].");
-    }
 }
 
 } // namespace aare::detail

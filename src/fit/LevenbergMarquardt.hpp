@@ -2,6 +2,7 @@
 #pragma once
 
 #include "DampedGaussNewton.hpp"
+#include "FitHelpers.hpp"
 #include "aare/FitModel.hpp"
 #include "aare/NDView.hpp"
 
@@ -26,9 +27,8 @@ namespace aare::detail {
  * equations g = J^T r and J^T J, which DampedGaussNewton iterates on: it
  * handles fixed parameters, limits, damping and the convergence test, see
  * there. Rejected trials are rare with its damping rule, and a rejected one
- * only wastes a single pass. Trial points at which the model loses its
- * sensitivity to a free parameter are rejected. As in Minuit2, max_calls = 0
- * selects the default budget 200 + 100 * npar + 5 * npar^2.
+ * only wastes a single pass. max_calls counts evaluations, see
+ * evaluation_budget().
  *
  * Errors are Gauss-Newton estimates, sqrt(diag((J^T J)^-1)), over the free
  * parameters that do not sit on a limit. Fixed and limit-bound parameters
@@ -40,7 +40,6 @@ template <typename Model> class LevenbergMarquardt {
     static_assert(Model::npar >= 1 && Model::npar <= 16,
                   "LevenbergMarquardt keeps npar x npar matrices on the stack");
 
-    using Result = MinimizerResult;
     using Driver = DampedGaussNewton<npar>;
     using Normal = typename Driver::Normal;
 
@@ -52,18 +51,28 @@ template <typename Model> class LevenbergMarquardt {
      * @param y       Measured values.
      * @param s       Per-point uncertainties, empty view for an unweighted fit.
      * @param start   Starting values, see start_values() in FitHelpers.hpp.
-     * @param par_out Receives npar fitted values; zeros on failure.
-     * @param err_out Receives npar errors when non-null; zeros on failure.
+     * @param par_out Receives npar fitted values; untouched on failure.
+     * @param err_out Receives npar errors when non-null; untouched on
+     *                failure.
      */
-    Result fit(const FitModel<Model> &model, NDView<double, 1> x,
-               NDView<double, 1> y, NDView<double, 1> s,
-               const std::array<double, Model::npar> &start, double *par_out,
-               double *err_out) {
+    MinimizerResult fit(const FitModel<Model> &model, NDView<double, 1> x,
+                        NDView<double, 1> y, NDView<double, 1> s,
+                        const std::array<double, Model::npar> &start,
+                        double *par_out, double *err_out) {
         x_ = x;
         y_ = y;
-        s_ = s;
         weighted_ = s.size() > 0;
         const auto n = static_cast<std::size_t>(x.size());
+        r_.resize(n);
+        J_.resize(n * static_cast<std::size_t>(npar));
+        if (weighted_) {
+            // 1 / s_i once per pixel rather than once per evaluation.
+            w_.resize(n);
+            for (std::size_t i = 0; i < n; ++i) {
+                const double si = s[static_cast<ssize_t>(i)];
+                w_[i] = si != 0.0 ? 1.0 / si : 0.0;
+            }
+        }
         Vec<npar> lower{};
         Vec<npar> upper{};
         std::array<bool, Model::npar> fixed{};
@@ -73,41 +82,16 @@ template <typename Model> class LevenbergMarquardt {
             upper[k] = model.upper_limit(idx);
             fixed[k] = model.is_user_fixed(idx);
         }
-        r_.resize(n);
-        J_.resize(n * static_cast<std::size_t>(npar));
-        if (weighted_) {
-            // 1 / s_i once per pixel rather than once per evaluation.
-            w_.resize(n);
-            for (std::size_t i = 0; i < n; ++i)
-                w_[i] = s_[static_cast<ssize_t>(i)] != 0.0
-                            ? 1.0 / s_[static_cast<ssize_t>(i)]
-                            : 0.0;
-        }
-        const int max_calls = model.max_calls() > 0
-                                  ? static_cast<int>(model.max_calls())
-                                  : 200 + 100 * npar + 5 * npar * npar;
+        typename Driver::Options opt;
+        opt.tolerance = model.tolerance();
+        opt.max_calls = evaluation_budget(model);
 
         auto eval = [this](const Vec<npar> &p, Normal &out) {
             return evaluate(p, out);
         };
-        typename Driver::Options opt;
-        opt.tolerance = model.tolerance();
-        opt.max_calls = max_calls;
-        // Start cautiously: the estimated start values of the linear
-        // parameters can be far off, and the first steps are then wild.
-        opt.damping0 = 0.1;
-        // A width driven onto its lower limit turns a model into a step
-        // function whose chi2 no longer responds to the width and jumps
-        // with the position; the iteration then stalls there. Such trial
-        // points are rejected, as in VariableProjection.
-        opt.reject_degenerate = true;
-        const Result res = driver_.fit(eval, start, lower, upper, fixed, opt);
-        if (!res.valid) {
-            std::fill(par_out, par_out + npar, 0.0);
-            if (err_out)
-                std::fill(err_out, err_out + npar, 0.0);
+        const auto res = driver_.fit(eval, start, lower, upper, fixed, opt);
+        if (!res.valid)
             return res;
-        }
         std::copy(driver_.point().begin(), driver_.point().end(), par_out);
         if (err_out)
             driver_.errors(err_out);
@@ -120,7 +104,7 @@ template <typename Model> class LevenbergMarquardt {
     }
 
     // Residuals r = (y - f) / s and the Jacobian J = dr/dp at the point p,
-    // reduced to F = chi2 / 2, g = J^T r and the upper triangle of J^T J.
+    // reduced to F = chi2 / 2, g = J^T r and J^T J.
     // The sums run over all parameters with fixed-size loops, so the
     // compiler can unroll them and keep the accumulators in registers.
     // Returns false when the model rejects the parameters.
@@ -142,26 +126,21 @@ template <typename Model> class LevenbergMarquardt {
                 Ji[k] = -g[k] * w;
         }
         Vec<npar> G{};
-        Mat<npar> H{};
+        SymMat<npar> H;
         for (ssize_t i = 0; i < n; ++i) {
             const double *Ji = &J_[static_cast<std::size_t>(i) * npar];
             const double ri = r_[i];
-            for (int a = 0; a < npar; ++a) {
+            for (int a = 0; a < npar; ++a)
                 G[a] += Ji[a] * ri;
-                for (int b = a; b < npar; ++b)
-                    H[a][b] += Ji[a] * Ji[b];
-            }
+            H.rank1_update(Ji);
         }
         out.F = F;
-        for (int a = 0; a < npar; ++a) {
-            out.g[a] = G[a];
-            for (int b = a; b < npar; ++b)
-                out.H[a][b] = H[a][b];
-        }
+        out.g = G;
+        out.H = H;
         return true;
     }
 
-    NDView<double, 1> x_, y_, s_;
+    NDView<double, 1> x_, y_;
     bool weighted_ = false;
     Driver driver_;
     std::vector<double> r_;

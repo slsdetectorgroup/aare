@@ -620,6 +620,18 @@ TEST_CASE("Fit a data cube with errors matches per-pixel fits", "[fit]") {
                       .margin(1e-6));
         }
     }
+
+    // The error output is optional for a weighted fit as well, but has to
+    // match the data when it is passed.
+    NDArray<double, 3> par_only({rows, cols, 3});
+    aare::fit_3d(model, x.view(), y.view(), y_err.view(), par_only.view(),
+                 NDView<double, 3>{}, chi2.view(), 3);
+    for (ssize_t i = 0; i < par.size(); ++i)
+        CHECK(par_only[i] == Approx(par[i]).margin(1e-9));
+    NDArray<double, 3> short_err({rows, cols, 2});
+    CHECK_THROWS_AS(aare::fit_3d(model, x.view(), y.view(), y_err.view(),
+                                 par.view(), short_err.view(), chi2.view(), 3),
+                    std::runtime_error);
 }
 
 TEST_CASE("Fitting with every parameter fixed returns the fixed values",
@@ -778,55 +790,41 @@ TEST_CASE("All minimizers agree on a noisy data cube", "[fit]") {
 namespace {
 
 // The separable structure of a model must reproduce eval and eval_and_grad:
-// f = sum_j par[linear_par[j]] * phi[j], df/dpar[linear_par[j]] = phi[j] and
-// df/dpar[nonlinear[k]] = sum_j par[linear_par[j]] * dphi[k][j].
+// with the columns phi_j and dphi_kj of basis_columns,
+// f = sum_j par[linear_par[j]] * phi_j, df/dpar[linear_par[j]] = phi_j and
+// df/dpar[nonlinear[k]] = sum_j par[linear_par[j]] * dphi_kj.
 template <typename Model>
 void check_separable(const std::vector<double> &par,
                      const std::vector<double> &xs) {
     using Traits = aare::model::separable_traits<Model>;
     static_assert(aare::model::is_separable<Model>::value);
-    typename Traits::Basis phi{};
-    typename Traits::BasisGrad dphi{};
+    const std::size_t n = xs.size();
+    std::vector<double> phi(Traits::nlin * xs.size());
+    std::vector<double> dphi(Traits::nnl * Traits::nlin * xs.size());
+    Model::basis_columns(xs.data(), static_cast<ssize_t>(xs.size()), par,
+                         phi.data(), dphi.data());
     std::array<double, Model::npar> g{};
     double f = 0.0;
-    for (const double x : xs) {
-        INFO("x = " << x);
-        Model::basis_and_grad(x, par, phi, dphi);
-        Model::eval_and_grad(x, par, f, g);
+    for (std::size_t i = 0; i < n; ++i) {
+        INFO("x = " << xs[i]);
+        Model::eval_and_grad(xs[i], par, f, g);
         double sum = 0.0;
         for (std::size_t j = 0; j < Traits::nlin; ++j) {
             const auto idx = Model::linear_par[j];
-            sum += par[idx] * phi[j];
-            CHECK(g[idx] == Approx(phi[j]).epsilon(1e-12).margin(1e-14));
+            sum += par[idx] * phi[j * n + i];
+            CHECK(g[idx] ==
+                  Approx(phi[j * n + i]).epsilon(1e-12).margin(1e-14));
         }
-        CHECK(Model::eval(x, par) == Approx(sum).epsilon(1e-12).margin(1e-14));
+        CHECK(Model::eval(xs[i], par) ==
+              Approx(sum).epsilon(1e-12).margin(1e-14));
         CHECK(f == Approx(sum).epsilon(1e-12).margin(1e-14));
         for (std::size_t k = 0; k < Traits::nnl; ++k) {
             double d = 0.0;
             for (std::size_t j = 0; j < Traits::nlin; ++j)
-                d += par[Model::linear_par[j]] * dphi[k][j];
+                d += par[Model::linear_par[j]] *
+                     dphi[(k * Traits::nlin + j) * n + i];
             CHECK(g[Traits::nonlinear_par[k]] ==
                   Approx(d).epsilon(1e-12).margin(1e-14));
-        }
-    }
-    // The bulk basis pass must agree with the per-point one.
-    if constexpr (aare::model::has_basis_columns<Model>::value) {
-        const auto n = static_cast<ssize_t>(xs.size());
-        std::vector<double> cols(Traits::nlin * xs.size());
-        std::vector<double> dcols(Traits::nnl * Traits::nlin * xs.size());
-        Model::basis_columns(xs.data(), n, par, cols.data(), dcols.data());
-        for (ssize_t i = 0; i < n; ++i) {
-            INFO("x = " << xs[static_cast<std::size_t>(i)]);
-            Model::basis_and_grad(xs[static_cast<std::size_t>(i)], par, phi,
-                                  dphi);
-            for (std::size_t j = 0; j < Traits::nlin; ++j)
-                CHECK(cols[j * xs.size() + static_cast<std::size_t>(i)] ==
-                      Approx(phi[j]).epsilon(1e-12).margin(1e-14));
-            for (std::size_t k = 0; k < Traits::nnl; ++k)
-                for (std::size_t j = 0; j < Traits::nlin; ++j)
-                    CHECK(dcols[(k * Traits::nlin + j) * xs.size() +
-                                static_cast<std::size_t>(i)] ==
-                          Approx(dphi[k][j]).epsilon(1e-12).margin(1e-14));
         }
     }
 }

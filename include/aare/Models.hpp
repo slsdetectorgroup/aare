@@ -111,53 +111,38 @@ inline constexpr double no_bound = std::numeric_limits<double>::infinity();
  * for Minimizer::VarPro.
  *
  * A model whose function is linear in some of its parameters lists them in
- * ascending order in `linear_par` and provides
- *
- *   static void basis_and_grad(double x, const std::vector<double> &par,
- *                              std::array<double, nlin> &phi,
- *                              std::array<std::array<double, nlin>, nnl> &dphi)
- *
- * with nlin = linear_par.size() and nnl = npar - nlin, such that
- *
- *   f(x; par) = sum_j par[linear_par[j]] * phi[j]
- *
- * and dphi[k][j] = d phi[j] / d par[nonlinear[k]], where nonlinear lists the
- * remaining parameter indices in ascending order (see separable_traits).
- * basis_and_grad ignores the linear entries of par. The [fit] tests check
- * phi and dphi against eval and eval_and_grad for every model.
- *
- * A model may additionally provide the same quantities for all scan points
- * at once, see has_basis_columns:
+ * ascending order in `linear_par` and provides its basis functions and their
+ * derivatives for all scan points at once:
  *
  *   static void basis_columns(const double *__restrict x, ssize_t n,
  *                             const std::vector<double> &par,
  *                             double *__restrict phi,
  *                             double *__restrict dphi)
  *
- * writes phi[j * n + i] = phi_j(x_i) and dphi[(k * nlin + j) * n + i] =
- * d phi_j / d par[nonlinear[k]] (x_i), one contiguous column per function.
- * Written as a loop free of reductions with the parameters hoisted and
- * fast_exp instead of std::exp, it compiles to vector instructions, which
- * is where VarPro spends most of its time. The __restrict qualifiers are
+ * With nlin = linear_par.size() and nnl = npar - nlin it writes the nlin
+ * columns phi[j * n + i] = phi_j(x_i) of the basis functions, such that
+ *
+ *   f(x; par) = sum_j par[linear_par[j]] * phi_j(x)
+ *
+ * and the nnl * nlin columns dphi[(k * nlin + j) * n + i] =
+ * d phi_j / d par[nonlinear[k]] (x_i), where nonlinear lists the remaining
+ * parameter indices in ascending order (see separable_traits). It ignores
+ * the linear entries of par. The [fit] tests check the columns against eval
+ * and eval_and_grad for every model.
+ *
+ * VarPro spends most of its time here, so the function is written to compile
+ * to vector instructions: one loop free of reductions, with the parameters
+ * hoisted and fast_exp instead of std::exp. The __restrict qualifiers are
  * needed: without them gcc has to prove that the output columns do not
  * overlap, exceeds its budget of run-time alias checks once a loop writes
- * more than three columns, and quietly emits scalar code. The tests check
- * it against basis_and_grad.
+ * more than three columns, and quietly emits scalar code.
  */
 template <typename Model, typename = void>
 struct is_separable : std::false_type {};
 
 template <typename Model>
 struct is_separable<Model, std::void_t<decltype(Model::linear_par),
-                                       decltype(&Model::basis_and_grad)>>
-    : std::true_type {};
-
-/** @brief Detects a separable model that provides basis_columns. */
-template <typename Model, typename = void>
-struct has_basis_columns : std::false_type {};
-
-template <typename Model>
-struct has_basis_columns<Model, std::void_t<decltype(&Model::basis_columns)>>
+                                       decltype(&Model::basis_columns)>>
     : std::true_type {};
 
 /** @brief The parameter indices not listed in linear, in ascending order. */
@@ -186,9 +171,106 @@ template <typename Model> struct separable_traits {
     static constexpr std::size_t linear_index(int j) {
         return Model::linear_par[static_cast<std::size_t>(j)];
     }
-    using Basis = std::array<double, nlin>;
-    using BasisGrad = std::array<std::array<double, nlin>, nnl>;
 };
+
+/**
+ * @brief Features of a peak on a background that may be higher on its left,
+ * as the start estimates of the peak models need them.
+ */
+struct PeakEstimate {
+    double mu;         // x at the maximum of y
+    double y_max;      // maximum of y
+    double left_mean;  // mean of the first ~10% of y
+    double right_mean; // mean of the last ~10% of y
+    double sigma;      // width of the peak
+};
+
+/**
+ * @brief Estimate the features of a peak. Assumes x is sorted ascending.
+ *
+ * sigma comes from the half width on the right side of the peak, above the
+ * right background, so that a plateau on the left does not bias it. It falls
+ * back to 10% of the x range.
+ */
+inline PeakEstimate estimate_peak(NDView<double, 1> x, NDView<double, 1> y) {
+    const ssize_t n = y.size();
+
+    const auto max_it = std::max_element(y.begin(), y.end());
+    const ssize_t i_max = std::distance(y.begin(), max_it);
+    const double y_max = *max_it;
+    const double mu = x[i_max];
+
+    const double x_range = std::max(x[n - 1] - x[0], 1e-9);
+
+    const ssize_t tail = std::min<ssize_t>(std::max<ssize_t>(n / 10, 2), n);
+
+    double left_mean = 0.0;
+    double right_mean = 0.0;
+
+    for (ssize_t i = 0; i < tail; ++i)
+        left_mean += y[i];
+    left_mean /= tail;
+
+    for (ssize_t i = n - tail; i < n; ++i)
+        right_mean += y[i];
+    right_mean /= tail;
+
+    const double half = right_mean + 0.5 * (y_max - right_mean);
+
+    double sigma = 0.1 * x_range;
+    for (ssize_t i = i_max; i < n; ++i) {
+        if (y[i] <= half) {
+            const double half_width = std::abs(x[i] - mu);
+            if (half_width > 1e-12)
+                sigma = half_width / 1.1774100225154747; // sqrt(2*ln(2))
+            break;
+        }
+    }
+    sigma = std::max(sigma, 1e-6);
+
+    return {mu, y_max, left_mean, right_mean, sigma};
+}
+
+/**
+ * @brief A Gaussian peak G and the erfc step H below it at one point, with
+ * their derivatives with respect to the peak position and width:
+ *
+ *   G = exp(-u^2 / 2),  H = erfc(u / sqrt(2)) / 2,  u = (x - mu) / sigma
+ *
+ *   dG/dmu    = G * u / sigma
+ *   dG/dsigma = G * u^2 / sigma
+ *   dH/dmu    = G / (sqrt(2*pi) * sigma)
+ *   dH/dsigma = G * u / (sqrt(2*pi) * sigma)
+ */
+struct PeakTerms {
+    double G;
+    double H;
+    double dG_dmu;
+    double dG_dsig;
+    double dH_dmu;
+    double dH_dsig;
+};
+
+/**
+ * @brief The terms of a peak from its Gaussian G = exp(-u^2 / 2) at
+ * u = (x - mu) / sigma, shared by the peak models.
+ *
+ * The caller evaluates the exponential: with std::exp at a single point, and
+ * with fast_exp in a loop that should vectorise. A model with two peaks
+ * evaluates both exponentials before it asks for the terms, which then stay
+ * in registers rather than being spilled around the second call of std::exp.
+ * The function is inlined, so the terms a caller does not use cost nothing.
+ */
+ALWAYS_INLINE PeakTerms peak_terms(double G, double u, double inv_sig) {
+    PeakTerms t;
+    t.G = G;
+    t.H = 0.5 * (1.0 - fast_erf_from_exp(u * inv_sqrt2, G));
+    t.dG_dmu = G * u * inv_sig;
+    t.dG_dsig = t.dG_dmu * u;
+    t.dH_dmu = inv_sqrt_2pi * G * inv_sig;
+    t.dH_dsig = t.dH_dmu * u;
+    return t;
+}
 
 // _____________________________________________________________________
 //
@@ -231,12 +313,16 @@ struct Pol1 {
     /** @brief Both parameters are linear: f = p0 * 1 + p1 * x. */
     static constexpr std::array<std::size_t, 2> linear_par = {0, 1};
 
-    static void basis_and_grad(
-        double x, [[maybe_unused]] const std::vector<double> &par,
-        std::array<double, 2> &phi,
-        [[maybe_unused]] std::array<std::array<double, 2>, 0> &dphi) {
-        phi[0] = 1.0;
-        phi[1] = x;
+    static void basis_columns(const double *__restrict x, ssize_t n,
+                              [[maybe_unused]] const std::vector<double> &par,
+                              double *__restrict phi,
+                              [[maybe_unused]] double *__restrict dphi) {
+        double *one = phi;
+        double *x_col = phi + n;
+        for (ssize_t i = 0; i < n; ++i) {
+            one[i] = 1.0;
+            x_col[i] = x[i];
+        }
     }
 
     static bool is_valid([[maybe_unused]] const std::vector<double> &par) {
@@ -301,13 +387,18 @@ struct Pol2 {
     /** @brief All parameters are linear: f = p0 * 1 + p1 * x + p2 * x^2. */
     static constexpr std::array<std::size_t, 3> linear_par = {0, 1, 2};
 
-    static void basis_and_grad(
-        double x, [[maybe_unused]] const std::vector<double> &par,
-        std::array<double, 3> &phi,
-        [[maybe_unused]] std::array<std::array<double, 3>, 0> &dphi) {
-        phi[0] = 1.0;
-        phi[1] = x;
-        phi[2] = x * x;
+    static void basis_columns(const double *__restrict x, ssize_t n,
+                              [[maybe_unused]] const std::vector<double> &par,
+                              double *__restrict phi,
+                              [[maybe_unused]] double *__restrict dphi) {
+        double *one = phi;
+        double *x_col = phi + n;
+        double *x2_col = phi + 2 * n;
+        for (ssize_t i = 0; i < n; ++i) {
+            one[i] = 1.0;
+            x_col[i] = x[i];
+            x2_col[i] = x[i] * x[i];
+        }
     }
 
     static bool is_valid([[maybe_unused]] const std::vector<double> &par) {
@@ -420,23 +511,6 @@ struct Gaussian {
     /** @brief A is linear: f = A * exp(-(x - mu)^2 / (2 sigma^2)). */
     static constexpr std::array<std::size_t, 1> linear_par = {0};
 
-    static void basis_and_grad(double x, const std::vector<double> &par,
-                               std::array<double, 1> &phi,
-                               std::array<std::array<double, 1>, 2> &dphi) {
-        const double mu = par[1];
-        const double sig = par[2];
-
-        const double dx = x - mu;
-        const double inv_sig = 1.0 / sig;
-        const double inv_sig2 = inv_sig * inv_sig;
-        const double e = std::exp(-0.5 * dx * dx * inv_sig2);
-
-        phi[0] = e;
-        dphi[0][0] = e * dx * inv_sig2;                // d/dmu
-        dphi[1][0] = e * dx * dx * inv_sig2 * inv_sig; // d/dsigma
-    }
-
-    /** @brief basis_and_grad for all points, one column per function. */
     static void basis_columns(const double *__restrict x, ssize_t n,
                               const std::vector<double> &par,
                               double *__restrict phi, double *__restrict dphi) {
@@ -517,16 +591,11 @@ struct Gaussian {
  *   par[2] = mu     (shared Gaussian center / step inflection point)
  *   par[3] = sigma  (shared Gaussian width / step width, must be > 0)
  *
- * Analytic partial derivatives:
- *   Let dx = x - mu
- *       z  = dx / (sqrt(2)*sigma)
- *       E  = exp(-z^2)
- *       H  = 0.5 * (1 - erf(z))
- *
- *   df/dA     = E
+ * Analytic partial derivatives, with the peak G and the step H of PeakTerms:
+ *   df/dA     = G
  *   df/dS     = H
- *   df/dmu    = A*E*dx/sigma^2 + S*E/(sqrt(2*pi)*sigma)
- *   df/dsigma = A*E*dx^2/sigma^3 + S*E*dx/(sqrt(2*pi)*sigma^2)
+ *   df/dmu    = A * dG/dmu + S * dH/dmu
+ *   df/dsigma = A * dG/dsigma + S * dH/dsigma
  */
 struct GaussianErfcPlateau {
     static constexpr std::size_t npar = 4;
@@ -544,13 +613,10 @@ struct GaussianErfcPlateau {
         const double mu = par[2];
         const double sig = par[3];
 
-        const double dx = x - mu;
-        const double z = dx * inv_sqrt2 / sig;
-
-        const double e = std::exp(-z * z);
-        const double step = 0.5 * (1.0 - fast_erf_from_exp(z, e));
-
-        return A * e + S * step;
+        const double inv_sig = 1.0 / sig;
+        const double u = (x - mu) * inv_sig;
+        const PeakTerms t = peak_terms(std::exp(-0.5 * u * u), u, inv_sig);
+        return A * t.G + S * t.H;
     }
 
     static void eval_and_grad(double x, const std::vector<double> &par,
@@ -560,81 +626,41 @@ struct GaussianErfcPlateau {
         const double mu = par[2];
         const double sig = par[3];
 
-        const double dx = x - mu;
-        const double z = dx * inv_sqrt2 / sig;
-
-        const double e = std::exp(-z * z);
-        const double step = 0.5 * (1.0 - fast_erf_from_exp(z, e));
-
-        f = A * e + S * step;
-
         const double inv_sig = 1.0 / sig;
-        const double inv_sig2 = inv_sig * inv_sig;
-        const double inv_sig3 = inv_sig2 * inv_sig;
+        const double u = (x - mu) * inv_sig;
+        const PeakTerms t = peak_terms(std::exp(-0.5 * u * u), u, inv_sig);
 
-        g[0] = e;    // df/dA
-        g[1] = step; // df/dS
+        f = A * t.G + S * t.H;
 
-        g[2] = A * e * dx * inv_sig2 + S * inv_sqrt_2pi * e * inv_sig; // df/dmu
-
-        g[3] = A * e * dx * dx * inv_sig3 +
-               S * inv_sqrt_2pi * e * dx * inv_sig2; // df/dsigma
+        g[0] = t.G;                           // df/dA
+        g[1] = t.H;                           // df/dS
+        g[2] = A * t.dG_dmu + S * t.dH_dmu;   // df/dmu
+        g[3] = A * t.dG_dsig + S * t.dH_dsig; // df/dsigma
     }
 
-    /** @brief A and S are linear: f = A * e + S * step. */
+    /** @brief A and S are linear: f = A * G + S * H. */
     static constexpr std::array<std::size_t, 2> linear_par = {0, 1};
 
-    static void basis_and_grad(double x, const std::vector<double> &par,
-                               std::array<double, 2> &phi,
-                               std::array<std::array<double, 2>, 2> &dphi) {
-        const double mu = par[2];
-        const double sig = par[3];
-
-        const double dx = x - mu;
-        const double inv_sig = 1.0 / sig;
-        const double inv_sig2 = inv_sig * inv_sig;
-        const double inv_sig3 = inv_sig2 * inv_sig;
-        const double z = dx * inv_sqrt2 * inv_sig;
-
-        const double e = std::exp(-z * z);
-        const double step = 0.5 * (1.0 - fast_erf_from_exp(z, e));
-
-        phi[0] = e;
-        phi[1] = step;
-        dphi[0][0] = e * dx * inv_sig2;                // de/dmu
-        dphi[0][1] = inv_sqrt_2pi * e * inv_sig;       // dstep/dmu
-        dphi[1][0] = e * dx * dx * inv_sig3;           // de/dsigma
-        dphi[1][1] = inv_sqrt_2pi * e * dx * inv_sig2; // dstep/dsigma
-    }
-
-    /** @brief basis_and_grad for all points, one column per function. */
     static void basis_columns(const double *__restrict x, ssize_t n,
                               const std::vector<double> &par,
                               double *__restrict phi, double *__restrict dphi) {
         const double mu = par[2];
         const double inv_sig = 1.0 / par[3];
-        const double inv_sig2 = inv_sig * inv_sig;
-        const double inv_sig3 = inv_sig2 * inv_sig;
-        const double cz = inv_sqrt2 * inv_sig;
-        const double ce = inv_sqrt_2pi * inv_sig;
-        const double ce2 = inv_sqrt_2pi * inv_sig2;
-        double *e_col = phi;
-        double *step_col = phi + n;
-        double *de_dmu = dphi;
-        double *dstep_dmu = dphi + n;
-        double *de_dsig = dphi + 2 * n;
-        double *dstep_dsig = dphi + 3 * n;
+        double *G = phi;
+        double *H = phi + n;
+        double *dG_dmu = dphi;
+        double *dH_dmu = dphi + n;
+        double *dG_dsig = dphi + 2 * n;
+        double *dH_dsig = dphi + 3 * n;
         for (ssize_t i = 0; i < n; ++i) {
-            const double dx = x[i] - mu;
-            const double z = dx * cz;
-            const double e = fast_exp(-z * z);
-            const double step = 0.5 * (1.0 - fast_erf_from_exp(z, e));
-            e_col[i] = e;
-            step_col[i] = step;
-            de_dmu[i] = e * dx * inv_sig2;
-            dstep_dmu[i] = ce * e;
-            de_dsig[i] = e * dx * dx * inv_sig3;
-            dstep_dsig[i] = ce2 * e * dx;
+            const double u = (x[i] - mu) * inv_sig;
+            const PeakTerms t = peak_terms(fast_exp(-0.5 * u * u), u, inv_sig);
+            G[i] = t.G;
+            H[i] = t.H;
+            dG_dmu[i] = t.dG_dmu;
+            dH_dmu[i] = t.dH_dmu;
+            dG_dsig[i] = t.dG_dsig;
+            dH_dsig[i] = t.dH_dsig;
         }
     }
 
@@ -651,56 +677,15 @@ struct GaussianErfcPlateau {
      * S      ~ average of first 10% of y values
      * mu     ~ x at maximum y
      * A      ~ y_max - 0.5*S
-     * sigma  ~ right-side half-width of the peak, fallback to 10% x-range
+     * sigma  ~ right-side half-width of the peak, see estimate_peak
      */
     static std::array<double, npar> estimate_par(NDView<double, 1> x,
                                                  NDView<double, 1> y) {
-        const ssize_t n = y.size();
-
-        const auto max_it = std::max_element(y.begin(), y.end());
-        const ssize_t i_max = std::distance(y.begin(), max_it);
-
-        const double y_max = *max_it;
-
-        const double x_range = std::max(x[n - 1] - x[0], 1e-9);
-
-        const ssize_t tail = std::min<ssize_t>(std::max<ssize_t>(n / 10, 2), n);
-
-        double left_mean = 0.0;
-        double right_mean = 0.0;
-
-        for (ssize_t i = 0; i < tail; ++i)
-            left_mean += y[i];
-        left_mean /= tail;
-
-        for (ssize_t i = n - tail; i < n; ++i)
-            right_mean += y[i];
-        right_mean /= tail;
-
-        const double S = left_mean;
-        const double mu = x[i_max];
-
+        const PeakEstimate peak = estimate_peak(x, y);
+        const double S = peak.left_mean;
         // At x = mu, the erfc step contributes roughly S/2.
-        const double A = y_max - 0.5 * S;
-
-        // Estimate sigma from the right half-width of the peak.
-        // This avoids the left plateau biasing the FWHM estimate.
-        const double half = right_mean + 0.5 * (y_max - right_mean);
-
-        double sig = 0.1 * x_range;
-        for (ssize_t i = i_max; i < n; ++i) {
-            if (y[i] <= half) {
-                const double half_width = std::abs(x[i] - mu);
-                if (half_width > 1e-12) {
-                    sig = half_width / 1.1774100225154747; // sqrt(2*ln(2))
-                }
-                break;
-            }
-        }
-
-        sig = std::max(sig, 1e-6);
-
-        return {A, S, mu, sig};
+        const double A = peak.y_max - 0.5 * S;
+        return {A, S, peak.mu, peak.sigma};
     }
 };
 
@@ -754,13 +739,10 @@ struct GaussianChargeSharing {
         const double N = par[4];
         const double C = par[5];
 
-        const double dx = x - mu;
-        const double u = dx / sig;
-
-        const double G = std::exp(-0.5 * u * u);
-        const double H = 0.5 * (1.0 - fast_erf_from_exp(u * inv_sqrt2, G));
-
-        return p0 - p1 * x + N * (G + C * H);
+        const double inv_sig = 1.0 / sig;
+        const double u = (x - mu) * inv_sig;
+        const PeakTerms t = peak_terms(std::exp(-0.5 * u * u), u, inv_sig);
+        return p0 - p1 * x + N * (t.G + C * t.H);
     }
 
     static void eval_and_grad(double x, const std::vector<double> &par,
@@ -772,30 +754,18 @@ struct GaussianChargeSharing {
         const double N = par[4];
         const double C = par[5];
 
-        const double dx = x - mu;
-        const double u = dx / sig;
-
-        const double G = std::exp(-0.5 * u * u);
-        const double H = 0.5 * (1.0 - fast_erf_from_exp(u * inv_sqrt2, G));
-
-        f = p0 - p1 * x + N * (G + C * H);
-
         const double inv_sig = 1.0 / sig;
-        const double inv_sig2 = inv_sig * inv_sig;
-        const double inv_sig3 = inv_sig2 * inv_sig;
+        const double u = (x - mu) * inv_sig;
+        const PeakTerms t = peak_terms(std::exp(-0.5 * u * u), u, inv_sig);
 
-        const double dG_dmu = G * dx * inv_sig2;
-        const double dG_dsig = G * dx * dx * inv_sig3;
-
-        const double dH_dmu = inv_sqrt_2pi * G * inv_sig;
-        const double dH_dsig = inv_sqrt_2pi * G * dx * inv_sig2;
+        f = p0 - p1 * x + N * (t.G + C * t.H);
 
         g[0] = 1.0;
         g[1] = -x;
-        g[2] = N * (dG_dmu + C * dH_dmu);
-        g[3] = N * (dG_dsig + C * dH_dsig);
-        g[4] = G + C * H;
-        g[5] = N * H;
+        g[2] = N * (t.dG_dmu + C * t.dH_dmu);
+        g[3] = N * (t.dG_dsig + C * t.dH_dsig);
+        g[4] = t.G + C * t.H;
+        g[5] = N * t.H;
     }
 
     /**
@@ -804,49 +774,12 @@ struct GaussianChargeSharing {
      */
     static constexpr std::array<std::size_t, 3> linear_par = {0, 1, 4};
 
-    static void basis_and_grad(double x, const std::vector<double> &par,
-                               std::array<double, 3> &phi,
-                               std::array<std::array<double, 3>, 3> &dphi) {
-        const double mu = par[2];
-        const double sig = par[3];
-        const double C = par[5];
-
-        const double inv_sig = 1.0 / sig;
-        const double inv_sig2 = inv_sig * inv_sig;
-        const double inv_sig3 = inv_sig2 * inv_sig;
-
-        const double dx = x - mu;
-        const double u = dx * inv_sig;
-
-        const double G = std::exp(-0.5 * u * u);
-        const double H = 0.5 * (1.0 - fast_erf_from_exp(u * inv_sqrt2, G));
-
-        const double dG_dmu = G * dx * inv_sig2;
-        const double dG_dsig = G * dx * dx * inv_sig3;
-        const double dH_dmu = inv_sqrt_2pi * G * inv_sig;
-        const double dH_dsig = inv_sqrt_2pi * G * dx * inv_sig2;
-
-        phi[0] = 1.0;
-        phi[1] = -x;
-        phi[2] = G + C * H;
-        for (int k = 0; k < 3; ++k) {
-            dphi[k][0] = 0.0;
-            dphi[k][1] = 0.0;
-        }
-        dphi[0][2] = dG_dmu + C * dH_dmu;   // d/dmu
-        dphi[1][2] = dG_dsig + C * dH_dsig; // d/dsigma
-        dphi[2][2] = H;                     // d/dC
-    }
-
-    /** @brief basis_and_grad for all points, one column per function. */
     static void basis_columns(const double *__restrict x, ssize_t n,
                               const std::vector<double> &par,
                               double *__restrict phi, double *__restrict dphi) {
         const double mu = par[2];
         const double inv_sig = 1.0 / par[3];
         const double C = par[5];
-        const double inv_sig2 = inv_sig * inv_sig;
-        const double inv_sig3 = inv_sig2 * inv_sig;
         double *one = phi;
         double *minus_x = phi + n;
         double *shape = phi + 2 * n;
@@ -859,20 +792,14 @@ struct GaussianChargeSharing {
         double *d_C = dphi + 8 * n;
         for (ssize_t i = 0; i < n; ++i) {
             const double xi = x[i];
-            const double dx = xi - mu;
-            const double u = dx * inv_sig;
-            const double G = fast_exp(-0.5 * u * u);
-            const double H = 0.5 * (1.0 - fast_erf_from_exp(u * inv_sqrt2, G));
-            const double dG_dmu = G * dx * inv_sig2;
-            const double dG_dsig = G * dx * dx * inv_sig3;
-            const double dH_dmu = inv_sqrt_2pi * G * inv_sig;
-            const double dH_dsig = inv_sqrt_2pi * G * dx * inv_sig2;
+            const double u = (xi - mu) * inv_sig;
+            const PeakTerms t = peak_terms(fast_exp(-0.5 * u * u), u, inv_sig);
             one[i] = 1.0;
             minus_x[i] = -xi;
-            shape[i] = G + C * H;
-            d_mu[i] = dG_dmu + C * dH_dmu;
-            d_sig[i] = dG_dsig + C * dH_dsig;
-            d_C[i] = H;
+            shape[i] = t.G + C * t.H;
+            d_mu[i] = t.dG_dmu + C * t.dH_dmu;
+            d_sig[i] = t.dG_dsig + C * t.dH_dsig;
+            d_C[i] = t.H;
         }
     }
 
@@ -882,50 +809,13 @@ struct GaussianChargeSharing {
 
     static std::array<double, npar> estimate_par(NDView<double, 1> x,
                                                  NDView<double, 1> y) {
-        const ssize_t n = y.size();
-
-        const auto max_it = std::max_element(y.begin(), y.end());
-        const ssize_t i_max = std::distance(y.begin(), max_it);
-
-        const double x_range = std::max(x[n - 1] - x[0], 1e-9);
-
-        const ssize_t tail = std::min<ssize_t>(std::max<ssize_t>(n / 10, 2), n);
-
-        double left_mean = 0.0;
-        double right_mean = 0.0;
-
-        for (ssize_t i = 0; i < tail; ++i)
-            left_mean += y[i];
-        left_mean /= tail;
-
-        for (ssize_t i = n - tail; i < n; ++i)
-            right_mean += y[i];
-        right_mean /= tail;
-
-        const double p0 = right_mean;
+        const PeakEstimate peak = estimate_peak(x, y);
+        const double p0 = peak.right_mean;
         const double p1 = 0.0;
-        const double mu = x[i_max];
-
-        const double N = std::max(*max_it - right_mean, 1e-9);
-
+        const double N = std::max(peak.y_max - peak.right_mean, 1e-9);
         // Left plateau excess is roughly N*C.
-        const double C = (left_mean - right_mean) / N;
-
-        double sigma = 0.1 * x_range;
-        const double half = right_mean + 0.5 * ((*max_it) - right_mean);
-
-        for (ssize_t i = i_max; i < n; ++i) {
-            if (y[i] <= half) {
-                const double half_width = std::abs(x[i] - mu);
-                if (half_width > 1e-12)
-                    sigma = half_width / 1.1774100225154747; // sqrt(2*ln(2))
-                break;
-            }
-        }
-
-        sigma = std::max(sigma, 1e-6);
-
-        return {p0, p1, mu, sigma, N, C};
+        const double C = (peak.left_mean - peak.right_mean) / N;
+        return {p0, p1, peak.mu, peak.sigma, N, C};
     }
 };
 
@@ -987,22 +877,16 @@ struct GaussianChargeSharingKb {
         const double r = par[6];
         const double q = par[7];
 
-        const double mu_b = r * mu;
-
-        const double dx = x - mu;
-        const double dxb = x - mu_b;
-
-        const double u = dx / sig;
-        const double ub = dxb / sig;
-
+        const double inv_sig = 1.0 / sig;
+        const double u = (x - mu) * inv_sig;
+        const double ub = (x - r * mu) * inv_sig;
         const double G = std::exp(-0.5 * u * u);
         const double Gb = std::exp(-0.5 * ub * ub);
+        const PeakTerms a = peak_terms(G, u, inv_sig);
+        const PeakTerms b = peak_terms(Gb, ub, inv_sig);
 
-        const double H = 0.5 * (1.0 - fast_erf_from_exp(u * inv_sqrt2, G));
-        const double Hb = 0.5 * (1.0 - fast_erf_from_exp(ub * inv_sqrt2, Gb));
-
-        const double ka = G + C * H;
-        const double kb = Gb + C * Hb;
+        const double ka = a.G + C * a.H;
+        const double kb = b.G + C * b.H;
 
         return p0 - p1 * x + N * (ka + q * kb);
     }
@@ -1018,44 +902,24 @@ struct GaussianChargeSharingKb {
         const double r = par[6];
         const double q = par[7];
 
-        const double mu_b = r * mu;
-
-        const double dx = x - mu;
-        const double dxb = x - mu_b;
-
-        const double u = dx / sig;
-        const double ub = dxb / sig;
-
+        const double inv_sig = 1.0 / sig;
+        const double u = (x - mu) * inv_sig;
+        const double ub = (x - r * mu) * inv_sig;
         const double G = std::exp(-0.5 * u * u);
         const double Gb = std::exp(-0.5 * ub * ub);
+        const PeakTerms a = peak_terms(G, u, inv_sig);
+        const PeakTerms b = peak_terms(Gb, ub, inv_sig);
 
-        const double H = 0.5 * (1.0 - fast_erf_from_exp(u * inv_sqrt2, G));
-        const double Hb = 0.5 * (1.0 - fast_erf_from_exp(ub * inv_sqrt2, Gb));
-
-        const double ka = G + C * H;
-        const double kb = Gb + C * Hb;
+        const double ka = a.G + C * a.H;
+        const double kb = b.G + C * b.H;
 
         f = p0 - p1 * x + N * (ka + q * kb);
 
-        const double inv_sig = 1.0 / sig;
-        const double inv_sig2 = inv_sig * inv_sig;
-        const double inv_sig3 = inv_sig2 * inv_sig;
+        const double dka_dmu = a.dG_dmu + C * a.dH_dmu;
+        const double dka_dsig = a.dG_dsig + C * a.dH_dsig;
 
-        const double dG_dmu = G * dx * inv_sig2;
-        const double dG_dsig = G * dx * dx * inv_sig3;
-        const double dH_dmu = inv_sqrt_2pi * G * inv_sig;
-        const double dH_dsig = inv_sqrt_2pi * G * dx * inv_sig2;
-
-        const double dGb_dmu_b = Gb * dxb * inv_sig2;
-        const double dGb_dsig = Gb * dxb * dxb * inv_sig3;
-        const double dHb_dmu_b = inv_sqrt_2pi * Gb * inv_sig;
-        const double dHb_dsig = inv_sqrt_2pi * Gb * dxb * inv_sig2;
-
-        const double dka_dmu = dG_dmu + C * dH_dmu;
-        const double dka_dsig = dG_dsig + C * dH_dsig;
-
-        const double dkb_dmu_b = dGb_dmu_b + C * dHb_dmu_b;
-        const double dkb_dsig = dGb_dsig + C * dHb_dsig;
+        const double dkb_dmu_b = b.dG_dmu + C * b.dH_dmu;
+        const double dkb_dsig = b.dG_dsig + C * b.dH_dsig;
 
         g[0] = 1.0;
         g[1] = -x;
@@ -1067,7 +931,7 @@ struct GaussianChargeSharingKb {
 
         g[4] = ka + q * kb;
 
-        g[5] = N * (H + q * Hb);
+        g[5] = N * (a.H + q * b.H);
 
         // mu_b = r * mu, so dmu_b/dr = mu
         g[6] = N * q * mu * dkb_dmu_b;
@@ -1081,67 +945,6 @@ struct GaussianChargeSharingKb {
      */
     static constexpr std::array<std::size_t, 3> linear_par = {0, 1, 4};
 
-    static void basis_and_grad(double x, const std::vector<double> &par,
-                               std::array<double, 3> &phi,
-                               std::array<std::array<double, 3>, 5> &dphi) {
-        const double mu = par[2];
-        const double sig = par[3];
-        const double C = par[5];
-        const double r = par[6];
-        const double q = par[7];
-
-        const double inv_sig = 1.0 / sig;
-        const double inv_sig2 = inv_sig * inv_sig;
-        const double inv_sig3 = inv_sig2 * inv_sig;
-
-        const double mu_b = r * mu;
-
-        const double dx = x - mu;
-        const double dxb = x - mu_b;
-
-        const double u = dx * inv_sig;
-        const double ub = dxb * inv_sig;
-
-        const double G = std::exp(-0.5 * u * u);
-        const double Gb = std::exp(-0.5 * ub * ub);
-
-        const double H = 0.5 * (1.0 - fast_erf_from_exp(u * inv_sqrt2, G));
-        const double Hb = 0.5 * (1.0 - fast_erf_from_exp(ub * inv_sqrt2, Gb));
-
-        const double ka = G + C * H;
-        const double kb = Gb + C * Hb;
-
-        const double dG_dmu = G * dx * inv_sig2;
-        const double dG_dsig = G * dx * dx * inv_sig3;
-        const double dH_dmu = inv_sqrt_2pi * G * inv_sig;
-        const double dH_dsig = inv_sqrt_2pi * G * dx * inv_sig2;
-
-        const double dGb_dmu_b = Gb * dxb * inv_sig2;
-        const double dGb_dsig = Gb * dxb * dxb * inv_sig3;
-        const double dHb_dmu_b = inv_sqrt_2pi * Gb * inv_sig;
-        const double dHb_dsig = inv_sqrt_2pi * Gb * dxb * inv_sig2;
-
-        const double dka_dmu = dG_dmu + C * dH_dmu;
-        const double dka_dsig = dG_dsig + C * dH_dsig;
-
-        const double dkb_dmu_b = dGb_dmu_b + C * dHb_dmu_b;
-        const double dkb_dsig = dGb_dsig + C * dHb_dsig;
-
-        phi[0] = 1.0;
-        phi[1] = -x;
-        phi[2] = ka + q * kb;
-        for (int k = 0; k < 5; ++k) {
-            dphi[k][0] = 0.0;
-            dphi[k][1] = 0.0;
-        }
-        dphi[0][2] = dka_dmu + q * r * dkb_dmu_b; // d/dmu, mu_b = r * mu
-        dphi[1][2] = dka_dsig + q * dkb_dsig;     // d/dsigma
-        dphi[2][2] = H + q * Hb;                  // d/dC
-        dphi[3][2] = q * mu * dkb_dmu_b;          // d/dr
-        dphi[4][2] = kb;                          // d/dq
-    }
-
-    /** @brief basis_and_grad for all points, one column per function. */
     static void basis_columns(const double *__restrict x, ssize_t n,
                               const std::vector<double> &par,
                               double *__restrict phi, double *__restrict dphi) {
@@ -1150,8 +953,6 @@ struct GaussianChargeSharingKb {
         const double C = par[5];
         const double r = par[6];
         const double q = par[7];
-        const double inv_sig2 = inv_sig * inv_sig;
-        const double inv_sig3 = inv_sig2 * inv_sig;
         const double mu_b = r * mu;
         double *one = phi;
         double *minus_x = phi + n;
@@ -1168,35 +969,23 @@ struct GaussianChargeSharingKb {
         double *d_q = dphi + 14 * n;
         for (ssize_t i = 0; i < n; ++i) {
             const double xi = x[i];
-            const double dx = xi - mu;
-            const double dxb = xi - mu_b;
-            const double u = dx * inv_sig;
-            const double ub = dxb * inv_sig;
-            const double G = fast_exp(-0.5 * u * u);
-            const double Gb = fast_exp(-0.5 * ub * ub);
-            const double H = 0.5 * (1.0 - fast_erf_from_exp(u * inv_sqrt2, G));
-            const double Hb =
-                0.5 * (1.0 - fast_erf_from_exp(ub * inv_sqrt2, Gb));
-            const double ka = G + C * H;
-            const double kb = Gb + C * Hb;
-            const double dG_dmu = G * dx * inv_sig2;
-            const double dG_dsig = G * dx * dx * inv_sig3;
-            const double dH_dmu = inv_sqrt_2pi * G * inv_sig;
-            const double dH_dsig = inv_sqrt_2pi * G * dx * inv_sig2;
-            const double dGb_dmu_b = Gb * dxb * inv_sig2;
-            const double dGb_dsig = Gb * dxb * dxb * inv_sig3;
-            const double dHb_dmu_b = inv_sqrt_2pi * Gb * inv_sig;
-            const double dHb_dsig = inv_sqrt_2pi * Gb * dxb * inv_sig2;
-            const double dka_dmu = dG_dmu + C * dH_dmu;
-            const double dka_dsig = dG_dsig + C * dH_dsig;
-            const double dkb_dmu_b = dGb_dmu_b + C * dHb_dmu_b;
-            const double dkb_dsig = dGb_dsig + C * dHb_dsig;
+            const double u = (xi - mu) * inv_sig;
+            const double ub = (xi - mu_b) * inv_sig;
+            const PeakTerms a = peak_terms(fast_exp(-0.5 * u * u), u, inv_sig);
+            const PeakTerms b =
+                peak_terms(fast_exp(-0.5 * ub * ub), ub, inv_sig);
+            const double ka = a.G + C * a.H;
+            const double kb = b.G + C * b.H;
+            const double dka_dmu = a.dG_dmu + C * a.dH_dmu;
+            const double dka_dsig = a.dG_dsig + C * a.dH_dsig;
+            const double dkb_dmu_b = b.dG_dmu + C * b.dH_dmu;
+            const double dkb_dsig = b.dG_dsig + C * b.dH_dsig;
             one[i] = 1.0;
             minus_x[i] = -xi;
             shape[i] = ka + q * kb;
             d_mu[i] = dka_dmu + q * r * dkb_dmu_b;
             d_sig[i] = dka_dsig + q * dkb_dsig;
-            d_C[i] = H + q * Hb;
+            d_C[i] = a.H + q * b.H;
             d_r[i] = q * mu * dkb_dmu_b;
             d_q[i] = kb;
         }
@@ -1227,15 +1016,15 @@ struct GaussianChargeSharingKb {
 
 // _____________________________________________________________________
 //
-// RisingScurve
+// RisingScurve and FallingScurve
 // _____________________________________________________________________
 
 /**
- * @brief Rising S-curve (error-function step) with linear baseline and
- *        post-step slope.
+ * @brief S-curve (error-function step) with linear baseline and post-step
+ *        slope. Direction = +1 rises with x, Direction = -1 falls.
  *
- * f(x) = (p0 + p1*x) + 0.5*(1 + erf((x - mu) / (sqrt(2)*sigma))) * (A + C*(x -
- * mu)))
+ * f(x) = (p0 + p1*x)
+ *      + 0.5*(1 ± erf((x - mu) / (sqrt(2)*sigma))) * (A + C*(x - mu))
  *
  * Parameters:
  *   par[0] = p0  (baseline offset)
@@ -1244,8 +1033,15 @@ struct GaussianChargeSharingKb {
  *   par[3] = sigma  (transition width, must be > 0)
  *   par[4] = A  (step amplitude)
  *   par[5] = C  (post-step slope)
+ *
+ * With the step S(x) = 0.5*(1 ± erf(z)), z = (x - mu) / (sqrt(2)*sigma):
+ *   dS/dmu    = -(±1/sqrt(2*pi)) * exp(-z^2) / sigma
+ *   dS/dsigma = -(±1/sqrt(2*pi)) * exp(-z^2) * (x - mu) / sigma^2
  */
-struct RisingScurve {
+template <int Direction> struct Scurve {
+    static_assert(Direction == 1 || Direction == -1,
+                  "an S-curve either rises (+1) or falls (-1)");
+
     static constexpr std::size_t npar = 6;
 
     static constexpr std::array<ParamInfo, npar> param_info = {{
@@ -1266,18 +1062,12 @@ struct RisingScurve {
         const double p5 = par[5];
 
         const double dx = x - p2;
-        const double step = 0.5 * (1.0 + fast_erf(dx * inv_sqrt2 / p3));
+        const double step = 0.5 * (1.0 + sign * fast_erf(dx * inv_sqrt2 / p3));
         return (p0 + p1 * x) + step * (p4 + p5 * dx);
     }
 
-    /**
-     * @brief Evaluate function value and partial derivatives in a single pass.
-     *
-     * Uses:
-     *   S(x)  = 0.5*(1 + erf(z)),  z = (x-p2) / (sqrt(2)*p3)
-     *   dS/dp2 = -(1/sqrt(2*pi)) * exp(-z^2) / p3
-     *   dS/dp3 = -(1/sqrt(2*pi)) * exp(-z^2) * (x-p2) / p3^2
-     */
+    /** @brief Evaluate function value and partial derivatives in a single
+     * pass. */
     static void eval_and_grad(double x, const std::vector<double> &par,
                               double &f, std::array<double, npar> &g) {
         const double p0 = par[0];
@@ -1290,13 +1080,13 @@ struct RisingScurve {
         const double dx = x - p2;
         const double z = dx * inv_sqrt2 / p3;
         const double e = std::exp(-z * z);
-        const double step = 0.5 * (1.0 + fast_erf_from_exp(z, e));
+        const double step = 0.5 * (1.0 + sign * fast_erf_from_exp(z, e));
         const double amp = p4 + p5 * dx;
 
         f = (p0 + p1 * x) + step * amp;
 
-        const double dSdp2 = -inv_sqrt_2pi * e / p3;
-        const double dSdp3 = -inv_sqrt_2pi * e * dx / (p3 * p3);
+        const double dSdp2 = dstep * e / p3;
+        const double dSdp3 = dstep * e * dx / (p3 * p3);
 
         g[0] = 1.0;                     // df/dp0
         g[1] = x;                       // df/dp1
@@ -1312,43 +1102,13 @@ struct RisingScurve {
      */
     static constexpr std::array<std::size_t, 4> linear_par = {0, 1, 4, 5};
 
-    static void basis_and_grad(double x, const std::vector<double> &par,
-                               std::array<double, 4> &phi,
-                               std::array<std::array<double, 4>, 2> &dphi) {
-        const double p2 = par[2];
-        const double p3 = par[3];
-
-        const double inv_p3 = 1.0 / p3;
-        const double dx = x - p2;
-        const double z = dx * inv_sqrt2 * inv_p3;
-        const double e = std::exp(-z * z);
-        const double step = 0.5 * (1.0 + fast_erf_from_exp(z, e));
-
-        const double dSdp2 = -inv_sqrt_2pi * e * inv_p3;
-        const double dSdp3 = dSdp2 * dx * inv_p3;
-
-        phi[0] = 1.0;
-        phi[1] = x;
-        phi[2] = step;
-        phi[3] = step * dx;
-        dphi[0][0] = 0.0;
-        dphi[0][1] = 0.0;
-        dphi[0][2] = dSdp2;             // dS/dmu
-        dphi[0][3] = dSdp2 * dx - step; // d(S dx)/dmu
-        dphi[1][0] = 0.0;
-        dphi[1][1] = 0.0;
-        dphi[1][2] = dSdp3;      // dS/dsigma
-        dphi[1][3] = dSdp3 * dx; // d(S dx)/dsigma
-    }
-
-    /** @brief basis_and_grad for all points, one column per function. */
     static void basis_columns(const double *__restrict x, ssize_t n,
                               const std::vector<double> &par,
                               double *__restrict phi, double *__restrict dphi) {
         const double p2 = par[2];
         const double inv_p3 = 1.0 / par[3];
         const double cz = inv_sqrt2 * inv_p3;
-        const double ce = -inv_sqrt_2pi * inv_p3;
+        const double ce = dstep * inv_p3;
         double *one = phi;
         double *x_col = phi + n;
         double *step_col = phi + 2 * n;
@@ -1365,7 +1125,7 @@ struct RisingScurve {
             const double dx = xi - p2;
             const double z = dx * cz;
             const double e = fast_exp(-z * z);
-            const double step = 0.5 * (1.0 + fast_erf_from_exp(z, e));
+            const double step = 0.5 * (1.0 + sign * fast_erf_from_exp(z, e));
             const double dSdp2 = ce * e;
             const double dSdp3 = dSdp2 * dx * inv_p3;
             one[i] = 1.0;
@@ -1384,286 +1144,95 @@ struct RisingScurve {
         return par[3] != 0.0;
     }
 
-    /** @brief Data-driven initial parameter estimates for a rising S-curve. */
+    /**
+     * @brief Data-driven initial parameter estimates.
+     *
+     * The baseline is a line through the ~10% of points before the step
+     * turns on (the first points of a rising curve, the last of a falling
+     * one), the plateau the mean of the ~10% at the other end.
+     */
     static std::array<double, npar> estimate_par(NDView<double, 1> x,
                                                  NDView<double, 1> y) {
+        constexpr bool rising = Direction > 0;
         const ssize_t n = y.size();
+        const ssize_t n_tail = std::max<ssize_t>(n / 10, 2);
+        const ssize_t base_begin = rising ? 0 : n - n_tail;
+        const ssize_t plateau_begin = rising ? n - n_tail : 0;
 
-        // baseline: average of first ~10% of points (before turn-on)
-        ssize_t n_base = std::max<ssize_t>(n / 10, 2);
         double sum_y = 0, sum_xy = 0, sum_x = 0, sum_x2 = 0;
-        for (ssize_t i = 0; i < n_base; ++i) {
+        for (ssize_t i = base_begin; i < base_begin + n_tail; ++i) {
             sum_y += y[i];
             sum_x += x[i];
             sum_xy += x[i] * y[i];
             sum_x2 += x[i] * x[i];
         }
-        double denom = n_base * sum_x2 - sum_x * sum_x;
+        double denom = n_tail * sum_x2 - sum_x * sum_x;
         double p1 = (std::abs(denom) > 1e-30)
-                        ? (n_base * sum_xy - sum_x * sum_y) / denom
+                        ? (n_tail * sum_xy - sum_x * sum_y) / denom
                         : 0.0;
-        double p0 = (sum_y - p1 * sum_x) / n_base;
+        double p0 = (sum_y - p1 * sum_x) / n_tail;
 
-        // plateau: average of last ~10%
         double plateau = 0;
-        ssize_t n_plat = std::max<ssize_t>(n / 10, 2);
-        for (ssize_t i = n - n_plat; i < n; ++i)
+        for (ssize_t i = plateau_begin; i < plateau_begin + n_tail; ++i)
             plateau += y[i];
-        plateau /= n_plat;
+        plateau /= n_tail;
 
         // amplitude: plateau minus baseline at midpoint
         double x_mid = 0.5 * (x[0] + x[n - 1]);
         double baseline_at_mid = p0 + p1 * x_mid;
         double p4 = plateau - baseline_at_mid;
 
-        // threshold: x where y first crosses 50% between baseline and plateau
-        double y_half = baseline_at_mid + 0.5 * p4;
-        double p2 = x_mid; // fallback
-        for (ssize_t i = 0; i < n; ++i) {
-            if (y[i] >= y_half) {
-                p2 = x[i];
-                break;
+        // x of the first point past the given fraction of the step
+        const auto crossing = [&](double fraction, double fallback) {
+            const double level = baseline_at_mid + fraction * p4;
+            for (ssize_t i = 0; i < n; ++i) {
+                if (rising ? y[i] >= level : y[i] <= level)
+                    return x[i];
             }
-        }
+            return fallback;
+        };
 
-        // sigma: estimate from transition width (10%-90% rise)
-        double y_10 = baseline_at_mid + 0.1 * p4;
-        double y_90 = baseline_at_mid + 0.9 * p4;
-        double x_10 = x[0], x_90 = x[n - 1];
-        for (ssize_t i = 0; i < n; ++i) {
-            if (y[i] >= y_10) {
-                x_10 = x[i];
-                break;
-            }
-        }
-        for (ssize_t i = 0; i < n; ++i) {
-            if (y[i] >= y_90) {
-                x_90 = x[i];
-                break;
-            }
-        }
-        // for a Gaussian CDF: 10%-90% width = 2 * 1.2816 * sigma
-        double p3 = std::max((x_90 - x_10) / 2.5631, 1.0);
+        // threshold: halfway between baseline and plateau
+        double p2 = crossing(0.5, x_mid);
+
+        // sigma: from the transition width between 10% and 90% of the step;
+        // for a Gaussian CDF that width is 2 * 1.2816 * sigma
+        double x_enter = crossing(rising ? 0.1 : 0.9, x[0]);
+        double x_leave = crossing(rising ? 0.9 : 0.1, x[n - 1]);
+        double p3 = std::max((x_leave - x_enter) / 2.5631, 1.0);
 
         double p5 = 0.0; // assume flat gain, let optimizer find the slope
 
         return {p0, p1, p2, p3, p4, p5};
     }
+
+  private:
+    static constexpr double sign = Direction;
+    // dS/dmu = dstep * exp(-z^2) / sigma
+    static constexpr double dstep = -sign * inv_sqrt_2pi;
 };
 
-// _____________________________________________________________________
-//
-// FallingScurve
-// _____________________________________________________________________
+/** @brief S-curve that rises with x, see Scurve. */
+struct RisingScurve : Scurve<+1> {};
 
-/**
- * @brief Falling S-curve (complementary error-function step) with linear
- *        baseline and post-step slope.
- *
- * f(x) = (p0 + p1*x) + 0.5*(1 - erf((x - mu) / (sqrt(2)*sigma))) * (A + C*(x -
- * mu))
- *
- * Parameters are identical to RisingScurve.  The only difference is the
- * sign of the erf term, which flips the step direction (and the signs of
- * dS/dp2 and dS/dp3 in the gradient).
- */
-struct FallingScurve {
-    static constexpr std::size_t npar = 6;
-
-    static constexpr std::array<ParamInfo, npar> param_info = {{
-        {"p0", -no_bound, no_bound},
-        {"p1", -no_bound, no_bound},
-        {"mu", -no_bound, no_bound},
-        {"sigma", 1e-12, no_bound},
-        {"A", -no_bound, no_bound},
-        {"C", -no_bound, no_bound},
-    }};
-
-    static double eval(double x, const std::vector<double> &par) {
-        const double p0 = par[0];
-        const double p1 = par[1];
-        const double p2 = par[2];
-        const double p3 = par[3];
-        const double p4 = par[4];
-        const double p5 = par[5];
-
-        const double dx = x - p2;
-        const double step = 0.5 * (1.0 - fast_erf(dx * inv_sqrt2 / p3));
-        return (p0 + p1 * x) + step * (p4 + p5 * dx);
-    }
-
-    static void eval_and_grad(double x, const std::vector<double> &par,
-                              double &f, std::array<double, npar> &g) {
-        const double p0 = par[0];
-        const double p1 = par[1];
-        const double p2 = par[2];
-        const double p3 = par[3];
-        const double p4 = par[4];
-        const double p5 = par[5];
-
-        const double dx = x - p2;
-        const double z = dx * inv_sqrt2 / p3;
-        const double e = std::exp(-z * z);
-        const double step = 0.5 * (1.0 - fast_erf_from_exp(z, e));
-        const double amp = p4 + p5 * dx;
-
-        f = (p0 + p1 * x) + step * amp;
-
-        const double dSdp2 = +inv_sqrt_2pi * e / p3; // sign flipped vs rising
-        const double dSdp3 = +inv_sqrt_2pi * e * dx / (p3 * p3);
-
-        g[0] = 1.0;
-        g[1] = x;
-        g[2] = dSdp2 * amp - step * p5;
-        g[3] = dSdp3 * amp;
-        g[4] = step;
-        g[5] = step * dx;
-    }
-
-    /**
-     * @brief p0, p1, A and C are linear:
-     * f = p0 * 1 + p1 * x + A * S + C * S * (x - mu).
-     */
-    static constexpr std::array<std::size_t, 4> linear_par = {0, 1, 4, 5};
-
-    static void basis_and_grad(double x, const std::vector<double> &par,
-                               std::array<double, 4> &phi,
-                               std::array<std::array<double, 4>, 2> &dphi) {
-        const double p2 = par[2];
-        const double p3 = par[3];
-
-        const double inv_p3 = 1.0 / p3;
-        const double dx = x - p2;
-        const double z = dx * inv_sqrt2 * inv_p3;
-        const double e = std::exp(-z * z);
-        const double step = 0.5 * (1.0 - fast_erf_from_exp(z, e));
-
-        const double dSdp2 =
-            inv_sqrt_2pi * e * inv_p3; // sign flipped vs rising
-        const double dSdp3 = dSdp2 * dx * inv_p3;
-
-        phi[0] = 1.0;
-        phi[1] = x;
-        phi[2] = step;
-        phi[3] = step * dx;
-        dphi[0][0] = 0.0;
-        dphi[0][1] = 0.0;
-        dphi[0][2] = dSdp2;             // dS/dmu
-        dphi[0][3] = dSdp2 * dx - step; // d(S dx)/dmu
-        dphi[1][0] = 0.0;
-        dphi[1][1] = 0.0;
-        dphi[1][2] = dSdp3;      // dS/dsigma
-        dphi[1][3] = dSdp3 * dx; // d(S dx)/dsigma
-    }
-
-    /** @brief basis_and_grad for all points, one column per function. */
-    static void basis_columns(const double *__restrict x, ssize_t n,
-                              const std::vector<double> &par,
-                              double *__restrict phi, double *__restrict dphi) {
-        const double p2 = par[2];
-        const double inv_p3 = 1.0 / par[3];
-        const double cz = inv_sqrt2 * inv_p3;
-        const double ce = inv_sqrt_2pi * inv_p3; // sign flipped vs rising
-        double *one = phi;
-        double *x_col = phi + n;
-        double *step_col = phi + 2 * n;
-        double *step_dx = phi + 3 * n;
-        // d phi_0 and d phi_1 vanish for mu and sigma.
-        std::fill(dphi, dphi + 2 * n, 0.0);
-        std::fill(dphi + 4 * n, dphi + 6 * n, 0.0);
-        double *dmu_step = dphi + 2 * n;
-        double *dmu_step_dx = dphi + 3 * n;
-        double *dsig_step = dphi + 6 * n;
-        double *dsig_step_dx = dphi + 7 * n;
-        for (ssize_t i = 0; i < n; ++i) {
-            const double xi = x[i];
-            const double dx = xi - p2;
-            const double z = dx * cz;
-            const double e = fast_exp(-z * z);
-            const double step = 0.5 * (1.0 - fast_erf_from_exp(z, e));
-            const double dSdp2 = ce * e;
-            const double dSdp3 = dSdp2 * dx * inv_p3;
-            one[i] = 1.0;
-            x_col[i] = xi;
-            step_col[i] = step;
-            step_dx[i] = step * dx;
-            dmu_step[i] = dSdp2;
-            dmu_step_dx[i] = dSdp2 * dx - step;
-            dsig_step[i] = dSdp3;
-            dsig_step_dx[i] = dSdp3 * dx;
-        }
-    }
-
-    /** @brief Reject degenerate width (zero transition width). */
-    static bool is_valid(const std::vector<double> &par) {
-        return par[3] != 0.0;
-    }
-
-    /** @brief Data-driven initial parameter estimates for a falling S-curve. */
-    static std::array<double, npar> estimate_par(NDView<double, 1> x,
-                                                 NDView<double, 1> y) {
-        const ssize_t n = y.size();
-
-        // baseline: last ~10% of points (after turn-off)
-        ssize_t n_base = std::max<ssize_t>(n / 10, 2);
-        double sum_y = 0, sum_xy = 0, sum_x = 0, sum_x2 = 0;
-        for (ssize_t i = n - n_base; i < n; ++i) {
-            sum_y += y[i];
-            sum_x += x[i];
-            sum_xy += x[i] * y[i];
-            sum_x2 += x[i] * x[i];
-        }
-        double denom = n_base * sum_x2 - sum_x * sum_x;
-        double p1 = (std::abs(denom) > 1e-30)
-                        ? (n_base * sum_xy - sum_x * sum_y) / denom
-                        : 0.0;
-        double p0 = (sum_y - p1 * sum_x) / n_base;
-
-        // plateau: average of first ~10%
-        double plateau = 0;
-        ssize_t n_plat = std::max<ssize_t>(n / 10, 2);
-        for (ssize_t i = 0; i < n_plat; ++i)
-            plateau += y[i];
-        plateau /= n_plat;
-
-        // amplitude: plateau minus baseline at midpoint
-        double x_mid = 0.5 * (x[0] + x[n - 1]);
-        double baseline_at_mid = p0 + p1 * x_mid;
-        double p4 = plateau - baseline_at_mid;
-
-        // threshold: x where y first drops below 50%
-        double y_half = baseline_at_mid + 0.5 * p4;
-        double p2 = x_mid; // fallback
-        for (ssize_t i = 0; i < n; ++i) {
-            if (y[i] <= y_half) {
-                p2 = x[i];
-                break;
-            }
-        }
-
-        // sigma: estimate from transition width (90%-10% fall)
-        double y_90 = baseline_at_mid + 0.9 * p4;
-        double y_10 = baseline_at_mid + 0.1 * p4;
-        double x_90 = x[0], x_10 = x[n - 1];
-        for (ssize_t i = 0; i < n; ++i) {
-            if (y[i] <= y_90) {
-                x_90 = x[i];
-                break;
-            }
-        }
-        for (ssize_t i = 0; i < n; ++i) {
-            if (y[i] <= y_10) {
-                x_10 = x[i];
-                break;
-            }
-        }
-        // same CDF relationship: 10%-90% width = 2 * 1.2816 * sigma
-        double p3 = std::max((x_10 - x_90) / 2.5631, 1.0);
-
-        double p5 = 0.0;
-
-        return {p0, p1, p2, p3, p4, p5};
-    }
-};
+/** @brief S-curve that falls with x, see Scurve. */
+struct FallingScurve : Scurve<-1> {};
 
 } // namespace aare::model
+
+/**
+ * @brief The fit models: expands to X(Model) for every model in aare::model.
+ *
+ * The explicit instantiations of FitModel and the fit functions and the
+ * Python bindings are generated from this list, so a new model is added
+ * here once. It also needs its Minuit step scales in src/fit/MinuitSteps.hpp.
+ */
+#define AARE_FOR_EACH_FIT_MODEL(X)                                             \
+    X(Pol1)                                                                    \
+    X(Pol2)                                                                    \
+    X(Gaussian)                                                                \
+    X(GaussianErfcPlateau)                                                     \
+    X(GaussianChargeSharing)                                                   \
+    X(GaussianChargeSharingKb)                                                 \
+    X(RisingScurve)                                                            \
+    X(FallingScurve)

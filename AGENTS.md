@@ -149,18 +149,26 @@ lives in `python/aare/transform.py` on top of C++ generators.
 `GaussianChargeSharing`, ...) form the public fitting API. Each model
 provides `eval`, `eval_and_grad`, `is_valid`, `estimate_par`, and
 `param_info`; the separable models also declare their linear parameters
-(`linear_par`, `basis_and_grad`, `basis_columns`). `FitModel` is plain data
+(`linear_par`, `basis_columns`). A model is listed once, in
+`AARE_FOR_EACH_FIT_MODEL` at the end of `Models.hpp`, which generates the
+explicit instantiations and the Python bindings; it also needs its step
+scales in `MinuitSteps.hpp`. `FitModel` is plain data
 (limits, fixed flags, start values, minimizer settings) and selects one of
 four minimizers through `aare::Minimizer`: Minuit2's Migrad (default) and
 Fumili, or the built-in Levenberg-Marquardt and variable projection
 solvers. The private implementation lives in `src/fit/`: `Fit.cpp` holds
 the `FitModel` method bodies, the per-thread `detail::PixelFitter` that
-dispatches on the minimizer and falls back from VarPro to
-Levenberg-Marquardt, `fit_pixel`/`fit_3d`, and the explicit
-instantiations; `FitHelpers.hpp` holds the start-value precedence and
-shape checks; `DampedGaussNewton.hpp` is the damped Gauss-Newton driver
-shared by `LevenbergMarquardt.hpp` and `VariableProjection.hpp`, with the
-small fixed-size linear algebra on `std::array` (`Vec<N>`, `Mat<N>`).
+dispatches on the minimizer, falls back from VarPro to
+Levenberg-Marquardt and zeroes the outputs of a failed fit,
+`fit_pixel`/`fit_3d`, and the explicit instantiations; `FitHelpers.hpp`
+holds the start-value precedence, the evaluation budget and the shape
+checks; `DampedGaussNewton.hpp` is the damped Gauss-Newton driver
+shared by `LevenbergMarquardt.hpp` and `VariableProjection.hpp`;
+`LinearAlgebra.hpp` holds their small fixed-size linear algebra on
+`std::array` (`Vec<N>`, `Mat<R, C>`, `SymMat<N>`, `Cholesky<N>`,
+`compress`). The per-point loops of `VariableProjection::reduce` are
+sensitive to the code around them, see the comment there; check instruction
+counts with `perf stat` when touching it.
 `FitMinuit2.cpp` (with `Chi2.hpp` and `MinuitSteps.hpp`) is the only
 translation unit that includes Minuit2 headers; Minuit2 is a private,
 `BUILD_INTERFACE`-only dependency of `aare_core`. The `[fit]` tests run

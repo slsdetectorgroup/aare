@@ -172,50 +172,47 @@ template <typename Model> class PixelFitter {
             return fail(par_out, err_out, chi2);
 
         const auto start = start_values(model, x, y);
-
-        if (model.minimizer() == Minimizer::VarPro) {
-            // A model without the separable structure, a pixel that does
-            // not converge and a pixel whose linear solution violates a
-            // limit fall back to the full solver.
+        const Minimizer minimizer = model.minimizer();
+        bool valid = false;
+        if (minimizer == Minimizer::Migrad || minimizer == Minimizer::Fumili) {
+            valid = fit_pixel_minuit2(model, x, y, y_err, start, par_out,
+                                      err_out, chi2);
+        } else {
+            // VarPro falls back to the full solver for a model without the
+            // separable structure, a pixel that does not converge and a
+            // pixel whose linear solution violates a limit.
             if constexpr (model::is_separable<Model>::value) {
-                const auto res =
-                    vp_.fit(model, x, y, y_err, start, par_out, err_out);
-                if (res.valid && finite(par_out, err_out, res.chi2)) {
-                    chi2 = res.chi2;
-                    return true;
-                }
+                valid =
+                    minimizer == Minimizer::VarPro &&
+                    run(vp_, model, x, y, y_err, start, par_out, err_out, chi2);
             }
-            return fit_lm(model, x, y, y_err, start, par_out, err_out, chi2);
+            valid = valid ||
+                    run(lm_, model, x, y, y_err, start, par_out, err_out, chi2);
         }
-        if (model.minimizer() == Minimizer::LevenbergMarquardt)
-            return fit_lm(model, x, y, y_err, start, par_out, err_out, chi2);
-        return fit_pixel_minuit2(model, x, y, y_err, start, par_out, err_out,
-                                 chi2);
+        return valid || fail(par_out, err_out, chi2);
     }
 
   private:
-    // The built-in solvers do not guard every operation against NaN or
-    // infinity, so a result is checked before it is reported as a valid fit.
-    static bool finite(const double *par, const double *err, double chi2) {
-        bool ok = std::isfinite(chi2);
-        for (std::size_t k = 0; k < Model::npar; ++k)
-            ok = ok && std::isfinite(par[k]) && (!err || std::isfinite(err[k]));
+    // Runs a built-in solver. They do not guard every operation against NaN
+    // or infinity, so a result only counts as a valid fit when it is finite.
+    template <typename Solver>
+    static bool run(Solver &solver, const FitModel<Model> &model,
+                    NDView<double, 1> x, NDView<double, 1> y,
+                    NDView<double, 1> y_err,
+                    const std::array<double, Model::npar> &start,
+                    double *par_out, double *err_out, double &chi2) {
+        const auto res =
+            solver.fit(model, x, y, y_err, start, par_out, err_out);
+        bool ok = res.valid && std::isfinite(res.chi2);
+        for (std::size_t k = 0; ok && k < Model::npar; ++k)
+            ok = std::isfinite(par_out[k]) &&
+                 (!err_out || std::isfinite(err_out[k]));
+        if (ok)
+            chi2 = res.chi2;
         return ok;
     }
 
-    bool fit_lm(const FitModel<Model> &model, NDView<double, 1> x,
-                NDView<double, 1> y, NDView<double, 1> y_err,
-                const std::array<double, Model::npar> &start, double *par_out,
-                double *err_out, double &chi2) {
-        const auto res = lm_.fit(model, x, y, y_err, start, par_out, err_out);
-        if (res.valid && finite(par_out, err_out, res.chi2)) {
-            chi2 = res.chi2;
-            return true;
-        }
-        return fail(par_out, err_out, chi2);
-    }
-
-    // A failed fit reports zeros.
+    // A failed fit reports zeros, whichever minimizer it came from.
     static bool fail(double *par_out, double *err_out, double &chi2) {
         std::fill(par_out, par_out + Model::npar, 0.0);
         if (err_out)
@@ -311,25 +308,18 @@ void fit_3d(const FitModel<Model> &model, NDView<double, 1> x,
 
 // NOLINTBEGIN
 #define AARE_INSTANTIATE_FIT(Model)                                            \
-    template class FitModel<Model>;                                            \
-    template NDArray<double, 1> fit_pixel<Model>(                              \
-        const FitModel<Model> &, NDView<double, 1>, NDView<double, 1>,         \
+    template class FitModel<model::Model>;                                     \
+    template NDArray<double, 1> fit_pixel<model::Model>(                       \
+        const FitModel<model::Model> &, NDView<double, 1>, NDView<double, 1>,  \
         NDView<double, 1>);                                                    \
-    template NDArray<double, 1> fit_pixel<Model>(                              \
-        const FitModel<Model> &, NDView<double, 1>, NDView<double, 1>);        \
-    template void fit_3d<Model>(const FitModel<Model> &, NDView<double, 1>,    \
-                                NDView<double, 3>, NDView<double, 3>,          \
-                                NDView<double, 3>, NDView<double, 3>,          \
-                                NDView<double, 2>, int);
+    template NDArray<double, 1> fit_pixel<model::Model>(                       \
+        const FitModel<model::Model> &, NDView<double, 1>, NDView<double, 1>); \
+    template void fit_3d<model::Model>(                                        \
+        const FitModel<model::Model> &, NDView<double, 1>, NDView<double, 3>,  \
+        NDView<double, 3>, NDView<double, 3>, NDView<double, 3>,               \
+        NDView<double, 2>, int);
 
-AARE_INSTANTIATE_FIT(model::Gaussian)
-AARE_INSTANTIATE_FIT(model::GaussianErfcPlateau)
-AARE_INSTANTIATE_FIT(model::GaussianChargeSharing)
-AARE_INSTANTIATE_FIT(model::GaussianChargeSharingKb)
-AARE_INSTANTIATE_FIT(model::Pol1)
-AARE_INSTANTIATE_FIT(model::Pol2)
-AARE_INSTANTIATE_FIT(model::RisingScurve)
-AARE_INSTANTIATE_FIT(model::FallingScurve)
+AARE_FOR_EACH_FIT_MODEL(AARE_INSTANTIATE_FIT)
 
 #undef AARE_INSTANTIATE_FIT
 // NOLINTEND

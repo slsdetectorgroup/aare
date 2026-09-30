@@ -8,17 +8,16 @@ namespace aare {
 
 // ---------------------------------------------------------------------------
 // Pixel fitting with the minimizer selected by the FitModel.
-// Template bodies and explicit instantiations live in src/Fit.cpp.
+// Template bodies and explicit instantiations live in src/fit/Fit.cpp.
 // ---------------------------------------------------------------------------
 
 /**
  * @brief Fit a single pixel's data.
  *
- * The minimizer (Migrad, Fumili or LevenbergMarquardt) is selected by the
- * model, see aare::Minimizer. Parameter errors, when requested, come from
- * MnHesse with Migrad and from the linearised covariance otherwise; fixed
- * parameters and parameters ending on a limit report 0. A failed fit
- * returns zeros.
+ * The minimizer is selected by the model, see aare::Minimizer. Parameter
+ * errors, when requested, come from MnHesse with Migrad and from the linearised
+ * covariance otherwise; fixed parameters and parameters ending on a limit
+ * report 0. A failed fit returns zeros.
  *
  * User-precedence rules:
  *   - Fixed parameters: kept at their value, excluded from the fit.
@@ -57,8 +56,8 @@ NDArray<double, 1> fit_pixel(const FitModel<Model> &model, NDView<double, 1> x,
  * @param y_err      Uncertainties, same shape as y, or empty for unweighted
  * fits.
  * @param par_out    Output parameters, shape `(rows, cols, npar)`.
- * @param err_out    Output parameter errors, shape `(rows, cols, npar)`, if
- * used.
+ * @param err_out    Output parameter errors, shape `(rows, cols, npar)`, or
+ * empty when they are not wanted. Filled only with compute_errors.
  * @param chi2_out   Output chi-squared / objective values, shape `(rows,
  * cols)`.
  * @param n_threads  Number of threads used to split rows.

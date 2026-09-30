@@ -55,7 +55,7 @@
   to exhaust the default budget of 100 may now converge.
 - Added ``Minimizer.VarPro``, a built-in variable projection
   solver. Every bundled model now declares the parameters it is linear in
-  (``linear_par`` and ``basis_and_grad`` in C++, checked against the model
+  (``linear_par`` and ``basis_columns`` in C++, checked against the model
   derivatives by the tests). Each trial point solves those exactly and the
   Levenberg-Marquardt iteration runs over the nonlinear parameters only, so
   the fit needs fewer evaluations and does not depend on start values of the
@@ -65,12 +65,13 @@
   Limits on linear parameters, pixels that do not converge
   and models without the separable structure fall back to
   ``LevenbergMarquardt``. Parameter errors are the same Gauss-Newton
-  estimates. The Gaussian, plateau, charge-sharing and S-curve models also
-  provide their basis functions for all scan points at once
-  (``basis_columns``), a loop that compiles to vector instructions with the
-  new ``model::fast_exp``; ``eval`` and ``eval_and_grad``, and with them the
-  other minimizers, are unchanged. ``Minimizer.Migrad`` remains the
-  default.
+  estimates. ``basis_columns`` provides the basis functions for all scan
+  points at once, a loop that compiles to vector instructions with the new
+  ``model::fast_exp``. ``GaussianErfcPlateau``, ``GaussianChargeSharing`` and
+  ``GaussianChargeSharingKb`` now compute their peak and erfc terms in one
+  shared function (``model::peak_terms``), a rounding-level change of their
+  values and derivatives for every minimizer. ``Minimizer.Migrad`` remains
+  the default.
 - ``NDArray``/``NDView`` expressions now support scalar operands
   (``2 * a + b / 4``) and can be assigned to an existing ``NDArray``, reusing
   its buffer.
@@ -93,6 +94,12 @@
   ``std::out_of_range`` (``IndexError`` in Python) and ``SetParLimits``
   rejects ``lo >= hi``. The models in ``Models.hpp`` no longer provide the
   Minuit specific ``compute_steps`` and ``compute_ranges`` helpers.
+  ``model::RisingScurve`` and ``model::FallingScurve`` now derive from one
+  template, ``model::Scurve<+1>`` and ``model::Scurve<-1>``. The list of fit
+  models lives in ``AARE_FOR_EACH_FIT_MODEL`` in ``Models.hpp``, from which
+  the explicit instantiations and the Python bindings are generated.
+- C++ ``fit_3d`` accepts an empty ``err_out`` for a weighted fit too; it
+  used to require one whenever ``y_err`` was passed.
 - Fit behaviour common to all minimizers: user start and fixed values are
   applied before the validity check and free start values are clamped into
   their limits; one-sided limits are open-ended for ``LevenbergMarquardt``

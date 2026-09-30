@@ -15,10 +15,12 @@ namespace aare::detail {
  * @brief Fit one pixel with the Minuit2 minimizer selected by the model.
  *
  * @param start    Starting values, see start_values() in FitHelpers.hpp.
- * @param par_out  Receives npar fitted values; zeros on failure.
- * @param err_out  Receives npar errors when non-null; zeros on failure.
- *                 Fixed parameters and parameters on a limit report 0.
- * @param chi2     Receives the chi-squared at the minimum; 0 on failure.
+ * @param par_out  Receives npar fitted values.
+ * @param err_out  Receives npar errors when non-null. Fixed parameters and
+ *                 parameters on a limit report 0.
+ * @param chi2     Receives the chi-squared at the minimum.
+ *
+ * The outputs are untouched when the fit fails.
  * @return true when Minuit2 reports a valid minimum.
  */
 template <typename Model>

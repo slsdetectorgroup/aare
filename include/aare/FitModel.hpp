@@ -22,12 +22,12 @@ namespace aare {
  *   two-sided limit becomes active; a pixel without a valid Fumili minimum
  *   is refitted with Migrad.
  * - LevenbergMarquardt: the built-in damped Gauss-Newton solver
- *   (src/LevenbergMarquardt.hpp). It uses the analytic Jacobian, reflects
+ *   (src/fit/LevenbergMarquardt.hpp). It uses the analytic Jacobian, reflects
  *   steps at parameter limits and reuses its buffers between pixels, so a
  *   data cube is fitted without per-pixel allocations. Parameter errors are
  *   sqrt(diag((J^T J)^-1)) over the free parameters.
  * - VarPro: the built-in variable projection solver
- *   (src/VariableProjection.hpp) for models that declare their linear
+ *   (src/fit/VariableProjection.hpp) for models that declare their linear
  *   parameters (model::is_separable). Every trial point solves the linear
  *   parameters exactly and the Levenberg-Marquardt iteration runs over the
  *   nonlinear ones only, which needs fewer evaluations and avoids poor
@@ -58,8 +58,8 @@ enum class Minimizer { Migrad, Fumili, LevenbergMarquardt, VarPro };
  * parameters, user start values and minimizer settings.
  *
  * The object holds plain data and can be shared read-only between threads.
- * Method bodies live in src/Fit.cpp, which explicitly instantiates the class
- * for every supported model.
+ * Method bodies live in src/fit/Fit.cpp, which explicitly instantiates the
+ * class for every supported model.
  */
 template <typename Model> class FitModel {
   public:
@@ -152,14 +152,10 @@ template <typename Model> class FitModel {
 };
 
 // Suppress implicit instantiation for all supported model types.
-// Definitions live in src/Fit.cpp.
-extern template class FitModel<model::Gaussian>;
-extern template class FitModel<model::GaussianErfcPlateau>;
-extern template class FitModel<model::GaussianChargeSharing>;
-extern template class FitModel<model::GaussianChargeSharingKb>;
-extern template class FitModel<model::Pol1>;
-extern template class FitModel<model::Pol2>;
-extern template class FitModel<model::RisingScurve>;
-extern template class FitModel<model::FallingScurve>;
+// Definitions live in src/fit/Fit.cpp.
+#define AARE_DECLARE_FIT_MODEL(Model)                                          \
+    extern template class FitModel<model::Model>;
+AARE_FOR_EACH_FIT_MODEL(AARE_DECLARE_FIT_MODEL)
+#undef AARE_DECLARE_FIT_MODEL
 
 } // namespace aare

@@ -28,17 +28,10 @@ ROOT::Minuit2::MnUserParameters
 user_parameters(const FitModel<Model> &model, NDView<double, 1> x,
                 NDView<double, 1> y,
                 const std::array<double, Model::npar> &start) {
-    constexpr std::size_t npar = Model::npar;
-
-    double x_range = 0.0;
-    double y_range = 0.0;
-    double slope_scale = 0.0;
-    minuit2::compute_ranges(x, y, x_range, y_range, slope_scale);
-    std::array<double, npar> steps{};
-    minuit2::Steps<Model>::compute(start, x_range, y_range, slope_scale, steps);
+    const auto steps = minuit2::steps<Model>(start, x, y);
 
     ROOT::Minuit2::MnUserParameters upar;
-    for (std::size_t i = 0; i < npar; ++i) {
+    for (std::size_t i = 0; i < Model::npar; ++i) {
         const auto idx = static_cast<unsigned int>(i);
         upar.Add(Model::param_info[i].name, start[i], steps[i]);
         const double lo = model.lower_limit(idx);
@@ -102,12 +95,6 @@ bool fit_pixel_minuit2(const FitModel<Model> &model, NDView<double, 1> x,
                        NDView<double, 1> y, NDView<double, 1> y_err,
                        const std::array<double, Model::npar> &start,
                        double *par_out, double *err_out, double &chi2) {
-    constexpr std::size_t npar = Model::npar;
-    std::fill(par_out, par_out + npar, 0.0);
-    if (err_out)
-        std::fill(err_out, err_out + npar, 0.0);
-    chi2 = 0.0;
-
     if (!Model::is_valid(std::vector<double>(start.begin(), start.end())))
         return false;
 
@@ -148,19 +135,12 @@ bool fit_pixel_minuit2(const FitModel<Model> &model, NDView<double, 1> x,
 
 // NOLINTBEGIN
 #define AARE_INSTANTIATE_MINUIT2_FIT(Model)                                    \
-    template bool fit_pixel_minuit2<Model>(                                    \
-        const FitModel<Model> &, NDView<double, 1>, NDView<double, 1>,         \
-        NDView<double, 1>, const std::array<double, Model::npar> &, double *,  \
-        double *, double &);
+    template bool fit_pixel_minuit2<model::Model>(                             \
+        const FitModel<model::Model> &, NDView<double, 1>, NDView<double, 1>,  \
+        NDView<double, 1>, const std::array<double, model::Model::npar> &,     \
+        double *, double *, double &);
 
-AARE_INSTANTIATE_MINUIT2_FIT(model::Gaussian)
-AARE_INSTANTIATE_MINUIT2_FIT(model::GaussianErfcPlateau)
-AARE_INSTANTIATE_MINUIT2_FIT(model::GaussianChargeSharing)
-AARE_INSTANTIATE_MINUIT2_FIT(model::GaussianChargeSharingKb)
-AARE_INSTANTIATE_MINUIT2_FIT(model::Pol1)
-AARE_INSTANTIATE_MINUIT2_FIT(model::Pol2)
-AARE_INSTANTIATE_MINUIT2_FIT(model::RisingScurve)
-AARE_INSTANTIATE_MINUIT2_FIT(model::FallingScurve)
+AARE_FOR_EACH_FIT_MODEL(AARE_INSTANTIATE_MINUIT2_FIT)
 
 #undef AARE_INSTANTIATE_MINUIT2_FIT
 // NOLINTEND

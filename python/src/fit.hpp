@@ -1,6 +1,8 @@
 // SPDX-License-Identifier: MPL-2.0
+#include <array>
 #include <cstdint>
 #include <filesystem>
+#include <memory>
 #include <pybind11/pybind11.h>
 #include <pybind11/stl.h>
 #include <pybind11/stl_bind.h>
@@ -12,12 +14,13 @@
 namespace py = pybind11;
 using namespace pybind11::literals;
 
+// Input arrays are converted, so that the fit can be called with any dtype.
+using DoubleArray =
+    py::array_t<double, py::array::c_style | py::array::forcecast>;
+
 template <typename Model>
-py::object
-fit_dispatch(const aare::FitModel<Model> &model,
-             py::array_t<double, py::array::c_style | py::array::forcecast> x,
-             py::array_t<double, py::array::c_style | py::array::forcecast> y,
-             py::object y_err_obj, int n_threads);
+py::dict fit_dispatch(const aare::FitModel<Model> &model, DoubleArray x,
+                      DoubleArray y, py::object y_err_obj, int n_threads);
 
 template <typename Model> void bind_fit_model(py::module &m, const char *name) {
     using FM = aare::FitModel<Model>;
@@ -92,12 +95,8 @@ template <typename Model> void bind_fit_model(py::module &m, const char *name) {
                       &FM::SetComputeErrors)
         .def_property("minimizer", &FM::minimizer, &FM::SetMinimizer)
         .def(
-            "__call__", // conversion ok, we want to be able to call with any
-                        // dtype
-            [](const FM & /*self*/,
-               py::array_t<double, py::array::c_style | py::array::forcecast> x,
-               py::array_t<double, py::array::c_style | py::array::forcecast>
-                   par) {
+            "__call__",
+            [](const FM & /*self*/, DoubleArray x, DoubleArray par) {
                 auto x_view = make_view_1d(x);
                 auto p_view = make_view_1d(par);
 
@@ -111,15 +110,13 @@ template <typename Model> void bind_fit_model(py::module &m, const char *name) {
             },
             py::arg("x"), py::arg("par"))
         .def(
-            "fit", // conversion ok
-            [](const FM &self,
-               py::array_t<double, py::array::c_style | py::array::forcecast> x,
-               py::array_t<double, py::array::c_style | py::array::forcecast> y,
-               py::object y_err_obj, int n_threads) -> py::object {
+            "fit",
+            [](const FM &self, DoubleArray x, DoubleArray y,
+               py::object y_err_obj, int n_threads) {
                 return fit_dispatch<Model>(self, x, y, y_err_obj, n_threads);
             },
             R"doc(
-            Fit this model to 1D or 3D data using Minuit2.
+            Fit this model to 1D or 3D data.
 
             The minimizer is selected by the ``minimizer`` property
             (``Minimizer.Migrad`` by default, ``Minimizer.Fumili``,
@@ -141,163 +138,75 @@ template <typename Model> void bind_fit_model(py::module &m, const char *name) {
             py::arg("n_threads") = 4);
 }
 
+// Fit one model to 1D or 3D data and pack the result: "par", "par_err" when
+// the model computes errors, and "chi2".
 template <typename Model>
-py::dict pack_1d_result_dict(const aare::NDArray<double, 1> &result,
-                             bool compute_errors) {
-    constexpr std::size_t npar = Model::npar;
-
-    auto res = result.view();
-
-    auto par_out = new NDArray<double, 1>({npar}, 0.0);
-    auto chi2_out = new NDArray<double, 1>({1}, 0.0);
-
-    auto par_view = par_out->view();
-    auto chi2_view = chi2_out->view();
-
-    for (std::size_t i = 0; i < npar; ++i) {
-        par_view(i) = res(i);
-    }
-
-    if (compute_errors) {
-        auto err_out = new NDArray<double, 1>({npar}, 0.0);
-        auto err_view = err_out->view();
-
-        for (std::size_t i = 0; i < npar; ++i) {
-            err_view(i) = res(npar + i);
-        }
-
-        chi2_view(0) = res(2 * npar);
-
-        return py::dict("par"_a = return_image_data(par_out),
-                        "par_err"_a = return_image_data(err_out),
-                        "chi2"_a = return_image_data(chi2_out));
-    } else {
-        chi2_view(0) = res(npar);
-
-        return py::dict("par"_a = return_image_data(par_out),
-                        "chi2"_a = return_image_data(chi2_out));
-    }
-}
-
-// Helper: typed dispatch for one Model, handles 1D/3D + y_err logic
-template <typename Model>
-py::object
-fit_dispatch(const aare::FitModel<Model> &model,
-             py::array_t<double, py::array::c_style | py::array::forcecast> x,
-             py::array_t<double, py::array::c_style | py::array::forcecast> y,
-             py::object y_err_obj, int n_threads) {
-    constexpr std::size_t npar = Model::npar;
+py::dict fit_dispatch(const aare::FitModel<Model> &model, DoubleArray x,
+                      DoubleArray y, py::object y_err_obj, int n_threads) {
+    constexpr auto npar = static_cast<ssize_t>(Model::npar);
+    const bool want_errors = model.compute_errors();
+    const bool weighted = !y_err_obj.is_none();
+    DoubleArray y_err;
+    if (weighted)
+        y_err = py::cast<DoubleArray>(y_err_obj);
+    auto x_view = make_view_1d(x);
+    py::dict result;
 
     if (y.ndim() == 3) {
-        auto par_out =
-            new NDArray<double, 3>({y.shape(0), y.shape(1), npar}, 0.0);
-        auto chi2_out = new NDArray<double, 2>({y.shape(0), y.shape(1)}, 0.0);
+        const ssize_t rows = y.shape(0);
+        const ssize_t cols = y.shape(1);
+        using Cube = NDArray<double, 3>;
+        using Image = NDArray<double, 2>;
+        const std::array<ssize_t, 3> par_shape{rows, cols, npar};
+        auto par = std::make_unique<Cube>(par_shape, 0.0);
+        auto par_err =
+            want_errors ? std::make_unique<Cube>(par_shape, 0.0) : nullptr;
+        auto chi2 =
+            std::make_unique<Image>(std::array<ssize_t, 2>{rows, cols}, 0.0);
 
-        auto x_view = make_view_1d(x);
-        auto y_view = make_view_3d(y);
+        aare::fit_3d<Model>(
+            model, x_view, make_view_3d(y),
+            weighted ? make_view_3d(y_err) : NDView<double, 3>{}, par->view(),
+            par_err ? par_err->view() : NDView<double, 3>{}, chi2->view(),
+            n_threads);
 
-        if (!y_err_obj.is_none()) {
-            auto y_err = py::cast<
-                py::array_t<double, py::array::c_style | py::array::forcecast>>(
-                y_err_obj);
-
-            auto err_out =
-                new NDArray<double, 3>({y.shape(0), y.shape(1), npar}, 0.0);
-            auto y_view_err = make_view_3d(y_err);
-
-            aare::fit_3d<Model>(model, x_view, y_view, y_view_err,
-                                par_out->view(), err_out->view(),
-                                chi2_out->view(), n_threads);
-
-            if (model.compute_errors()) {
-                return py::dict("par"_a = return_image_data(par_out),
-                                "par_err"_a = return_image_data(err_out),
-                                "chi2"_a = return_image_data(chi2_out));
-            } else {
-                delete err_out;
-                return py::dict("par"_a = return_image_data(par_out),
-                                "chi2"_a = return_image_data(chi2_out));
-            }
-        } else {
-            // Unweighted fit; parameter errors are still available when
-            // requested, as in the 1D path.
-            NDView<double, 3> dummy_err{};
-
-            if (model.compute_errors()) {
-                auto err_out =
-                    new NDArray<double, 3>({y.shape(0), y.shape(1), npar}, 0.0);
-
-                aare::fit_3d<Model>(model, x_view, y_view, dummy_err,
-                                    par_out->view(), err_out->view(),
-                                    chi2_out->view(), n_threads);
-
-                return py::dict("par"_a = return_image_data(par_out),
-                                "par_err"_a = return_image_data(err_out),
-                                "chi2"_a = return_image_data(chi2_out));
-            }
-
-            NDView<double, 3> dummy_err_out{};
-
-            aare::fit_3d<Model>(model, x_view, y_view, dummy_err,
-                                par_out->view(), dummy_err_out,
-                                chi2_out->view(), n_threads);
-
-            return py::dict("par"_a = return_image_data(par_out),
-                            "chi2"_a = return_image_data(chi2_out));
-        }
+        result["par"] = return_image_data(par.release());
+        if (par_err)
+            result["par_err"] = return_image_data(par_err.release());
+        result["chi2"] = return_image_data(chi2.release());
     } else if (y.ndim() == 1) {
-        NDArray<double, 1> result{};
+        // [par..., (err...,) chi2], see fit_pixel
+        const auto flat = aare::fit_pixel<Model>(
+            model, x_view, make_view_1d(y),
+            weighted ? make_view_1d(y_err) : NDView<double, 1>{});
 
-        auto x_view = make_view_1d(x);
-        auto y_view = make_view_1d(y);
-
-        if (!y_err_obj.is_none()) {
-            auto y_err = py::cast<
-                py::array_t<double, py::array::c_style | py::array::forcecast>>(
-                y_err_obj);
-
-            auto y_view_err = make_view_1d(y_err);
-            result = aare::fit_pixel<Model>(model, x_view, y_view, y_view_err);
-        } else {
-            result = aare::fit_pixel<Model>(model, x_view, y_view);
-        }
-
-        return pack_1d_result_dict<Model>(result, model.compute_errors());
-
+        result["par"] = py::array_t<double>(npar, flat.data());
+        if (want_errors)
+            result["par_err"] = py::array_t<double>(npar, flat.data() + npar);
+        result["chi2"] = py::array_t<double>(1, flat.data() + flat.size() - 1);
     } else {
         throw std::runtime_error("Data must be 1D or 3D.");
     }
+    return result;
 }
 
 // Resolve the model type behind a Python object and run the fit.
-py::object dispatch_any_model(
-    py::object model_obj,
-    py::array_t<double, py::array::c_style | py::array::forcecast> x,
-    py::array_t<double, py::array::c_style | py::array::forcecast> y,
-    py::object y_err_obj, int n_threads) {
-    using namespace aare::model;
-
+py::dict dispatch_any_model(py::object model_obj, DoubleArray x, DoubleArray y,
+                            py::object y_err_obj, int n_threads) {
 #define AARE_DISPATCH_MODEL(Model)                                             \
-    if (py::isinstance<aare::FitModel<Model>>(model_obj)) {                    \
-        const auto &mdl = model_obj.cast<const aare::FitModel<Model> &>();     \
-        return fit_dispatch<Model>(mdl, x, y, y_err_obj, n_threads);           \
+    if (py::isinstance<aare::FitModel<aare::model::Model>>(model_obj)) {       \
+        const auto &mdl =                                                      \
+            model_obj.cast<const aare::FitModel<aare::model::Model> &>();      \
+        return fit_dispatch(mdl, x, y, y_err_obj, n_threads);                  \
     }
-
-    AARE_DISPATCH_MODEL(Pol1)
-    AARE_DISPATCH_MODEL(Pol2)
-    AARE_DISPATCH_MODEL(Gaussian)
-    AARE_DISPATCH_MODEL(GaussianErfcPlateau)
-    AARE_DISPATCH_MODEL(GaussianChargeSharing)
-    AARE_DISPATCH_MODEL(GaussianChargeSharingKb)
-    AARE_DISPATCH_MODEL(RisingScurve)
-    AARE_DISPATCH_MODEL(FallingScurve)
-
+    AARE_FOR_EACH_FIT_MODEL(AARE_DISPATCH_MODEL)
 #undef AARE_DISPATCH_MODEL
 
+#define AARE_MODEL_NAME(Model) " " #Model
     throw std::runtime_error(
-        "Unknown model type. Expected Pol1, Pol2, Gaussian, "
-        "GaussianErfcPlateau, GaussianChargeSharing, GaussianChargeSharingKb, "
-        "RisingScurve or FallingScurve.");
+        "Unknown model type. Expected one of:" AARE_FOR_EACH_FIT_MODEL(
+            AARE_MODEL_NAME));
+#undef AARE_MODEL_NAME
 }
 
 void define_fit_bindings(py::module &m) {
@@ -346,27 +255,13 @@ void define_fit_bindings(py::module &m) {
         .value("VarPro", aare::Minimizer::VarPro);
 
     // ── Bind model classes ──────────────────────────────────────────
-    bind_fit_model<aare::model::Gaussian>(m, "Gaussian");
-    bind_fit_model<aare::model::GaussianErfcPlateau>(m, "GaussianErfcPlateau");
-    bind_fit_model<aare::model::GaussianChargeSharing>(m,
-                                                       "GaussianChargeSharing");
-    bind_fit_model<aare::model::GaussianChargeSharingKb>(
-        m, "GaussianChargeSharingKb");
-    bind_fit_model<aare::model::RisingScurve>(m, "RisingScurve");
-    bind_fit_model<aare::model::FallingScurve>(m, "FallingScurve");
-    bind_fit_model<aare::model::Pol1>(m, "Pol1");
-    bind_fit_model<aare::model::Pol2>(m, "Pol2");
+#define AARE_BIND_FIT_MODEL(Model)                                             \
+    bind_fit_model<aare::model::Model>(m, #Model);
+    AARE_FOR_EACH_FIT_MODEL(AARE_BIND_FIT_MODEL)
+#undef AARE_BIND_FIT_MODEL
 
-    m.def(
-        "fit",
-        [](py::object model_obj, // conversion ok, we want to be able to call
-                                 // with any dtype
-           py::array_t<double, py::array::c_style | py::array::forcecast> x,
-           py::array_t<double, py::array::c_style | py::array::forcecast> y,
-           py::object y_err_obj, int n_threads) -> py::object {
-            return dispatch_any_model(model_obj, x, y, y_err_obj, n_threads);
-        },
-        R"(
+    m.def("fit", &dispatch_any_model,
+          R"(
         Fit a model to 1D or 3D data with the minimizer selected by the
         model's ``minimizer`` property.
  
@@ -395,6 +290,6 @@ void define_fit_bindings(py::module &m) {
             errors when ``compute_errors`` is enabled; fixed parameters and
             parameters on a limit report 0.  A failed fit returns zeros.
         )",
-        py::arg("model"), py::arg("x"), py::arg("y"),
-        py::arg("y_err") = py::none(), py::arg("n_threads") = 4);
+          py::arg("model"), py::arg("x"), py::arg("y"),
+          py::arg("y_err") = py::none(), py::arg("n_threads") = 4);
 }
