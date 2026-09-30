@@ -56,6 +56,10 @@ void define_ClusterFinder(py::module &m, const std::string &typestr) {
         .def("update_threshold",
              &ClusterFinder<ClusterType, uint16_t, pd_type>::update_threshold)
         .def_property_readonly(
+            "pedestal_ready",
+            &ClusterFinder<ClusterType, uint16_t, pd_type>::pedestal_ready,
+            R"(True once enough pedestal frames have been pushed to find clusters.)")
+        .def_property_readonly(
             "pedestal",
             [](ClusterFinder<ClusterType, uint16_t, pd_type> &self) {
                 auto pd = new NDArray<pd_type, 2>{};

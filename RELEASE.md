@@ -4,6 +4,9 @@
 
 ### New Features:
 
+- Added ``pedestal_ready`` to ``ClusterFinder`` and ``ClusterFinderMT`` in C++
+  and Python to check whether enough pedestal frames have been pushed to find
+  clusters.
 - Added the Python ``FrameDiscardPolicy`` enum with ``NoDiscard``, ``Discard``,
   and ``DiscardPartial``, enabling access to ``RawMasterFile.frame_discard_policy``.
 - Added the Python ``Pedestal`` factory with ``dtype`` selection, matching
@@ -90,6 +93,10 @@
 
 
 ### Bugfixes:
+- Setting nSigma on ``ClusterFinder`` and ``ClusterFinderMT`` before the
+  pedestal is ready no longer raises an error. The new value is used when the
+  threshold is initialized. Previously ``ClusterFinderMT.set_nSigma()`` also
+  left the worker threads with different nSigma values.
 - The Python ``Cluster`` constructors validate that the data array holds
   exactly one value per pixel and raise ``ValueError`` otherwise. Previously a
   longer array wrote past the end of the cluster data.
