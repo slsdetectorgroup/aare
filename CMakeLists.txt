@@ -347,6 +347,7 @@ set(PUBLICHEADERS
     include/aare/GainMap.hpp
     include/aare/ROIGeometry.hpp
     include/aare/DetectorGeometry.hpp
+    include/aare/DataSetAggregation.hpp
     include/aare/JungfrauDataFile.hpp
     include/aare/logger.hpp
     include/aare/NDArray.hpp
