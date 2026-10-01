@@ -109,6 +109,39 @@ Build the Python bindings. Default option is off.
     If you have a newer system Python compared to the one in your virtual environment,
     you might have to pass -DPython_FIND_VIRTUALENV=ONLY to cmake.
 
+**AARE_CUDA "Build CUDA cluster finder backend" OFF**
+
+Build :doc:`ClusterFinderCUDA`, the GPU cluster finder. Default option is off,
+in which case aare builds CPU-only and the class is not compiled at all.
+
+Requires the CUDA toolkit (nvcc) and a compiler combination nvcc accepts; see
+:doc:`Requirements`. With ``AARE_PYTHON_BINDINGS=ON`` the CUDA bindings are
+built as a separate extension module, ``_aare_cuda``, which avoids nvcc/gcc ABI
+conflicts in the main module. The classes are re-exported onto ``aare``, so
+imports stay the same either way:
+
+.. code-block:: bash
+
+    cmake ../aare -DAARE_CUDA=ON -DAARE_PYTHON_BINDINGS=ON
+    make -j4
+
+.. code-block:: python
+
+    from aare import ClusterFinderCUDA, _cuda_available
+
+On a CPU-only build ``_cuda_available()`` returns False and the
+``ClusterFinderCUDA`` factory raises ``RuntimeError``.
+
+**AARE_CUDA_ARCHITECTURES "CUDA architectures to compile for" native**
+
+Only used when ``AARE_CUDA=ON``. Defaults to ``native``, which targets the GPU
+in the building machine. Set it explicitly to build portable binaries or to
+cross-compile for a GPU you are not building on:
+
+.. code-block:: bash
+
+    cmake ../aare -DAARE_CUDA=ON -DAARE_CUDA_ARCHITECTURES="80;89"
+
 **AARE_TESTS "Build tests" OFF**
 
 Build unit tests. Default option is off.
