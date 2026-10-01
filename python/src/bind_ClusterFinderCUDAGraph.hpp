@@ -13,8 +13,6 @@
 namespace py = pybind11;
 using pd_type = double;
 
-using namespace aare;
-
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Wunused-parameter"
 
@@ -65,7 +63,7 @@ void define_ClusterFinderCUDAGraph(py::module &m, const std::string &typestr) {
         .def(
             "steal_clusters",
             [](CF &self, bool realloc_same_capacity) {
-                return std::move(self.steal_clusters(realloc_same_capacity));
+                return self.steal_clusters(realloc_same_capacity);
             },
             py::arg("realloc_same_capacity") = true)
 

@@ -70,23 +70,23 @@ template <class Algo> struct require_algo {
     using Output = typename Algo::Output;
     using Buffers = typename Ped::Buffers;
 
-    static_assert(std::is_move_constructible<Output>::value &&
-                      !std::is_copy_constructible<Output>::value,
+    static_assert(std::is_move_constructible_v<Output> &&
+                      !std::is_copy_constructible_v<Output>,
                   "Algo::Output owns device memory: it must be move-only.");
-    static_assert(std::is_move_constructible<Buffers>::value &&
-                      !std::is_copy_constructible<Buffers>::value,
+    static_assert(std::is_move_constructible_v<Buffers> &&
+                      !std::is_copy_constructible_v<Buffers>,
                   "Ped::Buffers owns device memory: it must be move-only.");
-    static_assert(std::is_trivially_copyable<typename Ped::View>::value,
+    static_assert(std::is_trivially_copyable_v<typename Ped::View>,
                   "Ped::View is passed to a kernel: it must be a trivially "
                   "copyable bundle of pointers, owning nothing.");
     static_assert(
-        std::is_same<decltype(Output::clusters_offset), const size_t>::value &&
-            std::is_same<decltype(Output::bytes_per_frame(0)), size_t>::value,
+        std::is_same_v<decltype(Output::clusters_offset), const size_t> &&
+            std::is_same_v<decltype(Output::bytes_per_frame(0)), size_t>,
         "Algo::Output must expose the block layout as 'static constexpr size_t "
         "clusters_offset' and 'static size_t bytes_per_frame(uint32_t)': the "
         "driver sizes its pinned host slots from them, before any Output "
         "exists.");
-    static_assert(std::is_floating_point<typename Algo::compute_type>::value,
+    static_assert(std::is_floating_point_v<typename Algo::compute_type>,
                   "Algo::compute_type is the nSigma threshold type: an "
                   "integral type compiles and truncates nSigma (3.5 -> 3).");
 

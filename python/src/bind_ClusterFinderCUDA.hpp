@@ -14,8 +14,6 @@
 namespace py = pybind11;
 using pd_type = double;
 
-using namespace aare;
-
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Wunused-parameter"
 
@@ -170,7 +168,7 @@ sqrt(max(sum2/n - mean^2, 0)). Counterpart to `noise` for the device pedestal.)"
         .def(
             "steal_clusters",
             [](CF &self, bool realloc_same_capacity) {
-                return std::move(self.steal_clusters(realloc_same_capacity));
+                return self.steal_clusters(realloc_same_capacity);
             },
             py::arg("realloc_same_capacity") = true)
 

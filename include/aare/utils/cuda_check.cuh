@@ -3,7 +3,8 @@
 #include <sstream>
 #include <stdexcept>
 
-inline void __cuda_check(cudaError_t err, const char *file, int line) {
+namespace aare::cuda::detail {
+inline void cuda_check(cudaError_t err, const char *file, int line) {
     if (err != cudaSuccess) {
         throw std::runtime_error((std::ostringstream{}
                                   << "[CUDA ERROR] " << cudaGetErrorString(err)
@@ -11,5 +12,6 @@ inline void __cuda_check(cudaError_t err, const char *file, int line) {
                                      .str());
     }
 }
-
-#define CUDA_CHECK(stmt) __cuda_check((stmt), __FILE__, __LINE__)
+} // namespace aare::cuda::detail
+#define CUDA_CHECK(stmt)                                                       \
+    ::aare::cuda::detail::cuda_check((stmt), __FILE__, __LINE__)

@@ -5,6 +5,7 @@
 #include "aare/clusterfinder_algo.cuh"
 #include "aare/utils/cuda_check.cuh"
 #include <algorithm>
+#include <array>
 #include <cmath>
 #include <cstdint>
 #include <cstdio>
@@ -12,6 +13,7 @@
 #include <limits>
 #include <memory>
 #include <stdexcept>
+#include <utility>
 #include <vector>
 
 namespace aare::cuda {
@@ -104,18 +106,18 @@ class ClusterFinderCUDA {
     // separate slots. A third submit() without an intervening collect() throws.
     static constexpr int NUM_SLOTS = 2;
 
-    void *h_output_slots[NUM_SLOTS] = {nullptr, nullptr};
-    size_t m_output_slot_capacity[NUM_SLOTS] = {0, 0};
+    std::array<void *, NUM_SLOTS> h_output_slots{};
+    std::array<size_t, NUM_SLOTS> m_output_slot_capacity{};
 
     // Per-slot state consumed by collect()
-    bool m_slot_in_flight[NUM_SLOTS] = {false, false};
+    std::array<bool, NUM_SLOTS> m_slot_in_flight{};
     // A BatchView handed out by collect_view() still points into this slot's
     // pinned buffer. The slot must not be reused until the view is released, so
     // submit_batch() refuses it rather than overwriting live results.
-    bool m_slot_view_held[NUM_SLOTS] = {false, false};
-    size_t m_slot_n_frames[NUM_SLOTS] = {0, 0};
-    uint64_t m_slot_first_frame[NUM_SLOTS] = {0, 0};
-    int m_slot_streams_used[NUM_SLOTS] = {0, 0};
+    std::array<bool, NUM_SLOTS> m_slot_view_held{};
+    std::array<size_t, NUM_SLOTS> m_slot_n_frames{};
+    std::array<uint64_t, NUM_SLOTS> m_slot_first_frame{};
+    std::array<int, NUM_SLOTS> m_slot_streams_used{};
     int m_next_slot = 0;
 
     // Pointer registered via cudaHostRegister by the caller (for pinned H2D
@@ -160,14 +162,14 @@ class ClusterFinderCUDA {
 
     // Per-slot kernel timing event pools (sized lazily to the largest batch).
     // Left empty when m_time_kernels is false — no events are ever created.
-    std::vector<cudaEvent_t> m_kernel_start_pools[NUM_SLOTS];
-    std::vector<cudaEvent_t> m_kernel_stop_pools[NUM_SLOTS];
+    std::array<std::vector<cudaEvent_t>, NUM_SLOTS> m_kernel_start_pools;
+    std::array<std::vector<cudaEvent_t>, NUM_SLOTS> m_kernel_stop_pools;
 
     // Per-slot, per-stream "batch done" sync events (timing disabled).
     // Recorded after the last D2H of each submit_batch(). collect() waits on
     // these via cudaEventSynchronize so it unblocks as soon as the batch
     // finishes, even if the next batch is already queued in the same streams.
-    std::vector<cudaEvent_t> m_batch_done[NUM_SLOTS];
+    std::array<std::vector<cudaEvent_t>, NUM_SLOTS> m_batch_done;
 
     /// Copy every frame of a pinned output slot into results, turning the
     /// packed device layout into owned ClusterVectors. This is exactly the work
@@ -253,7 +255,7 @@ class ClusterFinderCUDA {
     }
 
     /// Called by BatchView when it is released, making the slot reusable.
-    void release_slot(int slot) {
+    void release_slot(int slot) noexcept {
         if (slot >= 0 && slot < NUM_SLOTS)
             m_slot_view_held[slot] = false;
     }
@@ -346,7 +348,7 @@ class ClusterFinderCUDA {
         ~BatchView() { release(); }
 
         /// Give the slot back. Idempotent; the view is unusable afterwards.
-        void release() {
+        void release() noexcept {
             if (m_owner)
                 m_owner->release_slot(m_slot);
             m_owner = nullptr;
@@ -355,22 +357,24 @@ class ClusterFinderCUDA {
             m_slot = -1;
         }
 
-        bool valid() const { return m_base != nullptr; }
-        size_t n_frames() const { return m_n_frames; }
-        uint64_t first_frame() const { return m_first_frame; }
+        [[nodiscard]] bool valid() const noexcept { return m_base != nullptr; }
+        [[nodiscard]] size_t n_frames() const noexcept { return m_n_frames; }
+        [[nodiscard]] uint64_t first_frame() const noexcept {
+            return m_first_frame;
+        }
 
-        uint32_t count(size_t i) const {
+        [[nodiscard]] uint32_t count(size_t i) const {
             check(i);
             return Output::host_count(m_base + i * m_stride,
                                       static_cast<uint32_t>(m_max_clusters));
         }
 
-        const ClusterType *clusters(size_t i) const {
+        [[nodiscard]] const ClusterType *clusters(size_t i) const {
             check(i);
             return Output::host_clusters(m_base + i * m_stride);
         }
 
-        size_t total_clusters() const {
+        [[nodiscard]] size_t total_clusters() const {
             size_t n = 0;
             for (size_t i = 0; i < m_n_frames; ++i)
                 n += count(i);
@@ -380,7 +384,7 @@ class ClusterFinderCUDA {
         /// Per-cluster sums for the whole batch, concatenated frame by frame.
         /// The common reduction, done here so callers never have to materialise
         /// the clusters themselves.
-        std::vector<value_type> sums() const {
+        [[nodiscard]] std::vector<value_type> sums() const {
             std::vector<value_type> out;
             out.reserve(total_clusters());
             for (size_t i = 0; i < m_n_frames; ++i) {
@@ -393,17 +397,14 @@ class ClusterFinderCUDA {
         }
 
       private:
-        void steal(BatchView &o) {
-            m_owner = o.m_owner;
-            m_base = o.m_base;
+        void steal(BatchView &o) noexcept {
+            m_owner = std::exchange(o.m_owner, nullptr);
+            m_base = std::exchange(o.m_base, nullptr);
+            m_slot = std::exchange(o.m_slot, -1);
             m_n_frames = o.m_n_frames;
             m_first_frame = o.m_first_frame;
             m_stride = o.m_stride;
             m_max_clusters = o.m_max_clusters;
-            m_slot = o.m_slot;
-            o.m_owner = nullptr;
-            o.m_base = nullptr;
-            o.m_slot = -1;
         }
         void check(size_t i) const {
             if (!m_base)
@@ -617,7 +618,7 @@ class ClusterFinderCUDA {
      * @brief Move clusters out of the internal ClusterVector, optionally
      *        reallocating the internal one with the same capacity.
      */
-    ClusterVector<ClusterType>
+    [[nodiscard]] ClusterVector<ClusterType>
     steal_clusters(bool realloc_same_capacity = false) {
         ClusterVector<ClusterType> tmp = std::move(m_clusters);
         if (realloc_same_capacity)
@@ -662,8 +663,8 @@ class ClusterFinderCUDA {
      *   }
      *   process(cf.collect(tok));  // drain final batch
      */
-    BatchToken submit_batch(NDView<FRAME_TYPE, 3> frames,
-                            uint64_t first_frame = 0) {
+    [[nodiscard]] BatchToken submit_batch(NDView<FRAME_TYPE, 3> frames,
+                                          uint64_t first_frame = 0) {
         if (m_pedestal_dirty) {
             sync_pedestal_to_device();
             m_pedestal_dirty = false;
@@ -744,7 +745,8 @@ class ClusterFinderCUDA {
      * concurrently running batch already queued in the same streams is not
      * waited on — the GPU keeps running while the CPU drains this batch.
      */
-    std::vector<ClusterVector<ClusterType>> collect(BatchToken token) {
+    [[nodiscard]] std::vector<ClusterVector<ClusterType>>
+    collect(BatchToken token) {
         const int slot = token.slot;
         if (!m_slot_in_flight[slot])
             throw std::runtime_error(
@@ -788,7 +790,7 @@ class ClusterFinderCUDA {
      * released, so at most NUM_SLOTS - 1 further batches can be submitted while
      * it is alive. Consume, then release.
      */
-    BatchView collect_view(BatchToken token) {
+    [[nodiscard]] BatchView collect_view(BatchToken token) {
         const int slot = token.slot;
         size_t n_frames = 0;
         uint64_t first_frame = 0;
