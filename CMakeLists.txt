@@ -442,7 +442,7 @@ if(AARE_TESTS)
 endif()
 if(AARE_VERBOSE)
   target_compile_definitions(aare_core PUBLIC AARE_VERBOSE)
-  target_compile_definitions(aare_core PUBLIC AARE_LOG_LEVEL=aare::logDEBUG5)
+  target_compile_definitions(aare_core PUBLIC AARE_LOG_LEVEL=aare::logDEBUG)
 else()
   target_compile_definitions(aare_core PUBLIC AARE_LOG_LEVEL=aare::logWARNING)
 endif()
@@ -457,6 +457,7 @@ set_target_properties(aare_core PROPERTIES ARCHIVE_OUTPUT_DIRECTORY
 if(AARE_TESTS)
   set(TestSources
       ${CMAKE_CURRENT_SOURCE_DIR}/tests/raw_file_helpers.hpp
+      ${CMAKE_CURRENT_SOURCE_DIR}/tests/jungfrau_file_helpers.hpp
       ${CMAKE_CURRENT_SOURCE_DIR}/src/algorithm.test.cpp
       ${CMAKE_CURRENT_SOURCE_DIR}/src/calibration.test.cpp
       ${CMAKE_CURRENT_SOURCE_DIR}/src/defs.test.cpp
@@ -466,6 +467,7 @@ if(AARE_TESTS)
       ${CMAKE_CURRENT_SOURCE_DIR}/src/fit/Fit.test.cpp
       ${CMAKE_CURRENT_SOURCE_DIR}/src/Frame.test.cpp
       ${CMAKE_CURRENT_SOURCE_DIR}/src/DetectorGeometry.test.cpp
+      ${CMAKE_CURRENT_SOURCE_DIR}/src/DataSetAggregation.test.cpp
       ${CMAKE_CURRENT_SOURCE_DIR}/src/Interpolation.test.cpp
       ${CMAKE_CURRENT_SOURCE_DIR}/src/RawMasterFile.test.cpp
       ${CMAKE_CURRENT_SOURCE_DIR}/src/NDArray.test.cpp

@@ -11,6 +11,7 @@
 #include "bind_ClusterFinder.hpp"
 #include "bind_ClusterFinderMT.hpp"
 #include "bind_ClusterVector.hpp"
+#include "bind_DataSetAggregation.hpp"
 #include "bind_Defs.hpp"
 #include "bind_Eta.hpp"
 #include "bind_FastPedestal.hpp"
@@ -178,4 +179,6 @@ PYBIND11_MODULE(_aare, m) {
     define_eta<double>(m, "d");
     define_eta<int>(m, "i");
     define_eta<int16_t>(m, "i16");
+
+    bind_DataSetAggregation<uint16_t>(m);
 }
