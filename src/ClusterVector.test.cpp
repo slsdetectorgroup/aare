@@ -180,7 +180,8 @@ TEST_CASE("Summing 3x1 clusters of int64") {
 
     Cluster<int32_t, 3, 1> c3 = {11, 12, {13, 14, 15}};
     cv.push_back(c3);
-    REQUIRE(cv.capacity() == 4);
+    // growth factor is implementation defined (2x libstdc++, 1.5x MSVC)
+    REQUIRE(cv.capacity() >= 3);
     REQUIRE(cv.size() == 3);
 
     /*
@@ -236,7 +237,8 @@ TEST_CASE("Push back more than initial capacity") {
     Cluster<int32_t, 2, 2> c3 = {11, 12, {13, 14, 15, 16}};
     cv.push_back(c3);
     REQUIRE(cv.size() == 3);
-    REQUIRE(cv.capacity() == 4);
+    // growth factor is implementation defined (2x libstdc++, 1.5x MSVC)
+    REQUIRE(cv.capacity() >= 3);
 
     Cluster<int32_t, 2, 2> *ptr =
         reinterpret_cast<Cluster<int32_t, 2, 2> *>(cv.data());
