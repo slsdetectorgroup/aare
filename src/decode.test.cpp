@@ -10,6 +10,7 @@ using Catch::Matchers::WithinAbs;
 #include <vector>
 
 using aare::BitOffset;
+using aare::ssize_t;
 
 TEST_CASE("test_adc_sar_05_decode64to16") {
     uint64_t input = 0;

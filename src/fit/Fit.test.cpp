@@ -17,6 +17,7 @@
 using aare::Minimizer;
 using aare::NDArray;
 using aare::NDView;
+using aare::ssize_t;
 using Catch::Approx;
 
 namespace {

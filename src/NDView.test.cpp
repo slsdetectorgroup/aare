@@ -11,6 +11,7 @@
 using aare::NDView;
 using aare::num_elements;
 using aare::Shape;
+using aare::ssize_t;
 
 static_assert(std::is_convertible_v<NDView<int, 2>, NDView<const int, 2>>);
 static_assert(!std::is_convertible_v<NDView<const int, 2>, NDView<int, 2>>);
