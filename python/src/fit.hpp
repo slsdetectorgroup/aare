@@ -11,6 +11,7 @@
 
 namespace py = pybind11;
 using namespace pybind11::literals;
+using aare::ssize_t;
 
 template <typename Model>
 py::object

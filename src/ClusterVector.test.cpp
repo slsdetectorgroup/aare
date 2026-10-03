@@ -12,6 +12,7 @@
 
 using aare::Cluster;
 using aare::ClusterVector;
+using aare::ssize_t;
 using C1 = Cluster<int32_t, 2, 2>;
 
 TEST_CASE("A newly created ClusterVector is empty") {
