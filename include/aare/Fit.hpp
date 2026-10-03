@@ -4,6 +4,8 @@
 #include "aare/FitModel.hpp"
 #include "aare/NDArray.hpp"
 
+#include <optional>
+
 namespace aare {
 
 // ---------------------------------------------------------------------------
@@ -62,11 +64,15 @@ NDArray<double, 1> fit_pixel(const FitModel<Model> &model, NDView<double, 1> x,
  * @param chi2_out   Output chi-squared / objective values, shape `(rows,
  * cols)`.
  * @param n_threads  Number of threads used to split rows.
+ * @param fit_range  Optional view of shape `(rows, cols, 2)` with the start
+ * and end indices of the scan points to fit for each pixel. If not provided,
+ * the full range is used.
  */
 template <typename Model>
 void fit_3d(const FitModel<Model> &model, NDView<double, 1> x,
             NDView<double, 3> y, NDView<double, 3> y_err,
             NDView<double, 3> par_out, NDView<double, 3> err_out,
-            NDView<double, 2> chi2_out, int n_threads);
+            NDView<double, 2> chi2_out, int n_threads,
+            std::optional<const NDView<size_t, 3>> fit_range = std::nullopt);
 
 } // namespace aare

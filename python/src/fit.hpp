@@ -17,7 +17,8 @@ py::object
 fit_dispatch(const aare::FitModel<Model> &model,
              py::array_t<double, py::array::c_style | py::array::forcecast> x,
              py::array_t<double, py::array::c_style | py::array::forcecast> y,
-             py::object y_err_obj, int n_threads);
+             py::object y_err_obj, int n_threads,
+             std::optional<py::array_t<size_t>> fit_range = std::nullopt);
 
 template <typename Model> void bind_fit_model(py::module &m, const char *name) {
     using FM = aare::FitModel<Model>;
@@ -117,8 +118,11 @@ template <typename Model> void bind_fit_model(py::module &m, const char *name) {
             [](const FM &self,
                py::array_t<double, py::array::c_style | py::array::forcecast> x,
                py::array_t<double, py::array::c_style | py::array::forcecast> y,
-               py::object y_err_obj, int n_threads) -> py::object {
-                return fit_dispatch<Model>(self, x, y, y_err_obj, n_threads);
+               py::object y_err_obj, int n_threads,
+               std::optional<py::array_t<size_t>> fit_range =
+                   std::nullopt) -> py::object {
+                return fit_dispatch<Model>(self, x, y, y_err_obj, n_threads,
+                                           fit_range);
             },
             R"doc(
             Fit this model to 1D or 3D data using Minuit2.
@@ -138,9 +142,11 @@ template <typename Model> void bind_fit_model(py::module &m, const char *name) {
                 Per-point uncertainties. None for unweighted fit.
             n_threads : int
                 Number of threads for 3D parallel loop.
+            fit_range : array_like, shape (rows, cols, 2), optional
+                Start and end indices of the scan points to fit for each pixel. If not provided, the full range is used.
             )doc",
             py::arg("x"), py::arg("y"), py::arg("y_err") = py::none(),
-            py::arg("n_threads") = 4);
+            py::arg("n_threads") = 4, py::arg("fit_range") = py::none());
 
     if constexpr (std::is_same_v<Model, model::GaussianChargeSharing> or
                   std::is_same_v<Model, model::GaussianChargeSharingKb>) {
@@ -226,7 +232,8 @@ py::object
 fit_dispatch(const aare::FitModel<Model> &model,
              py::array_t<double, py::array::c_style | py::array::forcecast> x,
              py::array_t<double, py::array::c_style | py::array::forcecast> y,
-             py::object y_err_obj, int n_threads) {
+             py::object y_err_obj, int n_threads,
+             std::optional<py::array_t<size_t>> fit_range) {
     constexpr std::size_t npar = Model::npar;
 
     if (y.ndim() == 3) {
@@ -236,6 +243,11 @@ fit_dispatch(const aare::FitModel<Model> &model,
 
         auto x_view = make_view_1d(x);
         auto y_view = make_view_3d(y);
+
+        const auto fit_range_view =
+            fit_range.has_value()
+                ? std::optional(make_view_3d(fit_range.value()))
+                : std::nullopt;
 
         if (!y_err_obj.is_none()) {
             auto y_err = py::cast<
@@ -250,7 +262,8 @@ fit_dispatch(const aare::FitModel<Model> &model,
                 py::gil_scoped_release release; // release GIL for parallel loop
                 aare::fit_3d<Model>(model, x_view, y_view, y_view_err,
                                     par_out->view(), err_out->view(),
-                                    chi2_out->view(), n_threads);
+                                    chi2_out->view(), n_threads,
+                                    fit_range_view);
             }
 
             if (model.compute_errors()) {
@@ -273,7 +286,8 @@ fit_dispatch(const aare::FitModel<Model> &model,
 
                 aare::fit_3d<Model>(model, x_view, y_view, dummy_err,
                                     par_out->view(), err_out->view(),
-                                    chi2_out->view(), n_threads);
+                                    chi2_out->view(), n_threads,
+                                    fit_range_view);
 
                 return py::dict("par"_a = return_image_data(par_out),
                                 "par_err"_a = return_image_data(err_out),
@@ -284,9 +298,9 @@ fit_dispatch(const aare::FitModel<Model> &model,
 
             {
                 py::gil_scoped_release release; // release GIL for parallel loop
-                aare::fit_3d<Model>(model, x_view, y_view, dummy_err,
-                                    par_out->view(), dummy_err_out,
-                                    chi2_out->view(), n_threads);
+                aare::fit_3d<Model>(
+                    model, x_view, y_view, dummy_err, par_out->view(),
+                    dummy_err_out, chi2_out->view(), n_threads, fit_range_view);
             }
 
             return py::dict("par"_a = return_image_data(par_out),
@@ -297,6 +311,12 @@ fit_dispatch(const aare::FitModel<Model> &model,
 
         auto x_view = make_view_1d(x);
         auto y_view = make_view_1d(y);
+
+        if (fit_range.has_value()) {
+            throw std::runtime_error(
+                "fit_range is only supported for 3D data. Directly pass the "
+                "clipped data to fit() for 1D data.");
+        }
 
         if (!y_err_obj.is_none()) {
             auto y_err = py::cast<
@@ -328,13 +348,15 @@ py::object dispatch_any_model(
     py::object model_obj,
     py::array_t<double, py::array::c_style | py::array::forcecast> x,
     py::array_t<double, py::array::c_style | py::array::forcecast> y,
-    py::object y_err_obj, int n_threads) {
+    py::object y_err_obj, int n_threads,
+    std::optional<py::array_t<size_t>> fit_range = std::nullopt) {
     using namespace aare::model;
 
 #define AARE_DISPATCH_MODEL(Model)                                             \
     if (py::isinstance<aare::FitModel<Model>>(model_obj)) {                    \
         const auto &mdl = model_obj.cast<const aare::FitModel<Model> &>();     \
-        return fit_dispatch<Model>(mdl, x, y, y_err_obj, n_threads);           \
+        return fit_dispatch<Model>(mdl, x, y, y_err_obj, n_threads,            \
+                                   fit_range);                                 \
     }
 
     AARE_DISPATCH_MODEL(Pol1)
@@ -423,7 +445,7 @@ void define_fit_bindings(py::module &m) {
         R"(
         Fit a model to 1D or 3D data with the minimizer selected by the
         model's ``minimizer`` property.
- 
+
         Parameters
         ----------
         model : object
@@ -439,7 +461,7 @@ void define_fit_bindings(py::module &m) {
             Per-point uncertainties.  Same shape as y.  None → unweighted fit.
         n_threads : int
             Number of threads for the 3D parallel loop.
- 
+
         Returns
         -------
         dict

@@ -267,7 +267,8 @@ template <typename Model>
 void fit_3d(const FitModel<Model> &model, NDView<double, 1> x,
             NDView<double, 3> y, NDView<double, 3> y_err,
             NDView<double, 3> par_out, NDView<double, 3> err_out,
-            NDView<double, 2> chi2_out, int n_threads) {
+            NDView<double, 2> chi2_out, int n_threads,
+            std::optional<const NDView<size_t, 3>> fit_range) {
     constexpr std::size_t npar = Model::npar;
     detail::check_fit_3d_shapes<Model>(x, y, y_err, par_out, err_out, chi2_out);
 
@@ -280,14 +281,23 @@ void fit_3d(const FitModel<Model> &model, NDView<double, 1> x,
         std::array<double, npar> err{};
         for (ssize_t row = first_row; row < last_row; row++) {
             for (ssize_t col = 0; col < y.shape(1); col++) {
-                NDView<double, 1> values(&y(row, col, 0), {y.shape(2)});
+                const size_t start_range =
+                    fit_range ? (*fit_range)(row, col, 0) : 0;
+                const ssize_t num_y_samples =
+                    fit_range ? (*fit_range)(row, col, 1) - start_range
+                              : y.shape(2);
+                NDView<double, 1> values(&y(row, col, start_range),
+                                         {num_y_samples});
                 NDView<double, 1> errors =
-                    has_errors ? NDView<double, 1>(&y_err(row, col, 0),
-                                                   {y_err.shape(2)})
-                               : NDView<double, 1>{};
+                    has_errors
+                        ? NDView<double, 1>(&y_err(row, col, start_range),
+                                            {num_y_samples})
+                        : NDView<double, 1>{};
+
+                NDView<double, 1> x_clipped(&x(start_range), {num_y_samples});
 
                 double chi2 = 0.0;
-                fitter.fit(model, x, values, errors, par.data(),
+                fitter.fit(model, x_clipped, values, errors, par.data(),
                            want_par_errors ? err.data() : nullptr, chi2);
 
                 for (std::size_t k = 0; k < npar; ++k)
@@ -317,10 +327,10 @@ void fit_3d(const FitModel<Model> &model, NDView<double, 1> x,
         NDView<double, 1>);                                                    \
     template NDArray<double, 1> fit_pixel<Model>(                              \
         const FitModel<Model> &, NDView<double, 1>, NDView<double, 1>);        \
-    template void fit_3d<Model>(const FitModel<Model> &, NDView<double, 1>,    \
-                                NDView<double, 3>, NDView<double, 3>,          \
-                                NDView<double, 3>, NDView<double, 3>,          \
-                                NDView<double, 2>, int);
+    template void fit_3d<Model>(                                               \
+        const FitModel<Model> &, NDView<double, 1>, NDView<double, 3>,         \
+        NDView<double, 3>, NDView<double, 3>, NDView<double, 3>,               \
+        NDView<double, 2>, int, std::optional<const NDView<size_t, 3>>);
 
 AARE_INSTANTIATE_FIT(model::Gaussian)
 AARE_INSTANTIATE_FIT(model::GaussianErfcPlateau)
