@@ -28,8 +28,7 @@ NumpyFile::NumpyFile(const std::filesystem::path &fname,
             throw std::runtime_error(
                 fmt::format("Could not open: {} for reading", fname.string()));
         }
-        initial_header_len = aare::NumpyHelpers::write_header(
-            std::filesystem::path(fname.c_str()), m_header);
+        initial_header_len = aare::NumpyHelpers::write_header(fname, m_header);
     }
     m_pixels_per_frame =
         std::accumulate(m_header.shape.begin() + 1, m_header.shape.end(), 1,
