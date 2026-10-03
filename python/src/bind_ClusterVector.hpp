@@ -124,7 +124,7 @@ void define_ClusterVector(py::module &m, const std::string &typestr) {
         .def_property_readonly(
             "fmt",
             [typestr](ClusterVector<ClusterType> &self) {
-                return fmt_format<ClusterType>;
+                return fmt_format<ClusterType>();
             },
             "PEP 3118 format string for one stored cluster.")
 
@@ -145,11 +145,11 @@ void define_ClusterVector(py::module &m, const std::string &typestr) {
         .def_buffer(
             [typestr](ClusterVector<ClusterType> &self) -> py::buffer_info {
                 return py::buffer_info(
-                    self.data(),             /* Pointer to buffer */
-                    self.item_size(),        /* Size of one scalar */
-                    fmt_format<ClusterType>, /* Format descriptor */
-                    1,                       /* Number of dimensions */
-                    {self.size()},           /* Buffer dimensions */
+                    self.data(),               /* Pointer to buffer */
+                    self.item_size(),          /* Size of one scalar */
+                    fmt_format<ClusterType>(), /* Format descriptor */
+                    1,                         /* Number of dimensions */
+                    {self.size()},             /* Buffer dimensions */
                     {self.item_size()} /* Strides (in bytes) for each index */
                 );
             });
