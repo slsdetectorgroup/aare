@@ -268,7 +268,9 @@ void fit_3d(const FitModel<Model> &model, NDView<double, 1> x,
             NDView<double, 3> y, NDView<double, 3> y_err,
             NDView<double, 3> par_out, NDView<double, 3> err_out,
             NDView<double, 2> chi2_out, int n_threads) {
-    constexpr std::size_t npar = Model::npar;
+    // static so the lambda below can use it as an array size without
+    // capturing it, which MSVC otherwise rejects
+    static constexpr std::size_t npar = Model::npar;
     detail::check_fit_3d_shapes<Model>(x, y, y_err, par_out, err_out, chi2_out);
 
     const bool has_errors = (y_err.size() > 0);
