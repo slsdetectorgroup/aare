@@ -1,5 +1,13 @@
 # Release notes
 
+## Next
+
+### New Features:
+
+- Added the Python ``xy`` type with ``row`` and ``col`` fields, enabling access
+  to ``RawFile.geometry``, ``RawMasterFile.detector_layout``, and
+  ``RawMasterFile.udp_interfaces_per_module``. It unpacks as ``row, col``.
+
 ## 2026.9.30
 
 ### New Features:
