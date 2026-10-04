@@ -27,7 +27,7 @@ FilePtr::operator bool() const noexcept { return fp_ != nullptr; }
 FILE *FilePtr::get() { return fp_; }
 
 ssize_t FilePtr::tell() {
-    auto pos = ftell(fp_);
+    auto pos = ftell64(fp_);
     if (pos == -1)
         throw std::runtime_error(
             fmt::format("Error getting file position: {}", error_msg()));
