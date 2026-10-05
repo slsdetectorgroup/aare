@@ -35,6 +35,43 @@ Frame JungfrauDataFile::read_frame(size_t frame_number) {
     return f;
 }
 
+Frame JungfrauDataFile::read_columns(const std::vector<size_t> column_indices) {
+
+    Frame f(rows(), column_indices.size(), Dtype::UINT16);
+
+    auto image_buf = reinterpret_cast<std::byte *>(f.data());
+
+    m_fp.seek(header_size, SEEK_CUR); // skip header
+
+    auto current_position = m_fp.tell();
+
+    for (size_t row = 0; row < rows(); ++row) {
+        const auto row_start =
+            current_position + row * cols() * sizeof(pixel_type);
+        for (const auto column_index : column_indices) {
+            m_fp.seek(row_start + column_index * sizeof(pixel_type), SEEK_SET);
+            if (auto rc = fread(image_buf, 1, sizeof(pixel_type), m_fp.get());
+                rc != sizeof(pixel_type)) {
+                throw std::runtime_error(LOCATION +
+                                         "Could not read image from file" +
+                                         m_fp.error_msg());
+            }
+            image_buf += sizeof(pixel_type);
+        }
+    }
+
+    // prepare for next read
+    // if we are at the end of the file, open the next file
+    ++m_current_frame_index;
+    if (m_current_frame_index >= m_last_frame_in_file[m_current_file_index] &&
+        (m_current_frame_index < m_total_frames)) {
+        ++m_current_file_index;
+        open_file(m_current_file_index);
+    }
+
+    return f;
+}
+
 std::vector<Frame> JungfrauDataFile::read_n(size_t n_frames) {
     std::vector<Frame> frames;
     for (size_t i = 0; i < n_frames; ++i) {

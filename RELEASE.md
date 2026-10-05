@@ -1,5 +1,9 @@
 # Release notes
 
+### New Features: 
+
+- Added ``read_columns`` to JungfrauDataFile to only read selected columns 
+
 ## 2026.9.30
 
 ### New Features:

@@ -1,12 +1,13 @@
 // SPDX-License-Identifier: MPL-2.0
 #include "aare/JungfrauDataFile.hpp"
 
+#include "jungfrau_file_helpers.hpp"
 #include "test_config.hpp"
 #include <catch2/catch_test_macros.hpp>
 
 using aare::JungfrauDataFile;
 using aare::JungfrauDataHeader;
-TEST_CASE("Open a Jungfrau data file", "[.with-data]") {
+TEST_CASE("Open a Jungfrau data file", "[.with-data][jungfrau_file]") {
     // we know we have 4 files with 7, 7, 7, and 3 frames
     // firs frame number if 1 and the bunch id is frame_number**2
     // so we can check the header
@@ -38,7 +39,7 @@ TEST_CASE("Open a Jungfrau data file", "[.with-data]") {
     }
 }
 
-TEST_CASE("Seek in a JungfrauDataFile", "[.with-data]") {
+TEST_CASE("Seek in a JungfrauDataFile", "[.with-data][jungfrau_file]") {
     auto fpath = test_data_path() / "dat" / "AldoJF65k_000000.dat";
     REQUIRE(std::filesystem::exists(fpath));
 
@@ -72,7 +73,7 @@ TEST_CASE("Seek in a JungfrauDataFile", "[.with-data]") {
 }
 
 TEST_CASE("Open a Jungfrau data file with non zero file index",
-          "[.with-data]") {
+          "[.with-data][jungfrau_file]") {
 
     auto fpath = test_data_path() / "dat" / "AldoJF65k_000003.dat";
     REQUIRE(std::filesystem::exists(fpath));
@@ -96,7 +97,8 @@ TEST_CASE("Open a Jungfrau data file with non zero file index",
     REQUIRE(f.current_file().stem() == "AldoJF65k_000003");
 }
 
-TEST_CASE("Read into throws if size doesn't match", "[.with-data]") {
+TEST_CASE("Read into throws if size doesn't match",
+          "[.with-data][jungfrau_file]") {
     auto fpath = test_data_path() / "dat" / "AldoJF65k_000000.dat";
     REQUIRE(std::filesystem::exists(fpath));
 
@@ -110,4 +112,36 @@ TEST_CASE("Read into throws if size doesn't match", "[.with-data]") {
     REQUIRE_THROWS(f.read_into(&image));
 
     REQUIRE(f.tell() == 0);
+}
+
+TEST_CASE("Read columns from a Jungfrau data file", "[jungfrau_file]") {
+
+    TemporaryJungfrauFiles temp_files(1, []([[maybe_unused]] const size_t) {
+        aare::NDArray<uint16_t, 2> data(
+            {aare::Jungfrau::nRows, aare::Jungfrau::nCols});
+
+        for (ssize_t row = 0; row < data.shape(0); ++row) {
+            for (ssize_t col = 0; col < data.shape(1); ++col) {
+                data(row, col) = static_cast<uint16_t>(col);
+            }
+        }
+        return data;
+    });
+
+    const std::filesystem::path path = temp_files.file_path();
+
+    JungfrauDataFile f(path);
+
+    auto columns = f.read_columns({0, 10, 30});
+
+    REQUIRE(columns.rows() == aare::Jungfrau::nRows);
+    REQUIRE(columns.cols() == 3);
+
+    auto columns_view = columns.view<uint16_t>();
+
+    for (ssize_t row = 0; row < columns.rows(); ++row) {
+        CHECK(columns_view(row, 0) == 0);
+        CHECK(columns_view(row, 1) == 10);
+        CHECK(columns_view(row, 2) == 30);
+    }
 }
