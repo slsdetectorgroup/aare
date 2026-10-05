@@ -9,6 +9,7 @@
 using aare::NDArray;
 using aare::NDView;
 using aare::Shape;
+using aare::ssize_t;
 
 TEST_CASE("Initial size is zero if no size is specified") {
     NDArray<double> a;
