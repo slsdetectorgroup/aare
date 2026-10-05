@@ -18,9 +18,6 @@ namespace py = pybind11;
 
 using namespace aare;
 
-#pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wunused-parameter"
-
 template <typename Type, uint8_t ClusterSizeX, uint8_t ClusterSizeY,
           typename CoordType = uint16_t>
 void define_ClusterVector(py::module &m, const std::string &typestr) {
@@ -123,7 +120,7 @@ void define_ClusterVector(py::module &m, const std::string &typestr) {
              "padding.")
         .def_property_readonly(
             "fmt",
-            [typestr](ClusterVector<ClusterType> &self) {
+            [typestr]([[maybe_unused]] ClusterVector<ClusterType> &self) {
                 return fmt_format<ClusterType>();
             },
             "PEP 3118 format string for one stored cluster.")
@@ -228,5 +225,3 @@ void define_3x3_reduction(py::module &m) {
         )doc",
         py::arg("clustervector"));
 }
-
-#pragma GCC diagnostic pop

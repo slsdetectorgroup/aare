@@ -61,11 +61,6 @@ auto read_n_frames_from_RawSubFile(RawSubFile &self, size_t n_frames) {
     return py::make_tuple(header, image);
 }
 
-// Disable warnings for unused parameters, as we ignore some
-// in the __exit__ method
-#pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wunused-parameter"
-
 void define_raw_sub_file_io_bindings(py::module &m) {
     py::class_<RawSubFile>(m, "RawSubFile")
         .def(py::init<const std::filesystem::path &, DetectorType, size_t,
@@ -89,9 +84,12 @@ void define_raw_sub_file_io_bindings(py::module &m) {
              })
         .def("__enter__", [](RawSubFile &self) { return &self; })
         .def("__exit__",
-             [](RawSubFile &self, const std::optional<pybind11::type> &exc_type,
-                const std::optional<pybind11::object> &exc_value,
-                const std::optional<pybind11::object> &traceback) {})
+             []([[maybe_unused]] RawSubFile &self,
+                [[maybe_unused]] const std::optional<pybind11::type> &exc_type,
+                [[maybe_unused]] const std::optional<pybind11::object>
+                    &exc_value,
+                [[maybe_unused]] const std::optional<pybind11::object>
+                    &traceback) {})
         .def("__iter__", [](RawSubFile &self) { return &self; })
         .def("__next__", [](RawSubFile &self) {
             try {
@@ -101,5 +99,3 @@ void define_raw_sub_file_io_bindings(py::module &m) {
             }
         });
 }
-
-#pragma GCC diagnostic pop

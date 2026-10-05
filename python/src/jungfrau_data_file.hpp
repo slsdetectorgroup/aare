@@ -15,11 +15,6 @@
 namespace py = pybind11;
 using namespace ::aare;
 
-// Disable warnings for unused parameters, as we ignore some
-// in the __exit__ method
-#pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wunused-parameter"
-
 auto read_dat_frame(JungfrauDataFile &self) {
     py::array_t<JungfrauDataHeader> header(1);
     py::array_t<uint16_t> image({self.rows(), self.cols()});
@@ -94,10 +89,12 @@ void define_jungfrau_data_file_io_bindings(py::module &m) {
               )")
         .def("__enter__", [](JungfrauDataFile &self) { return &self; })
         .def("__exit__",
-             [](JungfrauDataFile &self,
-                const std::optional<pybind11::type> &exc_type,
-                const std::optional<pybind11::object> &exc_value,
-                const std::optional<pybind11::object> &traceback) {
+             []([[maybe_unused]] JungfrauDataFile &self,
+                [[maybe_unused]] const std::optional<pybind11::type> &exc_type,
+                [[maybe_unused]] const std::optional<pybind11::object>
+                    &exc_value,
+                [[maybe_unused]] const std::optional<pybind11::object>
+                    &traceback) {
                  //  self.close();
              })
         .def("__iter__", [](JungfrauDataFile &self) { return &self; })
@@ -109,5 +106,3 @@ void define_jungfrau_data_file_io_bindings(py::module &m) {
             }
         });
 }
-
-#pragma GCC diagnostic pop
