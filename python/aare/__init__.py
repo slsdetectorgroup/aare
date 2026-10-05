@@ -71,3 +71,5 @@ from ._aare import (
     PixelHistogram_u32,
     PixelHistogram_u64,
 )
+
+from ._aare import mean_over_dataset
