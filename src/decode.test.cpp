@@ -25,7 +25,7 @@ TEST_CASE("test_adc_sar_05_decode64to16") {
     // test all bits by iteratting through the bitlist
     std::vector<int> bitlist = {29, 19, 28, 18, 31, 21, 27, 20, 24, 23, 25, 22};
     for (size_t i = 0; i < bitlist.size(); i++) {
-        input = 1UL << bitlist[i];
+        input = 1ULL << bitlist[i];
         output = aare::adc_sar_05_decode64to16(input);
         CHECK(output == (1 << i));
     }
@@ -95,7 +95,7 @@ TEST_CASE("Each byte buffer decoder maps to its own bit order") {
     };
 
     for (const auto &c : cases) {
-        uint64_t word = (1UL << c.bit0) | (1UL << c.bit1);
+        uint64_t word = (1ULL << c.bit0) | (1ULL << c.bit1);
         std::vector<uint8_t> buffer(8);
         std::memcpy(buffer.data(), &word, sizeof(word));
         aare::NDView<const uint8_t, 2> bytes(buffer.data(), {1, 8});
