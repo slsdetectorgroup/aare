@@ -136,7 +136,7 @@ void JungfrauDataFile::find_frame_size(const std::filesystem::path &fname) {
 
 void JungfrauDataFile::parse_fname(const std::filesystem::path &fname) {
     m_path = fname.parent_path();
-    m_base_name = fname.stem();
+    m_base_name = fname.stem().string();
 
     // find file index, then remove if from the base name
     if (auto pos = m_base_name.find_last_of('_'); pos != std::string::npos) {

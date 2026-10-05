@@ -11,8 +11,8 @@ namespace aare {
 RawFileNameComponents::RawFileNameComponents(
     const std::filesystem::path &fname) {
     m_base_path = fname.parent_path();
-    m_base_name = fname.stem();
-    m_ext = fname.extension();
+    m_base_name = fname.stem().string();
+    m_ext = fname.extension().string();
 
     if (m_ext != ".json" && m_ext != ".raw") {
         throw std::runtime_error(LOCATION +
