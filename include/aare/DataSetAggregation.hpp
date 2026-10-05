@@ -21,13 +21,14 @@ NDArray<FRAME_TYPE, 3> mean_over_dataset(const std::filesystem::path &path,
                                          const size_t num_samples,
                                          const size_t num_frames_per_sample,
                                          const int num_threads = 16) {
-    File file(path);
+    File meta_file(path);
 
-    auto frame = file.read_frame();
+    auto frame = meta_file.read_frame();
 
-    NDArray<FRAME_TYPE, 3> mean_per_sample({static_cast<ssize_t>(file.rows()),
-                                            static_cast<ssize_t>(file.cols()),
-                                            static_cast<ssize_t>(num_samples)});
+    NDArray<FRAME_TYPE, 3> mean_per_sample(
+        {static_cast<ssize_t>(meta_file.rows()),
+         static_cast<ssize_t>(meta_file.cols()),
+         static_cast<ssize_t>(num_samples)});
 
     auto mean_over_samples = [&](size_t start_sample, size_t end_sample) {
         File file(path);
