@@ -221,7 +221,7 @@ JungfrauDataHeader JungfrauDataFile::read_header() {
         throw std::runtime_error(LOCATION + "Could not read header from file" +
                                  m_fp.error_msg());
     }
-    m_fp.seek(-header_size, SEEK_CUR);
+    m_fp.seek(-static_cast<ssize_t>(header_size), SEEK_CUR);
     return header;
 }
 
