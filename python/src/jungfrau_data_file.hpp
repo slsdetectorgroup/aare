@@ -101,7 +101,7 @@ void define_jungfrau_data_file_io_bindings(py::module &m) {
         .def("__next__", [](JungfrauDataFile &self) {
             try {
                 return read_dat_frame(self);
-            } catch (std::runtime_error &e) {
+            } catch (std::runtime_error &) {
                 throw py::stop_iteration();
             }
         });

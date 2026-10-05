@@ -144,7 +144,7 @@ void define_file_io_bindings(py::module &m) {
                 self.read_into(
                     reinterpret_cast<std::byte *>(image.mutable_data()));
                 return image;
-            } catch (std::runtime_error &e) {
+            } catch (std::runtime_error &) {
                 throw py::stop_iteration();
             }
         });

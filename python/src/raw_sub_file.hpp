@@ -94,7 +94,7 @@ void define_raw_sub_file_io_bindings(py::module &m) {
         .def("__next__", [](RawSubFile &self) {
             try {
                 return read_frame_from_RawSubFile(self);
-            } catch (std::runtime_error &e) {
+            } catch (std::runtime_error &) {
                 throw py::stop_iteration();
             }
         });
