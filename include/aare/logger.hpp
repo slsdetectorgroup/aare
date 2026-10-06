@@ -160,7 +160,7 @@ class Logger {
 
 // TODO! Do we need to keep the runtime option?
 #define LOG(level)                                                             \
-    if (level > AARE_LOG_LEVEL)                                                \
+    if constexpr (level > AARE_LOG_LEVEL)                                      \
         ;                                                                      \
     else if (level > aare::Logger::ReportingLevel())                           \
         ;                                                                      \
