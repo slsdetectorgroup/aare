@@ -51,8 +51,11 @@ def run_one(cdim, cap, streams, label, n_frames, batch, outdir) -> dict | None:
     for line in p.stdout.splitlines():
         if line.strip().startswith(("n_streams", "H2D/frame", "wall")):
             print("   ", line.strip())
-    if not rep.with_suffix(".nsys-rep").exists():
-        print(f"    FAILED: {p.stderr.strip()[-400:]}")
+    # nsys writes a report even when the traced process crashes, and returns
+    # the child's exit code: check it, or a dead probe surfaces later as a
+    # missing CUPTI table in the export.
+    if p.returncode != 0 or not rep.with_suffix(".nsys-rep").exists():
+        print(f"    FAILED (exit {p.returncode}): {p.stderr.strip()[-400:]}")
         return None
 
     subprocess.run([common.NSYS, "stats", "--force-export=true", "--report",

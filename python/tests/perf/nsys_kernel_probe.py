@@ -19,8 +19,9 @@ n_streams, N, cdim, cap, batch = (int(a) for a in sys.argv[1:6])
 f = File(common.DATA_FILE)
 pd = File(common.PEDESTAL_FILE)
 
-cf = ClusterFinderCUDA((f.rows, f.cols), (cdim, cdim), n_sigma=common.N_SIGMA,
-                       max_clusters_per_frame=cap, n_streams=n_streams)
+cf = ClusterFinderCUDA((f.rows, f.cols), cluster_size=(cdim, cdim),
+                       n_sigma=common.N_SIGMA, max_clusters_per_frame=cap,
+                       n_streams=n_streams)
 for _ in range(common.N_PEDESTAL_FRAMES):
     cf.push_pedestal_frame(pd.read_frame().copy())
 
