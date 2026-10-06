@@ -11,6 +11,12 @@
   build, so releases publish them to PyPI alongside the Linux and macOS
   wheels.
 
+### Build:
+
+- libzmq is only fetched or searched for with ``-DAARE_ZMQ=ON`` (default
+  OFF) and is then available as ``aare::zmq``. Nothing in aare links it yet,
+  and skipping it removes about 8 s from every CMake configure.
+
 ## 2026.9.30
 
 ### New Features:

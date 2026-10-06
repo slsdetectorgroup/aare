@@ -49,10 +49,11 @@ cmake --build build -j4
 
 Useful optional settings include `AARE_DOCS`, `AARE_BENCHMARKS`, `AARE_ASAN`,
 `AARE_WARNINGS_AS_ERRORS`, `AARE_VERBOSE` (raises the compile-time log
-level), and `AARE_TUNE_LOCAL` (`-march=native`, not portable). Reconfigure an
-existing build directory instead of creating alternate in-tree build layouts
-unless isolation is needed; `build/CMakeCache.txt` records the options and
-interpreter it was configured with.
+level), `AARE_TUNE_LOCAL` (`-march=native`, not portable), and `AARE_ZMQ`
+(fetches or finds ZeroMQ and defines `aare::zmq`; nothing links it yet).
+Reconfigure an existing build directory instead of creating alternate
+in-tree build layouts unless isolation is needed; `build/CMakeCache.txt`
+records the options and interpreter it was configured with.
 
 `-Werror=return-type` is always enabled. New code should also compile cleanly
 under the project's `-Wall -Wextra -pedantic -Wshadow -Wold-style-cast
