@@ -103,6 +103,7 @@ void define_ClusterFinderCUDAGraph(py::module &m, const std::string &typestr) {
                     info.ptr, static_cast<size_t>(info.size) *
                                   static_cast<size_t>(info.itemsize));
             },
+            py::keep_alive<1, 2>(),
             R"(Pin a numpy array as a locked host buffer so that
             find_clusters_batched transfers it at full DMA bandwidth.
             Call once before the processing loop with the full data array.
