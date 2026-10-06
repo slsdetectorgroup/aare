@@ -23,6 +23,13 @@
   area instead of a single file, so the bindings build in parallel and
   editing one binding header recompiles only its unit. The module's
   contents and registration order are unchanged.
+- The Python extension is no longer link-time optimized by default. The hot
+  loops are header templates compiled at ``-O3`` inside the extension and
+  LTO cannot reach the static ``aare_core``, so it only added a 20 s
+  single-threaded link and made the binary 15 % smaller. LTO follows the
+  standard CMake property now:
+  ``set_property(TARGET _aare PROPERTY INTERPROCEDURAL_OPTIMIZATION ON)`` or
+  ``-DCMAKE_INTERPROCEDURAL_OPTIMIZATION=ON`` restores it.
 
 ## 2026.9.30
 

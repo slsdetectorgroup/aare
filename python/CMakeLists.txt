@@ -20,8 +20,16 @@ endif()
 
 # The compiled python extension: one translation unit per binding area so they
 # compile in parallel; see src/module.cpp for the registration order.
+#
+# Without NO_EXTRAS pybind11 links pybind11::lto, which forces full LTO on the
+# extension regardless of the target's INTERPROCEDURAL_OPTIMIZATION property.
+# LTO cannot reach aare_core (a plain static library) and the templated hot
+# paths are already compiled at -O3 inside the extension, so it only adds a long
+# single-threaded link step. With NO_EXTRAS the standard target property decides
+# (off by default); the other extras are re-added below.
 pybind11_add_module(
   _aare # name of the module
+  NO_EXTRAS
   src/module.cpp
   src/bind_io.cpp
   src/bind_hist.cpp
@@ -37,6 +45,16 @@ pybind11_add_module(
 set_target_properties(_aare PROPERTIES LIBRARY_OUTPUT_DIRECTORY
                                        ${CMAKE_BINARY_DIR})
 target_link_libraries(_aare PRIVATE aare_core aare_compiler_flags)
+
+# The pybind11_add_module extras that NO_EXTRAS skipped, LTO excepted
+if(MSVC)
+  target_link_libraries(_aare PRIVATE pybind11::windows_extras) # /bigobj, /MP
+elseif(CMAKE_BUILD_TYPE)
+  string(TOUPPER "${CMAKE_BUILD_TYPE}" _aare_build_type)
+  if(NOT _aare_build_type MATCHES "DEBUG|RELWITHDEBINFO|NONE")
+    pybind11_strip(_aare) # strip symbols from optimized builds
+  endif()
+endif()
 
 target_include_directories(
   _aare SYSTEM
