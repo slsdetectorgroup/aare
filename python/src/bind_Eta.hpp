@@ -28,7 +28,7 @@ void define_eta(py::module &m, const std::string &typestr) {
         });
 }
 
-void define_corner_enum(py::module &m) {
+inline void define_corner_enum(py::module &m) {
     py::enum_<corner>(m, "corner", "enum.Enum")
         .value("cTopLeft", corner::cTopLeft)
         .value("cTopRight", corner::cTopRight)

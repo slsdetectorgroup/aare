@@ -18,11 +18,21 @@ else()
   find_package(pybind11 3.0.3 REQUIRED)
 endif()
 
-# Add the compiled python extension
+# The compiled python extension: one translation unit per binding area so they
+# compile in parallel; see src/module.cpp for the registration order.
 pybind11_add_module(
   _aare # name of the module
-  src/module.cpp # source file
-)
+  src/module.cpp
+  src/bind_io.cpp
+  src/bind_hist.cpp
+  src/bind_pedestal.cpp
+  src/bind_fit.cpp
+  src/bind_eta.cpp
+  src/bind_cluster_2x2.cpp
+  src/bind_cluster_3x3.cpp
+  src/bind_cluster_5x5.cpp
+  src/bind_cluster_7x7.cpp
+  src/bind_cluster_9x9.cpp)
 
 set_target_properties(_aare PROPERTIES LIBRARY_OUTPUT_DIRECTORY
                                        ${CMAKE_BINARY_DIR})

@@ -19,6 +19,10 @@
 - Minuit2, and libzmq when enabled, are compiled as unity builds (about 5x
   less compile time), and the fetched dependencies are shallow clones, which
   makes a first configure faster and the build directory smaller.
+- The Python extension is compiled from one translation unit per binding
+  area instead of a single file, so the bindings build in parallel and
+  editing one binding header recompiles only its unit. The module's
+  contents and registration order are unchanged.
 
 ## 2026.9.30
 
