@@ -23,7 +23,7 @@ RawFileNameComponents::RawFileNameComponents(
     try {
         auto pos = m_base_name.rfind('_');
         m_file_index = std::stoi(m_base_name.substr(pos + 1));
-    } catch (const std::invalid_argument &e) {
+    } catch (const std::invalid_argument &) {
         throw std::runtime_error(LOCATION + "Could not parse file index");
     }
 
@@ -370,7 +370,7 @@ void RawMasterFile::parse_json(std::istream &is) {
 
     try {
         m_quad = j.at("Quad");
-    } catch (const json::out_of_range &e) {
+    } catch (const json::out_of_range &) {
         // keep the optional empty
     }
     // try{
@@ -384,7 +384,7 @@ void RawMasterFile::parse_json(std::istream &is) {
         if (digital_flag) {
             m_digital_samples = j.at("Digital Samples");
         }
-    } catch (const json::out_of_range &e) {
+    } catch (const json::out_of_range &) {
         // keep the optional empty
     }
     try {
@@ -393,7 +393,7 @@ void RawMasterFile::parse_json(std::istream &is) {
         if (m_transceiver_flag) {
             m_transceiver_samples = j.at("Transceiver Samples");
         }
-    } catch (const json::out_of_range &e) {
+    } catch (const json::out_of_range &) {
         // keep the optional empty
     }
     try {
@@ -414,7 +414,7 @@ void RawMasterFile::parse_json(std::istream &is) {
             m_scan_parameters
                 .increment_stop(); // adjust for endpoint being included
         }
-    } catch (const json::out_of_range &e) {
+    } catch (const json::out_of_range &) {
         // not a scan
     }
     try {
@@ -424,7 +424,7 @@ void RawMasterFile::parse_json(std::istream &is) {
             m_udp_port_types.value().push_back(
                 string_to<UDPPortPosition>(elem));
         }
-    } catch (const json::out_of_range &e) {
+    } catch (const json::out_of_range &) {
         // leave the optional empty
     }
     try {
@@ -433,13 +433,13 @@ void RawMasterFile::parse_json(std::istream &is) {
         for (auto &elem : json_list_obj) {
             m_disabled_udp_ports.push_back(static_cast<size_t>(elem));
         }
-    } catch (const json::out_of_range &e) {
+    } catch (const json::out_of_range &) {
         m_disabled_udp_ports
             .clear(); // empty list if not present in master file
     }
     try {
         m_udp_interfaces_per_module = {j.at("Number of UDP Interfaces"), 1};
-    } catch (const json::out_of_range &e) {
+    } catch (const json::out_of_range &) {
         if (m_type == DetectorType::Eiger && m_quad == 1)
             m_udp_interfaces_per_module = {2, 1};
         else if (m_type == DetectorType::Eiger) {
@@ -485,7 +485,7 @@ void RawMasterFile::parse_json(std::istream &is) {
             }
         }
 
-    } catch (const json::out_of_range &e) {
+    } catch (const json::out_of_range &) {
         // fill ROI with full detector size if not present in master file
         m_rois.push_back(
             {0, m_detector_layout.col * static_cast<ssize_t>(m_pixels_x), 0,

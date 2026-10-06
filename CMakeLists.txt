@@ -208,6 +208,11 @@ if(AARE_FETCH_FMT)
       CACHE BOOL "")
   FetchContent_MakeAvailable(fmt)
   set_property(TARGET fmt PROPERTY POSITION_INDEPENDENT_CODE ON)
+  if(MSVC)
+    # fmt 12.1.0 calls std::isalpha only to check that ADL finds it and drops
+    # the result, which MSVC's standard library marks [[nodiscard]]
+    target_compile_options(fmt PRIVATE /wd4834)
+  endif()
 else()
   find_package(fmt 8 REQUIRED)
 endif()
