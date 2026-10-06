@@ -35,6 +35,12 @@ set_target_properties(
   _aare PROPERTIES LIBRARY_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/aare
                    INTERPROCEDURAL_OPTIMIZATION FALSE)
 
+# module.cpp instantiates every binding for every cluster size and type, which
+# exceeds the default COFF section limit (MSVC error C1128).
+if(MSVC)
+  target_compile_options(_aare PRIVATE /bigobj)
+endif()
+
 # ---- CUDA module (separate .so) --------------------------------------------
 if(AARE_CUDA)
   pybind11_add_module(_aare_cuda NO_EXTRAS src/cuda_bindings.cu)
