@@ -8,6 +8,9 @@ if(AARE_FETCH_CATCH)
     GIT_REPOSITORY https://github.com/catchorg/Catch2.git
     GIT_TAG v3.5.3)
   FetchContent_MakeAvailable(Catch2)
+  # Catch2 is ~100 small files; a unity build compiles them in a few batches
+  set_target_properties(Catch2 Catch2WithMain
+                        PROPERTIES UNITY_BUILD ON UNITY_BUILD_BATCH_SIZE 16)
 else()
   # Otherwise look for installed catch2
   find_package(Catch2 3 REQUIRED)
