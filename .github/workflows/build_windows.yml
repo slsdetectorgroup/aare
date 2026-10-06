@@ -1,0 +1,37 @@
+name: Build and test on Windows
+
+on:
+  workflow_dispatch:
+  push:
+  pull_request:
+
+jobs:
+  build:
+    runs-on: windows-latest
+
+    steps:
+      - uses: actions/checkout@v6
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install Python dependencies
+        run: python -m pip install ninja numpy matplotlib pytest pytest-check boost-histogram
+
+      # Puts cl.exe on the path so that CMake can use the Ninja generator
+      - uses: ilammy/msvc-dev-cmd@v1
+
+      - name: Configure
+        run: cmake -S . -B build -G Ninja -DCMAKE_BUILD_TYPE=Release -DAARE_TESTS=ON -DAARE_PYTHON_BINDINGS=ON -DAARE_WARNINGS_AS_ERRORS=ON
+
+      - name: Build
+        run: cmake --build build
+
+      - name: C++ unit tests
+        run: ctest --test-dir build --output-on-failure -j4
+
+      - name: Python unit tests
+        env:
+          PYTHONPATH: ${{ github.workspace }}\build
+        run: python -m pytest python/tests

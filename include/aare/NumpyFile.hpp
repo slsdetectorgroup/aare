@@ -2,6 +2,7 @@
 #pragma once
 #include "aare/Dtype.hpp"
 #include "aare/FileInterface.hpp"
+#include "aare/FilePtr.hpp"
 #include "aare/NumpyHelpers.hpp"
 #include "aare/defs.hpp"
 
@@ -77,7 +78,7 @@ class NumpyFile : public FileInterface {
      */
     template <typename T, size_t NDim> NDArray<T, NDim> load() {
         NDArray<T, NDim> arr(make_shape<NDim>(m_header.shape));
-        if (fseek(fp, static_cast<long>(header_size), SEEK_SET)) {
+        if (fseek64(fp, header_size, SEEK_SET)) {
             throw std::runtime_error(LOCATION +
                                      "Error seeking to the start of the data");
         }

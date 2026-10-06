@@ -9,6 +9,7 @@
 #include <pybind11/stl_bind.h>
 
 namespace py = pybind11;
+using aare::ssize_t;
 
 template <typename DataType>
 py::array_t<DataType>

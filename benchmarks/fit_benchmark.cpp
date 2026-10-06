@@ -10,6 +10,8 @@
 #include <string>
 #include <vector>
 
+using aare::ssize_t;
+
 struct TestCase {
     std::string name;
     double true_A;

@@ -28,6 +28,9 @@ build = "cp{312,313,314}-manylinux_x86_64"
 build = "cp{312,313,314}-macosx_*"
 archs = ["arm64"]
 
+[tool.cibuildwheel.windows]
+build = "cp{312,313,314}-win_amd64"
+
 
 [tool.scikit-build]
 build.verbose = true

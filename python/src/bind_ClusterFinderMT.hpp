@@ -20,9 +20,6 @@ namespace py = pybind11;
 
 using namespace aare;
 
-#pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wunused-parameter"
-
 template <typename T, uint8_t ClusterSizeX, uint8_t ClusterSizeY,
           typename CoordType = uint16_t>
 void define_ClusterFinderMT(py::module &m, const std::string &typestr) {
@@ -55,7 +52,8 @@ void define_ClusterFinderMT(py::module &m, const std::string &typestr) {
             py::arg("frame").noconvert(), py::arg("frame_number") = 0)
         .def_property_readonly(
             "cluster_size",
-            [](ClusterFinderMT<ClusterType, uint16_t, pd_type> &self) {
+            []([[maybe_unused]] ClusterFinderMT<ClusterType, uint16_t, pd_type>
+                   &self) {
                 return py::make_tuple(ClusterSizeX, ClusterSizeY);
             })
         .def("clear_pedestal",
@@ -93,5 +91,3 @@ void define_ClusterFinderMT(py::module &m, const std::string &typestr) {
              py::arg("nSigma"),
              R"(sets the number of sigma for all cluster finders.)");
 }
-
-#pragma GCC diagnostic pop

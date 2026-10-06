@@ -1,7 +1,7 @@
 # SPDX-License-Identifier: MPL-2.0
 import pytest
 import json
-from aare import File, RawFile, RawSubFile, DetectorType, ROI, UDPPortPosition
+from aare import File, RawFile, RawSubFile, DetectorType, ROI, UDPPortPosition, xy
 import numpy as np
 
 
@@ -235,6 +235,20 @@ def test_raw_frame_count_across_rois(small_raw_file, short_module):
         assert frames.shape == (1, 2, 3)
         with pytest.raises(RuntimeError):
             reader.read_roi(roi_index)
+
+
+def test_raw_file_geometry(small_raw_file):
+    metadata = json.loads(small_raw_file.read_text())
+    metadata["Geometry"] = {"x": 1, "y": 2}
+    small_raw_file.write_text(json.dumps(metadata))
+    for index in range(2):
+        data = (small_raw_file.parent / f"run_d0_f{index}_0.raw").read_bytes()
+        (small_raw_file.parent / f"run_d1_f{index}_0.raw").write_bytes(data)
+
+    reader = RawFile(small_raw_file)
+    assert reader.geometry == xy(row=2, col=1)
+    assert reader.master.detector_layout == xy(row=2, col=1)
+    assert reader.master.udp_interfaces_per_module == xy(row=1, col=1)
 
 
 @pytest.mark.parametrize("disabled_port", [0, 1])

@@ -9,10 +9,10 @@ namespace aare {
 
 FilePtr::FilePtr(const std::filesystem::path &fname,
                  const std::string &mode = "rb") {
-    fp_ = fopen(fname.c_str(), mode.c_str());
+    fp_ = fopen(fname.string().c_str(), mode.c_str());
     if (!fp_)
         throw std::runtime_error(
-            fmt::format("Could not open: {}", fname.c_str()));
+            fmt::format("Could not open: {}", fname.string()));
 }
 
 FilePtr::FilePtr(FilePtr &&other) { std::swap(fp_, other.fp_); }
@@ -27,7 +27,7 @@ FilePtr::operator bool() const noexcept { return fp_ != nullptr; }
 FILE *FilePtr::get() { return fp_; }
 
 ssize_t FilePtr::tell() {
-    auto pos = ftell(fp_);
+    auto pos = ftell64(fp_);
     if (pos == -1)
         throw std::runtime_error(
             fmt::format("Error getting file position: {}", error_msg()));

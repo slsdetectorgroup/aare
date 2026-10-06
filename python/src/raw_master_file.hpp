@@ -67,9 +67,23 @@ void define_raw_master_file_bindings(py::module &m) {
         .def_property_readonly("total_frames_expected",
                                &RawMasterFile::total_frames_expected)
         .def_property_readonly("detector_layout",
-                               &RawMasterFile::detector_layout)
+                               &RawMasterFile::detector_layout, R"(
+            Number of modules along each axis of the detector
+
+            Returns
+            ----------
+                xy
+                    Module rows and columns
+            )")
         .def_property_readonly("udp_interfaces_per_module",
-                               &RawMasterFile::udp_interfaces_per_module)
+                               &RawMasterFile::udp_interfaces_per_module, R"(
+            Number of UDP interfaces along each axis of a module
+
+            Returns
+            ----------
+                xy
+                    UDP interface rows and columns
+            )")
         .def_property_readonly("analog_samples", &RawMasterFile::analog_samples,
                                R"(
             Number of analog samples

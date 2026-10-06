@@ -13,11 +13,6 @@
 #include <string>
 #include <utility>
 
-// Disable warnings for unused parameters, as we ignore some
-// in the __exit__ method
-#pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wunused-parameter"
-
 namespace py = pybind11;
 using namespace ::aare;
 
@@ -171,14 +166,12 @@ void define_ClusterFile(py::module &m, const std::string &typestr) {
         .def("__enter__", [](ClusterFile<ClusterType> &self) { return &self; })
         .def("__exit__",
              [](ClusterFile<ClusterType> &self,
-                const std::optional<pybind11::type> &exc_type,
-                const std::optional<pybind11::object> &exc_value,
-                const std::optional<pybind11::object> &traceback) {
-                 self.close();
-             })
+                [[maybe_unused]] const std::optional<pybind11::type> &exc_type,
+                [[maybe_unused]] const std::optional<pybind11::object>
+                    &exc_value,
+                [[maybe_unused]] const std::optional<pybind11::object>
+                    &traceback) { self.close(); })
         .def("__iter__", [](ClusterFile<ClusterType> &self) { return &self; })
         .def("__next__",
              [](File &self) { return ChunkIterator(self.chunks()).next(); });
 }
-
-#pragma GCC diagnostic pop

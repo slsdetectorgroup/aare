@@ -302,7 +302,7 @@ void RawFile::open_subfiles(const size_t roi_index) {
 
 DetectorHeader RawFile::read_header(const std::filesystem::path &fname) {
     DetectorHeader h{};
-    FILE *fp = fopen(fname.string().c_str(), "r");
+    FILE *fp = fopen(fname.string().c_str(), "rb");
     if (!fp)
         throw std::runtime_error(fmt::format(
             "Could not open file '{}' for frame index 0", fname.string()));

@@ -112,8 +112,13 @@ struct fmt_format_trait<Cluster<T, ClusterSizeX, ClusterSizeY, CoordType>> {
     }
 };
 
-template <typename ClusterType>
-auto fmt_format = fmt_format_trait<ClusterType>::value();
+// Function-local static rather than a variable template: MSVC does not run
+// the dynamic initializer of a variable template instantiated from inside
+// another template, which left the format string empty.
+template <typename ClusterType> const std::string &fmt_format() {
+    static const std::string value = fmt_format_trait<ClusterType>::value();
+    return value;
+}
 
 /**
  * Helper function to allocate image data given item size and shape
