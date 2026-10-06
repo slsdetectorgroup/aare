@@ -24,177 +24,119 @@
 namespace py = pybind11;
 using namespace ::aare;
 
+// One binding for the three ADC SAR decoders. Each is registered under
+// its original Python name so existing transforms keep working.
+template <void (*decode)(NDView<const uint8_t, 2>, NDView<uint16_t, 2>)>
+py::array_t<uint16_t> decode64to16(py::array_t<uint8_t> input) {
+    auto bytes = make_const_view_2d(input);
+    constexpr ssize_t bytes_per_word = sizeof(uint64_t);
+    auto output = py::array_t<uint16_t>(
+        {bytes.shape(0), bytes.shape(1) / bytes_per_word});
+    decode(bytes, make_view_2d(output));
+    return output;
+}
+
+constexpr auto decode64to16_doc =
+    "Decode packed 64-bit ADC samples. Takes a two-dimensional, "
+    "C-contiguous uint8 array whose row length is a multiple of 8 bytes "
+    "and returns a uint16 array with one value per 64-bit word.";
+
 void define_ctb_raw_file_io_bindings(py::module &m) {
 
-    m.def("adc_sar_05_06_07_08decode64to16", [](py::array_t<uint8_t> input) {
-        if (input.ndim() != 2) {
-            throw std::runtime_error(
-                "Only 2D arrays are supported at this moment");
-        }
+    m.def("adc_sar_05_06_07_08decode64to16",
+          &decode64to16<adc_sar_05_06_07_08decode64to16>,
+          py::arg("input").noconvert(), decode64to16_doc);
 
-        // Create a 2D output array with the same shape as the input
-        std::vector<ssize_t> shape{input.shape(0),
-                                   input.shape(1) /
-                                       static_cast<ssize_t>(bits_per_byte)};
-        py::array_t<uint16_t> output(shape);
+    m.def("adc_sar_05_decode64to16", &decode64to16<adc_sar_05_decode64to16>,
+          py::arg("input").noconvert(), decode64to16_doc);
 
-        // Create a view of the input and output arrays
-        NDView<uint64_t, 2> input_view(
-            reinterpret_cast<uint64_t *>(input.mutable_data()),
-            {output.shape(0), output.shape(1)});
-        NDView<uint16_t, 2> output_view(output.mutable_data(),
-                                        {output.shape(0), output.shape(1)});
+    m.def("adc_sar_04_decode64to16", &decode64to16<adc_sar_04_decode64to16>,
+          py::arg("input").noconvert(), decode64to16_doc);
 
-        adc_sar_05_06_07_08decode64to16(input_view, output_view);
+    m.def(
+        "apply_custom_weights",
+        [](py::array_t<uint16_t> input, py::array_t<double> weights) {
+            auto input_view = make_view_1d(input);
+            auto weights_view = make_view_1d(weights);
+            auto output = py::array_t<double>(input_view.size());
+            apply_custom_weights(input_view, make_view_1d(output),
+                                 weights_view);
+            return output;
+        },
+        py::arg("input").noconvert(), py::arg("weights").noconvert(),
+        "Apply per-bit weights to every value of a one-dimensional, "
+        "C-contiguous uint16 array and return a float64 array.");
 
-        return output;
-    });
+    m.def(
+        "expand24to32bit",
+        [](py::array_t<uint8_t> input, uint32_t offset) {
+            constexpr ssize_t bytes_per_channel = 3; // 24 bit
+            auto input_view = make_const_view_1d(input);
+            auto output =
+                py::array_t<uint32_t>(input_view.size() / bytes_per_channel);
+            aare::expand24to32bit(input_view, make_view_1d(output),
+                                  aare::BitOffset(offset));
+            return output;
+        },
+        py::arg("input").noconvert(), py::arg("offset"),
+        "Expand packed 24-bit values from a one-dimensional, C-contiguous "
+        "uint8 array into a uint32 array.");
 
-    m.def("adc_sar_05_decode64to16", [](py::array_t<uint8_t> input) {
-        if (input.ndim() != 2) {
-            throw std::runtime_error(
-                "Only 2D arrays are supported at this moment");
-        }
+    m.def(
+        "expand4to8bit",
+        [](py::array_t<uint8_t> input) {
+            auto input_view = make_const_view_1d(input);
+            auto output = py::array_t<uint8_t>(input_view.size() * 2);
+            aare::expand4to8bit(input_view, make_view_1d(output));
+            return output;
+        },
+        py::arg("input").noconvert(),
+        "Expand two 4-bit values per byte of a one-dimensional, C-contiguous "
+        "uint8 array into a uint8 array of twice the length.");
 
-        // Create a 2D output array with the same shape as the input
-        std::vector<ssize_t> shape{input.shape(0),
-                                   input.shape(1) /
-                                       static_cast<ssize_t>(bits_per_byte)};
-        py::array_t<uint16_t> output(shape);
+    m.def(
+        "decode_my302",
+        [](py::array_t<uint8_t> input, uint32_t offset) {
+            // Physical layout of the chip
+            constexpr ssize_t channels = 64;
+            constexpr ssize_t counters = 3;
+            constexpr ssize_t bytes_per_channel = 3; // 24 bit
+            constexpr ssize_t n_outputs = 2;
 
-        // Create a view of the input and output arrays
-        NDView<uint64_t, 2> input_view(
-            reinterpret_cast<uint64_t *>(input.mutable_data()),
-            {output.shape(0), output.shape(1)});
-        NDView<uint16_t, 2> output_view(output.mutable_data(),
-                                        {output.shape(0), output.shape(1)});
+            auto input_view = make_const_view_1d(input);
 
-        adc_sar_05_decode64to16(input_view, output_view);
+            ssize_t expected_size = channels * counters * bytes_per_channel;
 
-        return output;
-    });
+            // If we have an offset we need one extra byte per output
+            aare::BitOffset bitoff(offset);
+            if (bitoff.value())
+                expected_size += n_outputs;
 
-    m.def("adc_sar_04_decode64to16", [](py::array_t<uint8_t> input) {
-        if (input.ndim() != 2) {
-            throw std::runtime_error(
-                "Only 2D arrays are supported at this moment");
-        }
+            if (input_view.size() != expected_size) {
+                throw py::value_error(
+                    fmt::format("{} Expected an input size of {} bytes. Called "
+                                "with input size of {}",
+                                LOCATION, expected_size, input_view.size()));
+            }
 
-        // Create a 2D output array with the same shape as the input
-        std::vector<ssize_t> shape{input.shape(0),
-                                   input.shape(1) /
-                                       static_cast<ssize_t>(bits_per_byte)};
-        py::array_t<uint16_t> output(shape);
+            auto output = py::array_t<uint32_t>(channels * counters);
+            auto output_view = make_view_1d(output);
 
-        // Create a view of the input and output arrays
-        NDView<uint64_t, 2> input_view(
-            reinterpret_cast<uint64_t *>(input.mutable_data()),
-            {output.shape(0), output.shape(1)});
-        NDView<uint16_t, 2> output_view(output.mutable_data(),
-                                        {output.shape(0), output.shape(1)});
+            const ssize_t in_step = input_view.size() / n_outputs;
+            const ssize_t out_step = output_view.size() / n_outputs;
+            for (ssize_t i = 0; i != n_outputs; ++i) {
+                NDView<const uint8_t, 1> in_part(
+                    input_view.data() + in_step * i, {in_step});
+                NDView<uint32_t, 1> out_part(output_view.data() + out_step * i,
+                                             {out_step});
+                aare::expand24to32bit(in_part, out_part, bitoff);
+            }
 
-        adc_sar_04_decode64to16(input_view, output_view);
-
-        return output;
-    });
-
-    m.def("apply_custom_weights",
-          [](py::array_t<uint16_t, py::array::c_style | py::array::forcecast>
-                 &input,
-             py::array_t<double, py::array::c_style | py::array::forcecast>
-                 &weights) {
-              // Create new array with same shape as the input array
-              // (uninitialized values)
-              py::buffer_info buf = input.request();
-              py::array_t<double> output(buf.shape);
-
-              // Use NDViews to call into the C++ library
-              auto weights_view = make_view_1d(weights);
-              NDView<uint16_t, 1> input_view(input.mutable_data(),
-                                             {input.size()});
-              NDView<double, 1> output_view(output.mutable_data(),
-                                            {output.size()});
-
-              apply_custom_weights(input_view, output_view, weights_view);
-              return output;
-          });
-
-    m.def("expand24to32bit",
-          [](py::array_t<uint8_t, py::array::c_style | py::array::forcecast>
-                 &input,
-             uint32_t offset) {
-              aare::BitOffset bitoff(offset);
-              py::buffer_info buf = input.request();
-
-              constexpr uint32_t bytes_per_channel = 3; // 24 bit
-              py::array_t<uint32_t> output(buf.size / bytes_per_channel);
-
-              NDView<uint8_t, 1> input_view(input.mutable_data(),
-                                            {input.size()});
-              NDView<uint32_t, 1> output_view(output.mutable_data(),
-                                              {output.size()});
-
-              aare::expand24to32bit(input_view, output_view, bitoff);
-              return output;
-          });
-
-    m.def("expand4to8bit",
-          [](py::array_t<uint8_t, py::array::c_style | py::array::forcecast>
-                 &input) {
-              py::buffer_info buf = input.request();
-
-              py::array_t<uint8_t> output(buf.size * 2);
-
-              NDView<uint8_t, 1> input_view(input.mutable_data(),
-                                            {input.size()});
-              NDView<uint8_t, 1> output_view(output.mutable_data(),
-                                             {output.size()});
-
-              aare::expand4to8bit(input_view, output_view);
-              return output;
-          });
-
-    m.def("decode_my302",
-          [](py::array_t<uint8_t, py::array::c_style | py::array::forcecast>
-                 &input,
-             uint32_t offset) {
-              // Physical layout of the chip
-              constexpr size_t channels = 64;
-              constexpr size_t counters = 3;
-              constexpr size_t bytes_per_channel = 3; // 24 bit
-              constexpr int n_outputs = 2;
-
-              ssize_t expected_size = channels * counters * bytes_per_channel;
-
-              // If whe have an offset we need one extra byte per output
-              aare::BitOffset bitoff(offset);
-              if (bitoff.value())
-                  expected_size += n_outputs;
-
-              if (input.size() != expected_size) {
-                  throw std::runtime_error(fmt::format(
-                      "{} Expected an input size of {} bytes. Called "
-                      "with input size of {}",
-                      LOCATION, expected_size, input.size()));
-              }
-
-              py::buffer_info buf = input.request();
-              py::array_t<uint32_t> output(channels * counters);
-
-              for (int i = 0; i != n_outputs; ++i) {
-                  auto step = input.size() / n_outputs;
-                  auto out_step = output.size() / n_outputs;
-                  NDView<uint8_t, 1> input_view(input.mutable_data() + step * i,
-                                                {input.size() / n_outputs});
-                  NDView<uint32_t, 1> output_view(output.mutable_data() +
-                                                      out_step * i,
-                                                  {output.size() / n_outputs});
-
-                  aare::expand24to32bit(input_view, output_view, bitoff);
-              }
-
-              return output;
-          });
+            return output;
+        },
+        py::arg("input").noconvert(), py::arg("offset"),
+        "Decode a Mythen 302 readout from a one-dimensional, C-contiguous "
+        "uint8 array into a uint32 array of 64 channels times 3 counters.");
 
     py::class_<CtbRawFile>(m, "CtbRawFile")
         .def(py::init<const std::filesystem::path &>())

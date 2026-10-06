@@ -18,9 +18,6 @@ namespace py = pybind11;
 
 using namespace aare;
 
-#pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wunused-parameter"
-
 template <typename Type, uint8_t ClusterSizeX, uint8_t ClusterSizeY,
           typename CoordType = uint16_t>
 void define_ClusterVector(py::module &m, const std::string &typestr) {
@@ -46,11 +43,7 @@ void define_ClusterVector(py::module &m, const std::string &typestr) {
 
         .def(
             "__call__",
-            [](ClusterVector<ClusterType> &self,
-               py::array_t<bool, py::array::c_style> mask) {
-                if (mask.ndim() != 1) {
-                    throw py::value_error("Mask must be one-dimensional");
-                }
+            [](ClusterVector<ClusterType> &self, py::array_t<bool> mask) {
                 return self(make_view_1d(mask));
             },
             py::arg("mask").noconvert(), R"doc(
@@ -127,8 +120,8 @@ void define_ClusterVector(py::module &m, const std::string &typestr) {
              "padding.")
         .def_property_readonly(
             "fmt",
-            [typestr](ClusterVector<ClusterType> &self) {
-                return fmt_format<ClusterType>;
+            [typestr]([[maybe_unused]] ClusterVector<ClusterType> &self) {
+                return fmt_format<ClusterType>();
             },
             "PEP 3118 format string for one stored cluster.")
 
@@ -149,11 +142,11 @@ void define_ClusterVector(py::module &m, const std::string &typestr) {
         .def_buffer(
             [typestr](ClusterVector<ClusterType> &self) -> py::buffer_info {
                 return py::buffer_info(
-                    self.data(),             /* Pointer to buffer */
-                    self.item_size(),        /* Size of one scalar */
-                    fmt_format<ClusterType>, /* Format descriptor */
-                    1,                       /* Number of dimensions */
-                    {self.size()},           /* Buffer dimensions */
+                    self.data(),               /* Pointer to buffer */
+                    self.item_size(),          /* Size of one scalar */
+                    fmt_format<ClusterType>(), /* Format descriptor */
+                    1,                         /* Number of dimensions */
+                    {self.size()},             /* Buffer dimensions */
                     {self.item_size()} /* Strides (in bytes) for each index */
                 );
             });
@@ -232,5 +225,3 @@ void define_3x3_reduction(py::module &m) {
         )doc",
         py::arg("clustervector"));
 }
-
-#pragma GCC diagnostic pop

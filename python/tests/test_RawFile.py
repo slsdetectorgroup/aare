@@ -1,7 +1,7 @@
 # SPDX-License-Identifier: MPL-2.0
 import pytest
 import json
-from aare import File, RawFile, RawSubFile, DetectorType, ROI, UDPPortPosition
+from aare import File, RawFile, RawSubFile, DetectorType, ROI, UDPPortPosition, xy
 import numpy as np
 
 from aare import strixelremap
@@ -29,6 +29,61 @@ def small_raw_file(tmp_path):
         # A detector header followed by six uint16 pixels.
         data_path.write_bytes(bytes(112) + np.arange(6, dtype=np.uint16).tobytes())
     return master_path
+
+
+@pytest.mark.parametrize("reader_type", [RawFile, File])
+@pytest.mark.parametrize("legacy_master", [False, True])
+@pytest.mark.parametrize("padding, policy, supported", [
+    (0, "nodiscard", False),
+    (0, "discard", False),
+    (0, "discardpartial", True),
+    (1, "nodiscard", True),
+    (1, "discard", True),
+    (1, "discardpartial", True),
+])
+def test_raw_frame_policy(small_raw_file, reader_type, legacy_master,
+                          padding, policy, supported):
+    master_path = small_raw_file
+    if legacy_master:
+        master_path = master_path.with_suffix(".raw")
+        master_path.write_text(
+            "Version : 6.4\n"
+            "Detector Type : Jungfrau\n"
+            "Timing Mode : auto\n"
+            "Geometry : [1, 1]\n"
+            "Image Size : 12\n"
+            "Pixels : [3, 2]\n"
+            "Dynamic Range : 16\n"
+            "Max Frames Per File : 1\n"
+            "Total Frames : 2\n"
+            "Frames in File : 2\n"
+            f"Frame Padding : {padding}\n"
+            f"Frame Discard Policy : {policy}\n"
+        )
+    else:
+        metadata = json.loads(master_path.read_text())
+        metadata["Frame Padding"] = padding
+        metadata["Frame Discard Policy"] = policy
+        master_path.write_text(json.dumps(metadata))
+
+    if supported:
+        reader = reader_type(master_path)
+        assert reader.total_frames == 2
+        frame = reader.read_frame()
+        if reader_type is RawFile:
+            _, frame = frame
+        np.testing.assert_array_equal(frame, np.arange(6).reshape(2, 3))
+    else:
+        message = "requires frame padding or discardpartial"
+        with pytest.raises(RuntimeError, match=message) as error:
+            reader_type(master_path)
+        assert str(master_path) in str(error.value)
+
+        for index in range(2):
+            (master_path.parent / f"run_d0_f{index}_0.raw").unlink()
+        with pytest.raises(RuntimeError, match=message) as error:
+            reader_type(master_path)
+        assert str(master_path) in str(error.value)
 
 
 @pytest.mark.parametrize("method, args, kwargs", [
@@ -183,6 +238,20 @@ def test_raw_frame_count_across_rois(small_raw_file, short_module):
         assert frames.shape == (1, 2, 3)
         with pytest.raises(RuntimeError):
             reader.read_roi(roi_index)
+
+
+def test_raw_file_geometry(small_raw_file):
+    metadata = json.loads(small_raw_file.read_text())
+    metadata["Geometry"] = {"x": 1, "y": 2}
+    small_raw_file.write_text(json.dumps(metadata))
+    for index in range(2):
+        data = (small_raw_file.parent / f"run_d0_f{index}_0.raw").read_bytes()
+        (small_raw_file.parent / f"run_d1_f{index}_0.raw").write_bytes(data)
+
+    reader = RawFile(small_raw_file)
+    assert reader.geometry == xy(row=2, col=1)
+    assert reader.master.detector_layout == xy(row=2, col=1)
+    assert reader.master.udp_interfaces_per_module == xy(row=1, col=1)
 
 
 @pytest.mark.parametrize("disabled_port", [0, 1])

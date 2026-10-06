@@ -13,11 +13,6 @@
 #include <string>
 #include <utility>
 
-// Disable warnings for unused parameters, as we ignore some
-// in the __exit__ method
-#pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wunused-parameter"
-
 namespace py = pybind11;
 using namespace ::aare;
 
@@ -138,9 +133,10 @@ void define_ClusterFile(py::module &m, const std::string &typestr) {
              "Estimate the number of clusters from the file size. Frame "
              "headers can make this larger than the actual count.")
         .def(
-            "set_noise_map",
+            "set_noise_map", // conversions ok
             [](ClusterFile<ClusterType> &self,
-               py::array_t<int32_t, py::array::c_style> noise_map) {
+               py::array_t<int32_t, py::array::c_style | py::array::forcecast>
+                   noise_map) {
                 auto view = make_view_2d(noise_map);
                 self.set_noise_map(view);
             },
@@ -149,9 +145,10 @@ void define_ClusterFile(py::module &m, const std::string &typestr) {
             "[y, x]. The map must cover every cluster center coordinate.")
 
         .def(
-            "set_gain_map",
+            "set_gain_map", // conversions ok
             [](ClusterFile<ClusterType> &self,
-               py::array_t<double, py::array::c_style> gain_map) {
+               py::array_t<double, py::array::c_style | py::array::forcecast>
+                   gain_map) {
                 auto view = make_view_2d(gain_map);
                 self.set_gain_map(view);
             },
@@ -169,14 +166,12 @@ void define_ClusterFile(py::module &m, const std::string &typestr) {
         .def("__enter__", [](ClusterFile<ClusterType> &self) { return &self; })
         .def("__exit__",
              [](ClusterFile<ClusterType> &self,
-                const std::optional<pybind11::type> &exc_type,
-                const std::optional<pybind11::object> &exc_value,
-                const std::optional<pybind11::object> &traceback) {
-                 self.close();
-             })
+                [[maybe_unused]] const std::optional<pybind11::type> &exc_type,
+                [[maybe_unused]] const std::optional<pybind11::object>
+                    &exc_value,
+                [[maybe_unused]] const std::optional<pybind11::object>
+                    &traceback) { self.close(); })
         .def("__iter__", [](ClusterFile<ClusterType> &self) { return &self; })
         .def("__next__",
              [](File &self) { return ChunkIterator(self.chunks()).next(); });
 }
-
-#pragma GCC diagnostic pop

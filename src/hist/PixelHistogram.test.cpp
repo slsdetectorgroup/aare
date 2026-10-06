@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: MPL-2.0
 #include <catch2/catch_test_macros.hpp>
 #include <catch2/generators/catch_generators.hpp>
 
@@ -17,6 +18,7 @@
 using aare::NDArray;
 using aare::NDView;
 using aare::PixelHistogram;
+using aare::ssize_t;
 
 namespace {
 // The synchronous fill() has been removed; fill_async() is the only entry

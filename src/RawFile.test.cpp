@@ -16,6 +16,51 @@ using aare::File;
 using aare::RawFile;
 using namespace aare;
 
+TEST_CASE("RawFile requires padding or discarding partial frames",
+          "[RawFile][frame-policy]") {
+    const auto [padding, policy, supported] =
+        GENERATE(table<size_t, std::string, bool>({
+            {0, "nodiscard", false},
+            {0, "discard", false},
+            {0, "discardpartial", true},
+            {1, "nodiscard", true},
+            {1, "discard", true},
+            {1, "discardpartial", true},
+        }));
+    CAPTURE(padding, policy);
+    TemporaryRawFiles files;
+    nlohmann::json metadata;
+    std::ifstream(files.master_path()) >> metadata;
+    metadata["Frame Padding"] = padding;
+    metadata["Frame Discard Policy"] = policy;
+    std::ofstream(files.master_path()) << metadata;
+
+    REQUIRE(RawMasterFile(files.master_path()).frame_padding() == padding);
+    if (supported) {
+        RawFile reader(files.master_path());
+        REQUIRE(reader.total_frames() == 2);
+        auto frame = reader.read_frame();
+        REQUIRE(frame.view<uint16_t>()(0, 0) == 1);
+        File generic_reader(files.master_path());
+        auto generic_frame = generic_reader.read_frame();
+        REQUIRE(generic_frame.view<uint16_t>()(0, 0) == 1);
+    } else {
+        SECTION("with data subfiles") {}
+        SECTION("without data subfiles") {
+            std::filesystem::remove(files.data_path(0, 0));
+            std::filesystem::remove(files.data_path(0, 1));
+        }
+        const auto path_matcher =
+            Catch::Matchers::ContainsSubstring(files.master_path().string());
+        const auto policy_matcher = Catch::Matchers::ContainsSubstring(
+            "requires frame padding or discardpartial");
+        const auto message = path_matcher && policy_matcher;
+        REQUIRE_THROWS_AS(RawFile(files.master_path()), std::runtime_error);
+        REQUIRE_THROWS_WITH(RawFile(files.master_path()), message);
+        REQUIRE_THROWS_WITH(File(files.master_path()), message);
+    }
+}
+
 TEST_CASE("RawFile read errors identify the frame index and master path",
           "[RawFile][read-errors]") {
     TemporaryRawFiles files;

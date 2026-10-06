@@ -4,6 +4,22 @@
 
 ### New Features:
 
+- Added the Python ``xy`` type with ``row`` and ``col`` fields, enabling access
+  to ``RawFile.geometry``, ``RawMasterFile.detector_layout``, and
+  ``RawMasterFile.udp_interfaces_per_module``. It unpacks as ``row, col``.
+- Added Windows wheels (``win_amd64``, Python 3.12 to 3.14) to the wheel
+  build, so releases publish them to PyPI alongside the Linux and macOS
+  wheels.
+
+## 2026.9.30
+
+### New Features:
+
+- Added ``pedestal_ready`` to ``ClusterFinder`` and ``ClusterFinderMT`` in C++
+  and Python to check whether enough pedestal frames have been pushed to find
+  clusters.
+- Added the Python ``FrameDiscardPolicy`` enum with ``NoDiscard``, ``Discard``,
+  and ``DiscardPartial``, enabling access to ``RawMasterFile.frame_discard_policy``.
 - Added the Python ``Pedestal`` factory with ``dtype`` selection, matching
   ``FastPedestal`` and defaulting to ``float64`` output.
 - Added ``FastPedestal`` in C++ and Python for per-pixel running mean
@@ -28,8 +44,76 @@
 - Added string representator in python for Cluster and Eta 
 - Added roi slice method in python for easy slicing of numpy arrays ``array[roi.slice()]``. 
 - added context manager for ``aare.RawMasterFile``
+- Added a configurable minimizer for the fit models, selected with the
+  ``minimizer`` constructor argument or property in Python, or
+  ``FitModel::SetMinimizer`` in C++. ``Minimizer.Migrad`` remains the default.
+  ``Minimizer.Fumili`` is Minuit2's Gauss-Newton minimizer, which uses the
+  analytic model derivatives and needs far fewer function evaluations.
+  ``Minimizer.LevenbergMarquardt`` is a built-in, dependency-free
+  Levenberg-Marquardt solver with the analytic Jacobian; it reflects steps at
+  parameter limits and fits data cubes without per-pixel allocations. A fit
+  that stalls away from a minimum, or whose width collapses below the spacing
+  of the scan points, is reported as failed (all zeros) rather than returned
+  as a result, so noisy or signal-free pixels may fail. With
+  ``compute_errors``, Fumili and LevenbergMarquardt report parameter errors
+  from their linearised covariance instead of running Hesse. Pixels for which
+  Fumili does not reach a valid minimum, which Minuit2's implementation cannot
+  once a two-sided limit becomes active, are refitted with Migrad.
+- ``Minimizer.LevenbergMarquardt`` is about twice as fast for every model: it
+  evaluates the Jacobian at the trial point instead of re-evaluating accepted
+  points, accumulates the normal equations with fixed-size loops, needs a
+  single factorisation per iteration, and the erf-based models compute one
+  exponential per point instead of two. Results are unchanged, except that
+  ``GaussianChargeSharing`` and ``GaussianChargeSharingKb`` now evaluate the
+  erf from the Gaussian's exponential, a rounding-level change. One iteration
+  costs one model evaluation of the ``max_calls`` budget, so pixels that used
+  to exhaust the default budget of 100 may now converge.
+- Added ``Minimizer.VarPro``, a built-in variable projection
+  solver. Every bundled model now declares the parameters it is linear in
+  (``linear_par`` and ``basis_and_grad`` in C++, checked against the model
+  derivatives by the tests). Each trial point solves those exactly and the
+  Levenberg-Marquardt iteration runs over the nonlinear parameters only, so
+  the fit needs fewer evaluations and does not depend on start values of the
+  linear parameters. When the basis functions are nearly collinear, as for a
+  polynomial on a narrow range far from x = 0, one more pass over the data
+  refines the linear solution to the precision of the other minimizers.
+  Limits on linear parameters, pixels that do not converge
+  and models without the separable structure fall back to
+  ``LevenbergMarquardt``. Parameter errors are the same Gauss-Newton
+  estimates. The Gaussian, plateau, charge-sharing and S-curve models also
+  provide their basis functions for all scan points at once
+  (``basis_columns``), a loop that compiles to vector instructions with the
+  new ``model::fast_exp``; ``eval`` and ``eval_and_grad``, and with them the
+  other minimizers, are unchanged. ``Minimizer.Migrad`` remains the
+  default.
+- ``NDArray``/``NDView`` expressions now support scalar operands
+  (``2 * a + b / 4``) and can be assigned to an existing ``NDArray``, reusing
+  its buffer.
 
 ### API Changes:
+
+- The C++ ``NDArray`` view constructor and ``NDArray::copy_from()`` take
+  ``NDView<const T, Ndim>``. Mutable views still convert implicitly, so
+  existing callers are unaffected, and read-only views can now be copied.
+- Added C++ overloads of ``adc_sar_05_06_07_08decode64to16``,
+  ``adc_sar_05_decode64to16`` and ``adc_sar_04_decode64to16`` that take the
+  packed samples as ``NDView<const uint8_t, 2>``. Words are assembled with
+  ``memcpy``, so the buffer does not need to be 8-byte aligned. The existing
+  ``NDView<uint64_t, 2>`` overloads are unchanged.
+- ``NDArray`` ``+ - * /`` with a scalar now returns a lazy expression instead
+  of an ``NDArray`` and no longer converts the scalar to the element type.
+- ``FitModel`` is now plain data without a pimpl (C++ users need to rebuild);
+  it gained ``strategy()``, ``lower_limit()``, ``upper_limit()`` and
+  ``value()`` accessors and lost ``impl()``. Bad parameter indices raise
+  ``std::out_of_range`` (``IndexError`` in Python) and ``SetParLimits``
+  rejects ``lo >= hi``. The models in ``Models.hpp`` no longer provide the
+  Minuit specific ``compute_steps`` and ``compute_ranges`` helpers.
+- Fit behaviour common to all minimizers: user start and fixed values are
+  applied before the validity check and free start values are clamped into
+  their limits; one-sided limits are open-ended for ``LevenbergMarquardt``
+  while the Minuit2 minimizers use a wide two-sided range as before; with
+  ``compute_errors``, fixed parameters and parameters ending on a limit report
+  an error of 0 (fixed parameters previously reported 1.0 with Minuit2).
 
 - ``FastPedestal`` variance is now a private ``double`` intermediate. Removed
   the C++ ``variance()``/``variance_unchecked()`` APIs and Python ``var()``.
@@ -74,7 +158,70 @@
 - ``RawMasterFile::rois()`` always returns a list of rois (no optional). Per default it returns a list of one ROI element spawing the entire detector 
 - ``TimingMode::Auto`` changed to ``TimingMode::AUTO_TIMING``, ``TimingMode::Trigger`` changed to ``TimingMode::TRIGGER_EXPOSURE``
 
+
 ### Bugfixes:
+- Fitting a 3D data cube in Python without ``y_err`` now returns ``par_err``
+  when ``compute_errors`` is set, as fitting a single pixel already did.
+- Samples with a zero error are ignored by every minimizer, as documented,
+  also when they hold NaN. They are now removed before the start values are
+  estimated; previously a masked NaN at a sample used by the estimate, such
+  as the first or last point of ``Pol1``, made even Migrad fail. A pixel with
+  fewer remaining samples than free parameters is reported as failed.
+- Fitting a single pixel checks that ``x``, ``y`` and ``y_err`` have the same
+  size and raises ``RuntimeError`` otherwise. Previously a shorter ``y`` or
+  ``y_err`` was read past its end.
+- Setting nSigma on ``ClusterFinder`` and ``ClusterFinderMT`` before the
+  pedestal is ready no longer raises an error. The new value is used when the
+  threshold is initialized. Previously ``ClusterFinderMT.set_nSigma()`` also
+  left the worker threads with different nSigma values.
+- The Python ``Cluster`` constructors validate that the data array holds
+  exactly one value per pixel and raise ``ValueError`` otherwise. Previously a
+  longer array wrote past the end of the cluster data.
+- The Python CTB decoding helpers ``adc_sar_*decode64to16``,
+  ``apply_custom_weights``, ``expand24to32bit``, ``expand4to8bit`` and
+  ``decode_my302`` validate their input through ``make_view``. They require
+  C-contiguous arrays of the documented rank and reject other dtypes with
+  ``TypeError`` instead of converting a copy. The ADC SAR decoders no longer
+  reinterpret the byte buffer as aligned 64-bit words; a row length that is
+  not a multiple of 8 bytes raises ``ValueError`` instead of dropping the
+  trailing bytes. Read-only arrays are accepted where the input is only read.
+  ``decode_my302`` raises ``ValueError`` instead of ``RuntimeError`` for a
+  wrong input size.
+- Mismatched operators inhibited vectorization in gcc of NDArray math operators
+- ``NDArray``/``NDView`` math operators and expressions were not vectorized
+  for ``uint8_t`` and 64 bit integers, up to 30x slower than a plain loop.
+- Removed the move constructor and move assignment of
+  ``ProducerConsumerQueue``. They left the moved-from queue with a null
+  buffer, crashing its destructor if it still held elements, and leaked
+  the target's buffer on assignment. The queue is now non-movable, as in
+  the upstream folly implementation; hold it in a ``unique_ptr`` to move
+  it around.
+- ``ProducerConsumerQueue`` rejects sizes below two with
+  ``std::invalid_argument`` in all build types. The previous assertion was
+  compiled out of Release builds, so a zero-size queue overflowed its buffer
+  on the first write.
+- Corrected the license metadata for vendored third-party code.
+  ``ProducerConsumerQueue.hpp`` is tagged ``Apache-2.0`` like upstream folly
+  and ``NumpyHelpers.cpp`` is tagged ``MIT`` like upstream libnpy. The MPL 2.0,
+  Apache 2.0, and MIT texts ship in ``LICENSES/``, and both the conda package
+  and the Python wheel declare ``MPL-2.0 AND Apache-2.0 AND MIT`` with all
+  three license files. Building the wheel now requires scikit-build-core 0.11
+  or newer.
+- The wheel and conda package now ship ``THIRD-PARTY-NOTICES.txt`` and the
+  LGPL 2.1 text for the libraries compiled into the extension: Minuit2
+  (LGPL-2.1-or-later), {fmt} and nlohmann/json (MIT), and pybind11
+  (BSD-3-Clause). Their license expressions include these licenses.
+  Minuit2 is now fetched at tag ``v6-40-02`` instead of ``master``, and
+  libzmq at ``v4.3.5`` (MPL-2.0) instead of ``v4.3.4`` (LGPL-3.0 with a
+  static-linking exception).
+- ``RawFile`` and ``File`` reject raw files with frame padding disabled unless
+  the frame discard policy is ``discardpartial``. The constructor reports the
+  master path before opening data subfiles. Legacy ``.raw`` master files now
+  parse the frame discard policy so unpadded ``discardpartial`` files remain
+  readable.
+- Fixed ``CtbRawFile.read_frame(index)`` and reads after ``seek(index)`` at
+  subfile boundaries skipping a subfile, returning the wrong frame or raising
+  ``Subfile index out of range``.
 - ``Pedestal`` reports mismatched frame shapes with exceptions in all push
   overloads, including Debug builds, instead of aborting on assertions.
 - Python ``Pedestal`` constructors reject negative dimensions and sample
@@ -85,6 +232,10 @@
   without implicit conversion. Both ``push()`` and ``push_with_threshold()``
   validate that frames and thresholds are two-dimensional before constructing
   views, preventing incorrect results from unsupported array layouts or ranks.
+- Python ``ClusterFinder.push_pedestal_frame()`` and ``find_clusters()`` now
+  require C-contiguous ``uint16`` frames without implicit conversion, raising
+  ``TypeError`` instead of silently copying and casting the input. The frame
+  argument can also be passed by keyword as ``frame``.
 
 - Fixed a leaked empty ``ClusterVector`` at the end of Python ``ClusterFile``
   iteration. Chunk iteration now rejects a zero chunk size.
@@ -260,7 +411,6 @@ https://github.com/slsdetectorgroup/aare
 erik.frojdh@psi.ch \
 alice.mazzoleni@psi.ch \
 dhanya.thattil@psi.ch
-
 
 
 

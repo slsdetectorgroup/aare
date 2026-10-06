@@ -5,6 +5,7 @@
 
 #include <array>
 #include <cassert>
+#include <cstddef>
 #include <cstdint>
 #include <cstring>
 #include <stdexcept>
@@ -12,6 +13,10 @@
 #include <string_view>
 #include <variant>
 #include <vector>
+
+#if !defined(_MSC_VER)
+#include <sys/types.h> // ::ssize_t
+#endif
 
 /**
  * @brief LOCATION macro to get the current location in the code
@@ -32,7 +37,39 @@
     } while (0)
 #endif
 
+/**
+ * ALWAYS_INLINE forces a function to be inlined at every call site. gcc
+ * refuses to inline a plain `inline` function once its translation-unit
+ * growth budget (--param inline-unit-growth) is used up, which happens in
+ * the fitting code where every model is instantiated for every minimizer;
+ * a per-point helper that is then called out of line also stops the
+ * surrounding loop from vectorising.
+ */
+#if (defined(_MSC_VER) || defined(__INTEL_COMPILER))
+#define STRONG_INLINE __forceinline
+#else
+#define STRONG_INLINE inline
+#endif
+
+#if defined(__GNUC__)
+#define ALWAYS_INLINE __attribute__((always_inline)) inline
+#else
+#define ALWAYS_INLINE STRONG_INLINE
+#endif
+
 namespace aare {
+
+/**
+ * Signed size and index type used throughout the library (shapes, strides,
+ * frame indices, ROI coordinates). On POSIX this is the platform's ssize_t,
+ * so nothing changes for existing code. MSVC has no ssize_t, so there it is
+ * std::ptrdiff_t, which is the same type as Py_ssize_t and NumPy's npy_intp.
+ */
+#if defined(_MSC_VER)
+using ssize_t = std::ptrdiff_t;
+#else
+using ssize_t = ::ssize_t;
+#endif
 
 inline constexpr size_t bits_per_byte = 8;
 

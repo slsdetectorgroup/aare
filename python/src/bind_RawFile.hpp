@@ -318,7 +318,14 @@ void define_raw_file_io_bindings(py::module &m) {
             Cols for the given ROI.
             )")
         .def_property_readonly("bitdepth", &RawFile::bitdepth)
-        .def_property_readonly("geometry", &RawFile::geometry)
+        .def_property_readonly("geometry", &RawFile::geometry, R"(
+            Number of modules along each axis of the detector.
+
+            Returns
+            -------
+            xy
+                Module rows and columns.
+            )")
         .def_property_readonly("detector_type", &RawFile::detector_type)
         .def_property_readonly("master", &RawFile::master)
         .def_property_readonly("n_modules", &RawFile::n_modules)

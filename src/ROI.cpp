@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: MPL-2.0
 #include "aare/ROI.hpp"
 #include "aare/DetectorGeometry.hpp"
 #include "aare/ROIGeometry.hpp"
@@ -19,7 +20,7 @@ bool complete_ROI(const ROI &roi, const DetectorGeometry &geometry) {
 
 bool complete_ROI(const std::vector<ROI> &rois,
                   const DetectorGeometry &geometry) {
-    if (rois.empty() or rois.size() > 1) {
+    if (rois.empty() || rois.size() > 1) {
         return false;
     } else {
         return complete_ROI(rois[0], geometry);
@@ -33,7 +34,7 @@ bool complete_ROI(const ROIGeometry &roi, const DetectorGeometry &geometry) {
 
 bool complete_ROI(const std::vector<ROIGeometry> &rois,
                   const DetectorGeometry &geometry) {
-    if (rois.empty() or rois.size() > 1) {
+    if (rois.empty() || rois.size() > 1) {
         return false;
     } else {
         return complete_ROI(rois[0], geometry);

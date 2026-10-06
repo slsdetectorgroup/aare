@@ -27,6 +27,8 @@ class NDArray : public ArrayExpr<NDArray<T, Ndim>, Ndim> {
     T *data_;
 
   public:
+    static constexpr bool is_leaf = true;
+
     ///////////////////////////////////////////////////////////////////////////////
     // Constructors
     //
@@ -64,13 +66,19 @@ class NDArray : public ArrayExpr<NDArray<T, Ndim>, Ndim> {
 
     /**
      * @brief Construct a new NDArray object from a NDView.
-     * @note The data is copied from the view to the NDArray.
+     * @note The data is copied from the view to the NDArray. The view is
+     * only read, so both NDView<T, Ndim> and NDView<const T, Ndim> are
+     * accepted.
      *
      * @param v view of data to initialize the NDArray with
      */
-    explicit NDArray(const NDView<T, Ndim> v) : NDArray(v.shape()) {
+    explicit NDArray(NDView<const T, Ndim> v) : NDArray(v.shape()) {
         std::copy(v.begin(), v.end(), begin());
     }
+
+    // Keeps an exact match for mutable views so that they do not pick the
+    // element-wise ArrayExpr constructor.
+    explicit NDArray(NDView<T, Ndim> v) : NDArray(NDView<const T, Ndim>(v)) {}
 
     /**
      * @brief Construct a new NDArray object from an std::array.
@@ -135,9 +143,7 @@ class NDArray : public ArrayExpr<NDArray<T, Ndim>, Ndim> {
      */
     template <typename E>
     NDArray(ArrayExpr<E, Ndim> &&expr) : NDArray(expr.shape()) {
-        for (size_t i = 0; i < size_; ++i) {
-            data_[i] = expr[i];
-        }
+        *this = expr;
     }
 
     /**
@@ -149,13 +155,14 @@ class NDArray : public ArrayExpr<NDArray<T, Ndim>, Ndim> {
     /**
      * @brief Copy data from a view of matching shape into this array without
      * reallocating.
-     * @param v view to copy from, must have the same shape as this array
+     * @param v view to copy from, must have the same shape as this array.
+     * Accepts NDView<T, Ndim> and NDView<const T, Ndim>.
      * @throws std::runtime_error if the shapes differ
      *
      * Use this instead of assigning a new NDArray when the buffer needs to be
      * kept, for example when the array is part of a preallocated pool.
      */
-    void copy_from(const NDView<T, Ndim> v) {
+    void copy_from(NDView<const T, Ndim> v) {
         if (v.shape() != shape_) {
             throw std::runtime_error(LOCATION +
                                      "Shape mismatch in NDArray::copy_from");
@@ -324,6 +331,26 @@ class NDArray : public ArrayExpr<NDArray<T, Ndim>, Ndim> {
         return *this;
     }
 
+    /**
+     * @brief Evaluate an ArrayExpr into the NDArray. Reuses the existing
+     * buffer if the shape matches.
+     */
+    template <typename E> NDArray &operator=(const ArrayExpr<E, Ndim> &expr) {
+        if (expr.shape() != shape_) {
+            // Evaluate before releasing the buffer, expr might refer to it
+            NDArray tmp(expr.shape());
+            tmp = expr;
+            return *this = std::move(tmp);
+        }
+        // Local copies, see elementwise()
+        const auto e = operand(expr);
+        T *data = data_;
+        for (size_t i = 0, n = size_; i < n; ++i) {
+            data[i] = e[i];
+        }
+        return *this;
+    }
+
     ///////////////////////////////////////////////////////////////////////////////
     // Math operators
     //
@@ -337,10 +364,7 @@ class NDArray : public ArrayExpr<NDArray<T, Ndim>, Ndim> {
             throw(std::runtime_error(
                 "Shape of NDArray must match for operator +="));
 
-        for (size_t i = 0; i < size_; ++i) {
-            data_[i] += other.data_[i];
-        }
-        return *this;
+        return elementwise(other.data_, std::plus<T>());
     }
 
     /**
@@ -351,10 +375,7 @@ class NDArray : public ArrayExpr<NDArray<T, Ndim>, Ndim> {
             throw(std::runtime_error(
                 "Shape of NDArray must match for operator -="));
 
-        for (size_t i = 0; i < size_; ++i) {
-            data_[i] -= other.data_[i];
-        }
-        return *this;
+        return elementwise(other.data_, std::minus<T>());
     }
 
     /**
@@ -365,10 +386,7 @@ class NDArray : public ArrayExpr<NDArray<T, Ndim>, Ndim> {
             throw(std::runtime_error(
                 "Shape of NDArray must match for operator *="));
 
-        for (size_t i = 0; i < size_; ++i) {
-            data_[i] *= other.data_[i];
-        }
-        return *this;
+        return elementwise(other.data_, std::multiplies<T>());
     }
 
     /**
@@ -379,13 +397,9 @@ class NDArray : public ArrayExpr<NDArray<T, Ndim>, Ndim> {
      */
     template <typename V> NDArray &operator/=(const NDArray<V, Ndim> &other) {
         // check shape
-        if (shape_ == other.shape()) {
-            for (size_t i = 0; i < size_; ++i) {
-                data_[i] /= other(i);
-            }
-            return *this;
-        }
-        throw(std::runtime_error("Shape of NDArray must match"));
+        if (shape_ != other.shape())
+            throw(std::runtime_error("Shape of NDArray must match"));
+        return elementwise(other.data(), std::divides<>());
     }
 
     /**
@@ -400,36 +414,28 @@ class NDArray : public ArrayExpr<NDArray<T, Ndim>, Ndim> {
      * @brief Add a scalar value to all elements in the NDArray.
      */
     NDArray &operator+=(const T &value) {
-        for (size_t i = 0; i < size_; ++i)
-            data_[i] += value;
-        return *this;
+        return elementwise(value, std::plus<T>());
     }
 
     /**
      * @brief Subtract a scalar value to all elements in the NDArray.
      */
     NDArray &operator-=(const T &value) {
-        for (size_t i = 0; i < size_; ++i)
-            data_[i] -= value;
-        return *this;
+        return elementwise(value, std::minus<T>());
     }
 
     /**
      * @brief Multiply all elements in the NDArray with a scalar value
      */
     NDArray &operator*=(const T &value) {
-        for (size_t i = 0; i < size_; ++i)
-            data_[i] *= value;
-        return *this;
+        return elementwise(value, std::multiplies<T>());
     }
 
     /**
      * @brief Divide all elements in the NDArray with a scalar value
      */
     NDArray &operator/=(const T &value) {
-        for (size_t i = 0; i < size_; ++i)
-            data_[i] /= value;
-        return *this;
+        return elementwise(value, std::divides<T>());
     }
 
     /**
@@ -437,53 +443,7 @@ class NDArray : public ArrayExpr<NDArray<T, Ndim>, Ndim> {
      * Used for example to mask out gain bits for Jungfrau detectors.
      */
     NDArray &operator&=(const T &mask) {
-        for (auto it = begin(); it != end(); ++it)
-            *it &= mask;
-        return *this;
-    }
-
-    /**
-     * @brief Operator +  with a scalar value. Returns a new NDArray.
-     *
-     * TODO! Expression template version of this?
-     */
-    NDArray operator+(const T &value) {
-        NDArray result = *this;
-        result += value;
-        return result;
-    }
-
-    /**
-     * @brief Operator -  with a scalar value. Returns a new NDArray.
-     *
-     * TODO! Expression template version of this?
-     */
-    NDArray operator-(const T &value) {
-        NDArray result = *this;
-        result -= value;
-        return result;
-    }
-
-    /**
-     * @brief Operator *  with a scalar value. Returns a new NDArray.
-     *
-     * TODO! Expression template version of this?
-     */
-    NDArray operator*(const T &value) {
-        NDArray result = *this;
-        result *= value;
-        return result;
-    }
-
-    /**
-     * @brief Operator /  with a scalar value. Returns a new NDArray.
-     *
-     * TODO! Expression template version of this?
-     */
-    NDArray operator/(const T &value) {
-        NDArray result = *this;
-        result /= value;
-        return result;
+        return elementwise(mask, std::bit_and<T>());
     }
 
     /**
@@ -509,19 +469,16 @@ class NDArray : public ArrayExpr<NDArray<T, Ndim>, Ndim> {
      * @brief Compute the square root of all elements in the NDArray.
      */
     void sqrt() {
-        for (size_t i = 0; i < size_; ++i) {
-            data_[i] = std::sqrt(data_[i]);
+        T *data = data_;
+        for (size_t i = 0, n = size_; i < n; ++i) {
+            data[i] = std::sqrt(data[i]);
         }
     }
 
     /*
      * @brief Prefix increment operator. Increments all elements by 1.
      */
-    NDArray &operator++() {
-        for (size_t i = 0; i < size_; ++i)
-            data_[i] += T{1};
-        return *this;
-    }
+    NDArray &operator++() { return elementwise(T{1}, std::plus<T>()); }
 
     /** @brief Create a mutable view of the NDArray. */
     NDView<T, Ndim> view() { return NDView<T, Ndim>{data_, shape_}; }
@@ -532,6 +489,31 @@ class NDArray : public ArrayExpr<NDArray<T, Ndim>, Ndim> {
     }
 
   private:
+    /**
+     * @brief Apply data_[i] = op(data_[i], value) to all elements.
+     *
+     * The members are copied to locals since a store to data_[i] may alias
+     * them for some T (uint8_t, int64_t, ...). The compiler then has to reload
+     * them every iteration, which blocks vectorization.
+     */
+    template <typename Op> NDArray &elementwise(T value, Op op) {
+        T *data = data_;
+        for (size_t i = 0, n = size_; i < n; ++i) {
+            data[i] = op(data[i], value);
+        }
+        return *this;
+    }
+
+    /** @brief Apply data_[i] = op(data_[i], other[i]) to all elements. */
+    template <typename V, typename Op>
+    NDArray &elementwise(const V *other, Op op) {
+        T *data = data_;
+        for (size_t i = 0, n = size_; i < n; ++i) {
+            data[i] = op(data[i], other[i]);
+        }
+        return *this;
+    }
+
     /**
      * @brief Reset the NDArray to an empty state. Dropping the ownership of
      * the data. Used internally for move operations to avoid double free or

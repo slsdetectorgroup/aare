@@ -146,7 +146,7 @@ def test_masking_requires_c_contiguous_array():
     mask = np.array([True, False, True, False], dtype=bool)[::2]
     assert not mask.flags.c_contiguous
 
-    with pytest.raises(TypeError):
+    with pytest.raises(ValueError, match="C-contiguous"):
         cv(mask)
 
 
@@ -157,5 +157,5 @@ def test_masking_requires_one_dimension():
 
     mask = np.array([[True, False]], dtype=bool)
 
-    with pytest.raises(ValueError, match="one-dimensional"):
+    with pytest.raises(ValueError):
         cv(mask)

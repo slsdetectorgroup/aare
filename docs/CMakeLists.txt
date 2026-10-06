@@ -36,7 +36,7 @@ add_custom_target(
   docs
   COMMAND ${DOXYGEN_EXECUTABLE} ${DOXYGEN_OUT}
   COMMAND
-    ${SPHINX_EXECUTABLE} -a -b html
+    ${SPHINX_EXECUTABLE} -W -a -b html
     -Dbreathe_projects.aare=${CMAKE_CURRENT_BINARY_DIR}/xml -c "${SPHINX_BUILD}"
     ${SPHINX_BUILD}/src ${SPHINX_BUILD}/html
   COMMENT "Generating documentation with Sphinx")

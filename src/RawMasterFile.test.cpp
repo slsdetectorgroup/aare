@@ -3,10 +3,37 @@
 
 #include "test_config.hpp"
 #include <catch2/catch_test_macros.hpp>
+#include <catch2/generators/catch_generators.hpp>
 #include <iostream>
 #include <sstream>
 
 using namespace aare;
+
+TEST_CASE("Parse legacy master frame discard policies",
+          "[rawmasterfile][frame-policy]") {
+    const auto [policy, expected] =
+        GENERATE(table<std::string, FrameDiscardPolicy>({
+            {"nodiscard", FrameDiscardPolicy::NoDiscard},
+            {"discard", FrameDiscardPolicy::Discard},
+            {"discardpartial", FrameDiscardPolicy::DiscardPartial},
+            {"", FrameDiscardPolicy::NoDiscard},
+        }));
+    CAPTURE(policy);
+    std::ostringstream content;
+    content << "Version : 6.4\n"
+               "Detector Type : Jungfrau\n"
+               "Timing Mode : auto\n"
+               "Geometry : [1, 1]\n"
+               "Pixels : [3, 2]\n"
+               "Frame Padding : 0\n";
+    if (!policy.empty()) {
+        content << "Frame Discard Policy : " << policy << '\n';
+    }
+    std::istringstream input(content.str());
+    RawMasterFile master(input, "run_master_0.raw");
+    REQUIRE(master.frame_padding() == 0);
+    REQUIRE(master.frame_discard_policy() == expected);
+}
 
 TEST_CASE("Parse a master file fname") {
     RawFileNameComponents m("test_master_1.json");

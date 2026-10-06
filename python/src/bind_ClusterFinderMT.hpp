@@ -20,9 +20,6 @@ namespace py = pybind11;
 
 using namespace aare;
 
-#pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wunused-parameter"
-
 template <typename T, uint8_t ClusterSizeX, uint8_t ClusterSizeY,
           typename CoordType = uint16_t>
 void define_ClusterFinderMT(py::module &m, const std::string &typestr) {
@@ -37,12 +34,14 @@ void define_ClusterFinderMT(py::module &m, const std::string &typestr) {
              py::arg("capacity") = 2048, py::arg("n_threads") = 3,
              py::arg("queue_depth") = 16,
              py::arg("min_pedestal_samples") = 1000)
-        .def("push_pedestal_frame",
-             [](ClusterFinderMT<ClusterType, uint16_t, pd_type> &self,
-                py::array_t<uint16_t> frame) {
-                 auto view = make_view_2d(frame);
-                 self.push_pedestal_frame(view);
-             })
+        .def(
+            "push_pedestal_frame",
+            [](ClusterFinderMT<ClusterType, uint16_t, pd_type> &self,
+               py::array_t<uint16_t> frame) {
+                auto view = make_view_2d(frame);
+                self.push_pedestal_frame(view);
+            },
+            py::arg("frame").noconvert())
         .def(
             "find_clusters",
             [](ClusterFinderMT<ClusterType, uint16_t, pd_type> &self,
@@ -50,16 +49,21 @@ void define_ClusterFinderMT(py::module &m, const std::string &typestr) {
                 auto view = make_view_2d(frame);
                 self.find_clusters(view, frame_number);
             },
-            py::arg(), py::arg("frame_number") = 0)
+            py::arg("frame").noconvert(), py::arg("frame_number") = 0)
         .def_property_readonly(
             "cluster_size",
-            [](ClusterFinderMT<ClusterType, uint16_t, pd_type> &self) {
+            []([[maybe_unused]] ClusterFinderMT<ClusterType, uint16_t, pd_type>
+                   &self) {
                 return py::make_tuple(ClusterSizeX, ClusterSizeY);
             })
         .def("clear_pedestal",
              &ClusterFinderMT<ClusterType, uint16_t, pd_type>::clear_pedestal)
         .def("update_threshold",
              &ClusterFinderMT<ClusterType, uint16_t, pd_type>::update_threshold)
+        .def(
+            "pedestal_ready",
+            &ClusterFinderMT<ClusterType, uint16_t, pd_type>::pedestal_ready,
+            R"(waits for the queued frames, then returns True if all cluster finders have enough pedestal frames to find clusters.)")
         .def("sync", &ClusterFinderMT<ClusterType, uint16_t, pd_type>::sync)
         .def("stop", &ClusterFinderMT<ClusterType, uint16_t, pd_type>::stop)
         .def("start", &ClusterFinderMT<ClusterType, uint16_t, pd_type>::start)
@@ -87,5 +91,3 @@ void define_ClusterFinderMT(py::module &m, const std::string &typestr) {
              py::arg("nSigma"),
              R"(sets the number of sigma for all cluster finders.)");
 }
-
-#pragma GCC diagnostic pop

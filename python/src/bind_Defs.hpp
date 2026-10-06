@@ -1,3 +1,5 @@
+// SPDX-License-Identifier: MPL-2.0
+#include <pybind11/operators.h>
 #include <pybind11/pybind11.h>
 #include <pybind11/stl.h>
 
@@ -89,6 +91,21 @@ void define_defs_bindings(py::module &m) {
                    self.ymin == other.ymin && self.ymax == other.ymax;
         });
 
+    py::class_<xy>(m, "xy")
+        .def(py::init<uint32_t, uint32_t>(), py::arg("row"), py::arg("col"))
+        .def_readwrite("row", &xy::row)
+        .def_readwrite("col", &xy::col)
+        .def("__repr__",
+             [](const xy &self) {
+                 return fmt::format("xy(row={}, col={})", self.row, self.col);
+             })
+        .def("__iter__",
+             [](const xy &self) {
+                 return py::iter(py::make_tuple(self.row, self.col));
+             })
+        .def(py::self == py::self)
+        .def(py::self != py::self);
+
     py::enum_<DetectorType>(m, "DetectorType")
         .value("Jungfrau", DetectorType::Jungfrau)
         .value("Eiger", DetectorType::Eiger)
@@ -111,4 +128,9 @@ void define_defs_bindings(py::module &m) {
         .value("GATED", TimingMode::GATED)
         .value("BURST_TRIGGER", TimingMode::BURST_TRIGGER)
         .value("TRIGGER_GATED", TimingMode::TRIGGER_GATED);
+
+    py::enum_<FrameDiscardPolicy>(m, "FrameDiscardPolicy")
+        .value("NoDiscard", FrameDiscardPolicy::NoDiscard)
+        .value("Discard", FrameDiscardPolicy::Discard)
+        .value("DiscardPartial", FrameDiscardPolicy::DiscardPartial);
 }

@@ -22,9 +22,10 @@ from ._aare import (
     RawSubFile,
 )
 from ._aare import Pedestal_d, Pedestal_f, ClusterFinder_Cluster3x3i, VarClusterFinder
-from ._aare import DetectorType, ReadoutMode 
+from ._aare import DetectorType, FrameDiscardPolicy, ReadoutMode
 from ._aare import hitmap
 from ._aare import ROI
+from ._aare import xy
 from ._aare import corner 
 
 from ._aare import UDPPortPosition
@@ -40,6 +41,7 @@ from .Cluster import Cluster
 
 from ._aare import Gaussian, RisingScurve, FallingScurve, Pol1, Pol2, GaussianErfcPlateau, GaussianChargeSharing, GaussianChargeSharingKb
 from ._aare import fit
+from ._aare import Minimizer
 from ._aare import Interpolator
 from ._aare import calculate_eta2, calculate_eta3, calculate_cross_eta3, calculate_full_eta2
 from ._aare import reduce_to_2x2, reduce_to_3x3

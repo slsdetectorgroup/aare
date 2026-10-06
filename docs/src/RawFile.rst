@@ -1,6 +1,14 @@
 RawFile
 ===============
 
+Reading requires frame padding to be enabled 
+or ``Frame Discard Policy`` to be ``discardpartial``.
+The constructor checks the
+parsed master metadata before opening data subfiles and throws
+``std::runtime_error`` with the master path if this requirement is not met.
+This applies to JSON and legacy ``.raw`` masters, including when opened through
+``aare::File``. ``RawMasterFile`` can still be used to inspect their metadata.
+
 ``total_frames()`` is the minimum actual frame count across all selected
 ``RawSubFile`` objects in all ROIs. Each subfile count includes its complete
 series of ``.raw`` files and is determined when the file is opened. Disabled

@@ -22,6 +22,7 @@
 #include "bind_PixelMap.hpp"
 #include "bind_RawFile.hpp"
 #include "bind_calibration.hpp"
+#include "bind_testing.hpp"
 
 #include "StrixelRemap/bind_InclusiveROI.hpp"
 #include "StrixelRemap/bind_PredefinedVariables.hpp"
@@ -98,6 +99,7 @@ PYBIND11_MODULE(_aare, m) {
     define_jungfrau_data_file_io_bindings(m);
 
     bind_calibration(m);
+    define_testing_bindings(m);
 
     DEFINE_CLUSTER_BINDINGS(int, 3, 3, uint16_t, i);
     DEFINE_CLUSTER_BINDINGS(double, 3, 3, uint16_t, d);

@@ -39,6 +39,8 @@ class RawFile : public FileInterface {
      * @brief RawFile constructor
      * @param fname path to the master file (.json)
      * @param mode file mode (only "r" is supported at the moment)
+     * @throws std::runtime_error if frame padding is disabled and the frame
+     * discard policy is not DiscardPartial.
      */
     RawFile(const std::filesystem::path &fname, const std::string &mode = "r");
     virtual ~RawFile() override = default;

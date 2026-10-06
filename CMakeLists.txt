@@ -106,7 +106,7 @@ if(AARE_FETCH_MINUIT2)
   FetchContent_Declare(
     Minuit2
     GIT_REPOSITORY https://github.com/GooFit/Minuit2.git
-    GIT_TAG master
+    GIT_TAG v6-40-02
     UPDATE_DISCONNECTED 1)
   # Disable Minuit2 extras we don't need
   set(minuit2_mpi
@@ -129,7 +129,9 @@ if(AARE_FETCH_MINUIT2)
   add_library(aare::Minuit2 ALIAS Minuit2)
 else()
   find_package(Minuit2 CONFIG QUIET)
-  if(NOT Minuit2_FOUND)
+  if(Minuit2_FOUND)
+    add_library(aare::Minuit2 ALIAS Minuit2::Minuit2)
+  else()
     message(
       STATUS
         "Stand alone Minuit2 not found. Trying to find it as a part of ROOT")
@@ -153,7 +155,7 @@ if(AARE_FETCH_ZMQ)
   FetchContent_Declare(
     libzmq
     GIT_REPOSITORY https://github.com/zeromq/libzmq.git
-    GIT_TAG v4.3.4
+    GIT_TAG v4.3.5
     PATCH_COMMAND ${ZMQ_PATCH_COMMAND}
     UPDATE_DISCONNECTED 1)
   # Disable unwanted options from libzmq
@@ -206,6 +208,11 @@ if(AARE_FETCH_FMT)
       CACHE BOOL "")
   FetchContent_MakeAvailable(fmt)
   set_property(TARGET fmt PROPERTY POSITION_INDEPENDENT_CODE ON)
+  if(MSVC)
+    # fmt 12.1.0 calls std::isalpha only to check that ADL finds it and drops
+    # the result, which MSVC's standard library marks [[nodiscard]]
+    target_compile_options(fmt PRIVATE /wd4834)
+  endif()
 else()
   find_package(fmt 8 REQUIRED)
 endif()
@@ -252,18 +259,30 @@ target_compile_features(aare_compiler_flags INTERFACE cxx_std_17)
 # MSVC specific #
 # ##############################################################################
 if(MSVC)
-  add_compile_definitions(AARE_MSVC)
-  if(CMAKE_BUILD_TYPE STREQUAL "Release")
-    message(STATUS "Release build")
-    target_compile_options(aare_compiler_flags INTERFACE /O2)
-  else()
-    message(STATUS "Debug build")
-    target_compile_options(aare_compiler_flags
-                           INTERFACE /Od /Zi /MDd /D_ITERATOR_DEBUG_LEVEL=2)
-    target_link_options(aare_compiler_flags INTERFACE /DEBUG:FULL)
-  endif()
-  target_compile_options(aare_compiler_flags INTERFACE /w # disable warnings
+  # CMake sets the per-configuration optimisation, debug-info and
+  # runtime-library flags itself, so only warnings and conformance here.
+  target_compile_options(
+    aare_compiler_flags
+    INTERFACE /W4 # -Wall -Wextra
+              /permissive- # standard conformance, like CMAKE_CXX_EXTENSIONS OFF
+              /utf-8 # sources are UTF-8
+              /we4715 # not all control paths return a value, like
+                      # -Werror=return-type
+              /wd4244 # narrowing conversions: -Wconversion is not enabled
+              /wd4267 # on gcc/clang either
+              /wd4068 # unknown pragma: the GCC diagnostic pragmas
+              /wd4324 # structure padded due to alignas: intended
   )
+  target_compile_definitions(aare_compiler_flags
+                             INTERFACE _CRT_SECURE_NO_WARNINGS)
+
+  if(AARE_WARNINGS_AS_ERRORS)
+    target_compile_options(aare_compiler_flags INTERFACE /WX)
+  endif()
+
+  if(AARE_ASAN)
+    message(WARNING "AARE_ASAN is not supported with MSVC. Ignoring.")
+  endif()
 
 else()
   # ############################################################################
@@ -316,20 +335,20 @@ else()
     endif()
   endif()
 
+  if(AARE_ASAN)
+    message(STATUS "AddressSanitizer enabled")
+    target_compile_options(
+      aare_compiler_flags INTERFACE -fsanitize=address,undefined,pointer-compare
+                                    -fno-omit-frame-pointer)
+    target_link_libraries(
+      aare_compiler_flags INTERFACE -fsanitize=address,undefined,pointer-compare
+                                    -fno-omit-frame-pointer)
+  endif()
+
 endif() # GCC/Clang specific
 
 if(AARE_PYTHON_BINDINGS)
   add_subdirectory(python)
-endif()
-
-if(AARE_ASAN)
-  message(STATUS "AddressSanitizer enabled")
-  target_compile_options(
-    aare_compiler_flags INTERFACE -fsanitize=address,undefined,pointer-compare
-                                  -fno-omit-frame-pointer)
-  target_link_libraries(
-    aare_compiler_flags INTERFACE -fsanitize=address,undefined,pointer-compare
-                                  -fno-omit-frame-pointer)
 endif()
 
 if(AARE_TESTS)
@@ -404,7 +423,8 @@ set(SourceFiles
     ${CMAKE_CURRENT_SOURCE_DIR}/src/Dtype.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/src/File.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/src/FilePtr.cpp
-    ${CMAKE_CURRENT_SOURCE_DIR}/src/Fit.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/fit/Fit.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/fit/FitMinuit2.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/src/Frame.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/src/Interpolator.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/src/JungfrauDataFile.cpp
@@ -466,7 +486,7 @@ if(AARE_TESTS)
       ${CMAKE_CURRENT_SOURCE_DIR}/src/decode.test.cpp
       ${CMAKE_CURRENT_SOURCE_DIR}/src/Dtype.test.cpp
       ${CMAKE_CURRENT_SOURCE_DIR}/src/FilePtr.test.cpp
-      ${CMAKE_CURRENT_SOURCE_DIR}/src/Fit.test.cpp
+      ${CMAKE_CURRENT_SOURCE_DIR}/src/fit/Fit.test.cpp
       ${CMAKE_CURRENT_SOURCE_DIR}/src/Frame.test.cpp
       ${CMAKE_CURRENT_SOURCE_DIR}/src/DetectorGeometry.test.cpp
       ${CMAKE_CURRENT_SOURCE_DIR}/src/Interpolation.test.cpp
@@ -479,12 +499,14 @@ if(AARE_TESTS)
       ${CMAKE_CURRENT_SOURCE_DIR}/src/CalculateEta.test.cpp
       ${CMAKE_CURRENT_SOURCE_DIR}/src/ClusterFile.test.cpp
       ${CMAKE_CURRENT_SOURCE_DIR}/src/ClusterFinderMT.test.cpp
+      ${CMAKE_CURRENT_SOURCE_DIR}/src/ProducerConsumerQueue.test.cpp
       ${CMAKE_CURRENT_SOURCE_DIR}/src/Pedestal.test.cpp
       ${CMAKE_CURRENT_SOURCE_DIR}/src/FastPedestal.test.cpp
       ${CMAKE_CURRENT_SOURCE_DIR}/src/hist/PixelHistogramImpl.test.cpp
       ${CMAKE_CURRENT_SOURCE_DIR}/src/hist/PixelHistogram.test.cpp
       ${CMAKE_CURRENT_SOURCE_DIR}/src/hist/PedestalTrackingPixelHistogram.test.cpp
       ${CMAKE_CURRENT_SOURCE_DIR}/src/JungfrauDataFile.test.cpp
+      ${CMAKE_CURRENT_SOURCE_DIR}/src/logger.test.cpp
       ${CMAKE_CURRENT_SOURCE_DIR}/src/MultiThreadedFileReader.test.cpp
       ${CMAKE_CURRENT_SOURCE_DIR}/src/NumpyFile.test.cpp
       ${CMAKE_CURRENT_SOURCE_DIR}/src/NumpyHelpers.test.cpp
