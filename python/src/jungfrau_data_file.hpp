@@ -81,8 +81,15 @@ void define_jungfrau_data_file_io_bindings(py::module &m) {
         .def(
             "read_columns",
             [](JungfrauDataFile &self,
-               const std::vector<size_t> column_indices) {
-                return self.read_columns(column_indices);
+               const std::vector<size_t> &column_indices) {
+                auto frame = new Frame(self.read_columns(column_indices));
+                return py::array_t<uint16_t>(
+                    {frame->rows(), frame->cols()},
+                    {frame->cols() * sizeof(uint16_t), sizeof(uint16_t)},
+                    reinterpret_cast<uint16_t *>(frame->data()),
+                    py::capsule(frame, [](void *ptr) {
+                        delete reinterpret_cast<Frame *>(ptr);
+                    }));
             },
             R"(
             Read the columns at the current frame.

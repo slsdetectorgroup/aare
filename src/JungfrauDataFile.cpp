@@ -35,7 +35,8 @@ Frame JungfrauDataFile::read_frame(size_t frame_number) {
     return f;
 }
 
-Frame JungfrauDataFile::read_columns(const std::vector<size_t> column_indices) {
+Frame JungfrauDataFile::read_columns(
+    const std::vector<size_t> &column_indices) {
 
     Frame f(rows(), column_indices.size(), Dtype::UINT16);
 
