@@ -7,6 +7,9 @@
 - Added the Python ``xy`` type with ``row`` and ``col`` fields, enabling access
   to ``RawFile.geometry``, ``RawMasterFile.detector_layout``, and
   ``RawMasterFile.udp_interfaces_per_module``. It unpacks as ``row, col``.
+- Added Windows wheels (``win_amd64``, Python 3.12 to 3.14) to the wheel
+  build, so releases publish them to PyPI alongside the Linux and macOS
+  wheels.
 
 ## 2026.9.30
 
