@@ -15,7 +15,8 @@ footprint.
 
 - `include/aare/` contains the public C++ API and header-defined templates.
 - `src/` contains C++ implementations and colocated Catch2 tests named
-  `*.test.cpp`.
+  `*.test.cpp`, grouped into `src/fit/`, `src/hist/` and `src/utils/` where
+  a component has several private files.
 - `tests/` contains the C++ test executable, configuration, and shared helpers.
 - `python/src/` contains pybind11 bindings and module registration.
 - `python/aare/` contains Python facades, convenience APIs, and public exports.
@@ -145,10 +146,26 @@ lives in `python/aare/transform.py` on top of C++ generators.
 
 `Fit.hpp`, `FitModel<Model>`, and `Models.hpp` (`Gaussian`, `Pol1`, `Pol2`,
 `RisingScurve`, `FallingScurve`, `GaussianErfcPlateau`,
-`GaussianChargeSharing`, ...) wrap Minuit2. Template bodies and explicit
-instantiations live in `src/Fit.cpp`; `FitModelImpl` is a pimpl so Minuit2
-headers never leak into the public API. Minuit2 is a private,
-`BUILD_INTERFACE`-only dependency of `aare_core`.
+`GaussianChargeSharing`, ...) form the public fitting API. Each model
+provides `eval`, `eval_and_grad`, `is_valid`, `estimate_par`, and
+`param_info`; the separable models also declare their linear parameters
+(`linear_par`, `basis_and_grad`, `basis_columns`). `FitModel` is plain data
+(limits, fixed flags, start values, minimizer settings) and selects one of
+four minimizers through `aare::Minimizer`: Minuit2's Migrad (default) and
+Fumili, or the built-in Levenberg-Marquardt and variable projection
+solvers. The private implementation lives in `src/fit/`: `Fit.cpp` holds
+the `FitModel` method bodies, the per-thread `detail::PixelFitter` that
+dispatches on the minimizer and falls back from VarPro to
+Levenberg-Marquardt, `fit_pixel`/`fit_3d`, and the explicit
+instantiations; `FitHelpers.hpp` holds the start-value precedence and
+shape checks; `DampedGaussNewton.hpp` is the damped Gauss-Newton driver
+shared by `LevenbergMarquardt.hpp` and `VariableProjection.hpp`, with the
+small fixed-size linear algebra on `std::array` (`Vec<N>`, `Mat<N>`).
+`FitMinuit2.cpp` (with `Chi2.hpp` and `MinuitSteps.hpp`) is the only
+translation unit that includes Minuit2 headers; Minuit2 is a private,
+`BUILD_INTERFACE`-only dependency of `aare_core`. The `[fit]` tests run
+every configuration through all four minimizers and check that they
+agree; run them when changing any solver.
 
 ### Python layer
 

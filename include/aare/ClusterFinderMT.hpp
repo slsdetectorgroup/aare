@@ -1,5 +1,6 @@
 // SPDX-License-Identifier: MPL-2.0
 #pragma once
+#include <algorithm>
 #include <atomic>
 #include <cstdint>
 #include <memory>
@@ -127,6 +128,14 @@ class ClusterFinderMT {
                 q->recycle_front();
             } else {
                 backoff.pause();
+            }
+        }
+    }
+
+    void wait_for_input_queues() const {
+        for (auto &q : m_input_queues) {
+            while (!q->isEmpty()) {
+                std::this_thread::sleep_for(m_default_wait);
             }
         }
     }
@@ -411,20 +420,27 @@ class ClusterFinderMT {
     // }
 
     /**
-     * @brief Set the nSigma value for all the cluster finders.
+     * @brief Set the nSigma value for all the cluster finders. Waits for the
+     * queued frames to be processed first.
      * @param nSigma number of sigma above the pedestal to consider a photon
      * during cluster finding.
      */
     void set_nSigma(const PEDESTAL_TYPE nSigma) {
-        // Wait for all queues to be empty before changing the sigma
-        for (auto &q : m_input_queues) {
-            while (!q->isEmpty()) {
-                std::this_thread::sleep_for(m_default_wait);
-            }
-        }
+        wait_for_input_queues();
         for (auto &cf : m_cluster_finders) {
             cf->set_nSigma(nSigma);
         }
+    }
+
+    /**
+     * @brief Return whether all cluster finders have received enough pedestal
+     * frames to find clusters. Waits for the queued frames to be processed
+     * first.
+     */
+    bool pedestal_ready() {
+        wait_for_input_queues();
+        return std::all_of(m_cluster_finders.begin(), m_cluster_finders.end(),
+                           [](const auto &cf) { return cf->pedestal_ready(); });
     }
 };
 

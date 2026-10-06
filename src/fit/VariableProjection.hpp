@@ -1,0 +1,511 @@
+// SPDX-License-Identifier: MPL-2.0
+#pragma once
+
+#include "DampedGaussNewton.hpp"
+#include "aare/FitModel.hpp"
+#include "aare/Models.hpp"
+#include "aare/NDView.hpp"
+
+#include <algorithm>
+#include <array>
+#include <cmath>
+#include <cstddef>
+#include <vector>
+
+namespace aare::detail {
+
+/**
+ * @brief Variable projection least-squares minimiser for a separable
+ * FitModel (Golub and Pereyra, 1973).
+ *
+ * The model declares the parameters it is linear in, see
+ * model::is_separable. For a given point of the nonlinear parameters the
+ * linear ones are solved exactly from their normal equations, and the
+ * damped Gauss-Newton iteration of DampedGaussNewton runs over the
+ * nonlinear parameters only, on the projected residual
+ * r(alpha) = y - Phi(alpha) beta(alpha). Its Jacobian uses Kaufman's
+ * approximation, the derivatives of the model at fixed beta projected out
+ * of the span of the basis functions, and the reduced Gauss-Newton Hessian
+ * is the Schur complement of the full one. Compared with
+ * LevenbergMarquardt the iteration needs fewer evaluations, cannot be misled
+ * by poor start values of the linear parameters, and each evaluation
+ * accumulates far fewer sums. The driver rejects trial points at which the
+ * model loses its sensitivity to a nonlinear parameter and polishes the
+ * converged point with one undamped step.
+ *
+ * One evaluation is a pass over the data that writes the basis functions
+ * and their derivatives as columns (the model's vectorisable basis_columns
+ * when it has one, otherwise basis_and_grad per point), a reduction to the
+ * normal equations of the linear parameters, the small solve, and a second
+ * reduction over the columns for the projected residual.
+ *
+ * Keep one instance per thread: the buffers are reused between pixels so
+ * that after the first fit no memory is allocated.
+ *
+ * - Fixed nonlinear parameters are left out of the iteration. A fixed
+ *   linear parameter keeps its value and moves to the data side of the
+ *   linear solve.
+ * - Limits on nonlinear parameters are handled by the driver. A limit on a
+ *   linear parameter cannot be enforced by the linear solve: when the
+ *   solution violates one, the fit reports failure so that the caller can
+ *   fall back to LevenbergMarquardt.
+ * - Start values of free linear parameters are ignored.
+ * - max_calls counts evaluations of the projected problem, as in
+ *   LevenbergMarquardt; 0 selects 200 + 100 * npar + 5 * npar^2.
+ * - Errors are the Gauss-Newton estimates of the full model at the
+ *   solution, sqrt(diag((J^T J)^-1)) over the free parameters that do not
+ *   sit on a limit, the same as LevenbergMarquardt reports.
+ */
+template <typename Model> class VariableProjection {
+  public:
+    static_assert(model::is_separable<Model>::value,
+                  "VariableProjection needs a model with linear_par and "
+                  "basis_and_grad");
+    using Traits = model::separable_traits<Model>;
+    static constexpr int npar = static_cast<int>(Model::npar);
+    static constexpr int nlin = static_cast<int>(Traits::nlin);
+    static constexpr int nnl = static_cast<int>(Traits::nnl);
+    static_assert(Model::npar >= 1 && Model::npar <= 16,
+                  "VariableProjection keeps npar x npar matrices on the stack");
+    static_assert(nlin >= 1, "a separable model has at least one linear "
+                             "parameter");
+
+    using Result = MinimizerResult;
+    // The driver iterates over the nonlinear parameters. A fully linear
+    // model has none and is solved without iterating.
+    static constexpr int ndrv = nnl > 0 ? nnl : 1;
+    static constexpr int ncol = nnl * nlin > 0 ? nnl *nlin : 1;
+    using Driver = DampedGaussNewton<ndrv>;
+    using Normal = typename Driver::Normal;
+
+    /**
+     * @brief Fit one pixel, see LevenbergMarquardt::fit for the arguments.
+     */
+    Result fit(const FitModel<Model> &model, NDView<double, 1> x,
+               NDView<double, 1> y, NDView<double, 1> s,
+               const std::array<double, Model::npar> &start, double *par_out,
+               double *err_out) {
+        x_ = x;
+        y_ = y;
+        const auto n = static_cast<std::size_t>(x.size());
+        phi_.resize(n * nlin);
+        dphi_.resize(n * nlin * nnl);
+        weighted_ = s.size() > 0;
+        if (weighted_) {
+            // 1 / s_i^2 once per pixel; points with s_i == 0 are ignored.
+            w2_.resize(n);
+            for (std::size_t i = 0; i < n; ++i) {
+                const double si = s[static_cast<ssize_t>(i)];
+                w2_[i] = si != 0.0 ? 1.0 / (si * si) : 0.0;
+            }
+        }
+        pvec_.assign(start.begin(), start.end());
+        have_last_ = false;
+        have_ref_ = false;
+        nfree_lin_ = 0;
+        for (int j = 0; j < nlin; ++j) {
+            const auto k = static_cast<unsigned int>(Traits::linear_index(j));
+            lin_fixed_[j] = model.is_user_fixed(k);
+            if (!lin_fixed_[j])
+                free_lin_[nfree_lin_++] = j;
+        }
+        Vec<ndrv> alpha{};
+        Vec<ndrv> lower{};
+        Vec<ndrv> upper{};
+        std::array<bool, ndrv> fixed{};
+        for (int k = 0; k < nnl; ++k) {
+            const auto idx =
+                static_cast<unsigned int>(Traits::nonlinear_par[k]);
+            alpha[k] = start[idx];
+            lower[k] = model.lower_limit(idx);
+            upper[k] = model.upper_limit(idx);
+            fixed[k] = model.is_user_fixed(idx);
+        }
+        const int max_calls = model.max_calls() > 0
+                                  ? static_cast<int>(model.max_calls())
+                                  : 200 + 100 * npar + 5 * npar * npar;
+
+        Result res;
+        auto fail = [&]() {
+            res.valid = false;
+            res.chi2 = 0.0;
+            std::fill(par_out, par_out + npar, 0.0);
+            if (err_out)
+                std::fill(err_out, err_out + npar, 0.0);
+            return res;
+        };
+
+        if constexpr (nnl == 0) {
+            Normal nrm;
+            if (!evaluate(alpha, nrm))
+                return fail();
+            res.calls = 1;
+            res.valid = true;
+            res.chi2 = 2.0 * nrm.F;
+            for (int j = 0; j < nlin; ++j)
+                pvec_[Traits::linear_index(j)] =
+                    nrm.aux[static_cast<std::size_t>(j)];
+        } else {
+            auto eval = [this](const Vec<ndrv> &a, Normal &out) {
+                return evaluate(a, out);
+            };
+            typename Driver::Options opt;
+            opt.tolerance = model.tolerance();
+            opt.max_calls = max_calls;
+            // The same cautious start as LevenbergMarquardt: a large first
+            // step can still drive a width to zero. Rejecting degenerate
+            // trial points guards against that, and the polish step makes
+            // up for the few iterations, which stop while the damping still
+            // shortens the steps.
+            opt.damping0 = 0.1;
+            opt.reject_degenerate = true;
+            opt.polish = true;
+            res = driver_.fit(eval, alpha, lower, upper, fixed, opt);
+            if (!res.valid)
+                return fail();
+            for (int k = 0; k < nnl; ++k)
+                pvec_[Traits::nonlinear_par[k]] = driver_.point()[k];
+            for (int j = 0; j < nlin; ++j)
+                pvec_[Traits::linear_index(j)] =
+                    driver_.normal().aux[static_cast<std::size_t>(j)];
+        }
+
+        // The linear solve knows nothing about limits. A solution beyond a
+        // limit fails; one within rounding of a limit is moved onto it, so
+        // that it counts as on the limit whichever way the rounding went.
+        for (int j = 0; j < nlin; ++j) {
+            if (lin_fixed_[j])
+                continue;
+            const auto k = static_cast<unsigned int>(Traits::linear_index(j));
+            const double lo = model.lower_limit(k);
+            const double hi = model.upper_limit(k);
+            const double tol = 1e-12 * std::max(1.0, std::abs(pvec_[k]));
+            if (pvec_[k] < lo - tol || pvec_[k] > hi + tol)
+                return fail();
+            if (std::abs(pvec_[k] - lo) <= tol)
+                pvec_[k] = lo;
+            else if (std::abs(pvec_[k] - hi) <= tol)
+                pvec_[k] = hi;
+        }
+        std::copy(pvec_.begin(), pvec_.end(), par_out);
+        if (err_out)
+            errors(model, err_out);
+        return res;
+    }
+
+  private:
+    // F = chi2 / 2, gradient and Kaufman Hessian of the projected residual
+    // at the nonlinear point alpha, and the linear solution in out.aux.
+    // Returns false when the model rejects the point, or when the basis
+    // functions are numerically linearly dependent there or one of them has
+    // vanished on the scan points, see reduce().
+    bool evaluate(const Vec<ndrv> &alpha, Normal &out) {
+        for (int k = 0; k < nnl; ++k)
+            pvec_[Traits::nonlinear_par[k]] = alpha[k];
+        if (!Model::is_valid(pvec_))
+            return false;
+        const ssize_t n = x_.size();
+
+        // Basis functions and their derivatives, one column per function:
+        // phi_[j * n + i] and dphi_[(k * nlin + j) * n + i].
+        if constexpr (model::has_basis_columns<Model>::value) {
+            Model::basis_columns(x_.data(), n, pvec_, phi_.data(),
+                                 dphi_.data());
+        } else {
+            typename Traits::Basis phi{};
+            typename Traits::BasisGrad dphi{};
+            double *pc = phi_.data();
+            double *dc = dphi_.data();
+            const auto un = static_cast<std::size_t>(n);
+            for (ssize_t i = 0; i < n; ++i) {
+                Model::basis_and_grad(x_[i], pvec_, phi, dphi);
+                const auto ui = static_cast<std::size_t>(i);
+                for (int j = 0; j < nlin; ++j)
+                    pc[static_cast<std::size_t>(j) * un + ui] =
+                        phi[static_cast<std::size_t>(j)];
+                for (int k = 0; k < nnl; ++k)
+                    for (int j = 0; j < nlin; ++j)
+                        dc[static_cast<std::size_t>(k * nlin + j) * un + ui] =
+                            dphi[static_cast<std::size_t>(k)]
+                                [static_cast<std::size_t>(j)];
+            }
+        }
+        return weighted_ ? reduce<true>(alpha, out) : reduce<false>(alpha, out);
+    }
+
+    // The reductions over the columns: normal equations and solve of the
+    // linear parameters, then the projected residual. All loops over the
+    // linear and nonlinear parameters have compile-time bounds; the free
+    // linear block is packed out of the full sums afterwards.
+    template <bool Weighted> bool reduce(const Vec<ndrv> &alpha, Normal &out) {
+        const ssize_t n = x_.size();
+        const auto un = static_cast<std::size_t>(n);
+        std::array<const double *, nlin> pc;
+        for (int j = 0; j < nlin; ++j)
+            pc[j] = phi_.data() + static_cast<std::size_t>(j) * un;
+        std::array<const double *, ncol> dc;
+        for (int c = 0; c < nnl * nlin; ++c)
+            dc[c] = dphi_.data() + static_cast<std::size_t>(c) * un;
+        const double *yd = y_.data();
+        const double *w2 = Weighted ? w2_.data() : nullptr;
+
+        // Pass 1: normal equations M = Phi^T W Phi, t = Phi^T W y of all
+        // linear parameters.
+        Mat<nlin> M{};
+        Vec<nlin> t{};
+        for (ssize_t i = 0; i < n; ++i) {
+            const double wi = Weighted ? w2[i] : 1.0;
+            const double yi = yd[i];
+            Vec<nlin> f;
+            for (int j = 0; j < nlin; ++j)
+                f[j] = pc[j][i];
+            for (int a = 0; a < nlin; ++a) {
+                const double fa = f[a] * wi;
+                t[a] += fa * yi;
+                for (int b = a; b < nlin; ++b)
+                    M[a][b] += fa * f[b];
+            }
+        }
+
+        // Free linear parameters: their block of M, with the fixed ones
+        // moved to the right-hand side, v_a = t_a - sum_fixed c_j M_aj.
+        // The lower triangle of M is filled in so that the run-time indices
+        // below need no branch: gcc's range analysis derives an impossible
+        // subscript from the branch not taken and warns about it. The loops
+        // run over the compile-time bound and write zeros past nfree_lin_
+        // for the same reason, gcc otherwise reports v and qf as possibly
+        // uninitialised when they are passed to cholesky_substitute. Both
+        // are false positives; neither change affects the results.
+        for (int a = 1; a < nlin; ++a)
+            for (int b = 0; b < a; ++b)
+                M[a][b] = M[b][a];
+        Mat<nlin> A{};
+        Vec<nlin> v{};
+        for (int a = 0; a < nlin; ++a) {
+            if (a >= nfree_lin_) {
+                v[a] = 0.0;
+                continue;
+            }
+            const int ja = free_lin_[a];
+            double va = t[ja];
+            for (int j = 0; j < nlin; ++j)
+                if (lin_fixed_[j])
+                    va -= pvec_[Traits::linear_index(j)] * M[ja][j];
+            v[a] = va;
+            for (int b = 0; b < nfree_lin_; ++b)
+                A[a][b] = M[ja][free_lin_[b]];
+        }
+        // A free basis function that has all but vanished on the scan points
+        // (a Gaussian narrower than the point spacing, centred between two
+        // points) leaves its coefficient undetermined, and the solve returns
+        // an absurd one that fits a single point. Its squared norm is compared
+        // with that at the pixel's first evaluation, the start point.
+        if (!have_ref_) {
+            for (int j = 0; j < nlin; ++j)
+                ref_norm2_[j] = M[j][j];
+            have_ref_ = true;
+        }
+        for (int a = 0; a < nfree_lin_; ++a) {
+            const int j = free_lin_[a];
+            if (!(M[j][j] >= vanished_basis * ref_norm2_[j]))
+                return false;
+        }
+        Mat<nlin> L{};
+        if (!cholesky_factor<nlin>(nfree_lin_, A, L))
+            return false;
+        // Nearly collinear basis functions: a pivot of the factorisation far
+        // below its diagonal element means that the linear solution loses
+        // about log10(diagonal / pivot) digits, beyond which it is noise.
+        bool refine = false;
+        for (int a = 0; a < nfree_lin_; ++a) {
+            if (!(L[a][a] * L[a][a] >= collinear_basis * A[a][a]))
+                return false;
+            refine = refine || L[a][a] * L[a][a] < refine_basis * A[a][a];
+        }
+        Vec<nlin> beta_free{};
+        cholesky_substitute<nlin>(nfree_lin_, L, v, beta_free);
+        for (int a = 0; a < nfree_lin_; ++a)
+            pvec_[Traits::linear_index(free_lin_[a])] = beta_free[a];
+        // Short of that, the digits lost to the normal equations are
+        // recovered by one step of iterative refinement on the data (the
+        // corrected semi-normal equations): the correction solves the same
+        // equations for Phi^T W r of the residual of the first solution. A
+        // polynomial fitted far from x = 0 needs it; x in [20000, 20500]
+        // otherwise costs a Pol2 six digits.
+        if (refine) {
+            Vec<nlin> beta;
+            for (int j = 0; j < nlin; ++j)
+                beta[j] = pvec_[Traits::linear_index(j)];
+            Vec<nlin> s{};
+            for (ssize_t i = 0; i < n; ++i) {
+                double r = yd[i];
+                for (int j = 0; j < nlin; ++j)
+                    r -= beta[j] * pc[j][i];
+                const double rw = Weighted ? r * w2[i] : r;
+                for (int j = 0; j < nlin; ++j)
+                    s[j] += pc[j][i] * rw;
+            }
+            Vec<nlin> sf{};
+            for (int a = 0; a < nlin; ++a)
+                sf[a] = a < nfree_lin_ ? s[free_lin_[a]] : 0.0;
+            Vec<nlin> delta{};
+            cholesky_substitute<nlin>(nfree_lin_, L, sf, delta);
+            for (int a = 0; a < nfree_lin_; ++a)
+                pvec_[Traits::linear_index(free_lin_[a])] += delta[a];
+        }
+        Vec<nlin> beta;
+        for (int j = 0; j < nlin; ++j) {
+            beta[j] = pvec_[Traits::linear_index(j)];
+            out.aux[static_cast<std::size_t>(j)] = beta[j];
+        }
+
+        // Pass 2: residual r = y - Phi beta and u_k = df/dalpha_k at fixed
+        // beta; F, b = U^T W r, N = U^T W U and Q = Phi^T W U.
+        double F = 0.0;
+        Vec<ndrv> b{};
+        Mat<ndrv> N{};
+        std::array<Vec<nlin>, ndrv> Q{};
+        for (ssize_t i = 0; i < n; ++i) {
+            const double wi = Weighted ? w2[i] : 1.0;
+            Vec<nlin> f;
+            for (int j = 0; j < nlin; ++j)
+                f[j] = pc[j][i];
+            double r = yd[i];
+            for (int j = 0; j < nlin; ++j)
+                r -= beta[j] * f[j];
+            Vec<ndrv> u{};
+            for (int k = 0; k < nnl; ++k)
+                for (int j = 0; j < nlin; ++j)
+                    u[k] += beta[j] * dc[k * nlin + j][i];
+            const double rw = r * wi;
+            F += 0.5 * r * rw;
+            for (int k = 0; k < nnl; ++k) {
+                const double uw = u[k] * wi;
+                b[k] += uw * r;
+                for (int l = k; l < nnl; ++l)
+                    N[k][l] += uw * u[l];
+                for (int j = 0; j < nlin; ++j)
+                    Q[k][j] += uw * f[j];
+            }
+        }
+
+        // The full Gauss-Newton Hessian of the model at this point is
+        // [[M, Q^T], [Q, N]]; kept for the errors of the final point.
+        for (int k = 0; k < nnl; ++k)
+            last_alpha_[k] = alpha[k];
+        for (int a = 0; a < nlin; ++a)
+            for (int c = a; c < nlin; ++c)
+                last_M_[a][c] = M[a][c];
+        for (int k = 0; k < nnl; ++k) {
+            for (int j = 0; j < nlin; ++j)
+                last_Q_[k][j] = Q[k][j];
+            for (int l = k; l < nnl; ++l)
+                last_N_[k][l] = N[k][l];
+        }
+        have_last_ = true;
+
+        // Kaufman's Jacobian: U projected out of the span of the free basis,
+        // H = N - Q_free^T A^-1 Q_free.
+        std::array<Vec<nlin>, ndrv> qf{};
+        std::array<Vec<nlin>, ndrv> z{};
+        for (int k = 0; k < nnl; ++k) {
+            for (int a = 0; a < nlin; ++a)
+                qf[k][a] = a < nfree_lin_ ? Q[k][free_lin_[a]] : 0.0;
+            cholesky_substitute<nlin>(nfree_lin_, L, qf[k], z[k]);
+        }
+        out.F = F;
+        for (int k = 0; k < nnl; ++k) {
+            out.g[k] = -b[k];
+            for (int l = k; l < nnl; ++l) {
+                double h = N[k][l];
+                for (int a = 0; a < nfree_lin_; ++a)
+                    h -= qf[k][a] * z[l][a];
+                out.H[k][l] = h;
+            }
+        }
+        return true;
+    }
+
+    // Gauss-Newton errors from the Jacobian of the full model at the
+    // solution, the estimate LevenbergMarquardt reports as well. The
+    // Jacobian's normal matrix is assembled from the sums of the last
+    // evaluation when that was the final point, which it is unless the last
+    // trial was rejected; otherwise one pass over the data computes it.
+    void errors(const FitModel<Model> &model, double *err_out) {
+        Mat<npar> H{};
+        bool at_solution = have_last_;
+        for (int k = 0; k < nnl; ++k)
+            at_solution = at_solution &&
+                          pvec_[Traits::nonlinear_par[k]] == last_alpha_[k];
+        if (at_solution) {
+            for (int a = 0; a < nlin; ++a)
+                for (int c = a; c < nlin; ++c)
+                    H[Traits::linear_index(a)][Traits::linear_index(c)] =
+                        last_M_[a][c];
+            for (int k = 0; k < nnl; ++k) {
+                const auto m = static_cast<int>(Traits::nonlinear_par[k]);
+                for (int j = 0; j < nlin; ++j) {
+                    const auto i = static_cast<int>(Traits::linear_index(j));
+                    H[std::min(i, m)][std::max(i, m)] = last_Q_[k][j];
+                }
+                for (int l = k; l < nnl; ++l)
+                    H[m][Traits::nonlinear_par[l]] = last_N_[k][l];
+            }
+        } else {
+            const ssize_t n = x_.size();
+            std::array<double, Model::npar> g{};
+            double f = 0.0;
+            for (ssize_t i = 0; i < n; ++i) {
+                Model::eval_and_grad(x_[i], pvec_, f, g);
+                const double wi =
+                    weighted_ ? w2_[static_cast<std::size_t>(i)] : 1.0;
+                for (int a = 0; a < npar; ++a)
+                    for (int c = a; c < npar; ++c)
+                        H[a][c] += g[a] * g[c] * wi;
+            }
+        }
+        // Fixed parameters and parameters that end on a limit have no error.
+        // The driver knows the nonlinear ones; the linear solve can land a
+        // linear parameter exactly on a limit without violating it.
+        std::array<bool, npar> skip;
+        for (int k = 0; k < npar; ++k) {
+            const auto idx = static_cast<unsigned int>(k);
+            const double v = pvec_[static_cast<std::size_t>(k)];
+            skip[k] = model.is_user_fixed(idx) || v <= model.lower_limit(idx) ||
+                      v >= model.upper_limit(idx);
+        }
+        if constexpr (nnl > 0) {
+            for (int k = 0; k < nnl; ++k)
+                skip[Traits::nonlinear_par[k]] =
+                    skip[Traits::nonlinear_par[k]] || driver_.skipped(k);
+        }
+        gauss_newton_errors<npar>(H, skip, err_out);
+    }
+
+    NDView<double, 1> x_, y_;
+    Driver driver_;
+    bool weighted_ = false;
+    // Sums of the last evaluation, see errors().
+    bool have_last_ = false;
+    Vec<ndrv> last_alpha_{};
+    Mat<nlin> last_M_{};
+    std::array<Vec<nlin>, ndrv> last_Q_{};
+    Mat<ndrv> last_N_{};
+    // Squared norms of the basis functions at the start point, see reduce().
+    bool have_ref_ = false;
+    Vec<nlin> ref_norm2_{};
+    static constexpr double vanished_basis = 1e-8;
+    static constexpr double collinear_basis = 1e-10;
+    // Pivot ratio below which the linear solution is refined, about four
+    // lost digits.
+    static constexpr double refine_basis = 1e-4;
+    int nfree_lin_ = 0;
+    std::array<int, nlin> free_lin_{};
+    std::array<bool, nlin> lin_fixed_{};
+    std::vector<double> phi_;  // nlin columns of n basis values
+    std::vector<double> dphi_; // nnl * nlin columns of their derivatives
+    std::vector<double> w2_;   // 1 / s_i^2 for weighted fits
+    std::vector<double> pvec_;
+};
+
+} // namespace aare::detail

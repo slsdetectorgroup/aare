@@ -1,9 +1,12 @@
 # Release notes
 
-## Next
+## 2026.9.30
 
 ### New Features:
 
+- Added ``pedestal_ready`` to ``ClusterFinder`` and ``ClusterFinderMT`` in C++
+  and Python to check whether enough pedestal frames have been pushed to find
+  clusters.
 - Added the Python ``FrameDiscardPolicy`` enum with ``NoDiscard``, ``Discard``,
   and ``DiscardPartial``, enabling access to ``RawMasterFile.frame_discard_policy``.
 - Added the Python ``Pedestal`` factory with ``dtype`` selection, matching
@@ -29,6 +32,48 @@
 - Added string representator in python for Cluster and Eta 
 - Added roi slice method in python for easy slicing of numpy arrays ``array[roi.slice()]``. 
 - added context manager for ``aare.RawMasterFile``
+- Added a configurable minimizer for the fit models, selected with the
+  ``minimizer`` constructor argument or property in Python, or
+  ``FitModel::SetMinimizer`` in C++. ``Minimizer.Migrad`` remains the default.
+  ``Minimizer.Fumili`` is Minuit2's Gauss-Newton minimizer, which uses the
+  analytic model derivatives and needs far fewer function evaluations.
+  ``Minimizer.LevenbergMarquardt`` is a built-in, dependency-free
+  Levenberg-Marquardt solver with the analytic Jacobian; it reflects steps at
+  parameter limits and fits data cubes without per-pixel allocations. A fit
+  that stalls away from a minimum, or whose width collapses below the spacing
+  of the scan points, is reported as failed (all zeros) rather than returned
+  as a result, so noisy or signal-free pixels may fail. With
+  ``compute_errors``, Fumili and LevenbergMarquardt report parameter errors
+  from their linearised covariance instead of running Hesse. Pixels for which
+  Fumili does not reach a valid minimum, which Minuit2's implementation cannot
+  once a two-sided limit becomes active, are refitted with Migrad.
+- ``Minimizer.LevenbergMarquardt`` is about twice as fast for every model: it
+  evaluates the Jacobian at the trial point instead of re-evaluating accepted
+  points, accumulates the normal equations with fixed-size loops, needs a
+  single factorisation per iteration, and the erf-based models compute one
+  exponential per point instead of two. Results are unchanged, except that
+  ``GaussianChargeSharing`` and ``GaussianChargeSharingKb`` now evaluate the
+  erf from the Gaussian's exponential, a rounding-level change. One iteration
+  costs one model evaluation of the ``max_calls`` budget, so pixels that used
+  to exhaust the default budget of 100 may now converge.
+- Added ``Minimizer.VarPro``, a built-in variable projection
+  solver. Every bundled model now declares the parameters it is linear in
+  (``linear_par`` and ``basis_and_grad`` in C++, checked against the model
+  derivatives by the tests). Each trial point solves those exactly and the
+  Levenberg-Marquardt iteration runs over the nonlinear parameters only, so
+  the fit needs fewer evaluations and does not depend on start values of the
+  linear parameters. When the basis functions are nearly collinear, as for a
+  polynomial on a narrow range far from x = 0, one more pass over the data
+  refines the linear solution to the precision of the other minimizers.
+  Limits on linear parameters, pixels that do not converge
+  and models without the separable structure fall back to
+  ``LevenbergMarquardt``. Parameter errors are the same Gauss-Newton
+  estimates. The Gaussian, plateau, charge-sharing and S-curve models also
+  provide their basis functions for all scan points at once
+  (``basis_columns``), a loop that compiles to vector instructions with the
+  new ``model::fast_exp``; ``eval`` and ``eval_and_grad``, and with them the
+  other minimizers, are unchanged. ``Minimizer.Migrad`` remains the
+  default.
 - ``NDArray``/``NDView`` expressions now support scalar operands
   (``2 * a + b / 4``) and can be assigned to an existing ``NDArray``, reusing
   its buffer.
@@ -45,6 +90,19 @@
   ``NDView<uint64_t, 2>`` overloads are unchanged.
 - ``NDArray`` ``+ - * /`` with a scalar now returns a lazy expression instead
   of an ``NDArray`` and no longer converts the scalar to the element type.
+- ``FitModel`` is now plain data without a pimpl (C++ users need to rebuild);
+  it gained ``strategy()``, ``lower_limit()``, ``upper_limit()`` and
+  ``value()`` accessors and lost ``impl()``. Bad parameter indices raise
+  ``std::out_of_range`` (``IndexError`` in Python) and ``SetParLimits``
+  rejects ``lo >= hi``. The models in ``Models.hpp`` no longer provide the
+  Minuit specific ``compute_steps`` and ``compute_ranges`` helpers.
+- Fit behaviour common to all minimizers: user start and fixed values are
+  applied before the validity check and free start values are clamped into
+  their limits; one-sided limits are open-ended for ``LevenbergMarquardt``
+  while the Minuit2 minimizers use a wide two-sided range as before; with
+  ``compute_errors``, fixed parameters and parameters ending on a limit report
+  an error of 0 (fixed parameters previously reported 1.0 with Minuit2).
+
 - ``FastPedestal`` variance is now a private ``double`` intermediate. Removed
   the C++ ``variance()``/``variance_unchecked()`` APIs and Python ``var()``.
   Standard deviation is calculated before conversion to the output type,
@@ -90,6 +148,20 @@
 
 
 ### Bugfixes:
+- Fitting a 3D data cube in Python without ``y_err`` now returns ``par_err``
+  when ``compute_errors`` is set, as fitting a single pixel already did.
+- Samples with a zero error are ignored by every minimizer, as documented,
+  also when they hold NaN. They are now removed before the start values are
+  estimated; previously a masked NaN at a sample used by the estimate, such
+  as the first or last point of ``Pol1``, made even Migrad fail. A pixel with
+  fewer remaining samples than free parameters is reported as failed.
+- Fitting a single pixel checks that ``x``, ``y`` and ``y_err`` have the same
+  size and raises ``RuntimeError`` otherwise. Previously a shorter ``y`` or
+  ``y_err`` was read past its end.
+- Setting nSigma on ``ClusterFinder`` and ``ClusterFinderMT`` before the
+  pedestal is ready no longer raises an error. The new value is used when the
+  threshold is initialized. Previously ``ClusterFinderMT.set_nSigma()`` also
+  left the worker threads with different nSigma values.
 - The Python ``Cluster`` constructors validate that the data array holds
   exactly one value per pixel and raise ``ValueError`` otherwise. Previously a
   longer array wrote past the end of the cluster data.
