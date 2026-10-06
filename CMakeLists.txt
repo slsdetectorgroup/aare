@@ -111,6 +111,7 @@ if(AARE_FETCH_MINUIT2)
     Minuit2
     GIT_REPOSITORY https://github.com/GooFit/Minuit2.git
     GIT_TAG v6-40-02
+    GIT_SHALLOW TRUE
     UPDATE_DISCONNECTED 1)
   # Disable Minuit2 extras we don't need
   set(minuit2_mpi
@@ -128,6 +129,10 @@ if(AARE_FETCH_MINUIT2)
   FetchContent_MakeAvailable(Minuit2)
 
   set_property(TARGET Minuit2Math PROPERTY POSITION_INDEPENDENT_CODE ON)
+  # Minuit2 is ~60 small files; compiling them in batches is several times
+  # faster
+  set_target_properties(Minuit2 Minuit2Math
+                        PROPERTIES UNITY_BUILD ON UNITY_BUILD_BATCH_SIZE 16)
   set_property(TARGET Minuit2 PROPERTY POSITION_INDEPENDENT_CODE ON)
 
   add_library(aare::Minuit2 ALIAS Minuit2)
@@ -165,6 +170,7 @@ if(AARE_ZMQ)
       libzmq
       GIT_REPOSITORY https://github.com/zeromq/libzmq.git
       GIT_TAG v4.3.5
+      GIT_SHALLOW TRUE
       PATCH_COMMAND ${ZMQ_PATCH_COMMAND}
       UPDATE_DISCONNECTED 1)
     # Disable unwanted options from libzmq
@@ -198,6 +204,14 @@ if(AARE_ZMQ)
       FetchContent_Populate(libzmq)
       add_subdirectory(${libzmq_SOURCE_DIR} ${libzmq_BINARY_DIR}
                        EXCLUDE_FROM_ALL)
+      # libzmq compiles its sources into the OBJECT library "objects" (on
+      # Windows directly into libzmq-static); batch them like Minuit2
+      foreach(_zmq_target objects libzmq-static)
+        if(TARGET ${_zmq_target})
+          set_target_properties(
+            ${_zmq_target} PROPERTIES UNITY_BUILD ON UNITY_BUILD_BATCH_SIZE 16)
+        endif()
+      endforeach()
     endif()
   else()
     find_package(ZeroMQ 4 REQUIRED)
@@ -218,6 +232,7 @@ if(AARE_FETCH_FMT)
     fmt
     GIT_REPOSITORY https://github.com/fmtlib/fmt.git
     GIT_TAG 12.1.0
+    GIT_SHALLOW TRUE
     GIT_PROGRESS TRUE
     USES_TERMINAL_DOWNLOAD TRUE)
   set(FMT_INSTALL

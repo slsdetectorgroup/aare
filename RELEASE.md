@@ -16,6 +16,9 @@
 - libzmq is only fetched or searched for with ``-DAARE_ZMQ=ON`` (default
   OFF) and is then available as ``aare::zmq``. Nothing in aare links it yet,
   and skipping it removes about 8 s from every CMake configure.
+- Minuit2, and libzmq when enabled, are compiled as unity builds (about 5x
+  less compile time), and the fetched dependencies are shallow clones, which
+  makes a first configure faster and the build directory smaller.
 
 ## 2026.9.30
 

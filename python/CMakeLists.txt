@@ -11,7 +11,8 @@ if(AARE_FETCH_PYBIND11)
   FetchContent_Declare(
     pybind11
     GIT_REPOSITORY https://github.com/pybind/pybind11
-    GIT_TAG v3.0.3)
+    GIT_TAG v3.0.3
+    GIT_SHALLOW TRUE)
   FetchContent_MakeAvailable(pybind11)
 else()
   find_package(pybind11 3.0.3 REQUIRED)
