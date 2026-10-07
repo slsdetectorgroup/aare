@@ -27,6 +27,10 @@ jobs:
 
     runs-on: ${{ matrix.platform }}
 
+    env:
+      # sccache keeps compiled objects in the GitHub Actions cache
+      SCCACHE_GHA_ENABLED: "true"
+
     defaults:
       run:
         shell: "bash -l {0}"
@@ -43,13 +47,22 @@ jobs:
           channels: conda-forge
           conda-remove-defaults: "true"
 
+      - uses: mozilla-actions/sccache-action@v0.0.11
+        with:
+          version: "v0.18.0"
+
+      # Precompiled headers are disabled because sccache does not cache
+      # compilations that use one
       - name: Build library and docs
         run: |
             mkdir build 
             cd build 
-            cmake .. -DCMAKE_BUILD_TYPE=${{env.BUILD_TYPE}} -DAARE_SYSTEM_LIBRARIES=ON -DAARE_PYTHON_BINDINGS=ON -DAARE_DOCS=ON -DAARE_TESTS=ON -DAARE_WARNINGS_AS_ERRORS=ON
+            cmake .. -DCMAKE_BUILD_TYPE=${{env.BUILD_TYPE}} -DAARE_SYSTEM_LIBRARIES=ON -DAARE_PYTHON_BINDINGS=ON -DAARE_DOCS=ON -DAARE_TESTS=ON -DAARE_WARNINGS_AS_ERRORS=ON -DCMAKE_C_COMPILER_LAUNCHER=sccache -DCMAKE_CXX_COMPILER_LAUNCHER=sccache -DCMAKE_DISABLE_PRECOMPILE_HEADERS=ON
             make -j 4 
             make docs
+
+      - name: Compiler cache statistics
+        run: sccache --show-stats
 
       - name: C++ unit tests
         working-directory: ${{github.workspace}}/build
