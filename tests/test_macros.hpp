@@ -1,4 +1,5 @@
 // SPDX-License-Identifier: MPL-2.0
+#pragma once
 #include <catch2/catch_test_macros.hpp>
 
 #include <catch2/interfaces/catch_interfaces_capture.hpp>
