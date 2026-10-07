@@ -27,6 +27,28 @@ set_target_properties(
   tests PROPERTIES RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR} OUTPUT_NAME
                                                                 run_tests)
 
+# Headers nearly every test includes, parsed once instead of per test file. Keep
+# this list to the test framework and ubiquitous aare headers: anything listed
+# here is available in every test without an #include.
+target_precompile_headers(
+  tests
+  PRIVATE
+  <catch2/catch_test_macros.hpp>
+  <catch2/matchers/catch_matchers_floating_point.hpp>
+  <fmt/format.h>
+  <filesystem>
+  <fstream>
+  <string>
+  <vector>
+  <array>
+  <thread>
+  <chrono>
+  "${PROJECT_SOURCE_DIR}/include/aare/NDArray.hpp"
+  "${PROJECT_SOURCE_DIR}/include/aare/NDView.hpp"
+  "${PROJECT_SOURCE_DIR}/include/aare/defs.hpp"
+  "${PROJECT_SOURCE_DIR}/include/aare/Frame.hpp"
+  "${PROJECT_SOURCE_DIR}/include/aare/Dtype.hpp")
+
 include(CTest)
 include(Catch)
 catch_discover_tests(tests)
