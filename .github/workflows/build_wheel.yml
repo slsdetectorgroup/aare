@@ -31,12 +31,21 @@ jobs:
         with:
           version: "v0.18.0"
 
-      # Each job builds aare_core, Minuit2 and fmt once per Python version;
-      # with sccache those identical objects are compiled once and reused.
+      # Without an MSVC environment scikit-build-core falls back to the Visual
+      # Studio generator on Windows, and MSBuild ignores the compiler launcher
+      - uses: TheMrMilchmann/setup-msvc-dev@v4.1.0
+        if: runner.os == 'Windows'
+        with:
+          arch: x64
+
       # Linux wheels build inside a manylinux container, which needs its own
-      # sccache binary and the cache credentials the action exported.
+      # sccache binary and the cache credentials the action exported; its
+      # statistics are printed after each wheel since the host cannot see them.
       - name: Build wheels
         env:
+          CIBW_ENVIRONMENT_WINDOWS: CMAKE_GENERATOR=Ninja
+          CIBW_REPAIR_WHEEL_COMMAND_LINUX: >-
+            auditwheel repair -w {dest_dir} {wheel} && sccache --show-stats
           CIBW_CONFIG_SETTINGS: >-
             cmake.define.CMAKE_C_COMPILER_LAUNCHER=sccache
             cmake.define.CMAKE_CXX_COMPILER_LAUNCHER=sccache
