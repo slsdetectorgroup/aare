@@ -1,4 +1,5 @@
 // SPDX-License-Identifier: MPL-2.0
+#pragma once
 
 /*
  *The file to_string.hpp contains conversion to and from string for various aare
