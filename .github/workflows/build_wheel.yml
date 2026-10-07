@@ -19,6 +19,11 @@ jobs:
       matrix:
         os: [ubuntu-latest, macos-latest, windows-latest]
 
+    env:
+      # Job level so that the build and the statistics step talk to the same
+      # sccache server configured for the GitHub Actions cache
+      SCCACHE_GHA_ENABLED: "true"
+
     steps:
       - uses: actions/checkout@v4
 
@@ -32,7 +37,6 @@ jobs:
       # sccache binary and the cache credentials the action exported.
       - name: Build wheels
         env:
-          SCCACHE_GHA_ENABLED: "true"
           CIBW_CONFIG_SETTINGS: >-
             cmake.define.CMAKE_C_COMPILER_LAUNCHER=sccache
             cmake.define.CMAKE_CXX_COMPILER_LAUNCHER=sccache
