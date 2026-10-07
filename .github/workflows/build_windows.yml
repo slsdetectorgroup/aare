@@ -9,6 +9,11 @@ jobs:
   build:
     runs-on: windows-latest
 
+    env:
+      # sccache keeps compiled objects in the GitHub Actions cache, so later
+      # runs only recompile the translation units a change affects
+      SCCACHE_GHA_ENABLED: "true"
+
     steps:
       - uses: actions/checkout@v6
 
@@ -22,11 +27,20 @@ jobs:
       # Puts cl.exe on the path so that CMake can use the Ninja generator
       - uses: ilammy/msvc-dev-cmd@v1
 
+      - uses: mozilla-actions/sccache-action@v0.0.11
+        with:
+          version: "v0.18.0"
+
+      # Precompiled headers are disabled: sccache cannot cache MSVC
+      # compilations that use one
       - name: Configure
-        run: cmake -S . -B build -G Ninja -DCMAKE_BUILD_TYPE=Release -DAARE_TESTS=ON -DAARE_PYTHON_BINDINGS=ON -DAARE_WARNINGS_AS_ERRORS=ON
+        run: cmake -S . -B build -G Ninja -DCMAKE_BUILD_TYPE=Release -DAARE_TESTS=ON -DAARE_PYTHON_BINDINGS=ON -DAARE_WARNINGS_AS_ERRORS=ON -DCMAKE_C_COMPILER_LAUNCHER=sccache -DCMAKE_CXX_COMPILER_LAUNCHER=sccache -DCMAKE_DISABLE_PRECOMPILE_HEADERS=ON
 
       - name: Build
         run: cmake --build build
+
+      - name: Compiler cache statistics
+        run: sccache --show-stats
 
       - name: C++ unit tests
         run: ctest --test-dir build --output-on-failure -j4
