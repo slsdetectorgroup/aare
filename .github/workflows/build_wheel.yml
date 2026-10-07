@@ -22,8 +22,33 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
+      - uses: mozilla-actions/sccache-action@v0.0.11
+        with:
+          version: "v0.18.0"
+
+      # Each job builds aare_core, Minuit2 and fmt once per Python version;
+      # with sccache those identical objects are compiled once and reused.
+      # Linux wheels build inside a manylinux container, which needs its own
+      # sccache binary and the cache credentials the action exported.
       - name: Build wheels
+        env:
+          SCCACHE_GHA_ENABLED: "true"
+          CIBW_CONFIG_SETTINGS: >-
+            cmake.define.CMAKE_C_COMPILER_LAUNCHER=sccache
+            cmake.define.CMAKE_CXX_COMPILER_LAUNCHER=sccache
+            cmake.define.CMAKE_DISABLE_PRECOMPILE_HEADERS=ON
+          CIBW_ENVIRONMENT_PASS_LINUX: >-
+            SCCACHE_GHA_ENABLED ACTIONS_RESULTS_URL ACTIONS_RUNTIME_TOKEN
+            ACTIONS_CACHE_SERVICE_V2
+          CIBW_BEFORE_ALL_LINUX: >-
+            curl -sSL https://github.com/mozilla/sccache/releases/download/v0.18.0/sccache-v0.18.0-x86_64-unknown-linux-musl.tar.gz
+            | tar -xz -C /usr/local/bin --strip-components=1 --wildcards '*/sccache'
+            && chmod +x /usr/local/bin/sccache
         run: pipx run cibuildwheel==3.4.0
+
+      - name: Compiler cache statistics
+        if: runner.os != 'Linux'
+        run: sccache --show-stats
 
       - uses: actions/upload-artifact@v4
         with:
