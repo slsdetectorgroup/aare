@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: MPL-2.0
 #pragma once
 
+#include "aare/GapPixels.hpp"
 #include "aare/MultiThreadedFileReader.hpp"
 
 #include <cstddef>
@@ -79,9 +80,21 @@ inline void define_multi_threaded_file_reader_bindings(py::module_ &m) {
     reader.attr("__module__") = "aare.experimental";
     reader
         .def(py::init<std::filesystem::path, size_t, size_t,
-                      std::optional<size_t>>(),
+                      std::optional<size_t>, std::optional<GapPixels>>(),
              py::arg("fname"), py::arg("n_threads"), py::arg("chunk_size"),
              py::arg("total_frames") = py::none(),
+             py::arg("gap_pixels") = py::none())
+        .def(py::init([](std::filesystem::path fname, size_t n_threads,
+                         size_t chunk_size, std::optional<size_t> total_frames,
+                         bool gap_pixels) {
+                 return MultiThreadedFileReader(
+                     std::move(fname), n_threads, chunk_size, total_frames,
+                     gap_pixels ? std::optional<GapPixels>(GapPixels{})
+                                : std::nullopt);
+             }),
+             py::arg("fname"), py::arg("n_threads"), py::arg("chunk_size"),
+             py::arg("total_frames") = py::none(),
+             py::arg("gap_pixels") = false,
              R"doc(
                  Read chunks of detector frames concurrently.
 
@@ -93,7 +106,12 @@ inline void define_multi_threaded_file_reader_bindings(py::module_ &m) {
                      n_threads: Maximum number of worker threads.
                      chunk_size: Number of frames read per claimed chunk.
                      total_frames: Optional frame limit. None reads all frames.
+                     gap_pixels: Insert gap pixels, raw files only. True uses
+                         the default GapPixels configuration. Each worker
+                         uses the configured seed plus its worker index.
                  )doc")
+        .def_property_readonly("gap_pixels",
+                               &MultiThreadedFileReader::gap_pixels)
         .def(
             "read",
             [](MultiThreadedFileReader &self) {

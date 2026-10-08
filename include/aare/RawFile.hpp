@@ -2,6 +2,7 @@
 #pragma once
 #include "aare/FileInterface.hpp"
 #include "aare/Frame.hpp"
+#include "aare/GapPixels.hpp"
 #include "aare/NDArray.hpp" //for pixel map
 #include "aare/ROIGeometry.hpp"
 #include "aare/RawMasterFile.hpp"
@@ -11,7 +12,9 @@
 #include "../tests/friend_test.hpp"
 #endif
 
+#include <array>
 #include <optional>
+#include <random>
 
 namespace aare {
 
@@ -29,20 +32,39 @@ class RawFile : public FileInterface {
     RawMasterFile m_master;
     size_t m_current_frame{};
 
-    std::vector<ROIGeometry> m_ROI_geometries;
-
     /// @brief Minimum frame count across the selected raw subfile series.
     size_t m_frames_in_file{};
+
+    /// @brief Scratch space for one module part that is not contiguous in
+    /// the assembled frame. Sized at open to the largest part in any ROI.
+    std::vector<std::byte> m_part_buffer;
+
+    /// @brief Gap pixel configuration, empty when reading without gaps
+    std::optional<GapPixels> m_gap_pixels;
+    detail::GapLayout m_gap_layout{};
+    std::mt19937_64 m_generator;
+
+    /// @brief Detector coordinates of each ROI, in roi_geometries() order
+    std::vector<ROI> m_roi_rects;
+    /// @brief {rows, cols} of the assembled frame of each ROI, including
+    /// gap pixels when enabled
+    std::vector<std::array<ssize_t, 2>> m_roi_shapes;
 
   public:
     /**
      * @brief RawFile constructor
      * @param fname path to the master file (.json)
      * @param mode file mode (only "r" is supported at the moment)
+     * @param gap_pixels insert gap pixels into every assembled frame. Frame
+     * sizes, rows() and cols() then include the gaps. Only supported for
+     * Jungfrau and Eiger.
      * @throws std::runtime_error if frame padding is disabled and the frame
      * discard policy is not DiscardPartial.
+     * @throws std::invalid_argument if gap pixels are requested for another
+     * detector type or the gap configuration is invalid
      */
-    RawFile(const std::filesystem::path &fname, const std::string &mode = "r");
+    RawFile(const std::filesystem::path &fname, const std::string &mode = "r",
+            std::optional<GapPixels> gap_pixels = std::nullopt);
     virtual ~RawFile() override = default;
 
     Frame read_frame() override;
@@ -102,6 +124,10 @@ class RawFile : public FileInterface {
      */
     size_t pixels_per_frame(const size_t roi_index);
     size_t bytes_per_pixel() const;
+
+    /// @brief Gap pixel configuration, empty when reading without gaps
+    const std::optional<GapPixels> &gap_pixels() const { return m_gap_pixels; }
+
     void seek(size_t frame_index) override;
     size_t tell() override;
     /// @brief Minimum actual frame count across all subfiles and ROIs.
@@ -153,6 +179,26 @@ class RawFile : public FileInterface {
   private:
     std::runtime_error frame_error(size_t frame_index,
                                    const std::string &message) const;
+
+    /**
+     * @brief Frame index to read from each module part of a ROI so that all
+     * parts hold the same detector frame number. Parts whose frame number
+     * lags are advanced; the index never moves backwards.
+     * @throws std::runtime_error if a part runs out of frames while
+     * synchronizing
+     */
+    std::vector<size_t> synchronized_frame_indices(size_t frame_index,
+                                                   size_t roi_index);
+
+    /**
+     * @brief Assemble a frame with gap pixels: fill the gap lines, scatter
+     * every module part through the scratch buffer and, if configured,
+     * split the counts of the chip edge pixels.
+     */
+    template <typename T>
+    void assemble_with_gaps(std::byte *frame_buffer, size_t roi_index,
+                            const std::vector<size_t> &frame_indices,
+                            DetectorHeader *header);
 
     /**
      * @brief read the frame at the given frame index into the image buffer

@@ -2,6 +2,7 @@
 import pytest
 import json
 from aare import File, RawFile, RawSubFile, DetectorType, ROI, UDPPortPosition, xy
+from aare import GapPixels, ModuleGaps, insert_gap_pixels
 import numpy as np
 
 
@@ -26,6 +27,46 @@ def small_raw_file(tmp_path):
         # A detector header followed by six uint16 pixels.
         data_path.write_bytes(bytes(112) + np.arange(6, dtype=np.uint16).tobytes())
     return master_path
+
+
+MODULE_ROWS = 2
+MODULE_COLS = 3
+
+
+def write_module_layout(directory, layout_rows, layout_cols, frames=2,
+                        module_rows=MODULE_ROWS, module_cols=MODULE_COLS,
+                        detector_type="Jungfrau"):
+    """Write a raw file series with modules in the given layout.
+
+    Modules are numbered as DetectorGeometry orders them, down each column
+    first, and every module holds distinct values so misplacement is visible.
+    Returns the master path and the expected image of frame 0.
+    """
+    master_path = directory / "run_master_0.json"
+    master_path.write_text(json.dumps({
+        "Version": 7.2,
+        "Detector Type": detector_type,
+        "Timing Mode": "auto",
+        "Geometry": {"x": layout_cols, "y": layout_rows},
+        "Image Size in bytes": module_rows * module_cols * 2,
+        "Pixels": {"x": module_cols, "y": module_rows},
+        "Max Frames Per File": 1,
+        "Total Frames": frames,
+        "Frames in File": frames,
+        "Frame Padding": 1,
+        "Frame Discard Policy": "nodiscard",
+    }))
+    expected = np.zeros((module_rows * layout_rows, module_cols * layout_cols), dtype=np.uint16)
+    for module in range(layout_rows * layout_cols):
+        module_row, module_col = module % layout_rows, module // layout_rows
+        pixels = ((np.arange(module_rows * module_cols, dtype=np.uint32) + module * 10 + 1) % 65536).astype(np.uint16)
+        expected[module_row * module_rows:(module_row + 1) * module_rows,
+                 module_col * module_cols:(module_col + 1) * module_cols] = pixels.reshape(module_rows, module_cols)
+        for index in range(frames):
+            data_path = directory / f"run_d{module}_f{index}_0.raw"
+            # 112 byte detector header followed by the module pixels
+            data_path.write_bytes(bytes(112) + pixels.tobytes())
+    return master_path, expected
 
 
 @pytest.mark.parametrize("reader_type", [RawFile, File])
@@ -453,3 +494,109 @@ def test_read_eiger_udp_port_disabled(test_data_path):
         assert len(rois) == 2
         assert rois[0] == ROI(0, 512, 0, 512)
         assert rois[1] == ROI(1024, 1536, 0, 512)
+
+
+@pytest.mark.parametrize("layout", [(1, 1), (2, 1), (1, 2), (2, 2), (3, 2)])
+@pytest.mark.parametrize("reader_type", [RawFile, File])
+def test_raw_file_assembles_module_layout(tmp_path, layout, reader_type):
+    layout_rows, layout_cols = layout
+    master_path, expected = write_module_layout(tmp_path, layout_rows, layout_cols)
+
+    with reader_type(master_path) as reader:
+        # RawFile binds rows/cols as methods (ROI overloads), File as properties
+        rows = reader.rows() if reader_type is RawFile else reader.rows
+        cols = reader.cols() if reader_type is RawFile else reader.cols
+        assert (rows, cols) == expected.shape
+        result = reader.read_frame()
+        image = result[1] if reader_type is RawFile else result
+        assert image.shape == expected.shape
+        assert (image == expected).all()
+
+        reader.seek(0)
+        result = reader.read_n(2)
+        images = result[1] if reader_type is RawFile else result
+        assert images.shape == (2,) + expected.shape
+        assert (images == expected).all()
+
+
+@pytest.mark.parametrize("layout", [(1, 1), (2, 1), (1, 2)])
+def test_raw_file_gap_pixels(tmp_path, layout):
+    layout_rows, layout_cols = layout
+    master_path, expected = write_module_layout(tmp_path, layout_rows, layout_cols,
+                                                module_rows=512, module_cols=1024)
+    gaps = GapPixels(fill_value=5)
+    with RawFile(master_path, gap_pixels=gaps) as reader:
+        assert reader.gap_pixels == gaps
+        assert (reader.rows(), reader.cols()) == (512 * layout_rows + 2 * (layout_rows * 2 - 1),
+                                                  1024 * layout_cols + 2 * (layout_cols * 4 - 1))
+        header, image = reader.read_frame()
+        assert header.size == layout_rows * layout_cols
+        assert (image == insert_gap_pixels(expected, DetectorType.Jungfrau, gaps)).all()
+        reader.seek(0)
+        _, images = reader.read_n(2)
+        assert images.shape == (2, reader.rows(), reader.cols())
+        assert (images[1] == image).all()
+
+    with RawFile(master_path) as reader:
+        assert reader.gap_pixels is None
+        assert (reader.rows(), reader.cols()) == expected.shape
+
+    with RawFile(master_path, gap_pixels=True) as reader:
+        assert reader.gap_pixels == GapPixels()
+        _, image = reader.read_frame()
+        assert (image == insert_gap_pixels(expected, DetectorType.Jungfrau)).all()
+
+    with File(master_path, gap_pixels=True) as reader:
+        assert (reader.rows, reader.cols) == insert_gap_pixels(expected, DetectorType.Jungfrau).shape
+        assert (reader.read_frame() == insert_gap_pixels(expected, DetectorType.Jungfrau)).all()
+
+    module_gaps = GapPixels(module_gaps=ModuleGaps(8, 36))
+    with File(master_path, gap_pixels=module_gaps) as reader:
+        assert (reader.read_frame() == insert_gap_pixels(expected, DetectorType.Jungfrau, module_gaps)).all()
+
+
+def test_raw_file_gap_pixels_split_counts(tmp_path):
+    master_path, expected = write_module_layout(tmp_path, 1, 1, module_rows=512, module_cols=1024)
+    gaps = GapPixels(split_counts=True, seed=11)
+    with RawFile(master_path, gap_pixels=gaps) as reader:
+        _, image = reader.read_frame()
+    assert (image == insert_gap_pixels(expected, DetectorType.Jungfrau, gaps)).all()
+    assert image.sum() == expected.sum()
+
+
+def test_raw_file_gap_pixels_unsupported_detector(tmp_path):
+    master_path, _ = write_module_layout(tmp_path, 1, 1, detector_type="Moench")
+    RawFile(master_path)
+    with pytest.raises(ValueError):
+        RawFile(master_path, gap_pixels=True)
+    with pytest.raises(ValueError):
+        File(master_path, gap_pixels=True)
+
+
+@pytest.mark.withdata
+def test_raw_file_gap_pixels_recorded_jungfrau(test_data_path):
+    path = test_data_path / "raw/jungfrau/jungfrau_single_master_0.json"
+    gaps = GapPixels(fill_value=3)
+    with RawFile(path, gap_pixels=gaps) as gapped, RawFile(path) as plain:
+        assert (gapped.rows(), gapped.cols()) == (514, 1030)
+        _, image = gapped.read_frame()
+        _, reference = plain.read_frame()
+        assert image.shape == (514, 1030)
+        assert (image == insert_gap_pixels(reference, DetectorType.Jungfrau, gaps)).all()
+
+
+@pytest.mark.withdata
+def test_raw_file_gap_pixels_recorded_rois(test_data_path):
+    path = test_data_path / "raw/ROITestData/MultipleROIs/run_master_0.json"
+    with RawFile(path, gap_pixels=True) as gapped, RawFile(path) as plain:
+        assert gapped.num_rois == 2
+        _, images = gapped.read_rois()
+        _, references = plain.read_rois()
+        rois = plain.master.rois
+        assert images[0].shape == (303, 103)
+        assert images[1].shape == (101, 103)
+        for image, reference, roi in zip(images, references, rois):
+            assert (image == insert_gap_pixels(reference, DetectorType.Jungfrau, roi=roi)).all()
+        gapped.seek(0)
+        _, frames = gapped.read_n_with_roi(2, roi_index=1)
+        assert frames.shape == (2, 101, 103)
