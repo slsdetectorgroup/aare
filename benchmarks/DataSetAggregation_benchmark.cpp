@@ -21,7 +21,7 @@ class JungfrauTestDataSet : public benchmark::Fixture {
 static void DatasetAggregation_MeanOverDataset(benchmark::State &st) {
     const std::filesystem::path file_path =
         "/home/mazzol_a/Documents/temp_jungfrau/"
-        "CS_M749_2026-05-19_HGOG1G2_000000.dat";
+        "BP_M749_2026-05-19_HGOG1G2_000000.dat";
 
     for (auto _ : st) {
         aare::NDArray<uint16_t, 3> res =
@@ -31,4 +31,19 @@ static void DatasetAggregation_MeanOverDataset(benchmark::State &st) {
     }
 }
 
+static void DatasetAggregation_MeanCurrentSource(benchmark::State &st) {
+    const std::filesystem::path file_path =
+        "/home/mazzol_a/Documents/temp_jungfrau/"
+        "CS_M749_2026-05-19_HGOG1G2_000000.dat";
+
+    for (auto _ : st) {
+        aare::NDArray<uint16_t, 3> res = aare::mean_current_source(
+            file_path, 10, 97, 16,
+            10 * 3 * 64); // 10 frames * 3 samples * 64 columns
+
+        benchmark::DoNotOptimize(res);
+    }
+}
+
 BENCHMARK(DatasetAggregation_MeanOverDataset);
+BENCHMARK(DatasetAggregation_MeanCurrentSource);
