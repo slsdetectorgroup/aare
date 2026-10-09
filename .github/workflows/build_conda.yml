@@ -39,6 +39,8 @@ jobs:
       - name: Disable upload
         run: conda config --set anaconda_upload no
 
+      # Pull requests build only the newest Python; pushes to main build
+      # every version listed in conda-recipe/conda_build_config.yaml
       - name: Build
-        run: conda-build conda-recipe 
+        run: conda-build conda-recipe ${{ !(github.event_name == 'push' && github.ref == 'refs/heads/main') && '--python 3.14' || '' }}
 

@@ -43,6 +43,10 @@ jobs:
       # statistics are printed after each wheel since the host cannot see them.
       - name: Build wheels
         env:
+          # Pull requests and manual runs build only the newest Python; pushes
+          # to main and releases build every version listed in pyproject.toml
+          CIBW_SKIP: >-
+            ${{ !(github.event_name == 'release' || (github.event_name == 'push' && github.ref == 'refs/heads/main')) && 'cp312-* cp313-*' || '' }}
           CIBW_ENVIRONMENT_WINDOWS: CMAKE_GENERATOR=Ninja
           CIBW_REPAIR_WHEEL_COMMAND_LINUX: >-
             auditwheel repair -w {dest_dir} {wheel} && sccache --show-stats
