@@ -3,7 +3,9 @@ import numpy as np
 import pytest
 
 import aare
+from aare import GapPixels, RawFile, insert_gap_pixels
 from aare.experimental import MultiThreadedFileReader
+from test_RawFile import write_module_layout
 
 
 @pytest.fixture
@@ -145,3 +147,38 @@ def test_invalid_configuration(
             chunk_size=chunk_size,
             total_frames=total_frames,
         )
+
+
+def test_gap_pixels_on_raw_files(tmp_path):
+    master_path, expected = write_module_layout(tmp_path, 1, 1, frames=4,
+                                                module_rows=512, module_cols=1024)
+    gaps = GapPixels(fill_value=2)
+    reader = MultiThreadedFileReader(master_path, n_threads=2, chunk_size=1, gap_pixels=gaps)
+    assert reader.gap_pixels == gaps
+    assert (reader.rows, reader.cols) == (514, 1030)
+    frames = reader.read_all()
+    assert frames.shape == (4, 514, 1030)
+    assert (frames == insert_gap_pixels(expected, aare.DetectorType.Jungfrau, gaps)).all()
+
+    reader = MultiThreadedFileReader(master_path, n_threads=2, chunk_size=1, gap_pixels=True)
+    assert reader.gap_pixels == GapPixels()
+    assert reader.read_all().shape == (4, 514, 1030)
+
+    reader = MultiThreadedFileReader(master_path, n_threads=2, chunk_size=1)
+    assert reader.gap_pixels is None
+    assert reader.read_all().shape == (4, 512, 1024)
+
+
+def test_gap_pixels_split_counts_preserve_totals(tmp_path):
+    master_path, expected = write_module_layout(tmp_path, 1, 1, frames=4,
+                                                module_rows=512, module_cols=1024)
+    gaps = GapPixels(split_counts=True, seed=1)
+    frames = MultiThreadedFileReader(master_path, n_threads=2, chunk_size=1, gap_pixels=gaps).read_all()
+    assert frames.shape == (4, 514, 1030)
+    assert (frames.sum(axis=(1, 2)) == expected.sum()).all()
+
+
+def test_gap_pixels_rejected_for_numpy_files(frame_file):
+    path, _ = frame_file
+    with pytest.raises(ValueError):
+        MultiThreadedFileReader(path, n_threads=1, chunk_size=1, gap_pixels=True)

@@ -24,11 +24,12 @@ size_t checked_product(size_t lhs, size_t rhs) {
 
 MultiThreadedFileReader::MultiThreadedFileReader(
     std::filesystem::path fname, size_t n_threads, size_t chunk_size,
-    std::optional<size_t> total_frames)
+    std::optional<size_t> total_frames, std::optional<GapPixels> gap_pixels)
     : m_fname(std::move(fname)), m_n_threads(n_threads),
       m_chunk_size(chunk_size), m_total_frames(0), m_source_total_frames(0),
       m_rows(0), m_cols(0), m_bitdepth(0), m_dtype(Dtype::NONE),
-      m_bytes_per_frame(0), m_total_bytes(0), m_current_frame(0) {
+      m_bytes_per_frame(0), m_total_bytes(0), m_current_frame(0),
+      m_gap_pixels(std::move(gap_pixels)) {
     if (m_n_threads == 0) {
         throw std::invalid_argument(
             "MultiThreadedFileReader requires at least one thread");
@@ -38,7 +39,7 @@ MultiThreadedFileReader::MultiThreadedFileReader(
             "MultiThreadedFileReader chunk size must be greater than zero");
     }
 
-    File file(m_fname);
+    File file(m_fname, "r", worker_config(0));
     m_source_total_frames = file.total_frames();
     m_total_frames = total_frames.value_or(m_source_total_frames);
     if (m_total_frames > m_source_total_frames) {
@@ -56,8 +57,17 @@ MultiThreadedFileReader::MultiThreadedFileReader(
     m_files.reserve(m_n_threads);
     m_files.push_back(std::move(file));
     for (size_t i = 1; i < m_n_threads; ++i) {
-        m_files.emplace_back(m_fname);
+        m_files.emplace_back(m_fname, "r", worker_config(i));
     }
+}
+
+FileConfig MultiThreadedFileReader::worker_config(size_t worker_index) const {
+    FileConfig config;
+    config.gap_pixels = m_gap_pixels;
+    if (config.gap_pixels && config.gap_pixels->seed) {
+        *config.gap_pixels->seed += worker_index;
+    }
+    return config;
 }
 
 size_t MultiThreadedFileReader::remaining_frames() const noexcept {

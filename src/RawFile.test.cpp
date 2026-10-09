@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: MPL-2.0
 #include "aare/RawFile.hpp"
 #include "aare/File.hpp"
+#include "aare/GapPixels.hpp"
 #include "aare/RawMasterFile.hpp" //needed for ROI
 
 #include <catch2/catch_test_macros.hpp>
@@ -220,6 +221,338 @@ TEST_CASE("RawFile frame count comes from the complete subfile series",
     REQUIRE(reader.total_frames() == 2);
     REQUIRE(reader.frame_number(1) == 101);
     REQUIRE_NOTHROW(reader.read_frame(1));
+}
+
+TEST_CASE("RawFile assembles every module layout", "[RawFile][geometry]") {
+    const auto [layout_rows, layout_cols] = GENERATE(table<uint32_t, uint32_t>({
+        {1, 1},
+        {2, 1},
+        {1, 2},
+        {2, 2},
+        {3, 2},
+    }));
+    CAPTURE(layout_rows, layout_cols);
+    TemporaryRawFiles files(xy{layout_rows, layout_cols});
+    const size_t rows = TemporaryRawFiles::module_rows * layout_rows;
+    const size_t cols = TemporaryRawFiles::module_cols * layout_cols;
+
+    auto check = [&](NDView<uint16_t, 2> image) {
+        REQUIRE(image.shape(0) == static_cast<ssize_t>(rows));
+        REQUIRE(image.shape(1) == static_cast<ssize_t>(cols));
+        for (size_t row = 0; row < rows; ++row) {
+            for (size_t col = 0; col < cols; ++col) {
+                CAPTURE(row, col);
+                REQUIRE(image(row, col) == files.expected(row, col));
+            }
+        }
+    };
+
+    RawFile file(files.master_path());
+    REQUIRE(file.rows() == rows);
+    REQUIRE(file.cols() == cols);
+    REQUIRE(file.n_modules() == files.n_modules());
+    REQUIRE(file.bytes_per_frame() == rows * cols * sizeof(uint16_t));
+
+    SECTION("read_frame") {
+        auto frame = file.read_frame();
+        check(frame.view<uint16_t>());
+    }
+    SECTION("read_into with headers") {
+        NDArray<uint16_t, 2> image(
+            {static_cast<ssize_t>(rows), static_cast<ssize_t>(cols)});
+        std::vector<DetectorHeader> headers(files.n_modules());
+        file.seek(1);
+        file.read_into(reinterpret_cast<std::byte *>(image.data()),
+                       headers.data());
+        check(image.view());
+        for (size_t module = 0; module < files.n_modules(); ++module) {
+            CAPTURE(module);
+            REQUIRE(headers[module].frameNumber == 101);
+            REQUIRE(headers[module].row == module % layout_rows);
+            REQUIRE(headers[module].column == module / layout_rows);
+        }
+    }
+    SECTION("read_n") {
+        auto frames = file.read_n(2);
+        REQUIRE(frames.size() == 2);
+        for (auto &frame : frames) {
+            check(frame.view<uint16_t>());
+        }
+    }
+    SECTION("generic File") {
+        File reader(files.master_path());
+        auto frame = reader.read_frame(1);
+        check(frame.view<uint16_t>());
+    }
+}
+
+namespace {
+
+/// Compare a frame read with gap pixels against the free function applied
+/// to the same frame read without gaps.
+template <typename T>
+bool matches_gap_oracle(Frame &gapped, Frame &plain, const ROI &roi,
+                        DetectorType detector, bool quad,
+                        const GapPixels &gaps) {
+    auto expected = insert_gap_pixels(NDView<const T, 2>(plain.view<T>()), roi,
+                                      detector, quad, gaps);
+    auto actual = gapped.view<T>();
+    if (expected.shape() != actual.shape()) {
+        UNSCOPED_INFO("shape " << actual.shape(0) << "x" << actual.shape(1)
+                               << " expected " << expected.shape(0) << "x"
+                               << expected.shape(1));
+        return false;
+    }
+    for (ssize_t row = 0; row < expected.shape(0); ++row) {
+        for (ssize_t col = 0; col < expected.shape(1); ++col) {
+            if (expected(row, col) != actual(row, col)) {
+                UNSCOPED_INFO("pixel (" << row << ", " << col << ") "
+                                        << actual(row, col) << " expected "
+                                        << expected(row, col));
+                return false;
+            }
+        }
+    }
+    return true;
+}
+
+bool matches_gap_oracle(Frame &gapped, Frame &plain, const ROI &roi,
+                        DetectorType detector, bool quad,
+                        const GapPixels &gaps) {
+    switch (plain.bitdepth()) {
+    case 8:
+        return matches_gap_oracle<uint8_t>(gapped, plain, roi, detector, quad,
+                                           gaps);
+    case 16:
+        return matches_gap_oracle<uint16_t>(gapped, plain, roi, detector, quad,
+                                            gaps);
+    case 32:
+        return matches_gap_oracle<uint32_t>(gapped, plain, roi, detector, quad,
+                                            gaps);
+    default:
+        return false;
+    }
+}
+
+} // namespace
+
+TEST_CASE("RawFile inserts gap pixels into synthetic Jungfrau modules",
+          "[RawFile][GapPixels]") {
+    const auto [layout_rows, layout_cols] = GENERATE(table<uint32_t, uint32_t>({
+        {1, 1},
+        {2, 1},
+        {1, 2},
+    }));
+    CAPTURE(layout_rows, layout_cols);
+    TemporaryRawFiles files(xy{layout_rows, layout_cols}, xy{512, 1024});
+    const ROI detector{0, static_cast<ssize_t>(files.cols()), 0,
+                       static_cast<ssize_t>(files.rows())};
+
+    GapPixels gaps;
+    SECTION("defaults") {}
+    SECTION("module gaps and fill value") {
+        gaps.module_gaps = ModuleGaps{8, 36};
+        gaps.fill_value = 7;
+    }
+    const auto layout = detail::gap_layout(DetectorType::Jungfrau, false, gaps);
+    const auto shape = detail::gapped_shape(detector, layout);
+    const auto fill = static_cast<uint16_t>(gaps.fill_value);
+
+    RawFile file(files.master_path(), "r", gaps);
+    REQUIRE(file.gap_pixels() == gaps);
+    REQUIRE(file.rows() == static_cast<size_t>(shape[0]));
+    REQUIRE(file.cols() == static_cast<size_t>(shape[1]));
+    REQUIRE(file.pixels_per_frame() ==
+            static_cast<size_t>(shape[0] * shape[1]));
+    REQUIRE(file.bytes_per_frame() == file.pixels_per_frame() * 2);
+
+    std::vector<DetectorHeader> headers(files.n_modules());
+    NDArray<uint16_t, 2> image(shape);
+    file.read_into(reinterpret_cast<std::byte *>(image.data()), headers.data());
+    for (const auto &header : headers) {
+        REQUIRE(header.frameNumber == 100);
+    }
+
+    for (size_t row = 0; row < files.rows(); ++row) {
+        for (size_t col = 0; col < files.cols(); ++col) {
+            const auto value =
+                image(layout.y.gapped(static_cast<ssize_t>(row)),
+                      layout.x.gapped(static_cast<ssize_t>(col)));
+            if (value != files.expected(row, col)) {
+                CAPTURE(row, col);
+                REQUIRE(value == files.expected(row, col));
+            }
+        }
+    }
+    for (const auto boundary :
+         layout.x.inner_boundaries(detector.xmin, detector.xmax)) {
+        const auto [first, last] = layout.x.gap_range(boundary, 0);
+        for (ssize_t col = first; col <= last; ++col) {
+            for (ssize_t row = 0; row < shape[0]; ++row) {
+                if (image(row, col) != fill) {
+                    CAPTURE(row, col);
+                    REQUIRE(image(row, col) == fill);
+                }
+            }
+        }
+    }
+    for (const auto boundary :
+         layout.y.inner_boundaries(detector.ymin, detector.ymax)) {
+        const auto [first, last] = layout.y.gap_range(boundary, 0);
+        for (ssize_t row = first; row <= last; ++row) {
+            for (ssize_t col = 0; col < shape[1]; ++col) {
+                if (image(row, col) != fill) {
+                    CAPTURE(row, col);
+                    REQUIRE(image(row, col) == fill);
+                }
+            }
+        }
+    }
+
+    auto frame = file.read_frame();
+    REQUIRE(frame.rows() == static_cast<size_t>(shape[0]));
+    REQUIRE(frame.cols() == static_cast<size_t>(shape[1]));
+    REQUIRE(frame.view<uint16_t>() == image.view());
+}
+
+TEST_CASE("RawFile splits counts like the free function",
+          "[RawFile][GapPixels]") {
+    TemporaryRawFiles files(xy{1, 2}, xy{512, 1024});
+    GapPixels gaps;
+    gaps.split_counts = true;
+    gaps.seed = 7;
+    RawFile gapped(files.master_path(), "r", gaps);
+    RawFile plain(files.master_path());
+    auto gapped_frame = gapped.read_frame();
+    auto plain_frame = plain.read_frame();
+    const ROI detector{0, 2048, 0, 512};
+    REQUIRE(matches_gap_oracle(gapped_frame, plain_frame, detector,
+                               DetectorType::Jungfrau, false, gaps));
+
+    // the next frame continues the generator, so the oracle for frame 1 is
+    // the free function applied after the same number of draws
+    auto frames = gapped.read_n(1);
+    auto second_plain = plain.read_frame();
+    auto expected = insert_gap_pixels(
+        NDView<const uint16_t, 2>(second_plain.view<uint16_t>()), detector,
+        DetectorType::Jungfrau, false, gaps);
+    double gapped_total = 0;
+    double expected_total = 0;
+    auto view = frames[0].view<uint16_t>();
+    for (ssize_t row = 0; row < expected.shape(0); ++row) {
+        for (ssize_t col = 0; col < expected.shape(1); ++col) {
+            gapped_total += view(row, col);
+            expected_total += expected(row, col);
+        }
+    }
+    REQUIRE(gapped_total == expected_total);
+}
+
+TEST_CASE("RawFile rejects gap pixels for unsupported detectors",
+          "[RawFile][GapPixels]") {
+    TemporaryRawFiles files;
+    auto metadata = nlohmann::json::parse(std::ifstream(files.master_path()));
+    metadata["Detector Type"] = "Moench";
+    std::ofstream(files.master_path()) << metadata;
+    REQUIRE_NOTHROW(RawFile(files.master_path()));
+    REQUIRE_THROWS_AS(RawFile(files.master_path(), "r", GapPixels{}),
+                      std::invalid_argument);
+}
+
+TEST_CASE("Gap pixels on recorded Jungfrau and Eiger files",
+          "[.with-data][RawFile][GapPixels]") {
+    struct Case {
+        const char *path;
+        std::array<ssize_t, 2> shape;
+        std::optional<ModuleGaps> module_gaps;
+    };
+    const auto test = GENERATE(values<Case>({
+        {"raw/jungfrau/jungfrau_single_master_0.json", {514, 1030}, {}},
+        {"raw/jungfrau/jungfrau_double_master_0.json", {514, 1030}, {}},
+        {"raw/eiger/Lab6_20500eV_2deg_20240629_master_7.json", {514, 1030}, {}},
+        {"raw/eiger/eiger_500k_16bit_master_0.json", {514, 1030}, {}},
+        {"raw/eiger_quad_data/"
+         "W13_vrpreampscan_m21C_300V_800eV_vthre2000_master_0.json",
+         {514, 514},
+         {}},
+        {"raw/virtual/920/jungfrau/two_modules_master_0.json",
+         {1028, 1030},
+         {}},
+        {"raw/virtual/920/jungfrau/two_modules_master_0.json",
+         {1064, 1030},
+         ModuleGaps{8, 36}},
+        {"raw/ROITestData/MultipleChipROI/run_master_2.json", {301, 103}, {}},
+        {"raw/ROITestData/MultipleChipROI/run_master_2.json",
+         {337, 103},
+         ModuleGaps{8, 36}},
+        {"raw/virtual/920/jungfrau/"
+         "single_module_roi_512_767_0_255_master_0.json",
+         {256, 256},
+         {}},
+    }));
+    CAPTURE(test.path);
+    const auto fpath = test_data_path() / test.path;
+    REQUIRE(std::filesystem::exists(fpath));
+
+    GapPixels gaps;
+    gaps.module_gaps = test.module_gaps;
+    gaps.fill_value = 3;
+    RawFile gapped(fpath, "r", gaps);
+    RawFile plain(fpath);
+    REQUIRE(gapped.rows() == static_cast<size_t>(test.shape[0]));
+    REQUIRE(gapped.cols() == static_cast<size_t>(test.shape[1]));
+    REQUIRE(gapped.bytes_per_frame() ==
+            gapped.pixels_per_frame() * gapped.bytes_per_pixel());
+
+    auto gapped_frame = gapped.read_frame();
+    auto plain_frame = plain.read_frame();
+    REQUIRE(gapped_frame.rows() == static_cast<size_t>(test.shape[0]));
+    REQUIRE(gapped_frame.cols() == static_cast<size_t>(test.shape[1]));
+    REQUIRE(matches_gap_oracle(gapped_frame, plain_frame, plain.master().roi(),
+                               plain.detector_type(),
+                               plain.master().quad() == 1, gaps));
+}
+
+TEST_CASE("Split counts on a recorded Jungfrau file",
+          "[.with-data][RawFile][GapPixels]") {
+    const auto fpath =
+        test_data_path() / "raw/jungfrau/jungfrau_single_master_0.json";
+    GapPixels gaps;
+    gaps.split_counts = true;
+    gaps.seed = 2024;
+    RawFile gapped(fpath, "r", gaps);
+    RawFile plain(fpath);
+    auto gapped_frame = gapped.read_frame();
+    auto plain_frame = plain.read_frame();
+    REQUIRE(matches_gap_oracle(gapped_frame, plain_frame, plain.master().roi(),
+                               DetectorType::Jungfrau, false, gaps));
+}
+
+TEST_CASE("Gap pixels on a file with two ROIs",
+          "[.with-data][RawFile][GapPixels]") {
+    const auto fpath =
+        test_data_path() / "raw/ROITestData/MultipleROIs/run_master_0.json";
+    GapPixels gaps;
+    RawFile gapped(fpath, "r", gaps);
+    RawFile plain(fpath);
+    REQUIRE(gapped.num_rois() == 2);
+    // x 200..300 holds the chip boundary at 256; y 100..400 holds the one at
+    // 256 while y 600..700 holds none
+    REQUIRE(gapped.rows(0) == 303);
+    REQUIRE(gapped.cols(0) == 103);
+    REQUIRE(gapped.rows(1) == 101);
+    REQUIRE(gapped.cols(1) == 103);
+
+    auto gapped_frames = gapped.read_rois();
+    auto plain_frames = plain.read_rois();
+    const auto rois = plain.master().rois();
+    REQUIRE(gapped_frames.size() == 2);
+    for (size_t index = 0; index < 2; ++index) {
+        CAPTURE(index);
+        REQUIRE(matches_gap_oracle(gapped_frames[index], plain_frames[index],
+                                   rois[index], DetectorType::Jungfrau, false,
+                                   gaps));
+    }
 }
 
 TEST_CASE("Read number of frames from a jungfrau raw file",
@@ -535,7 +868,7 @@ TEST_CASE("Open multi module file with ROI",
 }
 
 TEST_CASE("Open multi module file with ROI spanning over multiple modules",
-          "[.width-data][read_rois][RawFile]") {
+          "[.with-data][read_rois][RawFile]") {
 
     auto fpath =
         test_data_path() / "raw/ROITestData/MultipleChipROI/run_master_2.json";
@@ -557,7 +890,7 @@ TEST_CASE("Open multi module file with ROI spanning over multiple modules",
 }
 
 TEST_CASE("Open multi module file with two ROIs",
-          "[.width-data][read_rois][RawFile]") {
+          "[.with-data][read_rois][RawFile]") {
 
     auto fpath =
         test_data_path() / "raw/ROITestData/MultipleROIs/run_master_0.json";
