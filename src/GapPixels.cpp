@@ -15,8 +15,7 @@ GapLayout gap_layout(DetectorType detector, bool quad, const GapPixels &gaps) {
     if (gaps.chip_gap < 0) {
         throw std::invalid_argument(LOCATION + "Chip gap must not be negative");
     }
-    const ModuleGaps module_gaps =
-        gaps.module_gaps.value_or(ModuleGaps{gaps.chip_gap, gaps.chip_gap});
+    const ModuleGaps module_gaps = gaps.module_gaps.value_or(ModuleGaps{});
     if (module_gaps.x < 0 || module_gaps.y < 0) {
         throw std::invalid_argument(LOCATION +
                                     "Module gaps must not be negative");

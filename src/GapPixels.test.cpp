@@ -76,11 +76,11 @@ TEST_CASE("Gap layout follows the detector type", "[GapPixels]") {
         CHECK(layout.x.chip == 256);
         CHECK(layout.x.module == 1024);
         CHECK(layout.x.chip_gap == 2);
-        CHECK(layout.x.module_gap == 2);
+        CHECK(layout.x.module_gap == 0);
         CHECK(layout.y.chip == 256);
         CHECK(layout.y.module == 512);
         CHECK(layout.y.chip_gap == 2);
-        CHECK(layout.y.module_gap == 2);
+        CHECK(layout.y.module_gap == 0);
     }
     SECTION("Eiger quad has a 512 pixel wide module") {
         CHECK(detail::gap_layout(DetectorType::Eiger, true, GapPixels{})
@@ -135,11 +135,11 @@ TEST_CASE("Gapped shape of detector ROIs", "[GapPixels]") {
     CHECK(gapped_shape(ROI{0, 1024, 0, 512}, DetectorType::Jungfrau, false,
                        module_8_36) == Shape{514, 1030});
     CHECK(gapped_shape(ROI{0, 2048, 0, 512}, DetectorType::Jungfrau, false) ==
-          Shape{514, 2062});
+          Shape{514, 2060});
     CHECK(gapped_shape(ROI{0, 2048, 0, 512}, DetectorType::Jungfrau, false,
                        module_8_36) == Shape{514, 2068});
     CHECK(gapped_shape(ROI{0, 1024, 0, 1024}, DetectorType::Jungfrau, false) ==
-          Shape{1030, 1030});
+          Shape{1028, 1030});
     CHECK(gapped_shape(ROI{0, 1024, 0, 1024}, DetectorType::Jungfrau, false,
                        module_8_36) == Shape{1064, 1030});
     CHECK(gapped_shape(ROI{0, 512, 0, 512}, DetectorType::Eiger, true) ==
@@ -155,7 +155,7 @@ TEST_CASE("Gapped shape of detector ROIs", "[GapPixels]") {
         CHECK(gapped_shape(ROI{255, 257, 0, 1}, DetectorType::Jungfrau,
                            false) == Shape{1, 4});
         CHECK(gapped_shape(ROI{200, 301, 300, 601}, DetectorType::Jungfrau,
-                           false) == Shape{303, 103});
+                           false) == Shape{301, 103});
         CHECK(gapped_shape(ROI{200, 301, 300, 601}, DetectorType::Jungfrau,
                            false, module_8_36) == Shape{337, 103});
         CHECK(gapped_shape(ROI{512, 768, 0, 256}, DetectorType::Jungfrau,
@@ -367,6 +367,35 @@ TEST_CASE("insert_gap_pixels on ROIs", "[GapPixels]") {
         CHECK(result(0, 2) == 0.25);
         CHECK(result(0, 3) == 2.5);
     }
+}
+
+TEST_CASE("Module boundaries receive no gap unless module gaps are set",
+          "[GapPixels]") {
+    // rows 510..513 of two stacked modules hold the module boundary at 512
+    const ROI roi{0, 2, 510, 514};
+    auto source = pattern<uint16_t>(4, 2);
+    GapPixels gaps;
+    gaps.fill_value = 9;
+    SECTION("fill value") {}
+    SECTION("split counts") {
+        gaps.split_counts = true;
+        gaps.seed = 1;
+    }
+    auto result = insert_gap_pixels(NDView<const uint16_t, 2>(source.view()),
+                                    roi, DetectorType::Jungfrau, false, gaps);
+    REQUIRE(result.shape() == std::array<ssize_t, 2>{4, 2});
+    CHECK(result == source);
+
+    gaps.module_gaps = ModuleGaps{0, 3};
+    auto with_gap = insert_gap_pixels(NDView<const uint16_t, 2>(source.view()),
+                                      roi, DetectorType::Jungfrau, false, gaps);
+    REQUIRE(with_gap.shape() == std::array<ssize_t, 2>{7, 2});
+    for (ssize_t row = 2; row < 5; ++row) {
+        CHECK(with_gap(row, 0) == 9);
+        CHECK(with_gap(row, 1) == 9);
+    }
+    CHECK(with_gap(1, 0) == source(1, 0));
+    CHECK(with_gap(5, 0) == source(2, 0));
 }
 
 TEST_CASE("Split counts between edge pixels and their gaps", "[GapPixels]") {

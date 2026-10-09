@@ -527,8 +527,9 @@ def test_raw_file_gap_pixels(tmp_path, layout):
     gaps = GapPixels(fill_value=5)
     with RawFile(master_path, gap_pixels=gaps) as reader:
         assert reader.gap_pixels == gaps
-        assert (reader.rows(), reader.cols()) == (512 * layout_rows + 2 * (layout_rows * 2 - 1),
-                                                  1024 * layout_cols + 2 * (layout_cols * 4 - 1))
+        # one chip boundary per module row, three per module column and no
+        # gap between modules
+        assert (reader.rows(), reader.cols()) == ((512 + 2) * layout_rows, (1024 + 6) * layout_cols)
         header, image = reader.read_frame()
         assert header.size == layout_rows * layout_cols
         assert (image == insert_gap_pixels(expected, DetectorType.Jungfrau, gaps)).all()

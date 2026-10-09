@@ -4,8 +4,8 @@ GapPixels
 Jungfrau and Eiger modules are built from 256x256 pixel chips. The pixels
 at a chip edge are physically double size, so an image that places the
 chips next to each other is distorted. Gap pixels restore the geometry by
-inserting pixels at every chip boundary and, optionally, wider gaps
-between modules.
+inserting pixels at every chip boundary inside a module and, optionally,
+gaps between modules.
 
 Gap positions are determined in detector coordinates before any ROI.
 A ROI only receives the gaps that fall strictly inside it, so a ROI that
@@ -26,9 +26,9 @@ Field            Default          Meaning
                                   inside a module. Source column 255 expands
                                   to the right and column 256 to the left.
 ``module_gaps``  unset            ``ModuleGaps{x, y}`` inserted at module
-                                  boundaries instead of the chip gap. Unset
-                                  means module boundaries receive the chip
-                                  gap. ``ModuleGaps{8, 36}`` matches the
+                                  boundaries. Unset means no pixels are
+                                  inserted between modules.
+                                  ``ModuleGaps{8, 36}`` matches the
                                   slsDetectorPackage GUI.
 ``fill_value``   0                Value written to gap pixels, converted to
                                   the pixel type. Out of range values wrap
@@ -47,8 +47,8 @@ Image sizes with the default configuration and with ``ModuleGaps{8, 36}``:
 Detector range                         Ungapped   Defaults  ``ModuleGaps{8,36}``
 ====================================== ========== ========= ===================
 One module, columns                    1024       1030      1030
-Two modules side by side, columns      2048       2062      2068
-Two modules stacked, rows              1024       1030      1064
+Two modules side by side, columns      2048       2060      2068
+Two modules stacked, rows              1024       1028      1064
 ROI columns 100 to 400                 300        302       302
 ROI columns 256 to 512                 256        256       256
 ====================================== ========== ========= ===================

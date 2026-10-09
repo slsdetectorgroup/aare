@@ -34,7 +34,7 @@ def test_configuration_defaults_and_equality():
 
 def test_gapped_shape():
     assert gapped_shape(ROI(0, 1024, 0, 512), DetectorType.Jungfrau) == (514, 1030)
-    assert gapped_shape(ROI(0, 1024, 0, 1024), DetectorType.Jungfrau) == (1030, 1030)
+    assert gapped_shape(ROI(0, 1024, 0, 1024), DetectorType.Jungfrau) == (1028, 1030)
     assert gapped_shape(ROI(0, 1024, 0, 1024), DetectorType.Jungfrau, GapPixels(module_gaps=ModuleGaps(8, 36))) == (1064, 1030)
     assert gapped_shape(ROI(0, 512, 0, 512), DetectorType.Eiger, quad=True) == (514, 514)
     assert gapped_shape(ROI(256, 512, 0, 256), DetectorType.Jungfrau) == (256, 256)
@@ -51,6 +51,16 @@ def test_insert_gap_pixels_matches_numpy(dtype):
     expected = reference(image, [(256, 2), (512, 2), (768, 2)], [(256, 2)], fill=3)
     assert result.dtype == image.dtype
     assert result.shape == (514, 1030)
+    assert (result == expected).all()
+
+
+def test_insert_gap_pixels_without_module_gaps():
+    # two stacked modules: chip gaps at rows 256 and 768, none at the module
+    # boundary at row 512
+    image = np.arange(1024 * 1024, dtype=np.uint32).reshape(1024, 1024)
+    result = insert_gap_pixels(image, DetectorType.Jungfrau)
+    expected = reference(image, [(256, 2), (512, 2), (768, 2)], [(256, 2), (768, 2)])
+    assert result.shape == (1028, 1030)
     assert (result == expected).all()
 
 

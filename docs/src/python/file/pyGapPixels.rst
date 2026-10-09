@@ -5,7 +5,8 @@ GapPixels
 
 Jungfrau and Eiger modules are built from 256x256 pixel chips with double
 size pixels at the chip edges. Gap pixels restore the geometry by inserting
-pixels at every chip boundary and, optionally, wider gaps between modules.
+pixels at every chip boundary inside a module and, optionally, gaps between
+modules.
 Gap positions are determined in detector coordinates before any ROI, so a
 ROI only receives the gaps that fall strictly inside it.
 
@@ -19,9 +20,9 @@ Field            Default          Meaning
 ``chip_gap``     2                Pixels inserted at each chip boundary
                                   inside a module.
 ``module_gaps``  None             ``ModuleGaps(x, y)`` inserted at module
-                                  boundaries instead of the chip gap. None
-                                  means module boundaries receive the chip
-                                  gap. ``ModuleGaps(8, 36)`` matches the
+                                  boundaries. None means no pixels are
+                                  inserted between modules.
+                                  ``ModuleGaps(8, 36)`` matches the
                                   slsDetectorPackage GUI.
 ``fill_value``   0                Value written to gap pixels, converted to
                                   the pixel dtype. Module gaps always
@@ -34,7 +35,7 @@ Field            Default          Meaning
 ================ ================ ===========================================
 
 A single Jungfrau module reads as ``(514, 1030)`` with the defaults. Two
-stacked modules read as ``(1030, 1030)`` with the defaults and
+stacked modules read as ``(1028, 1030)`` with the defaults and
 ``(1064, 1030)`` with ``ModuleGaps(8, 36)``.
 
 .. code-block:: python

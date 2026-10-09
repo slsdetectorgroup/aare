@@ -18,8 +18,7 @@
 namespace aare {
 
 /**
- * @brief Pixels inserted at each boundary between modules, replacing the
- * chip gap there.
+ * @brief Pixels inserted at each boundary between modules.
  */
 struct ModuleGaps {
     ssize_t x{};
@@ -34,7 +33,9 @@ struct ModuleGaps {
 /**
  * @brief Configuration for inserting gap pixels into Jungfrau and Eiger
  * images. Chip and module sizes are fixed by the detector type: 256x256
- * pixel chips in 1024x512 pixel modules (512x512 for an Eiger quad).
+ * pixel chips in 1024x512 pixel modules (512x512 for an Eiger quad). Gaps
+ * are inserted at the chip boundaries inside each module and, only when
+ * module_gaps is set, between modules.
  *
  * Gap positions are determined in detector coordinates before any ROI, so
  * a ROI only receives the gaps that fall strictly inside it.
@@ -44,8 +45,8 @@ struct GapPixels {
     /// column 255 expands to the right and column 256 to the left.
     ssize_t chip_gap{2};
 
-    /// @brief Pixels inserted at module boundaries instead of the chip gap.
-    /// Unset means module boundaries receive the chip gap.
+    /// @brief Pixels inserted at module boundaries. Unset means no pixels
+    /// are inserted between modules.
     std::optional<ModuleGaps> module_gaps{};
 
     /// @brief Value written to gap pixels, converted to the pixel type.

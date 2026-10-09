@@ -32,8 +32,7 @@ py::array insert_gap_pixels_typed(const py::array &image, const ROI &roi,
 
 void define_gap_pixels_bindings(py::module &m) {
     py::class_<ModuleGaps>(m, "ModuleGaps", R"(
-        Pixels inserted at each boundary between modules, replacing the chip
-        gap there.
+        Pixels inserted at each boundary between modules.
         )")
         .def(py::init<>())
         .def(py::init<ssize_t, ssize_t>(), py::arg("x"), py::arg("y"))
@@ -55,8 +54,8 @@ void define_gap_pixels_bindings(py::module &m) {
             Pixels inserted at each chip boundary inside a module. Source
             column 255 expands to the right and column 256 to the left.
         module_gaps : ModuleGaps, optional
-            Pixels inserted at module boundaries instead of the chip gap.
-            None means module boundaries receive the chip gap.
+            Pixels inserted at module boundaries. None means no pixels are
+            inserted between modules.
         fill_value : float
             Value written to gap pixels, converted to the pixel type. Module
             gaps always receive this value.

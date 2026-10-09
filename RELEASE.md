@@ -7,8 +7,9 @@
 - Added gap pixel insertion for Jungfrau and Eiger raw files. ``RawFile``,
   ``File`` (through ``FileConfig::gap_pixels``) and
   ``MultiThreadedFileReader`` take a ``GapPixels`` configuration, in Python
-  the ``gap_pixels`` argument, and assemble frames with 2 pixel chip gaps
-  and optional ``ModuleGaps`` between modules. Gap positions follow
+  the ``gap_pixels`` argument, and assemble frames with 2 pixel gaps at
+  the chip boundaries inside each module and, only when ``ModuleGaps`` is
+  set, gaps between modules. Gap positions follow
   detector coordinates before any ROI. Gap pixels receive a fill value or,
   with ``split_counts``, half of the neighbouring double size pixel. The
   new ``insert_gap_pixels`` and ``gapped_shape`` apply the same transform
