@@ -26,7 +26,7 @@ requirements:
     - python
     - pip
     - numpy >=2.1
-    - scikit-build-core >=0.11
+    - scikit-build-core >=1.0
     - pybind11 >=3.0.3
     - matplotlib # needed in host to solve the environment for run
 
