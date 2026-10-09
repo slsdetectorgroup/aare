@@ -11,6 +11,27 @@
   build, so releases publish them to PyPI alongside the Linux and macOS
   wheels.
 
+### Build:
+
+- libzmq is only fetched or searched for with ``-DAARE_ZMQ=ON`` (default
+  OFF) and is then available as ``aare::zmq``. Nothing in aare links it yet,
+  and skipping it removes about 8 s from every CMake configure.
+- Minuit2, Catch2, and libzmq when enabled, are compiled as unity builds
+  (about 4-5x less compile time), and the fetched dependencies are shallow
+  clones, which makes a first configure faster and the build directory
+  smaller.
+- The Python extension is compiled from one translation unit per binding
+  area instead of a single file, so the bindings build in parallel and
+  editing one binding header recompiles only its unit. The module's
+  contents and registration order are unchanged.
+- The Python extension is no longer link-time optimized by default. The hot
+  loops are header templates compiled at ``-O3`` inside the extension and
+  LTO cannot reach the static ``aare_core``, so it only added a 20 s
+  single-threaded link and made the binary 15 % smaller. LTO follows the
+  standard CMake property now:
+  ``set_property(TARGET _aare PROPERTY INTERPROCEDURAL_OPTIMIZATION ON)`` or
+  ``-DCMAKE_INTERPROCEDURAL_OPTIMIZATION=ON`` restores it.
+
 ## 2026.9.30
 
 ### New Features:

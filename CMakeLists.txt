@@ -65,6 +65,10 @@ option(AARE_FETCH_FMT "Use FetchContent to download fmt" ON)
 option(AARE_FETCH_PYBIND11 "Use FetchContent to download pybind11" ON)
 option(AARE_FETCH_CATCH "Use FetchContent to download catch2" ON)
 option(AARE_FETCH_JSON "Use FetchContent to download nlohmann::json" ON)
+option(
+  AARE_ZMQ
+  "Fetch or find ZeroMQ. Nothing uses it yet; kept for upcoming streaming support"
+  OFF)
 option(AARE_FETCH_ZMQ "Use FetchContent to download libzmq" ON)
 option(AARE_FETCH_MINUIT2 "Use FetchContent to download Minuit2" ON)
 
@@ -107,6 +111,7 @@ if(AARE_FETCH_MINUIT2)
     Minuit2
     GIT_REPOSITORY https://github.com/GooFit/Minuit2.git
     GIT_TAG v6-40-02
+    GIT_SHALLOW TRUE
     UPDATE_DISCONNECTED 1)
   # Disable Minuit2 extras we don't need
   set(minuit2_mpi
@@ -124,6 +129,10 @@ if(AARE_FETCH_MINUIT2)
   FetchContent_MakeAvailable(Minuit2)
 
   set_property(TARGET Minuit2Math PROPERTY POSITION_INDEPENDENT_CODE ON)
+  # Minuit2 is ~60 small files; compiling them in batches is several times
+  # faster
+  set_target_properties(Minuit2 Minuit2Math
+                        PROPERTIES UNITY_BUILD ON UNITY_BUILD_BATCH_SIZE 16)
   set_property(TARGET Minuit2 PROPERTY POSITION_INDEPENDENT_CODE ON)
 
   add_library(aare::Minuit2 ALIAS Minuit2)
@@ -144,53 +153,75 @@ else()
   endif()
 endif()
 
-if(AARE_FETCH_ZMQ)
-  # Fetchcontent_Declare is deprecated need to find a way to update this for now
-  # setting the policy to old is enough
-  if(${CMAKE_VERSION} VERSION_GREATER_EQUAL "3.30")
-    cmake_policy(SET CMP0169 OLD)
-  endif()
-  set(ZMQ_PATCH_COMMAND
-      git apply ${CMAKE_CURRENT_SOURCE_DIR}/patches/libzmq_cmake_version.patch)
-  FetchContent_Declare(
-    libzmq
-    GIT_REPOSITORY https://github.com/zeromq/libzmq.git
-    GIT_TAG v4.3.5
-    PATCH_COMMAND ${ZMQ_PATCH_COMMAND}
-    UPDATE_DISCONNECTED 1)
-  # Disable unwanted options from libzmq
-  set(BUILD_TESTS
-      OFF
-      CACHE BOOL "Switch off libzmq test build")
-  set(BUILD_SHARED
-      OFF
-      CACHE BOOL "Switch off libzmq shared libs")
-  set(WITH_PERF_TOOL
-      OFF
-      CACHE BOOL "")
-  set(ENABLE_CPACK
-      OFF
-      CACHE BOOL "")
-  set(ENABLE_CLANG
-      OFF
-      CACHE BOOL "")
-  set(ENABLE_CURVE
-      OFF
-      CACHE BOOL "")
-  set(ENABLE_DRAFTS
-      OFF
-      CACHE BOOL "")
+# ZeroMQ is not linked anywhere at the moment, so it is only fetched and
+# configured on request (saves ~8 s per configure and a 25 MB clone). Enable it
+# with -DAARE_ZMQ=ON and link aare::zmq where it is needed.
+if(AARE_ZMQ)
+  if(AARE_FETCH_ZMQ)
+    # Fetchcontent_Declare is deprecated need to find a way to update this for
+    # now setting the policy to old is enough
+    if(${CMAKE_VERSION} VERSION_GREATER_EQUAL "3.30")
+      cmake_policy(SET CMP0169 OLD)
+    endif()
+    set(ZMQ_PATCH_COMMAND
+        git apply
+        ${CMAKE_CURRENT_SOURCE_DIR}/patches/libzmq_cmake_version.patch)
+    FetchContent_Declare(
+      libzmq
+      GIT_REPOSITORY https://github.com/zeromq/libzmq.git
+      GIT_TAG v4.3.5
+      GIT_SHALLOW TRUE
+      PATCH_COMMAND ${ZMQ_PATCH_COMMAND}
+      UPDATE_DISCONNECTED 1)
+    # Disable unwanted options from libzmq
+    set(BUILD_TESTS
+        OFF
+        CACHE BOOL "Switch off libzmq test build")
+    set(BUILD_SHARED
+        OFF
+        CACHE BOOL "Switch off libzmq shared libs")
+    set(WITH_PERF_TOOL
+        OFF
+        CACHE BOOL "")
+    set(ENABLE_CPACK
+        OFF
+        CACHE BOOL "")
+    set(ENABLE_CLANG
+        OFF
+        CACHE BOOL "")
+    set(ENABLE_CURVE
+        OFF
+        CACHE BOOL "")
+    set(ENABLE_DRAFTS
+        OFF
+        CACHE BOOL "")
 
-  # TODO! Verify that this is what we want to do in aare Using GetProperties and
-  # Populate to be able to exclude zmq from install (not possible with
-  # FetchContent_MakeAvailable(libzmq))
-  FetchContent_GetProperties(libzmq)
-  if(NOT libzmq_POPULATED)
-    FetchContent_Populate(libzmq)
-    add_subdirectory(${libzmq_SOURCE_DIR} ${libzmq_BINARY_DIR} EXCLUDE_FROM_ALL)
+    # TODO! Verify that this is what we want to do in aare Using GetProperties
+    # and Populate to be able to exclude zmq from install (not possible with
+    # FetchContent_MakeAvailable(libzmq))
+    FetchContent_GetProperties(libzmq)
+    if(NOT libzmq_POPULATED)
+      FetchContent_Populate(libzmq)
+      add_subdirectory(${libzmq_SOURCE_DIR} ${libzmq_BINARY_DIR}
+                       EXCLUDE_FROM_ALL)
+      # libzmq compiles its sources into the OBJECT library "objects" (on
+      # Windows directly into libzmq-static); batch them like Minuit2
+      foreach(_zmq_target objects libzmq-static)
+        if(TARGET ${_zmq_target})
+          set_target_properties(
+            ${_zmq_target} PROPERTIES UNITY_BUILD ON UNITY_BUILD_BATCH_SIZE 16)
+        endif()
+      endforeach()
+    endif()
+  else()
+    find_package(ZeroMQ 4 REQUIRED)
   endif()
-else()
-  find_package(ZeroMQ 4 REQUIRED)
+  if(TARGET libzmq-static)
+    add_library(aare::zmq ALIAS libzmq-static)
+  else()
+    add_library(aare::zmq ALIAS libzmq)
+  endif()
+  message(STATUS "ZeroMQ enabled (AARE_ZMQ=ON), link aare::zmq to use it")
 endif()
 
 if(AARE_FETCH_FMT)
@@ -201,6 +232,7 @@ if(AARE_FETCH_FMT)
     fmt
     GIT_REPOSITORY https://github.com/fmtlib/fmt.git
     GIT_TAG 12.1.0
+    GIT_SHALLOW TRUE
     GIT_PROGRESS TRUE
     USES_TERMINAL_DOWNLOAD TRUE)
   set(FMT_INSTALL

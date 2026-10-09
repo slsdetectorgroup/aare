@@ -1,68 +1,10 @@
 // SPDX-License-Identifier: MPL-2.0
-// Files with bindings to the different classes
+// Module registration. The bindings live in bind_*.cpp translation units so
+// they compile in parallel; the call order below is kept as before.
 
-#include "module_config.hpp"
+#include "bindings.hpp"
 
-// New style file naming
-#include "bind_Cluster.hpp"
-#include "bind_ClusterCollector.hpp"
-#include "bind_ClusterFile.hpp"
-#include "bind_ClusterFileSink.hpp"
-#include "bind_ClusterFinder.hpp"
-#include "bind_ClusterFinderMT.hpp"
-#include "bind_ClusterVector.hpp"
-#include "bind_Defs.hpp"
-#include "bind_Eta.hpp"
-#include "bind_FastPedestal.hpp"
-#include "bind_Interpolator.hpp"
-#include "bind_MultiThreadedFileReader.hpp"
-#include "bind_Pedestal.hpp"
-#include "bind_PedestalTrackingPixelHistogram.hpp"
-#include "bind_PixelHistogram.hpp"
-#include "bind_PixelMap.hpp"
-#include "bind_RawFile.hpp"
-#include "bind_calibration.hpp"
-#include "bind_testing.hpp"
-
-// TODO! migrate the other names
-#include "ctb_raw_file.hpp"
-#include "file.hpp"
-#include "fit.hpp"
-#include "jungfrau_data_file.hpp"
-#include "raw_master_file.hpp"
-#include "raw_sub_file.hpp"
-#include "var_cluster.hpp"
-
-// Pybind stuff
-#include <cstdint>
 #include <pybind11/pybind11.h>
-#include <pybind11/stl.h>
-
-namespace py = pybind11;
-
-/* MACRO that defines Cluster bindings for a specific size and type
-
-T - Storage type of the cluster data (int, float, double)
-N - Number of rows in the cluster
-M - Number of columns in the cluster
-U - Type of the pixel data (e.g., uint16_t)
-TYPE_CODE - A character representing the type code (e.g., 'i' for int, 'd' for
-double, 'f' for float)
-
-*/
-#define DEFINE_CLUSTER_BINDINGS(T, N, M, U, TYPE_CODE)                         \
-    define_ClusterFile<T, N, M, U>(m, "Cluster" #N "x" #M #TYPE_CODE);         \
-    define_ClusterVector<T, N, M, U>(m, "Cluster" #N "x" #M #TYPE_CODE);       \
-    define_Cluster<T, N, M, U>(m, #N "x" #M #TYPE_CODE);                       \
-    register_calculate_2x2eta<T, N, M, U>(m);                                  \
-    define_2x2_reduction<T, N, M, U>(m);                                       \
-    reduce_to_2x2<T, N, M, U>(m);
-
-#define DEFINE_BINDINGS_CLUSTERFINDER(T, N, M, U, TYPE_CODE)                   \
-    define_ClusterFinder<T, N, M, U>(m, "Cluster" #N "x" #M #TYPE_CODE);       \
-    define_ClusterFinderMT<T, N, M, U>(m, "Cluster" #N "x" #M #TYPE_CODE);     \
-    define_ClusterFileSink<T, N, M, U>(m, "Cluster" #N "x" #M #TYPE_CODE);     \
-    define_ClusterCollector<T, N, M, U>(m, "Cluster" #N "x" #M #TYPE_CODE);
 
 PYBIND11_MODULE(_aare, m) {
     auto experimental = m.def_submodule(
@@ -78,12 +20,7 @@ PYBIND11_MODULE(_aare, m) {
     define_pixel_map_bindings(m);
     define_pixel_histogram_bindings(m);
     define_pedestal_tracking_pixel_histogram_bindings(m);
-    define_pedestal_bindings<double>(m, "Pedestal_d");
-    define_pedestal_bindings<float>(m, "Pedestal_f");
-    define_pedestal_bindings<int16_t>(m, "Pedestal_i16");
-    define_fast_pedestal_bindings<double>(m, "FastPedestal_d");
-    define_fast_pedestal_bindings<float>(m, "FastPedestal_f");
-    define_fast_pedestal_bindings<int16_t>(m, "FastPedestal_i16");
+    bind_pedestals(m);
     define_fit_bindings(m);
     define_interpolation_bindings(m);
     define_jungfrau_data_file_io_bindings(m);
@@ -91,91 +28,29 @@ PYBIND11_MODULE(_aare, m) {
     bind_calibration(m);
     define_testing_bindings(m);
 
-    DEFINE_CLUSTER_BINDINGS(int, 3, 3, uint16_t, i);
-    DEFINE_CLUSTER_BINDINGS(double, 3, 3, uint16_t, d);
-    DEFINE_CLUSTER_BINDINGS(float, 3, 3, uint16_t, f);
+    bind_cluster_types_3x3(m);
+    bind_cluster_types_2x2(m);
+    bind_cluster_types_5x5(m);
+    bind_cluster_types_7x7(m);
+    bind_cluster_types_9x9(m);
+    bind_cluster_types_3x3_i16(m);
 
-    DEFINE_CLUSTER_BINDINGS(int, 2, 2, uint16_t, i);
-    DEFINE_CLUSTER_BINDINGS(double, 2, 2, uint16_t, d);
-    DEFINE_CLUSTER_BINDINGS(float, 2, 2, uint16_t, f);
+    bind_cluster_finders_3x3(m);
+    bind_cluster_finders_5x5(m);
+    bind_cluster_finders_7x7(m);
+    bind_cluster_finders_9x9(m);
 
-    DEFINE_CLUSTER_BINDINGS(int, 5, 5, uint16_t, i);
-    DEFINE_CLUSTER_BINDINGS(double, 5, 5, uint16_t, d);
-    DEFINE_CLUSTER_BINDINGS(float, 5, 5, uint16_t, f);
+    bind_cluster_vector_reductions_5x5(m);
+    bind_cluster_vector_reductions_7x7(m);
+    bind_cluster_vector_reductions_9x9(m);
 
-    DEFINE_CLUSTER_BINDINGS(int, 7, 7, uint16_t, i);
-    DEFINE_CLUSTER_BINDINGS(double, 7, 7, uint16_t, d);
-    DEFINE_CLUSTER_BINDINGS(float, 7, 7, uint16_t, f);
+    bind_cluster_reductions_5x5(m);
+    bind_cluster_reductions_7x7(m);
+    bind_cluster_reductions_9x9(m);
 
-    DEFINE_CLUSTER_BINDINGS(int, 9, 9, uint16_t, i);
-    DEFINE_CLUSTER_BINDINGS(double, 9, 9, uint16_t, d);
-    DEFINE_CLUSTER_BINDINGS(float, 9, 9, uint16_t, f);
-
-    DEFINE_CLUSTER_BINDINGS(int16_t, 3, 3, uint16_t, i16);
-
-    DEFINE_BINDINGS_CLUSTERFINDER(int, 3, 3, uint16_t, i);
-    DEFINE_BINDINGS_CLUSTERFINDER(double, 3, 3, uint16_t, d);
-    DEFINE_BINDINGS_CLUSTERFINDER(float, 3, 3, uint16_t, f);
-    DEFINE_BINDINGS_CLUSTERFINDER(int16_t, 3, 3, uint16_t, i16);
-
-    DEFINE_BINDINGS_CLUSTERFINDER(int, 5, 5, uint16_t, i);
-    DEFINE_BINDINGS_CLUSTERFINDER(double, 5, 5, uint16_t, d);
-    DEFINE_BINDINGS_CLUSTERFINDER(float, 5, 5, uint16_t, f);
-
-    DEFINE_BINDINGS_CLUSTERFINDER(int, 7, 7, uint16_t, i);
-    DEFINE_BINDINGS_CLUSTERFINDER(double, 7, 7, uint16_t, d);
-    DEFINE_BINDINGS_CLUSTERFINDER(float, 7, 7, uint16_t, f);
-
-    DEFINE_BINDINGS_CLUSTERFINDER(int, 9, 9, uint16_t, i);
-    DEFINE_BINDINGS_CLUSTERFINDER(double, 9, 9, uint16_t, d);
-    DEFINE_BINDINGS_CLUSTERFINDER(float, 9, 9, uint16_t, f);
-
-    define_3x3_reduction<int, 5, 5, uint16_t>(m);
-    define_3x3_reduction<double, 5, 5, uint16_t>(m);
-    define_3x3_reduction<float, 5, 5, uint16_t>(m);
-    define_3x3_reduction<int, 7, 7, uint16_t>(m);
-    define_3x3_reduction<double, 7, 7, uint16_t>(m);
-    define_3x3_reduction<float, 7, 7, uint16_t>(m);
-    define_3x3_reduction<int, 9, 9, uint16_t>(m);
-    define_3x3_reduction<double, 9, 9, uint16_t>(m);
-    define_3x3_reduction<float, 9, 9, uint16_t>(m);
-
-    reduce_to_3x3<int, 5, 5, uint16_t>(m);
-    reduce_to_3x3<double, 5, 5, uint16_t>(m);
-    reduce_to_3x3<float, 5, 5, uint16_t>(m);
-    reduce_to_3x3<int, 7, 7, uint16_t>(m);
-    reduce_to_3x3<double, 7, 7, uint16_t>(m);
-    reduce_to_3x3<float, 7, 7, uint16_t>(m);
-    reduce_to_3x3<int, 9, 9, uint16_t>(m);
-    reduce_to_3x3<double, 9, 9, uint16_t>(m);
-    reduce_to_3x3<float, 9, 9, uint16_t>(m);
-
-    register_calculate_3x3eta<int, 3, 3, uint16_t>(m);
-    register_calculate_3x3eta<double, 3, 3, uint16_t>(m);
-    register_calculate_3x3eta<float, 3, 3, uint16_t>(m);
-    register_calculate_3x3eta<int16_t, 3, 3, uint16_t>(m);
+    bind_eta_3x3(m);
 
     define_defs_bindings(m);
 
-    using Sum_index_pair_d = Sum_index_pair<double, corner>;
-    PYBIND11_NUMPY_DTYPE(Sum_index_pair_d, sum, index);
-    using Sum_index_pair_f = Sum_index_pair<float, corner>;
-    PYBIND11_NUMPY_DTYPE(Sum_index_pair_f, sum, index);
-    using Sum_index_pair_i = Sum_index_pair<int, corner>;
-    PYBIND11_NUMPY_DTYPE(Sum_index_pair_i, sum, index);
-
-    using eta_d = Eta2<double>;
-    PYBIND11_NUMPY_DTYPE(eta_d, x, y, c, sum);
-    using eta_i = Eta2<int>;
-    PYBIND11_NUMPY_DTYPE(eta_i, x, y, c, sum);
-    using eta_f = Eta2<float>;
-    PYBIND11_NUMPY_DTYPE(eta_f, x, y, c, sum);
-    using eta_i16 = Eta2<int16_t>;
-    PYBIND11_NUMPY_DTYPE(eta_i16, x, y, c, sum);
-
-    define_corner_enum(m);
-    define_eta<float>(m, "f");
-    define_eta<double>(m, "d");
-    define_eta<int>(m, "i");
-    define_eta<int16_t>(m, "i16");
+    bind_eta_types(m);
 }

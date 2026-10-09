@@ -1,11 +1,13 @@
 // SPDX-License-Identifier: MPL-2.0
 #pragma once
 
+#include <fmt/format.h>
 #include <iostream>
 #include <pybind11/numpy.h>
 #include <pybind11/pybind11.h>
 #include <pybind11/stl.h>
 
+#include "aare/Cluster.hpp"
 #include "aare/Frame.hpp"
 #include "aare/NDArray.hpp"
 #include "aare/NDView.hpp"
@@ -124,8 +126,8 @@ template <typename ClusterType> const std::string &fmt_format() {
  * Helper function to allocate image data given item size and shape
  * used when we want to fill a numpy array and return to python
  */
-py::array allocate_image_data(size_t item_size,
-                              const std::vector<size_t> &shape) {
+inline py::array allocate_image_data(size_t item_size,
+                                     const std::vector<size_t> &shape) {
     py::array image_data;
     if (item_size == 1) {
         image_data = py::array_t<uint8_t>(shape);

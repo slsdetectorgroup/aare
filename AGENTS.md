@@ -49,10 +49,11 @@ cmake --build build -j4
 
 Useful optional settings include `AARE_DOCS`, `AARE_BENCHMARKS`, `AARE_ASAN`,
 `AARE_WARNINGS_AS_ERRORS`, `AARE_VERBOSE` (raises the compile-time log
-level), and `AARE_TUNE_LOCAL` (`-march=native`, not portable). Reconfigure an
-existing build directory instead of creating alternate in-tree build layouts
-unless isolation is needed; `build/CMakeCache.txt` records the options and
-interpreter it was configured with.
+level), `AARE_TUNE_LOCAL` (`-march=native`, not portable), and `AARE_ZMQ`
+(fetches or finds ZeroMQ and defines `aare::zmq`; nothing links it yet).
+Reconfigure an existing build directory instead of creating alternate
+in-tree build layouts unless isolation is needed; `build/CMakeCache.txt`
+records the options and interpreter it was configured with.
 
 `-Werror=return-type` is always enabled. New code should also compile cleanly
 under the project's `-Wall -Wextra -pedantic -Wshadow -Wold-style-cast
@@ -169,13 +170,24 @@ agree; run them when changing any solver.
 
 ### Python layer
 
-- `python/src/module.cpp` registers everything. Templated classes are
+- `python/src/module.cpp` only calls the registration entry points declared
+  in `bindings.hpp`, in a fixed order (overload docstrings follow it). The
+  bindings themselves are compiled in parallel translation units:
+  `bind_io.cpp` (files, geometry, pixel maps, calibration, test probes),
+  `bind_hist.cpp`, `bind_pedestal.cpp`, `bind_fit.cpp`, `bind_eta.cpp`, and
+  one `bind_cluster_NxN.cpp` per cluster size. Templated classes are
   instantiated per value type and cluster size through the
-  `DEFINE_CLUSTER_BINDINGS` and `DEFINE_BINDINGS_CLUSTERFINDER` macros,
-  producing names such as `ClusterFinder_Cluster3x3i`, `Pedestal_d`, and
-  `FastPedestal_i16`. Supported cluster sizes are 2x2, 3x3, 5x5, 7x7, and
-  9x9; value types are `i`, `f`, `d`, and `i16` (3x3 only).
-  `module_config.hpp` fixes the module-wide pedestal type (`pd_type`).
+  `DEFINE_CLUSTER_BINDINGS` and `DEFINE_BINDINGS_CLUSTERFINDER` macros in
+  `bind_cluster_common.hpp`, producing names such as
+  `ClusterFinder_Cluster3x3i`, `Pedestal_d`, and `FastPedestal_i16`.
+  Supported cluster sizes are 2x2, 3x3, 5x5, 7x7, and 9x9; value types are
+  `i`, `f`, `d`, and `i16` (3x3 only). `module_config.hpp` fixes the
+  module-wide pedestal type (`pd_type`). Each `bind_*.hpp` header is included
+  by exactly one translation unit, so a header must include everything it
+  uses itself, including the pybind11 casters (`pybind11/stl.h`,
+  `pybind11/stl/filesystem.h`) for the types its bindings take or return.
+  Non-template functions defined in a header that several units include
+  must be `inline`.
 - `python/aare/factory.py` maps NumPy dtypes to those suffixes. The facades
   in `python/aare/*.py` are thin factory functions or subclasses that select
   the right binding and add Pythonic conveniences (iteration, context
@@ -223,7 +235,10 @@ A Python-facing feature can require coordinated changes in several layers:
 
 1. Update the C++ public API and implementation.
 2. Add or update its binding in `python/src/`.
-3. Register new bindings in `python/src/module.cpp`.
+3. Register new bindings: add the entry point to `python/src/bindings.hpp`,
+   call it from `python/src/module.cpp`, and include the header from the
+   matching `python/src/bind_*.cpp` (or add a new one to
+   `python/CMakeLists.txt`).
 4. Update the facade or public exports in `python/aare/`.
 5. If adding a Python module, add it to `PYTHON_FILES` in
    `python/CMakeLists.txt` so it is copied and installed.
