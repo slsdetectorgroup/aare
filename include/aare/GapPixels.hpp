@@ -257,7 +257,7 @@ void split_edge_counts(NDView<T, 2> destination, const ROI &roi,
             LOCATION + "Splitting counts requires a chip gap of 2");
     }
 
-    auto halve = [&generator](T &pixel, T &gap) {
+    auto halve = [&](T &pixel, T &gap) {
         if constexpr (std::is_floating_point_v<T>) {
             const T half = pixel / 2;
             pixel = half;
