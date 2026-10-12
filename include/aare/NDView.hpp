@@ -221,6 +221,21 @@ class NDView : public ArrayExpr<NDView<T, Ndim>, Ndim> {
         return NDView(buffer_ + first * strides_[0], new_shape);
     }
 
+    /**
+     * @brief Create a subview of a single index of the first dimension.
+     * This is useful for accessing a single frame in a batch of frames.
+     * @param index The index of the subview.
+     * @return A new NDView that is a subview of the current view.
+     * @throws std::runtime_error if the index is invalid.
+     */
+    template <int D = Ndim, std::enable_if_t<(D > 1) && D == Ndim, int> = 0>
+    NDView<T, D - 1> sub_view(const ssize_t index) const {
+        if (index < 0 || index >= shape_[0])
+            throw std::runtime_error(LOCATION + "Invalid sub_view index");
+        auto new_shape = drop_first_dim(shape_);
+        return NDView<T, D - 1>(buffer_ + index * strides_[0], new_shape);
+    }
+
   private:
     template <typename, ssize_t> friend class NDView;
 
