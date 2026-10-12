@@ -309,4 +309,7 @@ TEST_CASE("NDView subview", "[NDView]") {
     CHECK(subview(1) == 5);
     CHECK(subview(2) == 6);
     CHECK(subview(3) == 7);
+
+    REQUIRE_THROWS_AS(data.sub_view(3), std::runtime_error);
+    REQUIRE_THROWS_AS(data.sub_view(-1), std::runtime_error);
 }
