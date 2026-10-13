@@ -1,0 +1,977 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>PixelHistogramCUDA Build Guide</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans:ital,wght@0,400;0,500;0,600;0,700;1,400&display=swap">
+<style>
+body { margin: 0; }
+:root {
+  --bg: #f3f5f6;
+  --surface: #ffffff;
+  --ink: #17212b;
+  --muted: #55626e;
+  --rule: #d5dce1;
+  --accent: #0b6e78;
+  --accent-soft: #dcefef;
+  --copy: #2d63c8;
+  --copy-tint: #dfe8f8;
+  --compute: #b4531a;
+  --compute-tint: #f7e4d6;
+  --warn: #9b3a12;
+  --warn-soft: #fbeee6;
+  --code-bg: #e9eef1;
+  --sans: "IBM Plex Sans", system-ui, -apple-system, "Segoe UI", sans-serif;
+  --mono: "IBM Plex Mono", ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    color-scheme: dark;
+    --bg: #0f1418;
+    --surface: #161d23;
+    --ink: #e2e8ed;
+    --muted: #9aa7b2;
+    --rule: #2a353e;
+    --accent: #4fb5bf;
+    --accent-soft: #15302f;
+    --copy: #7ea8f3;
+    --copy-tint: #1b2a42;
+    --compute: #ef9c64;
+    --compute-tint: #3a2618;
+    --warn: #f0a07a;
+    --warn-soft: #33201a;
+    --code-bg: #1d262d;
+  }
+}
+:root[data-theme="dark"] {
+  color-scheme: dark;
+  --bg: #0f1418;
+  --surface: #161d23;
+  --ink: #e2e8ed;
+  --muted: #9aa7b2;
+  --rule: #2a353e;
+  --accent: #4fb5bf;
+  --accent-soft: #15302f;
+  --copy: #7ea8f3;
+  --copy-tint: #1b2a42;
+  --compute: #ef9c64;
+  --compute-tint: #3a2618;
+  --warn: #f0a07a;
+  --warn-soft: #33201a;
+  --code-bg: #1d262d;
+}
+
+* { box-sizing: border-box; }
+html { scroll-behavior: smooth; }
+@media (prefers-reduced-motion: reduce) { html { scroll-behavior: auto; } }
+body {
+  background: var(--bg);
+  color: var(--ink);
+  font-family: var(--sans);
+  font-size: 16px;
+  line-height: 1.6;
+  padding-inline: 16px;
+  padding-block: 0 64px;
+}
+.shell {
+  max-width: 1120px;
+  margin: 0 auto;
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 40px;
+}
+@media (min-width: 980px) {
+  .shell { grid-template-columns: 220px minmax(0, 1fr); }
+}
+nav.toc {
+  display: none;
+}
+@media (min-width: 980px) {
+  nav.toc {
+    display: block;
+    position: sticky;
+    top: calc(env(safe-area-inset-top, 0px) + 24px);
+    align-self: start;
+    padding-top: 56px;
+    font-size: 13.5px;
+  }
+}
+nav.toc p {
+  font-family: var(--mono);
+  font-size: 11px;
+  letter-spacing: .08em;
+  text-transform: uppercase;
+  color: var(--muted);
+  margin: 0 0 10px;
+}
+nav.toc ol { list-style: none; margin: 0; padding: 0; display: grid; gap: 6px; }
+nav.toc a { color: var(--muted); text-decoration: none; }
+nav.toc a:hover, nav.toc a:focus-visible { color: var(--accent); }
+
+main { min-width: 0; max-width: 760px; }
+header.top { padding-top: 56px; padding-bottom: 8px; }
+.eyebrow {
+  font-family: var(--mono);
+  font-size: 12px;
+  letter-spacing: .08em;
+  text-transform: uppercase;
+  color: var(--accent);
+  margin: 0 0 12px;
+}
+h1 {
+  font-size: clamp(30px, 5vw, 40px);
+  line-height: 1.15;
+  font-weight: 700;
+  letter-spacing: -.01em;
+  margin: 0 0 16px;
+  text-wrap: balance;
+}
+.lede { font-size: 18px; color: var(--muted); margin: 0; max-width: 65ch; }
+.meta {
+  margin-top: 20px;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px 20px;
+  font-family: var(--mono);
+  font-size: 12.5px;
+  color: var(--muted);
+}
+
+section { padding-top: 48px; }
+h2 {
+  font-size: 24px;
+  line-height: 1.25;
+  font-weight: 650;
+  margin: 0 0 6px;
+  text-wrap: balance;
+  scroll-margin-top: 24px;
+}
+.kicker { color: var(--muted); margin: 0 0 20px; max-width: 65ch; }
+h3 {
+  font-size: 18px;
+  font-weight: 600;
+  margin: 28px 0 8px;
+  text-wrap: balance;
+}
+p, li { max-width: 68ch; }
+p { margin: 0 0 14px; }
+ul, ol { margin: 0 0 14px; padding-left: 22px; }
+li { margin-bottom: 6px; }
+strong { font-weight: 600; }
+a { color: var(--accent); }
+a:focus-visible, summary:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; border-radius: 3px; }
+
+code {
+  font-family: var(--mono);
+  font-size: .86em;
+  background: var(--code-bg);
+  padding: .1em .35em;
+  border-radius: 4px;
+  overflow-wrap: anywhere;
+}
+pre {
+  font-family: var(--mono);
+  font-size: 13px;
+  line-height: 1.55;
+  background: var(--code-bg);
+  border-radius: 6px;
+  padding: 14px 16px;
+  overflow-x: auto;
+  margin: 0 0 16px;
+}
+pre code { background: none; padding: 0; font-size: inherit; }
+
+/* the refined slot model */
+.verdict {
+  border-left: 3px solid var(--accent);
+  background: var(--accent-soft);
+  padding: 14px 18px;
+  border-radius: 0 6px 6px 0;
+  margin: 0 0 20px;
+}
+.verdict p:last-child { margin-bottom: 0; }
+
+.notes { display: grid; gap: 12px; margin: 0 0 16px; padding: 0; list-style: none; }
+.notes li {
+  max-width: none;
+  display: grid;
+  grid-template-columns: 92px minmax(0, 1fr);
+  gap: 12px;
+  padding: 12px 0;
+  border-top: 1px solid var(--rule);
+  margin: 0;
+}
+.tag {
+  font-family: var(--mono);
+  font-size: 11px;
+  letter-spacing: .06em;
+  text-transform: uppercase;
+  padding-top: 3px;
+}
+.tag.agree { color: var(--accent); }
+.tag.refine { color: var(--compute); }
+.tag.missing { color: var(--warn); }
+@media (max-width: 520px) {
+  .notes li { grid-template-columns: 1fr; gap: 2px; }
+}
+
+/* comparison + dependency tables */
+.table-wrap { overflow-x: auto; margin: 0 0 18px; }
+table {
+  border-collapse: collapse;
+  width: 100%;
+  min-width: 560px;
+  font-size: 14.5px;
+}
+th, td {
+  text-align: left;
+  vertical-align: top;
+  padding: 10px 12px;
+  border-bottom: 1px solid var(--rule);
+}
+th {
+  font-family: var(--mono);
+  font-size: 11.5px;
+  letter-spacing: .06em;
+  text-transform: uppercase;
+  color: var(--muted);
+  font-weight: 500;
+  border-bottom: 1.5px solid var(--ink);
+}
+td:first-child { white-space: nowrap; }
+.swatch { display: inline-block; width: 10px; height: 10px; border-radius: 2px; margin-right: 6px; vertical-align: 0; }
+.sw-copy { background: var(--copy); }
+.sw-compute { background: var(--compute); }
+
+/* timelines */
+figure { margin: 0 0 24px; }
+.diagram {
+  background: var(--surface);
+  border: 1px solid var(--rule);
+  border-radius: 8px;
+  padding: 12px 8px 4px;
+  overflow-x: auto;
+}
+.diagram svg { display: block; width: 100%; min-width: 660px; height: auto; }
+figcaption { font-size: 14px; color: var(--muted); margin-top: 8px; max-width: 68ch; }
+svg .lane-label { font-family: var(--mono); font-size: 12px; fill: var(--muted); }
+svg .box-copy { fill: var(--copy-tint); stroke: var(--copy); stroke-width: 1.2; }
+svg .box-compute { fill: var(--compute-tint); stroke: var(--compute); stroke-width: 1.2; }
+svg .box-text { font-family: var(--mono); font-size: 11px; fill: var(--ink); }
+svg .lane-line { stroke: var(--rule); stroke-width: 1; }
+svg .arr-copy { stroke: var(--copy); stroke-width: 1.4; fill: none; stroke-dasharray: 4 3; }
+svg .arr-compute { stroke: var(--compute); stroke-width: 1.4; fill: none; stroke-dasharray: 4 3; }
+svg .head-copy { fill: var(--copy); }
+svg .head-compute { fill: var(--compute); }
+svg .idle { fill: url(#hatch); stroke: var(--rule); }
+svg .idle-text { font-family: var(--mono); font-size: 10px; fill: var(--muted); }
+svg .hatch-line { stroke: var(--muted); stroke-width: 1; opacity: .45; }
+svg .axis { stroke: var(--muted); stroke-width: 1; }
+svg .axis-text { font-family: var(--mono); font-size: 11px; fill: var(--muted); }
+.legend { display: flex; flex-wrap: wrap; gap: 6px 22px; font-size: 13.5px; color: var(--muted); margin: 6px 0 0; }
+.legend span { display: inline-flex; align-items: center; gap: 8px; }
+.legend i { display: inline-block; width: 26px; height: 0; border-top: 2px dashed; }
+.legend .l-copy { color: var(--copy); }
+.legend .l-compute { color: var(--compute); }
+
+/* data path strip */
+.path {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: stretch;
+  gap: 8px;
+  margin: 0 0 20px;
+  padding: 0;
+  list-style: none;
+}
+.path li {
+  max-width: none;
+  margin: 0;
+  flex: 1 1 130px;
+  background: var(--surface);
+  border: 1px solid var(--rule);
+  border-radius: 6px;
+  padding: 10px 12px;
+  font-size: 13.5px;
+  line-height: 1.45;
+}
+.path b { display: block; font-family: var(--mono); font-size: 12px; font-weight: 600; margin-bottom: 2px; }
+.path .on-copy { border-top: 3px solid var(--copy); }
+.path .on-compute { border-top: 3px solid var(--compute); }
+
+/* decisions */
+.decisions { display: grid; gap: 14px; margin: 0 0 16px; }
+.decision {
+  background: var(--surface);
+  border: 1px solid var(--rule);
+  border-radius: 8px;
+  padding: 16px 18px 6px;
+}
+.decision h3 { margin: 0 0 8px; font-size: 16.5px; display: flex; gap: 10px; align-items: baseline; flex-wrap: wrap; }
+.decision h3 .id { font-family: var(--mono); font-size: 12px; color: var(--accent); font-weight: 500; }
+.decision ul { padding-left: 18px; }
+.rec { font-size: 14.5px; }
+.rec::before {
+  content: "Lean: ";
+  font-family: var(--mono);
+  font-size: 11px;
+  letter-spacing: .06em;
+  text-transform: uppercase;
+  color: var(--accent);
+}
+
+/* steps */
+ol.steps { list-style: none; padding: 0; margin: 0; counter-reset: step; display: grid; gap: 0; }
+ol.steps > li {
+  max-width: none;
+  counter-increment: step;
+  position: relative;
+  padding: 22px 0 18px 56px;
+  border-top: 1px solid var(--rule);
+  margin: 0;
+}
+ol.steps > li::before {
+  content: counter(step);
+  position: absolute;
+  left: 0;
+  top: 22px;
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  border: 1.5px solid var(--accent);
+  color: var(--accent);
+  font-family: var(--mono);
+  font-weight: 600;
+  font-size: 15px;
+  display: grid;
+  place-items: center;
+}
+ol.steps h3 { margin: 4px 0 10px; }
+.facet { display: grid; grid-template-columns: 96px minmax(0, 1fr); gap: 4px 14px; margin: 0 0 10px; }
+.facet dt {
+  font-family: var(--mono);
+  font-size: 11px;
+  letter-spacing: .06em;
+  text-transform: uppercase;
+  color: var(--muted);
+  padding-top: 4px;
+}
+.facet dd { margin: 0 0 8px; }
+.facet dd ul { margin-bottom: 4px; }
+@media (max-width: 520px) {
+  ol.steps > li { padding-left: 0; padding-top: 68px; }
+  .facet { grid-template-columns: 1fr; }
+  .facet dd { margin-bottom: 12px; }
+}
+
+details {
+  border: 1px solid var(--rule);
+  border-radius: 6px;
+  background: var(--surface);
+  margin: 0 0 10px;
+}
+summary {
+  cursor: pointer;
+  padding: 9px 14px;
+  font-size: 14.5px;
+  font-weight: 500;
+  list-style: none;
+  display: flex;
+  gap: 10px;
+  align-items: baseline;
+}
+summary::-webkit-details-marker { display: none; }
+summary::before {
+  content: "+";
+  font-family: var(--mono);
+  color: var(--accent);
+  width: 10px;
+  flex: none;
+}
+details[open] summary::before { content: "\2212"; }
+details > div { padding: 0 14px 4px 34px; font-size: 15px; }
+.hint summary { color: var(--muted); }
+
+/* review list */
+.review { list-style: none; padding: 0; margin: 0 0 16px; }
+.review li {
+  max-width: none;
+  display: grid;
+  grid-template-columns: 74px minmax(0, 1fr);
+  gap: 12px;
+  padding: 10px 0;
+  border-top: 1px solid var(--rule);
+  margin: 0;
+  font-size: 15px;
+}
+.review .ln { font-family: var(--mono); font-size: 12.5px; color: var(--muted); padding-top: 2px; }
+.review .sev {
+  font-family: var(--mono);
+  font-size: 10.5px;
+  letter-spacing: .06em;
+  text-transform: uppercase;
+  margin-right: 6px;
+}
+.sev.build { color: var(--warn); }
+.sev.bug { color: var(--compute); }
+.sev.design { color: var(--accent); }
+
+.callout {
+  background: var(--warn-soft);
+  border-left: 3px solid var(--warn);
+  padding: 12px 16px;
+  border-radius: 0 6px 6px 0;
+  margin: 0 0 16px;
+  font-size: 15px;
+}
+.callout p:last-child { margin-bottom: 0; }
+.callout.handoff { background: var(--accent-soft); border-left-color: var(--accent); }
+.callout.handoff ul { margin: 0; padding-left: 20px; }
+.callout.handoff li { margin-bottom: 6px; }
+
+.pitfalls { list-style: none; padding: 0; margin: 0; display: grid; gap: 0; }
+.pitfalls li { max-width: none; padding: 12px 0; border-top: 1px solid var(--rule); margin: 0; }
+.pitfalls b { display: block; margin-bottom: 2px; }
+
+/* status chips */
+.chip {
+  display: inline-block;
+  font-family: var(--mono);
+  font-size: 10.5px;
+  font-weight: 500;
+  letter-spacing: .06em;
+  text-transform: uppercase;
+  padding: 2px 8px;
+  border-radius: 999px;
+  border: 1px solid currentColor;
+  line-height: 1.5;
+  vertical-align: 2px;
+  white-space: nowrap;
+}
+.chip.done { color: var(--accent); background: var(--accent-soft); }
+.chip.partial { color: var(--compute); background: var(--compute-tint); }
+.chip.next { color: var(--copy); background: var(--copy-tint); }
+.chip.todo { color: var(--muted); }
+.chip.decided { color: var(--accent); background: var(--accent-soft); }
+.chip.open { color: var(--muted); }
+ol.steps h3 { display: flex; gap: 10px; align-items: baseline; flex-wrap: wrap; }
+#kernel h3 { display: flex; gap: 10px; align-items: baseline; flex-wrap: wrap; }
+
+.status-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+  gap: 14px;
+  margin: 0 0 18px;
+}
+.status-col {
+  background: var(--surface);
+  border: 1px solid var(--rule);
+  border-radius: 8px;
+  padding: 14px 16px 4px;
+}
+.status-col h3 { margin: 0 0 10px; font-size: 15px; display: flex; gap: 10px; align-items: baseline; }
+.status-col ul { padding-left: 18px; font-size: 14.5px; }
+.status-col li { margin-bottom: 7px; }
+.stepbar {
+  display: grid;
+  grid-template-columns: repeat(8, minmax(0, 1fr));
+  gap: 4px;
+  margin: 0 0 6px;
+}
+.stepbar span {
+  height: 8px;
+  border-radius: 2px;
+  background: var(--rule);
+}
+.stepbar .s-done { background: var(--accent); }
+.stepbar .s-partial { background: var(--compute); }
+.stepbar .s-next { background: var(--copy); }
+.stepbar-labels {
+  display: grid;
+  grid-template-columns: repeat(8, minmax(0, 1fr));
+  gap: 4px;
+  font-family: var(--mono);
+  font-size: 11px;
+  color: var(--muted);
+  margin: 0 0 20px;
+  text-align: center;
+}
+
+footer { margin-top: 56px; padding-top: 16px; border-top: 1px solid var(--rule); font-size: 13px; color: var(--muted); }
+</style>
+</head>
+<body>
+
+<div class="shell">
+  <nav class="toc" aria-label="Contents">
+    <p>Contents</p>
+    <ol>
+      <li><a href="#status">Start here</a></li>
+      <li><a href="#pipeline">How the pipeline works</a></li>
+      <li><a href="#kernel">Kernel design</a></li>
+      <li><a href="#reference">Implementation reference</a></li>
+      <li><a href="#decisions">Decisions</a></li>
+      <li><a href="#steps">Steps</a></li>
+      <li><a href="#review">Loose ends</a></li>
+      <li><a href="#testing">Testing and measuring</a></li>
+      <li><a href="#pitfalls">Pitfalls</a></li>
+      <li><a href="#selfcheck">Self-check</a></li>
+    </ol>
+  </nav>
+
+  <main>
+    <header class="top">
+      <p class="eyebrow">aare · feature/cuda_pixelhistogram</p>
+      <h1>Building PixelHistogramCUDA</h1>
+      <p class="lede">Design, current state and remaining steps for the GPU version of <code>PixelHistogram</code> (without pedestal tracking). It is also the handoff document: <a href="#status">Start here</a> and the <a href="#reference">Implementation reference</a> are enough to continue in a new conversation.</p>
+      <div class="meta">
+        <span>Target: 400 × 400 px · ~1000 bins · RTX 4090</span>
+        <span>CPU reference: PixelHistogramImpl</span>
+        <span>Updated 13 Oct 2026</span>
+      </div>
+    </header>
+
+    <section id="status">
+      <h2>Start here</h2>
+      <div class="callout handoff">
+        <ul>
+          <li><strong>Goal:</strong> one histogram per detector pixel, filled on the GPU from batches of frames, with output identical to <code>PixelHistogramImpl</code>.</li>
+          <li><strong>Files:</strong> <code>include/aare/hist/PixelHistogramCUDA.hpp</code> (class), <code>include/aare/hist/pixelhistogram_kernel.cuh</code> (kernels, namespace <code>aare::cuda::detail</code>), <code>include/aare/RAII_device.hpp</code> (wrappers), <code>include/aare/utils/cuda_check.cuh</code> (<code>CUDA_CHECK</code>). Nothing is committed yet.</li>
+          <li><strong>Current step:</strong> 6, CMake wiring and the first end-to-end tests against <code>PixelHistogramImpl</code>. All code is written; the pipeline and fill kernel have never run end to end yet.</li>
+          <li><strong>Settled decisions</strong> are listed under <a href="#decisions">Decisions</a>. Don't reopen them without a measurement.</li>
+          <li><strong>Working agreement:</strong> the author writes the code; the assistant reviews, explains and gives hints rather than full solutions unless asked.</li>
+        </ul>
+      </div>
+
+      <div class="stepbar" aria-hidden="true">
+        <span class="s-done"></span><span class="s-partial"></span><span class="s-done"></span><span class="s-done"></span><span class="s-partial"></span><span class="s-next"></span><span></span><span></span>
+      </div>
+      <div class="stepbar-labels" aria-hidden="true">
+        <span>1</span><span>2</span><span>3</span><span>4</span><span>5</span><span>6</span><span>7</span><span>8</span>
+      </div>
+      <p>Steps 1, 3 and 4 are done and verified. Steps 2 and 5 are written and compile, but are only verified by step 6. Details in <a href="#steps">Steps</a>.</p>
+    </section>
+
+    <section id="pipeline">
+      <h2>How the pipeline works</h2>
+      <p class="kicker">Two streams, two device slots, one histogram that stays on the GPU for the whole run.</p>
+
+      <ul class="path" aria-label="Data path">
+        <li><b>host frames</b>caller-owned, pinned once with <code>register_input_buffer</code></li>
+        <li class="on-copy"><b>copy stream</b>H2D of batch <em>i</em> into slot <em>i</em> mod 2</li>
+        <li class="on-compute"><b>compute stream</b>one fill kernel per batch, in order</li>
+        <li><b>d_histogram</b><code>uint32_t</code> counts, bin-major</li>
+        <li class="on-compute"><b>values()</b>transpose + cap, one D2H</li>
+      </ul>
+
+      <h3>Who waits for what</h3>
+      <div class="table-wrap">
+        <table>
+          <thead><tr><th>Event</th><th>Recorded</th><th>Waited on by</th><th>Prevents</th></tr></thead>
+          <tbody>
+            <tr>
+              <td><span class="swatch sw-copy"></span><code>copy_done[s]</code></td>
+              <td>copy stream, after the H2D into slot <em>s</em></td>
+              <td>compute stream, before the kernel on <em>s</em></td>
+              <td>A kernel reading a half-copied slot</td>
+            </tr>
+            <tr>
+              <td><span class="swatch sw-compute"></span><code>kernel_done[s]</code></td>
+              <td>compute stream, after the kernel on <em>s</em></td>
+              <td>copy stream, before the next H2D into <em>s</em></td>
+              <td>Overwriting a slot a kernel is still reading</td>
+            </tr>
+            <tr>
+              <td>stream order</td>
+              <td>n/a</td>
+              <td>each kernel after the previous one; <code>values()</code> after the last kernel</td>
+              <td>Kernels racing on the histogram; reading an unfinished histogram</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <h3>Expected case: copy-bound</h3>
+      <figure>
+        <div class="diagram">
+          <svg viewBox="0 0 740 160" role="img" aria-labelledby="t1title">
+            <title id="t1title">Copy-bound timeline: H2D runs back to back on the copy stream; each kernel starts when its copy lands; kernel_done waits are already satisfied so the copy engine never idles.</title>
+            <defs>
+              <marker id="hc1" viewBox="0 0 8 8" refX="7" refY="4" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0 0 L8 4 L0 8 z" class="head-copy"/></marker>
+              <marker id="hk1" viewBox="0 0 8 8" refX="7" refY="4" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0 0 L8 4 L0 8 z" class="head-compute"/></marker>
+            </defs>
+            <text x="8" y="47" class="lane-label">copy</text>
+            <text x="8" y="119" class="lane-label">compute</text>
+            <line x1="100" y1="42" x2="730" y2="42" class="lane-line"/>
+            <line x1="100" y1="114" x2="730" y2="114" class="lane-line"/>
+            <!-- copy lane: C=100, scale 1.35 -->
+            <rect x="101" y="24" width="133" height="36" rx="3" class="box-copy"/><text x="167" y="46" text-anchor="middle" class="box-text">H2D b0·s0</text>
+            <rect x="236" y="24" width="133" height="36" rx="3" class="box-copy"/><text x="302" y="46" text-anchor="middle" class="box-text">H2D b1·s1</text>
+            <rect x="371" y="24" width="133" height="36" rx="3" class="box-copy"/><text x="437" y="46" text-anchor="middle" class="box-text">H2D b2·s0</text>
+            <rect x="506" y="24" width="133" height="36" rx="3" class="box-copy"/><text x="572" y="46" text-anchor="middle" class="box-text">H2D b3·s1</text>
+            <!-- compute lane: K=60 -->
+            <rect x="236" y="96" width="79" height="36" rx="3" class="box-compute"/><text x="275" y="118" text-anchor="middle" class="box-text">K b0·s0</text>
+            <rect x="371" y="96" width="79" height="36" rx="3" class="box-compute"/><text x="410" y="118" text-anchor="middle" class="box-text">K b1·s1</text>
+            <rect x="506" y="96" width="79" height="36" rx="3" class="box-compute"/><text x="545" y="118" text-anchor="middle" class="box-text">K b2·s0</text>
+            <rect x="641" y="96" width="79" height="36" rx="3" class="box-compute"/><text x="680" y="118" text-anchor="middle" class="box-text">K b3·s1</text>
+            <!-- copy_done arrows (down) -->
+            <line x1="235" y1="61" x2="235" y2="94" class="arr-copy" marker-end="url(#hc1)"/>
+            <line x1="370" y1="61" x2="370" y2="94" class="arr-copy" marker-end="url(#hc1)"/>
+            <line x1="505" y1="61" x2="505" y2="94" class="arr-copy" marker-end="url(#hc1)"/>
+            <line x1="640" y1="61" x2="640" y2="94" class="arr-copy" marker-end="url(#hc1)"/>
+            <!-- kernel_done arrows (up, already satisfied) -->
+            <line x1="316" y1="95" x2="368" y2="62" class="arr-compute" marker-end="url(#hk1)"/>
+            <line x1="451" y1="95" x2="503" y2="62" class="arr-compute" marker-end="url(#hk1)"/>
+            <line x1="100" y1="148" x2="728" y2="148" class="axis"/>
+            <text x="728" y="144" text-anchor="end" class="axis-text">time →</text>
+          </svg>
+        </div>
+        <figcaption>Kernel faster than copy. Each kernel waits only for its own copy. By the time H2D b2 wants slot 0, kernel b0 has long finished, so the <code>kernel_done</code> wait costs nothing and the copy engine runs back to back. Throughput = copy time per batch.</figcaption>
+      </figure>
+
+      <h3>If the kernel were slower: compute-bound</h3>
+      <figure>
+        <div class="diagram">
+          <svg viewBox="0 0 740 160" role="img" aria-labelledby="t2title">
+            <title id="t2title">Compute-bound timeline: kernels run back to back; H2D into a slot waits for that slot's previous kernel, leaving idle gaps on the copy stream.</title>
+            <defs>
+              <marker id="hc2" viewBox="0 0 8 8" refX="7" refY="4" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0 0 L8 4 L0 8 z" class="head-copy"/></marker>
+              <marker id="hk2" viewBox="0 0 8 8" refX="7" refY="4" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0 0 L8 4 L0 8 z" class="head-compute"/></marker>
+              <pattern id="hatch" width="6" height="6" patternUnits="userSpaceOnUse" patternTransform="rotate(45)">
+                <line x1="0" y1="0" x2="0" y2="6" class="hatch-line"/>
+              </pattern>
+            </defs>
+            <text x="8" y="47" class="lane-label">copy</text>
+            <text x="8" y="119" class="lane-label">compute</text>
+            <line x1="100" y1="42" x2="730" y2="42" class="lane-line"/>
+            <line x1="100" y1="114" x2="730" y2="114" class="lane-line"/>
+            <!-- idle gaps on copy lane -->
+            <rect x="263" y="30" width="52" height="24" class="idle"/><text x="289" y="22" text-anchor="middle" class="idle-text">idle</text>
+            <rect x="398" y="30" width="52" height="24" class="idle"/>
+            <rect x="533" y="30" width="52" height="24" class="idle"/>
+            <!-- copy lane: C=60 -->
+            <rect x="101" y="24" width="79" height="36" rx="3" class="box-copy"/><text x="140" y="46" text-anchor="middle" class="box-text">H2D b0·s0</text>
+            <rect x="182" y="24" width="79" height="36" rx="3" class="box-copy"/><text x="221" y="46" text-anchor="middle" class="box-text">H2D b1·s1</text>
+            <rect x="317" y="24" width="79" height="36" rx="3" class="box-copy"/><text x="356" y="46" text-anchor="middle" class="box-text">H2D b2·s0</text>
+            <rect x="452" y="24" width="79" height="36" rx="3" class="box-copy"/><text x="491" y="46" text-anchor="middle" class="box-text">H2D b3·s1</text>
+            <rect x="587" y="24" width="79" height="36" rx="3" class="box-copy"/><text x="626" y="46" text-anchor="middle" class="box-text">H2D b4·s0</text>
+            <!-- compute lane: K=100 -->
+            <rect x="182" y="96" width="133" height="36" rx="3" class="box-compute"/><text x="248" y="118" text-anchor="middle" class="box-text">K b0·s0</text>
+            <rect x="317" y="96" width="133" height="36" rx="3" class="box-compute"/><text x="383" y="118" text-anchor="middle" class="box-text">K b1·s1</text>
+            <rect x="452" y="96" width="133" height="36" rx="3" class="box-compute"/><text x="518" y="118" text-anchor="middle" class="box-text">K b2·s0</text>
+            <rect x="587" y="96" width="133" height="36" rx="3" class="box-compute"/><text x="653" y="118" text-anchor="middle" class="box-text">K b3·s1</text>
+            <!-- copy_done arrows (down) -->
+            <line x1="181" y1="61" x2="181" y2="94" class="arr-copy" marker-end="url(#hc2)"/>
+            <line x1="262" y1="61" x2="312" y2="95" class="arr-copy" marker-end="url(#hc2)"/>
+            <line x1="397" y1="61" x2="447" y2="95" class="arr-copy" marker-end="url(#hc2)"/>
+            <line x1="532" y1="61" x2="582" y2="95" class="arr-copy" marker-end="url(#hc2)"/>
+            <!-- kernel_done arrows (up, these stall the copy) -->
+            <line x1="321" y1="95" x2="321" y2="62" class="arr-compute" marker-end="url(#hk2)"/>
+            <line x1="456" y1="95" x2="456" y2="62" class="arr-compute" marker-end="url(#hk2)"/>
+            <line x1="591" y1="95" x2="591" y2="62" class="arr-compute" marker-end="url(#hk2)"/>
+            <line x1="100" y1="148" x2="728" y2="148" class="axis"/>
+            <text x="728" y="144" text-anchor="end" class="axis-text">time →</text>
+          </svg>
+        </div>
+        <figcaption>Kernel slower than copy. H2D b2 can't start until kernel b0 releases slot 0, and the copy stream idles in the hatched gaps. Without this wait you'd overwrite slot 0 under a running kernel, with no error, just wrong counts. Throughput = kernel time per batch. A third slot would not raise it.</figcaption>
+      </figure>
+      <div class="legend">
+        <span class="l-copy"><i></i>copy_done[s]: compute stream waits</span>
+        <span class="l-compute"><i></i>kernel_done[s]: copy stream waits</span>
+        <span>b<em>i</em>·s<em>j</em> = batch <em>i</em> in slot <em>j</em></span>
+      </div>
+
+      <p>Throughput is one batch per max(copy time, kernel time). A third slot would only absorb jitter, not make the slower stage faster.</p>
+    </section>
+
+    <section id="kernel">
+      <h2>Kernel design</h2>
+
+      <h3>Fill kernel: bin-major, one thread per pixel</h3>
+      <ul>
+        <li><strong>1D grid, one thread per pixel.</strong> Histogramming never looks at neighbouring pixels, so a pixel is just a flat index <code>p</code>. Consecutive threads take consecutive pixels, so each warp reads one contiguous chunk per frame.</li>
+        <li><strong>Each thread loops over the batch's frames</strong> and increments its own pixel's bins.</li>
+        <li><strong>No atomics.</strong> Only one thread ever writes pixel <em>p</em>'s bins, and kernels never overlap because they share one in-order stream.</li>
+      </ul>
+      <div class="table-wrap">
+        <table>
+          <thead><tr><th>Accumulator layout</th><th>Warp increment, all same bin</th><th>Warp increment, all different bins</th><th>Hot set in L2 (160k px, ~10 hot bins)</th></tr></thead>
+          <tbody>
+            <tr><td>pixel-major <code>[p][bin]</code></td><td>32 separate sectors</td><td>32 separate sectors</td><td>~50 MB</td></tr>
+            <tr><td>bin-major <code>[bin][p]</code></td><td>1 × 128 B line</td><td>32 separate sectors</td><td>~6 MB</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <p>Bin-major is never worse, and much better when neighbouring pixels land in the same bin. What matters is how many <em>distinct</em> bins a warp hits, not how far apart they are.</p>
+
+      <h3>No shared memory in the fill kernel</h3>
+      <ul>
+        <li>It wouldn't be shared: each thread owns its pixel's bins, so it would just be a big private array per thread.</li>
+        <li>2 KB per pixel (1000 bins × 2 B) fits only ~50 pixels per SM, which collapses occupancy.</li>
+        <li>Writing all bins back after each batch would move the whole histogram (~1.3 GB per batch).</li>
+        <li>The 4090's 72 MB L2 already holds the hot bins: ~2 µs of L2 traffic per frame, against ~13 µs to copy one frame over PCIe.</li>
+      </ul>
+
+      <h3>Finalize kernel: transpose and cap <span class="chip done">Done</span></h3>
+      <ul>
+        <li><code>bin_to_pixel_major</code> turns the <code>[nbins][npix]</code> accumulator into <code>[npix][nbins]</code> <code>StorageType</code>, capping each count. One thread per <em>output</em> element: writes are coalesced, reads are strided but mostly served from cache.</li>
+        <li>It writes into a temporary buffer and only <em>reads</em> the accumulator, so <code>values()</code> works mid-run and filling can continue afterwards.</li>
+        <li>Cost: roughly 2–4 ms, against ~13 ms for the 320 MB D2H that follows. A tiled version is deferred (see <a href="#decisions">Decisions</a>).</li>
+      </ul>
+    </section>
+
+    <section id="reference">
+      <h2>Implementation reference</h2>
+      <p class="kicker">Exact behaviour of the code as of 13 Oct 2026. Everything below is implemented.</p>
+
+      <h3>Layout conventions</h3>
+      <ul>
+        <li><strong><code>NDView</code> / <code>NDArray</code> are always C-order.</strong> Strides are computed from the shape (<code>c_strides</code> in <code>NDView.hpp</code>); the last index moves fastest; neither class accepts custom strides. <code>sub_view(first, last)</code> slices axis 0 and stays contiguous.</li>
+        <li><strong>Input batch:</strong> <code>NDView&lt;AxisType, 3&gt;</code> of shape <code>(n_frames, rows, cols)</code>. With <code>p = row × ncols + col</code> and <code>npix = rows × cols</code>, frame <em>f</em>, pixel <em>p</em> is at <code>f × npix + p</code>.</li>
+        <li><strong>Device accumulator <code>d_histogram</code>:</strong> <code>npix × nbins</code> <code>uint32_t</code>, <strong>bin-major</strong>: count of (p, b) at <code>b × npix + p</code>.</li>
+        <li><strong>API output:</strong> shape <code>(rows, cols, nbins)</code> of <code>StorageType</code>, <strong>pixel-major</strong>: (p, b) at <code>p × nbins + b</code>. Same as the CPU classes.</li>
+      </ul>
+
+      <h3>Class template and members</h3>
+      <p><code>template &lt;StorageType = uint16_t, DeviceStorageType = uint32_t, AxisType = float, int BLOCK_SIZE = 128&gt; class PixelHistogramCUDA</code>, in <code>aare::cuda</code>. Non-copyable, non-movable. <code>NUM_SLOTS = 2</code> (compile-time).</p>
+      <div class="table-wrap">
+        <table>
+          <thead><tr><th>Member (declaration order)</th><th>Role</th></tr></thead>
+          <tbody>
+            <tr><td><code>nrows</code></td><td>Declared first: its initializer calls <code>check_args</code>, so validation runs before anything allocates.</td></tr>
+            <tr><td><code>ncols, m_nbins, m_xmin, m_xmax, m_scale, m_batch_size</code></td><td><code>m_scale = nbins / (xmax − xmin)</code> (bins per unit).</td></tr>
+            <tr><td><code>m_next_batch</code>, <code>mutable m_processed_batches</code></td><td>Slot counter (submitted batches); <code>flush()</code> sets processed = submitted.</td></tr>
+            <tr><td><code>m_registered_input</code></td><td><code>HostRegistration</code>; destroyed after the streams have synchronised.</td></tr>
+            <tr><td><code>d_histogram</code>, <code>d_frames_batch[NUM_SLOTS]</code></td><td>Accumulator and per-slot frame buffers (<code>npix × batch_size</code> <code>AxisType</code>).</td></tr>
+            <tr><td><code>copy_done[NUM_SLOTS]</code>, <code>kernel_done[NUM_SLOTS]</code></td><td>Per-slot events.</td></tr>
+            <tr><td><code>copy_stream</code>, <code>compute_stream</code></td><td>Declared <strong>last</strong> so they're destroyed <strong>first</strong>; the <code>Stream</code> deleter synchronises before destroying, so nothing is freed under running work.</td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <h3>Constructor</h3>
+      <ul>
+        <li><code>check_args(rows, cols, n_bins, xmin, xmax, batch_size)</code> throws <code>std::invalid_argument</code> unless rows, cols, bins ≥ 1, <code>xmax &gt; xmin</code> (also rejects NaN) and <code>batch_size ≥ 1</code>; returns <code>rows</code>.</li>
+        <li>Body: create events in a loop; <code>cudaMemsetAsync(d_histogram, 0, d_histogram.bytes(), compute_stream)</code> (on the compute stream so every kernel is ordered after it; plain <code>cudaMemset</code> would run on the legacy default stream, which non-blocking streams don't wait for); allocate the frame buffers in a loop.</li>
+      </ul>
+
+      <h3>Input registration</h3>
+      <ul>
+        <li><code>register_input_buffer(ptr, bytes)</code>: synchronise the copy stream → unregister the previous buffer explicitly (re-registering overlapping memory would fail with <code>cudaErrorHostMemoryAlreadyRegistered</code>) → <code>HostRegistration(ptr, bytes)</code>.</li>
+        <li><code>unregister_input_buffer()</code>: synchronise the copy stream → unregister.</li>
+        <li><code>HostRegistration::unregister()</code> releases the pointer from its <code>unique_ptr</code> <em>before</em> calling <code>cudaHostUnregister</code>, so a failure is never retried by the destructor.</li>
+        <li><strong>Contract:</strong> the caller's dataset must outlive the registration. Unregistered (pageable) input still works, but copies don't overlap.</li>
+      </ul>
+
+      <h3><code>submit_batch(frames)</code>: exact sequence</h3>
+      <ol>
+        <li>Validate: <code>shape(0) ≤ m_batch_size</code>, <code>shape(1) == nrows</code>, <code>shape(2) == ncols</code>.</li>
+        <li><code>slot = m_next_batch++ % NUM_SLOTS</code>; <code>n_frames = shape(0)</code>.</li>
+        <li>Copy stream: <code>cudaStreamWaitEvent(kernel_done[slot])</code>.</li>
+        <li>Copy stream: <code>cudaMemcpyAsync</code> H2D of <code>npix × n_frames × sizeof(AxisType)</code> into <code>d_frames_batch[slot]</code>.</li>
+        <li>Copy stream: <code>cudaEventRecord(copy_done[slot])</code>.</li>
+        <li>Compute stream: <code>cudaStreamWaitEvent(copy_done[slot])</code>.</li>
+        <li>Compute stream: <code>fill_bin_major&lt;&lt;&lt;ceil(npix / BLOCK_SIZE), BLOCK_SIZE&gt;&gt;&gt;(frames, d_histogram, npix, nbins, xmin, xmax, scale, n_frames)</code>, then <code>cudaGetLastError</code>.</li>
+        <li>Compute stream: <code>cudaEventRecord(kernel_done[slot])</code>.</li>
+      </ol>
+      <p><strong>Invariants:</strong> the host never waits. In the first round, waits on events never recorded are no-ops. All kernels run in order on one stream, which is what makes plain increments safe. <code>n_frames</code> is passed by value, so a partial last batch is safe. <code>fill_histogram(frames)</code> cuts <code>frames</code> into <code>sub_view</code>s of at most <code>m_batch_size</code> along axis 0 and submits each. <code>flush() const</code> synchronises copy, then compute.</p>
+
+      <h3><code>fill_bin_major</code></h3>
+      <ul>
+        <li><code>p = (size_t)blockIdx.x × blockDim.x + threadIdx.x</code>; return if <code>p ≥ npix</code>.</li>
+        <li>For <code>f</code> in <code>[0, n_frames)</code>: <code>v = frames[f × npix + p]</code>; skip (<code>continue</code>) unless <code>v ≥ xmin &amp;&amp; v &lt; xmax</code>, written this way so NaN is skipped too; <code>bin = min((size_t)((v − xmin) × scale), nbins − 1)</code>; <code>++hist[bin × npix + p]</code>. No saturation check: the <code>uint32_t</code> counter can't realistically overflow, and <code>values()</code> caps.</li>
+        <li>Matches <code>PixelHistogramImpl::fill_flat_unchecked</code> operation for operation. No FMA risk: there's no addition after the multiply.</li>
+        <li>No atomics, no shared memory, no <code>__syncthreads()</code>. All indices in <code>size_t</code>; pointers <code>const</code> / <code>__restrict__</code>.</li>
+      </ul>
+
+      <h3><code>values(out) const</code>: exact sequence</h3>
+      <ol>
+        <li>Check <code>out.shape() == (nrows, ncols, nbins)</code>; otherwise throw <code>std::invalid_argument</code> naming the expected shape. The shape fully determines the layout (C-order), so nothing else needs checking.</li>
+        <li><code>tmp = make_async_buffer&lt;StorageType&gt;(npix × nbins, compute_stream)</code>.</li>
+        <li><code>bin_to_pixel_major&lt;&lt;&lt;ceil(total / BLOCK_SIZE), BLOCK_SIZE, 0, compute&gt;&gt;&gt;(d_histogram, tmp, npix, nbins, count_cap())</code>, then <code>cudaGetLastError</code>.</li>
+        <li><code>cudaMemcpyAsync(out.data(), tmp, total × sizeof(StorageType), D2H, compute_stream)</code>.</li>
+        <li><code>cudaStreamSynchronize(compute_stream)</code>. <code>tmp</code> is freed with <code>cudaFreeAsync</code> when it goes out of scope, also if a <code>CUDA_CHECK</code> throws.</li>
+      </ol>
+      <ul>
+        <li><strong>Semantics:</strong> a snapshot of every batch submitted so far; the accumulator is never modified, so filling can continue afterwards. The caller needs no sync before calling.</li>
+        <li><code>values()</code> allocates an <em>uninitialised</em> <code>NDArray</code> (shape-only constructor), calls <code>values(view)</code> and returns it (NRVO, else a move).</li>
+        <li><code>count_cap()</code> (private, <code>static constexpr</code>): for integer <code>StorageType</code>, the smaller of its max and <code>DeviceStorageType</code>'s max (compared as <code>uintmax_t</code>); for floating-point storage, <code>DeviceStorageType</code>'s max. Capping once here equals the CPU's per-increment saturation, because counts only increase.</li>
+        <li><code>bin_to_pixel_major</code>: one thread per <em>output</em> element <code>t</code> (64-bit index, return if <code>t ≥ npix × nbins</code>); <code>pix = t / nbins</code>, <code>bin = t − pix × nbins</code>; <code>out[t] = (StorageType)min(in[bin × npix + pix], cap)</code> with a ternary. Writes coalesced, reads strided (served mostly from cache).</li>
+      </ul>
+
+      <h3><code>values_pixel(row, col) const</code></h3>
+      <ul>
+        <li>A debug/convenience call for inspecting one pixel; for many pixels, call <code>values()</code> once. Throws <code>std::invalid_argument</code> unless <code>row &lt; nrows</code> and <code>col &lt; ncols</code>.</li>
+        <li><code>cudaMemcpy2DAsync(dst = host DeviceStorageType[nbins], dpitch = sizeof(DeviceStorageType), src = d_histogram + p, spitch = npix × sizeof(DeviceStorageType), width = sizeof(DeviceStorageType), height = nbins, D2H, compute_stream)</code>, then synchronise.</li>
+        <li>Cap each value at <code>count_cap()</code> and convert into the returned <code>NDArray&lt;StorageType, 1&gt;</code> in a host loop. (<code>NDArray</code>'s expression constructor wouldn't do this: it needs an rvalue and truncates instead of capping.)</li>
+        <li>Cost: the copy engine moves one 4-byte piece per bin, so per byte it's slow (2D copies are always slower than 1D unless width = pitch). Fine for a single pixel.</li>
+      </ul>
+
+      <h3><code>bin_edges()</code> / <code>bin_centers()</code></h3>
+      <p>Computed on demand, nothing stored: <code>edges[i] = xmin + (i × (xmax − xmin)) / nbins</code> for <code>i</code> in <code>[0, nbins]</code> (same formula as <code>PixelHistogramImpl</code>); <code>centers[i] = (edges[i] + edges[i+1]) / 2</code>.</p>
+
+      <h3>RAII helpers (<code>include/aare/RAII_device.hpp</code>)</h3>
+      <div class="table-wrap">
+        <table>
+          <thead><tr><th>Helper</th><th>Owns</th><th>Released by</th></tr></thead>
+          <tbody>
+            <tr><td><code>DeviceBuffer&lt;T&gt;(n)</code></td><td><code>cudaMalloc</code> memory; <code>get()</code>, <code>size()</code>, <code>bytes()</code></td><td><code>cudaFree</code></td></tr>
+            <tr><td><code>HostRegistration(ptr, bytes)</code></td><td>A <code>cudaHostRegister</code>; explicit constructor; <code>unregister()</code></td><td><code>cudaHostUnregister</code></td></tr>
+            <tr><td><code>AsyncDeviceBuffer&lt;T&gt;</code> via <code>make_async_buffer&lt;T&gt;(n, stream)</code></td><td><code>cudaMallocAsync</code> memory; a <code>unique_ptr</code> with a deleter that remembers the stream</td><td><code>cudaFreeAsync</code> on that stream</td></tr>
+            <tr><td><code>Stream</code> via <code>make_stream()</code></td><td>A <code>cudaStreamNonBlocking</code> stream</td><td><code>cudaStreamSynchronize</code>, then destroy</td></tr>
+            <tr><td><code>Event</code> via <code>make_event()</code></td><td>An event with <code>DisableTiming | BlockingSync</code></td><td><code>cudaEventDestroy</code></td></tr>
+          </tbody>
+        </table>
+      </div>
+      <p>All deleters are <code>noexcept</code> and ignore errors; <code>CUDA_CHECK</code> (which throws) is only used outside destructors.</p>
+
+    </section>
+
+    <section id="decisions">
+      <h2>Decisions</h2>
+
+      <h3>Settled</h3>
+      <div class="table-wrap">
+        <table>
+          <thead><tr><th>Choice</th><th>Instead of, and why</th></tr></thead>
+          <tbody>
+            <tr><td>Two streams (copy / compute), two slots</td><td>One stream per slot: kernels from different slots would run at the same time and race on the histogram.</td></tr>
+            <tr><td>One <code>submit_batch</code> queuing all six operations; internal slot counter</td><td>Separate public <code>submit</code> + <code>process</code>: only correct if the caller strictly alternates them. Submitting <em>i</em> and <em>i + 2</em> before processing <em>i</em> silently counted batch <em>i + 2</em> twice.</td></tr>
+            <tr><td>Frames copied as delivered, frame-major</td><td>Transposing frames to pixel-major: an extra pass, and it de-coalesces the kernel's reads.</td></tr>
+            <tr><td>One accumulator, resident on the GPU</td><td>Partial histograms per batch or per stream: counting is additive, so there's nothing to reduce.</td></tr>
+            <tr><td>Bin-major <code>uint32_t</code> counts</td><td>Pixel-major: 32 sectors per warp whatever the data. <code>StorageType</code> counts: a saturation compare in the hot loop. Capping once in <code>values()</code> gives the same result as the CPU's per-increment saturation.</td></tr>
+            <tr><td>No atomics, no shared memory in the fill kernel</td><td>See <a href="#kernel">Kernel design</a>.</td></tr>
+            <tr><td>Input: caller owns the dataset; the class holds the registration</td><td>A class-owned host copy: wasted memory for data already in RAM.</td></tr>
+            <tr><td>Output: caller-owned <code>NDView</code>; no host copy kept; not pinned by the class</td><td>A host histogram member ties 320 MB to the instance. Pinning per call costs about what it saves for a copy made once per run.</td></tr>
+            <tr><td>Convert and transpose on the device</td><td>D2H as <code>uint32_t</code>, then convert on the host: twice the PCIe bytes plus a slow host pass.</td></tr>
+            <tr><td>Bin edges computed on the host</td><td>A device copy: no kernel reads it.</td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <h3>Open</h3>
+      <ul>
+        <li><strong>Input type (D1):</strong> frames are <code>float</code> today. Raw <code>uint16_t</code> would halve PCIe traffic, the likely bottleneck. For the performance pass.</li>
+        <li><strong>Batch size (D6):</strong> 64–256 frames should be enough (launch overhead ~5 µs vs ~13 µs per frame copy). Choose with nsys.</li>
+        <li><strong>Streaming from file:</strong> today the dataset must already be in host memory. If needed: a blocking submit, or a pinned staging ring that <code>MultiThreadedFileReader</code> writes into directly.</li>
+      </ul>
+
+      <h3>Deferred optimisations</h3>
+      <ul>
+        <li><strong>Tiled transpose</strong>, only if the transpose shows up next to the D2H in nsys.</li>
+        <li><strong>A window of hot bins in shared memory</strong> (e.g. 32 × <code>uint16_t</code> per pixel, centred per pixel), only if the fill kernel turns out to be the bottleneck.</li>
+      </ul>
+      <details class="hint"><summary>Tiled transpose: how it works</summary><div><p>A 2D grid of 32 × 32 tiles: <code>(npix + 31) / 32</code> pixel tiles in x, <code>(nbins + 31) / 32</code> bin tiles in y. Each block has 32 × 8 threads, and each thread handles 4 rows of its tile. Read the tile with <code>threadIdx.x</code> walking pixels (coalesced in bin-major), store it in a <code>[32][33]</code> shared array, <code>__syncthreads()</code>, then write it with <code>threadIdx.x</code> walking bins (coalesced in pixel-major), capping at the write. The extra column avoids bank conflicts. Shared memory is what lets a thread write a value another thread read; a 2D tiling without it changes nothing about coalescing. The square tile matters: a 32 × 8 tile would write only 8 bins per pixel.</p></div></details>
+    </section>
+
+    <section id="steps">
+      <h2>Steps</h2>
+      <p class="kicker">Each step ends with a passing test. Specs are in the <a href="#reference">reference</a>.</p>
+
+      <ol class="steps">
+        <li>
+          <h3>RAII wrappers <span class="chip done">Done</span></h3>
+          <p>All CUDA resources are owned by wrappers in <code>RAII_device.hpp</code>; the class has no destructor.</p>
+        </li>
+        <li>
+          <h3>Host-side pipeline <span class="chip partial">Written, untested</span></h3>
+          <p>Constructor, input registration, <code>submit_batch</code>, <code>fill_histogram</code>, <code>flush()</code>, bin edges and centres. Verified in step 6.</p>
+        </li>
+        <li>
+          <h3>Finalize kernel + <code>values()</code> <span class="chip done">Done, verified</span></h3>
+          <p>Checked with a scratch nvcc test on the RTX 4090: a known pattern <code>count = bin × npix + p</code> on 37 × 53 px and 45 bins (counts up to ~88 k), with <code>uint16_t</code> and <code>uint32_t</code> storage, plus a 1 × 1 case and a run through <code>values()</code>; <code>count_cap()</code> checked at compile time for six types. Zero mismatches. Becomes a real Catch2 test in step 6.</p>
+        </li>
+        <li>
+          <h3><code>values_pixel()</code> <span class="chip done">Done, verified</span></h3>
+          <p><code>cudaMemcpy2DAsync</code> gather, then cap and convert on the host. Scratch test on the known pattern (37 × 53 px, 45 bins, counts up to 88 244): <code>values_pixel(r, c)</code> equals <code>values()(r, c, :)</code> for the four corners and two interior pixels, with <code>uint16_t</code> and <code>uint32_t</code> storage. Zero mismatches.</p>
+        </li>
+        <li>
+          <h3>Fill kernel <code>fill_bin_major</code> <span class="chip partial">Written, untested</span></h3>
+          <p>Implemented to the spec in the reference; the class compiles. Verified by step 6's comparison with the CPU class.</p>
+        </li>
+        <li>
+          <h3>Tests and overlap <span class="chip next">Next</span></h3>
+          <ul>
+            <li>CMake wiring under <code>AARE_CUDA</code>, as on the cluster finder branch. The kernel launch means only nvcc can compile files that include the header, so a <code>.cu</code> test implementation is called from the Catch2 <code>.test.cpp</code>.</li>
+            <li>The tests listed under <a href="#testing">Testing and measuring</a>.</li>
+            <li>nsys shows H2D <em>i+1</em> overlapping kernel <em>i</em>.</li>
+          </ul>
+        </li>
+        <li>
+          <h3>Performance pass <span class="chip todo">To do</span></h3>
+          <p>One change at a time, behind the same tests: <code>uint16_t</code> input, batch size, block size, several frames loaded ahead per thread. Aim for throughput within ~10–20 % of measured H2D bandwidth. Once copy-bound, kernel speedups show up as nothing.</p>
+        </li>
+        <li>
+          <h3>Integration <span class="chip todo">To do</span></h3>
+          <p>Python binding (with <code>py::keep_alive</code> on <code>register_input_buffer</code>), docs in <code>docs/src/</code>, a <code>RELEASE.md</code> entry, the explicit source/test lists in CMake (see AGENTS.md). Done when <code>ctest</code> and pytest pass on a CUDA build and a non-CUDA build is unaffected.</p>
+        </li>
+      </ol>
+    </section>
+
+    <section id="review">
+      <h2>Loose ends</h2>
+      <p class="kicker">Small items in the current files.</p>
+      <ul class="review">
+        <li><span class="ln">hpp L202</span><div><span class="sev design">tidy</span>The "TODO: Needs transpose" above <code>values(out)</code> is done.</div></li>
+        <li><span class="ln">hpp L240</span><div><span class="sev design">tidy</span>A bare <code>// TODO</code> under the Option B comment, with nothing to do.</div></li>
+        <li><span class="ln">hpp L173</span><div><span class="sev design">tidy</span>The "let's not use shmem at first" comment inside the launch can go: the decision is final.</div></li>
+        <li><span class="ln">values_pixel</span><div><span class="sev design">tidy</span>C-style cast <code>(ssize_t)m_nbins</code> in the loop; the repo's warnings flag it. Use <code>static_cast</code>.</div></li>
+        <li><span class="ln">cuda_check.cuh</span><div><span class="sev design">tidy</span>No newline at the end of the file, so compilers warn "backslash-newline at end of file".</div></li>
+      </ul>
+    </section>
+
+    <section id="testing">
+      <h2>Testing and measuring</h2>
+      <h3>Tests</h3>
+      <ul>
+        <li><strong>Known pattern</strong> written into <code>d_histogram</code> (via <code>FRIEND_TEST</code> from <code>tests/friend_test.hpp</code>): checks the transpose and capping without the fill kernel. Use odd sizes so partial blocks are covered.</li>
+        <li><strong>Exact match with <code>PixelHistogramImpl</code></strong> on random frames, including values at <code>xmin</code>, just below <code>xmax</code>, at <code>xmax</code> and outside the range.</li>
+        <li><strong>Pipeline cases:</strong> a partial last batch; several <code>fill_histogram</code> calls in a row; <code>values()</code> mid-run, then more filling.</li>
+        <li><strong>Race test</strong> (a test of the tests): temporarily remove the <code>kernel_done</code> wait and slow the kernel down. Results must become wrong; if they don't, the tests can't catch a synchronisation bug.</li>
+      </ul>
+      <h3>Measuring</h3>
+      <ul>
+        <li><strong>Ceiling:</strong> measure pinned H2D bandwidth (<code>nvbandwidth</code> or <code>bandwidthTest</code>) and divide by the frame size to get the maximum frames/s.</li>
+        <li><strong>Timeline:</strong> wrap submit, <code>values()</code> and file reading in NVTX ranges, then:</li>
+      </ul>
+      <pre><code>nsys profile --trace=cuda,nvtx -o pixhist ./build/your_bench
+nsys stats --report cuda_gpu_trace pixhist.nsys-rep</code></pre>
+      <ul>
+        <li>Gaps on the copy row while kernels run: compute-bound, so optimise the kernel.</li>
+        <li>Gaps on both rows: the host is the bottleneck (file reading, a hidden sync).</li>
+        <li>Copies labelled "Pageable": the input isn't pinned, so nothing overlaps.</li>
+        <li>A memcpy or memset on the default stream: something escaped your streams.</li>
+      </ul>
+    </section>
+
+    <section id="pitfalls">
+      <h2>Pitfalls</h2>
+      <ul class="pitfalls">
+        <li><b>Default-stream calls</b>Plain <code>cudaMemcpy</code> and <code>cudaMemset</code> run on the legacy default stream, which streams created with <code>cudaStreamNonBlocking</code> don't wait for. Keep every operation on your own streams.</li>
+        <li><b>Pageable memory</b><code>cudaMemcpyAsync</code> from unpinned memory works but is effectively synchronous. Nothing errors; you just lose the overlap.</li>
+        <li><b>Throwing in destructors</b><code>CUDA_CHECK</code> throws, and a throw from a destructor calls <code>std::terminate</code>. Deleters ignore errors instead.</li>
+        <li><b>32-bit index overflow</b><code>blockIdx.x × blockDim.x</code> is computed in 32 bits; widen to <code>size_t</code> first. <code>bin × npix</code> and <code>frame × npix</code> also need 64 bits on large detectors.</li>
+        <li><b>Host constexpr in device code</b><code>std::numeric_limits&lt;T&gt;::max()</code> needs nvcc's <code>--expt-relaxed-constexpr</code> in a kernel. That's why the cap is computed on the host and passed in.</li>
+        <li><b>Kernel arguments vs pointers</b>Arguments are copied at launch, so passing the frame count by value is safe. Anything read through a pointer is read when the kernel runs.</li>
+      </ul>
+    </section>
+
+    <section id="selfcheck">
+      <h2>Self-check</h2>
+      <p class="kicker">Answers are folded.</p>
+      <details><summary>Why does the H2D into slot s wait on kernel_done[s], and not on the previous batch's kernel?</summary><div><p>Only the kernel on slot s reads slot s. And since kernels run in order, <code>kernel_done[s]</code> firing means every earlier kernel has finished too.</p></div></details>
+      <details><summary>Why do kernels never race on the histogram without atomics?</summary><div><p>Each pixel belongs to one thread, and all kernels run one after another on the compute stream.</p></div></details>
+      <details><summary>Why is bin-major never worse than pixel-major for the fill kernel?</summary><div><p>In pixel-major, neighbouring threads are always <code>nbins</code> apart, so every warp increment touches 32 sectors. In bin-major that's only the worst case (all bins different); every shared bin reduces it.</p></div></details>
+      <details><summary>Why is capping once at the end the same as saturating every increment?</summary><div><p>Counts only increase, so both give min(n, max), as long as the <code>uint32_t</code> counter itself never wraps (4 × 10⁹ counts per bin).</p></div></details>
+      <details><summary>What does the caller need to do before values()?</summary><div><p>Nothing. <code>values()</code> queues the transpose and the D2H on the compute stream, after every kernel already submitted, and synchronises before returning.</p></div></details>
+      <details><summary>Why does a third slot not raise throughput?</summary><div><p>Throughput is set by the slower of copy and kernel. Extra slots only absorb jitter, such as one slow file read.</p></div></details>
+    </section>
+
+    <footer>Base PixelHistogramCUDA (no pedestal tracking). Pedestal tracking would reuse the same pipeline; only the kernel's per-pixel state and the setup differ.</footer>
+  </main>
+</div>
+</body>
+</html>
