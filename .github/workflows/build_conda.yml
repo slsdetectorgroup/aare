@@ -11,6 +11,9 @@ on:
 
 jobs:
   build:
+    # The name leaves out the Python version so that the required status
+    # check on main keeps matching when the version is bumped
+    name: Conda build on ${{ matrix.platform }}
     strategy:
       fail-fast: false
       matrix:
