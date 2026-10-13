@@ -542,7 +542,8 @@ footer { margin-top: 56px; padding-top: 16px; border-top: 1px solid var(--rule);
           <li><strong>Files:</strong> <code>include/aare/hist/PixelHistogramCUDA.hpp</code> (class), <code>include/aare/hist/pixelhistogram_kernel.cuh</code> (kernels, namespace <code>aare::cuda::detail</code>), <code>include/aare/RAII_device.hpp</code> (wrappers), <code>include/aare/utils/cuda_check.cuh</code> (<code>CUDA_CHECK</code>). Nothing is committed yet.</li>
           <li><strong>Current step:</strong> 6, CMake wiring and the first end-to-end tests against <code>PixelHistogramImpl</code>. All code is written; the pipeline and fill kernel have never run end to end yet.</li>
           <li><strong>Settled decisions</strong> are listed under <a href="#decisions">Decisions</a>. Don't reopen them without a measurement.</li>
-          <li><strong>Working agreement:</strong> the author writes the code; the assistant reviews, explains and gives hints rather than full solutions unless asked.</li>
+          <li><strong>Branch:</strong> <code>feature/cuda_pixelhistogram</code> is based on <code>feature/cuda_clusterfinder</code> and pushed. The cluster finder merges into <code>main</code> first. <code>cuda_check.cuh</code>, the base of <code>RAII_device.hpp</code> and the <code>AARE_CUDA</code> CMake setup come from that branch; this branch only adds <code>HostRegistration</code>, <code>AsyncDeviceBuffer</code> and <code>Event</code> to <code>RAII_device.hpp</code>. Pick up cluster-finder updates by rebasing (then <code>--force-with-lease</code>) or merging; in both cases keep this branch's <code>RAII_device.hpp</code> on conflict.</li>
+          <li><strong>Working agreement:</strong> the author writes the code; the assistant reviews, explains and gives hints rather than full solutions unless asked. Answers are direct, honest (including when something is wrong) and compact.</li>
         </ul>
       </div>
 
@@ -895,7 +896,7 @@ footer { margin-top: 56px; padding-top: 16px; border-top: 1px solid var(--rule);
         <li>
           <h3>Tests and overlap <span class="chip next">Next</span></h3>
           <ul>
-            <li>CMake wiring under <code>AARE_CUDA</code>, as on the cluster finder branch. The kernel launch means only nvcc can compile files that include the header, so a <code>.cu</code> test implementation is called from the Catch2 <code>.test.cpp</code>.</li>
+            <li>CMake wiring: reuse the <code>AARE_CUDA</code> option and the test pattern already in this branch's base (see <code>ClusterFinderCUDA_testimpl.cu</code> / <code>ClusterFinderCUDA.test.cpp</code>). The kernel launch means only nvcc can compile files that include the header, so a <code>.cu</code> test implementation is called from the Catch2 <code>.test.cpp</code>.</li>
             <li>The tests listed under <a href="#testing">Testing and measuring</a>.</li>
             <li>nsys shows H2D <em>i+1</em> overlapping kernel <em>i</em>.</li>
           </ul>
@@ -918,8 +919,7 @@ footer { margin-top: 56px; padding-top: 16px; border-top: 1px solid var(--rule);
         <li><span class="ln">hpp L202</span><div><span class="sev design">tidy</span>The "TODO: Needs transpose" above <code>values(out)</code> is done.</div></li>
         <li><span class="ln">hpp L240</span><div><span class="sev design">tidy</span>A bare <code>// TODO</code> under the Option B comment, with nothing to do.</div></li>
         <li><span class="ln">hpp L173</span><div><span class="sev design">tidy</span>The "let's not use shmem at first" comment inside the launch can go: the decision is final.</div></li>
-        <li><span class="ln">values_pixel</span><div><span class="sev design">tidy</span>C-style cast <code>(ssize_t)m_nbins</code> in the loop; the repo's warnings flag it. Use <code>static_cast</code>.</div></li>
-        <li><span class="ln">cuda_check.cuh</span><div><span class="sev design">tidy</span>No newline at the end of the file, so compilers warn "backslash-newline at end of file".</div></li>
+        <li><span class="ln">cuda_check.cuh</span><div><span class="sev design">tidy</span>No newline at the end of the file, so compilers warn "backslash-newline at end of file". The file comes from the cluster-finder branch: fix it there.</div></li>
       </ul>
     </section>
 
