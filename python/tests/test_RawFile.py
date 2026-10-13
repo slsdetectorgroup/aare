@@ -532,7 +532,7 @@ def test_raw_file_gap_pixels(tmp_path, layout):
         assert (reader.rows(), reader.cols()) == ((512 + 2) * layout_rows, (1024 + 6) * layout_cols)
         header, image = reader.read_frame()
         assert header.size == layout_rows * layout_cols
-        assert (image == insert_gap_pixels(expected, DetectorType.Jungfrau, gaps)).all()
+        assert (image == insert_gap_pixels(expected, gaps)).all()
         reader.seek(0)
         _, images = reader.read_n(2)
         assert images.shape == (2, reader.rows(), reader.cols())
@@ -545,15 +545,15 @@ def test_raw_file_gap_pixels(tmp_path, layout):
     with RawFile(master_path, gap_pixels=True) as reader:
         assert reader.gap_pixels == GapPixels()
         _, image = reader.read_frame()
-        assert (image == insert_gap_pixels(expected, DetectorType.Jungfrau)).all()
+        assert (image == insert_gap_pixels(expected)).all()
 
     with File(master_path, gap_pixels=True) as reader:
-        assert (reader.rows, reader.cols) == insert_gap_pixels(expected, DetectorType.Jungfrau).shape
-        assert (reader.read_frame() == insert_gap_pixels(expected, DetectorType.Jungfrau)).all()
+        assert (reader.rows, reader.cols) == insert_gap_pixels(expected).shape
+        assert (reader.read_frame() == insert_gap_pixels(expected)).all()
 
     module_gaps = GapPixels(module_gaps=ModuleGaps(8, 36))
     with File(master_path, gap_pixels=module_gaps) as reader:
-        assert (reader.read_frame() == insert_gap_pixels(expected, DetectorType.Jungfrau, module_gaps)).all()
+        assert (reader.read_frame() == insert_gap_pixels(expected, module_gaps)).all()
 
 
 def test_raw_file_gap_pixels_split_counts(tmp_path):
@@ -561,7 +561,7 @@ def test_raw_file_gap_pixels_split_counts(tmp_path):
     gaps = GapPixels(split_counts=True, seed=11)
     with RawFile(master_path, gap_pixels=gaps) as reader:
         _, image = reader.read_frame()
-    assert (image == insert_gap_pixels(expected, DetectorType.Jungfrau, gaps)).all()
+    assert (image == insert_gap_pixels(expected, gaps)).all()
     assert image.sum() == expected.sum()
 
 
@@ -583,7 +583,7 @@ def test_raw_file_gap_pixels_recorded_jungfrau(test_data_path):
         _, image = gapped.read_frame()
         _, reference = plain.read_frame()
         assert image.shape == (514, 1030)
-        assert (image == insert_gap_pixels(reference, DetectorType.Jungfrau, gaps)).all()
+        assert (image == insert_gap_pixels(reference, gaps)).all()
 
 
 @pytest.mark.withdata
@@ -597,7 +597,7 @@ def test_raw_file_gap_pixels_recorded_rois(test_data_path):
         assert images[0].shape == (303, 103)
         assert images[1].shape == (101, 103)
         for image, reference, roi in zip(images, references, rois):
-            assert (image == insert_gap_pixels(reference, DetectorType.Jungfrau, roi=roi)).all()
+            assert (image == insert_gap_pixels(reference, roi=roi)).all()
         gapped.seek(0)
         _, frames = gapped.read_n_with_roi(2, roi_index=1)
         assert frames.shape == (2, 101, 103)

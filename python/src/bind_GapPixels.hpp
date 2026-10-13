@@ -19,12 +19,10 @@ namespace {
 
 template <typename T>
 py::array insert_gap_pixels_typed(const py::array &image, const ROI &roi,
-                                  DetectorType detector, bool quad,
                                   const GapPixels &gaps) {
     py::array_t<T, py::array::c_style | py::array::forcecast> typed(image);
     auto source = make_const_view_2d(typed);
-    auto *result = new NDArray<T, 2>(
-        insert_gap_pixels<T>(source, roi, detector, quad, gaps));
+    auto *result = new NDArray<T, 2>(insert_gap_pixels<T>(source, roi, gaps));
     return return_image_data(result);
 }
 
@@ -46,7 +44,8 @@ void define_gap_pixels_bindings(py::module &m) {
 
     py::class_<GapPixels>(m, "GapPixels", R"(
         Configuration for inserting gap pixels into Jungfrau and Eiger
-        images. Chip and module sizes are fixed by the detector type.
+        images. Chip and module sizes are fixed: 256x256 pixel chips in
+        1024x512 pixel modules.
 
         Parameters
         ----------
@@ -103,21 +102,25 @@ void define_gap_pixels_bindings(py::module &m) {
 
     m.def(
         "gapped_shape",
-        [](const ROI &roi, DetectorType detector_type, const GapPixels &gaps,
-           bool quad) {
-            const auto shape = gapped_shape(roi, detector_type, quad, gaps);
+        [](const ROI &roi, const GapPixels &gaps) {
+            const auto shape = gapped_shape(roi, gaps);
             return py::make_tuple(shape[0], shape[1]);
         },
-        py::arg("roi"), py::arg("detector_type"), py::arg("gaps") = GapPixels{},
-        py::arg("quad") = false, R"(
+        py::arg("roi"), py::arg("gaps") = GapPixels{}, R"(
         Shape (rows, cols) of the gapped image of a detector coordinate ROI.
+
+        Parameters
+        ----------
+        roi : ROI
+            Detector coordinates of the image.
+        gaps : GapPixels
+            Gap configuration.
         )");
 
     m.def(
         "insert_gap_pixels",
-        [](const py::array &image, DetectorType detector_type,
-           const GapPixels &gaps, std::optional<ROI> roi,
-           bool quad) -> py::array {
+        [](const py::array &image, const GapPixels &gaps,
+           std::optional<ROI> roi) -> py::array {
             if (image.ndim() != 2) {
                 throw py::value_error(
                     fmt::format("Expected a 2D image, got {}D", image.ndim()));
@@ -125,51 +128,40 @@ void define_gap_pixels_bindings(py::module &m) {
             const ROI rect =
                 roi.value_or(ROI{0, image.shape(1), 0, image.shape(0)});
             if (py::isinstance<py::array_t<uint8_t>>(image)) {
-                return insert_gap_pixels_typed<uint8_t>(
-                    image, rect, detector_type, quad, gaps);
+                return insert_gap_pixels_typed<uint8_t>(image, rect, gaps);
             }
             if (py::isinstance<py::array_t<uint16_t>>(image)) {
-                return insert_gap_pixels_typed<uint16_t>(
-                    image, rect, detector_type, quad, gaps);
+                return insert_gap_pixels_typed<uint16_t>(image, rect, gaps);
             }
             if (py::isinstance<py::array_t<uint32_t>>(image)) {
-                return insert_gap_pixels_typed<uint32_t>(
-                    image, rect, detector_type, quad, gaps);
+                return insert_gap_pixels_typed<uint32_t>(image, rect, gaps);
             }
             if (py::isinstance<py::array_t<int32_t>>(image)) {
-                return insert_gap_pixels_typed<int32_t>(
-                    image, rect, detector_type, quad, gaps);
+                return insert_gap_pixels_typed<int32_t>(image, rect, gaps);
             }
             if (py::isinstance<py::array_t<float>>(image)) {
-                return insert_gap_pixels_typed<float>(
-                    image, rect, detector_type, quad, gaps);
+                return insert_gap_pixels_typed<float>(image, rect, gaps);
             }
             if (py::isinstance<py::array_t<double>>(image)) {
-                return insert_gap_pixels_typed<double>(
-                    image, rect, detector_type, quad, gaps);
+                return insert_gap_pixels_typed<double>(image, rect, gaps);
             }
             throw py::type_error(
                 "Unsupported dtype, expected uint8, uint16, uint32, int32, "
                 "float32 or float64");
         },
-        py::arg("image"), py::arg("detector_type"),
-        py::arg("gaps") = GapPixels{}, py::arg("roi") = py::none(),
-        py::arg("quad") = false, R"(
+        py::arg("image"), py::arg("gaps") = GapPixels{},
+        py::arg("roi") = py::none(), R"(
         Insert gap pixels into a 2D image.
 
         Parameters
         ----------
         image : numpy.ndarray
             Ungapped image of ``roi``.
-        detector_type : DetectorType
-            Jungfrau or Eiger.
         gaps : GapPixels
             Gap configuration.
         roi : ROI, optional
             Detector coordinates of the image. Defaults to the full image
             starting at pixel (0, 0).
-        quad : bool
-            True for an Eiger quad.
 
         Returns
         -------

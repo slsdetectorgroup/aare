@@ -32,10 +32,11 @@ struct ModuleGaps {
 
 /**
  * @brief Configuration for inserting gap pixels into Jungfrau and Eiger
- * images. Chip and module sizes are fixed by the detector type: 256x256
- * pixel chips in 1024x512 pixel modules (512x512 for an Eiger quad). Gaps
- * are inserted at the chip boundaries inside each module and, only when
- * module_gaps is set, between modules.
+ * images. Chip and module sizes are fixed: 256x256 pixel chips in 1024x512
+ * pixel modules. Gaps are inserted at the chip boundaries inside each module
+ * and, only when module_gaps is set, between modules. An Eiger quad is
+ * 512x512 pixels, so its only chip boundaries are at pixel 256 and the
+ * module width never comes into play.
  *
  * Gap positions are determined in detector coordinates before any ROI, so
  * a ROI only receives the gaps that fall strictly inside it.
@@ -126,11 +127,10 @@ struct GapLayout {
 };
 
 /**
- * @brief Resolve the gap layout for a detector
- * @throws std::invalid_argument for detectors other than Jungfrau and Eiger
- * or for an inconsistent configuration
+ * @brief Resolve the gap layout of a configuration
+ * @throws std::invalid_argument for an inconsistent configuration
  */
-GapLayout gap_layout(DetectorType detector, bool quad, const GapPixels &gaps);
+GapLayout gap_layout(const GapPixels &gaps);
 
 /// @brief Gapped shape {rows, cols} of a detector coordinate ROI
 std::array<ssize_t, 2> gapped_shape(const ROI &roi, const GapLayout &layout);
@@ -326,27 +326,25 @@ void split_edge_counts(NDView<T, 2> destination, const ROI &roi,
 
 /**
  * @brief Shape {rows, cols} of the gapped image of a detector coordinate ROI
- * @throws std::invalid_argument for unsupported detectors or an invalid ROI
+ * @param roi detector coordinates of the image
+ * @param gaps gap configuration
+ * @throws std::invalid_argument for an invalid ROI or configuration
  */
-std::array<ssize_t, 2> gapped_shape(const ROI &roi, DetectorType detector,
-                                    bool quad, const GapPixels &gaps = {});
+std::array<ssize_t, 2> gapped_shape(const ROI &roi, const GapPixels &gaps = {});
 
 /**
  * @brief Insert gap pixels into an image
  * @param source ungapped image of `roi`
  * @param roi detector coordinates of `source`
- * @param detector detector type, Jungfrau or Eiger
- * @param quad true for an Eiger quad
  * @param gaps gap configuration
  * @return gapped image
- * @throws std::invalid_argument for unsupported detectors, an invalid
- * configuration or a source shape that does not match the ROI
+ * @throws std::invalid_argument for an invalid configuration or a source
+ * shape that does not match the ROI
  */
 template <typename T>
 NDArray<T, 2> insert_gap_pixels(NDView<const T, 2> source, const ROI &roi,
-                                DetectorType detector, bool quad,
                                 const GapPixels &gaps = {}) {
-    const auto layout = detail::gap_layout(detector, quad, gaps);
+    const auto layout = detail::gap_layout(gaps);
     detail::validate_roi(roi);
     NDArray<T, 2> result(detail::gapped_shape(roi, layout));
     detail::fill_gap_pixels(result.view(), roi, layout,

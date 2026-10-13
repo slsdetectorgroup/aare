@@ -292,10 +292,9 @@ namespace {
 /// to the same frame read without gaps.
 template <typename T>
 bool matches_gap_oracle(Frame &gapped, Frame &plain, const ROI &roi,
-                        DetectorType detector, bool quad,
                         const GapPixels &gaps) {
-    auto expected = insert_gap_pixels(NDView<const T, 2>(plain.view<T>()), roi,
-                                      detector, quad, gaps);
+    auto expected =
+        insert_gap_pixels(NDView<const T, 2>(plain.view<T>()), roi, gaps);
     auto actual = gapped.view<T>();
     if (expected.shape() != actual.shape()) {
         UNSCOPED_INFO("shape " << actual.shape(0) << "x" << actual.shape(1)
@@ -317,18 +316,14 @@ bool matches_gap_oracle(Frame &gapped, Frame &plain, const ROI &roi,
 }
 
 bool matches_gap_oracle(Frame &gapped, Frame &plain, const ROI &roi,
-                        DetectorType detector, bool quad,
                         const GapPixels &gaps) {
     switch (plain.bitdepth()) {
     case 8:
-        return matches_gap_oracle<uint8_t>(gapped, plain, roi, detector, quad,
-                                           gaps);
+        return matches_gap_oracle<uint8_t>(gapped, plain, roi, gaps);
     case 16:
-        return matches_gap_oracle<uint16_t>(gapped, plain, roi, detector, quad,
-                                            gaps);
+        return matches_gap_oracle<uint16_t>(gapped, plain, roi, gaps);
     case 32:
-        return matches_gap_oracle<uint32_t>(gapped, plain, roi, detector, quad,
-                                            gaps);
+        return matches_gap_oracle<uint32_t>(gapped, plain, roi, gaps);
     default:
         return false;
     }
@@ -354,7 +349,7 @@ TEST_CASE("RawFile inserts gap pixels into synthetic Jungfrau modules",
         gaps.module_gaps = ModuleGaps{8, 36};
         gaps.fill_value = 7;
     }
-    const auto layout = detail::gap_layout(DetectorType::Jungfrau, false, gaps);
+    const auto layout = detail::gap_layout(gaps);
     const auto shape = detail::gapped_shape(detector, layout);
     const auto fill = static_cast<uint16_t>(gaps.fill_value);
 
@@ -426,8 +421,7 @@ TEST_CASE("RawFile splits counts like the free function",
     auto gapped_frame = gapped.read_frame();
     auto plain_frame = plain.read_frame();
     const ROI detector{0, 2048, 0, 512};
-    REQUIRE(matches_gap_oracle(gapped_frame, plain_frame, detector,
-                               DetectorType::Jungfrau, false, gaps));
+    REQUIRE(matches_gap_oracle(gapped_frame, plain_frame, detector, gaps));
 
     // the next frame continues the generator, so the oracle for frame 1 is
     // the free function applied after the same number of draws
@@ -435,7 +429,7 @@ TEST_CASE("RawFile splits counts like the free function",
     auto second_plain = plain.read_frame();
     auto expected = insert_gap_pixels(
         NDView<const uint16_t, 2>(second_plain.view<uint16_t>()), detector,
-        DetectorType::Jungfrau, false, gaps);
+        gaps);
     double gapped_total = 0;
     double expected_total = 0;
     auto view = frames[0].view<uint16_t>();
@@ -509,8 +503,7 @@ TEST_CASE("Gap pixels on recorded Jungfrau and Eiger files",
     REQUIRE(gapped_frame.rows() == static_cast<size_t>(test.shape[0]));
     REQUIRE(gapped_frame.cols() == static_cast<size_t>(test.shape[1]));
     REQUIRE(matches_gap_oracle(gapped_frame, plain_frame, plain.master().roi(),
-                               plain.detector_type(),
-                               plain.master().quad() == 1, gaps));
+                               gaps));
 }
 
 TEST_CASE("Split counts on a recorded Jungfrau file",
@@ -525,7 +518,7 @@ TEST_CASE("Split counts on a recorded Jungfrau file",
     auto gapped_frame = gapped.read_frame();
     auto plain_frame = plain.read_frame();
     REQUIRE(matches_gap_oracle(gapped_frame, plain_frame, plain.master().roi(),
-                               DetectorType::Jungfrau, false, gaps));
+                               gaps));
 }
 
 TEST_CASE("Gap pixels on a file with two ROIs",
@@ -550,8 +543,7 @@ TEST_CASE("Gap pixels on a file with two ROIs",
     for (size_t index = 0; index < 2; ++index) {
         CAPTURE(index);
         REQUIRE(matches_gap_oracle(gapped_frames[index], plain_frames[index],
-                                   rois[index], DetectorType::Jungfrau, false,
-                                   gaps));
+                                   rois[index], gaps));
     }
 }
 

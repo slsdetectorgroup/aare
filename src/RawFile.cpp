@@ -70,9 +70,15 @@ RawFile::RawFile(const std::filesystem::path &fname, const std::string &mode,
         }
         m_roi_shapes.reserve(num_rois);
         if (gap_pixels) {
+            const auto detector = m_master.detector_type();
+            if (detector != DetectorType::Jungfrau &&
+                detector != DetectorType::Eiger) {
+                throw std::invalid_argument(
+                    LOCATION + "Gap pixels are only supported for Jungfrau "
+                               "and Eiger detectors");
+            }
             m_gap_pixels = gap_pixels;
-            m_gap_layout = detail::gap_layout(
-                m_master.detector_type(), m_master.quad() == 1, *gap_pixels);
+            m_gap_layout = detail::gap_layout(*gap_pixels);
             m_generator = detail::make_generator(gap_pixels->seed);
             for (const auto &rect : m_roi_rects) {
                 m_roi_shapes.push_back(

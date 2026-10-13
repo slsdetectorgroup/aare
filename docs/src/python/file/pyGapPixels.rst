@@ -10,9 +10,10 @@ modules.
 Gap positions are determined in detector coordinates before any ROI, so a
 ROI only receives the gaps that fall strictly inside it.
 
-Only Jungfrau and Eiger are supported; other detector types raise
-``ValueError``. The chip size and the module size (1024x512, or 512x512 for
-an Eiger quad) are fixed by the detector type.
+Only Jungfrau and Eiger raw files are supported; ``RawFile`` raises
+``ValueError`` for other detector types. The chip size (256 pixels) and the
+module size (1024x512 pixels) are fixed. An Eiger quad (512x512 pixels)
+needs no special handling, since its only chip boundaries are at pixel 256.
 
 ================ ================ ===========================================
 Field            Default          Meaning
@@ -40,7 +41,7 @@ stacked modules read as ``(1028, 1030)`` with the defaults and
 
 .. code-block:: python
 
-    from aare import RawFile, File, GapPixels, ModuleGaps, insert_gap_pixels, DetectorType
+    from aare import RawFile, File, GapPixels, ModuleGaps, insert_gap_pixels
 
     # defaults: chip gaps of 2 filled with 0
     with RawFile("run_master_0.json", gap_pixels=True) as f:
@@ -52,12 +53,12 @@ stacked modules read as ``(1028, 1030)`` with the defaults and
         image = f.read_frame()
 
     # the same transform for an image in memory, e.g. a pedestal
-    gapped_pedestal = insert_gap_pixels(pedestal, DetectorType.Jungfrau, gaps)
+    gapped_pedestal = insert_gap_pixels(pedestal, gaps)
 
 ``insert_gap_pixels`` accepts 2D ``uint8``, ``uint16``, ``uint32``,
 ``int32``, ``float32`` and ``float64`` arrays and returns a new array of the
-same dtype. Pass ``roi`` when the image covers part of the detector and
-``quad=True`` for an Eiger quad. ``gapped_shape`` returns the shape of the
+same dtype. Pass ``roi`` when the image covers part of the detector.
+``gapped_shape`` returns the shape of the
 gapped image of a ROI.
 
 .. autoclass:: GapPixels

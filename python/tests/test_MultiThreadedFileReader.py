@@ -158,7 +158,7 @@ def test_gap_pixels_on_raw_files(tmp_path):
     assert (reader.rows, reader.cols) == (514, 1030)
     frames = reader.read_all()
     assert frames.shape == (4, 514, 1030)
-    assert (frames == insert_gap_pixels(expected, aare.DetectorType.Jungfrau, gaps)).all()
+    assert (frames == insert_gap_pixels(expected, gaps)).all()
 
     reader = MultiThreadedFileReader(master_path, n_threads=2, chunk_size=1, gap_pixels=True)
     assert reader.gap_pixels == GapPixels()

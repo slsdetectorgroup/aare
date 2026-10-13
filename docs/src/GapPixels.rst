@@ -15,9 +15,9 @@ Configuration
 -------------
 
 ``GapPixels`` holds the configuration. The chip size (256 pixels) and the
-module size (1024x512 pixels, 512x512 for an Eiger quad) are fixed by the
-detector type. Other detector types are rejected with
-``std::invalid_argument``.
+module size (1024x512 pixels) are fixed. An Eiger quad (512x512 pixels)
+needs no special handling, since its only chip boundaries are at pixel 256.
+``RawFile`` rejects other detector types with ``std::invalid_argument``.
 
 ================ ================ ===========================================
 Field            Default          Meaning
@@ -96,8 +96,7 @@ detector coordinates of the image.
 
    aare::NDArray<double, 2> pedestal = ...; // 512 x 1024
    auto gapped = aare::insert_gap_pixels<double>(
-       pedestal.view(), aare::ROI{0, 1024, 0, 512},
-       aare::DetectorType::Jungfrau, false, aare::GapPixels{});
+       pedestal.view(), aare::ROI{0, 1024, 0, 512}, aare::GapPixels{});
 
 ``gapped_shape`` returns the shape of the gapped image of a ROI.
 

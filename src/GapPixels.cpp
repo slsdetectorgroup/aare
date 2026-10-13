@@ -6,12 +6,7 @@
 namespace aare {
 namespace detail {
 
-GapLayout gap_layout(DetectorType detector, bool quad, const GapPixels &gaps) {
-    if (detector != DetectorType::Jungfrau && detector != DetectorType::Eiger) {
-        throw std::invalid_argument(
-            LOCATION +
-            "Gap pixels are only supported for Jungfrau and Eiger detectors");
-    }
+GapLayout gap_layout(const GapPixels &gaps) {
     if (gaps.chip_gap < 0) {
         throw std::invalid_argument(LOCATION + "Chip gap must not be negative");
     }
@@ -26,8 +21,7 @@ GapLayout gap_layout(DetectorType detector, bool quad, const GapPixels &gaps) {
     }
 
     constexpr ssize_t chip = 256;
-    const ssize_t module_x =
-        (detector == DetectorType::Eiger && quad) ? 512 : 1024;
+    constexpr ssize_t module_x = 1024;
     constexpr ssize_t module_y = 512;
     return {{chip, module_x, gaps.chip_gap, module_gaps.x},
             {chip, module_y, gaps.chip_gap, module_gaps.y}};
@@ -70,9 +64,8 @@ std::mt19937_64 make_generator(std::optional<uint64_t> seed) {
 
 } // namespace detail
 
-std::array<ssize_t, 2> gapped_shape(const ROI &roi, DetectorType detector,
-                                    bool quad, const GapPixels &gaps) {
-    const auto layout = detail::gap_layout(detector, quad, gaps);
+std::array<ssize_t, 2> gapped_shape(const ROI &roi, const GapPixels &gaps) {
+    const auto layout = detail::gap_layout(gaps);
     detail::validate_roi(roi);
     return detail::gapped_shape(roi, layout);
 }
