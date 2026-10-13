@@ -25,6 +25,11 @@ an allocation when the caller already owns a buffer of at least
 remaining from the current position, and ``seek()`` to reposition the reader.
 Call ``close()`` to release all worker file handles early.
 
+The optional fifth argument inserts :doc:`gap pixels <GapPixels>` when
+reading raw files. ``rows()``, ``cols()`` and ``bytes_per_frame()`` then
+include the gaps. Each worker reader uses the configured seed plus its
+worker index for split counts.
+
 .. note::
 
    Multiple workers do not guarantee faster reads. Performance depends on the

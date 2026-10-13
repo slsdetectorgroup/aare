@@ -4,6 +4,16 @@
 
 ### New Features:
 
+- Added gap pixel insertion for Jungfrau and Eiger raw files. ``RawFile``,
+  ``File`` (through ``FileConfig::gap_pixels``) and
+  ``MultiThreadedFileReader`` take a ``GapPixels`` configuration, in Python
+  the ``gap_pixels`` argument, and assemble frames with 2 pixel gaps at
+  the chip boundaries inside each module and, only when ``ModuleGaps`` is
+  set, gaps between modules. Gap positions follow
+  detector coordinates before any ROI. Gap pixels receive a fill value or,
+  with ``split_counts``, half of the neighbouring double size pixel. The
+  new ``insert_gap_pixels`` and ``gapped_shape`` apply the same transform
+  to images in memory.
 - Added the Python ``xy`` type with ``row`` and ``col`` fields, enabling access
   to ``RawFile.geometry``, ``RawMasterFile.detector_layout``, and
   ``RawMasterFile.udp_interfaces_per_module``. It unpacks as ``row, col``.
@@ -11,6 +21,12 @@
   build, so releases publish them to PyPI alongside the Linux and macOS
   wheels.
 - added ``NDView::sub_view(index)`` operator returns a subview at index along dimension 0
+
+### Other:
+
+- ``RawFile`` assembles multi-module frames through one placement path with
+  a scratch buffer allocated once at open, instead of allocating a module
+  buffer for every frame.
 
 ## 2026.9.30
 

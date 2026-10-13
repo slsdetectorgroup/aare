@@ -24,6 +24,11 @@ iteration position. The context manager closes all worker files on exit.
 ``close()`` is also available for explicit cleanup and may be called
 repeatedly.
 
+``gap_pixels`` inserts :doc:`gap pixels <../file/pyGapPixels>` when reading
+raw files. Pass ``True`` for the defaults or a ``GapPixels``. ``rows`` and
+``cols`` then include the gaps. Each worker uses the configured seed plus its
+worker index for split counts.
+
 .. autoclass:: MultiThreadedFileReader
     :members:
     :undoc-members:

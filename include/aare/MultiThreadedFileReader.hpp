@@ -3,6 +3,7 @@
 
 #include "aare/Dtype.hpp"
 #include "aare/File.hpp"
+#include "aare/GapPixels.hpp"
 
 #include <cstddef>
 #include <filesystem>
@@ -25,10 +26,13 @@ class MultiThreadedFileReader {
      * @param n_threads maximum number of worker threads
      * @param chunk_size number of frames claimed by a worker at a time
      * @param total_frames number of frames to read, or all frames when omitted
+     * @param gap_pixels insert gap pixels, raw files only. Each worker
+     * reader uses the configured seed plus its worker index.
      */
     MultiThreadedFileReader(std::filesystem::path fname, size_t n_threads,
                             size_t chunk_size,
-                            std::optional<size_t> total_frames = std::nullopt);
+                            std::optional<size_t> total_frames = std::nullopt,
+                            std::optional<GapPixels> gap_pixels = std::nullopt);
 
     MultiThreadedFileReader(const MultiThreadedFileReader &) = delete;
     MultiThreadedFileReader &
@@ -66,6 +70,9 @@ class MultiThreadedFileReader {
     bool is_open() const noexcept { return !m_files.empty(); }
 
     size_t n_threads() const noexcept { return m_n_threads; }
+    const std::optional<GapPixels> &gap_pixels() const noexcept {
+        return m_gap_pixels;
+    }
     size_t chunk_size() const noexcept { return m_chunk_size; }
     size_t total_frames() const noexcept { return m_total_frames; }
     size_t source_total_frames() const noexcept {
@@ -96,9 +103,11 @@ class MultiThreadedFileReader {
     size_t m_bytes_per_frame;
     size_t m_total_bytes;
     size_t m_current_frame;
+    std::optional<GapPixels> m_gap_pixels;
     std::vector<File> m_files;
 
     void ensure_open() const;
+    FileConfig worker_config(size_t worker_index) const;
 };
 
 } // namespace aare::experimental
