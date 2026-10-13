@@ -11,12 +11,19 @@
   build, so releases publish them to PyPI alongside the Linux and macOS
   wheels.
 - added ``NDView::sub_view(index)`` operator returns a subview at index along dimension 0
+- Added ``GapPixels`` with ``insert_gap_pixels`` and ``gapped_shape`` to
+  insert gap pixels into Jungfrau and Eiger images in memory: 2 pixel gaps
+  at the chip boundaries inside each module and, only when ``ModuleGaps``
+  is set, gaps between modules. Gap positions follow detector coordinates
+  before any ROI. Gap pixels receive a fill value or, with
+  ``split_counts``, half of the neighbouring double size pixel.
 
 ### Other:
 
 - ``RawFile`` assembles multi-module frames through one placement path with
   a scratch buffer allocated once at open, instead of allocating a module
   buffer for every frame.
+
 ### Bugfixes:
 
 - Fixed ``Matterhorn10Transform`` with 4 bit dynamic range and

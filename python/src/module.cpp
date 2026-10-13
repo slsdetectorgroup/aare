@@ -14,6 +14,7 @@
 #include "bind_Defs.hpp"
 #include "bind_Eta.hpp"
 #include "bind_FastPedestal.hpp"
+#include "bind_GapPixels.hpp"
 #include "bind_Interpolator.hpp"
 #include "bind_MultiThreadedFileReader.hpp"
 #include "bind_Pedestal.hpp"
@@ -156,6 +157,7 @@ PYBIND11_MODULE(_aare, m) {
     register_calculate_3x3eta<int16_t, 3, 3, uint16_t>(m);
 
     define_defs_bindings(m);
+    define_gap_pixels_bindings(m);
 
     using Sum_index_pair_d = Sum_index_pair<double, corner>;
     PYBIND11_NUMPY_DTYPE(Sum_index_pair_d, sum, index);
