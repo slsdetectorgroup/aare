@@ -16,7 +16,7 @@ using aare::ssize_t;
 static_assert(std::is_convertible_v<NDView<int, 2>, NDView<const int, 2>>);
 static_assert(!std::is_convertible_v<NDView<const int, 2>, NDView<int, 2>>);
 
-TEST_CASE("Calculate size from a shape") {
+TEST_CASE("Calculate size from a shape", "[NDView]") {
     Shape<3> shape{2, 3, 4};
     REQUIRE(num_elements(shape) == 24);
 
@@ -34,7 +34,7 @@ TEST_CASE("Calculate size from a shape") {
     REQUIRE(num_elements(shape5) == 10485760000);
 }
 
-TEST_CASE("Element reference 1D") {
+TEST_CASE("Element reference 1D", "[NDView]") {
     std::vector<int> vec;
     for (int i = 0; i != 10; ++i) {
         vec.push_back(i);
@@ -47,7 +47,7 @@ TEST_CASE("Element reference 1D") {
     }
 }
 
-TEST_CASE("Assign elements through () and []") {
+TEST_CASE("Assign elements through () and []", "[NDView]") {
     std::vector<int> vec;
     for (int i = 0; i != 10; ++i) {
         vec.push_back(i);
@@ -80,7 +80,7 @@ TEST_CASE("Assign elements through () and []") {
     REQUIRE(data[9] == 9);
 }
 
-TEST_CASE("Element reference 1D with a const NDView") {
+TEST_CASE("Element reference 1D with a const NDView", "[NDView]") {
     std::vector<int> vec;
     for (int i = 0; i != 10; ++i) {
         vec.push_back(i);
@@ -93,7 +93,7 @@ TEST_CASE("Element reference 1D with a const NDView") {
     }
 }
 
-TEST_CASE("Convert a mutable NDView to a const NDView") {
+TEST_CASE("Convert a mutable NDView to a const NDView", "[NDView]") {
     std::vector<int> vec{1, 2, 3, 4};
     NDView<int, 2> mutable_view(vec.data(), Shape<2>{2, 2});
 
@@ -104,7 +104,7 @@ TEST_CASE("Convert a mutable NDView to a const NDView") {
     REQUIRE(const_view.strides() == mutable_view.strides());
 }
 
-TEST_CASE("Element reference 2D") {
+TEST_CASE("Element reference 2D", "[NDView]") {
     std::vector<int> vec(12);
     std::iota(vec.begin(), vec.end(), 0);
 
@@ -120,7 +120,7 @@ TEST_CASE("Element reference 2D") {
     }
 }
 
-TEST_CASE("Element reference 3D") {
+TEST_CASE("Element reference 3D", "[NDView]") {
     std::vector<int> vec;
     for (int i = 0; i != 24; ++i) {
         vec.push_back(i);
@@ -139,7 +139,7 @@ TEST_CASE("Element reference 3D") {
     }
 }
 
-TEST_CASE("Plus and minus with single value") {
+TEST_CASE("Plus and minus with single value", "[NDView]") {
     std::vector<int> vec(12);
     std::iota(vec.begin(), vec.end(), 0);
     NDView<int, 2> data(vec.data(), Shape<2>{3, 4});
@@ -161,7 +161,7 @@ TEST_CASE("Plus and minus with single value") {
     }
 }
 
-TEST_CASE("Multiply and divide with single value") {
+TEST_CASE("Multiply and divide with single value", "[NDView]") {
     std::vector<int> vec;
     for (int i = 0; i != 12; ++i) {
         vec.push_back(i);
@@ -185,7 +185,7 @@ TEST_CASE("Multiply and divide with single value") {
     }
 }
 
-TEST_CASE("elementwise assign") {
+TEST_CASE("elementwise assign", "[NDView]") {
     std::vector<int> vec(25);
     NDView<int, 2> data(vec.data(), Shape<2>{5, 5});
 
@@ -195,7 +195,7 @@ TEST_CASE("elementwise assign") {
     }
 }
 
-TEST_CASE("iterators") {
+TEST_CASE("iterators", "[NDView]") {
     std::vector<int> vec(12);
     std::iota(vec.begin(), vec.end(), 0);
     NDView<int, 1> data(vec.data(), Shape<1>{12});
@@ -220,7 +220,7 @@ TEST_CASE("iterators") {
     }
 }
 
-TEST_CASE("divide with another NDView") {
+TEST_CASE("divide with another NDView", "[NDView]") {
     std::vector<int> vec0{9, 12, 3};
     std::vector<int> vec1{3, 2, 1};
     std::vector<int> result{3, 6, 3};
@@ -237,7 +237,7 @@ TEST_CASE("divide with another NDView") {
     }
 }
 
-TEST_CASE("Retrieve shape") {
+TEST_CASE("Retrieve shape", "[NDView]") {
     std::vector<int> vec(12);
     std::iota(vec.begin(), vec.end(), 0);
     NDView<int, 2> data(vec.data(), Shape<2>{3, 4});
@@ -245,7 +245,7 @@ TEST_CASE("Retrieve shape") {
     REQUIRE(data.shape()[1] == 4);
 }
 
-TEST_CASE("compare two views") {
+TEST_CASE("compare two views", "[NDView]") {
     std::vector<int> vec1(12);
     std::iota(vec1.begin(), vec1.end(), 0);
     NDView<int, 2> view1(vec1.data(), Shape<2>{3, 4});
@@ -257,7 +257,7 @@ TEST_CASE("compare two views") {
     REQUIRE((view1 == view2));
 }
 
-TEST_CASE("Compare two views with different size") {
+TEST_CASE("Compare two views with different size", "[NDView]") {
     std::vector<int> vec1(12);
     std::iota(vec1.begin(), vec1.end(), 0);
     NDView<int, 2> view1(vec1.data(), Shape<2>{3, 4});
@@ -269,7 +269,7 @@ TEST_CASE("Compare two views with different size") {
     REQUIRE_FALSE(view1 == view2);
 }
 
-TEST_CASE("Compare two views with same size but different shape") {
+TEST_CASE("Compare two views with same size but different shape", "[NDView]") {
     std::vector<int> vec1(12);
     std::iota(vec1.begin(), vec1.end(), 0);
     NDView<int, 2> view1(vec1.data(), Shape<2>{3, 4});
@@ -281,7 +281,7 @@ TEST_CASE("Compare two views with same size but different shape") {
     REQUIRE_FALSE(view1 == view2);
 }
 
-TEST_CASE("Create a view over a vector") {
+TEST_CASE("Create a view over a vector", "[NDView]") {
     std::vector<int> vec(12);
     std::iota(vec.begin(), vec.end(), 0);
     auto v = aare::make_view(vec);
@@ -290,9 +290,26 @@ TEST_CASE("Create a view over a vector") {
     REQUIRE(v[11] == 11);
 }
 
-TEST_CASE("NDView over byte") {
+TEST_CASE("NDView over byte", "[NDView]") {
     std::vector<std::byte> buf(5);
     auto v = aare::make_view(buf);
     REQUIRE(v.shape()[0] == 5);
     REQUIRE(v[0] == std::byte{0});
+}
+
+TEST_CASE("NDView subview", "[NDView]") {
+    std::vector<int> vec(12);
+    std::iota(vec.begin(), vec.end(), 0);
+    NDView<int, 2> data(vec.data(), Shape<2>{3, 4});
+
+    auto subview = data.sub_view(1);
+    REQUIRE(subview.shape().size() == 1);
+    REQUIRE(subview.shape()[0] == 4);
+    CHECK(subview(0) == 4);
+    CHECK(subview(1) == 5);
+    CHECK(subview(2) == 6);
+    CHECK(subview(3) == 7);
+
+    REQUIRE_THROWS_AS(data.sub_view(3), std::runtime_error);
+    REQUIRE_THROWS_AS(data.sub_view(-1), std::runtime_error);
 }
