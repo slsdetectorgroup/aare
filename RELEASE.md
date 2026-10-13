@@ -12,6 +12,13 @@
   wheels.
 - added ``NDView::sub_view(index)`` operator returns a subview at index along dimension 0
 
+### Bugfixes:
+
+- Fixed ``Matterhorn10Transform`` with 4 bit dynamic range and
+  ``Mythen302Transform`` failing with ``Expected 1D array, got 2D`` on frames
+  read through ``CtbRawFile``. The transforms now flatten the frame before
+  calling the decoders.
+
 ## 2026.9.30
 
 ### New Features:
