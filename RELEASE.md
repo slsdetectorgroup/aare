@@ -12,6 +12,12 @@
   wheels.
 - added ``NDView::sub_view(index)`` operator returns a subview at index along dimension 0
 
+### Other:
+
+- ``RawFile`` assembles multi-module frames through one placement path with
+  a scratch buffer allocated once at open, instead of allocating a module
+  buffer for every frame.
+
 ## 2026.9.30
 
 ### New Features:
