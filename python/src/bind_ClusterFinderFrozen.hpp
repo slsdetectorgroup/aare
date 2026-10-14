@@ -1,8 +1,8 @@
 // SPDX-License-Identifier: MPL-2.0
-#include "aare/ClusterFinderFrozen.hpp"
 #include "aare/ClusterVector.hpp"
 #include "aare/NDView.hpp"
 #include "aare/Pedestal.hpp"
+#include "aare/cf/ClusterFinderFrozen.hpp"
 #include "np_helper.hpp"
 
 #include <cstdint>

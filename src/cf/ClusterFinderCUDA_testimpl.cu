@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: MPL-2.0
 #include "ClusterFinderCUDA_testimpl.hpp"
-#include "aare/ClusterFinderCUDA.hpp"
-#include "aare/clusterfinder_algo.cuh"
+#include "aare/cf/ClusterFinderCUDA.hpp"
+#include "aare/cf/clusterfinder_algo.cuh"
 #include <algorithm>
 #include <random>
 

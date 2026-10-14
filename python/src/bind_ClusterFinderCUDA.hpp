@@ -1,9 +1,9 @@
 // SPDX-License-Identifier: MPL-2.0
 #pragma once
-#include "aare/ClusterFinderCUDA.hpp"
 #include "aare/ClusterVector.hpp"
 #include "aare/FastPedestal.hpp"
 #include "aare/NDView.hpp"
+#include "aare/cf/ClusterFinderCUDA.hpp"
 #include "np_helper.hpp"
 
 #include <cstdint>

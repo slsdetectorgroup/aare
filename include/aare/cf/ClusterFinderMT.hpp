@@ -9,9 +9,9 @@
 
 #include "aare/Backoff.hpp"
 #include "aare/CircularFifo.hpp"
-#include "aare/ClusterFinder.hpp"
 #include "aare/NDArray.hpp"
 #include "aare/ProducerConsumerQueue.hpp"
+#include "aare/cf/ClusterFinder.hpp"
 #include "aare/logger.hpp"
 #include <ctime>
 namespace aare {

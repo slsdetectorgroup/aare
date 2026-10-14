@@ -40,7 +40,7 @@ def _sh(cmd: str, default: str = "unknown") -> str:
 
 def device_ped_type() -> str:
     """DEVICE_PED_TYPE from the kernel header (the float/double build axis)."""
-    hdr = REPO / "include/aare/clusterfinder_kernel.cuh"
+    hdr = REPO / "include/aare/cf/clusterfinder_kernel.cuh"
     for line in hdr.read_text().splitlines()[:40]:
         if "using DEVICE_PED_TYPE" in line and not line.strip().startswith("//"):
             return line.split("=")[1].split(";")[0].strip()
@@ -56,7 +56,7 @@ def assert_build_fresh() -> None:
     headers = ["clusterfinder_kernel.cuh", "clusterfinder_algo.cuh",
                "ClusterFinderCUDA.hpp"]
     stale = [h for h in headers
-             if (REPO / "include/aare" / h).stat().st_mtime > built]
+             if (REPO / "include/aare/cf" / h).stat().st_mtime > built]
     if stale:
         raise RuntimeError(f"{', '.join(stale)} newer than the extension: rebuild first")
 

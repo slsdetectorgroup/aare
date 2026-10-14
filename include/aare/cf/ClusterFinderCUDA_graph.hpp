@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: MPL-2.0
 #pragma once
-#include "aare/ClusterFinder.hpp"
-#include "aare/clusterfinder_kernel.cuh"
+#include "aare/cf/ClusterFinder.hpp"
+#include "aare/cf/clusterfinder_kernel.cuh"
 #include "aare/utils/cuda_check.cuh"
 #include <algorithm>
 #include <cmath>

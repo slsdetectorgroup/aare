@@ -1,11 +1,11 @@
 // SPDX-License-Identifier: MPL-2.0
 #include "aare/ClusterCollector.hpp"
 #include "aare/ClusterFileSink.hpp"
-#include "aare/ClusterFinder.hpp"
-#include "aare/ClusterFinderMT.hpp"
 #include "aare/ClusterVector.hpp"
 #include "aare/NDView.hpp"
 #include "aare/Pedestal.hpp"
+#include "aare/cf/ClusterFinder.hpp"
+#include "aare/cf/ClusterFinderMT.hpp"
 #include "np_helper.hpp"
 
 #include <cstdint>

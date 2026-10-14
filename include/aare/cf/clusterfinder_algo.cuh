@@ -3,7 +3,7 @@
 #include "aare/Cluster.hpp"
 #include "aare/FastPedestal.hpp"
 #include "aare/NDArray.hpp"
-#include "aare/clusterfinder_kernel.cuh"
+#include "aare/cf/clusterfinder_kernel.cuh"
 #include "aare/utils/cuda_check.cuh"
 #include <algorithm>
 #include <cmath>

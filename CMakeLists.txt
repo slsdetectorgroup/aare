@@ -376,7 +376,7 @@ set(PUBLICHEADERS
     include/aare/ArrayExpr.hpp
     include/aare/CalculateEta.hpp
     include/aare/Cluster.hpp
-    include/aare/ClusterFinder.hpp
+    include/aare/cf/ClusterFinder.hpp
     include/aare/ClusterFile.hpp
     include/aare/CtbRawFile.hpp
     include/aare/ClusterVector.hpp
@@ -420,9 +420,9 @@ if(AARE_CUDA)
   list(
     APPEND
     PUBLICHEADERS
-    include/aare/ClusterFinderCUDA.hpp
-    include/aare/clusterfinder_algo.cuh
-    include/aare/clusterfinder_kernel.cuh
+    include/aare/cf/ClusterFinderCUDA.hpp
+    include/aare/cf/clusterfinder_algo.cuh
+    include/aare/cf/clusterfinder_kernel.cuh
     include/aare/RAII_device.hpp
     include/aare/utils/cuda_check.cuh)
 endif()
@@ -519,12 +519,12 @@ if(AARE_TESTS)
       ${CMAKE_CURRENT_SOURCE_DIR}/src/RawMasterFile.test.cpp
       ${CMAKE_CURRENT_SOURCE_DIR}/src/NDArray.test.cpp
       ${CMAKE_CURRENT_SOURCE_DIR}/src/NDView.test.cpp
-      ${CMAKE_CURRENT_SOURCE_DIR}/src/ClusterFinder.test.cpp
+      ${CMAKE_CURRENT_SOURCE_DIR}/src/cf/ClusterFinder.test.cpp
       ${CMAKE_CURRENT_SOURCE_DIR}/src/ClusterVector.test.cpp
       ${CMAKE_CURRENT_SOURCE_DIR}/src/Cluster.test.cpp
       ${CMAKE_CURRENT_SOURCE_DIR}/src/CalculateEta.test.cpp
       ${CMAKE_CURRENT_SOURCE_DIR}/src/ClusterFile.test.cpp
-      ${CMAKE_CURRENT_SOURCE_DIR}/src/ClusterFinderMT.test.cpp
+      ${CMAKE_CURRENT_SOURCE_DIR}/src/cf/ClusterFinderMT.test.cpp
       ${CMAKE_CURRENT_SOURCE_DIR}/src/ProducerConsumerQueue.test.cpp
       ${CMAKE_CURRENT_SOURCE_DIR}/src/Pedestal.test.cpp
       ${CMAKE_CURRENT_SOURCE_DIR}/src/FastPedestal.test.cpp
@@ -547,8 +547,9 @@ endif()
 # Catch2 is never compiled by nvcc.
 if(AARE_TESTS AND AARE_CUDA)
   target_sources(
-    tests PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/src/ClusterFinderCUDA.test.cpp
-                  ${CMAKE_CURRENT_SOURCE_DIR}/src/ClusterFinderCUDA_testimpl.cu)
+    tests
+    PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/src/cf/ClusterFinderCUDA.test.cpp
+            ${CMAKE_CURRENT_SOURCE_DIR}/src/cf/ClusterFinderCUDA_testimpl.cu)
   target_link_libraries(tests PRIVATE aare_cuda)
 endif()
 

@@ -1,12 +1,12 @@
 // SPDX-License-Identifier: MPL-2.0
 #pragma once
 #include "aare/ClusterFile.hpp"
-#include "aare/ClusterFinder.hpp" // no_2x2_cluster guard, reused here
 #include "aare/ClusterVector.hpp"
 #include "aare/Dtype.hpp"
 #include "aare/FastPedestal.hpp"
 #include "aare/NDArray.hpp"
 #include "aare/NDView.hpp"
+#include "aare/cf/ClusterFinder.hpp" // no_2x2_cluster guard, reused here
 #include "aare/defs.hpp"
 #include <cstddef>
 #include <utility>
