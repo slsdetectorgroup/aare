@@ -9,6 +9,13 @@ jobs:
   build:
     runs-on: windows-latest
 
+    strategy:
+      fail-fast: false
+      matrix:
+        # Pushes to main build and test every supported Python; other runs
+        # only the newest
+        python-version: ${{ fromJSON((github.event_name == 'push' && github.ref == 'refs/heads/main') && '["3.12", "3.13", "3.14"]' || '["3.14"]') }}
+
     env:
       # sccache keeps compiled objects in the GitHub Actions cache, so later
       # runs only recompile the translation units a change affects
@@ -19,7 +26,7 @@ jobs:
 
       - uses: actions/setup-python@v7
         with:
-          python-version: "3.12"
+          python-version: ${{ matrix.python-version }}
 
       - name: Install Python dependencies
         run: python -m pip install ninja numpy matplotlib pytest pytest-check boost-histogram
