@@ -110,3 +110,15 @@ def test_insert_gap_pixels_rejects_bad_input():
         insert_gap_pixels(np.zeros((2, 2), dtype=np.int64))
     with pytest.raises(ValueError):
         insert_gap_pixels(image, GapPixels(split_counts=True, chip_gap=4))
+    with pytest.raises(ValueError):
+        insert_gap_pixels(image, GapPixels(fill_value=float("nan")))
+    with pytest.raises(ValueError):
+        insert_gap_pixels(image, GapPixels(fill_value=1e20))
+
+
+def test_insert_gap_pixels_nan_fill_for_float_images():
+    image = np.ones((2, 2), dtype=np.float32)
+    result = insert_gap_pixels(image, GapPixels(fill_value=float("nan")), roi=ROI(255, 257, 0, 2))
+    assert result.shape == (2, 4)
+    assert np.isnan(result[:, 1:3]).all()
+    assert (result[:, [0, 3]] == 1).all()

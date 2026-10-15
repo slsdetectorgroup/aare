@@ -30,8 +30,10 @@ Field            Default          Meaning
                                   ``ModuleGaps{8, 36}`` matches the
                                   slsDetectorPackage GUI.
 ``fill_value``   0                Value written to gap pixels, converted to
-                                  the pixel type. Out of range values wrap
-                                  for integer pixels. Module gaps always
+                                  the pixel type. Finite values wrap for
+                                  integer pixels; NaN, infinity and
+                                  magnitudes of 2^63 or more raise for
+                                  integer pixels. Module gaps always
                                   receive this value.
 ``split_counts`` false            Split the counts of the double size edge
                                   pixels between the pixel and its gap pixel

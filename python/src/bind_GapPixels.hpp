@@ -56,8 +56,10 @@ void define_gap_pixels_bindings(py::module &m) {
             Pixels inserted at module boundaries. None means no pixels are
             inserted between modules.
         fill_value : float
-            Value written to gap pixels, converted to the pixel type. Module
-            gaps always receive this value.
+            Value written to gap pixels, converted to the pixel type. Finite
+            values wrap for integer images; NaN, infinity and magnitudes of
+            2**63 or more raise ValueError for integer images. Module gaps
+            always receive this value.
         split_counts : bool
             Split the counts of the double-size pixels at chip boundaries
             between the pixel and its gap pixel. Integer remainders go to

@@ -5,7 +5,10 @@
 #include "aare/ROI.hpp"
 #include "aare/defs.hpp"
 
+#include <fmt/format.h>
+
 #include <array>
+#include <cmath>
 #include <cstdint>
 #include <cstring>
 #include <optional>
@@ -141,12 +144,25 @@ void validate_destination(const std::array<ssize_t, 2> &shape, const ROI &roi,
 
 std::mt19937_64 make_generator(std::optional<uint64_t> seed);
 
-/// @brief Convert the fill value to the pixel type without undefined
-/// behaviour for out of range values
+/**
+ * @brief Convert the fill value to the pixel type
+ *
+ * Finite values wrap into integer pixel types. NaN, infinity and magnitudes
+ * of 2^63 or more have no integer representation and are rejected, since
+ * converting them would be undefined behaviour.
+ * @throws std::invalid_argument for a value without an integer
+ * representation when T is an integer type
+ */
 template <typename T> T fill_as(double value) {
     if constexpr (std::is_floating_point_v<T>) {
         return static_cast<T>(value);
     } else {
+        if (!(std::fabs(value) < 0x1p63)) {
+            throw std::invalid_argument(
+                LOCATION + fmt::format("Fill value {} cannot be converted to "
+                                       "an integer pixel type",
+                                       value));
+        }
         return static_cast<T>(static_cast<int64_t>(value));
     }
 }
@@ -338,17 +354,18 @@ std::array<ssize_t, 2> gapped_shape(const ROI &roi, const GapPixels &gaps = {});
  * @param roi detector coordinates of `source`
  * @param gaps gap configuration
  * @return gapped image
- * @throws std::invalid_argument for an invalid configuration or a source
- * shape that does not match the ROI
+ * @throws std::invalid_argument for an invalid configuration, a fill value
+ * that cannot be converted to the pixel type or a source shape that does
+ * not match the ROI
  */
 template <typename T>
 NDArray<T, 2> insert_gap_pixels(NDView<const T, 2> source, const ROI &roi,
                                 const GapPixels &gaps = {}) {
     const auto layout = detail::gap_layout(gaps);
     detail::validate_roi(roi);
+    const T fill = detail::fill_as<T>(gaps.fill_value);
     NDArray<T, 2> result(detail::gapped_shape(roi, layout));
-    detail::fill_gap_pixels(result.view(), roi, layout,
-                            detail::fill_as<T>(gaps.fill_value));
+    detail::fill_gap_pixels(result.view(), roi, layout, fill);
     detail::copy_with_gaps(source, roi, result.view(), roi, layout);
     if (gaps.split_counts) {
         auto generator = detail::make_generator(gaps.seed);

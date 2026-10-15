@@ -5,6 +5,8 @@
 #include <catch2/generators/catch_generators.hpp>
 #include <catch2/matchers/catch_matchers_string.hpp>
 
+#include <cmath>
+#include <limits>
 #include <numeric>
 
 using namespace aare;
@@ -324,6 +326,29 @@ TEST_CASE("insert_gap_pixels on ROIs", "[GapPixels]") {
         CHECK(result(0, 1) == 0.25);
         CHECK(result(0, 2) == 0.25);
         CHECK(result(0, 3) == 2.5);
+    }
+    SECTION("fill values without an integer representation throw") {
+        const ROI roi{255, 257, 0, 1};
+        auto source = pattern<uint16_t>(1, 2);
+        GapPixels gaps;
+        for (const double value :
+             {std::numeric_limits<double>::quiet_NaN(),
+              std::numeric_limits<double>::infinity(),
+              -std::numeric_limits<double>::infinity(), 1e20, -1e20, 0x1p63}) {
+            gaps.fill_value = value;
+            CHECK_THROWS_AS(
+                insert_gap_pixels(NDView<const uint16_t, 2>(source.view()), roi,
+                                  gaps),
+                std::invalid_argument);
+        }
+
+        // the same values are valid for floating point images
+        gaps.fill_value = std::numeric_limits<double>::quiet_NaN();
+        auto floats = pattern<float>(1, 2);
+        auto result =
+            insert_gap_pixels(NDView<const float, 2>(floats.view()), roi, gaps);
+        CHECK(std::isnan(result(0, 1)));
+        CHECK(std::isnan(result(0, 2)));
     }
 }
 
