@@ -62,14 +62,15 @@ same dtype. Pass ``roi`` when the image covers part of the detector.
 Reading files
 -------------
 
-``RawFile`` and ``File`` take ``gap_pixels``: ``True`` for the defaults or
-a ``GapPixels``. Frame shapes, ``rows`` and ``cols`` then include the gaps.
+``RawFile`` takes ``gap_pixels``: ``True`` for the defaults or a
+``GapPixels``. Frame shapes, ``rows`` and ``cols`` then include the gaps.
 Only Jungfrau and Eiger raw files are supported; other detector types raise
-``ValueError``.
+``ValueError``. The generic ``File`` does not insert gap pixels; use
+``RawFile`` or apply ``insert_gap_pixels`` to the frames it returns.
 
 .. code-block:: python
 
-    from aare import File, GapPixels, ModuleGaps, RawFile
+    from aare import GapPixels, ModuleGaps, RawFile
 
     # defaults: chip gaps of 2 filled with 0
     with RawFile("run_master_0.json", gap_pixels=True) as f:
@@ -77,8 +78,8 @@ Only Jungfrau and Eiger raw files are supported; other detector types raise
 
     # module gaps as in the slsDetectorPackage GUI, counts split at chip edges
     gaps = GapPixels(module_gaps=ModuleGaps(8, 36), split_counts=True, seed=1)
-    with File("run_master_0.json", gap_pixels=gaps) as f:
-        image = f.read_frame()
+    with RawFile("run_master_0.json", gap_pixels=gaps) as f:
+        header, image = f.read_frame()
 
 .. autoclass:: GapPixels
     :members:

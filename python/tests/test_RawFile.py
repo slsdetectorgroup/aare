@@ -544,16 +544,15 @@ def test_raw_file_gap_pixels(tmp_path, layout):
 
     with RawFile(master_path, gap_pixels=True) as reader:
         assert reader.gap_pixels == GapPixels()
+        assert (reader.rows(), reader.cols()) == insert_gap_pixels(expected).shape
         _, image = reader.read_frame()
         assert (image == insert_gap_pixels(expected)).all()
 
-    with File(master_path, gap_pixels=True) as reader:
-        assert (reader.rows, reader.cols) == insert_gap_pixels(expected).shape
-        assert (reader.read_frame() == insert_gap_pixels(expected)).all()
-
     module_gaps = GapPixels(module_gaps=ModuleGaps(8, 36))
-    with File(master_path, gap_pixels=module_gaps) as reader:
-        assert (reader.read_frame() == insert_gap_pixels(expected, module_gaps)).all()
+    with RawFile(master_path, gap_pixels=module_gaps) as reader:
+        assert (reader.rows(), reader.cols()) == insert_gap_pixels(expected, module_gaps).shape
+        _, image = reader.read_frame()
+        assert (image == insert_gap_pixels(expected, module_gaps)).all()
 
 
 def test_raw_file_gap_pixels_split_counts(tmp_path):
@@ -570,8 +569,6 @@ def test_raw_file_gap_pixels_unsupported_detector(tmp_path):
     RawFile(master_path)
     with pytest.raises(ValueError):
         RawFile(master_path, gap_pixels=True)
-    with pytest.raises(ValueError):
-        File(master_path, gap_pixels=True)
 
 
 @pytest.mark.withdata

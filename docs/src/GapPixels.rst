@@ -72,11 +72,12 @@ chip gap of 2.
 Reading files
 -------------
 
-Pass a ``GapPixels`` to :cpp:class:`aare::RawFile` or set
-``FileConfig::gap_pixels`` for :cpp:class:`aare::File`. Frame sizes,
+Pass a ``GapPixels`` to :cpp:class:`aare::RawFile`. Frame sizes,
 ``rows()``, ``cols()`` and ``bytes_per_frame()`` then include the gaps.
 Module data is scattered into the gapped frame while it is assembled, so no
-extra frame sized buffer is needed. Headers are unchanged.
+extra frame sized buffer is needed. Headers are unchanged. The generic
+:cpp:class:`aare::File` does not insert gap pixels; use ``RawFile`` or
+apply ``insert_gap_pixels`` to the frames it returns.
 
 .. code-block:: cpp
 
