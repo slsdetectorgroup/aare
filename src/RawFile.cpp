@@ -9,6 +9,7 @@
 #include "aare/logger.hpp"
 
 #include <algorithm>
+#include <cstring>
 #include <fmt/format.h>
 #include <nlohmann/json.hpp>
 
@@ -49,13 +50,17 @@ RawFile::RawFile(const std::filesystem::path &fname, const std::string &mode)
 
         std::optional<size_t> min_frames;
         size_t max_frames = 0;
+        size_t max_part_bytes = 0;
         for (const auto &subfiles : m_subfiles) {
             for (const auto &subfile : subfiles) {
                 const auto count = subfile->frames_in_file();
                 min_frames = min_frames ? std::min(*min_frames, count) : count;
                 max_frames = std::max(max_frames, count);
+                max_part_bytes =
+                    std::max(max_part_bytes, subfile->bytes_per_frame());
             }
         }
+        m_part_buffer.resize(max_part_bytes);
         if (!min_frames) {
             throw std::runtime_error(fmt::format(
                 "No raw subfiles selected by '{}'", fname.string()));
@@ -338,6 +343,47 @@ Frame RawFile::get_frame(size_t frame_index, const size_t roi_index) {
 
 size_t RawFile::bytes_per_pixel() const { return m_master.bitdepth() / 8; }
 
+std::vector<size_t> RawFile::synchronized_frame_indices(size_t frame_index,
+                                                        size_t roi_index) {
+    const auto &roi = m_master.roi_geometries().at(roi_index);
+    const size_t n_parts = roi.num_modules_in_roi();
+    std::vector<size_t> frame_indices(n_parts, frame_index);
+    if (n_parts == 1) {
+        return frame_indices;
+    }
+
+    std::vector<size_t> frame_numbers(n_parts);
+    for (size_t part_idx = 0; part_idx != n_parts; ++part_idx) {
+        frame_numbers[part_idx] =
+            m_subfiles[roi_index][part_idx]->frame_number(frame_index);
+    }
+
+    while (!all_equal(frame_numbers)) {
+        // advance the part with the lowest frame number until all agree
+        const auto min_frame_idx = static_cast<size_t>(std::distance(
+            frame_numbers.begin(),
+            std::min_element(frame_numbers.begin(), frame_numbers.end())));
+
+        frame_indices[min_frame_idx]++;
+        if (frame_indices[min_frame_idx] >= total_frames()) {
+            throw frame_error(
+                frame_index,
+                LOCATION +
+                    fmt::format(
+                        "Frame index {} out of range while synchronizing "
+                        "module {} for ROI {}; last data file '{}'",
+                        frame_indices[min_frame_idx], min_frame_idx, roi_index,
+                        m_subfiles[roi_index][min_frame_idx]
+                            ->current_path()
+                            .string()));
+        }
+        frame_numbers[min_frame_idx] =
+            m_subfiles[roi_index][min_frame_idx]->frame_number(
+                frame_indices[min_frame_idx]);
+    }
+    return frame_indices;
+}
+
 void RawFile::get_frame_into(size_t frame_index, std::byte *frame_buffer,
                              const size_t roi_index, DetectorHeader *header) {
     LOG(logDEBUG) << "RawFile::get_frame_into(" << frame_index << ")";
@@ -349,148 +395,45 @@ void RawFile::get_frame_into(size_t frame_index, std::byte *frame_buffer,
                             "frames (indices are zero-based)",
                             frame_index, total_frames()));
     }
-    std::vector<size_t> frame_numbers(
-        m_master.roi_geometries().at(roi_index).num_modules_in_roi());
-    std::vector<size_t> frame_indices(
-        m_master.roi_geometries().at(roi_index).num_modules_in_roi(),
-        frame_index);
 
-    // sync the frame numbers
+    const auto &roi = m_master.roi_geometries().at(roi_index);
+    const auto frame_indices =
+        synchronized_frame_indices(frame_index, roi_index);
 
-    if (m_master.roi_geometries().at(roi_index).num_modules_in_roi() !=
-        1) { // if we have more than one module
-        for (size_t part_idx = 0;
-             part_idx !=
-             m_master.roi_geometries().at(roi_index).num_modules_in_roi();
-             ++part_idx) {
-            frame_numbers[part_idx] =
-                m_subfiles[roi_index][part_idx]->frame_number(frame_index);
-        }
+    const size_t bytes_per_pixel = m_master.bitdepth() / bits_per_byte;
+    const size_t roi_width = roi.pixels_x();
 
-        // 1. if frame number vector is the same break
-        while (!all_equal(frame_numbers)) {
+    for (size_t part_idx = 0; part_idx != roi.num_modules_in_roi();
+         ++part_idx) {
+        // origin and size of the part relative to the ROI
+        const auto &pos = m_master.geometry().get_module_geometries(
+            roi.module_indices_in_roi(part_idx));
+        const auto width = static_cast<size_t>(pos.width);
+        const auto height = static_cast<size_t>(pos.height);
+        auto &subfile = *m_subfiles[roi_index][part_idx];
+        subfile.seek(frame_indices[part_idx]);
 
-            // 2. find the index of the minimum frame number,
-            auto min_frame_idx = std::distance(
-                frame_numbers.begin(),
-                std::min_element(frame_numbers.begin(), frame_numbers.end()));
+        std::byte *dest =
+            frame_buffer + (static_cast<size_t>(pos.origin_y) * roi_width +
+                            static_cast<size_t>(pos.origin_x)) *
+                               bytes_per_pixel;
 
-            // 3. increase its index and update its respective frame
-            // number
-            frame_indices[min_frame_idx]++;
-
-            // 4. if we can't increase its index => throw error
-            if (frame_indices[min_frame_idx] >= total_frames()) {
-                throw frame_error(
-                    frame_index,
-                    LOCATION +
-                        fmt::format(
-                            "Frame index {} out of range while synchronizing "
-                            "module {} for ROI {}; last data file '{}'",
-                            frame_indices[min_frame_idx], min_frame_idx,
-                            roi_index,
-                            m_subfiles[roi_index][min_frame_idx]
-                                ->current_path()
-                                .string()));
-            }
-
-            frame_numbers[min_frame_idx] =
-                m_subfiles[roi_index][min_frame_idx]->frame_number(
-                    frame_indices[min_frame_idx]);
-        }
-    }
-
-    if (m_master.detector_layout().col == 1) {
-        // get the part from each subfile and copy it to the frame
-        for (size_t part_idx = 0;
-             part_idx !=
-             m_master.roi_geometries().at(roi_index).num_modules_in_roi();
-             ++part_idx) {
-            auto corrected_idx = frame_indices[part_idx];
-
-            // This is where we start writing
-            auto offset =
-                (m_master.geometry()
-                         .get_module_geometries(
-                             m_master.roi_geometries()
-                                 .at(roi_index)
-                                 .module_indices_in_roi(part_idx))
-                         .origin_y *
-                     m_master.roi_geometries().at(roi_index).pixels_x() +
-                 m_master.geometry()
-                     .get_module_geometries(
-                         m_master.roi_geometries()
-                             .at(roi_index)
-                             .module_indices_in_roi(part_idx))
-                     .origin_x) *
-                m_master.bitdepth() / 8;
-
-            if (m_master.geometry()
-                    .get_module_geometries(m_master.roi_geometries()
-                                               .at(roi_index)
-                                               .module_indices_in_roi(part_idx))
-                    .origin_x != 0)
-                throw frame_error(
-                    frame_index,
-                    LOCATION +
-                        " Implementation error. x pos not 0."); // TODO:
-                                                                // origin
-                                                                // can still
-                                                                // change if
-                                                                // roi
-                                                                // changes
-            // TODO! What if the files don't match?
-            m_subfiles[roi_index][part_idx]->seek(corrected_idx);
-            m_subfiles[roi_index][part_idx]->read_into(frame_buffer + offset,
-                                                       header);
-            if (header)
-                ++header;
-        }
-
-    } else {
-        // TODO! should we read row by row?
-
-        // create a buffer large enough to hold a full module
-        auto bytes_per_part =
-            m_master.pixels_y() * m_master.pixels_x() * m_master.bitdepth() /
-            8; // TODO! replace with image_size_in_bytes // TODO
-               // shouldnt it only be the module size? - check
-
-        auto *part_buffer = new std::byte[bytes_per_part];
-
-        // TODO! if we have many submodules we should reorder them on
-        // the module level
-
-        for (size_t part_idx = 0;
-             part_idx !=
-             m_master.roi_geometries().at(roi_index).num_modules_in_roi();
-             ++part_idx) {
-            auto pos = m_master.geometry().get_module_geometries(
-                m_master.roi_geometries().at(roi_index).module_indices_in_roi(
-                    part_idx));
-            auto corrected_idx = frame_indices[part_idx];
-
-            m_subfiles[roi_index][part_idx]->seek(corrected_idx);
-            m_subfiles[roi_index][part_idx]->read_into(part_buffer, header);
-            if (header)
-                ++header;
-
-            for (size_t cur_row = 0; cur_row < static_cast<size_t>(pos.height);
-                 cur_row++) {
-
-                auto irow = (pos.origin_y + cur_row);
-                auto icol = pos.origin_x;
-                auto dest =
-                    (irow * m_master.roi_geometries().at(roi_index).pixels_x() +
-                     icol);
-                dest = dest * m_master.bitdepth() / 8;
-                memcpy(frame_buffer + dest,
-                       part_buffer +
-                           cur_row * pos.width * m_master.bitdepth() / 8,
-                       pos.width * m_master.bitdepth() / 8);
+        if (width == roi_width) {
+            // the part spans full rows of the ROI and is contiguous in the
+            // assembled frame
+            subfile.read_into(dest, header);
+        } else {
+            subfile.read_into(m_part_buffer.data(), header);
+            const size_t row_bytes = width * bytes_per_pixel;
+            const size_t roi_row_bytes = roi_width * bytes_per_pixel;
+            for (size_t row = 0; row < height; ++row) {
+                std::memcpy(dest + row * roi_row_bytes,
+                            m_part_buffer.data() + row * row_bytes, row_bytes);
             }
         }
-        delete[] part_buffer;
+        if (header) {
+            ++header;
+        }
     }
 }
 

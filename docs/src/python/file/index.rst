@@ -8,6 +8,7 @@ File I/O
    pyClusterFile
    pyCtbRawFile
    pyFile
+   pyGapPixels
    pyJungfrauDataFile
    pyRawFile
    pyRawMasterFile
