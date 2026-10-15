@@ -2,9 +2,11 @@
 #pragma once
 #include "aare/Dtype.hpp"
 #include "aare/Frame.hpp"
+#include "aare/GapPixels.hpp"
 #include "aare/defs.hpp"
 
 #include <filesystem>
+#include <optional>
 #include <vector>
 
 namespace aare {
@@ -15,6 +17,7 @@ namespace aare {
  * rows: number of rows in the file
  * cols: number of columns in the file
  * geometry: geometry of the file
+ * gap_pixels: insert gap pixels when reading raw files
  */
 struct FileConfig {
     aare::Dtype dtype{typeid(uint16_t)};
@@ -24,7 +27,8 @@ struct FileConfig {
         return dtype == other.dtype && rows == other.rows &&
                cols == other.cols && geometry == other.geometry &&
                detector_type == other.detector_type &&
-               max_frames_per_file == other.max_frames_per_file;
+               max_frames_per_file == other.max_frames_per_file &&
+               gap_pixels == other.gap_pixels;
     }
     bool operator!=(const FileConfig &other) const { return !(*this == other); }
 
@@ -34,6 +38,10 @@ struct FileConfig {
     DetectorType detector_type{DetectorType::Unknown};
     int max_frames_per_file{};
     size_t total_frames{};
+
+    /// @brief Insert gap pixels into every frame. Only RawFile supports
+    /// this; other readers reject a set value.
+    std::optional<GapPixels> gap_pixels{};
     // std::string to_string() const {
     //     return "{ dtype: " + dtype.to_string() +
     //            ", rows: " + std::to_string(rows) +

@@ -23,10 +23,12 @@ File::File(const std::filesystem::path &fname, const std::string &mode,
     // Assuming we are pointing at a master file?
     // TODO! How do we read raw files directly?
     if (fname.extension() == ".raw" || fname.extension() == ".json") {
-        // file_impl = new RawFile(fname, mode, cfg);
-        file_impl = std::make_unique<RawFile>(fname, mode);
+        file_impl = std::make_unique<RawFile>(fname, mode, cfg.gap_pixels);
+    } else if (cfg.gap_pixels) {
+        throw std::invalid_argument(fmt::format(
+            "Gap pixels are only supported for raw files, cannot open '{}'",
+            fname.string()));
     } else if (fname.extension() == ".npy") {
-        // file_impl = new NumpyFile(fname, mode, cfg);
         file_impl = std::make_unique<NumpyFile>(fname, mode, cfg);
     } else if (fname.extension() == ".dat") {
         file_impl = std::make_unique<JungfrauDataFile>(fname);

@@ -24,7 +24,8 @@ std::runtime_error RawFile::frame_error(size_t frame_index,
                     frame_index, m_master.master_fname().string(), message));
 }
 
-RawFile::RawFile(const std::filesystem::path &fname, const std::string &mode)
+RawFile::RawFile(const std::filesystem::path &fname, const std::string &mode,
+                 std::optional<GapPixels> gap_pixels)
     : m_master(fname) {
 
     m_mode = mode;
@@ -61,6 +62,34 @@ RawFile::RawFile(const std::filesystem::path &fname, const std::string &mode)
             }
         }
         m_part_buffer.resize(max_part_bytes);
+
+        m_roi_rects = m_master.rois();
+        if (m_roi_rects.size() != num_rois) {
+            throw std::runtime_error(
+                LOCATION + "ROI count differs from ROI geometry count");
+        }
+        m_roi_shapes.reserve(num_rois);
+        if (gap_pixels) {
+            const auto detector = m_master.detector_type();
+            if (detector != DetectorType::Jungfrau &&
+                detector != DetectorType::Eiger) {
+                throw std::invalid_argument(
+                    LOCATION + "Gap pixels are only supported for Jungfrau "
+                               "and Eiger detectors");
+            }
+            m_gap_pixels = gap_pixels;
+            m_gap_layout = detail::gap_layout(*gap_pixels);
+            m_generator = detail::make_generator(gap_pixels->seed);
+            for (const auto &rect : m_roi_rects) {
+                m_roi_shapes.push_back(
+                    detail::gapped_shape(rect, m_gap_layout));
+            }
+        } else {
+            for (const auto &roi : m_master.roi_geometries()) {
+                m_roi_shapes.push_back({static_cast<ssize_t>(roi.pixels_y()),
+                                        static_cast<ssize_t>(roi.pixels_x())});
+            }
+        }
         if (!min_frames) {
             throw std::runtime_error(fmt::format(
                 "No raw subfiles selected by '{}'", fname.string()));
@@ -202,9 +231,7 @@ size_t RawFile::bytes_per_frame() {
 }
 
 size_t RawFile::bytes_per_frame(const size_t roi_index) {
-    return m_master.roi_geometries().at(roi_index).pixels_x() *
-           m_master.roi_geometries().at(roi_index).pixels_y() *
-           m_master.bitdepth() / bits_per_byte;
+    return pixels_per_frame(roi_index) * m_master.bitdepth() / bits_per_byte;
 }
 
 size_t RawFile::pixels_per_frame() {
@@ -217,8 +244,7 @@ size_t RawFile::pixels_per_frame() {
 }
 
 size_t RawFile::pixels_per_frame(const size_t roi_index) {
-    return m_master.roi_geometries().at(roi_index).pixels_x() *
-           m_master.roi_geometries().at(roi_index).pixels_y();
+    return rows(roi_index) * cols(roi_index);
 }
 
 DetectorType RawFile::detector_type() const { return m_master.detector_type(); }
@@ -249,7 +275,7 @@ size_t RawFile::rows() const {
     return rows(0);
 }
 size_t RawFile::rows(const size_t roi_index) const {
-    return m_master.roi_geometries().at(roi_index).pixels_y();
+    return static_cast<size_t>(m_roi_shapes.at(roi_index)[0]);
 }
 size_t RawFile::cols() const {
     if (m_master.roi_geometries().size() > 1) {
@@ -260,7 +286,7 @@ size_t RawFile::cols() const {
     return cols(0);
 }
 size_t RawFile::cols(const size_t roi_index) const {
-    return m_master.roi_geometries().at(roi_index).pixels_x();
+    return static_cast<size_t>(m_roi_shapes.at(roi_index)[1]);
 }
 size_t RawFile::bitdepth() const { return m_master.bitdepth(); }
 
@@ -333,8 +359,8 @@ DetectorHeader RawFile::read_header(const std::filesystem::path &fname) {
 RawMasterFile RawFile::master() const { return m_master; }
 
 Frame RawFile::get_frame(size_t frame_index, const size_t roi_index) {
-    auto f = Frame(m_master.roi_geometries().at(roi_index).pixels_y(),
-                   m_master.roi_geometries().at(roi_index).pixels_x(),
+    auto f = Frame(static_cast<uint32_t>(rows(roi_index)),
+                   static_cast<uint32_t>(cols(roi_index)),
                    Dtype::from_bitdepth(m_master.bitdepth()));
     std::byte *frame_buffer = f.data();
     get_frame_into(frame_index, frame_buffer, roi_index);
@@ -400,6 +426,30 @@ void RawFile::get_frame_into(size_t frame_index, std::byte *frame_buffer,
     const auto frame_indices =
         synchronized_frame_indices(frame_index, roi_index);
 
+    if (m_gap_pixels) {
+        switch (m_master.bitdepth()) {
+        case 8:
+            assemble_with_gaps<uint8_t>(frame_buffer, roi_index, frame_indices,
+                                        header);
+            break;
+        case 16:
+            assemble_with_gaps<uint16_t>(frame_buffer, roi_index, frame_indices,
+                                         header);
+            break;
+        case 32:
+            assemble_with_gaps<uint32_t>(frame_buffer, roi_index, frame_indices,
+                                         header);
+            break;
+        default:
+            throw frame_error(frame_index,
+                              LOCATION +
+                                  fmt::format("Gap pixels are not supported "
+                                              "for a bit depth of {}",
+                                              m_master.bitdepth()));
+        }
+        return;
+    }
+
     const size_t bytes_per_pixel = m_master.bitdepth() / bits_per_byte;
     const size_t roi_width = roi.pixels_x();
 
@@ -434,6 +484,43 @@ void RawFile::get_frame_into(size_t frame_index, std::byte *frame_buffer,
         if (header) {
             ++header;
         }
+    }
+}
+
+template <typename T>
+void RawFile::assemble_with_gaps(std::byte *frame_buffer, size_t roi_index,
+                                 const std::vector<size_t> &frame_indices,
+                                 DetectorHeader *header) {
+    const auto &roi = m_master.roi_geometries().at(roi_index);
+    const ROI &rect = m_roi_rects.at(roi_index);
+    NDView<T, 2> destination(reinterpret_cast<T *>(frame_buffer),
+                             m_roi_shapes.at(roi_index));
+    detail::fill_gap_pixels(destination, rect, m_gap_layout,
+                            detail::fill_as<T>(m_gap_pixels->fill_value));
+
+    for (size_t part_idx = 0; part_idx != roi.num_modules_in_roi();
+         ++part_idx) {
+        const auto &pos = m_master.geometry().get_module_geometries(
+            roi.module_indices_in_roi(part_idx));
+        auto &subfile = *m_subfiles[roi_index][part_idx];
+        subfile.seek(frame_indices[part_idx]);
+        subfile.read_into(m_part_buffer.data(), header);
+        if (header) {
+            ++header;
+        }
+        // detector coordinates of the part
+        const ROI part_rect{
+            rect.xmin + pos.origin_x, rect.xmin + pos.origin_x + pos.width,
+            rect.ymin + pos.origin_y, rect.ymin + pos.origin_y + pos.height};
+        NDView<const T, 2> source(
+            reinterpret_cast<const T *>(m_part_buffer.data()),
+            {pos.height, pos.width});
+        detail::copy_with_gaps(source, part_rect, destination, rect,
+                               m_gap_layout);
+    }
+
+    if (m_gap_pixels->split_counts) {
+        detail::split_edge_counts(destination, rect, m_gap_layout, m_generator);
     }
 }
 

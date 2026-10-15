@@ -3,6 +3,7 @@
 #include "aare/CtbRawFile.hpp"
 #include "aare/File.hpp"
 #include "aare/Frame.hpp"
+#include "aare/GapPixels.hpp"
 #include "aare/ROI.hpp"
 #include "aare/RawFile.hpp"
 #include "aare/RawMasterFile.hpp"
@@ -29,13 +30,37 @@ void define_file_io_bindings(py::module &m) {
                          debug, roundRNumber, detType, version, packetMask);
 
     py::class_<File>(m, "File")
-        .def(py::init([](const std::filesystem::path &fname) {
-            return File(fname, "r", {});
-        }))
-        .def(py::init(
-            [](const std::filesystem::path &fname, const std::string &mode) {
-                return File(fname, mode, {});
-            }))
+        .def(py::init([](const std::filesystem::path &fname,
+                         const std::string &mode,
+                         std::optional<GapPixels> gap_pixels) {
+                 FileConfig cfg;
+                 cfg.gap_pixels = std::move(gap_pixels);
+                 return File(fname, mode, cfg);
+             }),
+             py::arg("fname"), py::arg("mode") = "r",
+             py::arg("gap_pixels") = py::none())
+        .def(py::init([](const std::filesystem::path &fname,
+                         const std::string &mode, bool gap_pixels) {
+                 FileConfig cfg;
+                 if (gap_pixels) {
+                     cfg.gap_pixels = GapPixels{};
+                 }
+                 return File(fname, mode, cfg);
+             }),
+             py::arg("fname"), py::arg("mode") = "r",
+             py::arg("gap_pixels") = false, R"(
+             Open a file for reading.
+
+             Parameters
+             ----------
+             fname : path
+                 Master file (.json, .raw), .npy or .dat file.
+             mode : str
+                 Only "r" is supported.
+             gap_pixels : bool or GapPixels
+                 Insert gap pixels when reading raw files. True uses the
+                 default GapPixels configuration.
+             )")
         .def(py::init<const std::filesystem::path &, const std::string &,
                       const FileConfig &>())
 
