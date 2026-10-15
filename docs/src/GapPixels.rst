@@ -80,9 +80,9 @@ detector receives exactly the gaps that fall inside it.
 
    #include "aare/GapPixels.hpp"
 
-   aare::NDArray<double, 2> pedestal = ...; // 512 x 1024
+   aare::NDArray<double, 2> image = ...; // 512 x 1024
    auto gapped = aare::insert_gap_pixels<double>(
-       pedestal.view(), aare::ROI{0, 1024, 0, 512}, aare::GapPixels{});
+       image.view(), aare::ROI{0, 1024, 0, 512}, aare::GapPixels{});
    // gapped is 514 x 1030
 
 ``gapped_shape`` returns the shape of the gapped image of a ROI without
