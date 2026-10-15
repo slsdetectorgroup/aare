@@ -3,8 +3,28 @@
 
 #include <fmt/format.h>
 
+#include <limits>
+
 namespace aare {
 namespace detail {
+
+namespace {
+
+constexpr ssize_t chip = 256;
+constexpr ssize_t module_x = 1024;
+constexpr ssize_t module_y = 512;
+
+// Gap sizes and detector coordinates are bounded so that gapped coordinates
+// and gapped image sizes cannot overflow ssize_t. A gapped coordinate is at
+// most (1 + 2 * max_gap / chip) times the detector coordinate, and the image
+// size is the product of two such extents.
+constexpr ssize_t max_gap = 1024;
+constexpr ssize_t max_coordinate = ssize_t{1} << 28;
+constexpr ssize_t max_extent = max_coordinate * (1 + 2 * max_gap / chip);
+static_assert(max_extent <= std::numeric_limits<ssize_t>::max() / max_extent,
+              "gapped image sizes must fit in ssize_t");
+
+} // namespace
 
 GapLayout gap_layout(const GapPixels &gaps) {
     if (gaps.chip_gap < 0) {
@@ -15,14 +35,20 @@ GapLayout gap_layout(const GapPixels &gaps) {
         throw std::invalid_argument(LOCATION +
                                     "Module gaps must not be negative");
     }
+    if (gaps.chip_gap > max_gap) {
+        throw std::invalid_argument(
+            LOCATION +
+            fmt::format("Chip gap must not exceed {} pixels", max_gap));
+    }
+    if (module_gaps.x > max_gap || module_gaps.y > max_gap) {
+        throw std::invalid_argument(
+            LOCATION +
+            fmt::format("Module gaps must not exceed {} pixels", max_gap));
+    }
     if (gaps.split_counts && gaps.chip_gap != 2) {
         throw std::invalid_argument(
             LOCATION + "Splitting counts requires a chip gap of 2");
     }
-
-    constexpr ssize_t chip = 256;
-    constexpr ssize_t module_x = 1024;
-    constexpr ssize_t module_y = 512;
     return {{chip, module_x, gaps.chip_gap, module_gaps.x},
             {chip, module_y, gaps.chip_gap, module_gaps.y}};
 }
@@ -38,6 +64,11 @@ void validate_roi(const ROI &roi) {
         throw std::invalid_argument(
             LOCATION + fmt::format("Invalid ROI x [{}, {}) y [{}, {})",
                                    roi.xmin, roi.xmax, roi.ymin, roi.ymax));
+    }
+    if (roi.xmax > max_coordinate || roi.ymax > max_coordinate) {
+        throw std::invalid_argument(
+            LOCATION +
+            fmt::format("ROI coordinates must not exceed {}", max_coordinate));
     }
 }
 

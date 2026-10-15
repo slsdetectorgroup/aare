@@ -45,17 +45,19 @@ struct ModuleGaps {
  * a ROI only receives the gaps that fall strictly inside it.
  */
 struct GapPixels {
-    /// @brief Pixels inserted at each chip boundary inside a module. Source
-    /// column 255 expands to the right and column 256 to the left.
+    /// @brief Pixels inserted at each chip boundary inside a module, at
+    /// most 1024. Source column 255 expands to the right and column 256 to
+    /// the left.
     ssize_t chip_gap{2};
 
-    /// @brief Pixels inserted at module boundaries. Unset means no pixels
-    /// are inserted between modules.
+    /// @brief Pixels inserted at module boundaries, at most 1024 each.
+    /// Unset means no pixels are inserted between modules.
     std::optional<ModuleGaps> module_gaps{};
 
     /// @brief Value written to gap pixels, converted to the pixel type.
-    /// Values outside the range of an integer pixel type wrap. Module gaps
-    /// always receive this value.
+    /// Finite values wrap for integer pixel types; NaN, infinity and
+    /// magnitudes of 2^63 or more are rejected. Module gaps always receive
+    /// this value.
     double fill_value{0};
 
     /// @brief Split the counts of the double-size pixels at chip boundaries

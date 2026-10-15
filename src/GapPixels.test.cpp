@@ -105,6 +105,17 @@ TEST_CASE("Gap layout follows the configuration", "[GapPixels]") {
         gaps.chip_gap = 4;
         CHECK_THROWS_AS(detail::gap_layout(gaps), std::invalid_argument);
     }
+    SECTION("gaps are limited to 1024 pixels") {
+        GapPixels gaps;
+        gaps.chip_gap = 1024;
+        gaps.module_gaps = ModuleGaps{1024, 1024};
+        CHECK_NOTHROW(detail::gap_layout(gaps));
+        gaps.chip_gap = 1025;
+        CHECK_THROWS_AS(detail::gap_layout(gaps), std::invalid_argument);
+        gaps.chip_gap = 2;
+        gaps.module_gaps = ModuleGaps{8, 1025};
+        CHECK_THROWS_AS(detail::gap_layout(gaps), std::invalid_argument);
+    }
 }
 
 TEST_CASE("Gapped shape of detector ROIs", "[GapPixels]") {
@@ -135,6 +146,14 @@ TEST_CASE("Gapped shape of detector ROIs", "[GapPixels]") {
         CHECK_THROWS_AS(gapped_shape(ROI{-1, 10, 0, 10}),
                         std::invalid_argument);
         CHECK_THROWS_AS(gapped_shape(ROI{10, 5, 0, 10}), std::invalid_argument);
+    }
+    SECTION("coordinates are limited to 2^28") {
+        const ssize_t limit = ssize_t{1} << 28;
+        CHECK(gapped_shape(ROI{limit - 1, limit, 0, 1}) == Shape{1, 1});
+        CHECK_THROWS_AS(gapped_shape(ROI{limit, limit + 1, 0, 1}),
+                        std::invalid_argument);
+        CHECK_THROWS_AS(gapped_shape(ROI{0, 1, limit, limit + 1}),
+                        std::invalid_argument);
     }
 }
 
@@ -217,6 +236,27 @@ TEST_CASE("Copy and fill with a tiny layout", "[GapPixels]") {
                             ROI{0, 7, 0, 4}, destination.view(), roi, layout),
                         std::invalid_argument);
     }
+}
+
+TEST_CASE("Gaps and coordinates that overflow the gapped shape are rejected",
+          "[GapPixels]") {
+    // chip_gap * 3 wrapped around in 64 bit arithmetic and reported a 1x1023
+    // image for this source, so gap filling wrote past the allocation
+    auto source = pattern<uint16_t>(1, 1024);
+    GapPixels gaps;
+    gaps.chip_gap = 6148914691236517205;
+    const ROI roi{0, 1024, 0, 1};
+    CHECK_THROWS_AS(gapped_shape(roi, gaps), std::invalid_argument);
+    CHECK_THROWS_AS(
+        insert_gap_pixels(NDView<const uint16_t, 2>(source.view()), roi, gaps),
+        std::invalid_argument);
+
+    const ssize_t far = ssize_t{1} << 62;
+    const ROI far_roi{far, far + 1024, 0, 1};
+    CHECK_THROWS_AS(gapped_shape(far_roi), std::invalid_argument);
+    CHECK_THROWS_AS(
+        insert_gap_pixels(NDView<const uint16_t, 2>(source.view()), far_roi),
+        std::invalid_argument);
 }
 
 TEST_CASE("insert_gap_pixels on a Jungfrau module", "[GapPixels]") {

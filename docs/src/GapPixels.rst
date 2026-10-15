@@ -17,6 +17,8 @@ Configuration
 ``GapPixels`` holds the configuration. The chip size (256 pixels) and the
 module size (1024x512 pixels) are fixed. An Eiger quad (512x512 pixels)
 needs no special handling, since its only chip boundaries are at pixel 256.
+Gaps of up to 1024 pixels are supported, far beyond the 2 to 10 pixels of
+a real detector, and detector coordinates are limited to 2^28.
 
 ================ ================ ===========================================
 Field            Default          Meaning

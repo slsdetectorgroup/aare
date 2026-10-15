@@ -50,11 +50,12 @@ void define_gap_pixels_bindings(py::module &m) {
         Parameters
         ----------
         chip_gap : int
-            Pixels inserted at each chip boundary inside a module. Source
-            column 255 expands to the right and column 256 to the left.
+            Pixels inserted at each chip boundary inside a module, at most
+            1024. Source column 255 expands to the right and column 256 to
+            the left.
         module_gaps : ModuleGaps, optional
-            Pixels inserted at module boundaries. None means no pixels are
-            inserted between modules.
+            Pixels inserted at module boundaries, at most 1024 each. None
+            means no pixels are inserted between modules.
         fill_value : float
             Value written to gap pixels, converted to the pixel type. Finite
             values wrap for integer images; NaN, infinity and magnitudes of

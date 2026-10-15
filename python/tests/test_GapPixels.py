@@ -114,6 +114,12 @@ def test_insert_gap_pixels_rejects_bad_input():
         insert_gap_pixels(image, GapPixels(fill_value=float("nan")))
     with pytest.raises(ValueError):
         insert_gap_pixels(image, GapPixels(fill_value=1e20))
+    with pytest.raises(ValueError):
+        insert_gap_pixels(image, GapPixels(chip_gap=6148914691236517205))
+    with pytest.raises(ValueError):
+        insert_gap_pixels(image, GapPixels(module_gaps=ModuleGaps(8, 2000)))
+    with pytest.raises(ValueError):
+        insert_gap_pixels(image, roi=ROI(2**40, 2**40 + 400, 0, 400))
 
 
 def test_insert_gap_pixels_nan_fill_for_float_images():
