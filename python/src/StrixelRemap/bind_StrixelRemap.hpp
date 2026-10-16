@@ -55,6 +55,20 @@ void define_StrixelPixelRemaps(py::module &m) {
                 maps are empty if the groups are not covered by the user ROI.
             )")
 
+        .def_property_readonly(
+            "sensor_config",
+            [](const aare::remap::StrixelPixelMap<N, M> &self) {
+                return self.get_SensorConfig();
+            },
+            R"(
+            Get the sensor configuration associated with this StrixelPixelMap.
+
+            Returns
+            -------
+            SensorConfig
+                The sensor configuration.
+            )")
+
         .def(
             "__call__",
             [](aare::remap::StrixelPixelMap<N, M> &self,

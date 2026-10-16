@@ -126,6 +126,12 @@ template <std::size_t N, std::size_t M = N> class StrixelPixelMap {
         return m_group_maps[group_index];
     }
 
+    /**
+     * @brief Get the sensor configuration associated with this StrixelPixelMap.
+     * @return const SensorConfig<N>& The sensor configuration.
+     */
+    const SensorConfig<N> &get_SensorConfig() const { return m_sensorconfig; }
+
   protected:
     /**
      * @brief Build the strixel-to-pixel order map for one strixel group.
