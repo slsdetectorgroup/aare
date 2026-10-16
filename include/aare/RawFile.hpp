@@ -26,6 +26,10 @@ class RawFile : public FileInterface {
     std::vector<std::vector<std::unique_ptr<RawSubFile>>>
         m_subfiles; // [ROI][modules_per_ROI]
 
+    /// @brief Scratch space for one module part that is not contiguous in
+    /// the assembled frame. Sized at open to the largest part in any ROI.
+    std::vector<std::byte> m_part_buffer;
+
     RawMasterFile m_master;
     size_t m_current_frame{};
 
@@ -153,6 +157,16 @@ class RawFile : public FileInterface {
   private:
     std::runtime_error frame_error(size_t frame_index,
                                    const std::string &message) const;
+
+    /**
+     * @brief Frame index to read from each module part of a ROI so that all
+     * parts hold the same detector frame number. Parts whose frame number
+     * lags are advanced; the index never moves backwards.
+     * @throws std::runtime_error if a part runs out of frames while
+     * synchronizing
+     */
+    std::vector<size_t> synchronized_frame_indices(size_t frame_index,
+                                                   size_t roi_index);
 
     /**
      * @brief read the frame at the given frame index into the image buffer
