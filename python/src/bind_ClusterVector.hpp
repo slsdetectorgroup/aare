@@ -2,11 +2,11 @@
 #pragma once
 #include "aare/ClusterCollector.hpp"
 #include "aare/ClusterFileSink.hpp"
-#include "aare/ClusterFinder.hpp"
-#include "aare/ClusterFinderMT.hpp"
 #include "aare/ClusterVector.hpp"
 #include "aare/NDView.hpp"
 #include "aare/Pedestal.hpp"
+#include "aare/cf/ClusterFinder.hpp"
+#include "aare/cf/ClusterFinderMT.hpp"
 #include "np_helper.hpp"
 
 #include <cstdint>
@@ -35,7 +35,7 @@ void define_ClusterVector(py::module &m, const std::string &typestr) {
         valid only while the ClusterVector's underlying allocation and size
         remain unchanged.
         )doc",
-        py::buffer_protocol())
+        py::buffer_protocol(), py::module_local())
 
         .def(py::init(), R"doc(
         Create an empty ClusterVector with frame number 0 and space reserved
