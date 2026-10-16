@@ -140,10 +140,10 @@ void define_StrixelPixelRemaps(py::module &m) {
             },
             py::arg("input").noconvert(),
             R"(
-            Apply the strixel-to-pixel remapping to an input array. 
+            Apply the strixel-to-pixel remapping to an input array.
             This overload assumes that the user ROI has already been set and
             the map calculated using `calculate_map()`.
-            
+
             Parameters
             ----------
             input : np.ndarray[uint16_t, 2]
@@ -216,7 +216,7 @@ void define_StrixelPixelRemaps(py::module &m) {
             Apply the strixel-to-pixel remapping to an input array.
             This overload assumes that the user ROI has already been set and
             the map calculated using `calculate_map()`.
-            
+
             Parameters
             ----------
             input : np.ndarray[uint16_t, 2]

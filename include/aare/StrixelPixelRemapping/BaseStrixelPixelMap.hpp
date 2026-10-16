@@ -140,15 +140,10 @@ template <std::size_t N, std::size_t M = N> class StrixelPixelMap {
      * within each multiplicity chunk; it does not reverse the complete
      * strixel column ordering.
      *
+     * The sensor pixel geometry, module placement, bond shift and user ROI
+     * are taken from the members of this StrixelPixelMap.
+     *
      * @param group_config Configuration of the strixel group to be mapped.
-     * @param pixel Sensor pixel geometry to which the group
-     *              is connected.
-     * @param placement Sensor placement and orientation on the module.
-     * @param roi_user User-specified ROI in the module's native coordinate
-     * system.
-     * @param bond_shift Physical bonding shift in x and y directions defined in
-     * the sensor's native coordinate system (before it is oriented on the
-     * module).
      * @return A StrixelGroupToPixelMap describing the mapping from strixel
      * coordinates to pixel indices in the user-provided ROI.
      *      - map(strixel_row,strixel_col) = pixel_index_in_user_roi
