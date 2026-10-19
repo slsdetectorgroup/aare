@@ -87,19 +87,19 @@ TEST_CASE("mean_current_source", "[DataSetAggregation]") {
         mean_current_source(temp_files.file_path(), mean_over_num_frames,
                             num_samples, 4, file_offset);
 
-    REQUIRE(result.shape(0) == num_samples);
-    REQUIRE(result.shape(1) == rows);
-    REQUIRE(result.shape(2) == cols);
+    REQUIRE(result.shape(0) == rows);
+    REQUIRE(result.shape(1) == cols);
+    REQUIRE(result.shape(2) == num_samples);
 
     size_t sum_mean_over_frames = (mean_over_num_frames) *
                                   (mean_over_num_frames - 1) /
                                   2; // sum of 0,1,...,mean_over_num_frames-1
 
-    for (size_t sample = 0; sample < num_samples; ++sample) {
-        for (size_t r = 0; r < rows; ++r) {
-            for (size_t c = 0; c < cols; ++c) {
+    for (size_t r = 0; r < rows; ++r) {
+        for (size_t c = 0; c < cols; ++c) {
+            for (size_t sample = 0; sample < num_samples; ++sample) {
 
-                CHECK(result(sample, r, c) ==
+                CHECK(result(r, c, sample) ==
                       static_cast<uint16_t>(
                           (c * mean_over_num_frames + sum_mean_over_frames) /
                           mean_over_num_frames));

@@ -64,6 +64,6 @@ void bind_read_current_source(pybind11::module_ &m) {
 
         Returns:
         --------
-            np.ndarray: A numpy array containing the mean frame for each current source with shape (num_sources, rows, cols).
+            np.ndarray: A numpy array containing the mean frame for each current source with shape (rows, cols, num_sources).
     )pbdoc");
 }

@@ -112,8 +112,8 @@ NDArray<FRAME_TYPE, 3> mean_over_dataset(const std::filesystem::path &path,
  * @param num_threads The number of threads to use for parallel computation.
  * @param file_offset The offset in the file to start reading from.
  * @return An NDArray containing the mean current source data for each sample.
- * @note On Linux the file is read with O_DIRECT in large chunks, bypassing the
- * page cache, since the datasets are typically larger than the available RAM.
+ (rows, cols, num_samples)
+
  */
 NDArray<uint16_t, 3> mean_current_source(const std::filesystem::path &path,
                                          const size_t mean_over_num_frames,

@@ -51,9 +51,9 @@ NDArray<uint16_t, 3> mean_current_source(const std::filesystem::path &path,
     const double inv_mean_over_num_frames =
         1.0 / static_cast<double>(mean_over_num_frames);
 
-    NDArray<uint16_t, 3> cs_data({static_cast<ssize_t>(num_samples),
-                                  static_cast<ssize_t>(num_rows),
-                                  static_cast<ssize_t>(num_cols)},
+    NDArray<uint16_t, 3> cs_data({static_cast<ssize_t>(num_rows),
+                                  static_cast<ssize_t>(num_cols),
+                                  static_cast<ssize_t>(num_samples)},
                                  0);
 
     auto worker = [&](const size_t sample_begin, const size_t sample_end) {
@@ -109,10 +109,16 @@ NDArray<uint16_t, 3> mean_current_source(const std::filesystem::path &path,
                 }
             }
 
-            uint16_t *out = cs_data.data() + sample * num_rows * num_cols;
-            for (size_t idx = 0; idx < num_rows * num_cols; ++idx) {
-                out[idx] = static_cast<uint16_t>(static_cast<double>(sum[idx]) *
-                                                 inv_mean_over_num_frames);
+            // uint16_t *out = cs_data.data() + sample * num_rows * num_cols;
+            for (size_t row = 0; row < num_rows; ++row) {
+                size_t row_offset = row * num_cols;
+                for (size_t col = 0; col < num_cols; ++col) {
+                    cs_data(row, col, sample) = static_cast<uint16_t>(
+                        static_cast<double>(sum[row_offset + col]) *
+                        inv_mean_over_num_frames); // bad striding maybe better
+                                                   // to reshape and copy in
+                                                   // numpy
+                }
             }
         }
     };
