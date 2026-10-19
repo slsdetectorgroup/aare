@@ -181,4 +181,6 @@ PYBIND11_MODULE(_aare, m) {
     define_eta<int16_t>(m, "i16");
 
     bind_DataSetAggregation<uint16_t>(m);
+
+    bind_read_current_source(m);
 }
