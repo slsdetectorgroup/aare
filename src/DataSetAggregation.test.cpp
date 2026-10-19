@@ -55,3 +55,55 @@ TEST_CASE("mean_over_dataset", "[DataSetAggregation]") {
         }
     }
 }
+
+TEST_CASE("mean_current_source", "[DataSetAggregation]") {
+
+    constexpr size_t rows = 256;
+    constexpr size_t cols = 256;
+    constexpr size_t columns_per_subcolumn = 64;
+    constexpr size_t mean_over_num_frames = 3;
+    constexpr size_t num_samples = 5;
+    constexpr size_t file_offset = 2 * columns_per_subcolumn;
+    constexpr size_t frames_per_sample =
+        mean_over_num_frames * columns_per_subcolumn;
+    constexpr size_t num_frames = num_samples * frames_per_sample + file_offset;
+
+    // spread over several files to cross file boundaries mid sample
+    TemporaryJungfrauFiles temp_files(
+        num_frames,
+        [&](size_t frame) {
+            NDArray<uint16_t, 2> data({rows, cols});
+            int frame_idx = ((frame - file_offset) / columns_per_subcolumn) %
+                            mean_over_num_frames;
+
+            for (size_t r = 0; r < rows; ++r)
+                for (size_t c = 0; c < cols; ++c)
+                    data(r, c) = c + frame_idx;
+            return data;
+        },
+        3);
+
+    auto result =
+        mean_current_source(temp_files.file_path(), mean_over_num_frames,
+                            num_samples, 4, file_offset);
+
+    REQUIRE(result.shape(0) == num_samples);
+    REQUIRE(result.shape(1) == rows);
+    REQUIRE(result.shape(2) == cols);
+
+    size_t sum_mean_over_frames = (mean_over_num_frames) *
+                                  (mean_over_num_frames - 1) /
+                                  2; // sum of 0,1,...,mean_over_num_frames-1
+
+    for (size_t sample = 0; sample < num_samples; ++sample) {
+        for (size_t r = 0; r < rows; ++r) {
+            for (size_t c = 0; c < cols; ++c) {
+
+                CHECK(result(sample, r, c) ==
+                      static_cast<uint16_t>(
+                          (c * mean_over_num_frames + sum_mean_over_frames) /
+                          mean_over_num_frames));
+            }
+        }
+    }
+}
