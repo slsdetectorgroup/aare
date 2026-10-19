@@ -4,9 +4,9 @@
 #include <filesystem>
 #include <thread>
 
-#include "aare/ClusterFinderMT.hpp"
 #include "aare/ClusterVector.hpp"
 #include "aare/ProducerConsumerQueue.hpp"
+#include "aare/cf/ClusterFinderMT.hpp"
 
 namespace aare {
 

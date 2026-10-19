@@ -1,5 +1,6 @@
 // SPDX-License-Identifier: MPL-2.0
 #pragma once
+#include "aare/Cluster.hpp" // no_2x2_cluster
 #include "aare/ClusterFile.hpp"
 #include "aare/ClusterVector.hpp"
 #include "aare/Dtype.hpp"
@@ -11,13 +12,6 @@
 #include <cstddef>
 
 namespace aare {
-
-template <typename ClusterType,
-          typename = std::enable_if_t<is_cluster_v<ClusterType>>>
-struct no_2x2_cluster {
-    constexpr static bool value =
-        ClusterType::cluster_size_x > 2 && ClusterType::cluster_size_y > 2;
-};
 
 /**
  * @brief Find fixed-size photon clusters using a per-pixel pedestal and noise
