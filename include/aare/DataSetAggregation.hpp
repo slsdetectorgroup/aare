@@ -21,14 +21,32 @@ NDArray<FRAME_TYPE, 3> mean_over_dataset(const std::filesystem::path &path,
                                          const size_t num_samples,
                                          const size_t num_frames_per_sample,
                                          const int num_threads = 16) {
-    File meta_file(path);
 
-    auto frame = meta_file.read_frame();
+    size_t rows = 0;
+    size_t cols = 0;
+    size_t total_num_frames = 0;
 
-    NDArray<FRAME_TYPE, 3> mean_per_sample(
-        {static_cast<ssize_t>(meta_file.rows()),
-         static_cast<ssize_t>(meta_file.cols()),
-         static_cast<ssize_t>(num_samples)});
+    {
+        File meta_file(path);
+        rows = meta_file.rows();
+        cols = meta_file.cols();
+        total_num_frames = meta_file.total_frames();
+    }
+
+    NDArray<FRAME_TYPE, 3> mean_per_sample({static_cast<ssize_t>(rows),
+                                            static_cast<ssize_t>(cols),
+                                            static_cast<ssize_t>(num_samples)});
+
+    if (num_threads < 1)
+        throw std::invalid_argument("num_threads must be at least 1");
+
+    if (total_num_frames != num_samples * num_frames_per_sample) {
+        throw std::runtime_error(
+            fmt::format("Frames mismatch: Expected {} frames got {}",
+                        num_samples * num_frames_per_sample, total_num_frames));
+    }
+
+    const double inv_n = 1.0 / static_cast<double>(num_frames_per_sample);
 
     auto mean_over_samples = [&](size_t start_sample, size_t end_sample) {
         File file(path);
@@ -36,16 +54,11 @@ NDArray<FRAME_TYPE, 3> mean_over_dataset(const std::filesystem::path &path,
         file.seek(start_sample * num_frames_per_sample);
         NDArray<FRAME_TYPE, 3> frames(
             {static_cast<ssize_t>(num_frames_per_sample),
-             static_cast<ssize_t>(file.rows()),
-             static_cast<ssize_t>(file.cols())});
-
-        size_t rows = file.rows();
-        size_t cols = file.cols();
+             static_cast<ssize_t>(rows), static_cast<ssize_t>(cols)});
 
         std::vector<double> sum(rows *
                                 cols); // need to be double to avoid overflow
                                        // for uint16_t and uint32_t
-        const double inv_n = 1.0 / static_cast<double>(num_frames_per_sample);
 
         // TODO: maybe tile
         for (size_t i = start_sample; i < end_sample; ++i) {
