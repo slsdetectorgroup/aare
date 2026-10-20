@@ -16,9 +16,21 @@ void define_pedestal_tracking_pixel_histogram_bindings(py::module &m) {
         m, "PedestalTrackingPixelHistogram",
         "A pixel-wise histogram of frame - pedestal residuals, with a "
         "per-pixel running pedestal estimate sharded across worker threads")
-        .def(
-            py::init<int, int, int, double, double, int, std::size_t, double>(),
-            R"(
+        .def(py::init([](int rows, int cols, int n_bins, double xmin, double xmax, int n_threads, std::size_t max_pending,
+                         double n_sigma, std::optional<py::array_t<bool,
+                         py::array::c_style | py::array::forcecast>> mask) {
+                 if (mask.has_value()) {
+                     auto view = make_view_2d(mask.value());
+                     return new PedestalTrackingPixelHistogram(
+                         rows, cols, n_bins, xmin, xmax, n_threads, max_pending,
+                         n_sigma, view);
+                 } else {
+                     return new PedestalTrackingPixelHistogram(
+                         rows, cols, n_bins, xmin, xmax, n_threads, max_pending,
+                         n_sigma);
+                 }
+             }),
+             R"(
              Initialize a PedestalTrackingPixelHistogram.
 
              Args:
@@ -43,10 +55,16 @@ void define_pedestal_tracking_pixel_histogram_bindings(py::module &m) {
                      ``0.0`` to disable the pedestal update and get
                      histogram-only async behaviour (default: 1.0).
                      Also exposed live via the ``n_sigma`` property.
+                mask: Optional 2D boolean array (shape: rows x cols) that
+                     indicates bad pixels. True values indicate bad pixels
+                     that will be skipped during pedestal tracking and
+                     histogramming. If not provided, all pixels are treated
+                     as good.
              )",
-            py::kw_only(), py::arg("rows"), py::arg("cols"), py::arg("n_bins"),
-            py::arg("xmin"), py::arg("xmax"), py::arg("n_threads") = 1,
-            py::arg("max_pending") = std::size_t{16}, py::arg("n_sigma") = 1.0)
+             py::kw_only(), py::arg("rows"), py::arg("cols"), py::arg("n_bins"),
+             py::arg("xmin"), py::arg("xmax"), py::arg("n_threads") = 1,
+             py::arg("max_pending") = std::size_t{16}, py::arg("n_sigma") = 1.0,
+             py::arg("mask") = std::nullopt)
 
         .def(
             "push_pedestal_no_update",
@@ -99,6 +117,30 @@ void define_pedestal_tracking_pixel_histogram_bindings(py::module &m) {
              Returns:
                  A 2D numpy array (rows x cols, dtype: float64)
                  containing the current cached pedestal mean.
+             )")
+
+        .def(
+            "pedestal_std",
+            [](const PedestalTrackingPixelHistogram &self) {
+                // pedestal_std() flushes + locks + memcpys; do all of
+                // that without the GIL, only reacquire to wrap into a
+                // numpy array.
+                NDArray<PedestalTrackingPixelHistogram::AxisType, 2> *ptr =
+                    nullptr;
+                {
+                    py::gil_scoped_release release;
+                    ptr = new NDArray<PedestalTrackingPixelHistogram::AxisType,
+                                      2>(self.pedestal_std());
+                }
+                return return_image_data(ptr);
+            },
+            R"(
+             Snapshot the per-pixel pedestal std stitched together
+             from all shards.   
+
+             Returns:
+                 A 2D numpy array (rows x cols, dtype: float64)
+                 containing the current cached pedestal std.
              )")
 
         .def(
