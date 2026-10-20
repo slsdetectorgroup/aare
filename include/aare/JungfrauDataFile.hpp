@@ -62,14 +62,6 @@ class JungfrauDataFile : public FileInterface {
     // Extra functions needed for FileInterface
     Frame read_frame() override;
     Frame read_frame(size_t frame_number) override;
-    /**
-     * @brief Read the columns at the current  frame
-     * @param column_indices vector of column indices to read
-     * @pre column_indices must be sorted in ascending order
-     * @return Frame containing the columns at the current frame
-     */
-    Frame read_columns(const std::vector<size_t> column_indices);
-
     std::vector<Frame> read_n(size_t n_frames = 0) override;
     void read_into(std::byte *image_buf) override;
     void read_into(std::byte *image_buf, size_t n_frames) override;

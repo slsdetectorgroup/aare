@@ -74,24 +74,6 @@ void define_jungfrau_data_file_io_bindings(py::module &m) {
              R"(
                Read a single frame from the file.
                )")
-        .def(
-            "read_columns",
-            [](JungfrauDataFile &self,
-               const std::vector<size_t> column_indices) {
-                return self.read_columns(column_indices);
-            },
-            R"(
-            Read the columns at the current frame.
-            Parameters
-            ----------
-            column_indices : list of int
-                The indices of the columns to read.
-            Returns
-            -------
-            Frame : Frame
-                The columns read from the file.
-            )
-        )")
         .def("read_n", &read_n_dat_frames,
              R"(
                Read maximum n_frames frames from the file.
