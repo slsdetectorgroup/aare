@@ -32,6 +32,7 @@ AARE
     python/histogram/index
     python/pedestal/index
     pyFit
+    pyDataSetAggregation
     
 
 
