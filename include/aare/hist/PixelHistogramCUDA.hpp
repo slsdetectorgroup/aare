@@ -261,7 +261,7 @@ class PixelHistogramCUDA {
     // Needs transpose form Bin-Major to Pixel-Major
     NDArray<StorageType, 1> values_pixel(size_t row, size_t col) const {
         if (row >= nrows || col >= ncols)
-            throw std::invalid_argument(
+            throw std::out_of_range(
                 "Incorrect pixel coordinate; out-of bound access");
         NDArray<DeviceStorageType, 1> pixel_hist(
             {static_cast<ssize_t>(m_nbins)});
@@ -310,6 +310,11 @@ class PixelHistogramCUDA {
                        });
         return centers;
     }
+
+    size_t rows() const noexcept { return nrows; }
+    size_t cols() const noexcept { return ncols; }
+    size_t n_bins() const noexcept { return m_nbins; }
+    size_t batch_size() const noexcept { return m_batch_size; }
 };
 
 } // namespace aare::cuda
