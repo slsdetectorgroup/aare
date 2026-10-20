@@ -19,13 +19,51 @@ jobs:
       matrix:
         os: [ubuntu-latest, macos-latest, windows-latest]
 
+    env:
+      # Job level so that the build and the statistics step talk to the same
+      # sccache server configured for the GitHub Actions cache
+      SCCACHE_GHA_ENABLED: "true"
+
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
 
+      - uses: mozilla-actions/sccache-action@v0.0.11
+        with:
+          version: "v0.18.0"
+
+      # Without an MSVC environment scikit-build-core falls back to the Visual
+      # Studio generator on Windows, and MSBuild ignores the compiler launcher
+      - uses: TheMrMilchmann/setup-msvc-dev@v4.1.0
+        if: runner.os == 'Windows'
+        with:
+          arch: x64
+
+      # Linux wheels build inside a manylinux container, which needs its own
+      # sccache binary and the cache credentials the action exported; its
+      # statistics are printed after each wheel since the host cannot see them.
       - name: Build wheels
-        run: pipx run cibuildwheel==3.4.0
+        env:
+          CIBW_ENVIRONMENT_WINDOWS: CMAKE_GENERATOR=Ninja
+          CIBW_REPAIR_WHEEL_COMMAND_LINUX: >-
+            auditwheel repair -w {dest_dir} {wheel} && sccache --show-stats
+          CIBW_CONFIG_SETTINGS: >-
+            cmake.define.CMAKE_C_COMPILER_LAUNCHER=sccache
+            cmake.define.CMAKE_CXX_COMPILER_LAUNCHER=sccache
+            cmake.define.CMAKE_DISABLE_PRECOMPILE_HEADERS=ON
+          CIBW_ENVIRONMENT_PASS_LINUX: >-
+            SCCACHE_GHA_ENABLED ACTIONS_RESULTS_URL ACTIONS_RUNTIME_TOKEN
+            ACTIONS_CACHE_SERVICE_V2
+          CIBW_BEFORE_ALL_LINUX: >-
+            curl -sSL https://github.com/mozilla/sccache/releases/download/v0.18.0/sccache-v0.18.0-x86_64-unknown-linux-musl.tar.gz
+            | tar -xz -C /usr/local/bin --strip-components=1 --wildcards '*/sccache'
+            && chmod +x /usr/local/bin/sccache
+        run: pipx run cibuildwheel==4.3.0
 
-      - uses: actions/upload-artifact@v4
+      - name: Compiler cache statistics
+        if: runner.os != 'Linux'
+        run: sccache --show-stats
+
+      - uses: actions/upload-artifact@v7
         with:
           name: cibw-wheels-${{ matrix.os }}-${{ strategy.job-index }}
           path: ./wheelhouse/*.whl
@@ -34,12 +72,12 @@ jobs:
     name: Build source distribution
     runs-on: ubuntu-latest
     steps:
-    - uses: actions/checkout@v4
+    - uses: actions/checkout@v7
 
     - name: Build sdist
       run: pipx run build --sdist
 
-    - uses: actions/upload-artifact@v4
+    - uses: actions/upload-artifact@v7
       with:
         name: cibw-sdist
         path: dist/*.tar.gz
@@ -54,7 +92,7 @@ jobs:
     # or, alternatively, upload to PyPI on every tag starting with 'v' (remove on: release above to use this)
     # if: github.event_name == 'push' && startsWith(github.ref, 'refs/tags/v')
     steps:
-        - uses: actions/download-artifact@v4
+        - uses: actions/download-artifact@v8
           with:
             # unpacks all CIBW artifacts into dist/
             pattern: cibw-*
