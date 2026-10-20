@@ -18,6 +18,8 @@
   is set, gaps between modules. Gap positions follow detector coordinates
   before any ROI. Gap pixels receive a fill value or, with
   ``split_counts``, half of the neighbouring double size pixel.
+- Added ``mean_current_source`` to read current source Jungfrau data and evarge the values over several acquisitions.
+- Added ``mean_over_dataset`` to calculate the mean over several acquisitions in a Datasets.  
 
 ### Other:
 
