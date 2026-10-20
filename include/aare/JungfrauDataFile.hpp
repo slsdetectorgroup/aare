@@ -68,7 +68,7 @@ class JungfrauDataFile : public FileInterface {
      * @pre column_indices must be sorted in ascending order
      * @return Frame containing the columns at the current frame
      */
-    Frame read_columns(const std::vector<size_t> &column_indices);
+    Frame read_columns(const std::vector<size_t> column_indices);
 
     std::vector<Frame> read_n(size_t n_frames = 0) override;
     void read_into(std::byte *image_buf) override;
