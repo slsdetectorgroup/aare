@@ -44,6 +44,7 @@ AARE
     NDView
     Frame
     File
+    GapPixels
     MultiThreadedFileReader
     Dtype
     Cluster

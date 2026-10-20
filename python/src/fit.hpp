@@ -1,4 +1,5 @@
 // SPDX-License-Identifier: MPL-2.0
+#pragma once
 #include <cstdint>
 #include <filesystem>
 #include <pybind11/pybind11.h>
