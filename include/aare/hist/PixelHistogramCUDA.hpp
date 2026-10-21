@@ -14,12 +14,22 @@
 #include <string>
 #include <type_traits>
 
+#ifdef AARE_TESTS
+#include "../tests/friend_test.hpp"
+#endif
+
 namespace aare::cuda {
 
 template <typename StorageType = uint16_t,
           typename DeviceStorageType = uint32_t, typename AxisType = float,
           int BLOCK_SIZE = 128>
 class PixelHistogramCUDA {
+#ifdef AARE_TESTS
+    // Writes a known pattern into d_histogram to test values() without the
+    // fill kernel (PixelHistogramCUDA_testimpl.cu).
+    FRIEND_TEST(known_pattern_transpose_and_cap)
+#endif
+
     // nrows is declared first: its initializer validates all constructor
     // arguments, so it must run before anything below allocates.
     size_t nrows;
@@ -199,7 +209,6 @@ class PixelHistogramCUDA {
     // In theory, this fct captures the histogram built from batches processed
     // so far i.e. possibly runs between 2 consecutive batches and before all
     // frames where processed...
-    // TODO: Needs transpose form Bin-Major to Pixel-Major
     void values(NDView<StorageType, 3> out) const {
         // Make sure the handle points to a well-shaped owning NDArray in
         // Pixel-Major layout
