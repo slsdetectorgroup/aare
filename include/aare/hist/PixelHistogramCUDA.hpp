@@ -21,7 +21,7 @@
 namespace aare::cuda {
 
 template <typename StorageType = uint16_t,
-          typename DeviceStorageType = uint32_t, typename AxisType = float,
+          typename DeviceStorageType = uint32_t, typename InputType = float,
           int BLOCK_SIZE = 128>
 class PixelHistogramCUDA {
 #ifdef AARE_TESTS
@@ -30,6 +30,20 @@ class PixelHistogramCUDA {
     FRIEND_TEST(known_pattern_transpose_and_cap)
 #endif
 
+    // Frames are copied to the device as InputType, as the caller provides
+    // them. The histogram axis (range, bin edges, the bin arithmetic) must be
+    // floating point: an integral input gets a float axis, converted in the
+    // kernel. That conversion is exact up to 16-bit integers.
+    static_assert(std::is_floating_point_v<InputType> ||
+                      (std::is_integral_v<InputType> && sizeof(InputType) <= 2),
+                  "PixelHistogramCUDA: InputType must be floating point or an "
+                  "integer of at most 16 bits");
+
+  public:
+    using AxisType = std::conditional_t<std::is_floating_point_v<InputType>,
+                                        InputType, float>;
+
+  private:
     // nrows is declared first: its initializer validates all constructor
     // arguments, so it must run before anything below allocates.
     size_t nrows;
@@ -51,7 +65,7 @@ class PixelHistogramCUDA {
 
     // Device buffers for frames and histogram
     DeviceBuffer<DeviceStorageType> d_histogram;
-    std::array<DeviceBuffer<AxisType>, NUM_SLOTS> d_frames_batch;
+    std::array<DeviceBuffer<InputType>, NUM_SLOTS> d_frames_batch;
 
     // Events for synchronization
     std::array<Event, NUM_SLOTS> copy_done;
@@ -120,7 +134,7 @@ class PixelHistogramCUDA {
         // Initialize device buffers for frames
         for (int i = 0; i < NUM_SLOTS; ++i) {
             d_frames_batch[i] =
-                DeviceBuffer<AxisType>(nrows * ncols * m_batch_size);
+                DeviceBuffer<InputType>(nrows * ncols * m_batch_size);
         }
     }
 
@@ -141,7 +155,7 @@ class PixelHistogramCUDA {
         m_registered_input.unregister();
     }
 
-    void submit_batch(NDView<AxisType, 3> frames) {
+    void submit_batch(NDView<InputType, 3> frames) {
         auto frame_shape = frames.shape();
         if (static_cast<size_t>(frame_shape[0]) > m_batch_size ||
             static_cast<size_t>(frame_shape[1]) != nrows ||
@@ -156,7 +170,7 @@ class PixelHistogramCUDA {
         const int slot = m_next_batch++ % NUM_SLOTS;
 
         // pointer to the first frame in the batch
-        const AxisType *h_frames_batch = frames.data();
+        const InputType *h_frames_batch = frames.data();
 
         // Make sure `copy_stream` waits on any kernel (using `slot`) to finish
         // execution
@@ -166,7 +180,7 @@ class PixelHistogramCUDA {
         // Copy frames to device
         const size_t npix = nrows * ncols;
         CUDA_CHECK(cudaMemcpyAsync(d_frames_batch[slot].get(), h_frames_batch,
-                                   npix * batch_size * sizeof(AxisType),
+                                   npix * batch_size * sizeof(InputType),
                                    cudaMemcpyHostToDevice, copy_stream.get()));
 
         // Record the copy_done event (in the copy_stream) right after the copy
@@ -191,11 +205,11 @@ class PixelHistogramCUDA {
             cudaEventRecord(kernel_done[slot].get(), compute_stream.get()));
     }
 
-    void fill_histogram(NDView<AxisType, 3> frames) {
+    void fill_histogram(NDView<InputType, 3> frames) {
         auto N_frames = static_cast<size_t>(frames.shape(0));
         for (size_t i = 0; i < N_frames; i += m_batch_size) {
             size_t batch_end = std::min(i + m_batch_size, N_frames);
-            NDView<AxisType, 3> batch = frames.sub_view(i, batch_end);
+            NDView<InputType, 3> batch = frames.sub_view(i, batch_end);
             submit_batch(batch);
         }
     }

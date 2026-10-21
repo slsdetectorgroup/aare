@@ -33,8 +33,10 @@ bin_to_pixel_major(const DeviceStorageType *__restrict__ d_histogram_binMajor,
         count < saturation_value ? count : saturation_value);
 }
 
-template <typename DeviceStorageType = uint32_t, typename AxisType = float>
-__global__ void fill_bin_major(const AxisType *__restrict__ d_frames_batch,
+// Frames arrive as InputType; each value is converted to the floating-point
+// AxisType before binning.
+template <typename DeviceStorageType, typename InputType, typename AxisType>
+__global__ void fill_bin_major(const InputType *__restrict__ d_frames_batch,
                                DeviceStorageType *__restrict__ d_histogram,
                                const size_t npix, const size_t nbins,
                                AxisType xmin, AxisType xmax, AxisType scale,
@@ -46,7 +48,8 @@ __global__ void fill_bin_major(const AxisType *__restrict__ d_frames_batch,
 
     for (size_t fid = 0; fid < batch_size; ++fid) {
 
-        AxisType val_pix_at_fid = d_frames_batch[fid * npix + pix_id];
+        const AxisType val_pix_at_fid =
+            static_cast<AxisType>(d_frames_batch[fid * npix + pix_id]);
         if (!(val_pix_at_fid >= xmin &&
               val_pix_at_fid < xmax)) // also skips NaN
             continue;
