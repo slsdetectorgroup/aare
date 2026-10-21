@@ -160,6 +160,27 @@ TEST_CASE("PixelHistogramCUDA result does not depend on the batch size",
     REQUIRE((cpu.values() == gpu.values));
 }
 
+TEST_CASE("PixelHistogramCUDA bins uint16 frames on a float axis", "[cuda]") {
+    // 1000 bins over 1200 ADU: bins 1.2 wide, so an integral axis (scale
+    // 1000 / 1200 == 0 in integers) would put everything in bin 0.
+    const size_t nrows = 7, ncols = 13, nframes = 100, nbins = 1000;
+    const float xmin = 3900.0f, xmax = 5100.0f;
+    auto frames = make_synth(nrows, ncols, nframes); // integer-valued floats
+
+    NDArray<uint16_t, 3> raw(frames.shape());
+    for (ssize_t i = 0; i < frames.size(); ++i)
+        raw.data()[i] = static_cast<uint16_t>(frames.data()[i]);
+
+    // The CPU reference gets the same values as float.
+    PixelHistogram<uint32_t> cpu(nrows, ncols, nbins, xmin, xmax);
+    fill_cpu(cpu, frames.view());
+
+    auto gpu = test_cuda::run_gpu<uint32_t>(raw.view(), nbins, xmin, xmax,
+                                            /*batch_size=*/8);
+    REQUIRE((cpu.bin_edges() == gpu.edges));
+    REQUIRE((cpu.values() == gpu.values));
+}
+
 TEST_CASE("PixelHistogramCUDA accumulates over several fills with values() "
           "in between",
           "[cuda]") {
