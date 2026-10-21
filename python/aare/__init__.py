@@ -4,16 +4,16 @@ from . import _aare
 
 # ---- CUDA module (optional) ------------------------------------------------
 # When the package was built with AARE_CUDA=ON, a sibling extension
-# _aare_cuda contains the ClusterFinderCUDA_* classes. We re-export them
-# onto _aare so user code can do `from aare import ClusterFinderCUDA_*`
-# regardless of which .so physically hosts the class. On a CPU-only build
-# the import fails silently and ClusterFinderCUDA_* classes simply aren't
-# present; the factory in ClusterFinder.py handles that case with a clear
-# RuntimeError.
+# _aare_cuda contains the ClusterFinderCUDA_* and PixelHistogramCUDA_*
+# classes. We re-export them onto _aare so user code can do
+# `from aare import ClusterFinderCUDA_*` regardless of which .so physically
+# hosts the class. On a CPU-only build the import fails silently and the
+# classes simply aren't present; the factories in ClusterFinder.py and
+# PixelHistogramCUDA.py handle that case with a clear RuntimeError.
 try:
     from . import _aare_cuda as _aare_cuda_mod
     for _name in dir(_aare_cuda_mod):
-        if _name.startswith("ClusterFinderCUDA"):
+        if _name.startswith(("ClusterFinderCUDA", "PixelHistogramCUDA")):
             setattr(_aare, _name, getattr(_aare_cuda_mod, _name))
     del _name
 except ImportError:
@@ -55,6 +55,7 @@ from .ClusterFinder import (ClusterFinder, ClusterFinderFrozen, ClusterCollector
                             ClusterFinderCUDA, ClusterFinderCUDAGraph, _cuda_available, find_cluster_views_batched_iter)
 from .ClusterVector import ClusterVector
 from .Cluster import Cluster
+from .PixelHistogramCUDA import PixelHistogramCUDA
 
 from ._aare import Gaussian, RisingScurve, FallingScurve, Pol1, Pol2, GaussianErfcPlateau, GaussianChargeSharing, GaussianChargeSharingKb
 from ._aare import fit
