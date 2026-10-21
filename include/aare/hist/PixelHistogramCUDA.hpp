@@ -62,6 +62,7 @@ class PixelHistogramCUDA {
     // The order of the declarations below is important. It conditions the order
     // of their destruction.
     HostRegistration m_registered_input{};
+    HostRegistration m_registered_output{};
 
     // Device buffers for frames and histogram
     DeviceBuffer<DeviceStorageType> d_histogram;
@@ -155,7 +156,20 @@ class PixelHistogramCUDA {
         m_registered_input.unregister();
     }
 
-    void submit_batch(NDView<InputType, 3> frames) {
+    // Pins the caller's output histogram, so values(out) into it copies at
+    // DMA speed. The D2H copy runs on the compute stream.
+    void register_output_buffer(void *ptr, size_t bytes) {
+        CUDA_CHECK(cudaStreamSynchronize(compute_stream.get()));
+        m_registered_output.unregister();
+        m_registered_output = HostRegistration(ptr, bytes);
+    }
+
+    void unregister_output_buffer() {
+        CUDA_CHECK(cudaStreamSynchronize(compute_stream.get()));
+        m_registered_output.unregister();
+    }
+
+    void submit_batch(NDView<const InputType, 3> frames) {
         auto frame_shape = frames.shape();
         if (static_cast<size_t>(frame_shape[0]) > m_batch_size ||
             static_cast<size_t>(frame_shape[1]) != nrows ||
@@ -205,11 +219,11 @@ class PixelHistogramCUDA {
             cudaEventRecord(kernel_done[slot].get(), compute_stream.get()));
     }
 
-    void fill_histogram(NDView<InputType, 3> frames) {
+    void fill_histogram(NDView<const InputType, 3> frames) {
         auto N_frames = static_cast<size_t>(frames.shape(0));
         for (size_t i = 0; i < N_frames; i += m_batch_size) {
             size_t batch_end = std::min(i + m_batch_size, N_frames);
-            NDView<InputType, 3> batch = frames.sub_view(i, batch_end);
+            NDView<const InputType, 3> batch = frames.sub_view(i, batch_end);
             submit_batch(batch);
         }
     }

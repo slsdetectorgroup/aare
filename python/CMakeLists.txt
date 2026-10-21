@@ -158,6 +158,7 @@ set(PYTHON_FILES
     aare/Cluster.py
     aare/FastPedestal.py
     aare/Pedestal.py
+    aare/PixelHistogramCUDA.py
     aare/calibration.py
     aare/factory.py
     aare/experimental.py
