@@ -14,10 +14,11 @@ template <typename H> struct DeviceResult {
     NDArray<H, 3> values;
 };
 
-// Histogram `frames` (nframes, nrows, ncols) on the GPU. Explicitly
-// instantiated in the .cu for the storage types under test.
-template <typename H>
-DeviceResult<H> run_gpu(NDView<float, 3> frames, size_t nbins, float xmin,
+// Histogram `frames` (nframes, nrows, ncols) on the GPU, with frames of type
+// In. Explicitly instantiated in the .cu for the storage and input types
+// under test; the axis is float for all of them.
+template <typename H, typename In>
+DeviceResult<H> run_gpu(NDView<In, 3> frames, size_t nbins, float xmin,
                         float xmax, size_t batch_size);
 
 // Fill one histogram from consecutive parts of `frames`, part i ending at

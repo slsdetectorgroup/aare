@@ -67,28 +67,29 @@ namespace aare::test_cuda {
 
 void check_known_pattern() { cuda::known_pattern_transpose_and_cap_impl(); }
 
-template <typename H>
-DeviceResult<H> run_gpu(NDView<float, 3> frames, size_t nbins, float xmin,
+template <typename H, typename In>
+DeviceResult<H> run_gpu(NDView<In, 3> frames, size_t nbins, float xmin,
                         float xmax, size_t batch_size) {
     using D = std::conditional_t<sizeof(H) == 8, uint64_t, uint32_t>;
-    cuda::PixelHistogramCUDA<H, D> hist(static_cast<size_t>(frames.shape(1)),
-                                        static_cast<size_t>(frames.shape(2)),
-                                        nbins, xmin, xmax, batch_size);
+    cuda::PixelHistogramCUDA<H, D, In> hist(
+        static_cast<size_t>(frames.shape(1)),
+        static_cast<size_t>(frames.shape(2)), nbins, xmin, xmax, batch_size);
     hist.register_input_buffer(frames.data(), frames.total_bytes());
     hist.fill_histogram(frames);
     hist.unregister_input_buffer();
     return {hist.bin_centers(), hist.bin_edges(), hist.values()};
 }
 
-#define INSTANTIATE(H)                                                         \
-    template DeviceResult<H> run_gpu<H>(NDView<float, 3>, size_t, float,       \
-                                        float, size_t);
-INSTANTIATE(uint8_t)
-INSTANTIATE(uint16_t)
-INSTANTIATE(uint32_t)
-INSTANTIATE(uint64_t)
-INSTANTIATE(float)
-INSTANTIATE(double)
+#define INSTANTIATE(H, In)                                                     \
+    template DeviceResult<H> run_gpu<H, In>(NDView<In, 3>, size_t, float,      \
+                                            float, size_t);
+INSTANTIATE(uint8_t, float)
+INSTANTIATE(uint16_t, float)
+INSTANTIATE(uint32_t, float)
+INSTANTIATE(uint64_t, float)
+INSTANTIATE(float, float)
+INSTANTIATE(double, float)
+INSTANTIATE(uint32_t, uint16_t)
 #undef INSTANTIATE
 
 std::vector<NDArray<uint32_t, 3>>
