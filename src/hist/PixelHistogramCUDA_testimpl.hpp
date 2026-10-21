@@ -4,6 +4,8 @@
 #include "aare/NDView.hpp"
 #include <cstddef>
 #include <cstdint>
+#include <utility>
+#include <vector>
 
 namespace aare::test_cuda {
 
@@ -17,5 +19,30 @@ template <typename H> struct DeviceResult {
 template <typename H>
 DeviceResult<H> run_gpu(NDView<float, 3> frames, size_t nbins, float xmin,
                         float xmax, size_t batch_size);
+
+// Fill one histogram from consecutive parts of `frames`, part i ending at
+// frame ends[i], and take a values() snapshot after each part.
+std::vector<NDArray<uint32_t, 3>>
+run_gpu_in_parts(NDView<float, 3> frames, size_t nbins, float xmin, float xmax,
+                 size_t batch_size, const std::vector<size_t> &ends);
+
+// Known pattern written straight into the device accumulator, read back
+// through values(); tests the transpose and the cap without the fill kernel.
+// Throws std::runtime_error describing the first mismatch.
+void check_known_pattern();
+
+struct PixelQueries {
+    NDArray<uint8_t, 3> values;
+    std::vector<NDArray<uint8_t, 1>> pixels; // values_pixel(), one per query
+    bool row_out_of_range_throws;            // values_pixel(nrows, 0)
+    bool col_out_of_range_throws;            // values_pixel(0, ncols)
+};
+
+// Fill a uint8_t histogram from `frames`, then read values() and
+// values_pixel() for each (row, col) in `pixels`.
+PixelQueries
+run_gpu_values_pixel(NDView<float, 3> frames, size_t nbins, float xmin,
+                     float xmax, size_t batch_size,
+                     const std::vector<std::pair<size_t, size_t>> &pixels);
 
 } // namespace aare::test_cuda
