@@ -84,6 +84,25 @@ RawFile::RawFile(const std::filesystem::path &fname, const std::string &mode,
                                "data: it would split the gain bits. Convert "
                                "to energy and use insert_gap_pixels");
             }
+            // bit depth and fill value are known at open, reject them here
+            // rather than on the first read
+            switch (m_master.bitdepth()) {
+            case 8:
+                detail::fill_as<uint8_t>(gap_pixels->fill_value);
+                break;
+            case 16:
+                detail::fill_as<uint16_t>(gap_pixels->fill_value);
+                break;
+            case 32:
+                detail::fill_as<uint32_t>(gap_pixels->fill_value);
+                break;
+            default:
+                throw std::invalid_argument(
+                    LOCATION +
+                    fmt::format("Gap pixels are not supported for a bit "
+                                "depth of {}",
+                                m_master.bitdepth()));
+            }
             m_gap_pixels = gap_pixels;
             m_gap_layout = detail::gap_layout(*gap_pixels);
             m_generator = detail::make_generator(gap_pixels->seed);
