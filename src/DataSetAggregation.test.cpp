@@ -2,6 +2,7 @@
 
 #include "jungfrau_file_helpers.hpp"
 
+#include <catch2/catch_approx.hpp>
 #include <catch2/catch_test_macros.hpp>
 
 #include <iostream>
@@ -26,19 +27,19 @@ TEST_CASE("mean_over_dataset", "[DataSetAggregation]") {
 
     const std::filesystem::path path = temp_files.file_path();
 
-    auto mean_result = mean_over_dataset<uint16_t>(
-        path, num_samples, num_frames_per_sample, num_threads);
+    auto mean_result = block_mean<uint16_t>(path, num_samples,
+                                            num_frames_per_sample, num_threads);
 
     // Check the shape of the result
     REQUIRE(mean_result.shape(0) == Jungfrau::nRows);
     REQUIRE(mean_result.shape(1) == Jungfrau::nCols);
     REQUIRE(mean_result.shape(2) == num_samples);
 
-    uint16_t mean_value =
+    double mean_value =
         (num_frames_per_sample - 1) /
-        2; // ((num_frames_per_sample -1)*num_frames_per_sample) / (2
-           // *num_frames_per_sample); // mean of
-           // 0,1,...,num_frames_per_sample-1
+        2.0; // ((num_frames_per_sample -1)*num_frames_per_sample) / (2
+             // *num_frames_per_sample); // mean of
+             // 0,1,...,num_frames_per_sample-1
 
     // Check that the mean values
     for (ssize_t sample = 0; sample < num_samples; ++sample) {
@@ -50,7 +51,8 @@ TEST_CASE("mean_over_dataset", "[DataSetAggregation]") {
                         << ", col: " << col << ". Expected: " << mean_value
                         << ", got: " << mean_result(row, col, sample) << "\n";
                 }
-                CHECK(mean_result(row, col, sample) == mean_value);
+                CHECK(mean_result(row, col, sample) ==
+                      Catch::Approx(mean_value));
             }
         }
     }
@@ -83,9 +85,8 @@ TEST_CASE("mean_current_source", "[DataSetAggregation]") {
         },
         3);
 
-    auto result =
-        mean_current_source(temp_files.file_path(), mean_over_num_frames,
-                            num_samples, 4, file_offset);
+    auto result = mean_current_source(temp_files.file_path(), num_samples,
+                                      mean_over_num_frames, 4, file_offset);
 
     REQUIRE(result.shape(0) == rows);
     REQUIRE(result.shape(1) == cols);
@@ -99,10 +100,11 @@ TEST_CASE("mean_current_source", "[DataSetAggregation]") {
         for (size_t c = 0; c < cols; ++c) {
             for (size_t sample = 0; sample < num_samples; ++sample) {
 
-                CHECK(result(r, c, sample) ==
-                      static_cast<uint16_t>(
-                          (c * mean_over_num_frames + sum_mean_over_frames) /
-                          mean_over_num_frames));
+                CHECK(
+                    result(r, c, sample) ==
+                    Catch::Approx(static_cast<double>(c * mean_over_num_frames +
+                                                      sum_mean_over_frames) /
+                                  mean_over_num_frames));
             }
         }
     }

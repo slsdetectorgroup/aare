@@ -16,11 +16,11 @@ namespace aare {
 
 // TODO: maybe O_DIRECT rea dis better to avoid the page cache
 
-NDArray<uint16_t, 3> mean_current_source(const std::filesystem::path &path,
-                                         const size_t mean_over_num_frames,
-                                         const size_t num_samples,
-                                         const int num_threads,
-                                         size_t file_offset) {
+NDArray<double, 3> mean_current_source(const std::filesystem::path &path,
+                                       const size_t num_samples,
+                                       const size_t mean_over_num_frames,
+                                       const int num_threads,
+                                       size_t file_offset) {
 
     constexpr size_t columns_per_subcolumn = 64;
     constexpr size_t frames_per_chunk = 16; // ~16 MiB per read for 512x1024
@@ -51,10 +51,10 @@ NDArray<uint16_t, 3> mean_current_source(const std::filesystem::path &path,
     const double inv_mean_over_num_frames =
         1.0 / static_cast<double>(mean_over_num_frames);
 
-    NDArray<uint16_t, 3> cs_data({static_cast<ssize_t>(num_rows),
-                                  static_cast<ssize_t>(num_cols),
-                                  static_cast<ssize_t>(num_samples)},
-                                 0);
+    NDArray<double, 3> cs_data({static_cast<ssize_t>(num_rows),
+                                static_cast<ssize_t>(num_cols),
+                                static_cast<ssize_t>(num_samples)},
+                               0);
 
     auto worker = [&](const size_t sample_begin, const size_t sample_end) {
         std::vector<uint64_t> sum(
@@ -113,11 +113,11 @@ NDArray<uint16_t, 3> mean_current_source(const std::filesystem::path &path,
             for (size_t row = 0; row < num_rows; ++row) {
                 size_t row_offset = row * num_cols;
                 for (size_t col = 0; col < num_cols; ++col) {
-                    cs_data(row, col, sample) = static_cast<uint16_t>(
+                    cs_data(row, col, sample) =
                         static_cast<double>(sum[row_offset + col]) *
-                        inv_mean_over_num_frames); // bad striding maybe better
-                                                   // to reshape and copy in
-                                                   // numpy
+                        inv_mean_over_num_frames; // bad striding maybe better
+                                                  // to reshape and copy in
+                                                  // numpy
                 }
             }
         }

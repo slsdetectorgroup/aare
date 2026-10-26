@@ -11,7 +11,7 @@ The result has shape ``(rows, cols, num_samples)``, i.e. the sample index is the
 Mean over a dataset
 -------------------
 
-``aare.mean_over_dataset`` averages a fixed number of consecutive frames for each sample.
+``aare.block_mean`` averages a fixed number of consecutive frames for each sample.
 The frames in the file are expected to be grouped by sample:
 
 .. note:: 
@@ -30,15 +30,15 @@ The frames in the file are expected to be grouped by sample:
 
 .. code-block:: python
 
-    from aare import mean_over_dataset
+    from aare import block_mean
 
     # 10 samples (e.g. exposure times) with 1000 frames each
-    mean = mean_over_dataset("path/to/master_0.json", 10, 1000)
+    mean = block_mean("path/to/master_0.json", 10, 1000)
     # mean.shape() == {rows, cols, 10}
 
 .. py:currentmodule:: aare
 
-.. autofunction:: mean_over_dataset
+.. autofunction:: block_mean
 
 ``aare.mean_current_source`` reads a Jungfrau data file recorded during a current source scan. In such a scan only every 64th
 column is illuminated in each frame. Consecutive frames step through the 64 columns of a
@@ -68,7 +68,7 @@ spans ``mean_over_num_frames * 64`` frames, and every pixel is averaged over
     from aare import mean_current_source
 
     # 5 current source settings, 100 frames per column -> 6400 frames per sample
-    cs = mean_current_source("path/to/data_000000.dat", 100, 5)
+    cs = mean_current_source("path/to/data_000000.dat", 5, 100)
     # cs.shape() == {rows, cols, 5}
 
 .. autofunction:: mean_current_source

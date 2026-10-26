@@ -11,7 +11,7 @@ The result has shape ``(rows, cols, num_samples)``, i.e. the sample index is the
 Mean over a dataset
 -------------------
 
-:cpp:func:`aare::mean_over_dataset` averages a fixed number of consecutive frames for each sample.
+:cpp:func:`aare::block_mean` averages a fixed number of consecutive frames for each sample.
 The frames in the file are expected to be grouped by sample:
 
 .. code-block:: text
@@ -25,8 +25,6 @@ The frames in the file are expected to be grouped by sample:
   ``std::runtime_error`` is thrown.
 * The template parameter ``FRAME_TYPE`` must match the pixel type stored in the file
   (e.g. ``uint16_t``); it is also the type of the returned array.
-* The sum is accumulated in ``double`` to avoid overflow, and the mean is cast back to
-  ``FRAME_TYPE``. For integer types the fractional part is truncated.
 * ``num_threads`` must be at least 1, otherwise a ``std::invalid_argument`` is thrown.
 
 .. code-block:: cpp
@@ -34,10 +32,10 @@ The frames in the file are expected to be grouped by sample:
     #include "aare/DataSetAggregation.hpp"
 
     // 10 samples (e.g. exposure times) with 1000 frames each
-    auto mean = aare::mean_over_dataset<uint16_t>("path/to/master_0.json", 10, 1000);
+    auto mean = aare::block_mean<uint16_t>("path/to/master_0.json", 10, 1000);
     // mean.shape() == {rows, cols, 10}
 
-.. doxygenfunction:: aare::mean_over_dataset
+.. doxygenfunction:: aare::block_mean
 
 Mean of current source data
 ---------------------------
@@ -62,9 +60,6 @@ spans ``mean_over_num_frames * 64`` frames, and every pixel is averaged over
 * ``file_offset`` skips the given number of frames at the start of the file. The file must contain
   exactly ``file_offset + num_samples * mean_over_num_frames * 64`` frames, otherwise a
   ``std::runtime_error`` is thrown.
-* The returned array is always ``uint16_t``. The sum is accumulated in ``uint64_t`` and the mean
-  is truncated to an integer. The raw pixel values are averaged; no pedestal subtraction or gain
-  conversion is applied.
 * Frames are read in chunks of 16 frames (~16 MiB for a 512x1024 detector).
 * ``num_threads`` must be at least 1, otherwise a ``std::invalid_argument`` is thrown.
 
@@ -73,7 +68,7 @@ spans ``mean_over_num_frames * 64`` frames, and every pixel is averaged over
     #include "aare/DataSetAggregation.hpp"
 
     // 5 current source settings, 100 frames per column -> 6400 frames per sample
-    auto cs = aare::mean_current_source("path/to/data_000000.dat", 100, 5);
+    auto cs = aare::mean_current_source("path/to/data_000000.dat", 5, 100);
     // cs.shape() == {rows, cols, 5}
 
 .. doxygenfunction:: aare::mean_current_source

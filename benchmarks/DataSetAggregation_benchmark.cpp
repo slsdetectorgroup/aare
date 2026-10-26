@@ -25,7 +25,7 @@ static void DatasetAggregation_MeanOverDataset(benchmark::State &st) {
 
     for (auto _ : st) {
         aare::NDArray<uint16_t, 3> res =
-            aare::mean_over_dataset<uint16_t>(file_path, 220, 10, 16);
+            aare::block_mean<uint16_t>(file_path, 220, 10, 16);
 
         benchmark::DoNotOptimize(res);
     }
