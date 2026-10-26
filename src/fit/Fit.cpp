@@ -273,7 +273,8 @@ void fit_3d(const FitModel<Model> &model, NDView<double, 1> x,
     // static so the lambda below can use it as an array size without
     // capturing it, which MSVC otherwise rejects
     static constexpr std::size_t npar = Model::npar;
-    detail::check_fit_3d_shapes<Model>(x, y, y_err, par_out, err_out, chi2_out);
+    detail::check_fit_3d_shapes<Model>(x, y, y_err, par_out, err_out, chi2_out,
+                                       fit_range);
 
     const bool has_errors = (y_err.size() > 0);
     const bool want_par_errors = (err_out.size() > 0) && model.compute_errors();
@@ -289,6 +290,14 @@ void fit_3d(const FitModel<Model> &model, NDView<double, 1> x,
                 const ssize_t num_y_samples =
                     fit_range ? (*fit_range)(row, col, 1) - start_range
                               : y.shape(2);
+
+                if (start_range + num_y_samples >
+                    static_cast<size_t>(y.shape(2)))
+                    throw std::runtime_error(fmt::format(
+                        "fit_3d: fit_range out of bounds for (row={}, col={}, "
+                        "start_range={}, num_y_samples={}, num samples={})",
+                        row, col, start_range, num_y_samples, y.shape(2)));
+
                 NDView<double, 1> values(&y(row, col, start_range),
                                          {num_y_samples});
                 NDView<double, 1> errors =

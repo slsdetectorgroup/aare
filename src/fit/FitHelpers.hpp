@@ -49,8 +49,8 @@ inline void check_fit_pixel_shapes(NDView<double, 1> x, NDView<double, 1> y,
 template <typename Model>
 void check_fit_3d_shapes(NDView<double, 1> x, NDView<double, 3> y,
                          NDView<double, 3> y_err, NDView<double, 3> par_out,
-                         NDView<double, 3> err_out,
-                         NDView<double, 2> chi2_out) {
+                         NDView<double, 3> err_out, NDView<double, 2> chi2_out,
+                         std::optional<const NDView<size_t, 3>> fit_range) {
     constexpr auto npar = static_cast<ssize_t>(Model::npar);
 
     if (x.size() != y.shape(2))
@@ -62,6 +62,14 @@ void check_fit_3d_shapes(NDView<double, 1> x, NDView<double, 3> y,
 
     if (chi2_out.shape(0) != y.shape(0) || chi2_out.shape(1) != y.shape(1))
         throw std::runtime_error("chi2_out must have shape [rows, cols].");
+
+    if (fit_range.has_value()) {
+        const auto &fr = fit_range.value();
+        if (fr.shape(0) != y.shape(0) || fr.shape(1) != y.shape(1) ||
+            fr.shape(2) != 2)
+            throw std::runtime_error(
+                "fit_range must have shape [rows, cols, 2].");
+    }
 
     const bool err_out_matches = err_out.shape(0) == y.shape(0) &&
                                  err_out.shape(1) == y.shape(1) &&
