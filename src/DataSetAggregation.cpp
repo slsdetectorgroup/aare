@@ -62,6 +62,10 @@ NDArray<double, 3> mean_current_source(const std::filesystem::path &path,
 
         JungfrauDataFile reader(path);
 
+        NDArray<uint16_t, 3> frames({static_cast<ssize_t>(frames_per_chunk),
+                                     static_cast<ssize_t>(num_rows),
+                                     static_cast<ssize_t>(num_cols)});
+
         for (size_t sample = sample_begin; sample < sample_end; ++sample) {
             std::fill(sum.begin(), sum.end(), 0);
 
@@ -76,15 +80,16 @@ NDArray<double, 3> mean_current_source(const std::filesystem::path &path,
                 const size_t n_frames_to_read =
                     std::min({frames_per_chunk, last - frame_chunk});
 
-                auto frames = reader.read_n(n_frames_to_read);
+                reader.read_into(reinterpret_cast<std::byte *>(frames.data()),
+                                 n_frames_to_read, nullptr);
 
                 for (size_t f = 0; f < n_frames_to_read; ++f) {
                     // each frame illuminates every 64th column
                     const size_t illum_col_idx =
                         (frame_chunk + f - first) % columns_per_subcolumn;
 
-                    const auto *data =
-                        reinterpret_cast<const uint16_t *>(frames[f].data());
+                    const auto *data = reinterpret_cast<const uint16_t *>(
+                        frames.data() + f * num_rows * num_cols);
 
                     for (size_t r = 0; r < half_rows; ++r) {
                         const size_t column_offset =
