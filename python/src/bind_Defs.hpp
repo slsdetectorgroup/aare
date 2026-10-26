@@ -4,7 +4,10 @@
 #include <pybind11/pybind11.h>
 #include <pybind11/stl.h>
 
+#include "aare/ROI.hpp"
 #include "aare/defs.hpp"
+
+#include <fmt/format.h>
 
 namespace py = pybind11;
 using namespace aare;

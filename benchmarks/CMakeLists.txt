@@ -6,7 +6,7 @@ FetchContent_Declare(
   benchmark
   GIT_REPOSITORY https://github.com/google/benchmark.git
   GIT_TAG v1.8.3 # Change to the latest version if needed
-)
+  GIT_SHALLOW TRUE)
 
 # Ensure Google Benchmark is built correctly
 set(BENCHMARK_ENABLE_TESTING

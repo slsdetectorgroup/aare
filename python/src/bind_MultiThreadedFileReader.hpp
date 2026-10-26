@@ -71,7 +71,7 @@ multi_threaded_reader_read(aare::experimental::MultiThreadedFileReader &reader,
     return image;
 }
 
-inline void define_multi_threaded_file_reader_bindings(py::module_ &m) {
+void define_multi_threaded_file_reader_bindings(py::module_ &m) {
     using aare::experimental::MultiThreadedFileReader;
 
     auto reader =
