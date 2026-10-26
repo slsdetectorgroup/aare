@@ -76,8 +76,8 @@ Only Jungfrau and Eiger raw files are supported; other detector types raise
     with RawFile("run_master_0.json", gap_pixels=True) as f:
         header, image = f.read_frame()
 
-    # module gaps as in the slsDetectorPackage GUI, counts split at chip edges
-    gaps = GapPixels(module_gaps=ModuleGaps(8, 36), split_counts=True, seed=1)
+    # module gaps as in the slsDetectorPackage GUI
+    gaps = GapPixels(module_gaps=ModuleGaps(8, 36), split_counts=False)
     with RawFile("run_master_0.json", gap_pixels=gaps) as f:
         header, image = f.read_frame()
 

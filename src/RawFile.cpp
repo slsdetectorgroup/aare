@@ -77,6 +77,13 @@ RawFile::RawFile(const std::filesystem::path &fname, const std::string &mode,
                     LOCATION + "Gap pixels are only supported for Jungfrau "
                                "and Eiger detectors");
             }
+            if (gap_pixels->split_counts &&
+                detector == DetectorType::Jungfrau) {
+                throw std::invalid_argument(
+                    LOCATION + "split_counts cannot be used on raw Jungfrau "
+                               "data: it would split the gain bits. Convert "
+                               "to energy and use insert_gap_pixels");
+            }
             m_gap_pixels = gap_pixels;
             m_gap_layout = detail::gap_layout(*gap_pixels);
             m_generator = detail::make_generator(gap_pixels->seed);
