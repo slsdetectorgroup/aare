@@ -412,7 +412,12 @@ TEST_CASE("RawFile inserts gap pixels into synthetic Jungfrau modules",
 
 TEST_CASE("RawFile splits counts like the free function",
           "[RawFile][GapPixels]") {
-    TemporaryRawFiles files(xy{1, 2}, xy{512, 1024});
+    // one Eiger module: two 256x1024 ports stacked in a column. Splitting is
+    // rejected on raw Jungfrau data, so the synthetic file is Eiger.
+    TemporaryRawFiles files(xy{2, 1}, xy{256, 1024});
+    auto metadata = nlohmann::json::parse(std::ifstream(files.master_path()));
+    metadata["Detector Type"] = "Eiger";
+    std::ofstream(files.master_path()) << metadata;
     GapPixels gaps;
     gaps.split_counts = true;
     gaps.seed = 7;
@@ -420,7 +425,7 @@ TEST_CASE("RawFile splits counts like the free function",
     RawFile plain(files.master_path());
     auto gapped_frame = gapped.read_frame();
     auto plain_frame = plain.read_frame();
-    const ROI detector{0, 2048, 0, 512};
+    const ROI detector{0, 1024, 0, 512};
     REQUIRE(matches_gap_oracle(gapped_frame, plain_frame, detector, gaps));
 
     // the next frame continues the generator, so the oracle for frame 1 is
@@ -440,6 +445,16 @@ TEST_CASE("RawFile splits counts like the free function",
         }
     }
     REQUIRE(gapped_total == expected_total);
+}
+
+TEST_CASE("RawFile rejects split counts on raw Jungfrau data",
+          "[RawFile][GapPixels]") {
+    TemporaryRawFiles files(xy{1, 1}, xy{512, 1024});
+    GapPixels gaps;
+    gaps.split_counts = true;
+    REQUIRE_NOTHROW(RawFile(files.master_path(), "r", GapPixels{}));
+    REQUIRE_THROWS_AS(RawFile(files.master_path(), "r", gaps),
+                      std::invalid_argument);
 }
 
 TEST_CASE("RawFile rejects gap pixels for unsupported detectors",
@@ -506,10 +521,10 @@ TEST_CASE("Gap pixels on recorded Jungfrau and Eiger files",
                                gaps));
 }
 
-TEST_CASE("Split counts on a recorded Jungfrau file",
+TEST_CASE("Split counts on a recorded Eiger file",
           "[.with-data][RawFile][GapPixels]") {
     const auto fpath =
-        test_data_path() / "raw/jungfrau/jungfrau_single_master_0.json";
+        test_data_path() / "raw/eiger/eiger_500k_16bit_master_0.json";
     GapPixels gaps;
     gaps.split_counts = true;
     gaps.seed = 2024;
@@ -519,6 +534,15 @@ TEST_CASE("Split counts on a recorded Jungfrau file",
     auto plain_frame = plain.read_frame();
     REQUIRE(matches_gap_oracle(gapped_frame, plain_frame, plain.master().roi(),
                                gaps));
+}
+
+TEST_CASE("Split counts are rejected on a recorded Jungfrau file",
+          "[.with-data][RawFile][GapPixels]") {
+    const auto fpath =
+        test_data_path() / "raw/jungfrau/jungfrau_single_master_0.json";
+    GapPixels gaps;
+    gaps.split_counts = true;
+    REQUIRE_THROWS_AS(RawFile(fpath, "r", gaps), std::invalid_argument);
 }
 
 TEST_CASE("Gap pixels on a file with two ROIs",

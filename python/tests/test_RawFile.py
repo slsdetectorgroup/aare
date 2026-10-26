@@ -556,12 +556,25 @@ def test_raw_file_gap_pixels(tmp_path, layout):
 
 
 def test_raw_file_gap_pixels_split_counts(tmp_path):
-    master_path, expected = write_module_layout(tmp_path, 1, 1, module_rows=512, module_cols=1024)
+    # one Eiger module: two 256x1024 ports stacked in a column. Splitting is
+    # rejected on raw Jungfrau data. The plain read is the reference since
+    # Eiger ports are row flipped on reading.
+    master_path, _ = write_module_layout(tmp_path, 2, 1, module_rows=256, module_cols=1024,
+                                         detector_type="Eiger")
     gaps = GapPixels(split_counts=True, seed=11)
+    with RawFile(master_path) as reader:
+        _, plain = reader.read_frame()
     with RawFile(master_path, gap_pixels=gaps) as reader:
         _, image = reader.read_frame()
-    assert (image == insert_gap_pixels(expected, gaps)).all()
-    assert image.sum() == expected.sum()
+    assert (image == insert_gap_pixels(plain, gaps)).all()
+    assert image.sum() == plain.sum()
+
+
+def test_raw_file_gap_pixels_split_counts_rejected_for_jungfrau(tmp_path):
+    master_path, _ = write_module_layout(tmp_path, 1, 1, module_rows=512, module_cols=1024)
+    RawFile(master_path, gap_pixels=GapPixels())
+    with pytest.raises(ValueError):
+        RawFile(master_path, gap_pixels=GapPixels(split_counts=True))
 
 
 def test_raw_file_gap_pixels_unsupported_detector(tmp_path):
