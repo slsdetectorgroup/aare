@@ -50,6 +50,7 @@ class PedestalTrackingPixelHistogram {
     std::vector<FastPedestal<AxisType>> partial_pedestals_;
     std::vector<NDArray<AxisType, 2>> partial_std_; // cached for pedestal
                                                     // tracking
+    std::vector<NDArray<bool, 2>> partial_masks_{};
 
     // Thread pool members
     std::vector<std::thread> workers_;
@@ -83,9 +84,6 @@ class PedestalTrackingPixelHistogram {
     std::chrono::microseconds async_wait_{100};
     std::size_t max_batch_size_;
     std::atomic<AxisType> n_sigma_;
-
-    /// @brief optional mask. True indicates a bad pixel
-    const std::optional<NDView<bool, 2>> mask_{std::nullopt};
 
     // Private worker thread method
     void worker_loop(int thread_id);

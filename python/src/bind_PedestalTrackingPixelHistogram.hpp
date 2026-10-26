@@ -16,20 +16,21 @@ void define_pedestal_tracking_pixel_histogram_bindings(py::module &m) {
         m, "PedestalTrackingPixelHistogram",
         "A pixel-wise histogram of frame - pedestal residuals, with a "
         "per-pixel running pedestal estimate sharded across worker threads")
-        .def(py::init([](int rows, int cols, int n_bins, double xmin, double xmax, int n_threads, std::size_t max_pending,
-                         double n_sigma, std::optional<py::array_t<bool,
-                         py::array::c_style | py::array::forcecast>> mask) {
-                 if (mask.has_value()) {
-                     auto view = make_view_2d(mask.value());
-                     return new PedestalTrackingPixelHistogram(
-                         rows, cols, n_bins, xmin, xmax, n_threads, max_pending,
-                         n_sigma, view);
-                 } else {
-                     return new PedestalTrackingPixelHistogram(
-                         rows, cols, n_bins, xmin, xmax, n_threads, max_pending,
-                         n_sigma);
-                 }
-             }),
+        .def(py::init(
+                 [](int rows, int cols, int n_bins, double xmin, double xmax,
+                    int n_threads, std::size_t max_pending, double n_sigma,
+                    std::optional<py::array_t<bool, py::array::c_style>> mask) {
+                     if (mask.has_value()) {
+                         auto view = make_view_2d(mask.value());
+                         return new PedestalTrackingPixelHistogram(
+                             rows, cols, n_bins, xmin, xmax, n_threads,
+                             max_pending, n_sigma, view);
+                     } else {
+                         return new PedestalTrackingPixelHistogram(
+                             rows, cols, n_bins, xmin, xmax, n_threads,
+                             max_pending, n_sigma);
+                     }
+                 }),
              R"(
              Initialize a PedestalTrackingPixelHistogram.
 

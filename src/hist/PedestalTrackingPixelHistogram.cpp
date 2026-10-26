@@ -25,8 +25,7 @@ PedestalTrackingPixelHistogram::PedestalTrackingPixelHistogram(
     : rows_(rows), cols_(cols), n_threads_(n_threads), xmin_(xmin), xmax_(xmax),
       current_work_kind_(WorkKind::FillWithThreshold), current_image_(nullptr),
       current_images_(nullptr), completed_threads_(0), stop_workers_(false),
-      work_generation_(0), max_batch_size_(max_pending / 3), n_sigma_(n_sigma),
-      mask_(mask) {
+      work_generation_(0), max_batch_size_(max_pending / 3), n_sigma_(n_sigma) {
     if (rows_ < 1 || cols_ < 1 || n_bins < 1) {
         throw std::invalid_argument("PedestalTrackingPixelHistogram requires "
                                     "positive rows, cols and bins");
@@ -65,6 +64,15 @@ PedestalTrackingPixelHistogram::PedestalTrackingPixelHistogram(
     partial_pedestals_.reserve(n_threads_);
     partial_std_.reserve(n_threads_);
 
+    if (mask.has_value()) {
+        if (mask->shape(0) != rows_ || mask->shape(1) != cols_) {
+            throw std::invalid_argument(
+                "PedestalTrackingPixelHistogram mask shape does not match "
+                "constructor shape");
+        }
+        partial_masks_.reserve(n_threads_);
+    }
+
     for (int i = 0; i < n_threads_; ++i) {
         const auto local_rows = row_count(i);
         partial_hists_.emplace_back(local_rows, cols, n_bins, xmin_, xmax_);
@@ -73,6 +81,13 @@ PedestalTrackingPixelHistogram::PedestalTrackingPixelHistogram(
         partial_std_.emplace_back(NDArray<AxisType, 2>(
             {static_cast<ssize_t>(local_rows), static_cast<ssize_t>(cols)},
             0.0));
+
+        if (mask.has_value()) {
+            partial_masks_.emplace_back(
+                NDView<const bool, 2>(mask->begin() + row_start(i) * cols_,
+                                      {static_cast<ssize_t>(local_rows),
+                                       static_cast<ssize_t>(cols)}));
+        }
     }
 
     // Spawn worker threads
@@ -209,7 +224,7 @@ void PedestalTrackingPixelHistogram::worker_loop(int thread_id) {
         auto &my_pedestal = partial_pedestals_[thread_id];
         auto &my_hist = partial_hists_[thread_id];
 
-        const bool has_mask = mask_.has_value();
+        const bool has_mask = !partial_masks_.empty();
 
         switch (kind) {
         case WorkKind::PushPedestal: {
@@ -266,8 +281,6 @@ void PedestalTrackingPixelHistogram::worker_loop(int thread_id) {
                      tile_begin += pixel_tile_size) {
                     const auto tile_end =
                         std::min(tile_begin + pixel_tile_size, local_pixels);
-                    // const bool ptr_to_mask = has_mask ? mask_.value().data()
-                    // + global_pixel_begin + tile_begin : nullptr;
                     for (const auto &frame : frames) {
                         const auto *input =
                             frame.data() + global_pixel_begin + tile_begin;
@@ -275,7 +288,8 @@ void PedestalTrackingPixelHistogram::worker_loop(int thread_id) {
                              local_pixel < tile_end; ++local_pixel, ++input) {
                             const FrameType raw = *input;
 
-                            if (has_mask && mask_.value()[local_pixel]) {
+                            if (has_mask &&
+                                partial_masks_[thread_id](local_pixel)) {
                                 continue; // Skip masked pixels entirely
                             }
 
