@@ -51,6 +51,7 @@ PYBIND11_MODULE(_aare, m) {
     bind_eta_3x3(m);
 
     define_defs_bindings(m);
+    define_gap_pixels_bindings(m);
 
     bind_eta_types(m);
 }

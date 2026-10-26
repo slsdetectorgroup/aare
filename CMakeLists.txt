@@ -420,6 +420,7 @@ set(PUBLICHEADERS
     include/aare/ROI.hpp
     include/aare/ROIGeometry.hpp
     include/aare/DetectorGeometry.hpp
+    include/aare/GapPixels.hpp
     include/aare/JungfrauDataFile.hpp
     include/aare/logger.hpp
     include/aare/NDArray.hpp
@@ -445,6 +446,7 @@ set(SourceFiles
     ${CMAKE_CURRENT_SOURCE_DIR}/src/ROI.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/src/ROIGeometry.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/src/DetectorGeometry.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/GapPixels.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/src/hist/PedestalTrackingPixelHistogram.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/src/Dtype.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/src/File.cpp
@@ -514,6 +516,7 @@ if(AARE_TESTS)
       ${CMAKE_CURRENT_SOURCE_DIR}/src/fit/Fit.test.cpp
       ${CMAKE_CURRENT_SOURCE_DIR}/src/Frame.test.cpp
       ${CMAKE_CURRENT_SOURCE_DIR}/src/DetectorGeometry.test.cpp
+      ${CMAKE_CURRENT_SOURCE_DIR}/src/GapPixels.test.cpp
       ${CMAKE_CURRENT_SOURCE_DIR}/src/Interpolation.test.cpp
       ${CMAKE_CURRENT_SOURCE_DIR}/src/RawMasterFile.test.cpp
       ${CMAKE_CURRENT_SOURCE_DIR}/src/NDArray.test.cpp

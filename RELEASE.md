@@ -10,6 +10,30 @@
 - Added Windows wheels (``win_amd64``, Python 3.12 to 3.14) to the wheel
   build, so releases publish them to PyPI alongside the Linux and macOS
   wheels.
+- added ``NDView::sub_view(index)`` operator returns a subview at index along dimension 0
+- Added ``GapPixels`` with ``insert_gap_pixels`` and ``gapped_shape`` to
+  insert gap pixels into Jungfrau and Eiger images in memory: 2 pixel gaps
+  at the chip boundaries inside each module and, only when ``ModuleGaps``
+  is set, gaps between modules. Gap positions follow detector coordinates
+  before any ROI. Gap pixels receive a fill value or, with
+  ``split_counts``, half of the neighbouring double size pixel.
+- ``RawFile`` takes a ``GapPixels`` configuration, in Python the
+  ``gap_pixels`` argument, and inserts gap pixels while frames are
+  assembled. ``rows()``, ``cols()`` and every returned frame then include
+  the gaps, for the full frame and for each ROI.
+
+### Other:
+
+- ``RawFile`` assembles multi-module frames through one placement path with
+  a scratch buffer allocated once at open, instead of allocating a module
+  buffer for every frame.
+
+### Bugfixes:
+
+- Fixed ``Matterhorn10Transform`` with 4 bit dynamic range and
+  ``Mythen302Transform`` failing with ``Expected 1D array, got 2D`` on frames
+  read through ``CtbRawFile``. The transforms now flatten the frame before
+  calling the decoders.
 
 ### Build:
 

@@ -42,6 +42,14 @@ The top-level frame bounds error states the number of frames in the file and
 that indices are zero-based.
 
 
+Pass a :doc:`GapPixels <GapPixels>` configuration as the third constructor
+argument to insert gap pixels while frames are assembled. ``rows()``,
+``cols()``, ``pixels_per_frame()``, ``bytes_per_frame()`` and every returned
+frame then include the gaps, for the full frame and for each ROI. The option
+is only supported for Jungfrau and Eiger and throws
+``std::invalid_argument`` for other detector types. Headers and frame
+numbers are unchanged.
+
 .. doxygenclass:: aare::RawFile
    :members:
    :undoc-members:
