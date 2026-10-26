@@ -46,7 +46,7 @@ defaults and ``(1064, 1030)`` with ``ModuleGaps(8, 36)``.
     gapped = insert_gap_pixels(image)
 
     # module gaps as in the slsDetectorPackage GUI, counts split at chip edges
-    gaps = GapPixels(module_gaps=ModuleGaps(8, 36), split_counts=True, seed=1)
+    gaps = GapPixels(module_gaps=ModuleGaps(8, 36), split_counts=True)
     gapped = insert_gap_pixels(image, gaps)
 
     # an image that covers columns 100 to 400 of the first ten rows
