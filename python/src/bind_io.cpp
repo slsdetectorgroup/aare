@@ -3,6 +3,7 @@
 #include "module_config.hpp"
 
 #include "bind_Defs.hpp"
+#include "bind_GapPixels.hpp"
 #include "bind_MultiThreadedFileReader.hpp"
 #include "bind_PixelMap.hpp"
 #include "bind_RawFile.hpp"

@@ -21,6 +21,7 @@ void define_jungfrau_data_file_io_bindings(py::module &m);
 void bind_calibration(py::module &m);
 void define_testing_bindings(py::module &m);
 void define_defs_bindings(py::module &m);
+void define_gap_pixels_bindings(py::module &m);
 
 // bind_hist.cpp
 void define_pixel_histogram_bindings(py::module &m);
