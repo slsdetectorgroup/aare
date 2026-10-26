@@ -21,7 +21,7 @@ target_sources(
   benchmarks
   PRIVATE ndarray_benchmark.cpp ndview_benchmark.cpp calculateeta_benchmark.cpp
           reduce_benchmark.cpp clusterfile_benchmark.cpp
-          DataSetAggregation_benchmark.cpp)
+          DataSetAggregation_benchmark.cpp rawfile_benchmark.cpp)
 
 # Link Google Benchmark and other necessary libraries
 target_link_libraries(benchmarks PRIVATE benchmark::benchmark aare_core
