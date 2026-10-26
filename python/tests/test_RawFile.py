@@ -556,10 +556,10 @@ def test_raw_file_gap_pixels(tmp_path, layout):
 
 
 def test_raw_file_gap_pixels_split_counts(tmp_path):
-    # one Eiger module: two 256x1024 ports stacked in a column. Splitting is
+    # one Eiger module: four 256x512 ports in a 2x2 layout. Splitting is
     # rejected on raw Jungfrau data. The plain read is the reference since
     # Eiger ports are row flipped on reading.
-    master_path, _ = write_module_layout(tmp_path, 2, 1, module_rows=256, module_cols=1024,
+    master_path, _ = write_module_layout(tmp_path, 2, 2, module_rows=256, module_cols=512,
                                          detector_type="Eiger")
     gaps = GapPixels(split_counts=True, seed=11)
     with RawFile(master_path) as reader:

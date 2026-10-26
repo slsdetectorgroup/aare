@@ -412,9 +412,9 @@ TEST_CASE("RawFile inserts gap pixels into synthetic Jungfrau modules",
 
 TEST_CASE("RawFile splits counts like the free function",
           "[RawFile][GapPixels]") {
-    // one Eiger module: two 256x1024 ports stacked in a column. Splitting is
+    // one Eiger module: four 256x512 ports in a 2x2 layout. Splitting is
     // rejected on raw Jungfrau data, so the synthetic file is Eiger.
-    TemporaryRawFiles files(xy{2, 1}, xy{256, 1024});
+    TemporaryRawFiles files(xy{2, 2}, xy{256, 512});
     auto metadata = nlohmann::json::parse(std::ifstream(files.master_path()));
     metadata["Detector Type"] = "Eiger";
     std::ofstream(files.master_path()) << metadata;
