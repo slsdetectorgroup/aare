@@ -13,9 +13,10 @@ TEST_CASE("mean_over_dataset", "[DataSetAggregation]") {
 
     // Create a temporary Jungfrau data file with 2200 frames, each frame is a
 
-    const int num_samples = 100;
-    const int num_frames_per_sample = 10;
-    const int num_threads = 16;
+    const int num_samples = 10;
+    const int num_frames_per_sample = 100;
+    const int num_processing_threads = 12;
+    const int num_reader_threads = 8;
 
     TemporaryJungfrauFiles temp_files(
         num_samples * num_frames_per_sample, [](size_t frame) {
@@ -27,8 +28,9 @@ TEST_CASE("mean_over_dataset", "[DataSetAggregation]") {
 
     const std::filesystem::path path = temp_files.file_path();
 
-    auto mean_result = block_mean<uint16_t>(path, num_samples,
-                                            num_frames_per_sample, num_threads);
+    auto mean_result =
+        block_mean<uint16_t>(path, num_samples, num_frames_per_sample,
+                             num_processing_threads, num_reader_threads);
 
     // Check the shape of the result
     REQUIRE(mean_result.shape(0) == Jungfrau::nRows);

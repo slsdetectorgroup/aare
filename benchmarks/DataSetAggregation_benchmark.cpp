@@ -3,29 +3,14 @@
 #include "aare/DataSetAggregation.hpp"
 #include <filesystem>
 
-/*
-constexpr ssize_t size = 1024;
-class JungfrauTestDataSet : public benchmark::Fixture {
-  public:
-    std::filesystem::path file_path =
-        std::filesystem::path("/home/mazzol_a/Documents/temp_jungfrau/"
-                              "CS_M749_2026-05-19_HGOG1G2_000000.dat");
-
-    void SetUp(::benchmark::State &state) {}
-
-    // void TearDown(::benchmark::State& state) {
-    // }
-};
-*/
-
 static void DatasetAggregation_MeanOverDataset(benchmark::State &st) {
     const std::filesystem::path file_path =
-        "/home/mazzol_a/Documents/temp_jungfrau/"
+        "/mnt/sls_det_storage/jungfrau_calib/data/Module_749_Calib/"
         "BP_M749_2026-05-19_HGOG1G2_000000.dat";
 
     for (auto _ : st) {
         aare::NDArray<uint16_t, 3> res =
-            aare::block_mean<uint16_t>(file_path, 220, 100, 16);
+            aare::block_mean<uint16_t>(file_path, 220, 100);
 
         benchmark::DoNotOptimize(res);
     }
@@ -33,7 +18,7 @@ static void DatasetAggregation_MeanOverDataset(benchmark::State &st) {
 
 static void DatasetAggregation_MeanCurrentSource(benchmark::State &st) {
     const std::filesystem::path file_path =
-        "/home/mazzol_a/Documents/temp_jungfrau/"
+        "/mnt/sls_det_storage/jungfrau_calib/data/Module_749_Calib/"
         "CS_M749_2026-05-19_HGOG1G2_000000.dat";
 
     for (auto _ : st) {

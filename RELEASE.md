@@ -18,7 +18,9 @@
   before any ROI. Gap pixels receive a fill value or, with
   ``split_counts``, half of the neighbouring double size pixel.
 - Added ``mean_current_source`` to read current source Jungfrau data and evarge the values over several acquisitions.
-- Added ``mean_over_dataset`` to calculate the mean over several acquisitions in a Datasets.  
+- Added ``block_mean`` to calculate the mean over several blocked acquisitions in a datasets.  
+- Added ``MultiThreadedFileReader::read_into(destination, n_frames)`` to read an
+  exact number of frames in C++.
 - ``RawFile`` takes a ``GapPixels`` configuration, in Python the
   ``gap_pixels`` argument, and inserts gap pixels while frames are
   assembled. ``rows()``, ``cols()`` and every returned frame then include

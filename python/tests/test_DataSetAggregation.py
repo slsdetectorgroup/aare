@@ -7,16 +7,17 @@ from aare import block_mean, mean_current_source
 def test_block_mean(create_temporary_jungfrau_files):
     """ test block_mean """
     rows, cols = 256, 256
-    num_samples = 100
-    num_frames_per_sample = 10
-    num_threads = 16
+    num_samples = 10
+    num_frames_per_sample = 100
+    num_processing_threads = 12
+    num_reader_threads = 8
 
     file_system = create_temporary_jungfrau_files(
         num_samples * num_frames_per_sample,
         lambda frame: np.full((rows, cols), frame % num_frames_per_sample, dtype=np.uint16),
     )
 
-    result = block_mean(file_system, num_samples, num_frames_per_sample, num_threads)
+    result = block_mean(file_system, num_samples = num_samples, mean_over_num_frames = num_frames_per_sample, num_processing_threads = num_processing_threads, num_reader_threads = num_reader_threads)
 
     assert result.shape == (rows, cols, num_samples)
 
