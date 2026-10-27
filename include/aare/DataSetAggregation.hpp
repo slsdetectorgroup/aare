@@ -1,8 +1,12 @@
 #pragma once
 #include "aare/File.hpp"
 #include <algorithm>
+#include <array>
+#include <condition_variable>
 #include <filesystem>
 #include <future>
+#include <limits>
+#include <mutex>
 #include <vector>
 
 namespace aare {
@@ -15,6 +19,8 @@ namespace aare {
  * @param mean_over_num_frames The number of frames per sample to take mean
  * over.
  * @param num_threads The number of threads to use for parallel computation.
+ * One thread reads the frames, the remaining threads each process a shard of
+ * rows.
  * @return An NDArray containing the mean frame stored as double for each
  * sample.
  */
@@ -49,56 +55,133 @@ block_mean(const std::filesystem::path &path, const size_t num_samples,
 
     const double inv_n = 1.0 / static_cast<double>(mean_over_num_frames);
 
-    auto mean_over_samples = [&](size_t start_sample, size_t end_sample) {
-        File file(path);
+    // One reader thread loads all frames of a sample into a ring buffer slot,
+    // while the worker threads each compute the mean for their own shard of
+    // rows. Reading the next samples overlaps with processing the current one.
+    constexpr size_t num_buffers = 3;
 
-        file.seek(start_sample * mean_over_num_frames);
-        NDArray<FRAME_TYPE, 3> frames(
-            {static_cast<ssize_t>(mean_over_num_frames),
-             static_cast<ssize_t>(rows), static_cast<ssize_t>(cols)});
+    const size_t num_workers =
+        std::min(std::max<size_t>(1, static_cast<size_t>(num_threads) - 1),
+                 std::max<size_t>(1, rows));
 
-        std::vector<double> sum(rows *
-                                cols); // need to be double to avoid overflow
-                                       // for uint16_t and uint32_t
+    std::vector<NDArray<FRAME_TYPE, 3>> buffers;
+    buffers.reserve(num_buffers);
+    for (size_t b = 0; b < num_buffers; ++b) {
+        buffers.emplace_back(std::array<ssize_t, 3>{
+            static_cast<ssize_t>(mean_over_num_frames),
+            static_cast<ssize_t>(rows), static_cast<ssize_t>(cols)});
+    }
 
-        // TODO: maybe tile
-        for (size_t i = start_sample; i < end_sample; ++i) {
-            file.read_into(reinterpret_cast<std::byte *>(frames.data()),
-                           mean_over_num_frames); // TODO: maybe better
-                                                  // performance if read one by
-                                                  // one - e.g. for parallel
+    // per slot: sample currently loaded and number of workers still using it
+    constexpr size_t no_sample = std::numeric_limits<size_t>::max();
+    std::vector<size_t> loaded_sample(num_buffers, no_sample);
+    std::vector<size_t> pending_workers(num_buffers, 0);
+    bool abort = false;
 
-            std::fill(sum.begin(), sum.end(), 0.0);
+    std::mutex mtx;
+    std::condition_variable cv_loaded;
+    std::condition_variable cv_free;
 
-            for (size_t f = 0; f < mean_over_num_frames; ++f) {
-                // const size_t f_off = f * rows * cols;
-                for (size_t r = 0; r < rows; ++r) {
-                    // const size_t off = f_off + r * cols;
+    auto set_abort = [&]() {
+        {
+            std::lock_guard<std::mutex> lock(mtx);
+            abort = true;
+        }
+        cv_loaded.notify_all();
+        cv_free.notify_all();
+    };
+
+    auto reader = [&]() {
+        try {
+            File file(path);
+            for (size_t i = 0; i < num_samples; ++i) {
+                const size_t slot = i % num_buffers;
+                {
+                    std::unique_lock<std::mutex> lock(mtx);
+                    cv_free.wait(lock, [&] {
+                        return abort || pending_workers[slot] == 0;
+                    });
+                    if (abort)
+                        return;
+                }
+
+                file.read_into(
+                    reinterpret_cast<std::byte *>(buffers[slot].data()),
+                    mean_over_num_frames);
+
+                {
+                    std::lock_guard<std::mutex> lock(mtx);
+                    loaded_sample[slot] = i;
+                    pending_workers[slot] = num_workers;
+                }
+                cv_loaded.notify_all();
+            }
+        } catch (...) {
+            set_abort();
+            throw;
+        }
+    };
+
+    auto worker = [&](size_t row_begin, size_t row_end) {
+        try {
+            const size_t shard_size = (row_end - row_begin) * cols;
+            // need to be double to avoid overflow for uint16_t and uint32_t
+            std::vector<double> sum(shard_size);
+
+            for (size_t i = 0; i < num_samples; ++i) {
+                const size_t slot = i % num_buffers;
+                {
+                    std::unique_lock<std::mutex> lock(mtx);
+                    cv_loaded.wait(lock, [&] {
+                        return abort || loaded_sample[slot] == i;
+                    });
+                    if (abort)
+                        return;
+                }
+
+                std::fill(sum.begin(), sum.end(), 0.0);
+
+                const FRAME_TYPE *src = buffers[slot].data() + row_begin * cols;
+                for (size_t f = 0; f < mean_over_num_frames; ++f) {
+                    const FRAME_TYPE *frame = src + f * rows * cols;
+                    for (size_t k = 0; k < shard_size; ++k) {
+                        sum[k] += static_cast<double>(frame[k]);
+                    }
+                }
+
+                bool slot_free = false;
+                {
+                    std::lock_guard<std::mutex> lock(mtx);
+                    slot_free = --pending_workers[slot] == 0;
+                }
+                if (slot_free)
+                    cv_free.notify_one();
+
+                // buffer slot is no longer needed, write output after release
+                for (size_t r = row_begin; r < row_end; ++r) {
                     for (size_t c = 0; c < cols; ++c) {
-                        sum[r * cols + c] += static_cast<double>(frames(
-                            f, r, c)); // static_cast<double>(src[off + c]);
+                        mean_per_sample(r, c, i) =
+                            sum[(r - row_begin) * cols + c] * inv_n;
                     }
                 }
             }
-
-            for (size_t r = 0; r < rows; ++r) {
-                for (size_t c = 0; c < cols; ++c) {
-                    mean_per_sample(r, c, i) = sum[r * cols + c] * inv_n;
-                }
-            }
-        };
+        } catch (...) {
+            set_abort();
+            throw;
+        }
     };
 
-    std::vector<std::future<void>> futures(num_threads);
+    std::vector<std::future<void>> futures;
+    futures.reserve(num_workers + 1);
 
-    int chunk_size = num_samples / num_threads;
+    futures.push_back(std::async(std::launch::async, reader));
 
-    for (int i = 0; i < num_threads; ++i) {
-        size_t end_sample =
-            (i == num_threads - 1) ? num_samples : (i + 1) * chunk_size;
-
-        futures[i] = std::async(std::launch::async, mean_over_samples,
-                                i * chunk_size, end_sample);
+    const size_t rows_per_worker = rows / num_workers;
+    for (size_t w = 0; w < num_workers; ++w) {
+        size_t row_end =
+            (w == num_workers - 1) ? rows : (w + 1) * rows_per_worker;
+        futures.push_back(std::async(std::launch::async, worker,
+                                     w * rows_per_worker, row_end));
     }
 
     for (auto &f : futures) {
