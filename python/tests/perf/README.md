@@ -7,13 +7,14 @@ with its own driver, traced process, README and `results/`:
 | folder | class |
 |---|---|
 | [`cf/`](cf/README.md) | `ClusterFinderCUDA` |
+| [`hist/`](hist/README.md) | `PixelHistogramCUDA` |
 
 Shared by all of them:
 
 | file | role |
 |---|---|
 | `common.py` | paths (`AARE_REPO`, `AARE_BUILD`, `AARE_PERF_DATA`, `NSYS`), guards (fresh build, idle GPU), `env.json` stamp, results folder |
-| `gpu_span.py` | reads an nsys SQLite export: busy time, duty cycle and roofline per engine, optionally for one kernel name only |
+| `gpu_span.py` | reads an nsys SQLite export: busy time, duty cycle and roofline per engine, optionally for one kernel name and a subset of engines only |
 
 Requirements (a CUDA build of the Python extension, Nsight Systems, the
 dataset, an idle GPU) are listed in each folder's README.

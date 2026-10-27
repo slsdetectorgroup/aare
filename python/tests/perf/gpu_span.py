@@ -10,6 +10,9 @@ pedestal-upload copies that precede any kernel are excluded.
 
 `kernel_name` (optional) keeps only kernels whose short name contains it, for
 a probe whose per-frame kernel shares the trace with one-off kernels.
+`engines` (optional, Python only) limits the engines that are reported and
+that count for the window and the roofline: a probe whose only D2H is a
+one-off readout at the end passes ("kernel", "H2D").
 
 Roofline = tallest engine's busy time per frame. PCIe is full-duplex and the
 engines overlap, so the floor is the max, never the sum.
@@ -36,16 +39,19 @@ def union(rows):
     return busy + ce - cs
 
 
-def analyze(sqlite_path, n_frames, kernel_name=None) -> dict:
+ENGINES = ("kernel", "H2D", "D2H")
+
+
+def analyze(sqlite_path, n_frames, kernel_name=None, engines=ENGINES) -> dict:
     db = sqlite3.connect(str(sqlite_path))
     kernels = [(s, e) for s, e, name in db.execute(KERNELS)
                if kernel_name is None or kernel_name in name]
     if not kernels:
         raise RuntimeError(f"no kernel matching {kernel_name!r} in {sqlite_path}")
     ops = {"kernel": kernels}
-    ops.update({k: db.execute(q).fetchall() for k, q in Q.items()})
+    ops.update({k: db.execute(q).fetchall() for k, q in Q.items() if k in engines})
     lo = ops["kernel"][0][0]
-    hi = max([ops["kernel"][-1][1]] + [r[1] for r in ops["D2H"][-1:]])
+    hi = max([ops["kernel"][-1][1]] + [r[1] for r in ops.get("D2H", [])[-1:]])
     span = hi - lo
 
     out = {"n_frames": n_frames, "window_ms": span / 1e6,
@@ -59,7 +65,7 @@ def analyze(sqlite_path, n_frames, kernel_name=None) -> dict:
         out[f"{k}_overlap"] = tot / busy if busy else 0.0
         out[f"{k}_duty_pct"] = 100 * busy / span
         out[f"{k}_us_per_frame"] = busy / 1e3 / n_frames
-    tallest = max(("kernel", "H2D", "D2H"), key=lambda k: out[f"{k}_us_per_frame"])
+    tallest = max(ops, key=lambda k: out[f"{k}_us_per_frame"])
     out["bottleneck"] = tallest
     out["roofline_us_per_frame"] = out[f"{tallest}_us_per_frame"]
     out["roofline_fps"] = 1e6 / out["roofline_us_per_frame"]
