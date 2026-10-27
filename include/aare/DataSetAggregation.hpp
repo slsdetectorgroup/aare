@@ -70,16 +70,13 @@ block_mean(const std::filesystem::path &path, const size_t num_samples,
 
             std::fill(sum.begin(), sum.end(), 0.0);
 
-            const FRAME_TYPE *src =
-                frames.data(); // using the pointer seems to be much faster than
-                               // using the NDArray
-
             for (size_t f = 0; f < mean_over_num_frames; ++f) {
-                const size_t f_off = f * rows * cols;
+                // const size_t f_off = f * rows * cols;
                 for (size_t r = 0; r < rows; ++r) {
-                    const size_t off = f_off + r * cols;
+                    // const size_t off = f_off + r * cols;
                     for (size_t c = 0; c < cols; ++c) {
-                        sum[r * cols + c] += static_cast<double>(src[off + c]);
+                        sum[r * cols + c] += static_cast<double>(frames(
+                            f, r, c)); // static_cast<double>(src[off + c]);
                     }
                 }
             }
