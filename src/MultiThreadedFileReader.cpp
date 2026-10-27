@@ -85,9 +85,19 @@ void MultiThreadedFileReader::ensure_open() const {
     }
 }
 
-size_t MultiThreadedFileReader::read_into(std::byte *destination) {
+size_t
+MultiThreadedFileReader::read_into(std::byte *destination,
+                                   std::optional<size_t> frames_to_read_) {
     ensure_open();
-    const size_t frames_to_read = next_read_frames();
+    const size_t next_frames_to_read = next_read_frames();
+    const size_t frames_to_read = frames_to_read_.value_or(next_frames_to_read);
+
+    if (frames_to_read > next_frames_to_read) {
+        throw std::invalid_argument(
+            fmt::format("MultiThreadedFileReader cannot read more frames than "
+                        "available: requested {}, available {}",
+                        frames_to_read, next_frames_to_read));
+    }
     if (frames_to_read == 0) {
         return 0;
     }

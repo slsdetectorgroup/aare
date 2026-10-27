@@ -40,12 +40,17 @@ class MultiThreadedFileReader {
     /**
      * @brief Read one chunk per active worker into a caller-owned buffer.
      *
+     * @param destination Pointer to the buffer where the data will be written.
+     * @param frames_to_read Optional number of frames to read. If not provided,
+     * the reader will read the next available frames.
+     *
      * The buffer must hold at least next_read_bytes() bytes. The reader's
      * position advances by the returned number of frames. At the end of the
      * configured range this function returns zero and does not access the
      * destination.
      */
-    size_t read_into(std::byte *destination);
+    size_t read_into(std::byte *destination,
+                     std::optional<size_t> frames_to_read = std::nullopt);
 
     /** @brief Read the next wave of chunks into an owned byte buffer. */
     std::vector<std::byte> read();
