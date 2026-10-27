@@ -1,5 +1,7 @@
 #pragma once
 #include "aare/File.hpp"
+#include "aare/MultiThreadedFileReader.hpp"
+#include "aare/utils/math_helpers.hpp"
 #include <algorithm>
 #include <array>
 #include <condition_variable>
@@ -21,13 +23,16 @@ namespace aare {
  * @param num_threads The number of threads to use for parallel computation.
  * One thread reads the frames, the remaining threads each process a shard of
  * rows.
+ * @param num_reader_threads The number of file workers the reader thread uses
+ * to load the frames of one sample in parallel.
  * @return An NDArray containing the mean frame stored as double for each
  * sample.
  */
 template <typename FRAME_TYPE>
 NDArray<double, 3>
 block_mean(const std::filesystem::path &path, const size_t num_samples,
-           const size_t mean_over_num_frames, const int num_threads = 16) {
+           const size_t mean_over_num_frames, const int num_threads = 12,
+           const size_t num_reader_threads = 8) {
 
     size_t rows = 0;
     size_t cols = 0;
@@ -46,6 +51,8 @@ block_mean(const std::filesystem::path &path, const size_t num_samples,
 
     if (num_threads < 1)
         throw std::invalid_argument("num_threads must be at least 1");
+    if (num_reader_threads < 1)
+        throw std::invalid_argument("num_reader_threads must be at least 1");
 
     if (total_num_frames != num_samples * mean_over_num_frames) {
         throw std::runtime_error(
@@ -56,8 +63,9 @@ block_mean(const std::filesystem::path &path, const size_t num_samples,
     const double inv_n = 1.0 / static_cast<double>(mean_over_num_frames);
 
     // One reader thread loads all frames of a sample into a ring buffer slot,
-    // while the worker threads each compute the mean for their own shard of
-    // rows. Reading the next samples overlaps with processing the current one.
+    // splitting the read over num_reader_threads file workers, while the
+    // worker threads each compute the mean for their own shard of rows.
+    // Reading the next samples overlaps with processing the current one.
     constexpr size_t num_buffers = 3;
 
     const size_t num_workers =
@@ -93,7 +101,11 @@ block_mean(const std::filesystem::path &path, const size_t num_samples,
 
     auto reader = [&]() {
         try {
-            File file(path);
+            // one wave of the reader covers exactly one sample
+            experimental::MultiThreadedFileReader file_reader(
+                path, num_reader_threads,
+                ceil_div(mean_over_num_frames, num_reader_threads));
+
             for (size_t i = 0; i < num_samples; ++i) {
                 const size_t slot = i % num_buffers;
                 {
@@ -105,7 +117,7 @@ block_mean(const std::filesystem::path &path, const size_t num_samples,
                         return;
                 }
 
-                file.read_into(
+                file_reader.read_into(
                     reinterpret_cast<std::byte *>(buffers[slot].data()),
                     mean_over_num_frames);
 
