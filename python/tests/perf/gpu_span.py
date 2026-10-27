@@ -1,12 +1,15 @@
 """Per-engine busy time and duty cycle from an nsys SQLite export.
 
     nsys stats --force-export=true --report cuda_gpu_sum <rep>.nsys-rep
-    python gpu_span.py <rep>.sqlite <n_frames>
+    python gpu_span.py <rep>.sqlite <n_frames> [kernel_name]
 
 Per engine (kernel / H2D / D2H): sum of op durations, busy = union of the
 intervals (overlaps not double-counted), duty = busy / processing window.
-The window is first kernel start to last D2H end, so the pedestal-upload
-copies that precede any kernel are excluded.
+The window is first kernel start to last kernel or D2H end, so the
+pedestal-upload copies that precede any kernel are excluded.
+
+`kernel_name` (optional) keeps only kernels whose short name contains it, for
+a probe whose per-frame kernel shares the trace with one-off kernels.
 
 Roofline = tallest engine's busy time per frame. PCIe is full-duplex and the
 engines overlap, so the floor is the max, never the sum.
@@ -14,12 +17,15 @@ engines overlap, so the floor is the max, never the sum.
 import sqlite3
 import sys
 
-Q = {"kernel": "SELECT start,end FROM CUPTI_ACTIVITY_KIND_KERNEL ORDER BY start",
-     "H2D": "SELECT start,end FROM CUPTI_ACTIVITY_KIND_MEMCPY WHERE copyKind=1 ORDER BY start",
+KERNELS = ("SELECT k.start, k.end, s.value FROM CUPTI_ACTIVITY_KIND_KERNEL k "
+           "JOIN StringIds s ON k.shortName = s.id ORDER BY k.start")
+Q = {"H2D": "SELECT start,end FROM CUPTI_ACTIVITY_KIND_MEMCPY WHERE copyKind=1 ORDER BY start",
      "D2H": "SELECT start,end FROM CUPTI_ACTIVITY_KIND_MEMCPY WHERE copyKind=2 ORDER BY start"}
 
 
 def union(rows):
+    if not rows:
+        return 0
     busy, cs, ce = 0, *rows[0]
     for s, e in rows[1:]:
         if s > ce:
@@ -30,11 +36,16 @@ def union(rows):
     return busy + ce - cs
 
 
-def analyze(sqlite_path, n_frames) -> dict:
+def analyze(sqlite_path, n_frames, kernel_name=None) -> dict:
     db = sqlite3.connect(str(sqlite_path))
-    ops = {k: db.execute(q).fetchall() for k, q in Q.items()}
+    kernels = [(s, e) for s, e, name in db.execute(KERNELS)
+               if kernel_name is None or kernel_name in name]
+    if not kernels:
+        raise RuntimeError(f"no kernel matching {kernel_name!r} in {sqlite_path}")
+    ops = {"kernel": kernels}
+    ops.update({k: db.execute(q).fetchall() for k, q in Q.items()})
     lo = ops["kernel"][0][0]
-    hi = max(ops["kernel"][-1][1], ops["D2H"][-1][1])
+    hi = max([ops["kernel"][-1][1]] + [r[1] for r in ops["D2H"][-1:]])
     span = hi - lo
 
     out = {"n_frames": n_frames, "window_ms": span / 1e6,
@@ -45,7 +56,7 @@ def analyze(sqlite_path, n_frames) -> dict:
         out[f"{k}_n"] = len(rows)
         out[f"{k}_sum_ms"] = tot / 1e6
         out[f"{k}_busy_ms"] = busy / 1e6
-        out[f"{k}_overlap"] = tot / busy
+        out[f"{k}_overlap"] = tot / busy if busy else 0.0
         out[f"{k}_duty_pct"] = 100 * busy / span
         out[f"{k}_us_per_frame"] = busy / 1e3 / n_frames
     tallest = max(("kernel", "H2D", "D2H"), key=lambda k: out[f"{k}_us_per_frame"])
@@ -57,7 +68,8 @@ def analyze(sqlite_path, n_frames) -> dict:
 
 if __name__ == "__main__":
     N = int(sys.argv[2]) if len(sys.argv) > 2 else 2000
-    r = analyze(sys.argv[1], N)
+    name = sys.argv[3] if len(sys.argv) > 3 else None
+    r = analyze(sys.argv[1], N, name)
     print(f"processing window: {r['window_ms']:.1f} ms / {N} frames = "
           f"{r['window_us_per_frame']:.1f} us/frame")
     for k in ("kernel", "H2D", "D2H"):

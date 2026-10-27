@@ -10,7 +10,8 @@ import time
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
-import common  # noqa: E402  (puts the build dir on sys.path)
+import cf_common  # noqa: E402  (puts ../ and the build dir on sys.path)
+from cf_common import common  # noqa: E402
 
 from aare import File, ClusterFinderCUDA  # noqa: E402
 
@@ -20,9 +21,9 @@ f = File(common.DATA_FILE)
 pd = File(common.PEDESTAL_FILE)
 
 cf = ClusterFinderCUDA((f.rows, f.cols), cluster_size=(cdim, cdim),
-                       n_sigma=common.N_SIGMA, max_clusters_per_frame=cap,
+                       n_sigma=cf_common.N_SIGMA, max_clusters_per_frame=cap,
                        n_streams=n_streams)
-for _ in range(common.N_PEDESTAL_FRAMES):
+for _ in range(cf_common.N_PEDESTAL_FRAMES):
     cf.push_pedestal_frame(pd.read_frame().copy())
 
 data = f.read_n(N)

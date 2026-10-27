@@ -20,7 +20,8 @@ import sys
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
-import common  # noqa: E402
+import cf_common  # noqa: E402  (puts ../ and the build dir on sys.path)
+from cf_common import common  # noqa: E402
 import gpu_span  # noqa: E402
 
 HERE = Path(__file__).resolve().parent
@@ -68,7 +69,7 @@ def run_one(cdim, cap, streams, label, n_frames, batch, outdir) -> dict | None:
 
     r = gpu_span.analyze(sq, n_frames)
     r.update(label=label, cluster_dim=cdim, cap=cap, n_streams=streams,
-             batch=batch, device_ped_type=common.device_ped_type())
+             batch=batch, device_ped_type=cf_common.device_ped_type())
     print(f"    kernel {r['kernel_us_per_frame']:5.2f} us (duty {r['kernel_duty_pct']:4.1f}%)  "
           f"H2D {r['H2D_us_per_frame']:5.2f} ({r['H2D_duty_pct']:4.1f}%)  "
           f"D2H {r['D2H_us_per_frame']:5.2f} ({r['D2H_duty_pct']:4.1f}%)")
@@ -87,10 +88,10 @@ def main() -> int:
     ap.add_argument("--cap", type=int, default=None, help="override every cap")
     args = ap.parse_args()
 
-    common.assert_build_fresh()
+    common.assert_build_fresh(cf_common.HEADERS)
     common.assert_idle_gpu()
-    env = common.capture_env()
-    outdir = common.results_dir(args.tag)
+    env = common.capture_env(device_ped_type=cf_common.device_ped_type())
+    outdir = cf_common.results_dir(args.tag)
     common.write_env(outdir / "env.json", env)
     print(f"build: DEVICE_PED_TYPE={env['device_ped_type']}  git={env['git_rev']}"
           f"{' (dirty)' if env['git_dirty'] else ''}")
