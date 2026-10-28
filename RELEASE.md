@@ -4,6 +4,15 @@
 
 ### New Features:
 
+- ``VarClusterFinder`` can exclude pixels with a mask (``set_mask`` and
+  ``clear_mask`` in C++, the ``mask`` property in Python, ``None`` to
+  remove it): a masked pixel never seeds a cluster and is never added to
+  one, clusters grow around it, and it shows as -1 in ``labeled``.
+- ``VarClusterFinder`` can grow clusters with a fixed neighbour threshold
+  below the seed threshold (``set_neighbour_threshold`` in C++, the
+  ``neighbour_threshold`` property in Python, ``None`` to follow the seed
+  threshold), as the noise map mode does with its two factors. The seed
+  ``threshold`` can be changed after construction.
 - Added the Python ``xy`` type with ``row`` and ``col`` fields, enabling access
   to ``RawFile.geometry``, ``RawMasterFile.detector_layout``, and
   ``RawMasterFile.udp_interfaces_per_module``. It unpacks as ``row, col``.
@@ -22,13 +31,51 @@
   assembled. ``rows()``, ``cols()`` and every returned frame then include
   the gaps, for the full frame and for each ROI.
 
+### API Changes:
+
+- ``VarClusterFinder`` keeps only the flood fill. ``find_clusters_X`` is now
+  ``find_clusters``; the connected component labelling path (the previous
+  ``find_clusters`` and ``single_pass``) and the Python ``hits`` method, a
+  duplicate of ``steal_hits``, are removed. The input image is no longer
+  modified unless erasing is enabled (``set_erase_clusters`` in C++, the
+  ``erase_clusters`` property in Python, replacing
+  ``set_empty_surroundingPixels``), which now zeroes both the cluster
+  pixels and their sub-threshold neighbours.
+  Hits are stored in an offset layout instead of one 624 byte record per
+  cluster: ``steal_hits`` returns a ``Hits`` structure (``VarClusterHits``
+  in Python) with one 32 byte record per cluster (``size``, ``row``,
+  ``col``, ``energy``, ``max``, ``offset``) and flat ``rows``, ``cols`` and
+  ``values`` arrays holding every cluster pixel, so the 50 pixel limit is
+  gone. Hits are returned in scan order. The threshold factors are
+  ``set_seed_factor`` and ``set_neighbour_factor`` in C++ and the
+  ``seed_factor`` and ``neighbour_factor`` properties in Python; they take
+  floating point values and the seed factor is configurable instead of
+  being fixed to 5.
+  The noise map setters are ``set_noise_map`` and ``clear_noise_map`` in
+  C++; in Python the noise map is the ``noise_map`` property, ``None`` to
+  return to the fixed threshold, and ``labeled`` is a property instead of
+  a method. ``set_numberOfNeighbours`` is ``set_connectivity`` in C++ and
+  the ``connectivity`` property in Python.
+
 ### Other:
 
 - ``RawFile`` assembles multi-module frames through one placement path with
   a scratch buffer allocated once at open, instead of allocating a module
   buffer for every frame.
+- ``VarClusterFinder`` scans sparse frames about four times faster and
+  fills clusters about twice as fast.
 
 ### Bugfixes:
+
+- Fixed ``VarClusterFinder`` crashing with a stack overflow on large
+  connected areas above threshold, for example a frame with an invalid
+  pedestal. The fill is now iterative.
+- Fixed ``VarClusterFinder.set_noiseMap`` keeping a reference to the
+  temporary array created when the noise map was not a C-contiguous
+  float64 array. The map is now copied.
+- ``VarClusterFinder`` now rejects images and noise maps whose shape does
+  not match the finder instead of reading out of bounds, and records the
+  maximum pixel correctly with a negative threshold.
 
 - Fixed ``Matterhorn10Transform`` with 4 bit dynamic range and
   ``Mythen302Transform`` failing with ``Expected 1D array, got 2D`` on frames

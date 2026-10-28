@@ -57,6 +57,18 @@
 #define ALWAYS_INLINE STRONG_INLINE
 #endif
 
+/**
+ * NEVER_INLINE keeps a rarely taken, register-hungry function out of the
+ * hot loop that calls it, so that the loop itself stays tight.
+ */
+#if defined(__GNUC__)
+#define NEVER_INLINE __attribute__((noinline))
+#elif defined(_MSC_VER)
+#define NEVER_INLINE __declspec(noinline)
+#else
+#define NEVER_INLINE
+#endif
+
 namespace aare {
 
 /**
