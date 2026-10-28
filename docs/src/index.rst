@@ -32,6 +32,7 @@ AARE
     python/histogram/index
     python/pedestal/index
     pyFit
+    pyDataSetAggregation
     
 
 
@@ -59,6 +60,7 @@ AARE
     RawSubFile
     RawMasterFile
     VarClusterFinder
+    DataSetAggregation
 
 
 
