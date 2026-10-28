@@ -4,16 +4,18 @@ import numpy as np
 from .ScanParameters import ScanParameters
 
 class RawFile(_aare.RawFile):
-    """
-    Class to read Raw files produced by slsDetectorPackage 
+    def __init__(self, fname, chunk_size = 1, gap_pixels = False):
+        """Open a raw file for reading.
 
-    Parameters:
-        fname (str): Path to the master file.
-        chunk_size (int, optional): Number of frames to read at a time. Defaults to 1.
-        strixeltransform (list, optional): List of strixel transform objects. Defaults to None.
-    """
-    def __init__(self, fname, chunk_size = 1, strixeltransform : list = None):
-        super().__init__(fname)
+        Args:
+            fname: Master file (.json or .raw).
+            chunk_size: Frames returned per iteration step.
+            gap_pixels: Insert gap pixels into every frame. True uses the
+                default GapPixels configuration, or pass a GapPixels. Frame
+                shapes then include the gaps. Only Jungfrau and Eiger are
+                supported.
+        """
+        super().__init__(fname, gap_pixels)
         self._chunk_size = chunk_size
         self._strixeltransform : list = strixeltransform
         if self._strixeltransform is not None:

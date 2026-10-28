@@ -40,6 +40,12 @@ For a file containing five frames, the valid indices are 0 through 4. Attempting
 to read index 5 raises an error stating: ``Frame index 5 is out of range: file
 contains 5 frames (indices are zero-based)``.
 
+``gap_pixels`` inserts :doc:`gap pixels <pyGapPixels>` while frames are
+assembled. Pass ``True`` for the defaults or a ``GapPixels``. ``rows()``,
+``cols()`` and every returned frame then include the gaps, for the full frame
+and for each ROI. Only Jungfrau and Eiger are supported; other detector
+types raise ``ValueError``. Headers are unchanged.
+
 .. autoclass:: RawFile
     :members:
     :undoc-members:

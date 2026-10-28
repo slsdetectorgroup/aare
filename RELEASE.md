@@ -17,6 +17,10 @@
   is set, gaps between modules. Gap positions follow detector coordinates
   before any ROI. Gap pixels receive a fill value or, with
   ``split_counts``, half of the neighbouring double size pixel.
+- ``RawFile`` takes a ``GapPixels`` configuration, in Python the
+  ``gap_pixels`` argument, and inserts gap pixels while frames are
+  assembled. ``rows()``, ``cols()`` and every returned frame then include
+  the gaps, for the full frame and for each ROI.
 
 ### Other:
 
