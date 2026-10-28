@@ -36,6 +36,7 @@ void bind_DataSetAggregation(pybind11::module_ &m) {
             mean_over_num_frames (int): The number of frames per sample to take mean over.
             num_processing_threads (int, optional): The number of threads to use for parallel computation. One thread reads, the others compute the mean. Defaults to 12.
             num_reader_threads (int, optional): The number of file workers the reader thread uses to load each sample. Defaults to 8.
+
         Returns:
         --------
             np.ndarray: A numpy array containing the mean frame stored as np.float64 for each sample with shape (rows, cols, num_samples).
