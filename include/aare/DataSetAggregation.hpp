@@ -294,12 +294,16 @@ NDArray<double, 3> block_mean(const std::filesystem::path &path,
 
 /**
  * @brief Compute the mean current source data from a Jungfrau detector file
+ * Spawns num_processing_threads + num_reader_threads + 1 threads in total.
  * @param path The path to the Jungfrau detector file.
  * @param num_samples The number of samples in the dataset e.g. exposure
  times
  * @param mean_over_num_frames The number of frames to mean over for each
  sample.
- * @param num_threads The number of threads to use for parallel computation.
+ * @param num_processing_threads The number of threads to use for parallel
+ computation. (default 12)
+ * @param num_reader_threads The number of threads to use for reading data.
+ (default 8)
  * @param file_offset The offset in the file to start reading from.
  * @return An NDArray containing the mean current source data stored as
  double for each sample. (rows, cols, num_samples)
@@ -308,7 +312,8 @@ NDArray<double, 3> block_mean(const std::filesystem::path &path,
 NDArray<double, 3> mean_current_source(const std::filesystem::path &path,
                                        const size_t num_samples,
                                        const size_t mean_over_num_frames,
-                                       const int num_threads = 16,
+                                       const size_t num_processing_threads = 12,
+                                       const size_t num_reader_threads = 8,
                                        size_t file_offset = 0);
 
 } // namespace aare

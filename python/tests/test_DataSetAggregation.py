@@ -46,7 +46,7 @@ def test_mean_current_source(create_temporary_jungfrau_files):
     # spread over several files to cross file boundaries mid sample
     file_system = create_temporary_jungfrau_files(num_frames, frame_generator, num_files=3)
 
-    result = mean_current_source(file_system, num_samples, mean_over_num_frames, 4, file_offset)
+    result = mean_current_source(file_system, num_samples = num_samples, mean_over_num_frames = mean_over_num_frames, num_processing_threads = 4, num_reader_threads = 3, file_offset = file_offset)
 
     assert result.shape == (rows, cols, num_samples)
 

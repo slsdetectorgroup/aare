@@ -88,7 +88,7 @@ TEST_CASE("mean_current_source", "[DataSetAggregation]") {
         3);
 
     auto result = mean_current_source(temp_files.file_path(), num_samples,
-                                      mean_over_num_frames, 4, file_offset);
+                                      mean_over_num_frames, 4, 3, file_offset);
 
     REQUIRE(result.shape(0) == rows);
     REQUIRE(result.shape(1) == cols);

@@ -23,7 +23,7 @@ static void DatasetAggregation_MeanCurrentSource(benchmark::State &st) {
 
     for (auto _ : st) {
         aare::NDArray<uint16_t, 3> res = aare::mean_current_source(
-            file_path, 10, 97, 16,
+            file_path, 10, 97, 12, 8,
             10 * 3 * 64); // 10 frames * 3 samples * 64 columns
 
         benchmark::DoNotOptimize(res);
