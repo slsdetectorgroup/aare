@@ -49,43 +49,21 @@ template <typename T> T string_to(const std::string &arg) {
 }
 
 /**
- * @brief Convert a string to DetectorType
- * @param name string representation of the DetectorType
- * @return DetectorType
- * @throw runtime_error if the string does not match any DetectorType
+ * @brief Convert a string to an enum value. Specialized for DetectorType,
+ * UDPPortPosition, TimingMode, FrameDiscardPolicy and DACIndex.
+ * @param arg string representation of the enum value
+ * @return the matching enum value
+ * @throw std::runtime_error if the string does not match any value
+ * (std::invalid_argument for DACIndex)
  */
 template <> DetectorType string_to(const std::string &arg);
 
-/**
- * @brief Convert a string to UDPPortPosition
- * @param name string representation of the UDPPortPosition
- * @return UDPPortPosition
- * @throw runtime_error if the string does not match any UDPPortPosition
- */
 template <> UDPPortPosition string_to(const std::string &arg);
 
-/**
- * @brief Convert a string to TimingMode
- * @param mode string representation of the TimingMode
- * @return TimingMode
- * @throw runtime_error if the string does not match any TimingMode
- */
 template <> TimingMode string_to(const std::string &arg);
 
-/**
- * @brief Convert a string to FrameDiscardPolicy
- * @param mode string representation of the FrameDiscardPolicy
- * @return FrameDiscardPolicy
- * @throw runtime_error if the string does not match any FrameDiscardPolicy
- */
 template <> FrameDiscardPolicy string_to(const std::string &arg);
 
-/**
- * @brief Convert a string to a DACIndex
- * @param arg string representation of the dacIndex
- * @return DACIndex
- * @throw invalid argument error if the string does not match any DACIndex
- */
 template <> DACIndex string_to(const std::string &arg);
 
 /**

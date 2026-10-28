@@ -49,6 +49,8 @@ class RawSubFile {
      * @param rows number of rows in the subfile
      * @param cols number of columns in the subfile
      * @param bitdepth bitdepth of the subfile
+     * @param pos_row row position of the subfile in the full detector image
+     * @param pos_col column position of the subfile in the full detector image
      * @throws std::invalid_argument if the detector,type pair is not supported
      */
     RawSubFile(const std::filesystem::path &fname, DetectorType detector,

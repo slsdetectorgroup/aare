@@ -173,6 +173,8 @@ class RawFile : public FileInterface {
      * @param frame_index frame number to read
      * @param frame_buffer buffer to store the frame
      * @param roi_index index of the ROI to read (default is 0 e.g. full frame)
+     * @param header if non-null, receives one DetectorHeader per module in
+     * the ROI
      */
     void get_frame_into(
         size_t frame_index, std::byte *frame_buffer, const size_t roi_index = 0,
@@ -180,7 +182,7 @@ class RawFile : public FileInterface {
 
     /**
      * @brief get the frame at the given frame index
-     * @param frame_number frame number to read
+     * @param frame_index frame number to read
      * @param roi_index index of the ROI to read (default is 0 e.g. full frame)
      * @return Frame
      */
