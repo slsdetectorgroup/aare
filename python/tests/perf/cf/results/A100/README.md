@@ -12,6 +12,8 @@ folder name says `evtrace-on`. Driver and git state of each run are in its
 | `2026-10-28_f64_lround` | f64 | `lround` | 20 000 / 2000 | 3x3, 9x9 at s1, s4 |
 | `2026-10-29_f32_round_b2000_f20K` | f32 | `round` | 20 000 / 2000 | 3x3 to 9x9 at s1, s4, s8 |
 | `2026-10-29_f32_round_b3000_f50K` | f32 | `round` | 50 000 / 3000 | 3x3 to 9x9 at s1, s4, s8 |
+| `2026-10-29_f32_round_throughput` | f32 | `round` | 20 000 / 2000 | unprofiled wall clock (`throughput.py`), 3x3 to 9x9 at s1, s4 |
+| `2026-10-29_f32_round_throughput_5x5` | f32 | `round` | 20 000 / 2000 | 5x5 rerun, 5 passes (first run disturbed by other jobs on the node) |
 
 `lround(float)` is emulated in software on the device and made the f32 9x9
 kernel 1.8x slower than f64. It was replaced by `round` in 104e284. The
