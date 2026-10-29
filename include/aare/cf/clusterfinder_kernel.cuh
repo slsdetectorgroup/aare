@@ -10,7 +10,7 @@ namespace aare::cuda::detail {
 /// Stencil arithmetic precision. Set both aliases to double for an f64 build.
 /// float is safe here because the device pedestal stores centered moments
 /// against a host-computed baseline: f32 and f64 agree to 3e-7 in cluster
-/// count, and f32 cuts the 9x9 kernel time by ~40%.
+/// count, and the f32 kernel is faster (fewer registers, higher occupancy).
 using COMPUTE_TYPE = float;
 /// Device pedestal storage and running variance update. See COMPUTE_TYPE.
 using DEVICE_PED_TYPE = float;
@@ -279,8 +279,11 @@ __global__ void find_clusters_in_single_frame(
 #pragma unroll
         for (int ic = -col_radius; ic <= col_radius; ++ic) {
             COMPUTE_TYPE val = shmem[shmem_tid + ir * TILE_W + ic];
+            // round, not lround: lround(float) is emulated in software on
+            // device (~2x the 9x9 kernel time); round(float) is a few
+            // instructions. Both round half away from zero, like the CPU path.
             if constexpr (std::is_integral_v<CT>)
-                dst[idx] = static_cast<CT>(lround(val));
+                dst[idx] = static_cast<CT>(round(val));
             else
                 dst[idx] = static_cast<CT>(val);
             idx++;
