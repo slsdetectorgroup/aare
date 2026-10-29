@@ -6,6 +6,11 @@
 
 namespace aare::cuda::detail {
 
+/// Accumulator layout. false: bin-major [nbins][npix]. true: pixel-major
+/// [npix][nbins], the layout values() returns, so readout only caps.
+/// Experiment switch: rebuild to change it.
+inline constexpr bool PIXEL_MAJOR = false;
+
 // Transposes the [nbins][npix] device histogram into [npix][nbins] and
 // saturates each count at saturation_value before narrowing to StorageType.
 // One thread per output element: writes are coalesced, reads are strided.
@@ -28,7 +33,9 @@ bin_to_pixel_major(const DeviceStorageType *__restrict__ d_histogram_binMajor,
     const size_t bin_id = g_tid - pix_id * nbins;
 
     const DeviceStorageType count =
-        d_histogram_binMajor[bin_id * npix + pix_id];
+        PIXEL_MAJOR ? d_histogram_binMajor[g_tid]
+                    : d_histogram_binMajor[bin_id * npix + pix_id];
+
     d_histogram_pixMajor[g_tid] = static_cast<StorageType>(
         count < saturation_value ? count : saturation_value);
 }
@@ -56,7 +63,10 @@ __global__ void fill_bin_major(const InputType *__restrict__ d_frames_batch,
 
         size_t bin_id = min(
             static_cast<size_t>((val_pix_at_fid - xmin) * scale), nbins - 1);
-        ++d_histogram[pix_id + npix * bin_id];
+        if constexpr (PIXEL_MAJOR)
+            ++d_histogram[pix_id * nbins + bin_id];
+        else
+            ++d_histogram[pix_id + npix * bin_id];
     }
 }
 
