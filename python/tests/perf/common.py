@@ -37,6 +37,19 @@ def _sh(cmd: str, default: str = "unknown") -> str:
     except Exception:
         return default
 
+def nsys_profile_flags() -> list[str]:
+    """`nsys profile` flags shared by every probe.
+
+    nsys 2025.1 traces CUDA events by default, which widens the host gaps
+    between steps (kernel times are unchanged). Older nsys rejects
+    --cuda-event-trace, so it is added only when the help text lists it.
+    """
+    flags = ["--trace=cuda", "--sample=none", "--cpuctxsw=none",
+             "--force-overwrite=true"]
+    if "--cuda-event-trace" in _sh(f"{NSYS} profile --help 2>&1", default=""):
+        flags.append("--cuda-event-trace=false")
+    return flags
+
 
 def assert_build_fresh(headers: list[str]) -> None:
     """Abort if any header (repo-relative path) is newer than the extension."""

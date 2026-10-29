@@ -33,21 +33,30 @@ HERE = Path(__file__).resolve().parent
 # The cap sets the D2H bar (the slot is copied whole regardless of fill), so a
 # probe at a different cap is a different measurement.
 CONFIGS = [
-    (3, 3000, 4, "3x3_s4"),
     (3, 3000, 1, "3x3_s1_uncontended"),
-    (9, 1700, 4, "9x9_s4"),
+    (3, 3000, 4, "3x3_s4"),
+    (3, 3000, 8, "3x3_s8"),
+    (5, 2350, 1, "5x5_s1_uncontended"),
+    (5, 2350, 4, "5x5_s4"),
+    (5, 2350, 8, "5x5_s8"),
+    (7, 2170, 1, "7x7_s1_uncontended"),
+    (7, 2170, 4, "7x7_s4"),
+    (7, 2170, 8, "7x7_s8"),
     (9, 1700, 1, "9x9_s1_uncontended"),
+    (9, 1700, 4, "9x9_s4"),
+    (9, 1700, 8, "9x9_s8"),
 ]
 
 
 def run_one(cdim, cap, streams, label, n_frames, batch, outdir) -> dict | None:
     rep = outdir / f"probe_{label}_cap{cap}"
     print(f"\n--- {label}: {cdim}x{cdim} cap={cap} streams={streams} N={n_frames} ---")
-
-    prof = [common.NSYS, "profile", "--trace=cuda", "--sample=none",
-            "--cpuctxsw=none", "--force-overwrite=true", "-o", str(rep),
+    
+    prof = [common.NSYS, "profile", *common.nsys_profile_flags(),
+            "-o", str(rep),
             sys.executable, str(HERE / "nsys_kernel_probe.py"),
             str(streams), str(n_frames), str(cdim), str(cap), str(batch)]
+
     p = subprocess.run(prof, capture_output=True, text=True)
     for line in p.stdout.splitlines():
         if line.strip().startswith(("n_streams", "H2D/frame", "wall")):
