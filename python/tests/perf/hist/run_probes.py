@@ -62,8 +62,8 @@ def run_one(dtype, n_bins, batch, label, n_frames, chunk, outdir) -> dict | None
     rep = outdir / f"probe_{label}"
     print(f"\n--- {label}: {dtype} frames, {n_bins} bins, batch={batch}, N={n_frames} ---")
 
-    prof = [common.NSYS, "profile", "--trace=cuda", "--sample=none",
-            "--cpuctxsw=none", "--force-overwrite=true", "-o", str(rep),
+    prof = [common.NSYS, "profile", *common.nsys_profile_flags(),
+            "-o", str(rep),
             sys.executable, str(HERE / "nsys_hist_probe.py"),
             dtype, str(n_frames), str(n_bins), str(batch), str(chunk)]
     p = subprocess.run(prof, capture_output=True, text=True)
