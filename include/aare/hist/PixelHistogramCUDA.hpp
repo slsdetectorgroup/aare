@@ -309,8 +309,8 @@ class PixelHistogramCUDA {
             /*dst     =*/pixel_hist.data(),
             /* dpitch =*/sizeof(DeviceStorageType), // destination stride
             /* src    =*/d_histogram.get() +
-                p, // d_histogram has a Bin-Major layout
-            /* spitch =*/nrows * ncols *
+                (detail::PIXEL_MAJOR ? p * m_nbins : p),
+            /* spitch =*/(detail::PIXEL_MAJOR ? 1 : nrows * ncols) *
                 sizeof(DeviceStorageType),          // source stride
             /* width  =*/sizeof(DeviceStorageType), // in bytes
             /* height =*/m_nbins,                   // number of rows
