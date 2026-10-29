@@ -29,6 +29,9 @@ configure_file("${CMAKE_CURRENT_SOURCE_DIR}/conf.py.in"
 
 file(COPY "${CMAKE_CURRENT_SOURCE_DIR}/figures" DESTINATION "${SPHINX_BUILD}")
 
+file(COPY "${CMAKE_CURRENT_SOURCE_DIR}/pybind_overloads.py"
+     DESTINATION "${SPHINX_BUILD}")
+
 configure_file("${CMAKE_CURRENT_SOURCE_DIR}/static/extra.css"
                "${SPHINX_BUILD}/static/css/extra.css" @ONLY)
 
