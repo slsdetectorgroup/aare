@@ -25,7 +25,15 @@ void known_pattern_transpose_and_cap_impl() {
         std::vector<uint32_t> pattern(npix * nbins);
         // Bin-major counts 0 .. npix * nbins - 1: within a bin, successive
         // pixels hold successive values; one pixel's bins are npix apart.
-        std::iota(pattern.begin(), pattern.end(), 0u);
+        if constexpr (detail::PIXEL_MAJOR) {
+            for (size_t p = 0; p < npix; ++p)
+                for (size_t b = 0; b < nbins; ++b)
+                    pattern[p * nbins + b] =
+                        static_cast<uint32_t>(b * npix + p);
+        } else {
+            std::iota(pattern.begin(), pattern.end(), 0u);
+        }
+
         // Copied on the compute stream: after the constructor's memset,
         // before values()'s transpose.
         CUDA_CHECK(cudaMemcpyAsync(
