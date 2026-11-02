@@ -13,10 +13,8 @@
 #
 import os
 import sys
-sys.path.insert(0, os.path.abspath('..'))
-sys.path.insert(0, os.path.abspath('.'))  # local extensions, e.g. pybind_overloads
+sys.path.insert(0, os.path.abspath(os.path.dirname(__file__))) # finds pybind_overloads.py 
 
-print(sys.path)
 
 # -- Project information -----------------------------------------------------
 
@@ -24,6 +22,7 @@ project = 'aare'
 copyright = '2024, CPS Detector Group'
 author = 'CPS Detector Group'
 version = '@PROJECT_VERSION@'
+release = '@PROJECT_VERSION@'
 
 # -- General configuration ---------------------------------------------------
 
@@ -62,6 +61,5 @@ html_theme = "furo"
 # so a file named "default.css" will overwrite the builtin "default.css".
 html_static_path = ['static']
 
-
 def setup(app):
-    app.add_css_file('css/extra.css')  # may also be an URL
+    app.add_css_file('extra.css')  # relative to _static/; may also be an URL
