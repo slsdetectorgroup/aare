@@ -60,7 +60,7 @@ NDArray<double, 3> mean_current_source(const std::filesystem::path &path,
     constexpr size_t num_buffers = 4; // TODO: random for now reading much
                                       // slower - small buffer is enough
 
-    BufferPool<NDArray<uint16_t, 3>> buffers(
+    RingBufferPool<NDArray<uint16_t, 3>> buffers(
         num_buffers, num_processing_threads,
         [&num_rows, &num_cols, &frames_per_sample] {
             return NDArray<uint16_t, 3>(

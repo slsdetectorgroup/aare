@@ -405,7 +405,8 @@ set(PUBLICHEADERS
     include/aare/to_string.hpp
     include/aare/utils/task.hpp
     include/aare/utils/ifstream_helpers.hpp
-    include/aare/utils/math_helpers.hpp)
+    include/aare/utils/math_helpers.hpp
+    include/aare/utils/RingBufferPool.hpp)
 
 set(SourceFiles
     ${CMAKE_CURRENT_SOURCE_DIR}/src/calibration.cpp
@@ -514,6 +515,7 @@ if(AARE_TESTS)
       ${CMAKE_CURRENT_SOURCE_DIR}/src/RawSubFile.test.cpp
       ${CMAKE_CURRENT_SOURCE_DIR}/src/ROI.test.cpp
       ${CMAKE_CURRENT_SOURCE_DIR}/src/utils/task.test.cpp
+      ${CMAKE_CURRENT_SOURCE_DIR}/src/utils/RingBufferPool.test.cpp
       ${CMAKE_CURRENT_SOURCE_DIR}/src/to_string.test.cpp)
   target_sources(tests PRIVATE ${TestSources})
 endif()
