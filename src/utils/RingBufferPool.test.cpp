@@ -31,7 +31,7 @@ TEST_CASE("RingBufferPool cant overwrite before all consumers release",
     const size_t next_buffer = pool_size; // This will wrap around to slot 0
     const size_t slot_to_write = next_buffer % pool_size;
     // Producer cannot acquire a write slot until all consumers have released it
-    std::thread producer_thread([&ring_buffer, next_buffer]() {
+    std::thread producer_thread([&ring_buffer, &next_buffer]() {
         int *buffer = ring_buffer.acquire_write(next_buffer);
         REQUIRE(buffer != nullptr);
         *buffer = static_cast<int>(next_buffer);
