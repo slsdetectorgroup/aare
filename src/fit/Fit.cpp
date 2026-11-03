@@ -135,6 +135,11 @@ template <typename Model> class PixelFitter {
     /**
      * @brief Fit one pixel.
      *
+     * @param model   Model and fit settings.
+     * @param x       Sample positions.
+     * @param y       Measured values at x.
+     * @param y_err   Uncertainties of y; an empty view gives an unweighted fit.
+     *                Points with zero error are skipped.
      * @param par_out Receives npar fitted values; zeros on failure.
      * @param err_out Receives npar errors when non-null; zeros on failure.
      * @param chi2    Receives the chi-squared at the minimum; 0 on failure.

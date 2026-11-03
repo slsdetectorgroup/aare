@@ -128,6 +128,7 @@ class Interpolator {
      * @param ix index of etaX bin
      * @param iy index of etaY bin
      * @param ie index of energy bin
+     * @param eta eta values of the cluster
      * @return pair of interpolated transformed eta values (ietax, ietay)
      */
     template <typename T>

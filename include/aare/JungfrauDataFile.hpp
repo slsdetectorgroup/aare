@@ -89,6 +89,7 @@ class JungfrauDataFile : public FileInterface {
     /**
      * @brief Read a single frame from the file into the given NDArray
      * @param image NDArray to read the frame into.
+     * @param header pointer to a JungfrauDataHeader or nullptr (to skip header)
      */
     void read_into(NDArray<uint16_t> *image,
                    JungfrauDataHeader *header = nullptr);

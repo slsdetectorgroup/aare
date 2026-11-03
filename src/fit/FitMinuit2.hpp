@@ -14,6 +14,10 @@ namespace aare::detail {
 /**
  * @brief Fit one pixel with the Minuit2 minimizer selected by the model.
  *
+ * @param model    Model and fit settings.
+ * @param x        Sample positions.
+ * @param y        Measured values at x.
+ * @param y_err    Uncertainties of y; an empty view gives an unweighted fit.
  * @param start    Starting values, see start_values() in FitHelpers.hpp.
  * @param par_out  Receives npar fitted values; zeros on failure.
  * @param err_out  Receives npar errors when non-null; zeros on failure.
