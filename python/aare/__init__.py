@@ -75,3 +75,4 @@ from ._aare import (
 )
 
 from . import strixelremap 
+from ._aare import block_mean, mean_current_source 

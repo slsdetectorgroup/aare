@@ -11,6 +11,7 @@
 #include "bind_ClusterFinder.hpp"
 #include "bind_ClusterFinderMT.hpp"
 #include "bind_ClusterVector.hpp"
+#include "bind_DataSetAggregation.hpp"
 #include "bind_Defs.hpp"
 #include "bind_Eta.hpp"
 #include "bind_FastPedestal.hpp"
@@ -208,4 +209,7 @@ PYBIND11_MODULE(_aare, m) {
     DEFINE_BINDINGS_STRIXELPIXELMAP(2, 1); // quad iLGAD sensor
     define_predefinedConfigs(strixelremap);
     define_predefinedStrixelPixelMaps(strixelremap);
+    bind_DataSetAggregation<uint16_t>(m);
+
+    bind_read_current_source(m);
 }

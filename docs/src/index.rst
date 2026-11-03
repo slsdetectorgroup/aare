@@ -33,6 +33,7 @@ AARE
     python/pedestal/index
     python/strixelremap/index
     pyFit
+    pyDataSetAggregation
     
 
 
@@ -61,6 +62,7 @@ AARE
     RawMasterFile
     VarClusterFinder
     StrixelPixelRemapping/index
+    DataSetAggregation
 
 
 
