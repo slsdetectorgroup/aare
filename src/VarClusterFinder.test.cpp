@@ -395,6 +395,73 @@ TEST_CASE("The input is left untouched unless erase_clusters is enabled",
         }
         CHECK(copy(3, 5) == 0.0);
     }
+    SECTION("Zeroing does not change the hits with a lower neighbour "
+            "threshold") {
+        NDArray<double, 2> two({8, 12}, 1.0);
+        add_cluster(two, 3, 3);
+        add_cluster(two, 3, 7);
+        two(1, 3) = 7.0; // joins the first cluster as a neighbour only
+        NDArray<double, 2> copy(two);
+
+        Finder plain({8, 12}, 10.0);
+        plain.set_neighbour_threshold(5.0);
+        plain.find_clusters(two.view());
+        Finder zeroing({8, 12}, 10.0);
+        zeroing.set_neighbour_threshold(5.0);
+        zeroing.set_erase_clusters(true);
+        zeroing.find_clusters(copy.view());
+
+        const auto a = plain.steal_hits();
+        const auto b = zeroing.steal_hits();
+        REQUIRE(a.size() == 2);
+        REQUIRE(b.size() == 2);
+        CHECK(a.hits[0].size == 10);
+        for (size_t i = 0; i < a.size(); ++i) {
+            CHECK(a.hits[i].size == b.hits[i].size);
+            CHECK(a.hits[i].energy == b.hits[i].energy);
+            CHECK(pixels_of(a, i) == pixels_of(b, i));
+        }
+    }
+}
+
+TEST_CASE("Erasing requires 0 <= neighbour threshold <= seed threshold",
+          "[varcluster]") {
+    NDArray<double, 2> img({8, 8}, 0.0);
+    add_cluster(img, 3, 3);
+    const NDArray<double, 2> original(img);
+    Finder finder({8, 8}, 10.0);
+    finder.set_erase_clusters(true);
+
+    SECTION("Neighbour threshold above the seed threshold") {
+        finder.set_neighbour_threshold(30.0);
+        CHECK_THROWS_AS(finder.find_clusters(img.view()), std::runtime_error);
+        CHECK(img == original); // rejected before touching anything
+        CHECK(finder.total_clusters() == 0);
+        finder.set_erase_clusters(false);
+        CHECK_NOTHROW(finder.find_clusters(img.view()));
+    }
+    SECTION("Negative seed threshold") {
+        finder.set_threshold(-5.0);
+        CHECK_THROWS_AS(finder.find_clusters(img.view()), std::runtime_error);
+    }
+    SECTION("Negative neighbour threshold") {
+        finder.set_neighbour_threshold(-1.0);
+        CHECK_THROWS_AS(finder.find_clusters(img.view()), std::runtime_error);
+    }
+    SECTION("Neighbour factor above the seed factor") {
+        NDArray<double, 2> noise({8, 8}, 1.0);
+        finder.set_noise_map(noise.view());
+        finder.set_neighbour_factor(6.0);
+        CHECK_THROWS_AS(finder.find_clusters(img.view()), std::runtime_error);
+    }
+    SECTION("Negative noise") {
+        NDArray<double, 2> noise({8, 8}, 1.0);
+        noise(7, 7) = -1.0;
+        finder.set_noise_map(noise.view());
+        CHECK_THROWS_AS(finder.find_clusters(img.view()), std::runtime_error);
+        finder.clear_noise_map();
+        CHECK_NOTHROW(finder.find_clusters(img.view()));
+    }
 }
 
 TEST_CASE("Masked pixels never seed and are never added to a cluster",

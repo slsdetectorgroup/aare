@@ -95,8 +95,11 @@ the constructor and leaves it untouched. With ``erase_clusters = True`` the
 clusters are erased from the frame as the fill visits them: every cluster
 pixel is set to zero, and so are the sub-threshold neighbours around it,
 because charge that leaked below threshold would otherwise bias a pedestal
-updated from the erased frame. A zeroed pixel compares as zero for the rest
-of the frame, which only matters for negative thresholds.
+updated from the erased frame. Erasing requires
+0 <= ``neighbour_threshold`` <= ``threshold`` (with a noise map,
+0 <= ``neighbour_factor`` <= ``seed_factor`` and no negative noise), so that
+it never changes the hits; ``find_clusters`` raises ``RuntimeError``
+otherwise.
 
 .. py:currentmodule:: aare
 

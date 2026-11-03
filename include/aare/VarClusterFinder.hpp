@@ -46,8 +46,10 @@ namespace aare {
  * in which case every cluster pixel, and also every sub-threshold neighbour
  * the fill examined around it, is set to zero as it is visited. The ring is
  * included so that a pedestal updated from the erased frame sees no charge
- * that leaked out of the cluster. A zeroed pixel compares as zero for the
- * rest of the frame, which only matters for negative thresholds.
+ * that leaked out of the cluster. Erasing requires 0 <= neighbour threshold
+ * <= seed threshold at every pixel (with a noise map: 0 <= neighbour factor
+ * <= seed factor and no negative noise), so that it never changes the hits;
+ * find_clusters() throws otherwise.
  *
  * @tparam T Pixel type of the image and the noise map.
  */
@@ -118,6 +120,7 @@ template <typename T> class VarClusterFinder {
     T threshold_;
     std::optional<T> neighbour_threshold_; // follows threshold_ when unset
     std::optional<NDArray<T, 2>> noise_map_;
+    bool noise_map_has_negative_ = false;
     // Label image template: -1 on masked pixels, 0 elsewhere
     std::optional<NDArray<int32_t, 2>> masked_labels_;
     T seed_factor_ = 5;
@@ -166,10 +169,16 @@ template <typename T> class VarClusterFinder {
     void set_noise_map(NDView<const T, 2> noise_map) {
         check_shape(noise_map.shape(), "noise map");
         noise_map_.emplace(noise_map);
+        noise_map_has_negative_ =
+            std::any_of(noise_map_->begin(), noise_map_->end(),
+                        [](T v) { return v < T{}; });
     }
 
     /** @brief Drop the noise map and use the fixed threshold again. */
-    void clear_noise_map() { noise_map_.reset(); }
+    void clear_noise_map() {
+        noise_map_.reset();
+        noise_map_has_negative_ = false;
+    }
 
     /** @brief The noise map, or nothing while the fixed threshold is used. */
     const std::optional<NDArray<T, 2>> &noise_map() const { return noise_map_; }
@@ -252,7 +261,9 @@ template <typename T> class VarClusterFinder {
      * @brief Erase the clusters from the input image while processing a
      * frame (default off): every cluster pixel and the sub-threshold
      * neighbours around it are set to zero, so that a pedestal updated from
-     * the frame afterwards is not biased by the clusters.
+     * the frame afterwards is not biased by the clusters. Requires
+     * 0 <= neighbour threshold <= seed threshold; find_clusters() throws
+     * otherwise.
      */
     void set_erase_clusters(bool erase) { erase_clusters_ = erase; }
     /** @brief Whether clusters are erased from the input image. */
@@ -261,10 +272,14 @@ template <typename T> class VarClusterFinder {
     /**
      * @brief Find the clusters in one frame and append them to the hits.
      * @param img Image of the shape given to the constructor.
-     * @throws std::runtime_error if the shape does not match.
+     * @throws std::runtime_error if the shape does not match, or if erasing
+     * is enabled and the thresholds do not satisfy
+     * 0 <= neighbour threshold <= seed threshold (see set_erase_clusters()).
      */
     void find_clusters(NDView<T, 2> img) {
         check_shape(img.shape(), "image");
+        if (erase_clusters_)
+            check_erase_thresholds();
         if (noise_map_)
             find_clusters_impl(img,
                                NoiseThreshold{noise_map_->data(), seed_factor_,
@@ -296,6 +311,32 @@ template <typename T> class VarClusterFinder {
                 fmt::format("{} shape ({}, {}) does not match the finder "
                             "shape ({}, {})",
                             what, shape[0], shape[1], shape_[0], shape_[1]));
+    }
+
+    // Erasing must not change the hits: a zeroed pixel has to fail both
+    // tests, and a pixel rejected as a neighbour must not pass as a seed.
+    // Both hold when 0 <= neighbour(i) <= seed(i) for every pixel.
+    void check_erase_thresholds() const {
+        if (noise_map_) {
+            if (!(0 <= neighbour_factor_ && neighbour_factor_ <= seed_factor_))
+                throw std::runtime_error(
+                    LOCATION +
+                    fmt::format("erase_clusters requires 0 <= neighbour "
+                                "factor ({}) <= seed factor ({})",
+                                neighbour_factor_, seed_factor_));
+            if (noise_map_has_negative_)
+                throw std::runtime_error(LOCATION +
+                                         "erase_clusters requires a noise map "
+                                         "without negative values");
+        } else {
+            const T neighbour = neighbour_threshold();
+            if (!(T{} <= neighbour && neighbour <= threshold_))
+                throw std::runtime_error(
+                    LOCATION +
+                    fmt::format("erase_clusters requires 0 <= neighbour "
+                                "threshold ({}) <= threshold ({})",
+                                neighbour, threshold_));
+        }
     }
 
     template <class Threshold>
