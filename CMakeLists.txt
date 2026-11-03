@@ -388,6 +388,7 @@ set(PUBLICHEADERS
     include/aare/ROI.hpp
     include/aare/ROIGeometry.hpp
     include/aare/DetectorGeometry.hpp
+    include/aare/DataSetAggregation.hpp
     include/aare/GapPixels.hpp
     include/aare/JungfrauDataFile.hpp
     include/aare/logger.hpp
@@ -404,7 +405,8 @@ set(PUBLICHEADERS
     include/aare/to_string.hpp
     include/aare/utils/task.hpp
     include/aare/utils/ifstream_helpers.hpp
-    include/aare/utils/math_helpers.hpp)
+    include/aare/utils/math_helpers.hpp
+    include/aare/utils/RingBufferPool.hpp)
 
 set(SourceFiles
     ${CMAKE_CURRENT_SOURCE_DIR}/src/calibration.cpp
@@ -416,6 +418,7 @@ set(SourceFiles
     ${CMAKE_CURRENT_SOURCE_DIR}/src/DetectorGeometry.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/src/GapPixels.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/src/hist/PedestalTrackingPixelHistogram.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/DataSetAggregation.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/src/Dtype.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/src/File.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/src/FilePtr.cpp
@@ -460,7 +463,7 @@ if(AARE_TESTS)
 endif()
 if(AARE_VERBOSE)
   target_compile_definitions(aare_core PUBLIC AARE_VERBOSE)
-  target_compile_definitions(aare_core PUBLIC AARE_LOG_LEVEL=aare::logDEBUG5)
+  target_compile_definitions(aare_core PUBLIC AARE_LOG_LEVEL=aare::logDEBUG)
 else()
   target_compile_definitions(aare_core PUBLIC AARE_LOG_LEVEL=aare::logWARNING)
 endif()
@@ -475,6 +478,7 @@ set_target_properties(aare_core PROPERTIES ARCHIVE_OUTPUT_DIRECTORY
 if(AARE_TESTS)
   set(TestSources
       ${CMAKE_CURRENT_SOURCE_DIR}/tests/raw_file_helpers.hpp
+      ${CMAKE_CURRENT_SOURCE_DIR}/tests/jungfrau_file_helpers.hpp
       ${CMAKE_CURRENT_SOURCE_DIR}/src/algorithm.test.cpp
       ${CMAKE_CURRENT_SOURCE_DIR}/src/calibration.test.cpp
       ${CMAKE_CURRENT_SOURCE_DIR}/src/defs.test.cpp
@@ -484,6 +488,7 @@ if(AARE_TESTS)
       ${CMAKE_CURRENT_SOURCE_DIR}/src/fit/Fit.test.cpp
       ${CMAKE_CURRENT_SOURCE_DIR}/src/Frame.test.cpp
       ${CMAKE_CURRENT_SOURCE_DIR}/src/DetectorGeometry.test.cpp
+      ${CMAKE_CURRENT_SOURCE_DIR}/src/DataSetAggregation.test.cpp
       ${CMAKE_CURRENT_SOURCE_DIR}/src/GapPixels.test.cpp
       ${CMAKE_CURRENT_SOURCE_DIR}/src/Interpolation.test.cpp
       ${CMAKE_CURRENT_SOURCE_DIR}/src/RawMasterFile.test.cpp
@@ -510,6 +515,7 @@ if(AARE_TESTS)
       ${CMAKE_CURRENT_SOURCE_DIR}/src/RawSubFile.test.cpp
       ${CMAKE_CURRENT_SOURCE_DIR}/src/ROI.test.cpp
       ${CMAKE_CURRENT_SOURCE_DIR}/src/utils/task.test.cpp
+      ${CMAKE_CURRENT_SOURCE_DIR}/src/utils/RingBufferPool.test.cpp
       ${CMAKE_CURRENT_SOURCE_DIR}/src/to_string.test.cpp)
   target_sources(tests PRIVATE ${TestSources})
 endif()
