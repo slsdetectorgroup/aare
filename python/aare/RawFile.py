@@ -4,7 +4,7 @@ import numpy as np
 from .ScanParameters import ScanParameters
 
 class RawFile(_aare.RawFile):
-    def __init__(self, fname, chunk_size = 1, gap_pixels = False):
+    def __init__(self, fname, chunk_size = 1, gap_pixels = False, strixeltransform : list = None):
         """Open a raw file for reading.
 
         Args:
@@ -14,6 +14,7 @@ class RawFile(_aare.RawFile):
                 default GapPixels configuration, or pass a GapPixels. Frame
                 shapes then include the gaps. Only Jungfrau and Eiger are
                 supported.
+            strixeltransform: List of strixeltransform objects to apply to the data. (default None)
         """
         super().__init__(fname, gap_pixels)
         self._chunk_size = chunk_size
