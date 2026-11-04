@@ -11,6 +11,7 @@
 #include <limits>
 #include <optional>
 #include <stdexcept>
+#include <type_traits>
 #include <utility>
 #include <vector>
 
@@ -27,7 +28,8 @@ namespace aare {
  * to the constructor for seeds and, once set_neighbour_threshold() is used,
  * a separate one for neighbours. With a noise map they are per-pixel
  * multiples of the noise: the seed factor times the noise for seeds and the
- * neighbour factor times the noise for neighbours, both 5 by default.
+ * neighbour factor times the noise for neighbours, both 5 by default. The
+ * factors are floating point for every pixel type, see Factor.
  *
  * The clusters are collected in a Hits structure: one Hit per cluster with
  * the pixel count, the summed energy and the position and value of the
@@ -95,6 +97,14 @@ template <typename T> class VarClusterFinder {
         }
     };
 
+    /**
+     * @brief Type of the threshold factors and of the thresholds derived
+     * from the noise map: the pixel type for floating point images, double
+     * for integer images so that fractional factors are not truncated and
+     * the product with the noise cannot overflow the pixel type.
+     */
+    using Factor = std::conditional_t<std::is_floating_point_v<T>, T, double>;
+
   private:
     struct FixedThreshold {
         T seed_value;
@@ -105,10 +115,12 @@ template <typename T> class VarClusterFinder {
 
     struct NoiseThreshold {
         const T *noise;
-        T seed_factor;
-        T neighbour_factor;
-        T seed(ssize_t i) const { return seed_factor * noise[i]; }
-        T neighbour(ssize_t i) const { return neighbour_factor * noise[i]; }
+        Factor seed_factor;
+        Factor neighbour_factor;
+        Factor seed(ssize_t i) const { return seed_factor * noise[i]; }
+        Factor neighbour(ssize_t i) const {
+            return neighbour_factor * noise[i];
+        }
     };
 
     static constexpr size_t initial_hit_capacity = 2000;
@@ -120,8 +132,8 @@ template <typename T> class VarClusterFinder {
     std::optional<NDArray<T, 2>> noise_map_;
     // Label image template: -1 on masked pixels, 0 elsewhere
     std::optional<NDArray<int32_t, 2>> masked_labels_;
-    T seed_factor_ = 5;
-    T neighbour_factor_ = 5;
+    Factor seed_factor_ = 5;
+    Factor neighbour_factor_ = 5;
     int connectivity_ = 8;
     bool erase_clusters_ = false;
     NDArray<int32_t, 2> labels_;
@@ -225,15 +237,21 @@ template <typename T> class VarClusterFinder {
         return neighbour_threshold_.value_or(threshold_);
     }
 
-    /** @brief Seed threshold in units of the noise map (default 5). */
-    void set_seed_factor(T factor) { seed_factor_ = factor; }
+    /**
+     * @brief Seed threshold in units of the noise map (default 5), floating
+     * point for every pixel type.
+     */
+    void set_seed_factor(Factor factor) { seed_factor_ = factor; }
     /** @brief The seed threshold factor. */
-    T seed_factor() const { return seed_factor_; }
+    Factor seed_factor() const { return seed_factor_; }
 
-    /** @brief Neighbour threshold in units of the noise map (default 5). */
-    void set_neighbour_factor(T factor) { neighbour_factor_ = factor; }
+    /**
+     * @brief Neighbour threshold in units of the noise map (default 5),
+     * floating point for every pixel type.
+     */
+    void set_neighbour_factor(Factor factor) { neighbour_factor_ = factor; }
     /** @brief The neighbour threshold factor. */
-    T neighbour_factor() const { return neighbour_factor_; }
+    Factor neighbour_factor() const { return neighbour_factor_; }
 
     /**
      * @brief Grow clusters through 4 or 8 connected neighbours (default 8).

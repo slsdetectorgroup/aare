@@ -49,8 +49,9 @@
   gone. Hits are returned in scan order. The threshold factors are
   ``set_seed_factor`` and ``set_neighbour_factor`` in C++ and the
   ``seed_factor`` and ``neighbour_factor`` properties in Python; they take
-  floating point values and the seed factor is configurable instead of
-  being fixed to 5.
+  floating point values for every pixel type, where the factor and its
+  product with the noise used to be truncated to the pixel type, and the
+  seed factor is configurable instead of being fixed to 5.
   The noise map setters are ``set_noise_map`` and ``clear_noise_map`` in
   C++; in Python the noise map is the ``noise_map`` property, ``None`` to
   return to the fixed threshold, and ``labeled`` is a property instead of

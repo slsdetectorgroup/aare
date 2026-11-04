@@ -13,7 +13,8 @@ using Hits = Finder::Hits;
 
 namespace {
 
-std::set<std::pair<int, int>> pixels_of(const Hits &hits, size_t i) {
+template <class H>
+std::set<std::pair<int, int>> pixels_of(const H &hits, size_t i) {
     const auto &hit = hits.hits[i];
     std::set<std::pair<int, int>> pixels;
     for (int64_t k = hit.offset; k < hit.offset + hit.size; ++k)
@@ -230,6 +231,65 @@ TEST_CASE("Noise map thresholds: seeds and neighbours use their own factors",
     SECTION("A noise map of the wrong shape is rejected") {
         NDArray<double, 2> wrong({8, 9}, 1.0);
         CHECK_THROWS_AS(finder.set_noise_map(wrong.view()), std::runtime_error);
+    }
+}
+
+TEST_CASE("Noise factors are floating point for integer images",
+          "[varcluster]") {
+    SECTION("A fractional seed factor is not truncated") {
+        // Noise 2 and seed factor 2.5 give a threshold of 5: the pixel of
+        // value 5 is not above it, the pixel of value 6 is. A factor
+        // truncated to 2 would accept both.
+        NDArray<int32_t, 2> img({4, 4}, 0);
+        img(1, 1) = 5;
+        img(2, 3) = 6;
+        NDArray<int32_t, 2> noise({4, 4}, 2);
+        VarClusterFinder<int32_t> finder({4, 4}, 1);
+        finder.set_noise_map(noise.view());
+        finder.set_seed_factor(2.5);
+        CHECK(finder.seed_factor() == 2.5);
+        finder.find_clusters(img.view());
+        auto hits = finder.steal_hits();
+        REQUIRE(hits.size() == 1);
+        CHECK(hits.hits[0].row == 2);
+        CHECK(hits.hits[0].col == 3);
+        CHECK(hits.hits[0].max == 6);
+    }
+    SECTION("A fractional neighbour factor is not truncated") {
+        // Noise 2 and neighbour factor 1.5 give a threshold of 3: the
+        // neighbour of value 4 joins the cluster, the one of value 3 does
+        // not. A factor truncated to 1 would take both.
+        NDArray<int32_t, 2> img({4, 4}, 0);
+        img(1, 1) = 20;
+        img(1, 2) = 3;
+        img(2, 1) = 4;
+        NDArray<int32_t, 2> noise({4, 4}, 2);
+        VarClusterFinder<int32_t> finder({4, 4}, 1);
+        finder.set_noise_map(noise.view());
+        finder.set_neighbour_factor(1.5);
+        CHECK(finder.neighbour_factor() == 1.5);
+        finder.find_clusters(img.view());
+        auto hits = finder.steal_hits();
+        REQUIRE(hits.size() == 1);
+        CHECK(hits.hits[0].size == 2);
+        CHECK(pixels_of(hits, 0) ==
+              std::set<std::pair<int, int>>{{1, 1}, {2, 1}});
+        CHECK(hits.hits[0].energy == 24);
+    }
+    SECTION("The threshold does not wrap around in a narrow pixel type") {
+        // 5 times a noise of 20000 is 100000, which does not fit uint16_t.
+        // Wrapped to the pixel type it would be 34464, below the pixel.
+        NDArray<uint16_t, 2> img({4, 4}, 0);
+        img(1, 1) = 40000;
+        VarClusterFinder<uint16_t> finder({4, 4}, 1);
+        NDArray<uint16_t, 2> noise({4, 4}, 20000);
+        finder.set_noise_map(noise.view());
+        finder.find_clusters(img.view());
+        CHECK(finder.total_clusters() == 0);
+        NDArray<uint16_t, 2> small_noise({4, 4}, 2000); // threshold 10000
+        finder.set_noise_map(small_noise.view());
+        finder.find_clusters(img.view());
+        CHECK(finder.total_clusters() == 1);
     }
 }
 
