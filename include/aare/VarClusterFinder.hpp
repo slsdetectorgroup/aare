@@ -322,11 +322,13 @@ template <typename T> class VarClusterFinder {
         };
 
         // Most pixels are below threshold. A vectorisable check per block
-        // skips them without entering the per-pixel loop.
+        // skips them without entering the per-pixel loop. The flag is an int
+        // rather than a bool because gcc does not vectorise a bool
+        // OR-reduction.
         constexpr ssize_t block = 32;
         ssize_t start = 0;
         for (; start + block <= n_pixels; start += block) {
-            bool any = false;
+            int any = 0;
             for (ssize_t k = 0; k < block; ++k)
                 any |= pixels[start + k] > thr.seed(start + k);
             if (any)

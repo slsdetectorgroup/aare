@@ -62,8 +62,9 @@
 - ``RawFile`` assembles multi-module frames through one placement path with
   a scratch buffer allocated once at open, instead of allocating a module
   buffer for every frame.
-- ``VarClusterFinder`` scans sparse frames about four times faster and
-  fills clusters about twice as fast.
+- ``VarClusterFinder`` is several times faster than the previous flood fill,
+  on empty frames and on frames with thousands of clusters alike; see
+  ``benchmarks/varclusterfinder_benchmark.cpp``.
 
 ### Bugfixes:
 
