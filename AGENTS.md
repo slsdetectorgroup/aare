@@ -172,10 +172,12 @@ agree; run them when changing any solver.
 
 - `python/src/module.cpp` only calls the registration entry points declared
   in `bindings.hpp`, in a fixed order (overload docstrings follow it). The
-  bindings themselves are compiled in parallel translation units:
-  `bind_io.cpp` (files, geometry, pixel maps, calibration, test probes),
-  `bind_hist.cpp`, `bind_pedestal.cpp`, `bind_fit.cpp`, `bind_eta.cpp`, and
-  one `bind_cluster_NxN.cpp` per cluster size. Templated classes are
+  bindings themselves are compiled in parallel translation units, one per
+  domain: `bind_io.cpp` (file readers), `bind_core.cpp` (detector
+  definitions, geometry, pixel maps, test probes), `bind_hist.cpp`,
+  `bind_pedestal.cpp` (pedestals and calibration), `bind_fit.cpp`,
+  `bind_eta.cpp`, `bind_cluster_var.cpp`, and one `bind_cluster_NxN.cpp`
+  per cluster size. Templated classes are
   instantiated per value type and cluster size through the
   `DEFINE_CLUSTER_BINDINGS` and `DEFINE_BINDINGS_CLUSTERFINDER` macros in
   `bind_cluster_common.hpp`, producing names such as

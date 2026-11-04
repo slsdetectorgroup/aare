@@ -32,10 +32,12 @@ pybind11_add_module(
   NO_EXTRAS
   src/module.cpp
   src/bind_io.cpp
+  src/bind_core.cpp
   src/bind_hist.cpp
   src/bind_pedestal.cpp
   src/bind_fit.cpp
   src/bind_eta.cpp
+  src/bind_cluster_var.cpp
   src/bind_cluster_2x2.cpp
   src/bind_cluster_3x3.cpp
   src/bind_cluster_5x5.cpp

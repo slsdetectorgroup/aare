@@ -8,28 +8,29 @@
 
 namespace py = pybind11;
 
-// bind_io.cpp (functions defined in the individual bind_*.hpp headers)
+// bind_io.cpp: file readers (functions defined in the individual headers)
 void define_file_io_bindings(py::module &m);
 void define_multi_threaded_file_reader_bindings(py::module &m);
 void define_raw_file_io_bindings(py::module &m);
 void define_raw_sub_file_io_bindings(py::module &m);
 void define_ctb_raw_file_io_bindings(py::module &m);
 void define_raw_master_file_bindings(py::module &m);
-void define_var_cluster_finder_bindings(py::module &m);
-void define_pixel_map_bindings(py::module &m);
 void define_jungfrau_data_file_io_bindings(py::module &m);
-void bind_calibration(py::module &m);
-void define_testing_bindings(py::module &m);
+void bind_dataset_aggregation(py::module &m);
+
+// bind_core.cpp: detector definitions, geometry, pixel maps and test probes
 void define_defs_bindings(py::module &m);
 void define_gap_pixels_bindings(py::module &m);
-void bind_dataset_aggregation(py::module &m);
+void define_pixel_map_bindings(py::module &m);
+void define_testing_bindings(py::module &m);
 
 // bind_hist.cpp
 void define_pixel_histogram_bindings(py::module &m);
 void define_pedestal_tracking_pixel_histogram_bindings(py::module &m);
 
-// bind_pedestal.cpp
+// bind_pedestal.cpp: pedestals and calibration
 void bind_pedestals(py::module &m);
+void bind_calibration(py::module &m);
 
 // bind_fit.cpp
 void define_fit_bindings(py::module &m);
@@ -53,6 +54,9 @@ void bind_cluster_reductions_5x5(py::module &m);
 void bind_cluster_reductions_7x7(py::module &m);
 void bind_cluster_reductions_9x9(py::module &m);
 void bind_eta_3x3(py::module &m);
+
+// bind_cluster_var.cpp
+void define_var_cluster_finder_bindings(py::module &m);
 
 // bind_eta.cpp
 void bind_eta_types(py::module &m);
