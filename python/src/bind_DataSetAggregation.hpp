@@ -1,4 +1,5 @@
 #include "aare/DataSetAggregation.hpp"
+#include "np_helper.hpp"
 
 #include <pybind11/pybind11.h>
 
