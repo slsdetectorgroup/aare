@@ -134,6 +134,22 @@ def test_erase_clusters_zeroes_cluster_and_ring():
     assert np.array_equal(img, expected)
 
 
+def test_erase_clusters_requires_ordered_non_negative_thresholds():
+    img = frame_with_cluster()
+    cf = VarClusterFinder((8, 8), 10.0)
+    cf.erase_clusters = True
+    cf.neighbour_threshold = 30.0
+    with pytest.raises(RuntimeError, match="erase_clusters requires"):
+        cf.find_clusters(img)
+    assert img[3, 4] == 100.0  # rejected before touching anything
+    cf.neighbour_threshold = None
+    noise = np.ones((8, 8))
+    noise[0, 0] = -1.0
+    cf.noise_map = noise
+    with pytest.raises(RuntimeError, match="negative"):
+        cf.find_clusters(img)
+
+
 def test_labeled_image():
     img = frame_with_cluster()
     img[7, 0] = 50.0

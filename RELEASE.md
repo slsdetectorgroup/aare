@@ -40,7 +40,10 @@
   modified unless erasing is enabled (``set_erase_clusters`` in C++, the
   ``erase_clusters`` property in Python, replacing
   ``set_empty_surroundingPixels``), which now zeroes both the cluster
-  pixels and their sub-threshold neighbours.
+  pixels and their sub-threshold neighbours. Erasing requires
+  0 <= neighbour threshold <= seed threshold (with a noise map, ordered
+  non-negative factors and no negative noise) so that it never changes
+  the hits; ``find_clusters`` raises an error otherwise.
   Hits are stored in an offset layout instead of one 624 byte record per
   cluster: ``steal_hits`` returns a ``Hits`` structure (``VarClusterHits``
   in Python) with one 32 byte record per cluster (``size``, ``row``,

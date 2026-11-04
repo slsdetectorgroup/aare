@@ -189,7 +189,10 @@ per pixel multiples of the noise, ``seed_factor`` and ``neighbour_factor``.)")
             "Erase the clusters from the input image while processing a "
             "frame (default False): every cluster pixel and the sub-threshold "
             "neighbours around it are set to zero, so that a pedestal updated "
-            "from the frame afterwards is not biased by the clusters.")
+            "from the frame afterwards is not biased by the clusters. "
+            "Requires 0 <= neighbour threshold <= threshold (with a noise "
+            "map: 0 <= neighbour_factor <= seed_factor and no negative "
+            "noise); find_clusters raises RuntimeError otherwise.")
         .def(
             "find_clusters",
             [](Finder &self, py::array_t<double> img) {
