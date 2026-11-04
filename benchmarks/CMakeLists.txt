@@ -24,6 +24,7 @@ target_sources(
           calculateeta_benchmark.cpp
           reduce_benchmark.cpp
           clusterfile_benchmark.cpp
+          DataSetAggregation_benchmark.cpp
           rawfile_benchmark.cpp
           varclusterfinder_benchmark.cpp)
 

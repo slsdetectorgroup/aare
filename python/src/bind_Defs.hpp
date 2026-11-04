@@ -31,6 +31,9 @@ void define_defs_bindings(py::module &m) {
     moench05.attr("nCols") = Moench05::nCols;
     moench05.attr("adcNumbers") = Moench05::adcNumbers;
 
+    auto jungfrau = py::class_<Jungfrau>(m, "Jungfrau");
+    jungfrau.attr("nRows") = Jungfrau::nRows;
+    jungfrau.attr("nCols") = Jungfrau::nCols;
     py::class_<ROI>(m, "ROI")
         .def(py::init<>())
         .def(py::init<ssize_t, ssize_t, ssize_t, ssize_t>(), py::arg("xmin"),
