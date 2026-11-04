@@ -20,7 +20,8 @@ namespace aare {
 
 PedestalTrackingPixelHistogram::PedestalTrackingPixelHistogram(
     int rows, int cols, int n_bins, AxisType xmin, AxisType xmax, int n_threads,
-    std::size_t max_pending, AxisType n_sigma)
+    std::size_t max_pending, AxisType n_sigma,
+    std::optional<const NDView<bool, 2>> mask)
     : rows_(rows), cols_(cols), n_threads_(n_threads), xmin_(xmin), xmax_(xmax),
       current_work_kind_(WorkKind::FillWithThreshold), current_image_(nullptr),
       current_images_(nullptr), completed_threads_(0), stop_workers_(false),
@@ -62,6 +63,16 @@ PedestalTrackingPixelHistogram::PedestalTrackingPixelHistogram(
     partial_hists_.reserve(n_threads_);
     partial_pedestals_.reserve(n_threads_);
     partial_std_.reserve(n_threads_);
+
+    if (mask.has_value()) {
+        if (mask->shape(0) != rows_ || mask->shape(1) != cols_) {
+            throw std::invalid_argument(
+                "PedestalTrackingPixelHistogram mask shape does not match "
+                "constructor shape");
+        }
+        partial_masks_.reserve(n_threads_);
+    }
+
     for (int i = 0; i < n_threads_; ++i) {
         const auto local_rows = row_count(i);
         partial_hists_.emplace_back(local_rows, cols, n_bins, xmin_, xmax_);
@@ -70,6 +81,13 @@ PedestalTrackingPixelHistogram::PedestalTrackingPixelHistogram(
         partial_std_.emplace_back(NDArray<AxisType, 2>(
             {static_cast<ssize_t>(local_rows), static_cast<ssize_t>(cols)},
             0.0));
+
+        if (mask.has_value()) {
+            partial_masks_.emplace_back(
+                NDView<const bool, 2>(mask->begin() + row_start(i) * cols_,
+                                      {static_cast<ssize_t>(local_rows),
+                                       static_cast<ssize_t>(cols)}));
+        }
     }
 
     // Spawn worker threads
@@ -206,10 +224,14 @@ void PedestalTrackingPixelHistogram::worker_loop(int thread_id) {
         auto &my_pedestal = partial_pedestals_[thread_id];
         auto &my_hist = partial_hists_[thread_id];
 
+        const bool has_mask = !partial_masks_.empty();
+
         switch (kind) {
         case WorkKind::PushPedestal: {
             auto frame = image->sub_view(first_row, first_row + local_rows);
-            my_pedestal.add_init_frame(frame);
+            my_pedestal.add_init_frame(
+                frame); // dont bother adding bad pixels in pedestal - not
+                        // needed for calculation
             break;
         }
         case WorkKind::UpdateMean: {
@@ -265,6 +287,12 @@ void PedestalTrackingPixelHistogram::worker_loop(int thread_id) {
                         for (std::size_t local_pixel = tile_begin;
                              local_pixel < tile_end; ++local_pixel, ++input) {
                             const FrameType raw = *input;
+
+                            if (has_mask &&
+                                partial_masks_[thread_id](local_pixel)) {
+                                continue; // Skip masked pixels entirely
+                            }
+
                             const AxisType val =
                                 static_cast<AxisType>(raw) -
                                 my_pedestal.mean_unchecked(
@@ -365,6 +393,37 @@ PedestalTrackingPixelHistogram::pedestal_mean() const {
             continue;
 
         const auto view = partial_pedestals_[t].view();
+        std::memcpy(data.data() + first_row * row_stride, view.data(),
+                    local_rows * row_stride * sizeof(AxisType));
+    }
+
+    return data;
+}
+
+NDArray<PedestalTrackingPixelHistogram::AxisType, 2>
+PedestalTrackingPixelHistogram::pedestal_std() const {
+    // Drain in-flight async fills and serialise with all other fan-outs
+    // (Fill / PushPedestal / UpdateMean). m_std is overwritten wholesale
+    // by Pedestal::update_mean, so without the lock we could read torn
+    // rows mid-update.
+    flush();
+    std::lock_guard<std::mutex> lock(fill_mutex_);
+
+    NDArray<AxisType, 2> data(
+        {static_cast<ssize_t>(rows_), static_cast<ssize_t>(cols_)});
+
+    // Each partial pedestal stores its slice of m_std in C-order
+    // [local_rows x cols], identical in layout to the corresponding
+    // [first_row .. first_row + local_rows)[col] slice of `data`, so
+    // we can copy each shard with a single memcpy.
+    const size_t row_stride = static_cast<size_t>(cols_);
+    for (int t = 0; t < n_threads_; ++t) {
+        const auto first_row = static_cast<size_t>(row_start(t));
+        const auto local_rows = static_cast<size_t>(row_count(t));
+        if (local_rows == 0)
+            continue;
+
+        const auto view = partial_std_[t].view();
         std::memcpy(data.data() + first_row * row_stride, view.data(),
                     local_rows * row_stride * sizeof(AxisType));
     }

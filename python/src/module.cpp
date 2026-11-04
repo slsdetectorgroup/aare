@@ -54,4 +54,6 @@ PYBIND11_MODULE(_aare, m) {
     define_gap_pixels_bindings(m);
 
     bind_eta_types(m);
+
+    bind_dataset_aggregation(m);
 }

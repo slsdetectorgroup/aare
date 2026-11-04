@@ -73,3 +73,5 @@ from ._aare import (
     PixelHistogram_u32,
     PixelHistogram_u64,
 )
+
+from ._aare import block_mean, mean_current_source 

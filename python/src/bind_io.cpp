@@ -2,6 +2,7 @@
 // File readers, geometry, pixel maps, calibration and test probes.
 #include "module_config.hpp"
 
+#include "bind_DataSetAggregation.hpp"
 #include "bind_Defs.hpp"
 #include "bind_GapPixels.hpp"
 #include "bind_MultiThreadedFileReader.hpp"
@@ -15,3 +16,8 @@
 #include "raw_master_file.hpp"
 #include "raw_sub_file.hpp"
 #include "var_cluster.hpp"
+
+void bind_dataset_aggregation(py::module &m) {
+    bind_DataSetAggregation<uint16_t>(m);
+    bind_read_current_source(m);
+}
