@@ -35,6 +35,9 @@ jobs:
       - name: Enable upload
         run: conda config --set anaconda_upload yes
 
+      - name: Install conda-build in base
+        run: conda install -n base conda-build -y
+
       - name: Build
         env:
           CONDA_TOKEN: ${{ secrets.CONDA_TOKEN }}
