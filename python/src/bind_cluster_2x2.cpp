@@ -1,4 +1,6 @@
 // SPDX-License-Identifier: MPL-2.0
+#include "bindings.hpp"
+
 #include "bind_cluster_common.hpp"
 
 void bind_cluster_types_2x2(py::module &m) {

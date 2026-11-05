@@ -97,10 +97,14 @@
   (about 4-5x less compile time), and the fetched dependencies are shallow
   clones, which makes a first configure faster and the build directory
   smaller.
-- The Python extension is compiled from one translation unit per binding
-  area instead of a single file, so the bindings build in parallel and
-  editing one binding header recompiles only its unit. The module's
-  contents and registration order are unchanged.
+- The Python extension is compiled from one translation unit per bound
+  class or function group instead of a single file, so the bindings build
+  in parallel and editing one binding recompiles only its unit.
+  ``-DAARE_PYTHON_UNITY_BUILD=ON`` (used by ``pip install`` and the
+  packaging CI jobs)
+  combines the units of each binding area into one, which needs less total
+  compiler time on machines with few cores. The module's contents and
+  registration order are unchanged.
 - The Python extension is no longer link-time optimized by default. The hot
   loops are header templates compiled at ``-O3`` inside the extension and
   LTO cannot reach the static ``aare_core``, so it only added a 20 s

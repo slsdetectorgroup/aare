@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: MPL-2.0
-#include "module_config.hpp"
+#include "bindings.hpp"
 
 #include "bind_Eta.hpp"
 

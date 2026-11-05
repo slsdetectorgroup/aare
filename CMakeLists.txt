@@ -43,6 +43,10 @@ set(CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/cmake" ${CMAKE_MODULE_PATH})
 
 # General options
 option(AARE_PYTHON_BINDINGS "Build python bindings" OFF)
+option(
+  AARE_PYTHON_UNITY_BUILD
+  "Compile the python bindings as one translation unit per binding area instead of one per class: less total compiler time, fewer units to build in parallel"
+  OFF)
 option(AARE_TESTS "Build tests" OFF)
 option(AARE_BENCHMARKS "Build benchmarks" OFF)
 option(AARE_EXAMPLES "Build examples" OFF)

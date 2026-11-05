@@ -1,9 +1,9 @@
 // SPDX-License-Identifier: MPL-2.0
-#pragma once
 #include "aare/CalculateEta.hpp"
 #include "aare/Interpolator.hpp"
 #include "aare/NDArray.hpp"
 #include "aare/NDView.hpp"
+#include "bindings.hpp"
 #include "np_helper.hpp"
 #include <cstdint>
 #include <filesystem>

@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: MPL-2.0
-// Module registration. The bindings live in bind_*.cpp translation units so
-// they compile in parallel; the call order below is kept as before.
+// Module registration. Each bind_*.cpp defines the bindings of one class or
+// function group and declares its entry point in bindings.hpp. The call order
+// below is kept: overload docstrings follow it.
 
 #include "bindings.hpp"
 
@@ -21,6 +22,7 @@ PYBIND11_MODULE(_aare, m) {
     define_pixel_histogram_bindings(m);
     define_pedestal_tracking_pixel_histogram_bindings(m);
     bind_pedestals(m);
+    bind_fast_pedestals(m);
     define_fit_bindings(m);
     define_interpolation_bindings(m);
     define_jungfrau_data_file_io_bindings(m);

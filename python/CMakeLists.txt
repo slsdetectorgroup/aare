@@ -18,8 +18,17 @@ else()
   find_package(pybind11 3.0.3 REQUIRED)
 endif()
 
-# The compiled python extension: one translation unit per binding area so they
-# compile in parallel; see src/module.cpp for the registration order.
+# The compiled python extension. Each bind_*.cpp holds the bindings of one class
+# or function group and is its own translation unit, so the units compile in
+# parallel and an edit recompiles only its file. The templated cluster bindings
+# are instantiated per cluster size in bind_cluster_NxN.cpp; src/module.cpp
+# registers everything in a fixed order.
+#
+# AARE_PYTHON_UNITY_BUILD combines the units of each group below into one. That
+# trades parallelism and per-file rebuilds for less total compiler time, which
+# is what counts on machines with few cores; pip builds and the packaging CI
+# jobs turn it on. The build_with_docs CI job keeps it off, so every unit is
+# also checked to compile on its own.
 #
 # Without NO_EXTRAS pybind11 links pybind11::lto, which forces full LTO on the
 # extension regardless of the target's INTERPROCEDURAL_OPTIMIZATION property.
@@ -27,22 +36,57 @@ endif()
 # paths are already compiled at -O3 inside the extension, so it only adds a long
 # single-threaded link step. With NO_EXTRAS the standard target property decides
 # (off by default); the other extras are re-added below.
+set(_aare_py_io
+    src/bind_File.cpp
+    src/bind_RawFile.cpp
+    src/bind_RawSubFile.cpp
+    src/bind_RawMasterFile.cpp
+    src/bind_CtbRawFile.cpp
+    src/bind_JungfrauDataFile.cpp
+    src/bind_MultiThreadedFileReader.cpp
+    src/bind_DataSetAggregation.cpp)
+set(_aare_py_core src/bind_Defs.cpp src/bind_GapPixels.cpp
+                  src/bind_PixelMap.cpp src/bind_testing.cpp)
+set(_aare_py_hist src/bind_PixelHistogram.cpp
+                  src/bind_PedestalTrackingPixelHistogram.cpp)
+set(_aare_py_pedestal src/bind_Pedestal.cpp src/bind_FastPedestal.cpp
+                      src/bind_calibration.cpp)
+set(_aare_py_fit src/bind_Fit.cpp src/bind_Interpolator.cpp)
+set(_aare_py_groups io core hist pedestal fit)
+
 pybind11_add_module(
   _aare # name of the module
   NO_EXTRAS
   src/module.cpp
-  src/bind_io.cpp
-  src/bind_core.cpp
-  src/bind_hist.cpp
-  src/bind_pedestal.cpp
-  src/bind_fit.cpp
-  src/bind_eta.cpp
-  src/bind_cluster_var.cpp
-  src/bind_cluster_2x2.cpp
+  # the cluster units take longest, listing them first schedules them first
   src/bind_cluster_3x3.cpp
-  src/bind_cluster_5x5.cpp
+  src/bind_cluster_9x9.cpp
   src/bind_cluster_7x7.cpp
-  src/bind_cluster_9x9.cpp)
+  src/bind_cluster_5x5.cpp
+  src/bind_cluster_2x2.cpp
+  ${_aare_py_io}
+  ${_aare_py_core}
+  ${_aare_py_hist}
+  ${_aare_py_pedestal}
+  ${_aare_py_fit}
+  src/bind_Eta.cpp
+  src/bind_VarClusterFinder.cpp)
+
+if(AARE_PYTHON_UNITY_BUILD)
+  if(CMAKE_VERSION VERSION_LESS 3.18)
+    message(
+      WARNING
+        "AARE_PYTHON_UNITY_BUILD needs CMake 3.18 or newer; compiling the python bindings as individual translation units"
+    )
+  else()
+    set_target_properties(_aare PROPERTIES UNITY_BUILD ON UNITY_BUILD_MODE
+                                                          GROUP)
+    foreach(group IN LISTS _aare_py_groups)
+      set_source_files_properties(${_aare_py_${group}} PROPERTIES UNITY_GROUP
+                                                                  ${group})
+    endforeach()
+  endif()
+endif()
 
 set_target_properties(_aare PROPERTIES LIBRARY_OUTPUT_DIRECTORY
                                        ${CMAKE_BINARY_DIR})

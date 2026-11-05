@@ -1,8 +1,8 @@
 // SPDX-License-Identifier: MPL-2.0
-#pragma once
 #include "aare/GapPixels.hpp"
 #include "aare/ROI.hpp"
 #include "aare/defs.hpp"
+#include "bindings.hpp"
 #include "np_helper.hpp"
 
 #include <fmt/format.h>
