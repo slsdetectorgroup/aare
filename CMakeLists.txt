@@ -515,6 +515,7 @@ if(AARE_TESTS)
       ${CMAKE_CURRENT_SOURCE_DIR}/src/RawSubFile.test.cpp
       ${CMAKE_CURRENT_SOURCE_DIR}/src/ROI.test.cpp
       ${CMAKE_CURRENT_SOURCE_DIR}/src/utils/task.test.cpp
+      ${CMAKE_CURRENT_SOURCE_DIR}/src/VarClusterFinder.test.cpp
       ${CMAKE_CURRENT_SOURCE_DIR}/src/utils/RingBufferPool.test.cpp
       ${CMAKE_CURRENT_SOURCE_DIR}/src/to_string.test.cpp)
   target_sources(tests PRIVATE ${TestSources})

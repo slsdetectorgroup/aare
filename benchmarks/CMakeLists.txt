@@ -25,7 +25,8 @@ target_sources(
           reduce_benchmark.cpp
           clusterfile_benchmark.cpp
           DataSetAggregation_benchmark.cpp
-          rawfile_benchmark.cpp)
+          rawfile_benchmark.cpp
+          varclusterfinder_benchmark.cpp)
 
 # Link Google Benchmark and other necessary libraries
 target_link_libraries(benchmarks PRIVATE benchmark::benchmark aare_core
