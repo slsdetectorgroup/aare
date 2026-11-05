@@ -1,4 +1,5 @@
 // SPDX-License-Identifier: MPL-2.0
+#pragma once
 
 #include "aare/FastPedestal.hpp"
 #include "np_helper.hpp"

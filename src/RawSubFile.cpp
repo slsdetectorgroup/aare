@@ -163,7 +163,7 @@ void RawSubFile::parse_fname(const std::filesystem::path &fname) {
     // f1 is the file index - thi is the one we need
     // 0 is the measurement index, will not change
     m_path = fname.parent_path();
-    m_base_name = fname.filename();
+    m_base_name = fname.filename().string();
 
     // Regex to extract numbers after 'd' and 'f'
     std::regex pattern(R"(^(.*_d)(\d+)(_f)(\d+)(_\d+\.raw)$)");

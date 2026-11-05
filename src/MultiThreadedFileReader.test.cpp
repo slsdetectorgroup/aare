@@ -22,6 +22,7 @@ using aare::File;
 using aare::FileConfig;
 using aare::Frame;
 using aare::NumpyFile;
+using aare::ssize_t;
 using aare::experimental::MultiThreadedFileReader;
 
 namespace {

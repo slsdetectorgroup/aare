@@ -28,8 +28,7 @@ NumpyFile::NumpyFile(const std::filesystem::path &fname,
             throw std::runtime_error(
                 fmt::format("Could not open: {} for reading", fname.string()));
         }
-        initial_header_len = aare::NumpyHelpers::write_header(
-            std::filesystem::path(fname.c_str()), m_header);
+        initial_header_len = aare::NumpyHelpers::write_header(fname, m_header);
     }
     m_pixels_per_frame =
         std::accumulate(m_header.shape.begin() + 1, m_header.shape.end(), 1,
@@ -46,7 +45,7 @@ void NumpyFile::write_impl(void *data, uint64_t size) {
     if (!(m_mode == "w" || m_mode == "a")) {
         throw std::invalid_argument("File not open for writing");
     }
-    if (fseek(fp, 0, SEEK_END))
+    if (fseek64(fp, 0, SEEK_END))
         throw std::runtime_error("Could not seek to end of file");
     size_t const rc = fwrite(data, size, 1, fp);
     if (rc != 1) {
@@ -68,8 +67,8 @@ void NumpyFile::get_frame_into(size_t frame_number, std::byte *image_buf) {
     if (frame_number > m_header.shape[0]) {
         throw std::invalid_argument("Frame number out of range");
     }
-    if (fseek(fp, header_size + frame_number * m_bytes_per_frame,
-              SEEK_SET)) // NOLINT
+    if (fseek64(fp, header_size + frame_number * m_bytes_per_frame,
+                SEEK_SET)) // NOLINT
         throw std::runtime_error("Could not seek to frame");
 
     size_t const rc = fread(image_buf, m_bytes_per_frame, 1, fp);
@@ -101,15 +100,15 @@ void NumpyFile::read_into(std::byte *image_buf, size_t n_frames) {
 NumpyFile::~NumpyFile() noexcept {
     if (m_mode == "w" || m_mode == "a") {
         // determine number of frames
-        if (fseek(fp, 0, SEEK_END)) {
+        if (fseek64(fp, 0, SEEK_END)) {
             std::cout << "Could not seek to end of file" << std::endl;
         }
-        size_t const file_size = ftell(fp);
+        size_t const file_size = ftell64(fp);
         size_t const data_size = file_size - initial_header_len;
         size_t const n_frames = data_size / m_bytes_per_frame;
         // update number of frames in header (first element of shape)
         m_header.shape[0] = n_frames;
-        if (fseek(fp, 0, SEEK_SET)) {
+        if (fseek64(fp, 0, SEEK_SET)) {
             std::cout << "Could not seek to beginning of file" << std::endl;
         }
         // create string stream to contain header

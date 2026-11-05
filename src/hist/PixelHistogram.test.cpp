@@ -18,6 +18,7 @@
 using aare::NDArray;
 using aare::NDView;
 using aare::PixelHistogram;
+using aare::ssize_t;
 
 namespace {
 // The synchronous fill() has been removed; fill_async() is the only entry

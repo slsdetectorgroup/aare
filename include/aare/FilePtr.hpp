@@ -1,9 +1,28 @@
 // SPDX-License-Identifier: MPL-2.0
 #pragma once
+#include "aare/defs.hpp"
+#include <cstdint>
 #include <cstdio>
 #include <filesystem>
 
 namespace aare {
+
+// MSVC's long is 32 bits, so fseek/ftell stop working past 2 GB there
+inline int fseek64(FILE *fp, int64_t offset, int whence) {
+#ifdef _WIN32
+    return _fseeki64(fp, offset, whence);
+#else
+    return fseek(fp, static_cast<long>(offset), whence);
+#endif
+}
+
+inline int64_t ftell64(FILE *fp) {
+#ifdef _WIN32
+    return _ftelli64(fp);
+#else
+    return ftell(fp);
+#endif
+}
 
 /**
  * \brief RAII wrapper for FILE pointer
@@ -22,7 +41,7 @@ class FilePtr {
     FILE *get();
     ssize_t tell();
     void seek(ssize_t offset, int whence = SEEK_SET) {
-        if (fseek(fp_, offset, whence) != 0)
+        if (fseek64(fp_, offset, whence) != 0)
             throw std::runtime_error("Error seeking in file");
     }
     std::string error_msg();

@@ -136,7 +136,7 @@ void JungfrauDataFile::find_frame_size(const std::filesystem::path &fname) {
 
 void JungfrauDataFile::parse_fname(const std::filesystem::path &fname) {
     m_path = fname.parent_path();
-    m_base_name = fname.stem();
+    m_base_name = fname.stem().string();
 
     // find file index, then remove if from the base name
     if (auto pos = m_base_name.find_last_of('_'); pos != std::string::npos) {
@@ -221,7 +221,7 @@ JungfrauDataHeader JungfrauDataFile::read_header() {
         throw std::runtime_error(LOCATION + "Could not read header from file" +
                                  m_fp.error_msg());
     }
-    m_fp.seek(-header_size, SEEK_CUR);
+    m_fp.seek(-static_cast<ssize_t>(header_size), SEEK_CUR);
     return header;
 }
 

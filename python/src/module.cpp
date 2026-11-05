@@ -12,9 +12,11 @@
 #include "bind_ClusterFinderFrozen.hpp"
 #include "bind_ClusterFinderMT.hpp"
 #include "bind_ClusterVector.hpp"
+#include "bind_DataSetAggregation.hpp"
 #include "bind_Defs.hpp"
 #include "bind_Eta.hpp"
 #include "bind_FastPedestal.hpp"
+#include "bind_GapPixels.hpp"
 #include "bind_Interpolator.hpp"
 #include "bind_MultiThreadedFileReader.hpp"
 #include "bind_Pedestal.hpp"
@@ -158,6 +160,7 @@ PYBIND11_MODULE(_aare, m) {
     register_calculate_3x3eta<int16_t, 3, 3, uint16_t>(m);
 
     define_defs_bindings(m);
+    define_gap_pixels_bindings(m);
 
     using Sum_index_pair_d = Sum_index_pair<double, corner>;
     PYBIND11_NUMPY_DTYPE(Sum_index_pair_d, sum, index);
@@ -180,4 +183,8 @@ PYBIND11_MODULE(_aare, m) {
     define_eta<double>(m, "d");
     define_eta<int>(m, "i");
     define_eta<int16_t>(m, "i16");
+
+    bind_DataSetAggregation<uint16_t>(m);
+
+    bind_read_current_source(m);
 }

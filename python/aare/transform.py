@@ -135,7 +135,7 @@ class Matterhorn10Transform:
         elif self.dynamic_range == 8: 
             return np.take(data.view(np.uint8), self.pixel_map).reshape(self.num_counters, Matterhorn10.nRows, Matterhorn10.nCols)
         else: #dynamic range 4
-            return np.take(_aare.expand4to8bit(data.view(np.uint8)), self.pixel_map).reshape(self.num_counters, Matterhorn10.nRows, Matterhorn10.nCols)
+            return np.take(_aare.expand4to8bit(data.view(np.uint8).reshape(-1)), self.pixel_map).reshape(self.num_counters, Matterhorn10.nRows, Matterhorn10.nCols)
             
 class Mythen302Transform:
     """
@@ -169,7 +169,7 @@ class Mythen302Transform:
         image : np.ndarray
             uint32 array of size  64, 3
         """
-        res = _aare.decode_my302(data, self.offset)
+        res = _aare.decode_my302(data.reshape(-1), self.offset)
         res = res.reshape(
             Mythen302Transform._n_channels, Mythen302Transform._n_counters
         )

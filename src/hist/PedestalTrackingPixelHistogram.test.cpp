@@ -20,6 +20,7 @@ using aare::FileConfig;
 using aare::Frame;
 using aare::NumpyFile;
 using aare::PedestalTrackingPixelHistogram;
+using aare::ssize_t;
 
 namespace {
 

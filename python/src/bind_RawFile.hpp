@@ -1,7 +1,9 @@
 // SPDX-License-Identifier: MPL-2.0
+#pragma once
 #include "aare/CtbRawFile.hpp"
 #include "aare/File.hpp"
 #include "aare/Frame.hpp"
+#include "aare/GapPixels.hpp"
 #include "aare/RawFile.hpp"
 #include "aare/RawMasterFile.hpp"
 #include "aare/RawSubFile.hpp"
@@ -12,6 +14,7 @@
 #include <cstdint>
 #include <filesystem>
 #include <fmt/format.h>
+#include <memory>
 #include <pybind11/iostream.h>
 #include <pybind11/numpy.h>
 #include <pybind11/pybind11.h>
@@ -33,7 +36,33 @@ std::runtime_error raw_file_read_error(RawFile &file,
 
 void define_raw_file_io_bindings(py::module &m) {
     py::class_<RawFile>(m, "RawFile")
-        .def(py::init<const std::filesystem::path &>())
+        .def(py::init([](const std::filesystem::path &fname,
+                         const GapPixels &gap_pixels) {
+                 return std::make_unique<RawFile>(fname, "r", gap_pixels);
+             }),
+             py::arg("fname"), py::arg("gap_pixels"))
+        .def(py::init([](const std::filesystem::path &fname, bool gap_pixels) {
+                 return std::make_unique<RawFile>(
+                     fname, "r",
+                     gap_pixels ? std::optional<GapPixels>(GapPixels{})
+                                : std::nullopt);
+             }),
+             py::arg("fname"), py::arg("gap_pixels") = false, R"(
+             Open a raw file for reading.
+
+             Parameters
+             ----------
+             fname : path
+                 Master file (.json or .raw).
+             gap_pixels : bool or GapPixels
+                 Insert gap pixels into every frame. True uses the default
+                 GapPixels configuration. Frame shapes, rows() and cols()
+                 then include the gaps. Only Jungfrau and Eiger are
+                 supported.
+             )")
+        .def_property_readonly("gap_pixels", &RawFile::gap_pixels, R"(
+             Gap pixel configuration, or None when reading without gaps.
+             )")
         .def("read_frame",
              [](RawFile &self) {
                  if (self.n_modules_in_roi().size() > 1) {
@@ -117,8 +146,8 @@ void define_raw_file_io_bindings(py::module &m) {
 
                 std::vector<size_t> shape;
                 shape.reserve(2);
-                shape.push_back(self.roi_geometries(roi_index).pixels_y());
-                shape.push_back(self.roi_geometries(roi_index).pixels_x());
+                shape.push_back(self.rows(roi_index));
+                shape.push_back(self.cols(roi_index));
 
                 py::array image =
                     allocate_image_data(self.bytes_per_pixel(), shape);
@@ -176,8 +205,8 @@ void define_raw_file_io_bindings(py::module &m) {
                 for (size_t r = 0; r < number_of_ROIs; r++) {
                     std::vector<size_t> shape;
                     shape.reserve(2);
-                    shape.push_back(self.roi_geometries(r).pixels_y());
-                    shape.push_back(self.roi_geometries(r).pixels_x());
+                    shape.push_back(self.rows(r));
+                    shape.push_back(self.cols(r));
 
                     images[r] =
                         allocate_image_data(self.bytes_per_pixel(), shape);
@@ -228,9 +257,8 @@ void define_raw_file_io_bindings(py::module &m) {
                 if (n_frames == 0) {
                     throw raw_file_read_error(self, "No frames left in file");
                 }
-                std::vector<size_t> shape{
-                    n_frames, self.roi_geometries(roi_index).pixels_y(),
-                    self.roi_geometries(roi_index).pixels_x()};
+                std::vector<size_t> shape{n_frames, self.rows(roi_index),
+                                          self.cols(roi_index)};
 
                 // return headers from all subfiles
                 auto n_mod = self.n_modules_in_roi()[roi_index];
@@ -318,7 +346,14 @@ void define_raw_file_io_bindings(py::module &m) {
             Cols for the given ROI.
             )")
         .def_property_readonly("bitdepth", &RawFile::bitdepth)
-        .def_property_readonly("geometry", &RawFile::geometry)
+        .def_property_readonly("geometry", &RawFile::geometry, R"(
+            Number of modules along each axis of the detector.
+
+            Returns
+            -------
+            xy
+                Module rows and columns.
+            )")
         .def_property_readonly("detector_type", &RawFile::detector_type)
         .def_property_readonly("master", &RawFile::master)
         .def_property_readonly("n_modules", &RawFile::n_modules)

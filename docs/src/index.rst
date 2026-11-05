@@ -32,6 +32,7 @@ AARE
     python/histogram/index
     python/pedestal/index
     pyFit
+    pyDataSetAggregation
     
 
 
@@ -44,6 +45,7 @@ AARE
     NDView
     Frame
     File
+    GapPixels
     MultiThreadedFileReader
     Dtype
     Cluster
@@ -59,6 +61,7 @@ AARE
     RawSubFile
     RawMasterFile
     VarClusterFinder
+    DataSetAggregation
 
 
 

@@ -3,6 +3,8 @@
 #include <aare/algorithm.hpp>
 #include <catch2/catch_test_macros.hpp>
 
+using aare::ssize_t;
+
 TEST_CASE("Find the closed index in a 1D array", "[algorithm]") {
     aare::NDArray<double, 1> arr({5});
     for (ssize_t i = 0; i < arr.size(); i++) {

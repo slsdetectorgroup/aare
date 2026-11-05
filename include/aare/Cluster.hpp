@@ -83,7 +83,7 @@ struct Cluster {
                 data[cluster_center_index - ClusterSizeX] +
                 data[cluster_center_index - 1 - ClusterSizeX];
             // subcluster top right from center
-            if (ClusterSizeX > 2) {
+            if constexpr (ClusterSizeX > 2) {
                 sum_2x2_subcluster[1] =
                     data[cluster_center_index] +
                     data[cluster_center_index + 1] +
@@ -91,7 +91,7 @@ struct Cluster {
                     data[cluster_center_index - ClusterSizeX + 1];
             }
             // subcluster bottom left from center
-            if (ClusterSizeY > 2) {
+            if constexpr (ClusterSizeY > 2) {
                 sum_2x2_subcluster[2] =
                     data[cluster_center_index] +
                     data[cluster_center_index - 1] +
@@ -99,7 +99,7 @@ struct Cluster {
                     data[cluster_center_index + ClusterSizeX - 1];
             }
             // subcluster bottom right from center
-            if (ClusterSizeX > 2 && ClusterSizeY > 2) {
+            if constexpr (ClusterSizeX > 2 && ClusterSizeY > 2) {
                 sum_2x2_subcluster[3] =
                     data[cluster_center_index] +
                     data[cluster_center_index + 1] +

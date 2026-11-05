@@ -159,7 +159,7 @@ Dtype Dtype::from_bitdepth(uint8_t bitdepth) {
 std::string Dtype::to_string() const {
 
     char ec{};
-    if (endian::native == endian::little)
+    if constexpr (endian::native == endian::little)
         ec = '<';
     else
         ec = '>';

@@ -1,4 +1,5 @@
 // SPDX-License-Identifier: MPL-2.0
+#pragma once
 
 /*
  *The file to_string.hpp contains conversion to and from string for various aare
@@ -19,7 +20,7 @@ T string_to(const std::string &t, const std::string &unit) {
     double tval{0};
     try {
         tval = std::stod(t);
-    } catch (const std::invalid_argument &e) {
+    } catch (const std::invalid_argument &) {
         throw std::runtime_error("Could not convert string to time");
     }
 

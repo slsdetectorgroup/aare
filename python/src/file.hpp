@@ -1,4 +1,5 @@
 // SPDX-License-Identifier: MPL-2.0
+#pragma once
 #include "aare/CtbRawFile.hpp"
 #include "aare/File.hpp"
 #include "aare/Frame.hpp"
@@ -20,11 +21,6 @@
 
 namespace py = pybind11;
 using namespace ::aare;
-
-// Disable warnings for unused parameters, as we ignore some
-// in the __exit__ method
-#pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wunused-parameter"
 
 void define_file_io_bindings(py::module &m) {
 
@@ -122,9 +118,12 @@ void define_file_io_bindings(py::module &m) {
              })
         .def("__enter__", [](File &self) { return &self; })
         .def("__exit__",
-             [](File &self, const std::optional<pybind11::type> &exc_type,
-                const std::optional<pybind11::object> &exc_value,
-                const std::optional<pybind11::object> &traceback) {
+             []([[maybe_unused]] File &self,
+                [[maybe_unused]] const std::optional<pybind11::type> &exc_type,
+                [[maybe_unused]] const std::optional<pybind11::object>
+                    &exc_value,
+                [[maybe_unused]] const std::optional<pybind11::object>
+                    &traceback) {
                  //  self.close();
              })
         .def("__iter__", [](File &self) { return &self; })
@@ -146,7 +145,7 @@ void define_file_io_bindings(py::module &m) {
                 self.read_into(
                     reinterpret_cast<std::byte *>(image.mutable_data()));
                 return image;
-            } catch (std::runtime_error &e) {
+            } catch (std::runtime_error &) {
                 throw py::stop_iteration();
             }
         });
@@ -160,6 +159,4 @@ void define_file_io_bindings(py::module &m) {
         .def_property_readonly("start", &ScanParameters::start)
         .def_property_readonly("stop", &ScanParameters::stop)
         .def_property_readonly("step", &ScanParameters::step);
-
-#pragma GCC diagnostic pop
 }

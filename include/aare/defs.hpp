@@ -5,6 +5,7 @@
 
 #include <array>
 #include <cassert>
+#include <cstddef>
 #include <cstdint>
 #include <cstring>
 #include <stdexcept>
@@ -12,6 +13,10 @@
 #include <string_view>
 #include <variant>
 #include <vector>
+
+#if !defined(_MSC_VER)
+#include <sys/types.h> // ::ssize_t
+#endif
 
 /**
  * @brief LOCATION macro to get the current location in the code
@@ -53,6 +58,18 @@
 #endif
 
 namespace aare {
+
+/**
+ * Signed size and index type used throughout the library (shapes, strides,
+ * frame indices, ROI coordinates). On POSIX this is the platform's ssize_t,
+ * so nothing changes for existing code. MSVC has no ssize_t, so there it is
+ * std::ptrdiff_t, which is the same type as Py_ssize_t and NumPy's npy_intp.
+ */
+#if defined(_MSC_VER)
+using ssize_t = std::ptrdiff_t;
+#else
+using ssize_t = ::ssize_t;
+#endif
 
 inline constexpr size_t bits_per_byte = 8;
 
@@ -154,6 +171,11 @@ struct Moench05 {
     /// @brief used ADCs for moench given in relative numbers to the default
     /// enabled blocks of 4 adcs in absolute adcs 9, 13, 1 are used
     constexpr static std::array<int, 3> adcNumbers = {5, 9, 1};
+};
+
+struct Jungfrau {
+    constexpr static size_t nRows = 512;
+    constexpr static size_t nCols = 1024;
 };
 
 enum ReadoutMode : uint8_t {

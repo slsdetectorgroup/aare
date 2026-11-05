@@ -233,6 +233,11 @@ if(AARE_FETCH_FMT)
       CACHE BOOL "")
   FetchContent_MakeAvailable(fmt)
   set_property(TARGET fmt PROPERTY POSITION_INDEPENDENT_CODE ON)
+  if(MSVC)
+    # fmt 12.1.0 calls std::isalpha only to check that ADL finds it and drops
+    # the result, which MSVC's standard library marks [[nodiscard]]
+    target_compile_options(fmt PRIVATE /wd4834)
+  endif()
 else()
   find_package(fmt 8 REQUIRED)
 endif()
@@ -279,18 +284,30 @@ target_compile_features(aare_compiler_flags INTERFACE cxx_std_17)
 # MSVC specific #
 # ##############################################################################
 if(MSVC)
-  add_compile_definitions(AARE_MSVC)
-  if(CMAKE_BUILD_TYPE STREQUAL "Release")
-    message(STATUS "Release build")
-    target_compile_options(aare_compiler_flags INTERFACE /O2)
-  else()
-    message(STATUS "Debug build")
-    target_compile_options(aare_compiler_flags
-                           INTERFACE /Od /Zi /MDd /D_ITERATOR_DEBUG_LEVEL=2)
-    target_link_options(aare_compiler_flags INTERFACE /DEBUG:FULL)
-  endif()
-  target_compile_options(aare_compiler_flags INTERFACE /w # disable warnings
+  # CMake sets the per-configuration optimisation, debug-info and
+  # runtime-library flags itself, so only warnings and conformance here.
+  target_compile_options(
+    aare_compiler_flags
+    INTERFACE /W4 # -Wall -Wextra
+              /permissive- # standard conformance, like CMAKE_CXX_EXTENSIONS OFF
+              /utf-8 # sources are UTF-8
+              /we4715 # not all control paths return a value, like
+                      # -Werror=return-type
+              /wd4244 # narrowing conversions: -Wconversion is not enabled
+              /wd4267 # on gcc/clang either
+              /wd4068 # unknown pragma: the GCC diagnostic pragmas
+              /wd4324 # structure padded due to alignas: intended
   )
+  target_compile_definitions(aare_compiler_flags
+                             INTERFACE _CRT_SECURE_NO_WARNINGS)
+
+  if(AARE_WARNINGS_AS_ERRORS)
+    target_compile_options(aare_compiler_flags INTERFACE /WX)
+  endif()
+
+  if(AARE_ASAN)
+    message(WARNING "AARE_ASAN is not supported with MSVC. Ignoring.")
+  endif()
 
 else()
   # ############################################################################
@@ -346,20 +363,20 @@ else()
     endif()
   endif()
 
+  if(AARE_ASAN)
+    message(STATUS "AddressSanitizer enabled")
+    target_compile_options(
+      aare_compiler_flags INTERFACE -fsanitize=address,undefined,pointer-compare
+                                    -fno-omit-frame-pointer)
+    target_link_libraries(
+      aare_compiler_flags INTERFACE -fsanitize=address,undefined,pointer-compare
+                                    -fno-omit-frame-pointer)
+  endif()
+
 endif() # GCC/Clang specific
 
 if(AARE_PYTHON_BINDINGS)
   add_subdirectory(python)
-endif()
-
-if(AARE_ASAN)
-  message(STATUS "AddressSanitizer enabled")
-  target_compile_options(
-    aare_compiler_flags INTERFACE -fsanitize=address,undefined,pointer-compare
-                                  -fno-omit-frame-pointer)
-  target_link_libraries(
-    aare_compiler_flags INTERFACE -fsanitize=address,undefined,pointer-compare
-                                  -fno-omit-frame-pointer)
 endif()
 
 if(AARE_TESTS)
@@ -399,6 +416,8 @@ set(PUBLICHEADERS
     include/aare/ROI.hpp
     include/aare/ROIGeometry.hpp
     include/aare/DetectorGeometry.hpp
+    include/aare/DataSetAggregation.hpp
+    include/aare/GapPixels.hpp
     include/aare/JungfrauDataFile.hpp
     include/aare/logger.hpp
     include/aare/NDArray.hpp
@@ -414,7 +433,8 @@ set(PUBLICHEADERS
     include/aare/to_string.hpp
     include/aare/utils/task.hpp
     include/aare/utils/ifstream_helpers.hpp
-    include/aare/utils/math_helpers.hpp)
+    include/aare/utils/math_helpers.hpp
+    include/aare/utils/RingBufferPool.hpp)
 
 if(AARE_CUDA)
   list(
@@ -435,7 +455,9 @@ set(SourceFiles
     ${CMAKE_CURRENT_SOURCE_DIR}/src/ROI.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/src/ROIGeometry.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/src/DetectorGeometry.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/GapPixels.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/src/hist/PedestalTrackingPixelHistogram.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/DataSetAggregation.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/src/Dtype.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/src/File.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/src/FilePtr.cpp
@@ -480,7 +502,7 @@ if(AARE_TESTS)
 endif()
 if(AARE_VERBOSE)
   target_compile_definitions(aare_core PUBLIC AARE_VERBOSE)
-  target_compile_definitions(aare_core PUBLIC AARE_LOG_LEVEL=aare::logDEBUG5)
+  target_compile_definitions(aare_core PUBLIC AARE_LOG_LEVEL=aare::logDEBUG)
 else()
   target_compile_definitions(aare_core PUBLIC AARE_LOG_LEVEL=aare::logWARNING)
 endif()
@@ -506,6 +528,7 @@ endif()
 if(AARE_TESTS)
   set(TestSources
       ${CMAKE_CURRENT_SOURCE_DIR}/tests/raw_file_helpers.hpp
+      ${CMAKE_CURRENT_SOURCE_DIR}/tests/jungfrau_file_helpers.hpp
       ${CMAKE_CURRENT_SOURCE_DIR}/src/algorithm.test.cpp
       ${CMAKE_CURRENT_SOURCE_DIR}/src/calibration.test.cpp
       ${CMAKE_CURRENT_SOURCE_DIR}/src/defs.test.cpp
@@ -515,6 +538,8 @@ if(AARE_TESTS)
       ${CMAKE_CURRENT_SOURCE_DIR}/src/fit/Fit.test.cpp
       ${CMAKE_CURRENT_SOURCE_DIR}/src/Frame.test.cpp
       ${CMAKE_CURRENT_SOURCE_DIR}/src/DetectorGeometry.test.cpp
+      ${CMAKE_CURRENT_SOURCE_DIR}/src/DataSetAggregation.test.cpp
+      ${CMAKE_CURRENT_SOURCE_DIR}/src/GapPixels.test.cpp
       ${CMAKE_CURRENT_SOURCE_DIR}/src/Interpolation.test.cpp
       ${CMAKE_CURRENT_SOURCE_DIR}/src/RawMasterFile.test.cpp
       ${CMAKE_CURRENT_SOURCE_DIR}/src/NDArray.test.cpp
@@ -532,6 +557,7 @@ if(AARE_TESTS)
       ${CMAKE_CURRENT_SOURCE_DIR}/src/hist/PixelHistogram.test.cpp
       ${CMAKE_CURRENT_SOURCE_DIR}/src/hist/PedestalTrackingPixelHistogram.test.cpp
       ${CMAKE_CURRENT_SOURCE_DIR}/src/JungfrauDataFile.test.cpp
+      ${CMAKE_CURRENT_SOURCE_DIR}/src/logger.test.cpp
       ${CMAKE_CURRENT_SOURCE_DIR}/src/MultiThreadedFileReader.test.cpp
       ${CMAKE_CURRENT_SOURCE_DIR}/src/NumpyFile.test.cpp
       ${CMAKE_CURRENT_SOURCE_DIR}/src/NumpyHelpers.test.cpp
@@ -539,6 +565,7 @@ if(AARE_TESTS)
       ${CMAKE_CURRENT_SOURCE_DIR}/src/RawSubFile.test.cpp
       ${CMAKE_CURRENT_SOURCE_DIR}/src/ROI.test.cpp
       ${CMAKE_CURRENT_SOURCE_DIR}/src/utils/task.test.cpp
+      ${CMAKE_CURRENT_SOURCE_DIR}/src/utils/RingBufferPool.test.cpp
       ${CMAKE_CURRENT_SOURCE_DIR}/src/to_string.test.cpp)
   target_sources(tests PRIVATE ${TestSources})
 endif()

@@ -16,6 +16,7 @@
 #include <pybind11/stl/filesystem.h>
 
 namespace py = pybind11;
+using aare::ssize_t;
 
 inline py::dtype multi_threaded_reader_numpy_dtype(const aare::Dtype &dtype) {
     using aare::Dtype;

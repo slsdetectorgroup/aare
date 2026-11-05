@@ -1,4 +1,6 @@
 // SPDX-License-Identifier: MPL-2.0
+#pragma once
+#include <pybind11/operators.h>
 #include <pybind11/pybind11.h>
 #include <pybind11/stl.h>
 
@@ -29,6 +31,9 @@ void define_defs_bindings(py::module &m) {
     moench05.attr("nCols") = Moench05::nCols;
     moench05.attr("adcNumbers") = Moench05::adcNumbers;
 
+    auto jungfrau = py::class_<Jungfrau>(m, "Jungfrau");
+    jungfrau.attr("nRows") = Jungfrau::nRows;
+    jungfrau.attr("nCols") = Jungfrau::nCols;
     py::class_<ROI>(m, "ROI")
         .def(py::init<>())
         .def(py::init<ssize_t, ssize_t, ssize_t, ssize_t>(), py::arg("xmin"),
@@ -73,6 +78,21 @@ void define_defs_bindings(py::module &m) {
             return self.xmin == other.xmin && self.xmax == other.xmax &&
                    self.ymin == other.ymin && self.ymax == other.ymax;
         });
+
+    py::class_<xy>(m, "xy")
+        .def(py::init<uint32_t, uint32_t>(), py::arg("row"), py::arg("col"))
+        .def_readwrite("row", &xy::row)
+        .def_readwrite("col", &xy::col)
+        .def("__repr__",
+             [](const xy &self) {
+                 return fmt::format("xy(row={}, col={})", self.row, self.col);
+             })
+        .def("__iter__",
+             [](const xy &self) {
+                 return py::iter(py::make_tuple(self.row, self.col));
+             })
+        .def(py::self == py::self)
+        .def(py::self != py::self);
 
     py::enum_<DetectorType>(m, "DetectorType")
         .value("Jungfrau", DetectorType::Jungfrau)

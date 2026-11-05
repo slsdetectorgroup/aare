@@ -42,6 +42,8 @@ from ._aare import Pedestal_d, Pedestal_f, ClusterFinder_Cluster3x3i, VarCluster
 from ._aare import DetectorType, FrameDiscardPolicy, ReadoutMode
 from ._aare import hitmap
 from ._aare import ROI
+from ._aare import GapPixels, ModuleGaps, insert_gap_pixels, gapped_shape
+from ._aare import xy
 from ._aare import corner 
 
 from ._aare import UDPPortPosition
@@ -89,3 +91,5 @@ from ._aare import (
     PixelHistogram_u32,
     PixelHistogram_u64,
 )
+
+from ._aare import block_mean, mean_current_source 

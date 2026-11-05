@@ -17,6 +17,7 @@
 using aare::Minimizer;
 using aare::NDArray;
 using aare::NDView;
+using aare::ssize_t;
 using Catch::Approx;
 
 namespace {
@@ -1099,7 +1100,7 @@ TEST_CASE("Samples with a zero error are ignored even when NaN", "[fit]") {
     INFO("minimizer " << name(minimizer));
     const double nan = std::numeric_limits<double>::quiet_NaN();
 
-    constexpr ssize_t n = 10;
+    static constexpr ssize_t n = 10; // static: used inside GENERATE's lambda
     NDArray<double, 1> x({n});
     NDArray<double, 1> y({n});
     NDArray<double, 1> y_err({n}, 1.0);

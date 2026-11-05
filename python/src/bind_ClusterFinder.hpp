@@ -1,4 +1,5 @@
 // SPDX-License-Identifier: MPL-2.0
+#pragma once
 #include "aare/ClusterCollector.hpp"
 #include "aare/ClusterFileSink.hpp"
 #include "aare/ClusterVector.hpp"
@@ -19,9 +20,6 @@
 namespace py = pybind11;
 
 using namespace aare;
-
-#pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wunused-parameter"
 
 template <typename T, uint8_t ClusterSizeX, uint8_t ClusterSizeY,
           typename CoordType = uint16_t>
@@ -92,5 +90,3 @@ void define_ClusterFinder(py::module &m, const std::string &typestr) {
             },
             py::arg("frame").noconvert(), py::arg("frame_number") = 0);
 }
-
-#pragma GCC diagnostic pop

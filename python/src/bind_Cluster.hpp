@@ -1,4 +1,5 @@
 // SPDX-License-Identifier: MPL-2.0
+#pragma once
 #include "aare/Cluster.hpp"
 
 #include <cstdint>
@@ -12,9 +13,6 @@
 namespace py = pybind11;
 
 using namespace aare;
-
-#pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wunused-parameter"
 
 template <typename Type, uint8_t ClusterSizeX, uint8_t ClusterSizeY,
           typename CoordType>
@@ -140,5 +138,3 @@ void reduce_to_2x2(py::module &m) {
         row-major order.
         )doc");
 }
-
-#pragma GCC diagnostic pop

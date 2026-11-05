@@ -1,4 +1,5 @@
 // SPDX-License-Identifier: MPL-2.0
+#pragma once
 #include "aare/calibration.hpp"
 
 #include <cstdint>
@@ -9,6 +10,7 @@
 #include <pybind11/stl_bind.h>
 
 namespace py = pybind11;
+using aare::ssize_t;
 
 template <typename DataType>
 py::array_t<DataType>

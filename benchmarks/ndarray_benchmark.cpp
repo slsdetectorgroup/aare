@@ -3,6 +3,7 @@
 #include <benchmark/benchmark.h>
 
 using aare::NDArray;
+using aare::ssize_t;
 
 constexpr ssize_t size = 1024;
 class TwoArrays : public benchmark::Fixture {
