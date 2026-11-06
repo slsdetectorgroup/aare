@@ -11,6 +11,9 @@ on:
 
 jobs:
   build:
+    # The name leaves out the Python version so that the required status
+    # check on main keeps matching when the version is bumped
+    name: Conda build on ${{ matrix.platform }}
     strategy:
       fail-fast: false
       matrix:
@@ -39,6 +42,17 @@ jobs:
       - name: Disable upload
         run: conda config --set anaconda_upload no
 
+      # Pull requests build only the newest Python that
+      # conda-recipe/conda_build_config.yaml lists; pushes to main skip this
+      # step and build every version. The list is read as text so that an
+      # unquoted 3.10 is not parsed as the number 3.1.
+      - name: Select the newest Python
+        if: ${{ !(github.event_name == 'push' && github.ref == 'refs/heads/main') }}
+        run: |
+          newest=$(awk '/^python:/ {f=1; next} f && /^[^ ]/ {f=0} f && /^ *- / {sub(/#.*/, ""); sub(/^ *- */, ""); print}' conda-recipe/conda_build_config.yaml | tr -d "\"' " | sort -V | tail -n 1)
+          echo "Building Python $newest"
+          echo "CONDA_BUILD_ARGS=--python $newest" >> "$GITHUB_ENV"
+
       - name: Build
-        run: conda-build conda-recipe 
+        run: conda-build conda-recipe $CONDA_BUILD_ARGS
 

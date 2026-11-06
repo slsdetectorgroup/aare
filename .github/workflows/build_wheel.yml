@@ -23,6 +23,7 @@ jobs:
       # Job level so that the build and the statistics step talk to the same
       # sccache server configured for the GitHub Actions cache
       SCCACHE_GHA_ENABLED: "true"
+      CIBUILDWHEEL_VERSION: "4.3.0"
 
     steps:
       - uses: actions/checkout@v7
@@ -37,6 +38,19 @@ jobs:
         if: runner.os == 'Windows'
         with:
           arch: x64
+
+      # Pull requests and manual runs build only the newest Python that
+      # pyproject.toml lists for this platform; pushes to main and releases
+      # skip this step and build every version. Deriving the identifier here
+      # keeps pyproject.toml the single place where versions are added or
+      # dropped.
+      - name: Select the newest Python
+        if: ${{ !(github.event_name == 'release' || (github.event_name == 'push' && github.ref == 'refs/heads/main')) }}
+        shell: bash
+        run: |
+          newest=$(pipx run cibuildwheel==${{ env.CIBUILDWHEEL_VERSION }} --print-build-identifiers | sort -V | tail -n 1)
+          echo "Building $newest"
+          echo "CIBW_BUILD=$newest" >> "$GITHUB_ENV"
 
       # Linux wheels build inside a manylinux container, which needs its own
       # sccache binary and the cache credentials the action exported; its
@@ -57,7 +71,7 @@ jobs:
             curl -sSL https://github.com/mozilla/sccache/releases/download/v0.18.0/sccache-v0.18.0-x86_64-unknown-linux-musl.tar.gz
             | tar -xz -C /usr/local/bin --strip-components=1 --wildcards '*/sccache'
             && chmod +x /usr/local/bin/sccache
-        run: pipx run cibuildwheel==4.3.0
+        run: pipx run cibuildwheel==${{ env.CIBUILDWHEEL_VERSION }}
 
       - name: Compiler cache statistics
         if: runner.os != 'Linux'
