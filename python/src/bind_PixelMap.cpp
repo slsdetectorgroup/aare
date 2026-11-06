@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: MPL-2.0
-#pragma once
 #include "aare/PixelMap.hpp"
+#include "bindings.hpp"
 #include "np_helper.hpp"
 
 #include <cstdint>
