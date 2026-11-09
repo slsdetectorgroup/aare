@@ -1,12 +1,13 @@
 // SPDX-License-Identifier: MPL-2.0
-#pragma once
 #include "aare/hist/PedestalTrackingPixelHistogram.hpp"
+#include "bindings.hpp"
 #include "np_helper.hpp"
 
 #include <cstdint>
 #include <pybind11/numpy.h>
 #include <pybind11/pybind11.h>
 #include <pybind11/stl.h>
+#include <pybind11/stl/filesystem.h>
 
 namespace py = pybind11;
 using namespace ::aare;

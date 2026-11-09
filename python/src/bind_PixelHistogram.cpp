@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: MPL-2.0
-#pragma once
 #include "aare/hist/PixelHistogram.hpp"
+#include "bindings.hpp"
 #include "np_helper.hpp"
 
 #include <cstddef>

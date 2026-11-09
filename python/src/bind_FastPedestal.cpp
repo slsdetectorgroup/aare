@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: MPL-2.0
-#pragma once
+#include "bindings.hpp"
 
 #include "aare/FastPedestal.hpp"
 #include "np_helper.hpp"
@@ -8,6 +8,7 @@
 #include <pybind11/numpy.h>
 #include <pybind11/pybind11.h>
 #include <pybind11/stl.h>
+#include <pybind11/stl/filesystem.h>
 
 namespace py = pybind11;
 
@@ -133,4 +134,10 @@ void define_fast_pedestal_bindings(py::module &m, const std::string &name) {
             "Create a pedestal from a uint16 file. Skip skip_first frames, use "
             "the next n_samples for initialization, then apply every remaining "
             "frame as a steady-state update.");
+}
+
+void bind_fast_pedestals(py::module &m) {
+    define_fast_pedestal_bindings<double>(m, "FastPedestal_d");
+    define_fast_pedestal_bindings<float>(m, "FastPedestal_f");
+    define_fast_pedestal_bindings<int16_t>(m, "FastPedestal_i16");
 }

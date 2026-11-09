@@ -49,10 +49,16 @@ cmake --build build -j4
 
 Useful optional settings include `AARE_DOCS`, `AARE_BENCHMARKS`, `AARE_ASAN`,
 `AARE_WARNINGS_AS_ERRORS`, `AARE_VERBOSE` (raises the compile-time log
-level), and `AARE_TUNE_LOCAL` (`-march=native`, not portable). Reconfigure an
-existing build directory instead of creating alternate in-tree build layouts
-unless isolation is needed; `build/CMakeCache.txt` records the options and
-interpreter it was configured with.
+level), `AARE_TUNE_LOCAL` (`-march=native`, not portable), `AARE_ZMQ`
+(fetches or finds ZeroMQ and defines `aare::zmq`; nothing links it yet), and
+`AARE_PYTHON_UNITY_BUILD` (compiles the python bindings as one translation
+unit per binding area instead of one per class; less total compiler time,
+less parallelism; `pip install` and the packaging CI jobs turn it on, the
+`build_with_docs` job keeps it off so every unit is checked to compile on
+its own).
+Reconfigure an existing build directory instead of creating alternate
+in-tree build layouts unless isolation is needed; `build/CMakeCache.txt`
+records the options and interpreter it was configured with.
 
 `-Werror=return-type` is always enabled. New code should also compile cleanly
 under the project's `-Wall -Wextra -pedantic -Wshadow -Wold-style-cast
@@ -169,13 +175,28 @@ agree; run them when changing any solver.
 
 ### Python layer
 
-- `python/src/module.cpp` registers everything. Templated classes are
-  instantiated per value type and cluster size through the
-  `DEFINE_CLUSTER_BINDINGS` and `DEFINE_BINDINGS_CLUSTERFINDER` macros,
+- `python/src/module.cpp` only calls the registration entry points declared
+  in `bindings.hpp`, in a fixed order (overload docstrings follow it). Each
+  `bind_<Class>.cpp` is one translation unit with the bindings of one class
+  or function group (`bind_RawFile.cpp`, `bind_Fit.cpp`,
+  `bind_calibration.cpp`, ...) and defines the entry point it declares in
+  `bindings.hpp`. Headers hold only templates that several units
+  instantiate: the `bind_Cluster*.hpp` set and `bind_Eta.hpp`, included
+  through `bind_cluster_common.hpp` by one `bind_cluster_NxN.cpp` per
+  cluster size and by `bind_Eta.cpp`. Templated classes are instantiated
+  per value type and cluster size through the `DEFINE_CLUSTER_BINDINGS` and
+  `DEFINE_BINDINGS_CLUSTERFINDER` macros in `bind_cluster_common.hpp`,
   producing names such as `ClusterFinder_Cluster3x3i`, `Pedestal_d`, and
   `FastPedestal_i16`. Supported cluster sizes are 2x2, 3x3, 5x5, 7x7, and
   9x9; value types are `i`, `f`, `d`, and `i16` (3x3 only).
-  `module_config.hpp` fixes the module-wide pedestal type (`pd_type`).
+  `module_config.hpp` fixes the module-wide pedestal type (`pd_type`). A
+  shared header must include everything it uses itself, including the
+  pybind11 casters (`pybind11/stl.h`, `pybind11/stl/filesystem.h`) for the
+  types its bindings take or return, and non-template functions it defines
+  must be `inline`. `python/CMakeLists.txt` lists the units in groups
+  (`io`, `core`, `hist`, `pedestal`, `fit`); with `AARE_PYTHON_UNITY_BUILD`
+  the units of a group are concatenated into one, so file-scope names
+  (helpers, anonymous namespaces, macros) must not clash within a group.
 - `python/aare/factory.py` maps NumPy dtypes to those suffixes. The facades
   in `python/aare/*.py` are thin factory functions or subclasses that select
   the right binding and add Pythonic conveniences (iteration, context
@@ -223,7 +244,10 @@ A Python-facing feature can require coordinated changes in several layers:
 
 1. Update the C++ public API and implementation.
 2. Add or update its binding in `python/src/`.
-3. Register new bindings in `python/src/module.cpp`.
+3. Register new bindings: put them in the matching `python/src/bind_*.cpp`
+   or add a new unit to its group in `python/CMakeLists.txt`, declare the
+   entry point in `python/src/bindings.hpp`, and call it from
+   `python/src/module.cpp`.
 4. Update the facade or public exports in `python/aare/`.
 5. If adding a Python module, add it to `PYTHON_FILES` in
    `python/CMakeLists.txt` so it is copied and installed.

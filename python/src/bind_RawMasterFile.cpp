@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: MPL-2.0
-#pragma once
+#include "bindings.hpp"
 
 #include "aare/CtbRawFile.hpp"
 #include "aare/File.hpp"
