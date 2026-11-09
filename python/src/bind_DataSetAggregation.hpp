@@ -27,7 +27,7 @@ void bind_DataSetAggregation(pybind11::module_ &m) {
         py::arg("num_reader_threads") = 8,
         R"pbdoc(
         Compute the block mean over several frames per sample stored in a file.
-        Function spawns num_processing_threads + num_reader_threads + 1 threads in total.
+        Function spawns num_processing_threads + num_reader_threads threads in total.
 
         Parameters:
         -----------
@@ -60,7 +60,7 @@ void bind_read_current_source(pybind11::module_ &m) {
         py::arg("num_reader_threads") = 8, py::arg("file_offset") = 0,
         R"pbdoc(
         Compute the mean over several frames per sample stored in a file for each current source.
-        Function spawns num_processing_threads + num_reader_threads + 1 threads in total.
+        Function spawns num_processing_threads + num_reader_threads threads in total.
 
         Parameters:
         -----------

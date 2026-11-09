@@ -93,6 +93,17 @@ NDArray<double, 3> block_mean(const std::filesystem::path &path,
                     mean_over_num_frames);
 
                 buffers.commit_write(i);
+
+                fmt::print("\rProgress: {}/{} ({:.1f}%)",
+                           (i + 1) * mean_over_num_frames,
+                           num_samples * mean_over_num_frames,
+                           num_samples * mean_over_num_frames == 0
+                               ? 100.0
+                               : 100.0 *
+                                     static_cast<double>((i + 1) *
+                                                         mean_over_num_frames) /
+                                     static_cast<double>(num_samples *
+                                                         mean_over_num_frames));
             }
         } catch (...) {
             buffers.abort(); // wake up the other threads so they can exit
@@ -141,9 +152,7 @@ NDArray<double, 3> block_mean(const std::filesystem::path &path,
     };
 
     std::vector<std::future<void>> futures;
-    futures.reserve(num_processing_threads + 1);
-
-    futures.push_back(std::async(std::launch::async, reader));
+    futures.reserve(num_processing_threads);
 
     const size_t rows_per_worker = rows / num_processing_threads;
     for (size_t w = 0; w < num_processing_threads; ++w) {
@@ -153,6 +162,8 @@ NDArray<double, 3> block_mean(const std::filesystem::path &path,
         futures.push_back(std::async(std::launch::async, worker,
                                      w * rows_per_worker, row_end));
     }
+
+    reader(); // run reader in main thread to avoid extra thread creation
 
     for (auto &f : futures) {
         try {
