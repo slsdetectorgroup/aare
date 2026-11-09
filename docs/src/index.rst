@@ -56,6 +56,7 @@ AARE
     Interpolation
     JungfrauDataFile
     Pedestal
+    FastPedestal
     RawFile
     RawSubFile
     RawMasterFile

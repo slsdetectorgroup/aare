@@ -34,6 +34,12 @@
   ``gap_pixels`` argument, and inserts gap pixels while frames are
   assembled. ``rows()``, ``cols()`` and every returned frame then include
   the gaps, for the full frame and for each ROI.
+- ``FastPedestal`` can hand out and take back its complete state in C++:
+  ``state()`` returns a plain ``FastPedestalState`` (``n_samples``,
+  ``cur_samples`` and the per-pixel ``sum`` and ``sum2``), and ``set_state()``
+  or the new constructor restore it, so a pedestal continues exactly where
+  it stopped. The state does not depend on the pedestal type and is not tied
+  to a file format.
 
 ### API Changes:
 
