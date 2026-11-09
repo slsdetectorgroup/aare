@@ -2,6 +2,7 @@
 
 import numpy as np
 
+from ._aare import read_state_header
 from .factory import _get_typed_class
 
 
@@ -53,4 +54,50 @@ def from_file(filename, n_samples=1000, skip_first=0, dtype=np.float64):
     )
 
 
+def load_state(filename, dtype=None):
+    """Create a FastPedestal from a state file.
+
+    The file is written by ``save_state()`` of a pedestal and holds
+    everything it had accumulated, so the new pedestal continues exactly
+    where the stored one stopped, whether that was during initialization or
+    after becoming ready. The image shape, ``n_samples`` and by default the
+    dtype are taken from the file.
+
+    This returns a new pedestal. To load a state file into a pedestal that
+    already exists, call ``load_state(filename)`` on that pedestal; it keeps
+    its own dtype.
+
+    Args:
+        filename: State file written by ``save_state()``.
+        dtype: Output dtype for the mean and standard deviation. By default
+            the dtype of the pedestal that wrote the file, as stored in it.
+
+    Raises:
+        RuntimeError: If the file cannot be read, is not a state file of a
+            FastPedestal, or is truncated or damaged.
+        ValueError: If the dtype, given or stored, has no binding.
+    """
+    if dtype is None:
+        dtype = _stored_dtype(filename)
+    cls = _get_fast_pedestal_class(dtype)
+    return cls.from_state_file(filename)
+
+
+def _stored_dtype(filename):
+    """Return the dtype of the pedestal that wrote a state file.
+
+    Only files that are not state files are reported here. Anything else
+    that is wrong with the file is left to ``from_state_file()``, which
+    checks everything it reads; ``float64`` only serves to reach it.
+    """
+    header = read_state_header(filename)
+    try:
+        if header["type"] == "FastPedestal":
+            return np.dtype(header["state"]["dtype"])
+    except (KeyError, TypeError):
+        pass
+    return np.float64
+
+
 FastPedestal.from_file = from_file
+FastPedestal.load_state = load_state

@@ -1,5 +1,6 @@
 // SPDX-License-Identifier: MPL-2.0
 #pragma once
+#include "aare/Dtype.hpp"
 #include "aare/File.hpp"
 #include "aare/Frame.hpp"
 #include "aare/NDArray.hpp"
@@ -17,7 +18,9 @@ namespace aare {
  * and the FastPedestal constructor, so that a pedestal can be stored and
  * later continued exactly where it stopped. The state does not depend on the
  * PEDESTAL_TYPE of the pedestal it was taken from: the moments are always
- * double and the cached mean is recomputed from them.
+ * double and the cached mean is recomputed from them. dtype only records
+ * that type, for whoever restores the state and wants the same kind of
+ * pedestal; a pedestal of any PEDESTAL_TYPE can take the state.
  *
  * sum and sum2 accumulate the pixel values and their squares over the
  * initialization frames. Once the pedestal is ready (cur_samples equals
@@ -25,6 +28,9 @@ namespace aare {
  * sum / n_samples and the second moment is sum2 / n_samples.
  */
 struct FastPedestalState {
+    /// PEDESTAL_TYPE of the pedestal the state was taken from, the type of
+    /// its mean and standard deviation. Not used by set_state()
+    Dtype dtype{Dtype::NONE};
     /// Number of initialization frames and reciprocal weight of later values
     uint32_t n_samples{};
     /// Initialization frames accumulated so far, at most n_samples
@@ -120,7 +126,8 @@ template <typename PEDESTAL_TYPE> class FastPedestal {
      * whether it is still initializing or ready.
      */
     FastPedestalState state() const {
-        FastPedestalState state{m_samples, m_cur_samples,
+        FastPedestalState state{Dtype(typeid(PEDESTAL_TYPE)), m_samples,
+                                m_cur_samples,
                                 NDArray<double, 2>({m_rows, m_cols}),
                                 NDArray<double, 2>({m_rows, m_cols})};
         for (ssize_t i = 0; i < m_sum.size(); ++i) {
@@ -134,7 +141,7 @@ template <typename PEDESTAL_TYPE> class FastPedestal {
      * @brief Replace the complete state, including n_samples.
      *
      * The cached mean is recomputed, so the state can come from a pedestal
-     * of another PEDESTAL_TYPE.
+     * of another PEDESTAL_TYPE; its dtype is not used.
      * @param state State whose sum and sum2 have the shape of this pedestal,
      * with n_samples positive and cur_samples at most n_samples. The values
      * of sum and sum2 are not checked.

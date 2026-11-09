@@ -23,6 +23,7 @@ PYBIND11_MODULE(_aare, m) {
     define_pedestal_tracking_pixel_histogram_bindings(m);
     bind_pedestals(m);
     bind_fast_pedestals(m);
+    bind_state_files(m);
     define_fit_bindings(m);
     define_interpolation_bindings(m);
     define_jungfrau_data_file_io_bindings(m);

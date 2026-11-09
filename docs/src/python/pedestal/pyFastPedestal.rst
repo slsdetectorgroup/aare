@@ -46,6 +46,48 @@ selects the output type of the pedestal statistics.
        "frames.npy", n_samples=100, skip_first=10, dtype=np.float32
    )
 
+Saving and restoring the state
+------------------------------
+
+``save_state()`` writes everything the pedestal has accumulated to a state
+file. A pedestal that loads the file continues exactly where the stored one
+stopped, whether that was during initialization or after becoming ready. A
+pedestal taken once from a dark run can this way be reused for many data
+files or in other processes.
+
+The file records the ``dtype`` of the pedestal that wrote it. There are two
+ways to load it:
+
+* ``FastPedestal.load_state(filename, dtype=None)`` returns a new pedestal.
+  The image shape and ``n_samples`` come from the file, and so does the
+  ``dtype`` unless one is given, which selects the output type as in the
+  factory.
+* ``pedestal.load_state(filename)`` replaces the state of an existing
+  pedestal and returns nothing. ``n_samples`` comes from the file, the image
+  shape in the file must be that of the pedestal, and the pedestal keeps its
+  ``dtype``. If the file cannot be loaded, the pedestal is left unchanged.
+
+The file format is described in :doc:`../../StateFile`, including how to
+read it with NumPy only. ``aare.read_state_header()`` returns its header as
+a dict, for example to see the stored ``dtype`` or ``n_samples`` without
+loading the arrays.
+
+.. autofunction:: aare.FastPedestal.load_state
+
+.. code-block:: python
+
+   pedestal = FastPedestal.from_file("dark.npy", n_samples=1000)
+   pedestal.save_state("dark.aare")
+
+   # Later, or in another process: a new pedestal from the file, with
+   # the dtype stored in it unless another is given
+   pedestal = FastPedestal.load_state("dark.aare")
+   pedestal = FastPedestal.load_state("dark.aare", dtype=np.float32)
+
+   # Or into a pedestal that already exists, keeping its dtype
+   pedestal = FastPedestal(512, 1024, dtype=np.int16)
+   pedestal.load_state("dark.aare")
+
 Example
 -------
 

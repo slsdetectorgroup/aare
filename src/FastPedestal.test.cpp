@@ -47,6 +47,7 @@ TEMPLATE_TEST_CASE("fast pedestal restored from a state continues identically",
         }
 
         const auto state = original.state();
+        REQUIRE(state.dtype == Dtype(typeid(TestType)));
         REQUIRE(state.n_samples == n_samples);
         REQUIRE(state.cur_samples == std::min(frames_before, n_samples));
         REQUIRE(state.sum.shape() == Shape<2>{3, 4});
@@ -96,9 +97,13 @@ TEST_CASE("fast pedestal state does not depend on the pedestal type",
         push_pedestal_test_frame(source, frame_index);
     }
     const auto state = source.state();
+    REQUIRE(state.dtype == Dtype::DOUBLE);
 
+    // The dtype of the state only records where it came from
     FastPedestal<float> as_float(state);
     FastPedestal<int16_t> as_int16(state);
+    REQUIRE(as_float.state().dtype == Dtype::FLOAT);
+    REQUIRE(as_int16.state().dtype == Dtype::INT16);
 
     const auto mean = source.mean();
     const auto mean_float = as_float.mean();
@@ -108,8 +113,14 @@ TEST_CASE("fast pedestal state does not depend on the pedestal type",
         REQUIRE(mean_int16[i] == static_cast<int16_t>(mean[i]));
     }
 
-    // The moments pass through the other types unchanged
-    for (const auto &other : {as_float.state(), as_int16.state()}) {
+    // The moments pass through the other types unchanged, as does a state
+    // without a dtype
+    FastPedestal<float> from_untyped(2, 3, 4);
+    auto untyped = state;
+    untyped.dtype = Dtype::NONE;
+    from_untyped.set_state(untyped);
+    for (const auto &other :
+         {as_float.state(), as_int16.state(), from_untyped.state()}) {
         REQUIRE(other.n_samples == state.n_samples);
         REQUIRE(other.cur_samples == state.cur_samples);
         REQUIRE(other.sum == state.sum);

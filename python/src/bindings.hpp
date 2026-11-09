@@ -45,6 +45,8 @@ void define_pedestal_tracking_pixel_histogram_bindings(py::module &m);
 void bind_pedestals(py::module &m);
 // bind_FastPedestal.cpp
 void bind_fast_pedestals(py::module &m);
+// bind_StateFile.cpp
+void bind_state_files(py::module &m);
 // bind_calibration.cpp
 void bind_calibration(py::module &m);
 

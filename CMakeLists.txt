@@ -437,6 +437,7 @@ set(PUBLICHEADERS
     include/aare/RawFile.hpp
     include/aare/RawMasterFile.hpp
     include/aare/RawSubFile.hpp
+    include/aare/StateFile.hpp
     include/aare/VarClusterFinder.hpp
     include/aare/to_string.hpp
     include/aare/utils/task.hpp
@@ -470,11 +471,16 @@ set(SourceFiles
     ${CMAKE_CURRENT_SOURCE_DIR}/src/RawFile.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/src/RawMasterFile.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/src/RawSubFile.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/StateFile.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/src/to_string.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/src/utils/task.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/src/utils/ifstream_helpers.cpp)
 
 add_library(aare_core STATIC ${SourceFiles} ${PUBLICHEADERS})
+# State files record the version that wrote them
+set_source_files_properties(
+  ${CMAKE_CURRENT_SOURCE_DIR}/src/StateFile.cpp
+  PROPERTIES COMPILE_DEFINITIONS "AARE_VERSION=\"${PROJECT_VERSION}\"")
 target_include_directories(
   aare_core PUBLIC "$<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>"
                    "$<INSTALL_INTERFACE:${CMAKE_INSTALL_INCLUDEDIR}>")
@@ -550,6 +556,7 @@ if(AARE_TESTS)
       ${CMAKE_CURRENT_SOURCE_DIR}/src/RawFile.test.cpp
       ${CMAKE_CURRENT_SOURCE_DIR}/src/RawSubFile.test.cpp
       ${CMAKE_CURRENT_SOURCE_DIR}/src/ROI.test.cpp
+      ${CMAKE_CURRENT_SOURCE_DIR}/src/StateFile.test.cpp
       ${CMAKE_CURRENT_SOURCE_DIR}/src/utils/task.test.cpp
       ${CMAKE_CURRENT_SOURCE_DIR}/src/VarClusterFinder.test.cpp
       ${CMAKE_CURRENT_SOURCE_DIR}/src/utils/RingBufferPool.test.cpp

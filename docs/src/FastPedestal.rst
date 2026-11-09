@@ -14,7 +14,9 @@ with ``set_state()``, continues exactly as the original would, whether it was
 still initializing or already ready. The state is independent of the
 ``PEDESTAL_TYPE``: the moments are always ``double`` and the cached mean is
 recomputed, so a state taken from a ``FastPedestal<double>`` can be given to
-a ``FastPedestal<float>``.
+a ``FastPedestal<float>``. Its ``dtype`` only records the ``PEDESTAL_TYPE``
+it was taken from, for whoever restores it and wants the same kind of
+pedestal.
 
 .. code-block:: c++
 
@@ -32,8 +34,20 @@ a ``FastPedestal<float>``.
    other.set_state(state);
 
 ``set_state()`` throws if the shape or the sample counts of the state are not
-valid and then leaves the pedestal unchanged. The state is not tied to a file
-format; it only exposes the data that a writer needs.
+valid and then leaves the pedestal unchanged.
+
+The state itself is plain data and not tied to a file format. To keep it,
+write it to a state file with ``save_state()`` and read it back with
+``load_state()``, see :doc:`StateFile`:
+
+.. code-block:: c++
+
+   #include "aare/StateFile.hpp"
+
+   aare::save_state(pedestal.state(), "dark.aare");
+
+   aare::FastPedestal<double> restored(
+       aare::load_state<aare::FastPedestalState>("dark.aare"));
 
 .. doxygenstruct:: aare::FastPedestalState
    :members:

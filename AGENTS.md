@@ -148,6 +148,36 @@ lives in `python/aare/transform.py` on top of C++ generators.
 - `hist/PixelHistogram` and `PedestalTrackingPixelHistogram` build per-pixel
   histograms across a frame series, multithreaded by row bands.
 
+### State files
+
+Saving and restoring what an object has accumulated is split in two layers.
+The class hands out a plain-data state struct and takes it back
+(`FastPedestalState` with `FastPedestal::state()`, `set_state()` and a
+constructor); the struct holds no redundant fields and knows nothing about
+files. `StateFile.hpp` declares `save_state()`, `load_state<State>()` and
+`read_state_header()`, which returns the JSON header as text so that a caller
+can see the type and dtype stored in a file before choosing what to load it
+into; `src/StateFile.cpp` holds the format: magic `AARESTAT`, a `uint64` header
+length, a JSON header (`format_version`, `aare_version`, `type`, `state`) and
+then the arrays as raw little-endian data, each described in the header by
+`{"dtype", "shape", "offset"}`. nlohmann JSON stays out of the public header.
+The private `StateWriter` and `StateReader` are shared by all state types; a
+new type adds a `to_header()`/`from_header()` pair, which can call those of
+the states it contains, plus its `save_state()` overload and `load_state()`
+specialization. The reader checks everything it reads and ignores unknown
+header fields, so adding a field needs no new `format_version`; removing one
+or changing its meaning does. `docs/src/StateFile.rst` is the format
+reference and must change with the format.
+
+In Python a class with a state binds `save_state(filename)` and
+`load_state(filename)` as instance methods, the latter loading into the
+object it is called on, and a static `from_state_file(filename)` that returns
+a new object. The dtype-selecting factory exposes that one as
+`Factory.load_state(filename, dtype=None)`, where `None` means the dtype
+recorded in the file, read with `read_state_header()`. Do not bind
+`load_state` as a static method: called on an existing object it would
+silently leave it unchanged.
+
 ### Fitting
 
 `Fit.hpp`, `FitModel<Model>`, and `Models.hpp` (`Gaussian`, `Pol1`, `Pol2`,

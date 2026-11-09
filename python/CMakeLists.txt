@@ -50,7 +50,7 @@ set(_aare_py_core src/bind_Defs.cpp src/bind_GapPixels.cpp
 set(_aare_py_hist src/bind_PixelHistogram.cpp
                   src/bind_PedestalTrackingPixelHistogram.cpp)
 set(_aare_py_pedestal src/bind_Pedestal.cpp src/bind_FastPedestal.cpp
-                      src/bind_calibration.cpp)
+                      src/bind_StateFile.cpp src/bind_calibration.cpp)
 set(_aare_py_fit src/bind_Fit.cpp src/bind_Interpolator.cpp)
 set(_aare_py_groups io core hist pedestal fit)
 

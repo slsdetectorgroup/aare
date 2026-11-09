@@ -60,6 +60,7 @@ AARE
     RawFile
     RawSubFile
     RawMasterFile
+    StateFile
     VarClusterFinder
     DataSetAggregation
 
