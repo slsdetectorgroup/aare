@@ -101,6 +101,7 @@ NDArray<double, 3> mean_current_source(const std::filesystem::path &path,
                                                          mean_over_num_frames) /
                                      static_cast<double>(num_samples *
                                                          mean_over_num_frames));
+                std::fflush(stdout);
             }
         } catch (...) {
             buffers.abort(); // wake up the other threads so they can exit

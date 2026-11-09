@@ -22,6 +22,7 @@ void bind_DataSetAggregation(pybind11::module_ &m) {
            const size_t mean_over_num_frames,
            const size_t num_processing_threads,
            const size_t num_reader_threads) {
+            py::gil_scoped_release release;
             auto result = new NDArray<double, 3>(block_mean<FRAME_TYPE>(
                 path, num_samples, mean_over_num_frames, num_processing_threads,
                 num_reader_threads));
@@ -55,6 +56,7 @@ void bind_read_current_source(pybind11::module_ &m) {
            const size_t mean_over_num_frames,
            const size_t num_processing_threads, const size_t num_reader_threads,
            const size_t file_offset) {
+            py::gil_scoped_release release;
             auto result = new NDArray<double, 3>(mean_current_source(
                 path, num_samples, mean_over_num_frames, num_processing_threads,
                 num_reader_threads, file_offset));
