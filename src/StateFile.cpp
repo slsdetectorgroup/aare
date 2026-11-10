@@ -35,11 +35,6 @@
 // object {"dtype", "shape", "offset"} with a NumPy dtype string and the
 // offset of the data relative to the end of the header. The data section and
 // every array in it start on a multiple of 64 bytes.
-//
-// To support another state type, add a to_header()/from_header() pair for
-// it, which can call those of the states it contains, and a save_state()
-// overload and load_state() specialization with their declarations in
-// StateFile.hpp.
 
 namespace aare {
 
