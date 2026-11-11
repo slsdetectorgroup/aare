@@ -77,11 +77,12 @@ void check_known_pattern() { cuda::known_pattern_transpose_and_cap_impl(); }
 
 template <typename H, typename In>
 DeviceResult<H> run_gpu(NDView<In, 3> frames, size_t nbins, float xmin,
-                        float xmax, size_t batch_size) {
+                        float xmax, size_t batch_size, bool window) {
     using D = std::conditional_t<sizeof(H) == 8, uint64_t, uint32_t>;
     cuda::PixelHistogramCUDA<H, D, In> hist(
         static_cast<size_t>(frames.shape(1)),
-        static_cast<size_t>(frames.shape(2)), nbins, xmin, xmax, batch_size);
+        static_cast<size_t>(frames.shape(2)), nbins, xmin, xmax, batch_size,
+        window);
     hist.register_input_buffer(frames.data(), frames.total_bytes());
     hist.fill_histogram(frames);
     hist.unregister_input_buffer();
@@ -90,7 +91,7 @@ DeviceResult<H> run_gpu(NDView<In, 3> frames, size_t nbins, float xmin,
 
 #define INSTANTIATE(H, In)                                                     \
     template DeviceResult<H> run_gpu<H, In>(NDView<In, 3>, size_t, float,      \
-                                            float, size_t);
+                                            float, size_t, bool);
 INSTANTIATE(uint8_t, float)
 INSTANTIATE(uint16_t, float)
 INSTANTIATE(uint32_t, float)
@@ -102,10 +103,12 @@ INSTANTIATE(uint32_t, uint16_t)
 
 std::vector<NDArray<uint32_t, 3>>
 run_gpu_in_parts(NDView<float, 3> frames, size_t nbins, float xmin, float xmax,
-                 size_t batch_size, const std::vector<size_t> &ends) {
+                 size_t batch_size, const std::vector<size_t> &ends,
+                 bool window) {
     cuda::PixelHistogramCUDA<uint32_t> hist(
         static_cast<size_t>(frames.shape(1)),
-        static_cast<size_t>(frames.shape(2)), nbins, xmin, xmax, batch_size);
+        static_cast<size_t>(frames.shape(2)), nbins, xmin, xmax, batch_size,
+        window);
     hist.register_input_buffer(frames.data(), frames.total_bytes());
 
     std::vector<NDArray<uint32_t, 3>> snapshots;
@@ -118,6 +121,16 @@ run_gpu_in_parts(NDView<float, 3> frames, size_t nbins, float xmin, float xmax,
     }
     hist.unregister_input_buffer();
     return snapshots;
+}
+
+bool constructor_throws(size_t nbins, size_t batch_size, bool window) {
+    try {
+        cuda::PixelHistogramCUDA<uint32_t> hist(2, 3, nbins, 0.0f, 1.0f,
+                                                batch_size, window);
+    } catch (const std::invalid_argument &) {
+        return true;
+    }
+    return false;
 }
 
 namespace {

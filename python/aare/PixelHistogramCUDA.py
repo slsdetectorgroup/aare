@@ -31,7 +31,7 @@ def _suffix(table, dtype, what):
 
 
 def PixelHistogramCUDA(*, rows, cols, n_bins, xmin, xmax, dtype,
-                       storage_dtype=np.uint32, batch_size=64):
+                       storage_dtype=np.uint32, batch_size=64, window=True):
     """
     Per-pixel histograms filled on the GPU.
 
@@ -58,6 +58,14 @@ def PixelHistogramCUDA(*, rows, cols, n_bins, xmin, xmax, dtype,
     batch_size : int, optional
         Frames copied and processed per step. Two batches are held on the
         GPU, 2 * batch_size * rows * cols * itemsize bytes. Default 64.
+        With window=True, at most 65535; larger batches, about 1024, make
+        the window pay best.
+    window : bool, optional
+        Fill kernel. True (default): each pixel's busiest 128 bins are
+        counted in fast on-chip memory during a batch, and only values
+        outside them (mostly photons) go straight to the histogram in GPU
+        memory. False: every value goes straight to GPU memory. The counts
+        are identical; only the speed differs.
 
     Example
     -------
@@ -82,4 +90,4 @@ def PixelHistogramCUDA(*, rows, cols, n_bins, xmin, xmax, dtype,
             f"{_suffix(_STORAGE_SUFFIX, storage_dtype, 'storage_dtype')}")
     cls = getattr(_aare, name)
     return cls(rows=rows, cols=cols, n_bins=n_bins, xmin=xmin, xmax=xmax,
-               batch_size=batch_size)
+               batch_size=batch_size, window=window)

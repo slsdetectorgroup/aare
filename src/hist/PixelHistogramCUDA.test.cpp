@@ -60,6 +60,8 @@ TEMPLATE_TEST_CASE("PixelHistogramCUDA matches PixelHistogram on noisy frames",
                    "[cuda]", uint8_t, uint16_t, uint32_t, uint64_t, float,
                    double) {
     // Non-square, so swapped rows and columns or a wrong stride show up.
+    const bool window = GENERATE(true, false);
+    CAPTURE(window);
     const size_t nrows = 7, ncols = 13, nframes = 100, nbins = 120;
     const float xmin = 3900.0f, xmax = 5100.0f;
     auto frames = make_synth(nrows, ncols, nframes);
@@ -69,7 +71,7 @@ TEMPLATE_TEST_CASE("PixelHistogramCUDA matches PixelHistogram on noisy frames",
     fill_cpu(cpu, frames.view());
 
     auto gpu = test_cuda::run_gpu<TestType>(frames.view(), nbins, xmin, xmax,
-                                            /*batch_size=*/8);
+                                            /*batch_size=*/8, window);
     REQUIRE((cpu.bin_edges() == gpu.edges));
     REQUIRE((cpu.bin_centers() == gpu.centers));
     REQUIRE((cpu.values() == gpu.values));
@@ -146,7 +148,8 @@ TEST_CASE("PixelHistogramCUDA result does not depend on the batch size",
     // batch. 25: divides nframes. 100: exactly one batch. 150: one batch
     // smaller than its slot.
     const size_t batch_size = GENERATE(1, 7, 25, 100, 150);
-    CAPTURE(batch_size);
+    const bool window = GENERATE(true, false);
+    CAPTURE(batch_size, window);
 
     const size_t nrows = 7, ncols = 13, nframes = 100, nbins = 120;
     const float xmin = 3900.0f, xmax = 5100.0f;
@@ -156,13 +159,16 @@ TEST_CASE("PixelHistogramCUDA result does not depend on the batch size",
     fill_cpu(cpu, frames.view());
 
     auto gpu = test_cuda::run_gpu<uint32_t>(frames.view(), nbins, xmin, xmax,
-                                            batch_size);
+                                            batch_size, window);
     REQUIRE((cpu.values() == gpu.values));
 }
 
 TEST_CASE("PixelHistogramCUDA bins uint16 frames on a float axis", "[cuda]") {
     // 1000 bins over 1200 ADU: bins 1.2 wide, so an integral axis (scale
-    // 1000 / 1200 == 0 in integers) would put everything in bin 0.
+    // 1000 / 1200 == 0 in integers) would put everything in bin 0. More bins
+    // than the window holds, so fill_window's window covers part of the range.
+    const bool window = GENERATE(true, false);
+    CAPTURE(window);
     const size_t nrows = 7, ncols = 13, nframes = 100, nbins = 1000;
     const float xmin = 3900.0f, xmax = 5100.0f;
     auto frames = make_synth(nrows, ncols, nframes); // integer-valued floats
@@ -176,7 +182,7 @@ TEST_CASE("PixelHistogramCUDA bins uint16 frames on a float axis", "[cuda]") {
     fill_cpu(cpu, frames.view());
 
     auto gpu = test_cuda::run_gpu<uint32_t>(raw.view(), nbins, xmin, xmax,
-                                            /*batch_size=*/8);
+                                            /*batch_size=*/8, window);
     REQUIRE((cpu.bin_edges() == gpu.edges));
     REQUIRE((cpu.values() == gpu.values));
 }
@@ -191,8 +197,10 @@ TEST_CASE("PixelHistogramCUDA accumulates over several fills with values() "
     // With batch_size 8: part 1 ends in a partial batch, part 2 is a single
     // frame, part 3 fills the rest after two values() calls.
     const std::vector<size_t> ends = {30, 31, nframes};
-    auto snapshots = test_cuda::run_gpu_in_parts(frames.view(), nbins, xmin,
-                                                 xmax, /*batch_size=*/8, ends);
+    const bool window = GENERATE(true, false);
+    CAPTURE(window);
+    auto snapshots = test_cuda::run_gpu_in_parts(
+        frames.view(), nbins, xmin, xmax, /*batch_size=*/8, ends, window);
     REQUIRE(snapshots.size() == ends.size());
 
     PixelHistogram<uint32_t> cpu(nrows, ncols, nbins, xmin, xmax);
@@ -242,4 +250,70 @@ TEST_CASE("PixelHistogramCUDA values() transposes and caps a known "
           "accumulator pattern",
           "[cuda]") {
     REQUIRE_NOTHROW(test_cuda::check_known_pattern());
+}
+
+TEST_CASE("PixelHistogramCUDA window kernel stays exact when values miss the "
+          "window",
+          "[cuda]") {
+    // 2 ADU bins, so the 128-bin window spans 256 ADU. Photons (+300 to
+    // +1500 ADU, 5 % of values) always miss it. Halfway, every pedestal jumps
+    // by 400 ADU, out of the window, so the kernel has to place it again.
+    // Pixel (0, 0) is always out of range. Pixel (0, 1) alternates between
+    // two levels 2000 ADU apart, so its window never holds more than half of
+    // its values and is placed again every batch.
+    const size_t batch_size = GENERATE(1, 37, 256);
+    CAPTURE(batch_size);
+    const size_t nrows = 9, ncols = 11, nframes = 600, nbins = 2000;
+    const size_t npix = nrows * ncols;
+    const float xmin = 3000.0f, xmax = 7000.0f;
+
+    std::mt19937 rng(777);
+    std::uniform_real_distribution<float> base_d(4000.0f, 4600.0f);
+    std::uniform_real_distribution<float> sigma_d(5.0f, 15.0f);
+    std::uniform_real_distribution<float> photon_d(300.0f, 1500.0f);
+    std::bernoulli_distribution hit_d(0.05);
+    std::normal_distribution<float> unit_d(0.0f, 1.0f);
+    std::vector<float> base(npix), sigma(npix);
+    for (size_t p = 0; p < npix; ++p) {
+        base[p] = base_d(rng);
+        sigma[p] = sigma_d(rng);
+    }
+
+    NDArray<float, 3> frames({static_cast<ssize_t>(nframes),
+                              static_cast<ssize_t>(nrows),
+                              static_cast<ssize_t>(ncols)});
+    float *data = frames.data();
+    for (size_t f = 0; f < nframes; ++f) {
+        for (size_t p = 0; p < npix; ++p) {
+            float v = base[p] + sigma[p] * unit_d(rng);
+            if (f >= nframes / 2)
+                v += 400.0f;
+            if (hit_d(rng))
+                v += photon_d(rng);
+            if (p == 0)
+                v = 100.0f;
+            else if (p == 1)
+                v = (f % 2 ? 4000.0f : 6000.0f) + sigma[p] * unit_d(rng);
+            data[f * npix + p] = std::round(v);
+        }
+    }
+
+    PixelHistogram<uint32_t> cpu(nrows, ncols, nbins, xmin, xmax);
+    fill_cpu(cpu, frames.view());
+    const auto expected = cpu.values();
+
+    auto window = test_cuda::run_gpu<uint32_t>(frames.view(), nbins, xmin, xmax,
+                                               batch_size, true);
+    REQUIRE((window.values == expected));
+    auto direct = test_cuda::run_gpu<uint32_t>(frames.view(), nbins, xmin, xmax,
+                                               batch_size, false);
+    REQUIRE((direct.values == expected));
+}
+
+TEST_CASE("PixelHistogramCUDA limits the batch size of the window kernel",
+          "[cuda]") {
+    // fill_window counts a batch in uint16_t shared counters.
+    REQUIRE_FALSE(test_cuda::constructor_throws(10, 65535, true));
+    REQUIRE(test_cuda::constructor_throws(10, 65536, true));
+    REQUIRE_FALSE(test_cuda::constructor_throws(10, 65536, false));
 }

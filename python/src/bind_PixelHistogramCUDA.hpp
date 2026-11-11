@@ -76,9 +76,11 @@ void define_PixelHistogramCUDA(py::module &m, const std::string &class_name) {
              Frames are copied to the device with the dtype they have; the
              histogram axis is floating point. Build instances with the
              aare.PixelHistogramCUDA() factory rather than by class name.)")
-        .def(py::init<size_t, size_t, size_t, AxisType, AxisType, size_t>(),
+        .def(py::init<size_t, size_t, size_t, AxisType, AxisType, size_t,
+                      bool>(),
              py::kw_only(), py::arg("rows"), py::arg("cols"), py::arg("n_bins"),
-             py::arg("xmin"), py::arg("xmax"), py::arg("batch_size"))
+             py::arg("xmin"), py::arg("xmax"), py::arg("batch_size"),
+             py::arg("window") = true)
 
         .def(
             "register_input_buffer",
@@ -209,6 +211,10 @@ void define_PixelHistogramCUDA(py::module &m, const std::string &class_name) {
         .def_property_readonly("cols", &Hist::cols)
         .def_property_readonly("n_bins", &Hist::n_bins)
         .def_property_readonly("batch_size", &Hist::batch_size)
+        .def_property_readonly(
+            "window", &Hist::window,
+            "True if the fill kernel counts each pixel's busy bins in shared "
+            "memory (fill_window), False for fill_bin_major.")
         .def_property_readonly(
             "dtype", [](const Hist &) { return py::dtype::of<InputType>(); },
             "dtype of the frames this histogram takes.");
