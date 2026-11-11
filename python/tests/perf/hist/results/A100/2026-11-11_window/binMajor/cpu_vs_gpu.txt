@@ -1,0 +1,91 @@
+NVIDIA A100-SXM4-80GB, 0 MiB, 81920 MiB, 0 %
+read (20000, 400, 400) uint16, 6.40 GB in 4.6 s
+250 bins over [3500, 7500), 16.00 ADU per bin
+uint16 -> float64 conversion: 2.39 s (not in the CPU time)
+CPU (30 threads): 2.75 s, 7,267 frames/s
+GPU u16 (window): fill 0.243 s, 82,332 frames/s, 12.1 us/frame | values() 0.013 s | total 0.255 s, speed-up 10.8x | identical: True
+GPU f32 (window): fill 0.488 s, 40,993 frames/s, 24.4 us/frame | values() 0.012 s | total 0.500 s, speed-up 5.5x | identical: True
+GPU f64 (window): fill 0.963 s, 20,767 frames/s, 48.2 us/frame | values() 0.008 s | total 0.971 s, speed-up 2.8x | identical: True
+appended 3 rows to results/A100/2026-11-11_window/binMajor/runs.csv
+NVIDIA A100-SXM4-80GB, 0 MiB, 81920 MiB, 0 %
+read (20000, 400, 400) uint16, 6.40 GB in 5.5 s
+500 bins over [3500, 7500), 8.00 ADU per bin
+uint16 -> float64 conversion: 2.41 s (not in the CPU time)
+CPU (30 threads): 3.39 s, 5,895 frames/s
+GPU u16 (window): fill 0.243 s, 82,256 frames/s, 12.2 us/frame | values() 0.021 s | total 0.264 s, speed-up 12.8x | identical: True
+GPU f32 (window): fill 0.488 s, 40,979 frames/s, 24.4 us/frame | values() 0.017 s | total 0.505 s, speed-up 6.7x | identical: True
+GPU f64 (window): fill 0.963 s, 20,765 frames/s, 48.2 us/frame | values() 0.016 s | total 0.979 s, speed-up 3.5x | identical: True
+appended 3 rows to results/A100/2026-11-11_window/binMajor/runs.csv
+NVIDIA A100-SXM4-80GB, 0 MiB, 81920 MiB, 0 %
+read (20000, 400, 400) uint16, 6.40 GB in 6.0 s
+1000 bins over [3500, 7500), 4.00 ADU per bin
+uint16 -> float64 conversion: 2.34 s (not in the CPU time)
+CPU (30 threads): 3.05 s, 6,553 frames/s
+GPU u16 (window): fill 0.243 s, 82,443 frames/s, 12.1 us/frame | values() 0.037 s | total 0.279 s, speed-up 10.9x | identical: True
+GPU f32 (window): fill 0.488 s, 40,979 frames/s, 24.4 us/frame | values() 0.035 s | total 0.523 s, speed-up 5.8x | identical: True
+GPU f64 (window): fill 0.963 s, 20,764 frames/s, 48.2 us/frame | values() 0.032 s | total 0.995 s, speed-up 3.1x | identical: True
+appended 3 rows to results/A100/2026-11-11_window/binMajor/runs.csv
+NVIDIA A100-SXM4-80GB, 0 MiB, 81920 MiB, 0 %
+read (20000, 400, 400) uint16, 6.40 GB in 4.8 s
+2000 bins over [3500, 7500), 2.00 ADU per bin
+uint16 -> float64 conversion: 2.40 s (not in the CPU time)
+CPU (30 threads): 3.24 s, 6,180 frames/s
+GPU u16 (window): fill 0.243 s, 82,222 frames/s, 12.2 us/frame | values() 0.068 s | total 0.311 s, speed-up 10.4x | identical: True
+GPU f32 (window): fill 0.489 s, 40,930 frames/s, 24.4 us/frame | values() 0.067 s | total 0.555 s, speed-up 5.8x | identical: True
+GPU f64 (window): fill 0.964 s, 20,751 frames/s, 48.2 us/frame | values() 0.063 s | total 1.027 s, speed-up 3.2x | identical: True
+appended 3 rows to results/A100/2026-11-11_window/binMajor/runs.csv
+NVIDIA A100-SXM4-80GB, 0 MiB, 81920 MiB, 0 %
+read (20000, 400, 400) uint16, 6.40 GB in 4.2 s
+4000 bins over [3500, 7500), 1.00 ADU per bin
+uint16 -> float64 conversion: 2.45 s (not in the CPU time)
+CPU (30 threads): 5.23 s, 3,827 frames/s
+GPU u16 (window): fill 0.244 s, 81,898 frames/s, 12.2 us/frame | values() 0.131 s | total 0.376 s, speed-up 13.9x | identical: True
+GPU f32 (window): fill 0.489 s, 40,860 frames/s, 24.5 us/frame | values() 0.129 s | total 0.618 s, speed-up 8.5x | identical: True
+GPU f64 (window): fill 0.965 s, 20,729 frames/s, 48.2 us/frame | values() 0.127 s | total 1.092 s, speed-up 4.8x | identical: True
+appended 3 rows to results/A100/2026-11-11_window/binMajor/runs.csv
+NVIDIA A100-SXM4-80GB, 0 MiB, 81920 MiB, 0 %
+read (20000, 400, 400) uint16, 6.40 GB in 4.8 s
+250 bins over [3500, 7500), 16.00 ADU per bin
+uint16 -> float64 conversion: 2.47 s (not in the CPU time)
+CPU (30 threads): 2.83 s, 7,056 frames/s
+GPU u16 (direct): fill 0.243 s, 82,403 frames/s, 12.1 us/frame | values() 0.014 s | total 0.257 s, speed-up 11.1x | identical: True
+GPU f32 (direct): fill 0.484 s, 41,287 frames/s, 24.2 us/frame | values() 0.011 s | total 0.496 s, speed-up 5.7x | identical: True
+GPU f64 (direct): fill 0.963 s, 20,759 frames/s, 48.2 us/frame | values() 0.008 s | total 0.971 s, speed-up 2.9x | identical: True
+appended 3 rows to results/A100/2026-11-11_window/binMajor/runs.csv
+NVIDIA A100-SXM4-80GB, 0 MiB, 81920 MiB, 0 %
+read (20000, 400, 400) uint16, 6.40 GB in 4.7 s
+500 bins over [3500, 7500), 8.00 ADU per bin
+uint16 -> float64 conversion: 2.39 s (not in the CPU time)
+CPU (30 threads): 2.91 s, 6,879 frames/s
+GPU u16 (direct): fill 0.249 s, 80,285 frames/s, 12.5 us/frame | values() 0.023 s | total 0.272 s, speed-up 10.7x | identical: True
+GPU f32 (direct): fill 0.488 s, 41,000 frames/s, 24.4 us/frame | values() 0.020 s | total 0.508 s, speed-up 5.7x | identical: True
+GPU f64 (direct): fill 0.967 s, 20,689 frames/s, 48.3 us/frame | values() 0.016 s | total 0.983 s, speed-up 3.0x | identical: True
+appended 3 rows to results/A100/2026-11-11_window/binMajor/runs.csv
+NVIDIA A100-SXM4-80GB, 0 MiB, 81920 MiB, 0 %
+read (20000, 400, 400) uint16, 6.40 GB in 5.1 s
+1000 bins over [3500, 7500), 4.00 ADU per bin
+uint16 -> float64 conversion: 2.40 s (not in the CPU time)
+CPU (30 threads): 3.00 s, 6,659 frames/s
+GPU u16 (direct): fill 0.341 s, 58,615 frames/s, 17.1 us/frame | values() 0.037 s | total 0.379 s, speed-up 7.9x | identical: True
+GPU f32 (direct): fill 0.741 s, 26,987 frames/s, 37.1 us/frame | values() 0.231 s | total 0.972 s, speed-up 3.1x | identical: True
+GPU f64 (direct): fill 0.971 s, 20,590 frames/s, 48.6 us/frame | values() 0.032 s | total 1.003 s, speed-up 3.0x | identical: True
+appended 3 rows to results/A100/2026-11-11_window/binMajor/runs.csv
+NVIDIA A100-SXM4-80GB, 0 MiB, 81920 MiB, 0 %
+read (20000, 400, 400) uint16, 6.40 GB in 5.6 s
+2000 bins over [3500, 7500), 2.00 ADU per bin
+uint16 -> float64 conversion: 2.31 s (not in the CPU time)
+CPU (30 threads): 3.19 s, 6,268 frames/s
+GPU u16 (direct): fill 0.460 s, 43,489 frames/s, 23.0 us/frame | values() 0.069 s | total 0.529 s, speed-up 6.0x | identical: True
+GPU f32 (direct): fill 0.505 s, 39,637 frames/s, 25.2 us/frame | values() 0.066 s | total 0.571 s, speed-up 5.6x | identical: True
+GPU f64 (direct): fill 0.973 s, 20,547 frames/s, 48.7 us/frame | values() 0.063 s | total 1.036 s, speed-up 3.1x | identical: True
+appended 3 rows to results/A100/2026-11-11_window/binMajor/runs.csv
+NVIDIA A100-SXM4-80GB, 0 MiB, 81920 MiB, 0 %
+read (20000, 400, 400) uint16, 6.40 GB in 5.2 s
+4000 bins over [3500, 7500), 1.00 ADU per bin
+uint16 -> float64 conversion: 2.55 s (not in the CPU time)
+CPU (30 threads): 5.56 s, 3,600 frames/s
+GPU u16 (direct): fill 0.530 s, 37,709 frames/s, 26.5 us/frame | values() 0.131 s | total 0.661 s, speed-up 8.4x | identical: True
+GPU f32 (direct): fill 0.547 s, 36,554 frames/s, 27.4 us/frame | values() 0.129 s | total 0.677 s, speed-up 8.2x | identical: True
+GPU f64 (direct): fill 1.013 s, 19,736 frames/s, 50.7 us/frame | values() 0.126 s | total 1.140 s, speed-up 4.9x | identical: True
+appended 3 rows to results/A100/2026-11-11_window/binMajor/runs.csv
+

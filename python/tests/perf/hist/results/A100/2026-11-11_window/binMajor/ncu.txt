@@ -1,0 +1,36 @@
+for k in window direct; do for b in 250 2000 4000; do
+>   M="--cache-control none --kernel-name regex:fill_ --launch-skip 5 --launch-count 5 --print-summary per-kernel --metrics gpu__time_duration.avg,lts__t_sector_hit_rate.pct,dram__bytes_read.sum,dram__bytes_write.sum"
+>   ncu $M python nsys_hist_probe.py u16 20000 $b 1024 4096 --kernel $k 2>&1 | grep -E "^dtype|duration|hit_rate|dram__|Error|error"
+> done; done
+
+dtype=uint16  N=20000  n_bins=250  batch=1024  chunk=4096  range=[4171, 5744)  bin width=6.29  kernel=window
+    dram__bytes_read.sum             Mbyte  514.27  514.46  514.36
+    dram__bytes_write.sum            Mbyte  137.07  137.50  137.35
+    gpu__time_duration.avg              ms    3.09    3.11    3.10
+    lts__t_sector_hit_rate.pct           %   48.48   48.73   48.55
+dtype=uint16  N=20000  n_bins=2000  batch=1024  chunk=4096  range=[4171, 5744)  bin width=0.79  kernel=window
+    dram__bytes_read.sum             Gbyte    1.40    1.44    1.41
+    dram__bytes_write.sum            Mbyte  655.68  670.15  660.32
+    gpu__time_duration.avg              ms    5.72    5.81    5.76
+    lts__t_sector_hit_rate.pct           %   60.31   60.60   60.48
+dtype=uint16  N=20000  n_bins=4000  batch=1024  chunk=4096  range=[4171, 5744)  bin width=0.39  kernel=window
+    dram__bytes_read.sum             Gbyte    2.60    2.61    2.61
+    dram__bytes_write.sum            Gbyte    1.32    1.32    1.32
+    gpu__time_duration.avg              ms    7.82    7.93    7.86
+    lts__t_sector_hit_rate.pct           %   62.54   62.69   62.60
+dtype=uint16  N=20000  n_bins=250  batch=1024  chunk=4096  range=[4171, 5744)  bin width=6.29  kernel=direct
+    dram__bytes_read.sum             Gbyte    3.82    3.83    3.82
+    dram__bytes_write.sum            Gbyte    2.88    2.89    2.88
+    gpu__time_duration.avg              ms   11.67   11.82   11.73
+    lts__t_sector_hit_rate.pct           %   74.71   75.10   74.97
+dtype=uint16  N=20000  n_bins=2000  batch=1024  chunk=4096  range=[4171, 5744)  bin width=0.79  kernel=direct
+    dram__bytes_read.sum             Gbyte   11.03   11.07   11.05
+    dram__bytes_write.sum            Gbyte    4.92    4.92    4.92
+    gpu__time_duration.avg              ms   26.48   26.79   26.59
+    lts__t_sector_hit_rate.pct           %   60.61   60.81   60.69
+dtype=uint16  N=20000  n_bins=4000  batch=1024  chunk=4096  range=[4171, 5744)  bin width=0.39  kernel=direct
+    dram__bytes_read.sum             Gbyte   11.08   11.09   11.09
+    dram__bytes_write.sum            Gbyte    4.92    4.93    4.93
+    gpu__time_duration.avg              ms   26.26   26.61   26.43
+    lts__t_sector_hit_rate.pct           %   60.60   60.68   60.65
+
