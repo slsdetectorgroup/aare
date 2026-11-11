@@ -9,7 +9,7 @@ namespace aare::cuda::detail {
 /// Accumulator layout. false: bin-major [nbins][npix]. true: pixel-major
 /// [npix][nbins], the layout values() returns, so readout only caps.
 /// Experiment switch: rebuild to change it.
-inline constexpr bool PIXEL_MAJOR = false;
+inline constexpr bool PIXEL_MAJOR = true;
 
 /// Width, in bins, of each pixel's shared-memory window in fill_window.
 /// Chosen with perf/hist/window_hits.py on MÖNCH frames (noise sigma ~21
