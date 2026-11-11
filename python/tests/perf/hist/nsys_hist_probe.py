@@ -47,6 +47,8 @@ ap.add_argument("batch", type=int)
 ap.add_argument("chunk", type=int)
 ap.add_argument("--range-scale", type=float, default=1.0)
 ap.add_argument("--center", type=float, default=None)
+ap.add_argument("--kernel", choices=["window", "direct"], default="window",
+                help="fill_window (default) or fill_bin_major")
 args = ap.parse_args()
 
 dtype = DTYPES[args.dtype]
@@ -72,7 +74,7 @@ rows, cols = data.shape[1:]
 
 hist = PixelHistogramCUDA(rows=rows, cols=cols, n_bins=n_bins, xmin=xmin,
                           xmax=xmax, dtype=data.dtype, storage_dtype=np.uint32,
-                          batch_size=batch)
+                          batch_size=batch, window=args.kernel == "window")
 out = np.empty((rows, cols, n_bins), dtype=np.uint32)
 hist.register_input_buffer(data)
 hist.register_output_buffer(out)
@@ -95,7 +97,7 @@ hist.unregister_output_buffer()
 in_range = out.sum(dtype=np.uint64) / (N * rows * cols)
 print(f"dtype={data.dtype}  N={N}  n_bins={n_bins}  batch={batch}  chunk={chunk}  "
       f"range=[{xmin:g}, {xmax:g})  bin width={(xmax - xmin) / n_bins:.2f}"
-      f"{'  centred' if args.center is not None else ''}")
+      f"{'  centred' if args.center is not None else ''}  kernel={args.kernel}")
 print(f"  H2D/frame={rows * cols * data.itemsize:,} B   "
       f"readout={out.nbytes:,} B   in range={100 * in_range:.2f}%")
 print(f"  wall fill={t_fill:.3f}s ({N / t_fill:.0f} FPS)  readout={t_read * 1e3:.1f} ms  "

@@ -58,14 +58,16 @@ def readout(sqlite_path) -> dict:
             "readout_D2H_GBps": d2h_bytes / d2h_ns if d2h_ns else 0.0}
 
 
-def run_one(dtype, n_bins, batch, label, n_frames, chunk, outdir) -> dict | None:
+def run_one(dtype, n_bins, batch, label, n_frames, chunk, outdir,
+            kernel="window") -> dict | None:
     rep = outdir / f"probe_{label}"
     print(f"\n--- {label}: {dtype} frames, {n_bins} bins, batch={batch}, N={n_frames} ---")
 
     prof = [common.NSYS, "profile", *common.nsys_profile_flags(),
             "-o", str(rep),
             sys.executable, str(HERE / "nsys_hist_probe.py"),
-            dtype, str(n_frames), str(n_bins), str(batch), str(chunk)]
+            dtype, str(n_frames), str(n_bins), str(batch), str(chunk),
+            "--kernel", kernel]
     p = subprocess.run(prof, capture_output=True, text=True)
     for line in p.stdout.splitlines():
         if line.strip().startswith(("dtype=", "H2D/frame", "wall")):
@@ -88,7 +90,7 @@ def run_one(dtype, n_bins, batch, label, n_frames, chunk, outdir) -> dict | None
     r = gpu_span.analyze(sq, n_frames, hist_common.FILL_KERNEL,
                          engines=("kernel", "H2D"))
     r.update(readout(sq))
-    r.update(label=label, dtype=dtype, n_bins=n_bins, batch=batch)
+    r.update(label=label, dtype=dtype, n_bins=n_bins, batch=batch, kernel=kernel)
     print(f"    fill: kernel {r['kernel_us_per_frame']:5.2f} us (duty {r['kernel_duty_pct']:4.1f}%)  "
           f"H2D {r['H2D_us_per_frame']:5.2f} ({r['H2D_duty_pct']:4.1f}%)  "
           f"-> {r['bottleneck']}-bound at {r['roofline_us_per_frame']:.2f} us/frame "
@@ -106,6 +108,8 @@ def main() -> int:
                     help="frames held in host memory and re-queued until --frames")
     ap.add_argument("--tag", default="")
     ap.add_argument("--only", nargs="+", default=None, help="subset of labels")
+    ap.add_argument("--kernel", choices=["window", "direct"], default="window",
+                    help="fill kernel: fill_window (default) or fill_bin_major")
     args = ap.parse_args()
 
     common.assert_build_fresh(hist_common.HEADERS)
@@ -120,7 +124,8 @@ def main() -> int:
     for dtype, n_bins, batch, label in CONFIGS:
         if args.only and label not in args.only:
             continue
-        r = run_one(dtype, n_bins, batch, label, args.frames, args.chunk, outdir)
+        r = run_one(dtype, n_bins, batch, label, args.frames, args.chunk, outdir,
+                    args.kernel)
         if r:
             rows.append(r)
 
