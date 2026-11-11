@@ -16,16 +16,22 @@ template <typename H> struct DeviceResult {
 
 // Histogram `frames` (nframes, nrows, ncols) on the GPU, with frames of type
 // In. Explicitly instantiated in the .cu for the storage and input types
-// under test; the axis is float for all of them.
+// under test; the axis is float for all of them. `window` picks the fill
+// kernel: fill_window (true) or fill_bin_major (false).
 template <typename H, typename In>
 DeviceResult<H> run_gpu(NDView<In, 3> frames, size_t nbins, float xmin,
-                        float xmax, size_t batch_size);
+                        float xmax, size_t batch_size, bool window = true);
 
 // Fill one histogram from consecutive parts of `frames`, part i ending at
 // frame ends[i], and take a values() snapshot after each part.
 std::vector<NDArray<uint32_t, 3>>
 run_gpu_in_parts(NDView<float, 3> frames, size_t nbins, float xmin, float xmax,
-                 size_t batch_size, const std::vector<size_t> &ends);
+                 size_t batch_size, const std::vector<size_t> &ends,
+                 bool window = true);
+
+// Whether constructing a histogram with these arguments throws
+// std::invalid_argument.
+bool constructor_throws(size_t nbins, size_t batch_size, bool window);
 
 // Known pattern written straight into the device accumulator, read back
 // through values(); tests the transpose and the cap without the fill kernel.

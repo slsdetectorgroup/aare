@@ -25,28 +25,50 @@ def frames():
     return np.round(base + noise).astype(np.uint16)
 
 
-def make_gpu(dtype, storage_dtype=np.uint32, batch_size=8):
-    return PixelHistogramCUDA(rows=ROWS, cols=COLS, n_bins=N_BINS, xmin=XMIN,
+def make_gpu(dtype, storage_dtype=np.uint32, batch_size=8, window=True,
+             n_bins=N_BINS):
+    return PixelHistogramCUDA(rows=ROWS, cols=COLS, n_bins=n_bins, xmin=XMIN,
                               xmax=XMAX, dtype=dtype,
                               storage_dtype=storage_dtype,
-                              batch_size=batch_size)
+                              batch_size=batch_size, window=window)
 
 
-def cpu_values(frames):
-    cpu = PixelHistogram_u32(rows=ROWS, cols=COLS, n_bins=N_BINS, xmin=XMIN,
+def cpu_values(frames, n_bins=N_BINS):
+    cpu = PixelHistogram_u32(rows=ROWS, cols=COLS, n_bins=n_bins, xmin=XMIN,
                              xmax=XMAX)
     for frame in frames:
         cpu.fill_async(frame.astype(np.float64))
     return cpu.values()
 
 
+@pytest.mark.parametrize("window", [True, False])
 @pytest.mark.parametrize("dtype", [np.uint16, np.float32, np.float64])
-def test_matches_cpu(frames, dtype):
+def test_matches_cpu(frames, dtype, window):
     data = frames.astype(dtype)
-    gpu = make_gpu(dtype)
+    gpu = make_gpu(dtype, window=window)
     gpu.fill_histogram(data)
     np.testing.assert_array_equal(gpu.values(), cpu_values(frames))
     assert gpu.dtype == np.dtype(dtype)
+    assert gpu.window is window
+
+
+@pytest.mark.parametrize("window", [True, False])
+def test_matches_cpu_with_photons_and_fine_bins(window):
+    # 1200 bins of 1 ADU: more bins than the window holds. 5 % of values get
+    # a photon far outside it, and the pedestals jump halfway.
+    rng = np.random.default_rng(7)
+    base = rng.uniform(4000, 4600, (ROWS, COLS))
+    data = base + rng.normal(0, 10, (300, ROWS, COLS))
+    data[150:] += 300
+    data += (rng.random(data.shape) < 0.05) * rng.uniform(100, 200, data.shape)
+    data = np.round(data).astype(np.uint16)
+    gpu = make_gpu(np.uint16, batch_size=64, window=window, n_bins=1200)
+    gpu.fill_histogram(data)
+    np.testing.assert_array_equal(gpu.values(), cpu_values(data, n_bins=1200))
+
+
+def test_window_is_the_default():
+    assert make_gpu(np.uint16).window is True
 
 
 @pytest.mark.parametrize("dtype, axis_dtype", [(np.uint16, np.float32),
@@ -178,3 +200,7 @@ def test_constructor_validates_arguments():
     with pytest.raises(ValueError):
         PixelHistogramCUDA(rows=ROWS, cols=COLS, n_bins=N_BINS, xmin=XMIN,
                            xmax=XMAX, dtype=np.uint16, batch_size=0)
+    # The window kernel counts a batch in uint16 shared counters.
+    with pytest.raises(ValueError, match="65535"):
+        make_gpu(np.uint16, batch_size=65536, window=True)
+    make_gpu(np.uint16, batch_size=65536, window=False)

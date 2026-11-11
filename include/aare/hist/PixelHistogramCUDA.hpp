@@ -53,6 +53,7 @@ class PixelHistogramCUDA {
     AxisType m_xmax;
     AxisType m_scale; // 1/bin width
     size_t m_batch_size;
+    bool m_window; // fill_window (true) or fill_bin_major (false)
     size_t m_next_batch;
     mutable size_t m_processed_batches; // flush() touches it.
 
@@ -66,7 +67,19 @@ class PixelHistogramCUDA {
 
     // Device buffers for frames and histogram
     DeviceBuffer<DeviceStorageType> d_histogram;
+    // Per-pixel window centre of fill_window, in bins; NaN until placed.
+    DeviceBuffer<float> d_centre;
     std::array<DeviceBuffer<InputType>, NUM_SLOTS> d_frames_batch;
+
+    // fill_window's shared memory per block. Over 48 KB would need
+    // cudaFuncSetAttribute(cudaFuncAttributeMaxDynamicSharedMemorySize).
+    static constexpr size_t WINDOW_SHMEM_BYTES =
+        size_t{detail::WINDOW_BINS} * BLOCK_SIZE * sizeof(uint16_t);
+    static_assert(WINDOW_SHMEM_BYTES <= 48 * 1024,
+                  "PixelHistogramCUDA: window shared memory exceeds 48 KB per "
+                  "block; lower BLOCK_SIZE or WINDOW_BINS");
+    // Largest batch whose counts fit fill_window's uint16_t shared counters.
+    static constexpr size_t MAX_WINDOW_BATCH = 65535;
 
     // Events for synchronization
     std::array<Event, NUM_SLOTS> copy_done;
@@ -80,7 +93,8 @@ class PixelHistogramCUDA {
     // first member initializer so that nothing is allocated before the
     // arguments are known to be valid.
     static size_t check_args(size_t rows, size_t cols, size_t n_bins,
-                             AxisType xmin, AxisType xmax, size_t batch_size) {
+                             AxisType xmin, AxisType xmax, size_t batch_size,
+                             bool window) {
         if (rows < 1 || cols < 1 || n_bins < 1) {
             throw std::invalid_argument(
                 "PixelHistogramCUDA requires positive rows, cols and bins");
@@ -92,6 +106,11 @@ class PixelHistogramCUDA {
         if (batch_size < 1) {
             throw std::invalid_argument(
                 "PixelHistogramCUDA requires batch_size >= 1");
+        }
+        if (window && batch_size > MAX_WINDOW_BATCH) {
+            throw std::invalid_argument(
+                "PixelHistogramCUDA with window=true requires batch_size <= " +
+                std::to_string(MAX_WINDOW_BATCH));
         }
         return rows;
     }
@@ -114,14 +133,18 @@ class PixelHistogramCUDA {
     }
 
   public:
+    // window: fill with fill_window, which counts each pixel's busy bins in
+    // shared memory (needs batch_size <= 65535; batches of ~10 x WINDOW_BINS
+    // frames or more pay best). false: fill_bin_major, every value straight
+    // to global memory. Both give identical counts.
     PixelHistogramCUDA(size_t rows, size_t cols, size_t n_bins, AxisType xmin,
-                       AxisType xmax, size_t batch_size = 1)
-        : nrows{check_args(rows, cols, n_bins, xmin, xmax, batch_size)},
+                       AxisType xmax, size_t batch_size = 1, bool window = true)
+        : nrows{check_args(rows, cols, n_bins, xmin, xmax, batch_size, window)},
           ncols{cols}, m_nbins{n_bins}, m_xmin{xmin}, m_xmax{xmax},
           m_scale{m_nbins / (m_xmax - m_xmin)}, m_batch_size{batch_size},
-          m_next_batch{0}, m_processed_batches{0},
-          d_histogram{nrows * ncols * m_nbins}, copy_stream{make_stream()},
-          compute_stream{make_stream()} {
+          m_window{window}, m_next_batch{0}, m_processed_batches{0},
+          d_histogram{nrows * ncols * m_nbins}, d_centre{nrows * ncols},
+          copy_stream{make_stream()}, compute_stream{make_stream()} {
 
         // Construct events
         for (int i = 0; i < NUM_SLOTS; ++i) {
@@ -130,6 +153,9 @@ class PixelHistogramCUDA {
         }
 
         CUDA_CHECK(cudaMemsetAsync(d_histogram.get(), 0, d_histogram.bytes(),
+                                   compute_stream.get()));
+        // All bytes 0xFF is a float NaN: every window starts "not placed".
+        CUDA_CHECK(cudaMemsetAsync(d_centre.get(), 0xFF, d_centre.bytes(),
                                    compute_stream.get()));
 
         // Initialize device buffers for frames
@@ -208,11 +234,17 @@ class PixelHistogramCUDA {
         CUDA_CHECK(
             cudaStreamWaitEvent(compute_stream.get(), copy_done[slot].get()));
 
-        detail::fill_bin_major<<<gridDim, blockDim, 0, // let's not use shmem at
-                                                       // first
-                                 compute_stream.get()>>>(
-            d_frames_batch[slot].get(), d_histogram.get(), npix, m_nbins,
-            m_xmin, m_xmax, m_scale, batch_size);
+        if (m_window) {
+            detail::fill_window<<<gridDim, blockDim, WINDOW_SHMEM_BYTES,
+                                  compute_stream.get()>>>(
+                d_frames_batch[slot].get(), d_histogram.get(), d_centre.get(),
+                npix, m_nbins, m_xmin, m_xmax, m_scale, batch_size);
+        } else {
+            detail::
+                fill_bin_major<<<gridDim, blockDim, 0, compute_stream.get()>>>(
+                    d_frames_batch[slot].get(), d_histogram.get(), npix,
+                    m_nbins, m_xmin, m_xmax, m_scale, batch_size);
+        }
         CUDA_CHECK(cudaGetLastError());
 
         CUDA_CHECK(
@@ -352,6 +384,7 @@ class PixelHistogramCUDA {
     size_t cols() const noexcept { return ncols; }
     size_t n_bins() const noexcept { return m_nbins; }
     size_t batch_size() const noexcept { return m_batch_size; }
+    bool window() const noexcept { return m_window; }
 };
 
 } // namespace aare::cuda
