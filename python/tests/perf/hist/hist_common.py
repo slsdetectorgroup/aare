@@ -16,9 +16,10 @@ HEADERS = ["include/aare/hist/PixelHistogramCUDA.hpp",
            "include/aare/hist/pixelhistogram_kernel.cuh",
            "include/aare/RAII_device.hpp"]
 
-# Kernel short names in the trace. The fill kernel runs once per batch; the
-# readout kernel once per values() call.
-FILL_KERNEL = "fill_bin_major"
+# Kernel short names in the trace, matched as substrings. The fill kernel
+# (fill_window or fill_bin_major) runs once per batch; the readout kernel
+# once per values() call.
+FILL_KERNEL = "fill_"
 READOUT_KERNEL = "bin_to_pixel_major"
 
 

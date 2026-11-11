@@ -3,7 +3,7 @@
 
     cpu_vs_gpu.py [--n-frames N] [--n-bins B] [--xmin X] [--xmax X]
                   [--threads T] [--batch S] [--gpu-dtype {u16,f32,f64} ...]
-                  [--csv PATH]
+                  [--kernel {window,direct}] [--csv PATH]
 
 Script version of python/tests/PixelHistogramCUDA.ipynb, for a GPU node
 without Jupyter. Not an nsys probe: the times are wall-clock.
@@ -42,7 +42,7 @@ from aare import File, PixelHistogram_u32, PixelHistogramCUDA  # noqa: E402
 DTYPES = {"u16": np.uint16, "f32": np.float32, "f64": np.float64}
 CSV_COLUMNS = ["node", "cpus", "cpu_threads", "cpu_s", "gpu_input",
                "gpu_batch", "gpu_fill_s", "gpu_values_s", "n_frames",
-               "n_bins", "range_adu", "identical"]
+               "n_bins", "range_adu", "identical", "gpu_kernel"]
 
 ap = argparse.ArgumentParser()
 ap.add_argument("--n-frames", type=int, default=20_000)
@@ -54,6 +54,8 @@ ap.add_argument("--threads", type=int, default=len(os.sched_getaffinity(0)),
 ap.add_argument("--batch", type=int, default=128, help="GPU batch size")
 ap.add_argument("--gpu-dtype", choices=DTYPES, nargs="+", default=["u16"],
                 help="one GPU run per dtype, e.g. --gpu-dtype u16 f32 f64")
+ap.add_argument("--kernel", choices=["window", "direct"], default="window",
+                help="GPU fill kernel: fill_window (default) or fill_bin_major")
 ap.add_argument("--csv", type=Path, help="append one row per GPU run here")
 args = ap.parse_args()
 
@@ -104,7 +106,8 @@ for name in args.gpu_dtype:
 
     gpu = PixelHistogramCUDA(rows=rows, cols=cols, n_bins=args.n_bins,
                              xmin=args.xmin, xmax=args.xmax, dtype=gpu_dtype,
-                             storage_dtype=np.uint32, batch_size=args.batch)
+                             storage_dtype=np.uint32, batch_size=args.batch,
+                             window=args.kernel == "window")
     gpu.register_input_buffer(frames_gpu)  # pin once, outside the timers
     gpu.register_output_buffer(values_gpu)
 
@@ -123,7 +126,7 @@ for name in args.gpu_dtype:
 
     identical = np.array_equal(values_cpu, values_gpu)
     all_identical &= identical
-    print(f"GPU {name}: fill {t_fill:.3f} s, {n_frames / t_fill:,.0f} frames/s, "
+    print(f"GPU {name} ({args.kernel}): fill {t_fill:.3f} s, {n_frames / t_fill:,.0f} frames/s, "
           f"{t_fill / n_frames * 1e6:.1f} us/frame | values() {t_values:.3f} s | "
           f"total {t_gpu:.3f} s, speed-up {t_cpu / t_gpu:.1f}x | "
           f"identical: {identical}")
@@ -139,7 +142,7 @@ for name in args.gpu_dtype:
         gpu_fill_s=f"{t_fill:.3f}", gpu_values_s=f"{t_values:.3f}",
         n_frames=n_frames, n_bins=args.n_bins,
         range_adu=f"{args.xmax - args.xmin:g}",
-        identical=str(identical).lower()))
+        identical=str(identical).lower(), gpu_kernel=args.kernel))
 
 if args.csv:
     new = not args.csv.exists()
