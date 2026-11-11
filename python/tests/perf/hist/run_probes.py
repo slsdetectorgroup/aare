@@ -5,6 +5,11 @@
     python3.11 run_probes.py --frames 2000         # quick check (clocks may not ramp)
     python3.11 run_probes.py --only u16_b1000_bs64 --tag mytag
 
+    # sweep instead of the 4 configs: every input type x bin count x kernel
+    python run_probes.py --dtypes u16 f32 f64 --bins 250 500 1000 2000 4000 \
+        --batch 1024 --range 3500 7500 --kernel window direct --chunk 4096 \
+        --outdir results/A100/2026-11-11_window/pixelMajor/nsys
+
 Per config: an .nsys-rep + .sqlite in results/<date>[_tag]/ and one row in
 probes.csv (re-running a config replaces its own row only).
 
@@ -18,6 +23,7 @@ from __future__ import annotations
 
 import argparse
 import csv
+import re
 import sqlite3
 import subprocess
 import sys
@@ -59,7 +65,7 @@ def readout(sqlite_path) -> dict:
 
 
 def run_one(dtype, n_bins, batch, label, n_frames, chunk, outdir,
-            kernel="window") -> dict | None:
+            kernel="window", hist_range=None) -> dict | None:
     rep = outdir / f"probe_{label}"
     print(f"\n--- {label}: {dtype} frames, {n_bins} bins, batch={batch}, N={n_frames} ---")
 
@@ -68,10 +74,16 @@ def run_one(dtype, n_bins, batch, label, n_frames, chunk, outdir,
             sys.executable, str(HERE / "nsys_hist_probe.py"),
             dtype, str(n_frames), str(n_bins), str(batch), str(chunk),
             "--kernel", kernel]
+    if hist_range:
+        prof += ["--range", *map(str, hist_range)]
     p = subprocess.run(prof, capture_output=True, text=True)
+    bin_width = None
     for line in p.stdout.splitlines():
         if line.strip().startswith(("dtype=", "H2D/frame", "wall")):
             print("   ", line.strip())
+        m = re.search(r"bin width=([0-9.]+)", line)
+        if m:
+            bin_width = float(m.group(1))
     # nsys writes a report even when the traced process crashes, and returns
     # the child's exit code: check it, or a dead probe surfaces later as a
     # missing CUPTI table in the export.
@@ -90,7 +102,8 @@ def run_one(dtype, n_bins, batch, label, n_frames, chunk, outdir,
     r = gpu_span.analyze(sq, n_frames, hist_common.FILL_KERNEL,
                          engines=("kernel", "H2D"))
     r.update(readout(sq))
-    r.update(label=label, dtype=dtype, n_bins=n_bins, batch=batch, kernel=kernel)
+    r.update(label=label, dtype=dtype, n_bins=n_bins, batch=batch, kernel=kernel,
+             bin_width_adu=bin_width)
     print(f"    fill: kernel {r['kernel_us_per_frame']:5.2f} us (duty {r['kernel_duty_pct']:4.1f}%)  "
           f"H2D {r['H2D_us_per_frame']:5.2f} ({r['H2D_duty_pct']:4.1f}%)  "
           f"-> {r['bottleneck']}-bound at {r['roofline_us_per_frame']:.2f} us/frame "
@@ -108,26 +121,43 @@ def main() -> int:
                     help="frames held in host memory and re-queued until --frames")
     ap.add_argument("--tag", default="")
     ap.add_argument("--only", nargs="+", default=None, help="subset of labels")
-    ap.add_argument("--kernel", choices=["window", "direct"], default="window",
-                    help="fill kernel: fill_window (default) or fill_bin_major")
+    ap.add_argument("--kernel", choices=["window", "direct"], nargs="+",
+                    default=["window"],
+                    help="fill kernel(s): fill_window (default) and/or fill_bin_major")
+    ap.add_argument("--dtypes", choices=["u16", "f32", "f64"], nargs="+",
+                    help="sweep: input types (with --bins, replaces the 4 configs)")
+    ap.add_argument("--bins", type=int, nargs="+", help="sweep: bin counts")
+    ap.add_argument("--batch", type=int, default=1024, help="sweep: batch size")
+    ap.add_argument("--range", nargs=2, type=float, metavar=("XMIN", "XMAX"),
+                    help="histogram range (default: from the data)")
+    ap.add_argument("--outdir", type=Path,
+                    help="results folder (default: results/<date>[_tag]/)")
     args = ap.parse_args()
+    if args.bins:
+        configs = [(d, b, args.batch, f"{d}_b{b}_bs{args.batch}")
+                   for d in (args.dtypes or ["u16"]) for b in args.bins]
+    else:
+        configs = CONFIGS
 
     common.assert_build_fresh(hist_common.HEADERS)
     common.assert_idle_gpu()
     env = common.capture_env()
-    outdir = hist_common.results_dir(args.tag)
+    outdir = args.outdir or hist_common.results_dir(args.tag)
+    outdir.mkdir(parents=True, exist_ok=True)
     common.write_env(outdir / "env.json", env)
     print(f"build: git={env['git_rev']}{' (dirty)' if env['git_dirty'] else ''}")
     print(f"out:   {outdir}")
 
     rows = []
-    for dtype, n_bins, batch, label in CONFIGS:
-        if args.only and label not in args.only:
-            continue
-        r = run_one(dtype, n_bins, batch, label, args.frames, args.chunk, outdir,
-                    args.kernel)
-        if r:
-            rows.append(r)
+    for kernel in args.kernel:
+        for dtype, n_bins, batch, base in configs:
+            if args.only and base not in args.only:
+                continue
+            label = f"{base}_{kernel}" if len(args.kernel) > 1 or args.bins else base
+            r = run_one(dtype, n_bins, batch, label, args.frames, args.chunk, outdir,
+                        kernel, args.range)
+            if r:
+                rows.append(r)
 
     if not rows:
         return 1

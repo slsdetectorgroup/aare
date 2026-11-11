@@ -47,6 +47,9 @@ ap.add_argument("batch", type=int)
 ap.add_argument("chunk", type=int)
 ap.add_argument("--range-scale", type=float, default=1.0)
 ap.add_argument("--center", type=float, default=None)
+ap.add_argument("--range", nargs=2, type=float, metavar=("XMIN", "XMAX"),
+                help="histogram range [XMIN, XMAX) in ADU (default: from the data, "
+                     "then --range-scale)")
 ap.add_argument("--kernel", choices=["window", "direct"], default="window",
                 help="fill_window (default) or fill_bin_major")
 args = ap.parse_args()
@@ -69,6 +72,8 @@ xmin, xmax = float(math.floor(lo)), float(math.ceil(hi) + 1)
 if args.range_scale != 1.0:
     mid, half = (xmin + xmax) / 2, (xmax - xmin) / 2 * args.range_scale
     xmin, xmax = float(math.floor(mid - half)), float(math.ceil(mid + half))
+if args.range:
+    xmin, xmax = args.range
 data = np.ascontiguousarray(data.astype(dtype, copy=False))
 rows, cols = data.shape[1:]
 

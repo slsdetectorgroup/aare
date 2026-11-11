@@ -1,6 +1,6 @@
 """Plot a cpu_vs_gpu.py campaign: throughput and speed-up against bin width.
 
-    plot_cpu_vs_gpu.py [CSV] [--out DIR]
+    plot_cpu_vs_gpu.py [CSV] [--out DIR] [--kernel window|direct]
 
 CSV is the file written by `cpu_vs_gpu.py --csv` (default: the A100 campaign
 of 2026-11-05). Writes two PNGs next to it, or into --out:
@@ -11,8 +11,13 @@ of 2026-11-05). Writes two PNGs next to it, or into --out:
                               each GPU input type
   speedup_vs_binwidth.png     GPU over CPU, one line per GPU input type
 
-Times are fill plus values() on both sides, so the histogram readout is
-included and spread over the run's frames.
+Times are for the whole pipeline on both sides: on the GPU the fill (frames copied in, kernel) plus one values() (the
+histogram copied back). The readout is paid once per run, so it weighs more
+in a short run. The PCIe lines are the limit of the copy in alone.
+
+A CSV with a gpu_kernel column holds runs of both fill kernels: only the
+--kernel ones are plotted (default window) and the PNG names end in _window
+or _direct. Older CSVs have no such column; their runs are the direct kernel.
 
 The accumulator layout (detail::PIXEL_MAJOR) is not in the CSV: it is taken
 from the CSV's folder name ("binMajor..." or "pixelMajor...", any case), or
@@ -53,13 +58,21 @@ ap = argparse.ArgumentParser()
 ap.add_argument("csv", type=Path, nargs="?", default=DEFAULT_CSV)
 ap.add_argument("--out", type=Path, help="output directory (default: the CSV's)")
 ap.add_argument("--layout", choices=["bin-major", "pixel-major"],
-                help="fill kernel layout (default: from the CSV's folder name)")
+                help="accumulator layout (default: from the CSV's folder name)")
+ap.add_argument("--kernel", choices=["window", "direct"], default="window",
+                help="fill kernel to plot when the CSV has both (default: window)")
 args = ap.parse_args()
 out = args.out or args.csv.parent
 out.mkdir(parents=True, exist_ok=True)
 
 # ---- data --------------------------------------------------------------------
 rows = list(csv.DictReader(args.csv.open()))
+has_kernel = "gpu_kernel" in rows[0]
+kernel = args.kernel if has_kernel else "direct"
+rows = [r for r in rows if r.get("gpu_kernel", "direct") == kernel]
+if not rows:
+    raise SystemExit(f"no {kernel} runs in {args.csv}")
+suffix = f"_{kernel}" if has_kernel else ""
 n_frames = int(rows[0]["n_frames"])
 range_adu = float(rows[0]["range_adu"])
 node = rows[0]["node"]
@@ -96,15 +109,18 @@ def xaxis(ax):
     ax.grid(True, which="major", alpha=0.3)
 
 
-SUBTITLE = (f"A100 vs EPYC 7713 (30 threads, float64 input, {node})  ·  {layout} kernel  ·  "
+SUBTITLE = (f"A100 vs EPYC 7713 (30 threads, float64 input, {node})  ·  {layout}, {kernel} kernel  ·  "
             f"{n_frames:,} frames of 400×400")
 
 
+NOTE = "GPU time: frames copied in + fill kernel + one values() (histogram copied back)"
+
+
 def titles(fig, ax, title):
-    """Short bold title on the figure, one grey line of context under it,
+    """Short bold title on the figure, two grey lines of context under it,
     kept clear of the top axis label."""
     fig.suptitle(title, fontsize=12, fontweight="bold")
-    ax.set_title(SUBTITLE, fontsize=8.5, color="0.4", pad=14)
+    ax.set_title(f"{SUBTITLE}\n{NOTE}", fontsize=8.5, color="0.4", pad=14)
 
 # ---- throughput ----------------------------------------------------------------
 fig, ax = plt.subplots(figsize=(8, 5.6), layout="constrained")
@@ -115,17 +131,17 @@ for inp in ("u16", "f32", "f64"):
     ax.plot(ws, [n_frames / gpu[inp][w] for w in ws], lw=2, ms=7, **st)
     limit = PCIE_GBPS * 1e9 / (NPIX * BYTES[inp])
     ax.axhline(limit, color=st["color"], ls="--", lw=1, alpha=0.7)
-    ax.annotate(f"PCIe copy limit, {inp}: {limit / 1e3:.0f}k frames/s",
+    ax.annotate(f"PCIe limit of the copy in alone, {inp}: {limit / 1e3:.0f}k frames/s",
                 (max(widths) * 1.25, limit), xytext=(0, 3), textcoords="offset points",
                 color=st["color"], fontsize=8, va="bottom")
 ax.set_yscale("log")
 ax.set_ylim(2e3, 1.5e5)
 ax.yaxis.set_major_formatter(FuncFormatter(lambda v, _: f"{v / 1e3:g}k"))
-ax.set_ylabel("Throughput, fill + readout (frames per second, log scale)")
+ax.set_ylabel("Frames per second, whole pipeline (log scale)")
 xaxis(ax)
-titles(fig, ax, "Throughput, GPU vs CPU")
+titles(fig, ax, "Throughput of the whole pipeline, GPU vs CPU")
 ax.legend(loc="lower left", fontsize=9, framealpha=0.9)
-p1 = out / "throughput_vs_binwidth.png"
+p1 = out / f"throughput_vs_binwidth{suffix}.png"
 fig.savefig(p1, dpi=200)
 plt.close(fig)
 
@@ -143,10 +159,10 @@ for inp in ("u16", "f32", "f64"):
 ax.set_ylim(0, max(cpu[w] / gpu[i][w] for i in gpu for w in gpu[i]) * 1.15)
 ax.set_ylabel("Speed-up over the CPU (CPU time / GPU time)")
 xaxis(ax)
-titles(fig, ax, "GPU speed-up over the CPU")
+titles(fig, ax, "GPU speed-up over the CPU, whole pipeline")
 ax.legend(loc="upper center", bbox_to_anchor=(0.5, -0.13), ncol=3, fontsize=9,
           frameon=False)
-p2 = out / "speedup_vs_binwidth.png"
+p2 = out / f"speedup_vs_binwidth{suffix}.png"
 fig.savefig(p2, dpi=200)
 plt.close(fig)
 
