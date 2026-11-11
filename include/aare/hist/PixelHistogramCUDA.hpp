@@ -138,7 +138,8 @@ class PixelHistogramCUDA {
     // frames or more pay best). false: fill_bin_major, every value straight
     // to global memory. Both give identical counts.
     PixelHistogramCUDA(size_t rows, size_t cols, size_t n_bins, AxisType xmin,
-                       AxisType xmax, size_t batch_size = 1, bool window = true)
+                       AxisType xmax, size_t batch_size = 1024,
+                       bool window = true)
         : nrows{check_args(rows, cols, n_bins, xmin, xmax, batch_size, window)},
           ncols{cols}, m_nbins{n_bins}, m_xmin{xmin}, m_xmax{xmax},
           m_scale{m_nbins / (m_xmax - m_xmin)}, m_batch_size{batch_size},

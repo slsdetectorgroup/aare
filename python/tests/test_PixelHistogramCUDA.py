@@ -67,8 +67,13 @@ def test_matches_cpu_with_photons_and_fine_bins(window):
     np.testing.assert_array_equal(gpu.values(), cpu_values(data, n_bins=1200))
 
 
-def test_window_is_the_default():
-    assert make_gpu(np.uint16).window is True
+def test_defaults():
+    # Checks the factory's own defaults.
+    gpu = PixelHistogramCUDA(rows=ROWS, cols=COLS, n_bins=N_BINS, xmin=XMIN,
+                             xmax=XMAX, dtype=np.uint16)
+    assert gpu.batch_size == 1024
+    assert gpu.window is True
+
 
 
 @pytest.mark.parametrize("dtype, axis_dtype", [(np.uint16, np.float32),

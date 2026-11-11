@@ -31,7 +31,7 @@ def _suffix(table, dtype, what):
 
 
 def PixelHistogramCUDA(*, rows, cols, n_bins, xmin, xmax, dtype,
-                       storage_dtype=np.uint32, batch_size=64, window=True):
+                       storage_dtype=np.uint32, batch_size=1024, window=True):
     """
     Per-pixel histograms filled on the GPU.
 
@@ -56,10 +56,13 @@ def PixelHistogramCUDA(*, rows, cols, n_bins, xmin, xmax, dtype,
         np.uint32, np.uint64, np.float32 or np.float64. Integer counts are
         capped at the type's maximum. Default np.uint32.
     batch_size : int, optional
-        Frames copied and processed per step. Two batches are held on the
-        GPU, 2 * batch_size * rows * cols * itemsize bytes. Default 64.
-        With window=True, at most 65535; larger batches, about 1024, make
-        the window pay best.
+        Frames copied to the GPU and histogrammed per step. Two batches are
+        held on the GPU: 2 * batch_size * rows * cols * itemsize bytes.
+        Default 1024; with window=True, at most 65535. The copy of one batch
+        overlaps the kernel on the previous one, and larger batches shorten
+        the kernel's time per frame, not the copy's. With 1024, the kernel
+        needs under half the copy time, so the copy sets the speed; with 64,
+        the kernel can take as long as the copy.
     window : bool, optional
         Fill kernel. True (default): each pixel's busiest 128 bins are
         counted in fast on-chip memory during a batch, and only values
