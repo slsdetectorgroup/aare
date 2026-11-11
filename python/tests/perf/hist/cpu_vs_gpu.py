@@ -51,7 +51,7 @@ ap.add_argument("--xmin", type=float, default=3500)
 ap.add_argument("--xmax", type=float, default=7500)
 ap.add_argument("--threads", type=int, default=len(os.sched_getaffinity(0)),
                 help="CPU fill threads (default: the CPUs this job may use)")
-ap.add_argument("--batch", type=int, default=128, help="GPU batch size")
+ap.add_argument("--batch", type=int, default=1024, help="GPU batch size")
 ap.add_argument("--gpu-dtype", choices=DTYPES, nargs="+", default=["u16"],
                 help="one GPU run per dtype, e.g. --gpu-dtype u16 f32 f64")
 ap.add_argument("--kernel", choices=["window", "direct"], default="window",
