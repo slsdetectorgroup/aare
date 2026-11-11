@@ -9,7 +9,7 @@ git state are in each run's `env.json`.
 |---|---|---|---|
 | `2026-10-29_bin-major` | bin-major | 20 000 | the 4 configurations of `run_probes.py` (nsys) |
 | `2026-11-05_cpu_vs_gpu` | both | 20 000 | `cpu_vs_gpu.py`, direct kernel only |
-| `2026-11-11_window` | both | 20 000 | `cpu_vs_gpu.py` and ncu, window and direct kernels, batch size 1024 |
+| `2026-11-11_window` | both | 20 000 | `cpu_vs_gpu.py` and ncu, window and direct kernels, batch size 1024; nsys sweeps (pixel-major) in `pixelMajor/nsys` and `pixelMajor/nsys_batch` |
 
 ## Terms used below
 
@@ -179,6 +179,61 @@ Plots in each folder, made with
 `throughput_vs_binwidth_window.png` and `speedup_vs_binwidth_window.png`
 (and `_direct`).
 
+### Copy or kernel? (nsys, `pixelMajor/nsys/`)
+
+nsys records, in the same run, how long the copy engine and the fill kernel
+are busy. They overlap, so the fill runs at the speed of the slower one.
+Pixel-major layout, batch 1024, range [3500, 7500) ADU, 20 000 frames per
+run. Plot: `fill_bound.png`.
+
+**Busy time per frame (µs), 16 → 1 ADU per bin**
+
+| Input frames | Copy in | Window kernel | Direct kernel |
+|---|--:|--:|--:|
+| uint16 | 12.0 | 2.9 → 5.6 | 7.7 → **20.1** |
+| float32 | 24.0 | 2.8 → 5.4 | 7.6 → 20.2 |
+| float64 | 48.0 | 2.9 → 5.5 | 7.8 → 20.6 |
+
+- With the window kernel the copy limits the fill everywhere: the kernel
+  takes at most half the uint16 copy time, at 1 ADU per bin.
+- The direct kernel limits the uint16 fill from 2 ADU per bin down (fill
+  14.6 and 20.7 µs/frame).
+- The kernel time hardly depends on the input type: the work is per value,
+  not per byte.
+- The fill time per frame (first copy start to last kernel end) is within
+  0.2 µs of the copy time: there are no gaps between batches.
+
+### Batch size (nsys, `pixelMajor/nsys_batch/`)
+
+uint16 frames, window kernel, 40 960 frames per run. The copy takes 12.0
+µs/frame at every batch size. Plot: `batch_size.png`.
+
+**Window kernel busy time per frame (µs)**
+
+| Batch size | 4 ADU per bin | 2 ADU per bin | 1 ADU per bin | Fill time, 1 ADU per bin |
+|--:|--:|--:|--:|--:|
+| 64 | 7.5 | 9.9 | **11.9** | 12.3 |
+| 128 | 5.8 | 7.3 | 9.1 | 12.3 |
+| 256 | 4.8 | 6.0 | 7.1 | 12.3 |
+| 512 | 4.3 | 5.2 | 6.0 | 12.3 |
+| 1024 | 3.8 | 4.7 | 5.3 | 12.2 |
+| 4096 | 4.0 | 4.3 | 4.6 | 12.5 |
+
+- The batch size sets the kernel's margin under the copy, not the fill
+  speed: the fill stays at the copy time for every batch size tested.
+- At batch 64 (the Python default so far) the kernel is busy as long as the
+  copy at 1 ADU per bin: no margin left.
+- From 1024 on the kernel stays under half the copy time; 4096 gains little
+  more, and its fill is slightly slower (12.5 µs/frame) because the first
+  copy and the last kernel, which don't overlap, are longer.
+- Recommended default: 1024. It holds 2 × 1024 frames on the GPU: 655 MB for
+  uint16 frames of 400 × 400, 2.6 GB for float64.
+
+An earlier version of `run_probes.py` left the first batch's copy out of the
+copy time (it ends before the first kernel starts), so the copy came out up
+to 10 % low at large batches. These CSVs were recomputed with
+`run_probes.py --reanalyze` and count every copy.
+
 ### What sets the window kernel's speed
 
 The window kernel touches GPU memory in two cases only; everything else
@@ -220,12 +275,11 @@ timings:
   0.39 ADU per bin, about ±1.2 noise widths. More values miss, and more window
   counters are non-zero at the flush. Kernel time, bin-major: 3.0, 5.6 and
   7.7 µs/frame at 6.3, 0.79 and 0.39 ADU per bin.
-- **Batch size (simulated only).** The flush happens once per batch, so its
-  cost per value falls roughly as 1 / batch size. The misses don't depend on
-  it. At 1 ADU per bin, a batch of 128 already leaves half the direct
-  kernel's updates; the Python default of 64 would lose even more. The CPU vs
-  GPU runs used 1024. Batch size is limited to 65 535 because the window
-  counters are 16-bit.
+- **Batch size (measured, see above).** The flush happens once per batch, so
+  its cost per value falls roughly as 1 / batch size; the misses don't depend
+  on it. Measured at 1 ADU per bin: kernel 11.9 µs/frame at batch 64, 5.3 at
+  1024. Batch size is limited to 65 535 because the window counters are
+  16-bit.
 - **Window size (simulated only).** A wider window catches more values but
   has more counters to flush and needs more shared memory: 128 bins × 128
   pixels per block × 2 bytes = 32 KB per block, against a 48 KB default
@@ -234,8 +288,7 @@ timings:
   compile time (`WINDOW_BINS` in `pixelhistogram_kernel.cuh`).
 - The simulated updates are not a time. The kernel is not limited by GPU
   memory bandwidth (see the layout result above), so twice the updates won't
-  mean twice the time. Neither batch size nor window size has been timed on
-  the GPU yet.
+  mean twice the time. The window size has not been timed on the GPU.
 
 ### To reproduce
 
