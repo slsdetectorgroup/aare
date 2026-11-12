@@ -20,19 +20,25 @@ git state are in each run's `env.json`.
 - **Copy limit**: the time to copy one frame over PCIe, about 26 GB/s here:
   12 µs per frame for uint16 frames, 24 µs for float32, 48 µs for float64.
   A fill at this limit is **copy-bound**: a faster kernel no longer helps.
-- **Readout (`values()`)**: reads the histogram back. A small GPU kernel caps
-  the counts (and, in the bin-major layout, transposes them), then the whole
-  histogram is copied from the GPU to host memory.
-- **Accumulator layout**: how the histogram is stored in GPU memory, set at
-  compile time by `detail::PIXEL_MAJOR` in `pixelhistogram_kernel.cuh`.
+- **Readout (`values()`)**: reads the histogram back. In these runs a small
+  GPU kernel capped the counts (and in the bin-major layout transposed them),
+  then the whole histogram was copied from the GPU to host memory. Since
+  12 Nov, with `uint32` counts (the default, used in all these runs) there is
+  nothing to cap and `values()` copies the histogram directly, without a
+  kernel; other count types still run the cap kernel (`cap_counts`).
+- **Accumulator layout**: how the histogram is stored in GPU memory.
   **Bin-major**: `[bin][pixel]`, one bin of all pixels after another.
   **Pixel-major**: `[pixel][bin]`, one pixel's whole histogram after another;
   this is the order `values()` returns, so no transpose is needed.
-- **Direct kernel** (`fill_bin_major`, which despite its name handles both
-  layouts): every value increments its bin directly in GPU memory.
+  The runs below compare both. Pixel-major won (see the decision below) and
+  is now the only layout in the code; the bin-major runs were made with a
+  compile-time layout switch that has since been removed (last present in
+  commit `c7fa15e`).
+- **Direct kernel** (`fill_direct`, named `fill_bin_major` when these runs
+  were made): every value increments its bin directly in GPU memory.
 - **Window kernel** (`fill_window`, the default since 11 Nov): each pixel
-  counts its busiest 128 bins (the "window") in fast on-chip shared memory
-  during a batch. Values outside the window (mostly photons) go straight to
+  counts 128 consecutive bins around its noise peak (the "window") in fast
+  on-chip shared memory during a batch. Values outside the window (mostly photons) go straight to
   GPU memory. At the end of the batch the window counts are added to the
   histogram in GPU memory (the "flush"). The window places itself on the
   first batch and follows the pixel's pedestal afterwards.
@@ -46,8 +52,8 @@ from the data, [4171, 5744) ADU.
 
 | Configuration | Fill kernel (µs/frame) | Host-to-GPU copy (µs/frame) | Limited by | Frames per second | Readout kernel (ms) | GPU-to-host copy of the histogram (ms) |
 |---|--:|--:|---|--:|--:|--:|
-| `u16_b1000_bs64` | 23.3 | 12.0 | kernel | 42 900 | 5.8 | 24.4 |
-| `f32_b1000_bs64` | 23.5 | 24.0 | copy and kernel equally | 41 700 | 5.8 | 24.4 |
+| `u16_b1000_bs64` | 23.3 | 12.0 | kernel | 42 900 | 5.8 | 24.3 |
+| `f32_b1000_bs64` | 23.5 | 24.0 | copy and kernel equally | 41 700 | 5.8 | 24.3 |
 | `u16_b100_bs64` | 4.4 | 12.0 | copy | 83 100 | 0.4 | 2.4 |
 | `u16_b1000_bs512` | 22.9 | 11.7 | kernel | 43 600 | 5.8 | 24.4 |
 
@@ -86,10 +92,11 @@ normal range (a 64 MB histogram).
   bins, raw pixel-major up to about 500, centred bin-major up to about 1000.
   No layout keeps raw uint16 frames copy-bound at 1000 bins.
 
-To reproduce, from `python/tests/perf/hist`:
+To reproduce, from `python/tests/perf/hist` (the bin-major columns need
+commit `c7fa15e` or earlier, with the layout switch set to bin-major):
 
 ```bash
-M="--cache-control none --kernel-name fill_bin_major --launch-skip 20 --launch-count 5 --print-summary per-kernel --metrics gpu__time_duration.avg,lts__t_sector_hit_rate.pct,dram__bytes_read.sum,dram__bytes_write.sum"
+M="--cache-control none --kernel-name regex:fill_ --launch-skip 20 --launch-count 5 --print-summary per-kernel --metrics gpu__time_duration.avg,lts__t_sector_hit_rate.pct,dram__bytes_read.sum,dram__bytes_write.sum"
 for b in 100 200 500 1000 2000; do
   ncu $M python nsys_hist_probe.py u16 2000 $b 64 2000 2>&1 | grep -E "^dtype|duration|hit_rate|dram__"
 done
@@ -97,6 +104,27 @@ done
 ```
 
 Divide the duration by 64 to get µs/frame.
+
+## Direct kernel vs the CPU, both layouts (`2026-11-05_cpu_vs_gpu`)
+
+`cpu_vs_gpu.py` on gpu104, before the window kernel: 20 000 raw frames, range
+[3500, 7500) ADU, batch size 128, direct kernel, one folder per layout
+(`binMajor_kernel/`, `pixelMajor_kernel/`, each with `runs.csv` and plots).
+Every GPU run gave the same histogram as the CPU. Fill of uint16 frames, in
+µs per frame (copy limit 12.0):
+
+| Bin width (ADU) | Bins | Bin-major layout | Pixel-major layout |
+|--:|--:|--:|--:|
+| 16 | 250 | 12.4 | 12.4 |
+| 8 | 500 | 12.3 | 12.4 |
+| 4 | 1000 | 17.2 | 12.3 |
+| 2 | 2000 | 22.8 | 14.6 |
+| 1 | 4000 | 26.1 | 19.9 |
+
+float32 and float64 frames fill at their copy limit (24 and 48 µs per frame)
+at every width in pixel-major. With the direct kernel, uint16 frames stay
+copy-bound down to 4 ADU per bin in pixel-major and 8 ADU in bin-major; the
+window kernel (next section) removes that limit.
 
 ## Window kernel vs direct kernel, in both layouts (`2026-11-11_window`)
 
@@ -221,12 +249,12 @@ uint16 frames, window kernel, 40 960 frames per run. The copy takes 12.0
 
 - The batch size sets the kernel's margin under the copy, not the fill
   speed: the fill stays at the copy time for every batch size tested.
-- At batch 64 (the Python default so far) the kernel is busy as long as the
+- At batch 64 (the Python default until 12 Nov) the kernel is busy as long as the
   copy at 1 ADU per bin: no margin left.
 - From 1024 on the kernel stays under half the copy time; 4096 gains little
   more, and its fill is slightly slower (12.5 µs/frame) because the first
   copy and the last kernel, which don't overlap, are longer.
-- Recommended default: 1024. It holds 2 × 1024 frames on the GPU: 655 MB for
+- Default since 12 Nov: 1024. It holds 2 × 1024 frames on the GPU: 655 MB for
   uint16 frames of 400 × 400, 2.6 GB for float64.
 
 An earlier version of `run_probes.py` left the first batch's copy out of the
@@ -292,8 +320,9 @@ timings:
 
 ### To reproduce
 
-From `python/tests/perf/hist`, once per layout (rebuild after changing
-`detail::PIXEL_MAJOR`):
+From `python/tests/perf/hist`. This reruns the pixel-major folder; the
+bin-major folder needs commit `c7fa15e` or earlier, with the layout switch set
+to bin-major and `R` pointing at `binMajor`:
 
 ```bash
 R=results/A100/2026-11-11_window/pixelMajor

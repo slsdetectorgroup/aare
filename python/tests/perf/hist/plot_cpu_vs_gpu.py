@@ -19,9 +19,9 @@ A CSV with a gpu_kernel column holds runs of both fill kernels: only the
 --kernel ones are plotted (default window) and the PNG names end in _window
 or _direct. Older CSVs have no such column; their runs are the direct kernel.
 
-The accumulator layout (detail::PIXEL_MAJOR) is not in the CSV: it is taken
-from the CSV's folder name ("binMajor..." or "pixelMajor...", any case), or
-from --layout.
+The accumulator layout is not in the CSV. The current code is pixel-major
+only, but older runs may be bin-major: a folder name with "binMajor" (any
+case) marks them, as does --layout. Everything else is pixel-major.
 """
 import argparse
 import csv
@@ -36,7 +36,7 @@ import matplotlib.pyplot as plt  # noqa: E402
 from matplotlib.ticker import FuncFormatter, NullFormatter  # noqa: E402
 
 HERE = Path(__file__).resolve().parent
-DEFAULT_CSV = HERE / "results/A100/2026-11-05_cpu_vs_gpu/binMajor_kernel/runs.csv"
+DEFAULT_CSV = HERE / "results/A100/2026-11-11_window/pixelMajor/runs.csv"
 
 # Host-to-device bandwidth on the A100 nodes: the float64 fill is copy-bound
 # at 48.2 us for 1.28 MB per frame (u16: 12.0 us, f32: 24.0 us in the nsys
@@ -58,7 +58,8 @@ ap = argparse.ArgumentParser()
 ap.add_argument("csv", type=Path, nargs="?", default=DEFAULT_CSV)
 ap.add_argument("--out", type=Path, help="output directory (default: the CSV's)")
 ap.add_argument("--layout", choices=["bin-major", "pixel-major"],
-                help="accumulator layout (default: from the CSV's folder name)")
+                help="accumulator layout (default: bin-major if the CSV's folder name "
+                     "says binMajor, else pixel-major)")
 ap.add_argument("--kernel", choices=["window", "direct"], default="window",
                 help="fill kernel to plot when the CSV has both (default: window)")
 args = ap.parse_args()
@@ -77,10 +78,7 @@ n_frames = int(rows[0]["n_frames"])
 range_adu = float(rows[0]["range_adu"])
 node = rows[0]["node"]
 folder = args.csv.resolve().parent.name.lower()
-layout = args.layout or ("pixel-major" if "pixelmajor" in folder else
-                         "bin-major" if "binmajor" in folder else None)
-if layout is None:
-    raise SystemExit(f"can't tell the layout from folder '{folder}': pass --layout")
+layout = args.layout or ("bin-major" if "binmajor" in folder else "pixel-major")
 
 cpu = {}                      # adu_per_bin -> CPU seconds
 gpu = defaultdict(dict)       # input -> adu_per_bin -> GPU seconds

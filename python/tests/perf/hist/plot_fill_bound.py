@@ -29,7 +29,7 @@ DTYPE_NAME = {"u16": "uint16 frames", "f32": "float32 frames", "f64": "float64 f
 STYLE = {
     "H2D": dict(color="#000000", marker="D", ls="--", label="Copy in (host to GPU)"),
     "window": dict(color="#0072B2", marker="o", ls="-", label="Window kernel (fill_window)"),
-    "direct": dict(color="#D55E00", marker="s", ls="-", label="Direct kernel (fill_bin_major)"),
+    "direct": dict(color="#D55E00", marker="s", ls="-", label="Direct kernel (fill_direct)"),
 }
 
 ap = argparse.ArgumentParser()

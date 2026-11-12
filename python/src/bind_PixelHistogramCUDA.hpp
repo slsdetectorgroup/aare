@@ -74,12 +74,13 @@ void define_PixelHistogramCUDA(py::module &m, const std::string &class_name) {
                      R"(Per-pixel histograms filled on the GPU.
 
              Frames are copied to the device with the dtype they have; the
-             histogram axis is floating point. Build instances with the
-             aare.PixelHistogramCUDA() factory rather than by class name.)")
+             histogram axis is floating point. Not thread-safe. Build
+             instances with the aare.PixelHistogramCUDA() factory rather than
+             by class name.)")
         .def(py::init<size_t, size_t, size_t, AxisType, AxisType, size_t,
                       bool>(),
              py::kw_only(), py::arg("rows"), py::arg("cols"), py::arg("n_bins"),
-             py::arg("xmin"), py::arg("xmax"), py::arg("batch_size"),
+             py::arg("xmin"), py::arg("xmax"), py::arg("batch_size") = 1024,
              py::arg("window") = true)
 
         .def(
@@ -89,9 +90,11 @@ void define_PixelHistogramCUDA(py::module &m, const std::string &class_name) {
                 if (!(arr.flags() & py::array::c_style))
                     throw py::value_error("Array is not C-contiguous. Use "
                                           "np.ascontiguousarray(arr)");
-                self.register_input_buffer(
-                    const_cast<void *>(static_cast<const void *>(arr.data())),
-                    static_cast<size_t>(arr.nbytes()));
+                // A read-only array (np.memmap with mode="r") can only be
+                // pinned read-only.
+                self.register_input_buffer(arr.data(),
+                                           static_cast<size_t>(arr.nbytes()),
+                                           !arr.writeable());
             },
             py::arg("frames"), py::keep_alive<1, 2>(),
             R"(Pin `frames` so that fill_histogram() copies it at full DMA
@@ -100,7 +103,8 @@ void define_PixelHistogramCUDA(py::module &m, const std::string &class_name) {
              Pass the whole dataset once; slices of it passed to
              fill_histogram() benefit too. The array is kept alive for as
              long as the histogram exists. Registering another array releases
-             the previous one.)")
+             the previous one. An array can be registered by only one
+             histogram at a time (a CUDA limit).)")
 
         .def("unregister_input_buffer", &Hist::unregister_input_buffer,
              "Release the buffer pinned by register_input_buffer().")
@@ -138,7 +142,8 @@ void define_PixelHistogramCUDA(py::module &m, const std::string &class_name) {
              bandwidth. `out` must have the storage dtype and shape
              (rows, cols, n_bins). It is kept alive for as long as the
              histogram exists. Registering another array releases the
-             previous one.)")
+             previous one. An array can be registered by only one histogram
+             at a time.)")
 
         .def("unregister_output_buffer", &Hist::unregister_output_buffer,
              "Release the buffer pinned by register_output_buffer().")
@@ -213,8 +218,9 @@ void define_PixelHistogramCUDA(py::module &m, const std::string &class_name) {
         .def_property_readonly("batch_size", &Hist::batch_size)
         .def_property_readonly(
             "window", &Hist::window,
-            "True if the fill kernel counts each pixel's busy bins in shared "
-            "memory (fill_window), False for fill_bin_major.")
+            "True if the fill kernel counts each pixel's 128 bins around its "
+            "noise peak in shared memory (fill_window), False for "
+            "fill_direct.")
         .def_property_readonly(
             "dtype", [](const Hist &) { return py::dtype::of<InputType>(); },
             "dtype of the frames this histogram takes.");

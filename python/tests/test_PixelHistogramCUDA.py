@@ -123,6 +123,17 @@ def test_read_only_frames_are_accepted(frames):
     np.testing.assert_array_equal(gpu.values(), cpu_values(frames))
 
 
+def test_read_only_memmap_can_be_registered(frames, tmp_path):
+    path = tmp_path / "frames.raw"
+    frames.tofile(path)
+    mm = np.memmap(path, dtype=np.uint16, mode="r", shape=frames.shape)
+    gpu = make_gpu(np.uint16)
+    gpu.register_input_buffer(mm)  # pinned read-only
+    gpu.fill_histogram(mm)
+    np.testing.assert_array_equal(gpu.values(), cpu_values(frames))
+    gpu.unregister_input_buffer()
+
+
 def test_values_pixel(frames):
     gpu = make_gpu(np.uint16)
     gpu.fill_histogram(frames)
@@ -205,6 +216,11 @@ def test_constructor_validates_arguments():
     with pytest.raises(ValueError):
         PixelHistogramCUDA(rows=ROWS, cols=COLS, n_bins=N_BINS, xmin=XMIN,
                            xmax=XMAX, dtype=np.uint16, batch_size=0)
+    # float('inf'), NaN, and 1e40, which is inf on the float32 axis.
+    for xmin, xmax in [(XMIN, np.inf), (np.nan, XMAX), (XMIN, 1e40)]:
+        with pytest.raises(ValueError, match="finite"):
+            PixelHistogramCUDA(rows=ROWS, cols=COLS, n_bins=N_BINS, xmin=xmin,
+                               xmax=xmax, dtype=np.uint16)
     # The window kernel counts a batch in uint16 shared counters.
     with pytest.raises(ValueError, match="65535"):
         make_gpu(np.uint16, batch_size=65536, window=True)

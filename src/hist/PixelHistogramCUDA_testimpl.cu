@@ -3,7 +3,6 @@
 #include "aare/hist/PixelHistogramCUDA.hpp"
 #include <algorithm>
 #include <limits>
-#include <numeric>
 #include <stdexcept>
 #include <string>
 #include <type_traits>
@@ -11,11 +10,11 @@
 
 namespace aare::cuda {
 
-// Writes count = b * npix + p, unique per cell, into the bin-major
-// accumulator, then checks that values() returns it pixel-major and capped
-// at StorageType's max. Throws on the first mismatch. The check is a lambda
-// because only this friend function may touch the private members.
-void known_pattern_transpose_and_cap_impl() {
+// Writes count = b * npix + p, unique per cell, into the pixel-major
+// accumulator, then checks that values() returns it in the same layout and
+// capped at StorageType's max. Throws on the first mismatch. The check is a
+// lambda because only this friend function may touch the private members.
+void known_pattern_cap_impl() {
     auto check = [](auto storage_tag, size_t nrows, size_t ncols, size_t nbins,
                     const char *type_name) {
         using StorageType = decltype(storage_tag);
@@ -23,19 +22,14 @@ void known_pattern_transpose_and_cap_impl() {
         const size_t npix = nrows * ncols;
 
         std::vector<uint32_t> pattern(npix * nbins);
-        // Bin-major counts 0 .. npix * nbins - 1: within a bin, successive
-        // pixels hold successive values; one pixel's bins are npix apart.
-        if constexpr (detail::PIXEL_MAJOR) {
-            for (size_t p = 0; p < npix; ++p)
-                for (size_t b = 0; b < nbins; ++b)
-                    pattern[p * nbins + b] =
-                        static_cast<uint32_t>(b * npix + p);
-        } else {
-            std::iota(pattern.begin(), pattern.end(), 0u);
-        }
+        // Counts 0 .. npix * nbins - 1, all different, so a misplaced count
+        // shows up.
+        for (size_t p = 0; p < npix; ++p)
+            for (size_t b = 0; b < nbins; ++b)
+                pattern[p * nbins + b] = static_cast<uint32_t>(b * npix + p);
 
         // Copied on the compute stream: after the constructor's memset,
-        // before values()'s transpose.
+        // before values()'s cap kernel.
         CUDA_CHECK(cudaMemcpyAsync(
             hist.d_histogram.get(), pattern.data(), hist.d_histogram.bytes(),
             cudaMemcpyHostToDevice, hist.compute_stream.get()));
@@ -60,7 +54,7 @@ void known_pattern_transpose_and_cap_impl() {
         }
     };
 
-    // Odd sizes leave partial blocks in the transpose. Counts reach ~88k:
+    // Odd sizes leave a partial block in the cap kernel. Counts reach ~88k:
     // capped for uint8_t and uint16_t, exact for uint32_t and float.
     check(uint8_t{}, 37, 53, 45, "uint8_t");
     check(uint16_t{}, 37, 53, 45, "uint16_t");
@@ -73,7 +67,7 @@ void known_pattern_transpose_and_cap_impl() {
 
 namespace aare::test_cuda {
 
-void check_known_pattern() { cuda::known_pattern_transpose_and_cap_impl(); }
+void check_known_pattern() { cuda::known_pattern_cap_impl(); }
 
 template <typename H, typename In>
 DeviceResult<H> run_gpu(NDView<In, 3> frames, size_t nbins, float xmin,

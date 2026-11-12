@@ -57,6 +57,7 @@ AARE
     Interpolation
     JungfrauDataFile
     Pedestal
+    PixelHistogramCUDA
     RawFile
     RawSubFile
     RawMasterFile
