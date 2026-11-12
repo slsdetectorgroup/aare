@@ -13,14 +13,18 @@ BATCH = 4
 HIT = (16, 16)
 
 
-@pytest.fixture
-def cf():
+def make_cf():
     cf = ClusterFinderCUDA(SHAPE, n_streams=2, min_pedestal_samples=10)
     rng = np.random.default_rng(42)
     for _ in range(20):
         cf.push_pedestal_frame(
             rng.normal(1000, 5, SHAPE).astype(np.uint16))
     return cf
+
+
+@pytest.fixture
+def cf():
+    return make_cf()
 
 
 @pytest.fixture
@@ -78,3 +82,20 @@ def test_views_batched_iter_pipelines_all_chunks(cf, frames):
                                              chunk=BATCH):
         seen.append((v.first_frame, v.n_frames))
     assert seen == [(10, BATCH), (10 + BATCH, BATCH), (10 + 2 * BATCH, BATCH)]
+
+
+def counts(cf, frames):
+    with cf.collect_view(cf.submit_batch(frames)) as v:
+        return [v.count(i) for i in range(v.n_frames)]
+
+
+def test_failed_call_does_not_fail_the_next_find(frames):
+    # CUDA refuses to register one array twice. The error it keeps until read
+    # must not make a later find raise after its work was queued: a retry
+    # would process the frames twice.
+    expected = counts(make_cf(), frames)
+    a, a2 = make_cf(), make_cf()
+    a.register_input_buffer(frames)
+    with pytest.raises(RuntimeError, match="already mapped"):
+        a2.register_input_buffer(frames)
+    assert counts(make_cf(), frames) == expected

@@ -363,6 +363,11 @@ struct FixedWindow {
             (static_cast<unsigned>(lp.ncols) + BLOCK_X - 1) / BLOCK_X,
             (static_cast<unsigned>(lp.nrows) + BLOCK_Y - 1) / BLOCK_Y);
 
+        // Clear CUDA's per-thread last error first: one left by a call whose
+        // result nobody checked (the destructors ignore theirs) would
+        // otherwise be reported as this launch's error, after the batch's
+        // earlier frames were queued.
+        cudaGetLastError();
         detail::find_clusters_in_single_frame<ClusterType, FrameType, BLOCK_X,
                                               BLOCK_Y>
             <<<grid, block, shmem_bytes, stream>>>(

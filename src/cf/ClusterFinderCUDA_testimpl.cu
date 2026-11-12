@@ -4,6 +4,7 @@
 #include "aare/cf/clusterfinder_algo.cuh"
 #include <algorithm>
 #include <random>
+#include <stdexcept>
 
 namespace aare::test_cuda {
 namespace {
@@ -170,6 +171,52 @@ ManualVsDriver<Cluster<int32_t, N, N>> run(int nrows, int ncols, int n_ped,
 }
 
 } // namespace
+
+FailedRegistration find_after_failed_registration(int nrows, int ncols,
+                                                  int n_ped, int n_frames) {
+    using C = Cluster<int32_t, 3, 3>;
+    using Algo = cuda::FixedWindow<C, uint16_t>;
+    using Finder = cuda::ClusterFinderCUDA<Algo>;
+    const float nSigma = 5.0f;
+    const size_t max_clusters = 4096;
+
+    const size_t npx = static_cast<size_t>(nrows) * ncols;
+    Synth s = make_synth(nrows, ncols, n_ped, n_frames);
+    const Shape<2> shape{static_cast<ssize_t>(nrows),
+                         static_cast<ssize_t>(ncols)};
+    const NDView<uint16_t, 3> sig(
+        s.sig.data(), {static_cast<ssize_t>(n_frames), shape[0], shape[1]});
+
+    auto find = [&] {
+        Finder cf(shape, nSigma, max_clusters, 1);
+        for (int f = 0; f < n_ped; ++f)
+            cf.push_pedestal_frame(
+                NDView<uint16_t, 2>(s.ped.data() + f * npx, shape));
+        auto res = cf.find_clusters_batched(sig, 0);
+        std::vector<std::vector<C>> out(n_frames);
+        for (int f = 0; f < n_frames; ++f)
+            for (size_t i = 0; i < res[f].size(); ++i)
+                out[f].push_back(res[f][i]);
+        return out;
+    };
+
+    FailedRegistration r{false, false, find(), {}};
+    Finder a(shape, nSigma, max_clusters, 1);
+    Finder a2(shape, nSigma, max_clusters, 1);
+    const size_t bytes = s.sig.size() * sizeof(uint16_t);
+    a.register_input_buffer(s.sig.data(), bytes);
+    try {
+        a2.register_input_buffer(s.sig.data(), bytes);
+    } catch (const std::runtime_error &) {
+        r.registration_threw = true;
+    }
+    try {
+        r.after = find();
+    } catch (const std::runtime_error &) {
+        r.find_threw = true;
+    }
+    return r;
+}
 
 ManualVsDriver<Cluster<int32_t, 3, 3>>
 run_fixed_window_3x3(int nrows, int ncols, int n_ped, int n_frames) {

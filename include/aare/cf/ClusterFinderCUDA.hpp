@@ -536,8 +536,9 @@ class ClusterFinderCUDA {
      * up.
      */
     void register_input_buffer(void *ptr, size_t bytes) {
-        if (m_registered_input)
-            CUDA_CHECK(cudaHostUnregister(m_registered_input));
+        // Forget the old buffer before pinning the new one: if that fails,
+        // the destructor must not unpin the old buffer a second time.
+        unregister_input_buffer();
         CUDA_CHECK(cudaHostRegister(ptr, bytes, cudaHostRegisterDefault));
         m_registered_input = ptr;
     }

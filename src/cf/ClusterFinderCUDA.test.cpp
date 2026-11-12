@@ -48,3 +48,21 @@ TEST_CASE("FixedWindow::launch on caller-owned buffers matches the driver",
     SECTION("3x3") { check(test_cuda::run_fixed_window_3x3(61, 97, 1000, 20)); }
     SECTION("9x9") { check(test_cuda::run_fixed_window_9x9(61, 97, 1000, 20)); }
 }
+
+// CUDA keeps the error of a failed call until cudaGetLastError() reads it.
+// Left set, the next find's launch check reported it after the batch's earlier
+// frames had been queued, so a retry processed them twice.
+TEST_CASE("ClusterFinderCUDA find is not failed by an earlier CUDA error",
+          "[cuda]") {
+    const auto r = test_cuda::find_after_failed_registration(61, 97, 1000, 8);
+    REQUIRE(r.registration_threw);
+    REQUIRE_FALSE(r.find_threw);
+    REQUIRE(r.before.size() == r.after.size());
+    size_t total = 0;
+    for (size_t f = 0; f < r.before.size(); ++f) {
+        INFO("frame " << f);
+        REQUIRE(identical(r.before[f], r.after[f]));
+        total += r.before[f].size();
+    }
+    REQUIRE(total > 0);
+}
