@@ -246,6 +246,17 @@ TEST_CASE("PixelHistogramCUDA values_pixel matches the pixel's slice of "
     REQUIRE(gpu.col_out_of_range_throws);
 }
 
+TEST_CASE("PixelHistogramCUDA fill is not failed by an earlier CUDA error",
+          "[cuda]") {
+    // CUDA keeps the error of a failed call until cudaGetLastError() reads
+    // it. Left set, the next fill's launch check reported it, after the
+    // batch had been queued: a retry counted it twice.
+    const auto r = test_cuda::fill_after_failed_registration();
+    REQUIRE(r.registration_threw);
+    REQUIRE_FALSE(r.fill_threw);
+    REQUIRE(r.counted == r.expected);
+}
+
 TEST_CASE("PixelHistogramCUDA values() keeps the layout and caps a known "
           "accumulator pattern",
           "[cuda]") {

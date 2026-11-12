@@ -38,6 +38,18 @@ bool constructor_throws(size_t nbins, size_t batch_size, bool window);
 // Throws std::runtime_error describing the first mismatch.
 void check_known_pattern();
 
+struct FailedRegistration {
+    bool registration_threw; // the second registration of one buffer
+    bool fill_threw;         // the fill on a new histogram afterwards
+    uint64_t counted;        // sum of that histogram's values()
+    uint64_t expected;       // number of frame values, all in range
+};
+
+// Register one buffer in two histograms (CUDA refuses the second), then fill
+// a third, new histogram. A CUDA error left over from the failed call must
+// not make the fill throw after the work was queued.
+FailedRegistration fill_after_failed_registration();
+
 struct PixelQueries {
     NDArray<uint8_t, 3> values;
     std::vector<NDArray<uint8_t, 1>> pixels; // values_pixel(), one per query

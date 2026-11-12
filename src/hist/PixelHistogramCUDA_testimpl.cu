@@ -79,6 +79,7 @@ DeviceResult<H> run_gpu(NDView<In, 3> frames, size_t nbins, float xmin,
         window);
     hist.register_input_buffer(frames.data(), frames.total_bytes());
     hist.fill_histogram(frames);
+    // Unpin while the histogram lives: must wait for the fill's copies.
     hist.unregister_input_buffer();
     return {hist.bin_centers(), hist.bin_edges(), hist.values()};
 }
@@ -113,7 +114,6 @@ run_gpu_in_parts(NDView<float, 3> frames, size_t nbins, float xmin, float xmax,
         snapshots.push_back(hist.values());
         begin = end;
     }
-    hist.unregister_input_buffer();
     return snapshots;
 }
 
@@ -125,6 +125,33 @@ bool constructor_throws(size_t nbins, size_t batch_size, bool window) {
         return true;
     }
     return false;
+}
+
+FailedRegistration fill_after_failed_registration() {
+    const size_t nrows = 3, ncols = 5, nbins = 10, batch = 4;
+    NDArray<float, 3> frames(
+        {6, static_cast<ssize_t>(nrows), static_cast<ssize_t>(ncols)}, 0.5f);
+    using Hist = cuda::PixelHistogramCUDA<uint32_t>;
+    Hist a(nrows, ncols, nbins, 0.0f, 1.0f, batch);
+    Hist a2(nrows, ncols, nbins, 0.0f, 1.0f, batch);
+    Hist b(nrows, ncols, nbins, 0.0f, 1.0f, batch);
+
+    FailedRegistration r{false, false, 0, static_cast<uint64_t>(frames.size())};
+    a.register_input_buffer(frames.data(), frames.total_bytes());
+    try {
+        a2.register_input_buffer(frames.data(), frames.total_bytes());
+    } catch (const std::runtime_error &) {
+        r.registration_threw = true;
+    }
+    try {
+        b.fill_histogram(frames.view());
+    } catch (const std::runtime_error &) {
+        r.fill_threw = true;
+    }
+    const auto values = b.values();
+    for (ssize_t i = 0; i < values.size(); ++i)
+        r.counted += values[i];
+    return r;
 }
 
 namespace {
@@ -153,7 +180,6 @@ run_gpu_values_pixel(NDView<float, 3> frames, size_t nbins, float xmin,
                                            batch_size);
     hist.register_input_buffer(frames.data(), frames.total_bytes());
     hist.fill_histogram(frames);
-    hist.unregister_input_buffer();
 
     PixelQueries out{hist.values(), {}, false, false};
     for (const auto &[row, col] : pixels)
