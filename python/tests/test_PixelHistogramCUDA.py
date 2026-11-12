@@ -105,7 +105,7 @@ def test_registered_buffer_outlives_the_caller(frames):
     gpu.fill_histogram(data)
     del data  # kept alive by the registration
     np.testing.assert_array_equal(gpu.values(), cpu_values(frames))
-    gpu.unregister_input_buffer()
+    gpu.unregister_input_buffer()  # releases the array kept alive above
 
 
 def test_several_fills_accumulate(frames):
@@ -123,6 +123,19 @@ def test_read_only_frames_are_accepted(frames):
     np.testing.assert_array_equal(gpu.values(), cpu_values(frames))
 
 
+def test_failed_call_does_not_fail_the_next_fill(frames):
+    # CUDA refuses to register one array twice. The error it keeps until read
+    # must not make a later fill raise after its work was queued: a retry
+    # would count the frames twice.
+    a, a2 = make_gpu(np.uint16), make_gpu(np.uint16)
+    a.register_input_buffer(frames)
+    with pytest.raises(RuntimeError, match="already mapped"):
+        a2.register_input_buffer(frames)
+    b = make_gpu(np.uint16)
+    b.fill_histogram(frames)
+    np.testing.assert_array_equal(b.values(), cpu_values(frames))
+
+
 def test_read_only_memmap_can_be_registered(frames, tmp_path):
     path = tmp_path / "frames.raw"
     frames.tofile(path)
@@ -131,7 +144,7 @@ def test_read_only_memmap_can_be_registered(frames, tmp_path):
     gpu.register_input_buffer(mm)  # pinned read-only
     gpu.fill_histogram(mm)
     np.testing.assert_array_equal(gpu.values(), cpu_values(frames))
-    gpu.unregister_input_buffer()
+    gpu.unregister_input_buffer()  # unpinning a read-only mapping works too
 
 
 def test_values_pixel(frames):

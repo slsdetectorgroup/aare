@@ -298,6 +298,10 @@ class PixelHistogramCUDA {
         CUDA_CHECK(
             cudaStreamWaitEvent(compute_stream.get(), copy_done[slot].get()));
 
+        // Clear CUDA's per-thread last error first: one left by a call
+        // whose result nobody checked (the deleters ignore theirs) would
+        // otherwise be reported as this launch's error.
+        cudaGetLastError();
         if (m_window) {
             detail::fill_window<<<gridDim, blockDim, WINDOW_SHMEM_BYTES,
                                   compute_stream.get()>>>(
@@ -308,10 +312,12 @@ class PixelHistogramCUDA {
                 d_frames_batch[slot].get(), d_histogram.get(), npix, m_nbins,
                 m_xmin, m_xmax, m_scale, batch_size);
         }
-        CUDA_CHECK(cudaGetLastError());
-
+        const cudaError_t launch_error = cudaGetLastError();
+        // Recorded even if the launch failed, so the next copy into this
+        // slot still waits for everything queued before it.
         CUDA_CHECK(
             cudaEventRecord(kernel_done[slot].get(), compute_stream.get()));
+        CUDA_CHECK(launch_error);
     }
 
     /// Queues frames of shape (n_frames, rows, cols) in batches of
@@ -367,6 +373,7 @@ class PixelHistogramCUDA {
             const dim3 blockDim(BLOCK_SIZE);
             const dim3 gridDim(static_cast<unsigned int>(
                 (total + BLOCK_SIZE - 1) / BLOCK_SIZE));
+            cudaGetLastError(); // clear a stale error, as in submit_batch()
             detail::cap_counts<<<gridDim, blockDim, 0, compute_stream.get()>>>(
                 d_histogram.get(), d_capped.get(), total, count_cap());
             CUDA_CHECK(cudaGetLastError());
