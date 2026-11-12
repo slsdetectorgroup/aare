@@ -109,6 +109,14 @@ Build the Python bindings. Default option is off.
     If you have a newer system Python compared to the one in your virtual environment,
     you might have to pass -DPython_FIND_VIRTUALENV=ONLY to cmake.
 
+**AARE_PYTHON_UNITY_BUILD "Compile the python bindings as one translation unit per binding area" OFF**
+
+Compile the Python bindings as one translation unit per binding area (file readers,
+pedestals, clusters of one size, ...) instead of one per bound class. The build then
+needs less total compiler time but has fewer units to compile in parallel, which is
+faster on machines with few cores. Default option is off; ``pip install`` and the packaging
+CI jobs turn it on.
+
 **AARE_CUDA "Build CUDA cluster finder backend" OFF**
 
 Build :doc:`ClusterFinderCUDA`, the GPU cluster finder. Default option is off,

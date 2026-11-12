@@ -31,6 +31,7 @@ from ._aare import (
     Pedestal_i16,
     ClusterFinder_Cluster3x3i,
     VarClusterFinder,
+    VarClusterHits,
 )
 from ._aare import (
     File,
@@ -38,7 +39,6 @@ from ._aare import (
     RawMasterFile,
     RawSubFile,
 )
-from ._aare import Pedestal_d, Pedestal_f, ClusterFinder_Cluster3x3i, VarClusterFinder
 from ._aare import DetectorType, FrameDiscardPolicy, ReadoutMode
 from ._aare import hitmap
 from ._aare import ROI
@@ -80,7 +80,6 @@ from .calibration import *
 from ._aare import apply_calibration, count_switching_pixels
 from ._aare import calculate_pedestal, calculate_pedestal_float, calculate_pedestal_g0, calculate_pedestal_g0_float
 
-from ._aare import VarClusterFinder
 from ._aare import (
     PedestalTrackingPixelHistogram,
     PixelHistogram,

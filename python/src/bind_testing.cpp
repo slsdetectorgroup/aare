@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: MPL-2.0
 // Probes used by the python test-suite to exercise the helpers in
 // np_helper.hpp. Internal, no API guarantees.
-#pragma once
+#include "bindings.hpp"
 
 #include "aare/NDArray.hpp"
 #include "aare/NDView.hpp"

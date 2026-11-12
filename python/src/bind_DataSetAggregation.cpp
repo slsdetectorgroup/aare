@@ -1,6 +1,11 @@
+// SPDX-License-Identifier: MPL-2.0
+#include "bindings.hpp"
+
 #include "aare/DataSetAggregation.hpp"
+#include "np_helper.hpp"
 
 #include <pybind11/pybind11.h>
+#include <pybind11/stl/filesystem.h>
 
 #include <pybind11/numpy.h>
 #include <pybind11/stl.h>
@@ -75,4 +80,9 @@ void bind_read_current_source(pybind11::module_ &m) {
         --------
             np.ndarray: A numpy array containing the mean frame stored as np.float64 for each current source with shape (rows, cols, num_sources).
     )pbdoc");
+}
+
+void bind_dataset_aggregation(py::module &m) {
+    bind_DataSetAggregation<uint16_t>(m);
+    bind_read_current_source(m);
 }
