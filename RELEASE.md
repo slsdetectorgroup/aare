@@ -34,6 +34,14 @@
   ``gap_pixels`` argument, and inserts gap pixels while frames are
   assembled. ``rows()``, ``cols()`` and every returned frame then include
   the gaps, for the full frame and for each ROI.
+- Added ``PixelHistogramCUDA``, per-pixel histograms filled on the GPU, in
+  C++ (``aare::cuda``) and Python (the ``PixelHistogramCUDA`` factory).
+  Requires ``-DAARE_CUDA=ON``. Frames are copied as ``uint16``, ``float32``
+  or ``float64`` without conversion, in batches (``batch_size``, default
+  1024) whose copies overlap the fill kernel. The default kernel
+  (``window=True``) counts each pixel's bins around its noise peak in
+  shared memory, so the copy, not the kernel, sets the speed. The counts
+  equal ``PixelHistogram``'s with the same axis type.
 
 ### API Changes:
 

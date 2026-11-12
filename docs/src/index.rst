@@ -51,11 +51,13 @@ AARE
     Cluster
     ClusterFinder
     ClusterFinderMT
+    ClusterFinderCUDA
     ClusterFile
     ClusterVector
     Interpolation
     JungfrauDataFile
     Pedestal
+    PixelHistogramCUDA
     RawFile
     RawSubFile
     RawMasterFile

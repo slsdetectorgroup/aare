@@ -1,0 +1,248 @@
+#!/usr/bin/env python3
+"""nsys probe sweep for PixelHistogramCUDA: fill cost per frame, readout cost.
+
+    python run_probes.py                       # the 4 configs, 20k frames
+    python run_probes.py --frames 2000         # quick check (clocks may not ramp)
+    python run_probes.py --only u16_b1000_bs64 --tag mytag
+
+    # sweep instead of the 4 configs: every input type x bin count x kernel
+    python run_probes.py --dtypes u16 f32 f64 --bins 250 500 1000 2000 4000 \
+        --batch 1024 --range 3500 7500 --kernel window direct --chunk 4096 \
+        --outdir results/A100/2026-11-11_window/pixelMajor/nsys
+
+    # recompute probes.csv from the .sqlite traces already in a folder
+    python run_probes.py --reanalyze results/A100/2026-11-11_window/pixelMajor/nsys
+
+Per config: an .nsys-rep + .sqlite in results/<date>[_tag]/ and one row in
+probes.csv (re-running a config replaces its own row only).
+
+Two separate costs:
+  fill     per frame: H2D of the frame and the fill kernel, overlapping. The
+           roofline is the taller of the two.
+  readout  once per values() call: one D2H of rows * cols * n_bins counts,
+           after cap_counts unless the counts are uint32 (as here).
+           Independent of the number of frames.
+"""
+from __future__ import annotations
+
+import argparse
+import csv
+import re
+import sqlite3
+import subprocess
+import sys
+from pathlib import Path
+
+sys.path.insert(0, str(Path(__file__).resolve().parent))
+import hist_common  # noqa: E402  (puts ../ and the build dir on sys.path)
+from hist_common import common  # noqa: E402
+import gpu_span  # noqa: E402
+
+HERE = Path(__file__).resolve().parent
+
+# (dtype, n_bins, batch, label)
+#   u16_b1000_bs64   reference: raw frames, batch 64 (default until Nov 2026)
+#   f32_b1000_bs64   twice the H2D bytes per frame
+#   u16_b100_bs64    histogram of 160k pixels x 100 bins x 4 B = 64 MB, about
+#                    the size of L2: the fill kernel's scattered increments
+#                    mostly hit cache
+#   u16_b1000_bs512  larger batches: fewer, longer copies and kernels
+CONFIGS = [
+    ("u16", 1000, 64, "u16_b1000_bs64"),
+    ("f32", 1000, 64, "f32_b1000_bs64"),
+    ("u16", 100, 64, "u16_b100_bs64"),
+    ("u16", 1000, 512, "u16_b1000_bs512"),
+]
+
+
+def fill(sqlite_path, n_frames) -> dict:
+    """Busy time per frame of the fill kernel and of the H2D copies.
+
+    gpu_span.analyze starts its window at the first kernel, which leaves out
+    the first batch's copy: that copy always ends before the first kernel
+    starts. Its H2D time per frame came out low by one batch in N frames
+    (12.0 -> 10.8 us/frame at batch 4096 over 40 960 frames). Every H2D in
+    this probe copies frames, so count them all, and start the fill window at
+    the first copy.
+    """
+    r = gpu_span.analyze(sqlite_path, n_frames, hist_common.FILL_KERNEL,
+                         engines=("kernel", "H2D"))
+    db = sqlite3.connect(str(sqlite_path))
+    h2d = db.execute(gpu_span.Q["H2D"]).fetchall()
+    kern = [(s, e) for s, e, name in db.execute(gpu_span.KERNELS)
+            if hist_common.FILL_KERNEL in name]
+    start = min(h2d[0][0], kern[0][0])
+    span = max(kern[-1][1], h2d[-1][1]) - start
+    tot, busy = sum(e - s for s, e in h2d), gpu_span.union(h2d)
+    r.update(window_ms=span / 1e6, window_us_per_frame=span / 1e3 / n_frames,
+             H2D_n=len(h2d), H2D_sum_ms=tot / 1e6, H2D_busy_ms=busy / 1e6,
+             H2D_overlap=tot / busy if busy else 0.0,
+             H2D_duty_pct=100 * busy / span, H2D_us_per_frame=busy / 1e3 / n_frames,
+             kernel_duty_pct=100 * r["kernel_busy_ms"] * 1e6 / span)
+    tallest = max(("kernel", "H2D"), key=lambda k: r[f"{k}_us_per_frame"])
+    r.update(bottleneck=tallest, roofline_us_per_frame=r[f"{tallest}_us_per_frame"])
+    r["roofline_fps"] = 1e6 / r["roofline_us_per_frame"]
+    return r
+
+
+def readout(sqlite_path) -> dict:
+    """Total time of the readout kernel and of all D2H copies."""
+    db = sqlite3.connect(str(sqlite_path))
+    k = [e - s for s, e, name in db.execute(gpu_span.KERNELS)
+         if any(r in name for r in hist_common.READOUT_KERNELS)]
+    d2h_ns, d2h_bytes = db.execute(
+        "SELECT COALESCE(SUM(end-start), 0), COALESCE(SUM(bytes), 0) "
+        "FROM CUPTI_ACTIVITY_KIND_MEMCPY WHERE copyKind=2").fetchone()
+    return {"readout_kernel_n": len(k), "readout_kernel_ms": sum(k) / 1e6,
+            "readout_D2H_ms": d2h_ns / 1e6, "readout_D2H_MB": d2h_bytes / 1e6,
+            "readout_D2H_GBps": d2h_bytes / d2h_ns if d2h_ns else 0.0}
+
+
+def run_one(dtype, n_bins, batch, label, n_frames, chunk, outdir,
+            kernel="window", hist_range=None) -> dict | None:
+    rep = outdir / f"probe_{label}"
+    print(f"\n--- {label}: {dtype} frames, {n_bins} bins, batch={batch}, N={n_frames} ---")
+
+    prof = [common.NSYS, "profile", *common.nsys_profile_flags(),
+            "-o", str(rep),
+            sys.executable, str(HERE / "nsys_hist_probe.py"),
+            dtype, str(n_frames), str(n_bins), str(batch), str(chunk),
+            "--kernel", kernel]
+    if hist_range:
+        prof += ["--range", *map(str, hist_range)]
+    p = subprocess.run(prof, capture_output=True, text=True)
+    bin_width = None
+    for line in p.stdout.splitlines():
+        if line.strip().startswith(("dtype=", "H2D/frame", "wall")):
+            print("   ", line.strip())
+        m = re.search(r"bin width=([0-9.]+)", line)
+        if m:
+            bin_width = float(m.group(1))
+    # nsys writes a report even when the traced process crashes, and returns
+    # the child's exit code: check it, or a dead probe surfaces later as a
+    # missing CUPTI table in the export.
+    if p.returncode != 0 or not rep.with_suffix(".nsys-rep").exists():
+        print(f"    FAILED (exit {p.returncode}): {p.stderr.strip()[-400:]}")
+        return None
+
+    subprocess.run([common.NSYS, "stats", "--force-export=true", "--report",
+                    "cuda_gpu_sum", str(rep.with_suffix(".nsys-rep"))],
+                   capture_output=True, text=True)
+    sq = rep.with_suffix(".sqlite")
+    if not sq.exists():
+        print("    FAILED: no sqlite export")
+        return None
+
+    r = fill(sq, n_frames)
+    r.update(readout(sq))
+    r.update(label=label, dtype=dtype, n_bins=n_bins, batch=batch, kernel=kernel,
+             bin_width_adu=bin_width)
+    print(f"    fill: kernel {r['kernel_us_per_frame']:5.2f} us (duty {r['kernel_duty_pct']:4.1f}%)  "
+          f"H2D {r['H2D_us_per_frame']:5.2f} ({r['H2D_duty_pct']:4.1f}%)  "
+          f"-> {r['bottleneck']}-bound at {r['roofline_us_per_frame']:.2f} us/frame "
+          f"= {r['roofline_fps']:,.0f} FPS")
+    print(f"    readout: kernel {r['readout_kernel_ms']:.2f} ms  D2H {r['readout_D2H_ms']:.2f} ms "
+          f"({r['readout_D2H_MB']:,.0f} MB at {r['readout_D2H_GBps']:.1f} GB/s)")
+    return r
+
+
+def main() -> int:
+    ap = argparse.ArgumentParser(description=__doc__,
+                                 formatter_class=argparse.RawDescriptionHelpFormatter)
+    ap.add_argument("--frames", type=int, default=20_000)
+    ap.add_argument("--chunk", type=int, default=2000,
+                    help="frames held in host memory and re-queued until --frames")
+    ap.add_argument("--tag", default="")
+    ap.add_argument("--only", nargs="+", default=None, help="subset of labels")
+    ap.add_argument("--kernel", choices=["window", "direct"], nargs="+",
+                    default=["window"],
+                    help="fill kernel(s): fill_window (default) and/or fill_direct")
+    ap.add_argument("--dtypes", choices=["u16", "f32", "f64"], nargs="+",
+                    help="sweep: input types (with --bins, replaces the 4 configs)")
+    ap.add_argument("--bins", type=int, nargs="+", help="sweep: bin counts")
+    ap.add_argument("--batch", type=int, default=1024, help="sweep: batch size")
+    ap.add_argument("--range", nargs=2, type=float, metavar=("XMIN", "XMAX"),
+                    help="histogram range (default: from the data)")
+    ap.add_argument("--outdir", type=Path,
+                    help="results folder (default: results/<date>[_tag]/)")
+    ap.add_argument("--reanalyze", type=Path, metavar="DIR",
+                    help="only recompute DIR/probes.csv from the .sqlite traces in DIR")
+    args = ap.parse_args()
+    if args.reanalyze:
+        return reanalyze(args.reanalyze)
+    if args.bins:
+        configs = [(d, b, args.batch, f"{d}_b{b}_bs{args.batch}")
+                   for d in (args.dtypes or ["u16"]) for b in args.bins]
+    else:
+        configs = CONFIGS
+
+    common.assert_build_fresh(hist_common.HEADERS)
+    common.assert_idle_gpu()
+    env = common.capture_env()
+    outdir = args.outdir or hist_common.results_dir(args.tag)
+    outdir.mkdir(parents=True, exist_ok=True)
+    common.write_env(outdir / "env.json", env)
+    print(f"build: git={env['git_rev']}{' (dirty)' if env['git_dirty'] else ''}")
+    print(f"out:   {outdir}")
+
+    rows = []
+    for kernel in args.kernel:
+        for dtype, n_bins, batch, base in configs:
+            if args.only and base not in args.only:
+                continue
+            label = f"{base}_{kernel}" if len(args.kernel) > 1 or args.bins else base
+            r = run_one(dtype, n_bins, batch, label, args.frames, args.chunk, outdir,
+                        kernel, args.range)
+            if r:
+                rows.append(r)
+
+    if not rows:
+        return 1
+    out = outdir / "probes.csv"
+    prior = list(csv.DictReader(out.open())) if out.exists() else []
+    fresh = {r["label"] for r in rows}
+    merged = [r for r in prior if r["label"] not in fresh] + rows
+    with out.open("w", newline="") as fh:
+        w = csv.DictWriter(fh, fieldnames=list(rows[0]))
+        w.writeheader()
+        w.writerows(merged)
+
+    summary(rows)
+    print(f"\n-> {out}")
+    return 0
+
+
+def summary(rows) -> None:
+    print("\n=== fill (us/frame) and readout (ms, once per values()) ===")
+    print(f"{'config':<18} {'kernel':>8} {'H2D':>8}  {'bound':<6} {'FPS':>10}  "
+          f"{'rd kernel':>9} {'rd D2H':>8}")
+    for r in rows:
+        print(f"{r['label']:<18} {float(r['kernel_us_per_frame']):8.2f} "
+              f"{float(r['H2D_us_per_frame']):8.2f}  {r['bottleneck']:<6} "
+              f"{float(r['roofline_fps']):10,.0f}  {float(r['readout_kernel_ms']):9.2f} "
+              f"{float(r['readout_D2H_ms']):8.2f}")
+
+
+def reanalyze(outdir: Path) -> int:
+    """Recompute the trace-derived columns of outdir/probes.csv; the config
+    columns (label, dtype, bins, batch, kernel, bin width) are kept."""
+    path = outdir / "probes.csv"
+    rows = list(csv.DictReader(path.open()))
+    for row in rows:
+        sq = outdir / f"probe_{row['label']}.sqlite"
+        if not sq.exists():
+            print(f"    {row['label']}: no {sq.name}, row kept as it was")
+            continue
+        row.update(fill(sq, int(row["n_frames"])))
+        row.update(readout(sq))
+    with path.open("w", newline="") as fh:
+        w = csv.DictWriter(fh, fieldnames=list(rows[0]))
+        w.writeheader()
+        w.writerows(rows)
+    summary(rows)
+    print(f"\n-> {path}")
+    return 0
+
+
+if __name__ == "__main__":
+    raise SystemExit(main())

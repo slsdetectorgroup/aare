@@ -1,0 +1,30 @@
+dtype=uint16  N=20000  n_bins=250  batch=1024  chunk=4096  range=[4171, 5744)  bin width=6.29  kernel=window
+    dram__bytes_read.sum             Mbyte  499.27  499.50  499.39
+    dram__bytes_write.sum            Mbyte  125.38  125.49  125.43
+    gpu__time_duration.avg              ms    3.46    3.48    3.47
+    lts__t_sector_hit_rate.pct           %   52.54   52.60   52.57
+dtype=uint16  N=20000  n_bins=2000  batch=1024  chunk=4096  range=[4171, 5744)  bin width=0.79  kernel=window
+    dram__bytes_read.sum             Mbyte  925.58  926.83  925.94
+    dram__bytes_write.sum            Mbyte  354.67  355.72  355.03
+    gpu__time_duration.avg              ms    5.95    6.13    6.05
+    lts__t_sector_hit_rate.pct           %   63.00   63.14   63.08
+dtype=uint16  N=20000  n_bins=4000  batch=1024  chunk=4096  range=[4171, 5744)  bin width=0.39  kernel=window
+    dram__bytes_read.sum             Gbyte    1.90    1.91    1.90
+    dram__bytes_write.sum            Gbyte    1.07    1.08    1.07
+    gpu__time_duration.avg              ms    7.94    8.05    8.00
+    lts__t_sector_hit_rate.pct           %   66.57   66.68   66.63
+dtype=uint16  N=20000  n_bins=250  batch=1024  chunk=4096  range=[4171, 5744)  bin width=6.29  kernel=direct
+    dram__bytes_read.sum             Gbyte    1.49    1.50    1.50
+    dram__bytes_write.sum            Gbyte    1.69    1.70    1.70
+    gpu__time_duration.avg              ms    9.21    9.28    9.26
+    lts__t_sector_hit_rate.pct           %   86.50   86.86   86.68
+dtype=uint16  N=20000  n_bins=2000  batch=1024  chunk=4096  range=[4171, 5744)  bin width=0.79  kernel=direct
+    dram__bytes_read.sum             Gbyte    7.81    8.00    7.87
+    dram__bytes_write.sum            Gbyte    4.24    4.29    4.26
+    gpu__time_duration.avg              ms   21.23   21.70   21.39
+    lts__t_sector_hit_rate.pct           %   65.91   66.48   66.18
+dtype=uint16  N=20000  n_bins=4000  batch=1024  chunk=4096  range=[4171, 5744)  bin width=0.39  kernel=direct
+    dram__bytes_read.sum             Gbyte    9.87   10.01    9.95
+    dram__bytes_write.sum            Gbyte    4.74    4.76    4.75
+    gpu__time_duration.avg              ms   24.73   25.03   24.94
+    lts__t_sector_hit_rate.pct           %   62.68   62.89   62.74
