@@ -51,7 +51,7 @@ ap.add_argument("--range", nargs=2, type=float, metavar=("XMIN", "XMAX"),
                 help="histogram range [XMIN, XMAX) in ADU (default: from the data, "
                      "then --range-scale)")
 ap.add_argument("--kernel", choices=["window", "direct"], default="window",
-                help="fill_window (default) or fill_bin_major")
+                help="fill_window (default) or fill_direct")
 args = ap.parse_args()
 
 dtype = DTYPES[args.dtype]

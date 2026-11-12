@@ -246,7 +246,7 @@ TEST_CASE("PixelHistogramCUDA values_pixel matches the pixel's slice of "
     REQUIRE(gpu.col_out_of_range_throws);
 }
 
-TEST_CASE("PixelHistogramCUDA values() transposes and caps a known "
+TEST_CASE("PixelHistogramCUDA values() keeps the layout and caps a known "
           "accumulator pattern",
           "[cuda]") {
     REQUIRE_NOTHROW(test_cuda::check_known_pattern());

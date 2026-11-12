@@ -64,7 +64,8 @@ option(
   "Optimize for the building machine's CPU (-march=native -mtune=native). Not portable, the resulting binaries might not run on other machines."
   OFF)
 
-option(AARE_CUDA "Build CUDA cluster finder backend" OFF)
+option(AARE_CUDA
+       "Build the CUDA classes (ClusterFinderCUDA, PixelHistogramCUDA)" OFF)
 set(AARE_CUDA_ARCHITECTURES
     "native"
     CACHE STRING "CUDA architectures to compile for (used when AARE_CUDA=ON)")

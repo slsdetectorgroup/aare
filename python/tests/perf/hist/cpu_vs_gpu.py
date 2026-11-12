@@ -55,7 +55,7 @@ ap.add_argument("--batch", type=int, default=1024, help="GPU batch size")
 ap.add_argument("--gpu-dtype", choices=DTYPES, nargs="+", default=["u16"],
                 help="one GPU run per dtype, e.g. --gpu-dtype u16 f32 f64")
 ap.add_argument("--kernel", choices=["window", "direct"], default="window",
-                help="GPU fill kernel: fill_window (default) or fill_bin_major")
+                help="GPU fill kernel: fill_window (default) or fill_direct")
 ap.add_argument("--csv", type=Path, help="append one row per GPU run here")
 args = ap.parse_args()
 
@@ -115,7 +115,7 @@ for name in args.gpu_dtype:
     gpu.fill_histogram(frames_gpu)
     gpu.flush()  # fill_histogram only queues the work
     t1 = time.perf_counter()
-    gpu.values(out=values_gpu)  # transpose + copy back to the host
+    gpu.values(out=values_gpu)  # cap + copy back to the host
     t2 = time.perf_counter()
     t_fill, t_values, t_gpu = t1 - t0, t2 - t1, t2 - t0
 

@@ -17,7 +17,7 @@ template <typename H> struct DeviceResult {
 // Histogram `frames` (nframes, nrows, ncols) on the GPU, with frames of type
 // In. Explicitly instantiated in the .cu for the storage and input types
 // under test; the axis is float for all of them. `window` picks the fill
-// kernel: fill_window (true) or fill_bin_major (false).
+// kernel: fill_window (true) or fill_direct (false).
 template <typename H, typename In>
 DeviceResult<H> run_gpu(NDView<In, 3> frames, size_t nbins, float xmin,
                         float xmax, size_t batch_size, bool window = true);
@@ -34,7 +34,7 @@ run_gpu_in_parts(NDView<float, 3> frames, size_t nbins, float xmin, float xmax,
 bool constructor_throws(size_t nbins, size_t batch_size, bool window);
 
 // Known pattern written straight into the device accumulator, read back
-// through values(); tests the transpose and the cap without the fill kernel.
+// through values(); tests the layout and the cap without the fill kernel.
 // Throws std::runtime_error describing the first mismatch.
 void check_known_pattern();
 

@@ -49,8 +49,9 @@ class HostRegistration {
 
   public:
     HostRegistration() = default;
-    explicit HostRegistration(void *raw_ptr, size_t bytes) {
-        CUDA_CHECK(cudaHostRegister(raw_ptr, bytes, cudaHostRegisterDefault));
+    explicit HostRegistration(void *raw_ptr, size_t bytes,
+                              unsigned int flags = cudaHostRegisterDefault) {
+        CUDA_CHECK(cudaHostRegister(raw_ptr, bytes, flags));
         m_ptr.reset(raw_ptr);
     }
 

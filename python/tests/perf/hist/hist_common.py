@@ -17,10 +17,11 @@ HEADERS = ["include/aare/hist/PixelHistogramCUDA.hpp",
            "include/aare/RAII_device.hpp"]
 
 # Kernel short names in the trace, matched as substrings. The fill kernel
-# (fill_window or fill_bin_major) runs once per batch; the readout kernel
-# once per values() call.
+# (fill_window or fill_direct) runs once per batch; the readout kernel
+# once per values() call, and not at all for uint32 counts. bin_to_pixel_major is its old name, still in the
+# traces recorded before the rename (for run_probes.py --reanalyze).
 FILL_KERNEL = "fill_"
-READOUT_KERNEL = "bin_to_pixel_major"
+READOUT_KERNELS = ("cap_counts", "bin_to_pixel_major")
 
 
 def results_dir(tag: str = "") -> Path:

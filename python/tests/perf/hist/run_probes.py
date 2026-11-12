@@ -1,9 +1,9 @@
 #!/usr/bin/env python3
 """nsys probe sweep for PixelHistogramCUDA: fill cost per frame, readout cost.
 
-    python3.11 run_probes.py                       # full sweep, 20k frames
-    python3.11 run_probes.py --frames 2000         # quick check (clocks may not ramp)
-    python3.11 run_probes.py --only u16_b1000_bs64 --tag mytag
+    python run_probes.py                       # the 4 configs, 20k frames
+    python run_probes.py --frames 2000         # quick check (clocks may not ramp)
+    python run_probes.py --only u16_b1000_bs64 --tag mytag
 
     # sweep instead of the 4 configs: every input type x bin count x kernel
     python run_probes.py --dtypes u16 f32 f64 --bins 250 500 1000 2000 4000 \
@@ -17,10 +17,11 @@ Per config: an .nsys-rep + .sqlite in results/<date>[_tag]/ and one row in
 probes.csv (re-running a config replaces its own row only).
 
 Two separate costs:
-  fill     per frame: H2D of the frame and fill_bin_major, overlapping. The
+  fill     per frame: H2D of the frame and the fill kernel, overlapping. The
            roofline is the taller of the two.
-  readout  once per values() call: bin_to_pixel_major, then one D2H of
-           rows * cols * n_bins counts. Independent of the number of frames.
+  readout  once per values() call: one D2H of rows * cols * n_bins counts,
+           after cap_counts unless the counts are uint32 (as here).
+           Independent of the number of frames.
 """
 from __future__ import annotations
 
@@ -40,7 +41,7 @@ import gpu_span  # noqa: E402
 HERE = Path(__file__).resolve().parent
 
 # (dtype, n_bins, batch, label)
-#   u16_b1000_bs64   reference: raw frames, default batch size
+#   u16_b1000_bs64   reference: raw frames, batch 64 (default until Nov 2026)
 #   f32_b1000_bs64   twice the H2D bytes per frame
 #   u16_b100_bs64    histogram of 160k pixels x 100 bins x 4 B = 64 MB, about
 #                    the size of L2: the fill kernel's scattered increments
@@ -88,7 +89,7 @@ def readout(sqlite_path) -> dict:
     """Total time of the readout kernel and of all D2H copies."""
     db = sqlite3.connect(str(sqlite_path))
     k = [e - s for s, e, name in db.execute(gpu_span.KERNELS)
-         if hist_common.READOUT_KERNEL in name]
+         if any(r in name for r in hist_common.READOUT_KERNELS)]
     d2h_ns, d2h_bytes = db.execute(
         "SELECT COALESCE(SUM(end-start), 0), COALESCE(SUM(bytes), 0) "
         "FROM CUPTI_ACTIVITY_KIND_MEMCPY WHERE copyKind=2").fetchone()
@@ -155,7 +156,7 @@ def main() -> int:
     ap.add_argument("--only", nargs="+", default=None, help="subset of labels")
     ap.add_argument("--kernel", choices=["window", "direct"], nargs="+",
                     default=["window"],
-                    help="fill kernel(s): fill_window (default) and/or fill_bin_major")
+                    help="fill kernel(s): fill_window (default) and/or fill_direct")
     ap.add_argument("--dtypes", choices=["u16", "f32", "f64"], nargs="+",
                     help="sweep: input types (with --bins, replaces the 4 configs)")
     ap.add_argument("--bins", type=int, nargs="+", help="sweep: bin counts")
