@@ -17,6 +17,7 @@ Configuration
 ``GapPixels`` holds the configuration. The chip size (256 pixels) and the
 module size (1024x512 pixels) are fixed. An Eiger quad (512x512 pixels)
 needs no special handling, since its only chip boundaries are at pixel 256.
+``RawFile`` rejects other detector types with ``std::invalid_argument``.
 Gaps of up to 1024 pixels are supported, far beyond the 2 to 10 pixels of
 a real detector, and detector coordinates are limited to 2^28.
 
@@ -67,6 +68,26 @@ parts with its total preserved. Module gaps are not split and keep the
 fill value. Splitting only happens where a gap pixel is inserted, so an
 edge pixel on a ROI border keeps its full value. Split mode requires a
 chip gap of 2.
+
+Reading files
+-------------
+
+Pass a ``GapPixels`` to :cpp:class:`aare::RawFile`. Frame sizes,
+``rows()``, ``cols()`` and ``bytes_per_frame()`` then include the gaps.
+Module data is scattered into the gapped frame while it is assembled, so no
+extra frame sized buffer is needed. Headers are unchanged. The generic
+:cpp:class:`aare::File` does not insert gap pixels; use ``RawFile`` or
+apply ``insert_gap_pixels`` to the frames it returns.
+
+.. code-block:: cpp
+
+   #include "aare/GapPixels.hpp"
+   #include "aare/RawFile.hpp"
+
+   aare::GapPixels gaps;
+   gaps.module_gaps = aare::ModuleGaps{8, 36};
+   aare::RawFile file("run_master_0.json", "r", gaps);
+   auto frame = file.read_frame(); // 1064 x 1030 for two stacked modules
 
 Images in memory
 ----------------

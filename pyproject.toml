@@ -43,6 +43,9 @@ install.components = ["python"]
 
 [tool.scikit-build.cmake.define]
 AARE_PYTHON_BINDINGS = "ON"
+# A pip build is compiled once and never incrementally, so fewer, larger
+# translation units only save compiler time
+AARE_PYTHON_UNITY_BUILD = "ON"
 AARE_INSTALL_PYTHONEXT = "ON"
 
 

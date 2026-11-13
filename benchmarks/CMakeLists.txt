@@ -6,7 +6,7 @@ FetchContent_Declare(
   benchmark
   GIT_REPOSITORY https://github.com/google/benchmark.git
   GIT_TAG v1.8.3 # Change to the latest version if needed
-)
+  GIT_SHALLOW TRUE)
 
 # Ensure Google Benchmark is built correctly
 set(BENCHMARK_ENABLE_TESTING
@@ -19,8 +19,14 @@ add_executable(benchmarks)
 
 target_sources(
   benchmarks
-  PRIVATE ndarray_benchmark.cpp ndview_benchmark.cpp calculateeta_benchmark.cpp
-          reduce_benchmark.cpp clusterfile_benchmark.cpp)
+  PRIVATE ndarray_benchmark.cpp
+          ndview_benchmark.cpp
+          calculateeta_benchmark.cpp
+          reduce_benchmark.cpp
+          clusterfile_benchmark.cpp
+          DataSetAggregation_benchmark.cpp
+          rawfile_benchmark.cpp
+          varclusterfinder_benchmark.cpp)
 
 # Link Google Benchmark and other necessary libraries
 target_link_libraries(benchmarks PRIVATE benchmark::benchmark aare_core

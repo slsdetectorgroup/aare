@@ -17,7 +17,7 @@ To simplify deployment we build and statically link a few libraries.
 - Minuit2
 - nlohmann_json
 - pybind11
-- ZeroMQ
+- ZeroMQ (only with ``-DAARE_ZMQ=ON``; nothing uses it yet)
 
 **Extra dependencies for building documentation**
 

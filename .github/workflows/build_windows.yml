@@ -44,7 +44,7 @@ jobs:
       # Precompiled headers are disabled: sccache cannot cache MSVC
       # compilations that use one
       - name: Configure
-        run: cmake -S . -B build -G Ninja -DCMAKE_BUILD_TYPE=Release -DAARE_TESTS=ON -DAARE_PYTHON_BINDINGS=ON -DAARE_WARNINGS_AS_ERRORS=ON -DCMAKE_C_COMPILER_LAUNCHER=sccache -DCMAKE_CXX_COMPILER_LAUNCHER=sccache -DCMAKE_DISABLE_PRECOMPILE_HEADERS=ON
+        run: cmake -S . -B build -G Ninja -DCMAKE_BUILD_TYPE=Release -DAARE_TESTS=ON -DAARE_PYTHON_BINDINGS=ON -DAARE_PYTHON_UNITY_BUILD=ON -DAARE_WARNINGS_AS_ERRORS=ON -DCMAKE_C_COMPILER_LAUNCHER=sccache -DCMAKE_CXX_COMPILER_LAUNCHER=sccache -DCMAKE_DISABLE_PRECOMPILE_HEADERS=ON
 
       - name: Build
         run: cmake --build build

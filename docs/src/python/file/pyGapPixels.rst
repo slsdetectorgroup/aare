@@ -46,7 +46,7 @@ defaults and ``(1064, 1030)`` with ``ModuleGaps(8, 36)``.
     gapped = insert_gap_pixels(image)
 
     # module gaps as in the slsDetectorPackage GUI, counts split at chip edges
-    gaps = GapPixels(module_gaps=ModuleGaps(8, 36), split_counts=True, seed=1)
+    gaps = GapPixels(module_gaps=ModuleGaps(8, 36), split_counts=True)
     gapped = insert_gap_pixels(image, gaps)
 
     # an image that covers columns 100 to 400 of the first ten rows
@@ -58,6 +58,28 @@ defaults and ``(1064, 1030)`` with ``ModuleGaps(8, 36)``.
 ``int32``, ``float32`` and ``float64`` arrays and returns a new array of the
 same dtype. Pass ``roi`` when the image covers part of the detector.
 ``gapped_shape`` returns the shape of the gapped image of a ROI.
+
+Reading files
+-------------
+
+``RawFile`` takes ``gap_pixels``: ``True`` for the defaults or a
+``GapPixels``. Frame shapes, ``rows`` and ``cols`` then include the gaps.
+Only Jungfrau and Eiger raw files are supported; other detector types raise
+``ValueError``. The generic ``File`` does not insert gap pixels; use
+``RawFile`` or apply ``insert_gap_pixels`` to the frames it returns.
+
+.. code-block:: python
+
+    from aare import GapPixels, ModuleGaps, RawFile
+
+    # defaults: chip gaps of 2 filled with 0
+    with RawFile("run_master_0.json", gap_pixels=True) as f:
+        header, image = f.read_frame()
+
+    # module gaps as in the slsDetectorPackage GUI
+    gaps = GapPixels(module_gaps=ModuleGaps(8, 36), split_counts=False)
+    with RawFile("run_master_0.json", gap_pixels=gaps) as f:
+        header, image = f.read_frame()
 
 .. autoclass:: GapPixels
     :members:

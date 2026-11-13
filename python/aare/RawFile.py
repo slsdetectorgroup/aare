@@ -4,8 +4,18 @@ import numpy as np
 from .ScanParameters import ScanParameters
 
 class RawFile(_aare.RawFile):
-    def __init__(self, fname, chunk_size = 1):
-        super().__init__(fname)
+    def __init__(self, fname, chunk_size = 1, gap_pixels = False):
+        """Open a raw file for reading.
+
+        Args:
+            fname: Master file (.json or .raw).
+            chunk_size: Frames returned per iteration step.
+            gap_pixels: Insert gap pixels into every frame. True uses the
+                default GapPixels configuration, or pass a GapPixels. Frame
+                shapes then include the gaps. Only Jungfrau and Eiger are
+                supported.
+        """
+        super().__init__(fname, gap_pixels)
         self._chunk_size = chunk_size
 
 

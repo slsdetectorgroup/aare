@@ -1,10 +1,13 @@
 // SPDX-License-Identifier: MPL-2.0
-#pragma once
+#include "bindings.hpp"
 #include <pybind11/operators.h>
 #include <pybind11/pybind11.h>
 #include <pybind11/stl.h>
 
+#include "aare/ROI.hpp"
 #include "aare/defs.hpp"
+
+#include <fmt/format.h>
 
 namespace py = pybind11;
 using namespace aare;
@@ -31,6 +34,9 @@ void define_defs_bindings(py::module &m) {
     moench05.attr("nCols") = Moench05::nCols;
     moench05.attr("adcNumbers") = Moench05::adcNumbers;
 
+    auto jungfrau = py::class_<Jungfrau>(m, "Jungfrau");
+    jungfrau.attr("nRows") = Jungfrau::nRows;
+    jungfrau.attr("nCols") = Jungfrau::nCols;
     py::class_<ROI>(m, "ROI")
         .def(py::init<>())
         .def(py::init<ssize_t, ssize_t, ssize_t, ssize_t>(), py::arg("xmin"),

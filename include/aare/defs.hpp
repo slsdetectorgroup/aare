@@ -57,6 +57,18 @@
 #define ALWAYS_INLINE STRONG_INLINE
 #endif
 
+/**
+ * NEVER_INLINE keeps a rarely taken, register-hungry function out of the
+ * hot loop that calls it, so that the loop itself stays tight.
+ */
+#if defined(__GNUC__)
+#define NEVER_INLINE __attribute__((noinline))
+#elif defined(_MSC_VER)
+#define NEVER_INLINE __declspec(noinline)
+#else
+#define NEVER_INLINE
+#endif
+
 namespace aare {
 
 /**
@@ -171,6 +183,11 @@ struct Moench05 {
     /// @brief used ADCs for moench given in relative numbers to the default
     /// enabled blocks of 4 adcs in absolute adcs 9, 13, 1 are used
     constexpr static std::array<int, 3> adcNumbers = {5, 9, 1};
+};
+
+struct Jungfrau {
+    constexpr static size_t nRows = 512;
+    constexpr static size_t nCols = 1024;
 };
 
 enum ReadoutMode : uint8_t {
