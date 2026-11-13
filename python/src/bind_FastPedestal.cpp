@@ -2,6 +2,7 @@
 #include "bindings.hpp"
 
 #include "aare/FastPedestal.hpp"
+#include "aare/StateFile.hpp"
 #include "np_helper.hpp"
 
 #include <cstdint>
@@ -133,7 +134,43 @@ void define_fast_pedestal_bindings(py::module &m, const std::string &name) {
             py::arg("skip_first") = 0,
             "Create a pedestal from a uint16 file. Skip skip_first frames, use "
             "the next n_samples for initialization, then apply every remaining "
-            "frame as a steady-state update.");
+            "frame as a steady-state update.")
+        .def(
+            "save_state",
+            [](const FastPedestal<SUM_TYPE> &pedestal,
+               const std::filesystem::path &filename) {
+                aare::save_state(pedestal.state(), filename);
+            },
+            py::arg("filename"),
+            "Write the complete state of the pedestal to a state file, "
+            "whether it is still initializing or ready. An existing file is "
+            "replaced. A pedestal that loads the file with load_state() "
+            "continues exactly as this one would.")
+        // An instance method: as a static method that returns a new pedestal
+        // it could be called on an existing one, which then stayed unchanged
+        .def(
+            "load_state",
+            [](FastPedestal<SUM_TYPE> &pedestal,
+               const std::filesystem::path &filename) {
+                pedestal.set_state(
+                    aare::load_state<aare::FastPedestalState>(filename));
+            },
+            py::arg("filename"),
+            "Replace the state of this pedestal with the one in a state file "
+            "written by save_state(). n_samples is taken from the file, the "
+            "image shape must be that of this pedestal, and the dtype stays "
+            "that of this pedestal whatever the file records. If the file "
+            "cannot be loaded the pedestal is left unchanged.")
+        .def_static(
+            "from_state_file",
+            [](const std::filesystem::path &filename) {
+                return FastPedestal<SUM_TYPE>(
+                    aare::load_state<aare::FastPedestalState>(filename));
+            },
+            py::arg("filename"),
+            "Create a pedestal of this dtype from a state file written by "
+            "save_state(), whatever dtype the file records. The image shape "
+            "and n_samples are taken from the file.");
 }
 
 void bind_fast_pedestals(py::module &m) {

@@ -1,5 +1,6 @@
 // SPDX-License-Identifier: MPL-2.0
 #pragma once
+#include "aare/Dtype.hpp"
 #include "aare/File.hpp"
 #include "aare/Frame.hpp"
 #include "aare/NDArray.hpp"
@@ -9,6 +10,36 @@
 #include <sys/types.h>
 
 namespace aare {
+
+/**
+ * @brief Complete state of a FastPedestal as plain data.
+ *
+ * Returned by FastPedestal::state() and accepted by FastPedestal::set_state()
+ * and the FastPedestal constructor, so that a pedestal can be stored and
+ * later continued exactly where it stopped. The state does not depend on the
+ * PEDESTAL_TYPE of the pedestal it was taken from: the moments are always
+ * double and the cached mean is recomputed from them. dtype only records
+ * that type, for whoever restores the state and wants the same kind of
+ * pedestal; a pedestal of any PEDESTAL_TYPE can take the state.
+ *
+ * sum and sum2 accumulate the pixel values and their squares over the
+ * initialization frames. Once the pedestal is ready (cur_samples equals
+ * n_samples) each new value replaces 1 / n_samples of them, so the mean is
+ * sum / n_samples and the second moment is sum2 / n_samples.
+ */
+struct FastPedestalState {
+    /// PEDESTAL_TYPE of the pedestal the state was taken from, the type of
+    /// its mean and standard deviation. Not used by set_state()
+    Dtype dtype{Dtype::NONE};
+    /// Number of initialization frames and reciprocal weight of later values
+    uint32_t n_samples{};
+    /// Initialization frames accumulated so far, at most n_samples
+    uint32_t cur_samples{};
+    /// Per-pixel accumulator of the values, shape (rows, cols)
+    NDArray<double, 2> sum;
+    /// Per-pixel accumulator of the squared values, shape (rows, cols)
+    NDArray<double, 2> sum2;
+};
 
 /**
  * @brief Maintain per-pixel mean and population standard deviation.
@@ -73,7 +104,80 @@ template <typename PEDESTAL_TYPE> class FastPedestal {
         }
     }
 
+    /**
+     * @brief Construct a pedestal from a state, taking the image shape and
+     * n_samples from it.
+     * @throws std::runtime_error if the state is empty or not valid, see
+     * set_state().
+     */
+    explicit FastPedestal(const FastPedestalState &state)
+        : FastPedestal(static_cast<uint32_t>(state.sum.shape(0)),
+                       static_cast<uint32_t>(state.sum.shape(1)),
+                       state.n_samples) {
+        set_state(state);
+    }
+
     ~FastPedestal() = default;
+
+    /**
+     * @brief Return a copy of the complete state.
+     *
+     * A pedestal given this state continues exactly as this one would,
+     * whether it is still initializing or ready.
+     */
+    FastPedestalState state() const {
+        FastPedestalState state{Dtype(typeid(PEDESTAL_TYPE)), m_samples,
+                                m_cur_samples,
+                                NDArray<double, 2>({m_rows, m_cols}),
+                                NDArray<double, 2>({m_rows, m_cols})};
+        for (ssize_t i = 0; i < m_sum.size(); ++i) {
+            state.sum[i] = m_sum[i].sum;
+            state.sum2[i] = m_sum[i].sum2;
+        }
+        return state;
+    }
+
+    /**
+     * @brief Replace the complete state, including n_samples.
+     *
+     * The cached mean is recomputed, so the state can come from a pedestal
+     * of another PEDESTAL_TYPE; its dtype is not used.
+     * @param state State whose sum and sum2 have the shape of this pedestal,
+     * with n_samples positive and cur_samples at most n_samples. The values
+     * of sum and sum2 are not checked.
+     * @throws std::runtime_error if the state is not valid. The pedestal is
+     * then left unchanged.
+     */
+    void set_state(const FastPedestalState &state) {
+        const Shape<2> shape{m_rows, m_cols};
+        if (state.sum.shape() != shape || state.sum2.shape() != shape) {
+            throw std::runtime_error(fmt::format(
+                "FastPedestal state has sum of shape ({}, {}) and sum2 of "
+                "shape ({}, {}), expected ({}, {})",
+                state.sum.shape(0), state.sum.shape(1), state.sum2.shape(0),
+                state.sum2.shape(1), m_rows, m_cols));
+        }
+        if (state.n_samples == 0 || state.cur_samples > state.n_samples) {
+            throw std::runtime_error(fmt::format(
+                "Invalid FastPedestal state: n_samples={} must be positive "
+                "and cur_samples={} at most n_samples",
+                state.n_samples, state.cur_samples));
+        }
+
+        m_samples = state.n_samples;
+        m_inv_samples = 1.0 / m_samples;
+        m_cur_samples = state.cur_samples;
+        m_ready = m_cur_samples == m_samples;
+        for (ssize_t i = 0; i < m_sum.size(); ++i) {
+            m_sum[i] = Entry{state.sum[i], state.sum2[i]};
+        }
+        // The mean is only written once the pedestal is ready
+        if (m_ready) {
+            update_mean();
+        } else {
+            m_mean = PEDESTAL_TYPE(0);
+        }
+    }
 
     /**
      * @brief Return a non-owning view of the cached mean.

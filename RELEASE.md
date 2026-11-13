@@ -34,6 +34,21 @@
   ``gap_pixels`` argument, and inserts gap pixels while frames are
   assembled. ``rows()``, ``cols()`` and every returned frame then include
   the gaps, for the full frame and for each ROI.
+- ``FastPedestal`` can hand out and take back its complete state in C++:
+  ``state()`` returns a plain ``FastPedestalState`` (``n_samples``,
+  ``cur_samples``, the per-pixel ``sum`` and ``sum2``, and the ``dtype`` of
+  the pedestal it came from), and ``set_state()`` or the new constructor
+  restore it, so a pedestal continues exactly where it stopped. A pedestal of
+  any type can take the state, and it is not tied to a file format.
+- Added state files to keep such a state: ``save_state(state, fname)``,
+  ``load_state<FastPedestalState>(fname)`` and ``read_state_header(fname)``
+  in C++ (``aare/StateFile.hpp``); ``pedestal.save_state(fname)``,
+  ``FastPedestal.load_state(fname, dtype=None)`` for a new pedestal of the
+  stored dtype unless one is given, ``pedestal.load_state(fname)`` to load
+  into an existing one, and ``aare.read_state_header(fname)`` in Python. A
+  state file is a JSON header followed by the arrays as raw data; the layout
+  is documented and can be read with NumPy only. A pedestal taken once from a
+  dark run can be stored and reused for other files or in other processes.
 
 ### API Changes:
 
