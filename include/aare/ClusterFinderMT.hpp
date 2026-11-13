@@ -179,7 +179,6 @@ class ClusterFinderMT {
     /**
      * @brief Construct a new ClusterFinderMT object
      * @param image_size size of the image
-     * @param cluster_size size of the cluster
      * @param nSigma number of sigma above the pedestal to consider a photon
      * @param capacity initial capacity of the cluster vector. Should match
      * expected number of clusters in a frame per frame.

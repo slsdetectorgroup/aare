@@ -52,7 +52,14 @@ set(_aare_py_hist src/bind_PixelHistogram.cpp
 set(_aare_py_pedestal src/bind_Pedestal.cpp src/bind_FastPedestal.cpp
                       src/bind_calibration.cpp)
 set(_aare_py_fit src/bind_Fit.cpp src/bind_Interpolator.cpp)
-set(_aare_py_groups io core hist pedestal fit)
+
+set(_aare_py_strixelremap
+    src/StrixelRemap/bind_InclusiveROI.cpp
+    src/StrixelRemap/bind_PredefinedVariables.cpp
+    src/StrixelRemap/bind_StrixelPixelMapDefs.cpp
+    src/StrixelRemap/bind_strixelmaps.cpp)
+
+set(_aare_py_groups io core hist pedestal fit strixelremap)
 
 pybind11_add_module(
   _aare # name of the module
@@ -69,6 +76,7 @@ pybind11_add_module(
   ${_aare_py_hist}
   ${_aare_py_pedestal}
   ${_aare_py_fit}
+  ${_aare_py_strixelremap}
   src/bind_Eta.cpp
   src/bind_VarClusterFinder.cpp)
 
@@ -122,6 +130,8 @@ set(PYTHON_FILES
     aare/RawFile.py
     aare/transform.py
     aare/ScanParameters.py
+    aare/strixelremap/__init__.py
+    aare/strixelremap/StrixelRemapFactories.py
     aare/utils.py)
 
 # Copy the python files to the build directory

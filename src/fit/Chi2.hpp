@@ -78,6 +78,7 @@ template <class Model> class Chi2Data1D {
      * @brief Compute chi2, its gradient and the Gauss-Newton Hessian in a
      * single pass over the data.
      *
+     * @param par   Parameter values, size npar.
      * @param grad  Receives d(chi2)/dp_k, resized to npar.
      * @param hess  Receives the packed symmetric Hessian in the layout used by
      *              ROOT::Minuit2::FumiliFCNBase: element (j, k) with j <= k is

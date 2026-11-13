@@ -73,4 +73,5 @@ from ._aare import (
     PixelHistogram_u64,
 )
 
+from . import strixelremap 
 from ._aare import block_mean, mean_current_source 
