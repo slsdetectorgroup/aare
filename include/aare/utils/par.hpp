@@ -13,7 +13,8 @@ void RunInParallel(F func, const std::vector<std::pair<int, int>> &tasks) {
     // auto tasks = split_task(0, y.shape(0), n_threads);
     std::vector<std::future<void>> futures;
     for (auto &task : tasks) {
-        futures.push_back(std::async(std::launch::async, func, task.first, task.second));
+        futures.push_back(
+            std::async(std::launch::async, func, task.first, task.second));
     }
     for (auto &future : futures) {
         future.get();
