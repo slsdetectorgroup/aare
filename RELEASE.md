@@ -37,6 +37,17 @@
 
 ### API Changes:
 
+- ``NDArray`` and ``NDView`` share their indexing, compound assignment and
+  comparison through a common base (``NDOps``), so both now support the same
+  set: ``+=``, ``-=``, ``*=``, ``/=`` with a scalar, an ``NDArray``, an
+  ``NDView`` or an expression such as ``a * b`` (also with another element
+  type), ``&=`` with a scalar, ``==`` and ``!=``. New for ``NDView`` are
+  ``&=``, ``!=`` and ``+=``, ``-=``, ``*=`` with an array or view. An
+  expression on the right hand side is applied element by element without
+  a temporary array. ``NDView::operator/=`` with a view of another shape
+  now throws ``std::runtime_error`` like ``NDArray``; it was not checked
+  before. ``strides()`` returns a const reference instead of a copy.
+
 - ``VarClusterFinder`` keeps only the flood fill. ``find_clusters_X`` is now
   ``find_clusters``; the connected component labelling path (the previous
   ``find_clusters`` and ``single_pass``) and the Python ``hits`` method, a

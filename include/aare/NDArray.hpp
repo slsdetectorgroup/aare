@@ -20,7 +20,9 @@
 namespace aare {
 
 template <typename T, ssize_t Ndim = 2>
-class NDArray : public ArrayExpr<NDArray<T, Ndim>, Ndim> {
+class NDArray : public NDOps<NDArray<T, Ndim>, T, Ndim> {
+    using Ops = NDOps<NDArray<T, Ndim>, T, Ndim>;
+
     std::array<ssize_t, Ndim> shape_;
     std::array<ssize_t, Ndim> strides_;
     size_t size_{}; // TODO! do we need to store size when we have shape?
@@ -181,30 +183,9 @@ class NDArray : public ArrayExpr<NDArray<T, Ndim>, Ndim> {
     auto *end() { return data_ + size_; }
     const auto *end() const { return data_ + size_; }
 
-    /*
-     * @brief Access element at given multi-dimensional index.
-     * i.e. arr(i,j,k,...)
-     *
-     * @note The fast index is the last index. Please take care when iterating
-     * through the array.
-     */
-    template <typename... Ix>
-    std::enable_if_t<sizeof...(Ix) == Ndim, T &> operator()(Ix... index) {
-        return data_[element_offset(strides_, index...)];
-    }
-
-    /*
-     * @brief Access element at given multi-dimensional index (const version).
-     * i.e. arr(i,j,k,...)
-     *
-     * @note The fast index is the last index. Please take care when iterating
-     * through the array.
-     */
-    template <typename... Ix>
-    std::enable_if_t<sizeof...(Ix) == Ndim, const T &>
-    operator()(Ix... index) const {
-        return data_[element_offset(strides_, index...)];
-    }
+    // arr(i, j, ...) and arr[i], shared with NDView
+    using Ops::operator();
+    using Ops::operator[];
 
     /*
      @brief Index the array as it would be a 1D array. To get a certain
@@ -217,18 +198,6 @@ class NDArray : public ArrayExpr<NDArray<T, Ndim>, Ndim> {
      pixel in a multidimensional array use the (i,j,k,...) operator instead.
      */
     const T &operator()(ssize_t i) const { return data_[i]; }
-
-    /*
-     @brief Index the array as it would be a 1D array. To get a certain
-     pixel in a multidimensional array use the (i,j,k,...) operator instead.
-     */
-    T &operator[](ssize_t i) { return data_[i]; }
-
-    /*
-     @brief Index the array as it would be a 1D array. To get a certain
-     pixel in a multidimensional array use the (i,j,k,...) operator instead.
-     */
-    const T &operator[](ssize_t i) const { return data_[i]; }
 
     /* @brief Return a raw pointer to the data */
     T *data() { return data_; }
@@ -256,7 +225,9 @@ class NDArray : public ArrayExpr<NDArray<T, Ndim>, Ndim> {
     ssize_t shape(ssize_t i) const noexcept { return shape_[i]; }
 
     /** @brief Return the strides of the array */
-    std::array<ssize_t, Ndim> strides() const noexcept { return strides_; }
+    const std::array<ssize_t, Ndim> &strides() const noexcept {
+        return strides_;
+    }
 
     /**
      * @brief Return the bitdepth of the array. Useful for checking that
@@ -342,7 +313,7 @@ class NDArray : public ArrayExpr<NDArray<T, Ndim>, Ndim> {
             tmp = expr;
             return *this = std::move(tmp);
         }
-        // Local copies, see elementwise()
+        // Local copies, see NDOps::elementwise()
         const auto e = operand(expr);
         T *data = data_;
         for (size_t i = 0, n = size_; i < n; ++i) {
@@ -357,113 +328,12 @@ class NDArray : public ArrayExpr<NDArray<T, Ndim>, Ndim> {
     ///////////////////////////////////////////////////////////////////////////////
 
     /**
-     * @brief Add elementwise from another NDArray.
-     */
-    NDArray &operator+=(const NDArray &other) {
-        if (shape_ != other.shape_)
-            throw(std::runtime_error(
-                "Shape of NDArray must match for operator +="));
-
-        return elementwise(other.data_, std::plus<T>());
-    }
-
-    /**
-     * @brief Subtract elementwise with another NDArray.
-     */
-    NDArray &operator-=(const NDArray &other) {
-        if (shape_ != other.shape_)
-            throw(std::runtime_error(
-                "Shape of NDArray must match for operator -="));
-
-        return elementwise(other.data_, std::minus<T>());
-    }
-
-    /**
-     * @brief Multiply elementwise with another NDArray.
-     */
-    NDArray &operator*=(const NDArray &other) {
-        if (shape_ != other.shape_)
-            throw(std::runtime_error(
-                "Shape of NDArray must match for operator *="));
-
-        return elementwise(other.data_, std::multiplies<T>());
-    }
-
-    /**
-     * @brief Divide elementwise by another NDArray. Templated to allow division
-     * with different types.
-     *
-     * TODO! Why is this templated when the others are not?
-     */
-    template <typename V> NDArray &operator/=(const NDArray<V, Ndim> &other) {
-        // check shape
-        if (shape_ != other.shape())
-            throw(std::runtime_error("Shape of NDArray must match"));
-        return elementwise(other.data(), std::divides<>());
-    }
-
-    /**
      * @brief Assign a scalar value to all elements in the NDArray.
      */
     NDArray &operator=(const T &value) {
         std::fill_n(data_, size_, value);
         return *this;
     }
-
-    /**
-     * @brief Add a scalar value to all elements in the NDArray.
-     */
-    NDArray &operator+=(const T &value) {
-        return elementwise(value, std::plus<T>());
-    }
-
-    /**
-     * @brief Subtract a scalar value to all elements in the NDArray.
-     */
-    NDArray &operator-=(const T &value) {
-        return elementwise(value, std::minus<T>());
-    }
-
-    /**
-     * @brief Multiply all elements in the NDArray with a scalar value
-     */
-    NDArray &operator*=(const T &value) {
-        return elementwise(value, std::multiplies<T>());
-    }
-
-    /**
-     * @brief Divide all elements in the NDArray with a scalar value
-     */
-    NDArray &operator/=(const T &value) {
-        return elementwise(value, std::divides<T>());
-    }
-
-    /**
-     * @brief Bitwise AND all elements in the NDArray with a scalar mask.
-     * Used for example to mask out gain bits for Jungfrau detectors.
-     */
-    NDArray &operator&=(const T &mask) {
-        return elementwise(mask, std::bit_and<T>());
-    }
-
-    /**
-     * @brief Compare two NDArrays elementwise for equality.
-     */
-    bool operator==(const NDArray &other) const {
-        if (shape_ != other.shape_)
-            return false;
-
-        for (size_t i = 0; i != size_; ++i)
-            if (data_[i] != other.data_[i])
-                return false;
-
-        return true;
-    }
-
-    /**
-     * @brief Compare two NDArrays elementwise for non-equality.
-     */
-    bool operator!=(const NDArray &other) const { return !((*this) == other); }
 
     /**
      * @brief Compute the square root of all elements in the NDArray.
@@ -478,7 +348,7 @@ class NDArray : public ArrayExpr<NDArray<T, Ndim>, Ndim> {
     /*
      * @brief Prefix increment operator. Increments all elements by 1.
      */
-    NDArray &operator++() { return elementwise(T{1}, std::plus<T>()); }
+    NDArray &operator++() { return *this += T{1}; }
 
     /** @brief Create a mutable view of the NDArray. */
     NDView<T, Ndim> view() { return NDView<T, Ndim>{data_, shape_}; }
@@ -489,31 +359,6 @@ class NDArray : public ArrayExpr<NDArray<T, Ndim>, Ndim> {
     }
 
   private:
-    /**
-     * @brief Apply data_[i] = op(data_[i], value) to all elements.
-     *
-     * The members are copied to locals since a store to data_[i] may alias
-     * them for some T (uint8_t, int64_t, ...). The compiler then has to reload
-     * them every iteration, which blocks vectorization.
-     */
-    template <typename Op> NDArray &elementwise(T value, Op op) {
-        T *data = data_;
-        for (size_t i = 0, n = size_; i < n; ++i) {
-            data[i] = op(data[i], value);
-        }
-        return *this;
-    }
-
-    /** @brief Apply data_[i] = op(data_[i], other[i]) to all elements. */
-    template <typename V, typename Op>
-    NDArray &elementwise(const V *other, Op op) {
-        T *data = data_;
-        for (size_t i = 0, n = size_; i < n; ++i) {
-            data[i] = op(data[i], other[i]);
-        }
-        return *this;
-    }
-
     /**
      * @brief Reset the NDArray to an empty state. Dropping the ownership of
      * the data. Used internally for move operations to avoid double free or
@@ -531,18 +376,6 @@ class NDArray : public ArrayExpr<NDArray<T, Ndim>, Ndim> {
 // Free functions closely related to NDArray
 //
 ///////////////////////////////////////////////////////////////////////////////
-
-template <typename T, ssize_t Ndim>
-std::ostream &operator<<(std::ostream &os, const NDArray<T, Ndim> &arr) {
-    for (auto row = 0; row < arr.shape(0); ++row) {
-        for (auto col = 0; col < arr.shape(1); ++col) {
-            os << std::setw(3);
-            os << arr(row, col) << " ";
-        }
-        os << "\n";
-    }
-    return os;
-}
 
 template <typename T, ssize_t Ndim>
 [[deprecated("Saving of raw arrays without metadata is deprecated")]] void
