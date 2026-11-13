@@ -7,6 +7,8 @@
 
 namespace py = pybind11;
 
+using aare::ssize_t;
+
 void define_StrixelPixelMapDefs(py::module &m) {
 
     py::enum_<aare::remap::defs::Rotation>(m, "Rotation")

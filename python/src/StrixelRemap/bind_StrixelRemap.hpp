@@ -7,6 +7,8 @@
 
 #include "aare/StrixelPixelRemapping/BaseStrixelPixelMap.hpp"
 
+using aare::ssize_t;
+
 namespace py = pybind11;
 
 namespace aare::remap::detail {
