@@ -52,12 +52,15 @@ jobs:
           version: "v0.18.0"
 
       # Precompiled headers are disabled because sccache does not cache
-      # compilations that use one
+      # compilations that use one. The python bindings are compiled as one
+      # translation unit per file (AARE_PYTHON_UNITY_BUILD=OFF, the local
+      # default) so every unit is checked to compile on its own; the
+      # packaging jobs build the grouped units instead.
       - name: Build library and docs
         run: |
             mkdir build 
             cd build 
-            cmake .. -DCMAKE_BUILD_TYPE=${{env.BUILD_TYPE}} -DAARE_SYSTEM_LIBRARIES=ON -DAARE_PYTHON_BINDINGS=ON -DAARE_DOCS=ON -DAARE_TESTS=ON -DAARE_WARNINGS_AS_ERRORS=ON -DCMAKE_C_COMPILER_LAUNCHER=sccache -DCMAKE_CXX_COMPILER_LAUNCHER=sccache -DCMAKE_DISABLE_PRECOMPILE_HEADERS=ON
+            cmake .. -DCMAKE_BUILD_TYPE=${{env.BUILD_TYPE}} -DAARE_SYSTEM_LIBRARIES=ON -DAARE_PYTHON_BINDINGS=ON -DAARE_PYTHON_UNITY_BUILD=OFF -DAARE_DOCS=ON -DAARE_TESTS=ON -DAARE_WARNINGS_AS_ERRORS=ON -DCMAKE_C_COMPILER_LAUNCHER=sccache -DCMAKE_CXX_COMPILER_LAUNCHER=sccache -DCMAKE_DISABLE_PRECOMPILE_HEADERS=ON
             make -j 4 
             make docs
 

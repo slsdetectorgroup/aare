@@ -1,3 +1,4 @@
+#include <fmt/format.h>
 #include <pybind11/pybind11.h>
 
 #include "aare/StrixelPixelRemapping/InclusiveROI.hpp"
@@ -83,7 +84,7 @@ void define_InclusiveROI(py::module &m) {
         .def_static("emptyROI", &aare::InclusiveROI::emptyROI,
                     "create an empty InclusiveROI");
 
-    m.def("toInclusiveROI", &toInclusiveROI, py::arg("roi").noconvert(),
+    m.def("toInclusiveROI", &aare::toInclusiveROI, py::arg("roi").noconvert(),
           R"(
         Convert a half-open ROI to an inclusive ROI
 
@@ -98,7 +99,7 @@ void define_InclusiveROI(py::module &m) {
             Inclusive ROI with the same physical extent
         )");
 
-    m.def("toHalfopenROI", &toHalfopenROI, py::arg("roi").noconvert(),
+    m.def("toHalfopenROI", &aare::toHalfopenROI, py::arg("roi").noconvert(),
           R"(
         Convert an inclusive ROI to a half-open ROI
 

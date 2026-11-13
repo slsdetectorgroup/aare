@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: MPL-2.0
-#pragma once
+#include "bindings.hpp"
 
 #include "aare/Pedestal.hpp"
 #include "np_helper.hpp"
@@ -119,4 +119,10 @@ void define_pedestal_bindings(py::module &m, const std::string &name) {
                                           sizeof(SUM_TYPE))},
                 true);
         });
+}
+
+void bind_pedestals(py::module &m) {
+    define_pedestal_bindings<double>(m, "Pedestal_d");
+    define_pedestal_bindings<float>(m, "Pedestal_f");
+    define_pedestal_bindings<int16_t>(m, "Pedestal_i16");
 }

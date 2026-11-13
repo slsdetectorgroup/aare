@@ -1,7 +1,13 @@
 
+#include <fmt/format.h>
+#include <pybind11/numpy.h>
 #include <pybind11/pybind11.h>
 
+#include "../np_helper.hpp"
+
 #include "aare/StrixelPixelRemapping/BaseStrixelPixelMap.hpp"
+
+namespace py = pybind11;
 
 namespace aare::remap::detail {
 

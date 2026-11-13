@@ -1,11 +1,11 @@
 // SPDX-License-Identifier: MPL-2.0
-#pragma once
 #include "aare/CtbRawFile.hpp"
 #include "aare/File.hpp"
 #include "aare/Frame.hpp"
 #include "aare/RawFile.hpp"
 #include "aare/RawMasterFile.hpp"
 #include "aare/RawSubFile.hpp"
+#include "bindings.hpp"
 
 #include "aare/defs.hpp"
 
