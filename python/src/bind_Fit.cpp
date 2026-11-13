@@ -11,6 +11,8 @@
 #include "aare/Fit.hpp"
 #include "aare/FitModel.hpp"
 #include "aare/Models.hpp"
+#include <algorithm>
+#include <iostream>
 
 namespace py = pybind11;
 using namespace pybind11::literals;
@@ -22,7 +24,9 @@ fit_dispatch(const aare::FitModel<Model> &model,
              py::array_t<double, py::array::c_style | py::array::forcecast> x,
              py::array_t<double, py::array::c_style | py::array::forcecast> y,
              py::object y_err_obj, int n_threads,
-             std::optional<py::array_t<size_t>> fit_range = std::nullopt);
+             std::optional<
+                 py::array_t<size_t, py::array::c_style | py::array::forcecast>>
+                 fit_range = std::nullopt);
 
 template <typename Model> void bind_fit_model(py::module &m, const char *name) {
     using FM = aare::FitModel<Model>;
@@ -123,8 +127,9 @@ template <typename Model> void bind_fit_model(py::module &m, const char *name) {
                py::array_t<double, py::array::c_style | py::array::forcecast> x,
                py::array_t<double, py::array::c_style | py::array::forcecast> y,
                py::object y_err_obj, int n_threads,
-               std::optional<py::array_t<size_t>> fit_range =
-                   std::nullopt) -> py::object {
+               std::optional<py::array_t<size_t, py::array::c_style |
+                                                     py::array::forcecast>>
+                   fit_range = std::nullopt) -> py::object {
                 return fit_dispatch<Model>(self, x, y, y_err_obj, n_threads,
                                            fit_range);
             },
@@ -237,7 +242,9 @@ fit_dispatch(const aare::FitModel<Model> &model,
              py::array_t<double, py::array::c_style | py::array::forcecast> x,
              py::array_t<double, py::array::c_style | py::array::forcecast> y,
              py::object y_err_obj, int n_threads,
-             std::optional<py::array_t<size_t>> fit_range) {
+             std::optional<
+                 py::array_t<size_t, py::array::c_style | py::array::forcecast>>
+                 fit_range) {
     constexpr std::size_t npar = Model::npar;
 
     if (y.ndim() == 3) {
@@ -353,7 +360,9 @@ py::object dispatch_any_model(
     py::array_t<double, py::array::c_style | py::array::forcecast> x,
     py::array_t<double, py::array::c_style | py::array::forcecast> y,
     py::object y_err_obj, int n_threads,
-    std::optional<py::array_t<size_t>> fit_range = std::nullopt) {
+    std::optional<
+        py::array_t<size_t, py::array::c_style | py::array::forcecast>>
+        fit_range = std::nullopt) {
     using namespace aare::model;
 
 #define AARE_DISPATCH_MODEL(Model)                                             \

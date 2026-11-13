@@ -2,7 +2,7 @@
 #pragma once
 #include "aare/NDView.hpp"
 #include "aare/utils/task.hpp"
-#include <thread>
+#include <future>
 #include <utility>
 #include <vector>
 
@@ -11,12 +11,13 @@ namespace aare {
 template <typename F>
 void RunInParallel(F func, const std::vector<std::pair<int, int>> &tasks) {
     // auto tasks = split_task(0, y.shape(0), n_threads);
-    std::vector<std::thread> threads;
+    std::vector<std::future<void>> futures;
     for (auto &task : tasks) {
-        threads.push_back(std::thread(func, task.first, task.second));
+        futures.push_back(
+            std::async(std::launch::async, func, task.first, task.second));
     }
-    for (auto &thread : threads) {
-        thread.join();
+    for (auto &future : futures) {
+        future.get();
     }
 }
 

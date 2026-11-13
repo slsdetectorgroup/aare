@@ -292,11 +292,16 @@ void fit_3d(const FitModel<Model> &model, NDView<double, 1> x,
                               : y.shape(2);
 
                 if (start_range + num_y_samples >
-                    static_cast<size_t>(y.shape(2)))
+                    static_cast<size_t>(y.shape(2))) {
                     throw std::runtime_error(fmt::format(
                         "fit_3d: fit_range out of bounds for (row={}, col={}, "
-                        "start_range={}, num_y_samples={}, num samples={})",
-                        row, col, start_range, num_y_samples, y.shape(2)));
+                        "start_range={}, end_range={}, num samples={})",
+                        row, col, start_range, start_range + num_y_samples,
+                        y.shape(2)));
+                }
+
+                if (num_y_samples == 0)
+                    continue; // no data to fit
 
                 NDView<double, 1> values(&y(row, col, start_range),
                                          {num_y_samples});
