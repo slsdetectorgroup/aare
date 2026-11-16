@@ -7,6 +7,7 @@
 #include "aare/ClusterVector.hpp"
 #include "aare/NDView.hpp"
 #include "aare/Pedestal.hpp"
+#include "aare/StateFile.hpp"
 
 #include "module_config.hpp"
 #include "np_helper.hpp"
@@ -15,6 +16,7 @@
 #include <filesystem>
 #include <pybind11/pybind11.h>
 #include <pybind11/stl.h>
+#include <pybind11/stl/filesystem.h>
 #include <pybind11/stl_bind.h>
 
 namespace py = pybind11;
@@ -88,5 +90,48 @@ void define_ClusterFinder(py::module &m, const std::string &typestr) {
                 self.find_clusters(view, frame_number);
                 return;
             },
-            py::arg("frame").noconvert(), py::arg("frame_number") = 0);
+            py::arg("frame").noconvert(), py::arg("frame_number") = 0)
+        .def(
+            "save_state",
+            [](const ClusterFinder<ClusterType, uint16_t, pd_type> &self,
+               const std::filesystem::path &filename) {
+                aare::save_state(self.state(), filename);
+            },
+            py::arg("filename"),
+            "Write the complete state of the cluster finder to a state file: "
+            "the pedestal, whether it is still initializing or ready, nSigma "
+            "and the threshold as last computed. An existing file is "
+            "replaced. Clusters that have not been taken with "
+            "steal_clusters() are not stored. A finder that loads the file "
+            "with load_state() continues exactly as this one would.")
+        // An instance method: as a static method that returns a new finder
+        // it could be called on an existing one, which then stayed unchanged
+        .def(
+            "load_state",
+            [](ClusterFinder<ClusterType, uint16_t, pd_type> &self,
+               const std::filesystem::path &filename) {
+                self.set_state(
+                    aare::load_state<aare::ClusterFinderState>(filename));
+            },
+            py::arg("filename"),
+            "Replace the state of this cluster finder with the one in a "
+            "state file written by save_state(). nSigma and "
+            "min_pedestal_samples are taken from the file; the cluster size "
+            "and the image shape must be those of this finder, and the dtype "
+            "stays that of this finder whatever the file records. Clusters "
+            "that have not been taken with steal_clusters() are dropped. If "
+            "the file cannot be loaded the finder is left unchanged.")
+        .def_static(
+            "from_state_file",
+            [](const std::filesystem::path &filename, size_t capacity) {
+                return ClusterFinder<ClusterType, uint16_t, pd_type>(
+                    aare::load_state<aare::ClusterFinderState>(filename),
+                    capacity);
+            },
+            py::arg("filename"), py::arg("capacity") = 1'000'000,
+            "Create a cluster finder of this cluster size and dtype from a "
+            "state file written by save_state(), whatever dtype the file "
+            "records. The file must come from a finder with the same cluster "
+            "size. The image shape, nSigma and min_pedestal_samples are "
+            "taken from the file.");
 }

@@ -3,8 +3,8 @@ State files
 
 A state file stores everything an object has accumulated, so that it can be
 restored later, possibly in another process, and continue exactly where it
-stopped. ``FastPedestal`` is the first class with a state that can be stored
-this way.
+stopped. ``FastPedestal`` and ``ClusterFinder`` have a state that can be
+stored this way.
 
 .. code-block:: c++
 
@@ -15,11 +15,15 @@ this way.
    aare::FastPedestal<double> restored(
        aare::load_state<aare::FastPedestalState>("dark.aare"));
 
+A cluster finder is stored the same way, with ``finder.state()`` and
+``load_state<aare::ClusterFinderState>()``, see :doc:`ClusterFinder`.
+
 In Python the same file is written with ``pedestal.save_state()`` and read
 with ``FastPedestal.load_state()``, which returns a new pedestal, or
 ``pedestal.load_state()``, which loads into an existing one, see
-:doc:`python/pedestal/pyFastPedestal`. The file extension is free; the
-examples use ``.aare``.
+:doc:`python/pedestal/pyFastPedestal`. ``ClusterFinder`` has the same three
+functions, see :doc:`python/cluster/pyClusterFinder`. The file extension is
+free; the examples use ``.aare``.
 
 To see what a file holds without reading its arrays, ``read_state_header()``
 returns the JSON header, as text in C++ and as a dict in Python:
@@ -92,6 +96,40 @@ The header of a ``FastPedestal<float>`` with 400 x 400 pixels:
    file, a NumPy dtype string like the arrays'. A reader may create a
    pedestal of that type or of another; the moments are double either way.
 
+A state can contain another state. The header of a 3 x 3 ``ClusterFinder``
+with ``int32`` clusters holds the state of its pedestal under ``pedestal``,
+with the fields that a ``FastPedestal`` file has under ``state``:
+
+.. code-block:: json
+
+   {
+     "format_version": 1,
+     "aare_version": "2026.9.30",
+     "type": "ClusterFinder",
+     "state": {
+       "cluster_dtype": "<i4",
+       "cluster_size_x": 3,
+       "cluster_size_y": 3,
+       "n_sigma": 5.0,
+       "threshold": {"dtype": "<f8", "shape": [400, 400], "offset": 0},
+       "pedestal": {
+         "dtype": "<f8",
+         "n_samples": 1000,
+         "cur_samples": 1000,
+         "sum": {"dtype": "<f8", "shape": [400, 400], "offset": 1280000},
+         "sum2": {"dtype": "<f8", "shape": [400, 400], "offset": 2560000}
+       }
+     }
+   }
+
+The fields are those of ``ClusterFinderState``, see :doc:`ClusterFinder`.
+``cluster_size_x`` and ``cluster_size_y`` are the number of columns and rows
+of a cluster; the state can only be loaded into a finder with that cluster
+size. ``cluster_dtype`` is the value type of the clusters of the finder that
+wrote the file; a reader may create a finder of that type or of another.
+``threshold`` is the per-pixel threshold as it was last computed, which is
+in general not ``n_sigma`` times the noise that follows from ``pedestal``.
+
 A reader ignores fields it does not know, so that later versions can add
 fields without changing ``format_version``. Removing a field or changing its
 meaning requires a new version.
@@ -138,7 +176,9 @@ by the array:
 API
 ---
 
-.. doxygenfunction:: aare::save_state
+.. doxygenfunction:: aare::save_state(const FastPedestalState&, const std::filesystem::path&)
+
+.. doxygenfunction:: aare::save_state(const ClusterFinderState&, const std::filesystem::path&)
 
 .. doxygenfunction:: aare::load_state(const std::filesystem::path&)
 

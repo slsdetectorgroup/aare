@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: MPL-2.0
 #pragma once
 
+#include "aare/ClusterFinder.hpp"
 #include "aare/FastPedestal.hpp"
 
 #include <filesystem>
@@ -29,9 +30,21 @@ void save_state(const FastPedestalState &state,
                 const std::filesystem::path &fname);
 
 /**
+ * @brief Write the state of a cluster finder to a file.
+ * @param state State to write, as returned by ClusterFinder::state(). Its
+ * cluster_dtype and the dtype of its pedestal must be set and its n_sigma
+ * finite.
+ * @param fname File to write. An existing file is replaced.
+ * @throws std::runtime_error if a dtype is not set, n_sigma is not finite
+ * or the file cannot be written.
+ */
+void save_state(const ClusterFinderState &state,
+                const std::filesystem::path &fname);
+
+/**
  * @brief Read a state written by save_state().
  * @tparam State Type of the state stored in the file. Supported:
- * FastPedestalState.
+ * FastPedestalState and ClusterFinderState.
  * @param fname File to read.
  * @throws std::runtime_error if the file cannot be read, is not a state
  * file, was written in a newer format, holds the state of another type, or
@@ -43,5 +56,9 @@ State load_state(const std::filesystem::path &fname) = delete;
 template <>
 FastPedestalState
 load_state<FastPedestalState>(const std::filesystem::path &fname);
+
+template <>
+ClusterFinderState
+load_state<ClusterFinderState>(const std::filesystem::path &fname);
 
 } // namespace aare

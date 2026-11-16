@@ -49,6 +49,19 @@
   state file is a JSON header followed by the arrays as raw data; the layout
   is documented and can be read with NumPy only. A pedestal taken once from a
   dark run can be stored and reused for other files or in other processes.
+- ``ClusterFinder`` can be stored and restored the same way. In C++
+  ``state()`` returns a ``ClusterFinderState`` (the pedestal state,
+  ``n_sigma``, the threshold as last computed, and the cluster size and
+  cluster dtype of the finder it came from), ``set_state()`` or the new
+  constructor restore it, and ``save_state()`` and
+  ``load_state<ClusterFinderState>()`` keep it in a state file. In Python:
+  ``finder.save_state(fname)``, ``ClusterFinder.load_state(fname,
+  dtype=None, capacity=1024)`` for a new finder with the stored cluster size
+  and, unless one is given, the stored dtype, and ``finder.load_state(fname)``
+  to load into an existing one. A state only loads into a finder with the
+  same cluster size and image shape. Clusters that have not been taken with
+  ``steal_clusters()`` are not stored, and loading into an existing finder
+  drops those it holds.
 
 ### API Changes:
 

@@ -1,5 +1,6 @@
 # SPDX-License-Identifier: MPL-2.0
 from . import _aare
+from ._aare import read_state_header
 import numpy as np
 from .factory import _type_to_char
 
@@ -40,6 +41,70 @@ def ClusterFinder(image_size, *, cluster_size=(3,3), n_sigma=5, dtype = np.int32
     """
     cls = _get_class("ClusterFinder", cluster_size, dtype)
     return cls(image_size, n_sigma=n_sigma, capacity=capacity, min_pedestal_samples=min_pedestal_samples)
+
+
+def _load_state(filename, dtype=None, capacity=1024):
+    """Create a ClusterFinder from a state file.
+
+    The file is written by ``save_state()`` of a cluster finder and holds its
+    pedestal, ``nSigma`` and threshold, so the new finder continues exactly
+    where the stored one stopped, whether its pedestal was still initializing
+    or ready. The image shape, the cluster size, ``nSigma``,
+    ``min_pedestal_samples`` and by default the dtype are taken from the
+    file. Clusters that the stored finder had found but not handed out with
+    ``steal_clusters()`` are not in the file.
+
+    This returns a new finder. To load a state file into a finder that
+    already exists, call ``load_state(filename)`` on that finder; it keeps
+    its own dtype and must have the cluster size stored in the file.
+
+    Parameters
+    ----------
+    filename : path-like
+        State file written by ``save_state()``.
+    dtype : data-type, optional
+        The data type of the clusters. By default that of the finder that
+        wrote the file, as stored in it.
+    capacity : int, optional
+        The maximum number of clusters that can be stored before
+        reallocating. Default is 1024.
+
+    Raises
+    ------
+    RuntimeError
+        If the file cannot be read, is not a state file of a ClusterFinder,
+        or is truncated or damaged.
+    ValueError
+        If there is no ClusterFinder with the stored cluster size and the
+        dtype, given or stored.
+    """
+    cluster_size, stored_dtype = _stored_cluster_type(filename)
+    if dtype is None:
+        dtype = stored_dtype
+    cls = _get_class("ClusterFinder", cluster_size, dtype)
+    return cls.from_state_file(filename, capacity=capacity)
+
+
+def _stored_cluster_type(filename):
+    """Return the cluster size and dtype of the finder that wrote a state file.
+
+    Only files that are not state files are reported here. Anything else
+    that is wrong with the file is left to ``from_state_file()``, which
+    checks everything it reads; a 3x3 ``int32`` finder only serves to reach
+    it.
+    """
+    header = read_state_header(filename)
+    try:
+        if header["type"] == "ClusterFinder":
+            state = header["state"]
+            cluster_size = (state["cluster_size_x"], state["cluster_size_y"])
+            return cluster_size, np.dtype(state["cluster_dtype"])
+    except (KeyError, TypeError):
+        pass
+    return (3, 3), np.int32
+
+
+ClusterFinder.load_state = _load_state
 
 
 def ClusterFinderMT(image_size, *, cluster_size = (3,3), dtype=np.int32, n_sigma=5, capacity = 1024, n_threads = 3, min_pedestal_samples = 1000): 

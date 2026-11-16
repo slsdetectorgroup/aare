@@ -9,6 +9,7 @@
 
 #include <array>
 #include <cerrno>
+#include <cmath>
 #include <cstdint>
 #include <cstdio>
 #include <fstream>
@@ -364,6 +365,22 @@ class StateReader {
         return static_cast<T>(value.get<uint64_t>());
     }
 
+    /** Read object[key] as a finite number. */
+    double read_double(const json &object, const char *key) const {
+        const json &value = field(object, key);
+        if (!value.is_number())
+            fail(fmt::format("\"{}\" must be a number", key));
+        return value.get<double>();
+    }
+
+    /** Read object[key] as an object, for a state inside the state. */
+    const json &read_object(const json &object, const char *key) const {
+        const json &value = field(object, key);
+        if (!value.is_object())
+            fail(fmt::format("\"{}\" must be an object", key));
+        return value;
+    }
+
     /** Read the array that object[key] describes. */
     template <typename T, ssize_t Ndim>
     NDArray<T, Ndim> read_array(const json &object, const char *key) {
@@ -443,6 +460,40 @@ void from_header(const json &header, StateReader &reader,
     state.sum2 = reader.read_array<double, 2>(header, "sum2");
 }
 
+constexpr std::string_view cluster_finder_type = "ClusterFinder";
+
+json to_header(const ClusterFinderState &state, StateWriter &writer) {
+    if (state.cluster_dtype == Dtype::NONE ||
+        state.cluster_dtype == Dtype::ERROR)
+        throw std::runtime_error("Cannot save a ClusterFinder state whose "
+                                 "cluster_dtype is not set");
+    // JSON has no representation for them
+    if (!std::isfinite(state.n_sigma))
+        throw std::runtime_error(
+            fmt::format("Cannot save a ClusterFinder state whose n_sigma is {}",
+                        state.n_sigma));
+    json header;
+    header["cluster_dtype"] = dtype_string(state.cluster_dtype);
+    header["cluster_size_x"] = state.cluster_size_x;
+    header["cluster_size_y"] = state.cluster_size_y;
+    header["n_sigma"] = state.n_sigma;
+    header["threshold"] = writer.add(state.threshold);
+    header["pedestal"] = to_header(state.pedestal, writer);
+    return header;
+}
+
+void from_header(const json &header, StateReader &reader,
+                 ClusterFinderState &state) {
+    state.cluster_dtype = reader.read_dtype(header, "cluster_dtype");
+    state.cluster_size_x =
+        reader.read_unsigned<uint8_t>(header, "cluster_size_x");
+    state.cluster_size_y =
+        reader.read_unsigned<uint8_t>(header, "cluster_size_y");
+    state.n_sigma = reader.read_double(header, "n_sigma");
+    state.threshold = reader.read_array<double, 2>(header, "threshold");
+    from_header(reader.read_object(header, "pedestal"), reader, state.pedestal);
+}
+
 } // namespace
 
 std::string read_state_header(const std::filesystem::path &fname) {
@@ -461,6 +512,22 @@ FastPedestalState
 load_state<FastPedestalState>(const std::filesystem::path &fname) {
     StateReader reader(fname, fast_pedestal_type);
     FastPedestalState state;
+    from_header(reader.state(), reader, state);
+    return state;
+}
+
+void save_state(const ClusterFinderState &state,
+                const std::filesystem::path &fname) {
+    StateWriter writer;
+    json header = to_header(state, writer);
+    writer.write(fname, cluster_finder_type, std::move(header));
+}
+
+template <>
+ClusterFinderState
+load_state<ClusterFinderState>(const std::filesystem::path &fname) {
+    StateReader reader(fname, cluster_finder_type);
+    ClusterFinderState state;
     from_header(reader.state(), reader, state);
     return state;
 }
