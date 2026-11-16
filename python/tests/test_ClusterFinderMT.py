@@ -261,3 +261,30 @@ def test_cluster_finder_returns_and_saves_its_pedestal(tmp_path):
     other = ClusterFinder(SHAPE, n_sigma=4.1, min_pedestal_samples=N_SAMPLES)
     other.load_pedestal(tmp_path / "pedestal.aare")
     np.testing.assert_array_equal(other.pedestal, finder.pedestal)
+
+
+def test_clusters_can_be_stolen_from_a_running_collector():
+    finder = _finder_mt()
+    collector = ClusterCollector(finder)
+    frames = _test_frames(N_SAMPLES + 20)
+    _process(finder, frames[:N_SAMPLES])
+
+    # After sync() the collector has one ClusterVector for each data frame
+    _process(finder, frames[N_SAMPLES : N_SAMPLES + 12], first=N_SAMPLES)
+    finder.sync()
+    first = collector.steal_clusters()
+    assert sorted(c.frame_number for c in first) == list(
+        range(N_SAMPLES, N_SAMPLES + 12)
+    )
+
+    # Stolen clusters are gone, later ones are still collected
+    _process(finder, frames[N_SAMPLES + 12 :], first=N_SAMPLES + 12)
+    finder.sync()
+    second = collector.steal_clusters()
+    assert sorted(c.frame_number for c in second) == list(
+        range(N_SAMPLES + 12, N_SAMPLES + 20)
+    )
+
+    finder.stop()
+    collector.stop()
+    assert len(collector.steal_clusters()) == 0
