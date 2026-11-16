@@ -9,9 +9,11 @@
 
 #include <algorithm>
 #include <catch2/catch_test_macros.hpp>
+#include <chrono>
 #include <filesystem>
 #include <memory>
 #include <thread>
+#include <type_traits>
 #include <vector>
 
 using namespace aare;
@@ -309,4 +311,46 @@ TEST_CASE("sync gives a running collector the clusters of all frames") {
     cf.stop();
     collector.stop();
     CHECK(collector.steal_clusters().empty());
+}
+
+TEST_CASE("cluster collector can be started again after a stop") {
+    using ClusterType = Cluster<int32_t, 3, 3>;
+    ProducerConsumerQueue<ClusterVector<ClusterType>> source(8);
+    ClusterCollector<ClusterType> collector(&source);
+    collector.start(); // running: does nothing
+
+    REQUIRE(source.write(ClusterVector<ClusterType>(4, 1)));
+    collector.stop();
+    collector.stop(); // stopped: does nothing
+    CHECK(source.isEmpty());
+
+    // Nothing is taken from the queue while stopped
+    REQUIRE(source.write(ClusterVector<ClusterType>(4, 2)));
+    std::this_thread::sleep_for(std::chrono::milliseconds(5));
+    CHECK_FALSE(source.isEmpty());
+
+    collector.start();
+    REQUIRE(source.write(ClusterVector<ClusterType>(4, 3)));
+    collector.stop();
+
+    // Clusters from before the stop are kept
+    auto clusters = collector.steal_clusters();
+    REQUIRE(clusters.size() == 3);
+    for (size_t i = 0; i < clusters.size(); ++i) {
+        CHECK(clusters[i].frame_number() == static_cast<int32_t>(i + 1));
+    }
+}
+
+TEST_CASE("cluster collector stops its thread when destroyed") {
+    using ClusterType = Cluster<int32_t, 3, 3>;
+    ProducerConsumerQueue<ClusterVector<ClusterType>> source(8);
+    {
+        ClusterCollector<ClusterType> collector(&source);
+        REQUIRE(source.write(ClusterVector<ClusterType>(4, 1)));
+    }
+    // The destructor waits for the queue to be empty, as stop() does
+    CHECK(source.isEmpty());
+
+    static_assert(!std::is_copy_constructible_v<ClusterCollector<ClusterType>>);
+    static_assert(!std::is_move_constructible_v<ClusterCollector<ClusterType>>);
 }

@@ -41,6 +41,8 @@
   is running and no longer raises on a collector that is not stopped. It
   returns the clusters collected since the last call; call ``sync()`` on the
   ``ClusterFinderMT`` first to get those of every frame given to it so far.
+- ``ClusterCollector`` has ``start()``, which starts the collector thread
+  again after ``stop()``. Both do nothing when there is nothing to do.
 - ``VarClusterFinder`` keeps only the flood fill. ``find_clusters_X`` is now
   ``find_clusters``; the connected component labelling path (the previous
   ``find_clusters`` and ``single_pass``) and the Python ``hits`` method, a
@@ -77,6 +79,9 @@
 
 ### Bugfixes:
 
+- Destroying a ``ClusterCollector`` without calling ``stop()`` no longer
+  terminates the program: the destructor stops the collector thread. In
+  Python the collector keeps its ``ClusterFinderMT`` alive.
 - Fixed ``VarClusterFinder`` crashing with a stack overflow on large
   connected areas above threshold, for example a frame with an invalid
   pedestal. The fill is now iterative.

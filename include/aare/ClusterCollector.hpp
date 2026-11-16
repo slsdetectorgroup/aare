@@ -19,8 +19,13 @@ namespace aare {
  * @brief Takes the clusters out of a sink queue, such as the one of a
  * ClusterFinderMT, on its own thread and keeps them in memory.
  *
- * The clusters collected so far can be taken with steal_clusters() at any
- * time, also while the collector is running.
+ * The thread is started by the constructor and stopped by stop() or the
+ * destructor, and can be started again with start(). The clusters collected
+ * so far can be taken with steal_clusters() at any time, also while the
+ * collector is running. start() and stop() must not be called from several
+ * threads at once.
+ *
+ * The queue must outlive the collector.
  */
 template <typename ClusterType,
           typename = std::enable_if_t<is_cluster_v<ClusterType>>>
@@ -60,11 +65,9 @@ class ClusterCollector {
 
   public:
     explicit ClusterCollector(SourceQueue *source) : m_source(source) {
-        m_thread =
-            std::thread(&ClusterCollector::process,
-                        this); // only one process does that so why isnt it
-                               // automatically written to m_cluster in collect
-                               // - instead of writing first to m_sink?
+        // only one process does that so why isnt it automatically written to
+        // m_cluster in collect - instead of writing first to m_sink?
+        start();
     }
 
     template <typename Finder,
@@ -75,13 +78,36 @@ class ClusterCollector {
     explicit ClusterCollector(Finder *source)
         : ClusterCollector(source->sink()) {}
 
+    /// Stops the collector thread, see stop()
+    ~ClusterCollector() { stop(); }
+
+    // The thread holds a pointer to this object
+    ClusterCollector(const ClusterCollector &) = delete;
+    ClusterCollector &operator=(const ClusterCollector &) = delete;
+
     /**
-     * @brief Stop the collector thread once the queue is empty.
+     * @brief Start the collector thread. Does nothing if it is running.
+     *
+     * Clusters collected before stop() that have not been stolen are kept.
+     */
+    void start() {
+        if (m_thread.joinable()) {
+            return;
+        }
+        m_stop_requested.store(false, std::memory_order_release);
+        m_thread = std::thread(&ClusterCollector::process, this);
+    }
+
+    /**
+     * @brief Stop the collector thread once the queue is empty. Does nothing
+     * if it is stopped.
      */
     void stop() {
+        if (!m_thread.joinable()) {
+            return;
+        }
         m_stop_requested.store(true, std::memory_order_release);
-        if (m_thread.joinable())
-            m_thread.join();
+        m_thread.join();
     }
 
     /**

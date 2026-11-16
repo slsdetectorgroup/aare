@@ -48,3 +48,32 @@ def test_clusters_can_be_stolen_from_a_running_collector():
     collector.stop()
     assert len(collector.steal_clusters()) == 0
 
+
+def test_collector_can_be_started_again():
+    finder = _finder_with_pedestal()
+    collector = ClusterCollector(finder)
+
+    _find(finder, range(4))
+    finder.sync()
+    collector.stop()
+    collector.stop()
+
+    collector.start()
+    collector.start()
+    _find(finder, range(4, 8))
+    finder.sync()
+    assert _frame_numbers(collector.steal_clusters()) == list(range(8))
+
+    finder.stop()
+    collector.stop()
+
+
+def test_collector_can_be_dropped_without_stop():
+    finder = _finder_with_pedestal()
+    collector = ClusterCollector(finder)
+    _find(finder, range(4))
+    # A running finder cannot be dropped, the collector can: it keeps the
+    # finder alive and stops its own thread
+    finder.stop()
+    del finder
+    del collector
