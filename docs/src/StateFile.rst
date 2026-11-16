@@ -137,6 +137,28 @@ wrote the file; a reader may create a finder of that type or of another.
 ``threshold`` is the per-pixel threshold as it was last computed, which is
 in general not ``n_sigma`` times the noise that follows from ``pedestal``.
 
+A ``ClusterFinderMT`` has one cluster finder per thread, whose pedestals
+differ. Its header holds their states as a list under ``finders``, each with
+the fields that a ``ClusterFinder`` file has under ``state``, and the index
+of the thread that takes the next frame:
+
+.. code-block:: json
+
+   {
+     "format_version": 1,
+     "aare_version": "2026.9.30",
+     "type": "ClusterFinderMT",
+     "state": {
+       "version": 1,
+       "next_thread": 2,
+       "finders": [
+         {"version": 1, "cluster_dtype": "<i4", "...": "..."},
+         {"version": 1, "cluster_dtype": "<i4", "...": "..."},
+         {"version": 1, "cluster_dtype": "<i4", "...": "..."}
+       ]
+     }
+   }
+
 A reader ignores fields it does not know, and reads a field that was added
 after the first files were written only if it is there. Later versions can
 therefore add fields without a new version, and both older and newer
@@ -190,6 +212,8 @@ API
 .. doxygenfunction:: aare::save_state(const FastPedestalState&, const std::filesystem::path&)
 
 .. doxygenfunction:: aare::save_state(const ClusterFinderState&, const std::filesystem::path&)
+
+.. doxygenfunction:: aare::save_state(const ClusterFinderMTState&, const std::filesystem::path&)
 
 .. doxygenfunction:: aare::load_state(const std::filesystem::path&)
 

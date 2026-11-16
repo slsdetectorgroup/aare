@@ -153,10 +153,13 @@ lives in `python/aare/transform.py` on top of C++ generators.
 Saving and restoring what an object has accumulated is split in two layers.
 The class hands out a plain-data state struct and takes it back
 (`FastPedestalState` with `FastPedestal::state()`, `set_state()` and a
-constructor; `ClusterFinderState`, which contains one, likewise); the struct
+constructor; `ClusterFinderState`, which contains one, likewise;
+`ClusterFinderMTState`, which holds one `ClusterFinderState` per thread and
+is only handed out or taken while the threads are stopped); the struct
 lives in the header of its class, holds no redundant fields and knows
 nothing about files. `set_state()` checks the state before it changes
-anything and takes a state from an object with other value types: a state
+anything, with a `check_state()` that a class holding several such objects
+calls on all of them first, and takes a state from an object with other value types: a state
 stores its numbers as double and records the types it came from in dtype
 fields that `set_state()` ignores and a loader may use as the default. `StateFile.hpp` declares `save_state()`, `load_state<State>()` and
 `read_state_header()`, which returns the JSON header as text so that a caller

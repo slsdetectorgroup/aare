@@ -4,6 +4,7 @@
 #include "StateFileIO.hpp"
 
 #include "aare/ClusterFinder.hpp"
+#include "aare/ClusterFinderMT.hpp"
 #include "aare/FastPedestal.hpp"
 
 #include <catch2/catch_template_test_macros.hpp>
@@ -771,4 +772,120 @@ TEST_CASE("state reader and writer handle optional fields, lists and masks",
     REQUIRE_THROWS_WITH(
         node.children("not_objects"),
         ContainsSubstring("\"not_objects\" must be a list of objects"));
+}
+
+namespace {
+
+// Two cluster finders that differ, as those of two threads do
+ClusterFinderMTState make_test_mt_state() {
+    ClusterFinderMTState state;
+    state.finders.push_back(make_test_finder_state());
+    state.finders.push_back(make_test_finder_state());
+    state.finders[1].threshold[0] = 5.0;
+    state.finders[1].pedestal.sum[1] = 6.0;
+    state.next_thread = 1;
+    return state;
+}
+
+bool same_state(const ClusterFinderMTState &a, const ClusterFinderMTState &b) {
+    if (a.next_thread != b.next_thread || a.finders.size() != b.finders.size())
+        return false;
+    for (size_t i = 0; i < a.finders.size(); ++i) {
+        if (!same_state(a.finders[i], b.finders[i]))
+            return false;
+    }
+    return true;
+}
+
+} // namespace
+
+TEST_CASE("state file returns a ClusterFinderMTState bit for bit",
+          "[state-file]") {
+    TemporaryStateFile file;
+    const auto state = make_test_mt_state();
+    save_state(state, file.path());
+
+    const auto loaded = load_state<ClusterFinderMTState>(file.path());
+    REQUIRE(loaded.finders.size() == 2);
+    REQUIRE(loaded.next_thread == 1);
+    REQUIRE(same_state(loaded, state));
+    REQUIRE_FALSE(same_state(loaded.finders[0], loaded.finders[1]));
+}
+
+TEST_CASE("state file of a multithreaded cluster finder has the documented "
+          "layout",
+          "[state-file]") {
+    TemporaryStateFile file;
+    save_state(make_test_mt_state(), file.path());
+
+    const auto header = nlohmann::json::parse(read_state_header(file.path()));
+    REQUIRE(header.at("type") == "ClusterFinderMT");
+    const auto &state = header.at("state");
+    REQUIRE(state.at("version") == 1);
+    REQUIRE(state.at("next_thread") == 1);
+    const auto &finders = state.at("finders");
+    REQUIRE(finders.is_array());
+    REQUIRE(finders.size() == 2);
+
+    // Every array of every thread has its own aligned place in the data
+    std::vector<uint64_t> offsets;
+    for (const auto &finder : finders) {
+        REQUIRE(finder.at("version") == 1);
+        REQUIRE(finder.at("cluster_size_y") == 5);
+        offsets.push_back(finder.at("threshold").at("offset"));
+        offsets.push_back(finder.at("pedestal").at("sum").at("offset"));
+        offsets.push_back(finder.at("pedestal").at("sum2").at("offset"));
+    }
+    REQUIRE(offsets == std::vector<uint64_t>{0, 64, 128, 192, 256, 320});
+}
+
+TEST_CASE("state file keeps a multithreaded cluster finder without cluster "
+          "finders, which the class rejects",
+          "[state-file]") {
+    TemporaryStateFile file;
+    save_state(ClusterFinderMTState{}, file.path());
+    const auto loaded = load_state<ClusterFinderMTState>(file.path());
+    REQUIRE(loaded.finders.empty());
+    using Finder = ClusterFinderMT<Cluster<int32_t, 3, 5>>;
+    REQUIRE_THROWS_AS(Finder{loaded}, std::runtime_error);
+}
+
+TEST_CASE("load_state rejects headers that do not describe a multithreaded "
+          "cluster finder",
+          "[state-file]") {
+    struct Case {
+        std::string expected_message;
+        std::function<void(nlohmann::json &)> modify;
+    };
+    using json = nlohmann::json;
+    const std::vector<Case> cases{
+        {"version 2 of the ClusterFinderMT state is not supported",
+         [](json &h) { h["state"]["version"] = 2; }},
+        {"\"next_thread\" is missing",
+         [](json &h) { h["state"].erase("next_thread"); }},
+        {"\"finders\" is missing",
+         [](json &h) { h["state"].erase("finders"); }},
+        {"\"finders\" must be a list",
+         [](json &h) { h["state"]["finders"] = h["state"]["finders"][0]; }},
+        {"\"finders\" must be a list of objects",
+         [](json &h) { h["state"]["finders"][1] = 1; }},
+        {"version 2 of the ClusterFinder state is not supported",
+         [](json &h) { h["state"]["finders"][1]["version"] = 2; }},
+        {"\"n_sigma\" is missing",
+         [](json &h) { h["state"]["finders"][1].erase("n_sigma"); }},
+    };
+    for (const auto &test_case : cases) {
+        TemporaryStateFile file;
+        save_state(make_test_mt_state(), file.path());
+        modify_header(file.path(), test_case.modify);
+        REQUIRE_THROWS_WITH(load_state<ClusterFinderMTState>(file.path()),
+                            ContainsSubstring(test_case.expected_message));
+    }
+
+    TemporaryStateFile file;
+    save_state(make_test_mt_state(), file.path());
+    REQUIRE_THROWS_WITH(
+        load_state<ClusterFinderState>(file.path()),
+        ContainsSubstring(
+            "holds the state of a ClusterFinderMT, expected a ClusterFinder"));
 }

@@ -118,6 +118,57 @@ def ClusterFinderMT(image_size, *, cluster_size = (3,3), dtype=np.int32, n_sigma
     return cls(image_size, n_sigma=n_sigma, capacity=capacity, min_pedestal_samples=min_pedestal_samples, n_threads=n_threads)
 
 
+def _load_mt_state(filename, dtype=None, capacity=1024, queue_depth=16):
+    """Create a ClusterFinderMT from a state file.
+
+    The file is written by ``save_state()`` of a ClusterFinderMT and holds,
+    for each of its threads, the pedestal, ``nSigma`` and threshold, and
+    which thread takes the next frame. The new finder has the stored number
+    of threads, which are started, and continues where the stored one
+    stopped. The image shape, the cluster size and by default the dtype are
+    taken from the file.
+
+    This returns a new finder. To load a state file into a finder that
+    already exists, stop it and call ``load_state(filename)`` on it.
+
+    Parameters
+    ----------
+    filename : path-like
+        State file written by ``save_state()`` of a ClusterFinderMT.
+    dtype : data-type, optional
+        The data type of the clusters. By default that of the finder that
+        wrote the file, as stored in it.
+    capacity : int, optional
+        The maximum number of clusters that can be stored per frame before
+        reallocating. Default is 1024.
+    queue_depth : int, optional
+        The number of frame buffers per thread. Default is 16.
+
+    Raises
+    ------
+    RuntimeError
+        If the file cannot be read, is not a state file of a
+        ClusterFinderMT, or is truncated or damaged.
+    ValueError
+        If there is no ClusterFinderMT with the stored cluster size and the
+        dtype, given or stored.
+    """
+    size_x, size_y, stored_dtype = _stored_state_fields(
+        filename,
+        "ClusterFinderMT",
+        ("finders", 0, "cluster_size_x"),
+        ("finders", 0, "cluster_size_y"),
+        ("finders", 0, "cluster_dtype"),
+    )
+    if dtype is None:
+        dtype = stored_dtype
+    cls = _get_class("ClusterFinderMT", (size_x, size_y), dtype)
+    return cls.from_state_file(filename, capacity=capacity, queue_depth=queue_depth)
+
+
+ClusterFinderMT.load_state = _load_mt_state
+
+
 def ClusterCollector(clusterfindermt, dtype=np.int32): 
     """ 
     Factory function to create a ClusterCollector object. Provides a cleaner syntax for 

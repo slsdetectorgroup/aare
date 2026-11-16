@@ -59,6 +59,9 @@ ready, otherwise when pedestal frames make it ready.
    // Or from the state file of a pedestal
    finder.set_pedestal(aare::load_state<aare::FastPedestalState>("dark.aare"));
 
+``get_pedestal()`` returns a copy of the pedestal of the finder as a
+``FastPedestal``.
+
 The state itself is plain data and not tied to a file format. To keep it,
 write it to a state file with ``save_state()`` and read it back with
 ``load_state()``, see :doc:`StateFile`:

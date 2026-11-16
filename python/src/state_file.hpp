@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: MPL-2.0
 #pragma once
 
+#include "aare/FastPedestal.hpp"
 #include "aare/StateFile.hpp"
 
 #include <filesystem>
@@ -30,4 +31,16 @@ void def_state_file(pybind11::class_<Class, Options...> &cls,
                 self.set_state(aare::load_state<State>(filename));
             },
             pybind11::arg("filename"), load_doc);
+}
+
+template <typename T> struct type_tag {
+    using type = T;
+};
+
+// Calls f once for each FastPedestal type bound in bind_FastPedestal.cpp,
+// to bind an overload for each
+template <typename F> void for_each_fast_pedestal_type(F &&f) {
+    f(type_tag<aare::FastPedestal<double>>{});
+    f(type_tag<aare::FastPedestal<float>>{});
+    f(type_tag<aare::FastPedestal<int16_t>>{});
 }

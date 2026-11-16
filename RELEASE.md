@@ -66,6 +66,20 @@
   ``FastPedestal``, passed itself or as its state, keeping ``nSigma`` and recomputing the threshold if the
   pedestal is ready. In Python: ``finder.set_pedestal(pedestal)`` and, from
   the state file of a pedestal, ``finder.load_pedestal(fname)``.
+  ``get_pedestal()`` returns a copy of the pedestal as a ``FastPedestal``
+  and, in Python, ``finder.save_pedestal(fname)`` writes its state file.
+- ``ClusterFinderMT`` can be stored and restored as well. Its
+  ``ClusterFinderMTState`` holds the state of the cluster finder of every
+  thread, whose pedestals differ, and the thread that takes the next frame;
+  ``state()``, ``set_state()``, a constructor and ``save_state()`` /
+  ``load_state<ClusterFinderMTState>()`` work as for ``ClusterFinder``, on a
+  stopped finder. In Python: ``finder.save_state(fname)``,
+  ``ClusterFinderMT.load_state(fname, dtype=None)`` for a new finder and
+  ``finder.load_state(fname, thread_index=None)``, which also takes the
+  state file of a ``ClusterFinder`` for all threads or one.
+  ``set_pedestal``, ``load_pedestal``, ``get_pedestal`` and
+  ``save_pedestal`` take a thread index, and ``n_threads`` returns the
+  number of threads.
 
 ### API Changes:
 
@@ -110,6 +124,16 @@
 
 ### Bugfixes:
 
+- Fixed ``ClusterFinderMT`` occasionally dropping a frame, and with it one
+  of the frame buffers of that thread, when the queue of the thread was
+  full: ``find_clusters()`` and ``push_pedestal_frame()`` now wait for room
+  in the queue. With ``queue_depth=1`` the lost buffer made the next frame
+  wait forever.
+- Fixed ``ClusterFinderMT::stop()`` occasionally leaving the clusters of
+  the last frames of a thread behind instead of moving them to the sink.
+- ``ClusterFinderMT::stop()`` and ``start()`` do nothing when the threads
+  are already stopped or running. A second ``stop()`` threw and a second
+  ``start()`` started a second set of threads.
 - Fixed ``VarClusterFinder`` crashing with a stack overflow on large
   connected areas above threshold, for example a frame with an invalid
   pedestal. The fill is now iterative.

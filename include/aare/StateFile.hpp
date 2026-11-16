@@ -10,6 +10,7 @@ namespace aare {
 // load_state() includes anyway
 struct FastPedestalState;
 struct ClusterFinderState;
+struct ClusterFinderMTState;
 
 /**
  * @brief Read the JSON header of a state file as text.
@@ -44,9 +45,21 @@ void save_state(const ClusterFinderState &state,
                 const std::filesystem::path &fname);
 
 /**
+ * @brief Write the state of a multi-threaded cluster finder to a file.
+ * @param state State to write, as returned by ClusterFinderMT::state().
+ * Each cluster finder in it must be valid for save_state() of a
+ * ClusterFinderState.
+ * @param fname File to write. An existing file is replaced.
+ * @throws std::runtime_error if a state in it cannot be saved or the file
+ * cannot be written.
+ */
+void save_state(const ClusterFinderMTState &state,
+                const std::filesystem::path &fname);
+
+/**
  * @brief Read a state written by save_state().
  * @tparam State Type of the state stored in the file. Supported:
- * FastPedestalState and ClusterFinderState.
+ * FastPedestalState, ClusterFinderState and ClusterFinderMTState.
  * @param fname File to read.
  * @throws std::runtime_error if the file cannot be read, is not a state
  * file, was written in a newer format, holds the state of another type, or
@@ -62,5 +75,9 @@ load_state<FastPedestalState>(const std::filesystem::path &fname);
 template <>
 ClusterFinderState
 load_state<ClusterFinderState>(const std::filesystem::path &fname);
+
+template <>
+ClusterFinderMTState
+load_state<ClusterFinderMTState>(const std::filesystem::path &fname);
 
 } // namespace aare

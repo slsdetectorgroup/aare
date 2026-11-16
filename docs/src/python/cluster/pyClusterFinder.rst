@@ -96,3 +96,63 @@ is left unchanged.
    finder.set_pedestal(dark)
    # or
    finder.load_pedestal("dark.aare")
+
+``finder.get_pedestal()`` returns a copy of the pedestal of the finder as a
+``FastPedestal``, and ``finder.save_pedestal(filename)`` writes it to a
+state file that ``FastPedestal.load_state()`` and ``load_pedestal()`` read.
+
+ClusterFinderMT
+---------------
+
+``ClusterFinderMT`` runs one cluster finder per thread. Pedestal frames go
+to every thread, but each data frame goes to one thread, which updates its
+pedestal from it, so the pedestals of the threads drift apart while clusters
+are found. Its state file therefore holds the pedestal, ``nSigma`` and
+threshold of every thread, and which thread takes the next frame.
+
+The state and the pedestals can only be read or replaced while the finder is
+stopped: ``stop()`` first lets the threads finish the frames they were
+given, and the methods below raise ``RuntimeError`` on a running finder.
+
+.. code-block:: python
+
+   finder = ClusterFinderMT((400, 400), n_threads=3)
+   collector = ClusterCollector(finder)
+   # ... push pedestal frames, find clusters ...
+   finder.stop()
+   finder.save_state("finder.aare")
+
+   # Later: a new finder with the stored number of threads, cluster size
+   # and dtype, already started
+   finder = ClusterFinderMT.load_state("finder.aare")
+
+   # Or into a finder that already exists, with the same number of threads
+   other.stop()
+   other.load_state("finder.aare")
+   other.start()
+
+``finder.load_state()`` also takes the state file of a single-threaded
+``ClusterFinder``. It holds one state, which is given to every thread or,
+with ``thread_index``, to that thread only.
+
+.. autofunction:: aare.ClusterFinderMT.load_state
+
+The pedestal methods of ``ClusterFinder`` take a thread index here:
+
+* ``finder.set_pedestal(pedestal, thread_index=None)`` and
+  ``finder.load_pedestal(filename, thread_index=None)`` replace the pedestal
+  of every thread or, with ``thread_index``, of that thread only. ``nSigma``
+  is kept and the threshold of each thread that gets the pedestal follows
+  the rule of the finder.
+* ``finder.get_pedestal(thread_index=0)`` returns a copy of the pedestal of
+  one thread as a ``FastPedestal``, and
+  ``finder.save_pedestal(filename, thread_index=0)`` writes it to a state
+  file.
+
+.. code-block:: python
+
+   finder.stop()
+   finder.set_pedestal(dark)                  # every thread
+   finder.set_pedestal(dark, thread_index=1)  # thread 1 only
+   pedestals = [finder.get_pedestal(i) for i in range(finder.n_threads)]
+   finder.start()

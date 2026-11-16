@@ -144,21 +144,11 @@ class ClusterFinder {
     }
 
     /**
-     * @brief Replace the complete state, including nSigma and
-     * min_pedestal_samples.
-     *
-     * The threshold is taken from the state and not recomputed. Clusters
-     * that have not been taken with steal_clusters() are dropped; the
-     * capacity of the cluster vector is kept. The state can come from a
-     * finder with another cluster value type, frame type or pedestal type;
-     * its cluster_dtype and the dtype of its pedestal are not used.
-     * @param state State of a finder with the same cluster size, whose
-     * threshold and pedestal have the image shape of this finder. The
-     * values of n_sigma and the threshold are not checked.
-     * @throws std::runtime_error if the state is not valid. The finder is
-     * then left unchanged.
+     * @brief Check that set_state() would accept a state, without changing
+     * the finder.
+     * @throws std::runtime_error if the state is not valid, see set_state().
      */
-    void set_state(const ClusterFinderState &state) {
+    void check_state(const ClusterFinderState &state) const {
         if (state.cluster_size_x != ClusterSizeX ||
             state.cluster_size_y != ClusterSizeY) {
             throw std::runtime_error(fmt::format(
@@ -174,7 +164,26 @@ class ClusterFinder {
                 state.threshold.shape(0), state.threshold.shape(1),
                 m_image_size[0], m_image_size[1]));
         }
-        // Checks the pedestal state and throws before changing anything
+        m_pedestal.check_state(state.pedestal);
+    }
+
+    /**
+     * @brief Replace the complete state, including nSigma and
+     * min_pedestal_samples.
+     *
+     * The threshold is taken from the state and not recomputed. Clusters
+     * that have not been taken with steal_clusters() are dropped; the
+     * capacity of the cluster vector is kept. The state can come from a
+     * finder with another cluster value type, frame type or pedestal type;
+     * its cluster_dtype and the dtype of its pedestal are not used.
+     * @param state State of a finder with the same cluster size, whose
+     * threshold and pedestal have the image shape of this finder. The
+     * values of n_sigma and the threshold are not checked.
+     * @throws std::runtime_error if the state is not valid. The finder is
+     * then left unchanged.
+     */
+    void set_state(const ClusterFinderState &state) {
+        check_state(state);
         m_pedestal.set_state(state.pedestal);
 
         m_nSigma = static_cast<PEDESTAL_TYPE>(state.n_sigma);
@@ -259,6 +268,12 @@ class ClusterFinder {
     template <typename T> void set_pedestal(const FastPedestal<T> &pedestal) {
         set_pedestal(pedestal.state());
     }
+
+    /**
+     * @brief Return a copy of the pedestal as it is now, for example to
+     * give it to another finder with set_pedestal().
+     */
+    FastPedestal<PEDESTAL_TYPE> get_pedestal() const { return m_pedestal; }
 
     /** @brief Clear the pedestal and mark it as not ready. */
     void clear_pedestal() { m_pedestal.clear(); }

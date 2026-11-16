@@ -4,16 +4,20 @@
 #include <atomic>
 #include <cstdint>
 #include <memory>
+#include <optional>
+#include <stdexcept>
 #include <thread>
 #include <vector>
 
 #include "aare/Backoff.hpp"
 #include "aare/CircularFifo.hpp"
 #include "aare/ClusterFinder.hpp"
+#include "aare/FastPedestal.hpp"
 #include "aare/NDArray.hpp"
 #include "aare/ProducerConsumerQueue.hpp"
 #include "aare/logger.hpp"
 #include <ctime>
+#include <fmt/format.h>
 namespace aare {
 
 enum class FrameType {
@@ -55,6 +59,28 @@ class FramePool {
     }
 
     size_t size() const { return m_buffers.size(); }
+};
+
+/**
+ * @brief Complete state of a ClusterFinderMT as plain data.
+ *
+ * Returned by ClusterFinderMT::state() and accepted by
+ * ClusterFinderMT::set_state() and the ClusterFinderMT constructor. Each
+ * thread has its own cluster finder, and their pedestals drift apart while
+ * clusters are found, because every thread updates its pedestal from the
+ * frames it is given. The state therefore holds one ClusterFinderState per
+ * thread, and which thread takes the next frame, so that a finder given the
+ * state hands every further frame to the thread that would have had it.
+ *
+ * Clusters that are still on their way to the sink are not part of the
+ * state, nor are the capacity and the queue depth.
+ */
+struct ClusterFinderMTState {
+    /// State of the cluster finder of each thread, in thread order
+    std::vector<ClusterFinderState> finders;
+    /// Index of the thread that takes the next frame given to
+    /// find_clusters()
+    uint64_t next_thread{};
 };
 
 /**
@@ -155,8 +181,11 @@ class ClusterFinderMT {
      */
     void collect() {
         Backoff backoff;
-        while (!m_stop_requested || !output_queues_are_empty() ||
-               !m_processing_threads_stopped) {
+        // The queues are checked after the processing threads have
+        // stopped: checked before, a thread could still add the clusters of
+        // its last frame, which would then be left behind
+        while (!m_stop_requested || !m_processing_threads_stopped ||
+               !output_queues_are_empty()) {
             bool moved_any = false;
             for (auto &queue : m_output_queues) {
                 if (auto *front = queue->frontPtr(); front != nullptr) {
@@ -173,6 +202,41 @@ class ClusterFinderMT {
                 backoff.pause();
             }
         }
+    }
+
+    void check_next_thread(const ClusterFinderMTState &state) const {
+        if (state.next_thread >= state.finders.size()) {
+            throw std::runtime_error(fmt::format(
+                "ClusterFinderMT state has next_thread {} with {} threads",
+                state.next_thread, state.finders.size()));
+        }
+    }
+
+    void create_queues(Shape<2> image_size, size_t queue_depth) {
+        for (size_t i = 0; i < m_n_threads; i++) {
+            m_frame_pools.emplace_back(
+                std::make_unique<FramePool>(queue_depth, image_size));
+            m_input_queues.emplace_back(std::make_unique<InputQueue>(
+                static_cast<uint32_t>(queue_depth), [](size_t slot) {
+                    return FrameRef{FrameType::DATA,
+                                    static_cast<uint32_t>(slot), 0};
+                }));
+            m_output_queues.emplace_back(std::make_unique<OutputQueue>(200));
+        }
+    }
+
+    // The cluster finders belong to their threads while those run
+    void require_stopped() const {
+        if (!m_processing_threads_stopped) {
+            throw std::runtime_error("ClusterFinderMT is still running");
+        }
+    }
+
+    Finder &finder_of(size_t thread_index) const {
+        if (thread_index >= m_cluster_finders.size()) {
+            throw std::runtime_error("Thread index out of range");
+        }
+        return *m_cluster_finders[thread_index];
     }
 
   public:
@@ -210,19 +274,166 @@ class ClusterFinderMT {
                     ClusterFinder<ClusterType, FRAME_TYPE, PEDESTAL_TYPE>>(
                     image_size, nSigma, capacity, min_pedestal_samples));
         }
-        for (size_t i = 0; i < n_threads; i++) {
-            m_frame_pools.emplace_back(
-                std::make_unique<FramePool>(queue_depth, image_size));
-            m_input_queues.emplace_back(std::make_unique<InputQueue>(
-                static_cast<uint32_t>(queue_depth), [](size_t slot) {
-                    return FrameRef{FrameType::DATA,
-                                    static_cast<uint32_t>(slot), 0};
-                }));
-            m_output_queues.emplace_back(std::make_unique<OutputQueue>(200));
-        }
+        create_queues(image_size, queue_depth);
         // TODO! Should we start automatically?
         start();
     }
+
+    /**
+     * @brief Construct a cluster finder from a state, with one thread for
+     * each cluster finder in it, and start the threads.
+     * @param state State of a finder with the same cluster size.
+     * @param capacity Initial capacity of the cluster vector of each thread.
+     * @param queue_depth Number of frame buffers per thread.
+     * @throws std::runtime_error if the state is empty or not valid, see
+     * set_state().
+     */
+    explicit ClusterFinderMT(const ClusterFinderMTState &state,
+                             size_t capacity = 2000, size_t queue_depth = 16)
+        : m_n_threads(state.finders.size()) {
+        if (state.finders.empty()) {
+            throw std::runtime_error(
+                "ClusterFinderMT state holds no cluster finders");
+        }
+        // Each finder takes its image shape from its own state
+        const Shape<2> image_size = state.finders.front().threshold.shape();
+        for (const auto &finder_state : state.finders) {
+            if (finder_state.threshold.shape() != image_size) {
+                throw std::runtime_error("ClusterFinderMT state holds "
+                                         "cluster finders with different "
+                                         "image shapes");
+            }
+            m_cluster_finders.push_back(
+                std::make_unique<Finder>(finder_state, capacity));
+        }
+        check_next_thread(state);
+        m_current_thread = state.next_thread;
+        create_queues(image_size, queue_depth);
+        start();
+    }
+
+    /**
+     * @brief Return a copy of the complete state.
+     *
+     * Call stop() first, which lets the threads finish the frames they were
+     * given. A finder given this state continues as this one would: every
+     * thread with its own pedestal and threshold, and the next frame going
+     * to the same thread.
+     * @throws std::runtime_error if the threads are running.
+     */
+    ClusterFinderMTState state() const {
+        require_stopped();
+        ClusterFinderMTState state;
+        for (const auto &cf : m_cluster_finders) {
+            state.finders.push_back(cf->state());
+        }
+        state.next_thread = m_current_thread % m_n_threads;
+        return state;
+    }
+
+    /**
+     * @brief Replace the complete state of every thread.
+     * @param state State with one cluster finder for each thread of this
+     * finder, each valid for ClusterFinder::set_state().
+     * @throws std::runtime_error if the threads are running or the state is
+     * not valid. The finder is then left unchanged.
+     */
+    void set_state(const ClusterFinderMTState &state) {
+        require_stopped();
+        if (state.finders.size() != m_n_threads) {
+            throw std::runtime_error(fmt::format(
+                "ClusterFinderMT state is for {} threads, this finder has {}",
+                state.finders.size(), m_n_threads));
+        }
+        check_next_thread(state);
+        for (size_t i = 0; i < m_n_threads; ++i) {
+            m_cluster_finders[i]->check_state(state.finders[i]);
+        }
+        for (size_t i = 0; i < m_n_threads; ++i) {
+            m_cluster_finders[i]->set_state(state.finders[i]);
+        }
+        m_current_thread = state.next_thread;
+    }
+
+    /**
+     * @brief Give the state of one cluster finder to one thread or to all.
+     *
+     * For a state taken with a single-threaded ClusterFinder, or with
+     * state() of this class for one of its threads.
+     * @param state State valid for ClusterFinder::set_state().
+     * @param thread_index Thread to give the state to. Without it every
+     * thread gets the state and the next frame goes to the first thread.
+     * @throws std::runtime_error if the threads are running, the index is
+     * out of range or the state is not valid. The finder is then left
+     * unchanged.
+     */
+    void set_state(const ClusterFinderState &state,
+                   std::optional<size_t> thread_index = std::nullopt) {
+        require_stopped();
+        if (thread_index) {
+            finder_of(*thread_index).set_state(state);
+            return;
+        }
+        // All threads have the same cluster size and image shape, so a
+        // state that the first accepts is accepted by all
+        for (auto &cf : m_cluster_finders) {
+            cf->set_state(state);
+        }
+        m_current_thread = 0;
+    }
+
+    /**
+     * @brief Replace the pedestal of one thread or of all, see
+     * ClusterFinder::set_pedestal().
+     *
+     * nSigma is kept, and the threshold of each thread that gets the
+     * pedestal is recomputed if the pedestal is ready.
+     * @param state State of a pedestal with the image shape of this finder.
+     * @param thread_index Thread to give the pedestal to. Without it every
+     * thread gets the pedestal.
+     * @throws std::runtime_error if the threads are running, the index is
+     * out of range or the state is not valid. The finder is then left
+     * unchanged.
+     */
+    void set_pedestal(const FastPedestalState &state,
+                      std::optional<size_t> thread_index = std::nullopt) {
+        require_stopped();
+        if (thread_index) {
+            finder_of(*thread_index).set_pedestal(state);
+            return;
+        }
+        // As for set_state(): accepted by the first, accepted by all
+        for (auto &cf : m_cluster_finders) {
+            cf->set_pedestal(state);
+        }
+    }
+
+    /**
+     * @brief Replace the pedestal of one thread or of all with a copy of a
+     * FastPedestal of any PEDESTAL_TYPE, as set_pedestal() does with its
+     * state.
+     */
+    template <typename T>
+    void set_pedestal(const FastPedestal<T> &pedestal,
+                      std::optional<size_t> thread_index = std::nullopt) {
+        set_pedestal(pedestal.state(), thread_index);
+    }
+
+    /**
+     * @brief Return a copy of the pedestal of one thread as it is now.
+     *
+     * The pedestals of the threads differ once clusters have been found.
+     * @param thread_index index of the thread
+     * @throws std::runtime_error if the threads are running or the index is
+     * out of range.
+     */
+    FastPedestal<PEDESTAL_TYPE> get_pedestal(size_t thread_index = 0) const {
+        require_stopped();
+        return finder_of(thread_index).get_pedestal();
+    }
+
+    /** @brief Return the number of processing threads. */
+    size_t n_threads() const { return m_n_threads; }
 
     /**
      * @brief Return the sink queue where all the clusters are collected
@@ -234,9 +445,12 @@ class ClusterFinderMT {
     }
 
     /**
-     * @brief Start all processing threads
+     * @brief Start all processing threads. Does nothing if they are running.
      */
     void start() {
+        if (!m_processing_threads_stopped) {
+            return;
+        }
         m_processing_threads_stopped = false;
         m_stop_requested = false;
 
@@ -249,9 +463,13 @@ class ClusterFinderMT {
     }
 
     /**
-     * @brief Stop all processing threads
+     * @brief Stop all processing threads once they have finished the frames
+     * they were given. Does nothing if they are stopped.
      */
     void stop() {
+        if (m_processing_threads_stopped) {
+            return;
+        }
         m_stop_requested = true;
 
         for (auto &thread : m_threads) {
@@ -300,9 +518,14 @@ class ClusterFinderMT {
             ref.frame_number = 0;
             (*m_frame_pools[i])[ref.slot].copy_from(frame);
 
-            // Cannot fail, the free list is what limits how many frames are
-            // in flight so there is always room in the filled list.
-            q->try_push_value(ref);
+            // The free list limits how many frames are in flight, but a
+            // buffer is back in it just before the worker removes its frame
+            // from the filled list, which can still be full at that moment.
+            // Without waiting for the room the frame would be dropped and
+            // its buffer lost.
+            while (!q->try_push_value(ref)) {
+                backoff.pause();
+            }
         }
     }
 
@@ -332,9 +555,10 @@ class ClusterFinderMT {
         //           and "
         //           << cpu_ns/1000.0 << " cpu_us" << std::endl;
 
-        // Cannot fail, the free list is what limits how many frames are in
-        // flight so there is always room in the filled list.
-        q->try_push_value(ref);
+        // Wait for room, see push_pedestal_frame()
+        while (!q->try_push_value(ref)) {
+            backoff.pause();
+        }
         m_current_thread++;
     }
 

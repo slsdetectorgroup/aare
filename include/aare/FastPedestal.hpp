@@ -138,17 +138,11 @@ template <typename PEDESTAL_TYPE> class FastPedestal {
     }
 
     /**
-     * @brief Replace the complete state, including n_samples.
-     *
-     * The cached mean is recomputed, so the state can come from a pedestal
-     * of another PEDESTAL_TYPE; its dtype is not used.
-     * @param state State whose sum and sum2 have the shape of this pedestal,
-     * with n_samples positive and cur_samples at most n_samples. The values
-     * of sum and sum2 are not checked.
-     * @throws std::runtime_error if the state is not valid. The pedestal is
-     * then left unchanged.
+     * @brief Check that set_state() would accept a state, without changing
+     * the pedestal.
+     * @throws std::runtime_error if the state is not valid, see set_state().
      */
-    void set_state(const FastPedestalState &state) {
+    void check_state(const FastPedestalState &state) const {
         const Shape<2> shape{m_rows, m_cols};
         if (state.sum.shape() != shape || state.sum2.shape() != shape) {
             throw std::runtime_error(fmt::format(
@@ -163,6 +157,21 @@ template <typename PEDESTAL_TYPE> class FastPedestal {
                 "and cur_samples={} at most n_samples",
                 state.n_samples, state.cur_samples));
         }
+    }
+
+    /**
+     * @brief Replace the complete state, including n_samples.
+     *
+     * The cached mean is recomputed, so the state can come from a pedestal
+     * of another PEDESTAL_TYPE; its dtype is not used.
+     * @param state State whose sum and sum2 have the shape of this pedestal,
+     * with n_samples positive and cur_samples at most n_samples. The values
+     * of sum and sum2 are not checked.
+     * @throws std::runtime_error if the state is not valid. The pedestal is
+     * then left unchanged.
+     */
+    void set_state(const FastPedestalState &state) {
+        check_state(state);
 
         m_samples = state.n_samples;
         m_inv_samples = 1.0 / m_samples;

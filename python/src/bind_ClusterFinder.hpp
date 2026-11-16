@@ -23,17 +23,6 @@ namespace py = pybind11;
 
 using namespace aare;
 
-template <typename T> struct type_tag {
-    using type = T;
-};
-
-// Calls f once for each FastPedestal type bound in bind_FastPedestal.cpp
-template <typename F> void for_each_fast_pedestal_type(F &&f) {
-    f(type_tag<FastPedestal<double>>{});
-    f(type_tag<FastPedestal<float>>{});
-    f(type_tag<FastPedestal<int16_t>>{});
-}
-
 template <typename T, uint8_t ClusterSizeX, uint8_t ClusterSizeY,
           typename CoordType = uint16_t>
 void define_ClusterFinder(py::module &m, const std::string &typestr) {
@@ -137,6 +126,24 @@ void define_ClusterFinder(py::module &m, const std::string &typestr) {
                const Pedestal &pedestal) { self.set_pedestal(pedestal); },
             py::arg("pedestal"), set_pedestal_doc);
     });
+    cls.def(
+        "get_pedestal",
+        [](const ClusterFinder<ClusterType, uint16_t, pd_type> &self) {
+            return self.get_pedestal();
+        },
+        "Return a copy of the pedestal of this cluster finder as a "
+        "FastPedestal, for example to give it to another finder with "
+        "set_pedestal().");
+    cls.def(
+        "save_pedestal",
+        [](const ClusterFinder<ClusterType, uint16_t, pd_type> &self,
+           const std::filesystem::path &filename) {
+            aare::save_state(self.get_pedestal().state(), filename);
+        },
+        py::arg("filename"),
+        "Write the pedestal of this cluster finder to a state file of a "
+        "FastPedestal, which FastPedestal.load_state() and load_pedestal() "
+        "read. An existing file is replaced.");
     cls.def(
         "load_pedestal",
         [](ClusterFinder<ClusterType, uint16_t, pd_type> &self,

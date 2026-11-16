@@ -4,6 +4,7 @@
 #include "StateFileIO.hpp"
 
 #include "aare/ClusterFinder.hpp"
+#include "aare/ClusterFinderMT.hpp"
 #include "aare/FastPedestal.hpp"
 
 #include <cmath>
@@ -262,6 +263,29 @@ void from_header(const StateReader::Node &header, ClusterFinderState &state) {
     from_header(header.child("pedestal"), state.pedestal);
 }
 
+constexpr std::string_view type_name(const ClusterFinderMTState &) {
+    return "ClusterFinderMT";
+}
+constexpr uint64_t state_version(const ClusterFinderMTState &) { return 1; }
+
+json to_header(const ClusterFinderMTState &state, StateWriter &writer) {
+    json finders = json::array();
+    for (const auto &finder : state.finders)
+        finders.push_back(to_header(finder, writer));
+    json header;
+    header["version"] = state_version(state);
+    header["next_thread"] = state.next_thread;
+    header["finders"] = std::move(finders);
+    return header;
+}
+
+void from_header(const StateReader::Node &header, ClusterFinderMTState &state) {
+    header.check_version(type_name(state), state_version(state));
+    state.next_thread = header.unsigned_integer<uint64_t>("next_thread");
+    for (const auto &finder : header.children("finders"))
+        from_header(finder, state.finders.emplace_back());
+}
+
 template <typename State>
 void save(const State &state, const std::filesystem::path &fname) {
     StateWriter writer;
@@ -302,6 +326,17 @@ template <>
 ClusterFinderState
 load_state<ClusterFinderState>(const std::filesystem::path &fname) {
     return load<ClusterFinderState>(fname);
+}
+
+void save_state(const ClusterFinderMTState &state,
+                const std::filesystem::path &fname) {
+    save(state, fname);
+}
+
+template <>
+ClusterFinderMTState
+load_state<ClusterFinderMTState>(const std::filesystem::path &fname) {
+    return load<ClusterFinderMTState>(fname);
 }
 
 } // namespace aare
