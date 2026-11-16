@@ -7,9 +7,12 @@
 
 #include "test_config.hpp"
 
+#include <algorithm>
 #include <catch2/catch_test_macros.hpp>
 #include <filesystem>
 #include <memory>
+#include <thread>
+#include <vector>
 
 using namespace aare;
 
@@ -222,4 +225,88 @@ TEST_CASE("cluster collector drains queued clusters when stopped") {
     for (size_t i = 0; i < clusters.size(); ++i) {
         CHECK(clusters[i].frame_number() == static_cast<int32_t>(i + 1));
     }
+}
+
+TEST_CASE("clusters can be stolen from a running cluster collector") {
+    using ClusterType = Cluster<int32_t, 3, 3>;
+    ProducerConsumerQueue<ClusterVector<ClusterType>> source(8);
+    ClusterCollector<ClusterType> collector(&source);
+
+    const auto write_frames = [&source](uint64_t first, uint64_t last) {
+        for (uint64_t frame_number = first; frame_number <= last;
+             ++frame_number) {
+            REQUIRE(source.write(ClusterVector<ClusterType>(4, frame_number)));
+        }
+        while (!source.isEmpty()) {
+            std::this_thread::yield();
+        }
+    };
+
+    CHECK(collector.steal_clusters().empty());
+
+    write_frames(1, 3);
+    auto clusters = collector.steal_clusters();
+    REQUIRE(clusters.size() == 3);
+    for (size_t i = 0; i < clusters.size(); ++i) {
+        CHECK(clusters[i].frame_number() == static_cast<int32_t>(i + 1));
+    }
+
+    // Stolen clusters are gone, later ones are still collected
+    write_frames(4, 5);
+    clusters = collector.steal_clusters();
+    REQUIRE(clusters.size() == 2);
+    CHECK(clusters[0].frame_number() == 4);
+    CHECK(clusters[1].frame_number() == 5);
+
+    collector.stop();
+    CHECK(collector.steal_clusters().empty());
+}
+
+TEST_CASE("sync gives a running collector the clusters of all frames") {
+    using ClusterType = Cluster<int32_t, 3, 3>;
+
+    const size_t n_threads = 3;
+    const size_t min_pedestal_samples = 4;
+    const size_t frames_per_round = 50;
+    const Shape<2> image_size{10, 10};
+
+    ClusterFinderMT<ClusterType> cf(image_size, 5, 200, n_threads, 16,
+                                    min_pedestal_samples);
+    ClusterCollector<ClusterType> collector(&cf);
+
+    NDArray<uint16_t, 2> low(image_size, 98);
+    NDArray<uint16_t, 2> high(image_size, 102);
+    NDArray<uint16_t, 2> hit(image_size, 100);
+    hit(5, 5) = 130;
+
+    for (size_t i = 0; i < min_pedestal_samples / 2; ++i) {
+        cf.push_pedestal_frame(low.view());
+        cf.push_pedestal_frame(high.view());
+    }
+
+    uint64_t frame_number = 0;
+    for (int round = 0; round < 3; ++round) {
+        for (size_t i = 0; i < frames_per_round; ++i) {
+            cf.find_clusters(hit.view(), frame_number++);
+        }
+        cf.sync();
+
+        auto clusters = collector.steal_clusters();
+        REQUIRE(clusters.size() == frames_per_round);
+        std::vector<int32_t> frame_numbers;
+        for (const auto &frame_clusters : clusters) {
+            CHECK(frame_clusters.size() == 1);
+            frame_numbers.push_back(frame_clusters.frame_number());
+        }
+        std::sort(frame_numbers.begin(), frame_numbers.end());
+        const auto first = static_cast<int32_t>(frame_number) -
+                           static_cast<int32_t>(frames_per_round);
+        for (size_t i = 0; i < frame_numbers.size(); ++i) {
+            CHECK(frame_numbers[i] == first + static_cast<int32_t>(i));
+        }
+    }
+
+    cf.stop();
+    collector.stop();
+    CHECK(collector.steal_clusters().empty());
 }
