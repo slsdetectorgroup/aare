@@ -30,9 +30,11 @@ returns the JSON header, as text in C++ and as a dict in Python:
    '<f4'
 
 ``save_state()`` writes to a temporary file next to the target, named as the
-target with ``.tmp`` appended, and renames it when it is complete. A crash
-while writing therefore never leaves a partly written state file, and an
-existing file is replaced only by a complete one.
+target with a random tag and ``.tmp`` appended, and renames it when it is
+complete. A crash while writing therefore never leaves a partly written state
+file, and an existing file is replaced only by a complete one. Each save has
+its own temporary file, so of several saves to the same target at the same
+time the file holds the state of the one that finished last.
 
 File layout
 -----------

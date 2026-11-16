@@ -12,8 +12,11 @@
 #include <cstdint>
 #include <cstring>
 #include <functional>
+#include <future>
 #include <limits>
 #include <sstream>
+#include <thread>
+#include <vector>
 
 using namespace aare;
 using Catch::Matchers::ContainsSubstring;
@@ -39,16 +42,21 @@ class TemporaryStateFile {
     ~TemporaryStateFile() {
         std::error_code error;
         std::filesystem::remove(m_path, error);
-        std::filesystem::remove(tmp_path(), error);
+        for (const auto &tmp : tmp_files())
+            std::filesystem::remove(tmp, error);
     }
 
     const std::filesystem::path &path() const { return m_path; }
 
-    // The name save_state() writes to before renaming
-    std::filesystem::path tmp_path() const {
-        auto tmp = m_path;
-        tmp += ".tmp";
-        return tmp;
+    // The files save_state() wrote to and did not rename or remove
+    std::vector<std::filesystem::path> tmp_files() const {
+        const auto prefix = m_path.filename().string() + ".";
+        std::vector<std::filesystem::path> found;
+        for (const auto &entry :
+             std::filesystem::directory_iterator(m_path.parent_path()))
+            if (entry.path().filename().string().rfind(prefix, 0) == 0)
+                found.push_back(entry.path());
+        return found;
     }
 
   private:
@@ -201,7 +209,45 @@ TEST_CASE("state file is replaced as a whole", "[state-file]") {
     save_state(state, file.path());
 
     REQUIRE(same_state(load_state<FastPedestalState>(file.path()), state));
-    REQUIRE_FALSE(std::filesystem::exists(file.tmp_path()));
+    REQUIRE(file.tmp_files().empty());
+}
+
+TEST_CASE("concurrent saves to one state file leave one of the states",
+          "[state-file]") {
+    TemporaryStateFile file;
+    auto first = make_test_state();
+    auto second = make_test_state();
+    second.cur_samples = 4;
+    for (auto &value : second.sum)
+        value = 42.0;
+
+    // Both threads start each save together, so that the writes overlap. A
+    // save that throws is counted instead of ending the thread, which would
+    // leave the other one waiting
+    constexpr int n_rounds = 200;
+    std::atomic<int> arrived{0};
+    std::atomic<int> n_failed{0};
+    auto save_repeatedly = [&](const FastPedestalState &state) {
+        for (int round = 0; round < n_rounds; ++round) {
+            ++arrived;
+            while (arrived.load() < 2 * (round + 1))
+                std::this_thread::yield();
+            try {
+                save_state(state, file.path());
+            } catch (const std::exception &) {
+                ++n_failed;
+            }
+        }
+    };
+    auto other =
+        std::async(std::launch::async, save_repeatedly, std::cref(second));
+    save_repeatedly(first);
+    other.get();
+
+    REQUIRE(n_failed == 0);
+    const auto loaded = load_state<FastPedestalState>(file.path());
+    REQUIRE((same_state(loaded, first) || same_state(loaded, second)));
+    REQUIRE(file.tmp_files().empty());
 }
 
 TEST_CASE("state file that cannot be written reports it", "[state-file]") {

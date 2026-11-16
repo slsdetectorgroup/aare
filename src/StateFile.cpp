@@ -8,9 +8,12 @@
 #include <nlohmann/json.hpp>
 
 #include <array>
+#include <cerrno>
 #include <cstdint>
+#include <cstdio>
 #include <fstream>
 #include <limits>
+#include <random>
 #include <stdexcept>
 #include <string>
 #include <string_view>
@@ -65,6 +68,93 @@ void require_little_endian(const std::filesystem::path &fname) {
     if (endian::native != endian::little)
         fail(fname, "state files are only supported on little-endian systems");
 }
+
+// The file a state is written to before it replaces the target. It sits next
+// to the target, so that the rename stays on one file system, under a name
+// that is created exclusively: concurrent saves to one target each write
+// their own file and the last complete one wins. Removed again unless it was
+// renamed.
+class TemporaryFile {
+    std::filesystem::path m_target;
+    std::filesystem::path m_path;
+    std::FILE *m_file{nullptr};
+    bool m_failed{false};
+
+    static std::FILE *create_exclusive(const std::filesystem::path &path,
+                                       int &error) {
+        std::FILE *file = nullptr;
+#ifdef _WIN32
+        error = _wfopen_s(&file, path.c_str(), L"wbx");
+#else
+        errno = 0;
+        file = std::fopen(path.c_str(), "wbx");
+        error = file ? 0 : errno;
+#endif
+        return file;
+    }
+
+    void close() {
+        if (m_file && std::fclose(m_file) != 0)
+            m_failed = true;
+        m_file = nullptr;
+    }
+
+  public:
+    explicit TemporaryFile(const std::filesystem::path &target)
+        : m_target(target) {
+        std::random_device entropy;
+        int error = 0;
+        // A name that is taken, by another save or a file left by a crash,
+        // only costs another attempt
+        for (int attempt = 0; attempt < 100; ++attempt) {
+            const uint64_t tag = (uint64_t{entropy()} << 32) | entropy();
+            auto path = target;
+            path += fmt::format(".{:016x}.tmp", tag);
+            m_file = create_exclusive(path, error);
+            if (m_file) {
+                m_path = std::move(path);
+                return;
+            }
+            if (error != EEXIST)
+                break;
+        }
+        fail(target,
+             fmt::format("could not create a temporary file next to it: {}",
+                         std::generic_category().message(error)));
+    }
+
+    TemporaryFile(const TemporaryFile &) = delete;
+    TemporaryFile &operator=(const TemporaryFile &) = delete;
+
+    ~TemporaryFile() {
+        close();
+        if (!m_path.empty()) {
+            std::error_code ignored;
+            std::filesystem::remove(m_path, ignored);
+        }
+    }
+
+    void write(const char *data, uint64_t n_bytes) {
+        if (std::fwrite(data, 1, n_bytes, m_file) != n_bytes)
+            m_failed = true;
+    }
+
+    void pad(uint64_t n_bytes) {
+        for (uint64_t i = 0; i < n_bytes; ++i)
+            if (std::fputc('\0', m_file) == EOF)
+                m_failed = true;
+    }
+
+    /** Replace the target with what was written. */
+    void rename_to_target() {
+        close();
+        if (m_failed)
+            fail(m_target,
+                 fmt::format("could not write to {}", m_path.string()));
+        std::filesystem::rename(m_path, m_target);
+        m_path.clear();
+    }
+};
 
 // NumPy dtype string of T as it is stored in a state file, for example "<f8"
 template <typename T> std::string dtype_string() {
@@ -136,36 +226,19 @@ class StateWriter {
         text.push_back('\n');
         const uint64_t header_length = text.size();
 
-        auto tmp_name = fname;
-        tmp_name += ".tmp";
-        try {
-            std::ofstream out(tmp_name, std::ios::binary | std::ios::trunc);
-            if (!out)
-                fail(fname, fmt::format("could not open {} for writing",
-                                        tmp_name.string()));
-            out.write(file_magic.data(), file_magic.size());
-            out.write(reinterpret_cast<const char *>(&header_length),
-                      sizeof(header_length));
-            out.write(text.data(), static_cast<std::streamsize>(text.size()));
+        TemporaryFile out(fname);
+        out.write(file_magic.data(), file_magic.size());
+        out.write(reinterpret_cast<const char *>(&header_length),
+                  sizeof(header_length));
+        out.write(text.data(), text.size());
 
-            uint64_t position = 0; // in the data section
-            for (const auto &array : m_arrays) {
-                for (; position < array.offset; ++position)
-                    out.put('\0');
-                out.write(array.data,
-                          static_cast<std::streamsize>(array.n_bytes));
-                position += array.n_bytes;
-            }
-            out.close();
-            if (!out)
-                fail(fname,
-                     fmt::format("could not write to {}", tmp_name.string()));
-            std::filesystem::rename(tmp_name, fname);
-        } catch (...) {
-            std::error_code ignored;
-            std::filesystem::remove(tmp_name, ignored);
-            throw;
+        uint64_t position = 0; // in the data section
+        for (const auto &array : m_arrays) {
+            out.pad(array.offset - position);
+            out.write(array.data, array.n_bytes);
+            position = array.offset + array.n_bytes;
         }
+        out.rename_to_target();
     }
 };
 
