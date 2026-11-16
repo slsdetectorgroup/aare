@@ -2,8 +2,7 @@
 
 import numpy as np
 
-from ._aare import read_state_header
-from .factory import _get_typed_class
+from .factory import _get_typed_class, _stored_state_fields
 
 
 def _get_fast_pedestal_class(dtype):
@@ -78,25 +77,9 @@ def load_state(filename, dtype=None):
         ValueError: If the dtype, given or stored, has no binding.
     """
     if dtype is None:
-        dtype = _stored_dtype(filename)
+        (dtype,) = _stored_state_fields(filename, "FastPedestal", "dtype")
     cls = _get_fast_pedestal_class(dtype)
     return cls.from_state_file(filename)
-
-
-def _stored_dtype(filename):
-    """Return the dtype of the pedestal that wrote a state file.
-
-    Only files that are not state files are reported here. Anything else
-    that is wrong with the file is left to ``from_state_file()``, which
-    checks everything it reads; ``float64`` only serves to reach it.
-    """
-    header = read_state_header(filename)
-    try:
-        if header["type"] == "FastPedestal":
-            return np.dtype(header["state"]["dtype"])
-    except (KeyError, TypeError):
-        pass
-    return np.float64
 
 
 FastPedestal.from_file = from_file

@@ -164,21 +164,34 @@ can see the type and dtype stored in a file before choosing what to load it
 into; `src/StateFile.cpp` holds the format: magic `AARESTAT`, a `uint64` header
 length, a JSON header (`format_version`, `aare_version`, `type`, `state`) and
 then the arrays as raw little-endian data, each described in the header by
-`{"dtype", "shape", "offset"}`. nlohmann JSON stays out of the public header.
-The private `StateWriter` and `StateReader` are shared by all state types; a
-new type adds a `to_header()`/`from_header()` pair, which can call those of
-the states it contains (as `ClusterFinderState` does for its `"pedestal"`),
-plus its `save_state()` overload and `load_state()` specialization. The reader checks everything it reads and ignores unknown
-header fields, so adding a field needs no new `format_version`; removing one
-or changing its meaning does. `docs/src/StateFile.rst` is the format
+`{"dtype", "shape", "offset"}`.
+The `StateWriter` and `StateReader` in the private header
+`src/StateFileIO.hpp` are shared by all state types and tested directly in
+`src/StateFile.test.cpp`; nlohmann JSON stays out of the public headers. A
+new type adds, in `StateFile.cpp`, a `type_name()` and a `state_version()`
+overload and a `to_header()`/`from_header()` pair, which can call those of
+the states it contains (as `ClusterFinderState` does for its `"pedestal"`);
+`from_header()` reads through a `StateReader::Node`, whose accessors check
+each field: scalars, `array<T, Ndim>()` (also `bool`), `child()` for a state
+inside the state, `children()` for a list of them and `has()` for a field
+that may be absent. The public `save_state()` overload and `load_state()`
+specialization are then one line each on the shared `save()`/`load()`, and
+`StateFile.hpp` only forward declares the state struct. Saves to the same
+file must not overlap. The reader ignores unknown header fields; a field
+added to a state later must be read only if the header `has()` it, with a
+default otherwise, so that older files still load and no version changes.
+Removing a field or changing its meaning increases the `state_version()` of
+that type; `format_version` is for the layout and the header outside
+`"state"`. `docs/src/StateFile.rst` is the format
 reference and must change with the format.
 
 In Python a class with a state binds `save_state(filename)` and
 `load_state(filename)` as instance methods, the latter loading into the
-object it is called on, and a static `from_state_file(filename)` that returns
-a new object. The dtype-selecting factory exposes that one as
+object it is called on, with `def_state_file<State>(cls, ...)` from
+`python/src/state_file.hpp`, and a static `from_state_file(filename)` that
+returns a new object. The dtype-selecting factory exposes that one as
 `Factory.load_state(filename, dtype=None)`, where `None` means the dtype
-recorded in the file, read with `read_state_header()`. What a state is tied
+recorded in the file, read with `_stored_state_fields()` from `factory.py`. What a state is tied
 to, such as the cluster size of a `ClusterFinder`, always comes from the
 file and is not an argument. Do not bind
 `load_state` as a static method: called on an existing object it would

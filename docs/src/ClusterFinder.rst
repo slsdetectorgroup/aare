@@ -43,6 +43,22 @@ Take them first if they are needed.
 ``set_state()`` throws if the cluster size, the shapes or the pedestal state
 do not fit, and then leaves the finder unchanged.
 
+To give a finder only a pedestal, for example one taken from a dark run with
+a :doc:`FastPedestal`, use ``set_pedestal()`` with that pedestal, of any
+type, or with its state, for example one read from a state file. It keeps ``nSigma`` and the clusters found so far and takes
+``min_pedestal_samples`` from the pedestal. The threshold follows the rule of
+the finder: it is recomputed as noise times ``nSigma`` if the pedestal is
+ready, otherwise when pedestal frames make it ready.
+
+.. code-block:: c++
+
+   aare::FastPedestal<double> dark(400, 400, 1000);
+   // ... add the dark frames ...
+   finder.set_pedestal(dark);
+
+   // Or from the state file of a pedestal
+   finder.set_pedestal(aare::load_state<aare::FastPedestalState>("dark.aare"));
+
 The state itself is plain data and not tied to a file format. To keep it,
 write it to a state file with ``save_state()`` and read it back with
 ``load_state()``, see :doc:`StateFile`:

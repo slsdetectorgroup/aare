@@ -228,6 +228,38 @@ class ClusterFinder {
     /** @brief Return the per-pixel pedestal standard deviation (noise). */
     NDArray<PEDESTAL_TYPE, 2> noise() { return m_pedestal.std(); }
 
+    /**
+     * @brief Replace the pedestal with one taken elsewhere, for example
+     * from a dark run processed with a FastPedestal.
+     *
+     * nSigma and the clusters found so far are kept. The threshold follows
+     * the rule of the finder: it is recomputed as noise multiplied by
+     * nSigma if the new pedestal is ready, otherwise it is left as it is
+     * until pedestal frames make the pedestal ready. min_pedestal_samples
+     * becomes the n_samples of the state.
+     * @param state State of a pedestal with the image shape of this
+     * finder, of any PEDESTAL_TYPE.
+     * @throws std::runtime_error if the state is not valid, see
+     * FastPedestal::set_state(). The finder is then left unchanged.
+     */
+    void set_pedestal(const FastPedestalState &state) {
+        m_pedestal.set_state(state);
+        if (m_pedestal.ready()) {
+            update_threshold();
+        }
+    }
+
+    /**
+     * @brief Replace the pedestal with a copy of a FastPedestal of any
+     * PEDESTAL_TYPE, as set_pedestal() does with its state.
+     * @param pedestal Pedestal with the image shape of this finder.
+     * @throws std::runtime_error if the shape does not match. The finder is
+     * then left unchanged.
+     */
+    template <typename T> void set_pedestal(const FastPedestal<T> &pedestal) {
+        set_pedestal(pedestal.state());
+    }
+
     /** @brief Clear the pedestal and mark it as not ready. */
     void clear_pedestal() { m_pedestal.clear(); }
 

@@ -1,6 +1,8 @@
 // SPDX-License-Identifier: MPL-2.0
 #include "aare/StateFile.hpp"
 
+#include "StateFileIO.hpp"
+
 #include "aare/ClusterFinder.hpp"
 #include "aare/FastPedestal.hpp"
 
@@ -12,11 +14,8 @@
 #include <atomic>
 #include <cstdint>
 #include <cstring>
-#include <functional>
-#include <future>
 #include <limits>
 #include <sstream>
-#include <thread>
 #include <vector>
 
 using namespace aare;
@@ -238,44 +237,6 @@ TEST_CASE("state file is replaced as a whole", "[state-file]") {
     REQUIRE(file.tmp_files().empty());
 }
 
-TEST_CASE("concurrent saves to one state file leave one of the states",
-          "[state-file]") {
-    TemporaryStateFile file;
-    auto first = make_test_state();
-    auto second = make_test_state();
-    second.cur_samples = 4;
-    for (auto &value : second.sum)
-        value = 42.0;
-
-    // Both threads start each save together, so that the writes overlap. A
-    // save that throws is counted instead of ending the thread, which would
-    // leave the other one waiting
-    constexpr int n_rounds = 200;
-    std::atomic<int> arrived{0};
-    std::atomic<int> n_failed{0};
-    auto save_repeatedly = [&](const FastPedestalState &state) {
-        for (int round = 0; round < n_rounds; ++round) {
-            ++arrived;
-            while (arrived.load() < 2 * (round + 1))
-                std::this_thread::yield();
-            try {
-                save_state(state, file.path());
-            } catch (const std::exception &) {
-                ++n_failed;
-            }
-        }
-    };
-    auto other =
-        std::async(std::launch::async, save_repeatedly, std::cref(second));
-    save_repeatedly(first);
-    other.get();
-
-    REQUIRE(n_failed == 0);
-    const auto loaded = load_state<FastPedestalState>(file.path());
-    REQUIRE((same_state(loaded, first) || same_state(loaded, second)));
-    REQUIRE(file.tmp_files().empty());
-}
-
 TEST_CASE("state file that cannot be written reports it", "[state-file]") {
     TemporaryStateFile directory;
     const auto path = directory.path() / "missing-directory" / "state.aare";
@@ -482,6 +443,10 @@ TEST_CASE("load_state rejects headers that do not describe the state",
         {"\"state\" is missing", [](json &h) { h.erase("state"); }},
         {"\"state\" must be an object",
          [](json &h) { h["state"] = json::array(); }},
+        {"version 2 of the FastPedestal state is not supported",
+         [](json &h) { h["state"]["version"] = 2; }},
+        {"\"version\" is missing",
+         [](json &h) { h["state"].erase("version"); }},
         {"\"dtype\" is missing", [](json &h) { h["state"].erase("dtype"); }},
         {"\"dtype\" must be a string",
          [](json &h) { h["state"]["dtype"] = 8; }},
@@ -735,4 +700,75 @@ TEST_CASE("load_state rejects headers that do not describe a cluster finder",
         REQUIRE_THROWS_WITH(load_state<ClusterFinderState>(file.path()),
                             ContainsSubstring(test.expected_message));
     }
+}
+
+TEST_CASE("state inside a state has its own version", "[state-file]") {
+    TemporaryStateFile file;
+    save_state(make_test_finder_state(), file.path());
+    REQUIRE(nlohmann::json::parse(read_state_header(file.path()))
+                .at("state")
+                .at("version") == 1);
+    REQUIRE(nlohmann::json::parse(read_state_header(file.path()))
+                .at("state")
+                .at("pedestal")
+                .at("version") == 1);
+
+    modify_header(file.path(), [](nlohmann::json &header) {
+        header["state"]["pedestal"]["version"] = 2;
+    });
+    REQUIRE_THROWS_WITH(
+        load_state<ClusterFinderState>(file.path()),
+        ContainsSubstring(
+            "version 2 of the FastPedestal state is not supported"));
+}
+
+// What the states of the classes that follow need from the reader and
+// writer, which no state uses yet: fields that may be left out, lists of
+// states and bool arrays
+TEST_CASE("state reader and writer handle optional fields, lists and masks",
+          "[state-file]") {
+    using detail::json;
+    TemporaryStateFile file;
+
+    NDArray<bool, 2> mask(Shape<2>{2, 3}, false);
+    mask(0, 1) = true;
+    mask(1, 2) = true;
+    NDArray<uint8_t, 1> not_a_mask(Shape<1>{3}, 0);
+    not_a_mask(1) = 2;
+
+    detail::StateWriter writer;
+    json state;
+    state["mask"] = writer.add(mask);
+    state["not_a_mask"] = writer.add(not_a_mask);
+    state["not_a_mask"]["dtype"] = "|b1";
+    state["left_out"] = nullptr;
+    state["threads"] = json::array({{{"index", 0}}, {{"index", 1}}});
+    state["not_objects"] = json::array({1, 2});
+    writer.write(file.path(), "Test", state);
+
+    REQUIRE(nlohmann::json::parse(read_state_header(file.path()))
+                .at("state")
+                .at("mask")
+                .at("dtype") == "|b1");
+
+    detail::StateReader reader(file.path());
+    const auto node = reader.state("Test");
+
+    REQUIRE(node.has("mask"));
+    REQUIRE_FALSE(node.has("noise_map"));
+    REQUIRE_FALSE(node.has("left_out"));
+
+    REQUIRE(node.array<bool, 2>("mask") == mask);
+    REQUIRE_THROWS_WITH((node.array<bool, 1>("not_a_mask")),
+                        ContainsSubstring("holds a value that is not 0 or 1"));
+
+    const auto threads = node.children("threads");
+    REQUIRE(threads.size() == 2);
+    REQUIRE(threads[0].unsigned_integer<uint32_t>("index") == 0);
+    REQUIRE(threads[1].unsigned_integer<uint32_t>("index") == 1);
+    REQUIRE_THROWS_WITH(node.children("mask"),
+                        ContainsSubstring("\"mask\" must be a list"));
+    REQUIRE_THROWS_WITH(
+        node.children("not_objects"),
+        ContainsSubstring("\"not_objects\" must be a list of objects"));
 }

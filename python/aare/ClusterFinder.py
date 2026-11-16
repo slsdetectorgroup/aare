@@ -1,8 +1,7 @@
 # SPDX-License-Identifier: MPL-2.0
 from . import _aare
-from ._aare import read_state_header
 import numpy as np
-from .factory import _type_to_char
+from .factory import _stored_state_fields, _type_to_char
 
 _supported_cluster_sizes = [(2,2), (3,3), (5,5), (7,7), (9,9),]
 
@@ -43,7 +42,9 @@ def ClusterFinder(image_size, *, cluster_size=(3,3), n_sigma=5, dtype = np.int32
     return cls(image_size, n_sigma=n_sigma, capacity=capacity, min_pedestal_samples=min_pedestal_samples)
 
 
-def _load_state(filename, dtype=None, capacity=1024):
+# Documented as aare.ClusterFinder.load_state, which autodoc looks up as this
+# name in this module
+def load_state(filename, dtype=None, capacity=1024):
     """Create a ClusterFinder from a state file.
 
     The file is written by ``save_state()`` of a cluster finder and holds its
@@ -78,33 +79,16 @@ def _load_state(filename, dtype=None, capacity=1024):
         If there is no ClusterFinder with the stored cluster size and the
         dtype, given or stored.
     """
-    cluster_size, stored_dtype = _stored_cluster_type(filename)
+    size_x, size_y, stored_dtype = _stored_state_fields(
+        filename, "ClusterFinder", "cluster_size_x", "cluster_size_y", "cluster_dtype"
+    )
     if dtype is None:
         dtype = stored_dtype
-    cls = _get_class("ClusterFinder", cluster_size, dtype)
+    cls = _get_class("ClusterFinder", (size_x, size_y), dtype)
     return cls.from_state_file(filename, capacity=capacity)
 
 
-def _stored_cluster_type(filename):
-    """Return the cluster size and dtype of the finder that wrote a state file.
-
-    Only files that are not state files are reported here. Anything else
-    that is wrong with the file is left to ``from_state_file()``, which
-    checks everything it reads; a 3x3 ``int32`` finder only serves to reach
-    it.
-    """
-    header = read_state_header(filename)
-    try:
-        if header["type"] == "ClusterFinder":
-            state = header["state"]
-            cluster_size = (state["cluster_size_x"], state["cluster_size_y"])
-            return cluster_size, np.dtype(state["cluster_dtype"])
-    except (KeyError, TypeError):
-        pass
-    return (3, 3), np.int32
-
-
-ClusterFinder.load_state = _load_state
+ClusterFinder.load_state = load_state
 
 
 def ClusterFinderMT(image_size, *, cluster_size = (3,3), dtype=np.int32, n_sigma=5, capacity = 1024, n_threads = 3, min_pedestal_samples = 1000): 

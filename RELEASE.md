@@ -62,6 +62,10 @@
   same cluster size and image shape. Clusters that have not been taken with
   ``steal_clusters()`` are not stored, and loading into an existing finder
   drops those it holds.
+- ``ClusterFinder::set_pedestal()`` gives a finder the pedestal of a
+  ``FastPedestal``, passed itself or as its state, keeping ``nSigma`` and recomputing the threshold if the
+  pedestal is ready. In Python: ``finder.set_pedestal(pedestal)`` and, from
+  the state file of a pedestal, ``finder.load_pedestal(fname)``.
 
 ### API Changes:
 
@@ -89,6 +93,11 @@
   return to the fixed threshold, and ``labeled`` is a property instead of
   a method. ``set_numberOfNeighbours`` is ``set_connectivity`` in C++ and
   the ``connectivity`` property in Python.
+
+- ``Dtype::to_string()`` returns the string NumPy writes: ``"|i1"`` and
+  ``"|u1"`` for the one-byte types and a byte order for ``float`` and
+  ``double`` (``"<f4"``, ``"<f8"``; they were ``"f4"`` and ``"f8"``).
+  ``Dtype`` reads both forms as before.
 
 ### Other:
 

@@ -1,8 +1,8 @@
 # SPDX-License-Identifier: MPL-2.0
-import json
 
 import numpy as np
 import pytest
+from conftest import read_state_file
 
 from aare import (
     FastPedestal,
@@ -175,32 +175,6 @@ def _test_frames(n_frames, shape=(3, 4)):
     return rng.integers(1000, 1100, size=(n_frames, *shape), dtype=np.uint16)
 
 
-def _read_state_file(fname):
-    """Read a state file with NumPy only, as shown in the documentation."""
-    with open(fname, "rb") as f:
-        if f.read(8) != b"AARESTAT":
-            raise ValueError("not an aare state file")
-        header_length = int.from_bytes(f.read(8), "little")
-        header = json.loads(f.read(header_length))
-    data_start = 16 + header_length
-
-    def resolve(node):
-        if isinstance(node, dict):
-            if node.keys() == {"dtype", "shape", "offset"}:
-                return np.fromfile(
-                    fname,
-                    dtype=node["dtype"],
-                    count=int(np.prod(node["shape"])),
-                    offset=data_start + node["offset"],
-                ).reshape(node["shape"])
-            return {key: resolve(value) for key, value in node.items()}
-        if isinstance(node, list):
-            return [resolve(value) for value in node]
-        return node
-
-    return resolve(header)
-
-
 @pytest.mark.parametrize("dtype", [np.float64, np.float32, np.int16])
 @pytest.mark.parametrize("frames_before", [0, 3, 5, 8])
 def test_fast_pedestal_continues_from_state_file(tmp_path, dtype, frames_before):
@@ -340,7 +314,7 @@ def test_fast_pedestal_state_file_is_readable_with_numpy(tmp_path):
         pedestal.add_init_frame(frame)
     pedestal.save_state(tmp_path / "pedestal.aare")
 
-    content = _read_state_file(tmp_path / "pedestal.aare")
+    content = read_state_file(tmp_path / "pedestal.aare")
 
     assert content["format_version"] == 1
     assert content["type"] == "FastPedestal"
@@ -359,7 +333,7 @@ def test_fast_pedestal_state_file_is_readable_with_numpy(tmp_path):
     for frame in frames[3:]:
         pedestal.add_init_frame(frame)
     pedestal.save_state(tmp_path / "pedestal.aare")
-    state = _read_state_file(tmp_path / "pedestal.aare")["state"]
+    state = read_state_file(tmp_path / "pedestal.aare")["state"]
     np.testing.assert_array_equal(
         state["sum"] * (1.0 / state["n_samples"]), pedestal.mean()
     )

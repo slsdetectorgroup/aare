@@ -56,4 +56,7 @@ TEST_CASE("Construct from string with endianess") {
 
 TEST_CASE("Convert to string") {
     REQUIRE(Dtype(typeid(int)).to_string() == "<i4");
+    // As NumPy writes them: '|' for one byte, a byte order for the rest
+    REQUIRE(Dtype(typeid(uint8_t)).to_string() == "|u1");
+    REQUIRE(Dtype(typeid(double)).to_string() == "<f8");
 }

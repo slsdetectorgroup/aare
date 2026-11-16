@@ -1,13 +1,15 @@
 // SPDX-License-Identifier: MPL-2.0
 #pragma once
 
-#include "aare/ClusterFinder.hpp"
-#include "aare/FastPedestal.hpp"
-
 #include <filesystem>
 #include <string>
 
 namespace aare {
+
+// Defined in the header of their class, which the caller of save_state() and
+// load_state() includes anyway
+struct FastPedestalState;
+struct ClusterFinderState;
 
 /**
  * @brief Read the JSON header of a state file as text.

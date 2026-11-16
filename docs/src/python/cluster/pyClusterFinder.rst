@@ -69,3 +69,30 @@ loading the arrays.
    # Or into a finder that already exists, keeping its dtype
    finder = ClusterFinder((400, 400), cluster_size=(3, 3), dtype=np.float64)
    finder.load_state("finder.aare")
+
+Using a pedestal taken elsewhere
+--------------------------------
+
+A finder is normally restored from its own state file, which includes the
+pedestal. To give a finder only a pedestal, for example one taken from a
+dark run with a :doc:`../pedestal/pyFastPedestal`, use
+``finder.set_pedestal(pedestal)`` or, from the state file of that pedestal,
+``finder.load_pedestal(filename)``. The pedestal can have any dtype and must
+have the image shape of the finder.
+
+Both keep ``nSigma`` and the clusters found so far, and
+``min_pedestal_samples`` becomes ``n_samples`` of the pedestal. The
+threshold follows the rule of the finder: it is recomputed as noise times
+``nSigma`` if the pedestal is ready, otherwise when pedestal frames make it
+ready. If the pedestal does not fit or the file cannot be loaded, the finder
+is left unchanged.
+
+.. code-block:: python
+
+   dark = FastPedestal.from_file("dark_master_0.json")
+   dark.save_state("dark.aare")
+
+   finder = ClusterFinder((400, 400), cluster_size=(3, 3), n_sigma=5)
+   finder.set_pedestal(dark)
+   # or
+   finder.load_pedestal("dark.aare")

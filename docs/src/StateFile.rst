@@ -34,11 +34,10 @@ returns the JSON header, as text in C++ and as a dict in Python:
    '<f4'
 
 ``save_state()`` writes to a temporary file next to the target, named as the
-target with a random tag and ``.tmp`` appended, and renames it when it is
-complete. A crash while writing therefore never leaves a partly written state
-file, and an existing file is replaced only by a complete one. Each save has
-its own temporary file, so of several saves to the same target at the same
-time the file holds the state of the one that finished last.
+target with ``.tmp`` appended, and renames it when it is complete. A crash
+while writing therefore never leaves a partly written state file, and an
+existing file is replaced only by a complete one. Saves to the same target
+must not run at the same time.
 
 File layout
 -----------
@@ -67,6 +66,7 @@ The header of a ``FastPedestal<float>`` with 400 x 400 pixels:
      "aare_version": "2026.9.30",
      "type": "FastPedestal",
      "state": {
+       "version": 1,
        "dtype": "<f4",
        "n_samples": 1000,
        "cur_samples": 1000,
@@ -76,8 +76,8 @@ The header of a ``FastPedestal<float>`` with 400 x 400 pixels:
    }
 
 ``format_version``
-   Version of the layout and of the header fields. A reader rejects a file
-   with a newer version than it knows.
+   Version of the layout and of the header fields outside ``state``. A
+   reader rejects a file with a newer version than it knows.
 
 ``aare_version``
    Version of aare that wrote the file. For information only.
@@ -87,10 +87,13 @@ The header of a ``FastPedestal<float>`` with 400 x 400 pixels:
    error.
 
 ``state``
-   The state itself. Scalars are JSON values. An array is an object with
-   exactly the keys ``dtype`` (a NumPy dtype string), ``shape`` and
-   ``offset`` (in bytes, relative to the start of the data section), placed
-   where the array belongs in the state. The fields of a ``FastPedestal`` are
+   The state itself. Its ``version`` is that of the fields of this type of
+   state; a reader rejects a newer one than it knows. Scalars are JSON
+   values. An array is an object with exactly the keys ``dtype`` (a NumPy
+   dtype string, ``"|b1"`` for a mask of ``bool``), ``shape`` and ``offset``
+   (in bytes, relative to the start of the data section), placed where the
+   array belongs in the state. A field that a state can leave out is absent
+   or ``null``. The fields of a ``FastPedestal`` are
    those of ``FastPedestalState``, see :doc:`FastPedestal`: its ``dtype`` is
    the type of the mean and standard deviation of the pedestal that wrote the
    file, a NumPy dtype string like the arrays'. A reader may create a
@@ -98,7 +101,9 @@ The header of a ``FastPedestal<float>`` with 400 x 400 pixels:
 
 A state can contain another state. The header of a 3 x 3 ``ClusterFinder``
 with ``int32`` clusters holds the state of its pedestal under ``pedestal``,
-with the fields that a ``FastPedestal`` file has under ``state``:
+with the fields that a ``FastPedestal`` file has under ``state``,
+including its own ``version``. Several states of one type are stored as a
+list of such objects:
 
 .. code-block:: json
 
@@ -107,12 +112,14 @@ with the fields that a ``FastPedestal`` file has under ``state``:
      "aare_version": "2026.9.30",
      "type": "ClusterFinder",
      "state": {
+       "version": 1,
        "cluster_dtype": "<i4",
        "cluster_size_x": 3,
        "cluster_size_y": 3,
        "n_sigma": 5.0,
        "threshold": {"dtype": "<f8", "shape": [400, 400], "offset": 0},
        "pedestal": {
+         "version": 1,
          "dtype": "<f8",
          "n_samples": 1000,
          "cur_samples": 1000,
@@ -130,9 +137,13 @@ wrote the file; a reader may create a finder of that type or of another.
 ``threshold`` is the per-pixel threshold as it was last computed, which is
 in general not ``n_sigma`` times the noise that follows from ``pedestal``.
 
-A reader ignores fields it does not know, so that later versions can add
-fields without changing ``format_version``. Removing a field or changing its
-meaning requires a new version.
+A reader ignores fields it does not know, and reads a field that was added
+after the first files were written only if it is there. Later versions can
+therefore add fields without a new version, and both older and newer
+versions of aare read the file. Removing a field or changing its meaning
+requires a new ``version`` of that state, which leaves the files of the
+other types readable; ``format_version`` changes only with the layout or the
+header fields outside ``state``.
 
 Reading a state file with NumPy
 -------------------------------

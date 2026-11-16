@@ -1,8 +1,8 @@
 # SPDX-License-Identifier: MPL-2.0
-import json
 
 import numpy as np
 import pytest
+from conftest import read_state_file
 
 from aare import ClusterFinder, FastPedestal, _aare, read_state_header
 
@@ -40,32 +40,6 @@ def _finder(dtype=np.int32, cluster_size=(3, 3), n_sigma=4.1, shape=SHAPE):
 
 def _clusters(finder):
     return np.array(finder.steal_clusters())
-
-
-def _read_state_file(fname):
-    """The reader documented in docs/src/StateFile.rst, using NumPy only."""
-    with open(fname, "rb") as f:
-        if f.read(8) != b"AARESTAT":
-            raise ValueError("not an aare state file")
-        header_length = int.from_bytes(f.read(8), "little")
-        header = json.loads(f.read(header_length))
-    data_start = 16 + header_length
-
-    def resolve(node):
-        if isinstance(node, dict):
-            if node.keys() == {"dtype", "shape", "offset"}:
-                return np.fromfile(
-                    fname,
-                    dtype=node["dtype"],
-                    count=int(np.prod(node["shape"])),
-                    offset=data_start + node["offset"],
-                ).reshape(node["shape"])
-            return {key: resolve(value) for key, value in node.items()}
-        if isinstance(node, list):
-            return [resolve(value) for value in node]
-        return node
-
-    return resolve(header)
 
 
 @pytest.mark.parametrize("dtype", [np.int32, np.float32, np.float64])
@@ -106,7 +80,7 @@ def test_cluster_finder_state_file_keeps_the_threshold(tmp_path):
         original.push_pedestal_frame(frame)
     original.save_state(tmp_path / "finder.aare")
 
-    content = _read_state_file(tmp_path / "finder.aare")
+    content = read_state_file(tmp_path / "finder.aare")
     np.testing.assert_array_equal(
         content["state"]["threshold"], original.noise * 4.1
     )
@@ -192,7 +166,7 @@ def test_cluster_finder_state_file_is_readable_with_numpy(tmp_path):
         finder.push_pedestal_frame(frame)
     finder.save_state(tmp_path / "finder.aare")
 
-    state = _read_state_file(tmp_path / "finder.aare")["state"]
+    state = read_state_file(tmp_path / "finder.aare")["state"]
 
     pedestal = state["pedestal"]
     assert pedestal["cur_samples"] == pedestal["n_samples"] == N_SAMPLES
@@ -291,3 +265,82 @@ def test_cluster_finder_load_state_rejects_truncated_file(tmp_path):
 
     with pytest.raises(RuntimeError, match="truncated or damaged"):
         ClusterFinder.load_state(tmp_path / "truncated.aare")
+
+
+def _dark_pedestal(dtype=np.float64, n_samples=8, shape=SHAPE):
+    """A ready pedestal taken on its own, from other frames than the finders'."""
+    pedestal = FastPedestal(*shape, n_samples=n_samples, dtype=dtype)
+    for frame in _test_frames(n_samples, shape=shape, seed=7)[:N_SAMPLES]:
+        pedestal.add_init_frame(frame)
+    for frame in _test_frames(n_samples - N_SAMPLES, shape=shape, seed=8):
+        pedestal.add_init_frame(frame)
+    assert pedestal.ready
+    return pedestal
+
+
+@pytest.mark.parametrize("pedestal_dtype", [np.float64, np.float32, np.int16])
+def test_cluster_finder_set_pedestal(pedestal_dtype):
+    pedestal = _dark_pedestal(pedestal_dtype)
+    finder = _finder(n_sigma=4.1)
+    assert not finder.pedestal_ready
+
+    assert finder.set_pedestal(pedestal) is None
+
+    # Ready without pedestal frames, with the settings it had
+    assert finder.pedestal_ready
+    assert finder.nSigma == 4.1
+    reference = _dark_pedestal(np.float64)
+    np.testing.assert_array_equal(finder.pedestal, reference.mean())
+    np.testing.assert_array_equal(finder.noise, reference.std())
+
+    # The threshold is the one update_threshold() computes from it
+    frames = _test_frames(12)[N_SAMPLES:]
+    updated = _finder(n_sigma=4.1)
+    updated.set_pedestal(pedestal)
+    updated.update_threshold()
+    for i, frame in enumerate(frames):
+        finder.find_clusters(frame, i)
+        updated.find_clusters(frame, i)
+    expected = _clusters(updated)
+    assert expected.size > 0
+    np.testing.assert_array_equal(_clusters(finder), expected)
+
+
+def test_cluster_finder_load_pedestal(tmp_path):
+    pedestal = _dark_pedestal(np.float32)
+    pedestal.save_state(tmp_path / "dark.aare")
+
+    finder = _finder(n_sigma=4.1)
+    assert finder.load_pedestal(tmp_path / "dark.aare") is None
+    reference = _finder(n_sigma=4.1)
+    reference.set_pedestal(pedestal)
+
+    assert finder.pedestal_ready
+    assert finder.nSigma == 4.1
+    np.testing.assert_array_equal(finder.pedestal, reference.pedestal)
+    for i, frame in enumerate(_test_frames(12)[N_SAMPLES:]):
+        finder.find_clusters(frame, i)
+        reference.find_clusters(frame, i)
+    expected = _clusters(reference)
+    assert expected.size > 0
+    np.testing.assert_array_equal(_clusters(finder), expected)
+
+
+def test_cluster_finder_load_pedestal_rejects_what_does_not_fit(tmp_path):
+    finder = _finder()
+    for frame in _test_frames(N_SAMPLES):
+        finder.push_pedestal_frame(frame)
+    before = finder.pedestal.copy()
+
+    # The state file of a finder is not that of a pedestal
+    finder.save_state(tmp_path / "finder.aare")
+    with pytest.raises(RuntimeError, match="expected a FastPedestal"):
+        finder.load_pedestal(tmp_path / "finder.aare")
+
+    _dark_pedestal(shape=(10, 13)).save_state(tmp_path / "other_shape.aare")
+    with pytest.raises(RuntimeError, match="shape"):
+        finder.load_pedestal(tmp_path / "other_shape.aare")
+    with pytest.raises(RuntimeError, match="shape"):
+        finder.set_pedestal(_dark_pedestal(shape=(10, 13)))
+
+    np.testing.assert_array_equal(finder.pedestal, before)

@@ -234,6 +234,79 @@ TEST_CASE("cluster finder state keeps the threshold as it was computed",
     REQUIRE(restored.state().threshold == scaled_noise(original, 4.0));
 }
 
+TEST_CASE("cluster finder takes a pedestal and recomputes its threshold",
+          "[cluster-finder]") {
+    using Finder = ClusterFinder<Cluster<int32_t, 3, 3>>;
+    const Shape<2> shape{10, 12};
+
+    // A pedestal taken on its own, with another type and n_samples
+    FastPedestal<float> pedestal(10, 12, 8);
+    for (uint32_t frame_index = 0; frame_index < 8; ++frame_index) {
+        auto frame = finder_test_frame(shape, 100 + frame_index);
+        pedestal.add_init_frame(frame.view());
+    }
+    REQUIRE(pedestal.ready());
+
+    // A finder that is in use, so that its threshold is behind its pedestal
+    // and it holds clusters, and one that saw the same frames
+    Finder finder(shape, 4.0, 100, 5);
+    Finder untouched(shape, 4.0, 100, 5);
+    for (uint32_t frame_index = 0; frame_index < 12; ++frame_index) {
+        process_test_frame(finder, shape, frame_index);
+        process_test_frame(untouched, shape, frame_index);
+    }
+
+    finder.set_pedestal(pedestal.state());
+
+    const auto state = finder.state();
+    REQUIRE(state.n_sigma == 4.0);
+    REQUIRE(state.pedestal.n_samples == 8);
+    REQUIRE(state.pedestal.sum == pedestal.state().sum);
+    REQUIRE(state.pedestal.sum2 == pedestal.state().sum2);
+    REQUIRE(state.threshold == scaled_noise(finder, 4.0));
+    // The clusters found before are kept
+    const auto clusters = finder.steal_clusters();
+    REQUIRE(clusters.size() > 0);
+    REQUIRE(same_clusters(clusters, untouched.steal_clusters()));
+
+    SECTION("a pedestal that is not ready leaves the threshold") {
+        FastPedestal<double> initializing(10, 12, 8);
+        auto frame = finder_test_frame(shape, 200);
+        initializing.add_init_frame(frame.view());
+
+        finder.set_pedestal(initializing.state());
+        REQUIRE_FALSE(finder.pedestal_ready());
+        REQUIRE(finder.state().threshold == state.threshold);
+
+        // It is recomputed once pedestal frames make the pedestal ready
+        for (uint32_t frame_index = 201; frame_index < 208; ++frame_index) {
+            auto next = finder_test_frame(shape, frame_index);
+            finder.push_pedestal_frame(next.view());
+        }
+        REQUIRE(finder.pedestal_ready());
+        REQUIRE(finder.state().threshold == scaled_noise(finder, 4.0));
+        REQUIRE_FALSE(finder.state().threshold == state.threshold);
+    }
+
+    SECTION("the pedestal itself gives the same as its state") {
+        Finder other(shape, 4.0, 100, 5);
+        other.set_pedestal(pedestal);
+        REQUIRE(other.pedestal_ready());
+        REQUIRE(other.state().pedestal.sum == state.pedestal.sum);
+        REQUIRE(other.state().pedestal.sum2 == state.pedestal.sum2);
+        REQUIRE(other.state().threshold == state.threshold);
+    }
+
+    SECTION("a pedestal of another shape is rejected") {
+        FastPedestal<double> other(10, 13, 8);
+        REQUIRE_THROWS_AS(finder.set_pedestal(other.state()),
+                          std::runtime_error);
+        REQUIRE_THROWS_AS(finder.set_pedestal(other), std::runtime_error);
+        REQUIRE(finder.state().threshold == state.threshold);
+        REQUIRE(finder.state().pedestal.sum == state.pedestal.sum);
+    }
+}
+
 TEST_CASE("cluster finder state does not depend on the value types",
           "[cluster-finder]") {
     const Shape<2> shape{10, 12};
