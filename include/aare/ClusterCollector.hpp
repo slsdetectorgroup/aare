@@ -1,5 +1,8 @@
 // SPDX-License-Identifier: MPL-2.0
 #pragma once
+#include <atomic>
+#include <mutex>
+#include <thread>
 #include <type_traits>
 #include <utility>
 #include <vector>
@@ -34,13 +37,23 @@ class ClusterCollector
     std::vector<ClusterVector<ClusterType>> m_clusters;
 
     void consume(ClusterVector<ClusterType> &&clusters) {
-        m_clusters.push_back(std::move(clusters));
+        {
+            std::lock_guard<std::mutex> lock(m_clusters_mutex);
+            m_clusters.push_back(std::move(*clusters));
+        }
     }
 
     std::vector<ClusterVector<ClusterType>> steal_clusters_impl() {
         // guard by mutex if needed if this is called from multiple threads
-        return std::move(m_clusters);
+        {
+            std::lock_guard<std::mutex> lock(m_clusters_mutex);
+            return std::move(m_clusters);
+        }
     }
+
+  private:
+    std::mutex m_clusters_mutex;
+    ClusterVector<ClusterType> m_clusters;
 };
 
 } // namespace aare

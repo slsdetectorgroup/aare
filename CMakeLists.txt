@@ -545,6 +545,7 @@ if(AARE_TESTS)
       ${CMAKE_CURRENT_SOURCE_DIR}/src/Cluster.test.cpp
       ${CMAKE_CURRENT_SOURCE_DIR}/src/CalculateEta.test.cpp
       ${CMAKE_CURRENT_SOURCE_DIR}/src/ClusterFile.test.cpp
+      ${CMAKE_CURRENT_SOURCE_DIR}/src/ClusterFileSink.test.cpp
       ${CMAKE_CURRENT_SOURCE_DIR}/src/ClusterFinderMT.test.cpp
       ${CMAKE_CURRENT_SOURCE_DIR}/src/ProducerConsumerQueue.test.cpp
       ${CMAKE_CURRENT_SOURCE_DIR}/src/Pedestal.test.cpp

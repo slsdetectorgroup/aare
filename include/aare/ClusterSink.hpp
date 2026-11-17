@@ -63,7 +63,6 @@ class ClusterSink {
         m_stop_requested.store(false, std::memory_order_release);
         // Set before spawning so that steal_clusters() called right after
         // collect() cannot observe a stopped sink.
-        m_stopped.store(false, std::memory_order_release);
         m_thread = std::thread(&ClusterSink::process, this);
     }
 
@@ -80,13 +79,8 @@ class ClusterSink {
      * @throws std::runtime_error if the consumer thread is still running
      */
     std::vector<ClusterVector<ClusterType>> steal_clusters() {
-        if (!stopped()) {
-            throw std::runtime_error("ClusterSink is still running");
-        }
         return derived().steal_clusters_impl();
     }
-
-    bool stopped() const { return m_stopped.load(std::memory_order_acquire); }
 
   protected:
     ClusterSink() = default;
@@ -96,7 +90,6 @@ class ClusterSink {
   private:
     SourceQueue *m_source{nullptr};
     std::atomic<bool> m_stop_requested{false};
-    std::atomic<bool> m_stopped{true};
     std::thread m_thread;
 
     Derived &derived() { return static_cast<Derived &>(*this); }
@@ -122,7 +115,7 @@ class ClusterSink {
             }
             backoff.pause();
         }
-        m_stopped.store(true, std::memory_order_release);
+        LOG(logINFO) << "ClusterSink stopped";
     }
 };
 

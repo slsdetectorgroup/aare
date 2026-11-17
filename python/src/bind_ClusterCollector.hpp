@@ -28,8 +28,14 @@ void define_ClusterCollector(py::module &m, const std::string &typestr) {
     using ClusterType = Cluster<T, ClusterSizeX, ClusterSizeY, CoordType>;
 
     py::class_<ClusterCollector<ClusterType>>(m, class_name.c_str())
-        .def(py::init<ClusterFinderMT<ClusterType, uint16_t, pd_type> *>())
-        .def("stop", &ClusterCollector<ClusterType>::stop)
+        // The collector thread reads the sink of the finder
+        .def(py::init<ClusterFinderMT<ClusterType, uint16_t, pd_type> *>(),
+             py::keep_alive<1, 2>())
+        .def("start", &ClusterCollector<ClusterType>::start,
+             "Start the collector thread. Does nothing if it is running.")
+        .def("stop", &ClusterCollector<ClusterType>::stop,
+             "Stop the collector thread once all clusters in the sink of "
+             "the finder are collected. Does nothing if it is stopped.")
         .def(
             "steal_clusters",
             [](ClusterCollector<ClusterType> &self) {
@@ -37,5 +43,9 @@ void define_ClusterCollector(py::module &m, const std::string &typestr) {
                     self.steal_clusters());
                 return v; // TODO change!!!
             },
-            py::return_value_policy::take_ownership);
+            py::return_value_policy::take_ownership,
+            "Take the clusters collected since the last call, one "
+            "ClusterVector per frame. Can be called while the collector is "
+            "running; call sync() on the finder first to get the clusters "
+            "of every frame given to it so far.");
 }
