@@ -7,9 +7,9 @@
 #include <vector>
 
 #include "aare/Backoff.hpp"
-#include "aare/ClusterFinderMT.hpp"
 #include "aare/ClusterVector.hpp"
 #include "aare/ProducerConsumerQueue.hpp"
+#include "aare/cf/ClusterFinderMT.hpp"
 #include "aare/defs.hpp"
 
 namespace aare {

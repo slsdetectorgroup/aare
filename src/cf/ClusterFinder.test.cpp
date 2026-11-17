@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: MPL-2.0
-#include "aare/ClusterFinder.hpp"
+#include "aare/cf/ClusterFinder.hpp"
 #include "aare/Pedestal.hpp"
 #include <catch2/catch_test_macros.hpp>
 #include <catch2/generators/catch_generators.hpp>
