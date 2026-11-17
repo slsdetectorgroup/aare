@@ -73,9 +73,8 @@ def test_collector_can_be_dropped_without_stop():
     finder = _finder_with_pedestal()
     collector = ClusterCollector(finder)
     _find(finder, range(4))
-    # A running finder cannot be dropped, the collector can: it keeps the
-    # finder alive and stops its own thread
-    finder.stop()
+    finder.sync()
+    # The collector keeps the finder alive and stops its own thread
     del finder
     del collector
 
@@ -114,9 +113,9 @@ def test_file_sink_can_be_dropped_without_stop(tmp_path):
     finder = _finder_with_pedestal()
     sink = ClusterFileSink(finder, path)
     _find(finder, range(20))
-    # A running finder cannot be dropped, the sink can: it keeps the finder
-    # alive, stops its own thread and closes the file
-    finder.stop()
+    finder.sync()
+    # The sink keeps the finder alive, stops its own thread and closes the
+    # file
     del finder
     del sink
     assert _frame_numbers_in(path) == list(range(20))
@@ -127,3 +126,23 @@ def test_file_sink_raises_if_the_file_cannot_be_opened(tmp_path):
     with pytest.raises(RuntimeError, match="Could not open"):
         ClusterFileSink(finder, tmp_path / "missing" / "clusters.clust")
     finder.stop()
+
+
+def test_running_finder_can_be_dropped():
+    finder = _finder_with_pedestal()
+    _find(finder, range(20))
+    del finder
+
+
+def test_finder_start_and_stop_can_be_repeated():
+    finder = _finder_with_pedestal()
+    collector = ClusterCollector(finder)
+    finder.start()
+    _find(finder, range(4))
+    finder.stop()
+    finder.stop()
+    finder.start()
+    _find(finder, range(4, 8))
+    finder.stop()
+    collector.stop()
+    assert _frame_numbers(collector.steal_clusters()) == list(range(8))

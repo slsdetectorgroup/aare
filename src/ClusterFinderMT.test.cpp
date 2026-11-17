@@ -354,3 +354,58 @@ TEST_CASE("cluster collector stops its thread when destroyed") {
     static_assert(!std::is_copy_constructible_v<ClusterCollector<ClusterType>>);
     static_assert(!std::is_move_constructible_v<ClusterCollector<ClusterType>>);
 }
+
+TEST_CASE("running cluster finder can be destroyed") {
+    using ClusterType = Cluster<int32_t, 3, 3>;
+    const Shape<2> image_size{10, 10};
+    NDArray<uint16_t, 2> frame(image_size, 100);
+
+    {
+        ClusterFinderMT<ClusterType> cf(image_size);
+    }
+    {
+        ClusterFinderMT<ClusterType> cf(image_size, 5, 16, 3, 16, 2);
+        cf.push_pedestal_frame(frame.view());
+        cf.push_pedestal_frame(frame.view());
+        cf.find_clusters(frame.view());
+    }
+    {
+        // Stopped: the destructor has nothing to do
+        ClusterFinderMT<ClusterType> cf(image_size);
+        cf.stop();
+        cf.stop();
+    }
+    {
+        ClusterFinderMT<ClusterType> cf(image_size);
+        cf.start(); // running: does nothing
+        cf.stop();
+        cf.start();
+    }
+
+    static_assert(!std::is_copy_constructible_v<ClusterFinderMT<ClusterType>>);
+    static_assert(!std::is_move_constructible_v<ClusterFinderMT<ClusterType>>);
+}
+
+TEST_CASE("cluster finder with a full sink can be destroyed") {
+    using ClusterType = Cluster<int32_t, 3, 3>;
+    const size_t n_threads = 3;
+    const Shape<2> image_size{10, 10};
+    NDArray<uint16_t, 2> frame(image_size, 100);
+
+    ClusterFinderMT<ClusterType> cf(image_size, 5, 16, n_threads, 16, 2);
+    cf.push_pedestal_frame(frame.view());
+    cf.push_pedestal_frame(frame.view());
+
+    // Nothing empties the sink, so it fills up, then the queues of the
+    // threads, and the threads wait for room. With 1000 cluster vectors in
+    // the sink and 200 in the queue of each thread, these frames leave
+    // every thread waiting without blocking find_clusters(). stop() would
+    // wait forever, the destructor must not.
+    const size_t n_frames = 1000 + n_threads * 200 + n_threads * 4;
+    for (size_t i = 0; i < n_frames; ++i) {
+        cf.find_clusters(frame.view(), i);
+    }
+    while (!cf.sink()->isFull()) {
+        std::this_thread::yield();
+    }
+}

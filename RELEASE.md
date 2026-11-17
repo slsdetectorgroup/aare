@@ -79,6 +79,12 @@
 
 ### Bugfixes:
 
+- Destroying a running ``ClusterFinderMT`` no longer terminates the program.
+  The destructor stops the threads without waiting for the frames and
+  clusters still in the queues, so it also returns when nothing empties the
+  sink; call ``stop()`` first to have every frame processed. ``start()``
+  and ``stop()`` do nothing on a finder that is already running or stopped,
+  instead of terminating or raising.
 - ``ClusterFileSink`` opens its file before it starts its thread. Clusters
   that were already in the sink queue of the finder could be dropped
   instead of written.
