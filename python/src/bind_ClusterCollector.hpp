@@ -2,7 +2,6 @@
 #pragma once
 #include "aare/ClusterCollector.hpp"
 #include "aare/ClusterFileSink.hpp"
-#include "aare/ClusterFinder.hpp"
 #include "aare/ClusterFinderMT.hpp"
 #include "aare/ClusterVector.hpp"
 #include "aare/NDView.hpp"

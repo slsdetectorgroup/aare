@@ -51,6 +51,7 @@ AARE
     Dtype
     Cluster
     ClusterFinder
+    ClusterFinderImpl
     ClusterFinderMT
     ClusterFile
     ClusterVector

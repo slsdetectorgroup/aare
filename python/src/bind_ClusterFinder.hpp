@@ -2,7 +2,7 @@
 #pragma once
 #include "aare/ClusterCollector.hpp"
 #include "aare/ClusterFileSink.hpp"
-#include "aare/ClusterFinder.hpp"
+#include "aare/ClusterFinderImpl.hpp"
 #include "aare/ClusterFinderMT.hpp"
 #include "aare/ClusterVector.hpp"
 #include "aare/NDView.hpp"
@@ -28,7 +28,7 @@ void define_ClusterFinder(py::module &m, const std::string &typestr) {
 
     using ClusterType = Cluster<T, ClusterSizeX, ClusterSizeY, CoordType>;
 
-    py::class_<ClusterFinder<ClusterType, uint16_t, pd_type>>(
+    py::class_<ClusterFinderImpl<ClusterType, uint16_t, pd_type>>(
         m, class_name.c_str())
         .def(py::init<Shape<2>, pd_type, size_t, size_t>(),
              py::arg("image_size"), py::arg("n_sigma") = 5.0,
@@ -37,43 +37,43 @@ void define_ClusterFinder(py::module &m, const std::string &typestr) {
 
         .def_property(
             "nSigma",
-            &ClusterFinder<ClusterType, uint16_t, pd_type>::get_nSigma,
-            &ClusterFinder<ClusterType, uint16_t, pd_type>::set_nSigma,
+            &ClusterFinderImpl<ClusterType, uint16_t, pd_type>::get_nSigma,
+            &ClusterFinderImpl<ClusterType, uint16_t, pd_type>::set_nSigma,
             R"(number of sigma above the pedestal to consider a photon during cluster finding.)")
 
         .def(
             "push_pedestal_frame",
-            [](ClusterFinder<ClusterType, uint16_t, pd_type> &self,
+            [](ClusterFinderImpl<ClusterType, uint16_t, pd_type> &self,
                py::array_t<uint16_t> frame) {
                 auto view = make_view_2d(frame);
                 self.push_pedestal_frame(view);
             },
             py::arg("frame").noconvert())
         .def("clear_pedestal",
-             &ClusterFinder<ClusterType, uint16_t, pd_type>::clear_pedestal)
-        .def("update_threshold",
-             &ClusterFinder<ClusterType, uint16_t, pd_type>::update_threshold)
+             &ClusterFinderImpl<ClusterType, uint16_t, pd_type>::clear_pedestal)
+        .def("update_threshold", &ClusterFinderImpl<ClusterType, uint16_t,
+                                                    pd_type>::update_threshold)
         .def_property_readonly(
             "pedestal_ready",
-            &ClusterFinder<ClusterType, uint16_t, pd_type>::pedestal_ready,
+            &ClusterFinderImpl<ClusterType, uint16_t, pd_type>::pedestal_ready,
             R"(True once enough pedestal frames have been pushed to find clusters.)")
         .def_property_readonly(
             "pedestal",
-            [](ClusterFinder<ClusterType, uint16_t, pd_type> &self) {
+            [](ClusterFinderImpl<ClusterType, uint16_t, pd_type> &self) {
                 auto pd = new NDArray<pd_type, 2>{};
                 *pd = self.pedestal();
                 return return_image_data(pd);
             })
         .def_property_readonly(
             "noise",
-            [](ClusterFinder<ClusterType, uint16_t, pd_type> &self) {
+            [](ClusterFinderImpl<ClusterType, uint16_t, pd_type> &self) {
                 auto arr = new NDArray<pd_type, 2>{};
                 *arr = self.noise();
                 return return_image_data(arr);
             })
         .def(
             "steal_clusters",
-            [](ClusterFinder<ClusterType, uint16_t, pd_type> &self,
+            [](ClusterFinderImpl<ClusterType, uint16_t, pd_type> &self,
                bool realloc_same_capacity) {
                 ClusterVector<ClusterType> clusters =
                     self.steal_clusters(realloc_same_capacity);
@@ -82,7 +82,7 @@ void define_ClusterFinder(py::module &m, const std::string &typestr) {
             py::arg("realloc_same_capacity") = false)
         .def(
             "find_clusters",
-            [](ClusterFinder<ClusterType, uint16_t, pd_type> &self,
+            [](ClusterFinderImpl<ClusterType, uint16_t, pd_type> &self,
                py::array_t<uint16_t> frame, uint64_t frame_number) {
                 auto view = make_view_2d(frame);
                 self.find_clusters(view, frame_number);
