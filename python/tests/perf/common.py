@@ -81,7 +81,9 @@ def capture_env(**extra) -> dict:
         "host": _sh("hostname"),
         "git_rev": _sh(f"git -C {REPO} rev-parse --short HEAD"),
         "git_branch": _sh(f"git -C {REPO} rev-parse --abbrev-ref HEAD"),
-        "git_dirty": bool(_sh(f"git -C {REPO} status --porcelain", default="")),
+        # Untracked files (results, traces) don't make the build dirty.
+        "git_dirty": bool(_sh(f"git -C {REPO} status --porcelain -uno",
+                              default="")),
         "aare_version": getattr(aare, "__version__", "unknown"),
     }
     env.update(extra)

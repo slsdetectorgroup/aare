@@ -23,9 +23,8 @@ tracing every CUDA call. Use them to answer "what does the kernel cost" and
 
 - A built tree with the CUDA extension: `build/aare/_aare_cuda*.so`. Run the
   scripts with a Python of the same minor version as the build, with numpy and
-  matplotlib installed (`aare/__init__.py` imports both). On pc-moench-04 the
-  build is 3.11 and the `py` conda environment works:
-  `/home/ferjao_k/.conda/envs/py/bin/python`.
+  matplotlib installed (`aare/__init__.py` imports both). A system Python
+  often lacks matplotlib; a conda environment of the same version works.
 - Nsight Systems. Default path `/opt/nvidia/nsight-systems/2024.5.1/bin/nsys`,
   override with `NSYS=...`.
 - The MOENCH dataset under `/mnt/sls_det_storage/.../2026032408/process/xrf/`
@@ -46,8 +45,7 @@ python run_probes.py --frames 2000  # smoke test only; clocks do not ramp, kerne
 python run_probes.py --only 3x3_s1_uncontended 9x9_s1_uncontended --tag mychange
 ```
 
-Configs, matching the campaign in `docs/ClusterFinderCUDA_benchmark_results.md`
-on branch `bench/cuda_cf`:
+Configs:
 
 | label | cluster | cap | streams | batch | frames |
 |---|---|---|---|---|---|
@@ -87,8 +85,9 @@ the `.nsys-rep` and `.sqlite` traces are tens of MB each and are gitignored.
 
 ## Reference, 2026-09-10, RTX 4090, driver 595.71.05, float pedestal
 
-Kernel us/frame. "before" is commit 7177f00 (pre-refactor kernel, rebuilt and
-re-probed the same day, matching its August numbers): `results/2026-09-10_f32_ref7177/`.
+Kernel us/frame. "before" is the kernel before the refactor (an August commit
+that was never pushed), rebuilt and re-probed the same day, matching its August
+numbers: `results/2026-09-10_f32_ref7177/`.
 "after" is the kernel with the cooperative tile load, size-dependent unroll
 and two-phase load: `results/2026-09-10_f32/`.
 
@@ -101,3 +100,6 @@ and two-phase load: `results/2026-09-10_f32/`.
 
 Both sizes are transfer-bound; sustained throughput is unchanged (3x3 about
 61 400 FPS, 9x9 about 39 600 FPS on the zero-copy path).
+
+A100 results, 3x3 to 9x9 at 1, 4 and 8 streams:
+[`results/A100/README.md`](results/A100/README.md).
