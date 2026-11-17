@@ -80,8 +80,13 @@ def ClusterCollector(clusterfindermt, dtype=np.int32):
 
 def ClusterFileSink(clusterfindermt, cluster_file, dtype=np.int32): 
     """ 
-    Factory function to create a ClusterCollector object. Provides a cleaner syntax for 
-    the templated ClusterCollector in C++.
+    Factory function to create a ClusterFileSink object, which writes the
+    clusters of a ClusterFinderMT to a binary cluster file. Provides a cleaner
+    syntax for the templated ClusterFileSink in C++.
+
+    The file is replaced if it exists and is complete once ``stop()`` has
+    returned or the sink is deleted. Raises ``RuntimeError`` if the file
+    cannot be opened.
     """
 
     cls = _get_class("ClusterFileSink", clusterfindermt.cluster_size, dtype)

@@ -37,6 +37,12 @@
 
 ### API Changes:
 
+- ``ClusterCollector.steal_clusters()`` can be called while the collector
+  is running and no longer raises on a collector that is not stopped. It
+  returns the clusters collected since the last call; call ``sync()`` on the
+  ``ClusterFinderMT`` first to get those of every frame given to it so far.
+- ``ClusterCollector`` has ``start()``, which starts the collector thread
+  again after ``stop()``. Both do nothing when there is nothing to do.
 - ``VarClusterFinder`` keeps only the flood fill. ``find_clusters_X`` is now
   ``find_clusters``; the connected component labelling path (the previous
   ``find_clusters`` and ``single_pass``) and the Python ``hits`` method, a
@@ -73,6 +79,24 @@
 
 ### Bugfixes:
 
+- Destroying a running ``ClusterFinderMT`` no longer terminates the program.
+  The destructor stops the threads without waiting for the frames and
+  clusters still in the queues, so it also returns when nothing empties the
+  sink; call ``stop()`` first to have every frame processed. ``start()``
+  and ``stop()`` do nothing on a finder that is already running or stopped,
+  instead of terminating or raising.
+- ``ClusterFileSink`` opens its file before it starts its thread. Clusters
+  that were already in the sink queue of the finder could be dropped
+  instead of written.
+- ``ClusterFileSink`` raises if the file cannot be opened, instead of
+  silently discarding all clusters.
+- Destroying a ``ClusterFileSink`` without calling ``stop()`` no longer
+  terminates the program: the destructor stops the thread and closes the
+  file. Calling ``stop()`` twice no longer raises. In Python the sink keeps
+  its ``ClusterFinderMT`` alive.
+- Destroying a ``ClusterCollector`` without calling ``stop()`` no longer
+  terminates the program: the destructor stops the collector thread. In
+  Python the collector keeps its ``ClusterFinderMT`` alive.
 - Fixed ``VarClusterFinder`` crashing with a stack overflow on large
   connected areas above threshold, for example a frame with an invalid
   pedestal. The fill is now iterative.
