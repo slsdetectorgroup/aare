@@ -1,8 +1,9 @@
 # SPDX-License-Identifier: MPL-2.0
 
 import numpy as np
+import pytest
 
-from aare import ClusterCollector, ClusterFinderMT
+from aare import ClusterCollector, ClusterFile, ClusterFileSink, ClusterFinderMT
 
 SHAPE = (10, 12)
 N_SAMPLES = 8
@@ -77,3 +78,52 @@ def test_collector_can_be_dropped_without_stop():
     finder.stop()
     del finder
     del collector
+
+
+def _frame_numbers_in(path):
+    with ClusterFile(path) as file:
+        frame_numbers = []
+        while (clusters := file.read_frame()) is not None:
+            frame_numbers.append(clusters.frame_number)
+    return sorted(frame_numbers)
+
+
+def test_file_sink_writes_the_clusters_of_all_frames(tmp_path):
+    path = tmp_path / "clusters.clust"
+    finder = _finder_with_pedestal()
+    sink = ClusterFileSink(finder, path)
+    _find(finder, range(20))
+    finder.stop()
+    sink.stop()
+    sink.stop()
+    assert _frame_numbers_in(path) == list(range(20))
+
+
+def test_file_sink_writes_clusters_found_before_it_was_created(tmp_path):
+    path = tmp_path / "clusters.clust"
+    finder = _finder_with_pedestal()
+    _find(finder, range(20))
+    finder.stop()
+    sink = ClusterFileSink(finder, path)
+    sink.stop()
+    assert _frame_numbers_in(path) == list(range(20))
+
+
+def test_file_sink_can_be_dropped_without_stop(tmp_path):
+    path = tmp_path / "clusters.clust"
+    finder = _finder_with_pedestal()
+    sink = ClusterFileSink(finder, path)
+    _find(finder, range(20))
+    # A running finder cannot be dropped, the sink can: it keeps the finder
+    # alive, stops its own thread and closes the file
+    finder.stop()
+    del finder
+    del sink
+    assert _frame_numbers_in(path) == list(range(20))
+
+
+def test_file_sink_raises_if_the_file_cannot_be_opened(tmp_path):
+    finder = _finder_with_pedestal()
+    with pytest.raises(RuntimeError, match="Could not open"):
+        ClusterFileSink(finder, tmp_path / "missing" / "clusters.clust")
+    finder.stop()

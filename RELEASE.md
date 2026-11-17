@@ -79,6 +79,15 @@
 
 ### Bugfixes:
 
+- ``ClusterFileSink`` opens its file before it starts its thread. Clusters
+  that were already in the sink queue of the finder could be dropped
+  instead of written.
+- ``ClusterFileSink`` raises if the file cannot be opened, instead of
+  silently discarding all clusters.
+- Destroying a ``ClusterFileSink`` without calling ``stop()`` no longer
+  terminates the program: the destructor stops the thread and closes the
+  file. Calling ``stop()`` twice no longer raises. In Python the sink keeps
+  its ``ClusterFinderMT`` alive.
 - Destroying a ``ClusterCollector`` without calling ``stop()`` no longer
   terminates the program: the destructor stops the collector thread. In
   Python the collector keeps its ``ClusterFinderMT`` alive.
