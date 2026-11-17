@@ -86,8 +86,12 @@ With `AARE_BENCHMARKS=ON`, Google Benchmark programs build as
 
 - `NDArray<T, Ndim>` owns contiguous C-order memory; `NDView<T, Ndim>` is a
   non-owning view with the same shape and stride API. Both derive from
-  `ArrayExpr` (expression templates for element-wise math). Shapes are
-  `std::array<ssize_t, Ndim>`. `NDView<T>` converts to `NDView<const T>`.
+  `NDOps` (CRTP base in `ArrayExpr.hpp` with the shared `(i,j,...)` and `[]`
+  indexing, compound assignment, comparison, and stream output), which
+  derives from `ArrayExpr` (expression templates for element-wise math). Add
+  operations both containers should have to `NDOps`, not to each class.
+  Shapes are `std::array<ssize_t, Ndim>`. `NDView<T>` converts to
+  `NDView<const T>`.
 - `Frame` is a byte buffer plus rows, cols, and `Dtype`, the lowest common
   denominator returned by file readers. `Dtype` is a runtime type tag built
   from a bitdepth, a NumPy descriptor, or `typeid`.

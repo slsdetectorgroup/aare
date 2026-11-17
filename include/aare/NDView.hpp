@@ -53,16 +53,6 @@ template <size_t Ndim> size_t num_elements(const Shape<Ndim> &shape) {
                            std::multiplies<size_t>());
 }
 
-template <ssize_t Dim = 0, typename Strides>
-ssize_t element_offset(const Strides & /*unused*/) {
-    return 0;
-}
-
-template <ssize_t Dim = 0, typename Strides, typename... Ix>
-ssize_t element_offset(const Strides &strides, ssize_t i, Ix... index) {
-    return i * strides[Dim] + element_offset<Dim + 1>(strides, index...);
-}
-
 template <ssize_t Ndim>
 std::array<ssize_t, Ndim> c_strides(const std::array<ssize_t, Ndim> &shape) {
     std::array<ssize_t, Ndim> strides{};
@@ -82,7 +72,9 @@ std::array<ssize_t, Ndim> make_array(const std::vector<ssize_t> &vec) {
 }
 
 template <typename T, ssize_t Ndim = 2>
-class NDView : public ArrayExpr<NDView<T, Ndim>, Ndim> {
+class NDView : public NDOps<NDView<T, Ndim>, T, Ndim> {
+    using Ops = NDOps<NDView<T, Ndim>, T, Ndim>;
+
   public:
     NDView() = default;
     ~NDView() = default;
@@ -99,70 +91,30 @@ class NDView : public ArrayExpr<NDView<T, Ndim>, Ndim> {
         : buffer_(other.buffer_), strides_(other.strides_),
           shape_(other.shape_), size_(other.size_) {}
 
-    template <typename... Ix>
-    std::enable_if_t<sizeof...(Ix) == Ndim, T &> operator()(Ix... index) {
-        return buffer_[element_offset(strides_, index...)];
-    }
+    // view(i, j, ...) and view[i], shared with NDArray
+    using Ops::operator();
+    using Ops::operator[];
 
-    template <typename... Ix>
-    std::enable_if_t<sizeof...(Ix) == 1 && (Ndim > 1), NDView<T, Ndim - 1>>
-    operator()(Ix... index) {
+    // Not variadic: a template with the same parameter list as the inherited
+    // operator()(Ix...) would hide it despite the using declaration.
+    template <ssize_t D = Ndim>
+    std::enable_if_t<(D > 1) && D == Ndim, NDView<T, D - 1>>
+    operator()(ssize_t index) {
         // return a view of the next dimension
-        std::array<ssize_t, Ndim - 1> new_shape{};
-        std::copy_n(shape_.begin() + 1, Ndim - 1, new_shape.begin());
-        return NDView<T, Ndim - 1>(&buffer_[element_offset(strides_, index...)],
-                                   new_shape);
-    }
-
-    template <typename... Ix>
-    std::enable_if_t<sizeof...(Ix) == Ndim, const T &>
-    operator()(Ix... index) const {
-        return buffer_[element_offset(strides_, index...)];
+        return NDView<T, D - 1>(buffer_ + index * strides_[0],
+                                drop_first_dim(shape_));
     }
 
     ssize_t size() const { return static_cast<ssize_t>(size_); }
     size_t total_bytes() const { return size_ * sizeof(T); }
-    std::array<ssize_t, Ndim> strides() const noexcept { return strides_; }
+    const std::array<ssize_t, Ndim> &strides() const noexcept {
+        return strides_;
+    }
 
     T *begin() { return buffer_; }
     T *end() { return buffer_ + size_; }
     T const *begin() const { return buffer_; }
     T const *end() const { return buffer_ + size_; }
-
-    /**
-     * @brief Access element at index i.
-     */
-    T &operator[](ssize_t i) { return buffer_[i]; }
-
-    /**
-     * @brief Access element at index i.
-     */
-    const T &operator[](ssize_t i) const { return buffer_[i]; }
-
-    bool operator==(const NDView &other) const {
-        if (size_ != other.size_)
-            return false;
-        if (shape_ != other.shape_)
-            return false;
-        for (size_t i = 0; i != size_; ++i) {
-            if (buffer_[i] != other.buffer_[i])
-                return false;
-        }
-        return true;
-    }
-
-    NDView &operator+=(const T val) { return elemenwise(val, std::plus<T>()); }
-    NDView &operator-=(const T val) { return elemenwise(val, std::minus<T>()); }
-    NDView &operator*=(const T val) {
-        return elemenwise(val, std::multiplies<T>());
-    }
-    NDView &operator/=(const T val) {
-        return elemenwise(val, std::divides<T>());
-    }
-
-    NDView &operator/=(const NDView &other) {
-        return elemenwise(other, std::divides<T>());
-    }
 
     template <size_t Size> NDView &operator=(const std::array<T, Size> &arr) {
         if (size() != static_cast<ssize_t>(arr.size()))
@@ -243,25 +195,6 @@ class NDView : public ArrayExpr<NDView<T, Ndim>, Ndim> {
     std::array<ssize_t, Ndim> strides_{};
     std::array<ssize_t, Ndim> shape_{};
     uint64_t size_{};
-
-    template <class BinaryOperation>
-    NDView &elemenwise(T val, BinaryOperation op) {
-        // Local copies since a store to buffer_[i] may alias the members
-        T *buffer = buffer_;
-        for (uint64_t i = 0, n = size_; i != n; ++i) {
-            buffer[i] = op(buffer[i], val);
-        }
-        return *this;
-    }
-    template <class BinaryOperation>
-    NDView &elemenwise(const NDView &other, BinaryOperation op) {
-        T *buffer = buffer_;
-        const T *other_buffer = other.buffer_;
-        for (uint64_t i = 0, n = size_; i != n; ++i) {
-            buffer[i] = op(buffer[i], other_buffer[i]);
-        }
-        return *this;
-    }
 };
 
 template <typename T, ssize_t Ndim> void NDView<T, Ndim>::print_all() const {
@@ -274,8 +207,10 @@ template <typename T, ssize_t Ndim> void NDView<T, Ndim>::print_all() const {
     }
 }
 
-template <typename T, ssize_t Ndim>
-std::ostream &operator<<(std::ostream &os, const NDView<T, Ndim> &arr) {
+/** @brief Print a 2D NDArray or NDView row by row. */
+template <typename Derived, typename T, ssize_t Ndim>
+std::ostream &operator<<(std::ostream &os, const NDOps<Derived, T, Ndim> &ops) {
+    const auto &arr = static_cast<const Derived &>(ops);
     for (auto row = 0; row < arr.shape(0); ++row) {
         for (auto col = 0; col < arr.shape(1); ++col) {
             os << std::setw(3);

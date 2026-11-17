@@ -1,10 +1,13 @@
 // SPDX-License-Identifier: MPL-2.0
 #include "aare/NDView.hpp"
+#include "aare/NDArray.hpp"
 #include <catch2/catch_test_macros.hpp>
 
 #include <cstddef>
 #include <iostream>
 #include <numeric>
+#include <sstream>
+#include <stdexcept>
 #include <type_traits>
 #include <vector>
 
@@ -312,4 +315,118 @@ TEST_CASE("NDView subview", "[NDView]") {
 
     REQUIRE_THROWS_AS(data.sub_view(3), std::runtime_error);
     REQUIRE_THROWS_AS(data.sub_view(-1), std::runtime_error);
+}
+
+TEST_CASE("Index operators shared between NDView and NDArray") {
+    // Both get operator()(i,j,...) and operator[] from NDOps, adding
+    // it must not grow the view
+    static_assert(sizeof(NDView<int, 2>) ==
+                  sizeof(int *) + 4 * sizeof(ssize_t) + sizeof(uint64_t));
+
+    aare::NDArray<int, 3> arr({2, 3, 4}, 0);
+    auto view = arr.view();
+
+    // Write through the view with indices of mixed integer types
+    view(1, size_t{2}, ssize_t{3}) = 57;
+    view[0] = 5;
+    REQUIRE(arr(1, 2, 3) == 57);
+    REQUIRE(arr[23] == 57);
+    REQUIRE(arr(0, 0, 0) == 5);
+
+    // A single index on a view with more dimensions gives a view, not an
+    // element
+    auto frame = view(1);
+    static_assert(std::is_same_v<decltype(frame), NDView<int, 2>>);
+    REQUIRE(frame.shape() == aare::Shape<2>{3, 4});
+    REQUIRE(frame(2, 3) == 57);
+    frame(0, 1) = 9;
+    REQUIRE(arr(1, 0, 1) == 9);
+
+    // Const access returns const references
+    const auto &carr = arr;
+    const auto &cview = view;
+    static_assert(std::is_same_v<decltype(carr(0, 0, 0)), const int &>);
+    static_assert(std::is_same_v<decltype(cview(0, 0, 0)), const int &>);
+    static_assert(std::is_same_v<decltype(carr[0]), const int &>);
+    static_assert(std::is_same_v<decltype(cview[0]), const int &>);
+    static_assert(std::is_same_v<decltype(arr.view()(0, 0, 0)), int &>);
+    static_assert(std::is_same_v<decltype(carr.view()(0, 0, 0)), const int &>);
+    REQUIRE(cview(1, 2, 3) == 57);
+}
+
+TEST_CASE("Elementwise math shared between NDView and NDArray") {
+    aare::NDArray<int, 2> a({2, 3}, 6);
+    aare::NDArray<int, 2> b({2, 3}, 2);
+    auto va = a.view();
+
+    SECTION("scalar operators on a view modify the underlying array") {
+        va += 2;   // 8
+        va -= 1;   // 7
+        va *= 3;   // 21
+        va /= 2;   // 10
+        va &= 0x6; // 2
+        for (auto v : a)
+            REQUIRE(v == 2);
+    }
+
+    SECTION("arrays and views can be mixed") {
+        va += b; // view op array
+        REQUIRE(a(1, 2) == 8);
+        a -= b.view(); // array op view
+        REQUIRE(a(1, 2) == 6);
+        va *= b.view(); // view op view
+        REQUIRE(a(1, 2) == 12);
+        const auto &cb = b;
+        a /= cb.view(); // array op read only view
+        REQUIRE(a(1, 2) == 6);
+    }
+
+    SECTION("the right hand side can have another element type") {
+        aare::NDArray<double, 2> d({2, 3}, 1.5);
+        a *= d;
+        REQUIRE(a(0, 0) == 9);
+        va /= d.view();
+        REQUIRE(a(0, 0) == 6);
+    }
+
+    SECTION("an expression is applied without changing its operands") {
+        a += b * b;
+        REQUIRE(a(0, 0) == 10);
+        va -= b + b;
+        REQUIRE(a(1, 2) == 6);
+        a += a * 2; // reads and writes the same buffer
+        REQUIRE(a(1, 2) == 18);
+        REQUIRE(b(0, 0) == 2);
+    }
+
+    SECTION("shape mismatch throws for arrays and views") {
+        aare::NDArray<int, 2> c({3, 2}, 1);
+        REQUIRE_THROWS_AS(a += c, std::runtime_error);
+        REQUIRE_THROWS_AS(va /= c.view(), std::runtime_error);
+        REQUIRE_THROWS_AS(va *= c, std::runtime_error);
+        REQUIRE(a(0, 0) == 6);
+    }
+
+    SECTION("comparison") {
+        aare::NDArray<int, 2> c({2, 3}, 6);
+        REQUIRE(va == c.view());
+        REQUIRE_FALSE(va != c.view());
+        REQUIRE(a == c);
+        c(1, 1) = 0;
+        REQUIRE(va != c.view());
+        REQUIRE(a != c);
+        // same data, different shape
+        aare::NDArray<int, 2> e({3, 2}, 6);
+        REQUIRE(a != e);
+        REQUIRE(va != e.view());
+    }
+
+    SECTION("stream output is the same for an array and its view") {
+        std::ostringstream from_array;
+        std::ostringstream from_view;
+        from_array << a;
+        from_view << va;
+        REQUIRE(from_array.str() == "  6   6   6 \n  6   6   6 \n");
+        REQUIRE(from_view.str() == from_array.str());
+    }
 }
