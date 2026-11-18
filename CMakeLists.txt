@@ -486,6 +486,8 @@ if(AARE_CUDA)
     include/aare/cf/ClusterFinderCUDA.hpp
     include/aare/cf/clusterfinder_algo.cuh
     include/aare/cf/clusterfinder_kernel.cuh
+    include/aare/hist/HistogramPipelineCUDA.hpp
+    include/aare/hist/fill_policies.cuh
     include/aare/hist/PixelHistogramCUDA.hpp
     include/aare/hist/pixelhistogram_kernel.cuh
     include/aare/RAII_device.hpp
