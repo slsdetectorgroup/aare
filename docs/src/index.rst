@@ -57,9 +57,11 @@ AARE
     Interpolation
     JungfrauDataFile
     Pedestal
+    FastPedestal
     RawFile
     RawSubFile
     RawMasterFile
+    StateFile
     VarClusterFinder
     StrixelPixelRemapping/index
     DataSetAggregation

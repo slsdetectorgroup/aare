@@ -1,7 +1,7 @@
 # SPDX-License-Identifier: MPL-2.0
 from . import _aare
 import numpy as np
-from .factory import _type_to_char
+from .factory import _stored_state_fields, _type_to_char
 
 _supported_cluster_sizes = [(2,2), (3,3), (5,5), (7,7), (9,9),]
 
@@ -42,6 +42,55 @@ def ClusterFinder(image_size, *, cluster_size=(3,3), n_sigma=5, dtype = np.int32
     return cls(image_size, n_sigma=n_sigma, capacity=capacity, min_pedestal_samples=min_pedestal_samples)
 
 
+# Documented as aare.ClusterFinder.load_state, which autodoc looks up as this
+# name in this module
+def load_state(filename, dtype=None, capacity=1024):
+    """Create a ClusterFinder from a state file.
+
+    The file is written by ``save_state()`` of a cluster finder and holds its
+    pedestal, ``nSigma`` and threshold, so the new finder continues exactly
+    where the stored one stopped, whether its pedestal was still initializing
+    or ready. The image shape, the cluster size, ``nSigma``,
+    ``min_pedestal_samples`` and by default the dtype are taken from the
+    file. Clusters that the stored finder had found but not handed out with
+    ``steal_clusters()`` are not in the file.
+
+    This returns a new finder. To load a state file into a finder that
+    already exists, call ``load_state(filename)`` on that finder; it keeps
+    its own dtype and must have the cluster size stored in the file.
+
+    Parameters
+    ----------
+    filename : path-like
+        State file written by ``save_state()``.
+    dtype : data-type, optional
+        The data type of the clusters. By default that of the finder that
+        wrote the file, as stored in it.
+    capacity : int, optional
+        The maximum number of clusters that can be stored before
+        reallocating. Default is 1024.
+
+    Raises
+    ------
+    RuntimeError
+        If the file cannot be read, is not a state file of a ClusterFinder,
+        or is truncated or damaged.
+    ValueError
+        If there is no ClusterFinder with the stored cluster size and the
+        dtype, given or stored.
+    """
+    size_x, size_y, stored_dtype = _stored_state_fields(
+        filename, "ClusterFinder", "cluster_size_x", "cluster_size_y", "cluster_dtype"
+    )
+    if dtype is None:
+        dtype = stored_dtype
+    cls = _get_class("ClusterFinder", (size_x, size_y), dtype)
+    return cls.from_state_file(filename, capacity=capacity)
+
+
+ClusterFinder.load_state = load_state
+
+
 def ClusterFinderMT(image_size, *, cluster_size = (3,3), dtype=np.int32, n_sigma=5, capacity = 1024, n_threads = 3, min_pedestal_samples = 1000): 
     """ 
     Factory function to create a ClusterFinderMT object. Provides a cleaner syntax for 
@@ -67,6 +116,57 @@ def ClusterFinderMT(image_size, *, cluster_size = (3,3), dtype=np.int32, n_sigma
 
     cls = _get_class("ClusterFinderMT", cluster_size, dtype)
     return cls(image_size, n_sigma=n_sigma, capacity=capacity, min_pedestal_samples=min_pedestal_samples, n_threads=n_threads)
+
+
+def _load_mt_state(filename, dtype=None, capacity=1024, queue_depth=16):
+    """Create a ClusterFinderMT from a state file.
+
+    The file is written by ``save_state()`` of a ClusterFinderMT and holds,
+    for each of its threads, the pedestal, ``nSigma`` and threshold, and
+    which thread takes the next frame. The new finder has the stored number
+    of threads, which are started, and continues where the stored one
+    stopped. The image shape, the cluster size and by default the dtype are
+    taken from the file.
+
+    This returns a new finder. To load a state file into a finder that
+    already exists, call ``load_state(filename)`` on it.
+
+    Parameters
+    ----------
+    filename : path-like
+        State file written by ``save_state()`` of a ClusterFinderMT.
+    dtype : data-type, optional
+        The data type of the clusters. By default that of the finder that
+        wrote the file, as stored in it.
+    capacity : int, optional
+        The maximum number of clusters that can be stored per frame before
+        reallocating. Default is 1024.
+    queue_depth : int, optional
+        The number of frame buffers per thread. Default is 16.
+
+    Raises
+    ------
+    RuntimeError
+        If the file cannot be read, is not a state file of a
+        ClusterFinderMT, or is truncated or damaged.
+    ValueError
+        If there is no ClusterFinderMT with the stored cluster size and the
+        dtype, given or stored.
+    """
+    size_x, size_y, stored_dtype = _stored_state_fields(
+        filename,
+        "ClusterFinderMT",
+        ("finders", 0, "cluster_size_x"),
+        ("finders", 0, "cluster_size_y"),
+        ("finders", 0, "cluster_dtype"),
+    )
+    if dtype is None:
+        dtype = stored_dtype
+    cls = _get_class("ClusterFinderMT", (size_x, size_y), dtype)
+    return cls.from_state_file(filename, capacity=capacity, queue_depth=queue_depth)
+
+
+ClusterFinderMT.load_state = _load_mt_state
 
 
 def ClusterCollector(clusterfindermt, dtype=np.int32): 

@@ -165,10 +165,11 @@ std::string Dtype::to_string() const {
         ec = '>';
 
     switch (m_type) {
+    // NumPy writes '|' where the byte order does not apply
     case TypeIndex::INT8:
-        return fmt::format("{}i1", ec);
+        return "|i1";
     case TypeIndex::UINT8:
-        return fmt::format("{}u1", ec);
+        return "|u1";
     case TypeIndex::INT16:
         return fmt::format("{}i2", ec);
     case TypeIndex::UINT16:
@@ -182,9 +183,9 @@ std::string Dtype::to_string() const {
     case TypeIndex::UINT64:
         return fmt::format("{}u8", ec);
     case TypeIndex::FLOAT:
-        return "f4";
+        return fmt::format("{}f4", ec);
     case TypeIndex::DOUBLE:
-        return "f8";
+        return fmt::format("{}f8", ec);
     case TypeIndex::ERROR:
         throw std::runtime_error(
             "Could not get string representation. Type not supported.");

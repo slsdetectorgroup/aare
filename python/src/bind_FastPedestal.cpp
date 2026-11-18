@@ -3,26 +3,26 @@
 
 #include "aare/FastPedestal.hpp"
 #include "np_helper.hpp"
+#include "state_file.hpp"
 
 #include <cstdint>
 #include <pybind11/numpy.h>
 #include <pybind11/pybind11.h>
 #include <pybind11/stl.h>
-#include <pybind11/stl/filesystem.h>
 
 namespace py = pybind11;
 
 template <typename SUM_TYPE>
 void define_fast_pedestal_bindings(py::module &m, const std::string &name) {
 
-    py::class_<FastPedestal<SUM_TYPE>>(
+    py::class_<FastPedestal<SUM_TYPE>> cls(
         m, name.c_str(),
         "Maintain a per-pixel running mean and population standard deviation.",
-        py::buffer_protocol())
-        .def(py::init<uint32_t, uint32_t, uint32_t>(), py::arg("rows"),
-             py::arg("cols"), py::arg("n_samples"),
-             "Construct an empty pedestal. It becomes ready after n_samples "
-             "calls to add_init_frame().")
+        py::buffer_protocol());
+    cls.def(py::init<uint32_t, uint32_t, uint32_t>(), py::arg("rows"),
+            py::arg("cols"), py::arg("n_samples"),
+            "Construct an empty pedestal. It becomes ready after n_samples "
+            "calls to add_init_frame().")
         .def(py::init<uint32_t, uint32_t>(), py::arg("rows"), py::arg("cols"),
              "Construct an empty pedestal with n_samples=1000.")
 
@@ -134,6 +134,28 @@ void define_fast_pedestal_bindings(py::module &m, const std::string &name) {
             "Create a pedestal from a uint16 file. Skip skip_first frames, use "
             "the next n_samples for initialization, then apply every remaining "
             "frame as a steady-state update.");
+
+    def_state_file<aare::FastPedestalState>(
+        cls,
+        "Write the complete state of the pedestal to a state file, "
+        "whether it is still initializing or ready. An existing file is "
+        "replaced. A pedestal that loads the file with load_state() "
+        "continues exactly as this one would.",
+        "Replace the state of this pedestal with the one in a state file "
+        "written by save_state(). n_samples is taken from the file, the "
+        "image shape must be that of this pedestal, and the dtype stays "
+        "that of this pedestal whatever the file records. If the file "
+        "cannot be loaded the pedestal is left unchanged.");
+    cls.def_static(
+        "from_state_file",
+        [](const std::filesystem::path &filename) {
+            return FastPedestal<SUM_TYPE>(
+                aare::load_state<aare::FastPedestalState>(filename));
+        },
+        py::arg("filename"),
+        "Create a pedestal of this dtype from a state file written by "
+        "save_state(), whatever dtype the file records. The image shape "
+        "and n_samples are taken from the file.");
 }
 
 void bind_fast_pedestals(py::module &m) {

@@ -1,4 +1,5 @@
 # SPDX-License-Identifier: MPL-2.0
+import json
 import os
 from pathlib import Path
 import pytest
@@ -59,3 +60,30 @@ def create_temporary_jungfrau_files(tmp_path):
         return master_path / "JungfrauTest_000000.dat"
 
     return _create
+
+
+def read_state_file(fname):
+    """Read a state file with NumPy only, as documented in
+    docs/src/StateFile.rst."""
+    with open(fname, "rb") as f:
+        if f.read(8) != b"AARESTAT":
+            raise ValueError("not an aare state file")
+        header_length = int.from_bytes(f.read(8), "little")
+        header = json.loads(f.read(header_length))
+    data_start = 16 + header_length
+
+    def resolve(node):
+        if isinstance(node, dict):
+            if node.keys() == {"dtype", "shape", "offset"}:
+                return np.fromfile(
+                    fname,
+                    dtype=node["dtype"],
+                    count=int(np.prod(node["shape"])),
+                    offset=data_start + node["offset"],
+                ).reshape(node["shape"])
+            return {key: resolve(value) for key, value in node.items()}
+        if isinstance(node, list):
+            return [resolve(value) for value in node]
+        return node
+
+    return resolve(header)

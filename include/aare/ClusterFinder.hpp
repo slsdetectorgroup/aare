@@ -9,8 +9,48 @@
 #include "aare/Pedestal.hpp"
 #include "aare/defs.hpp"
 #include <cstddef>
+#include <fmt/format.h>
+#include <stdexcept>
 
 namespace aare {
+
+/**
+ * @brief Complete state of a ClusterFinder as plain data.
+ *
+ * Returned by ClusterFinder::state() and accepted by
+ * ClusterFinder::set_state() and the ClusterFinder constructor, so that a
+ * finder can be stored and later continued exactly where it stopped. A
+ * state can only be given to a finder with the same cluster size and image
+ * shape. It does not depend on the other types of the finder it was taken
+ * from: n_sigma and the threshold are always double, and the pedestal is a
+ * FastPedestalState. cluster_dtype only records the value type of the
+ * clusters, for whoever restores the state and wants the same kind of
+ * finder.
+ *
+ * The threshold is part of the state because it is not kept in step with
+ * the pedestal: it is the noise multiplied by n_sigma at the time of the
+ * last ClusterFinder::update_threshold(), while finding clusters keeps
+ * updating the pedestal.
+ *
+ * Clusters that were found but not yet taken with
+ * ClusterFinder::steal_clusters() are not part of the state.
+ */
+struct ClusterFinderState {
+    /// Value type of the clusters of the finder the state was taken from.
+    /// Not used by set_state()
+    Dtype cluster_dtype{Dtype::NONE};
+    /// Number of columns of a cluster
+    uint8_t cluster_size_x{};
+    /// Number of rows of a cluster
+    uint8_t cluster_size_y{};
+    /// Noise multiplier used when the threshold is recomputed
+    double n_sigma{};
+    /// Per-pixel threshold as last computed, shape (rows, cols). All zero
+    /// until the pedestal has been ready once
+    NDArray<double, 2> threshold;
+    /// State of the pedestal, with the dtype of the pedestal of the finder
+    FastPedestalState pedestal;
+};
 
 template <typename ClusterType,
           typename = std::enable_if_t<is_cluster_v<ClusterType>>>
@@ -68,6 +108,92 @@ class ClusterFinder {
     }
 
     /**
+     * @brief Construct a cluster finder from a state, taking the image
+     * shape, nSigma and min_pedestal_samples from it.
+     * @param state State of a finder with the same cluster size.
+     * @param capacity Initial cluster-vector capacity.
+     * @throws std::runtime_error if the state is empty or not valid, see
+     * set_state().
+     */
+    explicit ClusterFinder(const ClusterFinderState &state,
+                           size_t capacity = 1000000)
+        : ClusterFinder(state.threshold.shape(),
+                        static_cast<PEDESTAL_TYPE>(state.n_sigma), capacity,
+                        state.pedestal.n_samples) {
+        set_state(state);
+    }
+
+    /**
+     * @brief Return a copy of the complete state.
+     *
+     * A finder given this state continues exactly as this one would,
+     * whether its pedestal is still initializing or ready. Clusters that
+     * have not been taken with steal_clusters() are not included.
+     */
+    ClusterFinderState state() const {
+        ClusterFinderState state{Dtype(typeid(CT)),
+                                 ClusterSizeX,
+                                 ClusterSizeY,
+                                 static_cast<double>(m_nSigma),
+                                 NDArray<double, 2>(m_image_size),
+                                 m_pedestal.state()};
+        for (ssize_t i = 0; i < m_threshold.size(); ++i) {
+            state.threshold[i] = static_cast<double>(m_threshold[i]);
+        }
+        return state;
+    }
+
+    /**
+     * @brief Check that set_state() would accept a state, without changing
+     * the finder.
+     * @throws std::runtime_error if the state is not valid, see set_state().
+     */
+    void check_state(const ClusterFinderState &state) const {
+        if (state.cluster_size_x != ClusterSizeX ||
+            state.cluster_size_y != ClusterSizeY) {
+            throw std::runtime_error(fmt::format(
+                "ClusterFinder state is for {}x{} clusters, this finder "
+                "has {}x{} clusters",
+                int{state.cluster_size_x}, int{state.cluster_size_y},
+                int{ClusterSizeX}, int{ClusterSizeY}));
+        }
+        if (state.threshold.shape() != m_image_size) {
+            throw std::runtime_error(fmt::format(
+                "ClusterFinder state has a threshold of shape ({}, {}), "
+                "expected ({}, {})",
+                state.threshold.shape(0), state.threshold.shape(1),
+                m_image_size[0], m_image_size[1]));
+        }
+        m_pedestal.check_state(state.pedestal);
+    }
+
+    /**
+     * @brief Replace the complete state, including nSigma and
+     * min_pedestal_samples.
+     *
+     * The threshold is taken from the state and not recomputed. Clusters
+     * that have not been taken with steal_clusters() are dropped; the
+     * capacity of the cluster vector is kept. The state can come from a
+     * finder with another cluster value type, frame type or pedestal type;
+     * its cluster_dtype and the dtype of its pedestal are not used.
+     * @param state State of a finder with the same cluster size, whose
+     * threshold and pedestal have the image shape of this finder. The
+     * values of n_sigma and the threshold are not checked.
+     * @throws std::runtime_error if the state is not valid. The finder is
+     * then left unchanged.
+     */
+    void set_state(const ClusterFinderState &state) {
+        check_state(state);
+        m_pedestal.set_state(state.pedestal);
+
+        m_nSigma = static_cast<PEDESTAL_TYPE>(state.n_sigma);
+        for (ssize_t i = 0; i < m_threshold.size(); ++i) {
+            m_threshold[i] = static_cast<PEDESTAL_TYPE>(state.threshold[i]);
+        }
+        m_clusters = ClusterVector<ClusterType>(m_clusters.capacity());
+    }
+
+    /**
      * @brief Set the noise multiplier used for threshold calculation.
      *
      * The threshold is recomputed immediately if the pedestal is ready,
@@ -110,6 +236,44 @@ class ClusterFinder {
 
     /** @brief Return the per-pixel pedestal standard deviation (noise). */
     NDArray<PEDESTAL_TYPE, 2> noise() { return m_pedestal.std(); }
+
+    /**
+     * @brief Replace the pedestal with one taken elsewhere, for example
+     * from a dark run processed with a FastPedestal.
+     *
+     * nSigma and the clusters found so far are kept. The threshold follows
+     * the rule of the finder: it is recomputed as noise multiplied by
+     * nSigma if the new pedestal is ready, otherwise it is left as it is
+     * until pedestal frames make the pedestal ready. min_pedestal_samples
+     * becomes the n_samples of the state.
+     * @param state State of a pedestal with the image shape of this
+     * finder, of any PEDESTAL_TYPE.
+     * @throws std::runtime_error if the state is not valid, see
+     * FastPedestal::set_state(). The finder is then left unchanged.
+     */
+    void set_pedestal(const FastPedestalState &state) {
+        m_pedestal.set_state(state);
+        if (m_pedestal.ready()) {
+            update_threshold();
+        }
+    }
+
+    /**
+     * @brief Replace the pedestal with a copy of a FastPedestal of any
+     * PEDESTAL_TYPE, as set_pedestal() does with its state.
+     * @param pedestal Pedestal with the image shape of this finder.
+     * @throws std::runtime_error if the shape does not match. The finder is
+     * then left unchanged.
+     */
+    template <typename T> void set_pedestal(const FastPedestal<T> &pedestal) {
+        set_pedestal(pedestal.state());
+    }
+
+    /**
+     * @brief Return a copy of the pedestal as it is now, for example to
+     * give it to another finder with set_pedestal().
+     */
+    FastPedestal<PEDESTAL_TYPE> get_pedestal() const { return m_pedestal; }
 
     /** @brief Clear the pedestal and mark it as not ready. */
     void clear_pedestal() { m_pedestal.clear(); }
