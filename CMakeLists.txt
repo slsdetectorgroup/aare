@@ -488,6 +488,7 @@ if(AARE_CUDA)
     include/aare/cf/clusterfinder_kernel.cuh
     include/aare/hist/HistogramPipelineCUDA.hpp
     include/aare/hist/fill_policies.cuh
+    include/aare/hist/PedestalTrackingPixelHistogramCUDA.hpp
     include/aare/hist/PixelHistogramCUDA.hpp
     include/aare/hist/pixelhistogram_kernel.cuh
     include/aare/RAII_device.hpp
@@ -626,10 +627,14 @@ endif()
 if(AARE_TESTS AND AARE_CUDA)
   target_sources(
     tests
-    PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/src/cf/ClusterFinderCUDA.test.cpp
-            ${CMAKE_CURRENT_SOURCE_DIR}/src/cf/ClusterFinderCUDA_testimpl.cu
-            ${CMAKE_CURRENT_SOURCE_DIR}/src/hist/PixelHistogramCUDA.test.cpp
-            ${CMAKE_CURRENT_SOURCE_DIR}/src/hist/PixelHistogramCUDA_testimpl.cu)
+    PRIVATE
+      ${CMAKE_CURRENT_SOURCE_DIR}/src/cf/ClusterFinderCUDA.test.cpp
+      ${CMAKE_CURRENT_SOURCE_DIR}/src/cf/ClusterFinderCUDA_testimpl.cu
+      ${CMAKE_CURRENT_SOURCE_DIR}/src/hist/PixelHistogramCUDA.test.cpp
+      ${CMAKE_CURRENT_SOURCE_DIR}/src/hist/PixelHistogramCUDA_testimpl.cu
+      ${CMAKE_CURRENT_SOURCE_DIR}/src/hist/PedestalTrackingPixelHistogramCUDA.test.cpp
+      ${CMAKE_CURRENT_SOURCE_DIR}/src/hist/PedestalTrackingPixelHistogramCUDA_testimpl.cu
+  )
   target_link_libraries(tests PRIVATE aare_cuda)
 endif()
 
