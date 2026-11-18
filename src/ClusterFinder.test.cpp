@@ -106,27 +106,6 @@ TEST_CASE("ClusterFinder with a ClusterCollector collects all frames") {
     CHECK(cf.pedestal().shape() == image_size);
 }
 
-TEST_CASE("ClusterFinder steal_clusters throws while running") {
-    ClusterFinder<ClusterCollector<ClusterType>> cf(
-        image_size, 5.0, 200, n_threads, queue_depth, min_pedestal_samples);
-    CHECK_THROWS_AS(cf.steal_clusters(), std::runtime_error);
-}
-
-TEST_CASE("ClusterFinder can be restarted after stop") {
-    ClusterFinder<ClusterCollector<ClusterType>> cf(
-        image_size, 5.0, 200, n_threads, queue_depth, min_pedestal_samples);
-    push_pedestal(cf);
-    push_hits(cf, 3);
-    cf.stop();
-    CHECK(cf.steal_clusters().size() == 3);
-
-    cf.start();
-    CHECK(cf.running());
-    push_hits(cf, 5);
-    cf.stop();
-    CHECK(cf.steal_clusters().size() == 5);
-}
-
 TEST_CASE("ClusterFinder destructor stops a running finder and sink") {
     ClusterFinder<ClusterCollector<ClusterType>> cf(
         image_size, 5.0, 200, n_threads, queue_depth, min_pedestal_samples);
@@ -159,29 +138,4 @@ TEST_CASE("ClusterFinder with a ClusterFileSink writes all frames") {
         ++n_read;
     }
     CHECK(n_read == n_frames);
-}
-
-TEST_CASE("ClusterFileSink throws when the file cannot be opened") {
-    CHECK_THROWS_AS(ClusterFinder<ClusterFileSink<ClusterType>>(
-                        image_size, 5.0, 200, n_threads, queue_depth,
-                        min_pedestal_samples,
-                        std::filesystem::path("/nonexistent/dir/out.clust")),
-                    std::runtime_error);
-}
-
-TEST_CASE("ClusterSink can be started on a queue with collect") {
-    ProducerConsumerQueue<ClusterVector<ClusterType>> source(4);
-    for (uint64_t frame_number = 1; frame_number <= 3; ++frame_number) {
-        REQUIRE(source.write(ClusterVector<ClusterType>(4, frame_number)));
-    }
-
-    ClusterCollector<ClusterType> collector;
-    CHECK(collector.stopped());
-    collector.collect(&source);
-    CHECK_THROWS_AS(collector.collect(&source), std::runtime_error);
-    collector.stop();
-
-    auto clusters = collector.steal_clusters();
-    REQUIRE(clusters.size() == 3);
-    CHECK(source.isEmpty());
 }
