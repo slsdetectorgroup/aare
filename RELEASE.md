@@ -72,8 +72,8 @@
   ``ClusterFinderMTState`` holds the state of the cluster finder of every
   thread, whose pedestals differ, and the thread that takes the next frame;
   ``state()``, ``set_state()``, a constructor and ``save_state()`` /
-  ``load_state<ClusterFinderMTState>()`` work as for ``ClusterFinder``, on a
-  stopped finder. In Python: ``finder.save_state(fname)``,
+  ``load_state<ClusterFinderMTState>()`` work as for ``ClusterFinder``.
+  In Python: ``finder.save_state(fname)``,
   ``ClusterFinderMT.load_state(fname, dtype=None)`` for a new finder and
   ``finder.load_state(fname, thread_index=None)``, which also takes the
   state file of a ``ClusterFinder`` for all threads or one.
@@ -87,6 +87,13 @@
   is running and no longer raises on a collector that is not stopped. It
   returns the clusters collected since the last call; call ``sync()`` on the
   ``ClusterFinderMT`` first to get those of every frame given to it so far.
+- ``ClusterFinderMT`` no longer needs ``stop()`` to read or change the
+  cluster finders of its threads. ``pedestal()``, ``noise()``,
+  ``clear_pedestal()`` and ``update_threshold()`` threw on a running
+  finder; they, and the new state and pedestal functions, now wait for the
+  frames given so far to be processed, as ``set_nSigma()`` and
+  ``pedestal_ready()`` did. They must be called from the thread that gives
+  the finder its frames.
 - ``ClusterCollector`` has ``start()``, which starts the collector thread
   again after ``stop()``. Both do nothing when there is nothing to do.
 - ``VarClusterFinder`` keeps only the flood fill. ``find_clusters_X`` is now

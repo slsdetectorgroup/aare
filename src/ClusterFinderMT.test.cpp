@@ -472,29 +472,59 @@ TEST_CASE("multithreaded cluster finder continues identically from a state",
     }
 }
 
-TEST_CASE("multithreaded cluster finder only hands out and takes state while "
-          "stopped",
+TEST_CASE("multithreaded cluster finder hands out and takes state while "
+          "running",
           "[cluster-finder-mt]") {
-    StateFinderMT finder(state_shape, 4.0, 200, 2, 16, state_pedestal_frames);
-    const auto pedestal = dark_pedestal(100, 8);
+    const uint32_t n_before = 40;
+    const uint32_t n_frames = 80;
+
+    StateFinderMT uninterrupted(state_shape, 4.0, 200, 3, 16,
+                                state_pedestal_frames);
+    process_frames(uninterrupted, 0, n_frames);
+    uninterrupted.stop();
+
+    // What a running finder hands out includes the frames given so far
+    StateFinderMT source(state_shape, 4.0, 200, 3, 16, state_pedestal_frames);
+    process_frames(source, 0, n_before);
+    const auto state = source.state();
+    const auto pedestal = source.get_pedestal(1);
+    const auto mean = source.pedestal(2);
+    const auto noise = source.noise(2);
+    source.stop();
+    REQUIRE(same_state(source.state(), state));
+    REQUIRE(source.get_pedestal(1).state().sum == pedestal.state().sum);
+    REQUIRE(source.pedestal(2) == mean);
+    REQUIRE(source.noise(2) == noise);
+
+    // A running finder that takes the state goes on as the source would,
+    // and its earlier frames are not affected
+    StateFinderMT finder(state_shape, 4.0, 200, 3, 16, state_pedestal_frames);
+    process_frames(finder, 0, state_pedestal_frames - 1);
+    finder.set_state(state);
+    process_frames(finder, n_before, n_frames);
+    finder.stop();
+    REQUIRE(same_state(finder.state(), uninterrupted.state()));
+
+    auto clusters = sorted_clusters(source);
+    const auto later_clusters = sorted_clusters(finder);
+    clusters.insert(clusters.end(), later_clusters.begin(),
+                    later_clusters.end());
+    std::sort(clusters.begin(), clusters.end());
+    REQUIRE(clusters == sorted_clusters(uninterrupted));
+
+    // The state of one cluster finder for every thread, and an invalid one
     ClusterFinder<StateCluster> single(state_shape, 4.0, 200,
                                        state_pedestal_frames);
-
-    REQUIRE_THROWS_AS(finder.state(), std::runtime_error);
+    finder.start();
+    REQUIRE_NOTHROW(finder.start()); // running: does nothing
+    finder.set_state(single.state());
     REQUIRE_THROWS_AS(finder.set_state(ClusterFinderMTState{}),
                       std::runtime_error);
-    REQUIRE_THROWS_AS(finder.set_state(single.state()), std::runtime_error);
-    REQUIRE_THROWS_AS(finder.set_pedestal(pedestal), std::runtime_error);
-    REQUIRE_THROWS_AS(finder.get_pedestal(), std::runtime_error);
-
-    // Stopping and starting again when that is already so does nothing
+    for (const auto &finder_state : finder.state().finders) {
+        REQUIRE(same_state(finder_state, single.state()));
+    }
     finder.stop();
-    REQUIRE_NOTHROW(finder.stop());
-    REQUIRE_NOTHROW(finder.state());
-    finder.start();
-    REQUIRE_NOTHROW(finder.start());
-    REQUIRE_THROWS_AS(finder.state(), std::runtime_error);
-    finder.stop();
+    REQUIRE_NOTHROW(finder.stop()); // stopped: does nothing
 }
 
 TEST_CASE("multithreaded cluster finder rejects an invalid state and stays "
@@ -616,6 +646,39 @@ TEST_CASE("multithreaded cluster finder takes and returns the pedestal of "
     FastPedestal<double> other_shape(10, 13, 8);
     REQUIRE_THROWS_AS(finder.set_pedestal(other_shape), std::runtime_error);
     REQUIRE(same_state(finder.state(), state));
+}
+
+TEST_CASE("multithreaded cluster finder takes a pedestal while running",
+          "[cluster-finder-mt]") {
+    const uint32_t n_before = 40;
+    const uint32_t n_frames = 80;
+    const auto pedestal = dark_pedestal(100, 8);
+
+    // Stopped for the pedestal
+    StateFinderMT reference(state_shape, 4.0, 200, 3, 16,
+                            state_pedestal_frames);
+    process_frames(reference, 0, n_before);
+    reference.stop();
+    reference.set_pedestal(pedestal);
+    reference.start();
+    process_frames(reference, n_before, n_frames);
+    reference.stop();
+
+    // Running: the frames given before the pedestal are processed first
+    StateFinderMT finder(state_shape, 4.0, 200, 3, 16, state_pedestal_frames);
+    process_frames(finder, 0, n_before);
+    finder.set_pedestal(pedestal);
+    process_frames(finder, n_before, n_frames);
+    finder.stop();
+
+    REQUIRE(same_state(finder.state(), reference.state()));
+    REQUIRE(sorted_clusters(finder) == sorted_clusters(reference));
+
+    // An invalid pedestal is rejected on a running finder too
+    finder.start();
+    FastPedestal<double> other_shape(10, 13, 8);
+    REQUIRE_THROWS_AS(finder.set_pedestal(other_shape), std::runtime_error);
+    REQUIRE_THROWS_AS(finder.set_pedestal(pedestal, 3), std::runtime_error);
 }
 
 TEST_CASE("multithreaded cluster finder processes every frame when its "

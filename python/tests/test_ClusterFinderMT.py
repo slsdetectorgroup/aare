@@ -127,26 +127,28 @@ def test_cluster_finder_mt_state_header(tmp_path):
         assert finder_state["pedestal"]["sum"]["shape"] == list(SHAPE)
 
 
-def test_cluster_finder_mt_state_needs_a_stopped_finder(tmp_path):
+def test_cluster_finder_mt_saves_and_loads_state_while_running(tmp_path):
+    # What a running finder hands out includes the frames given so far
     source = _finder_mt()
     _process(source, _test_frames(12))
+    source.save_state(tmp_path / "running.aare")
+    source.save_pedestal(tmp_path / "pedestal.aare", thread_index=1)
+    pedestal = source.get_pedestal(1)
+    mean, noise = source.pedestal(2), source.noise(2)
     _stop(source)
     source.save_state(tmp_path / "finder.aare")
-    pedestal = _dark_pedestal(seed=3)
+    assert (tmp_path / "running.aare").read_bytes() == (
+        tmp_path / "finder.aare"
+    ).read_bytes()
+    assert _same_pedestal(pedestal, source.get_pedestal(1))
+    assert _same_pedestal(FastPedestal.load_state(tmp_path / "pedestal.aare"), pedestal)
+    np.testing.assert_array_equal(mean, source.pedestal(2))
+    np.testing.assert_array_equal(noise, source.noise(2))
 
     finder = _finder_mt()
-    for call in (
-        lambda: finder.save_state(tmp_path / "other.aare"),
-        lambda: finder.load_state(tmp_path / "finder.aare"),
-        lambda: finder.set_pedestal(pedestal),
-        lambda: finder.get_pedestal(),
-    ):
-        with pytest.raises(RuntimeError, match="still running"):
-            call()
-
+    assert finder.load_state(tmp_path / "finder.aare") is None
     finder.stop()
     finder.stop()  # stopping a stopped finder does nothing
-    assert finder.load_state(tmp_path / "finder.aare") is None
     for thread_index in range(N_THREADS):
         np.testing.assert_array_equal(
             finder.pedestal(thread_index), source.pedestal(thread_index)
@@ -243,6 +245,37 @@ def test_cluster_finder_mt_sets_and_returns_pedestals(tmp_path):
     for i in range(N_THREADS):
         finder.find_clusters(frame, i)
     assert _stop(finder) >= N_THREADS
+
+
+def test_cluster_finder_mt_takes_a_pedestal_while_running(tmp_path):
+    frames = _test_frames(60)
+    pedestal = _dark_pedestal(seed=7)
+    pedestal.save_state(tmp_path / "dark.aare")
+
+    # Stopped for the pedestal
+    reference = _finder_mt()
+    _process(reference, frames[:30])
+    reference.stop()
+    reference.set_pedestal(pedestal)
+    reference.start()
+    _process(reference, frames[30:], first=30)
+    n_reference = _stop(reference)
+
+    # Running: the frames given before the pedestal are processed first
+    for give in (
+        lambda finder: finder.set_pedestal(pedestal),
+        lambda finder: finder.load_pedestal(tmp_path / "dark.aare"),
+    ):
+        finder = _finder_mt()
+        _process(finder, frames[:30])
+        give(finder)
+        _process(finder, frames[30:], first=30)
+        assert _stop(finder) == n_reference
+        for thread_index in range(N_THREADS):
+            assert _same_pedestal(
+                finder.get_pedestal(thread_index),
+                reference.get_pedestal(thread_index),
+            )
 
 
 def test_cluster_finder_returns_and_saves_its_pedestal(tmp_path):

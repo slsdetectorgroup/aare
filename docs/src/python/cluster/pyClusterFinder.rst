@@ -110,16 +110,19 @@ pedestal from it, so the pedestals of the threads drift apart while clusters
 are found. Its state file therefore holds the pedestal, ``nSigma`` and
 threshold of every thread, and which thread takes the next frame.
 
-The state and the pedestals can only be read or replaced while the finder is
-stopped: ``stop()`` first lets the threads finish the frames they were
-given, and the methods below raise ``RuntimeError`` on a running finder.
+The state, the pedestals and the noise can be read and replaced while the
+finder is running, without ``stop()``. These methods first wait for the
+frames given so far to be processed: those frames use the previous state or
+pedestal and are included in what is read or saved, and every later frame
+sees the change. Call them from the thread that gives the finder its
+frames; from another thread while frames are given they are a data race,
+which is not checked.
 
 .. code-block:: python
 
    finder = ClusterFinderMT((400, 400), n_threads=3)
    collector = ClusterCollector(finder)
    # ... push pedestal frames, find clusters ...
-   finder.stop()
    finder.save_state("finder.aare")
 
    # Later: a new finder with the stored number of threads, cluster size
@@ -127,9 +130,7 @@ given, and the methods below raise ``RuntimeError`` on a running finder.
    finder = ClusterFinderMT.load_state("finder.aare")
 
    # Or into a finder that already exists, with the same number of threads
-   other.stop()
    other.load_state("finder.aare")
-   other.start()
 
 ``finder.load_state()`` also takes the state file of a single-threaded
 ``ClusterFinder``. It holds one state, which is given to every thread or,
@@ -151,8 +152,6 @@ The pedestal methods of ``ClusterFinder`` take a thread index here:
 
 .. code-block:: python
 
-   finder.stop()
    finder.set_pedestal(dark)                  # every thread
    finder.set_pedestal(dark, thread_index=1)  # thread 1 only
    pedestals = [finder.get_pedestal(i) for i in range(finder.n_threads)]
-   finder.start()

@@ -1,6 +1,22 @@
 ClusterFinderMT
 ==================
 
+While the finder is running
+---------------------------
+
+The cluster finders belong to their threads while those have frames to work
+on. Everything that reads or changes them can still be called on a running
+finder, without ``stop()``: ``state()``, ``set_state()``,
+``set_pedestal()``, ``get_pedestal()``, ``pedestal()``, ``noise()``,
+``clear_pedestal()``, ``update_threshold()``, ``set_nSigma()`` and
+``pedestal_ready()``. They first wait for the frames given so far to be
+processed, so these frames use the previous state or pedestal and are
+included in what is returned, and every later frame sees the change.
+
+This only holds when they are called from the thread that gives the finder
+its frames. Calling them from another thread while frames are given is a
+data race; there is no check for it.
+
 Saving and restoring the state
 ------------------------------
 
@@ -14,15 +30,10 @@ constructed from that state, or given it with ``set_state()``, continues as
 the original would: every thread with its own pedestal and threshold, and
 every further frame going to the thread that would have had it.
 
-The cluster finders belong to their threads while those run. ``state()``,
-``set_state()``, ``set_pedestal()`` and ``get_pedestal()`` throw unless the
-finder is stopped; ``stop()`` first lets the threads finish the frames they
-were given. Clusters that have not been taken from the sink are not part of
-the state.
+Clusters that have not been taken from the sink are not part of the state.
 
 .. code-block:: c++
 
-   finder.stop();
    aare::ClusterFinderMTState state = finder.state();
    aare::save_state(state, "finder.aare");
 
@@ -31,9 +42,7 @@ the state.
        aare::load_state<aare::ClusterFinderMTState>("finder.aare"));
 
    // Or into an existing finder with the same number of threads
-   other.stop();
    other.set_state(state);
-   other.start();
 
 ``set_state()`` with a ``ClusterFinderMTState`` needs a state for the number
 of threads of the finder and leaves the finder unchanged if any part of the
@@ -52,11 +61,9 @@ each thread that gets the pedestal is recomputed if the pedestal is ready.
 
 .. code-block:: c++
 
-   finder.stop();
    finder.set_pedestal(dark);                 // every thread
    finder.set_pedestal(dark, 1);              // thread 1 only
    auto pedestal = finder.get_pedestal(2);    // FastPedestal of thread 2
-   finder.start();
 
 .. doxygenstruct:: aare::ClusterFinderMTState
    :members:

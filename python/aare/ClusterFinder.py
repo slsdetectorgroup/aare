@@ -129,7 +129,7 @@ def _load_mt_state(filename, dtype=None, capacity=1024, queue_depth=16):
     taken from the file.
 
     This returns a new finder. To load a state file into a finder that
-    already exists, stop it and call ``load_state(filename)`` on it.
+    already exists, call ``load_state(filename)`` on it.
 
     Parameters
     ----------

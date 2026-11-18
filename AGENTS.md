@@ -155,7 +155,9 @@ The class hands out a plain-data state struct and takes it back
 (`FastPedestalState` with `FastPedestal::state()`, `set_state()` and a
 constructor; `ClusterFinderState`, which contains one, likewise;
 `ClusterFinderMTState`, which holds one `ClusterFinderState` per thread and
-is only handed out or taken while the threads are stopped); the struct
+is handed out or taken on a running finder once the input queues have
+drained, as everything else that touches the per-thread finders, see
+`wait_until_idle()`); the struct
 lives in the header of its class, holds no redundant fields and knows
 nothing about files. `set_state()` checks the state before it changes
 anything, with a `check_state()` that a class holding several such objects
