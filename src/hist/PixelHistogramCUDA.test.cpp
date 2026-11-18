@@ -106,7 +106,8 @@ TEMPLATE_TEST_CASE(
     REQUIRE(static_cast<size_t>(gpu_count) == cap);
 }
 
-TEST_CASE("PixelHistogramCUDA keeps [xmin, xmax) and drops NaN and infinities",
+TEST_CASE("PixelHistogramCUDA keeps the half-open range and drops NaN and "
+          "infinities",
           "[cuda]") {
     const float xmin = 3900.0f, xmax = 5100.0f;
     const float inf = std::numeric_limits<float>::infinity();
