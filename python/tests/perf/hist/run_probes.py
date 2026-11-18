@@ -10,6 +10,11 @@
         --batch 1024 --range 3500 7500 --kernel window direct --chunk 4096 \
         --outdir results/A100/2026-11-11_window/pixelMajor/nsys
 
+    # PedestalTrackingPixelHistogramCUDA (u16, seeded from the pedestal file),
+    # residual range, gate n_sigma = 3
+    python run_probes.py --tracking --n-sigma 3 --bins 250 500 1000 2000 4000 \
+        --batch 1024 --range -500 3500 --kernel window direct
+
     # recompute probes.csv from the .sqlite traces already in a folder
     python run_probes.py --reanalyze results/A100/2026-11-11_window/pixelMajor/nsys
 
@@ -61,14 +66,21 @@ def fill(sqlite_path, n_frames) -> dict:
     gpu_span.analyze starts its window at the first kernel, which leaves out
     the first batch's copy: that copy always ends before the first kernel
     starts. Its H2D time per frame came out low by one batch in N frames
-    (12.0 -> 10.8 us/frame at batch 4096 over 40 960 frames). Every H2D in
-    this probe copies frames, so count them all, and start the fill window at
-    the first copy.
+    (12.0 -> 10.8 us/frame at batch 4096 over 40 960 frames). So count every
+    frame copy, and start the fill window at the first copy.
+
+    Frame copies are the H2D on the copy stream, taken as the stream of the
+    largest H2D: the pedestal-tracking probe also uploads its seed with three
+    small H2D on the compute stream before the fill.
     """
     r = gpu_span.analyze(sqlite_path, n_frames, hist_common.FILL_KERNEL,
                          engines=("kernel", "H2D"))
     db = sqlite3.connect(str(sqlite_path))
-    h2d = db.execute(gpu_span.Q["H2D"]).fetchall()
+    h2d_all = db.execute("SELECT start, end, bytes, streamId FROM "
+                         "CUPTI_ACTIVITY_KIND_MEMCPY WHERE copyKind=1 "
+                         "ORDER BY start").fetchall()
+    copy_stream = max(h2d_all, key=lambda c: c[2])[3]
+    h2d = [(s, e) for s, e, _, stream in h2d_all if stream == copy_stream]
     kern = [(s, e) for s, e, name in db.execute(gpu_span.KERNELS)
             if hist_common.FILL_KERNEL in name]
     start = min(h2d[0][0], kern[0][0])
@@ -99,7 +111,9 @@ def readout(sqlite_path) -> dict:
 
 
 def run_one(dtype, n_bins, batch, label, n_frames, chunk, outdir,
-            kernel="window", hist_range=None) -> dict | None:
+            kernel="window", hist_range=None, n_sigma=None) -> dict | None:
+    """n_sigma: None for PixelHistogramCUDA, else PedestalTrackingPixelHistogramCUDA
+    with that gate."""
     rep = outdir / f"probe_{label}"
     print(f"\n--- {label}: {dtype} frames, {n_bins} bins, batch={batch}, N={n_frames} ---")
 
@@ -110,6 +124,8 @@ def run_one(dtype, n_bins, batch, label, n_frames, chunk, outdir,
             "--kernel", kernel]
     if hist_range:
         prof += ["--range", *map(str, hist_range)]
+    if n_sigma is not None:
+        prof += ["--tracking", "--n-sigma", str(n_sigma)]
     p = subprocess.run(prof, capture_output=True, text=True)
     bin_width = None
     for line in p.stdout.splitlines():
@@ -136,7 +152,8 @@ def run_one(dtype, n_bins, batch, label, n_frames, chunk, outdir,
     r = fill(sq, n_frames)
     r.update(readout(sq))
     r.update(label=label, dtype=dtype, n_bins=n_bins, batch=batch, kernel=kernel,
-             bin_width_adu=bin_width)
+             bin_width_adu=bin_width,
+             tracking_n_sigma="" if n_sigma is None else n_sigma)
     print(f"    fill: kernel {r['kernel_us_per_frame']:5.2f} us (duty {r['kernel_duty_pct']:4.1f}%)  "
           f"H2D {r['H2D_us_per_frame']:5.2f} ({r['H2D_duty_pct']:4.1f}%)  "
           f"-> {r['bottleneck']}-bound at {r['roofline_us_per_frame']:.2f} us/frame "
@@ -163,6 +180,10 @@ def main() -> int:
     ap.add_argument("--batch", type=int, default=1024, help="sweep: batch size")
     ap.add_argument("--range", nargs=2, type=float, metavar=("XMIN", "XMAX"),
                     help="histogram range (default: from the data)")
+    ap.add_argument("--tracking", action="store_true",
+                    help="PedestalTrackingPixelHistogramCUDA instead (u16 only)")
+    ap.add_argument("--n-sigma", type=float, nargs="+", default=[3.0],
+                    help="with --tracking: pedestal-update gate(s), default 3")
     ap.add_argument("--outdir", type=Path,
                     help="results folder (default: results/<date>[_tag]/)")
     ap.add_argument("--reanalyze", type=Path, metavar="DIR",
@@ -186,15 +207,19 @@ def main() -> int:
     print(f"out:   {outdir}")
 
     rows = []
-    for kernel in args.kernel:
-        for dtype, n_bins, batch, base in configs:
-            if args.only and base not in args.only:
-                continue
-            label = f"{base}_{kernel}" if len(args.kernel) > 1 or args.bins else base
-            r = run_one(dtype, n_bins, batch, label, args.frames, args.chunk, outdir,
-                        kernel, args.range)
-            if r:
-                rows.append(r)
+    gates = args.n_sigma if args.tracking else [None]
+    for n_sigma in gates:
+        for kernel in args.kernel:
+            for dtype, n_bins, batch, base in configs:
+                if args.only and base not in args.only:
+                    continue
+                label = f"{base}_{kernel}" if len(args.kernel) > 1 or args.bins else base
+                if n_sigma is not None:
+                    label = f"trk{n_sigma:g}_{label}"
+                r = run_one(dtype, n_bins, batch, label, args.frames, args.chunk,
+                            outdir, kernel, args.range, n_sigma)
+                if r:
+                    rows.append(r)
 
     if not rows:
         return 1
@@ -214,10 +239,10 @@ def main() -> int:
 
 def summary(rows) -> None:
     print("\n=== fill (us/frame) and readout (ms, once per values()) ===")
-    print(f"{'config':<18} {'kernel':>8} {'H2D':>8}  {'bound':<6} {'FPS':>10}  "
+    print(f"{'config':<28} {'kernel':>8} {'H2D':>8}  {'bound':<6} {'FPS':>10}  "
           f"{'rd kernel':>9} {'rd D2H':>8}")
     for r in rows:
-        print(f"{r['label']:<18} {float(r['kernel_us_per_frame']):8.2f} "
+        print(f"{r['label']:<28} {float(r['kernel_us_per_frame']):8.2f} "
               f"{float(r['H2D_us_per_frame']):8.2f}  {r['bottleneck']:<6} "
               f"{float(r['roofline_fps']):10,.0f}  {float(r['readout_kernel_ms']):9.2f} "
               f"{float(r['readout_D2H_ms']):8.2f}")

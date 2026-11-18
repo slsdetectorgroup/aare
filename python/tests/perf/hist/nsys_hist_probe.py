@@ -2,6 +2,7 @@
 
     nsys_hist_probe.py <dtype> <n_frames> <n_bins> <batch> <chunk>
                        [--range-scale S] [--center OFFSET]
+                       [--tracking [--n-sigma S]]
 
 dtype is u16, f32 or f64 (the frame dtype copied to the GPU). Run by
 run_probes.py; run directly only under `nsys profile --trace=cuda` or ncu. The
@@ -16,6 +17,13 @@ for the cache-footprint experiments:
                    OFFSET, rounded and clipped to uint16. All pixels then sit
                    near OFFSET, so neighbouring pixels share bins, while u16
                    frames keep the same H2D bytes.
+
+--tracking uses PedestalTrackingPixelHistogramCUDA (uint16 frames only): the
+pedestal is seeded from the 1000 frames of the pedestal file and update_mean()
+is called before the timed fill. The default range is then taken from the
+residuals frame - seed mean. The seed upload is three H2D copies on the
+compute stream; run_probes.py counts only the copy stream's H2D as frame
+copies.
 
 Only `chunk` frames are read and held in host memory. They are registered once
 and passed to fill_histogram() repeatedly until n_frames have been queued: the
@@ -35,7 +43,8 @@ sys.path.insert(0, str(Path(__file__).resolve().parent))
 import hist_common  # noqa: E402,F401  (puts ../ and the build dir on sys.path)
 from hist_common import common  # noqa: E402
 
-from aare import File, PixelHistogramCUDA  # noqa: E402
+from aare import (File, PedestalTrackingPixelHistogramCUDA,  # noqa: E402
+                  PixelHistogramCUDA)
 
 DTYPES = {"u16": np.uint16, "f32": np.float32, "f64": np.float64}
 
@@ -52,7 +61,13 @@ ap.add_argument("--range", nargs=2, type=float, metavar=("XMIN", "XMAX"),
                      "then --range-scale)")
 ap.add_argument("--kernel", choices=["window", "direct"], default="window",
                 help="fill_window (default) or fill_direct")
+ap.add_argument("--tracking", action="store_true",
+                help="PedestalTrackingPixelHistogramCUDA, seeded from the pedestal file")
+ap.add_argument("--n-sigma", type=float, default=3.0,
+                help="pedestal-update gate with --tracking (default 3)")
 args = ap.parse_args()
+if args.tracking and (args.dtype != "u16" or args.center is not None):
+    ap.error("--tracking takes u16 frames and no --center")
 
 dtype = DTYPES[args.dtype]
 N, n_bins, batch = args.n_frames, args.n_bins, args.batch
@@ -66,8 +81,13 @@ if args.center is not None:
     ped = np.median(data[:min(chunk, 200)], axis=0).astype(np.float32)
     data = np.clip(np.rint(data.astype(np.float32) - ped + np.float32(args.center)),
                    0, np.iinfo(np.uint16).max)
-# Range from the data itself, so that nearly every value is histogrammed.
-lo, hi = np.percentile(data[:min(chunk, 200)], [0.1, 99.9])
+pedestal = File(common.PEDESTAL_FILE).read_n(1000) if args.tracking else None
+# Range from the data itself (the residuals with --tracking), so that nearly
+# every value is histogrammed.
+sample = data[:min(chunk, 200)]
+if args.tracking:
+    sample = sample - pedestal.mean(axis=0)
+lo, hi = np.percentile(sample, [0.1, 99.9])
 xmin, xmax = float(math.floor(lo)), float(math.ceil(hi) + 1)
 if args.range_scale != 1.0:
     mid, half = (xmin + xmax) / 2, (xmax - xmin) / 2 * args.range_scale
@@ -77,9 +97,17 @@ if args.range:
 data = np.ascontiguousarray(data.astype(dtype, copy=False))
 rows, cols = data.shape[1:]
 
-hist = PixelHistogramCUDA(rows=rows, cols=cols, n_bins=n_bins, xmin=xmin,
-                          xmax=xmax, dtype=data.dtype, storage_dtype=np.uint32,
-                          batch_size=batch, window=args.kernel == "window")
+if args.tracking:
+    hist = PedestalTrackingPixelHistogramCUDA(
+        rows=rows, cols=cols, n_bins=n_bins, xmin=xmin, xmax=xmax,
+        n_sigma=args.n_sigma, storage_dtype=np.uint32, batch_size=batch,
+        window=args.kernel == "window")
+    hist.push_pedestal_no_update(pedestal)
+    hist.update_mean()
+else:
+    hist = PixelHistogramCUDA(rows=rows, cols=cols, n_bins=n_bins, xmin=xmin,
+                              xmax=xmax, dtype=data.dtype, storage_dtype=np.uint32,
+                              batch_size=batch, window=args.kernel == "window")
 out = np.empty((rows, cols, n_bins), dtype=np.uint32)
 hist.register_input_buffer(data)
 hist.register_output_buffer(out)
@@ -102,7 +130,8 @@ hist.unregister_output_buffer()
 in_range = out.sum(dtype=np.uint64) / (N * rows * cols)
 print(f"dtype={data.dtype}  N={N}  n_bins={n_bins}  batch={batch}  chunk={chunk}  "
       f"range=[{xmin:g}, {xmax:g})  bin width={(xmax - xmin) / n_bins:.2f}"
-      f"{'  centred' if args.center is not None else ''}  kernel={args.kernel}")
+      f"{'  centred' if args.center is not None else ''}  kernel={args.kernel}"
+      f"{f'  tracking n_sigma={args.n_sigma:g}' if args.tracking else ''}")
 print(f"  H2D/frame={rows * cols * data.itemsize:,} B   "
       f"readout={out.nbytes:,} B   in range={100 * in_range:.2f}%")
 print(f"  wall fill={t_fill:.3f}s ({N / t_fill:.0f} FPS)  readout={t_read * 1e3:.1f} ms  "

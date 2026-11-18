@@ -72,7 +72,9 @@ ax1.set_ylabel("Time per frame (µs)")
 ax1.set_title("Busy time of the fill kernel and of the copy", fontsize=10)
 ax2.set_title("Fill time, what the pipeline delivers", fontsize=10)
 fig.suptitle(f"Effect of the batch size on the GPU fill ({DTYPE_NAME.get(r0['dtype'], r0['dtype'])} "
-             f"frames, {r0['kernel']} kernel)", fontsize=12, fontweight="bold")
+             f"frames, {r0['kernel']} kernel"
+             f"{', pedestal tracking' if r0.get('tracking_n_sigma') else ''})",
+             fontsize=12, fontweight="bold")
 handles, labels = ax1.get_legend_handles_labels()
 leg = fig.legend(handles, labels, loc="outside lower center", ncol=len(labels), fontsize=9,
                  frameon=False, title=f"nsys, {int(r0['n_frames']):,} frames per run", title_fontsize=8.5)

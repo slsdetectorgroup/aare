@@ -13,6 +13,9 @@ import common  # noqa: E402
 
 # Rebuild-guard: the extension must be newer than all of these.
 HEADERS = ["include/aare/hist/PixelHistogramCUDA.hpp",
+           "include/aare/hist/PedestalTrackingPixelHistogramCUDA.hpp",
+           "include/aare/hist/HistogramPipelineCUDA.hpp",
+           "include/aare/hist/fill_policies.cuh",
            "include/aare/hist/pixelhistogram_kernel.cuh",
            "include/aare/RAII_device.hpp"]
 
