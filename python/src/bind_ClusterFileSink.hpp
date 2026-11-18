@@ -29,7 +29,12 @@ void define_ClusterFileSink(py::module &m, const std::string &typestr) {
     // TODO! adapt to set pedestal type (needs templating of ClusterFileSink)
     // or maybe access through base class?
     py::class_<ClusterFileSink<ClusterType>>(m, class_name.c_str())
+        // The sink thread reads the sink queue of the finder
         .def(py::init<ClusterFinderMT<ClusterType, uint16_t, double> *,
-                      const std::filesystem::path &>())
-        .def("stop", &ClusterFileSink<ClusterType>::stop);
+                      const std::filesystem::path &>(),
+             py::keep_alive<1, 2>())
+        .def("stop", &ClusterFileSink<ClusterType>::stop,
+             "Stop the sink thread once all clusters in the sink queue of "
+             "the finder are written, and close the file. Does nothing if "
+             "the sink is stopped.");
 }

@@ -9,10 +9,12 @@
 
 #include <algorithm>
 #include <catch2/catch_test_macros.hpp>
+#include <chrono>
 #include <filesystem>
 #include <memory>
 #include <thread>
 #include <tuple>
+#include <type_traits>
 #include <vector>
 
 using namespace aare;
@@ -629,4 +631,101 @@ TEST_CASE("multithreaded cluster finder processes every frame when its "
     collector.stop();
     // One cluster vector reaches the sink for each data frame
     REQUIRE(collector.steal_clusters().size() == n_data_frames);
+}
+
+TEST_CASE("cluster collector can be started again after a stop") {
+    using ClusterType = Cluster<int32_t, 3, 3>;
+    ProducerConsumerQueue<ClusterVector<ClusterType>> source(8);
+    ClusterCollector<ClusterType> collector(&source);
+    collector.start(); // running: does nothing
+
+    REQUIRE(source.write(ClusterVector<ClusterType>(4, 1)));
+    collector.stop();
+    collector.stop(); // stopped: does nothing
+    CHECK(source.isEmpty());
+
+    // Nothing is taken from the queue while stopped
+    REQUIRE(source.write(ClusterVector<ClusterType>(4, 2)));
+    std::this_thread::sleep_for(std::chrono::milliseconds(5));
+    CHECK_FALSE(source.isEmpty());
+
+    collector.start();
+    REQUIRE(source.write(ClusterVector<ClusterType>(4, 3)));
+    collector.stop();
+
+    // Clusters from before the stop are kept
+    auto clusters = collector.steal_clusters();
+    REQUIRE(clusters.size() == 3);
+    for (size_t i = 0; i < clusters.size(); ++i) {
+        CHECK(clusters[i].frame_number() == static_cast<int32_t>(i + 1));
+    }
+}
+
+TEST_CASE("cluster collector stops its thread when destroyed") {
+    using ClusterType = Cluster<int32_t, 3, 3>;
+    ProducerConsumerQueue<ClusterVector<ClusterType>> source(8);
+    {
+        ClusterCollector<ClusterType> collector(&source);
+        REQUIRE(source.write(ClusterVector<ClusterType>(4, 1)));
+    }
+    // The destructor waits for the queue to be empty, as stop() does
+    CHECK(source.isEmpty());
+
+    static_assert(!std::is_copy_constructible_v<ClusterCollector<ClusterType>>);
+    static_assert(!std::is_move_constructible_v<ClusterCollector<ClusterType>>);
+}
+
+TEST_CASE("running cluster finder can be destroyed") {
+    using ClusterType = Cluster<int32_t, 3, 3>;
+    const Shape<2> image_size{10, 10};
+    NDArray<uint16_t, 2> frame(image_size, 100);
+
+    {
+        ClusterFinderMT<ClusterType> cf(image_size);
+    }
+    {
+        ClusterFinderMT<ClusterType> cf(image_size, 5, 16, 3, 16, 2);
+        cf.push_pedestal_frame(frame.view());
+        cf.push_pedestal_frame(frame.view());
+        cf.find_clusters(frame.view());
+    }
+    {
+        // Stopped: the destructor has nothing to do
+        ClusterFinderMT<ClusterType> cf(image_size);
+        cf.stop();
+        cf.stop();
+    }
+    {
+        ClusterFinderMT<ClusterType> cf(image_size);
+        cf.start(); // running: does nothing
+        cf.stop();
+        cf.start();
+    }
+
+    static_assert(!std::is_copy_constructible_v<ClusterFinderMT<ClusterType>>);
+    static_assert(!std::is_move_constructible_v<ClusterFinderMT<ClusterType>>);
+}
+
+TEST_CASE("cluster finder with a full sink can be destroyed") {
+    using ClusterType = Cluster<int32_t, 3, 3>;
+    const size_t n_threads = 3;
+    const Shape<2> image_size{10, 10};
+    NDArray<uint16_t, 2> frame(image_size, 100);
+
+    ClusterFinderMT<ClusterType> cf(image_size, 5, 16, n_threads, 16, 2);
+    cf.push_pedestal_frame(frame.view());
+    cf.push_pedestal_frame(frame.view());
+
+    // Nothing empties the sink, so it fills up, then the queues of the
+    // threads, and the threads wait for room. With 1000 cluster vectors in
+    // the sink and 200 in the queue of each thread, these frames leave
+    // every thread waiting without blocking find_clusters(). stop() would
+    // wait forever, the destructor must not.
+    const size_t n_frames = 1000 + n_threads * 200 + n_threads * 4;
+    for (size_t i = 0; i < n_frames; ++i) {
+        cf.find_clusters(frame.view(), i);
+    }
+    while (!cf.sink()->isFull()) {
+        std::this_thread::yield();
+    }
 }

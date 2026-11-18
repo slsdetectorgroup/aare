@@ -90,6 +90,18 @@ NDArray<double, 3> mean_current_source(const std::filesystem::path &path,
                     frames_per_sample);
 
                 buffers.commit_write(b);
+
+                fmt::print("\rProgress: {}/{} ({:.1f}%)",
+                           (b + 1) * mean_over_num_frames,
+                           num_samples * mean_over_num_frames,
+                           num_samples * mean_over_num_frames == 0
+                               ? 100.0
+                               : 100.0 *
+                                     static_cast<double>((b + 1) *
+                                                         mean_over_num_frames) /
+                                     static_cast<double>(num_samples *
+                                                         mean_over_num_frames));
+                std::fflush(stdout);
             }
         } catch (...) {
             buffers.abort(); // wake up the other threads so they can exit
@@ -155,10 +167,7 @@ NDArray<double, 3> mean_current_source(const std::filesystem::path &path,
     };
 
     std::vector<std::future<void>> futures;
-    futures.reserve(num_processing_threads + 1);
-
-    // reader thread
-    futures.push_back(std::async(std::launch::async, reader));
+    futures.reserve(num_processing_threads);
 
     const size_t rows_per_worker = num_rows / num_processing_threads;
     for (size_t w = 0; w < num_processing_threads; ++w) {
@@ -168,6 +177,8 @@ NDArray<double, 3> mean_current_source(const std::filesystem::path &path,
         futures.push_back(std::async(std::launch::async, worker,
                                      w * rows_per_worker, row_end));
     }
+
+    reader(); // run reader in main thread to avoid extra thread creation
 
     for (auto &f : futures) {
         try {

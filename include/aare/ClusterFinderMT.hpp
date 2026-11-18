@@ -117,6 +117,9 @@ class ClusterFinderMT {
   private:
     std::atomic<bool> m_stop_requested{false};
     std::atomic<bool> m_processing_threads_stopped{true};
+    // Set by the destructor only: the threads leave their frames and
+    // clusters where they are instead of waiting for room in the queues
+    std::atomic<bool> m_discard_requested{false};
 
     /**
      * @brief Function called by the processing threads. It reads the frames
@@ -128,7 +131,7 @@ class ClusterFinderMT {
         auto *pool = m_frame_pools[thread_id].get();
         Backoff backoff;
 
-        while (!m_stop_requested || !q->isEmpty()) {
+        while (!m_discard_requested && (!m_stop_requested || !q->isEmpty())) {
             if (FrameRef *ref = q->frontPtr(); ref != nullptr) {
                 backoff.reset();
                 auto view = (*pool)[ref->slot].view();
@@ -141,6 +144,9 @@ class ClusterFinderMT {
                     auto clusters = cf->steal_clusters(true);
                     while (!m_output_queues[thread_id]->write(
                         std::move(clusters))) {
+                        if (m_discard_requested) {
+                            return;
+                        }
                         backoff.pause();
                     }
                     break;
@@ -184,12 +190,16 @@ class ClusterFinderMT {
         // The queues are checked after the processing threads have
         // stopped: checked before, a thread could still add the clusters of
         // its last frame, which would then be left behind
-        while (!m_stop_requested || !m_processing_threads_stopped ||
-               !output_queues_are_empty()) {
+        while (!m_discard_requested &&
+               (!m_stop_requested || !m_processing_threads_stopped ||
+                !output_queues_are_empty())) {
             bool moved_any = false;
             for (auto &queue : m_output_queues) {
                 if (auto *front = queue->frontPtr(); front != nullptr) {
                     while (!m_sink.write(std::move(*front))) {
+                        if (m_discard_requested) {
+                            return;
+                        }
                         backoff.pause();
                     }
                     queue->popFront();
@@ -243,7 +253,6 @@ class ClusterFinderMT {
     /**
      * @brief Construct a new ClusterFinderMT object
      * @param image_size size of the image
-     * @param cluster_size size of the cluster
      * @param nSigma number of sigma above the pedestal to consider a photon
      * @param capacity initial capacity of the cluster vector. Should match
      * expected number of clusters in a frame per frame.
@@ -278,6 +287,25 @@ class ClusterFinderMT {
         // TODO! Should we start automatically?
         start();
     }
+
+    /**
+     * @brief Stop the threads without waiting for the frames and clusters
+     * that are still in the queues.
+     *
+     * Nothing can take the clusters from the sink once the finder is gone,
+     * and waiting for room in a sink that nobody empties would never end.
+     * Call stop() first, with something emptying the sink, to have every
+     * frame processed. Whatever takes clusters from the sink must be
+     * stopped or destroyed before the finder.
+     */
+    ~ClusterFinderMT() {
+        m_discard_requested = true;
+        stop();
+    }
+
+    // The threads hold a pointer to this object
+    ClusterFinderMT(const ClusterFinderMT &) = delete;
+    ClusterFinderMT &operator=(const ClusterFinderMT &) = delete;
 
     /**
      * @brief Construct a cluster finder from a state, with one thread for

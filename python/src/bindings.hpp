@@ -27,6 +27,13 @@ void define_multi_threaded_file_reader_bindings(py::module &m);
 // bind_DataSetAggregation.cpp
 void bind_dataset_aggregation(py::module &m);
 
+// Strixel remapping bindings
+void define_InclusiveROI(py::module &m);
+void define_predefinedConfigs(py::module &m);
+void define_predefinedStrixelPixelMaps(py::module &m);
+void define_StrixelPixelMapDefs(py::module &m);
+void define_StrixelMapsandSensorConfigs(py::module &m);
+
 // bind_Defs.cpp
 void define_defs_bindings(py::module &m);
 // bind_GapPixels.cpp

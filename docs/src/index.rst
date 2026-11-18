@@ -31,6 +31,7 @@ AARE
     python/experimental/index
     python/histogram/index
     python/pedestal/index
+    python/strixelremap/index
     pyFit
     pyDataSetAggregation
     
@@ -38,7 +39,7 @@ AARE
 
 .. toctree::
     :caption: C++ API
-    :maxdepth: 1
+    :maxdepth: 2
     
     algorithm
     NDArray
@@ -62,6 +63,7 @@ AARE
     RawMasterFile
     StateFile
     VarClusterFinder
+    StrixelPixelRemapping/index
     DataSetAggregation
 
 
