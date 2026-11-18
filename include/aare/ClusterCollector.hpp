@@ -34,12 +34,13 @@ class ClusterCollector
     ~ClusterCollector() { this->stop(); }
 
   private:
+    std::mutex m_clusters_mutex;
     std::vector<ClusterVector<ClusterType>> m_clusters;
 
     void consume(ClusterVector<ClusterType> &&clusters) {
         {
             std::lock_guard<std::mutex> lock(m_clusters_mutex);
-            m_clusters.push_back(std::move(*clusters));
+            m_clusters.push_back(std::move(clusters));
         }
     }
 
@@ -47,13 +48,9 @@ class ClusterCollector
         // guard by mutex if needed if this is called from multiple threads
         {
             std::lock_guard<std::mutex> lock(m_clusters_mutex);
-            return std::move(m_clusters);
+            return std::exchange(m_clusters, {});
         }
     }
-
-  private:
-    std::mutex m_clusters_mutex;
-    ClusterVector<ClusterType> m_clusters;
 };
 
 } // namespace aare

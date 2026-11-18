@@ -1,39 +1,32 @@
 // SPDX-License-Identifier: MPL-2.0
 #pragma once
-#include "aare/ClusterCollector.hpp"
 #include "aare/ClusterFileSink.hpp"
-#include "aare/ClusterFinderMT.hpp"
-#include "aare/ClusterVector.hpp"
-#include "aare/NDView.hpp"
-#include "aare/Pedestal.hpp"
-#include "np_helper.hpp"
+
+#include "bind_ClusterSinkBase_methods.hpp"
 
 #include <cstdint>
 #include <filesystem>
+#include <fmt/format.h>
 #include <pybind11/pybind11.h>
-#include <pybind11/stl.h>
 #include <pybind11/stl/filesystem.h>
-#include <pybind11/stl_bind.h>
+#include <string>
 
 namespace py = pybind11;
-using namespace aare;
 
 template <typename T, uint8_t ClusterSizeX, uint8_t ClusterSizeY,
           typename CoordType = uint16_t>
 void define_ClusterFileSink(py::module &m, const std::string &typestr) {
     auto class_name = fmt::format("ClusterFileSink_{}", typestr);
 
-    using ClusterType = Cluster<T, ClusterSizeX, ClusterSizeY, CoordType>;
+    using ClusterType = aare::Cluster<T, ClusterSizeX, ClusterSizeY, CoordType>;
+    using Sink = aare::ClusterFileSink<ClusterType>;
 
-    // TODO! adapt to set pedestal type (needs templating of ClusterFileSink)
-    // or maybe access through base class?
-    py::class_<ClusterFileSink<ClusterType>>(m, class_name.c_str())
-        // The sink thread reads the sink queue of the finder
-        .def(py::init<ClusterFinderMT<ClusterType, uint16_t, double> *,
-                      const std::filesystem::path &>(),
-             py::keep_alive<1, 2>())
-        .def("stop", &ClusterFileSink<ClusterType>::stop,
-             "Stop the sink thread once all clusters in the sink queue of "
-             "the finder are written, and close the file. Does nothing if "
-             "the sink is stopped.");
+    py::class_<Sink> cls(m, class_name.c_str(),
+                         R"(ClusterSink that writes the clusters to a binary
+cluster file. Start it with collect(). The file is complete once stop()
+has returned. steal_clusters() returns nothing.)");
+    cls.def(py::init<const std::filesystem::path &>(), py::arg("fname"),
+            R"(Construct a ClusterFileSink that writes to the given file.)");
+    // bind Base class methods
+    define_ClusterSink_methods(cls);
 }

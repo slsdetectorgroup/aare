@@ -43,11 +43,10 @@ class ClusterFileSink
     ~ClusterFileSink() { this->stop(); }
 
     void stop() {
-        if (!this->stopped()) {
-            Base::stop();
+        Base::stop();
+        if (m_file.is_open()) {
+            m_file.close();
         }
-
-        m_file.close(); // TODO in stop or destructor?
     }
 
   private:

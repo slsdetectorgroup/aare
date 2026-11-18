@@ -11,6 +11,7 @@
 #include "aare/Cluster.hpp"
 #include "aare/ClusterVector.hpp"
 #include "aare/ProducerConsumerQueue.hpp"
+#include "aare/logger.hpp"
 
 namespace aare {
 
@@ -57,7 +58,8 @@ class ClusterSink {
             throw std::invalid_argument("ClusterSink: source queue is null");
         }
         if (m_thread.joinable()) {
-            throw std::runtime_error("ClusterSink is already collecting");
+            LOG(logINFO) << "ClusterSink is already collecting";
+            return;
         }
         m_source = source;
         m_stop_requested.store(false, std::memory_order_release);
