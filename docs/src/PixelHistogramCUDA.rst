@@ -10,7 +10,7 @@ caller gives them (``uint16`` frames move half the bytes of ``float32``), and
 histogrammed into one accumulator that stays on the GPU for the whole run.
 The copy of one batch overlaps the kernel on the previous one, so the fill
 runs as fast as the slower of the two. With the default fill kernel the copy
-is the slower one. :cpp:func:`aare::cuda::PixelHistogramCUDA::values` caps the
+is the slower one. ``values()`` caps the
 counts at the storage type's maximum and copies the histogram back, shape
 ``(rows, cols, n_bins)``; it can be called at any time, and filling can
 continue afterwards.
@@ -38,5 +38,15 @@ Pinning the input with ``register_input_buffer`` (and the output with
 can be registered by only one object at a time. The class is not thread-safe.
 
 .. doxygenclass:: aare::cuda::PixelHistogramCUDA
+   :members:
+   :undoc-members:
+
+Methods
+-------
+
+Every method but the constructor belongs to the pipeline the class shares
+with :doc:`PedestalTrackingPixelHistogramCUDA`:
+
+.. doxygenclass:: aare::cuda::detail::HistogramPipeline
    :members:
    :undoc-members:

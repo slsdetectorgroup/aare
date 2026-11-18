@@ -8,3 +8,4 @@ Histogram
    pyPixelHistogram
    pyPixelHistogramCUDA
    pyPedestalTrackingPixelHistogram
+   pyPedestalTrackingPixelHistogramCUDA

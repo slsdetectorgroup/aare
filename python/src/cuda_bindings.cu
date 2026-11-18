@@ -4,12 +4,13 @@
 // the ClusterVector and Cluster types it exposes in its return values, so
 // the module is self-contained — users can call steal_clusters() and get
 // back a usable ClusterVector without _aare needing to be imported first.
-// Also registers PixelHistogramCUDA.
+// Also registers PixelHistogramCUDA and PedestalTrackingPixelHistogramCUDA.
 
 #include "bind_Cluster.hpp"
 #include "bind_ClusterFinderCUDA.hpp"
 #include "bind_ClusterFinderCUDAGraph.hpp"
 #include "bind_ClusterVector.hpp"
+#include "bind_PedestalTrackingPixelHistogramCUDA.hpp"
 #include "bind_PixelHistogramCUDA.hpp"
 
 #include <pybind11/pybind11.h>
@@ -88,6 +89,8 @@ PYBIND11_MODULE(_aare_cuda, m) {
 
     // Pixel histograms: PixelHistogramCUDA_<input>_<storage>
     aare::define_PixelHistogramCUDA_bindings(m);
+    // PedestalTrackingPixelHistogramCUDA_<storage>
+    aare::define_PedestalTrackingPixelHistogramCUDA_bindings(m);
 }
 
 #undef DEFINE_CUDA_CLUSTER_TYPES

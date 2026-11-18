@@ -21,17 +21,24 @@ namespace detail {
 // Frames are copied to the GPU as given, so a wrong dtype must not be
 // converted silently: the converted copy would be a temporary, not the
 // caller's (possibly pinned) buffer. Ndim and contiguity are checked when the
-// view is made.
+// view is made. dtype_selectable: the class is made per frame dtype, so the
+// message also suggests building it for the caller's dtype.
 template <typename InputType>
-py::array_t<InputType> require_dtype(const py::array &arr) {
+py::array_t<InputType> require_dtype(const py::array &arr,
+                                     const std::string &class_name,
+                                     bool dtype_selectable) {
     if (!py::isinstance<py::array_t<InputType>>(arr)) {
         const auto want =
             py::str(py::dtype::of<InputType>()).cast<std::string>();
         const auto got = py::str(arr.dtype()).cast<std::string>();
-        throw py::type_error(
-            "PixelHistogramCUDA was built for " + want + " frames, got " + got +
-            ". Build it with dtype=" + got +
-            ", or convert the frames with .astype(np." + want + ").");
+        if (dtype_selectable)
+            throw py::type_error(
+                class_name + " was built for " + want + " frames, got " + got +
+                ". Build it with dtype=" + got +
+                ", or convert the frames with .astype(np." + want + ").");
+        throw py::type_error(class_name + " takes " + want + " frames, got " +
+                             got + ". Convert them with .astype(np." + want +
+                             ").");
     }
     return py::reinterpret_borrow<py::array_t<InputType>>(arr);
 }
@@ -60,44 +67,31 @@ py::array_t<StorageType> require_output(const py::array &arr, size_t rows,
 
 } // namespace detail
 
-template <typename StorageType, typename InputType>
-void define_PixelHistogramCUDA(py::module &m, const std::string &class_name) {
-    // 64-bit device counters for 8-byte storage, so counts can't wrap at
-    // 2^32 before the cap in values().
-    using DeviceStorageType =
-        std::conditional_t<sizeof(StorageType) == 8, uint64_t, uint32_t>;
-    using Hist =
-        cuda::PixelHistogramCUDA<StorageType, DeviceStorageType, InputType>;
+// The methods of detail::HistogramPipeline, shared by PixelHistogramCUDA and
+// PedestalTrackingPixelHistogramCUDA. class_name and dtype_selectable go into
+// the error message for frames of the wrong dtype (see require_dtype).
+template <typename Hist, typename StorageType>
+void define_HistogramPipeline_methods(py::class_<Hist> &cls,
+                                      const std::string &class_name,
+                                      bool dtype_selectable) {
+    using InputType = typename Hist::InputType;
     using AxisType = typename Hist::AxisType;
-
-    py::class_<Hist>(m, class_name.c_str(),
-                     R"(Per-pixel histograms filled on the GPU.
-
-             Frames are copied to the device with the dtype they have; the
-             histogram axis is floating point. Not thread-safe. Build
-             instances with the aare.PixelHistogramCUDA() factory rather than
-             by class name.)")
-        .def(py::init<size_t, size_t, size_t, AxisType, AxisType, size_t,
-                      bool>(),
-             py::kw_only(), py::arg("rows"), py::arg("cols"), py::arg("n_bins"),
-             py::arg("xmin"), py::arg("xmax"), py::arg("batch_size") = 1024,
-             py::arg("window") = true)
-
-        .def(
-            "register_input_buffer",
-            [](Hist &self, const py::array &frames) {
-                auto arr = detail::require_dtype<InputType>(frames);
-                if (!(arr.flags() & py::array::c_style))
-                    throw py::value_error("Array is not C-contiguous. Use "
-                                          "np.ascontiguousarray(arr)");
-                // A read-only array (np.memmap with mode="r") can only be
-                // pinned read-only.
-                self.register_input_buffer(arr.data(),
-                                           static_cast<size_t>(arr.nbytes()),
-                                           !arr.writeable());
-            },
-            py::arg("frames"), py::keep_alive<1, 2>(),
-            R"(Pin `frames` so that fill_histogram() copies it at full DMA
+    cls.def(
+           "register_input_buffer",
+           [class_name, dtype_selectable](Hist &self, const py::array &frames) {
+               auto arr = detail::require_dtype<InputType>(frames, class_name,
+                                                           dtype_selectable);
+               if (!(arr.flags() & py::array::c_style))
+                   throw py::value_error("Array is not C-contiguous. Use "
+                                         "np.ascontiguousarray(arr)");
+               // A read-only array (np.memmap with mode="r") can only be
+               // pinned read-only.
+               self.register_input_buffer(arr.data(),
+                                          static_cast<size_t>(arr.nbytes()),
+                                          !arr.writeable());
+           },
+           py::arg("frames"), py::keep_alive<1, 2>(),
+           R"(Pin `frames` so that fill_histogram() copies it at full DMA
              bandwidth and overlaps the copies with the kernels.
 
              Pass the whole dataset once; slices of it passed to
@@ -111,8 +105,10 @@ void define_PixelHistogramCUDA(py::module &m, const std::string &class_name) {
 
         .def(
             "fill_histogram",
-            [](Hist &self, const py::array &frames) {
-                auto arr = detail::require_dtype<InputType>(frames);
+            [class_name, dtype_selectable](Hist &self,
+                                           const py::array &frames) {
+                auto arr = detail::require_dtype<InputType>(frames, class_name,
+                                                            dtype_selectable);
                 auto view = make_const_view_3d(arr);
                 py::gil_scoped_release release;
                 self.fill_histogram(view);
@@ -220,10 +216,36 @@ void define_PixelHistogramCUDA(py::module &m, const std::string &class_name) {
             "window", &Hist::window,
             "True if the fill kernel counts each pixel's 128 bins around its "
             "noise peak in shared memory (fill_window), False for "
-            "fill_direct.")
-        .def_property_readonly(
-            "dtype", [](const Hist &) { return py::dtype::of<InputType>(); },
-            "dtype of the frames this histogram takes.");
+            "fill_direct.");
+}
+
+template <typename StorageType, typename InputType>
+void define_PixelHistogramCUDA(py::module &m, const std::string &class_name) {
+    // 64-bit device counters for 8-byte storage, so counts can't wrap at
+    // 2^32 before the cap in values().
+    using DeviceStorageType =
+        std::conditional_t<sizeof(StorageType) == 8, uint64_t, uint32_t>;
+    using Hist =
+        cuda::PixelHistogramCUDA<StorageType, DeviceStorageType, InputType>;
+    using AxisType = typename Hist::AxisType;
+
+    py::class_<Hist> cls(m, class_name.c_str(),
+                         R"(Per-pixel histograms filled on the GPU.
+
+             Frames are copied to the device with the dtype they have; the
+             histogram axis is floating point. Not thread-safe. Build
+             instances with the aare.PixelHistogramCUDA() factory rather than
+             by class name.)");
+    cls.def(
+        py::init<size_t, size_t, size_t, AxisType, AxisType, size_t, bool>(),
+        py::kw_only(), py::arg("rows"), py::arg("cols"), py::arg("n_bins"),
+        py::arg("xmin"), py::arg("xmax"), py::arg("batch_size") = 1024,
+        py::arg("window") = true);
+    define_HistogramPipeline_methods<Hist, StorageType>(
+        cls, "PixelHistogramCUDA", /*dtype_selectable=*/true);
+    cls.def_property_readonly(
+        "dtype", [](const Hist &) { return py::dtype::of<InputType>(); },
+        "dtype of the frames this histogram takes.");
 }
 
 // Class names are PixelHistogramCUDA_<input>_<storage>, e.g.
