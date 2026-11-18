@@ -9,6 +9,7 @@
 #include "bind_ClusterFile.hpp"
 #include "bind_ClusterFileSink.hpp"
 #include "bind_ClusterFinder.hpp"
+#include "bind_ClusterFinderImpl.hpp"
 #include "bind_ClusterFinderMT.hpp"
 #include "bind_ClusterVector.hpp"
 #include "bind_Eta.hpp"
@@ -32,7 +33,10 @@ double, 'f' for float)
     reduce_to_2x2<T, N, M, U>(m);
 
 #define DEFINE_BINDINGS_CLUSTERFINDER(T, N, M, U, TYPE_CODE)                   \
-    define_ClusterFinder<T, N, M, U>(m, "Cluster" #N "x" #M #TYPE_CODE);       \
+    define_ClusterFinderImpl<T, N, M, U>(m, "Cluster" #N "x" #M #TYPE_CODE);   \
     define_ClusterFinderMT<T, N, M, U>(m, "Cluster" #N "x" #M #TYPE_CODE);     \
     define_ClusterFileSink<T, N, M, U>(m, "Cluster" #N "x" #M #TYPE_CODE);     \
-    define_ClusterCollector<T, N, M, U>(m, "Cluster" #N "x" #M #TYPE_CODE);
+    define_ClusterCollector<T, N, M, U>(m, "Cluster" #N "x" #M #TYPE_CODE);    \
+    define_ClusterFinderCollector<T, N, M, U>(m,                               \
+                                              "Cluster" #N "x" #M #TYPE_CODE); \
+    define_ClusterFinderFileSink<T, N, M, U>(m, "Cluster" #N "x" #M #TYPE_CODE);

@@ -126,18 +126,24 @@ lives in `python/aare/transform.py` on top of C++ generators.
 - `Pedestal<T>` and `FastPedestal<T>` maintain per-pixel running mean and
   standard deviation, always accumulating in `double`. `FastPedestal` must
   see `min_pedestal_samples` frames before `ready()`.
-- `ClusterFinder<ClusterType, FRAME_TYPE, PEDESTAL_TYPE>` is single-threaded:
+- `ClusterFinderImpl<ClusterType, FRAME_TYPE, PEDESTAL_TYPE>` is single-threaded:
   push pedestal frames, then `find_clusters(view, frame_number)` appends to an
   internal `ClusterVector` that callers take with `steal_clusters()`.
   Thresholds are `n_sigma * std` and are recomputed by `update_threshold()`.
-- `ClusterFinderMT` wraps N `ClusterFinder`s, one per thread, each with a
+- `ClusterFinderMT` wraps N `ClusterFinderImpl`s, one per thread, each with a
   `CircularFifo<FrameRef>` input queue backed by a preallocated `FramePool`
   and a `ProducerConsumerQueue` output. A collector thread funnels all
-  outputs into a single sink queue. Consumers of that sink run their own
-  thread: `ClusterCollector` (accumulate in memory, `steal_clusters()`) or
-  `ClusterFileSink` (write the binary cluster file). The `stop()` and
-  `sync()` ordering matters; read the existing tests before changing
-  lifecycle code.
+  outputs into a single sink queue. Consumers of that sink derive from the
+  CRTP base `ClusterSink<Derived, ClusterType>`, which owns the consumer
+  thread (`collect(queue)` spawns it and calls
+  the derived `consume()`, `stop()` drains and joins. 
+  Derived destructors must call `stop()`. The sinks are `ClusterCollector`
+  (accumulate in memory, `steal_clusters()`) and `ClusterFileSink` (write the
+  binary cluster file; `steal_clusters()` warns and returns nothing).
+  `ClusterFinder<SinkType>` bundles a `ClusterFinderMT` with a sink
+  (constrained by `is_cluster_sink_v`).
+  The `stop()` and `sync()` ordering matters; read the existing tests before
+  changing lifecycle code.
 - `Cluster<T, SizeX, SizeY, CoordType>` is a POD (x, y, data[]) and
   `ClusterVector<Cluster<...>>` is a frame-tagged `std::vector` of them.
   `ClusterFile` reads and writes the binary format (`int32 frame_number`,
