@@ -6,4 +6,6 @@ Histogram
    :maxdepth: 1
 
    pyPixelHistogram
+   pyPixelHistogramCUDA
    pyPedestalTrackingPixelHistogram
+   pyPedestalTrackingPixelHistogramCUDA

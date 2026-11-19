@@ -21,6 +21,10 @@ PAGES = [
                  "ClusterFinderCUDA_Cluster3x3i_BatchToken",
                  "ClusterFinderCUDA_Cluster3x3i_BatchView",
                  "ClusterFinderCUDAGraph_Cluster3x3i")
+] + [
+    ("python/histogram/pyPixelHistogramCUDA.rst", "PixelHistogramCUDA_u16_u32"),
+    ("python/histogram/pyPedestalTrackingPixelHistogramCUDA.rst",
+     "PedestalTrackingPixelHistogramCUDA_u16"),
 ]
 
 
