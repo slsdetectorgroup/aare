@@ -37,6 +37,10 @@ for k in ("window", "direct"):
     STYLE[k + " tracking"] = dict(STYLE[k], ls=":", mfc="white",
                                   label=STYLE[k]["label"].split(" (")[0] + ", pedestal tracking")
 
+FOOTNOTE = (
+    "* Busy time per frame = (sum of the durations of all fill kernels) / number of frames;\n"
+    "  for the copy line, the same with the frame copies to the GPU.")
+
 ap = argparse.ArgumentParser()
 ap.add_argument("csv", type=Path)
 ap.add_argument("--out", type=Path, help="output directory (default: the CSV's)")
@@ -57,8 +61,11 @@ for r in rows:
 dtypes = [d for d in ("u16", "f32", "f64") if d in copy]
 r0 = rows[0]
 
-fig, axes = plt.subplots(1, len(dtypes), figsize=(4.6 * len(dtypes), 4.8),
-                         layout="constrained", squeeze=False)
+# Plots on top; legend and footnote in their own strip below, so they never
+# overlap whatever the number of panels.
+fig = plt.figure(figsize=(max(4.6 * len(dtypes), 7.5), 6.05), layout="constrained")
+top, bottom = fig.subfigures(2, 1, height_ratios=[4.8, 1.25])
+axes = top.subplots(1, len(dtypes), squeeze=False)
 for ax, d in zip(axes[0], dtypes):
     ws = sorted(copy[d], reverse=True)
     ax.plot(ws, [sum(copy[d][w]) / len(copy[d][w]) for w in ws], lw=2, ms=6, **STYLE["H2D"])
@@ -75,16 +82,17 @@ for ax, d in zip(axes[0], dtypes):
     ax.set_ylim(0, None)
     ax.set_title(DTYPE_NAME[d], fontsize=10)
     ax.grid(True, alpha=0.3)
-axes[0][0].set_ylabel("Busy time per frame (µs)")
-fig.suptitle("Is the GPU fill limited by the copy in or by the kernel?",
+axes[0][0].set_ylabel("Busy time per frame (µs) *")
+top.suptitle("Is the GPU fill limited by the copy in or by the kernel?",
              fontsize=12, fontweight="bold")
 handles, labels = axes[0][0].get_legend_handles_labels()
-leg = fig.legend(handles, labels, loc="outside lower center", ncol=min(3, len(labels)), fontsize=9, frameon=False,
-                 title=f"nsys, batch {r0['batch']}, {int(r0['n_frames']):,} frames per run. "
-                       "Copy and kernel overlap, so the slower one sets the fill speed: "
-                       "a kernel under the copy line means copy-bound.",
-                 title_fontsize=8.5)
-leg.get_title().set_color("0.4")
+bottom.legend(handles, labels, loc="upper center", ncol=min(3, len(labels)), fontsize=9,
+              frameon=False)
+bottom.text(0.5, 0.02,
+            f"nsys, batch {r0['batch']}, {int(r0['n_frames']):,} frames per run. "
+            "Copy and kernel run at the same time, so the slower one\n"
+            "sets the fill speed: a kernel line under the copy line is hidden behind the copy.\n"
+            + FOOTNOTE, ha="center", va="bottom", multialignment="left", fontsize=8.5, color="0.25")
 p = out / "fill_bound.png"
 fig.savefig(p, dpi=200, bbox_inches="tight")
 print(f"wrote {p}")

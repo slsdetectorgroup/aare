@@ -4,8 +4,9 @@ NVIDIA GeForce RTX 4090 (72 MB L2 cache) in pc-moench-04, driver 595.71.05,
 CUDA 12.4, nsys 2024.5.1. The card is shared with other jobs: these runs were
 made while it was idle (checked by `run_probes.py`). Same data as the A100
 runs: raw MÖNCH frames, 400 × 400 pixels, uint16. Driver and git state in each
-folder's `env.json`; terms (fill, copy limit, layouts, window and direct
-kernels) are explained in `../A100/README.md`.
+folder's `env.json`. Terms (fill, copy limit, layouts, window and direct
+kernels) and how the nsys busy and fill times are computed:
+[`../README.md`](../README.md).
 
 | Folder | What was run |
 |---|---|
@@ -65,6 +66,7 @@ median pedestal) and updates each pixel's pedestal from the values within
 `n_sigma` × sigma. The `PixelHistogramCUDA` rows were rerun the same day as a
 baseline. The library is commit `9a2b474`; `env.json` says dirty because the
 probe scripts were being extended.
+The same probes on the A100 (19 Nov) are in `../A100/README.md`.
 
 **Kernel busy time per frame (µs), batch 1024, plot `nsys/fill_bound.png`**
 

@@ -10,40 +10,20 @@ git state are in each run's `env.json`.
 | `2026-10-29_bin-major` | bin-major | 20 000 | the 4 configurations of `run_probes.py` (nsys) |
 | `2026-11-05_cpu_vs_gpu` | both | 20 000 | `cpu_vs_gpu.py`, direct kernel only |
 | `2026-11-11_window` | both | 20 000 | `cpu_vs_gpu.py` and ncu, window and direct kernels, batch size 1024; nsys sweeps (pixel-major) in `pixelMajor/nsys` and `pixelMajor/nsys_batch` |
+| `2026-11-19_tracking` | pixel-major | 20 000 / 40 960 | nsys: `PedestalTrackingPixelHistogramCUDA` next to `PixelHistogramCUDA`, `n_sigma` sweep, batch-size sweep |
 
-## Terms used below
+Terms (fill, copy limit, layouts, window and direct kernels) and how the nsys
+busy and fill times are computed: [`../README.md`](../README.md).
 
-- **Fill**: everything `fill_histogram()` does. It copies a batch of frames
-  from host memory to the GPU and runs the fill kernel on it. The copy of the
-  next batch overlaps with the kernel of the current one, so the fill runs at
-  the speed of the slower of the two.
-- **Copy limit**: the time to copy one frame over PCIe, about 26 GB/s here:
-  12 µs per frame for uint16 frames, 24 µs for float32, 48 µs for float64.
-  A fill at this limit is **copy-bound**: a faster kernel no longer helps.
-- **Readout (`values()`)**: reads the histogram back. In these runs a small
-  GPU kernel capped the counts (and in the bin-major layout transposed them),
-  then the whole histogram was copied from the GPU to host memory. Since
-  12 Nov, with `uint32` counts (the default, used in all these runs) there is
-  nothing to cap and `values()` copies the histogram directly, without a
-  kernel; other count types still run the cap kernel (`cap_counts`).
-- **Accumulator layout**: how the histogram is stored in GPU memory.
-  **Bin-major**: `[bin][pixel]`, one bin of all pixels after another.
-  **Pixel-major**: `[pixel][bin]`, one pixel's whole histogram after another;
-  this is the order `values()` returns, so no transpose is needed.
-  The runs below compare both. Pixel-major won (see the decision below) and
-  is now the only layout in the code; the bin-major runs were made with a
-  compile-time layout switch that has since been removed (last present in
-  commit `c7fa15e`).
-- **Direct kernel** (`fill_direct`, named `fill_bin_major` when these runs
-  were made): every value increments its bin directly in GPU memory.
-- **Window kernel** (`fill_window`, the default since 11 Nov): each pixel
-  counts 128 consecutive bins around its noise peak (the "window") in fast
-  on-chip shared memory during a batch. Values outside the window (mostly photons) go straight to
-  GPU memory. At the end of the batch the window counts are added to the
-  histogram in GPU memory (the "flush"). The window places itself on the
-  first batch and follows the pixel's pedestal afterwards.
-- **ncu** times the GPU kernel alone; `cpu_vs_gpu.py` times the whole fill and
-  readout from Python.
+Notes specific to these runs:
+
+- **Readout**: in the runs up to 11 Nov a small GPU kernel capped the counts
+  (and in the bin-major layout transposed them) before the copy to host
+  memory. Since 12 Nov, with `uint32` counts (the default, used in all these
+  runs) `values()` copies the histogram directly; other count types still run
+  the cap kernel (`cap_counts`).
+- The direct kernel was named `fill_bin_major` when the October runs were
+  made.
 
 ## nsys baseline, direct kernel, bin-major (`2026-10-29_bin-major`)
 
@@ -336,3 +316,90 @@ done; done
 ```
 
 Divide the duration by 1024 to get µs/frame.
+
+## Pedestal tracking (`2026-11-19_tracking/`)
+
+Same probes as the RTX 4090 runs of 18 Nov (`../RTX4090/README.md`), on gpu104,
+library and scripts at commit `44cced1`. `PedestalTrackingPixelHistogramCUDA`
+is seeded with the 1000 frames of `Cu_factor_10_pedestal`, then histograms
+residuals in [−1000, 3000) ADU; `PixelHistogramCUDA` (no tracking) histograms
+the raw values in [3500, 7500) ADU. Busy times in µs per frame, as defined in
+`../README.md`. The RTX 4090 values are in brackets.
+
+**Kernel busy time per frame (µs), batch 1024, plot `nsys/fill_bound.png`**
+
+| Kernel | 16 ADU per bin | 8 | 4 | 2 | 1 |
+|---|--:|--:|--:|--:|--:|
+| Window | 2.90 (1.89) | 3.52 | 3.97 | 4.87 | 5.66 (3.77) |
+| Window, pedestal tracking | 2.67 (4.07) | 3.34 | 3.67 | 4.15 | 4.65 (4.60) |
+| Direct | 7.65 (5.38) | 9.27 | 11.15 | **14.13** | **19.18** (13.43) |
+| Direct, pedestal tracking | 8.50 (5.60) | 10.58 | **12.68** | **14.69** | **20.41** (13.71) |
+| Copy in | 12.01 | 12.01 | 12.02 | 12.02 | 12.02 |
+
+Bold: above the copy, so the kernel limits the fill.
+
+- With the window kernel the fill is copy-bound at every bin width, with or
+  without tracking: fill time 12.1–12.2 µs per frame, 83 200 frames per
+  second.
+- Tracking costs nothing on the A100: the window kernel with tracking is even
+  0.2–1.0 µs per frame faster than without. On the RTX 4090 it costs up to
+  2.2 µs per frame. The A100 does double precision at half its
+  single-precision rate, the RTX 4090 at 1/64. Why tracking beats the plain
+  kernel here was not investigated: the two bin different values (residuals
+  vs raw values) over different ranges, so their windows sit differently.
+- The plain kernels match the 11 Nov runs within 2–5 % (window 5.66 vs 5.57,
+  direct 19.18 vs 20.09 µs per frame at 1 ADU per bin): the fill policy
+  refactoring (`HistogramPipeline`) did not slow them down.
+- The direct kernel is kernel-bound from 4 ADU per bin with tracking (fill
+  13.3 µs per frame), from 2 ADU without.
+
+**Cost of the pedestal update: window kernel, 1 ADU per bin (`nsys_nsigma/`)**
+
+| | No tracking class | `n_sigma` 0 | 1 | 3 | 5 |
+|---|--:|--:|--:|--:|--:|
+| Kernel, A100 (µs per frame) | 5.66 | 4.56 | 4.71 | 4.80 | 4.84 |
+| Kernel, RTX 4090 | 3.77 | 4.00 | 4.79 | 4.64 | 4.61 |
+
+On the A100 the double-precision update adds at most 0.3 µs per frame
+(`n_sigma` 0 → 5).
+
+**Window kernel with pedestal tracking against the batch size (µs per frame), plot `nsys_batch/batch_size.png`**
+
+| Batch size | 4 ADU per bin | 2 | 1 | 1, RTX 4090 | 1, no tracking (A100, 11 Nov) | Fill time, 1 ADU per bin |
+|--:|--:|--:|--:|--:|--:|--:|
+| 64 | 6.40 | 8.41 | 9.83 | **13.31** | 11.9 | 12.14 |
+| 128 | 5.09 | 6.40 | 7.38 | 8.87 | 9.1 | 12.09 |
+| 256 | 4.32 | 5.15 | 5.94 | 6.32 | 7.1 | 12.08 |
+| 512 | 3.82 | 4.38 | 5.07 | 5.05 | 6.0 | 12.09 |
+| 1024 | 3.60 | 4.00 | 4.62 | 4.52 | 5.3 | 12.13 |
+| 4096 | 3.45 | 3.73 | 4.16 | 4.19 | 4.6 | 12.42 |
+
+The copy takes 12.01–12.06 µs per frame. On the A100 the fill is copy-bound
+at every batch size, batch 64 included (the RTX 4090 is kernel-bound there at
+1 ADU per bin).
+
+### To reproduce
+
+On a Merlin7 A100 node, from `python/tests/perf/hist`, with `NSYS` set to the
+nsys of the loaded module:
+
+```bash
+R=results/A100/2026-11-19_tracking
+python run_probes.py --dtypes u16 --bins 250 500 1000 2000 4000 --batch 1024 \
+    --range 3500 7500 --kernel window direct --chunk 4096 --outdir $R/nsys
+python run_probes.py --tracking --n-sigma 3 --dtypes u16 --bins 250 500 1000 2000 4000 \
+    --batch 1024 --range -1000 3000 --kernel window direct --chunk 4096 --outdir $R/nsys
+python plot_fill_bound.py $R/nsys/probes.csv
+python run_probes.py --tracking --n-sigma 0 1 3 5 --dtypes u16 --bins 4000 --batch 1024 \
+    --range -1000 3000 --kernel window --chunk 4096 --outdir $R/nsys_nsigma
+for bs in 64 128 256 512 1024 4096; do
+  python run_probes.py --tracking --n-sigma 3 --dtypes u16 --bins 1000 2000 4000 --batch $bs \
+      --range -1000 3000 --kernel window --frames 40960 --chunk 4096 --outdir $R/nsys_batch
+done
+python plot_batch.py $R/nsys_batch/probes.csv
+```
+
+nsys 2025.1.3 sometimes fails to write its report ("Multiple different
+definitions of the same VmTidToPidInfo"; `run_probes.py` prints `FAILED`).
+Rerun the same command with only the failed `--kernel` or `--bins`: a rerun
+replaces only its own rows in `probes.csv`.
