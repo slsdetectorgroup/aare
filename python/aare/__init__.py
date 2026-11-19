@@ -46,6 +46,7 @@ from ._aare import Minimizer
 from ._aare import Interpolator
 from ._aare import calculate_eta2, calculate_eta3, calculate_cross_eta3, calculate_full_eta2
 from ._aare import reduce_to_2x2, reduce_to_3x3
+from ._aare import dequantize
 
 from ._aare import apply_custom_weights
 

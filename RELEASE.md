@@ -35,6 +35,15 @@
   assembled. ``rows()``, ``cols()`` and every returned frame then include
   the gaps, for the full frame and for each ROI.
 
+- Added ``dequantize`` to convert integer clusters to floating point and
+  spread every pixel value over the interval that was stored as that
+  integer (``Quantization::Rounded`` or ``Quantization::Truncated`` in C++,
+  the ``truncated`` argument in Python, rounded by default) and optionally
+  apply a gain map or a single gain in the same pass. Use it before
+  ``calculate_eta2`` and ``Interpolator.interpolate``: integer pixel values
+  otherwise put spikes in the eta histogram, most visibly at exactly 0 and
+  1, and lines in the interpolated image.
+
 ### API Changes:
 
 - ``ClusterCollector.steal_clusters()`` can be called while the collector

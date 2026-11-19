@@ -73,6 +73,15 @@ class InvertedGainMap {
         }
     }
 
+    /// @brief Inverted gain (energy per ADU) of the pixel at row y, column x.
+    double operator()(ssize_t y, ssize_t x) const { return m_gain_map(y, x); }
+
+    /// @brief Number of rows of the gain map.
+    ssize_t rows() const { return m_gain_map.shape(0); }
+
+    /// @brief Number of columns of the gain map.
+    ssize_t cols() const { return m_gain_map.shape(1); }
+
   private:
     NDArray<double, 2> m_gain_map{};
 };
