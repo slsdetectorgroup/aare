@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: MPL-2.0
 #pragma once
 #include "aare/RAII_device.hpp"
+#include "aare/RAII_host.hpp"
 #include "aare/cf/ClusterFinder.hpp"
 #include "aare/cf/clusterfinder_algo.cuh"
 #include "aare/utils/cuda_check.cuh"
@@ -106,7 +107,7 @@ class ClusterFinderCUDA {
     // separate slots. A third submit() without an intervening collect() throws.
     static constexpr int NUM_SLOTS = 2;
 
-    std::array<void *, NUM_SLOTS> h_output_slots{};
+    std::array<PinnedHostBuffer, NUM_SLOTS> h_output_slots{};
     std::array<size_t, NUM_SLOTS> m_output_slot_capacity{};
 
     // Per-slot state consumed by collect()
@@ -123,7 +124,7 @@ class ClusterFinderCUDA {
     // Pointer registered via cudaHostRegister by the caller (for pinned H2D
     // speed). The class tracks it only to unregister in the destructor if the
     // caller forgets.
-    void *m_registered_input = nullptr;
+    HostRegistration m_registered_input;
 
     Shape<2> m_shape;
     size_t nrows;
@@ -162,14 +163,14 @@ class ClusterFinderCUDA {
 
     // Per-slot kernel timing event pools (sized lazily to the largest batch).
     // Left empty when m_time_kernels is false — no events are ever created.
-    std::array<std::vector<cudaEvent_t>, NUM_SLOTS> m_kernel_start_pools;
-    std::array<std::vector<cudaEvent_t>, NUM_SLOTS> m_kernel_stop_pools;
+    std::array<std::vector<Event>, NUM_SLOTS> m_kernel_start_pools;
+    std::array<std::vector<Event>, NUM_SLOTS> m_kernel_stop_pools;
 
     // Per-slot, per-stream "batch done" sync events (timing disabled).
     // Recorded after the last D2H of each submit_batch(). collect() waits on
     // these via cudaEventSynchronize so it unblocks as soon as the batch
     // finishes, even if the next batch is already queued in the same streams.
-    std::array<std::vector<cudaEvent_t>, NUM_SLOTS> m_batch_done;
+    std::array<std::vector<Event>, NUM_SLOTS> m_batch_done;
 
     /// Copy every frame of a pinned output slot into results, turning the
     /// packed device layout into owned ClusterVectors. This is exactly the work
@@ -272,7 +273,7 @@ class ClusterFinderCUDA {
         // cudaEventSynchronize (not cudaStreamSynchronize) so a batch already
         // queued behind this one in the same streams is not waited on.
         for (int k = 0; k < m_slot_streams_used[slot]; ++k)
-            CUDA_CHECK(cudaEventSynchronize(m_batch_done[slot][k]));
+            CUDA_CHECK(cudaEventSynchronize(m_batch_done[slot][k].get()));
         accumulate_kernel_times(slot, n_frames);
         m_frames_processed += n_frames;
         m_slot_in_flight[slot] = false;
@@ -286,8 +287,8 @@ class ClusterFinderCUDA {
         for (size_t frame_idx = 0; frame_idx < n_frames; ++frame_idx) {
             float kernel_ms = 0.0f;
             CUDA_CHECK(cudaEventElapsedTime(
-                &kernel_ms, m_kernel_start_pools[slot][frame_idx],
-                m_kernel_stop_pools[slot][frame_idx]));
+                &kernel_ms, m_kernel_start_pools[slot][frame_idx].get(),
+                m_kernel_stop_pools[slot][frame_idx].get()));
             m_total_kernel_ms += kernel_ms;
         }
     }
@@ -483,10 +484,10 @@ class ClusterFinderCUDA {
                 m_image_size, static_cast<uint32_t>(m_max_clusters_per_frame)));
 
         for (int s = 0; s < NUM_SLOTS; ++s) {
-            m_batch_done[s].resize(n_streams);
-            for (int k = 0; k < n_streams; ++k)
-                CUDA_CHECK(cudaEventCreateWithFlags(&m_batch_done[s][k],
-                                                    cudaEventDisableTiming));
+            m_batch_done[s].reserve(n_streams);
+            for (int k = 0; k < n_streams; ++k) {
+                m_batch_done[s].push_back(make_event(cudaEventDisableTiming));
+            }
         }
     }
 
@@ -497,23 +498,6 @@ class ClusterFinderCUDA {
         for (auto &sc : v_sc)
             if (sc)
                 cudaStreamSynchronize(sc->stream());
-
-        for (int s = 0; s < NUM_SLOTS; ++s) {
-            for (auto e : m_kernel_start_pools[s])
-                if (e)
-                    cudaEventDestroy(e);
-            for (auto e : m_kernel_stop_pools[s])
-                if (e)
-                    cudaEventDestroy(e);
-            for (auto e : m_batch_done[s])
-                if (e)
-                    cudaEventDestroy(e);
-            if (h_output_slots[s])
-                cudaFreeHost(h_output_slots[s]);
-        }
-
-        if (m_registered_input)
-            cudaHostUnregister(m_registered_input);
     }
 
     // Non-copyable, non-movable
@@ -539,15 +523,13 @@ class ClusterFinderCUDA {
         // Forget the old buffer before pinning the new one: if that fails,
         // the destructor must not unpin the old buffer a second time.
         unregister_input_buffer();
-        CUDA_CHECK(cudaHostRegister(ptr, bytes, cudaHostRegisterDefault));
-        m_registered_input = ptr;
+        m_registered_input = HostRegistration(ptr, bytes);
     }
 
     void unregister_input_buffer() {
-        if (m_registered_input) {
-            CUDA_CHECK(cudaHostUnregister(m_registered_input));
-            m_registered_input = nullptr;
-        }
+        for (auto &sc : v_sc)
+            CUDA_CHECK(cudaStreamSynchronize(sc->stream()));
+        m_registered_input.unregister();
     }
 
     void push_pedestal_frame(NDView<FRAME_TYPE, 2> frame) {
@@ -707,14 +689,14 @@ class ClusterFinderCUDA {
 
             if (m_time_kernels)
                 CUDA_CHECK(cudaEventRecord(
-                    m_kernel_start_pools[slot][frame_idx], sc.stream()));
+                    m_kernel_start_pools[slot][frame_idx].get(), sc.stream()));
             Algo::launch(launch_params, ped_params, sc.frame(),
                          sc.pedestal_view(), sc.output(), sc.stream());
             if (m_time_kernels)
-                CUDA_CHECK(cudaEventRecord(m_kernel_stop_pools[slot][frame_idx],
-                                           sc.stream()));
+                CUDA_CHECK(cudaEventRecord(
+                    m_kernel_stop_pools[slot][frame_idx].get(), sc.stream()));
 
-            void *h_out = static_cast<char *>(h_output_slots[slot]) +
+            void *h_out = static_cast<char *>(h_output_slots[slot].get()) +
                           frame_idx * m_output_bytes_per_frame;
             CUDA_CHECK(cudaMemcpyAsync(h_out, sc.output().data(),
                                        m_output_bytes_per_frame,
@@ -728,8 +710,8 @@ class ClusterFinderCUDA {
         const int streams_used =
             std::min<int>(n_streams, static_cast<int>(n_frames_batch));
         for (int k = 0; k < streams_used; ++k)
-            CUDA_CHECK(
-                cudaEventRecord(m_batch_done[slot][k], v_sc[k]->stream()));
+            CUDA_CHECK(cudaEventRecord(m_batch_done[slot][k].get(),
+                                       v_sc[k]->stream()));
 
         m_slot_n_frames[slot] = n_frames_batch;
         m_slot_first_frame[slot] = first_frame;
@@ -762,7 +744,7 @@ class ClusterFinderCUDA {
         // cudaEventSynchronize returns as soon as the event fires, without
         // waiting for any later operations already queued in the stream.
         for (int k = 0; k < streams_used; ++k)
-            CUDA_CHECK(cudaEventSynchronize(m_batch_done[slot][k]));
+            CUDA_CHECK(cudaEventSynchronize(m_batch_done[slot][k].get()));
 
         std::vector<ClusterVector<ClusterType>> results;
         results.reserve(n_frames_batch);
@@ -775,7 +757,7 @@ class ClusterFinderCUDA {
         // into a helper so find_clusters_batched() shares it;
         // accumulate_kernel_times is the m_time_kernels branch that used to
         // live in the same loop.
-        materialize_slot(h_output_slots[slot], n_frames_batch, results);
+        materialize_slot(h_output_slots[slot].get(), n_frames_batch, results);
         accumulate_kernel_times(slot, n_frames_batch);
 
         m_frames_processed += n_frames_batch;
@@ -798,9 +780,9 @@ class ClusterFinderCUDA {
         finish_slot(slot, n_frames, first_frame);
 
         m_slot_view_held[slot] = true;
-        return BatchView(this, h_output_slots[slot], n_frames, first_frame,
-                         m_output_bytes_per_frame, m_max_clusters_per_frame,
-                         slot);
+        return BatchView(this, h_output_slots[slot].get(), n_frames,
+                         first_frame, m_output_bytes_per_frame,
+                         m_max_clusters_per_frame, slot);
     }
 
     /**
@@ -948,10 +930,13 @@ class ClusterFinderCUDA {
     void grow_output_slot(int slot, size_t n_frames) {
         if (n_frames <= m_output_slot_capacity[slot])
             return;
-        if (h_output_slots[slot])
-            CUDA_CHECK(cudaFreeHost(h_output_slots[slot]));
-        CUDA_CHECK(cudaMallocHost(&h_output_slots[slot],
-                                  n_frames * m_output_bytes_per_frame));
+
+        // Free first, so the old and new slots are never pinned at once, and
+        // zero the capacity so it stays right if the allocation throws.
+        h_output_slots[slot].reset();
+        m_output_slot_capacity[slot] = 0;
+        h_output_slots[slot] =
+            make_pinned_host(n_frames * m_output_bytes_per_frame);
         m_output_slot_capacity[slot] = n_frames;
     }
 
@@ -961,11 +946,11 @@ class ClusterFinderCUDA {
         const size_t old_size = m_kernel_start_pools[slot].size();
         if (n_frames <= old_size)
             return;
-        m_kernel_start_pools[slot].resize(n_frames);
-        m_kernel_stop_pools[slot].resize(n_frames);
-        for (size_t i = old_size; i < n_frames; ++i) {
-            CUDA_CHECK(cudaEventCreate(&m_kernel_start_pools[slot][i]));
-            CUDA_CHECK(cudaEventCreate(&m_kernel_stop_pools[slot][i]));
+        while (m_kernel_start_pools[slot].size() < n_frames) {
+            auto start = make_event(cudaEventDefault);
+            auto stop = make_event(cudaEventDefault);
+            m_kernel_start_pools[slot].push_back(std::move(start));
+            m_kernel_stop_pools[slot].push_back(std::move(stop));
         }
     }
 };
