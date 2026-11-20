@@ -407,6 +407,7 @@ set(PUBLICHEADERS
     include/aare/ClusterVector.hpp
     include/aare/decode.hpp
     include/aare/defs.hpp
+    include/aare/Dequantize.hpp
     include/aare/Dtype.hpp
     include/aare/File.hpp
     include/aare/Fit.hpp
@@ -532,6 +533,7 @@ if(AARE_TESTS)
       ${CMAKE_CURRENT_SOURCE_DIR}/src/Frame.test.cpp
       ${CMAKE_CURRENT_SOURCE_DIR}/src/DetectorGeometry.test.cpp
       ${CMAKE_CURRENT_SOURCE_DIR}/src/DataSetAggregation.test.cpp
+      ${CMAKE_CURRENT_SOURCE_DIR}/src/Dequantize.test.cpp
       ${CMAKE_CURRENT_SOURCE_DIR}/src/GapPixels.test.cpp
       ${CMAKE_CURRENT_SOURCE_DIR}/src/Interpolation.test.cpp
       ${CMAKE_CURRENT_SOURCE_DIR}/src/RawMasterFile.test.cpp

@@ -90,3 +90,9 @@ API.
    :param ClusterVector clustervector: Input clusters of size 2x2 or larger.
    :return: Reduced 2x2 clusters.
    :rtype: ClusterVector
+
+Gain correction
+---------------
+
+``ClusterFile.set_gain_map`` is deprecated. Use a
+:ref:`Dequantizer <py_dequantizer>` to apply a gain map to integer clusters.

@@ -42,6 +42,8 @@ void define_gap_pixels_bindings(py::module &m);
 void define_pixel_map_bindings(py::module &m);
 // bind_testing.cpp
 void define_testing_bindings(py::module &m);
+// bind_Dequantize.cpp
+void define_dequantizer_bindings(py::module &m);
 
 // bind_PixelHistogram.cpp
 void define_pixel_histogram_bindings(py::module &m);
