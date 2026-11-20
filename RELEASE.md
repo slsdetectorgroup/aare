@@ -35,23 +35,16 @@
   assembled. ``rows()``, ``cols()`` and every returned frame then include
   the gaps, for the full frame and for each ROI.
 
-- Added ``Dequantizer`` to convert integer clusters to floating point and
-  spread every pixel value over the interval that was stored as that
-  integer (``Quantization::Rounded`` or ``Quantization::Truncated`` in C++,
-  the ``truncated`` argument in Python, rounded by default) and optionally
-  apply a gain map or a single gain in the same pass. Use it before
-  ``calculate_eta2`` and ``Interpolator.interpolate``: integer pixel values
-  otherwise put spikes in the eta histogram, most visibly at exactly 0 and
-  1, and lines in the interpolated image. One object is used for all chunks
-  of a file; the result does not depend on the chunk size.
+- Added ``Dequantizer`` to convert integer clusters to floating point
+  clusters before ``calculate_eta2`` and ``Interpolator.interpolate``,
+  optionally applying a gain or a gain map in the same pass. Integer pixel
+  values otherwise put spikes in the eta histogram and lines in the
+  interpolated image.
 
 ### API Changes:
 
-- ``ClusterFile.set_gain_map`` is deprecated. It converts the result of the
-  gain correction back to the cluster type of the file, which truncates
-  integer clusters. It emits a ``DeprecationWarning`` in Python and is
-  marked ``[[deprecated]]`` in C++. Read the clusters without a gain map and
-  convert them with a ``Dequantizer`` created with the gain map.
+- ``ClusterFile.set_gain_map`` is deprecated because it truncates integer
+  clusters. Use a ``Dequantizer`` created with the gain map.
 - ``ClusterCollector.steal_clusters()`` can be called while the collector
   is running and no longer raises on a collector that is not stopped. It
   returns the clusters collected since the last call; call ``sync()`` on the

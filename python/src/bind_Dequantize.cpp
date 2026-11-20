@@ -18,37 +18,28 @@ using namespace aare;
 void define_dequantizer_bindings(py::module &m) {
     py::class_<Dequantizer>(m, "Dequantizer",
                             R"doc(
-        Converts integer clusters to float32 and replaces every pixel value
-        with a uniformly distributed value from the interval that was stored
-        as that integer. Optionally applies a gain in the same pass.
+        Converts integer clusters to float32 clusters, drawing every pixel
+        value uniformly from the interval that was stored as that integer.
+        Optionally divides by a gain in the same pass.
 
-        Integer pixel values make ratios such as eta take only rational
-        values, which shows as spikes in finely binned eta histograms and as
-        lines in interpolated images. Convert the clusters before calculating
-        eta and before interpolating.
-
-        Create one Dequantizer and call it for every chunk of a file. It
-        keeps the state of its random generator between calls, so the result
-        does not depend on the chunk size. Do not call one object from
-        several threads at the same time.
+        Removes the spikes that integer pixel values leave in eta histograms
+        and the lines in interpolated images. Use one object for all chunks
+        of a file: the result does not depend on the chunk size. Not thread
+        safe.
 
         Parameters
         ----------
         gain : float or numpy.ndarray, optional
-            Gain in ADU/energy that the spread values are divided by: one
-            number for all pixels, or a two-dimensional array indexed as
-            ``[y, x]``. The array is copied. Clusters that extend beyond the
-            array are kept with all pixel values set to zero.
+            Gain in ADU/energy: one number, or a 2D array indexed as
+            ``[y, x]``. Clusters that extend beyond the array are kept with
+            all pixel values set to zero.
         truncated : bool, default False
-            How the pixel values were converted to integers. ``False`` for
-            values rounded to the nearest integer, as ClusterFinder writes
-            them: ``n`` is spread over ``[n - 0.5, n + 0.5)``. ``True`` for
-            values truncated toward zero, as in older cluster files:
-            positive ``n`` is spread over ``[n, n + 1)``, negative ``n`` over
-            ``(n - 1, n]`` and 0 over ``(-1, 1)``. In truncated data the
-            pixel value 0 occurs about twice as often as 1 or -1.
+            ``False`` if the pixel values were rounded to the nearest
+            integer, as ClusterFinder does. ``True`` if they were truncated
+            toward zero, as in older cluster files, where the value 0 occurs
+            about twice as often as 1 or -1.
         seed : int, optional
-            Seed of the random generator. ``None`` seeds it from the system.
+            Seed of the random generator, from the system when ``None``.
         )doc")
         .def(
             py::init([](const py::object &gain, const bool truncated,

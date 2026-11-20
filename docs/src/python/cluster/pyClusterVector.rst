@@ -91,67 +91,8 @@ API.
    :return: Reduced 2x2 clusters.
    :rtype: ClusterVector
 
-Dequantizer
------------
+Gain correction
+---------------
 
-Integer pixel values make ratios such as eta take only rational values, which
-shows as spikes in finely binned eta histograms and as lines in interpolated
-images. A ``Dequantizer`` converts integer clusters to ``float32`` and replaces
-every pixel value with a uniformly distributed value from the interval that
-was stored as that integer. It can divide by a gain in the same pass. Convert
-the clusters before ``calculate_eta2`` and before ``Interpolator.interpolate``,
-and use the same converted clusters for both.
-
-.. code:: python
-
-    from aare import ClusterFile, Dequantizer, calculate_eta2
-
-    dequantizer = Dequantizer(gain=gain_map, seed=1)
-    with ClusterFile("path/to/file") as f:
-        for chunk in f.chunks(1_000_000):
-            clusters = dequantizer(chunk)
-            eta = calculate_eta2(clusters)
-
-Create one ``Dequantizer`` and call it for every chunk. It keeps the state of
-its random generator between calls, so the result does not depend on the chunk
-size. Do not call one object from several threads at the same time.
-
-Pass the gain to the ``Dequantizer`` and do not call
-``ClusterFile.set_gain_map``. That method is deprecated and emits a
-``DeprecationWarning``: it converts the result back to the cluster type of
-the file, which truncates integer clusters.
-
-``truncated`` states how the writer of the clusters converted pixel values to
-integers. ``ClusterFinder`` rounds to the nearest integer, which is the
-default. Older cluster files were truncated toward zero and need
-``truncated=True``; in such a file the pixel value 0 occurs about twice as
-often as 1 or -1:
-
-.. code:: python
-
-    data = np.array(chunk)["data"]
-    np.bincount(data[(data >= -3) & (data <= 3)] + 3)
-
-.. py:class:: Dequantizer(*, gain=None, truncated=False, seed=None)
-   :noindex:
-
-   :param gain: Gain in ADU/energy that the spread values are divided by:
-      one number for all pixels, or a two-dimensional array indexed as
-      ``[y, x]``. The array is copied. Clusters that extend beyond the array
-      are kept with all pixel values set to zero.
-   :type gain: float or numpy.ndarray
-   :param bool truncated: ``False`` spreads ``n`` over ``[n - 0.5, n + 0.5)``.
-      ``True`` spreads positive ``n`` over ``[n, n + 1)``, negative ``n`` over
-      ``(n - 1, n]`` and 0 over ``(-1, 1)``.
-   :param int seed: Seed of the random generator; ``None`` seeds it from the
-      system.
-
-   .. py:method:: __call__(clusters)
-      :noindex:
-
-      Convert clusters. Coordinates and the frame number are copied and the
-      input is not changed.
-
-      :param ClusterVector clusters: Clusters with an integer pixel type.
-      :return: ``float32`` clusters of the same cluster size.
-      :rtype: ClusterVector
+``ClusterFile.set_gain_map`` is deprecated. Use a
+:ref:`Dequantizer <py_dequantizer>` to apply a gain map to integer clusters.

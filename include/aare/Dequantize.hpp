@@ -19,16 +19,12 @@
 
 namespace aare {
 
-/**
- * @brief How the writer of the clusters converted pixel values to integers.
- */
+/// How the writer of the clusters converted pixel values to integers.
 enum class Quantization {
-    /// Rounded to the nearest integer: n stands for [n - 0.5, n + 0.5).
-    /// ClusterFinder writes integer clusters this way.
+    /// Nearest integer, as ClusterFinder does: n stands for [n - 0.5, n + 0.5)
     Rounded,
-    /// Truncated toward zero: n > 0 stands for [n, n + 1), n < 0 for
-    /// (n - 1, n] and 0 for (-1, 1). In such data the value 0 occurs about
-    /// twice as often as the values next to it.
+    /// Toward zero: n > 0 stands for [n, n + 1), n < 0 for (n - 1, n] and 0
+    /// for (-1, 1)
     Truncated
 };
 
@@ -37,12 +33,8 @@ namespace detail {
 /// Number of random bits used for one pixel.
 constexpr int dequantize_bits = 21;
 
-/**
- * @brief Draw a value from the interval that was stored as the integer value.
- * @param value stored integer
- * @param bits 21 uniformly distributed random bits
- * @param quantization how the integer was produced
- */
+/// Draw a value from the interval that was stored as value, using 21
+/// uniformly distributed random bits.
 template <typename OutT, typename T>
 OutT dequantize_value(const T value, const uint32_t bits,
                       const Quantization quantization) {
@@ -65,28 +57,19 @@ OutT dequantize_value(const T value, const uint32_t bits,
 } // namespace detail
 
 /**
- * @brief Converts integer clusters to floating point, replacing every pixel
- * value with a uniformly distributed value from the interval that was stored
- * as that integer, and optionally applies a gain in the same pass.
+ * @brief Converts integer clusters to floating point clusters, drawing every
+ * pixel value uniformly from the interval that was stored as that integer.
+ * Optionally applies a gain in the same pass.
  *
- * Integer pixel values make ratios such as eta take only rational values,
- * which shows as spikes in finely binned eta histograms and as lines in
- * interpolated images. Spreading the values removes this without changing
- * their distribution on scales larger than one integer step.
- *
- * Create one Dequantizer and use it for all the clusters of a measurement. It
- * keeps the state of its random generator between calls, so the result does
- * not depend on how the clusters are split into chunks. An object must not be
- * used from several threads at the same time; create one per thread, each
- * with its own seed.
+ * Removes the spikes that integer pixel values leave in eta histograms and
+ * the lines in interpolated images. Use one object for all chunks of a file:
+ * the result does not depend on the chunk size. Not thread safe.
  */
 class Dequantizer {
   public:
     /**
-     * @brief Dequantizer that does not apply a gain.
      * @param quantization how the pixel values were converted to integers
-     * @param seed seed of the random generator. Unset means it is seeded from
-     * the system.
+     * @param seed seed of the random generator, from the system when unset
      */
     explicit Dequantizer(
         const Quantization quantization = Quantization::Rounded,
@@ -94,12 +77,9 @@ class Dequantizer {
         : m_quantization(quantization), m_generator(make_generator(seed)) {}
 
     /**
-     * @brief Dequantizer that divides the spread values by a gain that is the
-     * same for every pixel.
-     * @param gain gain in ADU/energy
+     * @param gain gain in ADU/energy, the same for every pixel
      * @param quantization how the pixel values were converted to integers
-     * @param seed seed of the random generator. Unset means it is seeded from
-     * the system.
+     * @param seed seed of the random generator, from the system when unset
      */
     explicit Dequantizer(
         const double gain,
@@ -109,16 +89,10 @@ class Dequantizer {
           m_generator(make_generator(seed)) {}
 
     /**
-     * @brief Dequantizer that multiplies the spread values by the inverted
-     * gain of their pixel.
-     *
-     * Clusters that extend beyond the gain map are kept with all pixel values
-     * set to zero, as InvertedGainMap::apply_gain_map does.
-     *
-     * @param gain_map inverted gain per detector pixel, indexed as [y, x]
+     * @param gain_map inverted gain per pixel, indexed as [y, x]. Clusters
+     * that extend beyond the map are kept with all pixel values set to zero.
      * @param quantization how the pixel values were converted to integers
-     * @param seed seed of the random generator. Unset means it is seeded from
-     * the system.
+     * @param seed seed of the random generator, from the system when unset
      */
     explicit Dequantizer(
         InvertedGainMap gain_map,
@@ -128,13 +102,11 @@ class Dequantizer {
           m_generator(make_generator(seed)) {}
 
     /**
-     * @brief Dequantizer that divides the spread values by the gain of their
-     * pixel.
-     * @param gain_map gain in ADU/energy per detector pixel, indexed as
-     * [y, x]. The map is copied and inverted.
+     * @param gain_map gain in ADU/energy per pixel, indexed as [y, x]. The
+     * map is copied. Clusters that extend beyond the map are kept with all
+     * pixel values set to zero.
      * @param quantization how the pixel values were converted to integers
-     * @param seed seed of the random generator. Unset means it is seeded from
-     * the system.
+     * @param seed seed of the random generator, from the system when unset
      */
     explicit Dequantizer(
         const NDView<double, 2> gain_map,
@@ -143,16 +115,9 @@ class Dequantizer {
         : Dequantizer(InvertedGainMap(gain_map), quantization, seed) {}
 
     /**
-     * @brief Convert clusters into an existing vector.
-     *
-     * Coordinates and the frame number are copied. The previous content of
-     * out is replaced and its allocation is reused when it is large enough.
-     *
-     * @tparam OutT floating point pixel type of the output. float holds
-     * integers up to about 2^23 with a fractional part; use double for larger
-     * values.
-     * @param clusters integer clusters to convert
-     * @param out receives the converted clusters
+     * @brief Convert clusters into an existing vector, reusing its
+     * allocation. Coordinates and the frame number are copied.
+     * @tparam OutT floating point pixel type of the output
      */
     template <typename OutT, typename T, uint8_t ClusterSizeX,
               uint8_t ClusterSizeY, typename CoordType>
@@ -167,8 +132,6 @@ class Dequantizer {
                       "Dequantizer writes clusters with a floating point type");
         using ClusterType = Cluster<T, ClusterSizeX, ClusterSizeY, CoordType>;
 
-        // Position of the pixels relative to the cluster center, as in
-        // InvertedGainMap::apply_gain_map.
         constexpr ssize_t size_x = ClusterSizeX;
         constexpr ssize_t size_y = ClusterSizeY;
         const InvertedGainMap *gain_map = m_gain_map ? &*m_gain_map : nullptr;
@@ -188,6 +151,7 @@ class Dequantizer {
                 destination.data.fill(0);
                 continue;
             }
+            // Pixel positions as in InvertedGainMap::apply_gain_map
             const ssize_t x_first = center_x - size_x / 2;
             const ssize_t y_first = center_y - size_y / 2;
             size_t j = 0;
@@ -208,9 +172,6 @@ class Dequantizer {
     /**
      * @brief Convert clusters.
      * @tparam OutT floating point pixel type of the result, float by default
-     * @param clusters integer clusters to convert
-     * @return converted clusters with the coordinates and frame number of the
-     * input
      */
     template <typename OutT = float, typename T, uint8_t ClusterSizeX,
               uint8_t ClusterSizeY, typename CoordType>
@@ -224,12 +185,7 @@ class Dequantizer {
         return out;
     }
 
-    /**
-     * @brief Convert clusters to float clusters.
-     * @param clusters integer clusters to convert
-     * @return converted clusters with the coordinates and frame number of the
-     * input
-     */
+    /// @brief Convert clusters to float clusters.
     template <typename T, uint8_t ClusterSizeX, uint8_t ClusterSizeY,
               typename CoordType>
     ClusterVector<Cluster<float, ClusterSizeX, ClusterSizeY, CoordType>>

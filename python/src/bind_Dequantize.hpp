@@ -11,10 +11,8 @@ namespace py = pybind11;
 
 using namespace aare;
 
-// Adds Dequantizer.__call__ for one integer cluster type and does nothing for
-// the floating point ones, so it can be part of DEFINE_CLUSTER_BINDINGS. The
-// class itself is registered in bind_Dequantize.cpp, which module.cpp calls
-// before the cluster units.
+// Adds Dequantizer.__call__ for an integer cluster type; does nothing for the
+// floating point ones. The class is registered in bind_Dequantize.cpp.
 template <typename Type, uint8_t ClusterSizeX, uint8_t ClusterSizeY,
           typename CoordType = uint16_t>
 void register_dequantize([[maybe_unused]] py::module &m) {
@@ -34,8 +32,7 @@ void register_dequantize([[maybe_unused]] py::module &m) {
                 py::arg("clusters"),
                 R"doc(
                 Convert integer clusters to float32 clusters of the same
-                size. Coordinates and the frame number are copied; the input
-                is not changed.
+                size. The input is not changed.
                 )doc");
     }
 }
