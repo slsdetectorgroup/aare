@@ -16,6 +16,7 @@ using aare::Cluster;
 using aare::ClusterVector;
 using aare::Dequantizer;
 using aare::Quantization;
+using aare::ssize_t;
 
 namespace {
 
