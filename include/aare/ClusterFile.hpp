@@ -314,15 +314,27 @@ class ClusterFile {
      * is copied and inverted internally.
      * @note Clusters whose complete footprint extends beyond the gain map are
      * retained with all cluster data values set to zero.
+     * @deprecated The result is converted back to the cluster type of the
+     * file, which truncates integer clusters and leaves patterns in eta and
+     * in interpolated images. Read the clusters without a gain map and pass
+     * them to a Dequantizer created with the gain map.
      */
+    [[deprecated("the result is truncated to the cluster type of the file; "
+                 "apply the gain with aare::Dequantizer instead")]]
     void set_gain_map(const NDView<double, 2> gain_map) {
         m_gain_map = InvertedGainMap(gain_map);
     }
 
+    /// @deprecated Use a Dequantizer created with the gain map.
+    [[deprecated("the result is truncated to the cluster type of the file; "
+                 "apply the gain with aare::Dequantizer instead")]]
     void set_gain_map(const InvertedGainMap &gain_map) {
         m_gain_map = gain_map;
     }
 
+    /// @deprecated Use a Dequantizer created with the gain map.
+    [[deprecated("the result is truncated to the cluster type of the file; "
+                 "apply the gain with aare::Dequantizer instead")]]
     void set_gain_map(const InvertedGainMap &&gain_map) {
         m_gain_map = gain_map;
     }

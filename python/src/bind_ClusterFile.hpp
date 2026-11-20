@@ -150,10 +150,26 @@ void define_ClusterFile(py::module &m, const std::string &typestr) {
             [](ClusterFile<ClusterType> &self,
                py::array_t<double, py::array::c_style | py::array::forcecast>
                    gain_map) {
+                if (PyErr_WarnEx(
+                        PyExc_DeprecationWarning,
+                        "ClusterFile.set_gain_map is deprecated: the result "
+                        "is converted back to the cluster type of the file, "
+                        "which truncates integer clusters. Read the clusters "
+                        "without a gain map and convert them with "
+                        "aare.Dequantizer(gain=gain_map).",
+                        1) < 0) {
+                    throw py::error_already_set();
+                }
                 auto view = make_view_2d(gain_map);
+                AARE_SUPPRESS_DEPRECATED_BEGIN
                 self.set_gain_map(view);
+                AARE_SUPPRESS_DEPRECATED_END
             },
             py::arg("gain_map"),
+            "Deprecated: use ``aare.Dequantizer(gain=gain_map)`` on the "
+            "clusters instead. The result of this gain correction is "
+            "converted back to the cluster type of the file, which truncates "
+            "integer clusters.\n\n"
             "Set a two-dimensional, C-contiguous float64 gain map in "
             "ADU/energy, indexed as [y, x]. Clusters whose complete footprint "
             "extends beyond the map are retained with all data values set to "

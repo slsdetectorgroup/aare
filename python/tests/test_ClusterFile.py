@@ -81,7 +81,8 @@ def test_iterators_apply_filters_and_gain(iterator_file, use_roi, use_noise, met
             reader.set_roi(ROI(0, 6, 0, 12))
         if use_noise:
             reader.set_noise_map(np.full((12, 12), 15, dtype=np.int32))
-        reader.set_gain_map(np.full((12, 12), 2.0))
+        with pytest.warns(DeprecationWarning, match="Dequantizer"):
+            reader.set_gain_map(np.full((12, 12), 2.0))
         results = list(getattr(reader, method)())
         if method == "frames":
             assert [frame.frame_number for frame in results] == [-11, 42, 103, 104, 105]

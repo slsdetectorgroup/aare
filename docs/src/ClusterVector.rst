@@ -25,34 +25,28 @@ ClusterVector
 
 Integer pixel values make ratios such as eta take only rational values, which
 shows as spikes in finely binned eta histograms and as lines in interpolated
-images. ``dequantize`` converts integer clusters to floating point and spreads
-every value over the interval that was stored as that integer. Apply it before
-calculating eta and before interpolating.
+images. A ``Dequantizer`` converts integer clusters to floating point and
+spreads every value over the interval that was stored as that integer. Convert
+the clusters before calculating eta and before interpolating.
 
-A gain can be applied in the same pass. When reading a file in chunks, create
-the inverted gain map, the generator and the output vector once:
+A gain can be applied in the same pass. Create one ``Dequantizer`` and use it
+for every chunk of a file: it keeps the state of its random generator between
+calls, so the result does not depend on the chunk size.
 
 .. code:: cpp
 
-    InvertedGainMap inverse_gain(gain_map);
-    std::mt19937_64 generator(seed);
-    ClusterVector<Cluster<float, 3, 3>> converted;
+    Dequantizer dequantizer(gain_map.view(), Quantization::Rounded, seed);
 
     ClusterFile<Cluster<int32_t, 3, 3>> file(path);
     for (auto &chunk : file.chunks(1'000'000)) {
-        dequantize(chunk, converted, Quantization::Rounded, generator,
-                   inverse_gain);
-        auto eta = calculate_eta2(converted);
+        auto clusters = dequantizer(chunk); // Cluster<float, 3, 3>
+        auto eta = calculate_eta2(clusters);
     }
+
+``ClusterFile::set_gain_map`` is deprecated: it converts the result back to
+the cluster type of the file, which truncates integer clusters.
 
 .. doxygenenum:: aare::Quantization
 
-.. doxygenfunction:: aare::dequantize(const ClusterVector<Cluster<T, ClusterSizeX, ClusterSizeY, CoordType>>&, ClusterVector<Cluster<OutT, ClusterSizeX, ClusterSizeY, CoordType>>&, const Quantization, std::mt19937_64&)
-
-.. doxygenfunction:: aare::dequantize(const ClusterVector<Cluster<T, ClusterSizeX, ClusterSizeY, CoordType>>&, ClusterVector<Cluster<OutT, ClusterSizeX, ClusterSizeY, CoordType>>&, const Quantization, std::mt19937_64&, const InvertedGainMap&)
-
-.. doxygenfunction:: aare::dequantize(const ClusterVector<Cluster<T, ClusterSizeX, ClusterSizeY, CoordType>>&, ClusterVector<Cluster<OutT, ClusterSizeX, ClusterSizeY, CoordType>>&, const Quantization, std::mt19937_64&, const double)
-
-.. doxygenfunction:: aare::dequantize(const ClusterVector<Cluster<T, ClusterSizeX, ClusterSizeY, CoordType>>&, const Quantization, std::mt19937_64&)
-
-.. doxygenfunction:: aare::dequantize(const ClusterVector<Cluster<T, ClusterSizeX, ClusterSizeY, CoordType>>&, const Quantization, std::optional<uint64_t>)
+.. doxygenclass:: aare::Dequantizer
+   :members:

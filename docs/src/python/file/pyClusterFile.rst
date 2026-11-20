@@ -62,6 +62,13 @@ footprint lies inside the map. Clusters whose footprint extends beyond the
 gain-map boundaries remain in the returned cluster vector, but all their data
 values are set to zero.
 
+.. warning::
+   ``set_gain_map`` is deprecated and emits a ``DeprecationWarning``. The
+   result of the gain correction is converted back to the cluster type of the
+   file, which truncates integer clusters and leaves patterns in eta and in
+   interpolated images. Read the clusters without a gain map and convert them
+   with ``Dequantizer(gain=gain_map)``, see :ref:`py_clustervector`.
+
 .. py:currentmodule:: aare
 
 .. autofunction:: ClusterFile

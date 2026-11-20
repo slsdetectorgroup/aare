@@ -69,6 +69,25 @@
 #define NEVER_INLINE
 #endif
 
+/**
+ * AARE_SUPPRESS_DEPRECATED_BEGIN and AARE_SUPPRESS_DEPRECATED_END enclose
+ * code that has to call a deprecated function, such as its own test or its
+ * python binding, so that it compiles without a deprecation warning.
+ */
+#if defined(__GNUC__)
+#define AARE_SUPPRESS_DEPRECATED_BEGIN                                         \
+    _Pragma("GCC diagnostic push")                                             \
+        _Pragma("GCC diagnostic ignored \"-Wdeprecated-declarations\"")
+#define AARE_SUPPRESS_DEPRECATED_END _Pragma("GCC diagnostic pop")
+#elif defined(_MSC_VER)
+#define AARE_SUPPRESS_DEPRECATED_BEGIN                                         \
+    __pragma(warning(push)) __pragma(warning(disable : 4996))
+#define AARE_SUPPRESS_DEPRECATED_END __pragma(warning(pop))
+#else
+#define AARE_SUPPRESS_DEPRECATED_BEGIN
+#define AARE_SUPPRESS_DEPRECATED_END
+#endif
+
 namespace aare {
 
 /**
