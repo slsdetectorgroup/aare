@@ -16,6 +16,22 @@ optionally applying a gain in the same pass.
             clusters = dequantizer(chunk)
             eta = calculate_eta2(clusters)
 
+``truncated`` states how the writer of the clusters converted pixel values to
+integers, which decides the interval each value is drawn from:
+
+- ``truncated=False`` (default): rounded to the nearest integer, as
+  ``ClusterFinder`` does. ``n`` is spread over ``[n - 0.5, n + 0.5)``.
+- ``truncated=True``: truncated toward zero, as in older cluster files.
+  Positive ``n`` is spread over ``[n, n + 1)``, negative ``n`` over
+  ``(n - 1, n]`` and 0 over ``(-1, 1)``.
+
+In a truncated file the pixel value 0 occurs about twice as often as 1 or -1:
+
+.. code:: python
+
+    data = np.array(chunk)["data"]
+    np.bincount(data[(data >= -3) & (data <= 3)] + 3)
+
 .. py:currentmodule:: aare
 
 .. autoclass:: Dequantizer
