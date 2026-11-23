@@ -1,5 +1,7 @@
 // SPDX-License-Identifier: MPL-2.0
 #pragma once
+#include "aare/RAII_device.hpp"
+#include "aare/RAII_host.hpp"
 #include "aare/cf/ClusterFinder.hpp"
 #include "aare/cf/clusterfinder_kernel.cuh"
 #include "aare/utils/cuda_check.cuh"
@@ -9,6 +11,7 @@
 #include <cstdio>
 #include <cstring>
 #include <limits>
+#include <memory>
 #include <stdexcept>
 #include <vector>
 
@@ -16,22 +19,40 @@ namespace aare::cuda {
 
 namespace detail {
 
-// Per-stream device resources and CUDA Graph state.
+struct GraphDeleter {
+    void operator()(cudaGraph_t g) const noexcept {
+        if (g)
+            cudaGraphDestroy(g);
+    }
+};
+using Graph = std::unique_ptr<CUgraph_st, GraphDeleter>;
+
+struct GraphExecDeleter {
+    void operator()(cudaGraphExec_t g) const noexcept {
+        if (g)
+            cudaGraphExecDestroy(g);
+    }
+};
+using GraphExec = std::unique_ptr<CUgraphExec_st, GraphExecDeleter>;
+
+// Per-stream device resources and CUDA Graph state. The stream is declared
+// last, so it is destroyed first: its deleter synchronises before the graphs
+// and buffers above it are released.
 template <typename ClusterType, typename FRAME_TYPE, typename PEDESTAL_TYPE>
 struct StreamContextGraph {
-    cudaStream_t stream = nullptr;
-    FRAME_TYPE *d_frame = nullptr;
+    DeviceBuffer<FRAME_TYPE> d_frame;
     // Device pedestal precision is set by DEVICE_PED_TYPE in the kernel header.
     // Accumulators hold CENTERED moments of Y = X - d_pd_off (see kernel).
-    DEVICE_PED_TYPE *d_pd_mean = nullptr;
-    DEVICE_PED_TYPE *d_pd_sum = nullptr;
-    DEVICE_PED_TYPE *d_pd_sum2 = nullptr;
-    DEVICE_PED_TYPE *d_pd_off = nullptr; // frozen per-pixel baseline X0
-    uint8_t *d_output = nullptr; // [uint32_t count | ClusterType clusters[max]]
+    DeviceBuffer<DEVICE_PED_TYPE> d_pd_mean;
+    DeviceBuffer<DEVICE_PED_TYPE> d_pd_sum;
+    DeviceBuffer<DEVICE_PED_TYPE> d_pd_sum2;
+    DeviceBuffer<DEVICE_PED_TYPE> d_pd_off; // frozen per-pixel baseline X0
+    DeviceBuffer<uint8_t>
+        d_output; // [uint32_t count | ClusterType clusters[max]]
 
     // CUDA Graph handles — rebuilt on pedestal change or h_output_pinned resize
-    cudaGraph_t graph = nullptr;
-    cudaGraphExec_t graphExec = nullptr;
+    Graph graph;
+    GraphExec graphExec;
     cudaGraphNode_t h2d_node = nullptr;
     cudaGraphNode_t d2h_node = nullptr;
 
@@ -54,6 +75,8 @@ struct StreamContextGraph {
     // Per-frame update templates for H2D and D2H memcpy nodes
     cudaMemcpy3DParms h2d_params = {};
     cudaMemcpy3DParms d2h_params = {};
+
+    Stream stream;
 };
 
 } // namespace detail
@@ -72,16 +95,16 @@ class ClusterFinderCUDAGraph {
 
     size_t m_output_pinned_capacity =
         0; // # frames currently allocated in h_output_pinned
-    void *h_output_pinned = nullptr;
+    PinnedHostBuffer h_output_pinned;
 
     // Pointer registered via cudaHostRegister by the caller (for pinned H2D
     // speed). The class tracks it only to unregister in the destructor if the
     // caller forgets.
-    void *m_registered_input = nullptr;
+    HostRegistration m_registered_input;
 
     // Pinned scratch buffer used as placeholder source/destination when
     // building CUDA Graph nodes (before per-frame pointers are known).
-    void *m_placeholder = nullptr;
+    PinnedHostBuffer m_placeholder;
 
     Shape<2> m_shape;
     size_t nrows;
@@ -185,57 +208,32 @@ class ClusterFinderCUDAGraph {
             m_clusters_offset + m_max_clusters_per_frame * sizeof(ClusterType);
 
         // Pinned scratch for CUDA Graph node placeholders
-        CUDA_CHECK(cudaMallocHost(
-            &m_placeholder, std::max(m_image_bytes, m_output_bytes_per_frame)));
+        m_placeholder =
+            make_pinned_host(std::max(m_image_bytes, m_output_bytes_per_frame));
 
+        // Every element is built in place here and the vector never grows
+        // afterwards: kargs_ptrs points into its own element.
         v_sc.resize(n_streams);
-        for (int k = 0; k < n_streams; ++k) {
-            auto &sc = v_sc[k];
-            CUDA_CHECK(
-                cudaStreamCreateWithFlags(&sc.stream, cudaStreamNonBlocking));
-            CUDA_CHECK(cudaMalloc(&sc.d_frame, m_image_bytes));
-            CUDA_CHECK(cudaMalloc(
-                &sc.d_pd_mean, m_image_size * sizeof(detail::DEVICE_PED_TYPE)));
-            CUDA_CHECK(cudaMalloc(
-                &sc.d_pd_sum, m_image_size * sizeof(detail::DEVICE_PED_TYPE)));
-            CUDA_CHECK(cudaMalloc(
-                &sc.d_pd_sum2, m_image_size * sizeof(detail::DEVICE_PED_TYPE)));
-            CUDA_CHECK(cudaMalloc(
-                &sc.d_pd_off, m_image_size * sizeof(detail::DEVICE_PED_TYPE)));
-            CUDA_CHECK(cudaMalloc(&sc.d_output, m_output_bytes_per_frame));
+        for (auto &sc : v_sc) {
+            using DPT = detail::DEVICE_PED_TYPE;
+            sc.d_frame = DeviceBuffer<FRAME_TYPE>(m_image_size);
+            sc.d_pd_mean = DeviceBuffer<DPT>(m_image_size);
+            sc.d_pd_sum = DeviceBuffer<DPT>(m_image_size);
+            sc.d_pd_sum2 = DeviceBuffer<DPT>(m_image_size);
+            sc.d_pd_off = DeviceBuffer<DPT>(m_image_size);
+            sc.d_output = DeviceBuffer<uint8_t>(m_output_bytes_per_frame);
+            sc.stream = make_stream();
         }
     }
 
     ~ClusterFinderCUDAGraph() {
-        for (auto &sc : v_sc) {
+        // Drain every stream before anything is released: the pinned output
+        // and placeholder buffers are declared before v_sc and so outlive it,
+        // but a graph on another stream may still be writing into them. The
+        // members free themselves after this body returns.
+        for (auto &sc : v_sc)
             if (sc.stream)
-                cudaStreamSynchronize(sc.stream);
-            if (sc.graphExec)
-                cudaGraphExecDestroy(sc.graphExec);
-            if (sc.graph)
-                cudaGraphDestroy(sc.graph);
-            if (sc.d_frame)
-                cudaFree(sc.d_frame);
-            if (sc.d_pd_mean)
-                cudaFree(sc.d_pd_mean);
-            if (sc.d_pd_sum)
-                cudaFree(sc.d_pd_sum);
-            if (sc.d_pd_sum2)
-                cudaFree(sc.d_pd_sum2);
-            if (sc.d_pd_off)
-                cudaFree(sc.d_pd_off);
-            if (sc.d_output)
-                cudaFree(sc.d_output);
-            if (sc.stream)
-                cudaStreamDestroy(sc.stream);
-        }
-
-        if (h_output_pinned)
-            cudaFreeHost(h_output_pinned);
-        if (m_registered_input)
-            cudaHostUnregister(m_registered_input);
-        if (m_placeholder)
-            cudaFreeHost(m_placeholder);
+                cudaStreamSynchronize(sc.stream.get());
     }
 
     // Non-copyable, non-movable
@@ -264,15 +262,15 @@ class ClusterFinderCUDAGraph {
         // Forget the old buffer before pinning the new one: if that fails,
         // the destructor must not unpin the old buffer a second time.
         unregister_input_buffer();
-        CUDA_CHECK(cudaHostRegister(ptr, bytes, cudaHostRegisterDefault));
-        m_registered_input = ptr;
+        m_registered_input = HostRegistration(ptr, bytes);
     }
 
     void unregister_input_buffer() {
-        if (m_registered_input) {
-            CUDA_CHECK(cudaHostUnregister(m_registered_input));
-            m_registered_input = nullptr;
-        }
+        // A batch that threw part-way may have left copies from the buffer
+        // in flight: wait for them before unpinning it.
+        for (auto &sc : v_sc)
+            CUDA_CHECK(cudaStreamSynchronize(sc.stream.get()));
+        m_registered_input.unregister();
     }
 
     void push_pedestal_frame(NDView<FRAME_TYPE, 2> frame) {
@@ -345,10 +343,13 @@ class ClusterFinderCUDAGraph {
 
         // Lazy grow D2H output staging buffer (one slot per frame)
         if (n_frames_batch > m_output_pinned_capacity) {
-            if (h_output_pinned)
-                CUDA_CHECK(cudaFreeHost(h_output_pinned));
-            CUDA_CHECK(cudaMallocHost(
-                &h_output_pinned, n_frames_batch * m_output_bytes_per_frame));
+            // Free first, so the old and new buffers are never pinned at
+            // once, and zero the capacity so it stays right if the
+            // allocation throws.
+            h_output_pinned.reset();
+            m_output_pinned_capacity = 0;
+            h_output_pinned =
+                make_pinned_host(n_frames_batch * m_output_bytes_per_frame);
             m_output_pinned_capacity = n_frames_batch;
             m_graphs_dirty = true;
         }
@@ -375,33 +376,34 @@ class ClusterFinderCUDAGraph {
             auto &sc = v_sc[frame_idx % n_streams];
 
             const FRAME_TYPE *h_src = frames.data() + frame_idx * m_image_size;
-            void *h_slot = static_cast<char *>(h_output_pinned) +
+            void *h_slot = static_cast<char *>(h_output_pinned.get()) +
                            frame_idx * m_output_bytes_per_frame;
 
             sc.h2d_params.srcPtr =
                 make_cudaPitchedPtr(const_cast<FRAME_TYPE *>(h_src),
                                     m_image_bytes, m_image_bytes, 1);
             CUDA_CHECK(cudaGraphExecMemcpyNodeSetParams(
-                sc.graphExec, sc.h2d_node, &sc.h2d_params));
+                sc.graphExec.get(), sc.h2d_node, &sc.h2d_params));
 
             sc.d2h_params.dstPtr = make_cudaPitchedPtr(
                 h_slot, m_output_bytes_per_frame, m_output_bytes_per_frame, 1);
             CUDA_CHECK(cudaGraphExecMemcpyNodeSetParams(
-                sc.graphExec, sc.d2h_node, &sc.d2h_params));
+                sc.graphExec.get(), sc.d2h_node, &sc.d2h_params));
 
-            CUDA_CHECK(cudaGraphLaunch(sc.graphExec, sc.stream));
+            CUDA_CHECK(cudaGraphLaunch(sc.graphExec.get(), sc.stream.get()));
         }
 
         // Sync once per stream
         const int streams_used =
             std::min<int>(n_streams, static_cast<int>(n_frames_batch));
         for (int k = 0; k < streams_used; ++k)
-            CUDA_CHECK(cudaStreamSynchronize(v_sc[k].stream));
+            CUDA_CHECK(cudaStreamSynchronize(v_sc[k].stream.get()));
 
         // Drain: fan in results from pinned D2H output pool
         for (size_t frame_idx = 0; frame_idx < n_frames_batch; ++frame_idx) {
-            const void *h_slot = static_cast<const char *>(h_output_pinned) +
-                                 frame_idx * m_output_bytes_per_frame;
+            const void *h_slot =
+                static_cast<const char *>(h_output_pinned.get()) +
+                frame_idx * m_output_bytes_per_frame;
             uint32_t n_found = *reinterpret_cast<const uint32_t *>(h_slot);
             n_found = std::min<uint32_t>(
                 n_found, static_cast<uint32_t>(m_max_clusters_per_frame));
@@ -472,17 +474,21 @@ class ClusterFinderCUDAGraph {
 
         const size_t bytes = m_image_size * sizeof(DPT);
         for (auto &sc : v_sc) {
-            CUDA_CHECK(cudaMemcpyAsync(sc.d_pd_mean, f_mean.data(), bytes,
-                                       cudaMemcpyHostToDevice, sc.stream));
-            CUDA_CHECK(cudaMemcpyAsync(sc.d_pd_sum, f_sum.data(), bytes,
-                                       cudaMemcpyHostToDevice, sc.stream));
-            CUDA_CHECK(cudaMemcpyAsync(sc.d_pd_sum2, f_sum2.data(), bytes,
-                                       cudaMemcpyHostToDevice, sc.stream));
-            CUDA_CHECK(cudaMemcpyAsync(sc.d_pd_off, m_offset.data(), bytes,
-                                       cudaMemcpyHostToDevice, sc.stream));
+            CUDA_CHECK(cudaMemcpyAsync(sc.d_pd_mean.get(), f_mean.data(), bytes,
+                                       cudaMemcpyHostToDevice,
+                                       sc.stream.get()));
+            CUDA_CHECK(cudaMemcpyAsync(sc.d_pd_sum.get(), f_sum.data(), bytes,
+                                       cudaMemcpyHostToDevice,
+                                       sc.stream.get()));
+            CUDA_CHECK(cudaMemcpyAsync(sc.d_pd_sum2.get(), f_sum2.data(), bytes,
+                                       cudaMemcpyHostToDevice,
+                                       sc.stream.get()));
+            CUDA_CHECK(cudaMemcpyAsync(sc.d_pd_off.get(), m_offset.data(),
+                                       bytes, cudaMemcpyHostToDevice,
+                                       sc.stream.get()));
         }
         for (auto &sc : v_sc)
-            CUDA_CHECK(cudaStreamSynchronize(sc.stream));
+            CUDA_CHECK(cudaStreamSynchronize(sc.stream.get()));
 
         // Kernel's n_pd_samples and the pedestal arrays changed; graphs must
         // be rebuilt before the next launch.
@@ -501,55 +507,54 @@ class ClusterFinderCUDAGraph {
         for (int k = 0; k < n_streams; ++k) {
             auto &sc = v_sc[k];
 
-            if (sc.graphExec) {
-                cudaGraphExecDestroy(sc.graphExec);
-                sc.graphExec = nullptr;
-            }
-            if (sc.graph) {
-                cudaGraphDestroy(sc.graph);
-                sc.graph = nullptr;
-            }
-            CUDA_CHECK(cudaGraphCreate(&sc.graph, 0));
+            // Release the old graph first; if a step below throws, both stay
+            // null and m_graphs_dirty stays set, so the next batch rebuilds.
+            sc.graphExec.reset();
+            sc.graph.reset();
+            cudaGraph_t graph = nullptr;
+            CUDA_CHECK(cudaGraphCreate(&graph, 0));
+            sc.graph.reset(graph);
 
             // --- Memset node: zero the cluster count at d_output[0:4] ---
             cudaMemsetParams ms_p = {};
-            ms_p.dst = sc.d_output;
+            ms_p.dst = sc.d_output.get();
             ms_p.elementSize = 1;
             ms_p.width = sizeof(uint32_t);
             ms_p.height = 1;
             ms_p.pitch = sizeof(uint32_t);
             ms_p.value = 0;
             cudaGraphNode_t memset_node;
-            CUDA_CHECK(cudaGraphAddMemsetNode(&memset_node, sc.graph, nullptr,
-                                              0, &ms_p));
+            CUDA_CHECK(cudaGraphAddMemsetNode(&memset_node, sc.graph.get(),
+                                              nullptr, 0, &ms_p));
 
             // --- H2D node: host frame → d_frame (placeholder src) ---
             sc.h2d_params = {};
             sc.h2d_params.srcPtr = make_cudaPitchedPtr(
-                m_placeholder, m_image_bytes, m_image_bytes, 1);
+                m_placeholder.get(), m_image_bytes, m_image_bytes, 1);
             sc.h2d_params.dstPtr = make_cudaPitchedPtr(
-                sc.d_frame, m_image_bytes, m_image_bytes, 1);
+                sc.d_frame.get(), m_image_bytes, m_image_bytes, 1);
             sc.h2d_params.extent = make_cudaExtent(m_image_bytes, 1, 1);
             sc.h2d_params.kind = cudaMemcpyHostToDevice;
-            CUDA_CHECK(cudaGraphAddMemcpyNode(&sc.h2d_node, sc.graph, nullptr,
-                                              0, &sc.h2d_params));
+            CUDA_CHECK(cudaGraphAddMemcpyNode(&sc.h2d_node, sc.graph.get(),
+                                              nullptr, 0, &sc.h2d_params));
 
             // Kernel waits for both memset and H2D (d_frame and count zeroed)
             cudaGraphNode_t pre_kernel[] = {memset_node, sc.h2d_node};
 
             // --- Kernel node ---
-            sc.karg_d_frame = sc.d_frame;
-            sc.karg_d_pd_mean = sc.d_pd_mean;
-            sc.karg_d_pd_sum = sc.d_pd_sum;
-            sc.karg_d_pd_sum2 = sc.d_pd_sum2;
-            sc.karg_d_pd_off = sc.d_pd_off;
+            sc.karg_d_frame = sc.d_frame.get();
+            sc.karg_d_pd_mean = sc.d_pd_mean.get();
+            sc.karg_d_pd_sum = sc.d_pd_sum.get();
+            sc.karg_d_pd_sum2 = sc.d_pd_sum2.get();
+            sc.karg_d_pd_off = sc.d_pd_off.get();
             sc.karg_n_pd_samples = n_pd_samples;
             sc.karg_nSigma = m_nSigma;
             sc.karg_nrows = static_cast<int32_t>(nrows);
             sc.karg_ncols = static_cast<int32_t>(ncols);
             sc.karg_d_clusters = reinterpret_cast<ClusterType *>(
-                sc.d_output + m_clusters_offset);
-            sc.karg_d_cluster_count = reinterpret_cast<uint32_t *>(sc.d_output);
+                sc.d_output.get() + m_clusters_offset);
+            sc.karg_d_cluster_count =
+                reinterpret_cast<uint32_t *>(sc.d_output.get());
             sc.karg_max_clusters =
                 static_cast<uint32_t>(m_max_clusters_per_frame);
 
@@ -578,25 +583,27 @@ class ClusterFinderCUDAGraph {
             kp.extra = nullptr;
 
             cudaGraphNode_t kernel_node;
-            CUDA_CHECK(cudaGraphAddKernelNode(&kernel_node, sc.graph,
+            CUDA_CHECK(cudaGraphAddKernelNode(&kernel_node, sc.graph.get(),
                                               pre_kernel, 2, &kp));
 
             // --- D2H node: d_output → host slot (placeholder dst) ---
             sc.d2h_params = {};
             sc.d2h_params.srcPtr =
-                make_cudaPitchedPtr(sc.d_output, m_output_bytes_per_frame,
+                make_cudaPitchedPtr(sc.d_output.get(), m_output_bytes_per_frame,
                                     m_output_bytes_per_frame, 1);
-            sc.d2h_params.dstPtr =
-                make_cudaPitchedPtr(m_placeholder, m_output_bytes_per_frame,
-                                    m_output_bytes_per_frame, 1);
+            sc.d2h_params.dstPtr = make_cudaPitchedPtr(
+                m_placeholder.get(), m_output_bytes_per_frame,
+                m_output_bytes_per_frame, 1);
             sc.d2h_params.extent =
                 make_cudaExtent(m_output_bytes_per_frame, 1, 1);
             sc.d2h_params.kind = cudaMemcpyDeviceToHost;
-            CUDA_CHECK(cudaGraphAddMemcpyNode(&sc.d2h_node, sc.graph,
+            CUDA_CHECK(cudaGraphAddMemcpyNode(&sc.d2h_node, sc.graph.get(),
                                               &kernel_node, 1, &sc.d2h_params));
 
-            CUDA_CHECK(cudaGraphInstantiate(&sc.graphExec, sc.graph, nullptr,
-                                            nullptr, 0));
+            cudaGraphExec_t graph_exec = nullptr;
+            CUDA_CHECK(cudaGraphInstantiate(&graph_exec, sc.graph.get(),
+                                            nullptr, nullptr, 0));
+            sc.graphExec.reset(graph_exec);
         }
     }
 };
