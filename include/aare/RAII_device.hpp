@@ -116,11 +116,29 @@ struct EventDeleter {
 
 using Event = std::unique_ptr<CUevent_st, EventDeleter>;
 
-inline Event make_event() {
+// The default creates an event without timing, whose synchronize sleeps
+// instead of spinning
+inline Event make_event(unsigned int flags = cudaEventDisableTiming |
+                                             cudaEventBlockingSync) {
     cudaEvent_t raw_ptr = nullptr;
-    CUDA_CHECK(cudaEventCreateWithFlags(&raw_ptr, cudaEventDisableTiming |
-                                                      cudaEventBlockingSync));
+    CUDA_CHECK(cudaEventCreateWithFlags(&raw_ptr, flags));
     return Event{raw_ptr};
+}
+
+// Pinned (page-locked) host buffer, freed with cudaFreeHost
+struct CudaFreeHostDeleter {
+    void operator()(void *p) const noexcept {
+        if (p)
+            cudaFreeHost(p);
+    }
+};
+
+using PinnedHostBuffer = std::unique_ptr<void, CudaFreeHostDeleter>;
+
+inline PinnedHostBuffer make_pinned_host(size_t bytes) {
+    void *p = nullptr;
+    CUDA_CHECK(cudaMallocHost(&p, bytes));
+    return PinnedHostBuffer{p};
 }
 
 } // namespace aare::cuda

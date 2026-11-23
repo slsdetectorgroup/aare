@@ -1,7 +1,6 @@
 // SPDX-License-Identifier: MPL-2.0
 #pragma once
 #include "aare/RAII_device.hpp"
-#include "aare/RAII_host.hpp"
 #include "aare/cf/ClusterFinder.hpp"
 #include "aare/cf/clusterfinder_algo.cuh"
 #include "aare/utils/cuda_check.cuh"
