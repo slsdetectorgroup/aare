@@ -12,6 +12,89 @@ factories raise ``RuntimeError``.
 
 .. autofunction:: find_cluster_views_batched_iter
 
+Performance
+-----------
+
+The GPU finds clusters faster than Python can take them as one
+``ClusterVector`` per frame, so the host side decides the rate.
+
+**Copy only what you keep.** When a reduction is all you need, such as a
+spectrum or cluster counts, use :py:func:`find_cluster_views_batched_iter`. It
+reads ``v.sums()`` and ``v.counts`` straight from the finder's pinned output
+buffer and allocates nothing per frame. Use ``find_clusters_batched`` when you
+need the clusters themselves.
+
+**Keeping clusters: tune glibc's heap.** Every kept frame needs new memory,
+and the first write to a new page costs a page fault: the kernel maps the page
+and zero-fills it. By default glibc grows its heap a little at a time, so the
+kernel backs it with 4 KiB pages, about 23 faults per frame at 3x3. It also
+gives freed memory back to the kernel, so memory reused later faults again.
+This setting changes both:
+
+.. code-block:: bash
+
+   export GLIBC_TUNABLES=glibc.malloc.mmap_threshold=33554432:glibc.malloc.trim_threshold=4294967295:glibc.malloc.top_pad=268435456
+
+- ``top_pad``: grow the heap 256 MiB at a time. The kernel can then back it
+  with 2 MiB transparent huge pages, one fault per 2 MiB instead of per
+  4 KiB. This part alone gives the gain on a fresh start.
+- ``trim_threshold``: never give freed memory back, so it is reused already
+  mapped.
+- ``mmap_threshold``: take blocks up to 32 MiB from the heap instead of
+  mapping each one separately.
+
+glibc reads the variable once, at start-up: set it before Python starts.
+Setting ``os.environ`` from a running interpreter has no effect. Huge pages
+need transparent huge pages set to ``always``
+(``/sys/kernel/mm/transparent_hugepage/enabled``) and free memory: on a
+machine short of memory the kernel falls back to 4 KiB pages and most of the
+gain is lost. The process also keeps its peak memory for its whole life, which
+suits an acquisition but not a long-running shared service.
+
+For Jupyter or VS Code, register a kernel that carries the variable, and select
+it as the notebook's kernel:
+
+.. code-block:: bash
+
+   python -m ipykernel install --user --name py-heap \
+       --display-name "Python (heap kept)" \
+       --env GLIBC_TUNABLES glibc.malloc.mmap_threshold=33554432:glibc.malloc.trim_threshold=4294967295:glibc.malloc.top_pad=268435456
+
+``jupyter kernelspec uninstall py-heap`` removes it.
+
+Huge pages make faults cheaper, but new pages still have to be zero-filled.
+**Pre-heating** moves that out of the acquisition too. Before it starts, write
+as much heap as the clusters will need, in blocks under 32 MiB, then free it.
+With the setting, glibc keeps the pages mapped and the finder's output reuses
+them; without it, the pre-heated memory is given back:
+
+.. code-block:: python
+
+   import numpy as np
+
+   n_gib = 3                                       # what the kept clusters need
+   blocks = [np.ones(16 << 20, np.uint8)           # 16 MiB each, every page written
+             for _ in range(64 * n_gib)]
+   del blocks
+
+``np.ones`` writes every page; ``np.zeros`` would not. Measured on an
+RTX 4090 with free memory, 20 000 MOENCH frames, 3x3 clusters, batch 3000, one
+fresh process per row; "copy" keeps every ``ClusterVector``, "zero-copy" fills
+a spectrum from the views:
+
+==================================  =========  ================  ==============
+Setup                               Copy, FPS  Faults per frame  Zero-copy, FPS
+==================================  =========  ================  ==============
+default                             31 000     22.7              56 700
+``GLIBC_TUNABLES``                  41 100     0.2               56 800
+``GLIBC_TUNABLES`` + 3 GB pre-heat  51 200     0.0               56 700
+==================================  =========  ================  ==============
+
+With only 4 GB of memory free, the same three copy runs gave 29 400, 30 100
+and 45 800 FPS: without huge pages the setting alone gains almost nothing.
+
+``python/tests/perf/cf/page_faults.py`` reproduces these numbers.
+
 Returned classes
 ----------------
 
