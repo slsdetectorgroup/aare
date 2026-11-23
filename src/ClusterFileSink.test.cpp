@@ -2,7 +2,7 @@
 #include "aare/ClusterFileSink.hpp"
 #include "aare/Cluster.hpp"
 #include "aare/ClusterFile.hpp"
-#include "aare/ClusterFinderMT.hpp"
+#include "aare/cf/ClusterFinderMT.hpp"
 
 #include <algorithm>
 #include <catch2/catch_test_macros.hpp>

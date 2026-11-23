@@ -9,9 +9,9 @@
 
 #include "aare/Backoff.hpp"
 #include "aare/CircularFifo.hpp"
-#include "aare/ClusterFinder.hpp"
 #include "aare/NDArray.hpp"
 #include "aare/ProducerConsumerQueue.hpp"
+#include "aare/cf/ClusterFinder.hpp"
 #include "aare/logger.hpp"
 #include <ctime>
 namespace aare {
@@ -159,29 +159,47 @@ class ClusterFinderMT {
      * @brief Collect all the clusters from the output queues and write them to
      * the sink
      */
+    // void collect() {
+    //     Backoff backoff;
+    //     while (!m_stop_requested || !output_queues_are_empty() ||
+    //            !m_processing_threads_stopped) {
+    //         bool moved_any = false;
+    //         for (auto &queue : m_output_queues) {
+    //             if (auto *front = queue->frontPtr(); front != nullptr) {
+    //                 while (!m_sink.write(std::move(*front))) {
+    //                     backoff.pause();
+    //                 }
+    //                 queue->popFront();
+    //                 moved_any = true;
+    //             }
+    //         }
+    //         if (moved_any) {
+    //             backoff.reset();
+    //         } else {
+    //             backoff.pause();
+    //         }
+    //     }
+    // }
     void collect() {
         Backoff backoff;
-        while (!m_discard_requested &&
-               (!m_stop_requested || !output_queues_are_empty() ||
-                !m_processing_threads_stopped)) {
+        while (!m_discard_requested) {
+            const bool done = m_stop_requested && m_processing_threads_stopped;
             bool moved_any = false;
             for (auto &queue : m_output_queues) {
-                if (auto *front = queue->frontPtr(); front != nullptr) {
+                while (auto *front = queue->frontPtr()) {
                     while (!m_sink.write(std::move(*front))) {
-                        if (m_discard_requested) {
+                        if (m_discard_requested)
                             return;
-                        }
                         backoff.pause();
                     }
                     queue->popFront();
                     moved_any = true;
                 }
             }
-            if (moved_any) {
-                backoff.reset();
-            } else {
-                backoff.pause();
-            }
+            if (done &&
+                !moved_any) // swept after observing done, so this is real
+                break;
+            moved_any ? backoff.reset() : backoff.pause();
         }
     }
 

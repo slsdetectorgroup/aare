@@ -10,9 +10,9 @@
 
 #include <fmt/format.h>
 
-#include "aare/ClusterFinderMT.hpp"
 #include "aare/ClusterVector.hpp"
 #include "aare/ProducerConsumerQueue.hpp"
+#include "aare/cf/ClusterFinderMT.hpp"
 #include "aare/logger.hpp"
 
 namespace aare {

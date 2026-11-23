@@ -52,6 +52,7 @@ AARE
     Cluster
     ClusterFinder
     ClusterFinderMT
+    ClusterFinderCUDA
     ClusterFile
     ClusterVector
     Interpolation
