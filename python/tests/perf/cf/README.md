@@ -16,6 +16,7 @@ tracing every CUDA call. Use them to answer "what does the kernel cost" and
 | `run_probes.py` | driver: runs each config under nsys, exports SQLite, writes `probes.csv` |
 | `nsys_kernel_probe.py` | the traced process: pedestal, one batched pass, exit |
 | `cf_common.py` | cluster-finder settings: pedestal frames, n_sigma, headers for the rebuild guard, `DEVICE_PED_TYPE` |
+| `page_faults.py` | host side, no profiler: FPS and page faults of the output path, with and without the glibc heap setting and pre-heating |
 | `../gpu_span.py` | shared: reads the SQLite export, computes busy time, duty cycle, roofline |
 | `../common.py` | shared: paths, guards (fresh build, idle GPU), `env.json` stamp |
 
@@ -70,6 +71,36 @@ python ../gpu_span.py results/<dir>/probe_9x9_s1_uncontended_cap1700.sqlite 2000
 
 `probes.csv` and `env.json` are small and can be committed with a result;
 the `.nsys-rep` and `.sqlite` traces are tens of MB each and are gitignored.
+
+## Host memory and page faults
+
+`page_faults.py` times the host side of the output path, without nsys: keeping
+every `ClusterVector`, filling a spectrum from them, and the zero-copy views.
+It also counts the minor page faults of each. Run each configuration in a fresh
+process: the heap's state carries over from one measurement to the next.
+
+```bash
+python page_faults.py                       # glibc defaults
+python page_faults.py --preheat-gb 3        # pre-heat, mostly given back without the setting
+GLIBC_TUNABLES=glibc.malloc.mmap_threshold=33554432:glibc.malloc.trim_threshold=4294967295:glibc.malloc.top_pad=268435456 \
+    python page_faults.py --preheat-gb 3    # keep freed memory, then pre-heat
+```
+
+2026-11-19, RTX 4090 with free memory, 20 000 frames, 3x3, batch 3000:
+keeping every `ClusterVector` runs at 31 000 FPS with the defaults (22.7
+faults per frame), 41 100 with the setting (0.2 faults per frame), and 51 200
+with the setting and a 3 GB pre-heat. The zero-copy path runs at about
+56 700 FPS in all of them. `top_pad` alone gives the setting's gain on a fresh
+start: the heap then grows in 256 MiB steps, which the kernel backs with 2 MiB
+transparent huge pages. `trim_threshold` or `mmap_threshold` alone gain
+nothing. The page `docs/src/python/cluster/pyClusterFinderCUDA.rst`
+("Performance") explains the setting and how to put it in a Jupyter kernel.
+
+Huge pages need free memory. With only 4 GB free (another process holding
+65 GB), the same three runs gave 29 400, 30 100 and 45 800 FPS, and the
+pre-heat took seconds per GB instead of about 0.1 s. Check `free -g` before
+quoting a number. With huge pages one fault maps 2 MiB, so a low fault count
+does not mean the memory came free: compare the times.
 
 ## Reading the numbers
 
