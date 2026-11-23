@@ -64,7 +64,8 @@ option(
   "Optimize for the building machine's CPU (-march=native -mtune=native). Not portable, the resulting binaries might not run on other machines."
   OFF)
 
-option(AARE_CUDA "Build CUDA cluster finder backend" OFF)
+option(AARE_CUDA
+       "Build the CUDA classes (ClusterFinderCUDA, PixelHistogramCUDA)" OFF)
 set(AARE_CUDA_ARCHITECTURES
     "native"
     CACHE STRING "CUDA architectures to compile for (used when AARE_CUDA=ON)")
@@ -485,6 +486,11 @@ if(AARE_CUDA)
     include/aare/cf/ClusterFinderCUDA.hpp
     include/aare/cf/clusterfinder_algo.cuh
     include/aare/cf/clusterfinder_kernel.cuh
+    include/aare/hist/HistogramPipelineCUDA.hpp
+    include/aare/hist/fill_policies.cuh
+    include/aare/hist/PedestalTrackingPixelHistogramCUDA.hpp
+    include/aare/hist/PixelHistogramCUDA.hpp
+    include/aare/hist/pixelhistogram_kernel.cuh
     include/aare/RAII_device.hpp
     include/aare/utils/cuda_check.cuh)
 endif()
@@ -622,8 +628,14 @@ endif()
 if(AARE_TESTS AND AARE_CUDA)
   target_sources(
     tests
-    PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/src/cf/ClusterFinderCUDA.test.cpp
-            ${CMAKE_CURRENT_SOURCE_DIR}/src/cf/ClusterFinderCUDA_testimpl.cu)
+    PRIVATE
+      ${CMAKE_CURRENT_SOURCE_DIR}/src/cf/ClusterFinderCUDA.test.cpp
+      ${CMAKE_CURRENT_SOURCE_DIR}/src/cf/ClusterFinderCUDA_testimpl.cu
+      ${CMAKE_CURRENT_SOURCE_DIR}/src/hist/PixelHistogramCUDA.test.cpp
+      ${CMAKE_CURRENT_SOURCE_DIR}/src/hist/PixelHistogramCUDA_testimpl.cu
+      ${CMAKE_CURRENT_SOURCE_DIR}/src/hist/PedestalTrackingPixelHistogramCUDA.test.cpp
+      ${CMAKE_CURRENT_SOURCE_DIR}/src/hist/PedestalTrackingPixelHistogramCUDA_testimpl.cu
+  )
   target_link_libraries(tests PRIVATE aare_cuda)
 endif()
 

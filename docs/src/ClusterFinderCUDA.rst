@@ -21,6 +21,8 @@ no per-frame allocation or copy.
 Device kernel
 -------------
 
-.. doxygennamespace:: aare::cuda::detail
-   :members:
-   :undoc-members:
+.. doxygenfunction:: aare::cuda::detail::find_clusters_in_single_frame
+
+.. doxygentypedef:: aare::cuda::detail::COMPUTE_TYPE
+
+.. doxygentypedef:: aare::cuda::detail::DEVICE_PED_TYPE

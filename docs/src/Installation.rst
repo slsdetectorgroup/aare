@@ -117,10 +117,11 @@ needs less total compiler time but has fewer units to compile in parallel, which
 faster on machines with few cores. Default option is off; ``pip install`` and the packaging
 CI jobs turn it on.
 
-**AARE_CUDA "Build CUDA cluster finder backend" OFF**
+**AARE_CUDA "Build the CUDA classes (ClusterFinderCUDA, PixelHistogramCUDA)" OFF**
 
-Build :doc:`ClusterFinderCUDA`, the GPU cluster finder. Default option is off,
-in which case aare builds CPU-only and the class is not compiled at all.
+Build the GPU classes: :doc:`ClusterFinderCUDA`, the cluster finder, and
+:doc:`PixelHistogramCUDA`, the per-pixel histograms. Default option is off,
+in which case aare builds CPU-only and the classes are not compiled at all.
 
 Requires the CUDA toolkit (nvcc) and a compiler combination nvcc accepts; see
 :doc:`Requirements`. With ``AARE_PYTHON_BINDINGS=ON`` the CUDA bindings are
