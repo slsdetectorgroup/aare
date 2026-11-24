@@ -76,6 +76,10 @@ jobs:
         working-directory: ${{github.workspace}}/build
         run: python -m pytest ${{github.workspace}}/python/tests/ 
 
+      - name: Documentation examples
+        working-directory: ${{github.workspace}}/build
+        run: make doctest
+
       - name: Upload static files as artifact
         if: matrix.platform == 'ubuntu-latest'
         id: deployment
