@@ -157,7 +157,7 @@ constructor; `ClusterFinderState`, which contains one, likewise;
 `ClusterFinderMTState`, which holds one `ClusterFinderState` per thread and
 is handed out or taken on a running finder once the input queues have
 drained, as everything else that touches the per-thread finders, see
-`wait_until_idle()`); the struct
+`idle_finders()`); the struct
 lives in the header of its class, holds no redundant fields and knows
 nothing about files. `set_state()` checks the state before it changes
 anything, with a `check_state()` that a class holding several such objects
