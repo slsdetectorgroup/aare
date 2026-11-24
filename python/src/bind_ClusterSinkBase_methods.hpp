@@ -39,8 +39,5 @@ void define_ClusterSink_methods(py::class_<Sink> &cls) {
             py::call_guard<py::gil_scoped_release>(),
             R"(
             Stop the sink thread once the output queue of the finder is empty.
-            Does nothing if the sink is already stopped.)")
-        .def(
-            "steal_clusters", [](Sink &self) { return self.steal_clusters(); },
-            R"(Take the clusters currently held by the sink. For a ClusterCollector, this returns all clusters collected so far. For a ClusterFileSink, this returns nothing.)");
+            Does nothing if the sink is already stopped.)");
 }

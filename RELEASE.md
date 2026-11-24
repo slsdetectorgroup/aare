@@ -4,6 +4,14 @@
 
 ### New Features:
 
+- Python bindings for ``ClusterFinder``, which bundles a ``ClusterFinderMT``
+  with a sink: ``ClusterFinderCollector_<Cluster>`` keeps the clusters in
+  memory (``get_clusters()`` waits for queued frames, ``steal_clusters()``
+  does not) and ``ClusterFinderFileSink_<Cluster>`` writes them to a cluster
+  file given as ``fname``. Both start on construction, ``stop()`` or leaving
+  a ``with`` block stops them.
+- ``ClusterCollector.collect(finder)`` and ``ClusterFileSink.collect(finder)``
+  take a ``ClusterFinderMT`` and keep it alive while collecting.
 - ``VarClusterFinder`` can exclude pixels with a mask (``set_mask`` and
   ``clear_mask`` in C++, the ``mask`` property in Python, ``None`` to
   remove it): a masked pixel never seeds a cluster and is never added to

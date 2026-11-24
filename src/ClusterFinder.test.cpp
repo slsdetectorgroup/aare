@@ -88,7 +88,7 @@ TEST_CASE("ClusterFinder with a ClusterCollector collects all frames") {
     cf.stop();
     CHECK_FALSE(cf.running());
 
-    auto clusters = cf.steal_clusters();
+    auto clusters = cf.sink()->steal_clusters();
     REQUIRE(clusters.size() == n_frames);
 
     std::vector<int32_t> frame_numbers;
@@ -124,9 +124,6 @@ TEST_CASE("ClusterFinder with a ClusterFileSink writes all frames") {
         push_pedestal(cf);
         push_hits(cf, n_frames);
         cf.stop();
-
-        // The clusters are on disk, nothing to steal.
-        CHECK(cf.steal_clusters().empty());
     }
 
     ClusterFile<ClusterType> file(tmp.path());

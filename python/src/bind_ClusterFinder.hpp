@@ -3,6 +3,8 @@
 #include "aare/ClusterCollector.hpp"
 #include "aare/ClusterFileSink.hpp"
 #include "aare/ClusterFinder.hpp"
+#include "aare/ClusterFinderFileSink.hpp"
+#include "aare/ClusterFinderMemoryCollect.hpp"
 #include "aare/ClusterVector.hpp"
 #include "aare/NDArray.hpp"
 #include "aare/NDView.hpp"
@@ -50,20 +52,6 @@ void define_ClusterFinder_methods(py::class_<Finder> &cls) {
             "stop", [](Finder &self) { self.stop(); },
             py::call_guard<py::gil_scoped_release>(),
             R"(Process all queued frames, then drain and stop the sink. For a file sink the file is complete afterwards. Calling it again does nothing.)")
-        .def(
-            "steal_clusters",
-            [](Finder &self) { return self.steal_clusters(); },
-            R"(Take the clusters currently held by the sink, without waiting for queued frames. Returns nothing for a file sink.)")
-        .def(
-            "get_clusters",
-            [](Finder &self) {
-                {
-                    py::gil_scoped_release release;
-                    self.sync();
-                }
-                return self.steal_clusters();
-            },
-            R"(Wait for all queued frames, then take the clusters held by the sink. Returns nothing for a file sink.)")
         .def("clear_pedestal", [](Finder &self) { self.clear_pedestal(); })
         .def("update_threshold", [](Finder &self) { self.update_threshold(); })
         .def(
@@ -115,12 +103,12 @@ void define_ClusterFinder_methods(py::class_<Finder> &cls) {
  */
 template <typename T, uint8_t ClusterSizeX, uint8_t ClusterSizeY,
           typename CoordType = uint16_t>
-void define_ClusterFinderCollector(py::module &m, const std::string &typestr) {
-    auto class_name = fmt::format("ClusterFinderCollector_{}", typestr);
+void define_ClusterFinderMemoryCollect(py::module &m,
+                                       const std::string &typestr) {
+    auto class_name = fmt::format("ClusterFinderMemoryCollect_{}", typestr);
 
     using ClusterType = aare::Cluster<T, ClusterSizeX, ClusterSizeY, CoordType>;
-    using Finder = aare::ClusterFinder<aare::ClusterCollector<ClusterType>,
-                                       uint16_t, pd_type>;
+    using Finder = aare::ClusterFinderMemoryCollect<ClusterType>;
 
     py::class_<Finder> cls(
         m, class_name.c_str(),
@@ -133,6 +121,13 @@ steal_clusters(). stop() or leaving a with block stops both.)");
             py::arg("capacity") = 2048, py::arg("n_threads") = 3,
             py::arg("queue_depth") = 16,
             py::arg("min_pedestal_samples") = 1000);
+    cls.def(
+           "get_clusters", [](Finder &self) { return self.get_clusters(); },
+           R"(Wait for all queued frames to be processed, then return all clusters currently accumulated in memory.)")
+        .def(
+            "steal_clusters",
+            [](Finder &self) { return self.steal_clusters(); },
+            R"(Return all clusters currently accumulated in memory. Does not wait for queued frames to be processed.)");
     define_ClusterFinder_methods<Finder, ClusterSizeX, ClusterSizeY>(cls);
 }
 

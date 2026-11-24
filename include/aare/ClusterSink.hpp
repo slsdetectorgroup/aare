@@ -76,14 +76,6 @@ class ClusterSink {
         m_thread.join();
     }
 
-    /**
-     * @brief Take the clusters held by the sink.
-     * @throws std::runtime_error if the consumer thread is still running
-     */
-    std::vector<ClusterVector<ClusterType>> steal_clusters() {
-        return derived().steal_clusters_impl();
-    }
-
   protected:
     ClusterSink() = default;
     // Protected and non-virtual: sinks are never deleted through the base.

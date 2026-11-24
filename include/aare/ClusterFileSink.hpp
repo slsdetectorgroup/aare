@@ -25,7 +25,7 @@ template <typename ClusterType,
 class ClusterFileSink
     : public ClusterSink<ClusterFileSink<ClusterType>, ClusterType> {
     using Base = ClusterSink<ClusterFileSink<ClusterType>, ClusterType>;
-    friend Base;
+    friend Base; // Base calls consume() on the derived class
 
   public:
     using SourceQueue = typename Base::SourceQueue;
@@ -62,12 +62,6 @@ class ClusterFileSink
                      sizeof(num_clusters));
         m_file.write(reinterpret_cast<const char *>(clusters.data()),
                      clusters.size() * clusters.item_size());
-    }
-
-    std::vector<ClusterVector<ClusterType>> steal_clusters_impl() {
-        LOG(logWARNING) << "ClusterFileSink::steal_clusters: clusters are "
-                           "written to file, returning an empty vector";
-        return {};
     }
 };
 

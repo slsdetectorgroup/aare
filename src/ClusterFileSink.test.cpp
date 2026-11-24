@@ -181,19 +181,3 @@ TEST_CASE("cluster file sink writes the clusters of a cluster finder") {
         CHECK(frame_numbers[static_cast<size_t>(i)] == i);
     }
 }
-
-TEST_CASE("cluster file sink returns an empty vector on steal_clusters") {
-    TemporarySinkFile file;
-    SinkQueue source(8);
-    ClusterFileSink<SinkCluster> sink(file.path());
-    sink.collect(&source);
-
-    for (int32_t i = 0; i < 5; ++i) {
-        REQUIRE(source.write(make_frame(1 + i, static_cast<size_t>(i % 3))));
-    }
-    auto clusters = sink.steal_clusters();
-    CHECK(clusters.empty());
-    sink.stop();
-
-    check_file(file.path(), 1, 5);
-}

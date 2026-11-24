@@ -59,8 +59,9 @@ def test_collector_can_be_started_again():
     collector.stop()
     collector.stop()
 
-    collector.start()
-    collector.start()
+    collector.collect(finder)
+    with pytest.raises(RuntimeError, match="already collecting"):
+        collector.collect(finder)
     _find(finder, range(4, 8))
     finder.sync()
     assert _frame_numbers(collector.steal_clusters()) == list(range(8))
@@ -123,7 +124,7 @@ def test_file_sink_can_be_dropped_without_stop(tmp_path):
 
 def test_file_sink_raises_if_the_file_cannot_be_opened(tmp_path):
     finder = _finder_with_pedestal()
-    with pytest.raises(RuntimeError, match="Could not open"):
+    with pytest.raises(RuntimeError, match="could not open"):
         ClusterFileSink(finder, tmp_path / "missing" / "clusters.clust")
     finder.stop()
 

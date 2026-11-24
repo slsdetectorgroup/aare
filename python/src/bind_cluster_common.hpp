@@ -37,6 +37,6 @@ double, 'f' for float)
     define_ClusterFinderMT<T, N, M, U>(m, "Cluster" #N "x" #M #TYPE_CODE);     \
     define_ClusterFileSink<T, N, M, U>(m, "Cluster" #N "x" #M #TYPE_CODE);     \
     define_ClusterCollector<T, N, M, U>(m, "Cluster" #N "x" #M #TYPE_CODE);    \
-    define_ClusterFinderCollector<T, N, M, U>(m,                               \
-                                              "Cluster" #N "x" #M #TYPE_CODE); \
+    define_ClusterFinderMemoryCollect<T, N, M, U>(m, "Cluster" #N              \
+                                                     "x" #M #TYPE_CODE);       \
     define_ClusterFinderFileSink<T, N, M, U>(m, "Cluster" #N "x" #M #TYPE_CODE);

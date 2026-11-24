@@ -23,7 +23,7 @@ template <typename ClusterType,
 class ClusterCollector
     : public ClusterSink<ClusterCollector<ClusterType>, ClusterType> {
     using Base = ClusterSink<ClusterCollector<ClusterType>, ClusterType>;
-    friend Base;
+    friend Base; // Base calls consume() on the derived class
 
   public:
     using SourceQueue = typename Base::SourceQueue;
@@ -33,6 +33,14 @@ class ClusterCollector
 
     ~ClusterCollector() { this->stop(); }
 
+    std::vector<ClusterVector<ClusterType>> steal_clusters() {
+        // guard by mutex if needed if this is called from multiple threads
+        {
+            std::lock_guard<std::mutex> lock(m_clusters_mutex);
+            return std::exchange(m_clusters, {});
+        }
+    }
+
   private:
     std::mutex m_clusters_mutex;
     std::vector<ClusterVector<ClusterType>> m_clusters;
@@ -41,14 +49,6 @@ class ClusterCollector
         {
             std::lock_guard<std::mutex> lock(m_clusters_mutex);
             m_clusters.push_back(std::move(clusters));
-        }
-    }
-
-    std::vector<ClusterVector<ClusterType>> steal_clusters_impl() {
-        // guard by mutex if needed if this is called from multiple threads
-        {
-            std::lock_guard<std::mutex> lock(m_clusters_mutex);
-            return std::exchange(m_clusters, {});
         }
     }
 };

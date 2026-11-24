@@ -10,52 +10,12 @@
 #include "aare/Backoff.hpp"
 #include "aare/CircularFifo.hpp"
 #include "aare/ClusterFinderImpl.hpp"
+#include "aare/FramePool.hpp"
 #include "aare/NDArray.hpp"
 #include "aare/ProducerConsumerQueue.hpp"
 #include "aare/logger.hpp"
 #include <ctime>
 namespace aare {
-
-enum class FrameType {
-    DATA,
-    PEDESTAL,
-};
-
-/**
- * @brief Ticket identifying a frame buffer in a FramePool. Trivially
- * copyable, the buffer itself never travels through the queues.
- */
-struct FrameRef {
-    FrameType type{};
-    uint32_t slot{};
-    uint64_t frame_number{};
-};
-
-/**
- * @brief Fixed set of frame buffers allocated once at construction.
- *
- * Buffers are addressed by slot index and are never moved or reallocated, so
- * the queues only need to pass a FrameRef around. This keeps the per frame
- * allocation out of the hot path entirely.
- */
-class FramePool {
-    std::vector<NDArray<uint16_t, 2>> m_buffers;
-
-  public:
-    FramePool(size_t depth, Shape<2> shape) {
-        m_buffers.reserve(depth); // no reallocation, slots stay stable
-        for (size_t i = 0; i < depth; ++i) {
-            m_buffers.emplace_back(shape);
-        }
-    }
-
-    NDArray<uint16_t, 2> &operator[](uint32_t slot) { return m_buffers[slot]; }
-    const NDArray<uint16_t, 2> &operator[](uint32_t slot) const {
-        return m_buffers[slot];
-    }
-
-    size_t size() const { return m_buffers.size(); }
-};
 
 /**
  * @brief ClusterFinderMT is a multi-threaded version of ClusterFinderImpl. It
