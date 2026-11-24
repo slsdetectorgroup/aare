@@ -402,6 +402,11 @@ set(PUBLICHEADERS
     include/aare/CalculateEta.hpp
     include/aare/Cluster.hpp
     include/aare/ClusterFinder.hpp
+    include/aare/ClusterFinderImpl.hpp
+    include/aare/ClusterFinderMT.hpp
+    include/aare/ClusterFinderVectorSink.hpp
+    include/aare/ClusterFinderFileSink.hpp
+    include/aare/ClusterSink.hpp
     include/aare/ClusterFile.hpp
     include/aare/CtbRawFile.hpp
     include/aare/ClusterVector.hpp
@@ -538,6 +543,7 @@ if(AARE_TESTS)
       ${CMAKE_CURRENT_SOURCE_DIR}/src/NDArray.test.cpp
       ${CMAKE_CURRENT_SOURCE_DIR}/src/NDView.test.cpp
       ${CMAKE_CURRENT_SOURCE_DIR}/src/ClusterFinder.test.cpp
+      ${CMAKE_CURRENT_SOURCE_DIR}/src/ClusterFinderImpl.test.cpp
       ${CMAKE_CURRENT_SOURCE_DIR}/src/ClusterVector.test.cpp
       ${CMAKE_CURRENT_SOURCE_DIR}/src/Cluster.test.cpp
       ${CMAKE_CURRENT_SOURCE_DIR}/src/CalculateEta.test.cpp

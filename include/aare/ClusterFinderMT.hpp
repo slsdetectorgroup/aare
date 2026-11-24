@@ -9,57 +9,17 @@
 
 #include "aare/Backoff.hpp"
 #include "aare/CircularFifo.hpp"
-#include "aare/ClusterFinder.hpp"
+#include "aare/ClusterFinderImpl.hpp"
+#include "aare/FramePool.hpp"
 #include "aare/NDArray.hpp"
 #include "aare/ProducerConsumerQueue.hpp"
 #include "aare/logger.hpp"
 #include <ctime>
 namespace aare {
 
-enum class FrameType {
-    DATA,
-    PEDESTAL,
-};
-
 /**
- * @brief Ticket identifying a frame buffer in a FramePool. Trivially
- * copyable, the buffer itself never travels through the queues.
- */
-struct FrameRef {
-    FrameType type{};
-    uint32_t slot{};
-    uint64_t frame_number{};
-};
-
-/**
- * @brief Fixed set of frame buffers allocated once at construction.
- *
- * Buffers are addressed by slot index and are never moved or reallocated, so
- * the queues only need to pass a FrameRef around. This keeps the per frame
- * allocation out of the hot path entirely.
- */
-class FramePool {
-    std::vector<NDArray<uint16_t, 2>> m_buffers;
-
-  public:
-    FramePool(size_t depth, Shape<2> shape) {
-        m_buffers.reserve(depth); // no reallocation, slots stay stable
-        for (size_t i = 0; i < depth; ++i) {
-            m_buffers.emplace_back(shape);
-        }
-    }
-
-    NDArray<uint16_t, 2> &operator[](uint32_t slot) { return m_buffers[slot]; }
-    const NDArray<uint16_t, 2> &operator[](uint32_t slot) const {
-        return m_buffers[slot];
-    }
-
-    size_t size() const { return m_buffers.size(); }
-};
-
-/**
- * @brief ClusterFinderMT is a multi-threaded version of ClusterFinder. It uses
- * a producer-consumer queue to distribute the frames to the threads. The
+ * @brief ClusterFinderMT is a multi-threaded version of ClusterFinderImpl. It
+ * uses a producer-consumer queue to distribute the frames to the threads. The
  * clusters are collected in a single output queue.
  * @tparam FRAME_TYPE type of the frame data
  * @tparam PEDESTAL_TYPE type of the pedestal data
@@ -74,7 +34,7 @@ class ClusterFinderMT {
     using CT = typename ClusterType::value_type;
     size_t m_current_thread{0};
     size_t m_n_threads{0};
-    using Finder = ClusterFinder<ClusterType, FRAME_TYPE, PEDESTAL_TYPE>;
+    using Finder = ClusterFinderImpl<ClusterType, FRAME_TYPE, PEDESTAL_TYPE>;
     using InputQueue = CircularFifo<FrameRef>;
     using OutputQueue = ProducerConsumerQueue<ClusterVector<ClusterType>>;
     std::vector<std::unique_ptr<InputQueue>> m_input_queues;
@@ -216,7 +176,7 @@ class ClusterFinderMT {
         for (size_t i = 0; i < n_threads; i++) {
             m_cluster_finders.push_back(
                 std::make_unique<
-                    ClusterFinder<ClusterType, FRAME_TYPE, PEDESTAL_TYPE>>(
+                    ClusterFinderImpl<ClusterType, FRAME_TYPE, PEDESTAL_TYPE>>(
                     image_size, nSigma, capacity, min_pedestal_samples));
         }
         for (size_t i = 0; i < n_threads; i++) {

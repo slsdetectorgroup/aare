@@ -85,7 +85,8 @@ TEST_CASE("cluster file sink writes the clusters queued before it started") {
         REQUIRE(source.write(make_frame(1 + i, static_cast<size_t>(i % 3))));
     }
 
-    ClusterFileSink<SinkCluster> sink(&source, file.path());
+    ClusterFileSink<SinkCluster> sink(file.path());
+    sink.collect(&source);
     sink.stop();
 
     CHECK(source.isEmpty());
@@ -95,7 +96,8 @@ TEST_CASE("cluster file sink writes the clusters queued before it started") {
 TEST_CASE("cluster file sink writes the clusters queued while it runs") {
     TemporarySinkFile file;
     SinkQueue source(8);
-    ClusterFileSink<SinkCluster> sink(&source, file.path());
+    ClusterFileSink<SinkCluster> sink(file.path());
+    sink.collect(&source);
 
     for (int32_t i = 0; i < 40; ++i) {
         auto frame = make_frame(1 + i, static_cast<size_t>(i % 3));
@@ -113,7 +115,8 @@ TEST_CASE("cluster file sink stops and closes the file when destroyed") {
     TemporarySinkFile file;
     SinkQueue source(8);
     {
-        ClusterFileSink<SinkCluster> sink(&source, file.path());
+        ClusterFileSink<SinkCluster> sink(file.path());
+        sink.collect(&source);
         for (int32_t i = 0; i < 5; ++i) {
             REQUIRE(
                 source.write(make_frame(1 + i, static_cast<size_t>(i % 3))));
@@ -133,7 +136,7 @@ TEST_CASE("cluster file sink throws if the file cannot be opened") {
 
     // The file name is used as a directory that does not exist
     CHECK_THROWS_AS(
-        ClusterFileSink<SinkCluster>(&source, file.path() / "clusters.clust"),
+        ClusterFileSink<SinkCluster>(file.path() / "clusters.clust"),
         std::runtime_error);
     // Nothing was taken from the queue
     CHECK_FALSE(source.isEmpty());
@@ -147,7 +150,8 @@ TEST_CASE("cluster file sink writes the clusters of a cluster finder") {
 
     ClusterFinderMT<SinkCluster> finder(image_size, 5, 200, 3, 16,
                                         min_pedestal_samples);
-    ClusterFileSink<SinkCluster> sink(&finder, file.path());
+    ClusterFileSink<SinkCluster> sink(file.path());
+    sink.collect(finder.sink());
 
     NDArray<uint16_t, 2> low(image_size, 98);
     NDArray<uint16_t, 2> high(image_size, 102);

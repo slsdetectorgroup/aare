@@ -4,6 +4,13 @@
 
 ### New Features:
 
+- New "virtual" (not constructable as a standalone class) CRTP base class ``ClusterSink`` for easier implementation of custom cluster sink types. (Note: The base type is not registered in python)
+- New class ``ClusterFinder`` templated on the ClusterSink type, which bundles a ``ClusterFinderMT``
+  with the templated sink. It automatically handles collection to sink, synchronization with sink and destructions. 
+- Special derived classes ``ClusterFinderVectorSink`` and ``ClusterFinderFileSink`` that inherit from ``ClusterFinder``. 
+  ``ClusterFinderVectorSink`` uses ``ClusterVectorSink`` as sink type. It has two special member functions ``steal_clusters`` and ``get_clusters``. ``steal_clusters`` drains the sink queue and returns the accumulated clusters. ``get_clusters`` first synchronizes with the finder and then returns the accumulated clusters. 
+ ``ClusterFinderFileSink`` uses the ``ClusterFileSink`` as sink and directly writes the clusters to memory. 
+  Both derived classes start on construction, ``stop()`` or leaving a ``with`` from python stops them. 
 - ``VarClusterFinder`` can exclude pixels with a mask (``set_mask`` and
   ``clear_mask`` in C++, the ``mask`` property in Python, ``None`` to
   remove it): a masked pixel never seeds a cluster and is never added to
@@ -37,11 +44,15 @@
 
 ### API Changes:
 
-- ``ClusterCollector.steal_clusters()`` can be called while the collector
+- ``ClusterCollector`` is renamed to ``ClusterVectorSink``. 
+- Both ``ClusterVectorSink`` and ``ClusterFileSink`` don't take the ``ClusterFinderMT`` as construction argument and don't spawn the collector thread during construction anymore. 
+  One needs to call ``collect()`` and pass ``ClusterFinderMT`` sink queue to start the collection process. The python factories ``ClusterVectorSink`` and ``ClusterFileSink`` taking the ``ClusterFinderMT`` as function input argument can still be used as before. 
+- `ClusterFinder` is renamed to `ClsuterFinderImpl`
+- ``ClusterVectorSink.steal_clusters()`` can be called while the collector
   is running and no longer raises on a collector that is not stopped. It
   returns the clusters collected since the last call; call ``sync()`` on the
   ``ClusterFinderMT`` first to get those of every frame given to it so far.
-- ``ClusterCollector`` has ``start()``, which starts the collector thread
+- ``ClusterVectorSink`` has ``start()``, which starts the collector thread
   again after ``stop()``. Both do nothing when there is nothing to do.
 - ``VarClusterFinder`` keeps only the flood fill. ``find_clusters_X`` is now
   ``find_clusters``; the connected component labelling path (the previous
@@ -94,7 +105,7 @@
   terminates the program: the destructor stops the thread and closes the
   file. Calling ``stop()`` twice no longer raises. In Python the sink keeps
   its ``ClusterFinderMT`` alive.
-- Destroying a ``ClusterCollector`` without calling ``stop()`` no longer
+- Destroying a ``ClusterVectorSink`` without calling ``stop()`` no longer
   terminates the program: the destructor stops the collector thread. In
   Python the collector keeps its ``ClusterFinderMT`` alive.
 - Fixed ``VarClusterFinder`` crashing with a stack overflow on large

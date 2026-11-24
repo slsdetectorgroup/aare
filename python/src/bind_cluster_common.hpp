@@ -5,12 +5,13 @@
 #include "module_config.hpp"
 
 #include "bind_Cluster.hpp"
-#include "bind_ClusterCollector.hpp"
 #include "bind_ClusterFile.hpp"
 #include "bind_ClusterFileSink.hpp"
 #include "bind_ClusterFinder.hpp"
+#include "bind_ClusterFinderImpl.hpp"
 #include "bind_ClusterFinderMT.hpp"
 #include "bind_ClusterVector.hpp"
+#include "bind_ClusterVectorSink.hpp"
 #include "bind_Eta.hpp"
 
 /* MACRO that defines Cluster bindings for a specific size and type
@@ -32,7 +33,10 @@ double, 'f' for float)
     reduce_to_2x2<T, N, M, U>(m);
 
 #define DEFINE_BINDINGS_CLUSTERFINDER(T, N, M, U, TYPE_CODE)                   \
-    define_ClusterFinder<T, N, M, U>(m, "Cluster" #N "x" #M #TYPE_CODE);       \
+    define_ClusterFinderImpl<T, N, M, U>(m, "Cluster" #N "x" #M #TYPE_CODE);   \
     define_ClusterFinderMT<T, N, M, U>(m, "Cluster" #N "x" #M #TYPE_CODE);     \
     define_ClusterFileSink<T, N, M, U>(m, "Cluster" #N "x" #M #TYPE_CODE);     \
-    define_ClusterCollector<T, N, M, U>(m, "Cluster" #N "x" #M #TYPE_CODE);
+    define_ClusterVectorSink<T, N, M, U>(m, "Cluster" #N "x" #M #TYPE_CODE);   \
+    define_ClusterFinderVectorSink<T, N, M, U>(m, "Cluster" #N                 \
+                                                  "x" #M #TYPE_CODE);          \
+    define_ClusterFinderFileSink<T, N, M, U>(m, "Cluster" #N "x" #M #TYPE_CODE);

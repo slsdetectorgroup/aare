@@ -3,7 +3,7 @@
 import numpy as np
 import pytest
 
-from aare import ClusterCollector, ClusterFile, ClusterFileSink, ClusterFinderMT
+from aare import ClusterVectorSink, ClusterFile, ClusterFileSink, ClusterFinderMT
 
 SHAPE = (10, 12)
 N_SAMPLES = 8
@@ -33,7 +33,7 @@ def _frame_numbers(cluster_vectors):
 
 def test_clusters_can_be_stolen_from_a_running_collector():
     finder = _finder_with_pedestal()
-    collector = ClusterCollector(finder)
+    collector = ClusterVectorSink(finder)
 
     # After sync() the collector has one ClusterVector for each data frame
     _find(finder, range(12))
@@ -52,15 +52,16 @@ def test_clusters_can_be_stolen_from_a_running_collector():
 
 def test_collector_can_be_started_again():
     finder = _finder_with_pedestal()
-    collector = ClusterCollector(finder)
+    collector = ClusterVectorSink(finder)
 
     _find(finder, range(4))
     finder.sync()
     collector.stop()
     collector.stop()
 
-    collector.start()
-    collector.start()
+    collector.collect(finder)
+    with pytest.raises(RuntimeError, match="already collecting"):
+        collector.collect(finder)
     _find(finder, range(4, 8))
     finder.sync()
     assert _frame_numbers(collector.steal_clusters()) == list(range(8))
@@ -71,7 +72,7 @@ def test_collector_can_be_started_again():
 
 def test_collector_can_be_dropped_without_stop():
     finder = _finder_with_pedestal()
-    collector = ClusterCollector(finder)
+    collector = ClusterVectorSink(finder)
     _find(finder, range(4))
     finder.sync()
     # The collector keeps the finder alive and stops its own thread
@@ -123,7 +124,7 @@ def test_file_sink_can_be_dropped_without_stop(tmp_path):
 
 def test_file_sink_raises_if_the_file_cannot_be_opened(tmp_path):
     finder = _finder_with_pedestal()
-    with pytest.raises(RuntimeError, match="Could not open"):
+    with pytest.raises(RuntimeError, match="could not open"):
         ClusterFileSink(finder, tmp_path / "missing" / "clusters.clust")
     finder.stop()
 
@@ -136,7 +137,7 @@ def test_running_finder_can_be_dropped():
 
 def test_finder_start_and_stop_can_be_repeated():
     finder = _finder_with_pedestal()
-    collector = ClusterCollector(finder)
+    collector = ClusterVectorSink(finder)
     finder.start()
     _find(finder, range(4))
     finder.stop()

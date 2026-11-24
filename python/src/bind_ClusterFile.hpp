@@ -3,6 +3,7 @@
 #include "aare/CalculateEta.hpp"
 #include "aare/ClusterFile.hpp"
 #include "aare/defs.hpp"
+#include "np_helper.hpp"
 
 #include <cstdint>
 #include <filesystem>

@@ -69,28 +69,39 @@ def ClusterFinderMT(image_size, *, cluster_size = (3,3), dtype=np.int32, n_sigma
     return cls(image_size, n_sigma=n_sigma, capacity=capacity, min_pedestal_samples=min_pedestal_samples, n_threads=n_threads)
 
 
-def ClusterCollector(clusterfindermt, dtype=np.int32): 
-    """ 
-    Factory function to create a ClusterCollector object. Provides a cleaner syntax for 
-    the templated ClusterCollector in C++.
+def ClusterVectorSink(clusterfindermt, dtype=np.int32):
     """
-    
-    cls = _get_class("ClusterCollector", clusterfindermt.cluster_size, dtype)
-    return cls(clusterfindermt)
+    Factory function to create a ClusterVectorSink that keeps the clusters of
+    a ClusterFinderMT in memory. Provides a cleaner syntax for the templated
+    ClusterVectorSink in C++.
 
-def ClusterFileSink(clusterfindermt, cluster_file, dtype=np.int32): 
-    """ 
+    The collector starts collecting from ``clusterfindermt`` right away. Take
+    the clusters with ``steal_clusters()``; call ``sync()`` on the finder first
+    to get the clusters of every frame given to it so far. After ``stop()``,
+    ``collect(finder)`` starts it again.
+    """
+
+    cls = _get_class("ClusterVectorSink", clusterfindermt.cluster_size, dtype)
+    collector = cls()
+    collector.collect(clusterfindermt)
+    return collector
+
+def ClusterFileSink(clusterfindermt, cluster_file, dtype=np.int32):
+    """
     Factory function to create a ClusterFileSink object, which writes the
     clusters of a ClusterFinderMT to a binary cluster file. Provides a cleaner
     syntax for the templated ClusterFileSink in C++.
 
     The file is replaced if it exists and is complete once ``stop()`` has
-    returned or the sink is deleted. Raises ``RuntimeError`` if the file
+    returned or the sink is deleted. ``stop()`` closes the file, so a stopped
+    file sink cannot collect again. Raises ``RuntimeError`` if the file
     cannot be opened.
     """
 
     cls = _get_class("ClusterFileSink", clusterfindermt.cluster_size, dtype)
-    return cls(clusterfindermt, cluster_file)
+    sink = cls(cluster_file)
+    sink.collect(clusterfindermt)
+    return sink
 
 
 def ClusterFile(fname, cluster_size=(3,3), dtype=np.int32, chunk_size = 1000, mode = "r"):
