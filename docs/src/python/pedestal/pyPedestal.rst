@@ -42,10 +42,7 @@ Factory
 Example
 -------
 
-The example needs some frames to work with. Four small frames alternating
-between 102 and 98 stand in for dark frames read from a detector:
-
-.. testcode::
+.. testsetup::
 
    import numpy as np
 
@@ -53,11 +50,13 @@ between 102 and 98 stand in for dark frames read from a detector:
    initialization_frames[0::2] += 2
    initialization_frames[1::2] -= 2
 
-Push the frames to the pedestal, then read the mean and the noise of each
-pixel:
+Here ``initialization_frames`` is a stack of dark frames with dtype ``uint16``
+and shape ``(n_frames, rows, cols)``. Push the frames to the pedestal, then
+read the mean and the noise of each pixel:
 
 .. testcode::
 
+   import numpy as np
    from aare import Pedestal
 
    pedestal = Pedestal(rows=2, cols=3, n_samples=100, dtype=np.float32)
@@ -65,24 +64,19 @@ pixel:
    for frame in initialization_frames:
        pedestal.push(frame)
 
+   # The mean and std can be requested even if fewer than n_samples frames
+   # have been pushed
    mean = pedestal.mean()
    noise = pedestal.std()
 
-   print("Mean:")
-   print(mean)
-   print("Noise:")
-   print(noise)
+.. testcode::
+   :hide:
 
-Output:
-
-.. testoutput::
-
-   Mean:
-   [[100. 100. 100.]
-    [100. 100. 100.]]
-   Noise:
-   [[2. 2. 2.]
-    [2. 2. 2.]]
+   # The frames alternate between 102 and 98
+   assert mean.dtype == np.float32
+   assert noise.dtype == np.float32
+   np.testing.assert_array_equal(mean, np.full((2, 3), 100))
+   np.testing.assert_array_equal(noise, np.full((2, 3), 2))
 
 Complete API
 ------------
