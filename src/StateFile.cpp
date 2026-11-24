@@ -44,55 +44,6 @@ void require_little_endian(const std::filesystem::path &fname) {
         fail(fname, "state files are only supported on little-endian systems");
 }
 
-// The file a state is written to before it replaces the target: the target
-// with ".tmp" appended, so that the rename stays on one file system. Removed
-// again unless it was renamed. Saves to one target must not overlap.
-class TemporaryFile {
-    std::filesystem::path m_target;
-    std::filesystem::path m_path;
-    std::ofstream m_file;
-
-  public:
-    explicit TemporaryFile(const std::filesystem::path &target)
-        : m_target(target), m_path(target) {
-        m_path += ".tmp";
-        m_file.open(m_path, std::ios::binary | std::ios::trunc);
-        if (!m_file)
-            fail(target, fmt::format("could not create {}", m_path.string()));
-    }
-
-    TemporaryFile(const TemporaryFile &) = delete;
-    TemporaryFile &operator=(const TemporaryFile &) = delete;
-
-    ~TemporaryFile() {
-        m_file.close();
-        if (!m_path.empty()) {
-            std::error_code ignored;
-            std::filesystem::remove(m_path, ignored);
-        }
-    }
-
-    // A failed write is reported by rename_to_target()
-    void write(const char *data, uint64_t n_bytes) {
-        m_file.write(data, static_cast<std::streamsize>(n_bytes));
-    }
-
-    void pad(uint64_t n_bytes) {
-        for (uint64_t i = 0; i < n_bytes; ++i)
-            m_file.put('\0');
-    }
-
-    /** Replace the target with what was written. */
-    void rename_to_target() {
-        m_file.close();
-        if (!m_file)
-            fail(m_target,
-                 fmt::format("could not write to {}", m_path.string()));
-        std::filesystem::rename(m_path, m_target);
-        m_path.clear();
-    }
-};
-
 } // namespace
 
 void StateWriter::write(const std::filesystem::path &fname,
@@ -113,19 +64,36 @@ void StateWriter::write(const std::filesystem::path &fname,
     text.push_back('\n');
     const uint64_t header_length = text.size();
 
-    TemporaryFile out(fname);
-    out.write(file_magic.data(), file_magic.size());
-    out.write(reinterpret_cast<const char *>(&header_length),
-              sizeof(header_length));
-    out.write(text.data(), text.size());
+    // Written to a file next to the target, so that the rename stays on one
+    // file system, which then replaces the target or is removed again. Saves
+    // to one target must not overlap.
+    auto tmp = fname;
+    tmp += ".tmp";
+    std::ofstream out(tmp, std::ios::binary | std::ios::trunc);
+    if (!out)
+        fail(fname, fmt::format("could not create {}", tmp.string()));
+    try {
+        out.write(file_magic.data(), file_magic.size());
+        out.write(reinterpret_cast<const char *>(&header_length),
+                  sizeof(header_length));
+        out << text;
 
-    uint64_t position = 0; // in the data section
-    for (const auto &array : m_arrays) {
-        out.pad(array.offset - position);
-        out.write(array.data, array.n_bytes);
-        position = array.offset + array.n_bytes;
+        uint64_t position = 0; // in the data section
+        for (const auto &array : m_arrays) {
+            out << std::string(array.offset - position, '\0');
+            out.write(array.data, static_cast<std::streamsize>(array.n_bytes));
+            position = array.offset + array.n_bytes;
+        }
+        out.close();
+        if (!out)
+            fail(fname, fmt::format("could not write to {}", tmp.string()));
+        std::filesystem::rename(tmp, fname);
+    } catch (...) {
+        out.close();
+        std::error_code ignored;
+        std::filesystem::remove(tmp, ignored);
+        throw;
     }
-    out.rename_to_target();
 }
 
 StateReader::StateReader(const std::filesystem::path &fname)
