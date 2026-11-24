@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: MPL-2.0
 #pragma once
-#include "aare/ClusterCollector.hpp"
+#include "aare/ClusterVectorSink.hpp"
 
 #include "bind_ClusterSinkBase_methods.hpp"
 
@@ -14,11 +14,11 @@ namespace py = pybind11;
 
 template <typename T, uint8_t ClusterSizeX, uint8_t ClusterSizeY,
           typename CoordType = uint16_t>
-void define_ClusterCollector(py::module &m, const std::string &typestr) {
-    auto class_name = fmt::format("ClusterCollector_{}", typestr);
+void define_ClusterVectorSink(py::module &m, const std::string &typestr) {
+    auto class_name = fmt::format("ClusterVectorSink_{}", typestr);
 
     using ClusterType = aare::Cluster<T, ClusterSizeX, ClusterSizeY, CoordType>;
-    using Sink = aare::ClusterCollector<ClusterType>;
+    using Sink = aare::ClusterVectorSink<ClusterType>;
 
     py::class_<Sink> cls(m, class_name.c_str(),
                          R"(ClusterSink that keeps the clusters in memory.

@@ -3,19 +3,19 @@ ClusterFinder
 
 ``ClusterFinder`` combines a :doc:`ClusterFinderMT` with a cluster sink. The
 sink type is a template parameter and must derive from ``ClusterSink``:
-``ClusterCollector`` keeps the clusters in memory, ``ClusterFileSink`` writes
+``ClusterVectorSink`` keeps the clusters in memory, ``ClusterFileSink`` writes
 them to a binary cluster file.
 
 .. code-block:: cpp
 
-    #include "aare/ClusterCollector.hpp"
+    #include "aare/ClusterVectorSink.hpp"
     #include "aare/ClusterFileSink.hpp"
     #include "aare/ClusterFinder.hpp"
 
     using ClusterType = aare::Cluster<int32_t, 3, 3>;
 
     // in memory
-    aare::ClusterFinder<aare::ClusterCollector<ClusterType>> cf({400, 400});
+    aare::ClusterFinder<aare::ClusterVectorSink<ClusterType>> cf({400, 400});
     // ... push_pedestal_frame / find_clusters
     cf.stop();
     auto clusters = cf.steal_clusters();

@@ -16,7 +16,7 @@ namespace aare {
  * @brief Base class for a multithreaded finder that feeds its clusters into a
  * sink.
  *
- * Owns a ClusterFinderMT and a SinkType (for example ClusterCollector or
+ * Owns a ClusterFinderMT and a SinkType (for example ClusterVectorSink or
  * ClusterFileSink). Both are started on construction: the sink's collect()
  * spawns the thread that drains the finder's output queue. stop() processes
  * all queued frames, then drains and stops the sink. The destructor calls

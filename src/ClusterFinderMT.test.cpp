@@ -2,7 +2,7 @@
 
 #include "aare/ClusterFinderMT.hpp"
 #include "aare/Cluster.hpp"
-#include "aare/ClusterCollector.hpp"
+#include "aare/ClusterVectorSink.hpp"
 #include "aare/File.hpp"
 
 #include "test_config.hpp"
@@ -109,7 +109,7 @@ TEST_CASE("multithreaded cluster finder", "[.with-data]") {
     CHECK(cf.m_input_queues_are_empty() == true);
 
     CHECK(cf.m_sink_size() == n_frames);
-    ClusterCollector<ClusterType> clustercollector{};
+    ClusterVectorSink<ClusterType> clustercollector{};
     clustercollector.collect(cf.sink());
 
     clustercollector.stop();
@@ -181,7 +181,7 @@ TEST_CASE("nSigma set before the pedestal is ready reaches all threads") {
     }
     cf.stop();
 
-    ClusterCollector<ClusterType> collector{};
+    ClusterVectorSink<ClusterType> collector{};
     collector.collect(cf.sink());
     collector.stop();
 
@@ -198,19 +198,19 @@ TEST_CASE(
     using Finder = ClusterFinderMTWrapper<ClusterType, uint16_t, float>;
 
     static_assert(std::is_invocable_v<
-                  decltype(&ClusterCollector<ClusterType>::collect),
-                  ClusterCollector<ClusterType>,
+                  decltype(&ClusterVectorSink<ClusterType>::collect),
+                  ClusterVectorSink<ClusterType>,
                   ProducerConsumerQueue<ClusterVector<ClusterType>> *>);
     static_assert(
         !std::is_invocable_v<
-            decltype(&ClusterCollector<ClusterType>::collect),
-            ClusterCollector<ClusterType>,
+            decltype(&ClusterVectorSink<ClusterType>::collect),
+            ClusterVectorSink<ClusterType>,
             ProducerConsumerQueue<ClusterVector<Cluster<int32_t, 5, 5>>> *>);
 
     Finder cf({10, 10});
     cf.stop();
 
-    ClusterCollector<ClusterType> collector{};
+    ClusterVectorSink<ClusterType> collector{};
     collector.collect(cf.sink());
     collector.stop();
 
@@ -225,7 +225,7 @@ TEST_CASE("cluster collector drains queued clusters when stopped") {
         REQUIRE(source.write(ClusterVector<ClusterType>(4, frame_number)));
     }
 
-    ClusterCollector<ClusterType> collector{};
+    ClusterVectorSink<ClusterType> collector{};
     collector.collect(&source);
     collector.stop();
 
@@ -240,7 +240,7 @@ TEST_CASE("cluster collector drains queued clusters when stopped") {
 TEST_CASE("clusters can be stolen from a running cluster collector") {
     using ClusterType = Cluster<int32_t, 3, 3>;
     ProducerConsumerQueue<ClusterVector<ClusterType>> source(8);
-    ClusterCollector<ClusterType> collector{};
+    ClusterVectorSink<ClusterType> collector{};
     collector.collect(&source);
 
     const auto write_frames = [&source](uint64_t first, uint64_t last) {
@@ -283,7 +283,7 @@ TEST_CASE("sync gives a running collector the clusters of all frames") {
 
     ClusterFinderMT<ClusterType> cf(image_size, 5, 200, n_threads, 16,
                                     min_pedestal_samples);
-    ClusterCollector<ClusterType> collector{};
+    ClusterVectorSink<ClusterType> collector{};
     collector.collect(cf.sink());
 
     NDArray<uint16_t, 2> low(image_size, 98);
@@ -327,15 +327,17 @@ TEST_CASE("cluster collector stops its thread when destroyed") {
     using ClusterType = Cluster<int32_t, 3, 3>;
     ProducerConsumerQueue<ClusterVector<ClusterType>> source(8);
     {
-        ClusterCollector<ClusterType> collector{};
+        ClusterVectorSink<ClusterType> collector{};
         collector.collect(&source);
         REQUIRE(source.write(ClusterVector<ClusterType>(4, 1)));
     }
     // The destructor waits for the queue to be empty, as stop() does
     CHECK(source.isEmpty());
 
-    static_assert(!std::is_copy_constructible_v<ClusterCollector<ClusterType>>);
-    static_assert(!std::is_move_constructible_v<ClusterCollector<ClusterType>>);
+    static_assert(
+        !std::is_copy_constructible_v<ClusterVectorSink<ClusterType>>);
+    static_assert(
+        !std::is_move_constructible_v<ClusterVectorSink<ClusterType>>);
 }
 
 TEST_CASE("running cluster finder can be destroyed") {

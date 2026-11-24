@@ -69,11 +69,11 @@ def ClusterFinderMT(image_size, *, cluster_size = (3,3), dtype=np.int32, n_sigma
     return cls(image_size, n_sigma=n_sigma, capacity=capacity, min_pedestal_samples=min_pedestal_samples, n_threads=n_threads)
 
 
-def ClusterCollector(clusterfindermt, dtype=np.int32):
+def ClusterVectorSink(clusterfindermt, dtype=np.int32):
     """
-    Factory function to create a ClusterCollector that keeps the clusters of
+    Factory function to create a ClusterVectorSink that keeps the clusters of
     a ClusterFinderMT in memory. Provides a cleaner syntax for the templated
-    ClusterCollector in C++.
+    ClusterVectorSink in C++.
 
     The collector starts collecting from ``clusterfindermt`` right away. Take
     the clusters with ``steal_clusters()``; call ``sync()`` on the finder first
@@ -81,7 +81,7 @@ def ClusterCollector(clusterfindermt, dtype=np.int32):
     ``collect(finder)`` starts it again.
     """
 
-    cls = _get_class("ClusterCollector", clusterfindermt.cluster_size, dtype)
+    cls = _get_class("ClusterVectorSink", clusterfindermt.cluster_size, dtype)
     collector = cls()
     collector.collect(clusterfindermt)
     return collector

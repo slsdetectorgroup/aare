@@ -2,9 +2,9 @@
 
 #include "aare/ClusterFinder.hpp"
 #include "aare/Cluster.hpp"
-#include "aare/ClusterCollector.hpp"
 #include "aare/ClusterFile.hpp"
 #include "aare/ClusterFileSink.hpp"
+#include "aare/ClusterVectorSink.hpp"
 
 #include <catch2/catch_test_macros.hpp>
 
@@ -66,17 +66,17 @@ class TemporaryPath {
 
 } // namespace
 
-static_assert(is_cluster_sink_v<ClusterCollector<ClusterType>>);
+static_assert(is_cluster_sink_v<ClusterVectorSink<ClusterType>>);
 static_assert(is_cluster_sink_v<ClusterFileSink<ClusterType>>);
 static_assert(!is_cluster_sink_v<ClusterVector<ClusterType>>);
 static_assert(!is_cluster_sink_v<int>);
 static_assert(
-    std::is_same_v<ClusterFinder<ClusterCollector<ClusterType>>::ClusterType,
+    std::is_same_v<ClusterFinder<ClusterVectorSink<ClusterType>>::ClusterType,
                    ClusterType>);
 
-TEST_CASE("ClusterFinder with a ClusterCollector collects all frames") {
+TEST_CASE("ClusterFinder with a ClusterVectorSink collects all frames") {
     const uint64_t n_frames = 20;
-    ClusterFinder<ClusterCollector<ClusterType>> cf(
+    ClusterFinder<ClusterVectorSink<ClusterType>> cf(
         image_size, 5.0, 200, n_threads, queue_depth, min_pedestal_samples);
     REQUIRE(cf.running());
 
@@ -107,7 +107,7 @@ TEST_CASE("ClusterFinder with a ClusterCollector collects all frames") {
 }
 
 TEST_CASE("ClusterFinder destructor stops a running finder and sink") {
-    ClusterFinder<ClusterCollector<ClusterType>> cf(
+    ClusterFinder<ClusterVectorSink<ClusterType>> cf(
         image_size, 5.0, 200, n_threads, queue_depth, min_pedestal_samples);
     push_pedestal(cf);
     push_hits(cf, 5);

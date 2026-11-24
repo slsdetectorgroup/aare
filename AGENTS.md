@@ -135,15 +135,17 @@ lives in `python/aare/transform.py` on top of C++ generators.
   and a `ProducerConsumerQueue` output. A collector thread funnels all
   outputs into a single sink queue. Consumers of that sink derive from the
   CRTP base `ClusterSink<Derived, ClusterType>`, which owns the consumer
-  thread (`collect(queue)` spawns it and calls
+  thread. `collect(queue)` spawns it and calls
   the derived `consume()`, `stop()` drains and joins. 
-  Derived destructors must call `stop()`. The sinks are `ClusterCollector`
-  (accumulate in memory, `steal_clusters()`) and `ClusterFileSink` (write the
-  binary cluster file; `steal_clusters()` warns and returns nothing).
+  Derived destructors must call `stop()`. The sinks are `ClusterVectorSink`
+  (clusters accumulate in `std::vector`) and `ClusterFileSink` (writes to the
+  binary cluster file).
   `ClusterFinder<SinkType>` bundles a `ClusterFinderMT` with a sink
   (constrained by `is_cluster_sink_v`).
-  The `stop()` and `sync()` ordering matters; read the existing tests before
-  changing lifecycle code.
+  The `stop()` ordering of the sink and finder matters - the finder should always stop first to drain the queues; read the existing tests before
+  changing lifecycle code. There is derived classes `ClusterFinderVectorSink` inheriting from `ClusterFinder<ClusterVectorSink>` with derived members 
+  `steal_clusters` (drains the sink queue and returns what has been accumulated) and `get_clusters` (which syncs first with the finder and then drains the sink queue). 
+  Additionally there is derived class `ClusterFinderFileSink' inheriting from `ClusterFinder<ClusterFileSink>`. 
 - `Cluster<T, SizeX, SizeY, CoordType>` is a POD (x, y, data[]) and
   `ClusterVector<Cluster<...>>` is a frame-tagged `std::vector` of them.
   `ClusterFile` reads and writes the binary format (`int32 frame_number`,

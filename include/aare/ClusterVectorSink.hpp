@@ -20,18 +20,18 @@ namespace aare {
  */
 template <typename ClusterType,
           typename = std::enable_if_t<is_cluster_v<ClusterType>>>
-class ClusterCollector
-    : public ClusterSink<ClusterCollector<ClusterType>, ClusterType> {
-    using Base = ClusterSink<ClusterCollector<ClusterType>, ClusterType>;
+class ClusterVectorSink
+    : public ClusterSink<ClusterVectorSink<ClusterType>, ClusterType> {
+    using Base = ClusterSink<ClusterVectorSink<ClusterType>, ClusterType>;
     friend Base; // Base calls consume() on the derived class
 
   public:
     using SourceQueue = typename Base::SourceQueue;
 
     /** @brief Construct an idle collector, start it with collect(). */
-    ClusterCollector() = default;
+    ClusterVectorSink() = default;
 
-    ~ClusterCollector() { this->stop(); }
+    ~ClusterVectorSink() { this->stop(); }
 
     std::vector<ClusterVector<ClusterType>> steal_clusters() {
         // guard by mutex if needed if this is called from multiple threads

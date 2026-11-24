@@ -3,7 +3,7 @@
 import numpy as np
 import pytest
 
-from aare import ClusterCollector, ClusterFile, ClusterFileSink, ClusterFinderMT
+from aare import ClusterVectorSink, ClusterFile, ClusterFileSink, ClusterFinderMT
 
 SHAPE = (10, 12)
 N_SAMPLES = 8
@@ -33,7 +33,7 @@ def _frame_numbers(cluster_vectors):
 
 def test_clusters_can_be_stolen_from_a_running_collector():
     finder = _finder_with_pedestal()
-    collector = ClusterCollector(finder)
+    collector = ClusterVectorSink(finder)
 
     # After sync() the collector has one ClusterVector for each data frame
     _find(finder, range(12))
@@ -52,7 +52,7 @@ def test_clusters_can_be_stolen_from_a_running_collector():
 
 def test_collector_can_be_started_again():
     finder = _finder_with_pedestal()
-    collector = ClusterCollector(finder)
+    collector = ClusterVectorSink(finder)
 
     _find(finder, range(4))
     finder.sync()
@@ -72,7 +72,7 @@ def test_collector_can_be_started_again():
 
 def test_collector_can_be_dropped_without_stop():
     finder = _finder_with_pedestal()
-    collector = ClusterCollector(finder)
+    collector = ClusterVectorSink(finder)
     _find(finder, range(4))
     finder.sync()
     # The collector keeps the finder alive and stops its own thread
@@ -137,7 +137,7 @@ def test_running_finder_can_be_dropped():
 
 def test_finder_start_and_stop_can_be_repeated():
     finder = _finder_with_pedestal()
-    collector = ClusterCollector(finder)
+    collector = ClusterVectorSink(finder)
     finder.start()
     _find(finder, range(4))
     finder.stop()

@@ -1,11 +1,11 @@
 // SPDX-License-Identifier: MPL-2.0
 #pragma once
-#include "aare/ClusterCollector.hpp"
 #include "aare/ClusterFileSink.hpp"
 #include "aare/ClusterFinder.hpp"
 #include "aare/ClusterFinderFileSink.hpp"
-#include "aare/ClusterFinderMemoryCollect.hpp"
+#include "aare/ClusterFinderVectorSink.hpp"
 #include "aare/ClusterVector.hpp"
+#include "aare/ClusterVectorSink.hpp"
 #include "aare/NDArray.hpp"
 #include "aare/NDView.hpp"
 
@@ -98,17 +98,16 @@ void define_ClusterFinder_methods(py::class_<Finder> &cls) {
 }
 
 /**
- * ClusterFinder with a ClusterCollector sink, exposed as
- * ClusterFinderCollector_<typestr>.
+ * ClusterFinder with a ClusterVectorSink sink, exposed as
+ * ClusterFinderVectorSink_<typestr>.
  */
 template <typename T, uint8_t ClusterSizeX, uint8_t ClusterSizeY,
           typename CoordType = uint16_t>
-void define_ClusterFinderMemoryCollect(py::module &m,
-                                       const std::string &typestr) {
-    auto class_name = fmt::format("ClusterFinderMemoryCollect_{}", typestr);
+void define_ClusterFinderVectorSink(py::module &m, const std::string &typestr) {
+    auto class_name = fmt::format("ClusterFinderVectorSink_{}", typestr);
 
     using ClusterType = aare::Cluster<T, ClusterSizeX, ClusterSizeY, CoordType>;
-    using Finder = aare::ClusterFinderMemoryCollect<ClusterType>;
+    using Finder = aare::ClusterFinderVectorSink<ClusterType>;
 
     py::class_<Finder> cls(
         m, class_name.c_str(),

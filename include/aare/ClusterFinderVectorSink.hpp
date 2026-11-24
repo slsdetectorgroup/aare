@@ -1,5 +1,8 @@
+// SPDX-License-Identifier: MPL-2.0
+#pragma once
 #include "aare/ClusterFinder.hpp"
 #include "aare/ClusterVector.hpp"
+#include "aare/ClusterVectorSink.hpp"
 
 namespace aare {
 
@@ -8,27 +11,26 @@ namespace aare {
  */
 template <typename ClusterType,
           typename = std::enable_if_t<is_cluster_v<ClusterType>>>
-class ClusterFinderMemoryCollect
-    : public aare::ClusterFinder<aare::ClusterCollector<ClusterType>> {
+class ClusterFinderVectorSink
+    : public aare::ClusterFinder<aare::ClusterVectorSink<ClusterType>> {
   public:
-    using Base = aare::ClusterFinder<aare::ClusterCollector<ClusterType>>;
+    using Base = aare::ClusterFinder<aare::ClusterVectorSink<ClusterType>>;
 
-    explicit ClusterFinderMemoryCollect(aare::Shape<2> image_size,
-                                        double nSigma = 5.0,
-                                        size_t capacity = 2000,
-                                        size_t n_threads = 3,
-                                        size_t queue_depth = 16,
-                                        size_t min_pedestal_samples = 1000)
+    explicit ClusterFinderVectorSink(aare::Shape<2> image_size,
+                                     double nSigma = 5.0,
+                                     size_t capacity = 2000,
+                                     size_t n_threads = 3,
+                                     size_t queue_depth = 16,
+                                     size_t min_pedestal_samples = 1000)
         : Base(image_size, nSigma, capacity, n_threads, queue_depth,
                min_pedestal_samples) {}
 
-    ~ClusterFinderMemoryCollect() = default;
-    ClusterFinderMemoryCollect(const ClusterFinderMemoryCollect &) = delete;
-    ClusterFinderMemoryCollect &
-    operator=(const ClusterFinderMemoryCollect &) = delete;
-    ClusterFinderMemoryCollect(ClusterFinderMemoryCollect &&) = delete;
-    ClusterFinderMemoryCollect &
-    operator=(ClusterFinderMemoryCollect &&) = delete;
+    ~ClusterFinderVectorSink() = default;
+    ClusterFinderVectorSink(const ClusterFinderVectorSink &) = delete;
+    ClusterFinderVectorSink &
+    operator=(const ClusterFinderVectorSink &) = delete;
+    ClusterFinderVectorSink(ClusterFinderVectorSink &&) = delete;
+    ClusterFinderVectorSink &operator=(ClusterFinderVectorSink &&) = delete;
 
     /**
      * @brief Return all clusters currently accumulated in memory.

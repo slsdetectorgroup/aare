@@ -31,12 +31,12 @@ from ._aare import corner
 
 from ._aare import UDPPortPosition
 
-# from ._aare import ClusterFinderMT, ClusterCollector, ClusterFileSink, ClusterVector_i
+# from ._aare import ClusterFinderMT, ClusterVectorSink, ClusterFileSink, ClusterVector_i
 
 from ._version import __version__
 from .FastPedestal import FastPedestal
 from .Pedestal import Pedestal
-from .ClusterFinder import ClusterFinder, ClusterCollector, ClusterFinderMT, ClusterFileSink, ClusterFile
+from .ClusterFinder import ClusterFinder, ClusterVectorSink, ClusterFinderMT, ClusterFileSink, ClusterFile
 from .ClusterVector import ClusterVector
 from .Cluster import Cluster
 

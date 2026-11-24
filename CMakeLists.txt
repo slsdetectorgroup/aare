@@ -404,7 +404,7 @@ set(PUBLICHEADERS
     include/aare/ClusterFinder.hpp
     include/aare/ClusterFinderImpl.hpp
     include/aare/ClusterFinderMT.hpp
-    include/aare/ClusterFinderMemoryCollect.hpp
+    include/aare/ClusterFinderVectorSink.hpp
     include/aare/ClusterFinderFileSink.hpp
     include/aare/ClusterSink.hpp
     include/aare/ClusterFile.hpp
