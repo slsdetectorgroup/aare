@@ -42,18 +42,47 @@ Factory
 Example
 -------
 
-.. code-block:: python
+The example needs some frames to work with. Four small frames alternating
+between 102 and 98 stand in for dark frames read from a detector:
+
+.. testcode::
 
    import numpy as np
+
+   initialization_frames = np.full((4, 2, 3), 100, dtype=np.uint16)
+   initialization_frames[0::2] += 2
+   initialization_frames[1::2] -= 2
+
+Push the frames to the pedestal, then read the mean and the noise of each
+pixel:
+
+.. testcode::
+
    from aare import Pedestal
 
-   pedestal = Pedestal(512, 1024, n_samples=100, dtype=np.float32)
+   pedestal = Pedestal(rows=2, cols=3, n_samples=100, dtype=np.float32)
 
    for frame in initialization_frames:
        pedestal.push(frame)
 
    mean = pedestal.mean()
    noise = pedestal.std()
+
+   print("Mean:")
+   print(mean)
+   print("Noise:")
+   print(noise)
+
+Output:
+
+.. testoutput::
+
+   Mean:
+   [[100. 100. 100.]
+    [100. 100. 100.]]
+   Noise:
+   [[2. 2. 2.]
+    [2. 2. 2.]]
 
 Complete API
 ------------
