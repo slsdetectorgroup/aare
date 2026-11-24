@@ -173,20 +173,24 @@ then the arrays as raw little-endian data, each described in the header by
 The `StateWriter` and `StateReader` in the private header
 `src/StateFileIO.hpp` are shared by all state types and tested directly in
 `src/StateFile.test.cpp`; nlohmann JSON stays out of the public headers. A
-new type adds, in `StateFile.cpp`, a `type_name()` and a `state_version()`
-overload and a `to_header()`/`from_header()` pair, which can call those of
-the states it contains (as `ClusterFinderState` does for its `"pedestal"`);
-`from_header()` reads through a `StateReader::Node`, whose accessors check
-each field: scalars, `array<T, Ndim>()` (also `bool`), `child()` for a state
-inside the state, `children()` for a list of them and `has()` for a field
-that may be absent. The public `save_state()` overload and `load_state()`
-specialization are then one line each on the shared `save()`/`load()`, and
+state is described once, for writing and for reading: a new type adds, in
+`StateFile.cpp`, a specialization of `StateFormat` with its `name`, its
+`version` and a `fields()` that calls `field("key", state.member)` for each
+member. What a field is in the file, and how it is checked, follows from the
+type of the member: a `Dtype`, an unsigned integer, a `double`, an
+`NDArray<T, Ndim>` (also `bool`), another state (as `ClusterFinderState` has
+for its `"pedestal"`), a `std::vector` of states, or a `std::optional` of one
+of these for a field that may be absent. A kind of member that is not among
+these gets an overload in the `Fields` of both the writer and the reader. The
+public `save_state()` overload and `load_state()` specialization are then one
+line each on `StateWriter::save()` and `StateReader::state<State>()`, and
 `StateFile.hpp` only forward declares the state struct. Saves to the same
 file must not overlap. The reader ignores unknown header fields; a field
-added to a state later must be read only if the header `has()` it, with a
-default otherwise, so that older files still load and no version changes.
-Removing a field or changing its meaning increases the `state_version()` of
-that type; `format_version` is for the layout and the header outside
+added to a state later must be described with its value for the files
+without it, `field("key", state.member, value)`, so that older files still
+load and no version changes.
+Removing a field or changing its meaning increases the `version` of that
+type; `format_version` is for the layout and the header outside
 `"state"`. `docs/src/StateFile.rst` is the format
 reference and must change with the format.
 

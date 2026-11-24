@@ -7,7 +7,6 @@
 #include "aare/ClusterFinderMT.hpp"
 #include "aare/FastPedestal.hpp"
 
-#include <cmath>
 #include <system_error>
 #include <utility>
 
@@ -165,8 +164,8 @@ StateReader::StateReader(const std::filesystem::path &fname)
         fail("the header must be a JSON object");
 
     // The version comes first: a newer format may have changed the rest
-    const auto version =
-        Node(*this, m_header).unsigned_integer<uint64_t>("format_version");
+    uint64_t version{};
+    Fields{*this, m_header}("format_version", version);
     if (version == 0 || version > format_version)
         fail(fmt::format("format version {} is not supported, this "
                          "version of aare reads up to version {}",
@@ -176,131 +175,53 @@ StateReader::StateReader(const std::filesystem::path &fname)
     m_data_size = file_size - m_data_start;
 }
 
-StateReader::Node StateReader::state(std::string_view expected_type) {
-    const Node header(*this, m_header);
-    const auto type = header.string("type");
-    if (type != expected_type)
-        fail(fmt::format("holds the state of a {}, expected a {}", type,
-                         expected_type));
-    return header.child("state");
-}
+// A new type of state adds its StateFormat here, and its save_state() and
+// load_state() below. A state inside a state is a field like any other. A
+// field added later gets a value for the files without it, so that older
+// files still load; the version increases only for a change that an older
+// reader would get wrong.
+
+template <> struct StateFormat<FastPedestalState> {
+    static constexpr std::string_view name = "FastPedestal";
+    static constexpr uint64_t version = 1;
+
+    template <typename Fields, typename State>
+    static void fields(Fields &field, State &state) {
+        field("dtype", state.dtype);
+        field("n_samples", state.n_samples);
+        field("cur_samples", state.cur_samples);
+        field("sum", state.sum);
+        field("sum2", state.sum2);
+    }
+};
+
+template <> struct StateFormat<ClusterFinderState> {
+    static constexpr std::string_view name = "ClusterFinder";
+    static constexpr uint64_t version = 1;
+
+    template <typename Fields, typename State>
+    static void fields(Fields &field, State &state) {
+        field("cluster_dtype", state.cluster_dtype);
+        field("cluster_size_x", state.cluster_size_x);
+        field("cluster_size_y", state.cluster_size_y);
+        field("n_sigma", state.n_sigma);
+        field("threshold", state.threshold);
+        field("pedestal", state.pedestal);
+    }
+};
+
+template <> struct StateFormat<ClusterFinderMTState> {
+    static constexpr std::string_view name = "ClusterFinderMT";
+    static constexpr uint64_t version = 1;
+
+    template <typename Fields, typename State>
+    static void fields(Fields &field, State &state) {
+        field("next_thread", state.next_thread);
+        field("finders", state.finders);
+    }
+};
 
 } // namespace detail
-
-namespace {
-
-using detail::json;
-using detail::StateReader;
-using detail::StateWriter;
-
-// A new type of state adds its name in the file, the version of its fields
-// and how it maps to the header and back. A state inside a state calls the
-// pair of its own type. A field added later is read only if the header
-// has() it, so that older files still load; the version increases only for
-// a change that an older reader would get wrong.
-
-constexpr std::string_view type_name(const FastPedestalState &) {
-    return "FastPedestal";
-}
-constexpr uint64_t state_version(const FastPedestalState &) { return 1; }
-
-json to_header(const FastPedestalState &state, StateWriter &writer) {
-    if (state.dtype == Dtype::NONE || state.dtype == Dtype::ERROR)
-        throw std::runtime_error("Cannot save a FastPedestal state whose "
-                                 "dtype is not set");
-    json header;
-    header["version"] = state_version(state);
-    header["dtype"] = state.dtype.to_string();
-    header["n_samples"] = state.n_samples;
-    header["cur_samples"] = state.cur_samples;
-    header["sum"] = writer.add(state.sum);
-    header["sum2"] = writer.add(state.sum2);
-    return header;
-}
-
-void from_header(const StateReader::Node &header, FastPedestalState &state) {
-    header.check_version(type_name(state), state_version(state));
-    state.dtype = header.dtype("dtype");
-    state.n_samples = header.unsigned_integer<uint32_t>("n_samples");
-    state.cur_samples = header.unsigned_integer<uint32_t>("cur_samples");
-    state.sum = header.array<double, 2>("sum");
-    state.sum2 = header.array<double, 2>("sum2");
-}
-
-constexpr std::string_view type_name(const ClusterFinderState &) {
-    return "ClusterFinder";
-}
-constexpr uint64_t state_version(const ClusterFinderState &) { return 1; }
-
-json to_header(const ClusterFinderState &state, StateWriter &writer) {
-    if (state.cluster_dtype == Dtype::NONE ||
-        state.cluster_dtype == Dtype::ERROR)
-        throw std::runtime_error("Cannot save a ClusterFinder state whose "
-                                 "cluster_dtype is not set");
-    // JSON has no representation for them
-    if (!std::isfinite(state.n_sigma))
-        throw std::runtime_error(
-            fmt::format("Cannot save a ClusterFinder state whose n_sigma is {}",
-                        state.n_sigma));
-    json header;
-    header["version"] = state_version(state);
-    header["cluster_dtype"] = state.cluster_dtype.to_string();
-    header["cluster_size_x"] = state.cluster_size_x;
-    header["cluster_size_y"] = state.cluster_size_y;
-    header["n_sigma"] = state.n_sigma;
-    header["threshold"] = writer.add(state.threshold);
-    header["pedestal"] = to_header(state.pedestal, writer);
-    return header;
-}
-
-void from_header(const StateReader::Node &header, ClusterFinderState &state) {
-    header.check_version(type_name(state), state_version(state));
-    state.cluster_dtype = header.dtype("cluster_dtype");
-    state.cluster_size_x = header.unsigned_integer<uint8_t>("cluster_size_x");
-    state.cluster_size_y = header.unsigned_integer<uint8_t>("cluster_size_y");
-    state.n_sigma = header.number("n_sigma");
-    state.threshold = header.array<double, 2>("threshold");
-    from_header(header.child("pedestal"), state.pedestal);
-}
-
-constexpr std::string_view type_name(const ClusterFinderMTState &) {
-    return "ClusterFinderMT";
-}
-constexpr uint64_t state_version(const ClusterFinderMTState &) { return 1; }
-
-json to_header(const ClusterFinderMTState &state, StateWriter &writer) {
-    json finders = json::array();
-    for (const auto &finder : state.finders)
-        finders.push_back(to_header(finder, writer));
-    json header;
-    header["version"] = state_version(state);
-    header["next_thread"] = state.next_thread;
-    header["finders"] = std::move(finders);
-    return header;
-}
-
-void from_header(const StateReader::Node &header, ClusterFinderMTState &state) {
-    header.check_version(type_name(state), state_version(state));
-    state.next_thread = header.unsigned_integer<uint64_t>("next_thread");
-    for (const auto &finder : header.children("finders"))
-        from_header(finder, state.finders.emplace_back());
-}
-
-template <typename State>
-void save(const State &state, const std::filesystem::path &fname) {
-    StateWriter writer;
-    json header = to_header(state, writer);
-    writer.write(fname, type_name(state), std::move(header));
-}
-
-template <typename State> State load(const std::filesystem::path &fname) {
-    StateReader reader(fname);
-    State state;
-    from_header(reader.state(type_name(state)), state);
-    return state;
-}
-
-} // namespace
 
 std::string read_state_header(const std::filesystem::path &fname) {
     return detail::StateReader(fname).header().dump(2);
@@ -308,35 +229,35 @@ std::string read_state_header(const std::filesystem::path &fname) {
 
 void save_state(const FastPedestalState &state,
                 const std::filesystem::path &fname) {
-    save(state, fname);
+    detail::StateWriter::save(state, fname);
 }
 
 template <>
 FastPedestalState
 load_state<FastPedestalState>(const std::filesystem::path &fname) {
-    return load<FastPedestalState>(fname);
+    return detail::StateReader(fname).state<FastPedestalState>();
 }
 
 void save_state(const ClusterFinderState &state,
                 const std::filesystem::path &fname) {
-    save(state, fname);
+    detail::StateWriter::save(state, fname);
 }
 
 template <>
 ClusterFinderState
 load_state<ClusterFinderState>(const std::filesystem::path &fname) {
-    return load<ClusterFinderState>(fname);
+    return detail::StateReader(fname).state<ClusterFinderState>();
 }
 
 void save_state(const ClusterFinderMTState &state,
                 const std::filesystem::path &fname) {
-    save(state, fname);
+    detail::StateWriter::save(state, fname);
 }
 
 template <>
 ClusterFinderMTState
 load_state<ClusterFinderMTState>(const std::filesystem::path &fname) {
-    return load<ClusterFinderMTState>(fname);
+    return detail::StateReader(fname).state<ClusterFinderMTState>();
 }
 
 } // namespace aare
