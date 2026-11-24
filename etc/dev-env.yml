@@ -8,6 +8,7 @@ dependencies:
   - doxygen
   - sphinx
   - breathe
+  - sphinx-gallery
   - sphinx_rtd_theme
   - furo
   - zeromq
