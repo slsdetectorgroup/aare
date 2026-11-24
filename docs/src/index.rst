@@ -25,6 +25,7 @@ AARE
     :maxdepth: 1
 
     auto_examples/index
+    CppExamples
 
 .. toctree::
     :caption: Python API

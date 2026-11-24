@@ -24,6 +24,9 @@ footprint.
 - `docs/src/` contains Sphinx/reStructuredText documentation. Doxygen and
   Breathe integrate the C++ API into the Sphinx site.
 - `benchmarks/` contains Google Benchmark programs.
+- `examples/` contains standalone C++ example programs, built with
+  `AARE_EXAMPLES=ON`. Each one is registered as a CTest test and shown in
+  `docs/src/CppExamples.rst`; list new ones in `examples/CMakeLists.txt`.
 - `cmake/`, `conda-recipe/`, and `pyproject.toml` support builds and packaging.
 - `RELEASE.md` contains pending and published release notes.
 
