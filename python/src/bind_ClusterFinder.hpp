@@ -126,14 +126,11 @@ void define_ClusterFinder(py::module &m, const std::string &typestr) {
                const Pedestal &pedestal) { self.set_pedestal(pedestal); },
             py::arg("pedestal"), set_pedestal_doc);
     });
-    cls.def(
-        "get_pedestal",
-        [](const ClusterFinder<ClusterType, uint16_t, pd_type> &self) {
-            return self.get_pedestal();
-        },
-        "Return a copy of the pedestal of this cluster finder as a "
-        "FastPedestal, for example to give it to another finder with "
-        "set_pedestal().");
+    cls.def("get_pedestal",
+            &ClusterFinder<ClusterType, uint16_t, pd_type>::get_pedestal,
+            "Return a copy of the pedestal of this cluster finder as a "
+            "FastPedestal, for example to give it to another finder with "
+            "set_pedestal().");
     cls.def(
         "save_pedestal",
         [](const ClusterFinder<ClusterType, uint16_t, pd_type> &self,

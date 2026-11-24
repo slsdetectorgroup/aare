@@ -36,14 +36,14 @@ def _get_typed_class(name, dtype):
         ) from None
 
 
-def _stored_state_fields(filename, type_name, *keys):
+def _stored_state_fields(filename, type_name, *keys, within=()):
     """Return fields of the state in the header of a state file.
 
     Used by the factories that pick a bound class from what a file records
-    before loading it. A key is the name of a field or, for a field deeper
-    in the state, a tuple of names and list indices. Raises ``RuntimeError``
-    if the file is not a state file of ``type_name`` or lacks one of the
-    fields.
+    before loading it. ``within`` is the path of names and list indices to
+    a state inside the state, as ``("finders", 0)``, to take the fields
+    from. Raises ``RuntimeError`` if the file is not a state file of
+    ``type_name`` or lacks one of the fields.
     """
     header = _aare.read_state_header(filename)
     stored_type = header.get("type")
@@ -52,15 +52,11 @@ def _stored_state_fields(filename, type_name, *keys):
             f"State file {filename}: holds the state of a {stored_type}, "
             f"expected a {type_name}"
         )
-    def lookup(key):
-        # A tuple is a path into the state, as ("finders", 0, "n_sigma")
-        value = header["state"]
-        for part in key if isinstance(key, tuple) else (key,):
-            value = value[part]
-        return value
-
     try:
-        return [lookup(key) for key in keys]
+        state = header["state"]
+        for part in within:
+            state = state[part]
+        return [state[key] for key in keys]
     except (KeyError, IndexError, TypeError) as e:
         raise RuntimeError(
             f"State file {filename}: {e} is missing from the state"

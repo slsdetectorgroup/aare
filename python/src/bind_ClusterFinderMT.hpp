@@ -176,16 +176,11 @@ void define_ClusterFinderMT(py::module &m, const std::string &typestr) {
             py::arg("pedestal"), py::arg("thread_index") = py::none(),
             set_pedestal_doc);
     });
-    cls.def(
-        "get_pedestal",
-        [](const Finder &self, size_t thread_index) {
-            return self.get_pedestal(thread_index);
-        },
-        py::arg("thread_index") = 0,
-        "Return a copy of the pedestal of one thread as a FastPedestal. "
-        "On a running finder the frames given so far are included. The "
-        "pedestals of the threads differ once "
-        "clusters have been found.");
+    cls.def("get_pedestal", &Finder::get_pedestal, py::arg("thread_index") = 0,
+            "Return a copy of the pedestal of one thread as a FastPedestal. "
+            "On a running finder the frames given so far are included. The "
+            "pedestals of the threads differ once "
+            "clusters have been found.");
     cls.def(
         "load_pedestal",
         [](Finder &self, const std::filesystem::path &filename,
@@ -208,7 +203,6 @@ void define_ClusterFinderMT(py::module &m, const std::string &typestr) {
         "Write the pedestal of one thread to a state file of a "
         "FastPedestal, which FastPedestal.load_state() and load_pedestal() "
         "read. An existing file is replaced.");
-    cls.def_property_readonly(
-        "n_threads", [](const Finder &self) { return self.n_threads(); },
-        "Number of processing threads.");
+    cls.def_property_readonly("n_threads", &Finder::n_threads,
+                              "Number of processing threads.");
 }
