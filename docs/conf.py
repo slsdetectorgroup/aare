@@ -31,6 +31,7 @@ release = '@PROJECT_VERSION@'
 # ones.
 extensions = ['breathe',
               'sphinx.ext.autodoc',
+              'sphinx.ext.doctest',
               'sphinx.ext.napoleon',
               'pybind_overloads',
              ]

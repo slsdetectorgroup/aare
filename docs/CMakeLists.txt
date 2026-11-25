@@ -21,3 +21,16 @@ add_custom_target(
     -Dbreathe_projects.aare=${CMAKE_CURRENT_BINARY_DIR}/xml -c
     "${CMAKE_CURRENT_SOURCE_DIR}" ${SPHINX_SOURCE} ${SPHINX_BUILD}/html
   COMMENT "Generating documentation with Sphinx")
+
+# Runs the examples in the documentation and compares their output. Doxygen runs
+# first since the pages with C++ API need its xml to be read.
+add_custom_target(
+  doctest
+  COMMAND ${DOXYGEN_EXECUTABLE} ${DOXYGEN_OUT}
+  COMMAND
+    ${CMAKE_COMMAND} -E env "PYTHONPATH=${CMAKE_BINARY_DIR}" # find aare module
+    ${SPHINX_EXECUTABLE} -W -b doctest -Dversion=${PROJECT_VERSION}
+    -Drelease=${PROJECT_VERSION}
+    -Dbreathe_projects.aare=${CMAKE_CURRENT_BINARY_DIR}/xml -c
+    "${CMAKE_CURRENT_SOURCE_DIR}" ${SPHINX_SOURCE} ${SPHINX_BUILD}/doctest
+  COMMENT "Running documentation examples with Sphinx doctest")
