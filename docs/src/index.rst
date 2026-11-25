@@ -21,6 +21,12 @@ AARE
     Consume
 
 .. toctree::
+    :caption: Examples
+    :maxdepth: 1
+
+    auto_examples/index
+
+.. toctree::
     :caption: Python API
     :maxdepth: 3
     :hidden:
