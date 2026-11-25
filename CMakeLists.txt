@@ -589,7 +589,10 @@ set(CMAKE_BUILD_WITH_INSTALL_RPATH FALSE)
 # $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
 # $<INSTALL_INTERFACE:include> )
 
-# add_subdirectory(examples)
+if(AARE_EXAMPLES)
+  enable_testing()
+  add_subdirectory(examples)
+endif()
 
 if(AARE_DOCS)
   add_subdirectory(docs)
