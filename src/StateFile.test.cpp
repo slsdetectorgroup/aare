@@ -6,6 +6,7 @@
 #include "aare/ClusterFinder.hpp"
 #include "aare/ClusterFinderMT.hpp"
 #include "aare/FastPedestal.hpp"
+#include "aare/Interpolator.hpp"
 #include "aare/Pedestal.hpp"
 #include "aare/VarClusterFinder.hpp"
 #include "aare/hist/PedestalTrackingPixelHistogram.hpp"
@@ -864,4 +865,38 @@ TEST_CASE("state file returns a PedestalTrackingPixelHistogramState bit for "
     loaded = load_state<PedestalTrackingPixelHistogramState>(file.path());
     REQUIRE(same_without_mask(loaded));
     REQUIRE(loaded.mask == state.mask);
+}
+
+TEST_CASE("state file returns an InterpolatorState bit for bit",
+          "[state-file]") {
+    TemporaryStateFile file;
+    InterpolatorState state;
+    state.etabinsx = NDArray<double, 1>(std::array<double, 3>{0.0, 0.1, 1.0});
+    state.etabinsy = NDArray<double, 1>(std::array<double, 2>{-0.5, 1.5});
+    state.energy_bins = NDArray<double, 1>(std::array<double, 2>{0.0, 1e300});
+    const auto same_bins = [&state](const InterpolatorState &loaded) {
+        return loaded.etabinsx == state.etabinsx &&
+               loaded.etabinsy == state.etabinsy &&
+               loaded.energy_bins == state.energy_bins;
+    };
+
+    // Before an eta distribution has been given
+    save_state(state, file.path());
+    const auto header = nlohmann::json::parse(read_state_header(file.path()));
+    REQUIRE(header.at("type") == "Interpolator");
+    REQUIRE(header.at("state").at("ietax").at("shape") ==
+            nlohmann::json{0, 0, 0});
+    auto loaded = load_state<InterpolatorState>(file.path());
+    REQUIRE(same_bins(loaded));
+    REQUIRE(loaded.ietax.size() == 0);
+    REQUIRE(loaded.ietay.size() == 0);
+
+    state.ietax = NDArray<double, 3>({2, 1, 1}, 1.0 / 3.0);
+    state.ietay = NDArray<double, 3>({2, 1, 1}, 0.1);
+    state.ietay(1, 0, 0) = std::numeric_limits<double>::denorm_min();
+    save_state(state, file.path());
+    loaded = load_state<InterpolatorState>(file.path());
+    REQUIRE(same_bins(loaded));
+    REQUIRE((loaded.ietax == state.ietax));
+    REQUIRE((loaded.ietay == state.ietay));
 }

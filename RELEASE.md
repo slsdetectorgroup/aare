@@ -113,6 +113,12 @@
   In Python: ``hist.save_state(fname)``,
   ``PedestalTrackingPixelHistogram.from_state_file(fname, n_threads=1)``
   and ``hist.load_state(fname)``.
+- ``Interpolator`` can store and restore its bin edges and transformed eta
+  distributions: ``state()``, ``set_state()`` and a constructor with an
+  ``InterpolatorState`` in C++, and in Python
+  ``interpolator.save_state(fname)``,
+  ``Interpolator.from_state_file(fname)`` and
+  ``interpolator.load_state(fname)``.
 
 ### API Changes:
 

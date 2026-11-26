@@ -4,9 +4,9 @@ State files
 A state file stores everything an object has accumulated, so that it can be
 restored later, possibly in another process, and continue exactly where it
 stopped. ``FastPedestal``, ``Pedestal``, ``ClusterFinder``,
-``ClusterFinderMT``, ``VarClusterFinder``, ``PixelHistogram`` and
-``PedestalTrackingPixelHistogram`` have a state that can be stored this
-way.
+``ClusterFinderMT``, ``VarClusterFinder``, ``PixelHistogram``,
+``PedestalTrackingPixelHistogram`` and ``Interpolator`` have a state that
+can be stored this way.
 
 .. code-block:: c++
 
@@ -217,6 +217,11 @@ The state of a ``PedestalTrackingPixelHistogram`` holds ``n_sigma``, the
 fields of a ``FastPedestal`` file for the whole image, and ``histogram``,
 with the fields of a ``PixelHistogram`` file. It does not depend on the
 number of threads of the histogram that wrote it.
+
+The state of an ``Interpolator`` is five arrays of ``"<f8"``: the bin edges
+``etabinsx``, ``etabinsy`` and ``energy_bins``, and the two CDFs ``ietax``
+and ``ietay``, which have the shape ``[0, 0, 0]`` until an eta distribution
+has been given.
 
 A reader ignores fields it does not know, and reads a field that was added
 after the first files were written only if it is there. Later versions can

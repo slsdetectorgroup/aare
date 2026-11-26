@@ -152,6 +152,15 @@ Interpolation class:
 .. Note:: 
     Make sure to use reasonable energy bins, when constructing the joint distribution. If data is too sparse for a given energy the interpolation will lead to erroneous results.
 
+The transformed :math:`\eta`-distributions are computed once from many
+clusters. ``state()`` returns them with the bin edges as a plain
+``InterpolatorState``, ``set_state()`` or the constructor that takes a state
+restore them, and ``save_state()`` and ``load_state<InterpolatorState>()``
+keep them in a state file, see :doc:`StateFile`.
+
+.. doxygenstruct:: aare::InterpolatorState
+   :members:
+
 .. doxygenclass:: aare::Interpolator
    :members:
    :undoc-members:

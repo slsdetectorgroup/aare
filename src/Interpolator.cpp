@@ -1,6 +1,9 @@
 // SPDX-License-Identifier: MPL-2.0
 #include "aare/Interpolator.hpp"
 
+#include <fmt/format.h>
+#include <stdexcept>
+
 namespace aare {
 
 Interpolator::Interpolator(NDView<double, 1> xbins, NDView<double, 1> ybins,
@@ -50,6 +53,37 @@ Interpolator::Interpolator(NDView<double, 3> etacube, NDView<double, 1> xbins,
             }
         }
     }
+}
+
+Interpolator::Interpolator(const InterpolatorState &state) { set_state(state); }
+
+InterpolatorState Interpolator::state() const {
+    return {m_etabinsx, m_etabinsy, m_energy_bins, m_ietax, m_ietay};
+}
+
+void Interpolator::set_state(const InterpolatorState &state) {
+    const Shape<3> bins{state.etabinsx.size() - 1, state.etabinsy.size() - 1,
+                        state.energy_bins.size() - 1};
+    const bool empty = state.ietax.size() == 0 && state.ietay.size() == 0;
+    const bool fits =
+        state.ietax.shape() == bins && state.ietay.shape() == bins;
+    if (bins[0] < 1 || bins[1] < 1 || bins[2] < 1 || !(empty || fits)) {
+        throw std::runtime_error(fmt::format(
+            "Interpolator state has {} etaX, {} etaY and {} energy bin "
+            "edges, ietax of shape ({}, {}, {}) and ietay of shape ({}, {}, "
+            "{}); every axis needs two edges and both must be empty or have "
+            "the shape ({}, {}, {})",
+            state.etabinsx.size(), state.etabinsy.size(),
+            state.energy_bins.size(), state.ietax.shape(0),
+            state.ietax.shape(1), state.ietax.shape(2), state.ietay.shape(0),
+            state.ietay.shape(1), state.ietay.shape(2), bins[0], bins[1],
+            bins[2]));
+    }
+    m_etabinsx = state.etabinsx;
+    m_etabinsy = state.etabinsy;
+    m_energy_bins = state.energy_bins;
+    m_ietax = state.ietax;
+    m_ietay = state.ietay;
 }
 
 void Interpolator::rosenblatttransform(NDView<double, 3> etacube) {

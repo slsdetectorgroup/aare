@@ -22,6 +22,27 @@ struct Coordinate2D {
     double y{};
 };
 
+/**
+ * @brief Complete state of an Interpolator as plain data.
+ *
+ * Returned by Interpolator::state() and accepted by Interpolator::set_state()
+ * and the Interpolator constructor, so that the transformed eta distributions,
+ * which are computed once from many clusters, can be stored and used again.
+ */
+struct InterpolatorState {
+    /// Bin edges of etaX
+    NDArray<double, 1> etabinsx;
+    /// Bin edges of etaY
+    NDArray<double, 1> etabinsy;
+    /// Bin edges of the photon energy
+    NDArray<double, 1> energy_bins;
+    /// CDF of etaX, shape (etaX bins, etaY bins, energy bins). Empty until
+    /// an eta distribution has been given
+    NDArray<double, 3> ietax;
+    /// CDF of etaY, with the shape of ietax
+    NDArray<double, 3> ietay;
+};
+
 class Interpolator {
 
     /**
@@ -73,6 +94,25 @@ class Interpolator {
      * dimension is etaX, second etaY, third photon energy)
      */
     void rosenblatttransform(NDView<double, 3> etacube);
+
+    /**
+     * @brief Construct an interpolator from a state.
+     * @throws std::runtime_error if the state is not valid, see set_state().
+     */
+    explicit Interpolator(const InterpolatorState &state);
+
+    /** @brief Return a copy of the bin edges and the two CDFs. */
+    InterpolatorState state() const;
+
+    /**
+     * @brief Replace the bin edges and the two CDFs.
+     * @param state State with at least two edges for every axis, whose CDFs
+     * are both empty or both have one bin less than there are edges along
+     * every axis.
+     * @throws std::runtime_error if the state is not valid. The
+     * interpolator is then left unchanged.
+     */
+    void set_state(const InterpolatorState &state);
 
     NDArray<double, 3> get_ietax() { return m_ietax; }
     NDArray<double, 3> get_ietay() { return m_ietay; }

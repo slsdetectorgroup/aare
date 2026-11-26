@@ -165,7 +165,7 @@ format.
   back (`state()`, `set_state()` and a constructor; `FastPedestalState`,
   `PedestalState`, `ClusterFinderState`, `ClusterFinderMTState`,
   `VarClusterFinderState`, `PixelHistogramState<StorageType>`,
-  `PedestalTrackingPixelHistogramState`). It lives in the header of
+  `PedestalTrackingPixelHistogramState`, `InterpolatorState`). It lives in the header of
   its class, holds no redundant fields and knows nothing about files. It
   stores its numbers as double and records the types it came from in dtype
   fields that `set_state()` ignores, so an object with other value types can
