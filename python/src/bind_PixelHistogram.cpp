@@ -2,9 +2,11 @@
 #include "aare/hist/PixelHistogram.hpp"
 #include "bindings.hpp"
 #include "np_helper.hpp"
+#include "state_file.hpp"
 
 #include <cstddef>
 #include <cstdint>
+#include <memory>
 #include <pybind11/numpy.h>
 #include <pybind11/pybind11.h>
 #include <pybind11/stl.h>
@@ -25,9 +27,9 @@ void define_pixel_histogram_binding(py::module &m, const char *class_name,
                     "axis and ") +
         storage_dtype + " bin storage";
 
-    py::class_<Hist>(m, class_name, doc.c_str())
-        .def(py::init<int, int, int, double, double, int, std::size_t>(),
-             R"(
+    py::class_<Hist> cls(m, class_name, doc.c_str());
+    cls.def(py::init<int, int, int, double, double, int, std::size_t>(),
+            R"(
              Initialize a PixelHistogram.
 
              Args:
@@ -41,9 +43,9 @@ void define_pixel_histogram_binding(py::module &m, const char *class_name,
                      asynchronous filling before fill_async() applies
                      backpressure on the caller (default: 16)
              )",
-             py::kw_only(), py::arg("rows"), py::arg("cols"), py::arg("n_bins"),
-             py::arg("xmin"), py::arg("xmax"), py::arg("n_threads") = 1,
-             py::arg("max_pending") = std::size_t{16})
+            py::kw_only(), py::arg("rows"), py::arg("cols"), py::arg("n_bins"),
+            py::arg("xmin"), py::arg("xmax"), py::arg("n_threads") = 1,
+            py::arg("max_pending") = std::size_t{16})
 
         .def(
             "fill_async",
@@ -127,6 +129,26 @@ void define_pixel_histogram_binding(py::module &m, const char *class_name,
              Returns:
                  A 1D numpy array containing the edge values for the histogram bins
              )");
+
+    def_state_file<PixelHistogramState<StorageType>>(
+        cls,
+        "Write the range and the counts to a state file, replacing an "
+        "existing file. Pending asynchronous fills are included.",
+        "Replace the counts of this histogram with those in a state file, "
+        "which must have its image shape, number of bins, range and "
+        "storage dtype.");
+    cls.def_static(
+        "from_state_file",
+        [](const std::filesystem::path &filename, int n_threads,
+           std::size_t max_pending) {
+            return std::make_unique<Hist>(
+                load_state<PixelHistogramState<StorageType>>(filename),
+                n_threads, max_pending);
+        },
+        py::arg("filename"), py::kw_only(), py::arg("n_threads") = 1,
+        py::arg("max_pending") = std::size_t{16},
+        "Create a histogram of this storage dtype from a state file, with "
+        "the image shape, the number of bins and the range stored in it.");
 }
 
 } // namespace

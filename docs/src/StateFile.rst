@@ -4,8 +4,8 @@ State files
 A state file stores everything an object has accumulated, so that it can be
 restored later, possibly in another process, and continue exactly where it
 stopped. ``FastPedestal``, ``Pedestal``, ``ClusterFinder``,
-``ClusterFinderMT`` and ``VarClusterFinder`` have a state that can be
-stored this way.
+``ClusterFinderMT``, ``VarClusterFinder`` and ``PixelHistogram`` have a
+state that can be stored this way.
 
 .. code-block:: c++
 
@@ -188,6 +188,25 @@ are left out when the finder has none:
        "erase_clusters": false,
        "noise_map": {"dtype": "<f8", "shape": [400, 400], "offset": 0},
        "mask": {"dtype": "|b1", "shape": [400, 400], "offset": 1280000}
+     }
+   }
+
+The state of a ``PixelHistogram`` is its range and its counts, with the
+shape (rows, cols, bins). The counts keep the storage type of the histogram
+that wrote the file, here ``uint16``, and load only into a histogram with
+that storage type:
+
+.. code-block:: json
+
+   {
+     "format_version": 1,
+     "aare_version": "2026.9.30",
+     "type": "PixelHistogram",
+     "state": {
+       "version": 1,
+       "xmin": 0.0,
+       "xmax": 100.0,
+       "values": {"dtype": "<u2", "shape": [400, 400, 200], "offset": 0}
      }
    }
 

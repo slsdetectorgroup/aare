@@ -12,6 +12,7 @@
 #include <cstddef>
 #include <cstdint>
 #include <cstring>
+#include <fmt/format.h>
 #include <memory>
 #include <mutex>
 #include <stdexcept>
@@ -68,10 +69,86 @@ class PixelHistogram {
     int row_start(int thread_id) const;
     int row_count(int thread_id) const;
 
+    // The state, if a histogram can be constructed from it
+    static const PixelHistogramState<StorageType> &
+    checked(const PixelHistogramState<StorageType> &state) {
+        const auto shape = state.values.shape();
+        if (shape[0] < 1 || shape[1] < 1 || shape[2] < 1 ||
+            !(state.xmax > state.xmin)) {
+            throw std::runtime_error(fmt::format(
+                "PixelHistogram state has values of shape ({}, {}, {}) and "
+                "the range [{}, {}); the shape must be positive and xmax "
+                "larger than xmin",
+                shape[0], shape[1], shape[2], state.xmin, state.xmax));
+        }
+        return state;
+    }
+
   public:
     PixelHistogram(int rows, int cols, int n_bins, AxisType xmin, AxisType xmax,
                    int n_threads = 1, std::size_t max_pending = 16);
     ~PixelHistogram();
+
+    /**
+     * @brief Construct a histogram from a state, taking the image shape,
+     * the number of bins and the range from it.
+     * @param state State of a histogram with the same StorageType.
+     * @param n_threads Number of threads for filling.
+     * @param max_pending Number of images that can wait to be filled.
+     * @throws std::runtime_error if the state is empty or its range is not
+     * valid.
+     */
+    explicit PixelHistogram(const PixelHistogramState<StorageType> &state,
+                            int n_threads = 1, std::size_t max_pending = 16)
+        : PixelHistogram(static_cast<int>(checked(state).values.shape(0)),
+                         static_cast<int>(state.values.shape(1)),
+                         static_cast<int>(state.values.shape(2)),
+                         static_cast<AxisType>(state.xmin),
+                         static_cast<AxisType>(state.xmax), n_threads,
+                         max_pending) {
+        set_state(state);
+    }
+
+    /**
+     * @brief Return a copy of the complete state: the range and the counts,
+     * after the images given so far. The number of threads is not part of
+     * it.
+     */
+    PixelHistogramState<StorageType> state() const {
+        return {static_cast<double>(xmin_), static_cast<double>(xmax_),
+                values()};
+    }
+
+    /**
+     * @brief Replace the counts, after the images given so far have been
+     * filled. To be called from the thread that gives the images.
+     * @param state State with the image shape, the number of bins and the
+     * range of this histogram.
+     * @throws std::runtime_error if the state does not fit. The histogram
+     * is then left unchanged.
+     */
+    void set_state(const PixelHistogramState<StorageType> &state) {
+        flush();
+        const auto pixel_stride = partial_hists_.front().view().shape(1) *
+                                  partial_hists_.front().view().shape(2);
+        const Shape<3> shape{rows_, cols_,
+                             partial_hists_.front().view().shape(2)};
+        if (state.values.shape() != shape ||
+            static_cast<AxisType>(state.xmin) != xmin_ ||
+            static_cast<AxisType>(state.xmax) != xmax_) {
+            throw std::runtime_error(fmt::format(
+                "PixelHistogram state has values of shape ({}, {}, {}) and "
+                "the range [{}, {}), expected ({}, {}, {}) and [{}, {})",
+                state.values.shape(0), state.values.shape(1),
+                state.values.shape(2), state.xmin, state.xmax, shape[0],
+                shape[1], shape[2], xmin_, xmax_));
+        }
+        for (int t = 0; t < n_threads_; ++t) {
+            partial_hists_[t].set_values(NDView<const StorageType, 3>(
+                state.values.data() + row_start(t) * pixel_stride,
+                {row_count(t), shape[1], shape[2]}));
+        }
+    }
 
     // Asynchronous fill: takes ownership of `image`, enqueues it for the
     // coordinator thread, and returns. Blocks the caller only if the queue

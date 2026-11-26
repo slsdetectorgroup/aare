@@ -97,6 +97,15 @@
   file. In Python: ``pedestal.save_state(fname)``,
   ``Pedestal.load_state(fname, dtype=None)`` for a new pedestal and
   ``pedestal.load_state(fname)`` to load into an existing one.
+- ``PixelHistogram`` can store and restore its counts. In C++ ``state()``
+  returns a ``PixelHistogramState<StorageType>`` (the range and the counts),
+  ``set_state()`` or the new constructor restore it, and ``save_state()``
+  and ``load_state<PixelHistogramState<StorageType>>()`` keep it in a state
+  file. In Python: ``hist.save_state(fname)``,
+  ``PixelHistogram_u16.from_state_file(fname, n_threads=1)`` (and the other
+  variants) for a new histogram and ``hist.load_state(fname)`` to load into
+  an existing one with the same shape, bins and range. The counts keep
+  their storage dtype and are not converted.
 
 ### API Changes:
 

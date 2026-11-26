@@ -8,6 +8,7 @@
 #include "aare/FastPedestal.hpp"
 #include "aare/Pedestal.hpp"
 #include "aare/VarClusterFinder.hpp"
+#include "aare/hist/PixelHistogramImpl.hpp"
 
 #include <catch2/catch_test_macros.hpp>
 #include <catch2/matchers/catch_matchers_string.hpp>
@@ -788,4 +789,39 @@ TEST_CASE("state file returns a PedestalState bit for bit", "[state-file]") {
         load_state<FastPedestalState>(file.path()),
         ContainsSubstring(
             "holds the state of a Pedestal, expected a FastPedestal"));
+}
+
+TEST_CASE("state file returns a PixelHistogramState with its storage type",
+          "[state-file]") {
+    TemporaryStateFile file;
+    PixelHistogramState<uint16_t> state;
+    state.xmin = -0.5;
+    state.xmax = 0.1;
+    state.values = NDArray<uint16_t, 3>({2, 3, 4}, 0);
+    for (ssize_t i = 0; i < state.values.size(); ++i) {
+        state.values[i] = static_cast<uint16_t>(65535 - 7 * i);
+    }
+    save_state(state, file.path());
+
+    const auto header = nlohmann::json::parse(read_state_header(file.path()));
+    REQUIRE(header.at("type") == "PixelHistogram");
+    REQUIRE(header.at("state").at("values").at("dtype") == "<u2");
+    REQUIRE(header.at("state").at("values").at("shape") ==
+            nlohmann::json{2, 3, 4});
+
+    const auto loaded = load_state<PixelHistogramState<uint16_t>>(file.path());
+    REQUIRE(loaded.xmin == state.xmin);
+    REQUIRE(loaded.xmax == state.xmax);
+    REQUIRE((loaded.values == state.values));
+
+    // The counts are not converted to another storage type
+    REQUIRE_THROWS_WITH(
+        load_state<PixelHistogramState<uint32_t>>(file.path()),
+        ContainsSubstring("array \"values\" has dtype <u2, expected <u4"));
+
+    PixelHistogramState<double> weights{0.0, 1.0,
+                                        NDArray<double, 3>({1, 2, 3}, 0.25)};
+    save_state(weights, file.path());
+    REQUIRE((load_state<PixelHistogramState<double>>(file.path()).values ==
+             weights.values));
 }

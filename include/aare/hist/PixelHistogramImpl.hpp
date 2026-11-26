@@ -19,6 +19,27 @@ silently dropped.
 
 namespace aare {
 
+/**
+ * @brief Complete state of a per-pixel histogram as plain data.
+ *
+ * Returned by PixelHistogram::state() and accepted by
+ * PixelHistogram::set_state() and the PixelHistogram constructor, so that a
+ * histogram can be stored and later filled further. Unlike the other
+ * states it has the storage type of the histogram it was taken from, since
+ * the counts are too large to be kept as double as well: a state only goes
+ * back into a histogram with the same StorageType. The axis type is not
+ * part of it; the range is double.
+ * @tparam StorageType Type of the bin counts.
+ */
+template <typename StorageType> struct PixelHistogramState {
+    /// Lower edge of the first bin
+    double xmin{};
+    /// Upper edge of the last bin
+    double xmax{};
+    /// Bin counts, shape (rows, cols, n_bins)
+    NDArray<StorageType, 3> values;
+};
+
 template <typename T, typename StorageType> class PixelHistogramImpl {
     static_assert(std::is_floating_point_v<T>,
                   "PixelHistogramImpl requires a floating-point axis type");
@@ -44,6 +65,9 @@ template <typename T, typename StorageType> class PixelHistogramImpl {
     void fill_flat_unchecked(std::size_t pixel, T value);
 
     NDArray<StorageType, 3> values() const;
+    // Replace the counts with a copy of `values`, which must have the
+    // [rows x cols x n_bins] shape of the storage. The shape is unchecked.
+    void set_values(NDView<const StorageType, 3> values);
     // Zero-copy view of the underlying [rows x cols x n_bins] storage.
     // Lifetime is tied to *this. Use for low-level merge/stitching paths;
     // prefer values() for the public API where you want an owned copy.
@@ -131,6 +155,12 @@ void PixelHistogramImpl<T, StorageType>::fill_flat_unchecked(std::size_t pixel,
 template <typename T, typename StorageType>
 NDArray<StorageType, 3> PixelHistogramImpl<T, StorageType>::values() const {
     return m_values;
+}
+
+template <typename T, typename StorageType>
+void PixelHistogramImpl<T, StorageType>::set_values(
+    NDView<const StorageType, 3> values) {
+    std::copy_n(values.data(), m_values.size(), m_values.data());
 }
 
 template <typename T, typename StorageType>
