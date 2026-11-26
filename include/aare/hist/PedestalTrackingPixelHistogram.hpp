@@ -151,8 +151,9 @@ class PedestalTrackingPixelHistogram {
         std::size_t max_pending = 16);
 
     /**
-     * @brief Return a copy of the complete state, after the frames given
-     * so far: the counts, the pedestal, the noise, n_sigma and the mask.
+     * @brief Return a copy of the complete state: the counts, the
+     * pedestal, the noise, n_sigma and the mask. Waits first until the
+     * frames given so far have been filled, as values() does.
      */
     PedestalTrackingPixelHistogramState state() const;
 

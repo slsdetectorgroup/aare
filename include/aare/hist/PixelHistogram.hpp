@@ -110,9 +110,9 @@ class PixelHistogram {
     }
 
     /**
-     * @brief Return a copy of the complete state: the range and the counts,
-     * after the images given so far. The number of threads is not part of
-     * it.
+     * @brief Return a copy of the complete state: the range and the counts.
+     * Waits first until the images given so far have been filled, as
+     * values() does. The number of threads is not part of it.
      */
     PixelHistogramState<StorageType> state() const {
         return {static_cast<double>(xmin_), static_cast<double>(xmax_),

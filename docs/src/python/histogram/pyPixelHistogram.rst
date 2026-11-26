@@ -24,8 +24,9 @@ type is preferred:
 
 **Saving and restoring the counts**
 
-``save_state()`` writes the range and the counts to a state file, including
-the images that were still waiting to be filled.
+``save_state()`` first waits until every image given with ``fill_async()``
+has been filled, as ``values()`` does, and then writes the range and the
+counts to a state file. The images themselves are not stored.
 ``from_state_file(filename, n_threads=1, max_pending=16)`` of a variant
 returns a new histogram with the image shape, the number of bins and the
 range stored in the file, and ``hist.load_state(filename)`` replaces the

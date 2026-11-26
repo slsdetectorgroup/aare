@@ -293,10 +293,10 @@ void define_pedestal_tracking_pixel_histogram_bindings(py::module &m) {
 
     def_state_file<PedestalTrackingPixelHistogramState>(
         cls,
-        "Write the complete state to a state file, replacing an existing "
-        "file: the counts, the pedestal, the noise of the last "
-        "update_mean(), n_sigma and the mask. Pending asynchronous fills "
-        "are included.",
+        "Wait for pending asynchronous fills to complete, then write the "
+        "complete state to a state file, replacing an existing file: the "
+        "counts, the pedestal, the noise of the last update_mean(), n_sigma "
+        "and the mask.",
         "Replace the state of this histogram with the one in a state file, "
         "including n_sigma and the mask. The image shape, the number of "
         "bins and the range must match.");

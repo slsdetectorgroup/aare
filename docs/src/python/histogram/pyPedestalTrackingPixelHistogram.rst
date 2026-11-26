@@ -25,9 +25,11 @@ reader_threads * reader_chunk_size * rows * cols * sizeof(uint16)``.
 
 **Saving and restoring the state**
 
-``save_state()`` writes the complete state to a state file: the counts, the
-pedestal, the noise as of the last ``update_mean()``, ``n_sigma`` and the
-mask, including the frames that were still waiting to be filled.
+``save_state()`` first waits until every frame given with ``fill_async()``
+has been filled, as ``values()`` does, and then writes the complete state to
+a state file: the counts, the pedestal, the noise as of the last
+``update_mean()``, ``n_sigma`` and the mask. The frames themselves are not
+stored.
 ``PedestalTrackingPixelHistogram.from_state_file(filename, n_threads=1,
 max_pending=16)`` returns a new histogram that is filled further exactly as
 the stored one would have been, with any number of threads, and

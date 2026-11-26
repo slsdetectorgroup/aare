@@ -132,8 +132,8 @@ void define_pixel_histogram_binding(py::module &m, const char *class_name,
 
     def_state_file<PixelHistogramState<StorageType>>(
         cls,
-        "Write the range and the counts to a state file, replacing an "
-        "existing file. Pending asynchronous fills are included.",
+        "Wait for pending asynchronous fills to complete, then write the "
+        "range and the counts to a state file, replacing an existing file.",
         "Replace the counts of this histogram with those in a state file, "
         "which must have its image shape, number of bins, range and "
         "storage dtype.");
