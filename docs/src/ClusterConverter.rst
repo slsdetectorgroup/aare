@@ -1,18 +1,24 @@
-.. _Dequantizer_C++API:
+.. _ClusterConverter_C++API:
 
-Dequantizer
-===========
+ClusterConverter
+================
 
 Converts integer clusters to floating point clusters for eta and
-interpolation, optionally applying a gain in the same pass.
+interpolation. One pass over the clusters does two things:
+
+- It dequantizes: every pixel value is drawn uniformly from the interval of
+  analog values that was stored as that integer. This removes the spikes
+  that integer pixel values leave in eta histograms and the lines in
+  interpolated images.
+- It applies a gain or a gain map, when one is given.
 
 .. code:: cpp
 
-    Dequantizer dequantizer(gain_map.view(), Quantization::Rounded, seed);
+    ClusterConverter converter(gain_map.view(), Quantization::Rounded, seed);
 
     ClusterFile<Cluster<int32_t, 3, 3>> file(path);
     for (auto &chunk : file.chunks(1'000'000)) {
-        auto clusters = dequantizer(chunk); // Cluster<float, 3, 3>
+        auto clusters = converter(chunk); // Cluster<float, 3, 3>
         auto eta = calculate_eta2(clusters);
     }
 
@@ -29,5 +35,5 @@ to integers, which decides the interval each value is drawn from:
 
 .. doxygenenum:: aare::Quantization
 
-.. doxygenclass:: aare::Dequantizer
+.. doxygenclass:: aare::ClusterConverter
    :members:

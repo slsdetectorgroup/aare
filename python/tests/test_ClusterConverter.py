@@ -2,7 +2,7 @@
 import numpy as np
 import pytest
 
-from aare import Dequantizer, _aare, calculate_eta2
+from aare import ClusterConverter, _aare, calculate_eta2
 
 
 def make_clusters(values, frame_number=0):
@@ -16,7 +16,7 @@ def make_clusters(values, frame_number=0):
 
 def test_returns_float32_clusters_and_keeps_the_input():
     cv = make_clusters([5, -3, 0], frame_number=42)
-    result = Dequantizer(seed=1)(cv)
+    result = ClusterConverter(seed=1)(cv)
 
     assert isinstance(result, _aare.ClusterVector_Cluster3x3f)
     assert result.frame_number == 42
@@ -29,7 +29,7 @@ def test_returns_float32_clusters_and_keeps_the_input():
 
 def test_rounded_values_stay_within_half_a_step():
     values = np.array([-40, -1, 0, 1, 40] * 400)
-    data = np.array(Dequantizer(truncated=False, seed=2)(make_clusters(values)))["data"]
+    data = np.array(ClusterConverter(truncated=False, seed=2)(make_clusters(values)))["data"]
     offset = data - values[:, None, None]
 
     assert offset.min() >= -0.5
@@ -40,7 +40,7 @@ def test_rounded_values_stay_within_half_a_step():
 
 def test_truncated_values_move_away_from_zero():
     values = np.array([-40, 0, 40] * 700)
-    data = np.array(Dequantizer(truncated=True, seed=3)(make_clusters(values)))["data"]
+    data = np.array(ClusterConverter(truncated=True, seed=3)(make_clusters(values)))["data"]
     negative, zero, positive = data[values == -40], data[values == 0], data[values == 40]
 
     assert -41 < negative.min() and negative.max() <= -40
@@ -53,12 +53,12 @@ def test_truncated_values_move_away_from_zero():
 
 def test_seed_makes_the_result_reproducible():
     cv = make_clusters([3] * 20)
-    dequantizer = Dequantizer(seed=4)
-    first = np.array(dequantizer(cv))["data"]
-    second = np.array(dequantizer(cv))["data"]
-    same = np.array(Dequantizer(seed=4)(cv))["data"]
-    other = np.array(Dequantizer(seed=5)(cv))["data"]
-    unseeded = np.array(Dequantizer()(cv))["data"]
+    converter = ClusterConverter(seed=4)
+    first = np.array(converter(cv))["data"]
+    second = np.array(converter(cv))["data"]
+    same = np.array(ClusterConverter(seed=4)(cv))["data"]
+    other = np.array(ClusterConverter(seed=5)(cv))["data"]
+    unseeded = np.array(ClusterConverter()(cv))["data"]
 
     np.testing.assert_array_equal(first, same)
     assert not np.array_equal(first, second)  # the generator moves on
@@ -68,10 +68,10 @@ def test_seed_makes_the_result_reproducible():
 
 def test_result_does_not_depend_on_the_chunk_size():
     values = np.arange(-50, 50)
-    whole = np.array(Dequantizer(seed=6)(make_clusters(values)))["data"]
+    whole = np.array(ClusterConverter(seed=6)(make_clusters(values)))["data"]
 
-    dequantizer = Dequantizer(seed=6)
-    chunks = [np.array(dequantizer(make_clusters(values[i:i + 7])))["data"]
+    converter = ClusterConverter(seed=6)
+    chunks = [np.array(converter(make_clusters(values[i:i + 7])))["data"]
               for i in range(0, values.size, 7)]
     np.testing.assert_array_equal(np.concatenate(chunks), whole)
 
@@ -79,28 +79,28 @@ def test_result_does_not_depend_on_the_chunk_size():
 def test_other_integer_cluster_types():
     cv = _aare.ClusterVector_Cluster2x2i()
     cv.push_back(_aare.Cluster2x2i(1, 2, np.array([1, 2, 3, 4], dtype=np.int32)))
-    assert isinstance(Dequantizer()(cv), _aare.ClusterVector_Cluster2x2f)
+    assert isinstance(ClusterConverter()(cv), _aare.ClusterVector_Cluster2x2f)
 
     cv16 = _aare.ClusterVector_Cluster3x3i16()
     cv16.push_back(_aare.Cluster3x3i16(1, 2, np.arange(9, dtype=np.int16)))
-    result = Dequantizer(truncated=True, seed=6)(cv16)
+    result = ClusterConverter(truncated=True, seed=6)(cv16)
     assert isinstance(result, _aare.ClusterVector_Cluster3x3f)
     np.testing.assert_array_equal(np.floor(np.array(result)["data"][0].ravel())[1:], np.arange(1, 9))
 
 
 def test_invalid_arguments():
     with pytest.raises(TypeError):
-        Dequantizer(2.5)  # keyword only
+        ClusterConverter(2.5)  # keyword only
     with pytest.raises(TypeError):
-        Dequantizer(gain="two")
+        ClusterConverter(gain="two")
     with pytest.raises(ValueError):
-        Dequantizer(gain=np.ones(4))
+        ClusterConverter(gain=np.ones(4))
     with pytest.raises(ValueError):
-        Dequantizer(gain=np.ones((2, 2, 2)))
+        ClusterConverter(gain=np.ones((2, 2, 2)))
     with pytest.raises(TypeError):
-        Dequantizer()(_aare.ClusterVector_Cluster3x3f())
+        ClusterConverter()(_aare.ClusterVector_Cluster3x3f())
     with pytest.raises(TypeError):
-        Dequantizer()(np.zeros(3))
+        ClusterConverter()(np.zeros(3))
 
 
 def test_eta_of_truncated_data_has_no_pile_up():
@@ -113,14 +113,14 @@ def test_eta_of_truncated_data_has_no_pile_up():
         cv.push_back(_aare.Cluster3x3i(5, 5, data))
 
     eta_int = calculate_eta2(cv)["x"]
-    eta_float = calculate_eta2(Dequantizer(truncated=True, seed=8)(cv))["x"]
+    eta_float = calculate_eta2(ClusterConverter(truncated=True, seed=8)(cv))["x"]
 
     assert np.mean((eta_int == 0) | (eta_int == 1)) > 0.1
     assert np.mean((eta_float == 0) | (eta_float == 1)) == 0
 
 
 def test_rounds_by_default():
-    data = np.array(Dequantizer(seed=9)(make_clusters([40] * 500)))["data"]
+    data = np.array(ClusterConverter(seed=9)(make_clusters([40] * 500)))["data"]
     assert data.min() >= 39.5 and data.max() <= 40.5
     assert data.min() < 39.6
 
@@ -128,8 +128,8 @@ def test_rounds_by_default():
 @pytest.mark.parametrize("gain", [2.5, np.float32(2.5), 4])
 def test_uniform_gain_in_the_same_pass(gain):
     cv = make_clusters([40] * 50, frame_number=5)
-    plain = np.array(Dequantizer(truncated=True, seed=10)(cv))["data"]
-    scaled = Dequantizer(gain=gain, truncated=True, seed=10)(cv)
+    plain = np.array(ClusterConverter(truncated=True, seed=10)(cv))["data"]
+    scaled = ClusterConverter(gain=gain, truncated=True, seed=10)(cv)
 
     assert scaled.frame_number == 5
     np.testing.assert_allclose(np.array(scaled)["data"], plain / float(gain), rtol=1e-6)
@@ -143,7 +143,7 @@ def test_gain_map_in_the_same_pass():
     for x, y in centers:
         cv.push_back(_aare.Cluster3x3i(x, y, np.full(9, 1000, dtype=np.int32)))
 
-    arr = np.array(Dequantizer(gain=gain, seed=11)(cv))
+    arr = np.array(ClusterConverter(gain=gain, seed=11)(cv))
     for cluster, (x, y) in zip(arr[:3], centers[:3]):
         expected = gain[y - 1:y + 2, x - 1:x + 2]
         assert np.abs(cluster["data"] * expected - 1000).max() <= 0.51
@@ -155,11 +155,11 @@ def test_gain_map_in_the_same_pass():
 
 def test_gain_map_is_copied():
     gain = np.full((4, 4), 2.0)
-    dequantizer = Dequantizer(gain=gain, seed=13)
+    converter = ClusterConverter(gain=gain, seed=13)
     gain[:] = 1000.0
     cv = _aare.ClusterVector_Cluster3x3i()
     cv.push_back(_aare.Cluster3x3i(1, 1, np.full(9, 100, dtype=np.int32)))
-    assert np.abs(np.array(dequantizer(cv))["data"] - 50).max() <= 0.25
+    assert np.abs(np.array(converter(cv))["data"] - 50).max() <= 0.25
 
 
 def test_gain_map_matches_the_cluster_file_convention(tmp_path):
@@ -177,10 +177,10 @@ def test_gain_map_matches_the_cluster_file_convention(tmp_path):
         f.write_frame(cv)
 
     with ClusterFile(fname) as f:
-        with pytest.warns(DeprecationWarning, match="Dequantizer"):
+        with pytest.warns(DeprecationWarning, match="ClusterConverter"):
             f.set_gain_map(gain)
         from_file = np.array(f.read_frame())["data"]
     with ClusterFile(fname) as f:
-        converted = np.array(Dequantizer(gain=gain, seed=12)(f.read_frame()))["data"]
+        converted = np.array(ClusterConverter(gain=gain, seed=12)(f.read_frame()))["data"]
 
     assert np.abs(converted - from_file).max() <= 1.0

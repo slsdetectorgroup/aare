@@ -35,16 +35,16 @@
   assembled. ``rows()``, ``cols()`` and every returned frame then include
   the gaps, for the full frame and for each ROI.
 
-- Added ``Dequantizer`` to convert integer clusters to floating point
-  clusters before ``calculate_eta2`` and ``Interpolator.interpolate``,
-  optionally applying a gain or a gain map in the same pass. Integer pixel
-  values otherwise put spikes in the eta histogram and lines in the
-  interpolated image.
+- Added ``ClusterConverter`` to convert integer clusters to floating point
+  clusters before ``calculate_eta2`` and ``Interpolator.interpolate``. It
+  dequantizes the pixel values and optionally applies a gain or a gain map
+  in the same pass. Integer pixel values otherwise put spikes in the eta
+  histogram and lines in the interpolated image.
 
 ### API Changes:
 
 - ``ClusterFile.set_gain_map`` is deprecated because it truncates integer
-  clusters. Use a ``Dequantizer`` created with the gain map.
+  clusters. Use a ``ClusterConverter`` created with the gain map.
 - ``ClusterCollector.steal_clusters()`` can be called while the collector
   is running and no longer raises on a collector that is not stopped. It
   returns the clusters collected since the last call; call ``sync()`` on the

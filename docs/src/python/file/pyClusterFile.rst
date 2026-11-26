@@ -64,7 +64,7 @@ values are set to zero.
 
 .. warning::
    ``set_gain_map`` is deprecated: it truncates integer clusters. Use a
-   :ref:`Dequantizer <py_dequantizer>` instead.
+   :ref:`ClusterConverter <py_cluster_converter>` instead.
 
 .. py:currentmodule:: aare
 

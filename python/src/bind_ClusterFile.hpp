@@ -153,7 +153,8 @@ void define_ClusterFile(py::module &m, const std::string &typestr) {
                 if (PyErr_WarnEx(
                         PyExc_DeprecationWarning,
                         "ClusterFile.set_gain_map is deprecated: it truncates "
-                        "integer clusters. Use aare.Dequantizer(gain=gain_map) "
+                        "integer clusters. Use "
+                        "aare.ClusterConverter(gain=gain_map) "
                         "on the clusters instead.",
                         1) < 0) {
                     throw py::error_already_set();
@@ -165,7 +166,7 @@ void define_ClusterFile(py::module &m, const std::string &typestr) {
             },
             py::arg("gain_map"),
             "Deprecated, truncates integer clusters: use "
-            "``aare.Dequantizer(gain=gain_map)``.\n\n"
+            "``aare.ClusterConverter(gain=gain_map)``.\n\n"
             "Set a two-dimensional, C-contiguous float64 gain map in "
             "ADU/energy, indexed as [y, x]. Clusters whose complete footprint "
             "extends beyond the map are retained with all data values set to "

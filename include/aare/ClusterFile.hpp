@@ -314,22 +314,22 @@ class ClusterFile {
      * is copied and inverted internally.
      * @note Clusters whose complete footprint extends beyond the gain map are
      * retained with all cluster data values set to zero.
-     * @deprecated Truncates integer clusters. Use a Dequantizer created with
-     * the gain map.
+     * @deprecated Truncates integer clusters. Use a ClusterConverter created
+     * with the gain map.
      */
-    [[deprecated("truncates integer clusters, use aare::Dequantizer")]]
+    [[deprecated("truncates integer clusters, use aare::ClusterConverter")]]
     void set_gain_map(const NDView<double, 2> gain_map) {
         m_gain_map = InvertedGainMap(gain_map);
     }
 
-    /// @deprecated Use a Dequantizer created with the gain map.
-    [[deprecated("truncates integer clusters, use aare::Dequantizer")]]
+    /// @deprecated Use a ClusterConverter created with the gain map.
+    [[deprecated("truncates integer clusters, use aare::ClusterConverter")]]
     void set_gain_map(const InvertedGainMap &gain_map) {
         m_gain_map = gain_map;
     }
 
-    /// @deprecated Use a Dequantizer created with the gain map.
-    [[deprecated("truncates integer clusters, use aare::Dequantizer")]]
+    /// @deprecated Use a ClusterConverter created with the gain map.
+    [[deprecated("truncates integer clusters, use aare::ClusterConverter")]]
     void set_gain_map(const InvertedGainMap &&gain_map) {
         m_gain_map = gain_map;
     }

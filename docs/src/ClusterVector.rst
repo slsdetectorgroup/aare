@@ -24,4 +24,4 @@ ClusterVector
 **Gain correction:**
 
 ``ClusterFile::set_gain_map`` is deprecated. Use a
-:ref:`Dequantizer <Dequantizer_C++API>` to apply a gain map to integer clusters.
+:ref:`ClusterConverter <ClusterConverter_C++API>` to apply a gain map to integer clusters.

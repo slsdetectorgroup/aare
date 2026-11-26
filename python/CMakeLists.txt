@@ -49,7 +49,7 @@ set(_aare_py_io
     src/bind_MultiThreadedFileReader.cpp
     src/bind_DataSetAggregation.cpp)
 set(_aare_py_core
-    src/bind_Defs.cpp src/bind_Dequantize.cpp src/bind_GapPixels.cpp
+    src/bind_Defs.cpp src/bind_ClusterConverter.cpp src/bind_GapPixels.cpp
     src/bind_PixelMap.cpp src/bind_testing.cpp)
 set(_aare_py_hist src/bind_PixelHistogram.cpp
                   src/bind_PedestalTrackingPixelHistogram.cpp)

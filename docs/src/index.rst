@@ -61,7 +61,7 @@ AARE
     ClusterFinderMT
     ClusterFile
     ClusterVector
-    Dequantizer
+    ClusterConverter
     Interpolation
     JungfrauDataFile
     Pedestal

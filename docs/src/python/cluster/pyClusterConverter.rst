@@ -1,19 +1,25 @@
-.. _py_dequantizer:
+.. _py_cluster_converter:
 
-Dequantizer
-===========
+ClusterConverter
+================
 
-Converts integer clusters to ``float32`` clusters for eta and interpolation,
-optionally applying a gain in the same pass.
+Converts integer clusters to ``float32`` clusters for eta and interpolation.
+One pass over the clusters does two things:
+
+- It dequantizes: every pixel value is drawn uniformly from the interval of
+  analog values that was stored as that integer. This removes the spikes
+  that integer pixel values leave in eta histograms and the lines in
+  interpolated images.
+- It applies a gain or a gain map, when one is given.
 
 .. code:: python
 
-    from aare import ClusterFile, Dequantizer, calculate_eta2
+    from aare import ClusterFile, ClusterConverter, calculate_eta2
 
-    dequantizer = Dequantizer(gain=gain_map, seed=1)
+    converter = ClusterConverter(gain=gain_map, seed=1)
     with ClusterFile("path/to/file") as f:
         for chunk in f.chunks(1_000_000):
-            clusters = dequantizer(chunk)
+            clusters = converter(chunk)
             eta = calculate_eta2(clusters)
 
 ``truncated`` states how the writer of the clusters converted pixel values to
@@ -34,6 +40,6 @@ In a truncated file the pixel value 0 occurs about twice as often as 1 or -1:
 
 .. py:currentmodule:: aare
 
-.. autoclass:: Dequantizer
+.. autoclass:: ClusterConverter
    :members:
    :special-members: __call__

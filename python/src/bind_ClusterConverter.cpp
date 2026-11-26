@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: MPL-2.0
 #include "bindings.hpp"
 
-#include "aare/Dequantize.hpp"
+#include "aare/ClusterConverter.hpp"
 #include "aare/GainMap.hpp"
 #include "np_helper.hpp"
 
@@ -14,10 +14,10 @@
 using namespace aare;
 
 // The class is registered here; bind_cluster_NxN.cpp adds one __call__
-// overload per integer cluster type through register_dequantize.
-void define_dequantizer_bindings(py::module &m) {
-    py::class_<Dequantizer>(m, "Dequantizer",
-                            R"doc(
+// overload per integer cluster type through register_cluster_converter.
+void define_cluster_converter_bindings(py::module &m) {
+    py::class_<ClusterConverter>(m, "ClusterConverter",
+                                 R"doc(
         Converts integer clusters to float32 clusters, drawing every pixel
         value uniformly from the interval that was stored as that integer.
         Optionally divides by a gain in the same pass.
@@ -46,7 +46,7 @@ void define_dequantizer_bindings(py::module &m) {
                 const auto quantization =
                     truncated ? Quantization::Truncated : Quantization::Rounded;
                 if (gain.is_none())
-                    return Dequantizer(quantization, seed);
+                    return ClusterConverter(quantization, seed);
 
                 const auto gain_array =
                     py::array_t<double, py::array::c_style |
@@ -56,15 +56,16 @@ void define_dequantizer_bindings(py::module &m) {
                         "gain must be a number or a 2D array of numbers");
                 }
                 if (gain_array.ndim() == 0)
-                    return Dequantizer(*gain_array.data(), quantization, seed);
+                    return ClusterConverter(*gain_array.data(), quantization,
+                                            seed);
                 if (gain_array.ndim() != 2) {
                     throw py::value_error(
                         "gain must be a number or a 2D array of numbers");
                 }
                 // A const view also takes arrays that are not writeable
-                return Dequantizer(InvertedGainMap(NDArray<double, 2>(
-                                       make_const_view_2d(gain_array))),
-                                   quantization, seed);
+                return ClusterConverter(InvertedGainMap(NDArray<double, 2>(
+                                            make_const_view_2d(gain_array))),
+                                        quantization, seed);
             }),
             py::kw_only(), py::arg("gain") = py::none(),
             py::arg("truncated") = false, py::arg("seed") = py::none());

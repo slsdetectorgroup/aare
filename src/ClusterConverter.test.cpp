@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: MPL-2.0
-#include "aare/Dequantize.hpp"
+#include "aare/ClusterConverter.hpp"
 #include "aare/GainMap.hpp"
 #include "aare/NDArray.hpp"
 
@@ -13,8 +13,8 @@
 #include <utility>
 
 using aare::Cluster;
+using aare::ClusterConverter;
 using aare::ClusterVector;
-using aare::Dequantizer;
 using aare::Quantization;
 using aare::ssize_t;
 
@@ -75,14 +75,15 @@ Range pixel_range(const ClusterVector<ClusterType> &clusters) {
 
 } // namespace
 
-TEST_CASE("Dequantizer returns float clusters by default", "[dequantize]") {
+TEST_CASE("ClusterConverter returns float clusters by default",
+          "[ClusterConverter]") {
     const auto clusters = constant_clusters(7, 4, 123);
-    Dequantizer dequantizer(Quantization::Rounded, 1);
-    auto result = dequantizer(clusters);
+    ClusterConverter converter(Quantization::Rounded, 1);
+    auto result = converter(clusters);
 
     STATIC_REQUIRE(
         std::is_same_v<decltype(result), ClusterVector<Cluster<float, 3, 3>>>);
-    STATIC_REQUIRE(std::is_same_v<decltype(dequantizer.dequantize(clusters)),
+    STATIC_REQUIRE(std::is_same_v<decltype(converter.apply(clusters)),
                                   ClusterVector<Cluster<float, 3, 3>>>);
     REQUIRE(result.size() == clusters.size());
     CHECK(result.frame_number() == 123);
@@ -92,12 +93,12 @@ TEST_CASE("Dequantizer returns float clusters by default", "[dequantize]") {
     }
 }
 
-TEST_CASE("Dequantizer spreads rounded values around the integer",
-          "[dequantize]") {
+TEST_CASE("ClusterConverter spreads rounded values around the integer",
+          "[ClusterConverter]") {
     const auto value = GENERATE(-40, -1, 0, 1, 40);
     const auto clusters = constant_clusters(value, 20000);
-    Dequantizer dequantizer(Quantization::Rounded, 2);
-    const auto range = pixel_range(dequantizer.dequantize<double>(clusters));
+    ClusterConverter converter(Quantization::Rounded, 2);
+    const auto range = pixel_range(converter.apply<double>(clusters));
 
     CHECK(range.min >= value - 0.5);
     CHECK(range.max < value + 0.5);
@@ -105,26 +106,26 @@ TEST_CASE("Dequantizer spreads rounded values around the integer",
     CHECK(std::abs(range.mean - value) < 0.01);
 }
 
-TEST_CASE("Dequantizer spreads truncated values away from zero",
-          "[dequantize]") {
-    Dequantizer dequantizer(Quantization::Truncated, 3);
+TEST_CASE("ClusterConverter spreads truncated values away from zero",
+          "[ClusterConverter]") {
+    ClusterConverter converter(Quantization::Truncated, 3);
     SECTION("positive values cover [n, n + 1)") {
-        const auto range = pixel_range(
-            dequantizer.dequantize<double>(constant_clusters(40, 20000)));
+        const auto range =
+            pixel_range(converter.apply<double>(constant_clusters(40, 20000)));
         CHECK(range.min >= 40.0);
         CHECK(range.max < 41.0);
         CHECK(std::abs(range.mean - 40.5) < 0.01);
     }
     SECTION("negative values cover (n - 1, n]") {
-        const auto range = pixel_range(
-            dequantizer.dequantize<double>(constant_clusters(-40, 20000)));
+        const auto range =
+            pixel_range(converter.apply<double>(constant_clusters(-40, 20000)));
         CHECK(range.min > -41.0);
         CHECK(range.max <= -40.0);
         CHECK(std::abs(range.mean + 40.5) < 0.01);
     }
     SECTION("zero covers (-1, 1)") {
-        const auto range = pixel_range(
-            dequantizer.dequantize<double>(constant_clusters(0, 20000)));
+        const auto range =
+            pixel_range(converter.apply<double>(constant_clusters(0, 20000)));
         CHECK(range.min > -1.0);
         CHECK(range.min < -0.99);
         CHECK(range.max < 1.0);
@@ -133,8 +134,8 @@ TEST_CASE("Dequantizer spreads truncated values away from zero",
     }
 }
 
-TEST_CASE("Dequantizer removes the double zero of truncated data",
-          "[dequantize]") {
+TEST_CASE("ClusterConverter removes the double zero of truncated data",
+          "[ClusterConverter]") {
     // Truncate uniformly distributed values toward zero as a legacy writer
     // did, then check that the result is uniform again.
     std::mt19937_64 source(4);
@@ -148,8 +149,8 @@ TEST_CASE("Dequantizer removes the double zero of truncated data",
         clusters.push_back(cluster);
     }
 
-    Dequantizer dequantizer(Quantization::Truncated, 5);
-    const auto result = dequantizer(clusters);
+    ClusterConverter converter(Quantization::Truncated, 5);
+    const auto result = converter(clusters);
     std::array<size_t, 16> counts{};
     for (const auto &cluster : result) {
         for (const auto value : cluster.data) {
@@ -163,16 +164,17 @@ TEST_CASE("Dequantizer removes the double zero of truncated data",
               0.03 * expected);
 }
 
-TEST_CASE("Dequantizer is reproducible with a seed", "[dequantize]") {
+TEST_CASE("ClusterConverter is reproducible with a seed",
+          "[ClusterConverter]") {
     const auto clusters = constant_clusters(3, 50);
-    Dequantizer first_dequantizer(Quantization::Rounded, 6);
-    Dequantizer same_dequantizer(Quantization::Rounded, 6);
-    Dequantizer other_dequantizer(Quantization::Rounded, 7);
-    const auto first = first_dequantizer(clusters);
-    const auto same = same_dequantizer(clusters);
-    const auto other = other_dequantizer(clusters);
+    ClusterConverter first_converter(Quantization::Rounded, 6);
+    ClusterConverter same_converter(Quantization::Rounded, 6);
+    ClusterConverter other_converter(Quantization::Rounded, 7);
+    const auto first = first_converter(clusters);
+    const auto same = same_converter(clusters);
+    const auto other = other_converter(clusters);
     // The generator moves on: a second call adds different values.
-    const auto second = first_dequantizer(clusters);
+    const auto second = first_converter(clusters);
 
     bool other_differs = false;
     bool second_differs = false;
@@ -185,15 +187,15 @@ TEST_CASE("Dequantizer is reproducible with a seed", "[dequantize]") {
     CHECK(second_differs);
 }
 
-TEST_CASE("Dequantizer result does not depend on the chunk size",
-          "[dequantize]") {
+TEST_CASE("ClusterConverter result does not depend on the chunk size",
+          "[ClusterConverter]") {
     // 7 clusters of 9 pixels leave a partly used 64 bit draw between calls.
     const auto clusters = varied_clusters(100);
     const size_t chunk_size = 7;
 
-    Dequantizer whole_dequantizer(Quantization::Rounded, 14);
-    Dequantizer chunk_dequantizer(Quantization::Rounded, 14);
-    const auto whole = whole_dequantizer(clusters);
+    ClusterConverter whole_converter(Quantization::Rounded, 14);
+    ClusterConverter chunk_converter(Quantization::Rounded, 14);
+    const auto whole = whole_converter(clusters);
 
     size_t compared = 0;
     for (size_t first = 0; first < clusters.size(); first += chunk_size) {
@@ -201,7 +203,7 @@ TEST_CASE("Dequantizer result does not depend on the chunk size",
         ClusterVector<IntCluster> chunk(last - first);
         for (size_t i = first; i < last; ++i)
             chunk.push_back(clusters[i]);
-        const auto converted = chunk_dequantizer(chunk);
+        const auto converted = chunk_converter(chunk);
         REQUIRE(converted.size() == last - first);
         for (size_t i = 0; i < converted.size(); ++i, ++compared)
             CHECK(converted[i].data == whole[compared].data);
@@ -209,14 +211,14 @@ TEST_CASE("Dequantizer result does not depend on the chunk size",
     CHECK(compared == clusters.size());
 }
 
-TEST_CASE("Dequantizer reuses the output vector", "[dequantize]") {
-    Dequantizer dequantizer(Quantization::Rounded, 8);
+TEST_CASE("ClusterConverter reuses the output vector", "[ClusterConverter]") {
+    ClusterConverter converter(Quantization::Rounded, 8);
     ClusterVector<Cluster<float, 3, 3>> out(100);
-    dequantizer.dequantize(constant_clusters(5, 100, 1), out);
+    converter.apply(constant_clusters(5, 100, 1), out);
     const auto *storage = out.data();
     const auto first_pixel = out[0].data[0];
 
-    dequantizer.dequantize(constant_clusters(9, 60, 2), out);
+    converter.apply(constant_clusters(9, 60, 2), out);
     CHECK(out.data() == storage);
     CHECK(out.size() == 60);
     CHECK(out.frame_number() == 2);
@@ -224,11 +226,12 @@ TEST_CASE("Dequantizer reuses the output vector", "[dequantize]") {
     CHECK(out[59].data[8] >= 8.5f);
 }
 
-TEST_CASE("Dequantizer handles other cluster types", "[dequantize]") {
+TEST_CASE("ClusterConverter handles other cluster types",
+          "[ClusterConverter]") {
     ClusterVector<Cluster<int16_t, 2, 2>> clusters(1);
     clusters.push_back(Cluster<int16_t, 2, 2>{4, 5, {-3, 0, 3, 100}});
-    Dequantizer dequantizer(Quantization::Truncated, 9);
-    const auto result = dequantizer.dequantize<double>(clusters);
+    ClusterConverter converter(Quantization::Truncated, 9);
+    const auto result = converter.apply<double>(clusters);
 
     STATIC_REQUIRE(std::is_same_v<decltype(result),
                                   const ClusterVector<Cluster<double, 2, 2>>>);
@@ -240,27 +243,27 @@ TEST_CASE("Dequantizer handles other cluster types", "[dequantize]") {
     CHECK(static_cast<int>(result[0].data[3]) == 100);
 
     ClusterVector<Cluster<int16_t, 2, 2>> empty(0, 17);
-    const auto none = dequantizer(empty);
+    const auto none = converter(empty);
     CHECK(none.empty());
     CHECK(none.frame_number() == 17);
 }
 
-TEST_CASE("Dequantizer rounds and is seeded from the system by default",
-          "[dequantize]") {
-    Dequantizer dequantizer;
-    const auto range = pixel_range(dequantizer(constant_clusters(40, 2000)));
+TEST_CASE("ClusterConverter rounds and is seeded from the system by default",
+          "[ClusterConverter]") {
+    ClusterConverter converter;
+    const auto range = pixel_range(converter(constant_clusters(40, 2000)));
     CHECK(range.min >= 39.5);
     CHECK(range.max <= 40.5);
     CHECK(range.min < 39.6);
 }
 
-TEST_CASE("Dequantizer applies a uniform gain in the same pass",
-          "[dequantize]") {
+TEST_CASE("ClusterConverter applies a uniform gain in the same pass",
+          "[ClusterConverter]") {
     const auto clusters = constant_clusters(40, 500, 11);
-    Dequantizer plain_dequantizer(Quantization::Truncated, 10);
-    Dequantizer gain_dequantizer(2.5, Quantization::Truncated, 10);
-    const auto plain = plain_dequantizer.dequantize<double>(clusters);
-    const auto scaled = gain_dequantizer.dequantize<double>(clusters);
+    ClusterConverter plain_converter(Quantization::Truncated, 10);
+    ClusterConverter gain_converter(2.5, Quantization::Truncated, 10);
+    const auto plain = plain_converter.apply<double>(clusters);
+    const auto scaled = gain_converter.apply<double>(clusters);
 
     REQUIRE(scaled.size() == plain.size());
     CHECK(scaled.frame_number() == 11);
@@ -272,7 +275,8 @@ TEST_CASE("Dequantizer applies a uniform gain in the same pass",
     }
 }
 
-TEST_CASE("Dequantizer applies a gain map in the same pass", "[dequantize]") {
+TEST_CASE("ClusterConverter applies a gain map in the same pass",
+          "[ClusterConverter]") {
     // The gain of pixel (y, x) is 1 + y + 10 * x, so every pixel of a
     // cluster identifies the map element it was divided by.
     aare::NDArray<double, 2> gain({6, 8});
@@ -291,8 +295,8 @@ TEST_CASE("Dequantizer applies a gain map in the same pass", "[dequantize]") {
         clusters.push_back(cluster);
     }
 
-    Dequantizer dequantizer(gain.view(), Quantization::Rounded, 12);
-    const auto out = dequantizer.dequantize<double>(clusters);
+    ClusterConverter converter(gain.view(), Quantization::Rounded, 12);
+    const auto out = converter.apply<double>(clusters);
 
     REQUIRE(out.size() == 7);
     for (size_t i = 0; i < 3; ++i) {
@@ -314,20 +318,21 @@ TEST_CASE("Dequantizer applies a gain map in the same pass", "[dequantize]") {
     }
 }
 
-TEST_CASE("Dequantizer gain variants agree for the same seed", "[dequantize]") {
+TEST_CASE("ClusterConverter gain variants agree for the same seed",
+          "[ClusterConverter]") {
     const auto clusters = varied_clusters(100);
     aare::NDArray<double, 2> gain({12, 12}, 4.0);
     const aare::InvertedGainMap inverse(gain);
     CHECK(inverse(2, 3) == Catch::Approx(0.25));
 
-    Dequantizer plain_dequantizer(Quantization::Rounded, 15);
-    Dequantizer uniform_dequantizer(4.0, Quantization::Rounded, 15);
-    Dequantizer view_dequantizer(gain.view(), Quantization::Rounded, 15);
-    Dequantizer map_dequantizer(inverse, Quantization::Rounded, 15);
-    const auto plain = plain_dequantizer.dequantize<double>(clusters);
-    const auto uniform = uniform_dequantizer.dequantize<double>(clusters);
-    const auto from_view = view_dequantizer.dequantize<double>(clusters);
-    const auto from_map = map_dequantizer.dequantize<double>(clusters);
+    ClusterConverter plain_converter(Quantization::Rounded, 15);
+    ClusterConverter uniform_converter(4.0, Quantization::Rounded, 15);
+    ClusterConverter view_converter(gain.view(), Quantization::Rounded, 15);
+    ClusterConverter map_converter(inverse, Quantization::Rounded, 15);
+    const auto plain = plain_converter.apply<double>(clusters);
+    const auto uniform = uniform_converter.apply<double>(clusters);
+    const auto from_view = view_converter.apply<double>(clusters);
+    const auto from_map = map_converter.apply<double>(clusters);
 
     for (size_t i = 0; i < clusters.size(); ++i) {
         for (size_t j = 0; j < 9; ++j) {
@@ -338,7 +343,8 @@ TEST_CASE("Dequantizer gain variants agree for the same seed", "[dequantize]") {
     }
 }
 
-TEST_CASE("Dequantizer with a gain map handles 2x2 clusters", "[dequantize]") {
+TEST_CASE("ClusterConverter with a gain map handles 2x2 clusters",
+          "[ClusterConverter]") {
     aare::NDArray<double, 2> gain({4, 4});
     for (ssize_t y = 0; y < 4; ++y)
         for (ssize_t x = 0; x < 4; ++x)
@@ -349,8 +355,8 @@ TEST_CASE("Dequantizer with a gain map handles 2x2 clusters", "[dequantize]") {
     clusters.push_back(Cluster<int32_t, 2, 2>{2, 1, {500, 500, 500, 500}});
     clusters.push_back(Cluster<int32_t, 2, 2>{0, 1, {500, 500, 500, 500}});
 
-    Dequantizer dequantizer(gain.view(), Quantization::Rounded, 13);
-    const auto out = dequantizer.dequantize<double>(clusters);
+    ClusterConverter converter(gain.view(), Quantization::Rounded, 13);
+    const auto out = converter.apply<double>(clusters);
 
     CHECK(std::abs(out[0].data[0] * gain(0, 1) - 500.0) <= 0.5);
     CHECK(std::abs(out[0].data[1] * gain(0, 2) - 500.0) <= 0.5);

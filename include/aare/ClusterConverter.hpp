@@ -1,8 +1,9 @@
 // SPDX-License-Identifier: MPL-2.0
 /************************************************
- * @file Dequantize.hpp
- * @short convert integer clusters to floating point and spread every pixel
- * value over the interval of analog values that was stored as that integer
+ * @file ClusterConverter.hpp
+ * @short convert integer clusters to floating point: spread every pixel value
+ * over the interval of analog values that was stored as that integer and
+ * optionally apply a gain
  ***********************************************/
 
 #pragma once
@@ -66,13 +67,13 @@ OutT dequantize_value(const T value, const uint32_t bits,
  * the lines in interpolated images. Use one object for all chunks of a file:
  * the result does not depend on the chunk size. Not thread safe.
  */
-class Dequantizer {
+class ClusterConverter {
   public:
     /**
      * @param quantization how the pixel values were converted to integers
      * @param seed seed of the random generator, from the system when unset
      */
-    explicit Dequantizer(
+    explicit ClusterConverter(
         const Quantization quantization = Quantization::Rounded,
         const std::optional<uint64_t> seed = {})
         : m_quantization(quantization), m_generator(make_generator(seed)) {}
@@ -82,7 +83,7 @@ class Dequantizer {
      * @param quantization how the pixel values were converted to integers
      * @param seed seed of the random generator, from the system when unset
      */
-    explicit Dequantizer(
+    explicit ClusterConverter(
         const double gain,
         const Quantization quantization = Quantization::Rounded,
         const std::optional<uint64_t> seed = {})
@@ -95,7 +96,7 @@ class Dequantizer {
      * @param quantization how the pixel values were converted to integers
      * @param seed seed of the random generator, from the system when unset
      */
-    explicit Dequantizer(
+    explicit ClusterConverter(
         InvertedGainMap gain_map,
         const Quantization quantization = Quantization::Rounded,
         const std::optional<uint64_t> seed = {})
@@ -109,11 +110,11 @@ class Dequantizer {
      * @param quantization how the pixel values were converted to integers
      * @param seed seed of the random generator, from the system when unset
      */
-    explicit Dequantizer(
+    explicit ClusterConverter(
         const NDView<double, 2> gain_map,
         const Quantization quantization = Quantization::Rounded,
         const std::optional<uint64_t> seed = {})
-        : Dequantizer(InvertedGainMap(gain_map), quantization, seed) {}
+        : ClusterConverter(InvertedGainMap(gain_map), quantization, seed) {}
 
     /**
      * @brief Convert clusters into an existing vector, reusing its
@@ -122,15 +123,17 @@ class Dequantizer {
      */
     template <typename OutT, typename T, uint8_t ClusterSizeX,
               uint8_t ClusterSizeY, typename CoordType>
-    void dequantize(
-        const ClusterVector<Cluster<T, ClusterSizeX, ClusterSizeY, CoordType>>
-            &clusters,
-        ClusterVector<Cluster<OutT, ClusterSizeX, ClusterSizeY, CoordType>>
-            &out) {
-        static_assert(std::is_integral_v<T>,
-                      "Dequantizer needs clusters with an integer pixel type");
-        static_assert(std::is_floating_point_v<OutT>,
-                      "Dequantizer writes clusters with a floating point type");
+    void
+    apply(const ClusterVector<Cluster<T, ClusterSizeX, ClusterSizeY, CoordType>>
+              &clusters,
+          ClusterVector<Cluster<OutT, ClusterSizeX, ClusterSizeY, CoordType>>
+              &out) {
+        static_assert(
+            std::is_integral_v<T>,
+            "ClusterConverter needs clusters with an integer pixel type");
+        static_assert(
+            std::is_floating_point_v<OutT>,
+            "ClusterConverter writes clusters with a floating point type");
         using ClusterType = Cluster<T, ClusterSizeX, ClusterSizeY, CoordType>;
 
         constexpr ssize_t size_x = ClusterSizeX;
@@ -177,12 +180,11 @@ class Dequantizer {
     template <typename OutT = float, typename T, uint8_t ClusterSizeX,
               uint8_t ClusterSizeY, typename CoordType>
     ClusterVector<Cluster<OutT, ClusterSizeX, ClusterSizeY, CoordType>>
-    dequantize(
-        const ClusterVector<Cluster<T, ClusterSizeX, ClusterSizeY, CoordType>>
-            &clusters) {
+    apply(const ClusterVector<Cluster<T, ClusterSizeX, ClusterSizeY, CoordType>>
+              &clusters) {
         ClusterVector<Cluster<OutT, ClusterSizeX, ClusterSizeY, CoordType>> out(
             clusters.size(), clusters.frame_number());
-        dequantize(clusters, out);
+        apply(clusters, out);
         return out;
     }
 
@@ -193,7 +195,7 @@ class Dequantizer {
     operator()(
         const ClusterVector<Cluster<T, ClusterSizeX, ClusterSizeY, CoordType>>
             &clusters) {
-        return dequantize<float>(clusters);
+        return apply<float>(clusters);
     }
 
   private:

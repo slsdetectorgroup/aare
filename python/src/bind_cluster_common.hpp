@@ -6,12 +6,12 @@
 
 #include "bind_Cluster.hpp"
 #include "bind_ClusterCollector.hpp"
+#include "bind_ClusterConverter.hpp"
 #include "bind_ClusterFile.hpp"
 #include "bind_ClusterFileSink.hpp"
 #include "bind_ClusterFinder.hpp"
 #include "bind_ClusterFinderMT.hpp"
 #include "bind_ClusterVector.hpp"
-#include "bind_Dequantize.hpp"
 #include "bind_Eta.hpp"
 
 /* MACRO that defines Cluster bindings for a specific size and type
@@ -31,7 +31,7 @@ double, 'f' for float)
     register_calculate_2x2eta<T, N, M, U>(m);                                  \
     define_2x2_reduction<T, N, M, U>(m);                                       \
     reduce_to_2x2<T, N, M, U>(m);                                              \
-    register_dequantize<T, N, M, U>(m);
+    register_cluster_converter<T, N, M, U>(m);
 
 #define DEFINE_BINDINGS_CLUSTERFINDER(T, N, M, U, TYPE_CODE)                   \
     define_ClusterFinder<T, N, M, U>(m, "Cluster" #N "x" #M #TYPE_CODE);       \

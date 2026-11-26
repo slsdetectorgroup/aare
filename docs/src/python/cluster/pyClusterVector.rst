@@ -95,4 +95,4 @@ Gain correction
 ---------------
 
 ``ClusterFile.set_gain_map`` is deprecated. Use a
-:ref:`Dequantizer <py_dequantizer>` to apply a gain map to integer clusters.
+:ref:`ClusterConverter <py_cluster_converter>` to apply a gain map to integer clusters.
