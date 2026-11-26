@@ -6,13 +6,16 @@ find_package(
   REQUIRED)
 set(PYBIND11_FINDPYTHON ON) # Needed for RH8
 
-# Download or find pybind11 depending on configuration
+# Build pybind11 from source or find it depending on configuration
 if(AARE_FETCH_PYBIND11)
-  FetchContent_Declare(
+  aare_declare_dependency(
     pybind11
-    GIT_REPOSITORY https://github.com/pybind/pybind11
-    GIT_TAG v3.0.3
-    GIT_SHALLOW TRUE)
+    # https://github.com/pybind/pybind11/archive/refs/tags/v3.0.3.tar.gz
+    ARCHIVE pybind11-3.0.3.tar.gz
+    SHA256 787459e1e186ee82001759508fefa408373eae8a076ffe0078b126c6f8f0ec5e
+    GITHUB GIT_REPOSITORY https://github.com/pybind/pybind11
+           GIT_TAG v3.0.3
+           GIT_SHALLOW TRUE)
   FetchContent_MakeAvailable(pybind11)
 else()
   find_package(pybind11 3.0.3 REQUIRED)
@@ -52,7 +55,14 @@ set(_aare_py_hist src/bind_PixelHistogram.cpp
 set(_aare_py_pedestal src/bind_Pedestal.cpp src/bind_FastPedestal.cpp
                       src/bind_calibration.cpp)
 set(_aare_py_fit src/bind_Fit.cpp src/bind_Interpolator.cpp)
-set(_aare_py_groups io core hist pedestal fit)
+
+set(_aare_py_strixelremap
+    src/StrixelRemap/bind_InclusiveROI.cpp
+    src/StrixelRemap/bind_PredefinedVariables.cpp
+    src/StrixelRemap/bind_StrixelPixelMapDefs.cpp
+    src/StrixelRemap/bind_strixelmaps.cpp)
+
+set(_aare_py_groups io core hist pedestal fit strixelremap)
 
 pybind11_add_module(
   _aare # name of the module
@@ -69,6 +79,7 @@ pybind11_add_module(
   ${_aare_py_hist}
   ${_aare_py_pedestal}
   ${_aare_py_fit}
+  ${_aare_py_strixelremap}
   src/bind_Eta.cpp
   src/bind_VarClusterFinder.cpp)
 
@@ -122,6 +133,8 @@ set(PYTHON_FILES
     aare/RawFile.py
     aare/transform.py
     aare/ScanParameters.py
+    aare/strixelremap/__init__.py
+    aare/strixelremap/StrixelRemapFactories.py
     aare/utils.py)
 
 # Copy the python files to the build directory
@@ -148,10 +161,15 @@ if(AARE_INSTALL_PYTHONEXT)
     EXPORT "${TARGETS_EXPORT_NAME}"
     LIBRARY DESTINATION aare COMPONENT python)
 
-  install(
-    FILES ${PYTHON_FILES}
-    DESTINATION aare
-    COMPONENT python)
+  # Keep the subdirectory of each file (aare/strixelremap/...); a single
+  # install(FILES) would flatten them all into aare/
+  foreach(FILE ${PYTHON_FILES})
+    get_filename_component(FILE_DIR ${FILE} DIRECTORY)
+    install(
+      FILES ${FILE}
+      DESTINATION ${FILE_DIR}
+      COMPONENT python)
+  endforeach()
   install(
     FILES ../VERSION
     DESTINATION aare

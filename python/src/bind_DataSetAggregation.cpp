@@ -22,9 +22,15 @@ void bind_DataSetAggregation(pybind11::module_ &m) {
            const size_t mean_over_num_frames,
            const size_t num_processing_threads,
            const size_t num_reader_threads) {
-            auto result = new NDArray<double, 3>(block_mean<FRAME_TYPE>(
-                path, num_samples, mean_over_num_frames, num_processing_threads,
-                num_reader_threads));
+            NDArray<double, 3> *result = nullptr;
+            {
+                // release the GIL only for the pure C++ computation; creating
+                // the numpy array below requires holding the GIL
+                py::gil_scoped_release release;
+                result = new NDArray<double, 3>(block_mean<FRAME_TYPE>(
+                    path, num_samples, mean_over_num_frames,
+                    num_processing_threads, num_reader_threads));
+            }
             return return_image_data(result);
         },
         py::arg("path"), py::kw_only(), py::arg("num_samples"),
@@ -32,7 +38,7 @@ void bind_DataSetAggregation(pybind11::module_ &m) {
         py::arg("num_reader_threads") = 8,
         R"pbdoc(
         Compute the block mean over several frames per sample stored in a file.
-        Function spawns num_processing_threads + num_reader_threads + 1 threads in total.
+        Function spawns num_processing_threads + num_reader_threads threads in total.
 
         Parameters:
         -----------
@@ -55,9 +61,15 @@ void bind_read_current_source(pybind11::module_ &m) {
            const size_t mean_over_num_frames,
            const size_t num_processing_threads, const size_t num_reader_threads,
            const size_t file_offset) {
-            auto result = new NDArray<double, 3>(mean_current_source(
-                path, num_samples, mean_over_num_frames, num_processing_threads,
-                num_reader_threads, file_offset));
+            NDArray<double, 3> *result = nullptr;
+            {
+                // release the GIL only for the pure C++ computation; creating
+                // the numpy array below requires holding the GIL
+                py::gil_scoped_release release;
+                result = new NDArray<double, 3>(mean_current_source(
+                    path, num_samples, mean_over_num_frames,
+                    num_processing_threads, num_reader_threads, file_offset));
+            }
             return return_image_data(result);
         },
         py::arg("path"), py::kw_only(), py::arg("num_samples"),
@@ -65,7 +77,7 @@ void bind_read_current_source(pybind11::module_ &m) {
         py::arg("num_reader_threads") = 8, py::arg("file_offset") = 0,
         R"pbdoc(
         Compute the mean over several frames per sample stored in a file for each current source.
-        Function spawns num_processing_threads + num_reader_threads + 1 threads in total.
+        Function spawns num_processing_threads + num_reader_threads threads in total.
 
         Parameters:
         -----------

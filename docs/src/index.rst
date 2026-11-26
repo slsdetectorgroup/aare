@@ -21,6 +21,13 @@ AARE
     Consume
 
 .. toctree::
+    :caption: Examples
+    :maxdepth: 1
+
+    auto_examples/index
+    CppExamples
+
+.. toctree::
     :caption: Python API
     :maxdepth: 3
     :hidden:
@@ -31,6 +38,7 @@ AARE
     python/experimental/index
     python/histogram/index
     python/pedestal/index
+    python/strixelremap/index
     pyFit
     pyDataSetAggregation
     
@@ -38,7 +46,7 @@ AARE
 
 .. toctree::
     :caption: C++ API
-    :maxdepth: 1
+    :maxdepth: 2
     
     algorithm
     NDArray
@@ -60,6 +68,7 @@ AARE
     RawSubFile
     RawMasterFile
     VarClusterFinder
+    StrixelPixelRemapping/index
     DataSetAggregation
 
 

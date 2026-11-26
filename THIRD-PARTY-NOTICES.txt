@@ -2,8 +2,9 @@ Third-party notices for aare binary packages
 ============================================
 
 The aare Python wheels and conda packages compile the following libraries into
-the aare extension module. They are not part of the aare source repository;
-CMake downloads them at build time. Their license notices follow below.
+the aare extension module. Their unmodified upstream source archives are in
+the libs/ directory of the aare source repository and CMake builds them from
+there. Their license notices follow below.
 
   Minuit2 v6-40-02      LGPL-2.1-or-later  https://github.com/GooFit/Minuit2
   {fmt} 12.1.0          MIT                https://github.com/fmtlib/fmt

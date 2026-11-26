@@ -58,4 +58,13 @@ PYBIND11_MODULE(_aare, m) {
     bind_eta_types(m);
 
     bind_dataset_aggregation(m);
+
+    auto strixelremap =
+        m.def_submodule("strixelremap", "Strixel remapping utilities.");
+
+    define_InclusiveROI(strixelremap);
+    define_StrixelPixelMapDefs(strixelremap);
+    define_StrixelMapsandSensorConfigs(strixelremap);
+    define_predefinedConfigs(strixelremap);
+    define_predefinedStrixelPixelMaps(strixelremap);
 }

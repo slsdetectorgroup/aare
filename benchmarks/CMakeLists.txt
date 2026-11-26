@@ -2,18 +2,25 @@
 
 include(FetchContent)
 
-FetchContent_Declare(
-  benchmark
-  GIT_REPOSITORY https://github.com/google/benchmark.git
-  GIT_TAG v1.8.3 # Change to the latest version if needed
-  GIT_SHALLOW TRUE)
+if(AARE_FETCH_BENCHMARK)
+  aare_declare_dependency(
+    benchmark
+    # https://github.com/google/benchmark/archive/refs/tags/v1.8.3.tar.gz
+    ARCHIVE benchmark-1.8.3.tar.gz
+    SHA256 6bc180a57d23d4d9515519f92b0c83d61b05b5bab188961f36ac7b06b0d9e9ce
+    GITHUB GIT_REPOSITORY https://github.com/google/benchmark.git
+           GIT_TAG v1.8.3
+           GIT_SHALLOW TRUE)
 
-# Ensure Google Benchmark is built correctly
-set(BENCHMARK_ENABLE_TESTING
-    OFF
-    CACHE BOOL "" FORCE)
+  # Ensure Google Benchmark is built correctly
+  set(BENCHMARK_ENABLE_TESTING
+      OFF
+      CACHE BOOL "" FORCE)
 
-FetchContent_MakeAvailable(benchmark)
+  FetchContent_MakeAvailable(benchmark)
+else()
+  find_package(benchmark REQUIRED)
+endif()
 
 add_executable(benchmarks)
 

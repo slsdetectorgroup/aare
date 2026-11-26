@@ -7,9 +7,14 @@
 
 #include "test_config.hpp"
 
+#include <algorithm>
 #include <catch2/catch_test_macros.hpp>
+#include <chrono>
 #include <filesystem>
 #include <memory>
+#include <thread>
+#include <type_traits>
+#include <vector>
 
 using namespace aare;
 
@@ -221,5 +226,186 @@ TEST_CASE("cluster collector drains queued clusters when stopped") {
     CHECK(source.isEmpty());
     for (size_t i = 0; i < clusters.size(); ++i) {
         CHECK(clusters[i].frame_number() == static_cast<int32_t>(i + 1));
+    }
+}
+
+TEST_CASE("clusters can be stolen from a running cluster collector") {
+    using ClusterType = Cluster<int32_t, 3, 3>;
+    ProducerConsumerQueue<ClusterVector<ClusterType>> source(8);
+    ClusterCollector<ClusterType> collector(&source);
+
+    const auto write_frames = [&source](uint64_t first, uint64_t last) {
+        for (uint64_t frame_number = first; frame_number <= last;
+             ++frame_number) {
+            REQUIRE(source.write(ClusterVector<ClusterType>(4, frame_number)));
+        }
+        while (!source.isEmpty()) {
+            std::this_thread::yield();
+        }
+    };
+
+    CHECK(collector.steal_clusters().empty());
+
+    write_frames(1, 3);
+    auto clusters = collector.steal_clusters();
+    REQUIRE(clusters.size() == 3);
+    for (size_t i = 0; i < clusters.size(); ++i) {
+        CHECK(clusters[i].frame_number() == static_cast<int32_t>(i + 1));
+    }
+
+    // Stolen clusters are gone, later ones are still collected
+    write_frames(4, 5);
+    clusters = collector.steal_clusters();
+    REQUIRE(clusters.size() == 2);
+    CHECK(clusters[0].frame_number() == 4);
+    CHECK(clusters[1].frame_number() == 5);
+
+    collector.stop();
+    CHECK(collector.steal_clusters().empty());
+}
+
+TEST_CASE("sync gives a running collector the clusters of all frames") {
+    using ClusterType = Cluster<int32_t, 3, 3>;
+
+    const size_t n_threads = 3;
+    const size_t min_pedestal_samples = 4;
+    const size_t frames_per_round = 50;
+    const Shape<2> image_size{10, 10};
+
+    ClusterFinderMT<ClusterType> cf(image_size, 5, 200, n_threads, 16,
+                                    min_pedestal_samples);
+    ClusterCollector<ClusterType> collector(&cf);
+
+    NDArray<uint16_t, 2> low(image_size, 98);
+    NDArray<uint16_t, 2> high(image_size, 102);
+    NDArray<uint16_t, 2> hit(image_size, 100);
+    hit(5, 5) = 130;
+
+    for (size_t i = 0; i < min_pedestal_samples / 2; ++i) {
+        cf.push_pedestal_frame(low.view());
+        cf.push_pedestal_frame(high.view());
+    }
+
+    uint64_t frame_number = 0;
+    for (int round = 0; round < 3; ++round) {
+        for (size_t i = 0; i < frames_per_round; ++i) {
+            cf.find_clusters(hit.view(), frame_number++);
+        }
+        cf.sync();
+
+        auto clusters = collector.steal_clusters();
+        REQUIRE(clusters.size() == frames_per_round);
+        std::vector<int32_t> frame_numbers;
+        for (const auto &frame_clusters : clusters) {
+            CHECK(frame_clusters.size() == 1);
+            frame_numbers.push_back(frame_clusters.frame_number());
+        }
+        std::sort(frame_numbers.begin(), frame_numbers.end());
+        const auto first = static_cast<int32_t>(frame_number) -
+                           static_cast<int32_t>(frames_per_round);
+        for (size_t i = 0; i < frame_numbers.size(); ++i) {
+            CHECK(frame_numbers[i] == first + static_cast<int32_t>(i));
+        }
+    }
+
+    cf.stop();
+    collector.stop();
+    CHECK(collector.steal_clusters().empty());
+}
+
+TEST_CASE("cluster collector can be started again after a stop") {
+    using ClusterType = Cluster<int32_t, 3, 3>;
+    ProducerConsumerQueue<ClusterVector<ClusterType>> source(8);
+    ClusterCollector<ClusterType> collector(&source);
+    collector.start(); // running: does nothing
+
+    REQUIRE(source.write(ClusterVector<ClusterType>(4, 1)));
+    collector.stop();
+    collector.stop(); // stopped: does nothing
+    CHECK(source.isEmpty());
+
+    // Nothing is taken from the queue while stopped
+    REQUIRE(source.write(ClusterVector<ClusterType>(4, 2)));
+    std::this_thread::sleep_for(std::chrono::milliseconds(5));
+    CHECK_FALSE(source.isEmpty());
+
+    collector.start();
+    REQUIRE(source.write(ClusterVector<ClusterType>(4, 3)));
+    collector.stop();
+
+    // Clusters from before the stop are kept
+    auto clusters = collector.steal_clusters();
+    REQUIRE(clusters.size() == 3);
+    for (size_t i = 0; i < clusters.size(); ++i) {
+        CHECK(clusters[i].frame_number() == static_cast<int32_t>(i + 1));
+    }
+}
+
+TEST_CASE("cluster collector stops its thread when destroyed") {
+    using ClusterType = Cluster<int32_t, 3, 3>;
+    ProducerConsumerQueue<ClusterVector<ClusterType>> source(8);
+    {
+        ClusterCollector<ClusterType> collector(&source);
+        REQUIRE(source.write(ClusterVector<ClusterType>(4, 1)));
+    }
+    // The destructor waits for the queue to be empty, as stop() does
+    CHECK(source.isEmpty());
+
+    static_assert(!std::is_copy_constructible_v<ClusterCollector<ClusterType>>);
+    static_assert(!std::is_move_constructible_v<ClusterCollector<ClusterType>>);
+}
+
+TEST_CASE("running cluster finder can be destroyed") {
+    using ClusterType = Cluster<int32_t, 3, 3>;
+    const Shape<2> image_size{10, 10};
+    NDArray<uint16_t, 2> frame(image_size, 100);
+
+    {
+        ClusterFinderMT<ClusterType> cf(image_size);
+    }
+    {
+        ClusterFinderMT<ClusterType> cf(image_size, 5, 16, 3, 16, 2);
+        cf.push_pedestal_frame(frame.view());
+        cf.push_pedestal_frame(frame.view());
+        cf.find_clusters(frame.view());
+    }
+    {
+        // Stopped: the destructor has nothing to do
+        ClusterFinderMT<ClusterType> cf(image_size);
+        cf.stop();
+        cf.stop();
+    }
+    {
+        ClusterFinderMT<ClusterType> cf(image_size);
+        cf.start(); // running: does nothing
+        cf.stop();
+        cf.start();
+    }
+
+    static_assert(!std::is_copy_constructible_v<ClusterFinderMT<ClusterType>>);
+    static_assert(!std::is_move_constructible_v<ClusterFinderMT<ClusterType>>);
+}
+
+TEST_CASE("cluster finder with a full sink can be destroyed") {
+    using ClusterType = Cluster<int32_t, 3, 3>;
+    const size_t n_threads = 3;
+    const Shape<2> image_size{10, 10};
+    NDArray<uint16_t, 2> frame(image_size, 100);
+
+    ClusterFinderMT<ClusterType> cf(image_size, 5, 16, n_threads, 16, 2);
+    cf.push_pedestal_frame(frame.view());
+    cf.push_pedestal_frame(frame.view());
+
+    // Nothing empties the sink, so it fills up, then the queues of the
+    // threads, and the threads wait for room. With 1000 cluster vectors in
+    // the sink and 200 in the queue of each thread, these frames leave
+    // every thread waiting without blocking find_clusters(). stop() would
+    // wait forever, the destructor must not.
+    const size_t n_frames = 1000 + n_threads * 200 + n_threads * 4;
+    for (size_t i = 0; i < n_frames; ++i) {
+        cf.find_clusters(frame.view(), i);
+    }
+    while (!cf.sink()->isFull()) {
+        std::this_thread::yield();
     }
 }
