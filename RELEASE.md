@@ -80,6 +80,15 @@
   ``set_pedestal``, ``load_pedestal``, ``get_pedestal`` and
   ``save_pedestal`` take a thread index, and ``n_threads`` returns the
   number of threads.
+- ``VarClusterFinder`` can store and restore its configuration: the
+  thresholds, the factors, the connectivity, ``erase_clusters``, the noise
+  map and the mask. In C++ ``state()`` returns a ``VarClusterFinderState``,
+  ``set_state()`` or the new constructor restore it, and ``save_state()``
+  and ``load_state<VarClusterFinderState>()`` keep it in a state file. In
+  Python: ``finder.save_state(fname)``,
+  ``VarClusterFinder.from_state_file(fname)`` for a new finder and
+  ``finder.load_state(fname)`` to load into an existing one with the same
+  image shape. Hits are not stored.
 
 ### API Changes:
 

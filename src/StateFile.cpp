@@ -6,6 +6,7 @@
 #include "aare/ClusterFinder.hpp"
 #include "aare/ClusterFinderMT.hpp"
 #include "aare/FastPedestal.hpp"
+#include "aare/VarClusterFinder.hpp"
 
 #include <system_error>
 #include <utility>
@@ -189,6 +190,26 @@ template <> struct StateFormat<ClusterFinderMTState> {
     }
 };
 
+template <> struct StateFormat<VarClusterFinderState> {
+    static constexpr std::string_view name = "VarClusterFinder";
+    static constexpr uint64_t version = 1;
+
+    template <typename Fields, typename State>
+    static void fields(Fields &field, State &state) {
+        field("dtype", state.dtype);
+        field("rows", state.rows);
+        field("cols", state.cols);
+        field("threshold", state.threshold);
+        field("neighbour_threshold", state.neighbour_threshold);
+        field("seed_factor", state.seed_factor);
+        field("neighbour_factor", state.neighbour_factor);
+        field("connectivity", state.connectivity);
+        field("erase_clusters", state.erase_clusters);
+        field("noise_map", state.noise_map);
+        field("mask", state.mask);
+    }
+};
+
 } // namespace detail
 
 std::string read_state_header(const std::filesystem::path &fname) {
@@ -211,6 +232,7 @@ template <typename State> State load_state(const std::filesystem::path &fname) {
 AARE_STATE_FILE_OF(FastPedestalState)
 AARE_STATE_FILE_OF(ClusterFinderState)
 AARE_STATE_FILE_OF(ClusterFinderMTState)
+AARE_STATE_FILE_OF(VarClusterFinderState)
 #undef AARE_STATE_FILE_OF
 
 } // namespace aare

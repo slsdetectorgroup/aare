@@ -163,7 +163,7 @@ format.
 
 - **State struct.** The class hands out a plain-data struct and takes it
   back (`state()`, `set_state()` and a constructor; `FastPedestalState`,
-  `ClusterFinderState`, `ClusterFinderMTState`). It lives in the header of
+  `ClusterFinderState`, `ClusterFinderMTState`, `VarClusterFinderState`). It lives in the header of
   its class, holds no redundant fields and knows nothing about files. It
   stores its numbers as double and records the types it came from in dtype
   fields that `set_state()` ignores, so an object with other value types can
@@ -180,7 +180,7 @@ format.
   `field("key", state.member)` for each member, and add the type to the
   list of instantiations at the end of the file. The same description
   writes and reads. A member can be a `Dtype`, an unsigned integer, a
-  `double`, an `NDArray<T, Ndim>` (also `bool`), another state, a
+  `double`, a `bool`, an `NDArray<T, Ndim>` (also `bool`), another state, a
   `std::vector` of states, or a `std::optional` of one of these; any other
   kind needs an overload in the `Fields` of both the writer and the reader.
 - **Versions.** The reader ignores unknown header fields. A field added
@@ -196,7 +196,8 @@ format.
   dtype-selecting factory exposes that one as
   `Factory.load_state(filename, dtype=None)`, where `None` means the dtype
   recorded in the file, read with `_stored_state_fields()` from
-  `factory.py`. What a state is tied to, such as the cluster size, always
+  `factory.py`; a class bound for one type only, as `VarClusterFinder`, has
+  no factory and is created with `from_state_file()`. What a state is tied to, such as the cluster size, always
   comes from the file. Do not bind `load_state` as a static method: called
   on an existing object it would silently leave it unchanged.
 

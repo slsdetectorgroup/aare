@@ -3,8 +3,8 @@ State files
 
 A state file stores everything an object has accumulated, so that it can be
 restored later, possibly in another process, and continue exactly where it
-stopped. ``FastPedestal`` and ``ClusterFinder`` have a state that can be
-stored this way.
+stopped. ``FastPedestal``, ``ClusterFinder``, ``ClusterFinderMT`` and
+``VarClusterFinder`` have a state that can be stored this way.
 
 .. code-block:: c++
 
@@ -156,6 +156,33 @@ of the thread that takes the next frame:
          {"version": 1, "cluster_dtype": "<i4", "...": "..."},
          {"version": 1, "cluster_dtype": "<i4", "...": "..."}
        ]
+     }
+   }
+
+A ``VarClusterFinder`` accumulates nothing between frames, so its state is
+its configuration, with the fields of ``VarClusterFinderState``, see
+:doc:`VarClusterFinder`. ``neighbour_threshold``, ``noise_map`` and ``mask``
+are left out when the finder has none:
+
+.. code-block:: json
+
+   {
+     "format_version": 1,
+     "aare_version": "2026.9.30",
+     "type": "VarClusterFinder",
+     "state": {
+       "version": 1,
+       "dtype": "<f8",
+       "rows": 400,
+       "cols": 400,
+       "threshold": 50.0,
+       "neighbour_threshold": 20.0,
+       "seed_factor": 5.0,
+       "neighbour_factor": 2.0,
+       "connectivity": 8,
+       "erase_clusters": false,
+       "noise_map": {"dtype": "<f8", "shape": [400, 400], "offset": 0},
+       "mask": {"dtype": "|b1", "shape": [400, 400], "offset": 1280000}
      }
    }
 

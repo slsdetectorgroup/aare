@@ -2,6 +2,7 @@
 #include "aare/VarClusterFinder.hpp"
 #include "bindings.hpp"
 #include "np_helper.hpp"
+#include "state_file.hpp"
 
 #include <cstdint>
 #include <pybind11/numpy.h>
@@ -88,17 +89,17 @@ into this object and stay valid as long as any of them is referenced.)")
             py::arg("i"),
             "Rows, columns and values of the pixels of cluster i, as views.");
 
-    py::class_<Finder>(m, "VarClusterFinder",
-                       R"(Find clusters of variable size by flood filling
+    py::class_<Finder> cls(m, "VarClusterFinder",
+                           R"(Find clusters of variable size by flood filling
 connected pixels above a threshold.
 
 A pixel above the seed threshold starts a cluster that grows into every
 4 or 8 connected neighbour above the neighbour threshold. Without a noise
 map the thresholds are the fixed ``threshold`` for seeds and
 ``neighbour_threshold`` for neighbours. With ``noise_map`` set they are
-per pixel multiples of the noise, ``seed_factor`` and ``neighbour_factor``.)")
-        .def(py::init<Shape<2>, double>(), py::arg("shape"),
-             py::arg("threshold"))
+per pixel multiples of the noise, ``seed_factor`` and ``neighbour_factor``.)");
+    cls.def(py::init<Shape<2>, double>(), py::arg("shape"),
+            py::arg("threshold"))
         .def_property_readonly(
             "labeled",
             [](const Finder &self) {
@@ -204,4 +205,20 @@ per pixel multiples of the noise, ``seed_factor`` and ``neighbour_factor``.)")
              "finder.")
         .def("total_clusters", &Finder::total_clusters,
              "Number of hits currently held by the finder.");
+
+    def_state_file<VarClusterFinderState>(
+        cls,
+        "Write the configuration of the finder to a state file, replacing "
+        "an existing file: the thresholds, the factors, connectivity, "
+        "erase_clusters, the noise map and the mask. Hits are not stored.",
+        "Replace the configuration of this finder with the one in a state "
+        "file. The image shape must match; hits the finder still holds are "
+        "dropped.");
+    cls.def_static(
+        "from_state_file",
+        [](const std::filesystem::path &filename) {
+            return Finder(load_state<VarClusterFinderState>(filename));
+        },
+        py::arg("filename"),
+        "Create a finder from a state file written by save_state().");
 }

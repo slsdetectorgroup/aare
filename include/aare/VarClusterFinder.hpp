@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: MPL-2.0
 #pragma once
 
+#include "aare/Dtype.hpp"
 #include "aare/NDArray.hpp"
 #include "aare/NDView.hpp"
 #include "aare/defs.hpp"
@@ -16,6 +17,51 @@
 #include <vector>
 
 namespace aare {
+
+/**
+ * @brief Complete configuration of a VarClusterFinder as plain data.
+ *
+ * Returned by VarClusterFinder::state() and accepted by
+ * VarClusterFinder::set_state() and the VarClusterFinder constructor, so
+ * that a finder can be stored and later set up exactly as it was. A finder
+ * accumulates nothing between frames except its hits, so the state is its
+ * settings, its noise map and its mask. It does not depend on the pixel
+ * type of the finder it was taken from: the thresholds, the factors and
+ * the noise map are always double. dtype only records that type, for
+ * whoever restores the state and wants the same kind of finder.
+ *
+ * Hits that were found but not yet taken with
+ * VarClusterFinder::steal_hits() and the label image of the last frame are
+ * not part of the state.
+ */
+struct VarClusterFinderState {
+    /// Pixel type of the finder the state was taken from. Not used by
+    /// set_state()
+    Dtype dtype{Dtype::NONE};
+    /// Number of rows of the image
+    uint32_t rows{};
+    /// Number of columns of the image
+    uint32_t cols{};
+    /// Fixed seed threshold
+    double threshold{};
+    /// Fixed neighbour threshold, or nothing while it follows the seed
+    /// threshold
+    std::optional<double> neighbour_threshold;
+    /// Seed threshold in units of the noise map
+    double seed_factor{5};
+    /// Neighbour threshold in units of the noise map
+    double neighbour_factor{5};
+    /// 4 or 8
+    uint8_t connectivity{8};
+    /// Whether clusters are erased from the input image
+    bool erase_clusters{false};
+    /// Per-pixel noise, shape (rows, cols), or nothing while the fixed
+    /// thresholds are used
+    std::optional<NDArray<double, 2>> noise_map;
+    /// True on the excluded pixels, shape (rows, cols), or nothing without
+    /// a mask
+    std::optional<NDArray<bool, 2>> mask;
+};
 
 /**
  * @brief Find clusters of variable size by flood filling connected pixels
@@ -159,6 +205,105 @@ template <typename T> class VarClusterFinder {
                             "({}, {})",
                             shape[0], shape[1], max_coord, max_coord));
         hits_.reserve(initial_hit_capacity, initial_pixel_capacity);
+    }
+
+    /**
+     * @brief Construct a finder from a state, taking the image shape from
+     * it.
+     * @throws std::runtime_error if the state is not valid, see
+     * set_state().
+     */
+    explicit VarClusterFinder(const VarClusterFinderState &state)
+        : VarClusterFinder(state_shape(state), T{}) {
+        set_state(state);
+    }
+
+    /**
+     * @brief Return a copy of the complete configuration: the thresholds,
+     * the factors, the connectivity, erase_clusters, the noise map and the
+     * mask. Hits that have not been taken with steal_hits() are not
+     * included.
+     */
+    VarClusterFinderState state() const {
+        VarClusterFinderState state;
+        state.dtype = Dtype(typeid(T));
+        state.rows = static_cast<uint32_t>(shape_[0]);
+        state.cols = static_cast<uint32_t>(shape_[1]);
+        state.threshold = static_cast<double>(threshold_);
+        if (neighbour_threshold_)
+            state.neighbour_threshold =
+                static_cast<double>(*neighbour_threshold_);
+        state.seed_factor = static_cast<double>(seed_factor_);
+        state.neighbour_factor = static_cast<double>(neighbour_factor_);
+        state.connectivity = static_cast<uint8_t>(connectivity_);
+        state.erase_clusters = erase_clusters_;
+        if (noise_map_) {
+            NDArray<double, 2> map(shape_);
+            for (ssize_t i = 0; i < map.size(); ++i)
+                map[i] = static_cast<double>((*noise_map_)[i]);
+            state.noise_map = std::move(map);
+        }
+        state.mask = mask();
+        return state;
+    }
+
+    /**
+     * @brief Replace the complete configuration.
+     *
+     * Hits that have not been taken with steal_hits() are dropped and the
+     * label image is cleared. The state can come from a finder with
+     * another pixel type; its dtype is not used.
+     * @param state State with the image shape of this finder, a
+     * connectivity of 4 or 8, and thresholds and a noise map that the
+     * pixel type of this finder can hold.
+     * @throws std::runtime_error if the state is not valid. The finder is
+     * then left unchanged.
+     */
+    void set_state(const VarClusterFinderState &state) {
+        check_shape(state_shape(state), "state");
+        if (state.noise_map)
+            check_shape(state.noise_map->shape(), "noise map of the state");
+        if (state.mask)
+            check_shape(state.mask->shape(), "mask of the state");
+        if (state.connectivity != 4 && state.connectivity != 8)
+            throw std::runtime_error(
+                LOCATION +
+                fmt::format("VarClusterFinder state has connectivity {}, "
+                            "expected 4 or 8",
+                            int{state.connectivity}));
+        bool representable =
+            fits(state.threshold) &&
+            (!state.neighbour_threshold || fits(*state.neighbour_threshold));
+        if (state.noise_map)
+            for (ssize_t i = 0; representable && i < state.noise_map->size();
+                 ++i)
+                representable = fits((*state.noise_map)[i]);
+        if (!representable)
+            throw std::runtime_error(
+                LOCATION + "VarClusterFinder state holds a threshold or a "
+                           "noise value outside the range of the pixel type");
+
+        threshold_ = static_cast<T>(state.threshold);
+        neighbour_threshold_.reset();
+        if (state.neighbour_threshold)
+            neighbour_threshold_ = static_cast<T>(*state.neighbour_threshold);
+        seed_factor_ = static_cast<Factor>(state.seed_factor);
+        neighbour_factor_ = static_cast<Factor>(state.neighbour_factor);
+        connectivity_ = state.connectivity;
+        erase_clusters_ = state.erase_clusters;
+        noise_map_.reset();
+        if (state.noise_map) {
+            NDArray<T, 2> map(shape_);
+            for (ssize_t i = 0; i < map.size(); ++i)
+                map[i] = static_cast<T>((*state.noise_map)[i]);
+            noise_map_ = std::move(map);
+        }
+        if (state.mask)
+            set_mask(state.mask->view());
+        else
+            clear_mask();
+        hits_.clear();
+        labels_ = 0;
     }
 
     /**
@@ -307,6 +452,23 @@ template <typename T> class VarClusterFinder {
     size_t total_clusters() const { return hits_.size(); }
 
   private:
+    static Shape<2> state_shape(const VarClusterFinderState &state) {
+        return {static_cast<ssize_t>(state.rows),
+                static_cast<ssize_t>(state.cols)};
+    }
+
+    // Whether a value of a state can be converted to the pixel type. An
+    // integer type cannot hold NaN or a value outside its range
+    static bool fits(double value) {
+        if constexpr (std::is_floating_point_v<T>) {
+            return true;
+        } else {
+            using limits = std::numeric_limits<T>;
+            return value >= static_cast<double>(limits::min()) &&
+                   value < static_cast<double>(limits::max()) + 1.0;
+        }
+    }
+
     void check_shape(const Shape<2> &shape, const char *what) const {
         if (shape != shape_)
             throw std::runtime_error(

@@ -6,6 +6,7 @@
 #include "aare/ClusterFinder.hpp"
 #include "aare/ClusterFinderMT.hpp"
 #include "aare/FastPedestal.hpp"
+#include "aare/VarClusterFinder.hpp"
 
 #include <catch2/catch_test_macros.hpp>
 #include <catch2/matchers/catch_matchers_string.hpp>
@@ -528,9 +529,8 @@ TEST_CASE("load_state checks the fields of a state inside a state",
     }
 }
 
-// What the states of the classes that follow need from the reader and
-// writer, which no state uses yet: fields that may be left out or were
-// added later, and bool arrays
+// Fields that may be left out or were added later, lists and bool arrays,
+// on a state made for the test
 namespace {
 
 struct TestThreadState {
@@ -701,4 +701,59 @@ TEST_CASE("state file keeps a multithreaded cluster finder without cluster "
     REQUIRE(loaded.finders.empty());
     using Finder = ClusterFinderMT<Cluster<int32_t, 3, 5>>;
     REQUIRE_THROWS_AS(Finder{loaded}, std::runtime_error);
+}
+
+TEST_CASE("state file returns a VarClusterFinderState bit for bit",
+          "[state-file]") {
+    TemporaryStateFile file;
+    VarClusterFinderState state;
+    state.dtype = Dtype::FLOAT;
+    state.rows = 2;
+    state.cols = 3;
+    state.threshold = -0.1;
+    state.seed_factor = 4.1;
+    state.neighbour_factor = 1.0 / 3.0;
+    state.connectivity = 4;
+    state.erase_clusters = true;
+    const auto same_scalars = [&state](const VarClusterFinderState &loaded) {
+        return loaded.dtype == state.dtype && loaded.rows == state.rows &&
+               loaded.cols == state.cols &&
+               loaded.threshold == state.threshold &&
+               loaded.neighbour_threshold == state.neighbour_threshold &&
+               loaded.seed_factor == state.seed_factor &&
+               loaded.neighbour_factor == state.neighbour_factor &&
+               loaded.connectivity == state.connectivity &&
+               loaded.erase_clusters == state.erase_clusters;
+    };
+
+    // Without what a finder can be without
+    save_state(state, file.path());
+    auto header = nlohmann::json::parse(read_state_header(file.path()));
+    REQUIRE(header.at("type") == "VarClusterFinder");
+    REQUIRE(header.at("state").at("erase_clusters") == true);
+    REQUIRE_FALSE(header.at("state").contains("neighbour_threshold"));
+    REQUIRE_FALSE(header.at("state").contains("noise_map"));
+    REQUIRE_FALSE(header.at("state").contains("mask"));
+    auto loaded = load_state<VarClusterFinderState>(file.path());
+    REQUIRE(same_scalars(loaded));
+    REQUIRE_FALSE(loaded.noise_map.has_value());
+    REQUIRE_FALSE(loaded.mask.has_value());
+
+    state.neighbour_threshold = 0.7;
+    state.noise_map = make_test_state().sum; // with NaN and infinity
+    state.mask = NDArray<bool, 2>({2, 3}, false);
+    (*state.mask)(1, 2) = true;
+    save_state(state, file.path());
+    header = nlohmann::json::parse(read_state_header(file.path()));
+    REQUIRE(header.at("state").at("mask").at("dtype") == "|b1");
+    loaded = load_state<VarClusterFinderState>(file.path());
+    REQUIRE(same_scalars(loaded));
+    REQUIRE(same_bits(*loaded.noise_map, *state.noise_map));
+    REQUIRE(loaded.mask == state.mask);
+
+    modify_header(file.path(),
+                  [](nlohmann::json &h) { h["state"]["erase_clusters"] = 1; });
+    REQUIRE_THROWS_WITH(
+        load_state<VarClusterFinderState>(file.path()),
+        ContainsSubstring("\"erase_clusters\" must be true or false"));
 }

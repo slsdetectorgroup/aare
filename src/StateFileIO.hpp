@@ -66,7 +66,7 @@ template <typename T> std::string dtype_string() {
  *
  * which is called both to write and to read. What a field is in the file
  * follows from the type of the member: a Dtype, an unsigned integer, a
- * double, an NDArray, another state, a std::vector of states, or a
+ * double, a bool, an NDArray, another state, a std::vector of states, or a
  * std::optional of one of these for a field that may be left out. A field
  * added later has a third argument, its value when read from an older file.
  */
@@ -107,6 +107,8 @@ class StateWriter {
         operator()(const char *key, T value) {
             object[key] = value;
         }
+
+        void operator()(const char *key, bool value) { object[key] = value; }
 
         void operator()(const char *key, double value) {
             // JSON has no representation for infinity and NaN
@@ -243,6 +245,10 @@ class StateReader {
                 fail(fmt::format("\"{}\" must be an integer between 0 and {}",
                                  key, std::numeric_limits<T>::max()));
             value = static_cast<T>(field.get<uint64_t>());
+        }
+
+        void operator()(const char *key, bool &value) const {
+            value = at(key, &json::is_boolean, "true or false").get<bool>();
         }
 
         void operator()(const char *key, double &value) const {
