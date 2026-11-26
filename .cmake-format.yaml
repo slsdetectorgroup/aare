@@ -1,0 +1,18 @@
+# Only teaches cmake-format the keywords of aare_declare_dependency
+# (cmake/helpers.cmake); everything else keeps the defaults.
+parse:
+  additional_commands:
+    aare_declare_dependency:
+      pargs: 1
+      kwargs:
+        ARCHIVE: 1
+        SHA256: 1
+        GITHUB:
+          kwargs:
+            URL: 1
+            GIT_REPOSITORY: 1
+            GIT_TAG: 1
+            GIT_SHALLOW: 1
+            GIT_PROGRESS: 1
+            USES_TERMINAL_DOWNLOAD: 1
+            UPDATE_DISCONNECTED: 1

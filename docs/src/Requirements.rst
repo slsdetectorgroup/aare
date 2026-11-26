@@ -11,7 +11,8 @@ Requirements
     To save compile time some of the dependencies can also be picked up from the system/conda environment by specifying:
     -DAARE_SYSTEM_LIBRARIES=ON during the cmake configuration.
 
-To simplify deployment we build and statically link a few libraries.
+To simplify deployment we build and statically link a few libraries. Their source
+archives are in ``libs/``, so nothing is downloaded during the build.
 
 - fmt
 - Minuit2

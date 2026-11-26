@@ -6,7 +6,8 @@ regex = '^(?P<version>\d+(?:\.\d+)*(?:[\.\+\w]+)?)$'
 result = "{version}"
 
 [build-system]
-requires = ["scikit-build-core>=1.0", "pybind11", "numpy"]
+# pybind11 is built from the archive in libs/, see python/CMakeLists.txt
+requires = ["scikit-build-core>=1.0", "numpy"]
 build-backend = "scikit_build_core.build"
 
 [project]
