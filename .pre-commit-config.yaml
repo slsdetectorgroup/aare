@@ -4,6 +4,7 @@ repos:
     rev: v6.0.0
     hooks:
       - id: check-added-large-files
+        exclude: ^libs/ # source archives of the bundled dependencies
       - id: check-yaml
         exclude: conda-recipe/
       - id: check-toml

@@ -97,7 +97,27 @@ For detailed options see the CMakeLists.txt file in the root directory of the pr
 
 **AARE_SYSTEM_LIBRARIES "Use system libraries" OFF**
 
-Use system libraries instead of using FetchContent to pull in dependencies. Default option is off.
+Look for fmt, nlohmann_json, pybind11 and Catch2 with ``find_package`` instead of building
+them from source. Minuit2 and Google Benchmark are still built from source; turn them off
+separately with ``AARE_FETCH_MINUIT2`` and ``AARE_FETCH_BENCHMARK``. Default option is off.
+
+**AARE_FETCH_FROM_GITHUB "Download the sources of fetched dependencies from GitHub" OFF**
+
+Download the dependencies that are built from source from GitHub instead of unpacking
+the archives in ``libs/``. Default option is off.
+
+Building without network access
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+The source archives of fmt, nlohmann_json, Minuit2, pybind11, Catch2 and Google Benchmark
+are part of the repository (``libs/``), and the default configuration builds them from
+there. A CMake build of the library, the Python bindings, the tests and the benchmarks
+therefore needs no network access. Two things still do:
+
+- ``-DAARE_ZMQ=ON`` downloads libzmq, unless a system ZeroMQ is used with
+  ``-DAARE_FETCH_ZMQ=OFF``.
+- ``pip install .`` downloads the Python build requirements (scikit-build-core and
+  numpy). Install them beforehand and pass ``--no-build-isolation`` to build offline.
 
 
 **AARE_PYTHON_BINDINGS "Build python bindings" OFF**

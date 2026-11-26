@@ -6,6 +6,7 @@ dependencies:
   - catch2
   - conda-build
   - doxygen
+  - fmt
   - sphinx
   - breathe
   - sphinx-gallery

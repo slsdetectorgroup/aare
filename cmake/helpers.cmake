@@ -52,3 +52,30 @@ function(set_std_fs_lib)
     set(STD_FS_LIB "")
   endif()
 endfunction()
+
+# Declare a dependency that is built from source with FetchContent. By default
+# the source is unpacked from the archive in libs/, so nothing is downloaded.
+# With AARE_FETCH_FROM_GITHUB the arguments after GITHUB are used instead.
+# Arguments that are not recognised are passed on to FetchContent_Declare in
+# both cases.
+function(aare_declare_dependency name)
+  cmake_parse_arguments(ARG "" "ARCHIVE;SHA256" "GITHUB" ${ARGN})
+  if(AARE_FETCH_FROM_GITHUB)
+    message(STATUS "${name}: downloading from GitHub")
+    FetchContent_Declare(${name} ${ARG_GITHUB} ${ARG_UNPARSED_ARGUMENTS})
+  else()
+    set(archive "${PROJECT_SOURCE_DIR}/libs/${ARG_ARCHIVE}")
+    if(NOT EXISTS "${archive}")
+      message(
+        FATAL_ERROR
+          "${name}: ${archive} is missing. Restore it, or configure with -DAARE_FETCH_FROM_GITHUB=ON to download the sources."
+      )
+    endif()
+    message(STATUS "${name}: using libs/${ARG_ARCHIVE}")
+    FetchContent_Declare(
+      ${name}
+      URL "${archive}"
+      URL_HASH SHA256=${ARG_SHA256}
+      ${ARG_UNPARSED_ARGUMENTS})
+  endif()
+endfunction()

@@ -36,9 +36,13 @@ The project requires CMake 3.15 or newer, C++17 with compiler extensions
 disabled, and Python 3.11 or newer. `etc/dev-env.yml` defines the Conda
 development environment.
 
-CMake fetches several dependencies by default. Use
-`-DAARE_SYSTEM_LIBRARIES=ON` only when all required system or Conda packages
-are available.
+CMake builds several dependencies from source by default (fmt, nlohmann_json,
+Minuit2, pybind11, Catch2, Google Benchmark). Their unmodified upstream
+archives are in `libs/` and are declared with `aare_declare_dependency`
+(`cmake/helpers.cmake`), so a default configure needs no network access;
+`-DAARE_FETCH_FROM_GITHUB=ON` downloads them instead. libzmq (`AARE_ZMQ`) is
+the exception and is always downloaded. Use `-DAARE_SYSTEM_LIBRARIES=ON` only
+when all required system or Conda packages are available.
 
 Use this configuration for normal development:
 
@@ -233,6 +237,10 @@ agree; run them when changing any solver.
   copyright and license notice, set the SPDX identifier to that license, and
   list the license in `LICENSES/`, `pyproject.toml`, `conda-recipe/meta.yaml`,
   and `README.md`. `etc/add_license.py` skips files with a license notice.
+- To bump a dependency in `libs/`, replace the archive with the unmodified
+  upstream one from the URL in the comment at its `aare_declare_dependency`
+  call, and update `ARCHIVE`, `SHA256` (`shasum -a 256`), the GitHub tag in
+  the same call, and `libs/README.md`. Do not repack or edit the archives.
 - When adding or bumping a fetched dependency that is compiled into the
   Python extension, update its version and notice in
   `THIRD-PARTY-NOTICES.txt` and the license expressions in `pyproject.toml`

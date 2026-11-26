@@ -6,13 +6,16 @@ find_package(
   REQUIRED)
 set(PYBIND11_FINDPYTHON ON) # Needed for RH8
 
-# Download or find pybind11 depending on configuration
+# Build pybind11 from source or find it depending on configuration
 if(AARE_FETCH_PYBIND11)
-  FetchContent_Declare(
+  aare_declare_dependency(
     pybind11
-    GIT_REPOSITORY https://github.com/pybind/pybind11
-    GIT_TAG v3.0.3
-    GIT_SHALLOW TRUE)
+    # https://github.com/pybind/pybind11/archive/refs/tags/v3.0.3.tar.gz
+    ARCHIVE pybind11-3.0.3.tar.gz
+    SHA256 787459e1e186ee82001759508fefa408373eae8a076ffe0078b126c6f8f0ec5e
+    GITHUB GIT_REPOSITORY https://github.com/pybind/pybind11
+           GIT_TAG v3.0.3
+           GIT_SHALLOW TRUE)
   FetchContent_MakeAvailable(pybind11)
 else()
   find_package(pybind11 3.0.3 REQUIRED)
