@@ -114,6 +114,14 @@
 
 ### Build:
 
+- The sources of fmt, nlohmann_json, Minuit2, pybind11, Catch2 and Google
+  Benchmark are now part of the repository as archives in ``libs/`` and the
+  build uses them by default, so CMake no longer downloads anything (libzmq
+  with ``-DAARE_ZMQ=ON`` excepted) and aare can be built without network
+  access. ``-DAARE_FETCH_FROM_GITHUB=ON`` restores the download.
+  ``-DAARE_FETCH_BENCHMARK=OFF`` uses an installed Google Benchmark.
+- The pip and conda builds no longer require the pybind11 package; they use
+  the bundled pybind11 like every other build.
 - libzmq is only fetched or searched for with ``-DAARE_ZMQ=ON`` (default
   OFF) and is then available as ``aare::zmq``. Nothing in aare links it yet,
   and skipping it removes about 8 s from every CMake configure.

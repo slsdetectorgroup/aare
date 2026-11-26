@@ -1,12 +1,15 @@
 # SPDX-License-Identifier: MPL-2.0
 
-# Download catch2 if configured to do so
+# Build catch2 from source if configured to do so
 if(AARE_FETCH_CATCH)
-  FetchContent_Declare(
+  aare_declare_dependency(
     Catch2
-    GIT_SHALLOW TRUE
-    GIT_REPOSITORY https://github.com/catchorg/Catch2.git
-    GIT_TAG v3.5.3)
+    # https://github.com/catchorg/Catch2/archive/refs/tags/v3.5.3.tar.gz
+    ARCHIVE Catch2-3.5.3.tar.gz
+    SHA256 8d723b0535c94860ef8cf6231580fa47d67a3416757ecb10639e40d748ab6c71
+    GITHUB GIT_REPOSITORY https://github.com/catchorg/Catch2.git
+           GIT_TAG v3.5.3
+           GIT_SHALLOW TRUE)
   FetchContent_MakeAvailable(Catch2)
   # Catch2 is ~100 small files; a unity build compiles them in a few batches
   set_target_properties(Catch2 Catch2WithMain

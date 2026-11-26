@@ -21,7 +21,7 @@ The full license texts are in the `LICENSES` directory.
 
 The Python wheels and conda packages also contain Minuit2
 (LGPL-2.1-or-later), {fmt} and nlohmann/json (MIT), and pybind11
-(BSD-3-Clause), which CMake downloads at build time. See
+(BSD-3-Clause), which CMake builds from the source archives in `libs/`. See
 `THIRD-PARTY-NOTICES.txt` for their notices.
 
 ## Build and install
