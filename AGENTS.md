@@ -23,6 +23,11 @@ footprint.
 - `python/tests/` contains the pytest suite.
 - `docs/src/` contains Sphinx/reStructuredText documentation. Doxygen and
   Breathe integrate the C++ API into the Sphinx site.
+- `docs/examples/` contains the Python examples of the sphinx-gallery. Each
+  `plot_*.py` script is run during the docs build and rendered as a page.
+  `example_data.py` generates input files for them; call it between
+  `# sphinx_gallery_start_ignore` and `# sphinx_gallery_end_ignore` so the
+  page shows only the code a user would write.
 - `benchmarks/` contains Google Benchmark programs.
 - `examples/` contains standalone C++ example programs, built with
   `AARE_EXAMPLES=ON`. Each one is registered as a CTest test and shown in

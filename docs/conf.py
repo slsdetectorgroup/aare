@@ -46,6 +46,8 @@ sphinx_gallery_conf = {
     'examples_dirs': os.path.join(os.path.dirname(os.path.abspath(__file__)),
                                   'examples'),
     'gallery_dirs': 'auto_examples',
+    # Helper that generates input files, not an example itself
+    'ignore_pattern': r'__init__\.py|example_data\.py',
     'download_all_examples': False,
     'write_computation_times': False,
 }
