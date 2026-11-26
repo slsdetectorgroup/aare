@@ -17,6 +17,17 @@ def _get_class(name, cluster_size, dtype):
     return cls
 
 
+def _get_stored_class(name, filename, dtype, within=()):
+    """
+    Helper function to get the class for the state file of a ``name``: with
+    the cluster size and, unless given, the dtype of the ClusterFinder state
+    stored in it, which is ``within`` the state of the file.
+    """
+    size_x, size_y, stored_dtype = _stored_state_fields(
+        filename, name, "cluster_size_x", "cluster_size_y", "cluster_dtype", within=within
+    )
+    return _get_class(name, (size_x, size_y), stored_dtype if dtype is None else dtype)
+
 
 def ClusterFinder(image_size, *, cluster_size=(3,3), n_sigma=5, dtype = np.int32, capacity = 1024, min_pedestal_samples = 1000):
     """
@@ -79,12 +90,7 @@ def load_state(filename, dtype=None, capacity=1024):
         If there is no ClusterFinder with the stored cluster size and the
         dtype, given or stored.
     """
-    size_x, size_y, stored_dtype = _stored_state_fields(
-        filename, "ClusterFinder", "cluster_size_x", "cluster_size_y", "cluster_dtype"
-    )
-    if dtype is None:
-        dtype = stored_dtype
-    cls = _get_class("ClusterFinder", (size_x, size_y), dtype)
+    cls = _get_stored_class("ClusterFinder", filename, dtype)
     return cls.from_state_file(filename, capacity=capacity)
 
 
@@ -153,16 +159,7 @@ def _load_mt_state(filename, dtype=None, capacity=1024, queue_depth=16):
         If there is no ClusterFinderMT with the stored cluster size and the
         dtype, given or stored.
     """
-    size_x, size_y, stored_dtype = _stored_state_fields(
-        filename,
-        "ClusterFinderMT",
-        ("finders", 0, "cluster_size_x"),
-        ("finders", 0, "cluster_size_y"),
-        ("finders", 0, "cluster_dtype"),
-    )
-    if dtype is None:
-        dtype = stored_dtype
-    cls = _get_class("ClusterFinderMT", (size_x, size_y), dtype)
+    cls = _get_stored_class("ClusterFinderMT", filename, dtype, within=("finders", 0))
     return cls.from_state_file(filename, capacity=capacity, queue_depth=queue_depth)
 
 

@@ -247,18 +247,21 @@ class ClusterFinderMT {
     // to work on. A thread takes a frame out of its queue once it is done
     // with it, so with the queues empty no thread is using its cluster
     // finder, and none starts to before the caller, which is the thread
-    // that gives the frames, gives the next one
-    void wait_until_idle() const {
+    // that gives the frames, gives the next one. Everything that reads or
+    // changes the cluster finders from outside their threads gets them
+    // here or from idle_finder()
+    const std::vector<std::unique_ptr<Finder>> &idle_finders() const {
         if (!m_processing_threads_stopped) {
             wait_for_input_queues();
         }
+        return m_cluster_finders;
     }
 
-    Finder &finder_of(size_t thread_index) const {
+    Finder &idle_finder(size_t thread_index) const {
         if (thread_index >= m_cluster_finders.size()) {
             throw std::runtime_error("Thread index out of range");
         }
-        return *m_cluster_finders[thread_index];
+        return *idle_finders()[thread_index];
     }
 
   public:
@@ -290,10 +293,8 @@ class ClusterFinderMT {
                        << ", queue_depth: " << queue_depth;
 
         for (size_t i = 0; i < n_threads; i++) {
-            m_cluster_finders.push_back(
-                std::make_unique<
-                    ClusterFinder<ClusterType, FRAME_TYPE, PEDESTAL_TYPE>>(
-                    image_size, nSigma, capacity, min_pedestal_samples));
+            m_cluster_finders.push_back(std::make_unique<Finder>(
+                image_size, nSigma, capacity, min_pedestal_samples));
         }
         create_queues(image_size, queue_depth);
         // TODO! Should we start automatically?
@@ -361,9 +362,8 @@ class ClusterFinderMT {
      * same thread.
      */
     ClusterFinderMTState state() const {
-        wait_until_idle();
         ClusterFinderMTState state;
-        for (const auto &cf : m_cluster_finders) {
+        for (const auto &cf : idle_finders()) {
             state.finders.push_back(cf->state());
         }
         state.next_thread = m_current_thread % m_n_threads;
@@ -378,7 +378,7 @@ class ClusterFinderMT {
      * then left unchanged.
      */
     void set_state(const ClusterFinderMTState &state) {
-        wait_until_idle();
+        const auto &finders = idle_finders();
         if (state.finders.size() != m_n_threads) {
             throw std::runtime_error(fmt::format(
                 "ClusterFinderMT state is for {} threads, this finder has {}",
@@ -386,10 +386,10 @@ class ClusterFinderMT {
         }
         check_next_thread(state);
         for (size_t i = 0; i < m_n_threads; ++i) {
-            m_cluster_finders[i]->check_state(state.finders[i]);
+            finders[i]->check_state(state.finders[i]);
         }
         for (size_t i = 0; i < m_n_threads; ++i) {
-            m_cluster_finders[i]->set_state(state.finders[i]);
+            finders[i]->set_state(state.finders[i]);
         }
         m_current_thread = state.next_thread;
     }
@@ -407,14 +407,13 @@ class ClusterFinderMT {
      */
     void set_state(const ClusterFinderState &state,
                    std::optional<size_t> thread_index = std::nullopt) {
-        wait_until_idle();
         if (thread_index) {
-            finder_of(*thread_index).set_state(state);
+            idle_finder(*thread_index).set_state(state);
             return;
         }
         // All threads have the same cluster size and image shape, so a
         // state that the first accepts is accepted by all
-        for (auto &cf : m_cluster_finders) {
+        for (auto &cf : idle_finders()) {
             cf->set_state(state);
         }
         m_current_thread = 0;
@@ -434,13 +433,12 @@ class ClusterFinderMT {
      */
     void set_pedestal(const FastPedestalState &state,
                       std::optional<size_t> thread_index = std::nullopt) {
-        wait_until_idle();
         if (thread_index) {
-            finder_of(*thread_index).set_pedestal(state);
+            idle_finder(*thread_index).set_pedestal(state);
             return;
         }
         // As for set_state(): accepted by the first, accepted by all
-        for (auto &cf : m_cluster_finders) {
+        for (auto &cf : idle_finders()) {
             cf->set_pedestal(state);
         }
     }
@@ -464,8 +462,7 @@ class ClusterFinderMT {
      * @throws std::runtime_error if the index is out of range.
      */
     FastPedestal<PEDESTAL_TYPE> get_pedestal(size_t thread_index = 0) const {
-        wait_until_idle();
-        return finder_of(thread_index).get_pedestal();
+        return idle_finder(thread_index).get_pedestal();
     }
 
     /** @brief Return the number of processing threads. */
@@ -521,11 +518,7 @@ class ClusterFinderMT {
      * @brief Wait for all the queues to be empty. Mostly used for timing tests.
      */
     void sync() {
-        for (auto &q : m_input_queues) {
-            while (!q->isEmpty()) {
-                std::this_thread::sleep_for(m_default_wait);
-            }
-        }
+        wait_for_input_queues();
         for (auto &q : m_output_queues) {
             while (!q->isEmpty()) {
                 std::this_thread::sleep_for(m_default_wait);
@@ -599,8 +592,7 @@ class ClusterFinderMT {
     }
 
     void clear_pedestal() {
-        wait_until_idle();
-        for (auto &cf : m_cluster_finders) {
+        for (auto &cf : idle_finders()) {
             cf->clear_pedestal();
         }
     }
@@ -610,8 +602,7 @@ class ClusterFinderMT {
      * finders.
      */
     void update_threshold() {
-        wait_until_idle();
-        for (auto &cf : m_cluster_finders) {
+        for (auto &cf : idle_finders()) {
             cf->update_threshold();
         }
     }
@@ -621,14 +612,7 @@ class ClusterFinderMT {
      * @param thread_index index of the thread
      */
     auto pedestal(size_t thread_index = 0) {
-        if (m_cluster_finders.empty()) {
-            throw std::runtime_error("No cluster finders available");
-        }
-        if (thread_index >= m_cluster_finders.size()) {
-            throw std::runtime_error("Thread index out of range");
-        }
-        wait_until_idle();
-        return m_cluster_finders[thread_index]->pedestal();
+        return idle_finder(thread_index).pedestal();
     }
 
     /**
@@ -636,14 +620,7 @@ class ClusterFinderMT {
      * @param thread_index index of the thread
      */
     auto noise(size_t thread_index = 0) {
-        if (m_cluster_finders.empty()) {
-            throw std::runtime_error("No cluster finders available");
-        }
-        if (thread_index >= m_cluster_finders.size()) {
-            throw std::runtime_error("Thread index out of range");
-        }
-        wait_until_idle();
-        return m_cluster_finders[thread_index]->noise();
+        return idle_finder(thread_index).noise();
     }
 
     // void push(FrameWrapper&& frame) {
@@ -659,8 +636,7 @@ class ClusterFinderMT {
      * during cluster finding.
      */
     void set_nSigma(const PEDESTAL_TYPE nSigma) {
-        wait_until_idle();
-        for (auto &cf : m_cluster_finders) {
+        for (auto &cf : idle_finders()) {
             cf->set_nSigma(nSigma);
         }
     }
@@ -671,8 +647,8 @@ class ClusterFinderMT {
      * first.
      */
     bool pedestal_ready() {
-        wait_until_idle();
-        return std::all_of(m_cluster_finders.begin(), m_cluster_finders.end(),
+        const auto &finders = idle_finders();
+        return std::all_of(finders.begin(), finders.end(),
                            [](const auto &cf) { return cf->pedestal_ready(); });
     }
 };

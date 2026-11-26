@@ -16,6 +16,7 @@
 #include <cstdint>
 #include <cstring>
 #include <limits>
+#include <optional>
 #include <sstream>
 #include <vector>
 
@@ -724,54 +725,129 @@ TEST_CASE("state inside a state has its own version", "[state-file]") {
 }
 
 // What the states of the classes that follow need from the reader and
-// writer, which no state uses yet: fields that may be left out, lists of
-// states and bool arrays
+// writer, which no state uses yet: fields that may be left out or were
+// added later, and bool arrays
+namespace {
+
+struct TestThreadState {
+    uint32_t index{};
+};
+
+struct TestState {
+    NDArray<bool, 2> mask;
+    std::optional<NDArray<double, 2>> noise_map;
+    std::vector<TestThreadState> threads;
+    uint32_t added_later{};
+};
+
+} // namespace
+
+namespace aare::detail {
+
+template <> struct StateFormat<TestThreadState> {
+    static constexpr std::string_view name = "TestThread";
+    static constexpr uint64_t version = 1;
+
+    template <typename Fields, typename State>
+    static void fields(Fields &field, State &state) {
+        field("index", state.index);
+    }
+};
+
+template <> struct StateFormat<TestState> {
+    static constexpr std::string_view name = "Test";
+    static constexpr uint64_t version = 1;
+
+    template <typename Fields, typename State>
+    static void fields(Fields &field, State &state) {
+        field("mask", state.mask);
+        field("noise_map", state.noise_map);
+        field("threads", state.threads);
+        field("added_later", state.added_later, uint32_t{7});
+    }
+};
+
+} // namespace aare::detail
+
 TEST_CASE("state reader and writer handle optional fields, lists and masks",
           "[state-file]") {
-    using detail::json;
+    using json = nlohmann::json;
     TemporaryStateFile file;
+    const auto load = [&file] {
+        return detail::StateReader(file.path()).state<TestState>();
+    };
 
-    NDArray<bool, 2> mask(Shape<2>{2, 3}, false);
-    mask(0, 1) = true;
-    mask(1, 2) = true;
-    NDArray<uint8_t, 1> not_a_mask(Shape<1>{3}, 0);
-    not_a_mask(1) = 2;
+    TestState state;
+    state.mask = NDArray<bool, 2>(Shape<2>{2, 3}, false);
+    state.mask(0, 1) = true;
+    state.mask(1, 2) = true;
+    state.threads = {{0}, {1}};
+    state.added_later = 3;
+    detail::StateWriter::save(state, file.path());
 
-    detail::StateWriter writer;
-    json state;
-    state["mask"] = writer.add(mask);
-    state["not_a_mask"] = writer.add(not_a_mask);
-    state["not_a_mask"]["dtype"] = "|b1";
-    state["left_out"] = nullptr;
-    state["threads"] = json::array({{{"index", 0}}, {{"index", 1}}});
-    state["not_objects"] = json::array({1, 2});
-    writer.write(file.path(), "Test", state);
+    const auto header = json::parse(read_state_header(file.path()));
+    REQUIRE(header.at("type") == "Test");
+    REQUIRE(header.at("state").at("mask").at("dtype") == "|b1");
+    REQUIRE_FALSE(header.at("state").contains("noise_map"));
 
-    REQUIRE(nlohmann::json::parse(read_state_header(file.path()))
-                .at("state")
-                .at("mask")
-                .at("dtype") == "|b1");
+    auto loaded = load();
+    REQUIRE(loaded.mask == state.mask);
+    REQUIRE_FALSE(loaded.noise_map.has_value());
+    REQUIRE(loaded.threads.size() == 2);
+    REQUIRE(loaded.threads[0].index == 0);
+    REQUIRE(loaded.threads[1].index == 1);
+    REQUIRE(loaded.added_later == 3);
 
-    detail::StateReader reader(file.path());
-    const auto node = reader.state("Test");
+    SECTION("a field that is null counts as left out") {
+        modify_header(file.path(),
+                      [](json &h) { h["state"]["noise_map"] = nullptr; });
+        REQUIRE_FALSE(load().noise_map.has_value());
+    }
+    SECTION("a field that may be left out is read if it is there") {
+        state.noise_map = NDArray<double, 2>(Shape<2>{2, 3}, 0.5);
+        detail::StateWriter::save(state, file.path());
+        loaded = load();
+        REQUIRE(loaded.mask == state.mask);
+        REQUIRE(loaded.noise_map.has_value());
+        REQUIRE(*loaded.noise_map == *state.noise_map);
 
-    REQUIRE(node.has("mask"));
-    REQUIRE_FALSE(node.has("noise_map"));
-    REQUIRE_FALSE(node.has("left_out"));
-
-    REQUIRE(node.array<bool, 2>("mask") == mask);
-    REQUIRE_THROWS_WITH((node.array<bool, 1>("not_a_mask")),
-                        ContainsSubstring("holds a value that is not 0 or 1"));
-
-    const auto threads = node.children("threads");
-    REQUIRE(threads.size() == 2);
-    REQUIRE(threads[0].unsigned_integer<uint32_t>("index") == 0);
-    REQUIRE(threads[1].unsigned_integer<uint32_t>("index") == 1);
-    REQUIRE_THROWS_WITH(node.children("mask"),
-                        ContainsSubstring("\"mask\" must be a list"));
-    REQUIRE_THROWS_WITH(
-        node.children("not_objects"),
-        ContainsSubstring("\"not_objects\" must be a list of objects"));
+        modify_header(file.path(),
+                      [](json &h) { h["state"]["noise_map"]["shape"] = {2}; });
+        REQUIRE_THROWS_WITH(
+            load(), ContainsSubstring("array \"noise_map\" has 1 dimensions"));
+    }
+    SECTION("a field added later has a value for the files without it") {
+        modify_header(file.path(),
+                      [](json &h) { h["state"].erase("added_later"); });
+        REQUIRE(load().added_later == 7);
+        modify_header(file.path(),
+                      [](json &h) { h["state"]["added_later"] = -1; });
+        REQUIRE_THROWS_WITH(
+            load(), ContainsSubstring("\"added_later\" must be an integer"));
+    }
+    SECTION("a list must be a list of objects") {
+        modify_header(file.path(), [](json &h) {
+            h["state"]["threads"] = h["state"]["mask"];
+        });
+        REQUIRE_THROWS_WITH(load(),
+                            ContainsSubstring("\"threads\" must be a list"));
+        modify_header(file.path(),
+                      [](json &h) { h["state"]["threads"] = {1, 2}; });
+        REQUIRE_THROWS_WITH(
+            load(), ContainsSubstring("\"threads\" must be a list of objects"));
+    }
+    SECTION("a bool array only holds 0 and 1") {
+        auto bytes = read_bytes(file.path());
+        const auto data_start = state_file_preamble_size + header_length(bytes);
+        REQUIRE(bytes[data_start + 1] == 1);
+        bytes[data_start + 1] = 2;
+        write_state_file(
+            file.path(),
+            bytes.substr(state_file_preamble_size, header_length(bytes)),
+            bytes.substr(data_start));
+        REQUIRE_THROWS_WITH(
+            load(), ContainsSubstring("holds a value that is not 0 or 1"));
+    }
 }
 
 namespace {
