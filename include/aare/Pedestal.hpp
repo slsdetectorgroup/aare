@@ -5,6 +5,7 @@
 #include "aare/NDArray.hpp"
 #include "aare/NDView.hpp"
 #include <algorithm>
+#include <cmath>
 #include <cstddef>
 #include <fmt/format.h>
 #include <stdexcept>
@@ -265,8 +266,11 @@ template <typename SUM_TYPE = double> class Pedestal {
 
         for (size_t row = 0; row < m_rows; row++) {
             for (size_t col = 0; col < m_cols; col++) {
-                if (fabs(frame(row, col) - mean(row, col)) <
-                    threshold(row, col)) {
+                // Widened explicitly: the difference is float, double or
+                // an integer depending on T and SUM_TYPE
+                const auto difference = frame(row, col) - mean(row, col);
+                if (std::abs(static_cast<double>(difference)) <
+                    static_cast<double>(threshold(row, col))) {
                     push<T>(row, col, frame(row, col));
                 }
             }
