@@ -64,17 +64,27 @@ option(
   "Optimize for the building machine's CPU (-march=native -mtune=native). Not portable, the resulting binaries might not run on other machines."
   OFF)
 
-# Configure which of the dependencies to use FetchContent for
-option(AARE_FETCH_FMT "Use FetchContent to download fmt" ON)
-option(AARE_FETCH_PYBIND11 "Use FetchContent to download pybind11" ON)
-option(AARE_FETCH_CATCH "Use FetchContent to download catch2" ON)
-option(AARE_FETCH_JSON "Use FetchContent to download nlohmann::json" ON)
+# Configure which of the dependencies to build from source with FetchContent
+# (ON) and which to look for with find_package (OFF). The sources come from the
+# archives in libs/ unless AARE_FETCH_FROM_GITHUB is set, so the default build
+# does not need network access. libzmq has no archive in libs/ and is always
+# downloaded.
+option(AARE_FETCH_FMT "Build fmt from source with FetchContent" ON)
+option(AARE_FETCH_PYBIND11 "Build pybind11 from source with FetchContent" ON)
+option(AARE_FETCH_CATCH "Build catch2 from source with FetchContent" ON)
+option(AARE_FETCH_JSON "Use nlohmann::json from source with FetchContent" ON)
+option(AARE_FETCH_BENCHMARK
+       "Build Google Benchmark from source with FetchContent" ON)
+option(
+  AARE_FETCH_FROM_GITHUB
+  "Download the sources of fetched dependencies from GitHub instead of using the archives in libs/"
+  OFF)
 option(
   AARE_ZMQ
   "Fetch or find ZeroMQ. Nothing uses it yet; kept for upcoming streaming support"
   OFF)
 option(AARE_FETCH_ZMQ "Use FetchContent to download libzmq" ON)
-option(AARE_FETCH_MINUIT2 "Use FetchContent to download Minuit2" ON)
+option(AARE_FETCH_MINUIT2 "Build Minuit2 from source with FetchContent" ON)
 
 option(AARE_WARNINGS_AS_ERRORS "Treat warnings as errors during compilation"
        OFF)
@@ -98,8 +108,9 @@ if(AARE_SYSTEM_LIBRARIES)
   set(AARE_FETCH_ZMQ
       OFF
       CACHE BOOL "Disabled FetchContent for libzmq" FORCE)
-  # Still fetch Minuit2 when setting AARE_SYSTEM_LIBRARIES since it is not
-  # available on conda-forge
+  # Minuit2 and Google Benchmark are still built from source when setting
+  # AARE_SYSTEM_LIBRARIES: Minuit2 is not available on conda-forge and benchmark
+  # is not in the development environment
 endif()
 
 if(AARE_BENCHMARKS)
@@ -111,12 +122,15 @@ set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 if(AARE_FETCH_MINUIT2)
   # We are building Minuit2 from sources.
 
-  FetchContent_Declare(
+  aare_declare_dependency(
     Minuit2
-    GIT_REPOSITORY https://github.com/GooFit/Minuit2.git
-    GIT_TAG v6-40-02
-    GIT_SHALLOW TRUE
-    UPDATE_DISCONNECTED 1)
+    # https://github.com/GooFit/Minuit2/archive/refs/tags/v6-40-02.tar.gz
+    ARCHIVE Minuit2-6-40-02.tar.gz
+    SHA256 72049214d0c6cdc5389ab7d8acf474638b68eaa1e66dd01389b5e7d70657fef8
+    GITHUB GIT_REPOSITORY https://github.com/GooFit/Minuit2.git
+           GIT_TAG v6-40-02
+           GIT_SHALLOW TRUE
+           UPDATE_DISCONNECTED 1)
   # Disable Minuit2 extras we don't need
   set(minuit2_mpi
       OFF
@@ -232,13 +246,16 @@ if(AARE_FETCH_FMT)
   set(FMT_TEST
       OFF
       CACHE INTERNAL "disabling fmt tests")
-  FetchContent_Declare(
+  aare_declare_dependency(
     fmt
-    GIT_REPOSITORY https://github.com/fmtlib/fmt.git
-    GIT_TAG 12.1.0
-    GIT_SHALLOW TRUE
-    GIT_PROGRESS TRUE
-    USES_TERMINAL_DOWNLOAD TRUE)
+    # https://github.com/fmtlib/fmt/archive/refs/tags/12.1.0.tar.gz
+    ARCHIVE fmt-12.1.0.tar.gz
+    SHA256 ea7de4299689e12b6dddd392f9896f08fb0777ac7168897a244a6d6085043fea
+    GITHUB GIT_REPOSITORY https://github.com/fmtlib/fmt.git
+           GIT_TAG 12.1.0
+           GIT_SHALLOW TRUE
+           GIT_PROGRESS TRUE
+           USES_TERMINAL_DOWNLOAD TRUE)
   set(FMT_INSTALL
       ON
       CACHE BOOL "")
@@ -254,9 +271,13 @@ else()
 endif()
 
 if(AARE_FETCH_JSON)
-  FetchContent_Declare(
+  aare_declare_dependency(
     json
-    URL https://github.com/nlohmann/json/releases/download/v3.11.3/json.tar.xz)
+    ARCHIVE json-3.11.3.tar.xz
+    SHA256 d6c65aca6b1ed68e7a182f4757257b107ae403032760ed6ef121c9d55e81757d
+    GITHUB
+      URL https://github.com/nlohmann/json/releases/download/v3.11.3/json.tar.xz
+  )
   set(JSON_Install
       ON
       CACHE BOOL "")
@@ -596,7 +617,10 @@ set(CMAKE_BUILD_WITH_INSTALL_RPATH FALSE)
 # $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
 # $<INSTALL_INTERFACE:include> )
 
-# add_subdirectory(examples)
+if(AARE_EXAMPLES)
+  enable_testing()
+  add_subdirectory(examples)
+endif()
 
 if(AARE_DOCS)
   add_subdirectory(docs)

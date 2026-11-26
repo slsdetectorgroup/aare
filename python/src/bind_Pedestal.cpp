@@ -34,7 +34,20 @@ void define_pedestal_bindings(py::module &m, const std::string &name) {
                 *mea = self.mean();
                 return return_image_data(mea);
             },
-            "Return a copy of the cached mean. Empty pixels return zero.")
+            R"doc(
+            Return a copy of the cached mean. Empty pixels return zero.
+
+            Examples
+            --------
+            >>> import numpy as np
+            >>> from aare import Pedestal
+            >>> pedestal = Pedestal(rows=2, cols=3)
+            >>> pedestal.push(np.full((2, 3), 100, dtype=np.uint16))
+            >>> pedestal.push(np.full((2, 3), 104, dtype=np.uint16))
+            >>> pedestal.mean()
+            array([[102., 102., 102.],
+                   [102., 102., 102.]])
+            )doc")
         .def(
             "view",
             [](py::object self_py) {

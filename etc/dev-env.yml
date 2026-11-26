@@ -6,8 +6,10 @@ dependencies:
   - catch2
   - conda-build
   - doxygen
+  - fmt
   - sphinx
   - breathe
+  - sphinx-gallery
   - sphinx_rtd_theme
   - furo
   - zeromq

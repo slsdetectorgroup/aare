@@ -42,18 +42,41 @@ Factory
 Example
 -------
 
-.. code-block:: python
+.. testsetup::
+
+   import numpy as np
+
+   initialization_frames = np.full((4, 2, 3), 100, dtype=np.uint16)
+   initialization_frames[0::2] += 2
+   initialization_frames[1::2] -= 2
+
+Here ``initialization_frames`` is a stack of dark frames with dtype ``uint16``
+and shape ``(n_frames, rows, cols)``. Push the frames to the pedestal, then
+read the mean and the noise of each pixel:
+
+.. testcode::
 
    import numpy as np
    from aare import Pedestal
 
-   pedestal = Pedestal(512, 1024, n_samples=100, dtype=np.float32)
+   pedestal = Pedestal(rows=2, cols=3, n_samples=100, dtype=np.float32)
 
    for frame in initialization_frames:
        pedestal.push(frame)
 
+   # The mean and std can be requested even if fewer than n_samples frames
+   # have been pushed
    mean = pedestal.mean()
    noise = pedestal.std()
+
+.. testcode::
+   :hide:
+
+   # The frames alternate between 102 and 98
+   assert mean.dtype == np.float32
+   assert noise.dtype == np.float32
+   np.testing.assert_array_equal(mean, np.full((2, 3), 100))
+   np.testing.assert_array_equal(noise, np.full((2, 3), 2))
 
 Complete API
 ------------

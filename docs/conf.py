@@ -31,13 +31,24 @@ release = '@PROJECT_VERSION@'
 # ones.
 extensions = ['breathe',
               'sphinx.ext.autodoc',
+              'sphinx.ext.doctest',
               'sphinx.ext.napoleon',
+              'sphinx_gallery.gen_gallery',
               'pybind_overloads',
              ]
 
 breathe_default_project = "aare"
 napoleon_use_ivar = True
 napoleon_numpy_docstring = True
+
+# Examples in docs/examples are run and rendered into docs/src/auto_examples
+sphinx_gallery_conf = {
+    'examples_dirs': os.path.join(os.path.dirname(os.path.abspath(__file__)),
+                                  'examples'),
+    'gallery_dirs': 'auto_examples',
+    'download_all_examples': False,
+    'write_computation_times': False,
+}
 
 
 # Add any paths that contain templates here, relative to this directory.
