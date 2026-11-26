@@ -7,5 +7,6 @@ Cluster & Interpolation
 
    pyCluster
    pyClusterVector
+   pyClusterConverter
    pyInterpolation
    pyVarClusterFinder

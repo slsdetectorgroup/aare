@@ -6,6 +6,7 @@
 
 #include "bind_Cluster.hpp"
 #include "bind_ClusterCollector.hpp"
+#include "bind_ClusterConverter.hpp"
 #include "bind_ClusterFile.hpp"
 #include "bind_ClusterFileSink.hpp"
 #include "bind_ClusterFinder.hpp"
@@ -29,7 +30,8 @@ double, 'f' for float)
     define_Cluster<T, N, M, U>(m, #N "x" #M #TYPE_CODE);                       \
     register_calculate_2x2eta<T, N, M, U>(m);                                  \
     define_2x2_reduction<T, N, M, U>(m);                                       \
-    reduce_to_2x2<T, N, M, U>(m);
+    reduce_to_2x2<T, N, M, U>(m);                                              \
+    register_cluster_converter<T, N, M, U>(m);
 
 #define DEFINE_BINDINGS_CLUSTERFINDER(T, N, M, U, TYPE_CODE)                   \
     define_ClusterFinder<T, N, M, U>(m, "Cluster" #N "x" #M #TYPE_CODE);       \

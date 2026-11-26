@@ -30,6 +30,9 @@ PYBIND11_MODULE(_aare, m) {
     bind_calibration(m);
     define_testing_bindings(m);
 
+    // Before the cluster types, which add its __call__ overloads
+    define_cluster_converter_bindings(m);
+
     bind_cluster_types_3x3(m);
     bind_cluster_types_2x2(m);
     bind_cluster_types_5x5(m);

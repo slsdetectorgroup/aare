@@ -62,6 +62,10 @@ footprint lies inside the map. Clusters whose footprint extends beyond the
 gain-map boundaries remain in the returned cluster vector, but all their data
 values are set to zero.
 
+.. warning::
+   ``set_gain_map`` is deprecated: it truncates integer clusters. Use a
+   :ref:`ClusterConverter <py_cluster_converter>` instead.
+
 .. py:currentmodule:: aare
 
 .. autofunction:: ClusterFile

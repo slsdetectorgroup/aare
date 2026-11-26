@@ -61,6 +61,7 @@ AARE
     ClusterFinderMT
     ClusterFile
     ClusterVector
+    ClusterConverter
     Interpolation
     JungfrauDataFile
     Pedestal

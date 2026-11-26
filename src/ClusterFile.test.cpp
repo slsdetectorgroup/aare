@@ -745,7 +745,9 @@ TEST_CASE("ClusterFile iteration preserves filtering and gain correction",
     aare::NDArray<double, 2> gain({12, 12}, 2.0);
     aare::NDArray<int32_t, 2> noise({12, 12}, 5);
     for (auto *file_reader : {&reader, &reference}) {
+        AARE_SUPPRESS_DEPRECATED_BEGIN
         file_reader->set_gain_map(gain.view());
+        AARE_SUPPRESS_DEPRECATED_END
         if (use_roi) {
             file_reader->set_roi(aare::ROI{0, 6, 0, 12});
         }
