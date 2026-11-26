@@ -209,12 +209,8 @@ by the array:
 API
 ---
 
-.. doxygenfunction:: aare::save_state(const FastPedestalState&, const std::filesystem::path&)
+.. doxygenfunction:: aare::save_state
 
-.. doxygenfunction:: aare::save_state(const ClusterFinderState&, const std::filesystem::path&)
-
-.. doxygenfunction:: aare::save_state(const ClusterFinderMTState&, const std::filesystem::path&)
-
-.. doxygenfunction:: aare::load_state(const std::filesystem::path&)
+.. doxygenfunction:: aare::load_state
 
 .. doxygenfunction:: aare::read_state_header

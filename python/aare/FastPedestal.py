@@ -54,17 +54,10 @@ def from_file(filename, n_samples=1000, skip_first=0, dtype=np.float64):
 
 
 def load_state(filename, dtype=None):
-    """Create a FastPedestal from a state file.
+    """Create a FastPedestal from a state file written by ``save_state()``.
 
-    The file is written by ``save_state()`` of a pedestal and holds
-    everything it had accumulated, so the new pedestal continues exactly
-    where the stored one stopped, whether that was during initialization or
-    after becoming ready. The image shape, ``n_samples`` and by default the
-    dtype are taken from the file.
-
-    This returns a new pedestal. To load a state file into a pedestal that
-    already exists, call ``load_state(filename)`` on that pedestal; it keeps
-    its own dtype.
+    The new pedestal continues where the stored one stopped. To load into a
+    pedestal that already exists, call ``load_state(filename)`` on it.
 
     Args:
         filename: State file written by ``save_state()``.

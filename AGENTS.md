@@ -157,61 +157,48 @@ lives in `python/aare/transform.py` on top of C++ generators.
 
 ### State files
 
-Saving and restoring what an object has accumulated is split in two layers.
-The class hands out a plain-data state struct and takes it back
-(`FastPedestalState` with `FastPedestal::state()`, `set_state()` and a
-constructor; `ClusterFinderState`, which contains one, likewise;
-`ClusterFinderMTState`, which holds one `ClusterFinderState` per thread and
-is handed out or taken on a running finder once the input queues have
-drained, as everything else that touches the per-thread finders, see
-`idle_finders()`); the struct
-lives in the header of its class, holds no redundant fields and knows
-nothing about files. `set_state()` checks the state before it changes
-anything, with a `check_state()` that a class holding several such objects
-calls on all of them first, and takes a state from an object with other value types: a state
-stores its numbers as double and records the types it came from in dtype
-fields that `set_state()` ignores and a loader may use as the default. `StateFile.hpp` declares `save_state()`, `load_state<State>()` and
-`read_state_header()`, which returns the JSON header as text so that a caller
-can see the type and dtype stored in a file before choosing what to load it
-into; `src/StateFile.cpp` holds the format: magic `AARESTAT`, a `uint64` header
-length, a JSON header (`format_version`, `aare_version`, `type`, `state`) and
-then the arrays as raw little-endian data, each described in the header by
-`{"dtype", "shape", "offset"}`.
-The `StateWriter` and `StateReader` in the private header
-`src/StateFileIO.hpp` are shared by all state types and tested directly in
-`src/StateFile.test.cpp`; nlohmann JSON stays out of the public headers. A
-state is described once, for writing and for reading: a new type adds, in
-`StateFile.cpp`, a specialization of `StateFormat` with its `name`, its
-`version` and a `fields()` that calls `field("key", state.member)` for each
-member. What a field is in the file, and how it is checked, follows from the
-type of the member: a `Dtype`, an unsigned integer, a `double`, an
-`NDArray<T, Ndim>` (also `bool`), another state (as `ClusterFinderState` has
-for its `"pedestal"`), a `std::vector` of states, or a `std::optional` of one
-of these for a field that may be absent. A kind of member that is not among
-these gets an overload in the `Fields` of both the writer and the reader. The
-public `save_state()` overload and `load_state()` specialization are then one
-line each on `StateWriter::save()` and `StateReader::state<State>()`, and
-`StateFile.hpp` only forward declares the state struct. Saves to the same
-file must not overlap. The reader ignores unknown header fields; a field
-added to a state later must be described with its value for the files
-without it, `field("key", state.member, value)`, so that older files still
-load and no version changes.
-Removing a field or changing its meaning increases the `version` of that
-type; `format_version` is for the layout and the header outside
-`"state"`. `docs/src/StateFile.rst` is the format
-reference and must change with the format.
+Saving and restoring what an object has accumulated is split in two layers;
+`docs/src/StateFile.rst` is the format reference and must change with the
+format.
 
-In Python a class with a state binds `save_state(filename)` and
-`load_state(filename)` as instance methods, the latter loading into the
-object it is called on, with `def_state_file<State>(cls, ...)` from
-`python/src/state_file.hpp`, and a static `from_state_file(filename)` that
-returns a new object. The dtype-selecting factory exposes that one as
-`Factory.load_state(filename, dtype=None)`, where `None` means the dtype
-recorded in the file, read with `_stored_state_fields()` from `factory.py`. What a state is tied
-to, such as the cluster size of a `ClusterFinder`, always comes from the
-file and is not an argument. Do not bind
-`load_state` as a static method: called on an existing object it would
-silently leave it unchanged.
+- **State struct.** The class hands out a plain-data struct and takes it
+  back (`state()`, `set_state()` and a constructor; `FastPedestalState`,
+  `ClusterFinderState`, `ClusterFinderMTState`). It lives in the header of
+  its class, holds no redundant fields and knows nothing about files. It
+  stores its numbers as double and records the types it came from in dtype
+  fields that `set_state()` ignores, so an object with other value types can
+  take it. `set_state()` checks the state before it changes anything, with a
+  `check_state()` that a class holding several such objects calls on all of
+  them first. `ClusterFinderMT` reaches its per-thread finders through
+  `idle_finders()`, also for its state.
+- **File.** `StateFile.hpp` declares `save_state()`, `load_state<State>()`
+  and `read_state_header()`. The shared `StateWriter` and `StateReader` are
+  in the private header `src/StateFileIO.hpp`, so nlohmann JSON stays out of
+  the public headers. Saves to the same file must not overlap.
+- **Adding a state.** In `src/StateFile.cpp`, specialize `StateFormat` with
+  the `name`, the `version` and a `fields()` that calls
+  `field("key", state.member)` for each member, and add the type to the
+  list of instantiations at the end of the file. The same description
+  writes and reads. A member can be a `Dtype`, an unsigned integer, a
+  `double`, an `NDArray<T, Ndim>` (also `bool`), another state, a
+  `std::vector` of states, or a `std::optional` of one of these; any other
+  kind needs an overload in the `Fields` of both the writer and the reader.
+- **Versions.** The reader ignores unknown header fields. A field added
+  later is described with its value for the files without it,
+  `field("key", state.member, value)`, and changes no version. Removing a
+  field or changing its meaning increases the `version` of that type;
+  `format_version` is for the layout and the header outside `"state"`.
+- **Python.** `def_state_file<State>(cls, ...)` from
+  `python/src/state_file.hpp` binds `save_state(filename)` and
+  `load_state(filename)` as instance methods, the latter loading into the
+  object it is called on; the class also binds a static
+  `from_state_file(filename)` that returns a new object. The
+  dtype-selecting factory exposes that one as
+  `Factory.load_state(filename, dtype=None)`, where `None` means the dtype
+  recorded in the file, read with `_stored_state_fields()` from
+  `factory.py`. What a state is tied to, such as the cluster size, always
+  comes from the file. Do not bind `load_state` as a static method: called
+  on an existing object it would silently leave it unchanged.
 
 ### Fitting
 

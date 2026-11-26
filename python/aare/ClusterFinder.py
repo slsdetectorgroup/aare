@@ -56,19 +56,10 @@ def ClusterFinder(image_size, *, cluster_size=(3,3), n_sigma=5, dtype = np.int32
 # Documented as aare.ClusterFinder.load_state, which autodoc looks up as this
 # name in this module
 def load_state(filename, dtype=None, capacity=1024):
-    """Create a ClusterFinder from a state file.
+    """Create a ClusterFinder from a state file written by ``save_state()``.
 
-    The file is written by ``save_state()`` of a cluster finder and holds its
-    pedestal, ``nSigma`` and threshold, so the new finder continues exactly
-    where the stored one stopped, whether its pedestal was still initializing
-    or ready. The image shape, the cluster size, ``nSigma``,
-    ``min_pedestal_samples`` and by default the dtype are taken from the
-    file. Clusters that the stored finder had found but not handed out with
-    ``steal_clusters()`` are not in the file.
-
-    This returns a new finder. To load a state file into a finder that
-    already exists, call ``load_state(filename)`` on that finder; it keeps
-    its own dtype and must have the cluster size stored in the file.
+    The new finder continues where the stored one stopped. To load into a
+    finder that already exists, call ``load_state(filename)`` on it.
 
     Parameters
     ----------
@@ -125,16 +116,10 @@ def ClusterFinderMT(image_size, *, cluster_size = (3,3), dtype=np.int32, n_sigma
 
 
 def _load_mt_state(filename, dtype=None, capacity=1024, queue_depth=16):
-    """Create a ClusterFinderMT from a state file.
+    """Create a ClusterFinderMT from a state file written by ``save_state()``.
 
-    The file is written by ``save_state()`` of a ClusterFinderMT and holds,
-    for each of its threads, the pedestal, ``nSigma`` and threshold, and
-    which thread takes the next frame. The new finder has the stored number
-    of threads, which are started, and continues where the stored one
-    stopped. The image shape, the cluster size and by default the dtype are
-    taken from the file.
-
-    This returns a new finder. To load a state file into a finder that
+    The new finder has the stored number of threads, which are started, and
+    continues where the stored one stopped. To load into a finder that
     already exists, call ``load_state(filename)`` on it.
 
     Parameters

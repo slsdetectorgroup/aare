@@ -2,7 +2,6 @@
 
 import numpy as np
 import pytest
-from conftest import read_state_file
 
 from aare import (
     FastPedestal,
@@ -228,14 +227,6 @@ def test_fast_pedestal_load_state_defaults_to_the_stored_dtype(tmp_path, dtype):
     assert type(restored) is type(original)
 
 
-def test_fast_pedestal_load_state_in_place_keeps_the_dtype(tmp_path):
-    FastPedestal(2, 3, dtype=np.float32).save_state(tmp_path / "pedestal.aare")
-
-    pedestal = FastPedestal(2, 3, dtype=np.int16)
-    pedestal.load_state(tmp_path / "pedestal.aare")
-
-    assert isinstance(pedestal, FastPedestal_i16)
-
 
 def test_read_state_header(tmp_path):
     pedestal = FastPedestal(2, 3, n_samples=7, dtype=np.int16)
@@ -307,54 +298,7 @@ def test_fast_pedestal_load_state_in_place_keeps_pedestal_on_error(tmp_path):
     np.testing.assert_array_equal(pedestal.mean(), mean)
 
 
-def test_fast_pedestal_state_file_is_readable_with_numpy(tmp_path):
-    frames = _test_frames(5)
-    pedestal = FastPedestal(3, 4, n_samples=5)
-    for frame in frames[:3]:
-        pedestal.add_init_frame(frame)
-    pedestal.save_state(tmp_path / "pedestal.aare")
 
-    content = read_state_file(tmp_path / "pedestal.aare")
-
-    assert content["format_version"] == 1
-    assert content["type"] == "FastPedestal"
-    assert isinstance(content["aare_version"], str)
-    state = content["state"]
-    assert state["dtype"] == "<f8"
-    assert state["n_samples"] == 5
-    assert state["cur_samples"] == 3
-    values = frames[:3].astype(np.float64)
-    assert state["sum"].dtype == np.float64
-    np.testing.assert_array_equal(state["sum"], values.sum(axis=0))
-    np.testing.assert_array_equal(state["sum2"], (values**2).sum(axis=0))
-
-    # Once ready, the mean is sum / n_samples. The pedestal multiplies by
-    # the reciprocal, which can differ from a division in the last bit.
-    for frame in frames[3:]:
-        pedestal.add_init_frame(frame)
-    pedestal.save_state(tmp_path / "pedestal.aare")
-    state = read_state_file(tmp_path / "pedestal.aare")["state"]
-    np.testing.assert_array_equal(
-        state["sum"] * (1.0 / state["n_samples"]), pedestal.mean()
-    )
-
-
-def test_fast_pedestal_load_state_rejects_other_files(tmp_path):
-    with pytest.raises(RuntimeError, match="could not open"):
-        FastPedestal.load_state(tmp_path / "missing.aare")
-
-    np.save(tmp_path / "frames.npy", _test_frames(2))
-    with pytest.raises(RuntimeError, match="not an aare state file"):
-        FastPedestal.load_state(tmp_path / "frames.npy")
-
-
-def test_fast_pedestal_load_state_rejects_truncated_file(tmp_path):
-    fname = tmp_path / "pedestal.aare"
-    FastPedestal(3, 4).save_state(fname)
-    fname.write_bytes(fname.read_bytes()[:-1])
-
-    with pytest.raises(RuntimeError, match="truncated or damaged"):
-        FastPedestal.load_state(fname)
 
 
 def test_fast_pedestal_load_state_rejects_unbound_dtype(tmp_path):

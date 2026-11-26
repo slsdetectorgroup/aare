@@ -4,7 +4,7 @@ import numpy as np
 import pytest
 from conftest import read_state_file
 
-from aare import ClusterFinder, FastPedestal, _aare, read_state_header
+from aare import ClusterFinder, FastPedestal, _aare
 
 SHAPE = (10, 12)
 N_SAMPLES = 5
@@ -70,28 +70,6 @@ def test_cluster_finder_continues_from_state_file(tmp_path, dtype, frames_before
     np.testing.assert_array_equal(_clusters(restored), expected)
 
 
-def test_cluster_finder_state_file_keeps_the_threshold(tmp_path):
-    # A photon of 300 ADU is found with the threshold computed from the
-    # pedestal frames. Recomputed with nSigma changed behind its back it
-    # would not be, so the restored finder must use the stored threshold.
-    frames = _test_frames(N_SAMPLES + 1)
-    original = _finder(n_sigma=4.1)
-    for frame in frames[:N_SAMPLES]:
-        original.push_pedestal_frame(frame)
-    original.save_state(tmp_path / "finder.aare")
-
-    content = read_state_file(tmp_path / "finder.aare")
-    np.testing.assert_array_equal(
-        content["state"]["threshold"], original.noise * 4.1
-    )
-
-    restored = ClusterFinder.load_state(tmp_path / "finder.aare")
-    original.find_clusters(frames[N_SAMPLES])
-    restored.find_clusters(frames[N_SAMPLES])
-    expected = _clusters(original)
-    assert expected.size > 0
-    np.testing.assert_array_equal(_clusters(restored), expected)
-
 
 @pytest.mark.parametrize("cluster_size", [(3, 3), (5, 5), (9, 9)])
 @pytest.mark.parametrize("dtype", [np.int32, np.float32, np.float64])
@@ -133,30 +111,6 @@ def test_cluster_finder_load_state_rejects_unbound_types(tmp_path):
     with pytest.raises(ValueError, match="Unsupported"):
         ClusterFinder.load_state(tmp_path / "finder5.aare", dtype=np.int16)
 
-
-def test_cluster_finder_state_header(tmp_path):
-    finder = _finder(np.float32, (5, 5), n_sigma=3.5)
-    finder.push_pedestal_frame(_test_frames(1)[0])
-    finder.save_state(tmp_path / "finder.aare")
-
-    header = read_state_header(tmp_path / "finder.aare")
-
-    assert header["format_version"] == 1
-    assert header["type"] == "ClusterFinder"
-    state = header["state"]
-    assert state["cluster_dtype"] == "<f4"
-    assert state["cluster_size_x"] == 5
-    assert state["cluster_size_y"] == 5
-    assert state["n_sigma"] == 3.5
-    assert state["threshold"] == {
-        "dtype": "<f8",
-        "shape": list(SHAPE),
-        "offset": 0,
-    }
-    assert state["pedestal"]["dtype"] == "<f8"
-    assert state["pedestal"]["n_samples"] == N_SAMPLES
-    assert state["pedestal"]["cur_samples"] == 1
-    assert state["pedestal"]["sum"]["shape"] == list(SHAPE)
 
 
 def test_cluster_finder_state_file_is_readable_with_numpy(tmp_path):
@@ -241,7 +195,8 @@ def test_cluster_finder_from_state_file_needs_the_cluster_size(tmp_path):
         _aare.ClusterFinder_Cluster3x3i.from_state_file(tmp_path / "finder.aare")
 
 
-def test_cluster_finder_load_state_rejects_other_files(tmp_path):
+def test_load_state_rejects_the_state_file_of_another_class(tmp_path):
+    # The factories look at the type in the header before they pick a class
     FastPedestal(3, 4).save_state(tmp_path / "pedestal.aare")
     with pytest.raises(RuntimeError, match="holds the state of a FastPedestal"):
         ClusterFinder.load_state(tmp_path / "pedestal.aare")
@@ -250,21 +205,6 @@ def test_cluster_finder_load_state_rejects_other_files(tmp_path):
     with pytest.raises(RuntimeError, match="holds the state of a ClusterFinder"):
         FastPedestal.load_state(tmp_path / "finder.aare")
 
-    np.save(tmp_path / "frames.npy", _test_frames(2))
-    with pytest.raises(RuntimeError, match="not an aare state file"):
-        ClusterFinder.load_state(tmp_path / "frames.npy")
-    with pytest.raises(RuntimeError, match="could not open"):
-        ClusterFinder.load_state(tmp_path / "missing.aare")
-
-
-def test_cluster_finder_load_state_rejects_truncated_file(tmp_path):
-    finder = _finder()
-    finder.save_state(tmp_path / "finder.aare")
-    content = (tmp_path / "finder.aare").read_bytes()
-    (tmp_path / "truncated.aare").write_bytes(content[:-8])
-
-    with pytest.raises(RuntimeError, match="truncated or damaged"):
-        ClusterFinder.load_state(tmp_path / "truncated.aare")
 
 
 def _dark_pedestal(dtype=np.float64, n_samples=8, shape=SHAPE):

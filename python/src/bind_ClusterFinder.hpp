@@ -94,30 +94,19 @@ void define_ClusterFinder(py::module &m, const std::string &typestr) {
 
     def_state_file<aare::ClusterFinderState>(
         cls,
-        "Write the complete state of the cluster finder to a state file: "
-        "the pedestal, whether it is still initializing or ready, nSigma "
-        "and the threshold as last computed. An existing file is "
-        "replaced. Clusters that have not been taken with "
-        "steal_clusters() are not stored. A finder that loads the file "
-        "with load_state() continues exactly as this one would.",
-        "Replace the state of this cluster finder with the one in a "
-        "state file written by save_state(). nSigma and "
-        "min_pedestal_samples are taken from the file; the cluster size "
-        "and the image shape must be those of this finder, and the dtype "
-        "stays that of this finder whatever the file records. Clusters "
-        "that have not been taken with steal_clusters() are dropped. If "
-        "the file cannot be loaded the finder is left unchanged.");
+        "Write the complete state of the cluster finder to a state file, "
+        "replacing an existing file. Clusters not yet taken with "
+        "steal_clusters() are not stored.",
+        "Replace the state of this cluster finder with the one in a state "
+        "file. The cluster size and the image shape must match; the dtype "
+        "of this finder is kept and clusters it still holds are dropped.");
 
     // The pedestal alone, from a FastPedestal of any bound dtype or from its
     // state file
     const char *set_pedestal_doc =
-        "Replace the pedestal of this cluster finder with a copy of a "
-        "FastPedestal of any dtype with the same image shape, whether it "
-        "is still initializing or ready. nSigma and the clusters found so "
-        "far are kept and min_pedestal_samples becomes n_samples of the "
-        "pedestal. The threshold is recomputed as noise times nSigma if "
-        "the pedestal is ready, otherwise when pedestal frames make it "
-        "ready.";
+        "Replace the pedestal with a copy of a FastPedestal of any dtype "
+        "with the same image shape. nSigma is kept and the threshold is "
+        "recomputed once the pedestal is ready.";
     for_each_fast_pedestal_type([&](auto type) {
         using Pedestal = typename decltype(type)::type;
         cls.def(
@@ -128,9 +117,7 @@ void define_ClusterFinder(py::module &m, const std::string &typestr) {
     });
     cls.def("get_pedestal",
             &ClusterFinder<ClusterType, uint16_t, pd_type>::get_pedestal,
-            "Return a copy of the pedestal of this cluster finder as a "
-            "FastPedestal, for example to give it to another finder with "
-            "set_pedestal().");
+            "Return a copy of the pedestal as a FastPedestal.");
     cls.def(
         "save_pedestal",
         [](const ClusterFinder<ClusterType, uint16_t, pd_type> &self,
@@ -138,9 +125,7 @@ void define_ClusterFinder(py::module &m, const std::string &typestr) {
             aare::save_state(self.get_pedestal().state(), filename);
         },
         py::arg("filename"),
-        "Write the pedestal of this cluster finder to a state file of a "
-        "FastPedestal, which FastPedestal.load_state() and load_pedestal() "
-        "read. An existing file is replaced.");
+        "Write the pedestal to a state file of a FastPedestal.");
     cls.def(
         "load_pedestal",
         [](ClusterFinder<ClusterType, uint16_t, pd_type> &self,
@@ -149,10 +134,8 @@ void define_ClusterFinder(py::module &m, const std::string &typestr) {
                 aare::load_state<aare::FastPedestalState>(filename));
         },
         py::arg("filename"),
-        "Replace the pedestal of this cluster finder with the one in a "
-        "state file written by save_state() of a FastPedestal, as "
-        "set_pedestal() does with a FastPedestal. If the file cannot be "
-        "loaded the finder is left unchanged.");
+        "Replace the pedestal with the one in a state file of a "
+        "FastPedestal, see set_pedestal().");
     cls.def_static(
         "from_state_file",
         [](const std::filesystem::path &filename, size_t capacity) {
@@ -161,8 +144,5 @@ void define_ClusterFinder(py::module &m, const std::string &typestr) {
         },
         py::arg("filename"), py::arg("capacity") = 1'000'000,
         "Create a cluster finder of this cluster size and dtype from a "
-        "state file written by save_state(), whatever dtype the file "
-        "records. The file must come from a finder with the same cluster "
-        "size. The image shape, nSigma and min_pedestal_samples are "
-        "taken from the file.");
+        "state file.");
 }

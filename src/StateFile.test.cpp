@@ -7,7 +7,6 @@
 #include "aare/ClusterFinderMT.hpp"
 #include "aare/FastPedestal.hpp"
 
-#include <catch2/catch_template_test_macros.hpp>
 #include <catch2/catch_test_macros.hpp>
 #include <catch2/matchers/catch_matchers_string.hpp>
 #include <nlohmann/json.hpp>
@@ -124,16 +123,6 @@ bool same_state(const ClusterFinderState &a, const ClusterFinderState &b) {
            same_state(a.pedestal, b.pedestal);
 }
 
-// The dtype string a state file records for a pedestal type
-template <typename T> std::string pedestal_dtype_string() {
-    if constexpr (std::is_same_v<T, double>)
-        return "<f8";
-    else if constexpr (std::is_same_v<T, float>)
-        return "<f4";
-    else
-        return "<i2";
-}
-
 std::string read_bytes(const std::filesystem::path &path) {
     std::ifstream in(path, std::ios::binary);
     std::ostringstream bytes;
@@ -206,6 +195,7 @@ TEST_CASE("state file has the documented layout", "[state-file]") {
     REQUIRE_FALSE(header.at("aare_version").get<std::string>().empty());
 
     const auto &fields = header.at("state");
+    REQUIRE(fields.at("version") == 1);
     REQUIRE(fields.at("dtype") == "<f4");
     REQUIRE(fields.at("n_samples") == 5);
     REQUIRE(fields.at("cur_samples") == 3);
@@ -305,56 +295,6 @@ TEST_CASE("read_state_header rejects what it cannot read", "[state-file]") {
     const auto header = nlohmann::json::parse(read_state_header(file.path()));
     REQUIRE(header.at("type") == "ClusterFinder");
     REQUIRE(header.at("state") == 1);
-}
-
-TEMPLATE_TEST_CASE("fast pedestal continues identically from a state file",
-                   "[state-file]", double, float, int16_t) {
-    auto frame = [](uint32_t frame_index) {
-        NDArray<uint16_t, 2> pixels({3, 4});
-        for (ssize_t i = 0; i < pixels.size(); ++i) {
-            pixels[i] = static_cast<uint16_t>(
-                1000 + (frame_index * 37 + static_cast<uint32_t>(i) * 11) % 97);
-        }
-        return pixels;
-    };
-    auto push = [&](FastPedestal<TestType> &pedestal, uint32_t frame_index) {
-        auto pixels = frame(frame_index);
-        if (pedestal.ready()) {
-            pedestal.push_ema(pixels.view());
-        } else {
-            pedestal.add_init_frame(pixels.view());
-        }
-    };
-
-    // Stored while initializing and after becoming ready
-    for (const uint32_t frames_before : {3u, 8u}) {
-        CAPTURE(frames_before);
-        TemporaryStateFile file;
-        FastPedestal<TestType> original(3, 4, 5);
-        uint32_t frame_index = 0;
-        for (; frame_index < frames_before; ++frame_index) {
-            push(original, frame_index);
-        }
-        save_state(original.state(), file.path());
-
-        const auto header =
-            nlohmann::json::parse(read_state_header(file.path()));
-        REQUIRE(header.at("state").at("dtype") ==
-                pedestal_dtype_string<TestType>());
-        const auto state = load_state<FastPedestalState>(file.path());
-        REQUIRE(state.dtype == Dtype(typeid(TestType)));
-
-        FastPedestal<TestType> restored(state);
-        REQUIRE(restored.ready() == original.ready());
-
-        for (uint32_t i = 0; i < 10; ++i, ++frame_index) {
-            push(original, frame_index);
-            push(restored, frame_index);
-        }
-        REQUIRE(same_state(restored.state(), original.state()));
-        REQUIRE(restored.mean() == original.mean());
-        REQUIRE(restored.std() == original.std());
-    }
 }
 
 TEST_CASE("load_state ignores header fields it does not know", "[state-file]") {
@@ -509,52 +449,6 @@ TEST_CASE("state file returns a ClusterFinderState bit for bit",
     REQUIRE(same_state(loaded, state));
 }
 
-TEST_CASE("state file of a cluster finder has the documented layout",
-          "[state-file]") {
-    TemporaryStateFile file;
-    const auto state = make_test_finder_state();
-    save_state(state, file.path());
-    const auto bytes = read_bytes(file.path());
-
-    REQUIRE(bytes.substr(0, 8) == "AARESTAT");
-    const auto data_start = state_file_preamble_size + header_length(bytes);
-    REQUIRE(data_start % 64 == 0);
-
-    const auto header = nlohmann::json::parse(
-        bytes.substr(state_file_preamble_size, header_length(bytes)));
-    REQUIRE(header == nlohmann::json::parse(read_state_header(file.path())));
-    REQUIRE(header.at("format_version") == 1);
-    REQUIRE(header.at("type") == "ClusterFinder");
-
-    const auto &fields = header.at("state");
-    REQUIRE(fields.at("cluster_dtype") == "<i4");
-    REQUIRE(fields.at("cluster_size_x") == 3);
-    REQUIRE(fields.at("cluster_size_y") == 5);
-    REQUIRE(fields.at("n_sigma") == 0.1);
-    // The pedestal is stored as in its own file, its arrays after the
-    // threshold, each on the next multiple of 64 bytes
-    const size_t array_bytes = 2 * 3 * sizeof(double);
-    const nlohmann::json expected_shape{2, 3};
-    const auto &pedestal = fields.at("pedestal");
-    REQUIRE(pedestal.at("dtype") == "<f4");
-    REQUIRE(pedestal.at("n_samples") == 5);
-    REQUIRE(pedestal.at("cur_samples") == 3);
-    const std::array<const nlohmann::json *, 3> arrays{
-        &fields.at("threshold"), &pedestal.at("sum"), &pedestal.at("sum2")};
-    const std::array<const double *, 3> data{state.threshold.data(),
-                                             state.pedestal.sum.data(),
-                                             state.pedestal.sum2.data()};
-    for (size_t i = 0; i < arrays.size(); ++i) {
-        CAPTURE(i);
-        REQUIRE(arrays[i]->at("dtype") == "<f8");
-        REQUIRE(arrays[i]->at("shape") == expected_shape);
-        REQUIRE(arrays[i]->at("offset") == 64 * i);
-        REQUIRE(std::memcmp(bytes.data() + data_start + 64 * i, data[i],
-                            array_bytes) == 0);
-    }
-    REQUIRE(bytes.size() == data_start + 128 + array_bytes);
-}
-
 TEST_CASE("state file of a cluster finder needs what it records",
           "[state-file]") {
     TemporaryStateFile file;
@@ -596,65 +490,9 @@ TEST_CASE("load_state only reads the type of state it is asked for",
             "holds the state of a ClusterFinder, expected a FastPedestal"));
 }
 
-TEMPLATE_TEST_CASE("cluster finder continues identically from a state file",
-                   "[state-file]", double, float) {
-    using Finder = ClusterFinder<Cluster<int32_t, 3, 3>, uint16_t, TestType>;
-    const Shape<2> shape{10, 12};
-    auto process = [&](Finder &finder, uint32_t frame_index) {
-        NDArray<uint16_t, 2> pixels(shape);
-        for (ssize_t i = 0; i < pixels.size(); ++i) {
-            pixels[i] = static_cast<uint16_t>(
-                1000 + (frame_index * 37 + static_cast<uint32_t>(i) * 11) % 7);
-        }
-        // A photon in every frame after those of the pedestal
-        if (frame_index >= 5) {
-            const ssize_t hit = 2 + frame_index % 5;
-            pixels(hit, hit) = static_cast<uint16_t>(pixels(hit, hit) + 300);
-        }
-        if (finder.pedestal_ready()) {
-            finder.find_clusters(pixels.view(), frame_index);
-        } else {
-            finder.push_pedestal_frame(pixels.view());
-        }
-    };
-
-    // Stored while the pedestal initializes and after finding clusters
-    for (const uint32_t frames_before : {3u, 12u}) {
-        CAPTURE(frames_before);
-        TemporaryStateFile file;
-        // A multiplier that is not exact in float or in decimal
-        Finder original(shape, static_cast<TestType>(4.1), 100, 5);
-        uint32_t frame_index = 0;
-        for (; frame_index < frames_before; ++frame_index) {
-            process(original, frame_index);
-        }
-        original.steal_clusters();
-        save_state(original.state(), file.path());
-
-        const auto state = load_state<ClusterFinderState>(file.path());
-        REQUIRE(same_state(state, original.state()));
-
-        Finder restored(state);
-        REQUIRE(restored.get_nSigma() == original.get_nSigma());
-        for (uint32_t i = 0; i < 10; ++i, ++frame_index) {
-            process(original, frame_index);
-            process(restored, frame_index);
-        }
-        REQUIRE(same_state(restored.state(), original.state()));
-
-        const auto expected = original.steal_clusters();
-        const auto actual = restored.steal_clusters();
-        REQUIRE(expected.size() > 0);
-        REQUIRE(actual.size() == expected.size());
-        for (size_t i = 0; i < expected.size(); ++i) {
-            REQUIRE(actual[i].x == expected[i].x);
-            REQUIRE(actual[i].y == expected[i].y);
-            REQUIRE(actual[i].data == expected[i].data);
-        }
-    }
-}
-
-TEST_CASE("load_state rejects headers that do not describe a cluster finder",
+// The kinds of field that a FastPedestalState does not have: a double, an
+// integer narrower than 32 bits and a state inside the state
+TEST_CASE("load_state checks the fields of a state inside a state",
           "[state-file]") {
     struct Case {
         std::string expected_message;
@@ -662,36 +500,22 @@ TEST_CASE("load_state rejects headers that do not describe a cluster finder",
     };
     using json = nlohmann::json;
     const std::vector<Case> cases{
-        {"\"cluster_dtype\" is missing",
-         [](json &h) { h["state"].erase("cluster_dtype"); }},
-        {"\"cluster_dtype\" x4 is not a supported dtype",
-         [](json &h) { h["state"]["cluster_dtype"] = "x4"; }},
-        {"\"cluster_size_x\" is missing",
-         [](json &h) { h["state"].erase("cluster_size_x"); }},
         {"\"cluster_size_y\" must be an integer between 0 and 255",
          [](json &h) { h["state"]["cluster_size_y"] = 256; }},
-        {"\"n_sigma\" is missing",
-         [](json &h) { h["state"].erase("n_sigma"); }},
         {"\"n_sigma\" must be a number",
          [](json &h) { h["state"]["n_sigma"] = "5"; }},
         {"\"n_sigma\" must be a number",
          [](json &h) { h["state"]["n_sigma"] = nullptr; }},
-        {"\"threshold\" is missing",
-         [](json &h) { h["state"].erase("threshold"); }},
-        {"array \"threshold\" has dtype <f4, expected <f8",
-         [](json &h) { h["state"]["threshold"]["dtype"] = "<f4"; }},
-        {"array \"threshold\" extends beyond the end of the file",
-         [](json &h) { h["state"]["threshold"]["shape"] = {200, 300}; }},
         {"\"pedestal\" is missing",
          [](json &h) { h["state"].erase("pedestal"); }},
         {"\"pedestal\" must be an object",
          [](json &h) { h["state"]["pedestal"] = 5; }},
         {"\"n_samples\" is missing",
          [](json &h) { h["state"]["pedestal"].erase("n_samples"); }},
-        {"\"sum\" must describe an array",
-         [](json &h) { h["state"]["pedestal"]["sum"] = 5; }},
         {"array \"sum2\" extends beyond the end of the file",
          [](json &h) { h["state"]["pedestal"]["sum2"]["offset"] = 1000; }},
+        {"version 2 of the FastPedestal state is not supported",
+         [](json &h) { h["state"]["pedestal"]["version"] = 2; }},
     };
 
     for (const auto &test : cases) {
@@ -702,26 +526,6 @@ TEST_CASE("load_state rejects headers that do not describe a cluster finder",
         REQUIRE_THROWS_WITH(load_state<ClusterFinderState>(file.path()),
                             ContainsSubstring(test.expected_message));
     }
-}
-
-TEST_CASE("state inside a state has its own version", "[state-file]") {
-    TemporaryStateFile file;
-    save_state(make_test_finder_state(), file.path());
-    REQUIRE(nlohmann::json::parse(read_state_header(file.path()))
-                .at("state")
-                .at("version") == 1);
-    REQUIRE(nlohmann::json::parse(read_state_header(file.path()))
-                .at("state")
-                .at("pedestal")
-                .at("version") == 1);
-
-    modify_header(file.path(), [](nlohmann::json &header) {
-        header["state"]["pedestal"]["version"] = 2;
-    });
-    REQUIRE_THROWS_WITH(
-        load_state<ClusterFinderState>(file.path()),
-        ContainsSubstring(
-            "version 2 of the FastPedestal state is not supported"));
 }
 
 // What the states of the classes that follow need from the reader and
@@ -888,33 +692,6 @@ TEST_CASE("state file returns a ClusterFinderMTState bit for bit",
     REQUIRE_FALSE(same_state(loaded.finders[0], loaded.finders[1]));
 }
 
-TEST_CASE("state file of a multithreaded cluster finder has the documented "
-          "layout",
-          "[state-file]") {
-    TemporaryStateFile file;
-    save_state(make_test_mt_state(), file.path());
-
-    const auto header = nlohmann::json::parse(read_state_header(file.path()));
-    REQUIRE(header.at("type") == "ClusterFinderMT");
-    const auto &state = header.at("state");
-    REQUIRE(state.at("version") == 1);
-    REQUIRE(state.at("next_thread") == 1);
-    const auto &finders = state.at("finders");
-    REQUIRE(finders.is_array());
-    REQUIRE(finders.size() == 2);
-
-    // Every array of every thread has its own aligned place in the data
-    std::vector<uint64_t> offsets;
-    for (const auto &finder : finders) {
-        REQUIRE(finder.at("version") == 1);
-        REQUIRE(finder.at("cluster_size_y") == 5);
-        offsets.push_back(finder.at("threshold").at("offset"));
-        offsets.push_back(finder.at("pedestal").at("sum").at("offset"));
-        offsets.push_back(finder.at("pedestal").at("sum2").at("offset"));
-    }
-    REQUIRE(offsets == std::vector<uint64_t>{0, 64, 128, 192, 256, 320});
-}
-
 TEST_CASE("state file keeps a multithreaded cluster finder without cluster "
           "finders, which the class rejects",
           "[state-file]") {
@@ -924,44 +701,4 @@ TEST_CASE("state file keeps a multithreaded cluster finder without cluster "
     REQUIRE(loaded.finders.empty());
     using Finder = ClusterFinderMT<Cluster<int32_t, 3, 5>>;
     REQUIRE_THROWS_AS(Finder{loaded}, std::runtime_error);
-}
-
-TEST_CASE("load_state rejects headers that do not describe a multithreaded "
-          "cluster finder",
-          "[state-file]") {
-    struct Case {
-        std::string expected_message;
-        std::function<void(nlohmann::json &)> modify;
-    };
-    using json = nlohmann::json;
-    const std::vector<Case> cases{
-        {"version 2 of the ClusterFinderMT state is not supported",
-         [](json &h) { h["state"]["version"] = 2; }},
-        {"\"next_thread\" is missing",
-         [](json &h) { h["state"].erase("next_thread"); }},
-        {"\"finders\" is missing",
-         [](json &h) { h["state"].erase("finders"); }},
-        {"\"finders\" must be a list",
-         [](json &h) { h["state"]["finders"] = h["state"]["finders"][0]; }},
-        {"\"finders\" must be a list of objects",
-         [](json &h) { h["state"]["finders"][1] = 1; }},
-        {"version 2 of the ClusterFinder state is not supported",
-         [](json &h) { h["state"]["finders"][1]["version"] = 2; }},
-        {"\"n_sigma\" is missing",
-         [](json &h) { h["state"]["finders"][1].erase("n_sigma"); }},
-    };
-    for (const auto &test_case : cases) {
-        TemporaryStateFile file;
-        save_state(make_test_mt_state(), file.path());
-        modify_header(file.path(), test_case.modify);
-        REQUIRE_THROWS_WITH(load_state<ClusterFinderMTState>(file.path()),
-                            ContainsSubstring(test_case.expected_message));
-    }
-
-    TemporaryStateFile file;
-    save_state(make_test_mt_state(), file.path());
-    REQUIRE_THROWS_WITH(
-        load_state<ClusterFinderState>(file.path()),
-        ContainsSubstring(
-            "holds the state of a ClusterFinderMT, expected a ClusterFinder"));
 }

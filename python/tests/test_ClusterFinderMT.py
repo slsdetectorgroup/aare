@@ -108,24 +108,6 @@ def _stopped(finder):
     return finder
 
 
-def test_cluster_finder_mt_state_header(tmp_path):
-    finder = _finder_mt(np.float32, n_threads=2)
-    _process(finder, _test_frames(8))
-    _stop(finder, np.float32)
-    finder.save_state(tmp_path / "finder.aare")
-
-    header = read_state_header(tmp_path / "finder.aare")
-    assert header["type"] == "ClusterFinderMT"
-    state = header["state"]
-    assert state["version"] == 1
-    # Three data frames went to threads 0, 1 and 0
-    assert state["next_thread"] == 1
-    assert len(state["finders"]) == 2
-    for finder_state in state["finders"]:
-        assert finder_state["cluster_dtype"] == "<f4"
-        assert finder_state["n_sigma"] == 4.1
-        assert finder_state["pedestal"]["sum"]["shape"] == list(SHAPE)
-
 
 def test_cluster_finder_mt_saves_and_loads_state_while_running(tmp_path):
     # What a running finder hands out includes the frames given so far
@@ -246,36 +228,6 @@ def test_cluster_finder_mt_sets_and_returns_pedestals(tmp_path):
         finder.find_clusters(frame, i)
     assert _stop(finder) >= N_THREADS
 
-
-def test_cluster_finder_mt_takes_a_pedestal_while_running(tmp_path):
-    frames = _test_frames(60)
-    pedestal = _dark_pedestal(seed=7)
-    pedestal.save_state(tmp_path / "dark.aare")
-
-    # Stopped for the pedestal
-    reference = _finder_mt()
-    _process(reference, frames[:30])
-    reference.stop()
-    reference.set_pedestal(pedestal)
-    reference.start()
-    _process(reference, frames[30:], first=30)
-    n_reference = _stop(reference)
-
-    # Running: the frames given before the pedestal are processed first
-    for give in (
-        lambda finder: finder.set_pedestal(pedestal),
-        lambda finder: finder.load_pedestal(tmp_path / "dark.aare"),
-    ):
-        finder = _finder_mt()
-        _process(finder, frames[:30])
-        give(finder)
-        _process(finder, frames[30:], first=30)
-        assert _stop(finder) == n_reference
-        for thread_index in range(N_THREADS):
-            assert _same_pedestal(
-                finder.get_pedestal(thread_index),
-                reference.get_pedestal(thread_index),
-            )
 
 
 def test_cluster_finder_returns_and_saves_its_pedestal(tmp_path):

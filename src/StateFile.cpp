@@ -143,8 +143,8 @@ StateReader::StateReader(const std::filesystem::path &fname)
     m_data_size = file_size - m_data_start;
 }
 
-// A new type of state adds its StateFormat here, and its save_state() and
-// load_state() below. A state inside a state is a field like any other. A
+// A new type of state adds its StateFormat here and its name to the list at
+// the end of this file. A state inside a state is a field like any other. A
 // field added later gets a value for the files without it, so that older
 // files still load; the version increases only for a change that an older
 // reader would get wrong.
@@ -195,37 +195,22 @@ std::string read_state_header(const std::filesystem::path &fname) {
     return detail::StateReader(fname).header().dump(2);
 }
 
-void save_state(const FastPedestalState &state,
-                const std::filesystem::path &fname) {
+template <typename State>
+void save_state(const State &state, const std::filesystem::path &fname) {
     detail::StateWriter::save(state, fname);
 }
 
-template <>
-FastPedestalState
-load_state<FastPedestalState>(const std::filesystem::path &fname) {
-    return detail::StateReader(fname).state<FastPedestalState>();
+template <typename State> State load_state(const std::filesystem::path &fname) {
+    return detail::StateReader(fname).state<State>();
 }
 
-void save_state(const ClusterFinderState &state,
-                const std::filesystem::path &fname) {
-    detail::StateWriter::save(state, fname);
-}
-
-template <>
-ClusterFinderState
-load_state<ClusterFinderState>(const std::filesystem::path &fname) {
-    return detail::StateReader(fname).state<ClusterFinderState>();
-}
-
-void save_state(const ClusterFinderMTState &state,
-                const std::filesystem::path &fname) {
-    detail::StateWriter::save(state, fname);
-}
-
-template <>
-ClusterFinderMTState
-load_state<ClusterFinderMTState>(const std::filesystem::path &fname) {
-    return detail::StateReader(fname).state<ClusterFinderMTState>();
-}
+// The types of state that can be saved and loaded
+#define AARE_STATE_FILE_OF(State)                                              \
+    template void save_state(const State &, const std::filesystem::path &);    \
+    template State load_state<State>(const std::filesystem::path &);
+AARE_STATE_FILE_OF(FastPedestalState)
+AARE_STATE_FILE_OF(ClusterFinderState)
+AARE_STATE_FILE_OF(ClusterFinderMTState)
+#undef AARE_STATE_FILE_OF
 
 } // namespace aare
