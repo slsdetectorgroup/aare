@@ -21,7 +21,7 @@ std::string read_state_header(const std::filesystem::path &fname);
  * ClusterFinderMTState or VarClusterFinderState; any other type fails to
  * link.
  * @param state State to write, as returned by state() of its class. Every
- * dtype in it must be set and n_sigma finite.
+ * dtype in it must be set and every number outside its arrays finite.
  * @param fname File to write. An existing file is replaced.
  * @throws std::runtime_error if the state cannot be saved or the file
  * cannot be written.
