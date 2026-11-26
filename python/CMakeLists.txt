@@ -161,10 +161,15 @@ if(AARE_INSTALL_PYTHONEXT)
     EXPORT "${TARGETS_EXPORT_NAME}"
     LIBRARY DESTINATION aare COMPONENT python)
 
-  install(
-    FILES ${PYTHON_FILES}
-    DESTINATION aare
-    COMPONENT python)
+  # Keep the subdirectory of each file (aare/strixelremap/...); a single
+  # install(FILES) would flatten them all into aare/
+  foreach(FILE ${PYTHON_FILES})
+    get_filename_component(FILE_DIR ${FILE} DIRECTORY)
+    install(
+      FILES ${FILE}
+      DESTINATION ${FILE_DIR}
+      COMPONENT python)
+  endforeach()
   install(
     FILES ../VERSION
     DESTINATION aare
