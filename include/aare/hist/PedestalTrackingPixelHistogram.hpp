@@ -21,6 +21,34 @@
 
 namespace aare {
 
+/**
+ * @brief Complete state of a PedestalTrackingPixelHistogram as plain data.
+ *
+ * Returned by PedestalTrackingPixelHistogram::state() and accepted by
+ * PedestalTrackingPixelHistogram::set_state() and a constructor, so that a
+ * histogram can be stored and later filled further exactly as it would have
+ * been. The row bands of the worker threads are joined: the state does not
+ * depend on the number of threads.
+ *
+ * The noise is part of the state because it is not kept in step with the
+ * pedestal: it is the standard deviation at the time of the last
+ * update_mean(), while filling keeps updating the pedestal.
+ */
+struct PedestalTrackingPixelHistogramState {
+    /// Range and counts of the histogram of the residuals
+    PixelHistogramState<uint16_t> histogram;
+    /// State of the pedestal over the whole image
+    FastPedestalState pedestal;
+    /// Per-pixel noise as of the last update_mean(), shape (rows, cols). All
+    /// zero before the first
+    NDArray<double, 2> noise;
+    /// Sigma multiplier of the gate for pedestal updates
+    double n_sigma{};
+    /// True on the pixels that are skipped, shape (rows, cols), or nothing
+    /// without a mask
+    std::optional<NDArray<bool, 2>> mask;
+};
+
 class PedestalTrackingPixelHistogram {
   public:
     using StorageType = uint16_t;
@@ -108,6 +136,37 @@ class PedestalTrackingPixelHistogram {
         int n_threads = 1, std::size_t max_pending = 16, AxisType n_sigma = 1.0,
         std::optional<const NDView<bool, 2>> mask = std::nullopt);
     ~PedestalTrackingPixelHistogram();
+
+    /**
+     * @brief Construct a histogram from a state, taking the image shape,
+     * the number of bins, the range, n_sigma and the mask from it.
+     * @param state State to continue from.
+     * @param n_threads Number of worker threads.
+     * @param max_pending Number of frames that can wait to be filled.
+     * @throws std::runtime_error if the state is empty or not valid, see
+     * set_state().
+     */
+    explicit PedestalTrackingPixelHistogram(
+        const PedestalTrackingPixelHistogramState &state, int n_threads = 1,
+        std::size_t max_pending = 16);
+
+    /**
+     * @brief Return a copy of the complete state, after the frames given
+     * so far: the counts, the pedestal, the noise, n_sigma and the mask.
+     */
+    PedestalTrackingPixelHistogramState state() const;
+
+    /**
+     * @brief Replace the complete state, including n_sigma and the mask,
+     * after the frames given so far have been filled. To be called from
+     * the thread that gives the frames.
+     * @param state State with the image shape, the number of bins and the
+     * range of this histogram, whose pedestal, noise and mask have the
+     * image shape.
+     * @throws std::runtime_error if the state is not valid. The histogram
+     * is then left unchanged.
+     */
+    void set_state(const PedestalTrackingPixelHistogramState &state);
 
     void push_pedestal_no_update(const NDView<FrameType, 2> &frame);
     void update_mean();

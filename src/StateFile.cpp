@@ -8,6 +8,7 @@
 #include "aare/FastPedestal.hpp"
 #include "aare/Pedestal.hpp"
 #include "aare/VarClusterFinder.hpp"
+#include "aare/hist/PedestalTrackingPixelHistogram.hpp"
 #include "aare/hist/PixelHistogramImpl.hpp"
 
 #include <system_error>
@@ -221,6 +222,20 @@ struct StateFormat<PixelHistogramState<StorageType>> {
     }
 };
 
+template <> struct StateFormat<PedestalTrackingPixelHistogramState> {
+    static constexpr std::string_view name = "PedestalTrackingPixelHistogram";
+    static constexpr uint64_t version = 1;
+
+    template <typename Fields, typename State>
+    static void fields(Fields &field, State &state) {
+        field("n_sigma", state.n_sigma);
+        field("noise", state.noise);
+        field("mask", state.mask);
+        field("pedestal", state.pedestal);
+        field("histogram", state.histogram);
+    }
+};
+
 template <> struct StateFormat<VarClusterFinderState> {
     static constexpr std::string_view name = "VarClusterFinder";
     static constexpr uint64_t version = 1;
@@ -265,6 +280,7 @@ AARE_STATE_FILE_OF(PedestalState)
 AARE_STATE_FILE_OF(ClusterFinderState)
 AARE_STATE_FILE_OF(ClusterFinderMTState)
 AARE_STATE_FILE_OF(VarClusterFinderState)
+AARE_STATE_FILE_OF(PedestalTrackingPixelHistogramState)
 AARE_STATE_FILE_OF(PixelHistogramState<uint8_t>)
 AARE_STATE_FILE_OF(PixelHistogramState<uint16_t>)
 AARE_STATE_FILE_OF(PixelHistogramState<uint32_t>)

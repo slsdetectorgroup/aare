@@ -663,6 +663,142 @@ void PedestalTrackingPixelHistogram::fill_from_file(
     }
 }
 
+namespace {
+
+// The state, if a histogram can be constructed from it
+const PedestalTrackingPixelHistogramState &
+checked(const PedestalTrackingPixelHistogramState &state) {
+    const auto shape = state.histogram.values.shape();
+    if (shape[0] < 1 || shape[1] < 1 || shape[2] < 1 ||
+        !(state.histogram.xmax > state.histogram.xmin)) {
+        throw std::runtime_error(fmt::format(
+            "PedestalTrackingPixelHistogram state has values of shape ({}, "
+            "{}, {}) and the range [{}, {}); the shape must be positive and "
+            "xmax larger than xmin",
+            shape[0], shape[1], shape[2], state.histogram.xmin,
+            state.histogram.xmax));
+    }
+    return state;
+}
+
+// Rows [first_row, first_row + rows) of an image
+template <typename T>
+NDView<const T, 2> row_band(const NDArray<T, 2> &image, int first_row,
+                            int rows) {
+    return NDView<const T, 2>(image.data() + first_row * image.shape(1),
+                              {rows, image.shape(1)});
+}
+
+} // namespace
+
+PedestalTrackingPixelHistogram::PedestalTrackingPixelHistogram(
+    const PedestalTrackingPixelHistogramState &state, int n_threads,
+    std::size_t max_pending)
+    : PedestalTrackingPixelHistogram(
+          static_cast<int>(checked(state).histogram.values.shape(0)),
+          static_cast<int>(state.histogram.values.shape(1)),
+          static_cast<int>(state.histogram.values.shape(2)),
+          static_cast<AxisType>(state.histogram.xmin),
+          static_cast<AxisType>(state.histogram.xmax), n_threads, max_pending,
+          static_cast<AxisType>(state.n_sigma)) {
+    set_state(state);
+}
+
+PedestalTrackingPixelHistogramState
+PedestalTrackingPixelHistogram::state() const {
+    PedestalTrackingPixelHistogramState state;
+    state.histogram = {static_cast<double>(xmin_), static_cast<double>(xmax_),
+                       values()};
+    const auto noise = pedestal_std();
+    std::lock_guard<std::mutex> lock(fill_mutex_);
+
+    const Shape<2> shape{rows_, cols_};
+    state.noise = NDArray<double, 2>(shape);
+    std::copy(noise.begin(), noise.end(), state.noise.begin());
+    state.n_sigma = static_cast<double>(n_sigma());
+    state.pedestal.sum = NDArray<double, 2>(shape);
+    state.pedestal.sum2 = NDArray<double, 2>(shape);
+    if (!partial_masks_.empty()) {
+        state.mask = NDArray<bool, 2>(shape);
+    }
+    for (int t = 0; t < n_threads_; ++t) {
+        const auto band = partial_pedestals_[t].state();
+        const auto first = static_cast<ssize_t>(row_start(t)) * cols_;
+        // The bands were given the same frames
+        state.pedestal.dtype = band.dtype;
+        state.pedestal.n_samples = band.n_samples;
+        state.pedestal.cur_samples = band.cur_samples;
+        std::copy(band.sum.begin(), band.sum.end(),
+                  state.pedestal.sum.begin() + first);
+        std::copy(band.sum2.begin(), band.sum2.end(),
+                  state.pedestal.sum2.begin() + first);
+        if (state.mask) {
+            std::copy(partial_masks_[t].begin(), partial_masks_[t].end(),
+                      state.mask->begin() + first);
+        }
+    }
+    return state;
+}
+
+void PedestalTrackingPixelHistogram::set_state(
+    const PedestalTrackingPixelHistogramState &state) {
+    flush();
+    std::lock_guard<std::mutex> lock(fill_mutex_);
+
+    const Shape<2> shape{rows_, cols_};
+    const auto n_bins = partial_hists_.front().view().shape(2);
+    const auto &histogram = state.histogram;
+    if (histogram.values.shape() != Shape<3>{rows_, cols_, n_bins} ||
+        static_cast<AxisType>(histogram.xmin) != xmin_ ||
+        static_cast<AxisType>(histogram.xmax) != xmax_) {
+        throw std::runtime_error(fmt::format(
+            "PedestalTrackingPixelHistogram state has values of shape ({}, "
+            "{}, {}) and the range [{}, {}), expected ({}, {}, {}) and [{}, "
+            "{})",
+            histogram.values.shape(0), histogram.values.shape(1),
+            histogram.values.shape(2), histogram.xmin, histogram.xmax, rows_,
+            cols_, n_bins, xmin_, xmax_));
+    }
+    const auto &pedestal = state.pedestal;
+    if (pedestal.sum.shape() != shape || pedestal.sum2.shape() != shape ||
+        state.noise.shape() != shape ||
+        (state.mask && state.mask->shape() != shape)) {
+        throw std::runtime_error(fmt::format(
+            "PedestalTrackingPixelHistogram state has a pedestal, noise or "
+            "mask that does not have the image shape ({}, {})",
+            rows_, cols_));
+    }
+    if (pedestal.n_samples == 0 || pedestal.cur_samples > pedestal.n_samples) {
+        throw std::runtime_error(fmt::format(
+            "Invalid PedestalTrackingPixelHistogram state: n_samples={} of "
+            "the pedestal must be positive and cur_samples={} at most "
+            "n_samples",
+            pedestal.n_samples, pedestal.cur_samples));
+    }
+
+    partial_masks_.clear();
+    const auto pixel_stride = static_cast<ssize_t>(cols_) * n_bins;
+    for (int t = 0; t < n_threads_; ++t) {
+        const int first_row = row_start(t);
+        const int rows = row_count(t);
+        partial_hists_[t].set_values(NDView<const StorageType, 3>(
+            histogram.values.data() + first_row * pixel_stride,
+            {rows, cols_, n_bins}));
+        partial_pedestals_[t].set_state(
+            {pedestal.dtype, pedestal.n_samples, pedestal.cur_samples,
+             NDArray<double, 2>(row_band(pedestal.sum, first_row, rows)),
+             NDArray<double, 2>(row_band(pedestal.sum2, first_row, rows))});
+        const auto noise = row_band(state.noise, first_row, rows);
+        std::transform(
+            noise.begin(), noise.end(), partial_std_[t].begin(),
+            [](double value) { return static_cast<AxisType>(value); });
+        if (state.mask) {
+            partial_masks_.emplace_back(row_band(*state.mask, first_row, rows));
+        }
+    }
+    n_sigma_.store(static_cast<AxisType>(state.n_sigma));
+}
+
 void PedestalTrackingPixelHistogram::process_pedestal_file(
     const std::filesystem::path &fname, ssize_t max_frames, bool verbose) {
     constexpr std::size_t progress_interval = 66;

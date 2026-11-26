@@ -6,6 +6,7 @@
 #include "aare/NumpyFile.hpp"
 
 #include <catch2/catch_test_macros.hpp>
+#include <catch2/matchers/catch_matchers_string.hpp>
 
 #include <algorithm>
 #include <chrono>
@@ -287,4 +288,170 @@ TEST_CASE("Tiled pedestal tracking matches chronological single-frame fills",
     REQUIRE(tiled_mean.shape() == chronological_mean.shape());
     CHECK(std::equal(tiled_mean.begin(), tiled_mean.end(),
                      chronological_mean.begin()));
+}
+
+namespace {
+
+constexpr int state_rows = 5;
+constexpr int state_cols = 7;
+
+// A baseline that differs from pixel to pixel, with an offset per frame
+aare::NDArray<std::uint16_t, 2> state_test_frame(int offset) {
+    aare::NDArray<std::uint16_t, 2> frame({state_rows, state_cols});
+    for (ssize_t i = 0; i < frame.size(); ++i) {
+        frame[i] = static_cast<std::uint16_t>(100 + i % 5 + offset);
+    }
+    return frame;
+}
+
+// 1000 pedestal frames with a noise of 2, then update_mean()
+void seed_pedestal(PedestalTrackingPixelHistogram &histogram) {
+    for (int seed = 0; seed < 1000; ++seed) {
+        auto frame = state_test_frame(seed % 2 == 0 ? -2 : 2);
+        histogram.push_pedestal_no_update(frame.view());
+    }
+    histogram.update_mean();
+}
+
+// Offsets inside and outside the gate of 2 sigma, so that only some frames
+// update the pedestal
+void fill(PedestalTrackingPixelHistogram &histogram, int first, int last) {
+    const int offsets[] = {1, -3, 8, 0, 3, -1};
+    for (int i = first; i < last; ++i) {
+        histogram.fill_async(state_test_frame(offsets[i % 6]));
+    }
+}
+
+template <typename A> bool same(const A &a, const A &b) {
+    return a.shape() == b.shape() && std::equal(a.begin(), a.end(), b.begin());
+}
+
+void require_same(const PedestalTrackingPixelHistogram &actual,
+                  const PedestalTrackingPixelHistogram &expected) {
+    REQUIRE(same(actual.values(), expected.values()));
+    REQUIRE(same(actual.pedestal_mean(), expected.pedestal_mean()));
+    REQUIRE(same(actual.pedestal_std(), expected.pedestal_std()));
+    REQUIRE(actual.n_sigma() == expected.n_sigma());
+}
+
+} // namespace
+
+TEST_CASE("Pedestal tracking histogram restored from a state is filled "
+          "further identically",
+          "[PedestalTrackingPixelHistogram]") {
+    aare::NDArray<bool, 2> mask({state_rows, state_cols}, false);
+    mask(3, 4) = true;
+    const aare::NDView<bool, 2> mask_view = mask.view();
+    PedestalTrackingPixelHistogram original(state_rows, state_cols, 32, -16.0f,
+                                            16.0f, 2, 16, 2.0f, mask_view);
+    seed_pedestal(original);
+    fill(original, 0, 9);
+    // The pedestal has moved on since the noise was computed
+    const auto state = original.state();
+    REQUIRE(state.pedestal.n_samples == 1000);
+    REQUIRE(state.pedestal.cur_samples == 1000);
+    REQUIRE(state.n_sigma == 2.0);
+    REQUIRE(same(state.histogram.values, original.values()));
+    REQUIRE(state.mask.has_value());
+    REQUIRE((*state.mask)(3, 4));
+
+    // With another number of threads, whose row bands differ
+    PedestalTrackingPixelHistogram restored(state, 3);
+    // A histogram without mask that holds other data and settings
+    PedestalTrackingPixelHistogram given(state_rows, state_cols, 32, -16.0f,
+                                         16.0f, 1, 16, 5.0f);
+    auto other_frame = state_test_frame(40);
+    given.push_pedestal_no_update(other_frame.view());
+    given.set_state(state);
+    require_same(restored, original);
+    require_same(given, original);
+
+    fill(original, 9, 30);
+    fill(restored, 9, 30);
+    fill(given, 9, 30);
+    REQUIRE_FALSE(same(original.values(), state.histogram.values));
+    REQUIRE_FALSE(same(original.state().pedestal.sum, state.pedestal.sum));
+    require_same(restored, original);
+    require_same(given, original);
+    // The masked pixel stayed empty
+    const auto values = given.values();
+    for (ssize_t bin = 0; bin < 32; ++bin) {
+        REQUIRE(values(3, 4, bin) == 0);
+    }
+}
+
+TEST_CASE("Pedestal tracking histogram takes a state while its pedestal is "
+          "initializing and drops its mask",
+          "[PedestalTrackingPixelHistogram]") {
+    PedestalTrackingPixelHistogram original(state_rows, state_cols, 32, -16.0f,
+                                            16.0f, 2);
+    for (int seed = 0; seed < 400; ++seed) {
+        auto frame = state_test_frame(seed % 2 == 0 ? -2 : 2);
+        original.push_pedestal_no_update(frame.view());
+    }
+    const auto state = original.state();
+    REQUIRE(state.pedestal.cur_samples == 400);
+    REQUIRE_FALSE(state.mask.has_value());
+
+    aare::NDArray<bool, 2> mask({state_rows, state_cols}, true);
+    const aare::NDView<bool, 2> mask_view = mask.view();
+    PedestalTrackingPixelHistogram given(state_rows, state_cols, 32, -16.0f,
+                                         16.0f, 3, 16, 1.0f, mask_view);
+    given.set_state(state);
+    REQUIRE_FALSE(given.state().mask.has_value());
+
+    // Both take the remaining pedestal frames and then fill alike
+    for (auto *histogram : {&original, &given}) {
+        for (int seed = 400; seed < 1000; ++seed) {
+            auto frame = state_test_frame(seed % 2 == 0 ? -2 : 2);
+            histogram->push_pedestal_no_update(frame.view());
+        }
+        histogram->update_mean();
+        fill(*histogram, 0, 12);
+    }
+    require_same(given, original);
+}
+
+TEST_CASE("Pedestal tracking histogram rejects an invalid state and stays "
+          "unchanged",
+          "[PedestalTrackingPixelHistogram]") {
+    using Catch::Matchers::ContainsSubstring;
+    PedestalTrackingPixelHistogram histogram(state_rows, state_cols, 32, -16.0f,
+                                             16.0f, 2, 16, 2.0f);
+    seed_pedestal(histogram);
+    fill(histogram, 0, 6);
+    const auto valid = histogram.state();
+
+    auto other_bins = valid;
+    other_bins.histogram.values =
+        aare::NDArray<std::uint16_t, 3>({state_rows, state_cols, 31}, 0);
+    REQUIRE_THROWS_WITH(histogram.set_state(other_bins),
+                        ContainsSubstring("expected (5, 7, 32)"));
+    auto other_range = valid;
+    other_range.histogram.xmax = 17.0;
+    REQUIRE_THROWS_WITH(histogram.set_state(other_range),
+                        ContainsSubstring("and [-16, 16)"));
+    auto bad_pedestal = valid;
+    bad_pedestal.pedestal.sum2 =
+        aare::NDArray<double, 2>({state_rows, state_cols + 1}, 0.0);
+    REQUIRE_THROWS_WITH(histogram.set_state(bad_pedestal),
+                        ContainsSubstring("does not have the image shape"));
+    auto bad_noise = valid;
+    bad_noise.noise = aare::NDArray<double, 2>({state_rows + 1, state_cols});
+    REQUIRE_THROWS_WITH(histogram.set_state(bad_noise),
+                        ContainsSubstring("does not have the image shape"));
+    auto bad_mask = valid;
+    bad_mask.mask = aare::NDArray<bool, 2>({state_cols, state_rows}, false);
+    REQUIRE_THROWS_WITH(histogram.set_state(bad_mask),
+                        ContainsSubstring("does not have the image shape"));
+    auto too_many = valid;
+    too_many.pedestal.cur_samples = 1001;
+    REQUIRE_THROWS_WITH(histogram.set_state(too_many),
+                        ContainsSubstring("at most n_samples"));
+    REQUIRE_THROWS_AS(PedestalTrackingPixelHistogram(
+                          aare::PedestalTrackingPixelHistogramState{}),
+                      std::runtime_error);
+
+    PedestalTrackingPixelHistogram reference(valid);
+    require_same(histogram, reference);
 }

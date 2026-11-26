@@ -8,6 +8,7 @@
 #include "aare/FastPedestal.hpp"
 #include "aare/Pedestal.hpp"
 #include "aare/VarClusterFinder.hpp"
+#include "aare/hist/PedestalTrackingPixelHistogram.hpp"
 #include "aare/hist/PixelHistogramImpl.hpp"
 
 #include <catch2/catch_test_macros.hpp>
@@ -824,4 +825,43 @@ TEST_CASE("state file returns a PixelHistogramState with its storage type",
     save_state(weights, file.path());
     REQUIRE((load_state<PixelHistogramState<double>>(file.path()).values ==
              weights.values));
+}
+
+TEST_CASE("state file returns a PedestalTrackingPixelHistogramState bit for "
+          "bit",
+          "[state-file]") {
+    TemporaryStateFile file;
+    PedestalTrackingPixelHistogramState state;
+    state.histogram = {-0.5, 0.1, NDArray<uint16_t, 3>({2, 3, 4}, 7)};
+    state.histogram.values(1, 2, 3) = 65535;
+    state.pedestal = make_test_state();
+    state.noise = make_test_state().sum2;
+    state.n_sigma = 1.0 / 3.0;
+    const auto same_without_mask =
+        [&state](const PedestalTrackingPixelHistogramState &loaded) {
+            return loaded.histogram.xmin == state.histogram.xmin &&
+                   loaded.histogram.xmax == state.histogram.xmax &&
+                   loaded.histogram.values == state.histogram.values &&
+                   same_state(loaded.pedestal, state.pedestal) &&
+                   same_bits(loaded.noise, state.noise) &&
+                   loaded.n_sigma == state.n_sigma;
+        };
+
+    save_state(state, file.path());
+    auto header = nlohmann::json::parse(read_state_header(file.path()));
+    REQUIRE(header.at("type") == "PedestalTrackingPixelHistogram");
+    // The states inside it are stored as in their own files
+    REQUIRE(header.at("state").at("histogram").at("version") == 1);
+    REQUIRE(header.at("state").at("pedestal").at("n_samples") == 5);
+    REQUIRE_FALSE(header.at("state").contains("mask"));
+    auto loaded = load_state<PedestalTrackingPixelHistogramState>(file.path());
+    REQUIRE(same_without_mask(loaded));
+    REQUIRE_FALSE(loaded.mask.has_value());
+
+    state.mask = NDArray<bool, 2>({2, 3}, false);
+    (*state.mask)(0, 2) = true;
+    save_state(state, file.path());
+    loaded = load_state<PedestalTrackingPixelHistogramState>(file.path());
+    REQUIRE(same_without_mask(loaded));
+    REQUIRE(loaded.mask == state.mask);
 }

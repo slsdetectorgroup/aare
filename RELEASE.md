@@ -106,6 +106,13 @@
   variants) for a new histogram and ``hist.load_state(fname)`` to load into
   an existing one with the same shape, bins and range. The counts keep
   their storage dtype and are not converted.
+- ``PedestalTrackingPixelHistogram`` can be stored and restored the same
+  way. Its ``PedestalTrackingPixelHistogramState`` holds the counts, the
+  pedestal of the whole image, the noise as of the last ``update_mean()``,
+  ``n_sigma`` and the mask, and does not depend on the number of threads.
+  In Python: ``hist.save_state(fname)``,
+  ``PedestalTrackingPixelHistogram.from_state_file(fname, n_threads=1)``
+  and ``hist.load_state(fname)``.
 
 ### API Changes:
 
