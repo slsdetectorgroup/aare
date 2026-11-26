@@ -63,8 +63,7 @@ void define_cluster_converter_bindings(py::module &m) {
                         "gain must be a number or a 2D array of numbers");
                 }
                 // A const view also takes arrays that are not writeable
-                return ClusterConverter(InvertedGainMap(NDArray<double, 2>(
-                                            make_const_view_2d(gain_array))),
+                return ClusterConverter(make_const_view_2d(gain_array),
                                         quantization, seed);
             }),
             py::kw_only(), py::arg("gain") = py::none(),

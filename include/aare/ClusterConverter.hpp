@@ -35,24 +35,29 @@ namespace detail {
 /// Number of random bits used for one pixel.
 constexpr int dequantize_bits = 21;
 
-/// Draw a value from the interval that was stored as value, using 21
-/// uniformly distributed random bits.
-template <typename OutT, typename T>
-OutT dequantize_value(const T value, const uint32_t bits,
-                      const Quantization quantization) {
-    constexpr OutT step =
-        OutT{1} / static_cast<OutT>(uint32_t{1} << dequantize_bits);
-    const auto stored = static_cast<OutT>(value);
-    const OutT fraction = static_cast<OutT>(bits) * step; // [0, 1)
+/// Mask that keeps dequantize_bits bits.
+constexpr uint64_t dequantize_mask = (uint64_t{1} << dequantize_bits) - 1;
+
+/// Number of pixels one 64 bit draw of the generator serves.
+constexpr int dequantize_pieces_per_draw = 64 / dequantize_bits;
+
+/// Draw a value from the interval that was stored as value, using
+/// dequantize_bits uniformly distributed random bits.
+template <typename T>
+double dequantize_value(const T value, const uint32_t bits,
+                        const Quantization quantization) {
+    constexpr double step = 1.0 / static_cast<double>(dequantize_mask + 1);
+    const auto stored = static_cast<double>(value);
+    const double fraction = static_cast<double>(bits) * step; // [0, 1)
 
     if (quantization == Quantization::Rounded)
-        return stored + (fraction - OutT{0.5});
+        return stored + (fraction - 0.5);
     if (value > 0)
         return stored + fraction;
     if (value < 0)
         return stored - fraction;
     // Zero collects (-1, 1): one bit for the sign, the rest for the magnitude.
-    const OutT magnitude = static_cast<OutT>(bits >> 1) * (2 * step);
+    const double magnitude = static_cast<double>(bits >> 1) * (2 * step);
     return (bits & 1U) ? magnitude : -magnitude;
 }
 
@@ -111,7 +116,7 @@ class ClusterConverter {
      * @param seed seed of the random generator, from the system when unset
      */
     explicit ClusterConverter(
-        const NDView<double, 2> gain_map,
+        const NDView<const double, 2> gain_map,
         const Quantization quantization = Quantization::Rounded,
         const std::optional<uint64_t> seed = {})
         : ClusterConverter(InvertedGainMap(gain_map), quantization, seed) {}
@@ -161,7 +166,7 @@ class ClusterConverter {
             size_t j = 0;
             for (ssize_t row = 0; row < size_y; ++row) {
                 for (ssize_t col = 0; col < size_x; ++col, ++j) {
-                    const auto value = detail::dequantize_value<double>(
+                    const auto value = detail::dequantize_value(
                         source.data[j], next_bits(), m_quantization);
                     const double inverse_gain =
                         gain_map ? (*gain_map)(y_first + row, x_first + col)
@@ -207,15 +212,16 @@ class ClusterConverter {
                                device());
     }
 
-    /// Hands out a 64 bit draw in three pieces of 21 bits. What is left of a
-    /// draw is kept for the next call.
+    /// Hands out a 64 bit draw of the generator in pieces of
+    /// detail::dequantize_bits bits: three pieces of 21 bits, one per pixel.
+    /// What is left of a draw is kept for the next call.
     uint32_t next_bits() {
         if (m_pieces_left == 0) {
             m_bits = m_generator();
-            m_pieces_left = 3;
+            m_pieces_left = detail::dequantize_pieces_per_draw;
         }
-        const auto value = static_cast<uint32_t>(
-            m_bits & ((uint64_t{1} << detail::dequantize_bits) - 1));
+        const auto value =
+            static_cast<uint32_t>(m_bits & detail::dequantize_mask);
         m_bits >>= detail::dequantize_bits;
         --m_pieces_left;
         return value;

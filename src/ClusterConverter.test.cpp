@@ -329,15 +329,20 @@ TEST_CASE("ClusterConverter gain variants agree for the same seed",
     ClusterConverter uniform_converter(4.0, Quantization::Rounded, 15);
     ClusterConverter view_converter(gain.view(), Quantization::Rounded, 15);
     ClusterConverter map_converter(inverse, Quantization::Rounded, 15);
+    const auto &const_gain = gain;
+    ClusterConverter const_view_converter(const_gain.view(),
+                                          Quantization::Rounded, 15);
     const auto plain = plain_converter.apply<double>(clusters);
     const auto uniform = uniform_converter.apply<double>(clusters);
     const auto from_view = view_converter.apply<double>(clusters);
     const auto from_map = map_converter.apply<double>(clusters);
+    const auto from_const_view = const_view_converter.apply<double>(clusters);
 
     for (size_t i = 0; i < clusters.size(); ++i) {
         for (size_t j = 0; j < 9; ++j) {
             CHECK(uniform[i].data[j] == plain[i].data[j] / 4.0);
             CHECK(from_view[i].data[j] == uniform[i].data[j]);
+            CHECK(from_const_view[i].data[j] == uniform[i].data[j]);
             CHECK(from_map[i].data[j] == uniform[i].data[j]);
         }
     }

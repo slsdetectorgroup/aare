@@ -24,8 +24,8 @@ class InvertedGainMap {
         }
     };
 
-    explicit InvertedGainMap(const NDView<double, 2> gain_map) {
-        m_gain_map = NDArray<double, 2>(gain_map);
+    explicit InvertedGainMap(const NDView<const double, 2> gain_map)
+        : m_gain_map(gain_map) {
         for (auto &item : m_gain_map) {
             item = 1.0 / item;
         }
