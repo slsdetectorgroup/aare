@@ -83,7 +83,7 @@ TEST_CASE("ClusterConverter returns float clusters by default",
 
     STATIC_REQUIRE(
         std::is_same_v<decltype(result), ClusterVector<Cluster<float, 3, 3>>>);
-    STATIC_REQUIRE(std::is_same_v<decltype(converter.apply(clusters)),
+    STATIC_REQUIRE(std::is_same_v<decltype(converter.convert(clusters)),
                                   ClusterVector<Cluster<float, 3, 3>>>);
     REQUIRE(result.size() == clusters.size());
     CHECK(result.frame_number() == 123);
@@ -98,7 +98,7 @@ TEST_CASE("ClusterConverter spreads rounded values around the integer",
     const auto value = GENERATE(-40, -1, 0, 1, 40);
     const auto clusters = constant_clusters(value, 20000);
     ClusterConverter converter(Quantization::Rounded, 2);
-    const auto range = pixel_range(converter.apply<double>(clusters));
+    const auto range = pixel_range(converter.convert<double>(clusters));
 
     CHECK(range.min >= value - 0.5);
     CHECK(range.max < value + 0.5);
@@ -110,22 +110,22 @@ TEST_CASE("ClusterConverter spreads truncated values away from zero",
           "[ClusterConverter]") {
     ClusterConverter converter(Quantization::Truncated, 3);
     SECTION("positive values cover [n, n + 1)") {
-        const auto range =
-            pixel_range(converter.apply<double>(constant_clusters(40, 20000)));
+        const auto range = pixel_range(
+            converter.convert<double>(constant_clusters(40, 20000)));
         CHECK(range.min >= 40.0);
         CHECK(range.max < 41.0);
         CHECK(std::abs(range.mean - 40.5) < 0.01);
     }
     SECTION("negative values cover (n - 1, n]") {
-        const auto range =
-            pixel_range(converter.apply<double>(constant_clusters(-40, 20000)));
+        const auto range = pixel_range(
+            converter.convert<double>(constant_clusters(-40, 20000)));
         CHECK(range.min > -41.0);
         CHECK(range.max <= -40.0);
         CHECK(std::abs(range.mean + 40.5) < 0.01);
     }
     SECTION("zero covers (-1, 1)") {
         const auto range =
-            pixel_range(converter.apply<double>(constant_clusters(0, 20000)));
+            pixel_range(converter.convert<double>(constant_clusters(0, 20000)));
         CHECK(range.min > -1.0);
         CHECK(range.min < -0.99);
         CHECK(range.max < 1.0);
@@ -214,11 +214,11 @@ TEST_CASE("ClusterConverter result does not depend on the chunk size",
 TEST_CASE("ClusterConverter reuses the output vector", "[ClusterConverter]") {
     ClusterConverter converter(Quantization::Rounded, 8);
     ClusterVector<Cluster<float, 3, 3>> out(100);
-    converter.apply(constant_clusters(5, 100, 1), out);
+    converter.convert(constant_clusters(5, 100, 1), out);
     const auto *storage = out.data();
     const auto first_pixel = out[0].data[0];
 
-    converter.apply(constant_clusters(9, 60, 2), out);
+    converter.convert(constant_clusters(9, 60, 2), out);
     CHECK(out.data() == storage);
     CHECK(out.size() == 60);
     CHECK(out.frame_number() == 2);
@@ -231,7 +231,7 @@ TEST_CASE("ClusterConverter handles other cluster types",
     ClusterVector<Cluster<int16_t, 2, 2>> clusters(1);
     clusters.push_back(Cluster<int16_t, 2, 2>{4, 5, {-3, 0, 3, 100}});
     ClusterConverter converter(Quantization::Truncated, 9);
-    const auto result = converter.apply<double>(clusters);
+    const auto result = converter.convert<double>(clusters);
 
     STATIC_REQUIRE(std::is_same_v<decltype(result),
                                   const ClusterVector<Cluster<double, 2, 2>>>);
@@ -262,8 +262,8 @@ TEST_CASE("ClusterConverter applies a uniform gain in the same pass",
     const auto clusters = constant_clusters(40, 500, 11);
     ClusterConverter plain_converter(Quantization::Truncated, 10);
     ClusterConverter gain_converter(2.5, Quantization::Truncated, 10);
-    const auto plain = plain_converter.apply<double>(clusters);
-    const auto scaled = gain_converter.apply<double>(clusters);
+    const auto plain = plain_converter.convert<double>(clusters);
+    const auto scaled = gain_converter.convert<double>(clusters);
 
     REQUIRE(scaled.size() == plain.size());
     CHECK(scaled.frame_number() == 11);
@@ -296,7 +296,7 @@ TEST_CASE("ClusterConverter applies a gain map in the same pass",
     }
 
     ClusterConverter converter(gain.view(), Quantization::Rounded, 12);
-    const auto out = converter.apply<double>(clusters);
+    const auto out = converter.convert<double>(clusters);
 
     REQUIRE(out.size() == 7);
     for (size_t i = 0; i < 3; ++i) {
@@ -332,11 +332,11 @@ TEST_CASE("ClusterConverter gain variants agree for the same seed",
     const auto &const_gain = gain;
     ClusterConverter const_view_converter(const_gain.view(),
                                           Quantization::Rounded, 15);
-    const auto plain = plain_converter.apply<double>(clusters);
-    const auto uniform = uniform_converter.apply<double>(clusters);
-    const auto from_view = view_converter.apply<double>(clusters);
-    const auto from_map = map_converter.apply<double>(clusters);
-    const auto from_const_view = const_view_converter.apply<double>(clusters);
+    const auto plain = plain_converter.convert<double>(clusters);
+    const auto uniform = uniform_converter.convert<double>(clusters);
+    const auto from_view = view_converter.convert<double>(clusters);
+    const auto from_map = map_converter.convert<double>(clusters);
+    const auto from_const_view = const_view_converter.convert<double>(clusters);
 
     for (size_t i = 0; i < clusters.size(); ++i) {
         for (size_t j = 0; j < 9; ++j) {
@@ -361,7 +361,7 @@ TEST_CASE("ClusterConverter with a gain map handles 2x2 clusters",
     clusters.push_back(Cluster<int32_t, 2, 2>{0, 1, {500, 500, 500, 500}});
 
     ClusterConverter converter(gain.view(), Quantization::Rounded, 13);
-    const auto out = converter.apply<double>(clusters);
+    const auto out = converter.convert<double>(clusters);
 
     CHECK(std::abs(out[0].data[0] * gain(0, 1) - 500.0) <= 0.5);
     CHECK(std::abs(out[0].data[1] * gain(0, 2) - 500.0) <= 0.5);

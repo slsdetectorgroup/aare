@@ -128,11 +128,11 @@ class ClusterConverter {
      */
     template <typename OutT, typename T, uint8_t ClusterSizeX,
               uint8_t ClusterSizeY, typename CoordType>
-    void
-    apply(const ClusterVector<Cluster<T, ClusterSizeX, ClusterSizeY, CoordType>>
-              &clusters,
-          ClusterVector<Cluster<OutT, ClusterSizeX, ClusterSizeY, CoordType>>
-              &out) {
+    void convert(
+        const ClusterVector<Cluster<T, ClusterSizeX, ClusterSizeY, CoordType>>
+            &clusters,
+        ClusterVector<Cluster<OutT, ClusterSizeX, ClusterSizeY, CoordType>>
+            &out) {
         static_assert(
             std::is_integral_v<T>,
             "ClusterConverter needs clusters with an integer pixel type");
@@ -184,12 +184,12 @@ class ClusterConverter {
      */
     template <typename OutT = float, typename T, uint8_t ClusterSizeX,
               uint8_t ClusterSizeY, typename CoordType>
-    ClusterVector<Cluster<OutT, ClusterSizeX, ClusterSizeY, CoordType>>
-    apply(const ClusterVector<Cluster<T, ClusterSizeX, ClusterSizeY, CoordType>>
-              &clusters) {
+    ClusterVector<Cluster<OutT, ClusterSizeX, ClusterSizeY, CoordType>> convert(
+        const ClusterVector<Cluster<T, ClusterSizeX, ClusterSizeY, CoordType>>
+            &clusters) {
         ClusterVector<Cluster<OutT, ClusterSizeX, ClusterSizeY, CoordType>> out(
             clusters.size(), clusters.frame_number());
-        apply(clusters, out);
+        convert(clusters, out);
         return out;
     }
 
@@ -200,7 +200,7 @@ class ClusterConverter {
     operator()(
         const ClusterVector<Cluster<T, ClusterSizeX, ClusterSizeY, CoordType>>
             &clusters) {
-        return apply<float>(clusters);
+        return convert<float>(clusters);
     }
 
   private:

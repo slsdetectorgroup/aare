@@ -27,6 +27,15 @@ def test_returns_float32_clusters_and_keeps_the_input():
     np.testing.assert_array_equal(np.array(cv)["data"][:, 0, 0], [5, -3, 0])
 
 
+def test_convert_is_the_same_as_calling_the_converter():
+    cv = make_clusters(np.arange(-20, 20))
+    called = ClusterConverter(seed=1)(cv)
+    converted = ClusterConverter(seed=1).convert(cv)
+
+    assert isinstance(converted, _aare.ClusterVector_Cluster3x3f)
+    np.testing.assert_array_equal(np.array(converted), np.array(called))
+
+
 def test_rounded_values_stay_within_half_a_step():
     values = np.array([-40, -1, 0, 1, 40] * 400)
     data = np.array(ClusterConverter(truncated=False, seed=2)(make_clusters(values)))["data"]

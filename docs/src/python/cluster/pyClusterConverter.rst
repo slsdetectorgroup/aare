@@ -19,8 +19,10 @@ One pass over the clusters does two things:
     converter = ClusterConverter(gain=gain_map, seed=1)
     with ClusterFile("path/to/file") as f:
         for chunk in f.chunks(1_000_000):
-            clusters = converter(chunk)
+            clusters = converter.convert(chunk)
             eta = calculate_eta2(clusters)
+
+Calling the object, ``converter(chunk)``, does the same as ``convert``.
 
 ``truncated`` states how the writer of the clusters converted pixel values to
 integers, which decides the interval each value is drawn from:
