@@ -78,6 +78,27 @@ read the mean and the noise of each pixel:
    np.testing.assert_array_equal(mean, np.full((2, 3), 100))
    np.testing.assert_array_equal(noise, np.full((2, 3), 2))
 
+Saving and restoring the state
+------------------------------
+
+``save_state()`` writes everything the pedestal has accumulated to a state
+file, and a pedestal that loads the file continues exactly where the stored
+one stopped. ``Pedestal.load_state(filename, dtype=None)`` returns a new
+pedestal with the image shape, ``n_samples`` and, unless one is given, the
+``dtype`` stored in the file. ``pedestal.load_state(filename)`` replaces the
+state of an existing pedestal, which must have the image shape stored in
+the file and keeps its ``dtype``; if the file cannot be loaded, the pedestal
+is left unchanged. The file format is described in :doc:`../../StateFile`.
+
+.. code:: python
+
+   pedestal.save_state("dark.aare")
+
+   pedestal = Pedestal.load_state("dark.aare")   # a new pedestal
+   other.load_state("dark.aare")                 # an existing one
+
+.. autofunction:: aare.Pedestal.load_state
+
 Complete API
 ------------
 

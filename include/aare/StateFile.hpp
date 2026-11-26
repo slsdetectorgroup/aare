@@ -17,9 +17,9 @@ std::string read_state_header(const std::filesystem::path &fname);
 
 /**
  * @brief Write a state to a file.
- * @tparam State FastPedestalState, ClusterFinderState,
- * ClusterFinderMTState or VarClusterFinderState; any other type fails to
- * link.
+ * @tparam State The state struct of a class that has one, such as
+ * FastPedestalState or ClusterFinderState; docs/src/StateFile.rst lists
+ * them. Any other type fails to link.
  * @param state State to write, as returned by state() of its class. Every
  * dtype in it must be set and every number outside its arrays finite.
  * @param fname File to write. An existing file is replaced.

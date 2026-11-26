@@ -89,6 +89,14 @@
   ``VarClusterFinder.from_state_file(fname)`` for a new finder and
   ``finder.load_state(fname)`` to load into an existing one with the same
   image shape. Hits are not stored.
+- ``Pedestal`` can be stored and restored like ``FastPedestal``:
+  ``state()`` returns a ``PedestalState`` (``n_samples``, the per-pixel
+  ``cur_samples``, ``sum`` and ``sum2``, and the ``dtype`` of the pedestal
+  it came from), ``set_state()`` or the new constructor restore it, and
+  ``save_state()`` and ``load_state<PedestalState>()`` keep it in a state
+  file. In Python: ``pedestal.save_state(fname)``,
+  ``Pedestal.load_state(fname, dtype=None)`` for a new pedestal and
+  ``pedestal.load_state(fname)`` to load into an existing one.
 
 ### API Changes:
 

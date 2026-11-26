@@ -163,7 +163,8 @@ format.
 
 - **State struct.** The class hands out a plain-data struct and takes it
   back (`state()`, `set_state()` and a constructor; `FastPedestalState`,
-  `ClusterFinderState`, `ClusterFinderMTState`, `VarClusterFinderState`). It lives in the header of
+  `PedestalState`, `ClusterFinderState`, `ClusterFinderMTState`,
+  `VarClusterFinderState`). It lives in the header of
   its class, holds no redundant fields and knows nothing about files. It
   stores its numbers as double and records the types it came from in dtype
   fields that `set_state()` ignores, so an object with other value types can

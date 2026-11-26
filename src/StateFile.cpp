@@ -6,6 +6,7 @@
 #include "aare/ClusterFinder.hpp"
 #include "aare/ClusterFinderMT.hpp"
 #include "aare/FastPedestal.hpp"
+#include "aare/Pedestal.hpp"
 #include "aare/VarClusterFinder.hpp"
 
 #include <system_error>
@@ -164,6 +165,20 @@ template <> struct StateFormat<FastPedestalState> {
     }
 };
 
+template <> struct StateFormat<PedestalState> {
+    static constexpr std::string_view name = "Pedestal";
+    static constexpr uint64_t version = 1;
+
+    template <typename Fields, typename State>
+    static void fields(Fields &field, State &state) {
+        field("dtype", state.dtype);
+        field("n_samples", state.n_samples);
+        field("cur_samples", state.cur_samples);
+        field("sum", state.sum);
+        field("sum2", state.sum2);
+    }
+};
+
 template <> struct StateFormat<ClusterFinderState> {
     static constexpr std::string_view name = "ClusterFinder";
     static constexpr uint64_t version = 1;
@@ -230,6 +245,7 @@ template <typename State> State load_state(const std::filesystem::path &fname) {
     template void save_state(const State &, const std::filesystem::path &);    \
     template State load_state<State>(const std::filesystem::path &);
 AARE_STATE_FILE_OF(FastPedestalState)
+AARE_STATE_FILE_OF(PedestalState)
 AARE_STATE_FILE_OF(ClusterFinderState)
 AARE_STATE_FILE_OF(ClusterFinderMTState)
 AARE_STATE_FILE_OF(VarClusterFinderState)

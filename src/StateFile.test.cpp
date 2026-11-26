@@ -6,6 +6,7 @@
 #include "aare/ClusterFinder.hpp"
 #include "aare/ClusterFinderMT.hpp"
 #include "aare/FastPedestal.hpp"
+#include "aare/Pedestal.hpp"
 #include "aare/VarClusterFinder.hpp"
 
 #include <catch2/catch_test_macros.hpp>
@@ -756,4 +757,35 @@ TEST_CASE("state file returns a VarClusterFinderState bit for bit",
     REQUIRE_THROWS_WITH(
         load_state<VarClusterFinderState>(file.path()),
         ContainsSubstring("\"erase_clusters\" must be true or false"));
+}
+
+TEST_CASE("state file returns a PedestalState bit for bit", "[state-file]") {
+    TemporaryStateFile file;
+    const auto moments = make_test_state();
+    PedestalState state;
+    state.dtype = Dtype::INT16;
+    state.n_samples = 5;
+    state.cur_samples = NDArray<uint32_t, 2>({2, 3}, 0);
+    state.cur_samples(0, 1) = 5;
+    state.cur_samples(1, 2) = 3;
+    state.sum = moments.sum;
+    state.sum2 = moments.sum2;
+    save_state(state, file.path());
+
+    const auto header = nlohmann::json::parse(read_state_header(file.path()));
+    REQUIRE(header.at("type") == "Pedestal");
+    REQUIRE(header.at("state").at("cur_samples").at("dtype") == "<u4");
+
+    const auto loaded = load_state<PedestalState>(file.path());
+    REQUIRE(loaded.dtype == Dtype::INT16);
+    REQUIRE(loaded.n_samples == 5);
+    REQUIRE(loaded.cur_samples == state.cur_samples);
+    REQUIRE(same_bits(loaded.sum, state.sum));
+    REQUIRE(same_bits(loaded.sum2, state.sum2));
+
+    // Not the state of a FastPedestal, although the fields look alike
+    REQUIRE_THROWS_WITH(
+        load_state<FastPedestalState>(file.path()),
+        ContainsSubstring(
+            "holds the state of a Pedestal, expected a FastPedestal"));
 }

@@ -3,8 +3,9 @@ State files
 
 A state file stores everything an object has accumulated, so that it can be
 restored later, possibly in another process, and continue exactly where it
-stopped. ``FastPedestal``, ``ClusterFinder``, ``ClusterFinderMT`` and
-``VarClusterFinder`` have a state that can be stored this way.
+stopped. ``FastPedestal``, ``Pedestal``, ``ClusterFinder``,
+``ClusterFinderMT`` and ``VarClusterFinder`` have a state that can be
+stored this way.
 
 .. code-block:: c++
 
@@ -98,6 +99,10 @@ The header of a ``FastPedestal<float>`` with 400 x 400 pixels:
    the type of the mean and standard deviation of the pedestal that wrote the
    file, a NumPy dtype string like the arrays'. A reader may create a
    pedestal of that type or of another; the moments are double either way.
+
+The state of a ``Pedestal`` has the type ``"Pedestal"`` and the same fields,
+see :doc:`Pedestal`, except that ``cur_samples`` is an array: every pixel
+counts its own samples (``"dtype": "<u4"``).
 
 A state can contain another state. The header of a 3 x 3 ``ClusterFinder``
 with ``int32`` clusters holds the state of its pedestal under ``pedestal``,
