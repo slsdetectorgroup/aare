@@ -10,12 +10,16 @@
 
 #include "module_config.hpp"
 #include "np_helper.hpp"
+#include "state_file.hpp"
 
 #include <cstdint>
 #include <filesystem>
+#include <memory>
+#include <optional>
 #include <pybind11/pybind11.h>
 #include <pybind11/stl.h>
 #include <pybind11/stl_bind.h>
+#include <string>
 
 namespace py = pybind11;
 
@@ -28,13 +32,13 @@ void define_ClusterFinderMT(py::module &m, const std::string &typestr) {
 
     using ClusterType = Cluster<T, ClusterSizeX, ClusterSizeY, CoordType>;
 
-    py::class_<ClusterFinderMT<ClusterType, uint16_t, pd_type>>(
-        m, class_name.c_str())
-        .def(py::init<Shape<2>, pd_type, size_t, size_t, size_t, size_t>(),
-             py::arg("image_size"), py::arg("n_sigma") = 5.0,
-             py::arg("capacity") = 2048, py::arg("n_threads") = 3,
-             py::arg("queue_depth") = 16,
-             py::arg("min_pedestal_samples") = 1000)
+    using Finder = ClusterFinderMT<ClusterType, uint16_t, pd_type>;
+
+    py::class_<Finder> cls(m, class_name.c_str());
+    cls.def(py::init<Shape<2>, pd_type, size_t, size_t, size_t, size_t>(),
+            py::arg("image_size"), py::arg("n_sigma") = 5.0,
+            py::arg("capacity") = 2048, py::arg("n_threads") = 3,
+            py::arg("queue_depth") = 16, py::arg("min_pedestal_samples") = 1000)
         .def(
             "push_pedestal_frame",
             [](ClusterFinderMT<ClusterType, uint16_t, pd_type> &self,
@@ -91,4 +95,96 @@ void define_ClusterFinderMT(py::module &m, const std::string &typestr) {
              &ClusterFinderMT<ClusterType, uint16_t, pd_type>::set_nSigma,
              py::arg("nSigma"),
              R"(sets the number of sigma for all cluster finders.)");
+
+    cls.def(
+        "save_state",
+        [](const Finder &self, const std::filesystem::path &filename) {
+            aare::save_state(self.state(), filename);
+        },
+        py::arg("filename"),
+        "Write the complete state of every thread to a state file, "
+        "replacing an existing file. The frames given so far are included.");
+    // An instance method: as a static method that returns a new finder it
+    // could be called on an existing one, which then stayed unchanged
+    cls.def(
+        "load_state",
+        [](Finder &self, const std::filesystem::path &filename,
+           std::optional<size_t> thread_index) {
+            // The file of a single-threaded finder holds one state, which
+            // goes to one thread or to all
+            const auto header = py::module_::import("json").attr("loads")(
+                aare::read_state_header(filename));
+            if (header.attr("get")("type").equal(py::str("ClusterFinder"))) {
+                self.set_state(
+                    aare::load_state<aare::ClusterFinderState>(filename),
+                    thread_index);
+                return;
+            }
+            if (thread_index) {
+                throw std::runtime_error(
+                    "thread_index can only be given with the state file of "
+                    "a ClusterFinder; the state file of a ClusterFinderMT "
+                    "holds the state of every thread");
+            }
+            self.set_state(
+                aare::load_state<aare::ClusterFinderMTState>(filename));
+        },
+        py::arg("filename"), py::arg("thread_index") = py::none(),
+        "Replace the state of this cluster finder with the one in a state "
+        "file. The file of a ClusterFinderMT must have the number of "
+        "threads of this finder; the file of a ClusterFinder is given to "
+        "the thread thread_index or, without it, to every thread.");
+    cls.def_static(
+        "from_state_file",
+        [](const std::filesystem::path &filename, size_t capacity,
+           size_t queue_depth) {
+            return std::make_unique<Finder>(
+                aare::load_state<aare::ClusterFinderMTState>(filename),
+                capacity, queue_depth);
+        },
+        py::arg("filename"), py::arg("capacity") = 2048,
+        py::arg("queue_depth") = 16,
+        "Create a cluster finder of this cluster size and dtype from the "
+        "state file of a ClusterFinderMT, with the stored number of "
+        "threads, and start it.");
+
+    const char *set_pedestal_doc =
+        "Replace the pedestal of the thread thread_index or, without it, of "
+        "every thread with a copy of a FastPedestal, see "
+        "ClusterFinder.set_pedestal().";
+    for_each_fast_pedestal_type([&](auto type) {
+        using Pedestal = typename decltype(type)::type;
+        cls.def(
+            "set_pedestal",
+            [](Finder &self, const Pedestal &pedestal,
+               std::optional<size_t> thread_index) {
+                self.set_pedestal(pedestal, thread_index);
+            },
+            py::arg("pedestal"), py::arg("thread_index") = py::none(),
+            set_pedestal_doc);
+    });
+    cls.def("get_pedestal", &Finder::get_pedestal, py::arg("thread_index") = 0,
+            "Return a copy of the pedestal of one thread as a FastPedestal.");
+    cls.def(
+        "load_pedestal",
+        [](Finder &self, const std::filesystem::path &filename,
+           std::optional<size_t> thread_index) {
+            self.set_pedestal(
+                aare::load_state<aare::FastPedestalState>(filename),
+                thread_index);
+        },
+        py::arg("filename"), py::arg("thread_index") = py::none(),
+        "Replace the pedestal of the thread thread_index or, without it, of "
+        "every thread with the one in a state file of a FastPedestal.");
+    cls.def(
+        "save_pedestal",
+        [](const Finder &self, const std::filesystem::path &filename,
+           size_t thread_index) {
+            aare::save_state(self.get_pedestal(thread_index).state(), filename);
+        },
+        py::arg("filename"), py::arg("thread_index") = 0,
+        "Write the pedestal of one thread to a state file of a "
+        "FastPedestal.");
+    cls.def_property_readonly("n_threads", &Finder::n_threads,
+                              "Number of processing threads.");
 }

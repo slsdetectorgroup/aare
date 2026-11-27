@@ -2,8 +2,8 @@
 #pragma once
 
 #include "aare/defs.hpp"
+#include "temporary_path.hpp"
 
-#include <chrono>
 #include <filesystem>
 #include <fstream>
 #include <nlohmann/json.hpp>
@@ -42,10 +42,7 @@ class TemporaryRawFiles {
                                aare::xy module_size = {module_rows,
                                                        module_cols})
         : m_layout(layout), m_module_size(module_size) {
-        const auto unique =
-            std::chrono::steady_clock::now().time_since_epoch().count();
-        m_directory = std::filesystem::temp_directory_path() /
-                      ("aare-raw-" + std::to_string(unique));
+        m_directory = unique_temporary_path("aare-raw", "");
         std::filesystem::create_directory(m_directory);
         const size_t pixels_per_module = module_size.row * module_size.col;
         const nlohmann::json metadata = {

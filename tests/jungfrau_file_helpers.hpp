@@ -1,6 +1,6 @@
 #include "aare/JungfrauDataFile.hpp"
 #include "aare/NDArray.hpp"
-#include <chrono>
+#include "temporary_path.hpp"
 #include <filesystem>
 #include <fmt/format.h>
 #include <functional>
@@ -20,10 +20,7 @@ class TemporaryJungfrauFiles {
         const size_t num_frames,
         std::function<aare::NDArray<uint16_t, 2>(size_t)> frame_generator,
         const size_t num_files = 1) {
-        const auto unique =
-            std::chrono::steady_clock::now().time_since_epoch().count();
-        m_directory = std::filesystem::temp_directory_path() /
-                      ("aare-raw-" + std::to_string(unique));
+        m_directory = unique_temporary_path("aare-jungfrau", "");
 
         std::filesystem::create_directory(m_directory);
 

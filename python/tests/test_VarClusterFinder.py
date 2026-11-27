@@ -4,7 +4,7 @@ import gc
 import numpy as np
 import pytest
 
-from aare import VarClusterFinder, VarClusterHits
+from aare import FastPedestal, VarClusterFinder, VarClusterHits, read_state_header
 
 
 def frame_with_cluster(shape=(8, 8), row=3, col=4):
@@ -331,3 +331,90 @@ def test_connectivity_property():
     with pytest.raises(RuntimeError):
         cf.connectivity = 6
     assert cf.connectivity == 4
+
+
+def _configured_finder():
+    """A finder with every setting away from its default."""
+    cf = VarClusterFinder((8, 8), 50.0)
+    cf.neighbour_threshold = 15.0
+    cf.seed_factor = 4
+    cf.neighbour_factor = 1.5
+    cf.connectivity = 4
+    cf.erase_clusters = True
+    noise = np.full((8, 8), 10.0)
+    noise[3, 5] = 30.0
+    cf.noise_map = noise
+    mask = np.zeros((8, 8), dtype=bool)
+    mask[2, 4] = True
+    cf.mask = mask
+    return cf
+
+
+def _same_configuration(a, b):
+    return (
+        a.threshold == b.threshold
+        and a.neighbour_threshold == b.neighbour_threshold
+        and a.seed_factor == b.seed_factor
+        and a.neighbour_factor == b.neighbour_factor
+        and a.connectivity == b.connectivity
+        and a.erase_clusters == b.erase_clusters
+        and np.array_equal(a.noise_map, b.noise_map)
+        and np.array_equal(a.mask, b.mask)
+    )
+
+
+def test_state_file_restores_the_configuration(tmp_path):
+    original = _configured_finder()
+    assert original.save_state(tmp_path / "finder.aare") is None
+
+    header = read_state_header(tmp_path / "finder.aare")
+    assert header["type"] == "VarClusterFinder"
+    assert header["state"]["dtype"] == "<f8"
+    assert (header["state"]["rows"], header["state"]["cols"]) == (8, 8)
+
+    restored = VarClusterFinder.from_state_file(tmp_path / "finder.aare")
+    assert _same_configuration(restored, original)
+
+    # Into a finder that holds hits and other settings
+    finder = VarClusterFinder((8, 8), 1.0)
+    finder.find_clusters(frame_with_cluster())
+    assert finder.load_state(str(tmp_path / "finder.aare")) is None
+    assert _same_configuration(finder, original)
+    assert finder.total_clusters() == 0
+
+    for cf in (original, restored, finder):
+        cf.find_clusters(frame_with_cluster())
+    expected = original.steal_hits()
+    assert len(expected) > 0
+    for cf in (restored, finder):
+        hits = cf.steal_hits()
+        np.testing.assert_array_equal(hits.hits, expected.hits)
+        np.testing.assert_array_equal(hits.values, expected.values)
+
+
+def test_state_file_without_noise_map_and_mask(tmp_path):
+    VarClusterFinder((8, 8), 50.0).save_state(tmp_path / "finder.aare")
+    assert "noise_map" not in read_state_header(tmp_path / "finder.aare")["state"]
+
+    finder = _configured_finder()
+    finder.load_state(tmp_path / "finder.aare")
+    assert finder.noise_map is None
+    assert finder.mask is None
+    # The neighbour threshold follows the seed threshold again
+    finder.threshold = 70.0
+    assert finder.neighbour_threshold == 70.0
+
+
+def test_load_state_keeps_the_finder_on_error(tmp_path):
+    finder = _configured_finder()
+
+    VarClusterFinder((8, 9), 50.0).save_state(tmp_path / "other_shape.aare")
+    with pytest.raises(RuntimeError, match="state shape"):
+        finder.load_state(tmp_path / "other_shape.aare")
+    FastPedestal(8, 8).save_state(tmp_path / "pedestal.aare")
+    with pytest.raises(RuntimeError, match="expected a VarClusterFinder"):
+        finder.load_state(tmp_path / "pedestal.aare")
+    with pytest.raises(RuntimeError, match="expected a VarClusterFinder"):
+        VarClusterFinder.from_state_file(tmp_path / "pedestal.aare")
+
+    assert _same_configuration(finder, _configured_finder())

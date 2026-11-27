@@ -2,6 +2,7 @@
 #include "aare/hist/PedestalTrackingPixelHistogram.hpp"
 #include "bindings.hpp"
 #include "np_helper.hpp"
+#include "state_file.hpp"
 
 #include <cstdint>
 #include <pybind11/numpy.h>
@@ -13,26 +14,26 @@ namespace py = pybind11;
 using namespace ::aare;
 
 void define_pedestal_tracking_pixel_histogram_bindings(py::module &m) {
-    py::class_<PedestalTrackingPixelHistogram>(
+    py::class_<PedestalTrackingPixelHistogram> cls(
         m, "PedestalTrackingPixelHistogram",
         "A pixel-wise histogram of frame - pedestal residuals, with a "
-        "per-pixel running pedestal estimate sharded across worker threads")
-        .def(py::init(
-                 [](int rows, int cols, int n_bins, double xmin, double xmax,
-                    int n_threads, std::size_t max_pending, double n_sigma,
-                    std::optional<py::array_t<bool, py::array::c_style>> mask) {
-                     if (mask.has_value()) {
-                         auto view = make_view_2d(mask.value());
-                         return new PedestalTrackingPixelHistogram(
-                             rows, cols, n_bins, xmin, xmax, n_threads,
-                             max_pending, n_sigma, view);
-                     } else {
-                         return new PedestalTrackingPixelHistogram(
-                             rows, cols, n_bins, xmin, xmax, n_threads,
-                             max_pending, n_sigma);
-                     }
-                 }),
-             R"(
+        "per-pixel running pedestal estimate sharded across worker threads");
+    cls.def(py::init(
+                [](int rows, int cols, int n_bins, double xmin, double xmax,
+                   int n_threads, std::size_t max_pending, double n_sigma,
+                   std::optional<py::array_t<bool, py::array::c_style>> mask) {
+                    if (mask.has_value()) {
+                        auto view = make_view_2d(mask.value());
+                        return new PedestalTrackingPixelHistogram(
+                            rows, cols, n_bins, xmin, xmax, n_threads,
+                            max_pending, n_sigma, view);
+                    } else {
+                        return new PedestalTrackingPixelHistogram(
+                            rows, cols, n_bins, xmin, xmax, n_threads,
+                            max_pending, n_sigma);
+                    }
+                }),
+            R"(
              Initialize a PedestalTrackingPixelHistogram.
 
              Args:
@@ -63,10 +64,10 @@ void define_pedestal_tracking_pixel_histogram_bindings(py::module &m) {
                      histogramming. If not provided, all pixels are treated
                      as good.
              )",
-             py::kw_only(), py::arg("rows"), py::arg("cols"), py::arg("n_bins"),
-             py::arg("xmin"), py::arg("xmax"), py::arg("n_threads") = 1,
-             py::arg("max_pending") = std::size_t{16}, py::arg("n_sigma") = 1.0,
-             py::arg("mask") = std::nullopt)
+            py::kw_only(), py::arg("rows"), py::arg("cols"), py::arg("n_bins"),
+            py::arg("xmin"), py::arg("xmax"), py::arg("n_threads") = 1,
+            py::arg("max_pending") = std::size_t{16}, py::arg("n_sigma") = 1.0,
+            py::arg("mask") = std::nullopt)
 
         .def(
             "push_pedestal_no_update",
@@ -289,4 +290,26 @@ void define_pedestal_tracking_pixel_histogram_bindings(py::module &m) {
              Returns:
                  A 1D numpy array (dtype: float32) of bin edge values.
              )");
+
+    def_state_file<PedestalTrackingPixelHistogramState>(
+        cls,
+        "Wait for pending asynchronous fills to complete, then write the "
+        "complete state to a state file, replacing an existing file: the "
+        "counts, the pedestal, the noise of the last update_mean(), n_sigma "
+        "and the mask.",
+        "Replace the state of this histogram with the one in a state file, "
+        "including n_sigma and the mask. The image shape, the number of "
+        "bins and the range must match.");
+    cls.def_static(
+        "from_state_file",
+        [](const std::filesystem::path &filename, int n_threads,
+           std::size_t max_pending) {
+            return std::make_unique<PedestalTrackingPixelHistogram>(
+                load_state<PedestalTrackingPixelHistogramState>(filename),
+                n_threads, max_pending);
+        },
+        py::arg("filename"), py::kw_only(), py::arg("n_threads") = 1,
+        py::arg("max_pending") = std::size_t{16},
+        "Create a histogram from a state file, with the image shape, the "
+        "number of bins, the range, n_sigma and the mask stored in it.");
 }

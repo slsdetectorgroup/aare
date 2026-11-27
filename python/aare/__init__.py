@@ -35,6 +35,7 @@ from ._aare import UDPPortPosition
 
 from ._version import __version__
 from .FastPedestal import FastPedestal
+from ._aare import read_state_header
 from .Pedestal import Pedestal
 from .ClusterFinder import ClusterFinder, ClusterCollector, ClusterFinderMT, ClusterFileSink, ClusterFile
 from .ClusterVector import ClusterVector

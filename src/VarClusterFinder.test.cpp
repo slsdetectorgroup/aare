@@ -1,8 +1,10 @@
 // SPDX-License-Identifier: MPL-2.0
 #include "aare/VarClusterFinder.hpp"
 #include <algorithm>
+#include <catch2/catch_template_test_macros.hpp>
 #include <catch2/catch_test_macros.hpp>
 #include <catch2/matchers/catch_matchers_floating_point.hpp>
+#include <catch2/matchers/catch_matchers_string.hpp>
 #include <cstdlib>
 #include <set>
 #include <utility>
@@ -570,4 +572,162 @@ TEST_CASE("A fixed neighbour threshold grows clusters below the seed "
     finder.set_threshold(15.0);
     CHECK(finder.neighbour_threshold() == 15.0);
     CHECK(size_of_first_hit() == 9);
+}
+
+namespace {
+
+// A finder with every setting away from its default, a noise map and a mask
+template <typename T> VarClusterFinder<T> configured_finder() {
+    VarClusterFinder<T> finder({8, 10}, T{50});
+    finder.set_neighbour_threshold(T{15});
+    finder.set_seed_factor(4);
+    finder.set_neighbour_factor(1.5);
+    finder.set_connectivity(4);
+    finder.set_erase_clusters(true);
+    NDArray<T, 2> noise({8, 10}, T{10});
+    noise(2, 3) = T{30};
+    finder.set_noise_map(noise.view());
+    NDArray<bool, 2> mask({8, 10}, false);
+    mask(5, 6) = true;
+    finder.set_mask(mask.view());
+    return finder;
+}
+
+template <typename T> NDArray<T, 2> frame_with_clusters() {
+    NDArray<T, 2> img({8, 10}, T{0});
+    for (auto [row, col] : {std::pair{2, 2}, std::pair{5, 5}}) {
+        img(row, col) = T{100};
+        img(row, col + 1) = T{20};
+        img(row + 1, col - 1) = T{20}; // joins through a diagonal only
+    }
+    return img;
+}
+
+template <typename A, typename B>
+void require_same_hits(const A &actual, const B &expected) {
+    REQUIRE(expected.size() > 0);
+    REQUIRE(actual.size() == expected.size());
+    REQUIRE(actual.rows == expected.rows);
+    REQUIRE(actual.cols == expected.cols);
+    for (size_t i = 0; i < expected.size(); ++i) {
+        REQUIRE(actual.hits[i].size == expected.hits[i].size);
+        REQUIRE(static_cast<double>(actual.hits[i].energy) ==
+                static_cast<double>(expected.hits[i].energy));
+    }
+}
+
+} // namespace
+
+TEMPLATE_TEST_CASE("A finder restored from a state finds the same clusters",
+                   "[varcluster]", double, float, int32_t) {
+    auto original = configured_finder<TestType>();
+    // With the noise map and, once that is removed, the fixed thresholds
+    for (const bool with_noise_map : {true, false}) {
+        CAPTURE(with_noise_map);
+        if (!with_noise_map)
+            original.clear_noise_map();
+        const auto state = original.state();
+        REQUIRE(state.dtype == Dtype(typeid(TestType)));
+        REQUIRE(state.noise_map.has_value() == with_noise_map);
+
+        VarClusterFinder<TestType> restored(state);
+        // A finder with other settings that takes the state
+        VarClusterFinder<TestType> given({8, 10}, TestType{1});
+        given.set_state(state);
+
+        auto expected_img = frame_with_clusters<TestType>();
+        original.find_clusters(expected_img.view());
+        const auto expected = original.steal_hits();
+        for (auto *finder : {&restored, &given}) {
+            auto img = frame_with_clusters<TestType>();
+            finder->find_clusters(img.view());
+            require_same_hits(finder->steal_hits(), expected);
+            REQUIRE(img == expected_img); // erased alike
+            REQUIRE(finder->labeled() == original.labeled());
+            REQUIRE(finder->neighbour_threshold() == TestType{15});
+            REQUIRE(finder->seed_factor() == original.seed_factor());
+            REQUIRE(finder->connectivity() == 4);
+            REQUIRE(finder->mask() == original.mask());
+        }
+    }
+}
+
+TEST_CASE("A finder state does not depend on the pixel type", "[varcluster]") {
+    auto original = configured_finder<double>();
+    VarClusterFinder<int32_t> restored(original.state());
+    REQUIRE(restored.state().dtype == Dtype::INT32);
+    REQUIRE(restored.seed_factor() == 4);
+    REQUIRE(restored.neighbour_factor() == 1.5);
+
+    auto expected_img = frame_with_clusters<double>();
+    auto img = frame_with_clusters<int32_t>();
+    original.find_clusters(expected_img.view());
+    restored.find_clusters(img.view());
+    require_same_hits(restored.steal_hits(), original.steal_hits());
+}
+
+TEST_CASE("A finder given a state keeps following the seed threshold and "
+          "drops its hits",
+          "[varcluster]") {
+    Finder original({8, 10}, 50.0);
+    const auto state = original.state();
+    REQUIRE_FALSE(state.neighbour_threshold.has_value());
+    REQUIRE_FALSE(state.noise_map.has_value());
+    REQUIRE_FALSE(state.mask.has_value());
+
+    auto finder = configured_finder<double>();
+    auto img = frame_with_clusters<double>();
+    finder.find_clusters(img.view());
+    REQUIRE(finder.total_clusters() > 0);
+
+    finder.set_state(state);
+    REQUIRE(finder.total_clusters() == 0);
+    REQUIRE(finder.labeled() == NDArray<int32_t, 2>({8, 10}, 0));
+    REQUIRE_FALSE(finder.noise_map().has_value());
+    REQUIRE_FALSE(finder.mask().has_value());
+    finder.set_threshold(70.0);
+    REQUIRE(finder.neighbour_threshold() == 70.0);
+}
+
+TEST_CASE("A finder rejects an invalid state and stays unchanged",
+          "[varcluster]") {
+    using Catch::Matchers::ContainsSubstring;
+    auto finder = configured_finder<int32_t>();
+    const auto valid = Finder({8, 10}, 50.0).state();
+
+    auto other_shape = valid;
+    other_shape.rows = 9;
+    REQUIRE_THROWS_WITH(finder.set_state(other_shape),
+                        ContainsSubstring("state shape (9, 10)"));
+    auto bad_noise_map = valid;
+    bad_noise_map.noise_map = NDArray<double, 2>({8, 9}, 1.0);
+    REQUIRE_THROWS_WITH(finder.set_state(bad_noise_map),
+                        ContainsSubstring("noise map of the state"));
+    auto bad_mask = valid;
+    bad_mask.mask = NDArray<bool, 2>({7, 10}, false);
+    REQUIRE_THROWS_WITH(finder.set_state(bad_mask),
+                        ContainsSubstring("mask of the state"));
+    auto bad_connectivity = valid;
+    bad_connectivity.connectivity = 6;
+    REQUIRE_THROWS_WITH(finder.set_state(bad_connectivity),
+                        ContainsSubstring("connectivity 6"));
+    // What an int32 cannot hold
+    auto too_large = valid;
+    too_large.threshold = 1e10;
+    REQUIRE_THROWS_WITH(finder.set_state(too_large),
+                        ContainsSubstring("outside the range"));
+    auto nan_noise = valid;
+    nan_noise.noise_map = NDArray<double, 2>({8, 10}, 1.0);
+    (*nan_noise.noise_map)(1, 1) = std::numeric_limits<double>::quiet_NaN();
+    REQUIRE_THROWS_WITH(finder.set_state(nan_noise),
+                        ContainsSubstring("outside the range"));
+    REQUIRE_THROWS_AS(VarClusterFinder<double>(VarClusterFinderState{}),
+                      std::runtime_error);
+
+    const auto state = finder.state();
+    const auto expected = configured_finder<int32_t>().state();
+    REQUIRE(state.threshold == expected.threshold);
+    REQUIRE(state.connectivity == 4);
+    REQUIRE(state.noise_map == expected.noise_map);
+    REQUIRE(state.mask == expected.mask);
 }

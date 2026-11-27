@@ -3,6 +3,7 @@
 
 #include "aare/Pedestal.hpp"
 #include "np_helper.hpp"
+#include "state_file.hpp"
 
 #include <cstdint>
 #include <filesystem>
@@ -15,16 +16,16 @@ namespace py = pybind11;
 template <typename SUM_TYPE>
 void define_pedestal_bindings(py::module &m, const std::string &name) {
 
-    py::class_<Pedestal<SUM_TYPE>>(
+    py::class_<Pedestal<SUM_TYPE>> cls(
         m, name.c_str(),
         "Maintain a per-pixel running mean and population standard deviation. "
         "Statistics are available during initialization and are zero for empty "
         "pixels.",
-        py::buffer_protocol())
-        .def(py::init<uint32_t, uint32_t, uint32_t>(), py::arg("rows"),
-             py::arg("cols"), py::arg("n_samples"),
-             "Construct an empty pedestal. Each pixel accumulates n_samples "
-             "values before switching to exponential updates.")
+        py::buffer_protocol());
+    cls.def(py::init<uint32_t, uint32_t, uint32_t>(), py::arg("rows"),
+            py::arg("cols"), py::arg("n_samples"),
+            "Construct an empty pedestal. Each pixel accumulates n_samples "
+            "values before switching to exponential updates.")
         .def(py::init<uint32_t, uint32_t>(), py::arg("rows"), py::arg("cols"),
              "Construct an empty pedestal with n_samples=1000.")
         .def(
@@ -132,6 +133,21 @@ void define_pedestal_bindings(py::module &m, const std::string &name) {
                                           sizeof(SUM_TYPE))},
                 true);
         });
+
+    def_state_file<aare::PedestalState>(
+        cls,
+        "Write the complete state of the pedestal to a state file, "
+        "replacing an existing file.",
+        "Replace the state of this pedestal with the one in a state file. "
+        "The image shape must match; the dtype of this pedestal is kept.");
+    cls.def_static(
+        "from_state_file",
+        [](const std::filesystem::path &filename) {
+            return Pedestal<SUM_TYPE>(
+                aare::load_state<aare::PedestalState>(filename));
+        },
+        py::arg("filename"),
+        "Create a pedestal of this dtype from a state file.");
 }
 
 void bind_pedestals(py::module &m) {

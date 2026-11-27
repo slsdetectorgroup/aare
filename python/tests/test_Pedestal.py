@@ -2,7 +2,7 @@
 import numpy as np
 import pytest
 
-from aare import Pedestal, Pedestal_d, Pedestal_f, Pedestal_i16
+from aare import FastPedestal, Pedestal, Pedestal_d, Pedestal_f, Pedestal_i16
 
 
 @pytest.mark.parametrize(
@@ -202,3 +202,68 @@ def test_pedestal_rejects_inputs_with_wrong_ndim(dtype, input_name, shape):
             pedestal.push_with_threshold(frame, invalid)
 
     np.testing.assert_array_equal(pedestal.mean(), np.zeros((2, 3)))
+
+
+def _state_test_frames(n_frames, shape=(3, 4)):
+    rng = np.random.default_rng(42)
+    return rng.integers(1000, 1100, size=(n_frames, *shape), dtype=np.uint16)
+
+
+@pytest.mark.parametrize("dtype", [np.float64, np.float32, np.int16])
+@pytest.mark.parametrize("frames_before", [0, 3, 8])
+def test_pedestal_continues_from_state_file(tmp_path, dtype, frames_before):
+    # Empty, initializing and updated after settling
+    frames = _state_test_frames(frames_before + 10)
+    original = Pedestal(3, 4, n_samples=5, dtype=dtype)
+    for frame in frames[:frames_before]:
+        original.push(frame)
+    assert original.save_state(tmp_path / "pedestal.aare") is None
+
+    # A new pedestal of the stored dtype, and one that holds other data
+    restored = Pedestal.load_state(tmp_path / "pedestal.aare")
+    assert type(restored) is type(original)
+    given = Pedestal(3, 4, n_samples=2, dtype=dtype)
+    given.push(_state_test_frames(1)[0] + 500)
+    assert given.load_state(str(tmp_path / "pedestal.aare")) is None
+
+    for pedestal in (restored, given):
+        assert pedestal.n_samples == 5
+        for frame in frames[frames_before:]:
+            pedestal.push(frame)
+    for frame in frames[frames_before:]:
+        original.push(frame)
+    for pedestal in (restored, given):
+        np.testing.assert_array_equal(pedestal.mean(), original.mean())
+        np.testing.assert_array_equal(pedestal.std(), original.std())
+
+
+def test_pedestal_load_state_takes_another_dtype(tmp_path):
+    original = Pedestal(3, 4, n_samples=5, dtype=np.float64)
+    for frame in _state_test_frames(8):
+        original.push(frame)
+    original.save_state(tmp_path / "pedestal.aare")
+
+    restored = Pedestal.load_state(tmp_path / "pedestal.aare", dtype=np.float32)
+    assert isinstance(restored, Pedestal_f)
+    np.testing.assert_array_equal(restored.mean(), original.mean().astype(np.float32))
+    with pytest.raises(ValueError, match="Unsupported dtype for Pedestal"):
+        Pedestal.load_state(tmp_path / "pedestal.aare", dtype=np.int32)
+
+
+def test_pedestal_load_state_keeps_the_pedestal_on_error(tmp_path):
+    pedestal = Pedestal(3, 4, n_samples=5)
+    pedestal.push(_state_test_frames(1)[0])
+    mean = pedestal.mean()
+
+    Pedestal(4, 3).save_state(tmp_path / "other_shape.aare")
+    with pytest.raises(RuntimeError, match=r"expected \(3, 4\)"):
+        pedestal.load_state(tmp_path / "other_shape.aare")
+    # The state file of a FastPedestal is not that of a Pedestal
+    FastPedestal(3, 4).save_state(tmp_path / "fast.aare")
+    with pytest.raises(RuntimeError, match="expected a Pedestal"):
+        pedestal.load_state(tmp_path / "fast.aare")
+    with pytest.raises(RuntimeError, match="expected a Pedestal"):
+        Pedestal.load_state(tmp_path / "fast.aare")
+
+    assert pedestal.n_samples == 5
+    np.testing.assert_array_equal(pedestal.mean(), mean)

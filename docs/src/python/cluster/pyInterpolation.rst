@@ -114,6 +114,12 @@ Interpolation class for :math:`\eta`-Interpolation
     Make sure to use reasonable energy bins, when constructing the joint distribution. If data is too sparse for a given energy the interpolation will lead to erreneous results.
 
 
+The transformed :math:`\eta`-distributions can be stored and used again:
+``interpolator.save_state(filename)`` writes them with the bin edges to a
+state file, ``Interpolator.from_state_file(filename)`` returns a new
+interpolator from it and ``interpolator.load_state(filename)`` loads it into
+an existing one. The file format is described in :doc:`../../StateFile`.
+
 .. py:currentmodule:: aare
 
 .. autoclass:: Interpolator

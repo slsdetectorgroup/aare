@@ -3,10 +3,10 @@
 #include "aare/Cluster.hpp"
 #include "aare/ClusterFile.hpp"
 #include "aare/ClusterFinderMT.hpp"
+#include "temporary_path.hpp"
 
 #include <algorithm>
 #include <catch2/catch_test_macros.hpp>
-#include <chrono>
 #include <cstdint>
 #include <filesystem>
 #include <string>
@@ -26,11 +26,7 @@ class TemporarySinkFile {
 
   public:
     TemporarySinkFile() {
-        const auto unique =
-            std::chrono::steady_clock::now().time_since_epoch().count();
-        m_path =
-            std::filesystem::temp_directory_path() /
-            ("aare-cluster-file-sink-" + std::to_string(unique) + ".clust");
+        m_path = unique_temporary_path("aare-cluster-file-sink", ".clust");
     }
     TemporarySinkFile(const TemporarySinkFile &) = delete;
     TemporarySinkFile &operator=(const TemporarySinkFile &) = delete;

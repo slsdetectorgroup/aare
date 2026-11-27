@@ -5,11 +5,13 @@
 #include "aare/ClusterFinder.hpp"
 #include "aare/ClusterFinderMT.hpp"
 #include "aare/ClusterVector.hpp"
+#include "aare/FastPedestal.hpp"
 #include "aare/NDView.hpp"
 #include "aare/Pedestal.hpp"
 
 #include "module_config.hpp"
 #include "np_helper.hpp"
+#include "state_file.hpp"
 
 #include <cstdint>
 #include <filesystem>
@@ -28,12 +30,12 @@ void define_ClusterFinder(py::module &m, const std::string &typestr) {
 
     using ClusterType = Cluster<T, ClusterSizeX, ClusterSizeY, CoordType>;
 
-    py::class_<ClusterFinder<ClusterType, uint16_t, pd_type>>(
-        m, class_name.c_str())
-        .def(py::init<Shape<2>, pd_type, size_t, size_t>(),
-             py::arg("image_size"), py::arg("n_sigma") = 5.0,
-             py::arg("capacity") = 1'000'000,
-             py::arg("min_pedestal_samples") = 1000)
+    py::class_<ClusterFinder<ClusterType, uint16_t, pd_type>> cls(
+        m, class_name.c_str());
+    cls.def(py::init<Shape<2>, pd_type, size_t, size_t>(),
+            py::arg("image_size"), py::arg("n_sigma") = 5.0,
+            py::arg("capacity") = 1'000'000,
+            py::arg("min_pedestal_samples") = 1000)
 
         .def_property(
             "nSigma",
@@ -89,4 +91,58 @@ void define_ClusterFinder(py::module &m, const std::string &typestr) {
                 return;
             },
             py::arg("frame").noconvert(), py::arg("frame_number") = 0);
+
+    def_state_file<aare::ClusterFinderState>(
+        cls,
+        "Write the complete state of the cluster finder to a state file, "
+        "replacing an existing file. Clusters not yet taken with "
+        "steal_clusters() are not stored.",
+        "Replace the state of this cluster finder with the one in a state "
+        "file. The cluster size and the image shape must match; the dtype "
+        "of this finder is kept and clusters it still holds are dropped.");
+
+    // The pedestal alone, from a FastPedestal of any bound dtype or from its
+    // state file
+    const char *set_pedestal_doc =
+        "Replace the pedestal with a copy of a FastPedestal of any dtype "
+        "with the same image shape. nSigma is kept and the threshold is "
+        "recomputed once the pedestal is ready.";
+    for_each_fast_pedestal_type([&](auto type) {
+        using Pedestal = typename decltype(type)::type;
+        cls.def(
+            "set_pedestal",
+            [](ClusterFinder<ClusterType, uint16_t, pd_type> &self,
+               const Pedestal &pedestal) { self.set_pedestal(pedestal); },
+            py::arg("pedestal"), set_pedestal_doc);
+    });
+    cls.def("get_pedestal",
+            &ClusterFinder<ClusterType, uint16_t, pd_type>::get_pedestal,
+            "Return a copy of the pedestal as a FastPedestal.");
+    cls.def(
+        "save_pedestal",
+        [](const ClusterFinder<ClusterType, uint16_t, pd_type> &self,
+           const std::filesystem::path &filename) {
+            aare::save_state(self.get_pedestal().state(), filename);
+        },
+        py::arg("filename"),
+        "Write the pedestal to a state file of a FastPedestal.");
+    cls.def(
+        "load_pedestal",
+        [](ClusterFinder<ClusterType, uint16_t, pd_type> &self,
+           const std::filesystem::path &filename) {
+            self.set_pedestal(
+                aare::load_state<aare::FastPedestalState>(filename));
+        },
+        py::arg("filename"),
+        "Replace the pedestal with the one in a state file of a "
+        "FastPedestal, see set_pedestal().");
+    cls.def_static(
+        "from_state_file",
+        [](const std::filesystem::path &filename, size_t capacity) {
+            return ClusterFinder<ClusterType, uint16_t, pd_type>(
+                aare::load_state<aare::ClusterFinderState>(filename), capacity);
+        },
+        py::arg("filename"), py::arg("capacity") = 1'000'000,
+        "Create a cluster finder of this cluster size and dtype from a "
+        "state file.");
 }

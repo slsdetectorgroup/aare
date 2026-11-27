@@ -155,6 +155,55 @@ lives in `python/aare/transform.py` on top of C++ generators.
 - `hist/PixelHistogram` and `PedestalTrackingPixelHistogram` build per-pixel
   histograms across a frame series, multithreaded by row bands.
 
+### State files
+
+Saving and restoring what an object has accumulated is split in two layers;
+`docs/src/StateFile.rst` is the format reference and must change with the
+format.
+
+- **State struct.** The class hands out a plain-data struct and takes it
+  back (`state()`, `set_state()` and a constructor; `FastPedestalState`,
+  `PedestalState`, `ClusterFinderState`, `ClusterFinderMTState`,
+  `VarClusterFinderState`, `PixelHistogramState<StorageType>`,
+  `PedestalTrackingPixelHistogramState`, `InterpolatorState`). It lives in the header of
+  its class, holds no redundant fields and knows nothing about files. It
+  stores its numbers as double and records the types it came from in dtype
+  fields that `set_state()` ignores, so an object with other value types can
+  take it. The exception is `PixelHistogramState`, templated on the storage
+  type because the counts are too large to keep as double as well. `set_state()` checks the state before it changes anything, with a
+  `check_state()` that a class holding several such objects calls on all of
+  them first. `ClusterFinderMT` reaches its per-thread finders through
+  `idle_finders()`, also for its state.
+- **File.** `StateFile.hpp` declares `save_state()`, `load_state<State>()`
+  and `read_state_header()`. The shared `StateWriter` and `StateReader` are
+  in the private header `src/StateFileIO.hpp`, so nlohmann JSON stays out of
+  the public headers. Saves to the same file must not overlap.
+- **Adding a state.** In `src/StateFile.cpp`, specialize `StateFormat` with
+  the `name`, the `version` and a `fields()` that calls
+  `field("key", state.member)` for each member, and add the type to the
+  list of instantiations at the end of the file. The same description
+  writes and reads. A member can be a `Dtype`, an unsigned integer, a
+  `double`, a `bool`, an `NDArray<T, Ndim>` (also `bool`), another state, a
+  `std::vector` of states, or a `std::optional` of one of these; any other
+  kind needs an overload in the `Fields` of both the writer and the reader.
+- **Versions.** The reader ignores unknown header fields. A field added
+  later is described with its value for the files without it,
+  `field("key", state.member, value)`, and changes no version. Removing a
+  field or changing its meaning increases the `version` of that type;
+  `format_version` is for the layout and the header outside `"state"`.
+- **Python.** `def_state_file<State>(cls, ...)` from
+  `python/src/state_file.hpp` binds `save_state(filename)` and
+  `load_state(filename)` as instance methods, the latter loading into the
+  object it is called on; the class also binds a static
+  `from_state_file(filename)` that returns a new object. The
+  dtype-selecting factory exposes that one as
+  `Factory.load_state(filename, dtype=None)`, where `None` means the dtype
+  recorded in the file, read with `_stored_state_fields()` from
+  `factory.py`; a class bound for one type only, as `VarClusterFinder`, has
+  no factory and is created with `from_state_file()`. What a state is tied to, such as the cluster size, always
+  comes from the file. Do not bind `load_state` as a static method: called
+  on an existing object it would silently leave it unchanged.
+
 ### Fitting
 
 `Fit.hpp`, `FitModel<Model>`, and `Models.hpp` (`Gaussian`, `Pol1`, `Pol2`,

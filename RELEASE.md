@@ -34,6 +34,91 @@
   ``gap_pixels`` argument, and inserts gap pixels while frames are
   assembled. ``rows()``, ``cols()`` and every returned frame then include
   the gaps, for the full frame and for each ROI.
+- ``FastPedestal`` can hand out and take back its complete state in C++:
+  ``state()`` returns a plain ``FastPedestalState`` (``n_samples``,
+  ``cur_samples``, the per-pixel ``sum`` and ``sum2``, and the ``dtype`` of
+  the pedestal it came from), and ``set_state()`` or the new constructor
+  restore it, so a pedestal continues exactly where it stopped. A pedestal of
+  any type can take the state, and it is not tied to a file format.
+- Added state files to keep such a state: ``save_state(state, fname)``,
+  ``load_state<FastPedestalState>(fname)`` and ``read_state_header(fname)``
+  in C++ (``aare/StateFile.hpp``); ``pedestal.save_state(fname)``,
+  ``FastPedestal.load_state(fname, dtype=None)`` for a new pedestal of the
+  stored dtype unless one is given, ``pedestal.load_state(fname)`` to load
+  into an existing one, and ``aare.read_state_header(fname)`` in Python. A
+  state file is a JSON header followed by the arrays as raw data; the layout
+  is documented and can be read with NumPy only. A pedestal taken once from a
+  dark run can be stored and reused for other files or in other processes.
+- ``ClusterFinder`` can be stored and restored the same way. In C++
+  ``state()`` returns a ``ClusterFinderState`` (the pedestal state,
+  ``n_sigma``, the threshold as last computed, and the cluster size and
+  cluster dtype of the finder it came from), ``set_state()`` or the new
+  constructor restore it, and ``save_state()`` and
+  ``load_state<ClusterFinderState>()`` keep it in a state file. In Python:
+  ``finder.save_state(fname)``, ``ClusterFinder.load_state(fname,
+  dtype=None, capacity=1024)`` for a new finder with the stored cluster size
+  and, unless one is given, the stored dtype, and ``finder.load_state(fname)``
+  to load into an existing one. A state only loads into a finder with the
+  same cluster size and image shape. Clusters that have not been taken with
+  ``steal_clusters()`` are not stored, and loading into an existing finder
+  drops those it holds.
+- ``ClusterFinder::set_pedestal()`` gives a finder the pedestal of a
+  ``FastPedestal``, passed itself or as its state, keeping ``nSigma`` and recomputing the threshold if the
+  pedestal is ready. In Python: ``finder.set_pedestal(pedestal)`` and, from
+  the state file of a pedestal, ``finder.load_pedestal(fname)``.
+  ``get_pedestal()`` returns a copy of the pedestal as a ``FastPedestal``
+  and, in Python, ``finder.save_pedestal(fname)`` writes its state file.
+- ``ClusterFinderMT`` can be stored and restored as well. Its
+  ``ClusterFinderMTState`` holds the state of the cluster finder of every
+  thread, whose pedestals differ, and the thread that takes the next frame;
+  ``state()``, ``set_state()``, a constructor and ``save_state()`` /
+  ``load_state<ClusterFinderMTState>()`` work as for ``ClusterFinder``.
+  In Python: ``finder.save_state(fname)``,
+  ``ClusterFinderMT.load_state(fname, dtype=None)`` for a new finder and
+  ``finder.load_state(fname, thread_index=None)``, which also takes the
+  state file of a ``ClusterFinder`` for all threads or one.
+  ``set_pedestal``, ``load_pedestal``, ``get_pedestal`` and
+  ``save_pedestal`` take a thread index, and ``n_threads`` returns the
+  number of threads.
+- ``VarClusterFinder`` can store and restore its configuration: the
+  thresholds, the factors, the connectivity, ``erase_clusters``, the noise
+  map and the mask. In C++ ``state()`` returns a ``VarClusterFinderState``,
+  ``set_state()`` or the new constructor restore it, and ``save_state()``
+  and ``load_state<VarClusterFinderState>()`` keep it in a state file. In
+  Python: ``finder.save_state(fname)``,
+  ``VarClusterFinder.from_state_file(fname)`` for a new finder and
+  ``finder.load_state(fname)`` to load into an existing one with the same
+  image shape. Hits are not stored.
+- ``Pedestal`` can be stored and restored like ``FastPedestal``:
+  ``state()`` returns a ``PedestalState`` (``n_samples``, the per-pixel
+  ``cur_samples``, ``sum`` and ``sum2``, and the ``dtype`` of the pedestal
+  it came from), ``set_state()`` or the new constructor restore it, and
+  ``save_state()`` and ``load_state<PedestalState>()`` keep it in a state
+  file. In Python: ``pedestal.save_state(fname)``,
+  ``Pedestal.load_state(fname, dtype=None)`` for a new pedestal and
+  ``pedestal.load_state(fname)`` to load into an existing one.
+- ``PixelHistogram`` can store and restore its counts. In C++ ``state()``
+  returns a ``PixelHistogramState<StorageType>`` (the range and the counts),
+  ``set_state()`` or the new constructor restore it, and ``save_state()``
+  and ``load_state<PixelHistogramState<StorageType>>()`` keep it in a state
+  file. In Python: ``hist.save_state(fname)``,
+  ``PixelHistogram_u16.from_state_file(fname, n_threads=1)`` (and the other
+  variants) for a new histogram and ``hist.load_state(fname)`` to load into
+  an existing one with the same shape, bins and range. The counts keep
+  their storage dtype and are not converted.
+- ``PedestalTrackingPixelHistogram`` can be stored and restored the same
+  way. Its ``PedestalTrackingPixelHistogramState`` holds the counts, the
+  pedestal of the whole image, the noise as of the last ``update_mean()``,
+  ``n_sigma`` and the mask, and does not depend on the number of threads.
+  In Python: ``hist.save_state(fname)``,
+  ``PedestalTrackingPixelHistogram.from_state_file(fname, n_threads=1)``
+  and ``hist.load_state(fname)``.
+- ``Interpolator`` can store and restore its bin edges and transformed eta
+  distributions: ``state()``, ``set_state()`` and a constructor with an
+  ``InterpolatorState`` in C++, and in Python
+  ``interpolator.save_state(fname)``,
+  ``Interpolator.from_state_file(fname)`` and
+  ``interpolator.load_state(fname)``.
 
 ### API Changes:
 
@@ -41,6 +126,13 @@
   is running and no longer raises on a collector that is not stopped. It
   returns the clusters collected since the last call; call ``sync()`` on the
   ``ClusterFinderMT`` first to get those of every frame given to it so far.
+- ``ClusterFinderMT`` no longer needs ``stop()`` to read or change the
+  cluster finders of its threads. ``pedestal()``, ``noise()``,
+  ``clear_pedestal()`` and ``update_threshold()`` threw on a running
+  finder; they, and the new state and pedestal functions, now wait for the
+  frames given so far to be processed, as ``set_nSigma()`` and
+  ``pedestal_ready()`` did. They must be called from the thread that gives
+  the finder its frames.
 - ``ClusterCollector`` has ``start()``, which starts the collector thread
   again after ``stop()``. Both do nothing when there is nothing to do.
 - ``VarClusterFinder`` keeps only the flood fill. ``find_clusters_X`` is now
@@ -68,6 +160,11 @@
   a method. ``set_numberOfNeighbours`` is ``set_connectivity`` in C++ and
   the ``connectivity`` property in Python.
 
+- ``Dtype::to_string()`` returns the string NumPy writes: ``"|i1"`` and
+  ``"|u1"`` for the one-byte types and a byte order for ``float`` and
+  ``double`` (``"<f4"``, ``"<f8"``; they were ``"f4"`` and ``"f8"``).
+  ``Dtype`` reads both forms as before.
+
 ### Other:
 
 - ``RawFile`` assembles multi-module frames through one placement path with
@@ -79,6 +176,13 @@
 
 ### Bugfixes:
 
+- Fixed ``ClusterFinderMT`` occasionally dropping a frame, and with it one
+  of the frame buffers of that thread, when the queue of the thread was
+  full: ``find_clusters()`` and ``push_pedestal_frame()`` now wait for room
+  in the queue. With ``queue_depth=1`` the lost buffer made the next frame
+  wait forever.
+- Fixed ``ClusterFinderMT::stop()`` occasionally leaving the clusters of
+  the last frames of a thread behind instead of moving them to the sink.
 - Destroying a running ``ClusterFinderMT`` no longer terminates the program.
   The destructor stops the threads without waiting for the frames and
   clusters still in the queues, so it also returns when nothing empties the

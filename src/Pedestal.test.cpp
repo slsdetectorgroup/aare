@@ -4,6 +4,7 @@
 #include <catch2/catch_template_test_macros.hpp>
 #include <catch2/catch_test_macros.hpp>
 #include <catch2/matchers/catch_matchers_floating_point.hpp>
+#include <catch2/matchers/catch_matchers_string.hpp>
 #include <chrono>
 #include <random>
 
@@ -150,4 +151,113 @@ TEST_CASE("test pedestal with normal distribution") {
                          Catch::Matchers::WithinAbs(STD, STD * TOLERANCE));
         }
     }
+}
+
+namespace {
+
+// Pixel values around 1000 that differ from pixel to pixel and frame to frame
+NDArray<uint16_t, 2> pedestal_test_frame(uint32_t frame_index) {
+    NDArray<uint16_t, 2> pixels({3, 4});
+    for (ssize_t i = 0; i < pixels.size(); ++i) {
+        pixels[i] = static_cast<uint16_t>(
+            1000 + (frame_index * 37 + static_cast<uint32_t>(i) * 11) % 97);
+    }
+    return pixels;
+}
+
+} // namespace
+
+TEMPLATE_TEST_CASE("pedestal restored from a state continues identically",
+                   "[pedestal]", double, float, int16_t) {
+    // A threshold that only some pixels pass leaves the counts unequal
+    NDArray<TestType, 2> threshold({3, 4}, TestType{40});
+    auto push = [&](Pedestal<TestType> &pedestal, uint32_t frame_index) {
+        auto pixels = pedestal_test_frame(frame_index);
+        if (frame_index % 2 == 0) {
+            pedestal.push(pixels.view());
+        } else {
+            pedestal.push_with_threshold(pixels.view(), threshold.view());
+        }
+    };
+
+    // Stored empty, while initializing and after some pixels have settled
+    for (const uint32_t frames_before : {0u, 3u, 9u}) {
+        CAPTURE(frames_before);
+        Pedestal<TestType> original(3, 4, 5);
+        uint32_t frame_index = 0;
+        for (; frame_index < frames_before; ++frame_index) {
+            push(original, frame_index);
+        }
+        const auto state = original.state();
+        REQUIRE(state.dtype == Dtype(typeid(TestType)));
+        REQUIRE(state.n_samples == 5);
+
+        Pedestal<TestType> restored(state);
+        // A pedestal that holds other data, with another n_samples
+        Pedestal<TestType> given(3, 4, 2);
+        given.push(pedestal_test_frame(50).view());
+        given.set_state(state);
+
+        for (auto *pedestal : {&restored, &given}) {
+            REQUIRE(pedestal->mean() == original.mean());
+            REQUIRE(pedestal->n_samples() == 5);
+        }
+        for (uint32_t i = 0; i < 10; ++i, ++frame_index) {
+            push(original, frame_index);
+            push(restored, frame_index);
+            push(given, frame_index);
+        }
+        for (auto *pedestal : {&restored, &given}) {
+            REQUIRE(pedestal->cur_samples() == original.cur_samples());
+            REQUIRE(pedestal->state().sum == original.state().sum);
+            REQUIRE(pedestal->state().sum2 == original.state().sum2);
+            REQUIRE(pedestal->mean() == original.mean());
+            REQUIRE(pedestal->std() == original.std());
+        }
+    }
+}
+
+TEST_CASE("pedestal state does not depend on the pedestal type", "[pedestal]") {
+    Pedestal<double> original(3, 4, 5);
+    for (uint32_t i = 0; i < 8; ++i) {
+        original.push(pedestal_test_frame(i).view());
+    }
+    Pedestal<float> restored(original.state());
+    REQUIRE(restored.state().dtype == Dtype::FLOAT);
+    for (uint32_t row = 0; row < 3; ++row) {
+        for (uint32_t col = 0; col < 4; ++col) {
+            REQUIRE(restored.mean(row, col) ==
+                    static_cast<float>(original.mean(row, col)));
+        }
+    }
+}
+
+TEST_CASE("pedestal rejects an invalid state and stays unchanged",
+          "[pedestal]") {
+    using Catch::Matchers::ContainsSubstring;
+    Pedestal<double> pedestal(3, 4, 5);
+    pedestal.push(pedestal_test_frame(0).view());
+    const auto valid = pedestal.state();
+    const auto mean = pedestal.mean();
+
+    auto other_shape = Pedestal<double>(4, 3, 5).state();
+    REQUIRE_THROWS_WITH(pedestal.set_state(other_shape),
+                        ContainsSubstring("expected (3, 4)"));
+    auto uneven = valid;
+    uneven.sum2 = NDArray<double, 2>({3, 5}, 0.0);
+    REQUIRE_THROWS_WITH(pedestal.set_state(uneven),
+                        ContainsSubstring("expected (3, 4)"));
+    auto no_samples = valid;
+    no_samples.n_samples = 0;
+    REQUIRE_THROWS_WITH(pedestal.set_state(no_samples),
+                        ContainsSubstring("n_samples=0 must be positive"));
+    auto too_many = valid;
+    too_many.cur_samples(2, 3) = 6;
+    REQUIRE_THROWS_WITH(pedestal.set_state(too_many),
+                        ContainsSubstring("at most n_samples"));
+    REQUIRE_THROWS_AS(Pedestal<double>(PedestalState{}), std::runtime_error);
+
+    REQUIRE(pedestal.n_samples() == 5);
+    REQUIRE(pedestal.cur_samples() == valid.cur_samples);
+    REQUIRE(pedestal.mean() == mean);
 }

@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: MPL-2.0
 #include <catch2/catch_test_macros.hpp>
 #include <catch2/generators/catch_generators.hpp>
+#include <catch2/matchers/catch_matchers_string.hpp>
 
 #include "aare/logger.hpp"
 #include <chrono>
@@ -320,4 +321,77 @@ TEST_CASE("PixelHistogram supports custom storage and axis types") {
     auto centers = hist.bin_centers();
     STATIC_REQUIRE(std::is_same_v<decltype(centers(0)), double &>);
     CHECK(centers.shape(0) == 4);
+}
+
+namespace {
+
+// A different value in every pixel, moving through the bins from frame to
+// frame, some of them outside the range
+NDArray<float, 2> state_test_image(int frame_index) {
+    NDArray<float, 2> image({7, 5});
+    for (ssize_t i = 0; i < image.size(); ++i) {
+        image[i] =
+            static_cast<float>((frame_index * 7 + i * 3) % 23) * 0.5f - 0.5f;
+    }
+    return image;
+}
+
+} // namespace
+
+TEST_CASE("A histogram restored from a state is filled further identically",
+          "[pixel-histogram]") {
+    PixelHistogram<uint16_t, float> original(7, 5, 20, 0.0f, 10.0f, 3);
+    int frame_index = 0;
+    for (; frame_index < 6; ++frame_index) {
+        original.fill_async(state_test_image(frame_index));
+    }
+    // Taken without flush(): the images given so far are included
+    const auto state = original.state();
+    // The arrays are compared in parentheses: Catch cannot print them
+    REQUIRE(state.xmin == 0.0);
+    REQUIRE(state.xmax == 10.0);
+    REQUIRE((state.values == original.values()));
+
+    // With another number of threads, whose row bands differ
+    PixelHistogram<uint16_t, float> restored(state, 2);
+    // A histogram that holds other counts
+    PixelHistogram<uint16_t, float> given(7, 5, 20, 0.0f, 10.0f, 4);
+    given.fill_async(state_test_image(40));
+    given.set_state(state);
+    REQUIRE((restored.values() == state.values));
+    REQUIRE((given.values() == state.values));
+
+    for (; frame_index < 12; ++frame_index) {
+        original.fill_async(state_test_image(frame_index));
+        restored.fill_async(state_test_image(frame_index));
+        given.fill_async(state_test_image(frame_index));
+    }
+    const auto expected = original.values();
+    REQUIRE((expected != state.values));
+    REQUIRE((restored.values() == expected));
+    REQUIRE((given.values() == expected));
+    REQUIRE((restored.bin_edges() == original.bin_edges()));
+}
+
+TEST_CASE("A histogram rejects a state that does not fit and stays unchanged",
+          "[pixel-histogram]") {
+    using Catch::Matchers::ContainsSubstring;
+    using Hist = PixelHistogram<uint16_t, float>;
+    Hist hist(7, 5, 20, 0.0f, 10.0f, 2);
+    hist.fill_async(state_test_image(0));
+    const auto before = hist.values();
+
+    REQUIRE_THROWS_WITH(hist.set_state(Hist(7, 6, 20, 0.0f, 10.0f).state()),
+                        ContainsSubstring("expected (7, 5, 20)"));
+    REQUIRE_THROWS_WITH(hist.set_state(Hist(7, 5, 21, 0.0f, 10.0f).state()),
+                        ContainsSubstring("expected (7, 5, 20)"));
+    REQUIRE_THROWS_WITH(hist.set_state(Hist(7, 5, 20, 0.0f, 11.0f).state()),
+                        ContainsSubstring("and [0, 10)"));
+    REQUIRE_THROWS_AS(Hist(aare::PixelHistogramState<uint16_t>{}),
+                      std::runtime_error);
+    auto no_range = hist.state();
+    no_range.xmax = no_range.xmin;
+    REQUIRE_THROWS_AS(Hist(no_range), std::runtime_error);
+
+    REQUIRE((hist.values() == before));
 }

@@ -5,6 +5,7 @@
 #include "aare/NDView.hpp"
 #include "bindings.hpp"
 #include "np_helper.hpp"
+#include "state_file.hpp"
 #include <cstdint>
 #include <filesystem>
 #include <pybind11/pybind11.h>
@@ -187,6 +188,21 @@ void define_interpolation_bindings(py::module &m) {
     register_transform_eta_values<int>(interpolator);
     register_transform_eta_values<float>(interpolator);
     register_transform_eta_values<double>(interpolator);
+
+    def_state_file<aare::InterpolatorState>(
+        interpolator,
+        "Write the bin edges and the two CDFs to a state file, replacing an "
+        "existing file.",
+        "Replace the bin edges and the two CDFs of this interpolator with "
+        "those in a state file.");
+    interpolator.def_static(
+        "from_state_file",
+        [](const std::filesystem::path &filename) {
+            return Interpolator(
+                aare::load_state<aare::InterpolatorState>(filename));
+        },
+        py::arg("filename"),
+        "Create an interpolator from a state file written by save_state().");
 
     // TODO! Evaluate without converting to double
     m.def(

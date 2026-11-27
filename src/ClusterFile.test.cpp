@@ -3,10 +3,10 @@
 #include "test_config.hpp"
 
 #include "aare/defs.hpp"
+#include "temporary_path.hpp"
 #include <algorithm>
 #include <catch2/catch_test_macros.hpp>
 #include <catch2/generators/catch_generators.hpp>
-#include <chrono>
 #include <cstdint>
 #include <filesystem>
 #include <string>
@@ -22,10 +22,7 @@ namespace {
 class TemporaryClusterFile {
   public:
     TemporaryClusterFile() {
-        const auto unique =
-            std::chrono::steady_clock::now().time_since_epoch().count();
-        m_path = std::filesystem::temp_directory_path() /
-                 ("aare-cluster-file-" + std::to_string(unique) + ".clust");
+        m_path = unique_temporary_path("aare-cluster-file", ".clust");
     }
 
     TemporaryClusterFile(const TemporaryClusterFile &) = delete;

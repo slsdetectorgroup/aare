@@ -98,6 +98,25 @@ because charge that leaked below threshold would otherwise bias a pedestal
 updated from the erased frame. A zeroed pixel compares as zero for the rest
 of the frame, which only matters for negative thresholds.
 
+**Saving and restoring the configuration**
+
+``save_state()`` writes the configuration of the finder to a state file:
+the thresholds, the factors, ``connectivity``, ``erase_clusters``, the
+noise map and the mask. ``VarClusterFinder.from_state_file(filename)``
+returns a new finder with that configuration, and
+``finder.load_state(filename)`` replaces the configuration of an existing
+finder, which must have the image shape stored in the file. Hits are not
+stored, and loading into an existing finder drops those it holds. If the
+file cannot be loaded, the finder is left unchanged. The file format is
+described in :doc:`../../StateFile`.
+
+.. code:: python
+
+    cf.save_state("finder.aare")
+
+    cf = VarClusterFinder.from_state_file("finder.aare")   # a new finder
+    other.load_state("finder.aare")                        # an existing one
+
 .. py:currentmodule:: aare
 
 .. autoclass:: VarClusterFinder
