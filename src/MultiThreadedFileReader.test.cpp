@@ -7,10 +7,10 @@
 #include "aare/Frame.hpp"
 #include "aare/NumpyFile.hpp"
 
+#include "temporary_path.hpp"
 #include "test_config.hpp"
 #include <catch2/catch_test_macros.hpp>
 
-#include <chrono>
 #include <cstddef>
 #include <cstdint>
 #include <filesystem>
@@ -30,10 +30,7 @@ namespace {
 class TemporaryNumpyFile {
   public:
     TemporaryNumpyFile() {
-        const auto unique =
-            std::chrono::steady_clock::now().time_since_epoch().count();
-        m_path = std::filesystem::temp_directory_path() /
-                 ("aare-mt-reader-" + std::to_string(unique) + ".npy");
+        m_path = unique_temporary_path("aare-mt-reader", ".npy");
 
         FileConfig cfg;
         cfg.dtype = aare::Dtype::UINT16;

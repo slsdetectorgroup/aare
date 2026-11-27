@@ -11,12 +11,12 @@
 #include "aare/VarClusterFinder.hpp"
 #include "aare/hist/PedestalTrackingPixelHistogram.hpp"
 #include "aare/hist/PixelHistogramImpl.hpp"
+#include "temporary_path.hpp"
 
 #include <catch2/catch_test_macros.hpp>
 #include <catch2/matchers/catch_matchers_string.hpp>
 #include <nlohmann/json.hpp>
 
-#include <atomic>
 #include <cstdint>
 #include <cstring>
 #include <limits>
@@ -35,11 +35,7 @@ constexpr size_t state_file_preamble_size = 16;
 class TemporaryStateFile {
   public:
     TemporaryStateFile() {
-        static std::atomic<int> counter{0};
-        const auto unique =
-            std::chrono::steady_clock::now().time_since_epoch().count();
-        m_path = std::filesystem::temp_directory_path() /
-                 fmt::format("aare-state-file-{}-{}.aare", unique, counter++);
+        m_path = unique_temporary_path("aare-state-file", ".aare");
     }
 
     TemporaryStateFile(const TemporaryStateFile &) = delete;

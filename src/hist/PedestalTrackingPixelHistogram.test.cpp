@@ -4,12 +4,12 @@
 #include "aare/File.hpp"
 #include "aare/Frame.hpp"
 #include "aare/NumpyFile.hpp"
+#include "temporary_path.hpp"
 
 #include <catch2/catch_test_macros.hpp>
 #include <catch2/matchers/catch_matchers_string.hpp>
 
 #include <algorithm>
-#include <chrono>
 #include <cstdint>
 #include <filesystem>
 #include <functional>
@@ -32,10 +32,7 @@ class TemporaryHistogramFile {
 
     TemporaryHistogramFile(std::size_t rows = 2, std::size_t cols = 3,
                            std::size_t frames = 10, Generator generator = {}) {
-        const auto unique =
-            std::chrono::steady_clock::now().time_since_epoch().count();
-        path_ = std::filesystem::temp_directory_path() /
-                ("aare-pedestal-hist-" + std::to_string(unique) + ".npy");
+        path_ = unique_temporary_path("aare-pedestal-hist", ".npy");
 
         FileConfig config;
         config.dtype = aare::Dtype::UINT16;
